@@ -1,0 +1,485 @@
+
+
+──────── page 1/24 ────────
+
+CS153: Compilers 
+Lecture 17: Control Flow Graph  
+and Data Flow Analysis 
+Stephen Chong 
+https://www.seas.harvard.edu/courses/cs153
+
+
+──────── page 2/24 ────────
+
+Stephen Chong, Harvard University
+Announcements
+•Project 5 out 
+•Due Tuesday Nov 13 (14 days) 
+•Project 6 out 
+•Due Tuesday Nov 20 (21 days) 
+•Project 7 will be released today 
+•Due Thursday Nov 29 (30 days)
+ 2
+
+
+──────── page 3/24 ────────
+
+Stephen Chong, Harvard University
+Today
+•Control Flow Graphs 
+•Basic Blocks 
+•Dataﬂow Analysis 
+•Available Expressions
+ 3
+
+
+──────── page 4/24 ────────
+
+Stephen Chong, Harvard University
+Optimizations So Far
+•We’ve look only at local optimizations 
+•Limited to “pure” expressions 
+•Avoid variable capture by having unique variable 
+names
+ 4
+
+
+──────── page 5/24 ────────
+
+Stephen Chong, Harvard University
+Next Few Lectures
+•Imperative Representations 
+•Like MIPS assembly at the instruction level. 
+• except we assume an inﬁnite # of temps 
+• and abstract away details of the calling convention 
+•But with a bit more structure.  
+•Organized into a Control-Flow graph 
+•nodes:  labeled basic blocks of instructions 
+• single-entry, single-exit 
+• i.e., no jumps, branching, or labels inside block 
+•edges:  jumps/branches to basic blocks 
+•Dataﬂow analysis 
+•computing information to answer questions about data ﬂowing 
+through the graph.
+ 5
+
+
+──────── page 6/24 ────────
+
+Stephen Chong, Harvard University
+Control-Flow Graphs
+•Graphical representation of a program 
+•Edges in graph represent control ﬂow:  
+how execution traverses a program 
+•Nodes represent statements
+ 6
+x := 0;
+y := 0;
+while (n > 0) {
+  if (n % 2 = 0) {
+    x := x + n;
+    y := y + 1;
+  }
+  else {
+    y := y + n;
+    x := x + 1;
+ }
+  n := n - 1;
+}
+print(x);
+x:=x+n
+y:=y+1
+y := 0
+n > 0
+n%2=0
+y:=y+n
+print(x)
+n:=n-1
+x := 0
+x:=x+1
+true
+false
+true
+false
+
+
+──────── page 7/24 ────────
+
+Stephen Chong, Harvard University
+Basic Blocks
+•We will require that nodes of a control ﬂow 
+graph are basic blocks 
+•Sequences of statements such that: 
+• Can be entered only at beginning of block 
+• Can be exited only at end of block 
+‣ Exit by branching, by unconditional jump to another block, or by 
+returning from function 
+•Basic blocks simplify representation and analysis
+ 7
+
+
+──────── page 8/24 ────────
+
+Stephen Chong, Harvard University
+Basic Blocks
+•Basic block: single entry, single exit
+ 8
+x := 0;
+y := 0;
+while (n > 0) {
+  if (n % 2 = 0) {
+    x := x + n;
+    y := y + 1;
+  }
+  else {
+    y := y + n;
+    x := x + 1;
+ }
+  n := n - 1;
+}
+print(x);
+x:=x+n
+y:=y+1
+x := 0
+y := 0
+n > 0
+n%2=0
+y:=y+n
+x:=x+1
+print(x)
+n:=n-1
+true
+false
+true
+false
+
+
+──────── page 9/24 ────────
+
+Stephen Chong, Harvard University
+CFG Abstract Syntax
+ 9
+type operand = 
+   | Int of int | Var of var | Label of label
+type block = 
+| Return of operand
+| Jump of label
+| Branch of operand * test * operand * label * label
+| Move of var * operand * block
+| Load of var * int * operand * block
+| Store of var * int * operand * block
+| Assign of var * primop * (operand list) * block
+| Call of var * operand * (operand list) * block
+type proc = { vars : var list,    
+              prologue: label, epilogue: label,  
+              blocks : (label * block) list }
+
+
+──────── page 10/24 ────────
+
+Stephen Chong, Harvard University
+Differences with Monadic Form
+•Essentially MIPS assembly with inﬁnite number of 
+registers 
+•No lambdas, so easy to translate to MIPS modulo 
+register allocation and assignment. 
+•Monadic form requires extra pass to eliminate lambdas 
+and make closures explicit (closure conversion, lambda 
+lifting) 
+•Unlike Monadic Form, variables are mutable 
+•Return constructor is function return, not 
+monadic return
+ 10
+
+
+──────── page 11/24 ────────
+
+Stephen Chong, Harvard University
+Let’s Revisit Optimizations
+•Folding 
+•t:=3+4    becomes    t:=7 
+•Constant propagation 
+•t:=7; B; u:=t+3; B’ 
+    becomes    t := 7; B; u:=7+3; B’ 
+•Problem!  B might assign a fresh value to t 
+•Copy propagation 
+•t:=u; B; v:=t+3; B’ 
+    becomes    t:=u; B; v:=u+3; B’ 
+•Problem! B might assign a fresh value to t or u
+ 11
+
+
+──────── page 12/24 ────────
+
+Stephen Chong, Harvard University
+Let’s Revisit Optimizations
+•Dead code elimination 
+•x:=e; B; jump L    becomes    B; jump L 
+• Problem! Block L might use x 
+•x:=e1;B1; x:=e2;B2    becomes    B1;x:=e2;B2       
+                   (x not used in B1) 
+•Common sub-expression elimination 
+•x:=y+z;B1;w := y+z;B2    becomes    
+x:=y+z;B1;w:=x;B2 
+• problem: B1 might change x, y, or z
+ 12
+
+
+──────── page 13/24 ────────
+
+Stephen Chong, Harvard University
+Optimization in Imperative Settings
+•Optimization on a functional representation: 
+•Only had to worry about variable capture. 
+•Could avoid this by renaming variables so that they were unique. 
+•then: let x=p(v1,…,vn) in e == e[x↦p(v1,…,vn)] 
+•Optimization in an imperative representation: 
+•Have to worry about intervening updates 
+• for deﬁned variable, similar to variable capture. 
+• but must also worry about free variables. 
+• x:=p(v1,…,vn);B  == B[x↦p(v1,…,vn)]  only when B doesn't 
+modify x or modify any of the vi! 
+•On the other hand, graph representation makes it possible to be 
+more precise about the scope of a variable.
+ 13
+
+
+──────── page 14/24 ────────
+
+Stephen Chong, Harvard University
+Dataflow Analysis
+•To handle intervening updates we will compute analysis facts for 
+each program point 
+•There is a “program point” immediately before and after each instruction 
+•Analysis facts are facts about variables, expressions, etc. 
+•Which facts we are interested in will depend on the particular 
+optimization or analysis we are concerned with 
+•Given that some facts D hold at a program point before 
+instruction S, after S executes some facts D’ will hold 
+•How S transforms D into D’ is called the transfer function for S 
+•This kind of analysis is called dataﬂow analysis 
+•Because given a control-ﬂow graph, we are computing facts about data/
+variables and propagating these facts over the control ﬂow graph
+ 14
+
+
+──────── page 15/24 ────────
+
+Stephen Chong, Harvard University
+Available Expressions
+•An expression e is available at program point p if on 
+all paths from the entry to p, expression e is 
+computed at least once, and there are no intervening 
+assignment to x or to the free variables of e 
+•If e is available at p, we do not need to re-compute 
+e 
+•(i.e., for common sub-expression elimination) 
+•How do we compute the available expressions at 
+each program point?
+ 15
+
+
+──────── page 16/24 ────────
+
+x := a + b;
+y := a * b;
+y > a
+a := a + 1;
+x := a + b
+exit
+entry
+Stephen Chong, Harvard University
+Available Expressions Example
+ 16
+∅
+∅
+{a+b}
+{a+b, a*b}
+{a+b, a*b}
+{a+b, a*b}
+{a+b, a*b}
+∅
+{a+b}
+{a+b}
+{a+b}
+{a+b}
+1.
+2.
+3.
+4.
+5.
+6.
+7.
+8.
+9.
+10.
+11.
+12.
+(Numbers indicate the order that the  
+    facts are computed in this example.)
+
+
+──────── page 17/24 ────────
+
+Stephen Chong, Harvard University
+More Formally
+•Suppose D is a set of expressions that are 
+available at program point p 
+•Suppose p is immediately before  “x := e1; B” 
+•Then the statement “x:=e1” 
+•generates the available expression e1, and 
+•kills any available expression e2 in D such that x is in 
+variables(e2) 
+•So the available expressions for B are: 
+  (D ∪ {e1}) – { e2 | x∈variables(e2) }
+ 17
+
+
+──────── page 18/24 ────────
+
+Stephen Chong, Harvard University
+Gen and Kill Sets
+•Can describe this analysis by the set of available 
+expressions that each statement generates and kills! 
+•Transfer function for stmt S: λD. (D ∪ GenS) – KillS
+ 18
+Stmt
+Gen
+Kill
+x:=v
+{ v }
+{e | x in e}
+x:=v1 op v2
+{v1 op v2}
+{e | x in e}
+x:=*(v+i) 
+{}
+{e | x in e}
+*(v+i):=x 
+{}
+{}
+jump L
+{}
+{}
+return v
+{}
+{}
+if v1 op v2 goto L1 else goto L2 
+{}
+{}
+x:=v(v1,...vn) 
+{}
+{e | x in e}
+
+
+──────── page 19/24 ────────
+
+Stephen Chong, Harvard University
+Available Expressions Example
+•What is the effect of each 
+statement on the facts?
+ 19
+x := a + b;
+y := a * b;
+y > a
+a := a + 1;
+x := a + b
+exit
+entry
+Stmt
+Gen
+Kill
+x := a + b
+a+b
+y := a * b
+a*b
+y > a
+a := a + 1
+a+1
+a+1
+a+b
+a*b
+
+
+──────── page 20/24 ────────
+
+Stephen Chong, Harvard University
+Aliasing
+•We don’t track expressions involving memory 
+(loads & stores). 
+•We can tell whether variables names are equal. 
+•We cannot (in general) tell whether two variables will 
+have the same value. 
+•If we track *x as an available expression, 
+and then see *y := e’, don’t know whether to kill 
+*x 
+• Don’t know whether x’s value will be the same as y’s value
+ 20
+
+
+──────── page 21/24 ────────
+
+Stephen Chong, Harvard University
+Function Calls
+•Because a function call may access memory, and 
+may have side effects, we can’t consider them to 
+be available expressions
+ 21
+
+
+──────── page 22/24 ────────
+
+Stephen Chong, Harvard University
+Flowing Through the Graph
+•How to propagate available expression facts over control ﬂow graph? 
+•Given available expressions Din[L] that ﬂow into block labeled L, 
+compute Dout[L] that ﬂow out 
+•Composition of transfer functions of statements in L's block 
+•For each block L, we can deﬁne: 
+•succ[L] = the blocks L might jump to 
+•pred[L] = the blocks that might jump to L 
+•We can then ﬂow Dout[L] to all of the blocks in succ[L] 
+•They'll compute new Dout's and ﬂow them to their successors and so on 
+•How should we combine facts from predecessors? 
+•e.g., if pred[L] = {L1, L2, L3}, how do we combine Dout[L1], Dout[L2], Dout[L3] 
+to get Din[L] ? 
+•Union or intersection?
+ 22
+
+
+──────── page 23/24 ────────
+
+Stephen Chong, Harvard University
+Algorithm Sketch
+•initialize Din[L] to the empty set. 
+•initialize Dout[L] to the available expressions that ﬂow out of 
+block L, assuming Din[L] are the set ﬂowing in. 
+•loop until no change { 
+•  for each L: 
+•    In := ⋂{Dout[L’] | L’ in pred[L] } 
+•    if In ≠ Din[L] then { 
+•        Din[L] := In 
+•        Dout[L] := ﬂow Din[L] through L's block. 
+•    } 
+•}
+ 23
+
+
+──────── page 24/24 ────────
+
+Stephen Chong, Harvard University
+Termination and Speed
+•We know the available expressions dataﬂow analysis will 
+terminate! 
+•Each time through the loop each Din[L] and Dout[L] either stay the same 
+or increase 
+•If all Din[L] and Dout[L] stay the same, we stop 
+•There’s a ﬁnite number of assignments in the program and ﬁnite blocks, 
+so a ﬁnite number of times we can increase Din[L] and Dout[L] 
+•In general, if set of facts form a lattice, transfer functions 
+monotonic, then termination guaranteed 
+•There are a number of tricks used to speed up the analysis: 
+•Can keep a work queue that holds only those blocks that have changed 
+•Pre-compute transfer function for a block (i.e., composition of transfer 
+functions of statements in block)
+ 24

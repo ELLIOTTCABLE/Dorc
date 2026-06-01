@@ -1,0 +1,38 @@
+# Mutation core (Q1) + compositional scaling (Q3) — from purity analysis + Facebook-scale
+
+> ⟢ 2026-06 — the "soundness-bias inversion" here is now the knob `kFAIL` (probe-soundness `kFAIL-withhold` vs elision-soundness `kFAIL-perform`; phase-keyed, welded). Grep the slug for current handling.
+
+Two of the highest-yield reads. Together they give the spine of Dorc's analysis: **a compositional, summary-based side-effect/MOD analysis** — but with a soundness bias *inverted* from the industrial bug-finders.
+
+## Salcianu–Rinard purity/side-effect analysis — the closest classical analog to "may-mutate"
+SURE this is the most directly transferable prior art for Q1:
+- **Purity = "does not mutate any location that existed in the prestate"** (the program state right before invocation). Mutating *newly-allocated* objects is fine. → Dorc's exact notion: a command is **skippable** iff it doesn't change *existing system state*; a command that writes only scratch it owns (a `/tmp` file it also removes) is "pure" in this sense. This formalizes the planning-log's "scratch-temp-not-depended-on falls out of dataflow."
+- Mechanism: pointer+escape analysis with a **points-to graph** distinguishing **inside nodes** (allocated here) from **parameter/load nodes** (prestate). Mutations on inside nodes are ignored; mutations on parameter/load nodes are the real side effects. For Dorc the "heap" is *system state* (packages, files, services, users, ports); "inside vs prestate" becomes "state this run created vs state that pre-existed."
+- **Compositional summary, computed ONCE per method**, parameterized over unknown calling context (param/load nodes abstract unknown inputs); instantiated at each call site via a node-mapping; recursion iterates to fixpoint. → This is the per-command/per-function **effect summary** mechanism Dorc needs, concretely.
+- Output is richer than a bit: **read-only params**, **safe params**, and a **regular expression characterizing exactly which prestate locations are mutated** (e.g. `list.head.next*.data.(x|y)`). → Dorc analog: a command's effect summary is not "mutates: y/n" but "mutates *these state-paths/facts*" (`pkg:foo`, `file:/etc/x`, `svc:foo#enabled`). This is what buys **1B precision** (probe only the state a command can actually touch) *and* feeds the planning-log's "establishes fact F" composition.
+- They **deliberately sacrifice soundness for caches** (hashcode caches mutate but are "semantically preserving"); the analysis *tells you which fields are mutated* so a human confirms the mutation is benign. → Dorc's "exclude non-determinism / canonicalize" is the same move: recognize benign mutation (timestamps, caches) and the analysis must *surface what's touched* for adjudication.
+- Lineage: "stems from Gifford et al. type-and-effect systems." Confirms the effect-system framing for the oracle's effect-class.
+
+## Facebook scale (Infer/Zoncolan) — compositionality IS the scaling answer (Q3)
+SURE for Q3, and it maps onto an ops fleet/role structure almost too well:
+- **Compositional analysis**: the result of a composite program = results of its parts + a combine step. Each procedure → a concise **summary** (an abstract-domain element). Each procedure visited a few times; **most procedures analyzed independently → parallelism**; runtime ≈ linear combination of per-procedure costs (modulo recursion). **Compositional ⇒ naturally incremental**: change one procedure, don't re-analyze the rest.
+  - → Dorc: each **role/module/function** is a "procedure"; summarize once, cache, recompose per host. An org corpus is *embarrassingly modular* (many roles × many hosts) → this is the natural fit, and it answers Q3 (arbitrarily-large corpus) directly. The planning-log's "flat forest of mostly-independent roles" is *exactly* the structure compositional analysis exploits.
+- **Two design questions for any compositional analysis**: (a) how to represent a procedure's meaning concisely (the abstract domain / summary shape); (b) how to combine. Keep the domain "precise enough + coarse enough"; **limit/avoid disjunctions** to bound per-procedure cost.
+- **Diff-time deployment is the load-bearing UX lesson**: identical analysis got **0% fix rate batch vs 70% at diff-time** (in code review, commenting on the diff that introduced the issue). Reasons: avoids mental context-switch; relevance. Reports only *new* issues via a move/line-robust bug-equivalence hash.
+  - → Dorc: don't re-probe the whole fleet every run. Analyze the **ops-repo diff** (a changed role) fast, show *what state changes* that diff implies and on which hosts. This is the natural Dorc workflow and it's the thing that makes Ansible's "re-run everything for 20 min" obsolete (planning-log MH1).
+- Numbers: Zoncolan 100M LOC < 30 min / 24 cores; Infer diff-time ~15 min. Taint analysis (Zoncolan) = "which untrusted input reaches which sink" — structurally identical to Dorc's "which state reaches/feeds which mutation-or-probe."
+
+## THE soundness-bias inversion (the single most important synthesis point so far)
+> **Update (two-soundness standard):** the framing below is the **elision-soundness** half only (never skip a needed mutation; fail toward *do-execute*; extra runs harmless by idempotence). Its co-equal twin, **probe-soundness** (the read-only pass must not itself mutate), has the *opposite* fail-action (*don't-execute*). One ⊤ does not serve both. See AGENTS §1 / `analysis-architecture.md` §1A.
+
+SUSPECT-but-strong: Infer/Zoncolan are **unsound bug-finders** — they tolerate **false negatives** (missed bugs) to keep **false positives** low (developer trust). Dorc's *elision* requirement is the **opposite bias**: tolerate **false positives** (extra runs — harmless by idempotence, slow) but **forbid false negatives** (a missed necessary mutation → false-skip → a host silently left unconverged/broken). So:
+- We reuse Infer's **compositional summary machinery** and its **diff-time deployment model** wholesale.
+- We do **not** adopt its soundness posture. Dorc's analysis must be a **sound over-approximation** (abstract-interpretation flavor: Goblint/TAJS), where the summary over-approximates the mutated-location set and unknown context → ⊤ (un-probeable + can't-skip). The summary lattice's ⊤ = "may mutate unknown locations / can't-skip; un-probeable."
+- Consequence: Dorc = **"Infer's architecture (compositional summaries + diff-time) running an over-approximating MOD/side-effect analysis (Salcianu–Rinard shape) instead of an under-approximating bug-finder."** That one sentence is most of the architecture answer to Q1+Q3.
+- The precision tension Facebook describes (fewer false-neg ⇒ more false-pos) is *fine* for us: extra probes are cheap; the planning-log's whole cost-asymmetry argument is the same observation. We sit at the "tolerate false-positives" end deliberately.
+
+## Open threads to resolve in remaining reads
+- IFDS/IDE vs. summary-based abstract interpretation: which engine shape for the *interprocedural* propagation (IFDS gives precise+poly for *distributive* problems; is may-mutate distributive? GUESS partly — gen/kill of facts is, but the *characterization* regex / points-to is not). Read IFDS next.
+- SDG/PDG as the **reusable** structure for Q2 (retain reachability for many analyses) + slicing for 1B precision.
+- Whether to represent everything as a **queryable fact base** (Datalog/CodeQL) so "add an analysis later" = "write a query" (Q2), and whether that scales (Souffle) / incrementalizes (IncA, differential dataflow).
+- Sparse value-flow (SVF): skip irrelevant program points — a concrete 1B+Q3 technique; the "value-flow graph" may be the right reusable IR (Q2).

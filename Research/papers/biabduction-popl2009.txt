@@ -1,0 +1,1678 @@
+
+
+──────── page 1/12 ────────
+
+Compositional Shape Analysis by means of Bi-Abduction
+Cristiano Calcagno
+Imperial College, London
+ccris@doc.ic.ac.uk
+Dino Distefano
+Peter O’Hearn
+Hongseok Yang
+Queen Mary, University of London
+{ddino,ohearn,hyang}@dcs.qmul.ac.uk
+Abstract
+This paper describes a compositional shape analysis, where each
+procedure is analyzed independently of its callers. The analysis
+uses an abstract domain based on a restricted fragment of sepa-
+ration logic, and assigns a collection of Hoare triples to each pro-
+cedure; the triples provide an over-approximation of data structure
+usage. Compositionality brings its usual beneﬁts – increased poten-
+tial to scale, ability to deal with unknown calling contexts, graceful
+way to deal with imprecision – to shape analysis, for the ﬁrst time.
+The analysis rests on a generalized form of abduction (infer-
+ence of explanatory hypotheses) which we call bi-abduction. Bi-
+abduction displays abduction as a kind of inverse to the frame prob-
+lem: it jointly infers anti-frames (missing portions of state) and
+frames (portions of state not touched by an operation), and is the
+basis of a new interprocedural analysis algorithm. We have im-
+plemented our analysis algorithm and we report case studies on
+smaller programs to evaluate the quality of discovered speciﬁca-
+tions, and larger programs (e.g., an entire Linux distribution) to test
+scalability and graceful imprecision.
+Categories and Subject Descriptors
+D.2.4 [Software Engineer-
+ing]: Software/Program Veriﬁcation; D.3.4 [Programming Lan-
+guages]: Processors; F.3.1 [Logics and Meanings of Programs]:
+Specifying and Verifying and Reasoning about Programs
+General Terms
+Veriﬁcation, Reliability, Languages, Theory
+Keywords
+Program Analysis, Proof Theory, Abduction
+1.
+Introduction
+The Case for Compositional Shape Analysis.
+A shape analysis
+attempts to discover invariants that describe the data structures in a
+program (e.g., [43, 3, 37, 21, 4]). We are interested in particular in
+the use of such analyses for (lightweight) program veriﬁcation. A
+shape analysis can in principle prove that programs do not commit
+pointer-safety errors (dereferencing a null or dangling pointer, or
+leaking memory), without the user having to write loop invariants
+or even pre/post speciﬁcations for procedures; these are inferred
+during analysis. To do this the analysis typically has to accurately
+identify (or distinguish) cyclic and acyclic linked structures, nested
+lists, and so on.
+Recall that a semantic deﬁnition of a language is compositional
+if the meaning of a composite expression is deﬁned in terms of
+Permission to make digital or hard copies of all or part of this work for personal or
+classroom use is granted without fee provided that copies are not made or distributed
+for proﬁt or commercial advantage and that copies bear this notice and the full citation
+on the ﬁrst page. To copy otherwise, to republish, to post on servers or to redistribute
+to lists, requires prior speciﬁc permission and/or a fee.
+POPL’09,
+January 18–24, 2009, Savannah, Georgia, USA.
+Copyright c⃝2009 ACM 978-1-60558-379-2/09/01...$5.00
+the meanings of its parts. Similarly, a program analysis is compo-
+sitional if the analysis result of a composite program (or program
+fragment) is computed from the analysis results of its parts. Often,
+this deﬁnition is understood at the level of granularity of procedures
+or groups of recursive procedures. This paper is, to our knowledge,
+the ﬁrst to deﬁne and evaluate a compositional shape analysis.
+Compositionality has well-known potential beneﬁts, which line
+up directly with some of the outstanding problems in making shape
+analysis more practical.
+1. The ability to analyze program parts, without having the con-
+text. When an entire program is not available, or is very large,
+the user of a whole-program shape analysis must put in a sig-
+niﬁcant amount of work before the analysis is run at all. This
+work consists in deﬁning a “fake main program” which allo-
+cates data structures and calls the incomplete program’s proce-
+dures, or it involves deﬁning preconditions for the procedures.
+Both are time consuming and possible sources of error.
+The very deﬁnition of “compositional” presupposes that an
+analysis makes sense for an incomplete program, without hav-
+ing its context (or a “main” program) available.
+This is evidently relevant to the potential use of an analysis
+during program development, rather than only after a complete
+program has been written.
+2. Potential to scale. Shape analyses are notoriously expensive.
+After years of research and many papers, we have only recently
+seen the accurate analysis of complete programs in the thou-
+sands of lines of code (up to 10K LOC) [21, 23, 30]. (Less ac-
+curate analyses, which typically cannot prove pointer safety on
+such programs, have been reported for larger code bases; e.g.,
+[14, 22].) Papers in the ﬁeld usually use test programs number-
+ing in only the hundreds or tens of lines of code.
+With a compositional analysis it becomes relatively easy to get
+meaningful (if partial) results for large code bases.
+There is a further beneﬁt that is worth mentioning: Paralleliza-
+tion. If we can analyze groups of procedures independently, it
+is easy to run the analysis in parallel and exploit the power of
+the multicore computers that are becoming mainstream.
+[Aside. Compositional analysis, by its nature, easily yields an
+incremental algorithm. When an analysis is ﬁrst run its results
+can be stored to disk. Then, if a procedure (or recursive pro-
+cedure group) is changed, only it has to be re-analyzed; the old
+analysis results for independent procedures remain unchanged.]
+3. Graceful imprecision. There is no single existing shape domain
+that has been proposed which is appropriate to all of the kinds
+of data structures found in a large program (such as Linux): any
+known shape domain will deliver uselessly imprecise results at
+some point, after which (in a whole program analysis) meaning-
+ful results cease to be obtained even for portions of code which
+could be well treated, were a suitable precondition known.
+
+
+──────── page 2/12 ────────
+
+If a compositional analysis is unable to get precise results for
+one procedure, due to limitations of its abstract domain, it can
+still obtain precise results for other procedures.
+This discussion motivates the problem of deﬁning and evaluating a
+compositional shape analysis.
+Compositional Shape Analysis by Abductive Inference.
+Charles
+Peirce introduced abductive inference – inference of explanatory
+hypotheses – in the early 1900’s in his writings on the scientiﬁc
+process [36]. Abduction was formulated to distinguish hypothesis
+formation from deductive and inductive inference patterns. Abduc-
+tive inference has been widely studied in philosophy, and it has
+been used in a number of ways in Artiﬁcial Intelligence, such as in
+diagnosis and in planning. (The survey article [24] points to many
+formalizations and applications in the AI literature.)
+The main contribution of this paper is conceptual in nature. We
+explain how abductive inference can be used to deﬁne a composi-
+tional, interprocedural shape analysis algorithm. We use abduction
+to generate preconditions, so that we can obtain a true Hoare triple
+for a procedure without knowing its calling context. This allows
+us to make a compositional, bottom-up program analysis, where
+callees are analyzed before callers.
+The basic idea is this. During an analysis run we might ﬁnd
+that we do not have enough information to perform an operation
+– a procedure call, or a dereferencing. We then perform abductive
+inference to infer what is missing. We percolate this information
+back to the preconditions of procedures and, in the end, this allows
+us to synthesize Hoare triples without examining the calling context
+of a procedure.
+This use of abduction generalizes a method we described in
+[7] for generating preconditions in an intraprocedural (i.e., with-
+out procedures) analysis. Abduction makes it possible to handle
+procedure calls. It is also more systematic: the method of ﬁnding
+preconditions is seen as part of a more general scheme – inference
+of missing hypotheses – rather than an ad hoc method based on
+pointer dereferencing faults (as was the case in [7]).
+A major part of our contribution involves deﬁning an abductive
+inference algorithm for use with a shape analysis. We deﬁne a
+new procedure for performing abductive inference for (certain)
+separation logic assertions which, following [5, 11], are used to
+deﬁne the abstract states in our analysis. In fact, to treat procedure
+calls we must deal with a more general problem, which we call bi-
+abduction, that infers “frames” describing extra, unneeded portions
+of state as well as the needed, missing portions (the “anti-frames”).
+We have implemented our analysis algorithm and done a num-
+ber of case studies to evaluate it. These range from small programs
+operating over composite list structures, through to a medium-sized
+program (a ﬁrewire device driver), and on to larger code bases (in-
+cluding complete distributions of Apache, OpenSSL, Linux). The
+small and medium-sized examples are done to probe questions con-
+cerning the quality of speciﬁcations discovered by our analysis, and
+the larger ones to test scalability and graceful imprecision.
+2.
+Bi-Abductive Inference for Speciﬁcation
+Synthesis
+In this section we explain informally how bi-abduction is used in
+our analysis. Subsequent sections develop the ideas formally.
+Abductive Inference.
+In standard logic, abduction can be set up
+as follows.
+Given: assumption A and goal G.
+To ﬁnd: “missing” assumptions M making the entailment
+A ∧M ⊢G
+true.
+Constraints are placed on what counts as a solution: that it be
+consistent, that it be expressed using a restricted collection of
+“abducible” facts, and sometimes that it be minimal in some sense.
+In this paper we will be solving a similar problem, but for
+separation logic rather than classical logic. So, we will have to solve
+problems of the form
+A ∗?? ⊢G
+where we use the separating conjunction to partition the premises
+instead of, or in addition to, the usual additive conjunction of
+classical logic.
+Generating Preconditions by Abduction.
+Suppose that during a
+program veriﬁcation we have an assertion A at a call site for a
+procedure, and the procedure has a precondition G. For example,
+Procedure precondition: G
+def= list(x) ∗list(y),
+Assertion at call site: A
+def= x7→0
+Here the precondition says that x and y point to acyclic linked lists
+occupying separate memory, while the assertion A says that x is a
+pointer variable containing 0 (so a list of length 1).
+The difﬁculty we face is that the assertion A does not imply G;
+the call site and given precondition do not match up. One thing we
+can do is to give up on our veriﬁcation, or our program analysis, at
+this point. But we might also realize
+if only we had the assertion list(y) as well, separately con-
+joined, then we would be able to meet the precondition.
+The informal inference step expressed here is abductive in nature:
+it is about inferring an hypothesis. Formally, it involves solving a
+question of the form
+A ∗?? ⊢G.
+We can see the relevance of this to interprocedural analysis
+using an example. Suppose we are given a procedure summary
+(here, a spec using Hoare triples) of a procedure merge(x,y). The
+summary might have been computed previously in an analysis, or it
+might have been supplied manually by a user. We have an enclosing
+procedure p(y) which calls merge as follows.
+1
+lst_nd* p(lst_nd *y) { // Inferred Pre: list(y)
+2
+lst_nd *x;
+3
+x=malloc(sizeof(lst_nd)); x->tail =
+0;
+4
+merge(x,y);
+// Obtained Post: list(x)
+5
+return(x);
+6
+}
+// Inferred Post: list(ret)
+7
+void merge(lst_nd *x,lst_nd *y){//SUMMARY ONLY
+9
+// Given Pre: list(x) * list(y)
+10 }
+// Given Post: list(x)
+Here is how we can synthesize the pre and post described at
+lines 1 and 6. We begin by executing p() with starting symbolic
+heap emp, an assertion describing the empty heap. Just after line
+3 we obtain the assertion A = x7→0. We call our abductive proof
+procedure, which tells us that list(y) is missing. So we infer that
+we should have started execution with list(y) rather than emp,
+and record list(y) as a missing precondition. We pretend that the
+analysis of the call at line 4 was successful, and continue the
+analysis of p() with the postcondition list(x) of merge(x,y). At
+the end of procedure p() we obtain list(ret) as the computed post,
+where ret is the value returned by the procedure.
+Notice that the speciﬁcation synthesized for p() is not at all
+random: the precondition describes the set of states on which the
+procedure can be safely run, presuming the given spec of merge().
+
+
+──────── page 3/12 ────────
+
+Bi-Abduction.
+Abduction gives us a way to synthesize missing
+portions of state. We also have to synthesize additional, leftover
+portions of state (the frame) by solving a more general problem
+which we term bi-abduction:
+A ∗?anti-frame ⊢G ∗?frame.
+We illustrate the use of bi-abduction with the following varia-
+tion on the example above, using the same procedure summary as
+before for merge().
+1
+lst_nd* q(lst_nd *y) { // Inferred Pre: list(y)
+2
+lst_nd *x, *z;
+3
+x=malloc(sizeof(lst_nd)); x->tail=0;
+4
+z=malloc(sizeof(lst_nd)); z->tail=0;
+5
+// Abducted: list(y), Framed: z|->0
+6
+merge(x,y);
+// Obtained Post: list(x)*z|->0
+7
+merge(x,z);
+// Obtained Post: list(x)
+8
+return(x);
+9
+}
+// Inferred Post: list(ret)
+This time we infer anti-frame list(y) as before, but using bi-
+abduction we also infer z7→0 as the frame axiom that won’t be
+needed by procedure call at line 6. That is, we obtain a solution of
+the bi-abduction question
+x7→0 ∗z7→0 ∗?anti-frame ⊢list(x) ∗list(y) ∗?frame
+where ?anti-frame = list(y), ?frame = z7→0. We tack the frame
+on to the postcondition list(x) obtained from the procedure sum-
+mary, continue execution at line 7, and this eventually gives us the
+indicated pre/post pair at lines 1 and 9.
+Again, the inferred pre/post spec talks about only those cells
+that the procedure accesses. Such “small speciﬁcations” are useful
+to aim for when synthesizing pre- and postconditions, because (1)
+shape domains usually have an enormous number of states that
+might be used and (2) “small speciﬁcations” describe more general
+facts about procedures than “big speciﬁcations”, so that they lead
+to a more precise analysis of callers of those procedures.
+The more general point we wish to make is that bi-abduction
+gives us a way to realize, in a program analysis, a key idea from
+[34], where speciﬁcations and proofs concentrate on the cells ac-
+cessed by a program rather than the entire global state of a system.
+Synthesis of frames allows us to use small speciﬁcations of heap
+portions by slotting them into larger states found at call sites, where
+abduction of anti-frames helps us to ﬁnd the small specs.1
+3.
+Symbolic Heaps
+Storage Model.
+We assume two disjoint sets of variables: a ﬁnite
+set of program variables Var (ranged over by x, y, z, . . .) and a
+countable set of logical variables LVar (ranged over by a, b, c, . . .).
+Let Loc be a countably inﬁnite set of locations, and let Val be a set
+of values that includes Loc. The storage model is as follows:
+Heap
+def= Loc ⇀ﬁn Val
+Stack
+def= (Var ∪LVar) →Val
+State
+def= Stack × Heap
+1 Previous work has shown the beneﬁt of inferring frames [41, 17, 30], but
+not anti-frames, and the resulting procedure summaries therefore describe
+larger portions of state than necessary.
+Symbolic Heaps.
+Symbolic heaps are special separation logic
+formulae [5, 11], interpreted over State, and deﬁned as follows:
+E ::= x | a | t(E, . . . , E)
+Expressions
+Π ::= E=E | E̸=E | true | Π ∧Π Pure formulae
+B ::= . . .
+Basic spatial predicates
+Σ ::= B | true | emp | Σ ∗Σ
+Spatial formulae
+∆::= Π ∧Σ
+Quantiﬁer-free symb. heaps
+H ::= ∃⃗a. ∆
+Symbolic heaps
+Expressions are program or logical variables x, a. Or they are heap-
+independent terms t(E1, . . . , En) (e.g., 0). Pure formulae are com-
+posed by the conjunction of equalities and disequalities between
+expressions, and describe properties of variables. The spatial for-
+mulae specify properties of the heap. The predicate emp holds in
+the empty heap where nothing is allocated. The formula Σ1 ∗Σ2
+uses the separating conjunction of separation logic and holds in a
+heap h which can be split into two disjoint parts h1 and h2 such
+that Σ1 holds in h1 and Σ2 in h2. Symbolic heaps H have the form
+∃⃗a. Π ∧Σ, where only some (not necessarily all) logical variables
+in Π ∧Σ are existentially quantiﬁed. The set of all symbolic heaps
+is denoted by SH.
+B is a collection of basic spatial predicates. One instantiation is
+B
+::=
+E7→E | lseg(E, E)
+Here, the points-to predicate x7→y denotes a heap with a single al-
+located cell at address x with content y, and lseg(x, y) denotes a list
+segment from x to y (not included). For simplicity, we describe our
+algorithms and results mainly using this instantiation, although they
+work equally well for other more sophisticated instantiations [4, 9]
+after slight or no modiﬁcations; when some modiﬁcations are nec-
+essary, we will explain what they are.
+In this paper, we overload the ∗operator, so that it also works
+for ∆and H. For i = 1, 2, let ∆i = Πi ∧Σi and Hi = ∃⃗ai. ∆i
+where all bound variables are distinct and they are different from
+free variables. We deﬁne ∆1 ∗∆2 and H1 ∗H2 as follows:
+∆1∗∆2
+def= (Π1∧Π2)∧(Σ1∗Σ2),
+H1∗H2
+def= ∃⃗a1 ⃗a2. ∆1∗∆2.
+We overload −∗Σ and Π ∧−similarly:
+∆i ∗Σ
+def= Πi ∧(Σ ∗Σi),
+Hi ∗Σ
+def= ∃⃗ai. ∆i ∗Σ,
+Π ∧∆i
+def= (Π ∧Πi) ∧Σi,
+Π ∧Hi
+def= ∃⃗ai. Π ∧∆i.
+4.
+Abduction for Separated Heap Abstractions
+In this section we describe an algorithm for inferring answers to the
+abduction question:
+Given ∆and H, ﬁnd a symbolic heap M such that
+∆∗M
+⊢
+H.
+(1)
+The question, as put, can be answered trivially, by returning a
+false assertion. In this paper, we propose a criterion for judging the
+quality of solutions of (1). The order M ≾M ′, meaning that M is
+a better solution than M ′, is deﬁned as follows
+M ≾M ′
+def
+⇐⇒(M ′ ⊢M ∗true ∧M ̸⊢M ′ ∗true) ∨
+(M ′ ⊢M ∗true ∧M ⊢M ′ ∗true ∧M ′ ⊢M).
+Ideally, we would ﬁnd solutions that are minimal w.r.t. ≾and
+consistent. As a semantic question about sets of concrete heaps
+(viewing an assertion as a set) the best solution always exists.2
+2 Semantically, the best solution is
+min({ (s, h) | ∆∗{(s, h)} ⊢H }),
+where min(M) is the predicate deﬁned below:
+{ (s, h) ∈M | for all subheaps h′ of h, if {(s, h′)} ⊢M, then h′ = h }.
+
+
+──────── page 4/12 ────────
+
+(Π ∧Σ) ∗[M] ▷H
+Π ∧Σ ⊢∃⃗a.Π′
+Π ∧Π′ ∧emp ⊢Σ′
+(Π ∧Σ) ∗[M] ▷H ∗(∃⃗a. Π′ ∧Σ′)
+remove
+(E0=E1 ∧∆) ∗[M] ▷∃⃗b. ∆′
+∆∗E7→E0 ∗[∃⃗a. E0=E1 ∧M] ▷∃⃗a⃗b. ∆′ ∗E7→E1
+7→-match
+(where⃗b ∩FreeLVar(E1) = ∅)
+∆∗[M] ▷∃⃗a. ∆′ ∗lseg(E0, E1)
+∆∗B(E, E0) ∗[M] ▷∃⃗a. ∆′ ∗lseg(E, E1) lseg-right
+(where B(E, E0) is E7→E0 or lseg(E, E0))
+(E̸=E0 ∧∆∗lseg(a, E0)) ∗[M] ▷∃⃗b. ∆′
+∆∗lseg(E, E0) ∗[E̸=E0 ∧M] ▷∃a⃗b. ∆′ ∗E7→a
+lseg-left
+(Π ∧emp) ∗[∃⃗a. Π′ ∧emp] ▷∃⃗a. Π′ ∧emp base-emp
+∆∗[∃⃗a. Π ∧emp] ▷∃⃗a. Π ∧true base-true
+∆∗[M] ▷∆′
+∆∗∃⃗a. B(E, E′) ̸⊢false
+∆∗[M ∗∃⃗a. B(E, E′)] ▷∆′ ∗∃⃗a. B(E, E′) missing
+(where B(E, E′) is E7→E′ or lseg(E, E′))
+Figure 1. Proof Rules for Abductive Inference
+While this solution exists theoretically, it is not easy to compute and
+can lead to additional expense in the analysis (see Example 3 be-
+low). So, we present a more pragmatically-motivated procedure for
+abductive inference. The order ≾is used to inform design choices
+in the algorithm, rather than to identify the theoretically best solu-
+tion. This is just how in abstract interpretation analyses often do not
+implement the “best abstract transformer” for pragmatic reasons.
+Proof System for Abductive Inference.
+We introduce a proof
+system for deriving judgments of the form
+∆∗[M] ▷H,
+where M, H are symbolic heaps and ∆is a quantiﬁer-free sym-
+bolic heap. This judgment means that M is the missing anti-frame
+of the abduction question ∆∗?? ⊢H, and each proof rule de-
+scribes how to search for the solution of this question. The proof
+rules are presented in Figure 1. In the ﬁgure, we assume that all
+the bound logical variables are different from one another and also
+from free logical variables.
+EXAMPLE 1. This example shows how our inference ﬁnds a solu-
+tion of the question
+x7→y ∗[??] ▷x7→a ∗lseg(a, 0) ∗true.
+Note that in this case, the abduction should infer that y is an
+instantiation of the logical variable a, in addition to the fact that
+lseg(a, 0) is the missing predicate in the assumption. The inference
+algorithm ﬁnds such an instantiation using the 7→-match rule:
+(y=a ∧emp) ∗[emp] ▷true base-true
+(y=a ∧emp) ∗[lseg(a, 0)] ▷lseg(a, 0) ∗true missing
+x7→y ∗[y=a ∧lseg(a, 0)] ▷x7→a ∗lseg(a, 0) ∗true 7→-match
+The last step of the derivation shows that 7→-match is used to ﬁnd
+the instantiation of a (i.e., y = a), and strengthens the assumption
+with this instantiation y=a. The other two steps move the remain-
+ing lseg(a, 0) predicate in the conclusion to the missing anti-frame
+part.
+This example shows how our proof method goes beyond previ-
+ous works on theorem proving with separation logic. Indeed, it is
+possible to obtain a sound theorem prover for abduction by a sim-
+ple modiﬁcation of a usual theorem prover for separation logic [5].
+An abduction question ∆∗?? ⊢H is solved by attempting to
+show the entailment ∆⊢H and, when this proof attempt fails
+with one undischarged assumption emp ⊢M, we conclude that
+the missing heap is M. This prover is not powerful enough to ﬁnd
+out the instantiation of logical variables, as we have done here.
+For instance, in our example, it would fail to ﬁnd y=a, and in-
+fer x7→a ∗lseg(a, 0) as a missing anti-frame. This means that the
+symbolic heap x7→y∗x7→a∗lseg(a, 0) is a new enhanced assump-
+tion by abduction, although it is an inconsistent formula. Certainly,
+this is not a desirable solution.
+□
+EXAMPLE 2. Next, we consider a slightly modiﬁed version of the
+motivating example from Section 2:
+x7→z ∗[??] ▷lseg(x, z) ∗lseg(y, 0) ∗true
+The derivation below shows how our inference algorithm ﬁnds a
+solution of this abduction question:
+emp ∗[emp] ▷true base-true
+emp ∗[lseg(y, 0)] ▷lseg(y, 0) ∗true missing
+emp ∗[lseg(y, 0)] ▷lseg(z, z) ∗lseg(y, 0) ∗true remove
+x7→z ∗[lseg(y, 0)] ▷lseg(x, z) ∗lseg(y, 0) ∗true lseg-right
+The last step subtracts x7→z from lseg(x, z), and the second
+last step removes the result lseg(z, z) of this subtraction, be-
+cause emp ⊢lseg(z, z). The remaining steps move the predicate
+lseg(y, 0) from the conclusion to the anti-frame. In this derivation,
+the application of the remove rule is crucial to obtain a better so-
+lution. Without using the rule, we could apply missing twice, once
+for lseg(z, z) and the next for lseg(y, 0), and this would give us
+x7→z ∗[lseg(z, z) ∗lseg(y, 0)] ▷lseg(x, z) ∗lseg(y, 0) ∗true.
+Note that the inferred anti-frame is not as good as lseg(y, 0),
+because it has a bigger symbolic heap than lseg(y, 0).
+□
+EXAMPLE 3. Consider the abduction question:
+x 7→3 ∗[??]
+⊢
+y 7→3 ∗true
+Our algorithm ﬁnds as a solution y 7→3. It is not the best solution:
+a better solution is the disjunction y 7→3 ∨(y=x ∧emp).
+Although we can see how to compute a best solution in this
+case, we do not do so for two pragmatic reasons. First, if we were
+to aim for the best then we would end up creating large disjunctions
+that do case analysis on whether two pointers are equal or not
+(it would involve comparing the left sides of 7→or linked list
+assertions, pairwise). Keeping control of disjunctions is essential
+for performance [23]. Second, we have found in our experiments
+that the loss of precision caused by this choice does not hurt us too
+much. See, in particular, the results on the ﬁrewire device driver in
+Section 7. This is a trade-off, which could be revisited.
+□
+Reading the Proof System as an Algorithm.
+The proof sys-
+tem for abductive inference, when read in the usual premises-
+to-conclusion way, lets us easily see that the inferences we are
+making are sound. When read in the opposite direction, it can
+also be thought of as a speciﬁcation of an algorithm for ﬁnding
+missing hypotheses M. The algorithm is obtained by reading the
+rules bottom-up, and by viewing the M parts as unknowns. There
+is also a pragmatically-motivated order to the application of the
+rules, which we describe. This reading of the proof rules leads im-
+mediately to a recursive program, which forms the basis of our
+implementation.
+
+
+──────── page 5/12 ────────
+
+The key point is that our proof rules have a special form
+∆′ ∗[M ′] ▷H′
+Cond
+∆∗[M] ▷H
+Here Cond is a condition involving parts of ∆and H. The algo-
+rithmic reading of this rule is the following. In order to answer the
+entailment question ∆∗?? ⊢H, the side condition Cond is ﬁrst
+checked, and if it holds, we make a recursive call to answer the
+smaller question ∆′ ∗?? ⊢H′. The solution M ′ of this simpler
+question is then used to compute the solution M of the original
+question. For instance, the rule 7→-match ﬁres when both the left-
+hand side and right-hand side have a points-to-fact involving E:
+∆∗E7→E0 ∗?? ⊢∃⃗a⃗b. ∆′ ∗E7→E1
+The inference engine then cancels out those facts, and continues
+the search for the solution with the reduced right-hand side ∃⃗b. ∆′
+and the reduced left-hand side ∆after adding the equality E0=E1
+concerning the contents of cell E. Later, when this new simpliﬁed
+search gives a result M, we conjoin the assumed equality to the
+computed missing anti-frame M and existentially quantify logical
+variables ⃗a, which gives the result of the original search.
+Our abduction algorithm tries to apply the rules in Figure 1 in
+the order in which they appear in the ﬁgure. It ﬁrst attempts to use
+remove and eliminates a part of the symbolic heap on the right-
+hand side of ▷that holds for the empty heap. Once this phase is
+complete, the inference goes through each predicate on the right-
+hand side and tries to simplify the predicate using 7→-match, lseg-
+right and lseg-left. When this simpliﬁcation process gets stuck, the
+algorithm applies missing, base-emp and base-true, and moves the
+remaining predicates from the right-hand side to the missing anti-
+frame part.
+By arranging the order of rule applications in this way, our in-
+ference tries to minimize the size of the spatial part of the inferred
+missing anti-frame M. This is considered desirable according to
+the deﬁnition of ≾. By trying the remove rule before missing,
+the inference prefers choosing the empty heap to moving a pred-
+icate from the conclusion to the anti-frame part. For instance, given
+emp ∗[??] ⊢lseg(x, x), the remove rule infers emp as the miss-
+ing anti-frame whereas the missing rule returns lseg(x, x). The in-
+ference algorithm returns emp between the two, because it tries
+remove before missing. Also, the application of the simpliﬁcation
+rules (i.e., 7→-match, lseg-right and lseg-left) before the missing
+rule ensures that the common parts between the assumption and
+the conclusion are cancelled out as much as possible, before trying
+to move predicates from the conclusion to the anti-frame part.
+A Framework of Abductive Inference for Inductive Predicates.
+For concreteness, in the description of the abductive inference
+system, we used a speciﬁc inductive predicate for list segments.
+We now describe a generalization that deals with different classes
+of inductive deﬁnitions, such as those for doubly-liked lists, nested
+lists, trees and skip lists [40, 4, 9] which have been used for
+different abstract domains. For our generalization we keep all the
+components of the abduction inference in the previous section,
+except for the four proof rules in Figure 1: 7→-match, lseg-left,
+lseg-right and missing.
+Suppose that we have an abstract domain whose basic spatial
+predicates are ranged over by B(E, ⃗E). Recall that the abstract
+domain used throughout the paper corresponds to a speciﬁc instan-
+tiation:
+B(E, E′)
+::=
+E7→E′ | lseg(E, E′).
+The missing rule is generalized in the following way:
+∆∗[M] ▷H
+∆∗∃⃗a. B(E, ⃗E) ̸⊢false
+∆∗[M ∗∃⃗a. B(E, ⃗E)] ▷H ∗∃⃗a. B(E, ⃗E)
+missing-gen
+Note that this rule is almost the same as missing, except for the
+changes required to reﬂect the different sets of basic predicates.
+To generalize the other rules, we need to make an assumption
+about the abstract domain: we assume that we are given a set of
+axioms involving basic special predicates, all of which have the
+form
+(∃⃗y. Π(x, ⃗y, ⃗z) ∧B(x, ⃗y) ∗Σ(⃗y, ⃗z))
+⊢
+B′(x, ⃗z), or
+Π(x, ⃗z) ∧B(x, ⃗z) ⊢(∃⃗y. B′(x, ⃗y) ∗Σ(⃗y, ⃗z)).
+For example, the abstract domain of this paper has the axioms
+below:
+(∃y. y = z ∧x7→y ∗emp) ⊢(x7→z),
+(∃y. lseg(x, y) ∗lseg(y, z)) ⊢lseg(x, z),
+x ̸= z ∧lseg(x, z) ⊢∃y.(x7→y) ∗lseg(y, z).
+(2)
+Each of these axioms generates proof rules that replace 7→-
+match, lseg-left and lseg-right. For each axiom of the ﬁrst form
+(∃⃗y. Π(x, ⃗y, ⃗z) ∧B(x, ⃗y) ∗Σ(⃗y, ⃗z))
+⊢
+B′(x, ⃗z),
+we deﬁne the following rule for abduction:
+(Π(E, ⃗E, ⃗E′) ∧∆) ∗[M] ▷∃⃗b. ∆′ ∗Σ( ⃗E, ⃗E′)
+∆∗B(E, ⃗E) ∗[∃⃗a. Π(E, ⃗E, ⃗E′) ∧M] ▷∃⃗a⃗b. ∆′ ∗B′(E, ⃗E′)
+For each axiom of the second form
+Π(x, ⃗z) ∧B(x, ⃗z) ⊢(∃⃗y. B′(x, ⃗y) ∗Σ(⃗y, ⃗z)),
+we include the following proof rule for abduction:
+(Π(E, ⃗E′) ∧∆∗Σ(⃗a, ⃗E′)) ∗[M] ▷∃⃗b. ∆′
+(∆∗B(E, ⃗E′)) ∗[Π(E, ⃗E′) ∧M] ▷∃⃗a⃗b. ∆′ ∗B′(E,⃗a)
+The rules 7→-match, lseg-left and lseg-right presented earlier can
+be generated by following this recipe using the three axioms in (2).
+THEOREM 4. If all the assumed axioms are sound, the proof system
+for abduction is sound. That is, if ∆∗[M] ▷H is derivable, then
+∆∗M semantically implies H.
+5.
+Bi-Abduction
+We now turn to the more general bi-abduction question
+∆∗?anti-frame ⊢H ∗?frame
+for quantiﬁer-free symbolic heaps ∆and normal symbolic heaps
+H.3 It would be possible to consider a mixed proof system for this
+problem, but it turns out that there is a way to answer the question
+by appealing to separate frame inference and abduction procedures.
+Several frame inference procedures have been described in pre-
+vious papers [5, 32, 12]. Here we assume a given procedure Frame,
+which returns either a symbolic heap or an exception fail. Frame
+must satisfy
+Frame(H0, H1) = L(̸= fail) =⇒H0 ⊢H1 ∗L
+indicating that if frame inference succeeds in ﬁnding a “leftover”
+heap L then the indicated entailment holds. In Algorithm 1 we
+deﬁne a further procedure Abduce, satisfying the speciﬁcation
+Abduce(∆, H) = M(̸= fail) =⇒∆∗M ⊢H
+meaning that it soundly ﬁnds missing heap portions. The second
+step of Algorithm 1 relies on an ordinary theorem prover for sym-
+bolic heaps.
+3 We consider bi-abduction between ∆and H here, instead of normal
+symbolic heaps, because it is the question asked by our analysis. However,
+it is not technically difﬁcult to extend our algorithm to bi-abduction for
+normal symbolic heaps.
+
+
+──────── page 6/12 ────────
+
+Algorithm 1 Finding a Missing Heap Portion
+Abduce(∆, H)
+def=
+1. Find a symbolic heap M such that
+∆∗[M] ▷H
+using the abduction algorithm from Section 4. If no such heap
+can be found, return fail.
+2. If ∆∗M is (provably) inconsistent, return fail. Otherwise,
+return M.
+Algorithm 2 Synthesizing Missing and Leftover Heaps, Jointly
+BiAbd(∆, H)
+def=
+M := Abduce(∆, H ∗true);
+L := Frame(∆∗M, H);
+return(M, L)
+We can combine these two procedures to obtain the algorithm
+BiAbd described in Algorithm 2. The use of −∗true in the
+abduction question of the algorithm lets us ignore the leftover frame
+when computing the missing heap. By convention, the algorithm
+raises exception fail if either of its internal procedure calls does.
+THEOREM 5. BiAbd(∆, H) = (M, F)
+=⇒
+∆∗M ⊢H ∗F.
+Comparing Solutions.
+The soundness property in Theorem 5
+can be satisﬁed trivially. We now deﬁne an order ⊑on potential
+solutions which was used to design our algorithm.
+M ≾M ′
+def
+⇐⇒(M ′ ⊢M ∗true ∧M ̸⊢M ′ ∗true) ∨
+(M ′ ⊢M ∗true ∧M ⊢M ′ ∗true ∧M ′ ⊢M)
+M ≈M ′
+def
+⇐⇒M ≾M ′ ∧M ≿M ′
+(M, L) ⊑(M ′, L′)
+def
+⇐⇒(M ≾M ′) ∨(M ′ ≈M ∧L ⊢L′).
+The deﬁnition of ⊑is a lexicographic ordering of the order M ≾
+M ′ deﬁned for abduction, and ordinary implication for leftover
+heaps. The bias on the anti-frame part is due to our application:
+the BiAbd algorithm is mainly used to infer preconditions of pro-
+cedures. The missing anti-frame part is used to update the precon-
+dition being discovered by the analysis. The second disjunct means
+that if two solutions have the equally good missing anti-frames, the
+better one should have a logically stronger leftover frame.
+Our BiAbd algorithm ﬁrst attempts to ﬁnd a good missing anti-
+frame M, and then tries to ﬁnd a good frame L. This order of
+searching for a solution reﬂects our emphasis on the quality of the
+missing anti-frame part, as in the deﬁnition of ⊑.
+EXAMPLE 6. We illustrate the intuition behind ⊑using
+x7→0 ∗M ⊢lseg(x, 0) ∗lseg(y, 0) ∗L
+Consider the following three solutions of the question:
+M
+def= lseg(y, 0)
+L
+def= emp
+M ′
+def= lseg(y, 0) ∗z7→0
+L′
+def= z7→0
+M ′′
+def= lseg(y, 0)
+L′′
+def= true
+According to the order we have just deﬁned, the best solution
+among the above three is (M, L), and it is what the algorithm
+BiAbd returns. It is better than (M ′, L′), because its missing anti-
+frame M is strictly better than M ′ (i.e., M ≾M ′ and M ̸≈M ′)
+since it describes smaller heaps than M ′. The solution (M, L) is
+also better than (M ′′, L′′) but for a different reason. In this case,
+the missing anti-frames M, M ′′ have the same quality according
+to our deﬁnition (i.e., M ≈M ′′). However, this time the deciding
+factor is the comparison of the leftover frames of the solutions; L
+is stronger than L′′, so (M, L) ⊑(M ′′, L′′).
+□
+6.
+Compositional Interprocedural Shape Analysis
+We illustrate our interprocedural shape analysis using a simple
+while language extended with procedure calls and parametrized by
+a collection of basic operations. Later we will instantiate the basic
+operations to be certain heap-manipulating commands.
+e ::= x | t(e1, . . . , en)
+Prog. Expressions
+b ::= · · ·
+Booleans
+A ::= · · ·
+Atomic Commands
+c ::= A | x:=f(⃗e) | c1; c2 | if b c1 c2
+Commands
+|
+while b c
+p ::= · | f(⃗x){local ⃗y; c; return e}; p Programs
+A program p consists of a number of procedure deﬁnitions. For
+simplicity, we only consider procedures that return a single value,
+and that do not access any global variables.
+The aim of our compositional shape analysis is to construct a
+spec table T (f) (or procedure summary [44]) for every procedure
+f in Proc. Spec tables are partial functions from symbolic heaps to
+sets of symbolic heaps:
+T (f) : Spec,
+where Spec
+def= SH ⇀P(SH).
+The domain of T (f) speciﬁes the preconditions we consider for
+procedure f. For each P in the domain, the intended reading of
+T (f)(P) = {Q1, . . . , Qk} is that
+{P}f(⃗x){Q1 ∨· · · ∨Qk}
+is a true Hoare triple. We will often write {P}f(⃗x){Q} ∈T to
+mean that T (f)(P) = Q, and we deﬁne the set of spec tables as
+AllSpecs
+def= Proc →Spec.
+The analysis uses an abstract semantics
+[[c]]IP : AllSpecs →P((SH×SH)∪{⊤}) →P((SH×SH)∪{⊤})
+of commands that works on pairs (F, H) of the precondition part
+F and the current heap H. The transfer function for an individual
+statement can alter the H component, and add to the F component,
+giving (F ∗M, H′), meaning that the statement can reach H′ if the
+missing part M is added to the start state.
+We presume that we are given transfer functions [[A]]IP for the
+atomic commands. Later, we will spell out one such collection. The
+pivotal part of our development is the semantics [[x := f(⃗e)]]IP of
+procedure call, which we describe ﬁrst.
+6.1
+Abstract Semantics of Procedure Call
+Besides frames and anti-frames, our semantics must take into ac-
+count that, as in standard Hoare logic, all the logical variables (el-
+ements of LVar) in a Hoare triple are implicitly universally quanti-
+ﬁed. For example, in
+{x7→a′ ∗y7→b′}swap(x, y){ret=0 ∧x7→b′ ∗y7→a′}.
+a′ and b′ are logical variables, and the spec means that swap
+exchanges the contents of cells x and y.
+We will be using abduction to instantiate logical variables, as
+well as to ﬁnd missing heap portions. To see how this works, for
+the abduction question
+x 7→e ∗[??]
+⊢
+x 7→a
+our algorithm ﬁnds e=a ∧emp as the solution, where e=a is the
+part telling us how to instantiate the logical variable.
+
+
+──────── page 7/12 ────────
+
+R := ∅;
+Let ∃⃗a.∆H be H;
+for all {P}f(⃗x){Q} ∈T ′(f) do
+P ′ := P[⃗e/⃗x]; Q′ := Q[⃗e/⃗x];
+if BiAbd(∆H, P ′) = (M, L) ̸= fail,
+and
+Rename(∆H, M, P ′, Q′) = (⃗e′,⃗b, M0) ̸= fail
+then
+R := R ∪{(F ∗M0, ∃⃗a. (Q ∗L)[y⃗e′/ret⃗b]) | Q ∈Q′}
+end if
+end for;
+return R
+Figure 2. Abstract Semantics of [[y:=f(⃗e)]]IP
+T ′(F, H)
+Let⃗b be FreeLVar(P, Q);
+Pick ⃗e′ disjoint from⃗b such that ∆H ∗M ⊢⃗e′=⃗b,
+but if cannot pick such ⃗e′, return fail;
+Pick M0 disjoint from⃗b, ⃗a and program variables such that
+∆H ∗M0 ⊢∆H ∗M[⃗e′/⃗b],
+but if cannot pick such M0, return fail;
+return (⃗e′,⃗b, M0)
+Figure 3. Subroutine Rename(∆H, M, P, Q)
+Figure 2 shows the details of the abstract semantics of the
+procedure call y:=f(⃗e). The abstract execution
+[[y:=f(⃗e)]]IP
+T ′(F, H)
+goes through every spec {P}f(⃗x){Q} of f in T ′(f), and calls
+the BiAbd algorithm to check whether this spec can be used to
+update (F, H) appropriately. If BiAbd returns fail, the analysis
+ignores this spec, and moves on to the next. Otherwise, it massages
+the anti-frame and ﬁnds instantiations of parameters by a call to
+the Rename subroutine from Figure 3. Rename performs essential
+but intricate trickery with variables, as is usual in Hoare logic
+treatments of procedures. Generally, the anti-frame M0 that it ﬁnds
+will be expressed in terms of logical variables that are fresh or
+free in H. This is to ensure that it is independent of program
+variables that might be modiﬁed between the start of a procedure
+and the point of discovery of M0, allowing it to be used later as a
+precondition. The vectors ⃗e′ and⃗b tell us how to instantiate logical
+variables in the speciﬁcation, as discussed in the swap example
+at the beginning of this subsection. Although technical in nature,
+properly dealing with the issues tackled by Rename is essential for
+the precision of speciﬁcation discovery. Many procedures will have
+logical variables in their speciﬁcations, and imprecise treatment of
+them would lead to an unacceptably imprecise analysis.
+EXAMPLE 7. We give a full description of the abstract semantics
+[[v := swap(x, y)]]IP
+T ′(F, H)
+F
+def= (x=a ∧y=b ∧a7→c),
+H
+def= (y=b ∧x7→y ∗z7→0)
+using the speciﬁcation given earlier in this section. The semantics
+ﬁrst invokes BiAbd( y=b ∧x7→y ∗z7→0,
+x7→a′ ∗y7→b′ ) and
+infers M and L:
+M
+def= (a′=y ∧b′=d ∧y7→d),
+L
+def= z7→0.
+From this output, the analysis computes the three missing elements
+for analyzing the call v:=swap(x, y), which are a leftover frame
+z7→0, a missing anti-frame y7→d, and the instantiation a′=y ∧
+b′=d of logical variables a′, b′ in the spec of swap. Rename then
+computes (⃗e′, ⃗b′, M0), where M0
+def= (b7→d) is expressed in terms
+of existing logical variable b and fresh d, ⃗e′
+def= (y, d) and ⃗b′
+def=
+(a′, b′). These elements form the result of analyzing the call. The
+current precondition F is updated by ∗-conjoining the missing anti-
+frame b7→d:
+F ∗b7→d
+⇐⇒
+x=a ∧y=b ∧a7→c ∗b7→d.
+The current heap H is mutated according to the instantiated spec of
+swap with a′=y ∧b′=d and the leftover frame z7→0, and becomes
+v=0 ∧x7→d ∗y7→y ∗z7→0.
+Thus, the result of [[v := swap(x, y)]]IP
+T ′(F, H) is the singleton set
+{ (x=a ∧y=b ∧a7→c ∗b7→d, v=0 ∧x7→d ∗y7→y ∗z7→0) }.□
+Our algorithm is different in an important respect compared to
+typical forwards interprocedural analysis algorithms. Usually, if a
+call is found to match with one of the speciﬁcations in a procedure
+summary, that speciﬁcation is used and others are ignored. The rea-
+son is that, unless the abstract domain supports conjunction (meet),
+using more than one spec can only lead to decreased precision and
+efﬁciency. In our case, although our analysis is forwards-running,
+its primary purpose is to help generate preconditions (through ab-
+duction): for this purpose, it makes sense to try as many of the
+speciﬁcations in a procedure summary as possible.
+EXAMPLE 8. To illustrate the use of multiple specs consider the
+following example program:
+1
+void safe_reset_wrapper(int *y) {
+2
+// Inferred Pre1: y=0 && emp
+3
+// Inferred Pre2: y!=0 && y|->-
+4
+safe_reset(y);
+5
+}
+// Inferred Post1: y=0 && emp
+6
+// Inferred Post2: y!=0 && y|->0
+7
+void safe_reset(int *y) {// SUMMARY ONLY
+8
+// Given Pre1: y=0 && emp
+9
+// Given Pre2: y!=0 && y|->-
+10 } // Given Post1: y=0 && emp
+11
+// Given Post2: y!=0 && y|->0
+The analysis of safe reset wrapper starts with emp, meaning
+that the heap is empty. When it hits the call to safe reset, the
+analysis calls the abduction algorithm, and checks whether emp is
+abducible to the preconditions of the two specs. It ﬁnds that emp is
+abducible with the precondition y=0∧emp of the ﬁrst spec. Instead
+of ignoring the remaining specs (like a standard forward analysis
+would), our analysis considers the abducibility of emp with the
+precondition y7→- of the other spec. Since the analysis considers
+both specs, it eventually infers two preconditions: y=0 ∧emp, and
+y̸=0 ∧y7→−. If the analysis had searched for only one applicable
+spec, it would not have been able to ﬁnd the second precondition.□
+6.2
+Top-level Algorithm
+We write Proc for the set of procedure names deﬁned in a program,
+and assume that Proc is partitioned into Proc0, . . . , Procn that
+satisfy the following calling relationship: if f is in Proci and f
+calls g, procedure g belongs to Procj for some j ≤i.
+The analysis starts by building spec tables T0 for procedures
+in Proc0. It infers preconditions for the procedures in Proc0 using
+an interprocedural precondition discovery, and then computes post-
+conditions for the inferred preconditions by the forward interpro-
+cedural shape analysis. Next, using the constructed T0, the analysis
+considers procedures in the next level Proc1, and builds tables T1
+for them, again by the interprocedural precondition discovery and
+the forward interprocedural shape analysis. This process is repeated
+for Proc2, . . . , Procn, and gives spec tables for all the procedures.
+The top-level analysis algorithm is given in Algorithm 3, which
+follows the informal description in the previous paragraph. Note
+
+
+──────── page 8/12 ────────
+
+Algorithm 3 Top-level Analysis Algorithm.
+AllSpecs
+def= Proc →Spec
+AllPres
+def= Proc →P(SH)
+local T :AllSpecs,
+P:AllPres,
+k:Nats;
+T := λf.λP.undeﬁned;
+P := λf.∅;
+k := 0;
+while k ≤n do
+P := InferPre(Prock, T );
+T := InferSpec(Prock, P, T );
+k := k+1
+end while;
+return T
+that the algorithm calls two subroutines:
+AllSpecs
+def= Proc →Spec
+AllPres
+def= Proc →P(SH)
+InferPre : P(Proc) × AllSpecs →AllPres
+InferSpec : P(Proc) × AllPres × AllSpecs →AllSpecs
+The ﬁrst subroutine InferPre(Prock, T ) is an interprocedural pre-
+condition discovery phase. Using the given spec tables T of called
+procedures, it discovers candidate preconditions for procedures in
+Prock. The second InferSpec(Prock, P, T ) is our interprocedural
+forward shape analysis, and it constructs specs for procedures in
+Prock with respect to preconditions in P and adds them to T .
+The subroutine InferPre(Prock, Tin) discovers candidate pre-
+conditions for every f in Prock, while using spec tables Tin to
+handle procedure calls in the body of f. Concretely, this discov-
+ery is done by a ﬁxpoint computation, which constructs (possibly
+unsound) spec tables T for procedures in Prock. T includes all the
+spec tables in Tin, but those tables of T do not change during the
+ﬁxpoint computation. For each procedure f in Prock, the subrou-
+tine abstractly runs the body of f with respect to the initial (F, H),
+and uses the result of this abstract run to update the spec table T (f)
+for f. This updating is repeated until T does not change, in which
+case the preconditions in T (f) are returned. The overall structure
+of the subroutine is described in Algorithm 4, where the abstract
+run of commands is speciﬁed using the abstract semantics [[−]]IP.
+Note that the algorithm uses two sets of logical variables for each
+procedure f: ⃗a for caching the initial values of parameters ⃗x, and
+⃗b for existentially quantifying the parameters and local variables in
+the computed postconditions H for f.
+We remark that our implementation also uses optimizations
+from the RHS interprocedural analysis algorithm [39], which avoid
+a certain amount of re-computation. We have, for simplicity, de-
+scribed a less efﬁcient algorithm in the paper.
+6.3
+InferSpec Phase
+After having run our interprocedural precondition-discovery algo-
+rithm we go through one more phase to ﬁnd the ﬁnal speciﬁcations
+for the procedures. This is a form of re-execution, which calculates
+postconditions from the given candidate preconditions, and also ﬁl-
+ters out unsafe preconditions. As in [7], ﬁltering is needed because
+we are using abstraction to simplify preconditions, which is a po-
+tentially unsound step were we not to re-execute.
+The re-execution InferSpec takes three parameters. The ﬁrst pa-
+rameter Prock is the set of procedure names whose summaries
+should be calculated; the second parameter Pin is a map from the
+procedure names in Prock to their candidate preconditions to be
+ﬁltered; the ﬁnal parameter Tin is the initial spec table, which con-
+tains the procedure summaries already computed (i.e., the sum-
+maries of procedures in Procj with j < k). Given these param-
+eters, InferSpec constructs an updated spec table T for Prock by
+a ﬁxpoint computation. (Technically, T also contains summaries
+of procedures in Procj with j < k, but this part of T does
+Algorithm 4 InferPre(Prock, Tin).
+local T : AllSpecs, R ⊆SH×SH ∪{⊤};
+T := Tin;
+R := ∅;
+repeat
+for all f ∈Prock do
+Let f(⃗x){local ⃗y; c; return e} be the deﬁnition of f;
+Pick fresh ⃗a with |⃗a|=|⃗x|;
+R := [[c; ret:=e]]IP
+T ({(⃗x=⃗a ∧emp, ⃗x=⃗a ∧emp)});
+if ⊤∈R then
+Reports the possibility of local memory errors at f
+end if;
+for all (F, H) ∈R do
+if (T (f)(F) is undeﬁned) then
+T (f)(F) := {∃⃗b.H[⃗b/⃗x⃗y] | fresh⃗b s.t |⃗b|=|⃗x⃗y|};
+else
+T (f)(F) := T (f)(F) ∪
+{∃⃗b.H[⃗b/⃗x⃗y] | fresh⃗b s.t |⃗b|=|⃗x⃗y|};
+end if
+end for
+end for
+until T does not change;
+return λf. if (f ∈Prock) then dom(T (f)) else ∅
+Algorithm 5 InferSpec(Prock, Pin, Tin).
+local T : AllSpecs, Q: P(SH ∪{⊤});
+T := λf.λP. if (f ∈Prock ∧P ∈Pin(f)) then ∅else Tin(f)(P);
+repeat
+for all f ∈Prock and P ∈Pin(f) do
+Let f(⃗x){local ⃗y; c; return e} be the deﬁnition of f;
+Pick fresh ⃗a with |⃗a|=|⃗x⃗y|;
+Q := [[c; ret:=e]]I
+T ({P});
+if ((⊤∈Q) ∨(T (f)(P) is undeﬁned)) then
+T (f)(P) := undeﬁned
+else
+T (f)(P) := T (f)(P) ∪{∃⃗a.H[⃗a/⃗x⃗y] | H ∈Q}
+end if
+end for
+until T does not change;
+return T
+not change during the ﬁxpoint computation.) The algorithm goes
+through every procedure f ∈Prock and every candidate precondi-
+tion P ∈Pin(f), and calls a forward intraprocedural analysis
+[[−]]I
+:
+AllSpecs →P(SH ∪{⊤}) →P(SH ∪{⊤})
+for the body of f. Then, the forward analysis gives the postcondi-
+tion Q with
+{P}f(⃗x){Q},
+which is used to update T . The ﬁxpoint computation continues
+until T does not change. Algorithm 5 gives the details of InferSpec.
+As in the previous section, the most interesting case of our ab-
+stract forward semantics is the procedure call. (The other cases are
+identical to those of the standard intraprocedural analysis.) Suppose
+that the forward analysis is analyzing procedure call y:=f(e) for a
+symbolic heap H under spec table T ′. For simplicity, we assume
+that neither H nor any preconditions of f in T ′(f) have existential
+quantiﬁcations. The abstract run of y:=f(e) searches for a collec-
+tion of specs of f stored in T ′(f) that can be used to transform the
+current symbolic heap H. That is, for each spec {P}f(x){Q} in
+T ′(f), it tries to match the precondition P with the assertion H at
+the call site.
+
+
+──────── page 9/12 ────────
+
+There is an important precision consideration in the semantics
+of procedure call. In experiments we have often found an asser-
+tion H that by itself does not imply any of the preconditions in the
+summary, even after frame inference, but where H implies the dis-
+junction of several preconditions. This happens when H describes
+at once several possible situations which have been analyzed sepa-
+rately during the construction of the spec table. Our implementation
+uses abduction to determine the conditions under which each pre-
+condition is implied. Technically, for each precondition Pi, we try
+to ﬁnd a pure formula Πi so that the entailment Πi ∧H ⊢Pi ∗true
+holds. Finally, when all the specs have been examined, the analyzer
+selects a minimal collection of the recorded pairs
+(Π1, Q1), . . . , (Πn, Qn)
+such that the Πj together cover every possible case, which is to
+say that Π1 ∨. . . ∨Πn is a tautology. The analysis result is the
+disjunction of the Qi’s. (The soundness of this case splitting can be
+justiﬁed by the disjunction rule in Hoare logic.)
+We make two further remarks on this semantics of function
+calls. First, when the abstract semantics ﬁnds sufﬁciently many
+specs of f that are applicable (i.e., the disjunction of their precon-
+ditions is implied by the current symbolic heap), it ignores other
+specs of f. This contrasts with [[y:=f(e)]]IP
+T ′, which considers all
+specs of f. Second, if the analysis does not ﬁnd any applicable spec,
+it does not attempt to add a new spec to f, unlike common global
+interprocedural analyses.
+This phase also needs a semantics [[A]]I for the (so far unspeci-
+ﬁed) atomic commands. The basic fact is the following
+THEOREM 9. If the semantics [[A]]I of each atomic command is
+sound, then InferSpec returns true Hoare triples only.
+We could state the result more formally, by identifying a concrete
+semantics, a concretization function, and so on. But, there is no
+deep reason for why this result holds. It is just that, if we are given
+sound [[A]]I (wrt a given concrete semantics) then our treatment of
+procedures with [[−]]I is sound as well, and this semantics is then
+used by InferSpec to weed out any preconditions from the previous
+phase that do not guarantee safe execution.
+6.4
+Underlying Shape Analysis
+We now describe the missing deﬁnitions of the abstract semantics,
+which have been postponed in previous sections. Our description
+assumes one particular instantiation of our programming language:
+b ::= e=e | e̸=e
+Booleans
+A ::= a[e] | a
+Atomic Commands
+a[e] ::= [e]:=e′ | free(e) | x:=[e]
+a ::= x:=e | x:=new(e)
+In this instantiation, we have two classes of atomic commands. a[e]
+attempts to dereference cell e, updating it ([e1]:=e2), disposing
+it (free(e)), or reading its content (x:=[e]). The other atomic
+commands, denoted a, do not access existing cells.
+The forward abstract semantics [[−]]I of commands is deﬁned in
+three steps (as suggested in [43]), and implemented by functions:
+rearr(e) : SH →P(SH ∪{⊤}),
+exec(A) : SH →P(SH ∪{⊤}),
+abs : SH →SH.
+The ﬁrst step is rearrangement,4 and it is implemented by the func-
+tion rearr(e), which takes an abstract state and attempts to “concre-
+tise” the cell e that is accessed by the command in execution. If e
+is already explicit then this step is simply the identity function. The
+4 Rearrangement is the typical term used in separation logic based analyses.
+In [43], this step is called materialization of summary nodes.
+Rearr(e)(F, H)
+def= let H = rearr(e)(H) and
+F = {(F, H′) | H′ ∈H ∩SH}
+in if (⊤̸∈H) then F
+elseif (H ⊢e=a for some a∈LVar) and
+¬(F∗a7→b ⊢false for fresh b∈LVar)
+then F ∪{(F ∗a7→b, H ∗e7→b)}
+else F ∪{⊤}
+Exec(A)(F, H)
+def= let H = exec(A)(H)
+in {(F, H′) | H′ ∈H} ∪{⊤| ⊤∈H}
+Abs(F, H)
+def= (abs(F), abs(H))
+Figure 4. Rearrangement, Execution, Abstraction for [[A]]IP.
+second step is execution, and it is deﬁned by the function exec(A).
+This function symbolically executes the atomic command A in the
+rearranged heap. Finally, the third step is abstraction (or canonical-
+ization), implemented by abs, which simpliﬁes symbolic heaps and
+allows the convergence of the ﬁxpoint computation.
+For a function t : D →P(D ∪{⊤}), let t† be a function on
+P(D ∪{⊤}) deﬁned by
+t†(X)
+def=
+{⊤| ⊤∈X} ∪(
+[
+{t(x) | x ∈(X ∩D)}).
+The forward abstract transfer functions of atomic commands are:5
+[[a[e]]]I
+T (X)
+def=
+(abs† ◦exec(a[e])† ◦rearr(e)†)(X)
+[[a]]I
+T (X)
+def=
+(abs† ◦exec(a)†)(X).
+The reader is referred to [11] for a detailed treatment of transfer
+functions deﬁned in terms of rearr, exec and abs. The abstract
+semantics of the compound commands is standard:
+[[c1; c2]]I
+T (X)
+def= ([[c2]]I
+T ◦[[c1]]I
+T )(X)
+[[if b c1 c2]]I
+T (X)
+def= ([[c1]]I
+T ◦ﬁlt(b))(X) ⊔([[c2]]I
+T ◦ﬁlt(¬b))(X)
+[[while b c]]I
+T (X)
+def= ﬁlt(¬b)(lﬁx λX′. X ⊔([[c]]I
+T ◦ﬁlt(b))(X′))
+where ﬁlt(b) is used to ﬁlter out states that do not satisfy the
+boolean condition b. The semantics of function calls is already
+given in Section 6.3.
+The abstract semantics [[−]]IP used by the precondition discov-
+ery follows the same pattern as the forward one [[−]]I. The only
+difference is that it uses new versions of rearrangement, execution,
+abstraction functions that work on P((SH × SH) ∪{⊤}):
+Rearr(e)
+:
+SH × SH →P((SH × SH) ∪{⊤}),
+Exec(A)
+:
+SH × SH →P((SH × SH) ∪{⊤}),
+Abs
+:
+SH × SH →SH × SH.
+These functions are deﬁned in Figure 4. The major change is in the
+rearrangement function Rearr(e), which takes (F, H) and tries to
+expose a speciﬁed cell e from H. The rearrangement function of the
+forward analysis rearr is invoked to prove that a dereferenced cell
+e is allocated. The unusual step is that, in case this attempt fails,
+the subroutine adds the missing cell to the precondition and the
+current symbolic heap. A standard analysis would have stopped,
+reporting a possible fault. Note that before adding the points-to
+relation to F, the expression e is rewritten in terms of a logical
+variable a to avoid conﬂicts with the program variables that change
+during the computation. We also point out that in order to stop the
+precondition assertion from growing forever (and therefore making
+the analysis diverge) Abs abstracts F as well as H.
+5 Here we view functions on SH as functions from SH to P(SH ∪{⊤})
+that always return singleton sets.
+
+
+──────── page 10/12 ────────
+
+Program
+MLOC
+Num. Procs
+Proven Procs
+Procs Coverage %
+Time (1)
+Time (8)
+Linux kernel 2.6.25.4
+2.473
+101330
+59215
+58.4
+6869.09
+1739.28
+Gimp 2.4.6
+0.708
+15114
+6364
+42.1
+3601.16
+1067.60
+OpenSSL 0.9.8g
+0.214
+4818
+2967
+61.6
+605.36
+446.60
+Sendmail 8.14.3
+0.108
+684
+353
+51.6
+184.50
+184.83
+Apache 2.2.8
+0.102
+1870
+881
+47.1
+294.67
+104.48
+OpenSSH 5.0
+0.073
+1135
+519
+45.7
+142.56
+30.24
+Spin 5.1.6
+0.019
+357
+197
+55.2
+772.82
+253.96
+Table 1. Case Studies with Larges Programs (timeout=1s).
+7.
+Case Studies
+The compositional analysis algorithm in this paper takes an abstract
+domain as an argument. We have implemented our algorithm in
+the SPACEINVADER tool, giving us a version “SPACEINVADER
+ABDUCTOR”, or more brieﬂy, ABDUCTOR. This instantiation of
+our compositional analysis algorithm uses the composite abstract
+domain from [4] as the base shape analysis. We used that domain
+because of its ability to deal with a variety of linear data structures.
+But since our analysis is parametric in the abstract domain, we
+could plug in other abstract domains, such as those from [21, 30],
+and we would immediately obtain another compositional analysis.
+Small Examples.
+This ﬁrst case study gives us some basic in-
+formation on the quality of the speciﬁcations inferred by the com-
+positional algorithm. It is entirely possible, after all, to obtain a
+useless compositional analysis simply by returning trivial speciﬁ-
+cations (the top of a lattice) for all procedures.
+Our ﬁrst case study illustrates the treatment of recursion (and,
+thus, the interprocedural aspect), both cyclic and acyclic lists, and
+nested structures. The particular data structure was a cyclic singly-
+linked list, where each node has a nested acyclic sub-list. We
+wrote recursive procedures for traversing, deleting, and inserting
+into such structures. In each case ABDUCTOR found a precondition
+formula describing exactly this data structure: it described only the
+cells accessed by the algorithms. That the algorithm found these
+preconditions for algorithms performing nested traversals on nested
+data structures indicates that the analysis does not only ﬁnd trivial
+speciﬁcations: accurate analysis within loops and recursions, and
+within lists, is needed to ﬁnd the resulting speciﬁcations.6
+Medium Example.
+The IEEE 1394 (ﬁrewire) Device Driver for
+Windows is around 10K LOC, and it contains 121 procedures. It
+was analyzed in a top-down fashion in [23]. We sought to use the
+same abstract domain, to compare our bottom-up analysis.
+Our analysis was able to ﬁnd consistent speciﬁcations (where
+precondition is not inconsistent) for all 121 of the procedures.
+Note that many of these procedures have to “ﬁt together” with one
+another. If we found a completely imprecise spec of one procedure,
+then this might be inconsistent with another procedure’s calling
+expectations. Put another way, our analysis has found proofs of
+the Hoare triples for higher-level procedures, which would have
+been impossible if the specs discovered for sub-procedures were
+too imprecise for the relevant call sites.
+More anecdotally, looking at top-level procedures we ﬁnd that
+the speciﬁcations describe complex, nested structures (not neces-
+sarily weakest liberal preconditions), which could only be found if
+the analysis was tracking traversals of these structures with some
+degree of precision. To take one example, the analysis of top-
+level procedure t1394Diag Pnp discovers preconditions with sev-
+eral circular linked lists, some of which have nested acyclic sub-
+lists. This is as expected from [23]. But, some of the precondi-
+6 The source code of the small examples can be found at:
+http://www.dcs.qmul.ac.uk/∼ddino/small examples popl09
+tions are unexpected. Usually, the ﬁrewire driver collaborates with
+other lower-level drivers, and this collaboration involves the deref-
+erence of certain ﬁelds of these lower-level drivers. So, if a human
+(as in our previous work) writes preconditions for the driver, he
+or she normally speciﬁes that the collaborating lower-level drivers
+are allocated, because otherwise, the preconditions cannot ensure
+pointer safety. What the bottom-up analysis ﬁnds is that these
+lower-level drivers are not necessarily dereferenced; dereferencing
+depends on the values of parameters. The preconditions discovered
+by ABDUCTOR thus clarify this dependency relation between the
+values of parameters and the dereference of lower-level drivers.
+We stress that, to obtain these results for the ﬁrewire driver,
+we had to slightly modify the code analyzed in [23]. The problem
+is that the driver works over lists where the nodes contain back-
+pointers to a common head node. When doing top-down analysis,
+with a given precondition, this “common” information is readily
+available. When going bottom-up, more general cases were con-
+sidered by ABDUCTOR, that the abstract domain could not handle
+precisely. This is perhaps not surprising, as the domain from [23]
+was designed with top-down analysis in mind. But, it also illustrates
+that the bottom-up analysis places different stresses on an abstract
+domain than does top-down.
+So, while we would claim that the better the abstract domain ﬁts
+the data structures of a program the better are the triples discovered
+by our technique, we also emphasize that the problem of spec
+discovery might impact the design of abstract domains.
+Large Programs and Complete Open Source Projects.
+In Table
+1 we report case studies running ABDUCTOR on larger open source
+projects (e.g. a complete Linux Kernel distribution). The purpose of
+these examples is not to test precision: rather, they probe scalability
+and graceful imprecision. The case studies were run on a machine
+with two 2.66GHz Quad-Core Intel Xeon processors with 4GB
+memory. The number of lines of C code (LOC) was measured by
+instrumenting gcc so that only code actually compiled was counted.
+The table reports for each test: the number of lines of code with unit
+one million (MLOC); the number of procedures analyzed (Num.
+Procs); the number of procedures with at least one consistent spec
+(Proven Procs); the percentage of procedures with at least one
+consistent spec (Procs Coverage %); and the execution time in
+seconds (Time) with the number of processor cores indicated in
+brackets (e.g. 8 cores is indicated as Time (8)).
+Running with a timeout of one second for each procedure, we
+observed that only a very low percentage of procedures timed out.
+More often our analysis failed to ﬁnd a nontrivial spec (a spec with
+a consistent precondition). The percentage of procedures analyzed
+is somewhat encouraging, and might be improved by using better
+base abstract domains or human intervention.
+For the great majority of the procedures relatively simple spec-
+iﬁcations were found, which did not involve linked list predicates.
+This is because a minority of procedures actually traverse data
+structures. (The analysis did many times ﬁnd linked list structure,
+e.g., in procedure ap find linked module in Apache.) The point,
+
+
+──────── page 11/12 ────────
+
+for analysis, is that by combining abduction and frame inference we
+obtain speciﬁcations that (nearly) describe only the cells accessed
+by a procedure. This modularity means that linked lists do not have
+to be threaded throughout the speciﬁcations of all procedures.
+There is no deep reason for our scalability, except perhaps that
+we attempt to discover small specs (hence reducing the number as
+well). We can easily employ a timeout strategy because of compo-
+sitionality: if one procedure times out, we can still get results for
+others. Even more importantly, we can analyze each ﬁle indepen-
+dently of others: we do not have to load the entire source program
+into memory to analyze it, which would quickly overspill the RAM
+and cause the analysis to thrash. To underline this independence
+we have reported parallel speedup in Table 1, for an implementa-
+tion using eight cores.
+Caveats.
+Our compositional algorithm is parametrized by the
+base abstract domain, and so an instantiation of it will inherit any
+limitations of the base domain. For our experiments we used the
+domain introduced in [4], which does not deal well with arrays and
+pointer arithmetic. These are treated as non-deterministic opera-
+tions that are imprecise but sound for the goal of proving pointer
+safety. Also, the analysis ignores concurrency. (Indeed, it may be
+that the compositional analysis gives new methods that might be
+used in shape analysis for concurrency [18].)
+We have treated unknown library procedures as non-deterministic
+assignments without side effects. In many cases this is a sound in-
+terpretation, for the purposes of pointer safety. However, we simply
+did not have the time to manually inspect all of the C libraries to
+provide specs for them. Note that this “problem” does not impact
+the scalability aspect of our experiment, which is its primary pur-
+pose. (Of course, we would be interested in combining our work
+with techniques designed to deal with libraries in binary [16].)
+Finally, our method does not deal well with code pointers, a
+longstanding open problem. We have treated code pointers as if
+they are unknown procedures. This, in effect, assumes that a code
+pointer is part of an “object” with a different footprint than the
+current procedure. One often sees this idiom, for example in the
+relation between the Linux kernel and device drivers. Our position
+also calls to mind the hypothetical frame rule from [35]. However,
+signiﬁcant further work is needed in this direction.
+At the beginning of the paper we made the case for examining a
+compositional shape analysis. We do not claim that compositional
+analyses are fundamentally superior to non-compositional ones. As
+we have argued in the introduction, they present several interesting
+properties. However, it is reasonable to envisage that, ultimately,
+effective and accurate analysis of large software will be done by
+considering a mix of techniques. An analysis might work composi-
+tionally most of the time, choosing where to employ more precise
+and perhaps non-compositional methods. For instance, we might
+run an analysis bottom-up, interpreting callees before callers, but
+then employ a top-down narrowing phase afterwards to improve
+precision on certain needed parts of the code.
+8.
+Related Work
+As we mentioned in the Introduction, we are interested in accurate
+heap analyses that can be used to prove pointer safety. We use the
+term “analysis” to refer to methods that discover loop invariants and
+pre- and postconditions, and conﬁne our attention to such veriﬁca-
+tion methods in this section.7 Of course, our method might be used
+in concert with static veriﬁers that use user-supplied annotations.
+The kind of shape analysis done here is one that attempts to be
+accurate in the presence of deep heap update, where a heap mu-
+7 For example, [25] refers to itself as a compositional heap analysis, but
+it requires procedure summaries/specs to be provided by the user, so it
+performs a different task than here.
+tation is made some undetermined length down a linked structure.
+The ﬁrst such analysis was presented in [43], and there have been
+many subsequent works in search of ever better shape domains
+(e.g., [37, 6, 26, 28, 29, 4, 8]). Scalability is a signiﬁcant prob-
+lem for these precise analyses. Several papers on deep update have
+reported whole-program analyses with experimental results on pro-
+grams in the thousands of lines of code [21, 23, 30]. Other analyses
+sacriﬁce precision in order to gain scalability [14, 22]; they cannot,
+for example, give precise results on device drivers.
+The techniques developed in this paper are in a sense comple-
+mentary to the ideas in all these works. Although we have used the
+domain from [4, 23] in our experiments, the compositional analy-
+sis algorithm is parametrized by the abstract domain and we might
+swap in one of the other abstract domains, or others that are devel-
+oped in the future to obtain ever better compositional analyses.
+We do not claim that bi-abductive inference is the only possible
+way one might obtain a compositional shape analysis. Indeed,
+other approaches might occur more immediately to the reader:
+particularly, underapproximating backwards program analysis.
+Deﬁning a backwards shape analysis with acceptable precision
+and efﬁciency is, as far as we are aware, an open problem. Prior
+to our precursor paper [7], we formulated and implemented a back-
+wards shape analysis of our own. It created an enormous number of
+abstract states, and when it took several seconds to analyze a trivial
+list traversal program we abandoned the approach.
+Subsequently, several groups described ways to obtain precon-
+ditions in shape analysis by going backwards [27, 38, 1]. None is
+formulated in an interprocedural manner, and they report experi-
+mental results only for programs in the tens of lines of code. Further
+research is needed to develop or evaluate the ideas in these works.
+Previous works have treated procedure calls in a local way, by
+passing only the reachable part of the abstract heap to a procedure
+[42, 17, 30]. The method here is more strongly local; by using the
+idea of ﬁnding/using “small speciﬁcations” that only mention the
+footprints of procedures, we are able to be more aggressive and
+sometimes pass fewer than the reachable cells.
+The general issues regarding compositional program analysis
+are well known [10], and for non-shape domains a number of
+compositional analyses have appeared (e.g. [45, 33, 13, 20, 31]).
+They all use different techniques to those here.
+Giacobazzi has previously used abductive inference in the anal-
+ysis of logic programs [15]. The problem he solves is dual to that
+here. Given a speciﬁcation of a logic programming module and an
+implementation, the method of [15] infers constraints on undeﬁned
+literals in the module: it is top-down synthesis of constraints on
+literals referred to in open code. In a procedural language the cor-
+responding problem is to start with a Hoare triple for an “outer”
+procedure, whose body refers to another unknown procedure, and
+to infer a constraint on the unknown procedure. Here, we infer
+the spec for the “outer” procedure, relying on previously-computed
+specs for procedures called in its body. It would be interesting to at-
+tempt to apply abduction in Giacobazzi’s way to procedural code,
+to infer constraints from open code.
+Gulwani et al. [19] have used abduction to under-approximate
+logical operators such as conjunction and disjunction in their work
+on program analysis for abstract domains with quantiﬁcation. Their
+application of abduction is completely different to that here.
+9.
+Conclusions
+This paper has introduced the use of abductive inference to syn-
+thesize heap speciﬁcations. We deﬁned one particular abductive
+proof procedure for use with separated heap abstractions, and we
+explained how a more general notion of bi-abduction could be used
+to deﬁne a compositional interprocedural shape analysis.
+
+
+──────── page 12/12 ────────
+
+Bi-abduction displays abduction as, in a sense, an inverse to
+the frame problem. Frame inference is about synthesizing leftover,
+extra portions of state. Abduction ﬁnds needed, missing portions of
+state, which we call anti-frames. The frames are not allowed to be
+updated, while the anti-frames can be. This informally-described
+inversion is curiously matched in our logical question
+A ∗?anti-frame ⊢G ∗?frame.
+Furthermore, the two parts to the bi-abduction question play differ-
+ent but mutually supporting roles: the anti-frames help us ﬁnd small
+speciﬁcations, that describe constrained portions of memory [34],
+while the frames allow us to use the small specs.
+We did case studies ranging from small and medium-sized ex-
+amples to test precision, to larger code bases, including Linux,
+OpenSSL and Apache. No previous shape analysis for deep update
+has approached code bases of comparable size.
+The analysis results we obtain on the large programs are partial,
+but this is another beneﬁt of our method. The analysis is able to
+obtain non-trivial Hoare triples for collections of procedures, even
+when for other procedures it obtains imprecise results or takes
+too long. For the procedures we did not successfully analyze we
+could in principle consider using other methods such as manually-
+supplied assertions to help the analysis along, interactive proofs, or
+even other abstract domains. In fact for the eventual aim of proving
+non-trivial properties (e.g., memory safety) of entire large code
+bases it seems likely that a mixture of techniques, with different
+degrees of automation, will be needed, and it is in easing their
+blending that compositional methods have much to offer.
+Finally, it seems that our scheme of using abduction to infer
+preconditions could conceivably be used to deﬁne compositional
+analyses for other abstract domains than shape domains.
+Acknowledgements.
+We would like to thank Jan Tobias M¨uhlberg
+for providing the benchmarks which initially sparked this work,
+Paul Kelly for giving us access to his group’s 8-core machine, and
+Wei-Ngan Chin for useful comments. The authors acknowledge the
+support of the Smallfoot project funded by the UK EPSRC. Diste-
+fano was supported by a Royal Academy of Engineering research
+fellowship. Calcagno, O’Hearn and Yang were supported by EP-
+SRC Advanced Fellowships. O’Hearn acknowledges the support
+of a Royal Society Wolfson Research Merit Award.
+References
+[1] P.A. Abdulla, A. Bouajjani, J. Cederberg, F. Haziza, A. Rezine:
+Monotonic Abstraction for Programs with Dynamic Memory Heaps.
+In CAV’08, pp. 341-354.
+[2] A.Podelski, A.Rybalchenko, and T.Wies.
+Heap assumptions on
+demand. In CAV, 2008.
+[3] I. Balaban, A. Pnueli, and L. D. Zuck. Shape analysis by predicate
+abstraction. In VMCAI’05, pp. 164-180.
+[4] J. Berdine, C. Calcagno, B. Cook, D. Distefano, P. O’Hearn, T. Wies,
+and H. Yang. Shape analysis of composite data structures. In CAV’07.
+[5] J. Berdine, C. Calcagno, and P. O’Hearn. Symbolic execution with
+separation logic. In APLAS’05, pp. 52-68.
+[6] A. Bouajjani, P. Habermehl, A. Rogalewicz, and T. Vojnar. Abstract
+tree regular model checking of complex dynamic data structures. In
+SAS’06, pp. 52-70.
+[7] C. Calcagno, D. Distefano, P. O’Hearn, and H. Yang. Footprint
+analysis: A shape analysis that discovers preconditions. In SAS’07.
+[8] B. Chang and X. Rival. Relational inductive shape analysis. In
+POPL’08, pp. 247-260.
+[9] B. Chang, X. Rival, and G. Necula. Shape analysis with structural
+invariant checkers. In SAS’07, pp. 384-401.
+[10] P. Cousot and R. Cousot. Compositional separate modular static
+analysis of programs by abstract interpretation. In SSGRR’01.
+[11] D. Distefano, P. O’Hearn, and H. Yang. A local shape analysis based
+on separation logic. In TACAS’06, pp. 287-302.
+[12] D. Distefano and M. Parkinson. jStar: Towards Practical Veriﬁcation
+for Java. In OOPSLA’08, pp. 213-226.
+[13] N. Dor, M. Rodeh, and M. Sagiv. CSSV: Towards a realistic tool for
+statically detecting all buffer overﬂows in C. In PLDI’03, pp. 155-167.
+[14] R. Ghiya and . Hendren. Is it a tree, a DAG, or a cyclic graph? A
+shape analysis for heap-directed pointers in C. In POPL’96, pp. 1-15.
+[15] R. Giacobazzi. Abductive analysis of modular logic programs. In
+SLP’94, pp. 377-392.
+[16] D. Gopan and T. Reps. Low-level library analysis and summarization.
+In CAV’07, pp. 68-81.
+[17] A. Gotsman, J. Berdine, and B. Cook. Interprocedural shape analysis
+with separated heap abstractions. In SAS’06, pp. 240-260.
+[18] A. Gotsman, J. Berdine, B. Cook, and M. Sagiv. Thread-modular
+shape analysis In PLDI’07, pp. 266-277.
+[19] S. Gulwani, B. McCloskey, and A. Tiwari.
+Lifting Abstract
+Interpreters to Quantiﬁed Logical Domains. In POPL’08, pp. 235-246.
+[20] S. Gulwani and A. Tiwari. Computing procedure summaries for
+interprocedural analysis. In ESOP’07, pp. 253-267.
+[21] B. Guo, N. Vachharajani, and D. August.
+Shape analysis with
+inductive recursion synthesis. In PLDI’07, pp. 256-265.
+[22] B. Hackett and R. Rugina. Region-based shape analysis with tracked
+locations. In POPL’05, pp. 310-323.
+[23] H.Yang, O.Lee, J.Berdine, C.Calcagno, B.Cook, D.Distefano, and
+P.O’Hearn. Scalable shape analysis for systems code. In CAV’08.
+[24] A. C. Kakas, R. A. Kowalski, and F. Toni.
+Abductive logic
+programming. J. of Logic and Computation, 2(6):719-770, 1992.
+[25] V. Kuncak, P. Lam, and M. Rinard. Role analysis. In POPL’02.
+[26] T. Lev-Ami, N. Immerman, and M. Sagiv. Abstraction for shape
+analysis with fast and precise transfomers. In CAV’06, pp. 547-561.
+[27] T. Lev-Ami, M. Sagiv, T. Reps, and S. Gulwani:. Backward analysis
+for inferring quantiﬁed preconditions. Tel Aviv University Tech
+Report TR-2007-12-01, 2007.
+[28] S. Magill, J. Berdine, E. Clarke, and B. Cook. Arithmetic Strengthen-
+ing for Shape Analysis. In SAS’07, pp. 419-436.
+[29] R. Manevich, J. Berdine, B. Cook, G. Ramalingam, and M. Sagiv.
+Shape analysis by graph decomposition. In TACAS’07, pp. 3-18.
+[30] M. Marron, M. Hermenegildo, D. Kapur, and D. Stefanovic. Efﬁcient
+context-sensitive shape analysis with graph based heap models. In
+CC’08, pp. 245-259.
+[31] Y. Moy. Sufﬁcient preconditions for modular assertion checking. In
+VMCAI’08, pp. 188-202.
+[32] H. Nguyen, C. David, S. Qin, and W.-N. Chin. Automated veriﬁcation
+of shape and size properties via separation logic. In VMCAI’07.
+[33] E. Nystrom, H. Kim, and W. Hwu. Bottom-up and top-down context-
+sensitive summary-based pointer analysis. SAS’04, pp. 165-180.
+[34] P. O’Hearn, J. Reynolds, and H. Yang.
+Local reasoning about
+programs that alter data structures. In CSL’01, pp. 1-19.
+[35] P. O’Hearn, H. Yang and J. Reynolds. Separation and information
+hiding. In POPL’04, pp. 268-280.
+[36] C. Peirce. Collected papers of Charles Sanders Peirce. Harvard
+University Press., 1958.
+[37] A. Podelski and T. Wies. Boolean heaps. In SAS’05, pp. 268-283.
+[38] A.Podelski, A.Rybalchenko, and T.Wies.
+Heap assumptions on
+demand. In CAV’08, pp. 314-327.
+[39] T. Reps, S. Horwitz, and M. Sagiv. Precise interprocedural dataﬂow
+analysis via graph reachability. In POPL’95, pp. 49-61.
+[40] J. C. Reynolds. Separation logic: A logic for shared mutable data
+structures. In LICS’02, pp. 55-74.
+[41] N. Rinetzky, J. Bauer, T. Reps, M. Sagiv, and R. Wilhelm. A semantics
+for procedure local heaps and its abstractions. In POPL’05.
+[42] N. Rinetzky, M. Sagiv, and E. Yahav. Interprocedural shape analysis
+for cutpoint-free programs. In SAS’05, pp. 284-302.
+[43] M. Sagiv, T. Reps, R. Wilhelm. Solving shape-analysis problems in
+languages with destructive updating. ACM TOPLAS, 20(1):1-50,1998.
+[44] M. Sharir and A. Pnueli. Two approaches to interprocedural data
+ﬂow analysis. In S. Muchnick and J. Jones, editors, Program Flow
+Analysis: Theory and Applications. Prentice-Hall, 1981.
+[45] J. Whaley and M. Rinard. Compositional pointer and escape analysis
+for Java. In OOPSLA’06, pp. 187-206.

@@ -1,0 +1,3848 @@
+
+
+──────── page 1/11 ────────
+
+Polymorphic 
+Effect 
+Systems 
+John M. Lucassen * and David K. Gifford 
+MIT 
+Laboratory 
+for Computer 
+Science 
+545 Technology 
+Square 
+Cambridge, 
+Massachusetts 
+02139 
+We present a new approach 
+to programming 
+lan- 
+guages for parallel 
+computers 
+that uses an effect sys- 
+tem 
+to discover 
+expression 
+scheduling 
+constraints. 
+This effect system is part of a ‘kinded’ 
+type system 
+with three base kinds: 
+types, which describe the value 
+that an expression may return; 
+effects, which describe 
+the side-effects that an expression may have; and re- 
+gions, 
+which describe the area of the store in which 
+side-effects may occur. Types, effects and regions are 
+collectively 
+called 
+descriptions. 
+Expressions 
+can be abstracted 
+over any kind of 
+description 
+variable 
+- 
+this permits 
+type, effect and 
+region polymorphism. 
+Unobservable 
+side-effects can 
+be masked by the effect system; an effect soundness 
+property 
+guarantees 
+that the effects computed 
+stati- 
+cally by the effect system are a conservative 
+approxi- 
+mation 
+of the actual side-effects that a given expres- 
+sion may have. 
+The effect system we describe 
+performs 
+certain 
+kinds 
+of side-effect. analysis that were not previously 
+feasible. 
+Experimental 
+data 
+from 
+the programming 
+language 
+FX 
+indicate 
+that 
+an effect system can be 
+used effectively 
+to compile 
+programs 
+for parallel 
+com- 
+puters. 
+This work was supported 
+in part by DARPA/ONR 
+contract 
+number N00014-83-K-0125 
+* Currently 
+at IBM 
+Tokyo 
+Research 
+Laboratory, 
+5- 
+19 Sanbancho, 
+Chiyoda-ku, 
+Tokyo 102, Japan 
+Permission to copy without fee all or part of this material is granted 
+provided that the copies are not made or distributed for direct 
+commercial advantage, the ACM copyright notice and the title of 
+the publication and its date appear, and notice is given that copying 
+is by permission of the Association 
+for Computing 
+Machinery. 
+To 
+copy 
+otherwise, 
+or to republish, 
+requires a fee and/or specfic 
+permission. 
+1. Introduction 
+We present a new approach to programming 
+that 
+is intended 
+to combine 
+the advantages 
+of functional 
+and imperative 
+programming. 
+Our approach uses an 
+effect system 
+in conjunction 
+with a conventional 
+type 
+system to compute 
+both the type and 
+the effect 
+of 
+each expression statically. 
+The effect of an expression 
+is a concise 
+summary 
+of the observable 
+side-effects 
+that the expression may have when it is evaluated. 
+If 
+two expressions 
+do not have interfering 
+effects, 
+then a 
+compiler 
+may schedule them to run in parallel subject 
+to dataflow 
+constraints. 
+The effect 
+system 
+described 
+in this paper is an integral 
+part of the programming 
+language 
+FX 
+[Gif87]. 
+The 
+effect 
+system 
+we present 
+is capable 
+of certain 
+kinds of side-effect analysis that were not previously 
+feasible. In particular, 
+the effect system permits con- 
+currency 
+analysis in the presence of first-class 
+func- 
+tion values, and it permits the masking of side-effects 
+on local data values even in the presence of first-class, 
+heap-allocated 
+values of user-defined 
+types. (A value 
+is first-class 
+if it can be stored, passed as an argu- 
+ment, 
+and 
+returned 
+as a result.) 
+In particular, 
+the 
+effect 
+system is able to mask effects on first-class, 
+user-defined, 
+heap-allocated 
+data structures, 
+which 
+no previously 
+published 
+static 
+method 
+can do. 
+An 
+effect soundness property 
+guarantees that the effects 
+computed 
+statically 
+by the effect system are a conser- 
+vative 
+approximation 
+of the actual 
+side-effects 
+that 
+a 
+given expression 
+may have. 
+We distinguish 
+three sorts of effects: READ, 
+WRITE, 
+and ALLOC 
+effects, 
+where 
+allocation 
+includes 
+initial- 
+ization. 
+Each effect is subscripted 
+by the region where 
+the effect may occur. 
+Compound 
+effects can be con- 
+structed 
+as unions of simple effects, and thus effects 
+form a lattice. 
+The bottom of the effect lattice is the 
+effect PURE, which is used to describe expressions that 
+have 
+no side-effects. 
+Proceedings 
+of the Fifteenth 
+Annual 
+ACM 
+SIGACT-SIGPLAN 
+Symposium 
+on Princi- 
+@ 1988 ACM-O-89791-252-7/88/0001/0047 
+$1.50 
+47 
+ples of Programming 
+Languages, 
+San Diego, 
+California 
+(January 
+1988) 
+
+
+──────── page 2/11 ────────
+
+The 
+type 
+and effect system 
+is based 
+on a ‘kinded’ 
+type 
+system 
+for 
+the 
+second-order 
+lambda 
+calculus 
+[McC79]. 
+Kinds 
+are the 
+types 
+of descriptions. 
+The 
+type 
+and effect 
+system 
+:has three 
+base kinds: 
+types, 
+which 
+describe 
+the value 
+that 
+an expression 
+may 
+re- 
+turn; 
+effects, 
+which 
+describe 
+the side-effects 
+that 
+an 
+expression 
+may have; and regions, 
+which 
+describe 
+the 
+area 
+of the 
+store 
+in which 
+side-effects 
+may 
+occur. 
+Types, 
+effects 
+and regions 
+are closely 
+interrelated; 
+in 
+particular, 
+a subroutine 
+type incorporates 
+a latent 
+ef- 
+fect, which 
+describes 
+the side-effects 
+that 
+the subrou- 
+tine may have when it is applied; 
+and a reference 
+type 
+incorporates 
+a region, 
+which 
+describes 
+where 
+the ref- 
+erence 
+is allocated. 
+The kind 
+system 
+is used to verify 
+the well-formedness 
+of descriptions; 
+the type 
+and ef- 
+fect 
+system 
+is used to verify 
+the well-formedness 
+of 
+expressions. 
+The 
+effect 
+s;ystem 
+is designed 
+to be useful 
+to pro- 
+grammers, 
+compiler 
+writers, 
+and language 
+designers 
+in the following 
+respects: 
+l 
+An 
+effect 
+system 
+helps 
+a programmer 
+specify 
+the 
+side-effect 
+properties 
+aof program 
+modules 
+in a way 
+that 
+is machine-verifiable. 
+Effect 
+specifications 
+are 
+a natural 
+ex-tension 
+of the type specifications 
+found 
+in conventional 
+programming 
+languages. 
+We be- 
+lieve 
+that 
+the use of effect 
+specifications 
+has the 
+potential 
+to improve 
+the design 
+and maintenance 
+of imperative 
+programs. 
+l 
+An effect 
+system 
+helps 
+the compiler 
+identify 
+opti- 
+mization 
+opportunities 
+that 
+are hard 
+to detect 
+in 
+a conventional 
+higher-order 
+imperative 
+program- 
+ming 
+langua.ge. 
+We have focused 
+our research 
+on 
+two classes of optimizations: 
+evaluation 
+order, 
+in- 
+cluding 
+eager, 
+lazy, and concurrent 
+evaluation 
+and 
+code motion, 
+and common 
+subexpression 
+elimina- 
+tion, 
+which 
+i.ncludes 
+memoization. 
+We believe 
+that 
+the 
+ability 
+-to perform 
+these 
+optimizations 
+effec- 
+tively 
+in the 
+presence 
+of side-effects 
+represents 
+a 
+step towards 
+integrating 
+functional 
+and imperative 
+programming 
+for the purpose 
+of massively 
+parallel 
+programming. 
+l 
+An effect system 
+lets the language 
+designer 
+express 
+and enforce 
+side-effect 
+constraints 
+in the language 
+definition. 
+F’or example, 
+by limiting 
+polymorphism 
+to expressions 
+without 
+side-effects, 
+we have 
+been 
+able 
+to construct 
+the first 
+type 
+system 
+known 
+to 
+us that 
+permits 
+an efficient 
+implementation 
+of fully 
+orthogonal 
+polymorphiism 
+(in which 
+any expression 
+can be abstr<acted 
+over any description 
+variable 
+and 
+in which 
+all polymorphic 
+values 
+are first 
+class) 
+in 
+the presence 
+of side-effects. 
+In the remainder 
+of this 
+paper 
+we review 
+related 
+work 
+(Section 
+2), 
+introduce 
+the 
+principles 
+of type 
+48 
+and 
+effect 
+checking 
+by means 
+of examples 
+(Section 
+3), present 
+the formal 
+type 
+and effect inference 
+rules 
+which 
+constitute 
+the static 
+semantics 
+of the language 
+(Section 
+4), present 
+the dynamic 
+semantics 
+and dis- 
+cuss the soundness 
+of the type 
+and effect system 
+(Sec- 
+tion 
+5), show how soundness 
+results 
+can be extended 
+to a language 
+with 
+effect masking 
+(Section 
+6), discuss 
+our experience 
+with 
+an implementation 
+of the FX pro- 
+gramming 
+language 
+(Section 
+i’), and summarize 
+our 
+results 
+(Section 
+8). 
+2. Relation 
+to Other 
+Work 
+In this section 
+we compare 
+our research 
+with 
+other 
+work 
+on conventional 
+flow analysis, 
+abstract 
+interpre- 
+tation, 
+syntactic 
+interference 
+control, 
+and earlier 
+work 
+on effect 
+systems. 
+l 
+In 
+conventional 
+flow 
+analysis 
+[Ban79, 
+Bar78, 
+WeiSO] the local 
+effects of each sudroutine 
+are first 
+computed, 
+and then 
+the true 
+effects 
+of each sub- 
+routine 
+are computed 
+using 
+a transitive 
+closure 
+or 
+graph 
+flow algorithm 
+on the subroutine 
+call graph. 
+These 
+methods 
+require 
+that 
+the calling 
+pattern 
+be- 
+tween 
+subroutines 
+be known 
+statically, 
+so that 
+the 
+call 
+graph 
+can be computed. 
+Thus, 
+conventional 
+flow analysis 
+can not deal with 
+first-class 
+subrou- 
+tines 
+or separate 
+compilation. 
+Our 
+effect 
+system, 
+on the other 
+hand, 
+is able to handle 
+first-class 
+sub- 
+routines 
+as well 
+as separate 
+compilation 
+because 
+the latent 
+effect of each subroutine 
+is evident 
+from 
+its type. 
+Our 
+approach 
+also differs 
+from 
+conven- 
+tional 
+flow analysis 
+in that 
+all effect information 
+is 
+visible 
+to the programmer, 
+and must 
+therefore 
+be 
+expressed 
+in human-readable 
+form, 
+preferably 
+in 
+terms 
+that 
+are related 
+to the programmer’s 
+view 
+of the program. 
+Neirynck 
+et ~2. [Nei87] 
+show how to compute 
+sup- 
+port 
+sets and 
+aliasing 
+relationships 
+statically 
+us- 
+ing 
+abstract 
+interpretation. 
+Within 
+this 
+frame- 
+work 
+the side-effects 
+of a subroutine 
+invocation 
+can 
+depend 
+on the side-effects 
+of its procedural 
+argu- 
+ments, 
+in a way 
+that 
+resembles 
+our notion 
+of ef- 
+fect polymorphism. 
+Neirynck 
+et al. 
+restrict 
+their 
+attention 
+to a language 
+in which 
+subroutines 
+and 
+references 
+are not storable, 
+and in which 
+references 
+can not be returned 
+out of the scope in which 
+they 
+are created 
+(i.e. 
+heap allocation 
+is not supported), 
+In our approach, 
+the use of the type 
+system 
+allows 
+both 
+subroutines 
+and 
+references 
+to be first-class 
+values. 
+In 
+his 
+paper 
+on 
+syntactic 
+control 
+of 
+interfer- 
+ence, 
+Reynolds 
+[Rey78] 
+presents 
+a simple 
+syntac- 
+tic 
+method 
+for computing 
+the 
+support 
+set of an 
+
+
+──────── page 3/11 ────────
+
+expression, 
+with 
+the objective 
+of permitting 
+con- 
+current 
+evaluation 
+of two expressions 
+only 
+if their 
+support 
+sets do not overlap. 
+This 
+method 
+does not 
+distinguish 
+between 
+the variables 
+accessed 
+by the 
+expression, 
+on the one hand, 
+and the support 
+set of 
+the value 
+returned 
+by the expression 
+on the other 
+hand. 
+As a result, 
+the restrictions 
+on concurrent 
+evaluation 
+are unnecessarily 
+conservative. 
+Our ef- 
+fect inference 
+rules, 
+on the other 
+hand, 
+maintain 
+a 
+clear 
+distinction 
+between 
+support 
+sets (which 
+are 
+described 
+by regions) 
+and 
+side-effects 
+(which 
+are 
+described 
+by effects). 
+The programming 
+language 
+Euclid 
+[Lam77, 
+Pop771 
+was designed 
+to aid program 
+verification 
+via static 
+side-effect 
+and 
+aliasing 
+restrictions. 
+Euclid 
+in- 
+cludes 
+collections, 
+which 
+are similar 
+to our notion 
+of regions, 
+and it has two 
+kinds 
+of abstractions: 
+procedures, 
+that 
+are executed 
+only 
+for their 
+side- 
+effects, 
+and functions, 
+that 
+are executed 
+only 
+for 
+their 
+result 
+value. 
+Functions 
+are permitted 
+to have 
+side-effects 
+on internal 
+objects. 
+Euclid’s 
+collections 
+are not first-class 
+values, 
+and thus they are a source 
+of non-uniformity 
+in the language. 
+Euclid’s 
+side- 
+effect 
+restrictions 
+are less general 
+than 
+an effect 
+system, 
+and 
+thus 
+Euclid 
+does not 
+provide 
+effect 
+polymorphism 
+or general 
+effect masking. 
+The Rabbit 
+compiler 
+[Ste78] 
+distinguishes 
+five dif- 
+ferent 
+kinds 
+of side-effects 
+via a static 
+analysis 
+sys- 
+tem. 
+Like 
+an effect 
+system, 
+Rabbit 
+computes 
+the 
+side-effects 
+of an expression 
+based 
+upon 
+its effects 
+and the side-effects 
+of its subexpressions. 
+However, 
+Rabbit 
+does not include 
+effect polymorphism 
+or ef- 
+fect masking, 
+nor does it provide 
+a mechanism 
+to 
+communicate 
+the effects 
+of a procedure 
+from 
+the 
+point 
+of definition 
+to the point 
+of use. 
+The idea of effect systems, 
+and their 
+application 
+to 
+compilation 
+and to first-class 
+polymorphism, 
+were 
+originally 
+introduced 
+in [Gif86]. 
+This 
+earlier 
+pa- 
+per distinguishes 
+four ‘effect 
+classes’ 
+ranging 
+from 
+PURE 
+to 
+PROCEDURE, 
+and 
+shows 
+how 
+the 
+effect 
+class 
+of a subroutine 
+can 
+be determined 
+syntac- 
+tically. 
+There 
+is no abstraction 
+over effect 
+classes; 
+moreover, 
+there 
+is no way 
+to mask 
+unobservable 
+side-effects. 
+In the present 
+paper, 
+the elevation 
+of 
+effects 
+to the status 
+of first-class 
+descriptions 
+con- 
+tributes 
+to the uniformity 
+of the system. 
+Moreover, 
+we are able to state 
+and prove 
+[Luc87] 
+an impor- 
+tant 
+effect, soundness 
+property. 
+3. Examples 
+of Effects 
+and 
+Types 
+In order 
+to give the reader 
+an intuitive 
+idea of how 
+an effect 
+system 
+can be used we first 
+present 
+exam- 
+pies of effect polymorphism 
+and effect 
+masking. 
+The 
+examples 
+are 
+written 
+in 
+MFX 
+[Luc87], 
+a statically 
+scoped 
+Lisp 
+dialect 
+with 
+a type 
+and 
+effect 
+system. 
+The 
+name 
+MFX 
+stands 
+for “mini-FX"; 
+MFX 
+is a sub- 
+set of the full 
+Fx 
+language 
+[Gif87]. 
+We 
+first 
+consider 
+the 
+polymorphic 
+subroutine 
+twice, 
+which 
+takes a subroutine 
+of a single 
+argument 
+and returns 
+the result 
+of composing 
+that 
+subroutine 
+with 
+itself: 
+twice 
+= (PLAMBDA (t:TYpE 
+~:EFFEcT) 
+(LAMBDA (f:(suBR 
+(LAMBDA (x:t) 
+(f (f x>>))> 
+(t> e t>> 
+twice 
+is polymorphic 
+in both 
+the argument 
+type 
+t 
+and the latent 
+effect 
+e of its argument. 
+This 
+is re- 
+flected 
+in the type 
+of twice, 
+which 
+is inferred 
+from 
+the above 
+definition 
+by the type 
+inference 
+rules: 
+twice 
+: (POLY 
+(t :TYPE 
+e : EFFECT) 
+PURE 
+(SUBR (suBR:(t) 
+8 t) PURE 
+(sUBR (t) 
+e t))> 
+The POLY type 
+reflects 
+the fact that twice 
+is polymor- 
+phic 
+with 
+respect 
+to a type 
+t and an effect 
+e. Note 
+that 
+the 
+kinds 
+of the description 
+variables 
+t and 
+e 
+are specified 
+in the POLY type. 
+In what 
+follows 
+we 
+will 
+omit 
+the latent 
+effect of a POLY type 
+whenever 
+it 
+is PURE. However, 
+we will 
+never 
+omit 
+the latent 
+effect 
+of a SUBR type. 
+A more elaborate 
+example 
+of polymorphism 
+is the 
+mapcar 
+subroutine, 
+which 
+is defined 
+below. 
+We have 
+omitted 
+the details 
+of the recursive 
+definition; 
+note, 
+however, 
+that 
+the type 
+and the effect 
+of the body 
+of 
+MAPCAR 
+are declared 
+in advance 
+using THE. The effect 
+constructor 
+MAXEFF returns 
+the effect that 
+is the least 
+upper 
+bound 
+of its arguments. 
+mapcar 
+= 
+(PLAMBDA (ti:TYpE 
+t2:TYpE ~:REGION 
+e:EFFECT) 
+(LAMBDA (~:(SUBR (ti) 
+e t2) 
+input: 
+(listof 
+r tl) 
+1 
+(THE (MAxEFF (ALLoc r) 
+(READ r) e) 
+(listof 
+r t2) 
+(IF 
+(null? 
+input) 
+empty 
+((PROJ 
+cons 
+r) 
+(f 
+(car 
+input)) 
+49 
+
+
+──────── page 4/11 ────────
+
+(mapcar f 
+(cdr 
+input>>))))> 
+mapcar 
+is polymorphic 
+in the 
+type 
+of the elements 
+of its input 
+list, 
+the type 
+of the elements 
+of its out- 
+put list, 
+the region 
+in which 
+these lists are allocated, 
+and 
+the 
+latent 
+effect 
+ad the 
+subroutine 
+that 
+is be- 
+ing mapped. 
+This 
+is rejlected 
+in the type 
+of mapcar, 
+which 
+is inferred 
+from the above definition 
+by the type 
+inference 
+rules given 
+suitable 
+declarations 
+for listof, 
+null?, 
+cons, 
+car 
+and cdr: 
+mapcar 
+: 
+(POLY 
+(t:L:TYPE 
+t:Z:TYPE 
+r:REGION 
+(3 : EFFECT 1 PURE 
+(SUBR 
+‘((SUBR 
+(ti) 
+e t2> 
+(listof 
+r tl)) 
+‘(MAXEFF (READ r) 
+a (ALLoc r)) 
+?(listof 
+:r t2))) 
+The latent 
+effect of mapcar 
+has three 
+distinct 
+compo- 
+nents: 
+the effect 
+of reading 
+the input 
+list, 
+the effect 
+of applying 
+the mapping 
+subroutine, 
+and the effect of 
+allocating 
+the output 
+list. 
+Note that 
+the listof 
+type 
+constructor 
+incorporates 
+both 
+the region 
+in which 
+the 
+list 
+is allocated 
+and the type 
+of, the elements 
+of the 
+list. 
+Our final 
+example 
+is a simple 
+case of effect 
+mask- 
+ing: 
+example 
+= 
+(LET 
+((y 
+((PROJ 
+cons 
+@red) 
+1 2))) 
+be-car! 
+y 2) 
+(car 
+y)> 
+This 
+expression 
+allocates 
+a cons-cell 
+initialized 
+to 
+(1,2) 
+in the region 
+@red, mutates 
+the car 
+of the pair 
+to be 2, and 
+then 
+returns 
+the 
+car 
+of the 
+pair. 
+Al- 
+though 
+the ex:pression 
+a.llocates, 
+writes, 
+and reads the 
+region 
+(Pred, the effect 
+masking 
+rules can prove 
+that 
+this 
+expressio:n 
+has no observable 
+side-effects. 
+As a 
+result, 
+the expression 
+as a whole 
+has effect 
+PURE. 
+In 
+general, 
+effects 
+on a given 
+region 
+can be masked 
+from 
+the effect 
+of at given 
+ex.pression 
+whenever 
+the region 
+does not appear 
+free in the type 
+of the expression 
+or 
+in the type 
+of .any free v,ariable 
+of the expression. 
+This 
+is discussed 
+in more 
+detail 
+in Section 
+6. 
+4. Inference 
+Rules 
+for Types 
+and Effects 
+This 
+section 
+presents 
+a set of type 
+and effect 
+in- 
+ference 
+rules for the language 
+MFX. 
+MFX 
+is based 
+on 
+the second-order 
+typed 
+lambda-calculus 
+and 
+on the 
+higher-order 
+‘kinded’ 
+lambda-calculus 
+of McCracken 
+[McC79, 
+Rey74]. 
+Th e an ua 
+1 
+g 
+g e consists 
+of three 
+lay- 
+ers: 
+expressions, 
+descriptions 
+(which 
+include 
+types, 
+effects 
+and regions), 
+and kinds 
+(which 
+are the ‘types’ 
+of descriptions). 
+There 
+are 
+three 
+kind 
+constants: 
+REGION, 
+EFFECT 
+and TYPE; 
+there 
+are no higher-order 
+kinds 
+in MFX. 
+Kind 
+= 
+REGION 
+- kinds 
+(K) 
+- the kind 
+of regions 
+EFFECT 
+TYPE 
+- the kind 
+of effects 
+- the kind 
+of types 
+There 
+are two general 
+classes of MFX 
+expressions: 
+expressions 
+that 
+come from 
+the higher-order 
+lambda- 
+calculus, 
+and expressions 
+that 
+deal with 
+side-effects. 
+Exp = 
+- expressions 
+(e) 
+Var 
+- ordinary 
+variable 
+(z) 
+(LAMBDA 
+(Var:Type) 
+Exp) 
+- ordinary 
+abstraction 
+- (compare 
+with 
+XZ:~ . e) 
+WP 
+EXP) 
+- ordinary 
+application 
+(PLAMBDA 
+(Dvar:Kind) 
+Exp) 
+- polymorphic 
+abstraction 
+- (compare 
+with 
+Ad:tc . e) 
+(PROJ 
+Exp Desc) 
+- polymorphic 
+application 
+(NEW 
+Region Type Exp) 
+- allocating 
+and initializing 
+a location 
+(GET Exp) 
+- reading 
+a location 
+(SET Exp Exp) 
+- writing 
+a location 
+Expressions 
+that 
+cannot 
+be reduced 
+are considered 
+to be values. 
+The 
+only 
+expressible 
+values 
+are the ab- 
+straction 
+expressions 
+listed 
+below. 
+Other 
+values, 
+such 
+as locations, 
+are not directly 
+expressible 
+and will 
+be 
+presented 
+later. 
+50 
+
+
+──────── page 5/11 ────────
+
+Vd 
+= 
+- values 
+(u) 
+(LAMBDA 
+(Var:Type) 
+Exp) 
+- ordinary 
+abstraction 
+(PLAMBDA 
+(Dvar:Kind) 
+Exp) 
+- polymorphic 
+abstraction 
+The 
+expressions 
+NEW, 
+GET 
+and 
+SET interact 
+with 
+the store. 
+We distinguish 
+three 
+ways 
+of interacting 
+with 
+the 
+store: 
+the 
+allocation 
+and 
+initialization 
+of 
+memory 
+locations, 
+the reading 
+(or dereferencing) 
+of 
+locations, 
+and the writing 
+(or updating) 
+of locations. 
+As we will 
+see, each of these 
+store interactions 
+is re- 
+flected 
+in the 
+syntactic 
+effect 
+of the 
+corresponding 
+expression. 
+Syntactically, 
+effects 
+are specified 
+in terms 
+of re- 
+gions, 
+which 
+correspond 
+to infinite 
+sets of locations. 
+Thus, 
+effects 
+may be of the following 
+forms: 
+Effect 
+= 
+Dvar 
+- effect descriptions 
+(E) 
+- effect variable 
+(ALLOC 
+Region) 
+- allocating 
+in a given 
+region 
+(READ 
+Region ) 
+- reading 
+from 
+a given 
+region 
+(WRITE 
+Region) 
+- writing 
+to a given 
+region 
+(MAXEFF 
+Effect*) 
+- combination 
+of zero or more effects 
+PURE 
+- “no effect”; 
+synonym 
+for (MAXEFF) 
+Syntactically, 
+regions 
+can be region 
+constants, 
+re- 
+gion variables, 
+the empty 
+region 
+(it contains 
+no loca- 
+tions), 
+and unions 
+of multiple 
+regions: 
+Region 
+= 
+Rconst 
+- region 
+descriptions 
+(p) 
+Dvar 
+- region 
+constant 
+(r) 
+- region 
+variable 
+(UNION 
+Region+) 
+- union 
+of one or more regions 
+In MFX, 
+the type 
+of an (ordinary 
+or polymorphic) 
+subroutine 
+incorporates 
+not only 
+the type 
+(or kind) 
+of the formal 
+parameter 
+and the type 
+of the returned 
+value, 
+but also the latent 
+effect of the subroutine. 
+The 
+type 
+of a location 
+incorporates 
+not only 
+the type 
+of 
+its contents, 
+but also the region 
+to which 
+the location 
+belongs. 
+Type 
+= 
+Dvar 
+- type 
+descriptions 
+(7) 
+- type 
+variable 
+(SUBR 
+(Type) 
+Effect 
+Type) 
+types 
+of ordinary 
+subroutines 
+1 (compare 
+with 
+r-f-)7’) 
+(POLY 
+(Dvar:Kind) 
+Effect 
+Type) 
+- types 
+of polymorphic 
+subroutines 
+- (compare 
+with 
+Vd : n F 7) 
+(REF 
+Region 
+Type) 
+- types 
+of locations 
+The 
+set of descriptions 
+is made 
+up of all types, 
+effects 
+and regions: 
+Desc = 
+Region 
+Effect 
+- descriptions 
+(6) 
+- region 
+descriptions 
+Type 
+- effect 
+descriptions 
+- type 
+descriptions 
+A description 
+is well-formed 
+with 
+respect 
+to a kind 
+assignment 
+B : Dvar 
++ 
+Kind 
+iff it has a kind 
+with 
+respect 
+to B. 
+The kind 
+assignment 
+maps 
+description 
+variables 
+to their 
+kinds. 
+We omit 
+the kind 
+inference 
+rules, 
+which 
+are straightforward. 
+The generalized 
+subtype 
+relation 
+C on descriptions 
+is defined 
+to correspond 
+to the subset 
+relation 
+on the 
+underlying 
+sets of locations, 
+state interactions, 
+or val- 
+ues respectively. 
+For 
+example, 
+p C 
+(UNION 
+p,p'), 
+PURE 
+E E, and 
+(REFP 
+T) 
+g 
+(REF(UNIONP,P')T). 
+We omit 
+the formal 
+definition. 
+The 
+generalized 
+type 
+conversion 
+relation 
+N on descriptions 
+corresponds 
+to 
+set equality 
+on the underlying 
+sets. 
+Thus, 
+T 2: 7’ iff 
+rCr’andr’C~. 
+An expression 
+is well-formed 
+with 
+respect 
+to a type 
+assignment 
+A : Dvar 
++ 
+Kind 
+and a kind 
+assignment 
+B iff it has a type with 
+respect 
+to A and B. The type 
+assignment 
+maps 
+ordinary 
+variables 
+to their 
+types. 
+The type 
+inference 
+rules are given 
+below. 
+They 
+have 
+been interleaved 
+with 
+the effect inference 
+rules in or- 
+der to illustrate 
+the 
+relation 
+between 
+types 
+and 
+ef- 
+fects. 
+Definition. 
+An expression 
+e has type 
+r with 
+re- 
+spect 
+to the type 
+assignment 
+A and the kind 
+assign- 
+ment 
+B iff the formula 
+A,B 
+I- e:r 
+can be derived 
+using 
+the axioms 
+and inference 
+rules 
+given 
+below. 
+Similarly, 
+the expression 
+has effect E ifE 
+51 
+
+
+──────── page 6/11 ────────
+
+the formula 
+A,B 
+t- e!e 
+can be derived. 
+If e has no free variables, 
+we will 
+simply 
+write 
+e : T and e ! E. 
+We write 
+FV(e) 
+f or the union 
+of the free descrip- 
+tion 
+variables 
+and 
+the 
+free region 
+constants 
+of the 
+expression 
+e; likewise, 
+we write 
+FV(6) 
+for the 
+free 
+description 
+variables 
+and region 
+constants 
+of the de- 
+scription 
+6. 
+The 
+sole type 
+axiom 
+states 
+that 
+the 
+type 
+of an 
+ordinary 
+variable 
+is give.n by the type assignment; 
+the 
+effect 
+axioms 
+z&ate that 
+every 
+ordinary 
+variable 
+and 
+every 
+value 
+has effect 
+PURE. 
+A,B 
+I- x : A(x) 
+x!PURE 
+21! PURE 
+The 
+types 
+and. effects 
+of larger 
+expressions 
+are given 
+by type 
+and effect inference 
+rules. 
+(Ordinary 
+Abstraction) 
+A[x 
+c 
+q-1, B 
+I- e : T’ 
+A[z 
+t 
+T], B 
+I- e ! E 
+A,B 
+I- (LAMBDA 
+I(Z:T) e) : (SUBR(T) 
+r T') 
+(Ordinary 
+Application) 
+A,B 
+I- el :: (suBR(TI) 
+ET-J) 
+A,B 
+I- e2:T 
+A T&T~ 
+A,B 
+t- el!q 
+A,B 
+k 
+ez!q 
+A,B 
+I- (el e2) 
+: 
+T2 
+A,B 
+I-- 
+(el 
+e2) 
+! 
+(MAXEFFC~ 
+~2 c) 
+(Polymorphic 
+Abstraction) 
+A,B[~+K] 
+I- e:T 
+A,B[d+-] 
+I- e!e 
+Vx 
+E W(e) 
+. d # FV(A(z)) 
+A, B 
+I- (PLAMBDA 
+(d:n) 
+e) : (POLY (d:n) 
+E T) 
+(Polymorphic 
+Application) 
+A,B 
+l- e : (POLY (d:rc) E’ 7’) 
+A,B 
+I- e!c 
+B 
+t- 6:~ 
+A,B 
+t- (PROJe6) 
+: 
+7-l m4 
+A,B 
+I- (PROJe6) 
+! 
+(MAXEFF 
+E e’[S/d]) 
+(Allocating 
+and Initializing 
+a Location) 
+B 
+k p: REGION 
+B 
+t- T:TYPE 
+A,B 
+I- e:r’ 
+A 
+7’57 
+A,B 
+I- e!e 
+-- 
+A,B 
+t- (NEWPTe) 
+: 
+(REFP~) 
+- 
+A,B 
+i- 
+(NEWPTe) 
+! 
+(MAXEFFE 
+(ALLOCP)) 
+(Reading 
+a Location) 
+A,B 
+k 
+e:(REFPT) 
+A,B 
+I- e!e 
+A,B 
+i- 
+(GETe) 
+: 
+A,B 
+!- (GETe) 
+! 
+(MAXEFF:(FLE*D,,) 
+(Writing 
+a Location) 
+A,B 
+I- el:(REFPT) 
+A,B 
+I- e:!:T’ 
+A 
+T’CT 
+A,B 
+I- el!q 
+A,B 
+I- ez!ez 
+A,B 
+k 
+(SET~I 
+e2) 
+: 
+UNIT 
+A,B 
+I- (SET~I 
+e2) 
+! 
+(MAXEFF 
+q e2 (WRITEP)) 
+In general, 
+the 
+effect 
+of an expression 
+consists 
+of 
+two 
+components, 
+namely 
+its inherited 
+effect 
+and its 
+intrinsic 
+effect: 
+the inherited 
+effect 
+of an expression 
+consists 
+of the effects of those of its immediate 
+subex- 
+pressions 
+that 
+may 
+be evaluated 
+in order 
+to evaluate 
+the expression, 
+and the intrinsic 
+effect of the expres- 
+sion is the effect that 
+is introduced 
+by the expression 
+itself. 
+5. Semantics 
+The soundness 
+of the MFX 
+effect inference 
+rules can 
+be expressed 
+only 
+in terms 
+of its semantics. 
+In this 
+section 
+we present 
+a structured 
+operational 
+semantics 
+of MFX 
+that 
+is expressed 
+in terms 
+of rewrite 
+rules. 
+These 
+rules, 
+which 
+closely 
+resemble 
+the rewrite 
+rules 
+for the lambda-calculus, 
+operate 
+on tuples 
+consisting 
+of an expression, 
+which 
+models 
+the computation 
+that 
+remains 
+to be performed, 
+and a store, 
+which 
+models 
+the memory 
+of the computation. 
+The store 
+maps 
+lo- 
+cations 
+to values. 
+In order 
+to deal with 
+the locations 
+that 
+may 
+arise during 
+the course 
+of computation, 
+we 
+expand 
+the set of expressions 
+to include 
+locations. 
+Definition. 
+A store is a finite 
+function 
+u : Lot 
+---* 
+Val that 
+maps 
+locations 
+to values. 
+Definition. 
+A state 
+is a tuple 
+(e,a) 
+of the form 
+(Exp 
+x Store). 
+Definition. 
+A terminal 
+state 
+is a state 
+(~,a) 
+of 
+the form 
+(Val 
+x Store). 
+52 
+
+
+──────── page 7/11 ────────
+
+A location 
+can be tagged 
+with 
+a region 
+description 
+and a type 
+description. 
+The 
+region 
+tag of a location 
+indicates 
+to what 
+region 
+the 
+location 
+belongs, 
+and 
+the type 
+tag of a location 
+indicates 
+what 
+types 
+of val- 
+ues the location 
+may contain. 
+The tags of a location 
+ought 
+to be closed; 
+tags that 
+contain 
+free description 
+variables 
+are meaningless. 
+We write 
+R(Z) for the re- 
+gion 
+tag 
+of the location 
+1 and 
+T(Z) for its type 
+tag. 
+Moreover, 
+we write 
+Z,,, to indicate 
+that 
+R(Z,,,) 
+= p 
+and T(Z,,) 
+= 7. If p is a region 
+constant, 
+then the lo- 
+cation 
+I,,, 
+belongs 
+to the region 
+corresponding 
+to that 
+region 
+constant; 
+otherwise, 
+it belongs 
+to the 
+union 
+of the corresponding 
+regions. 
+This 
+situation 
+reflects 
+either 
+uncertainty 
+indifference 
+about 
+the region 
+con- 
+stant 
+to which 
+the location 
+actually 
+belongs. 
+Definition. 
+A location 
+can be reached 
+through 
+a 
+region 
+p, 1 E Reach(p), 
+iff the region 
+tag of Z overlaps 
+with 
+p, i.e. iff FV(R(Z)) 
+II IV(p) 
+# 0. 
+Computation 
+proceeds 
+by repeatedly 
+reducing 
+the 
+current 
+state 
+according 
+to a set of reduction 
+axioms 
+and inference 
+rules, until 
+a terminal 
+state results. 
+The 
+relation 
+‘reduces 
+to’ or ‘3 
+’ on (State x State) 
+gives 
+the states, 
+if any, to which 
+a given 
+state 
+can be re- 
+duced. 
+The 
+reduction 
+axioms 
+are given 
+below: 
+(((LAMBDA 
+(23) 
+e) v),6)S 
+(e[w/z],u) 
+(((PLAMBDA 
+(d:~) 
+e) h),a) 
+i% 
+(e[S/d],cr) 
+((NEW 
+P 7 u>,a> 
+3 
+(l,,r 
+,b[lp,t 
++ 
+~1) 
+(1 not bound 
+in u) 
+((GET $a) 
+= 
+(g(l), 
+g) 
+((SET 
+1 v),b)Z$ 
+(w,u[Z c 
+v]) 
+The 
+reduction 
+inference 
+rules show how to reduce 
+a state 
+(e,o) 
+that 
+does not match 
+any reduction 
+ax- 
+iom by reducing 
+a designated 
+subexpression 
+of e. The 
+rules 
+have 
+been 
+designed 
+to ensure 
+left-to-right, 
+ap- 
+plicative 
+order 
+evaluation. 
+We present 
+only 
+the rules 
+for ordinary 
+application; 
+the remaining 
+rules are sim- 
+ilar. 
+(el,d 
+3 
+(4,fl’) 
+(e2,c) 
+3 
+(eh,u’) 
+((“1 
+e2),4 
+* 
+((~1 
+eh>,u’) 
+A state 
+is well-formed, 
+WFstete(Z3), 
+iff its expres- 
+sion 
+component 
+is well-formed, 
+the 
+contents 
+of the 
+locations 
+that 
+are bound 
+in the store are well-formed 
+and of a type 
+that 
+agrees 
+with 
+the tags of the corre- 
+sponding 
+locations, 
+and every 
+location 
+that 
+occurs 
+in 
+the state 
+has the same tags everywhere 
+and is bound 
+in the store. 
+Proposition. 
+(Type 
+and Effect 
+Preservation) 
+Re- 
+duction 
+of a well-formed 
+state 
+preserves 
+or decreases 
+the type 
+and effect descriptions 
+of the state. 
+WFstote 
+((e, u)) 
+e:r 
+e!e 
+zs 
+- 
+(e,a) 
+* 
+(e’,u’) 
+e’ ! E’ where 
+E’ E E 
+In order 
+to express 
+the effect 
+soundness 
+property, 
+we need to be able to refer to the locations 
+that 
+are 
+involved 
+in effects 
+in a reduction 
+step. 
+Definition. 
+For all 0 and 19’ such that 
+0 %$ O’, let 
+d(O,O’) 
+denote 
+the set of locations 
+allocated 
+and 
+initialized 
+in the reduction 
+step 8 s 
+8’ 
+R(B,e’) 
+denote 
+the set of locations 
+read in the re- 
+duction 
+step 0 3 
+8’ 
+YV(e,e’) 
+denote 
+the set of locations 
+written 
+in the 
+reduction 
+step t9 & 
+8’ 
+For the language 
+defined 
+thus far, these sets contain 
+either 
+zero or one location; 
+however, 
+we will not make 
+use of this fact. 
+Proposition. 
+(Effect 
+Soundness) 
+Reduction 
+of a 
+well-formed 
+state 
+allocates, 
+reads, 
+and writes 
+only lo- 
+cations 
+that 
+can be reached 
+through 
+the regions 
+spec- 
+ified by its effect. 
+In other 
+words, 
+if 8 G% 8’ and 0 ! E 
+where 
+E c? (MAXEFF(ALLO~~~) 
+(READP~)(wRITE~~)) 
+then 
+d(e,e’> 
+c 
+Reach 
+R(e,e’) 
+G Reach(pR) 
+w(e,el) 
+5 
+Reach(pw 
+) 
+6. Effect 
+Masking 
+Under 
+certain 
+circumstances, 
+side-effects 
+that 
+can- 
+not be observed 
+outside 
+of a given 
+expression 
+can be 
+masked 
+by the effect system. 
+The rule for effect mask- 
+ing 
+is developed 
+in two 
+steps. 
+First, 
+we present 
+a 
+construct 
+for declaring 
+private 
+regions 
+along 
+with 
+an 
+effect masking 
+rule for side-effects 
+involving 
+these pri- 
+vate 
+regions, 
+and we demonstrate 
+the 
+soundness 
+of 
+this masking 
+rule relative 
+to our operational 
+seman- 
+tics. 
+Second, 
+we show how this rule can be modified 
+to 
+mask 
+local 
+side-effects 
+even when 
+private 
+regions 
+are 
+not used. 
+Effect 
+masking 
+allows 
+imperative 
+program 
+fragments 
+to be embedded 
+in functional 
+programs, 
+53 
+
+
+──────── page 8/11 ────────
+
+provided 
+that 
+these imperative 
+fragments 
+have func- 
+Conal 
+semantics. 
+Thus, 
+effect 
+masking 
+allows 
+func- 
+tional 
+programs 
+to be implemented 
+using 
+imperative 
+constructs. 
+In addition, 
+effect masking 
+increases 
+the 
+feasibility 
+of compile-time 
+garbage 
+collection 
+in the 
+presence 
+of fir&-class 
+subroutines 
+and references. 
+The PRIVATE expression 
+declares 
+a private, 
+anony- 
+mous 
+region 
+for local 
+u:se that 
+becomes 
+inaccessible 
+when 
+the exprlession 
+returns. 
+Side-effects 
+on this 
+re- 
+gion 
+cannot 
+be observe’d 
+outside 
+of the 
+expression, 
+and need not be reported 
+in the syntactic 
+effect of the 
+expression; 
+we say that 
+such effects 
+can be masked. 
+Since the locations 
+belonging 
+to a private 
+region 
+can- 
+not be accessed 
+after the expression 
+returns, 
+they 
+can 
+be safely 
+deallocated 
+whlen the expression 
+returns. 
+The 
+grammiar 
+clause 
+for the PRIVATE expression 
+is 
+given 
+below. 
+Exp = 
+- expressions 
+(PRIVATED~~~ 
+Exp) 
+- declaration 
+of a private 
+region 
+The 
+type 
+and effect inference 
+rule for the PRIVATE 
+expression 
+is given 
+below. 
+Note 
+that 
+the type 
+and 
+effect 
+of the expression 
+are the same as the type 
+and 
+effect 
+of e, except 
+that 
+all effects 
+on d are masked. 
+Effect 
+masking 
+is accomplished 
+by substituting 
+the 
+empty 
+region 
+$ for the private 
+region 
+variable 
+d in the 
+effect 
+description 
+E; the empty 
+region 
+is defined 
+such 
+that 
+any effect 
+on + is interconvertible 
+with 
+PURE. 
+A,B[d 
+c :REGION] 
+I- e : T 
+.4,B[d 
+c 
+REGION] 
+k e ! E 
+A,B 
+I- (PRIVATE 
+d e) 
+: 
+A,B 
+1 (PRIVATE 
+d e) 
+! 
+e[$yd) 
+This 
+rule 
+resembles 
+a composition 
+of the 
+rules 
+for 
+polymorphic 
+abstraction 
+and 
+polymorphic 
+applica- 
+tion, 
+except 
+that 
+(i) 
+no actual 
+region 
+parameter 
+is 
+specified, 
+(ii) 
+the forma,1 region 
+parameter 
+must 
+not 
+appear 
+free in the type 
+of the body, 
+and (iii) 
+any ef- 
+fects on the fo,rmal 
+region 
+parameter 
+are masked. 
+The 
+simplest 
+way 
+to define 
+the semantics 
+of the 
+PRIVATE 
+expression 
+would 
+be with 
+the foIlowing 
+re- 
+duction 
+axiom, 
+where 
+I. denotes 
+a fresh 
+region 
+con- 
+stant: 
+((PFLIVATE d e),a) 3 
+(e[z/d], u) 
+Unfortunatlely, 
+this d.efinition 
+would 
+invalidate 
+the 
+type 
+preservation 
+proposition: 
+if the PRIVATE expres- 
+sion that 
+masks 
+the 
+eflrects on the private 
+region 
+is 
+removed, 
+the effect of the expression 
+may actually 
+in- 
+crease. 
+Since 
+type 
+preservation 
+is the foundation 
+of 
+our type 
+and effect 
+soundness 
+propositions, 
+we have 
+developed 
+a technique 
+for reducing 
+expressions 
+such 
+as the 
+PRIVATE 
+expression 
+while 
+retaining 
+the 
+type 
+preservation 
+property. 
+Formally, 
+the semantics 
+of the 
+PRIVATE 
+expression 
+are defined 
+in terms 
+of an aux- 
+iliary 
+expression, 
+which 
+resembles 
+the 
+PRIVATE 
+ex- 
+pression 
+except 
+that 
+the bound 
+variable 
+has been re- 
+placed 
+by a region 
+constant. 
+The 
+auxiliary 
+expres- 
+sion, *PRIVATE*, 
+serves as a syntactic 
+marker 
+that 
+in- 
+dicates 
+that 
+effect 
+masking 
+is taking 
+place. 
+When 
+a 
+PRIVATE expression 
+is reduced 
+to a *PRIVATE* 
+expres- 
+sion, a fresh region 
+constant 
+is chosen and embedded 
+in the expression. 
+The body 
+of the *PRIVATE* 
+expres- 
+sion is then 
+reduced 
+recursively, 
+while 
+the expression 
+serves 
+as a reminder 
+that 
+the chosen 
+region 
+constant 
+is private 
+to the expression, 
+and that 
+any 
+effects 
+on 
+it can therefore 
+be masked. 
+When 
+the body 
+has been 
+reduced 
+to a value, 
+there 
+are no more 
+effects 
+to be 
+masked 
+and the *PRIVATE* 
+expression 
+can be reduced 
+to its body. 
+The syntax 
+of the *PRIVATE* 
+expression 
+is given 
+by 
+the type 
+and effect inference 
+rule shown 
+below. 
+Exp = 
+- expressions 
+(*PRIVATE* 
+Dvar Exp) 
+- PRIVATE in progress 
+In order 
+to represent 
+the fact that 
+the region 
+con- 
+stant 
+chosen in the reduction 
+of a PRIVATE expression 
+must 
+be fresh, 
+we extend 
+the state 
+of the computa- 
+tion 
+with 
+a third 
+component 
+(besides 
+the expression 
+and the store), 
+namely 
+a region map 7 : T --, {USED). 
+States 
+will 
+now be of the form 
+(e,a,r), 
+and the ex- 
+isting 
+reduction 
+axioms 
+and reduction 
+inference 
+rules 
+are edited 
+accordingly. 
+(An 
+alternative 
+technique 
+is 
+given 
+by Felleisen 
+and Friedman 
+[Fe187]). 
+The region 
+map is used by the reduction 
+axiom 
+for 
+PRIVATE 
+expressions: 
+((PRIVATE 
+d e),a,7) 
+S- 
+((*PRIVATE* 
+7 e[r/d]),g,7[T 
++- USED]) 
+(T not bound in 7) 
+The 
+resulting 
+*PRIVATE* 
+expression 
+can be recur- 
+sively 
+reduced 
+using 
+the following 
+reduction 
+inference 
+rule: 
+((*PRIVATE* 
+T e),o, 7)s 
+((+PRIVATE* 
+T e'),u', 
+7’) 
+When 
+the 
+body 
+has been 
+reduced 
+to a value, 
+the 
+*PRIVATE* 
+expression 
+can be eliminated 
+using 
+the fol- 
+lowing 
+axiom: 
+((*PRIVATE* 
+T w),6,7)3 
+(v,a,7) 
+54 
+
+
+──────── page 9/11 ────────
+
+Even 
+though 
+we have taken 
+special 
+care to retain 
+a syntactic 
+marker 
+throughout 
+the reduction 
+process 
+whenever 
+effect 
+masking 
+is taking 
+place, 
+the 
+effect 
+soundness 
+proposition 
+no longer 
+holds 
+as originally 
+stated, 
+because 
+it fails to take side-effects 
+on private 
+regions 
+into 
+account. 
+Specifically, 
+if a state 
+8 ! e con- 
+tains an active 
+expression 
+of the form (*PRIVATE* 
+T e), 
+then 
+reduction 
+of 0 may have effects on the region 
+T, 
+even though 
+T does not appear 
+in E. 
+We 
+will 
+now 
+reformulate 
+the 
+effect 
+soundness 
+proposition 
+so that 
+it allows 
+locations 
+to be allocated, 
+read, or written 
+in regions 
+that 
+are private 
+to a given 
+expression 
+even though 
+these effects are not specified 
+by the syntactic 
+effect 
+of the expression. 
+The 
+modi- 
+fied proposition 
+operates 
+by confining 
+attention 
+to the 
+regions 
+that 
+are accessible 
+in the 
+context 
+that 
+sur- 
+rounds 
+the expression. 
+This 
+automatically 
+excludes 
+the private 
+regions 
+of the expression. 
+Definition. 
+A context 
+C is an expression 
+con- 
+taining 
+a single 
+“hole” 
+in which 
+an expression 
+can be 
+placed, 
+i.e. 
+such that 
+C[e] 
+is an expression 
+for any 
+expression 
+e. 
+Definition. 
+A region 
+constant 
+r is accessible 
+in 
+a context 
+C iff it appears 
+in the effect 
+of any active 
+expression 
+in that 
+context, 
+i.e. iff some active 
+expres- 
+sion in C has an effect 
+E such that 
+T E w(e). 
+We 
+write 
+Act(C) 
+to denote 
+the region constants 
+that 
+are 
+accessible 
+in the context 
+C. 
+Using 
+this 
+notation, 
+we can 
+express 
+the 
+regions 
+that 
+are accessible 
+in a given 
+context 
+C as simply 
+Acc( C). 
+We can 
+now 
+revise 
+the 
+effect 
+soundness 
+proposition. 
+It is expressed 
+in a somewhat 
+peculiar 
+way in order 
+to simplify 
+a comparison 
+with 
+the orig- 
+inal 
+proposition. 
+Proposition 
+(revised). 
+(Effect 
+Soundness) 
+Re- 
+duction 
+of an expression 
+in a well-formed 
+state 
+allo- 
+cates, 
+reads, 
+and 
+writes 
+only 
+locations 
+that 
+can be 
+reached 
+through 
+the 
+regions 
+specified 
+by its 
+effect 
+or through 
+the private 
+regions 
+of the expression. 
+In 
+other 
+words, 
+if 8 = (C[e],o, 
+y), 8’ = (C[e’],cr’,r’) 
+and 
+8 s 
+0’, and e ! e where 
+E N 
+(MAXEFF(ALL~CP~)(READ~~)(WRITEP~)) 
+then 
+d(6,0’) 
+n Reach(Acc(C)) 
+E Reach(pA) 
+72(8,0’) n Reach(Acc(C)) 
+g 
+Reach(pR 
+) 
+W(e, 0’) n Reach(Acc(C)) 
+E Reach(pw 
+) 
+Whenever 
+it is possible 
+to wrap 
+a given 
+expression 
+in a PRIVATE expression 
+for a certain 
+region 
+without 
+making 
+the program 
+in question 
+ill-typed, 
+the effects 
+on that 
+region 
+can be masked 
+as if this PRIVATE were 
+actually 
+present. 
+The 
+rule for this 
+so-called 
+implicit 
+effect 
+masking 
+is derived 
+directly 
+from 
+the 
+rule 
+for 
+PRIVATE: 
+A,B 
+i- e:r 
+A,B 
+I- e!e 
+B 
+t- d: REGION 
+z E W(e) 
+a 
+d $ FV(A(z)) 
+d 4 W(T) 
+A, B 
+I- e ! l [$/d] 
+Its 
+soundness 
+follows 
+from 
+the fact 
+that 
+there 
+is a 
+meaning-preserving 
+source-to-source 
+transformation 
+that 
+introduces 
+the appropriate 
+PRIVATE expression. 
+7. Experience 
+with 
+a prototype 
+FX implementation 
+We have 
+developed 
+a prototype 
+compiler 
+for the 
+FX programming 
+language 
+that 
+uses effect 
+informa- 
+tion 
+to constrain 
+the 
+parallel 
+evaluation 
+of expres- 
+sions 
+[Luc87]. 
+Th e compiler 
+enforces 
+evaluation 
+or- 
+der constraints 
+that 
+guarantee 
+serial 
+evaluation 
+se- 
+mantics. 
+The 
+target 
+language 
+of the 
+compiler 
+is a 
+dataflow 
+graph 
+that 
+has been annotated 
+with 
+schedul- 
+ing constraints; 
+a dataflow 
+graph 
+representation 
+was 
+chosen because 
+(i) the dataflow 
+model 
+allows 
+us to ex- 
+press concurrency 
+without 
+considering 
+such issues as 
+processor 
+allocation 
+and computation 
+grain 
+size, and 
+(ii) 
+a parallel 
+simulator 
+for this 
+model 
+was available 
+[ Arv87, 
+Tra86]. 
+To date we have used the compiler 
+and the simula- 
+tor to check, 
+compile 
+and run a variety 
+of programs, 
+most 
+of them 
+fairly 
+small. 
+In general, 
+the experimen- 
+tal results 
+agree with 
+our predictions. 
+Figures 
+1 and 2 show the result 
+of an experiment 
+that 
+tested 
+the 
+value 
+of effect 
+masking 
+on a small 
+program 
+that 
+computes 
+the sum of l! to lo!. 
+Figure 
+1 shows 
+the execution 
+of the program 
+when 
+it was 
+compiled 
+with 
+effect masking 
+disabled, 
+while 
+Figure 
+2 
+shows the execution 
+of the program 
+with 
+effect mask- 
+ing enabled. 
+Factorial 
+was programmed 
+in a conven- 
+tional 
+manner 
+using 
+an iterative 
+method 
+with 
+side- 
+effects; 
+when 
+effect masking 
+was enabled, 
+these local 
+effects 
+were 
+masked, 
+resulting 
+in a functional 
+speci- 
+fication 
+for the factorial 
+function, 
+which 
+in turn 
+re- 
+sulted 
+in the concurrent 
+evaluation 
+of the iterations 
+of the outer 
+loop. 
+The 
+figures 
+show 
+the number 
+of 
+ALU 
+operations 
+the simulated 
+dataflow 
+machine 
+exe- 
+cuted 
+during 
+each instruction 
+cycle. 
+In this example, 
+effect 
+masking 
+resulted 
+in a substantial 
+improvement 
+in elapsed 
+time. 
+In general, 
+of course, 
+the 
+results 
+depend 
+on the susceptibility 
+of the 
+program 
+to the 
+55 
+
+
+──────── page 10/11 ────────
+
+particular 
+kinds 
+of concurrency 
+analysis 
+supported 
+by 
+9. Bibliography 
+the language. 
+8. Conclusions 
+We have presented 
+a stattic effect system 
+with 
+effect 
+and 
+region 
+polymorphism 
+and 
+effect 
+masking. 
+The 
+type 
+and 
+effect 
+information 
+can 
+be used 
+to imple- 
+ment 
+certain 
+kinds 
+of sid.e-effect 
+analysis 
+that 
+were 
+not 
+previously 
+feasible 
+in the 
+presence 
+of first-class 
+subroutines 
+and reference 
+variables, 
+particularly 
+con- 
+currency 
+analysis 
+and the the masking 
+of local 
+side- 
+effects. 
+Empirical 
+results 
+from a prototype 
+implemen- 
+tation 
+suggest 
+that 
+the effect 
+system 
+can be used by 
+a parallel 
+compiler. 
+Arv87 
+Ban79 
+Bar78 
+Gif86 
+Gif87 
+Fe187 
+Lam77 
+Cycle 
+Number 
+Figure 
+1: Execution 
+without 
+Masking 
+Luc87 
+Cycle 
+Number 
+Figure 
+2: Execution 
+with 
+Masking 
+lbecu 
+ting a Program 
+on the MIT 
+Tagged- 
+Token 
+Datai?ow 
+Ar- 
+chitecture, 
+Arvind, 
+Rishiyur 
+S. Nikhil, 
+MIT 
+LCS 
+Computation 
+Structures 
+Group 
+Memo 
+No. 271 (March 
+1987) 
+An Efficient 
+Way to Find 
+the Side Effects of 
+Procedure 
+Calls and the Aliases of Variables. 
+John 
+P. Banning, 
+Fifth 
+Annual 
+ACM 
+Sym- 
+posium 
+on Principles 
+of Programming 
+Lan- 
+guages 
+(January 
+1979), 
+pp. 29-41 
+A Practical 
+Interprocedural 
+Data 
+Flow Anal- 
+ysis algorithm, 
+Jeffrey 
+M. Barth, 
+Communi- 
+cations 
+of the ACM, 
+Vol. 21, No. 9 (Septem- 
+ber 1978), 
+pp. 724-736 
+Tnntegrating 
+Functional 
+and Imperative 
+Pro- 
+gramming, 
+David 
+K. 
+Gifford, 
+John 
+M. 
+Lu- 
+cassen, 
+1986 
+ACM 
+Conference 
+on 
+LISP 
+and Functional 
+Programming 
+(August 
+1986), 
+pp. 28-38 
+FX-87 
+Reference 
+Manual, 
+David 
+K. Gifford 
+et al., 
+MIT 
+LCS 
+TR-409, 
+MIT 
+Laboratory 
+for Computer 
+Science, 
+September 
+1987. 
+A Calculus 
+for Assignments 
+in Higher-Order 
+Languages, 
+Matthias 
+Felleisen, 
+Daniel 
+Fried- 
+man, 
+Fourteenth 
+Annual 
+ACM 
+Symposium 
+on 
+Pr-inciples 
+of 
+Programming 
+Languages 
+(January 
+1987), 
+pp. 314-325 
+Report 
+on the Programming 
+Language 
+Eu- 
+clid, Butler 
+W. Lampson, 
+James 
+J. Horning, 
+Ralph 
+L. London, 
+James 
+G. Mitchell, 
+Ger- 
+ald J. Popek, 
+SIGPLAN 
+Notices, 
+12 (1977), 
+pp. l-79 
+Types and Effects - 
+Towards the Integration 
+of Functional 
+and Imperative 
+Programming, 
+John 
+M. Lucassen, 
+Ph. D. Thesis, 
+MIT 
+Lab- 
+oratory 
+for Computer 
+Science 
+LCS 
+TR-408 
+(August 
+1987) 
+McC79 
+An Investigation 
+of a Programming 
+Lan- 
+guage with 
+a Polymorphic 
+Type Structure, 
+Nancy 
+Jean McCracken, 
+Ph. D. Thesis, 
+Syra- 
+cuse University 
+School 
+of Computer 
+and In- 
+formation 
+Science 
+(June 
+1979) 
+Nei87 
+Computation 
+of Aliases 
+and 
+Support 
+Sets, 
+Anne 
+Neirynck, 
+Prakash 
+Panagaden, 
+Alan 
+J. Demers, 
+14th 
+Annual 
+ACM 
+Symp. 
+on 
+Principles 
+of Programming 
+Languages, 
+Mu- 
+nich, 
+West 
+Germany, 
+January 
+21-23, 
+1987, 
+pp. 
+274-283. 
+Pop77 
+Notes on the Design of Euclid, 
+G. J. Popek, 
+J. J. Horning, 
+R. L. 
+London, 
+Proceedings 
+56 
+
+
+──────── page 11/11 ────────
+
+of an ACM 
+Conference 
+on Language 
+De- 
+sign for Reliable 
+Software, 
+SIGPLAN 
+No- 
+tices, Vol. 12, No. 3 (March 1977), pp. 11-18 
+Rey74 
+Towards 
+a Theory 
+of Type 
+Structure, 
+Inter- 
+national 
+Programming 
+Symposium, 
+Lecture 
+Notes in Computer 
+Science no. 19 (1974), 
+pp. 408-425 
+Rey78 
+Syntactic 
+Control 
+of 
+Interference, 
+John 
+C. Reynolds, 
+Fifth 
+Annual 
+ACM 
+Sympo- 
+sium 
+on Principles 
+of Programming 
+Lan- 
+guages (January 
+1978), pp. 39-46 
+Ste78 
+Rabbit: 
+A Compiler 
+for Scheme 
+(A Study 
+in Compiler 
+Optimization), 
+AI-TR-474, 
+MIT 
+AI Laboratory, 
+May 1978. 
+Tra86 
+A 
+Compiler 
+for 
+the 
+MIT 
+Tagged-Token 
+Dataffow 
+Architecture, 
+Kenneth 
+R. Traub, 
+S.M. Thesis, MIT 
+Laboratory 
+for Computer 
+Science (August, 
+1987) 
+Wei 
+Interprocedural 
+Data Flow Analysis 
+in the 
+Presence 
+of Pointers, 
+Procedure 
+Variables, 
+and Label 
+Variables, 
+Seventh Annual 
+ACM 
+Symposium 
+on Principles 
+of Programming 
+Languages (January 
+1980), pp. 83-94 
+57 
