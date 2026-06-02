@@ -18,3 +18,7 @@
 
 # Guard against accidentally committing an in-tree corpus cache.
 /.cache/
+
+# Node instrument (tools/corpus) — installed per-platform (Win/WSL), not committed.
+node_modules/
+tools/corpus/dist/
