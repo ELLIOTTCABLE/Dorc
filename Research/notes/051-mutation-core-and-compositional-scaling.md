@@ -4,7 +4,7 @@
 
 Two of the highest-yield reads. Together they give the spine of Dorc's analysis: **a compositional, summary-based side-effect/MOD analysis** — but with a soundness bias *inverted* from the industrial bug-finders.
 
-## Salcianu–Rinard purity/side-effect analysis — the closest classical analog to "may-mutate"
+## Salcianu–Rinard purity/side-effect analysis [A-salcianu-rinard-purity-vmcai-2005] — the closest classical analog to "may-mutate"
 SURE this is the most directly transferable prior art for Q1:
 - **Purity = "does not mutate any location that existed in the prestate"** (the program state right before invocation). Mutating *newly-allocated* objects is fine. → Dorc's exact notion: a command is **skippable** iff it doesn't change *existing system state*; a command that writes only scratch it owns (a `/tmp` file it also removes) is "pure" in this sense. This formalizes the planning-log's "scratch-temp-not-depended-on falls out of dataflow."
 - Mechanism: pointer+escape analysis with a **points-to graph** distinguishing **inside nodes** (allocated here) from **parameter/load nodes** (prestate). Mutations on inside nodes are ignored; mutations on parameter/load nodes are the real side effects. For Dorc the "heap" is *system state* (packages, files, services, users, ports); "inside vs prestate" becomes "state this run created vs state that pre-existed."
@@ -13,7 +13,7 @@ SURE this is the most directly transferable prior art for Q1:
 - They **deliberately sacrifice soundness for caches** (hashcode caches mutate but are "semantically preserving"); the analysis *tells you which fields are mutated* so a human confirms the mutation is benign. → Dorc's "exclude non-determinism / canonicalize" is the same move: recognize benign mutation (timestamps, caches) and the analysis must *surface what's touched* for adjudication.
 - Lineage: "stems from Gifford et al. type-and-effect systems." Confirms the effect-system framing for the oracle's effect-class.
 
-## Facebook scale (Infer/Zoncolan) — compositionality IS the scaling answer (Q3)
+## Facebook scale (Infer/Zoncolan) [A-distefano-scaling-static-analyses-facebook-cacm-2019] — compositionality IS the scaling answer (Q3)
 SURE for Q3, and it maps onto an ops fleet/role structure almost too well:
 - **Compositional analysis**: the result of a composite program = results of its parts + a combine step. Each procedure → a concise **summary** (an abstract-domain element). Each procedure visited a few times; **most procedures analyzed independently → parallelism**; runtime ≈ linear combination of per-procedure costs (modulo recursion). **Compositional ⇒ naturally incremental**: change one procedure, don't re-analyze the rest.
   - → Dorc: each **role/module/function** is a "procedure"; summarize once, cache, recompose per host. An org corpus is *embarrassingly modular* (many roles × many hosts) → this is the natural fit, and it answers Q3 (arbitrarily-large corpus) directly. The planning-log's "flat forest of mostly-independent roles" is *exactly* the structure compositional analysis exploits.
@@ -23,7 +23,7 @@ SURE for Q3, and it maps onto an ops fleet/role structure almost too well:
 - Numbers: Zoncolan 100M LOC < 30 min / 24 cores; Infer diff-time ~15 min. Taint analysis (Zoncolan) = "which untrusted input reaches which sink" — structurally identical to Dorc's "which state reaches/feeds which mutation-or-probe."
 
 ## THE soundness-bias inversion (the single most important synthesis point so far)
-> **Update (two-soundness standard):** the framing below is the **elision-soundness** half only (never skip a needed mutation; fail toward *do-execute*; extra runs harmless by idempotence). Its co-equal twin, **probe-soundness** (the read-only pass must not itself mutate), has the *opposite* fail-action (*don't-execute*). One ⊤ does not serve both. See AGENTS §1 / `analysis-architecture.md` §1A.
+> **Update (two-soundness standard):** the framing below is the **elision-soundness** half only (never skip a needed mutation; fail toward *do-execute*; extra runs harmless by idempotence). Its co-equal twin, **probe-soundness** (the read-only pass must not itself mutate), has the *opposite* fail-action (*don't-execute*). One ⊤ does not serve both. See AGENTS §1 / `055-analysis-architecture.md` §1A.
 
 SUSPECT-but-strong: Infer/Zoncolan are **unsound bug-finders** — they tolerate **false negatives** (missed bugs) to keep **false positives** low (developer trust). Dorc's *elision* requirement is the **opposite bias**: tolerate **false positives** (extra runs — harmless by idempotence, slow) but **forbid false negatives** (a missed necessary mutation → false-skip → a host silently left unconverged/broken). So:
 - We reuse Infer's **compositional summary machinery** and its **diff-time deployment model** wholesale.

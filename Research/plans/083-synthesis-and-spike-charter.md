@@ -165,7 +165,7 @@ NOT carry as active MVP design weight.** Each is keyed to its knob/source.
 - **Tier-B interprocedural analysis** (IFDS/IDE summaries, backward slicing, the canonical-fact ontology,
   Datalog query layer) — `phase-1` Step 5 already defers this "only if the 10% earns it." The full
   `analysis-architecture` hybrid is the *reference design*, not MVP scope.
-- **The privileged eBPF/auditd tracer** (`deferred/privileged-tracing-tool.md`) — already correctly
+- **The privileged eBPF/auditd tracer** (`deferred/078-privileged-tracing-tool.md`) — already correctly
   quarantined (separate privileged binary, post-language). Core's only obligation now is the hook surface.
 - **RCPSP / optimal scheduling, k8s-style rolling/canary/readiness machinery** (`kSCHEDULE`, perf §4) —
   executor SEAM; Dorc *derives the inputs*, but the executor builds a subset for v1.
@@ -212,7 +212,7 @@ subset of the perf §6 list). Reserve the minimal seam; don't build the machiner
 ## 7. Inconsistencies ledger — where the older corpus actively misleads (pointers, not fixes)
 Strictly-additive supersession markers have been applied to the files marked ⟢; human-authored docs
 (README/DESIGN/TODO) are **flagged for the user, not edited**.
-- ⟢ `analysis-architecture.md` / `phase-1` — present engine-first as settled; **its *weight* is gated on
+- ⟢ `055-analysis-architecture.md` / `phase-1` — present engine-first as settled; **its *weight* is gated on
   the `kDEPS` investment split / the unrun go/no-go**, and the later perf/recovery rounds demoted how far
   static-derive alone reaches. (Marker added.)
 - **the metadata tension** (`kOOB`) — `pluggability` + `corpus-spike-seed-prompt` assert "no metadata
@@ -240,7 +240,7 @@ contributor-friendliness/adoption). Correction to `phase-2 §A`: the Melange opt
 and live contender. Decide after the spike.
 
 ## 9. Next step — the corpus spike (runs in a SEPARATE agent session)
-The spike executes in its own context window; kickoff prompt: `Research/plans/spike-session-prompt.md`.
+The spike executes in its own context window; kickoff prompt: `Research/plans/085-spike-session-prompt.md`.
 This charter is the spike's **WHAT** (the §3 question-set); that prompt is its **HOW** (generic operating
 rules). Shape:
 1. **Gather a large, representative corpus — a real research subtask, not a footnote.** Where to get a

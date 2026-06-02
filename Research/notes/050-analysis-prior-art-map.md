@@ -47,7 +47,7 @@ Canonical bodies of work (acquire each):
 | github/codeql (docs/std lib) | QL | the queryable-fact-base model; lib + docs (engine is closed). |
 | (maybe) microsoft/TypeScript | TS | control-flow-based narrowing — the canonical "narrowing" implementation; large, may take docs only. |
 
-## Papers to download (free PDFs; grade A unless noted) — see status in `00-source-manifest.md`
+## Papers to download (free PDFs; grade A unless noted) — see status in `000-source-manifest.md`
 Reps CFL-reachability survey; Reps–Horwitz–Sagiv IFDS; Cousot AI'77 (+ tutorial); Sharir–Pnueli; Weiser slicing; HRB SDG slicing; Tip slicing survey; Gifford–Lucassen effects; Cooper–Kennedy side-effects; Salcianu–Rinard purity; Distefano "Scaling at Facebook"; Arzt–Bodden Reviser (incremental IFDS); Whaley–Lam bddbddb; Bravenboer–Smaragdakis Doop; Scholz Soufflé; Sui–Xue SVF; Jensen–Møller TAJS; Avgustinov QL/CodeQL; McSherry differential dataflow.
 
 ## Synthesis (DO NOT START until coverage convinces) — will answer:

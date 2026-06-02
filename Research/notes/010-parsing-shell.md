@@ -10,7 +10,7 @@ SURE, and this is the single most important Phase-1 feasibility fact: **a clean 
 
 GUESS the design consequence for Dorc: our "strict superset, our needs first, not bashism-compatibility" stance (planning-log principle 8) is *vindicated by this paper* — the undecidable/irregular parts (alias/eval-driven lexing) are exactly what a from-scratch superset can define away. We don't inherit POSIX's parsing pain; we choose a statically-parseable core and push the rest to `unsafe`/⊤.
 
-## Morbig's architecture (the canonical answer to "how do you parse shell statically")
+## Morbig's architecture [A-morbig-sle-2018] (the canonical answer to "how do you parse shell statically")
 SURE this is the reference architecture, and it's small:
 - **Prelexer** (parsing-*independent*, OCamllex): "token recognition" → pretokens (operator / word / significant-layout). Uses *mutually-recursive parametric lexer entry points* — recursion+params give the lexer pushdown power for nested quoting, while each entry point maps to a named POSIX spec section (review-friendly).
 - **Lexer** (parsing-*dependent*): promotes words→keywords/assignments, switches to here-doc mode, disambiguates newlines — *by asking the parser*.
@@ -25,7 +25,7 @@ SURE and important for the Coq question: the CoLiS group — about as formal-met
 ## ShellCheck contrast (Morbig §7.1) — the production vs research-grade tradeoff
 SUSPECT this frames a core Phase-2 design choice. ShellCheck: Haskell + Parsec combinators, hand-crafted, **no embedded Yacc grammar** (so its relation to POSIX is unclear) and **analyses run on-the-fly during parsing with no intermediate CST** → new analyses require editing the parser (poor modularity). But hand-crafting gives fine context control → **excellent error messages**. Morbig: modular, spec-faithful CST, but research-grade UX. Dorc wants *both*: Morbig's separable-analyses-over-a-stable-IR + ShellCheck's error quality (Morbig notes they plan to adopt Pottier's Menhir error-diagnosis work [Pottier CC2016] for exactly this) + our own syntax extensions. This is the "own the parser" justification (planning-log) made concrete.
 
-## Dozer (2-page short paper; code at github.com/config-migration/dozer)
+## Dozer [A-dozer-icse-seip-2022] (2-page short paper; code at github.com/config-migration/dozer)
 SURE on the one borrowable insight: shell commands and Ansible modules **change system state only via syscalls**, so the kernel/syscall boundary is the ground-truth altitude for "what did this command actually change." That informs *what a `.check`/effect oracle must ultimately observe*.
 - Approach is **dynamic** (strace, run in Docker, compare straces to a knowledge base of Ansible-module traces, synthesize+validate a migration). We rejected dynamic syscall-tracing as the primary mechanism; this is premise-validation, not an approach to copy.
 - Their Discussion explicitly names our hard problem as future work: **composing configuration tasks** — "correct propagation of information as outputs and inputs, selecting tasks that don't conflict, and preserving control flow and error handling." → Independent confirmation that *composition* (not per-command effect-detection) is the novel/hard core — matches the user's reframe ("the derivable part is how oracles compose").

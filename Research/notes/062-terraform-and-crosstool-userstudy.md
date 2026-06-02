@@ -1,6 +1,6 @@
 # Terraform user-study + cross-tool synthesis (completes Space 3)
 
-Companion to notes/61 (Ansible, anchored on the Carreira 2025 study). Terraform has no single equivalent peer-reviewed anchor; sentiment is distributed across HN threads + practitioner blogs (graded individually). Quotes/URLs captured here = the durable record.
+Companion to notes/061 (Ansible, anchored on the Carreira 2025 study). Terraform has no single equivalent peer-reviewed anchor; sentiment is distributed across HN threads + practitioner blogs (graded individually). Quotes/URLs captured here = the durable record.
 
 ## Terraform — what's loved / kept (sacred cows)
 - **`plan`/`apply` preview** — the validated UX (round-2 borrowed it). "preview changes before making them."

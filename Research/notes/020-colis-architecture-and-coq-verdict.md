@@ -1,6 +1,6 @@
 # CoLiS architecture, corpus evidence, and the "is Coq justified?" verdict
 
-## The CoLiS toolchain architecture (TACAS 2020) — what to crib, what to drop
+## The CoLiS toolchain architecture (TACAS 2020) [A-colis-installation-scenarios-tacas-2020] — what to crib, what to drop
 Pipeline: `Package + Scenario → Scenario Player → Front-end(parse + translate) → Back-end(symbolic engine) → Diagnosis`.
 - **Front-end** = Morbig (shell → concrete syntax tree) **then a translation into `CoLiS`**, a clean intermediate language with formally-defined semantics.
 - **Back-end** = a symbolic-execution engine that computes, per outcome, a symbolic **input→output filesystem relation** encoded as **feature-tree constraints**; the engine is **generic over UNIX-command specifications, which are passed in as parameters.**
@@ -25,7 +25,7 @@ GUESS: this is the strongest external evidence that Dorc's thesis is sound — r
 - They consciously **don't model permissions/timestamps/symlink-resolution/concurrency** — accepting both over- and under-approximation. → confirms "bound the model; exclude what you can't cheaply nail" (our exclude-non-determinism principle).
 
 ## The "is a proof assistant (Coq/Isabelle/Why3) justified?" verdict
-Evidence from VSTTE 2017 (the CoLiS-language verified interpreter) + the TACAS trust boundaries:
+Evidence from VSTTE 2017 (the CoLiS-language verified interpreter) [A-verified-interpreter-shell-vstte-2017] + the TACAS trust boundaries:
 - The CoLiS group — maximally formal-methods-capable — verified **only the interpreter/semantics core of a *clean, self-designed* intermediate language**, and did it in **Why3 + automated SMT provers (Alt-Ergo/Z3/E/CVC)**, *deliberately avoiding* interactive assistants (Coq/Isabelle) as too heavy ("formalising semantics is most often done in Coq/Isabelle; we show automated provers suffice"). Even so, the *completeness* proof needed a **novel "ghost skeleton" technique** (abstracting the proof tree to a decreasing algebraic value) — research-grade effort, 207 subgoals, for ONE interpreter of a SIMPLIFIED language.
 - Crucially, they **did NOT and COULD NOT formally verify the two parts Dorc cares most about**: (i) the **parser** (POSIX spec is informal → "impossible to prove correct; we don't even claim absence of bugs"), and (ii) the **shell→IL translation** (no formal shell semantics existed). Both are *trusted via review + differential testing against dash/bash.*
 - The formal verification bought them **soundness of a symbolic over-approximation** — exactly the goal Dorc rejected.

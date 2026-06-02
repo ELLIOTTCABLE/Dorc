@@ -3,10 +3,10 @@
 > **Status (2026-06-01): methodology note, not a measurement.** Evaluates the
 > *thesis-blind, three-model* corpus variant scaffolded out-of-tree at
 > `~/shell-iac-corpus-study` — distinct from the in-tree `tools/corpus` instrument and
-> the spike it drove (`notes/80-corpus-spike-progress-and-first-tally.md`, hereafter
+> the spike it drove (`notes/080-corpus-spike-progress-and-first-tally.md`, hereafter
 > `[80]`). Verdict: **do not run it as a source of go/no-go numbers — it regresses on
 > the standard `[80]` already sets.** The worry that produced it is real; the fix is
-> `plans/corpus-classification-validation.md` (`[recovery]`), not blinding. Confidence
+> `plans/086-corpus-classification-validation.md` (`[recovery]`), not blinding. Confidence
 > markers throughout. External sources graded inline; some are highlights-only
 > (flagged) pending the separate source-discipline pass — treat their grades as
 > provisional. (This note was written *after* an initial critique made while
@@ -127,7 +127,7 @@ independent-perspective benefit) use the models as *raters of one fixed corpus* 
 *measure* the subjectivity instead of hiding it — are in `[recovery]`.
 
 ## Sources
-- `[A-dorc-corpus-tally]` +SURE — `notes/80-corpus-spike-progress-and-first-tally.md`:
+- `[A-dorc-corpus-tally]` +SURE — `notes/080-corpus-spike-progress-and-first-tally.md`:
   the measured first tally + v2 de-biasing. Graded A as *primary empirical* (your own
   instrument, reproducible from `tools/corpus` + `resolved.lock`); the surrounding
   planning prose is AI-generated per `Research/README.md`, so authoritative-for-intent,

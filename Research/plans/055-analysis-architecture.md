@@ -1,6 +1,6 @@
 # Dorc analysis architecture — sound probe reduction, reusable structure, corpus-scale performance
 
-> ⟢ **SUPERSEDED-IN-PART (2026-06-01):** the firmest *engine design*, but its *weight* is gated on the `kDEPS` investment split (the unrun corpus go/no-go); the later perf/recovery rounds demoted how far static-derive alone reaches. Treat as the **reference design**, not committed MVP scope. Current synthesis: `Research/plans/synthesis-and-spike-charter.md`; design tensions: `KNOBS.md`.
+> ⟢ **SUPERSEDED-IN-PART (2026-06-01):** the firmest *engine design*, but its *weight* is gated on the `kDEPS` investment split (the unrun corpus go/no-go); the later perf/recovery rounds demoted how far static-derive alone reaches. Treat as the **reference design**, not committed MVP scope. Current synthesis: `Research/plans/083-synthesis-and-spike-charter.md`; design tensions: `KNOBS.md`.
 
 Answering the three questions, assuming a reasonable parsetree over a corpus of files/modules. Grounded in the prior art (notes 50–54); confidence markers throughout; genuine design decisions flagged, not silently resolved.
 

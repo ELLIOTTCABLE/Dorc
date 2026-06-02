@@ -33,7 +33,7 @@ Two consequences threaded through the round:
 2. **Phase 2 — go to the source code and the ops war-stories.** Ansible's slowness and the mitogen/pipelining/strategy responses are *documented prior art* (someone hit the wall and wrote it down). pyinfra markets fast-parallel as its thesis — read *why* it's faster. Read sshd's own `MaxStartups`/`MaxSessions` defaults (the hard ceiling nobody mentions until it bites). Capture concrete numbers (default forks=5, fd limits, control-socket behavior).
 3. **Phase 3 — survey the mature tools precisely, since this is the "not my domain, easy to ignore" phase.** Catalog exactly what Ansible/Terraform/k8s give for ordering, batching, partial-failure, and *why* (each knob is a scar). Map each to Dorc's derived-dependence-graph model: Dorc *computes* the DAG the others make you author — but executing a DAG across a constrained fleet is a **scheduling** problem (list scheduling, critical path, resource-constrained), which is its own literature.
 4. **Cross-cutting — hunt the lock-in traps** ("things I'll wish I'd known"): architectural choices other tools made early that capped their performance ceiling and couldn't be undone after users depended on them. Seed list below; grow it.
-5. **Grade every source** (peer-reviewed/primary/source-code A; practitioner war-story B; SEO/AI listicle rejected). Reproduce durable findings in notes 71/72/73. Synthesize into `plans/performance-architecture.md` only after coverage feels honest per phase.
+5. **Grade every source** (peer-reviewed/primary/source-code A; practitioner war-story B; SEO/AI listicle rejected). Reproduce durable findings in notes 71/72/73. Synthesize into `plans/076-performance-architecture.md` only after coverage feels honest per phase.
 
 ## Seed list of lock-in traps to confirm/refute (the "wish I'd known" hunt)
 - **Terraform: monolithic state at the center → 15–30 min plans, contention queue, secrets-in-state** (already evidenced, notes 62). Lock-in: state *is* the architecture; can't decentralize after the fact. Dorc dodges by probing real state — *verify there's no equivalent hidden central bottleneck we'd accrete* (e.g. a summary cache that becomes a contention point).
@@ -56,9 +56,9 @@ Over-probing is **correctness-safe but economically central** — cutting unnece
 **Tuning-parameter sensitivity (the user's flag).** Perf is sensitive to a handful of knobs that live at the intersections of the three dualities: batch-vs-guard threshold; probe fan-out width (phase 2); apply parallelism / batch size (phase 3); and the **mode** (`update` probes a small declared scope → latency-bound, few hosts deep; `reconcile` probes everything → throughput-bound, whole fleet wide — *different optimizer objectives*, likely different defaults). The **audience** also shifts the objective: deployer-mode "fire, NOW" wants minimum latency-to-first-action; engineer-mode polishing wants maximum precision/insight. The cost model and these knobs are the same surface; treat them together.
 
 ## Output artifacts for the round
-- `notes/71-analyzer-runtime-perf.md` — cost models, the cliffs, what keeps Dorc off them, the per-phase fail-safe discipline made concrete.
-- `notes/72-probing-parallelism-perf.md` — fan-out limits (controller/network/target), the SSH ceilings, thundering-herd, oracle cost budget.
-- `notes/73-mutation-orchestration-perf.md` — ordering/batching/partial-failure prior art; DAG scheduling; the under-investment trap.
-- `notes/74-cost-model-and-tuning.md` — query-optimizer + PGO prior art; how oracles communicate cost without annotation burden; the tuning knobs and their duality-intersections.
-- `plans/performance-architecture.md` — synthesis: the perf design principles + the flagged decisions, mirroring `analysis-architecture.md`'s shape.
-- update `notes/00-source-manifest.md` + `README.md`.
+- `notes/071-analyzer-runtime-perf.md` — cost models, the cliffs, what keeps Dorc off them, the per-phase fail-safe discipline made concrete.
+- `notes/072-probing-parallelism-perf.md` — fan-out limits (controller/network/target), the SSH ceilings, thundering-herd, oracle cost budget.
+- `notes/073-mutation-orchestration-perf.md` — ordering/batching/partial-failure prior art; DAG scheduling; the under-investment trap.
+- `notes/074-cost-model-and-tuning.md` — query-optimizer + PGO prior art; how oracles communicate cost without annotation burden; the tuning knobs and their duality-intersections.
+- `plans/076-performance-architecture.md` — synthesis: the perf design principles + the flagged decisions, mirroring `055-analysis-architecture.md`'s shape.
+- update `notes/000-source-manifest.md` + `README.md`.

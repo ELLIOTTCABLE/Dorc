@@ -42,4 +42,4 @@ I deliberately did **not** auto-fetch video transcripts (low signal/token ratio,
 ## What you can safely *skip* for Dorc
 - Heavy abstract-interpretation Galois-connection formalism (Cousot-grade) — you rejected soundness-as-goal, so the lattice intuition from SPA §4 suffices; you don't need the categorical apparatus.
 - SSA / optimizing-compiler dataflow (dominators, GVN) — Dorc analyzes for *effect/skip*, not optimization.
-- Separation logic / shape analysis depth — relevant only as the *concept* behind compositional summaries (see `notes/40-…` Infer/bi-abduction), not as machinery to learn.
+- Separation logic / shape analysis depth — relevant only as the *concept* behind compositional summaries (see `notes/040-…` Infer/bi-abduction), not as machinery to learn.

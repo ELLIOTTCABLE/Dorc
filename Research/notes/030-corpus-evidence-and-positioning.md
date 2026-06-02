@@ -1,6 +1,6 @@
 # Real-world corpus evidence + positioning vs ShellCheck
 
-Source: "Bash in the Wild" (TOSEM 2022) — 1.35M GitHub bash scripts (general) + 14k from top-1k repos. Broader/messier population than CoLiS's Debian maintainer scripts, so it stress-tests the linearity bet against the user's actual target (note: RQ3 sample projects include **RetroPie-Setup** and **LinuxGSM** — literally game-server/console setup scripts, the planning-log's canonical use-case).
+Source: "Bash in the Wild" (TOSEM 2022) [A-bash-in-the-wild-tosem-2022] — 1.35M GitHub bash scripts (general) + 14k from top-1k repos. Broader/messier population than CoLiS's Debian maintainer scripts, so it stress-tests the linearity bet against the user's actual target (note: RQ3 sample projects include **RetroPie-Setup** and **LinuxGSM** — literally game-server/console setup scripts, the planning-log's canonical use-case).
 
 ## Feature usage — the linearity bet holds across the broad population
 SURE: real bash is shallow and mostly-linear.

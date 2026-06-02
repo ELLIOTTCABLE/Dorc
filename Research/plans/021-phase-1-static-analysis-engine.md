@@ -1,6 +1,6 @@
 # Phase 1 plan — empty dir → high-confidence POSIX-sh CFG / effect engine
 
-> ⟢ **SUPERSEDED-IN-PART (2026-06-01):** near-term scope is the **Tier-A** path only (intraprocedural per-function skip + ~40 bootstrap oracles); Tier-B and the full hybrid engine are gated on the `kDEPS` investment split (the corpus go/no-go). Current synthesis: `Research/plans/synthesis-and-spike-charter.md` + `KNOBS.md`.
+> ⟢ **SUPERSEDED-IN-PART (2026-06-01):** near-term scope is the **Tier-A** path only (intraprocedural per-function skip + ~40 bootstrap oracles); Tier-B and the full hybrid engine are gated on the `kDEPS` investment split (the corpus go/no-go). Current synthesis: `Research/plans/083-synthesis-and-spike-charter.md` + `KNOBS.md`.
 
 Scope of this plan: the "hard part" — the static front-end + control-flow/effect analysis. It deliberately elides generic SWE hygiene (CI, unit-test plumbing) per the user. Confidence markers throughout; this is a plan to *de-risk and sequence*, not a spec.
 
@@ -40,14 +40,14 @@ Cross-cutting: [Calibration harness] differential + property + container fixture
 - **`set -e` / `pipefail` / `trap` alter the CFG itself** (implicit exit/handler edges; can be set conditionally) — getting reachability wrong here is the subtlest unsoundness.
 - **Whole-program CFG** across functions / `source` / aliases (not per-file).
 - **Concurrency**: `&`, subshells, pipeline stages — subshell *env* mutations don't escape, *FS* mutations do.
-- **The dynamic-construct boundary** (`eval`, dynamic command names, `. "$dyn"`, recursive `$((…))`, LValue-taking builtins) → `⊤`/`unsafe` by construction (enumerated in `notes/40`).
+- **The dynamic-construct boundary** (`eval`, dynamic command names, `. "$dyn"`, recursive `$((…))`, LValue-taking builtins) → `⊤`/`unsafe` by construction (enumerated in `notes/040`).
 - **Quoting/word-splitting fragility** is pervasive (80% of real scripts have ≥1 smell) → unquoted expansion must be a first-class hazard, not an edge case.
 
 **The effect lattice (the heart):** orientation is the planning-log's and it's a textbook **forward, may** analysis (SPA §5.8). ⊤ = may-mutate/unknown is the conservative default; skip only on ⊥. Each command's transfer function comes from its oracle's declared **effect class** (pure-query / mutating / unknown). Unknown command, eval, unrecognized guard → ⊤ (un-probeable at probe-time + can't-skip at apply). The cost asymmetry is **phase-dependent** (apply: false-skip dangerous, false-run cheap; probe: a mis-run mutation is the catastrophe) — encoded by the per-phase lattice orientation, not by a proof. Two soundnesses; see AGENTS §1.
 
 **Engine/oracle separation (the load-bearing CoLiS lesson):** the analysis engine is *generic over command knowledge*; each command's check/effect is a plug-in. CoLiS proved this scales to ~28k scripts / hundreds of commands. Dorc keeps the split but swaps CoLiS's *symbolic FS-relation spec* for an *executable check-oracle shipped to and run on the host* (probe real state instead of symbolically modelling it).
 
-## 3. How much can we crib? (per component, license-aware — see `notes/40`)
+## 3. How much can we crib? (per component, license-aware — see `notes/040`)
 - **Parser:** techniques are free (non-copyrightable). Code reuse is license-gated: Morbig (the ideal fit) is **GPL-3** → either clean-room reimplement its incremental-LR + speculative-parsing recipe (~2–5k LoC; the SLE'18 paper is a near-complete spec) **or** bind **tree-sitter-bash** (MIT, C) if its tree suffices **or** fork **mvdan/sh** (BSD) iff Dorc is Go. (Decided in Phase 2.)
 - **CFG / lattice / dataflow / fixpoint solver:** theory from the SPA textbook; *structural factoring* from **Goblint** (MIT): separate `domain` (lattice lib) / `solver` (fixpoint engines) / `framework` (analysis glue) / `analyses` (plug-ins) / `lifters` (sensitivity transformers). But Goblint is 84k LoC, C-coupled, and *sound* — Dorc needs a **far smaller** engine (≈one may-mutate analysis + slicing, not 84 sound domains). Crib the factoring, not the code.
 - **Engine/oracle separation:** crib from CoLiS (concept, not GPL-3 code).

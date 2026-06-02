@@ -1,8 +1,8 @@
 # Corpus go/no-go — classification validation plan
 
 > **Status (2026-06-01): recovery plan.** Operationalizes the judgment-call parked in
-> `notes/80-corpus-spike-progress-and-first-tally.md` §7 (`[80]`), and supersedes the
-> blind multi-model variant rejected in `notes/81-blind-multimodel-study-critique.md`
+> `notes/080-corpus-spike-progress-and-first-tally.md` §7 (`[80]`), and supersedes the
+> blind multi-model variant rejected in `notes/081-blind-multimodel-study-critique.md`
 > (`[81]`). Goal: return the `kDEPS` engine-vs-oracle go/no-go *without confirming the
 > design by construction* — using the instrument, sample, and calibration-harness plan
 > you already have, not a blind pipeline. Confidence markers throughout.
@@ -30,7 +30,7 @@ subjectivity or *anchored against ground truth* despite it.
    *flips*, the classification is load-bearing → step 3 is mandatory, not optional. (This
    directly answers "does my taste decide the answer?" with a number.)
 3. **Ground-truth a stratified random subsample** with the calibration harness already
-   planned (charter §3 / `corpus-spike-seed-prompt.md` §Method): container fixtures — run
+   planned (charter §3 / `084-corpus-spike-seed-prompt.md` §Method): container fixtures — run
    the op, observe the state delta. This anchors *both* axes empirically: did the
    "expensive" op actually do expensive work, and did the "shallow" guard actually capture
    the need or did state still change behind a passing guard (an *elision-soundness* probe,

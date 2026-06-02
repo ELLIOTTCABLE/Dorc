@@ -1,6 +1,6 @@
 # Sound AI of a messy dynamic language — TAJS lessons (our exact predicament)
 
-TAJS (Jensen, Møller, Thiemann) is the closest methodological precedent: a **sound** static analysis of JavaScript — weak/dynamic typing, silent coercions, dynamic property names, prototype chains, `eval`, `with`, variadic functions. Shell is the same *kind* of beast (dynamic, coercion-happy, recalcitrant). Same author/group as the SPA textbook and `shstats` — the Aarhus throughline.
+TAJS (Jensen, Møller, Thiemann) [A-jensen-moller-tajs-type-analysis-javascript-sas-2009] is the closest methodological precedent: a **sound** static analysis of JavaScript — weak/dynamic typing, silent coercions, dynamic property names, prototype chains, `eval`, `with`, variadic functions. Shell is the same *kind* of beast (dynamic, coercion-happy, recalcitrant). Same author/group as the SPA textbook and `shstats` — the Aarhus throughline.
 
 ## Directly transferable design decisions
 - **Sound AI via the monotone framework over a deliberately-intricate lattice.** Soundness is the *stated requirement* (so absence-of-warning = proof). This is the **over-approximating-AI flavor** Dorc wants (note 51's soundness-bias) — *not* Infer's unsound bug-finding. TAJS shows it's feasible and useful on the small/medium programs that dominate ("targeted at hand-written programs of a few thousand LOC; most existing JS programs fit") — which *matches the shell corpus evidence* (provisioning scripts are short). Analysis time seconds–minutes; precision good on small/medium, degrades on the largest.

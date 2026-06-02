@@ -887,7 +887,7 @@ at once, run it in parallel, and apply only the minimal mutations each host actu
 <!-- /* superseded 2026-05-30: NOT "control flow preserved." The probe is a cost-based,
 behaviour-DROPPING optimizer — hoist cheap independent checks into a flat parallel batch,
 keep expensive ones under cheap guards, drop un-provably-inert leaves to apply. How much CFG
-is retained is an optimizer decision. See AGENTS.md "What Dorc is" + Research/notes/70. */ -->
+is retained is an optimizer decision. See AGENTS.md "What Dorc is" + Research/notes/070. */ -->
 
 One line: **`terraform plan`/`apply` for imperative shell — idempotency *derived by
 analysis*, not *authored by hand*.**

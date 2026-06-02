@@ -20,6 +20,6 @@ Function inventory to assess: inventory/host-mgmt; transport/connection (ssh/Con
 What failed; which implementation-choices cost them long-run; what people **love and won't give up**. Sources: HN/Lobsters threads, practitioner blogs/retrospectives, conference talks/postmortems, surveys (SO Developer Survey, CNCF, HashiCorp State-of-Cloud-Strategy), vendor-neutral "lessons learned." Grade hard. Recency-weighted, durable classics kept. Target output: a ranked "failures / costly-choices / sacred-cows" synthesis that feeds Space-1 (what jank to hunt) and Space-2 (what to integrate vs cede).
 
 ## Deliverables (gated on coverage)
-- `plans/corpus-acquisition-plan.md` (+ optional `tools/corpus-*` spike, un-run or gently-validated).
-- `plans/orchestration-go-no-go.md` (the matrix + per-feature rationale).
-- `notes/6x-*` user-study synthesis (failures / costly choices / sacred cows).
+- `plans/063-corpus-acquisition-plan.md` (+ optional `tools/corpus-*` spike, un-run or gently-validated).
+- `plans/064-orchestration-go-no-go.md` (the matrix + per-feature rationale).
+- `notes/06x-*` user-study synthesis (failures / costly choices / sacred cows).

@@ -10,9 +10,9 @@ Goal: produce **qualified, scoped, statistically-honest** answers to a fixed que
 real-world ops shell + Ansible at scale. You are **not** building Dorc itself.
 
 ## Read first — the project-specific WHAT
-- `Research/plans/synthesis-and-spike-charter.md` — **§3 is your spec** (the question-set: `Q-BAND`,
+- `Research/plans/083-synthesis-and-spike-charter.md` — **§3 is your spec** (the question-set: `Q-BAND`,
   `Q-ANTICORR`, … each tagged with a `KNOBS.md` slug); §9 is the shape of this session.
-- `Research/plans/corpus-acquisition-plan.md` — where to get data.
+- `Research/plans/063-corpus-acquisition-plan.md` — where to get data.
 - `KNOBS.md` — the design-tension vocabulary; use the slugs verbatim.
 - `AGENTS.md` + `README.md` / `DESIGN.md` — charter & priorities; trust those over the `Research/` notes.
 

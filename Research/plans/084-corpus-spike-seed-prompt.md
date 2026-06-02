@@ -1,6 +1,6 @@
 # Seed prompt — corpus-measurement spike (for a fresh context window)
 
-> ➤ **EXTENDED (2026-06-01):** folded into and broadened by `Research/plans/synthesis-and-spike-charter.md` §3 (the completionist two-corpus question-set, each question tagged with its `KNOBS.md` slug). Use the charter as the spike's question-set; this remains a valid condensed launch-prompt. **Correction:** ignore this doc's "measure the user's own homelab corpus" — reversed by *contrast-not-compound* (sample *public* corpora; charter §3). Generic operating rules for the spike session: `Research/plans/spike-session-prompt.md`.
+> ➤ **EXTENDED (2026-06-01):** folded into and broadened by `Research/plans/083-synthesis-and-spike-charter.md` §3 (the completionist two-corpus question-set, each question tagged with its `KNOBS.md` slug). Use the charter as the spike's question-set; this remains a valid condensed launch-prompt. **Correction:** ignore this doc's "measure the user's own homelab corpus" — reversed by *contrast-not-compound* (sample *public* corpora; charter §3). Generic operating rules for the spike session: `Research/plans/085-spike-session-prompt.md`.
 
 *Paste/condense this to launch the clean context. It orients, states the go/no-go, and lists every
 corpus-answerable open question so one pass feeds them all. **It is not authoritative** — write your
@@ -17,13 +17,13 @@ on. This is a *measurement + light tooling* round — **not** bulk acquisition, 
 2. **`AGENTS.md`** — the contract matrix (two audiences / two modes / two soundnesses), settled
    principles, the genuinely-open list. Note line 1's warning: `Research/` is unreviewed LLM-generated
    planning-slop — useful, not gospel.
-3. **`Research/plans/corpus-acquisition-plan.md`** — where to get data (academic corpora *before* GitHub
+3. **`Research/plans/063-corpus-acquisition-plan.md`** — where to get data (academic corpora *before* GitHub
    scraping), sampling/dedup/licensing, **and the "What the spike must MEASURE" section** (the depth-split
    below, in full). **`tools/corpus-survey.sh`** is the dry-run-by-default `gh` survey spike.
-4. **`Research/plans/performance-architecture.md` §4b/§5/§6** — the depth-split rationale ("Blow 3"
+4. **`Research/plans/076-performance-architecture.md` §4b/§5/§6** — the depth-split rationale ("Blow 3"
    anti-correlation), the boundary findings (probe-vs-just-run; when Dorc loses), and the §6 decisions
    tagged `[corpus-sensitive]` (this prompt's "also-answer" list).
-5. **`Research/notes/30-corpus-evidence-and-positioning.md`** + **`notes/71-analyzer-runtime-perf.md`** —
+5. **`Research/notes/030-corpus-evidence-and-positioning.md`** + **`notes/071-analyzer-runtime-perf.md`** —
    prior corpus numbers (Debian 28k, GitHub 1.35M) and the complexity cliffs the data must speak to.
 
 ## THE go/no-go measurement (primary deliverable)
@@ -54,7 +54,7 @@ must-probe/can't-skip by external/non-det reads, no oracle, dynamic constructs �
 **cheap-mutation fraction** (how much headline skip-rate is illusory JUST-RUN).
 
 ## ALSO answer (one corpus pass should feed every corpus-sensitive perf decision)
-From `performance-architecture.md` §6 `[corpus-sensitive]` + §7 + analysis-architecture:
+From `076-performance-architecture.md` §6 `[corpus-sensitive]` + §7 + analysis-architecture:
 - **(perf §6 #3 — context-sensitivity)** Does the abstract state stay **flat** in real scripts — guards
   are flat system-state predicates, not closures recombining variables across calling contexts (the
   k-CFA-paradox fault line)? AND would context-*insensitive* analysis actually lose meaningful skips, or
