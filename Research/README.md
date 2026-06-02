@@ -23,6 +23,8 @@ This research-README is a living-document; update the sections below
 
 > ➤ **START HERE (2026-06-01):** the current cross-domain synthesis + the corpus-spike question-set is `plans/083-synthesis-and-spike-charter.md`; the design-tension vocabulary is `../KNOBS.md`. Read those first; the per-round notes/plans below are the chronological substrate they synthesize.
 >
+> ➤ **THEN (round 7, kill-criteria → scope-down):** `plans/088-implementation-strategy-advisory.md` (*advisory, not a phased plan*) re-scopes the first-implementation move — falsification-first, build-to-kill, a dogfood vertical slice instead of the engine-first build-order or a precise corpus statistic. Reasoning record: `notes/087-kill-criteria-critique-and-scope-down.md`; `A-VALUE` is now a canonical kill-listing in `../DESIGN.md` (Sensitivities).
+
 ## Read in this order
 1. `notes/000-source-manifest.md` — every source, graded (quality/relevance) + the **license contamination map**.
 2. `notes/010-parsing-shell.md` — how to statically parse POSIX shell (Morbig); the trust argument.
