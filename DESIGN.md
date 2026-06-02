@@ -114,6 +114,20 @@ The goals here break down cleanly into a few moving parts:
 
    There's a cloud of potential components here, some bog-standard, some local to the problem-space; from containerized/sandboxed executors with eBPF/ptrace to surface missing dependencies-of-probing-oracles, to linters and LSPs. This is the "long tail" that makes this thing-I'm-building *actually good* (in a dislocated fashion, by encouraging more-and-higher-quality oracles), and where the bulk of the *work*-of-making-it-good lies.
 
+
+Sensitivities
+-------------
+The viability and value of Dorc depends heavily on a few things that are either outside-our-control; are *inside* our control but need careful cost/benefit and then Lots Of Work; or that we only 'control' in the sense that we throw up our hands and directly make it the user's problem:
+
+1. *Oracle-quality.* Although 'correctness' is discussed herein a lot (see 'Priorities' above), it's *very bounded*. We can only be as correct as the user-supplied code, on *both* ends. If either end (the "admin" writing the ops-body, or the "devops" writing the oracle - usually the same person) fails to follow the contracts we present, we're immediately unsound. Our idea of correctness is *best-effort*, and the real-world user-experience will be greatly degraded by the reality of imperfect library-code, an imperfect understanding of the world. (That is, after all, the point of our tool: trying to be as good as we can be, while requiring less knowledge and perfection than, say, Terraform/K8s.)
+
+   Design-wise, this will be a question of maximizing correctness and careful contract-design (what we're deciding to own); implementation-wise, it'll be a matter of A. *deep* defensiveness, B. *even deeper* user-friendly error-handling, debugging, and tracing/provenance, and finally C. rich tooling/support to minimize this class of causor. (oracle-author tooling; containers, test-harness, CI ...)
+
+2. *Subtle traits of real-world ops habits.* This tool is billed on, and built for, laziness - keep doing the easy thing, don't learn Terraform or whatever (see 'Priorities' above.) You have some scripts, keep using them. However, "keep doing what I'm doing" doesn't magically yield value; I'm banking on being able to *add value* to someone's *existing habits*, without asking too much of them at once. That's *very* sensitive to, well, what-people-actually-do-when-they're-feeling-lazy; *some* lazy habits may just happen to be freely subject to static-analysis (and I'm betting this project on the intuition that they are); but just as easily, a bunch of users not showing up in CoLiS could be heavily `eval()` users, completely destroying any chance of control-flow-analysis, lifting, elision, or query-planning. (Or tons of ops-tasks might not be sensitive to the sorts of *improvements* my analysis can make - lifting/probing/skipping - and instead just be genuinely-best-served by a dumb, linear run-through, every time, with no smarts.)
+
+   This will respond *somewhat* to a few design-`KNOBS.md` we can turn (in implementation - adjusting user efforts, rewarding certain ones; good error-messages, good hints and warnings; as well as in documentation/prose - extreme frontloading of "you get out what you put in", laziness is allowed, not rewarded, etc); but to some extent, if the reality bears out that *the majority* of habits people have defeat *the majority* of analysis that can be made sound, then using this tool becomes ~equiv to learning an objectively-better, describe-the-world alternative; and *this* tool's value drops from "you get to be lazy *and* it's got lots of ansible's traits for free!" to "you have to do as much work as for a strict tool, but to have an Ansible-tier unsound/gradually-typed one." That's only a value-prop to a very small set of people, and almost entirely based on taste ("I *really* like shell" or "I *really* like no-daemon".)
+
+
 General design principals
 -------------------------
 A grab-bag of aesthetic (or-target-audience-narrowing) design-decisions with throughlines in the various moving parts:
