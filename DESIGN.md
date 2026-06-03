@@ -149,6 +149,56 @@ A grab-bag of aesthetic (or-target-audience-narrowing) design-decisions with thr
 - provide best-effort based on implicit user declarations: be 'magic'. (Because the downside of 'magic' is hard-to-correctly-reason-about, but Dorc is strictly dominated in all of "correctness", "quality-when-significant-reasoning-is-applied", and *specifically* "correctness-when-reasoning-is-applied." The downsides of being 'magic' aren't as "down" for us.) For instance, if running in 'I just made a change, figure out what it was and re-apply only the minimal transitive-dependents' mode, e.g. `dorc try x.sh`, pursue the implicit user-goal there (hot-loop perf, answers, feedback) over strict correctness ("I can't do that because the dependencies of <x> aren't fully clear to me.") Provide *different* user-goals as backstops against the unavoidable downsides thereof, e.g. `dorc reconcile x.sh` to say "pursue correctness, fully apply everything."
 
 
+Contract & DX
+-------------
+For the properties we desire to provide to the ops-team/admin, we need to demand certain things of the devops/engineer.
+
+Per our overall goal, these can never be *guaranteed* (we must allow gradual-enhancement, we must support/warn/error thoroughly, and we must fail-fast-and-clearly, and finally, we must fail-safe, if any of these are violated), but:
+
+- High-quality oracles should avoid mutation, in the correct, non-mutative sections (probing)
+- High-quality oracles should be fast, in the correct, fast sections (probing)
+- High-quality oracles should be totalistic in their guarding/sh-spelled 'annotation' of the tools they're describing (i.e. a thorough exploration/rewriting-in-POSIX-sh of the state-*dependencies* of their target) ... for which we hope to eventually provide tooling (containerized TDD, eBPF, more static-analysis, runtime warns, etc)
+- but conversely, high-quality oracles should *not* change behaviour in the happy-case (*all* non-probing oracle-wrapping should consist of, effectively, hopefully, no-op protective guards.) Oracles surface existing behaviour, they don't change it (they express "docker will fail and exit if the file you pass it doesn't exist on-disk" in a static-analyzable, native-sh-spelled, fail-fast-and-cheap way; they don't *change* what `docker` will do if they are omitted/elided-removed. They should always strive to be a functional no-op to behaviour.)
+
+Our contract with the oracles is what makes our product, more than anything else. Encouraging and ensuring the maximal-quality of oracle; and gentle handling of *less*-high-quality-oracles, is what differentiates.
+
+
+Inference limitations
+---------------------
+Inference lies at the core, but cannot magically solve *all* problems. It's constantly at tension with the opposite points on the triangle - 'ask-little-of-the-user' (sharing a vertex with 'fail-safe' and 'fail-helpfully'), and with *itself* at the other vertex (to infer something about A from code containing B, I then need to know something about *B*. It's a chicken-and-the-egg, also called the 'symbol grounding problem'.)
+
+Consider:
+
+```sh
+dpkg -s nginx || apt-get install -y nginx
+nginx -c /etc/my_config
+```
+
+Without any metadata, without either special user-effort or a blessed library/accounting (of every tool on earth) from *us*, that starts out, looking to an inference engine like:
+
+```sh
+hork -s wombat || wibble -y wombat
+wombat -c /etc/myconfig
+```
+
+Does the repetition of `wombat` in the first line, with control-flow, imply `hork` is an idempotency-guard for `wibble`? Is the `wombat` on the first line the same as the wombat on the second line?
+
+What if this shows up in *another*, separate script in the analysis-unit:
+
+```sh
+command -v nginx || brew install nginx
+```
+
+What about now? Maybe we somehow have ascertained (user-direction?) that `dpkg` and `apt-get` handle the same *thing*, the same *unit* of shared-state; but what about this new, unknown `brew` command? How do we know that now? Concisely,
+
+- to *infer*, untold, that `wombat` is trackable-state, you'd need to know that `hork` is a *probe* of some kind; but
+- to *infer*, untold, that `hork` is a probe of kind K just from the CFG, you'd need to know that `wombat` is a K-entity.
+
+So, cross-oracle compatibility will *have* to be anchored with some sort of grounded anchor. A type-declaration, effectively. Without direction, even *with* our relative 'unsoundness', about the best we can do is collect a "company-it-keeps" record and provide *hints* to the user that better beavhiour may be gained by categorizing/enriching `wombat` ("this looks like a guard, maybe write an oracle for it.")
+
+(UNSETTLED, CONTINUE)
+
+
 Prior art
 ---------
 Conceptually, Dorc's problem-space shares a lot with:
