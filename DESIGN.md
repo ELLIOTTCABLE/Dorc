@@ -1,5 +1,7 @@
 Dorc: Design notes
 ==================
+(README.md describes what; this describes why and how.)
+
 The value of this tool hinges, potentially *moreso* than most software, on UX. There's a sound niche in the design-space, but the true differentiator isn't so much that "Dorc is surprisingly good" as it is that "Ansible is surprisingly bad." (Due, of course, to limitations imposed by early design decisions; not incompetence! I'm not an Ansible hater; there's a reason I'm trying to build an Ansible-inspired tool, lol.)
 
 This tool is rather especially subject to the network-effect; like Ansible or any other orchestrator, it will live or die on being able to bootstrap a library of contributed components, corresponding to the gargantuan, heterogeneous ocean of Ops Things in the World™. Pursuant to that, it's important to make it easy/fun to use *outside* of large industry; to some extent, although I want this work to be purposeful outside of hobbyists, I strongly suspect ops-hobbyists (homelabbers) and individual developers ("I have a personal website" or "I want to manage my dotfiles and config across multiple heterogeneous development machines, without faff") are my realistic target-market at the moment, outside of, well, myself.
