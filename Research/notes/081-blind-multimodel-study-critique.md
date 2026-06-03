@@ -96,13 +96,13 @@ what you already built."
   literature documents model-contingent-but-overlapping bias, self-preference (models
   favour low-perplexity/familiar outputs they'd generate), and explicitly warns of
   "circular validation… inflated metrics that do not reflect real-world performance"
-  when there is no human gold standard `[C-llm-annotation-bias]`.
+  when there is no human gold standard `[C-djouvas-polarity-bias-2026]` `[C-spiliopoulou-self-bias-2025]` `[C-plaza-del-arco-llm-crowds-2023]`.
 
 The contrast that proves the point: a 2026 AJPS study *did* get a valid, reproducible
 measurement from a Claude+GPT+Gemini ensemble — correlating .87–.92 with expert-survey
 benchmarks — but only because it used a **fixed corpus (235 manifestos), six
 pre-specified dimensions, and an external human ground truth**, replicated across a
-second model ensemble `[B-benoit-ajps2026]`. Those are exactly the three things the
+second model ensemble `[B-benoit-ajps-2026]`. Those are exactly the three things the
 blind variant lacks and `[80]` (mostly) has. The tooling can measure; *this protocol
 around it* can't.
 
@@ -111,7 +111,7 @@ Autonomous "characterize at scale" acquisition is convenience sampling of reacha
 public GitHub. The canonical software-mining study finds public GitHub is ~71.6%
 personal repositories, 67% single-committer, median 6 commits/project (90% < 50), ~46%
 inactive over six months, and only ~63% of a hand-classified sample even *for software
-development* `[A-kalliamvakou-msr2014]` (2014 data — directional, not current, but the
+development* `[A-kalliamvakou-msr-2014]` (2014 data — directional, not current, but the
 *kind* of skew is robust). You already route around exactly this: academic-labelled-
 corpora-first, a SHA-pinned fixed sample, and *contrast-not-compound*. The variant's
 "sample across the spectrum" instruction cannot fix a population most of which is private
@@ -127,22 +127,31 @@ independent-perspective benefit) use the models as *raters of one fixed corpus* 
 *measure* the subjectivity instead of hiding it — are in `[recovery]`.
 
 ## Sources
-- `[A-dorc-corpus-tally]` +SURE — `notes/080-corpus-spike-progress-and-first-tally.md`:
+- **Internal substrate** (this round's own tally, not an external source), +SURE — `notes/080-corpus-spike-progress-and-first-tally.md`:
   the measured first tally + v2 de-biasing. Graded A as *primary empirical* (your own
   instrument, reproducible from `tools/corpus` + `resolved.lock`); the surrounding
   planning prose is AI-generated per `Research/README.md`, so authoritative-for-intent,
   not verified.
-- `[A-kalliamvakou-msr2014]` +SURE — Kalliamvakou et al., "The Promises and Perils of
+- `[A-kalliamvakou-msr-2014]` +SURE — Kalliamvakou et al., "The Promises and Perils of
   Mining GitHub", MSR 2014. Peer-reviewed; **full-read** this session via
   `chisel.cs.uvic.ca/pubs/kalliamvakou-MSR2014.pdf`. A.
-- `[B-benoit-ajps2026]` ~SUSPECT — "Using LLMs to analyze political texts…", Am. J.
+- `[B-benoit-ajps-2026]` ~SUSPECT — "Using LLMs to analyze political texts…", Am. J.
   Political Science 2026, `onlinelibrary.wiley.com/doi/10.1111/ajps.70050`.
   Peer-reviewed but **highlights-only (not full-read)** → graded B pending a full read;
   the ensemble-validity claim rests on it, so verify before load-bearing reuse.
-- `[C-llm-annotation-bias]` -GUESS — cluster, **highlights-only**, graded C (mixed
-  venue, provisional): model-contingent polarity bias (MDPI *Computers* 15(5):262);
-  self-preference bias (arXiv 2508.06709); wisdom-of-LLM-crowds (arXiv 2307.12973).
-  Supports "consensus ≠ ground truth; circular validation without a gold set".
+- `[C-djouvas-polarity-bias-2026]` ~SUSPECT — Djouvas et al., "Model-Contingent Polarity
+  Bias in Large Language Model Annotation", *Computers* 15(5):262 (MDPI, 2026). **Full read
+  acquired** (browser-downloaded, out-of-band; Cloudflare-blocked to curl). Model-contingent,
+  overlapping annotation bias — different LLMs disagree by design.
+- `[C-spiliopoulou-self-bias-2025]` ~SUSPECT — Spiliopoulou et al., "Play Favorites: A
+  Statistical Method to Measure Self-Bias in LLM-as-a-Judge", arXiv:2508.06709 (2025).
+  Confirms self-preference (GPT-4o / Claude score their own outputs higher; family-bias);
+  **does NOT support the "low-perplexity/familiar outputs" mechanism glossed above** — that
+  attribution is unverified by this source.
+- `[C-plaza-del-arco-llm-crowds-2023]` ~SUSPECT — Plaza-del-Arco et al., "Wisdom of
+  Instruction-Tuned LM Crowds", arXiv:2307.12973 (LREC-COLING 2024 workshop). Aggregation
+  beats individual models but no LLM method rivals simple supervised models — backs
+  "consensus is not ground truth".
 - *Ungraded leads (asserted from model memory earlier this session; NOT used as
   evidence here, flagged for the source-discipline pass):* prediction-powered inference
   (Angelopoulos et al., Science 2023); Hubbard, *How to Measure Anything*; Evidence-Based

@@ -12,28 +12,58 @@ All human-*authored* content lives at the repo-root; the absolute most
 significant findings from this planning are usually reproduced by-hand in
 DESIGN.md in the human's words.
 
-## READ ME FIRST:
+## READ ME FIRST
 
-This research-README is a living-document; update the sections below
-(append-only) as you write new files and enter new phases.
+Living index. Keep *this* block rewritten to the current state-of-art; append to the
+per-round map below as new spikes land.
 
-*This* top section should be constantly rewritten with a quick summary of
-*most-recent-work / current-status, pointing at the correct files and mentioning
-*recent supercession:
+The work runs as N rounds (the NN in `NNx-slug.md`), each taking on a different
+facet and ending in a **synthesis** under `plans/`. **The syntheses are the
+on-ramp, and usually more-heavily human-reviewed; the `notes/` are their raw
+material** — open a note only when a synthesis sends you there. Read the
+syntheses by *question*, or by date (more recent rounds often incorporate at
+least a little bit of prior rounds as context; older ones, although focused, are
+often also full of superseded/incorrect info. peruse older rounds with care.)
 
-> ➤ **START HERE (2026-06-01):** the current cross-domain synthesis + the corpus-spike question-set is `plans/083-synthesis-and-spike-charter.md`; the design-tension vocabulary is `../KNOBS.md`. Read those first; the per-round notes/plans below are the chronological substrate they synthesize.
->
-> ➤ **THEN (round 7, kill-criteria → scope-down):** `plans/088-implementation-strategy-advisory.md` (*advisory, not a phased plan*) re-scopes the first-implementation move — falsification-first, build-to-kill, a dogfood vertical slice instead of the engine-first build-order or a precise corpus statistic. Reasoning record: `notes/087-kill-criteria-critique-and-scope-down.md`; `A-VALUE` is now a canonical kill-listing in `../DESIGN.md` (Sensitivities).
+- **What is it, and where's the hard part?** — `plans/021` (empty dir → CFG/effect engine) +
+  `plans/041` (language / parser / orchestration decisions).
+- **Can sh be analyzed soundly enough?** — `plans/055` (analysis architecture: sound+precise
+  probe-reduction · reusable fact-structure · corpus-scale + incremental).
+- **Who needs it, and what do we build?** — `plans/064` (per-feature integrate-vs-delineate
+  matrix; userbase evidence in `notes/060`–`062`).
+- **Fast enough?** — `plans/076` (performance architecture + the "decide-now, retrofit-hostile"
+  list).
+- **What must the core never optimize away?** — `plans/077` (the wrappable-leaf hook surface +
+  seccomp network backstop — *a live constraint, not history*).
+- **Cross-domain synthesis + the corpus charter** — `plans/083`.
+- **How do we build it to fail fast?** — `plans/088` (falsification-first, build-to-kill —
+  *advisory, not a phased plan*; reasoning in `notes/087`, kill-listing in `../DESIGN.md`).
+- **Tracking shared state across hosts** — `plans/099` (latest round's conclusion: relational
+  contracts over referent-agnostic symbols · MUST-vs-MAY · the IFDS decidable floor).
 
-## Read in this order
+Through-line worth holding: the **soundness story keeps getting re-cut** — bias-inversion
+(`051`) → perf demotes statically-derived deps (`076`) → trace-don't-derive recovery (`077`) →
+relational MUST/MAY contracts (`099`). Later cuts supersede earlier framings of *how much Dorc
+can know without running the host*; on that question, the later round wins.
+
+> *Latest — round 9, 2026-06-02, state-tracking:* the `plans/099` conclusion above, now
+> ground-tested against verbatim real-world scripts in the new `specimens/` corpus —
+> `specimens/090` (a kernel-dev task-runner; the **bless-vs-abdicate** idiom ledger) and
+> `specimens/091` (stack's installer; the **m×n abdication** motivator + meta-contract debt).
+> Specimens are reproduced commit-pinned + byte-checked via `tools/inline-specimen.sh`.
+
+## The per-round map (reference — the spine above is the curated reading order)
 1. `notes/000-source-manifest.md` — every source, graded (quality/relevance) + the **license contamination map**.
-2. `notes/010-parsing-shell.md` — how to statically parse POSIX shell (Morbig); the trust argument.
-3. `notes/020-colis-architecture-and-coq-verdict.md` — the engine/oracle architecture that scales; **why Coq is not justified**.
-4. `notes/030-corpus-evidence-and-positioning.md` — real-world corpus evidence (28k + 1.35M scripts); the bootstrap-oracle list; positioning vs ShellCheck.
-5. `notes/040-parser-architectures-and-cribbability.md` — Morbig vs Oils vs mvdan; what we can legally crib.
-6. `plans/021-phase-1-static-analysis-engine.md` — **the hard part**: empty dir → CFG/effect engine.
-7. `plans/041-phase-2-language-workload-orchestration.md` — language / parser / orchestration (decisions to make).
-8. `learning-path/README.md` — curriculum for the human (anchor: the SPA textbook).
+2. `{notes,plans}/YYx-slug.md` where "x' is the highest number for each "YY" research-spike
+
+### Foundations (round 1 — parse, engine architecture, positioning)
+- `notes/010-parsing-shell.md` — statically parsing POSIX shell (Morbig); the trust argument.
+- `notes/020-colis-architecture-and-coq-verdict.md` — the engine/oracle architecture that scales; **why Coq is not justified**.
+- `notes/030-corpus-evidence-and-positioning.md` — real-world corpus evidence (28k + 1.35M scripts); the bootstrap-oracle list; positioning vs ShellCheck.
+- `notes/040-parser-architectures-and-cribbability.md` — Morbig vs Oils vs mvdan; what we can legally crib.
+- **`plans/021-phase-1-static-analysis-engine.md`** — **the hard part**: empty dir → CFG/effect engine.
+- **`plans/041-phase-2-language-workload-orchestration.md`** — language / parser / orchestration (decisions to make).
+- `learning-path/README.md` — curriculum for the human (anchor: the SPA textbook).
 
 ### Analysis round (round 2 — soundness/reachability/mutation, the user's real concern)
 9. `notes/050-analysis-prior-art-map.md` — the campaign map (reframe of "soundness" as over-approximation; bodies of work per Q1/Q2/Q3).
@@ -68,17 +98,26 @@ This research-README is a living-document; update the sections below
 30. `notes/081-blind-multimodel-study-critique.md` — *methodology note, not a measurement.* **Don't run the thesis-blind, three-model variant** (scaffolded out-of-tree at `~/shell-iac-corpus-study`) **for go/no-go numbers — it regresses on the standard `[80]` already sets.** Blinding doesn't remove the classification-rule bias; it *relocates* it (→ prompt-framing, each model's training prior, the thesis-aware final compare) where it is opaque + uncorrectable, and "compare the three runs" is uninterpretable both ways (divergence confounds corpus≠measure≠classifier; convergence = shared priors, not truth). The worry is real (the apply-cost/check-depth rules *are* researcher-DoF) — but the fix is item 31, not blinding.
 31. **`plans/086-corpus-classification-validation.md`** — *the recovery (supersedes the blind variant).* Return the `kDEPS` go/no-go without confirming-by-construction, on the instrument + sample you already have: **pre-register** the apply-cost/check-depth rules → **sensitivity-test** the verdict across conservative→liberal rule-sets (does taste decide it?) → **ground-truth** a stratified subsample on the planned calibration harness (container fixtures; a few dozen gold ops bias-correct the static band) → *optional* **models-as-raters of one fixed corpus** (measure the subjectivity via κ/α instead of hiding it) → **adversarial** worst-defensible rule-set (severe testing). Keep the instrument + SHA-pinned sample + contrast-not-compound; discard the blind protocol.
 
-## Headline findings
-- **Feasibility (MH1) is strongly supported, and the engine is engineering not research.** Shell *is* statically parseable (Morbig + Oils, two independent proofs); the engine+oracle split *scales to 28k scripts* (CoLiS); real provisioning shell is short/linear/eval-rare (Debian 28k: avg 15 lines, 99.9% parse; GitHub 1.35M: `if` 70%, `for`<40%, eval 9%). Referenceable current codebases exist for every engine component (Morbig, Goblint, Smoosh, mvdan, tree-sitter-bash) plus the canonical theory (SPA textbook).
-- **The novel/unreferenced work is downstream** (oracle *composition* + the version layer), not the CFG engine.
-- **No Coq/proof-assistant.** Even CoLiS fell back to differential-testing for parser + translation; they proved only a clean IL's interpreter (in Why3, not Coq), buying soundness we reject. Replace with the calibration harness (differential + property + container fixtures — the user's "test-container toolkit").
-- **Positioning:** Dorc sits *above* ShellCheck (the de-facto linter, which by literature "does not check resource existence" — the #2 real-world bug class and exactly Dorc's altitude). The analysis-level niche is unoccupied.
-- **License lever:** the best-fit OCaml parser (Morbig) is GPL-3 → clean-room its recipe, or hand-roll (recommended), which also *decouples the parser from the language choice*.
+### Synthesis, charter & kill-criteria (rounds 7–8 — falsification-first)
+- **`plans/083-synthesis-and-spike-charter.md`** — folds rounds 1–5 into one design picture and **charters the corpus go/no-go spike** that `086` then de-biases.
+- `notes/087-kill-criteria-critique-and-scope-down.md` — the pivot to **build-to-kill over build-to-spec**; motivates the `A-VALUE` kill-listing reproduced by-hand in `../DESIGN.md` (Sensitivities).
+- **`plans/088-implementation-strategy-advisory.md`** — *advisory, not a phased plan.* A falsification-first build order — a dogfood vertical slice meant to kill the thesis early. Reasoning: `087`. (Process scaffolding, not findings: `plans/084`–`085` are the spike's seed/session prompts.)
 
-## Decisions awaiting the user (see plan 2 §F)
-1. **Implementation language** (OCaml vs Rust vs OCaml-core+TS-harness) — low-regret due to the serialization seam, but sets the velocity/distribution/growth tradeoff.
-2. **Drop the Ansible-transpile throwaway-v1?** (contradicts the planning log; I lean drop — bootstrap oracles are cheap and Ansible can't stream/frontload.)
-3. Parser strategy (lean hand-rolled recursive-descent + lexer-modes); executor (lean thin built-in ssh-streamer).
+### State-tracking round (round 9 — tracking shared-state across the described remote systems; 2026-06-02)
+32. `plans/090-state-tracking-research-plan.md` — the reviewable charter: the problem reified (state-closure; **ambient vs transient** facts — transient = un-probeable); the governing frame (**unsolvable-by-analysis-alone → user-in-loop → floor / frontier / ceiling**); the **knob-vs-contract × weld-vs-adjust** quadrant; "shared state" promoted, convergence demoted.
+33. `notes/091-state-ops-theory-traugott.md` — ops-native theory: Traugott's **divergent / convergent / congruent** trichotomy (Dorc = *congruent outcomes from convergent inputs*); Burgess; **cross-camp** confirmation that "tracking state + understanding intent" is the unsolved core; the `kVOLATILES` time-sensitivity caveat.
+34. `notes/092-flow-typing-tainting-and-the-RAL.md` — the two formal spines: **occurrence typing** (latent-proposition narrowing) + **CQual** (flow-sensitive qualifiers; strong/weak update = the aliasing ceiling in operation); the **Puppet RAL** type/provider = the kind/oracle model. (ACSL/ShellCheck demoted to the `kOOB` floor.)
+35. `notes/093-impossibility-ceilings-and-floors.md` — the walls: **Rice** (semantic-undecidable → recognize-syntax + probe + delegate), **Ramalingam** (precise-footprint-undecidable, *even intraprocedurally*), **frame-problem** (non-effects unenumerable → closed-world frame axiom); the **IFDS** finite+distributive **decidable floor**.
+36. `notes/094-guard-carrier-specmining-and-grounding.md` — *conversation findings*: the **idempotency guard** (`if ! PROBE; then ESTABLISH`) is the sh-spelled spec-carrier (shared-arg = entity-link; polarity = probe/establish); consumer-guard ≡ oracle.
+37. `notes/095-grounding-symbol-grounding-and-the-probe.md` — grounding → **relational** (human-adjudicated): Dorc is **referent-agnostic**, keeps relational contracts; the chicken-and-egg is the symbol-grounding regress, resolved by *declaration*, not inference. (Harnad downgraded; the probe merely *executes the oracle's check*, it does not "ground".)
+38. `notes/096-spec-mining-and-the-must-may-boundary.md` — Engler's **MUST vs MAY** = the sound/unsound line (elision rides MUST only: idiomatic-implied or oracle-declared); spec-mining = *offline* oracle-bootstrap/linter, off the per-run path.
+### Specimens (round 9 — verbatim real-world code, literate-annotated; design quarry, not a measurement)
+Each specimen is a real script reproduced byte-exact + commit-pinned via `tools/inline-specimen.sh`, then annotated for how facts get *spelled* idiomatically — surfacing candidate idioms to **bless** (collapse to one analyzer-recognised form) vs **abdicate** (delegate the open-ended, higher-kinded zoos to community-named kinds, since baking them is an **m×n** registry of every-alias × every-concept).
+- `specimens/090-literate-specimen-kernel-task-runner.md` — kernel-dev task-runner. The bless/abdicate ledger (`[ -f X ]`, `[ A -nt B ]`, `trap…EXIT/ERR`, `set -e`) **plus** the bake-into-core patterns: transient state (`trap`), provisioning-through-a-mount as *transport*, and atomic-publish licensing the probe (TOCTOU). The real-world grounding `099` §9 asked for.
+- `specimens/091-specimen-stack-get-stack.md` — stack's `get-stack.sh`: the Puppet-RAL by hand, the **m×n abdication** motivator, and the **meta-contract debt** (how mutually-unaware oracles declare `provide`/equivalence/wrinkles in plain sh). The *last* abdicate-bucket specimen.
+- Tooling: `tools/inline-specimen.sh OWNER/REPO PATH NOTE.md` — fetch verbatim + commit-pin + license + sha256, then edit around the single fenced block.
+- *Forward:* specimen-hunting pivots from abdicate-bucket exemplars to **bake-into-core** correctness patterns (the control/state-flow the analyzer must model itself).
+40. **`plans/099-state-tracking-synthesis.md`** — **the conclusion**: the design-space map (§2 walls · §3 decidable floor · §4 contracts/q-floor · §5 knob deltas · §6 the probe's role · §7 spec-mining placement · §8 the two spines).
 
 ## Vendor/ (full-history clones)
 CoLiS ecosystem (morbig, morsmall, colis-language, colis-constraints, shstats, lintshell, …), shellcheck, mvdan-sh, smoosh, oils, goblint-analyzer, tree-sitter-bash. See manifest for grades/licenses.

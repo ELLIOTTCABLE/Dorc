@@ -1,248 +1,417 @@
 {
-   "A-abadi-mcsherry-foundations-differential-dataflow-esop-2015": {
-      "file": "papers/abadi-mcsherry-foundations-differential-dataflow-esop2015.pdf",
-      "published": "2015",
-      "relevance-description": "Incremental iterative dataflow at scale (differential-dataflow foundations).",
-      "sha256": "59da979cca8e01bba60953ebfd4ceb31d9b7225e4c3a408ba33acb7c786a59d3"
-   },
-   "A-ansible-challenges-mixed-methods-study-2025": {
-      "url": "https://arxiv.org/abs/2504.08678",
-      "file": "papers/ansible-challenges-mixed-methods-study-2025.pdf",
-      "published": "2025",
-      "relevance-description": "Empirical Ansible user-study anchor (Carreira et al.): 59,157 posts + 20 interviews; validates the Dorc thesis + lists capability gaps.",
-      "sha256": "34923737c29b8164d87a22b66507be3c67e88227a5824bafcb629c0d9b36eeef"
-   },
-   "A-arzt-bodden-reviser-incremental-ifds-icse-2014": {
-      "url": "https://doi.org/10.1145/2568225.2568243",
-      "file": "papers/arzt-bodden-reviser-incremental-ifds-icse2014.pdf",
-      "published": "2014",
-      "relevance-description": "Incremental IFDS/IDE via clear-and-propagate; re-mined for the ~80% incremental-savings figure (Q3).",
-      "sha256": "382aa16c27b696da0fd56c28b1dea3e44f9b6b8fc206293f69ea88d215fd612b"
-   },
-   "A-avgustinov-ql-codeql-ecoop-2016": {
-      "url": "https://doi.org/10.4230/LIPIcs.ECOOP.2016.2",
-      "file": "papers/avgustinov-ql-codeql-ecoop2016.pdf",
-      "published": "2016",
-      "relevance-description": "QL/CodeQL: OO queries over a relational program-fact DB (queryable fact base, Q2).",
-      "sha256": "ef33b7fcd5f55841a96fda0763ef71a5c482738ec0be8c0780818a36808727e8"
-   },
-   "A-bash-in-the-wild-tosem-2022": {
-      "url": "https://doi.org/10.1145/3517193",
-      "file": "papers/bash-in-the-wild-tosem2022.pdf",
-      "published": "2022",
-      "relevance-description": "Large-scale empirical study of real bash usage/smells/bugs; grounds the corpus-skip-rate spike.",
-      "sha256": "75c053cc2c51b4e4afc01fb2565aafa1d7fa560d8e9d44e13d223ce7c2139ae9"
-   },
-   "A-biabduction-popl-2009": {
-      "file": "papers/biabduction-popl2009.pdf",
-      "published": "2009",
-      "relevance-description": "Compositional per-procedure pre/post inference (Infer's basis); maps to the requires/establishes dependency model.",
-      "sha256": "eb1fecb1bc7e8f85d255df69c1c8ae9a3762951b9056c0502b43528015a3569e"
-   },
-   "A-bravenboer-smaragdakis-doop-oopsla-2009": {
-      "file": "papers/bravenboer-smaragdakis-doop-oopsla2009.pdf",
-      "published": "2009",
-      "relevance-description": "Declarative points-to in Datalog (Doop).",
-      "sha256": "928ce283b2c9127f5f5f0ffd43108cbc4e00a4e0bee925c3a497486eb45945f7"
-   },
-   "A-colis-installation-scenarios-tacas-2020": {
-      "url": "https://hal.science/hal-02355602",
-      "file": "papers/colis-installation-scenarios-tacas2020.pdf",
-      "published": "2020",
-      "relevance-description": "Symbolic execution of 27k Debian maintainer scripts; feasibility evidence for MH1.",
-      "sha256": "1c8197b4975bd5a943a542a143e59f4914a863066becebcfeaea29c43db7c1dc"
-   },
-   "A-colis-platform-sttt-2022": {
-      "url": "https://hal.science/hal-03737886",
-      "file": "papers/colis-platform-sttt2022.pdf",
-      "published": "2022",
-      "relevance-description": "Platform/engineering view of the CoLiS toolchain end-to-end.",
-      "sha256": "59d7486e128d8e684163119e609f7acbb8da7736f510688dcd3aaf367cd35614"
-   },
-   "A-colis-specification-of-unix-utilities-2019": {
-      "url": "https://hal.science/hal-02321691",
-      "file": "papers/colis-specification-of-unix-utilities-2019.pdf",
-      "published": "2019",
-      "relevance-description": "Enumerated FS-effect specs for coreutils — the Tier-B canonical-fact vocabulary, pre-built.",
-      "sha256": "a9313c7b726464b09663cb9d661f6e20885d0715d7097c106004c16b11b6d897"
-   },
-   "A-cousot-abstract-interpretation-popl-1977": {
-      "file": "papers/cousot-abstract-interpretation-popl1977.pdf",
-      "published": "1977",
-      "relevance-description": "Abstract-interpretation foundation. (image-only scan; theory consumed via the SPA textbook.)",
-      "sha256": "5d2956eed13b2d40f6e15c2087fb870c3dea54a332fe46ee07cea608ca417238"
-   },
-   "A-distefano-scaling-static-analyses-facebook-cacm-2019": {
-      "url": "https://doi.org/10.1145/3338112",
-      "file": "papers/distefano-scaling-static-analyses-facebook-cacm2019.pdf",
-      "published": "2019",
-      "relevance-description": "Infer/Zoncolan: compositionality = scale; diff-time deployment (0%->70%). Scale + deployment template.",
-      "sha256": "3bf657de823252d6f44b96ec6b9348003b029c90abe739c707dedbf01d50a13e"
-   },
-   "A-dozer-icse-seip-2022": {
-      "url": "https://doi.org/10.1145/3510457.3513060",
-      "file": "papers/dozer-icse-seip-2022.pdf",
-      "published": "2022",
-      "relevance-description": "Syscall-altitude insight: command effects observable at the kernel boundary; names task composition as the hard problem.",
-      "sha256": "696dd526ead7883d4439f3af7928a47137424cb462e6d622f3ca649f37af3ab2"
-   },
-   "A-heintze-tardieu-demand-pointer-analysis-pldi-2001": {
-      "file": "papers/heintze-tardieu-demand-pointer-analysis-pldi2001.pdf",
-      "published": "2001",
-      "relevance-description": "Demand-driven pointer analysis (Q1B/Q3).",
-      "sha256": "a2d93bd17f2c2c25ec6eee016a233b010d5908d6efe98da564273cf50a358df7"
-   },
-   "A-horwitz-reps-binkley-sdg-slicing-toplas-1990": {
-      "file": "papers/horwitz-reps-binkley-sdg-slicing-toplas1990.pdf",
-      "published": "1990",
-      "relevance-description": "PDG/SDG + interprocedural slicing = reachability. Reusable-structure template (Q2).",
-      "sha256": "47dad02e866384928ef45b4b2df430d5e17594cfbbafd9e867f28b159e70e896"
-   },
-   "A-jeannerod-phd-thesis-2021": {
-      "url": "https://theses.hal.science/tel-03917971",
-      "file": "papers/jeannerod-phd-thesis-2021.pdf",
-      "published": "2021",
-      "relevance-description": "Master reference: full pipeline parse->AST->feature-tree constraints->decision procedures->corpus analysis. ~250pp OCaml.",
-      "sha256": "a96c176a656eb6a7144da73a93235eb7a859f5fc6e94d4a435f197bc1ffb0809"
-   },
-   "A-jensen-moller-tajs-type-analysis-javascript-sas-2009": {
-      "file": "papers/jensen-moller-tajs-type-analysis-javascript-sas2009.pdf",
-      "published": "2009",
-      "relevance-description": "Sound AI of a messy dynamic language (our predicament); recency abstraction; eval->T. Most direct methodological precedent.",
-      "sha256": "4fbcbb9ddd01284e724727301c8ea03502648066f09a32b96be8ba9243410f2e"
-   },
-   "A-lucassen-gifford-effect-systems-popl-1988": {
-      "file": "papers/lucassen-gifford-effect-systems-popl1988.pdf",
-      "published": "1988",
-      "relevance-description": "Type-and-effect systems (the oracle effect-class lineage).",
-      "sha256": "634e939eca29878db647e657caee7ae0537e8c5b7ba0f921aefd0e22c85bcc81"
-   },
-   "A-might-smaragdakis-vanhorn-kcfa-paradox-pldi-2010": {
-      "file": "papers/might-smaragdakis-vanhorn-kcfa-paradox-pldi2010.pdf",
-      "published": "2010",
-      "relevance-description": "k-CFA is EXPTIME for closures, polynomial for flat/OO data — so a flat fact-map may afford context-sensitivity.",
-      "sha256": "bf8777cb1db68afe0c53054770832ee4550fa68525027a21594b08be283f59a4"
-   },
-   "A-mokhov-build-systems-a-la-carte-icfp-2018": {
-      "url": "https://doi.org/10.1145/3236774",
-      "file": "papers/mokhov-build-systems-a-la-carte-icfp2018.pdf",
-      "published": "2018",
-      "relevance-description": "Scheduler x Rebuilder factoring; verifying-vs-constructive traces; early cutoff. The skip-thesis unifying theory.",
-      "sha256": "d6c175a48cc908ca3f185e1fb4620e3278c5655218ac687d83dfa7f405624ede"
-   },
-   "A-moller-schwartzbach-static-program-analysis-2025": {
-      "url": "https://cs.au.dk/~amoeller/spa/spa.pdf",
-      "file": "papers/moller-schwartzbach-static-program-analysis.pdf",
-      "published": "2025-04",
-      "relevance-description": "Anchor textbook: CFG, lattices, dataflow, fixpoints, interprocedural, abstract interpretation — the vocabulary + architecture of the field.",
-      "sha256": "19f7dcfb853a46e78d39bb92e6727c5255a7884c7d9ee16d7f0553e1bba230ca"
-   },
-   "A-morbig-sle-2018": {
-      "url": "https://hal.science/hal-01890044",
-      "file": "papers/morbig-sle2018.pdf",
-      "published": "2018",
-      "relevance-description": "Keystone: how to statically parse POSIX shell despite its eval-time grammar. Direct prior art, OCaml.",
-      "sha256": "bd6dc1853b317cdf7ca6dacb5d3d72d97dffa4caf4241ac8c25fc7fab9767b9e"
-   },
-   "A-reps-cfl-reachability-survey-1998": {
-      "file": "papers/reps-cfl-reachability-survey-1998.pdf",
-      "published": "1998",
-      "relevance-description": "CFL-reachability unifying framework (dataflow/slicing/points-to all = L-reachability).",
-      "sha256": "36c0f3edd1bb7c73ca543b7f711e565492de823eccce76a13c116137cba83fd3"
-   },
-   "A-reps-demand-interprocedural-cc-1994": {
-      "file": "papers/reps-demand-interprocedural-cc1994.pdf",
-      "published": "1994",
-      "relevance-description": "Demand-driven interprocedural analysis (Q1B/Q3).",
-      "sha256": "42b7d39afa493493c82366fa280aedeae1ce5275143a819953a1f85f58089469"
-   },
-   "A-reps-horwitz-sagiv-ifds-popl-1995": {
-      "file": "papers/reps-horwitz-sagiv-ifds-popl1995.pdf",
-      "published": "1995",
-      "relevance-description": "IFDS: precise interprocedural dataflow as realizable-path reachability + tabulation summaries. Engine candidate.",
-      "sha256": "ed8e1eb5144b7e41ccdac81d2473c9defcdcc0da5f0df1e3d6710246b0f2d6f8"
-   },
-   "A-salcianu-rinard-purity-vmcai-2005": {
-      "file": "papers/salcianu-rinard-purity-vmcai2005.pdf",
-      "published": "2005",
-      "relevance-description": "Purity/side-effect (MOD) analysis; compositional per-method summaries. Mutation-domain template.",
-      "sha256": "73b6fe80ada8e63641e1ebd99aaedbad941612141a5636a7725fd4edd9fe20f7"
-   },
-   "A-scholz-souffle-datalog-cc-2016": {
-      "file": "papers/scholz-souffle-datalog-cc2016.pdf",
-      "published": "2016",
-      "relevance-description": "Datalog->native compiled analysis at scale (queryable fact base, Q2/Q3); re-mined for the memory-wall quantification.",
-      "sha256": "0a02e4e4d742cf4e77e33030dcf9d2df8beebd68b9192d3dbb60779ea384663c"
-   },
-   "A-smoosh-popl-2020": {
-      "url": "https://doi.org/10.1145/3371111",
-      "file": "papers/smoosh-popl2020.pdf",
-      "published": "2020",
-      "relevance-description": "Executable formal POSIX semantics; catalogues the hazards (set -e, expansion, fields) the analyzer must respect.",
-      "sha256": "b32ba84db6152aefcb7d3e264b6c123a533fd86b646fcd0d53aff41337e95746"
-   },
-   "A-spall-mitchell-rattle-perfect-dependencies-2020": {
-      "url": "https://doi.org/10.1145/3428237",
-      "file": "papers/spall-mitchell-rattle-perfect-dependencies-2020.pdf",
-      "published": "2020",
-      "relevance-description": "Forward build system: straight-line script, no declared deps, trace file accesses -> 'perfect dependencies'. The load-bearing recovery find.",
-      "sha256": "8f5efc16655695a80e2cc7435c953ddd737cfbc2205ca7c9920b32ebf8301b17"
-   },
-   "A-sridharan-andersen-complexity-practice-sas-2009": {
-      "file": "papers/sridharan-andersen-complexity-practice-sas2009.pdf",
-      "published": "2009",
-      "relevance-description": "Andersen points-to is cubic worst-case but near-linear in practice (the 'cubic floor but small-in-practice' point Dorc relies on).",
-      "sha256": "1348d0130e466d4ff4352d72e8d60678ed7380c1a632a4976ac56db78e480699"
-   },
-   "A-sui-xue-svf-cc-2016": {
-      "file": "papers/sui-xue-svf-cc2016.pdf",
-      "published": "2016",
-      "relevance-description": "Sparse value-flow analysis; Graph/Rules/Solver factoring; mem-region partitioning (sparsity + factoring, Q3).",
-      "sha256": "b5b0d8251ba120c33a5789a850c84ad9704e5026be1455945b6979abf6c21d00"
-   },
-   "A-szabo-inca-incremental-datalog-lattices-oopsla-2018": {
-      "url": "https://doi.org/10.1145/3276509",
-      "file": "papers/szabo-inca-incremental-datalog-lattices-oopsla2018.pdf",
-      "published": "2018",
-      "relevance-description": "Incremental Datalog with lattices (IncA).",
-      "sha256": "9f1831ed3321801d61db14bf104f2ff256a588e6ba697f6a9ff0b25846009d7e"
-   },
-   "A-szabo-inca-whole-program-pldi-2021": {
-      "url": "https://doi.org/10.1145/3453483.3454026",
-      "file": "papers/szabo-inca-whole-program-pldi2021.pdf",
-      "published": "2021",
-      "relevance-description": "Incremental whole-program Datalog with lattices (DRedL).",
-      "sha256": "7077da9a52a7819b3e74e4e40c4d0437e2f71226f04c4855028e4995bdf7bb2a"
-   },
-   "A-tip-program-slicing-survey-1995": {
-      "file": "papers/tip-program-slicing-survey-1995.pdf",
-      "published": "1995",
-      "relevance-description": "Program-slicing survey. (image-only scan.)",
-      "sha256": "b437ab9dec05676c5b5f8a77165f9b5d0e4e905a42ca8d1f3b91983e688ff1ba"
-   },
-   "A-vanhorn-mairson-kcfa-exptime-icfp-2008": {
-      "file": "papers/vanhorn-mairson-kcfa-exptime-icfp2008.pdf",
-      "published": "2008",
-      "relevance-description": "Deciding k-CFA is complete for EXPTIME — context-sensitivity is provably exponential; the redline for the context dial.",
-      "sha256": "86057a8a3a14b8d22e2891d50574087e13ff481ef3541b7b058068e237dc9ed8"
-   },
-   "A-verified-interpreter-shell-vstte-2017": {
-      "url": "https://hal.science/hal-01534747",
-      "file": "papers/verified-interpreter-shell-vstte2017.pdf",
-      "published": "2017",
-      "relevance-description": "Shell-like interpreter formally verified in Why3 (not Coq). Direct input to 'is a proof assistant justified?'",
-      "sha256": "a195d6ccd0ba180d1adfed0a29b64555db370365e3bec9526361cf09c191b246"
-   },
-   "A-cmu-17355-dataflow-frameworks-2017": {
-      "file": "learning-path/cmu-17355-dataflow-frameworks.pdf",
-      "published": "2017",
-      "relevance-description": "Dataflow framework over WHILE3ADDR — clean pedagogy (Aldrich, CMU 17-355, Spring 2017). Learning path.",
-      "sha256": "260bb9df25347905448a7d8b6db0ac492bb2c628d3c7f58454ffc057b9a51778"
-   },
-   "A-harvard-cs153-cfg-dataflow": {
-      "url": "https://www.seas.harvard.edu/courses/cs153",
-      "file": "learning-path/harvard-cs153-cfg-dataflow.pdf",
-      "relevance-description": "CFG construction + dataflow, lecture form (Chong, Harvard CS153; offering-year not stamped in the deck). Learning path.",
-      "sha256": "e5517605f92277202cdec56d290f684f06ca7c26d41f04acefd3be0284462275"
-   }
+  "A-abadi-mcsherry-foundations-differential-dataflow-esop-2015": {
+    "file": "papers/abadi-mcsherry-foundations-differential-dataflow-esop2015.pdf",
+    "published": "2015",
+    "relevance-description": "Incremental iterative dataflow at scale (differential-dataflow foundations).",
+    "sha256": "59da979cca8e01bba60953ebfd4ceb31d9b7225e4c3a408ba33acb7c786a59d3"
+  },
+  "A-ansible-challenges-mixed-methods-study-2025": {
+    "url": "https://arxiv.org/abs/2504.08678",
+    "file": "papers/ansible-challenges-mixed-methods-study-2025.pdf",
+    "published": "2025",
+    "relevance-description": "Empirical Ansible user-study anchor (Carreira et al.): 59,157 posts + 20 interviews; validates the Dorc thesis + lists capability gaps.",
+    "sha256": "34923737c29b8164d87a22b66507be3c67e88227a5824bafcb629c0d9b36eeef"
+  },
+  "A-arzt-bodden-reviser-incremental-ifds-icse-2014": {
+    "url": "https://doi.org/10.1145/2568225.2568243",
+    "file": "papers/arzt-bodden-reviser-incremental-ifds-icse2014.pdf",
+    "published": "2014",
+    "relevance-description": "Incremental IFDS/IDE via clear-and-propagate; re-mined for the ~80% incremental-savings figure (Q3).",
+    "sha256": "382aa16c27b696da0fd56c28b1dea3e44f9b6b8fc206293f69ea88d215fd612b"
+  },
+  "A-avgustinov-ql-codeql-ecoop-2016": {
+    "url": "https://doi.org/10.4230/LIPIcs.ECOOP.2016.2",
+    "file": "papers/avgustinov-ql-codeql-ecoop2016.pdf",
+    "published": "2016",
+    "relevance-description": "QL/CodeQL: OO queries over a relational program-fact DB (queryable fact base, Q2).",
+    "sha256": "ef33b7fcd5f55841a96fda0763ef71a5c482738ec0be8c0780818a36808727e8"
+  },
+  "A-bash-in-the-wild-tosem-2022": {
+    "url": "https://doi.org/10.1145/3517193",
+    "file": "papers/bash-in-the-wild-tosem2022.pdf",
+    "published": "2022",
+    "relevance-description": "Large-scale empirical study of real bash usage/smells/bugs; grounds the corpus-skip-rate spike.",
+    "sha256": "75c053cc2c51b4e4afc01fb2565aafa1d7fa560d8e9d44e13d223ce7c2139ae9"
+  },
+  "A-biabduction-popl-2009": {
+    "file": "papers/biabduction-popl2009.pdf",
+    "published": "2009",
+    "relevance-description": "Compositional per-procedure pre/post inference (Infer's basis); maps to the requires/establishes dependency model.",
+    "sha256": "eb1fecb1bc7e8f85d255df69c1c8ae9a3762951b9056c0502b43528015a3569e"
+  },
+  "A-bravenboer-smaragdakis-doop-oopsla-2009": {
+    "file": "papers/bravenboer-smaragdakis-doop-oopsla2009.pdf",
+    "published": "2009",
+    "relevance-description": "Declarative points-to in Datalog (Doop).",
+    "sha256": "928ce283b2c9127f5f5f0ffd43108cbc4e00a4e0bee925c3a497486eb45945f7"
+  },
+  "A-colis-installation-scenarios-tacas-2020": {
+    "url": "https://hal.science/hal-02355602",
+    "file": "papers/colis-installation-scenarios-tacas2020.pdf",
+    "published": "2020",
+    "relevance-description": "Symbolic execution of 27k Debian maintainer scripts; feasibility evidence for MH1.",
+    "sha256": "1c8197b4975bd5a943a542a143e59f4914a863066becebcfeaea29c43db7c1dc"
+  },
+  "A-colis-platform-sttt-2022": {
+    "url": "https://hal.science/hal-03737886",
+    "file": "papers/colis-platform-sttt2022.pdf",
+    "published": "2022",
+    "relevance-description": "Platform/engineering view of the CoLiS toolchain end-to-end.",
+    "sha256": "59d7486e128d8e684163119e609f7acbb8da7736f510688dcd3aaf367cd35614"
+  },
+  "A-colis-specification-of-unix-utilities-2019": {
+    "url": "https://hal.science/hal-02321691",
+    "file": "papers/colis-specification-of-unix-utilities-2019.pdf",
+    "published": "2019",
+    "relevance-description": "Enumerated FS-effect specs for coreutils — the Tier-B canonical-fact vocabulary, pre-built.",
+    "sha256": "a9313c7b726464b09663cb9d661f6e20885d0715d7097c106004c16b11b6d897"
+  },
+  "A-cousot-abstract-interpretation-popl-1977": {
+    "file": "papers/cousot-abstract-interpretation-popl1977.pdf",
+    "published": "1977",
+    "relevance-description": "Abstract-interpretation foundation. (image-only scan; theory consumed via the SPA textbook.)",
+    "sha256": "5d2956eed13b2d40f6e15c2087fb870c3dea54a332fe46ee07cea608ca417238"
+  },
+  "A-distefano-scaling-static-analyses-facebook-cacm-2019": {
+    "url": "https://doi.org/10.1145/3338112",
+    "file": "papers/distefano-scaling-static-analyses-facebook-cacm2019.pdf",
+    "published": "2019",
+    "relevance-description": "Infer/Zoncolan: compositionality = scale; diff-time deployment (0%->70%). Scale + deployment template.",
+    "sha256": "3bf657de823252d6f44b96ec6b9348003b029c90abe739c707dedbf01d50a13e"
+  },
+  "A-dozer-icse-seip-2022": {
+    "url": "https://doi.org/10.1145/3510457.3513060",
+    "file": "papers/dozer-icse-seip-2022.pdf",
+    "published": "2022",
+    "relevance-description": "Syscall-altitude insight: command effects observable at the kernel boundary; names task composition as the hard problem.",
+    "sha256": "696dd526ead7883d4439f3af7928a47137424cb462e6d622f3ca649f37af3ab2"
+  },
+  "A-heintze-tardieu-demand-pointer-analysis-pldi-2001": {
+    "file": "papers/heintze-tardieu-demand-pointer-analysis-pldi2001.pdf",
+    "published": "2001",
+    "relevance-description": "Demand-driven pointer analysis (Q1B/Q3).",
+    "sha256": "a2d93bd17f2c2c25ec6eee016a233b010d5908d6efe98da564273cf50a358df7"
+  },
+  "A-horwitz-reps-binkley-sdg-slicing-toplas-1990": {
+    "file": "papers/horwitz-reps-binkley-sdg-slicing-toplas1990.pdf",
+    "published": "1990",
+    "relevance-description": "PDG/SDG + interprocedural slicing = reachability. Reusable-structure template (Q2).",
+    "sha256": "47dad02e866384928ef45b4b2df430d5e17594cfbbafd9e867f28b159e70e896"
+  },
+  "A-jeannerod-phd-thesis-2021": {
+    "url": "https://theses.hal.science/tel-03917971",
+    "file": "papers/jeannerod-phd-thesis-2021.pdf",
+    "published": "2021",
+    "relevance-description": "Master reference: full pipeline parse->AST->feature-tree constraints->decision procedures->corpus analysis. ~250pp OCaml.",
+    "sha256": "a96c176a656eb6a7144da73a93235eb7a859f5fc6e94d4a435f197bc1ffb0809"
+  },
+  "A-jensen-moller-tajs-type-analysis-javascript-sas-2009": {
+    "file": "papers/jensen-moller-tajs-type-analysis-javascript-sas2009.pdf",
+    "published": "2009",
+    "relevance-description": "Sound AI of a messy dynamic language (our predicament); recency abstraction; eval->T. Most direct methodological precedent.",
+    "sha256": "4fbcbb9ddd01284e724727301c8ea03502648066f09a32b96be8ba9243410f2e"
+  },
+  "A-lucassen-gifford-effect-systems-popl-1988": {
+    "file": "papers/lucassen-gifford-effect-systems-popl1988.pdf",
+    "published": "1988",
+    "relevance-description": "Type-and-effect systems (the oracle effect-class lineage).",
+    "sha256": "634e939eca29878db647e657caee7ae0537e8c5b7ba0f921aefd0e22c85bcc81"
+  },
+  "A-might-smaragdakis-vanhorn-kcfa-paradox-pldi-2010": {
+    "file": "papers/might-smaragdakis-vanhorn-kcfa-paradox-pldi2010.pdf",
+    "published": "2010",
+    "relevance-description": "k-CFA is EXPTIME for closures, polynomial for flat/OO data — so a flat fact-map may afford context-sensitivity.",
+    "sha256": "bf8777cb1db68afe0c53054770832ee4550fa68525027a21594b08be283f59a4"
+  },
+  "A-mokhov-build-systems-a-la-carte-icfp-2018": {
+    "url": "https://doi.org/10.1145/3236774",
+    "file": "papers/mokhov-build-systems-a-la-carte-icfp2018.pdf",
+    "published": "2018",
+    "relevance-description": "Scheduler x Rebuilder factoring; verifying-vs-constructive traces; early cutoff. The skip-thesis unifying theory.",
+    "sha256": "d6c175a48cc908ca3f185e1fb4620e3278c5655218ac687d83dfa7f405624ede"
+  },
+  "A-moller-schwartzbach-static-program-analysis-2025": {
+    "url": "https://cs.au.dk/~amoeller/spa/spa.pdf",
+    "file": "papers/moller-schwartzbach-static-program-analysis.pdf",
+    "published": "2025-04",
+    "relevance-description": "Anchor textbook: CFG, lattices, dataflow, fixpoints, interprocedural, abstract interpretation — the vocabulary + architecture of the field.",
+    "sha256": "19f7dcfb853a46e78d39bb92e6727c5255a7884c7d9ee16d7f0553e1bba230ca"
+  },
+  "A-morbig-sle-2018": {
+    "url": "https://hal.science/hal-01890044",
+    "file": "papers/morbig-sle2018.pdf",
+    "published": "2018",
+    "relevance-description": "Keystone: how to statically parse POSIX shell despite its eval-time grammar. Direct prior art, OCaml.",
+    "sha256": "bd6dc1853b317cdf7ca6dacb5d3d72d97dffa4caf4241ac8c25fc7fab9767b9e"
+  },
+  "A-reps-cfl-reachability-survey-1998": {
+    "file": "papers/reps-cfl-reachability-survey-1998.pdf",
+    "published": "1998",
+    "relevance-description": "CFL-reachability unifying framework (dataflow/slicing/points-to all = L-reachability).",
+    "sha256": "36c0f3edd1bb7c73ca543b7f711e565492de823eccce76a13c116137cba83fd3"
+  },
+  "A-reps-demand-interprocedural-cc-1994": {
+    "file": "papers/reps-demand-interprocedural-cc1994.pdf",
+    "published": "1994",
+    "relevance-description": "Demand-driven interprocedural analysis (Q1B/Q3).",
+    "sha256": "42b7d39afa493493c82366fa280aedeae1ce5275143a819953a1f85f58089469"
+  },
+  "A-reps-horwitz-sagiv-ifds-popl-1995": {
+    "file": "papers/reps-horwitz-sagiv-ifds-popl1995.pdf",
+    "published": "1995",
+    "relevance-description": "IFDS: precise interprocedural dataflow as realizable-path reachability + tabulation summaries. Engine candidate.",
+    "sha256": "ed8e1eb5144b7e41ccdac81d2473c9defcdcc0da5f0df1e3d6710246b0f2d6f8"
+  },
+  "A-salcianu-rinard-purity-vmcai-2005": {
+    "file": "papers/salcianu-rinard-purity-vmcai2005.pdf",
+    "published": "2005",
+    "relevance-description": "Purity/side-effect (MOD) analysis; compositional per-method summaries. Mutation-domain template.",
+    "sha256": "73b6fe80ada8e63641e1ebd99aaedbad941612141a5636a7725fd4edd9fe20f7"
+  },
+  "A-scholz-souffle-datalog-cc-2016": {
+    "file": "papers/scholz-souffle-datalog-cc2016.pdf",
+    "published": "2016",
+    "relevance-description": "Datalog->native compiled analysis at scale (queryable fact base, Q2/Q3); re-mined for the memory-wall quantification.",
+    "sha256": "0a02e4e4d742cf4e77e33030dcf9d2df8beebd68b9192d3dbb60779ea384663c"
+  },
+  "A-smoosh-popl-2020": {
+    "url": "https://doi.org/10.1145/3371111",
+    "file": "papers/smoosh-popl2020.pdf",
+    "published": "2020",
+    "relevance-description": "Executable formal POSIX semantics; catalogues the hazards (set -e, expansion, fields) the analyzer must respect.",
+    "sha256": "b32ba84db6152aefcb7d3e264b6c123a533fd86b646fcd0d53aff41337e95746"
+  },
+  "A-spall-mitchell-rattle-perfect-dependencies-2020": {
+    "url": "https://doi.org/10.1145/3428237",
+    "file": "papers/spall-mitchell-rattle-perfect-dependencies-2020.pdf",
+    "published": "2020",
+    "relevance-description": "Forward build system: straight-line script, no declared deps, trace file accesses -> 'perfect dependencies'. The load-bearing recovery find.",
+    "sha256": "8f5efc16655695a80e2cc7435c953ddd737cfbc2205ca7c9920b32ebf8301b17"
+  },
+  "A-sridharan-andersen-complexity-practice-sas-2009": {
+    "file": "papers/sridharan-andersen-complexity-practice-sas2009.pdf",
+    "published": "2009",
+    "relevance-description": "Andersen points-to is cubic worst-case but near-linear in practice (the 'cubic floor but small-in-practice' point Dorc relies on).",
+    "sha256": "1348d0130e466d4ff4352d72e8d60678ed7380c1a632a4976ac56db78e480699"
+  },
+  "A-sui-xue-svf-cc-2016": {
+    "file": "papers/sui-xue-svf-cc2016.pdf",
+    "published": "2016",
+    "relevance-description": "Sparse value-flow analysis; Graph/Rules/Solver factoring; mem-region partitioning (sparsity + factoring, Q3).",
+    "sha256": "b5b0d8251ba120c33a5789a850c84ad9704e5026be1455945b6979abf6c21d00"
+  },
+  "A-szabo-inca-incremental-datalog-lattices-oopsla-2018": {
+    "url": "https://doi.org/10.1145/3276509",
+    "file": "papers/szabo-inca-incremental-datalog-lattices-oopsla2018.pdf",
+    "published": "2018",
+    "relevance-description": "Incremental Datalog with lattices (IncA).",
+    "sha256": "9f1831ed3321801d61db14bf104f2ff256a588e6ba697f6a9ff0b25846009d7e"
+  },
+  "A-szabo-inca-whole-program-pldi-2021": {
+    "url": "https://doi.org/10.1145/3453483.3454026",
+    "file": "papers/szabo-inca-whole-program-pldi2021.pdf",
+    "published": "2021",
+    "relevance-description": "Incremental whole-program Datalog with lattices (DRedL).",
+    "sha256": "7077da9a52a7819b3e74e4e40c4d0437e2f71226f04c4855028e4995bdf7bb2a"
+  },
+  "A-tip-program-slicing-survey-1995": {
+    "file": "papers/tip-program-slicing-survey-1995.pdf",
+    "published": "1995",
+    "relevance-description": "Program-slicing survey. (image-only scan.)",
+    "sha256": "b437ab9dec05676c5b5f8a77165f9b5d0e4e905a42ca8d1f3b91983e688ff1ba"
+  },
+  "A-vanhorn-mairson-kcfa-exptime-icfp-2008": {
+    "file": "papers/vanhorn-mairson-kcfa-exptime-icfp2008.pdf",
+    "published": "2008",
+    "relevance-description": "Deciding k-CFA is complete for EXPTIME — context-sensitivity is provably exponential; the redline for the context dial.",
+    "sha256": "86057a8a3a14b8d22e2891d50574087e13ff481ef3541b7b058068e237dc9ed8"
+  },
+  "A-verified-interpreter-shell-vstte-2017": {
+    "url": "https://hal.science/hal-01534747",
+    "file": "papers/verified-interpreter-shell-vstte2017.pdf",
+    "published": "2017",
+    "relevance-description": "Shell-like interpreter formally verified in Why3 (not Coq). Direct input to 'is a proof assistant justified?'",
+    "sha256": "a195d6ccd0ba180d1adfed0a29b64555db370365e3bec9526361cf09c191b246"
+  },
+  "A-cmu-17355-dataflow-frameworks-2017": {
+    "file": "learning-path/cmu-17355-dataflow-frameworks.pdf",
+    "published": "2017",
+    "relevance-description": "Dataflow framework over WHILE3ADDR — clean pedagogy (Aldrich, CMU 17-355, Spring 2017). Learning path.",
+    "sha256": "260bb9df25347905448a7d8b6db0ac492bb2c628d3c7f58454ffc057b9a51778"
+  },
+  "A-harvard-cs153-cfg-dataflow": {
+    "url": "https://www.seas.harvard.edu/courses/cs153",
+    "file": "learning-path/harvard-cs153-cfg-dataflow.pdf",
+    "relevance-description": "CFG construction + dataflow, lecture form (Chong, Harvard CS153; offering-year not stamped in the deck). Learning path.",
+    "sha256": "e5517605f92277202cdec56d290f684f06ca7c26d41f04acefd3be0284462275"
+  },
+  "A-kalliamvakou-msr-2014": {
+    "url": "https://chisel.cs.uvic.ca/pubs/kalliamvakou-MSR2014.pdf",
+    "grading-certainty": "+1:SURE",
+    "grading-reasoning": "Peer-reviewed MSR 2014 (ACM, DOI 10.1145/2597073.2597074); foundational, heavily-cited empirical GitHub-mining study; all six cited population statistics confirmed verbatim against the paper.",
+    "relevance-certainty": "+1:SURE",
+    "relevance-description": "The canonical evidence that public GitHub is a skewed population (mostly personal, single-committer, inactive); grounds the note-081 critique of convenience-sampling reachable public repos.",
+    "graded-by": "subagent",
+    "published": "2014-05",
+    "retrieved": "2026-06-02",
+    "sha256": "4c0478ae5fbc27f29c0d5d4e66ee94bbc021b4851e413bd7a617d4098a19f0cf",
+    "acquired": "url",
+    "via": "note 081 citation; existence + all six stats adversarially verified by subagent"
+  },
+  "B-benoit-ajps-2026": {
+    "url": "https://researchonline.lse.ac.uk/id/eprint/137715/1/ajps.70050.pdf",
+    "grading-certainty": "+1:SURE",
+    "grading-reasoning": "Peer-reviewed American Journal of Political Science (DOI 10.1111/ajps.70050; Open Access; computational reproducibility verified by Cornell CSS). Source-quality A; recorded B for indirect, analogical relevance to Dorc.",
+    "relevance-certainty": "-1:GUESS",
+    "relevance-description": "Note 081 contrast-that-proves-the-point: a valid reproducible multi-LLM-ensemble measurement via a fixed corpus (235 manifestos), six pre-specified dimensions, external expert-survey ground truth, and replication. NB the note phrase second model ensemble understates the actual cross-time and cross-architecture replication.",
+    "graded-by": "subagent",
+    "published": "2026-03",
+    "retrieved": "2026-06-02",
+    "sha256": "68beb5404350f24429a6711a6272aead3530a63fb62504e13a3ce1a8af270b26",
+    "acquired": "url",
+    "via": "note 081 citation; verified by subagent plus abstract read; 235-manifestos / 6-dims / .87-.92 / replication all confirmed"
+  },
+  "C-spiliopoulou-self-bias-2025": {
+    "url": "https://arxiv.org/pdf/2508.06709",
+    "grading-certainty": "-0:SUSPECT",
+    "grading-reasoning": "arXiv preprint (cs.CL, Aug 2025), not peer-reviewed; presents a statistical method to identify and quantify LLM self-bias; finds GPT-4o and Claude 3.5 Sonnet rate their own outputs higher, plus family-bias.",
+    "relevance-certainty": "-1:GUESS",
+    "relevance-description": "Supports the note 081 self-preference-bias point. NB the paper does NOT claim the low-perplexity/familiar-outputs mechanism note 081 attributes to it; that gloss is unsupported here.",
+    "graded-by": "subagent",
+    "published": "2025-08",
+    "retrieved": "2026-06-02",
+    "sha256": "1777a9985d57c46b5b6202210e338215e88b0736b67ce18bc87baf9022f86394",
+    "acquired": "url",
+    "via": "note 081 cluster citation [C-llm-annotation-bias]; arXiv id verified and abstract read; mechanism-gloss mismatch flagged"
+  },
+  "C-plaza-del-arco-llm-crowds-2023": {
+    "url": "https://arxiv.org/pdf/2307.12973",
+    "grading-certainty": "-0:SUSPECT",
+    "grading-reasoning": "arXiv preprint accepted to the 3rd Workshop on Perspectivist Approaches to NLP (LREC-COLING 2024); aggregating LLM labels beats individual models but no LLM method rivals even simple supervised models.",
+    "relevance-certainty": "-0:SUSPECT",
+    "relevance-description": "Grounds the note 081 consensus-is-not-ground-truth point: LLM-annotator aggregation helps but does not reach supervised or human ground truth.",
+    "graded-by": "subagent",
+    "published": "2023-07",
+    "retrieved": "2026-06-02",
+    "sha256": "2025f01761db597d0d447390f9eea2d413dd4a3c497103c4569be0242daa583e",
+    "acquired": "url",
+    "via": "note 081 cluster citation; arXiv id and topic verified, abstract read"
+  },
+  "C-djouvas-polarity-bias-2026": {
+    "url": "https://doi.org/10.3390/computers15050262",
+    "grading-certainty": "-0:SUSPECT",
+    "grading-reasoning": "Peer-reviewed MDPI Computers 15(5):262 (2026; DOI 10.3390/computers15050262); finds model-contingent polarity bias across LLM annotators (e.g. ChatGPT-5 neutrality bias vs Qwen-3/Gemini-3 aligning with human polarization). MDPI is a lower-tier open-access venue.",
+    "relevance-certainty": "-1:GUESS",
+    "relevance-description": "Grounds the note 081 model-contingent-bias claim: annotation bias is structurally embedded in model design choices, so different LLMs disagree (overlapping but model-contingent), undercutting blind cross-model consensus as a validity signal.",
+    "graded-by": "subagent",
+    "published": "2026-04",
+    "retrieved": "2026-06-02",
+    "sha256": "b36b1913f92cf4a68953af0fdecd3c014e7b527277ccbf369890ae5e05205a22",
+    "acquired": "out-of-band",
+    "via": "note 081 cluster citation [C-llm-annotation-bias]; existence + topic verified by subagent and by an in-browser load; PDF acquired out-of-band (Cloudflare-blocked to curl), browser-downloaded by the user"
+  },
+  "A-traugott-order-matters-2002": {
+    "url": "http://infrastructures.org/papers/turing/turing.html",
+    "grading-certainty": "+1:SURE",
+    "grading-reasoning": "A: peer-reviewed primary (USENIX LISA, the main sysadmin venue), author-hosted, foundational and widely cited; read in full and verified in-context. Not B: it is primary, peer-reviewed, fully read, no rot/version concerns.",
+    "relevance-certainty": "+1:SURE",
+    "relevance-description": "Ops-native statement of Dorc's exact problem: self-administered hosts run self-modifying code -> circular/control-loop dependencies -> deterministic ordering is the keystone. The divergent/convergent/congruent trichotomy gives Dorc its coordinates. States undecidability of future-change deps (the unsolvability spine) and that testing is irreducible (validates kVERIFY-calibrate).",
+    "graded-by": "top-level-agent",
+    "published": "2002-11",
+    "retrieved": "2026-06-02",
+    "sha256": "a338b9a192809e0358bc66930b32ddfbdcb2d70af37f5e6dd89c343c290c7f99",
+    "acquired": "url",
+    "via": "mcp__kagi-ken__kagi_search_fetch(queries: ['Traugott Why Order Matters Turing equivalence automated system administration'])"
+  },
+  "B-burgess-cfengine-2010": {
+    "url": "https://www.usenix.org/event/config10/burgess.pdf",
+    "grading-certainty": "+1:SURE",
+    "grading-reasoning": "B not A: primary (the cfengine author) but the artifact is a conference slide deck, not a peer-reviewed paper; terse, assertion-heavy, no methods to verify. Not C: first-party authorship and the claims are corroborated by Traugott.",
+    "relevance-certainty": "-0:SUSPECT",
+    "relevance-description": "The convergence camp's self-account (convergence > idempotence; cfengine; promise theory). Read to avoid caricaturing convergence via its critic Traugott, and to probe whether 'promise' is a usable contract-primitive for Dorc's {what/who/where} triple.",
+    "graded-by": "top-level-agent",
+    "published": "2010",
+    "retrieved": "2026-06-02",
+    "sha256": "dcbdbde20c879cca3bdeced43dca0eee11bf3d524385f729220c7d8aca7cd5a5",
+    "acquired": "url",
+    "via": "mcp__kagi-ken__kagi_search_fetch(queries: ['Burgess promise theory convergent configuration management idempotence'])"
+  },
+  "A-tobin-hochstadt-logical-types-2010": {
+    "url": "https://www2.ccs.neu.edu/racket/pubs/icfp10-thf.pdf",
+    "grading-certainty": "+1:SURE",
+    "grading-reasoning": "A: peer-reviewed top PL venue (ICFP) by the originators of occurrence typing; primary formalization, heavily cited. Abstract-read only, so the A rests on venue+provenance, not full-text verification; revisit if a deep read diverges.",
+    "relevance-certainty": "+1:SURE",
+    "relevance-description": "THE academic root of the TS-guard model Dorc targets: a discipline exploiting data-type predicates in a test expression to narrow types per-branch = Dorc's idiomatic-sh guard (if dpkg -s X) narrowing system-state. The corrected prior-art layer (vs ACSL/ShellCheck = explicit annotation, wrong layer).",
+    "graded-by": "top-level-agent",
+    "published": "2010",
+    "retrieved": "2026-06-02",
+    "sha256": "b8311fc0c77dfd1960873020d934f725594de84dd0058c5d05a7b367b5632d21",
+    "acquired": "url",
+    "via": "mcp__kagi-ken__kagi_search_fetch(queries: ['occurrence typing Typed Racket logical types Tobin-Hochstadt Felleisen'])"
+  },
+  "A-foster-flow-sensitive-qualifiers-2002": {
+    "url": "https://www.cs.tufts.edu/~jfoster/papers/pldi02.pdf",
+    "grading-certainty": "+1:SURE",
+    "grading-reasoning": "A: peer-reviewed top PL venue (PLDI), the originating CQual work, heavily cited primary. Abstract-read only; A rests on venue+provenance, not full-text verification.",
+    "relevance-certainty": "+1:SURE",
+    "relevance-description": "The 'tainting' the human named: state-kind facts as flow-sensitive qualifiers layered on a base type, with strong updates; users annotate + inference fills the rest (= the kBURDEN declare+infer gradient). Concrete, practical (a checker, not a proving-minefield).",
+    "graded-by": "top-level-agent",
+    "published": "2002",
+    "retrieved": "2026-06-02",
+    "sha256": "4e40f293d1740b04e6032817a96cd96166e94d6855f2a6bbd46abfa978d5bf4c",
+    "acquired": "url",
+    "via": "mcp__kagi-ken__kagi_search_fetch(queries: ['flow-sensitive type qualifiers taint analysis CQual Foster'])"
+  },
+  "A-ramalingam-undecidability-aliasing-1994": {
+    "url": "https://web.cs.ucla.edu/~palsberg/course/cs232/papers/ramalingam-toplas94.pdf",
+    "grading-certainty": "+1:SURE",
+    "grading-reasoning": "A: peer-reviewed journal (TOPLAS), the canonical undecidability-of-aliasing result, heavily cited. Abstract-read, but the cited claim is the paper headline result, so mis-statement risk is low.",
+    "relevance-certainty": "+1:SURE",
+    "relevance-description": "The precision CEILING: precise may/must-alias is undecidable with if/loops/dynamic-storage/recursion -> precise command-footprint is undecidable -> Dorc MUST over-approximate the frame (T-on-unknown) and lean on oracle-declaration. Formal justification for kFAIL + the contract.",
+    "graded-by": "top-level-agent",
+    "published": "1994",
+    "retrieved": "2026-06-02",
+    "sha256": "6f64fba279886374f3989083902a324486680ff7e5208eb340662dab51696433",
+    "acquired": "url",
+    "via": "mcp__kagi-ken__kagi_search_fetch(queries: ['Landi Ryder undecidability of aliasing pointer analysis proof'])"
+  },
+  "B-sep-frame-problem-2004": {
+    "url": "https://plato.stanford.edu/entries/frame-problem/",
+    "grading-certainty": "+1:SURE",
+    "grading-reasoning": "B not A: Stanford Encyclopedia of Philosophy is authoritative, peer-reviewed and expert-authored, but it is a secondary explainer of McCarthy and Hayes 1969, not the primary source; A is reserved for primary peer-reviewed work or canonical first-party docs. Not C: SEP is rigorously edited and maintained.",
+    "relevance-certainty": "+1:SURE",
+    "relevance-description": "The philosophical CEILING: you cannot enumerate the non-effects of an action -> must assume-unchanged-unless-stated (frame axiom / closed-world). Roots Dorc's footprint-declared + frame-assumed contract; the closed-world move is fundamental, not a shortcut.",
+    "graded-by": "top-level-agent",
+    "published": "2004",
+    "retrieved": "2026-06-02",
+    "sha256": "b8dfc368e6c6ad09824ee1f1860f5eebc181c4e6da96497150544b6e2d843a17",
+    "acquired": "url",
+    "via": "mcp__kagi-ken__kagi_search_fetch(queries: ['frame problem McCarthy Hayes situation calculus AI'])"
+  },
+  "A-harnad-symbol-grounding-1990": {
+    "url": "https://www.cs.ox.ac.uk/activities/ieg/e-library/sources/harnad90_sgproblem.pdf",
+    "grading-certainty": "+1:SURE",
+    "grading-reasoning": "Harnad, 'The Symbol Grounding Problem', Physica D 42:335-346 (1990); foundational + heavily-cited. Read core (abstract + S2.1-2.3) from the Oxford-archived PDF.",
+    "relevance-certainty": "+1:SURE",
+    "relevance-description": "The named impossibility behind Dorc's chicken-and-egg (the Chinese/Chinese dictionary regress, 094 g4). Its hybrid bottom-up grounding (iconic + categorical) maps exactly onto Dorc's probe (iconic: observe real host-state) + oracle (categorical feature-detector) -> the probe is Dorc's *escape* from the symbol-grounding problem, not merely an optimization.",
+    "graded-by": "top-level-agent",
+    "published": "1990",
+    "retrieved": "2026-06-02",
+    "sha256": "d092fc373c7b231b57bb9304eeea35ea8164acd1c3d7a5a68bd17e4a8aa3d023",
+    "acquired": "url",
+    "via": "mcp__kagi-ken__kagi_search_fetch(queries: ['Harnad symbol grounding problem 1990 symbols meaning regress'])"
+  },
+  "A-engler-deviant-behavior-2001": {
+    "url": "https://web.stanford.edu/~engler/deviant-sosp-01.pdf",
+    "grading-certainty": "+1:SURE",
+    "grading-reasoning": "Engler, Chen, Hallem, Chou, Chelf, 'Bugs as Deviant Behavior', SOSP 2001; foundational + heavily-cited. Read core (intro + the MUST/MAY belief definitions, S1-S2).",
+    "relevance-certainty": "+1:SURE",
+    "relevance-description": "Its MUST-belief (directly-implied-by-code, no doubt -> a contradiction IS an error, sound) vs MAY-belief (observed-but-maybe-coincidence -> assume + statistically rank, unsound) distinction is the exact formal shape of Dorc's elision boundary: MUST = relational contract implied-by-idiomatic-structure or oracle-declared (elision-safe); MAY = distributional/mined guess (hints, never elision-safe).",
+    "graded-by": "top-level-agent",
+    "published": "2001",
+    "retrieved": "2026-06-02",
+    "sha256": "0479ba1784201a5af25d1edd3021139fdeebed12daba93e512bd8e0f80daeaac",
+    "acquired": "url",
+    "via": "mcp__kagi-ken__kagi_search_fetch(queries: ['Engler bugs as deviant behavior inferring errors via static analysis'])"
+  }
 }
