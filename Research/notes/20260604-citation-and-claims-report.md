@@ -3,7 +3,7 @@
 Datestamped synthesis (not a round). Human-facing summary of the **source-claim adversarial audit**
 of the `Research/` corpus, plus the `papers/`→`sources/` grading-migration that followed it. The
 batch-by-batch evidence (every deciding quote + locator) is the durable artifact at
-`_scratch/source-audit-register.md`; this report is the trust-level read and the concerns worth
+`notes/20260604-citation-and-claims-register.md`; this report is the trust-level read and the concerns worth
 knowing before you close out.
 
 ## TL;DR
@@ -114,10 +114,11 @@ arzt-bodden **~80% saved**, souffle **35 s**, TAJS **87%→<2% precision / 512 M
   tables (a handful are the now-canonical `sources/A-…` paths, which *look* like bare keys to the
   linter). Warning-level only; a separate bracket-canonicalization pass would clear them. I did not — they
   predate the migration and aren't load-bearing.
+  <!-- /* superseded 2026-06-04: that bracket-canonicalization pass was done — back-ticked slug-mentions → [slug] (surfacing + fixing 2 stale A→B grade-letters: dozer, moller-schwartzbach), and validate.sh gained a carve-out for on-disk sources/<slug>.<ext> paths. Validator now 0/0. */ -->
 
 ## Open items
 - Review the 2 assigned grades (**conc-grades-2**) — the only substantive judgment I made that the audit
   didn't back.
 - Optional, low-value: a generic-token audit; the bare-stem→bracket hygiene (**conc-warnings**).
 - Full evidence — quotes, locators, per-batch reasoning, the deterministic precheck — lives in
-  `_scratch/source-audit-register.md`.
+  `notes/20260604-citation-and-claims-register.md`.

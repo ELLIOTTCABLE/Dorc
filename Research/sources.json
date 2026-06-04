@@ -1908,5 +1908,18 @@
     "sha256": "36c0f3edd1bb7c73ca543b7f711e565492de823eccce76a13c116137cba83fd3",
     "acquired": "seed-corpus",
     "via": "papers-migration (provenance grade; audit OUT-OF-SCOPE, handoff ungraded)"
+  },
+  "A-mitogen-ansible-2024": {
+    "url": "https://mitogen.networkgenomics.com/ansible_detailed.html",
+    "grading-certainty": "+1:SURE",
+    "grading-reasoning": "A-not-B: canonical first-party author documentation of the Mitogen-for-Ansible connection layer (primary; the tool's own docs, mitogen-hq), dense with concrete primary numbers, current (reflects June-2024 Ansible 10.1 releases), no rot. Not B because first-party-canonical and directly load-bearing for the perf model, not third-party-about-Ansible.",
+    "relevance-certainty": "+1:SURE",
+    "relevance-description": "Orchestration-overhead-dominates evidence for the probe/apply fan-out perf model (notes 070/072): 'Mitogen cannot improve a module once it is executing; it can only ensure the module executes as quickly as possible' -- the win is all orchestration overhead (1.25-7x speedup; ~4 ms saved per 1 ms latency per step; process reuse 300-800 ms/step); plus the local_action serialization footgun and connection delegation.",
+    "graded-by": "top-level-agent",
+    "published": "2024",
+    "retrieved": "2026-06-04",
+    "sha256": "f1e8992c76ec7e6ea02ebf2d481c3be9b735ad40452c1b0851b47473ecb9b985",
+    "acquired": "url",
+    "via": "round-04 performance research; canonical Mitogen-for-Ansible docs (recorded at manifest:072 / notes 072)"
   }
 }

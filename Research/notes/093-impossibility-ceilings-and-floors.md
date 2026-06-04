@@ -92,4 +92,4 @@ exact discipline (finite + distributive) that keeps the analyzer half sound and 
   undecidable"). So the precision ceiling is *intrinsic*, not an interprocedural artifact — staying
   intraprocedural buys no precise footprint. Strengthens the f19→`kFAIL`/declared-frame argument.
 - **f21 confirmed (SEP frame-problem):** the "non-effects" statement verified against the archived
-  text; source correctly re-graded to `B-sep-frame-problem-2004` (an encyclopedia = secondary).
+  text; source correctly re-graded to [B-sep-frame-problem-2004] (an encyclopedia = secondary).

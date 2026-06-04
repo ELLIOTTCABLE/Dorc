@@ -124,9 +124,9 @@ read): "we need a good author-linter, and good linters need corpus analysis" —
 ## 10. Prior-art index (the graded base for this round)
 | note | front | load-bearing sources |
 | --- | --- | --- |
-| 091 | ops-native state theory | `A-traugott-order-matters-2002`, `B-burgess-cfengine-2010` |
-| 092 | flow-typing / tainting / RAL | `A-tobin-hochstadt-logical-types-2010`, `A-foster-flow-sensitive-qualifiers-2002`, `A-lucassen-gifford-effect-systems-popl-1988` (in-corpus), Puppet RAL (archive); *demoted: ACSL/ShellCheck = `kOOB`-floor only* |
-| 093 | impossibility ceilings/floor | `A-ramalingam-undecidability-aliasing-1994`, `B-sep-frame-problem-2004`, `A-reps-horwitz-sagiv-ifds-popl-1995` (in-corpus), Rice (canonical) |
+| 091 | ops-native state theory | [A-traugott-order-matters-2002], [B-burgess-cfengine-2010] |
+| 092 | flow-typing / tainting / RAL | [A-tobin-hochstadt-logical-types-2010], [A-foster-flow-sensitive-qualifiers-2002], [A-lucassen-gifford-effect-systems-popl-1988] (in-corpus), Puppet RAL (archive); *demoted: ACSL/ShellCheck = `kOOB`-floor only* |
+| 093 | impossibility ceilings/floor | [A-ramalingam-undecidability-aliasing-1994], [B-sep-frame-problem-2004], [A-reps-horwitz-sagiv-ifds-popl-1995] (in-corpus), Rice (canonical) |
 | 094 | the idempotency-guard carrier | (design-reasoning; archive RAL) |
-| 095 | grounding → **relational** (corrected) | `A-harnad-symbol-grounding-1990` (downgraded ~`-1:GUESS`, human-adjudicated over-reach); real content in RAL (092) + Burgess promises (091) |
-| 096 | spec-mining / MUST-MAY boundary | `A-engler-deviant-behavior-2001`; Ammons POPL'02 (named) |
+| 095 | grounding → **relational** (corrected) | [A-harnad-symbol-grounding-1990] (downgraded ~`-1:GUESS`, human-adjudicated over-reach); real content in RAL (092) + Burgess promises (091) |
+| 096 | spec-mining / MUST-MAY boundary | [A-engler-deviant-behavior-2001]; Ammons POPL'02 (named) |
