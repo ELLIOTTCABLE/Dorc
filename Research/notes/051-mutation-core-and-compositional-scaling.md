@@ -23,7 +23,7 @@ SURE for Q3, and it maps onto an ops fleet/role structure almost too well:
 - Numbers: Zoncolan 100M LOC < 30 min / 24 cores; Infer diff-time ~15 min. Taint analysis (Zoncolan) = "which untrusted input reaches which sink" — structurally identical to Dorc's "which state reaches/feeds which mutation-or-probe."
 
 ## THE soundness-bias inversion (the single most important synthesis point so far)
-> **Update (two-soundness standard):** the framing below is the **elision-soundness** half only (never skip a needed mutation; fail toward *do-execute*; extra runs harmless by idempotence). Its co-equal twin, **probe-soundness** (the read-only pass must not itself mutate), has the *opposite* fail-action (*don't-execute*). One ⊤ does not serve both. See AGENTS §1 / `055-analysis-architecture.md` §1A.
+> **Update (two-soundness standard):** the framing below is the **elision-soundness** half only (never skip a needed mutation; fail toward *do-execute*; extra runs harmless by idempotence). Its co-equal twin, **probe-soundness** (the read-only pass must not itself mutate), has the *opposite* fail-action (*don't-execute*). One ⊤ does not serve both. See `kFAIL` / `055-analysis-architecture.md` §1A.
 
 SUSPECT-but-strong: Infer/Zoncolan are **unsound bug-finders** — they tolerate **false negatives** (missed bugs) to keep **false positives** low (developer trust). Dorc's *elision* requirement is the **opposite bias**: tolerate **false positives** (extra runs — harmless by idempotence, slow) but **forbid false negatives** (a missed necessary mutation → false-skip → a host silently left unconverged/broken). So:
 - We reuse Infer's **compositional summary machinery** and its **diff-time deployment model** wholesale.

@@ -1,0 +1,12 @@
+# Toolchain pin for Dorc tooling.
+#
+# Win/WSL note: this file is read by BOTH your Windows-side and WSL-side mise
+# (it's in the synced tree), but installs are per-platform — run `mise install`
+# on each side. The corpus instrument's npm deps are pure-JS/wasm (no native
+# bindings), so the committed package-lock survives that division.
+#
+# node is LTS (the kept corpus instrument lives under tools/corpus/). The wasm
+# scanner stack is node-version-agnostic; verified on 25, pinned to 22 LTS.
+
+[tools]
+node = "22"

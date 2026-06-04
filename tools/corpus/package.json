@@ -1,0 +1,23 @@
+{
+   "name": "@dorc/corpus",
+   "private": true,
+   "type": "module",
+   "description": "Dorc corpus-measurement instrument (spike): an error-tolerant tree-sitter-bash + yaml scanner over real-world ops shell and Ansible. acquire (network, gated) is kept separate from scan (offline, pure).",
+   "engines": { "node": ">=22" },
+   "scripts": {
+      "scan": "tsx src/scan.ts",
+      "acquire": "tsx src/acquire.ts",
+      "typecheck": "tsc --noEmit",
+      "test": "vitest run"
+   },
+   "dependencies": {
+      "web-tree-sitter": "0.25.10",
+      "yaml": "^2.9.0"
+   },
+   "devDependencies": {
+      "@types/node": "^22.0.0",
+      "tsx": "^4.19.0",
+      "typescript": "^5.7.0",
+      "vitest": "^2.1.0"
+   }
+}

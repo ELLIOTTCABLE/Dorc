@@ -50,6 +50,7 @@ Poles: `kOOB-in-band ↔ kOOB-sidecar`
 **Tension:** dogfooding / human-visibility / no-cliff / trivial off-ramp (everything is shell you read and run) **vs** engine expressiveness for what shell genuinely cannot carry (effect-class, provenance/leaf-id, cost-class, memo-key+freshness).
 **Status:** directional — lean `kOOB-in-band`; minimize the sidecar. **Owner:** user (the value) + corpus (`Q-INFER` sizes the irreducible floor). **Lock-in:** med.
 Entangled with `kBURDEN` (that's *how much* is specified; this is *what form*).
+> *Clarification (human, 2026-06-03):* this knob's redline is **user-configuration form**, not metadata transport — out-of-band *metadata* (provenance/leaf-id, effect/cost-class, memo-key, network-transport framing) is fine; what is verboten (at least for now) is sidecar *configuration* — no YAML, no frontmatter, no pragma, no comment-parsing — all config is spelled in `sh` / library-code.
 
 ---
 
@@ -126,6 +127,7 @@ Poles: `kFIDELITY-optimized ↔ kFIDELITY-faithful`
 
 **Tension:** performance (the minimized, batched, opaque production probe) **vs** debuggability / attribution (`--faithful`: one-leaf-one-exec, 1:1 source mapping — the seam the realtime-output requirement *and* the future tracer both need).
 **Status:** open — both ship (`kFIDELITY-optimized` default, `kFIDELITY-faithful` reserved). **Owner:** dominant-strategy. **Lock-in:** high — the leaf-execution seam must be wrappable + provenance-preserving from day 1.
+> *Round-11 (error/provenance prior-art, 2026-06-03):* the "provenance-preserving" clause is heavier than a 1:1 source map — the faithful seam must preserve an N-tier, per-host-forking, host-qualified multi-locator derivation DAG (loc-host / loc-user-src / loc-probe / loc-surface); see `notes/110` (+ forthcoming `plans/` synthesis).
 
 ### `kSCHEDULE`
 Poles: `kSCHEDULE-wide ↔ kSCHEDULE-ordered`
@@ -172,6 +174,12 @@ Poles: `kDEPS-declare-world ↔ kDEPS-accept-partial`
 **Tension:** total upfront dependency specification (Nix/Ansible/Terraform — high buy-in, complete knowledge) **vs** accepting that dependency knowledge is non-total and filling it best-effort. *(static-derive and runtime-trace both serve `kDEPS-accept-partial` — complementary means, not opposed poles; you want both, trace as a backstop to derive.)*
 **Status:** welded → `kDEPS-accept-partial` (the anti-declarative thesis; DESIGN "rejected: declarative resource graph"). **Owner:** welded.
 The *open* question is not this axis but the **investment split** within it — how much `static-derive` carries vs how much the oracle-library + runtime-trace backstop must (the `Q-BAND`/`Q-ANTICORR` spike → `effort-allocation`).
+
+### `kAGENTLESS`
+Poles: `kAGENTLESS-push ↔ kAGENTLESS-host-autonomy`
+
+**Tension:** central push authority — one operator node drives the fleet, no per-host daemon to own or secure (DESIGN "push, not pull"; the ergonomic + no-listening-daemon win) **vs** host autonomy — each host applies only what it fetches and verifies itself (CFEngine's "no one except root@localhost can force cfengine to do anything"), which *bounds blast-radius* but reintroduces a pull/agent surface.
+**Welded to `kAGENTLESS-push`** (ergonomic, per DESIGN) — named only to keep the *security cost* in view: push concentrates the crown-jewel in the operator workstation (fleet-wide SSH keys — SaltStack's listening-master RCE blast-radius is relocated, not removed), and real m→n→o bastion-hopping reintroduces multi-hop trust. Push is *ergonomic, not a security claim*. **Owner:** welded. **Lock-in:** high (architectural).
 
 ---
 

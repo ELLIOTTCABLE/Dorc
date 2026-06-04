@@ -914,7 +914,7 @@ over-approximation, BOUNDED" (verification is bounded, not a non-goal). (b) Ther
 soundnesses with OPPOSITE fail-directions, never conflated: *probe-soundness* (read-only pass
 must not itself mutate; uncertain ⇒ withhold/defer execution) and *elision-soundness* (this
 paragraph — never skip needed work; uncertain ⇒ perform). One ⊤ cannot serve both. See
-AGENTS.md §1 "Two soundnesses". */ -->
+`kFAIL`. */ -->
 2. **Target = imperfect-state machines, not convergence to immutable truth.** The user is
    the unkillable "Linux box someone SSH'd into and ran commands on," and "deploy a janky
    app from a non-ops dev — no check-mode, no clean container, no clean API." Do **not**

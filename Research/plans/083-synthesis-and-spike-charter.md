@@ -36,7 +36,7 @@ silently reads-`/mnt/blah` catch shows static analysis structurally cannot see d
 deps. The corpus sizes the split, per the corpus-acquisition gate: *fat VALUE band → engine-heavy; thin
 VALUE but fat HARD band → oracle-library/trace-heavy, engine secondary; high un-analyzable rate → rework
 the thesis before any code.* **That measurement has not been run.** The mtime record shows the drift:
-`analysis-architecture` + `phase-1` (5/30, the engine cathedral) *predate* `performance-architecture` +
+`analysis-architecture` + `static-analysis-engine` (5/30, the engine cathedral) *predate* `performance-architecture` +
 `corpus-spike-seed-prompt` (5/31, the round that reined them in), so `analysis-architecture` describes
 the firmest *engine design* but overstates its *primacy*. Until the spike returns, **treat
 engine-primacy as provisional** — the engine *design* stands; its *weight* is TBD.
@@ -163,7 +163,7 @@ NOT carry as active MVP design weight.** Each is keyed to its knob/source.
 - **Cross-host memoization implementation** (`kSTATE`) — *reserve* the content-key+freshness in the
   verdict shape now (cheap, retrofit-hostile); *build* the reuse only if Q-HOMOGENEITY says it pays.
 - **Tier-B interprocedural analysis** (IFDS/IDE summaries, backward slicing, the canonical-fact ontology,
-  Datalog query layer) — `phase-1` Step 5 already defers this "only if the 10% earns it." The full
+  Datalog query layer) — `static-analysis-engine` Step 5 already defers this "only if the 10% earns it." The full
   `analysis-architecture` hybrid is the *reference design*, not MVP scope.
 - **The privileged eBPF/auditd tracer** (`deferred/078-privileged-tracing-tool.md`) — already correctly
   quarantined (separate privileged binary, post-language). Core's only obligation now is the hook surface.
@@ -178,7 +178,7 @@ subset of the perf §6 list). Reserve the minimal seam; don't build the machiner
 - **Versioned on-disk IR/summary format** (cheap; perf §6 #4) — needed for diff-time incrementality
   *and* team/oracle sharing. Version now; treat *persistence* as an optimization-with-cold-start-fallback
   (rust-analyzer punts it; Dorc's diff-primary smaller corpus tolerates cold-start in v1).
-- **Analysis-plane ⊥ execution-plane** (the serialization seam; phase-2 §intro) — already core; keep the
+- **Analysis-plane ⊥ execution-plane** (the serialization seam; `language-workload-orchestration` §intro) — already core; keep the
   analyzer/executor separable over a JSON-ish IR/verdict contract so a heavy compile-the-probe never
   starves the live push, and the impl-language never reaches target hosts.
 - **The leaf-execution seam** `kFIDELITY` `[H]` — every leaf executes through a process-level wrappable
@@ -206,13 +206,13 @@ subset of the perf §6 list). Reserve the minimal seam; don't build the machiner
 - **No `kDEPS-declare-world`** — if we ask the user to specify everything, they should just use
   Nix/Terraform.
 - **No throwaway Ansible-transpile v1** — bootstrap oracles are cheap and enumerable; Ansible can't
-  stream output nor frontload. (phase-2 §D; ratify the reversal.)
+  stream output nor frontload. (`language-workload-orchestration` §D; ratify the reversal.)
 - **No fork-per-host executor; no `select()`-based event loop** (the 1024-fd wall).
 
 ## 7. Inconsistencies ledger — where the older corpus actively misleads (pointers, not fixes)
 Strictly-additive supersession markers have been applied to the files marked ⟢; human-authored docs
 (README/DESIGN/TODO) are **flagged for the user, not edited**.
-- ⟢ `055-analysis-architecture.md` / `phase-1` — present engine-first as settled; **its *weight* is gated on
+- ⟢ `055-analysis-architecture.md` / `static-analysis-engine` — present engine-first as settled; **its *weight* is gated on
   the `kDEPS` investment split / the unrun go/no-go**, and the later perf/recovery rounds demoted how far
   static-derive alone reaches. (Marker added.)
 - **the metadata tension** (`kOOB`) — `pluggability` + `corpus-spike-seed-prompt` assert "no metadata
@@ -224,7 +224,7 @@ Strictly-additive supersession markers have been applied to the files marked ⟢
   **VALUE band size** (`kPROBING`), not raw skip-rate. (README/DESIGN flagged-for-user; AGENTS marker added.)
 - **AGENTS "current focus: the analysis engine"** — imprecise; the immediate next action is *the corpus
   go/no-go spike that decides the engine-vs-oracle investment split.* (Marker added.)
-- **"measure the user's own homelab corpus"** (`corpus-spike-seed-prompt`, `phase-1` Step −1, note 30) —
+- **"measure the user's own homelab corpus"** (`corpus-spike-seed-prompt`, `static-analysis-engine` Step −1, note 30) —
   **reversed** by *contrast-not-compound* (§3): sample *public* corpora, not the user's own. (Markers/notes added.)
 - **README staleness** (user-acknowledged) — elevator pitch predates several design decisions; treat as
   tiebreaker-for-intent only, supplanted by later-mtime docs this round.
@@ -235,7 +235,7 @@ the corpus (Q-WORKINGSET). **Do not force it now.** The user's live lean (per di
 (better single-binary distribution + a deliberate skill-stretch, but more LLM-dependence) **vs** a
 **minimal OCaml analysis-engine via Melange + a TypeScript harness for the generic/UX bulk** (both
 languages the user is expert in → faster iteration, less LLM-dependence; TS for
-contributor-friendliness/adoption). Correction to `phase-2 §A`: the Melange option is **not**
+contributor-friendliness/adoption). Correction to `language-workload-orchestration §A`: the Melange option is **not**
 "over-engineering for v1" — for this user it's an *adoption/contributor-friendliness* play, a legitimate
 and live contender. Decide after the spike.
 

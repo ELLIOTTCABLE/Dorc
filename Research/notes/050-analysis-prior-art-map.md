@@ -5,7 +5,7 @@
 Parsing is treated as **solved/pluggable** (user directive); assume a reasonable parsetree over a corpus of files/modules. This map organizes the *analysis* prior art to slurp up **before** synthesizing. Synthesis is gated on coverage.
 
 ## The reframe (what "soundness" means here)
-> **Update (two-soundness standard):** this round modeled only what's now called *elision-soundness* (don't omit a necessary probe/mutation). The co-equal *probe-soundness* (the read-only projection must not itself mutate; opposite fail-action) was left implicit. See AGENTS §1.
+> **Update (two-soundness standard):** this round modeled only what's now called *elision-soundness* (don't omit a necessary probe/mutation). The co-equal *probe-soundness* (the read-only projection must not itself mutate; opposite fail-action) was left implicit. See `kFAIL`.
 - **(1A) elision-soundness = sound over-approximation of the necessary-probe set.** Probe(c) is *necessary* iff c is *reachable* AND c *may-mutate*. So the probe set = `Reachable ∩ MayMutate`, and 1A demands we over-approximate both (never omit). Unmodeled constructs → ⊤ (un-probeable + can't-skip) — sound by construction; this is abstract interpretation's safe direction.
 - **(1B) precision = tighten the over-approximation** (best-effort, undecidable in the limit): dead-code/reachability pruning, purity/MOD precision, slice-to-relevance, path/flow sensitivity.
 - **(2) retain reachability/tracing** = build a *reusable* dependence graph + queryable fact base (+ provenance for explainability), not a one-shot pass.

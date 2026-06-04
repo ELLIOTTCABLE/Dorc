@@ -25,7 +25,7 @@ SURE: independent codebases converge on the same 3-way split for an *extensible*
 - **Incremental fixpoint** (Soufflé semi-naïve delta; IncA; Reviser for IFDS; Salsa-style memoized queries): the diff-time recompute. (Mechanism detail: note 54.)
 
 ## How this answers the three questions (forming)
-- **Q1** = forward over-approximating may-mutate (MOD) analysis (Salcianu-Rinard domain) propagated via IFDS/IDE-style summaries over the dependence/value-flow graph; probe set = Reachable ∩ MayMutate; ⊤-on-unknown (un-probeable + can't-skip) for soundness (two: probe + elision, see AGENTS §1).
+- **Q1** = forward over-approximating may-mutate (MOD) analysis (Salcianu-Rinard domain) propagated via IFDS/IDE-style summaries over the dependence/value-flow graph; probe set = Reachable ∩ MayMutate; ⊤-on-unknown (un-probeable + can't-skip) for soundness (two: probe + elision, see `kFAIL`).
 - **Q1B** = slicing (backward from probe set) + sparse value-flow + realizable-path/CFL precision + demand.
 - **Q2** = the dependence/value-flow graph IS the retained reachability structure; expose as a Datalog fact base so new analyses = new rules; provenance = explainability.
 - **Q3** = compositional per-role summaries + sparse + Datalog-native + region-partitioning + demand + incremental — every lever maps onto the modular ops-corpus structure.

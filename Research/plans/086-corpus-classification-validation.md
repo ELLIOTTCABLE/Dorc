@@ -6,6 +6,8 @@
 > (`[81]`). Goal: return the `kDEPS` engine-vs-oracle go/no-go *without confirming the
 > design by construction* — using the instrument, sample, and calibration-harness plan
 > you already have, not a blind pipeline. Confidence markers throughout.
+>
+> ⟢ **DOC-ROLE (2026-06-03):** this is **research-steps planning** (a de-biasing methodology for *if* a corpus VALUE-band is computed) — not a findings doc, and it does **not** reflect the round's actual outcome. The later kill-criteria round **shelved the precise band as the go/no-go**: `088-implementation-strategy-advisory.md` §5 (`do-3`) says don't compute it, and moves the go/no-go to the `do-4` dogfood existence-proof. Keep the instrument; treat this protocol as superseded-in-intent.
 
 ## The problem in one paragraph
 The go/no-go is the VALUE-band size — the fraction of *mutating* ops that are
@@ -34,7 +36,7 @@ subjectivity or *anchored against ground truth* despite it.
    the op, observe the state delta. This anchors *both* axes empirically: did the
    "expensive" op actually do expensive work, and did the "shallow" guard actually capture
    the need or did state still change behind a passing guard (an *elision-soundness* probe,
-   AGENTS §1). A few dozen ground-truthed ops are enough to bias-correct the static band
+   `kFAIL-perform`). A few dozen ground-truthed ops are enough to bias-correct the static band
    estimate and put a real confidence interval on it. *(Lead, ungraded — verify in the
    source-discipline pass: "prediction-powered inference" combines many cheap static labels
    + a few gold labels into an estimate with a valid CI, so the static heuristic buys scale

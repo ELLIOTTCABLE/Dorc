@@ -102,11 +102,12 @@ rate → rework the thesis before any code.** Persist as a new `Research/notes/`
 notes + manifest.
 
 ## Anti-mispigeonhole reminders (things that took repeating; don't regress)
-- **Two soundnesses, never conflated** (AGENTS §1): probe-soundness (read-only pass never mutates;
+- **Two soundnesses, never conflated** (`kFAIL`): probe-soundness (read-only pass never mutates;
   fail-safe = withhold) vs elision-soundness (never skip needed work; fail-safe = perform). Opposite
   fail-directions.
 - **No metadata layer — it's all sh.** Findings reduce to proposed `if …; then` guards; there is no
   declared-effect/cost sidecar (Reading A: inference + shell structure, annotation held latent).
+  <!-- /* superseded 2026-06-03: overstated. Reconciled to `kOOB` — *minimize* the out-of-band layer, don't deny it: an irreducible OOB floor (effect-class · provenance/leaf-id · cost-class · memo-key+freshness) is real; its size is the open `Q-INFER`. See `KNOBS.md` `kOOB` + `083-synthesis-and-spike-charter.md` §7. */ -->
 - **Perf is cost-and-latency, not correctness** — every shortcut is elision-safe; tune toward speed in the
   safe direction. The spike measures *value headroom*, not a correctness gate.
 - The engine is the point (DESIGN component 2); orchestrator/executor is to be **ceded/pluggable**; the

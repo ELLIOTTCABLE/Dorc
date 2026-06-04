@@ -1,4 +1,4 @@
-# Phase 2 plan — language, parser strategy, orchestration scope
+# Language, parser strategy, orchestration scope
 
 > ⟢ 2026-06 — two calls here are reconsidered: the Melange (OCaml-core + TS-harness) option is **not** "over-engineering" — it's a live adoption/contributor-friendliness contender — and the impl-language decision is deferred until after the corpus spike (downstream of the `kFACTS` substrate measurement). Language choice is a USER DECISION, not a knob. Grep "Melange" / "language" for current direction.
 

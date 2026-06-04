@@ -12,6 +12,8 @@
 > is graded-and-read yet** — sources are *candidates* with provisional grades, to
 > be acquired + graded in the fronts (the existing `sources.json` A-corpus is
 > reused where it already covers a domain).
+>
+> ⟢ **DOC-ROLE (2026-06-03):** this is the round-9 **research charter** (the `interactive-research` `plan.md`) — its domain-map (§2) and constraints/hypotheses `P1`–`P6` (§3) are *provisional, deliberately un-graded candidates*, **not findings**. The round-9 **conclusions** are `099-state-tracking-synthesis.md` (+ companion `09A-specimen-grounding-synthesis.md`). Don't cite this doc's framing as a result.
 
 ## ⚑ Findings-vs-stated-positions watch (per human direction, 2026-06-02)
 

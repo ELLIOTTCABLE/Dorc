@@ -12,7 +12,7 @@ Dorc's analysis is a **compositional, over-approximating may-mutate (MOD) abstra
 ## Q1 — soundly reduce parsetree → minimal-but-complete probe set
 
 ### 1A — the two soundnesses (probe-soundness + elision-soundness)
-Two distinct obligations with *opposite* fail-safe actions (see AGENTS §1). **Probe-soundness**: the
+Two distinct obligations with *opposite* fail-safe actions (see `kFAIL`). **Probe-soundness**: the
 read-only projection must never itself mutate — rests on correct inert-classification (`inert ⇒ really
 read-only`); an uncertain leaf is *un-probeable* (defer to apply), never run raw. **Elision-soundness**
 (the rest of this section): never omit a necessary probe/mutation. Its necessary-probe set is

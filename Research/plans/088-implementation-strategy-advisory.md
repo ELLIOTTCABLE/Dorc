@@ -6,13 +6,13 @@
 > what the kill-criteria session learned about project-killers, about the limits of upfront
 > analysis, and about how to scope the *first* code so it sets direction / risks killing the
 > project cheaply — as opposed to "Making Quality Software the Normal Way." It **reframes the
-> build-order** of `021-phase-1-static-analysis-engine.md` (which is engine-first, quality-engineering)
+> build-order** of `021-static-analysis-engine.md` (which is engine-first, quality-engineering)
 > and re-scopes the corpus go/no-go of `083-synthesis-and-spike-charter.md` §3. Reasoning roots:
 > `notes/087-kill-criteria-critique-and-scope-down.md`. Confidence markers throughout; design
 > tensions by `KNOBS.md` slug.
 
 ## 0. Read this before you phase the work
-The existing plans describe a *good engine* (`analysis-architecture`, `phase-1`) and a *good corpus
+The existing plans describe a *good engine* (`analysis-architecture`, `static-analysis-engine`) and a *good corpus
 study* (`charter` §3, `corpus-classification-validation`). Both are correct as designs and both are
 the wrong *first move*. The pre-mortem + the author's pushback (note 82) converged on a different
 opening: **the first implementation's job is to produce a go/no-go signal, not to be the foundation of
@@ -60,7 +60,7 @@ content-addressed; note 82 §4):
 The sequence: **build cheap-elision first, dogfood it, and watch whether its unsoundness ever actually
 bites** (a greyed line that needed to run, on your real ops). If it bites, *that pain is the earned,
 empirical justification for the analyzer.* If it never bites, you have shipped something useful and
-dodged the cathedral *and* the `A-ORACLE` existential risk. This inverts `phase-1`'s engine-first order:
+dodged the cathedral *and* the `A-ORACLE` existential risk. This inverts `static-analysis-engine`'s engine-first order:
 the analyzer should be *pulled into existence by observed need*, not pushed as foundation. (Gate this on
 `do-1`: under pure analyzer-locus you may skip straight to `do-4`; under UX-locus or hybrid, `do-2`
 first is +SURE the right order.)
@@ -71,7 +71,7 @@ the §1 disciplines (disposable-until-proven, dogfood, multi-threat).
 
 **BUILD — smallest end-to-end path, no more:**
 - *Parser:* reuse the already-vendored `tools/corpus` tree-sitter-bash (wasm, committed). Do **not**
-  open the parser-strategy/language lock-in question (`phase-2 §A`) — that's not what this spike tests;
+  open the parser-strategy/language lock-in question (`language-workload-orchestration §A`) — that's not what this spike tests;
   tree-sitter is throwaway-fine here.
 - *CFG:* build over the parse, but only model the control-flow constructs your dogfood scripts *actually
   use*; **⊤-reject everything else** (the elision-soundness discipline, `do-5`/TODO — acceptance gates
@@ -137,13 +137,13 @@ foundation-quality. If it's sprawling past two weeks, you are building the cathe
 
 ## 7. What NOT to do (the anti-goals)
 - ✗ Re-run the precise corpus band statistic (proven expensive + science-theatre-prone; `do-3`).
-- ✗ Build the engine cathedral (`phase-1` empty-dir→engine) as quality-software *before* the `do-4`
+- ✗ Build the engine cathedral (`static-analysis-engine` empty-dir→engine) as quality-software *before* the `do-4`
   go/no-go. Earn the mandate first.
 - ✗ Let "the UX falls out anyway" justify the analyzer (the author disowned this; note 82 §4). If the
   value is the UX, build the UX tool (`do-2`) and discover whether the analyzer is even wanted.
 - ✗ Build the executor's rich knobs / async fan-out / scheduler in v1 (SEAM/reserved; the under-investment
   trap is a *later* fight, not a *first* one).
-- ✗ Open the language/parser lock-in (`phase-2`) during the spike — orthogonal to what it tests.
+- ✗ Open the language/parser lock-in (`language-workload-orchestration`) during the spike — orthogonal to what it tests.
 
 ## 8. Controllability footnote (for the phasing agent)
 The author ranks `A-ORACLE` #1 partly because it feels *low-control* (community uptake). That conflates
@@ -154,7 +154,7 @@ controllable than the dread implies — *if* the DX-tooling leverage is invested
 lever on the #1 existential risk.
 
 ## 9. Relationship to existing plans (supersession pointers, additive)
-- ⟢ `021-phase-1-static-analysis-engine.md` — its *build-order* (engine-first, corpus-Step-−1-gate) is
+- ⟢ `021-static-analysis-engine.md` — its *build-order* (engine-first, corpus-Step-−1-gate) is
   reframed: the go/no-go gate is `do-4` (dogfood vertical slice), not a corpus statistic, and the order is
   `do-2` (cheap-elision-first) where the value-locus isn't pure-analyzer. The engine *design* stands; its
   *primacy as the first build* does not (consistent with the charter's own "engine-primacy provisional").

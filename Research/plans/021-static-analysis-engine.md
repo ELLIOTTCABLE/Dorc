@@ -1,4 +1,4 @@
-# Phase 1 plan — empty dir → high-confidence POSIX-sh CFG / effect engine
+# Static analysis — empty dir → high-confidence POSIX-sh CFG / effect engine
 
 > ⟢ **SUPERSEDED-IN-PART (2026-06-01):** near-term scope is the **Tier-A** path only (intraprocedural per-function skip + ~40 bootstrap oracles); Tier-B and the full hybrid engine are gated on the `kDEPS` investment split (the corpus go/no-go). Current synthesis: `Research/plans/083-synthesis-and-spike-charter.md` + `KNOBS.md`.
 
@@ -14,6 +14,7 @@ Evidence (from the read corpus, all A-grade):
 - The CoLiS group — maximally formal-methods-capable — verified **only the interpreter of a clean intermediate language**, in **Why3 + automated SMT** (deliberately *not* Coq/Isabelle, judged too heavy), and even that needed a novel "ghost-skeleton" proof technique for one simplified-language interpreter. (VSTTE 2017.)
 - They **could not** formally verify the two parts Dorc lives on: the **parser** ("POSIX spec is informal → impossible to prove correct; we don't even claim absence of bugs") and the **shell→IL translation** (no formal shell semantics). Both are trusted via review + **differential testing vs dash/bash**. (Morbig paper; TACAS 2020.)
 - The proof effort bought **soundness of a symbolic over-approximation** — the exact goal Dorc rejected.
+  <!-- /* superseded 2026-06-03: mischaracterized. [A-verified-interpreter-shell-vstte-2017] proved its CoLiS interpreter both SOUND AND COMPLETE w.r.t. the CoLiS semantics — an equivalence (Thm 1), not "an over-approximation." Symbolic over-approximation is the TACAS-2020 engine's property (and Abash's, cited there as others' work). The "Dorc rejected over-approximation" point holds — but it's the engine, not this proof. Source-claim audit → MILD. */ -->
 
 Verdict (SURE): No Coq/Isabelle; and not even CoLiS-style Why3+SMT as a *methodology*. Rationale: Dorc's domain is precisely the regime where CoLiS itself fell back to trust+testing; end-to-end soundness is unattainable regardless (the un-provable front-end gates everything), so proving the middle buys nothing the user wants. **Replace formal verification with the calibration harness (§5)** — differential testing + property tests + the user's own test-container oracle-fixture idea. 
 - Narrow, *deferred* exception (GUESS): the algorithmic kernels where a bug is **silent and dangerous** — the probe-soundness invariant "⊥ (inert-classified) ⇒ provably no mutation" (plus elision's "skip ⇒ proven-converged") — could merit a small property-test suite or even a Why3 lemma. That's a v2 unit-confidence tool for one function, not a project methodology. Do not adopt up front.
@@ -43,9 +44,10 @@ Cross-cutting: [Calibration harness] differential + property + container fixture
 - **The dynamic-construct boundary** (`eval`, dynamic command names, `. "$dyn"`, recursive `$((…))`, LValue-taking builtins) → `⊤`/`unsafe` by construction (enumerated in `notes/040`).
 - **Quoting/word-splitting fragility** is pervasive (80% of real scripts have ≥1 smell) → unquoted expansion must be a first-class hazard, not an edge case.
 
-**The effect lattice (the heart):** orientation is the planning-log's and it's a textbook **forward, may** analysis (SPA §5.8). ⊤ = may-mutate/unknown is the conservative default; skip only on ⊥. Each command's transfer function comes from its oracle's declared **effect class** (pure-query / mutating / unknown). Unknown command, eval, unrecognized guard → ⊤ (un-probeable at probe-time + can't-skip at apply). The cost asymmetry is **phase-dependent** (apply: false-skip dangerous, false-run cheap; probe: a mis-run mutation is the catastrophe) — encoded by the per-phase lattice orientation, not by a proof. Two soundnesses; see AGENTS §1.
+**The effect lattice (the heart):** orientation is the planning-log's and it's a textbook **forward, may** analysis (SPA §5.8). ⊤ = may-mutate/unknown is the conservative default; skip only on ⊥. Each command's transfer function comes from its oracle's declared **effect class** (pure-query / mutating / unknown). Unknown command, eval, unrecognized guard → ⊤ (un-probeable at probe-time + can't-skip at apply). The cost asymmetry is **phase-dependent** (apply: false-skip dangerous, false-run cheap; probe: a mis-run mutation is the catastrophe) — encoded by the per-phase lattice orientation, not by a proof. Two soundnesses; see `kFAIL`.
 
 **Engine/oracle separation (the load-bearing CoLiS lesson):** the analysis engine is *generic over command knowledge*; each command's check/effect is a plug-in. CoLiS proved this scales to ~28k scripts / hundreds of commands. Dorc keeps the split but swaps CoLiS's *symbolic FS-relation spec* for an *executable check-oracle shipped to and run on the host* (probe real state instead of symbolically modelling it).
+<!-- /* superseded 2026-06-03: "hundreds of commands" is the plan's own quantifier — [A-colis-installation-scenarios-tacas-2020] counts only the scripts ("28 814 maintainer scripts in 12 592 packages") and says merely "most of the UNIX commands called by the maintainer scripts" (unquantified). The engine/oracle-split substance holds; only the command-count is unsourced. Source-claim audit → MILD. */ -->
 
 ## 3. How much can we crib? (per component, license-aware — see `notes/040`)
 - **Parser:** techniques are free (non-copyrightable). Code reuse is license-gated: Morbig (the ideal fit) is **GPL-3** → either clean-room reimplement its incremental-LR + speculative-parsing recipe (~2–5k LoC; the SLE'18 paper is a near-complete spec) **or** bind **tree-sitter-bash** (MIT, C) if its tree suffices **or** fork **mvdan/sh** (BSD) iff Dorc is Go. (Decided in Phase 2.)
@@ -77,6 +79,7 @@ This is the user's "test-container toolkit," elevated to the project's correctne
 - **Step 3: effect lattice + oracle interface + per-host skip.** Forward may-analysis; ⊤/⊥; ship the **~40–50 bootstrap oracles** (the bash-in-the-wild priority list: `echo [ test cd export source read printf` + `rm mkdir cat cp mv ln chmod chown touch mkdir test ...`). Acceptance: "clean host → skip; any dirty leaf → no-skip" on container fixtures, zero false-skips.
 - **Step 4: per-function skip** (intra-function leading-guard reasoning) — *the differentiator* (relieves Ansible's "re-run whole fleet for one role"). Intra-function syntactic fact-matching only; no canonical-predicate vocabulary yet.
 - **Step 5 (defer): Tier-B** interprocedural facts + backward slicing (SPA §8–9 / IFDS) → sub-host minimal mutation set; the ~dozen canonical high-fanout facts. Build only if the 10% earns it.
+  <!-- /* superseded 2026-06-03: "slicing" is not in SPA — the textbook has no slicing chapter. Its source is [A-horwitz-reps-binkley-sdg-slicing-toplas-1990] (slicing = graph reachability; see 055:32); keep "SPA §8–9" for the interprocedural/IFDS/IDE content. Same fix applies to the pipeline line in §2 ("slicing → minimal mutation set"). Source-claim audit → MILD. */ -->
 - **Cross-cutting from Step 1:** the calibration harness (§5).
 
 ## 7. Phase-1-specific risks / open calls
@@ -85,4 +88,4 @@ This is the user's "test-container toolkit," elevated to the project's correctne
 - **Quoting/word-splitting** must be modeled as a hazard from Step 2 (it's everywhere), not bolted on.
 - **`set -e`/`trap` reachability** is the subtlest correctness trap — prioritize fixtures here.
 - **Leading-guard-only hoisting** assumption (planning log) — validate against the spike corpus, not asserted.
-- **License**: if we link Morbig/ShellCheck we inherit GPL-3 — decide deliberately in Phase 2 (see plan 2).
+- **License**: if we link Morbig/ShellCheck we inherit GPL-3 — decide deliberately in Phase 2 (see `041`).

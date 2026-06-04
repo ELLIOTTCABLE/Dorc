@@ -50,7 +50,7 @@ Acquisition above answers *where to get data*. This section answers *what to com
 
 **The single most decision-relevant number: the anti-correlation ratio** — among *expensive* ops, the shallow:deep check ratio. If expensive ops are mostly deep, the value band is thin *by nature* and M4 is the only lever (Blow 3 confirmed). If many expensive ops are shallow-checkable, the thesis is healthy.
 
-**Supporting (necessary, not sufficient):** the **un-analyzable rate** (leaves forced to must-probe/can't-skip by external/non-det reads, no oracle, dynamic constructs — note 71 / phase-1 Step −1; caps everything) and the **cheap-mutation fraction** (how much headline skip-rate is illusory JUST-RUN).
+**Supporting (necessary, not sufficient):** the **un-analyzable rate** (leaves forced to must-probe/can't-skip by external/non-det reads, no oracle, dynamic constructs — note 71 / static-analysis-engine Step −1; caps everything) and the **cheap-mutation fraction** (how much headline skip-rate is illusory JUST-RUN).
 
 **Method honesty:** on a *static* corpus, both axes are *heuristic estimates* (command-name → cost-class; "guard exists ∧ is a known-shallow predicate" → shallow) — enough to *size* bands, not to measure precisely. State the heuristic + error bars; no silent precision-claims. A later container-fixture pass (the calibration harness) can ground-truth a sample by *running* it. **Shortcut available:** `shstats` (cloned, `Vendor/colis-anr/shstats`) already does corpus-wide shell AST statistics — extend it for the two-axis tally rather than writing from scratch.
 

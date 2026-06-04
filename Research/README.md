@@ -40,17 +40,26 @@ often also full of superseded/incorrect info. peruse older rounds with care.)
   *advisory, not a phased plan*; reasoning in `notes/087`, kill-listing in `../DESIGN.md`).
 - **Tracking shared state across hosts** — `plans/099` (latest round's conclusion: relational
   contracts over referent-agnostic symbols · MUST-vs-MAY · the IFDS decidable floor).
+- **Real-world grounding of that round (specimens)** — `plans/09A` (bless/abdicate × bake-into-core · the Tier-A/B canonical-forms ledger · the rarity ≠ effect / contract-not-detector correction).
 
 Through-line worth holding: the **soundness story keeps getting re-cut** — bias-inversion
 (`051`) → perf demotes statically-derived deps (`076`) → trace-don't-derive recovery (`077`) →
 relational MUST/MAY contracts (`099`). Later cuts supersede earlier framings of *how much Dorc
 can know without running the host*; on that question, the later round wins.
 
-> *Latest — round 9, 2026-06-02, state-tracking:* the `plans/099` conclusion above, now
-> ground-tested against verbatim real-world scripts in the new `specimens/` corpus —
-> `specimens/090` (a kernel-dev task-runner; the **bless-vs-abdicate** idiom ledger) and
-> `specimens/091` (stack's installer; the **m×n abdication** motivator + meta-contract debt).
-> Specimens are reproduced commit-pinned + byte-checked via `tools/inline-specimen.sh`.
+> *Latest — round 10, 2026-06-02/03, security prior-art & threat-modeling:* the TODO security dive →
+> map (`plans/101`) + the **Dorc system threat-model** (`plans/102`). Key cuts: the probe-non-mutation
+> contract has a *first-party* refutation (Chef why-run; "read-only ≠ side-effect-free") and **its
+> soundness stops hard at the oracle-grounding boundary** — transfer-to-contract, never *eliminate* (the
+> live correctness frame; supersedes any "static-withhold guarantees it" reading). Control-node =
+> whole-fleet blast radius (Salt CVE); seccomp = classifier not sandbox; Dorc-is-a-package-manager is the
+> supply-chain lever (lean: **no registry**, defensive-lint backstop); methodology = *democratized* STRIDE.
+> Knob `kAGENTLESS` (was `kBLAST`) added welded; `kTRUST`/registry parked. **Version-drift** (same
+> version-string ≠ same bytes) flagged as the concrete grounding-breaker → a parked content-hash spike.
+>
+> *Prior — round 9, state-tracking:* `plans/099` ground-tested against verbatim real-world scripts in
+> `specimens/` (`090` kernel task-runner = bless-vs-abdicate ledger; `091` stack's installer = m×n
+> abdication + meta-contract debt; commit-pinned + byte-checked via `tools/inline-specimen.sh`).
 
 ## The per-round map (reference — the spine above is the curated reading order)
 - `notes/000-source-manifest.md` — every source, graded (quality/relevance) + the **license contamination map**.
@@ -61,13 +70,13 @@ can know without running the host*; on that question, the later round wins.
 - `notes/020-colis-architecture-and-coq-verdict.md` — the engine/oracle architecture that scales; **why Coq is not justified**.
 - `notes/030-corpus-evidence-and-positioning.md` — real-world corpus evidence (28k + 1.35M scripts); the bootstrap-oracle list; positioning vs ShellCheck.
 - `notes/040-parser-architectures-and-cribbability.md` — Morbig vs Oils vs mvdan; what we can legally crib.
-- **`plans/021-phase-1-static-analysis-engine.md`** — **the hard part**: empty dir → CFG/effect engine.
-- **`plans/041-phase-2-language-workload-orchestration.md`** — language / parser / orchestration (decisions to make).
+- **`plans/021-static-analysis-engine.md`** — **the hard part**: empty dir → CFG/effect engine.
+- **`plans/041-language-workload-orchestration.md`** — language / parser / orchestration (decisions to make).
 - `learning-path/README.md` — curriculum for the human (anchor: the SPA textbook).
 
 ### Analysis round (round 2 — soundness/reachability/mutation, the user's real concern)
 - `notes/050-analysis-prior-art-map.md` — the campaign map (reframe of "soundness" as over-approximation; bodies of work per Q1/Q2/Q3).
-- `notes/051-mutation-core-and-compositional-scaling.md` — MOD/purity domain + compositional summaries; **the soundness-bias inversion** (now refined into the two-soundness standard — *probe-soundness* vs *elision-soundness*; see AGENTS §1).
+- `notes/051-mutation-core-and-compositional-scaling.md` — MOD/purity domain + compositional summaries; **the soundness-bias inversion** (now refined into the two-soundness standard — *probe-soundness* vs *elision-soundness*; see `kFAIL`).
 - `notes/052-ifds-engine-and-datalog-bridge.md` — IFDS/IDE engine; side-effect & Datalog bridges.
 - `notes/053-reusable-structure-and-scale-mechanisms.md` — PDG/SDG vs Datalog vs value-flow; scale levers.
 - `notes/054-dynamic-language-soundness-tajs.md` — sound AI of a dynamic language (recency abstraction; eval→⊤).
@@ -114,11 +123,20 @@ can know without running the host*; on that question, the later round wins.
 
 ### Specimens (round 9 — verbatim real-world code, literate-annotated; design quarry, not a measurement)
 Each specimen is a real script reproduced byte-exact + commit-pinned via `tools/inline-specimen.sh`, then annotated for how facts get *spelled* idiomatically — surfacing candidate idioms to **bless** (collapse to one analyzer-recognised form) vs **abdicate** (delegate the open-ended, higher-kinded zoos to community-named kinds, since baking them is an **m×n** registry of every-alias × every-concept).
+
+**Synthesis / on-ramp: `plans/09A-specimen-grounding-synthesis.md`** — bless/abdicate × bake-into-core, the Tier-A/B canonical-forms ledger, and the **rarity ≠ effect / contract-not-detector** correction. Companion to `plans/099` (does not edit it).
 - `specimens/090-literate-specimen-kernel-task-runner.md` — kernel-dev task-runner. The bless/abdicate ledger (`[ -f X ]`, `[ A -nt B ]`, `trap…EXIT/ERR`, `set -e`) **plus** the bake-into-core patterns: transient state (`trap`), provisioning-through-a-mount as *transport*, and atomic-publish licensing the probe (TOCTOU). The real-world grounding `099` §9 asked for.
 - `specimens/091-specimen-stack-get-stack.md` — stack's `get-stack.sh`: the Puppet-RAL by hand, the **m×n abdication** motivator, and the **meta-contract debt** (how mutually-unaware oracles declare `provide`/equivalence/wrinkles in plain sh). The *last* abdicate-bucket specimen.
+- `specimens/092-bc-cfg-shell-env-state.md` — **first bake-into-core** specimen (an *excerpt class*, commit-pinned snippets): the **shell-execution-environment** state the analyzer must model — options (`set -euo pipefail`; `$-`-conditional `set +e` toggles), cwd (subshell-scoped `cd`), traps (canonical + *conditional*), `|| true` best-effort. Carries an early **bc-crossCFG** lead: system-state save/restore looks genuinely rare (the common bounded mutate-then-restore sections are all shell-internal).
+- `specimens/093-bc-crosscfg-system-state-rarity.md` — **bc-crossCFG** (task #2): system-state save/restore brackets (do_x;…;undo_x over host state, the W5 wrong-skip) are **rare** — the obvious tool-pairs (iptables-save/restore, setenforce, modprobe/rmmod) are dominated by *persistence / permanent-disable*, not transient revert. One clean counterexample (leifliddy mkosi build: `getenforce → setenforce 0 → trap 'setenforce 1' EXIT`); its undo is a `trap` — but (corrected) the `trap` is a **contract, not a detector**: the identical trap-free do/undo is more common and invisible, opaque mutators leave no trace (W3), and transient-ness is undecidable (Rice/W1). Rarity bounds the *cost* of the conservative withhold-default, never buys detection.
 - Tooling: `tools/inline-specimen.sh OWNER/REPO PATH NOTE.md` — fetch verbatim + commit-pin + license + sha256, then edit around the single fenced block.
 - *Forward:* specimen-hunting pivots from abdicate-bucket exemplars to **bake-into-core** correctness patterns (the control/state-flow the analyzer must model itself).
 - **`plans/099-state-tracking-synthesis.md`** — **the conclusion**: the design-space map (§2 walls · §3 decidable floor · §4 contracts/q-floor · §5 knob deltas · §6 the probe's role · §7 spec-mining placement · §8 the two spines).
+
+### Security prior-art & threat-modeling round (round 10 — the TODO security dive; 2026-06-02)
+- `notes/100-security-prior-art-and-threat-modeling.md` — 17 practitioner-weighted sources graded (13 round-10 + ProxyJump/shellcheck for (b) + Matrix-AI/seal for the version survey); findings + verbatim citations + the human's gate-adjudication. **Probe-non-mutation has a first-party refutation** (Chef why-run; "read-only ≠ side-effect-free") *and* **stops at the oracle-grounding boundary** (transfer-to-contract, never eliminate); **control-node = whole-fleet RCE** (Salt CVE); **seccomp = classifier not sandbox**; **Dorc is a package manager** (supply-chain lever; users don't read scripts → defensive-lint backstop); methodology = *democratized* STRIDE.
+- **`plans/101-security-threat-modeling-map.md`** — the map + **fronts 1–6** + the gate-adjudicated knobs **`kAGENTLESS`** (was `kBLAST`; push blast-radius — *added to KNOBS, welded*) and **`kTRUST`** (oracle-distribution integrity — *parked/out-of-scope*; cede to git). Gap-answers: oracle-trust → no code-fetching, defensive-lint backstop; **probe-contract → not a decision** (read-only welded-forced, cost best-effort); push → *ergonomic not a security claim*.
+- **`plans/102-dorc-threat-model.md`** — the deliverable: STRIDE over 5 trust-elements (operator-node · ssh-hops · probe · oracle · plan-output) + the **soundness-boundary** doctrine (eliminate only in Dorc's *own* code; oracle-behaviour = transfer+mitigate) + premortem + per-oracle template + **7 banked footgun-avoidance items**. Plus **Cross-cutting · version-drift** (the concrete grounding-breaker; content-hash-gating as the no-registry defence — *parked spike*, see `../TODO.md`).
 
 ## Vendor/ (full-history clones)
 CoLiS ecosystem (morbig, morsmall, colis-language, colis-constraints, shstats, lintshell, …), shellcheck, mvdan-sh, smoosh, oils, goblint-analyzer, tree-sitter-bash. See manifest for grades/licenses.
