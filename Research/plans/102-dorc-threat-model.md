@@ -65,7 +65,7 @@ Trust boundaries crossed: author→oracle (supply chain), oracle→control-node 
     *un-analysable* part only.
   - **Mitigate, best-effort backstops** → `plans/077` seccomp socket-observe + deferred `plans/078`
     container/trace *detect some* non-inert leaves the author missed — detection, not proof.
-  The CoLiS/smoosh base ([A-colis-specification-of-unix-utilities-2019] · [A-smoosh-popl-2020] ·
+  The CoLiS/smoosh base ([B-colis-specification-of-unix-utilities-2019] · [A-smoosh-popl-2020] ·
   [A-verified-interpreter-shell-vstte-2017]) bounds *how much propagation* can be sound; it does **not**
   extend soundness past the grounding boundary. Dorc's edge over Chef is the **contract + tooling +
   fail-safe direction**, not a guarantee Chef lacked.
