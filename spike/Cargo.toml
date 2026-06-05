@@ -9,7 +9,7 @@
 # analysis · probe · plan · hostsim · cli.
 [workspace]
 resolver = "2"
-members = ["crates/core", "crates/syntax"]
+members = ["crates/core", "crates/syntax", "crates/analysis"]
 
 [workspace.package]
 edition = "2021"

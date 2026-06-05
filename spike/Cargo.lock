@@ -3,6 +3,13 @@
 version = 4
 
 [[package]]
+name = "dorc-analysis"
+version = "0.0.0"
+dependencies = [
+ "dorc-core",
+]
+
+[[package]]
 name = "dorc-core"
 version = "0.0.0"
 
