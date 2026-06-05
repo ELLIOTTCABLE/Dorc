@@ -232,4 +232,29 @@ mod tests {
         assert!(r.converged);
         assert!(r.states.is_empty());
     }
+
+    #[test]
+    fn solve_runs_a_must_analysis_over_the_dual() {
+        use crate::lattice::{Flat, Must};
+        // The engine-wide-meet payoff (note 165 L1): a *must* analysis needs no new
+        // solver — running the unchanged worklist over the order-dual `Must<L>`
+        // turns ⊔-at-merges into ⊓-at-merges. On a diamond, a fact is must-true at
+        // the join only if BOTH branches agree.
+        let g = TestGraph::from_edges(4, &[(0, 1), (0, 2), (1, 3), (2, 3)]);
+
+        let agree = solve(&g, Direction::Forward, |v, inp: &Must<Flat<u8>>| match v {
+            1 | 2 => Must(Flat::Elem(5)),
+            _ => inp.clone(),
+        });
+        assert!(agree.converged);
+        assert_eq!(agree.states[3], Must(Flat::Elem(5)), "both branches agree ⇒ must-Elem(5)");
+
+        let disagree = solve(&g, Direction::Forward, |v, inp: &Must<Flat<u8>>| match v {
+            1 => Must(Flat::Elem(5)),
+            2 => Must(Flat::Elem(6)),
+            _ => inp.clone(),
+        });
+        assert!(disagree.converged);
+        assert_eq!(disagree.states[3], Must(Flat::Bottom), "branches disagree ⇒ ⊓ ⇒ ⊥, no must-fact");
+    }
 }

@@ -239,6 +239,68 @@ impl<K: Ord + Clone, V: Lattice> Lattice for MapL<K, V> {
     }
 }
 
+/// Orientation wrapper: an **over-approximate** (*may*) value — `truth ⊆ self`
+/// ("at most these"). The identity wrapper on `L` (⊥-start, ⊔-merge). A `May`
+/// result is safe for "this MIGHT hold / might need to run"; per `inv-must-may` it
+/// can NEVER license a skip — that authority is the dual's (note 165 L1).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct May<L>(pub L);
+
+impl<L: Lattice> Lattice for May<L> {
+    fn bottom() -> Self {
+        May(L::bottom())
+    }
+    fn join(&self, other: &Self) -> Self {
+        May(self.0.join(&other.0))
+    }
+    fn meet(&self, other: &Self) -> Self {
+        May(self.0.meet(&other.0))
+    }
+}
+
+impl<L: BoundedLattice> BoundedLattice for May<L> {
+    fn top() -> Self {
+        May(L::top())
+    }
+}
+
+/// Orientation wrapper: an **under-approximate** (*must*) value — `self ⊆ truth`
+/// ("at least these"). Implemented as the **order-dual** of `L`: its ⊥ is `L`'s ⊤
+/// and its ⊔ is `L`'s ⊓, so running the (always ⊥-start, ⊔-merge) [`solve`] over
+/// `Must<L>` performs a *must* analysis on `L` (⊤-start, ⊓-merge) — one engine,
+/// both orientations, the merge picked by the *type* (note 165 L1; this is what
+/// kills the union-where-you-needed-intersection bug). Only a `Must` value may
+/// license a skip.
+///
+/// Requires `L: BoundedLattice` for the ⊤ that becomes the dual's ⊥ — which is
+/// precisely why a must-analysis over a bare [`Powerset`] does not type-check.
+///
+/// *Boundary note:* a forward-must analysis whose entry in-state is **not** ⊤
+/// (e.g. available-expressions, entry = ∅) must seed that boundary explicitly;
+/// the default [`solve`] starts every node at the merge-identity (`Must`'s ⊥ =
+/// `L`'s ⊤). Add boundary seeding when the first such analysis lands (none yet —
+/// don't half-build it; cf. note 167 DP-8).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Must<L>(pub L);
+
+impl<L: BoundedLattice> Lattice for Must<L> {
+    fn bottom() -> Self {
+        Must(L::top()) // dual ⊥ = L's ⊤
+    }
+    fn join(&self, other: &Self) -> Self {
+        Must(self.0.meet(&other.0)) // dual ⊔ = L's ⊓
+    }
+    fn meet(&self, other: &Self) -> Self {
+        Must(self.0.join(&other.0)) // dual ⊓ = L's ⊔
+    }
+}
+
+impl<L: BoundedLattice> BoundedLattice for Must<L> {
+    fn top() -> Self {
+        Must(L::bottom()) // dual ⊤ = L's ⊥
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -369,5 +431,26 @@ mod tests {
         assert_eq!(m.get(&"svc"), Powerset::bottom(), "svc only in e, dropped by meet");
 
         assert_laws::<M>(&[M::default(), a, b, j]);
+    }
+
+    #[test]
+    fn orientation_wrappers_are_dual_lattices() {
+        use Flat::{Bottom, Elem, Top};
+        // May<L> is the identity wrapper — same ⊥/⊔/⊓ as L.
+        assert_laws(&[May(Bottom), May(Elem(1u8)), May(Elem(2u8)), May(Top)]);
+        assert_bounded(&[May(Bottom), May(Elem(1u8)), May(Elem(2u8)), May(Top)]);
+        assert_eq!(May(Elem(1u8)).join(&May(Elem(2))), May(Top), "May ⊔ = L's ⊔");
+
+        // Must<L> is the order-dual — still a lawful (bounded) lattice, with ⊥/⊔
+        // and ⊓ swapped. assert_laws passing IS the proof the dual is correct.
+        assert_laws(&[Must(Bottom), Must(Elem(1u8)), Must(Elem(2u8)), Must(Top)]);
+        assert_bounded(&[Must(Bottom), Must(Elem(1u8)), Must(Elem(2u8)), Must(Top)]);
+        assert_eq!(Must::<Flat<u8>>::bottom(), Must(Top), "Must's ⊥ = L's ⊤");
+        assert_eq!(Must::<Flat<u8>>::top(), Must(Bottom), "Must's ⊤ = L's ⊥");
+        assert_eq!(
+            Must(Elem(1u8)).join(&Must(Elem(2))),
+            Must(Bottom),
+            "Must's ⊔ = L's ⊓ (distinct elems meet to ⊥)"
+        );
     }
 }
