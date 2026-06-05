@@ -99,6 +99,21 @@ makes gnu the active toolchain, so there is no `+toolchain` footgun.
   branch, autonomous-commit is on. Style: `(AI <core-label>) terse message`, one
   line, `AI` label mandatory, no `Co-Authored-By` trailer. Never `git push`.
 
+## Spawning subagents (supervisor rule — mandatory)
+
+Every subagent this spike spawns MUST be told, as the first lines of its prompt,
+to read **in full**:
+
+- `<worktree>/README.md` and `<worktree>/DESIGN.md` — human-authored ground truth;
+  trust them over anything in `Research/` (unreviewed LLM planning-slop).
+- this `spike/CLAUDE.md` — the invariants above.
+
+No exceptions, even for "quick" tasks; pass the absolute paths. Then hand the
+subagent the specific invariant-slugs and research-chord slugs it must honor, and
+tell it to report back any context that *other* subagents must maintain. This is
+enforced by supervisor discipline (the prompt template), not a hook — do not let
+it slip.
+
 ## Confidence + reference discipline
 
 Mark uncertain claims in notes/reasoning with `+SURE` / `~SUSPECT` / `-GUESS` /
