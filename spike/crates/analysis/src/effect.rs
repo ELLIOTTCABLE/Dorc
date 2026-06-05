@@ -245,7 +245,11 @@ pub fn classify(cfg: &Cfg, ast: &Ast, idx: &KindIndex, interner: &mut Interner) 
     let mut out = Vec::new();
     for (i, effect) in effects.iter().enumerate() {
         let id = CfgNodeId(i as u32);
-        if cfg.node(id).kind != CfgNodeKind::Command {
+        // Only genuinely-runnable command leaves are plan/apply units. A command
+        // inside a `$( … )` substitution body is effect-bearing (it stayed in the
+        // reaching-defs above, so its mutations still poison/establish) but is NOT
+        // a leaf (find-cli-1, the dn-3 leaf-seam).
+        if cfg.node(id).kind != CfgNodeKind::Command || cfg.is_expansion_internal(id) {
             continue;
         }
         let class = match effect {

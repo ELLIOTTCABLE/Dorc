@@ -518,4 +518,24 @@ mod tests {
             "poisoned install must run even with a converged probe"
         );
     }
+
+    #[test]
+    fn substitution_internal_command_is_not_a_plan_leaf() {
+        // find-cli-1: the `$(uname)` body command must NOT be a plan Step (it runs
+        // during word expansion, not as a leaf); the two top-level commands are the
+        // only leaves. Before the fix this rendered a third, garbage step from the
+        // substring-relative span of the subst body.
+        let (plan, _) = plan_for("echo $(uname)\napt-get install -y nginx\n", Verdict::Diverged);
+        assert_eq!(
+            plan.steps.len(),
+            2,
+            "only the two top-level commands are leaves: {:?}",
+            plan.steps.iter().map(|s| s.sh.clone()).collect::<Vec<_>>()
+        );
+        assert!(plan.steps.iter().any(|s| s.sh.starts_with("echo")), "echo is a leaf");
+        assert!(
+            plan.steps.iter().any(|s| s.sh.contains("apt-get install")),
+            "install is a leaf"
+        );
+    }
 }

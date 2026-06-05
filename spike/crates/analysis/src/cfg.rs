@@ -112,6 +112,9 @@ pub struct Cfg {
     exit: CfgNodeId,
     succ: Vec<Vec<usize>>,
     pred: Vec<Vec<usize>>,
+    /// Per-node: lowered inside a command-substitution `$( … )` body (find-cli-1).
+    /// Such commands are effect-bearing but NOT plan/apply leaves.
+    expansion_internal: Vec<bool>,
 }
 
 impl Cfg {
@@ -147,6 +150,15 @@ impl Cfg {
     /// Predecessors of `id` as typed ids.
     pub fn pred_ids(&self, id: CfgNodeId) -> impl Iterator<Item = CfgNodeId> + '_ {
         self.pred[id.index()].iter().map(|&w| CfgNodeId(w as u32))
+    }
+
+    /// Was this node lowered inside a command-substitution `$( … )` body? Such
+    /// commands run during word expansion — they are effect-bearing (kept in the
+    /// dataflow) but are NOT plan/apply leaves (find-cli-1, the dn-3 leaf-seam).
+    /// Subshell `( )` and group `{ }` body commands are real leaves (not flagged).
+    #[must_use]
+    pub fn is_expansion_internal(&self, id: CfgNodeId) -> bool {
+        self.expansion_internal[id.index()]
     }
 }
 
@@ -268,6 +280,12 @@ struct Builder<'a> {
     /// redirection aborts under `set -e` just as a failing command does.
     fallible: Vec<bool>,
     toggle: Vec<Option<ErrExit>>,
+    /// Per-node: is this command lowered *inside* a command-substitution `$( … )`
+    /// body? Those run during word expansion, not as standalone leaves, so they
+    /// stay in the effect dataflow but are excluded from the plan/apply leaf set
+    /// (find-cli-1 / dn-3). Subshell `( )` and group `{ }` bodies are NOT marked —
+    /// their commands are real leaves.
+    expansion_internal: Vec<bool>,
     /// `ScopeExit` node → its matching `ScopeEnter` (find-4): the errexit forward
     /// pass restores the *pre-subshell* state at the exit, so a `set -e`/`set +e`
     /// toggle inside `( )`/`$( )` never leaks out. Both directions are kept so the
@@ -299,6 +317,7 @@ impl<'a> Builder<'a> {
             exit: CfgNodeId(0),
             fallible: Vec::new(),
             toggle: Vec::new(),
+            expansion_internal: Vec::new(),
             exit_to_enter: BTreeMap::new(),
             enter_to_exit: BTreeMap::new(),
             depth: 0,
@@ -314,6 +333,7 @@ impl<'a> Builder<'a> {
         self.pred.push(Vec::new());
         self.fallible.push(false);
         self.toggle.push(None);
+        self.expansion_internal.push(false);
         id
     }
 
@@ -737,7 +757,15 @@ impl<'a> Builder<'a> {
         for body in self.command_substs(word_id) {
             let enter = self.fresh(word_id, CfgNodeKind::ScopeEnter);
             self.add_edge(cur, enter);
+            // Commands lowered inside this `$( … )` body run during word expansion,
+            // so they are NOT plan/apply leaves (find-cli-1) — mark the whole body
+            // range (covering nested substitutions too). They remain in the effect
+            // dataflow; only their leaf-status changes.
+            let body_start = self.nodes.len();
             let body_exit = self.lower_node(body, enter);
+            for v in body_start..self.nodes.len() {
+                self.expansion_internal[v] = true;
+            }
             let leave = self.fresh(word_id, CfgNodeKind::ScopeExit);
             self.add_edge(body_exit, leave);
             self.pair_scope(enter, leave);
@@ -982,6 +1010,7 @@ impl<'a> Builder<'a> {
             exit: self.exit,
             succ: self.succ,
             pred: self.pred,
+            expansion_internal: self.expansion_internal,
         };
         debug_assert!(
             cfg_is_consistent(&cfg),

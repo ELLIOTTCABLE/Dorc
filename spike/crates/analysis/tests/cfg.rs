@@ -437,6 +437,36 @@ fn errexit_on_adds_failure_edge_to_exit() {
 }
 
 #[test]
+fn command_substitution_body_is_expansion_internal_subshell_body_is_not() {
+    // find-cli-1: a command inside `$( … )` is effect-bearing but NOT a leaf (it
+    // runs during word expansion); a command inside a subshell `( … )` IS a leaf.
+    let cfg = cfg_of("echo $(uname)");
+    let mut subst_internal = 0;
+    let mut leaves = 0;
+    for (id, node) in cfg.iter() {
+        if node.kind == CfgNodeKind::Command {
+            if cfg.is_expansion_internal(id) {
+                subst_internal += 1;
+            } else {
+                leaves += 1;
+            }
+        }
+    }
+    assert_eq!(subst_internal, 1, "the `$(uname)` body command is expansion-internal");
+    assert_eq!(leaves, 1, "the `echo` command is a leaf");
+
+    // A subshell body command is a real leaf (subshell bodies are NOT marked).
+    let sub = cfg_of("( uname )");
+    let mut sub_leaves = 0;
+    for (id, node) in sub.iter() {
+        if node.kind == CfgNodeKind::Command && !sub.is_expansion_internal(id) {
+            sub_leaves += 1;
+        }
+    }
+    assert_eq!(sub_leaves, 1, "a subshell `( uname )` body command IS a leaf");
+}
+
+#[test]
 fn case_with_subst_scrutinee_does_not_spuriously_flag_errexit_top() {
     // Regression (find-cli-4): a `case` whose scrutinee has a `$(…)` substitution,
     // FOLLOWED by a command, used to spuriously mark the post-case merge ⊤ — the
