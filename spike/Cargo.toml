@@ -1,0 +1,32 @@
+# Dorc implementation spike — cargo workspace.
+#
+# Disposable-until-proven (research doc 088 §1): this exists to surface design
+# problems for the planning corpus, not to be the foundation of the eventual
+# tool. Boring, defensive, type-maximal Rust; no `unsafe`, no authored macros.
+#
+# Crates are added to `members` as each phase begins (demand-driven), so the
+# dependency DAG stays legible. Seams (planned): core · syntax · oracle ·
+# analysis · probe · plan · hostsim · cli.
+[workspace]
+resolver = "2"
+members = ["crates/core"]
+
+[workspace.package]
+edition = "2021"
+rust-version = "1.96"
+publish = false
+
+# No-footgun policy, compiler-enforced for every crate and every subagent.
+# `unsafe_code = "forbid"` cannot even be locally overridden with `#[allow]`.
+[workspace.lints.rust]
+unsafe_code = "forbid"
+unreachable_pub = "warn"
+missing_debug_implementations = "warn"
+# Groups sit at priority -1 so the specific lints below can override them.
+rust_2018_idioms = { level = "warn", priority = -1 }
+
+[workspace.lints.clippy]
+all = { level = "warn", priority = -1 }
+unwrap_used = "warn"
+expect_used = "warn"
+todo = "warn"
