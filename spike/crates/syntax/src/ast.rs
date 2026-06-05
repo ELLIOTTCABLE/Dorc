@@ -62,6 +62,15 @@ impl AstBuilder {
         id
     }
 
+    /// Read back an already-`alloc`'d node. The recursive-descent parser needs this
+    /// to inspect children it just built (their spans, and the command-word literal
+    /// the ⊤-triggers key off) while the arena is still under construction.
+    /// Additive accessor only — does not change how the arena is built.
+    #[must_use]
+    pub fn node(&self, id: AstId) -> &Node {
+        &self.nodes[id.0 as usize]
+    }
+
     /// Finish, designating `root` (must have been `alloc`'d into this builder).
     #[must_use]
     pub fn finish(self, root: AstId) -> Ast {
