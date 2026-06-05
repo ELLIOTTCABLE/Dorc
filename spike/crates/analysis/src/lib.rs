@@ -13,3 +13,4 @@
 #![forbid(unsafe_code)]
 
 pub mod lattice;
+pub mod solve;
