@@ -25,8 +25,10 @@
 
 use core::marker::PhantomData;
 
+use dorc_analysis::cfg::{Cfg, CfgNodeId};
 use dorc_analysis::effect::{FactKey, SkipClass};
-use dorc_core::{Grade, Verdict};
+use dorc_core::{AstId, Grade, Interner, Verdict};
+use dorc_syntax::ast::Ast;
 
 // ===========================================================================
 // Phase markers + the Unknown-fold bias (note 165 L1)
@@ -197,10 +199,150 @@ impl SkipLicense {
     }
 }
 
+// ===========================================================================
+// The plan: per-leaf run/skip + render-back-to-sh (the leaf-seam, dn-3)
+// ===========================================================================
+
+/// A stable identifier for one executable leaf in a plan (`dn-3`, the leaf-seam):
+/// executable work is a list of *individually wrappable* leaves, each with a
+/// stable back-map to its source — NEVER one opaque `sh -c "$bigscript"`. The
+/// back-map is [`Step::ast`]; the id is this leaf's position in source order.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub struct LeafId(pub u32);
+
+/// What the plan does with one leaf.
+#[derive(Debug, Clone)]
+pub enum Disposition {
+    /// Run the leaf — its mutation is needed, or its convergence is unknown.
+    Run,
+    /// Elide the leaf — authorised by a [`SkipLicense`], the only way to reach here.
+    Skip(SkipLicense),
+}
+
+/// One leaf of the plan: its stable id, its source back-map (`dn-3`), the verbatim
+/// sh it would run, and the run/skip disposition.
+#[derive(Debug, Clone)]
+pub struct Step {
+    pub leaf: LeafId,
+    pub ast: AstId,
+    pub sh: String,
+    pub disposition: Disposition,
+}
+
+/// A whole-book plan: an ordered list of leaf [`Step`]s (the leaf-seam — never a
+/// single opaque script). Render with [`render_sh`](Plan::render_sh).
+#[derive(Debug, Clone)]
+pub struct Plan {
+    pub steps: Vec<Step>,
+}
+
+/// Build a plan from the analysis result + an injected host probe oracle.
+///
+/// `verdict_of` is the host probe (the real host / `hostsim` is a later seam): it
+/// answers, per fact, whether it already holds. `build_plan` is a pure function of
+/// its inputs (deterministic given a deterministic `verdict_of`). Every command
+/// leaf becomes a [`Step`]; a leaf is `Skip` ONLY when
+/// [`SkipLicense::prove_skippable`] mints a license — every other leaf runs (the
+/// `kFAIL-perform` safe direction).
+#[must_use]
+pub fn build_plan(
+    src: &str,
+    ast: &Ast,
+    cfg: &Cfg,
+    classes: &[(CfgNodeId, SkipClass)],
+    verdict_of: impl Fn(FactKey) -> Verdict,
+) -> Plan {
+    let mut steps: Vec<Step> = classes
+        .iter()
+        .map(|(node, class)| {
+            let ast_id = cfg.node(*node).ast;
+            let sh = command_text(src, ast, ast_id);
+            let disposition = match class {
+                SkipClass::EstablishAmbient(fact) => {
+                    let verdict = PhasedVerdict::<Probe>::new(verdict_of(*fact));
+                    // An EstablishAmbient fact comes from the oracle effect-map by
+                    // construction, so its grade is Must (note 160 `must-may`).
+                    match SkipLicense::prove_skippable(class, Grade::Must, verdict) {
+                        Some(license) => Disposition::Skip(license),
+                        None => Disposition::Run,
+                    }
+                }
+                SkipClass::EstablishWritten(_) | SkipClass::MustRun => Disposition::Run,
+            };
+            Step { leaf: LeafId(0), ast: ast_id, sh, disposition }
+        })
+        .collect();
+
+    // Source order (classify yields CFG-alloc order; sort by span for a faithful
+    // reading), then assign stable leaf ids.
+    steps.sort_by_key(|s| (ast.node(s.ast).span.lo.0, ast.node(s.ast).span.hi.0));
+    for (i, step) in steps.iter_mut().enumerate() {
+        step.leaf = LeafId(u32::try_from(i).unwrap_or(u32::MAX));
+    }
+    Plan { steps }
+}
+
+/// The verbatim source text of a node's `[lo, hi)` span — the exact sh the admin
+/// wrote. Resolving a span for display is allowed under `inv-referent-agnostic`
+/// (it is provenance, not a logic branch).
+fn command_text(src: &str, ast: &Ast, id: AstId) -> String {
+    let span = ast.node(id).span;
+    src.get(span.lo.0 as usize..span.hi.0 as usize)
+        .unwrap_or_default()
+        .to_string()
+}
+
+impl Plan {
+    /// Render the plan back as sh (the Terraform plan/apply UX, DESIGN): run leaves
+    /// verbatim, skipped leaves as provenance comments carrying the why. Each leaf
+    /// is emitted separately (the leaf-seam — never coalesced into one `sh -c`).
+    ///
+    /// *Known first-cut limitation (surfaced, not a bug):* leaves are emitted as a
+    /// flat source-ordered sequence, so a leaf's enclosing guard (`if`/`case`) is
+    /// NOT reproduced — the plan shows mutator dispositions, not a runnable rewrite
+    /// of the original control flow. A faithful in-place rewrite (comment the
+    /// elided span where it sits) is a later refinement; the flattening is the
+    /// leaf-seam / wo-1 provenance tension made concrete.
+    #[must_use]
+    pub fn render_sh(&self, interner: &Interner) -> String {
+        let mut out = String::from(
+            "#!/bin/sh\n# dorc plan (apply phase). Skipped leaves are already converged.\n\n",
+        );
+        for step in &self.steps {
+            match &step.disposition {
+                Disposition::Run => {
+                    out.push_str(&step.sh);
+                    out.push('\n');
+                }
+                Disposition::Skip(license) => {
+                    out.push_str(&format!(
+                        "# skip[{}]: {}\n#   \u{21b3} {} already holds (probe: converged \u{b7} must \u{b7} ambient)\n",
+                        step.leaf.0,
+                        step.sh,
+                        fact_display(interner, license.fact()),
+                    ));
+                }
+            }
+        }
+        out
+    }
+}
+
+/// `kind:entity` for a fact, resolving the interned names for *display only*
+/// (provenance, never a logic branch — `inv-referent-agnostic`).
+fn fact_display(interner: &Interner, fact: FactKey) -> String {
+    format!(
+        "{}:{}",
+        interner.resolve(fact.kind.0),
+        interner.resolve(fact.entity.0),
+    )
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use dorc_core::{Interner, KindId, OpaqueToken};
+    use dorc_core::{Interner, KindId, OpaqueToken, ProviderId};
+    use dorc_oracle::{KindIndex, Polarity};
 
     fn nginx_fact() -> FactKey {
         let mut i = Interner::default();
@@ -282,5 +424,98 @@ mod tests {
         // Sanity on the definite verdicts.
         assert_eq!(PhasedVerdict::<Probe>::new(Verdict::Converged).resolve(), Resolved::Skippable);
         assert_eq!(PhasedVerdict::<Apply>::new(Verdict::Diverged).resolve(), Resolved::Run);
+    }
+
+    // --- end-to-end: the whole pipeline (parse → cfg → classify → plan) ---
+
+    /// A package kind-index with `apt-get install → establish`. Deliberately no
+    /// `apt-get update` effect — it stays Opaque, which is the fixture's poison.
+    fn package_index(i: &mut Interner) -> KindIndex {
+        let package = KindId(i.intern("package"));
+        let apt = ProviderId(i.intern("apt-get"));
+        let install = i.intern("install");
+        let mut idx = KindIndex::default();
+        idx.add_effect(apt, install, package, Polarity::Establish);
+        idx
+    }
+
+    /// Run the pipeline on `src`, answering `package:nginx` with `nginx_verdict`
+    /// and every other fact `Unknown`.
+    fn plan_for(src: &str, nginx_verdict: Verdict) -> (Plan, Interner) {
+        let mut i = Interner::default();
+        let idx = package_index(&mut i);
+        let target = FactKey {
+            kind: KindId(i.intern("package")),
+            entity: OpaqueToken(i.intern("nginx")),
+        };
+        let parsed = dorc_syntax::parse(src);
+        let cfg = dorc_analysis::cfg::build(&parsed.value).value;
+        let classes = dorc_analysis::effect::classify(&cfg, &parsed.value, &idx, &mut i);
+        let plan = build_plan(src, &parsed.value, &cfg, &classes, |f| {
+            if f == target {
+                nginx_verdict
+            } else {
+                Verdict::Unknown
+            }
+        });
+        (plan, i)
+    }
+
+    fn find<'a>(plan: &'a Plan, needle: &str) -> &'a Step {
+        match plan.steps.iter().find(|s| s.sh.contains(needle)) {
+            Some(s) => s,
+            None => panic!("no leaf containing {needle:?} in {:?}", plan.steps),
+        }
+    }
+
+    #[test]
+    fn converged_ambient_install_is_skipped_rest_runs() {
+        // A lone install is ambient; a Converged probe licenses the skip. The
+        // following un-oracled command runs (Opaque ⇒ MustRun).
+        let (plan, interner) =
+            plan_for("apt-get install -y nginx\nsystemctl reload nginx\n", Verdict::Converged);
+        assert!(
+            matches!(find(&plan, "apt-get install").disposition, Disposition::Skip(_)),
+            "converged ambient install ⇒ skip"
+        );
+        assert!(
+            matches!(find(&plan, "systemctl reload").disposition, Disposition::Run),
+            "opaque reload ⇒ run"
+        );
+
+        let sh = plan.render_sh(&interner);
+        assert!(sh.contains("# skip["), "rendered plan comments the skipped leaf:\n{sh}");
+        assert!(sh.contains("package:nginx"), "skip provenance names the fact:\n{sh}");
+        assert!(sh.contains("systemctl reload nginx"), "run leaf rendered verbatim:\n{sh}");
+    }
+
+    #[test]
+    fn diverged_install_runs() {
+        // The host says nginx is absent ⇒ the install must run (no license).
+        let (plan, _) =
+            plan_for("apt-get install -y nginx\nsystemctl reload nginx\n", Verdict::Diverged);
+        assert!(
+            matches!(find(&plan, "apt-get install").disposition, Disposition::Run),
+            "diverged ⇒ run"
+        );
+    }
+
+    #[test]
+    fn fixture_install_runs_despite_converged_probe() {
+        // fs-4 on the REAL book: `apt-get update` is un-oracled ⇒ Opaque ⇒ poisons
+        // downstream ambient-ness, so the `apt-get install -y nginx` after it is
+        // EstablishWritten, not EstablishAmbient — and prove_skippable refuses a
+        // Written leaf. So even a Converged probe cannot license the skip; the
+        // install runs. (Surfaced design problem: to recover the skip the oracle
+        // must model `apt-get update` as package-state-pure; the spike's does not.)
+        let fixture = include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../fixtures/pi-webhost.book.sh"
+        ));
+        let (plan, _) = plan_for(fixture, Verdict::Converged);
+        assert!(
+            matches!(find(&plan, "apt-get install").disposition, Disposition::Run),
+            "poisoned install must run even with a converged probe"
+        );
     }
 }

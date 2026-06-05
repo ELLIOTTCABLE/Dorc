@@ -29,6 +29,8 @@ version = "0.0.0"
 dependencies = [
  "dorc-analysis",
  "dorc-core",
+ "dorc-oracle",
+ "dorc-syntax",
 ]
 
 [[package]]

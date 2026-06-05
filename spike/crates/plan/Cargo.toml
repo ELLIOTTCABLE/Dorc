@@ -12,6 +12,12 @@ publish = false
 [dependencies]
 dorc-core = { path = "../core" }
 dorc-analysis = { path = "../analysis" }
+# Rendering a leaf back to sh resolves its source span out of the AST.
+dorc-syntax = { path = "../syntax" }
+
+[dev-dependencies]
+# The end-to-end tests build a kind-index and run the real analysis pipeline.
+dorc-oracle = { path = "../oracle" }
 
 [lints]
 workspace = true
