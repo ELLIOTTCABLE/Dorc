@@ -1,0 +1,17 @@
+[package]
+name = "dorc-plan"
+version = "0.0.0"
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+
+# The elision path: turn (analysis `SkipClass` + a host probe verdict) into a
+# plan, gated by the note-165 orientation locks. Consumes the analysis result and
+# the oracle grade; the host verdict is injected (the real host / `hostsim` is a
+# later seam), so this crate stays a pure, deterministic function of its inputs.
+[dependencies]
+dorc-core = { path = "../core" }
+dorc-analysis = { path = "../analysis" }
+
+[lints]
+workspace = true

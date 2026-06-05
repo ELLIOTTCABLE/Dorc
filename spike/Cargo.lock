@@ -24,6 +24,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "dorc-plan"
+version = "0.0.0"
+dependencies = [
+ "dorc-analysis",
+ "dorc-core",
+]
+
+[[package]]
 name = "dorc-syntax"
 version = "0.0.0"
 dependencies = [
