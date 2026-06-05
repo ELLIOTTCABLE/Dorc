@@ -1,0 +1,23 @@
+[package]
+name = "dorc-cli"
+version = "0.0.0"
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+
+# The thin driver — the one place (with `hostsim`) where real I/O lives. The
+# analyzer kernel it calls is pure (`inv-determinism`); this binary just reads
+# files, runs the pipeline, and prints the plan.
+[[bin]]
+name = "dorc"
+path = "src/main.rs"
+
+[dependencies]
+dorc-core = { path = "../core" }
+dorc-syntax = { path = "../syntax" }
+dorc-analysis = { path = "../analysis" }
+dorc-oracle = { path = "../oracle" }
+dorc-plan = { path = "../plan" }
+
+[lints]
+workspace = true
