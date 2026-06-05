@@ -154,7 +154,10 @@ impl Reach {
 /// plan stage consumes — it does not skip anything itself.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SkipClass {
-    /// Not an elidable establish (opaque, pure, kill, or unrecognized) ⇒ run.
+    /// Not an elidable establish — opaque, pure, kill, unrecognized, OR an
+    /// establish whose reaching-context cannot be trusted: unreachable from entry
+    /// (e.g. a function body with no modeled call-edge), or produced under a
+    /// non-converged solve ⇒ run.
     MustRun,
     /// Establishes `fact`, ambient here (no upstream mutation) ⇒ probe the host.
     EstablishAmbient(FactKey),
@@ -164,9 +167,36 @@ pub enum SkipClass {
     EstablishWritten(FactKey),
 }
 
+/// Nodes reachable from the program `entry` by forward edges. The reaching-defs
+/// in-state of an *unreachable* node is a vacuous ⊥ (its only predecessors, if
+/// any, are themselves unreached), which is indistinguishable from a genuinely
+/// clean "nothing upstream mutated this fact" — so [`classify`] must not read an
+/// unreachable establish as ambient (find-A). Today the only unreachable
+/// `Command`s are function bodies: a call site has no modeled call-edge into the
+/// body (cfg `find-7`), so the body is a detached island. A simple forward
+/// graph reachability; deterministic and total (indices are in-bounds by
+/// construction, so it never panics — `inv-no-throw`).
+fn reachable_from_entry(cfg: &Cfg) -> Vec<bool> {
+    let mut seen = vec![false; cfg.node_count()];
+    let mut stack = vec![cfg.entry()];
+    seen[cfg.entry().index()] = true;
+    while let Some(v) = stack.pop() {
+        for w in cfg.succ_ids(v) {
+            if !seen[w.index()] {
+                seen[w.index()] = true;
+                stack.push(w);
+            }
+        }
+    }
+    seen
+}
+
 /// Classify every `Command` node for the skip decision: look up each command's
 /// effect, then a forward reaching-defs pass tells us, per establishing command,
-/// whether its fact is ambient. Deterministic; never panics.
+/// whether its fact is ambient. An establish is only offered as
+/// `EstablishAmbient` when its reaching-context is *trustworthy* — reachable from
+/// entry AND under a converged solve; otherwise it folds to the safe `MustRun`
+/// (find-A/find-B). Deterministic; never panics.
 #[must_use]
 pub fn classify(cfg: &Cfg, ast: &Ast, idx: &KindIndex, interner: &mut Interner) -> Vec<(CfgNodeId, SkipClass)> {
     let n = cfg.node_count();
@@ -191,6 +221,18 @@ pub fn classify(cfg: &Cfg, ast: &Ast, idx: &KindIndex, interner: &mut Interner) 
     });
     debug_assert!(reach.converged, "reaching-defs must converge (finite fact set)");
 
+    // Two reasons the reaching in-state cannot be trusted to mean "nothing
+    // upstream mutated this fact", both folding the safe way (→ MustRun):
+    //   * non-convergence (find-B): a capped solve returns a partial
+    //     under-approximation — a real upstream kill may not have propagated. The
+    //     `Reach` lattice is monotone + finite-height so this never trips here (the
+    //     `debug_assert` catches a regression loudly), but trusting a non-converged
+    //     state in *release* would be a silent wrong-skip, so guard it explicitly.
+    //   * unreachability (find-A): an establish unreachable from entry has a vacuous
+    //     ⊥ in-state; its true call context is unmodeled (cfg find-7).
+    let trust_reach = reach.converged;
+    let reachable = reachable_from_entry(cfg);
+
     let mut out = Vec::new();
     for (i, effect) in effects.iter().enumerate() {
         let id = CfgNodeId(i as u32);
@@ -198,8 +240,16 @@ pub fn classify(cfg: &Cfg, ast: &Ast, idx: &KindIndex, interner: &mut Interner) 
             continue;
         }
         let class = match effect {
-            CommandEffect::Establishes(f) if reach.states[i].mutated(f) => SkipClass::EstablishWritten(*f),
-            CommandEffect::Establishes(f) => SkipClass::EstablishAmbient(*f),
+            // Only a reachable establish under a converged solve is reasoned about;
+            // every other case — opaque/pure/kill, an unreachable establish, or a
+            // non-converged solve — folds to MustRun, always the run-it side.
+            CommandEffect::Establishes(f) if trust_reach && reachable[i] => {
+                if reach.states[i].mutated(f) {
+                    SkipClass::EstablishWritten(*f)
+                } else {
+                    SkipClass::EstablishAmbient(*f)
+                }
+            }
             _ => SkipClass::MustRun,
         };
         out.push((id, class));
@@ -275,6 +325,26 @@ mod tests {
         assert!(!classes
             .iter()
             .any(|c| matches!(c, SkipClass::EstablishAmbient(_))));
+    }
+
+    #[test]
+    fn detached_function_body_establish_is_not_ambient() {
+        // Why (find-A; both adversarial reviews independently, brk-1 / fs-1): a
+        // function body is a detached sub-CFG — its caller has no modeled call-edge
+        // (cfg find-7), so the in-body install is unreachable from entry and its
+        // reaching-in-state is a vacuous ⊥. Reading that as "nothing upstream" would
+        // advertise the establish skippable under an unknown call context — a
+        // kFAIL-perform wrong-skip. It must fold to MustRun (with the `p` call, also
+        // MustRun) until interprocedural call-edges land. The contrast with
+        // `lone_install_is_ambient` (identical establish, ambient at top level)
+        // proves the reachability gate is doing the work.
+        let (mut i, idx, _package) = package_setup();
+        let classes = classify_src("p() { apt-get install nginx; }\np", &mut i, &idx);
+        assert_eq!(
+            classes,
+            vec![SkipClass::MustRun, SkipClass::MustRun],
+            "detached body install + the call both fold to MustRun, no ambient skip"
+        );
     }
 
     #[test]
