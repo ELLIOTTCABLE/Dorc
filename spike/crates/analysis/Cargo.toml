@@ -12,6 +12,9 @@ dorc-core = { path = "../core" }
 # The CFG builder consumes the parser's arena AST (`cfg::build(ast: &Ast)`), so
 # syntax is a real dependency, not dev-only.
 dorc-syntax = { path = "../syntax" }
+# The effect analysis looks each command's (provider, verb) up in the oracle's
+# kind-index to drive the ambient∧invariant reaching-defs gate (note 162 O-1).
+dorc-oracle = { path = "../oracle" }
 
 [lints]
 workspace = true
