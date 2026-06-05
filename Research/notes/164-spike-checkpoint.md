@@ -52,6 +52,25 @@ binaries to 435 & 783 CPU-sec before I killed them):
 The earlier (clean-context, web-grounded) audit text lives in this session's
 transcript; the actionable set is the five fixes above.
 
+**Both web-grounded critics (neutral + adversarial) converged, and the
+adversarial half reproduced each break against the committed crate.** Precision
+they add: (a) the worklist propagation AND `MapL` canonicalization are *confirmed
+sound* (a 7-node multi-cycle reaches the true fixed point; no ⊥-leak) — do NOT
+rewrite the engine, only add the cap + contracts; (b) a bad transfer has TWO
+failure modes — an infinite hang (non-idempotent / non-monotone-toggle, the
+empirically-spinning case) OR a *silently wrong result* (returns `x = x ⊔ f(x)`
+rather than the equation's `x = f(x)`; no panic, so inv-no-throw is only
+*vacuously* met) — the cap catches the hang, the silent-wrong-result needs the
+monotonicity contract documented + law-tested; (c) the false "finite height"
+claim applies to `Powerset<unbounded T>` too, not just `MapL` (any transfer that
+mints a fresh element/key each visit climbs forever) — latent only because the
+current fact vocab is `u32`-interned-from-source (finite per input); it bites the
+first time a transfer synthesizes fresh facts mid-fixpoint; (d) `cfg.rs` already
+self-checks graph consistency (`consistent()`), so the OOB panic is reachable
+only from a *buggy* Graph producer — still, `solve` should `debug_assert` it.
+Nit: `leq`'s default clones a full `join` to compare (O(n) perf footgun) — worth
+a per-combinator override if it ever matters.
+
 ## 4. Surfaced DESIGN PROBLEMS for the planning corpus (the spike's deliverable)
 - **DP-1 (the hinge, note 162):** dn-1's first strawman was *command-centric*
   (dry-run the mutator, `apt-get --simulate|grep`). The adversarial cross-check
