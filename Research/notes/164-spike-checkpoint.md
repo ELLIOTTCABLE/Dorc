@@ -114,7 +114,14 @@ a per-combinator override if it ever matters.
 1. **Apply the §3 framework fix-set** (Solution+cap, debug-assert edges, document
    preconditions, non-monotone + malformed-graph tests).
 2. **Review + adversarially-check `cfg.rs`** (the `set -e` coarse modeling +
-   scope-boundary semantics are the soundness-bearing parts). Open Q from the CFG
+   scope-boundary semantics are the soundness-bearing parts). **SCRUTINIZE the
+   "more failure-edges = more conservative = safe" assumption [human-flagged
+   2026-06-05], do not assume it:** it holds for the forward *skip* decision
+   (extra edges only cost skips, never cause a wrong skip) but is UNVERIFIED for
+   the backward/apply pass and any "is this host converged?" verdict (different
+   soundness orientation), and "safe" hides a real precision/value cost (too many
+   spurious edges → too few skips → the tool loses its point). Argues for *precise*
+   `set -e` modeling, not coarse. Open Q from the CFG
    subagent: pipeline stages are modeled flat (only last stage fallible), no
    per-stage subshell-env-isolation — decide if the effect-builder needs it.
 3. **`oracle` crate** — fact-centric lift (note 162 v2): kind + fact-probe +
