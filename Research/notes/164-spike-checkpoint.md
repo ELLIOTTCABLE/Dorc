@@ -180,15 +180,24 @@ the solver run over the dual, *no engine change*); `plan` crate (`03a91f7`) with
 lock = **engine-wide meet** (the maximal-machinery option, chosen as state-space
 exploration — note 165 §3 calibrate-UP, "my prior lean is the FLOOR, not the cap").
 
-**NEXT ACTION (3b — finish the plan stage):** a `Plan` of per-leaf `Step`s
-(`Run{sh}` / `Skip{license}`), rendered back to sh (run lines verbatim; skips as
-provenance comments carrying the `Derivation`'s why), wired end-to-end on a fixture
-(`book.sh` → `cfg::build` → `effect::classify` → inject a `PhasedVerdict` per
-ambient fact → `prove_skippable` → emit plan-sh). Honor the leaf-seam (dn-3: each
-leaf individually wrappable, **never one opaque `sh -c`**; stable `LeafId→AstId`).
-THEN a seeded state-machine `hostsim` (DST) that answers fact-probes deterministically
-AND detects a probe attempting a *modeled* mutation (the kFAIL-withhold check, note
-162 DP-4); then a thin `cli`.
+**3b DONE (`38885fa`):** the elision path is complete end-to-end — `plan::{Plan,
+Step, Disposition, LeafId, build_plan, render_sh}`. The full vertical slice runs:
+`book.sh` → `cfg::build` → `effect::classify` → inject a `PhasedVerdict` per fact →
+`prove_skippable` → plan-sh (run lines verbatim, skips as provenance comments).
+Leaf-seam honored (each leaf a separate `Step` with `LeafId→AstId`; never one `sh
+-c`). 8 plan tests. **Surfaced (fs-4 on the real fixture):** `apt-get update` is
+un-oracled ⇒ Opaque ⇒ poisons the install it precedes (→ `EstablishWritten`), so
+even a Converged probe can't skip it — the oracle would need to model `apt-get
+update` as package-state-pure. **First-cut limitation (in render_sh doc):** the
+plan flattens control flow (leaves emitted source-ordered, guards not reproduced)
+— the leaf-seam / wo-1 tension made concrete; a faithful in-place rewrite is later.
+
+**NEXT ACTION:** the seeded state-machine `hostsim` (DST) — answers fact-probes
+deterministically against a modeled system-state (replacing the injected
+`verdict_of`), AND detects a probe attempting a *modeled* mutation (the
+kFAIL-withhold check, note 162 DP-4 — the spike stand-in for the real sandbox).
+State-machine, no async, seeded PRNG injected (the one place nondeterminism is
+allowed). Then a thin `cli` wiring the pipeline + printing the plan. HEAD `38885fa`.
 
 **RECENT FINDING to fold into the dn-1 contract:** (oracle-lift) a kind name must
 be **function-name-safe** (`[A-Za-z_]\w*`) to *have* a probe — `oracle_probe_my-pkg`
