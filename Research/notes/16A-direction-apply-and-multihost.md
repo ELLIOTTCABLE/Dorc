@@ -117,4 +117,4 @@ executor fork stays deferred/plan-and-gate, notes 128/142).
   are what let realistic books be tested without spurious noise.
 
 **NOTES INDEX:** …167 effect adversarial review · 168 round-16 build summary · 169
-cli capstone findings · 170 (this — apply + multi-host direction).
+cli capstone findings · 16A (this — apply + multi-host direction).
