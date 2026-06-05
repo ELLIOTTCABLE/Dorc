@@ -107,6 +107,27 @@ kernel. Outcome: the *narrow* claim survives, the *generalization* does not.
   reliable-oracle case; if irrelevant in only one cell it is deferred, not
   irrelevant. And: *verify a claimed failure by tracing it; don't relay it.*
 
+## 3b. The lens-pair sweep (why the exclusion fails in every cell)
+The quoted "for the core job only one edge carries weight" was tested against the
+three lens-pairs. The *narrow* forward fact (F's value = before-writes-to-F) holds
+in all cells — but the *decision-level* claim fails in each:
+- **probe vs apply:** in *probe* it INVERTS — a probe exists only for its output,
+  which the skip-decision consumes, so the backward/result edge is the whole point,
+  not a second concern. In *apply* it fails via stdout-liveness (real — `install |
+  tee log`) and converged-non-zero status-liveness (latent — `mkdir d || handle`).
+- **admin vs engineer:** the admin's book carries all edges in its own script; for
+  the engineer the backward edge IS their contribution — the gather/compute bridge
+  (16C) exists precisely to *discharge* "your result is needed," making a
+  result-live command skippable.
+- **reliable-oracle vs blind:** blind ⇒ everything Opaque ⇒ nothing skips ⇒ the
+  claim is vacuously "true" and useless; reliable ⇒ skips actually happen ⇒ every
+  edge is load-bearing. The exclusion looks safe exactly where it doesn't matter and
+  is most-wrong exactly where it does.
+All three failures are the SAME excluded object — backward result-liveness —
+reappearing through the reverse-direction, other-phase, and other-user doors. That
+is why the §3a standing check must test all four (reverse / other-phase /
+other-user / reliable-oracle), not just spot-check one.
+
 ## 4. The lattice / "what stays lifted" (VALIDATED)
 The 2×2 does **not** become the core lattice type, and neither does a single
 reaching-defs lattice. The core is a **product of two analyses in opposite
