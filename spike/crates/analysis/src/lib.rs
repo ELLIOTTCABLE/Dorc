@@ -12,5 +12,6 @@
 
 #![forbid(unsafe_code)]
 
+pub mod cfg;
 pub mod lattice;
 pub mod solve;

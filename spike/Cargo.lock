@@ -7,6 +7,7 @@ name = "dorc-analysis"
 version = "0.0.0"
 dependencies = [
  "dorc-core",
+ "dorc-syntax",
 ]
 
 [[package]]
