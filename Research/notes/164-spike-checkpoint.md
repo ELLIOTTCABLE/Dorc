@@ -158,35 +158,37 @@ a per-combinator override if it ever matters.
 - Commits are small/granular on `ai/spike-impl`; never pushed.
 
 ## 7. LIVE STATE & NEXT ACTION (2026-06-05 — supersedes §1/§5 where they conflict)
-**Committed** (branch `ai/spike-impl`, HEAD ~`b872e42`, all green): `core` ·
-`syntax` (parser) · `analysis::{lattice, solve (hardened: `Solution{converged}` +
-iteration cap), cfg (control-flow + COARSE errexit — being made precise, below)}`
-· `oracle` (types + the lift). Notes 160–166 committed.
+**Committed** (branch `ai/spike-impl`, HEAD `03a91f7`, all green + clippy-clean):
+`core` · `syntax` (parser) · `analysis::{lattice (now **engine-wide meet** +
+`BoundedLattice` + `May`/`Must` order-dual wrappers), solve (hardened + must-
+runnable via the dual), cfg (PRECISE errexit, note 166), effect (integrated +
+adversarially reviewed — note 167)}` · `oracle` · NEW `plan` (the elision locks).
+Notes 160–167 committed.
 
-**IN FLIGHT:** a subagent is making `cfg.rs`'s `set -e` modeling **precise** per
-note 166 (fixes both the missing-abort-edge unsoundness *and* the spurious-edge
-backward-unsoundness). On its completion: review + `cargo test -p dorc-analysis`
-+ commit `cfg.rs`. (It re-invokes me automatically when done.)
+**DONE THIS ROUND:** effect.rs wired in (`dcbd03e`); its two convergent adversarial
+findings fixed (`18ad386` — find-A detached-funcdef reachability gate + find-B
+solve-convergence fold; note 167, DP-8/DP-9); lattice gained engine-wide `meet` +
+`BoundedLattice` + property-tested join/meet/absorption laws (`9d3ee73`);
+`May<L>`/`Must<L>` order-dual orientation wrappers (`3e927dc` — a must-analysis is
+the solver run over the dual, *no engine change*); `plan` crate (`03a91f7`) with
+`PhasedVerdict<P>`+`Bias` and the `SkipLicense` witness (note 165 L1/L2 —
+`prove_skippable` is the *only* mint, gated on `EstablishAmbient ∧ Must ∧ Converged`;
+`Unknown` can never fold to a skip).
 
-**DORMANT, on-disk, NOT committed, NOT wired in:** `analysis/src/effect.rs`
-(`FactKey`, `CommandEffect`, `command_effect`, the `Reach` reaching-defs lattice,
-`classify` → `MustRun`/`EstablishAmbient`/`EstablishWritten`). It is NOT
-`mod`-declared, so it is uncompiled (workspace still builds). **Integrate AFTER
-the cfg-fix lands** (to avoid an `analysis/` build race): (a) add `dorc-oracle =
-{ path = "../oracle" }` to `analysis/Cargo.toml`; (b) add `pub mod effect;` to
-`analysis/src/lib.rs`; (c) `cargo test -p dorc-analysis` — its tests are
-errexit-NEUTRAL synthetics, so the precise-errexit change doesn't affect them; fix
-any blind-write compile nits; (d) commit; (e) adversarially-check `effect` (the
-direction-setting analytic core).
+**DECISIONS (2026-06-05, the human, via AskUserQuestion):** build target = the
+**probe/plan elision path** (host verdicts injected; `hostsim` later). Orientation
+lock = **engine-wide meet** (the maximal-machinery option, chosen as state-space
+exploration — note 165 §3 calibrate-UP, "my prior lean is the FLOOR, not the cap").
 
-**THEN (remaining build; calibrate-UP typing per note 165):** the probe/plan
-stage — from each `EstablishAmbient`, ship the kind's `FactProbe` for the entity;
-a `Verdict<Phase>` (phase-typed, `Bias`-trait safe-default) carries the host's
-answer; a `SkipLicense` witness (mintable ONLY from `EstablishAmbient` ∧ a
-`Converged` probe verdict ∧ ambient) gates plan elision; emit the plan as sh
-(run/skip + provenance). Then a seeded state-machine `hostsim` (DST) that answers
-fact-probes deterministically AND DST-detects a probe attempting a *modeled*
-mutation (the kFAIL-withhold check, note 162 DP-4); and a thin `cli`.
+**NEXT ACTION (3b — finish the plan stage):** a `Plan` of per-leaf `Step`s
+(`Run{sh}` / `Skip{license}`), rendered back to sh (run lines verbatim; skips as
+provenance comments carrying the `Derivation`'s why), wired end-to-end on a fixture
+(`book.sh` → `cfg::build` → `effect::classify` → inject a `PhasedVerdict` per
+ambient fact → `prove_skippable` → emit plan-sh). Honor the leaf-seam (dn-3: each
+leaf individually wrappable, **never one opaque `sh -c`**; stable `LeafId→AstId`).
+THEN a seeded state-machine `hostsim` (DST) that answers fact-probes deterministically
+AND detects a probe attempting a *modeled* mutation (the kFAIL-withhold check, note
+162 DP-4); then a thin `cli`.
 
 **RECENT FINDING to fold into the dn-1 contract:** (oracle-lift) a kind name must
 be **function-name-safe** (`[A-Za-z_]\w*`) to *have* a probe — `oracle_probe_my-pkg`
@@ -196,4 +198,4 @@ dn-1 constraint; note it in 162.
 **NOTES INDEX:** 160 chord-synthesis · 161 dn-1 strawman · 162 dn-1 reconciliation
 (the command→**fact-centric** pivot) · 163 SPA engine design · 164 (this; live
 state in this §7) · 165 orientation-lockdown (the calibrate-UP ruling) · 166 CFG
-errexit review + fix-spec.
+errexit review + fix-spec · 167 effect adversarial review (DP-8/DP-9).
