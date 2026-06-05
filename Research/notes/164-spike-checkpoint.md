@@ -111,8 +111,13 @@ a per-combinator override if it ever matters.
   supply the gen/kill the gate needs.
 
 ## 5. Next steps (ordered)
-1. **Apply the §3 framework fix-set** (Solution+cap, debug-assert edges, document
-   preconditions, non-monotone + malformed-graph tests).
+1. ~~Apply the §3 framework fix-set~~ **DONE (commit `81f7d24`):** `solve` →
+   `Solution{states,converged,rounds}` + a generous iteration cap (turns the
+   empirically-confirmed infinite climb into a loud `converged:false`, no hang) +
+   edge-bounds `debug_assert`/release-skip + the four preconditions documented + a
+   cap-trips-on-unbounded-climb test. Minor remainder: mirror the bounded-keys /
+   semantic-`Eq` preconditions into `lattice.rs` doc-comments. From the effect
+   analyses onward, note 165 (calibrate-UP) governs the typing.
 2. **Review + adversarially-check `cfg.rs`** (the `set -e` coarse modeling +
    scope-boundary semantics are the soundness-bearing parts). **SCRUTINIZE the
    "more failure-edges = more conservative = safe" assumption [human-flagged
