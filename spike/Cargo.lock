@@ -5,3 +5,10 @@ version = 4
 [[package]]
 name = "dorc-core"
 version = "0.0.0"
+
+[[package]]
+name = "dorc-syntax"
+version = "0.0.0"
+dependencies = [
+ "dorc-core",
+]
