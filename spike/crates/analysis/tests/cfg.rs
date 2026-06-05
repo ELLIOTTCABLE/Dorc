@@ -437,6 +437,43 @@ fn errexit_on_adds_failure_edge_to_exit() {
 }
 
 #[test]
+fn case_with_subst_scrutinee_does_not_spuriously_flag_errexit_top() {
+    // Regression (find-cli-4): a `case` whose scrutinee has a `$(…)` substitution,
+    // FOLLOWED by a command, used to spuriously mark the post-case merge ⊤ — the
+    // errexit pass seeded merges with `Off`, and `Off ⊔ On = ⊤` (Off/On are
+    // incomparable). Merges now seed ⊥, so `⊥ ⊔ On = On`: no spurious ⊤ on the
+    // common host-selection idiom. (Spurious ⊤ ⇒ spurious failure-edges, which are
+    // unsound for the backward apply-slice; note 166 find-8.)
+    let parsed = parse("set -e\ncase $(hostname) in *) : ;; esac\necho after");
+    let carried = build(&parsed.value);
+    assert!(
+        !carried.diags.iter().any(|d| d.code.0 == "cfg-errexit-unknown"),
+        "no spurious errexit ⊤ on `case $(...)` + a following command: {:?}",
+        carried.diags
+    );
+    // Non-vacuity: the case must be modeled (not ⊤-rejected), else the test passes
+    // for the wrong reason.
+    assert!(
+        !carried.diags.iter().any(|d| d.code.0 == "cfg-top-node"),
+        "the case is modeled, not ⊤-rejected"
+    );
+}
+
+#[test]
+fn genuine_set_plus_e_split_still_flags_errexit_top() {
+    // The dual guard: a real split — `set +e` on one path, `set -e` (still on) on
+    // the other — must STILL join to ⊤ at the merge (the following command may or
+    // may not abort). The ⊥-seed fix must not suppress genuine conflicts.
+    let parsed = parse("set -e\nif true; then set +e; fi\nafter");
+    let carried = build(&parsed.value);
+    assert!(
+        carried.diags.iter().any(|d| d.code.0 == "cfg-errexit-unknown"),
+        "a genuine set+e / set-e split must still flag ⊤: {:?}",
+        carried.diags
+    );
+}
+
+#[test]
 fn no_errexit_means_no_failure_edge() {
     // Without `set -e`, a plain command does NOT get a failure→exit edge: its only
     // successor is the fall-through. (Coarse model: errexit Off ⇒ no extra edge.)

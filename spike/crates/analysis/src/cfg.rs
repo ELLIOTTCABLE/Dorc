@@ -215,11 +215,18 @@ pub fn build(ast: &Ast) -> Carrier<Cfg> {
     b.finish()
 }
 
-/// `errexit` abstract value — a height-2 flat lattice (off ⊑ {on}, ⊤ above),
-/// matching `Flat` in the framework but kept local (the builder's pass is
-/// hand-rolled, not run through `solve`, so `build` stays self-contained).
+/// `errexit` abstract value — a small lattice: `Bottom` (⊥: no information /
+/// unreached) below the two **incomparable** atoms `Off`/`On`, below `Top` (⊤).
+/// `Off` and `On` do NOT compare (a path that is explicitly off and one that is on
+/// genuinely conflict), so their join is ⊤ — which is exactly why merges must be
+/// seeded ⊥, not `Off` (else `Off(seed) ⊔ On = ⊤` spuriously). Kept local (the
+/// builder's pass is hand-rolled, not run through `solve`, so `build` stays
+/// self-contained).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum ErrExit {
+    /// No information yet — the join identity and the init for non-entry nodes.
+    /// Never itself materialises a failure-edge (an unreached node cannot abort).
+    Bottom,
     Off,
     On,
     /// `set "$dyn"` or a join of On and Off — don't know ⇒ over-approximate
@@ -232,8 +239,10 @@ impl ErrExit {
     fn join(self, other: ErrExit) -> ErrExit {
         match (self, other) {
             (a, b) if a == b => a,
+            // ⊥ is the identity (so `⊥ ⊔ On = On`, not ⊤ — the merge-seed fix).
+            (ErrExit::Bottom, x) | (x, ErrExit::Bottom) => x,
             (ErrExit::Top, _) | (_, ErrExit::Top) => ErrExit::Top,
-            // On ⊔ Off — disagreement ⇒ ⊤ (may be on; add the edge).
+            // On ⊔ Off — genuine disagreement ⇒ ⊤ (may be on; add the edge).
             _ => ErrExit::Top,
         }
     }
@@ -774,9 +783,13 @@ impl<'a> Builder<'a> {
         let n = self.nodes.len();
         // before[v] = join of predecessors' after-states; after[v] applies v's
         // toggle (a `set -e`/`set +e` command) to before[v], or restores the
-        // pre-subshell state at a `ScopeExit` (find-4). Entry seeds Off (a script
-        // starts with errexit off until `set -e`).
-        let mut before = vec![ErrExit::Off; n];
+        // pre-subshell state at a `ScopeExit` (find-4). Non-entry nodes init to ⊥
+        // (no-info, the join identity) so a merge of an On path with an as-yet-
+        // unreached path yields On, not a spurious ⊤; only the program entry seeds
+        // `Off` (a script starts with errexit off until `set -e`), so a genuine
+        // `set +e` vs `set -e` split still joins to ⊤.
+        let mut before = vec![ErrExit::Bottom; n];
+        before[self.entry.index()] = ErrExit::Off;
         // Standard worklist to a fixed point (height-2 lattice ⇒ terminates fast).
         let mut work: Vec<usize> = (0..n).collect();
         let mut queued = vec![true; n];
