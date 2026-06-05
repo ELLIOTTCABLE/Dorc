@@ -1,7 +1,15 @@
-//! Generic complete-lattice framework — the substrate of every Dorc dataflow
-//! analysis. A lattice supplies ⊥ (`bottom`) and ⊔ (`join`); the solver climbs
-//! the chain `⊥ ⊑ f(⊥) ⊑ f²(⊥) ⊑ …` to the least fixed point, which terminates
-//! because every lattice here has **finite height**.
+//! Generic lattice framework — the substrate of every Dorc dataflow analysis. A
+//! [`Lattice`] supplies ⊥ (`bottom`), ⊔ (`join`), AND ⊓ (`meet`). The two merge
+//! operators are what let *one* solver run both *may* analyses (over-approximate:
+//! start ⊥, merge ⊔) and *must* analyses (under-approximate: start ⊤, merge ⊓) —
+//! the orientation that, silently mis-chosen, is a wrong-skip (note 165). A *must*
+//! analysis additionally needs a representable ⊤ to seed its interior nodes, so it
+//! runs over a [`BoundedLattice`]; crucially **not every lattice has one** — a
+//! [`Powerset`]/[`MapL`] over an unbounded element/key type has a perfectly good ⊓
+//! (∩ / pointwise) but no finite ⊤ (the universal set is unrepresentable). The
+//! type system therefore forbids a must-analysis over a bare powerset — the
+//! asymmetry note 165 predicted, made a compile error rather than a runtime
+//! surprise. The solver climbs/descends a finite-height chain to the fixed point.
 //!
 //! Domains are built compositionally from the combinators below
 //! ([`Powerset`]/[`Flat`]/[`Product`]/[`MapL`]) rather than hand-rolled per
@@ -10,22 +18,30 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
-/// A complete lattice of finite height.
+/// A lattice of finite height: ⊥, ⊔ (`join`), and ⊓ (`meet`).
 ///
-/// Laws (not type-enforceable — property-tested in `tests` below): `join` is
-/// associative, commutative, and idempotent; `bottom` is its identity; and the
-/// induced order `x ⊑ y ⟺ x ⊔ y = y` has finite height. Transfer functions
-/// written against a lattice must additionally be **monotone**
-/// (`x ⊑ y ⇒ f(x) ⊑ f(y)`) or the least fixed point is not guaranteed.
+/// Laws (not type-enforceable — property-tested in `tests` below): `join` and
+/// `meet` are each associative, commutative, and idempotent; they **absorb**
+/// (`a ⊔ (a ⊓ b) = a` and `a ⊓ (a ⊔ b) = a`); `bottom` is `join`'s identity and
+/// `meet`'s absorbing element (`⊥ ⊓ a = ⊥`); and the induced order
+/// `x ⊑ y ⟺ x ⊔ y = y` (equivalently `x ⊓ y = x`) has finite height. Transfer
+/// functions must additionally be **monotone** (`x ⊑ y ⇒ f(x) ⊑ f(y)`) or the
+/// fixed point is not guaranteed.
 pub trait Lattice: Clone + Eq {
-    /// The least element ⊥ — the identity of [`join`](Lattice::join).
+    /// The least element ⊥ — the identity of [`join`](Lattice::join), and the
+    /// absorbing element of [`meet`](Lattice::meet) (`⊥ ⊓ a = ⊥`).
     fn bottom() -> Self;
 
-    /// The least upper bound `self ⊔ other`.
+    /// The least upper bound `self ⊔ other` (the *may* merge: over-approximate).
     #[must_use]
     fn join(&self, other: &Self) -> Self;
 
-    /// `self ⊑ other` — "`other` is a safe approximation of `self`". Derived
+    /// The greatest lower bound `self ⊓ other` (the *must* merge: under-approx).
+    /// Dual to [`join`](Lattice::join) — see the absorption laws above.
+    #[must_use]
+    fn meet(&self, other: &Self) -> Self;
+
+    /// `self ⊑ other` — "`other` is a safe over-approximation of `self`". Derived
     /// from `join`: `x ⊑ y ⟺ x ⊔ y = y`.
     #[must_use]
     fn leq(&self, other: &Self) -> bool {
@@ -33,9 +49,22 @@ pub trait Lattice: Clone + Eq {
     }
 }
 
-/// Powerset lattice `(P(T), ⊆)`: ⊥ = ∅, ⊔ = ∪ — a *may* domain (over-approx).
-/// (A *must* analysis collects with ∩ from a ⊤ seed; that is an analysis-level
-/// choice, not a separate type — the spike's analyses are all *may*.)
+/// A [`Lattice`] with a representable greatest element ⊤ — the identity of
+/// [`meet`](Lattice::meet) (`⊤ ⊓ a = a`) and the absorbing element of `join`
+/// (`⊤ ⊔ a = ⊤`). A *must* dataflow seeds its interior nodes at ⊤ and descends via
+/// ⊓, so it runs only over a `BoundedLattice`. [`Powerset`]/[`MapL`] over an
+/// unbounded element/key type deliberately do NOT implement it (no finite
+/// universal set), making "a must-analysis over a bare powerset" a compile error.
+pub trait BoundedLattice: Lattice {
+    /// The greatest element ⊤.
+    fn top() -> Self;
+}
+
+/// Powerset lattice `(P(T), ⊆)`: ⊥ = ∅, ⊔ = ∪, ⊓ = ∩. A full [`Lattice`] (it has
+/// a meet), but with **no representable ⊤** for an unbounded `T` (the universal
+/// set), so deliberately NOT a [`BoundedLattice`] — a *must* analysis needing a ⊤
+/// seed must use an explicit-top domain instead (note 165's predicted asymmetry).
+/// Typically a *may* domain (over-approximate, started at ⊥).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Powerset<T: Ord + Clone>(pub BTreeSet<T>);
 
@@ -65,6 +94,9 @@ impl<T: Ord + Clone> Lattice for Powerset<T> {
     }
     fn join(&self, other: &Self) -> Self {
         Powerset(self.0.union(&other.0).cloned().collect())
+    }
+    fn meet(&self, other: &Self) -> Self {
+        Powerset(self.0.intersection(&other.0).cloned().collect())
     }
 }
 
@@ -96,6 +128,25 @@ impl<T: Clone + Eq> Lattice for Flat<T> {
             }
         }
     }
+    fn meet(&self, other: &Self) -> Self {
+        match (self, other) {
+            (Flat::Top, x) | (x, Flat::Top) => x.clone(),
+            (Flat::Bottom, _) | (_, Flat::Bottom) => Flat::Bottom,
+            (Flat::Elem(a), Flat::Elem(b)) => {
+                if a == b {
+                    Flat::Elem(a.clone())
+                } else {
+                    Flat::Bottom
+                }
+            }
+        }
+    }
+}
+
+impl<T: Clone + Eq> BoundedLattice for Flat<T> {
+    fn top() -> Self {
+        Flat::Top
+    }
 }
 
 /// Product lattice `A × B`, ordered componentwise — for bundling independent
@@ -109,6 +160,18 @@ impl<A: Lattice, B: Lattice> Lattice for Product<A, B> {
     }
     fn join(&self, other: &Self) -> Self {
         Product(self.0.join(&other.0), self.1.join(&other.1))
+    }
+    fn meet(&self, other: &Self) -> Self {
+        Product(self.0.meet(&other.0), self.1.meet(&other.1))
+    }
+}
+
+/// A product is bounded only when **both** components are — surfacing, in the
+/// type system, that `Product<Powerset<_>, _>` (Powerset has no ⊤) is a usable
+/// [`Lattice`] but not a must-domain.
+impl<A: BoundedLattice, B: BoundedLattice> BoundedLattice for Product<A, B> {
+    fn top() -> Self {
+        Product(A::top(), B::top())
     }
 }
 
@@ -161,6 +224,19 @@ impl<K: Ord + Clone, V: Lattice> Lattice for MapL<K, V> {
         }
         out
     }
+    fn meet(&self, other: &Self) -> Self {
+        // Pointwise ⊓. A key absent in either map is ⊥ there (the no-⊥ canonical
+        // form), and `⊥ ⊓ v = ⊥`, so only keys present in BOTH can survive — and
+        // even then only if their value-meet is non-⊥ (`insert` drops ⊥, keeping
+        // the form canonical so `Eq` stays semantic).
+        let mut out = MapL::default();
+        for (k, v) in &self.0 {
+            if let Some(v2) = other.0.get(k) {
+                out.insert(k.clone(), v.meet(v2));
+            }
+        }
+        out
+    }
 }
 
 #[cfg(test)]
@@ -174,21 +250,42 @@ mod tests {
     fn assert_laws<L: Lattice + std::fmt::Debug>(samples: &[L]) {
         let bot = L::bottom();
         for a in samples {
-            // ⊥ is the identity; join is idempotent; a ⊑ a.
+            // ⊥ identities, idempotence, reflexivity.
             assert_eq!(bot.join(a), *a, "⊥ ⊔ a = a");
             assert_eq!(a.join(&bot), *a, "a ⊔ ⊥ = a");
-            assert_eq!(a.join(a), *a, "idempotent");
+            assert_eq!(a.join(a), *a, "⊔ idempotent");
+            assert_eq!(a.meet(a), *a, "⊓ idempotent");
+            assert_eq!(bot.meet(a), bot, "⊥ ⊓ a = ⊥ (⊥ absorbs under ⊓)");
             assert!(a.leq(a), "reflexive ⊑");
             assert!(bot.leq(a), "⊥ ⊑ a");
             for b in samples {
-                // commutative; a ⊑ a⊔b ⊒ b.
-                assert_eq!(a.join(b), b.join(a), "commutative");
+                assert_eq!(a.join(b), b.join(a), "⊔ commutative");
+                assert_eq!(a.meet(b), b.meet(a), "⊓ commutative");
+                // absorption — the join/meet duality (a wrong `meet` breaks these).
+                assert_eq!(a.join(&a.meet(b)), *a, "a ⊔ (a ⊓ b) = a");
+                assert_eq!(a.meet(&a.join(b)), *a, "a ⊓ (a ⊔ b) = a");
                 let lub = a.join(b);
+                let glb = a.meet(b);
                 assert!(a.leq(&lub) && b.leq(&lub), "a,b ⊑ a⊔b");
+                assert!(glb.leq(a) && glb.leq(b), "a⊓b ⊑ a,b");
+                // the two ⊑ characterisations agree.
+                assert_eq!(a.leq(b), a.meet(b) == *a, "x⊑y ⟺ x⊓y=x");
                 for c in samples {
-                    assert_eq!(a.join(&b.join(c)), a.join(b).join(c), "associative");
+                    assert_eq!(a.join(&b.join(c)), a.join(b).join(c), "⊔ associative");
+                    assert_eq!(a.meet(&b.meet(c)), a.meet(b).meet(c), "⊓ associative");
                 }
             }
+        }
+    }
+
+    /// The ⊤ laws, for the lattices that have a representable greatest element.
+    fn assert_bounded<L: BoundedLattice + std::fmt::Debug>(samples: &[L]) {
+        let top = L::top();
+        for a in samples {
+            assert_eq!(top.meet(a), *a, "⊤ ⊓ a = a");
+            assert_eq!(a.meet(&top), *a, "a ⊓ ⊤ = a");
+            assert_eq!(top.join(a), top, "⊤ ⊔ a = ⊤ (⊤ absorbs under ⊔)");
+            assert!(a.leq(&top), "a ⊑ ⊤");
         }
     }
 
@@ -197,6 +294,7 @@ mod tests {
         let p = |xs: &[u8]| Powerset(xs.iter().copied().collect::<BTreeSet<_>>());
         assert_laws(&[p(&[]), p(&[1]), p(&[2]), p(&[1, 2]), p(&[1, 2, 3])]);
         assert_eq!(p(&[1]).join(&p(&[2])), p(&[1, 2]));
+        assert_eq!(p(&[1, 2]).meet(&p(&[2, 3])), p(&[2]), "⊓ = ∩");
         assert!(p(&[1]).leq(&p(&[1, 2])));
         assert!(!p(&[1, 2]).leq(&p(&[1])));
     }
@@ -205,8 +303,11 @@ mod tests {
     fn flat_saturates_distinct_elems_to_top() {
         use Flat::{Bottom, Elem, Top};
         assert_laws(&[Bottom, Elem(1u8), Elem(2u8), Top]);
+        assert_bounded(&[Bottom, Elem(1u8), Elem(2u8), Top]);
         assert_eq!(Elem(1u8).join(&Elem(1)), Elem(1), "same elem stays");
         assert_eq!(Elem(1u8).join(&Elem(2)), Top, "distinct elems → ⊤");
+        assert_eq!(Elem(1u8).meet(&Elem(2)), Bottom, "distinct elems ⊓ → ⊥");
+        assert_eq!(Top.meet(&Elem(1u8)), Elem(1), "⊤ ⊓ a = a");
         assert!(Elem(1u8).leq(&Top) && !Top.leq(&Elem(1)));
     }
 
@@ -224,6 +325,17 @@ mod tests {
         let j = mk(&[1], Flat::Elem(9)).join(&mk(&[2], Flat::Elem(8)));
         assert_eq!(j.1, Flat::Top);
         assert_eq!(j.0, Powerset([1, 2].into_iter().collect()));
+
+        // A product is BoundedLattice only when BOTH components are: Flat×Flat is,
+        // but the Powerset×Flat above is NOT (Powerset has no ⊤) — the type-level
+        // asymmetry, exercised. ⊓ is componentwise.
+        type FF = Product<Flat<u8>, Flat<u8>>;
+        assert_bounded::<FF>(&[FF::bottom(), Product(Flat::Elem(1), Flat::Top), FF::top()]);
+        assert_eq!(
+            Product(Flat::Elem(1u8), Flat::Top).meet(&Product(Flat::Top, Flat::Elem(2u8))),
+            Product(Flat::Elem(1), Flat::Elem(2)),
+            "componentwise ⊓"
+        );
     }
 
     #[test]
@@ -245,6 +357,16 @@ mod tests {
         c.insert("x", Powerset::singleton(1));
         c.insert("x", Powerset::bottom());
         assert_eq!(c, M::default(), "⊥-valued key is dropped → equals empty map");
+
+        // meet: pointwise ∩; only keys present in BOTH and non-⊥ survive.
+        let mut d = M::default();
+        d.insert("pkg", Powerset([1, 2].into_iter().collect()));
+        let mut e = M::default();
+        e.insert("pkg", Powerset([2, 3].into_iter().collect()));
+        e.insert("svc", Powerset::singleton(7));
+        let m = d.meet(&e);
+        assert_eq!(m.get(&"pkg"), Powerset::singleton(2), "pkg intersection is the singleton 2");
+        assert_eq!(m.get(&"svc"), Powerset::bottom(), "svc only in e, dropped by meet");
 
         assert_laws::<M>(&[M::default(), a, b, j]);
     }

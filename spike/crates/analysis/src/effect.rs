@@ -129,6 +129,15 @@ impl Lattice for Reach {
             (Reach::Facts(a), Reach::Facts(b)) => Reach::Facts(a.union(b).copied().collect()),
         }
     }
+    fn meet(&self, other: &Self) -> Self {
+        match (self, other) {
+            // `Top` is the join-absorbing ⊤, hence meet's identity (`⊤ ⊓ x = x`).
+            (Reach::Top, x) | (x, Reach::Top) => x.clone(),
+            (Reach::Facts(a), Reach::Facts(b)) => {
+                Reach::Facts(a.intersection(b).copied().collect())
+            }
+        }
+    }
 }
 
 impl Reach {
