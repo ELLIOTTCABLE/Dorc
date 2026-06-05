@@ -56,7 +56,18 @@ unwriteable (you may weaken `Must→May`; never `May→Must` without re-proof).
   orientation; wrong tag ⇒ won't compile; unsound transfer ⇒ differential test
   fails. The mine is never in the agent's blast radius.
 
-## 3. Priority tension (NEEDS THE HUMAN before I set wrapper density)
+## 3. Priority ruling (human, 2026-06-05): calibrate UP on correctness
+**Decision:** lean *harder* into the type-locks than readability alone would
+warrant. This is the throwaway landmine-finding stream, so the heavy-typed
+approach at max cost, splattered everywhere, IS a goal — it surfaces what such a
+codebase feels like in practice. Exact line left to me; deliberately **VARY** the
+lock-style across modules (some hard-typed, some convention-fenced) as extra
+state-space exploration. Watch-item: if it becomes *literally* thousands of
+wrappers drowning agent context, switch to SHORT type-names — a mechanical change,
+deferred until the first analysis files show the real density. My prior lean
+below is now the FLOOR, not the cap.
+
+*(Original tension, recorded:)*
 Validation (priority-3) vs readability (priority-1): phantom-typing *everything*
 maximizes the lock but drowns the code in `May<…>`/`Verdict<Apply>` noise, hurting
 the top priority. ~SUSPECT the line: type-lock only the *catastrophic* axes — the
