@@ -1,0 +1,23 @@
+[package]
+name = "dorc-hostsim"
+version = "0.0.0"
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+
+# The DST host model — the test substrate (notes 162 §4 / 163 §4). It depends on
+# the kernel's fact vocabulary, but the kernel NEVER depends on it: all
+# nondeterminism (the seeded PRNG) is quarantined here, so the analyzer kernel
+# stays a pure function (`inv-determinism`).
+[dependencies]
+dorc-core = { path = "../core" }
+dorc-analysis = { path = "../analysis" }
+
+[dev-dependencies]
+# The integration test drives the real pipeline with the modeled host as the probe.
+dorc-syntax = { path = "../syntax" }
+dorc-oracle = { path = "../oracle" }
+dorc-plan = { path = "../plan" }
+
+[lints]
+workspace = true
