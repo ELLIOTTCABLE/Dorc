@@ -168,7 +168,7 @@ impl<T> Carrier<T> {
 // ===========================================================================
 
 /// An interned string handle. Cheap to copy and compare.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Symbol(u32);
 
 /// Interns strings to [`Symbol`]s. Deterministic: equal input → equal symbol,
@@ -205,8 +205,21 @@ impl Interner {
 /// branch on its decoded text to infer meaning (that what-is-`nginx` job belongs
 /// to the oracle, not the engine). Cross-oracle identity binds to a named kind,
 /// never to a shared token (chord `cross-oracle-named-kind`).
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct OpaqueToken(pub Symbol);
+
+/// A named, oracle-declared *kind* (`package`, `service`, …) — the anchor for
+/// cross-oracle identity (wall `W4`, the dn-1 hinge). Like [`OpaqueToken`], the
+/// name is NEVER decoded for meaning; two oracles declaring the same kind name
+/// are coherent providers of one kind (chord `cross-oracle-named-kind`). The
+/// Tier-A blessed forms use well-known kind names (`file`, `tool`, `freshness`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct KindId(pub Symbol);
+
+/// An oracle *provider* (`apt-get`, `dpkg`, …) — the `(provider, verb)` key of
+/// the fact-centric effect map (note 162). An interned name, never decoded.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct ProviderId(pub Symbol);
 
 // ===========================================================================
 // Analysis vocabulary: phase, verdict, grade, fact-domain, fact
@@ -251,7 +264,7 @@ pub enum Grade {
 /// The coarse partition of system state (chord `fact-domain-partition`). Most
 /// commands touch exactly one domain; the partition lets propagation skip
 /// domains a command cannot affect. `Other` is the catch-all, not a wildcard.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum FactDomain {
     Pkg,
     File,
@@ -266,7 +279,7 @@ pub enum FactDomain {
 /// expression that introduced it (chord `fact-pair`: `fact = (opaque-token,
 /// source-expr)`). Structured selectors (e.g. a package's `installed` vs
 /// `version`) are added when the analysis phase needs them.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Fact {
     pub domain: FactDomain,
     pub entity: OpaqueToken,
