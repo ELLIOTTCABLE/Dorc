@@ -23,7 +23,7 @@
 //!   ([`CfgNodeKind::Redir`]), independent of the command word.
 //! * **`haz-seterr`** — `set -e`/errexit edges are partly an analysis *output*
 //!   (note 163 §3): [`build`] runs a small forward errexit pass and materialises
-//!   conditional failure→`exit` edges (coarse-but-sound v1; see [`build`]).
+//!   **precise** conditional failure→`exit` edges (note 166; see [`build`]).
 
 use std::collections::BTreeMap;
 
@@ -175,19 +175,27 @@ impl crate::solve::Graph for Cfg {
 ///
 /// 1. **Base CFG** — a structural walk of the AST emitting effect/structural
 ///    nodes and the ordinary sequential / branch / short-circuit edges.
-/// 2. **errexit materialisation (coarse-but-sound v1)** — a small forward pass
+/// 2. **errexit materialisation (precise — note 166)** — a small forward pass
 ///    tracks `errexit ∈ {on, off, ⊤}` per node (toggled by `set -e`/`set +e`;
-///    `set "$dyn"` ⇒ ⊤). Where errexit *may* be on at a fallible `Command`, an
-///    implicit failure→`exit` edge is added. **Over-approximate**: if unsure
-///    (⊤), the edge is added (more edges = more conservative = sound for both
-///    `kFAIL` phases). `cmd || true` suppresses it (`haz-swallow`), and commands
-///    evaluated in a condition context (`if`/`&&`/`||` test) do not get it
-///    (errexit is suppressed there).
+///    `set "$dyn"` ⇒ ⊤; subshell toggles do not leak — find-4). Where errexit
+///    *may* be on at a fallible `Command` **or** `Redir` (find-5), an implicit
+///    failure→`exit` edge is added. The edge set is **precise**, not
+///    over-approximate: it is *not* added where the shell never aborts — a
+///    `!`-negated pipeline (find-1), anywhere in an `if`/`while`/`until` test or a
+///    `&&`/`||` left operand (the whole region — find-2/3), or a `|| true` swallow
+///    (`haz-swallow`). The single remaining conservative direction is `set "$dyn"`
+///    ⇒ ⊤ ⇒ add the edge (dynamic option; genuinely unknown).
 ///
-/// *Deferred (flagged refinement):* precise per-edge materialisation that prunes
-/// the failure-edge where the command is provably infallible, and the irregular
-/// real-`dash`/`bash` errexit corner-cases (`pipefail` interaction,
-/// command-substitution inheritance) — `fork-errexit-semantics` (note 160 §9).
+/// Why precise matters (note 166 find-8): a *spurious* `cmd→exit` edge is unsound
+/// **backward** — the apply-minimization slice would see a post-`cmd` mutation as
+/// conditionally-bypassed and could skip an always-reached mutation
+/// (`kFAIL-perform` violation). A *missing* edge is unsound **forward** (a wrong
+/// skip). Both directions are now fixed.
+///
+/// *Known residue (flagged):* special-built-in redirection-error abort (`: > /bad`
+/// aborts *unconditionally*, not via `set -e` — see note 166 follow-up); `pipefail`
+/// interaction; cross-call errexit into function bodies (find-7) —
+/// `fork-errexit-semantics` (note 160 §9).
 #[must_use]
 pub fn build(ast: &Ast) -> Carrier<Cfg> {
     let mut b = Builder::new(ast);
@@ -244,11 +252,21 @@ struct Builder<'a> {
     diags: Vec<Diagnostic>,
     entry: CfgNodeId,
     exit: CfgNodeId,
-    /// Per-node: does this `Command` node toggle errexit, and is it fallible /
+    /// Per-node: does this node toggle errexit, and is it fallible /
     /// in a condition context? Populated during the walk; consumed by the
     /// errexit pass so the two phases share one source of truth (haz-seterr).
+    /// `fallible` is set on both `Command` and `Redir` nodes (find-5): a failing
+    /// redirection aborts under `set -e` just as a failing command does.
     fallible: Vec<bool>,
     toggle: Vec<Option<ErrExit>>,
+    /// `ScopeExit` node → its matching `ScopeEnter` (find-4): the errexit forward
+    /// pass restores the *pre-subshell* state at the exit, so a `set -e`/`set +e`
+    /// toggle inside `( )`/`$( )` never leaks out. Both directions are kept so the
+    /// worklist can re-queue the exit when its enter's inflow changes (keeping the
+    /// fixed point correct despite there being no enter→exit control edge).
+    /// `BTreeMap` (not `HashMap`) for `inv-determinism`.
+    exit_to_enter: BTreeMap<usize, usize>,
+    enter_to_exit: BTreeMap<usize, usize>,
     /// Recursion-depth guard mirroring the parser's (`inv-no-throw`): an AST that
     /// is pathologically deep (despite the parser's own bound) cannot blow the
     /// native stack here either.
@@ -272,6 +290,8 @@ impl<'a> Builder<'a> {
             exit: CfgNodeId(0),
             fallible: Vec::new(),
             toggle: Vec::new(),
+            exit_to_enter: BTreeMap::new(),
+            enter_to_exit: BTreeMap::new(),
             depth: 0,
         }
     }
@@ -331,10 +351,18 @@ impl<'a> Builder<'a> {
             NodeKind::Script { items } | NodeKind::List { items } => {
                 self.lower_sequence(&items.clone(), entry_pred)
             }
-            NodeKind::Simple { words, redirs, .. } => {
-                self.lower_simple(id, &words.clone(), &redirs.clone(), entry_pred)
+            NodeKind::Simple {
+                assigns,
+                words,
+                redirs,
+            } => {
+                let (assigns, words, redirs) = (assigns.clone(), words.clone(), redirs.clone());
+                self.lower_simple(id, &assigns, &words, &redirs, entry_pred)
             }
-            NodeKind::Pipeline { stages, .. } => self.lower_pipeline(&stages.clone(), entry_pred),
+            NodeKind::Pipeline { stages, negated } => {
+                let (stages, negated) = (stages.clone(), *negated);
+                self.lower_pipeline(&stages, negated, entry_pred)
+            }
             NodeKind::AndOr { op, left, right } => {
                 let (op, left, right) = (*op, *left, *right);
                 self.lower_and_or(op, left, right, entry_pred)
@@ -395,12 +423,27 @@ impl<'a> Builder<'a> {
     }
 
     /// A simple command. Redirections come first (their effects are established
-    /// before the command body runs — so `exit > f` still records `> f`), then
-    /// the command node. A terminating command (`exit`/`return`) routes to the
-    /// program exit with no fall-through.
+    /// before the command body runs — so `exit > f` still records `> f`), then any
+    /// command-substitution regions in the assignments/words (their subshells run
+    /// during expansion, before the command word), then the command node. A
+    /// terminating command (`exit`/`return`) routes to the program exit with no
+    /// fall-through.
+    ///
+    /// errexit + command substitution (find-6): a `$( … )` failure aborts under
+    /// `set -e` *only when its status becomes the host's* — i.e. an assignment-only
+    /// command `x=$(false)` (`[RAN]` aborts; note 166), `a=1 b=$(false)` (`[RAN]`
+    /// aborts). When a command word is present, `echo $(false)` takes `echo`'s
+    /// status and does NOT abort (`[RAN]`). We need no special fallibility wiring
+    /// for either: the host `Simple` is one `Command` node already flagged fallible,
+    /// so the assignment-only case is covered, and the command-word case correctly
+    /// attributes fallibility to the command word (not the masked subst). What was
+    /// missing was the subst *regions* themselves — lowered here so the downstream
+    /// effect analysis sees their effects; find-4 keeps any `set -e` they contain
+    /// from leaking out.
     fn lower_simple(
         &mut self,
         id: AstId,
+        assigns: &[AstId],
         words: &[AstId],
         redirs: &[AstId],
         entry_pred: CfgNodeId,
@@ -408,8 +451,24 @@ impl<'a> Builder<'a> {
         let mut cur = entry_pred;
         for &r in redirs {
             let rn = self.fresh(r, CfgNodeKind::Redir);
+            // A failing redirection aborts under `set -e` regardless of the command
+            // word (find-5): mark it fallible so phase 2 gives it a failure-edge.
+            // A condition-context / negated-pipeline clear (clear_fallible_range)
+            // will later unset this where the shell exempts it.
+            self.fallible[rn.index()] = true;
             self.add_edge(cur, rn);
             cur = rn;
+        }
+        // Command-substitution subshells in the assignment values and command words
+        // run during expansion (find-6). Assignment RHS is a `Word`; each word is a
+        // `Word`. Lower their `$( … )` bodies as scoped regions, sequenced here.
+        for &a in assigns {
+            if let NodeKind::Assign { value: Some(v), .. } = &self.ast.node(a).kind {
+                cur = self.lower_word_substs(*v, cur);
+            }
+        }
+        for &w in words {
+            cur = self.lower_word_substs(w, cur);
         }
         let cmd = self.fresh(id, CfgNodeKind::Command);
         self.add_edge(cur, cmd);
@@ -438,7 +497,19 @@ impl<'a> Builder<'a> {
     /// (`haz-concurrency`), but v1 models the pipeline as a simple sequence of its
     /// stage-regions; per-stage env-scoping is a flagged refinement (the next
     /// subagent may wrap each stage in a scope when it needs env-isolation).
-    fn lower_pipeline(&mut self, stages: &[AstId], entry_pred: CfgNodeId) -> CfgNodeId {
+    ///
+    /// A `!`-negated pipeline never fires errexit (find-1): POSIX exempts a command
+    /// whose status is negated with `!` from `set -e`, *even* `! true`
+    /// (`[RAN]` dash 0.5 — note 166). This is also Dorc's own guard idiom. So a
+    /// negated pipeline's governing (last) stage is cleared of fallibility, the
+    /// same as a condition-context command.
+    fn lower_pipeline(
+        &mut self,
+        stages: &[AstId],
+        negated: bool,
+        entry_pred: CfgNodeId,
+    ) -> CfgNodeId {
+        let first = self.nodes.len();
         let mut cur = entry_pred;
         let last = stages.len().saturating_sub(1);
         for (i, &stage) in stages.iter().enumerate() {
@@ -451,15 +522,24 @@ impl<'a> Builder<'a> {
                 }
             }
         }
+        if negated {
+            // The whole pipeline's status is negated ⇒ errexit cannot fire on it.
+            // Clear fallibility across every node the pipeline produced (covering
+            // the last stage's command *and* its redirections — find-1 + find-5).
+            self.clear_fallible_range(first, self.nodes.len());
+        }
         cur
     }
 
     /// `left && right` / `left || right` — **short-circuit** edges. `left` always
     /// runs; `right` runs conditionally on `left`'s status; both reach the
-    /// continuation (a merge). The `left` region is a *condition context*, so its
-    /// trailing command does NOT get an errexit failure-edge (errexit is
-    /// suppressed in `&&`/`||` left operands). For `||`, `left || true`-style
-    /// swallowing also suppresses it.
+    /// continuation (a merge). The whole `left` region is a *condition context*, so
+    /// nothing in it gets an errexit failure-edge (errexit is suppressed in
+    /// `&&`/`||` left operands — `[RAN]` `false && echo X`, `true && false && …`;
+    /// note 166 find-3). For `||`, `left || true`-style swallowing falls out of the
+    /// same rule. The `right` operand is NOT exempt at top level (`[RAN]`
+    /// `true && false` aborts); left-associative chains nest so each inner left is
+    /// covered by *its* enclosing `lower_and_or`.
     fn lower_and_or(
         &mut self,
         _op: dorc_syntax::ast::AndOrOp,
@@ -467,8 +547,7 @@ impl<'a> Builder<'a> {
         right: AstId,
         entry_pred: CfgNodeId,
     ) -> CfgNodeId {
-        let left_exit = self.lower_node(left, entry_pred);
-        self.mark_condition_context(left_exit);
+        let left_exit = self.lower_condition_region(left, entry_pred);
 
         let right_exit = self.lower_node(right, left_exit);
         // Hang the join's provenance on the left operand (a reasonable locator).
@@ -509,8 +588,10 @@ impl<'a> Builder<'a> {
         entry_pred: CfgNodeId,
         merge: CfgNodeId,
     ) {
-        let cond_exit = self.lower_node(cond, entry_pred);
-        self.mark_condition_context(cond_exit);
+        // The WHOLE condition is errexit-exempt, not just its tail (find-2): every
+        // command/redir in the test region is cleared of fallibility (`[RAN]`
+        // `if false; true; then …` runs the body, no abort; note 166).
+        let cond_exit = self.lower_condition_region(cond, entry_pred);
 
         // Success path: then_body.
         let then_exit = self.lower_node(then_body, cond_exit);
@@ -576,6 +657,7 @@ impl<'a> Builder<'a> {
         let body_exit = self.lower_node(body, enter);
         let leave = self.fresh(id, CfgNodeKind::ScopeExit);
         self.add_edge(body_exit, leave);
+        self.pair_scope(enter, leave);
         self.attach_redirs(id, redirs, leave)
     }
 
@@ -587,6 +669,13 @@ impl<'a> Builder<'a> {
     /// pass-through in the enclosing flow.
     fn lower_funcdef(&mut self, id: AstId, body: AstId, entry_pred: CfgNodeId) -> CfgNodeId {
         // Detached region: its own entry, unreferenced by `entry_pred`.
+        //
+        // TODO(find-7): the body's `Entry` is pred-less, so the errexit forward pass
+        // computes `Off` throughout the body and its commands get no failure-edges
+        // even when the *call site* runs under `set -e`. Harmless today (calls
+        // aren't modeled — the body is dead), but wrong once Tier-B call edges land:
+        // the body's errexit inflow must then come from the call site, not a seeded
+        // `Off`. Fix together with call-edge modeling, not piecemeal here (note 166).
         let func_entry = self.fresh(body, CfgNodeKind::Entry);
         let body_exit = self.lower_node(body, func_entry);
         let func_exit = self.fresh(body, CfgNodeKind::Exit);
@@ -613,28 +702,48 @@ impl<'a> Builder<'a> {
         top
     }
 
-    /// Lower the effect of evaluating a *word* (a case scrutinee, an expansion):
-    /// if it contains command substitutions `$( … )`, each is a scoped sub-region
-    /// (it runs in a subshell). Otherwise the word evaluation is a pass-through
-    /// merge (a pure expansion has no command effect of its own).
+    /// Lower the effect of evaluating a *word* as a standalone region (a `case`
+    /// scrutinee): its command substitutions become scoped sub-regions (it runs in
+    /// a subshell). A pure-expansion scrutinee (no `$( … )`) yields a single
+    /// pass-through merge so the `case` arms always have one node to branch from.
     fn lower_word_effects(&mut self, word_id: AstId, entry_pred: CfgNodeId) -> CfgNodeId {
-        let substs = self.command_substs(word_id);
-        if substs.is_empty() {
+        let after_substs = self.lower_word_substs(word_id, entry_pred);
+        if after_substs == entry_pred {
+            // No substitution region was emitted (pure expansion): keep the original
+            // single-merge shape so the scrutinee has its own exit node.
             let m = self.fresh(word_id, CfgNodeKind::Merge);
             self.add_edge(entry_pred, m);
             return m;
         }
+        after_substs
+    }
+
+    /// Lower just the command-substitution subshells inside a word, in source
+    /// order, each a scoped region (subshell semantics). Returns `entry_pred`
+    /// unchanged when the word has no `$( … )` (so a caller that wants no extra
+    /// node — `lower_simple`, find-6 — gets none). Shared by the `case` scrutinee
+    /// path ([`lower_word_effects`]) and assignment/argument expansion.
+    fn lower_word_substs(&mut self, word_id: AstId, entry_pred: CfgNodeId) -> CfgNodeId {
         let mut cur = entry_pred;
-        for body in substs {
-            // Each `$( … )` is a scoped region (subshell semantics).
+        for body in self.command_substs(word_id) {
             let enter = self.fresh(word_id, CfgNodeKind::ScopeEnter);
             self.add_edge(cur, enter);
             let body_exit = self.lower_node(body, enter);
             let leave = self.fresh(word_id, CfgNodeKind::ScopeExit);
             self.add_edge(body_exit, leave);
+            self.pair_scope(enter, leave);
             cur = leave;
         }
         cur
+    }
+
+    /// Record a `ScopeEnter`/`ScopeExit` pair (find-4) so the errexit forward pass
+    /// can restore the pre-subshell errexit state at the exit. Both directions are
+    /// stored: exit→enter for the restore, enter→exit so a change to the enter's
+    /// inflow re-queues the exit during the worklist.
+    fn pair_scope(&mut self, enter: CfgNodeId, leave: CfgNodeId) {
+        self.exit_to_enter.insert(leave.index(), enter.index());
+        self.enter_to_exit.insert(enter.index(), leave.index());
     }
 
     /// Append redirection effect nodes after `pred`, returning the new region exit.
@@ -643,6 +752,7 @@ impl<'a> Builder<'a> {
         let mut cur = pred;
         for &r in redirs {
             let rn = self.fresh(r, CfgNodeKind::Redir);
+            self.fallible[rn.index()] = true; // find-5: redir aborts under `set -e`
             self.add_edge(cur, rn);
             cur = rn;
         }
@@ -653,14 +763,19 @@ impl<'a> Builder<'a> {
 
     /// Materialise the conditional failure→`exit` edges (`haz-seterr`). Runs a
     /// forward fixed-point over the *base* CFG computing `errexit ∈ {Off,On,⊤}` at
-    /// each node, then adds a `node → exit` edge at every fallible `Command` where
-    /// errexit may be on. Over-approximate (⊤ ⇒ add the edge) ⇒ sound for both
-    /// `kFAIL` phases.
+    /// each node, then adds a `node → exit` edge at every fallible `Command`/`Redir`
+    /// where errexit may be on. **Precise** (note 166): the failure-edge set is
+    /// pruned where the shell never aborts — negated pipelines (find-1), whole
+    /// condition regions (find-2/3), `|| true` swallows — and *extended* where it
+    /// does — failing redirections (find-5). Subshell `set -e`/`set +e` toggles do
+    /// not leak out (find-4). `set "$dyn"` still over-approximates to ⊤ (add the
+    /// edge), which is the one remaining conservative direction.
     fn materialise_errexit_edges(&mut self) {
         let n = self.nodes.len();
         // before[v] = join of predecessors' after-states; after[v] applies v's
-        // toggle (a `set -e`/`set +e` command) to before[v]. Entry seeds Off
-        // (a script starts with errexit off until `set -e`).
+        // toggle (a `set -e`/`set +e` command) to before[v], or restores the
+        // pre-subshell state at a `ScopeExit` (find-4). Entry seeds Off (a script
+        // starts with errexit off until `set -e`).
         let mut before = vec![ErrExit::Off; n];
         // Standard worklist to a fixed point (height-2 lattice ⇒ terminates fast).
         let mut work: Vec<usize> = (0..n).collect();
@@ -670,8 +785,18 @@ impl<'a> Builder<'a> {
             let inflow = self.errexit_inflow(v, &before);
             if inflow != before[v] {
                 before[v] = inflow;
+                // A `ScopeExit` restores its matching `ScopeEnter`'s inflow, but
+                // there is no enter→exit control edge to propagate that change.
+                // Re-queue the partner exit so its `after` (and successors) catch
+                // up — keeping the fixed point correct (find-4).
+                if let Some(&leave) = self.enter_to_exit.get(&v) {
+                    if !queued[leave] {
+                        queued[leave] = true;
+                        work.push(leave);
+                    }
+                }
             }
-            let after_v = self.errexit_after(v, before[v]);
+            let after_v = self.errexit_after(v, &before);
             for &w in &self.succ[v] {
                 let joined = before[w].join(after_v);
                 if joined != before[w] {
@@ -684,14 +809,15 @@ impl<'a> Builder<'a> {
             }
         }
 
-        // Materialise edges (collect first to avoid borrow conflict).
+        // Materialise edges (collect first to avoid borrow conflict). Both
+        // `Command` and `Redir` nodes abort under `set -e` when fallible (find-5).
         let exit = self.exit;
         let mut to_add: Vec<usize> = Vec::new();
         let mut saw_top = false;
         for (v, node) in self.nodes.iter().enumerate() {
-            if matches!(node.kind, CfgNodeKind::Command)
+            if matches!(node.kind, CfgNodeKind::Command | CfgNodeKind::Redir)
                 && self.fallible[v]
-                && self.errexit_after(v, before[v]).may_be_on()
+                && self.errexit_after(v, &before).may_be_on()
             {
                 to_add.push(v);
                 if before[v] == ErrExit::Top {
@@ -720,7 +846,7 @@ impl<'a> Builder<'a> {
         }
         let mut acc: Option<ErrExit> = None;
         for &p in &self.pred[v] {
-            let after_p = self.errexit_after(p, before[p]);
+            let after_p = self.errexit_after(p, before);
             acc = Some(match acc {
                 Some(a) => a.join(after_p),
                 None => after_p,
@@ -729,10 +855,18 @@ impl<'a> Builder<'a> {
         acc.unwrap_or(ErrExit::Off)
     }
 
-    /// Apply node `v`'s effect on errexit: a `set -e`/`set +e` toggle overrides;
-    /// any other node passes the incoming state through.
-    fn errexit_after(&self, v: usize, incoming: ErrExit) -> ErrExit {
-        self.toggle[v].unwrap_or(incoming)
+    /// Apply node `v`'s effect on errexit. A `set -e`/`set +e` toggle overrides; a
+    /// `ScopeExit` *restores* its matching `ScopeEnter`'s inflow so a toggle inside
+    /// `( )`/`$( )` does not leak out (find-4, `[RAN]` note 166); any other node
+    /// passes its incoming state through.
+    fn errexit_after(&self, v: usize, before: &[ErrExit]) -> ErrExit {
+        if let Some(t) = self.toggle[v] {
+            return t;
+        }
+        if let Some(&enter) = self.exit_to_enter.get(&v) {
+            return before[enter];
+        }
+        before[v]
     }
 
     // ---- sh classification helpers (pure) -------------------------------------
@@ -796,13 +930,29 @@ impl<'a> Builder<'a> {
 
     // ---- condition-context tagging --------------------------------------------
 
-    /// Mark a region's trailing command as evaluated in a *condition context*
-    /// (the test of an `if`/`elif`, or the left of `&&`/`||`): errexit is
-    /// suppressed there, so it must NOT get a failure→exit edge. We clear the
-    /// fallibility flag on the exit node if it is a `Command`.
-    fn mark_condition_context(&mut self, region_exit: CfgNodeId) {
-        if matches!(self.nodes[region_exit.index()].kind, CfgNodeKind::Command) {
-            self.fallible[region_exit.index()] = false;
+    /// Lower a *condition-context* region (the test of an `if`/`elif`, or the left
+    /// operand of `&&`/`||`) and clear errexit-fallibility across **every** node it
+    /// produces, returning the region's exit. errexit is suppressed throughout such
+    /// a region, not merely at its tail (find-2), and reaches the inner non-final
+    /// operands of a compound test (find-3) — both of which the old tail-only
+    /// `mark_condition_context` missed when the region exit was a `Merge`.
+    ///
+    /// Implemented as a node-range clear: CFG nodes are arena-allocated in walk
+    /// order, so the half-open range `[before, after)` is exactly the region's
+    /// nodes (`inv-determinism` makes this range stable).
+    fn lower_condition_region(&mut self, cond: AstId, entry_pred: CfgNodeId) -> CfgNodeId {
+        let first = self.nodes.len();
+        let exit = self.lower_node(cond, entry_pred);
+        self.clear_fallible_range(first, self.nodes.len());
+        exit
+    }
+
+    /// Clear the fallibility flag on every node in the half-open arena range
+    /// `[from, to)` (a condition region, or a negated pipeline — find-1/2/3/5).
+    /// Clearing a non-fallible node is a no-op, so over-broad ranges are harmless.
+    fn clear_fallible_range(&mut self, from: usize, to: usize) {
+        for f in self.fallible[from..to].iter_mut() {
+            *f = false;
         }
     }
 

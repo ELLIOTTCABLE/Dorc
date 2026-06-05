@@ -495,6 +495,300 @@ fn errexit_unknown_is_conservative() {
 }
 
 // ===========================================================================
+// Precise errexit modeling (note 166): one regression test per fixed finding.
+// Each pins the CFG *structure* against the dash-verified script from the note.
+// ===========================================================================
+
+#[test]
+fn find1_negated_pipeline_has_no_failure_edge() {
+    // `[RAN]` dash: `set -e; ! true; echo AFTER` prints AFTER (rc 0) — a `!`-negated
+    // pipeline NEVER fires errexit, even `! true` (POSIX `!` exemption). So the
+    // negated pipeline's command must have NO failure→exit edge.
+    let src = "set -e\n! true\nafter";
+    let cfg = cfg_of(src);
+    let true_cmds = command_nodes_with_literal(&cfg, src, "true");
+    assert_eq!(true_cmds.len(), 1, "exactly one `true` command");
+    assert!(
+        !has_exit_edge(&cfg, true_cmds[0]),
+        "negated `! true` must NOT have a failure→exit edge (find-1)"
+    );
+    // Control: the trailing bare `after` (errexit on, not negated) DOES abort. We
+    // can't assert its exit edge directly (its only successor IS exit as the last
+    // statement), so instead pin a non-negated sibling that has a fall-through:
+    let src2 = "set -e\nfalse\nafter";
+    let cfg2 = cfg_of(src2);
+    let false_cmd = require(
+        first_command_with_literal(&cfg2, src2, "false"),
+        "false command exists",
+    );
+    assert!(
+        has_exit_edge(&cfg2, false_cmd),
+        "non-negated `false` under set -e DOES get a failure→exit edge (contrast)"
+    );
+}
+
+#[test]
+fn find2_whole_condition_is_errexit_exempt() {
+    // `[RAN]` dash: `set -e; if false; true; then echo THEN; fi; echo AFTER` runs
+    // THEN and AFTER — the WHOLE `if` condition is exempt, not just its last
+    // command. So `false` (a NON-tail condition command) must have no failure→exit
+    // edge, and so must the tail `true`.
+    let src = "set -e\nif false\ntrue\nthen body\nfi\nafter";
+    let cfg = cfg_of(src);
+    let false_cmd = require(
+        first_command_with_literal(&cfg, src, "false"),
+        "the non-tail condition command `false` exists",
+    );
+    assert!(
+        !has_exit_edge(&cfg, false_cmd),
+        "non-tail condition command is errexit-exempt (find-2)"
+    );
+    let true_cmd = require(
+        first_command_with_literal(&cfg, src, "true"),
+        "the tail condition command `true` exists",
+    );
+    assert!(
+        !has_exit_edge(&cfg, true_cmd),
+        "tail condition command is errexit-exempt too (confirmed-correct)"
+    );
+    // The THEN body is NOT exempt: `body` keeps a failure→exit edge.
+    let body = require(
+        first_command_with_literal(&cfg, src, "body"),
+        "the then-body command exists",
+    );
+    assert!(
+        has_exit_edge(&cfg, body),
+        "the then-body is NOT a condition context — it keeps its failure edge"
+    );
+}
+
+#[test]
+fn find3_compound_condition_exempts_inner_operands() {
+    // `[RAN]` dash: `set -e; if false && echo X; then …` does not abort at `false`
+    // (the whole compound test is exempt). When the condition is a `&&`/`||` chain,
+    // its inner operands (whose region exit is a Merge, which the old tail-only
+    // tagging skipped) must also be exempt.
+    let src = "set -e\nif a && b\nthen body\nfi\nafter";
+    let cfg = cfg_of(src);
+    for lit in ["a", "b"] {
+        let cmd = require(
+            first_command_with_literal(&cfg, src, lit),
+            "compound-condition operand exists",
+        );
+        assert!(
+            !has_exit_edge(&cfg, cmd),
+            "compound-condition operand `{lit}` is errexit-exempt (find-3)"
+        );
+    }
+
+    // Top-level `&&`/`||` (NOT a condition): the left/non-final operands are exempt
+    // (`[RAN]` `true && false && echo C` prints AFTER), but the FINAL right operand
+    // is NOT (`[RAN]` `true && false` aborts).
+    let src2 = "set -e\ntrue && false && c\nafter";
+    let cfg2 = cfg_of(src2);
+    let mid = require(
+        first_command_with_literal(&cfg2, src2, "false"),
+        "the middle `&&` operand exists",
+    );
+    assert!(
+        !has_exit_edge(&cfg2, mid),
+        "a non-final `&&` operand is exempt (find-3 / confirmed `|| true` family)"
+    );
+    let final_op = require(
+        first_command_with_literal(&cfg2, src2, "c"),
+        "the final `&&` operand exists",
+    );
+    assert!(
+        has_exit_edge(&cfg2, final_op),
+        "the FINAL `&&` operand is NOT exempt — it keeps its failure edge"
+    );
+}
+
+#[test]
+fn find4_subshell_errexit_toggle_does_not_leak() {
+    // `[RAN]` dash: `set -e; ( set +e; false ); false; echo AFTER` aborts (rc 1) —
+    // the `set +e` inside `( )` does NOT disable errexit outside it. So a command
+    // AFTER the subshell still gets its failure→exit edge.
+    //
+    // NB: the asserted command must be NON-terminal, else its normal fall-through to
+    // the program exit is indistinguishable from the errexit failure-edge — so each
+    // script ends with a trailing `tail` after the command under test.
+    let src = "set -e\n( set +e; false )\nafter\ntail";
+    let cfg = cfg_of(src);
+    assert!(
+        count_kind(&cfg, CfgNodeKind::ScopeEnter) == 1
+            && count_kind(&cfg, CfgNodeKind::ScopeExit) == 1,
+        "the subshell is a scoped region"
+    );
+    // `false` INSIDE the subshell (after `set +e`) is NOT fallible — errexit is off
+    // there.
+    let inner_false = require(
+        first_command_with_literal(&cfg, src, "false"),
+        "the inner `false` exists",
+    );
+    assert!(
+        !has_exit_edge(&cfg, inner_false),
+        "inside the subshell `set +e` is in effect: inner `false` has no failure edge"
+    );
+    // The command after the subshell sees errexit RESTORED to on (the toggle did
+    // not leak): it keeps a failure→exit edge in ADDITION to its fall-through.
+    let after = require(
+        first_command_with_literal(&cfg, src, "after"),
+        "the post-subshell command exists",
+    );
+    assert!(
+        has_exit_edge(&cfg, after),
+        "errexit is restored after the subshell — `after` keeps its failure edge (find-4)"
+    );
+
+    // Inverse: a `set -e` INSIDE a subshell must not leak OUT to an otherwise-off
+    // outer scope. `( set -e; false ); after; tail` — `after` must NOT get a
+    // failure→exit edge (its only successor is the fall-through to `tail`).
+    let src2 = "( set -e; false )\nafter\ntail";
+    let cfg2 = cfg_of(src2);
+    let after2 = require(
+        first_command_with_literal(&cfg2, src2, "after"),
+        "post-subshell command exists",
+    );
+    assert!(
+        !has_exit_edge(&cfg2, after2),
+        "a `set -e` inside `( )` does not leak out: outer `after` stays non-fallible (find-4)"
+    );
+}
+
+#[test]
+fn find5_failing_redirection_aborts_under_errexit() {
+    // `[RAN]` dash: a failing redirection aborts under `set -e` (`cat /etc/x > /f`
+    // with a bad path). The `Redir` node — sequenced before its command — must get
+    // a failure→exit edge, not only the `Command`.
+    let src = "set -e\ncat /etc/x > /f\nafter";
+    let cfg = cfg_of(src);
+    let redirs = redir_nodes(&cfg);
+    assert_eq!(redirs.len(), 1, "one redirection node");
+    assert!(
+        has_exit_edge(&cfg, redirs[0]),
+        "a failing redirection has a failure→exit edge under set -e (find-5)"
+    );
+
+    // Without `set -e`, the redirection does NOT get a failure→exit edge.
+    let src_off = "cat /etc/x > /f\nafter";
+    let cfg_off = cfg_of(src_off);
+    let redirs_off = redir_nodes(&cfg_off);
+    assert_eq!(redirs_off.len(), 1, "one redirection node");
+    assert!(
+        !has_exit_edge(&cfg_off, redirs_off[0]),
+        "no set -e ⇒ the redirection has no failure→exit edge"
+    );
+
+    // A redirection inside an `if` condition is exempt (the whole test region is).
+    let src_cond = "set -e\nif cat /etc/x > /f\nthen y\nfi";
+    let cfg_cond = cfg_of(src_cond);
+    let redirs_cond = redir_nodes(&cfg_cond);
+    assert_eq!(
+        redirs_cond.len(),
+        1,
+        "one redirection node in the condition"
+    );
+    assert!(
+        !has_exit_edge(&cfg_cond, redirs_cond[0]),
+        "a redirection in a condition context is errexit-exempt (find-5 × find-2)"
+    );
+}
+
+#[test]
+fn find6_command_substitution_regions_and_assignment_fallibility() {
+    // `[RAN]` dash: `set -e; x=$(false); echo AFTER` aborts (rc 1) — an
+    // assignment-only command takes the substitution's status. The host `Command`
+    // (whose command-word literal is None) must be fallible AND the `$( … )` body
+    // must be a scoped region in the graph.
+    let src = "set -e\nx=$(false)\nafter";
+    let cfg = cfg_of(src);
+    assert_eq!(
+        count_kind(&cfg, CfgNodeKind::ScopeEnter),
+        1,
+        "the `$(false)` is a scoped command-substitution region (find-6)"
+    );
+    let host = require(
+        assign_command_node(&cfg, src, "x"),
+        "the `x=$(…)` assignment host command exists",
+    );
+    assert!(
+        has_exit_edge(&cfg, host),
+        "an assignment-only `x=$(false)` aborts under set -e (find-6)"
+    );
+
+    // A `set +e` INSIDE the substitution subshell must not leak out (find-4 × find-6):
+    // `set -e; x=$(set +e; false); after` — `after` still gets a failure edge, since
+    // the subst runs in its own shell and the outer errexit stays on. (`after` is
+    // non-terminal so the failure edge is distinguishable from the fall-through.)
+    let src2 = "set -e\nx=$(set +e; false)\nafter\ntail";
+    let cfg2 = cfg_of(src2);
+    let after = require(
+        first_command_with_literal(&cfg2, src2, "after"),
+        "post-substitution command exists",
+    );
+    assert!(
+        has_exit_edge(&cfg2, after),
+        "a `set +e` inside `$( )` does not change errexit after the subshell (find-6 × find-4)"
+    );
+
+    // Contrast: `echo $(false)` has a command word, so the subst status is masked
+    // (`[RAN]` does NOT abort on the subst). The `echo` command is still fallible
+    // (the command word itself can fail) — that is correct and unchanged — but the
+    // important structural fact is the subst region exists.
+    let src3 = "set -e\necho $(false)\nafter";
+    let cfg3 = cfg_of(src3);
+    assert_eq!(
+        count_kind(&cfg3, CfgNodeKind::ScopeEnter),
+        1,
+        "the argument `$(false)` is still a scoped region"
+    );
+}
+
+#[test]
+fn confirmed_pipeline_last_stage_only_governs_errexit() {
+    // Confirmed-correct (note 166): in `a | b`, only the LAST stage governs the
+    // pipeline status under set -e. The non-last stage `a` must have no failure
+    // edge; the last stage `b` must have one. Pins this against accidental change.
+    let src = "set -e\na | b\nafter";
+    let cfg = cfg_of(src);
+    let a = require(first_command_with_literal(&cfg, src, "a"), "stage a exists");
+    let b = require(first_command_with_literal(&cfg, src, "b"), "stage b exists");
+    assert!(
+        !has_exit_edge(&cfg, a),
+        "non-last pipeline stage does not govern errexit (confirmed-correct)"
+    );
+    assert!(
+        has_exit_edge(&cfg, b),
+        "last pipeline stage governs errexit — keeps its failure edge (confirmed-correct)"
+    );
+}
+
+#[test]
+fn confirmed_brace_group_does_not_scope_errexit() {
+    // Confirmed-correct (note 166): a brace `{ }` runs in the current shell and does
+    // NOT scope — its `set -e` leaks (matches real shell). A `set -e` inside a brace
+    // group makes a following command fallible. (Contrast find-4's subshell.)
+    let src = "{ set -e; }\nafter\ntail";
+    let cfg = cfg_of(src);
+    assert_eq!(
+        count_kind(&cfg, CfgNodeKind::ScopeEnter),
+        0,
+        "a brace group introduces no scope boundary (confirmed-correct)"
+    );
+    // `after` is non-terminal (trailing `tail`), so its failure→exit edge is the
+    // errexit edge, not the fall-through.
+    let after = require(
+        first_command_with_literal(&cfg, src, "after"),
+        "post-group command exists",
+    );
+    assert!(
+        has_exit_edge(&cfg, after),
+        "a brace-group `set -e` leaks to the following command (confirmed-correct, contrast find-4)"
+    );
+}
+
+// ===========================================================================
 // Lookup helpers that resolve a literal command word back through provenance.
 // ===========================================================================
 
@@ -528,4 +822,36 @@ fn command_word_literal(ast: &dorc_syntax::Ast, id: dorc_core::AstId) -> Option<
         }
     }
     None
+}
+
+/// Does `id` have a direct failure→exit edge? (The errexit failure-edge the
+/// precise phase-2 pass materialises — note 166.)
+fn has_exit_edge(cfg: &Cfg, id: CfgNodeId) -> bool {
+    cfg.succ_ids(id).any(|w| w == cfg.exit())
+}
+
+/// All `Redir` effect nodes (find-5 asserts on these).
+fn redir_nodes(cfg: &Cfg) -> Vec<CfgNodeId> {
+    cfg.iter()
+        .filter(|(_, n)| n.kind == CfgNodeKind::Redir)
+        .map(|(id, _)| id)
+        .collect()
+}
+
+/// The `Command` node of an *assignment-only* `Simple` whose first assignment is
+/// `name=…` (e.g. the host of `x=$(false)`; its command-word literal is `None`, so
+/// `command_nodes_with_literal` cannot find it).
+fn assign_command_node(cfg: &Cfg, src: &str, name: &str) -> Option<CfgNodeId> {
+    use dorc_syntax::NodeKind;
+    let parsed = parse(src);
+    let ast = &parsed.value;
+    cfg.iter()
+        .filter(|(_, n)| n.kind == CfgNodeKind::Command)
+        .find(|(_, n)| match &ast.node(n.ast).kind {
+            NodeKind::Simple { assigns, .. } => assigns.iter().any(
+                |&a| matches!(&ast.node(a).kind, NodeKind::Assign { name: an, .. } if an == name),
+            ),
+            _ => false,
+        })
+        .map(|(id, _)| id)
 }
