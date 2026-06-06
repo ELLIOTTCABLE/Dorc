@@ -41,6 +41,8 @@ often also full of superseded/incorrect info. peruse older rounds with care.)
 - **Tracking shared state across hosts** — `plans/099` (latest round's conclusion: relational
   contracts over referent-agnostic symbols · MUST-vs-MAY · the IFDS decidable floor).
 - **Real-world grounding of that round (specimens)** — `plans/09A` (bless/abdicate × bake-into-core · the Tier-A/B canonical-forms ledger · the rarity ≠ effect / contract-not-detector correction).
+- **Does it run on Windows / odd targets?** — `plans/139` (platform-compat conclusion: `kLANG` *sh-is-the-product*
+  weld; controller = platform-free text + ssh; targets are sh-precondition-gated into tier-A/tier-B, never executor/transpile).
 
 Through-line worth holding: the **soundness story keeps getting re-cut** — bias-inversion
 (`051`) → perf demotes statically-derived deps (`076`) → trace-don't-derive recovery (`077`) →
@@ -60,6 +62,14 @@ can know without running the host*; on that question, the later round wins.
 > *Prior — round 9, state-tracking:* `plans/099` ground-tested against verbatim real-world scripts in
 > `specimens/` (`090` kernel task-runner = bless-vs-abdicate ledger; `091` stack's installer = m×n
 > abdication + meta-contract debt; commit-pinned + byte-checked via `tools/inline-specimen.sh`).
+
+> *Latest — round 13, 2026-06-03/04, platform-compatibility:* concluded in `plans/139` (charter `plans/130`).
+> The *orchestrator* has no Windows problem (analysis is platform-free text; a Rust async core dodges Ansible's
+> `fork()` wall), so **`kLANG`** (*sh-is-the-product*) is welded → the Windows/odd-*target* question is the hard
+> one: those are **sh-precondition-gated** (lighter than Ansible's POSIX-shell+Python contract), splitting
+> `kTPLATFORMS-wide` into **tier-A real-POSIX vs tier-B sh-syntax-only**. `kLANG`/`kTPLATFORMS`/`kWINLOCAL` added
+> to KNOBS; reconciled with out-of-band rounds 10–12 (`kCOMMS` = the in/out-of-band *plumbing* knob, a false
+> friend of `kOOB`; `kAGENTLESS` welded-push).
 
 ## The per-round map (reference — the spine above is the curated reading order)
 - `notes/000-source-manifest.md` — every source, graded (quality/relevance) + the **license contamination map**.
@@ -137,6 +147,30 @@ Each specimen is a real script reproduced byte-exact + commit-pinned via `tools/
 - `notes/100-security-prior-art-and-threat-modeling.md` — 17 practitioner-weighted sources graded (13 round-10 + ProxyJump/shellcheck for (b) + Matrix-AI/seal for the version survey); findings + verbatim citations + the human's gate-adjudication. **Probe-non-mutation has a first-party refutation** (Chef why-run; "read-only ≠ side-effect-free") *and* **stops at the oracle-grounding boundary** (transfer-to-contract, never eliminate); **control-node = whole-fleet RCE** (Salt CVE); **seccomp = classifier not sandbox**; **Dorc is a package manager** (supply-chain lever; users don't read scripts → defensive-lint backstop); methodology = *democratized* STRIDE.
 - **`plans/101-security-threat-modeling-map.md`** — the map + **fronts 1–6** + the gate-adjudicated knobs **`kAGENTLESS`** (was `kBLAST`; push blast-radius — *added to KNOBS, welded*) and **`kTRUST`** (oracle-distribution integrity — *parked/out-of-scope*; cede to git). Gap-answers: oracle-trust → no code-fetching, defensive-lint backstop; **probe-contract → not a decision** (read-only welded-forced, cost best-effort); push → *ergonomic not a security claim*.
 - **`plans/102-dorc-threat-model.md`** — the deliverable: STRIDE over 5 trust-elements (operator-node · ssh-hops · probe · oracle · plan-output) + the **soundness-boundary** doctrine (eliminate only in Dorc's *own* code; oracle-behaviour = transfer+mitigate) + premortem + per-oracle template + **7 banked footgun-avoidance items**. Plus **Cross-cutting · version-drift** (the concrete grounding-breaker; content-hash-gating as the no-registry defence — *parked spike*, see `../TODO.md`).
+
+### Platform-compatibility round (round 13 — orchestrator + target platform-compat; 2026-06-03, in progress)
+- `plans/130-platform-compatibility-research-plan.md` — the reviewable charter (interactive-research `plan.md`):
+  framing (Windows in ops), the orchestrator/target decomposition, proposed knobs + fronts. **Gate-revised.**
+- `notes/131-platform-compat-prior-art-survey.md` — wide-net prior-art: Ansible/Salt/pyinfra controller=*nix-only;
+  Windows-target=executor pattern; Win32-OpenSSH has no ControlMaster (#1328); MSYS path-mangling; Rust build matrix.
+- `notes/132-sh-as-product-and-target-precondition.md` — the human's steer: **`kLANG`** (*sh-is-the-product*) as a
+  new foundational weld; Windows/odd *targets* are **sh-precondition-gated** (git-bash/WSL/busybox-w32 set once, the
+  Ansible⟷Python analogy), never executor/transpile; `kTPLATFORMS`/`kWINLOCAL` proposed, `kTRANSPORT` dropped.
+- `notes/133-sh-precondition-and-busybox-viability.md` — **F-PRECOND** (done): Dorc's target precondition (SSH +
+  POSIX sh, *no Python*) is a strict *subset* of Ansible's (SSH + POSIX shell + Python); interpreter-as-prerequisite
+  is canonical prior art; busybox-w32 runs sh-*syntax* but a non-POSIX *env* (perms bogus) ⇒ `kTPLATFORMS-wide`
+  splits into tier-A real-POSIX vs tier-B sh-syntax-only targets.
+- `notes/134-crlf-line-ending-hazard.md` — **F-CRLF** (done): Windows-authored CRLF breaks *below* the shell
+  (shebang-`\r` = kernel exec failure, un-guardable from sh) ⇒ Dorc normalize-on-ship or detect-and-fail-clear.
+- **`plans/139-platform-compatibility-synthesis.md`** — **the conclusion**: `kLANG` welds the pluggable-language
+  question shut; orchestrator = platform-free text + ssh (Rust dodges `fork()`); targets = sh-precondition (lighter
+  than Ansible's) split **tier-A real-POSIX / tier-B sh-syntax-only**; `kWINLOCAL`/`kTPLATFORMS`; CRLF policy.
+  **Reconciled with out-of-band rounds 10–12** — `kCOMMS` disambiguation, `kAGENTLESS` align, F-RUSTCI/F-SSHPOOL
+  subsumed by round 12. (F-RUSTCI dropped, F-SSHPOOL folded.)
+- `notes/135-win32-bootstrap-mechanics.md` + **`plans/deferred/13A-busybox-win32-bootstrap.md`** — *post-conclusion
+  addendum (F-BOOTSTRAP).* Corrects the overstated "first-sh = human-only" boundary: a mechanized `raw`-equivalent
+  (scp/`curl.exe` a static busybox.exe → invoke by path) onboards a bare Win32-OpenSSH box to "runs any sh" without
+  breaching `kLANG`; robust pattern = scp-then-invoke-by-path (the `sh -s` stdin-pipe is Win32-OpenSSH's buggy zone).
 
 ## Vendor/ (full-history clones)
 CoLiS ecosystem (morbig, morsmall, colis-language, colis-constraints, shstats, lintshell, …), shellcheck, mvdan-sh, smoosh, oils, goblint-analyzer, tree-sitter-bash. See manifest for grades/licenses.

@@ -147,7 +147,28 @@ Poles: `kLOCKIN-commit ↔ kLOCKIN-reversible`
 
 ---
 
+## Platform reach — *how far do we bend for odd hosts/targets?*
+
+### `kTPLATFORMS`
+Poles: `kTPLATFORMS-mainstream ↔ kTPLATFORMS-wide`
+
+**Tension:** bend engineering toward mainstream Linux/macOS targets (fewer features broken for odd hosts) **vs** reach the long-tail — Windows, ARM, RasPi, RISC-V, Synology/busybox — the heterogeneous fleets the initial userbase runs.
+**Status:** open, lean `kTPLATFORMS-wide`, but gated by `kLANG`: "wide" is tractable only as "any target that can already evaluate POSIX sh" (an sh-precondition + per-platform oracles); Windows-without-sh forces the transpile/foreign-input options `kLANG` welds out. **Owner:** user + corpus. **Lock-in:** med (entangled with `kLANG` + oracle-library portability).
+
+### `kWINLOCAL`
+Poles: `kWINLOCAL-nix-only-controller ↔ kWINLOCAL-windows-supported`
+
+**Tension:** *nix-only orchestrator host (every push-tool analog does this — Ansible/Salt forbid a Windows controller; fork/local-exec UNIX-isms stay free) **vs** a native-Windows controller for the Windows-daily-driver homelabber. **Status:** directional, mild-lean `kWINLOCAL-nix-only-controller` (WSL is the prior-art escape hatch; the analyzer is platform-free text, so low lock-in). **Owner:** user. **Lock-in:** low.
+
+---
+
 ## Welded — settled; do not relitigate (named only so we can refer to them)
+
+### `kLANG`
+Poles: `kLANG-sh-is-the-product ↔ kLANG-pluggable-language`
+
+**Tension:** sh as the *sole authored/analyzed language* — one analyzer, one parser, one oracle-contract idiom, and a probe-compiler whose ceiling (what a sanitized probe can determine about a host, the network, cross-host truth) is shaped by sh's semantics **vs** a 2-to-N *input*-language backend (e.g. PowerShell) for broader native reach.
+**Welded to `kLANG-sh-is-the-product`**: a second *input* language is not a backend but a second product — new analyzer/parser/language-design/oracle-library; the only shared remnant is the name + the thin pluggable orchestrator — and it is not separable, since sh's shape governs what the subset-probes can prove. NB: binds the *authored* language only; a target running native *commands* inside sh control-flow does not breach it (that variance lives in oracles — see `kTPLATFORMS`). **Owner:** welded. **Lock-in:** absolute (day-one).
 
 ### `kFAIL`
 Poles: `kFAIL-withhold ↔ kFAIL-perform`
