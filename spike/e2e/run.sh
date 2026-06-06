@@ -42,7 +42,9 @@ for dir in "$here"/cases/*/; do
     set -- "$@" -o "$o"
   done
 
-  got=$("$dorc" --book="${dir}book.sh" "$@" < "${dir}probe-results.txt" | sed 's/\r$//')
+  # stderr (diagnostics — ⊤-rejects, oracle warnings) is not part of the e2e
+  # assertion; the artifact is stdout (probe + apply). Suppress it for a clean run.
+  got=$("$dorc" --book="${dir}book.sh" "$@" < "${dir}probe-results.txt" 2>/dev/null | sed 's/\r$//')
 
   if [ "${BLESS:-}" = "1" ]; then
     printf '%s\n' "$got" > "${dir}expected.out"
