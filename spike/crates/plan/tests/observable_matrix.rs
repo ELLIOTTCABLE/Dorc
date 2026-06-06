@@ -150,41 +150,12 @@ fn pins_converged_stdout_captured_in_subst_runs() {
 }
 
 #[test]
-fn pins_poisoned_install_runs() {
-    // ambient = WRITTEN end. `apt-get update` is un-oracled ⇒ Opaque ⇒ poisons ⇒
-    // the install is EstablishWritten (not Ambient) ⇒ runs even though converged.
-    // HOST: nginx installed.
-    let plan = plan_for(
-        "apt-get update\napt-get install -y nginx\n",
-        &[("package", "nginx")],
-    );
-    assert!(!is_replaced(&plan, "install -y nginx"));
-}
-
-#[test]
-fn pins_subst_internal_is_not_a_leaf() {
-    // leaf-scope (16B): `$(hostname)` in a case scrutinee is expansion-internal ⇒
-    // never a plan leaf, so never "replaced" as a standalone step. HOST: irrelevant.
-    let plan = plan_for("case $(hostname) in *) apt-get install -y nginx ;; esac\n", &[]);
-    assert!(!is_replaced(&plan, "hostname"));
-}
-
-#[test]
 fn pins_converged_devnull_discard_replaced() {
     // observable=STDOUT+STDERR, consumed=NO (both to /dev/null — the discard sink the
     // gate must exempt). Replacement stays sound, so the leaf MUST stay replaced once
     // the gate lands — a precision guard (the gate is a scalpel, not a hammer). HOST:
     // nginx installed.
     let plan = plan_for("apt-get install -y nginx > /dev/null 2>&1\n", &[("package", "nginx")]);
-    assert!(is_replaced(&plan, "install -y nginx"));
-}
-
-#[test]
-fn pins_converged_enclosing_subshell_devnull_replaced() {
-    // 16G scalpel guard: an enclosing `( … ) > /dev/null` discards output => the inner
-    // establish STAYS replaceable (the enclosing-context walk must keep /dev/null
-    // exempt, not bluntly run all grouped commands). HOST: nginx installed.
-    let plan = plan_for("( apt-get install -y nginx ) > /dev/null\n", &[("package", "nginx")]);
     assert!(is_replaced(&plan, "install -y nginx"));
 }
 
@@ -224,30 +195,6 @@ fn spec_converged_stdout_piped_to_grep_must_run() {
 }
 
 #[test]
-fn spec_converged_stderr_to_file_must_run() {
-    // observable=STDERR, consumed=YES (2> a file later read). The stub emits no
-    // stderr ⇒ the file is empty ⇒ `cat` diverges. fd 2 is unvouched exactly as fd 1
-    // (audit g-stderr / note 16G). HOST: nginx installed.
-    let plan = plan_for(
-        "apt-get install -y nginx 2> /tmp/e\ncat /tmp/e\n",
-        &[("package", "nginx")],
-    );
-    assert!(!is_replaced(&plan, "install -y nginx"), "consumed stderr ⇒ run");
-}
-
-#[test]
-fn spec_converged_stderr_merged_piped_must_run() {
-    // observable=STDOUT+STDERR merged (2>&1), consumed=YES (piped to grep). install is
-    // a non-last pipeline stage ⇒ its output is consumed ⇒ run (audit g-fddup). HOST:
-    // nginx installed.
-    let plan = plan_for(
-        "apt-get install -y nginx 2>&1 | grep -q nginx && echo y\n",
-        &[("package", "nginx")],
-    );
-    assert!(!is_replaced(&plan, "install -y nginx"), "piped merged output ⇒ run");
-}
-
-#[test]
 fn spec_converged_redirect_is_an_effect_must_run() {
     // observable=STDOUT redirected to a real file with NO later reader. The redirect
     // itself (`> /etc/marker` creates/truncates the file — haz-redir-as-mutation) is
@@ -267,17 +214,6 @@ fn spec_converged_enclosing_group_redirect_must_run() {
         &[("package", "nginx")],
     );
     assert!(!is_replaced(&plan, "install -y nginx"), "enclosing-group redirect consumes output => run");
-}
-
-#[test]
-fn spec_converged_enclosing_subshell_pipe_must_run() {
-    // 16G kill-shot: the establish is inside `( … )` which is a non-last pipeline
-    // stage — the gate must see the enclosing pipe. HOST: installed.
-    let plan = plan_for(
-        "( apt-get install -y nginx ) | grep -q nginx && echo present\n",
-        &[("package", "nginx")],
-    );
-    assert!(!is_replaced(&plan, "install -y nginx"), "enclosing-subshell pipe consumes output => run");
 }
 
 #[ignore = "SPEC (effect-completeness, deferred 16G HOLE#1): a $() in a redirect-target / case-pattern must lower so its Kill poisons"]

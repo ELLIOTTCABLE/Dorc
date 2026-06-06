@@ -437,20 +437,24 @@ mod tests {
 
     #[test]
     fn no_license_when_unvouched_output_consumed() {
-        // 16F/16G: a consumed stdout/stderr makes the `true`-stub's empty default
-        // unsound ⇒ no license (run), even with ambient + Must + Converged.
+        // 16F/16G: a consumed stdout OR stderr makes the `true`-stub's empty default
+        // unsound ⇒ no license (run), even with ambient + Must + Converged. Both
+        // unvouched output observables block — the `Stderr` branch was formerly only
+        // exercised end-to-end, pinned here so the matrix can drop its stderr cell.
         let f = nginx_fact();
-        let consumed = May(Powerset::singleton(Observable::Stdout));
-        assert!(
-            ReplaceLicense::prove_replaceable(
-                &SkipClass::EstablishAmbient(f),
-                Grade::Must,
-                PhasedVerdict::<Probe>::new(Verdict::Converged),
-                consumed,
-            )
-            .is_none(),
-            "a consumed unvouched observable must forbid the stub"
-        );
+        for obs in [Observable::Stdout, Observable::Stderr] {
+            let consumed = May(Powerset::singleton(obs));
+            assert!(
+                ReplaceLicense::prove_replaceable(
+                    &SkipClass::EstablishAmbient(f),
+                    Grade::Must,
+                    PhasedVerdict::<Probe>::new(Verdict::Converged),
+                    consumed,
+                )
+                .is_none(),
+                "a consumed {obs:?} must forbid the stub"
+            );
+        }
     }
 
     #[test]
