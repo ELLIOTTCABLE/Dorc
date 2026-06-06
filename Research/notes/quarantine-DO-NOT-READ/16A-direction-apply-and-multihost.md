@@ -1,4 +1,4 @@
-# 170 — spike direction: the apply phase + multi-host state (the missing half)
+# 16A — spike direction: the apply phase + multi-host state (the missing half)
 
 > **Status (2026-06-05): spike, direction note (planning, not implementation).**
 > The spike has built the **probe/plan half** (analyze a book → decide skips → emit

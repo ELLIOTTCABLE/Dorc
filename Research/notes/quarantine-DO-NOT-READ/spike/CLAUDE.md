@@ -67,6 +67,14 @@ makes gnu the active toolchain, so there is no `+toolchain` footgun.
   structure, or oracle-declared) may license a skip. `Grade::May`
   (mined/distributional) is a hint that bootstraps the oracle library and
   **never** authorizes elision.
+- **inv-superposition** — the analyzer kernel emits phase-/orientation-agnostic
+  lattice facts; only the phased *caller* collapses them, by arguing the phase
+  (`Bias`/`PhasedVerdict<P>`) and orientation (`May`/`Must`). The engine must never
+  fold `May`/`Must` or bake a phase default — a baked posture is a wrong-skip under
+  the opposite phase's `kFAIL`. It generalizes `inv-must-may`/`inv-kfail` from the
+  verdict to *every* phase-sensitive fact (DESIGN "Same analysis, different
+  fail-safe posture").
+  <!-- /* retrofit 2026-06-06 (16x postmortem pass): cfg.rs/plan.rs cite inv-superposition throughout, but this round-16 invariant list — authored before the slug was coined — omitted it; added so an agent hunting the registry finds what the code was already written against. Source: notes/quarantine-DO-NOT-READ/16K §3. */ -->
 - **inv-leaf-seam** (`dn-3`) — executable work is a list of individually
   wrappable leaves each carrying a stable `LeafId → AstId` back-map; **never one
   opaque `sh -c "$bigscript"`**. The probe projection is a leaf-id-preserving
