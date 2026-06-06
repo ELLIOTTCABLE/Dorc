@@ -83,6 +83,16 @@ pub fn command_effect(ast: &Ast, idx: &KindIndex, interner: &mut Interner, simpl
     let Some(provider_s) = word_literal(ast, first) else {
         return CommandEffect::Opaque; // dynamic command name
     };
+    // Target-state-pure shell builtins (they touch shell-env / stdout / control
+    // only, never an oracle-modeled system-state fact) are Pure, not Opaque — so
+    // they do NOT poison downstream ambient-ness (fs-4 / spec_set_e; note 16G §4 B).
+    // The poison is broader than `set -e` (every un-oracled token poisons); blessing
+    // the common pure builtins recovers the common case, and anything not on the
+    // list stays Opaque — the safe, over-refusing direction. (`echo`/`printf` stdout
+    // is the observable-liveness gate's concern, not a system-state effect.)
+    if is_target_state_pure_builtin(provider_s) {
+        return CommandEffect::Pure;
+    }
     let provider = ProviderId(interner.intern(provider_s));
     let Some(verb_s) = words.get(1).and_then(|&w| word_literal(ast, w)) else {
         return CommandEffect::Opaque; // no static verb ⇒ no effect to look up
@@ -108,6 +118,21 @@ pub fn command_effect(ast: &Ast, idx: &KindIndex, interner: &mut Interner, simpl
         Polarity::Establish => CommandEffect::Establishes(fact),
         Polarity::Kill => CommandEffect::Kills(fact),
     }
+}
+
+/// Shell builtins with no *target-system* (location-3) effect: they change shell
+/// options/cwd/variables or write to stdout/stderr, but never a package/file/
+/// service fact an oracle models. Treated as `Pure` so they don't poison
+/// reaching-defs ambient-ness (note 16G). Deliberately small and conservative —
+/// anything not listed stays `Opaque` (the safe over-refusing direction); the
+/// dynamic-lvalue forms (`unset "$x"`, `printf -v`) are already ⊤-rejected upstream
+/// by the parser, so only their static uses reach here.
+fn is_target_state_pure_builtin(word: &str) -> bool {
+    matches!(
+        word,
+        "set" | "cd" | "export" | "unset" | "shift" | "read" | "readonly" | "local"
+            | ":" | "true" | "false" | "echo" | "printf" | "test" | "["
+    )
 }
 
 /// Facts mutated by some command on a path to here — or `Top` once an `Opaque`

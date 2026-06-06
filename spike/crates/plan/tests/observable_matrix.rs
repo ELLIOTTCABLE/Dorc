@@ -253,7 +253,6 @@ fn spec_converged_stdout_redirected_then_read_must_run() {
 // confound that stops "status under set -e" from being a clean cell above.
 // ===========================================================================
 
-#[ignore = "SPEC (adjacent: effect-poison): set -e must not poison target-state ambient-ness"]
 #[test]
 fn spec_converged_set_e_does_not_poison_replacement() {
     // HOST: nginx installed (converged). `set -e` precedes the install; it toggles a
