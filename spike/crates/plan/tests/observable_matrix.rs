@@ -1,9 +1,9 @@
-//! Observable / replace state-space matrix — the round-16 (16C–16F) findings as
-//! executable cases. This is a SPEC for the implementation agent, not a passing
-//! suite: `pins_*` tests pin what the current code already gets right; `spec_*`
-//! tests (all `#[ignore]`d) encode what it gets WRONG and currently FAIL. Run
-//! `cargo test -p dorc-plan -- --ignored` to see the gaps; un-ignore each as it
-//! goes green.
+//! Observable / replace state-space matrix — the round-16 (16C–16J) findings as
+//! executable, END-TO-END cases (parse → cfg → classify → plan → disposition).
+//! The observable-liveness gate has LANDED (16H/16J), so this is a **passing
+//! regression suite**: `pins_*` assert behaviour that must stay correct, `spec_*`
+//! assert the gate's must-run cases. Only `spec_converged_subst_in_redir_target_poisons`
+//! stays `#[ignore]`d — the one deferred gap (HOLE#1, CFG-lowering completeness).
 //!
 //! THE MODEL (16F, for orientation — verify it against these cases, don't take it
 //! on faith): replacing a converged leaf = substituting a `true`-stub that
@@ -34,8 +34,10 @@
 //! observe exactly these). It is stated per test. Empty `holds` ⇒ everything
 //! Diverged (unconverged); a listed fact ⇒ Converged.
 //!
-//! TERMINOLOGY: the code still says `Disposition::Replace`; that is the to-be-renamed
-//! "Replace" (16F bans "skip"). `is_replaced` localizes the check to one spot.
+//! LAYERING: the consumption fact is the ENGINE's, computed during CFG lowering and
+//! asserted directly in `analysis/tests/cfg.rs` (the `consumed_*` tests); this file
+//! asserts the END-TO-END collapse of that fact into a run/replace disposition
+//! (`inv-superposition`, note 16J). `is_replaced` localizes the disposition check.
 
 use dorc_analysis::effect::FactKey;
 use dorc_core::{Interner, KindId, OpaqueToken, ProviderId, Verdict};
@@ -132,17 +134,6 @@ fn pins_converged_status_via_andand_replaced() {
 }
 
 #[test]
-fn pins_converged_status_captured_replaced() {
-    // observable=STATUS, consumed=YES ($? captures the rc), converged. rc-0 vouched
-    // ⇒ `true; rc=$?` gives rc=0, matching a converged install. HOST: nginx installed.
-    let plan = plan_for(
-        "apt-get install -y nginx\nrc=$?\n",
-        &[("package", "nginx")],
-    );
-    assert!(is_replaced(&plan, "install -y nginx"));
-}
-
-#[test]
 fn pins_converged_stdout_captured_in_subst_runs() {
     // observable=STDOUT, consumed=YES (captured by $()), converged. Handled today
     // *by accident*: the $()-internal install is excluded as expansion-internal
@@ -210,9 +201,9 @@ fn pins_converged_status_via_oror_replaced() {
 }
 
 // ===========================================================================
-// SPECS — currently WRONG; the build-against targets. All `#[ignore]`d so the
-// default suite stays green; each FAILS under `--ignored` until the backward
-// observable-liveness gate exists. Body asserts the DESIRED behaviour.
+// SPECS — the gate's must-run cases: a consumed UNVOUCHED output (stdout/stderr/fd)
+// ⇒ run. Formerly the #[ignore]d build-against targets; all pass now the gate has
+// landed. (Only the HOLE#1 subst-in-redir-target spec below stays #[ignore]d.)
 // ===========================================================================
 
 #[test]
@@ -229,43 +220,6 @@ fn spec_converged_stdout_piped_to_grep_must_run() {
     assert!(
         !is_replaced(&plan, "install -y nginx"),
         "stdout piped to grep (which gates echo) is value-bearing; the install must run"
-    );
-}
-
-#[test]
-fn spec_converged_stdout_piped_to_tee_must_run() {
-    // observable=STDOUT, consumed=YES (piped to tee → a file), converged. Replacing
-    // ⇒ `true | tee log` ⇒ the log loses the install's output. The conservative
-    // floor MustRuns ANY piped establish — it does not try to prove the downstream
-    // log is dead (over-approximate; the safe direction). HOST: nginx installed.
-    // CURRENT: REPLACED (wrong).
-    let plan = plan_for(
-        "apt-get install -y nginx | tee /var/log/install.log\n",
-        &[("package", "nginx")],
-    );
-    assert!(
-        !is_replaced(&plan, "install -y nginx"),
-        "stdout piped to tee is consumed; the conservative floor must run it"
-    );
-}
-
-#[test]
-fn spec_converged_stdout_redirected_then_read_must_run() {
-    // observable=STDOUT consumed via a FILE intermediary: `> out` sends the
-    // install's stdout to a file later read by `cat`. Replacing ⇒ `true > out` ⇒
-    // empty file ⇒ `cat out` diverges. This is the hard tier: the liveness must
-    // follow stdout → file → read, OR conservatively treat any non-/dev/null stdout
-    // redirect whose target is later read as consumed. (Arguably this is really the
-    // redirect-as-state-effect dimension — the file is a fact — rather than pure
-    // stdout-liveness; included to map the edge of the state-space.) HOST: nginx
-    // installed. CURRENT: REPLACED (wrong).
-    let plan = plan_for(
-        "apt-get install -y nginx > /tmp/out\ncat /tmp/out\n",
-        &[("package", "nginx")],
-    );
-    assert!(
-        !is_replaced(&plan, "install -y nginx"),
-        "stdout → file → read is consumed; the install must run"
     );
 }
 

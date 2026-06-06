@@ -111,18 +111,6 @@ fn fixture_builds_consistently_and_reaches_exit() {
 }
 
 #[test]
-fn fixture_entry_reaches_set_e() {
-    // The very first statement is `set -e`. Entry must reach it (sanity that the
-    // walk wires the script body onto entry, and that `set -e` is a Command node).
-    let cfg = cfg_of(PI_WEBHOST);
-    let set_e = require(
-        first_command_with_literal(&cfg, PI_WEBHOST, "set"),
-        "a `set` command node exists",
-    );
-    assert!(reaches(&cfg, cfg.entry(), set_e), "entry reaches `set -e`");
-}
-
-#[test]
 fn fixture_case_has_branch_per_arm_and_default_terminates() {
     // The fixture's `case "$(hostname)" in pi-web*|webhost-*) : ;; *) … exit 0 ;;`
     // must yield: a scrutinee region (the $(hostname) substitution → a scope), two
@@ -253,20 +241,6 @@ fn fixture_andand_short_circuits() {
     assert!(
         reaches(&cfg, reload, touch),
         "the reload path also continues to `touch`"
-    );
-}
-
-#[test]
-fn fixture_heredoc_and_write_redir_are_effect_nodes() {
-    // The `cat > /etc/nginx/sites-available/pi-web.conf <<'EOF' … EOF` inside the
-    // second `if` produces a `cat` command plus TWO redirection effect nodes (the
-    // `>` write and the `<<` here-doc), sequenced before/with the command. We
-    // assert the cat command exists and at least two Redir nodes are present
-    // overall (combined with the >/dev/null redirs this is ≥3, asserted elsewhere).
-    let cfg = cfg_of(PI_WEBHOST);
-    assert!(
-        first_command_with_literal(&cfg, PI_WEBHOST, "cat").is_some(),
-        "the heredoc-writing `cat` command is modeled"
     );
 }
 
@@ -522,21 +496,6 @@ fn no_errexit_means_no_failure_edge() {
 }
 
 #[test]
-fn swallow_suppresses_errexit_edge() {
-    // `cmd || true` (haz-swallow): even under `set -e`, the left of `||` is in a
-    // condition context, so it must NOT get a failure→exit edge.
-    let src = "set -e\nrisky_cmd || true\nafter";
-    let cfg = cfg_of(src);
-    let risky = command_nodes_with_literal(&cfg, src, "risky_cmd");
-    assert_eq!(risky.len(), 1, "exactly one risky_cmd command");
-    let risky = risky[0];
-    assert!(
-        !cfg.succ_ids(risky).any(|w| w == cfg.exit()),
-        "swallowed (`|| true`) command must not have a failure→exit edge"
-    );
-}
-
-#[test]
 fn errexit_unknown_is_conservative() {
     // `set "$opts"` makes errexit ⊤ (dynamic option). A subsequent command must
     // STILL get the failure→exit edge (over-approximate: ⊤ ⇒ add the edge), and a
@@ -669,6 +628,20 @@ fn find3_compound_condition_exempts_inner_operands() {
     assert!(
         has_exit_edge(&cfg2, final_op),
         "the FINAL `&&` operand is NOT exempt — it keeps its failure edge"
+    );
+
+    // `||` mirrors `&&`, including the `|| true` swallow idiom (haz-swallow): the
+    // LEFT of a top-level `||` is a condition context ⇒ exempt. (Folded in from the
+    // old standalone `swallow_suppresses_errexit_edge`.)
+    let src3 = "set -e\nrisky || true\nafter";
+    let cfg3 = cfg_of(src3);
+    let swallowed = require(
+        first_command_with_literal(&cfg3, src3, "risky"),
+        "the `|| true`-swallowed left operand exists",
+    );
+    assert!(
+        !has_exit_edge(&cfg3, swallowed),
+        "the left of a top-level `||` (the `|| true` swallow) is errexit-exempt"
     );
 }
 

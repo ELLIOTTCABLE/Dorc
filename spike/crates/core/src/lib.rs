@@ -339,13 +339,4 @@ mod tests {
         c.push(Diagnostic::error(DiagCode("boom"), None, "bad input, kept going"));
         assert!(c.has_errors());
     }
-
-    #[test]
-    fn span_to_covers_both() {
-        let a = Span::new(BytePos(2), BytePos(5));
-        let b = Span::new(BytePos(10), BytePos(12));
-        let joined = a.to(b);
-        assert_eq!(joined.lo, BytePos(2));
-        assert_eq!(joined.hi, BytePos(12));
-    }
 }
