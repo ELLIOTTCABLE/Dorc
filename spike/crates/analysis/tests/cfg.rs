@@ -10,7 +10,8 @@
 
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
 
-use dorc_analysis::cfg::{build, Cfg, CfgNodeId, CfgNodeKind};
+use dorc_analysis::cfg::{build, Cfg, CfgNodeId, CfgNodeKind, Observable};
+use dorc_analysis::lattice::Powerset;
 use dorc_analysis::solve::Graph;
 use dorc_syntax::parse;
 
@@ -921,4 +922,80 @@ fn assign_command_node(cfg: &Cfg, src: &str, name: &str) -> Option<CfgNodeId> {
             _ => false,
         })
         .map(|(id, _)| id)
+}
+
+// ===========================================================================
+// Output-consumption fact (note 16J / `inv-superposition`). The engine records,
+// per leaf, which unvouched output observables its CONTEXT consumes — computed in
+// the single lowering traversal (def-2 exhaustive / def-3 single-source), so it is
+// total over nodes (no "absent leaf" — def-1 intent achieved structurally). These
+// pin the fact directly, independent of `plan`'s collapse.
+// ===========================================================================
+
+/// The consumption set of the (sole) command whose command-word literal is `lit`.
+fn consumed_of(src: &str, lit: &str) -> Powerset<Observable> {
+    let cfg = cfg_of(src);
+    let id = require(first_command_with_literal(&cfg, src, lit), "command exists");
+    cfg.consumed_observables(id).clone()
+}
+
+#[test]
+fn consumed_lone_command_is_quiet() {
+    // No pipe, no redirect, no enclosing capture ⇒ provably quiet (empty set).
+    assert!(consumed_of("apt-get install -y nginx\n", "apt-get").0.is_empty());
+}
+
+#[test]
+fn consumed_own_stdout_redirect() {
+    // The leaf's OWN `> file` captures fd 1 ⇒ Stdout consumed.
+    let c = consumed_of("apt-get install -y nginx > /etc/marker\n", "apt-get");
+    assert!(c.contains(&Observable::Stdout));
+    assert!(!c.contains(&Observable::Stderr));
+}
+
+#[test]
+fn consumed_own_stderr_redirect() {
+    // `2> file` captures fd 2 ⇒ Stderr consumed (fd 1 untouched).
+    let c = consumed_of("apt-get install -y nginx 2> /tmp/err\n", "apt-get");
+    assert!(c.contains(&Observable::Stderr));
+    assert!(!c.contains(&Observable::Stdout));
+}
+
+#[test]
+fn consumed_devnull_is_quiet() {
+    // The `/dev/null` discard sink is exempt (the precision scalpel) ⇒ still quiet.
+    assert!(consumed_of("apt-get install -y nginx > /dev/null\n", "apt-get").0.is_empty());
+}
+
+#[test]
+fn consumed_nonlast_pipeline_stage() {
+    // A non-last pipeline stage's stdout is piped onward ⇒ Stdout consumed.
+    assert!(consumed_of("apt-get install -y nginx | tee log\n", "apt-get")
+        .contains(&Observable::Stdout));
+}
+
+#[test]
+fn consumed_enclosing_group_redirect_marks_inner_leaf() {
+    // 16G kill-shot / def-5 regression lock: the redirect is on the GROUP, not the
+    // leaf. The inner install must still be marked Stdout — proving consumption is
+    // computed in the single lowering traversal (the old plan-side dual-traversal
+    // missed exactly this enclosing case; here it cannot, the fact is born with the
+    // node via the arena-range mark).
+    let c = consumed_of("{ apt-get install -y nginx; } > /tmp/out\ncat /tmp/out\n", "apt-get");
+    assert!(c.contains(&Observable::Stdout), "enclosing-group redirect must mark the inner leaf");
+}
+
+#[test]
+fn consumed_enclosing_subshell_pipe_marks_inner_leaf() {
+    // 16G kill-shot: the `( … )` is a non-last pipeline stage; its inner install is
+    // the producer. The enclosing-pipe context must reach the inner leaf.
+    let c = consumed_of("( apt-get install -y nginx ) | grep -q nginx\n", "apt-get");
+    assert!(c.contains(&Observable::Stdout), "enclosing-subshell pipe must mark the inner leaf");
+}
+
+#[test]
+fn consumed_enclosing_subshell_devnull_stays_quiet() {
+    // The scalpel survives the enclosing case too: `( … ) > /dev/null` discards ⇒
+    // the inner leaf stays quiet (the range-mark must keep /dev/null exempt).
+    assert!(consumed_of("( apt-get install -y nginx ) > /dev/null\n", "apt-get").0.is_empty());
 }

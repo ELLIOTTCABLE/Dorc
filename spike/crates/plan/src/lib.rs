@@ -625,4 +625,31 @@ mod tests {
             "install is a leaf"
         );
     }
+
+    #[test]
+    fn consumption_fact_total_over_classify_leaves() {
+        // def-5 (note 16J §4): consumption is computed in the single lowering
+        // traversal and stored per node, so EVERY classify leaf has it defined — the
+        // "absent leaf" that slipped the old plan-side dual-traversal (16I bug-c) is
+        // structurally impossible. Cross-check the join: every leaf is queryable, the
+        // group-redirected install is marked Stdout, and the lone install is quiet.
+        let mut i = Interner::default();
+        let idx = package_index(&mut i);
+        let src = "{ apt-get install -y nginx; } > /tmp/out\napt-get install -y curl\n";
+        let parsed = dorc_syntax::parse(src);
+        let cfg = dorc_analysis::cfg::build(&parsed.value).value;
+        let classes = dorc_analysis::effect::classify(&cfg, &parsed.value, &idx, &mut i);
+        assert!(!classes.is_empty(), "fixture has classify leaves");
+        let (mut marked, mut quiet) = (0, 0);
+        for (node, _) in &classes {
+            // Total Vec ⇒ defined for every classify leaf (never an absent lookup).
+            if cfg.consumed_observables(*node).contains(&Observable::Stdout) {
+                marked += 1;
+            } else {
+                quiet += 1;
+            }
+        }
+        assert!(marked >= 1, "the group-redirected install is marked Stdout");
+        assert!(quiet >= 1, "the lone curl install is quiet");
+    }
 }
