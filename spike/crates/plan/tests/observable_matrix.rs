@@ -189,6 +189,15 @@ fn pins_converged_devnull_discard_replaced() {
 }
 
 #[test]
+fn pins_converged_enclosing_subshell_devnull_replaced() {
+    // 16G scalpel guard: an enclosing `( … ) > /dev/null` discards output => the inner
+    // establish STAYS replaceable (the enclosing-context walk must keep /dev/null
+    // exempt, not bluntly run all grouped commands). HOST: nginx installed.
+    let plan = plan_for("( apt-get install -y nginx ) > /dev/null\n", &[("package", "nginx")]);
+    assert!(is_replaced(&plan, "install -y nginx"));
+}
+
+#[test]
 fn pins_converged_status_via_oror_replaced() {
     // observable=STATUS, consumed=YES (|| reads the rc — the dangerous dual of &&),
     // converged. rc-0 is vouched by the establish contract ⇒ `true || …` does not
@@ -295,7 +304,42 @@ fn spec_converged_redirect_is_an_effect_must_run() {
     assert!(!is_replaced(&plan, "install -y nginx"), "non-/dev/null output redirect ⇒ run");
 }
 
-#[ignore = "SPEC (⊤-containment, deferred): a leaf whose own construct ⊤-rejects (background &) must not be replaced; distinct from the observable gate"]
+#[test]
+fn spec_converged_enclosing_group_redirect_must_run() {
+    // 16G kill-shot: the establish is inside `{ … }` and the redirect is on the
+    // GROUP, not the leaf — the gate must see the enclosing redirect. HOST: installed.
+    let plan = plan_for(
+        "{ apt-get install -y nginx; } > /tmp/out\ncat /tmp/out\n",
+        &[("package", "nginx")],
+    );
+    assert!(!is_replaced(&plan, "install -y nginx"), "enclosing-group redirect consumes output => run");
+}
+
+#[test]
+fn spec_converged_enclosing_subshell_pipe_must_run() {
+    // 16G kill-shot: the establish is inside `( … )` which is a non-last pipeline
+    // stage — the gate must see the enclosing pipe. HOST: installed.
+    let plan = plan_for(
+        "( apt-get install -y nginx ) | grep -q nginx && echo present\n",
+        &[("package", "nginx")],
+    );
+    assert!(!is_replaced(&plan, "install -y nginx"), "enclosing-subshell pipe consumes output => run");
+}
+
+#[ignore = "SPEC (effect-completeness, deferred 16G HOLE#1): a $() in a redirect-target / case-pattern must lower so its Kill poisons"]
+#[test]
+fn spec_converged_subst_in_redir_target_poisons() {
+    // 16G HOLE#1: `$(apt-get purge nginx)` in a redirect TARGET runs (purges nginx)
+    // but is never lowered into the CFG, so its Kill doesn't poison => the install is
+    // wrongly EstablishAmbient => replaced. Fix: lower substs in redirect targets +
+    // case patterns (a CFG-lowering completeness gap; deferred). HOST: installed.
+    let plan = plan_for(
+        "apt-get install -y nginx < \"$(apt-get purge nginx)\"\n",
+        &[("package", "nginx")],
+    );
+    assert!(!is_replaced(&plan, "install -y nginx"), "a Kill in a redirect-target subst must poison the install");
+}
+
 #[test]
 fn spec_topcontext_background_leaf_must_run() {
     // hole-5 (note 16G): `&` ⊤-rejects (loud parse + cfg-top diagnostics) yet the

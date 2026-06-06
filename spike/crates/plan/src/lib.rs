@@ -26,7 +26,7 @@
 use core::marker::PhantomData;
 use std::collections::BTreeSet;
 
-use dorc_analysis::cfg::{Cfg, CfgNodeId};
+use dorc_analysis::cfg::{Cfg, CfgNodeId, CfgNodeKind};
 use dorc_analysis::effect::{FactKey, SkipClass};
 use dorc_core::{AstId, Grade, Interner, Verdict};
 use dorc_syntax::ast::{Ast, NodeKind, RedirOp, RedirTarget, WordPart};
@@ -144,16 +144,18 @@ pub enum Observable {
 /// stage, or an output redirect of fd 1/2 to a non-`/dev/null` sink.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct ObservableUse {
-    pub stdout_consumed: bool,
-    pub stderr_consumed: bool,
+    /// An unvouched output observable (stdout or stderr) is consumed in a
+    /// value-bearing position — by the leaf itself OR by an enclosing
+    /// group/subshell/pipeline (16G kill-shot). Lumped: effect and status are
+    /// vouched, so only output-consumption matters.
+    pub output_consumed: bool,
 }
 
 impl ObservableUse {
     /// Does a consumed unvouched observable forbid the `true`-stub's empty default?
-    /// (Effect and status are vouched; only stdout/stderr being consumed forbids it.)
     #[must_use]
     pub fn forbids_stub(self) -> bool {
-        self.stdout_consumed || self.stderr_consumed
+        self.output_consumed
     }
 }
 
@@ -304,16 +306,20 @@ pub fn build_plan(
     classes: &[(CfgNodeId, SkipClass)],
     verdict_of: impl Fn(FactKey) -> Verdict,
 ) -> Plan {
-    let non_last_stages = non_last_pipeline_stages(ast);
+    let consumed = consumed_output_leaves(ast);
     let mut steps: Vec<Step> = classes
         .iter()
         .map(|(node, class)| {
             let ast_id = cfg.node(*node).ast;
             let sh = command_text(src, ast, ast_id);
             let disposition = match class {
-                SkipClass::EstablishAmbient(fact) => {
+                // Top-containment (16G hole-5): a leaf whose own statement is
+                // top-contaminated — e.g. a backgrounded `cmd &`, lowered as the leaf
+                // followed by a `Top` node — must not be replaced (its execution
+                // context is unmodeled). Conservative: a Top successor => run.
+                SkipClass::EstablishAmbient(fact) if !has_top_successor(cfg, *node) => {
                     let verdict = PhasedVerdict::<Probe>::new(verdict_of(*fact));
-                    let output = observable_use(ast, ast_id, &non_last_stages);
+                    let output = ObservableUse { output_consumed: consumed.contains(&ast_id) };
                     // An EstablishAmbient fact comes from the oracle effect-map by
                     // construction, so its grade is Must (note 160 `must-may`).
                     match ReplaceLicense::prove_replaceable(class, Grade::Must, verdict, output) {
@@ -321,7 +327,7 @@ pub fn build_plan(
                         None => Disposition::Run,
                     }
                 }
-                SkipClass::EstablishWritten(_) | SkipClass::MustRun => Disposition::Run,
+                _ => Disposition::Run,
             };
             Step { leaf: LeafId(0), ast: ast_id, sh, disposition }
         })
@@ -350,51 +356,90 @@ fn command_text(src: &str, ast: &Ast, id: AstId) -> String {
 /// is piped into the next stage, hence value-bearingly consumed (16F / 16G). One
 /// pass over the arena (no parent pointers, so collect from each `Pipeline`'s
 /// `stages[..last]`).
-fn non_last_pipeline_stages(ast: &Ast) -> BTreeSet<AstId> {
+/// AST ids of every command-leaf whose stdout/stderr is consumed in a
+/// value-bearing position — by the leaf's OWN redirect / pipeline-membership OR by
+/// an ENCLOSING group/subshell/pipeline (16G kill-shot: a redirect or pipe on
+/// `{ … }`/`( … )` captures the inner leaf's output, which the old leaf-local check
+/// missed). A top-down walk propagates the "an enclosing scope consumes my output"
+/// context down to the leaves. Conservative + structural (16F §5; no value-plane,
+/// 16C brk-1): `/dev/null` sinks are exempt (the precision scalpel), and fd-dups
+/// (`2>&1`, `>&3`) are not resolved (deferred — 16G).
+fn consumed_output_leaves(ast: &Ast) -> BTreeSet<AstId> {
     let mut out = BTreeSet::new();
-    for (_, node) in ast.iter() {
-        if let NodeKind::Pipeline { stages, .. } = &node.kind {
-            if let Some((_last, leading)) = stages.split_last() {
-                out.extend(leading.iter().copied());
-            }
-        }
-    }
+    walk_consumed(ast, ast.root(), false, &mut out);
     out
 }
 
-/// The unvouched-output consumption of the leaf whose `Simple` node is `simple_id`
-/// — the conservative structural surrogate (16F §5; no value-plane, 16C brk-1):
-/// stdout is consumed if the leaf is a non-last pipeline stage or redirects fd 1
-/// (or the default) to a non-`/dev/null` sink; stderr if it redirects fd 2 there.
-/// fd-dups (`2>&1`, `>&3`) are deliberately NOT resolved here (a deferred
-/// refinement — 16G): the floor already runs any piped or file-redirected establish,
-/// and not resolving dups keeps `> /dev/null 2>&1` correctly replaceable.
-fn observable_use(ast: &Ast, simple_id: AstId, non_last_stages: &BTreeSet<AstId>) -> ObservableUse {
-    let mut used = ObservableUse {
-        stdout_consumed: non_last_stages.contains(&simple_id),
-        stderr_consumed: false,
-    };
-    let NodeKind::Simple { redirs, .. } = &ast.node(simple_id).kind else {
-        return used;
-    };
-    for &r in redirs {
-        let NodeKind::Redir { op, fd, target } = &ast.node(r).kind else {
-            continue;
-        };
-        if !matches!(op, RedirOp::Write | RedirOp::Append) {
-            continue; // input / fd-dup / here-doc: not an output-write sink
+fn walk_consumed(ast: &Ast, id: AstId, enclosing_consumed: bool, out: &mut BTreeSet<AstId>) {
+    match &ast.node(id).kind {
+        NodeKind::Script { items } | NodeKind::List { items } => {
+            for &i in items {
+                walk_consumed(ast, i, enclosing_consumed, out);
+            }
         }
-        let RedirTarget::Word(w) = target else { continue };
-        if word_text(ast, *w) == Some("/dev/null") {
-            continue; // discard sink ⇒ not consumed
+        NodeKind::Simple { redirs, .. } => {
+            if enclosing_consumed || has_output_redir(ast, redirs) {
+                out.insert(id);
+            }
         }
-        match fd {
-            None | Some(1) => used.stdout_consumed = true,
-            Some(2) => used.stderr_consumed = true,
-            _ => {}
+        NodeKind::Pipeline { stages, .. } => {
+            let last = stages.len().saturating_sub(1);
+            for (i, &s) in stages.iter().enumerate() {
+                // A non-last stage's stdout is piped into the next => consumed; the
+                // last stage's output flows to the pipeline's own sink (inherit).
+                walk_consumed(ast, s, enclosing_consumed || i < last, out);
+            }
         }
+        NodeKind::AndOr { left, right, .. } => {
+            walk_consumed(ast, *left, enclosing_consumed, out);
+            walk_consumed(ast, *right, enclosing_consumed, out);
+        }
+        NodeKind::Subshell { body, redirs } | NodeKind::Group { body, redirs } => {
+            // The body's output flows to the group/subshell's own sink => consumed if
+            // THIS scope redirects output to a real file (or an outer scope already did).
+            let c = enclosing_consumed || has_output_redir(ast, redirs);
+            walk_consumed(ast, *body, c, out);
+        }
+        NodeKind::If { cond, then_body, elifs, else_body } => {
+            walk_consumed(ast, *cond, enclosing_consumed, out);
+            walk_consumed(ast, *then_body, enclosing_consumed, out);
+            for e in elifs {
+                walk_consumed(ast, e.cond, enclosing_consumed, out);
+                walk_consumed(ast, e.body, enclosing_consumed, out);
+            }
+            if let Some(eb) = else_body {
+                walk_consumed(ast, *eb, enclosing_consumed, out);
+            }
+        }
+        NodeKind::Case { arms, .. } => {
+            for a in arms {
+                walk_consumed(ast, a.body, enclosing_consumed, out);
+            }
+        }
+        // FuncDef bodies are detached (their leaves are unreachable => classify gates
+        // them); Word/Assign/Redir/Unsupported are not execution-position leaves.
+        _ => {}
     }
-    used
+}
+
+/// Does this redirection list write fd 1/2 (or the default) to a real
+/// (non-`/dev/null`) sink? fd-dups (`2>&1`, `>&3`) are not resolved here (deferred).
+fn has_output_redir(ast: &Ast, redirs: &[AstId]) -> bool {
+    redirs.iter().any(|&r| {
+        let NodeKind::Redir { op, fd, target } = &ast.node(r).kind else {
+            return false;
+        };
+        matches!(op, RedirOp::Write | RedirOp::Append)
+            && matches!(fd, None | Some(1) | Some(2))
+            && matches!(target, RedirTarget::Word(w) if word_text(ast, *w) != Some("/dev/null"))
+    })
+}
+
+/// Does this CFG node have a top (`Top`) node among its successors? Top-containment
+/// (16G hole-5): a leaf whose own statement is top-contaminated — e.g. `cmd &`,
+/// lowered as the leaf followed by a `Top` — is not safely replaceable.
+fn has_top_successor(cfg: &Cfg, node: CfgNodeId) -> bool {
+    cfg.succ_ids(node).any(|s| cfg.node(s).kind == CfgNodeKind::Top)
 }
 
 /// The single-literal text of a word node, if it is one (mirrors the analyzer's
@@ -492,7 +537,7 @@ mod tests {
         // 16F/16G: a consumed stdout/stderr makes the `true`-stub's empty default
         // unsound ⇒ no license (run), even with ambient + Must + Converged.
         let f = nginx_fact();
-        let consumed = ObservableUse { stdout_consumed: true, stderr_consumed: false };
+        let consumed = ObservableUse { output_consumed: true };
         assert!(
             ReplaceLicense::prove_replaceable(
                 &SkipClass::EstablishAmbient(f),
