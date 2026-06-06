@@ -24,11 +24,12 @@
 #![forbid(unsafe_code)]
 
 use core::marker::PhantomData;
+use std::collections::BTreeSet;
 
 use dorc_analysis::cfg::{Cfg, CfgNodeId, CfgNodeKind, Observable};
 use dorc_analysis::effect::{FactKey, SkipClass};
 use dorc_analysis::lattice::{May, Powerset};
-use dorc_core::{AstId, Grade, Interner, Verdict};
+use dorc_core::{AstId, Grade, Interner, KindId, Verdict};
 use dorc_syntax::ast::Ast;
 
 // ===========================================================================
@@ -274,6 +275,81 @@ pub struct Plan {
     pub steps: Vec<Step>,
 }
 
+// ===========================================================================
+// The probe (apply-2's convergence check) — DESIGN "probing phase", note 163 §1.
+// The FORWARD half of the compiler: what to check so the apply can elide. The
+// apply ([`build_plan`]) is driven by this probe's (simulated/real) answers.
+// ===========================================================================
+
+/// One read-only check the probe ships: "does `fact` already hold?", carried as the
+/// oracle's verbatim probe-sh (non-mutating by contract — `kFAIL-withhold`). The
+/// host's answer ([`Verdict`]) is what licenses the apply to elide the establishing
+/// leaf.
+#[derive(Debug, Clone)]
+pub struct ProbeCheck {
+    pub fact: FactKey,
+    pub sh: String,
+}
+
+/// A compiled probe: the read-only fact-checks whose answers drive the apply's
+/// elision (apply-2). It holds every [`SkipClass::EstablishAmbient`] fact (the only
+/// elidable class — note 162 O-1) whose kind has a *declared* read-only probe. A
+/// fact whose kind has NO probe is deliberately ABSENT — it is un-checkable, so the
+/// apply cannot elide it (`kFAIL-perform`: no convergence knowledge ⇒ run it). This
+/// is the "can't-probe ⇒ can't-elide" link.
+#[derive(Debug, Clone, Default)]
+pub struct ProbePlan {
+    pub checks: Vec<ProbeCheck>,
+}
+
+impl ProbePlan {
+    /// Render the probe as a shippable, read-only shell-script (the sanitised
+    /// projection shipped to gather facts — DESIGN). Provenance comments name the
+    /// fact (display only — `inv-referent-agnostic`).
+    #[must_use]
+    pub fn render_sh(&self, interner: &Interner) -> String {
+        let mut out = String::from(
+            "#!/bin/sh\n# dorc probe (read-only): reports per-fact convergence, mutates nothing.\n\n",
+        );
+        for check in &self.checks {
+            out.push_str(&format!("# probe: {}\n{}\n", fact_display(interner, check.fact), check.sh));
+        }
+        out
+    }
+
+    /// Did the probe compile a check for `fact`? The apply may only elide a fact the
+    /// probe actually checks (the "can't-probe ⇒ can't-elide" link).
+    #[must_use]
+    pub fn checks_fact(&self, fact: FactKey) -> bool {
+        self.checks.iter().any(|c| c.fact == fact)
+    }
+}
+
+/// Compile the probe from the analysis result: every [`SkipClass::EstablishAmbient`]
+/// fact whose kind has a declared read-only probe, supplied by `probe_body` (the
+/// oracle seam, threaded by the caller so `plan` need not depend on `oracle`).
+/// Deterministic, non-mutating; the FORWARD half of the compiler (the apply is
+/// [`build_plan`]). A kind without a probe yields no check ⇒ its facts cannot be
+/// elided downstream.
+#[must_use]
+pub fn compile_probe(
+    classes: &[(CfgNodeId, SkipClass)],
+    probe_body: impl Fn(KindId) -> Option<String>,
+) -> ProbePlan {
+    let mut checks = Vec::new();
+    let mut seen = BTreeSet::new();
+    for (_, class) in classes {
+        if let SkipClass::EstablishAmbient(fact) = class {
+            if seen.insert(*fact) {
+                if let Some(sh) = probe_body(fact.kind) {
+                    checks.push(ProbeCheck { fact: *fact, sh });
+                }
+            }
+        }
+    }
+    ProbePlan { checks }
+}
+
 /// Build a plan from the analysis result + an injected host probe oracle.
 ///
 /// `verdict_of` is the host probe (the real host / `hostsim` is a later seam): it
@@ -415,6 +491,33 @@ mod tests {
     /// common case for the `prove_replaceable` unit tests.
     fn quiet() -> May<Powerset<Observable>> {
         May(Powerset::default())
+    }
+
+    #[test]
+    fn compile_probe_includes_probeable_excludes_unprobeable() {
+        // The probe = EstablishAmbient facts WITH a declared read-only probe. A kind
+        // with an effect but NO probe is un-checkable ⇒ excluded ⇒ the apply cannot
+        // elide it (can't-probe ⇒ can't-elide, kFAIL-perform). MustRun is never probed.
+        let mut i = Interner::default();
+        let package = KindId(i.intern("package"));
+        let port = KindId(i.intern("port"));
+        let nginx = OpaqueToken(i.intern("nginx"));
+        let p80 = OpaqueToken(i.intern("80"));
+        let classes = vec![
+            (CfgNodeId(0), SkipClass::EstablishAmbient(FactKey { kind: package, entity: nginx })),
+            (CfgNodeId(1), SkipClass::EstablishAmbient(FactKey { kind: port, entity: p80 })),
+            (CfgNodeId(2), SkipClass::MustRun),
+        ];
+        // Only `package` has a declared probe.
+        let probe = compile_probe(&classes, |k| {
+            (k == package).then(|| "dpkg-query -W \"$1\"".to_string())
+        });
+        assert!(probe.checks_fact(FactKey { kind: package, entity: nginx }), "package probed");
+        assert!(
+            !probe.checks_fact(FactKey { kind: port, entity: p80 }),
+            "port has no probe ⇒ excluded (can't elide)"
+        );
+        assert_eq!(probe.checks.len(), 1, "only the probeable EstablishAmbient fact is in the probe");
     }
 
     #[test]

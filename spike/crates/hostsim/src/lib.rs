@@ -280,4 +280,129 @@ mod tests {
             assert!(reload_runs, "seed {seed}: un-oracled reload always runs");
         }
     }
+
+    #[test]
+    fn dst_apply2_chain_probe_simulate_elide_over_seeds() {
+        // apply-2 end-to-end — the WHOLE compiler chain with NO executor (the human's
+        // split): source → analyze → compile_probe → SIMULATE the probe against the
+        // seeded host → build_plan from those verdicts → the eliding apply. Per seed:
+        // an install is elided (Replace) iff the host holds its fact (and the probe
+        // checked it); the un-oracled reload always runs. Looping seeds fuzzes the
+        // host states, reproducibly, no network.
+        use dorc_core::ProviderId;
+        use dorc_oracle::{FactProbe, KindIndex, Polarity};
+        use dorc_plan::{build_plan, compile_probe, Disposition};
+
+        let src = "apt-get install -y nginx\napt-get install -y curl\nsystemctl reload nginx\n";
+        for seed in 0..64u64 {
+            let mut i = Interner::default();
+            let package = KindId(i.intern("package"));
+            let apt = ProviderId(i.intern("apt-get"));
+            let install = i.intern("install");
+            let mut idx = KindIndex::default();
+            idx.add_effect(apt, install, package, Polarity::Establish);
+            idx.add_probe(FactProbe { kind: package, body: "dpkg-query -W \"$1\"".into() });
+
+            let nginx = FactKey { kind: package, entity: OpaqueToken(i.intern("nginx")) };
+            let curl = FactKey { kind: package, entity: OpaqueToken(i.intern("curl")) };
+            let host = Host::seeded(seed, &[nginx, curl]);
+
+            let parsed = dorc_syntax::parse(src);
+            let cfg = dorc_analysis::cfg::build(&parsed.value).value;
+            let classes = dorc_analysis::effect::classify(&cfg, &parsed.value, &idx, &mut i);
+
+            // (1) compile the probe — the read-only checks to ship.
+            let probe = compile_probe(&classes, |k| idx.probe_for(k).map(|p| p.body.clone()));
+            assert!(
+                probe.checks_fact(nginx) && probe.checks_fact(curl),
+                "seed {seed}: both ambient installs are probed (package has a probe)"
+            );
+            // …and the probe renders as a read-only, non-mutating shell-script.
+            let probe_sh = probe.render_sh(&i);
+            assert!(
+                probe_sh.contains("dpkg-query") && probe_sh.contains("read-only"),
+                "seed {seed}: probe renders the verbatim read-only check"
+            );
+
+            // (2) SIMULATE: the host answers each probed fact; an unprobed fact ⇒ Unknown.
+            let verdict_of = |f: FactKey| {
+                if probe.checks_fact(f) {
+                    host.verdict(f)
+                } else {
+                    Verdict::Unknown
+                }
+            };
+            // (3) compile the eliding apply from the simulated probe results.
+            let apply = build_plan(src, &parsed.value, &cfg, &classes, verdict_of);
+
+            let elided = |needle: &str| {
+                apply
+                    .steps
+                    .iter()
+                    .find(|s| s.sh.contains(needle))
+                    .is_some_and(|s| matches!(s.disposition, Disposition::Replace(_)))
+            };
+            assert_eq!(
+                elided("install -y nginx"),
+                host.verdict(nginx) == Verdict::Converged,
+                "seed {seed}: nginx elided ⟺ host holds nginx"
+            );
+            assert_eq!(
+                elided("install -y curl"),
+                host.verdict(curl) == Verdict::Converged,
+                "seed {seed}: curl elided ⟺ host holds curl"
+            );
+            let reload_runs = apply
+                .steps
+                .iter()
+                .find(|s| s.sh.contains("systemctl reload"))
+                .is_some_and(|s| matches!(s.disposition, Disposition::Run));
+            assert!(reload_runs, "seed {seed}: un-oracled reload always runs");
+        }
+    }
+
+    #[test]
+    fn apply2_unprobeable_fact_is_not_elided() {
+        // can't-probe ⇒ can't-elide: a kind with an EFFECT but NO declared probe is
+        // omitted from the probe ⇒ the apply runs its install even on a host that
+        // HOLDS the fact (kFAIL-perform — no convergence knowledge ⇒ run).
+        use dorc_core::ProviderId;
+        use dorc_oracle::{KindIndex, Polarity};
+        use dorc_plan::{build_plan, compile_probe, Disposition};
+
+        let mut i = Interner::default();
+        let package = KindId(i.intern("package"));
+        let apt = ProviderId(i.intern("apt-get"));
+        let install = i.intern("install");
+        let mut idx = KindIndex::default();
+        idx.add_effect(apt, install, package, Polarity::Establish); // effect, but NO add_probe
+
+        let nginx = FactKey { kind: package, entity: OpaqueToken(i.intern("nginx")) };
+        let host = Host::new([nginx]); // the host HOLDS nginx (converged)
+
+        let src = "apt-get install -y nginx\n";
+        let parsed = dorc_syntax::parse(src);
+        let cfg = dorc_analysis::cfg::build(&parsed.value).value;
+        let classes = dorc_analysis::effect::classify(&cfg, &parsed.value, &idx, &mut i);
+
+        let probe = compile_probe(&classes, |k| idx.probe_for(k).map(|p| p.body.clone()));
+        assert!(probe.checks.is_empty(), "no declared probe ⇒ the probe is empty");
+
+        let verdict_of = |f: FactKey| {
+            if probe.checks_fact(f) {
+                host.verdict(f)
+            } else {
+                Verdict::Unknown
+            }
+        };
+        let apply = build_plan(src, &parsed.value, &cfg, &classes, verdict_of);
+        assert!(
+            matches!(apply.steps[0].disposition, Disposition::Run),
+            "un-probeable fact must run even though the host holds it"
+        );
+        assert!(
+            apply.render_sh(&i).contains("apt-get install -y nginx"),
+            "the un-elided install renders verbatim in the apply sh"
+        );
+    }
 }
