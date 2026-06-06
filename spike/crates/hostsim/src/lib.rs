@@ -260,7 +260,7 @@ mod tests {
                 plan.steps
                     .iter()
                     .find(|s| s.sh.contains(needle))
-                    .is_some_and(|s| matches!(s.disposition, dorc_plan::Disposition::Skip(_)))
+                    .is_some_and(|s| matches!(s.disposition, dorc_plan::Disposition::Replace(_)))
             };
             assert_eq!(
                 is_skipped("install -y nginx"),

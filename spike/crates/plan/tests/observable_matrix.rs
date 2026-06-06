@@ -34,7 +34,7 @@
 //! observe exactly these). It is stated per test. Empty `holds` ⇒ everything
 //! Diverged (unconverged); a listed fact ⇒ Converged.
 //!
-//! TERMINOLOGY: the code still says `Disposition::Skip`; that is the to-be-renamed
+//! TERMINOLOGY: the code still says `Disposition::Replace`; that is the to-be-renamed
 //! "Replace" (16F bans "skip"). `is_replaced` localizes the check to one spot.
 
 use dorc_analysis::effect::FactKey;
@@ -87,11 +87,11 @@ fn plan_for(src: &str, holds: &[(&str, &str)]) -> Plan {
 /// Is the leaf whose verbatim text contains `needle` **replaced** (elided to a
 /// stand-in)? `false` means it runs — either as a `Run` step, or because it is not
 /// a plan step at all (e.g. excluded as expansion-internal); both mean "not
-/// replaced". Today "replaced" is `Disposition::Skip`; the implementor renames it.
+/// replaced". Today "replaced" is `Disposition::Replace`; the implementor renames it.
 fn is_replaced(plan: &Plan, needle: &str) -> bool {
     plan.steps
         .iter()
-        .any(|s| s.sh.contains(needle) && matches!(s.disposition, Disposition::Skip(_)))
+        .any(|s| s.sh.contains(needle) && matches!(s.disposition, Disposition::Replace(_)))
 }
 
 // ===========================================================================
@@ -178,13 +178,34 @@ fn pins_subst_internal_is_not_a_leaf() {
     assert!(!is_replaced(&plan, "hostname"));
 }
 
+#[test]
+fn pins_converged_devnull_discard_replaced() {
+    // observable=STDOUT+STDERR, consumed=NO (both to /dev/null — the discard sink the
+    // gate must exempt). Replacement stays sound, so the leaf MUST stay replaced once
+    // the gate lands — a precision guard (the gate is a scalpel, not a hammer). HOST:
+    // nginx installed.
+    let plan = plan_for("apt-get install -y nginx > /dev/null 2>&1\n", &[("package", "nginx")]);
+    assert!(is_replaced(&plan, "install -y nginx"));
+}
+
+#[test]
+fn pins_converged_status_via_oror_replaced() {
+    // observable=STATUS, consumed=YES (|| reads the rc — the dangerous dual of &&),
+    // converged. rc-0 is vouched by the establish contract ⇒ `true || …` does not
+    // fire the handler, matching a converged install (also rc 0). HOST: installed.
+    let plan = plan_for(
+        "apt-get install -y nginx || systemctl start nginx\n",
+        &[("package", "nginx")],
+    );
+    assert!(is_replaced(&plan, "install -y nginx"));
+}
+
 // ===========================================================================
 // SPECS — currently WRONG; the build-against targets. All `#[ignore]`d so the
 // default suite stays green; each FAILS under `--ignored` until the backward
 // observable-liveness gate exists. Body asserts the DESIRED behaviour.
 // ===========================================================================
 
-#[ignore = "SPEC: stdout piped to grep is value-bearing ⇒ must run; needs the observable-liveness gate"]
 #[test]
 fn spec_converged_stdout_piped_to_grep_must_run() {
     // observable=STDOUT, consumed=YES (piped to grep whose rc then gates `echo`),
@@ -202,7 +223,6 @@ fn spec_converged_stdout_piped_to_grep_must_run() {
     );
 }
 
-#[ignore = "SPEC: stdout piped to tee is consumed ⇒ must run (conservative floor); needs the gate"]
 #[test]
 fn spec_converged_stdout_piped_to_tee_must_run() {
     // observable=STDOUT, consumed=YES (piped to tee → a file), converged. Replacing
@@ -220,7 +240,6 @@ fn spec_converged_stdout_piped_to_tee_must_run() {
     );
 }
 
-#[ignore = "SPEC (harder/adjacent tier): stdout→file→read; overlaps the redirect-as-state-effect dimension"]
 #[test]
 fn spec_converged_stdout_redirected_then_read_must_run() {
     // observable=STDOUT consumed via a FILE intermediary: `> out` sends the
@@ -238,6 +257,57 @@ fn spec_converged_stdout_redirected_then_read_must_run() {
     assert!(
         !is_replaced(&plan, "install -y nginx"),
         "stdout → file → read is consumed; the install must run"
+    );
+}
+
+#[test]
+fn spec_converged_stderr_to_file_must_run() {
+    // observable=STDERR, consumed=YES (2> a file later read). The stub emits no
+    // stderr ⇒ the file is empty ⇒ `cat` diverges. fd 2 is unvouched exactly as fd 1
+    // (audit g-stderr / note 16G). HOST: nginx installed.
+    let plan = plan_for(
+        "apt-get install -y nginx 2> /tmp/e\ncat /tmp/e\n",
+        &[("package", "nginx")],
+    );
+    assert!(!is_replaced(&plan, "install -y nginx"), "consumed stderr ⇒ run");
+}
+
+#[test]
+fn spec_converged_stderr_merged_piped_must_run() {
+    // observable=STDOUT+STDERR merged (2>&1), consumed=YES (piped to grep). install is
+    // a non-last pipeline stage ⇒ its output is consumed ⇒ run (audit g-fddup). HOST:
+    // nginx installed.
+    let plan = plan_for(
+        "apt-get install -y nginx 2>&1 | grep -q nginx && echo y\n",
+        &[("package", "nginx")],
+    );
+    assert!(!is_replaced(&plan, "install -y nginx"), "piped merged output ⇒ run");
+}
+
+#[test]
+fn spec_converged_redirect_is_an_effect_must_run() {
+    // observable=STDOUT redirected to a real file with NO later reader. The redirect
+    // itself (`> /etc/marker` creates/truncates the file — haz-redir-as-mutation) is
+    // dropped by the stub, so the leaf must run regardless of whether the content is
+    // read; conservative floor: any non-/dev/null output redirect ⇒ run (audit
+    // g-redir-effect). HOST: nginx installed.
+    let plan = plan_for("apt-get install -y nginx > /etc/marker\n", &[("package", "nginx")]);
+    assert!(!is_replaced(&plan, "install -y nginx"), "non-/dev/null output redirect ⇒ run");
+}
+
+#[ignore = "SPEC (⊤-containment, deferred): a leaf whose own construct ⊤-rejects (background &) must not be replaced; distinct from the observable gate"]
+#[test]
+fn spec_topcontext_background_leaf_must_run() {
+    // hole-5 (note 16G): `&` ⊤-rejects (loud parse + cfg-top diagnostics) yet the
+    // install is still replaced — build_plan never consults diagnostics, so a ⊤ in a
+    // leaf's own statement doesn't inhibit replacing it (an inv-top-reject breach at
+    // the plan layer). Benign for a converged no-op, latently unsound (background
+    // changes observability: async exit, $!, concurrency). Fix is ⊤-containment, NOT
+    // the observable gate. HOST: nginx installed.
+    let plan = plan_for("apt-get install -y nginx &\necho done\n", &[("package", "nginx")]);
+    assert!(
+        !is_replaced(&plan, "install -y nginx"),
+        "a leaf whose own construct ⊤-rejects must not be replaced"
     );
 }
 

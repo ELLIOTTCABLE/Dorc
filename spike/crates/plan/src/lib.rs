@@ -9,11 +9,11 @@
 //!   the type, so a probe verdict cannot be silently consumed as an apply verdict,
 //!   and [`Bias`] forces the `Unknown`-fold per phase. No code path folds
 //!   `Unknown` to a skip.
-//! * **[`SkipLicense`]** (note 165 L2) — the witness for the one irreversible verb
+//! * **[`ReplaceLicense`]** (note 165 L2) — the witness for the one irreversible verb
 //!   (*elide*). Its fields are private, so the only way to obtain one is
-//!   [`SkipLicense::prove_skippable`]; a plan emitter takes a `SkipLicense`, never
+//!   [`ReplaceLicense::prove_replaceable`]; a plan emitter takes a `ReplaceLicense`, never
 //!   a `bool`, so "skip" cannot be spelled without the proof.
-//! * **`inv-must-may` + the ambient gate**, enforced inside `prove_skippable`:
+//! * **`inv-must-may` + the ambient gate**, enforced inside `prove_replaceable`:
 //!   only a [`Grade::Must`] fact that `analysis` classified [`SkipClass::EstablishAmbient`]
 //!   (no upstream same-run mutation reaches it — note 162 O-1) and that the host
 //!   probe found `Converged` may be elided.
@@ -24,11 +24,12 @@
 #![forbid(unsafe_code)]
 
 use core::marker::PhantomData;
+use std::collections::BTreeSet;
 
 use dorc_analysis::cfg::{Cfg, CfgNodeId};
 use dorc_analysis::effect::{FactKey, SkipClass};
 use dorc_core::{AstId, Grade, Interner, Verdict};
-use dorc_syntax::ast::Ast;
+use dorc_syntax::ast::{Ast, NodeKind, RedirOp, RedirTarget, WordPart};
 
 // ===========================================================================
 // Phase markers + the Unknown-fold bias (note 165 L1)
@@ -45,24 +46,24 @@ pub enum Probe {}
 pub enum Apply {}
 
 /// The definite action a verdict folds to once `Unknown` is resolved per phase.
-/// A plan may elide a command only when it holds a [`Resolved::Skippable`], and
-/// `Skippable` is reachable ONLY from a definite [`Verdict::Converged`] — never
+/// A plan may elide a command only when it holds a [`Resolved::Replaceable`], and
+/// `Replaceable` is reachable ONLY from a definite [`Verdict::Converged`] — never
 /// from `Unknown` (that is the wrong-skip this crate forbids).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Resolved {
     /// The command's effect is already established → it may be elided.
-    Skippable,
+    Replaceable,
     /// The command must run (diverged, or the conservative fold of unknown).
     Run,
 }
 
 /// The phase-keyed safe default for an `Unknown` verdict (welded `kFAIL`). No
-/// implementation may return [`Resolved::Skippable`] — folding `Unknown` to a skip
+/// implementation may return [`Resolved::Replaceable`] — folding `Unknown` to a skip
 /// is the catastrophic error (note 165). Keeping the rule in one trait, one impl
 /// per phase, means it is reviewed in exactly one place instead of re-derived at
 /// every `match` on a verdict.
 pub trait Bias {
-    /// What an `Unknown` verdict folds to in this phase. Must never be `Skippable`.
+    /// What an `Unknown` verdict folds to in this phase. Must never be `Replaceable`.
     fn on_unknown() -> Resolved;
 }
 
@@ -100,11 +101,11 @@ impl<P: Bias> PhasedVerdict<P> {
     }
 
     /// Fold to a definite action; `Unknown` uses this phase's [`Bias`]. The only
-    /// route to [`Resolved::Skippable`] is a definite [`Verdict::Converged`].
+    /// route to [`Resolved::Replaceable`] is a definite [`Verdict::Converged`].
     #[must_use]
     pub fn resolve(self) -> Resolved {
         match self.raw {
-            Verdict::Converged => Resolved::Skippable,
+            Verdict::Converged => Resolved::Replaceable,
             Verdict::Diverged => Resolved::Run,
             Verdict::Unknown => P::on_unknown(),
         }
@@ -118,12 +119,51 @@ impl<P: Bias> PhasedVerdict<P> {
 }
 
 // ===========================================================================
-// The skip witness (note 165 L2)
+// Observables + the unvouched-output gate (16F / note 16G)
 // ===========================================================================
 
-/// Why a skip was licensed — the audit trail a plan UI greys-out as the "why"
+/// A thing a downstream consumer can detect about a leaf having run (16F). The
+/// `true`-stub defaults each — effect→none, status→0, stdout/stderr→empty — so the
+/// only question per observable is whether that default is *vouched*: **effect** by
+/// convergence (the forward gate), **status** by the `establishes` contract (a
+/// converged establish exits 0 — free), **stdout/stderr** by NOTHING.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Observable {
+    Effect,
+    Status,
+    Stdout,
+    Stderr,
+}
+
+/// Which of a leaf's **unvouched** observables (stdout/stderr) are consumed in a
+/// value-bearing position downstream. Effect and status are vouched elsewhere, so
+/// only an unvouched-and-consumed observable forbids the stub (16F §3 — one
+/// observable-liveness obligation; status is establish-discharged). Set by a
+/// conservative *structural* surrogate (16F §5; the analyzer has no value-plane to
+/// prove a consumer is actually value-sensitive — 16C brk-1): a non-last pipeline
+/// stage, or an output redirect of fd 1/2 to a non-`/dev/null` sink.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub struct ObservableUse {
+    pub stdout_consumed: bool,
+    pub stderr_consumed: bool,
+}
+
+impl ObservableUse {
+    /// Does a consumed unvouched observable forbid the `true`-stub's empty default?
+    /// (Effect and status are vouched; only stdout/stderr being consumed forbids it.)
+    #[must_use]
+    pub fn forbids_stub(self) -> bool {
+        self.stdout_consumed || self.stderr_consumed
+    }
+}
+
+// ===========================================================================
+// The replace witness (note 165 L2; "replace" — 16F)
+// ===========================================================================
+
+/// Why a replacement was licensed — the audit trail a plan UI greys-out as the "why"
 /// (note 165 L2). Readable, but only ever constructed inside
-/// [`SkipLicense::prove_skippable`], so every field reflects a checked condition.
+/// [`ReplaceLicense::prove_replaceable`], so every field reflects a checked condition.
 #[derive(Debug, Clone)]
 pub struct Derivation {
     /// The fact whose established-ness licenses the skip.
@@ -140,16 +180,16 @@ pub struct Derivation {
 
 /// The witness authorising the one irreversible verb — *elide a command*. Its
 /// fields are private, so the ONLY way to obtain one is
-/// [`prove_skippable`](SkipLicense::prove_skippable); a plan emitter accepts a
-/// `SkipLicense`, never a `bool`, so a skip cannot be spelled without the proof
+/// [`prove_replaceable`](ReplaceLicense::prove_replaceable); a plan emitter accepts a
+/// `ReplaceLicense`, never a `bool`, so a skip cannot be spelled without the proof
 /// (note 165 L2). Carries its [`Derivation`] for provenance.
 #[derive(Debug, Clone)]
-pub struct SkipLicense {
+pub struct ReplaceLicense {
     fact: FactKey,
     derivation: Derivation,
 }
 
-impl SkipLicense {
+impl ReplaceLicense {
     /// Mint a license iff EVERY condition holds; otherwise `None` — the
     /// conservative *run-it* direction (note 165 L2 / `inv-must-may` / the ambient
     /// gate):
@@ -158,24 +198,34 @@ impl SkipLicense {
     ///    no upstream same-run mutation reaches it — else its resting state is
     ///    stale and the probe is not authoritative);
     /// 2. the fact is [`Grade::Must`] (oracle-declared; a `May` hint never licenses);
-    /// 3. the probe verdict folds to [`Resolved::Skippable`] — a definite
+    /// 3. the probe verdict folds to [`Resolved::Replaceable`] — a definite
     ///    `Converged`; `Diverged` and (via [`Bias`]) `Unknown` do not.
+    /// 4. no UNVOUCHED observable (stdout/stderr) is consumed downstream — the stub
+    ///    defaults them to empty and `establishes` vouches only status, not output
+    ///    (16F §3 / note 16G); a consumed one ⇒ run (no in-spike bridge).
     #[must_use]
-    pub fn prove_skippable(
+    pub fn prove_replaceable(
         class: &SkipClass,
         grade: Grade,
         verdict: PhasedVerdict<Probe>,
-    ) -> Option<SkipLicense> {
+        output: ObservableUse,
+    ) -> Option<ReplaceLicense> {
         let SkipClass::EstablishAmbient(fact) = class else {
             return None;
         };
         if grade != Grade::Must {
             return None;
         }
-        if verdict.resolve() != Resolved::Skippable {
+        if verdict.resolve() != Resolved::Replaceable {
             return None;
         }
-        Some(SkipLicense {
+        // No unvouched observable (stdout/stderr) consumed downstream: the `true`
+        // stub defaults them to empty, vouched by nothing (16F §3 / note 16G); a
+        // consumed one would diverge ⇒ run (no in-spike bridge discharges it).
+        if output.forbids_stub() {
+            return None;
+        }
+        Some(ReplaceLicense {
             fact: *fact,
             derivation: Derivation {
                 fact: *fact,
@@ -213,10 +263,12 @@ pub struct LeafId(pub u32);
 /// What the plan does with one leaf.
 #[derive(Debug, Clone)]
 pub enum Disposition {
-    /// Run the leaf — its mutation is needed, or its convergence is unknown.
+    /// Run the leaf — its effect is needed, its convergence is unknown, or an
+    /// unvouched observable it emits is consumed downstream.
     Run,
-    /// Elide the leaf — authorised by a [`SkipLicense`], the only way to reach here.
-    Skip(SkipLicense),
+    /// Replace the leaf with a stand-in (`true` is the degenerate stand-in) —
+    /// authorised by a [`ReplaceLicense`], the only way to reach here.
+    Replace(ReplaceLicense),
 }
 
 /// One leaf of the plan: its stable id, its source back-map (`dn-3`), the verbatim
@@ -242,7 +294,7 @@ pub struct Plan {
 /// answers, per fact, whether it already holds. `build_plan` is a pure function of
 /// its inputs (deterministic given a deterministic `verdict_of`). Every command
 /// leaf becomes a [`Step`]; a leaf is `Skip` ONLY when
-/// [`SkipLicense::prove_skippable`] mints a license — every other leaf runs (the
+/// [`ReplaceLicense::prove_replaceable`] mints a license — every other leaf runs (the
 /// `kFAIL-perform` safe direction).
 #[must_use]
 pub fn build_plan(
@@ -252,6 +304,7 @@ pub fn build_plan(
     classes: &[(CfgNodeId, SkipClass)],
     verdict_of: impl Fn(FactKey) -> Verdict,
 ) -> Plan {
+    let non_last_stages = non_last_pipeline_stages(ast);
     let mut steps: Vec<Step> = classes
         .iter()
         .map(|(node, class)| {
@@ -260,10 +313,11 @@ pub fn build_plan(
             let disposition = match class {
                 SkipClass::EstablishAmbient(fact) => {
                     let verdict = PhasedVerdict::<Probe>::new(verdict_of(*fact));
+                    let output = observable_use(ast, ast_id, &non_last_stages);
                     // An EstablishAmbient fact comes from the oracle effect-map by
                     // construction, so its grade is Must (note 160 `must-may`).
-                    match SkipLicense::prove_skippable(class, Grade::Must, verdict) {
-                        Some(license) => Disposition::Skip(license),
+                    match ReplaceLicense::prove_replaceable(class, Grade::Must, verdict, output) {
+                        Some(license) => Disposition::Replace(license),
                         None => Disposition::Run,
                     }
                 }
@@ -292,6 +346,69 @@ fn command_text(src: &str, ast: &Ast, id: AstId) -> String {
         .to_string()
 }
 
+/// AST ids of every command that is a **non-last stage of a pipeline** — its stdout
+/// is piped into the next stage, hence value-bearingly consumed (16F / 16G). One
+/// pass over the arena (no parent pointers, so collect from each `Pipeline`'s
+/// `stages[..last]`).
+fn non_last_pipeline_stages(ast: &Ast) -> BTreeSet<AstId> {
+    let mut out = BTreeSet::new();
+    for (_, node) in ast.iter() {
+        if let NodeKind::Pipeline { stages, .. } = &node.kind {
+            if let Some((_last, leading)) = stages.split_last() {
+                out.extend(leading.iter().copied());
+            }
+        }
+    }
+    out
+}
+
+/// The unvouched-output consumption of the leaf whose `Simple` node is `simple_id`
+/// — the conservative structural surrogate (16F §5; no value-plane, 16C brk-1):
+/// stdout is consumed if the leaf is a non-last pipeline stage or redirects fd 1
+/// (or the default) to a non-`/dev/null` sink; stderr if it redirects fd 2 there.
+/// fd-dups (`2>&1`, `>&3`) are deliberately NOT resolved here (a deferred
+/// refinement — 16G): the floor already runs any piped or file-redirected establish,
+/// and not resolving dups keeps `> /dev/null 2>&1` correctly replaceable.
+fn observable_use(ast: &Ast, simple_id: AstId, non_last_stages: &BTreeSet<AstId>) -> ObservableUse {
+    let mut used = ObservableUse {
+        stdout_consumed: non_last_stages.contains(&simple_id),
+        stderr_consumed: false,
+    };
+    let NodeKind::Simple { redirs, .. } = &ast.node(simple_id).kind else {
+        return used;
+    };
+    for &r in redirs {
+        let NodeKind::Redir { op, fd, target } = &ast.node(r).kind else {
+            continue;
+        };
+        if !matches!(op, RedirOp::Write | RedirOp::Append) {
+            continue; // input / fd-dup / here-doc: not an output-write sink
+        }
+        let RedirTarget::Word(w) = target else { continue };
+        if word_text(ast, *w) == Some("/dev/null") {
+            continue; // discard sink ⇒ not consumed
+        }
+        match fd {
+            None | Some(1) => used.stdout_consumed = true,
+            Some(2) => used.stderr_consumed = true,
+            _ => {}
+        }
+    }
+    used
+}
+
+/// The single-literal text of a word node, if it is one (mirrors the analyzer's
+/// `word_literal`; used only to recognise the `/dev/null` redirect sink).
+fn word_text(ast: &Ast, id: AstId) -> Option<&str> {
+    match &ast.node(id).kind {
+        NodeKind::Word { parts } => match parts.as_slice() {
+            [WordPart::Literal(s)] | [WordPart::SingleQuoted(s)] => Some(s.as_str()),
+            _ => None,
+        },
+        _ => None,
+    }
+}
+
 impl Plan {
     /// Render the plan back as sh (the Terraform plan/apply UX, DESIGN): run leaves
     /// verbatim, skipped leaves as provenance comments carrying the why. Each leaf
@@ -306,7 +423,7 @@ impl Plan {
     #[must_use]
     pub fn render_sh(&self, interner: &Interner) -> String {
         let mut out = String::from(
-            "#!/bin/sh\n# dorc plan (apply phase). Skipped leaves are already converged.\n\n",
+            "#!/bin/sh\n# dorc plan (apply phase). Replaced leaves are already converged.\n\n",
         );
         for step in &self.steps {
             match &step.disposition {
@@ -314,9 +431,9 @@ impl Plan {
                     out.push_str(&step.sh);
                     out.push('\n');
                 }
-                Disposition::Skip(license) => {
+                Disposition::Replace(license) => {
                     out.push_str(&format!(
-                        "# skip[{}]: {}\n#   \u{21b3} {} already holds (probe: converged \u{b7} must \u{b7} ambient)\n",
+                        "# replace[{}]: {}\n#   \u{21b3} {} already holds (probe: converged \u{b7} must \u{b7} ambient)\n",
                         step.leaf.0,
                         step.sh,
                         fact_display(interner, license.fact()),
@@ -357,10 +474,11 @@ mod tests {
         // The one path that authorises a skip: classify said ambient, the oracle
         // declared Must, and the probe found it already holds.
         let f = nginx_fact();
-        let Some(lic) = SkipLicense::prove_skippable(
+        let Some(lic) = ReplaceLicense::prove_replaceable(
             &SkipClass::EstablishAmbient(f),
             Grade::Must,
             PhasedVerdict::<Probe>::new(Verdict::Converged),
+            ObservableUse::default(),
         ) else {
             panic!("ambient + must + converged must license a skip");
         };
@@ -370,15 +488,34 @@ mod tests {
     }
 
     #[test]
+    fn no_license_when_unvouched_output_consumed() {
+        // 16F/16G: a consumed stdout/stderr makes the `true`-stub's empty default
+        // unsound ⇒ no license (run), even with ambient + Must + Converged.
+        let f = nginx_fact();
+        let consumed = ObservableUse { stdout_consumed: true, stderr_consumed: false };
+        assert!(
+            ReplaceLicense::prove_replaceable(
+                &SkipClass::EstablishAmbient(f),
+                Grade::Must,
+                PhasedVerdict::<Probe>::new(Verdict::Converged),
+                consumed,
+            )
+            .is_none(),
+            "a consumed unvouched observable must forbid the stub"
+        );
+    }
+
+    #[test]
     fn no_license_when_verdict_not_converged() {
         // Diverged ⇒ run; Unknown ⇒ run (the Bias fold) — neither licenses.
         let f = nginx_fact();
         for v in [Verdict::Diverged, Verdict::Unknown] {
             assert!(
-                SkipLicense::prove_skippable(
+                ReplaceLicense::prove_replaceable(
                     &SkipClass::EstablishAmbient(f),
                     Grade::Must,
                     PhasedVerdict::<Probe>::new(v),
+                    ObservableUse::default(),
                 )
                 .is_none(),
                 "verdict {v:?} must NOT license a skip"
@@ -390,10 +527,11 @@ mod tests {
     fn no_license_for_may_grade() {
         // inv-must-may: a mined/distributional May-grade fact never authorises a skip.
         let f = nginx_fact();
-        assert!(SkipLicense::prove_skippable(
+        assert!(ReplaceLicense::prove_replaceable(
             &SkipClass::EstablishAmbient(f),
             Grade::May,
             PhasedVerdict::<Probe>::new(Verdict::Converged),
+            ObservableUse::default(),
         )
         .is_none());
     }
@@ -405,10 +543,11 @@ mod tests {
         let f = nginx_fact();
         for class in [SkipClass::EstablishWritten(f), SkipClass::MustRun] {
             assert!(
-                SkipLicense::prove_skippable(
+                ReplaceLicense::prove_replaceable(
                     &class,
                     Grade::Must,
                     PhasedVerdict::<Probe>::new(Verdict::Converged),
+                    ObservableUse::default(),
                 )
                 .is_none(),
                 "{class:?} must not license a skip"
@@ -418,11 +557,11 @@ mod tests {
 
     #[test]
     fn unknown_folds_to_run_in_both_phases() {
-        // The kFAIL fold: Unknown is never Skippable, in either phase.
+        // The kFAIL fold: Unknown is never Replaceable, in either phase.
         assert_eq!(PhasedVerdict::<Probe>::new(Verdict::Unknown).resolve(), Resolved::Run);
         assert_eq!(PhasedVerdict::<Apply>::new(Verdict::Unknown).resolve(), Resolved::Run);
         // Sanity on the definite verdicts.
-        assert_eq!(PhasedVerdict::<Probe>::new(Verdict::Converged).resolve(), Resolved::Skippable);
+        assert_eq!(PhasedVerdict::<Probe>::new(Verdict::Converged).resolve(), Resolved::Replaceable);
         assert_eq!(PhasedVerdict::<Apply>::new(Verdict::Diverged).resolve(), Resolved::Run);
     }
 
@@ -469,13 +608,13 @@ mod tests {
     }
 
     #[test]
-    fn converged_ambient_install_is_skipped_rest_runs() {
+    fn converged_ambient_install_is_replaced_rest_runs() {
         // A lone install is ambient; a Converged probe licenses the skip. The
         // following un-oracled command runs (Opaque ⇒ MustRun).
         let (plan, interner) =
             plan_for("apt-get install -y nginx\nsystemctl reload nginx\n", Verdict::Converged);
         assert!(
-            matches!(find(&plan, "apt-get install").disposition, Disposition::Skip(_)),
+            matches!(find(&plan, "apt-get install").disposition, Disposition::Replace(_)),
             "converged ambient install ⇒ skip"
         );
         assert!(
@@ -484,8 +623,8 @@ mod tests {
         );
 
         let sh = plan.render_sh(&interner);
-        assert!(sh.contains("# skip["), "rendered plan comments the skipped leaf:\n{sh}");
-        assert!(sh.contains("package:nginx"), "skip provenance names the fact:\n{sh}");
+        assert!(sh.contains("# replace["), "rendered plan comments the replaced leaf:\n{sh}");
+        assert!(sh.contains("package:nginx"), "replace provenance names the fact:\n{sh}");
         assert!(sh.contains("systemctl reload nginx"), "run leaf rendered verbatim:\n{sh}");
     }
 
@@ -504,7 +643,7 @@ mod tests {
     fn fixture_install_runs_despite_converged_probe() {
         // fs-4 on the REAL book: `apt-get update` is un-oracled ⇒ Opaque ⇒ poisons
         // downstream ambient-ness, so the `apt-get install -y nginx` after it is
-        // EstablishWritten, not EstablishAmbient — and prove_skippable refuses a
+        // EstablishWritten, not EstablishAmbient — and prove_replaceable refuses a
         // Written leaf. So even a Converged probe cannot license the skip; the
         // install runs. (Surfaced design problem: to recover the skip the oracle
         // must model `apt-get update` as package-state-pure; the spike's does not.)
