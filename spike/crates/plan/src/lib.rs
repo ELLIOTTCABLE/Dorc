@@ -24,12 +24,12 @@
 #![forbid(unsafe_code)]
 
 use core::marker::PhantomData;
-use std::collections::BTreeSet;
 
-use dorc_analysis::cfg::{Cfg, CfgNodeId, CfgNodeKind};
+use dorc_analysis::cfg::{Cfg, CfgNodeId, CfgNodeKind, Observable};
 use dorc_analysis::effect::{FactKey, SkipClass};
+use dorc_analysis::lattice::{May, Powerset};
 use dorc_core::{AstId, Grade, Interner, Verdict};
-use dorc_syntax::ast::{Ast, NodeKind, RedirOp, RedirTarget, WordPart};
+use dorc_syntax::ast::Ast;
 
 // ===========================================================================
 // Phase markers + the Unknown-fold bias (note 165 L1)
@@ -119,45 +119,18 @@ impl<P: Bias> PhasedVerdict<P> {
 }
 
 // ===========================================================================
-// Observables + the unvouched-output gate (16F / note 16G)
+// The observable-consumption gate (16F / note 16J)
 // ===========================================================================
-
-/// A thing a downstream consumer can detect about a leaf having run (16F). The
-/// `true`-stub defaults each — effect→none, status→0, stdout/stderr→empty — so the
-/// only question per observable is whether that default is *vouched*: **effect** by
-/// convergence (the forward gate), **status** by the `establishes` contract (a
-/// converged establish exits 0 — free), **stdout/stderr** by NOTHING.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Observable {
-    Effect,
-    Status,
-    Stdout,
-    Stderr,
-}
-
-/// Which of a leaf's **unvouched** observables (stdout/stderr) are consumed in a
-/// value-bearing position downstream. Effect and status are vouched elsewhere, so
-/// only an unvouched-and-consumed observable forbids the stub (16F §3 — one
-/// observable-liveness obligation; status is establish-discharged). Set by a
-/// conservative *structural* surrogate (16F §5; the analyzer has no value-plane to
-/// prove a consumer is actually value-sensitive — 16C brk-1): a non-last pipeline
-/// stage, or an output redirect of fd 1/2 to a non-`/dev/null` sink.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-pub struct ObservableUse {
-    /// An unvouched output observable (stdout or stderr) is consumed in a
-    /// value-bearing position — by the leaf itself OR by an enclosing
-    /// group/subshell/pipeline (16G kill-shot). Lumped: effect and status are
-    /// vouched, so only output-consumption matters.
-    pub output_consumed: bool,
-}
-
-impl ObservableUse {
-    /// Does a consumed unvouched observable forbid the `true`-stub's empty default?
-    #[must_use]
-    pub fn forbids_stub(self) -> bool {
-        self.output_consumed
-    }
-}
+//
+// The un-collapsed consumption fact — which unvouched output observables a leaf's
+// context consumes ([`Observable`]) — is computed by the ENGINE and emitted on the
+// `Cfg` ([`dorc_analysis::cfg::Cfg::consumed_observables`]); `plan` collapses it
+// (`inv-superposition`, note 16J). The `true`-stub defaults every observable
+// (effect→none, status→0, stdout/stderr→empty); a default is sound only if
+// *vouched* — effect by convergence (the forward gate), status by the `establishes`
+// contract (free), stdout/stderr by NOTHING — so a consumed stdout/stderr is the
+// one thing that forbids the stub. Per `inv-must-may`, that fact is read in the
+// `May` (over-approximate) orientation, which can only ever *block* a license.
 
 // ===========================================================================
 // The replace witness (note 165 L2; "replace" — 16F)
@@ -202,15 +175,21 @@ impl ReplaceLicense {
     /// 2. the fact is [`Grade::Must`] (oracle-declared; a `May` hint never licenses);
     /// 3. the probe verdict folds to [`Resolved::Replaceable`] — a definite
     ///    `Converged`; `Diverged` and (via [`Bias`]) `Unknown` do not.
-    /// 4. no UNVOUCHED observable (stdout/stderr) is consumed downstream — the stub
-    ///    defaults them to empty and `establishes` vouches only status, not output
-    ///    (16F §3 / note 16G); a consumed one ⇒ run (no in-spike bridge).
+    /// 4. no UNVOUCHED observable (stdout/stderr) is consumed downstream. The
+    ///    consumption is the engine's un-collapsed `May<Powerset<Observable>>` fact
+    ///    (`inv-superposition`, note 16J); per `inv-must-may` a `May` value can only
+    ///    block. The stub defaults stdout/stderr to empty, vouched by nothing (16F
+    ///    §3); a consumed one ⇒ run (no in-spike bridge).
+    ///
+    /// Generic over the phase `P` (`inv-superposition`): the engine never bakes a
+    /// phase; the caller argues it. `build_plan` passes the verdict's own provenance
+    /// (`Probe`).
     #[must_use]
-    pub fn prove_replaceable(
+    pub fn prove_replaceable<P: Bias>(
         class: &SkipClass,
         grade: Grade,
-        verdict: PhasedVerdict<Probe>,
-        output: ObservableUse,
+        verdict: PhasedVerdict<P>,
+        consumed: May<Powerset<Observable>>,
     ) -> Option<ReplaceLicense> {
         let SkipClass::EstablishAmbient(fact) = class else {
             return None;
@@ -221,10 +200,15 @@ impl ReplaceLicense {
         if verdict.resolve() != Resolved::Replaceable {
             return None;
         }
-        // No unvouched observable (stdout/stderr) consumed downstream: the `true`
-        // stub defaults them to empty, vouched by nothing (16F §3 / note 16G); a
-        // consumed one would diverge ⇒ run (no in-spike bridge discharges it).
-        if output.forbids_stub() {
+        // No UNVOUCHED observable (stdout/stderr) consumed downstream. The fact
+        // arrives un-collapsed as a `May` (over-approximate consumption): per
+        // `inv-must-may` a `May` value can only BLOCK a license, never grant one — a
+        // may-consumed stdout/stderr forbids the `true`-stub's empty default (16F §3
+        // / note 16J; no in-spike bridge discharges it). The block is sound in BOTH
+        // phases; only what a blocked leaf's disposition *becomes* is phase-keyed —
+        // the caller's collapse (`inv-superposition`), not here.
+        let May(consumed) = &consumed;
+        if consumed.contains(&Observable::Stdout) || consumed.contains(&Observable::Stderr) {
             return None;
         }
         Some(ReplaceLicense {
@@ -306,7 +290,6 @@ pub fn build_plan(
     classes: &[(CfgNodeId, SkipClass)],
     verdict_of: impl Fn(FactKey) -> Verdict,
 ) -> Plan {
-    let consumed = consumed_output_leaves(ast);
     let mut steps: Vec<Step> = classes
         .iter()
         .map(|(node, class)| {
@@ -318,12 +301,21 @@ pub fn build_plan(
                 // followed by a `Top` node — must not be replaced (its execution
                 // context is unmodeled). Conservative: a Top successor => run.
                 SkipClass::EstablishAmbient(fact) if !has_top_successor(cfg, *node) => {
+                    // `Probe` tags the verdict's provenance (a host probe);
+                    // prove_replaceable is generic over the phase (inv-superposition:
+                    // the caller argues it, the engine never bakes it).
                     let verdict = PhasedVerdict::<Probe>::new(verdict_of(*fact));
-                    let output = ObservableUse { output_consumed: consumed.contains(&ast_id) };
+                    // The engine's un-collapsed consumption fact, read in the `May`
+                    // (over-approximate) orientation: if it MAY be consumed, block.
+                    let consumed = May(cfg.consumed_observables(*node).clone());
                     // An EstablishAmbient fact comes from the oracle effect-map by
                     // construction, so its grade is Must (note 160 `must-may`).
-                    match ReplaceLicense::prove_replaceable(class, Grade::Must, verdict, output) {
+                    match ReplaceLicense::prove_replaceable(class, Grade::Must, verdict, consumed) {
                         Some(license) => Disposition::Replace(license),
+                        // None ⇒ run: the APPLY collapse of "no license"
+                        // (kFAIL-perform). The probe projection, when built, maps
+                        // "no license" to *withhold* — its own collapse (note 16J §5,
+                        // inv-superposition). Don't reuse this arm for probe.
                         None => Disposition::Run,
                     }
                 }
@@ -352,106 +344,11 @@ fn command_text(src: &str, ast: &Ast, id: AstId) -> String {
         .to_string()
 }
 
-/// AST ids of every command that is a **non-last stage of a pipeline** — its stdout
-/// is piped into the next stage, hence value-bearingly consumed (16F / 16G). One
-/// pass over the arena (no parent pointers, so collect from each `Pipeline`'s
-/// `stages[..last]`).
-/// AST ids of every command-leaf whose stdout/stderr is consumed in a
-/// value-bearing position — by the leaf's OWN redirect / pipeline-membership OR by
-/// an ENCLOSING group/subshell/pipeline (16G kill-shot: a redirect or pipe on
-/// `{ … }`/`( … )` captures the inner leaf's output, which the old leaf-local check
-/// missed). A top-down walk propagates the "an enclosing scope consumes my output"
-/// context down to the leaves. Conservative + structural (16F §5; no value-plane,
-/// 16C brk-1): `/dev/null` sinks are exempt (the precision scalpel), and fd-dups
-/// (`2>&1`, `>&3`) are not resolved (deferred — 16G).
-fn consumed_output_leaves(ast: &Ast) -> BTreeSet<AstId> {
-    let mut out = BTreeSet::new();
-    walk_consumed(ast, ast.root(), false, &mut out);
-    out
-}
-
-fn walk_consumed(ast: &Ast, id: AstId, enclosing_consumed: bool, out: &mut BTreeSet<AstId>) {
-    match &ast.node(id).kind {
-        NodeKind::Script { items } | NodeKind::List { items } => {
-            for &i in items {
-                walk_consumed(ast, i, enclosing_consumed, out);
-            }
-        }
-        NodeKind::Simple { redirs, .. } => {
-            if enclosing_consumed || has_output_redir(ast, redirs) {
-                out.insert(id);
-            }
-        }
-        NodeKind::Pipeline { stages, .. } => {
-            let last = stages.len().saturating_sub(1);
-            for (i, &s) in stages.iter().enumerate() {
-                // A non-last stage's stdout is piped into the next => consumed; the
-                // last stage's output flows to the pipeline's own sink (inherit).
-                walk_consumed(ast, s, enclosing_consumed || i < last, out);
-            }
-        }
-        NodeKind::AndOr { left, right, .. } => {
-            walk_consumed(ast, *left, enclosing_consumed, out);
-            walk_consumed(ast, *right, enclosing_consumed, out);
-        }
-        NodeKind::Subshell { body, redirs } | NodeKind::Group { body, redirs } => {
-            // The body's output flows to the group/subshell's own sink => consumed if
-            // THIS scope redirects output to a real file (or an outer scope already did).
-            let c = enclosing_consumed || has_output_redir(ast, redirs);
-            walk_consumed(ast, *body, c, out);
-        }
-        NodeKind::If { cond, then_body, elifs, else_body } => {
-            walk_consumed(ast, *cond, enclosing_consumed, out);
-            walk_consumed(ast, *then_body, enclosing_consumed, out);
-            for e in elifs {
-                walk_consumed(ast, e.cond, enclosing_consumed, out);
-                walk_consumed(ast, e.body, enclosing_consumed, out);
-            }
-            if let Some(eb) = else_body {
-                walk_consumed(ast, *eb, enclosing_consumed, out);
-            }
-        }
-        NodeKind::Case { arms, .. } => {
-            for a in arms {
-                walk_consumed(ast, a.body, enclosing_consumed, out);
-            }
-        }
-        // FuncDef bodies are detached (their leaves are unreachable => classify gates
-        // them); Word/Assign/Redir/Unsupported are not execution-position leaves.
-        _ => {}
-    }
-}
-
-/// Does this redirection list write fd 1/2 (or the default) to a real
-/// (non-`/dev/null`) sink? fd-dups (`2>&1`, `>&3`) are not resolved here (deferred).
-fn has_output_redir(ast: &Ast, redirs: &[AstId]) -> bool {
-    redirs.iter().any(|&r| {
-        let NodeKind::Redir { op, fd, target } = &ast.node(r).kind else {
-            return false;
-        };
-        matches!(op, RedirOp::Write | RedirOp::Append)
-            && matches!(fd, None | Some(1) | Some(2))
-            && matches!(target, RedirTarget::Word(w) if word_text(ast, *w) != Some("/dev/null"))
-    })
-}
-
 /// Does this CFG node have a top (`Top`) node among its successors? Top-containment
 /// (16G hole-5): a leaf whose own statement is top-contaminated — e.g. `cmd &`,
 /// lowered as the leaf followed by a `Top` — is not safely replaceable.
 fn has_top_successor(cfg: &Cfg, node: CfgNodeId) -> bool {
     cfg.succ_ids(node).any(|s| cfg.node(s).kind == CfgNodeKind::Top)
-}
-
-/// The single-literal text of a word node, if it is one (mirrors the analyzer's
-/// `word_literal`; used only to recognise the `/dev/null` redirect sink).
-fn word_text(ast: &Ast, id: AstId) -> Option<&str> {
-    match &ast.node(id).kind {
-        NodeKind::Word { parts } => match parts.as_slice() {
-            [WordPart::Literal(s)] | [WordPart::SingleQuoted(s)] => Some(s.as_str()),
-            _ => None,
-        },
-        _ => None,
-    }
 }
 
 impl Plan {
@@ -514,6 +411,12 @@ mod tests {
         }
     }
 
+    /// An empty (provably-quiet) consumption fact in the `May` orientation — the
+    /// common case for the `prove_replaceable` unit tests.
+    fn quiet() -> May<Powerset<Observable>> {
+        May(Powerset::default())
+    }
+
     #[test]
     fn license_minted_for_ambient_must_converged() {
         // The one path that authorises a skip: classify said ambient, the oracle
@@ -523,7 +426,7 @@ mod tests {
             &SkipClass::EstablishAmbient(f),
             Grade::Must,
             PhasedVerdict::<Probe>::new(Verdict::Converged),
-            ObservableUse::default(),
+            quiet(),
         ) else {
             panic!("ambient + must + converged must license a skip");
         };
@@ -537,7 +440,7 @@ mod tests {
         // 16F/16G: a consumed stdout/stderr makes the `true`-stub's empty default
         // unsound ⇒ no license (run), even with ambient + Must + Converged.
         let f = nginx_fact();
-        let consumed = ObservableUse { output_consumed: true };
+        let consumed = May(Powerset::singleton(Observable::Stdout));
         assert!(
             ReplaceLicense::prove_replaceable(
                 &SkipClass::EstablishAmbient(f),
@@ -560,7 +463,7 @@ mod tests {
                     &SkipClass::EstablishAmbient(f),
                     Grade::Must,
                     PhasedVerdict::<Probe>::new(v),
-                    ObservableUse::default(),
+                    quiet(),
                 )
                 .is_none(),
                 "verdict {v:?} must NOT license a skip"
@@ -576,7 +479,7 @@ mod tests {
             &SkipClass::EstablishAmbient(f),
             Grade::May,
             PhasedVerdict::<Probe>::new(Verdict::Converged),
-            ObservableUse::default(),
+            quiet(),
         )
         .is_none());
     }
@@ -592,7 +495,7 @@ mod tests {
                     &class,
                     Grade::Must,
                     PhasedVerdict::<Probe>::new(Verdict::Converged),
-                    ObservableUse::default(),
+                    quiet(),
                 )
                 .is_none(),
                 "{class:?} must not license a skip"

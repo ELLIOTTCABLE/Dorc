@@ -25,13 +25,15 @@
 //!   (note 163 §3): [`build`] runs a small forward errexit pass and materialises
 //!   **precise** conditional failure→`exit` edges (note 166; see [`build`]).
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use dorc_core::{AstId, Carrier, DiagCode, Diagnostic, Span};
 use dorc_syntax::{
-    ast::{CaseArm, ElseIf},
+    ast::{CaseArm, ElseIf, RedirOp, RedirTarget},
     Ast, NodeKind, WordPart,
 };
+
+use crate::lattice::Powerset;
 
 /// Diagnostic codes this module emits (greppable; `ch-catalog`).
 const CFG_TOP: DiagCode = DiagCode("cfg-top-node");
@@ -90,6 +92,22 @@ pub enum CfgNodeKind {
     Top,
 }
 
+/// An observable a downstream consumer can read off a leaf having run (16F / note
+/// 16J). The CFG records, per leaf, which **unvouched output** observables
+/// (`Stdout`/`Stderr`) the leaf's *context* consumes — an **un-collapsed** fact
+/// (`inv-superposition`): the engine names *what is consumed*; the phased caller
+/// (`plan`) collapses it into a run/replace decision, never the engine. `Effect`
+/// (vouched by convergence) and `Status` (vouched by the `establishes` contract)
+/// are vouched elsewhere, so they never enter the consumption set — but they are
+/// named here so the vouching model is legible in the type (16D spotlight).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum Observable {
+    Effect,
+    Status,
+    Stdout,
+    Stderr,
+}
+
 /// One CFG node: its role plus the [`AstId`] it derives from (provenance). For
 /// synthetic nodes (`Entry`/`Exit`/`Merge`/scope) the `ast` points at the nearest
 /// meaningful construct (the enclosing compound, or the script root) so a
@@ -115,6 +133,12 @@ pub struct Cfg {
     /// Per-node: lowered inside a command-substitution `$( … )` body (find-cli-1).
     /// Such commands are effect-bearing but NOT plan/apply leaves.
     expansion_internal: Vec<bool>,
+    /// Per-node: the unvouched output observables this node's *context* consumes
+    /// (note 16J, `inv-superposition`). Computed during lowering — the single
+    /// exhaustive structural traversal — so it is **total over nodes**: an empty
+    /// set means "visited, nothing consumes it" (provably quiet), never "not
+    /// examined". The phased caller wraps it `May<_>` and collapses it.
+    consumed: Vec<Powerset<Observable>>,
 }
 
 impl Cfg {
@@ -159,6 +183,17 @@ impl Cfg {
     #[must_use]
     pub fn is_expansion_internal(&self, id: CfgNodeId) -> bool {
         self.expansion_internal[id.index()]
+    }
+
+    /// The unvouched output observables (`Stdout`/`Stderr`) this node's context
+    /// consumes — the **un-collapsed** consumption fact (`inv-superposition`, note
+    /// 16J). Empty ⇒ provably quiet (the lowering is the single total traversal, so
+    /// "empty" means examined-and-quiet, never un-examined). The phased caller
+    /// (`plan`) wraps this in `May<_>` and collapses it; per `inv-must-may` a `May`
+    /// consumption can only **block** a replacement, never license one.
+    #[must_use]
+    pub fn consumed_observables(&self, id: CfgNodeId) -> &Powerset<Observable> {
+        &self.consumed[id.index()]
     }
 }
 
@@ -286,6 +321,12 @@ struct Builder<'a> {
     /// (find-cli-1 / dn-3). Subshell `( )` and group `{ }` bodies are NOT marked —
     /// their commands are real leaves.
     expansion_internal: Vec<bool>,
+    /// Per-node: the unvouched output observables this node's context consumes
+    /// (note 16J). Populated in lowering by `mark_consumed_range` (the enclosing
+    /// pipeline-stage / redirected-group context propagated to inner leaves, the
+    /// same arena-range trick `expansion_internal` uses). Emitted on the [`Cfg`]
+    /// un-collapsed (`inv-superposition`).
+    consumed: Vec<Powerset<Observable>>,
     /// `ScopeExit` node → its matching `ScopeEnter` (find-4): the errexit forward
     /// pass restores the *pre-subshell* state at the exit, so a `set -e`/`set +e`
     /// toggle inside `( )`/`$( )` never leaks out. Both directions are kept so the
@@ -318,6 +359,7 @@ impl<'a> Builder<'a> {
             fallible: Vec::new(),
             toggle: Vec::new(),
             expansion_internal: Vec::new(),
+            consumed: Vec::new(),
             exit_to_enter: BTreeMap::new(),
             enter_to_exit: BTreeMap::new(),
             depth: 0,
@@ -334,6 +376,7 @@ impl<'a> Builder<'a> {
         self.fallible.push(false);
         self.toggle.push(None);
         self.expansion_internal.push(false);
+        self.consumed.push(Powerset::default());
         id
     }
 
@@ -419,7 +462,12 @@ impl<'a> Builder<'a> {
                 // its env/var mutations DO escape. Model it as the body plus any
                 // group-level redirections, with no ScopeEnter/Exit.
                 let (body, redirs) = (*body, redirs.clone());
+                let body_start = self.nodes.len();
                 let after_body = self.lower_node(body, entry_pred);
+                // A group-level output redirect captures the body's output ⇒ every
+                // inner leaf consumes it (note 16J / 16G kill-shot: `{ install; } > f`).
+                let obs = output_redir_observables(self.ast, &redirs);
+                self.mark_consumed_range(body_start, self.nodes.len(), &obs);
                 self.attach_redirs(id, &redirs, after_body)
             }
             NodeKind::FuncDef { body, .. } => self.lower_funcdef(id, *body, entry_pred),
@@ -502,6 +550,13 @@ impl<'a> Builder<'a> {
         let cmd = self.fresh(id, CfgNodeKind::Command);
         self.add_edge(cur, cmd);
 
+        // Output-consumption (note 16J): this command's OWN redirections that
+        // capture fd 1/2 to a real (non-`/dev/null`) sink consume that observable.
+        // Enclosing pipeline-stage / redirected-group context is marked by the
+        // callers (`mark_consumed_range`); the leaf-local part is here.
+        let own = output_redir_observables(self.ast, redirs);
+        self.mark_consumed_range(cmd.index(), cmd.index() + 1, &own);
+
         // Record errexit-relevant facts for phase 2 (single source of truth).
         if let Some(t) = self.errexit_toggle(words) {
             self.toggle[cmd.index()] = Some(t);
@@ -542,8 +597,18 @@ impl<'a> Builder<'a> {
         let mut cur = entry_pred;
         let last = stages.len().saturating_sub(1);
         for (i, &stage) in stages.iter().enumerate() {
+            let stage_start = self.nodes.len();
             cur = self.lower_node(stage, cur);
             if i != last {
+                // A non-last stage's stdout is piped into the next ⇒ consumed (note
+                // 16J). Mark every command in the stage's region: the stage may be a
+                // `( … )`/`{ … }` whose inner leaf is the real producer (16G
+                // kill-shot, `( install ) | grep`), not just `cur`.
+                self.mark_consumed_range(
+                    stage_start,
+                    self.nodes.len(),
+                    &Powerset::singleton(Observable::Stdout),
+                );
                 // Only the last stage governs pipeline status; clear the
                 // fallibility flag on a non-last stage's command exit node.
                 if let CfgNodeKind::Command = self.nodes[cur.index()].kind {
@@ -683,7 +748,12 @@ impl<'a> Builder<'a> {
     ) -> CfgNodeId {
         let enter = self.fresh(id, CfgNodeKind::ScopeEnter);
         self.add_edge(entry_pred, enter);
+        let body_start = self.nodes.len();
         let body_exit = self.lower_node(body, enter);
+        // A subshell-level output redirect captures the body's output ⇒ every inner
+        // leaf consumes it (note 16J / 16G kill-shot: `( install ) > f`).
+        let obs = output_redir_observables(self.ast, redirs);
+        self.mark_consumed_range(body_start, self.nodes.len(), &obs);
         let leave = self.fresh(id, CfgNodeKind::ScopeExit);
         self.add_edge(body_exit, leave);
         self.pair_scope(enter, leave);
@@ -997,6 +1067,26 @@ impl<'a> Builder<'a> {
         }
     }
 
+    /// Mark every `Command` node in the half-open arena range `[from, to)` as having
+    /// each of `obs` consumed by an enclosing context (note 16J). Mirrors the
+    /// `expansion_internal` / `clear_fallible_range` arena-range idiom: a construct's
+    /// context applies to every leaf it lexically contains — exactly the enclosing
+    /// case the old leaf-local gate missed (16G kill-shot). Conservative: it also
+    /// marks nested / already-captured leaves, but over-marking ⇒ over-run ⇒ sound
+    /// (`kFAIL` / `kPRECISION`). Empty `obs` is a no-op (a `> /dev/null` discard).
+    fn mark_consumed_range(&mut self, from: usize, to: usize, obs: &Powerset<Observable>) {
+        if obs.0.is_empty() {
+            return;
+        }
+        for v in from..to {
+            if self.nodes[v].kind == CfgNodeKind::Command {
+                for &o in &obs.0 {
+                    self.consumed[v].0.insert(o);
+                }
+            }
+        }
+    }
+
     // ---- misc -----------------------------------------------------------------
 
     fn span(&self, id: AstId) -> Span {
@@ -1011,6 +1101,7 @@ impl<'a> Builder<'a> {
             succ: self.succ,
             pred: self.pred,
             expansion_internal: self.expansion_internal,
+            consumed: self.consumed,
         };
         debug_assert!(
             cfg_is_consistent(&cfg),
@@ -1023,6 +1114,49 @@ impl<'a> Builder<'a> {
 // ===========================================================================
 // Free helpers (pure)
 // ===========================================================================
+
+/// Which unvouched output observables a redirection list captures (note 16J): a
+/// `Write`/`Append` of fd 1 (or the default) ⇒ `Stdout`, fd 2 ⇒ `Stderr` — UNLESS
+/// the target is `/dev/null` (the discard sink, the precision scalpel; 16F §5 /
+/// 16G). fd-dups (`2>&1`, `>&3`) are deliberately NOT resolved (a deferred
+/// refinement — 16G); the structural floor already runs any file-redirected leaf.
+fn output_redir_observables(ast: &Ast, redirs: &[AstId]) -> Powerset<Observable> {
+    let mut out = BTreeSet::new();
+    for &r in redirs {
+        let NodeKind::Redir { op, fd, target } = &ast.node(r).kind else {
+            continue;
+        };
+        if !matches!(op, RedirOp::Write | RedirOp::Append) {
+            continue; // input / fd-dup / here-doc: not an output-write sink
+        }
+        let RedirTarget::Word(w) = target else { continue };
+        if word_text(ast, *w) == Some("/dev/null") {
+            continue; // discard sink ⇒ not consumed (the scalpel)
+        }
+        match fd {
+            None | Some(1) => {
+                out.insert(Observable::Stdout);
+            }
+            Some(2) => {
+                out.insert(Observable::Stderr);
+            }
+            _ => {}
+        }
+    }
+    Powerset(out)
+}
+
+/// The single-literal text of a word node, if it is exactly one literal fragment
+/// (mirrors `effect::word_literal`): used to recognise the `/dev/null` discard sink.
+fn word_text(ast: &Ast, w: AstId) -> Option<&str> {
+    match &ast.node(w).kind {
+        NodeKind::Word { parts } => match parts.as_slice() {
+            [WordPart::Literal(s)] | [WordPart::SingleQuoted(s)] => Some(s.as_str()),
+            _ => None,
+        },
+        _ => None,
+    }
+}
 
 /// Recursively collect `$( … )` substitution body ids from word parts (walking
 /// into double-quoted nesting, since `"$(cmd)"` still runs the command).
