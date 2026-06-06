@@ -312,7 +312,7 @@ impl ProbePlan {
             "#!/bin/sh\n# dorc probe (read-only): reports per-fact convergence, mutates nothing.\n\n",
         );
         for check in &self.checks {
-            out.push_str(&format!("# probe: {}\n{}\n", fact_display(interner, check.fact), check.sh));
+            out.push_str(&format!("# probe: {}\n{}\n", fact_label(interner, check.fact), check.sh));
         }
         out
     }
@@ -454,18 +454,59 @@ impl Plan {
                         "# replace[{}]: {}\n#   \u{21b3} {} already holds (probe: converged \u{b7} must \u{b7} ambient)\n",
                         step.leaf.0,
                         step.sh,
-                        fact_display(interner, license.fact()),
+                        fact_label(interner, license.fact()),
                     ));
                 }
             }
         }
         out
     }
+
+    /// Render the apply as the ORIGINAL book with elided (`Replace`) command-lines
+    /// commented out — "a copy of book.sh with the safe-to-omit lines commented", the
+    /// CLI's final artifact. Line-granular (the spike's books are ~one-command-per-line):
+    /// a source line is commented iff a `Replace` leaf lies on it and no `Run` leaf
+    /// does. Everything else (guards, blanks, comments, multi-leaf lines) passes
+    /// verbatim, so the output stays a runnable shell-script with the original
+    /// structure intact (contrast [`render_sh`](Plan::render_sh), the flat leaf-list).
+    #[must_use]
+    pub fn render_apply(&self, src: &str, ast: &Ast) -> String {
+        let line_of = |byte: u32| -> usize {
+            src.get(..byte as usize).map_or(0, |s| s.bytes().filter(|&b| b == b'\n').count())
+        };
+        let (mut elided, mut run) = (BTreeSet::new(), BTreeSet::new());
+        for step in &self.steps {
+            let span = ast.node(step.ast).span;
+            let last_byte = span.hi.0.saturating_sub(1).max(span.lo.0);
+            let lines = line_of(span.lo.0)..=line_of(last_byte);
+            let target = match &step.disposition {
+                Disposition::Replace(_) => &mut elided,
+                Disposition::Run => &mut run,
+            };
+            target.extend(lines);
+        }
+        let mut out = String::from(
+            "#!/bin/sh\n# dorc apply: the book, with already-converged lines elided (commented).\n\n",
+        );
+        for (i, line) in src.lines().enumerate() {
+            if elided.contains(&i) && !run.contains(&i) {
+                out.push_str("# ");
+                out.push_str(line);
+                out.push_str("   # dorc: elided (already converged)\n");
+            } else {
+                out.push_str(line);
+                out.push('\n');
+            }
+        }
+        out
+    }
 }
 
-/// `kind:entity` for a fact, resolving the interned names for *display only*
-/// (provenance, never a logic branch — `inv-referent-agnostic`).
-fn fact_display(interner: &Interner, fact: FactKey) -> String {
+/// `kind:entity` for a fact, resolving the interned names for *display/provenance*
+/// only (never a logic branch — `inv-referent-agnostic`). Public so the CLI can match
+/// probe-result lines back to facts by the same label the probe emitted.
+#[must_use]
+pub fn fact_label(interner: &Interner, fact: FactKey) -> String {
     format!(
         "{}:{}",
         interner.resolve(fact.kind.0),

@@ -1,26 +1,30 @@
-//! `dorc` — the thin spike CLI. Wires the network-free pipeline
-//! (parse → cfg → classify → plan) and prints the plan as sh.
+//! `dorc` — the thin spike CLI: the whole apply-2 round-trip over real files.
 //!
-//! This is an I/O edge: `inv-determinism` exempts `cli` (and `hostsim`); the
-//! analyzer kernel it calls is a pure function. Diagnostics go to stderr, the
-//! rendered plan to stdout (so `dorc book.sh >plan.sh` captures just the plan).
+//! Reads a book + oracle files, prints a read-only **probe** to stdout, reads the
+//! probe **results** from stdin, then prints the eliding **apply** (the book with
+//! already-converged lines commented out) to stdout. No executor — it *compiles* a
+//! probe and an apply; it runs neither. The simulated host's answers arrive on stdin
+//! (in a real deployment those come from running the probe on the host).
 //!
 //! ```text
-//! usage: dorc <book.sh> [--oracle <oracle.sh>]... [--has <kind:entity>]...
-//!   --oracle  lift this oracle file into the kind-index (repeatable)
-//!   --has     the (simulated) host already holds this fact (repeatable) — stands
-//!             in for a real probe verdict; a held fact reads Converged.
+//! usage: dorc --book=<book.sh> [-o <oracle.sh>]...
+//!   stdin : probe results, one per line — `kind:entity converged|diverged|unknown`
+//!   stdout: the probe script, then (after stdin EOF) the eliding-apply book
 //! ```
+//!
+//! I/O edge: `inv-determinism` exempts `cli`; the analyzer kernel it calls is pure.
+//! Diagnostics go to stderr so stdout stays the probe+apply.
 
 #![forbid(unsafe_code)]
 
-use std::collections::BTreeSet;
+use std::collections::BTreeMap;
+use std::io::{Read, Write};
 use std::process::ExitCode;
 
-use dorc_analysis::effect::FactKey;
-use dorc_core::{Interner, KindId, OpaqueToken, Verdict};
+use dorc_core::{Interner, Verdict};
+use dorc_plan::fact_label;
 
-const USAGE: &str = "usage: dorc <book.sh> [--oracle <oracle.sh>]... [--has <kind:entity>]...";
+const USAGE: &str = "usage: dorc --book=<book.sh> [-o <oracle.sh>]...";
 
 fn main() -> ExitCode {
     match run() {
@@ -35,31 +39,32 @@ fn main() -> ExitCode {
 struct Args {
     book: String,
     oracles: Vec<String>,
-    has: Vec<String>,
 }
 
+/// Minimal hand-rolled parsing (no `clap` dep): `--book=PATH` / `--book PATH`, and
+/// `-o PATH` / `-oPATH` / `--oracle PATH` (repeatable).
 fn parse_args() -> Result<Args, String> {
     let mut book: Option<String> = None;
     let mut oracles = Vec::new();
-    let mut has = Vec::new();
     let mut it = std::env::args().skip(1);
     while let Some(arg) = it.next() {
-        match arg.as_str() {
-            "--oracle" => oracles.push(it.next().ok_or("--oracle needs a path")?),
-            "--has" => has.push(it.next().ok_or("--has needs a kind:entity")?),
-            "-h" | "--help" => return Err(USAGE.to_string()),
-            other if other.starts_with('-') => return Err(format!("unknown flag {other}")),
-            other => {
-                if book.replace(other.to_string()).is_some() {
-                    return Err("only one book may be given".to_string());
-                }
-            }
+        if let Some(p) = arg.strip_prefix("--book=") {
+            book = Some(p.to_string());
+        } else if arg == "--book" {
+            book = Some(it.next().ok_or("--book needs a path")?);
+        } else if arg == "-o" || arg == "--oracle" {
+            oracles.push(it.next().ok_or("-o needs a path")?);
+        } else if let Some(p) = arg.strip_prefix("-o").filter(|p| !p.is_empty()) {
+            oracles.push(p.to_string());
+        } else if arg == "-h" || arg == "--help" {
+            return Err(USAGE.to_string());
+        } else {
+            return Err(format!("unexpected argument {arg:?}; {USAGE}"));
         }
     }
     Ok(Args {
         book: book.ok_or(USAGE)?,
         oracles,
-        has,
     })
 }
 
@@ -67,7 +72,7 @@ fn run() -> Result<(), String> {
     let args = parse_args()?;
     let mut interner = Interner::default();
 
-    // Lift the oracle files into one kind-index.
+    // Lift the oracle files into one shared kind-index.
     let oracle_srcs: Vec<String> = args
         .oracles
         .iter()
@@ -78,7 +83,7 @@ fn run() -> Result<(), String> {
     report("oracle", &lifted.diags);
     let idx = lifted.value;
 
-    // Parse + analyze the book.
+    // Parse + analyze the book (shared interner, so symbols match the oracles).
     let book_src = std::fs::read_to_string(&args.book)
         .map_err(|e| format!("reading book {}: {e}", args.book))?;
     let parsed = dorc_syntax::parse(&book_src);
@@ -87,42 +92,56 @@ fn run() -> Result<(), String> {
     report("cfg", &cfg.diags);
     let classes = dorc_analysis::effect::classify(&cfg.value, &parsed.value, &idx, &mut interner);
 
-    // The simulated host holds exactly the `--has` facts (a held fact reads
-    // Converged; anything else Diverged — the `--has` set is the whole host state).
-    let held: BTreeSet<FactKey> = args
-        .has
-        .iter()
-        .map(|s| parse_fact(&mut interner, s))
-        .collect::<Result<_, _>>()?;
-    let plan = dorc_plan::build_plan(&book_src, &parsed.value, &cfg.value, &classes, |f| {
-        if held.contains(&f) {
-            Verdict::Converged
-        } else {
-            Verdict::Diverged
-        }
-    });
+    // (1) compile + emit the read-only probe.
+    let probe = dorc_plan::compile_probe(&classes, |kind| idx.probe_for(kind).map(|p| p.body.clone()));
+    print!("{}", probe.render_sh(&interner));
+    std::io::stdout().flush().ok();
 
-    print!("{}", plan.render_sh(&interner));
+    // (2) read the (simulated) probe results from stdin.
+    let mut stdin_buf = String::new();
+    std::io::stdin()
+        .read_to_string(&mut stdin_buf)
+        .map_err(|e| format!("reading stdin: {e}"))?;
+    let results = parse_results(&stdin_buf);
+
+    // (3) compile + emit the eliding apply, driven by the probe results. A fact with
+    // no reported verdict folds to Unknown ⇒ run (kFAIL-perform).
+    let plan = dorc_plan::build_plan(&book_src, &parsed.value, &cfg.value, &classes, |f| {
+        results
+            .get(&fact_label(&interner, f))
+            .copied()
+            .unwrap_or(Verdict::Unknown)
+    });
+    print!("{}", plan.render_apply(&book_src, &parsed.value));
     Ok(())
 }
 
-/// Print a stage's diagnostics to stderr (keeping stdout = the plan).
+/// Parse stdin probe-results: `kind:entity converged|diverged|unknown` per line.
+/// Blank lines and `#` comments are ignored, so the probe's own `# probe:` echo can
+/// be piped straight back if convenient.
+fn parse_results(input: &str) -> BTreeMap<String, Verdict> {
+    input
+        .lines()
+        .filter_map(|line| {
+            let line = line.trim();
+            if line.is_empty() || line.starts_with('#') {
+                return None;
+            }
+            let mut it = line.split_whitespace();
+            let key = it.next()?.to_string();
+            let verdict = match it.next() {
+                Some("converged") => Verdict::Converged,
+                Some("diverged") => Verdict::Diverged,
+                _ => Verdict::Unknown,
+            };
+            Some((key, verdict))
+        })
+        .collect()
+}
+
+/// Print a stage's diagnostics to stderr (keeping stdout = probe + apply).
 fn report(stage: &str, diags: &[dorc_core::Diagnostic]) {
     for d in diags {
         eprintln!("{stage}: {}: {}", d.code.0, d.message);
     }
-}
-
-/// Parse a `kind:entity` spec from `--has`.
-fn parse_fact(interner: &mut Interner, spec: &str) -> Result<FactKey, String> {
-    let (kind, entity) = spec
-        .split_once(':')
-        .ok_or_else(|| format!("--has expects kind:entity, got {spec:?}"))?;
-    if kind.is_empty() || entity.is_empty() {
-        return Err(format!("--has kind and entity must be non-empty, got {spec:?}"));
-    }
-    Ok(FactKey {
-        kind: KindId(interner.intern(kind)),
-        entity: OpaqueToken(interner.intern(entity)),
-    })
 }
