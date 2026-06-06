@@ -366,6 +366,28 @@ mod tests {
     }
 
     #[test]
+    fn pure_builtin_upstream_does_not_poison_ambientness() {
+        // fs-4 (note 16G), the contrast to `opaque_upstream_poisons_ambientness`:
+        // the blessed target-state-pure builtins (`:`/`echo`/`cd`/…) touch
+        // shell-env/stdout, never an oracle-modeled fact, so they must NOT poison a
+        // later establish's ambient-ness. Guards the WHOLE `is_target_state_pure_builtin`
+        // allowlist + the Ambient-vs-Written line (the `set`-only end-to-end case does
+        // not isolate this); a mis-edit dropping `:`/`echo` would silently re-poison —
+        // a wrong-skip surface.
+        let (mut i, idx, package) = package_setup();
+        let nginx = OpaqueToken(i.intern("nginx"));
+        let classes = classify_src(":\necho hi\napt-get install nginx", &mut i, &idx);
+        assert!(
+            classes.contains(&SkipClass::EstablishAmbient(FactKey { kind: package, entity: nginx })),
+            "pure builtins (`:`/`echo`) upstream must keep the install EstablishAmbient: {classes:?}"
+        );
+        assert!(
+            !classes.iter().any(|c| matches!(c, SkipClass::EstablishWritten(_))),
+            "no spurious Written from a pure-builtin upstream"
+        );
+    }
+
+    #[test]
     fn detached_function_body_establish_is_not_ambient() {
         // Why (find-A; both adversarial reviews independently, brk-1 / fs-1): a
         // function body is a detached sub-CFG — its caller has no modeled call-edge

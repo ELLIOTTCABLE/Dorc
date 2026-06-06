@@ -100,27 +100,15 @@ fn is_replaced(plan: &Plan, needle: &str) -> bool {
 // PINS — current behaviour that is correct; keep it correct.
 // ===========================================================================
 
-#[test]
-fn pins_unconverged_install_runs() {
-    // convergence = UNCONVERGED end. HOST: nginx NOT installed (holds nothing).
-    // The forward gate: a diverged fact ⇒ run, whatever the observables.
-    let plan = plan_for("apt-get install -y nginx\n", &[]);
-    assert!(!is_replaced(&plan, "install -y nginx"));
-}
-
-#[test]
-fn pins_converged_lone_install_replaced() {
-    // consumed = DEAD end (neither rc nor stdout read): the degenerate
-    // replace-with-`true` (the old "skip"). HOST: nginx installed.
-    let plan = plan_for("apt-get install -y nginx\n", &[("package", "nginx")]);
-    assert!(is_replaced(&plan, "install -y nginx"));
-}
-
-// NOTE: "status consumed by `set -e`" cannot be pinned as *replaced* here — `set -e`
-// itself poisons (see the adjacent spec at the bottom), so the install is
+// NOTE: the verdict-axis baselines (diverged⇒run, converged⇒replace for a lone
+// install) live in the plan-unit e2e tests (`diverged_install_runs`,
+// `converged_ambient_install_is_replaced_rest_runs`), which subsume them — this
+// matrix isolates the OBSERVABLE dimension, so every cell below assumes converged.
+//
+// "status consumed by `set -e`" cannot be pinned as *replaced* here — `set -e`
+// itself poisons (the adjacent spec at the bottom), so the install is
 // EstablishWritten and never reaches the status question. The status dimension is
-// exercised cleanly below via `&&` and `$?`, which sit *after* the install (no
-// upstream poisoner).
+// exercised cleanly below via `&&` and `||`, which sit *after* the install.
 
 #[test]
 fn pins_converged_status_via_andand_replaced() {

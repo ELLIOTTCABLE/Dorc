@@ -447,6 +447,24 @@ fn reject_lvalue_builtins_are_dynamic_lvalue() {
 }
 
 #[test]
+fn reject_over_deep_nesting_is_loud() {
+    // inv-top-reject for the depth bound: nesting past the parser cap (MAX_DEPTH=256)
+    // must ⊤-reject LOUDLY with the right reason, never silently truncate. This is the
+    // one ⊤-trigger whose reason was otherwise unpinned — `totality_hostile_inputs…`
+    // only checks no-panic, `deeply_nested…` (cfg) only checks node_count.
+    let deep = "(".repeat(300);
+    let parsed = parse(&deep);
+    assert!(parsed.has_errors(), "over-deep nesting must emit an Error diagnostic");
+    assert!(
+        parsed.value.iter().any(|(_, n)| matches!(
+            &n.kind,
+            NodeKind::Unsupported { reason: UnsupportedReason::Unmodeled("nesting too deep"), .. }
+        )),
+        "a `nesting too deep` ⊤-node must be present (loud depth reject)"
+    );
+}
+
+#[test]
 fn reject_keeps_going_and_salvages() {
     // Why (dn-7 / inv-top-reject salvage): a reject in the middle of a script must
     // not abort the rest, and salvageable children are retained so unrelated
