@@ -95,7 +95,7 @@ write — or a system already emits — for reasons of its own.
     consumed stdout/stderr blocks the stub) (`16P` T10). In apply-2 this is computed **structurally during CFG
     lowering, *not* as a backward solve** (the flattened CFG can't see pipe-consumption; a backward fixpoint was
     *considered and rejected*) (`16P` T11). A *genuine* backward dataflow appears only in **apply-3** (the
-    targeted desired-set `dorc try`: apply-2 **plus** a backward relevance-reduction; **apply-3 ⊃ apply-2**)
+    targeted desired-set `dorc bump`: apply-2 **plus** a backward relevance-reduction; **apply-3 ⊃ apply-2**)
     (`16P` T13).
   - **superposition** (`16P` T11): the engine emits **phase- and orientation-agnostic** facts; only the
     *phased caller* collapses them. Never bake a phase default into a fact — a baked posture is a wrong-skip

@@ -184,7 +184,7 @@ working capability.**
   re-probe-before-apply, idempotence-by-execution. `hostsim` models the *effect* side, but nothing
   drives a plan against a host. The spike compiles a probe and an apply and executes neither.
 - **Multi-host / fleet / CAP** failure modes — direction only (`notes/quarantine-DO-NOT-READ/16A`).
-- **apply-3** (the targeted "desired-set" mode, `dorc try`) and its **backward relevance-reduction** —
+- **apply-3** (the targeted "desired-set" mode, `dorc bump`) and its **backward relevance-reduction** —
   the *solver* supports `Direction::Backward`, but **no backward analysis is instantiated**; only
   forward analyses exist. `Must` and the dual machinery are exercised only by their own unit tests.
 - **The oracle `Bridge{gather, compute}`** (the discharge for an output-consumed leaf) —

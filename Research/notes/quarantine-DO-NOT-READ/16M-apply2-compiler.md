@@ -13,7 +13,7 @@
 - **apply-2 — converge + safe-elide (THE DEFAULT, built this round):** probe the
   host, then elide anything we can prove safe to omit (already-converged). Forward
   only.
-- **apply-3 — targeted desired-set (`dorc try`, DEFERRED):** apply the user's set,
+- **apply-3 — targeted desired-set (`dorc bump`, DEFERRED):** apply the user's set,
   eliding what we can't prove relevant. The human's key insight: **apply-3 ⊃ apply-2**
   — it is apply-2 *plus* a backward relevance-reduction (probe → apply → further-
   reduce), a strict superset of the effort, not a separate path. Needs the backward

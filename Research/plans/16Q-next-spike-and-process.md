@@ -68,7 +68,7 @@ that is unbuilt-but-cheap.
   *free* exploration. `analysis::solve` is generic over `Direction{Forward, Backward}` and the whole
   `Must`/`BoundedLattice`/order-dual tower exists, but **no backward analysis and no must-analysis are
   instantiated** — the apparatus is exercised only by its own unit tests (`16P` T4, §3.2). apply-3
-  (`dorc try`, the targeted desired-set mode DESIGN names under "General design principals") is apply-2
+  (`dorc bump`, the targeted desired-set mode DESIGN names under "General design principals") is apply-2
   plus a *backward relevance-reduction*: `apply-3 ⊃ apply-2` (`16P` T13). Building it is the honest
   load-test of the orientation machinery spike-1 built "as state-space exploration" (the
   `notes/quarantine-DO-NOT-READ/168` "calibrate-up" ruling) but never ran against a real consumer. If the

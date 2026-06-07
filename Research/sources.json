@@ -523,7 +523,7 @@
     "grading-certainty": "+1:SURE",
     "grading-reasoning": "not A: a first-party design doc / exposition of the implementation (secondary to the actual Roslyn source, the real source-of-truth) and pedagogical in tone; not C: canonical first-party (in the dotnet/roslyn tree, authored by the team), current main-branch, directly on-point, no rot — B.",
     "relevance-certainty": "+1:SURE",
-    "relevance-description": "the red-green split: green = immutable {kind, width, children, diagnostics} with NO absolute-position and NO parent (so identical subtrees DAG-share via a cache, and edits reuse ~99.99% of nodes); red = a lazy position+parent facade. Diagnostics ride the immutable green core. Direct template for Dorc storing provenance RELATIVE (reusable across edits) + diagnostics-on-the-immutable-core + structural sharing of provenance-bearing nodes for incremental re-analysis (dorc try).",
+    "relevance-description": "the red-green split: green = immutable {kind, width, children, diagnostics} with NO absolute-position and NO parent (so identical subtrees DAG-share via a cache, and edits reuse ~99.99% of nodes); red = a lazy position+parent facade. Diagnostics ride the immutable green core. Direct template for Dorc storing provenance RELATIVE (reusable across edits) + diagnostics-on-the-immutable-core + structural sharing of provenance-bearing nodes for incremental re-analysis (dorc bump).",
     "graded-by": "top-level-agent",
     "published": "2024",
     "retrieved": "2026-06-03",

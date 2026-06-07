@@ -97,7 +97,7 @@ Mechanisms, each a candidate Dorc primitive:
 - **detachable/transplantable metadata** (a transform grafts input-provenance onto output) [A-racket-syntax-model-2024].
 - **separate diagnostic catalog + completeness gate** [A-pottier-reachability-2016]; **confidence on
   every *suggestion*** [B-rustc-diagnostics-2024]; **regional ranking to kill cascades** [A-diekmann-cpct-2020] [B-tratt-error-recovery-2020].
-- **non-correcting: the error *is* the rejected diff** + per-node change-bits (the `dorc try` prior-art) [A-wagner-history-recovery-1997];
+- **non-correcting: the error *is* the rejected diff** + per-node change-bits (the `dorc bump` prior-art) [A-wagner-history-recovery-1997];
   **one diagnostic spine** (fold lexer errors into parser errors) [B-tratt-error-recovery-2020] [A-bour-merlin-2018].
 
 ## 2. Cross-domain validation — what each front added
