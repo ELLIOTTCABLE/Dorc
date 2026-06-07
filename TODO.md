@@ -15,6 +15,10 @@
 - [ ] agentic meta-pass on "how best to structure this codebase so agents can work on it", some nightmare-slop bullshit.
   - most importantly I'm guessing deterministic triggers per-component, if possible. point agents entering certain dirs/components to authoritative design-documents for that component, so when they 'cross boundaries' to chase a fix/feature, they hit Correct Context to make it intelligently?
 
+## Small implementation details
+
+- [ ] probe-bodies *also* need to be proved non-mutable w/ effect analysis
+
 ---
 
 *(below: agent-dropped during the kill-criteria session, 2026-06-01 — for human review/integration)*

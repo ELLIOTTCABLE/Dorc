@@ -70,7 +70,17 @@ But that above 'flavour' of code, holds. Although shell-script has become the de
 
 Pursuant to that, well, it's 2026. We're adults, and many kinds of static analysis are borderline trivial, nowadays.
 
-Our approach will be double-ended: "from the host, backwards", we'll attempt to establish information about relevant *true state* on those machines (when performant - i.e. mostly 'when it's faster to check than to apply' & often-only-when 'it can be statically, globally checked'); and "from the working-dir, forwards", we'll attempt to establish information about the relevant *changes* to the instructions (when relevant/possible, i.e. the user has requested a partial-apply/update/git-sync; as opposed to a genuinely-ensure-the-world convergence/reconciliation).
+### given oracles, probe; then converge.
+
+Our approach is double-ended.
+
+1. "From the host, backwards", we'll attempt to establish information about relevant *current state* on those machines:
+    - when-possible - often only-when 'it's state that can be statically, globally checked'; and
+    - when-performant - i.e. ~mostly 'when it's somehow-faster to check than to apply'.
+
+2. Additionally, "from the working-dir, forwards", we'll read (if asked) information about the relevant *changes* to the system-state:
+    - when relevant/possible - i.e. the user has requested a partial-apply/update/git-sync; as opposed to a genuinely-ensure-the-world convergence/reconciliation; and
+    - when up-to-date - we're not going to be long-term arbiters of centrally-claimed-remote-state; but we *may* short-term-persist probe- and partial-application-results to reduce immediate work on subsequent re-runs.
 
 Importantly, all of this must be optimized for that 'embarrassingly shallow' case in an 'embarrassingly parallel' fashion:
 
@@ -81,6 +91,10 @@ Importantly, all of this must be optimized for that 'embarrassingly shallow' cas
 2. Then, the "application phase": a second, inverse view of the analysis, potentially (if running 'unsound') with *elision* of portions of the control-flow-graph that is fully irrelevant to the user's goals - either already correct on the target system(s) (by-probing, not by-stale-central-state), or having no control-flow interdependency with the modified portion of the ops-scripts, in partial-deploy-mode. ("Stuff that is already correct; *or* stuff that, while potentially incorrect, we-don't-care-about-right-this-second.")
 
    This apply is the *over*-approximation phase. Same analysis, different fail-safe posture, different performance profile.
+
+   Both #1 and #2 are *heavily* dependant upon oracle coverage, though: an operation with no 'oracle' to reassure us that a particular check is non-mutative, is something we can *never* run in non-mutative probing-mode, no matter how obvious it may seem. Similarly, an operation with no 'oracle' to declare its (hopefully-lack-of) global-data-dependencies to us, is again an operation we can never elide or rearrange during application.
+
+   Luckily, both are designed around gradual enhancement: you make the most minimal claims to us that reassure *your* risk-profile, and Dorc will do as much as it can for you, within the bounds of correctness. Put another way - the more you put in the effort to tell Dorc, the more Dorc can skip.
 
 3. Finally, we can present all of this in Terraform's plan/apply UX: take our constructed plan for the 'apply' phase (hopefully dynamically updated in real-time as the probe-phase asynchronously proceeds over-the-network, and uncovers elision-relevant state on various targets) and present it, *still as a simple shell-script*, to the user for approval/edition. In ideal cases, the entire repo-full-of-shell-script-equivalent of "running an entire Ansible playbook" can hopefully be reduced to one or two shell commands, directly narrowed to the state-mutators relevant to the user's current goals/changes/garbage-fire-with-business-consequences, which they can proceed to interactively execute or modify as appropriate.
 
@@ -199,12 +213,31 @@ So, cross-oracle compatibility will *have* to be anchored with some sort of grou
 (UNSETTLED, CONTINUE)
 
 
+"POSIX" sh
+----------
+I mildly-intentionally conflate the phrase 'POSIX sh' with 'Dash' and, well, Dorc; but there's actually a narrow spectrum here.
+
+There's two poles:
+- the *minimum* subset of the common shells users might be already using and familiar with (i.e., the *smallest* superset of the genuine POSIX standard), or
+- the *maximum* subset of the common shell features (i.e. the *largest* superset that still works in all of bash/zsh/dash/ash/etc.)
+
+The target-language we're aping/imitating is subject to a few constraints:
+1. We don't want to restrict ourselves (and our users) to the *literal*, classic standard (frustratingly, that is never what anybody means when they say "POSIX-sh"; it's almost universally used to mean "what dash and ash support on elderly remote hosts, no bashisms."); we want it to be easy and as-ergonomic-as-possible for our users to write *good, defensive* code, without learning new things; (esp. 'how to write defensive code in the absurdly-restrictive O.G. POSIX standard'; lack of `local`, for instance, is straight-up silly to target)
+2. ... but it's *critical* that we maintain our on/off-ramp for a *variety of users*. People are used to bash; people use zsh everyday at their terminal. Their favourite distro has some pared-down shell they are *just barely* used to writing defensive scripts for. We don't want to lock users into a shell they *otherwise don't use* - asking zsh daily-drivers to write bashisms into their costly-to-author ops-scripts is a non-starter, as that completely destroys our offramp.
+3. Finally, we're constrained on engineering-effort here: probably the *most* ideal for users, would be to manually target the second pole above: the *maximal* subset of the popular shells. ('Bring all your bashisms, as long as they're also zshisms!'); but that effectively means we have *no single target at all*. That turns us into an arbiter of "what *do* the two major shells sufficiently-similarly implement?", and turns fidelity/correctness into a moving target.
+
+This, too, is unsettled; but my strong lean is towards a very mild superset of POSIX; or maybe a slight subset of POSIX2024. If we can target a *specific minimum version* of a *specific piece of shipped software* (i.e. `dash` >=0.5.13), that has two massive benefits:
+
+- we can *ship* that version as an *executor* in some circumstances; and
+- even if we end up not doing that, 'testing that we do what we promised to' becomes 'testing that `dash` and our evaluator preform identically', a much easier testing/development target.
+
+
 Prior art
 ---------
 Conceptually, Dorc's problem-space shares a lot with:
 
 1. Obviously, orchestrators and related tooling. That's thoroughly discussed above.
-2. branch-prediction or a RDBMS query-planner; that's got *heavy* overlap with the solution-less, empirical
+2. branch-prediction or a RDBMS query-planner; that's got *heavy* overlap with the provably solution-less, empirical, best-effort approach we're taking to "do whatever we can within imperfect-user-effort"
 3. optimizing-compilers-but-unsound (from their perspective), in terms of the probe-compiler;
 4. Maybe-surprisingly, build-systems? Their problem-space of "don't run things you don't need to" has been well-explored for decades.
 

@@ -51,6 +51,7 @@ Poles: `kOOB-in-band ↔ kOOB-sidecar`
 **Status:** directional — lean `kOOB-in-band`; minimize the sidecar. **Owner:** user (the value) + corpus (`Q-INFER` sizes the irreducible floor). **Lock-in:** med.
 Entangled with `kBURDEN` (that's *how much* is specified; this is *what form*).
 > *Clarification (human, 2026-06-03):* this knob's redline is **user-configuration form**, not metadata transport — out-of-band *metadata* (provenance/leaf-id, effect/cost-class, memo-key, network-transport framing) is fine; what is verboten (at least for now) is sidecar *configuration* — no YAML, no frontmatter, no pragma, no comment-parsing — all config is spelled in `sh` / library-code.
+False friend of `kCOMMS` (Execution & modes): the same in-band/out-of-band axis but for Dorc's own transport, which carries no config redline.
 
 ---
 
@@ -128,6 +129,12 @@ Poles: `kFIDELITY-optimized ↔ kFIDELITY-faithful`
 **Tension:** performance (the minimized, batched, opaque production probe) **vs** debuggability / attribution (`--faithful`: one-leaf-one-exec, 1:1 source mapping — the seam the realtime-output requirement *and* the future tracer both need).
 **Status:** open — both ship (`kFIDELITY-optimized` default, `kFIDELITY-faithful` reserved). **Owner:** dominant-strategy. **Lock-in:** high — the leaf-execution seam must be wrappable + provenance-preserving from day 1.
 > *Round-11 (error/provenance prior-art, 2026-06-03):* the "provenance-preserving" clause is heavier than a 1:1 source map — the faithful seam must preserve an N-tier, per-host-forking, host-qualified multi-locator derivation DAG (loc-host / loc-user-src / loc-probe / loc-surface); see `notes/110` (+ forthcoming `plans/` synthesis).
+
+### `kCOMMS`
+Poles: `kCOMMS-executor-OOB ↔ kCOMMS-transpilation-inband`
+
+The form of Dorc's own controller↔host metadata: a bootstrapped probe-executor reporting out-of-band (Ansible-python-style), or transpiled markers in-band in a real-shell stream. A false friend of `kOOB` (same in-band/out-of-band axis, but Dorc's implementation I/O, not user-written config); open, and either pole rides the one `kFIDELITY` session seam.
+> *Round-14 (transport prior-art, 2026-06-04):* the two poles conflate two *orthogonal* axes — in-band↔OOB and executor↔pure-sh. The directional lean is the **executorless-OOB** quadrant the poles omit: tool I/O full-fidelity on native SSH channels; Dorc-signalling out-of-band, split by size/urgency — short gating verdicts (`(verdict, content-key, freshness)`) on a shared atomic fast-lane, large diagnostics in per-leaf files demuxed by filename. The executor pole is re-pinned to {no-writable-fs, hard backpressure}, *not* concurrency/attribution (pure-sh covers those). Security is structural (signalling never shares a lane with freeform). Residual: writable-fs on stripped/Windows targets. See `plans/142`.
 
 ### `kSCHEDULE`
 Poles: `kSCHEDULE-wide ↔ kSCHEDULE-ordered`
