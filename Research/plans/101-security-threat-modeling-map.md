@@ -53,7 +53,9 @@ first-party post-mortem [A-chef-whyrun-harmful-2018] shows the guard-dependency 
 evaluate `only_if 'rpm -q httpd'` correctly without the prior install actually running — the TODO
 elision-soundness hazard generalised) *and* that "no-op modes are not side-effect-free" (read-only
 interrogation locked up systemd). There is **no 2a/2b/2c design choice**: *read-only* is welded-forced
-(`kFAIL-withhold` — withhold any probe we can't prove non-mutative), and *bounded-cost* is inherently
+(`kFAIL-withhold` — withhold any probe we can't prove non-mutative),
+<!-- /* superseded 2026-06-06: carve-out — "withhold any probe we can't prove non-mutative" excepts the oracle's OWN declared command (`mycmd` inside `mycmd.check()`): opaque, never provable-inert, yet self-vouched and therefore shippable, or no oracle could exist (DESIGN "Inference limitations"). The withhold binds the *non-self-vouched* leaves; the self-command is "inert relative to the author's grounding" — this doc's own L63-64, `plans/102` E3. */ -->
+and *bounded-cost* is inherently
 best-effort (you cannot statically bound an arbitrary leaf's cost; and even a genuinely read-only call can
 block / wedge the host). The only honest contract is "**read-only or withheld; cost & effect are
 best-effort *flags*, not promises**." What's left is not a decision but:

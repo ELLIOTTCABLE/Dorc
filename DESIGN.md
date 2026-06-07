@@ -84,7 +84,7 @@ Our approach is double-ended.
 
 Importantly, all of this must be optimized for that 'embarrassingly shallow' case in an 'embarrassingly parallel' fashion:
 
-1. First, the "probing phase": For the state-establishment, we'll use one static-analysis; we *lift* (on Dorc's part) & *author* (on the user/community's part) any relevant state-oracles that can be guaranteed to be safe to run; and ship *sanitised, non-mutative, massively-parallelized* versions of the ops-automation to all the hosts in a "probing phase". This allows us to learn correctness-affecting facts about each machine, that we can use to tune the deployment/application phase.
+1. First, the "probing phase": For the state-establishment, we'll use one static-analysis; we *lift* (on Dorc's part) & *author* (on the user/community's part) any relevant state-oracles that can vouched-safe-to-run; and ship *sanitised, non-mutative, massively-parallelized* versions of the ops-automation to all the hosts in a "probing phase". This allows us to learn correctness-affecting facts about each machine, that we can use to tune the deployment/application phase.
 
    For these purposes, the probe-analysis must *under*-approximate - that is, it's better to not ship a probe at all (losing opportunity to elide evaluation later), than it is to ship something that may be mutative. (Another way to look at this: an optimizing compiler with an unusual idea of 'correct'; or a query-planner.)
 
@@ -181,7 +181,15 @@ Inference limitations
 ---------------------
 Inference lies at the core, but cannot magically solve *all* problems. It's constantly at tension with the opposite points on the triangle - 'ask-little-of-the-user' (sharing a vertex with 'fail-safe' and 'fail-helpfully'), and with *itself* at the other vertex (to infer something about A from code containing B, I then need to know something about *B*. It's a chicken-and-the-egg, also called the 'symbol grounding problem'.)
 
-Consider:
+For one, no amount of analysis will tell you whether this probe is safe to run during the non-mutative probing phase:
+
+```sh
+mycmd.check() { mycmd --dry-run "$@" ;}
+```
+
+For this reason, oracles effectively *have* to vouch for invocations of their own command, in their own body. Simply by existence, an oracle vouches for *itself*.
+
+Relatedly, consider:
 
 ```sh
 dpkg -s nginx || apt-get install -y nginx
