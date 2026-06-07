@@ -4,7 +4,7 @@
 > and EXCLUSIVELY at shell-spellings. Read the installed shell Claude SKILLs + a high-level ops-best-
 > practices page; slurp real scripts (GitHub, `Vendor/`); look **through code** for patterns. **GOAL:** find
 > a pattern that **isn't filenames and isn't packages**, exposing some statically-**analyzable coordination**
-> between commands. Feeds `plans/177` q1. Sources → `../sources.json`. AI-generated; confidence-marked.
+> between commands. Feeds `plans/17X` q1. Sources → `../sources.json`. AI-generated; confidence-marked.
 >
 > *Read for context (not graded — local, no URL):* the `shell-scripting-and-automation` + `ops-and-
 > infrastructure` Claude SKILLs. The ops skill confirms the user's real coordination referents are
@@ -28,7 +28,7 @@
   **precondition** on the shared handle: `[[ -z ${KUBECONFIG} ]] && die "KUBECONFIG needs to be set"` before
   using either tool [C-petergardfjall-helm-init-2024] (octocode aggregate: ~29 files show the
   `export KUBECONFIG=… ; kubectl … ; helm …` shape). **This is the env-var realization of the reverse-DNS
-  handle (`plans/177` C2) — flat/conventional, not reverse-DNS, but the same idea: decentralized agreement
+  handle (`plans/17X` C2) — flat/conventional, not reverse-DNS, but the same idea: decentralized agreement
   on a shared name.** It is the strongest sh-native handle found on *existing-independent-value* +
   *analyzability*: real tools already read it, for their own reasons.
 
@@ -81,12 +81,12 @@
   confirmation that signalling must not share a lane with freeform output** — `KNOBS kCOMMS` (human-owned;
   flagged, not edited). Even value-level: `GITHUB_ENV` may not set `NODE_OPTIONS`.
 
-## Verdict for `plans/177` q1
+## Verdict for `plans/17X` q1
 **q1 answered: a real, analyzable, non-file/non-package coordination channel exists — the environment, esp.
 convention-named cross-tool handles (`KUBECONFIG` model).** It is pervasive, already core-modeled, and it
 *sharpens the handle-spelling*: a **conventional environment-variable name** beats a reverse-DNS string on
 existing-independent-value + analyzability (real tools already read it). **But it delivers co-reference
-only; the KIND stays convention/author-declared** — the third converging confirmation of `plans/177`'s
+only; the KIND stays convention/author-declared** — the third converging confirmation of `plans/17X`'s
 "no-magic" lean. Net effect on the synthesis: the free-co-reference surface *extends* beyond filenames to
 named env-handles (a real gain), without cracking grounding (unchanged). **GitHub Actions (the human's
 lead)** is the strongest real-world *template* for the author-declared-yet-analyzable channel
@@ -132,8 +132,8 @@ negative, plus a transport bonus.
 > the workflow author we have introduced a new set of environment files to manage state and output.
 > … `echo "::set-output name={name}::{value}"` → `echo "{name}={value}" >> $GITHUB_OUTPUT`
 
-## Open / next (→ plans/177)
-- Fold k1c into `plans/177`: extend C2 (the handle) to *"reverse-DNS string OR a convention-named env-var,
+## Open / next (→ plans/17X)
+- Fold k1c into `plans/17X`: extend C2 (the handle) to *"reverse-DNS string OR a convention-named env-var,
   whichever already has independent consumers"*; add the env-channel **hazard** (ambient leakage, `099 W5`)
   to the open questions; keep the **co-reference-only / kind-declared** negative as now-triple-confirmed.
 - Untaken (declared): PID/job coordination (`pid=$(pgrep x); kill "$pid"` — producer/consumer dataflow,

@@ -10,7 +10,7 @@
 > fields** for *"agree on + communicate discovered-and-compared/checked identifiers carrying SOME
 > dimensionality/sub-data — how much = TBD."* Ideally sh-spellings; cross-field findings welcome.
 >
-> Eventual synthesis → `plans/177` (integrates `notes/171` + this; supersedes `plans/173`). Sources →
+> Eventual synthesis → `plans/17X` (integrates `notes/171` + this; folds in the prior packaging map). Sources →
 > `../sources.json`. Raw graded findings; AI-generated; confidence-marked; trust repo-root docs over this.
 
 ## Findings (lifted, most-load-bearing first)
@@ -147,7 +147,7 @@
 > Precedence MUST be calculated by separating the version into major, minor, patch and pre-release
 > identifiers in that order (Build metadata does not figure into precedence).
 
-## Open / next (carry to plans/177 synthesis)
+## Open / next (carry to plans/17X synthesis)
 - **The emerging sh-spelling candidate:** an oracle-emitted **reverse-DNS-rooted kind-handle** (lifted sh
   datum → analyzer index, per `dq-kOOB`) + **optional state sub-tags** (InChI/BCP-47 minimal-extensible) +
   **consumer-driven matching** (Pact/RFC-4647: A's precondition matches at its needed depth) + a **thin
