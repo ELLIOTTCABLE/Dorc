@@ -5,7 +5,9 @@
   - do not edit them, under any circumstances - suggest edits to the user if you see clear incorrectness; and
   - trust them over the ocean of unreviewed, LLM-generated planning-slop in the Research/ folder
 
-- The Research/ is deep, but noisy; second-best after human-written is the live `000-source-manifest` and synthesized `plans/`, which are denser and least context-wasteful. the per-turn  `notes/` are the noisiest/lowest-value, only dive into them when something leads you there, not prospectively; and amongst them, prioritize later turns (i.e. when digging into "spike 09x,", choose the higest "x" first.)
+- The Research/ is deep, but noisy; second-best after human-written is the live `000-source-manifest` and synthesized `plans/`, which are denser and least context-wasteful.
+  - the per-turn  `notes/` are the noisiest/lowest-value, only dive into them when something leads you there, not prospectively; and amongst them, prioritize later turns (i.e. when digging into "spike 09x,", choose the higest "x" first.)
+  - `plans/` are mildly-actively kept scanned for currency/correctness (there's annotations from later work marking where they're deeply incorrect); but `notes/` are *not*. if you fall back to reading `notes/`, note that you're reading historical thoughts verbatim with inaccuracies.
 
 ## Critical engineering reminders
 - this codebase depends heavily on deterministic systems-testing, DST, for correctness. you *must* analyze all changes for hermeticity; and all non-hermetic (non-pure) actions *must* be DI'd so as to be mockable for DST.
@@ -22,6 +24,14 @@
 - "performance" must be considered from two angles, and one dominates:
   - this is a network-appliance, and 1. ~O(hosts) network-tunnels will dominate most anything controller-local/algorithmic; but
   - even more so 2. *slow remote-host commands* dominate all of that (i.e. the-thing-dorc-is-built-to-automate.) algorithmically "expensive" analyses are unlikely to actually be expensive compared to the slow `docker` command they're eliminating, *especially* if they can fully eliminate application-on-a-host of *all* commands (i.e. establish that it's converged.)
+- *exclusion-check* any and all design work / analysis:
+  - before excluding any edge/quadrant/case (esp. as irrelevant), re-test it under all four-by-two directions:
+    1. the reverse propagation direction (for analyzer components),
+    2. the "other phase" (if you're working re: probe, then reconsider from the perspective of apply; and vice versa),
+    3. the "other user" (if you're working on oracle-author-things, reconsider as a lazy admin), and
+    4. the "other reliability" (if you've been assuming reliable-oracles, consider unreliable oracles.)
+  - if irrelevant only under particular cells, then that's *deffered*, not irrelevant, and it will sneak back in.
+  - corrolary: verify a claimed failure (subagent claim, error-message, test failure) *in other cells*; a "fix" for one cell can *break others*
 
 ## Terminology firming
 Some terms have shifted throughout the planning documents; be careful of these meaning something slightly different in older documents:
@@ -30,9 +40,11 @@ Some terms have shifted throughout the planning documents; be careful of these m
 - "fail-fast", for us, usually means *fail before network-calls*, not necessarily stop-what-you're-doing-and-crash. accumulating-incorrect-state is usually a danger worth avoiding in engineering; but for us, (per our 'best-effort' offer), it's often worth it to *batch* incorrectness, and recover "enough" to seek out other, *unrelated* error; giving the user as much information as possible. (however, this must be balanced against warning-fatigue; we only want to stay in a functional-enough state to seek *unrelated* error, not to track all the cascade of caused/correlated errors. only root-cause must be reported.)
   - rule-of-thumb: "fail-fast" means "fail on human timescales", within fractions-of-a-second; but it *doesn't* mean "fail in the component/context/stack-frame that experienced the error." (think, parsing errors with recoverable parser-engines.)
   - specific correctness rephrasing, though - in the *opposite* sense, on cross-network timescales, we must *absolutely* be fail-fast: we don't want to continue executing possibly-mutative commands once something's in an unknown/dangerous state. (think, a "non-mutating" probe that was only "non-mutating" because of state that is no longer surely-known thanks to some unrecoverable error.)
+- "skip" is a dangerous term used heavily in older documents, do not use it.
+  - always prefer "replace" (as in 'this allows the apply to *replace* the line'). a "skip" is a *degenerate case* of substitution-elision, where a command can be safely substituted with a sh-`true`-command: all possible observables (rc, stdout/fds, other effects) are not-depended-upon, or are vouched-for-by-oracle.
+  - but that term hides an *ocean* of important complexity, and has repeatedly led to depending upon that degenerate case.
 
 ## Conversation style
-
 - try to use greppable, pointable reference-slugs in documentation and conversation:
   - source-ID-with-grading (as per the interactive-research skill instructions; [Z-slug-id-1995])
   - similarly, reuse the named 'knobs' when referring to the shared-axis/"pair-in-tension" design-space components we're working with (see `KNOBS.md`)
@@ -53,3 +65,4 @@ Some terms have shifted throughout the planning documents; be careful of these m
 - this is actively developed across macOS, WSL2, and *nix hosts. both local scripts, and tooling, and your own agent-tool invocations must defensively account for this.
   - be careful of paths, esp. re. WSL2/zsh vs BashTool() (which uses msys)
   - be careful of SyncThing, it's live in a parentdir; don't move/create large vendored subrepos without ensuring they're syncthing-ignored *first* (once created-while-unignored, they start to sync; ignoring-them-afterwards leaves borderline-permanent artifacts)
+- you may be in a git-worktree; be careful. AGENTS/KNOBS/DESIGN/TODO are meant to be central communication channels, make sure you're watching for changes to those *anywhere* (use a permissive glob), and applying any changes I direct you to make (remember, they're human-direct-single-auth-to-edit *only*) must be made to the root ones, not the worktree.
