@@ -152,3 +152,101 @@ injection CVE [B-github-actions-setoutput-deprecation-2022]: real-world confirma
 not share a lane with freeform output · `DESIGN` "Inference limitations" (the `wombat` chicken-and-egg: the
 continuation is "an author-declared, reverse-DNS-or-env-var-named, analyzer-lifted handle — co-reference is
 the only free part").
+
+## 10. Candidate sh-spellings — *illustrative possibilities, not recommendations*
+
+> **Read this as strawman, not lean.** Everything below is a *candidate* spelling, written concretely only
+> so it can be argued with and thrown away — per AGENTS, inline strawmen to motivate a problem, never
+> committed Dorc patterns. Confidence is **low** (-GUESS / --WONDER) throughout; the lone narrow exception
+> is a *documented cost* (P6, GitHub in-band-signalling), flagged inline. The whole set sits downstream of
+> §5's **uncertain** lean that the kind is author-declared — if that's wrong, most of this is moot. None of
+> it decides `dq-kOOB` / `dq-entity-algebra`; it is grist for that decision, nothing more.
+>
+> Running example (so the sh coheres): a tool `frobctl` *might* manage "wombats" with states
+> `defrocked`/`frocked`/`wet`; oracle **B** wraps `frobctl`; oracle **A** wraps `zonk`, which *might* be
+> non-mutative only on a defrocked wombat. Intent: plain POSIX, dash-clean, inert if Dorc vanishes.
+
+- **P1 (-GUESS) — the kind-handle *could* be a lifted datum rather than a function name.** *If* the kind
+  must be declared at all (§5, uncertain), one option is a string assignment Dorc lifts — perhaps
+  reverse-DNS-rooted so independent oracles needn't a registry to avoid collisions (the Java/D-Bus/UTI
+  pattern [C-reverse-dns-notation-wikipedia-2026][B-houghton-utis-2012]). A *flat slug* or a *convention-named
+  env-var* might serve equally; this is a menu, not a pick. (A function-*name* convention is separately ruled
+  out by the inherited X3 constraint, not by this suggestion.)
+  ```sh
+  oracle_kind='net.frobnitz.wombat'      # one candidate datum-form; could as easily be a slug or an env-var name
+  ```
+
+- **P2 (-GUESS on the spelling; the hazard is real) — the probe *might* capture the tool's own rc.** The
+  *cost* it dodges is documented: `cmd | grep -q` conflates "no match" with "tool failed" (the DP-3 finding,
+  round-16 spike), which would mis-read as a converged skip. One possible shape:
+  ```sh
+  wombat_is() {                          # candidate convention: 0 holds · 1 absent · 2 unknown
+     command -v frobctl >/dev/null 2>&1 || return 2
+     _s=$(frobctl status -- "$2" 2>/dev/null) || return 2
+     [ "$_s" = "$1" ]
+  }
+  ```
+
+- **P3 (--WONDER) — states *might* hang off the kind as optional selectors.** How much sub-data is right is
+  the open `dq-entity-algebra` question. The adjacent fields *hint* at minimal-but-extensible (BCP-47's
+  "shortest that distinguishes" [B-w3c-language-tags-2024]; InChI's omit-irrelevant-layers
+  [C-inchi-wikipedia-2026]) and consumer-named depth (Pact [B-pact-cdc-docs-2022]) — a possibility to test,
+  not a shape to adopt.
+  ```sh
+  #  net.frobnitz.wombat            # bare kind     ·     net.frobnitz.wombat#defrocked   # a state selector
+  ```
+
+- **P4 (-GUESS) — effects *may* often be inferable from the idempotency-guard, so perhaps declare little.**
+  The (provider, verb) is the command itself; polarity *might* fall out of guard structure (094 g1 — a probe
+  + an establisher sharing an entity), leaving an explicit marker only for the un-inferable residue. Whether
+  inference reaches far enough is unknown.
+  ```sh
+  wombat_is defrocked "$w" || frobctl defrock -- "$w"   # the guard *might* already imply defrock → #defrocked
+  ```
+
+- **P5 (-GUESS) — A's precondition *could* be a guard naming the same handle.** *If* A and B agree at all, it
+  might be only by both referencing `net.frobnitz.wombat#defrocked`; a consumer-side guard is real, useful sh
+  and could double as the lift-point.
+  ```sh
+  zonk_check() { oracle_requires 'net.frobnitz.wombat#defrocked' "$1"; }   # candidate marker
+  ```
+
+- **P6 (~SUSPECT, *narrowly* — a documented cost, not speculation) — the verdict should not share a lane
+  with the wrapped tool's freeform output.** GitHub Actions mixed coordination-signalling into stdout
+  (`echo "::set-output…"`) and paid for it with injection CVEs, then moved coordination onto dedicated
+  environment *files* — *"to avoid untrusted logged data to use … commands without the intention of the
+  workflow author"* [B-github-actions-setoutput-deprecation-2022] (`kCOMMS`). The firm part is *only* that
+  narrow claim: keep the verdict off the tool's freeform stdout. The spelling stays a possibility:
+  ```sh
+  wombat_is "$state" "$entity"; rc=$?
+  printf '%s\t%d\n' "net.frobnitz.wombat#$state" "$rc" >> "$DORC_VERDICT"   # cf. >> "$GITHUB_OUTPUT"
+  ```
+
+- **P7 (-GUESS) — the *link* (not the kind) *may* come for free from co-reference.** The one part with
+  support from all three rounds: a shared variable or a conventional env-var threads A and B with no
+  declaration (094 g1; the KUBECONFIG-read-by-both-kubectl-and-helm pattern [C-petergardfjall-helm-init-2024]).
+  The kind would still need P1; only the *coupling* is free.
+  ```sh
+  w=$(frobctl create); zonk_check "$w" && zonk -- "$w"; frobctl defrock -- "$w"   # same $w → co-reference
+  ```
+
+- **P8 (-GUESS, but the highest-value direction) — where the kind is *already* grounded in system metadata,
+  the probe *might* just read it.** No new handle if the OS already wrote one (round-1 rank-1).
+  ```sh
+  wombat_is() { systemctl is-enabled -- "$2" >/dev/null 2>&1; }   # rides metadata written for systemd
+  #  other candidates: dpkg -s · pkg-config --exists · id -u · ip link show
+  ```
+
+**Anti-patterns — these carry *documented* costs (firm, but narrowly about the exact failure):**
+- A **dotted function-name** handle (`frobctl.check()`) empirically fails `dash -n` (151 X4, run under
+  dash/bash), breaking the off-ramp; and any 1-place name can't carry the 3-place relation (X3). *That* cost
+  is clear; the datum-form fix (P1) is the speculative part.
+- **Verdict mixed into freeform stdout** — the GitHub CVE (P6). Clear cost.
+- **`cmd | grep -q` as the probe** — the DP-3 rc-conflation. Clear cost.
+- *(Leanings, not cost-backed:)* inferring the kind from token shape or co-occurrence *appears* unsound
+  (095 f27), and a full consumer-side schema *appears* heavier than consumer-driven naming — treat as
+  ~SUSPECT, not established.
+
+**Bound (restating §5, still uncertain):** *if* anything here holds, it is probably that the kind needs
+*one* declared anchor both A and B write, with most of the rest free or inferred — but the survey makes that
+a **converging lean, not a proof**, and this whole section is a menu to argue with, not a recommendation.
