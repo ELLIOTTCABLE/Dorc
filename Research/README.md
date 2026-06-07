@@ -25,6 +25,12 @@ syntheses by *question*, or by date (more recent rounds often incorporate at
 least a little bit of prior rounds as context; older ones, although focused, are
 often also full of superseded/incorrect info. peruse older rounds with care.)
 
+**Start here (current state):** the standing design accord is the human-authored `../DESIGN.md` +
+`../KNOBS.md`; the most recent *event* is the **round-16 implementation spike** — read `plans/16P`
+(what it built / deliberately deferred — its §3 ledger first) then `plans/16Q` (what's owed next). The
+per-facet conclusions below (`055`/`099`/`102`/`111`/`128`/`139`/`142`) are the durable answers each
+round settled.
+
 - **What is it, and where's the hard part?** — `plans/021` (empty dir → CFG/effect engine) +
   `plans/041` (language / parser / orchestration decisions).
 - **Can sh be analyzed soundly enough?** — `plans/055` (analysis architecture: sound+precise
@@ -35,41 +41,49 @@ often also full of superseded/incorrect info. peruse older rounds with care.)
   list).
 - **What must the core never optimize away?** — `plans/077` (the wrappable-leaf hook surface +
   seccomp network backstop — *a live constraint, not history*).
-- **Cross-domain synthesis + the corpus charter** — `plans/083`.
+- **Where the project is *now*** — `plans/16P` + `plans/16Q` (the round-16 impl-spike record and what it
+  leaves owed). *(The rounds-1–5 cross-domain synthesis + corpus-spike charter, `plans/083`, is
+  **historical**: it self-labels "current top-of-stack / last gate before first code" but predates rounds
+  9–16 and the spike — read it for the early accord, not as current status.)*
 - **How do we build it to fail fast?** — `plans/088` (falsification-first, build-to-kill —
   *advisory, not a phased plan*; reasoning in `notes/087`, kill-listing in `../DESIGN.md`).
-- **Tracking shared state across hosts** — `plans/099` (latest round's conclusion: relational
+- **Tracking shared state across hosts** — `plans/099` (the round-9 conclusion: relational
   contracts over referent-agnostic symbols · MUST-vs-MAY · the IFDS decidable floor).
 - **Real-world grounding of that round (specimens)** — `plans/09A` (bless/abdicate × bake-into-core · the Tier-A/B canonical-forms ledger · the rarity ≠ effect / contract-not-detector correction).
 - **Does it run on Windows / odd targets?** — `plans/139` (platform-compat conclusion: `kLANG` *sh-is-the-product*
   weld; controller = platform-free text + ssh; targets are sh-precondition-gated into tier-A/tier-B, never executor/transpile).
+- **How do errors / provenance / "why" flow, end-to-end?** — `plans/111` (one PROV-shaped derivation-DAG, built-forward/
+  queried-backward; `(result × diagnostics)` never-throw; N-tier + per-host-forking; controller-side, hosts stay dumb).
+- **How do we test a network appliance without a network?** — `plans/128` (deterministic-simulation testing; the one
+  all-nondeterminism seam is the controller↔host *transport*; "best-effort" = maximal rigor, ceilings the edge not the kernel).
+- **How does the controller talk to hosts?** — `plans/142` (the *executorless-OOB* transport: tool I/O on native ssh
+  channels, Dorc-signalling out-of-band split by size/urgency; `kCOMMS`).
+- **Where do the plans break / what wastes effort?** — `notes/151` (adversarial premise-review; the convergent finding —
+  the *named-kind oracle contract is unspelled and four rounds defer it* — is the hinge `16` stubbed and `16Q` flags as next).
 
 Through-line worth holding: the **soundness story keeps getting re-cut** — bias-inversion
 (`051`) → perf demotes statically-derived deps (`076`) → trace-don't-derive recovery (`077`) →
 relational MUST/MAY contracts (`099`). Later cuts supersede earlier framings of *how much Dorc
 can know without running the host*; on that question, the later round wins.
 
-> *Latest — round 10, 2026-06-02/03, security prior-art & threat-modeling:* the TODO security dive →
-> map (`plans/101`) + the **Dorc system threat-model** (`plans/102`). Key cuts: the probe-non-mutation
-> contract has a *first-party* refutation (Chef why-run; "read-only ≠ side-effect-free") and **its
-> soundness stops hard at the oracle-grounding boundary** — transfer-to-contract, never *eliminate* (the
-> live correctness frame; supersedes any "static-withhold guarantees it" reading). Control-node =
-> whole-fleet blast radius (Salt CVE); seccomp = classifier not sandbox; Dorc-is-a-package-manager is the
-> supply-chain lever (lean: **no registry**, defensive-lint backstop); methodology = *democratized* STRIDE.
-> Knob `kAGENTLESS` (was `kBLAST`) added welded; `kTRUST`/registry parked. **Version-drift** (same
-> version-string ≠ same bytes) flagged as the concrete grounding-breaker → a parked content-hash spike.
+> *Latest — round 16, 2026-06-05, the implementation spike (`do-4`):* a deliberately disposable Rust
+> workspace that **built the cheapest tier of the `055` engine** — a pure, deterministic
+> `syntax→analysis→plan` kernel (hand-rolled monotone dataflow, reaching-defs **ambient gate**,
+> **observable/replace** elision, phase-keyed `kFAIL`, a probe→apply compiler) — and proved the
+> **apply-2 chain runs end-to-end** on real `.sh` under DST + an sh e2e harness. Record: `plans/16P`
+> (neutral; durable threads `T1`–`T17`; **read its §3 built-vs-designed ledger first**) + `plans/16Q`
+> (forward-look). **Deliberately *not* built — do not read as settled:** the **named-kind oracle contract**
+> (the sh idiom an author writes) was a *held strawman, deferred pending `dq-kOOB` — the next decision up*;
+> the **precision/recency keystone** (`16Q §1`: without it nothing elides on a realistic book), the apply
+> executor, and apply-3 are all `NOT BUILT`.
 >
-> *Prior — round 9, state-tracking:* `plans/099` ground-tested against verbatim real-world scripts in
-> `specimens/` (`090` kernel task-runner = bless-vs-abdicate ledger; `091` stack's installer = m×n
-> abdication + meta-contract debt; commit-pinned + byte-checked via `tools/inline-specimen.sh`).
-
-> *Latest — round 13, 2026-06-03/04, platform-compatibility:* concluded in `plans/139` (charter `plans/130`).
-> The *orchestrator* has no Windows problem (analysis is platform-free text; a Rust async core dodges Ansible's
-> `fork()` wall), so **`kLANG`** (*sh-is-the-product*) is welded → the Windows/odd-*target* question is the hard
-> one: those are **sh-precondition-gated** (lighter than Ansible's POSIX-shell+Python contract), splitting
-> `kTPLATFORMS-wide` into **tier-A real-POSIX vs tier-B sh-syntax-only**. `kLANG`/`kTPLATFORMS`/`kWINLOCAL` added
-> to KNOBS; reconciled with out-of-band rounds 10–12 (`kCOMMS` = the in/out-of-band *plumbing* knob, a false
-> friend of `kOOB`; `kAGENTLESS` welded-push).
+> *Recent rounds (newest first; detail in the per-round map below):* **15** adversarial premise-review
+> (`notes/150`+`151`; 2026-06-04; no plan) · **14** controller↔host transport / `kCOMMS` (`plans/142`;
+> 2026-06-04) · **13** platform-compat / `kLANG` weld (`plans/139`; 2026-06-03/04) · **12** cross-network
+> DST/TDD (`plans/128`; 2026-06-03) · **11** error/provenance spine (`plans/111`; 2026-06-03) · **10**
+> security threat-model (`plans/101`+`102`; 2026-06-02/03; Chef why-run refutation, Salt-CVE blast-radius,
+> `kAGENTLESS` welded, version-drift spike parked) · **9** state-tracking (`plans/099`+`09A`; specimens;
+> 2026-06-02).
 
 ## The per-round map (reference — the spine above is the curated reading order)
 - `notes/000-source-manifest.md` — every source, graded (quality/relevance) + the **license contamination map**.
@@ -118,7 +132,7 @@ can know without running the host*; on that question, the later round wins.
 - **`plans/086-corpus-classification-validation.md`** — *the recovery (supersedes the blind variant).* Return the `kDEPS` go/no-go without confirming-by-construction, on the instrument + sample you already have: **pre-register** the apply-cost/check-depth rules → **sensitivity-test** the verdict across conservative→liberal rule-sets (does taste decide it?) → **ground-truth** a stratified subsample on the planned calibration harness (container fixtures; a few dozen gold ops bias-correct the static band) → *optional* **models-as-raters of one fixed corpus** (measure the subjectivity via κ/α instead of hiding it) → **adversarial** worst-defensible rule-set (severe testing). Keep the instrument + SHA-pinned sample + contrast-not-compound; discard the blind protocol.
 
 ### Synthesis, charter & kill-criteria (rounds 7–8 — falsification-first)
-- **`plans/083-synthesis-and-spike-charter.md`** — folds rounds 1–5 into one design picture and **charters the corpus go/no-go spike** that `086` then de-biases.
+- **`plans/083-synthesis-and-spike-charter.md`** — folds rounds 1–5 into one design picture and **charters the corpus go/no-go spike** that `086` then de-biases. *(Historical: the rounds-1–5 accord — superseded as "current status" by rounds 9–16 and the spike; do not read its "last gate before first code" framing as live.)*
 - `notes/087-kill-criteria-critique-and-scope-down.md` — the pivot to **build-to-kill over build-to-spec**; motivates the `A-VALUE` kill-listing reproduced by-hand in `../DESIGN.md` (Sensitivities).
 - **`plans/088-implementation-strategy-advisory.md`** — *advisory, not a phased plan.* A falsification-first build order — a dogfood vertical slice meant to kill the thesis early. Reasoning: `087`. (Process scaffolding, not findings: `plans/084`–`085` are the spike's seed/session prompts.)
 
@@ -148,7 +162,16 @@ Each specimen is a real script reproduced byte-exact + commit-pinned via `tools/
 - **`plans/101-security-threat-modeling-map.md`** — the map + **fronts 1–6** + the gate-adjudicated knobs **`kAGENTLESS`** (was `kBLAST`; push blast-radius — *added to KNOBS, welded*) and **`kTRUST`** (oracle-distribution integrity — *parked/out-of-scope*; cede to git). Gap-answers: oracle-trust → no code-fetching, defensive-lint backstop; **probe-contract → not a decision** (read-only welded-forced, cost best-effort); push → *ergonomic not a security claim*.
 - **`plans/102-dorc-threat-model.md`** — the deliverable: STRIDE over 5 trust-elements (operator-node · ssh-hops · probe · oracle · plan-output) + the **soundness-boundary** doctrine (eliminate only in Dorc's *own* code; oracle-behaviour = transfer+mitigate) + premortem + per-oracle template + **7 banked footgun-avoidance items**. Plus **Cross-cutting · version-drift** (the concrete grounding-breaker; content-hash-gating as the no-registry defence — *parked spike*, see `../TODO.md`).
 
-### Platform-compatibility round (round 13 — orchestrator + target platform-compat; 2026-06-03, in progress)
+### Error / provenance / reporting round (round 11 — the cross-cutting "why" spine; 2026-06-03)
+- `notes/110` (+ `112` ops, `113` query-planner) — 31 graded sources across five prior-art domains (parsing/recovery, program-repair, static-transform provenance, distributed provenance, ops orchestration, RDBMS query-planners); the recurring node-shape + per-tier toolkit.
+- **`plans/111-error-provenance-reporting-synthesis.md`** — **the round conclusion**: error/provenance is *one* PROV-shaped derivation-DAG, not a pile of subsystems — `(best-effort result × accumulated diagnostics)` never-throw; compact origin-handles resolved lazily; built-forward/queried-backward; **N-tier + per-host-forking** (exceeds the single-machine prior-art); **the spine *is* the analyzer's own graph** (agree graph-types first, or build two incompatible graphs); **controller-side, hosts stay dumb** (`kAGENTLESS` preserved); ≥3 never-conflated edge-types. Heaviest knob touch: `kFIDELITY` (the N-tier locator-DAG; see KNOBS round-11 marker).
+
+### Cross-network TDD / CI round (round 12 — how to test a network appliance without a network; 2026-06-03)
+- `notes/120` (broad sweep) · `122` (DST explainer) · `123` (Rust DST ecosystem + the transitive-dep wall) · `124` (DST↔Dorc seam + the `axis-dst-cost` ladder) · `125` (containerizability quadrant; infer-vs-annotate) · `126` (transient-fault / Jepsen `:ok/:fail/:info`) · `127` (synthesis handoff). 33 new sources.
+- `plans/121-cross-network-tdd-ci-map.md` — the **frozen** round map (axes, 3 fronts, `concl-*` callouts); not rewritten by the conclusion.
+- **`plans/128-cross-network-tdd-ci-conclusion.md`** — **the conclusion**: deterministic-simulation testing is unusually *cheap* for Dorc; **the one all-nondeterminism seam is the controller↔host *transport* (`ship(host,unit)→results`)** — reserving it (rung L0) + a clock/rand/IO-injecting kernel is the only retrofit-hostile day-1 item; the **tier boundary everyone hand-annotates and nobody infers**; "best-effort" = *maximal* rigor, ceilings the edge never the kernel. A leaf is a *compile-time* `(host,leaf)` coordinate, **not** an RPC.
+
+### Platform-compatibility round (round 13 — orchestrator + target platform-compat; 2026-06-03/04)
 - `plans/130-platform-compatibility-research-plan.md` — the reviewable charter (interactive-research `plan.md`):
   framing (Windows in ops), the orchestrator/target decomposition, proposed knobs + fronts. **Gate-revised.**
 - `notes/131-platform-compat-prior-art-survey.md` — wide-net prior-art: Ansible/Salt/pyinfra controller=*nix-only;
@@ -171,6 +194,21 @@ Each specimen is a real script reproduced byte-exact + commit-pinned via `tools/
   addendum (F-BOOTSTRAP).* Corrects the overstated "first-sh = human-only" boundary: a mechanized `raw`-equivalent
   (scp/`curl.exe` a static busybox.exe → invoke by path) onboards a bare Win32-OpenSSH box to "runs any sh" without
   breaching `kLANG`; robust pattern = scp-then-invoke-by-path (the `sh -s` stdin-pipe is Win32-OpenSSH's buggy zone).
+
+### Controller↔host transport round (round 14 — the `kCOMMS` substrate; 2026-06-04)
+- `notes/140` (broad sweep) · `141` (7 graded primaries: apt `APT::Status-Fd`, bats fd-3, pdsh second-connection-for-stderr, debconf line-protocol, FIFO multi-writer atomicity, ssh-fds-don't-transit) · `143` (env/toolchain handoff).
+- **`plans/142-controller-host-transport-plan.md`** — variance-map **and** its round-close resolution (read the Resolution, it supersedes the `## My read` lean): the **executorless-OOB design** — tool I/O rides native ssh *batch* channels (channels = batches ≤ `MaxSessions`, internal `&` concurrency) at full fidelity; **Dorc-signalling is out-of-band, split by size/urgency** (short gating `(verdict, content-key, freshness)` on a shared atomic fast-lane; large diagnostics in per-leaf files demuxed by filename); **security is structural** (signalling never shares a lane with freeform). The executor pole shrinks to a narrow corner {no-writable-fs, hard backpressure}. Residual: writable-fs on stripped/Windows targets. (`kCOMMS`; see KNOBS round-14 marker.)
+
+### Adversarial premise-review round (round 15 — red-team the corpus for effort-waste; 2026-06-04)
+*No `plans/` synthesis (per human). Adversarial-only — **convergence is the signal, lone findings suspect-until-checked**; target = "meta-poor planning that wastes engineering effort" (go/no-go is YOLO-GO, so the self-kill / value-band findings are recorded-but-de-prioritized).*
+- `notes/150-adversarial-premise-review-phase1.md` — 14 clean-context per-round adversaries (R1–R14); *no clean feasibility kill-shot found.* Frontloads **`fM3-ACCRETION`** (later rounds silently overturn earlier "welded/day-1" calls) + **`M4` citation-integrity** faults.
+- `notes/151-adversarial-premise-review-phase2-conclusion.md` — 4 cross-cutting agents. **THE CONVERGENCE: the whole analyzer hinges on one unspelled artifact — the sh idiom by which an oracle NAMES its kind / anchors a skip / reports a verdict — reached and deferred by four rounds.** De-risk (X3): an analyzer-internal, `kOOB`-legal kind-index *is* buildable (a lifted index of user-authored declarations ≠ the maintainer-arbitrated registry the design rejects). Also the **`kCOMMS` knot** (five day-1 seams land on the leaf-execution session) and empirically-run oracle bugs (ufw `.`-as-regex; apt-get `-o` leak; oracles fail `dash -n`).
+- `notes/20260604-citation-and-claims-{register,report}.md` — the round's citation-integrity audit (flagged e.g. an unverifiable "verbatim" rattle quote anchoring `plans/deferred/078`).
+
+### The implementation spike (round 16 — `do-4`: build to surface design problems; 2026-06-05)
+*A deliberately disposable Rust workspace. The 25 round-16 notes + the spike code are **quarantined** (`notes/quarantine-DO-NOT-READ/`) — reach last-mile evidence through the two postmortems' citations; do **not** pull the quarantine back in wholesale.*
+- **`plans/16P-spike-postmortem.md`** — the neutral record: the cheapest `055` tier built (a pure deterministic kernel; reaching-defs **ambient gate**; **observable/replace** elision; the witness/license; a probe→apply compiler; DST + sh-e2e), as durable threads `T1`–`T17`, **each tagged against the built-vs-designed ledger (§3 — read first)**. The kind-index *mechanism* exists; the **oracle contract an author writes was a held strawman, not built**.
+- **`plans/16Q-next-spike-and-process.md`** — the forward-look (opinion, marked): the **precision/recency layer is the keystone the spike skipped** (`§1`: without it nothing elides on a realistic book); spike-2's `q1-*` build-list (instantiate a *backward* analysis + apply-3; recency/selectors; probe-projection); the retrofit-hostile decisions to **settle on paper first** (`dq-entity-algebra`, `dq-substrate`, `dq-kOOB`); enshrine only the fact-centric anchor's *shape, not spelling*. Plus process lessons for the next throwaway spike.
 
 ## Vendor/ (full-history clones)
 CoLiS ecosystem (morbig, morsmall, colis-language, colis-constraints, shstats, lintshell, …), shellcheck, mvdan-sh, smoosh, oils, goblint-analyzer, tree-sitter-bash. See manifest for grades/licenses.

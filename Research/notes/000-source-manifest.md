@@ -4,7 +4,7 @@ Grading: **Quality** = provenance (peer-reviewed/author-hosted human work = A; p
 
 ## Sources → `../sources.json`
 
-The graded **document-sources** (~40 papers + learning-path notes, plus the round-5/6 methodology imports — 43 entries) now live in the machine-queryable [`../sources.json`](../sources.json): each `<grade>-<slug>-<year>` key maps to its `url`, local `file`, `sha256`, and graded relevance. To avoid a second source of truth this manifest no longer tables them — it keeps only what `sources.json` does *not*: the **Vendor** clones, the **license lever**, and the external / uncloned sources recorded per round below.
+The graded **document-sources** — the original ~40 papers + learning-path notes, grown by each round's web/practitioner sources to **~175 keys (rounds 1–14)** as of the round-16 spike — live in the machine-queryable [`../sources.json`](../sources.json): each `<grade>-<slug>-<year>` key maps to its `url`, local `file`, `sha256`, and graded relevance. To avoid a second source of truth this manifest no longer tables them — it keeps only what `sources.json` does *not*: the **Vendor** clones, the **license lever**, and the external / uncloned sources recorded per round below. **No new Vendor clones after round 5** — rounds 6–16 added document-sources (and in-tree instruments / byte-pinned specimens) only.
 
 To-curate (links only so far; grade before saving): Clang "Data flow analysis: an informal introduction" (LLVM docs, B+); Ed Yang "Hoopl" blog series (A, functional dataflow lib); Wisconsin CS704 Horwitz notes (A). **Rejected: Grokipedia (AI-generated).**
 
@@ -106,6 +106,12 @@ After the perf-critique demoted derived-dependency soundness (the `docker compos
 
 Notes: `070-performance-map` (campaign map + the perf reframe + the contract-matrix-driven cost complication), `071-analyzer-runtime-perf` (the complexity cliffs + memory wall), `072-probing-parallelism-perf` (fan-out ceilings + thundering herd + resumability), `073-mutation-orchestration-perf` (DAG scheduling + batching + the under-investment trap), `074-cost-model-and-tuning` (DB-optimizer + PGO model for cost-without-annotation). Synthesis: **`plans/076-performance-architecture.md`** (the perf design principles + the "decide-now retrofit-hostile" list + flagged decisions).
 
+## Corpus go/no-go round (round 6 — 2026-06-02) — methodology imports
+No new domain sources; the round imported *methodology* (pre-registration, severe testing, inter-rater κ/α) graded in `sources.json`, and built the in-tree `tools/corpus` instrument (TS + tree-sitter — an instrument, not a Vendor clone). Notes `080`/`081`; recovery plan `086`. (Rounds 7–8 = synthesis/charter/kill-criteria; no new sources.)
+
+## State-tracking round (round 9 — 2026-06-02) — shared-state across hosts
+Ops-theory + PLT sources, all graded in `sources.json` (grep `traugott|burgess|engler|foster|harnad|ramalingam`): Traugott "Why Order Matters" [A-traugott-order-matters-2002] + Burgess/CFEngine [B-burgess-cfengine-2010] (the divergent/convergent/congruent trichotomy); Engler "deviant behavior" spec-mining [A-engler-deviant-behavior-2001] (the MUST-vs-MAY line); Foster flow-sensitive qualifiers / CQual [A-foster-flow-sensitive-qualifiers-2002] + occurrence-typing (the two formal spines); Harnad symbol-grounding [A-harnad-symbol-grounding-1990] (downgraded — Dorc keeps a referent-agnostic *relational* anchor); Ramalingam [A-ramalingam-undecidability-aliasing-1994] (precise-footprint-undecidable, even intraprocedurally). Notes `091`–`096`; conclusion **`plans/099`** + specimen synthesis `plans/09A`. Specimens are byte-exact real scripts pinned via `tools/inline-specimen.sh` (in-tree, not Vendor clones). No new Vendor clones.
+
 ## Security prior-art & threat-modeling round (round 10 — 2026-06-02)
 Practitioner/industry-weighted security dive (the TODO security item; threat-modeling-first). All graded web sources reproduced under `sources/` (full skill schema). New sources, graded:
 - **Chef "Why-Run Mode Is Considered Harmful"** (`chef.io/blog`, Julian Dunn) — **A**. First-party refutation of the dry-run/no-op contract: guards create inter-resource deps a no-op can't evaluate; "no-op modes are not side-effect-free" (systemd-lockup). Direct prior-art for `kFAIL-withhold`/`kELISION`/the TODO elision-soundness hazard.
@@ -128,3 +134,21 @@ Practitioner/industry-weighted security dive (the TODO security item; threat-mod
 - **REJECTED/not-saved**: the "threat modeling is theater" counter-search (only low-grade SEO/commercial — itself a finding: practitioner consensus is pro-TM, debate is lightweight-vs-heavy); SEO agent-vs-agentless listicles (Palo Alto/Wiz/Orca/Darktrace).
 
 Notes: `100-security-prior-art-and-threat-modeling` (+ gate-adjudication & (b)/(b+) addenda). Map: **`plans/101-security-threat-modeling-map.md`** (trust-boundary map · fronts 1–6 · gate-adjudicated knobs `kAGENTLESS`-welded / `kTRUST`-parked · gap-answers). Deliverable: **`plans/102-dorc-threat-model.md`** (STRIDE-per-element · soundness-boundary doctrine · premortem · per-oracle template · 7 banked items · the parked version-drift / content-hash spike).
+
+## Error / provenance / reporting round (round 11 — 2026-06-03)
+31 sources, all `top-level-agent`-graded on a full read, across five prior-art domains; full slug list in **`plans/111`** §5. Anchors by domain — parsing/recovery: [A-bour-merlin-2018] (`result × diagnostics`, never-throw) [A-pottier-reachability-2016] [B-rustc-diagnostics-2024] [B-gcc-libcpp-location-2024]; distributed provenance: [B-prov-primer-2013] [B-otel-spec-overview-2024] [A-wittner-distributed-prov-2022] [B-slsa-provenance-2023]; static-transform provenance: [B-mozilla-sourcemap-2024] [B-llvm-dilocation-2024]; ops: [B-puppet-transaction-report-2024] [B-k8s-api-conventions-conditions-2024] [B-ansible-error-handling-2026]; query-planner: [A-leis-query-optimizers-2015] [B-haritsa-robust-qp-2020] [B-postgres-explain-2024]. Conclusion **`plans/111`**. No new Vendor clones.
+
+## Cross-network TDD / CI round (round 12 — 2026-06-03)
+33 new sources (148 total at round close), DST / Jepsen / IaC-self-test / tier-theory clusters; grep `sources.json` `madsim|turmoil|shuttle|jepsen|tigerbeetle|antithesis|fdb-sigmod|sled|polarsignals|s2-dst|moonpool|testcontainers|molecule|test-kitchen|beaker|hughes|eatonphil|warpstream|etcd|tc-netem|scylladb|foundationdb`. The Rust DST crates (`madsim`/`turmoil`/`shuttle`) are *referenced*, **not cloned**. Map `plans/121` (frozen); conclusion **`plans/128`**. No new Vendor clones.
+
+## Platform-compatibility round (round 13 — 2026-06-03/04)
+Prior-art graded in `sources.json` (grep `busybox|win32openssh|pyinfra|msys2|mitogen`): busybox-w32 [A-busybox-w32-readme-2024]; Win32-OpenSSH no-ControlMaster #1328 [A-win32openssh-controlmaster-1328-2019] + the `sh -s` stdin-pipe bug #1545 [A-win32openssh-pipe-1545-2020]; pyinfra/Salt controller=*nix-only [A-pyinfra-compatibility-2024]; MSYS path-mangling [B-msys2-filesystem-paths-2024]. Notes `131`–`135`; conclusion **`plans/139`** (+ deferred `plans/deferred/13A`). No new Vendor clones.
+
+## Controller↔host transport round (round 14 — 2026-06-04)
+7 graded primaries (`notes/141`), in `sources.json`: apt `APT::Status-Fd` [A-debian-apt-progress-reporting-2022]; bats fd-3 [A-bats-core-writing-tests-2024]; pdsh second-connection-for-stderr [A-pdsh-readme-2024]; FIFO multi-writer atomicity [A-man7-pipe-2024]; ssh-fds-don't-transit [B-unix-se-ssh-fds-not-transportable-2025]; no-pty stream-mangling [B-kamil-ssh-separate-streams-tty-2021]; debconf line-protocol-over-standard-streams. `mitogen` [A-mitogen-ansible-2024] re-mined for the minimal-bootstrap cost. Plan + round-close resolution **`plans/142`**. No new Vendor clones.
+
+## Adversarial premise-review round (round 15 — 2026-06-04) — citation-integrity audit
+No new domain sources (a red-team *over* the corpus). Manifest-relevant output: the round's **citation-integrity audit** (`notes/20260604-citation-and-claims-register.md` + `-report.md`) re-checked the corpus's own citations and flagged load-bearing faults the 2026-06-04 self-audit missed — notably an **unverifiable "verbatim" rattle quote** anchoring `plans/deferred/078` (the *conclusion* — daemons defeat per-process tracing — is independently true; the *evidentiary anchor* is invented), plus interpretive over-reads (R3 user-study, R2 k-CFA term-equivocation). **Treat `078`'s tracing rationale as unsourced until re-grounded;** a second citation pass over the interpretive + tracing/transport tiers is banked.
+
+## Implementation spike (round 16 — 2026-06-05)
+No new external sources — a build spike (quarantined; record in `plans/16P`/`16Q`). Listed only so the manifest's round coverage is complete.
