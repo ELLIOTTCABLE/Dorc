@@ -2,7 +2,7 @@
 
 > Firewalled **K1** thread (entity-identity / equivalence / ontology); charter `plans/170`, brief
 > `_tmp-170-k1-brief.md`. This is the **raw graded findings log**; the deliverable **map-with-a-lean**
-> is `plans/17X-cross-oracle-kind-channel-synthesis.md`. Sources graded into `../sources.json` via `new-source.sh`.
+> is `plans/175-cross-oracle-kind-channel-synthesis.md`. Sources graded into `../sources.json` via `new-source.sh`.
 > AI-generated; confidence-marked; trust repo-root `DESIGN`/`KNOBS` over this. Per the brief I'm
 > *upstream* of the soundness math (charter A3–A6) — this is about **spelling the anchor**.
 
@@ -80,7 +80,7 @@
   *right* weaker shape; raw token-`sameAs` is the trap `094 g4` already named. **Flag for K2 synthesis**
   (the named kind as nominal type): the type's equality should be authority-scoped, not global.
 
-## Front-by-front (neutral; ranking + lean are in plans/17X)
+## Front-by-front (neutral; ranking + lean are in plans/175)
 
 - **f1-provides** — STRONG. Debian virtual-packages, update-alternatives, RPM `Provides`, pkg-config.
   The decades-old, self-paying, in-band, solver-lifted capability declaration. Best regime-1 prior-art.
@@ -181,7 +181,7 @@ probe↔apply). Reported as the brief requires; the `kOOB` lean weighs against a
 > statements). (THE FLOOR: comment + sidecar, zero value outside ShellCheck.)
 
 ## Open / next
-- Map + lean → `plans/17X-cross-oracle-kind-channel-synthesis.md` (this round stops at the map; human takes the lean
+- Map + lean → `plans/175-cross-oracle-kind-channel-synthesis.md` (this round stops at the map; human takes the lean
   into adversarial-crosscheck per charter §Sequencing).
 - Light/untaken leads (declared, not chased): RPM `Provides` primary (corroborates Debian, not read in
   full); pkg-config `.pc` primary; `.desktop`/mailcap MIME-handler kinds; tree-sitter/semgrep/CodeQL

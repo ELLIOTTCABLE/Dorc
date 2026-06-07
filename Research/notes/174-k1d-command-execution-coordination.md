@@ -5,7 +5,7 @@
 > shared kind. **EXCLUDED:** `# foo=bar` comments (the floor) **and** `FOO=bar` env-vars (k1c) — the
 > coordination must ride the **command execution itself**. **RELAXED constraint (human):** assume Dorc MAY
 > bless a small set of capabilities as hardcoded hooks/function-names in illegal-sh syntax (the `mycmd.check()`
-> model) — so blessing a few commands/idioms is ON the table. Feeds `plans/17X`. AI-generated; conf-marked.
+> model) — so blessing a few commands/idioms is ON the table. Feeds `plans/175`. AI-generated; conf-marked.
 
 ## Findings (lifted, most-load-bearing first)
 
@@ -51,7 +51,7 @@
   with it granted, this is the one place command-execution out-performs every prior channel.
 
 - **k1d-frame (+SURE) — where it slots.** getent/`command -v`/`id` extend `09A` Tier-A (blessed structural
-  idioms) *off-file*; getent is the multi-kind generalization. It also sharpens `plans/17X` S8 (read-existing
+  idioms) *off-file*; getent is the multi-kind generalization. It also sharpens `plans/175` S8 (read-existing
   -metadata): getent is the canonical read-existing-metadata probe **that self-names the kind**. The wrapper
   category is a *new* axis (execution-context coordination) prior rounds didn't surface.
 
@@ -75,7 +75,7 @@
 > `kill`'s arguments (distinct from a pipe, which would feed kill's stdin, which kill does not read). The
 > producer (pgrep→PID) and consumer (kill←PID) command identities expose the flowing kind.
 
-## Verdict (→ plans/17X)
+## Verdict (→ plans/175)
 **Command-execution DOES carry kind-signal — for blessed/bounded vocabularies — and getent is the proof.**
 `getent <kind> <entity>` is a real, canonical, read-only, self-kind-describing, 3-outcome fact-probe for ~16
 system kinds; the wrapper category exposes execution-context-kinds; producer/consumer exposes flowing-kinds
@@ -83,8 +83,8 @@ via blessed identities. This is the *first* channel to beat co-reference — gat
 blessing-allowance. The arbitrary/opaque kind still needs the declared handle (no-magic holds there); but for
 the blessed set, Dorc can read the kind **off the command itself**.
 
-## Open / next (→ plans/17X)
-- Fold into `plans/17X`: a candidate **P9** (getent-as-blessed-self-kind-describing-probe) + a note that
+## Open / next (→ plans/175)
+- Fold into `plans/175`: a candidate **P9** (getent-as-blessed-self-kind-describing-probe) + a note that
   command-execution carries kind-signal *for blessed vocabularies only*; the wrapper category is a new
   execution-context axis worth a `dq` of its own (`ssh host`/`docker exec` = Dorc's own model).
 - Untaken (declared): the full wrapper zoo (`nsenter`/`unshare`/`ip netns exec`/`setpriv`/`runuser`);
@@ -166,7 +166,7 @@ flag** `cmd --type=<KIND>`; (C) **arg *is* a member of a kind-namespace** `cmd <
   (semanage/seinfo/sesearch ~12 object-types × rule-types), **link-layer** (ip/dladm/ipadm ~25 objects),
   **CIM/WMI** (Get-CimInstance, hundreds of classes), **SMBIOS** (dmidecode), **terminfo** (tput, hundreds).
 - **k1d-cat-bound (+SURE, unchanged).** All are **blessed/bounded** vocabularies — the enabling condition.
-  An arbitrary/opaque kind still needs the declared handle (`plans/17X` P1). But the catalog shows the
+  An arbitrary/opaque kind still needs the declared handle (`plans/175` P1). But the catalog shows the
   *blessed* set is large, cross-OS, and high-value — a real oracle-library bootstrap, not a toy.
 
 ## Citations (verbatim; [slug]:loc)
@@ -185,4 +185,3 @@ flag** `cmd --type=<KIND>`; (C) **arg *is* a member of a kind-namespace** `cmd <
 > [B-dladm-illumos-man-2024]:show-* (relevance: -0:SUSPECT, subagent)
 > dladm show-link | show-phys | show-aggr | show-vlan | show-vnic | show-etherstub | show-linkprop … —
 > read-only; kind welded into the subcommand, mirroring `ip <object> show`.
-

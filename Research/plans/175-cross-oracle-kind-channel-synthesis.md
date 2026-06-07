@@ -1,4 +1,4 @@
-# 17X — The cross-oracle kind-channel: K1 synthesis + lean (round 17)
+# 175 — The cross-oracle kind-channel: K1 synthesis + lean (round 17)
 
 > **Status (round 17, 2026-06-07): the single K1 plans-synthesis.** Integrates four gather rounds —
 > `notes/171` (packaging prior-art), `notes/172` (adjacent fields), `notes/173` (shell-spellings / env-vars
