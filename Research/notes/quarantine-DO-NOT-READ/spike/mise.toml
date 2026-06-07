@@ -1,0 +1,2 @@
+﻿[env]
+RUSTUP_TOOLCHAIN = "stable-x86_64-pc-windows-gnu"

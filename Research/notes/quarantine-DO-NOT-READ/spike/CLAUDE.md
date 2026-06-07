@@ -1,0 +1,130 @@
+# spike/ — Dorc implementation spike: working agreement
+
+This `spike/` tree is a **disposable Rust implementation spike** of Dorc (the
+spec-mining static-analysis orchestrator described in the repo root's
+`README.md` / `DESIGN.md` / `KNOBS.md`). Its job is to **surface design
+problems** for the planning corpus by actually building the hard parts —
+**not** to become the shipped tool. Read the root docs for *what Dorc is*; this
+file is *how we build the spike*.
+
+Goal-shape: this is academic-grade static-analysis work (CFG, IFDS dataflow,
+abstract interpretation, lattices). Be **boring, defensive, careful, judicious**
+— not clever. Correctness (types + tests) over features; less code over more,
+but never at the cost of readability.
+
+## Build / test / run
+
+Toolchain is pinned per-dir via `spike/mise.toml` (`[env]` selects the
+self-contained `x86_64-pc-windows-gnu` toolchain because this box has no MSVC
+linker). **Always invoke cargo through mise, from inside `spike/`:**
+
+```
+mise exec -- cargo build
+mise exec -- cargo test
+mise exec -- cargo clippy --all-targets
+```
+
+Plain `cargo` (no `+toolchain`) is correct here — the mise `[env]` override
+makes gnu the active toolchain, so there is no `+toolchain` footgun.
+
+## Hard invariants (do not violate; cite the slug when you rely on one)
+
+- **inv-no-unsafe** — `unsafe` is `forbid`-den workspace-wide; it cannot be
+  re-enabled with `#[allow]`. No FFI. No authored macros (`macro_rules!` /
+  proc-macros) — they hand reviewers and other agents footguns. `#[derive(...)]`
+  and the standard derives are fine and encouraged.
+- **inv-determinism** — the analyzer kernel (`syntax → analysis → probe → plan`)
+  is a **pure function of its inputs**: no clock, RNG, filesystem, or network,
+  directly *or transitively*. This is what lets the whole pipeline run inside
+  deterministic-simulation (DST) tests without dependency-injection ceremony.
+  The *only* places nondeterminism is allowed: `hostsim` (seeded PRNG, injected)
+  and `cli` edges (real I/O). Never iterate a `HashMap`/`HashSet` to produce
+  output — use `BTreeMap`/sorted vecs where order is observable. No `async` in
+  the kernel (state-machine DST per the Polar-Signals model; async would
+  reintroduce scheduler nondeterminism).
+- **inv-no-throw** (`dn-7`) — every pipeline stage returns `Carrier<T>` (`value`
+  + accumulated `Vec<Diagnostic>`) and **never panics on malformed input**.
+  Errors are data. `unwrap`/`expect` are warn-linted; never use them on a path
+  that untrusted input can reach (tests may).
+- **inv-kfail** (`dn-6`, welded `kFAIL`) — two soundnesses, opposite
+  fail-directions, **phase-keyed** by `core::Phase`:
+  - `Phase::Probe` → never mutate (`kFAIL-withhold`): when unsure, *don't probe*.
+  - `Phase::Apply` → never skip a needed mutation (`kFAIL-perform`): when unsure,
+    *act*. An `Unknown` verdict folds to "act", never to "skip".
+  A shortcut/optimisation is legal only if it fails the conservative way *for its
+  phase*. This is the one thing performance may never trade.
+- **inv-top-reject** — anything unmodeled collapses to `⊤` (a `Top`/`Unknown`
+  element) and is **rejected loudly, never silently best-effort'd**. The parser
+  models only the sh subset the analyzer currently exercises; everything else is
+  ⊤-rejected. Under-modeling is a *correctness* boundary (elision-soundness), not
+  a TODO. The `⊤`-trigger set (eval, dynamic command names, `. "$dyn"`, recursive
+  `$((…))`, lvalue-taking builtins) is fixed — see the synthesis note.
+- **inv-referent-agnostic** (`W4`) — the engine never decodes an `OpaqueToken`'s
+  text to infer meaning. Compare tokens for intra-script co-reference; resolve
+  for display/provenance; never branch on "is this `nginx`". Cross-oracle
+  identity binds to a **named `KindId`**, never a shared token.
+- **inv-must-may** (`must-may`) — only a `Grade::Must` fact (implied by idiomatic
+  structure, or oracle-declared) may license a skip. `Grade::May`
+  (mined/distributional) is a hint that bootstraps the oracle library and
+  **never** authorizes elision.
+- **inv-superposition** — the analyzer kernel emits phase-/orientation-agnostic
+  lattice facts; only the phased *caller* collapses them, by arguing the phase
+  (`Bias`/`PhasedVerdict<P>`) and orientation (`May`/`Must`). The engine must never
+  fold `May`/`Must` or bake a phase default — a baked posture is a wrong-skip under
+  the opposite phase's `kFAIL`. It generalizes `inv-must-may`/`inv-kfail` from the
+  verdict to *every* phase-sensitive fact (DESIGN "Same analysis, different
+  fail-safe posture").
+  <!-- /* retrofit 2026-06-06 (16x postmortem pass): cfg.rs/plan.rs cite inv-superposition throughout, but this round-16 invariant list — authored before the slug was coined — omitted it; added so an agent hunting the registry finds what the code was already written against. Source: notes/quarantine-DO-NOT-READ/16K §3. */ -->
+- **inv-leaf-seam** (`dn-3`) — executable work is a list of individually
+  wrappable leaves each carrying a stable `LeafId → AstId` back-map; **never one
+  opaque `sh -c "$bigscript"`**. The probe projection is a leaf-id-preserving
+  rewrite.
+
+## Code style
+
+- Newtypes over bare integers/strings; **make illegal states unrepresentable**
+  (enums for finite choices; no "stringly-typed" anything).
+- Doc-comment every public type/fn with *why*, and cite the research-chord / `dn`
+  / `wo` / `KNOBS` slug it implements, so the rationale survives. Avoid
+  what/how comments on self-evident code (the `review-pass` skill will strip
+  verbose AI comments at the end — keep ~10%, brutally brief).
+- 3-space indentation is the human's global preference, **but** Rust convention
+  is 4-space and `rustfmt` enforces it — follow `rustfmt` here (project
+  convention beats personal preference). Run `mise exec -- cargo fmt`.
+- Tests: prefer brutal, adversarial integration tests and DST systems-tests over
+  exhaustive unit coverage. Do **not** chase 100% coverage. Each test should have
+  a reasoned argument for the behaviour/invariant it pins. Repetition in tests is
+  fine (no DRY ceremony in tests).
+
+## Boundaries
+
+- **Never edit the worktree-root human docs**: `README.md`, `DESIGN.md`,
+  `KNOBS.md`, `TODO.md`, `AGENTS.md`, `CLAUDE.md`. They are human-authored and
+  human-owned. If one looks wrong, surface it to the user; don't edit it.
+- Spike design notes go in `Research/notes/16x-*.md` (this branch). They are
+  historical/working notes, confidence-marked, not authoritative.
+- Commits: small + granular + frequent (mistakes included). On this `ai/*`
+  branch, autonomous-commit is on. Style: `(AI <core-label>) terse message`, one
+  line, `AI` label mandatory, no `Co-Authored-By` trailer. Never `git push`.
+
+## Spawning subagents (supervisor rule — mandatory)
+
+Every subagent this spike spawns MUST be told, as the first lines of its prompt,
+to read **in full**:
+
+- `<worktree>/README.md` and `<worktree>/DESIGN.md` — human-authored ground truth;
+  trust them over anything in `Research/` (unreviewed LLM planning-slop).
+- this `spike/CLAUDE.md` — the invariants above.
+
+No exceptions, even for "quick" tasks; pass the absolute paths. Then hand the
+subagent the specific invariant-slugs and research-chord slugs it must honor, and
+tell it to report back any context that *other* subagents must maintain. This is
+enforced by supervisor discipline (the prompt template), not a hook — do not let
+it slip.
+
+## Confidence + reference discipline
+
+Mark uncertain claims in notes/reasoning with `+SURE` / `~SUSPECT` / `-GUESS` /
+`--WONDER`. Give conversational lists greppable slug-ids (`nit-1`, `q-2`), not
+bare numbers. Reuse `KNOBS.md` slugs and research-chord slugs rather than
+re-deriving a tension by a new name.
