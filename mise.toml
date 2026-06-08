@@ -10,3 +10,28 @@
 
 [tools]
 node = "22"
+
+# Pre-commit `cargo fmt` for the round-19 Rust spike (see ./hk.pkl).
+# `pkl` is hk's config backend; both are pinned here so the hook is
+# reproducible rather than relying on a machine-global mise install.
+#
+# NOTE: the git hook is deliberately NOT auto-installed. This worktree's
+# `.git` shares the MAIN repo's gitdir, so `hk install` would write the
+# `hook.*` entry into the SHARED `.git/config` (affecting `main` and every
+# worktree). Install is a manual, human-gated step — see the round-19 spike
+# note. Run `mise run hk-install` only with that tradeoff understood.
+hk = "1.44.3"
+pkl = "0.31.1"
+
+[env]
+# Route hk's hook invocation + step commands through mise (so `cargo`/`hk`
+# resolve without an activated shell). Matches `mise x` usage in hk.pkl.
+HK_MISE = "1"
+
+[tasks.hk-install]
+description = "Install the hk pre-commit hook. WRITES SHARED .git/config (affects main) — human-gated; read the round-19 spike note first."
+run = "hk install"
+
+[tasks.fmt]
+description = "Apply cargo fmt to the spike via hk (formatters fix; nothing else)."
+run = "hk fix --all"
