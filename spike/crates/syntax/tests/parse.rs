@@ -73,7 +73,10 @@ fn first_word_literal(ast: &Ast, simple: AstId) -> Option<&str> {
 
 #[test]
 fn fixture_pi_webhost_top_level_shape() {
-    let src = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../../fixtures/pi-webhost.book.sh"));
+    let src = include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../fixtures/pi-webhost.book.sh"
+    ));
     let parsed = parse(src);
     let ast = &parsed.value;
 
@@ -90,16 +93,16 @@ fn fixture_pi_webhost_top_level_shape() {
     assert_eq!(
         labels,
         [
-            "Simple",  // set -e
-            "Case",    // case "$(hostname)" in …
-            "If",      // if ! command -v nginx …
-            "Simple",  // ufw allow 80/tcp
-            "Simple",  // ufw allow 443/tcp
-            "Simple",  // systemctl enable --now nginx
-            "If",      // if [ ! -f … ]; then cat > … <<'EOF' …
-            "AndOr",   // nginx -t && systemctl reload nginx
-            "Simple",  // touch …
-            "Simple",  // echo "pi-web up"
+            "Simple", // set -e
+            "Case",   // case "$(hostname)" in …
+            "If",     // if ! command -v nginx …
+            "Simple", // ufw allow 80/tcp
+            "Simple", // ufw allow 443/tcp
+            "Simple", // systemctl enable --now nginx
+            "If",     // if [ ! -f … ]; then cat > … <<'EOF' …
+            "AndOr",  // nginx -t && systemctl reload nginx
+            "Simple", // touch …
+            "Simple", // echo "pi-web up"
         ],
         "top-level item kinds/order"
     );
@@ -156,11 +159,18 @@ fn fixture_pi_webhost_top_level_shape() {
                             // First redir: write to /dev/null.
                             assert!(matches!(
                                 kind(ast, redirs[0]),
-                                NodeKind::Redir { op: RedirOp::Write, .. }
+                                NodeKind::Redir {
+                                    op: RedirOp::Write,
+                                    ..
+                                }
                             ));
                             // Second redir: 2>&1 (dup fd 2 → fd 1).
                             match kind(ast, redirs[1]) {
-                                NodeKind::Redir { op: RedirOp::Dup, fd, target } => {
+                                NodeKind::Redir {
+                                    op: RedirOp::Dup,
+                                    fd,
+                                    target,
+                                } => {
                                     assert_eq!(*fd, Some(2));
                                     assert!(matches!(target, RedirTarget::Fd(1)));
                                 }
@@ -190,7 +200,11 @@ fn fixture_pi_webhost_top_level_shape() {
                     assert_eq!(word_literal(ast, words[0]), Some("cat"));
                     assert_eq!(redirs.len(), 2, "redirect-to-file + heredoc");
                     let heredoc = redirs.iter().find_map(|&r| match kind(ast, r) {
-                        NodeKind::Redir { op: RedirOp::HereDoc, target, .. } => Some(target),
+                        NodeKind::Redir {
+                            op: RedirOp::HereDoc,
+                            target,
+                            ..
+                        } => Some(target),
                         _ => None,
                     });
                     let Some(heredoc) = heredoc else {
@@ -234,36 +248,36 @@ fn fixture_pi_webhost_top_level_shape() {
 #[test]
 fn totality_hostile_inputs_never_panic() {
     let hostile = [
-        "",                                  // empty
-        " \t\n\n  \t ",                      // only whitespace
-        "\u{0}\u{0}\u{0}",                   // NUL bytes
-        "echo \u{1f600}\u{1f4a9} café",      // non-ASCII / multibyte
-        "$(((",                              // truncated arithmetic
-        "$( $( $( ",                         // nested unterminated cmd-subst
-        "'unterminated single",              // unterminated single quote
-        "\"unterminated $x double",          // unterminated double quote
-        "`unterminated backtick",            // unterminated backtick
-        "${unterminated",                    // unterminated brace param
-        "<<EOF\nbody no terminator",         // unterminated heredoc
-        "if then fi |||",                    // garbage operators
-        "case in esac",                      // degenerate case
-        "case x in",                         // unterminated case
-        "if if if if",                       // repeated keyword, no bodies
-        ";;;;;;",                            // only terminators
-        "| | |",                             // only pipes
-        "& & &",                             // only async
-        "{ { { {",                           // unbalanced groups
-        "( ( ( (",                           // unbalanced subshells
-        ")))) }}}} ;;;;",                    // unbalanced closers
-        "for for for do do done done",       // malformed loop
-        "a=$(b=$(c=$(echo)))",               // deeply nested subst assigns
-        "\\",                                // lone backslash
-        "echo \\",                           // trailing backslash
-        "2>&",                               // truncated dup
-        "<<<",                               // here-string (unmodeled triadic)
-        &"(".repeat(2000),                   // deep nesting (stack safety)
-        &"echo a | ".repeat(1000),           // long pipeline
-        &"a && ".repeat(1000),               // long and-or chain
+        "",                             // empty
+        " \t\n\n  \t ",                 // only whitespace
+        "\u{0}\u{0}\u{0}",              // NUL bytes
+        "echo \u{1f600}\u{1f4a9} café", // non-ASCII / multibyte
+        "$(((",                         // truncated arithmetic
+        "$( $( $( ",                    // nested unterminated cmd-subst
+        "'unterminated single",         // unterminated single quote
+        "\"unterminated $x double",     // unterminated double quote
+        "`unterminated backtick",       // unterminated backtick
+        "${unterminated",               // unterminated brace param
+        "<<EOF\nbody no terminator",    // unterminated heredoc
+        "if then fi |||",               // garbage operators
+        "case in esac",                 // degenerate case
+        "case x in",                    // unterminated case
+        "if if if if",                  // repeated keyword, no bodies
+        ";;;;;;",                       // only terminators
+        "| | |",                        // only pipes
+        "& & &",                        // only async
+        "{ { { {",                      // unbalanced groups
+        "( ( ( (",                      // unbalanced subshells
+        ")))) }}}} ;;;;",               // unbalanced closers
+        "for for for do do done done",  // malformed loop
+        "a=$(b=$(c=$(echo)))",          // deeply nested subst assigns
+        "\\",                           // lone backslash
+        "echo \\",                      // trailing backslash
+        "2>&",                          // truncated dup
+        "<<<",                          // here-string (unmodeled triadic)
+        &"(".repeat(2000),              // deep nesting (stack safety)
+        &"echo a | ".repeat(1000),      // long pipeline
+        &"a && ".repeat(1000),          // long and-or chain
     ];
     for src in hostile {
         let parsed = parse(src);
@@ -287,9 +301,19 @@ fn assert_all_ids_resolve(ast: &Ast) {
     let check = |id: AstId| assert!(id.0 < count, "dangling AstId {id:?} (arena has {count})");
     for (_, node) in ast.iter() {
         match &node.kind {
-            NodeKind::Script { items } | NodeKind::List { items } => items.iter().for_each(|&i| check(i)),
-            NodeKind::Simple { assigns, words, redirs } => {
-                assigns.iter().chain(words).chain(redirs).for_each(|&i| check(i));
+            NodeKind::Script { items } | NodeKind::List { items } => {
+                items.iter().for_each(|&i| check(i))
+            }
+            NodeKind::Simple {
+                assigns,
+                words,
+                redirs,
+            } => {
+                assigns
+                    .iter()
+                    .chain(words)
+                    .chain(redirs)
+                    .for_each(|&i| check(i));
             }
             NodeKind::Pipeline { stages, .. } => stages.iter().for_each(|&i| check(i)),
             NodeKind::AndOr { left, right, .. } => {
@@ -300,7 +324,12 @@ fn assert_all_ids_resolve(ast: &Ast) {
                 check(*body);
                 redirs.iter().for_each(|&i| check(i));
             }
-            NodeKind::If { cond, then_body, elifs, else_body } => {
+            NodeKind::If {
+                cond,
+                then_body,
+                elifs,
+                else_body,
+            } => {
                 check(*cond);
                 check(*then_body);
                 for e in elifs {
@@ -442,8 +471,14 @@ fn reject_lvalue_builtins_are_dynamic_lvalue() {
 
     // …but ordinary forms of the same builtins stay modeled.
     assert!(!parse("unset FOO").has_errors(), "literal unset is fine");
-    assert!(!parse("printf '%s\\n' hi").has_errors(), "plain printf is fine");
-    assert!(!parse("[ -f /etc/x ]").has_errors(), "ordinary test is fine");
+    assert!(
+        !parse("printf '%s\\n' hi").has_errors(),
+        "plain printf is fine"
+    );
+    assert!(
+        !parse("[ -f /etc/x ]").has_errors(),
+        "ordinary test is fine"
+    );
 }
 
 #[test]
@@ -454,11 +489,17 @@ fn reject_over_deep_nesting_is_loud() {
     // only checks no-panic, `deeply_nested…` (cfg) only checks node_count.
     let deep = "(".repeat(300);
     let parsed = parse(&deep);
-    assert!(parsed.has_errors(), "over-deep nesting must emit an Error diagnostic");
+    assert!(
+        parsed.has_errors(),
+        "over-deep nesting must emit an Error diagnostic"
+    );
     assert!(
         parsed.value.iter().any(|(_, n)| matches!(
             &n.kind,
-            NodeKind::Unsupported { reason: UnsupportedReason::Unmodeled("nesting too deep"), .. }
+            NodeKind::Unsupported {
+                reason: UnsupportedReason::Unmodeled("nesting too deep"),
+                ..
+            }
         )),
         "a `nesting too deep` ⊤-node must be present (loud depth reject)"
     );
@@ -472,7 +513,11 @@ fn reject_keeps_going_and_salvages() {
     let parsed = parse("echo before\nfor i in 1; do x; done\necho after");
     let items = script_items(&parsed.value);
     let labels: Vec<&str> = items.iter().map(|&i| label(&parsed.value, i)).collect();
-    assert_eq!(labels, ["Simple", "Unsupported", "Simple"], "reject is isolated");
+    assert_eq!(
+        labels,
+        ["Simple", "Unsupported", "Simple"],
+        "reject is isolated"
+    );
     assert!(parsed.has_errors());
 
     // And the eval reject salvages its argument words (non-empty salvaged set).
@@ -486,7 +531,9 @@ fn reject_keeps_going_and_salvages() {
 }
 
 fn first_unsupported_node(ast: &Ast) -> Option<&NodeKind> {
-    ast.iter().map(|(_, n)| &n.kind).find(|k| matches!(k, NodeKind::Unsupported { .. }))
+    ast.iter()
+        .map(|(_, n)| &n.kind)
+        .find(|k| matches!(k, NodeKind::Unsupported { .. }))
 }
 
 // ===========================================================================
@@ -621,8 +668,18 @@ fn andor_is_left_associative() {
     let p = parse("a && b || c");
     match kind(&p.value, script_items(&p.value)[0]) {
         NodeKind::AndOr { op, left, right } => {
-            assert_eq!(*op, dorc_syntax::AndOrOp::Or, "outermost op is the last `||`");
-            assert!(matches!(kind(&p.value, *left), NodeKind::AndOr { op: dorc_syntax::AndOrOp::And, .. }));
+            assert_eq!(
+                *op,
+                dorc_syntax::AndOrOp::Or,
+                "outermost op is the last `||`"
+            );
+            assert!(matches!(
+                kind(&p.value, *left),
+                NodeKind::AndOr {
+                    op: dorc_syntax::AndOrOp::And,
+                    ..
+                }
+            ));
             assert_eq!(first_word_literal(&p.value, *right), Some("c"));
         }
         other => panic!("{other:?}"),
@@ -634,7 +691,10 @@ fn determinism_same_input_same_arena() {
     // Why (inv-determinism): the kernel is a pure function of its input. Two parses
     // of the same bytes must yield byte-identical arenas (no HashMap iteration, no
     // address-dependent ordering leaking into output).
-    let src = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../../fixtures/pi-webhost.book.sh"));
+    let src = include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../fixtures/pi-webhost.book.sh"
+    ));
     let a = parse(src);
     let b = parse(src);
     assert_eq!(a.value.iter().count(), b.value.iter().count(), "node count");

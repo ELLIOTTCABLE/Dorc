@@ -102,12 +102,22 @@ pub struct Diagnostic {
 impl Diagnostic {
     #[must_use]
     pub fn error(code: DiagCode, span: Option<Span>, message: impl Into<String>) -> Self {
-        Self { severity: Severity::Error, code, span, message: message.into() }
+        Self {
+            severity: Severity::Error,
+            code,
+            span,
+            message: message.into(),
+        }
     }
 
     #[must_use]
     pub fn warning(code: DiagCode, span: Option<Span>, message: impl Into<String>) -> Self {
-        Self { severity: Severity::Warning, code, span, message: message.into() }
+        Self {
+            severity: Severity::Warning,
+            code,
+            span,
+            message: message.into(),
+        }
     }
 }
 
@@ -126,7 +136,10 @@ impl<T> Carrier<T> {
     /// A clean result with no diagnostics.
     #[must_use]
     pub fn pure(value: T) -> Self {
-        Self { value, diags: Vec::new() }
+        Self {
+            value,
+            diags: Vec::new(),
+        }
     }
 
     #[must_use]
@@ -137,7 +150,10 @@ impl<T> Carrier<T> {
     /// Transform the carried value, preserving diagnostics.
     #[must_use]
     pub fn map<U>(self, f: impl FnOnce(T) -> U) -> Carrier<U> {
-        Carrier { value: f(self.value), diags: self.diags }
+        Carrier {
+            value: f(self.value),
+            diags: self.diags,
+        }
     }
 
     /// Sequence a stage, concatenating its diagnostics after `self`'s.
@@ -145,7 +161,10 @@ impl<T> Carrier<T> {
     pub fn and_then<U>(mut self, f: impl FnOnce(T) -> Carrier<U>) -> Carrier<U> {
         let mut next = f(self.value);
         self.diags.append(&mut next.diags);
-        Carrier { value: next.value, diags: self.diags }
+        Carrier {
+            value: next.value,
+            diags: self.diags,
+        }
     }
 
     pub fn push(&mut self, diag: Diagnostic) {
@@ -343,14 +362,12 @@ mod tests {
 
     #[test]
     fn carrier_threads_diagnostics_through_stages() {
-        let result = Carrier::pure(2)
-            .map(|n| n + 1)
-            .and_then(|n| {
-                Carrier::new(
-                    n * 10,
-                    vec![Diagnostic::warning(DiagCode("test-warn"), None, "heads up")],
-                )
-            });
+        let result = Carrier::pure(2).map(|n| n + 1).and_then(|n| {
+            Carrier::new(
+                n * 10,
+                vec![Diagnostic::warning(DiagCode("test-warn"), None, "heads up")],
+            )
+        });
         assert_eq!(result.value, 30);
         assert_eq!(result.diags.len(), 1);
         assert!(!result.has_errors());
@@ -359,7 +376,11 @@ mod tests {
     #[test]
     fn carrier_reports_errors_without_panicking() {
         let mut c = Carrier::pure(());
-        c.push(Diagnostic::error(DiagCode("boom"), None, "bad input, kept going"));
+        c.push(Diagnostic::error(
+            DiagCode("boom"),
+            None,
+            "bad input, kept going",
+        ));
         assert!(c.has_errors());
     }
 }

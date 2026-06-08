@@ -226,7 +226,10 @@ impl Parser {
             self.skip_newlines_after_operator();
             let right = self.parse_pipeline();
             let span = self.span_of(left).to(self.span_of(right));
-            left = self.builder.alloc(Node { span, kind: NodeKind::AndOr { op, left, right } });
+            left = self.builder.alloc(Node {
+                span,
+                kind: NodeKind::AndOr { op, left, right },
+            });
         }
         left
     }
@@ -259,7 +262,10 @@ impl Parser {
         }
         let last = *stages.last().unwrap_or(&first);
         let span = start_span.to(self.span_of(last));
-        self.builder.alloc(Node { span, kind: NodeKind::Pipeline { negated, stages } })
+        self.builder.alloc(Node {
+            span,
+            kind: NodeKind::Pipeline { negated, stages },
+        })
     }
 
     /// A leading `!` is the pipeline-negation reserved word only when it stands as
@@ -351,7 +357,10 @@ impl Parser {
             let econd = self.parse_condition_until(&[Reserved::Then]);
             self.expect_reserved(Reserved::Then, "expected `then` after `elif` condition");
             let ebody = self.parse_body_until(&[Reserved::Elif, Reserved::Else, Reserved::Fi]);
-            elifs.push(ElseIf { cond: econd, body: ebody });
+            elifs.push(ElseIf {
+                cond: econd,
+                body: ebody,
+            });
         }
 
         let else_body = if self.peek_reserved() == Some(Reserved::Else) {
@@ -365,7 +374,12 @@ impl Parser {
         let span = kw.span.to(end);
         self.builder.alloc(Node {
             span,
-            kind: NodeKind::If { cond, then_body, elifs, else_body },
+            kind: NodeKind::If {
+                cond,
+                then_body,
+                elifs,
+                else_body,
+            },
         })
     }
 
@@ -390,7 +404,10 @@ impl Parser {
             (Some(&f), Some(&l)) => self.span_of(f).to(self.span_of(l)),
             _ => Span::new(lo_hint.lo, lo_hint.lo),
         };
-        self.builder.alloc(Node { span, kind: NodeKind::List { items } })
+        self.builder.alloc(Node {
+            span,
+            kind: NodeKind::List { items },
+        })
     }
 
     // ---- case -----------------------------------------------------------------
@@ -415,7 +432,10 @@ impl Parser {
 
         let end = self.expect_reserved(Reserved::Esac, "expected `esac` to close `case`");
         let span = kw.span.to(end);
-        self.builder.alloc(Node { span, kind: NodeKind::Case { word, arms } })
+        self.builder.alloc(Node {
+            span,
+            kind: NodeKind::Case { word, arms },
+        })
     }
 
     /// One case arm: optional `(`, `pat (| pat)*`, `)`, body, `;;` (or `esac` for
@@ -460,7 +480,11 @@ impl Parser {
         // final arm may omit it and end directly at `esac`.)
         let body = self.parse_case_arm_body();
         let span = arm_lo.to(self.span_of(body));
-        Some(CaseArm { patterns, body, span })
+        Some(CaseArm {
+            patterns,
+            body,
+            span,
+        })
     }
 
     /// Parse a case-arm body: a command list ending at `;;` or `esac`. Consumes the
@@ -502,7 +526,10 @@ impl Parser {
         };
         let redirs = self.parse_redirs();
         let span = open.span.to(close_hi);
-        self.builder.alloc(Node { span, kind: NodeKind::Subshell { body, redirs } })
+        self.builder.alloc(Node {
+            span,
+            kind: NodeKind::Subshell { body, redirs },
+        })
     }
 
     /// `{ list; }` — brace group (current shell). Carries trailing redirections.
@@ -513,12 +540,19 @@ impl Parser {
         let close_hi = if matches!(self.peek(), TokKind::RBrace) {
             self.bump().span
         } else {
-            self.push_error(MALFORMED, open.span, "unterminated brace group `{` (no `}`)");
+            self.push_error(
+                MALFORMED,
+                open.span,
+                "unterminated brace group `{` (no `}`)",
+            );
             self.peek_span()
         };
         let redirs = self.parse_redirs();
         let span = open.span.to(close_hi);
-        self.builder.alloc(Node { span, kind: NodeKind::Group { body, redirs } })
+        self.builder.alloc(Node {
+            span,
+            kind: NodeKind::Group { body, redirs },
+        })
     }
 
     // ---- loops (⊤-reject) -----------------------------------------------------
@@ -599,7 +633,11 @@ impl Parser {
                         let span = name_span; // name_span covers the lhs; value spans separately
                         let id = self.builder.alloc(Node {
                             span: self.peek_span(),
-                            kind: NodeKind::Assign { name, name_span: span, value },
+                            kind: NodeKind::Assign {
+                                name,
+                                name_span: span,
+                                value,
+                            },
                         });
                         assigns.push(id);
                         self.bump();
@@ -649,7 +687,10 @@ impl Parser {
                     UnsupportedReason::Unmodeled("misplaced `;;`"),
                     "`;;` outside a case arm",
                 ),
-                _ => (UnsupportedReason::Unmodeled("unexpected token"), "expected a command"),
+                _ => (
+                    UnsupportedReason::Unmodeled("unexpected token"),
+                    "expected a command",
+                ),
             };
             let tok = self.bump();
             return self.unsupported(reason, tok.span, Vec::new(), msg);
@@ -661,7 +702,14 @@ impl Parser {
         }
 
         let span = self.span_covering(start_span, &assigns, &words, &redirs);
-        self.builder.alloc(Node { span, kind: NodeKind::Simple { assigns, words, redirs } })
+        self.builder.alloc(Node {
+            span,
+            kind: NodeKind::Simple {
+                assigns,
+                words,
+                redirs,
+            },
+        })
     }
 
     /// Look ahead for `name ( )` to decide funcdef vs simple. Does not consume.
@@ -693,7 +741,11 @@ impl Parser {
         let span = name_span.to(self.span_of(body));
         self.builder.alloc(Node {
             span,
-            kind: NodeKind::FuncDef { name, name_span, body },
+            kind: NodeKind::FuncDef {
+                name,
+                name_span,
+                body,
+            },
         })
     }
 
@@ -748,7 +800,9 @@ impl Parser {
             "." | "source" => {
                 // `. file` is fine only when the target is a literal path; a dynamic
                 // target (`. "$x"`) is a ⊤-trigger. With no second word it is malformed.
-                let target_literal = words.get(1).is_some_and(|&w| self.word_single_literal(w).is_some());
+                let target_literal = words
+                    .get(1)
+                    .is_some_and(|&w| self.word_single_literal(w).is_some());
                 if words.len() >= 2 && !target_literal {
                     Some(self.unsupported(
                         UnsupportedReason::DynamicExecution,
@@ -863,17 +917,28 @@ impl Parser {
                 let op = RedirOp::HereDoc;
                 let node = Node {
                     span: tok.span,
-                    kind: NodeKind::Redir { op, fd, target: RedirTarget::HereDoc { body, quoted } },
+                    kind: NodeKind::Redir {
+                        op,
+                        fd,
+                        target: RedirTarget::HereDoc { body, quoted },
+                    },
                 };
                 Some(self.builder.alloc(node))
             }
-            TokKind::Redir { op: RedirToken::Dup, fd } => {
+            TokKind::Redir {
+                op: RedirToken::Dup,
+                fd,
+            } => {
                 // `>&2`, `>&-`, `2>&1`: target is a word that is an fd number or `-`.
                 let (target, hi) = self.parse_dup_target();
                 let span = tok.span.to(hi);
                 Some(self.builder.alloc(Node {
                     span,
-                    kind: NodeKind::Redir { op: RedirOp::Dup, fd, target },
+                    kind: NodeKind::Redir {
+                        op: RedirOp::Dup,
+                        fd,
+                        target,
+                    },
                 }))
             }
             TokKind::Redir { op, fd } => {
@@ -888,7 +953,11 @@ impl Parser {
                 let span = tok.span.to(self.span_of(path));
                 Some(self.builder.alloc(Node {
                     span,
-                    kind: NodeKind::Redir { op: ast_op, fd, target: RedirTarget::Word(path) },
+                    kind: NodeKind::Redir {
+                        op: ast_op,
+                        fd,
+                        target: RedirTarget::Word(path),
+                    },
                 }))
             }
             _ => None,
@@ -938,7 +1007,10 @@ impl Parser {
                     _ => unreachable!(),
                 };
                 let lowered = self.lower_parts(parts);
-                self.builder.alloc(Node { span, kind: NodeKind::Word { parts: lowered } })
+                self.builder.alloc(Node {
+                    span,
+                    kind: NodeKind::Word { parts: lowered },
+                })
             }
             _ => {
                 let span = self.peek_span();
@@ -963,7 +1035,10 @@ impl Parser {
         // zero-width span at current token. Provenance is coarse for assignment RHS;
         // acceptable for the spike (the lhs name_span carries the locator).
         let span = self.peek_span();
-        Some(self.builder.alloc(Node { span, kind: NodeKind::Word { parts: lowered } }))
+        Some(self.builder.alloc(Node {
+            span,
+            kind: NodeKind::Word { parts: lowered },
+        }))
     }
 
     /// Lower lexer word-parts to AST word-parts. The only non-trivial case is

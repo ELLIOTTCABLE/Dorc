@@ -103,7 +103,10 @@ pub fn solve<G: Graph, L: Lattice>(
         queued[v] = false;
         let out = transfer(v, &state[v]);
         for &w in flows_to(v) {
-            debug_assert!(w < n, "Graph edge endpoint {w} out of range (node_count {n})");
+            debug_assert!(
+                w < n,
+                "Graph edge endpoint {w} out of range (node_count {n})"
+            );
             if w >= n {
                 continue; // release-mode defensive skip — never panic (inv-no-throw)
             }
@@ -117,7 +120,11 @@ pub fn solve<G: Graph, L: Lattice>(
             }
         }
     }
-    Solution { states: state, converged, rounds }
+    Solution {
+        states: state,
+        converged,
+        rounds,
+    }
 }
 
 #[cfg(test)]
@@ -172,7 +179,11 @@ mod tests {
         let r = solve(&g, Direction::Forward, gen);
         assert!(r.converged);
         assert_eq!(r.states[0], set(&[]), "entry has no predecessors ⇒ ⊥");
-        assert_eq!(r.states[3], set(&[0, 1, 2]), "everything generated upstream reaches node 3");
+        assert_eq!(
+            r.states[3],
+            set(&[0, 1, 2]),
+            "everything generated upstream reaches node 3"
+        );
     }
 
     #[test]
@@ -180,7 +191,11 @@ mod tests {
         let g = TestGraph::from_edges(4, &[(0, 1), (0, 2), (1, 3), (2, 3)]);
         let r = solve(&g, Direction::Forward, gen);
         assert!(r.converged);
-        assert_eq!(r.states[3], set(&[0, 1, 2]), "both branches join at the merge");
+        assert_eq!(
+            r.states[3],
+            set(&[0, 1, 2]),
+            "both branches join at the merge"
+        );
     }
 
     #[test]
@@ -188,7 +203,11 @@ mod tests {
         let g = TestGraph::from_edges(3, &[(0, 1), (1, 2), (2, 1)]);
         let r = solve(&g, Direction::Forward, gen);
         assert!(r.converged);
-        assert_eq!(r.states[1], set(&[0, 1, 2]), "loop body reaches its own fixed point");
+        assert_eq!(
+            r.states[1],
+            set(&[0, 1, 2]),
+            "loop body reaches its own fixed point"
+        );
         assert_eq!(r.states[2], set(&[0, 1, 2]));
     }
 
@@ -197,9 +216,20 @@ mod tests {
         let g = TestGraph::from_edges(4, &[(0, 1), (1, 2), (2, 3)]);
         let r = solve(&g, Direction::Backward, gen);
         assert!(r.converged);
-        assert_eq!(r.states[3], set(&[]), "exit has no successors ⇒ ⊥ (backward boundary)");
-        assert!(r.states[0].contains(&3), "node 3's fact flows backward to node 0");
-        assert_eq!(r.states[0], set(&[1, 2, 3]), "all downstream gens are live at the entry");
+        assert_eq!(
+            r.states[3],
+            set(&[]),
+            "exit has no successors ⇒ ⊥ (backward boundary)"
+        );
+        assert!(
+            r.states[0].contains(&3),
+            "node 3's fact flows backward to node 0"
+        );
+        assert_eq!(
+            r.states[0],
+            set(&[1, 2, 3]),
+            "all downstream gens are live at the entry"
+        );
     }
 
     #[test]
@@ -221,7 +251,10 @@ mod tests {
             t.0.insert(u64::try_from(s.0.len()).unwrap_or(u64::MAX)); // always a new element
             t
         });
-        assert!(!r.converged, "unbounded climb must report non-convergence, not loop");
+        assert!(
+            !r.converged,
+            "unbounded climb must report non-convergence, not loop"
+        );
         assert!(r.rounds > 0);
     }
 
@@ -247,7 +280,11 @@ mod tests {
             _ => inp.clone(),
         });
         assert!(agree.converged);
-        assert_eq!(agree.states[3], Must(Flat::Elem(5)), "both branches agree ⇒ must-Elem(5)");
+        assert_eq!(
+            agree.states[3],
+            Must(Flat::Elem(5)),
+            "both branches agree ⇒ must-Elem(5)"
+        );
 
         let disagree = solve(&g, Direction::Forward, |v, inp: &Must<Flat<u8>>| match v {
             1 => Must(Flat::Elem(5)),
@@ -255,6 +292,10 @@ mod tests {
             _ => inp.clone(),
         });
         assert!(disagree.converged);
-        assert_eq!(disagree.states[3], Must(Flat::Bottom), "branches disagree ⇒ ⊓ ⇒ ⊥, no must-fact");
+        assert_eq!(
+            disagree.states[3],
+            Must(Flat::Bottom),
+            "branches disagree ⇒ ⊓ ⇒ ⊥, no must-fact"
+        );
     }
 }

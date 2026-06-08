@@ -93,7 +93,8 @@ fn run() -> Result<(), String> {
     let classes = dorc_analysis::effect::classify(&cfg.value, &parsed.value, &idx, &mut interner);
 
     // (1) compile + emit the read-only probe.
-    let probe = dorc_plan::compile_probe(&classes, |kind| idx.probe_for(kind).map(|p| p.body.clone()));
+    let probe =
+        dorc_plan::compile_probe(&classes, |kind| idx.probe_for(kind).map(|p| p.body.clone()));
     print!("{}", probe.render_sh(&interner));
     std::io::stdout().flush().ok();
 

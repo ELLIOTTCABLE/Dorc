@@ -427,7 +427,10 @@ fn command_substitution_body_is_expansion_internal_subshell_body_is_not() {
             }
         }
     }
-    assert_eq!(subst_internal, 1, "the `$(uname)` body command is expansion-internal");
+    assert_eq!(
+        subst_internal, 1,
+        "the `$(uname)` body command is expansion-internal"
+    );
     assert_eq!(leaves, 1, "the `echo` command is a leaf");
 
     // A subshell body command is a real leaf (subshell bodies are NOT marked).
@@ -438,7 +441,10 @@ fn command_substitution_body_is_expansion_internal_subshell_body_is_not() {
             sub_leaves += 1;
         }
     }
-    assert_eq!(sub_leaves, 1, "a subshell `( uname )` body command IS a leaf");
+    assert_eq!(
+        sub_leaves, 1,
+        "a subshell `( uname )` body command IS a leaf"
+    );
 }
 
 #[test]
@@ -452,7 +458,10 @@ fn case_with_subst_scrutinee_does_not_spuriously_flag_errexit_top() {
     let parsed = parse("set -e\ncase $(hostname) in *) : ;; esac\necho after");
     let carried = build(&parsed.value);
     assert!(
-        !carried.diags.iter().any(|d| d.code.0 == "cfg-errexit-unknown"),
+        !carried
+            .diags
+            .iter()
+            .any(|d| d.code.0 == "cfg-errexit-unknown"),
         "no spurious errexit ⊤ on `case $(...)` + a following command: {:?}",
         carried.diags
     );
@@ -472,7 +481,10 @@ fn genuine_set_plus_e_split_still_flags_errexit_top() {
     let parsed = parse("set -e\nif true; then set +e; fi\nafter");
     let carried = build(&parsed.value);
     assert!(
-        carried.diags.iter().any(|d| d.code.0 == "cfg-errexit-unknown"),
+        carried
+            .diags
+            .iter()
+            .any(|d| d.code.0 == "cfg-errexit-unknown"),
         "a genuine set+e / set-e split must still flag ⊤: {:?}",
         carried.diags
     );
@@ -915,7 +927,9 @@ fn consumed_of(src: &str, lit: &str) -> Powerset<Observable> {
 #[test]
 fn consumed_lone_command_is_quiet() {
     // No pipe, no redirect, no enclosing capture ⇒ provably quiet (empty set).
-    assert!(consumed_of("apt-get install -y nginx\n", "apt-get").0.is_empty());
+    assert!(consumed_of("apt-get install -y nginx\n", "apt-get")
+        .0
+        .is_empty());
 }
 
 #[test]
@@ -937,14 +951,20 @@ fn consumed_own_stderr_redirect() {
 #[test]
 fn consumed_devnull_is_quiet() {
     // The `/dev/null` discard sink is exempt (the precision scalpel) ⇒ still quiet.
-    assert!(consumed_of("apt-get install -y nginx > /dev/null\n", "apt-get").0.is_empty());
+    assert!(
+        consumed_of("apt-get install -y nginx > /dev/null\n", "apt-get")
+            .0
+            .is_empty()
+    );
 }
 
 #[test]
 fn consumed_nonlast_pipeline_stage() {
     // A non-last pipeline stage's stdout is piped onward ⇒ Stdout consumed.
-    assert!(consumed_of("apt-get install -y nginx | tee log\n", "apt-get")
-        .contains(&Observable::Stdout));
+    assert!(
+        consumed_of("apt-get install -y nginx | tee log\n", "apt-get")
+            .contains(&Observable::Stdout)
+    );
 }
 
 #[test]
@@ -954,8 +974,14 @@ fn consumed_enclosing_group_redirect_marks_inner_leaf() {
     // computed in the single lowering traversal (the old plan-side dual-traversal
     // missed exactly this enclosing case; here it cannot, the fact is born with the
     // node via the arena-range mark).
-    let c = consumed_of("{ apt-get install -y nginx; } > /tmp/out\ncat /tmp/out\n", "apt-get");
-    assert!(c.contains(&Observable::Stdout), "enclosing-group redirect must mark the inner leaf");
+    let c = consumed_of(
+        "{ apt-get install -y nginx; } > /tmp/out\ncat /tmp/out\n",
+        "apt-get",
+    );
+    assert!(
+        c.contains(&Observable::Stdout),
+        "enclosing-group redirect must mark the inner leaf"
+    );
 }
 
 #[test]
@@ -963,12 +989,19 @@ fn consumed_enclosing_subshell_pipe_marks_inner_leaf() {
     // 16G kill-shot: the `( … )` is a non-last pipeline stage; its inner install is
     // the producer. The enclosing-pipe context must reach the inner leaf.
     let c = consumed_of("( apt-get install -y nginx ) | grep -q nginx\n", "apt-get");
-    assert!(c.contains(&Observable::Stdout), "enclosing-subshell pipe must mark the inner leaf");
+    assert!(
+        c.contains(&Observable::Stdout),
+        "enclosing-subshell pipe must mark the inner leaf"
+    );
 }
 
 #[test]
 fn consumed_enclosing_subshell_devnull_stays_quiet() {
     // The scalpel survives the enclosing case too: `( … ) > /dev/null` discards ⇒
     // the inner leaf stays quiet (the range-mark must keep /dev/null exempt).
-    assert!(consumed_of("( apt-get install -y nginx ) > /dev/null\n", "apt-get").0.is_empty());
+    assert!(
+        consumed_of("( apt-get install -y nginx ) > /dev/null\n", "apt-get")
+            .0
+            .is_empty()
+    );
 }

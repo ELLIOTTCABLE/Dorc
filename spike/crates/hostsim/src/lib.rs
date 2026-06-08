@@ -179,8 +179,16 @@ mod tests {
         let nginx = fk(&mut i, "package", "nginx");
         let curl = fk(&mut i, "package", "curl");
         let host = Host::new([nginx]);
-        assert_eq!(host.verdict(nginx), Verdict::Converged, "held fact ⇒ converged");
-        assert_eq!(host.verdict(curl), Verdict::Diverged, "absent fact ⇒ diverged");
+        assert_eq!(
+            host.verdict(nginx),
+            Verdict::Converged,
+            "held fact ⇒ converged"
+        );
+        assert_eq!(
+            host.verdict(curl),
+            Verdict::Diverged,
+            "absent fact ⇒ diverged"
+        );
     }
 
     #[test]
@@ -205,8 +213,16 @@ mod tests {
 
         let refused = host.run(Phase::Probe, HostOp::Establish(nginx));
         assert!(refused.is_none());
-        assert_eq!(host.verdict(nginx), Verdict::Diverged, "probe mutation must NOT take effect");
-        assert_eq!(host.violations().len(), 1, "the withhold breach is recorded");
+        assert_eq!(
+            host.verdict(nginx),
+            Verdict::Diverged,
+            "probe mutation must NOT take effect"
+        );
+        assert_eq!(
+            host.violations().len(),
+            1,
+            "the withhold breach is recorded"
+        );
         assert_eq!(host.violations()[0].op, HostOp::Establish(nginx));
     }
 
@@ -216,10 +232,18 @@ mod tests {
         let nginx = fk(&mut i, "package", "nginx");
         let mut host = Host::new([]);
         host.run(Phase::Apply, HostOp::Establish(nginx));
-        assert_eq!(host.verdict(nginx), Verdict::Converged, "apply establish takes effect");
+        assert_eq!(
+            host.verdict(nginx),
+            Verdict::Converged,
+            "apply establish takes effect"
+        );
         assert!(host.violations().is_empty(), "apply mutation is legitimate");
         host.run(Phase::Apply, HostOp::Kill(nginx));
-        assert_eq!(host.verdict(nginx), Verdict::Diverged, "apply kill takes effect");
+        assert_eq!(
+            host.verdict(nginx),
+            Verdict::Diverged,
+            "apply kill takes effect"
+        );
     }
 
     #[test]
@@ -227,8 +251,14 @@ mod tests {
         let mut i = Interner::default();
         let nginx = fk(&mut i, "package", "nginx");
         let mut host = Host::new([nginx]);
-        assert_eq!(host.run(Phase::Probe, HostOp::Query(nginx)), Some(Verdict::Converged));
-        assert_eq!(host.run(Phase::Apply, HostOp::Query(nginx)), Some(Verdict::Converged));
+        assert_eq!(
+            host.run(Phase::Probe, HostOp::Query(nginx)),
+            Some(Verdict::Converged)
+        );
+        assert_eq!(
+            host.run(Phase::Apply, HostOp::Query(nginx)),
+            Some(Verdict::Converged)
+        );
         assert!(host.violations().is_empty(), "a query never violates");
     }
 
@@ -264,7 +294,8 @@ mod tests {
             let parsed = dorc_syntax::parse(src);
             let cfg = dorc_analysis::cfg::build(&parsed.value).value;
             let classes = dorc_analysis::effect::classify(&cfg, &parsed.value, &idx, &mut i);
-            let plan = dorc_plan::build_plan(src, &parsed.value, &cfg, &classes, |f| host.verdict(f));
+            let plan =
+                dorc_plan::build_plan(src, &parsed.value, &cfg, &classes, |f| host.verdict(f));
 
             let is_skipped = |needle: &str| {
                 plan.steps
@@ -312,7 +343,10 @@ mod tests {
             let install = i.intern("install");
             let mut idx = KindIndex::default();
             idx.add_effect(apt, install, package, installed, Polarity::Establish);
-            idx.add_probe(FactProbe { kind: package, body: "dpkg-query -W \"$1\"".into() });
+            idx.add_probe(FactProbe {
+                kind: package,
+                body: "dpkg-query -W \"$1\"".into(),
+            });
 
             let cell = |i: &mut Interner, e: &str| FactKey {
                 kind: package,
@@ -407,7 +441,10 @@ mod tests {
         let classes = dorc_analysis::effect::classify(&cfg, &parsed.value, &idx, &mut i);
 
         let probe = compile_probe(&classes, |k| idx.probe_for(k).map(|p| p.body.clone()));
-        assert!(probe.checks.is_empty(), "no declared probe ⇒ the probe is empty");
+        assert!(
+            probe.checks.is_empty(),
+            "no declared probe ⇒ the probe is empty"
+        );
 
         let verdict_of = |f: FactKey| {
             if probe.checks_fact(f) {

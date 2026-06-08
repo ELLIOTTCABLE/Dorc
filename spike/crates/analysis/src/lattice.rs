@@ -410,7 +410,11 @@ mod tests {
         b.insert("svc", Powerset::singleton(7));
 
         let j = a.join(&b);
-        assert_eq!(j.get(&"pkg"), Powerset([1, 2].into_iter().collect()), "pointwise join");
+        assert_eq!(
+            j.get(&"pkg"),
+            Powerset([1, 2].into_iter().collect()),
+            "pointwise join"
+        );
         assert_eq!(j.get(&"svc"), Powerset::singleton(7), "key only in b");
         assert_eq!(j.get(&"absent"), Powerset::bottom(), "absent ≡ ⊥");
 
@@ -418,7 +422,11 @@ mod tests {
         let mut c = M::default();
         c.insert("x", Powerset::singleton(1));
         c.insert("x", Powerset::bottom());
-        assert_eq!(c, M::default(), "⊥-valued key is dropped → equals empty map");
+        assert_eq!(
+            c,
+            M::default(),
+            "⊥-valued key is dropped → equals empty map"
+        );
 
         // meet: pointwise ∩; only keys present in BOTH and non-⊥ survive.
         let mut d = M::default();
@@ -427,8 +435,16 @@ mod tests {
         e.insert("pkg", Powerset([2, 3].into_iter().collect()));
         e.insert("svc", Powerset::singleton(7));
         let m = d.meet(&e);
-        assert_eq!(m.get(&"pkg"), Powerset::singleton(2), "pkg intersection is the singleton 2");
-        assert_eq!(m.get(&"svc"), Powerset::bottom(), "svc only in e, dropped by meet");
+        assert_eq!(
+            m.get(&"pkg"),
+            Powerset::singleton(2),
+            "pkg intersection is the singleton 2"
+        );
+        assert_eq!(
+            m.get(&"svc"),
+            Powerset::bottom(),
+            "svc only in e, dropped by meet"
+        );
 
         assert_laws::<M>(&[M::default(), a, b, j]);
     }
@@ -439,7 +455,11 @@ mod tests {
         // May<L> is the identity wrapper — same ⊥/⊔/⊓ as L.
         assert_laws(&[May(Bottom), May(Elem(1u8)), May(Elem(2u8)), May(Top)]);
         assert_bounded(&[May(Bottom), May(Elem(1u8)), May(Elem(2u8)), May(Top)]);
-        assert_eq!(May(Elem(1u8)).join(&May(Elem(2))), May(Top), "May ⊔ = L's ⊔");
+        assert_eq!(
+            May(Elem(1u8)).join(&May(Elem(2))),
+            May(Top),
+            "May ⊔ = L's ⊔"
+        );
 
         // Must<L> is the order-dual — still a lawful (bounded) lattice, with ⊥/⊔
         // and ⊓ swapped. assert_laws passing IS the proof the dual is correct.

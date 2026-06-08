@@ -98,7 +98,10 @@ impl<P: Bias> PhasedVerdict<P> {
     /// Tag a raw host verdict with this phase.
     #[must_use]
     pub fn new(raw: Verdict) -> Self {
-        Self { raw, _phase: PhantomData }
+        Self {
+            raw,
+            _phase: PhantomData,
+        }
     }
 
     /// Fold to a definite action; `Unknown` uses this phase's [`Bias`]. The only
@@ -312,7 +315,11 @@ impl ProbePlan {
             "#!/bin/sh\n# dorc probe (read-only): reports per-fact convergence, mutates nothing.\n\n",
         );
         for check in &self.checks {
-            out.push_str(&format!("# probe: {}\n{}\n", fact_label(interner, check.fact), check.sh));
+            out.push_str(&format!(
+                "# probe: {}\n{}\n",
+                fact_label(interner, check.fact),
+                check.sh
+            ));
         }
         out
     }
@@ -397,7 +404,12 @@ pub fn build_plan(
                 }
                 _ => Disposition::Run,
             };
-            Step { leaf: LeafId(0), ast: ast_id, sh, disposition }
+            Step {
+                leaf: LeafId(0),
+                ast: ast_id,
+                sh,
+                disposition,
+            }
         })
         .collect();
 
@@ -424,7 +436,8 @@ fn command_text(src: &str, ast: &Ast, id: AstId) -> String {
 /// (16G hole-5): a leaf whose own statement is top-contaminated — e.g. `cmd &`,
 /// lowered as the leaf followed by a `Top` — is not safely replaceable.
 fn has_top_successor(cfg: &Cfg, node: CfgNodeId) -> bool {
-    cfg.succ_ids(node).any(|s| cfg.node(s).kind == CfgNodeKind::Top)
+    cfg.succ_ids(node)
+        .any(|s| cfg.node(s).kind == CfgNodeKind::Top)
 }
 
 impl Plan {
@@ -483,7 +496,8 @@ impl Plan {
     #[must_use]
     pub fn render_apply(&self, src: &str, ast: &Ast) -> String {
         let line_of = |byte: u32| -> usize {
-            src.get(..byte as usize).map_or(0, |s| s.bytes().filter(|&b| b == b'\n').count())
+            src.get(..byte as usize)
+                .map_or(0, |s| s.bytes().filter(|&b| b == b'\n').count())
         };
         let (mut elided, mut run) = (BTreeSet::new(), BTreeSet::new());
         for step in &self.steps {
@@ -501,7 +515,10 @@ impl Plan {
         );
         for (i, line) in src.lines().enumerate() {
             if elided.contains(&i) && !run.contains(&i) {
-                let indent: String = line.chars().take_while(|c| *c == ' ' || *c == '\t').collect();
+                let indent: String = line
+                    .chars()
+                    .take_while(|c| *c == ' ' || *c == '\t')
+                    .collect();
                 out.push_str("# ");
                 out.push_str(line.trim_start());
                 out.push_str("   # dorc: elided (already converged)\n");
@@ -581,8 +598,16 @@ mod tests {
         let open = SelectorId(i.intern("open"));
         let nginx = EntityRef::Operand(OpaqueToken(i.intern("nginx")));
         let p80 = EntityRef::Operand(OpaqueToken(i.intern("80")));
-        let pkg_nginx = FactKey { kind: package, entity: nginx, selector: installed };
-        let port_80 = FactKey { kind: port, entity: p80, selector: open };
+        let pkg_nginx = FactKey {
+            kind: package,
+            entity: nginx,
+            selector: installed,
+        };
+        let port_80 = FactKey {
+            kind: port,
+            entity: p80,
+            selector: open,
+        };
         let classes = vec![
             (CfgNodeId(0), SkipClass::EstablishAmbient(pkg_nginx)),
             (CfgNodeId(1), SkipClass::EstablishAmbient(port_80)),
@@ -597,7 +622,11 @@ mod tests {
             !probe.checks_fact(port_80),
             "port has no probe ⇒ excluded (can't elide)"
         );
-        assert_eq!(probe.checks.len(), 1, "only the probeable EstablishAmbient fact is in the probe");
+        assert_eq!(
+            probe.checks.len(),
+            1,
+            "only the probeable EstablishAmbient fact is in the probe"
+        );
     }
 
     #[test]
@@ -693,11 +722,23 @@ mod tests {
     #[test]
     fn unknown_folds_to_run_in_both_phases() {
         // The kFAIL fold: Unknown is never Replaceable, in either phase.
-        assert_eq!(PhasedVerdict::<Probe>::new(Verdict::Unknown).resolve(), Resolved::Run);
-        assert_eq!(PhasedVerdict::<Apply>::new(Verdict::Unknown).resolve(), Resolved::Run);
+        assert_eq!(
+            PhasedVerdict::<Probe>::new(Verdict::Unknown).resolve(),
+            Resolved::Run
+        );
+        assert_eq!(
+            PhasedVerdict::<Apply>::new(Verdict::Unknown).resolve(),
+            Resolved::Run
+        );
         // Sanity on the definite verdicts.
-        assert_eq!(PhasedVerdict::<Probe>::new(Verdict::Converged).resolve(), Resolved::Replaceable);
-        assert_eq!(PhasedVerdict::<Apply>::new(Verdict::Diverged).resolve(), Resolved::Run);
+        assert_eq!(
+            PhasedVerdict::<Probe>::new(Verdict::Converged).resolve(),
+            Resolved::Replaceable
+        );
+        assert_eq!(
+            PhasedVerdict::<Apply>::new(Verdict::Diverged).resolve(),
+            Resolved::Run
+        );
     }
 
     // --- end-to-end: the whole pipeline (parse → cfg → classify → plan) ---
@@ -755,28 +796,47 @@ mod tests {
     fn converged_ambient_install_is_replaced_rest_runs() {
         // A lone install is ambient; a Converged probe licenses the skip. The
         // following un-oracled command runs (Opaque ⇒ MustRun).
-        let (plan, interner) =
-            plan_for("apt-get install -y nginx\nsystemctl reload nginx\n", Verdict::Converged);
+        let (plan, interner) = plan_for(
+            "apt-get install -y nginx\nsystemctl reload nginx\n",
+            Verdict::Converged,
+        );
         assert!(
-            matches!(find(&plan, "apt-get install").disposition, Disposition::Replace(_)),
+            matches!(
+                find(&plan, "apt-get install").disposition,
+                Disposition::Replace(_)
+            ),
             "converged ambient install ⇒ skip"
         );
         assert!(
-            matches!(find(&plan, "systemctl reload").disposition, Disposition::Run),
+            matches!(
+                find(&plan, "systemctl reload").disposition,
+                Disposition::Run
+            ),
             "opaque reload ⇒ run"
         );
 
         let sh = plan.render_sh(&interner);
-        assert!(sh.contains("# replace["), "rendered plan comments the replaced leaf:\n{sh}");
-        assert!(sh.contains("package:nginx"), "replace provenance names the fact:\n{sh}");
-        assert!(sh.contains("systemctl reload nginx"), "run leaf rendered verbatim:\n{sh}");
+        assert!(
+            sh.contains("# replace["),
+            "rendered plan comments the replaced leaf:\n{sh}"
+        );
+        assert!(
+            sh.contains("package:nginx"),
+            "replace provenance names the fact:\n{sh}"
+        );
+        assert!(
+            sh.contains("systemctl reload nginx"),
+            "run leaf rendered verbatim:\n{sh}"
+        );
     }
 
     #[test]
     fn diverged_install_runs() {
         // The host says nginx is absent ⇒ the install must run (no license).
-        let (plan, _) =
-            plan_for("apt-get install -y nginx\nsystemctl reload nginx\n", Verdict::Diverged);
+        let (plan, _) = plan_for(
+            "apt-get install -y nginx\nsystemctl reload nginx\n",
+            Verdict::Diverged,
+        );
         assert!(
             matches!(find(&plan, "apt-get install").disposition, Disposition::Run),
             "diverged ⇒ run"
@@ -823,15 +883,26 @@ mod tests {
         // verdict is irrelevant here — this is the classify-level ambient gate.
         let ambient = |src: &str| {
             let (plan, _) = plan_for(src, Verdict::Converged);
-            matches!(find(&plan, "apt-get install").disposition, Disposition::Replace(_))
+            matches!(
+                find(&plan, "apt-get install").disposition,
+                Disposition::Replace(_)
+            )
         };
         // Neither neighbour ⇒ ambient ⇒ elides (the clean keystone case).
-        assert!(ambient("apt-get update\napt-get install -y nginx\n"), "no poison ⇒ elides");
+        assert!(
+            ambient("apt-get update\napt-get install -y nginx\n"),
+            "no poison ⇒ elides"
+        );
         // `set -e` is a pure builtin (fs-4 fix) — it must NOT count as a poison source.
-        assert!(ambient("set -e\napt-get update\napt-get install -y nginx\n"), "set -e is pure ⇒ still elides");
+        assert!(
+            ambient("set -e\napt-get update\napt-get install -y nginx\n"),
+            "set -e is pure ⇒ still elides"
+        );
         // Each real upstream Opaque neighbour, alone, poisons (no elision).
         assert!(
-            !ambient("case \"$(hostname)\" in *) : ;; esac\napt-get update\napt-get install -y nginx\n"),
+            !ambient(
+                "case \"$(hostname)\" in *) : ;; esac\napt-get update\napt-get install -y nginx\n"
+            ),
             "the $(hostname) case-scrutinee substitution poisons the install"
         );
         assert!(
@@ -849,9 +920,15 @@ mod tests {
         // `update → install` core of the realistic book with the un-oracled scrutinee/
         // guard stripped (the residual poison the full-fixture test documents). Pre-key
         // this was impossible: `update` Opaque ⇒ Top ⇒ install forced Written ⇒ Run.
-        let (plan, _) = plan_for("apt-get update\napt-get install -y nginx\n", Verdict::Converged);
+        let (plan, _) = plan_for(
+            "apt-get update\napt-get install -y nginx\n",
+            Verdict::Converged,
+        );
         assert!(
-            matches!(find(&plan, "apt-get install").disposition, Disposition::Replace(_)),
+            matches!(
+                find(&plan, "apt-get install").disposition,
+                Disposition::Replace(_)
+            ),
             "modeled `update` (distinct cell) no longer poisons ⇒ converged install elides"
         );
     }
@@ -862,14 +939,20 @@ mod tests {
         // during word expansion, not as a leaf); the two top-level commands are the
         // only leaves. Before the fix this rendered a third, garbage step from the
         // substring-relative span of the subst body.
-        let (plan, _) = plan_for("echo $(uname)\napt-get install -y nginx\n", Verdict::Diverged);
+        let (plan, _) = plan_for(
+            "echo $(uname)\napt-get install -y nginx\n",
+            Verdict::Diverged,
+        );
         assert_eq!(
             plan.steps.len(),
             2,
             "only the two top-level commands are leaves: {:?}",
             plan.steps.iter().map(|s| s.sh.clone()).collect::<Vec<_>>()
         );
-        assert!(plan.steps.iter().any(|s| s.sh.starts_with("echo")), "echo is a leaf");
+        assert!(
+            plan.steps.iter().any(|s| s.sh.starts_with("echo")),
+            "echo is a leaf"
+        );
         assert!(
             plan.steps.iter().any(|s| s.sh.contains("apt-get install")),
             "install is a leaf"
@@ -893,7 +976,10 @@ mod tests {
         let (mut marked, mut quiet) = (0, 0);
         for (node, _) in &classes {
             // Total Vec ⇒ defined for every classify leaf (never an absent lookup).
-            if cfg.consumed_observables(*node).contains(&Observable::Stdout) {
+            if cfg
+                .consumed_observables(*node)
+                .contains(&Observable::Stdout)
+            {
                 marked += 1;
             } else {
                 quiet += 1;

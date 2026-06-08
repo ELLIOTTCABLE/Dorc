@@ -44,7 +44,11 @@ pub(crate) enum TokKind {
     Word { parts: Vec<LexPart> },
     /// `<<`-style heredoc operator, already resolved: body text + whether the
     /// delimiter was quoted (`<<'EOF'` ⇒ no expansion in body), plus optional fd.
-    HereDoc { body: String, quoted: bool, fd: Option<u32> },
+    HereDoc {
+        body: String,
+        quoted: bool,
+        fd: Option<u32>,
+    },
     /// `|`
     Pipe,
     /// `||`
@@ -96,7 +100,9 @@ pub(crate) enum LexPart {
     Literal(String),
     SingleQuoted(String),
     DoubleQuoted(Vec<LexPart>),
-    Param { name: String },
+    Param {
+        name: String,
+    },
     /// `$( … )` / `` `…` `` — raw inner source (no surrounding delimiters).
     CommandSubst(String),
     /// `${x:-y}`, `${#x}`, … — opaque operator-form parameter expansion.
@@ -125,7 +131,12 @@ struct Lexer<'a> {
 /// Lex `src` into a token stream terminated by [`TokKind::Eof`]. Total: any byte
 /// sequence yields tokens (unterminated constructs are closed at EOF).
 pub(crate) fn lex(src: &str) -> Vec<Token> {
-    let mut lexer = Lexer { src: src.as_bytes(), pos: 0, tokens: Vec::new(), pending: Vec::new() };
+    let mut lexer = Lexer {
+        src: src.as_bytes(),
+        pos: 0,
+        tokens: Vec::new(),
+        pending: Vec::new(),
+    };
     lexer.run();
     lexer.tokens
 }
@@ -272,13 +283,34 @@ impl<'a> Lexer<'a> {
             b'>' => {
                 if self.peek(1) == Some(b'>') {
                     self.pos += 2;
-                    self.push(TokKind::Redir { op: RedirToken::Append, fd }, lo, self.pos);
+                    self.push(
+                        TokKind::Redir {
+                            op: RedirToken::Append,
+                            fd,
+                        },
+                        lo,
+                        self.pos,
+                    );
                 } else if self.peek(1) == Some(b'&') {
                     self.pos += 2;
-                    self.push(TokKind::Redir { op: RedirToken::Dup, fd }, lo, self.pos);
+                    self.push(
+                        TokKind::Redir {
+                            op: RedirToken::Dup,
+                            fd,
+                        },
+                        lo,
+                        self.pos,
+                    );
                 } else {
                     self.pos += 1;
-                    self.push(TokKind::Redir { op: RedirToken::Write, fd }, lo, self.pos);
+                    self.push(
+                        TokKind::Redir {
+                            op: RedirToken::Write,
+                            fd,
+                        },
+                        lo,
+                        self.pos,
+                    );
                 }
             }
             b'<' => {
@@ -286,10 +318,24 @@ impl<'a> Lexer<'a> {
                     self.lex_heredoc_op(lo, fd);
                 } else if self.peek(1) == Some(b'&') {
                     self.pos += 2;
-                    self.push(TokKind::Redir { op: RedirToken::Dup, fd }, lo, self.pos);
+                    self.push(
+                        TokKind::Redir {
+                            op: RedirToken::Dup,
+                            fd,
+                        },
+                        lo,
+                        self.pos,
+                    );
                 } else {
                     self.pos += 1;
-                    self.push(TokKind::Redir { op: RedirToken::Read, fd }, lo, self.pos);
+                    self.push(
+                        TokKind::Redir {
+                            op: RedirToken::Read,
+                            fd,
+                        },
+                        lo,
+                        self.pos,
+                    );
                 }
             }
             _ => unreachable!("redir entered on non-redir byte"),
@@ -315,8 +361,21 @@ impl<'a> Lexer<'a> {
         let (delimiter, quoted) = self.read_heredoc_delimiter();
         let op_hi = self.pos;
         let token_index = self.tokens.len();
-        self.push(TokKind::HereDoc { body: String::new(), quoted, fd }, lo, op_hi);
-        self.pending.push(PendingHeredoc { token_index, delimiter, quoted, fd });
+        self.push(
+            TokKind::HereDoc {
+                body: String::new(),
+                quoted,
+                fd,
+            },
+            lo,
+            op_hi,
+        );
+        self.pending.push(PendingHeredoc {
+            token_index,
+            delimiter,
+            quoted,
+            fd,
+        });
     }
 
     /// Read a heredoc delimiter word. A quoted delimiter (`'EOF'`, `"EOF"`, or a
@@ -374,7 +433,11 @@ impl<'a> Lexer<'a> {
         for heredoc in pending {
             let body = self.read_one_heredoc_body(&heredoc.delimiter);
             if let Some(tok) = self.tokens.get_mut(heredoc.token_index) {
-                tok.kind = TokKind::HereDoc { body, quoted: heredoc.quoted, fd: heredoc.fd };
+                tok.kind = TokKind::HereDoc {
+                    body,
+                    quoted: heredoc.quoted,
+                    fd: heredoc.fd,
+                };
             }
         }
     }
@@ -622,7 +685,9 @@ impl<'a> Lexer<'a> {
         let simple =
             !body.is_empty() && body.iter().all(|&c| c == b'_' || c.is_ascii_alphanumeric());
         let part = if simple {
-            LexPart::Param { name: String::from_utf8_lossy(body).into_owned() }
+            LexPart::Param {
+                name: String::from_utf8_lossy(body).into_owned(),
+            }
         } else {
             LexPart::ParamComplex
         };

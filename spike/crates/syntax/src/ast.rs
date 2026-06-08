@@ -74,7 +74,10 @@ impl AstBuilder {
     /// Finish, designating `root` (must have been `alloc`'d into this builder).
     #[must_use]
     pub fn finish(self, root: AstId) -> Ast {
-        Ast { nodes: self.nodes, root }
+        Ast {
+            nodes: self.nodes,
+            root,
+        }
     }
 }
 
@@ -103,7 +106,11 @@ pub enum NodeKind {
     /// semantics are the analyzer's concern (`haz-seterr`/`haz-concurrency`).
     Pipeline { negated: bool, stages: Vec<AstId> },
     /// `left && right` / `left || right` (left-associative; nest for chains).
-    AndOr { op: AndOrOp, left: AstId, right: AstId },
+    AndOr {
+        op: AndOrOp,
+        left: AstId,
+        right: AstId,
+    },
     /// `( body )` — runs in a subshell (env/var mutations don't escape;
     /// `haz-concurrency`). Carries any redirections on the group.
     Subshell { body: AstId, redirs: Vec<AstId> },
@@ -119,20 +126,35 @@ pub enum NodeKind {
     /// `case word in (pat|pat) body ;; … esac`.
     Case { word: AstId, arms: Vec<CaseArm> },
     /// `name() { body; }`.
-    FuncDef { name: String, name_span: Span, body: AstId },
+    FuncDef {
+        name: String,
+        name_span: Span,
+        body: AstId,
+    },
     /// A word: a sequence of quoted/unquoted fragments (see [`WordPart`]).
     Word { parts: Vec<WordPart> },
     /// `name=value` (value `None` for `name=`). Used both as a leading
     /// command-assignment and as a standalone statement (`oracle_kind=package`,
     /// the dn-1 anchor).
-    Assign { name: String, name_span: Span, value: Option<AstId> },
+    Assign {
+        name: String,
+        name_span: Span,
+        value: Option<AstId>,
+    },
     /// A redirection attached to a command (its own node — `haz-redir-as-mutation`).
-    Redir { op: RedirOp, fd: Option<u32>, target: RedirTarget },
+    Redir {
+        op: RedirOp,
+        fd: Option<u32>,
+        target: RedirTarget,
+    },
     /// ⊤-reject: a construct outside the modeled subset (`inv-top-reject`,
     /// chord `ch-errnode`). Provenance-bearing (the `Node.span` is the raw range);
     /// the analyzer treats it as an absorbing ⊤ — un-probeable and un-skippable.
     /// Salvaged children, if any, are kept so unrelated analysis can continue.
-    Unsupported { reason: UnsupportedReason, salvaged: Vec<AstId> },
+    Unsupported {
+        reason: UnsupportedReason,
+        salvaged: Vec<AstId>,
+    },
 }
 
 /// `elif cond; then body`.

@@ -1129,7 +1129,9 @@ fn output_redir_observables(ast: &Ast, redirs: &[AstId]) -> Powerset<Observable>
         if !matches!(op, RedirOp::Write | RedirOp::Append) {
             continue; // input / fd-dup / here-doc: not an output-write sink
         }
-        let RedirTarget::Word(w) = target else { continue };
+        let RedirTarget::Word(w) = target else {
+            continue;
+        };
         if word_text(ast, *w) == Some("/dev/null") {
             continue; // discard sink ⇒ not consumed (the scalpel)
         }
