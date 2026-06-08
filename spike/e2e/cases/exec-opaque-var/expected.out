@@ -1,0 +1,8 @@
+#!/bin/sh
+# dorc probe (read-only): reports per-fact convergence, mutates nothing.
+
+#!/bin/sh
+# dorc apply: the book, with already-converged lines elided (replaced by `:`).
+
+PKG=nginx
+apt-get install -y "$PKG"
