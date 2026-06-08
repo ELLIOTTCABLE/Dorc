@@ -233,3 +233,99 @@ stdin grammar and `hostsim`'s key (per `cli/CLAUDE.md` "stdin re-key gotcha"). -
 K2 move is to make `fact_label` emit a round-trippable `kind/selector` for `Singleton` (no bare `:#`). That
 display-format choice is a small but real `seam-prov`-adjacent decision; recording it so K2 doesn't bake an
 ugly/ambiguous label by reflex.
+
+### strain-5 — the poison wall is killed *specifically*, not *generally*: a realistic book needs broad oracle coverage to elide *anything* (K2, the headline e2e finding)
+
++SURE (built + tested + isolated by fragment, `plan::residual_poison_sources_isolated`): the keystone
+re-key kills `apt-get update`'s poison **exactly** — proven at classify level
+(`effect::poison_wall_dies_modeled_update_does_not_poison_install`) *and* now at plan level
+(`plan::fixture_install_elides_when_update_is_the_only_neighbour`: on `update\ninstall`, the converged install
+is `Disposition::Replace`). But on the **full** `fixtures/pi-webhost.book.sh`, the install **still runs** — and
+so does `update` itself (both classify `EstablishWritten`). This is the honest outcome the charter asked for
+(model enough to genuinely elide, OR document the precise residual; **not** a faked green): I documented the
+residual rather than over-modeling, because the residual is the *interesting datum*.
+
+The exclusion-check (isolated each upstream construct as a fragment, classifying `apt-get install`'s
+`SkipClass`):
+- `update\ninstall` (no poison) ⇒ both **Ambient** (the clean keystone win).
+- `set -e\nupdate\ninstall` ⇒ both **Ambient** — `set -e` is a target-state-pure builtin (the fs-4 allowlist
+  fix), correctly *not* a poison source. (Good: confirms the builtin-bless survived the re-key.)
+- `case "$(hostname)" in …` upstream ⇒ both **Written**. The `$(hostname)` command-substitution is an
+  un-oracled `Command` ⇒ `Opaque` ⇒ `Reach::Top`.
+- `if ! command -v nginx …` guard upstream ⇒ both **Written**. The guard's `command -v nginx` is likewise
+  un-oracled `Opaque` ⇒ `Top`.
+
+So the real book carries **two independent residual poisons**, and modeling `update` was *necessary but not
+sufficient*. The sharpest part of the finding (~SUSPECT this is the durable lesson): the `command -v nginx`
+guard is the admin's **own idempotency check** — the very idiom Dorc exists to lift — and because it is
+un-oracled it *poisons the block it guards*. That is the `seam-prov`/oracle-coverage reality: on a scrappy
+book, *most* leaves are `Opaque`, and a single upstream `Opaque` re-tops `Reach` for everything after it, so
+the per-cell precision the re-key buys is only *visible* once the upstream neighbours are also oracled (or
+proven pure). The keystone removes a *specific* false-poison; it does not, alone, make a realistic book elide.
+The `$(hostname)` and `command -v` cases point at the *next* coverage work: a host-identity oracle
+(`an-host-identity-fact`) and a `command -v`/tool-existence oracle (the `R2-SHADOW` blessed form) would each
+un-`Opaque` one of these. Neither is K2 scope; recorded as the measured oracle-coverage gap.
+
+(Process note, `ch-wrong`: the old `fixture_install_runs_despite_converged_probe` test *asserted* the poison;
+I renamed it to `fixture_install_on_realistic_book_still_runs_residual_poison` and re-grounded its assertion in
+the **new** cause — the test still asserts `Run`, but now for the residual-neighbour reason, with the
+`update`-specific poison dead. The charter's "FLIP to Replace" was the *hoped* outcome; the honest outcome is
+"flips on the isolated sequence, stays Run on the full book for a different correct reason." Both tests exist so
+the distinction can't silently rot.)
+
+### strain-6 — `ap-2`: the `sh -n` gate FIRED (as predicted); the honest fix is the `:` stand-in, *not* a paper-over (K2, charter deliverable)
+
++SURE (built + reproduced both directions): the `ap-2` runnability gate **fires on the `guarded` fixture**.
+The committed `render_apply` comments an elided line *in place*; when the elided leaf is the lone body of a
+`then`-clause (`if true; then\n  apt-get install …\nfi`), commenting it yields `if true; then\n# …\nfi` — an
+empty clause, a POSIX syntax error. Both `dash -n` and `sh -n` reject it: `Syntax error: "fi" unexpected`
+(exit 2). The old e2e *string-diffed* this and shipped it **green** — exactly the `ap-2` defect, live and
+committed in `cases/guarded/expected.out`. **This firing IS the deliverable** (charter §4 / `ap-2`).
+
+The fix (~SUSPECT this is the *honest* one, not a paper-over — argued, not reflexive): an elided line now emits
+**two** lines — the provenance comment, then a bare `:` (POSIX null command) at the original indentation. Key
+reframe: the `:` is **not** filler, it is the substitution **stand-in itself**. `Disposition::Replace`'s own
+doc says "`true` is the degenerate stand-in," and the observable-matrix model *defines* replacement as
+"substitute a `true`-stub that defaults every observable — status→rc-0 (vouched by convergence)." The
+comment-only render was the actual bug: it **deleted** the command instead of substituting its stand-in. So
+emitting `:` is *more* faithful to the model, not less — and `:` is valid in **every** context a command was
+(top-level, `then`/`do`/`case`-arm), so the artifact is always `-n`-clean by construction. Cost: a top-level
+lone elision gets a cosmetically-extra `:` line (harmless `true`-equivalent); the price of staying
+*line-granular* without parsing clause structure. The leaf-exact alternative (only inject `:` when a clause
+would actually empty) is the `seam-prov` render-fidelity work `plan/CLAUDE.md` flags — deferred, not needed for
+correctness.
+
+The gate itself (harness half, `cli` owns it — landed in `e2e/run.sh`): splits the cli's stdout into the two
+emitted artifacts on their `#!/bin/sh` shebangs (probe = first block, apply = second) and `dash -n`/`sh -n`-
+checks **each**, **always**, and **before** `BLESS` (blessing a non-runnable artifact is the trap). The text
+golden-diff stays as a *secondary* check (it catches wrong-elision *content*, to which `-n` is blind — a render
+that comments everything is `-n`-clean and useless; per `cli/CLAUDE.md`'s "needs both" tension). Verified
+**non-vacuous**: the pre-fix comment-only artifact fed to the same checker fires (exit 2); the fixed `:`-stub
+render passes (exit 0). `sh -n` never executes, so the fixtures' real-looking `apt-get`/`systemctl` lines are
+safe (no `hork`/`wombat` stubbing needed — nothing runs).
+
+### strain-7 — `fact_label`/cli-stdin format: `kind:entity#selector` (Operand) · `kind#selector` (Singleton) — resolves strain-4's --WONDER (K2)
+
++SURE (built + round-trips e2e): the strain-4 display-format question is **decided**. `fact_label` renders two
+shapes, discriminated by the presence of a `:`-operand segment:
+- **Operand** ⇒ `kind:entity#selector` — `package:nginx#installed`;
+- **Singleton** ⇒ `kind#selector` — `package-index#fresh` (NO bare `:`, so the ugly `package-index:#fresh`
+  strain-4 warned against never appears; `:` present ⟺ an operand exists).
+The selector is **always** rendered (`#selector`). Dropping it would let an `is-active` probe-verdict discharge
+an unmet `#enabled` cell — a wrong-elision under apply's `kFAIL` (`cli/CLAUDE.md` "stdin re-key gotcha"). The
+cli's stdin grammar *is* this label: `parse_results` keys a `BTreeMap<String, Verdict>` on the **exact** label
+string (it never decomposes kind/entity/selector — `inv-referent-agnostic`-clean, it's a string-equality match,
+never a decode), so the round-trip is exact-string and the only requirement is **injectivity** over distinct
+`FactKey`s. Injective modulo a `:`/`#` collision *inside* an interned name — a disposable-parser limitation
+(`ch-scope`; book operands like `nginx` don't carry `:`/`#`; arch-qualified `nginx:amd64` would be the first
+real collision, noted, not handled). Verified live: the probe emits `# probe: package:nginx#installed`, the
+host echoes `package:nginx#installed converged`, and the verdict binds — the selector is carried end-to-end,
+never widened to the whole entity. The `two-oracles` e2e case exercises both a `package:nginx#installed` and a
+`service:nginx#enabled` label in one round-trip.
+
+(Adjacent datum surfaced, NOT K2's to fix — strain-2 / `F-BLESSED` re-confirmed: the `service` oracle's probe
+body is `systemctl is-active` (`#active`) while `enable` gates `#enabled` — the probe reads the **wrong
+selector**. A real `service` oracle needs *two* probes (`is-enabled` AND `is-active`); the scrappy fixture
+under-probes. The e2e only `-n`-checks (never executes) the body, so it doesn't bite here, but it is the live
+≥enum-floor cliff: one `FactProbe` per *kind* can't answer per-*selector* facts. The probe-per-kind vs
+fact-per-selector mismatch is a richness-phase item — flagged for K3/later, not threaded in K2.)
