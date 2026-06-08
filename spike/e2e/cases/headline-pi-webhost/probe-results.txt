@@ -1,0 +1,6 @@
+pkgindex#fresh converged
+package:nginx#installed converged
+firewall:80/tcp#allowed converged
+firewall:443/tcp#allowed converged
+service:nginx#enabled converged
+service:nginx#active converged

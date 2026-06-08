@@ -1,0 +1,40 @@
+#!/bin/sh
+# dorc probe (read-only): reports per-fact convergence, mutates nothing.
+
+# probe: pkgindex#fresh
+{ test -n "$(find /var/lib/apt/lists/ -maxdepth 1 -newermt '-1 hour' 2>/dev/null)"; }
+# probe: package:nginx#installed
+{ dpkg-query -W "$1" >/dev/null 2>&1; }
+# probe: firewall:80/tcp#allowed
+{ ufw status 2>/dev/null | grep -q "$1"; }
+# probe: firewall:443/tcp#allowed
+{ ufw status 2>/dev/null | grep -q "$1"; }
+# probe: service:nginx#enabled
+{ systemctl is-active --quiet "$1"; }
+# probe: service:nginx#active
+{ systemctl is-active --quiet "$1"; }
+#!/bin/sh
+# dorc apply: the book, with already-converged lines elided (replaced by `:`).
+
+#!/bin/sh
+# pi-webhost provisioning (bare-mutation core; the lazy admin lets Dorc do idempotency)
+set -e
+
+# apt-get update   # dorc: elided (already converged)
+:
+# apt-get install -y nginx   # dorc: elided (already converged)
+:
+
+# ufw allow 80/tcp   # dorc: elided (already converged)
+:
+# ufw allow 443/tcp   # dorc: elided (already converged)
+:
+
+# systemctl enable nginx   # dorc: elided (already converged)
+:
+# systemctl start nginx   # dorc: elided (already converged)
+:
+
+nginx -t && systemctl reload nginx
+
+echo "pi-web up"

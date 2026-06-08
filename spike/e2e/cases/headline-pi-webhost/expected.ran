@@ -1,0 +1,2 @@
+ran: nginx -t
+ran: systemctl reload nginx
