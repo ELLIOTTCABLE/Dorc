@@ -261,29 +261,52 @@ pub enum Grade {
     May,
 }
 
-/// The coarse partition of system state (chord `fact-domain-partition`). Most
-/// commands touch exactly one domain; the partition lets propagation skip
-/// domains a command cannot affect. `Other` is the catch-all, not a wildcard.
+/// One independently-mutation-gating facet of a kind's ≥enum state-model
+/// (`17N inc-S` / `an-per-entity-selector`). An interned name; never decoded
+/// (`inv-referent-agnostic`) — compared for co-reference, resolved for display.
+///
+/// The selector is what splits a flat per-(kind,entity) bit into independent
+/// cells: `service#enabled` and `service#active` are *separately* mutation-gating
+/// (`systemctl enable --now` writes both; an `is-active` probe must not discharge
+/// an unmet `#enabled`), which a flat key could not hold (`notes/193` §1).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub enum FactDomain {
-    Pkg,
-    File,
-    Svc,
-    User,
-    Port,
-    Mount,
-    Other,
+pub struct SelectorId(pub Symbol);
+
+/// The cell a fact is about: an operand-named cell, or the kind's implicit
+/// singleton (`notes/193` §3; `an-host-identity-fact`-adjacent).
+///
+/// `apt-get update` is a nullary mutator on the one package index — no operand —
+/// so the key must carry [`Singleton`](EntityRef::Singleton), not require an
+/// [`OpaqueToken`]. The old flat key required a token, so a no-operand mutator
+/// fell through to `Opaque ⇒ Reach::Top ⇒ the poison wall`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum EntityRef {
+    /// A cell named by a literal operand (`package:nginx`). Two operand tokens
+    /// denote the same cell iff they compare equal (`an-entity-coref`).
+    Operand(OpaqueToken),
+    /// The kind's implicit single cell (`package-index`, the one apt index).
+    Singleton,
 }
 
-/// A state fact: an opaque entity token within a domain, tagged with the source
-/// expression that introduced it (chord `fact-pair`: `fact = (opaque-token,
-/// source-expr)`). Structured selectors (e.g. a package's `installed` vs
-/// `version`) are added when the analysis phase needs them.
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct Fact {
-    pub domain: FactDomain,
-    pub entity: OpaqueToken,
-    pub source: AstId,
+/// A system-state fact-key, re-keyed for spike-2 (`notes/193` §3 / charter §3 /
+/// `16Q §1`). The flat `(kind, entity)` pair gains a [`selector`](FactKey::selector)
+/// — the cell coordinate the whole engine reaches over.
+///
+/// `dec-seam-ownership` (closed → `core`): the structured entity-algebra is the
+/// shared vocabulary every crate agrees on first (`dac-B`), so it is *defined here*
+/// and `analysis::effect::FactKey` re-exports this type rather than holding a
+/// parallel key. Carries NO source span (provenance is the node's). Two keys are
+/// equal iff `kind` + `entity` + `selector` all match.
+///
+/// `Copy`/`Ord`/`Hash` are preserved: `Reach`'s `BTreeSet<FactKey>` needs `Ord`,
+/// and [`EntityRef`]/[`SelectorId`] are themselves `Copy`+`Ord`, so the bound holds.
+/// `inv-determinism`: any map/set keyed on `FactKey` stays `BTree*`, never
+/// hashed-into-output.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct FactKey {
+    pub kind: KindId,
+    pub entity: EntityRef,
+    pub selector: SelectorId,
 }
 
 // ===========================================================================
