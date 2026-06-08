@@ -1,2 +1,2 @@
-package:nginx converged
-service:nginx converged
+package:nginx#installed converged
+service:nginx#enabled converged

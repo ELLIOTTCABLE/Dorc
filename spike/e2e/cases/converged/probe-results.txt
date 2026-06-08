@@ -1,1 +1,1 @@
-package:nginx converged
+package:nginx#installed converged

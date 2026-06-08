@@ -1,2 +1,2 @@
-package:curl converged
-package:nginx converged
+package:curl#installed converged
+package:nginx#installed converged

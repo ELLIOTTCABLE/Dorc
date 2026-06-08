@@ -2,7 +2,7 @@
 # dorc probe (read-only): reports per-fact convergence, mutates nothing.
 
 #!/bin/sh
-# dorc apply: the book, with already-converged lines elided (commented).
+# dorc apply: the book, with already-converged lines elided (replaced by `:`).
 
 for i in 1 2; do apt-get install -y nginx; done
 apt-get install -y curl
