@@ -329,3 +329,62 @@ selector**. A real `service` oracle needs *two* probes (`is-enabled` AND `is-act
 under-probes. The e2e only `-n`-checks (never executes) the body, so it doesn't bite here, but it is the live
 ≥enum-floor cliff: one `FactProbe` per *kind* can't answer per-*selector* facts. The probe-per-kind vs
 fact-per-selector mismatch is a richness-phase item — flagged for K3/later, not threaded in K2.)
+
+### strain-8 — K3 adversarial-crosscheck found a priority-1 wrong-elision *regression* the invested review had softened (the process datum, + the fix)
+
+K3 ran `/adversarial-crosscheck` on the landed keystone (K1+K2): two clean-context Opus passes (one neutralised,
+one disowned-and-inverted), **un-seeded from this note** so cross-pass convergence is a real signal, both
+verifying by tracing the code + driving the real CLI, target rotated per `ap-3` (keystone-adherence · the `ap-2`
+harness · the three seams · ambient-gate over-loosening). Carve-outs honored (market-fit/value-prop/corpus).
+
+**Convergent validations (both passes, independently — the trustworthy signal):**
+- the selector re-key is the charter §3 keystone, *not* scaffolding (the flat key is gone; the poison-wall death
+  is real end-to-end). Honest caveat both raise: the re-key was **mechanically trivial in the dataflow**
+  (`Reach`/`classify` unchanged — generic over the opaque `Ord` key); the *only* behavioural logic change is
+  `command_effect`'s entity resolution. (Sharpens strain-3: the keystone's "whole-engine" weight is real but
+  lands in the consumers + the one `command_effect` branch, not the dataflow core — a substrate-precision datum:
+  the set-shaped `Reach` absorbed a domain refinement with zero transfer rewrite.)
+- the `ap-2` `sh -n` gate is real (both broke the empty-clause bug and watched it catch), but **runnability-only**
+  — content-blind to a *wrong* elision (a wrongly-elided command still passes `-n`; content rests on the
+  machine-blessed text goldens). Openly scoped, not hidden.
+- the three seams are **floor-only and that is on-charter** (seam-prov degenerate one-tier; seam-interproc
+  untouched — bodies still detached→`MustRun`, the *correct conservative* behaviour; seam-finite dormant — no
+  recursion built, so the hang-risk it guards doesn't exist yet). The adversarial pass explicitly ruled its own
+  "seams claimed-handled but broken" suspicion **does not hold**. Consequence worth stating: the seams have **not
+  been pressed**, so the round's seam-strain evidence is still thin — that is the richness phases' job, not done.
+  Also: **strong/weak update does not exist in the code at all** (only the `Singleton` *label* variant) — any
+  framing of the poison-wall fix as "selectors + strong/weak update, done" would overstate what landed. It is
+  selectors + `Singleton` only; strong/weak is T5, unbuilt.
+
+**The kill-shot (convergent, and the adversarial pass sharpened it PAST my own review — the headline):**
++SURE (traced + driven through the real CLI by the adversarial pass; then fixed + regression-tested here).
+`EntityRef::Singleton` was inferred on *zero **literal** operands*, which conflated two cases: a genuinely
+nullary verb (`apt-get update`, correct) **and a present-but-non-literal operand** (`apt-get install $PKG` —
+`word_literal($PKG)=None` ⇒ the operand is dropped ⇒ zero literals ⇒ `Singleton`). The second is a **priority-1
+wrong-elision** and a **regression**: baseline `357efdd` returned `Opaque ⇒ MustRun` for it; the re-key flipped a
+must-run into an elidable `package#installed` singleton cell, which `prove_replaceable` will replace on a
+`Converged` probe — so `install $PKG` (the *common* `install $PKGS`-loop idiom) gets silently elided though
+`$PKG` may name a different/absent package each run. This violates `kFAIL-perform` / never-under-execute — the
+engine's welded redline — so `ch-wrong` does **not** license it.
+
+The **process datum** (why the cross-check earned its cost): my own invested K1 review logged this as strain-1
+but **softened it** — framed as a *rare* mis-call (`apt-get install` with no package, a book error) and filed as
+a deferrable `ch-wrong` strain. The adversarial pass, un-seeded and hostile, found the **common** trigger
+(`$var` operand) and the **regression-vs-baseline** framing the optimistic read missed. That is exactly the
+sycophancy/optimism the `/adversarial-crosscheck` exists to counter — recorded as evidence the practice (`kp-1`)
+pays off on *this* spike too, not just round-16.
+
+**Fix (committed `0bebd6e`, `effect.rs:command_effect`):** classify post-verb words once — a *flag* is a literal
+starting with `-` (stripped); every *other* word is a non-flag operand, and a non-literal one (`$PKG`) **counts
+as an operand** (an unknown cell), it is not "no operand". `Singleton` now fires only on a *genuinely nullary*
+verb (zero non-flag operand words); a present-but-non-literal operand ⇒ `Opaque ⇒ run` (baseline soundness
+restored). Regressions: `install $PKG ⇒ Opaque`, `update ⇒ Singleton`, `update -y ⇒ Singleton` (flag-only tail
+stays nullary). This is the analyzer-inferred band-aid; the **principled** fix remains an oracle-declared
+cardinality bit (`dec-cardinality-deferred` / T5-R-strongweak) — T5 is now *more* motivated, since it also
+properly resolves this inference rather than inferring singleton-ness at all.
+
+**Standing items K3 surfaced for the richness phases (not yet acted on):** (a) the seams need *pressing* to
+produce strain evidence — that is the deliverable gap; (b) the probe-per-kind vs fact-per-selector mismatch
+(strain-7) is the next ≥enum-floor cliff; (c) the strongest *strategic* finding is strain-5's: oracle-coverage,
+not analyzer machinery, is the binding constraint on eliding a realistic book — an `effort-allocation` datum for
+the human, out of analyzer-spike scope.
