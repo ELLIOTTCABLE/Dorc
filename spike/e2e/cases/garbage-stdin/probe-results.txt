@@ -1,0 +1,5 @@
+this is not a valid result line
+package:nginx maybe-installed-idk
+
+# a comment line (ignored by the parser)
+   leading-whitespace garbage

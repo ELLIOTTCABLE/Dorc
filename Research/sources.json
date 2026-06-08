@@ -2987,5 +2987,83 @@
     "sha256": "c20c0d57459f4b101af9690ac48301ce52d62eb3c5df5e145923c5b275d7781b",
     "acquired": "url",
     "via": "mcp__kagi-ken__kagi_search_fetch(queries: ['Win32-OpenSSH ssh command stdin pipe CRLF translation binary corruption exit code cmd.exe'])"
+  },
+  "A-ascent-seamless-deductive-macros-2022": {
+    "url": "https://s-arash.github.io/ascent/cc22main-p95-seamless-deductive-inference-via-macros.pdf",
+    "grading-certainty": "+1:SURE",
+    "grading-reasoning": "Peer-reviewed CC 2022 paper (31st ACM SIGPLAN Compiler Construction, DOI 10.1145/3497776.3517779), Sahebolamri/Gilray/Micinski; the primary/canonical citation for Ascent. Full PDF read end-to-end via pdftotext (abstract+intro+semantics). A: primary, peer-reviewed, directly on-substrate (Rust-embedded lattice-Datalog).",
+    "relevance-certainty": "+1:SURE",
+    "relevance-description": "THE gap-3 source: a clean Rust-embeddable Datalog that extends Datalog semantics with NON-POWERSET LATTICES (verbatim 'much like Flix') and USER-DEFINED DATA TYPES ('much like Formulog and Souffle'), compiled via proc-macros uniformly with host Rust (no FFI). Re-implements the Rust borrow checker; benchmarked comparable to Datafrog and Souffle, ~2 orders faster than Flix. Directly weakens Dorc's Souffle-means-C++-FFI objection and shows a recursive kind-typed structured fact domain is hostable. Uses semi-naive eval + index generation.",
+    "graded-by": "subagent",
+    "published": "2022-04",
+    "retrieved": "2026-06-08",
+    "sha256": "64b6e14c6d062f40285b903475e0d3c46fb6c3c6c24440136cd1205278d3cbd8",
+    "acquired": "url",
+    "via": "mcp__octocode__githubGetFileContent(owner: s-arash, repo: ascent, README.MD) -> CC paper link"
+  },
+  "A-ascent-repo-docs-2026": {
+    "url": "https://raw.githubusercontent.com/s-arash/ascent/master/README.MD",
+    "grading-certainty": "+1:SURE",
+    "grading-reasoning": "Canonical first-party documentation of the exact tool (Ascent, s-arash/ascent README.MD on master), maintained by the author. Read in full alongside BYODS.MD, CHANGELOG.MD, Cargo.toml, and ascent_base/src/lattice/*.rs. A per the first-party-docs-of-direct-relevance carve-out; feature/lattice claims corroborated against the source code and the CC22 paper.",
+    "relevance-certainty": "+1:SURE",
+    "relevance-description": "Concrete gap-3 mechanics for Ascent as a Rust-embedded lattice-Datalog: the `lattice` keyword + `Lattice` trait (final-column join on duplicate-key insert, e.g. shortest_path via Dual<u32>); the ascent_base lattice combinators (Product/product-order = kind-embeds-kind, Box/Rc/Arc = recursive lattices, Set=BTreeSet powerset, Option, Dual/Reverse) from which a structured fact domain composes; `ascent_source!`/`include_source!` composition modules (maps to oracle authoring); stratified negation + aggregation; BYODS `#[ds(..)]` custom relation backing. Determinism for DST: default serial relation is std Vec (insertion-deterministic), but the DEFAULT `par` feature pulls rayon+dashmap (nondeterministic) and must be disabled (default-features=false) for a pure DST kernel. Dependency tail: hashbrown/rustc-hash/boxcar (runtime); syn/quote/petgraph are compile-time-only proc-macro deps. No FFI, no C++. NB: code+README search found NO provenance/proof-tree facility (unlike Souffle) -> the kFIDELITY why-tree lever is NOT free on Ascent.",
+    "graded-by": "subagent",
+    "published": "2026",
+    "retrieved": "2026-06-08",
+    "sha256": "fd46269c3808a63798b7d18cba7c68f17e0766e17ec64b935ca73f97ddc6e72e",
+    "acquired": "url",
+    "via": "mcp__octocode__githubViewRepoStructure(owner: s-arash, repo: ascent) + githubGetFileContent README.MD/BYODS.MD/lattice.rs"
+  },
+  "B-salsa-incremental-framework-2026": {
+    "url": "https://raw.githubusercontent.com/salsa-rs/salsa/master/README.md",
+    "grading-certainty": "+1:SURE",
+    "grading-reasoning": "Canonical first-party README of salsa-rs/salsa (the incremental-computation engine used by rust-analyzer). B not A: README-level first-party doc, self-described 'WORK IN PROGRESS', not a peer-reviewed or normative spec; characterization corroborated by the rustc-dev-guide Salsa page and the Salsa book overview.",
+    "relevance-certainty": "+1:SURE",
+    "relevance-description": "Settles gap-2: Salsa is 'a generic framework for on-demand, incrementalized computation' built on memoized queries (K->V) over Inputs + pure Functions, re-using memoized values when inputs change. It is an INCREMENTAL/DEMAND MEMOIZATION LAYER, NOT an analysis substrate: no fact lattice, no fixpoint/relational engine, no structured fact domain. Orthogonal to a pure DST-fuzzed BATCH kernel (a from-scratch batch analysis gains nothing from incremental memoization); it would sit ABOVE the kernel to serve the `dorc try` diff-time hot-loop, not replace the worklist. Verdict: layer, not substrate.",
+    "graded-by": "subagent",
+    "published": "2026",
+    "retrieved": "2026-06-08",
+    "sha256": "9c3a5f3cf22167b235541f110fc86073bcf0e38d3ed3e386c3e983a24c3a707a",
+    "acquired": "url",
+    "via": "mcp__kagi-ken__kagi_search_fetch(Salsa rust-analyzer incremental computation framework) -> salsa-rs/salsa"
+  },
+  "B-crepe-datalog-macro-2026": {
+    "url": "https://raw.githubusercontent.com/ekzhang/crepe/main/README.md",
+    "grading-certainty": "+1:SURE",
+    "grading-reasoning": "Canonical first-party README of ekzhang/crepe (518 stars, maintained; last push 2025-12). B: first-party project README, not peer-reviewed; feature set read in full.",
+    "relevance-certainty": "+1:SURE",
+    "relevance-description": "gap-3 comparator (less fit than Ascent). Crepe is a proc-macro Datalog with semi-naive eval, stratified negation, auto-indices, calls into Rust, compiled inline (no FFI); 'comparable speed to compiled Souffle, fraction of compile time'. CRUCIAL LIMIT: PURE RELATIONAL DATALOG ONLY — no lattice keyword, no non-powerset/structured fact domain, no provenance. So it does NOT host Dorc's recursive kind-typed lattice domain; it is the flat-finite-powerset model the decision already rejects. Useful only as evidence that the lightweight-Rust-Datalog niche exists.",
+    "graded-by": "subagent",
+    "published": "2026",
+    "retrieved": "2026-06-08",
+    "sha256": "7fc6e2656d862032f4d49fd7a1f6c016108d06adcf9d3e24d852381c3744a4ce",
+    "acquired": "url",
+    "via": "mcp__octocode__githubGetFileContent(owner: ekzhang, repo: crepe, README.md)"
+  },
+  "B-datafrog-engine-2026": {
+    "url": "https://raw.githubusercontent.com/rust-lang/datafrog/master/README.md",
+    "grading-certainty": "+1:SURE",
+    "grading-reasoning": "Canonical first-party README of rust-lang/datafrog (882 stars; the engine underlying polonius/borrow-check; maintained under rust-lang). B: first-party README, not peer-reviewed. Read in full.",
+    "relevance-certainty": "+1:SURE",
+    "relevance-description": "gap-3 comparator and a mirror of Dorc's status quo. Datafrog is 'a lightweight Datalog engine... with NO RUNTIME, relies on you to BUILD AND REPEATEDLY APPLY the update rules' — i.e. a manual fixpoint toolkit (you hand-write the `from_join` loop inside `while iteration.changed()`), not a declarative-rules language. No lattices, no provenance; deterministic (sorted Relation merges, no hashing in core); near-zero deps. This is essentially what Dorc's hand-rolled monotone worklist ALREADY is — so it corroborates that the worklist substrate is a legitimate, rust-lang-blessed point in the design space, rather than offering a reason to switch.",
+    "graded-by": "subagent",
+    "published": "2026",
+    "retrieved": "2026-06-08",
+    "sha256": "717fcb0189d9f0d918f74d0a1e67a3e872b477da25eac87fb844a3340ac0d314",
+    "acquired": "url",
+    "via": "mcp__octocode__githubGetFileContent(owner: rust-lang, repo: datafrog, README.md)"
+  },
+  "C-flowlog-datalog-dd-2026": {
+    "url": "https://raw.githubusercontent.com/flowlog-rs/flowlog/main/README.md",
+    "grading-certainty": "-0:SUSPECT",
+    "grading-reasoning": "First-party README of flowlog-rs/flowlog, a very new (repo created 2025-08, pushed 2026-06-08) project with a VLDB paper (vol19 p361-zhao). C not B: low maturity, self-flagged 'interfaces may change without notice', tiny adoption (24 stars), README read but paper body NOT read; included only as a currency datapoint.",
+    "relevance-certainty": "-0:SUSPECT",
+    "relevance-description": "gap-3 currency note: the newest Rust-adjacent Datalog. FlowLog compiles Souffle-compatible `.dl` programs to standalone Rust executables built on Timely + Differential Dataflow (parser->typechecker->stratifier->planner->codegen). Model is CODEGEN-TO-EXECUTABLE (like Souffle but emitting Rust+DD instead of C++), via `flowlog-build` from build.rs or a CLI — NOT an embedded-macro library like Ascent/Crepe. Pulls the heavy Timely/DD stack. Confirms incremental Datalog-on-DD is an active 2026 frontier, but it is a heavier substrate than Ascent and not obviously DST-pure; not a contender that moves the worklist decision.",
+    "graded-by": "subagent",
+    "published": "2026",
+    "retrieved": "2026-06-08",
+    "sha256": "a62dc725419d68dd33f052005ccec257de4b0aa548e4d63654cfd99adeb519fc",
+    "acquired": "url",
+    "via": "mcp__octocode__githubSearchRepositories(differential datalog, Rust) -> flowlog-rs/flowlog"
   }
 }
