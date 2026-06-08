@@ -5,14 +5,15 @@
 //! statically (never by running it):
 //!
 //! ```sh
-//! oracle_kind=package                          # the named kind this file serves
-//! oracle_probe_package() { … dpkg-query … }    # a READ-ONLY check: does package:$1 hold?
-//! oracle_effect apt-get install establish      # `apt-get install <pkgs>` establishes package
-//! oracle_effect apt-get purge   kill           # `apt-get purge   <pkgs>` removes it
+//! oracle_kind=package                            # the named kind this file serves
+//! oracle_probe_package() { … dpkg-query … }      # a READ-ONLY check: does package:$1 hold?
+//! oracle_effect apt-get install establish installed  # establishes package:<pkg>#installed
+//! oracle_effect apt-get purge   kill      installed  # removes it (same selector cell)
+//! oracle_effect apt-get update  establish fresh      # nullary: package-index#fresh (Singleton)
 //! ```
 //!
 //! From a book's bare `apt-get install -y nginx`, the analyzer looks up the
-//! effect `(apt-get, install) → (package, Establish)`, and to decide whether it
+//! effect `(apt-get, install) → (package, #installed, Establish)`, and to decide whether it
 //! is already done it ships the `package` kind's probe. The kind name is the only
 //! cross-oracle anchor (apt's `package` ≡ yum's `package`); it is never decoded
 //! for meaning.
@@ -26,7 +27,9 @@
 
 #![forbid(unsafe_code)]
 
-use dorc_core::{AstId, Carrier, DiagCode, Diagnostic, Interner, KindId, ProviderId, Span, Symbol};
+use dorc_core::{
+    AstId, Carrier, DiagCode, Diagnostic, Interner, KindId, ProviderId, SelectorId, Span, Symbol,
+};
 use dorc_syntax::ast::{Ast, NodeKind, WordPart};
 use std::collections::BTreeMap;
 
@@ -59,10 +62,14 @@ pub struct FactProbe {
 pub struct KindIndex {
     /// kind → how to observe it (one probe per kind).
     probes: BTreeMap<KindId, FactProbe>,
-    /// (provider, verb) → (kind, polarity). Accumulating + clobber-free: many
-    /// providers and many verbs coexist (`apt-get install` vs `apt-get purge` vs
-    /// `dpkg -i`), unlike a single `oracle_verb`.
-    effects: BTreeMap<(ProviderId, Symbol), (KindId, Polarity)>,
+    /// (provider, verb) → (kind, selector, polarity). Accumulating + clobber-free:
+    /// many providers and many verbs coexist (`apt-get install` vs `apt-get purge`
+    /// vs `dpkg -i`), unlike a single `oracle_verb`. The `selector` (`#installed`,
+    /// `#fresh`, `#enabled`, `#active`) is the per-entity facet the spike-2 re-key
+    /// added (`an-per-entity-selector`, `notes/193` §4): `enable` and `start` target
+    /// *different* selectors on the same `service` cell, so neither discharges the
+    /// other.
+    effects: BTreeMap<(ProviderId, Symbol), (KindId, SelectorId, Polarity)>,
 }
 
 impl KindIndex {
@@ -72,15 +79,17 @@ impl KindIndex {
         self.probes.insert(probe.kind, probe);
     }
 
-    /// Record that `provider verb …` has `polarity` on `kind`.
+    /// Record that `provider verb …` has `polarity` on `kind`'s `selector` cell.
     pub fn add_effect(
         &mut self,
         provider: ProviderId,
         verb: Symbol,
         kind: KindId,
+        selector: SelectorId,
         polarity: Polarity,
     ) {
-        self.effects.insert((provider, verb), (kind, polarity));
+        self.effects
+            .insert((provider, verb), (kind, selector, polarity));
     }
 
     /// The read-only probe for `kind`, if any oracle declared one.
@@ -89,10 +98,15 @@ impl KindIndex {
         self.probes.get(&kind)
     }
 
-    /// What a book's `provider verb …` does, if any oracle declared it. `None`
-    /// means "no oracle knows this" → the consumer treats the command as ⊤ (run).
+    /// What a book's `provider verb …` does, if any oracle declared it: which
+    /// `kind`, which `selector` cell, and the `polarity`. `None` means "no oracle
+    /// knows this" → the consumer treats the command as ⊤ (run).
     #[must_use]
-    pub fn effect_of(&self, provider: ProviderId, verb: Symbol) -> Option<(KindId, Polarity)> {
+    pub fn effect_of(
+        &self,
+        provider: ProviderId,
+        verb: Symbol,
+    ) -> Option<(KindId, SelectorId, Polarity)> {
         self.effects.get(&(provider, verb)).copied()
     }
 
@@ -200,12 +214,13 @@ fn lift_one(interner: &mut Interner, src: &str, out: &mut Carrier<KindIndex>) {
     );
 }
 
-/// A lifted but not-yet-kind-bound `oracle_effect`: the provider/verb names and
-/// the polarity. Held with the source's lifetime; interned only when a usable
-/// kind exists to bind them to.
+/// A lifted but not-yet-kind-bound `oracle_effect`: the provider/verb names, the
+/// `selector` cell name, and the polarity. Held with the source's lifetime;
+/// interned only when a usable kind exists to bind them to.
 struct RawEffect<'a> {
     provider: &'a str,
     verb: &'a str,
+    selector: &'a str,
     polarity: Polarity,
 }
 
@@ -266,17 +281,20 @@ fn lift_command<'a>(
         return None;
     }
 
-    // `oracle_effect <provider> <verb> <polarity>` — exactly three literal args.
+    // `oracle_effect <provider> <verb> <polarity> <selector>` — exactly four
+    // literal args. The 4th (selector) is the spike-2 re-key's per-entity facet
+    // (`ch-shape-anno` / `an-per-entity-selector`): which cell of the kind this
+    // verb gates (`#installed`, `#fresh`, `#enabled`, `#active`).
     let literal_args: Option<Vec<&str>> =
         words[1..].iter().map(|&w| word_literal(ast, w)).collect();
-    let Some([provider, verb, polarity]) = literal_args.as_deref() else {
+    let Some([provider, verb, polarity, selector]) = literal_args.as_deref() else {
         // Either a non-literal arg (collect → None) or the wrong arity (slice
         // pattern fails). Both are the same kind of malformed marker.
         out.push(Diagnostic::error(
             BAD_EFFECT,
             Some(span),
-            "oracle_effect takes exactly three literal arguments: \
-             <provider> <verb> <establish|kill>",
+            "oracle_effect takes exactly four literal arguments: \
+             <provider> <verb> <establish|kill> <selector>",
         ));
         return None;
     };
@@ -295,6 +313,7 @@ fn lift_command<'a>(
     Some(RawEffect {
         provider,
         verb,
+        selector,
         polarity,
     })
 }
@@ -351,6 +370,7 @@ fn bind(
             ProviderId(interner.intern(eff.provider)),
             interner.intern(eff.verb),
             kind,
+            SelectorId(interner.intern(eff.selector)),
             eff.polarity,
         );
     }
@@ -388,7 +408,7 @@ mod tests {
         i: &mut Interner,
         provider: &str,
         verb: &str,
-    ) -> Option<(KindId, Polarity)> {
+    ) -> Option<(KindId, SelectorId, Polarity)> {
         idx.effect_of(ProviderId(i.intern(provider)), i.intern(verb))
     }
 
@@ -399,17 +419,18 @@ mod tests {
         let package = KindId(interner.intern("package"));
         let apt = ProviderId(interner.intern("apt-get"));
         let install = interner.intern("install");
+        let installed = SelectorId(interner.intern("installed"));
 
         let mut idx = KindIndex::default();
         idx.add_probe(FactProbe {
             kind: package,
             body: "dpkg-query -W \"$1\"".into(),
         });
-        idx.add_effect(apt, install, package, Polarity::Establish);
+        idx.add_effect(apt, install, package, installed, Polarity::Establish);
 
         assert_eq!(
             idx.effect_of(apt, install),
-            Some((package, Polarity::Establish))
+            Some((package, installed, Polarity::Establish))
         );
         assert!(idx.probe_for(package).is_some());
         // An unknown (provider, verb) is None ⇒ consumer must run it (⊤), never skip.
@@ -440,6 +461,7 @@ mod tests {
         );
 
         let package = KindId(i.intern("package"));
+        let installed = SelectorId(i.intern("installed"));
         let Some(probe) = out.value.probe_for(package) else {
             panic!("a package probe was lifted");
         };
@@ -451,16 +473,16 @@ mod tests {
 
         assert_eq!(
             effect(&out.value, &mut i, "apt-get", "install"),
-            Some((package, Polarity::Establish))
+            Some((package, installed, Polarity::Establish))
         );
         assert_eq!(
             effect(&out.value, &mut i, "apt-get", "purge"),
-            Some((package, Polarity::Kill))
+            Some((package, installed, Polarity::Kill))
         );
         // A sub-verb flag (`-i`) is just another verb token — no flag grammar here.
         assert_eq!(
             effect(&out.value, &mut i, "dpkg", "-i"),
-            Some((package, Polarity::Establish))
+            Some((package, installed, Polarity::Establish))
         );
     }
 
@@ -508,7 +530,7 @@ mod tests {
         let mut i = Interner::default();
         let out = lift(
             &mut i,
-            &["oracle_kind=package\noracle_effect apt-get install establish\n"],
+            &["oracle_kind=package\noracle_effect apt-get install establish installed\n"],
         );
         assert!(
             out.diags.iter().any(|d| d.code == MISSING_PROBE),
@@ -518,9 +540,10 @@ mod tests {
         // The effect still binds to the (probeless) kind; the consumer finds no probe
         // and treats it as ⊤. Verify the kind was interned and the effect recorded.
         let package = KindId(i.intern("package"));
+        let installed = SelectorId(i.intern("installed"));
         assert_eq!(
             effect(&out.value, &mut i, "apt-get", "install"),
-            Some((package, Polarity::Establish))
+            Some((package, installed, Polarity::Establish))
         );
         assert!(out.value.probe_for(package).is_none());
     }
@@ -528,13 +551,15 @@ mod tests {
     #[test]
     fn malformed_effect_is_skipped_not_fatal() {
         // Wrong arity and an unknown polarity each drop just that one effect, with a
-        // diagnostic, while the rest of the file lifts (fail-soft, dn-7).
+        // diagnostic, while the rest of the file lifts (fail-soft, dn-7). Under the
+        // 4-token re-key, `install` (2 args) and `remove maybe installed` (bad
+        // polarity) are the two bad markers; the good `purge kill installed` survives.
         let mut i = Interner::default();
         let src = "oracle_kind=package\n\
                    oracle_probe_package() { :; }\n\
                    oracle_effect apt-get install\n\
-                   oracle_effect apt-get remove maybe\n\
-                   oracle_effect apt-get purge kill\n";
+                   oracle_effect apt-get remove maybe installed\n\
+                   oracle_effect apt-get purge kill installed\n";
         let out = lift(&mut i, &[src]);
         assert_eq!(
             out.diags.iter().filter(|d| d.code == BAD_EFFECT).count(),
@@ -544,15 +569,16 @@ mod tests {
         );
         // The good probe + the good effect survive the two bad markers.
         let package = KindId(i.intern("package"));
+        let installed = SelectorId(i.intern("installed"));
         assert!(out.value.probe_for(package).is_some());
         assert_eq!(
             effect(&out.value, &mut i, "apt-get", "purge"),
-            Some((package, Polarity::Kill))
+            Some((package, installed, Polarity::Kill))
         );
         assert_eq!(
             effect(&out.value, &mut i, "apt-get", "install"),
             None,
-            "dropped (no polarity)"
+            "dropped (wrong arity)"
         );
         assert_eq!(
             effect(&out.value, &mut i, "apt-get", "remove"),
@@ -566,18 +592,19 @@ mod tests {
         // dn-1's whole point: many oracle files contribute to one index, in argument
         // order, with no cross-file interference. Two providers, same kind.
         let a = "oracle_kind=package\noracle_probe_package() { :; }\n\
-                 oracle_effect apt-get install establish\n";
-        let b = "oracle_kind=package\noracle_effect yum install establish\n";
+                 oracle_effect apt-get install establish installed\n";
+        let b = "oracle_kind=package\noracle_effect yum install establish installed\n";
         let mut i = Interner::default();
         let out = lift(&mut i, &[a, b]);
         let package = KindId(i.intern("package"));
+        let installed = SelectorId(i.intern("installed"));
         assert_eq!(
             effect(&out.value, &mut i, "apt-get", "install"),
-            Some((package, Polarity::Establish))
+            Some((package, installed, Polarity::Establish))
         );
         assert_eq!(
             effect(&out.value, &mut i, "yum", "install"),
-            Some((package, Polarity::Establish))
+            Some((package, installed, Polarity::Establish))
         );
     }
 }

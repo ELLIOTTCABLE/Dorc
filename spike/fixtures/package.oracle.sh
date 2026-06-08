@@ -19,10 +19,12 @@ oracle_probe_package() {
    esac
 }
 
-# EFFECTS: accumulating (provider, verb) -> polarity on `package`. Many verbs and
-# providers coexist without clobbering (unlike a single oracle_verb).
-oracle_effect apt-get install   establish
-oracle_effect apt-get reinstall establish
-oracle_effect apt-get purge     kill
-oracle_effect apt-get remove    kill
-oracle_effect dpkg    -i        establish
+# EFFECTS: accumulating (provider, verb) -> (polarity, selector) on `package`. Many
+# verbs and providers coexist without clobbering (unlike a single oracle_verb). The
+# 4th token is the per-entity selector cell (note 193 §4): install/purge gate the
+# same #installed cell; a hypothetical `apt-get upgrade` would gate a #version cell.
+oracle_effect apt-get install   establish installed
+oracle_effect apt-get reinstall establish installed
+oracle_effect apt-get purge     kill      installed
+oracle_effect apt-get remove    kill      installed
+oracle_effect dpkg    -i        establish installed
