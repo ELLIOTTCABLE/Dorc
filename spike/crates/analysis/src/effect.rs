@@ -20,20 +20,20 @@
 use crate::cfg::{Cfg, CfgNodeId, CfgNodeKind};
 use crate::lattice::Lattice;
 use crate::solve::{solve, Direction, Graph};
-use dorc_core::{AstId, Interner, KindId, OpaqueToken, ProviderId};
+use dorc_core::{AstId, EntityRef, Interner, OpaqueToken, ProviderId};
 use dorc_oracle::{KindIndex, Polarity};
 use dorc_syntax::ast::{Ast, NodeKind, WordPart};
 use std::collections::BTreeSet;
 
-/// A system-state fact as a dataflow key: a named kind + an opaque entity. It
-/// carries NO source span — two commands establishing `package:nginx` from
-/// different lines denote the *same* fact for reaching-defs (provenance is the
-/// node's, tracked separately).
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub struct FactKey {
-    pub kind: KindId,
-    pub entity: OpaqueToken,
-}
+/// The dataflow fact-key the engine reaches over. **Re-exported from `core`**
+/// (`dec-seam-ownership`, `notes/193` §2): the structured entity-algebra is the
+/// shared vocabulary defined in `core` so `oracle`/`plan`/`hostsim` all key on one
+/// type; `analysis` is its largest *consumer*, not a parallel owner. The flat
+/// `(kind, entity)` pair of spike-1 became `core::FactKey { kind, entity:
+/// EntityRef, selector }` — the per-entity selector is what kills the poison wall
+/// (`apt-get update` ⇒ `package-index#fresh`, distinct from `install`'s
+/// `package:nginx#installed`).
+pub use dorc_core::FactKey;
 
 /// What a command does to system state, as far as the analyzer can determine.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -65,13 +65,27 @@ fn word_literal(ast: &Ast, w: AstId) -> Option<&str> {
 
 /// Determine a `Command` node's effect from the oracle index. ⊤-conservative
 /// (`Opaque`) on ANY uncertainty: dynamic command word/verb, no oracle entry, or
-/// not-exactly-one literal non-flag operand.
+/// *more than one* literal non-flag operand.
 ///
-/// The crude flag-strip ("operand = a literal not starting with `-`") and the
-/// single-entity restriction are a known coarse spot (note 162 O-3/O-4): sound
-/// (errs to `Opaque`) but value-eroding, and it mis-handles pre-verb flags
-/// (`apt-get -t x install …`) and attached values (`-oKey=Val`). Precise
-/// per-provider flag grammars are deferred.
+/// Entity resolution (the spike-2 re-key, `notes/193` §4):
+/// * exactly one literal non-flag operand ⇒ [`EntityRef::Operand`] (`install nginx`);
+/// * **zero** operands on a *modeled* `(provider, verb)` ⇒ [`EntityRef::Singleton`]
+///   (`apt-get update` — a nullary mutator on the one package index). This is what
+///   kills the poison wall: `update` gets a real cell (`package-index#fresh`)
+///   instead of falling through to `Opaque ⇒ Reach::Top`.
+/// * multiple / non-literal operands ⇒ `Opaque` (unchanged — `install nginx curl`).
+///
+/// Singleton-ness is **analyzer-inferred on zero-operands, not oracle-declared**
+/// (the K1 choice; `dec-shape` carries no cardinality token). Strain (`ch-wrong`,
+/// logged in `notes/193`): a verb that normally takes an operand but is mis-called
+/// with none (`apt-get install` alone) is mis-modeled `Singleton` not `Opaque` — a
+/// latent over-loosening; the principled fix is a declared singleton/cardinality bit
+/// (`dec-cardinality-deferred`).
+///
+/// The crude flag-strip ("operand = a literal not starting with `-`") is a known
+/// coarse spot (note 162 O-3/O-4): sound (errs to `Opaque`/`Singleton`) but
+/// value-eroding, and it mis-handles pre-verb flags (`apt-get -t x install …`) and
+/// attached values (`-oKey=Val`). Precise per-provider flag grammars are deferred.
 pub fn command_effect(ast: &Ast, idx: &KindIndex, interner: &mut Interner, simple: AstId) -> CommandEffect {
     let NodeKind::Simple { words, .. } = &ast.node(simple).kind else {
         return CommandEffect::Opaque;
@@ -98,10 +112,11 @@ pub fn command_effect(ast: &Ast, idx: &KindIndex, interner: &mut Interner, simpl
         return CommandEffect::Opaque; // no static verb ⇒ no effect to look up
     };
     let verb = interner.intern(verb_s);
-    let Some((kind, polarity)) = idx.effect_of(provider, verb) else {
+    let Some((kind, selector, polarity)) = idx.effect_of(provider, verb) else {
         return CommandEffect::Opaque; // unknown (provider, verb)
     };
-    // Entity = the single literal, non-flag operand after the verb.
+    // The literal, non-flag operands after the verb. Zero ⇒ the kind's singleton;
+    // exactly one ⇒ that operand's cell; more (or any non-literal) ⇒ ⊤.
     let mut operands = words[2..].iter().filter_map(|&w| {
         let lit = word_literal(ast, w)?;
         if lit.starts_with('-') {
@@ -110,10 +125,13 @@ pub fn command_effect(ast: &Ast, idx: &KindIndex, interner: &mut Interner, simpl
             Some(lit)
         }
     });
-    let (Some(entity_s), None) = (operands.next(), operands.next()) else {
-        return CommandEffect::Opaque; // zero / multiple / non-literal operands
+    let entity = match (operands.next(), operands.next()) {
+        (Some(entity_s), None) => EntityRef::Operand(OpaqueToken(interner.intern(entity_s))),
+        // the poison-wall fix: old flat key required a token here, fell through to ⊤
+        (None, _) => EntityRef::Singleton,
+        (Some(_), Some(_)) => return CommandEffect::Opaque,
     };
-    let fact = FactKey { kind, entity: OpaqueToken(interner.intern(entity_s)) };
+    let fact = FactKey { kind, entity, selector };
     match polarity {
         Polarity::Establish => CommandEffect::Establishes(fact),
         Polarity::Kill => CommandEffect::Kills(fact),
@@ -299,19 +317,45 @@ pub fn classify(cfg: &Cfg, ast: &Ast, idx: &KindIndex, interner: &mut Interner) 
 mod tests {
     use super::*;
     use crate::cfg;
+    use dorc_core::{KindId, SelectorId};
 
-    /// Build (interner, index) with the package oracle's effects, plus the
-    /// pre-interned kind/provider needed to assert facts.
-    fn package_setup() -> (Interner, KindIndex, KindId) {
+    /// The interned ids a package-fixture test asserts against. Kept together so a
+    /// test reads `s.installed` / `s.nginx` instead of re-interning inline.
+    struct Syms {
+        package: KindId,
+        package_index: KindId,
+        installed: SelectorId,
+        fresh: SelectorId,
+    }
+
+    /// Build (interner, index, syms) modeling the package oracle's effects — now
+    /// *including* `apt-get update → (package-index, #fresh)`, the modeled nullary
+    /// that the poison-wall fix relies on (`notes/193` §1). `install`/`purge` gate
+    /// the `#installed` selector of `package`.
+    fn package_setup() -> (Interner, KindIndex, Syms) {
         let mut interner = Interner::default();
         let package = KindId(interner.intern("package"));
+        let package_index = KindId(interner.intern("package-index"));
+        let installed = SelectorId(interner.intern("installed"));
+        let fresh = SelectorId(interner.intern("fresh"));
         let apt = ProviderId(interner.intern("apt-get"));
         let install = interner.intern("install");
         let purge = interner.intern("purge");
+        let update = interner.intern("update");
         let mut idx = KindIndex::default();
-        idx.add_effect(apt, install, package, Polarity::Establish);
-        idx.add_effect(apt, purge, package, Polarity::Kill);
-        (interner, idx, package)
+        idx.add_effect(apt, install, package, installed, Polarity::Establish);
+        idx.add_effect(apt, purge, package, installed, Polarity::Kill);
+        idx.add_effect(apt, update, package_index, fresh, Polarity::Establish);
+        (interner, idx, Syms { package, package_index, installed, fresh })
+    }
+
+    /// `package:<entity>#installed` — the cell `apt-get install <entity>` gates.
+    fn pkg_installed(i: &mut Interner, s: &Syms, entity: &str) -> FactKey {
+        FactKey {
+            kind: s.package,
+            entity: EntityRef::Operand(OpaqueToken(i.intern(entity))),
+            selector: s.installed,
+        }
     }
 
     fn classify_src(src: &str, interner: &mut Interner, idx: &KindIndex) -> Vec<SkipClass> {
@@ -327,25 +371,21 @@ mod tests {
     fn lone_install_is_ambient() {
         // Why: the simplest establish with nothing upstream — must be probe-able
         // (EstablishAmbient), the precondition for ever skipping it.
-        let (mut i, idx, package) = package_setup();
-        let nginx = OpaqueToken(i.intern("nginx"));
+        let (mut i, idx, s) = package_setup();
         let classes = classify_src("apt-get install nginx", &mut i, &idx);
-        assert_eq!(
-            classes,
-            vec![SkipClass::EstablishAmbient(FactKey { kind: package, entity: nginx })]
-        );
+        assert_eq!(classes, vec![SkipClass::EstablishAmbient(pkg_installed(&mut i, &s, "nginx"))]);
     }
 
     #[test]
     fn upstream_purge_makes_install_written() {
         // Why (note 162 O-1 / break-10, THE wrong-skip): an upstream same-run kill
         // means the resting probe is stale — the install must NOT be treated as
-        // ambient/skippable.
-        let (mut i, idx, package) = package_setup();
-        let nginx = OpaqueToken(i.intern("nginx"));
+        // ambient/skippable. purge + install gate the SAME (package:nginx#installed)
+        // cell, so the kill reaches the establish.
+        let (mut i, idx, s) = package_setup();
         let classes = classify_src("apt-get purge nginx\napt-get install nginx", &mut i, &idx);
         // purge ⇒ MustRun (a kill, not an elidable establish); install ⇒ Written.
-        assert!(classes.contains(&SkipClass::EstablishWritten(FactKey { kind: package, entity: nginx })));
+        assert!(classes.contains(&SkipClass::EstablishWritten(pkg_installed(&mut i, &s, "nginx"))));
         assert!(!classes
             .iter()
             .any(|c| matches!(c, SkipClass::EstablishAmbient(_))));
@@ -353,16 +393,97 @@ mod tests {
 
     #[test]
     fn opaque_upstream_poisons_ambientness() {
-        // Why (note 162 O-3, the precision COST being surfaced): an unrecognized
-        // command (no oracle) is Opaque ⇒ ⊤ ⇒ it conservatively poisons every
-        // downstream fact's ambient-ness. Sound but value-eroding — this test
-        // documents the cost so we feel it.
-        let (mut i, idx, _package) = package_setup();
+        // Why (note 162 O-3, the precision COST being surfaced): a genuinely
+        // unrecognized command (`ufw allow` — NO oracle entry) is still Opaque ⇒ ⊤ ⇒
+        // it conservatively poisons every downstream fact's ambient-ness. The re-key
+        // does NOT rescue an un-oracled neighbor; it rescues a *modeled* nullary
+        // (`apt-get update`, the `poison_wall_dies_*` test below). This documents the
+        // residual, correct cost so we still feel it.
+        let (mut i, idx, _s) = package_setup();
         let classes = classify_src("ufw allow 80/tcp\napt-get install nginx", &mut i, &idx);
         assert!(classes.iter().any(|c| matches!(c, SkipClass::EstablishWritten(_))));
         assert!(!classes
             .iter()
             .any(|c| matches!(c, SkipClass::EstablishAmbient(_))));
+    }
+
+    #[test]
+    fn poison_wall_dies_modeled_update_does_not_poison_install() {
+        // THE keystone win (`notes/193` §1 / acceptance §7.2): a modeled `apt-get
+        // update` establishes a *distinct cell* (`package-index#fresh`), so it no
+        // longer poisons the `apt-get install nginx` below it. Before the re-key,
+        // `update` was doubly-unkeyable (no operand, and — pre-modeling — no verb) ⇒
+        // Opaque ⇒ Reach::Top ⇒ install forced EstablishWritten. Now it's ambient.
+        let (mut i, idx, s) = package_setup();
+        let classes = classify_src("apt-get update\napt-get install nginx", &mut i, &idx);
+        assert!(
+            classes.contains(&SkipClass::EstablishAmbient(pkg_installed(&mut i, &s, "nginx"))),
+            "modeled `update` (distinct cell) must leave install EstablishAmbient: {classes:?}"
+        );
+        assert!(
+            !classes.iter().any(|c| matches!(c, SkipClass::EstablishWritten(_))),
+            "no Written: update's cell (package-index#fresh) ≠ install's (package:nginx#installed)"
+        );
+    }
+
+    #[test]
+    fn genuine_same_cell_kill_still_forces_written() {
+        // exclusion-check (`notes/193` §7.3): the re-key must NOT over-loosen the
+        // ambient gate. A real same-cell kill (`purge nginx; install nginx`, both on
+        // package:nginx#installed) must STILL force Written — resting probe is stale.
+        let (mut i, idx, s) = package_setup();
+        let classes = classify_src("apt-get purge nginx\napt-get install nginx", &mut i, &idx);
+        assert!(
+            classes.contains(&SkipClass::EstablishWritten(pkg_installed(&mut i, &s, "nginx"))),
+            "same-cell purge must keep install EstablishWritten (no over-loosening): {classes:?}"
+        );
+        assert!(!classes
+            .iter()
+            .any(|c| matches!(c, SkipClass::EstablishAmbient(_))));
+    }
+
+    #[test]
+    fn distinct_selectors_do_not_discharge_each_other() {
+        // The selector regression (`notes/193` §7.4): `systemctl enable nginx` and
+        // `systemctl start nginx` gate DIFFERENT selectors of the SAME service:nginx
+        // cell (#enabled vs #active). Neither discharges the other — both stay
+        // EstablishAmbient (an `is-active` probe must not satisfy an unmet `#enabled`).
+        // A flat key (one bit per kind+entity) could not hold this — the second would
+        // see the first reach its cell and (mis-)classify Written.
+        let mut i = Interner::default();
+        let service = KindId(i.intern("service"));
+        let enabled = SelectorId(i.intern("enabled"));
+        let active = SelectorId(i.intern("active"));
+        let systemctl = ProviderId(i.intern("systemctl"));
+        let enable = i.intern("enable");
+        let start = i.intern("start");
+        let mut idx = KindIndex::default();
+        idx.add_effect(systemctl, enable, service, enabled, Polarity::Establish);
+        idx.add_effect(systemctl, start, service, active, Polarity::Establish);
+
+        let classes = classify_src("systemctl enable nginx\nsystemctl start nginx", &mut i, &idx);
+        let enabled_cell = FactKey {
+            kind: service,
+            entity: EntityRef::Operand(OpaqueToken(i.intern("nginx"))),
+            selector: enabled,
+        };
+        let active_cell = FactKey {
+            kind: service,
+            entity: EntityRef::Operand(OpaqueToken(i.intern("nginx"))),
+            selector: active,
+        };
+        assert!(
+            classes.contains(&SkipClass::EstablishAmbient(enabled_cell)),
+            "enable nginx ⇒ service:nginx#enabled, ambient: {classes:?}"
+        );
+        assert!(
+            classes.contains(&SkipClass::EstablishAmbient(active_cell)),
+            "start nginx ⇒ service:nginx#active, ambient (NOT discharged by #enabled): {classes:?}"
+        );
+        assert!(
+            !classes.iter().any(|c| matches!(c, SkipClass::EstablishWritten(_))),
+            "distinct selectors ⇒ neither reaches the other's cell ⇒ no Written"
+        );
     }
 
     #[test]
@@ -374,11 +495,10 @@ mod tests {
         // allowlist + the Ambient-vs-Written line (the `set`-only end-to-end case does
         // not isolate this); a mis-edit dropping `:`/`echo` would silently re-poison —
         // a wrong-skip surface.
-        let (mut i, idx, package) = package_setup();
-        let nginx = OpaqueToken(i.intern("nginx"));
+        let (mut i, idx, s) = package_setup();
         let classes = classify_src(":\necho hi\napt-get install nginx", &mut i, &idx);
         assert!(
-            classes.contains(&SkipClass::EstablishAmbient(FactKey { kind: package, entity: nginx })),
+            classes.contains(&SkipClass::EstablishAmbient(pkg_installed(&mut i, &s, "nginx"))),
             "pure builtins (`:`/`echo`) upstream must keep the install EstablishAmbient: {classes:?}"
         );
         assert!(
@@ -398,7 +518,7 @@ mod tests {
         // MustRun) until interprocedural call-edges land. The contrast with
         // `lone_install_is_ambient` (identical establish, ambient at top level)
         // proves the reachability gate is doing the work.
-        let (mut i, idx, _package) = package_setup();
+        let (mut i, idx, _s) = package_setup();
         let classes = classify_src("p() { apt-get install nginx; }\np", &mut i, &idx);
         assert_eq!(
             classes,
@@ -408,9 +528,8 @@ mod tests {
     }
 
     #[test]
-    fn command_effect_is_top_conservative() {
-        let (mut i, idx, package) = package_setup();
-        let nginx = OpaqueToken(i.intern("nginx"));
+    fn command_effect_resolves_operand_singleton_and_top() {
+        let (mut i, idx, s) = package_setup();
         let eff = |src: &str, i: &mut Interner| {
             let parsed = dorc_syntax::parse(src);
             // the script's single top-level Simple is item 0 of the Script
@@ -419,9 +538,26 @@ mod tests {
             };
             command_effect(&parsed.value, &idx, i, items[0])
         };
-        assert_eq!(eff("apt-get install -y nginx", &mut i), CommandEffect::Establishes(FactKey { kind: package, entity: nginx }), "flag -y stripped");
+        // One operand ⇒ Operand cell; the flag `-y` is stripped.
+        let nginx_cell = pkg_installed(&mut i, &s, "nginx");
+        assert_eq!(
+            eff("apt-get install -y nginx", &mut i),
+            CommandEffect::Establishes(nginx_cell),
+            "flag -y stripped ⇒ Operand(nginx)#installed"
+        );
+        // Zero operands on a MODELED verb ⇒ Singleton (the poison-wall fix).
+        assert_eq!(
+            eff("apt-get update", &mut i),
+            CommandEffect::Establishes(FactKey {
+                kind: s.package_index,
+                entity: EntityRef::Singleton,
+                selector: s.fresh,
+            }),
+            "nullary modeled verb ⇒ Singleton(package-index#fresh)"
+        );
+        // Still ⊤ on the genuinely-ambiguous shapes.
         assert_eq!(eff("apt-get install nginx curl", &mut i), CommandEffect::Opaque, "multi-entity ⇒ ⊤");
         assert_eq!(eff("$cmd install nginx", &mut i), CommandEffect::Opaque, "dynamic command name ⇒ ⊤");
-        assert_eq!(eff("apt-get update", &mut i), CommandEffect::Opaque, "unknown verb ⇒ ⊤");
+        assert_eq!(eff("apt-get autoclean", &mut i), CommandEffect::Opaque, "unknown verb ⇒ ⊤");
     }
 }
