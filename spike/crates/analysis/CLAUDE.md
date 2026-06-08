@@ -1,6 +1,6 @@
 # spike/crates/analysis — CLAUDE.md
 
-The engine: CFG construction (`cfg.rs`), the monotone-dataflow worklist (`lattice.rs` + `solve.rs`), and effect/classify — the ambient gate (`effect.rs`). The keystone's home, and the densest crate. Read `spike/CLAUDE.md` (the `inv-*` list) and `Research/plans/190-spike2-keystone-charter.md` (esp. §3 keystone, §4 substrate + the three seams) before working here. Design rationale for every choice: `Research/notes/163-analysis-engine-design-spa-grounded.md`.
+The engine: CFG construction (`cfg.rs`), the monotone-dataflow worklist (`lattice.rs` + `solve.rs`), and effect/classify — the ambient gate (`effect.rs`). The keystone's home, and the densest crate. Read `spike/CLAUDE.md` (the `inv-*` list) and `Research/plans/191-spike2-keystone-charter.md` (esp. §3 keystone, §4 substrate + the three seams) before working here. Design rationale for every choice: `Research/notes/163-analysis-engine-design-spa-grounded.md`.
 
 ## What is already built (don't rebuild; thread the keystone *through* it)
 

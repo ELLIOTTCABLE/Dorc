@@ -1,7 +1,7 @@
 # spike/crates/syntax — CLAUDE.md
 
 The hand-rolled lexer + recursive-descent parser + arena AST for the modeled sh
-subset. Read `spike/CLAUDE.md` and `Research/plans/190-spike2-keystone-charter.md`.
+subset. Read `spike/CLAUDE.md` and `Research/plans/191-spike2-keystone-charter.md`.
 
 ## What this crate is for spike-2 — a disposable test front-end
 

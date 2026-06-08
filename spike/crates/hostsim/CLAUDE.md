@@ -1,6 +1,6 @@
 # spike/crates/hostsim — CLAUDE.md
 
-The seeded, deterministic DST host-model + the `kFAIL-withhold` monitor. Read `spike/CLAUDE.md` and `Research/plans/190-spike2-keystone-charter.md`.
+The seeded, deterministic DST host-model + the `kFAIL-withhold` monitor. Read `spike/CLAUDE.md` and `Research/plans/191-spike2-keystone-charter.md`.
 
 Keep this the sole home of nondeterminism (`inv-determinism`); the kernel it answers stays pure (`an-pure-kernel`). The kernel crates (`syntax`/`analysis`/`plan`/`core`) depend on *none* of this — that's what lets the whole pipeline run under DST with no DI ceremony (`an-di-seams`: this crate *is* the one DI seam; the kernel never reaches a clock/RNG/net/disk transitively). DST over seeds is the regression backbone — keep it green as the entity-algebra changes (`ap-1`: verdicts become per-selector, not one bit per kind/entity).
 

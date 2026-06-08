@@ -1,7 +1,7 @@
 # spike/crates/plan — CLAUDE.md
 
 Elision/replacement, the probe→apply compiler, and render. Read `spike/CLAUDE.md`
-(invariants) and `Research/plans/190-spike2-keystone-charter.md` (charter). Trust
+(invariants) and `Research/plans/191-spike2-keystone-charter.md` (charter). Trust
 the root `DESIGN.md` (the plan/apply UX) + `IMPLEMENTATION.md` ("To execute, or
 not to execute?" — the priority order: never under-execute > avoid over-execute >
 avoid unnecessary-execute) over `Research/`.

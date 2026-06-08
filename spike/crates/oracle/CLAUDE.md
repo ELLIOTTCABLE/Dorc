@@ -2,7 +2,7 @@
 
 Lifts an oracle's sh **statically** (never sources or runs it) into the *kind-index*: the 3-place relation
 `(kind, provider, verb) → effect` (`an-kind-index`) plus a read-only `FactProbe` per kind (`an-fact-probe`).
-Read `spike/CLAUDE.md` (invariants) and `Research/plans/190-spike2-keystone-charter.md` (the charter) first.
+Read `spike/CLAUDE.md` (invariants) and `Research/plans/191-spike2-keystone-charter.md` (the charter) first.
 This crate is the home of the `kTYANNOT-inline` experiment (`ch-shape-anno`) and the stdlib-oracle quality bar.
 
 ## What this crate is — and its place in the keystone

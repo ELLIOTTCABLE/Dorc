@@ -9,7 +9,7 @@ file is *how we build the spike*.
 
 This is now **spike-2** (round-19): the same disposable-spike contract, re-aimed at
 the keystone the round-16 spike skipped. Charter:
-`Research/plans/190-spike2-keystone-charter.md` (read it first). This tree is the
+`Research/plans/191-spike2-keystone-charter.md` (read it first). This tree is the
 round-16 code, forked here and verified green — extend it in place.
 
 Goal-shape: this is academic-grade static-analysis work (CFG, IFDS dataflow,
@@ -30,7 +30,7 @@ prompt you write:
 
 ## Round-19 / spike-2: the keystone, and the exploration frame
 
-Charter: `Research/plans/190-spike2-keystone-charter.md`. The job is the structured,
+Charter: `Research/plans/191-spike2-keystone-charter.md`. The job is the structured,
 recursive, kind-typed entity-algebra (and the analysis riding on it) that the
 round-16 spike skipped — the fact-domain re-key that kills the "poison wall" (an
 un-oracled neighbour poisoning all downstream ambient-ness, so nothing elides on a
@@ -67,7 +67,7 @@ update, which-phase, which-user, holds-under-an-unreliable-oracle — the `tc-*`
 lacks the phase/user/orientation context to settle these, so **flag them up to the orchestrator; never resolve
 them in isolation** — this is `inv-superposition` at the orchestration level (emit the fact; let the
 context-bearing caller collapse it). Purely-local tensions (render-fidelity, parser-massaging) stay with the
-component. The `tc-*` set + the exclusion-check axes are enumerated in `Research/plans/190` (§5b).
+component. The `tc-*` set + the exclusion-check axes are enumerated in `Research/plans/191` (§5b).
 
 ## Build / test / run
 
@@ -175,7 +175,7 @@ Every subagent this spike spawns MUST get, as the first lines of its prompt: the
   trust them over anything in `Research/` (unreviewed LLM planning-slop).
 - this `spike/CLAUDE.md` and the `spike/crates/<crate>/CLAUDE.md` for the crate it
   works in — the invariants + its per-component task.
-- `Research/plans/190-spike2-keystone-charter.md` — the spike-2 charter.
+- `Research/plans/191-spike2-keystone-charter.md` — the spike-2 charter.
 
 No exceptions, even for "quick" tasks; pass the absolute paths. Then hand the
 subagent the specific invariant-slugs and research-chord slugs it must honor, and

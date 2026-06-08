@@ -45,7 +45,7 @@ This synthesis is the checkpoint — we don't move on until it reads solid to yo
 ## Prompt 2 — the task overall (build-state + charter)
 
 ```
-Now the task itself. Read the round-19 charter in full: Research/plans/190-spike2-keystone-charter.md — it's
+Now the task itself. Read the round-19 charter in full: Research/plans/191-spike2-keystone-charter.md — it's
 the spike's on-ramp and names the locked decisions. For build-state, also read
 Research/plans/16P-spike-postmortem.md (its §3 built-vs-designed ledger first) and 16Q-next-spike-and-process.md.
 
@@ -100,7 +100,7 @@ namespace itself — kinds embed kinds), and how re-keying the fact domain to it
 ## Prompt 5 — the work, and how to run it
 
 ```
-You now have the context to orchestrate. Build the keystone per plans/190, dispatching subagents
+You now have the context to orchestrate. Build the keystone per plans/191, dispatching subagents
 per-component (the spike crates). Each subagent gets: the SAFETY block at the very top; the per-component
 CLAUDE.md in spike/crates/<crate>/ (and the spike-root spike/CLAUDE.md); and the specific charter / invariant
 slugs it must honor. Give them the goal and the invariants, then leave them room — they're Opus-Max, and
@@ -117,7 +117,7 @@ Two things the charter makes non-negotiable, because the last spike got them wro
   anything built on the old flat fact key.
 - The acceptance harness must execute or `sh -n`-check the rendered artifact, never string-diff it (ap-2).
 
-You own the cross-cutting tension adjudications (the `tc-*` set in plans/190 §5b — collapsing May/Must,
+You own the cross-cutting tension adjudications (the `tc-*` set in plans/191 §5b — collapsing May/Must,
 minting an elision-voucher, proof-vs-tainted, strong/weak-update, which-phase, which-user,
 holds-under-a-lying-oracle). A per-crate subagent flags these up to you; you discharge them with the
 phase/user/orientation context it lacks, running the exclusion-check (reverse-direction · other-phase ·

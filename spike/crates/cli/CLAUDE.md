@@ -1,6 +1,6 @@
 # spike/crates/cli — CLAUDE.md
 
-The round-trip: book + oracles → read-only probe → results → eliding apply. Read `spike/CLAUDE.md` and `Research/plans/190-spike2-keystone-charter.md`.
+The round-trip: book + oracles → read-only probe → results → eliding apply. Read `spike/CLAUDE.md` and `Research/plans/191-spike2-keystone-charter.md`.
 
 This is the one place determinism is relaxed (real I/O); `inv-determinism` exempts the `cli` edge *only*. Keep the I/O in `run()`/`main` and the pipeline (`parse → cfg::build → effect::classify → plan::{compile_probe, build_plan}`) a total `Carrier<T>` function of its inputs — don't let a clock/RNG/env-read leak inward to "help". Diagnostics go to stderr (`report`); stdout stays exactly probe-then-apply, or the e2e capture (and any real downstream pipe) breaks.
 

@@ -1,6 +1,6 @@
 # spike/crates/core — CLAUDE.md
 
-The shared vocabulary every crate agrees on first (chord `dac-B`: analyzer and provenance/error layer must agree the types *before* either builds, or they grow two incompatible graphs). Read `spike/CLAUDE.md` and `Research/plans/190-spike2-keystone-charter.md` for the spike-2 charter.
+The shared vocabulary every crate agrees on first (chord `dac-B`: analyzer and provenance/error layer must agree the types *before* either builds, or they grow two incompatible graphs). Read `spike/CLAUDE.md` and `Research/plans/191-spike2-keystone-charter.md` for the spike-2 charter.
 
 Today `core` holds: `AstId`/`BytePos`/`Span`, `Carrier<T>` + `Diagnostic` (the `dn-7` no-throw spine), `Interner`/`Symbol`, `OpaqueToken`/`KindId`/`ProviderId` (referent-agnostic identity), `Phase`/`Verdict`/`Grade`, and `FactDomain`/`Fact`.
 
