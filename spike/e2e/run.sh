@@ -76,14 +76,10 @@ syntax_check() {
 exec_check() {
   _label=$1; _art=$2; _case=$3; _dir=$4
   _log=$(mktemp)
-  # Resolve the mocks dir to an ABSOLUTE path: PATH is about to become *only* this
-  # dir, so a relative path would break (and the interpreter is invoked by its own
-  # absolute path `$checker_abs`, never found via the overridden PATH).
+  # Absolute mocks dir: PATH is about to become *only* this dir, so a relative path
+  # would break — and the interpreter is invoked by its own absolute path
+  # (`$checker_abs`), never found via the overridden PATH.
   _mocks=$(CDPATH= cd -- "${_dir}mocks" && pwd)
-  # PATH = the mocks dir ONLY. The shims are the entire executable surface; nothing
-  # real is reachable (an un-shimmed external ⇒ `not found` ⇒ a loud failure, never a
-  # real system mutation). The interpreter runs the rendered artifact exactly as a
-  # host would run the shipped apply.
   if ! _run_err=$(DORC_LOG="$_log" PATH="$_mocks" "$checker_abs" 2>&1 <<EOF
 $_art
 EOF
