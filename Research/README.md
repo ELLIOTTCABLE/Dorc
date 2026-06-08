@@ -26,10 +26,11 @@ least a little bit of prior rounds as context; older ones, although focused, are
 often also full of superseded/incorrect info. peruse older rounds with care.)
 
 **Start here (current state):** the standing design accord is the human-authored `../DESIGN.md` +
-`../KNOBS.md`; the most recent *event* is the **round-16 implementation spike** — read `plans/16P`
-(what it built / deliberately deferred — its §3 ledger first) then `plans/16Q` (what's owed next). The
-per-facet conclusions below (`055`/`099`/`102`/`111`/`128`/`139`/`142`) are the durable answers each
-round settled.
+`../KNOBS.md` (now incl. `kTYANNOT`); the most recent *event* is the **round-17 type/kind/naming research** —
+read **`plans/17N`** (the K1+K2 reunion: how a kind is spelled, analyzed, and reconciled — the on-ramp for the
+kind/'types' question) + **`notes/17O`** (its adversarial crosscheck). The prior **round-16 implementation
+spike** is still the build reality (`plans/16P` §3-ledger first, then `plans/16Q`). The per-facet conclusions
+below (`055`/`099`/`102`/`111`/`128`/`139`/`142`/`17N`) are the durable answers each round settled.
 
 - **What is it, and where's the hard part?** — `plans/021` (empty dir → CFG/effect engine) +
   `plans/041` (language / parser / orchestration decisions).
@@ -60,13 +61,26 @@ round settled.
   channels, Dorc-signalling out-of-band split by size/urgency; `kCOMMS`).
 - **Where do the plans break / what wastes effort?** — `notes/151` (adversarial premise-review; the convergent finding —
   the *named-kind oracle contract is unspelled and four rounds defer it* — is the hinge `16` stubbed and `16Q` flags as next).
+- **How do oracles name & reconcile kinds (the symbol-grounding / 'types' problem)?** — **`plans/17N`** (the
+  round-17 K1+K2 reunion: a named kind = identity-anchor + nominal type; *spell · analyze · reconcile*), built
+  from `plans/175` (K1 identity) + `plans/17H` (K2 type-discipline), adversarially crosschecked in `notes/17O`.
+  The continuation of `DESIGN`'s "Inference limitations" — the `151` hinge, now mapped (not yet decided).
 
 Through-line worth holding: the **soundness story keeps getting re-cut** — bias-inversion
 (`051`) → perf demotes statically-derived deps (`076`) → trace-don't-derive recovery (`077`) →
 relational MUST/MAY contracts (`099`). Later cuts supersede earlier framings of *how much Dorc
 can know without running the host*; on that question, the later round wins.
 
-> *Latest — round 16, 2026-06-05, the implementation spike (`do-4`):* a deliberately disposable Rust
+> *Latest — round 17, 2026-06-07/08, the type/kind/naming research:* the **symbol-grounding / 'types'
+> problem** — the unspelled named-kind contract `151` flagged as the hinge. Two firewalled kernels (K1
+> identity-spelling `plans/175` · K2 type-discipline `plans/17H`) **reunited** in **`plans/17N`** (the on-ramp
+> for the kind/types story), then **adversarially crosschecked** in **`notes/17O`**. Net: one genuine new knob
+> (`KNOBS kTYANNOT` — inline-annotation vs eol-comment, the off-ramp trade), one DESIGN paragraph owed
+> (`TODO.md` run-delta convergence), and the `094`-g1 "shared-arg = link" claim downgraded to a *may-grade
+> hint* across `099`/`175`/`17H`. The relational/referent-agnostic frame, the two-axis kill-criterion, and the
+> Seam held through both crosscheck rounds. Prior: round 16 (below).
+>
+> *Round 16, 2026-06-05, the implementation spike (`do-4`):* a deliberately disposable Rust
 > workspace that **built the cheapest tier of the `055` engine** — a pure, deterministic
 > `syntax→analysis→plan` kernel (hand-rolled monotone dataflow, reaching-defs **ambient gate**,
 > **observable/replace** elision, phase-keyed `kFAIL`, a probe→apply compiler) — and proved the
@@ -209,6 +223,38 @@ Each specimen is a real script reproduced byte-exact + commit-pinned via `tools/
 *A deliberately disposable Rust workspace. The 25 round-16 notes + the spike code are **quarantined** (`notes/quarantine-DO-NOT-READ/`) — reach last-mile evidence through the two postmortems' citations; do **not** pull the quarantine back in wholesale.*
 - **`plans/16P-spike-postmortem.md`** — the neutral record: the cheapest `055` tier built (a pure deterministic kernel; reaching-defs **ambient gate**; **observable/replace** elision; the witness/license; a probe→apply compiler; DST + sh-e2e), as durable threads `T1`–`T17`, **each tagged against the built-vs-designed ledger (§3 — read first)**. The kind-index *mechanism* exists; the **oracle contract an author writes was a held strawman, not built**.
 - **`plans/16Q-next-spike-and-process.md`** — the forward-look (opinion, marked): the **precision/recency layer is the keystone the spike skipped** (`§1`: without it nothing elides on a realistic book); spike-2's `q1-*` build-list (instantiate a *backward* analysis + apply-3; recency/selectors; probe-projection); the retrofit-hostile decisions to **settle on paper first** (`dq-entity-algebra`, `dq-substrate`, `dq-kOOB`); enshrine only the fact-centric anchor's *shape, not spelling*. Plus process lessons for the next throwaway spike.
+
+### Type / kind / naming round (round 17 — the symbol-grounding / 'types' problem; 2026-06-07/08)
+*How an oracle NAMES the kind its predicate serves, how kinds are ANALYZED as a (minimal) type-discipline, and
+how independently-authored oracles RECONCILE them — the "unspelled named-kind contract" `151` flagged as the
+hinge. Two firewalled kernels (K1 identity-spelling · K2 type-discipline), reunited, then adversarially
+crosschecked. Charter: `plans/170`.*
+- **K1 — cross-oracle kind-identity spelling.** Gather: `notes/171` (packaging prior-art) · `172` (adjacent
+  fields: BCP-47 / InChI / Pact / reverse-DNS) · `173` (shell spellings / env-vars / GitHub Actions) · `174`
+  (command-execution / the `getent` self-kind-describing pattern — the round's one positive). **Synthesis:
+  `plans/175`** — the 3-place `(kind, provider, verb)` shape is universal; cross-oracle identity binds to a
+  *named kind*, never a shared token; reverse-DNS handle; blessing buys a bounded vocabulary; co-reference is
+  the only *free* link (a may-grade hint, not a must-grade link — the `094`-g1 downgrade).
+- **K2 — the minimal type-discipline.** Plan `notes/17A`; reasoning `notes/17B` (the kill-floor is *two*
+  floors — depth vs fidelity/coordination); gather `17C`–`17G` (f6 success-typing · f7 gradual guarantee · f8
+  soft/pluggable/governance · f9 typestate/effects · f10 minimality/coherence). **Synthesis: `plans/17H`** —
+  the dumbest *forgiving* discipline (nominal kinds + ≥enum typestate, narrowed by occurrence-typing, all
+  unanchored ⇒ ⊤ ⇒ run); the safety-direction is the *oracle's*, not the tool's (spine-1); cross-oracle
+  meaning-agreement (coherence) is the un-dodgeable core (spine-2).
+- **`plans/17N` — the K1+K2 REUNION (the on-ramp for the kind/types question).** A kind is *one object* (K1's
+  identity-anchor + K2's nominal type). Part I (spell + analyze, single-oracle) · Part II (reconcile,
+  cross-oracle) · the Seam (meaning-agreement). Carries the live decisions: `dq-kOOB` (→ `kTYANNOT`),
+  `dq-entity-algebra` (recursive JSON-adjacent struct), the relational frame (referent-agnostic: *relay +
+  adjudicate*, never infer a referent), and the probe model (lift read-only probes; oracles *intercept*).
+- **`notes/17O` — the adversarial crosscheck (findings ledger).** Two rounds of neutral+adversarial passes
+  over `17N`, arbiter-verified live. R1 headline: the inline type-annotation breaks the off-ramp weld (→
+  `kTYANNOT`). R2 headline (both passes): the effect-map is *states*, not run-*deltas* — re-grounded into the
+  probe model (R2-CHANGEDELTA → the run-delta `TODO.md` entry). Strawmen: `notes/17x-strawmen/` (`oracles/`,
+  `books/`, `adversarial/` incl. the compiled-probe).
+- **Out-of-doc deliverables:** `../KNOBS.md` `kTYANNOT` (inline-annotation ↔ eol-comment) · `../TODO.md`
+  run-delta-convergence entry (to-write-into-DESIGN) · `[REVISED→17N]` annotations on `plans/099` §C +
+  `plans/175` + `plans/17H` (the `094`-g1 shared-arg→hint downgrade) · the `getent hosts` non-hermetic
+  canonical example.
 
 ## Vendor/ (full-history clones)
 CoLiS ecosystem (morbig, morsmall, colis-language, colis-constraints, shstats, lintshell, …), shellcheck, mvdan-sh, smoosh, oils, goblint-analyzer, tree-sitter-bash. See manifest for grades/licenses.

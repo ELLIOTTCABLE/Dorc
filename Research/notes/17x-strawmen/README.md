@@ -74,3 +74,14 @@ reachable *only* by kind-correlation, on real downloaded code. The same shape re
   i.e. *not* present in the book — they show what Dorc would need, and so double as the coverage-gap tally.
 - Commits #2/#3 were pinned to the serving SHA (re-pin from `git log -- <path>` for archival certainty).
 - Per AGENTS, the books are inline specimens; do not "fix" them — they are frozen evidence.
+
+## `adversarial/` — round-17 crosscheck strawmen (a different category)
+Added during the `plans/17N` adversarial crosscheck (`notes/17O`). Unlike the `books/`+`oracles/` above (real
+extractions), these are **illustrative regression-test seeds** authored to ground a finding:
+- `r17-crosscheck-runnable.straw.sh` — verified shell-hazard demos (runs clean under `dash`): `command -v`
+  function-shadowing, `|| true` rc-masking, mutating-`trap`-fires-during-probe, the off-ramp annotation.
+- `r17-crosscheck-dorc-inputs.straw.sh` — Dorc elision-decision inputs (valid sh + the correct-vs-wrong Dorc
+  verdict): R2-CHANGEDELTA (run-delta), R2-PROBEGATE, R2-CONTEXT, F-ALGEBRA (≥enum structured key), the
+  oracle-quality class.
+- `compiled-probe.straw.sh` — what a *lifted probe* looks like (oracle interceptors + OOB verdict lane +
+  CFG-preserved variant); the sanitized human sketch. Inlined into `plans/17N` §3.

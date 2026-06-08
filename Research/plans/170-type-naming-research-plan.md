@@ -29,7 +29,7 @@ separate"). This round takes on **both** sides, kept deliberately apart:
   won't force worse work later. Feeds the *shape* half of `dq-entity-algebra` + `kBURDEN`/`kVERIFY`.
 
 The firewall is a **method rule, not just a topic split**: the two threads are researched in **two separate
-fresh contexts** (`_tmp-170-k1-brief.md` / `_tmp-170-k2-brief.md`), so K1 never sees the PLT/typing material
+fresh contexts** (disposable per-kernel briefs, since deleted), so K1 never sees the PLT/typing material
 and cannot be poisoned by it (and is steered *away* from academic-PLT framing on purpose). They reunite only
 *after* the round — see Sequencing. Reason: the ontology tar-pit must not swallow the encoding question, and
 "it's just types" must not hand-wave past the genuinely-unsolved identity problem.

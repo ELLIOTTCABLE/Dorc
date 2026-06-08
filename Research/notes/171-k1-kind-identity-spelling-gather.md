@@ -1,7 +1,6 @@
 # 171 — K1: cross-referent kind-identity spelling — prior-art gather (round 17, 2026-06-07)
 
-> Firewalled **K1** thread (entity-identity / equivalence / ontology); charter `plans/170`, brief
-> `_tmp-170-k1-brief.md`. This is the **raw graded findings log**; the deliverable **map-with-a-lean**
+> Firewalled **K1** thread (entity-identity / equivalence / ontology); charter `plans/170`. This is the **raw graded findings log**; the deliverable **map-with-a-lean**
 > is `plans/175-cross-oracle-kind-channel-synthesis.md`. Sources graded into `../sources.json` via `new-source.sh`.
 > AI-generated; confidence-marked; trust repo-root `DESIGN`/`KNOBS` over this. Per the brief I'm
 > *upstream* of the soundness math (charter A3–A6) — this is about **spelling the anchor**.
