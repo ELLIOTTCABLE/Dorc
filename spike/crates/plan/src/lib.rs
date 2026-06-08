@@ -505,6 +505,16 @@ impl Plan {
 /// `kind:entity` for a fact, resolving the interned names for *display/provenance*
 /// only (never a logic branch — `inv-referent-agnostic`). Public so the CLI can match
 /// probe-result lines back to facts by the same label the probe emitted.
+///
+// TODO(K2): the K1 re-key made `fact.entity` an `EntityRef` (Operand/Singleton) and
+// added `fact.selector` (`core::FactKey`). This must resolve the richer key for
+// display — e.g. `package:nginx#installed` (Operand) / `package-index#fresh`
+// (Singleton). The exact format is a K2 call because it COUPLES to the cli round-trip:
+// `cli::parse_results`'s stdin grammar keys verdicts by this label and `hostsim`'s
+// fact-store keys on the same `FactKey` (see crates/cli/CLAUDE.md "stdin re-key
+// gotcha" — do NOT drop the selector on parse and widen a verdict to the whole
+// entity, a wrong-elision under apply's kFAIL). K1 owns core+oracle+analysis only and
+// leaves this break for K2 (the body below still reads the old flat `.entity.0`).
 #[must_use]
 pub fn fact_label(interner: &Interner, fact: FactKey) -> String {
     format!(
@@ -737,12 +747,21 @@ mod tests {
 
     #[test]
     fn fixture_install_runs_despite_converged_probe() {
-        // fs-4 on the REAL book: `apt-get update` is un-oracled ⇒ Opaque ⇒ poisons
-        // downstream ambient-ness, so the `apt-get install -y nginx` after it is
-        // EstablishWritten, not EstablishAmbient — and prove_replaceable refuses a
-        // Written leaf. So even a Converged probe cannot license the skip; the
-        // install runs. (Surfaced design problem: to recover the skip the oracle
-        // must model `apt-get update` as package-state-pure; the spike's does not.)
+        // TODO(K2): the keystone INVERTS this test. The poison was `apt-get update`
+        // being un-oracled ⇒ Opaque ⇒ poisoning the `install -y nginx` below it to
+        // EstablishWritten. K1 (notes/193) makes `update` MODELED on a distinct cell
+        // (`package-index#fresh`), so it no longer poisons the install — proven at the
+        // classify level by `effect::tests::poison_wall_dies_modeled_update_does_not_
+        // poison_install`. K2 must: (a) make `package_index(&mut i)` here model
+        // `apt-get update → (package-index, #fresh, establish)` (it currently models
+        // only `install`), then (b) FLIP this assertion to `Disposition::Replace` on a
+        // Converged host. CAVEAT (exclusion-check): the fixture's install sits in an
+        // `if ! command -v nginx` guard with other un-oracled neighbors (`ufw allow`,
+        // `systemctl enable --now`, the `case "$(hostname)"` scrutinee). Verify NONE of
+        // those still poison the install's cell before asserting Replace — if one does,
+        // the right assertion may stay Run for a DIFFERENT (correct) reason, which is
+        // itself a finding to record in notes/193. The keystone kills `update`'s
+        // poison specifically, not all poison on the book.
         let fixture = include_str!(concat!(
             env!("CARGO_MANIFEST_DIR"),
             "/../../fixtures/pi-webhost.book.sh"
