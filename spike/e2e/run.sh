@@ -39,8 +39,9 @@ fi
 # wrong-elision *content*, to which `-n` is blind — a render that comments out
 # everything is `-n`-clean and useless). Both, per cli/CLAUDE.md.
 checker=
+checker_abs=
 for c in dash sh; do
-  if command -v "$c" >/dev/null 2>&1; then checker=$c; break; fi
+  if command -v "$c" >/dev/null 2>&1; then checker=$c; checker_abs=$(command -v "$c"); break; fi
 done
 if [ -z "$checker" ]; then
   echo "no POSIX shell (dash/sh) for the ap-2 syntax gate — cannot validate runnability" >&2
@@ -57,6 +58,52 @@ syntax_check() {
     return 1
   fi
   return 0
+}
+
+# The ap-2 EXECUTABLE acceptance (Deliverable A / an-render-executability-check):
+# `-n` proves the artifact PARSES; this proves the *right lines run*. A case opts in
+# by shipping a mocks/ dir + an expected.ran golden. We EXECUTE the rendered artifact
+# ($2) under PATH=<case>/mocks ONLY, so the sole things that can run are the inert
+# shims (each logs `ran: <argv>` and exits 0 — never a real apt-get/systemctl/ufw).
+# A `:`-stubbed (elided) command logs nothing; a `Run` command logs its argv. We
+# assert the sorted run-set == expected.ran. SAFETY: PATH is the mocks dir alone, and
+# an un-shimmed external command ⇒ `command not found` ⇒ a loud failure (never a real
+# system mutation). Deterministic: the log is sorted (`inv-determinism`).
+exec_check() {
+  _label=$1; _art=$2; _case=$3; _dir=$4
+  _log=$(mktemp)
+  # Resolve the mocks dir to an ABSOLUTE path: PATH is about to become *only* this
+  # dir, so a relative path would break (and the interpreter is invoked by its own
+  # absolute path `$checker_abs`, never found via the overridden PATH).
+  _mocks=$(CDPATH= cd -- "${_dir}mocks" && pwd)
+  # PATH = the mocks dir ONLY. The shims are the entire executable surface; nothing
+  # real is reachable (an un-shimmed external ⇒ `not found` ⇒ a loud failure, never a
+  # real system mutation). The interpreter runs the rendered artifact exactly as a
+  # host would run the shipped apply.
+  if ! _run_err=$(DORC_LOG="$_log" PATH="$_mocks" "$checker_abs" 2>&1 <<EOF
+$_art
+EOF
+  ); then
+    echo "FAIL  $_case  [ap-2-exec: rendered $_label errored when run under mocks]"
+    printf '      %s\n' "$_run_err"
+    rm -f "$_log"
+    return 1
+  fi
+  _got_ran=$(LC_ALL=C sort < "$_log")
+  rm -f "$_log"
+  if [ "${BLESS:-}" = "1" ]; then
+    printf '%s\n' "$_got_ran" > "${_dir}expected.ran"
+    return 0
+  fi
+  _want_ran=$(LC_ALL=C sort < "${_dir}expected.ran" 2>/dev/null || true)
+  if [ "$_got_ran" = "$_want_ran" ]; then
+    return 0
+  fi
+  echo "FAIL  $_case  [ap-2-exec: $_label ran the wrong commands]"
+  if command -v diff >/dev/null 2>&1; then
+    printf '%s\n' "$_got_ran" | diff -u "${_dir}expected.ran" - 2>/dev/null || true
+  fi
+  return 1
 }
 
 fails=0
@@ -93,6 +140,20 @@ for dir in "$here"/cases/*/; do
     continue
   fi
 
+  # The ap-2 EXECUTABLE gate (Deliverable A): a case with a mocks/ dir is RUN, not
+  # just parsed — execute the rendered apply under the inert shims and assert the
+  # exact set of commands that ran (elided `:`-stubs run nothing). Analysis-only
+  # cases (no mocks/) keep the `-n`+golden discipline and are never executed.
+  if [ -d "${dir}mocks" ]; then
+    if ! exec_check apply "$apply_art" "$name" "$dir"; then
+      gate_ok=0
+    fi
+    if [ "$gate_ok" -ne 1 ]; then
+      fails=$((fails + 1))
+      continue
+    fi
+  fi
+
   if [ "${BLESS:-}" = "1" ]; then
     printf '%s\n' "$got" > "${dir}expected.out"
     echo "blessed $name (ap-2 gate passed)"
@@ -118,5 +179,5 @@ if [ "$fails" -ne 0 ]; then
 elif [ "${BLESS:-}" = "1" ]; then
   echo "blessed $total cases (all ap-2 gates passed)"
 else
-  echo "all $total e2e round-trips passed (incl. ap-2 $checker -n gate)"
+  echo "all $total e2e round-trips passed (incl. ap-2 $checker -n gate + exec gate where mocked)"
 fi
