@@ -65,25 +65,12 @@ fn word_literal(ast: &Ast, w: AstId) -> Option<&str> {
 
 /// Determine a `Command` node's effect from the oracle index. ⊤-conservative
 /// (`Opaque`) on ANY uncertainty: dynamic command word/verb, no oracle entry, a
-/// **non-literal** operand, or **more than one** non-flag operand.
+/// non-literal operand, or more than one non-flag operand.
 ///
-/// Entity resolution (the spike-2 re-key, `notes/193` §4 + strain-8):
-/// * exactly one literal non-flag operand ⇒ [`EntityRef::Operand`] (`install nginx`);
-/// * **zero non-flag operands** on a *modeled* `(provider, verb)` ⇒
-///   [`EntityRef::Singleton`] (`apt-get update` — a nullary mutator on the one
-///   package index). This kills the poison wall: `update` gets a real cell
-///   (`package-index#fresh`) instead of falling through to `Opaque ⇒ Reach::Top`.
-/// * a **non-literal** operand (`install $PKG`) or **multiple** operands ⇒ `Opaque`.
-///
-/// Singleton-ness is analyzer-inferred, not oracle-declared (the K1 choice; `dec-shape`
-/// carries no cardinality token). It fires only on a *genuinely nullary* verb — no
-/// non-flag operand word at all — **not** on a present-but-unknown operand:
-/// `apt-get install $PKG` keeps its operand word (just non-literal), so it stays
-/// `Opaque ⇒ run`, never a bogus elidable `Singleton` cell. (Adversarial-crosscheck
-/// strain-8 caught the earlier "zero *literal* operands ⇒ Singleton" conflation as a
-/// priority-1 wrong-elision regression vs the flat baseline's `Opaque`; an
-/// oracle-declared cardinality bit is still the cleaner long-term fix —
-/// `dec-cardinality-deferred`.)
+/// The provider, verb, and operand are each a ⊤-source: a non-literal one forces
+/// `Opaque` (`inv-top-reject`). Entity resolution — nullary `Singleton` vs one
+/// `Operand` vs ⊤ — is [`resolve_entity`], concentrated there so a ⊤ operand can
+/// never silently become a known cell (strain-8; the K1 inline `filter_map` let it).
 ///
 /// The crude flag-strip ("operand = a literal not starting with `-`") is a known
 /// coarse spot (note 162 O-3/O-4): sound (errs to `Opaque`/`Singleton`) but
@@ -123,26 +110,13 @@ pub fn command_effect(
     let Some((kind, selector, polarity)) = idx.effect_of(provider, verb) else {
         return CommandEffect::Opaque; // unknown (provider, verb)
     };
-    // Post-verb words, classified once: a *flag* (a literal starting with `-`) is
-    // stripped; every other word is a non-flag operand — and a non-LITERAL operand
-    // (`$PKG`) still counts as an operand (an *unknown* cell), it is not "no operand".
-    // The iterator yields one `Option<&str>` per non-flag operand: `Some` = literal,
-    // `None` = non-literal (`$dyn`).
-    let mut operands = words[2..]
-        .iter()
-        .filter_map(|&w| match word_literal(ast, w) {
-            Some(lit) if lit.starts_with('-') => None, // a flag — strip it
-            other => Some(other), // a non-flag operand (Some=literal, None=$dyn)
-        });
-    let entity = match (operands.next(), operands.next()) {
-        // No non-flag operand at all ⇒ a genuinely nullary verb (`apt-get update`) ⇒
-        // the kind's Singleton cell. This is the poison-wall fix.
-        (None, _) => EntityRef::Singleton,
-        // Exactly one, literal ⇒ that operand's cell.
-        (Some(Some(lit)), None) => EntityRef::Operand(OpaqueToken(interner.intern(lit))),
-        // A present-but-non-literal operand (`install $PKG`), or more than one ⇒ an
-        // unknown/ambiguous cell ⇒ Opaque ⇒ run (strain-8: never a bogus Singleton).
-        _ => return CommandEffect::Opaque,
+    // Resolve the operand cell ⊤-contagiously (strain-8): an operand the analyzer
+    // cannot resolve is an *unknown* cell, so it can never collapse into the kind's
+    // `Singleton` — it forces `Opaque ⇒ run`. This mirrors the verb/provider
+    // ⊤-guards above; `resolve_entity` concentrates `inv-top-reject` at the entity
+    // boundary (where the old inline `filter_map` let a ⊤ leak).
+    let Some(entity) = resolve_entity(ast, &words[2..], interner) else {
+        return CommandEffect::Opaque; // a non-literal operand, or more than one ⇒ ⊤
     };
     let fact = FactKey {
         kind,
@@ -153,6 +127,35 @@ pub fn command_effect(
         Polarity::Establish => CommandEffect::Establishes(fact),
         Polarity::Kill => CommandEffect::Kills(fact),
     }
+}
+
+/// Resolve the post-verb words to the entity a [`FactKey`] needs, or `None` if the
+/// operand shape is ⊤ (unknown) ⇒ the caller emits `Opaque`. The entity boundary's
+/// `inv-top-reject` enforcement, concentrated in one reviewable + unit-testable place
+/// (strain-8): the classification is **total** — every word is a flag, a literal
+/// operand, or a ⊤ (non-literal) — and ⊤ is **contagious**, so an operand the analyzer
+/// cannot resolve forces `None` and can never silently collapse into the kind's
+/// `Singleton` cell (the priority-1 wrong-elision the inline `filter_map` allowed).
+///
+/// * no non-flag operand at all (`apt-get update`, or only flags) ⇒ `Singleton`;
+/// * exactly one literal non-flag operand ⇒ `Operand`;
+/// * a non-literal operand (`install $PKG`), or more than one ⇒ `None` (⊤).
+fn resolve_entity(ast: &Ast, post_verb: &[AstId], interner: &mut Interner) -> Option<EntityRef> {
+    let mut operand: Option<&str> = None;
+    for &w in post_verb {
+        match word_literal(ast, w) {
+            Some(lit) if lit.starts_with('-') => {} // a flag — not part of the entity
+            Some(lit) => match operand {
+                None => operand = Some(lit), // the first literal operand
+                Some(_) => return None,      // a second ⇒ multi-entity ⊤
+            },
+            None => return None, // a non-literal operand (`$dyn`) ⇒ unknown cell ⇒ ⊤
+        }
+    }
+    Some(match operand {
+        Some(lit) => EntityRef::Operand(OpaqueToken(interner.intern(lit))),
+        None => EntityRef::Singleton, // genuinely nullary: no operand survived, no ⊤ leaked
+    })
 }
 
 /// Shell builtins with no *target-system* (location-3) effect: they change shell
