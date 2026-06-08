@@ -53,6 +53,13 @@ Entangled with `kBURDEN` (that's *how much* is specified; this is *what form*).
 > *Clarification (human, 2026-06-03):* this knob's redline is **user-configuration form**, not metadata transport — out-of-band *metadata* (provenance/leaf-id, effect/cost-class, memo-key, network-transport framing) is fine; what is verboten (at least for now) is sidecar *configuration* — no YAML, no frontmatter, no pragma, no comment-parsing — all config is spelled in `sh` / library-code.
 False friend of `kCOMMS` (Execution & modes): the same in-band/out-of-band axis but for Dorc's own transport, which carries no config redline.
 
+### `kTYANNOT`
+Poles: `kTYANNOT-inline ↔ kTYANNOT-eol-comment`
+
+**Tension:** *iff* Dorc ends up needing a non-sh-native **type-annotation** at all (itself unsettled — `dq-kOOB`; see `Research/plans/17N` top paragraph), how is it spelled in the script? `kTYANNOT-inline` annotates a type directly on a command argument — ergonomic, intuitive, significant-meaning-in-place (DX-forward) **vs** `kTYANNOT-eol-comment` carries it on an end-of-line `# …` comment (shellcheck-style; verbose, forces pulling typed values out of argument-position). The forcing tension is the **off-ramp**: sh has no inline-comment form, so an inline annotation is *not inert* under stock `dash`/`bash` — it aborts (`local: :: bad variable name`) or silently corrupts (verified, `Research/plans/17O` F-OFFRAMP) — breaking `kLANG`'s "absolutely trivial" off-ramp and demanding a correctness-critical strip/transpile pass; an eol comment is inert under any shell (off-ramp-free) but **re-opens `kOOB`'s `no-comment-parsing` redline**. So *both poles sacrifice a "spelled in sh" principle* — inline sacrifices the off-ramp (`kLANG`), eol-comment sacrifices no-comment-config (`kOOB`); the knob is *which*.
+**Status:** open, **gated by a prior open question** (`dq-kOOB`: whether a type-system exists at all). **Owner:** user (DX/ergonomics vs off-ramp purity). **Lock-in:** med (the spelling threads the parser + every typed oracle; the off-ramp guarantee is high-lock).
+> Entangled with `kOOB` (the eol-comment pole's cost) and `kLANG` (the inline pole's cost). Source: `Research/plans/17N` top paragraph + `Research/plans/17O` F-OFFRAMP. *(Added 2026-06-08 with human auth; the synthesis docs reference this slug, they do not redefine it.)*
+
 ---
 
 ## The probe optimizer — *per-leaf economics of checking vs acting*

@@ -10,6 +10,8 @@
 > synthesis is a later step (`17Y`/`17Z`). AI-generated; confidence-marked (+SURE/~SUSPECT/-GUESS/--WONDER);
 > trust repo-root `DESIGN`/`KNOBS` over this.
 
+> **[REVISED→17N · UNSETTLED · 2026-06-08]** The reunited K1+K2 synthesis forecast above as "`17Y`/`17Z`" **landed as `plans/17N`** — treat 17N as current where it differs. Two refinements supersede leans here: (1) `094` g1's framing of co-reference as a *link* (inherited by P4 and §11's "only free link") is **downgraded to a may-grade *hint*** — a guard's operand need not be its body's operand; (2) the `dq-kOOB` lean now carries a provisional non-sh-native **inline-annotation escape-hatch** for the claims sh cannot spell.
+
 ## 0. The question
 How do two oracles authored **independently** (A, B) converge on one **opaque kind-handle + its state
 sub-data** so a fact B *probes* discharges a precondition A *declares* — Dorc routing it, understanding

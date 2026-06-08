@@ -63,6 +63,9 @@ The deliverable's heart. The contract is **spelled in idiomatic sh-AST, not meta
 unit is the **idempotency guard** `if ! PROBE; then ESTABLISH; fi` / `PROBE || ESTABLISH`, where the **shared
 argument** is the entity-link and **guard polarity** marks probe-vs-establisher (094). The `{what · who-type ·
 where}` triple:
+
+> **[REVISED→17N · UNSETTLED · 2026-06-08]** The claim that *the shared argument **is** the entity-link* — and C2's *"a consumer guard **is** a MUST-belief, directly-implied"* — is **downgraded to a may-grade *hint***, not a must-grade link. A guard's operand need not be its body's operand (`if ! dpkg -s conflicting_package; then apt-get install something`), so guard-structure does **not** establish the probe/establish linkage; even a shared variable is not a guarantee. **C1 (≥1 *declared* anchor) and C3 (cross-oracle = *named kind*) are unaffected** — those were always must-grade-by-declaration. How much is derivable oracle-less is genuinely unsettled; see `plans/17N` (F3, §3, and the may/must split). NB: line 121 of this doc already flagged the shared-arg-link as "to test" — the test came back negative for the must-grade reading.
+
 - **C1 — q-floor (mandatory).** ≥1 **MUST-grade relational anchor per kind**: declare the kind + how to
   probe/establish it (the oracle's latent-proposition / qualifier-lattice, 092). Without a reachable anchor a
   command is ⊤ → run. This is the *irreducible* floor — the chicken-and-egg proves it non-empty (095).
