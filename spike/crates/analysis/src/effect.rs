@@ -64,29 +64,37 @@ fn word_literal(ast: &Ast, w: AstId) -> Option<&str> {
 }
 
 /// Determine a `Command` node's effect from the oracle index. ⊤-conservative
-/// (`Opaque`) on ANY uncertainty: dynamic command word/verb, no oracle entry, or
-/// *more than one* literal non-flag operand.
+/// (`Opaque`) on ANY uncertainty: dynamic command word/verb, no oracle entry, a
+/// **non-literal** operand, or **more than one** non-flag operand.
 ///
-/// Entity resolution (the spike-2 re-key, `notes/193` §4):
+/// Entity resolution (the spike-2 re-key, `notes/193` §4 + strain-8):
 /// * exactly one literal non-flag operand ⇒ [`EntityRef::Operand`] (`install nginx`);
-/// * **zero** operands on a *modeled* `(provider, verb)` ⇒ [`EntityRef::Singleton`]
-///   (`apt-get update` — a nullary mutator on the one package index). This is what
-///   kills the poison wall: `update` gets a real cell (`package-index#fresh`)
-///   instead of falling through to `Opaque ⇒ Reach::Top`.
-/// * multiple / non-literal operands ⇒ `Opaque` (unchanged — `install nginx curl`).
+/// * **zero non-flag operands** on a *modeled* `(provider, verb)` ⇒
+///   [`EntityRef::Singleton`] (`apt-get update` — a nullary mutator on the one
+///   package index). This kills the poison wall: `update` gets a real cell
+///   (`package-index#fresh`) instead of falling through to `Opaque ⇒ Reach::Top`.
+/// * a **non-literal** operand (`install $PKG`) or **multiple** operands ⇒ `Opaque`.
 ///
-/// Singleton-ness is **analyzer-inferred on zero-operands, not oracle-declared**
-/// (the K1 choice; `dec-shape` carries no cardinality token). Strain (`ch-wrong`,
-/// logged in `notes/193`): a verb that normally takes an operand but is mis-called
-/// with none (`apt-get install` alone) is mis-modeled `Singleton` not `Opaque` — a
-/// latent over-loosening; the principled fix is a declared singleton/cardinality bit
-/// (`dec-cardinality-deferred`).
+/// Singleton-ness is analyzer-inferred, not oracle-declared (the K1 choice; `dec-shape`
+/// carries no cardinality token). It fires only on a *genuinely nullary* verb — no
+/// non-flag operand word at all — **not** on a present-but-unknown operand:
+/// `apt-get install $PKG` keeps its operand word (just non-literal), so it stays
+/// `Opaque ⇒ run`, never a bogus elidable `Singleton` cell. (Adversarial-crosscheck
+/// strain-8 caught the earlier "zero *literal* operands ⇒ Singleton" conflation as a
+/// priority-1 wrong-elision regression vs the flat baseline's `Opaque`; an
+/// oracle-declared cardinality bit is still the cleaner long-term fix —
+/// `dec-cardinality-deferred`.)
 ///
 /// The crude flag-strip ("operand = a literal not starting with `-`") is a known
 /// coarse spot (note 162 O-3/O-4): sound (errs to `Opaque`/`Singleton`) but
 /// value-eroding, and it mis-handles pre-verb flags (`apt-get -t x install …`) and
 /// attached values (`-oKey=Val`). Precise per-provider flag grammars are deferred.
-pub fn command_effect(ast: &Ast, idx: &KindIndex, interner: &mut Interner, simple: AstId) -> CommandEffect {
+pub fn command_effect(
+    ast: &Ast,
+    idx: &KindIndex,
+    interner: &mut Interner,
+    simple: AstId,
+) -> CommandEffect {
     let NodeKind::Simple { words, .. } = &ast.node(simple).kind else {
         return CommandEffect::Opaque;
     };
@@ -115,23 +123,32 @@ pub fn command_effect(ast: &Ast, idx: &KindIndex, interner: &mut Interner, simpl
     let Some((kind, selector, polarity)) = idx.effect_of(provider, verb) else {
         return CommandEffect::Opaque; // unknown (provider, verb)
     };
-    // The literal, non-flag operands after the verb. Zero ⇒ the kind's singleton;
-    // exactly one ⇒ that operand's cell; more (or any non-literal) ⇒ ⊤.
-    let mut operands = words[2..].iter().filter_map(|&w| {
-        let lit = word_literal(ast, w)?;
-        if lit.starts_with('-') {
-            None
-        } else {
-            Some(lit)
-        }
-    });
+    // Post-verb words, classified once: a *flag* (a literal starting with `-`) is
+    // stripped; every other word is a non-flag operand — and a non-LITERAL operand
+    // (`$PKG`) still counts as an operand (an *unknown* cell), it is not "no operand".
+    // The iterator yields one `Option<&str>` per non-flag operand: `Some` = literal,
+    // `None` = non-literal (`$dyn`).
+    let mut operands = words[2..]
+        .iter()
+        .filter_map(|&w| match word_literal(ast, w) {
+            Some(lit) if lit.starts_with('-') => None, // a flag — strip it
+            other => Some(other), // a non-flag operand (Some=literal, None=$dyn)
+        });
     let entity = match (operands.next(), operands.next()) {
-        (Some(entity_s), None) => EntityRef::Operand(OpaqueToken(interner.intern(entity_s))),
-        // the poison-wall fix: old flat key required a token here, fell through to ⊤
+        // No non-flag operand at all ⇒ a genuinely nullary verb (`apt-get update`) ⇒
+        // the kind's Singleton cell. This is the poison-wall fix.
         (None, _) => EntityRef::Singleton,
-        (Some(_), Some(_)) => return CommandEffect::Opaque,
+        // Exactly one, literal ⇒ that operand's cell.
+        (Some(Some(lit)), None) => EntityRef::Operand(OpaqueToken(interner.intern(lit))),
+        // A present-but-non-literal operand (`install $PKG`), or more than one ⇒ an
+        // unknown/ambiguous cell ⇒ Opaque ⇒ run (strain-8: never a bogus Singleton).
+        _ => return CommandEffect::Opaque,
     };
-    let fact = FactKey { kind, entity, selector };
+    let fact = FactKey {
+        kind,
+        entity,
+        selector,
+    };
     match polarity {
         Polarity::Establish => CommandEffect::Establishes(fact),
         Polarity::Kill => CommandEffect::Kills(fact),
@@ -148,8 +165,21 @@ pub fn command_effect(ast: &Ast, idx: &KindIndex, interner: &mut Interner, simpl
 fn is_target_state_pure_builtin(word: &str) -> bool {
     matches!(
         word,
-        "set" | "cd" | "export" | "unset" | "shift" | "read" | "readonly" | "local"
-            | ":" | "true" | "false" | "echo" | "printf" | "test" | "["
+        "set"
+            | "cd"
+            | "export"
+            | "unset"
+            | "shift"
+            | "read"
+            | "readonly"
+            | "local"
+            | ":"
+            | "true"
+            | "false"
+            | "echo"
+            | "printf"
+            | "test"
+            | "["
     )
 }
 
@@ -250,7 +280,12 @@ fn reachable_from_entry(cfg: &Cfg) -> Vec<bool> {
 /// entry AND under a converged solve; otherwise it folds to the safe `MustRun`
 /// (find-A/find-B). Deterministic; never panics.
 #[must_use]
-pub fn classify(cfg: &Cfg, ast: &Ast, idx: &KindIndex, interner: &mut Interner) -> Vec<(CfgNodeId, SkipClass)> {
+pub fn classify(
+    cfg: &Cfg,
+    ast: &Ast,
+    idx: &KindIndex,
+    interner: &mut Interner,
+) -> Vec<(CfgNodeId, SkipClass)> {
     let n = cfg.node_count();
     // Precompute each node's effect once (interning happens here, with &mut).
     let effects: Vec<CommandEffect> = (0..n)
@@ -266,12 +301,19 @@ pub fn classify(cfg: &Cfg, ast: &Ast, idx: &KindIndex, interner: &mut Interner) 
         .collect();
 
     // Forward reaching-defs: out = in ⊔ gen(node).
-    let reach = solve(cfg, Direction::Forward, |i, incoming: &Reach| match &effects[i] {
-        CommandEffect::Establishes(f) | CommandEffect::Kills(f) => incoming.with(*f),
-        CommandEffect::Opaque => incoming.join(&Reach::Top),
-        CommandEffect::Pure => incoming.clone(),
-    });
-    debug_assert!(reach.converged, "reaching-defs must converge (finite fact set)");
+    let reach = solve(
+        cfg,
+        Direction::Forward,
+        |i, incoming: &Reach| match &effects[i] {
+            CommandEffect::Establishes(f) | CommandEffect::Kills(f) => incoming.with(*f),
+            CommandEffect::Opaque => incoming.join(&Reach::Top),
+            CommandEffect::Pure => incoming.clone(),
+        },
+    );
+    debug_assert!(
+        reach.converged,
+        "reaching-defs must converge (finite fact set)"
+    );
 
     // Two reasons the reaching in-state cannot be trusted to mean "nothing
     // upstream mutated this fact", both folding the safe way (→ MustRun):
@@ -346,7 +388,16 @@ mod tests {
         idx.add_effect(apt, install, package, installed, Polarity::Establish);
         idx.add_effect(apt, purge, package, installed, Polarity::Kill);
         idx.add_effect(apt, update, package_index, fresh, Polarity::Establish);
-        (interner, idx, Syms { package, package_index, installed, fresh })
+        (
+            interner,
+            idx,
+            Syms {
+                package,
+                package_index,
+                installed,
+                fresh,
+            },
+        )
     }
 
     /// `package:<entity>#installed` — the cell `apt-get install <entity>` gates.
@@ -373,7 +424,12 @@ mod tests {
         // (EstablishAmbient), the precondition for ever skipping it.
         let (mut i, idx, s) = package_setup();
         let classes = classify_src("apt-get install nginx", &mut i, &idx);
-        assert_eq!(classes, vec![SkipClass::EstablishAmbient(pkg_installed(&mut i, &s, "nginx"))]);
+        assert_eq!(
+            classes,
+            vec![SkipClass::EstablishAmbient(pkg_installed(
+                &mut i, &s, "nginx"
+            ))]
+        );
     }
 
     #[test]
@@ -385,7 +441,9 @@ mod tests {
         let (mut i, idx, s) = package_setup();
         let classes = classify_src("apt-get purge nginx\napt-get install nginx", &mut i, &idx);
         // purge ⇒ MustRun (a kill, not an elidable establish); install ⇒ Written.
-        assert!(classes.contains(&SkipClass::EstablishWritten(pkg_installed(&mut i, &s, "nginx"))));
+        assert!(classes.contains(&SkipClass::EstablishWritten(pkg_installed(
+            &mut i, &s, "nginx"
+        ))));
         assert!(!classes
             .iter()
             .any(|c| matches!(c, SkipClass::EstablishAmbient(_))));
@@ -401,7 +459,9 @@ mod tests {
         // residual, correct cost so we still feel it.
         let (mut i, idx, _s) = package_setup();
         let classes = classify_src("ufw allow 80/tcp\napt-get install nginx", &mut i, &idx);
-        assert!(classes.iter().any(|c| matches!(c, SkipClass::EstablishWritten(_))));
+        assert!(classes
+            .iter()
+            .any(|c| matches!(c, SkipClass::EstablishWritten(_))));
         assert!(!classes
             .iter()
             .any(|c| matches!(c, SkipClass::EstablishAmbient(_))));
@@ -417,11 +477,15 @@ mod tests {
         let (mut i, idx, s) = package_setup();
         let classes = classify_src("apt-get update\napt-get install nginx", &mut i, &idx);
         assert!(
-            classes.contains(&SkipClass::EstablishAmbient(pkg_installed(&mut i, &s, "nginx"))),
+            classes.contains(&SkipClass::EstablishAmbient(pkg_installed(
+                &mut i, &s, "nginx"
+            ))),
             "modeled `update` (distinct cell) must leave install EstablishAmbient: {classes:?}"
         );
         assert!(
-            !classes.iter().any(|c| matches!(c, SkipClass::EstablishWritten(_))),
+            !classes
+                .iter()
+                .any(|c| matches!(c, SkipClass::EstablishWritten(_))),
             "no Written: update's cell (package-index#fresh) ≠ install's (package:nginx#installed)"
         );
     }
@@ -434,7 +498,9 @@ mod tests {
         let (mut i, idx, s) = package_setup();
         let classes = classify_src("apt-get purge nginx\napt-get install nginx", &mut i, &idx);
         assert!(
-            classes.contains(&SkipClass::EstablishWritten(pkg_installed(&mut i, &s, "nginx"))),
+            classes.contains(&SkipClass::EstablishWritten(pkg_installed(
+                &mut i, &s, "nginx"
+            ))),
             "same-cell purge must keep install EstablishWritten (no over-loosening): {classes:?}"
         );
         assert!(!classes
@@ -461,7 +527,11 @@ mod tests {
         idx.add_effect(systemctl, enable, service, enabled, Polarity::Establish);
         idx.add_effect(systemctl, start, service, active, Polarity::Establish);
 
-        let classes = classify_src("systemctl enable nginx\nsystemctl start nginx", &mut i, &idx);
+        let classes = classify_src(
+            "systemctl enable nginx\nsystemctl start nginx",
+            &mut i,
+            &idx,
+        );
         let enabled_cell = FactKey {
             kind: service,
             entity: EntityRef::Operand(OpaqueToken(i.intern("nginx"))),
@@ -481,7 +551,9 @@ mod tests {
             "start nginx ⇒ service:nginx#active, ambient (NOT discharged by #enabled): {classes:?}"
         );
         assert!(
-            !classes.iter().any(|c| matches!(c, SkipClass::EstablishWritten(_))),
+            !classes
+                .iter()
+                .any(|c| matches!(c, SkipClass::EstablishWritten(_))),
             "distinct selectors ⇒ neither reaches the other's cell ⇒ no Written"
         );
     }
@@ -502,7 +574,9 @@ mod tests {
             "pure builtins (`:`/`echo`) upstream must keep the install EstablishAmbient: {classes:?}"
         );
         assert!(
-            !classes.iter().any(|c| matches!(c, SkipClass::EstablishWritten(_))),
+            !classes
+                .iter()
+                .any(|c| matches!(c, SkipClass::EstablishWritten(_))),
             "no spurious Written from a pure-builtin upstream"
         );
     }
@@ -545,19 +619,46 @@ mod tests {
             CommandEffect::Establishes(nginx_cell),
             "flag -y stripped ⇒ Operand(nginx)#installed"
         );
-        // Zero operands on a MODELED verb ⇒ Singleton (the poison-wall fix).
+        // Zero non-flag operands on a MODELED verb ⇒ Singleton (the poison-wall fix);
+        // a flag-only tail is still nullary.
+        let pkg_index_fresh = CommandEffect::Establishes(FactKey {
+            kind: s.package_index,
+            entity: EntityRef::Singleton,
+            selector: s.fresh,
+        });
         assert_eq!(
             eff("apt-get update", &mut i),
-            CommandEffect::Establishes(FactKey {
-                kind: s.package_index,
-                entity: EntityRef::Singleton,
-                selector: s.fresh,
-            }),
+            pkg_index_fresh,
             "nullary modeled verb ⇒ Singleton(package-index#fresh)"
         );
-        // Still ⊤ on the genuinely-ambiguous shapes.
-        assert_eq!(eff("apt-get install nginx curl", &mut i), CommandEffect::Opaque, "multi-entity ⇒ ⊤");
-        assert_eq!(eff("$cmd install nginx", &mut i), CommandEffect::Opaque, "dynamic command name ⇒ ⊤");
-        assert_eq!(eff("apt-get autoclean", &mut i), CommandEffect::Opaque, "unknown verb ⇒ ⊤");
+        assert_eq!(
+            eff("apt-get update -y", &mut i),
+            pkg_index_fresh,
+            "flag-only tail stays nullary ⇒ Singleton"
+        );
+        // strain-8 (adversarial-crosscheck): a present-but-NON-LITERAL operand is an
+        // UNKNOWN cell, NOT the singleton — else `install $PKG` would be wrongly
+        // elidable (a priority-1 wrong-elision regression). It must stay ⊤ ⇒ run.
+        assert_eq!(
+            eff("apt-get install $PKG", &mut i),
+            CommandEffect::Opaque,
+            "non-literal operand ⇒ ⊤, not Singleton"
+        );
+        // Still ⊤ on the other ambiguous shapes.
+        assert_eq!(
+            eff("apt-get install nginx curl", &mut i),
+            CommandEffect::Opaque,
+            "multi-entity ⇒ ⊤"
+        );
+        assert_eq!(
+            eff("$cmd install nginx", &mut i),
+            CommandEffect::Opaque,
+            "dynamic command name ⇒ ⊤"
+        );
+        assert_eq!(
+            eff("apt-get autoclean", &mut i),
+            CommandEffect::Opaque,
+            "unknown verb ⇒ ⊤"
+        );
     }
 }
