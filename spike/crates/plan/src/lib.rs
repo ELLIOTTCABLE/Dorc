@@ -29,7 +29,7 @@ use std::collections::BTreeSet;
 use dorc_analysis::cfg::{Cfg, CfgNodeId, CfgNodeKind, Observable};
 use dorc_analysis::effect::{FactKey, SkipClass};
 use dorc_analysis::lattice::{May, Powerset};
-use dorc_core::{AstId, Grade, Interner, KindId, Verdict};
+use dorc_core::{AstId, EntityRef, Grade, Interner, KindId, Verdict};
 use dorc_syntax::ast::Ast;
 
 // ===========================================================================
@@ -463,12 +463,23 @@ impl Plan {
     }
 
     /// Render the apply as the ORIGINAL book with elided (`Replace`) command-lines
-    /// commented out — "a copy of book.sh with the safe-to-omit lines commented", the
-    /// CLI's final artifact. Line-granular (the spike's books are ~one-command-per-line):
-    /// a source line is commented iff a `Replace` leaf lies on it and no `Run` leaf
-    /// does. Everything else (guards, blanks, comments, multi-leaf lines) passes
-    /// verbatim, so the output stays a runnable shell-script with the original
-    /// structure intact (contrast [`render_sh`](Plan::render_sh), the flat leaf-list).
+    /// replaced by their no-op stand-in — "a copy of book.sh with the safe-to-omit
+    /// lines commented", the CLI's final artifact. Line-granular (the spike's books
+    /// are ~one-command-per-line): a source line is elided iff a `Replace` leaf lies
+    /// on it and no `Run` leaf does. Everything else (guards, blanks, comments,
+    /// multi-leaf lines) passes verbatim, so the output keeps the original control
+    /// flow (contrast [`render_sh`](Plan::render_sh), the flat leaf-list).
+    ///
+    /// `ap-2` / `an-render-runnable` (`notes/193` strain-6): an elided line emits a
+    /// provenance comment **then a bare `:`** (POSIX null command) at the original
+    /// indentation. The `:` is the substitution *stand-in itself*, not filler —
+    /// `Disposition::Replace`'s "`true` is the degenerate stand-in", with status
+    /// vouched rc-0 by convergence (the observable-matrix `true`-stub model). A
+    /// comment *alone* deletes the command, so commenting the lone body of an
+    /// `if`/`while`/`case` arm leaves an empty clause — a `sh -n` syntax error. `:` is
+    /// valid in *every* context a command was, so the artifact is always `-n`-clean.
+    /// (Top-level elisions get a cosmetically-extra `:`; the leaf-exact alternative is
+    /// `seam-prov` render-fidelity work, deferred.)
     #[must_use]
     pub fn render_apply(&self, src: &str, ast: &Ast) -> String {
         let line_of = |byte: u32| -> usize {
@@ -486,13 +497,16 @@ impl Plan {
             target.extend(lines);
         }
         let mut out = String::from(
-            "#!/bin/sh\n# dorc apply: the book, with already-converged lines elided (commented).\n\n",
+            "#!/bin/sh\n# dorc apply: the book, with already-converged lines elided (replaced by `:`).\n\n",
         );
         for (i, line) in src.lines().enumerate() {
             if elided.contains(&i) && !run.contains(&i) {
+                let indent: String = line.chars().take_while(|c| *c == ' ' || *c == '\t').collect();
                 out.push_str("# ");
-                out.push_str(line);
+                out.push_str(line.trim_start());
                 out.push_str("   # dorc: elided (already converged)\n");
+                out.push_str(&indent);
+                out.push_str(":\n");
             } else {
                 out.push_str(line);
                 out.push('\n');
@@ -502,39 +516,50 @@ impl Plan {
     }
 }
 
-/// `kind:entity` for a fact, resolving the interned names for *display/provenance*
-/// only (never a logic branch — `inv-referent-agnostic`). Public so the CLI can match
-/// probe-result lines back to facts by the same label the probe emitted.
+/// A round-trippable, unambiguous display label for a fact's re-keyed cell
+/// (`notes/193` strain-4, K2's call). Resolves the interned names for
+/// *display/provenance* only — never a logic branch (`inv-referent-agnostic`). The
+/// cli matches host probe-result lines back to facts by this exact label (it keys a
+/// map on the string, never decoding it), so the format is the cli's stdin grammar.
 ///
-// TODO(K2): the K1 re-key made `fact.entity` an `EntityRef` (Operand/Singleton) and
-// added `fact.selector` (`core::FactKey`). This must resolve the richer key for
-// display — e.g. `package:nginx#installed` (Operand) / `package-index#fresh`
-// (Singleton). The exact format is a K2 call because it COUPLES to the cli round-trip:
-// `cli::parse_results`'s stdin grammar keys verdicts by this label and `hostsim`'s
-// fact-store keys on the same `FactKey` (see crates/cli/CLAUDE.md "stdin re-key
-// gotcha" — do NOT drop the selector on parse and widen a verdict to the whole
-// entity, a wrong-elision under apply's kFAIL). K1 owns core+oracle+analysis only and
-// leaves this break for K2 (the body below still reads the old flat `.entity.0`).
+/// Two shapes, discriminated by the presence of a `:` *operand* segment:
+/// * `kind:entity#selector` for [`EntityRef::Operand`] — `package:nginx#installed`;
+/// * `kind#selector` for [`EntityRef::Singleton`] — `package-index#fresh`. A
+///   singleton has no operand, so it carries NO `:`-segment (the bare `package-index:#fresh`
+///   the strain-4 note warned against is avoided — `:` present ⇔ an operand exists).
+///
+/// The selector is ALWAYS rendered (`#selector`): it is the per-entity facet the
+/// re-key added (`an-per-entity-selector`), and dropping it would let an `is-active`
+/// probe-verdict discharge an unmet `#enabled` cell — a wrong-elision under apply's
+/// `kFAIL` (`cli/CLAUDE.md` "stdin re-key gotcha"). The label is injective over
+/// distinct `FactKey`s modulo a `:`/`#` collision in an interned name (a disposable-
+/// parser limitation, `ch-scope`; book operands like `nginx` don't carry them).
 #[must_use]
 pub fn fact_label(interner: &Interner, fact: FactKey) -> String {
-    format!(
-        "{}:{}",
-        interner.resolve(fact.kind.0),
-        interner.resolve(fact.entity.0),
-    )
+    let kind = interner.resolve(fact.kind.0);
+    let selector = interner.resolve(fact.selector.0);
+    match fact.entity {
+        EntityRef::Operand(tok) => {
+            format!("{kind}:{}#{selector}", interner.resolve(tok.0))
+        }
+        EntityRef::Singleton => format!("{kind}#{selector}"),
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use dorc_core::{Interner, KindId, OpaqueToken, ProviderId};
+    use dorc_core::{Interner, KindId, OpaqueToken, ProviderId, SelectorId};
     use dorc_oracle::{KindIndex, Polarity};
 
+    /// `package:nginx#installed` — the cell `apt-get install nginx` gates. The
+    /// re-key (`notes/193`) made the entity an [`EntityRef`] and added a selector.
     fn nginx_fact() -> FactKey {
         let mut i = Interner::default();
         FactKey {
             kind: KindId(i.intern("package")),
-            entity: OpaqueToken(i.intern("nginx")),
+            entity: EntityRef::Operand(OpaqueToken(i.intern("nginx"))),
+            selector: SelectorId(i.intern("installed")),
         }
     }
 
@@ -552,20 +577,24 @@ mod tests {
         let mut i = Interner::default();
         let package = KindId(i.intern("package"));
         let port = KindId(i.intern("port"));
-        let nginx = OpaqueToken(i.intern("nginx"));
-        let p80 = OpaqueToken(i.intern("80"));
+        let installed = SelectorId(i.intern("installed"));
+        let open = SelectorId(i.intern("open"));
+        let nginx = EntityRef::Operand(OpaqueToken(i.intern("nginx")));
+        let p80 = EntityRef::Operand(OpaqueToken(i.intern("80")));
+        let pkg_nginx = FactKey { kind: package, entity: nginx, selector: installed };
+        let port_80 = FactKey { kind: port, entity: p80, selector: open };
         let classes = vec![
-            (CfgNodeId(0), SkipClass::EstablishAmbient(FactKey { kind: package, entity: nginx })),
-            (CfgNodeId(1), SkipClass::EstablishAmbient(FactKey { kind: port, entity: p80 })),
+            (CfgNodeId(0), SkipClass::EstablishAmbient(pkg_nginx)),
+            (CfgNodeId(1), SkipClass::EstablishAmbient(port_80)),
             (CfgNodeId(2), SkipClass::MustRun),
         ];
         // Only `package` has a declared probe.
         let probe = compile_probe(&classes, |k| {
             (k == package).then(|| "dpkg-query -W \"$1\"".to_string())
         });
-        assert!(probe.checks_fact(FactKey { kind: package, entity: nginx }), "package probed");
+        assert!(probe.checks_fact(pkg_nginx), "package probed");
         assert!(
-            !probe.checks_fact(FactKey { kind: port, entity: p80 }),
+            !probe.checks_fact(port_80),
             "port has no probe ⇒ excluded (can't elide)"
         );
         assert_eq!(probe.checks.len(), 1, "only the probeable EstablishAmbient fact is in the probe");
@@ -673,25 +702,34 @@ mod tests {
 
     // --- end-to-end: the whole pipeline (parse → cfg → classify → plan) ---
 
-    /// A package kind-index with `apt-get install → establish`. Deliberately no
-    /// `apt-get update` effect — it stays Opaque, which is the fixture's poison.
+    /// A package kind-index modeling `apt-get install → package#installed` AND
+    /// `apt-get update → package-index#fresh` (the spike-2 re-key, `notes/193` §1).
+    /// `update` now lands on a *distinct cell* from `install`, so it no longer
+    /// poisons the install below it — the poison-wall fix. (Pre-key, `update` was
+    /// left un-modeled ⇒ Opaque ⇒ Reach::Top ⇒ it poisoned everything downstream.)
     fn package_index(i: &mut Interner) -> KindIndex {
         let package = KindId(i.intern("package"));
+        let package_index = KindId(i.intern("package-index"));
+        let installed = SelectorId(i.intern("installed"));
+        let fresh = SelectorId(i.intern("fresh"));
         let apt = ProviderId(i.intern("apt-get"));
         let install = i.intern("install");
+        let update = i.intern("update");
         let mut idx = KindIndex::default();
-        idx.add_effect(apt, install, package, Polarity::Establish);
+        idx.add_effect(apt, install, package, installed, Polarity::Establish);
+        idx.add_effect(apt, update, package_index, fresh, Polarity::Establish);
         idx
     }
 
-    /// Run the pipeline on `src`, answering `package:nginx` with `nginx_verdict`
-    /// and every other fact `Unknown`.
+    /// Run the pipeline on `src`, answering `package:nginx#installed` with
+    /// `nginx_verdict` and every other fact `Unknown`.
     fn plan_for(src: &str, nginx_verdict: Verdict) -> (Plan, Interner) {
         let mut i = Interner::default();
         let idx = package_index(&mut i);
         let target = FactKey {
             kind: KindId(i.intern("package")),
-            entity: OpaqueToken(i.intern("nginx")),
+            entity: EntityRef::Operand(OpaqueToken(i.intern("nginx"))),
+            selector: SelectorId(i.intern("installed")),
         };
         let parsed = dorc_syntax::parse(src);
         let cfg = dorc_analysis::cfg::build(&parsed.value).value;
@@ -746,22 +784,23 @@ mod tests {
     }
 
     #[test]
-    fn fixture_install_runs_despite_converged_probe() {
-        // TODO(K2): the keystone INVERTS this test. The poison was `apt-get update`
-        // being un-oracled ⇒ Opaque ⇒ poisoning the `install -y nginx` below it to
-        // EstablishWritten. K1 (notes/193) makes `update` MODELED on a distinct cell
-        // (`package-index#fresh`), so it no longer poisons the install — proven at the
-        // classify level by `effect::tests::poison_wall_dies_modeled_update_does_not_
-        // poison_install`. K2 must: (a) make `package_index(&mut i)` here model
-        // `apt-get update → (package-index, #fresh, establish)` (it currently models
-        // only `install`), then (b) FLIP this assertion to `Disposition::Replace` on a
-        // Converged host. CAVEAT (exclusion-check): the fixture's install sits in an
-        // `if ! command -v nginx` guard with other un-oracled neighbors (`ufw allow`,
-        // `systemctl enable --now`, the `case "$(hostname)"` scrutinee). Verify NONE of
-        // those still poison the install's cell before asserting Replace — if one does,
-        // the right assertion may stay Run for a DIFFERENT (correct) reason, which is
-        // itself a finding to record in notes/193. The keystone kills `update`'s
-        // poison specifically, not all poison on the book.
+    fn fixture_install_on_realistic_book_still_runs_residual_poison() {
+        // THE poison-wall finding (`notes/193` strain-5, K2 — a DATUM, not a fail).
+        // The keystone kills `apt-get update`'s poison SPECIFICALLY (proven at classify
+        // level by `effect::tests::poison_wall_dies_modeled_update_does_not_poison_
+        // install`, and at plan level by the `…_only_neighbour` test below). But on the
+        // FULL realistic `pi-webhost.book.sh` the install STILL runs (and so does
+        // `update` itself) — for a DIFFERENT, correct reason: TWO upstream un-oracled
+        // neighbours each independently poison to Reach::Top (verified by isolating the
+        // fragments, `notes/193` strain-5):
+        //   1. `case "$(hostname)" in …` — the `$(hostname)` command-substitution is an
+        //      un-oracled Command ⇒ Opaque ⇒ Top;
+        //   2. `if ! command -v nginx …` — the guard's `command -v nginx` is likewise
+        //      un-oracled Opaque ⇒ Top (the bitter irony: the admin wrote this guard AS
+        //      an idempotency check, and it poisons the very block it guards).
+        // Modeling `update` was NECESSARY but not SUFFICIENT to elide on this scrappy
+        // book — a real measure of how much oracle coverage a realistic book needs to
+        // elide *anything* (honest, not a green faked by deleting the neighbours).
         let fixture = include_str!(concat!(
             env!("CARGO_MANIFEST_DIR"),
             "/../../fixtures/pi-webhost.book.sh"
@@ -769,7 +808,51 @@ mod tests {
         let (plan, _) = plan_for(fixture, Verdict::Converged);
         assert!(
             matches!(find(&plan, "apt-get install").disposition, Disposition::Run),
-            "poisoned install must run even with a converged probe"
+            "install still runs: two upstream un-oracled neighbours ($(hostname) in the \
+             case scrutinee, and `command -v nginx` in the if-guard) poison it — `update` \
+             is no longer the poison, but it is not the only one (notes/193 strain-5)"
+        );
+    }
+
+    #[test]
+    fn residual_poison_sources_isolated() {
+        // The exclusion-check behind strain-5 (`notes/193`): pin the TWO residual
+        // poison sources independently, so the finding survives as a regression and not
+        // just a narrated comment. Each upstream un-oracled construct, alone, forces the
+        // install to Written; with neither, it is Ambient (the keystone win). Host
+        // verdict is irrelevant here — this is the classify-level ambient gate.
+        let ambient = |src: &str| {
+            let (plan, _) = plan_for(src, Verdict::Converged);
+            matches!(find(&plan, "apt-get install").disposition, Disposition::Replace(_))
+        };
+        // Neither neighbour ⇒ ambient ⇒ elides (the clean keystone case).
+        assert!(ambient("apt-get update\napt-get install -y nginx\n"), "no poison ⇒ elides");
+        // `set -e` is a pure builtin (fs-4 fix) — it must NOT count as a poison source.
+        assert!(ambient("set -e\napt-get update\napt-get install -y nginx\n"), "set -e is pure ⇒ still elides");
+        // Each real upstream Opaque neighbour, alone, poisons (no elision).
+        assert!(
+            !ambient("case \"$(hostname)\" in *) : ;; esac\napt-get update\napt-get install -y nginx\n"),
+            "the $(hostname) case-scrutinee substitution poisons the install"
+        );
+        assert!(
+            !ambient("if ! command -v nginx; then apt-get install -y nginx; fi\n"),
+            "the `command -v nginx` if-guard poisons the install it guards"
+        );
+    }
+
+    #[test]
+    fn fixture_install_elides_when_update_is_the_only_neighbour() {
+        // THE keystone win at the PLAN level (`notes/193` strain-5 / acceptance §7.2):
+        // with `apt-get update` the ONLY upstream neighbour (modeled, distinct cell)
+        // and the host Converged, the install is now `Disposition::Replace` — the
+        // poison wall is genuinely dead end-to-end, not just at classify. This is the
+        // `update → install` core of the realistic book with the un-oracled scrutinee/
+        // guard stripped (the residual poison the full-fixture test documents). Pre-key
+        // this was impossible: `update` Opaque ⇒ Top ⇒ install forced Written ⇒ Run.
+        let (plan, _) = plan_for("apt-get update\napt-get install -y nginx\n", Verdict::Converged);
+        assert!(
+            matches!(find(&plan, "apt-get install").disposition, Disposition::Replace(_)),
+            "modeled `update` (distinct cell) no longer poisons ⇒ converged install elides"
         );
     }
 

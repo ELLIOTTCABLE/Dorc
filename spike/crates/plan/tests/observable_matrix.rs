@@ -40,7 +40,7 @@
 //! (`inv-superposition`, note 16J). `is_replaced` localizes the disposition check.
 
 use dorc_analysis::effect::FactKey;
-use dorc_core::{Interner, KindId, OpaqueToken, ProviderId, Verdict};
+use dorc_core::{EntityRef, Interner, KindId, OpaqueToken, ProviderId, SelectorId, Verdict};
 use dorc_oracle::{KindIndex, Polarity};
 use dorc_plan::{build_plan, Disposition, Plan};
 
@@ -52,12 +52,13 @@ use dorc_plan::{build_plan, Disposition, Plan};
 /// un-modellable here — see the note at the bottom of this file.)
 fn package_index(i: &mut Interner) -> KindIndex {
     let package = KindId(i.intern("package"));
+    let installed = SelectorId(i.intern("installed"));
     let apt = ProviderId(i.intern("apt-get"));
     let install = i.intern("install");
     let purge = i.intern("purge");
     let mut idx = KindIndex::default();
-    idx.add_effect(apt, install, package, Polarity::Establish);
-    idx.add_effect(apt, purge, package, Polarity::Kill);
+    idx.add_effect(apt, install, package, installed, Polarity::Establish);
+    idx.add_effect(apt, purge, package, installed, Polarity::Kill);
     idx
 }
 
@@ -67,11 +68,15 @@ fn package_index(i: &mut Interner) -> KindIndex {
 fn plan_for(src: &str, holds: &[(&str, &str)]) -> Plan {
     let mut i = Interner::default();
     let idx = package_index(&mut i);
+    // Every cell in this matrix is `<kind>:<entity>#installed` (the install/purge
+    // selector — the only one this oracle models), so the host-held facts carry it.
+    let installed = SelectorId(i.intern("installed"));
     let held: Vec<FactKey> = holds
         .iter()
         .map(|(k, e)| FactKey {
             kind: KindId(i.intern(k)),
-            entity: OpaqueToken(i.intern(e)),
+            entity: EntityRef::Operand(OpaqueToken(i.intern(e))),
+            selector: installed,
         })
         .collect();
     let parsed = dorc_syntax::parse(src);
