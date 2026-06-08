@@ -50,11 +50,15 @@ fi
 
 # Syntax-check one artifact ($2) labelled ($1 = "probe"/"apply") for case ($3).
 # Returns non-zero and prints the shell's diagnostic if the artifact does not parse.
+# Quiet when XFAIL_ACTIVE=1 (a known-defect case's failure is expected; the `xfail`
+# summary line carries the reason, so the raw diagnostic would just be noise).
 syntax_check() {
   _label=$1; _art=$2; _case=$3
   if ! _err=$(printf '%s\n' "$_art" | "$checker" -n 2>&1); then
-    echo "FAIL  $_case  [ap-2: rendered $_label is not $checker -n clean]"
-    printf '      %s\n' "$_err"
+    if [ "${XFAIL_ACTIVE:-}" != "1" ]; then
+      echo "FAIL  $_case  [ap-2: rendered $_label is not $checker -n clean]"
+      printf '      %s\n' "$_err"
+    fi
     return 1
   fi
   return 0
@@ -84,8 +88,10 @@ exec_check() {
 $_art
 EOF
   ); then
-    echo "FAIL  $_case  [ap-2-exec: rendered $_label errored when run under mocks]"
-    printf '      %s\n' "$_run_err"
+    if [ "${XFAIL_ACTIVE:-}" != "1" ]; then
+      echo "FAIL  $_case  [ap-2-exec: rendered $_label errored when run under mocks]"
+      printf '      %s\n' "$_run_err"
+    fi
     rm -f "$_log"
     return 1
   fi
@@ -99,9 +105,11 @@ EOF
   if [ "$_got_ran" = "$_want_ran" ]; then
     return 0
   fi
-  echo "FAIL  $_case  [ap-2-exec: $_label ran the wrong commands]"
-  if command -v diff >/dev/null 2>&1; then
-    printf '%s\n' "$_got_ran" | diff -u "${_dir}expected.ran" - 2>/dev/null || true
+  if [ "${XFAIL_ACTIVE:-}" != "1" ]; then
+    echo "FAIL  $_case  [ap-2-exec: $_label ran the wrong commands]"
+    if command -v diff >/dev/null 2>&1; then
+      printf '%s\n' "$_got_ran" | diff -u "${_dir}expected.ran" - 2>/dev/null || true
+    fi
   fi
   return 1
 }
@@ -129,46 +137,70 @@ for dir in "$here"/cases/*/; do
   probe_art=$(printf '%s\n' "$got" | awk 'BEGIN{c=0} /^#!\/bin\/sh/{c++} c==1{print}')
   apply_art=$(printf '%s\n' "$got" | awk 'BEGIN{c=0} /^#!\/bin\/sh/{c++} c>=2{print}')
 
-  # The ap-2 runnability gate — ALWAYS, and BEFORE bless (blessing a non-runnable
-  # artifact is exactly the ap-2 trap). A gate failure fails the case regardless of
-  # the text diff / bless mode.
-  gate_ok=1
-  syntax_check probe "$probe_art" "$name" || gate_ok=0
-  syntax_check apply "$apply_art" "$name" || gate_ok=0
-  if [ "$gate_ok" -ne 1 ]; then
-    fails=$((fails + 1))
-    continue
+  # A case with an XFAIL file is a documented KNOWN-DEFECT pin (notes/195): it asserts
+  # the *correct* (safe) behavior and is EXPECTED to fail against the current engine,
+  # so the corpus carries the defect without flipping the suite red or papering over
+  # it. A surprise pass ⇒ XPASS (loud: the defect got fixed — promote the case). The
+  # file's first line is the reason. Bless is suppressed for an xfail (its goldens are
+  # hand-authored to the safe behavior, not blessed from buggy output).
+  xfail_reason=
+  XFAIL_ACTIVE=
+  if [ -f "${dir}XFAIL" ]; then
+    xfail_reason=$(head -n1 "${dir}XFAIL")
+    XFAIL_ACTIVE=1
   fi
 
-  # The ap-2 EXECUTABLE gate (Deliverable A): a case with a mocks/ dir is RUN, not
-  # just parsed — execute the rendered apply under the inert shims and assert the
-  # exact set of commands that ran (elided `:`-stubs run nothing). Analysis-only
-  # cases (no mocks/) keep the `-n`+golden discipline and are never executed.
-  if [ -d "${dir}mocks" ]; then
-    if ! exec_check apply "$apply_art" "$name" "$dir"; then
-      gate_ok=0
+  # case_ok accumulates every gate + content check; interpreted through XFAIL below.
+  # (Not early-`continue`d, so an xfail case that fails a gate is reported, not fatal.)
+  case_ok=1
+
+  # The ap-2 runnability gate — ALWAYS, and (for non-xfail) BEFORE bless (blessing a
+  # non-runnable artifact is exactly the ap-2 trap).
+  syntax_check probe "$probe_art" "$name" || case_ok=0
+  syntax_check apply "$apply_art" "$name" || case_ok=0
+
+  # The ap-2 EXECUTABLE gate (Deliverable A): a case with a mocks/ dir is RUN, not just
+  # parsed — execute the rendered apply under the inert shims and assert the exact set
+  # of commands that ran (elided `:`-stubs run nothing). Analysis-only cases (no
+  # mocks/) keep the `-n`+golden discipline and are never executed. Skipped if the
+  # syntax gate already failed (a non-parseable artifact can't be meaningfully run).
+  if [ "$case_ok" -eq 1 ] && [ -d "${dir}mocks" ]; then
+    exec_check apply "$apply_art" "$name" "$dir" || case_ok=0
+  fi
+
+  # Content golden-diff (secondary to the gates; -n is blind to *which* lines elided).
+  # Skipped under bless and for xfail cases (goldens hand-authored there).
+  if [ "$case_ok" -eq 1 ] && [ "${BLESS:-}" != "1" ] && [ -z "$xfail_reason" ]; then
+    want=$(sed 's/\r$//' < "${dir}expected.out")
+    if [ "$got" != "$want" ]; then
+      echo "FAIL  $name  [content diff]"
+      case_ok=0
+      if command -v diff >/dev/null 2>&1; then
+        printf '%s\n' "$got" | diff -u "${dir}expected.out" - || true
+      fi
     fi
-    if [ "$gate_ok" -ne 1 ]; then
+  fi
+
+  # Interpret case_ok through the XFAIL lens.
+  if [ -n "$xfail_reason" ]; then
+    if [ "$case_ok" -eq 1 ]; then
+      echo "XPASS $name  [known defect appears FIXED — promote this case: $xfail_reason]"
       fails=$((fails + 1))
-      continue
+    else
+      echo "xfail $name  [$xfail_reason]"
     fi
-  fi
-
-  if [ "${BLESS:-}" = "1" ]; then
-    printf '%s\n' "$got" > "${dir}expected.out"
-    echo "blessed $name (ap-2 gate passed)"
-    continue
-  fi
-
-  want=$(sed 's/\r$//' < "${dir}expected.out")
-  if [ "$got" = "$want" ]; then
+  elif [ "${BLESS:-}" = "1" ]; then
+    if [ "$case_ok" -eq 1 ]; then
+      printf '%s\n' "$got" > "${dir}expected.out"
+      echo "blessed $name (ap-2 gate passed)"
+    else
+      echo "FAIL  $name  [gate failed; not blessed]"
+      fails=$((fails + 1))
+    fi
+  elif [ "$case_ok" -eq 1 ]; then
     echo "ok    $name"
   else
-    echo "FAIL  $name  [content diff]"
     fails=$((fails + 1))
-    if command -v diff >/dev/null 2>&1; then
-      printf '%s\n' "$got" | diff -u "${dir}expected.out" - || true
-    fi
   fi
 done
 
