@@ -160,12 +160,16 @@ impl Host {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use dorc_core::{Interner, KindId, OpaqueToken};
+    use dorc_core::{EntityRef, Interner, KindId, OpaqueToken, SelectorId};
 
+    /// `kind:entity#installed` — the re-keyed cell (`notes/193`). These host-model
+    /// tests only ever exercise `package#installed`, so the selector is fixed here;
+    /// the host is a plain set-membership oracle over whatever `FactKey` it is given.
     fn fk(i: &mut Interner, kind: &str, entity: &str) -> FactKey {
         FactKey {
             kind: KindId(i.intern(kind)),
-            entity: OpaqueToken(i.intern(entity)),
+            entity: EntityRef::Operand(OpaqueToken(i.intern(entity))),
+            selector: SelectorId(i.intern("installed")),
         }
     }
 
@@ -242,13 +246,19 @@ mod tests {
         for seed in 0..64u64 {
             let mut i = Interner::default();
             let package = KindId(i.intern("package"));
+            let installed = SelectorId(i.intern("installed"));
             let apt = ProviderId(i.intern("apt-get"));
             let install = i.intern("install");
             let mut idx = KindIndex::default();
-            idx.add_effect(apt, install, package, Polarity::Establish);
+            idx.add_effect(apt, install, package, installed, Polarity::Establish);
 
-            let nginx = FactKey { kind: package, entity: OpaqueToken(i.intern("nginx")) };
-            let curl = FactKey { kind: package, entity: OpaqueToken(i.intern("curl")) };
+            let cell = |i: &mut Interner, e: &str| FactKey {
+                kind: package,
+                entity: EntityRef::Operand(OpaqueToken(i.intern(e))),
+                selector: installed,
+            };
+            let nginx = cell(&mut i, "nginx");
+            let curl = cell(&mut i, "curl");
             let host = Host::seeded(seed, &[nginx, curl]);
 
             let parsed = dorc_syntax::parse(src);
@@ -297,14 +307,20 @@ mod tests {
         for seed in 0..64u64 {
             let mut i = Interner::default();
             let package = KindId(i.intern("package"));
+            let installed = SelectorId(i.intern("installed"));
             let apt = ProviderId(i.intern("apt-get"));
             let install = i.intern("install");
             let mut idx = KindIndex::default();
-            idx.add_effect(apt, install, package, Polarity::Establish);
+            idx.add_effect(apt, install, package, installed, Polarity::Establish);
             idx.add_probe(FactProbe { kind: package, body: "dpkg-query -W \"$1\"".into() });
 
-            let nginx = FactKey { kind: package, entity: OpaqueToken(i.intern("nginx")) };
-            let curl = FactKey { kind: package, entity: OpaqueToken(i.intern("curl")) };
+            let cell = |i: &mut Interner, e: &str| FactKey {
+                kind: package,
+                entity: EntityRef::Operand(OpaqueToken(i.intern(e))),
+                selector: installed,
+            };
+            let nginx = cell(&mut i, "nginx");
+            let curl = cell(&mut i, "curl");
             let host = Host::seeded(seed, &[nginx, curl]);
 
             let parsed = dorc_syntax::parse(src);
@@ -372,12 +388,17 @@ mod tests {
 
         let mut i = Interner::default();
         let package = KindId(i.intern("package"));
+        let installed = SelectorId(i.intern("installed"));
         let apt = ProviderId(i.intern("apt-get"));
         let install = i.intern("install");
         let mut idx = KindIndex::default();
-        idx.add_effect(apt, install, package, Polarity::Establish); // effect, but NO add_probe
+        idx.add_effect(apt, install, package, installed, Polarity::Establish); // effect, but NO add_probe
 
-        let nginx = FactKey { kind: package, entity: OpaqueToken(i.intern("nginx")) };
+        let nginx = FactKey {
+            kind: package,
+            entity: EntityRef::Operand(OpaqueToken(i.intern("nginx"))),
+            selector: installed,
+        };
         let host = Host::new([nginx]); // the host HOLDS nginx (converged)
 
         let src = "apt-get install -y nginx\n";
