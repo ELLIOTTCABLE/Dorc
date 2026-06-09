@@ -120,13 +120,23 @@ fn run() -> Result<(), String> {
 
 /// Parse stdin probe-results: `kind:entity#sel converged|diverged|unknown [rc=N]` per
 /// line. The optional `rc=N` is the **injected observed exit status** (`19B` build-1)
-/// the apply fold + value-preserving substitution read; absent, a `converged` fact
-/// defaults to the conforming `rc=0` (the established `true`-stub assumption), and a
-/// `diverged`/`unknown` fact carries no rc (⊤ for the fold). Blank lines and `#`
-/// comments are ignored, so the probe's own `# probe:` echo can be piped back.
+/// the apply fold + value-preserving substitution read. Blank lines and `#` comments
+/// are ignored, so the probe's own `# probe:` echo can be piped back.
 ///
-/// rc is the OUT-OF-BAND lane as plain data (`19B §2`): it never collides with the
+/// The rc is the OUT-OF-BAND lane as plain data (`19B §2`): it never collides with the
 /// verdict token (`unknown` stays a distinct word; the real rc rides as `rc=2`).
+///
+/// **An rc is carried ONLY when explicitly declared** (`19D`, the `kFAIL-perform`
+/// fix): a converged fact with no `rc=N` carries `rc=None` (⊤ for the fold), never a
+/// fabricated `rc=0`. The old conforming-`rc=0` default was a confident *wrong* value
+/// for a **non-conforming** establish (`useradd` exits 9 when converged): fabricating
+/// 0 let the fold short-circuit a `useradd || mkdir` fallback dead — a priority-1
+/// under-execute (`inv-kfail`). `core::Observed` already documents that an un-injected
+/// rc is ⊤ and the conforming-0 fallback is the *caller's* choice; this caller now
+/// declines it, deferring rc-production entirely to build-2's oracle contract (opt-B,
+/// `19B §1`). The trade: a conforming establish that does not declare `rc=0` no longer
+/// folds its branch — correct (never under-execute > avoid unnecessary-execute); its
+/// bare convergence-elision is unaffected (status dead ⇒ `true` stand-in, `19C` §3).
 fn parse_results(input: &str) -> BTreeMap<String, Observed> {
     input
         .lines()
@@ -142,16 +152,12 @@ fn parse_results(input: &str) -> BTreeMap<String, Observed> {
                 Some("diverged") => Verdict::Diverged,
                 _ => Verdict::Unknown,
             };
-            // An explicit `rc=N` overrides; else a converged fact is conforming (rc 0),
-            // and a non-converged fact has no known rc (None ⇒ ⊤ for the fold).
-            let explicit_rc = it.find_map(|tok| {
+            // rc is present ONLY when explicitly declared (`rc=N`); an undeclared rc is
+            // None ⇒ ⊤ ⇒ no fold through this leaf (the safe `kFAIL-perform` floor).
+            let rc = it.find_map(|tok| {
                 tok.strip_prefix("rc=")
                     .and_then(|n| n.parse::<i32>().ok())
                     .map(Rc)
-            });
-            let rc = explicit_rc.or(match verdict {
-                Verdict::Converged => Some(Rc(0)),
-                _ => None,
             });
             Some((key, Observed { verdict, rc }))
         })

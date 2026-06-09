@@ -22,7 +22,7 @@
 use std::collections::BTreeSet;
 
 use dorc_analysis::effect::FactKey;
-use dorc_core::{Observed, Phase, Rc, Verdict};
+use dorc_core::{Observed, Phase, Verdict};
 
 /// A tiny deterministic linear-congruential PRNG — the host's seeded
 /// nondeterminism. Hand-rolled (no `rand` dependency): the DST host must be
@@ -122,20 +122,23 @@ impl Host {
     }
 
     /// The full read-only [`Observed`] for a fact — the concrete `observe` the plan
-    /// stage's fold + value-preserving substitution inject (`19B` build-1). This
-    /// modeled host models **conforming, idempotent-success** establishes: a
-    /// `Converged` fact's command re-run exits 0 (so its substitution stand-in is
-    /// `true`). A non-conforming establish (`useradd` rc 9) is exercised by the unit
-    /// matrix's injected-rc case, not synthesized here — the host's job is set
-    /// membership, not modeling every tool's exact rc (`hostsim/CLAUDE.md`). A
-    /// `Diverged` fact carries no known rc (`None` ⇒ ⊤ for the fold).
+    /// stage's fold + value-preserving substitution inject (`19B` build-1). The host
+    /// is a plain set-membership oracle: it answers *whether* a fact holds, **not** the
+    /// exact exit status a tool yields when re-run converged — that is the (build-2)
+    /// oracle contract's job to declare (opt-B, `19B §1`), command-by-command. So
+    /// `observe` carries **no rc** (`None` ⇒ ⊤ for the fold), in BOTH the `Converged`
+    /// and `Diverged` cases.
+    ///
+    /// This is the `19D` `kFAIL-perform` fix: synthesizing a conforming `rc=0` here was
+    /// a confident *wrong* value for a non-conforming establish (`useradd` exits 9 when
+    /// converged), letting the fold short-circuit a `|| fallback` dead — a priority-1
+    /// under-execute (`inv-kfail`). A test needing an exact rc injects its own
+    /// `Observed { rc: Some(_), .. }` (the unit matrix's non-conforming case does);
+    /// the host never fabricates one. (`an-host-as-adversary`/`tc-reliability`: a
+    /// modeled host states membership, not a tool's private rc convention.)
     #[must_use]
     pub fn observe(&self, fact: FactKey) -> Observed {
-        let verdict = self.verdict(fact);
-        Observed {
-            verdict,
-            rc: (verdict == Verdict::Converged).then_some(Rc(0)),
-        }
+        Observed::verdict_only(self.verdict(fact))
     }
 
     /// Run one op in `phase`. A mutating op (`Establish`/`Kill`) in [`Phase::Probe`]
