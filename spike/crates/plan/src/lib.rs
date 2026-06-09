@@ -184,27 +184,44 @@ impl ReplaceLicense {
     ///    `Converged`; `Diverged` and (via [`Bias`]) `Unknown` do not.
     /// 4. no UNVOUCHED observable is consumed downstream. The consumption is the
     ///    engine's un-collapsed `May<Powerset<Observable>>` fact (`inv-superposition`,
-    ///    note 16J); per `inv-must-may` a `May` value can only block. The unvouched
-    ///    set is:
+    ///    note 16J); per `inv-must-may` a `May` value can only block. Branch-consumed
+    ///    status comes in two engine variants by render-expressibility (`19D` / 19C
+    ///    strain-D); both gate a *different* command's reachability, so a *fabricated*
+    ///    rc-0 stand-in would destroy that decision. The unvouched set:
     ///    * `Stdout`/`Stderr` — the stub defaults them to empty, vouched by nothing
-    ///      (16F §3); a consumed one ⇒ run (no in-spike bridge).
-    ///    * `Status` — present in the consumption set ONLY when **branch**-consumed
-    ///      (F1 / `notes/195`): a command gating a branch (`if`/`while`/`&&`/`||`/`!`)
-    ///      is a probe of world-state, so the stub's rc-0 default is unvouched and
-    ///      eliding it destroys the branch decision (a `kFAIL-perform` under-execute).
-    ///      Errexit-consumed status stays vouched (the establishes-contract's domain)
-    ///      by simply never entering the set — the engine marks `Status` only in a
-    ///      condition region (`cfg::lower_condition_region`), never the errexit pass.
+    ///      (16F §3); a consumed one ⇒ run (no in-spike bridge). A declared rc does
+    ///      NOT vouch *output content*, so these block regardless of `observed_rc`.
+    ///    * `Status` (an `if`/`elif` guard) — blocks the license **unconditionally**.
+    ///      The line-granular render cannot substitute a guard on its `if`/`then`/`fi`
+    ///      line, so even a declared rc cannot be applied in-situ (the disposition would
+    ///      be sound, but the render breaks `dash -n`). The block is the render floor;
+    ///      full retirement waits on the leaf-exact render (`C-5`).
+    ///    * `AndOrStatus` (a `&&`/`||` left operand) — blocks **only when the rc is
+    ///      undeclared** (`observed_rc == None`): then the stand-in defaults to `true`
+    ///      (rc 0), a fabricated success that suppresses a `|| fallback` (the
+    ///      `kFAIL-perform` under-execute — the round-19 adversarial trace). A
+    ///      *declared* rc relaxes it (`observed_rc == Some(N)` ⇒ the stand-in is
+    ///      `StandIn::from_rc(N)`, reproducing the exact status, so the branch decides
+    ///      identically — the fold's declared-rc opt-in, `19A §5`). The render CAN
+    ///      express this (operand+operator on one line; the fold + omit-safety gate
+    ///      handle it). (`tc-mint`/`tc-reliability`: the rc is a *declared observable*,
+    ///      not inferred; an un-declared rc on a non-conforming establish is an
+    ///      oracle-quality defect — build-2's contract, `19C` strain-B.)
+    ///    * Errexit (`set -e`)-consumed status stays vouched (a converged establish
+    ///      *has* succeeded — the establishes-contract) by never entering the set: the
+    ///      engine marks a status variant only in a branch region, never the errexit
+    ///      pass.
     ///
     /// Generic over the phase `P` (`inv-superposition`): the engine never bakes a
     /// phase; the caller argues it. `build_plan` passes the verdict's own provenance
-    /// (`Probe`).
+    /// (`Probe`) and the leaf's observed rc.
     #[must_use]
     pub fn prove_replaceable<P: Bias>(
         class: &SkipClass,
         grade: Grade,
         verdict: PhasedVerdict<P>,
         consumed: May<Powerset<Observable>>,
+        observed_rc: Option<Rc>,
     ) -> Option<ReplaceLicense> {
         let SkipClass::EstablishAmbient(fact) = class else {
             return None;
@@ -217,19 +234,28 @@ impl ReplaceLicense {
         }
         // No UNVOUCHED observable consumed downstream. The fact arrives un-collapsed
         // as a `May` (over-approximate consumption): per `inv-must-may` a `May` value
-        // can only BLOCK a license, never grant one. The unvouched set forbidding the
-        // `true`-stub's defaults (16F §3 / note 16J; no in-spike bridge discharges
-        // them): `Stdout`/`Stderr` (empty default vouched by nothing) and a
-        // **branch**-consumed `Status` (rc-0 default unvouched for a guard — F1 /
-        // `notes/195`; the engine puts `Status` in the set ONLY for a branch context,
-        // so its mere presence here means branch-consumed, never errexit-consumed).
-        // The block is sound in BOTH phases; only what a blocked leaf's disposition
-        // *becomes* is phase-keyed — the caller's collapse (`inv-superposition`).
+        // can only BLOCK a license, never grant one. (The block is sound in BOTH
+        // phases; only what a blocked leaf *becomes* is phase-keyed — the caller's
+        // collapse, `inv-superposition`.)
         let May(consumed) = &consumed;
-        if consumed.contains(&Observable::Stdout)
-            || consumed.contains(&Observable::Stderr)
-            || consumed.contains(&Observable::Status)
-        {
+        // `Stdout`/`Stderr`: empty default vouched by nothing (16F §3). A declared rc
+        // does not vouch output *content* ⇒ always block.
+        if consumed.contains(&Observable::Stdout) || consumed.contains(&Observable::Stderr) {
+            return None;
+        }
+        // `Status` (an `if`/`elif` guard): blocks unconditionally — the render floor
+        // (19C strain-D; even a declared rc can't be substituted in-situ on the
+        // `if`/`then`/`fi` line). Never enters the set for errexit, so `set -e` stays
+        // vouched.
+        if consumed.contains(&Observable::Status) {
+            return None;
+        }
+        // `AndOrStatus` (a `&&`/`||` left operand): blocks ONLY when the rc is undeclared
+        // (`19D`). With no declared rc the stand-in defaults to `true` (rc 0) — a
+        // fabricated success that suppresses a `|| fallback` (the `kFAIL-perform`
+        // under-execute). A declared rc relaxes it: `StandIn::from_rc` reproduces the
+        // exact status, so the branch decides as the real command would (`19A §5`).
+        if consumed.contains(&Observable::AndOrStatus) && observed_rc.is_none() {
             return None;
         }
         Some(ReplaceLicense {
@@ -611,17 +637,23 @@ fn disposition_for(
             let verdict =
                 PhasedVerdict::<Probe>::new(observed.map_or(Verdict::Unknown, |o| o.verdict));
             let consumed = May(cfg.consumed_observables(node).clone());
-            match ReplaceLicense::prove_replaceable(class, Grade::Must, verdict, consumed) {
+            let observed_rc = observed.and_then(|o| o.rc);
+            match ReplaceLicense::prove_replaceable(
+                class,
+                Grade::Must,
+                verdict,
+                consumed,
+                observed_rc,
+            ) {
                 Some(license) => {
-                    // The value-preserving stand-in: the observed exit status, or the
-                    // conforming `true` (rc 0) when the rc is un-injected — a converged
-                    // establish that fails to declare its idempotent-rerun rc is treated
-                    // as conforming (rc 0), the established `:`/`true` default. (A
-                    // *non*-conforming establish MUST inject its rc to be safe; the
-                    // injection is build-2's contract.)
-                    let stand_in = observed
-                        .and_then(|o| o.rc)
-                        .map_or(StandIn::True, StandIn::from_rc);
+                    // The value-preserving stand-in reproduces the observed exit status.
+                    // An un-injected rc falls back to the conforming `true` (rc 0) — but
+                    // ONLY a leaf whose status is NOT branch-consumed reaches here with an
+                    // undeclared rc: `prove_replaceable` now refuses the license for a
+                    // branch-consumed status with no declared rc (`19D` — that leaf runs),
+                    // so the `true` fallback applies only where the status is dead (rc 0
+                    // is then a harmless placeholder, never read by a branch).
+                    let stand_in = observed_rc.map_or(StandIn::True, StandIn::from_rc);
                     Disposition::Replace(license, stand_in)
                 }
                 None => Disposition::Run,
@@ -1059,6 +1091,7 @@ mod tests {
             Grade::Must,
             PhasedVerdict::<Probe>::new(Verdict::Converged),
             quiet(),
+            Some(Rc(0)),
         ) else {
             panic!("ambient + must + converged must license a skip");
         };
@@ -1073,6 +1106,8 @@ mod tests {
         // unsound ⇒ no license (run), even with ambient + Must + Converged. Both
         // unvouched output observables block — the `Stderr` branch was formerly only
         // exercised end-to-end, pinned here so the matrix can drop its stderr cell.
+        // A *declared* rc does NOT vouch output content, so passing `Some(Rc(0))` must
+        // STILL block (`19D`: the rc-relaxation is `Status`-only, never stdout/stderr).
         let f = nginx_fact();
         for obs in [Observable::Stdout, Observable::Stderr] {
             let consumed = May(Powerset::singleton(obs));
@@ -1082,9 +1117,69 @@ mod tests {
                     Grade::Must,
                     PhasedVerdict::<Probe>::new(Verdict::Converged),
                     consumed,
+                    Some(Rc(0)),
                 )
                 .is_none(),
-                "a consumed {obs:?} must forbid the stub"
+                "a consumed {obs:?} must forbid the stub even with a declared rc"
+            );
+        }
+    }
+
+    #[test]
+    fn andor_status_blocks_only_when_rc_undeclared() {
+        // `19D` (the keystone of the kFAIL-perform fix): a `&&`/`||` left operand's
+        // `AndOrStatus` blocks the license iff the rc is UNDECLARED — then the stand-in
+        // would default to `true`/rc-0, a fabricated success suppressing a `|| fallback`
+        // (the round-19 under-execute). A *declared* rc relaxes it (the value-preserving
+        // stand-in reproduces the exact status, preserving the branch).
+        let f = nginx_fact();
+        let consumed = || May(Powerset::singleton(Observable::AndOrStatus));
+        // Undeclared rc ⇒ BLOCK (the safe run-it floor).
+        assert!(
+            ReplaceLicense::prove_replaceable(
+                &SkipClass::EstablishAmbient(f),
+                Grade::Must,
+                PhasedVerdict::<Probe>::new(Verdict::Converged),
+                consumed(),
+                None,
+            )
+            .is_none(),
+            "`&&`/`||`-consumed status + undeclared rc must block (kFAIL-perform floor)"
+        );
+        // Declared rc (even a non-conforming 9) ⇒ RELAX (the stand-in is exact).
+        for rc in [Rc(0), Rc(9)] {
+            assert!(
+                ReplaceLicense::prove_replaceable(
+                    &SkipClass::EstablishAmbient(f),
+                    Grade::Must,
+                    PhasedVerdict::<Probe>::new(Verdict::Converged),
+                    consumed(),
+                    Some(rc),
+                )
+                .is_some(),
+                "`&&`/`||`-consumed status + declared rc {rc:?} licenses (value-preserving)"
+            );
+        }
+    }
+
+    #[test]
+    fn if_guard_status_blocks_unconditionally() {
+        // `19D` / 19C strain-D: the `if`/`elif`-guard `Status` is the render floor — it
+        // blocks the license EVEN with a declared rc (the line-granular render cannot
+        // substitute a guard on its `if`/`then`/`fi` line; a declared-rc relaxation
+        // would break `dash -n`). Contrast `andor_status_blocks_only_when_rc_undeclared`.
+        let f = nginx_fact();
+        for rc in [None, Some(Rc(0)), Some(Rc(9))] {
+            assert!(
+                ReplaceLicense::prove_replaceable(
+                    &SkipClass::EstablishAmbient(f),
+                    Grade::Must,
+                    PhasedVerdict::<Probe>::new(Verdict::Converged),
+                    May(Powerset::singleton(Observable::Status)),
+                    rc,
+                )
+                .is_none(),
+                "an if-guard's Status blocks unconditionally (render floor), rc={rc:?}"
             );
         }
     }
@@ -1100,6 +1195,7 @@ mod tests {
                     Grade::Must,
                     PhasedVerdict::<Probe>::new(v),
                     quiet(),
+                    Some(Rc(0)),
                 )
                 .is_none(),
                 "verdict {v:?} must NOT license a skip"
@@ -1116,6 +1212,7 @@ mod tests {
             Grade::May,
             PhasedVerdict::<Probe>::new(Verdict::Converged),
             quiet(),
+            Some(Rc(0)),
         )
         .is_none());
     }
@@ -1132,6 +1229,7 @@ mod tests {
                     Grade::Must,
                     PhasedVerdict::<Probe>::new(Verdict::Converged),
                     quiet(),
+                    Some(Rc(0)),
                 )
                 .is_none(),
                 "{class:?} must not license a skip"

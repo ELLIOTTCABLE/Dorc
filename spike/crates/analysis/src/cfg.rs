@@ -103,35 +103,46 @@ pub enum CfgNodeKind {
 /// * `Effect` ← convergence (the forward gate). Never enters the set.
 /// * `Stdout`/`Stderr` ← NOTHING, so a consumed one always enters the set and
 ///   blocks (16F §3).
-/// * `Status` ← context-dependent (F1 / `notes/195`, the round-19 fix): the rc-0
-///   default is vouched by the `establishes` contract for a **post-condition**
-///   consumer (`install && start` — "did my mutation succeed?", and `set -e`'s
-///   errexit), so errexit-/sequence-consumed status does NOT enter the set. It is
-///   **un**vouched for a **guard / pre-condition** consumer (`if ! command -v
-///   nginx` — "is X already true?", a different branch runs on the answer), where
-///   the leaf is a *probe of world-state*, not an establish. But the engine marks
-///   `Status` **only for an `if`/`elif` condition** (`lower_if_chain` passes
-///   `mark_status=true` to `lower_condition_region`) — the one *unambiguous* guard,
-///   where a different branch demonstrably runs on the rc. Two consumers are
-///   deliberately LEFT UNMARKED, so they do NOT block today (a known **under-execute**):
-///   a `&&`/`||` left operand (`lower_and_or` passes `mark_status=false` — it is
-///   genuinely ambiguous: `install && start` is a vouched post-condition that stays
-///   replaceable, while `cmd || install` is a guard that *should* block, structurally
-///   identical at the CFG; marking would regress the post-condition pin, so it is
-///   deferred to the F3 co-reference judgment — the `tc-mint` gap, `TODO(tc-mint)` in
-///   `lower_and_or`, pinned non-conforming by `observable_matrix`'s
-///   `xfail_nonconforming_…` and `notes/198` §1.3), and a bare `!`-negated pipeline
-///   (`lower_pipeline` only clears errexit-fallibility on the negation, never marks
-///   `Status`; a `!`-guard reached *through* an `if`/`elif` condition IS marked — it is
-///   the `if`, not the `!`, that marks the enclosing region). `while`/`until`
-///   conditions never reach here (loops are ⊤-rejected today, `notes/198` §1.4 — so the
-///   point is vacuous). The locus is the distinction (`lower_condition_region` marks an
-///   `if`/`elif` region); the errexit pass never marks `Status`, so errexit-consumed
-///   status stays vouched.
+///
+/// Branch-consumed status is split into TWO variants by their *render-expressibility*
+/// floor (`19D` / 19C strain-D), not their semantics — at the disposition layer both
+/// are rc-relaxable (a declared rc lets the value-preserving stand-in reproduce the
+/// exact status, preserving the branch decision — `19A §5`); they differ only in
+/// whether the *line-granular render* can express that substitution in-situ:
+///
+/// * [`Status`](Observable::Status) — an **`if`/`elif` condition** guard
+///   (`lower_if_chain` → `lower_condition_region(_, true)`). It blocks the license
+///   **unconditionally** (the phased caller never relaxes it), because the
+///   line-granular `render_apply` cannot substitute a guard that shares its line with
+///   the `if`/`then`/`fi` scaffolding: commenting `if cmd` and emitting the stand-in
+///   orphans `then`/`fi` (a `dash -n` break — 19C strain-D). The disposition layer
+///   does not *need* the block (exact-rc substitution would suffice), but the render
+///   does; full retirement waits on the leaf-exact / structural render (`C-5`).
+/// * [`AndOrStatus`](Observable::AndOrStatus) — a **`&&`/`||` left operand**
+///   (`lower_and_or` marks it directly). It blocks **only when the rc is undeclared**
+///   (the caller relaxes it on a declared rc): the render CAN express it (the operand +
+///   operator sit on one line, kept verbatim when mixed with a live sibling; the fold +
+///   the `render_apply` omit-safety gate handle the rest). This is the `19D` fix for
+///   the proven `useradd[9] || mkdir` under-execute, and it keeps `install && start`'s
+///   declared rc-0 post-condition replaceable.
+///
+/// A bare `!`-negated pipeline (`lower_pipeline`) marks neither (it only clears
+/// errexit-fallibility); a `!`-guard reached *through* an `if`/`elif` condition is
+/// marked [`Status`] by the enclosing `if`. `while`/`until` conditions never reach
+/// here (loops are ⊤-rejected today, `notes/198` §1.4 — so marking is vacuous).
+/// **Errexit** (`set -e`) marks neither: a converged establish *has* succeeded (the
+/// establishes-contract), so its rc-0 is genuinely vouched and stays elidable. (Only
+/// status that gates a *different* command's run needs the exact rc.)
+///
+/// The engine emits these un-collapsed (`inv-superposition`); the phased caller
+/// (`plan::prove_replaceable`) collapses them.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Observable {
     Effect,
+    /// `if`/`elif`-guard status — blocks the license unconditionally (render floor).
     Status,
+    /// `&&`/`||` left-operand status — blocks only when the rc is undeclared (`19D`).
+    AndOrStatus,
     Stdout,
     Stderr,
 }
@@ -669,18 +680,28 @@ impl<'a> Builder<'a> {
         right: AstId,
         entry_pred: CfgNodeId,
     ) -> CfgNodeId {
-        // TODO(tc-mint): a `&&`/`||` left operand is an AMBIGUOUS status consumer — a
-        // post-condition establish (`install && start`, rc-0 vouched, stays
-        // replaceable — the observable-matrix pins this) vs a pre-condition guard
-        // (`cmd || install`, should block like an `if`-guard, F1). The safe default
-        // for an ambiguous case is to BLOCK, but blocking here would regress the
-        // matrix's deliberate post-condition pin; disambiguating requires the F3
-        // co-reference judgment (does the consumed status gate a *different* branch's
-        // body?), which is the Half-B work. So the stopgap leaves `&&`/`||` UNMARKED
-        // (`mark_status=false`) and the residual is a flagged `tc-mint` gap — see
-        // `Research/notes/198`. (`if`/`elif` conditions, the unambiguous guards, ARE
-        // marked.)
+        // A `&&`/`||` left operand's status is **branch-consumed** (the right operand's
+        // reachability turns on it). `lower_condition_region(_, false)` clears its
+        // errexit-fallibility (a `&&`/`||` left operand is errexit-exempt) WITHOUT
+        // marking `Observable::Status` (that variant is the `if`/`elif` render floor,
+        // an unconditional block); instead it is marked `Observable::AndOrStatus` (the
+        // `19D` generalisation). The phased caller
+        // (`plan`) collapses it **rc-conditionally** (`prove_replaceable`): an undeclared
+        // rc blocks the license (eliding to a fabricated `true`/rc-0 would suppress a
+        // `cmd || fallback` — the `kFAIL-perform` under-execute the round-19 adversarial
+        // trace proved); a *declared* rc relaxes it (the value-preserving stand-in
+        // reproduces the exact status, so `install && start`'s rc-0 post-condition stays
+        // replaceable, and `useradd[9] || mkdir` keeps `mkdir` live). This dissolves the
+        // former `tc-mint` ambiguity (`notes/198` §1.3): the engine no longer guesses
+        // post-condition-vs-guard — it emits the un-collapsed status fact, and the
+        // *declared rc* (the fold's input) decides, per `inv-superposition`/`19A §5`.
+        let before_left = self.nodes.len();
         let left_exit = self.lower_condition_region(left, entry_pred, false);
+        self.mark_consumed_range(
+            before_left,
+            self.nodes.len(),
+            &Powerset::singleton(Observable::AndOrStatus),
+        );
 
         let right_exit = self.lower_node(right, left_exit);
         // Hang the join's provenance on the left operand (a reasonable locator).
@@ -1090,21 +1111,19 @@ impl<'a> Builder<'a> {
     /// operands of a compound test (find-3) — both of which the old tail-only
     /// `mark_condition_context` missed when the region exit was a `Merge`.
     ///
-    /// `mark_status` additionally marks every command in the region as
-    /// **branch-consuming its status** (F1 / `notes/195` — the round-19 stopgap): a
-    /// command whose exit status *gates a different branch's body* is a *probe of
-    /// world-state*, so the `true`-stub's rc-0 default is unvouched and must NOT
-    /// license eliding it (a converged-but-elided guard destroys the branch decision
-    /// — a `kFAIL-perform` under-execute). It is `true` ONLY for an unambiguous guard
-    /// — the test of an `if`/`elif` (and `while`/`until`, which are ⊤-rejected today,
-    /// so vacuous) — where a *different* branch runs on the rc. It is `false` for a
-    /// `&&`/`||` left operand, which is **ambiguous**: a post-condition establish
-    /// (`install && start` — rc-0 vouched by the establishes-contract, stays
-    /// replaceable; the matrix pins this) vs a guard (`cmd || install` — pre-condition,
-    /// should block). Disambiguating that is the F1↔Half-B `tc-mint` call, deferred
-    /// (see the `TODO(tc-mint)` at the call site). This locus is also what separates
-    /// branch-status from errexit-status: the errexit pass never marks
-    /// `Observable::Status`, so errexit-consumed status stays vouched.
+    /// `mark_status` additionally marks every command in the region as consuming
+    /// `Observable::Status` (F1 / `notes/195`): the test of an `if`/`elif` is an
+    /// **unambiguous guard** (a *different* branch runs on its rc), and the
+    /// line-granular render cannot substitute a guard sharing its line with the
+    /// `if`/`then`/`fi` scaffolding, so this `Status` blocks the license
+    /// **unconditionally** — the render floor (19C strain-D). It is `true` ONLY for an
+    /// `if`/`elif` condition (`while`/`until` are ⊤-rejected today, so vacuous); a
+    /// `&&`/`||` left operand is marked the *separate* `Observable::AndOrStatus` at its
+    /// own call site (`lower_and_or`, the `19D` rc-relaxable variant — the render CAN
+    /// express it), not via this `Status`. This locus is also what separates
+    /// branch-status from errexit-status: the errexit pass never marks either status
+    /// variant, so errexit-consumed status stays vouched (a converged establish has
+    /// succeeded — `set -e` correctly does not abort).
     ///
     /// Implemented as a node-range mark/clear: CFG nodes are arena-allocated in walk
     /// order, so the half-open range `[before, after)` is exactly the region's
