@@ -353,16 +353,14 @@ impl ProbePlan {
         let mut out = String::from(
             "#!/bin/sh\n# dorc probe (read-only): reports per-fact convergence, mutates nothing.\n\n",
         );
-        // Define each kind's check function once (first-seen order ⇒ deterministic),
-        // then invoke per fact with the operand bound. `defined` tracks which kinds'
-        // function bodies are already emitted.
+        // Each kind's check fn is emitted once (first-seen ⇒ deterministic), then
+        // invoked per fact with the operand bound.
         let mut defined = BTreeSet::new();
         for check in &self.checks {
             let fn_name = check_fn_name(interner, check.fact.kind);
             out.push_str(&format!("# probe: {}\n", fact_label(interner, check.fact)));
             if defined.insert(check.fact.kind) {
-                // `oracle_probe_<kind>` body is a brace-group; `name() <group>` is a
-                // valid POSIX function definition.
+                // body is a brace-group, so `name() <group>` is a valid POSIX funcdef.
                 out.push_str(&format!("{fn_name}() {}\n", check.sh));
             }
             match check.fact.entity {
