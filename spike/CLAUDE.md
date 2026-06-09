@@ -139,6 +139,20 @@ makes gnu the active toolchain, so there is no `+toolchain` footgun.
   opaque `sh -c "$bigscript"`**. The probe projection is a leaf-id-preserving
   rewrite.
 
+- **inv-one-observable** (the `19E`/`19F` rewrite invariant — do not let it
+  re-fragment) — there is exactly ONE concept of a command's *observable*: its
+  output-tuple over channels `{Effect, Status, Stdout, Stderr}` (extensible). The
+  oracle `.check()` **predicts** a value per channel (or a loud out-of-band ⊤
+  "can't-predict"); an enclosing context **consumes** (reads) some channels; a
+  substitution **reproduces** the consumed channels' exact predicted values; an
+  elision is licensed only when the **Effect** channel predicts *no-mutation*. Do
+  **not** re-introduce separate `Verdict{Converged}`, a bolted `Observed{rc}`, or a
+  consumption-only `Observable` — that three-way split silently under-executed a
+  non-conforming establish (`useradd … || mkdir`; see `Research/notes/19D`–`19F`).
+  **"Convergence" is the *derived* state of the `Effect` channel** (no-mutation,
+  refined by the ambient gate), never a separate probe-reported verdict and never
+  the check's concern.
+
 ## Code style
 
 - Newtypes over bare integers/strings; **make illegal states unrepresentable**
