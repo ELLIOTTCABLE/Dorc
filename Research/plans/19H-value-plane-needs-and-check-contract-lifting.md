@@ -1,262 +1,233 @@
-# 19H — The value-plane the engine needs, and the shape of `check()` contract-lifting
+# 19H — The value analysis the engine needs, and the shape of `check()` contract-lifting
 
-> **What this is.** A forward design synthesis (reference-quality, not a strain-log) distilling the
-> round-19 finding into the two things take-3 must get right. Round-19 validated the **output** side of
-> the elision engine — one coherent `Observable`, the apply fold, the cell-model + ambient gate — on
-> *injected stand-in values*, then drove into the wall: the **input** side (the value-plane + the
-> command-keyed `check()` that *produces* those values and *resolves* entities) is unbuilt, and is
-> unbuildable on the round-16 "no value-plane, inject the values" foundation. §1 specifies what that
-> input side needs; §2 specifies the shape of `check()` contract-lifting with copious examples; §3 the
-> carry-forward; §4 the open forks.
+> What this is. A forward design synthesis (reference-quality, not a strain-log) distilling the round-19
+> finding into two things take-3 must get right. Round-19 validated the output side of the elision engine
+> — one coherent observable-tuple, the apply fold, the kind/entity/selector cell-model + ambient gate —
+> by feeding it injected stand-in values, then drove into the wall: the input side, a real value-flow
+> analysis (and the command-keyed `check()` it lifts and runs), is unbuilt, and is the actual core of the
+> tool. §1 specifies what that analysis needs; §2 the shape of `check()` contract-lifting, with examples;
+> §3 the carry-forward; §4 the open questions, several of which a prior-art run should settle before any
+> rebuild.
 >
 > AI-authored, confidence-marked (+SURE / ~SUSPECT / -GUESS / --WONDER). Trust the root
 > `README`/`DESIGN`/`IMPLEMENTATION`/`KNOBS`/`AGENTS` and the human rulings (19A §5, find-3, the round-19
-> conversation) over this. Continues `19F`/`19G`. The slugs it leans on: `16C` (no value-plane), `19A §5`
-> (the settled probe→observables→abstract-interpret model), `ch-shape-anno` / `kTYANNOT` (the inline
-> annotation), `seam-interproc` / `seam-finite`, `inv-referent-agnostic` / SF-1 / `an-entity-uniqueness`
-> (identity declared-never-inferred), `17N` (named kinds), `17O` (the stdlib-oracle quality bar).
+> conversation) over this. Continues `19F`/`19G`. Slugs it leans on: `16C` (the value-synthesis
+> refutation — read carefully, it is narrower than "no value plane"), `19A §5` (the settled
+> probe→observables→abstract-interpret model), `ch-shape-anno`/`kTYANNOT` (the inline annotation),
+> `seam-interproc`/`seam-finite`, `inv-referent-agnostic`/SF-1/`an-entity-uniqueness` (identity declared,
+> not inferred), `17N` (named kinds), `17O` (the stdlib-oracle quality bar). The algorithmic and substrate
+> claims here are deliberately held open (§4) pending a prior-art pass.
 
 ---
 
-## 0. The finding, in one sentence
+## 0. The finding
 
-The settled model — **probe runs the command-keyed read-only `check()`s → concrete observables → the
-apply phase abstract-interprets the CFG over those values → omits what can't run** (`19A §5`, +SURE
-human-ruled) — *requires the engine to flow concrete values* (the book's literal arguments, through the
-oracle's `check()`), so a **narrow value-plane is not optional**: it is the single mechanism that both
-**resolves entities** (find-3) and **produces observables** (the rc the fold consumes). `16C`'s "no
-value-plane; every lock is fact-shaped; inject the values" was the correct scoping for round-16 but is
-the *foundational mis-step for this goal* — it forced every downstream piece (entity-resolution,
-rc-production) to become a stand-in (the engine's flag-strip; the test-injected rc).
+The settled model — the probe runs the command-keyed read-only `check()`s, returns concrete observables,
+and the apply phase abstract-interprets the script over those values and omits what cannot run (`19A §5`)
+— rests on the engine actually *tracking values*. It tracks them twice: before the probe, to work out
+which command touches which entity and to compile the right read-only check; and after, to flow the
+probe's results through the script's constructs and discover what is safe to elide. That value-tracking
+is a real value-flow analysis, and round-19 deferred all of it — injecting the observables, inferring the
+entities with a flag-strip. `16C` refused analyzer-side value *synthesis* (computing what a command would
+emit at runtime); it did not, and could not, refuse value *propagation* (following a value the script
+already names from where it is bound to where it is used). Conflating the two — reading "no synthesis" as
+"no value plane" — is what left the engine unable to do its central job.
 
 ---
 
-## 1. The value-plane — what the engine needs
+## 1. The value analysis — what the engine needs
 
-### 1.1 What it is, and what it is *not*
+### 1.1 It is a real value-flow analysis, over every file involved
 
-+SURE. A **narrow, decidable, forward value-analysis** over a **deliberately-constrained oracle-contract
-dialect**: it tracks concrete **constants** (literals like `nginx`, `install`, `-y`) and **simple
-positional parameters** (`$1`, `$@`, `shift`) as they flow through assignment, parameter-binding, and a
-small fixed set of string/control constructs — and ⊤ on everything outside the dialect.
+It propagates values the program already names — through assignments, variables, function parameters and
+positional arguments, and the ordinary control constructs — wherever they flow, across the files that
+participate (books and oracles alike). It does not need to be cutting-edge, but it needs to be real:
+constant propagation plus argument/parameter propagation is the floor, not the ceiling. A book that
+writes `pkg=nginx; apt-get install -y "$pkg"` must see `nginx` reach the install the same way an oracle's
+`check()` sees `nginx` reach its annotation — the moment you name a value, naming it cannot blind the
+analysis, or positional parameters die on the first `x=$1`.
 
-It is **NOT** general analyzer-side value *synthesis* — `16C`'s refutation of that stands; the general
-case is undecidable and undesirable. The narrowing is exactly what buys back decidability, on **two**
-independent constraints that must both hold:
+Two notes that the round-19 framing got wrong and this corrects. First, there is no useful book/oracle
+distinction at this layer: they are the same machinery and largely the same thing — "oracle" and "book"
+are design-shorthand for *intent* (a published, correctness-heavy provider vs. a scrappy local play), not
+an implementational boundary, so the value analysis treats them uniformly. Second, the line we draw is
+not a *category* exclusion ("variables are out, only literals are in") — it is a *reach* limit (see §1.3):
+we follow what we can, and stop where it gets too hard, and stopping is always safe.
 
-- **the book side is concrete-or-⊤** — only a *literal* operand resolves; a `$VAR`/`$(…)` operand is ⊤ ⇒
-  the command runs (already the spike's posture: `effect::resolve_entity` ⊤s on non-literal). The book
-  author gets analysis *only* for literal args; nothing is guessed.
-- **the oracle side is the constrained dialect** — the `check()` is written in a liftable subset ("feels
-  like sh, works like sh, reliably liftable" — human), *not* arbitrary sh. A `check()` that steps outside
-  the dialect is ⊤ ⇒ its command runs. The dialect's boundary **is** the ⊤-boundary.
+### 1.2 Why it is necessary — two engine capabilities, both value-flow
 
-The domain is small: `Value = ⊥ | Const(bytes) | ⊤` per value-location, plus a positional-parameter vector
-(`$1..$n`, mutated by `shift`). ~SUSPECT a couple of derived shapes are needed (a "prefix-stripped" view
-for `${1#-}`), but nothing approaching a string solver.
+These are the parts that make the rest of the engine work; round-19 had to stand in for each precisely
+because the analysis was absent.
 
-### 1.2 Why it is necessary — the two engine capabilities that *cannot exist* without it
+- Entity-resolution, before the probe. The cell-model (kind/entity/selector — the poison-wall fix,
+  `19G §1`) needs each command resolved to a cell. That means following the script's own value (`nginx`,
+  however it arrived at the command) into the oracle's `check()`, through the `check()`'s argparse, to a
+  kind-annotation. Absent the analysis, the engine *infers* identity by flag-stripping argv — the find-3
+  stand-in, which breaks the welded "identity is declared, never inferred" (SF-1 / `an-entity-uniqueness`
+  / `17N F3`), breaches `inv-referent-agnostic`, and mis-reads no-verb commands.
 
-These are the "parts necessary to make the rest of the engine work" — each is a thing round-19 had to
-*stand in for* precisely because the value-plane was absent.
+- Observable-flow, after the probe. Shipping a read-only check is pointless unless its result can then be
+  *flowed into the script's constructs* to license an elision. The post-probe abstract-interpretation has
+  to carry the probe-derived state through `&&`/`||`/`if`/`case`/assignments — the richer it is, the more
+  elision candidates exist; the more constructs it cannot follow, the fewer. The round-19 fold did this
+  for a bare exit code over `&&`/`||`/`if`/`!`; the real thing flows dependency-state through whatever the
+  book actually wrote. The fold is the seed of this analysis, not the whole of it.
 
-- **(need-entity) entity-resolution → the cell-model's input.** The cell-model (`FactKey{kind, entity,
-  selector}`, the poison-wall fix, `19G §1`) needs each command resolved to a cell. Without flow-tracking
-  the book's `nginx` *through the oracle's argparse* to a kind-annotation, the engine must **infer**
-  identity (flag-strip + verb=word-1). That stand-in (`find-3`, annotated in `effect.rs`): (a) violates
-  the **welded** "identity is *declared, never inferred*" (SF-1 / `an-entity-uniqueness` / `17N F3`); (b)
-  breaches `inv-referent-agnostic` (the engine reading argument *structure*); (c) mis-parses no-verb
-  commands (`useradd deploy` → verb=`deploy`). The value-plane is *how the oracle's declaration (the
-  annotation) reaches the book's concrete arg* — the only sound bridge.
-- **(need-obs) observable-production → the fold's input.** The fold abstract-interprets `&&`/`||`/`if`/`!`
-  over concrete rc **values** (`19A §5`: `9 || mkdir` ⇒ mkdir runs, by the shell's own semantics; rc is
-  *opaque* to Dorc). Those values must come from *running the read-only `check()`s in the probe* — not
-  from a fixture. Round-19 injected them (the cli `rc=N` stdin, the `substitutes_exact_rc` test): the
-  masking. The value-plane (statically: which read-only body to ship; dynamically: run it, receive the
-  rc) is what makes the rc a *real probed value*.
+One mechanism serves both: the command-keyed `check()` (§2) is what the pre-probe pass lifts (to resolve
+the entity and pick the body to ship) and what the post-probe pass consumes (its result is the observable
+flowed into the fold). So the value analysis is not two features bolted together; it is one analysis with
+a pre- and post-probe face.
 
-+SURE the load-bearing realization: **both needs are the same mechanism** — the command-keyed `check()`.
-So the value-plane is not two features; it is one analysis serving entity-resolution *and*
-observable-production. This is why it cannot be deferred to a "build-2": it *is* the keystone-input.
+### 1.3 The boundary is a control, not a wall — and that is where soundness lives
 
-### 1.3 The necessary capabilities (the minimum the dialect + analysis must model)
+The single load-bearing invariant, and the one algorithmic claim here held +SURE: wherever the analysis
+stops — a genuinely dynamic value it cannot resolve, or a construct past whatever complexity we have
+chosen to follow — it degrades to ⊤, and ⊤ means the command runs, its arguments go unparsed, and nothing
+is elided (`kFAIL-perform`). Soundness comes from this degrade-to-run, and it holds *independent of how
+powerful or precise the analysis is*. That decouples the two questions that round-19 tangled: correctness
+is fixed (⊤ ⇒ run, always), and coverage (how much actually elides) is a dial we can turn — cheap and
+shallow now, richer later — without ever putting correctness at risk.
 
-Driven by the canonical argparse (`§2.1`). Each `C-vp-*` is a thing the lift must handle or the whole
-command degrades to ⊤ ⇒ run.
+We have real control over where that dial sits, and it can sit at different places for different inputs:
+"past this level of nesting / this kind of construct, we will not parse arguments and will not elide" is a
+legitimate, tunable stop. ~SUSPECT we will want it set more generously for oracles (authored with intent,
+expected to stay liftable) than for scrappy books — but since they share the machinery, the difference is
+a threshold, not a different analysis.
 
-- **`C-vp-1` literal constants** tracked through the AST (`nginx`, `install`, `-y`). The decidable floor.
-- **`C-vp-2` positional-parameter binding (interprocedural).** Book call `apt-get install -y nginx` binds
-  the oracle `check()`'s `$@ = [install, -y, nginx]`, `$1 = install`, … This is the **call-edge +
-  param-binding** the spike lacks (`lower_funcdef` builds detached bodies, no call-edges — `seam-interproc`).
-  *Without it there is no path from the book's constant into the check.* +SURE this is the single biggest
-  net-new piece.
-- **`C-vp-3` `shift` / `shift N`** — re-binds positionals (`$1` becomes the old `$2`). The spine of any
-  argparse. Modeled as a concrete index-advance over the (finite) arg-vector.
-- **`C-vp-4` a minimal string-op set for option detection** — `${1#-}` (prefix-strip), `[ "$x" = "$y" ]`
-  equality, enough to express "is this an option." The dialect fixes the allowed set; anything else ⇒ ⊤.
-- **`C-vp-5` control-flow over values** — `while`, `case $1 in -t|-o) … ;; *) … esac`, `if` —
-  abstract-interpreted over the concrete/⊤ values. The apply fold already does this for *rc*; the
-  value-plane **generalizes the same machinery to strings/constants** (`§1.5`).
-- **`C-vp-6` the inline kind-annotation as the grounding anchor** — `pkg : com.debian.apt.Package = "$1"`
-  binds the flowed value to a *named kind* on that control-flow path (`ch-shape-anno`; `17N` reverse-DNS
-  handle). This is the **one non-sh-native token** in the whole scheme, and the locus of the `kTYANNOT`/
-  `kOOB` debt. The engine lifts it; the value flowing into it becomes a typed entity.
-- **`C-vp-7` ⊤-propagation as the safety floor** — a non-literal book arg, or any `check()` construct
-  outside the dialect, ⇒ ⊤ ⇒ *can't-resolve* ⇒ the command **runs** (`kFAIL-perform`). No partial best-
-  effort guess — that guessing *is* the flag-strip stand-in's sin (`need-entity`). The boundary is loud.
+### 1.4 What it must at least reach (minimum-necessary, not a closed set)
 
-### 1.4 What keeps it decidable (termination + the constrained dialect)
+A non-exhaustive list of the low-hanging fruit the analysis has to clear to be useful at all. More is
+better; none of these is a ceiling, and listing them is not meant to exclude anything absent from the
+list.
 
-+SURE, and important for the compiler-minded reviewer: this does **not** reintroduce an undecidable
-value analysis, because the analysis is **bounded concrete partial-evaluation over a finite arg-list**,
-not a fixpoint over an unbounded value lattice:
+- Constant propagation through assignment and variable use (`pkg=nginx; … "$pkg"`).
+- Propagation through function parameters and positional arguments, including the re-binding the argparse
+  idiom relies on (`$@`, `$1`, `shift`) — the bridge from a call to a `check()`'s body.
+- Flow through the common control constructs already in the apply fold's reach (`case`, `if`, `while`,
+  `&&`/`||`, `!`), now carrying values rather than only a bare exit code.
+- The inline kind-annotation as the grounding anchor (`pkg : com.debian.apt.Package = "$1"`) — the one
+  non-sh-native token in the whole scheme, and the locus of the `kTYANNOT`/`kOOB` debt (§4).
+- Cross-file flow: a book calling a command an oracle defines, and `. /path`-style helper sourcing, so a
+  value can travel from a book through an oracle's `check()` and back (`seam-interproc`).
 
-- the book's args are a **finite list of literals** (or ⊤). Abstract-interpreting the `check()`'s argparse
-  (`while`/`shift`/`case`) over a finite concrete arg-vector **terminates** — each `shift` strictly
-  advances a bounded index; the `while` consumes a finite list. (`§2.1` runs to completion in 3 iterations
-  for `[install, -y, nginx]`.)
-- the value domain is **finite-height**: the only `Const` values that ever appear are *substrings of the
-  script's own literals* (+ ⊤). No new values are synthesized (that is the `16C` line we do **not**
-  cross). So `seam-finite`'s ascending-chain guarantee holds without a hard depth cap — the cap stays as
-  the loud backstop.
-- the constrained dialect is the *other* half of decidability: the oracle author writes argparse in a
-  **liftable subset** by contract. A `check()` that uses an un-modeled construct (`eval`, a dynamic
-  `$cmd`, unbounded recursion) lifts to ⊤ — its command runs, never a wrong-resolve. **The dialect must be
-  designed deliberately as a first-class artifact** (what is liftable), not discovered ad-hoc.
+### 1.5 How it relates to what round-19 validated
 
-### 1.5 How it composes with the round-19 engine (the carry-forward, not a rebuild)
+The apply fold is the first, smallest instance of this analysis: it already abstract-interprets
+`&&`/`||`/`if`/`!`, only over a bare exit code and only on injected inputs. Take-3 widens its domain from
+"an exit code or ⊤" to "the values the script names or ⊤," and feeds it real probe results instead of
+fixtures. The cell-model is this analysis's output (the resolved entity, the annotation's kind, the verb's
+selector), and the one observable-tuple is the shape the `check()` populates per channel. None of that is
+thrown away; it is layered onto a real input side instead of stand-ins.
 
-+SURE. The value-plane is a *generalization of machinery round-19 already validated*, not a foreign body:
-
-- **the apply fold is a special case.** `plan::fold` already abstract-interprets `&&`/`||`/`if`/`!` over
-  `AbstractRc ∈ {Known(rc), Top}` — i.e. a value-plane whose values are *exit codes*. The value-plane
-  generalizes the domain to *constants/strings flowing through the check*. Carry the fold's design
-  forward; widen its domain. (`19C` is the fold; its algorithm is right, only its *inputs* were injected.)
-- **the cell-model is the value-plane's output.** `FactKey{kind, entity, selector}` is exactly
-  (annotation-kind, flowed-entity, verb-selector). The poison-wall fix stands; it just needs a *sound*
-  entity instead of the flag-strip's inferred one.
-- **the worklist substrate hosts it.** Lattice value = `Const | ⊤`; forward dataflow; no IFDS/Datalog
-  (`19A §5` / `notes/180`: substrate is not the question). The `Box`/`Product`/`MapL` combinators compose
-  a positional-param environment.
-- **the static/dynamic split.** The value-plane is the **static** half (resolve the entity for the
-  cell-model + ambient gate; decide *which read-only body to ship*). The probe is the **dynamic** half
-  (ship the body full-args, run it, receive the concrete observables). The fold consumes the dynamic half.
+Whether that widened analysis rides the existing worklist substrate unchanged, or wants something else, is
+an open question for the prior-art run (§4), not a claim this doc should make.
 
 ---
 
 ## 2. The shape of `check()` contract-lifting (examples)
 
-The unifying object is the oracle's **command-keyed, full-args `check()`** (`19A §5` C-1/C-4): one sh
-function per command-family that (a) argparses the command the way the *real* tool does, (b) inline-
-annotates which value is which kind, and (c) *is* the read-only probe body. The engine lifts it statically
-(entity-resolution) **and** ships+runs it (observable-production). Examples build from simplest to hardest.
+The unifying object is the oracle's command-keyed, full-args `check()` (`19A §5` C-1/C-4): one sh function
+per command-family that argparses the command the way the real tool does, inline-annotates which value is
+which kind, and is itself the read-only probe body. The engine lifts it (to resolve the entity and pick
+what to ship) and ships+runs it (to get the observable). Examples build from simplest to hardest. The
+value flowing in may originate in the book, not just in literal argv.
 
-### 2.1 Anatomy — the package mutator-with-read-only-probe (`apt-get`)
+### 2.1 Anatomy — `apt-get`, with the value arriving from the book
 
 ```sh
-apt_get__check() {                          # command-keyed: this lifts/ships for `apt-get …`
+# book:
+pkg=nginx
+apt-get install -y "$pkg"
+
+# oracle:
+apt_get__check() {                          # command-keyed: lifts/ships for `apt-get …`
    while [ "${1#-}" != "$1" ]; do           # skip leading options the way apt-get really does
       case $1 in -t|-o) shift 2 ;; *) shift ;; esac
    done
-   verb=$1; shift                           # the subcommand: install / purge / update / …
-   pkg : com.debian.apt.Package = "$1"      # ← inline-declare: THIS value is a Package, on THIS path
-   dpkg-query -W "$pkg"                     # the read-only fact-probe (NOT a dry-run of apt-get)
+   verb=$1; shift                           # install / purge / update / …
+   pkg : com.debian.apt.Package = "$1"      # inline-declare: THIS value is a Package, on THIS path
+   dpkg-query -W "$pkg"                     # the read-only fact-probe (not a dry-run of apt-get)
 }
 ```
 
-What the engine does, on the book line `apt-get install -y nginx`:
+What the engine does:
 
-- **lift + bind** (`C-vp-2`): `$@ = [install, -y, nginx]`.
-- **flow** (`C-vp-3/4/5`): the `while` tests `${1#-}` ≠ `$1` — true for `-y` (strips to `y`), false for
-  `install`/`nginx`. So it consumes `-y` (the `*) shift` arm), stops at `install`. `verb = install`,
-  `shift`, `$1 = nginx`.
-- **anchor** (`C-vp-6`): the annotation binds `pkg = nginx : com.debian.apt.Package`. The engine never
-  decided `-y` was a flag — the *oracle's own argparse* did, and the engine traced the constant through it.
-- **produce — static**: entity `package:nginx`, kind from the annotation, selector from `verb` (`install`
-  → `#installed`; `§2.5`). Cell = `package:nginx#installed`, fed to the cell-model + ambient gate.
-- **produce — dynamic**: ship `apt_get__check install -y nginx` (full-args, `C-1`); the host runs it; the
-  `dpkg-query -W nginx` body returns the rc. *That* rc is the probed observable.
+- In the book, propagate `pkg` ⇒ the install's argv is `[install, -y, nginx]` — the book's own value-flow,
+  same machinery as the oracle's.
+- Bind those into the `check()`'s `$@`, then follow the argparse: the `while` consumes `-y` (it strips to
+  `y` under `${1#-}`), stops at `install`; `verb=install`, `shift`, `$1=nginx`.
+- The annotation binds `nginx : com.debian.apt.Package` on this path. The engine never decided `-y` was a
+  flag — the oracle's own argparse did, and the analysis traced the value through it.
+- Pre-probe output: the cell `package:nginx#installed` (kind from the annotation, selector from the verb,
+  §2.5), fed to the cell-model and ambient gate.
+- Post-probe output: ship `apt_get__check install -y nginx` (full argv, C-1); the host runs the
+  `dpkg-query` body; its rc is the observable the fold then flows.
 
-Contrast the round-19 stand-in: `resolve_entity` flag-strips `-y` *itself* (find-3 breach) and the rc is
-*injected* (masking). Both vanish here — the check is the single source.
+The round-19 stand-ins this removes: the engine flag-stripping `-y` itself (find-3), and the rc being
+injected (the masking). Both collapse into the one `check()`.
 
-### 2.2 The read-only guard — the idempotency idiom (the achievable slice)
-
-The simplest and most common shape; +SURE achievable *without the full value-plane's hardest parts*,
-because the guard is *already* a read-only command whose rc the probe can just run-and-read.
+### 2.2 The read-only guard — the idempotency idiom (the most common shape)
 
 ```sh
-command__check() {                          # for the book's own `command -v X` idiom
+# book:  command -v nginx || apt-get install nginx
+command__check() {
    case $1 in -v) shift ;; esac
    tool : org.freedesktop.Tool = "$1"
-   command -v -- "$tool" >/dev/null         # R2-SHADOW: resolves to an executable file, not a fn/alias
+   command -v -- "$tool" >/dev/null         # R2-SHADOW: an executable file, not a fn/alias/builtin
 }
 ```
 
-Book: `command -v nginx || apt-get install nginx`.
+The guard is already read-only, so the probe simply runs it and reads the rc: present ⇒ 0, absent ⇒ 1. The
+post-probe pass flows that into the `||`: `0 || install` ⇒ install omitted, `1 || install` ⇒ install runs.
+Nothing about the install's own rc is needed — the guard's probed rc decides. This is the canonical
+`dpkg -s || install` idiom, and the smallest end-to-end demonstration of the whole loop: lift a guard,
+ship it, run it, flow the result, elide.
 
-- the guard `command -v nginx` lifts (entity `tool:nginx`), ships, **runs** → rc 0 (present) / 1 (absent).
-- the fold consumes the *guard's* probed rc: `0 || install` ⇒ install **omitted**; `1 || install` ⇒
-  install **runs**. **No declaration of `install`'s rc is needed** — the guard's probed rc drives the fold.
-- this is the canonical `dpkg -s || install` / `command -v || install` idiom (DESIGN). It is the
-  **read-only-guard slice** (round-19's "R2" capstone option): demonstrable on the existing `hostsim`
-  (map the modeled fact-verdict → the guard's rc) and the existing fold, with entity-resolution still on
-  the find-3 stand-in. It needs `need-obs` for *guards*, not the harder mutator case below.
-
-### 2.3 The mutator with no read-only self-probe (`useradd`) — and the central model fork
+### 2.3 The mutator with no read-only self-probe (`useradd`) — and a fork
 
 ```sh
+# book:  useradd deploy || mkdir /srv/app
 useradd__check() {
-   # (option-skip elided; useradd's real grammar)
-   user : org.openldap.PosixAccount = "$1"  # `useradd <name>` → $1 is the User; NO verb
-   getent passwd "$user"                    # the READ-ONLY fact-probe (NOT useradd itself)
+   # (option handling per useradd's real grammar)
+   user : org.openldap.PosixAccount = "$1"  # `useradd <name>` → $1 is the User; no verb
+   getent passwd "$user"                    # the read-only fact-probe (not useradd itself)
 }
 ```
 
-The check's read-only body (`getent passwd deploy`) probes the **fact** (does the user exist) → its own
-rc. But for `useradd deploy || mkdir /srv/app`, the `||` consumes **useradd's** rc, and useradd is a
-mutator — it is *not run* in a read-only probe. So:
+The check's read-only body (`getent passwd deploy`) probes the fact — does the user exist — and yields its
+own rc. But the `||` consumes `useradd`'s rc, and `useradd` is a mutator: it is not run in a read-only
+probe. So a fork take-3 should decide deliberately, not bake in:
 
-- **the fork (flag for take-3, do not pre-decide):** does the oracle *also* declare "when the user exists,
-  `useradd` yields rc **9**" (`19A §5` C-4-refined's `fact-state → observables`, enabling a value-
-  preserving elision of useradd to `(exit 9)`)? **Or** is an un-probeable mutator simply **⊤ ⇒ run** (the
-  human's later "no values, no defaults; only abstract-interpretation over probe-received values")?
-- **~SUSPECT lean (per the human's latest):** **⊤ ⇒ run.** `useradd deploy || mkdir` runs `useradd`
-  (we have no probed value for it), and at runtime its real rc 9 fires the `|| mkdir`. `mkdir` runs.
-  Convergence-elision still applies *only* where the mutator's status is **not branch-consumed** (a bare
-  `useradd deploy`, converged + ambient ⇒ replaceable by `true`, its dead status harmless). Under this
-  reading there is **no `fact-state → observables` declaration**, no converged-rc, and round-19's
-  `substitutes_exact_rc` (`useradd` → `(exit 9)`) was itself the over-reach — the simpler, sounder
-  behavior is "it runs."
-- the cost of the lean: we lose the *optimization* of eliding a branch-consumed non-conforming establish.
-  Per the priority order (never under-execute ≫ avoid unnecessary-execute) that is the correct trade. The
-  richer `fact-state → observables` is reservable for later if the value is ever shown to matter.
+- ~SUSPECT lean (per the human's "no defaults, no values; only what the probe gives us"): an un-probeable
+  mutator is ⊤, so it runs. `useradd deploy` runs, returns its real rc at apply-time, and `|| mkdir` fires
+  on its own. Convergence-elision still applies where a mutator's status is not branch-consumed (a bare
+  `useradd deploy`, converged and ambient, can be replaced by a no-op whose dead status nobody reads).
+  Under this reading there is no converged-rc declaration, and round-19's `(exit 9)` substitution was an
+  over-reach — the simpler behavior is just "it runs".
+- The alternative is an oracle declaration of `fact-state → observable` ("when the user exists, `useradd`
+  yields 9"), enabling a value-preserving elision of the mutator. Richer, but it is the kind of declared
+  value the human is currently rejecting.
 
-The +SURE part regardless of the fork: a mutator's rc is **never inferred or defaulted** — it is either
-a genuinely-probed value (it is not, here) or ⊤ ⇒ run. The round-19 `rc=0`-default and the injected
-`rc=9` are both stand-ins the take-3 model deletes.
+Either way, +SURE: a mutator's rc is never inferred or defaulted; it is a genuinely probed value or it is
+⊤ ⇒ run.
 
 ### 2.4 Cross-oracle identity — many commands, one named kind (`17N §5`)
 
 ```sh
 apt_get__check() { … pkg : com.debian.apt.Package = "$1"; dpkg-query -W "$pkg"; }
-dnf__check()     { … pkg : com.debian.apt.Package = "$2"; rpm -q "$pkg"; }   # different command, SAME kind
+dnf__check()     { … pkg : com.debian.apt.Package = "$2"; rpm -q "$pkg"; }   # different command, same kind
 ```
 
-- the **named kind** (the reverse-DNS handle `com.debian.apt.Package`, a *lifted datum* — `175 C2` /
-  `17N`) is the **coordination vocabulary**: `apt-get install nginx` and a later `dnf … nginx` resolve to
-  the *same cell* `package:nginx#installed`, so an apt-establish and a dnf-query coordinate even though
-  the engine is referent-agnostic about the *commands*. A shared *arg-token* could not bridge them (`17N
-  §5`); the kind does.
-- the per-command argparse differs (`$1` vs `$2`, different option grammars) — that is *exactly* why
-  identity is command-keyed (only the oracle knows its tool's grammar) while the *kind* is cross-oracle
-  (`19A §5`'s three-layer split: command-keyed *invocation*, named-kind *identity*, fact-converged
-  *license*).
-- ~SUSPECT residual (`inc-9`, contract-not-enforced): two oracles annotating the *same* kind must *agree*
-  on what it means; Dorc cannot enforce it (it never rejects plain sh) ⇒ a CI-lint, never a checked
-  property.
+The named kind (the reverse-DNS handle, a lifted datum — `175 C2` / `17N`) is the coordination vocabulary:
+two unrelated commands resolve to the same cell, so an apt-establish and a later dnf-query coordinate even
+though the engine stays referent-agnostic about the commands. A shared arg-token could not bridge them
+(`17N §5`); the kind does. The per-command argparse differs (`$1` vs `$2`, different grammars) — which is
+exactly why identity is command-keyed (only the oracle knows its tool) while the kind is cross-oracle
+(`19A §5`'s three layers: command-keyed invocation, named-kind identity, fact-converged license). ~SUSPECT
+residual (`inc-9`): two oracles annotating one kind must agree on its meaning, and Dorc cannot enforce
+that — a CI-lint, never a checked property.
 
-### 2.5 The selector comes from the verb, not the entity
+### 2.5 The selector comes from the verb
 
 ```sh
 systemctl__check() {
@@ -269,82 +240,64 @@ systemctl__check() {
 }
 ```
 
-- the annotation gives **kind + entity** (`service:nginx`); the **verb** gives the **selector cell**
-  (`#enabled` vs `#active`). `systemctl enable nginx` and `systemctl start nginx` touch *different cells of
-  the same entity* — neither discharges the other (the round-19 selector regression, `19G`/`193`). The
-  `check()` makes this fall out of its own `case $verb`.
-- +SURE the `≥enum` floor (`17O F-BLESSED`): an honest `service` probe is *two* read-only commands
-  (`is-enabled` **and** `is-active`); discharging `enable --now` needs both. The contract-lifting must let
-  one `check()` carry multiple selector-probes (the `case $verb` above), not collapse a service to one bit.
+The annotation gives kind and entity (`service:nginx`); the verb selects the cell (`#enabled` vs
+`#active`). `enable` and `start` touch different cells of the same entity, and neither discharges the
+other — the round-19 selector regression, made to fall out of the `check()`'s own `case $verb`. The `≥enum`
+floor (`17O F-BLESSED`) is why a service probe is genuinely two read-only commands; the contract-lifting
+must let one `check()` carry several selector-probes, not collapse a service to one bit.
 
-### 2.6 The stdlib-oracle quality bar the lifting must preserve (`17O`)
+### 2.6 The quality bar the lifting must preserve (`17O`)
 
-The `check()` body is the **read-only probe**, so the `17O` regression class is *contract*, not engine
-holes — the lifting/shipping must not paper over them:
+Because the `check()` body is the read-only probe, the `17O` regression class is contract, not engine
+holes, and the lifting must not paper over them: `R2-SHADOW` (`command -v` confirms an executable file,
+not a shadowing function); `R2-IDCACHE` (group membership via `getent group` field-4, never the stale
+`id` cache); `R2-ORTRUE` (refuse to read an errexit-masked rc — `… || true` forces 0 — as a verdict);
+`F-GETENT-HOSTS` (`getent hosts` routes to live DNS, non-hermetic — read-only is not hermetic). These are
+why the `check()` is authored, not generated.
 
-- **`R2-SHADOW`** — `command -v X` must confirm an executable *file* (`-v -- "$x"` + a file test), not a
-  function/alias/builtin; Dorc's own helper-fn idiom is what shadows it. Fails **unsafe** (reports
-  installed ⇒ wrong-elide).
-- **`R2-IDCACHE`** — group membership via `getent group … | field-4`, never `id -nG` (stale nss cache).
-- **`R2-ORTRUE`** — the lifter must **refuse to treat an errexit-masked rc as a verdict** (`… || true` /
-  `|| :` forces rc 0). A lifted check whose rc is masked is not a verdict.
-- **`F-GETENT-HOSTS`** — `getent hosts`/`ahosts` route through nsswitch ⇒ live DNS = non-hermetic
-  (`kVOLATILES`); **read-only ≠ hermetic**, disqualified from licensing elision.
+### 2.7 The static ⟷ dynamic duality
 
-These are why the `check()` is *authored* (the engineer's correctness-heavy work), not generated — they
-are the contract DESIGN calls "what makes our product."
-
-### 2.7 The static ⟷ dynamic duality, summarized
-
-One `check()` body is read **twice**:
-
-| phase | reads the `check()` for | yields |
-|---|---|---|
-| **static** (value-plane, analysis-time) | the argparse + annotation | the cell `kind:entity#selector` (→ cell-model, ambient gate) + *which* read-only body to ship |
-| **dynamic** (probe, run-time) | the body, shipped full-args (`C-1`) | concrete observables (rc, stdout) → the apply fold |
-
-The value-plane is the static half; round-19 built the consumers of the dynamic half (the fold) but fed
-them injected values because the static half (resolve which body, ship it, run it) was the stand-in.
+One `check()` body is read twice. The pre-probe (static) read takes the argparse and annotation and yields
+the cell, plus which read-only body to ship. The post-probe (dynamic) read is the shipped body run on the
+host, yielding the concrete observable the fold flows. Round-19 built consumers of the dynamic half but
+fed them fixtures, because the static half — resolve the entity, pick the body, run it — was the stand-in.
 
 ---
 
-## 3. What take-3 carries forward from round-19 (validated yield)
+## 3. What take-3 carries forward from round-19
 
-+SURE these are *designs the spike validated*, to layer on the value-plane + `check()`-lifting rather than
-re-derive:
+Designs the spike validated, to layer onto the value analysis rather than re-derive:
 
-- **the one `Observable`** (`19G §1`, Commit A `f148a31`): the output-tuple over channels
-  `{Effect, Status, Stdout, Stderr}` — coherent, and the right shape for "the check predicts a per-channel
-  value or ⊤."
-- **the apply fold** (`19C`): abstract-interpretation of `&&`/`||`/`if`/`!` over probed values; rc opaque;
-  ⊤ ⇒ run. The algorithm is right; it needs *real* inputs.
-- **the cell-model + ambient gate** (`193`/`19G`): `FactKey{kind, entity, selector}` + reaching-defs over
-  the effect-map — the poison-wall fix. The keystone *output*; the value-plane is its *input*.
-- **the DST `hostsim` + the e2e corpus** (43 cases) + the `ap-2` `dash -n`-executable harness — the
-  measuring infrastructure (the next step extracts + de-crufts this into the take-3 acceptance stick).
-- **the substrate** (worklist + lattice combinators) — hosts the value-plane unchanged (`19A §5` / `180`).
-- **the `17O` quality bar** (`§2.6`) — kept as regression contract.
+- The one observable-tuple over channels (effect / status / stdout / stderr) — the right shape for "the
+  check produces a per-channel value or ⊤".
+- The apply fold — abstract-interpretation over probed values; rc opaque; ⊤ ⇒ run — as the seed of the
+  post-probe value analysis (widen its domain, feed it real results).
+- The cell-model (kind / entity / selector) plus the reaching-defs ambient gate — the poison-wall fix; the
+  keystone output, with the value analysis as its input.
+- The deterministic host simulator and the e2e corpus, plus the executable (`dash -n`) acceptance gate —
+  the measuring infrastructure the next step extracts and de-crufts into the take-3 stick.
+- The `17O` quality bar (§2.6), kept as regression contract.
 
 ---
 
-## 4. Open forks for take-3 (flag, do not pre-decide — `ch-wrong`)
+## 4. Open questions (several for a prior-art run, before any rebuild)
 
-- **`fork-mutator-rc` (`§2.3`):** un-probeable mutator = ⊤ ⇒ run (the simpler "no-values" reading,
-  current lean) vs. an oracle-declared `fact-state → observables` converged-rc (the richer, value-
-  preserving elision). Resolves the contract's size. ~SUSPECT ⊤⇒run.
-- **`fork-annotation-spelling` (`ch-shape-anno` / `kTYANNOT`):** the `pkg : Kind = "$1"` inline form
-  breaks the off-ramp weld under stock dash (`17O F-OFFRAMP`) ⇒ needs a strip/transpile pass; the eol-
-  comment alternative re-opens `kOOB`'s no-comment-config. The one non-sh-native token in the scheme; its
-  spelling is the live `kTYANNOT` decision.
-- **`fork-dialect-boundary`:** the constrained oracle-contract dialect must be *designed* (what `check()`
-  constructs are liftable — the `C-vp-*` set is a first cut). This is the artifact that makes the value-
-  plane decidable; it deserves its own pass.
-- **`fork-interproc-scope` (`seam-interproc`):** call-edges into `check()` bodies — intra-file first, or
-  the `. /path` source-following supergraph. `C-vp-2` (param-binding) is the minimum.
+- The algorithm and substrate. How rich the value-flow needs to be, how it terminates and how precise it
+  is, and whether it rides the existing monotone worklist or wants a different engine — undetermined here.
+  The prior-art run should ground this; the only thing this doc asserts is the degrade-to-⊤ soundness floor
+  (§1.3), which holds regardless.
+- `fork-mutator-rc` (§2.3): an un-probeable mutator as ⊤ ⇒ run (current lean) vs. an oracle-declared
+  `fact-state → observable`. Decides whether any "declared value" exists at all.
+- `fork-annotation-spelling` (`ch-shape-anno` / `kTYANNOT`): the inline `pkg : Kind = "$1"` form breaks the
+  off-ramp under stock dash (`17O F-OFFRAMP`) and wants a strip/transpile pass; the eol-comment
+  alternative re-opens `kOOB`'s no-comment-config. The one non-sh-native token in the scheme; its spelling
+  is the live `kTYANNOT` decision.
+- Where the complexity dial sits (§1.3), and whether oracles and books really can share one threshold —
+  worth confirming, though the machinery is shared by construction.
 
 ---
 
-*The round-19 spike's durable product is this finding + the `notes/19*` record. The immediate next step
-(per the human) is to extract the round-19 corpus, strip the cruft that only "fills in" for the stand-in
-build (injected-rc fixtures, `resolve_entity`-dependent cases, masking tests), and turn it into the
+*The round-19 spike's durable product is this finding plus the `notes/19*` record. The immediate next step
+(per the human) is to extract the round-19 corpus, strip the cruft that only fills in for the stand-in
+build (injected-rc fixtures, identity-inference-dependent cases, masking tests), and turn it into the
 clean acceptance measuring-stick the take-3 rewrite is graded against.*
