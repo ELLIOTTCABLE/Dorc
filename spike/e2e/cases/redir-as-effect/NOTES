@@ -1,0 +1,7 @@
+analysis-only (no mocks/): the rendered apply keeps `: > /etc/nginx/.provisioned`, a
+real file-redirect the PATH-shim sandbox cannot intercept (a redirect is not a PATH
+lookup). The point this pins (haz-redir-as-mutation): the `:` command is a pure
+builtin, but the redirect `> file` is a first-class Redir effect node — it ALWAYS
+runs (a Redir is never a classify Command leaf, so it is never an elidable establish),
+while the converged upstream `apt-get install -y nginx` DOES elide. dash -n + golden.
+notes/199 cluster-A (redirection-as-effect).

@@ -1,0 +1,14 @@
+#!/bin/sh
+# dorc probe (read-only): reports per-fact convergence, mutates nothing.
+
+# probe: package:vim#installed
+package__check() { dpkg-query -W "$1" >/dev/null 2>&1; }
+package__check vim
+# probe: package:nginx#installed
+package__check nginx
+#!/bin/sh
+# dorc apply: the book, with already-converged lines elided (replaced by `:`).
+
+# apt-get install -y vim   # dorc: elided (already converged)
+:
+( apt-get install -y nginx ) | grep nginx

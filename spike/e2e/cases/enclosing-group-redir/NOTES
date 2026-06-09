@@ -1,0 +1,8 @@
+analysis-only (no mocks/): the rendered apply contains a real file redirect
+`> /var/log/provision.log`. The ap-2 EXECUTABLE gate runs the apply for real under
+PATH=mocks-only; a file-redirect is NOT a PATH lookup, so the shims cannot intercept
+it — executing this case would create a real file outside the sandbox. So it stays
+dash -n + golden (the redirect renders verbatim ⇒ the enclosing group-redirect makes
+the inner install's stdout consumed ⇒ Run). The pipeline form of the same enclosing-
+consumption gate IS executable — see exec-enclosing-pipe-subshell (a pipe is process-
+to-process, no real FS sink). notes/199 cluster-B / C-1-analogue.
