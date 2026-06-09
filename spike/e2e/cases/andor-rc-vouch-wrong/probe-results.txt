@@ -1,0 +1,4 @@
+# The host already has the user (Converged) — the exact cell that triggers the
+# engine's wrong Replace of the `useradd` leaf. (Disposition is unsound; the
+# line-granular render masks it — see book.sh / the disposition pin.)
+user#present converged

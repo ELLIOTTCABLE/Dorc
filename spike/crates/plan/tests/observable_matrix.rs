@@ -357,23 +357,93 @@ fn spec_converged_set_e_does_not_poison_replacement() {
 }
 
 // ===========================================================================
-// UN-MODELLABLE CELL (documented, no test) — STATUS, converged-FAILURE.
+// NON-CONFORMING ESTABLISH as an `&&`/`||` LEFT operand — STATUS, converged-FAILURE.
+// The DISPOSITION-LEVEL pin the round-19 adversarial pass proved is observable
+// in-spike (correcting this file's former "un-modellable, no test" note).
 //
-// The one status cell that *would* break: a command that exits NON-ZERO when its
-// fact is converged (e.g. `mkdir d` when `d` exists; `useradd x` when `x` exists).
-// If such a command were declared a plain establish, replacing it with `true`
-// (rc 0) would diverge wherever its status is consumed — e.g. `mkdir d || handle`
-// would suppress `handle`. This cannot be exercised in-spike, for two independent
-// reasons:
-//   1. the spike never RUNS commands, so the "real" non-zero rc is never produced
-//      (the stub always yields rc 0); the divergence only manifests at apply
-//      against a real host (needs the apply-executor + a host that models
-//      converged-non-zero rc), and
-//   2. the oracle model is (provider, verb) → effect and cannot express "this
-//      command exits non-zero when converged"; `mkdir /d` has no `verb`, and there
-//      is no rc-bridge to declare the exception.
-// It is the converse of the stdout specs: there, the analyzer must add a gate;
-// here, soundness is pushed onto the `establishes`-⇒-idempotent-success contract
-// (a conforming author uses `mkdir -p`, or declares an rc-bridge — outside-spike).
-// Recorded so the state-space map is complete; revisit with the apply-executor.
+// A NON-conforming establish exits NON-ZERO when its fact already holds (`useradd x`
+// rc 9, `mkdir d` w/o `-p`, `ln` w/o `-f`, `docker network create`). Declared a plain
+// establish and consumed as a `||` LEFT operand, when converged it is wrongly minted a
+// `ReplaceLicense` ⇒ `Disposition::Replace` ⇒ substituted by `:` (rc 0). The fallback
+// is then wrongly skipped: `useradd deploy || mkdir /x`, user already present ⇒ the
+// converged `useradd` becomes `:` (rc 0) ⇒ the `||` never fires ⇒ `mkdir` is skipped —
+// a priority-1 `kFAIL-perform` UNDER-EXECUTE. The engine replaces it because the
+// establishes-contract's "converged ⇒ rc 0" vouch is FALSE for a non-conforming
+// establish, and the engine cannot tell conforming from non-conforming (no rc-bridge,
+// `inc-7`-deferred — the human contract-design fork; NOT fixed here).
+//
+// Why this corrects the old "un-modellable" note: that note conflated "the spike never
+// RUNS the command (so the real rc≠0 never appears)" with "the unsound disposition is
+// unobservable". The DISPOSITION is observable WITHOUT an executor — `prove_replaceable`
+// mints the license at plan time. And `useradd <name>` DOES fit the (provider, verb)
+// model: verb=`<name>` ⇒ a Singleton `user#present` cell (the username baked as the
+// verb is a fixture wart, not load-bearing — the bug is the `||`-left disposition).
+//
+// CONTRAST, not contradiction (the two halves the engine cannot distinguish):
+// `pins_converged_status_via_oror_replaced` / `f1_andand_left_operand_stays_replaced_
+// tc_mint_gap` pin a CONFORMING establish (`apt-get install`, rc 0 when converged) as
+// replaceable — CORRECT there. This is the rc≠0 half: same `Replace`, but UNSOUND.
+// Both flow through the same unmarked-`&&`/`||` path (the `tc-mint` gap, `notes/198`
+// §1.3); disambiguating them is the deferred Half-B / F3 / `inc-7` work.
+//
+// `#[should_panic]` is the xfail: the test ASSERTS the SAFE behavior (the non-conforming
+// establish is NOT replaced), which the engine currently VIOLATES ⇒ the assert panics ⇒
+// the test passes as a pinned-defect. The day the engine blocks it (an rc-bridge / the
+// `tc-mint` resolution), the panic stops and `should_panic` fails LOUDLY (XPASS) —
+// promote the case then. (`expected = …` pins the intended assertion, so an unrelated
+// panic does not silently satisfy it.)
 // ===========================================================================
+
+/// Run the pipeline with a caller-supplied [`KindIndex`] (the matrix's `plan_for`
+/// hardcodes the package oracle; this cell needs a different, non-conforming-by-premise
+/// establish). `holds_singleton` lists the `kind#present` Singleton cells the host
+/// already has (Converged); everything else Diverged.
+fn plan_for_user_oror(src: &str) -> Plan {
+    let mut i = Interner::default();
+    let user = KindId(i.intern("user"));
+    let present = SelectorId(i.intern("present"));
+    let useradd = ProviderId(i.intern("useradd"));
+    // `useradd deploy` ⇒ provider=useradd, verb=`deploy`, no further operand ⇒ a
+    // Singleton `user#present` cell. The premise (NOT expressible in the oracle model):
+    // real `useradd` exits non-zero when `deploy` already exists — a NON-conforming
+    // establish, so the rc-0 vouch behind replacement is a lie.
+    let deploy = i.intern("deploy");
+    let mut idx = KindIndex::default();
+    idx.add_effect(useradd, deploy, user, present, Polarity::Establish);
+    // The host already has the user (Converged) — the exact cell that triggers the
+    // wrong Replace.
+    let held = FactKey {
+        kind: user,
+        entity: EntityRef::Singleton,
+        selector: present,
+    };
+    let parsed = dorc_syntax::parse(src);
+    let cfg = dorc_analysis::cfg::build(&parsed.value).value;
+    let classes = dorc_analysis::effect::classify(&cfg, &parsed.value, &idx, &mut i);
+    build_plan(src, &parsed.value, &cfg, &classes, move |f| {
+        if f == held {
+            Verdict::Converged
+        } else {
+            Verdict::Diverged
+        }
+    })
+}
+
+#[should_panic(expected = "non-conforming establish")]
+#[test]
+fn xfail_nonconforming_establish_andor_left_operand_wrongly_replaced() {
+    // `useradd deploy || mkdir /srv/app`, user `deploy` already present (Converged).
+    // SAFE behavior (asserted): the `useradd` is NOT replaced — because if it were `:`
+    // (rc 0), the `|| mkdir` would never fire, skipping a needed mkdir (kFAIL-perform).
+    // CURRENT (unsound, so the assert PANICS ⇒ pinned defect): the converged establish
+    // as a `||` left operand IS replaced (the `tc-mint` gap leaves `&&`/`||` unmarked,
+    // and the rc-0 vouch is false for this non-conforming establish). `notes/198` §1.3.
+    let plan = plan_for_user_oror("useradd deploy || mkdir /srv/app\n");
+    assert!(
+        !is_replaced(&plan, "useradd deploy"),
+        "non-conforming establish as a `||` left operand must NOT be replaced \
+         (else its rc-0 stub suppresses the `|| mkdir` fallback — a kFAIL-perform \
+         under-execute); the engine wrongly replaces it (the deferred tc-mint / \
+         rc-bridge gap, notes/198)"
+    );
+}

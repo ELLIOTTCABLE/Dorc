@@ -112,24 +112,22 @@ pub enum CfgNodeKind {
 ///   the leaf is a *probe of world-state*, not an establish. But the engine marks
 ///   `Status` **only for an `if`/`elif` condition** (`lower_if_chain` passes
 ///   `mark_status=true` to `lower_condition_region`) — the one *unambiguous* guard,
-///   where a different branch demonstrably runs on the rc. Deliberately LEFT UNMARKED
-///   (so they do NOT block today, a known **under-execute**):
-///   * a `&&`/`||` left operand — `lower_and_or` passes `mark_status=false`. It is
-///     genuinely ambiguous: `install && start` is a vouched post-condition (stays
-///     replaceable — the `observable_matrix` pins this), while `cmd || install` is a
-///     guard that *should* block, and the two are structurally identical at the CFG.
-///     Marking would regress the post-condition pin, so the safe-default-block is
-///     deferred to the F3 co-reference judgment — the documented `tc-mint` gap
-///     (`TODO(tc-mint)` in `lower_and_or`; pinned non-conforming in `notes/198` and
-///     the `andor-rc-vouch-wrong` xfail).
-///   * a bare `!`-negated pipeline — `lower_pipeline` only clears errexit-fallibility
-///     on the negation; it never marks `Status`. (A `!`-guard reached *through* an
-///     `if`/`elif` condition IS marked, because the enclosing condition region marks
-///     the whole range — it is the `if`, not the `!`, that marks.)
-///   `while`/`until` conditions never reach here (loops are ⊤-rejected today —
-///   `notes/198` §1.4 — so the point is vacuous). The locus is the distinction
-///   (`lower_condition_region` marks an `if`/`elif` region); the errexit pass never
-///   marks `Status`, so errexit-consumed status stays vouched.
+///   where a different branch demonstrably runs on the rc. Two consumers are
+///   deliberately LEFT UNMARKED, so they do NOT block today (a known **under-execute**):
+///   a `&&`/`||` left operand (`lower_and_or` passes `mark_status=false` — it is
+///   genuinely ambiguous: `install && start` is a vouched post-condition that stays
+///   replaceable, while `cmd || install` is a guard that *should* block, structurally
+///   identical at the CFG; marking would regress the post-condition pin, so it is
+///   deferred to the F3 co-reference judgment — the `tc-mint` gap, `TODO(tc-mint)` in
+///   `lower_and_or`, pinned non-conforming by `observable_matrix`'s
+///   `xfail_nonconforming_…` and `notes/198` §1.3), and a bare `!`-negated pipeline
+///   (`lower_pipeline` only clears errexit-fallibility on the negation, never marks
+///   `Status`; a `!`-guard reached *through* an `if`/`elif` condition IS marked — it is
+///   the `if`, not the `!`, that marks the enclosing region). `while`/`until`
+///   conditions never reach here (loops are ⊤-rejected today, `notes/198` §1.4 — so the
+///   point is vacuous). The locus is the distinction (`lower_condition_region` marks an
+///   `if`/`elif` region); the errexit pass never marks `Status`, so errexit-consumed
+///   status stays vouched.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Observable {
     Effect,
