@@ -24,13 +24,16 @@
 #![forbid(unsafe_code)]
 
 use core::marker::PhantomData;
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 
 use dorc_analysis::cfg::{Cfg, CfgNodeId, CfgNodeKind, Observable};
 use dorc_analysis::effect::{FactKey, SkipClass};
 use dorc_analysis::lattice::{May, Powerset};
-use dorc_core::{AstId, EntityRef, Grade, Interner, KindId, Verdict};
+use dorc_core::{AstId, EntityRef, Grade, Interner, KindId, Observed, Rc, Verdict};
 use dorc_syntax::ast::Ast;
+
+mod fold;
+pub use fold::{AbstractRc, FoldResult};
 
 // ===========================================================================
 // Phase markers + the Unknown-fold bias (note 165 L1)
@@ -264,15 +267,72 @@ impl ReplaceLicense {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct LeafId(pub u32);
 
+/// The cheapest sh stand-in that reproduces a leaf's **exact** observed exit status
+/// (`19A §5` observable-value-MAINTAINING substitution / DESIGN `16F`/`16P-T10`).
+/// NOT always `:`: the value the downstream fold/guard reads must be preserved, so a
+/// converged non-conforming establish (`useradd`, rc 9) becomes `(exit 9)`, never
+/// `true` — else its rc-0 stub would suppress a `|| fallback` (the `kFAIL-perform`
+/// under-execute the round-19 adversarial pass proved).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum StandIn {
+    /// rc 0 — `true` (the human's choice over `:` for the common conforming case).
+    True,
+    /// rc 1 — `false`.
+    False,
+    /// any other rc `n` — `(exit n)` (a subshell so it reproduces the status without
+    /// terminating the surrounding script).
+    Exit(i32),
+}
+
+impl StandIn {
+    /// The stand-in reproducing a concrete observed exit status.
+    #[must_use]
+    pub fn from_rc(rc: Rc) -> Self {
+        match rc.0 {
+            0 => StandIn::True,
+            1 => StandIn::False,
+            n => StandIn::Exit(n),
+        }
+    }
+
+    /// The sh that reproduces the status. `(exit n)` runs in a subshell so a
+    /// non-zero stand-in sets `$?` without aborting the script (a bare `exit n`
+    /// would terminate it).
+    #[must_use]
+    pub fn sh(self) -> String {
+        match self {
+            StandIn::True => "true".to_string(),
+            StandIn::False => "false".to_string(),
+            StandIn::Exit(n) => format!("(exit {n})"),
+        }
+    }
+}
+
 /// What the plan does with one leaf.
 #[derive(Debug, Clone)]
 pub enum Disposition {
     /// Run the leaf — its effect is needed, its convergence is unknown, or an
     /// unvouched observable it emits is consumed downstream.
     Run,
-    /// Replace the leaf with a stand-in (`true` is the degenerate stand-in) —
-    /// authorised by a [`ReplaceLicense`], the only way to reach here.
-    Replace(ReplaceLicense),
+    /// Replace the leaf with a value-preserving [`StandIn`] reproducing its exact
+    /// observed exit status — authorised by a [`ReplaceLicense`] (convergence-
+    /// elision), the only way to reach here. The `StandIn` is the `19A §5`
+    /// refinement: `true`/`false`/`(exit n)`, NOT always `:`.
+    Replace(ReplaceLicense, StandIn),
+    /// Omit the leaf: the apply abstract-interpreter (the fold) proved it lies in a
+    /// **provably-dead** branch — a `&&`/`||`/`if`/`!` whose controlling leaf has a
+    /// *known* exit status that short-circuits past this leaf (`19B` build-1, the
+    /// fold). Distinct from [`Replace`](Disposition::Replace): a `Replace` reproduces
+    /// a status a consumer reads; an `Omit`ted leaf is *unreachable*, so it has no
+    /// status to reproduce. Carries the controlling leaf's [`AstId`] (the render gate
+    /// looks up the controller's disposition by it; provenance only).
+    ///
+    /// `inv-kfail`: an `Omit` is minted ONLY when the controlling rc is KNOWN (a
+    /// probed observable); an unknown/⊤ controller never folds (the branch stays
+    /// live ⇒ run). Rendering an `Omit` is additionally gated on the controller being
+    /// itself neutralised (Replace/Omit), so the artifact never re-evaluates a kept,
+    /// possibly-stale guard against an omitted body (`render_apply`).
+    Omit { controller: AstId },
 }
 
 /// One leaf of the plan: its stable id, its source back-map (`dn-3`), the verbatim
@@ -438,13 +498,26 @@ pub fn compile_probe(
     ProbePlan { checks }
 }
 
-/// Build a plan from the analysis result + an injected host probe oracle.
+/// Build a plan from the analysis result + an injected host **observation** oracle.
 ///
-/// `verdict_of` is the host probe (the real host / `hostsim` is a later seam): it
-/// answers, per fact, whether it already holds. `build_plan` is a pure function of
-/// its inputs (deterministic given a deterministic `verdict_of`). Every command
-/// leaf becomes a [`Step`]; a leaf is `Skip` ONLY when
-/// [`ReplaceLicense::prove_replaceable`] mints a license — every other leaf runs (the
+/// `observe` is the host probe (the real host / `hostsim` is a later seam): it
+/// answers, per fact, the [`Observed`] state — the convergence [`Verdict`] (the
+/// elision gate) *and* the concrete observed exit status (the fold + value-preserving
+/// substitution input, `19A §5` / `19B` build-1). `build_plan` is a pure function of
+/// its inputs (deterministic given a deterministic `observe`).
+///
+/// Two collapses, both apply-phase (`inv-superposition` — the caller argues the
+/// phase; the engine never bakes it):
+/// 1. **convergence-elision** (the existing path): an `EstablishAmbient` + `Must` +
+///    `Converged` + no-unvouched-consumed leaf is `Replace`d by the value-preserving
+///    [`StandIn`] reproducing its observed exit status (`true` for the conforming rc
+///    0, `(exit 9)` for a non-conforming establish — NOT always `:`).
+/// 2. **the fold** (`fold::fold`): a leaf the apply abstract-interpreter proved
+///    lies in a provably-dead `&&`/`||`/`if`/`!` branch (from a *known* controlling
+///    status) is `Omit`ted. Fold OMITS only from KNOWN observables; ⊤/unknown ⇒ no
+///    fold ⇒ run (`inv-kfail`/`kFAIL-perform`).
+///
+/// A leaf that is neither folded-dead nor convergence-elidable **runs** (the
 /// `kFAIL-perform` safe direction).
 #[must_use]
 pub fn build_plan(
@@ -452,39 +525,39 @@ pub fn build_plan(
     ast: &Ast,
     cfg: &Cfg,
     classes: &[(CfgNodeId, SkipClass)],
-    verdict_of: impl Fn(FactKey) -> Verdict,
+    observe: impl Fn(FactKey) -> Observed,
 ) -> Plan {
+    // Map each classified leaf's AstId → its fact (only establish classes carry one).
+    // The fold reaches over the AST and needs each leaf's observed status keyed by
+    // AstId, so it asks this map, then the injected `observe`.
+    let leaf_fact: BTreeMap<AstId, FactKey> = classes
+        .iter()
+        .filter_map(|(node, class)| {
+            let fact = match class {
+                SkipClass::EstablishAmbient(f) | SkipClass::EstablishWritten(f) => *f,
+                SkipClass::MustRun => return None,
+            };
+            Some((cfg.node(*node).ast, fact))
+        })
+        .collect();
+
+    // Run the apply fold. A leaf's fold-status is its injected observation; a leaf
+    // with no fact (MustRun / opaque / query without an oracle effect) is ⊤ ⇒ no fold
+    // through it (`inv-kfail`).
+    let fold = fold::fold(ast, |leaf| leaf_fact.get(&leaf).map(|f| observe(*f)));
+
     let mut steps: Vec<Step> = classes
         .iter()
         .map(|(node, class)| {
             let ast_id = cfg.node(*node).ast;
             let sh = command_text(src, ast, ast_id);
-            let disposition = match class {
-                // Top-containment (16G hole-5): a leaf whose own statement is
-                // top-contaminated — e.g. a backgrounded `cmd &`, lowered as the leaf
-                // followed by a `Top` node — must not be replaced (its execution
-                // context is unmodeled). Conservative: a Top successor => run.
-                SkipClass::EstablishAmbient(fact) if !has_top_successor(cfg, *node) => {
-                    // `Probe` tags the verdict's provenance (a host probe);
-                    // prove_replaceable is generic over the phase (inv-superposition:
-                    // the caller argues it, the engine never bakes it).
-                    let verdict = PhasedVerdict::<Probe>::new(verdict_of(*fact));
-                    // The engine's un-collapsed consumption fact, read in the `May`
-                    // (over-approximate) orientation: if it MAY be consumed, block.
-                    let consumed = May(cfg.consumed_observables(*node).clone());
-                    // An EstablishAmbient fact comes from the oracle effect-map by
-                    // construction, so its grade is Must (note 160 `must-may`).
-                    match ReplaceLicense::prove_replaceable(class, Grade::Must, verdict, consumed) {
-                        Some(license) => Disposition::Replace(license),
-                        // None ⇒ run: the APPLY collapse of "no license"
-                        // (kFAIL-perform). The probe projection, when built, maps
-                        // "no license" to *withhold* — its own collapse (note 16J §5,
-                        // inv-superposition). Don't reuse this arm for probe.
-                        None => Disposition::Run,
-                    }
+            let observed = match class {
+                SkipClass::EstablishAmbient(f) | SkipClass::EstablishWritten(f) => {
+                    Some(observe(*f))
                 }
-                _ => Disposition::Run,
+                SkipClass::MustRun => None,
             };
+            let disposition = disposition_for(cfg, &fold, *node, class, ast_id, observed);
             Step {
                 leaf: LeafId(0),
                 ast: ast_id,
@@ -501,6 +574,61 @@ pub fn build_plan(
         step.leaf = LeafId(u32::try_from(i).unwrap_or(u32::MAX));
     }
     Plan { steps }
+}
+
+/// The per-leaf disposition: the fold first (a provably-dead leaf is `Omit`ted), then
+/// convergence-elision (`Replace` with the value-preserving stand-in), else `Run`.
+///
+/// The fold takes precedence over convergence-elision because a *dead* leaf has no
+/// status a consumer reads — `Omit` is strictly the right disposition (vs `Replace`,
+/// which exists to reproduce a status). Both are the apply collapse; a leaf that is
+/// neither runs (`kFAIL-perform`).
+fn disposition_for(
+    cfg: &Cfg,
+    fold: &FoldResult,
+    node: CfgNodeId,
+    class: &SkipClass,
+    ast_id: AstId,
+    observed: Option<Observed>,
+) -> Disposition {
+    // (2) the fold: a provably-dead branch leaf is omitted. Minted ONLY from a known
+    // controlling status (`fold` records `dead` only then) — `inv-kfail`. The fold
+    // reached the deadness via the controller leaf's AstId; resolve its fact for
+    // provenance + the render's neutralised-controller gate. Top-containment still
+    // gates: a ⊤-contaminated leaf is never folded away (context unmodeled).
+    if !has_top_successor(cfg, node) {
+        if let Some(controller_ast) = fold.dead_controller(ast_id) {
+            return Disposition::Omit {
+                controller: controller_ast,
+            };
+        }
+    }
+
+    // (1) convergence-elision (the existing path, refined to a value-preserving
+    // stand-in). Top-containment (16G hole-5): a ⊤-successor leaf is never replaced.
+    match class {
+        SkipClass::EstablishAmbient(_) if !has_top_successor(cfg, node) => {
+            let verdict =
+                PhasedVerdict::<Probe>::new(observed.map_or(Verdict::Unknown, |o| o.verdict));
+            let consumed = May(cfg.consumed_observables(node).clone());
+            match ReplaceLicense::prove_replaceable(class, Grade::Must, verdict, consumed) {
+                Some(license) => {
+                    // The value-preserving stand-in: the observed exit status, or the
+                    // conforming `true` (rc 0) when the rc is un-injected — a converged
+                    // establish that fails to declare its idempotent-rerun rc is treated
+                    // as conforming (rc 0), the established `:`/`true` default. (A
+                    // *non*-conforming establish MUST inject its rc to be safe; the
+                    // injection is build-2's contract.)
+                    let stand_in = observed
+                        .and_then(|o| o.rc)
+                        .map_or(StandIn::True, StandIn::from_rc);
+                    Disposition::Replace(license, stand_in)
+                }
+                None => Disposition::Run,
+            }
+        }
+        _ => Disposition::Run,
+    }
 }
 
 /// The verbatim source text of a node's `[lo, hi)` span — the exact sh the admin
@@ -543,12 +671,19 @@ impl Plan {
                     out.push_str(&step.sh);
                     out.push('\n');
                 }
-                Disposition::Replace(license) => {
+                Disposition::Replace(license, stand_in) => {
                     out.push_str(&format!(
-                        "# replace[{}]: {}\n#   \u{21b3} {} already holds (probe: converged \u{b7} must \u{b7} ambient)\n",
+                        "# replace[{}]: {}  (\u{2192} {})\n#   \u{21b3} {} already holds (probe: converged \u{b7} must \u{b7} ambient)\n",
                         step.leaf.0,
                         step.sh,
+                        stand_in.sh(),
                         fact_label(interner, license.fact()),
+                    ));
+                }
+                Disposition::Omit { .. } => {
+                    out.push_str(&format!(
+                        "# omit[{}]: {}\n#   \u{21b3} dead branch: a guard's known status proves it never runs\n",
+                        step.leaf.0, step.sh,
                     ));
                 }
             }
@@ -564,53 +699,119 @@ impl Plan {
     /// multi-leaf lines) passes verbatim, so the output keeps the original control
     /// flow (contrast [`render_sh`](Plan::render_sh), the flat leaf-list).
     ///
-    /// `ap-2` / `an-render-runnable` (`notes/193` strain-6): an elided line emits a
-    /// provenance comment **then a bare `:`** (POSIX null command) at the original
-    /// indentation. The `:` is the substitution *stand-in itself*, not filler —
-    /// `Disposition::Replace`'s "`true` is the degenerate stand-in", with status
-    /// vouched rc-0 by convergence (the observable-matrix `true`-stub model). A
-    /// comment *alone* deletes the command, so commenting the lone body of an
-    /// `if`/`while`/`case` arm leaves an empty clause — a `sh -n` syntax error. `:` is
-    /// valid in *every* context a command was, so the artifact is always `-n`-clean.
-    /// (Top-level elisions get a cosmetically-extra `:`; the leaf-exact alternative is
-    /// `seam-prov` render-fidelity work, deferred.)
+    /// `ap-2` / `an-render-runnable` (`notes/193` strain-6 + `19C`): a neutralised
+    /// line emits a provenance comment **then its value-preserving [`StandIn`]** at the
+    /// original indentation — `true` (rc 0), `false` (rc 1), `(exit n)` (other), or `:`
+    /// for a wholly-dead (`Omit`) line whose status is unreachable. The stand-in is the
+    /// substitution *itself*, not filler: a `Replace` reproduces the leaf's observed
+    /// status (`19A §5`); a comment *alone* deletes the command, so commenting the lone
+    /// body of an `if`/`while`/`case` arm leaves an empty clause — a `sh -n` syntax
+    /// error — which the stand-in (valid in *every* context a command was) prevents.
+    ///
+    /// Two new gates over the round-16 line-render:
+    /// * **value-preserving stand-in** — a line's stand-in reproduces its folded exit
+    ///   status (the surviving `Replace` leaf's, or the sequence's last), not a blanket
+    ///   `:`. This is what makes `useradd[rc9] || mkdir` safe end-to-end: were that line
+    ///   ever neutralised, its stand-in would be `(exit 9)`, not `true` (so `|| mkdir`
+    ///   still fires).
+    /// * **omit-safety** — an `Omit` (fold-dead) leaf is neutralised **only when its
+    ///   controlling guard is itself neutralised** (`is_neutralised`). If the guard is
+    ///   kept (`Run` — e.g. an `if`/`elif` guard held by `mark_status`, which the
+    ///   line-render cannot substitute in-situ), omitting the body would let the kept,
+    ///   possibly-stale guard re-decide against a removed body (a `kFAIL-perform`
+    ///   under-execute). So such an `Omit` body is rendered **verbatim** (it runs; the
+    ///   runtime guard gates it — the F1 floor). Coherent in-situ guard substitution is
+    ///   the deferred leaf-exact / structural render (`C-5`/`seam-prov`).
     #[must_use]
     pub fn render_apply(&self, src: &str, ast: &Ast) -> String {
         let line_of = |byte: u32| -> usize {
             src.get(..byte as usize)
                 .map_or(0, |s| s.bytes().filter(|&b| b == b'\n').count())
         };
-        let (mut elided, mut run) = (BTreeSet::new(), BTreeSet::new());
+        // Per-AstId disposition, so an `Omit`'s controller can be resolved for the
+        // omit-safety gate.
+        let by_ast: BTreeMap<AstId, &Disposition> =
+            self.steps.iter().map(|s| (s.ast, &s.disposition)).collect();
+
+        // Per source line: does a Run leaf sit on it (⇒ verbatim)? and the surviving
+        // value-preserving stand-in for a neutralised line.
+        let mut run_lines: BTreeSet<usize> = BTreeSet::new();
+        let mut neutral_lines: BTreeSet<usize> = BTreeSet::new();
+        let mut line_standin: BTreeMap<usize, StandIn> = BTreeMap::new();
         for step in &self.steps {
             let span = ast.node(step.ast).span;
             let last_byte = span.hi.0.saturating_sub(1).max(span.lo.0);
-            let lines = line_of(span.lo.0)..=line_of(last_byte);
-            let target = match &step.disposition {
-                Disposition::Replace(_) => &mut elided,
-                Disposition::Run => &mut run,
-            };
-            target.extend(lines);
+            let lines: Vec<usize> = (line_of(span.lo.0)..=line_of(last_byte)).collect();
+            match &step.disposition {
+                Disposition::Run => run_lines.extend(&lines),
+                Disposition::Replace(_, stand_in) => {
+                    for l in &lines {
+                        neutral_lines.insert(*l);
+                        // A `Replace` leaf's stand-in is the line's surviving value
+                        // (the short-circuit survivor / sequence tail). Last writer in
+                        // source order wins (the sequence tail).
+                        line_standin.insert(*l, *stand_in);
+                    }
+                }
+                Disposition::Omit { controller } => {
+                    if is_neutralised(&by_ast, *controller, 0) {
+                        // The guard is neutralised ⇒ safe to omit the dead body. A dead
+                        // body is unreachable, so it contributes NO status — its line's
+                        // stand-in stays whatever a surviving `Replace` set, else `:`.
+                        neutral_lines.extend(&lines);
+                    } else {
+                        // The guard is kept (`Run`) ⇒ the F1 floor: render the body
+                        // verbatim (it runs; the runtime guard gates it). Treat as Run.
+                        run_lines.extend(&lines);
+                    }
+                }
+            }
         }
         let mut out = String::from(
-            "#!/bin/sh\n# dorc apply: the book, with already-converged lines elided (replaced by `:`).\n\n",
+            "#!/bin/sh\n# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).\n\n",
         );
         for (i, line) in src.lines().enumerate() {
-            if elided.contains(&i) && !run.contains(&i) {
+            if neutral_lines.contains(&i) && !run_lines.contains(&i) {
                 let indent: String = line
                     .chars()
                     .take_while(|c| *c == ' ' || *c == '\t')
                     .collect();
+                // A surviving `Replace` leaf reproduces the line's exact status; a
+                // wholly-dead (`Omit`-only) line is unreachable code, so `:` (a pure
+                // structural placeholder — status never observed) is the honest filler.
+                let filler = match line_standin.get(&i) {
+                    Some(stand_in) => stand_in.sh(),
+                    None => ":".to_string(),
+                };
                 out.push_str("# ");
                 out.push_str(line.trim_start());
-                out.push_str("   # dorc: elided (already converged)\n");
+                out.push_str("   # dorc: elided (already converged / dead branch)\n");
                 out.push_str(&indent);
-                out.push_str(":\n");
+                out.push_str(&filler);
+                out.push('\n');
             } else {
                 out.push_str(line);
                 out.push('\n');
             }
         }
         out
+    }
+}
+
+/// Is `leaf` neutralised (its line will be commented out)? Used by `render_apply`'s
+/// omit-safety gate: an `Omit` body may only be neutralised if its controlling guard
+/// also is. A `Replace` is neutralised; a `Run` is not; an `Omit` is iff *its*
+/// controller is (transitively, with a small depth cap to defeat any pathological
+/// cycle — `inv-no-throw`). A missing controller folds to "not neutralised" (the safe
+/// run-it direction).
+fn is_neutralised(by_ast: &BTreeMap<AstId, &Disposition>, leaf: AstId, depth: u32) -> bool {
+    if depth > 64 {
+        return false; // defensive: never loop; default to run-it
+    }
+    match by_ast.get(&leaf) {
+        Some(Disposition::Replace(_, _)) => true,
+        Some(Disposition::Omit { controller }) => is_neutralised(by_ast, *controller, depth + 1),
+        _ => false, // Run, or an un-classified controller ⇒ not neutralised
     }
 }
 
@@ -995,10 +1196,16 @@ mod tests {
         let cfg = dorc_analysis::cfg::build(&parsed.value).value;
         let classes = dorc_analysis::effect::classify(&cfg, &parsed.value, &idx, &mut i);
         let plan = build_plan(src, &parsed.value, &cfg, &classes, |f| {
+            // Converged ⇒ conforming rc 0 (the package oracle is idempotent-success);
+            // every other fact Unknown / no-rc. The fold is exercised by the dedicated
+            // fold tests; these legacy cases isolate convergence-elision.
             if f == target {
-                nginx_verdict
+                Observed {
+                    verdict: nginx_verdict,
+                    rc: (nginx_verdict == Verdict::Converged).then_some(Rc(0)),
+                }
             } else {
-                Verdict::Unknown
+                Observed::verdict_only(Verdict::Unknown)
             }
         });
         (plan, i)
@@ -1022,7 +1229,7 @@ mod tests {
         assert!(
             matches!(
                 find(&plan, "apt-get install").disposition,
-                Disposition::Replace(_)
+                Disposition::Replace(_, _)
             ),
             "converged ambient install ⇒ skip"
         );
@@ -1104,7 +1311,7 @@ mod tests {
             let (plan, _) = plan_for(src, Verdict::Converged);
             matches!(
                 find(&plan, "apt-get install").disposition,
-                Disposition::Replace(_)
+                Disposition::Replace(_, _)
             )
         };
         // Neither neighbour ⇒ ambient ⇒ elides (the clean keystone case).
@@ -1146,7 +1353,7 @@ mod tests {
         assert!(
             matches!(
                 find(&plan, "apt-get install").disposition,
-                Disposition::Replace(_)
+                Disposition::Replace(_, _)
             ),
             "modeled `update` (distinct cell) no longer poisons ⇒ converged install elides"
         );

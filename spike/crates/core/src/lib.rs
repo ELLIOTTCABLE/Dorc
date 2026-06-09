@@ -271,6 +271,42 @@ pub enum Verdict {
     Unknown,
 }
 
+/// A concrete observed **exit status** (`19A §5`, `an-probe-shape`/`DP-3`): the
+/// *value* a leaf's command yields, held opaquely. The apply abstract-interpreter
+/// folds `&&`/`||`/`if`/`!` over this value (`9 || cmd` ⇒ `cmd` runs, by the shell's
+/// own semantics) and the substitution reproduces it exactly. **rc is opaque to
+/// Dorc** (`inv-referent-agnostic`-adjacent): we hold `9`, never interpret what `9`
+/// *means* — the author already encoded the meaning by choosing `!`/`&&`/`||`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct Rc(pub i32);
+
+/// What the probe observed about a fact's leaf — the **injected** observation the
+/// apply-side fold consumes (`19B` build-1, decision-independent). It pairs the
+/// convergence [`Verdict`] (the existing elision gate) with the concrete observed
+/// exit status (the fold + value-preserving-substitution input). The real
+/// oracle-contract side that *produces* these is a separate later build (`19B`
+/// build-2, the OOB verdict-lane); here they are injected.
+///
+/// `rc == None` ⇒ the exit status is **unknown** ⇒ ⊤ for the fold (no fold through
+/// this leaf ⇒ its branch stays live — `inv-kfail`/`inv-top-reject`). A converged
+/// fact whose rc is un-injected falls back to a conforming `Rc(0)` only at the
+/// *caller's* explicit choice (the CLI's stdin default), never silently here.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Observed {
+    pub verdict: Verdict,
+    pub rc: Option<Rc>,
+}
+
+impl Observed {
+    /// An observation carrying only a convergence verdict, no concrete rc (⊤ for the
+    /// fold). The conservative shape: the verdict still drives convergence-elision,
+    /// but the fold cannot resolve a branch through this leaf.
+    #[must_use]
+    pub fn verdict_only(verdict: Verdict) -> Self {
+        Self { verdict, rc: None }
+    }
+}
+
 /// Belief grade (Engler MUST/MAY, chord `must-may`) — the sound/unsound line.
 /// Only a `Must` fact may license a skip; `May` (mined/distributional) is a hint
 /// that bootstraps the oracle library and never authorizes elision.
