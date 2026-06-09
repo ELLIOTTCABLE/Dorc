@@ -21,7 +21,7 @@ use std::collections::BTreeMap;
 use std::io::{Read, Write};
 use std::process::ExitCode;
 
-use dorc_core::{Interner, Verdict};
+use dorc_core::{Interner, Observed, Rc, Verdict};
 use dorc_plan::fact_label;
 
 const USAGE: &str = "usage: dorc --book=<book.sh> [-o <oracle.sh>]...";
@@ -105,22 +105,29 @@ fn run() -> Result<(), String> {
         .map_err(|e| format!("reading stdin: {e}"))?;
     let results = parse_results(&stdin_buf);
 
-    // (3) compile + emit the eliding apply, driven by the probe results. A fact with
-    // no reported verdict folds to Unknown ⇒ run (kFAIL-perform).
+    // (3) compile + emit the eliding apply, driven by the probe observations. A fact
+    // with no reported observation folds to Unknown / no-rc ⇒ run, no fold
+    // (kFAIL-perform).
     let plan = dorc_plan::build_plan(&book_src, &parsed.value, &cfg.value, &classes, |f| {
         results
             .get(&fact_label(&interner, f))
             .copied()
-            .unwrap_or(Verdict::Unknown)
+            .unwrap_or(Observed::verdict_only(Verdict::Unknown))
     });
     print!("{}", plan.render_apply(&book_src, &parsed.value));
     Ok(())
 }
 
-/// Parse stdin probe-results: `kind:entity converged|diverged|unknown` per line.
-/// Blank lines and `#` comments are ignored, so the probe's own `# probe:` echo can
-/// be piped straight back if convenient.
-fn parse_results(input: &str) -> BTreeMap<String, Verdict> {
+/// Parse stdin probe-results: `kind:entity#sel converged|diverged|unknown [rc=N]` per
+/// line. The optional `rc=N` is the **injected observed exit status** (`19B` build-1)
+/// the apply fold + value-preserving substitution read; absent, a `converged` fact
+/// defaults to the conforming `rc=0` (the established `true`-stub assumption), and a
+/// `diverged`/`unknown` fact carries no rc (⊤ for the fold). Blank lines and `#`
+/// comments are ignored, so the probe's own `# probe:` echo can be piped back.
+///
+/// rc is the OUT-OF-BAND lane as plain data (`19B §2`): it never collides with the
+/// verdict token (`unknown` stays a distinct word; the real rc rides as `rc=2`).
+fn parse_results(input: &str) -> BTreeMap<String, Observed> {
     input
         .lines()
         .filter_map(|line| {
@@ -135,7 +142,18 @@ fn parse_results(input: &str) -> BTreeMap<String, Verdict> {
                 Some("diverged") => Verdict::Diverged,
                 _ => Verdict::Unknown,
             };
-            Some((key, verdict))
+            // An explicit `rc=N` overrides; else a converged fact is conforming (rc 0),
+            // and a non-converged fact has no known rc (None ⇒ ⊤ for the fold).
+            let explicit_rc = it.find_map(|tok| {
+                tok.strip_prefix("rc=")
+                    .and_then(|n| n.parse::<i32>().ok())
+                    .map(Rc)
+            });
+            let rc = explicit_rc.or(match verdict {
+                Verdict::Converged => Some(Rc(0)),
+                _ => None,
+            });
+            Some((key, Observed { verdict, rc }))
         })
         .collect()
 }

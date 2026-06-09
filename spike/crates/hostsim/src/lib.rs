@@ -22,7 +22,7 @@
 use std::collections::BTreeSet;
 
 use dorc_analysis::effect::FactKey;
-use dorc_core::{Phase, Verdict};
+use dorc_core::{Observed, Phase, Rc, Verdict};
 
 /// A tiny deterministic linear-congruential PRNG — the host's seeded
 /// nondeterminism. Hand-rolled (no `rand` dependency): the DST host must be
@@ -118,6 +118,23 @@ impl Host {
             Verdict::Converged
         } else {
             Verdict::Diverged
+        }
+    }
+
+    /// The full read-only [`Observed`] for a fact — the concrete `observe` the plan
+    /// stage's fold + value-preserving substitution inject (`19B` build-1). This
+    /// modeled host models **conforming, idempotent-success** establishes: a
+    /// `Converged` fact's command re-run exits 0 (so its substitution stand-in is
+    /// `true`). A non-conforming establish (`useradd` rc 9) is exercised by the unit
+    /// matrix's injected-rc case, not synthesized here — the host's job is set
+    /// membership, not modeling every tool's exact rc (`hostsim/CLAUDE.md`). A
+    /// `Diverged` fact carries no known rc (`None` ⇒ ⊤ for the fold).
+    #[must_use]
+    pub fn observe(&self, fact: FactKey) -> Observed {
+        let verdict = self.verdict(fact);
+        Observed {
+            verdict,
+            rc: (verdict == Verdict::Converged).then_some(Rc(0)),
         }
     }
 
@@ -295,13 +312,13 @@ mod tests {
             let cfg = dorc_analysis::cfg::build(&parsed.value).value;
             let classes = dorc_analysis::effect::classify(&cfg, &parsed.value, &idx, &mut i);
             let plan =
-                dorc_plan::build_plan(src, &parsed.value, &cfg, &classes, |f| host.verdict(f));
+                dorc_plan::build_plan(src, &parsed.value, &cfg, &classes, |f| host.observe(f));
 
             let is_skipped = |needle: &str| {
                 plan.steps
                     .iter()
                     .find(|s| s.sh.contains(needle))
-                    .is_some_and(|s| matches!(s.disposition, dorc_plan::Disposition::Replace(_)))
+                    .is_some_and(|s| matches!(s.disposition, dorc_plan::Disposition::Replace(_, _)))
             };
             assert_eq!(
                 is_skipped("install -y nginx"),
@@ -374,23 +391,24 @@ mod tests {
                 "seed {seed}: probe renders the verbatim read-only check"
             );
 
-            // (2) SIMULATE: the host answers each probed fact; an unprobed fact ⇒ Unknown.
-            let verdict_of = |f: FactKey| {
+            // (2) SIMULATE: the host answers each probed fact; an unprobed fact ⇒
+            // Unknown / no-rc (⊤ for the fold).
+            let observe = |f: FactKey| {
                 if probe.checks_fact(f) {
-                    host.verdict(f)
+                    host.observe(f)
                 } else {
-                    Verdict::Unknown
+                    Observed::verdict_only(Verdict::Unknown)
                 }
             };
             // (3) compile the eliding apply from the simulated probe results.
-            let apply = build_plan(src, &parsed.value, &cfg, &classes, verdict_of);
+            let apply = build_plan(src, &parsed.value, &cfg, &classes, observe);
 
             let elided = |needle: &str| {
                 apply
                     .steps
                     .iter()
                     .find(|s| s.sh.contains(needle))
-                    .is_some_and(|s| matches!(s.disposition, Disposition::Replace(_)))
+                    .is_some_and(|s| matches!(s.disposition, Disposition::Replace(_, _)))
             };
             assert_eq!(
                 elided("install -y nginx"),
@@ -446,14 +464,14 @@ mod tests {
             "no declared probe ⇒ the probe is empty"
         );
 
-        let verdict_of = |f: FactKey| {
+        let observe = |f: FactKey| {
             if probe.checks_fact(f) {
-                host.verdict(f)
+                host.observe(f)
             } else {
-                Verdict::Unknown
+                Observed::verdict_only(Verdict::Unknown)
             }
         };
-        let apply = build_plan(src, &parsed.value, &cfg, &classes, verdict_of);
+        let apply = build_plan(src, &parsed.value, &cfg, &classes, observe);
         assert!(
             matches!(apply.steps[0].disposition, Disposition::Run),
             "un-probeable fact must run even though the host holds it"
