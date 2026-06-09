@@ -5,6 +5,13 @@
 > high-value part. AI-authored, confidence-marked. Trust R/D/I/K over this; the corrections below are
 > the **human's rulings** (treat as authoritative direction, though their phrasing here is mine).
 > Continues 197/198/199.
+>
+> **⚠ DESIGN CHANGED DURING THE SESSION — read §5 first.** The C-2/C-3/C-4 framing in §3 was *refined
+> and partly superseded* later the same session (§5). In short: C-1 and C-5 stand; C-2/C-3's "track
+> rc-polarity per consumer" **dissolves** into plain abstract-interpretation over probed values; and
+> C-4 is refined from "oracle-contract the rc *directionality*" to "oracle-contract the *observables a
+> command produces* (incl. its exact rc value)." §3 is kept as the record of how the understanding got
+> there; §5 is the corrected model.
 
 ## 1. Wave-1 outcomes (all green: 41/41 e2e, workspace + clippy clean)
 
@@ -111,3 +118,59 @@ Open (human):
   orthogonal lower-lock tracks (gw-3 backward/apply-3 — ch-scope-locked, and gw-4 found errexit is
   dead-weight until it lands; recursion-smoke/seam-finite). Cheap precursor: **fork-B** (verify the
   adversarial's ~SUSPECT "same-cell subsumption is soft" claim) to size the C-4 build.
+
+## 5. Corrected realization (supersedes §3's C-2/C-3/C-4 framing) — it's just abstract interpretation over probed observables
+
+The human dissolved most of §3's complexity. The clean model (+SURE, human-ruled):
+
+**Probe → concrete observables → abstract-interpret the apply-CFG → omit what can't run.** The probe
+ships the (command-keyed, read-only) checks and returns a set of **concrete observables** — actual rc
+*values*, stdout, stderr, fds. The apply phase abstract-interprets the apply-CFG with those concrete
+values substituted, over the *known* semantics of `&&`/`||`/`if`/`!`/`case`, and omits what provably
+can't run. **rc is opaque to Dorc** — we hold the value (`9`), never interpret its meaning; `9 || mkdir`
+→ `mkdir` runs, by the shell's own `||` semantics. The author already encoded the meaning by choosing
+`!`/`&&`/`||`; Dorc just replays it over the probed value. *(This is concrete partial-evaluation where
+probed, ⊤ where unknown — SPA ch.12 made concrete, not a fixpoint over abstractions.)*
+
+- **The "polarity problem" was a non-problem (corrects C-2/C-3).** Nothing to *track*; no directionality
+  for Dorc to *interpret*. gw-1's F1 "block status-consumption in `if`/`elif`" is a **floor that exists
+  only because the spike doesn't yet track rc-as-value or execute the probe** (it injects a
+  convergence-bit verdict). The real design *probes the guard, reads its rc, substitutes it, folds the
+  branch* — which **is** Half-B subsumption, and *simpler* than the band-aid. errexit (C-3) isn't
+  special either: it's the shell evaluating each command's concrete rc — abstract-interpretation gets it
+  for free.
+- **C-4 refined: the oracle contract is `fact-state → observables`, not `rc → verdict-directionality`.**
+  Read-only guard (`command -v nginx`): run it, read the rc. Mutator (`useradd deploy`, can't run): the
+  oracle declares the observables it *would* produce given the probed fact-state — "useradd, when the
+  user exists → rc **9**" — so the substitution reproduces the exact value. An *observable-production*
+  declaration, not a directionality interpretation.
+- **Substitution = observable-value-MAINTAINING (DESIGN's observable/replace model, `16F`/`16P-T10`,
+  diluted in the spike).** Replace a converged leaf with the cheapest stand-in that reproduces *the
+  observables its consumers read* — the exact probed rc (`9`, not `false`/`1`, not `:`/`0`), captured
+  stdout, etc. (`true` over `:` for readability going forward; the real thing reproduces probed
+  observables, needing how-each-leaf-is-consumed + the oracle's `fact-state→observables`.)
+
+**`q-1b` resolved — "command-keyed vs effect-keyed" is a layer-conflation, not an either/or** (dug the
+corpus: `17N` F0/F1/§5, `16P` T7/DP-1). Three axes the "fact-centric not command-centric" slogan blurred:
+1. the check/probe **invocation** is **command-keyed** — only the oracle can argparse the binary and
+   decide which arg is a `Package`, whether the verb flips `#installed` or just reads it (`17N` F0: the
+   engine is *referent-agnostic*; the oracle is the command-specific thing). +SURE: can't be otherwise.
+2. cross-oracle **identity** is **named-kind**-keyed — two *different* commands (apt/brew/dpkg) touch
+   one fact; a shared arg-token can't bridge them (`17N` §5). The named kind is a *coordination
+   vocabulary* for command-keyed oracles, **not an alternative** to command-keying.
+3. the elision **license** is **fact-converged**-keyed, not re-running the command. The only thing
+   `DP-1`'s "command-centric → fact-centric pivot" rejected: the refuted strawman (`notes/161`) made the
+   probe a *dry-run of the mutator* (`apt-get --simulate | grep`), making the named-kind "decorative in
+   the skip path." "Fact-centric" fixed *that*, never the check invocation.
+The tell: the corpus's own effect-map is the 3-place `(kind, provider, verb) → effect` — `provider`+
+`verb` **is** the command, so it's command-*inclusive* by construction. Unified picture: **command-keyed
+oracles declaring effects on named kinds.** (`q-1a`: only the probe *invocation* goes full-args now; the
+cell-keying `resolve_entity` heuristic stays — flagged as an open design-hole, eventually oracle-mediated.)
+
+**Reframed wave-2 (replaces §4's "rc-modeling contract"):** three pieces — **(1)** track observables
+(esp. rc) as concrete values in the apply abstract-interpretation; **(2)** observable-preserving
+substitution (reproduce exact rc/stdout, not `:`); **(3)** the command-keyed oracle-check contract
+(full-args; declares the read-only check + the `fact-state → observables` it stands in for). One
+mechanism for F1 + `&&`/`||` + errexit + subsumption. Fits the existing worklist substrate (lattice
+values become probed-observables-or-⊤; no IFDS/Datalog change). +SURE more faithful to DESIGN's
+observable/replace model than the spike's current `classify → prove_replaceable → :`-substitute.
