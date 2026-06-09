@@ -1,5 +1,9 @@
-# andor-rc-vouch-wrong: `useradd` is a NON-conforming establish (rc!=0 when the user
-# already exists). Engine WRONGLY marks the converged useradd Replace (disposition pin:
-# observable_matrix::xfail_nonconforming_...). The LINE-GRANULAR render masks it here
-# (the || line has a Run leaf -> stays verbatim), so the apply is accidentally SAFE.
+# andor-rc-vouch-wrong (round-19: now FOLD-CORRECT): `useradd` is a NON-conforming
+# establish (rc 9 when the user already exists). The fold + value-preserving
+# substitution read the injected rc 9 (probe-results.txt): the converged useradd is
+# replaced by its EXACT status `(exit 9)`, not `:`/rc 0, so `(exit 9) || mkdir` ⇒
+# 9≠0 ⇒ `mkdir` still runs. Both run; the under-execute the old `:`-stub would cause
+# (mkdir wrongly skipped) is fixed. (Line render keeps this mixed line verbatim, so
+# the exec proof is mkdir-runs; the disposition proof is the promoted
+# observable_matrix::nonconforming_establish_andor_left_operand_substitutes_exact_rc.)
 useradd deploy || mkdir /srv/app

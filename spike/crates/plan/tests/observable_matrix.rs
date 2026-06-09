@@ -40,9 +40,11 @@
 //! (`inv-superposition`, note 16J). `is_replaced` localizes the disposition check.
 
 use dorc_analysis::effect::FactKey;
-use dorc_core::{EntityRef, Interner, KindId, OpaqueToken, ProviderId, SelectorId, Verdict};
+use dorc_core::{
+    EntityRef, Interner, KindId, Observed, OpaqueToken, ProviderId, Rc, SelectorId, Verdict,
+};
 use dorc_oracle::{KindIndex, Polarity};
-use dorc_plan::{build_plan, Disposition, Plan};
+use dorc_plan::{build_plan, Disposition, Plan, StandIn};
 
 /// The package oracle: `apt-get install ⇒ establishes package`, `apt-get purge ⇒
 /// kills`. It is **idempotent-success**: a converged `apt-get install` exits 0 —
@@ -83,22 +85,39 @@ fn plan_for(src: &str, holds: &[(&str, &str)]) -> Plan {
     let cfg = dorc_analysis::cfg::build(&parsed.value).value;
     let classes = dorc_analysis::effect::classify(&cfg, &parsed.value, &idx, &mut i);
     build_plan(src, &parsed.value, &cfg, &classes, move |f| {
+        // The package oracle is idempotent-success: a converged install exits 0, so a
+        // held fact is conforming `rc=0` (the value-preserving substitution's `true`).
         if held.contains(&f) {
-            Verdict::Converged
+            Observed {
+                verdict: Verdict::Converged,
+                rc: Some(Rc(0)),
+            }
         } else {
-            Verdict::Diverged
+            Observed::verdict_only(Verdict::Diverged)
         }
     })
 }
 
-/// Is the leaf whose verbatim text contains `needle` **replaced** (elided to a
-/// stand-in)? `false` means it runs — either as a `Run` step, or because it is not
-/// a plan step at all (e.g. excluded as expansion-internal); both mean "not
-/// replaced". Today "replaced" is `Disposition::Replace`; the implementor renames it.
+/// Is the leaf whose verbatim text contains `needle` **replaced** (elided to a value-
+/// preserving stand-in)? `false` means it runs — a `Run` step, an `Omit`ted (dead)
+/// step rendered verbatim, or not a plan step at all (e.g. expansion-internal).
+/// (`Omit` is the fold's dead-branch disposition; `is_replaced` is specifically about
+/// the convergence-elision `Replace`, so it does NOT count `Omit`.)
 fn is_replaced(plan: &Plan, needle: &str) -> bool {
     plan.steps
         .iter()
-        .any(|s| s.sh.contains(needle) && matches!(s.disposition, Disposition::Replace(_)))
+        .any(|s| s.sh.contains(needle) && matches!(s.disposition, Disposition::Replace(_, _)))
+}
+
+/// The value-preserving [`StandIn`] of the (first) `Replace` leaf containing `needle`,
+/// or `None` if it is not a `Replace`. Lets a test assert the substitution reproduces
+/// the *exact* observed rc (the `19A §5` value-preserving fix), not just that it is
+/// replaced.
+fn replace_standin(plan: &Plan, needle: &str) -> Option<StandIn> {
+    plan.steps.iter().find_map(|s| match &s.disposition {
+        Disposition::Replace(_, stand_in) if s.sh.contains(needle) => Some(*stand_in),
+        _ => None,
+    })
 }
 
 // ===========================================================================
@@ -394,24 +413,23 @@ fn spec_converged_set_e_does_not_poison_replacement() {
 // panic does not silently satisfy it.)
 // ===========================================================================
 
-/// Run the pipeline with a caller-supplied [`KindIndex`] (the matrix's `plan_for`
-/// hardcodes the package oracle; this cell needs a different, non-conforming-by-premise
-/// establish). `holds_singleton` lists the `kind#present` Singleton cells the host
-/// already has (Converged); everything else Diverged.
+/// Run the pipeline for the non-conforming-establish `||` cell. `useradd deploy` is a
+/// NON-conforming establish: it exits **9** when `deploy` already exists. The
+/// injected observation now carries that rc (`19B` build-1) — the apply fold reads it
+/// and the substitution reproduces it, instead of the old `:`/rc-0 lie.
 fn plan_for_user_oror(src: &str) -> Plan {
     let mut i = Interner::default();
     let user = KindId(i.intern("user"));
     let present = SelectorId(i.intern("present"));
     let useradd = ProviderId(i.intern("useradd"));
     // `useradd deploy` ⇒ provider=useradd, verb=`deploy`, no further operand ⇒ a
-    // Singleton `user#present` cell. The premise (NOT expressible in the oracle model):
-    // real `useradd` exits non-zero when `deploy` already exists — a NON-conforming
-    // establish, so the rc-0 vouch behind replacement is a lie.
+    // Singleton `user#present` cell.
     let deploy = i.intern("deploy");
     let mut idx = KindIndex::default();
     idx.add_effect(useradd, deploy, user, present, Polarity::Establish);
-    // The host already has the user (Converged) — the exact cell that triggers the
-    // wrong Replace.
+    // The host already has the user (Converged), and the observed exit status of a
+    // converged `useradd` is 9 (the non-conformance — now MODELED as an injected rc,
+    // the build-2 oracle-contract's job to produce for real).
     let held = FactKey {
         kind: user,
         entity: EntityRef::Singleton,
@@ -422,28 +440,47 @@ fn plan_for_user_oror(src: &str) -> Plan {
     let classes = dorc_analysis::effect::classify(&cfg, &parsed.value, &idx, &mut i);
     build_plan(src, &parsed.value, &cfg, &classes, move |f| {
         if f == held {
-            Verdict::Converged
+            Observed {
+                verdict: Verdict::Converged,
+                rc: Some(Rc(9)),
+            }
         } else {
-            Verdict::Diverged
+            Observed::verdict_only(Verdict::Diverged)
         }
     })
 }
 
-#[should_panic(expected = "non-conforming establish")]
 #[test]
-fn xfail_nonconforming_establish_andor_left_operand_wrongly_replaced() {
-    // `useradd deploy || mkdir /srv/app`, user `deploy` already present (Converged).
-    // SAFE behavior (asserted): the `useradd` is NOT replaced — because if it were `:`
-    // (rc 0), the `|| mkdir` would never fire, skipping a needed mkdir (kFAIL-perform).
-    // CURRENT (unsound, so the assert PANICS ⇒ pinned defect): the converged establish
-    // as a `||` left operand IS replaced (the `tc-mint` gap leaves `&&`/`||` unmarked,
-    // and the rc-0 vouch is false for this non-conforming establish). `notes/198` §1.3.
+fn nonconforming_establish_andor_left_operand_substitutes_exact_rc() {
+    // PROMOTED from `xfail_nonconforming_establish_andor_left_operand_wrongly_replaced`
+    // (`notes/198` §1.3 / `19C`). `useradd deploy || mkdir /srv/app`, user `deploy`
+    // already present (Converged), observed rc 9. The round-19 fold + value-preserving
+    // substitution fix the under-execute: the converged `useradd` IS replaced (it is a
+    // converged ambient establish), but by `(exit 9)` — its EXACT observed status — NOT
+    // `:`/rc-0. So `(exit 9) || mkdir` still fires the `|| mkdir` fallback ⇒ `mkdir`
+    // runs. The old xfail asserted "not replaced" (the only SAFE option when the
+    // substitution was a rc-0 lie); value-preserving substitution makes "replaced, but
+    // with the right rc" the correct, sound disposition.
     let plan = plan_for_user_oror("useradd deploy || mkdir /srv/app\n");
+
+    // The fix: the stand-in reproduces rc 9, so the `||` still fires.
+    assert_eq!(
+        replace_standin(&plan, "useradd deploy"),
+        Some(StandIn::Exit(9)),
+        "the converged non-conforming establish must be replaced by its EXACT rc \
+         (exit 9), not a rc-0 stub — else the `|| mkdir` fallback is suppressed \
+         (the kFAIL-perform under-execute the round-19 adversarial pass proved)"
+    );
+    // `mkdir` is live (the fold proved the `||` right operand reachable: left rc 9 ≠ 0)
+    // and is not an oracled establish, so it RUNS — never replaced, never omitted.
     assert!(
-        !is_replaced(&plan, "useradd deploy"),
-        "non-conforming establish as a `||` left operand must NOT be replaced \
-         (else its rc-0 stub suppresses the `|| mkdir` fallback — a kFAIL-perform \
-         under-execute); the engine wrongly replaces it (the deferred tc-mint / \
-         rc-bridge gap, notes/198)"
+        !is_replaced(&plan, "mkdir /srv/app"),
+        "mkdir runs (the fallback): it is not converged-elidable"
+    );
+    assert!(
+        plan.steps
+            .iter()
+            .any(|s| s.sh.contains("mkdir /srv/app") && matches!(s.disposition, Disposition::Run)),
+        "mkdir's disposition is Run — the fold keeps the `|| mkdir` fallback live"
     );
 }

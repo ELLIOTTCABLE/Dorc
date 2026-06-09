@@ -18,26 +18,26 @@ service__check 'nginx'
 # probe: service:nginx#active
 service__check 'nginx'
 #!/bin/sh
-# dorc apply: the book, with already-converged lines elided (replaced by `:`).
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
 
 #!/bin/sh
 # pi-webhost provisioning (bare-mutation core; the lazy admin lets Dorc do idempotency)
 set -e
 
-# apt-get update   # dorc: elided (already converged)
-:
-# apt-get install -y nginx   # dorc: elided (already converged)
-:
+# apt-get update   # dorc: elided (already converged / dead branch)
+true
+# apt-get install -y nginx   # dorc: elided (already converged / dead branch)
+true
 
-# ufw allow 80/tcp   # dorc: elided (already converged)
-:
-# ufw allow 443/tcp   # dorc: elided (already converged)
-:
+# ufw allow 80/tcp   # dorc: elided (already converged / dead branch)
+true
+# ufw allow 443/tcp   # dorc: elided (already converged / dead branch)
+true
 
-# systemctl enable nginx   # dorc: elided (already converged)
-:
-# systemctl start nginx   # dorc: elided (already converged)
-:
+# systemctl enable nginx   # dorc: elided (already converged / dead branch)
+true
+# systemctl start nginx   # dorc: elided (already converged / dead branch)
+true
 
 nginx -t && systemctl reload nginx
 

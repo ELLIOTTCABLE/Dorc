@@ -7,7 +7,7 @@ package__check 'web (proxy)'
 # probe: package:x; touch /tmp/PWNED#installed
 package__check 'x; touch /tmp/PWNED'
 #!/bin/sh
-# dorc apply: the book, with already-converged lines elided (replaced by `:`).
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
 
 apt-get install -y 'web (proxy)'
 apt-get install -y 'x; touch /tmp/PWNED'

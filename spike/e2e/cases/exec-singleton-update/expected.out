@@ -5,7 +5,7 @@
 pkgindex__check() { test -n "$(find /var/lib/apt/lists/ -maxdepth 1 -newermt '-1 hour' 2>/dev/null)"; }
 pkgindex__check
 #!/bin/sh
-# dorc apply: the book, with already-converged lines elided (replaced by `:`).
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
 
-# apt-get update   # dorc: elided (already converged)
-:
+# apt-get update   # dorc: elided (already converged / dead branch)
+true

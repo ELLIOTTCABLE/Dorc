@@ -7,9 +7,9 @@ package__check 'nginx'
 # probe: package:curl#installed
 package__check 'curl'
 #!/bin/sh
-# dorc apply: the book, with already-converged lines elided (replaced by `:`).
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
 
 set -e
-# apt-get install -y nginx   # dorc: elided (already converged)
-:
+# apt-get install -y nginx   # dorc: elided (already converged / dead branch)
+true
 apt-get install -y curl

@@ -1,0 +1,6 @@
+# nginx is on PATH (the tool guard is converged ⇒ `command -v nginx` exits 0). The
+# package fact is irrelevant to the fold here — the guard's rc 0 alone proves the
+# `|| install` branch dead. (No rc= needed: a converged conforming guard defaults to
+# rc 0, which is exactly `command -v`'s success status.)
+tool:nginx#present converged
+package:nginx#installed diverged
