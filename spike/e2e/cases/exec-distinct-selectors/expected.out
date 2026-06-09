@@ -3,9 +3,9 @@
 
 # probe: service:nginx#enabled
 service__check() { systemctl is-active --quiet "$1"; }
-service__check nginx
+service__check 'nginx'
 # probe: service:nginx#active
-service__check nginx
+service__check 'nginx'
 #!/bin/sh
 # dorc apply: the book, with already-converged lines elided (replaced by `:`).
 

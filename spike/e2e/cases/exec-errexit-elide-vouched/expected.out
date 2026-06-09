@@ -3,9 +3,9 @@
 
 # probe: package:nginx#installed
 package__check() { dpkg-query -W "$1" >/dev/null 2>&1; }
-package__check nginx
+package__check 'nginx'
 # probe: package:curl#installed
-package__check curl
+package__check 'curl'
 #!/bin/sh
 # dorc apply: the book, with already-converged lines elided (replaced by `:`).
 

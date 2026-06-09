@@ -3,10 +3,10 @@
 
 # probe: package:nginx#installed
 package__check() { dpkg-query -W "$1" >/dev/null 2>&1; }
-package__check nginx
+package__check 'nginx'
 # probe: service:nginx#enabled
 service__check() { systemctl is-active --quiet "$1"; }
-service__check nginx
+service__check 'nginx'
 #!/bin/sh
 # dorc apply: the book, with already-converged lines elided (replaced by `:`).
 

@@ -6,7 +6,7 @@ pkgindex__check() { test -n "$(find /var/lib/apt/lists/ -maxdepth 1 -newermt '-1
 pkgindex__check
 # probe: package:nginx#installed
 package__check() { dpkg-query -W "$1" >/dev/null 2>&1; }
-package__check nginx
+package__check 'nginx'
 #!/bin/sh
 # dorc apply: the book, with already-converged lines elided (replaced by `:`).
 

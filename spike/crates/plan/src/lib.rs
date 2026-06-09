@@ -331,6 +331,35 @@ fn check_fn_name(interner: &Interner, kind: KindId) -> String {
     format!("{}__check", interner.resolve(kind.0))
 }
 
+/// POSIX single-quote a string so it becomes exactly **one** literal argument when
+/// the rendered probe is parsed by `sh` — the F-QUOTE fix (`notes/198`, `inv-kfail`
+/// both directions). The book operand is interned **post-parse** (quotes already
+/// stripped, embedded metachars preserved — `effect::word_literal` reads
+/// `WordPart::SingleQuoted`'s inner text), so an operand like `my pkg` or
+/// `x; touch /tmp/PWNED` would otherwise interpolate raw into `package__check my pkg`
+/// (TWO args ⇒ probes the wrong entity, a `kFAIL-perform` wrong-elision) or
+/// `package__check x; touch …` (the `;` parses as a SECOND command ⇒ a `kFAIL-withhold`
+/// probe-mutation). Wrapping in `'…'` (with the `'\''` escape for an embedded quote)
+/// makes the value inert and exactly one positional arg, in every `sh`.
+///
+/// This is a pass-through byte-transform, NOT a decode (`inv-referent-agnostic`): the
+/// quoting never branches on what the operand *means*, only on which bytes need
+/// escaping to survive the shell verbatim — the same latitude render already takes to
+/// pass the operand through to the check.
+fn sh_single_quote(s: &str) -> String {
+    let mut out = String::with_capacity(s.len() + 2);
+    out.push('\'');
+    for ch in s.chars() {
+        if ch == '\'' {
+            out.push_str("'\\''"); // close-quote, escaped literal quote, re-open
+        } else {
+            out.push(ch);
+        }
+    }
+    out.push('\'');
+    out
+}
+
 impl ProbePlan {
     /// Render the probe as a shippable, read-only shell-script (the sanitised
     /// projection shipped to gather facts — DESIGN). Provenance comments name the
@@ -365,7 +394,10 @@ impl ProbePlan {
             }
             match check.fact.entity {
                 EntityRef::Operand(tok) => {
-                    out.push_str(&format!("{fn_name} {}\n", interner.resolve(tok.0)));
+                    // Single-quote so the operand is always exactly one inert positional
+                    // arg, never split or re-parsed (F-QUOTE, `notes/198`).
+                    let operand = sh_single_quote(interner.resolve(tok.0));
+                    out.push_str(&format!("{fn_name} {operand}\n"));
                 }
                 EntityRef::Singleton => out.push_str(&format!("{fn_name}\n")),
             }
@@ -720,14 +752,16 @@ mod tests {
         });
         let rendered = probe.render_sh(&i);
 
-        // Operand bound: `package__check nginx` AND `package__check curl`.
+        // Operand bound + single-quoted (F-QUOTE): `package__check 'nginx'` AND
+        // `package__check 'curl'`. A metachar-free operand quotes to the same single
+        // arg, just wrapped (render-only; the host strips the quotes).
         assert!(
-            rendered.contains("package__check nginx"),
-            "operand `nginx` bound into the invocation:\n{rendered}"
+            rendered.contains("package__check 'nginx'"),
+            "operand `nginx` bound + quoted into the invocation:\n{rendered}"
         );
         assert!(
-            rendered.contains("package__check curl"),
-            "operand `curl` bound (per-entity invocation):\n{rendered}"
+            rendered.contains("package__check 'curl'"),
+            "operand `curl` bound + quoted (per-entity invocation):\n{rendered}"
         );
         // The function body is defined exactly ONCE per kind (FLAT dedup), even with
         // two `package` entities.
@@ -746,6 +780,71 @@ mod tests {
         assert!(
             !rendered.contains("package__check\n"),
             "no bare `package__check` (operand kinds must bind an operand):\n{rendered}"
+        );
+    }
+
+    #[test]
+    fn probe_render_quotes_operand_with_space_or_metachar() {
+        // F-QUOTE (`notes/198`, `inv-kfail` both directions): the book operand is
+        // interned POST-parse (quotes stripped, embedded chars preserved), so a
+        // `'my pkg'` operand interns as `my pkg` and a `'x; touch /tmp/PWNED'` operand
+        // interns as `x; touch /tmp/PWNED`. Unquoted these would render `package__check
+        // my pkg` (TWO args ⇒ probes the WRONG entity, kFAIL-perform) and
+        // `package__check x; touch …` (the `;` ⇒ a SECOND command ⇒ kFAIL-withhold
+        // probe-mutation). Single-quoting makes each render as exactly ONE inert arg.
+        //
+        // This asserts the render-level structure (always runs, no shell). The
+        // *behavioral* properties the prompt names — the rendered probe is `dash -n`-
+        // clean AND `$1` binds to the whole operand — are exercised end-to-end against a
+        // real POSIX shell by `e2e/cases/probe-operand-quoting` (the `-n` gate + the
+        // exec gate prove binding under mocks); the spike keeps shell execution in the
+        // sh harness, never in kernel unit tests (`run.sh` "IN sh, FROM sh").
+        let mut i = Interner::default();
+        let package = KindId(i.intern("package"));
+        let installed = SelectorId(i.intern("installed"));
+        let spaced = EntityRef::Operand(OpaqueToken(i.intern("my pkg")));
+        let inject = EntityRef::Operand(OpaqueToken(i.intern("x; touch /tmp/PWNED")));
+        // An embedded single-quote pins the `'\''` escape (the only non-trivial case).
+        let quoted = EntityRef::Operand(OpaqueToken(i.intern("a'b")));
+        let cell = |entity| FactKey {
+            kind: package,
+            entity,
+            selector: installed,
+        };
+        let classes = vec![
+            (CfgNodeId(0), SkipClass::EstablishAmbient(cell(spaced))),
+            (CfgNodeId(1), SkipClass::EstablishAmbient(cell(inject))),
+            (CfgNodeId(2), SkipClass::EstablishAmbient(cell(quoted))),
+        ];
+        let probe = compile_probe(&classes, |k| {
+            (k == package).then(|| "{ dpkg-query -W \"$1\" >/dev/null 2>&1; }".to_string())
+        });
+        let rendered = probe.render_sh(&i);
+
+        // The space-operand is ONE arg: the whole `my pkg` inside one `'…'`.
+        assert!(
+            rendered.contains("package__check 'my pkg'\n"),
+            "spaced operand is single-quoted to one arg:\n{rendered}"
+        );
+        // The metachar-operand is inert: the `;` is INSIDE the quotes, so it cannot
+        // start a second command. (The literal `touch /tmp/PWNED` survives only as data
+        // passed to the check, never executed.)
+        assert!(
+            rendered.contains("package__check 'x; touch /tmp/PWNED'\n"),
+            "metachar operand is single-quoted ⇒ the `;` cannot split:\n{rendered}"
+        );
+        // The embedded-quote case uses the POSIX `'\''` idiom (close, escaped quote,
+        // reopen) — `a'b` ⇒ `'a'\''b'`.
+        assert!(
+            rendered.contains(r"package__check 'a'\''b'"),
+            "embedded single-quote escaped as '\\'':\n{rendered}"
+        );
+        // Defence-in-depth against the raw-injection regression: the unquoted, bare
+        // `; touch` sequence must NOT appear at the start of a rendered line (it only
+        // ever appears inside the single-quoted operand above).
+        assert!(
+            !rendered.contains("\npackage__check x; touch"),
+            "no UNQUOTED metachar invocation leaked:\n{rendered}"
         );
     }
 
