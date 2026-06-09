@@ -109,10 +109,27 @@ pub enum CfgNodeKind {
 ///   errexit), so errexit-/sequence-consumed status does NOT enter the set. It is
 ///   **un**vouched for a **guard / pre-condition** consumer (`if ! command -v
 ///   nginx` — "is X already true?", a different branch runs on the answer), where
-///   the leaf is a *probe of world-state*, not an establish — so **branch**-consumed
-///   status (the test of an `if`/`while`, a `&&`/`||` left operand, a `!`-negated
-///   pipeline) DOES enter the set and blocks the license. The locus is the
-///   distinction (`lower_condition_region` marks it); the errexit pass never does.
+///   the leaf is a *probe of world-state*, not an establish. But the engine marks
+///   `Status` **only for an `if`/`elif` condition** (`lower_if_chain` passes
+///   `mark_status=true` to `lower_condition_region`) — the one *unambiguous* guard,
+///   where a different branch demonstrably runs on the rc. Deliberately LEFT UNMARKED
+///   (so they do NOT block today, a known **under-execute**):
+///   * a `&&`/`||` left operand — `lower_and_or` passes `mark_status=false`. It is
+///     genuinely ambiguous: `install && start` is a vouched post-condition (stays
+///     replaceable — the `observable_matrix` pins this), while `cmd || install` is a
+///     guard that *should* block, and the two are structurally identical at the CFG.
+///     Marking would regress the post-condition pin, so the safe-default-block is
+///     deferred to the F3 co-reference judgment — the documented `tc-mint` gap
+///     (`TODO(tc-mint)` in `lower_and_or`; pinned non-conforming in `notes/198` and
+///     the `andor-rc-vouch-wrong` xfail).
+///   * a bare `!`-negated pipeline — `lower_pipeline` only clears errexit-fallibility
+///     on the negation; it never marks `Status`. (A `!`-guard reached *through* an
+///     `if`/`elif` condition IS marked, because the enclosing condition region marks
+///     the whole range — it is the `if`, not the `!`, that marks.)
+///   `while`/`until` conditions never reach here (loops are ⊤-rejected today —
+///   `notes/198` §1.4 — so the point is vacuous). The locus is the distinction
+///   (`lower_condition_region` marks an `if`/`elif` region); the errexit pass never
+///   marks `Status`, so errexit-consumed status stays vouched.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Observable {
     Effect,
