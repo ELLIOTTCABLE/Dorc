@@ -3,7 +3,7 @@ Analyzer/engine data-needs
 
 The living registry of *what the Dorc analysis-engine must represent, compute, track, or expose* — and
 *which part of Dorc needs it*. This is `ananeed-1` (consumers) × `ananeed-2` (information), the input to
-`ananeed-3` (which algorithms/data-structures satisfy it — see `Research/plans/170`). Human-maintained;
+`ananeed-3` (which algorithms/data-structures satisfy it — see `Research/plans/170`). LLM-generated,
 add a row when a feature implies a new datum. Elaboration, prior-art, and the algorithm-matching live in
 `plans/170` (do not put prose here).
 

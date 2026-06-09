@@ -1,6 +1,6 @@
 ## Reading guide
 
-- README.md, DESIGN.md, TODO.md, and KNOBS.md are human-written;
+- README, DESIGN, IMPLEMENTATION, and TODO are human-written; KNOBS and ANALYZER-NEEDS are LLM-generated but relatively authoritative.
   - consider re-reading them first if they are not in-context (important context in those is *not* duplicated into this AGENTS.md, intentionally);
   - do not edit them, under any circumstances - suggest edits to the user if you see clear incorrectness; and
   - trust them over the ocean of unreviewed, LLM-generated planning-slop in the Research/ folder
