@@ -103,6 +103,9 @@ pub fn command_effect(
         return CommandEffect::Pure;
     }
     let provider = ProviderId(interner.intern(provider_s));
+    // find-3 STAND-IN: `verb = word-1` assumes a `provider verb operand` shape; `useradd
+    // deploy` mis-reads verb=`deploy`. The real verb comes from the oracle's argparse, not
+    // position (see the STAND-IN block on `resolve_entity`). Temporary — no value-plane.
     let Some(verb_s) = words.get(1).and_then(|&w| word_literal(ast, w)) else {
         return CommandEffect::Opaque; // no static verb ⇒ no effect to look up
     };
@@ -129,6 +132,18 @@ pub fn command_effect(
     }
 }
 
+/// ⚠ **find-3 STAND-IN** — temporary; here ONLY because this spike has no value-plane.
+/// This engine-side entity inference (the flag-strip + one-operand rule below, and
+/// `verb = word-1` in [`command_effect`]) breaks the welded *identity is **declared,
+/// never inferred*** (SF-1 / `an-entity-uniqueness` / `17N F3`) and `inv-referent-agnostic`
+/// (the engine reading argument *structure*). The settled mechanism (`ch-shape-anno`): an
+/// oracle writes a mini-argparse in our **constrained** oracle-contract dialect (NOT
+/// arbitrary sh) and inline-annotates the operand's kind (`pkg : com.debian.apt.Package =
+/// "$1"`); the engine FLOW-TRACKS the book's constant *through that argparse* to the
+/// annotation — zero argparse in the engine. Unbuilt here: no value-plane (`16C`) +
+/// detached oracle bodies (`seam-interproc`). Until then this crude inference stands and
+/// every cell it mints is identity-taint-suspect (`tc-taint`, `notes/19G`).
+///
 /// Resolve the post-verb words to the entity a [`FactKey`] needs, or `None` if the
 /// operand shape is ⊤ (unknown) ⇒ the caller emits `Opaque`. The entity boundary's
 /// `inv-top-reject` enforcement, concentrated in one reviewable + unit-testable place
