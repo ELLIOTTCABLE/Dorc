@@ -14,14 +14,18 @@
 //! status ← the `establishes` contract (an idempotent establish exits 0 when
 //! converged, so rc-0 is free); stdout/stderr ← NOTHING.
 //!
-//! THE A/B CONTRAST this matrix makes concrete (the thing to build against): a
-//! CONSUMED *status* is fine — its default is vouched — so every `pins_*status*`
-//! passes even though the rc is read. A CONSUMED *stdout* is NOT fine — its empty
-//! default is unvouched — so every `spec_*stdout*` *should* be "not replaced" but
-//! currently IS replaced (no backward observable-liveness gate exists yet). The
-//! implementor's job is a gate that fires on consumed stdout/stderr/fd but NOT on
-//! status. (Whether status truly needs no gate, or is just establish-discharged —
-//! see 16F §6 / the prompt — is exactly what these cases let you re-derive.)
+//! THE A/B CONTRAST this matrix makes concrete: a CONSUMED *stdout*/*stderr* is NOT
+//! fine — its empty default is unvouched — so every `spec_*stdout*` is "not replaced"
+//! (the backward observable-liveness gate landed, 16H/16J). A CONSUMED *status* is
+//! REFINED (F1/`19D`): vouched (replaceable) for an errexit/post-condition consumer,
+//! but NOT for a branch consumer whose rc is UNDECLARED — an `if`/`elif` guard
+//! (`f1_status_consumed_by_if_guard_blocks_replacement`, unconditional render floor) or
+//! a `&&`/`||` left operand with no declared rc
+//! (`andor_left_operand_undeclared_rc_runs_kfail_perform`, the `kFAIL-perform` floor),
+//! where eliding to a fabricated rc-0 would change which branch/operand runs. A
+//! *declared* rc relaxes the `&&`/`||` case (the value-preserving stand-in reproduces
+//! the exact status). So status is establish-discharged ONLY when its rc is genuinely
+//! vouched (errexit on a converged establish) or declared.
 //!
 //! NOTE — these cases deliberately omit `set -e` to isolate the observable
 //! dimension. `set -e` is itself un-oracled ⇒ it independently *poisons* downstream
@@ -236,24 +240,69 @@ fn f1_status_consumed_by_errexit_stays_vouched() {
 }
 
 #[test]
-fn f1_andand_left_operand_stays_replaced_tc_mint_gap() {
-    // The DEFERRED `tc-mint` gap (documented, not a bug): a `&&`/`||` LEFT operand is
-    // an AMBIGUOUS status consumer. `install && start` is a POST-condition use ("did my
-    // install succeed? then start") — rc-0 vouched, stays replaceable — which the two
-    // `pins_converged_status_via_*` above deliberately pin. But `cmd || install` (cmd a
-    // guard) is a PRE-condition use that SHOULD block, structurally identical at the
-    // CFG. The stopgap leaves `&&`/`||` UNMARKED (only unambiguous `if`/`elif` guards
-    // block), so this stays replaced. Disambiguating needs the F3 co-reference judgment
-    // (does the consumed status gate a *different* branch's body?) — the Half-B work.
-    // This test PINS THE GAP so it is visible, not silently widened (`notes/198`).
+fn andand_left_operand_declared_rc0_relaxes_and_replaces() {
+    // `19D` (the former `tc-mint` gap, now RESOLVED): a `&&`/`||` left operand IS marked
+    // (`AndOrStatus`), so the caller's rc-conditional collapse decides — no
+    // post-condition-vs-guard guess. Here `install && start` is converged with a
+    // DECLARED rc 0 (`plan_for` injects it): the `AndOrStatus` block RELAXES (the
+    // value-preserving stand-in `true` reproduces the exact rc-0, so `start` decides
+    // identically — it would run after a real rc-0 install), and the install stays
+    // `Replace`d. CONTRAST `andor_left_operand_undeclared_rc_runs_kfail_perform` below
+    // (no declared rc ⇒ block ⇒ run) — the *declared rc*, not a structural guess, is
+    // what splits the post-condition (keep) from the under-execute (run).
     let plan = plan_for(
         "apt-get install -y nginx && systemctl enable nginx\n",
         &[("package", "nginx")],
     );
     assert!(
         is_replaced(&plan, "install -y nginx"),
-        "TODO(tc-mint): `&&`/`||` left operand left unmarked by the F1 stopgap (post-condition \
-         pin kept); the guard-on-the-left case is the deferred Half-B gap"
+        "declared rc-0 relaxes the AndOrStatus block ⇒ the conforming post-condition \
+         `install && start` stays replaced (value-preserving rc-0 stand-in)"
+    );
+}
+
+#[test]
+fn andor_left_operand_undeclared_rc_runs_kfail_perform() {
+    // `19D` THE DEFAULT-PATH FIX (the prompt's required assertion, the un-masking of the
+    // fabricated-rc-0 under-execute): a converged establish consumed as a `&&`/`||` LEFT
+    // operand with NO declared rc must **Run** — never `Replace`/`Omit`. With no rc the
+    // value-preserving stand-in would default to `true` (rc 0), a fabricated success;
+    // for a non-conforming establish (`useradd` exits 9 converged) that suppresses the
+    // `|| fallback` — the priority-1 `kFAIL-perform` under-execute the round-19
+    // adversarial pass proved. Here `apt-get install` is converged but its rc is
+    // UNDECLARED (verdict-only): `AndOrStatus` consumed + rc None ⇒ the license is
+    // refused ⇒ Run. The dual of `andand_left_operand_declared_rc0_relaxes_and_replaces`
+    // — same construct, opposite disposition, split ONLY by whether the rc is declared.
+    let mut i = Interner::default();
+    let idx = package_index(&mut i);
+    let installed = SelectorId(i.intern("installed"));
+    let nginx = FactKey {
+        kind: KindId(i.intern("package")),
+        entity: EntityRef::Operand(OpaqueToken(i.intern("nginx"))),
+        selector: installed,
+    };
+    let src = "apt-get install -y nginx || systemctl start nginx\n";
+    let parsed = dorc_syntax::parse(src);
+    let cfg = dorc_analysis::cfg::build(&parsed.value).value;
+    let classes = dorc_analysis::effect::classify(&cfg, &parsed.value, &idx, &mut i);
+    // Converged, but NO rc declared (the real CLI/hostsim default after `19D` — an
+    // un-injected rc is ⊤, never a fabricated 0).
+    let plan = build_plan(src, &parsed.value, &cfg, &classes, move |f| {
+        if f == nginx {
+            Observed::verdict_only(Verdict::Converged)
+        } else {
+            Observed::verdict_only(Verdict::Diverged)
+        }
+    });
+    assert!(
+        !is_replaced(&plan, "install -y nginx"),
+        "undeclared-rc `&&`/`||` left operand must NOT be replaced (kFAIL-perform floor)"
+    );
+    assert!(
+        plan.steps.iter().any(|s| s.sh.contains("install -y nginx")
+            && matches!(s.disposition, Disposition::Run)),
+        "its disposition is Run — a converged establish whose status is branch-consumed \
+         but whose rc is undeclared runs (never a fabricated-rc-0 elision)"
     );
 }
 
@@ -377,40 +426,35 @@ fn spec_converged_set_e_does_not_poison_replacement() {
 
 // ===========================================================================
 // NON-CONFORMING ESTABLISH as an `&&`/`||` LEFT operand — STATUS, converged-FAILURE.
-// The DISPOSITION-LEVEL pin the round-19 adversarial pass proved is observable
-// in-spike (correcting this file's former "un-modellable, no test" note).
+// The round-19 adversarial pass's proven `kFAIL-perform` under-execute, now FIXED at
+// two layers (`19C` the fold + value-preserving substitution; `19D` the rc-conditional
+// `AndOrStatus` gate + the un-fabricated rc default).
 //
 // A NON-conforming establish exits NON-ZERO when its fact already holds (`useradd x`
-// rc 9, `mkdir d` w/o `-p`, `ln` w/o `-f`, `docker network create`). Declared a plain
-// establish and consumed as a `||` LEFT operand, when converged it is wrongly minted a
-// `ReplaceLicense` ⇒ `Disposition::Replace` ⇒ substituted by `:` (rc 0). The fallback
-// is then wrongly skipped: `useradd deploy || mkdir /x`, user already present ⇒ the
-// converged `useradd` becomes `:` (rc 0) ⇒ the `||` never fires ⇒ `mkdir` is skipped —
-// a priority-1 `kFAIL-perform` UNDER-EXECUTE. The engine replaces it because the
-// establishes-contract's "converged ⇒ rc 0" vouch is FALSE for a non-conforming
-// establish, and the engine cannot tell conforming from non-conforming (no rc-bridge,
-// `inc-7`-deferred — the human contract-design fork; NOT fixed here).
+// rc 9, `mkdir d` w/o `-p`, `ln` w/o `-f`, `docker network create`). Consumed as a `||`
+// LEFT operand and converged, the OLD engine wrongly `Replace`d it by `:` (rc 0), so
+// `useradd deploy || mkdir /x` (user present) became `: || mkdir` ⇒ the `||` never
+// fired ⇒ `mkdir` was skipped — the under-execute. Two independent failures fed it:
+//   1. the value-preserving substitution did not exist (the stand-in was a flat rc-0
+//      `:`), and
+//   2. the engine left `&&`/`||` status UNMARKED, and the CLI/hostsim FABRICATED a
+//      conforming `rc=0` for any converged fact.
+// `19C` fixed (1): the stand-in is now the EXACT observed rc (`(exit 9)`), so a
+// *declared* rc-9 keeps `mkdir` live. `19D` fixes (2): the engine marks `&&`/`||`
+// status (`AndOrStatus`) and the caller refuses the license when the rc is UNDECLARED
+// (no more fabricated rc-0) ⇒ the leaf runs. The two halves the engine could not
+// distinguish are now split by the *declared rc*, not a structural guess:
+//   * DECLARED rc (the oracle/build-2 produces it): the fold + exact-rc substitution
+//     decide — `install && start`[rc 0] stays replaced; `useradd || mkdir`[rc 9] keeps
+//     `mkdir` live. (`andand_left_operand_declared_rc0_relaxes_and_replaces` /
+//     `nonconforming_establish_andor_left_operand_substitutes_exact_rc`.)
+//   * UNDECLARED rc (the default): block ⇒ Run (the `kFAIL-perform` floor —
+//     `andor_left_operand_undeclared_rc_runs_kfail_perform`).
+// `useradd <name>` fits the (provider, verb) model: verb=`<name>` ⇒ a Singleton
+// `user#present` cell (the baked username is a fixture wart, not load-bearing).
 //
-// Why this corrects the old "un-modellable" note: that note conflated "the spike never
-// RUNS the command (so the real rc≠0 never appears)" with "the unsound disposition is
-// unobservable". The DISPOSITION is observable WITHOUT an executor — `prove_replaceable`
-// mints the license at plan time. And `useradd <name>` DOES fit the (provider, verb)
-// model: verb=`<name>` ⇒ a Singleton `user#present` cell (the username baked as the
-// verb is a fixture wart, not load-bearing — the bug is the `||`-left disposition).
-//
-// CONTRAST, not contradiction (the two halves the engine cannot distinguish):
-// `pins_converged_status_via_oror_replaced` / `f1_andand_left_operand_stays_replaced_
-// tc_mint_gap` pin a CONFORMING establish (`apt-get install`, rc 0 when converged) as
-// replaceable — CORRECT there. This is the rc≠0 half: same `Replace`, but UNSOUND.
-// Both flow through the same unmarked-`&&`/`||` path (the `tc-mint` gap, `notes/198`
-// §1.3); disambiguating them is the deferred Half-B / F3 / `inc-7` work.
-//
-// `#[should_panic]` is the xfail: the test ASSERTS the SAFE behavior (the non-conforming
-// establish is NOT replaced), which the engine currently VIOLATES ⇒ the assert panics ⇒
-// the test passes as a pinned-defect. The day the engine blocks it (an rc-bridge / the
-// `tc-mint` resolution), the panic stops and `should_panic` fails LOUDLY (XPASS) —
-// promote the case then. (`expected = …` pins the intended assertion, so an unrelated
-// panic does not silently satisfy it.)
+// The case below keeps the DECLARED-rc-9 opt-in path (the build-2 contract's target):
+// the converged `useradd` is replaced by its EXACT `(exit 9)`, so `mkdir` stays live.
 // ===========================================================================
 
 /// Run the pipeline for the non-conforming-establish `||` cell. `useradd deploy` is a

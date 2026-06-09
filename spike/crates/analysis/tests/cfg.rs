@@ -1067,17 +1067,38 @@ fn consumed_errexit_does_not_mark_status() {
 }
 
 #[test]
-fn consumed_andand_left_operand_does_not_mark_status() {
-    // The deferred `tc-mint` gap (pinned at the engine layer): a `&&`/`||` left operand
-    // is ambiguous (post-condition establish vs guard), so the F1 stopgap leaves it
-    // UNMARKED — only unambiguous `if`/`elif` conditions mark status. (Were this to
-    // change, the matrix's post-condition `install && start` pin would also move.)
+fn consumed_andand_left_operand_marks_andor_status() {
+    // `19D` (generalised from the F1 `if`/`elif`-only stopgap): a `&&`/`||` left operand
+    // IS branch-consumed, so the engine marks it `Observable::AndOrStatus` (the
+    // rc-relaxable variant — distinct from the `if`/`elif` `Status` render floor). The
+    // phased caller collapses it rc-conditionally (`prove_replaceable`): undeclared rc ⇒
+    // block (the `useradd[9] || mkdir` under-execute floor), declared rc ⇒ relax
+    // (`install && start`'s rc-0 post-condition stays replaceable). Pins the engine-side
+    // fact; the rc-conditional collapse is in `plan`'s `observable_matrix.rs`.
     let c = consumed_of(
         "apt-get install -y nginx && systemctl enable nginx\n",
         "apt-get",
     );
     assert!(
+        c.contains(&Observable::AndOrStatus),
+        "a `&&`/`||` left operand's status is branch-consumed (marked AndOrStatus, 19D)"
+    );
+    // It is the rc-relaxable variant, NOT the `if`/`elif` unconditional-block `Status`.
+    assert!(
         !c.contains(&Observable::Status),
-        "TODO(tc-mint): `&&`/`||` left operand is left unmarked by the F1 stopgap"
+        "the `&&`/`||` variant is AndOrStatus, not the `if`/`elif` render-floor Status"
+    );
+}
+
+#[test]
+fn consumed_oror_left_operand_marks_andor_status() {
+    // The `||` dual (the under-execute side): `useradd deploy || mkdir` — the left
+    // operand's status gates the `mkdir` fallback, so it is marked `AndOrStatus`. With
+    // no declared rc the caller blocks ⇒ `useradd` runs ⇒ the `|| mkdir` fallback runs
+    // (`19D` — the proven `kFAIL-perform` fix).
+    let c = consumed_of("useradd deploy || mkdir /srv/app\n", "useradd");
+    assert!(
+        c.contains(&Observable::AndOrStatus),
+        "a `||` left operand's status is branch-consumed (marked AndOrStatus, 19D)"
     );
 }
