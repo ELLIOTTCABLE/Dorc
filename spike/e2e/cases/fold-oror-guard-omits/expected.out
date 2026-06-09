@@ -12,9 +12,11 @@ package__check 'nginx'
 
 # fold-oror-guard-omits (round-19, the canonical idempotency idiom): a read-only
 # guard short-circuits the mutator. `command -v nginx` (rc 0 when nginx is on PATH)
-# proves the `|| apt-get install` branch DEAD. The apply fold reads the guard's known
-# rc 0 and OMITS the install, collapsing the whole line to its value-preserving
-# stand-in `true` (the guard's rc). Nothing runs (expected.ran is empty). The DESIGN
+# proves the `|| apt-get install` branch DEAD — but ONLY when the guard's rc is
+# DECLARED (probe-results: `rc=0`). After 19D an un-injected rc is ⊤ (no fold, the
+# kFAIL-perform floor), so this case exercises the declared-rc opt-in: the fold reads
+# the guard's known rc 0 and OMITS the install, collapsing the line to its
+# value-preserving stand-in `true`. Nothing runs (expected.ran is empty). The DESIGN
 # `dpkg -s nginx || apt-get install nginx` idiom, with `command -v` as the guard.
 # command -v nginx >/dev/null 2>&1 || apt-get install -y nginx   # dorc: elided (already converged / dead branch)
 true
