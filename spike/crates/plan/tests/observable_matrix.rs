@@ -168,6 +168,77 @@ fn pins_converged_status_via_oror_replaced() {
 }
 
 // ===========================================================================
+// F1 — the BRANCH-vs-ERREXIT status A/B contrast (`notes/195` F1, round-19 stopgap).
+// The round-16 model decided "no status gate" (rc-0 vouched by the establishes-
+// contract). That is sound for a POST-condition / errexit consumer but UNSOUND for a
+// guard / PRE-condition consumer (a *different branch* runs on the rc), where eliding
+// the converged command to `:` (rc 0) destroys the branch decision — a `kFAIL-perform`
+// under-execute. The fix: **branch**-consumed status (the test of an `if`/`elif`)
+// blocks the license; **errexit**-consumed status (`set -e`) stays vouched. These two
+// cases ARE that contrast — same converged install, opposite disposition by locus.
+// ===========================================================================
+
+#[test]
+fn f1_status_consumed_by_if_guard_blocks_replacement() {
+    // A: observable=STATUS, consumed=YES by an `if` GUARD (a different branch runs on
+    // the rc), converged. `apt-get install` used AS the guard is a pre-condition
+    // consumer: eliding it to `:` would force the branch (and orphan `then`). The
+    // status is branch-consumed ⇒ it MUST block ⇒ the guard runs (the safe floor; the
+    // value-recovering fix is Half-B subsumption). HOST: nginx installed (converged).
+    // (`notes/195` F1: this reproduces with ONLY the package oracle, install-as-guard
+    // — no new oracle needed; it is the same wrong-classification as `if ! command -v`.)
+    let plan = plan_for(
+        "if apt-get install -y nginx; then echo done; fi\n",
+        &[("package", "nginx")],
+    );
+    assert!(
+        !is_replaced(&plan, "install -y nginx"),
+        "status consumed by an if-guard must block the license (the guard runs, not elides)"
+    );
+}
+
+#[test]
+fn f1_status_consumed_by_errexit_stays_vouched() {
+    // B: observable=STATUS, consumed=YES by ERREXIT (`set -e`), converged. This is the
+    // contrast to A: errexit-status IS the establishes-contract's domain (a converged
+    // idempotent establish exits 0, so `set -e` does not abort), so it stays vouched ⇒
+    // the install is still replaced. Gating *all* consumed status (the over-gate the
+    // 16G "load-bearing" tension warned of — under `set -e` every status is consumed)
+    // would never elide anything; the resolution is to gate BRANCH-status only. HOST:
+    // nginx installed. (`set -e` is target-state-pure — fs-4 — so it does not poison.)
+    let plan = plan_for(
+        "set -e\napt-get install -y nginx\n",
+        &[("package", "nginx")],
+    );
+    assert!(
+        is_replaced(&plan, "install -y nginx"),
+        "errexit-consumed status stays vouched by the establishes-contract ⇒ still replaced"
+    );
+}
+
+#[test]
+fn f1_andand_left_operand_stays_replaced_tc_mint_gap() {
+    // The DEFERRED `tc-mint` gap (documented, not a bug): a `&&`/`||` LEFT operand is
+    // an AMBIGUOUS status consumer. `install && start` is a POST-condition use ("did my
+    // install succeed? then start") — rc-0 vouched, stays replaceable — which the two
+    // `pins_converged_status_via_*` above deliberately pin. But `cmd || install` (cmd a
+    // guard) is a PRE-condition use that SHOULD block, structurally identical at the
+    // CFG. The stopgap leaves `&&`/`||` UNMARKED (only unambiguous `if`/`elif` guards
+    // block), so this stays replaced. Disambiguating needs the F3 co-reference judgment
+    // (does the consumed status gate a *different* branch's body?) — the Half-B work.
+    // This test PINS THE GAP so it is visible, not silently widened (`notes/198`).
+    let plan = plan_for(
+        "apt-get install -y nginx && systemctl enable nginx\n",
+        &[("package", "nginx")],
+    );
+    assert!(
+        is_replaced(&plan, "install -y nginx"),
+        "TODO(tc-mint): `&&`/`||` left operand left unmarked by the F1 stopgap (post-condition \
+         pin kept); the guard-on-the-left case is the deferred Half-B gap"
+    );
+}
+
+// ===========================================================================
 // SPECS — the gate's must-run cases: a consumed UNVOUCHED output (stdout/stderr/fd)
 // ⇒ run. Formerly the #[ignore]d build-against targets; all pass now the gate has
 // landed. (Only the HOLE#1 subst-in-redir-target spec below stays #[ignore]d.)

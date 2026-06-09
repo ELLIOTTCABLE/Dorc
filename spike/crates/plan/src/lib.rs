@@ -179,11 +179,19 @@ impl ReplaceLicense {
     /// 2. the fact is [`Grade::Must`] (oracle-declared; a `May` hint never licenses);
     /// 3. the probe verdict folds to [`Resolved::Replaceable`] — a definite
     ///    `Converged`; `Diverged` and (via [`Bias`]) `Unknown` do not.
-    /// 4. no UNVOUCHED observable (stdout/stderr) is consumed downstream. The
-    ///    consumption is the engine's un-collapsed `May<Powerset<Observable>>` fact
-    ///    (`inv-superposition`, note 16J); per `inv-must-may` a `May` value can only
-    ///    block. The stub defaults stdout/stderr to empty, vouched by nothing (16F
-    ///    §3); a consumed one ⇒ run (no in-spike bridge).
+    /// 4. no UNVOUCHED observable is consumed downstream. The consumption is the
+    ///    engine's un-collapsed `May<Powerset<Observable>>` fact (`inv-superposition`,
+    ///    note 16J); per `inv-must-may` a `May` value can only block. The unvouched
+    ///    set is:
+    ///    * `Stdout`/`Stderr` — the stub defaults them to empty, vouched by nothing
+    ///      (16F §3); a consumed one ⇒ run (no in-spike bridge).
+    ///    * `Status` — present in the consumption set ONLY when **branch**-consumed
+    ///      (F1 / `notes/195`): a command gating a branch (`if`/`while`/`&&`/`||`/`!`)
+    ///      is a probe of world-state, so the stub's rc-0 default is unvouched and
+    ///      eliding it destroys the branch decision (a `kFAIL-perform` under-execute).
+    ///      Errexit-consumed status stays vouched (the establishes-contract's domain)
+    ///      by simply never entering the set — the engine marks `Status` only in a
+    ///      condition region (`cfg::lower_condition_region`), never the errexit pass.
     ///
     /// Generic over the phase `P` (`inv-superposition`): the engine never bakes a
     /// phase; the caller argues it. `build_plan` passes the verdict's own provenance
@@ -204,15 +212,21 @@ impl ReplaceLicense {
         if verdict.resolve() != Resolved::Replaceable {
             return None;
         }
-        // No UNVOUCHED observable (stdout/stderr) consumed downstream. The fact
-        // arrives un-collapsed as a `May` (over-approximate consumption): per
-        // `inv-must-may` a `May` value can only BLOCK a license, never grant one — a
-        // may-consumed stdout/stderr forbids the `true`-stub's empty default (16F §3
-        // / note 16J; no in-spike bridge discharges it). The block is sound in BOTH
-        // phases; only what a blocked leaf's disposition *becomes* is phase-keyed —
-        // the caller's collapse (`inv-superposition`), not here.
+        // No UNVOUCHED observable consumed downstream. The fact arrives un-collapsed
+        // as a `May` (over-approximate consumption): per `inv-must-may` a `May` value
+        // can only BLOCK a license, never grant one. The unvouched set forbidding the
+        // `true`-stub's defaults (16F §3 / note 16J; no in-spike bridge discharges
+        // them): `Stdout`/`Stderr` (empty default vouched by nothing) and a
+        // **branch**-consumed `Status` (rc-0 default unvouched for a guard — F1 /
+        // `notes/195`; the engine puts `Status` in the set ONLY for a branch context,
+        // so its mere presence here means branch-consumed, never errexit-consumed).
+        // The block is sound in BOTH phases; only what a blocked leaf's disposition
+        // *becomes* is phase-keyed — the caller's collapse (`inv-superposition`).
         let May(consumed) = &consumed;
-        if consumed.contains(&Observable::Stdout) || consumed.contains(&Observable::Stderr) {
+        if consumed.contains(&Observable::Stdout)
+            || consumed.contains(&Observable::Stderr)
+            || consumed.contains(&Observable::Status)
+        {
             return None;
         }
         Some(ReplaceLicense {

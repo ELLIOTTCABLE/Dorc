@@ -1005,3 +1005,79 @@ fn consumed_enclosing_subshell_devnull_stays_quiet() {
             .is_empty()
     );
 }
+
+// --- F1 branch-status (round-19, `notes/195`): the engine marks `Observable::Status`
+// ONLY in an unambiguous-guard condition region (`if`/`elif`), so the phased caller
+// can block eliding a guard. The LOCUS is the whole fix — errexit and `&&`/`||` must
+// NOT mark it. These pin the engine-side fact directly (the `plan` collapse is in
+// `observable_matrix.rs`). ---
+
+#[test]
+fn consumed_if_guard_marks_status() {
+    // The command in an `if` condition is a guard (a different branch runs on its rc);
+    // its status is branch-consumed ⇒ `Status` in the set. The `then`-body command is
+    // NOT in the condition region ⇒ stays quiet.
+    let guard = consumed_of(
+        "if apt-get install -y nginx; then systemctl start nginx; fi\n",
+        "apt-get",
+    );
+    assert!(
+        guard.contains(&Observable::Status),
+        "an if-condition command's status is branch-consumed"
+    );
+    // The then-body command (distinct command word so the helper finds IT, not the
+    // guard) is not in the condition region ⇒ no branch-status.
+    let body = consumed_of(
+        "if apt-get install -y nginx; then systemctl start nginx; fi\n",
+        "systemctl",
+    );
+    assert!(
+        !body.contains(&Observable::Status),
+        "the then-body command is not a guard ⇒ no branch-status"
+    );
+}
+
+#[test]
+fn consumed_negated_if_guard_marks_status() {
+    // The Dorc idiom `if ! command -v X; then …` — the `!`-negated pipeline sits inside
+    // the `if` condition, so its command's status is branch-consumed (the F1 headline
+    // shape). `echo` is target-state-pure but the consumption fact is locus-based, not
+    // effect-based, so it is still marked.
+    let c = consumed_of(
+        "if ! echo probe; then apt-get install -y nginx; fi\n",
+        "echo",
+    );
+    assert!(
+        c.contains(&Observable::Status),
+        "a negated if-guard command's status is branch-consumed"
+    );
+}
+
+#[test]
+fn consumed_errexit_does_not_mark_status() {
+    // The A/B contrast at the engine layer: `set -e` consumes status (errexit reads
+    // every rc) but that is the establishes-contract's domain, so the engine must NOT
+    // put `Status` in the set — only a condition region does. Over-marking here would
+    // re-break "a converged install under `set -e` still elides".
+    let c = consumed_of("set -e\napt-get install -y nginx\n", "apt-get");
+    assert!(
+        !c.contains(&Observable::Status),
+        "errexit-consumed status is NOT marked (stays vouched)"
+    );
+}
+
+#[test]
+fn consumed_andand_left_operand_does_not_mark_status() {
+    // The deferred `tc-mint` gap (pinned at the engine layer): a `&&`/`||` left operand
+    // is ambiguous (post-condition establish vs guard), so the F1 stopgap leaves it
+    // UNMARKED — only unambiguous `if`/`elif` conditions mark status. (Were this to
+    // change, the matrix's post-condition `install && start` pin would also move.)
+    let c = consumed_of(
+        "apt-get install -y nginx && systemctl enable nginx\n",
+        "apt-get",
+    );
+    assert!(
+        !c.contains(&Observable::Status),
+        "TODO(tc-mint): `&&`/`||` left operand is left unmarked by the F1 stopgap"
+    );
+}

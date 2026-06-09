@@ -93,13 +93,26 @@ pub enum CfgNodeKind {
 }
 
 /// An observable a downstream consumer can read off a leaf having run (16F / note
-/// 16J). The CFG records, per leaf, which **unvouched output** observables
-/// (`Stdout`/`Stderr`) the leaf's *context* consumes — an **un-collapsed** fact
-/// (`inv-superposition`): the engine names *what is consumed*; the phased caller
-/// (`plan`) collapses it into a run/replace decision, never the engine. `Effect`
-/// (vouched by convergence) and `Status` (vouched by the `establishes` contract)
-/// are vouched elsewhere, so they never enter the consumption set — but they are
-/// named here so the vouching model is legible in the type (16D spotlight).
+/// 16J). The CFG records, per leaf, which observables the leaf's *context*
+/// consumes in a way the `true`-stub's default would NOT vouch — an **un-collapsed**
+/// fact (`inv-superposition`): the engine names *what is consumed*; the phased
+/// caller (`plan`) collapses it into a run/replace decision, never the engine.
+///
+/// Vouching (the `true`-stub defaults every observable; a default is sound only if
+/// vouched — 16F / the observable-matrix model):
+/// * `Effect` ← convergence (the forward gate). Never enters the set.
+/// * `Stdout`/`Stderr` ← NOTHING, so a consumed one always enters the set and
+///   blocks (16F §3).
+/// * `Status` ← context-dependent (F1 / `notes/195`, the round-19 fix): the rc-0
+///   default is vouched by the `establishes` contract for a **post-condition**
+///   consumer (`install && start` — "did my mutation succeed?", and `set -e`'s
+///   errexit), so errexit-/sequence-consumed status does NOT enter the set. It is
+///   **un**vouched for a **guard / pre-condition** consumer (`if ! command -v
+///   nginx` — "is X already true?", a different branch runs on the answer), where
+///   the leaf is a *probe of world-state*, not an establish — so **branch**-consumed
+///   status (the test of an `if`/`while`, a `&&`/`||` left operand, a `!`-negated
+///   pipeline) DOES enter the set and blocks the license. The locus is the
+///   distinction (`lower_condition_region` marks it); the errexit pass never does.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Observable {
     Effect,
@@ -641,7 +654,18 @@ impl<'a> Builder<'a> {
         right: AstId,
         entry_pred: CfgNodeId,
     ) -> CfgNodeId {
-        let left_exit = self.lower_condition_region(left, entry_pred);
+        // TODO(tc-mint): a `&&`/`||` left operand is an AMBIGUOUS status consumer — a
+        // post-condition establish (`install && start`, rc-0 vouched, stays
+        // replaceable — the observable-matrix pins this) vs a pre-condition guard
+        // (`cmd || install`, should block like an `if`-guard, F1). The safe default
+        // for an ambiguous case is to BLOCK, but blocking here would regress the
+        // matrix's deliberate post-condition pin; disambiguating requires the F3
+        // co-reference judgment (does the consumed status gate a *different* branch's
+        // body?), which is the Half-B work. So the stopgap leaves `&&`/`||` UNMARKED
+        // (`mark_status=false`) and the residual is a flagged `tc-mint` gap — see
+        // `Research/notes/198`. (`if`/`elif` conditions, the unambiguous guards, ARE
+        // marked.)
+        let left_exit = self.lower_condition_region(left, entry_pred, false);
 
         let right_exit = self.lower_node(right, left_exit);
         // Hang the join's provenance on the left operand (a reasonable locator).
@@ -684,8 +708,11 @@ impl<'a> Builder<'a> {
     ) {
         // The WHOLE condition is errexit-exempt, not just its tail (find-2): every
         // command/redir in the test region is cleared of fallibility (`[RAN]`
-        // `if false; true; then …` runs the body, no abort; note 166).
-        let cond_exit = self.lower_condition_region(cond, entry_pred);
+        // `if false; true; then …` runs the body, no abort; note 166). It is also an
+        // UNAMBIGUOUS guard — a different branch runs on the rc — so its commands'
+        // status is branch-consumed (`mark_status=true`): a converged guard must run,
+        // not elide (F1 / `notes/195`).
+        let cond_exit = self.lower_condition_region(cond, entry_pred, true);
 
         // Success path: then_body.
         let then_exit = self.lower_node(then_body, cond_exit);
@@ -1048,13 +1075,41 @@ impl<'a> Builder<'a> {
     /// operands of a compound test (find-3) — both of which the old tail-only
     /// `mark_condition_context` missed when the region exit was a `Merge`.
     ///
-    /// Implemented as a node-range clear: CFG nodes are arena-allocated in walk
+    /// `mark_status` additionally marks every command in the region as
+    /// **branch-consuming its status** (F1 / `notes/195` — the round-19 stopgap): a
+    /// command whose exit status *gates a different branch's body* is a *probe of
+    /// world-state*, so the `true`-stub's rc-0 default is unvouched and must NOT
+    /// license eliding it (a converged-but-elided guard destroys the branch decision
+    /// — a `kFAIL-perform` under-execute). It is `true` ONLY for an unambiguous guard
+    /// — the test of an `if`/`elif` (and `while`/`until`, which are ⊤-rejected today,
+    /// so vacuous) — where a *different* branch runs on the rc. It is `false` for a
+    /// `&&`/`||` left operand, which is **ambiguous**: a post-condition establish
+    /// (`install && start` — rc-0 vouched by the establishes-contract, stays
+    /// replaceable; the matrix pins this) vs a guard (`cmd || install` — pre-condition,
+    /// should block). Disambiguating that is the F1↔Half-B `tc-mint` call, deferred
+    /// (see the `TODO(tc-mint)` at the call site). This locus is also what separates
+    /// branch-status from errexit-status: the errexit pass never marks
+    /// `Observable::Status`, so errexit-consumed status stays vouched.
+    ///
+    /// Implemented as a node-range mark/clear: CFG nodes are arena-allocated in walk
     /// order, so the half-open range `[before, after)` is exactly the region's
     /// nodes (`inv-determinism` makes this range stable).
-    fn lower_condition_region(&mut self, cond: AstId, entry_pred: CfgNodeId) -> CfgNodeId {
+    fn lower_condition_region(
+        &mut self,
+        cond: AstId,
+        entry_pred: CfgNodeId,
+        mark_status: bool,
+    ) -> CfgNodeId {
         let first = self.nodes.len();
         let exit = self.lower_node(cond, entry_pred);
         self.clear_fallible_range(first, self.nodes.len());
+        if mark_status {
+            self.mark_consumed_range(
+                first,
+                self.nodes.len(),
+                &Powerset::singleton(Observable::Status),
+            );
+        }
         exit
     }
 
