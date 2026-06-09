@@ -22,7 +22,7 @@
 use std::collections::BTreeSet;
 
 use dorc_analysis::effect::FactKey;
-use dorc_core::{Observed, Phase, Verdict};
+use dorc_core::{Observable, Phase, Verdict};
 
 /// A tiny deterministic linear-congruential PRNG — the host's seeded
 /// nondeterminism. Hand-rolled (no `rand` dependency): the DST host must be
@@ -121,7 +121,7 @@ impl Host {
         }
     }
 
-    /// The full read-only [`Observed`] for a fact — the concrete `observe` the plan
+    /// The full read-only [`Observable`] for a fact — the concrete `observe` the plan
     /// stage's fold + value-preserving substitution inject (`19B` build-1). The host
     /// is a plain set-membership oracle: it answers *whether* a fact holds, **not** the
     /// exact exit status a tool yields when re-run converged — that is the (build-2)
@@ -133,12 +133,12 @@ impl Host {
     /// a confident *wrong* value for a non-conforming establish (`useradd` exits 9 when
     /// converged), letting the fold short-circuit a `|| fallback` dead — a priority-1
     /// under-execute (`inv-kfail`). A test needing an exact rc injects its own
-    /// `Observed { rc: Some(_), .. }` (the unit matrix's non-conforming case does);
+    /// `Observable { rc: Some(_), .. }` (the unit matrix's non-conforming case does);
     /// the host never fabricates one. (`an-host-as-adversary`/`tc-reliability`: a
     /// modeled host states membership, not a tool's private rc convention.)
     #[must_use]
-    pub fn observe(&self, fact: FactKey) -> Observed {
-        Observed::verdict_only(self.verdict(fact))
+    pub fn observe(&self, fact: FactKey) -> Observable {
+        Observable::verdict_only(self.verdict(fact))
     }
 
     /// Run one op in `phase`. A mutating op (`Establish`/`Kill`) in [`Phase::Probe`]
@@ -400,7 +400,7 @@ mod tests {
                 if probe.checks_fact(f) {
                     host.observe(f)
                 } else {
-                    Observed::verdict_only(Verdict::Unknown)
+                    Observable::verdict_only(Verdict::Unknown)
                 }
             };
             // (3) compile the eliding apply from the simulated probe results.
@@ -471,7 +471,7 @@ mod tests {
             if probe.checks_fact(f) {
                 host.observe(f)
             } else {
-                Observed::verdict_only(Verdict::Unknown)
+                Observable::verdict_only(Verdict::Unknown)
             }
         };
         let apply = build_plan(src, &parsed.value, &cfg, &classes, observe);

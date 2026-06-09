@@ -10,9 +10,10 @@
 
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
 
-use dorc_analysis::cfg::{build, Cfg, CfgNodeId, CfgNodeKind, Observable};
+use dorc_analysis::cfg::{build, Cfg, CfgNodeId, CfgNodeKind};
 use dorc_analysis::lattice::Powerset;
 use dorc_analysis::solve::Graph;
+use dorc_core::Channel;
 use dorc_syntax::parse;
 
 const PI_WEBHOST: &str = include_str!(concat!(
@@ -918,7 +919,7 @@ fn assign_command_node(cfg: &Cfg, src: &str, name: &str) -> Option<CfgNodeId> {
 // ===========================================================================
 
 /// The consumption set of the (sole) command whose command-word literal is `lit`.
-fn consumed_of(src: &str, lit: &str) -> Powerset<Observable> {
+fn consumed_of(src: &str, lit: &str) -> Powerset<Channel> {
     let cfg = cfg_of(src);
     let id = require(first_command_with_literal(&cfg, src, lit), "command exists");
     cfg.consumed_observables(id).clone()
@@ -936,16 +937,16 @@ fn consumed_lone_command_is_quiet() {
 fn consumed_own_stdout_redirect() {
     // The leaf's OWN `> file` captures fd 1 ⇒ Stdout consumed.
     let c = consumed_of("apt-get install -y nginx > /etc/marker\n", "apt-get");
-    assert!(c.contains(&Observable::Stdout));
-    assert!(!c.contains(&Observable::Stderr));
+    assert!(c.contains(&Channel::Stdout));
+    assert!(!c.contains(&Channel::Stderr));
 }
 
 #[test]
 fn consumed_own_stderr_redirect() {
     // `2> file` captures fd 2 ⇒ Stderr consumed (fd 1 untouched).
     let c = consumed_of("apt-get install -y nginx 2> /tmp/err\n", "apt-get");
-    assert!(c.contains(&Observable::Stderr));
-    assert!(!c.contains(&Observable::Stdout));
+    assert!(c.contains(&Channel::Stderr));
+    assert!(!c.contains(&Channel::Stdout));
 }
 
 #[test]
@@ -962,8 +963,7 @@ fn consumed_devnull_is_quiet() {
 fn consumed_nonlast_pipeline_stage() {
     // A non-last pipeline stage's stdout is piped onward ⇒ Stdout consumed.
     assert!(
-        consumed_of("apt-get install -y nginx | tee log\n", "apt-get")
-            .contains(&Observable::Stdout)
+        consumed_of("apt-get install -y nginx | tee log\n", "apt-get").contains(&Channel::Stdout)
     );
 }
 
@@ -979,7 +979,7 @@ fn consumed_enclosing_group_redirect_marks_inner_leaf() {
         "apt-get",
     );
     assert!(
-        c.contains(&Observable::Stdout),
+        c.contains(&Channel::Stdout),
         "enclosing-group redirect must mark the inner leaf"
     );
 }
@@ -990,7 +990,7 @@ fn consumed_enclosing_subshell_pipe_marks_inner_leaf() {
     // the producer. The enclosing-pipe context must reach the inner leaf.
     let c = consumed_of("( apt-get install -y nginx ) | grep -q nginx\n", "apt-get");
     assert!(
-        c.contains(&Observable::Stdout),
+        c.contains(&Channel::Stdout),
         "enclosing-subshell pipe must mark the inner leaf"
     );
 }
@@ -1006,7 +1006,7 @@ fn consumed_enclosing_subshell_devnull_stays_quiet() {
     );
 }
 
-// --- F1 branch-status (round-19, `notes/195`): the engine marks `Observable::Status`
+// --- F1 branch-status (round-19, `notes/195`): the engine marks `Channel::Status`
 // ONLY in an unambiguous-guard condition region (`if`/`elif`), so the phased caller
 // can block eliding a guard. The LOCUS is the whole fix — errexit and `&&`/`||` must
 // NOT mark it. These pin the engine-side fact directly (the `plan` collapse is in
@@ -1022,7 +1022,7 @@ fn consumed_if_guard_marks_status() {
         "apt-get",
     );
     assert!(
-        guard.contains(&Observable::Status),
+        guard.contains(&Channel::Status),
         "an if-condition command's status is branch-consumed"
     );
     // The then-body command (distinct command word so the helper finds IT, not the
@@ -1032,7 +1032,7 @@ fn consumed_if_guard_marks_status() {
         "systemctl",
     );
     assert!(
-        !body.contains(&Observable::Status),
+        !body.contains(&Channel::Status),
         "the then-body command is not a guard ⇒ no branch-status"
     );
 }
@@ -1048,7 +1048,7 @@ fn consumed_negated_if_guard_marks_status() {
         "echo",
     );
     assert!(
-        c.contains(&Observable::Status),
+        c.contains(&Channel::Status),
         "a negated if-guard command's status is branch-consumed"
     );
 }
@@ -1061,7 +1061,7 @@ fn consumed_errexit_does_not_mark_status() {
     // re-break "a converged install under `set -e` still elides".
     let c = consumed_of("set -e\napt-get install -y nginx\n", "apt-get");
     assert!(
-        !c.contains(&Observable::Status),
+        !c.contains(&Channel::Status),
         "errexit-consumed status is NOT marked (stays vouched)"
     );
 }
@@ -1069,7 +1069,7 @@ fn consumed_errexit_does_not_mark_status() {
 #[test]
 fn consumed_andand_left_operand_marks_andor_status() {
     // `19D` (generalised from the F1 `if`/`elif`-only stopgap): a `&&`/`||` left operand
-    // IS branch-consumed, so the engine marks it `Observable::AndOrStatus` (the
+    // IS branch-consumed, so the engine marks it `Channel::AndOrStatus` (the
     // rc-relaxable variant — distinct from the `if`/`elif` `Status` render floor). The
     // phased caller collapses it rc-conditionally (`prove_replaceable`): undeclared rc ⇒
     // block (the `useradd[9] || mkdir` under-execute floor), declared rc ⇒ relax
@@ -1080,12 +1080,12 @@ fn consumed_andand_left_operand_marks_andor_status() {
         "apt-get",
     );
     assert!(
-        c.contains(&Observable::AndOrStatus),
+        c.contains(&Channel::AndOrStatus),
         "a `&&`/`||` left operand's status is branch-consumed (marked AndOrStatus, 19D)"
     );
     // It is the rc-relaxable variant, NOT the `if`/`elif` unconditional-block `Status`.
     assert!(
-        !c.contains(&Observable::Status),
+        !c.contains(&Channel::Status),
         "the `&&`/`||` variant is AndOrStatus, not the `if`/`elif` render-floor Status"
     );
 }
@@ -1098,7 +1098,7 @@ fn consumed_oror_left_operand_marks_andor_status() {
     // (`19D` — the proven `kFAIL-perform` fix).
     let c = consumed_of("useradd deploy || mkdir /srv/app\n", "useradd");
     assert!(
-        c.contains(&Observable::AndOrStatus),
+        c.contains(&Channel::AndOrStatus),
         "a `||` left operand's status is branch-consumed (marked AndOrStatus, 19D)"
     );
 }

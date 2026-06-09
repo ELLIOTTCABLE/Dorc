@@ -26,10 +26,12 @@
 use core::marker::PhantomData;
 use std::collections::{BTreeMap, BTreeSet};
 
-use dorc_analysis::cfg::{Cfg, CfgNodeId, CfgNodeKind, Observable};
+use dorc_analysis::cfg::{Cfg, CfgNodeId, CfgNodeKind};
 use dorc_analysis::effect::{FactKey, SkipClass};
 use dorc_analysis::lattice::{May, Powerset};
-use dorc_core::{AstId, EntityRef, Grade, Interner, KindId, Observed, Rc, Verdict};
+use dorc_core::{
+    AstId, Channel, EntityRef, Grade, Interner, KindId, Observable, Predicted, Rc, Verdict,
+};
 use dorc_syntax::ast::Ast;
 
 mod fold;
@@ -130,7 +132,7 @@ impl<P: Bias> PhasedVerdict<P> {
 // ===========================================================================
 //
 // The un-collapsed consumption fact — which unvouched output observables a leaf's
-// context consumes ([`Observable`]) — is computed by the ENGINE and emitted on the
+// context consumes ([`Channel`]) — is computed by the ENGINE and emitted on the
 // `Cfg` ([`dorc_analysis::cfg::Cfg::consumed_observables`]); `plan` collapses it
 // (`inv-superposition`, note 16J). The `true`-stub defaults every observable
 // (effect→none, status→0, stdout/stderr→empty); a default is sound only if
@@ -183,7 +185,7 @@ impl ReplaceLicense {
     /// 3. the probe verdict folds to [`Resolved::Replaceable`] — a definite
     ///    `Converged`; `Diverged` and (via [`Bias`]) `Unknown` do not.
     /// 4. no UNVOUCHED observable is consumed downstream. The consumption is the
-    ///    engine's un-collapsed `May<Powerset<Observable>>` fact (`inv-superposition`,
+    ///    engine's un-collapsed `May<Powerset<Channel>>` fact (`inv-superposition`,
     ///    note 16J); per `inv-must-may` a `May` value can only block. Branch-consumed
     ///    status comes in two engine variants by render-expressibility (`19D` / 19C
     ///    strain-D); both gate a *different* command's reachability, so a *fabricated*
@@ -220,8 +222,8 @@ impl ReplaceLicense {
         class: &SkipClass,
         grade: Grade,
         verdict: PhasedVerdict<P>,
-        consumed: May<Powerset<Observable>>,
-        observed_rc: Option<Rc>,
+        consumed: May<Powerset<Channel>>,
+        status: Predicted<Rc>,
     ) -> Option<ReplaceLicense> {
         let SkipClass::EstablishAmbient(fact) = class else {
             return None;
@@ -240,14 +242,14 @@ impl ReplaceLicense {
         let May(consumed) = &consumed;
         // `Stdout`/`Stderr`: empty default vouched by nothing (16F §3). A declared rc
         // does not vouch output *content* ⇒ always block.
-        if consumed.contains(&Observable::Stdout) || consumed.contains(&Observable::Stderr) {
+        if consumed.contains(&Channel::Stdout) || consumed.contains(&Channel::Stderr) {
             return None;
         }
         // `Status` (an `if`/`elif` guard): blocks unconditionally — the render floor
         // (19C strain-D; even a declared rc can't be substituted in-situ on the
         // `if`/`then`/`fi` line). Never enters the set for errexit, so `set -e` stays
         // vouched.
-        if consumed.contains(&Observable::Status) {
+        if consumed.contains(&Channel::Status) {
             return None;
         }
         // `AndOrStatus` (a `&&`/`||` left operand): blocks ONLY when the rc is undeclared
@@ -255,7 +257,7 @@ impl ReplaceLicense {
         // fabricated success that suppresses a `|| fallback` (the `kFAIL-perform`
         // under-execute). A declared rc relaxes it: `StandIn::from_rc` reproduces the
         // exact status, so the branch decides as the real command would (`19A §5`).
-        if consumed.contains(&Observable::AndOrStatus) && observed_rc.is_none() {
+        if consumed.contains(&Channel::AndOrStatus) && matches!(status, Predicted::Top) {
             return None;
         }
         Some(ReplaceLicense {
@@ -527,7 +529,7 @@ pub fn compile_probe(
 /// Build a plan from the analysis result + an injected host **observation** oracle.
 ///
 /// `observe` is the host probe (the real host / `hostsim` is a later seam): it
-/// answers, per fact, the [`Observed`] state — the convergence [`Verdict`] (the
+/// answers, per fact, the [`Observable`] state — the convergence [`Verdict`] (the
 /// elision gate) *and* the concrete observed exit status (the fold + value-preserving
 /// substitution input, `19A §5` / `19B` build-1). `build_plan` is a pure function of
 /// its inputs (deterministic given a deterministic `observe`).
@@ -551,7 +553,7 @@ pub fn build_plan(
     ast: &Ast,
     cfg: &Cfg,
     classes: &[(CfgNodeId, SkipClass)],
-    observe: impl Fn(FactKey) -> Observed,
+    observe: impl Fn(FactKey) -> Observable,
 ) -> Plan {
     // Map each classified leaf's AstId → its fact (only establish classes carry one).
     // The fold reaches over the AST and needs each leaf's observed status keyed by
@@ -615,7 +617,7 @@ fn disposition_for(
     node: CfgNodeId,
     class: &SkipClass,
     ast_id: AstId,
-    observed: Option<Observed>,
+    observed: Option<Observable>,
 ) -> Disposition {
     // (2) the fold: a provably-dead branch leaf is omitted. Minted ONLY from a known
     // controlling status (`fold` records `dead` only then) — `inv-kfail`. The fold
@@ -635,25 +637,20 @@ fn disposition_for(
     match class {
         SkipClass::EstablishAmbient(_) if !has_top_successor(cfg, node) => {
             let verdict =
-                PhasedVerdict::<Probe>::new(observed.map_or(Verdict::Unknown, |o| o.verdict));
+                PhasedVerdict::<Probe>::new(observed.map_or(Verdict::Unknown, |o| o.effect));
             let consumed = May(cfg.consumed_observables(node).clone());
-            let observed_rc = observed.and_then(|o| o.rc);
-            match ReplaceLicense::prove_replaceable(
-                class,
-                Grade::Must,
-                verdict,
-                consumed,
-                observed_rc,
-            ) {
+            let status = observed.map_or(Predicted::Top, |o| o.status);
+            match ReplaceLicense::prove_replaceable(class, Grade::Must, verdict, consumed, status) {
                 Some(license) => {
-                    // The value-preserving stand-in reproduces the observed exit status.
-                    // An un-injected rc falls back to the conforming `true` (rc 0) — but
-                    // ONLY a leaf whose status is NOT branch-consumed reaches here with an
-                    // undeclared rc: `prove_replaceable` now refuses the license for a
-                    // branch-consumed status with no declared rc (`19D` — that leaf runs),
-                    // so the `true` fallback applies only where the status is dead (rc 0
-                    // is then a harmless placeholder, never read by a branch).
-                    let stand_in = observed_rc.map_or(StandIn::True, StandIn::from_rc);
+                    // The value-preserving stand-in reproduces the predicted Status channel.
+                    // An unpredicted status (`Predicted::Top`) falls back to the conforming
+                    // `true` (rc 0) — reached ONLY where the status is not branch-consumed
+                    // (`prove_replaceable` blocks a branch-consumed `Top`, `19D`), so the
+                    // rc-0 placeholder is never read by a branch.
+                    let stand_in = match status {
+                        Predicted::Value(rc) => StandIn::from_rc(rc),
+                        Predicted::Top => StandIn::True,
+                    };
                     Disposition::Replace(license, stand_in)
                 }
                 None => Disposition::Run,
@@ -896,7 +893,7 @@ mod tests {
 
     /// An empty (provably-quiet) consumption fact in the `May` orientation — the
     /// common case for the `prove_replaceable` unit tests.
-    fn quiet() -> May<Powerset<Observable>> {
+    fn quiet() -> May<Powerset<Channel>> {
         May(Powerset::default())
     }
 
@@ -1091,7 +1088,7 @@ mod tests {
             Grade::Must,
             PhasedVerdict::<Probe>::new(Verdict::Converged),
             quiet(),
-            Some(Rc(0)),
+            Predicted::Value(Rc(0)),
         ) else {
             panic!("ambient + must + converged must license a skip");
         };
@@ -1106,10 +1103,10 @@ mod tests {
         // unsound ⇒ no license (run), even with ambient + Must + Converged. Both
         // unvouched output observables block — the `Stderr` branch was formerly only
         // exercised end-to-end, pinned here so the matrix can drop its stderr cell.
-        // A *declared* rc does NOT vouch output content, so passing `Some(Rc(0))` must
+        // A *declared* rc does NOT vouch output content, so passing `Predicted::Value(Rc(0))` must
         // STILL block (`19D`: the rc-relaxation is `Status`-only, never stdout/stderr).
         let f = nginx_fact();
-        for obs in [Observable::Stdout, Observable::Stderr] {
+        for obs in [Channel::Stdout, Channel::Stderr] {
             let consumed = May(Powerset::singleton(obs));
             assert!(
                 ReplaceLicense::prove_replaceable(
@@ -1117,7 +1114,7 @@ mod tests {
                     Grade::Must,
                     PhasedVerdict::<Probe>::new(Verdict::Converged),
                     consumed,
-                    Some(Rc(0)),
+                    Predicted::Value(Rc(0)),
                 )
                 .is_none(),
                 "a consumed {obs:?} must forbid the stub even with a declared rc"
@@ -1133,7 +1130,7 @@ mod tests {
         // (the round-19 under-execute). A *declared* rc relaxes it (the value-preserving
         // stand-in reproduces the exact status, preserving the branch).
         let f = nginx_fact();
-        let consumed = || May(Powerset::singleton(Observable::AndOrStatus));
+        let consumed = || May(Powerset::singleton(Channel::AndOrStatus));
         // Undeclared rc ⇒ BLOCK (the safe run-it floor).
         assert!(
             ReplaceLicense::prove_replaceable(
@@ -1141,7 +1138,7 @@ mod tests {
                 Grade::Must,
                 PhasedVerdict::<Probe>::new(Verdict::Converged),
                 consumed(),
-                None,
+                Predicted::Top,
             )
             .is_none(),
             "`&&`/`||`-consumed status + undeclared rc must block (kFAIL-perform floor)"
@@ -1154,7 +1151,7 @@ mod tests {
                     Grade::Must,
                     PhasedVerdict::<Probe>::new(Verdict::Converged),
                     consumed(),
-                    Some(rc),
+                    Predicted::Value(rc),
                 )
                 .is_some(),
                 "`&&`/`||`-consumed status + declared rc {rc:?} licenses (value-preserving)"
@@ -1169,13 +1166,17 @@ mod tests {
         // substitute a guard on its `if`/`then`/`fi` line; a declared-rc relaxation
         // would break `dash -n`). Contrast `andor_status_blocks_only_when_rc_undeclared`.
         let f = nginx_fact();
-        for rc in [None, Some(Rc(0)), Some(Rc(9))] {
+        for rc in [
+            Predicted::Top,
+            Predicted::Value(Rc(0)),
+            Predicted::Value(Rc(9)),
+        ] {
             assert!(
                 ReplaceLicense::prove_replaceable(
                     &SkipClass::EstablishAmbient(f),
                     Grade::Must,
                     PhasedVerdict::<Probe>::new(Verdict::Converged),
-                    May(Powerset::singleton(Observable::Status)),
+                    May(Powerset::singleton(Channel::Status)),
                     rc,
                 )
                 .is_none(),
@@ -1195,7 +1196,7 @@ mod tests {
                     Grade::Must,
                     PhasedVerdict::<Probe>::new(v),
                     quiet(),
-                    Some(Rc(0)),
+                    Predicted::Value(Rc(0)),
                 )
                 .is_none(),
                 "verdict {v:?} must NOT license a skip"
@@ -1212,7 +1213,7 @@ mod tests {
             Grade::May,
             PhasedVerdict::<Probe>::new(Verdict::Converged),
             quiet(),
-            Some(Rc(0)),
+            Predicted::Value(Rc(0)),
         )
         .is_none());
     }
@@ -1229,7 +1230,7 @@ mod tests {
                     Grade::Must,
                     PhasedVerdict::<Probe>::new(Verdict::Converged),
                     quiet(),
-                    Some(Rc(0)),
+                    Predicted::Value(Rc(0)),
                 )
                 .is_none(),
                 "{class:?} must not license a skip"
@@ -1298,12 +1299,16 @@ mod tests {
             // every other fact Unknown / no-rc. The fold is exercised by the dedicated
             // fold tests; these legacy cases isolate convergence-elision.
             if f == target {
-                Observed {
-                    verdict: nginx_verdict,
-                    rc: (nginx_verdict == Verdict::Converged).then_some(Rc(0)),
+                Observable {
+                    effect: nginx_verdict,
+                    status: if nginx_verdict == Verdict::Converged {
+                        Predicted::Value(Rc(0))
+                    } else {
+                        Predicted::Top
+                    },
                 }
             } else {
-                Observed::verdict_only(Verdict::Unknown)
+                Observable::verdict_only(Verdict::Unknown)
             }
         });
         (plan, i)
@@ -1500,10 +1505,7 @@ mod tests {
         let (mut marked, mut quiet) = (0, 0);
         for (node, _) in &classes {
             // Total Vec ⇒ defined for every classify leaf (never an absent lookup).
-            if cfg
-                .consumed_observables(*node)
-                .contains(&Observable::Stdout)
-            {
+            if cfg.consumed_observables(*node).contains(&Channel::Stdout) {
                 marked += 1;
             } else {
                 quiet += 1;

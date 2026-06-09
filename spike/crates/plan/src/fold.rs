@@ -25,7 +25,7 @@
 
 use std::collections::BTreeMap;
 
-use dorc_core::{AstId, Observed, Rc};
+use dorc_core::{AstId, Observable, Predicted, Rc};
 use dorc_syntax::ast::{AndOrOp, Ast, NodeKind};
 
 /// A node's abstract exit status: a concrete value, or ⊤ (unknown). The fold's
@@ -87,16 +87,17 @@ impl FoldResult {
     }
 }
 
-/// Run the fold over `ast`, using `observe` to get each *leaf*'s concrete observed
-/// status. `observe(leaf)` returns the injected observation for the simple-command
-/// at `leaf` (its `rc` is the fold input); a leaf with no observation (`None`, or
-/// `Observed::rc == None`) is ⊤ ⇒ no fold through it.
+/// Run the fold over `ast`, using `observe` to get each *leaf*'s predicted
+/// [`Observable`]. The fold reads only the **Status** channel (`observe(leaf).status`):
+/// `Predicted::Value(rc)` is the fold input, `Predicted::Top` (or no observation) is ⊤ ⇒
+/// no fold through it. (The Status channel is the only one the rc-fold consumes; Effect
+/// gates the license elsewhere, Stdout/Stderr are liveness-only.)
 ///
 /// Deterministic + total (`inv-determinism` / `inv-no-throw`): a pure recursion over
 /// the arena, ordered maps, never panics (the same `MAX_DEPTH`-style safety is the
 /// AST's own — the tree is already depth-bounded by the parser/cfg).
 #[must_use]
-pub(crate) fn fold(ast: &Ast, observe: impl Fn(AstId) -> Option<Observed>) -> FoldResult {
+pub(crate) fn fold(ast: &Ast, observe: impl Fn(AstId) -> Option<Observable>) -> FoldResult {
     let mut f = Folder {
         ast,
         observe: &observe,
@@ -108,7 +109,7 @@ pub(crate) fn fold(ast: &Ast, observe: impl Fn(AstId) -> Option<Observed>) -> Fo
 
 struct Folder<'a> {
     ast: &'a Ast,
-    observe: &'a dyn Fn(AstId) -> Option<Observed>,
+    observe: &'a dyn Fn(AstId) -> Option<Observable>,
     out: FoldResult,
 }
 
@@ -144,9 +145,12 @@ impl Folder<'_> {
                     self.out.dead.entry(id).or_insert(id);
                     return AbstractRc::Top;
                 }
-                // A live leaf's status is its injected observation, or ⊤.
+                // A live leaf's status is its predicted Status channel, or ⊤.
                 match (self.observe)(id) {
-                    Some(Observed { rc: Some(rc), .. }) => AbstractRc::Known(rc),
+                    Some(Observable {
+                        status: Predicted::Value(rc),
+                        ..
+                    }) => AbstractRc::Known(rc),
                     _ => AbstractRc::Top,
                 }
             }
@@ -422,17 +426,17 @@ mod tests {
     }
 
     /// A known concrete observation (`rc=n`), the conforming converged shape.
-    fn obs(rc: i32) -> Observed {
-        Observed {
-            verdict: Verdict::Converged,
-            rc: Some(Rc(rc)),
+    fn obs(rc: i32) -> Observable {
+        Observable {
+            effect: Verdict::Converged,
+            status: Predicted::Value(Rc(rc)),
         }
     }
 
     /// Fold `src`, observing each named leaf with a concrete rc; all other leaves ⊤.
     fn fold_with(src: &str, observed: &[(&str, i32)]) -> (FoldResult, dorc_syntax::ast::Ast) {
         let ast = dorc_syntax::parse(src).value;
-        let want: std::collections::BTreeMap<AstId, Observed> = observed
+        let want: std::collections::BTreeMap<AstId, Observable> = observed
             .iter()
             .map(|(name, rc)| (leaf(&ast, name), obs(*rc)))
             .collect();

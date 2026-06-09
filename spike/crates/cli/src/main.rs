@@ -21,7 +21,7 @@ use std::collections::BTreeMap;
 use std::io::{Read, Write};
 use std::process::ExitCode;
 
-use dorc_core::{Interner, Observed, Rc, Verdict};
+use dorc_core::{Interner, Observable, Predicted, Rc, Verdict};
 use dorc_plan::fact_label;
 
 const USAGE: &str = "usage: dorc --book=<book.sh> [-o <oracle.sh>]...";
@@ -112,7 +112,7 @@ fn run() -> Result<(), String> {
         results
             .get(&fact_label(&interner, f))
             .copied()
-            .unwrap_or(Observed::verdict_only(Verdict::Unknown))
+            .unwrap_or(Observable::verdict_only(Verdict::Unknown))
     });
     print!("{}", plan.render_apply(&book_src, &parsed.value));
     Ok(())
@@ -131,13 +131,13 @@ fn run() -> Result<(), String> {
 /// fabricated `rc=0`. The old conforming-`rc=0` default was a confident *wrong* value
 /// for a **non-conforming** establish (`useradd` exits 9 when converged): fabricating
 /// 0 let the fold short-circuit a `useradd || mkdir` fallback dead — a priority-1
-/// under-execute (`inv-kfail`). `core::Observed` already documents that an un-injected
+/// under-execute (`inv-kfail`). `core::Observable` already documents that an un-injected
 /// rc is ⊤ and the conforming-0 fallback is the *caller's* choice; this caller now
 /// declines it, deferring rc-production entirely to build-2's oracle contract (opt-B,
 /// `19B §1`). The trade: a conforming establish that does not declare `rc=0` no longer
 /// folds its branch — correct (never under-execute > avoid unnecessary-execute); its
 /// bare convergence-elision is unaffected (status dead ⇒ `true` stand-in, `19C` §3).
-fn parse_results(input: &str) -> BTreeMap<String, Observed> {
+fn parse_results(input: &str) -> BTreeMap<String, Observable> {
     input
         .lines()
         .filter_map(|line| {
@@ -159,7 +159,14 @@ fn parse_results(input: &str) -> BTreeMap<String, Observed> {
                     .and_then(|n| n.parse::<i32>().ok())
                     .map(Rc)
             });
-            Some((key, Observed { verdict, rc }))
+            let status = rc.map_or(Predicted::Top, Predicted::Value);
+            Some((
+                key,
+                Observable {
+                    effect: verdict,
+                    status,
+                },
+            ))
         })
         .collect()
 }

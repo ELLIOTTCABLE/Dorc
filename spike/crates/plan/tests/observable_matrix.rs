@@ -45,7 +45,8 @@
 
 use dorc_analysis::effect::FactKey;
 use dorc_core::{
-    EntityRef, Interner, KindId, Observed, OpaqueToken, ProviderId, Rc, SelectorId, Verdict,
+    EntityRef, Interner, KindId, Observable, OpaqueToken, Predicted, ProviderId, Rc, SelectorId,
+    Verdict,
 };
 use dorc_oracle::{KindIndex, Polarity};
 use dorc_plan::{build_plan, Disposition, Plan, StandIn};
@@ -92,12 +93,12 @@ fn plan_for(src: &str, holds: &[(&str, &str)]) -> Plan {
         // The package oracle is idempotent-success: a converged install exits 0, so a
         // held fact is conforming `rc=0` (the value-preserving substitution's `true`).
         if held.contains(&f) {
-            Observed {
-                verdict: Verdict::Converged,
-                rc: Some(Rc(0)),
+            Observable {
+                effect: Verdict::Converged,
+                status: Predicted::Value(Rc(0)),
             }
         } else {
-            Observed::verdict_only(Verdict::Diverged)
+            Observable::verdict_only(Verdict::Diverged)
         }
     })
 }
@@ -289,9 +290,9 @@ fn andor_left_operand_undeclared_rc_runs_kfail_perform() {
     // un-injected rc is ⊤, never a fabricated 0).
     let plan = build_plan(src, &parsed.value, &cfg, &classes, move |f| {
         if f == nginx {
-            Observed::verdict_only(Verdict::Converged)
+            Observable::verdict_only(Verdict::Converged)
         } else {
-            Observed::verdict_only(Verdict::Diverged)
+            Observable::verdict_only(Verdict::Diverged)
         }
     });
     assert!(
@@ -484,12 +485,12 @@ fn plan_for_user_oror(src: &str) -> Plan {
     let classes = dorc_analysis::effect::classify(&cfg, &parsed.value, &idx, &mut i);
     build_plan(src, &parsed.value, &cfg, &classes, move |f| {
         if f == held {
-            Observed {
-                verdict: Verdict::Converged,
-                rc: Some(Rc(9)),
+            Observable {
+                effect: Verdict::Converged,
+                status: Predicted::Value(Rc(9)),
             }
         } else {
-            Observed::verdict_only(Verdict::Diverged)
+            Observable::verdict_only(Verdict::Diverged)
         }
     })
 }

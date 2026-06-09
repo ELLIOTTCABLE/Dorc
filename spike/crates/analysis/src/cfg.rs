@@ -27,7 +27,7 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
-use dorc_core::{AstId, Carrier, DiagCode, Diagnostic, Span};
+use dorc_core::{AstId, Carrier, Channel, DiagCode, Diagnostic, Span};
 use dorc_syntax::{
     ast::{CaseArm, ElseIf, RedirOp, RedirTarget},
     Ast, NodeKind, WordPart,
@@ -92,60 +92,13 @@ pub enum CfgNodeKind {
     Top,
 }
 
-/// An observable a downstream consumer can read off a leaf having run (16F / note
-/// 16J). The CFG records, per leaf, which observables the leaf's *context*
-/// consumes in a way the `true`-stub's default would NOT vouch — an **un-collapsed**
-/// fact (`inv-superposition`): the engine names *what is consumed*; the phased
-/// caller (`plan`) collapses it into a run/replace decision, never the engine.
-///
-/// Vouching (the `true`-stub defaults every observable; a default is sound only if
-/// vouched — 16F / the observable-matrix model):
-/// * `Effect` ← convergence (the forward gate). Never enters the set.
-/// * `Stdout`/`Stderr` ← NOTHING, so a consumed one always enters the set and
-///   blocks (16F §3).
-///
-/// Branch-consumed status is split into TWO variants by their *render-expressibility*
-/// floor (`19D` / 19C strain-D), not their semantics — at the disposition layer both
-/// are rc-relaxable (a declared rc lets the value-preserving stand-in reproduce the
-/// exact status, preserving the branch decision — `19A §5`); they differ only in
-/// whether the *line-granular render* can express that substitution in-situ:
-///
-/// * [`Status`](Observable::Status) — an **`if`/`elif` condition** guard
-///   (`lower_if_chain` → `lower_condition_region(_, true)`). It blocks the license
-///   **unconditionally** (the phased caller never relaxes it), because the
-///   line-granular `render_apply` cannot substitute a guard that shares its line with
-///   the `if`/`then`/`fi` scaffolding: commenting `if cmd` and emitting the stand-in
-///   orphans `then`/`fi` (a `dash -n` break — 19C strain-D). The disposition layer
-///   does not *need* the block (exact-rc substitution would suffice), but the render
-///   does; full retirement waits on the leaf-exact / structural render (`C-5`).
-/// * [`AndOrStatus`](Observable::AndOrStatus) — a **`&&`/`||` left operand**
-///   (`lower_and_or` marks it directly). It blocks **only when the rc is undeclared**
-///   (the caller relaxes it on a declared rc): the render CAN express it (the operand +
-///   operator sit on one line, kept verbatim when mixed with a live sibling; the fold +
-///   the `render_apply` omit-safety gate handle the rest). This is the `19D` fix for
-///   the proven `useradd[9] || mkdir` under-execute, and it keeps `install && start`'s
-///   declared rc-0 post-condition replaceable.
-///
-/// A bare `!`-negated pipeline (`lower_pipeline`) marks neither (it only clears
-/// errexit-fallibility); a `!`-guard reached *through* an `if`/`elif` condition is
-/// marked [`Status`] by the enclosing `if`. `while`/`until` conditions never reach
-/// here (loops are ⊤-rejected today, `notes/198` §1.4 — so marking is vacuous).
-/// **Errexit** (`set -e`) marks neither: a converged establish *has* succeeded (the
-/// establishes-contract), so its rc-0 is genuinely vouched and stays elidable. (Only
-/// status that gates a *different* command's run needs the exact rc.)
-///
-/// The engine emits these un-collapsed (`inv-superposition`); the phased caller
-/// (`plan::prove_replaceable`) collapses them.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub enum Observable {
-    Effect,
-    /// `if`/`elif`-guard status — blocks the license unconditionally (render floor).
-    Status,
-    /// `&&`/`||` left-operand status — blocks only when the rc is undeclared (`19D`).
-    AndOrStatus,
-    Stdout,
-    Stderr,
-}
+// The per-leaf consumption vocabulary is `core::Channel` (`inv-one-observable`, `19F`):
+// the CFG records, per leaf, which channels the leaf's *context* consumes in a way the
+// `true`-stub's default would NOT vouch — an un-collapsed fact (`inv-superposition`): the
+// engine names *what is consumed*; the phased caller (`plan`) collapses it. `Effect` is
+// vouched by convergence and never enters the set; `Stdout`/`Stderr` are vouched by
+// nothing (always block, 16F §3); the two branch-status variants (`Status` if-guard,
+// `AndOrStatus` &&/|| operand) differ only in render-expressibility — see `core::Channel`.
 
 /// One CFG node: its role plus the [`AstId`] it derives from (provenance). For
 /// synthetic nodes (`Entry`/`Exit`/`Merge`/scope) the `ast` points at the nearest
@@ -177,7 +130,7 @@ pub struct Cfg {
     /// exhaustive structural traversal — so it is **total over nodes**: an empty
     /// set means "visited, nothing consumes it" (provably quiet), never "not
     /// examined". The phased caller wraps it `May<_>` and collapses it.
-    consumed: Vec<Powerset<Observable>>,
+    consumed: Vec<Powerset<Channel>>,
 }
 
 impl Cfg {
@@ -231,7 +184,7 @@ impl Cfg {
     /// (`plan`) wraps this in `May<_>` and collapses it; per `inv-must-may` a `May`
     /// consumption can only **block** a replacement, never license one.
     #[must_use]
-    pub fn consumed_observables(&self, id: CfgNodeId) -> &Powerset<Observable> {
+    pub fn consumed_observables(&self, id: CfgNodeId) -> &Powerset<Channel> {
         &self.consumed[id.index()]
     }
 }
@@ -365,7 +318,7 @@ struct Builder<'a> {
     /// pipeline-stage / redirected-group context propagated to inner leaves, the
     /// same arena-range trick `expansion_internal` uses). Emitted on the [`Cfg`]
     /// un-collapsed (`inv-superposition`).
-    consumed: Vec<Powerset<Observable>>,
+    consumed: Vec<Powerset<Channel>>,
     /// `ScopeExit` node → its matching `ScopeEnter` (find-4): the errexit forward
     /// pass restores the *pre-subshell* state at the exit, so a `set -e`/`set +e`
     /// toggle inside `( )`/`$( )` never leaks out. Both directions are kept so the
@@ -646,7 +599,7 @@ impl<'a> Builder<'a> {
                 self.mark_consumed_range(
                     stage_start,
                     self.nodes.len(),
-                    &Powerset::singleton(Observable::Stdout),
+                    &Powerset::singleton(Channel::Stdout),
                 );
                 // Only the last stage governs pipeline status; clear the
                 // fallibility flag on a non-last stage's command exit node.
@@ -683,8 +636,8 @@ impl<'a> Builder<'a> {
         // A `&&`/`||` left operand's status is **branch-consumed** (the right operand's
         // reachability turns on it). `lower_condition_region(_, false)` clears its
         // errexit-fallibility (a `&&`/`||` left operand is errexit-exempt) WITHOUT
-        // marking `Observable::Status` (that variant is the `if`/`elif` render floor,
-        // an unconditional block); instead it is marked `Observable::AndOrStatus` (the
+        // marking `Channel::Status` (that variant is the `if`/`elif` render floor,
+        // an unconditional block); instead it is marked `Channel::AndOrStatus` (the
         // `19D` generalisation). The phased caller
         // (`plan`) collapses it **rc-conditionally** (`prove_replaceable`): an undeclared
         // rc blocks the license (eliding to a fabricated `true`/rc-0 would suppress a
@@ -700,7 +653,7 @@ impl<'a> Builder<'a> {
         self.mark_consumed_range(
             before_left,
             self.nodes.len(),
-            &Powerset::singleton(Observable::AndOrStatus),
+            &Powerset::singleton(Channel::AndOrStatus),
         );
 
         let right_exit = self.lower_node(right, left_exit);
@@ -1112,13 +1065,13 @@ impl<'a> Builder<'a> {
     /// `mark_condition_context` missed when the region exit was a `Merge`.
     ///
     /// `mark_status` additionally marks every command in the region as consuming
-    /// `Observable::Status` (F1 / `notes/195`): the test of an `if`/`elif` is an
+    /// `Channel::Status` (F1 / `notes/195`): the test of an `if`/`elif` is an
     /// **unambiguous guard** (a *different* branch runs on its rc), and the
     /// line-granular render cannot substitute a guard sharing its line with the
     /// `if`/`then`/`fi` scaffolding, so this `Status` blocks the license
     /// **unconditionally** — the render floor (19C strain-D). It is `true` ONLY for an
     /// `if`/`elif` condition (`while`/`until` are ⊤-rejected today, so vacuous); a
-    /// `&&`/`||` left operand is marked the *separate* `Observable::AndOrStatus` at its
+    /// `&&`/`||` left operand is marked the *separate* `Channel::AndOrStatus` at its
     /// own call site (`lower_and_or`, the `19D` rc-relaxable variant — the render CAN
     /// express it), not via this `Status`. This locus is also what separates
     /// branch-status from errexit-status: the errexit pass never marks either status
@@ -1141,7 +1094,7 @@ impl<'a> Builder<'a> {
             self.mark_consumed_range(
                 first,
                 self.nodes.len(),
-                &Powerset::singleton(Observable::Status),
+                &Powerset::singleton(Channel::Status),
             );
         }
         exit
@@ -1163,7 +1116,7 @@ impl<'a> Builder<'a> {
     /// case the old leaf-local gate missed (16G kill-shot). Conservative: it also
     /// marks nested / already-captured leaves, but over-marking ⇒ over-run ⇒ sound
     /// (`kFAIL` / `kPRECISION`). Empty `obs` is a no-op (a `> /dev/null` discard).
-    fn mark_consumed_range(&mut self, from: usize, to: usize, obs: &Powerset<Observable>) {
+    fn mark_consumed_range(&mut self, from: usize, to: usize, obs: &Powerset<Channel>) {
         if obs.0.is_empty() {
             return;
         }
@@ -1209,7 +1162,7 @@ impl<'a> Builder<'a> {
 /// the target is `/dev/null` (the discard sink, the precision scalpel; 16F §5 /
 /// 16G). fd-dups (`2>&1`, `>&3`) are deliberately NOT resolved (a deferred
 /// refinement — 16G); the structural floor already runs any file-redirected leaf.
-fn output_redir_observables(ast: &Ast, redirs: &[AstId]) -> Powerset<Observable> {
+fn output_redir_observables(ast: &Ast, redirs: &[AstId]) -> Powerset<Channel> {
     let mut out = BTreeSet::new();
     for &r in redirs {
         let NodeKind::Redir { op, fd, target } = &ast.node(r).kind else {
@@ -1226,10 +1179,10 @@ fn output_redir_observables(ast: &Ast, redirs: &[AstId]) -> Powerset<Observable>
         }
         match fd {
             None | Some(1) => {
-                out.insert(Observable::Stdout);
+                out.insert(Channel::Stdout);
             }
             Some(2) => {
-                out.insert(Observable::Stderr);
+                out.insert(Channel::Stderr);
             }
             _ => {}
         }

@@ -280,30 +280,79 @@ pub enum Verdict {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Rc(pub i32);
 
-/// What the probe observed about a fact's leaf — the **injected** observation the
-/// apply-side fold consumes (`19B` build-1, decision-independent). It pairs the
-/// convergence [`Verdict`] (the existing elision gate) with the concrete observed
-/// exit status (the fold + value-preserving-substitution input). The real
-/// oracle-contract side that *produces* these is a separate later build (`19B`
-/// build-2, the OOB verdict-lane); here they are injected.
-///
-/// `rc == None` ⇒ the exit status is **unknown** ⇒ ⊤ for the fold (no fold through
-/// this leaf ⇒ its branch stays live — `inv-kfail`/`inv-top-reject`). A converged
-/// fact whose rc is un-injected falls back to a conforming `Rc(0)` only at the
-/// *caller's* explicit choice (the CLI's stdin default), never silently here.
+/// A predicted value for one observable channel (`inv-one-observable`): a concrete
+/// value, or a loud out-of-band ⊤ "can't-predict". A `Top` on a *consumed* channel
+/// forces the consuming leaf to run (`inv-kfail`/`kFAIL-perform`): the check could not
+/// predict the value a downstream context reads, so no stand-in can reproduce it. (The
+/// fold's former `AbstractRc` was this type by another name — `Known`/`Top`.)
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Observed {
-    pub verdict: Verdict,
-    pub rc: Option<Rc>,
+pub enum Predicted<T> {
+    /// The check predicts this exact value (an oracle-declared converged-rc, …).
+    Value(T),
+    /// ⊤: the check cannot predict this channel ⇒ no fold / no substitution through it.
+    Top,
 }
 
-impl Observed {
-    /// An observation carrying only a convergence verdict, no concrete rc (⊤ for the
-    /// fold). The conservative shape: the verdict still drives convergence-elision,
-    /// but the fold cannot resolve a branch through this leaf.
+/// The channels of a command's observable output — the single shared vocabulary of the
+/// ONE Observable (`inv-one-observable`). A **closed** enum: adding a channel must break
+/// every exhaustive `match` (the compiler-as-checklist), so it carries NO
+/// `#[non_exhaustive]`. Replaces the former `analysis::cfg::Observable` consumption enum,
+/// unifying it with `Verdict`/`Observed` — the round-19 three-way split (`19F`).
+///
+/// Two views key off this one vocabulary: an [`Observable`] *predicts* a value per
+/// value-bearing channel; an enclosing context *consumes* a `Powerset<Channel>` (the
+/// liveness set). The `Effect` channel is vouched by convergence (the forward gate), so
+/// it never enters the *consumed* set — it gates the elision license instead.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum Channel {
+    /// The command's effect on managed state (mutation). Vouched by convergence ⇒ never
+    /// in the consumed set; its predicted value is the [`Observable::effect`] verdict.
+    Effect,
+    /// Exit status consumed by an `if`/`elif` **guard**. Blocks the license
+    /// unconditionally — the render floor (`19C` strain-D): the line-granular render
+    /// cannot substitute a guard sharing its line with the `if`/`then`/`fi` scaffolding.
+    Status,
+    /// Exit status consumed by a `&&`/`||` **left operand**. Rc-relaxable (`19D`): a
+    /// declared rc lets the value-preserving stand-in reproduce the exact status; an
+    /// undeclared rc (`Predicted::Top`) blocks (eliding to a fabricated rc-0 `true` would
+    /// suppress a `|| fallback` — the `kFAIL-perform` under-execute).
+    AndOrStatus,
+    /// fd 1 captured to a real (non-`/dev/null`) sink ⇒ value-bearing, vouched by
+    /// nothing ⇒ a consumed `Stdout` always blocks (16F §3).
+    Stdout,
+    /// fd 2 captured to a real sink — as `Stdout`.
+    Stderr,
+}
+
+/// The ONE Observable (`inv-one-observable`): a command's predicted output over
+/// [`Channel`]s. Replaces the round-19 three-way split — the `analysis::cfg::Observable`
+/// consumption enum, the standalone `core::Verdict`, and the bolted `Observed{verdict,
+/// rc}` (`19F`). The oracle `.check()` PREDICTS it; an enclosing context CONSUMES some
+/// channels; a substitution REPRODUCES the consumed channels' predicted values, and is
+/// licensed only when the `Effect` channel predicts no-mutation.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Observable {
+    /// `Effect` channel: the host-reported convergence [`Verdict`], refined to
+    /// no-mutation by the ambient gate downstream. "Convergence is the *derived* state
+    /// of the Effect channel" (`19F` §3) — `Verdict` is its value, no longer a separate
+    /// probe-reported concept.
+    pub effect: Verdict,
+    /// `Status` channel: the predicted exit status when converged — the oracle's declared
+    /// converged-rc. `Predicted::Top` ⇒ undeclared ⇒ no fold through this leaf (the `19D`
+    /// `kFAIL-perform` floor: never fabricate a conforming rc-0).
+    pub status: Predicted<Rc>,
+}
+
+impl Observable {
+    /// An observable carrying only the convergence verdict, with an **unpredicted**
+    /// status (`Predicted::Top` ⇒ ⊤ for the fold). The conservative shape: convergence
+    /// still drives elision, but no branch folds through this leaf's status.
     #[must_use]
-    pub fn verdict_only(verdict: Verdict) -> Self {
-        Self { verdict, rc: None }
+    pub fn verdict_only(effect: Verdict) -> Self {
+        Self {
+            effect,
+            status: Predicted::Top,
+        }
     }
 }
 
