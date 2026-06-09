@@ -302,6 +302,11 @@ pub struct Plan {
 /// oracle's verbatim probe-sh (non-mutating by contract — `kFAIL-withhold`). The
 /// host's answer ([`Verdict`]) is what licenses the apply to elide the establishing
 /// leaf.
+///
+/// `sh` is the oracle's `oracle_probe_<kind>` body (a brace-group taking the entity
+/// as `$1`). Half-B (`notes/197` §2 / `notes/198`) binds the book's operand into it
+/// at render: the FLAT interceptor model — define the kind's check once, invoke it
+/// per-entity with the operand bound (the "$1 unbound" Half-A degeneracy is gone).
 #[derive(Debug, Clone)]
 pub struct ProbeCheck {
     pub fact: FactKey,
@@ -319,21 +324,53 @@ pub struct ProbePlan {
     pub checks: Vec<ProbeCheck>,
 }
 
+/// The check-function name for a kind: `<kind>__check` (the strawman's `id__check`
+/// shape — `notes/197` §2). Resolving the kind name for the shipped artifact is
+/// referent-agnostic (it is passed through to the host, never branched on).
+fn check_fn_name(interner: &Interner, kind: KindId) -> String {
+    format!("{}__check", interner.resolve(kind.0))
+}
+
 impl ProbePlan {
     /// Render the probe as a shippable, read-only shell-script (the sanitised
     /// projection shipped to gather facts — DESIGN). Provenance comments name the
     /// fact (display only — `inv-referent-agnostic`).
+    ///
+    /// Half-B FLAT interceptor model (`notes/197` §2, variant A): each kind's
+    /// `oracle_probe_<kind>` body is wrapped once into a `<kind>__check()` function,
+    /// then invoked **per entity with the book's operand bound** (`$1`) — so a probe
+    /// for `package:nginx#installed` runs `package__check nginx`, not the Half-A
+    /// `dpkg-query -W ""` with `$1` empty. A [`EntityRef::Singleton`] fact (no
+    /// operand, `package-index#fresh`) is invoked with no args. The interceptors are
+    /// independent ⇒ a real dispatcher runs them concurrently (`an-leaf-seam`); the
+    /// CFG-preserved variant B (`an-maintain-cfg`) is deferred (`notes/198`).
+    ///
+    /// Binding the operand into the shipped artifact resolves the operand token to
+    /// text — legitimate (it is passed *through* to the check, never branched on —
+    /// `inv-referent-agnostic`), the same latitude `fact_label` uses for display.
     #[must_use]
     pub fn render_sh(&self, interner: &Interner) -> String {
         let mut out = String::from(
             "#!/bin/sh\n# dorc probe (read-only): reports per-fact convergence, mutates nothing.\n\n",
         );
+        // Define each kind's check function once (first-seen order ⇒ deterministic),
+        // then invoke per fact with the operand bound. `defined` tracks which kinds'
+        // function bodies are already emitted.
+        let mut defined = BTreeSet::new();
         for check in &self.checks {
-            out.push_str(&format!(
-                "# probe: {}\n{}\n",
-                fact_label(interner, check.fact),
-                check.sh
-            ));
+            let fn_name = check_fn_name(interner, check.fact.kind);
+            out.push_str(&format!("# probe: {}\n", fact_label(interner, check.fact)));
+            if defined.insert(check.fact.kind) {
+                // `oracle_probe_<kind>` body is a brace-group; `name() <group>` is a
+                // valid POSIX function definition.
+                out.push_str(&format!("{fn_name}() {}\n", check.sh));
+            }
+            match check.fact.entity {
+                EntityRef::Operand(tok) => {
+                    out.push_str(&format!("{fn_name} {}\n", interner.resolve(tok.0)));
+                }
+                EntityRef::Singleton => out.push_str(&format!("{fn_name}\n")),
+            }
         }
         out
     }
@@ -640,6 +677,77 @@ mod tests {
             probe.checks.len(),
             1,
             "only the probeable EstablishAmbient fact is in the probe"
+        );
+    }
+
+    #[test]
+    fn probe_render_binds_operand_flat_interceptor() {
+        // Half-B FLAT interceptor model (`notes/197` §2 / `notes/198`): the probe
+        // render wraps each kind's body into `<kind>__check()` ONCE and invokes it
+        // per-entity with the book's operand BOUND — not the Half-A `$1`-unbound stub.
+        let mut i = Interner::default();
+        let package = KindId(i.intern("package"));
+        let installed = SelectorId(i.intern("installed"));
+        let nginx = EntityRef::Operand(OpaqueToken(i.intern("nginx")));
+        let curl = EntityRef::Operand(OpaqueToken(i.intern("curl")));
+        let pkg_index = KindId(i.intern("package-index"));
+        let fresh = SelectorId(i.intern("fresh"));
+        let cell = |kind, entity, selector| FactKey {
+            kind,
+            entity,
+            selector,
+        };
+        let classes = vec![
+            (
+                CfgNodeId(0),
+                SkipClass::EstablishAmbient(cell(package, nginx, installed)),
+            ),
+            (
+                CfgNodeId(1),
+                SkipClass::EstablishAmbient(cell(package, curl, installed)),
+            ),
+            (
+                CfgNodeId(2),
+                SkipClass::EstablishAmbient(cell(pkg_index, EntityRef::Singleton, fresh)),
+            ),
+        ];
+        let probe = compile_probe(&classes, |k| {
+            if k == package {
+                Some("{ dpkg-query -W \"$1\"; }".to_string())
+            } else if k == pkg_index {
+                Some("{ test fresh; }".to_string())
+            } else {
+                None
+            }
+        });
+        let rendered = probe.render_sh(&i);
+
+        // Operand bound: `package__check nginx` AND `package__check curl`.
+        assert!(
+            rendered.contains("package__check nginx"),
+            "operand `nginx` bound into the invocation:\n{rendered}"
+        );
+        assert!(
+            rendered.contains("package__check curl"),
+            "operand `curl` bound (per-entity invocation):\n{rendered}"
+        );
+        // The function body is defined exactly ONCE per kind (FLAT dedup), even with
+        // two `package` entities.
+        assert_eq!(
+            rendered.matches("package__check() {").count(),
+            1,
+            "package's check fn defined once, invoked per entity:\n{rendered}"
+        );
+        // Singleton: no operand argument (`package-index__check` on its own line).
+        assert!(
+            rendered.contains("package-index__check\n"),
+            "a Singleton fact invokes the check with NO operand:\n{rendered}"
+        );
+        // No `$1`-unbound leftover invocation (the Half-A degeneracy is gone): every
+        // `package__check` line either defines the fn or carries an operand.
+        assert!(
+            !rendered.contains("package__check\n"),
+            "no bare `package__check` (operand kinds must bind an operand):\n{rendered}"
         );
     }
 

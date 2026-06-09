@@ -2,9 +2,11 @@
 # dorc probe (read-only): reports per-fact convergence, mutates nothing.
 
 # probe: package:nginx#installed
-{ dpkg-query -W "$1" >/dev/null 2>&1; }
+package__check() { dpkg-query -W "$1" >/dev/null 2>&1; }
+package__check nginx
 # probe: service:nginx#enabled
-{ systemctl is-active --quiet "$1"; }
+service__check() { systemctl is-active --quiet "$1"; }
+service__check nginx
 #!/bin/sh
 # dorc apply: the book, with already-converged lines elided (replaced by `:`).
 

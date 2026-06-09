@@ -2,7 +2,8 @@
 # dorc probe (read-only): reports per-fact convergence, mutates nothing.
 
 # probe: pkgindex#fresh
-{ test -n "$(find /var/lib/apt/lists/ -maxdepth 1 -newermt '-1 hour' 2>/dev/null)"; }
+pkgindex__check() { test -n "$(find /var/lib/apt/lists/ -maxdepth 1 -newermt '-1 hour' 2>/dev/null)"; }
+pkgindex__check
 #!/bin/sh
 # dorc apply: the book, with already-converged lines elided (replaced by `:`).
 
