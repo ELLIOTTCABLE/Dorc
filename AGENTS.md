@@ -51,6 +51,10 @@ Some terms have shifted throughout the planning documents; be careful of these m
   - when generating 'lists' during conversation (a list of questions, a list of results, a list of nits ...), try and give them vaguely-unique slug-IDs (`nit-1. nit-2. nit-3.`) instead of bare Markdown lists (`1. 2. 3.`), to make it easier to refer-back (and help me see what *you're* referring-back to)
   - try and use real/short words, or a clear abbrev (`axis-N`, `concl-N`, etc); or at least follow prior-art in the documents. avoid opaque IDs like `cc-1`
 
+- while using dense reasoning is preferable in general (to yourself, in design-documents, and in subagent prompts), *when discussing a complex topic with the human*, attempt to break things down in simpler, clearer language. (this mostly applies when asking a specific question; denser 'reporting' mid-task is more acceptable.)
+  - try to explain/break-down references you make to other design-docs (cite/unroll/explain planning-corpus-slugs)
+  - try and explain academic concepts simply, whether or not you expect the human to already understand; it aids in clear communication and direction-setting
+
 - try and create 'strawman scripts' during conversation and reasoning (that is, *write actual sh* to ground the conversation in, constantly)
   - Use these in conversation-flow, do not save them to durable/planning/notes documents (except as inline, short, idiomatic-sh examples to motivate a problem, like this: `set_x; if x; then do_y; fi; unset x`. Inline, direct, not making plans about Dorc.) since we don't want to accidentally lock-in/do-design-work about specific Dorc features or patterns *by accident*
   - but using them liberally will help ground both the conversation, and your inference (models do best with actual code to reason about, even if it's hallucinated)
