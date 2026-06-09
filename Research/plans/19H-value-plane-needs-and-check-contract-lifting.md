@@ -11,12 +11,14 @@
 >
 > AI-authored, confidence-marked (+SURE / ~SUSPECT / -GUESS / --WONDER). Trust the root
 > `README`/`DESIGN`/`IMPLEMENTATION`/`KNOBS`/`AGENTS` and the human rulings (19A §5, find-3, the round-19
-> conversation) over this. Continues `19F`/`19G`. Slugs it leans on: `16C` (the value-synthesis
-> refutation — read carefully, it is narrower than "no value plane"), `19A §5` (the settled
-> probe→observables→abstract-interpret model), `ch-shape-anno`/`kTYANNOT` (the inline annotation),
-> `seam-interproc`/`seam-finite`, `inv-referent-agnostic`/SF-1/`an-entity-uniqueness` (identity declared,
-> not inferred), `17N` (named kinds), `17O` (the stdlib-oracle quality bar). The algorithmic and substrate
-> claims here are deliberately held open (§4) pending a prior-art pass.
+> conversation) over this. Continues `19F`/`19G`. An adversarial-crosscheck on the first draft sharpened
+> §1.3/§2.3/§4 (the soundness floor is apply-direction only; the probe direction and propagation-correctness
+> are separate guarantees). Slugs it leans on: `16C` (the value-synthesis refutation — narrower than "no
+> value plane"), `19A §5` (the settled probe→observables→abstract-interpret model), `ch-shape-anno`/`kTYANNOT`
+> (the inline annotation), `seam-interproc`/`seam-finite`, `inv-referent-agnostic`/SF-1/`an-entity-uniqueness`
+> (identity declared, not inferred), `17N` (named kinds), `17O` (the stdlib-oracle quality bar),
+> `dq-reflexive-probe-inertness`/`16P` DP-4 (probe-inertness is not contract-enforceable). The algorithmic
+> and substrate claims here are deliberately held open (§4) pending a prior-art pass.
 
 ---
 
@@ -29,9 +31,12 @@ which command touches which entity and to compile the right read-only check; and
 probe's results through the script's constructs and discover what is safe to elide. That value-tracking
 is a real value-flow analysis, and round-19 deferred all of it — injecting the observables, inferring the
 entities with a flag-strip. `16C` refused analyzer-side value *synthesis* (computing what a command would
-emit at runtime); it did not, and could not, refuse value *propagation* (following a value the script
-already names from where it is bound to where it is used). Conflating the two — reading "no synthesis" as
-"no value plane" — is what left the engine unable to do its central job.
+emit at runtime); it did not, and could not, refuse value propagation (following a value the script
+already names from where it is bound to where it is used). That distinction is this doc's own sharpening,
+not `16C`'s wording: `16P` records the whole value plane as deliberately deferred — a charter-blessed
+scoping, not an error. The forward point is narrower: propagation is decidable, it is not the thing `16C`
+refuted, and this goal (eliding on real inputs) is the one that cannot afford the deferral, since it is
+exactly what resolving entities and producing observables both require.
 
 ---
 
@@ -78,21 +83,35 @@ the entity and pick the body to ship) and what the post-probe pass consumes (its
 flowed into the fold). So the value analysis is not two features bolted together; it is one analysis with
 a pre- and post-probe face.
 
-### 1.3 The boundary is a control, not a wall — and that is where soundness lives
+### 1.3 The boundary is a control — the apply-direction floor, and what it does not cover
 
-The single load-bearing invariant, and the one algorithmic claim here held +SURE: wherever the analysis
-stops — a genuinely dynamic value it cannot resolve, or a construct past whatever complexity we have
-chosen to follow — it degrades to ⊤, and ⊤ means the command runs, its arguments go unparsed, and nothing
-is elided (`kFAIL-perform`). Soundness comes from this degrade-to-run, and it holds *independent of how
-powerful or precise the analysis is*. That decouples the two questions that round-19 tangled: correctness
-is fixed (⊤ ⇒ run, always), and coverage (how much actually elides) is a dial we can turn — cheap and
-shallow now, richer later — without ever putting correctness at risk.
+One invariant is load-bearing, and it covers the apply direction: wherever the analysis stops — a
+genuinely dynamic value it cannot resolve, or a construct past whatever complexity we choose to follow —
+it degrades to ⊤, and ⊤ means the command runs, its arguments go unparsed, nothing is elided
+(`kFAIL-perform`). For that direction, soundness comes from the degrade-to-run and holds independent of
+how powerful or precise the analysis is: correctness is fixed (⊤ ⇒ run), coverage is a dial — cheap now,
+richer later — at no cost to correctness.
 
-We have real control over where that dial sits, and it can sit at different places for different inputs:
-"past this level of nesting / this kind of construct, we will not parse arguments and will not elide" is a
-legitimate, tunable stop. ~SUSPECT we will want it set more generously for oracles (authored with intent,
-expected to stay liftable) than for scrappy books — but since they share the machinery, the difference is
-a threshold, not a different analysis.
+Two things that floor does not cover, and take-3 must guarantee by other means (the correction an
+adversarial-crosscheck surfaced on the first draft of this doc):
+
+- The probe direction (`kFAIL-withhold`: never mutate in a read-only pass). The `check()` body is the
+  read-only probe we ship and run; if the analysis mis-resolves an entity or lifts the wrong body, the
+  degrade never fires — the engine confidently ships a wrong-entity or mutating probe. Probe-inertness is
+  a separate obligation: the reflexive-inertness check (point the effect-analyzer at the lifted probe body
+  and refuse to ship one it cannot prove inert — `dq-reflexive-probe-inertness`) plus the sandbox the
+  contract frame provably cannot replace (`16P` DP-4). A conservative value analysis does not make a probe
+  read-only.
+- Propagation-correctness. The floor protects against the analysis degrading; it does nothing against the
+  analysis being confidently wrong — a value mis-tracked through `shift`/`$@`, or two distinct operands
+  aliased to one cell, is a wrong resolution licensing a wrong elision, and the degrade never triggers
+  because nothing reports the error. The analysis must be correct where it acts, not merely conservative
+  where it gives up — the harder of the two guarantees, and the one §4 holds open.
+
+The dial itself we control, and it can sit differently per input: "past this nesting / this construct, do
+not parse arguments and do not elide" is a legitimate, tunable stop. ~SUSPECT we want it set more
+generously for oracles (authored, expected to stay liftable) than for scrappy books — but since they share
+the machinery, that is a threshold, not a different analysis.
 
 ### 1.4 What it must at least reach (minimum-necessary, not a closed set)
 
@@ -194,16 +213,24 @@ useradd__check() {
 }
 ```
 
-The check's read-only body (`getent passwd deploy`) probes the fact — does the user exist — and yields its
-own rc. But the `||` consumes `useradd`'s rc, and `useradd` is a mutator: it is not run in a read-only
-probe. So a fork take-3 should decide deliberately, not bake in:
+Note the shape first: `useradd <name>` has no verb — the entity is the bare first operand, exactly a case
+the current engine cannot resolve (it reads verb=word-1, so `deploy` becomes the verb; the round-19
+fixtures fake it by baking the username in as the verb). So this is not only an illustration of the model
+— no-verb resolution is one of the things the value analysis must newly enable. With that flagged: the
+check's read-only body (`getent passwd deploy`) probes the fact — does the user exist — and yields its own
+rc. But the `||` consumes `useradd`'s rc, and `useradd` is a mutator: it is not run in a read-only probe.
+So a fork take-3 should decide deliberately, not bake in:
 
 - ~SUSPECT lean (per the human's "no defaults, no values; only what the probe gives us"): an un-probeable
   mutator is ⊤, so it runs. `useradd deploy` runs, returns its real rc at apply-time, and `|| mkdir` fires
   on its own. Convergence-elision still applies where a mutator's status is not branch-consumed (a bare
   `useradd deploy`, converged and ambient, can be replaced by a no-op whose dead status nobody reads).
-  Under this reading there is no converged-rc declaration, and round-19's `(exit 9)` substitution was an
-  over-reach — the simpler behavior is just "it runs".
+  Under this reading there is no converged-rc declaration, which drops round-19's `(exit 9)` value-
+  preserving substitution. That is not a claim the substitution was wrong — it is built, tested, and the
+  fold direction under it is right (`19E`); it is the deliberate cost of the no-values ruling: you give up
+  eliding a converged branch-consumed mutator and let it run. No safety is traded — the
+  undeclared-rc-blocks-elision gate still prevents the under-execute the `(exit 9)` machinery also prevents
+  — only that one elision is lost.
 - The alternative is an oracle declaration of `fact-state → observable` ("when the user exists, `useradd`
   yields 9"), enabling a value-preserving elision of the mutator. Richer, but it is the kind of declared
   value the human is currently rejecting.
@@ -266,16 +293,20 @@ fed them fixtures, because the static half — resolve the entity, pick the body
 
 ## 3. What take-3 carries forward from round-19
 
-Designs the spike validated, to layer onto the value analysis rather than re-derive:
+Designs the spike validated (against injected inputs and the find-3 stand-in for identity — real, but
+stand-in-fed), to layer onto the value analysis rather than re-derive:
 
 - The one observable-tuple over channels (effect / status / stdout / stderr) — the right shape for "the
   check produces a per-channel value or ⊤".
 - The apply fold — abstract-interpretation over probed values; rc opaque; ⊤ ⇒ run — as the seed of the
   post-probe value analysis (widen its domain, feed it real results).
 - The cell-model (kind / entity / selector) plus the reaching-defs ambient gate — the poison-wall fix; the
-  keystone output, with the value analysis as its input.
-- The deterministic host simulator and the e2e corpus, plus the executable (`dash -n`) acceptance gate —
-  the measuring infrastructure the next step extracts and de-crufts into the take-3 stick.
+  keystone output. Note its entity coordinate is exactly the half still riding the find-3 stand-in
+  (selector/kind discrimination is validated; entity is resolved only because the flag-strip happens to
+  pick the literal operands in the fixtures).
+- The deterministic host simulator and the e2e corpus, plus the executable (`dash -n` and, for some cases,
+  real mocked exec) acceptance gate — the measuring infrastructure the next step extracts and de-crufts
+  into the take-3 stick.
 - The `17O` quality bar (§2.6), kept as regression contract.
 
 ---
@@ -284,8 +315,9 @@ Designs the spike validated, to layer onto the value analysis rather than re-der
 
 - The algorithm and substrate. How rich the value-flow needs to be, how it terminates and how precise it
   is, and whether it rides the existing monotone worklist or wants a different engine — undetermined here.
-  The prior-art run should ground this; the only thing this doc asserts is the degrade-to-⊤ soundness floor
-  (§1.3), which holds regardless.
+  The prior-art run should ground this. The only thing this doc asserts firmly is the apply-direction
+  degrade-to-⊤ floor (§1.3) — and even that is one of three guarantees: the probe-direction inertness and
+  the propagation-correctness it names are separate, and harder, and not provided by the floor.
 - `fork-mutator-rc` (§2.3): an un-probeable mutator as ⊤ ⇒ run (current lean) vs. an oracle-declared
   `fact-state → observable`. Decides whether any "declared value" exists at all.
 - `fork-annotation-spelling` (`ch-shape-anno` / `kTYANNOT`): the inline `pkg : Kind = "$1"` form breaks the
