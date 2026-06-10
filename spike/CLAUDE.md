@@ -9,11 +9,11 @@ become the shipped tool. Read the root docs for *what Dorc is*; this file is
 
 This is **spike-3 / take-3** (round-20). Charter: `Research/plans/19H` (what to
 build — the value-flow input side + command-keyed `check()` contract-lifting)
-and `Research/plans/19I` (what it is graded against — the 43-case corpus with
-its stand-in axes tagged). Process spine: `Research/plans/191` §5/§5b and the
-`16Q` `ap-*` correctives. The crate set was seeded from the round-19 spike-2
-(the `19F` §4 keep-list); take-3 rebuilds the input side in place and re-grounds
-every stand-in `19I` tags.
+and `Research/plans/19I` (what it is graded against — the e2e corpus, 42 cases
+after the stage-1 cut, with its stand-in axes tagged). Process spine:
+`Research/plans/191` §5/§5b and the `16Q` `ap-*` correctives. The crate set was
+seeded from the round-19 spike-2 (the `19F` §4 keep-list); take-3 rebuilds the
+input side in place and re-grounds every stand-in `19I` tags.
 
 Goal-shape: academic-grade static-analysis work (CFG, monotone dataflow,
 abstract interpretation, lattices). Be **boring, defensive, careful, judicious**
@@ -65,6 +65,12 @@ and where* (→ `Research/notes/20x-*.md`, append-only), not green tests.
   best-effort. Consequence: probe-inertness comes *only* from structural
   vouching (the self-vouch carve-out — a command inside its own oracle's
   `check()`); no analysis-confidence threshold ever makes a probe "safe".
+  This does NOT ban the cheap *vouch-closure check*
+  (`dq-reflexive-probe-inertness`, narrowed per 16Q's superseded-comment): a
+  lifted probe body containing a call that is neither the oracle's own
+  command, a declared Query, nor a blessed-pure builtin is REFUSED shipping —
+  that checks declared structure, not inferred mutation. It remains owed
+  (task-D scope; 205).
 - **TOCTOU (probe→apply staleness) is deferred-to-actively-WONTFIX.** Do not
   build re-probe-before-apply, freshness windows, or anything aimed at it.
   (Maybe-someday shape, very deferred: oracle tooling for a super-cheap
@@ -125,15 +131,27 @@ and where* (→ `Research/notes/20x-*.md`, append-only), not green tests.
   no-mutation. Convergence is the *derived* state of the Effect channel —
   never a separate probe-reported verdict. Do not re-introduce a standalone
   `Verdict`, a bolted `Observed{rc}`, or a consumption-only observable enum.
+- **inv-site-keyed-results** (round-20; default shape, 203 §1 + 205) — the
+  probe-results lane is keyed by **command-site** (the stable LeafId→AstId
+  back-map), not by fact, kind:entity, or check/command-family: a site-keyed
+  answer is a program-point-keyed answer, two same-command sites must not
+  collapse, and it preserves the human's (downgraded-but-reserved)
+  order-maintaining-probe seam (`kFLATTEN`). Not a weld: if `kSTATE`'s
+  reuse/memoization pole later demands fact-keyed verdict-shapes, that is a
+  conscious orchestrator+human decision, not a local refactor.
 - **inv-probe-sourced-values** (round-20, from the `19D` under-execute) — a
   replacement stand-in may reproduce ONLY values with probe-provenance: every
   channel value it emits traces to a concrete observable the probe actually
   produced (or an oracle-declared fact the human has explicitly sanctioned —
   none currently exist; see fork-mutator-rc). No fabricated defaults, no
-  rc=0 assumptions, no synthesized stdout. ⊤ anywhere in the flow forbids the
-  mint entirely. **Anti-masking test discipline**: no test may hand-inject an
-  observable the check itself should predict; a check returning can't-predict
-  must flip its dependent case to *run*.
+  rc=0 assumptions, no synthesized stdout. A *consumed* channel whose
+  prediction is ⊤ forbids the mint. **Consumption-coverage is the load-bearing
+  precondition** (205): an unmarked consumer makes "dead channel" a lie — the
+  committed engine's errexit/`$?` gaps are exactly that hole (task-E closes
+  them per the human's 19A C-3 ruling); never argue a channel "dead" without
+  tracing who could read it. **Anti-masking test discipline**: no test may
+  hand-inject an observable the check itself should predict; a check returning
+  can't-predict must flip its dependent case to *run*.
 
 ## Build / test / run
 
