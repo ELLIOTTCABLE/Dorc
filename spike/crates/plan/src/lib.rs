@@ -156,20 +156,47 @@ impl<P: Bias> PhasedVerdict<P> {
 // The replace witness (note 165 L2; "replace" — 16F)
 // ===========================================================================
 
+/// Which of the two value-preserving substitution paths licensed a replacement
+/// (task-D2): a convergence-elision of an already-established mutator, or a
+/// value-preserving substitution of a read-only Query guard. The two have genuinely
+/// different preconditions (a mutator needs `Converged` + `Must`; a Query needs only
+/// a valid, probe-sourced rc — it has no mutation to be already-done), so the witness
+/// records which one it proved.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum LicenseVia {
+    /// Convergence-elision: an `EstablishAmbient` mutator whose effect the host
+    /// reports already holds (`Converged`), oracle-declared `Must`, ambient.
+    ConvergedEstablish,
+    /// Query-guard substitution (202 §2 / task-D2): a read-only guard with a valid,
+    /// probe-sourced rc, replaced by the value-preserving [`StandIn`] reproducing that
+    /// rc. Mutates nothing, so convergence does not gate it — only rule-query-validity
+    /// + a known rc + the consumption gates do.
+    QueryGuard,
+}
+
 /// Why a replacement was licensed — the audit trail a plan UI greys-out as the "why"
 /// (note 165 L2). Readable, but only ever constructed inside
 /// [`ReplaceLicense::prove_replaceable`], so every field reflects a checked condition.
 #[derive(Debug, Clone)]
 pub struct Derivation {
-    /// The fact whose established-ness licenses the skip.
+    /// The fact whose established-ness (or queried-ness) licenses the substitution.
     pub fact: FactKey,
+    /// Which substitution path was proved ([`LicenseVia`]) — convergence-elision or a
+    /// Query-guard value-preserving substitution.
+    pub via: LicenseVia,
     /// `analysis` classified this command [`SkipClass::EstablishAmbient`]: no
     /// upstream same-run mutation reaches it (the W5 ambient gate, note 162 O-1).
+    /// Always `true` for [`LicenseVia::ConvergedEstablish`]; `false` for a Query guard
+    /// (a Query has no ambient-establish gate — rule-query-validity gates it instead).
     pub ambient: bool,
     /// The fact is oracle-declared [`Grade::Must`] (a mined `May` never licenses —
-    /// `inv-must-may`).
+    /// `inv-must-may`). [`Grade::Must`] for a converged-establish; for a Query guard
+    /// this records the guard's grade (the guard's elision is not a mutation-elision,
+    /// so `inv-must-may`'s mutation-licensing rule does not bind it).
     pub grade: Grade,
-    /// The host probe found the fact already holds ([`Verdict::Converged`]).
+    /// The host probe verdict: [`Verdict::Converged`] for a converged-establish; for a
+    /// Query guard, the guard's observed Effect verdict (`holds`/`absent` — the guard
+    /// is substituted regardless, since it mutates nothing).
     pub verdict: Verdict,
 }
 
@@ -229,6 +256,11 @@ impl ReplaceLicense {
     /// Generic over the phase `P` (`inv-superposition`): the engine never bakes a
     /// phase; the caller argues it. `build_plan` passes the verdict's own provenance
     /// (`Probe`) and the leaf's observed rc.
+    ///
+    /// task-D2 dispatch: an [`SkipClass::EstablishAmbient`] takes the
+    /// convergence-elision precondition above; a [`SkipClass::QueryResolvable`] takes
+    /// the Query-guard path ([`prove_query_replaceable`](ReplaceLicense::prove_query_replaceable)).
+    /// Any other class never licenses.
     #[must_use]
     #[expect(
         clippy::needless_pass_by_value,
@@ -241,48 +273,76 @@ impl ReplaceLicense {
         consumed: May<Powerset<Channel>>,
         status: Predicted<Rc>,
     ) -> Option<ReplaceLicense> {
-        let SkipClass::EstablishAmbient(fact) = class else {
-            return None;
-        };
-        if grade != Grade::Must {
+        match class {
+            SkipClass::EstablishAmbient(fact) => {
+                if grade != Grade::Must {
+                    return None;
+                }
+                if verdict.resolve() != Resolved::Replaceable {
+                    return None;
+                }
+                consumption_ok(&consumed, status).then_some(ReplaceLicense {
+                    fact: *fact,
+                    derivation: Derivation {
+                        fact: *fact,
+                        via: LicenseVia::ConvergedEstablish,
+                        ambient: true,
+                        grade,
+                        verdict: Verdict::Converged,
+                    },
+                })
+            }
+            SkipClass::QueryResolvable { fact, valid } => {
+                Self::prove_query_replaceable(*fact, *valid, verdict.raw(), &consumed, status)
+            }
+            _ => None,
+        }
+    }
+
+    /// Mint a license for a read-only **Query guard**'s value-preserving substitution
+    /// (202 §2 / task-D2 — Build 5). A Query mutates nothing, so convergence does NOT
+    /// gate it (unlike a converged-establish): the guard is replaced by the
+    /// [`StandIn`] reproducing its PROBED rc whenever
+    ///
+    /// 1. the guard is **valid** (rule-query-validity, 205 §2: no mutator/opaque
+    ///    reached it from entry — else its resting rc is stale ⇒ run for real); AND
+    /// 2. its rc is a **known** probe-sourced `Predicted::Value` (not ⊤) — the
+    ///    stand-in needs a concrete rc to reproduce (`inv-probe-sourced-values`: no
+    ///    fabricated rc-0); AND
+    /// 3. the consumption gates pass ([`consumption_ok`]): a guard whose `Stdout`/
+    ///    `Stderr` is consumed, or whose `Status` is an `if`/`elif` guard (the render
+    ///    floor), still blocks. A `&&`/`||`-consumed status with a *known* rc relaxes
+    ///    (the whole point — the fold reads the exact rc and substitutes it).
+    ///
+    /// An INVALID guard arrives with `status == ⊤` from its phased caller (the cli
+    /// withholds the stale rc), so condition (2) already blocks it — but we also gate
+    /// on `valid` directly so a mis-wired caller cannot smuggle a stale rc through.
+    #[must_use]
+    fn prove_query_replaceable(
+        fact: FactKey,
+        valid: bool,
+        verdict: Verdict,
+        consumed: &May<Powerset<Channel>>,
+        status: Predicted<Rc>,
+    ) -> Option<ReplaceLicense> {
+        if !valid {
             return None;
         }
-        if verdict.resolve() != Resolved::Replaceable {
+        // The guard needs a concrete probe-sourced rc to reproduce — a ⊤ status forbids
+        // the mint (`inv-probe-sourced-values`: never fabricate rc-0). This also covers
+        // the "branch-decision fully resolved" gate (Build 5): a known rc is exactly
+        // what lets the fold resolve the `&&`/`||` AND lets the stand-in reproduce it.
+        if matches!(status, Predicted::Top) {
             return None;
         }
-        // No UNVOUCHED observable consumed downstream. The fact arrives un-collapsed
-        // as a `May` (over-approximate consumption): per `inv-must-may` a `May` value
-        // can only BLOCK a license, never grant one. (The block is sound in BOTH
-        // phases; only what a blocked leaf *becomes* is phase-keyed — the caller's
-        // collapse, `inv-superposition`.)
-        let May(consumed) = &consumed;
-        // `Stdout`/`Stderr`: empty default vouched by nothing (16F §3). A declared rc
-        // does not vouch output *content* ⇒ always block.
-        if consumed.contains(&Channel::Stdout) || consumed.contains(&Channel::Stderr) {
-            return None;
-        }
-        // `Status` (an `if`/`elif` guard): blocks unconditionally — the render floor
-        // (19C strain-D; even a declared rc can't be substituted in-situ on the
-        // `if`/`then`/`fi` line). Errexit-consumption does NOT land here — it is
-        // marked as the value-relaxing `AndOrStatus` below (19A C-3 / 205 §2).
-        if consumed.contains(&Channel::Status) {
-            return None;
-        }
-        // `AndOrStatus` (a `&&`/`||` left operand): blocks ONLY when the rc is undeclared
-        // (`19D`). With no declared rc the stand-in defaults to `true` (rc 0) — a
-        // fabricated success that suppresses a `|| fallback` (the `kFAIL-perform`
-        // under-execute). A declared rc relaxes it: `StandIn::from_rc` reproduces the
-        // exact status, so the branch decides as the real command would (`19A §5`).
-        if consumed.contains(&Channel::AndOrStatus) && matches!(status, Predicted::Top) {
-            return None;
-        }
-        Some(ReplaceLicense {
-            fact: *fact,
+        consumption_ok(consumed, status).then_some(ReplaceLicense {
+            fact,
             derivation: Derivation {
-                fact: *fact,
-                ambient: true,
-                grade,
-                verdict: Verdict::Converged,
+                fact,
+                via: LicenseVia::QueryGuard,
+                ambient: false,
+                grade: Grade::Must,
+                verdict,
             },
         })
     }
@@ -298,6 +358,36 @@ impl ReplaceLicense {
     pub fn derivation(&self) -> &Derivation {
         &self.derivation
     }
+}
+
+/// The shared consumed-observable gate for both substitution paths (the un-vouched
+/// channel check, 16F §3 / 19C strain-D / 19D). The fact arrives un-collapsed as a
+/// `May` (over-approximate consumption): per `inv-must-may` a `May` value can only
+/// BLOCK a license, never grant one. Returns `true` iff NO unvouched observable
+/// forbids the substitution:
+/// * `Stdout`/`Stderr` — empty default vouched by nothing ⇒ a consumed one always
+///   blocks (a declared/probed rc does NOT vouch output *content*);
+/// * `Status` (an `if`/`elif` guard) — blocks unconditionally (the render floor: the
+///   line-granular render cannot substitute a guard on its `if`/`then`/`fi` line);
+/// * `AndOrStatus` (a `&&`/`||` left operand, or an errexit/`$?` consumer marked the
+///   same, 205 §2) — blocks ONLY when the rc is ⊤ (a fabricated rc-0 `true` would
+///   suppress a `|| fallback`, the `kFAIL-perform` under-execute); a known/probe-sourced
+///   rc relaxes it (`StandIn::from_rc` reproduces the exact status).
+///
+/// Sound in BOTH phases; only what a blocked leaf *becomes* is phase-keyed (the
+/// caller's collapse, `inv-superposition`).
+fn consumption_ok(consumed: &May<Powerset<Channel>>, status: Predicted<Rc>) -> bool {
+    let May(consumed) = consumed;
+    if consumed.contains(&Channel::Stdout) || consumed.contains(&Channel::Stderr) {
+        return false;
+    }
+    if consumed.contains(&Channel::Status) {
+        return false;
+    }
+    if consumed.contains(&Channel::AndOrStatus) && matches!(status, Predicted::Top) {
+        return false;
+    }
+    true
 }
 
 // ===========================================================================
@@ -409,6 +499,30 @@ pub struct Plan {
 // the per-fact dedup of spike-2 (which collapsed them) is gone.
 // ===========================================================================
 
+/// What kind of site a [`ProbeCheck`] is — the discriminant the wrong-concrete
+/// firewall keys on (202 §3 / 20C §2 / task-D2). The two site-classes carry
+/// **different observables in their record-rc**, and conflating them is the
+/// disaster class:
+/// * an `Establish` site's record-rc is the PROBE command's rc (`dpkg-query`'s),
+///   NOT the mutator's (`apt-get`'s) — feeding it to the fold's Status would be a
+///   confidently-wrong concrete; it is carried on the wire but feeds the fold
+///   NOTHING (status stays ⊤, unconditionally).
+/// * a `Query` site's record-rc is the guard's OWN rc (`command -v`'s) — it IS the
+///   value the `&&`/`||`/`if`/errexit consumer reads, so it is fold-usable as the
+///   Status channel, but ONLY when [`valid`](ProbeSiteKind::Query::valid)
+///   (rule-query-validity, 205 §2). This asymmetry is the heart of task-D2.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ProbeSiteKind {
+    /// An establish-class site: record-rc is the probe-command's rc ⇒ never the fold
+    /// Status (the firewall blocks it unconditionally).
+    Establish,
+    /// A read-only Query guard: record-rc is the guard's own rc ⇒ fold-usable as the
+    /// Status channel IFF `valid` (rule-query-validity's pristine-prefix bit). When
+    /// `!valid` an upstream mutator/opaque made the resting rc stale ⇒ the caller
+    /// withholds it (status ⇒ ⊤) and the guard runs for real.
+    Query { valid: bool },
+}
+
 /// One read-only check the probe ships for a **command site**: the oracle's verbatim
 /// probe-sh plus the site's full verbatim argv (C-1), wrapped so the rendered probe,
 /// when run, emits a results-record per site (`inv-site-keyed-results`).
@@ -430,20 +544,25 @@ pub struct ProbeCheck {
     /// [`LeafId`] the apply plan assigns the source command. Two same-command sites
     /// carry distinct ids.
     pub site: LeafId,
-    /// The resolved cell this site establishes (the probe checks whether it holds).
+    /// The resolved cell this site establishes or queries (the probe checks whether
+    /// it holds).
     pub fact: FactKey,
+    /// Establish-class or Query-class — the firewall discriminant ([`ProbeSiteKind`]).
+    pub site_kind: ProbeSiteKind,
     /// The oracle's `oracle_probe_<kind>` body (a brace-group), shipped verbatim.
     pub sh: String,
 }
 
 /// A compiled probe: per-resolvable-site read-only checks whose answers drive the
 /// apply's elision (apply-2), plus the un-resolvable sites recorded for transparency.
-/// A site is **resolvable** iff its class is [`SkipClass::EstablishAmbient`] (the only
-/// elidable class — note 162 O-1) AND its kind has a *declared* read-only probe; only
-/// resolvable sites get an invocation. An un-resolvable site (a kill, an opaque
-/// command, a written establish, or an establish whose kind has no probe) appears in
-/// the rendered artifact as a `site:<id> skip-unresolvable` comment, never as an
-/// invocation (`kFAIL-perform`: no convergence knowledge ⇒ the apply runs it).
+/// A site is **resolvable** iff its class is [`SkipClass::EstablishAmbient`] (the
+/// elidable establish — note 162 O-1) OR [`SkipClass::QueryResolvable`] (a read-only
+/// guard whose check IS the probe — 202 §2 / task-D2), AND its kind has a *declared*
+/// read-only probe; only resolvable sites get an invocation. An un-resolvable site (a
+/// kill, an opaque command, a written establish, a `MustRun`, or a resolvable class whose
+/// kind has no probe) appears in the rendered artifact as a `site:<id>
+/// skip-unresolvable` comment, never as an invocation (`kFAIL-perform`: no convergence
+/// knowledge ⇒ the apply runs it).
 #[derive(Debug, Clone, Default)]
 pub struct ProbePlan {
     /// The resolvable sites' checks, in site-id order.
@@ -602,19 +721,31 @@ pub fn compile_probe(
     let mut checks = Vec::new();
     let mut unresolvable = Vec::new();
     for (site, _node, class) in site_order(ast, cfg, classes) {
-        match class {
-            SkipClass::EstablishAmbient(fact) => match probe_body(fact.kind) {
-                // EstablishAmbient with a declared probe ⇒ a resolvable site.
+        // Both an EstablishAmbient and a (resolvable) Query site ship a check — each
+        // is probe-resolvable iff its kind has a declared `oracle_probe_*`. The
+        // `site_kind` discriminant rides along so the cli's firewall knows whether the
+        // record-rc is the probe's (Establish ⇒ never fold) or the guard's own (Query
+        // ⇒ fold iff valid). A written establish, a kill, opaque, pure, MustRun — none
+        // resolvable (`can't-probe ⇒ can't-elide`, `kFAIL-perform`).
+        let resolvable = match class {
+            SkipClass::EstablishAmbient(fact) => Some((*fact, ProbeSiteKind::Establish)),
+            SkipClass::QueryResolvable { fact, valid } => {
+                Some((*fact, ProbeSiteKind::Query { valid: *valid }))
+            }
+            _ => None,
+        };
+        match resolvable {
+            Some((fact, site_kind)) => match probe_body(fact.kind) {
                 Some(sh) => checks.push(ProbeCheck {
                     site,
-                    fact: *fact,
+                    fact,
+                    site_kind,
                     sh,
                 }),
-                // EstablishAmbient but no probe for the kind ⇒ un-checkable ⇒ runs.
+                // Resolvable class but no probe for the kind ⇒ un-checkable ⇒ runs.
                 None => unresolvable.push(site),
             },
-            // A written establish, a kill, opaque, pure — never elidable here.
-            _ => unresolvable.push(site),
+            None => unresolvable.push(site),
         }
     }
     ProbePlan {
@@ -652,14 +783,18 @@ pub fn build_plan(
     classes: &[(CfgNodeId, SkipClass)],
     observe: impl Fn(FactKey) -> Observable,
 ) -> Plan {
-    // Map each classified leaf's AstId → its fact (only establish classes carry one).
-    // The fold reaches over the AST and needs each leaf's observed status keyed by
-    // AstId, so it asks this map, then the injected `observe`.
+    // Map each classified leaf's AstId → its fact (establish + query classes carry
+    // one). The fold reaches over the AST and needs each leaf's observed status keyed
+    // by AstId, so it asks this map, then the injected `observe`. A Query guard's fact
+    // is included so the fold can read its (probe-sourced) Status channel — the rc that
+    // resolves the `&&`/`||` branch (task-D2).
     let leaf_fact: BTreeMap<AstId, FactKey> = classes
         .iter()
         .filter_map(|(node, class)| {
             let fact = match class {
-                SkipClass::EstablishAmbient(f) | SkipClass::EstablishWritten(f) => *f,
+                SkipClass::EstablishAmbient(f)
+                | SkipClass::EstablishWritten(f)
+                | SkipClass::QueryResolvable { fact: f, .. } => *f,
                 SkipClass::MustRun => return None,
             };
             Some((cfg.node(*node).ast, fact))
@@ -677,9 +812,9 @@ pub fn build_plan(
             let ast_id = cfg.node(*node).ast;
             let sh = command_text(src, ast, ast_id);
             let observed = match class {
-                SkipClass::EstablishAmbient(f) | SkipClass::EstablishWritten(f) => {
-                    Some(observe(*f))
-                }
+                SkipClass::EstablishAmbient(f)
+                | SkipClass::EstablishWritten(f)
+                | SkipClass::QueryResolvable { fact: f, .. } => Some(observe(*f)),
                 SkipClass::MustRun => None,
             };
             let disposition = disposition_for(cfg, &fold, *node, class, ast_id, observed);
@@ -732,10 +867,15 @@ fn disposition_for(
         };
     }
 
-    // (1) convergence-elision (the existing path, refined to a value-preserving
-    // stand-in). Top-containment (16G hole-5): a ⊤-successor leaf is never replaced.
+    // (1) value-preserving substitution: convergence-elision of a converged-establish,
+    // OR a Query-guard substitution (task-D2 — both minted through `prove_replaceable`,
+    // which dispatches on the class). Reached only for a leaf the fold did NOT omit
+    // (its branch stays live). Top-containment (16G hole-5): a ⊤-successor leaf is
+    // never replaced.
     match class {
-        SkipClass::EstablishAmbient(_) if !has_top_successor(cfg, node) => {
+        SkipClass::EstablishAmbient(_) | SkipClass::QueryResolvable { .. }
+            if !has_top_successor(cfg, node) =>
+        {
             let verdict =
                 PhasedVerdict::<Probe>::new(observed.map_or(Verdict::Unknown, |o| o.effect));
             let consumed = May(cfg.consumed_observables(node).clone());
@@ -744,9 +884,10 @@ fn disposition_for(
                 Some(license) => {
                     // The value-preserving stand-in reproduces the predicted Status channel.
                     // An unpredicted status (`Predicted::Top`) falls back to the conforming
-                    // `true` (rc 0) — reached ONLY where the status is not branch-consumed
-                    // (`prove_replaceable` blocks a branch-consumed `Top`, `19D`), so the
-                    // rc-0 placeholder is never read by a branch.
+                    // `true` (rc 0) — reached ONLY for a converged-establish whose status is
+                    // not branch-consumed (`prove_replaceable` blocks a branch-consumed `Top`,
+                    // `19D`; a Query guard always carries a known rc, never ⊤). So the rc-0
+                    // placeholder is never read by a branch.
                     let stand_in = match status {
                         Predicted::Value(rc) => StandIn::from_rc(rc),
                         Predicted::Top => StandIn::True,

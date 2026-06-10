@@ -10,6 +10,7 @@
 //! oracle_effect apt-get install establish installed  # establishes package:<pkg>#installed
 //! oracle_effect apt-get purge   kill      installed  # removes it (same selector cell)
 //! oracle_effect apt-get update  establish fresh      # nullary: package-index#fresh (Singleton)
+//! oracle_effect command ''      query     present    # READ-ONLY: observes tool:<x>#present
 //! ```
 //!
 //! From a book's bare `apt-get install -y nginx`, the analyzer looks up the
@@ -53,13 +54,24 @@ use std::collections::BTreeMap;
 /// (the effect-map still supplies selector/polarity per `(provider, verb)`).
 pub mod check;
 
-/// What a `(provider, verb)` invocation does to a fact of its kind.
+/// What a `(provider, verb)` invocation does to — or *observes about* — a fact of
+/// its kind (202 §2). Establish/Kill are MUTATORS; `Query` is the read-only
+/// guard-class (`command -v`, `dpkg -s`, `getent`), first-classed in round-20 task-D2.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Polarity {
     /// Makes the fact hold (`apt-get install` ⇒ `package:X` present).
     Establish,
     /// Makes the fact not hold (`apt-get purge` ⇒ `package:X` absent).
     Kill,
+    /// Reads the fact and mutates NOTHING (`command -v X` ⇒ observes
+    /// `tool:X#present`). The read-only guard-class (202 §2 / task-D2): a `Query`
+    /// poisons no reaching-defs and establishes nothing, but its check IS the probe
+    /// — and its probed rc becomes the guard site's Status channel (gated by
+    /// rule-query-validity, 205 §2). The disaster-class asymmetry: a Query site's
+    /// record-rc is the guard's OWN rc (fold-usable), unlike a mutator site's
+    /// record-rc (the probe-command's rc, never the mutator's — the wrong-concrete
+    /// firewall, 20C §2).
+    Query,
 }
 
 /// A read-only fact-probe for one kind: shippable sh that observes whether
@@ -405,11 +417,14 @@ fn lift_command<'a>(
     let polarity = match *polarity {
         "establish" => Polarity::Establish,
         "kill" => Polarity::Kill,
+        "query" => Polarity::Query,
         other => {
             out.push(Diagnostic::error(
                 BAD_EFFECT,
                 Some(span),
-                format!("oracle_effect polarity must be `establish` or `kill`, not `{other}`"),
+                format!(
+                    "oracle_effect polarity must be `establish`, `kill`, or `query`, not `{other}`"
+                ),
             ));
             return None;
         }
@@ -825,6 +840,50 @@ mod tests {
                 polarity: Polarity::Establish
             }],
             "the verbless effect keys on the ε-verb: {cells:?}"
+        );
+    }
+
+    #[test]
+    fn query_polarity_lifts_as_the_read_only_class() {
+        // task-D2 (202 §2): `oracle_effect command '' query present` lifts to a
+        // Query-polarity cell — the read-only guard-class. Pins the third polarity
+        // word and the ε-verb (verbless `command -v`) together (the canonical guard).
+        let mut i = Interner::default();
+        let src = "oracle_kind=tool\noracle_probe_tool() { :; }\n\
+                   oracle_effect command '' query present\n";
+        let out = lift(&mut i, &[src]);
+        assert!(
+            !out.has_errors(),
+            "the `query` polarity must lift cleanly: {:?}",
+            out.diags
+        );
+        let tool = KindId(i.intern("tool"));
+        let present = SelectorId(i.intern("present"));
+        let eps = empty_verb(&mut i);
+        let cells = out.value.effect_of(ProviderId(i.intern("command")), eps);
+        assert_eq!(
+            cells,
+            &[EffectCell {
+                kind: tool,
+                selector: present,
+                polarity: Polarity::Query
+            }],
+            "the verbless guard keys on the ε-verb with Query polarity: {cells:?}"
+        );
+    }
+
+    #[test]
+    fn unknown_polarity_word_is_diagnosed() {
+        // The grammar accepts exactly establish/kill/query; anything else drops the
+        // marker with a BAD_EFFECT diagnostic (fail-soft, dn-7).
+        let mut i = Interner::default();
+        let src = "oracle_kind=tool\noracle_probe_tool() { :; }\n\
+                   oracle_effect command '' observe present\n";
+        let out = lift(&mut i, &[src]);
+        assert!(
+            out.diags.iter().any(|d| d.code == BAD_EFFECT),
+            "an unknown polarity word must raise BAD_EFFECT: {:?}",
+            out.diags
         );
     }
 }

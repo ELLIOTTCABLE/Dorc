@@ -1,0 +1,5 @@
+#!/bin/sh
+# INERT mock (ap-2 exec harness): logs that it ran, mutates NOTHING, exits 0. Under the
+# harness's PATH=mocks-only this shim is the only external thing that can run.
+printf 'ran: %s %s\n' "${0##*/}" "$*" >>"$DORC_LOG"
+exit 0

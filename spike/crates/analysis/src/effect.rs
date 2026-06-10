@@ -43,7 +43,8 @@ use std::collections::BTreeSet;
 /// `package:nginx#installed`).
 pub use dorc_core::FactKey;
 
-/// What a command does to system state, as far as the analyzer can determine.
+/// What a command does to — or *observes about* — system state, as far as the
+/// analyzer can determine.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum CommandEffect {
     /// No modeled system-state effect (a bare assignment, or a read-only command).
@@ -52,6 +53,15 @@ pub enum CommandEffect {
     Establishes(FactKey),
     /// Kills `fact` (`apt-get purge nginx`).
     Kills(FactKey),
+    /// READS `fact` and mutates nothing — the read-only guard-class (`command -v
+    /// nginx` ⇒ `Queries(tool:nginx#present)`; 202 §2 / task-D2). A `Query`
+    /// **poisons no reaching-defs and establishes nothing** (the reaching-defs gen
+    /// treats it like `Pure`): a guard reads state, it does not change it, so it must
+    /// not force a downstream establish to `EstablishWritten` nor invalidate a
+    /// downstream Query (st-3, 20A §4). Distinct from `Pure` only so a Query SITE is
+    /// probe-resolvable (its check IS the probe) and its probed rc can feed the fold's
+    /// Status channel (gated by rule-query-validity).
+    Queries(FactKey),
     /// ⊤: cannot characterize — a ⊤ argv word, no provider/check, an `evaluate`
     /// `Top`, or no effect-map entry for the resolved verb. Conservatively MAY mutate
     /// anything (so it poisons downstream ambient-ness) and itself must run
@@ -71,10 +81,10 @@ const KIND_DISAGREEMENT: DiagCode = DiagCode("effect-kind-disagreement");
 /// code now (`inv-referent-agnostic`).
 ///
 /// Returns a `Vec` of cells (a multi-cell verb is legal — `us-effectmap`); each is
-/// `Establishes`/`Kills`. ANY ⊤ — a ⊤ argv word, no provider, no check, an
-/// `evaluate` `Top`, or no effect-map entry — yields `[Opaque]` (`inv-top-reject`:
-/// the degrade is the floor; both `kFAIL` directions). A bare assignment yields
-/// `[Pure]`.
+/// `Establishes`/`Kills`/`Queries` (`Queries` is the read-only guard-class, 202 §2).
+/// ANY ⊤ — a ⊤ argv word, no provider, no check, an `evaluate` `Top`, or no
+/// effect-map entry — yields `[Opaque]` (`inv-top-reject`: the degrade is the floor;
+/// both `kFAIL` directions). A bare assignment yields `[Pure]`.
 ///
 /// `inv-superposition`: the cells are phase-/orientation-agnostic facts; this
 /// classifies, it decides nothing. Diagnostics (kind-disagreement) accumulate in
@@ -156,8 +166,9 @@ pub fn command_effect(
     let cells = idx.effect_of(provider, verb_key);
     if cells.is_empty() {
         // The check resolved an identity, but no oracle declared an effect for this
-        // (provider, verb). Not this analysis's concern ⇒ ⊤ (runs). (A read-only Query
-        // guard lands here today; its fold is task-D, 202 §2.)
+        // (provider, verb). Not this analysis's concern ⇒ ⊤ (runs). A read-only guard
+        // whose oracle declares `oracle_effect … query …` lands as `Queries` below;
+        // only an un-declared guard falls through to Opaque here (task-D2, 202 §2).
         return vec![CommandEffect::Opaque];
     }
 
@@ -220,6 +231,7 @@ fn cell_effect(
     match cell.polarity {
         Polarity::Establish => CommandEffect::Establishes(fact),
         Polarity::Kill => CommandEffect::Kills(fact),
+        Polarity::Query => CommandEffect::Queries(fact),
     }
 }
 
@@ -298,6 +310,17 @@ impl Reach {
             Reach::Facts(s) => s.contains(fact),
         }
     }
+
+    /// Is this a **pristine** reaching-state — NO write-or-unknown reached here? The
+    /// rule-query-validity bit (205 §2 / 20A §4 st-3): a Query's probed rc is
+    /// fold-usable iff no invalidating command (an oracled MUTATOR — any
+    /// Establish/Kill — or an Opaque) reaches the guard from entry. Because Queries
+    /// and pure builtins gen nothing into `Reach`, "no write-or-unknown reached" is
+    /// exactly the empty (⊥) fact-set; a non-empty set (some mutator genned a cell) or
+    /// `Top` (an opaque ran) is non-pristine ⇒ the guard's resting rc is stale.
+    fn is_pristine(&self) -> bool {
+        matches!(self, Reach::Facts(s) if s.is_empty())
+    }
 }
 
 /// How a `Command` relates to the skip decision. This is the *input* the probe/
@@ -315,6 +338,21 @@ pub enum SkipClass {
     /// resting probe is not authoritative ⇒ run (or reason in-script; conservatively
     /// run). The `purge X; … install X` case.
     EstablishWritten(FactKey),
+    /// A read-only **Query** guard reading `fact` (`command -v nginx` ⇒
+    /// `tool:nginx#present`; 202 §2 / task-D2). Probe-resolvable like an
+    /// `EstablishAmbient` (its check IS the probe), but its probed rc feeds the
+    /// fold's **Status** channel rather than gating a mutation-elision — and ONLY
+    /// when [`valid`](SkipClass::QueryResolvable::valid) holds.
+    ///
+    /// `valid` is the rule-query-validity bit (205 §2 / 20A §4 st-3): the guard's
+    /// probe-time rc is fold-usable IFF NO invalidating command reaches the guard
+    /// from entry — invalidating = an oracled MUTATOR (any Establish/Kill) or an
+    /// Opaque; NOT invalidating = other Queries or blessed-pure builtins. When
+    /// `valid == false` the guard's resting rc is stale (a mutator may have changed
+    /// the cell), so the phased caller withholds the rc (status ⇒ ⊤) and the guard
+    /// runs for real at apply — never a stale fold (`inv-superposition`: the bit is a
+    /// phase-agnostic fact; the collapse stays in the caller).
+    QueryResolvable { fact: FactKey, valid: bool },
 }
 
 /// Nodes reachable from the program `entry` by forward edges. The reaching-defs
@@ -380,14 +418,18 @@ pub fn classify(
         .collect();
 
     // Forward reaching-defs: out = in ⊔ gen(node). Each of a node's cells is genned
-    // (a multi-cell verb writes every cell); an Opaque cell joins ⊤.
+    // (a multi-cell verb writes every cell); an Opaque cell joins ⊤. A `Queries` cell
+    // gens NOTHING — a read poisons no ambient-ness and invalidates no downstream
+    // Query (it is a write-free observation; task-D2 / st-3, 20A §4). This is the
+    // gen-side of rule-query-validity: because a Query gens nothing, `reach.states`
+    // (the IN-state at each node) carries exactly the writes-or-opaque that reached it.
     let reach = solve(cfg, Direction::Forward, |i, incoming: &Reach| {
         let mut state = incoming.clone();
         for cell in &effects[i] {
             state = match cell {
                 CommandEffect::Establishes(f) | CommandEffect::Kills(f) => state.with(*f),
                 CommandEffect::Opaque => state.join(&Reach::Top),
-                CommandEffect::Pure => state,
+                CommandEffect::Pure | CommandEffect::Queries(_) => state,
             };
         }
         state
@@ -433,6 +475,19 @@ pub fn classify(
                     SkipClass::EstablishWritten(*f)
                 } else {
                     SkipClass::EstablishAmbient(*f)
+                }
+            }
+            // A read-only Query guard, reachable + converged: probe-resolvable, with
+            // its rule-query-validity bit (205 §2 / 20A §4 st-3) read off the IN-state
+            // — pristine (no write-or-unknown reached from entry) ⇒ the probed rc is
+            // fold-usable. `reach.states[i]` is the in-state (solve.rs: states[v] is
+            // the state *before* node v); a Query gens nothing, so it is exactly the
+            // writes-or-opaque that reached the guard. An unreachable/non-converged
+            // guard folds to MustRun like any other (kFAIL-perform).
+            [CommandEffect::Queries(f)] if trust_reach && reachable[i] => {
+                SkipClass::QueryResolvable {
+                    fact: *f,
+                    valid: reach.states[i].is_pristine(),
                 }
             }
             _ => SkipClass::MustRun,
@@ -482,6 +537,11 @@ systemctl__check() {
       start)  probe-active "$svc" ;;
       disable) probe-enabled "$svc" ;;
    esac
+}
+command__check() {
+   case $1 in -v) shift ;; esac
+   tool : tool = "$1"
+   command -v -- "$tool" >/dev/null 2>&1
 }
 "#;
 
@@ -860,5 +920,154 @@ systemctl__check() {
             vec![SkipClass::MustRun],
             "an unassigned ⊤ operand ⇒ unresolved site ⇒ MustRun"
         );
+    }
+
+    // --- task-D2: the Query effect-class + rule-query-validity (202 §2 / 205 §2) ---
+
+    /// `tool:<entity>#present` — the cell `command -v <entity>` queries.
+    fn tool_present(i: &mut Interner, entity: &str) -> FactKey {
+        FactKey {
+            kind: KindId(i.intern("tool")),
+            entity: EntityRef::Operand(OpaqueToken(i.intern(entity))),
+            selector: SelectorId(i.intern("present")),
+        }
+    }
+
+    /// A package index (install/purge/update) PLUS a read-only `command '' query
+    /// present` guard on `tool` (the canonical `command -v` Query). Threads a
+    /// caller-provided interner so the Query tests share one across index-build +
+    /// classify + assertions.
+    fn package_and_query_index(i: &mut Interner) -> KindIndex {
+        let package = KindId(i.intern("package"));
+        let package_index = KindId(i.intern("package-index"));
+        let installed = SelectorId(i.intern("installed"));
+        let fresh = SelectorId(i.intern("fresh"));
+        let apt = ProviderId(i.intern("apt-get"));
+        let install = i.intern("install");
+        let purge = i.intern("purge");
+        let update = i.intern("update");
+        let tool = KindId(i.intern("tool"));
+        let present = SelectorId(i.intern("present"));
+        let command = ProviderId(i.intern("command"));
+        let eps = empty_verb(i);
+        let mut idx = KindIndex::default();
+        idx.add_effect(apt, install, package, installed, Polarity::Establish);
+        idx.add_effect(apt, purge, package, installed, Polarity::Kill);
+        idx.add_effect(apt, update, package_index, fresh, Polarity::Establish);
+        idx.add_effect(command, eps, tool, present, Polarity::Query);
+        idx
+    }
+
+    #[test]
+    fn lone_query_guard_is_resolvable_and_valid() {
+        // The simplest Query: `command -v nginx` with nothing upstream ⇒
+        // QueryResolvable + valid (pristine prefix — no write-or-unknown reached it).
+        // This is the headline guard, classified as a first-class read-only Query.
+        let mut i = Interner::default();
+        let idx = package_and_query_index(&mut i);
+        let classes = classify_src("command -v nginx", &mut i, &idx);
+        let fact = tool_present(&mut i, "nginx");
+        assert_eq!(
+            classes,
+            vec![SkipClass::QueryResolvable { fact, valid: true }],
+            "a lone Query guard is resolvable + valid: {classes:?}"
+        );
+    }
+
+    #[test]
+    fn query_does_not_poison_downstream_establish() {
+        // A Query READS, it does not write — so an upstream `command -v nginx` must NOT
+        // poison a downstream `apt-get install nginx`'s ambient-ness (contrast an Opaque
+        // neighbour, which does). The install stays EstablishAmbient. This is the
+        // gen-side of task-D2 (a Query gens nothing into Reach).
+        let mut i = Interner::default();
+        let idx = package_and_query_index(&mut i);
+        let classes = classify_src("command -v nginx\napt-get install -y nginx", &mut i, &idx);
+        let install = pkg_installed_with(&mut i, "nginx");
+        assert!(
+            classes.contains(&SkipClass::EstablishAmbient(install)),
+            "an upstream Query must NOT poison the install (it reads, doesn't write): {classes:?}"
+        );
+        assert!(
+            !classes
+                .iter()
+                .any(|c| matches!(c, SkipClass::EstablishWritten(_))),
+            "no Written: a Query gens nothing into Reach"
+        );
+    }
+
+    #[test]
+    fn query_after_query_stays_valid_st3() {
+        // st-3 (20A §4): an upstream QUERY does not invalidate a downstream Query (reads
+        // don't write — the guard-stack idiom keeps all its folds). Two `command -v`
+        // guards: BOTH stay valid. A pure builtin between them likewise doesn't
+        // invalidate (it gens nothing).
+        let mut i = Interner::default();
+        let idx = package_and_query_index(&mut i);
+        let classes = classify_src("command -v nginx\n:\ncommand -v curl", &mut i, &idx);
+        let nginx = tool_present(&mut i, "nginx");
+        let curl = tool_present(&mut i, "curl");
+        assert!(
+            classes.contains(&SkipClass::QueryResolvable {
+                fact: nginx,
+                valid: true
+            }),
+            "first Query valid: {classes:?}"
+        );
+        assert!(
+            classes.contains(&SkipClass::QueryResolvable {
+                fact: curl,
+                valid: true
+            }),
+            "second Query STILL valid — an upstream Query (+ pure `:`) does not invalidate (st-3): {classes:?}"
+        );
+    }
+
+    #[test]
+    fn query_after_mutator_is_invalid() {
+        // rule-query-validity (205 §2): an upstream MUTATOR (a write) invalidates a
+        // downstream Query — its resting rc is now stale. `apt-get install curl`
+        // (establishes package:curl#installed) ⇒ the `command -v nginx` guard below it
+        // is QueryResolvable but INVALID (valid: false). The cell mutated is irrelevant
+        // (ANY write invalidates — the pristine-prefix rule, not same-cell).
+        let mut i = Interner::default();
+        let idx = package_and_query_index(&mut i);
+        let classes = classify_src("apt-get install -y curl\ncommand -v nginx", &mut i, &idx);
+        let nginx = tool_present(&mut i, "nginx");
+        assert!(
+            classes.contains(&SkipClass::QueryResolvable {
+                fact: nginx,
+                valid: false
+            }),
+            "a Query below a mutator is INVALID (stale resting rc — pristine-prefix fails): {classes:?}"
+        );
+    }
+
+    #[test]
+    fn query_after_opaque_is_invalid() {
+        // rule-query-validity, the Opaque arm: an upstream un-oracled (Opaque) command
+        // ⇒ Reach::Top ⇒ the downstream Query is INVALID (an unknown command may have
+        // changed anything). `ufw allow 80/tcp` is un-oracled here ⇒ Opaque.
+        let mut i = Interner::default();
+        let idx = package_and_query_index(&mut i);
+        let classes = classify_src("ufw allow 80/tcp\ncommand -v nginx", &mut i, &idx);
+        let nginx = tool_present(&mut i, "nginx");
+        assert!(
+            classes.contains(&SkipClass::QueryResolvable {
+                fact: nginx,
+                valid: false
+            }),
+            "a Query below an Opaque command is INVALID (⊤ reached it): {classes:?}"
+        );
+    }
+
+    /// `package:<entity>#installed` via a shared interner (sibling of `pkg_installed`
+    /// for the Query tests that build their own index inline).
+    fn pkg_installed_with(i: &mut Interner, entity: &str) -> FactKey {
+        FactKey {
+            kind: KindId(i.intern("package")),
+            entity: EntityRef::Operand(OpaqueToken(i.intern(entity))),
+            selector: SelectorId(i.intern("installed")),
+        }
     }
 }

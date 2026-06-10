@@ -1,6 +1,9 @@
-# probe-results: site-keyed records (task-D1 WIRE). Grammar:
-#   site <leafid> effect=<holds|absent|cant-tell>
-# (the records the rendered probe emits; effect from the probe command rc).
-site 0 effect=holds
-declared-rc 0 rc=0
-site 1 effect=absent
+# probe-results: site-keyed records (task-D2). Grammar:
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# Site 0 is the `command -v nginx` QUERY guard: its OWN rc (0 = nginx on PATH) is
+# fold-usable as the Status channel (rule-query-validity passes — nothing mutates
+# upstream). The fold reads rc=0 ⇒ the `|| install` branch is DEAD. Site 1 is the
+# install (an establish): its rc is the probe-command's, NEVER fold-usable (firewall).
+# (The transitional `declared-rc` lane is dead — the Query record's rc carries it now.)
+site 0 effect=holds rc=0
+site 1 effect=absent rc=1

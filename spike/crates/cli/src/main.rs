@@ -9,7 +9,6 @@
 //! ```text
 //! usage: dorc --book=<book.sh> [-o <oracle.sh>]...
 //!   stdin : probe results, one per line — `site <leafid> effect=<holds|absent|cant-tell> rc=<n>`
-//!           (+ a transitional `declared-rc <leafid> rc=<n>` line for the fold)
 //!   stdout: the probe script, then (after stdin EOF) the eliding-apply book
 //! ```
 //!
@@ -147,13 +146,11 @@ fn run() -> Result<(), String> {
     // (3) re-key the site-keyed records to the FactKey-keyed observations `build_plan`
     // consumes (its fold/elision machinery is fact-keyed; only this probe-answer
     // plumbing re-keys — `inv-site-keyed-results`). The probe's `checks` carry each
-    // site's resolved fact, so a site-record maps site→fact. CRITICAL (the
-    // wrong-concrete firewall, 202 §3): a `site` record's `rc` is the PROBE command's
-    // rc (dpkg-query's), NOT the book command's (apt-get's) — for an establish site
-    // these are different observables, so it is carried but feeds the fold NOTHING.
-    // The site's fold `status` comes ONLY from the transitional `declared-rc` line (the
-    // legacy `fold-oror-guard` Query exception, consumed exactly as today's
-    // AndOrStatus relaxation); D2's Query class is what will legitimately equate them.
+    // site's resolved fact + its `site_kind`, so a site-record maps site→fact AND the
+    // firewall knows whether the rc is fold-usable. CRITICAL (the wrong-concrete
+    // firewall, 202 §3 / task-D2): a record's `rc` feeds the fold's Status ONLY for a
+    // VALID Query-class site (the guard's own rc); an establish site's rc is the PROBE
+    // command's (dpkg-query's), NOT the mutator's, so it feeds the fold NOTHING.
     let by_fact = facts_from_sites(&probe, &results);
     let plan = dorc_plan::build_plan(&book_src, &parsed.value, &cfg.value, &classes, |f| {
         by_fact
@@ -168,64 +165,85 @@ fn run() -> Result<(), String> {
 /// Re-key the site-keyed [`SiteResults`] to the `FactKey → Observable` map
 /// [`dorc_plan::build_plan`] consumes (`inv-site-keyed-results`): for each resolvable
 /// site the probe compiled, look up its reported [`Verdict`] (the Effect channel) and
-/// its transitional declared-rc (the Status channel), keyed by the site's resolved
-/// fact. A site with no reported record folds to `Unknown` ⇒ run (`kFAIL-perform`).
+/// — gated by the wrong-concrete firewall — its rc (the Status channel), keyed by the
+/// site's resolved fact. A site with no reported record folds to `Unknown` ⇒ run
+/// (`kFAIL-perform`).
+///
+/// THE WRONG-CONCRETE FIREWALL, Query-only (202 §3 / 20C §7 / task-D2 — the heart of
+/// the task): a record's `rc` feeds the fold's Status channel ONLY for a Query-class
+/// site that passed rule-query-validity. The asymmetry is load-bearing and
+/// disaster-class if wrong:
+/// * an **establish** site's record-rc is the PROBE command's rc (`dpkg-query`'s), NOT
+///   the mutator's (`apt-get`'s) — feeding it would be a confidently-wrong concrete, so
+///   its status stays `Predicted::Top` UNCONDITIONALLY (the check's rc is never the
+///   mutator's rc);
+/// * a **valid Query** site's record-rc IS the guard's own rc (`command -v`'s) — the
+///   exact value the `&&`/`||`/`if`/errexit consumer reads — so it feeds Status;
+/// * an **invalid Query** site (a mutator/opaque reached it from entry) has a stale
+///   resting rc, so its status also stays `Predicted::Top` ⇒ the guard runs for real.
 ///
 /// Two sites sharing a fact (two same-command sites — `inv-site-keyed-results`) write
 /// the same fact; last-in-site-order wins, which is sound here (they are the same cell
-/// on the same host, so they report the same verdict). The wrong-concrete firewall:
-/// the `status` is NEVER the site-record's probe-rc (that is the check command's rc);
-/// it is the declared-rc line alone (the legacy Query fold), else `Predicted::Top`.
+/// on the same host, so they report the same verdict).
 fn facts_from_sites(
     probe: &dorc_plan::ProbePlan,
     results: &SiteResults,
 ) -> BTreeMap<dorc_core::FactKey, Observable> {
+    use dorc_plan::ProbeSiteKind;
     let mut by_fact = BTreeMap::new();
     for check in &probe.checks {
-        let effect = results
-            .verdict
-            .get(&check.site)
-            .copied()
-            .unwrap_or(Verdict::Unknown);
-        let status = results
-            .declared_rc
-            .get(&check.site)
-            .map_or(Predicted::Top, |&rc| Predicted::Value(rc));
+        let record = results.records.get(&check.site);
+        let effect = record.map_or(Verdict::Unknown, |r| r.verdict);
+        // The firewall: only a VALID Query site's rc is fold-usable as Status.
+        let status = match check.site_kind {
+            ProbeSiteKind::Query { valid: true } => {
+                record.map_or(Predicted::Top, |r| Predicted::Value(r.rc))
+            }
+            // Establish site (check's rc, not the mutator's) OR an invalid Query
+            // (stale resting rc) ⇒ withhold the rc, status stays ⊤.
+            ProbeSiteKind::Establish | ProbeSiteKind::Query { valid: false } => Predicted::Top,
+        };
         by_fact.insert(check.fact, Observable { effect, status });
     }
     by_fact
 }
 
 /// The probe results parsed from stdin, keyed by command **site** (the stable
-/// `LeafId`, `inv-site-keyed-results`). Two lanes:
-/// * `verdict` — the Effect channel: each site's reported three-outcome
-///   (`holds`/`absent`/`cant-tell` ⇒ `Converged`/`Diverged`/`Unknown`);
-/// * `declared_rc` — the transitional Status lane (the legacy `fold-oror-guard` Query
-///   exception): a `declared-rc <site> rc=N` line. Consumed exactly as today's
-///   `AndOrStatus` relaxation; never widened (D2's Query class supersedes it).
+/// `LeafId`, `inv-site-keyed-results`). One record per site: the reported Effect
+/// [`Verdict`] plus the raw probe-command rc carried alongside it. Whether that rc is
+/// fold-usable is the FIREWALL's decision ([`facts_from_sites`]), not the parser's —
+/// the parser faithfully carries what the probe reported (`inv-superposition`: the
+/// wire transports the observed rc; the phased caller decides which channel, if any,
+/// it feeds).
 #[derive(Debug, Default)]
 struct SiteResults {
-    verdict: BTreeMap<dorc_plan::LeafId, Verdict>,
-    declared_rc: BTreeMap<dorc_plan::LeafId, Rc>,
+    records: BTreeMap<dorc_plan::LeafId, SiteRecord>,
+}
+
+/// One site's reported observation: the Effect-channel [`Verdict`] and the raw
+/// probe-command exit status.
+#[derive(Debug, Clone, Copy)]
+struct SiteRecord {
+    verdict: Verdict,
+    rc: Rc,
 }
 
 /// Parse stdin probe-results into the site-keyed [`SiteResults`]
-/// (`inv-site-keyed-results`). Two line forms; blank lines and `#` comments are
-/// ignored (so the probe's own `# site …` provenance echo can be piped back), and any
+/// (`inv-site-keyed-results`). One line form; blank lines and `#` comments are ignored
+/// (so the probe's own `# site …` provenance echo can be piped back), and any
 /// unrecognized line is dropped — a site with no record folds to `Unknown` ⇒ run (the
 /// `kFAIL-perform` floor; the `garbage-stdin` case pins it):
 ///
 /// * `site <leafid> effect=<holds|absent|cant-tell> rc=<n>` — the records the rendered
 ///   probe emits (the return channel, 202 §3). `effect` is the Effect channel mapped to
 ///   a [`Verdict`] (`holds`/`absent`/`cant-tell` ⇒ `Converged`/`Diverged`/`Unknown`).
-///   `rc` is the PROBE command's rc — parsed for grammar-validity but **discarded**:
-///   it is the check command's status (dpkg-query's), not the book command's, so
-///   feeding it to the fold would be a confidently-wrong concrete (the wrong-concrete
-///   firewall, 202 §3). It is carried only on the wire; D2's Query class is what will
-///   legitimately consume a probe-sourced rc.
-/// * `declared-rc <leafid> rc=<n>` — the TRANSITIONAL Status lane (the legacy
-///   `fold-oror-guard` Query exception): a probe-sourced rc the fold reads exactly as
-///   today's `AndOrStatus` relaxation (`19D`). Never widened.
+///   `rc` is the raw probe-command status, carried on the wire; the FIREWALL
+///   ([`facts_from_sites`]) decides whether it is fold-usable (only for a valid
+///   Query-class site). A missing/garbled `rc` defaults to `Rc(0)` for carriage but is
+///   irrelevant unless the firewall admits it.
+///
+/// (The transitional `declared-rc <leafid> rc=N` lane — the 19I §2 rc-injection
+/// mechanism — is DEAD as of task-D2: a Query site's own `rc=` carries the fold rc now.)
 fn parse_results(input: &str) -> SiteResults {
     let mut out = SiteResults::default();
     for line in input.lines() {
@@ -234,32 +252,26 @@ fn parse_results(input: &str) -> SiteResults {
             continue;
         }
         let mut it = line.split_whitespace();
-        match it.next() {
-            Some("site") => {
-                let Some(site) = it.next().and_then(parse_site) else {
-                    continue; // malformed site id ⇒ drop (⇒ Unknown ⇒ run)
-                };
-                // `effect=<word>` ⇒ the Effect channel verdict. A missing/garbled
-                // effect ⇒ Unknown (the safe direction).
-                let verdict = it
-                    .find_map(|tok| tok.strip_prefix("effect="))
-                    .map_or(Verdict::Unknown, effect_word_to_verdict);
-                out.verdict.insert(site, verdict);
-                // The trailing `rc=N` is intentionally NOT read into a fold input here
-                // (wrong-concrete firewall): a `site` record's rc is the check's rc.
-            }
-            Some("declared-rc") => {
-                let Some(site) = it.next().and_then(parse_site) else {
-                    continue;
-                };
-                if let Some(rc) =
-                    it.find_map(|tok| tok.strip_prefix("rc=").and_then(|n| n.parse::<i32>().ok()))
-                {
-                    out.declared_rc.insert(site, Rc(rc));
-                }
-            }
-            _ => {} // unrecognized line ⇒ drop (kFAIL-perform: no verdict ⇒ run)
+        if it.next() != Some("site") {
+            continue; // unrecognized line ⇒ drop (kFAIL-perform: no verdict ⇒ run)
         }
+        let Some(site) = it.next().and_then(parse_site) else {
+            continue; // malformed site id ⇒ drop (⇒ Unknown ⇒ run)
+        };
+        // The remaining tokens carry `effect=<word>` and `rc=<n>` in any order. A
+        // missing/garbled `effect` ⇒ Unknown (the safe direction); a missing/garbled
+        // `rc` ⇒ 0 (carried, but irrelevant unless the firewall admits it for a valid
+        // Query — and a Query reporting no rc is degenerate).
+        let mut verdict = Verdict::Unknown;
+        let mut rc = Rc(0);
+        for tok in it {
+            if let Some(w) = tok.strip_prefix("effect=") {
+                verdict = effect_word_to_verdict(w);
+            } else if let Some(n) = tok.strip_prefix("rc=").and_then(|n| n.parse::<i32>().ok()) {
+                rc = Rc(n);
+            }
+        }
+        out.records.insert(site, SiteRecord { verdict, rc });
     }
     out
 }
@@ -291,7 +303,7 @@ fn report(stage: &str, diags: &[dorc_core::Diagnostic]) {
 mod tests {
     use super::*;
     use dorc_core::{EntityRef, FactKey, Interner, KindId, OpaqueToken, SelectorId};
-    use dorc_plan::{LeafId, ProbeCheck, ProbePlan};
+    use dorc_plan::{LeafId, ProbeCheck, ProbePlan, ProbeSiteKind};
 
     fn pkg(i: &mut Interner, e: &str) -> FactKey {
         FactKey {
@@ -301,88 +313,99 @@ mod tests {
         }
     }
 
+    fn tool(i: &mut Interner, e: &str) -> FactKey {
+        FactKey {
+            kind: KindId(i.intern("tool")),
+            entity: EntityRef::Operand(OpaqueToken(i.intern(e))),
+            selector: SelectorId(i.intern("present")),
+        }
+    }
+
+    /// A one-check probe over `fact` with the given site-kind (the firewall input).
+    fn probe1(fact: FactKey, site_kind: ProbeSiteKind) -> ProbePlan {
+        ProbePlan {
+            checks: vec![ProbeCheck {
+                site: LeafId(0),
+                fact,
+                site_kind,
+                sh: "{ :; }".to_string(),
+            }],
+            unresolvable: vec![],
+        }
+    }
+
     #[test]
-    fn parse_results_maps_three_outcome_and_declared_rc() {
-        // The site lane maps holds/absent/cant-tell to the Effect verdict; the
-        // transitional declared-rc lane carries a probe-sourced rc, site-keyed.
+    fn parse_results_maps_three_outcome_and_carries_rc() {
+        // The record maps holds/absent/cant-tell to the Effect verdict and carries the
+        // raw rc on the wire (whether it is fold-usable is the firewall's call).
         let r = parse_results(
-            "site 0 effect=holds rc=0\nsite 1 effect=absent rc=1\n\
-             site 2 effect=cant-tell rc=2\ndeclared-rc 0 rc=0\n",
+            "site 0 effect=holds rc=0\nsite 1 effect=absent rc=1\nsite 2 effect=cant-tell rc=2\n",
         );
-        assert_eq!(r.verdict.get(&LeafId(0)), Some(&Verdict::Converged));
-        assert_eq!(r.verdict.get(&LeafId(1)), Some(&Verdict::Diverged));
-        assert_eq!(r.verdict.get(&LeafId(2)), Some(&Verdict::Unknown));
-        assert_eq!(r.declared_rc.get(&LeafId(0)), Some(&Rc(0)));
-        assert!(
-            !r.declared_rc.contains_key(&LeafId(1)),
-            "no declared-rc for site 1"
+        assert_eq!(
+            r.records.get(&LeafId(0)).map(|x| x.verdict),
+            Some(Verdict::Converged)
         );
+        assert_eq!(
+            r.records.get(&LeafId(1)).map(|x| x.verdict),
+            Some(Verdict::Diverged)
+        );
+        assert_eq!(
+            r.records.get(&LeafId(2)).map(|x| x.verdict),
+            Some(Verdict::Unknown)
+        );
+        assert_eq!(r.records.get(&LeafId(0)).map(|x| x.rc), Some(Rc(0)));
+        assert_eq!(r.records.get(&LeafId(1)).map(|x| x.rc), Some(Rc(1)));
     }
 
     #[test]
     fn parse_results_drops_garbage_kfail_perform() {
         // Unrecognized / malformed lines are dropped (⇒ Unknown ⇒ run). Pins the
-        // garbage-stdin behavior at the unit layer (`kFAIL-perform`).
+        // garbage-stdin behavior at the unit layer (`kFAIL-perform`). The dead
+        // `declared-rc` lane is now just an unrecognized line ⇒ dropped.
         let r = parse_results(
             "this is not a record\nsite notanumber effect=holds\n\
-             site 0 garbled-no-effect\ndeclared-rc xyz rc=bad\n# a comment\n",
+             site 0 garbled-no-effect\ndeclared-rc 0 rc=0\n# a comment\n",
         );
-        assert!(r.declared_rc.is_empty(), "garbled declared-rc dropped");
-        // `site 0 garbled-no-effect` parses the id but no effect= ⇒ Unknown (safe).
-        assert_eq!(r.verdict.get(&LeafId(0)), Some(&Verdict::Unknown));
-        // `site notanumber` ⇒ no id ⇒ dropped entirely.
-        assert_eq!(r.verdict.len(), 1, "only the id-parseable site landed");
+        // `site 0 garbled-no-effect` parses the id but no effect= ⇒ Unknown (safe), rc 0.
+        assert_eq!(
+            r.records.get(&LeafId(0)).map(|x| x.verdict),
+            Some(Verdict::Unknown)
+        );
+        // `site notanumber` ⇒ no id ⇒ dropped; the dead `declared-rc` line ⇒ dropped.
+        assert_eq!(r.records.len(), 1, "only the id-parseable site landed");
     }
 
     #[test]
-    fn firewall_site_record_rc_never_becomes_fold_status() {
-        // THE wrong-concrete firewall (202 §3): a `site` record's rc is the CHECK
-        // command's rc, NOT the book command's. It must NEVER reach the fold's Status
-        // channel. Here site 0 reports `holds rc=0` but declares NO declared-rc line ⇒
-        // the re-keyed Observable's status MUST be Top (undeclared), never Value(0).
+    fn firewall_establish_site_rc_never_becomes_fold_status() {
+        // THE wrong-concrete firewall, direction 1 (202 §3 / task-D2): an ESTABLISH
+        // site's record-rc is the CHECK command's rc (dpkg-query's), NOT the mutator's.
+        // It must NEVER reach the fold's Status — status stays Top unconditionally,
+        // even though the record carries `rc=0`.
         let mut i = Interner::default();
         let fact = pkg(&mut i, "nginx");
-        let probe = ProbePlan {
-            checks: vec![ProbeCheck {
-                site: LeafId(0),
-                fact,
-                sh: "{ :; }".to_string(),
-            }],
-            unresolvable: vec![],
-        };
+        let probe = probe1(fact, ProbeSiteKind::Establish);
         let results = parse_results("site 0 effect=holds rc=0\n");
-        let by_fact = facts_from_sites(&probe, &results);
-        let obs = by_fact
+        let obs = facts_from_sites(&probe, &results)
             .get(&fact)
             .copied()
-            .expect("the site's fact is keyed");
-        assert_eq!(
-            obs.effect,
-            Verdict::Converged,
-            "Effect channel = the reported verdict"
-        );
+            .expect("keyed");
+        assert_eq!(obs.effect, Verdict::Converged, "Effect = reported verdict");
         assert_eq!(
             obs.status,
             Predicted::Top,
-            "the site-record rc (check's rc) must NOT become fold status — only declared-rc does"
+            "an establish site's probe-rc must NOT become fold status (the disaster class)"
         );
     }
 
     #[test]
-    fn declared_rc_lane_feeds_fold_status() {
-        // The legacy Query exception (fold-oror-guard): the transitional declared-rc
-        // line — and ONLY it — supplies a site's fold Status. Contrast the firewall test.
+    fn firewall_valid_query_site_rc_feeds_fold_status() {
+        // THE wrong-concrete firewall, direction 2 (task-D2): a VALID Query site's
+        // record-rc IS the guard's own rc ⇒ it feeds the fold's Status exactly. This is
+        // the relaxation that replaces the dead `declared-rc` lane.
         let mut i = Interner::default();
-        let fact = pkg(&mut i, "nginx");
-        let probe = ProbePlan {
-            checks: vec![ProbeCheck {
-                site: LeafId(0),
-                fact,
-                sh: "{ :; }".to_string(),
-            }],
-            unresolvable: vec![],
-        };
-        let results = parse_results("site 0 effect=holds rc=0\ndeclared-rc 0 rc=0\n");
+        let fact = tool(&mut i, "nginx");
+        let probe = probe1(fact, ProbeSiteKind::Query { valid: true });
+        let results = parse_results("site 0 effect=holds rc=0\n");
         let obs = facts_from_sites(&probe, &results)
             .get(&fact)
             .copied()
@@ -390,7 +413,36 @@ mod tests {
         assert_eq!(
             obs.status,
             Predicted::Value(Rc(0)),
-            "declared-rc 0 supplies the fold status (the AndOrStatus relaxation seam)"
+            "a valid Query guard's own rc supplies the fold Status"
+        );
+        // A non-zero guard rc (nginx absent) carries through identically (Exit(n) path).
+        let results = parse_results("site 0 effect=absent rc=1\n");
+        let obs = facts_from_sites(&probe, &results)
+            .get(&fact)
+            .copied()
+            .unwrap();
+        assert_eq!(obs.status, Predicted::Value(Rc(1)), "rc 1 carries through");
+    }
+
+    #[test]
+    fn firewall_invalid_query_site_rc_withheld() {
+        // THE wrong-concrete firewall, direction 3 (rule-query-validity, 205 §2): an
+        // INVALID Query site (a mutator/opaque reached it from entry) has a stale
+        // resting rc ⇒ status stays Top even though the record carries `rc=0` ⇒ the
+        // guard runs for real at apply. The bit is the ENGINE's (classify); the cli only
+        // honors it.
+        let mut i = Interner::default();
+        let fact = tool(&mut i, "nginx");
+        let probe = probe1(fact, ProbeSiteKind::Query { valid: false });
+        let results = parse_results("site 0 effect=holds rc=0\n");
+        let obs = facts_from_sites(&probe, &results)
+            .get(&fact)
+            .copied()
+            .expect("keyed");
+        assert_eq!(
+            obs.status,
+            Predicted::Top,
+            "an INVALID Query guard's rc is stale ⇒ withheld (status Top ⇒ runs for real)"
         );
     }
 }

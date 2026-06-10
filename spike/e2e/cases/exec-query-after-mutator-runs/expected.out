@@ -1,0 +1,38 @@
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc — the record is the out-of-band lane).
+
+# site 1: package:curl#installed
+package__check() { dpkg-query -W "$1" >/dev/null 2>&1; }
+package__check 'curl'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'site 1 effect=%s rc=%s\n' "$_e" "$_rc"
+# site 2: tool:nginx#present
+tool__check() { command -v "$1" >/dev/null 2>&1; }
+tool__check 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'site 2 effect=%s rc=%s\n' "$_e" "$_rc"
+# site 3: package:nginx#installed
+package__check 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'site 3 effect=%s rc=%s\n' "$_e" "$_rc"
+# site:0 skip-unresolvable
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+# exec-query-after-mutator-runs (rule-query-validity, 205 §2 / 20A §4 st-3 — the
+# invalidation pin): the SAME Query-guard idiom as exec-query-guard-composition, but
+# now BELOW an oracled mutator. `apt-get install -y curl` establishes
+# package:curl#installed — a WRITE that reaches the `command -v nginx` guard from entry
+# ⇒ the guard is an INVALID Query (its resting rc is stale: a mutator ran). So the
+# firewall WITHHOLDS the guard's rc (status ⊤):
+#   - the fold cannot resolve the `||` (the guard rc is ⊤) ⇒ the nginx install stays
+#     LIVE (runs), never folded dead;
+#   - the guard itself is AndOrStatus-consumed with a ⊤ rc ⇒ no license ⇒ it RUNS for
+#     real at apply (re-observing the possibly-changed state — kFAIL-perform).
+# The run-set proves it: BOTH installs run (curl, and nginx — the latter's presence is
+# the proof the guard did NOT fold it). Contrast exec-query-guard-composition, where the
+# same guard with NOTHING upstream is valid and DOES fold the install. (The guard
+# `command -v` is a shell builtin, so it logs no `ran:` line — its running-for-real is
+# witnessed by the nginx install NOT being omitted.) HOST: curl installs fine; nginx
+# absent on PATH.
+set -e
+apt-get install -y curl
+command -v nginx >/dev/null 2>&1 || apt-get install -y nginx

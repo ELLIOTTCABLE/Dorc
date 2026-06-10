@@ -65,7 +65,8 @@
 
 use dorc_analysis::effect::{FactKey, SkipClass};
 use dorc_core::{
-    EntityRef, Interner, KindId, Observable, OpaqueToken, ProviderId, SelectorId, Verdict,
+    EntityRef, Interner, KindId, Observable, OpaqueToken, Predicted, ProviderId, Rc, SelectorId,
+    Verdict,
 };
 use dorc_oracle::{KindIndex, Polarity};
 use dorc_plan::{Disposition, Plan, build_plan};
@@ -508,5 +509,222 @@ fn spec_set_e_pure_at_effect_layer_but_c3_status_blocks() {
     assert!(
         !is_replaced(&plan, "install -y nginx"),
         "C-3: errexit-consumed ⊤-rc status ⇒ the install runs (despite fs-4 non-poison)"
+    );
+}
+
+// ===========================================================================
+// QUERY GUARDS (task-D2 — 202 §2, the read-only guard-class). A `command -v X`
+// guard is now a first-class Query: its OWN probed rc is fold-usable as the Status
+// channel (gated by rule-query-validity), so the canonical `guard || mutator` idiom
+// folds and the guard itself is value-preservingly substituted. These cases exercise
+// BOTH rc directions (Build 5 — the Exit(n) revival), the validity gate (the
+// invalidation pin), and the consumption gates.
+//
+// FIREWALL FIDELITY: `plan_query` mirrors the cli's firewall (`facts_from_sites`) — a
+// Query site's probed rc reaches the fold's Status ONLY when the site's
+// `SkipClass::QueryResolvable { valid }` bit holds; an establish site's rc never does.
+// So these are honest end-to-end (classify → firewall → plan), not Observable-injection
+// fakes (`inv-probe-sourced-values` anti-masking: the status a guard's check predicts
+// is exactly the probed rc, never hand-injected past the validity gate).
+// ===========================================================================
+
+/// apt-get check + the `command -v` check (verbless: strips `-v`, annotates the
+/// operand as `tool`). Lifted with the test's interner so provider symbols match.
+const CORPUS_CHECK_SRC_Q: &str = r#"
+apt_get__check() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   pkg : package = "$1"
+   if [ "$2" = "" ]; then probe-pkg "$pkg"; fi
+}
+command__check() {
+   case $1 in -v) shift ;; esac
+   tool : tool = "$1"
+   command -v -- "$tool" >/dev/null 2>&1
+}
+"#;
+
+/// package install/purge + the read-only `command '' query present` guard on `tool`.
+fn query_index(i: &mut Interner) -> KindIndex {
+    let mut idx = package_index(i);
+    let tool = KindId(i.intern("tool"));
+    let present = SelectorId(i.intern("present"));
+    let command = ProviderId(i.intern("command"));
+    let eps = dorc_oracle::empty_verb(i);
+    idx.add_effect(command, eps, tool, present, Polarity::Query);
+    idx
+}
+
+/// Run the whole pipeline with a Query guard, mirroring the cli's wrong-concrete
+/// FIREWALL: the `tool:<guard_tool>#present` Query cell is observed with `guard_rc`,
+/// but that rc reaches the fold's Status ONLY when the classified site is a VALID
+/// `QueryResolvable` (else withheld — status ⊤). `package:<e>#installed` cells are
+/// answered verdict-only by `pkg_holds` (a mutator's rc is always ⊤). The Effect verdict
+/// of the guard cell is derived from its rc (0 ⇒ Converged/holds, else Diverged).
+fn plan_query(src: &str, guard_tool: &str, guard_rc: i32, pkg_holds: &[&str]) -> Plan {
+    let mut i = Interner::default();
+    let idx = query_index(&mut i);
+    let installed = SelectorId(i.intern("installed"));
+    let present = SelectorId(i.intern("present"));
+    let tool_kind = KindId(i.intern("tool"));
+    let package = KindId(i.intern("package"));
+    let guard_fact = FactKey {
+        kind: tool_kind,
+        entity: EntityRef::Operand(OpaqueToken(i.intern(guard_tool))),
+        selector: present,
+    };
+    let pkg_facts: Vec<FactKey> = pkg_holds
+        .iter()
+        .map(|e| FactKey {
+            kind: package,
+            entity: EntityRef::Operand(OpaqueToken(i.intern(e))),
+            selector: installed,
+        })
+        .collect();
+
+    let parsed = dorc_syntax::parse(src);
+    let cfg = dorc_analysis::cfg::build(&parsed.value).value;
+    let value = dorc_analysis::value::analyze(&cfg, &parsed.value, &mut i);
+    let checks = vec![dorc_oracle::check::lift_checks(&mut i, CORPUS_CHECK_SRC_Q).value];
+    let classes = dorc_analysis::effect::classify(&cfg, &value, &idx, &checks, &mut i).value;
+
+    // Mirror the cli firewall: is the guard site a VALID Query? (Only then does its rc
+    // reach Status.) Read the bit off the guard cell's classification.
+    let guard_valid = classes.iter().any(|(_, c)| {
+        matches!(c, SkipClass::QueryResolvable { fact, valid: true } if *fact == guard_fact)
+    });
+    let guard_effect = if guard_rc == 0 {
+        Verdict::Converged
+    } else {
+        Verdict::Diverged
+    };
+
+    build_plan(src, &parsed.value, &cfg, &classes, move |f| {
+        if f == guard_fact {
+            Observable {
+                effect: guard_effect,
+                // THE FIREWALL: feed the guard's own rc only when valid; else withhold.
+                status: if guard_valid {
+                    Predicted::Value(Rc(guard_rc))
+                } else {
+                    Predicted::Top
+                },
+            }
+        } else if pkg_facts.contains(&f) {
+            Observable::verdict_only(Verdict::Converged)
+        } else {
+            Observable::verdict_only(Verdict::Diverged)
+        }
+    })
+}
+
+/// Is the leaf containing `needle` **omitted** (fold-dead branch)? Distinct from
+/// `is_replaced` (a value-preserving substitution of a live leaf).
+fn is_omitted(plan: &Plan, needle: &str) -> bool {
+    plan.steps
+        .iter()
+        .any(|s| s.sh.contains(needle) && matches!(s.disposition, Disposition::Omit { .. }))
+}
+
+#[test]
+fn query_guard_holds_omits_install_and_substitutes_guard() {
+    // THE composition (202 §2 / task-D2, the headline idempotency idiom): `command -v
+    // nginx || apt-get install` with the guard's probed rc=0 (nginx on PATH) and no
+    // upstream mutation (valid). The fold reads the guard's KNOWN rc 0 ⇒ the `||`
+    // install is provably DEAD ⇒ Omit. The guard itself mutates nothing, its rc is
+    // known + `||`-consumed (AndOrStatus, relaxable) ⇒ value-preservingly substituted
+    // (Replace ⇒ `true`). HOST: nginx present; package irrelevant (the branch is dead).
+    let plan = plan_query(
+        "command -v nginx >/dev/null 2>&1 || apt-get install -y nginx\n",
+        "nginx",
+        0,
+        &[],
+    );
+    assert!(
+        is_omitted(&plan, "apt-get install"),
+        "guard rc 0 ⇒ the || install is fold-dead (Omit): {:?}",
+        plan.steps
+            .iter()
+            .map(|s| (&s.sh, &s.disposition))
+            .collect::<Vec<_>>()
+    );
+    assert!(
+        is_replaced(&plan, "command -v nginx"),
+        "the Query guard itself is value-preservingly substituted (Replace ⇒ true)"
+    );
+}
+
+#[test]
+fn query_guard_absent_keeps_install_live_exit_revival() {
+    // Build 5, the OTHER rc direction (the Exit(n) revival, us-sure-drift / 20B): the
+    // guard's probed rc=1 (nginx NOT on PATH) ⇒ the `||` install is LIVE (it runs). The
+    // guard's branch decision is still fully resolved (rc 1 known), so the guard itself
+    // is substitutable — its stand-in is `StandIn::from_rc(1)` = `false` (the formerly
+    // zero-coverage non-zero-rc path). The install must NOT be omitted nor replaced.
+    let plan = plan_query(
+        "command -v nginx >/dev/null 2>&1 || apt-get install -y nginx\n",
+        "nginx",
+        1,
+        &[],
+    );
+    assert!(
+        !is_omitted(&plan, "apt-get install"),
+        "guard rc 1 ⇒ the || install is LIVE (not dead)"
+    );
+    assert!(
+        !is_replaced(&plan, "apt-get install"),
+        "the install is diverged (absent) ⇒ runs, not replaced"
+    );
+    // The guard substitutes to `false` (rc 1) — the Exit(n)/from_rc non-zero path.
+    let guard = plan
+        .steps
+        .iter()
+        .find(|s| s.sh.contains("command -v nginx"))
+        .expect("the guard is a leaf");
+    assert!(
+        matches!(&guard.disposition, Disposition::Replace(_, stand_in) if stand_in.sh() == "false"),
+        "the guard substitutes to its exact rc-1 stand-in `false`: {:?}",
+        guard.disposition
+    );
+}
+
+#[test]
+fn query_guard_invalid_after_mutator_runs_for_real() {
+    // THE invalidation pin (rule-query-validity, 205 §2 / 20A §4 st-3): the SAME guard
+    // BELOW an oracled mutator (`apt-get install -y curl` establishes
+    // package:curl#installed) ⇒ a write reaches the guard from entry ⇒ the guard is an
+    // INVALID Query ⇒ the firewall withholds its rc (status ⊤) ⇒ the fold cannot resolve
+    // the `||` ⇒ the nginx install stays LIVE, and the guard itself runs for real
+    // (AndOrStatus-consumed + ⊤ rc ⇒ no license). curl install runs (diverged). Nothing
+    // folds — the guard re-runs against the possibly-changed state (kFAIL-perform).
+    let plan = plan_query(
+        "apt-get install -y curl\ncommand -v nginx >/dev/null 2>&1 || apt-get install -y nginx\n",
+        "nginx",
+        0,
+        &["curl"],
+    );
+    assert!(
+        !is_omitted(&plan, "apt-get install -y nginx"),
+        "invalid guard ⇒ rc withheld ⇒ the nginx install is NOT folded dead (runs)"
+    );
+    assert!(
+        !is_replaced(&plan, "command -v nginx"),
+        "an invalid Query guard's rc is stale ⇒ it is NOT substituted (runs for real)"
+    );
+}
+
+#[test]
+fn query_guard_consumed_stdout_blocks_substitution() {
+    // The consumption gate honored for Query guards too (Build 5: "a guard whose stdout
+    // is consumed still blocks"): `out=$(command -v nginx)` captures the guard's stdout,
+    // which is value-bearing and vouched by nothing (16F §3) ⇒ the guard must run, NOT
+    // substitute — even though it is a valid Query with a known rc. (The `$()`-internal
+    // command is also expansion-internal, so it is not even a plan leaf — either way it
+    // is never Replaced.) HOST: nginx present.
+    let plan = plan_query("out=$(command -v nginx)\necho \"$out\"\n", "nginx", 0, &[]);
+    assert!(
+        !is_replaced(&plan, "command -v nginx"),
+        "a stdout-consumed Query guard blocks substitution (runs)"
     );
 }
