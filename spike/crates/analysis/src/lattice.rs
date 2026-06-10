@@ -376,6 +376,7 @@ mod tests {
     #[test]
     fn product_is_componentwise() {
         type P = Product<Powerset<u8>, Flat<u8>>;
+        type FF = Product<Flat<u8>, Flat<u8>>;
         let mk = |s: &[u8], f: Flat<u8>| Product(Powerset(s.iter().copied().collect()), f);
         assert_laws::<P>(&[
             P::bottom(),
@@ -391,7 +392,6 @@ mod tests {
         // A product is BoundedLattice only when BOTH components are: Flat×Flat is,
         // but the Powerset×Flat above is NOT (Powerset has no ⊤) — the type-level
         // asymmetry, exercised. ⊓ is componentwise.
-        type FF = Product<Flat<u8>, Flat<u8>>;
         assert_bounded::<FF>(&[FF::bottom(), Product(Flat::Elem(1), Flat::Top), FF::top()]);
         assert_eq!(
             Product(Flat::Elem(1u8), Flat::Top).meet(&Product(Flat::Top, Flat::Elem(2u8))),
@@ -403,20 +403,24 @@ mod tests {
     #[test]
     fn maplattice_is_pointwise_and_canonical() {
         type M = MapL<&'static str, Powerset<u8>>;
-        let mut a = M::default();
-        a.insert("pkg", Powerset::singleton(1));
-        let mut b = M::default();
-        b.insert("pkg", Powerset::singleton(2));
-        b.insert("svc", Powerset::singleton(7));
+        let mut lhs = M::default();
+        lhs.insert("pkg", Powerset::singleton(1));
+        let mut rhs = M::default();
+        rhs.insert("pkg", Powerset::singleton(2));
+        rhs.insert("svc", Powerset::singleton(7));
 
-        let j = a.join(&b);
+        let joined = lhs.join(&rhs);
         assert_eq!(
-            j.get(&"pkg"),
+            joined.get(&"pkg"),
             Powerset([1, 2].into_iter().collect()),
             "pointwise join"
         );
-        assert_eq!(j.get(&"svc"), Powerset::singleton(7), "key only in b");
-        assert_eq!(j.get(&"absent"), Powerset::bottom(), "absent ≡ ⊥");
+        assert_eq!(
+            joined.get(&"svc"),
+            Powerset::singleton(7),
+            "key only in rhs"
+        );
+        assert_eq!(joined.get(&"absent"), Powerset::bottom(), "absent ≡ ⊥");
 
         // Canonical form: inserting ⊥ removes the key (so Eq is semantic).
         let mut c = M::default();
@@ -446,7 +450,7 @@ mod tests {
             "svc only in e, dropped by meet"
         );
 
-        assert_laws::<M>(&[M::default(), a, b, j]);
+        assert_laws::<M>(&[M::default(), lhs, rhs, joined]);
     }
 
     #[test]

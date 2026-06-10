@@ -16,6 +16,16 @@
 //! Diagnostics go to stderr so stdout stays the probe+apply.
 
 #![forbid(unsafe_code)]
+// The cli is the sanctioned I/O edge (workspace Cargo.toml: "I/O-edge crates may
+// `#[expect]` these at the crate root, with reason"): stdout carries the
+// probe-then-apply artifact, stderr carries diagnostics. The kernel it drives
+// stays print-free. Not a seeded-ratchet expect — this one is permanent for the
+// binary's edge.
+#![expect(
+    clippy::print_stdout,
+    clippy::print_stderr,
+    reason = "cli is the I/O edge: probe/apply to stdout, diagnostics to stderr; the kernel stays print-free"
+)]
 
 use std::collections::BTreeMap;
 use std::io::{Read, Write};

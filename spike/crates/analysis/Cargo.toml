@@ -8,13 +8,13 @@ publish = false
 # The static-analysis engine: a generic monotone-dataflow framework (pure,
 # deterministic — `inv-determinism`) plus the sh-specific CFG/effect analyses.
 [dependencies]
-dorc-core = { path = "../core" }
+dorc-core = { path = "../core", version = "0.0.0" }
 # The CFG builder consumes the parser's arena AST (`cfg::build(ast: &Ast)`), so
 # syntax is a real dependency, not dev-only.
-dorc-syntax = { path = "../syntax" }
+dorc-syntax = { path = "../syntax", version = "0.0.0" }
 # The effect analysis looks each command's (provider, verb) up in the oracle's
 # kind-index to drive the ambient∧invariant reaching-defs gate (note 162 O-1).
-dorc-oracle = { path = "../oracle" }
+dorc-oracle = { path = "../oracle", version = "0.0.0" }
 
 [lints]
 workspace = true

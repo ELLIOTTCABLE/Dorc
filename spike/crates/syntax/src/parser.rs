@@ -26,7 +26,7 @@ use crate::ast::{
     AndOrOp, Ast, AstBuilder, CaseArm, ElseIf, Node, NodeKind, RedirOp, RedirTarget,
     UnsupportedReason, WordPart,
 };
-use crate::lexer::{lex, LexPart, RedirToken, TokKind, Token};
+use crate::lexer::{LexPart, RedirToken, TokKind, Token, lex};
 
 /// Diagnostic codes this parser emits (kept greppable; `ch-catalog`).
 const UNSUPPORTED: DiagCode = DiagCode("syntax-unsupported");
@@ -182,10 +182,10 @@ impl Parser {
             if self.at_eof() {
                 break;
             }
-            if let Some(r) = self.peek_reserved() {
-                if terminators.contains(&r) {
-                    break;
-                }
+            if let Some(r) = self.peek_reserved()
+                && terminators.contains(&r)
+            {
+                break;
             }
             // `}` / `)` close a brace-group / subshell body.
             if matches!(self.peek(), TokKind::RBrace | TokKind::RParen) {
@@ -272,11 +272,11 @@ impl Parser {
     /// its own word token. `!` lexes as part of a `Word` (it is not an operator
     /// byte), so we detect a `Word` whose single literal is exactly `!`.
     fn eat_bang(&mut self) -> bool {
-        if let TokKind::Word { parts } = self.peek() {
-            if single_literal(parts) == Some("!") {
-                self.bump();
-                return true;
-            }
+        if let TokKind::Word { parts } = self.peek()
+            && single_literal(parts) == Some("!")
+        {
+            self.bump();
+            return true;
         }
         false
     }
@@ -885,7 +885,7 @@ impl Parser {
     fn word_single_literal(&self, id: dorc_core::AstId) -> Option<&str> {
         match &self.builder_node(id).kind {
             NodeKind::Word { parts } => match parts.as_slice() {
-                [WordPart::Literal(s)] | [WordPart::SingleQuoted(s)] => Some(s),
+                [WordPart::Literal(s) | WordPart::SingleQuoted(s)] => Some(s),
                 _ => None,
             },
             _ => None,
@@ -998,29 +998,25 @@ impl Parser {
     /// (re-parsing command-substitution bodies into sub-ASTs). If the current token
     /// is not a word, emit a malformed ⊤ placeholder so callers always get an id.
     fn parse_word_or_placeholder(&mut self) -> dorc_core::AstId {
-        match self.peek() {
-            TokKind::Word { .. } => {
-                let tok = self.bump();
-                let span = tok.span;
-                let parts = match tok.kind {
-                    TokKind::Word { parts } => parts,
-                    _ => unreachable!(),
-                };
-                let lowered = self.lower_parts(parts);
-                self.builder.alloc(Node {
-                    span,
-                    kind: NodeKind::Word { parts: lowered },
-                })
-            }
-            _ => {
-                let span = self.peek_span();
-                self.unsupported(
-                    UnsupportedReason::Unmodeled("expected word"),
-                    span,
-                    Vec::new(),
-                    "expected a word here",
-                )
-            }
+        if let TokKind::Word { .. } = self.peek() {
+            let tok = self.bump();
+            let span = tok.span;
+            let TokKind::Word { parts } = tok.kind else {
+                unreachable!("peeked a Word above")
+            };
+            let lowered = self.lower_parts(parts);
+            self.builder.alloc(Node {
+                span,
+                kind: NodeKind::Word { parts: lowered },
+            })
+        } else {
+            let span = self.peek_span();
+            self.unsupported(
+                UnsupportedReason::Unmodeled("expected word"),
+                span,
+                Vec::new(),
+                "expected a word here",
+            )
         }
     }
 

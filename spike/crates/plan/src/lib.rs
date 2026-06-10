@@ -22,6 +22,16 @@
 //! verdict is injected (the real host / `hostsim` is a later seam).
 
 #![forbid(unsafe_code)]
+// Seeded round-19 code predates the take-3 lint gate; this crate-root expect
+// ratchets away during the rebuild (an unfulfilled `expect` warns, so it
+// self-removes as the seeded layer is replaced). It never relaxes the policy
+// for new crates — only this seeded substrate.
+#![expect(
+    missing_docs,
+    clippy::arithmetic_side_effects,
+    clippy::format_push_string,
+    reason = "seeded round-19 code predates the take-3 lint gate; ratchet away during the rebuild"
+)]
 
 use core::marker::PhantomData;
 use std::collections::{BTreeMap, BTreeSet};
@@ -218,6 +228,10 @@ impl ReplaceLicense {
     /// phase; the caller argues it. `build_plan` passes the verdict's own provenance
     /// (`Probe`) and the leaf's observed rc.
     #[must_use]
+    #[expect(
+        clippy::needless_pass_by_value,
+        reason = "by-value verdict/consumed keeps this minting API a clean owned-args boundary; not widened speculatively (plan/CLAUDE.md)"
+    )]
     pub fn prove_replaceable<P: Bias>(
         class: &SkipClass,
         grade: Grade,
@@ -515,12 +529,11 @@ pub fn compile_probe(
     let mut checks = Vec::new();
     let mut seen = BTreeSet::new();
     for (_, class) in classes {
-        if let SkipClass::EstablishAmbient(fact) = class {
-            if seen.insert(*fact) {
-                if let Some(sh) = probe_body(fact.kind) {
-                    checks.push(ProbeCheck { fact: *fact, sh });
-                }
-            }
+        if let SkipClass::EstablishAmbient(fact) = class
+            && seen.insert(*fact)
+            && let Some(sh) = probe_body(fact.kind)
+        {
+            checks.push(ProbeCheck { fact: *fact, sh });
         }
     }
     ProbePlan { checks }
@@ -624,12 +637,12 @@ fn disposition_for(
     // reached the deadness via the controller leaf's AstId; resolve its fact for
     // provenance + the render's neutralised-controller gate. Top-containment still
     // gates: a ⊤-contaminated leaf is never folded away (context unmodeled).
-    if !has_top_successor(cfg, node) {
-        if let Some(controller_ast) = fold.dead_controller(ast_id) {
-            return Disposition::Omit {
-                controller: controller_ast,
-            };
-        }
+    if !has_top_successor(cfg, node)
+        && let Some(controller_ast) = fold.dead_controller(ast_id)
+    {
+        return Disposition::Omit {
+            controller: controller_ast,
+        };
     }
 
     // (1) convergence-elision (the existing path, refined to a value-preserving
@@ -1208,14 +1221,16 @@ mod tests {
     fn no_license_for_may_grade() {
         // inv-must-may: a mined/distributional May-grade fact never authorises a skip.
         let f = nginx_fact();
-        assert!(ReplaceLicense::prove_replaceable(
-            &SkipClass::EstablishAmbient(f),
-            Grade::May,
-            PhasedVerdict::<Probe>::new(Verdict::Converged),
-            quiet(),
-            Predicted::Value(Rc(0)),
-        )
-        .is_none());
+        assert!(
+            ReplaceLicense::prove_replaceable(
+                &SkipClass::EstablishAmbient(f),
+                Grade::May,
+                PhasedVerdict::<Probe>::new(Verdict::Converged),
+                quiet(),
+                Predicted::Value(Rc(0)),
+            )
+            .is_none()
+        );
     }
 
     #[test]
@@ -1266,7 +1281,7 @@ mod tests {
     /// `apt-get update → package-index#fresh` (the spike-2 re-key, `notes/193` §1).
     /// `update` now lands on a *distinct cell* from `install`, so it no longer
     /// poisons the install below it — the poison-wall fix. (Pre-key, `update` was
-    /// left un-modeled ⇒ Opaque ⇒ Reach::Top ⇒ it poisoned everything downstream.)
+    /// left un-modeled ⇒ Opaque ⇒ `Reach::Top` ⇒ it poisoned everything downstream.)
     fn package_index(i: &mut Interner) -> KindIndex {
         let package = KindId(i.intern("package"));
         let package_index = KindId(i.intern("package-index"));

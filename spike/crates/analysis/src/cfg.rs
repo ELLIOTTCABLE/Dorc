@@ -5,7 +5,7 @@
 //! §3 (CFG construction + the hazard set) and `notes/160-analyzer-chord-synthesis.md`
 //! §2 (the hazard set / ⊤-trigger set). This module owns the sh-specific modeling;
 //! [`Cfg`] implements the analysis-agnostic [`crate::solve::Graph`] trait so the
-//! same worklist solves forward (may-mutate, ambient-gate, ShellEnvState) and
+//! same worklist solves forward (may-mutate, ambient-gate, `ShellEnvState`) and
 //! backward (apply-minimization slice) over it.
 //!
 //! Five properties are load-bearing (the spike invariants, `spike/CLAUDE.md`):
@@ -29,8 +29,8 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use dorc_core::{AstId, Carrier, Channel, DiagCode, Diagnostic, Span};
 use dorc_syntax::{
-    ast::{CaseArm, ElseIf, RedirOp, RedirTarget},
     Ast, NodeKind, WordPart,
+    ast::{CaseArm, ElseIf, RedirOp, RedirTarget},
 };
 
 use crate::lattice::Powerset;
@@ -80,7 +80,7 @@ pub enum CfgNodeKind {
     /// `|succ| ≤ 2` per branch, keeping the worklist cheap). Carries no effect.
     Merge,
     /// Enter a subshell `( )` / command-substitution `$( )` scope
-    /// (`haz-concurrency`): the next subagent's ShellEnvState pass pushes a frame
+    /// (`haz-concurrency`): the next subagent's `ShellEnvState` pass pushes a frame
     /// here. env/var/cwd mutations inside DO NOT escape; FS mutations DO.
     ScopeEnter,
     /// Leave a subshell/`$( )` scope: pop the frame, projecting out env/var/cwd
@@ -275,6 +275,10 @@ enum ErrExit {
 
 impl ErrExit {
     /// Join two errexit facts (the forward pass merges at every predecessor).
+    #[expect(
+        clippy::match_same_arms,
+        reason = "On⊔Off=Top is kept a distinct, commented arm from Top-absorption: same value, different lattice reason"
+    )]
     fn join(self, other: ErrExit) -> ErrExit {
         match (self, other) {
             (a, b) if a == b => a,
@@ -752,7 +756,7 @@ impl<'a> Builder<'a> {
     }
 
     /// Subshell `( body )` / the body of a `$( )` substitution: a scoped region.
-    /// `ScopeEnter` → body → `ScopeExit`; the next subagent's ShellEnvState pass
+    /// `ScopeEnter` → body → `ScopeExit`; the next subagent's `ShellEnvState` pass
     /// pushes/pops a frame at these so env/var/cwd mutations don't escape
     /// (`haz-concurrency`). Subshell-level redirections attach after the scope.
     fn lower_scoped(
@@ -916,11 +920,11 @@ impl<'a> Builder<'a> {
                 // there is no enter→exit control edge to propagate that change.
                 // Re-queue the partner exit so its `after` (and successors) catch
                 // up — keeping the fixed point correct (find-4).
-                if let Some(&leave) = self.enter_to_exit.get(&v) {
-                    if !queued[leave] {
-                        queued[leave] = true;
-                        work.push(leave);
-                    }
+                if let Some(&leave) = self.enter_to_exit.get(&v)
+                    && !queued[leave]
+                {
+                    queued[leave] = true;
+                    work.push(leave);
                 }
             }
             let after_v = self.errexit_after(v, &before);
@@ -1037,7 +1041,7 @@ impl<'a> Builder<'a> {
         // may word-split is not a fixed token.
         match &self.ast.node(id).kind {
             NodeKind::Word { parts } => match parts.as_slice() {
-                [WordPart::Literal(s)] | [WordPart::SingleQuoted(s)] => Some(s.as_str()),
+                [WordPart::Literal(s) | WordPart::SingleQuoted(s)] => Some(s.as_str()),
                 _ => None,
             },
             _ => None,
@@ -1045,7 +1049,7 @@ impl<'a> Builder<'a> {
     }
 
     /// Command-substitution bodies inside a word (each a nested `List`/`Script`
-    /// AstId), in source order. Only top-level and double-quoted parts are walked
+    /// `AstId`), in source order. Only top-level and double-quoted parts are walked
     /// (the lossless-quoting model); a `$( … )` runs in a subshell either way.
     fn command_substs(&self, word_id: AstId) -> Vec<AstId> {
         let mut out = Vec::new();
@@ -1104,7 +1108,7 @@ impl<'a> Builder<'a> {
     /// `[from, to)` (a condition region, or a negated pipeline — find-1/2/3/5).
     /// Clearing a non-fallible node is a no-op, so over-broad ranges are harmless.
     fn clear_fallible_range(&mut self, from: usize, to: usize) {
-        for f in self.fallible[from..to].iter_mut() {
+        for f in &mut self.fallible[from..to] {
             *f = false;
         }
     }
@@ -1195,7 +1199,7 @@ fn output_redir_observables(ast: &Ast, redirs: &[AstId]) -> Powerset<Channel> {
 fn word_text(ast: &Ast, w: AstId) -> Option<&str> {
     match &ast.node(w).kind {
         NodeKind::Word { parts } => match parts.as_slice() {
-            [WordPart::Literal(s)] | [WordPart::SingleQuoted(s)] => Some(s.as_str()),
+            [WordPart::Literal(s) | WordPart::SingleQuoted(s)] => Some(s.as_str()),
             _ => None,
         },
         _ => None,

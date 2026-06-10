@@ -1,0 +1,12 @@
+# typos config for the spike. Two project-vocabulary false positives, each
+# pinned as narrowly as the typos regex engine (no lookaround) allows.
+[default]
+extend-ignore-re = [
+   # `fnd-N` is the Research-corpus slug for "finding N" (fnd-1, fnd-4, ...),
+   # used across the CLAUDE.mds and note cross-references — not a misspelt "find".
+   "\\bfnd-[0-9]+\\b",
+   # `mis-` is the English prefix written with a hyphen (mis-chosen, mis-reads,
+   # mis-parsing, ...). Matching only the "mis-" span leaves the suffix word
+   # (chosen/reads/...) spell-checked normally; typos otherwise reads "mis" as "miss".
+   "\\bmis-",
+]

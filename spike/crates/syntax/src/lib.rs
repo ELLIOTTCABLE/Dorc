@@ -9,6 +9,18 @@
 //! faithful, lossless-enough tree (see `ast` for the shape invariants).
 
 #![forbid(unsafe_code)]
+// Seeded round-19 code predates the take-3 lint gate; this crate-root expect
+// ratchets away during the rebuild (an unfulfilled `expect` warns, so it
+// self-removes as the seeded layer is replaced). It never relaxes the policy
+// for new crates — only this seeded substrate.
+#![expect(
+    missing_docs,
+    clippy::indexing_slicing,
+    clippy::arithmetic_side_effects,
+    clippy::cast_possible_truncation,
+    clippy::unreachable,
+    reason = "seeded round-19 code predates the take-3 lint gate; ratchet away during the rebuild"
+)]
 
 pub mod ast;
 mod lexer;

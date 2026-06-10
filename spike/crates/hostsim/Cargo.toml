@@ -10,14 +10,14 @@ publish = false
 # nondeterminism (the seeded PRNG) is quarantined here, so the analyzer kernel
 # stays a pure function (`inv-determinism`).
 [dependencies]
-dorc-core = { path = "../core" }
-dorc-analysis = { path = "../analysis" }
+dorc-core = { path = "../core", version = "0.0.0" }
+dorc-analysis = { path = "../analysis", version = "0.0.0" }
 
 [dev-dependencies]
 # The integration test drives the real pipeline with the modeled host as the probe.
-dorc-syntax = { path = "../syntax" }
-dorc-oracle = { path = "../oracle" }
-dorc-plan = { path = "../plan" }
+dorc-syntax = { path = "../syntax", version = "0.0.0" }
+dorc-oracle = { path = "../oracle", version = "0.0.0" }
+dorc-plan = { path = "../plan", version = "0.0.0" }
 
 [lints]
 workspace = true

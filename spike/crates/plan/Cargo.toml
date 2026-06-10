@@ -10,14 +10,14 @@ publish = false
 # the oracle grade; the host verdict is injected (the real host / `hostsim` is a
 # later seam), so this crate stays a pure, deterministic function of its inputs.
 [dependencies]
-dorc-core = { path = "../core" }
-dorc-analysis = { path = "../analysis" }
+dorc-core = { path = "../core", version = "0.0.0" }
+dorc-analysis = { path = "../analysis", version = "0.0.0" }
 # Rendering a leaf back to sh resolves its source span out of the AST.
-dorc-syntax = { path = "../syntax" }
+dorc-syntax = { path = "../syntax", version = "0.0.0" }
 
 [dev-dependencies]
 # The end-to-end tests build a kind-index and run the real analysis pipeline.
-dorc-oracle = { path = "../oracle" }
+dorc-oracle = { path = "../oracle", version = "0.0.0" }
 
 [lints]
 workspace = true

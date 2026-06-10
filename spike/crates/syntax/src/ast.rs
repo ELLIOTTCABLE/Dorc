@@ -234,7 +234,7 @@ impl Word<'_> {
     #[must_use]
     pub fn as_literal(&self) -> Option<&str> {
         match self.parts {
-            [WordPart::Literal(s)] | [WordPart::SingleQuoted(s)] => Some(s),
+            [WordPart::Literal(s) | WordPart::SingleQuoted(s)] => Some(s),
             _ => None,
         }
     }

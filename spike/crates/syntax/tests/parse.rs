@@ -2,9 +2,21 @@
 //! (spike/CLAUDE.md testing policy): each test pins a specific invariant the
 //! analyzer downstream depends on. Repetition is intentional — no DRY ceremony.
 
+// An integration-test crate is a separate crate to clippy, so the `allow-*-in-tests`
+// clippy.toml keys cover `#[test]` bodies but NOT module-level test helpers
+// (`script_items`, `assert_all_ids_resolve`) or `#[test]`-fn length. These are
+// the "tests may panic/index/cast" allowances the policy intends, spelled at the
+// file top because the keys can't reach this crate's helpers.
+#![expect(
+    clippy::panic,
+    clippy::cast_possible_truncation,
+    clippy::too_many_lines,
+    reason = "test helpers/asserts: panic-on-bad-fixture, count-to-u32, and a long shape-assertion test — the in-tests allowances the policy intends"
+)]
+
 use dorc_core::AstId;
 use dorc_syntax::ast::Ast;
-use dorc_syntax::{parse, NodeKind, RedirOp, RedirTarget, UnsupportedReason, Word, WordPart};
+use dorc_syntax::{NodeKind, RedirOp, RedirTarget, UnsupportedReason, Word, WordPart, parse};
 
 // --- tiny read helpers (keep assertions legible) ---------------------------
 
@@ -46,7 +58,7 @@ fn label(ast: &Ast, id: AstId) -> &'static str {
 fn word_literal(ast: &Ast, id: AstId) -> Option<&str> {
     match kind(ast, id) {
         NodeKind::Word { parts } => match parts.as_slice() {
-            [WordPart::Literal(s)] | [WordPart::SingleQuoted(s)] => Some(s),
+            [WordPart::Literal(s) | WordPart::SingleQuoted(s)] => Some(s),
             _ => None,
         },
         _ => None,
@@ -302,7 +314,9 @@ fn assert_all_ids_resolve(ast: &Ast) {
     for (_, node) in ast.iter() {
         match &node.kind {
             NodeKind::Script { items } | NodeKind::List { items } => {
-                items.iter().for_each(|&i| check(i))
+                for &i in items {
+                    check(i);
+                }
             }
             NodeKind::Simple {
                 assigns,
@@ -322,7 +336,9 @@ fn assert_all_ids_resolve(ast: &Ast) {
             }
             NodeKind::Subshell { body, redirs } | NodeKind::Group { body, redirs } => {
                 check(*body);
-                redirs.iter().for_each(|&i| check(i));
+                for &i in redirs {
+                    check(i);
+                }
             }
             NodeKind::If {
                 cond,

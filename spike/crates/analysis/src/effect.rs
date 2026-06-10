@@ -19,7 +19,7 @@
 
 use crate::cfg::{Cfg, CfgNodeId, CfgNodeKind};
 use crate::lattice::Lattice;
-use crate::solve::{solve, Direction, Graph};
+use crate::solve::{Direction, Graph, solve};
 use dorc_core::{AstId, EntityRef, Interner, OpaqueToken, ProviderId};
 use dorc_oracle::{KindIndex, Polarity};
 use dorc_syntax::ast::{Ast, NodeKind, WordPart};
@@ -56,7 +56,7 @@ pub enum CommandEffect {
 fn word_literal(ast: &Ast, w: AstId) -> Option<&str> {
     match &ast.node(w).kind {
         NodeKind::Word { parts } => match parts.as_slice() {
-            [WordPart::Literal(s)] | [WordPart::SingleQuoted(s)] => Some(s.as_str()),
+            [WordPart::Literal(s) | WordPart::SingleQuoted(s)] => Some(s.as_str()),
             _ => None,
         },
         _ => None,
@@ -462,9 +462,11 @@ mod tests {
         assert!(classes.contains(&SkipClass::EstablishWritten(pkg_installed(
             &mut i, &s, "nginx"
         ))));
-        assert!(!classes
-            .iter()
-            .any(|c| matches!(c, SkipClass::EstablishAmbient(_))));
+        assert!(
+            !classes
+                .iter()
+                .any(|c| matches!(c, SkipClass::EstablishAmbient(_)))
+        );
     }
 
     #[test]
@@ -477,12 +479,16 @@ mod tests {
         // residual, correct cost so we still feel it.
         let (mut i, idx, _s) = package_setup();
         let classes = classify_src("ufw allow 80/tcp\napt-get install nginx", &mut i, &idx);
-        assert!(classes
-            .iter()
-            .any(|c| matches!(c, SkipClass::EstablishWritten(_))));
-        assert!(!classes
-            .iter()
-            .any(|c| matches!(c, SkipClass::EstablishAmbient(_))));
+        assert!(
+            classes
+                .iter()
+                .any(|c| matches!(c, SkipClass::EstablishWritten(_)))
+        );
+        assert!(
+            !classes
+                .iter()
+                .any(|c| matches!(c, SkipClass::EstablishAmbient(_)))
+        );
     }
 
     #[test]
@@ -521,9 +527,11 @@ mod tests {
             ))),
             "same-cell purge must keep install EstablishWritten (no over-loosening): {classes:?}"
         );
-        assert!(!classes
-            .iter()
-            .any(|c| matches!(c, SkipClass::EstablishAmbient(_))));
+        assert!(
+            !classes
+                .iter()
+                .any(|c| matches!(c, SkipClass::EstablishAmbient(_)))
+        );
     }
 
     #[test]
@@ -588,7 +596,9 @@ mod tests {
         let (mut i, idx, s) = package_setup();
         let classes = classify_src(":\necho hi\napt-get install nginx", &mut i, &idx);
         assert!(
-            classes.contains(&SkipClass::EstablishAmbient(pkg_installed(&mut i, &s, "nginx"))),
+            classes.contains(&SkipClass::EstablishAmbient(pkg_installed(
+                &mut i, &s, "nginx"
+            ))),
             "pure builtins (`:`/`echo`) upstream must keep the install EstablishAmbient: {classes:?}"
         );
         assert!(

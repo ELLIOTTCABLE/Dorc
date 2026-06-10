@@ -10,7 +10,7 @@ publish = false
 # recursive-descent parser over a deliberately-narrow sh subset gives the analyzer
 # exactly the AST shape it needs — lossless quoting + first-class redirections.)
 [dependencies]
-dorc-core = { path = "../core" }
+dorc-core = { path = "../core", version = "0.0.0" }
 
 [lints]
 workspace = true

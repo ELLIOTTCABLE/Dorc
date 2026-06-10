@@ -18,6 +18,15 @@
 //! [`FactKey`]s. The kernel crates depend on none of this.
 
 #![forbid(unsafe_code)]
+// Seeded round-19 code predates the take-3 lint gate; this crate-root expect
+// ratchets away during the rebuild (an unfulfilled `expect` warns, so it
+// self-removes as the seeded layer is replaced). It never relaxes the policy
+// for new crates — only this seeded substrate.
+#![expect(
+    missing_docs,
+    clippy::arithmetic_side_effects,
+    reason = "seeded round-19 code predates the take-3 lint gate; ratchet away during the rebuild"
+)]
 
 use std::collections::BTreeSet;
 
@@ -352,7 +361,7 @@ mod tests {
         // host states, reproducibly, no network.
         use dorc_core::ProviderId;
         use dorc_oracle::{FactProbe, KindIndex, Polarity};
-        use dorc_plan::{build_plan, compile_probe, Disposition};
+        use dorc_plan::{Disposition, build_plan, compile_probe};
 
         let src = "apt-get install -y nginx\napt-get install -y curl\nsystemctl reload nginx\n";
         for seed in 0..64u64 {
@@ -439,7 +448,7 @@ mod tests {
         // HOLDS the fact (kFAIL-perform — no convergence knowledge ⇒ run).
         use dorc_core::ProviderId;
         use dorc_oracle::{KindIndex, Polarity};
-        use dorc_plan::{build_plan, compile_probe, Disposition};
+        use dorc_plan::{Disposition, build_plan, compile_probe};
 
         let mut i = Interner::default();
         let package = KindId(i.intern("package"));

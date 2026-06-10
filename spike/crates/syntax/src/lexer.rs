@@ -154,7 +154,7 @@ fn is_word_terminator(b: u8) -> bool {
     is_blank(b) || matches!(b, b'\n' | b'|' | b'&' | b';' | b'(' | b')' | b'<' | b'>')
 }
 
-impl<'a> Lexer<'a> {
+impl Lexer<'_> {
     fn run(&mut self) {
         loop {
             self.skip_blanks_and_comments();
@@ -481,14 +481,14 @@ impl<'a> Lexer<'a> {
             while scan < self.src.len() && self.src[scan].is_ascii_digit() {
                 scan += 1;
             }
-            if scan < self.src.len() && matches!(self.src[scan], b'<' | b'>') {
-                if let Ok(fd_str) = std::str::from_utf8(&self.src[self.pos..scan]) {
-                    if let Ok(fd) = fd_str.parse::<u32>() {
-                        self.pos = scan;
-                        self.redir_with_fd(lo, fd);
-                        return;
-                    }
-                }
+            if scan < self.src.len()
+                && matches!(self.src[scan], b'<' | b'>')
+                && let Ok(fd_str) = std::str::from_utf8(&self.src[self.pos..scan])
+                && let Ok(fd) = fd_str.parse::<u32>()
+            {
+                self.pos = scan;
+                self.redir_with_fd(lo, fd);
+                return;
             }
         }
 

@@ -20,6 +20,15 @@
 //! token, and the compiler enforces it.
 
 #![forbid(unsafe_code)]
+// Seeded round-19 code predates the take-3 lint gate; these crate-root expects
+// ratchet away during the rebuild (an unfulfilled `expect` warns, so they
+// self-remove as the seeded layer is replaced). They never relax the policy for
+// new crates — only this seeded substrate.
+#![expect(
+    missing_docs,
+    clippy::indexing_slicing,
+    reason = "seeded round-19 code predates the take-3 lint gate; ratchet away during the rebuild"
+)]
 
 use std::collections::HashMap;
 

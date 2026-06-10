@@ -49,7 +49,7 @@ use dorc_core::{
     Verdict,
 };
 use dorc_oracle::{KindIndex, Polarity};
-use dorc_plan::{build_plan, Disposition, Plan, StandIn};
+use dorc_plan::{Disposition, Plan, StandIn, build_plan};
 
 /// The package oracle: `apt-get install ⇒ establishes package`, `apt-get purge ⇒
 /// kills`. It is **idempotent-success**: a converged `apt-get install` exits 0 —

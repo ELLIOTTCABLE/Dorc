@@ -13,11 +13,11 @@ name = "dorc"
 path = "src/main.rs"
 
 [dependencies]
-dorc-core = { path = "../core" }
-dorc-syntax = { path = "../syntax" }
-dorc-analysis = { path = "../analysis" }
-dorc-oracle = { path = "../oracle" }
-dorc-plan = { path = "../plan" }
+dorc-core = { path = "../core", version = "0.0.0" }
+dorc-syntax = { path = "../syntax", version = "0.0.0" }
+dorc-analysis = { path = "../analysis", version = "0.0.0" }
+dorc-oracle = { path = "../oracle", version = "0.0.0" }
+dorc-plan = { path = "../plan", version = "0.0.0" }
 
 [lints]
 workspace = true

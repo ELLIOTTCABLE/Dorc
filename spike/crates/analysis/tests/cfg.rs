@@ -8,9 +8,20 @@
 //! BFS over `succ` (so reachability assertions don't depend on the dataflow
 //! engine); `consistent(&cfg)` re-checks `w ∈ succ(v) ⟺ v ∈ pred(w)`.
 
+// An integration-test crate is a separate crate to clippy, so the `allow-*-in-tests`
+// clippy.toml keys cover `#[test]` bodies but NOT module-level test helpers
+// (`require`, `kind_counts`). These are the "tests may panic/index/cast" allowances
+// the policy intends, spelled at the file top because the keys can't reach helpers.
+#![expect(
+    clippy::panic,
+    clippy::arithmetic_side_effects,
+    clippy::cast_possible_truncation,
+    reason = "test helpers: panic-based require(), a counter increment, and count-to-u32 — the in-tests allowances the policy intends"
+)]
+
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
 
-use dorc_analysis::cfg::{build, Cfg, CfgNodeId, CfgNodeKind};
+use dorc_analysis::cfg::{Cfg, CfgNodeId, CfgNodeKind, build};
 use dorc_analysis::lattice::Powerset;
 use dorc_analysis::solve::Graph;
 use dorc_core::Channel;
@@ -870,7 +881,7 @@ fn command_word_literal(ast: &dorc_syntax::Ast, id: dorc_core::AstId) -> Option<
         let first = words.first()?;
         if let NodeKind::Word { parts } = &ast.node(*first).kind {
             return match parts.as_slice() {
-                [WordPart::Literal(s)] | [WordPart::SingleQuoted(s)] => Some(s.clone()),
+                [WordPart::Literal(s) | WordPart::SingleQuoted(s)] => Some(s.clone()),
                 _ => None,
             };
         }
@@ -928,9 +939,11 @@ fn consumed_of(src: &str, lit: &str) -> Powerset<Channel> {
 #[test]
 fn consumed_lone_command_is_quiet() {
     // No pipe, no redirect, no enclosing capture ⇒ provably quiet (empty set).
-    assert!(consumed_of("apt-get install -y nginx\n", "apt-get")
-        .0
-        .is_empty());
+    assert!(
+        consumed_of("apt-get install -y nginx\n", "apt-get")
+            .0
+            .is_empty()
+    );
 }
 
 #[test]

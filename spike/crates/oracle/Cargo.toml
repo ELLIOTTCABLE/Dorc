@@ -8,8 +8,8 @@ publish = false
 # Lifts the fact-centric oracle contract (note 162 v2) out of plain sh into the
 # analyzer-internal kind index. Pure + deterministic; consumes the parser.
 [dependencies]
-dorc-core = { path = "../core" }
-dorc-syntax = { path = "../syntax" }
+dorc-core = { path = "../core", version = "0.0.0" }
+dorc-syntax = { path = "../syntax", version = "0.0.0" }
 
 [lints]
 workspace = true

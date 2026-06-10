@@ -57,7 +57,7 @@ impl AbstractRc {
 /// The result of folding a script: per-leaf liveness + per-node abstract status.
 #[derive(Debug, Clone, Default)]
 pub struct FoldResult {
-    /// Leaves the fold proved **dead** (unreachable), each mapped to the AstId of the
+    /// Leaves the fold proved **dead** (unreachable), each mapped to the `AstId` of the
     /// controlling leaf whose known status short-circuited past it (provenance, and
     /// the render's neutralised-controller gate). A `BTreeMap` for `inv-determinism`.
     dead: BTreeMap<AstId, AstId>,
@@ -162,11 +162,7 @@ impl Folder<'_> {
                 for s in &stages {
                     last = self.eval(*s, live);
                 }
-                if negated {
-                    negate(last)
-                } else {
-                    last
-                }
+                if negated { negate(last) } else { last }
             }
             NodeKind::AndOr { op, left, right } => {
                 let (op, left, right) = (*op, *left, *right);
@@ -408,18 +404,16 @@ mod tests {
     use dorc_core::Verdict;
     use dorc_syntax::ast::{NodeKind, WordPart};
 
-    /// The AstId of the `Simple` command whose first word is `name` (the leaf the
+    /// The `AstId` of the `Simple` command whose first word is `name` (the leaf the
     /// fold reasons about). Tests inject observations keyed by these.
     fn leaf(ast: &Ast, name: &str) -> AstId {
         for (id, node) in ast.iter() {
-            if let NodeKind::Simple { words, .. } = &node.kind {
-                if let Some(&w) = words.first() {
-                    if let NodeKind::Word { parts } = &ast.node(w).kind {
-                        if matches!(parts.as_slice(), [WordPart::Literal(s)] if s == name) {
-                            return id;
-                        }
-                    }
-                }
+            if let NodeKind::Simple { words, .. } = &node.kind
+                && let Some(&w) = words.first()
+                && let NodeKind::Word { parts } = &ast.node(w).kind
+                && matches!(parts.as_slice(), [WordPart::Literal(s)] if s == name)
+            {
+                return id;
             }
         }
         panic!("no leaf command `{name}` in the parsed AST");
@@ -434,9 +428,9 @@ mod tests {
     }
 
     /// Fold `src`, observing each named leaf with a concrete rc; all other leaves ⊤.
-    fn fold_with(src: &str, observed: &[(&str, i32)]) -> (FoldResult, dorc_syntax::ast::Ast) {
+    fn fold_with(src: &str, observed: &[(&str, i32)]) -> (FoldResult, Ast) {
         let ast = dorc_syntax::parse(src).value;
-        let want: std::collections::BTreeMap<AstId, Observable> = observed
+        let want: BTreeMap<AstId, Observable> = observed
             .iter()
             .map(|(name, rc)| (leaf(&ast, name), obs(*rc)))
             .collect();
