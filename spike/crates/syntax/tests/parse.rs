@@ -545,6 +545,172 @@ fn nested_break_continue_binds_to_inner_loop_only() {
     assert!(p.has_errors(), "the inner loop's ⊤-reject is loud");
 }
 
+// ===========================================================================
+// fix-3 (`20O` find-4): the for-LIST is a wordlist that ends ONLY at `;`/newline
+// (dash/POSIX) — a reserved word in list position is an ORDINARY word, not a
+// terminator. Both demonstrated directions must be dash-faithful.
+// ===========================================================================
+
+#[test]
+fn for_list_reserved_words_are_ordinary_list_words() {
+    // `for f in do done; do echo "$f"; done` — `do` and `done` in LIST position are
+    // literal list words (dash iterates `do`,`done`). Must parse clean to a ForLoop with
+    // both words captured (before fix-4 the wordlist wrongly terminated at the first `do`).
+    let p = parse(r#"for f in do done; do echo "$f"; done"#);
+    assert!(
+        !p.has_errors(),
+        "`do`/`done` as for-list words must parse clean: {:?}",
+        p.diags
+    );
+    match kind(&p.value, script_items(&p.value)[0]) {
+        NodeKind::ForLoop { var, words, .. } => {
+            assert_eq!(var, "f");
+            assert_eq!(
+                words.len(),
+                2,
+                "both literal list words `do`,`done` captured"
+            );
+            assert_eq!(word_literal(&p.value, words[0]), Some("do"));
+            assert_eq!(word_literal(&p.value, words[1]), Some("done"));
+        }
+        other => panic!("expected ForLoop iterating `do`,`done`: {other:?}"),
+    }
+}
+
+#[test]
+fn for_list_unterminated_before_do_is_loud_top_reject() {
+    // `for f in a b do c; done` — the wordlist consumes `a b do c` (ending only at `;`),
+    // then finds `done` where dash requires `do` ⇒ a syntax error in dash
+    // (`"done" unexpected (expecting "do")`). We must ⊤-reject the whole loop loudly,
+    // never silently build a malformed ForLoop (`inv-top-reject`).
+    assert_rejects("for f in a b do c; done", UnsupportedReason::Loop);
+    // The fully-`do`-less list form: `for f in a b; echo c; done` (no `do` anywhere).
+    assert_rejects("for f in a b; echo c; done", UnsupportedReason::Loop);
+}
+
+#[test]
+fn for_var_can_be_a_reserved_word_in_agreement() {
+    // The agreement case: `for in in a b; do echo "$in"; done` — the FIRST `in` is the
+    // iteration VARIABLE name (a valid POSIX name), the SECOND `in` is the list keyword.
+    // dash accepts this and iterates `a`,`b`. Must parse clean with var=`in`, words=[a,b].
+    let p = parse(r#"for in in a b; do echo "$in"; done"#);
+    assert!(
+        !p.has_errors(),
+        "`for in in a b` must parse clean (first `in` is the var): {:?}",
+        p.diags
+    );
+    match kind(&p.value, script_items(&p.value)[0]) {
+        NodeKind::ForLoop { var, words, .. } => {
+            assert_eq!(var, "in", "the iteration variable is the first `in`");
+            assert_eq!(words.len(), 2, "the list is `a b`");
+            assert_eq!(word_literal(&p.value, words[0]), Some("a"));
+            assert_eq!(word_literal(&p.value, words[1]), Some("b"));
+        }
+        other => panic!("expected ForLoop with var `in`: {other:?}"),
+    }
+}
+
+// ===========================================================================
+// fix-4 (`20O` find-5): `break`/`continue` in a `while`/`until` CONDITION region
+// ⊤-rejects the loop, like a body jump (dash runs a condition `break` and it DOES
+// exit the loop). The for-LIST is a wordlist, so a `break` there is a literal word.
+// ===========================================================================
+
+#[test]
+fn break_or_continue_in_while_condition_is_top_reject() {
+    // A condition-position jump is an un-modeled early exit ⇒ ⊤-reject (dash:
+    // `while … && break; do …` exits the loop). Both while and until conditions.
+    assert_rejects("while break; do :; done", UnsupportedReason::Loop);
+    assert_rejects("until continue; do :; done", UnsupportedReason::Loop);
+    // A condition jump nested in the condition's own control flow still binds here.
+    assert_rejects("while x && break; do :; done", UnsupportedReason::Loop);
+    assert_rejects(
+        "while if y; then continue; fi; do :; done",
+        UnsupportedReason::Loop,
+    );
+}
+
+#[test]
+fn break_as_a_for_list_word_is_not_a_jump() {
+    // The for-LIST is a wordlist (fix-3), so `break`/`continue` appearing as a LIST word
+    // is a literal iteration value, NOT a loop jump ⇒ the loop parses clean (dash iterates
+    // the literal `break`). Pins that the jump detector does not over-claim the for-list.
+    let p = parse(r#"for x in break continue; do echo "$x"; done"#);
+    assert!(
+        !p.has_errors(),
+        "`break`/`continue` as for-list words are literals, not jumps: {:?}",
+        p.diags
+    );
+    assert!(matches!(
+        kind(&p.value, script_items(&p.value)[0]),
+        NodeKind::ForLoop { .. }
+    ));
+}
+
+// ===========================================================================
+// fix-2 (`20O` find-3): a CONSTRUCT-TRAILING redirection (`done < file`, `fi > log`,
+// `esac > log`) currently mis-parses into a phantom empty-argv command with ZERO
+// diagnostics — a silent ⊤. It must ⊤-reject the construct LOUDLY (honest interim;
+// full construct-redirection modeling is a recorded later slice).
+// ===========================================================================
+
+#[test]
+fn construct_trailing_redirection_is_loud_top_reject() {
+    // The idiomatic `while read … done < file` shape (find-3's headline) — now loud.
+    assert_rejects(
+        "while read line; do echo \"$line\"; done < input",
+        UnsupportedReason::Unmodeled("construct-trailing redirection"),
+    );
+    // `for … done > file`, `if … fi > log`, `case … esac > log` — every construct family.
+    assert_rejects(
+        "for x in a b; do echo \"$x\"; done > out",
+        UnsupportedReason::Unmodeled("construct-trailing redirection"),
+    );
+    assert_rejects(
+        "if true; then echo x; fi > log",
+        UnsupportedReason::Unmodeled("construct-trailing redirection"),
+    );
+    assert_rejects(
+        "case x in x) echo hi ;; esac > log",
+        UnsupportedReason::Unmodeled("construct-trailing redirection"),
+    );
+    // An append (`>>`) and an input (`<`) redirection both count.
+    assert_rejects(
+        "until false; do :; done >> out",
+        UnsupportedReason::Unmodeled("construct-trailing redirection"),
+    );
+}
+
+#[test]
+fn construct_trailing_redirection_salvages_the_construct() {
+    // The construct is salvaged (so unrelated sibling analysis proceeds, `dn-7`), and the
+    // ⊤ is loud. Pins the salvage so a later modeling slice can recover the inner tree.
+    let p = parse("while read l; do echo \"$l\"; done < input");
+    match first_unsupported_node(&p.value) {
+        Some(NodeKind::Unsupported { salvaged, .. }) => {
+            assert_eq!(salvaged.len(), 1, "the while-loop construct is salvaged");
+            assert!(
+                matches!(kind(&p.value, salvaged[0]), NodeKind::WhileLoop { .. }),
+                "the salvaged child is the parsed WhileLoop"
+            );
+        }
+        other => panic!("expected an Unsupported construct-redirect node: {other:?}"),
+    }
+}
+
+#[test]
+fn construct_without_trailing_redirection_still_parses_clean() {
+    // The non-regression control: a loop/if/case WITHOUT a trailing redirection is
+    // unaffected (still parses to its real node, no ⊤). Proves fix-2 fires only on the
+    // trailing-redirection shape, not on every construct.
+    assert!(!parse("while read l; do echo \"$l\"; done").has_errors());
+    assert!(!parse("for x in a b; do echo \"$x\"; done").has_errors());
+    assert!(!parse("if true; then echo x; fi").has_errors());
+    // A redirection INSIDE the body is fine (it attaches to the inner command, not the
+    // construct): `done` is not immediately followed by a redir here.
+    assert!(!parse("while read l; do echo \"$l\" > /dev/null; done").has_errors());
+}
+
 #[test]
 fn reject_eval_is_dynamic_execution() {
     // Why: eval runs constructed code — unanalyzable; the canonical ⊤-trigger.

@@ -307,12 +307,34 @@ impl Parser {
     /// simple command. ⊤-rejects loop constructs here so they never mis-parse.
     fn parse_command_inner(&mut self) -> dorc_core::AstId {
         if let Some(r) = self.peek_reserved() {
+            // A loop/if/case parses to its node, then we reject a CONSTRUCT-TRAILING
+            // redirection (`done < f`, `fi > log`, `esac > log`) loudly (`20O` find-3):
+            // it currently mis-parses into a phantom empty-argv command with zero
+            // diagnostics, contradicting `inv-top-reject`. Honest interim — full
+            // construct-redirection modeling is a recorded later slice (`20Q`).
+            // (Subshell/group already model trailing redirs as first-class, so they
+            // are dispatched below without this guard.)
             match r {
-                Reserved::If => return self.parse_if(),
-                Reserved::Case => return self.parse_case(),
-                Reserved::For => return self.parse_for(),
-                Reserved::While => return self.parse_while(false),
-                Reserved::Until => return self.parse_while(true),
+                Reserved::If => {
+                    let c = self.parse_if();
+                    return self.reject_construct_trailing_redir(c, "if");
+                }
+                Reserved::Case => {
+                    let c = self.parse_case();
+                    return self.reject_construct_trailing_redir(c, "case");
+                }
+                Reserved::For => {
+                    let c = self.parse_for();
+                    return self.reject_construct_trailing_redir(c, "for");
+                }
+                Reserved::While => {
+                    let c = self.parse_while(false);
+                    return self.reject_construct_trailing_redir(c, "while");
+                }
+                Reserved::Until => {
+                    let c = self.parse_while(true);
+                    return self.reject_construct_trailing_redir(c, "until");
+                }
                 // A bare closing keyword in command position is malformed; reject
                 // the single token so the enclosing parser can resync.
                 Reserved::Then
@@ -339,6 +361,49 @@ impl Parser {
             // `(`-less compound openers handled above; everything else is simple.
             _ => self.parse_simple_or_funcdef(),
         }
+    }
+
+    /// Loud-⊤-reject a CONSTRUCT-TRAILING redirection on a just-parsed loop/`if`/`case`
+    /// (`20O` find-3). dash redirects the WHOLE construct's I/O (`while … done < input`,
+    /// `if … fi > log`, `case … esac > log` all parse); we do not yet model that
+    /// (body-stdin/stdout consumption marking is a later slice), and the parser previously
+    /// dropped the trailing redir into a phantom empty-argv `Simple` with **zero**
+    /// diagnostics — a silent ⊤ that contradicts `inv-top-reject`. So when a construct is
+    /// immediately followed by a redirection, consume the trailing redir(s) (so they cannot
+    /// re-enter as a phantom command) and replace the construct with a loud
+    /// [`UnsupportedReason::Unmodeled`] ⊤ naming the construct-redirect (the loop/`if`/`case`
+    /// becomes an absorbing Top region — havoc/poison handles the rest). The construct is
+    /// salvaged so unrelated sibling analysis proceeds (`dn-7`). Returns `construct` unchanged
+    /// when no redirection trails it.
+    fn reject_construct_trailing_redir(
+        &mut self,
+        construct: dorc_core::AstId,
+        construct_name: &str,
+    ) -> dorc_core::AstId {
+        if !matches!(self.peek(), TokKind::Redir { .. } | TokKind::HereDoc { .. }) {
+            return construct;
+        }
+        let start = self.span_of(construct);
+        // Drain the trailing redir(s) so they never reach the list-level anti-stall as a
+        // phantom command; their spans extend the rejected region.
+        let mut end = self.peek_span();
+        while matches!(self.peek(), TokKind::Redir { .. } | TokKind::HereDoc { .. }) {
+            if let Some(r) = self.parse_one_redir() {
+                end = self.span_of(r);
+            } else {
+                break;
+            }
+        }
+        self.unsupported(
+            UnsupportedReason::Unmodeled("construct-trailing redirection"),
+            start.to(end),
+            vec![construct],
+            format!(
+                "a redirection trailing a `{construct_name}` construct (e.g. `{} < file`) is not \
+                 modeled — the construct's I/O redirection is outside the modeled subset",
+                construct_close(construct_name),
+            ),
+        )
     }
 
     // ---- if -------------------------------------------------------------------
@@ -602,9 +667,16 @@ impl Parser {
         }
         self.bump(); // `in`
 
-        // List words until the `;`/newline that precedes `do`.
+        // List words. The wordlist ends ONLY at `;`/newline/EOF (dash/POSIX, `20O`
+        // find-4) — a reserved word (`do`/`done`/`in`) in LIST position is an ordinary
+        // word, NOT a terminator. So we consume EVERY `Word` token here, including ones
+        // whose text is `do`/`done` (`for f in do done; do …` iterates the literals
+        // `do`,`done`); the list stops at the first non-Word (a `;`/newline separator, or
+        // an operator). Consequently `for f in a b do c; done` consumes `a b do c` as the
+        // list and finds `done` where `do` is required ⇒ the loud ⊤-reject below — exactly
+        // dash's `"done" unexpected (expecting "do")`.
         let mut words = Vec::new();
-        while matches!(self.peek(), TokKind::Word { .. }) && self.peek_reserved().is_none() {
+        while matches!(self.peek(), TokKind::Word { .. }) {
             words.push(self.parse_word_or_placeholder());
         }
         // A command-substitution / arithmetic in a list word is an effect-bearing
@@ -618,17 +690,34 @@ impl Parser {
                 "`for` list word contains a command-substitution/arithmetic (deferred per HOLE#1)",
             );
         }
+        // The list must be terminated by `;`/newline followed by `do` (XCU §2.9.4.2). If
+        // `do` is not where dash requires it (the wordlist ran past it, or it is absent),
+        // dash raises a syntax error — so we ⊤-reject the whole loop loudly rather than
+        // build a malformed `ForLoop` (`20O` find-4; `inv-top-reject`).
+        self.skip_separators();
+        if self.peek_reserved() != Some(Reserved::Do) {
+            let end = self.consume_balanced_loop();
+            return self.unsupported(
+                UnsupportedReason::Loop,
+                kw.span.to(end),
+                Vec::new(),
+                "`for` list is not terminated by `;`/newline before `do` (dash requires `do` here; \
+                 a reserved word in list position is an ordinary list word)",
+            );
+        }
 
         let body = self.parse_do_done();
         let span = kw.span.to(self.span_of(body));
-        // `break`/`continue` in the body ⇒ ⊤-reject the whole loop (the body parse
-        // sets this flag; the leaf is otherwise modeled).
-        if self.body_has_loop_jump(body) {
+        // `break`/`continue` in the body ⇒ ⊤-reject the whole loop. A `for` has no
+        // condition region — its list is a *wordlist*, so a `break` there is a literal
+        // word (`for x in break; …`), never a jump — so only the body is checked.
+        if self.region_has_loop_jump(body) {
             return self.unsupported(
                 UnsupportedReason::Loop,
                 span,
                 Vec::new(),
-                "`break`/`continue` is un-modeled (early exit breaks the back-edge fixpoint)",
+                "`break`/`continue` in the loop body is un-modeled \
+                 (early exit breaks the back-edge fixpoint)",
             );
         }
         self.builder.alloc(Node {
@@ -650,12 +739,17 @@ impl Parser {
         let cond = self.parse_condition_until(&[Reserved::Do]);
         let body = self.parse_do_done();
         let span = kw.span.to(self.span_of(body));
-        if self.body_has_loop_jump(body) {
+        // `break`/`continue` ANYWHERE in this loop's own control flow ⊤-rejects it — the
+        // CONDITION region as well as the body (`20O` find-5). dash runs a condition-position
+        // `break` and it DOES exit the loop (`while … && break; do …` runs 0 iterations), so
+        // an un-modeled early exit there breaks the back-edge fixpoint just as a body one does.
+        if self.region_has_loop_jump(cond) || self.region_has_loop_jump(body) {
             return self.unsupported(
                 UnsupportedReason::Loop,
                 span,
                 Vec::new(),
-                "`break`/`continue` is un-modeled (early exit breaks the back-edge fixpoint)",
+                "`break`/`continue` in the loop body or condition is un-modeled \
+                 (early exit breaks the back-edge fixpoint)",
             );
         }
         self.builder.alloc(Node {
@@ -720,12 +814,14 @@ impl Parser {
         matches!(&self.builder_node(id).kind, NodeKind::Word { parts } if parts_have(parts))
     }
 
-    /// Does a loop body contain a `break`/`continue` simple-command anywhere in its
-    /// own control flow (NOT descending into a nested loop, whose `break` binds to
-    /// IT, nor into a funcdef body)? Such a jump is un-modeled ⇒ the enclosing loop
-    /// ⊤-rejects. A conservative structural walk over the already-built body subtree.
-    fn body_has_loop_jump(&self, body: dorc_core::AstId) -> bool {
-        let mut stack = vec![body];
+    /// Does a loop REGION (a body or a `while`/`until` condition list) contain a
+    /// `break`/`continue` simple-command anywhere in its own control flow (NOT
+    /// descending into a nested loop, whose `break` binds to IT, nor into a funcdef
+    /// body)? Such a jump is un-modeled ⇒ the enclosing loop ⊤-rejects (`20O` find-5:
+    /// the condition region counts too — a `while … && break; do …` exits the loop). A
+    /// conservative structural walk over the already-built subtree.
+    fn region_has_loop_jump(&self, region: dorc_core::AstId) -> bool {
+        let mut stack = vec![region];
         while let Some(id) = stack.pop() {
             match &self.builder_node(id).kind {
                 NodeKind::Simple { words, .. } => {
@@ -1288,6 +1384,17 @@ impl Parser {
 // ===========================================================================
 // Free helpers (pure; no parser state)
 // ===========================================================================
+
+/// The closing keyword for a construct opener (`for`/`while`/`until` ⇒ `done`,
+/// `if` ⇒ `fi`, `case` ⇒ `esac`) — used only to make the construct-trailing-redirection
+/// diagnostic concrete (`done < file` reads better than `for … < file`).
+fn construct_close(opener: &str) -> &'static str {
+    match opener {
+        "if" => "fi",
+        "case" => "esac",
+        _ => "done", // for / while / until
+    }
+}
 
 /// If a lexer word is exactly one `Literal` part, return it. Reserved-word
 /// recognition and command-name fixedness both key off this.

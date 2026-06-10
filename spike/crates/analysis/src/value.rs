@@ -239,6 +239,11 @@ impl<'a> Prep<'a> {
                 assigned_vars.insert(name.clone());
                 let recipe = match value {
                     None => Recipe::Parts(Vec::new()), // `name=` ⇒ empty literal
+                    // A word-leading unquoted `~` on the RHS tilde-expands (`x=~` ⇒ `$HOME`),
+                    // which we cannot reproduce ⇒ ⊤ (fix-1). A source-literal glob does NOT
+                    // expand on an assignment RHS (`x=*.txt` stores `*.txt`), so it is kept
+                    // concrete here — the glob hazard fires only at the unquoted USE site.
+                    Some(v) if word_assign_rhs_hazard(ast, *v) => Recipe::Top,
                     Some(v) => recipe_of_word(ast, *v),
                 };
                 list.push((name.clone(), recipe));
@@ -324,13 +329,17 @@ impl<'a> Prep<'a> {
         };
         // JOIN the resolved words into one Flat. Empty list ⇒ ⊤ (the body's uses see an
         // unset/0-iteration var; never a stale literal). `Flat::join` saturates two
-        // distinct literals to ⊤ — exactly the >1-element rule.
+        // distinct literals to ⊤ — exactly the >1-element rule. A `for`-list word is an
+        // expansion site (dash globs `for f in *.conf`, tilde-expands `for f in ~`), so an
+        // unquoted source-literal glob / word-leading `~` (fix-1) makes that word ⊤.
         let mut acc = Flat::Bottom;
         for &w in words {
-            acc = acc.join(&flat_of(&resolve_recipe(
-                &recipe_of_word(self.ast, w),
-                incoming,
-            )));
+            let resolved = if word_expansion_hazard(self.ast, w) {
+                Abstract::Top
+            } else {
+                resolve_recipe(&recipe_of_word(self.ast, w), incoming)
+            };
+            acc = acc.join(&flat_of(&resolved));
         }
         let bound = match (words.is_empty(), acc) {
             (true, _) => Flat::Top, // empty list ⇒ ⊤ (cannot enumerate / ran 0 times)
@@ -483,6 +492,13 @@ impl<'a> Prep<'a> {
         words
             .iter()
             .flat_map(|&w| {
+                // An unquoted source-literal glob / word-leading `~` (fix-1) expands against
+                // the live filesystem / `$HOME` ⇒ one ⊤ slot (we cannot enumerate it). This
+                // is the direct-literal channel (`cmd *.deb`); a glob arriving through an
+                // unquoted variable's VALUE is the split path's `field_is_modelable` concern.
+                if word_expansion_hazard(self.ast, w) {
+                    return vec![Abstract::Top];
+                }
                 resolve_recipe_fields(&recipe_of_word(self.ast, w), incoming, self.ifs_pristine)
             })
             .collect()
@@ -708,6 +724,33 @@ fn collect_frags(parts: &[WordPart], quoted: bool, out: &mut Vec<Frag>) -> bool 
         }
     }
     true
+}
+
+/// The unquoted word-expansion hazards a word triggers at a *command/`for`-list expansion*
+/// site (`20O` find-1, fix-1): an unquoted source-literal glob (`*.deb`, XCU §2.6.6) OR a
+/// word-leading unquoted `~` (XCU §2.6.1). Either makes the word's expansion runtime-
+/// dependent (filesystem / `$HOME`) and unreproducible ⇒ the word degrades to a single ⊤.
+/// Both predicates live in `sem` (sharing `GLOB_CHARS` with the split-result guard); this
+/// is their value-plane application at the two *expansion* sites only.
+fn word_expansion_hazard(ast: &Ast, word: AstId) -> bool {
+    let NodeKind::Word { parts } = &ast.node(word).kind else {
+        return false;
+    };
+    sem::word_has_unquoted_glob(parts) || sem::word_has_leading_tilde(parts)
+}
+
+/// The subset of [`word_expansion_hazard`] that fires at an *assignment-RHS* site (`20O`
+/// fix-1, the three-row table): a word-leading unquoted `~` only. dash expands a tilde-prefix
+/// on an assignment RHS (`x=~` ⇒ `$HOME`) — unreproducible ⇒ ⊤ — but does **not** glob it
+/// (`x=*.txt` stores the literal `*.txt` concretely), so the source-literal glob check is
+/// deliberately excluded here. The store/unquoted-use/quoted-use distinction then falls out:
+/// the literal is stored concrete; an unquoted *use* (`cmd $x`) globs the value via the split
+/// path's [`sem::field_is_modelable`]; a quoted use (`cmd "$x"`) stays concrete.
+fn word_assign_rhs_hazard(ast: &Ast, word: AstId) -> bool {
+    let NodeKind::Word { parts } = &ast.node(word).kind else {
+        return false;
+    };
+    sem::word_has_leading_tilde(parts)
 }
 
 /// If `part` is an unquoted plain-variable expansion (`$name` / `${name}` where `name` is a
@@ -1589,6 +1632,122 @@ mod tests {
                 "cmd"
             ),
             vec![lit("cmd"), Word::Top]
+        );
+    }
+
+    // ---- fix-1: unquoted glob / tilde literals ⇒ ⊤ (`20O` find-1, XCU §2.6.6 / §2.6.1) ----
+
+    #[test]
+    fn straightline_argv_glob_literal_is_top() {
+        // The priority-1 channel (pre-existing for straight-line argv): an unquoted literal
+        // glob word expands against the live fs ⇒ ⊤ (dash: `*.deb` ⇒ the matching paths). The
+        // literal NEIGHBOURS stay concrete (per-word independence) — only the glob word is ⊤.
+        assert_eq!(
+            argv_of(r"apt-get install -y *.deb", "apt-get"),
+            vec![lit("apt-get"), lit("install"), lit("-y"), Word::Top],
+            "unquoted literal glob `*.deb` ⇒ ⊤ (pathname expansion is runtime-dependent)"
+        );
+    }
+
+    #[test]
+    fn quoted_glob_literal_stays_concrete() {
+        // The non-over-degrade pin (the engine is RIGHT here — do not break it): a QUOTED glob
+        // is a dash-literal (`cmd "*.conf"` ⇒ `[*.conf]`), so it must resolve concrete.
+        assert_eq!(
+            argv_of(r#"install "*.conf""#, "install"),
+            vec![lit("install"), lit("*.conf")],
+            "double-quoted `\"*.conf\"` is a literal ⇒ concrete (no glob)"
+        );
+        assert_eq!(
+            argv_of(r"install '*.conf'", "install"),
+            vec![lit("install"), lit("*.conf")],
+            "single-quoted `'*.conf'` is a literal ⇒ concrete (no glob)"
+        );
+    }
+
+    #[test]
+    fn word_leading_tilde_unquoted_is_top_quoted_is_concrete() {
+        // Word-leading unquoted `~` tilde-expands to `$HOME` (dash-verified) ⇒ ⊤ (no $HOME
+        // model). The quoted forms are dash-literals ⇒ concrete; a mid-word `~` is literal.
+        assert_eq!(
+            argv_of(r"cmd ~", "cmd"),
+            vec![lit("cmd"), Word::Top],
+            "word-leading unquoted `~` ⇒ ⊤ (tilde expansion, unmodelable)"
+        );
+        assert_eq!(
+            argv_of(r"cmd '~'", "cmd"),
+            vec![lit("cmd"), lit("~")],
+            "single-quoted `'~'` is a dash-literal ⇒ concrete"
+        );
+        assert_eq!(
+            argv_of(r#"cmd "~""#, "cmd"),
+            vec![lit("cmd"), lit("~")],
+            "double-quoted `\"~\"` is a dash-literal ⇒ concrete"
+        );
+        assert_eq!(
+            argv_of(r"cmd x~", "cmd"),
+            vec![lit("cmd"), lit("x~")],
+            "a mid-word `~` (not word-leading) is a literal ⇒ concrete"
+        );
+    }
+
+    #[test]
+    fn assignment_rhs_glob_three_row_table() {
+        // The dash-verified three-row table (the prompt's headline ask). The hazard is the
+        // unquoted USE, NOT the store:
+        //   store        — `x=*.txt` stores the literal `*.txt` CONCRETELY (no RHS glob);
+        //   unquoted use  — `cmd $x` field-splits then globs the value ⇒ ⊤ (split path);
+        //   quoted use    — `cmd "$x"` does not glob ⇒ stays concrete `*.txt`.
+        assert_eq!(
+            argv_of(r#"x=*.txt; cmd "$x""#, "cmd"),
+            vec![lit("cmd"), lit("*.txt")],
+            "store + quoted-use: assignment-RHS glob is stored concrete and survives a quoted use"
+        );
+        assert_eq!(
+            argv_of(r"x=*.txt; cmd $x", "cmd"),
+            vec![lit("cmd"), Word::Top],
+            "unquoted-use: the stored glob value globs at the unquoted use ⇒ ⊤ (split path)"
+        );
+    }
+
+    #[test]
+    fn assignment_rhs_leading_tilde_is_top() {
+        // Tilde DIVERGES from glob on an assignment RHS: dash expands `x=~` to `$HOME` (it is
+        // an assignment-word tilde context, XCU §2.6.1), which we cannot reproduce ⇒ ⊤ even
+        // for a quoted later use. The quoted RHS forms stay concrete (dash-literal `~`).
+        assert_eq!(
+            argv_of(r#"x=~; cmd "$x""#, "cmd"),
+            vec![lit("cmd"), Word::Top],
+            "an unquoted word-leading `~` on the RHS expands at assignment ⇒ ⊤"
+        );
+        assert_eq!(
+            argv_of(r#"x="~"; cmd "$x""#, "cmd"),
+            vec![lit("cmd"), lit("~")],
+            "a quoted RHS `~` is a dash-literal ⇒ stored concrete"
+        );
+    }
+
+    #[test]
+    fn for_list_glob_word_makes_for_var_top() {
+        // The demonstrated end-to-end channel (`20O` find-1): a `for`-list word that is an
+        // unquoted literal glob expands against the fs ⇒ the for-var binds ⊤ ⇒ the in-body
+        // use is ⊤. (Before fix-1 the for-var wrongly bound the literal `*.conf`.)
+        assert_eq!(
+            argv_of(r#"for f in *.conf; do cmd "$f"; done"#, "cmd"),
+            vec![lit("cmd"), Word::Top],
+            "a glob `for`-list word ⇒ for-var ⊤ ⇒ post-bind use ⊤"
+        );
+        // A word-leading `~` list word is the same hazard.
+        assert_eq!(
+            argv_of(r#"for f in ~; do cmd "$f"; done"#, "cmd"),
+            vec![lit("cmd"), Word::Top],
+            "a word-leading `~` `for`-list word ⇒ for-var ⊤"
+        );
+        // Control: a glob-free literal list word still resolves precisely (no over-degrade).
+        assert_eq!(
+            argv_of(r#"for f in nginx; do cmd "$f"; done"#, "cmd"),
+            vec![lit("cmd"), lit("nginx")],
+            "a glob-free single literal list word still resolves (no over-degrade)"
         );
     }
 

@@ -513,6 +513,68 @@ impl FieldAccumulator {
     }
 }
 
+// ===========================================================================
+// §8 Word-level unquoted expansion hazards: pathname (glob) + tilde (XCU §2.6.6 / §2.6.1)
+// ===========================================================================
+
+/// Does this word contain an **unquoted literal** pathname-expansion metacharacter
+/// (`*`, `?`, `[`) — i.e. one typed directly into an unquoted fragment of the word
+/// (XCU §2.6.6)? Such a word is matched against the live filesystem at expansion, which
+/// is runtime-dependent ⇒ the consumer must degrade it to ⊤ (the wrong-concrete frontier,
+/// `19H §1.3`). Quoted fragments (`"*.conf"`, `'*'`, a double-quoted literal) are exempt:
+/// dash treats a quoted `*` as a literal byte (dash-verified `cmd "*.conf"` ⇒ `[*.conf]`).
+///
+/// This is the **word-source** companion to [`field_is_modelable`] (the **resolved-value**
+/// glob check) — they share [`GLOB_CHARS`], the one definition (the prompt's "split-field
+/// guard and word-level guard share it"). `field_is_modelable` catches a glob char arriving
+/// through an *unquoted variable's value* (`x="*.deb"; cmd $x`, routed via the split path);
+/// this catches one typed *literally and unquoted* in the word (`cmd *.deb`). The two are
+/// complementary and non-overlapping: a source `$x` carries no literal glob char, and a
+/// resolved field never re-derives the word's quoting.
+///
+/// dash note: pathname expansion fires on the fields of a command word and a `for`-list
+/// word, but **not** on an assignment-statement RHS — `x=*.txt` stores the literal `*.txt`
+/// (dash-verified). So callers apply this at *expansion* sites (argv, `for`-list) only; an
+/// assignment RHS keeps a source-literal glob concrete (the three-row store/use/quoted-use
+/// table, `analysis::value`). An unterminated `[` (no closing `]`) is a *literal* to dash,
+/// so this over-degrades that one shape to ⊤ — the safe direction (`inv-kfail`).
+#[must_use]
+pub fn word_has_unquoted_glob(parts: &[WordPart]) -> bool {
+    parts.iter().any(|part| match part {
+        // A *bare* (unquoted) literal fragment globs on its metacharacters.
+        WordPart::Literal(s) => s.contains(GLOB_CHARS),
+        // Single-quoted, double-quoted, and every expansion are NOT a source-literal
+        // glob: single/double quotes suppress globbing of their bytes, and an expansion's
+        // *value*-glob is the split path's concern ([`field_is_modelable`]), not this one.
+        WordPart::SingleQuoted(_)
+        | WordPart::DoubleQuoted(_)
+        | WordPart::Param { .. }
+        | WordPart::CommandSubst(_)
+        | WordPart::Arithmetic
+        | WordPart::ParamComplex => false,
+    })
+}
+
+/// Does this word begin with an **unquoted word-leading `~`** (XCU §2.6.1 Tilde
+/// Expansion)? True iff the word's first [`WordPart`] is an unquoted [`Literal`] whose
+/// first byte is `~`. dash expands such a tilde-prefix to a home directory (dash-verified
+/// `cmd ~` ⇒ `[/home/...]`), which we cannot reproduce (no `$HOME` model) ⇒ the consumer
+/// degrades the word to ⊤.
+///
+/// dash note: tilde expansion fires word-leading-unquoted only — `cmd x~` and `cmd "$x"~`
+/// pass a literal `~` (the tilde is not word-initial), and `cmd '~'`/`cmd "~"` are literal
+/// (quoted). Unlike pathname expansion, tilde DOES fire on an assignment RHS (`x=~` ⇒
+/// `$HOME`, dash-verified), so callers apply this at *all* value-resolution sites including
+/// assignment RHS. This is a deliberately-conservative syntactic test: it over-degrades
+/// `~$x` and `~nouser` (which dash leaves literal because the login-name part is unknown /
+/// invalid) to ⊤ — the safe direction (`inv-kfail`); we model no tilde-prefix *positively*.
+/// The `:`-delimited assignment tilde (`x=a:~`, XCU §2.6.1) is NOT covered (not word-leading);
+/// it is a recorded residual (`20Q`), an under-degrade that no observed idiom exercises.
+#[must_use]
+pub fn word_has_leading_tilde(parts: &[WordPart]) -> bool {
+    matches!(parts.first(), Some(WordPart::Literal(s)) if s.starts_with('~'))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -805,5 +867,80 @@ mod tests {
         assert_eq!(single_quote("a'b"), "'a'\\''b'");
         // Two embedded quotes: open + `'\''` + `'\''` + close.
         assert_eq!(single_quote("''"), "''\\'''\\'''");
+    }
+
+    // ---- §8 word-level unquoted glob / tilde hazards (XCU §2.6.6 / §2.6.1) ----
+
+    #[test]
+    fn word_has_unquoted_glob_fires_on_bare_literal_only() {
+        // An unquoted literal glob char ⇒ pathname expansion ⇒ hazard (dash globs `*.deb`).
+        assert!(word_has_unquoted_glob(&[WordPart::Literal(
+            "*.deb".to_owned()
+        )]));
+        assert!(word_has_unquoted_glob(&[WordPart::Literal(
+            "pkg?".to_owned()
+        )]));
+        assert!(word_has_unquoted_glob(&[WordPart::Literal(
+            "[abc]".to_owned()
+        )]));
+        // A glob char in a *mixed* word still globs (the bare `*` part is unquoted).
+        assert!(word_has_unquoted_glob(&[
+            WordPart::DoubleQuoted(vec![WordPart::Literal("pre".to_owned())]),
+            WordPart::Literal("*.deb".to_owned()),
+        ]));
+        // Quoted glob chars are LITERAL to dash ⇒ NOT a hazard (`"*.conf"`, `'*'`).
+        assert!(!word_has_unquoted_glob(&[WordPart::SingleQuoted(
+            "*.conf".to_owned()
+        )]));
+        assert!(!word_has_unquoted_glob(&[WordPart::DoubleQuoted(vec![
+            WordPart::Literal("*.conf".to_owned()),
+        ])]));
+        // A variable/subst is not a *source-literal* glob (its value-glob is the split
+        // path's `field_is_modelable` concern, not this one).
+        assert!(!word_has_unquoted_glob(&[WordPart::Param {
+            name: "x".to_owned()
+        }]));
+        // A glob-free literal is fine.
+        assert!(!word_has_unquoted_glob(&[WordPart::Literal(
+            "nginx".to_owned()
+        )]));
+    }
+
+    #[test]
+    fn word_has_leading_tilde_is_word_leading_unquoted_only() {
+        // Word-leading unquoted `~` ⇒ tilde expansion (dash: `~` ⇒ $HOME).
+        assert!(word_has_leading_tilde(&[WordPart::Literal("~".to_owned())]));
+        assert!(word_has_leading_tilde(&[WordPart::Literal(
+            "~/foo".to_owned()
+        )]));
+        assert!(word_has_leading_tilde(&[WordPart::Literal(
+            "~root".to_owned()
+        )]));
+        // Conservative over-degrade: `~$x` (first part is `Literal("~")`) ⇒ hazard, though
+        // dash leaves it literal `~foo`. The safe direction (`inv-kfail`).
+        assert!(word_has_leading_tilde(&[
+            WordPart::Literal("~".to_owned()),
+            WordPart::Param {
+                name: "x".to_owned()
+            },
+        ]));
+        // NOT word-leading: a mid-word tilde (`x~`) is a literal in dash.
+        assert!(!word_has_leading_tilde(&[WordPart::Literal(
+            "x~".to_owned()
+        )]));
+        // Quoted tilde ⇒ literal (`'~'`, `"~"`).
+        assert!(!word_has_leading_tilde(&[WordPart::SingleQuoted(
+            "~".to_owned()
+        )]));
+        assert!(!word_has_leading_tilde(&[WordPart::DoubleQuoted(vec![
+            WordPart::Literal("~".to_owned()),
+        ])]));
+        // A leading variable then tilde (`$x~`) is not word-leading-tilde.
+        assert!(!word_has_leading_tilde(&[
+            WordPart::Param {
+                name: "x".to_owned()
+            },
+            WordPart::Literal("~".to_owned()),
+        ]));
     }
 }

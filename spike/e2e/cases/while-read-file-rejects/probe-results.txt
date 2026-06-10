@@ -1,0 +1,6 @@
+# probe-results: site-keyed records (task-D1 WIRE). Grammar:
+#   site <leafid> effect=<holds|absent|cant-tell>
+# NO records: the whole `while … done < file` construct is an absorbing ⊤ (a
+# construct-trailing redirection, find-3), so no site is probe-resolvable. The real
+# assertion is the LOUD diagnostic (expected-diagnostics) — fix-2 turns the previously
+# SILENT misparse into a `syntax-unsupported` + `cfg-top-node` pair — and the verbatim apply.
