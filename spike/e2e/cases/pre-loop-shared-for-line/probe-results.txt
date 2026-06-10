@@ -1,0 +1,7 @@
+# probe-results: site-keyed records (task-D1 WIRE). Grammar:
+#   site <leafid> effect=<holds|absent|cant-tell>
+# Site 0 is the pre-loop `apt-get install nginx` (package:nginx#installed) — holds, so it
+# is elided. It shares its line with the `for x in a` loop OPENER; the in-situ render keeps
+# the `for …` while substituting the install (`true; for x in a`). Site 1 is the in-loop
+# `echo "$x"` body (no oracle ⇒ unresolvable, no record).
+site 0 effect=holds

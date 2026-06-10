@@ -281,6 +281,44 @@ pub mod apply {
         out
     }
 
+    /// LINE-granular **in-situ** substitution for one or more `Replace`/`Omit` leaves
+    /// that share their source line with a loop/`if`/`case` **scaffolding keyword**
+    /// (`done`/`fi`/`esac`/`for`/`while`/`if`/`then`/`else`/`elif`/`do`) — the task-F2
+    /// generalisation of [`inline_arm_subst`] (20O find-2). Each `(start, end, filler)`
+    /// replaces that in-line byte span with `filler` (the leaf's value-preserving
+    /// stand-in, or `:` for a dead `Omit`); every other byte — crucially the keyword — is
+    /// kept verbatim.
+    ///
+    /// GUARANTEE: dash-n-clean **iff** the spans are the in-line byte ranges of the
+    /// line's elidable leaves (the caller slices them via `line_start`) and the bytes
+    /// OUTSIDE the spans are valid sh (here, the scaffolding keyword the book wrote). This
+    /// is the whole point: whole-line commenting `done; install` yields
+    /// `# done; install` ⇒ the `done` is gone ⇒ `for…do…` has no terminator ⇒ a
+    /// `dash -n` "expecting done" error ⇒ the apply aborts MID-RUN on the host (violating
+    /// fail-before-network). Splicing only the leaf span (`done; true`) keeps the keyword.
+    /// Spans are applied **right-to-left** (highest `start` first) so an earlier span's
+    /// offsets are unperturbed by a later splice. Caller-precondition: every span is on a
+    /// single line (a multi-line leaf is refused upstream and run verbatim — the
+    /// kFAIL-perform fallback). Pinned by `post-loop-shared-done-line` /
+    /// `pre-loop-shared-for-line` / `fi-shared-line` (e2e, exec-gated) + the
+    /// `render_*_shared_*` unit tests.
+    #[must_use]
+    pub fn inline_scaffold_subst(line: &str, subs: &[(usize, usize, String)]) -> String {
+        let mut spliced = line.to_string();
+        // Right-to-left: replacing a later span first leaves earlier byte offsets valid.
+        let mut ordered: Vec<&(usize, usize, String)> = subs.iter().collect();
+        ordered.sort_by_key(|s| core::cmp::Reverse(s.0));
+        for (start, end, filler) in ordered {
+            let lo = (*start).min(spliced.len());
+            let hi = (*end).min(spliced.len()).max(lo);
+            spliced.replace_range(lo..hi, filler);
+        }
+        let mut out = String::with_capacity(spliced.len().saturating_add(64));
+        out.push_str(&spliced);
+        out.push_str("   # dorc: elided (already converged / dead branch) — substituted in situ (shares line with scaffolding)\n");
+        out
+    }
+
     /// LINE-granular **whole-line** neutralisation: comment the original command, then
     /// emit its value-preserving stand-in (`filler`) at the original indent.
     ///

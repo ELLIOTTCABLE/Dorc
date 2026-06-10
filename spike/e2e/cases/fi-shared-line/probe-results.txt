@@ -1,0 +1,7 @@
+# probe-results: site-keyed records (task-D1 WIRE). Grammar:
+#   site <leafid> effect=<holds|absent|cant-tell>
+# Site 2 is the post-`if` `apt-get install nginx` (package:nginx#installed) — holds, so it
+# is elided. It shares its line with the `if`'s closing `fi`; the in-situ render keeps the
+# `fi` while substituting the install (`fi; true`). Sites 0/1 are the `if` guard (`true`)
+# and the then-body (`echo y`) — both shell builtins, no oracle ⇒ unresolvable, no records.
+site 2 effect=holds

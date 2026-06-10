@@ -1,0 +1,7 @@
+# probe-results: site-keyed records (task-D1 WIRE). Grammar:
+#   site <leafid> effect=<holds|absent|cant-tell>
+# (the records the rendered probe emits; effect from the probe command rc).
+# Site 1 is the post-loop `apt-get install nginx` (package:nginx#installed) — holds, so
+# the install is elided. Site 0 is the in-loop `echo "$x"` body (no oracle ⇒ unresolvable,
+# no record). The loop body is value-flow-pure (echo) so the install stays ambient/elidable.
+site 1 effect=holds

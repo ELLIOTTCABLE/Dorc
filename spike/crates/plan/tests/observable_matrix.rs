@@ -808,3 +808,120 @@ fn render_multi_line_case_arm_body_keeps_whole_line_comment_form() {
         "the `nginx)` pattern line is untouched:\n{rendered}"
     );
 }
+
+// ===========================================================================
+// task-F2 (20O find-2): in-situ substitution for a Replace leaf sharing its line
+// with LOOP / `if` scaffolding (`done`/`for`/`fi` …). The T14 case-arm fix
+// generalised: whole-line commenting `done; install` swallows the `done`, breaking
+// `dash -n` (the apply aborts MID-RUN on the host — violating fail-before-network).
+// The render keeps the keyword and substitutes only the leaf span.
+// ===========================================================================
+
+#[test]
+fn render_post_loop_install_sharing_done_line_substitutes_in_situ() {
+    // 20O find-2 case (a): a converged install on the loop's `done` line. The loop body
+    // (`echo "$x"`, value-flow-pure so the post-loop install stays elidable) is on the
+    // `do` line; `done` shares the install's line. Whole-line commenting would yield
+    // `# done; …` ⇒ `for…do…` with no terminator ⇒ `dash -n` "expecting done". The fix
+    // keeps `done` and substitutes the install (`done; true`). HOST: nginx converged.
+    let src = "for x in a b; do echo \"$x\"\ndone; apt-get install -y nginx\n";
+    let (plan, ast) = plan_and_ast(src, &[("package", "nginx")]);
+    let rendered = plan.render_apply(src, &ast);
+    assert!(
+        rendered.contains("\ndone; true   # dorc: elided"),
+        "the `done` keyword is kept; only the install is substituted (`done; true`):\n{rendered}"
+    );
+    assert!(
+        !rendered.contains("# done;"),
+        "the `done` is NOT commented out (the find-2 mangling that breaks `dash -n`):\n{rendered}"
+    );
+}
+
+#[test]
+fn render_pre_loop_install_sharing_for_line_substitutes_in_situ() {
+    // 20O find-2 case (b): a converged install BEFORE a loop, on the `for` opener line.
+    // The body is on the next line, so the install's line has no Run leaf to protect it;
+    // whole-line commenting would eat `for x in a`. The fix keeps the opener and
+    // substitutes the install (`true; for x in a`).
+    let src = "apt-get install -y nginx; for x in a\ndo echo \"$x\"; done\n";
+    let (plan, ast) = plan_and_ast(src, &[("package", "nginx")]);
+    let rendered = plan.render_apply(src, &ast);
+    assert!(
+        rendered.contains("true; for x in a   # dorc: elided"),
+        "the `for …` opener is kept; the install is substituted (`true; for x in a`):\n{rendered}"
+    );
+    // The `do …; done` body line is untouched (the loop still has its body + `done`).
+    assert!(
+        rendered.contains("\ndo echo \"$x\"; done\n"),
+        "the loop body + `done` survive verbatim:\n{rendered}"
+    );
+}
+
+#[test]
+fn render_post_if_install_sharing_fi_line_substitutes_in_situ() {
+    // 20O find-2 case (c): a converged install on the `if`'s closing `fi` line. The guard
+    // (`true`) and then-body (`echo y`) are on the `if`/`then` line; `fi` shares the
+    // install's line. Whole-line commenting would eat `fi` ⇒ `if…then…` unterminated. The
+    // fix keeps `fi` and substitutes the install (`fi; true`).
+    let src = "if true; then echo y\nfi; apt-get install -y nginx\n";
+    let (plan, ast) = plan_and_ast(src, &[("package", "nginx")]);
+    let rendered = plan.render_apply(src, &ast);
+    assert!(
+        rendered.contains("\nfi; true   # dorc: elided"),
+        "the `fi` keyword is kept; the install is substituted (`fi; true`):\n{rendered}"
+    );
+    assert!(
+        !rendered.contains("# fi;"),
+        "the `fi` is NOT commented out:\n{rendered}"
+    );
+}
+
+#[test]
+fn render_own_line_then_body_keeps_whole_line_comment_form() {
+    // Zero-churn negative control (the `guarded` e2e shape): a converged install that is
+    // the then-body but sits ALONE on its own line (the `then`/`fi` keywords are on OTHER
+    // lines) must keep the ORIGINAL whole-line comment form — it is already `dash -n`-clean
+    // and the in-situ path must NOT fire (it is gated on the leaf SHARING its line with
+    // scaffolding). This pins "zero golden churn outside the new cases".
+    let src = "if true; then\n   apt-get install -y nginx\nfi\necho done\n";
+    let (plan, ast) = plan_and_ast(src, &[("package", "nginx")]);
+    let rendered = plan.render_apply(src, &ast);
+    assert!(
+        rendered.contains(
+            "# apt-get install -y nginx   # dorc: elided (already converged / dead branch)\n"
+        ),
+        "an own-line then-body install keeps the whole-line comment form (not in-situ):\n{rendered}"
+    );
+    assert!(
+        !rendered.contains("in situ"),
+        "the in-situ path must NOT fire for an own-line leaf (zero churn):\n{rendered}"
+    );
+    // The `then`/`fi` keywords survive verbatim on their own lines.
+    assert!(
+        rendered.contains("if true; then\n") && rendered.contains("\nfi\n"),
+        "the `if`/`then`/`fi` scaffolding is intact:\n{rendered}"
+    );
+}
+
+#[test]
+fn render_multiline_leaf_on_scaffolding_line_refuses_license_and_runs_verbatim() {
+    // The refuse-the-license fallback (task-F2): a converged install whose argv operand
+    // carries a LITERAL NEWLINE, so its source span crosses two lines, while sharing the
+    // loop's `done` line. The in-situ splice operates on ONE line's bytes, so it cannot
+    // express a multi-line leaf — the conservative path REFUSES the license and renders
+    // the leaf VERBATIM (it RUNS — kFAIL-perform; over-executing an already-converged
+    // mutator is safe, a broken artifact is not). Critically the `done` is NOT eaten.
+    let src = "for x in a b; do echo \"$x\"\ndone; apt-get install -y \"multi\nline\"\n";
+    // The operand resolves to a concrete literal (`multi\nline`); converged ⇒ would be a
+    // Replace, but the multi-line span forces the verbatim-run fallback.
+    let (plan, ast) = plan_and_ast(src, &[("package", "multi\nline")]);
+    let rendered = plan.render_apply(src, &ast);
+    assert!(
+        rendered.contains("\ndone; apt-get install -y \"multi\nline\"\n"),
+        "the multi-line install is rendered VERBATIM (refuse-the-license), `done` kept:\n{rendered}"
+    );
+    assert!(
+        !rendered.contains("# done"),
+        "the `done` is NOT commented (the fallback must not break the loop):\n{rendered}"
+    );
+}

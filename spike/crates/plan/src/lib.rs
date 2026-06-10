@@ -998,13 +998,21 @@ impl Plan {
     ///   the deferred leaf-exact / structural render (`C-5`/`seam-prov`).
     #[must_use]
     pub fn render_apply(&self, src: &str, ast: &Ast) -> String {
+        emit_apply_lines(src, &self.classify_lines(src, ast))
+    }
+
+    /// Compute the per-line render decisions (the [`LineRender`] maps) — the *decision*
+    /// half of `render_apply`, split from the byte-emission half ([`emit_apply_lines`]) so
+    /// each stays length-bounded. Walks every leaf [`Step`], routing it to in-situ
+    /// substitution (case-arm T14 or scaffolding-shared task-F2), whole-line
+    /// neutralisation, or verbatim, per the omit-safety + scaffolding-safety gates.
+    fn classify_lines(&self, src: &str, ast: &Ast) -> LineRender {
         let line_of = |byte: u32| -> usize {
             src.get(..byte as usize)
                 .map_or(0, |s| s.bytes().filter(|&b| b == b'\n').count())
         };
-        // Byte offset of each source line's first byte (index = line number). Lets an
-        // absolute leaf span be mapped to an in-line byte column for the in-situ
-        // substitution (the T14 case-arm path below).
+        // Byte offset of each source line's first byte (index = line number) — maps an
+        // absolute leaf span to an in-line byte column for the in-situ paths.
         let line_start: Vec<usize> = std::iter::once(0)
             .chain(
                 src.bytes()
@@ -1012,92 +1020,181 @@ impl Plan {
                     .filter_map(|(i, b)| (b == b'\n').then_some(i + 1)),
             )
             .collect();
-        // Per-AstId disposition, so an `Omit`'s controller can be resolved for the
-        // omit-safety gate.
+        // Per-AstId disposition, so an `Omit`'s controller resolves for the omit-safety gate.
         let by_ast: BTreeMap<AstId, &Disposition> =
             self.steps.iter().map(|s| (s.ast, &s.disposition)).collect();
 
-        // The T14 fix (leaf-exact case-arm render): leaves that are the body of a
-        // one-liner `case` arm (`pat) cmd ;;` all on one line) cannot be whole-line
-        // commented without swallowing the `pat)`/`;;` scaffolding. They are substituted
-        // IN-SITU instead (only the command span is replaced). Detected AST-structurally.
+        // Leaves needing in-situ substitution: one-liner case-arm bodies (T14, keep
+        // `pat)`/`;;`) and leaves sharing a loop/`if`/`case` scaffolding line (task-F2,
+        // keep `done`/`fi`/… — else a whole-line comment eats the keyword, breaking
+        // `dash -n` and aborting the apply mid-run on the host).
         let arm_inline_leaves = case_arm_oneliner_leaves(ast, &line_of);
+        let scaffold_lines = scaffolding_boundary_lines(src, ast, &line_of);
 
-        // Per source line: does a Run leaf sit on it (⇒ verbatim)? and the surviving
-        // value-preserving stand-in for a neutralised line.
-        let mut run_lines: BTreeSet<usize> = BTreeSet::new();
-        let mut neutral_lines: BTreeSet<usize> = BTreeSet::new();
-        let mut line_standin: BTreeMap<usize, StandIn> = BTreeMap::new();
-        // line → (in-line byte start, in-line byte end, stand-in) for an in-situ
-        // case-arm substitution. The whole-line path skips these lines.
-        let mut inline_subst: BTreeMap<usize, (usize, usize, StandIn)> = BTreeMap::new();
+        let mut r = LineRender::default();
+        // The in-line byte span of a leaf on its (single) source line, or `None` if the
+        // leaf's span crosses a line boundary (the refuse-the-license precondition below).
+        let inline_span = |span: dorc_core::Span| -> Option<(usize, usize)> {
+            let l = line_of(span.lo.0);
+            if l != line_of(span.hi.0.saturating_sub(1).max(span.lo.0)) {
+                return None; // multi-line leaf — not expressible as one in-line splice
+            }
+            let lo = line_start.get(l).copied().unwrap_or(0);
+            Some((
+                (span.lo.0 as usize).saturating_sub(lo),
+                (span.hi.0 as usize).saturating_sub(lo),
+            ))
+        };
+        // Does a single-line leaf SHARE its line with non-whitespace bytes (a scaffolding
+        // keyword or another command)? If it sits ALONE on its line (only indentation
+        // brackets it), the ordinary whole-line comment form is correct and `dash -n`
+        // -clean — and must be kept byte-identical (zero churn: an own-line `then`-body
+        // install, `guarded` case). The in-situ splice is reserved for a leaf actually
+        // bracketed by other line content.
+        let shares_line = |start: usize, end: usize, line_idx: usize| -> bool {
+            src.lines().nth(line_idx).is_some_and(|line| {
+                let pre = line.get(..start).unwrap_or("");
+                let suf = line.get(end..).unwrap_or("");
+                !pre.trim().is_empty() || !suf.trim().is_empty()
+            })
+        };
         for step in &self.steps {
             let span = ast.node(step.ast).span;
             let last_byte = span.hi.0.saturating_sub(1).max(span.lo.0);
-            let lines: Vec<usize> = (line_of(span.lo.0)..=line_of(last_byte)).collect();
+            let first_line = line_of(span.lo.0);
+            let lines: Vec<usize> = (first_line..=line_of(last_byte)).collect();
+            // task-F2: a Replace/Omit leaf sharing its line with loop/`if` scaffolding (not
+            // a case-arm leaf — T14 routes those) cannot be whole-line-commented without
+            // eating the keyword (breaking `dash -n`). Splice it in-situ instead.
+            let on_scaffold = lines.iter().any(|l| scaffold_lines.contains(l))
+                && !arm_inline_leaves.contains(&step.ast);
+            let scaffold_filler: Option<String> = match &step.disposition {
+                Disposition::Replace(_, stand_in) if on_scaffold => Some(stand_in.sh()),
+                Disposition::Omit { controller }
+                    if on_scaffold && is_neutralised(&by_ast, *controller, 0) =>
+                {
+                    Some(":".to_string())
+                }
+                _ => None,
+            };
+            if let Some(filler) = scaffold_filler {
+                match inline_span(span) {
+                    Some((start, end)) if shares_line(start, end, first_line) => {
+                        // Bracketed by line content (the keyword) ⇒ splice in-situ.
+                        r.scaffold_subst
+                            .entry(first_line)
+                            .or_default()
+                            .push((start, end, filler));
+                        continue;
+                    }
+                    // Alone on its line (keyword elsewhere) ⇒ the whole-line form is safe +
+                    // byte-identical; fall through to it.
+                    Some(_) => {}
+                    // Multi-line leaf ⇒ not in-situ-expressible: REFUSE the license, run it
+                    // verbatim (kFAIL-perform; the comment path would eat the keyword).
+                    None => {
+                        r.run_lines.extend(&lines);
+                        continue;
+                    }
+                }
+            }
             match &step.disposition {
-                Disposition::Run => run_lines.extend(&lines),
+                Disposition::Run => r.run_lines.extend(&lines),
                 // A one-liner case-arm body `Replace`: substitute in-situ (keep `pat)`/`;;`).
                 Disposition::Replace(_, stand_in) if arm_inline_leaves.contains(&step.ast) => {
-                    let l = line_of(span.lo.0);
-                    let lo = line_start.get(l).copied().unwrap_or(0);
-                    let start = (span.lo.0 as usize).saturating_sub(lo);
-                    let end = (span.hi.0 as usize).saturating_sub(lo);
-                    inline_subst.insert(l, (start, end, *stand_in));
+                    if let Some((start, end)) = inline_span(span) {
+                        r.inline_subst.insert(first_line, (start, end, *stand_in));
+                    } else {
+                        // A multi-line case-arm body cannot be spliced in-situ either —
+                        // refuse and run it verbatim (same kFAIL-perform fallback).
+                        r.run_lines.extend(&lines);
+                    }
                 }
                 Disposition::Replace(_, stand_in) => {
                     for l in &lines {
-                        neutral_lines.insert(*l);
-                        // A `Replace` leaf's stand-in is the line's surviving value
-                        // (the short-circuit survivor / sequence tail). Last writer in
-                        // source order wins (the sequence tail).
-                        line_standin.insert(*l, *stand_in);
+                        r.neutral_lines.insert(*l);
+                        // A `Replace` leaf's stand-in is the line's surviving value (the
+                        // short-circuit survivor / sequence tail). Last writer wins.
+                        r.line_standin.insert(*l, *stand_in);
                     }
                 }
                 Disposition::Omit { controller } => {
                     if is_neutralised(&by_ast, *controller, 0) {
-                        // The guard is neutralised ⇒ safe to omit the dead body. A dead
-                        // body is unreachable, so it contributes NO status — its line's
-                        // stand-in stays whatever a surviving `Replace` set, else `:`.
-                        neutral_lines.extend(&lines);
+                        // Guard neutralised ⇒ safe to omit the dead body (unreachable, no
+                        // status — its stand-in stays whatever a surviving `Replace` set).
+                        r.neutral_lines.extend(&lines);
                     } else {
-                        // The guard is kept (`Run`) ⇒ the F1 floor: render the body
-                        // verbatim (it runs; the runtime guard gates it). Treat as Run.
-                        run_lines.extend(&lines);
+                        // Guard kept (`Run`) ⇒ the F1 floor: render the body verbatim (it
+                        // runs; the runtime guard gates it).
+                        r.run_lines.extend(&lines);
                     }
                 }
             }
         }
-        let mut out = String::from(render::apply::apply_header());
-        for (i, line) in src.lines().enumerate() {
-            if let Some((start, end, stand_in)) = inline_subst.get(&i).copied()
-                && !run_lines.contains(&i)
-            {
-                // T14 in-situ: keep the `pat)` prefix and ` ;;` suffix, replace only the
-                // command span with its value-preserving stand-in (`nginx) true ;;`).
-                let prefix = line.get(..start).unwrap_or(line);
-                let suffix = line.get(end..).unwrap_or_default();
-                out.push_str(&render::apply::inline_arm_subst(prefix, stand_in, suffix));
-            } else if neutral_lines.contains(&i) && !run_lines.contains(&i) {
-                let indent: String = line
-                    .chars()
-                    .take_while(|c| *c == ' ' || *c == '\t')
-                    .collect();
-                // A surviving `Replace` leaf reproduces the line's exact status; a
-                // wholly-dead (`Omit`-only) line is unreachable code, so `:` (a pure
-                // structural placeholder — status never observed) is the honest filler.
-                let filler = match line_standin.get(&i) {
-                    Some(stand_in) => stand_in.sh(),
-                    None => ":".to_string(),
-                };
-                out.push_str(&render::apply::commented_line(line, &indent, &filler));
-            } else {
-                out.push_str(line);
-                out.push('\n');
-            }
-        }
-        out
+        r
     }
+}
+
+/// The per-line render decisions [`Plan::classify_lines`] computes, bundled so the
+/// byte-emission loop ([`emit_apply_lines`]) is its own length-bounded function. Each map
+/// is keyed by source line index; the priority among them is encoded in the emitter.
+#[derive(Default)]
+struct LineRender {
+    /// Lines bearing a `Run` leaf (or a refused/floored leaf) ⇒ emitted verbatim. Wins
+    /// over every neutralisation below (a line with ANY run leaf keeps all its bytes).
+    run_lines: BTreeSet<usize>,
+    /// Lines whose every leaf is neutralised (whole-line comment + stand-in filler).
+    neutral_lines: BTreeSet<usize>,
+    /// The surviving value-preserving stand-in for a neutralised line (else `:`).
+    line_standin: BTreeMap<usize, StandIn>,
+    /// T14 in-situ case-arm substitution: line → (in-line start, end, stand-in).
+    inline_subst: BTreeMap<usize, (usize, usize, StandIn)>,
+    /// task-F2 in-situ scaffolding substitution: line → the elided leaf spans + fillers.
+    scaffold_subst: BTreeMap<usize, Vec<(usize, usize, String)>>,
+}
+
+/// Emit the apply artifact line-by-line from the pre-computed [`LineRender`] decisions.
+/// Priority (highest first): a `run_line` is always verbatim; else a scaffolding-shared
+/// in-situ splice (task-F2); else a case-arm in-situ splice (T14); else a whole-line
+/// comment + stand-in; else verbatim. Split out of `render_apply` to keep each function
+/// length-bounded and the emission independently legible.
+fn emit_apply_lines(src: &str, r: &LineRender) -> String {
+    let mut out = String::from(render::apply::apply_header());
+    for (i, line) in src.lines().enumerate() {
+        if r.run_lines.contains(&i) {
+            // A run leaf (or a refused/floored leaf) keeps the whole line verbatim — wins
+            // over any neutralisation that also touched the line.
+            out.push_str(line);
+            out.push('\n');
+        } else if let Some(subs) = r.scaffold_subst.get(&i) {
+            // task-F2 in-situ: splice each elided leaf's stand-in into the line, keeping
+            // every other byte (the scaffolding keyword) intact.
+            out.push_str(&render::apply::inline_scaffold_subst(line, subs));
+        } else if let Some((start, end, stand_in)) = r.inline_subst.get(&i).copied() {
+            // T14 in-situ: keep the `pat)` prefix and ` ;;` suffix, replace only the
+            // command span with its value-preserving stand-in (`nginx) true ;;`).
+            let prefix = line.get(..start).unwrap_or(line);
+            let suffix = line.get(end..).unwrap_or_default();
+            out.push_str(&render::apply::inline_arm_subst(prefix, stand_in, suffix));
+        } else if r.neutral_lines.contains(&i) {
+            let indent: String = line
+                .chars()
+                .take_while(|c| *c == ' ' || *c == '\t')
+                .collect();
+            // A surviving `Replace` leaf reproduces the line's exact status; a wholly-dead
+            // (`Omit`-only) line is unreachable code, so `:` (a pure structural
+            // placeholder — status never observed) is the honest filler.
+            let filler = match r.line_standin.get(&i) {
+                Some(stand_in) => stand_in.sh(),
+                None => ":".to_string(),
+            };
+            out.push_str(&render::apply::commented_line(line, &indent, &filler));
+        } else {
+            out.push_str(line);
+            out.push('\n');
+        }
+    }
+    out
 }
 
 /// Is `leaf` neutralised (its line will be commented out)? Used by `render_apply`'s
@@ -1155,6 +1252,95 @@ fn case_arm_oneliner_leaves(ast: &Ast, line_of: &impl Fn(u32) -> usize) -> BTree
         }
     }
     leaves
+}
+
+/// The source lines that carry a compound construct's **structural scaffolding** — the
+/// opener keyword (`for`/`while`/`until`/`if`/`case`), the closer keyword
+/// (`done`/`fi`/`esac`), and the first line of each interior body region (where a
+/// `do`/`then`/`elif`/`else` keyword sits when it shares a line with the body's first
+/// command). The 20O find-2 / task-F2 generalisation of the T14 case-arm fix.
+///
+/// Why this set, and why it is enough (the structural argument): a whole-line comment is
+/// catastrophic only when a `Replace`/`Omit` leaf shares its line with NON-leaf bytes
+/// that the comment would also swallow — a scaffolding keyword. A keyword can share a
+/// line with an elidable leaf in exactly three positions: AFTER a closer
+/// (`done; install`, `fi; install`, `esac; install`), BEFORE an opener
+/// (`install; for …`), or BEFORE a body's first command (`then install`, `do install`,
+/// `else install`). The closer line is `line_of(span.hi-1)`; the opener line is
+/// `line_of(span.lo)`; a body keyword shares the body-first-command's line, which is
+/// `line_of(body.span.lo)`. A keyword on its OWN line carries no leaf, so the comment
+/// path (which fires only on lines bearing a leaf) never reaches it — hence only these
+/// leaf-bearing boundary lines matter. The render's own prefix/suffix check then
+/// distinguishes a leaf that truly shares the line with scaffolding (⇒ in-situ) from a
+/// leaf alone on a boundary line (⇒ the ordinary whole-line comment, byte-identical to
+/// before — zero churn).
+///
+/// Detection is AST-structural (node spans + position-bounded separator skipping, never
+/// a free text-scan for keywords — a command's own `done`-substring or `)` would defeat
+/// that). `case` ARM interiors (`pat)`/`;;`) are owned by [`case_arm_oneliner_leaves`]
+/// (T14); this set adds the `case`/`esac` opener/closer lines, which T14 does not cover.
+///
+/// Span caveat (`20O` find-2): an `If` span includes `fi` and a `Case` span includes
+/// `esac`, but a `ForLoop`/`WhileLoop` span ends at its BODY, **excluding `done`** (the
+/// parser sets `span = kw.to(span_of(body))`). So the loop closer line is found by
+/// skipping the separators (`;`/newline/whitespace) that follow the body — the next
+/// content byte is `done` (the parser guarantees that gap holds only the separator and
+/// `done`), giving its line without a free keyword scan.
+fn scaffolding_boundary_lines(
+    src: &str,
+    ast: &Ast,
+    line_of: &impl Fn(u32) -> usize,
+) -> BTreeSet<usize> {
+    let mut lines = BTreeSet::new();
+    // The opener line (`span.lo`) and closer line (last byte) of a compound.
+    let span_lines = |span: dorc_core::Span| {
+        [
+            line_of(span.lo.0),
+            line_of(span.hi.0.saturating_sub(1).max(span.lo.0)),
+        ]
+    };
+    // The line of `done` for a loop whose span excludes it: skip `;`/newline/whitespace
+    // after the body's last byte to the next content byte (`done`).
+    let loop_closer_line = |body_hi: u32| -> usize {
+        let from = body_hi as usize;
+        let after = src.get(from..).unwrap_or_default();
+        let skip = after
+            .bytes()
+            .take_while(|b| matches!(b, b' ' | b'\t' | b'\n' | b'\r' | b';'))
+            .count();
+        line_of(u32::try_from(from.saturating_add(skip)).unwrap_or(u32::MAX))
+    };
+    for (_id, node) in ast.iter() {
+        match &node.kind {
+            NodeKind::ForLoop { body, .. } | NodeKind::WhileLoop { body, .. } => {
+                // opener (`for`/`while`/`until …`) + closer (`done`, span-excluded).
+                lines.insert(line_of(node.span.lo.0));
+                lines.insert(loop_closer_line(ast.node(*body).span.hi.0));
+            }
+            NodeKind::If {
+                then_body,
+                elifs,
+                else_body,
+                ..
+            } => {
+                // opener (`if …`) + closer (`fi`, span-included) + each body's first line
+                // (where a `then`/`elif`/`else` keyword sits when it shares that line).
+                lines.extend(span_lines(node.span));
+                lines.insert(line_of(ast.node(*then_body).span.lo.0));
+                lines.extend(elifs.iter().map(|e| line_of(ast.node(e.body).span.lo.0)));
+                lines.extend(else_body.map(|eb| line_of(ast.node(eb).span.lo.0)));
+            }
+            // `case`/`esac` opener+closer (span-included); arm interiors are T14's.
+            NodeKind::Case { .. } => lines.extend(span_lines(node.span)),
+            // NB `( … )` subshell / `{ …; }` group delimiters are the SAME find-2 class
+            // (`( install\n); run` ⇒ commenting the install eats `(` ⇒ stray `)` ⇒ broken
+            // `dash -n`) but are OUT of task-F2's charter scope (loop/`if`/`case` only) AND
+            // covering them churns the pre-existing `exec-subshell-establish` golden — so
+            // they are FLAGGED (tc-group-closer, `20R` §8), not handled here.
+            _ => {}
+        }
+    }
+    lines
 }
 
 /// A round-trippable, unambiguous display label for a fact's re-keyed cell
