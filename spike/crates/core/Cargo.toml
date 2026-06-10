@@ -1,0 +1,13 @@
+[package]
+name = "dorc-core"
+version = "0.0.0"
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+
+# Dependency-free by design: `core` must be deterministic (no clock, RNG, or I/O)
+# so it is safe inside deterministic-simulation tests. Adding a dependency here
+# requires proving it carries no nondeterminism (see spike/CLAUDE.md).
+
+[lints]
+workspace = true

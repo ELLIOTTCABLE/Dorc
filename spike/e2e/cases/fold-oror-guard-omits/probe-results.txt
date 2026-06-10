@@ -1,0 +1,9 @@
+# nginx is on PATH (the tool guard is converged ⇒ `command -v nginx` exits 0). The
+# guard DECLARES its rc (`rc=0`): after `19D` an un-injected rc is ⊤ (no fold), so the
+# fold-omit demonstrated here is the *declared-rc opt-in* path — the guard's known rc 0
+# alone proves the `|| install` branch dead. (Without `rc=0` the guard's status is
+# branch-consumed with an undeclared rc ⇒ it RUNS and the line stays verbatim — the
+# safe kFAIL-perform floor, the round-19 default-path fix. The exact-rc declaration is
+# what re-enables the elision.) The package fact is irrelevant to the fold here.
+tool:nginx#present converged rc=0
+package:nginx#installed diverged

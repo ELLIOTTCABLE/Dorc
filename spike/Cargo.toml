@@ -1,0 +1,61 @@
+# Dorc implementation spike — cargo workspace.
+#
+# Disposable-until-proven (research doc 088 §1): this exists to surface design
+# problems for the planning corpus, not to be the foundation of the eventual
+# tool. Boring, defensive, type-maximal Rust; no `unsafe`, no authored macros.
+#
+# Crate set seeded from the round-19 spike-2 (the 19F keep-list substrate +
+# the 43-case corpus); take-3 rebuilds the input side in place. The `dorc`
+# binary e2e/run.sh looks for comes from `crates/cli`.
+[workspace]
+resolver = "2"
+members = ["crates/core", "crates/syntax", "crates/analysis", "crates/oracle", "crates/plan", "crates/hostsim", "crates/cli"]
+
+[workspace.package]
+edition = "2024"
+rust-version = "1.96"
+publish = false
+
+# No-footgun policy, compiler-enforced for every crate and every subagent.
+# `unsafe_code = "forbid"` cannot even be locally overridden with `#[allow]`.
+# Everything below is `warn`, never `deny`: the warnings-are-failures gate is
+# the pre-commit clippy step in ../hk.pkl (`-D warnings`), so mid-work builds
+# never break on a toolchain bump while commits stay clean.
+[workspace.lints.rust]
+unsafe_code = "forbid"
+unreachable_pub = "warn"
+missing_debug_implementations = "warn"
+missing_docs = "warn"
+unused_lifetimes = "warn"
+unused_qualifications = "warn"
+# Groups sit at priority -1 so the specific lints below can override them.
+rust_2018_idioms = { level = "warn", priority = -1 }
+
+[workspace.lints.rustdoc]
+broken_intra_doc_links = "warn"
+private_intra_doc_links = "warn"
+
+[workspace.lints.clippy]
+all = { level = "warn", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
+cargo = { level = "warn", priority = -1 }
+# The no-panic family: errors are data; never panic on input (warn-not-forbid so
+# tests can opt out per-item with a justified `#[expect]`).
+unwrap_used = "warn"
+expect_used = "warn"
+panic = "warn"
+todo = "warn"
+unimplemented = "warn"
+unreachable = "warn"
+indexing_slicing = "warn"
+arithmetic_side_effects = "warn"
+# Kernel purity: diagnostics are data, not prints. I/O-edge crates may
+# `#[expect]` these at the crate root, with reason.
+print_stdout = "warn"
+print_stderr = "warn"
+dbg_macro = "warn"
+# Discipline: every silenced lint needs a visible, justified decision.
+allow_attributes = "warn"
+allow_attributes_without_reason = "warn"
+# Module style: `foo.rs`, never `foo/mod.rs`.
+mod_module_files = "warn"

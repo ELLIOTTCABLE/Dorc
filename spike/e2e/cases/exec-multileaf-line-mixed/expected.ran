@@ -1,0 +1,2 @@
+ran: apt-get install -y nginx
+ran: systemctl reload nginx

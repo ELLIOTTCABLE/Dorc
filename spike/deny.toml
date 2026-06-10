@@ -1,0 +1,24 @@
+# cargo-deny policy. The offline checks (licenses/bans/sources) run in the
+# pre-commit hook; `mise run audit` runs the network-touching advisories pass.
+[graph]
+all-features = true
+
+[licenses]
+# Extend deliberately, per-dependency, when a real dep arrives. The allowlist is
+# pre-staged (this workspace is currently dep-free), so unmatched allowances are
+# expected, not an error.
+allow = ["MIT", "Apache-2.0", "Unicode-3.0", "BSD-3-Clause"]
+unused-allowed-license = "allow"
+# The spike's own crates are publish = false and carry no license field.
+private = { ignore = true }
+
+[bans]
+multiple-versions = "warn"
+wildcards = "deny"
+
+[advisories]
+yanked = "deny"
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"

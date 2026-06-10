@@ -1,0 +1,7 @@
+#!/bin/sh
+# dorc probe (read-only): reports per-fact convergence, mutates nothing.
+
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+apt-get install -y nginx

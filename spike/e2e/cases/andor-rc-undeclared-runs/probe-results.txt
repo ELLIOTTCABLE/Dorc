@@ -1,0 +1,8 @@
+# The host already has the user (Converged) — but the probe declares NO rc (the real
+# CLI/hostsim default after `19D`: an un-injected rc is ⊤, never a fabricated rc 0).
+# `useradd`'s status is branch-consumed (the `|| mkdir` fallback turns on it) and its
+# rc is undeclared ⇒ the engine refuses to replace it ⇒ it RUNS. The line stays
+# verbatim; real `useradd` exits 9 ⇒ `|| mkdir` fires ⇒ `mkdir` runs. Both run — the
+# safe floor. (The DECLARED-rc opt-in that recovers value lives in andor-rc-vouch-wrong,
+# which injects `rc=9` so the substitution `(exit 9)` keeps `mkdir` live.)
+user#present converged

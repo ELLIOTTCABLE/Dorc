@@ -1,0 +1,16 @@
+#!/bin/sh
+# dorc probe (read-only): reports per-fact convergence, mutates nothing.
+
+# probe: tool:nginx#present
+tool__check() { command -v "$1" >/dev/null 2>&1; }
+tool__check 'nginx'
+# probe: package:nginx#installed
+package__check() { dpkg-query -W "$1" >/dev/null 2>&1; }
+package__check 'nginx'
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+if ! command -v nginx >/dev/null 2>&1
+then
+   apt-get install -y nginx
+fi

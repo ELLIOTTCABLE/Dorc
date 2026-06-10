@@ -1,0 +1,16 @@
+#!/bin/sh
+# dorc probe (read-only): reports per-fact convergence, mutates nothing.
+
+# probe: pkgindex#fresh
+pkgindex__check() { test -n "$(find /var/lib/apt/lists/ -maxdepth 1 -newermt '-1 hour' 2>/dev/null)"; }
+pkgindex__check
+# probe: package:nginx#installed
+package__check() { dpkg-query -W "$1" >/dev/null 2>&1; }
+package__check 'nginx'
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+# apt-get update   # dorc: elided (already converged / dead branch)
+true
+# apt-get install -y nginx   # dorc: elided (already converged / dead branch)
+true

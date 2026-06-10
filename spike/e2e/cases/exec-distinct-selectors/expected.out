@@ -1,0 +1,15 @@
+#!/bin/sh
+# dorc probe (read-only): reports per-fact convergence, mutates nothing.
+
+# probe: service:nginx#enabled
+service__check() { systemctl is-active --quiet "$1"; }
+service__check 'nginx'
+# probe: service:nginx#active
+service__check 'nginx'
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+# systemctl enable nginx   # dorc: elided (already converged / dead branch)
+true
+# systemctl start nginx   # dorc: elided (already converged / dead branch)
+true

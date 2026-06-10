@@ -1,0 +1,16 @@
+[package]
+name = "dorc-syntax"
+version = "0.0.0"
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+
+# Pure, deterministic: a string in, an arena-AST + diagnostics out. No deps beyond
+# core. (No tree-sitter / no C: this box has no C compiler, and a hand-rolled
+# recursive-descent parser over a deliberately-narrow sh subset gives the analyzer
+# exactly the AST shape it needs — lossless quoting + first-class redirections.)
+[dependencies]
+dorc-core = { path = "../core" }
+
+[lints]
+workspace = true
