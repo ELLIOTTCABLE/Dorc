@@ -15,7 +15,7 @@ node = "22"
 gh = "2"
 jq = "1"
 
-# Pre-commit `cargo fmt` for the round-19 Rust spike (see ./hk.pkl).
+# Pre-commit `cargo fmt` for the Rust spike under spike/ (see ./hk.pkl).
 # `pkl` is hk's config backend; both are pinned here so the hook is
 # reproducible rather than relying on a machine-global mise install.
 #
@@ -26,6 +26,11 @@ jq = "1"
 # note. Run `mise run hk-install` only with that tradeoff understood.
 hk = "1.44.3"
 pkl = "0.31.1"
+
+# Lint/audit toolbelt for the spike (wired as hk.pkl steps; see also
+# `mise run audit` for the network-touching advisories pass).
+"cargo:cargo-deny" = "latest"
+typos = "latest"
 
 [env]
 # Route hk's hook invocation + step commands through mise (so `cargo`/`hk`
@@ -39,3 +44,11 @@ run = "hk install"
 [tasks.fmt]
 description = "Apply cargo fmt to the spike via hk (formatters fix; nothing else)."
 run = "hk fix --all"
+
+[tasks.check]
+description = "All lint gates (fmt/clippy/deny/typos), check-only — same set the pre-commit hook runs."
+run = "hk check --all"
+
+[tasks.audit]
+description = "cargo-deny advisories (network: fetches the RustSec DB; not part of the offline pre-commit gates)."
+run = "cargo deny --manifest-path spike/Cargo.toml check advisories"
