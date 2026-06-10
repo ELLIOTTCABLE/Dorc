@@ -23,6 +23,8 @@
 )]
 
 pub mod ast;
+pub mod sem;
+
 mod lexer;
 mod parser;
 

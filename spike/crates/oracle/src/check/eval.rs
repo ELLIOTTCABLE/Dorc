@@ -19,6 +19,7 @@
 
 use super::ast::{Annotation, Check, Pattern, Stmt, Test, TestOp, Word};
 use dorc_core::{Span, Symbol};
+use dorc_syntax::sem::{self, UnsetPolicy};
 use std::collections::BTreeMap;
 
 /// The result of evaluating a [`Check`] over a concrete argv.
@@ -315,30 +316,42 @@ impl Evaluator {
         Flow::Normal
     }
 
-    /// Resolve a [`Word`] to a concrete string against the current positionals and
-    /// bindings, or `Err` with a reason if it is non-concrete.
+    /// Resolve a [`Word`] in the **strict** context (annotation value, `case`
+    /// scrutinee, assignment RHS): an unset positional is non-concrete ⇒ `Err`. See
+    /// [`Evaluator::resolve_with`].
     fn resolve(&self, word: &Word) -> Result<String, TopReason> {
+        self.resolve_with(word, UnsetPolicy::Unresolved)
+    }
+
+    /// Resolve a [`Word`] to a concrete string against the current positionals and
+    /// bindings under a named [`UnsetPolicy`] (the single home of the unset-parameter
+    /// context fork, `sem::UnsetPolicy`), or `Err` with a reason if it is non-concrete.
+    ///
+    /// A past-the-end positional / `${N#prefix}` forks on `policy`:
+    /// [`ExpandEmpty`](UnsetPolicy::ExpandEmpty) (test context) ⇒ the empty string;
+    /// [`Unresolved`](UnsetPolicy::Unresolved) (strict context) ⇒ `Err`. A `$0` or an
+    /// unbound *variable* is non-concrete under *both* policies (the safe direction).
+    fn resolve_with(&self, word: &Word, policy: UnsetPolicy) -> Result<String, TopReason> {
         match word {
             Word::Literal(s) | Word::SingleQuotedLiteral(s) => Ok(s.clone()),
             Word::Positional(0) => Err(TopReason::NonConcreteWord("`$0` is not modeled")),
-            Word::Positional(n) => self
-                .positional(*n)
-                .map(str::to_owned)
-                .ok_or(TopReason::NonConcreteWord("positional past end of argv")),
-            Word::PositionalStripPrefix { n, prefix } => {
-                let val = self
-                    .positional(*n)
-                    .ok_or(TopReason::NonConcreteWord("positional past end of argv"))?;
-                Ok(strip_prefix_once(val, prefix).to_owned())
-            }
+            Word::Positional(n) => match self.positional(*n) {
+                Some(v) => Ok(v.to_owned()),
+                None => unset_positional(policy),
+            },
+            Word::PositionalStripPrefix { n, prefix } => match self.positional(*n) {
+                // literal-prefix shortest-match == the literal (`sem::strip_prefix_literal`)
+                Some(val) => Ok(sem::strip_prefix_literal(val, prefix).to_owned()),
+                None => unset_positional(policy),
+            },
             Word::Var(sym) => self
                 .vars
                 .get(sym)
                 .cloned()
                 .ok_or(TopReason::NonConcreteWord("unbound variable")),
-            // Unmodeled expansions fail in every position — including `[ ]` tests
-            // (`resolve_in_test` falls through to here): evaluating them as text or
-            // guessing dash's glob semantics would be a wrong concrete.
+            // Unmodeled expansions fail in every position — including `[ ]` tests:
+            // evaluating them as text or guessing dash's glob semantics would be a
+            // wrong concrete.
             Word::Unmodeled(_) => Err(TopReason::NonConcreteWord("unmodeled parameter expansion")),
         }
     }
@@ -359,27 +372,12 @@ impl Evaluator {
     /// entity must resolve concretely; only the *test* context takes sh's unset-empty
     /// semantics. A `$0`/unbound-var is still non-concrete ⇒ Top, the safe direction.)
     fn eval_test(&self, test: &Test) -> Result<bool, TopReason> {
-        let lhs = self.resolve_in_test(&test.lhs)?;
-        let rhs = self.resolve_in_test(&test.rhs)?;
+        let lhs = self.resolve_with(&test.lhs, UnsetPolicy::ExpandEmpty)?;
+        let rhs = self.resolve_with(&test.rhs, UnsetPolicy::ExpandEmpty)?;
         Ok(match test.op {
             TestOp::Eq => lhs == rhs,
             TestOp::Ne => lhs != rhs,
         })
-    }
-
-    /// Resolve a word inside a `[ … ]` test, where a past-end positional is the empty
-    /// string (sh's unset-parameter semantics; see [`Evaluator::eval_test`]). A `$0`
-    /// or unbound variable is still `Err` (non-concrete ⇒ Top).
-    fn resolve_in_test(&self, word: &Word) -> Result<String, TopReason> {
-        match word {
-            // `$N` / `${N#prefix}` past the end of argv ⇒ empty string (sh: unset
-            // parameter expands empty; the prefix-strip is then a no-op).
-            Word::Positional(n) if *n != 0 && self.positional(*n).is_none() => Ok(String::new()),
-            Word::PositionalStripPrefix { n, .. } if self.positional(*n).is_none() => {
-                Ok(String::new())
-            }
-            _ => self.resolve(word),
-        }
     }
 
     /// Assemble the final [`Resolution`] from accumulated state. Two degrade gates:
@@ -409,9 +407,12 @@ fn pattern_matches(pattern: &Pattern, value: &str) -> bool {
     }
 }
 
-/// sh `${var#prefix}`: remove `prefix` from the start of `s` once (shortest match;
-/// for a literal prefix shortest == the literal). Returns `s` unchanged if it does
-/// not start with `prefix`.
-fn strip_prefix_once<'a>(s: &'a str, prefix: &str) -> &'a str {
-    s.strip_prefix(prefix).unwrap_or(s)
+/// The value of an *unset* positional under the [`UnsetPolicy`] fork (the single home
+/// of the unset-parameter context rule, `sem::UnsetPolicy`): test context ⇒ empty
+/// string (dash-faithful), strict context ⇒ non-concrete `Err` (the soundness floor).
+fn unset_positional(policy: UnsetPolicy) -> Result<String, TopReason> {
+    match policy {
+        UnsetPolicy::ExpandEmpty => Ok(String::new()),
+        UnsetPolicy::Unresolved => Err(TopReason::NonConcreteWord("positional past end of argv")),
+    }
 }

@@ -14,6 +14,7 @@ use super::ast::{
 use super::lexer::{Tok, Token, lex};
 use super::{OUT_OF_DIALECT, UNTERMINATED, VERB_BINDING, lift_failure, map_provider_name};
 use dorc_core::{Carrier, Interner, Span, Symbol};
+use dorc_syntax::sem;
 
 /// The provider-name suffix marking a command-keyed check (`apt_get__check`).
 const CHECK_SUFFIX: &str = "__check";
@@ -448,7 +449,7 @@ impl Parser<'_> {
         // is the standalone word `:`. We must distinguish `:` the word from the
         // `name=value` case (already handled). Look ahead.
         if !first_sq
-            && is_ident(&first)
+            && sem::is_name(&first)
             && matches!(
                 self.toks.get(self.pos.saturating_add(1)).map(|t| &t.kind),
                 Some(Tok::Word { lexeme, .. }) if lexeme == ":"
@@ -811,24 +812,23 @@ fn parse_word_lexeme(lexeme: &str, single_quoted: bool, interner: &mut Interner)
     }
     // `${N#PREFIX}` — positional with a leading LITERAL prefix stripped. dash treats the
     // prefix as a GLOB pattern (fnmatch, shortest match), and `${N##…}` as longest-match;
-    // our evaluator does a literal strip only. A globby prefix (`${1#*=}`) or the `##` form
-    // (which `split_once('#')` would mangle into a prefix starting with `#`) therefore
-    // diverges from dash — a wrong CONCRETE, the disaster class (round-20 crosscheck
-    // finding 2). Both fall through to the unmodeled-literal path ⇒ the evaluator fails to
-    // resolve ⇒ Top — symmetric with `parse_pattern`'s glob rejection, the safe direction.
+    // our evaluator does a literal strip only. The is-modelable predicate is shared
+    // (`sem::parse_prefix_strip`): a globby prefix (`${1#*=}`) or the `##` form yields
+    // `None` ⇒ we fall through to the unmodeled path ⇒ the evaluator fails to resolve ⇒
+    // Top — symmetric with `parse_pattern`'s glob rejection, the safe direction. Misreading
+    // a glob form as a literal strip was round-20 crosscheck finding 2 (a wrong concrete).
     if let Some(inner) = lexeme.strip_prefix("${").and_then(|s| s.strip_suffix('}')) {
-        if let Some((digits, prefix)) = inner.split_once('#')
-            && let Ok(n) = digits.parse::<u32>()
-            && !prefix.starts_with('#')
-            && !prefix.contains(['*', '?', '['])
-        {
+        if let Some(strip) = sem::parse_prefix_strip(inner) {
             return Word::PositionalStripPrefix {
-                n,
-                prefix: prefix.to_owned(),
+                n: strip.n,
+                prefix: strip.prefix.to_owned(),
             };
         }
-        // `${name}` (no `#`) — a braced variable reference.
-        if is_ident(inner) {
+        // `${name}` (no `#`) — a braced variable reference. NB the dialect keys ONLY a
+        // plain name here; a braced multi-digit positional `${12}` is intentionally left
+        // `Unmodeled` (it never appears in the §2 idioms, and modeling it would be a
+        // silent behaviour widening — 20D divergence dv-2).
+        if sem::is_name(inner) {
             return Word::Var(interner.intern(inner));
         }
         // Any other `${…}` parameter expansion is not modeled ⇒ `Unmodeled`, which
@@ -842,7 +842,7 @@ fn parse_word_lexeme(lexeme: &str, single_quoted: bool, interner: &mut Interner)
         if let Ok(n) = rest.parse::<u32>() {
             return Word::Positional(n);
         }
-        if is_ident(rest) {
+        if sem::is_name(rest) {
             return Word::Var(interner.intern(rest));
         }
         // `$@`, `$*`, `$#`, `$?` and the like: not modeled as a single resolvable
@@ -856,25 +856,15 @@ fn parse_word_lexeme(lexeme: &str, single_quoted: bool, interner: &mut Interner)
     Word::Literal(lexeme.to_owned())
 }
 
-/// Split `name=value` if `name` is a valid identifier and the lexeme contains `=`
-/// at the boundary. Returns `(name, value)`. A bare `name=` yields `("name", "")`.
+/// Split `name=value` if `name` is a valid POSIX name (`sem::is_name`) and the lexeme
+/// contains `=` at the boundary. Returns `(name, value)`. A bare `name=` yields
+/// `("name", "")`.
 fn split_assignment(lexeme: &str) -> Option<(&str, &str)> {
     let (name, value) = lexeme.split_once('=')?;
-    if name.is_empty() || !is_ident(name) {
+    if name.is_empty() || !sem::is_name(name) {
         return None;
     }
     Some((name, value))
-}
-
-/// A POSIX-name identifier: `[A-Za-z_][A-Za-z0-9_]*`. Used to recognize lvalues,
-/// variable names, and the annotation `name`.
-fn is_ident(s: &str) -> bool {
-    let mut chars = s.bytes();
-    match chars.next() {
-        Some(b) if b == b'_' || b.is_ascii_alphabetic() => {}
-        _ => return false,
-    }
-    chars.all(|b| b == b'_' || b.is_ascii_alphanumeric())
 }
 
 /// `case`/`while`/`if` block keywords that end a plain command when they appear in

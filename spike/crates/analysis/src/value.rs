@@ -40,6 +40,7 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use dorc_core::{AstId, Interner, Symbol};
 use dorc_syntax::ast::{Ast, NodeKind, WordPart};
+use dorc_syntax::sem::{self, FragClass};
 
 use crate::cfg::{Cfg, CfgNodeId, CfgNodeKind};
 use crate::lattice::{Flat, MapL};
@@ -423,23 +424,15 @@ impl<'a> Prep<'a> {
     }
 }
 
-/// The word's compile-time-constant text: `Some` iff every fragment is literal (no variable
-/// references, no unmodeled expansion). Used where a command's *shape* (e.g. `unset name`)
-/// must be recognized statically, independent of any dataflow state.
+/// The word's compile-time-constant text: `Some` iff every part is literal (no variable
+/// references, no expansion of any kind). Used where a command's *shape* (e.g. `unset name`)
+/// must be recognized statically, independent of any dataflow state. Delegates to
+/// [`sem::const_literal_text`] — the single home of the "no-variables-at-all" rule.
 fn literal_text(ast: &Ast, word: AstId) -> Option<String> {
-    match recipe_of_word(ast, word) {
-        Recipe::Top => None,
-        Recipe::Parts(parts) => {
-            let mut buf = String::new();
-            for frag in parts {
-                match frag {
-                    Frag::Lit(s) => buf.push_str(&s),
-                    Frag::Var(_) => return None,
-                }
-            }
-            Some(buf)
-        }
-    }
+    let NodeKind::Word { parts } = &ast.node(word).kind else {
+        return None;
+    };
+    sem::const_literal_text(parts)
 }
 
 /// Apply a node's assignments left-to-right, each RHS resolved against the running state.
@@ -479,12 +472,12 @@ fn resolve_recipe(recipe: &Recipe, env: &ValueEnv) -> Abstract {
     Abstract::Lit(buf)
 }
 
-/// Flatten an AST word into a [`Recipe`]. The lossless-quoting model (`haz-unquoted`) is the
-/// map: a [`WordPart::Param`] is a plain variable iff its name is a shell identifier
-/// (`[A-Za-z_][A-Za-z0-9_]*`); positional/special params (`$1`, `$@`, `$#`, `$?`, …) are
-/// always `⊤` (`19H`: script args are runtime input). Command-substitution, arithmetic, and
-/// operator-expansions are `⊤`. An **unquoted** expansion that may word-split also forces `⊤`
-/// (its arity is not statically one argument — `Word::may_split`).
+/// Flatten an AST word into a [`Recipe`] via the shared quoting-class rules
+/// ([`sem::classify_frag`]): a quoted plain variable is a trackable [`Frag::Var`]; a literal
+/// is a [`Frag::Lit`]; and any ⊤-class fragment (a quoted positional/special/subst —
+/// `FragClass::OpaqueValue` — or *any* unquoted expansion that may word-split —
+/// `FragClass::SplitRisk`) collapses the whole word to [`Recipe::Top`]. The
+/// arity/value-preservation split that was hand-rolled here now lives once in `sem`.
 fn recipe_of_word(ast: &Ast, word: AstId) -> Recipe {
     let NodeKind::Word { parts } = &ast.node(word).kind else {
         return Recipe::Top;
@@ -498,46 +491,27 @@ fn recipe_of_word(ast: &Ast, word: AstId) -> Recipe {
 }
 
 /// Collect concatenation fragments from word-parts; returns `false` (⇒ whole word `⊤`) on the
-/// first part that cannot be a literal fragment. `quoted` tracks whether we are inside a
-/// double-quote (where an expansion does not word-split).
+/// first part that is not value-preserving as a tracked fragment. `quoted` tracks whether we
+/// are inside a double-quote. The per-part decision is [`sem::classify_frag`]; this only maps
+/// its [`FragClass`] onto the analysis's owned-text [`Frag`].
 fn collect_frags(parts: &[WordPart], quoted: bool, out: &mut Vec<Frag>) -> bool {
     for part in parts {
-        match part {
-            WordPart::Literal(s) | WordPart::SingleQuoted(s) => out.push(Frag::Lit(s.clone())),
-            WordPart::DoubleQuoted(inner) => {
-                if !collect_frags(inner, true, out) {
-                    return false;
-                }
+        // Non-DoubleQuoted parts classify directly; a DoubleQuoted recurses at quoted=true.
+        let WordPart::DoubleQuoted(inner) = part else {
+            match sem::classify_frag(part, quoted) {
+                Some(FragClass::Literal(s)) => out.push(Frag::Lit(s.to_owned())),
+                Some(FragClass::Var(name)) => out.push(Frag::Var(name.to_owned())),
+                // ⊤ classes collapse the word. `None` is only `DoubleQuoted` (handled
+                // above); a defensive ⊤ otherwise.
+                Some(FragClass::OpaqueValue | FragClass::SplitRisk) | None => return false,
             }
-            WordPart::Param { name } => {
-                if !is_plain_var(name) {
-                    return false; // positional/special param ⇒ ⊤
-                }
-                // An unquoted `$x` may word-split / glob ⇒ its expansion is not statically a
-                // single argument; degrade to ⊤ (only the quoted form is safe).
-                if !quoted {
-                    return false;
-                }
-                out.push(Frag::Var(name.clone()));
-            }
-            // Command-substitution, arithmetic, and operator-expansions are runtime/unmodeled.
-            WordPart::CommandSubst(_) | WordPart::Arithmetic | WordPart::ParamComplex => {
-                return false;
-            }
+            continue;
+        };
+        if !collect_frags(inner, true, out) {
+            return false;
         }
     }
     true
-}
-
-/// Is `name` a plain shell-variable identifier (`[A-Za-z_][A-Za-z0-9_]*`)? Positional (`1`)
-/// and special (`@`, `*`, `#`, `?`, `-`, `$`, `!`) params are not — they are always `⊤`.
-fn is_plain_var(name: &str) -> bool {
-    let mut chars = name.chars();
-    match chars.next() {
-        Some(c) if c == '_' || c.is_ascii_alphabetic() => {}
-        _ => return false,
-    }
-    chars.all(|c| c == '_' || c.is_ascii_alphanumeric())
 }
 
 /// Compute, per `ScopeExit` node, the set of variable names assigned anywhere inside the

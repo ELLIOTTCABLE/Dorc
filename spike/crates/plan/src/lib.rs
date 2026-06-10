@@ -43,6 +43,7 @@ use dorc_core::{
     AstId, Channel, EntityRef, Grade, Interner, KindId, Observable, Predicted, Rc, Verdict,
 };
 use dorc_syntax::ast::Ast;
+use dorc_syntax::sem;
 
 mod fold;
 pub use fold::{AbstractRc, FoldResult};
@@ -458,35 +459,6 @@ fn check_fn_name(interner: &Interner, kind: KindId) -> String {
     format!("{}__check", interner.resolve(kind.0))
 }
 
-/// POSIX single-quote a string so it becomes exactly **one** literal argument when
-/// the rendered probe is parsed by `sh` — the F-QUOTE fix (`notes/198`, `inv-kfail`
-/// both directions). The book operand is interned **post-parse** (quotes already
-/// stripped, embedded metachars preserved — `effect::word_literal` reads
-/// `WordPart::SingleQuoted`'s inner text), so an operand like `my pkg` or
-/// `x; touch /tmp/PWNED` would otherwise interpolate raw into `package__check my pkg`
-/// (TWO args ⇒ probes the wrong entity, a `kFAIL-perform` wrong-elision) or
-/// `package__check x; touch …` (the `;` parses as a SECOND command ⇒ a `kFAIL-withhold`
-/// probe-mutation). Wrapping in `'…'` (with the `'\''` escape for an embedded quote)
-/// makes the value inert and exactly one positional arg, in every `sh`.
-///
-/// This is a pass-through byte-transform, NOT a decode (`inv-referent-agnostic`): the
-/// quoting never branches on what the operand *means*, only on which bytes need
-/// escaping to survive the shell verbatim — the same latitude render already takes to
-/// pass the operand through to the check.
-fn sh_single_quote(s: &str) -> String {
-    let mut out = String::with_capacity(s.len() + 2);
-    out.push('\'');
-    for ch in s.chars() {
-        if ch == '\'' {
-            out.push_str("'\\''"); // close-quote, escaped literal quote, re-open
-        } else {
-            out.push(ch);
-        }
-    }
-    out.push('\'');
-    out
-}
-
 impl ProbePlan {
     /// Render the probe as a shippable, read-only, **self-reporting** shell-script
     /// (the sanitised projection shipped to gather facts — DESIGN). The artifact, WHEN
@@ -538,7 +510,9 @@ impl ProbePlan {
             // `_e` chosen as a probe-local var name unlikely to clash with a check body.
             let invocation = match check.fact.entity {
                 EntityRef::Operand(tok) => {
-                    format!("{fn_name} {}", sh_single_quote(interner.resolve(tok.0)))
+                    // F-QUOTE: single-quote the operand so it is exactly one inert arg
+                    // in any sh (`sem::single_quote`, `inv-kfail` both directions).
+                    format!("{fn_name} {}", sem::single_quote(interner.resolve(tok.0)))
                 }
                 EntityRef::Singleton => fn_name,
             };

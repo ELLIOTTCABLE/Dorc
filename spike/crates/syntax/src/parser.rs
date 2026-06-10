@@ -1131,15 +1131,11 @@ fn single_literal(parts: &[LexPart]) -> Option<&str> {
     }
 }
 
-/// A valid sh function name: `name` chars, not starting with a digit. Used to
-/// gate funcdef detection so `2()` (invalid) is not treated as a definition.
+/// A valid sh function name: a POSIX *name* (`sem::is_name` — `[A-Za-z_][A-Za-z0-9_]*`,
+/// never digit-led), so `2()` is not treated as a definition. (sh function names are a
+/// strict subset of POSIX names — no `-` — which `sem::is_name` already enforces.)
 fn is_func_name(s: &str) -> bool {
-    let mut bytes = s.bytes();
-    match bytes.next() {
-        Some(b) if b == b'_' || b.is_ascii_alphabetic() => {}
-        _ => return false,
-    }
-    bytes.all(|b| b == b'_' || b.is_ascii_alphanumeric())
+    crate::sem::is_name(s)
 }
 
 /// Split a word's lexer parts into `(name, name_span, value_parts)` if it is a
