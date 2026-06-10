@@ -1,1 +1,4 @@
-package:curl#installed converged
+# probe-results: site-keyed records (task-D1 WIRE). Grammar:
+#   site <leafid> effect=<holds|absent|cant-tell>
+# (the records the rendered probe emits; effect from the probe command rc).
+# (site-unresolvable: package:curl#installed — no probe invocation, runs)

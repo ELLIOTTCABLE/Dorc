@@ -1,5 +1,10 @@
+# garbage-stdin: malformed records must be DROPPED, never crash the cli — the site
+# with no valid record folds to Unknown ⇒ run (kFAIL-perform). After the task-D1 WIRE
+# the grammar is site-keyed (`site <leafid> effect=<holds|absent|cant-tell>`), so this
+# exercises the new parser's failure modes: a non-`site` leading token, a non-numeric
+# site-id, and a `site` line with no `effect=`. None resolve site 0 ⇒ the install runs.
 this is not a valid result line
-package:nginx maybe-installed-idk
-
-# a comment line (ignored by the parser)
+site notanumber effect=holds
+site 0 garbled-no-effect-field
+declared-rc xyz rc=notanint
    leading-whitespace garbage

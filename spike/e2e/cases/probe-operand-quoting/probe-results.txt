@@ -1,5 +1,3 @@
-# No verdict line: a spaced operand's fact_label (`package:web (proxy)#installed`)
-# cannot be keyed by the cli's whitespace-split stdin grammar (the "stdin re-key
-# gotcha", cli/CLAUDE.md), so both facts fold to Unknown => Run (kFAIL-perform, safe).
-# This case pins the PROBE render (F-QUOTE), not an elision: the apply runs both
-# installs verbatim under the inert mock, proving the quoted operand stays ONE arg.
+# probe-results: site-keyed records (task-D1 WIRE). Grammar:
+#   site <leafid> effect=<holds|absent|cant-tell>
+# (the records the rendered probe emits; effect from the probe command rc).

@@ -399,32 +399,56 @@ pub struct Plan {
 // The probe (apply-2's convergence check) — DESIGN "probing phase", note 163 §1.
 // The FORWARD half of the compiler: what to check so the apply can elide. The
 // apply ([`build_plan`]) is driven by this probe's (simulated/real) answers.
+//
+// Round-20 task-D1 re-key (the WIRE — `inv-site-keyed-results`, 202 §3 / 205 §1):
+// the probe is now a real, runnable, SELF-REPORTING artifact, keyed by **command
+// site** (the stable [`LeafId`] back-map), not by fact. Each resolvable site invokes
+// the kind's check and emits a results-record on stdout (the round-trip's return
+// channel). Two same-command sites stay DISTINCT (different `LeafId`s ⇒ two records);
+// the per-fact dedup of spike-2 (which collapsed them) is gone.
 // ===========================================================================
 
-/// One read-only check the probe ships: "does `fact` already hold?", carried as the
-/// oracle's verbatim probe-sh (non-mutating by contract — `kFAIL-withhold`). The
-/// host's answer ([`Verdict`]) is what licenses the apply to elide the establishing
-/// leaf.
+/// One read-only check the probe ships for a **command site**: the oracle's verbatim
+/// probe-sh plus the site's full verbatim argv (C-1), wrapped so the rendered probe,
+/// when run, emits a results-record per site (`inv-site-keyed-results`).
 ///
 /// `sh` is the oracle's `oracle_probe_<kind>` body (a brace-group taking the entity
-/// as `$1`). Half-B (`notes/197` §2 / `notes/198`) binds the book's operand into it
-/// at render: the FLAT interceptor model — define the kind's check once, invoke it
-/// per-entity with the operand bound (the "$1 unbound" Half-A degeneracy is gone).
+/// as `$1`) — the SIMPLER sanctioned emitted-function shape (205 §1 / st-2, 20B §3):
+/// one wrapper per kind from the real declared probe, invoked per-site with the
+/// resolved entity bound. NOT the check's argparse skeleton (the placeholder check
+/// probe-bodies must not ship — `pkgindex`'s tautological `test -n fresh` is the named
+/// hazard, 20B §3); the `<provider>__check` argparse is the engine's entity-resolver,
+/// never the shipped probe body.
+///
+/// `site` is the stable [`LeafId`] (== the apply plan's leaf-id for the same source
+/// command), so the results-record keys back to exactly this program point. `fact` is
+/// the resolved cell (display/provenance + the cli's site→fact verdict re-key).
 #[derive(Debug, Clone)]
 pub struct ProbeCheck {
+    /// The stable command-site identity (`inv-site-keyed-results`): the same
+    /// [`LeafId`] the apply plan assigns the source command. Two same-command sites
+    /// carry distinct ids.
+    pub site: LeafId,
+    /// The resolved cell this site establishes (the probe checks whether it holds).
     pub fact: FactKey,
+    /// The oracle's `oracle_probe_<kind>` body (a brace-group), shipped verbatim.
     pub sh: String,
 }
 
-/// A compiled probe: the read-only fact-checks whose answers drive the apply's
-/// elision (apply-2). It holds every [`SkipClass::EstablishAmbient`] fact (the only
-/// elidable class — note 162 O-1) whose kind has a *declared* read-only probe. A
-/// fact whose kind has NO probe is deliberately ABSENT — it is un-checkable, so the
-/// apply cannot elide it (`kFAIL-perform`: no convergence knowledge ⇒ run it). This
-/// is the "can't-probe ⇒ can't-elide" link.
+/// A compiled probe: per-resolvable-site read-only checks whose answers drive the
+/// apply's elision (apply-2), plus the un-resolvable sites recorded for transparency.
+/// A site is **resolvable** iff its class is [`SkipClass::EstablishAmbient`] (the only
+/// elidable class — note 162 O-1) AND its kind has a *declared* read-only probe; only
+/// resolvable sites get an invocation. An un-resolvable site (a kill, an opaque
+/// command, a written establish, or an establish whose kind has no probe) appears in
+/// the rendered artifact as a `site:<id> skip-unresolvable` comment, never as an
+/// invocation (`kFAIL-perform`: no convergence knowledge ⇒ the apply runs it).
 #[derive(Debug, Clone, Default)]
 pub struct ProbePlan {
+    /// The resolvable sites' checks, in site-id order.
     pub checks: Vec<ProbeCheck>,
+    /// The un-resolvable sites' ids (rendered as `skip-unresolvable` comments).
+    pub unresolvable: Vec<LeafId>,
 }
 
 /// The check-function name for a kind: `<kind>__check` (the strawman's `id__check`
@@ -464,80 +488,165 @@ fn sh_single_quote(s: &str) -> String {
 }
 
 impl ProbePlan {
-    /// Render the probe as a shippable, read-only shell-script (the sanitised
-    /// projection shipped to gather facts — DESIGN). Provenance comments name the
-    /// fact (display only — `inv-referent-agnostic`).
+    /// Render the probe as a shippable, read-only, **self-reporting** shell-script
+    /// (the sanitised projection shipped to gather facts — DESIGN). The artifact, WHEN
+    /// RUN, emits one results-record per resolvable site on stdout — the round-trip's
+    /// return channel (202 §3). The record grammar (documented in the artifact header):
     ///
-    /// Half-B FLAT interceptor model (`notes/197` §2, variant A): each kind's
-    /// `oracle_probe_<kind>` body is wrapped once into a `<kind>__check()` function,
-    /// then invoked **per entity with the book's operand bound** (`$1`) — so a probe
-    /// for `package:nginx#installed` runs `package__check nginx`, not the Half-A
-    /// `dpkg-query -W ""` with `$1` empty. A [`EntityRef::Singleton`] fact (no
-    /// operand, `package-index#fresh`) is invoked with no args. The interceptors are
-    /// independent ⇒ a real dispatcher runs them concurrently (`an-leaf-seam`); the
-    /// CFG-preserved variant B (`an-maintain-cfg`) is deferred (`notes/198`).
+    /// ```text
+    /// site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+    /// ```
     ///
-    /// Binding the operand into the shipped artifact resolves the operand token to
-    /// text — legitimate (it is passed *through* to the check, never branched on —
-    /// `inv-referent-agnostic`), the same latitude `fact_label` uses for display.
+    /// `effect` is the fact-probe's three-outcome observation derived from the probe
+    /// command's exit status by the oracle's existing convention (`an-probe-shape`):
+    /// `0 ⇒ holds`, `1 ⇒ absent`, anything else `⇒ cant-tell`. `rc` is the raw probe
+    /// rc, carried for provenance. **No exit-code semantics for Dorc verdicts**: the rc
+    /// is opaque (a standing human ruling) and the record IS the out-of-band lane.
+    ///
+    /// CRITICAL (the wrong-concrete firewall, 202 §3 / the cli re-key): the `rc` is the
+    /// PROBE command's rc (`dpkg-query`'s), NOT the book command's (`apt-get`'s). For
+    /// an establish-class site these are DIFFERENT observables, so the cli carries this
+    /// rc but feeds it to NOTHING in the fold (only the legacy `fold-oror-guard` Query
+    /// exception folds a probe-sourced rc, via its own `declared-rc` line — D2's Query
+    /// class is what will legitimately equate a guard's probe-rc with its site status).
+    ///
+    /// Emitted-function shape (205 §1 / st-2 ruling): one `<kind>__check()` wrapper per
+    /// kind (first-seen ⇒ deterministic), built from the kind's real `oracle_probe_*`
+    /// body, invoked **per site** with the resolved entity bound (`$1`). A
+    /// [`EntityRef::Singleton`] fact (no operand, `package-index#fresh`) is invoked with
+    /// no args. The wrapper captures `$?` immediately after the check, maps it to the
+    /// three-outcome word, and prints the record.
     #[must_use]
     pub fn render_sh(&self, interner: &Interner) -> String {
-        let mut out = String::from(
-            "#!/bin/sh\n# dorc probe (read-only): reports per-fact convergence, mutates nothing.\n\n",
-        );
+        let mut out = String::from(PROBE_HEADER);
         // Each kind's check fn is emitted once (first-seen ⇒ deterministic), then
-        // invoked per fact with the operand bound.
+        // invoked per SITE with the operand bound + the self-report wrapper.
         let mut defined = BTreeSet::new();
         for check in &self.checks {
             let fn_name = check_fn_name(interner, check.fact.kind);
-            out.push_str(&format!("# probe: {}\n", fact_label(interner, check.fact)));
+            out.push_str(&format!(
+                "# site {}: {}\n",
+                check.site.0,
+                fact_label(interner, check.fact)
+            ));
             if defined.insert(check.fact.kind) {
                 // body is a brace-group, so `name() <group>` is a valid POSIX funcdef.
                 out.push_str(&format!("{fn_name}() {}\n", check.sh));
             }
-            match check.fact.entity {
+            // The invocation: run the check (operand bound + single-quoted, F-QUOTE),
+            // capture its rc, map to the three-outcome word, emit the site-keyed record.
+            // `_e` chosen as a probe-local var name unlikely to clash with a check body.
+            let invocation = match check.fact.entity {
                 EntityRef::Operand(tok) => {
-                    // Single-quote so the operand is always exactly one inert positional
-                    // arg, never split or re-parsed (F-QUOTE, `notes/198`).
-                    let operand = sh_single_quote(interner.resolve(tok.0));
-                    out.push_str(&format!("{fn_name} {operand}\n"));
+                    format!("{fn_name} {}", sh_single_quote(interner.resolve(tok.0)))
                 }
-                EntityRef::Singleton => out.push_str(&format!("{fn_name}\n")),
-            }
+                EntityRef::Singleton => fn_name,
+            };
+            out.push_str(&format!(
+                "{invocation}; _rc=$?; \
+                 if [ \"$_rc\" -eq 0 ]; then _e=holds; \
+                 elif [ \"$_rc\" -eq 1 ]; then _e=absent; \
+                 else _e=cant-tell; fi; \
+                 printf 'site {} effect=%s rc=%s\\n' \"$_e\" \"$_rc\"\n",
+                check.site.0
+            ));
+        }
+        // Un-resolvable sites are recorded as comments (never invoked): transparency
+        // for the human reading the artifact and the D3 argv-echo differential.
+        for site in &self.unresolvable {
+            out.push_str(&format!("# site:{} skip-unresolvable\n", site.0));
         }
         out
     }
 
     /// Did the probe compile a check for `fact`? The apply may only elide a fact the
-    /// probe actually checks (the "can't-probe ⇒ can't-elide" link).
+    /// probe actually checks (the "can't-probe ⇒ can't-elide" link). (Fact-keyed, not
+    /// site-keyed: the DST/unit tests ask "is this cell probed at all"; the site-keyed
+    /// record lane is the cli's concern.)
     #[must_use]
     pub fn checks_fact(&self, fact: FactKey) -> bool {
         self.checks.iter().any(|c| c.fact == fact)
     }
 }
 
-/// Compile the probe from the analysis result: every [`SkipClass::EstablishAmbient`]
-/// fact whose kind has a declared read-only probe, supplied by `probe_body` (the
-/// oracle seam, threaded by the caller so `plan` need not depend on `oracle`).
-/// Deterministic, non-mutating; the FORWARD half of the compiler (the apply is
-/// [`build_plan`]). A kind without a probe yields no check ⇒ its facts cannot be
-/// elided downstream.
+/// The probe artifact's header — documents the results-record grammar (205 §2
+/// rule-probe-exec-gate consumers, and the human reading the artifact, depend on it).
+const PROBE_HEADER: &str = "#!/bin/sh\n\
+    # dorc probe (read-only): checks per-SITE convergence, mutates nothing.\n\
+    # When run, emits one results-record per site on stdout (the return channel):\n\
+    #   site <leafid> effect=<holds|absent|cant-tell> rc=<n>\n\
+    # effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);\n\
+    # rc is the raw PROBE-command status (opaque to Dorc — the record is the out-of-band lane).\n\n";
+
+/// The canonical per-site ordering shared by [`compile_probe`] and [`build_plan`]
+/// (`inv-site-keyed-results`, the load-bearing back-map): assign each classified
+/// command a stable [`LeafId`] by sorting on its source span, so the probe's site-ids
+/// and the apply plan's leaf-ids are the SAME id space. Two same-command sites get
+/// distinct ids (their spans differ). Returned in site-id order, paired with the
+/// node + class so a caller need not re-sort.
+///
+/// Deterministic (`inv-determinism`): a total sort by `(span.lo, span.hi)`. Classify
+/// already excluded expansion-internal non-leaves (find-cli-1), so every entry is a
+/// genuine plan/apply leaf.
+fn site_order<'a>(
+    ast: &Ast,
+    cfg: &Cfg,
+    classes: &'a [(CfgNodeId, SkipClass)],
+) -> Vec<(LeafId, CfgNodeId, &'a SkipClass)> {
+    let mut ordered: Vec<(CfgNodeId, &SkipClass)> = classes.iter().map(|(n, c)| (*n, c)).collect();
+    ordered.sort_by_key(|(node, _)| {
+        let span = ast.node(cfg.node(*node).ast).span;
+        (span.lo.0, span.hi.0)
+    });
+    ordered
+        .into_iter()
+        .enumerate()
+        .map(|(i, (node, class))| (LeafId(u32::try_from(i).unwrap_or(u32::MAX)), node, class))
+        .collect()
+}
+
+/// Compile the probe from the analysis result, keyed by command **site**
+/// (`inv-site-keyed-results`): each [`SkipClass::EstablishAmbient`] site whose kind
+/// has a declared read-only probe (`probe_body`, the oracle seam threaded by the
+/// caller so `plan` need not depend on `oracle`) becomes one [`ProbeCheck`] with the
+/// site's stable [`LeafId`]; every other site is recorded as `unresolvable`. Two
+/// same-command resolvable sites yield two distinct checks (distinct ids) — the
+/// per-fact dedup of spike-2 is gone.
+///
+/// `ast`/`cfg` are threaded only to compute the shared site-id ordering ([`site_order`]
+/// — the same one [`build_plan`] uses), so the probe's site-ids equal the apply plan's
+/// leaf-ids. Deterministic, non-mutating; the FORWARD half of the compiler (the apply
+/// is [`build_plan`]). A kind without a probe yields no check ⇒ its site cannot be
+/// elided downstream (`can't-probe ⇒ can't-elide`).
 #[must_use]
 pub fn compile_probe(
+    ast: &Ast,
+    cfg: &Cfg,
     classes: &[(CfgNodeId, SkipClass)],
     probe_body: impl Fn(KindId) -> Option<String>,
 ) -> ProbePlan {
     let mut checks = Vec::new();
-    let mut seen = BTreeSet::new();
-    for (_, class) in classes {
-        if let SkipClass::EstablishAmbient(fact) = class
-            && seen.insert(*fact)
-            && let Some(sh) = probe_body(fact.kind)
-        {
-            checks.push(ProbeCheck { fact: *fact, sh });
+    let mut unresolvable = Vec::new();
+    for (site, _node, class) in site_order(ast, cfg, classes) {
+        match class {
+            SkipClass::EstablishAmbient(fact) => match probe_body(fact.kind) {
+                // EstablishAmbient with a declared probe ⇒ a resolvable site.
+                Some(sh) => checks.push(ProbeCheck {
+                    site,
+                    fact: *fact,
+                    sh,
+                }),
+                // EstablishAmbient but no probe for the kind ⇒ un-checkable ⇒ runs.
+                None => unresolvable.push(site),
+            },
+            // A written establish, a kill, opaque, pure — never elidable here.
+            _ => unresolvable.push(site),
         }
     }
-    ProbePlan { checks }
+    ProbePlan {
+        checks,
+        unresolvable,
+    }
 }
 
 /// Build a plan from the analysis result + an injected host **observation** oracle.
@@ -610,7 +719,10 @@ pub fn build_plan(
         .collect();
 
     // Source order (classify yields CFG-alloc order; sort by span for a faithful
-    // reading), then assign stable leaf ids.
+    // reading), then assign stable leaf ids. This MUST stay byte-identical to
+    // [`site_order`]'s sort+enumerate: the probe's site-ids and these leaf-ids are ONE
+    // id space (`inv-site-keyed-results`), so a record `site N …` keys back to leaf N.
+    // `probe_site_id_equals_plan_leaf_id` pins the equivalence.
     steps.sort_by_key(|s| (ast.node(s.ast).span.lo.0, ast.node(s.ast).span.hi.0));
     for (i, step) in steps.iter_mut().enumerate() {
         step.leaf = LeafId(u32::try_from(i).unwrap_or(u32::MAX));
@@ -930,184 +1042,286 @@ apt_get__check() {
         May(Powerset::default())
     }
 
-    #[test]
-    fn compile_probe_includes_probeable_excludes_unprobeable() {
-        // The probe = EstablishAmbient facts WITH a declared read-only probe. A kind
-        // with an effect but NO probe is un-checkable ⇒ excluded ⇒ the apply cannot
-        // elide it (can't-probe ⇒ can't-elide, kFAIL-perform). MustRun is never probed.
+    /// Run the real pipeline (parse → cfg → value-flow → classify → `compile_probe`) on
+    /// `src`, with `probe_body` supplying each kind's `oracle_probe_*` body. Returns the
+    /// site-keyed [`ProbePlan`] + the interner (for `render_sh`). The corpus apt check
+    /// resolves identity; `probe_body` decides which kinds are probeable. This is the
+    /// honest site-keyed shape (`inv-site-keyed-results`): the synthetic-`CfgNodeId`
+    /// fact-keyed tests of spike-2 could not exercise `site_order`.
+    fn probe_for_src(
+        src: &str,
+        probe_body: impl Fn(KindId) -> Option<String>,
+    ) -> (ProbePlan, Interner) {
         let mut i = Interner::default();
-        let package = KindId(i.intern("package"));
-        let port = KindId(i.intern("port"));
-        let installed = SelectorId(i.intern("installed"));
-        let open = SelectorId(i.intern("open"));
-        let nginx = EntityRef::Operand(OpaqueToken(i.intern("nginx")));
-        let p80 = EntityRef::Operand(OpaqueToken(i.intern("80")));
-        let pkg_nginx = FactKey {
-            kind: package,
-            entity: nginx,
-            selector: installed,
+        let idx = package_index(&mut i);
+        let parsed = dorc_syntax::parse(src);
+        let cfg = dorc_analysis::cfg::build(&parsed.value).value;
+        let value = dorc_analysis::value::analyze(&cfg, &parsed.value, &mut i);
+        let checks = vec![dorc_oracle::check::lift_checks(&mut i, CORPUS_CHECK_SRC).value];
+        let classes = dorc_analysis::effect::classify(&cfg, &value, &idx, &checks, &mut i).value;
+        let probe = compile_probe(&parsed.value, &cfg, &classes, probe_body);
+        (probe, i)
+    }
+
+    #[test]
+    fn compile_probe_resolvable_sites_probed_unresolvable_recorded() {
+        // The probe = EstablishAmbient sites WITH a declared read-only probe. A site
+        // whose kind has an effect but NO probe is un-checkable ⇒ NOT invoked, recorded
+        // `unresolvable` (can't-probe ⇒ can't-elide, kFAIL-perform). A MustRun site
+        // (the un-oracled `systemctl reload`) is likewise unresolvable. Here only
+        // `package` has a probe, so `install nginx` is the one resolvable site; the
+        // reload is unresolvable.
+        let package = {
+            let mut i = Interner::default();
+            KindId(i.intern("package"))
         };
-        let port_80 = FactKey {
-            kind: port,
-            entity: p80,
-            selector: open,
-        };
-        let classes = vec![
-            (CfgNodeId(0), SkipClass::EstablishAmbient(pkg_nginx)),
-            (CfgNodeId(1), SkipClass::EstablishAmbient(port_80)),
-            (CfgNodeId(2), SkipClass::MustRun),
-        ];
-        // Only `package` has a declared probe.
-        let probe = compile_probe(&classes, |k| {
-            (k == package).then(|| "dpkg-query -W \"$1\"".to_string())
-        });
-        assert!(probe.checks_fact(pkg_nginx), "package probed");
-        assert!(
-            !probe.checks_fact(port_80),
-            "port has no probe ⇒ excluded (can't elide)"
-        );
+        let (probe, _i) =
+            probe_for_src("apt-get install -y nginx\nsystemctl reload nginx\n", |k| {
+                (k == package).then(|| "dpkg-query -W \"$1\"".to_string())
+            });
+        assert_eq!(probe.checks.len(), 1, "one resolvable site (the install)");
         assert_eq!(
-            probe.checks.len(),
-            1,
-            "only the probeable EstablishAmbient fact is in the probe"
+            probe.checks[0].site,
+            LeafId(0),
+            "the install is the first source command ⇒ site 0"
+        );
+        assert!(
+            !probe.unresolvable.is_empty(),
+            "the un-oracled reload is recorded unresolvable: {probe:?}"
         );
     }
 
     #[test]
-    fn probe_render_binds_operand_flat_interceptor() {
-        // Half-B FLAT interceptor model (`notes/197` §2 / `notes/198`): the probe
-        // render wraps each kind's body into `<kind>__check()` ONCE and invokes it
-        // per-entity with the book's operand BOUND — not the Half-A `$1`-unbound stub.
-        let mut i = Interner::default();
-        let package = KindId(i.intern("package"));
-        let installed = SelectorId(i.intern("installed"));
-        let nginx = EntityRef::Operand(OpaqueToken(i.intern("nginx")));
-        let curl = EntityRef::Operand(OpaqueToken(i.intern("curl")));
-        let pkg_index = KindId(i.intern("package-index"));
-        let fresh = SelectorId(i.intern("fresh"));
-        let cell = |kind, entity, selector| FactKey {
-            kind,
-            entity,
-            selector,
+    fn compile_probe_no_probe_for_kind_makes_site_unresolvable() {
+        // can't-probe ⇒ can't-elide: with NO probe body for any kind, an otherwise
+        // ambient install site is unresolvable (not invoked) ⇒ the apply runs it.
+        let (probe, _i) = probe_for_src("apt-get install -y nginx\n", |_k| None);
+        assert!(probe.checks.is_empty(), "no probe ⇒ no resolvable site");
+        assert_eq!(
+            probe.unresolvable,
+            vec![LeafId(0)],
+            "the un-probeable site is recorded: {probe:?}"
+        );
+    }
+
+    #[test]
+    fn two_same_command_sites_stay_distinct_sites() {
+        // `inv-site-keyed-results` (the core of the re-key): two same-command sites are
+        // NEVER collapsed (spike-2's per-fact dedup is gone). Two IDENTICAL `apt-get
+        // install -y nginx` lines on the SAME cell: the SECOND sees the first establish
+        // its cell upstream ⇒ EstablishWritten ⇒ unresolvable (correct — its resting
+        // probe is stale). So site 0 is resolvable (a check) and site 1 is recorded
+        // unresolvable — distinct ids, no collapse. (A finding the test premise first
+        // got wrong: same-cell re-establish is Written, NOT a second ambient site;
+        // strain-D1-samecell.)
+        let package = {
+            let mut i = Interner::default();
+            KindId(i.intern("package"))
         };
-        let classes = vec![
+        let (probe, i) = probe_for_src(
+            "apt-get install -y nginx\napt-get install -y nginx\n",
+            |k| (k == package).then(|| "{ dpkg-query -W \"$1\"; }".to_string()),
+        );
+        assert_eq!(probe.checks.len(), 1, "site 0 resolvable (ambient)");
+        assert_eq!(probe.checks[0].site, LeafId(0));
+        assert_eq!(
+            probe.unresolvable,
+            vec![LeafId(1)],
+            "site 1 is a DISTINCT site, recorded unresolvable (same-cell Written), not collapsed"
+        );
+        let rendered = probe.render_sh(&i);
+        assert!(
+            rendered.contains("printf 'site 0 effect="),
+            "site 0 record:\n{rendered}"
+        );
+        assert!(
+            rendered.contains("# site:1 skip-unresolvable"),
+            "site 1 comment:\n{rendered}"
+        );
+    }
+
+    #[test]
+    fn two_distinct_cell_sites_both_resolvable_distinct_ids() {
+        // The clean half of `inv-site-keyed-results`: two installs of DIFFERENT packages
+        // (distinct cells, neither poisons the other) are two resolvable sites with
+        // distinct ids and distinct facts — two invocations, two records.
+        let package = {
+            let mut i = Interner::default();
+            KindId(i.intern("package"))
+        };
+        let (probe, i) =
+            probe_for_src("apt-get install -y nginx\napt-get install -y curl\n", |k| {
+                (k == package).then(|| "{ dpkg-query -W \"$1\"; }".to_string())
+            });
+        assert_eq!(probe.checks.len(), 2, "two distinct-cell sites");
+        assert_eq!(probe.checks[0].site, LeafId(0));
+        assert_eq!(probe.checks[1].site, LeafId(1));
+        assert_ne!(
+            probe.checks[0].fact, probe.checks[1].fact,
+            "distinct cells (nginx vs curl)"
+        );
+        let rendered = probe.render_sh(&i);
+        assert!(
+            rendered.contains("printf 'site 0 effect="),
+            "site 0 record:\n{rendered}"
+        );
+        assert!(
+            rendered.contains("printf 'site 1 effect="),
+            "site 1 record:\n{rendered}"
+        );
+    }
+
+    #[test]
+    fn probe_render_self_reports_and_binds_operand() {
+        // The WIRE: the rendered probe is SELF-REPORTING — each resolvable site invokes
+        // the kind's `oracle_probe_*` wrapper (defined ONCE per kind, F-QUOTE-bound
+        // operand) and emits `site <id> effect=… rc=…` on stdout. The Singleton site
+        // (`apt-get update` ⇒ pkgindex#fresh) is invoked with no operand. The emitted
+        // wrapper body is the DECLARED probe, NOT the check's argparse skeleton (st-2):
+        // the placeholder `test -n fresh` etc. must not ship — here we feed real bodies.
+        let (package, pkgindex) = {
+            let mut i = Interner::default();
             (
-                CfgNodeId(0),
-                SkipClass::EstablishAmbient(cell(package, nginx, installed)),
-            ),
-            (
-                CfgNodeId(1),
-                SkipClass::EstablishAmbient(cell(package, curl, installed)),
-            ),
-            (
-                CfgNodeId(2),
-                SkipClass::EstablishAmbient(cell(pkg_index, EntityRef::Singleton, fresh)),
-            ),
-        ];
-        let probe = compile_probe(&classes, |k| {
-            if k == package {
-                Some("{ dpkg-query -W \"$1\"; }".to_string())
-            } else if k == pkg_index {
-                Some("{ test fresh; }".to_string())
-            } else {
-                None
-            }
-        });
+                KindId(i.intern("package")),
+                KindId(i.intern("package-index")),
+            )
+        };
+        // Two package sites (nginx, curl) + one Singleton (update).
+        let (probe, i) = probe_for_src(
+            "apt-get install -y nginx\napt-get install -y curl\napt-get update\n",
+            |k| {
+                if k == package {
+                    Some("{ dpkg-query -W \"$1\"; }".to_string())
+                } else if k == pkgindex {
+                    Some(
+                        "{ test -n \"$(find /var/lib/apt/lists -newermt '-1 hour')\"; }"
+                            .to_string(),
+                    )
+                } else {
+                    None
+                }
+            },
+        );
         let rendered = probe.render_sh(&i);
 
-        // Operand bound + single-quoted (F-QUOTE): `package__check 'nginx'` AND
-        // `package__check 'curl'`. A metachar-free operand quotes to the same single
-        // arg, just wrapped (render-only; the host strips the quotes).
+        // Operand bound + single-quoted (F-QUOTE): `package__check 'nginx'` AND 'curl'.
         assert!(
             rendered.contains("package__check 'nginx'"),
-            "operand `nginx` bound + quoted into the invocation:\n{rendered}"
+            "operand nginx bound + quoted:\n{rendered}"
         );
         assert!(
             rendered.contains("package__check 'curl'"),
-            "operand `curl` bound + quoted (per-entity invocation):\n{rendered}"
+            "operand curl bound + quoted:\n{rendered}"
         );
-        // The function body is defined exactly ONCE per kind (FLAT dedup), even with
-        // two `package` entities.
+        // The wrapper fn is defined exactly ONCE per kind (FLAT dedup), two package sites.
         assert_eq!(
             rendered.matches("package__check() {").count(),
             1,
-            "package's check fn defined once, invoked per entity:\n{rendered}"
+            "package's check fn defined once, invoked per site:\n{rendered}"
         );
-        // Singleton: no operand argument (`package-index__check` on its own line).
+        // Singleton: invoked with NO operand (the bare fn name, then the record wrapper).
         assert!(
-            rendered.contains("package-index__check\n"),
-            "a Singleton fact invokes the check with NO operand:\n{rendered}"
+            rendered.contains("package-index__check; _rc=$?;"),
+            "a Singleton site invokes the check with NO operand:\n{rendered}"
         );
-        // No `$1`-unbound leftover invocation (the Half-A degeneracy is gone): every
-        // `package__check` line either defines the fn or carries an operand.
+        // Self-reporting: a site-keyed record printf per resolvable site (3 of them).
+        assert_eq!(
+            rendered.matches("printf 'site ").count(),
+            3,
+            "one record per resolvable site:\n{rendered}"
+        );
+        // The three-outcome derivation is present (holds/absent/cant-tell from rc).
         assert!(
-            !rendered.contains("package__check\n"),
-            "no bare `package__check` (operand kinds must bind an operand):\n{rendered}"
+            rendered.contains("_e=holds")
+                && rendered.contains("_e=absent")
+                && rendered.contains("_e=cant-tell"),
+            "the wrapper maps rc to the three-outcome word:\n{rendered}"
         );
     }
 
     #[test]
     fn probe_render_quotes_operand_with_space_or_metachar() {
         // F-QUOTE (`notes/198`, `inv-kfail` both directions): the book operand is
-        // interned POST-parse (quotes stripped, embedded chars preserved), so a
-        // `'my pkg'` operand interns as `my pkg` and a `'x; touch /tmp/PWNED'` operand
-        // interns as `x; touch /tmp/PWNED`. Unquoted these would render `package__check
-        // my pkg` (TWO args ⇒ probes the WRONG entity, kFAIL-perform) and
-        // `package__check x; touch …` (the `;` ⇒ a SECOND command ⇒ kFAIL-withhold
-        // probe-mutation). Single-quoting makes each render as exactly ONE inert arg.
-        //
-        // This asserts the render-level structure (always runs, no shell). The
-        // *behavioral* properties the prompt names — the rendered probe is `dash -n`-
-        // clean AND `$1` binds to the whole operand — are exercised end-to-end against a
-        // real POSIX shell by `e2e/cases/probe-operand-quoting` (the `-n` gate + the
-        // exec gate prove binding under mocks); the spike keeps shell execution in the
-        // sh harness, never in kernel unit tests (`run.sh` "IN sh, FROM sh").
-        let mut i = Interner::default();
-        let package = KindId(i.intern("package"));
-        let installed = SelectorId(i.intern("installed"));
-        let spaced = EntityRef::Operand(OpaqueToken(i.intern("my pkg")));
-        let inject = EntityRef::Operand(OpaqueToken(i.intern("x; touch /tmp/PWNED")));
-        // An embedded single-quote pins the `'\''` escape (the only non-trivial case).
-        let quoted = EntityRef::Operand(OpaqueToken(i.intern("a'b")));
-        let cell = |entity| FactKey {
-            kind: package,
-            entity,
-            selector: installed,
+        // interned POST-parse (quotes stripped, embedded chars preserved). A spaced or
+        // metachar operand must render as exactly ONE inert single-quoted arg, never
+        // splitting (TWO args ⇒ wrong entity, kFAIL-perform) or re-parsing (a `;` ⇒ a
+        // SECOND command ⇒ kFAIL-withhold probe-mutation). Driven through the real
+        // value-flow: a command-prefix assignment `PKG='my pkg'` flows the spaced
+        // operand to the install site. (The behavioral `dash -n` + binding properties
+        // are the e2e `probe-operand-quoting` case's job — "IN sh, FROM sh".)
+        let package = {
+            let mut i = Interner::default();
+            KindId(i.intern("package"))
         };
-        let classes = vec![
-            (CfgNodeId(0), SkipClass::EstablishAmbient(cell(spaced))),
-            (CfgNodeId(1), SkipClass::EstablishAmbient(cell(inject))),
-            (CfgNodeId(2), SkipClass::EstablishAmbient(cell(quoted))),
-        ];
-        let probe = compile_probe(&classes, |k| {
+        let body = |k: KindId| {
             (k == package).then(|| "{ dpkg-query -W \"$1\" >/dev/null 2>&1; }".to_string())
-        });
-        let rendered = probe.render_sh(&i);
+        };
 
-        // The space-operand is ONE arg: the whole `my pkg` inside one `'…'`.
+        // Spaced operand via a flowed assignment.
+        let (probe, i) = probe_for_src("PKG='my pkg'\napt-get install -y \"$PKG\"\n", body);
+        let rendered = probe.render_sh(&i);
         assert!(
-            rendered.contains("package__check 'my pkg'\n"),
-            "spaced operand is single-quoted to one arg:\n{rendered}"
+            rendered.contains("package__check 'my pkg'"),
+            "spaced operand single-quoted to one arg:\n{rendered}"
         );
-        // The metachar-operand is inert: the `;` is INSIDE the quotes, so it cannot
-        // start a second command. (The literal `touch /tmp/PWNED` survives only as data
-        // passed to the check, never executed.)
+
+        // Metachar operand: the `;` is INSIDE the quotes, so it cannot split.
+        let (probe, i) = probe_for_src(
+            "PKG='x; touch /tmp/PWNED'\napt-get install -y \"$PKG\"\n",
+            body,
+        );
+        let rendered = probe.render_sh(&i);
         assert!(
-            rendered.contains("package__check 'x; touch /tmp/PWNED'\n"),
-            "metachar operand is single-quoted ⇒ the `;` cannot split:\n{rendered}"
+            rendered.contains("package__check 'x; touch /tmp/PWNED'"),
+            "metachar operand single-quoted ⇒ the `;` cannot split:\n{rendered}"
         );
-        // The embedded-quote case uses the POSIX `'\''` idiom (close, escaped quote,
-        // reopen) — `a'b` ⇒ `'a'\''b'`.
-        assert!(
-            rendered.contains(r"package__check 'a'\''b'"),
-            "embedded single-quote escaped as '\\'':\n{rendered}"
-        );
-        // Defence-in-depth against the raw-injection regression: the unquoted, bare
-        // `; touch` sequence must NOT appear at the start of a rendered line (it only
-        // ever appears inside the single-quoted operand above).
+        // No UNQUOTED metachar invocation leaked (the `;` only ever appears quoted).
         assert!(
             !rendered.contains("\npackage__check x; touch"),
-            "no UNQUOTED metachar invocation leaked:\n{rendered}"
+            "no unquoted metachar invocation:\n{rendered}"
+        );
+    }
+
+    #[test]
+    fn probe_site_id_equals_plan_leaf_id() {
+        // `inv-site-keyed-results` (the load-bearing equivalence): the probe's site-id
+        // for a source command == the apply plan's leaf-id for the SAME command. A
+        // record `site N …` therefore keys back to plan leaf N. Drive both stages off
+        // one classify result and cross-check the install's id. (`apt-get update` is a
+        // modeled DISTINCT cell, so it does not poison the install's ambient-ness — the
+        // install stays resolvable; it is the second source command ⇒ site/leaf 1.)
+        let mut i = Interner::default();
+        let idx = package_index(&mut i);
+        let src = "apt-get update\napt-get install -y nginx\n";
+        let parsed = dorc_syntax::parse(src);
+        let cfg = dorc_analysis::cfg::build(&parsed.value).value;
+        let value = dorc_analysis::value::analyze(&cfg, &parsed.value, &mut i);
+        let checks = vec![dorc_oracle::check::lift_checks(&mut i, CORPUS_CHECK_SRC).value];
+        let classes = dorc_analysis::effect::classify(&cfg, &value, &idx, &checks, &mut i).value;
+
+        let package = KindId(i.intern("package"));
+        let probe = compile_probe(&parsed.value, &cfg, &classes, |k| {
+            (k == package).then(|| "{ dpkg-query -W \"$1\"; }".to_string())
+        });
+        let plan = build_plan(src, &parsed.value, &cfg, &classes, |_f| {
+            Observable::verdict_only(Verdict::Diverged)
+        });
+
+        let install_site = probe
+            .checks
+            .iter()
+            .find(|c| matches!(c.fact.entity, EntityRef::Operand(_)))
+            .expect("the install is a resolvable site")
+            .site;
+        let install_leaf = plan
+            .steps
+            .iter()
+            .find(|s| s.sh.contains("apt-get install"))
+            .expect("the install is a plan leaf")
+            .leaf;
+        assert_eq!(
+            install_site, install_leaf,
+            "probe site-id and plan leaf-id are ONE id space"
         );
     }
 

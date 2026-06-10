@@ -419,27 +419,39 @@ apt_get__check() {
             let cfg = dorc_analysis::cfg::build(&parsed.value).value;
             let classes = classify_value(&cfg, &parsed.value, &idx, &mut i);
 
-            // (1) compile the probe — the read-only checks to ship.
-            let probe = compile_probe(&classes, |k| idx.probe_for(k).map(|p| p.body.clone()));
+            // (1) compile the SITE-keyed probe — the read-only checks to ship
+            // (`inv-site-keyed-results`, round-20 task-D1).
+            let probe = compile_probe(&parsed.value, &cfg, &classes, |k| {
+                idx.probe_for(k).map(|p| p.body.clone())
+            });
             assert!(
                 probe.checks_fact(nginx) && probe.checks_fact(curl),
                 "seed {seed}: both ambient installs are probed (package has a probe)"
             );
-            // …and the probe renders as a read-only, non-mutating shell-script.
+            // …and the probe renders as a read-only, self-reporting shell-script.
             let probe_sh = probe.render_sh(&i);
             assert!(
                 probe_sh.contains("dpkg-query") && probe_sh.contains("read-only"),
                 "seed {seed}: probe renders the verbatim read-only check"
             );
 
-            // (2) SIMULATE: the host answers each probed fact; an unprobed fact ⇒
-            // Unknown / no-rc (⊤ for the fold).
+            // (2) SIMULATE — the SITE→CELL bridge (round-20 task-D1): the host answers
+            // each probed SITE by mapping it to its resolved cell (the probe's
+            // `checks` carry site→fact) and asking the cell-keyed fact-store. This is
+            // the DST stand-in for running the rendered probe and reading back its
+            // `site <id> effect=…` records. Re-key to the fact-keyed observations
+            // `build_plan` consumes (only the probe-answer plumbing re-keys; the
+            // fact-store stays cell-keyed). An unprobed site/fact ⇒ Unknown ⇒ run.
+            let mut by_fact: std::collections::BTreeMap<FactKey, Observable> =
+                std::collections::BTreeMap::new();
+            for check in &probe.checks {
+                by_fact.insert(check.fact, host.observe(check.fact));
+            }
             let observe = |f: FactKey| {
-                if probe.checks_fact(f) {
-                    host.observe(f)
-                } else {
-                    Observable::verdict_only(Verdict::Unknown)
-                }
+                by_fact
+                    .get(&f)
+                    .copied()
+                    .unwrap_or(Observable::verdict_only(Verdict::Unknown))
             };
             // (3) compile the eliding apply from the simulated probe results.
             let apply = build_plan(src, &parsed.value, &cfg, &classes, observe);
@@ -499,10 +511,17 @@ apt_get__check() {
         let cfg = dorc_analysis::cfg::build(&parsed.value).value;
         let classes = classify_value(&cfg, &parsed.value, &idx, &mut i);
 
-        let probe = compile_probe(&classes, |k| idx.probe_for(k).map(|p| p.body.clone()));
+        let probe = compile_probe(&parsed.value, &cfg, &classes, |k| {
+            idx.probe_for(k).map(|p| p.body.clone())
+        });
         assert!(
             probe.checks.is_empty(),
-            "no declared probe ⇒ the probe is empty"
+            "no declared probe ⇒ no resolvable site (the install is recorded unresolvable)"
+        );
+        assert_eq!(
+            probe.unresolvable.len(),
+            1,
+            "the un-probeable install site is recorded unresolvable (can't-probe ⇒ can't-elide)"
         );
 
         let observe = |f: FactKey| {

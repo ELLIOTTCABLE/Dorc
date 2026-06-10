@@ -1,6 +1,9 @@
-pkgindex#fresh converged
-package:nginx#installed converged
-firewall:80/tcp#allowed converged
-firewall:443/tcp#allowed converged
-service:nginx#enabled converged
-service:nginx#active converged
+# probe-results: site-keyed records (task-D1 WIRE). Grammar:
+#   site <leafid> effect=<holds|absent|cant-tell>
+# (the records the rendered probe emits; effect from the probe command rc).
+site 1 effect=holds
+site 2 effect=holds
+site 3 effect=holds
+site 4 effect=holds
+site 5 effect=holds
+site 6 effect=holds
