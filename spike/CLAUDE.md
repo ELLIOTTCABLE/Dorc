@@ -148,17 +148,14 @@ mise exec -- cargo clippy --workspace --all-targets
 sh e2e/run.sh        # the 43-case corpus: dash -n gate + exec-under-mocks
 ```
 
-Pre-commit gate set (= `mise run check` from the worktree root): `cargo fmt
---check` · `clippy -D warnings` · `cargo deny check licenses bans sources` ·
-`typos`. **Known worktree gotcha:** hk v1.44.3 (libgit2) cannot open this
-repository from inside a `.claude/worktrees/*` checkout (the repo uses
-`extensions.relativeWorktrees`), so the config-based pre-commit hook
-hard-fails before running anything. Resolution (human-sanctioned, 2026-06-10):
-agent shells carry `HK=0` via `.claude/settings.json` `env`, neutering the
-hook's hk invocation — so the four gates DO NOT run automatically on commit.
-You MUST run them yourself before committing (all four, from `spike/`; or
-`mise run check` from the root if hk works in your context). Never
-`--no-verify`.
+Pre-commit gate set: `cargo fmt --check` · `clippy -D warnings` ·
+`cargo deny check licenses bans sources` · `typos`. **There is NO git
+pre-commit hook** (the hk config-hook was uninstalled repo-wide at human
+direction, 2026-06-10 — hk v1.44.3's libgit2 cannot open relative-worktree
+checkouts like this one, so it hard-failed every commit from here). Nothing
+runs automatically on commit: you MUST run all four gates yourself before
+committing (from `spike/`; `mise x -- typos spike` runs from the worktree
+root). Never `--no-verify` (it's moot, but the discipline stands).
 
 Lint posture: the workspace lint table in `spike/Cargo.toml` is the policy for
 *new* code — do not weaken it. Seeded round-19 crates carry crate-root
