@@ -27,6 +27,11 @@
 - gates all green: `fmt`, `clippy --workspace --all-targets -D warnings` (no new expects),
   `cargo test --workspace` (145 lib/integration across crates), `sh e2e/run.sh` 43/43
   (standing render xfail intact), `typos spike`.
+  <!-- /* corrections 2026-06-10 (round-20 harness-crosscheck acc-1/acc-2): the commit this
+  note describes (1f66bbd) shipped with 44 case dirs (the orchestrator's review added
+  exec-opaque-var-runs and performed the §4 rename in the same commit — so §4's "flag for the
+  human / if the human approves" misdescribes its own commit: the rename HAPPENED, to
+  `exec-resolved-var-elides`, with the ⊤-floor re-grounded in `exec-opaque-var-runs`). */ -->
 
 ## §1 The classify signature change + call-sites (the contract task-D inherits)
 

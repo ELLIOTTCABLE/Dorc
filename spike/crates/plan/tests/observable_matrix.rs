@@ -376,7 +376,6 @@ fn spec_converged_stdout_piped_to_grep_must_run() {
     // converged. Replacing ⇒ `true | grep -q nginx` ⇒ empty stdout ⇒ grep no-match
     // ⇒ `echo present` does NOT run, diverging from the real run. STDOUT's empty
     // default is UNVOUCHED ⇒ the leaf must run. HOST: nginx installed.
-    // CURRENT: the install is EstablishAmbient + converged ⇒ REPLACED (wrong).
     let plan = plan_for(
         "apt-get install -y nginx | grep -q nginx && echo present\n",
         &[("package", "nginx")],

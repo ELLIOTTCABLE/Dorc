@@ -1,11 +1,9 @@
-# A `user` oracle declaring `useradd <name>` as establishing user#present. The model
-# is (provider, verb) -> effect, so `useradd deploy` reads verb=`deploy` (a Singleton
-# user#present cell; the baked username is a fixture wart, not load-bearing). The oracle
-# CANNOT express "useradd exits non-zero when the user already exists" — and here it
-# does NOT declare any rc either, so the engine has no exact status to substitute. With
-# an undeclared rc on a branch-consumed status the safe default is to RUN (`19D`). The
-# probe body is never executed by the harness (notes/198 2.3); only the rendered apply
-# runs.
+# A `user` oracle: `useradd <name>` establishes user:<name>#present. Verbless — the
+# effect-map keys on the ε-verb, and the check() below binds the first operand as the
+# entity (the find-3-era verb=deploy/Singleton reading is dead; task-W / 19I §2). The
+# oracle declares no rc — under fork-mutator-rc none can exist — so a branch-consumed
+# status carries ⊤ and the safe default is RUN (`19D`). The probe body is never
+# executed by the harness; only the rendered apply runs.
 oracle_kind=user
 oracle_probe_user() { getent passwd "$1" >/dev/null 2>&1; }
 oracle_effect useradd '' establish present
