@@ -6,3 +6,10 @@ oracle_kind=firewall
 oracle_probe_firewall() { ufw status 2>/dev/null | grep -q "$1"; }
 oracle_effect ufw allow establish allowed
 oracle_effect ufw deny kill allowed
+# command-keyed check(): `ufw <verb> <rule>` — bind the verb, annotate the rule operand
+# as `firewall` (exact-string only; rule-equivalence is unsound in sh, 15x HOLE).
+ufw__check() {
+   verb=$1; shift
+   rule : firewall = "$1"
+   ufw status "$rule" >/dev/null 2>&1
+}

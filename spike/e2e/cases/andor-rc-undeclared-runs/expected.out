@@ -1,9 +1,9 @@
 #!/bin/sh
 # dorc probe (read-only): reports per-fact convergence, mutates nothing.
 
-# probe: user#present
+# probe: user:deploy#present
 user__check() { getent passwd "$1" >/dev/null 2>&1; }
-user__check
+user__check 'deploy'
 #!/bin/sh
 # dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
 

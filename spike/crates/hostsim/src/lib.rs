@@ -191,6 +191,35 @@ mod tests {
     use super::*;
     use dorc_core::{EntityRef, Interner, KindId, OpaqueToken, SelectorId};
 
+    /// Corpus-shaped apt-get check (flag-strip → verb → single-operand `package`
+    /// annotation, `[ "$2" = "" ]` multi-operand refusal). These DST tests model only
+    /// `apt-get install` on `package`; `systemctl reload` has no check ⇒ Opaque ⇒ runs.
+    /// Lifted with the test's interner so provider symbols match the book.
+    const CORPUS_CHECK_SRC: &str = r#"
+apt_get__check() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   pkg : package = "$1"
+   if [ "$2" = "" ]; then probe-pkg "$pkg"; fi
+}
+"#;
+
+    /// Run value-flow + the corpus checks + classify (the DST tests' shared pipeline).
+    fn classify_value(
+        cfg: &dorc_analysis::cfg::Cfg,
+        ast: &dorc_syntax::ast::Ast,
+        idx: &dorc_oracle::KindIndex,
+        i: &mut Interner,
+    ) -> Vec<(
+        dorc_analysis::cfg::CfgNodeId,
+        dorc_analysis::effect::SkipClass,
+    )> {
+        let value = dorc_analysis::value::analyze(cfg, ast, i);
+        let checks = vec![dorc_oracle::check::lift_checks(i, CORPUS_CHECK_SRC).value];
+        dorc_analysis::effect::classify(cfg, &value, idx, &checks, i).value
+    }
+
     /// `kind:entity#installed` — the re-keyed cell (`notes/193`). These host-model
     /// tests only ever exercise `package#installed`, so the selector is fixed here;
     /// the host is a plain set-membership oracle over whatever `FactKey` it is given.
@@ -322,7 +351,7 @@ mod tests {
 
             let parsed = dorc_syntax::parse(src);
             let cfg = dorc_analysis::cfg::build(&parsed.value).value;
-            let classes = dorc_analysis::effect::classify(&cfg, &parsed.value, &idx, &mut i);
+            let classes = classify_value(&cfg, &parsed.value, &idx, &mut i);
             let plan =
                 dorc_plan::build_plan(src, &parsed.value, &cfg, &classes, |f| host.observe(f));
 
@@ -388,7 +417,7 @@ mod tests {
 
             let parsed = dorc_syntax::parse(src);
             let cfg = dorc_analysis::cfg::build(&parsed.value).value;
-            let classes = dorc_analysis::effect::classify(&cfg, &parsed.value, &idx, &mut i);
+            let classes = classify_value(&cfg, &parsed.value, &idx, &mut i);
 
             // (1) compile the probe — the read-only checks to ship.
             let probe = compile_probe(&classes, |k| idx.probe_for(k).map(|p| p.body.clone()));
@@ -468,7 +497,7 @@ mod tests {
         let src = "apt-get install -y nginx\n";
         let parsed = dorc_syntax::parse(src);
         let cfg = dorc_analysis::cfg::build(&parsed.value).value;
-        let classes = dorc_analysis::effect::classify(&cfg, &parsed.value, &idx, &mut i);
+        let classes = classify_value(&cfg, &parsed.value, &idx, &mut i);
 
         let probe = compile_probe(&classes, |k| idx.probe_for(k).map(|p| p.body.clone()));
         assert!(

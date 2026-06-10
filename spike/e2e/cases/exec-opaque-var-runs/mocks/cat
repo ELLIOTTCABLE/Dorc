@@ -1,0 +1,7 @@
+#!/bin/sh
+# INERT mock (ap-2 exec harness): logs that it ran, mutates NOTHING. Emits a fixed
+# package name on stdout so the book's `PKG=$(cat /etc/pkg)` binds a RUNTIME value —
+# statically the value-plane sees a command-substitution RHS ⇒ ⊤ (this case's point).
+printf 'ran: %s %s\n' "${0##*/}" "$*" >>"$DORC_LOG"
+printf 'nginx\n'
+exit 0

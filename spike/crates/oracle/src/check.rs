@@ -39,8 +39,23 @@ mod lexer;
 mod parser;
 
 pub use ast::{Check, CheckSet};
-pub use eval::{Resolution, Resolved, TopReason, evaluate};
+pub use eval::{Resolution, Resolved, ResolvedEntity, TopReason, evaluate};
 pub use parser::lift_checks;
+
+/// Map a check function's provider-name fragment to the command word: `_` → `-`
+/// (`apt_get` ⇒ `apt-get`). The **single** home of the underscore↔hyphen convention
+/// (204 §3, the `tc-*`-flagged provider-name rule): the dialect parser keys a
+/// [`CheckSet`] by the mapped name, AND the engine's wiring (`analysis::effect`)
+/// re-derives the provider symbol from a book's command word through this same
+/// function, so the book's command-word interning, `KindIndex`'s `ProviderId`
+/// interning, and the `CheckSet` key all agree (204 §6 seam #2). Exported so the
+/// mapping is never duplicated; a future provider-name escape lands here alone.
+///
+/// **Lossy** (a literal `_` in a command name cannot be expressed); flagged `tc-*`.
+#[must_use]
+pub fn map_provider_name(raw: &str) -> String {
+    raw.replace('_', "-")
+}
 
 /// Diagnostic codes the dialect parser emits (greppable; `ch-catalog`).
 const OUT_OF_DIALECT: DiagCode = DiagCode("check-out-of-dialect");

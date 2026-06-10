@@ -6,4 +6,11 @@
 # this body (only the book's rendered apply runs, and only command -v is a builtin).
 oracle_kind=tool
 oracle_probe_tool() { command -v "$1" >/dev/null 2>&1; }
-oracle_effect command -v establish present
+oracle_effect command '' establish present
+# command-keyed check(): `command -v <tool>` binds NO verb (verbless provider, the
+# effect-map keys on the ε-verb); strip the `-v`, annotate the operand as `tool`.
+command__check() {
+   case $1 in -v) shift ;; esac
+   tool : tool = "$1"
+   command -v -- "$tool" >/dev/null 2>&1
+}

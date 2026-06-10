@@ -5,4 +5,7 @@
 # verbatim; real `useradd` exits 9 ⇒ `|| mkdir` fires ⇒ `mkdir` runs. Both run — the
 # safe floor. (Round-20 `fork-mutator-rc`: no declared-rc path exists for a mutator —
 # the old rc=9-injecting contrast case was cut as masking; notes/203 §3.)
-user#present converged
+# task-W: the useradd check binds NO verb (ε-verb) and the entity is the FIRST OPERAND
+# `deploy` (the baked-verb `useradd deploy ⇒ Singleton` wart of find-3 is dead, 19I §2),
+# so the cell is now `user:deploy#present` (Operand), not the bare-kind Singleton.
+user:deploy#present converged

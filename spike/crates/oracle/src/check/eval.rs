@@ -44,9 +44,10 @@ pub struct Resolved {
     /// The reverse-DNS kind string from the annotation (opaque coordination handle;
     /// never decoded — `inv-referent-agnostic`).
     pub kind: String,
-    /// The annotated value, resolved to the concrete argv element (or literal) it
-    /// denotes (`nginx`).
-    pub entity: String,
+    /// The resolved entity: either a concrete operand the annotation denotes
+    /// (`nginx`), or [`ResolvedEntity::Singleton`] for a nullary verb whose resource
+    /// has no operand (`apt-get update`; 202 §2 / task-W §4).
+    pub entity: ResolvedEntity,
     /// The derived verb, if the check binds one (the value bound to a variable the
     /// oracle named `verb`). `None` for a verbless check (`useradd` — 19H §2.3); the
     /// absence is a first-class outcome, not an error.
@@ -56,6 +57,22 @@ pub struct Resolved {
     /// different probe per verb arm (19H §2.5); these are the ones the *selected*
     /// path actually runs, in execution order.
     pub probe_body: Vec<Span>,
+}
+
+/// The resolved entity of a [`Resolved`] — the operand the annotation denotes, or
+/// the Singleton (no-operand) resource of a nullary verb.
+///
+/// Maps directly onto `core::EntityRef` at the wiring boundary
+/// (`Operand(text)` → `EntityRef::Operand`, `Singleton` → `EntityRef::Singleton`),
+/// preserving the existing Singleton semantics (`apt-get update` ⇒
+/// `package-index#fresh`, no `:operand` segment in its `fact_label`).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ResolvedEntity {
+    /// A concrete operand argv element (`nginx`) the annotation's value resolved to.
+    Operand(String),
+    /// A nullary verb's singleton resource (no operand): the value-less annotation
+    /// form (`index : pkgindex`). The wiring keys this on `EntityRef::Singleton`.
+    Singleton,
 }
 
 /// Why an evaluation degraded to [`Resolution::Top`]. A closed enum so adding a new
@@ -150,7 +167,7 @@ struct Evaluator {
     /// Probe command spans reached on the selected path, in execution order.
     probe_body: Vec<Span>,
     /// The first inline annotation reached, resolved to (kind, entity).
-    annotation: Option<(String, String)>,
+    annotation: Option<(String, ResolvedEntity)>,
     budget: usize,
     steps: usize,
 }
@@ -281,17 +298,21 @@ impl Evaluator {
     }
 
     fn run_annotation(&mut self, anno: &Annotation) -> Flow {
-        match self.resolve(&anno.value) {
-            Ok(entity) => {
-                // First annotation wins (a check declares one entity-of-interest per
-                // path); a second is ignored. Record kind + resolved entity.
-                if self.annotation.is_none() {
-                    self.annotation = Some((anno.kind.clone(), entity));
-                }
-                Flow::Normal
-            }
-            Err(_) => Flow::Top(TopReason::UnresolvedAnnotationValue),
+        // A value-less annotation is the nullary/Singleton form (`index : pkgindex`):
+        // the verb's resource has no operand. A valued annotation resolves the operand.
+        let entity = match &anno.value {
+            None => ResolvedEntity::Singleton,
+            Some(value) => match self.resolve(value) {
+                Ok(text) => ResolvedEntity::Operand(text),
+                Err(_) => return Flow::Top(TopReason::UnresolvedAnnotationValue),
+            },
+        };
+        // First annotation wins (a check declares one entity-of-interest per path); a
+        // second is ignored. Record kind + resolved entity.
+        if self.annotation.is_none() {
+            self.annotation = Some((anno.kind.clone(), entity));
         }
+        Flow::Normal
     }
 
     /// Resolve a [`Word`] to a concrete string against the current positionals and
@@ -325,13 +346,36 @@ impl Evaluator {
     }
 
     /// Evaluate a `[ LHS OP RHS ]` string-comparison test.
+    ///
+    /// In a `[ … ]` test, a past-the-end positional is the **empty string**, faithful
+    /// to sh (an unset parameter expands to empty), NOT a degrade — so the flag-strip
+    /// `while [ "${1#-}" != "$1" ]` terminates cleanly when the argv is exhausted, and
+    /// an "is there a second operand?" guard `[ "$2" = "" ]` reads true at the end.
+    /// (The ANNOTATION value-position stays strict — past-end ⇒ Top — because an
+    /// entity must resolve concretely; only the *test* context takes sh's unset-empty
+    /// semantics. A `$0`/unbound-var is still non-concrete ⇒ Top, the safe direction.)
     fn eval_test(&self, test: &Test) -> Result<bool, TopReason> {
-        let lhs = self.resolve(&test.lhs)?;
-        let rhs = self.resolve(&test.rhs)?;
+        let lhs = self.resolve_in_test(&test.lhs)?;
+        let rhs = self.resolve_in_test(&test.rhs)?;
         Ok(match test.op {
             TestOp::Eq => lhs == rhs,
             TestOp::Ne => lhs != rhs,
         })
+    }
+
+    /// Resolve a word inside a `[ … ]` test, where a past-end positional is the empty
+    /// string (sh's unset-parameter semantics; see [`Evaluator::eval_test`]). A `$0`
+    /// or unbound variable is still `Err` (non-concrete ⇒ Top).
+    fn resolve_in_test(&self, word: &Word) -> Result<String, TopReason> {
+        match word {
+            // `$N` / `${N#prefix}` past the end of argv ⇒ empty string (sh: unset
+            // parameter expands empty; the prefix-strip is then a no-op).
+            Word::Positional(n) if *n != 0 && self.positional(*n).is_none() => Ok(String::new()),
+            Word::PositionalStripPrefix { n, .. } if self.positional(*n).is_none() => {
+                Ok(String::new())
+            }
+            _ => self.resolve(word),
+        }
     }
 
     /// Assemble the final [`Resolution`] from accumulated state. Two degrade gates:

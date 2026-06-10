@@ -1,0 +1,4 @@
+# Bait: the host claims nginx converged. The book's operand is genuinely dynamic
+# ($(cat …) ⇒ ⊤), so the engine must never connect this fact to the install site —
+# unknown identity ⇒ Opaque ⇒ runs (the group-H floor, re-grounded post-find-3).
+package:nginx#installed converged

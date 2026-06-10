@@ -12,7 +12,7 @@ use super::ast::{
     Annotation, CaseArm, Check, CheckSet, Command, Pattern, Stmt, Test, TestOp, Word,
 };
 use super::lexer::{Tok, Token, lex};
-use super::{OUT_OF_DIALECT, UNTERMINATED, VERB_BINDING, lift_failure};
+use super::{OUT_OF_DIALECT, UNTERMINATED, VERB_BINDING, lift_failure, map_provider_name};
 use dorc_core::{Carrier, Interner, Span, Symbol};
 
 /// The provider-name suffix marking a command-keyed check (`apt_get__check`).
@@ -462,38 +462,43 @@ impl Parser<'_> {
         self.parse_command(start_span)
     }
 
-    /// Parse the inline annotation `name : kind = value`. The caller verified the
+    /// Parse the inline annotation `name : kind = value` (the operand form) or
+    /// `name : kind` (the **nullary/Singleton** form — a verb whose resource has no
+    /// operand, e.g. `apt-get update`; 202 §2 / task-W §4). The caller verified the
     /// first word is `name` and the next is `:`.
     fn parse_annotation(&mut self, name: &str, start_span: Span) -> Result<Stmt, bool> {
         let name_sym = self.interner.intern(name);
         self.bump(); // name
         self.bump(); // `:`
-        // kind: a single plain word (reverse-DNS string).
-        let Some(Tok::Word {
-            lexeme,
-            single_quoted: false,
-        }) = self.peek()
-        else {
+        // kind: a single plain word (reverse-DNS string, or the file's short
+        // oracle_kind — task-W keeps them identical so annotation-kind == effect-map kind).
+        let Some((kind, false, kind_span)) = self.take_word() else {
             return Err(self.fail_here("annotation kind must be a single literal word"));
         };
-        let kind = lexeme.clone();
-        self.bump();
-        // `=`
+        // The `= value` tail is OPTIONAL. Present ⇒ the ordinary operand annotation.
+        // Absent ⇒ the nullary/Singleton spelling (`value = None`): the evaluator
+        // resolves a [`super::ast::AnnotatedValue::Singleton`] and the wiring keys the
+        // cell on [`dorc_core::EntityRef::Singleton`]. A value-less annotation is the
+        // EXPLICIT opt-in — a wholly *missing* annotation still degrades to
+        // `Top(MissingAnnotation)` (the safe direction), so no accidental Singleton.
         if !matches!(self.peek(), Some(Tok::Word { lexeme, .. }) if lexeme == "=") {
-            return Err(self.fail_here("annotation requires `=` before its value"));
+            return Ok(Stmt::Annotation(Annotation {
+                name: name_sym,
+                kind,
+                value: None,
+                span: start_span.to(kind_span),
+            }));
         }
-        self.bump();
-        // value word
+        self.bump(); // `=`
         let Some((lexeme, single_quoted, val_span)) = self.take_word() else {
-            return Err(self.fail_here("annotation value must be a word"));
+            return Err(self.fail_here("annotation requires a value word after `=`"));
         };
         let value = parse_word_lexeme(&lexeme, single_quoted, self.interner);
-        let span = start_span.to(val_span);
         Ok(Stmt::Annotation(Annotation {
             name: name_sym,
             kind,
-            value,
-            span,
+            value: Some(value),
+            span: start_span.to(val_span),
         }))
     }
 
@@ -874,11 +879,4 @@ fn is_block_keyword(s: &str) -> bool {
 /// keywords.
 fn is_statement_terminator_word(s: &str) -> bool {
     is_block_keyword(s)
-}
-
-/// Map a check function's provider-name fragment to the command word: `_` → `-`.
-/// (`apt_get` ⇒ `apt-get`.) See [`lift_checks`] for the rule's rationale and its
-/// `tc-*` flag.
-fn map_provider_name(raw: &str) -> String {
-    raw.replace('_', "-")
 }

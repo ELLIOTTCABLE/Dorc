@@ -93,6 +93,19 @@ fn run() -> Result<(), String> {
     report("oracle", &lifted.diags);
     let idx = lifted.value;
 
+    // Lift each oracle's `<provider>__check` functions into a per-file CheckSet (the
+    // real entity-resolution mechanism — the engine threads the book's value-flow
+    // through these, never parsing argv itself). Shared interner, so provider symbols
+    // match the book's command words (204 seam #2).
+    let checks: Vec<dorc_oracle::check::CheckSet> = oracle_refs
+        .iter()
+        .map(|src| {
+            let lifted = dorc_oracle::check::lift_checks(&mut interner, src);
+            report("check", &lifted.diags);
+            lifted.value
+        })
+        .collect();
+
     // Parse + analyze the book (shared interner, so symbols match the oracles).
     let book_src = std::fs::read_to_string(&args.book)
         .map_err(|e| format!("reading book {}: {e}", args.book))?;
@@ -100,7 +113,13 @@ fn run() -> Result<(), String> {
     report("parse", &parsed.diags);
     let cfg = dorc_analysis::cfg::build(&parsed.value);
     report("cfg", &cfg.diags);
-    let classes = dorc_analysis::effect::classify(&cfg.value, &parsed.value, &idx, &mut interner);
+    // Book-side value-flow: resolve each command-site's argv (constant/variable
+    // propagation) — the input entity-resolution consumes (19H §1 / 202 §1).
+    let value = dorc_analysis::value::analyze(&cfg.value, &parsed.value, &mut interner);
+    let classified =
+        dorc_analysis::effect::classify(&cfg.value, &value, &idx, &checks, &mut interner);
+    report("classify", &classified.diags);
+    let classes = classified.value;
 
     // (1) compile + emit the read-only probe.
     let probe =

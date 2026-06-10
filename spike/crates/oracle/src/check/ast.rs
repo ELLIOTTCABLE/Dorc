@@ -96,12 +96,16 @@ pub struct Annotation {
     /// the evaluator's resolution (the value-position is what matters) but kept for
     /// provenance and so an over-eager future binding-tracker has it.
     pub name: Symbol,
-    /// The reverse-DNS kind string (`com.debian.apt.Package`). An opaque
-    /// coordination handle (`inv-referent-agnostic`); never decoded for meaning.
+    /// The reverse-DNS kind string (`com.debian.apt.Package`) or the file's short
+    /// `oracle_kind` (task-W keeps these identical so annotation-kind ==
+    /// effect-map kind). An opaque coordination handle (`inv-referent-agnostic`);
+    /// never decoded for meaning.
     pub kind: String,
-    /// The annotated value word (`"$1"`). Resolved to a concrete argv element or
-    /// literal at evaluation time; if it cannot resolve concretely ⇒ Top.
-    pub value: Word,
+    /// The annotated value word (`"$1"`), or `None` for the **nullary/Singleton**
+    /// form (`index : pkgindex` with no `= value`): a verb whose resource has no
+    /// operand (`apt-get update`; 202 §2). A present value resolves to a concrete
+    /// argv element (else ⊤); `None` resolves to the Singleton entity.
+    pub value: Option<Word>,
     /// The whole annotation span (diagnostics).
     pub span: Span,
 }

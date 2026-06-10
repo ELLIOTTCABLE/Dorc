@@ -7,3 +7,14 @@ oracle_kind=service
 oracle_probe_service() { systemctl is-active --quiet "$1"; }
 oracle_effect systemctl enable establish enabled
 oracle_effect systemctl disable kill enabled
+# command-keyed check(): the verb selects a different probe per arm (enable→is-enabled,
+# start→is-active, disable→is-enabled); annotate the unit operand as `service`.
+systemctl__check() {
+   verb=$1; shift
+   svc : service = "$1"
+   case $verb in
+      enable)  systemctl is-enabled -- "$svc" ;;
+      start)   systemctl is-active  -- "$svc" ;;
+      disable) systemctl is-enabled -- "$svc" ;;
+   esac
+}

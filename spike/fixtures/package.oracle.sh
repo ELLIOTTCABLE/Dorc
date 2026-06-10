@@ -28,3 +28,17 @@ oracle_effect apt-get reinstall establish installed
 oracle_effect apt-get purge     kill      installed
 oracle_effect apt-get remove    kill      installed
 oracle_effect dpkg    -i        establish installed
+
+# COMMAND-KEYED check() (19H §2 / task-W): the oracle's OWN argparse traces the book's
+# resolved argv to the inline kind-annotation — the real entity-resolution (the engine
+# parses nothing). Flag-strip pre- and post-verb, bind the verb, annotate the single
+# operand as `package`; the `[ "$2" = "" ]` guard refuses a SECOND operand (a
+# multi-operand `install a b` resolves no probe ⇒ runs, never a wrong single-entity
+# elision). Coexists with the markers above (which still drive selector/polarity).
+apt_get__check() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   pkg : package = "$1"
+   if [ "$2" = "" ]; then dpkg-query -W -f='${Status}' "$pkg" >/dev/null 2>&1; fi
+}

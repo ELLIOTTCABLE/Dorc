@@ -6,3 +6,12 @@
 oracle_kind=package
 oracle_effect yum install establish installed
 oracle_effect yum remove kill installed
+# command-keyed check(): yum argparses like apt-get here (verb then operand), same
+# `package` kind — the cross-oracle Seam (the kind name is the shared anchor).
+yum__check() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   pkg : package = "$1"
+   if [ "$2" = "" ]; then rpm -q "$pkg" >/dev/null 2>&1; fi
+}

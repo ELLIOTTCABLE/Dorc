@@ -8,4 +8,11 @@
 # runs.
 oracle_kind=user
 oracle_probe_user() { getent passwd "$1" >/dev/null 2>&1; }
-oracle_effect useradd deploy establish present
+oracle_effect useradd '' establish present
+# command-keyed check(): `useradd <name>` binds NO verb (verbless — the effect-map keys
+# on the ε-verb); annotate the first operand as `user`. The baked-verb wart (verb=deploy)
+# dies: the entity is the operand, not a Singleton (task-W / 19I §2).
+useradd__check() {
+   user : user = "$1"
+   getent passwd "$user" >/dev/null 2>&1
+}

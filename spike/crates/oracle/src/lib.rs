@@ -46,11 +46,11 @@ use std::collections::BTreeMap;
 /// parser for the constrained oracle-contract dialect plus a concrete evaluator that
 /// traces a known argv through a check's argparse to its kind-annotation.
 ///
-/// ADDITIVE (round-20, task-C): this is the NEW input-side mechanism. It coexists
-/// with the existing [`lift`]/[`KindIndex`]/[`Polarity`] (which keep serving the
-/// corpus); a later wiring task (task-W) replaces the `find-3` engine-side argparse
-/// in `analysis::effect` with [`check::evaluate`] and decides the lift/index
-/// migration. Nothing here changes the existing public API.
+/// Round-20 input-side mechanism, wired in by task-W: `analysis::effect` threads a
+/// book's value-flow through [`check::evaluate`] (the oracle's own argparse) to its
+/// inline kind-annotation — the real entity-resolution, replacing the former
+/// engine-side argparse stand-in. Coexists with [`lift`]/[`KindIndex`]/[`Polarity`]
+/// (the effect-map still supplies selector/polarity per `(provider, verb)`).
 pub mod check;
 
 /// What a `(provider, verb)` invocation does to a fact of its kind.
@@ -74,6 +74,30 @@ pub struct FactProbe {
     pub body: String,
 }
 
+/// One declared effect cell of a `(provider, verb)`: which `kind`, which `selector`
+/// facet, and the `polarity`. A `(provider, verb)` may declare **several** cells
+/// (`us-effectmap`, note 205 §3: a multi-cell verb is real — `purge` kills
+/// `#installed` and may dirty a `#config` cell). The wiring (`analysis::effect`)
+/// treats each cell as written, in declaration order.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct EffectCell {
+    pub kind: KindId,
+    pub selector: SelectorId,
+    pub polarity: Polarity,
+}
+
+/// A duplicate-effect conflict (`us-effectmap`, note 205 §3): a *second*
+/// `oracle_effect` for the same `(provider, verb)` on the **same** `selector` cell.
+/// First-writer-wins (the duplicate is dropped); the lifter turns this into a loud
+/// [`Diagnostic`]. A different *selector* for the same verb is NOT a conflict — that
+/// is the legitimate multi-cell case ([`EffectCell`]).
+#[derive(Debug, Clone, Copy)]
+pub struct EffectConflict {
+    pub provider: ProviderId,
+    pub verb: Symbol,
+    pub selector: SelectorId,
+}
+
 /// The analyzer-internal kind index — the dn-1 artifact. A 3-place relation
 /// (kind, provider, verb→effect), *not* a 1-place naming convention (which would
 /// clobber when two providers coexist; note 162 F-3). Built by [`lift`], queried
@@ -82,14 +106,17 @@ pub struct FactProbe {
 pub struct KindIndex {
     /// kind → how to observe it (one probe per kind).
     probes: BTreeMap<KindId, FactProbe>,
-    /// (provider, verb) → (kind, selector, polarity). Accumulating + clobber-free:
+    /// (provider, verb) → the declared effect cells. Accumulating + clobber-free:
     /// many providers and many verbs coexist (`apt-get install` vs `apt-get purge`
-    /// vs `dpkg -i`), unlike a single `oracle_verb`. The `selector` (`#installed`,
-    /// `#fresh`, `#enabled`, `#active`) is the per-entity facet the spike-2 re-key
-    /// added (`an-per-entity-selector`, `notes/193` §4): `enable` and `start` target
-    /// *different* selectors on the same `service` cell, so neither discharges the
-    /// other.
-    effects: BTreeMap<(ProviderId, Symbol), (KindId, SelectorId, Polarity)>,
+    /// vs `dpkg -i`), unlike a single `oracle_verb`. The value is a **Vec** of
+    /// [`EffectCell`]s (`us-effectmap`, note 205 §3): a verb may gate several cells.
+    /// The `selector` (`#installed`/`#fresh`/`#enabled`/`#active`) is the per-entity
+    /// facet the spike-2 re-key added (`an-per-entity-selector`, `notes/193` §4):
+    /// `enable` and `start` target *different* selectors on the same `service` cell,
+    /// so neither discharges the other. A **verbless** provider (`useradd`,
+    /// `command -v`) keys on the ε-verb ([`empty_verb`]) — the check binds no verb,
+    /// so the wiring looks up `(provider, ε)` (202 §2 / task-W §4).
+    effects: BTreeMap<(ProviderId, Symbol), Vec<EffectCell>>,
 }
 
 impl KindIndex {
@@ -100,6 +127,10 @@ impl KindIndex {
     }
 
     /// Record that `provider verb …` has `polarity` on `kind`'s `selector` cell.
+    /// Returns `Some(EffectConflict)` if a cell on the **same** `(provider, verb,
+    /// selector)` was already declared — first-writer-wins, the duplicate is
+    /// dropped, and the caller diagnoses (`us-effectmap`, note 205 §3). A *different*
+    /// selector for the same verb is appended (the legitimate multi-cell case).
     pub fn add_effect(
         &mut self,
         provider: ProviderId,
@@ -107,9 +138,21 @@ impl KindIndex {
         kind: KindId,
         selector: SelectorId,
         polarity: Polarity,
-    ) {
-        self.effects
-            .insert((provider, verb), (kind, selector, polarity));
+    ) -> Option<EffectConflict> {
+        let cells = self.effects.entry((provider, verb)).or_default();
+        if cells.iter().any(|c| c.selector == selector) {
+            return Some(EffectConflict {
+                provider,
+                verb,
+                selector,
+            });
+        }
+        cells.push(EffectCell {
+            kind,
+            selector,
+            polarity,
+        });
+        None
     }
 
     /// The read-only probe for `kind`, if any oracle declared one.
@@ -118,22 +161,33 @@ impl KindIndex {
         self.probes.get(&kind)
     }
 
-    /// What a book's `provider verb …` does, if any oracle declared it: which
-    /// `kind`, which `selector` cell, and the `polarity`. `None` means "no oracle
-    /// knows this" → the consumer treats the command as ⊤ (run).
+    /// The declared effect cells of a book's `provider verb …`, if any oracle
+    /// declared it (the empty slice when not). Each cell is one `(kind, selector,
+    /// polarity)` the verb gates; the wiring treats each as written. A verbless
+    /// command keys on `(provider, ε)` ([`empty_verb`]). An empty result means "no
+    /// oracle knows this" → the consumer treats the command as ⊤ (run).
     #[must_use]
-    pub fn effect_of(
-        &self,
-        provider: ProviderId,
-        verb: Symbol,
-    ) -> Option<(KindId, SelectorId, Polarity)> {
-        self.effects.get(&(provider, verb)).copied()
+    pub fn effect_of(&self, provider: ProviderId, verb: Symbol) -> &[EffectCell] {
+        self.effects
+            .get(&(provider, verb))
+            .map_or(&[], Vec::as_slice)
     }
 
     #[must_use]
     pub fn is_empty(&self) -> bool {
         self.probes.is_empty() && self.effects.is_empty()
     }
+}
+
+/// The ε-verb symbol: the effect-map key for a **verbless** provider (`useradd
+/// deploy`, `command -v nginx` — the oracle's check binds no verb). Interned as the
+/// empty string, which no real argv verb token can be, so it never collides with a
+/// declared verb. The `oracle_effect` grammar spells it `''` (an empty single-quoted
+/// word; see [`lift_command`]), and the wiring maps a check's `verb: None` to this
+/// same symbol (202 §2 / task-W §4 — one shared spelling, both sides).
+#[must_use]
+pub fn empty_verb(interner: &mut Interner) -> Symbol {
+    interner.intern("")
 }
 
 /// Diagnostic codes the lifter emits (greppable; `ch-catalog`).
@@ -143,6 +197,7 @@ const MISSING_PROBE: DiagCode = DiagCode("oracle-missing-probe");
 const BAD_EFFECT: DiagCode = DiagCode("oracle-bad-effect");
 const TOP_LEVEL_MUTATOR: DiagCode = DiagCode("oracle-top-level-mutator");
 const NON_DECL_CONSTRUCT: DiagCode = DiagCode("oracle-non-declaration");
+const DUPLICATE_EFFECT: DiagCode = DiagCode("oracle-duplicate-effect");
 
 /// Lift a set of oracle sh sources into the kind index, interning kind/provider/
 /// verb names through the shared `interner` (so they match the names the book
@@ -175,12 +230,38 @@ pub fn lift(interner: &mut Interner, oracle_sources: &[&str]) -> Carrier<KindInd
 /// until the whole file is scanned.
 fn lift_one(interner: &mut Interner, src: &str, out: &mut Carrier<KindIndex>) {
     let parsed = dorc_syntax::parse(src);
-    out.diags.extend(parsed.diags);
     let ast = &parsed.value;
 
     let NodeKind::Script { items } = &ast.node(ast.root()).kind else {
         return; // parse() always roots a Script; defensive only.
     };
+
+    // A `<provider>__check` funcdef body is the COMMAND-KEYED dialect (203 §4) — NOT
+    // book sh — so the book parser legitimately ⊤-rejects its `while`/`case`. Those
+    // funcdefs are `check::lift_checks`' domain, not this lifter's (we ignore them
+    // below), so suppress parse diagnostics whose span falls inside one: surfacing
+    // them would falsely flag a well-formed oracle file (the `__check` bodies are
+    // owned by a different front-end). A parse error OUTSIDE a `__check` body still
+    // surfaces (it is real book-level malformedness).
+    let check_spans: Vec<Span> = items
+        .iter()
+        .filter_map(|&item| match &ast.node(item).kind {
+            NodeKind::FuncDef { name, .. } if name.ends_with("__check") => {
+                Some(ast.node(item).span)
+            }
+            _ => None,
+        })
+        .collect();
+    let inside_check = |span: Span| {
+        check_spans
+            .iter()
+            .any(|cs| span.lo.0 >= cs.lo.0 && span.hi.0 <= cs.hi.0)
+    };
+    out.diags
+        .extend(parsed.diags.into_iter().filter(|d| match d.span {
+            Some(s) => !inside_check(s),
+            None => true,
+        }));
 
     // Scan pass: gather the kind anchor, probe bodies (by name suffix), and raw
     // effect tuples. Binding to a `KindId` is deferred to a second pass because
@@ -304,7 +385,10 @@ fn lift_command<'a>(
     // `oracle_effect <provider> <verb> <polarity> <selector>` — exactly four
     // literal args. The 4th (selector) is the spike-2 re-key's per-entity facet
     // (`ch-shape-anno` / `an-per-entity-selector`): which cell of the kind this
-    // verb gates (`#installed`, `#fresh`, `#enabled`, `#active`).
+    // verb gates (`#installed`, `#fresh`, `#enabled`, `#active`). A **verbless**
+    // provider (`useradd`, `command -v`) spells `<verb>` as `''` (an empty
+    // single-quoted word) — it interns to the ε-verb ([`empty_verb`]), the key the
+    // wiring uses when a check binds no verb (202 §2 / task-W §4).
     let literal_args: Option<Vec<&str>> =
         words[1..].iter().map(|&w| word_literal(ast, w)).collect();
     let Some([provider, verb, polarity, selector]) = literal_args.as_deref() else {
@@ -386,13 +470,27 @@ fn bind(
     }
 
     for eff in effects {
-        out.value.add_effect(
-            ProviderId(interner.intern(eff.provider)),
-            interner.intern(eff.verb),
-            kind,
-            SelectorId(interner.intern(eff.selector)),
-            eff.polarity,
-        );
+        let provider = ProviderId(interner.intern(eff.provider));
+        let verb = interner.intern(eff.verb);
+        let selector = SelectorId(interner.intern(eff.selector));
+        if let Some(_conflict) = out
+            .value
+            .add_effect(provider, verb, kind, selector, eff.polarity)
+        {
+            // us-effectmap (note 205 §3): a second oracle_effect on the SAME
+            // (provider, verb, selector) cell is a footgun — loud diagnostic,
+            // first-writer-wins. A different selector for the same verb is the
+            // legitimate multi-cell case and is NOT diagnosed.
+            out.push(Diagnostic::error(
+                DUPLICATE_EFFECT,
+                None,
+                format!(
+                    "duplicate oracle_effect for (`{}`, verb=`{}`) on selector `{}` \
+                     — first declaration wins, this one is dropped",
+                    eff.provider, eff.verb, eff.selector
+                ),
+            ));
+        }
     }
 }
 
@@ -429,7 +527,13 @@ mod tests {
         provider: &str,
         verb: &str,
     ) -> Option<(KindId, SelectorId, Polarity)> {
-        idx.effect_of(ProviderId(i.intern(provider)), i.intern(verb))
+        // The index now holds a Vec of cells per (provider, verb) (`us-effectmap`);
+        // these tests model single-cell verbs, so project the sole cell to the old
+        // tuple shape. A genuine multi-cell verb is exercised by `multi_cell_verb_*`.
+        match idx.effect_of(ProviderId(i.intern(provider)), i.intern(verb)) {
+            [] => None,
+            [cell, ..] => Some((cell.kind, cell.selector, cell.polarity)),
+        }
     }
 
     #[test]
@@ -450,12 +554,16 @@ mod tests {
 
         assert_eq!(
             idx.effect_of(apt, install),
-            Some((package, installed, Polarity::Establish))
+            &[EffectCell {
+                kind: package,
+                selector: installed,
+                polarity: Polarity::Establish
+            }]
         );
         assert!(idx.probe_for(package).is_some());
-        // An unknown (provider, verb) is None ⇒ consumer must run it (⊤), never skip.
+        // An unknown (provider, verb) is the empty slice ⇒ consumer must run it (⊤).
         let purge = interner.intern("purge");
-        assert_eq!(idx.effect_of(apt, purge), None);
+        assert!(idx.effect_of(apt, purge).is_empty());
     }
 
     #[test]
@@ -625,6 +733,98 @@ mod tests {
         assert_eq!(
             effect(&out.value, &mut i, "yum", "install"),
             Some((package, installed, Polarity::Establish))
+        );
+    }
+
+    #[test]
+    fn duplicate_effect_same_cell_is_diagnosed_first_wins() {
+        // us-effectmap (note 205 §3): a SECOND oracle_effect on the same (provider,
+        // verb, selector) cell is a silent-clobber footgun. Now it is a loud
+        // DUPLICATE_EFFECT diagnostic and first-writer-wins (the duplicate is dropped).
+        // Here `install` is declared establish then (contradictorily) kill on the SAME
+        // #installed cell; the establish wins, the kill is dropped + diagnosed.
+        let mut i = Interner::default();
+        let src = "oracle_kind=package\noracle_probe_package() { :; }\n\
+                   oracle_effect apt-get install establish installed\n\
+                   oracle_effect apt-get install kill installed\n";
+        let out = lift(&mut i, &[src]);
+        assert_eq!(
+            out.diags
+                .iter()
+                .filter(|d| d.code == DUPLICATE_EFFECT)
+                .count(),
+            1,
+            "the duplicate same-cell effect must be diagnosed: {:?}",
+            out.diags
+        );
+        let package = KindId(i.intern("package"));
+        let installed = SelectorId(i.intern("installed"));
+        assert_eq!(
+            effect(&out.value, &mut i, "apt-get", "install"),
+            Some((package, installed, Polarity::Establish)),
+            "first-writer-wins: the establish survives, the kill is dropped"
+        );
+        // Only ONE cell recorded (the duplicate did not append).
+        assert_eq!(
+            out.value
+                .effect_of(ProviderId(i.intern("apt-get")), i.intern("install"))
+                .len(),
+            1
+        );
+    }
+
+    #[test]
+    fn multi_cell_verb_different_selectors_both_recorded() {
+        // us-effectmap (note 205 §3): a verb gating TWO DIFFERENT selectors of its
+        // kind is legitimate (NOT a duplicate) — both cells are recorded, no
+        // diagnostic. (A hypothetical `apt-get purge` that kills #installed AND dirties
+        // a #config cell.) The wiring treats each cell as written.
+        let mut i = Interner::default();
+        let src = "oracle_kind=package\noracle_probe_package() { :; }\n\
+                   oracle_effect apt-get purge kill installed\n\
+                   oracle_effect apt-get purge kill configured\n";
+        let out = lift(&mut i, &[src]);
+        assert!(
+            !out.diags.iter().any(|d| d.code == DUPLICATE_EFFECT),
+            "distinct selectors for one verb are NOT a duplicate: {:?}",
+            out.diags
+        );
+        let cells = out
+            .value
+            .effect_of(ProviderId(i.intern("apt-get")), i.intern("purge"));
+        assert_eq!(cells.len(), 2, "both selector cells recorded: {cells:?}");
+        let selectors: Vec<_> = cells.iter().map(|c| c.selector).collect();
+        assert!(selectors.contains(&SelectorId(i.intern("installed"))));
+        assert!(selectors.contains(&SelectorId(i.intern("configured"))));
+    }
+
+    #[test]
+    fn empty_verb_spelling_keys_the_epsilon_verb() {
+        // task-W §4: a verbless provider (`useradd`, `command -v`) spells its
+        // oracle_effect verb as `''` (empty single-quoted) ⇒ it interns to the ε-verb
+        // (`empty_verb`), the key the wiring uses for a check that binds no verb. Pin
+        // that the `''` spelling lands on exactly that key (not on a literal "''").
+        let mut i = Interner::default();
+        let src = "oracle_kind=user\noracle_probe_user() { :; }\n\
+                   oracle_effect useradd '' establish present\n";
+        let out = lift(&mut i, &[src]);
+        assert!(
+            !out.has_errors(),
+            "the '' (ε-verb) spelling must lift cleanly: {:?}",
+            out.diags
+        );
+        let user = KindId(i.intern("user"));
+        let present = SelectorId(i.intern("present"));
+        let eps = empty_verb(&mut i);
+        let cells = out.value.effect_of(ProviderId(i.intern("useradd")), eps);
+        assert_eq!(
+            cells,
+            &[EffectCell {
+                kind: user,
+                selector: present,
+                polarity: Polarity::Establish
+            }],
+            "the verbless effect keys on the ε-verb: {cells:?}"
         );
     }
 }

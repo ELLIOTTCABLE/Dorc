@@ -2,8 +2,13 @@
 //! skip decision consumes (this module decides *nothing* itself; it classifies).
 //!
 //! Two steps (note 163 §2):
-//! 1. **effect lookup** — for each `Command` node, ask the oracle index what its
-//!    `(provider, verb, entity)` does (`Establishes`/`Kills` a fact, or `Opaque`).
+//! 1. **effect resolution** — for each `Command` node, thread the book's
+//!    flow-resolved argv (`analysis::value::ValueFlow`) through the oracle's own
+//!    `check()` (`oracle::check::evaluate`) to its inline kind-annotation, then key
+//!    the resulting `(verb, entity, kind)` into the oracle effect-map for the
+//!    `(selector, polarity)` cells (`Establishes`/`Kills`, or `Opaque` on any ⊤).
+//!    The engine parses NO argv itself — *identity is declared, never inferred*
+//!    (`inv-referent-agnostic`); the old engine-side flag-strip stand-in is gone.
 //! 2. **ambient gate** — a forward reaching-definitions pass over the mutated
 //!    facts: a fact is *ambient* at a command iff NO upstream in-script command
 //!    mutated it (so the host's resting state is authoritative and we may probe
@@ -20,9 +25,12 @@
 use crate::cfg::{Cfg, CfgNodeId, CfgNodeKind};
 use crate::lattice::Lattice;
 use crate::solve::{Direction, Graph, solve};
-use dorc_core::{AstId, EntityRef, Interner, OpaqueToken, ProviderId};
-use dorc_oracle::{KindIndex, Polarity};
-use dorc_syntax::ast::{Ast, NodeKind, WordPart};
+use crate::value::{ValueFlow, ValueOf};
+use dorc_core::{
+    Carrier, DiagCode, Diagnostic, EntityRef, Interner, KindId, OpaqueToken, ProviderId,
+};
+use dorc_oracle::check::{self, CheckSet, ResolvedEntity};
+use dorc_oracle::{EffectCell, KindIndex, Polarity, empty_verb};
 use std::collections::BTreeSet;
 
 /// The dataflow fact-key the engine reaches over. **Re-exported from `core`**
@@ -44,133 +52,175 @@ pub enum CommandEffect {
     Establishes(FactKey),
     /// Kills `fact` (`apt-get purge nginx`).
     Kills(FactKey),
-    /// ⊤: cannot characterize — no oracle entry, dynamic command word/verb, or an
-    /// ambiguous entity. Conservatively MAY mutate anything (so it poisons
-    /// downstream ambient-ness) and itself must run.
+    /// ⊤: cannot characterize — a ⊤ argv word, no provider/check, an `evaluate`
+    /// `Top`, or no effect-map entry for the resolved verb. Conservatively MAY mutate
+    /// anything (so it poisons downstream ambient-ness) and itself must run
+    /// (`inv-top-reject`).
     Opaque,
 }
 
-/// The single literal text of a Word node, if it is exactly one literal fragment.
-/// The *only* statically-trusted case (`haz-unquoted`): a `may_split` word has
-/// unknown arity/targets and is never treated as a fixed token.
-fn word_literal(ast: &Ast, w: AstId) -> Option<&str> {
-    match &ast.node(w).kind {
-        NodeKind::Word { parts } => match parts.as_slice() {
-            [WordPart::Literal(s) | WordPart::SingleQuoted(s)] => Some(s.as_str()),
-            _ => None,
-        },
-        _ => None,
+/// Diagnostic code for a kind-disagreement between a check's annotation and the
+/// effect-map (`ch-catalog`; 204 §6 open seam).
+const KIND_DISAGREEMENT: DiagCode = DiagCode("effect-kind-disagreement");
+
+/// Determine a `Command` node's effect cells from the book's resolved argv + the
+/// oracle's own `check()` (the real entity-resolution mechanism; replaces the deleted
+/// engine-side argparse stand-in). The engine parses NOTHING: it threads the
+/// flow-resolved argv through the oracle's argparse (`check::evaluate`) and reads
+/// the inline kind-annotation. *Identity is declared, never inferred* — true in
+/// code now (`inv-referent-agnostic`).
+///
+/// Returns a `Vec` of cells (a multi-cell verb is legal — `us-effectmap`); each is
+/// `Establishes`/`Kills`. ANY ⊤ — a ⊤ argv word, no provider, no check, an
+/// `evaluate` `Top`, or no effect-map entry — yields `[Opaque]` (`inv-top-reject`:
+/// the degrade is the floor; both `kFAIL` directions). A bare assignment yields
+/// `[Pure]`.
+///
+/// `inv-superposition`: the cells are phase-/orientation-agnostic facts; this
+/// classifies, it decides nothing. Diagnostics (kind-disagreement) accumulate in
+/// `diags`.
+pub fn command_effect(
+    idx: &KindIndex,
+    checks: &[CheckSet],
+    argv: &[ValueOf],
+    interner: &mut Interner,
+    diags: &mut Vec<Diagnostic>,
+) -> Vec<CommandEffect> {
+    // A bare assignment-only command (`pkg=nginx`) has an empty argv ⇒ no
+    // system-state effect (value::analyze yields `[]` for words.is_empty()).
+    let Some(&word0) = argv.first() else {
+        return vec![CommandEffect::Pure];
+    };
+    // The command word must be a concrete literal; a ⊤ word (`"$dyn" install …`) is
+    // an un-modeled command ⇒ Opaque (`inv-top-reject`).
+    let ValueOf::Literal(provider_sym) = word0 else {
+        return vec![CommandEffect::Opaque];
+    };
+    let provider_str = interner.resolve(provider_sym).to_owned();
+    // Target-state-pure shell builtins (shell-env/stdout/control only, never an
+    // oracle-modeled fact) are Pure, not Opaque, so they do NOT poison downstream
+    // ambient-ness (fs-4 / spec_set_e; note 16G §4 B). Anything not listed stays
+    // Opaque (the safe over-refusing direction).
+    if is_target_state_pure_builtin(&provider_str) {
+        return vec![CommandEffect::Pure];
     }
+    // The provider symbol: the book's command word through the SHARED hyphen↔underscore
+    // convention (`check::map_provider_name`) — so it equals the `CheckSet` key and
+    // `KindIndex`'s `ProviderId` (204 §6 seam #2). The book word is already hyphenated
+    // (`apt-get`), so the map is a no-op here, but routing through the one helper keeps
+    // the vocabularies welded.
+    let provider = ProviderId(interner.intern(&check::map_provider_name(&provider_str)));
+
+    // The trailing args (command word excluded — C-1) must ALL be concrete literals
+    // to run the check (202 §1 fully-concrete-argv scope). A ⊤ hole ⇒ unresolved site
+    // ⇒ Opaque (runs). Collect the resolved text, holding it so `&str` slices borrow
+    // it for `evaluate`.
+    let mut arg_texts: Vec<String> = Vec::with_capacity(argv.len().saturating_sub(1));
+    for word in &argv[1..] {
+        match word {
+            ValueOf::Literal(s) => arg_texts.push(interner.resolve(*s).to_owned()),
+            ValueOf::Top => return vec![CommandEffect::Opaque], // ⊤ arg ⇒ unresolved
+        }
+    }
+    let arg_refs: Vec<&str> = arg_texts.iter().map(String::as_str).collect();
+
+    // Run the oracle's own argparse. Multiple oracle files may each declare a check
+    // for this provider (`apt-get` install/purge in one file, `apt-get update` in
+    // another — different kinds, different authors); try each and take the FIRST that
+    // resolves concretely. A check that does not handle this verb falls through to its
+    // own `Top` (no annotation reached / positional past end), so the partition is
+    // clean for the corpus. (tc-*: if two checks both resolve, first-in-file-order
+    // wins — flagged; no corpus case is ambiguous.) The `CheckSet` key is the same
+    // provider symbol (interning is idempotent; `ProviderId` wraps it).
+    let resolved = checks
+        .iter()
+        .filter_map(|cs| cs.get(provider.0))
+        .find_map(|c| match check::evaluate(c, &arg_refs) {
+            check::Resolution::Resolved(r) => Some(r),
+            check::Resolution::Top(_) => None,
+        });
+    let Some(resolved) = resolved else {
+        // No check resolved this site (no check for the provider, or every candidate
+        // degraded to ⊤). ⊤ ⇒ Opaque (`inv-top-reject`). We do NOT fall back to a
+        // verb-by-position lookup — that was the deleted engine-side argparse sin.
+        return vec![CommandEffect::Opaque];
+    };
+
+    // The verb key: the check's derived verb, or the ε-verb when the check binds none
+    // (`useradd`, `command -v` — 202 §2 / task-W §4). `evaluate`'s verb is compared
+    // against the effect-map's verb through the SAME `Interner` (204 seam #2).
+    let verb_key = match &resolved.verb {
+        Some(v) => interner.intern(v),
+        None => empty_verb(interner),
+    };
+    let cells = idx.effect_of(provider, verb_key);
+    if cells.is_empty() {
+        // The check resolved an identity, but no oracle declared an effect for this
+        // (provider, verb). Not this analysis's concern ⇒ ⊤ (runs). (A read-only Query
+        // guard lands here today; its fold is task-D, 202 §2.)
+        return vec![CommandEffect::Opaque];
+    }
+
+    // The cell's kind comes from the annotation (the declared identity, 204 §6); the
+    // effect-map supplies selector + polarity per (provider, verb). Kind-agreement
+    // (204 open seam): if a cell's effect-map kind disagrees with the annotation kind,
+    // diagnose and let the ANNOTATION win (the effect-map row is re-keyed under it).
+    let annotation_kind = KindId(interner.intern(&resolved.kind));
+    let entity = match &resolved.entity {
+        ResolvedEntity::Operand(text) => EntityRef::Operand(OpaqueToken(interner.intern(text))),
+        ResolvedEntity::Singleton => EntityRef::Singleton,
+    };
+    // `EffectCell` is `Copy` and `cells` borrows `idx` (disjoint from `&mut interner`),
+    // so iterate by copy — `cell_effect` takes `&mut interner` for the kind-agreement
+    // diagnostic without conflicting with the `idx` borrow.
+    cells
+        .iter()
+        .copied()
+        .map(|cell| {
+            cell_effect(
+                cell,
+                annotation_kind,
+                &resolved.kind,
+                entity,
+                interner,
+                diags,
+            )
+        })
+        .collect()
 }
 
-/// Determine a `Command` node's effect from the oracle index. ⊤-conservative
-/// (`Opaque`) on ANY uncertainty: dynamic command word/verb, no oracle entry, a
-/// non-literal operand, or more than one non-flag operand.
-///
-/// The provider, verb, and operand are each a ⊤-source: a non-literal one forces
-/// `Opaque` (`inv-top-reject`). Entity resolution — nullary `Singleton` vs one
-/// `Operand` vs ⊤ — is [`resolve_entity`], concentrated there so a ⊤ operand can
-/// never silently become a known cell (strain-8; the K1 inline `filter_map` let it).
-///
-/// The crude flag-strip ("operand = a literal not starting with `-`") is a known
-/// coarse spot (note 162 O-3/O-4): sound (errs to `Opaque`/`Singleton`) but
-/// value-eroding, and it mis-handles pre-verb flags (`apt-get -t x install …`) and
-/// attached values (`-oKey=Val`). Precise per-provider flag grammars are deferred.
-pub fn command_effect(
-    ast: &Ast,
-    idx: &KindIndex,
+/// Build one [`CommandEffect`] from a declared [`EffectCell`] under the resolved
+/// (annotation-kind, entity). Enforces the kind-agreement rule (204 §6): the
+/// annotation is the declared identity, so on a mismatch the cell is re-keyed under
+/// the annotation kind and a warning is recorded.
+fn cell_effect(
+    cell: EffectCell,
+    annotation_kind: KindId,
+    annotation_kind_str: &str,
+    entity: EntityRef,
     interner: &mut Interner,
-    simple: AstId,
+    diags: &mut Vec<Diagnostic>,
 ) -> CommandEffect {
-    let NodeKind::Simple { words, .. } = &ast.node(simple).kind else {
-        return CommandEffect::Opaque;
-    };
-    // A bare assignment (no command word) has no modeled system-state effect.
-    let Some(&first) = words.first() else {
-        return CommandEffect::Pure;
-    };
-    let Some(provider_s) = word_literal(ast, first) else {
-        return CommandEffect::Opaque; // dynamic command name
-    };
-    // Target-state-pure shell builtins (they touch shell-env / stdout / control
-    // only, never an oracle-modeled system-state fact) are Pure, not Opaque — so
-    // they do NOT poison downstream ambient-ness (fs-4 / spec_set_e; note 16G §4 B).
-    // The poison is broader than `set -e` (every un-oracled token poisons); blessing
-    // the common pure builtins recovers the common case, and anything not on the
-    // list stays Opaque — the safe, over-refusing direction. (`echo`/`printf` stdout
-    // is the observable-liveness gate's concern, not a system-state effect.)
-    if is_target_state_pure_builtin(provider_s) {
-        return CommandEffect::Pure;
+    if cell.kind != annotation_kind {
+        let em_kind = interner.resolve(cell.kind.0).to_owned();
+        diags.push(Diagnostic::warning(
+            KIND_DISAGREEMENT,
+            None,
+            format!(
+                "check annotation kind `{annotation_kind_str}` disagrees with the effect-map \
+                 kind `{em_kind}` for this verb — the annotation (declared identity) wins"
+            ),
+        ));
     }
-    let provider = ProviderId(interner.intern(provider_s));
-    // find-3 STAND-IN: `verb = word-1` assumes a `provider verb operand` shape; `useradd
-    // deploy` mis-reads verb=`deploy`. The real verb comes from the oracle's argparse, not
-    // position (see the STAND-IN block on `resolve_entity`). Temporary — no value-plane.
-    let Some(verb_s) = words.get(1).and_then(|&w| word_literal(ast, w)) else {
-        return CommandEffect::Opaque; // no static verb ⇒ no effect to look up
-    };
-    let verb = interner.intern(verb_s);
-    let Some((kind, selector, polarity)) = idx.effect_of(provider, verb) else {
-        return CommandEffect::Opaque; // unknown (provider, verb)
-    };
-    // Resolve the operand cell ⊤-contagiously (strain-8): an operand the analyzer
-    // cannot resolve is an *unknown* cell, so it can never collapse into the kind's
-    // `Singleton` — it forces `Opaque ⇒ run`. This mirrors the verb/provider
-    // ⊤-guards above; `resolve_entity` concentrates `inv-top-reject` at the entity
-    // boundary (where the old inline `filter_map` let a ⊤ leak).
-    let Some(entity) = resolve_entity(ast, &words[2..], interner) else {
-        return CommandEffect::Opaque; // a non-literal operand, or more than one ⇒ ⊤
-    };
     let fact = FactKey {
-        kind,
+        kind: annotation_kind, // the annotation wins (declared identity)
         entity,
-        selector,
+        selector: cell.selector,
     };
-    match polarity {
+    match cell.polarity {
         Polarity::Establish => CommandEffect::Establishes(fact),
         Polarity::Kill => CommandEffect::Kills(fact),
     }
-}
-
-/// ⚠ **find-3 STAND-IN** — temporary; here ONLY because this spike has no value-plane.
-/// This engine-side entity inference (the flag-strip + one-operand rule below, and
-/// `verb = word-1` in [`command_effect`]) breaks the welded *identity is **declared,
-/// never inferred*** (SF-1 / `an-entity-uniqueness` / `17N F3`) and `inv-referent-agnostic`
-/// (the engine reading argument *structure*). The settled mechanism (`ch-shape-anno`): an
-/// oracle writes a mini-argparse in our **constrained** oracle-contract dialect (NOT
-/// arbitrary sh) and inline-annotates the operand's kind (`pkg : com.debian.apt.Package =
-/// "$1"`); the engine FLOW-TRACKS the book's constant *through that argparse* to the
-/// annotation — zero argparse in the engine. Unbuilt here: no value-plane (`16C`) +
-/// detached oracle bodies (`seam-interproc`). Until then this crude inference stands and
-/// every cell it mints is identity-taint-suspect (`tc-taint`, `notes/19G`).
-///
-/// Resolve the post-verb words to the entity a [`FactKey`] needs, or `None` if the
-/// operand shape is ⊤ (unknown) ⇒ the caller emits `Opaque`. The entity boundary's
-/// `inv-top-reject` enforcement, concentrated in one reviewable + unit-testable place
-/// (strain-8): the classification is **total** — every word is a flag, a literal
-/// operand, or a ⊤ (non-literal) — and ⊤ is **contagious**, so an operand the analyzer
-/// cannot resolve forces `None` and can never silently collapse into the kind's
-/// `Singleton` cell (the priority-1 wrong-elision the inline `filter_map` allowed).
-///
-/// * no non-flag operand at all (`apt-get update`, or only flags) ⇒ `Singleton`;
-/// * exactly one literal non-flag operand ⇒ `Operand`;
-/// * a non-literal operand (`install $PKG`), or more than one ⇒ `None` (⊤).
-fn resolve_entity(ast: &Ast, post_verb: &[AstId], interner: &mut Interner) -> Option<EntityRef> {
-    let mut operand: Option<&str> = None;
-    for &w in post_verb {
-        match word_literal(ast, w) {
-            Some(lit) if lit.starts_with('-') => {} // a flag — not part of the entity
-            Some(lit) => match operand {
-                None => operand = Some(lit), // the first literal operand
-                Some(_) => return None,      // a second ⇒ multi-entity ⊤
-            },
-            None => return None, // a non-literal operand (`$dyn`) ⇒ unknown cell ⇒ ⊤
-        }
-    }
-    Some(match operand {
-        Some(lit) => EntityRef::Operand(OpaqueToken(interner.intern(lit))),
-        None => EntityRef::Singleton, // genuinely nullary: no operand survived, no ⊤ leaked
-    })
 }
 
 /// Shell builtins with no *target-system* (location-3) effect: they change shell
@@ -291,43 +341,57 @@ fn reachable_from_entry(cfg: &Cfg) -> Vec<bool> {
     seen
 }
 
-/// Classify every `Command` node for the skip decision: look up each command's
-/// effect, then a forward reaching-defs pass tells us, per establishing command,
-/// whether its fact is ambient. An establish is only offered as
-/// `EstablishAmbient` when its reaching-context is *trustworthy* — reachable from
-/// entry AND under a converged solve; otherwise it folds to the safe `MustRun`
-/// (find-A/find-B). Deterministic; never panics.
+/// Classify every `Command` node for the skip decision: resolve each command's
+/// effect cells (through the book's value-flow [`ValueFlow`] + the oracle's own
+/// `check()`), then a forward reaching-defs pass tells us, per establishing command,
+/// whether its fact is ambient. An establish is only offered as `EstablishAmbient`
+/// when its reaching-context is *trustworthy* — reachable from entry AND under a
+/// converged solve; otherwise it folds to the safe `MustRun` (find-A/find-B).
+///
+/// `value` is the book-side value-flow (`analysis::value::analyze`, the caller
+/// threads it); `checks` are the per-oracle-file `CheckSet`s (the engine parses no
+/// argv itself — `inv-referent-agnostic`). Returns a [`Carrier`] so kind-disagreement
+/// warnings (204 §6) surface. Deterministic; never panics (`inv-no-throw`).
 #[must_use]
 pub fn classify(
     cfg: &Cfg,
-    ast: &Ast,
+    value: &ValueFlow,
     idx: &KindIndex,
+    checks: &[CheckSet],
     interner: &mut Interner,
-) -> Vec<(CfgNodeId, SkipClass)> {
+) -> Carrier<Vec<(CfgNodeId, SkipClass)>> {
     let n = cfg.node_count();
-    // Precompute each node's effect once (interning happens here, with &mut).
-    let effects: Vec<CommandEffect> = (0..n)
+    let mut diags: Vec<Diagnostic> = Vec::new();
+    // Precompute each node's effect cells once (interning happens here, with &mut).
+    // A multi-cell verb yields several cells; the reaching-defs gen applies each.
+    let effects: Vec<Vec<CommandEffect>> = (0..n)
         .map(|i| {
             let id = CfgNodeId(i as u32);
             match cfg.node(id).kind {
-                CfgNodeKind::Command => command_effect(ast, idx, interner, cfg.node(id).ast),
+                CfgNodeKind::Command => {
+                    let argv = value.argv_values(id);
+                    command_effect(idx, checks, &argv, interner, &mut diags)
+                }
                 // An unmodeled construct may mutate anything ⇒ ⊤.
-                CfgNodeKind::Top => CommandEffect::Opaque,
-                _ => CommandEffect::Pure,
+                CfgNodeKind::Top => vec![CommandEffect::Opaque],
+                _ => vec![CommandEffect::Pure],
             }
         })
         .collect();
 
-    // Forward reaching-defs: out = in ⊔ gen(node).
-    let reach = solve(
-        cfg,
-        Direction::Forward,
-        |i, incoming: &Reach| match &effects[i] {
-            CommandEffect::Establishes(f) | CommandEffect::Kills(f) => incoming.with(*f),
-            CommandEffect::Opaque => incoming.join(&Reach::Top),
-            CommandEffect::Pure => incoming.clone(),
-        },
-    );
+    // Forward reaching-defs: out = in ⊔ gen(node). Each of a node's cells is genned
+    // (a multi-cell verb writes every cell); an Opaque cell joins ⊤.
+    let reach = solve(cfg, Direction::Forward, |i, incoming: &Reach| {
+        let mut state = incoming.clone();
+        for cell in &effects[i] {
+            state = match cell {
+                CommandEffect::Establishes(f) | CommandEffect::Kills(f) => state.with(*f),
+                CommandEffect::Opaque => state.join(&Reach::Top),
+                CommandEffect::Pure => state,
+            };
+        }
+        state
+    });
     debug_assert!(
         reach.converged,
         "reaching-defs must converge (finite fact set)"
@@ -346,7 +410,7 @@ pub fn classify(
     let reachable = reachable_from_entry(cfg);
 
     let mut out = Vec::new();
-    for (i, effect) in effects.iter().enumerate() {
+    for (i, cells) in effects.iter().enumerate() {
         let id = CfgNodeId(i as u32);
         // Only genuinely-runnable command leaves are plan/apply units. A command
         // inside a `$( … )` substitution body is effect-bearing (it stayed in the
@@ -355,11 +419,16 @@ pub fn classify(
         if cfg.node(id).kind != CfgNodeKind::Command || cfg.is_expansion_internal(id) {
             continue;
         }
-        let class = match effect {
+        // The elision candidate is a SINGLE establish cell (the corpus shape). A
+        // multi-cell establish has no single-fact `SkipClass` representation yet, so
+        // it folds to `MustRun` — sound (`kFAIL-perform`: never wrongly elided), the
+        // run-it floor; the reaching-defs above still tracked every cell. (Flagged:
+        // multi-fact elision is unbuilt past `SkipClass`'s single-fact shape.)
+        let class = match cells.as_slice() {
             // Only a reachable establish under a converged solve is reasoned about;
-            // every other case — opaque/pure/kill, an unreachable establish, or a
-            // non-converged solve — folds to MustRun, always the run-it side.
-            CommandEffect::Establishes(f) if trust_reach && reachable[i] => {
+            // every other case — opaque/pure/kill, multi-cell, an unreachable
+            // establish, or a non-converged solve — folds to MustRun.
+            [CommandEffect::Establishes(f)] if trust_reach && reachable[i] => {
                 if reach.states[i].mutated(f) {
                     SkipClass::EstablishWritten(*f)
                 } else {
@@ -370,14 +439,51 @@ pub fn classify(
         };
         out.push((id, class));
     }
-    out
+    Carrier { value: out, diags }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::cfg;
+    use crate::value::analyze;
     use dorc_core::{KindId, SelectorId};
+    use dorc_oracle::check::lift_checks;
+
+    /// The shared corpus-shaped check dialect the classify tests lift: an `apt-get`
+    /// check (flag-strip → verb → per-verb arm: `update` ⇒ a Singleton `package-index`
+    /// annotation; everything else ⇒ a post-verb flag-strip, the single-operand
+    /// `package` annotation, and a `[ "$2" = "" ]` guard that refuses a SECOND operand
+    /// — `install nginx curl` reaches no probe ⇒ Top ⇒ runs), plus a `systemctl` check
+    /// (verb → per-arm probe). Annotation kinds MATCH the effect-map's (`package`,
+    /// `package-index`, `service`) so the kind-agreement rule never fires. The probe
+    /// bodies are inert placeholders (this round resolves identity only).
+    ///
+    /// Lifted with the CALLER's interner (`i`), so the [`CheckSet`]'s provider symbol
+    /// equals the one `classify` interns from the book's command word (Symbols only
+    /// compare across one interner — 204 seam #2).
+    const CORPUS_CHECK_SRC: &str = r#"
+apt_get__check() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   case $verb in
+      update) idx : package-index; probe-fresh ;;
+      *)
+         while [ "${1#-}" != "$1" ]; do shift; done
+         pkg : package = "$1"
+         if [ "$2" = "" ]; then probe-pkg "$pkg"; fi ;;
+   esac
+}
+systemctl__check() {
+   verb=$1; shift
+   svc : service = "$1"
+   case $verb in
+      enable) probe-enabled "$svc" ;;
+      start)  probe-active "$svc" ;;
+      disable) probe-enabled "$svc" ;;
+   esac
+}
+"#;
 
     /// The interned ids a package-fixture test asserts against. Kept together so a
     /// test reads `s.installed` / `s.nginx` instead of re-interning inline.
@@ -427,10 +533,16 @@ mod tests {
         }
     }
 
+    /// Run the full pipeline on `src` (value-flow + the corpus checks + classify) and
+    /// return just the [`SkipClass`]es, in classify order. Everything shares one
+    /// interner so the [`CheckSet`]'s provider symbols match the book's command words.
     fn classify_src(src: &str, interner: &mut Interner, idx: &KindIndex) -> Vec<SkipClass> {
         let parsed = dorc_syntax::parse(src);
         let built = cfg::build(&parsed.value);
-        classify(&built.value, &parsed.value, idx, interner)
+        let value = analyze(&built.value, &parsed.value, interner);
+        let checks = vec![lift_checks(interner, CORPUS_CHECK_SRC).value];
+        classify(&built.value, &value, idx, &checks, interner)
+            .value
             .into_iter()
             .map(|(_, c)| c)
             .collect()
@@ -631,62 +743,122 @@ mod tests {
 
     #[test]
     fn command_effect_resolves_operand_singleton_and_top() {
-        let (mut i, idx, s) = package_setup();
-        let eff = |src: &str, i: &mut Interner| {
+        // Resolve a single-command book through value-flow + the corpus apt check,
+        // returning the node's effect cells. (One command ⇒ one Command node.)
+        fn eff(src: &str, i: &mut Interner, idx: &KindIndex) -> Vec<CommandEffect> {
             let parsed = dorc_syntax::parse(src);
-            // the script's single top-level Simple is item 0 of the Script
-            let NodeKind::Script { items } = &parsed.value.node(parsed.value.root()).kind else {
-                panic!()
+            let built = cfg::build(&parsed.value);
+            let value = analyze(&built.value, &parsed.value, i);
+            let checks = vec![lift_checks(i, CORPUS_CHECK_SRC).value];
+            // A dynamic command word (`$cmd …`) is ⊤-rejected by the parser ⇒ a `Top`
+            // CFG node, not a `Command` — classify treats that as Opaque. Mirror it.
+            let Some(node) = built
+                .value
+                .iter()
+                .find(|(_, n)| n.kind == CfgNodeKind::Command)
+                .map(|(id, _)| id)
+            else {
+                return vec![CommandEffect::Opaque];
             };
-            command_effect(&parsed.value, &idx, i, items[0])
-        };
-        // One operand ⇒ Operand cell; the flag `-y` is stripped.
+            let mut diags = Vec::new();
+            command_effect(idx, &checks, &value.argv_values(node), i, &mut diags)
+        }
+        let (mut i, idx, s) = package_setup();
+        // One operand ⇒ Operand cell; the flag `-y` is post-verb-stripped by the check.
         let nginx_cell = pkg_installed(&mut i, &s, "nginx");
         assert_eq!(
-            eff("apt-get install -y nginx", &mut i),
-            CommandEffect::Establishes(nginx_cell),
-            "flag -y stripped ⇒ Operand(nginx)#installed"
+            eff("apt-get install -y nginx", &mut i, &idx),
+            vec![CommandEffect::Establishes(nginx_cell)],
+            "the check strips the post-verb -y ⇒ Operand(nginx)#installed"
         );
-        // Zero non-flag operands on a MODELED verb ⇒ Singleton (the poison-wall fix);
-        // a flag-only tail is still nullary.
+        // Nullary modeled verb (`update`) ⇒ the check's value-less `package-index`
+        // annotation ⇒ Singleton (the poison-wall fix). A flag-only tail stays nullary
+        // (the `update` arm ignores the trailing `-y`).
         let pkg_index_fresh = CommandEffect::Establishes(FactKey {
             kind: s.package_index,
             entity: EntityRef::Singleton,
             selector: s.fresh,
         });
         assert_eq!(
-            eff("apt-get update", &mut i),
-            pkg_index_fresh,
+            eff("apt-get update", &mut i, &idx),
+            vec![pkg_index_fresh.clone()],
             "nullary modeled verb ⇒ Singleton(package-index#fresh)"
         );
         assert_eq!(
-            eff("apt-get update -y", &mut i),
-            pkg_index_fresh,
+            eff("apt-get update -y", &mut i, &idx),
+            vec![pkg_index_fresh],
             "flag-only tail stays nullary ⇒ Singleton"
         );
-        // strain-8 (adversarial-crosscheck): a present-but-NON-LITERAL operand is an
-        // UNKNOWN cell, NOT the singleton — else `install $PKG` would be wrongly
-        // elidable (a priority-1 wrong-elision regression). It must stay ⊤ ⇒ run.
+        // A non-literal operand (`$PKG` ⇒ ⊤ in value-flow) is an UNKNOWN cell, NOT the
+        // singleton — else `install $PKG` would be wrongly elidable (priority-1
+        // wrong-elision). ⊤ arg ⇒ unresolved site ⇒ Opaque ⇒ run.
         assert_eq!(
-            eff("apt-get install $PKG", &mut i),
-            CommandEffect::Opaque,
+            eff("apt-get install $PKG", &mut i, &idx),
+            vec![CommandEffect::Opaque],
             "non-literal operand ⇒ ⊤, not Singleton"
         );
-        // Still ⊤ on the other ambiguous shapes.
+        // Multi-operand: the single-`$1` check binds nginx, but its `[ "$2" = "" ]`
+        // guard sees the SECOND operand `curl` ⇒ no probe reached ⇒ Top ⇒ Opaque ⇒ run.
+        // This is the check's OWN multi-operand refusal (the oracle's code, not the
+        // engine): a wrong single-entity elision that would silently drop `curl` is
+        // avoided — the safety the deleted engine-side stand-in used to provide.
         assert_eq!(
-            eff("apt-get install nginx curl", &mut i),
-            CommandEffect::Opaque,
-            "multi-entity ⇒ ⊤"
+            eff("apt-get install nginx curl", &mut i, &idx),
+            vec![CommandEffect::Opaque],
+            "second operand ⇒ the check's guard refuses ⇒ ⊤"
         );
+        // Dynamic command name ⇒ ⊤ word0 ⇒ Opaque.
         assert_eq!(
-            eff("$cmd install nginx", &mut i),
-            CommandEffect::Opaque,
+            eff("$cmd install nginx", &mut i, &idx),
+            vec![CommandEffect::Opaque],
             "dynamic command name ⇒ ⊤"
         );
+        // Unknown verb: `autoclean` ⇒ the check's `*` arm reads `$1` (past end ⇒ Top),
+        // and the effect-map has no (apt-get, autoclean) row anyway ⇒ Opaque.
         assert_eq!(
-            eff("apt-get autoclean", &mut i),
-            CommandEffect::Opaque,
+            eff("apt-get autoclean", &mut i, &idx),
+            vec![CommandEffect::Opaque],
             "unknown verb ⇒ ⊤"
+        );
+    }
+
+    #[test]
+    fn multi_operand_is_not_wrongly_elided() {
+        // The kFAIL-perform guard the new check preserves (the deleted stand-in's
+        // multi-operand refusal): `apt-get install nginx curl` must NOT resolve to a single-entity
+        // cell (which could elide, silently dropping curl). It stays MustRun.
+        let (mut i, idx, _s) = package_setup();
+        let classes = classify_src("apt-get install nginx curl", &mut i, &idx);
+        assert_eq!(
+            classes,
+            vec![SkipClass::MustRun],
+            "multi-operand install ⇒ MustRun (no single-entity wrong-elision)"
+        );
+    }
+
+    #[test]
+    fn opaque_var_operand_is_top_when_unresolved_but_resolves_when_flowed() {
+        // The value-plane's reach: a command-prefix/assigned operand. `PKG=nginx;
+        // apt-get install -y "$PKG"` — value-flow resolves `"$PKG"` to nginx, so the
+        // site is fully concrete and the check resolves entity=nginx (EstablishAmbient).
+        // This is the value-flow win the old engine-side stand-in (which saw `"$PKG"`
+        // as a non-literal operand ⇒ Opaque) could not reach. Contrast: an UNASSIGNED
+        // `"$X"` stays ⊤ ⇒ Opaque. (GOLDEN: `exec-opaque-var` flips elsewhere — flagged.)
+        let (mut i, idx, s) = package_setup();
+        // The bare `PKG=nginx` assignment is also a leaf (MustRun); the install is the
+        // one we assert resolved.
+        let flowed = classify_src("PKG=nginx\napt-get install -y \"$PKG\"", &mut i, &idx);
+        assert!(
+            flowed.contains(&SkipClass::EstablishAmbient(pkg_installed(
+                &mut i, &s, "nginx"
+            ))),
+            "value-flow resolves the assigned operand ⇒ the install is identity-resolved: {flowed:?}"
+        );
+        let unresolved = classify_src("apt-get install -y \"$X\"", &mut i, &idx);
+        assert_eq!(
+            unresolved,
+            vec![SkipClass::MustRun],
+            "an unassigned ⊤ operand ⇒ unresolved site ⇒ MustRun"
         );
     }
 }

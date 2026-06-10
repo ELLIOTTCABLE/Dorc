@@ -70,6 +70,32 @@ use dorc_core::{
 use dorc_oracle::{KindIndex, Polarity};
 use dorc_plan::{Disposition, Plan, build_plan};
 
+/// Corpus-shaped apt-get check (flag-strip → verb → single-operand `package`
+/// annotation with a `[ "$2" = "" ]` multi-operand refusal). The matrix only models
+/// install/purge on `package`, so no `update`/Singleton arm is needed. Lifted with
+/// the test's interner so provider symbols match the book's command words.
+const CORPUS_CHECK_SRC: &str = r#"
+apt_get__check() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   pkg : package = "$1"
+   if [ "$2" = "" ]; then probe-pkg "$pkg"; fi
+}
+"#;
+
+/// Run value-flow + the corpus checks + classify, returning the classified leaves.
+fn classify_value(
+    cfg: &dorc_analysis::cfg::Cfg,
+    ast: &dorc_syntax::ast::Ast,
+    idx: &KindIndex,
+    i: &mut Interner,
+) -> Vec<(dorc_analysis::cfg::CfgNodeId, SkipClass)> {
+    let value = dorc_analysis::value::analyze(cfg, ast, i);
+    let checks = vec![dorc_oracle::check::lift_checks(i, CORPUS_CHECK_SRC).value];
+    dorc_analysis::effect::classify(cfg, &value, idx, &checks, i).value
+}
+
 /// The package oracle: `apt-get install ⇒ establishes package`, `apt-get purge ⇒
 /// kills`. Round-20: whether the tool is "idempotent-success" (a converged install
 /// exits 0) no longer matters to these tests — a mutator's rc is ⊤ regardless
@@ -106,7 +132,7 @@ fn plan_for(src: &str, holds: &[(&str, &str)]) -> Plan {
         .collect();
     let parsed = dorc_syntax::parse(src);
     let cfg = dorc_analysis::cfg::build(&parsed.value).value;
-    let classes = dorc_analysis::effect::classify(&cfg, &parsed.value, &idx, &mut i);
+    let classes = classify_value(&cfg, &parsed.value, &idx, &mut i);
     build_plan(src, &parsed.value, &cfg, &classes, move |f| {
         // No rc is ever carried for these mutator facts: `fork-mutator-rc` (adopted,
         // 202 §5) — a mutator's status is ⊤ (`inv-probe-sourced-values`); only the
@@ -316,7 +342,7 @@ fn andor_left_operand_undeclared_rc_runs_kfail_perform() {
     let src = "apt-get install -y nginx || systemctl start nginx\n";
     let parsed = dorc_syntax::parse(src);
     let cfg = dorc_analysis::cfg::build(&parsed.value).value;
-    let classes = dorc_analysis::effect::classify(&cfg, &parsed.value, &idx, &mut i);
+    let classes = classify_value(&cfg, &parsed.value, &idx, &mut i);
     // Converged, but NO rc declared (the real CLI/hostsim default after `19D` — an
     // un-injected rc is ⊤, never a fabricated 0).
     let plan = build_plan(src, &parsed.value, &cfg, &classes, move |f| {
@@ -463,7 +489,7 @@ fn spec_set_e_pure_at_effect_layer_but_c3_status_blocks() {
     let src = "set -e\napt-get install -y nginx\n";
     let parsed = dorc_syntax::parse(src);
     let cfg = dorc_analysis::cfg::build(&parsed.value).value;
-    let classes = dorc_analysis::effect::classify(&cfg, &parsed.value, &idx, &mut i);
+    let classes = classify_value(&cfg, &parsed.value, &idx, &mut i);
     // fs-4: the install is EstablishAmbient (set -e did not poison the effect analysis).
     let install_is_ambient = classes
         .iter()

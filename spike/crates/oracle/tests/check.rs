@@ -13,7 +13,14 @@
 //! `inv-determinism` (pure, ordered).
 
 use dorc_core::Interner;
-use dorc_oracle::check::{Resolution, TopReason, evaluate, lift_checks};
+use dorc_oracle::check::{Resolution, ResolvedEntity, TopReason, evaluate, lift_checks};
+
+/// A resolved operand entity, for terse `assert_eq!(r.entity, operand("nginx"))`.
+/// (The nullary/Singleton form is asserted directly against
+/// [`ResolvedEntity::Singleton`].)
+fn operand(s: &str) -> ResolvedEntity {
+    ResolvedEntity::Operand(s.to_owned())
+}
 
 // =============================================================================
 // Transcribed 19H §2 example bodies (verbatim) and the helpers tests share.
@@ -138,7 +145,8 @@ fn apt_get_book_order_install_y_nginx_binds_the_flag_strain_1() {
     let r = resolved(&res);
     assert_eq!(r.kind, "com.debian.apt.Package");
     assert_eq!(
-        r.entity, "-y",
+        r.entity,
+        operand("-y"),
         "book-order argv: the post-verb `-y` lands in the entity position (strain-1)"
     );
     assert_eq!(r.verb.as_deref(), Some("install"));
@@ -155,7 +163,7 @@ fn apt_get_flag_first_y_install_nginx_binds_nginx() {
     let res = resolve(APT_GET, "apt-get", &["-y", "install", "nginx"]);
     let r = resolved(&res);
     assert_eq!(r.kind, "com.debian.apt.Package");
-    assert_eq!(r.entity, "nginx");
+    assert_eq!(r.entity, operand("nginx"));
     assert_eq!(r.verb.as_deref(), Some("install"));
     assert_eq!(probe_texts(APT_GET, &res), vec![r#"dpkg-query -W "$pkg""#]);
 }
@@ -169,7 +177,7 @@ fn apt_get_pre_verb_flag_with_argument_shift_2() {
     // proving the `shift 2` path consumes the flag-argument exactly as written.
     let res = resolve(APT_GET, "apt-get", &["-t", "exp", "install", "nginx"]);
     let r = resolved(&res);
-    assert_eq!(r.entity, "nginx");
+    assert_eq!(r.entity, operand("nginx"));
     assert_eq!(r.verb.as_deref(), Some("install"));
     assert_eq!(r.kind, "com.debian.apt.Package");
 }
@@ -181,7 +189,7 @@ fn apt_get_multiple_leading_flags() {
     // Asserts the loop iterates correctly more than once on the default arm.
     let res = resolve(APT_GET, "apt-get", &["-y", "-q", "purge", "tree"]);
     let r = resolved(&res);
-    assert_eq!(r.entity, "tree");
+    assert_eq!(r.entity, operand("tree"));
     assert_eq!(r.verb.as_deref(), Some("purge"));
 }
 
@@ -192,7 +200,7 @@ fn apt_get_no_leading_flags() {
     // path.
     let res = resolve(APT_GET, "apt-get", &["install", "nginx"]);
     let r = resolved(&res);
-    assert_eq!(r.entity, "nginx");
+    assert_eq!(r.entity, operand("nginx"));
     assert_eq!(r.verb.as_deref(), Some("install"));
 }
 
@@ -205,7 +213,8 @@ fn apt_get_book_order_install_long_yes_binds_the_flag_strain_1() {
     let res = resolve(APT_GET, "apt-get", &["install", "--yes", "nginx"]);
     let r = resolved(&res);
     assert_eq!(
-        r.entity, "--yes",
+        r.entity,
+        operand("--yes"),
         "book-order post-verb long flag binds (strain-1)"
     );
     assert_eq!(r.verb.as_deref(), Some("install"));
@@ -221,7 +230,7 @@ fn apt_get_long_flag_double_dash_is_stripped_as_written() {
     // ends the loop. entity=nginx, verb=install.
     let res = resolve(APT_GET, "apt-get", &["--yes", "install", "nginx"]);
     let r = resolved(&res);
-    assert_eq!(r.entity, "nginx");
+    assert_eq!(r.entity, operand("nginx"));
     assert_eq!(r.verb.as_deref(), Some("install"));
 }
 
@@ -237,7 +246,7 @@ fn command_v_nginx_resolves_tool_no_verb() {
     let res = resolve(COMMAND, "command", &["-v", "nginx"]);
     let r = resolved(&res);
     assert_eq!(r.kind, "org.freedesktop.Tool");
-    assert_eq!(r.entity, "nginx");
+    assert_eq!(r.entity, operand("nginx"));
     assert_eq!(r.verb, None, "command__check binds no verb");
     assert_eq!(
         probe_texts(COMMAND, &res),
@@ -255,7 +264,7 @@ fn command_v_absent_flag_still_resolves_first_operand() {
     // a legal fall-through), distinct from the apt-get `case` which always has `*`.
     let res = resolve(COMMAND, "command", &["nginx"]);
     let r = resolved(&res);
-    assert_eq!(r.entity, "nginx");
+    assert_eq!(r.entity, operand("nginx"));
     assert_eq!(r.verb, None);
 }
 
@@ -267,18 +276,62 @@ fn command_v_absent_flag_still_resolves_first_operand() {
 fn useradd_deploy_resolves_user_no_verb() {
     // `[deploy]`: there is no flag-strip and no `verb=` — `$1` is the bare first
     // operand and the annotation binds it directly. entity=deploy, NO verb. This is
-    // exactly the shape the find-3 stand-in mis-read (verb=word-1 ⇒ verb=deploy); the
-    // dialect resolves it correctly because the oracle's own code says `$1` is the
-    // User and never binds a verb.
+    // exactly the shape the deleted engine-side stand-in mis-read (verb=word-1 ⇒
+    // verb=deploy); the dialect resolves it correctly because the oracle's own code
+    // says `$1` is the User and never binds a verb.
     let res = resolve(USERADD, "useradd", &["deploy"]);
     let r = resolved(&res);
     assert_eq!(r.kind, "org.openldap.PosixAccount");
-    assert_eq!(r.entity, "deploy");
+    assert_eq!(r.entity, operand("deploy"));
     assert_eq!(
         r.verb, None,
         "useradd binds no verb — absence is first-class"
     );
     assert_eq!(probe_texts(USERADD, &res), vec![r#"getent passwd "$user""#]);
+}
+
+// =============================================================================
+// Nullary / Singleton verb — `apt-get update` (the value-less annotation form).
+// =============================================================================
+
+#[test]
+fn nullary_verb_value_less_annotation_resolves_singleton() {
+    // `apt-get update`: a verb whose resource has NO operand (the package index as a
+    // whole). The check binds `verb=update`, the `case` selects the `update` arm, and
+    // the VALUE-LESS annotation `index : pkgindex` resolves the Singleton entity (no
+    // operand to bind). This is the explicit nullary spelling task-W needs to key the
+    // cell on `EntityRef::Singleton` (preserving `package-index#fresh` semantics).
+    let src = r"
+apt_get__check() {
+   verb=$1
+   case $verb in
+      update) index : pkgindex; test -n fresh ;;
+   esac
+}
+";
+    let res = resolve(src, "apt-get", &["update"]);
+    let r = resolved(&res);
+    assert_eq!(r.kind, "pkgindex");
+    assert_eq!(
+        r.entity,
+        ResolvedEntity::Singleton,
+        "a value-less annotation resolves the Singleton (no-operand) entity"
+    );
+    assert_eq!(r.verb.as_deref(), Some("update"));
+}
+
+#[test]
+fn value_less_annotation_with_equals_is_an_error() {
+    // The nullary form is `name : kind` with NO `=`. A dangling `name : kind =` (an
+    // `=` then no value) is malformed ⇒ a lift diagnostic, not a silent Singleton.
+    // (Keeps the value-less spelling EXPLICIT and unambiguous.)
+    let src = "q__check() { x : pkgindex = ; true; }";
+    let mut interner = Interner::default();
+    let lifted = lift_checks(&mut interner, src);
+    assert!(
+        !lifted.diags.is_empty(),
+        "`name : kind =` with no value must diagnose"
+    );
 }
 
 // =============================================================================
@@ -293,7 +346,7 @@ fn systemctl_enable_selects_is_enabled_probe() {
     let res = resolve(SYSTEMCTL, "systemctl", &["enable", "nginx"]);
     let r = resolved(&res);
     assert_eq!(r.kind, "org.freedesktop.systemd.Unit");
-    assert_eq!(r.entity, "nginx");
+    assert_eq!(r.entity, operand("nginx"));
     assert_eq!(r.verb.as_deref(), Some("enable"));
     assert_eq!(
         probe_texts(SYSTEMCTL, &res),
@@ -309,7 +362,7 @@ fn systemctl_start_selects_is_active_probe() {
     // one the selected path reaches.
     let res = resolve(SYSTEMCTL, "systemctl", &["start", "nginx"]);
     let r = resolved(&res);
-    assert_eq!(r.entity, "nginx");
+    assert_eq!(r.entity, operand("nginx"));
     assert_eq!(r.verb.as_deref(), Some("start"));
     assert_eq!(
         probe_texts(SYSTEMCTL, &res),
@@ -366,7 +419,7 @@ dnf__check() {
         .expect("apt-get check lifted");
     let apt_res = evaluate(apt, &["install", "nginx"]);
     let r_apt = resolved(&apt_res);
-    assert_eq!(r_apt.entity, "nginx");
+    assert_eq!(r_apt.entity, operand("nginx"));
     assert_eq!(r_apt.kind, "com.debian.apt.Package");
 
     // dnf binds the entity to `$2` (not `$1`): `[install, nginx]` ⇒ entity=nginx via
@@ -378,7 +431,11 @@ dnf__check() {
         .expect("dnf check lifted");
     let dnf_res = evaluate(dnf, &["install", "nginx"]);
     let r_dnf = resolved(&dnf_res);
-    assert_eq!(r_dnf.entity, "nginx", "dnf resolves the entity via $2");
+    assert_eq!(
+        r_dnf.entity,
+        operand("nginx"),
+        "dnf resolves the entity via $2"
+    );
     assert_eq!(r_dnf.kind, "com.debian.apt.Package", "same shared kind");
 }
 
@@ -475,7 +532,8 @@ naive__check() {
     let res = resolve(src, "naive", &["-y", "nginx"]);
     let r = resolved(&res);
     assert_eq!(
-        r.entity, "-y",
+        r.entity,
+        operand("-y"),
         "the check never stripped the flag, so $1 is the flag — we run its code as written"
     );
 }
@@ -501,6 +559,36 @@ loopy__check() {
     assert_eq!(res, Resolution::Top(TopReason::BudgetExceeded));
 }
 
+#[test]
+fn test_context_past_end_positional_is_empty_string() {
+    // sh semantics inside `[ … ]`: an unset/past-end positional expands to the empty
+    // string, NOT a degrade. This is load-bearing for the corpus apt check, which uses
+    // (a) a post-verb flag-strip `while [ "${1#-}" != "$1" ]` that must TERMINATE when
+    // the argv is exhausted, and (b) a single-operand guard `[ "$2" = "" ]` that gates
+    // the probe (so `install nginx curl` — a SECOND operand — reaches no probe ⇒ Top ⇒
+    // runs, never a wrong single-entity elision). Here: a check whose `if [ "$2" = "" ]`
+    // gates the probe resolves `[nginx]` (one operand, `$2` empty ⇒ probe runs) but
+    // degrades `[nginx, curl]` (a second operand ⇒ no probe ⇒ NoProbeReached).
+    let src = r#"
+pkgone__check() {
+   pkg : package = "$1"
+   if [ "$2" = "" ]; then probe "$pkg"; fi
+}
+"#;
+    let one = resolve(src, "pkgone", &["nginx"]);
+    assert_eq!(
+        resolved(&one).entity,
+        operand("nginx"),
+        "one operand: `$2` is empty (sh) ⇒ the guard passes ⇒ probe reached ⇒ Resolved"
+    );
+    let two = resolve(src, "pkgone", &["nginx", "curl"]);
+    assert_eq!(
+        two,
+        Resolution::Top(TopReason::NoProbeReached),
+        "a SECOND operand ⇒ `[ \"$2\" = \"\" ]` false ⇒ no probe ⇒ Top (the multi-operand refusal)"
+    );
+}
+
 // =============================================================================
 // Quoting — `"$1"` vs `$1` vs `'$1'` in the annotation value-position.
 // =============================================================================
@@ -511,7 +599,7 @@ fn double_quoted_positional_is_a_positional() {
     // exercised by every §2 example; pinned here in isolation for the quoting matrix.
     let src = r#"q__check() { x : K = "$1"; true; }"#;
     let res = resolve(src, "q", &["nginx"]);
-    assert_eq!(resolved(&res).entity, "nginx");
+    assert_eq!(resolved(&res).entity, operand("nginx"));
 }
 
 #[test]
@@ -521,7 +609,7 @@ fn bare_unquoted_positional_is_a_positional() {
     // a single concrete argv element. The dialect treats `$1` and `"$1"` the same.)
     let src = "q__check() { x : K = $1; true; }";
     let res = resolve(src, "q", &["nginx"]);
-    assert_eq!(resolved(&res).entity, "nginx");
+    assert_eq!(resolved(&res).entity, operand("nginx"));
 }
 
 #[test]
@@ -534,7 +622,7 @@ fn single_quoted_dollar_one_is_a_literal_not_a_positional() {
     let res = resolve(src, "q", &["nginx"]);
     assert_eq!(
         resolved(&res).entity,
-        "$1",
+        operand("$1"),
         "single-quoted '$1' is the literal dollar-one string, not the positional"
     );
 }

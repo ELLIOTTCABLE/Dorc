@@ -4,3 +4,11 @@
 oracle_kind=pkgindex
 oracle_probe_pkgindex() { test -n "$(find /var/lib/apt/lists/ -maxdepth 1 -newermt '-1 hour' 2>/dev/null)"; }
 oracle_effect apt-get update establish fresh
+# command-keyed check(): `apt-get update` is a NULLARY verb (no operand) — the
+# value-less annotation `idx : pkgindex` resolves the Singleton cell (task-W §4).
+apt_get__check() {
+   verb=$1; shift
+   case $verb in
+      update) idx : pkgindex; test -n fresh ;;
+   esac
+}

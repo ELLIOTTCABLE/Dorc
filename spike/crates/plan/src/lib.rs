@@ -893,6 +893,25 @@ mod tests {
     use dorc_core::{Interner, KindId, OpaqueToken, ProviderId, SelectorId};
     use dorc_oracle::{KindIndex, Polarity};
 
+    /// Corpus-shaped check dialect for the pipeline tests: the `apt-get` check
+    /// (flag-strip → verb → `update` Singleton arm `package-index`; else single-operand
+    /// `package` with a `[ "$2" = "" ]` multi-operand refusal). Annotation kinds match
+    /// the effect-map's, so the kind-agreement rule never fires. Lifted with the test's
+    /// interner so provider symbols match the book's command words (204 seam #2).
+    const CORPUS_CHECK_SRC: &str = r#"
+apt_get__check() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   case $verb in
+      update) idx : package-index; probe-fresh ;;
+      *)
+         while [ "${1#-}" != "$1" ]; do shift; done
+         pkg : package = "$1"
+         if [ "$2" = "" ]; then probe-pkg "$pkg"; fi ;;
+   esac
+}
+"#;
+
     /// `package:nginx#installed` — the cell `apt-get install nginx` gates. The
     /// re-key (`notes/193`) made the entity an [`EntityRef`] and added a selector.
     fn nginx_fact() -> FactKey {
@@ -1308,20 +1327,18 @@ mod tests {
         };
         let parsed = dorc_syntax::parse(src);
         let cfg = dorc_analysis::cfg::build(&parsed.value).value;
-        let classes = dorc_analysis::effect::classify(&cfg, &parsed.value, &idx, &mut i);
+        let value = dorc_analysis::value::analyze(&cfg, &parsed.value, &mut i);
+        let checks = vec![dorc_oracle::check::lift_checks(&mut i, CORPUS_CHECK_SRC).value];
+        let classes = dorc_analysis::effect::classify(&cfg, &value, &idx, &checks, &mut i).value;
         let plan = build_plan(src, &parsed.value, &cfg, &classes, |f| {
-            // Converged ⇒ conforming rc 0 (the package oracle is idempotent-success);
-            // every other fact Unknown / no-rc. The fold is exercised by the dedicated
-            // fold tests; these legacy cases isolate convergence-elision.
+            // fork-mutator-rc (202 §5 / 206 §3): a MUTATOR's status has no sanctioned
+            // source — only its Effect channel (convergence) arrives from the probe, the
+            // rc is ⊤. So `verdict_only` everywhere, never a fabricated `Rc(0)`. The
+            // earlier `Rc(0)` masked C-3: under `set -e` the install's status is consumed
+            // (AndOrStatus), and a declared rc-0 would relax-and-elide it; with the
+            // faithful ⊤-rc it correctly RUNS (see `residual_poison_sources_isolated`).
             if f == target {
-                Observable {
-                    effect: nginx_verdict,
-                    status: if nginx_verdict == Verdict::Converged {
-                        Predicted::Value(Rc(0))
-                    } else {
-                        Predicted::Top
-                    },
-                }
+                Observable::verdict_only(nginx_verdict)
             } else {
                 Observable::verdict_only(Verdict::Unknown)
             }
@@ -1437,10 +1454,35 @@ mod tests {
             ambient("apt-get update\napt-get install -y nginx\n"),
             "no poison ⇒ elides"
         );
-        // `set -e` is a pure builtin (fs-4 fix) — it must NOT count as a poison source.
+        // `set -e` is a pure builtin (fs-4) — it must NOT POISON (the install stays
+        // EstablishAmbient at the EFFECT layer). But under C-3 (205 §2 / 206 §3),
+        // `set -e` CONSUMES the install's status, which for a mutator is ⊤
+        // (fork-mutator-rc), so the plan disposition is now Run — NOT elided. The old
+        // `ambient(set -e …)` assert masked C-3 by feeding a fabricated rc-0 through
+        // `plan_for`; with the faithful ⊤-rc the install RUNS. Pin the EFFECT-layer
+        // non-poison (classify EstablishAmbient) directly, separate from the plan-level
+        // status block.
+        {
+            let mut i = Interner::default();
+            let idx = package_index(&mut i);
+            let src = "set -e\napt-get update\napt-get install -y nginx\n";
+            let parsed = dorc_syntax::parse(src);
+            let cfg = dorc_analysis::cfg::build(&parsed.value).value;
+            let value = dorc_analysis::value::analyze(&cfg, &parsed.value, &mut i);
+            let checks = vec![dorc_oracle::check::lift_checks(&mut i, CORPUS_CHECK_SRC).value];
+            let classes =
+                dorc_analysis::effect::classify(&cfg, &value, &idx, &checks, &mut i).value;
+            assert!(
+                classes
+                    .iter()
+                    .any(|(_, c)| matches!(c, SkipClass::EstablishAmbient(_))),
+                "fs-4: set -e does not poison ⇒ the install stays EstablishAmbient: {classes:?}"
+            );
+        }
+        // …but at the PLAN level the C-3 ⊤-rc status block makes it RUN (206 §3).
         assert!(
-            ambient("set -e\napt-get update\napt-get install -y nginx\n"),
-            "set -e is pure ⇒ still elides"
+            !ambient("set -e\napt-get update\napt-get install -y nginx\n"),
+            "C-3 (206 §3): set -e consumes the mutator's ⊤-rc status ⇒ the install RUNS"
         );
         // Each real upstream Opaque neighbour, alone, poisons (no elision).
         assert!(
@@ -1515,7 +1557,9 @@ mod tests {
         let src = "{ apt-get install -y nginx; } > /tmp/out\napt-get install -y curl\n";
         let parsed = dorc_syntax::parse(src);
         let cfg = dorc_analysis::cfg::build(&parsed.value).value;
-        let classes = dorc_analysis::effect::classify(&cfg, &parsed.value, &idx, &mut i);
+        let value = dorc_analysis::value::analyze(&cfg, &parsed.value, &mut i);
+        let checks = vec![dorc_oracle::check::lift_checks(&mut i, CORPUS_CHECK_SRC).value];
+        let classes = dorc_analysis::effect::classify(&cfg, &value, &idx, &checks, &mut i).value;
         assert!(!classes.is_empty(), "fixture has classify leaves");
         let (mut marked, mut quiet) = (0, 0);
         for (node, _) in &classes {
