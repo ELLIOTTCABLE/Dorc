@@ -348,8 +348,14 @@ impl<'a> Prep<'a> {
     }
 
     /// Resolve one command-site's argv. When `!converged`, the whole site is all-`⊤` (`16P`
-    /// DP-9). Command-prefix assignments (`FOO=bar cmd "$FOO"`) are applied **transiently**
-    /// so the command's own argv sees them, even though they do not persist downstream.
+    /// DP-9). Command-prefix assignments (`FOO=bar cmd "$FOO"`) are NOT visible to the
+    /// command's own argv: POSIX §2.9.1 expands the non-assignment words FIRST (step 2) and
+    /// performs the assignments after (step 4), so `"$FOO"` reads the *incoming* binding.
+    /// (Round-20 crosscheck finding: the original transient application here resolved
+    /// `pkg=nginx; pkg=apache apt-get install "$pkg"` to `apache` while dash passes `nginx` —
+    /// a wrong concrete that licensed a wrong elision end-to-end. Argv resolves against
+    /// `incoming` only; the prefix bindings affect the command's ENVIRONMENT, which we do not
+    /// model, and correctly never persist downstream — see `transfer_command`.)
     fn site_argv(&self, id: CfgNodeId, states: &[ValueEnv], converged: bool) -> Vec<Abstract> {
         let NodeKind::Simple { words, .. } = &self.ast.node(self.cfg.node(id).ast).kind else {
             return Vec::new();
@@ -360,13 +366,9 @@ impl<'a> Prep<'a> {
         let Some(incoming) = states.get(id.index()) else {
             return vec![Abstract::Top; words.len()];
         };
-        let mut env = incoming.clone();
-        if let Some(list) = self.assigns.get(&self.cfg.node(id).ast) {
-            apply_assigns(list, &mut env); // transient prefix bindings for THIS argv
-        }
         words
             .iter()
-            .map(|&w| resolve_recipe(&recipe_of_word(self.ast, w), &env))
+            .map(|&w| resolve_recipe(&recipe_of_word(self.ast, w), incoming))
             .collect()
     }
 }
@@ -937,12 +939,23 @@ mod tests {
     // ---- command-scoped env prefix (FOO=bar cmd) -----------------------------------------
 
     #[test]
-    fn command_prefix_assignment_visible_in_own_argv() {
-        // `FOO=bar cmd "$FOO"`: the command-scoped prefix IS visible to the command's own
-        // argv ⇒ [cmd, bar]. (The prefix is applied transiently at the site.)
+    fn command_prefix_assignment_not_visible_in_own_argv() {
+        // POSIX §2.9.1: argv words expand BEFORE prefix assignments take effect, so
+        // `FOO=bar cmd "$FOO"` passes FOO's *prior* binding (here: none ⇒ ⊤-conservative;
+        // dash passes empty). The original transient-visibility behavior here was a wrong
+        // concrete (round-20 adversarial crosscheck, priority-1: `pkg=nginx; pkg=apache
+        // apt-get install "$pkg"` resolved `apache`, dash passes `nginx`, and the wrong
+        // entity licensed a wrong elision end-to-end).
         assert_eq!(
             argv_of(r#"FOO=bar cmd "$FOO""#, "cmd"),
-            vec![lit("cmd"), lit("bar")]
+            vec![lit("cmd"), Word::Top],
+            "a prefix binding must not be read by the same command's own argv"
+        );
+        // The concrete-vs-concrete disagreement case: the PRIOR binding wins.
+        assert_eq!(
+            argv_of("pkg=nginx\npkg=apache cmd \"$pkg\"", "cmd"),
+            vec![lit("cmd"), lit("nginx")],
+            "argv reads the incoming env: dash expands words before the prefix assignment"
         );
     }
 

@@ -189,4 +189,10 @@ pub enum Word {
     /// per sh single-quote semantics. Kept separate from [`Literal`](Word::Literal)
     /// only for clarity at the parse boundary; evaluates identically to a literal.
     SingleQuotedLiteral(String),
+    /// A parameter-expansion form the dialect does not model (`${x:-y}`, a globby
+    /// or `##` prefix-strip, …). MUST fail to resolve in EVERY position — value,
+    /// annotation, and `[ ]` test alike. (Round-20 crosscheck: routing these to
+    /// [`Literal`](Word::Literal) made a test compare the literal `${1#*=}` text —
+    /// a wrong concrete vs dash's glob semantics. Unmodeled ⇒ Top, never a value.)
+    Unmodeled(String),
 }

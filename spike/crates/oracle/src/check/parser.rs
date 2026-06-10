@@ -809,10 +809,18 @@ fn parse_word_lexeme(lexeme: &str, single_quoted: bool, interner: &mut Interner)
     if single_quoted {
         return Word::SingleQuotedLiteral(lexeme.to_owned());
     }
-    // `${N#PREFIX}` — positional with a leading literal prefix stripped.
+    // `${N#PREFIX}` — positional with a leading LITERAL prefix stripped. dash treats the
+    // prefix as a GLOB pattern (fnmatch, shortest match), and `${N##…}` as longest-match;
+    // our evaluator does a literal strip only. A globby prefix (`${1#*=}`) or the `##` form
+    // (which `split_once('#')` would mangle into a prefix starting with `#`) therefore
+    // diverges from dash — a wrong CONCRETE, the disaster class (round-20 crosscheck
+    // finding 2). Both fall through to the unmodeled-literal path ⇒ the evaluator fails to
+    // resolve ⇒ Top — symmetric with `parse_pattern`'s glob rejection, the safe direction.
     if let Some(inner) = lexeme.strip_prefix("${").and_then(|s| s.strip_suffix('}')) {
         if let Some((digits, prefix)) = inner.split_once('#')
             && let Ok(n) = digits.parse::<u32>()
+            && !prefix.starts_with('#')
+            && !prefix.contains(['*', '?', '['])
         {
             return Word::PositionalStripPrefix {
                 n,
@@ -823,10 +831,11 @@ fn parse_word_lexeme(lexeme: &str, single_quoted: bool, interner: &mut Interner)
         if is_ident(inner) {
             return Word::Var(interner.intern(inner));
         }
-        // Any other `${…}` parameter expansion is not modeled ⇒ keep as a literal
-        // so the evaluator treats it as a non-positional (it will fail to resolve
-        // to an argv element and the site degrades to Top — the safe direction).
-        return Word::Literal(lexeme.to_owned());
+        // Any other `${…}` parameter expansion is not modeled ⇒ `Unmodeled`, which
+        // fails to resolve in EVERY position (annotation value AND `[ ]` test) ⇒ the
+        // check degrades to Top — the safe direction. (NOT `Literal`: a literal would
+        // *evaluate as its own text* in test-position — a wrong concrete.)
+        return Word::Unmodeled(lexeme.to_owned());
     }
     // `$N` — positional, or `$name` — variable.
     if let Some(rest) = lexeme.strip_prefix('$') {

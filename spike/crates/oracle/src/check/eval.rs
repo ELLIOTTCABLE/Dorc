@@ -336,6 +336,10 @@ impl Evaluator {
                 .get(sym)
                 .cloned()
                 .ok_or(TopReason::NonConcreteWord("unbound variable")),
+            // Unmodeled expansions fail in every position — including `[ ]` tests
+            // (`resolve_in_test` falls through to here): evaluating them as text or
+            // guessing dash's glob semantics would be a wrong concrete.
+            Word::Unmodeled(_) => Err(TopReason::NonConcreteWord("unmodeled parameter expansion")),
         }
     }
 

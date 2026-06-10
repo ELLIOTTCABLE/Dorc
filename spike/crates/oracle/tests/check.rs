@@ -833,3 +833,71 @@ fn provider_name_underscore_maps_to_hyphen() {
         "the underscore form must NOT be the key"
     );
 }
+
+// =============================================================================
+// Round-20 crosscheck finding 2 — globby/longest-match prefix-strips diverge from
+// dash (fnmatch vs literal strip) and must be Unmodeled ⇒ Top in EVERY position.
+// =============================================================================
+
+/// A check whose annotation value uses a GLOB prefix-strip (`${1#*=}` — dash strips
+/// up to the first `=` by fnmatch; a literal strip of `*=` matches nothing).
+const GLOB_ANNO: &str = r#"
+flagged__check() {
+   pkg : package = "${1#*=}"
+   dpkg-query -W "$pkg"
+}
+"#;
+
+/// A check using the `##` longest-match form (`${1##*/}` — dash basename). The
+/// naive `split_once('#')` parse would mangle it into a literal `#*/` strip.
+const HASHHASH_ANNO: &str = r#"
+based__check() {
+   pkg : package = "${1##*/}"
+   dpkg-query -W "$pkg"
+}
+"#;
+
+/// A check whose `[ ]` TEST uses a globby strip — the position where a Literal
+/// fallback would have silently compared the raw `${1#*=}` text (wrong concrete).
+const GLOB_TEST: &str = r#"
+globtest__check() {
+   while [ "${1#-*}" != "$1" ]; do shift; done
+   pkg : package = "$1"
+   dpkg-query -W "$pkg"
+}
+"#;
+
+#[test]
+fn glob_prefix_strip_in_annotation_is_top() {
+    // dash: `--pkg=nginx` ⇒ `${1#*=}` ⇒ `nginx`. A literal strip would keep
+    // `--pkg=nginx` — a wrong concrete entity. The dialect must refuse: Top.
+    let res = resolve(GLOB_ANNO, "flagged", &["--pkg=nginx"]);
+    assert!(
+        matches!(res, Resolution::Top(_)),
+        "a globby `${{N#pat}}` must be Unmodeled ⇒ Top, got {res:?}"
+    );
+}
+
+#[test]
+fn hashhash_longest_match_strip_is_top() {
+    // dash: `/usr/bin/dpkg` ⇒ `${1##*/}` ⇒ `dpkg`. The mangled-literal parse kept
+    // the path unchanged — a wrong concrete. Must be Top.
+    let res = resolve(HASHHASH_ANNO, "based", &["/usr/bin/dpkg"]);
+    assert!(
+        matches!(res, Resolution::Top(_)),
+        "`${{N##pat}}` longest-match is out of dialect ⇒ Top, got {res:?}"
+    );
+}
+
+#[test]
+fn glob_prefix_strip_in_test_position_is_top() {
+    // The sharper pole: in `[ ]`-test position a Literal fallback would COMPARE the
+    // raw `${1#-*}` text against `$1` (a concrete comparison dash disagrees with)
+    // and the loop would mis-decide. Unmodeled fails the test resolution ⇒ the
+    // whole check degrades to Top — never a wrong branch decision.
+    let res = resolve(GLOB_TEST, "globtest", &["-y", "nginx"]);
+    assert!(
+        matches!(res, Resolution::Top(_)),
+        "a globby strip in test-position must degrade the check to Top, got {res:?}"
+    );
+}
