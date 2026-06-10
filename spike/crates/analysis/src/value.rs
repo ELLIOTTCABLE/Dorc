@@ -749,14 +749,21 @@ impl<'a> Prep<'a> {
                     None => true,
                 }
             }),
-            // `getopts optstring name …` writes `name` (operand 1) plus OPTIND/OPTARG.
+            // `getopts optstring name …` writes `name` (operand 1) plus, always,
+            // OPTIND/OPTARG; a dynamic `name` operand may write anything ⇒ conservative.
             "getopts" => {
-                operands
-                    .get(1)
-                    .and_then(|&w| literal_text(self.ast, w))
-                    .as_deref()
-                    == Some(var)
+                var == "OPTIND"
+                    || var == "OPTARG"
+                    || match operands.get(1) {
+                        Some(&w) => literal_text(self.ast, w).is_none_or(|name| name == var),
+                        None => false,
+                    }
             }
+            // `cd` rebinds `$PWD`/`$OLDPWD` (POSIX `cd` step 10). It stays blessed-pure
+            // on the fact-cell axis (establishes nothing), but it IS a var-writer: the
+            // L2-crosscheck's find-cd-pwd drove `for PWD in …; do cd /tmp; install
+            // "$PWD"` to a wrong elision through exactly this gap (20T).
+            "cd" => var == "PWD" || var == "OLDPWD",
             _ => false,
         }
     }
@@ -1904,6 +1911,59 @@ mod tests {
             ),
             None,
             "a body reassignment of the for-var degrades Members to None (the ⊤ fallback)"
+        );
+    }
+
+    #[test]
+    fn members_for_pwd_with_cd_in_body_degrades_to_none() {
+        // find-cd-pwd (L2-crosscheck, 20T): `cd` rebinds `$PWD`, so a `for PWD in …` body
+        // containing `cd` does NOT carry the head's member at the install site — dash
+        // installs `/tmp`, not `aaa`/`bbb`. Pre-fix this elided wrongly (kFAIL-perform
+        // violation); the eligibility degrade is the fix surface.
+        assert_eq!(
+            member_argv_of(
+                r#"for PWD in aaa bbb; do cd /tmp; apt-get install "$PWD"; done"#,
+                "apt-get"
+            ),
+            None,
+            "cd's implicit $PWD write makes a for-PWD loop member-ineligible"
+        );
+        // The same loop WITHOUT a cd keeps Members: dash iterates PWD=aaa, PWD=bbb
+        // faithfully (PWD is an ordinary assignable var until something rebinds it).
+        assert_eq!(
+            member_argv_of(
+                r#"for PWD in aaa bbb; do apt-get install "$PWD"; done"#,
+                "apt-get"
+            ),
+            Some(vec![
+                vec![lit("apt-get"), lit("install"), lit("aaa")],
+                vec![lit("apt-get"), lit("install"), lit("bbb")],
+            ]),
+            "without cd, a for-PWD loop is an ordinary Members family"
+        );
+    }
+
+    #[test]
+    fn members_getopts_implicit_writes_degrade_to_none() {
+        // Same class as find-cd-pwd: getopts ALWAYS writes OPTIND (and OPTARG on
+        // flag-with-argument), regardless of its named operand.
+        assert_eq!(
+            member_argv_of(
+                r#"for OPTIND in 1 2; do getopts ab f; apt-get install "$OPTIND"; done"#,
+                "apt-get"
+            ),
+            None,
+            "getopts' implicit OPTIND write makes a for-OPTIND loop member-ineligible"
+        );
+        // A dynamic name operand may write anything — conservative degrade (mirrors the
+        // read-family's dynamic-operand arm).
+        assert_eq!(
+            member_argv_of(
+                r#"for p in a b; do getopts ab "$dest"; apt-get install "$p"; done"#,
+                "apt-get"
+            ),
+            None,
+            "a dynamic getopts name operand conservatively counts as writing the for-var"
         );
     }
 
