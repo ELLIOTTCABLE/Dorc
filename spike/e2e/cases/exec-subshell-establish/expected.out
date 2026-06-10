@@ -15,5 +15,4 @@ package_installed__check 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; el
 
 # apt-get install -y vim   # dorc: elided (already converged / dead branch)
 true
-# ( apt-get install -y nginx )   # dorc: elided (already converged / dead branch)
-true
+( true )   # dorc: elided (already converged / dead branch) — substituted in situ (shares line with scaffolding)

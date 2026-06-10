@@ -1332,11 +1332,13 @@ fn scaffolding_boundary_lines(
             }
             // `case`/`esac` opener+closer (span-included); arm interiors are T14's.
             NodeKind::Case { .. } => lines.extend(span_lines(node.span)),
-            // NB `( … )` subshell / `{ …; }` group delimiters are the SAME find-2 class
-            // (`( install\n); run` ⇒ commenting the install eats `(` ⇒ stray `)` ⇒ broken
-            // `dash -n`) but are OUT of task-F2's charter scope (loop/`if`/`case` only) AND
-            // covering them churns the pre-existing `exec-subshell-establish` golden — so
-            // they are FLAGGED (tc-group-closer, `20R` §8), not handled here.
+            // `( … )` subshell / `{ …; }` group delimiters: the SAME find-2 class
+            // (`( install\n); run` ⇒ commenting the install eats `(` ⇒ stray `)` ⇒
+            // broken `dash -n`). tc-group-closer ruled EXTEND (orchestrator, post-20R);
+            // their spans include both delimiters, so opener/closer lines suffice.
+            NodeKind::Subshell { .. } | NodeKind::Group { .. } => {
+                lines.extend(span_lines(node.span));
+            }
             _ => {}
         }
     }

@@ -204,6 +204,13 @@ runs automatically on commit: you MUST run all four gates yourself before
 committing (from `spike/`; `mise x -- typos spike` runs from the worktree
 root). Never `--no-verify` (it's moot, but the discipline stands).
 
+**BLESS is EXCLUSIVE** (strain-F2-bless-contamination, note 20R): `BLESS=1`
+re-blesses ALL cases from whatever `target/debug/dorc` exists at that instant —
+concurrent agents share one `target/`, so a bless during any sibling's
+mid-flight build bakes a buggy binary's output into goldens. Never run BLESS
+while any build-agent is in flight; orchestrator-only, on a freshly-verified
+binary, with the resulting diff inspected case-by-case.
+
 Lint posture: the workspace lint table in `spike/Cargo.toml` is the policy for
 *new* code — do not weaken it. Seeded round-19 crates carry crate-root
 `#![expect(..., reason)]`s; they self-ratchet (an unfulfilled expect warns) —
