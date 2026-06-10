@@ -165,8 +165,16 @@ EOF
     return 1
   fi
   # gate-4: ordered compare (no sort) — the log is in execution order, the golden in
-  # book order; a reorder is a real regression, not noise.
+  # book order; a reorder is a real regression, not noise. EXCEPTION (tc-pipe-ran-order,
+  # 20J strain-P5 / observed ~1-in-15 in 20M): pipeline STAGES run concurrently in sh,
+  # so their log-line order is genuinely nondeterministic — a case whose book pipes
+  # leaves opts into order-insensitive comparison via a `RAN_ORDER=lax` marker file.
+  # Scoped per-case; the welded book-ORDER assertion stays the default everywhere else.
   _want_ran=$(cat "${_dir}expected.ran" 2>/dev/null || true)
+  if [ -f "${_dir}RAN_ORDER=lax" ]; then
+    _got_ran=$(printf '%s\n' "$_got_ran" | LC_ALL=C sort)
+    _want_ran=$(printf '%s\n' "$_want_ran" | LC_ALL=C sort)
+  fi
   if [ "$_got_ran" = "$_want_ran" ]; then
     return 0
   fi
