@@ -3,9 +3,9 @@ Dorc, my "dash orchestrator"
 
 A specification-mining (think TypeScript type-narrowing guards, or OCaml/HM
 type-inference) static-analysis-based orchestrator/system-automation-tool, where
-every element of instruction and config is spelled in pure, idiomatic POSIX-sh.
-Designed for gradual-enhancement and best-effort defensiveness; the tool you use
-when you *want to be lazy*.
+instructions and config can be spelled in pure, idiomatic POSIX-sh. Designed for
+gradual-enhancement and best-effort defensiveness; the tool you use when you
+*want to be lazy*.
 
 Describe a system in shell; apply that description by running the shell.
 (Dotfiles, networks, developer-environments; whatever description you want. If
@@ -14,7 +14,7 @@ it's idempotent, but you're lazy, you probably want Dorc for it.)
 A tool that promises "best effort", not correctness; but also doesn't require
 from *you* correctness, and accepts *your* "best effort."
 
-(This project is my exploration of the feasability of replacing Ansible with,
+(This project is my exploration of the feasibility of replacing Ansible with,
 well, shell-script (because fuck YAML); while trying to best-effort retain some
 of the soundness and performance gains of the Big Boy orchestrators.)
 
@@ -63,17 +63,25 @@ precise approach.
 ### What this very-isn't
 
 There's many things we're trying very hard *not* to be:
- - the best version of a Dorc-like tool describes the whole world. (Again, if you
-   haven't yet, and you can, please, just go use the *good* tools.) That niche
-   is well-filled, we're not headed there
- - many compilers and much PLT has been spilled around provable, sound
-   cross-network soundness (session-types, etc.) Again, not us. I'll pursue
-   soundness within *very scoped boundaries*; but this tool is going to own and
-   operate in a space that is very under-specified. Chaotic, even. I won't
-   promise things I can't maintain
- - battle-grade, and probably never will be; but, see-num-1; why aren't you
+ - **the best version of an 'orchestrator' tool** ... because the *best version
+   needs to describes the whole world*. (Again, if you haven't yet, and you can,
+   please, just go use the *actually good* tools. Never choose a
+   gradually-enhanced tool for a greenfield project!) That niche is well-filled,
+   we're not headed there.
+ - **provably sound (at the whole-system level.)** We draw strict boundaries
+   around things which will *make* us unsound, and try to make that distinction
+   as clear as possible; and further, we will never *stop* you from doing what
+   you want to get done, in pursuit of soundness (again, go use the better
+   tools!); but we will instead promise soundness *within* only those strict
+   pre-conditions. (Some have called this "soundiness" - [Livshits et al.,
+   2015][soundiness].) This tool aspires to best-effort, best-effect in a *very*
+   chaotic and uneven problem-domain; and I won't have perfection holding it
+   back from that.
+ - **battle-grade,** and probably never will be; but, see-num-1; why aren't you
    using the *correct approach* for that? This is here to help *your* stuff be
    *more* battle-grade; but that by-definition means we're always going to be
    operating on relatively-toy-stuff
 
 (Further elaborated in [./DESIGN.md](DESIGN.md).)
+
+   [soundiness]: <http://soundiness.org/documents/InDefenseOfUnsoundness.pdf> "Livshits et al. (2015). 'In Defense of Soundiness: A Manifesto'. Communications of the ACM. 58. 44-46. 10.1145/2644805."
