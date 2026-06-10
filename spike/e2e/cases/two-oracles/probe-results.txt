@@ -1,2 +1,0 @@
-package:nginx converged
-service:nginx converged

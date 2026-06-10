@@ -1,0 +1,43 @@
+amends "package://github.com/jdx/hk/releases/download/v1.44.3/hk@1.44.3#/Config.pkl"
+
+// Pre-commit `cargo fmt` for the round-19 Rust spike, scoped to spike Rust.
+//
+// Why the spike-prefixed glob: this worktree's `.git` is a pointer into the
+// MAIN repo's gitdir, so `hook.*`/`core.hooksPath` config is SHARED with `main`
+// and every other worktree. Scoping every step to `spike/**/*.rs` makes the
+// shared hook a no-op for non-spike/non-Rust commits (e.g. on `main`), keeping
+// the blast radius minimal. The hook is NOT installed by these files alone;
+// installing it writes shared git config — see the round-19 spike note before
+// running `hk install`.
+//
+// Toolchain note: unlike the human's other Rust repos this does NOT use
+// `cargo +nightly fmt`. The spike pins its toolchain via `spike/mise.toml`'s
+// `[env]` (the self-contained gnu toolchain; this box has no MSVC linker), so
+// plain `cargo fmt` under `mise x` is correct here (spike/CLAUDE.md). The
+// `--manifest-path` lets the step run from the worktree-root repo top-level.
+local linters = new Mapping<String, Step> {
+    ["cargo_fmt"] {
+        glob = "spike/**/*.rs"
+        stage = "spike/**/*.rs"
+        workspace_indicator = "Cargo.toml"
+        // `--all` is required for `cargo fmt` to parse `--manifest-path` here;
+        // without it cargo fmt misreads the args and dumps help (verified).
+        check = "mise x -- cargo fmt --all --manifest-path spike/Cargo.toml --check"
+        fix = "mise x -- cargo fmt --all --manifest-path spike/Cargo.toml"
+    }
+}
+
+hooks {
+    ["pre-commit"] {
+        fix = true
+        stash = "git"
+        steps = linters
+    }
+    ["fix"] {
+        fix = true
+        steps = linters
+    }
+    ["check"] {
+        steps = linters
+    }
+}

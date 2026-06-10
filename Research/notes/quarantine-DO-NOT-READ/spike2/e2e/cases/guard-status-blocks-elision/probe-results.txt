@@ -1,0 +1,2 @@
+tool:nginx#present converged
+package:nginx#installed diverged

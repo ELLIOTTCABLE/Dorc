@@ -1,0 +1,44 @@
+#!/bin/sh
+# dorc probe (read-only): reports per-fact convergence, mutates nothing.
+
+# probe: pkgindex#fresh
+pkgindex__check() { test -n "$(find /var/lib/apt/lists/ -maxdepth 1 -newermt '-1 hour' 2>/dev/null)"; }
+pkgindex__check
+# probe: package:nginx#installed
+package__check() { dpkg-query -W "$1" >/dev/null 2>&1; }
+package__check 'nginx'
+# probe: firewall:80/tcp#allowed
+firewall__check() { ufw status 2>/dev/null | grep -q "$1"; }
+firewall__check '80/tcp'
+# probe: firewall:443/tcp#allowed
+firewall__check '443/tcp'
+# probe: service:nginx#enabled
+service__check() { systemctl is-active --quiet "$1"; }
+service__check 'nginx'
+# probe: service:nginx#active
+service__check 'nginx'
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+#!/bin/sh
+# pi-webhost provisioning (bare-mutation core; the lazy admin lets Dorc do idempotency)
+set -e
+
+# apt-get update   # dorc: elided (already converged / dead branch)
+true
+# apt-get install -y nginx   # dorc: elided (already converged / dead branch)
+true
+
+# ufw allow 80/tcp   # dorc: elided (already converged / dead branch)
+true
+# ufw allow 443/tcp   # dorc: elided (already converged / dead branch)
+true
+
+# systemctl enable nginx   # dorc: elided (already converged / dead branch)
+true
+# systemctl start nginx   # dorc: elided (already converged / dead branch)
+true
+
+nginx -t && systemctl reload nginx
+
+echo "pi-web up"

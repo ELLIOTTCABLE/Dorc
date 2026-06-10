@@ -1,0 +1,10 @@
+#!/bin/sh
+# INERT non-conforming-establish mock: simulates `useradd <name>` when the user
+# ALREADY EXISTS — logs that it ran, mutates NOTHING, then exits NON-ZERO (real
+# useradd's rc 9). The non-zero rc is the premise: because 19D keeps the line verbatim
+# (undeclared rc ⇒ run, no fabricated rc-0 elision), the REAL `useradd` runs and exits
+# 9, so `|| mkdir` fires and `mkdir` runs. Were the engine to wrongly elide `useradd`
+# to a fabricated `true` (the pre-19D bug), the `||` would not fire and `mkdir` would
+# be skipped — the kFAIL-perform under-execute this case guards against.
+printf 'ran: %s %s\n' "${0##*/}" "$*" >>"$DORC_LOG"
+exit 9
