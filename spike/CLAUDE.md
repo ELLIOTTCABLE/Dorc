@@ -153,9 +153,12 @@ Pre-commit gate set (= `mise run check` from the worktree root): `cargo fmt
 `typos`. **Known worktree gotcha:** hk v1.44.3 (libgit2) cannot open this
 repository from inside a `.claude/worktrees/*` checkout (the repo uses
 `extensions.relativeWorktrees`), so the config-based pre-commit hook
-hard-fails before running anything. Until that's resolved: run the four gates
-directly, then commit with the hook's designed bypass (`HK=0` in the
-environment). Never `--no-verify`.
+hard-fails before running anything. Resolution (human-sanctioned, 2026-06-10):
+agent shells carry `HK=0` via `.claude/settings.json` `env`, neutering the
+hook's hk invocation — so the four gates DO NOT run automatically on commit.
+You MUST run them yourself before committing (all four, from `spike/`; or
+`mise run check` from the root if hk works in your context). Never
+`--no-verify`.
 
 Lint posture: the workspace lint table in `spike/Cargo.toml` is the policy for
 *new* code — do not weaken it. Seeded round-19 crates carry crate-root
