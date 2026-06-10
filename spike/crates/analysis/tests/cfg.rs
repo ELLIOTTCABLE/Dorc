@@ -262,11 +262,12 @@ fn fixture_andand_short_circuits() {
 
 #[test]
 fn unsupported_loop_becomes_top_node_with_diagnostic() {
-    // `for i in 1; do x; done` is outside the modeled subset → the parser emits an
+    // task-L1: a literal-list loop now PARSES (no ⊤), but a no-`in` `for` (iterates
+    // runtime "$@") is still outside the subset → the parser emits an
     // `Unsupported{Loop}` node. cfg::build MUST surface a ⊤ CfgNode (never silently
     // skip it — inv-top-reject), carry a diagnostic, and keep the surrounding
     // structure (entry/exit) intact.
-    let parsed = parse("for i in 1; do x; done");
+    let parsed = parse("for x; do x; done");
     let carried = build(&parsed.value);
     let cfg = &carried.value;
 
@@ -297,8 +298,9 @@ fn unsupported_loop_becomes_top_node_with_diagnostic() {
 #[test]
 fn unsupported_in_sequence_keeps_neighbours_live() {
     // A ⊤ in the middle of a sequence must not swallow its neighbours: the
-    // commands before and after it stay present and on the path.
-    let src = "echo before\nfor i in 1; do x; done\necho after";
+    // commands before and after it stay present and on the path. (A no-`in` `for`
+    // still ⊤-rejects post-L1; a literal-list loop would NOT be ⊤ here.)
+    let src = "echo before\nfor x; do x; done\necho after";
     let parsed = parse(src);
     let cfg = build(&parsed.value).value;
     assert_eq!(
@@ -315,6 +317,117 @@ fn unsupported_in_sequence_keeps_neighbours_live() {
         echoes, 2,
         "both echo commands (before and after the ⊤) are present"
     );
+}
+
+// ===========================================================================
+// Loops (task-L1, `209` brk-1): the first REAL cyclic CFG — back-edge present,
+// no subshell scope, body commands are in-loop leaves.
+// ===========================================================================
+
+#[test]
+fn for_loop_lowers_a_back_edge_not_a_top_node() {
+    // The structural heart of L1: a literal-list `for` lowers to a LoopHead with a
+    // genuine BACK-EDGE (body_exit → head) and an exit edge (head → merge) — a cyclic
+    // CFG, NOT a ⊤ node. This is the first real cycle the worklist sees (the dataflow
+    // tests prove it converges; this pins the graph it runs over).
+    let cfg = cfg_of("for f in a b; do echo \"$f\"; done");
+    assert_eq!(
+        count_kind(&cfg, CfgNodeKind::Top),
+        0,
+        "a parsed loop is NOT ⊤"
+    );
+    assert_eq!(count_kind(&cfg, CfgNodeKind::LoopHead), 1, "one loop head");
+
+    let head = require(
+        cfg.iter()
+            .find(|(_, n)| n.kind == CfgNodeKind::LoopHead)
+            .map(|(id, _)| id),
+        "LoopHead present",
+    );
+    let body = require(
+        cfg.iter()
+            .find(|(_, n)| n.kind == CfgNodeKind::Command)
+            .map(|(id, _)| id),
+        "the body `echo` command",
+    );
+    // The back-edge: the head is reachable FROM the body (a cycle), and the body is
+    // reachable from the head — i.e. they are mutually reachable.
+    assert!(reaches(&cfg, head, body), "head reaches the body (enter)");
+    assert!(
+        reaches(&cfg, body, head),
+        "body reaches the head again (THE back-edge — a real cycle)"
+    );
+    // The head also has the exit edge to a merge (ran-zero-times / list-exhausted),
+    // so the post-loop continuation is reachable.
+    assert!(
+        cfg.succ_ids(head)
+            .any(|s| cfg.node(s).kind == CfgNodeKind::Merge),
+        "head has an exit edge to a merge (loop can end / run zero times)"
+    );
+    assert!(
+        consistent(&cfg),
+        "succ/pred stay mutually consistent over the cycle"
+    );
+}
+
+#[test]
+fn while_loop_lowers_condition_region_and_back_edge() {
+    // `while`: a condition region between head and body, plus the back-edge. The
+    // condition command is in-loop and consumes its status at the render floor
+    // (StatusRenderFloor — pinned in the consumed-observable tests); here we pin the
+    // cyclic shape + the body reachability.
+    let src = "while dpkg -s nginx; do apt-get install -y nginx; done";
+    let cfg = cfg_of(src);
+    assert_eq!(
+        count_kind(&cfg, CfgNodeKind::Top),
+        0,
+        "a parsed while is NOT ⊤"
+    );
+    assert_eq!(count_kind(&cfg, CfgNodeKind::LoopHead), 1);
+    let head = require(
+        cfg.iter()
+            .find(|(_, n)| n.kind == CfgNodeKind::LoopHead)
+            .map(|(id, _)| id),
+        "LoopHead",
+    );
+    // The install body command is mutually reachable with the head (back-edge).
+    let install = require(
+        command_nodes_with_literal(&cfg, src, "apt-get")
+            .first()
+            .copied(),
+        "the install body command",
+    );
+    assert!(reaches(&cfg, head, install));
+    assert!(
+        reaches(&cfg, install, head),
+        "the back-edge closes the cycle"
+    );
+    // The condition `dpkg` is also in the cycle (it runs every iteration).
+    let dpkg = require(
+        command_nodes_with_literal(&cfg, src, "dpkg")
+            .first()
+            .copied(),
+        "the while-condition command",
+    );
+    assert!(cfg.in_loop_body(dpkg), "the while condition is in-loop");
+    assert!(consistent(&cfg));
+}
+
+#[test]
+fn loop_body_commands_are_in_loop_post_loop_is_not() {
+    // item-2(d) leaf-seam + item-3 in-loop floor: a body command is an in-loop leaf
+    // (the structural render floor), but a command AFTER the loop is NOT in-loop, so
+    // the value below a converged loop unlocks normally (the brk-1 value-unlock). The
+    // two installs are command-word `apt-get`; exactly one is in-loop (the body) and
+    // one is not (post-loop) — counted via `in_loop_body`.
+    let src = "for f in a b; do apt-get install -y \"$f\"; done\napt-get install -y curl";
+    let cfg = cfg_of(src);
+    let installs = command_nodes_with_literal(&cfg, src, "apt-get");
+    assert_eq!(installs.len(), 2, "two apt-get command leaves");
+    let in_loop = installs.iter().filter(|&&id| cfg.in_loop_body(id)).count();
+    let post_loop = installs.iter().filter(|&&id| !cfg.in_loop_body(id)).count();
+    assert_eq!(in_loop, 1, "exactly the loop-body install is in-loop");
+    assert_eq!(post_loop, 1, "exactly the post-loop install is not in-loop");
 }
 
 // ===========================================================================
@@ -1117,6 +1230,47 @@ fn consumed_errexit_mark_respects_precise_edge_pruning() {
     assert!(
         !c.contains(&Channel::StatusRelaxable),
         "an errexit-exempt if-guard does NOT get the errexit StatusRelaxable mark (precise-edge pruning)"
+    );
+}
+
+#[test]
+fn while_condition_is_render_floor_and_errexit_exempt() {
+    // task-L1 item-2(a)+(b), the dash-fidelity heart of the while loop. Under `set -e`:
+    //   * the CONDITION command (`dpkg -s nginx`) is errexit-EXEMPT (a failing while
+    //     condition does NOT abort — dash: `set -e; while false; do :; done; echo ok`
+    //     prints ok), so it has NO failure→exit edge, and its status is consumed at the
+    //     render FLOOR (`StatusRenderFloor`, like an if-guard — a loop condition is not
+    //     in-situ substitutable); whereas
+    //   * the BODY command (`apt-get install`) is in the errexit region (a failing body
+    //     command DOES abort), so it has a failure-edge AND is `StatusRelaxable`-consumed
+    //     (C-3). The two split exactly as `if`-guard vs errexit-region command do.
+    let src = "set -e\nwhile dpkg -s nginx; do apt-get install -y nginx; done\n";
+    let cond = consumed_of(src, "dpkg");
+    assert!(
+        cond.contains(&Channel::StatusRenderFloor),
+        "the while CONDITION is StatusRenderFloor-consumed (render floor, like if-guard): {cond:?}"
+    );
+    assert!(
+        !cond.contains(&Channel::StatusRelaxable),
+        "the errexit-EXEMPT while condition must NOT pick up the errexit StatusRelaxable mark"
+    );
+    let body = consumed_of(src, "apt-get");
+    assert!(
+        body.contains(&Channel::StatusRelaxable),
+        "the errexit-region BODY command is StatusRelaxable-consumed (C-3): {body:?}"
+    );
+
+    // The failure-edge split, on the same source.
+    let cfg = cfg_of(src);
+    let cond_n = command_nodes_with_literal(&cfg, src, "dpkg")[0];
+    let body_n = command_nodes_with_literal(&cfg, src, "apt-get")[0];
+    assert!(
+        !has_exit_edge(&cfg, cond_n),
+        "the while condition has NO failure→exit edge (errexit-exempt)"
+    );
+    assert!(
+        has_exit_edge(&cfg, body_n),
+        "the errexit-region body command HAS a failure→exit edge (set -e aborts on it)"
     );
 }
 

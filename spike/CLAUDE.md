@@ -121,7 +121,14 @@ and where* (→ `Research/notes/20x-*.md`, append-only), not green tests.
   (`kFAIL-perform`; when unsure, act). The one thing performance never trades.
 - **inv-top-reject** — anything unmodeled collapses to ⊤ and is rejected
   loudly, never silently best-effort'd. Under-modeling is a correctness
-  boundary, not a TODO.
+  boundary, not a TODO. The trigger-set is *fixed in spirit but may shrink as
+  the modeled subset grows*: task-L1 (round-21, `209` brk-1) removed
+  literal-list `for`/`while`/`until` from it (they now parse + lower to a real
+  cyclic CFG); the residual loop ⊤-triggers are the no-`in` `for` (runtime
+  `"$@"`), `break`/`continue` (un-modeled early exit), and a `for`-list word
+  with a command-substitution/arithmetic. Shrinking a trigger is a deliberate
+  design act (the parser is the highest-risk surface — bias every ambiguity to
+  ⊤-reject-with-diagnostic), never an accident.
 - **inv-referent-agnostic** — the engine never decodes an `OpaqueToken`'s text
   to infer meaning; cross-oracle identity binds to a named `KindId`, never a
   shared token.

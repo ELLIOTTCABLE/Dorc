@@ -19,7 +19,12 @@
 
 ## §1 Breaks, ranked by (real-world frequency × elision-value lost)
 
-- **brk-1 · `for x in <literal list>` loops** — the single highest-cost miss. Today:
+- **brk-1 · `for x in <literal list>` loops** — the single highest-cost miss. [L1 LANDED
+  (round-21, task-L1): structure only — `for`/`while`/`until` parse + lower to a real cyclic
+  CFG (back-edge), the for-var binds the *Flat* JOIN of list words (>1 distinct ⇒ ⊤),
+  in-loop leaves are a structural render-floor (MustRun), and a converged install BELOW a
+  pure loop now elides. The PRECISION step below — (b) Powerset loop-domain + member-elision
+  render — is the NEXT slice, not yet built.] Today:
   parser-⊤ ⇒ one opaque box ⇒ havoc + poison; a book installing its package list in a loop is
   invisible. Fix decomposes: (a) parser/CFG models for/while (back-edges — the worklist
   handles cycles by construction, never yet fed one); (b) domain: a flat join (`nginx ⊔

@@ -205,6 +205,23 @@ impl Folder<'_> {
                 // is detached (not on this path) — don't descend (no call modeled).
                 AbstractRc::known(0)
             }
+            NodeKind::ForLoop { body, .. } => {
+                // A loop runs its body an iteration-count the rc-fold cannot know (0..N),
+                // so its construct-status is ⊤ and NO body leaf may be folded dead from
+                // an outside controller (task-L1, `209` brk-1). We descend `live` only to
+                // RECORD each body leaf's node_rc (render/debug symmetry); the in-loop
+                // render-floor in `disposition_for` independently bars eliding any of
+                // them this round, so a per-iteration `&&`/`||` deadness is never minted.
+                let body = *body;
+                let _ = self.eval(body, live);
+                AbstractRc::Top
+            }
+            NodeKind::WhileLoop { cond, body, .. } => {
+                let (cond, body) = (*cond, *body);
+                let _ = self.eval(cond, live);
+                let _ = self.eval(body, live);
+                AbstractRc::Top
+            }
             NodeKind::Unsupported { .. } => {
                 // ⊤ by construction (`inv-top-reject`): an unmodeled construct's status
                 // is unknown ⇒ no fold. Its (dead-or-live) leaves are handled by the
@@ -381,6 +398,16 @@ impl Folder<'_> {
             }
             NodeKind::Subshell { body, .. } | NodeKind::Group { body, .. } => {
                 self.kill_rec(*body, controller);
+            }
+            // A loop inside a dead branch: its body leaves are dead too. (The in-loop
+            // render-floor floors them to Run anyway, so this only keeps `is_dead`/
+            // `node_rc` complete — task-L1.) `for`-words/`while`-cond carry no leaf the
+            // render reasons about here; descend the body.
+            NodeKind::ForLoop { body, .. } => self.kill_rec(*body, controller),
+            NodeKind::WhileLoop { cond, body, .. } => {
+                let (cond, body) = (*cond, *body);
+                self.kill_rec(cond, controller);
+                self.kill_rec(body, controller);
             }
             // funcdef body is detached, words/assigns/redirs/unsupported carry no leaf.
             _ => {}

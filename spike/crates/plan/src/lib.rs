@@ -895,6 +895,18 @@ fn disposition_for(
     ast_id: AstId,
     observed: Option<Observable>,
 ) -> Disposition {
+    // (0) the in-loop render floor (task-L1, `209` brk-1): a leaf inside a loop body or
+    // condition is MustRun this round. The line-granular render cannot elide a SINGLE
+    // iteration (eliding the line removes the command from EVERY iteration), and a
+    // per-iteration `&&`/`||` deadness is likewise not line-expressible — so an in-loop
+    // leaf never mints a `Replace`/`Omit` license. This is the recorded floor the
+    // member-elision slice (`209` brk-1 (b): rewrite the iteration list to the diverged
+    // members) later lifts; POST-loop leaves are NOT in-loop, so the value below a
+    // converged loop unlocks normally (the brk-1 value-unlock).
+    if cfg.in_loop_body(node) {
+        return Disposition::Run;
+    }
+
     // (2) the fold: a provably-dead branch leaf is omitted. Minted ONLY from a known
     // controlling status (`fold` records `dead` only then) — `inv-kfail`. The fold
     // reached the deadness via the controller leaf's AstId; resolve its fact for
@@ -1975,6 +1987,46 @@ apt_get__check() {
                 Disposition::Replace(_, _)
             ),
             "modeled `update` (distinct cell) no longer poisons ⇒ converged install elides"
+        );
+    }
+
+    #[test]
+    fn in_loop_establish_runs_even_when_converged() {
+        // task-L1 in-loop render floor (`209` brk-1): a loop-body establish is MustRun
+        // this round EVEN WHEN the host reports it converged — the line-granular render
+        // cannot elide a single iteration. `for f in nginx; do apt-get install -y "$f";
+        // done` resolves the body install to package:nginx#installed (single-word for),
+        // and a Converged host would normally license a Replace — but the in-loop floor
+        // forces Run. (The post-elision-revives test below proves the floor is in-loop-
+        // scoped, not a blanket regression.)
+        let (plan, _) = plan_for(
+            "for f in nginx; do apt-get install -y \"$f\"; done\n",
+            Verdict::Converged,
+        );
+        assert!(
+            matches!(find(&plan, "apt-get install").disposition, Disposition::Run),
+            "an in-loop establish RUNS despite Converged (the in-loop render floor)"
+        );
+    }
+
+    #[test]
+    fn post_loop_install_elides_below_a_pure_loop() {
+        // THE brk-1 value-unlock at the PLAN layer (the run-set-proven elision the e2e
+        // `loop-post-elision-revives` case witnesses): a converged install BELOW a PURE
+        // loop now ELIDES. Pre-L1 the loop was a ⊤ node whose ⊤-containment + havoc
+        // killed this; with the loop lowered + a pure body, the post-loop install is
+        // EstablishAmbient and Converged ⇒ Replace.
+        let (plan, _) = plan_for(
+            "for f in a b; do echo \"$f\"; done\napt-get install -y nginx\n",
+            Verdict::Converged,
+        );
+        assert!(
+            matches!(
+                find(&plan, "apt-get install").disposition,
+                Disposition::Replace(_, _)
+            ),
+            "a converged install below a pure loop ELIDES (the brk-1 value-unlock): {:?}",
+            find(&plan, "apt-get install").disposition
         );
     }
 

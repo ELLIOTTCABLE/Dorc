@@ -43,7 +43,7 @@ use dorc_syntax::ast::{Ast, NodeKind, WordPart};
 use dorc_syntax::sem::{self, FragClass};
 
 use crate::cfg::{Cfg, CfgNodeId, CfgNodeKind};
-use crate::lattice::{Flat, MapL};
+use crate::lattice::{Flat, Lattice, MapL};
 use crate::solve::{Direction, solve};
 
 /// One resolved word: a statically-known literal string, or `⊤` (unknown).
@@ -266,11 +266,13 @@ impl<'a> Prep<'a> {
                 env
             }
             CfgNodeKind::Command => self.transfer_command(id, incoming),
-            // A ⊤-rejected region (loop, eval, …) is UNPARSED: its body may assign anything,
-            // invisibly — half-modeling it as a no-op is the `DP-8` trap, and a stale literal
-            // surviving past it is a confidently-wrong propagation (the no-floor class,
-            // `19H §1.3`). Havoc every tracked variable; untracked ones are absent-as-⊤
-            // already (`lookup`).
+            // A ⊤-rejected region (`eval`, a no-`in` `for`, `break`/`continue`, …) is
+            // UNPARSED: its body may assign anything, invisibly — half-modeling it as a
+            // no-op is the `DP-8` trap, and a stale literal surviving past it is a
+            // confidently-wrong propagation (the no-floor class, `19H §1.3`). Havoc every
+            // tracked variable; untracked ones are absent-as-⊤ already (`lookup`). NB:
+            // PARSED loops are NOT `Top` (task-L1) — their body is visible, so the
+            // back-edge JOIN (`LoopHead`) does the right thing without this havoc.
             CfgNodeKind::Top => {
                 let mut env = incoming.clone();
                 for v in &self.assigned_vars {
@@ -278,10 +280,48 @@ impl<'a> Prep<'a> {
                 }
                 env
             }
+            // A `for` loop head binds its iteration variable to the JOIN of the list
+            // words at body entry (task-L1, `209` brk-1: Flat — one word ⇒ that literal,
+            // >1 distinct ⇒ ⊤; the Powerset precision is the later member-elision slice).
+            // The binding overwrites whatever the back-edge carried for that var (the
+            // loop var is reset each iteration), and is resolved against `incoming` (the
+            // post-join state, so a body reassignment of a word-referenced var is seen).
+            // A `while`/`until` head binds nothing (no loop var) ⇒ pass-through.
+            CfgNodeKind::LoopHead => self.transfer_loop_head(id, incoming),
             // Merge / Redir / ScopeEnter / Exit carry state through unchanged (they bind no
             // variable in the modeled subset).
             _ => incoming.clone(),
         }
+    }
+
+    /// A `for`-loop [`CfgNodeKind::LoopHead`] transfer (task-L1): bind the iteration
+    /// variable to the JOIN of the list words, resolved against `incoming`. One word
+    /// ⇒ that literal (`for f in nginx` ⇒ `f = nginx`); ≥2 distinct, any ⊤/unresolvable
+    /// word, or an empty list ⇒ `⊤` (the Flat join saturates — `for x in a b` ⇒ `x = ⊤`,
+    /// the Powerset precision deferred to the member-elision slice). A `while`/`until`
+    /// head (or a `for` whose AST we cannot read) binds nothing.
+    fn transfer_loop_head(&self, id: CfgNodeId, incoming: &ValueEnv) -> ValueEnv {
+        let NodeKind::ForLoop { var, words, .. } = &self.ast.node(self.cfg.node(id).ast).kind
+        else {
+            return incoming.clone(); // while/until head: no loop var
+        };
+        // JOIN the resolved words into one Flat. Empty list ⇒ ⊤ (the body's uses see an
+        // unset/0-iteration var; never a stale literal). `Flat::join` saturates two
+        // distinct literals to ⊤ — exactly the >1-element rule.
+        let mut acc = Flat::Bottom;
+        for &w in words {
+            acc = acc.join(&flat_of(&resolve_recipe(
+                &recipe_of_word(self.ast, w),
+                incoming,
+            )));
+        }
+        let bound = match (words.is_empty(), acc) {
+            (true, _) => Flat::Top, // empty list ⇒ ⊤ (cannot enumerate / ran 0 times)
+            (false, f) => f,
+        };
+        let mut env = incoming.clone();
+        env.insert(var.clone(), bound);
+        env
     }
 
     /// A `Command` node's transfer. A bare assignment-only command (`pkg=nginx`, no words)
@@ -982,13 +1022,16 @@ mod tests {
 
     #[test]
     fn top_region_havocs_preassigned_vars() {
-        // gap-3 (crosscheck-surfaced): a ⊤-rejected region's UNPARSED body may reassign
-        // anything. `pkg=nginx; while …; do pkg=evil; done; cmd "$pkg"` — without the
-        // Top-node havoc the stale `nginx` survives the loop: a confidently-wrong value of
-        // exactly the class that wrongly resolves an entity with no floor underneath
-        // (`DP-8` half-modeling; 19H §1.3). The havoc forces ⊤.
+        // gap-3 (crosscheck-surfaced): a STILL-⊤-rejected region's UNPARSED body may
+        // reassign anything. A no-`in` `for` (iterates runtime "$@") is still ⊤ post-L1:
+        // `pkg=nginx; for x; do pkg=evil; done; cmd "$pkg"` — without the Top-node havoc
+        // the stale `nginx` survives the ⊤ region (the `DP-8` half-modeling / no-floor
+        // class, 19H §1.3). The havoc forces ⊤. (A LITERAL-list loop is NOT ⊤ now — its
+        // visible body + back-edge join gives the same ⊤ for a body reassignment, pinned
+        // by `for_loop_body_reassignment_converges_via_back_edge`; this test guards the
+        // residual ⊤-region path that survives L1.)
         assert_eq!(
-            argv_of("pkg=nginx\nwhile c; do pkg=evil; done\ncmd \"$pkg\"", "cmd"),
+            argv_of("pkg=nginx\nfor x; do pkg=evil; done\ncmd \"$pkg\"", "cmd"),
             vec![lit("cmd"), Word::Top],
             "a pre-assigned var must not survive a ⊤-rejected region with its old literal"
         );
@@ -1049,26 +1092,99 @@ mod tests {
         );
     }
 
-    // ---- loops converge to ⊤ (the worklist handles the back-edge) ------------------------
+    // ---- loops: the FIRST real cyclic CFG the worklist sees (task-L1, `209` brk-1) -------
 
     #[test]
-    fn loop_reassignment_converges_to_top() {
-        // `while`/`for` are ⊤-rejected by the parser today, so a real loop body becomes a `Top`
-        // CFG node and the var is never tracked through it. To exercise the *worklist's*
-        // back-edge convergence directly we need a cyclic CFG with a reassignment; the modeled
-        // subset has none (no loops). So this test instead pins the property we CAN observe:
-        // the analysis converges on the loop-shaped fixture, and a var whose value flows into a
-        // ⊤ region is ⊤ afterward. See the report for why a true loop-body reassignment test is
-        // not expressible in the current grammar.
-        let (argv, converged) = argv_and_converged("while c; do pkg=x; done\ncmd \"$pkg\"", "cmd");
-        assert!(
-            converged,
-            "the solve converges on the loop-shaped (⊤-node) CFG"
+    fn for_var_single_literal_word_resolves_precisely() {
+        // The for-variable binds the JOIN of the literal list words at body entry. ONE
+        // word ⇒ that literal (Flat precision): `for f in nginx; do cmd "$f"; done` ⇒ the
+        // in-body `cmd` sees `f = nginx`. This is the precise end of brk-1 (a) before the
+        // Powerset slice; the in-loop floor still RUNS the leaf (plan), but the value plane
+        // resolves it (so its identity/entity is known).
+        assert_eq!(
+            argv_of(r#"for f in nginx; do cmd "$f"; done"#, "cmd"),
+            vec![lit("cmd"), lit("nginx")],
+            "single-word for-list ⇒ the loop var resolves to that literal"
         );
+    }
+
+    #[test]
+    fn for_var_multiple_words_joins_to_top() {
+        // ≥2 distinct list words ⇒ the Flat join saturates ⇒ the for-var is ⊤ (the
+        // Powerset of {a,b} is the deferred member-elision precision, `209` brk-1 (b)).
+        assert_eq!(
+            argv_of(r#"for f in a b; do cmd "$f"; done"#, "cmd"),
+            vec![lit("cmd"), Word::Top],
+            ">1 distinct for-list words ⇒ loop var ⊤ (Flat join saturates)"
+        );
+        // Two IDENTICAL words ⇒ still that literal (the join of Elem(a)⊔Elem(a)=Elem(a)).
+        assert_eq!(
+            argv_of(r#"for f in a a; do cmd "$f"; done"#, "cmd"),
+            vec![lit("cmd"), lit("a")],
+            "repeated identical word ⇒ the literal survives the join"
+        );
+    }
+
+    #[test]
+    fn for_loop_body_reassignment_converges_via_back_edge() {
+        // THE first real cycle: a body reassignment flows back through the back-edge to
+        // the loop head and JOINs there. `pkg=base; for f in a b; do pkg=$f...` — but the
+        // simplest pin: a body var reassigned to the (⊤) loop var, observed AFTER the loop,
+        // is ⊤, AND the solve converges (the worklist's back-edge reaches a fixed point).
+        // This is the property task-A's note flagged as untestable until a real loop existed.
+        let (argv, converged) = argv_and_converged(
+            r#"pkg=base; for f in a b; do pkg="$f"; done; cmd "$pkg""#,
+            "cmd",
+        );
+        assert!(converged, "the worklist converges on the real cyclic CFG");
         assert_eq!(
             argv,
             vec![lit("cmd"), Word::Top],
-            "a var assigned only inside the ⊤-rejected loop body is ⊤ afterward"
+            "pkg joins base (0 iters) with $f (⊤, ≥1 iter) across the back-edge ⇒ ⊤"
+        );
+    }
+
+    #[test]
+    fn while_loop_body_var_is_top_after_loop() {
+        // A `while` head binds no loop var; a body assignment joins with the pre-loop value
+        // across the back-edge. `pkg=base` before, `pkg=x` in the body ⇒ join(base, x) = ⊤
+        // after the loop (ran-0-times keeps base; ran-≥1 sets x). Converges.
+        let (argv, converged) =
+            argv_and_converged("pkg=base\nwhile c; do pkg=x; done\ncmd \"$pkg\"", "cmd");
+        assert!(converged, "the while back-edge converges");
+        assert_eq!(argv, vec![lit("cmd"), Word::Top]);
+    }
+
+    #[test]
+    fn nested_loop_book_converges() {
+        // item-4(c) convergence smoke: a NESTED loop is two back-edges feeding one another;
+        // the monotone worklist over the finite-height Flat domain must still reach a fixed
+        // point (`solve`'s converged flag true). The values saturate to ⊤ (multi-word lists),
+        // but the load-bearing property here is *termination on nested cycles*.
+        let (argv, converged) = argv_and_converged(
+            "for o in a b; do for i in 1 2; do x=\"$o$i\"; done; done\ncmd \"$x\"",
+            "cmd",
+        );
+        assert!(
+            converged,
+            "the solve converges on a NESTED-loop CFG (two back-edges)"
+        );
+        assert_eq!(argv, vec![lit("cmd"), Word::Top]);
+    }
+
+    #[test]
+    fn post_loop_var_unaffected_by_pure_loop_keeps_literal() {
+        // Precision check (the brk-1 value-unlock's value-plane half): a var set BEFORE a
+        // loop whose body does NOT touch it survives the loop with its literal. `pkg=nginx;
+        // for f in a b; do echo "$f"; done; cmd "$pkg"` ⇒ pkg still nginx (the loop's
+        // back-edge join carries pkg=nginx unchanged; only `f` and echo's args move).
+        assert_eq!(
+            argv_of(
+                r#"pkg=nginx; for f in a b; do echo "$f"; done; cmd "$pkg""#,
+                "cmd"
+            ),
+            vec![lit("cmd"), lit("nginx")],
+            "a pre-loop var untouched by the body survives the loop with its literal"
         );
     }
 

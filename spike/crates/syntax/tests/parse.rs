@@ -44,6 +44,8 @@ fn label(ast: &Ast, id: AstId) -> &'static str {
         NodeKind::If { .. } => "If",
         NodeKind::Case { .. } => "Case",
         NodeKind::FuncDef { .. } => "FuncDef",
+        NodeKind::ForLoop { .. } => "ForLoop",
+        NodeKind::WhileLoop { .. } => "WhileLoop",
         NodeKind::Word { .. } => "Word",
         NodeKind::Assign { .. } => "Assign",
         NodeKind::Redir { .. } => "Redir",
@@ -282,6 +284,13 @@ fn totality_hostile_inputs_never_panic() {
         "( ( ( (",                      // unbalanced subshells
         ")))) }}}} ;;;;",               // unbalanced closers
         "for for for do do done done",  // malformed loop
+        "for x in a b",                 // unterminated for (no `do`/`done`)
+        "for x in a b; do echo $x",     // for body, no `done`
+        "while",                        // bare loop keyword at EOF
+        "do echo hi; done",             // `done` without `for`/`while` (misplaced)
+        "until",                        // bare until at EOF
+        "for x in $(",                  // for-list with truncated cmd-subst
+        &"for i in a; do ".repeat(400), // deep loop nesting (stack safety, MAX_DEPTH)
         "a=$(b=$(c=$(echo)))",          // deeply nested subst assigns
         "\\",                           // lone backslash
         "echo \\",                      // trailing backslash
@@ -364,6 +373,16 @@ fn assert_all_ids_resolve(ast: &Ast) {
                 }
             }
             NodeKind::FuncDef { body, .. } => check(*body),
+            NodeKind::ForLoop { words, body, .. } => {
+                for &i in words {
+                    check(i);
+                }
+                check(*body);
+            }
+            NodeKind::WhileLoop { cond, body, .. } => {
+                check(*cond);
+                check(*body);
+            }
             NodeKind::Word { parts } => check_parts(parts, &check),
             NodeKind::Assign { value, .. } => {
                 if let Some(v) = value {
@@ -418,12 +437,112 @@ fn assert_rejects(src: &str, want: UnsupportedReason) {
 }
 
 #[test]
-fn reject_loops_are_unsupported_loop() {
-    // Why: for/while/until are outside the modeled subset; mis-parsing one as a
-    // simple command named "for" would let the analyzer walk a phantom CFG.
-    assert_rejects("for i in 1 2; do echo $i; done", UnsupportedReason::Loop);
-    assert_rejects("while true; do :; done", UnsupportedReason::Loop);
-    assert_rejects("until false; do :; done", UnsupportedReason::Loop);
+fn loops_with_literal_lists_parse_to_real_nodes() {
+    // task-L1 (brk-1): the ⊤-trigger shrank — `for`/`while`/`until` over an
+    // enumerable list now PARSE to real AST nodes (body + words captured), no
+    // diagnostic. This is the pin-flip from the old loops-as-⊤ posture.
+    let f = parse("for i in 1 2; do echo $i; done");
+    assert!(
+        !f.has_errors(),
+        "literal-list for must parse clean: {:?}",
+        f.diags
+    );
+    match kind(&f.value, script_items(&f.value)[0]) {
+        NodeKind::ForLoop {
+            var, words, body, ..
+        } => {
+            assert_eq!(var, "i", "iteration variable captured");
+            assert_eq!(words.len(), 2, "both list words captured (1 2)");
+            assert!(
+                matches!(kind(&f.value, *body), NodeKind::List { .. }),
+                "body is a List"
+            );
+        }
+        other => panic!("expected ForLoop: {other:?}"),
+    }
+
+    let w = parse("while true; do :; done");
+    assert!(!w.has_errors(), "while must parse clean: {:?}", w.diags);
+    assert!(matches!(
+        kind(&w.value, script_items(&w.value)[0]),
+        NodeKind::WhileLoop { until: false, .. }
+    ));
+
+    let u = parse("until false; do :; done");
+    assert!(!u.has_errors(), "until must parse clean: {:?}", u.diags);
+    assert!(matches!(
+        kind(&u.value, script_items(&u.value)[0]),
+        NodeKind::WhileLoop { until: true, .. }
+    ));
+}
+
+#[test]
+fn loop_shapes_outside_the_subset_stay_unsupported_loop() {
+    // task-L1: what STAYS ⊤-rejected, with the honest reason pinned (the report's
+    // "what stays ⊤" list). Each must be a loud `UnsupportedReason::Loop`.
+    // no-`in` `for` iterates runtime "$@" (not a static list):
+    assert_rejects("for x; do echo $x; done", UnsupportedReason::Loop);
+    // `break`/`continue` — un-modeled early exit breaks the back-edge fixpoint's
+    // reaching-uses soundness (the body would otherwise parse fine):
+    assert_rejects("for x in a b; do break; done", UnsupportedReason::Loop);
+    assert_rejects("while true; do continue; done", UnsupportedReason::Loop);
+    // a list word with a command-substitution / arithmetic — effect-bearing
+    // expansion in word position, deferred per HOLE#1:
+    assert_rejects(
+        "for f in $(ls /etc); do echo $f; done",
+        UnsupportedReason::Loop,
+    );
+    assert_rejects(
+        "for n in $((1+1)); do echo $n; done",
+        UnsupportedReason::Loop,
+    );
+    // A `break`/`continue` NESTED in an if/group/case WITHIN the body still binds to the
+    // loop ⇒ still ⊤-rejects (the body walk descends through non-loop compounds).
+    assert_rejects(
+        "for x in a b; do if true; then break; fi; done",
+        UnsupportedReason::Loop,
+    );
+    assert_rejects("while c; do { continue; }; done", UnsupportedReason::Loop);
+    assert_rejects(
+        "for x in a b; do case $x in a) break ;; esac; done",
+        UnsupportedReason::Loop,
+    );
+}
+
+#[test]
+fn break_or_continue_as_an_argument_is_not_a_jump() {
+    // The dual: `break`/`continue` in ARGUMENT position (not the command word) is an
+    // ordinary word, NOT a loop jump ⇒ the loop parses clean. Pins that the jump
+    // detection keys on the command-word position only (`body_has_loop_jump`).
+    assert!(
+        !parse("for x in a b; do echo break; done").has_errors(),
+        "`break` as an argument to `echo` is not a loop jump"
+    );
+    assert!(
+        !parse("for x in a b; do apt-get install continue; done").has_errors(),
+        "`continue` as an operand is not a loop jump"
+    );
+}
+
+#[test]
+fn nested_break_continue_binds_to_inner_loop_only() {
+    // A `break`/`continue` in a NESTED loop binds to the INNER loop, so it does NOT
+    // ⊤-reject the OUTER loop — only the inner one. The outer parses; the inner is the
+    // ⊤ node. (`body_has_loop_jump` does not descend into a nested loop.)
+    let p = parse("for o in a b; do for i in 1 2; do break; done; done");
+    // The outer is a ForLoop (NOT rejected); the inner break-bearing loop is the ⊤.
+    match kind(&p.value, script_items(&p.value)[0]) {
+        NodeKind::ForLoop { body, .. } => {
+            // Somewhere inside the outer body there is exactly one Unsupported (the inner).
+            assert!(
+                first_unsupported(&p.value).is_some(),
+                "the inner break-loop is ⊤-rejected"
+            );
+            let _ = body;
+        }
+        other => panic!("outer must parse as ForLoop, not be rejected: {other:?}"),
+    }
+    assert!(p.has_errors(), "the inner loop's ⊤-reject is loud");
 }
 
 #[test]
@@ -525,14 +644,15 @@ fn reject_over_deep_nesting_is_loud() {
 fn reject_keeps_going_and_salvages() {
     // Why (dn-7 / inv-top-reject salvage): a reject in the middle of a script must
     // not abort the rest, and salvageable children are retained so unrelated
-    // analysis proceeds. We reject the loop but still see the trailing `echo`.
-    let parsed = parse("echo before\nfor i in 1; do x; done\necho after");
+    // analysis proceeds. The no-`in` `for` still ⊤-rejects (task-L1); the ⊤-node is
+    // consumed to its matching `done`, so the trailing `echo` is still seen.
+    let parsed = parse("echo before\nfor x; do x; done\necho after");
     let items = script_items(&parsed.value);
     let labels: Vec<&str> = items.iter().map(|&i| label(&parsed.value, i)).collect();
     assert_eq!(
         labels,
         ["Simple", "Unsupported", "Simple"],
-        "reject is isolated"
+        "reject is isolated (no-`in` for stays ⊤, consumed to `done`)"
     );
     assert!(parsed.has_errors());
 

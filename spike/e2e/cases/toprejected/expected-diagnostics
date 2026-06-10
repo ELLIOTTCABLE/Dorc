@@ -1,2 +1,2 @@
-error[syntax-unsupported]: loop constructs
+error[syntax-unsupported]: `break`/`continue` is un-modeled
 error[cfg-top-node]: unsupported construct

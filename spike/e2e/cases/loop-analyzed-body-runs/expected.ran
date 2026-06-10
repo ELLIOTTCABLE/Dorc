@@ -1,4 +1,3 @@
-ran: apt-get install -y nginx
 ran: apt-get install -y a
 ran: apt-get install -y b
 ran: apt-get install -y curl

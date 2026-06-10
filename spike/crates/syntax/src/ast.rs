@@ -131,6 +131,27 @@ pub enum NodeKind {
         name_span: Span,
         body: AstId,
     },
+    /// `for NAME in WORD…; do body; done` (brk-1, task-L1). The iteration variable
+    /// `var` binds successively to each expanded word; `words` are the list words
+    /// (captured losslessly so the value-plane can JOIN their resolved literals at
+    /// body entry). The no-`in` form (`for NAME; do …`) iterates `"$@"` (runtime
+    /// positionals) and stays ⊤-rejected, so this node ALWAYS carries an explicit list.
+    ForLoop {
+        var: String,
+        var_span: Span,
+        words: Vec<AstId>,
+        body: AstId,
+    },
+    /// `while LIST; do body; done` / `until LIST; do body; done` (brk-1, task-L1).
+    /// `until` flips the continuation sense (`until` loops *until* the condition
+    /// succeeds). The `cond` is a command list whose last command's status governs
+    /// continuation — a condition context (errexit-exempt, like an `if` test, and
+    /// status-consumed at the render floor).
+    WhileLoop {
+        cond: AstId,
+        body: AstId,
+        until: bool,
+    },
     /// A word: a sequence of quoted/unquoted fragments (see [`WordPart`]).
     Word { parts: Vec<WordPart> },
     /// `name=value` (value `None` for `name=`). Used both as a leading
@@ -279,7 +300,13 @@ pub enum UnsupportedReason {
     ArithmeticExpansion,
     /// lvalue-taking builtins: `unset "$x"`, `printf -v`, `${!ref}`, `test -v`.
     DynamicLValue,
-    /// `for`/`while`/`until` loops — not in the current modeled subset.
+    /// An un-modeled LOOP SHAPE (task-L1 shrank this trigger; `for`/`while`/`until`
+    /// with a literal/enumerable list now PARSE to [`NodeKind::ForLoop`]/
+    /// [`NodeKind::WhileLoop`]). Still ⊤-rejected: the no-`in` `for NAME; do …` form
+    /// (iterates runtime `"$@"`), `break`/`continue` (un-modeled early exit breaks the
+    /// back-edge fixpoint's reaching-uses soundness), and a `for` whose list words
+    /// contain a command-substitution/arithmetic (effect-bearing expansion in word
+    /// position — deferred per HOLE#1).
     Loop,
     /// grammar the parser recognises but the subset does not yet model.
     Unmodeled(&'static str),

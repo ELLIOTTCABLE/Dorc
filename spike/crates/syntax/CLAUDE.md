@@ -42,10 +42,21 @@ it fires:
   dynamic command name (first word not a fixed literal); `. "$dyn"`/`source $f`
   (literal-target `. /etc/x` is kept, not rejected); `$(( … ))` in command
   position; lvalue-taking builtins (`unset "$x"`, `printf -v`, `test -v`/`[ -v ]`);
-  loops (`for`/`while`/`until`); background `&`; over-deep nesting. Each → an
-  `Unsupported` node with the right `UnsupportedReason` **plus** an `Error`
-  diagnostic — loud, never silent (`inv-top-reject`). Salvage children so
-  unrelated analysis proceeds (`dn-7`).
+  the RESIDUAL loop shapes (task-L1 shrank this — see below); background `&`;
+  over-deep nesting. Each → an `Unsupported` node with the right
+  `UnsupportedReason` **plus** an `Error` diagnostic — loud, never silent
+  (`inv-top-reject`). Salvage children so unrelated analysis proceeds (`dn-7`).
+  - **Loops (task-L1, `209` brk-1):** `for NAME in WORD…`/`while`/`until` over an
+    enumerable list now PARSE to real `ForLoop`/`WhileLoop` nodes (body + words
+    captured) and lower to a cyclic CFG with a back-edge — they are NO LONGER ⊤.
+    What STAYS `UnsupportedReason::Loop`: the no-`in` `for NAME; do …` (iterates
+    runtime `"$@"`); `break`/`continue` anywhere in a loop body (un-modeled early
+    exit breaks the back-edge fixpoint's reaching-uses soundness — binds to the
+    *innermost* loop, so it ⊤-rejects only that one); and a `for`-list word
+    containing a command-substitution/arithmetic (effect-bearing expansion in word
+    position, deferred per HOLE#1). The PRECISION step (Powerset loop-domain +
+    member-elision render) is a LATER slice; L1 is structure only (the value plane
+    binds the for-var to the *Flat* JOIN of the list words — >1 distinct ⇒ ⊤).
 - **Semantic ⊤, NOT here** — deferred to the dataflow: no-oracle-entry, and the
   *dynamic word* (unquoted `$x` as an argument). The crate's job is to *preserve*
   the signal losslessly (`Word::may_split`), not to ⊤-reject it. ~SUSPECT this is

@@ -90,6 +90,14 @@ pub enum CfgNodeKind {
     /// (`inv-top-reject`): un-probeable AND un-skippable. The analyzer must fold
     /// this to ⊤ for its phase, never silently best-effort past it.
     Top,
+    /// The structural head of a loop (`for`/`while`/`until`, task-L1): the join point
+    /// where the loop's entry edge and its **back-edge** converge — the first real
+    /// cyclic CFG the worklist ever sees (`209` brk-1 (a)). Carries the loop's
+    /// [`AstId`] so the value-plane can read a `for`'s iteration variable + list words
+    /// and bind that variable to the JOIN of the literal words at body entry. Effect-
+    /// free and never a plan/apply leaf (the loop *construct* is structural; only the
+    /// body's [`Command`](CfgNodeKind::Command) nodes are leaves — `inv-leaf-seam`).
+    LoopHead,
 }
 
 // The per-leaf consumption vocabulary is `core::Channel` (`inv-one-observable`, `19F`):
@@ -129,6 +137,12 @@ pub struct Cfg {
     /// Per-node: lowered inside a command-substitution `$( … )` body (find-cli-1).
     /// Such commands are effect-bearing but NOT plan/apply leaves.
     expansion_internal: Vec<bool>,
+    /// Per-node: lowered inside a loop BODY or CONDITION (task-L1, `209` brk-1). A
+    /// loop-body leaf is a structural render-floor block this round — the
+    /// line-granular render cannot elide a single iteration, so an in-loop leaf never
+    /// mints a `Replace`/`Omit` license (`plan::disposition_for`). The recorded floor
+    /// the member-elision slice (`209` brk-1 (b)) later lifts.
+    in_loop: Vec<bool>,
     /// Per-node: the unvouched output observables this node's *context* consumes
     /// (note 16J, `inv-superposition`). Computed during lowering — the single
     /// exhaustive structural traversal — so it is **total over nodes**: an empty
@@ -179,6 +193,16 @@ impl Cfg {
     #[must_use]
     pub fn is_expansion_internal(&self, id: CfgNodeId) -> bool {
         self.expansion_internal[id.index()]
+    }
+
+    /// Was this node lowered inside a loop body or condition (task-L1, `209` brk-1)?
+    /// An in-loop leaf is the structural render-floor block: the line-granular render
+    /// cannot substitute a single iteration, so `plan` never mints a license for it
+    /// (`MustRun`-floor this round; the member-elision slice lifts it). A POST-loop
+    /// leaf is NOT in-loop, so the value below a converged loop unlocks normally.
+    #[must_use]
+    pub fn in_loop_body(&self, id: CfgNodeId) -> bool {
+        self.in_loop[id.index()]
     }
 
     /// The unvouched output observables (`Stdout`/`Stderr`) this node's context
@@ -327,6 +351,10 @@ struct Builder<'a> {
     /// (find-cli-1 / dn-3). Subshell `( )` and group `{ }` bodies are NOT marked —
     /// their commands are real leaves.
     expansion_internal: Vec<bool>,
+    /// Per-node: lowered inside a loop body/condition (task-L1). Marked by an
+    /// arena-range pass in `lower_for`/`lower_while` (the same range trick
+    /// `expansion_internal` uses); emitted on the [`Cfg`] for `plan`'s in-loop floor.
+    in_loop: Vec<bool>,
     /// Per-node: the unvouched output observables this node's context consumes
     /// (note 16J). Populated in lowering by `mark_consumed_range` (the enclosing
     /// pipeline-stage / redirected-group context propagated to inner leaves, the
@@ -365,6 +393,7 @@ impl<'a> Builder<'a> {
             fallible: Vec::new(),
             toggle: Vec::new(),
             expansion_internal: Vec::new(),
+            in_loop: Vec::new(),
             consumed: Vec::new(),
             exit_to_enter: BTreeMap::new(),
             enter_to_exit: BTreeMap::new(),
@@ -382,6 +411,7 @@ impl<'a> Builder<'a> {
         self.fallible.push(false);
         self.toggle.push(None);
         self.expansion_internal.push(false);
+        self.in_loop.push(false);
         self.consumed.push(Powerset::default());
         id
     }
@@ -477,6 +507,14 @@ impl<'a> Builder<'a> {
                 self.attach_redirs(id, &redirs, after_body)
             }
             NodeKind::FuncDef { body, .. } => self.lower_funcdef(id, *body, entry_pred),
+            NodeKind::ForLoop { body, .. } => {
+                let body = *body;
+                self.lower_for(id, body, entry_pred)
+            }
+            NodeKind::WhileLoop { cond, body, .. } => {
+                let (cond, body) = (*cond, *body);
+                self.lower_while(id, cond, body, entry_pred)
+            }
             NodeKind::Unsupported { .. } => self.lower_top(id, entry_pred),
             // Leaf word/assign/redir nodes never appear as a *statement* head here
             // (the parser nests them inside Simple/Redir); if one does, treat it as
@@ -814,6 +852,91 @@ impl<'a> Builder<'a> {
         let m = self.fresh(id, CfgNodeKind::Merge);
         self.add_edge(entry_pred, m);
         m
+    }
+
+    /// `for NAME in WORD…; do body; done` (task-L1, `209` brk-1). The control-flow:
+    ///
+    /// ```text
+    ///   entry_pred ─► head(LoopHead) ─► body ─► body_exit ─┐
+    ///                   ▲   │                              │  (back-edge)
+    ///                   └───┼──────────────────────────────┘
+    ///                       └─► merge (exit: list exhausted / ran 0 times)
+    /// ```
+    ///
+    /// The [`CfgNodeKind::LoopHead`] is the join of the entry edge and the **back-edge**
+    /// — the first real cyclic CFG the worklist sees (the back-edge join is what makes
+    /// a body reassignment reach the next iteration, and what lets "ran 0 times" fall
+    /// straight to `merge`). The list WORDS are pure expansion (any `$(…)`/arith in them
+    /// ⊤-rejected at parse), so they mint no CFG node; the value-plane reads the
+    /// iteration variable + words off this node's `ForLoop` AST and binds the variable
+    /// to the JOIN of the words at body entry. Loops do NOT create a subshell scope —
+    /// body assignments persist (`{ }`-like, item-2(c)) — so there is NO `ScopeEnter`/
+    /// `Exit`. Body commands are real leaves (NOT expansion-internal); they are marked
+    /// **in-loop** so `plan` floors them to run this round (`Cfg::in_loop_body`).
+    fn lower_for(&mut self, id: AstId, body: AstId, entry_pred: CfgNodeId) -> CfgNodeId {
+        let head = self.fresh(id, CfgNodeKind::LoopHead);
+        self.add_edge(entry_pred, head);
+        let body_start = self.nodes.len();
+        let body_exit = self.lower_node(body, head);
+        self.add_edge(body_exit, head); // the back-edge
+        self.mark_in_loop_range(body_start, self.nodes.len());
+        let merge = self.fresh(id, CfgNodeKind::Merge);
+        self.add_edge(head, merge); // exit edge (list exhausted, or ran zero times)
+        merge
+    }
+
+    /// `while LIST; do body; done` / `until LIST; do body; done` (task-L1). The
+    /// control-flow mirrors [`lower_for`] but with a real CONDITION region between the
+    /// head and the body:
+    ///
+    /// ```text
+    ///   entry_pred ─► head ─► [cond] ─► cond_exit ─► body ─► body_exit ─┐
+    ///                   ▲                   │                            │
+    ///                   └───────────────────┼────────────────────────────┘ (back-edge)
+    ///                                        └─► merge (cond ends the loop)
+    /// ```
+    ///
+    /// dash-fidelity (analysis/CLAUDE.md T9 / item-2(a)): a failing command in the
+    /// `while`/`until` CONDITION region does NOT abort under `set -e` (the same
+    /// errexit-exemption as an `if`/`elif` test — extended here via
+    /// [`lower_condition_region`]); a failing BODY command DOES abort (its failure-edge
+    /// is materialised in phase 2, and it is `StatusRelaxable`-consumed per C-3). The
+    /// condition CONSUMES its last command's status (it decides whether the body or the
+    /// exit runs) at the render floor — `Channel::StatusRenderFloor`, like an `if`-guard
+    /// (item-2(b)): the line-granular render cannot substitute a loop condition in-situ.
+    /// `until` vs `while` only flips the runtime continuation sense, not the CFG shape
+    /// (both a body-entry and an exit edge exist either way); the value/effect planes
+    /// are continuation-sense-agnostic, so one lowering serves both.
+    fn lower_while(
+        &mut self,
+        id: AstId,
+        cond: AstId,
+        body: AstId,
+        entry_pred: CfgNodeId,
+    ) -> CfgNodeId {
+        let head = self.fresh(id, CfgNodeKind::LoopHead);
+        self.add_edge(entry_pred, head);
+        let loop_start = self.nodes.len();
+        // The condition is an errexit-exempt guard whose status is consumed at the
+        // render floor (`mark_status = true`, like `if`/`elif`).
+        let cond_exit = self.lower_condition_region(cond, head, true);
+        let body_exit = self.lower_node(body, cond_exit);
+        self.add_edge(body_exit, head); // the back-edge
+        self.mark_in_loop_range(loop_start, self.nodes.len());
+        let merge = self.fresh(id, CfgNodeKind::Merge);
+        self.add_edge(cond_exit, merge); // exit edge (condition ends the loop)
+        merge
+    }
+
+    /// Mark every node in the half-open arena range `[from, to)` as lowered inside a
+    /// loop (task-L1). Mirrors the `expansion_internal` / `mark_consumed_range` range
+    /// idiom (`inv-determinism` makes the range stable). A NESTED loop's nodes fall
+    /// inside the outer range too — correct (they are in *a* loop), and a nested
+    /// loop's own call marks them again (idempotent).
+    fn mark_in_loop_range(&mut self, from: usize, to: usize) {
+        for v in from..to {
+            self.in_loop[v] = true;
+        }
     }
 
     /// An `NodeKind::Unsupported` construct → an absorbing ⊤ node (`inv-top-reject`).
@@ -1157,17 +1280,19 @@ impl<'a> Builder<'a> {
     /// `mark_condition_context` missed when the region exit was a `Merge`.
     ///
     /// `mark_status` additionally marks every command in the region as consuming
-    /// `Channel::StatusRenderFloor` (F1 / `notes/195`): the test of an `if`/`elif` is an
-    /// **unambiguous guard** (a *different* branch runs on its rc), and the
-    /// line-granular render cannot substitute a guard sharing its line with the
-    /// `if`/`then`/`fi` scaffolding, so this blocks the license **unconditionally** — the
-    /// render floor (19C strain-D). It is `true` ONLY for an `if`/`elif` condition
-    /// (`while`/`until` are ⊤-rejected today, so vacuous); a `&&`/`||` left operand is
-    /// marked the *separate* `Channel::StatusRelaxable` at its own call site
-    /// (`lower_and_or`, the `19D` value-relaxable variant — the render CAN express it),
-    /// not via this floor. This locus is the ONE source of the render-floor channel; the
-    /// value-relaxable channel has FOUR (`206` §3): a `&&`/`||` operand, an errexit-region
-    /// command (`materialise_errexit_edges`), and a `$?`-reader's predecessor
+    /// `Channel::StatusRenderFloor` (F1 / `notes/195`): the test of an `if`/`elif` — or
+    /// a `while`/`until` condition (task-L1) — is an **unambiguous guard** (a *different*
+    /// branch runs on its rc: the then/else, or the body/exit), and the line-granular
+    /// render cannot substitute a guard sharing its line with the `if`/`then`/`fi` (or
+    /// `while`/`do`/`done`) scaffolding, so this blocks the license **unconditionally** —
+    /// the render floor (19C strain-D). It is `true` for an `if`/`elif` condition AND a
+    /// loop condition (the L1 generalisation — these were ⊤-rejected when this was
+    /// written); a `&&`/`||` left operand is marked the *separate*
+    /// `Channel::StatusRelaxable` at its own call site (`lower_and_or`, the `19D`
+    /// value-relaxable variant — the render CAN express it), not via this floor. This
+    /// locus is the ONE source of the render-floor channel; the value-relaxable channel
+    /// has FOUR (`206` §3): a `&&`/`||` operand, an errexit-region command
+    /// (`materialise_errexit_edges`), and a `$?`-reader's predecessor
     /// (`mark_dollar_question_predecessors`). errexit is no longer
     /// special-cased-as-vouched (19A C-3 / 205 §2): a converged conforming establish under
     /// `set -e` still folds via a known rc, but a ⊤-rc mutator runs.
@@ -1237,6 +1362,7 @@ impl<'a> Builder<'a> {
             succ: self.succ,
             pred: self.pred,
             expansion_internal: self.expansion_internal,
+            in_loop: self.in_loop,
             consumed: self.consumed,
         };
         debug_assert!(

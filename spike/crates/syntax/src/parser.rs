@@ -310,9 +310,9 @@ impl Parser {
             match r {
                 Reserved::If => return self.parse_if(),
                 Reserved::Case => return self.parse_case(),
-                Reserved::For | Reserved::While | Reserved::Until => {
-                    return self.parse_loop_rejected(r);
-                }
+                Reserved::For => return self.parse_for(),
+                Reserved::While => return self.parse_while(false),
+                Reserved::Until => return self.parse_while(true),
                 // A bare closing keyword in command position is malformed; reject
                 // the single token so the enclosing parser can resync.
                 Reserved::Then
@@ -555,36 +555,140 @@ impl Parser {
         })
     }
 
-    // ---- loops (⊤-reject) -----------------------------------------------------
+    // ---- loops (task-L1) ------------------------------------------------------
 
-    /// `for`/`while`/`until` are outside the modeled subset → ⊤-reject as `Loop`.
-    /// We consume the whole construct (to its matching `done`, balancing nested
-    /// loops) so the surrounding parser resyncs cleanly, salvaging nothing (the
-    /// body's effects are unknown-by-design under ⊤).
-    fn parse_loop_rejected(&mut self, _kind: Reserved) -> dorc_core::AstId {
-        let start = self.peek_span();
-        let end = self.consume_balanced_loop();
-        let span = start.to(end);
-        self.unsupported(
-            UnsupportedReason::Loop,
+    /// `for NAME in WORD…; do body; done` (brk-1). Parses to a real
+    /// [`NodeKind::ForLoop`]. Two forms still ⊤-reject (`inv-top-reject`), consuming
+    /// to the matching `done` so the surrounding parser resyncs:
+    /// * the no-`in` form (`for NAME; do …`) — iterates runtime `"$@"`, not a
+    ///   static list (`UnsupportedReason::Loop`); and
+    /// * a list word containing a command-substitution / arithmetic — an
+    ///   effect-bearing expansion in word position, deferred per HOLE#1.
+    ///
+    /// `break`/`continue` anywhere in the body ⊤-reject the WHOLE loop (handled in
+    /// the body parse): un-modeled early exit breaks the back-edge fixpoint's
+    /// reaching-uses soundness story.
+    fn parse_for(&mut self) -> dorc_core::AstId {
+        let kw = self.bump(); // `for`
+        // The iteration variable: a single literal name.
+        let var = match self.peek() {
+            TokKind::Word { parts } => single_literal(parts)
+                .filter(|s| is_func_name(s))
+                .map(ToString::to_string),
+            _ => None,
+        };
+        let Some(var) = var else {
+            // `for` not followed by a name ⇒ malformed; reject to the matching done.
+            let end = self.consume_balanced_loop();
+            return self.unsupported(
+                UnsupportedReason::Loop,
+                kw.span.to(end),
+                Vec::new(),
+                "`for` requires an iteration-variable name",
+            );
+        };
+        let var_span = self.peek_span();
+        self.bump(); // the name
+
+        // The list: `in WORD…`. The no-`in` form iterates `"$@"` (runtime) ⇒ ⊤.
+        if self.peek_reserved() != Some(Reserved::In) {
+            let end = self.consume_balanced_loop();
+            return self.unsupported(
+                UnsupportedReason::Loop,
+                kw.span.to(end),
+                Vec::new(),
+                "`for NAME` without `in LIST` iterates runtime \"$@\" (outside the modeled subset)",
+            );
+        }
+        self.bump(); // `in`
+
+        // List words until the `;`/newline that precedes `do`.
+        let mut words = Vec::new();
+        while matches!(self.peek(), TokKind::Word { .. }) && self.peek_reserved().is_none() {
+            words.push(self.parse_word_or_placeholder());
+        }
+        // A command-substitution / arithmetic in a list word is an effect-bearing
+        // expansion (HOLE#1 posture) ⇒ ⊤-reject the whole loop.
+        if words.iter().any(|&w| self.word_has_expansion_effect(w)) {
+            let end = self.consume_balanced_loop();
+            return self.unsupported(
+                UnsupportedReason::Loop,
+                kw.span.to(end),
+                Vec::new(),
+                "`for` list word contains a command-substitution/arithmetic (deferred per HOLE#1)",
+            );
+        }
+
+        let body = self.parse_do_done();
+        let span = kw.span.to(self.span_of(body));
+        // `break`/`continue` in the body ⇒ ⊤-reject the whole loop (the body parse
+        // sets this flag; the leaf is otherwise modeled).
+        if self.body_has_loop_jump(body) {
+            return self.unsupported(
+                UnsupportedReason::Loop,
+                span,
+                Vec::new(),
+                "`break`/`continue` is un-modeled (early exit breaks the back-edge fixpoint)",
+            );
+        }
+        self.builder.alloc(Node {
             span,
-            Vec::new(),
-            "loop constructs (for/while/until) are not in the modeled subset",
-        )
+            kind: NodeKind::ForLoop {
+                var,
+                var_span,
+                words,
+                body,
+            },
+        })
     }
 
-    /// Consume tokens from the loop keyword through its matching `done`, tracking
-    /// nested `for`/`while`/`until … do … done` depth. Returns the span of the
-    /// closing `done` (or the last token at EOF).
+    /// `while LIST; do body; done` / `until LIST; do body; done` (brk-1) → a real
+    /// [`NodeKind::WhileLoop`]. The condition is a command list (commonly a probe
+    /// like `dpkg -s nginx`); `break`/`continue` in the body ⊤-rejects the loop.
+    fn parse_while(&mut self, until: bool) -> dorc_core::AstId {
+        let kw = self.bump(); // `while` / `until`
+        let cond = self.parse_condition_until(&[Reserved::Do]);
+        let body = self.parse_do_done();
+        let span = kw.span.to(self.span_of(body));
+        if self.body_has_loop_jump(body) {
+            return self.unsupported(
+                UnsupportedReason::Loop,
+                span,
+                Vec::new(),
+                "`break`/`continue` is un-modeled (early exit breaks the back-edge fixpoint)",
+            );
+        }
+        self.builder.alloc(Node {
+            span,
+            kind: NodeKind::WhileLoop { cond, body, until },
+        })
+    }
+
+    /// Parse a `do body; done` clause, returning the body `List` id. Tolerates a
+    /// missing `do`/`done` (malformed diagnostic, never blocking — `inv-no-throw`).
+    fn parse_do_done(&mut self) -> dorc_core::AstId {
+        // The `;`/newline before `do` (`for x in a b; do …`, or `… in a b\n do …`).
+        self.skip_separators();
+        self.expect_reserved(Reserved::Do, "expected `do` to open the loop body");
+        let body = self.parse_body_until(&[Reserved::Done]);
+        self.expect_reserved(Reserved::Done, "expected `done` to close the loop");
+        body
+    }
+
+    /// Consume tokens from the current position through the matching `done`, tracking
+    /// nested `for`/`while`/`until … do … done` depth (the ⊤-reject salvage path: a
+    /// no-`in` `for`, a subst-in-list `for`, or a malformed loop is discarded to its
+    /// `done` so the surrounding parser resyncs). Returns the closing `done`'s span
+    /// (or the last token at EOF). The opening keyword is assumed already consumed,
+    /// so we start at depth 1.
     fn consume_balanced_loop(&mut self) -> Span {
-        let mut depth = 0u32;
+        let mut depth = 1u32;
         let mut last = self.peek_span();
         loop {
             if self.at_eof() {
                 return last;
             }
-            let r = self.peek_reserved();
-            match r {
+            match self.peek_reserved() {
                 Some(Reserved::For | Reserved::While | Reserved::Until) => depth += 1,
                 Some(Reserved::Done) => {
                     depth -= 1;
@@ -600,6 +704,69 @@ impl Parser {
             last = self.peek_span();
             self.bump();
         }
+    }
+
+    /// Does this list word contain a command-substitution or arithmetic expansion
+    /// (an effect-bearing / dynamic word the for-list cannot statically enumerate)?
+    /// Walks double-quoted nesting (`"$(cmd)"` still runs the command).
+    fn word_has_expansion_effect(&self, id: dorc_core::AstId) -> bool {
+        fn parts_have(parts: &[WordPart]) -> bool {
+            parts.iter().any(|p| match p {
+                WordPart::CommandSubst(_) | WordPart::Arithmetic => true,
+                WordPart::DoubleQuoted(inner) => parts_have(inner),
+                _ => false,
+            })
+        }
+        matches!(&self.builder_node(id).kind, NodeKind::Word { parts } if parts_have(parts))
+    }
+
+    /// Does a loop body contain a `break`/`continue` simple-command anywhere in its
+    /// own control flow (NOT descending into a nested loop, whose `break` binds to
+    /// IT, nor into a funcdef body)? Such a jump is un-modeled ⇒ the enclosing loop
+    /// ⊤-rejects. A conservative structural walk over the already-built body subtree.
+    fn body_has_loop_jump(&self, body: dorc_core::AstId) -> bool {
+        let mut stack = vec![body];
+        while let Some(id) = stack.pop() {
+            match &self.builder_node(id).kind {
+                NodeKind::Simple { words, .. } => {
+                    if matches!(
+                        words.first().and_then(|&w| self.word_single_literal(w)),
+                        Some("break" | "continue")
+                    ) {
+                        return true;
+                    }
+                }
+                NodeKind::Script { items } | NodeKind::List { items } => {
+                    stack.extend(items.iter().copied());
+                }
+                NodeKind::Pipeline { stages, .. } => stack.extend(stages.iter().copied()),
+                NodeKind::AndOr { left, right, .. } => {
+                    stack.push(*left);
+                    stack.push(*right);
+                }
+                NodeKind::Subshell { body, .. } | NodeKind::Group { body, .. } => stack.push(*body),
+                NodeKind::If {
+                    cond,
+                    then_body,
+                    elifs,
+                    else_body,
+                } => {
+                    stack.push(*cond);
+                    stack.push(*then_body);
+                    for e in elifs {
+                        stack.push(e.cond);
+                        stack.push(e.body);
+                    }
+                    stack.extend(else_body.iter().copied());
+                }
+                NodeKind::Case { arms, .. } => stack.extend(arms.iter().map(|a| a.body)),
+                // A nested loop's `break`/`continue` binds to the NESTED loop, not
+                // this one — do not descend into it (it is modeled independently).
+                // funcdef bodies are detached. Words/assigns/redirs carry no command.
+                _ => {}
+            }
+        }
+        false
     }
 
     // ---- simple command / funcdef ---------------------------------------------

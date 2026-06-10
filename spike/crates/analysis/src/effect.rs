@@ -1061,6 +1061,74 @@ command__check() {
         );
     }
 
+    // --- task-L1 (`209` brk-1): reaching-defs over the loop back-edge -------------
+
+    #[test]
+    fn post_loop_install_ambient_when_loop_body_is_pure() {
+        // THE brk-1 value-unlock at the EFFECT layer: a PURE loop body (`echo` only —
+        // gens nothing) does NOT poison a converged install BELOW the loop. The
+        // reaching-defs back-edge carries no write out of the loop, so the post-loop
+        // install stays EstablishAmbient (elidable). Pre-L1 the loop was a ⊤ node whose
+        // havoc + ⊤-containment killed this — the poison the L1 lowering removes.
+        let (mut i, idx, s) = package_setup();
+        let classes = classify_src(
+            "for f in a b; do echo \"$f\"; done\napt-get install -y nginx",
+            &mut i,
+            &idx,
+        );
+        assert!(
+            classes.contains(&SkipClass::EstablishAmbient(pkg_installed(
+                &mut i, &s, "nginx"
+            ))),
+            "a pure loop body must NOT poison the post-loop install: {classes:?}"
+        );
+    }
+
+    #[test]
+    fn opaque_in_loop_body_poisons_post_loop_install() {
+        // The honest residual cost (exclusion-check, the other cell): an OPAQUE command
+        // inside the loop body propagates Reach::Top across the back-edge and OUT to the
+        // post-loop install ⇒ it is forced EstablishWritten (runs). A loop is not magic —
+        // an un-oracled body command poisons exactly as it would in straight-line code.
+        let (mut i, idx, _s) = package_setup();
+        let classes = classify_src(
+            "for f in a b; do ufw allow \"$f\"; done\napt-get install -y nginx",
+            &mut i,
+            &idx,
+        );
+        assert!(
+            classes
+                .iter()
+                .any(|c| matches!(c, SkipClass::EstablishWritten(_))),
+            "an Opaque loop-body command poisons the post-loop install (back-edge ⊤): {classes:?}"
+        );
+        assert!(
+            !classes
+                .iter()
+                .any(|c| matches!(c, SkipClass::EstablishAmbient(_))),
+            "no ambient install survives the in-loop Opaque"
+        );
+    }
+
+    #[test]
+    fn classify_converges_on_nested_loop_back_edges() {
+        // The reaching-defs fixpoint must converge on a NESTED loop (two back-edges).
+        // `classify` carries a `debug_assert!(reach.converged)`; a non-converging
+        // reaching-defs would trip it (or, in release, fold every establish to MustRun
+        // via `trust_reach`). Drive a nested loop with a body establish and assert we get
+        // a classification back at all (the post-loop install) — convergence implied.
+        let (mut i, idx, _s) = package_setup();
+        let classes = classify_src(
+            "for o in a b; do for p in c d; do apt-get install -y \"$p\"; done; done\nsystemctl reload nginx",
+            &mut i,
+            &idx,
+        );
+        assert!(
+            !classes.is_empty(),
+            "classify returns (reaching-defs converged on the nested back-edges): {classes:?}"
+        );
+    }
+
     /// `package:<entity>#installed` via a shared interner (sibling of `pkg_installed`
     /// for the Query tests that build their own index inline).
     fn pkg_installed_with(i: &mut Interner, entity: &str) -> FactKey {

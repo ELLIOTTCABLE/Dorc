@@ -1,0 +1,8 @@
+# probe-results: site-keyed records (task-D1 WIRE). Grammar:
+#   site <leafid> effect=<holds|absent|cant-tell>
+# NO records: the loop body install (leaf 0) is Opaque (⊤ for-var operand), which propagates
+# Reach::Top across the back-edge and poisons the curl install (leaf 1) to EstablishWritten.
+# Neither site is probe-resolvable, so the probe emits NO record (two `skip-unresolvable`
+# comments). With nothing resolvable, both installs simply run (the SAFE degrade,
+# kFAIL-perform). The run-set (a, b from the loop body + curl) is the real assertion; the
+# empty fixture makes gate-1 parity hold vacuously.
