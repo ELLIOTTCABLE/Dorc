@@ -41,6 +41,10 @@ there is consumed-with-⊤:
   `AndOrStatus` is now a misleading name. The rename (e.g. `StatusRelaxable` vs
   `StatusRenderFloor`) lands with the one-Observable completion pass; the two-channel
   *distinction* stays load-bearing until the leaf-exact render retires the floor.
+  - **EXECUTED in task-O** (20H): `Channel::AndOrStatus` → `Channel::StatusRelaxable`,
+    `Channel::Status` → `Channel::StatusRenderFloor`, pure rename, zero behavior change /
+    zero golden churn. The §3 axis-rationale (four-vs-one sources ⇒ render-expressibility)
+    is now cited at the `core::Channel` enum.
 - Brief-compliance nit for the dispatch ledger: the agent used `git mv` (index mutation)
   despite the no-git-staging instruction — harmless here (no commit, single agent), but the
   brief language should say "no index operations; rename via fs + let the orchestrator stage".

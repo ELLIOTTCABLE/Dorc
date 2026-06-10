@@ -28,7 +28,7 @@
 //! sanctioned source — the probe never runs mutators, and oracle-declared rc-values
 //! are rejected ("no values except what the probe gives us"). So a branch-consumed
 //! converged mutator RUNS, full stop; that lost elision is the ruling's deliberate
-//! cost (19H §2.3). The engine's `AndOrStatus`-relaxes-on-declared-rc seam STAYS —
+//! cost (19H §2.3). The engine's `StatusRelaxable`-relaxes-on-declared-rc seam STAYS —
 //! it is what probe-sourced *Query-guard* rcs ride next (202 §2); only the mutator-rc
 //! injection that previously exercised it here is gone (it was the masking 19I §2
 //! strips).
@@ -36,8 +36,9 @@
 //! ROUND-20 C-3 (19A C-3 / 205 §2, task-E): `set -e` and `$?` are now HONORED as
 //! ordinary rc-consumers, not special-cased-as-vouched. The engine marks an
 //! errexit-region command's rc — and a `$?`-reader's predecessor's rc — the
-//! value-relaxable `AndOrStatus` (`analysis/tests/cfg.rs` `consumed_errexit_marks_*` /
-//! `consumed_dollar_question_*`). Composed with `fork-mutator-rc` (a mutator's rc is
+//! value-relaxable `StatusRelaxable` (`analysis/tests/cfg.rs`
+//! `consumed_errexit_marks_relaxable_status_c3` / `consumed_dollar_question_*`). Composed
+//! with `fork-mutator-rc` (a mutator's rc is
 //! ⊤): a converged mutator under `set -e` now RUNS (`errexit_consumed_top_status_runs_c3`
 //! below) — the priority-2 over-execute the committed engine hid by leaving errexit
 //! un-marked is closed. A *known/probe-sourced* rc still folds (the relaxation seam),
@@ -168,7 +169,7 @@ fn is_replaced(plan: &Plan, needle: &str) -> bool {
 //
 // "status consumed by `set -e`" IS now a clean cell (C-3, 205 §2): `set -e` is
 // target-state-pure (fs-4) so the install stays `EstablishAmbient` and DOES reach the
-// status question, where its ⊤-rc `AndOrStatus` mark blocks the license ⇒ it runs
+// status question, where its ⊤-rc `StatusRelaxable` mark blocks the license ⇒ it runs
 // (`errexit_consumed_top_status_runs_c3`). The `&&`/`||` cells exercise the same
 // rc-relaxable status from a different locus.
 
@@ -176,7 +177,7 @@ fn is_replaced(plan: &Plan, needle: &str) -> bool {
 fn pins_converged_status_via_andand_runs_mutator_rc_top() {
     // observable=STATUS, consumed=YES (&& reads the rc), converged — but the rc of a
     // MUTATOR has no sanctioned source (`fork-mutator-rc`, 202 §5): the probe never
-    // runs `apt-get`, so its status is ⊤ and the `AndOrStatus` floor refuses the
+    // runs `apt-get`, so its status is ⊤ and the `StatusRelaxable` floor refuses the
     // license ⇒ the install RUNS. (Pre-round-20 this pinned `Replace` via an injected
     // conforming rc=0 — the masking class 19I §2 strips.) The lost elision is the
     // ruling's deliberate cost; the relaxation seam re-activates for probe-sourced
@@ -224,7 +225,7 @@ fn pins_converged_devnull_discard_replaced() {
 fn pins_converged_status_via_oror_runs_mutator_rc_top() {
     // observable=STATUS, consumed=YES (|| reads the rc — the dangerous dual of &&),
     // converged. Same `fork-mutator-rc` disposition as the `&&` pin above: no
-    // sanctioned source for the install's rc ⇒ ⊤ ⇒ the `AndOrStatus` floor refuses ⇒
+    // sanctioned source for the install's rc ⇒ ⊤ ⇒ the `StatusRelaxable` floor refuses ⇒
     // RUNS. This is also the safer floor for the `||` shape specifically: a fabricated
     // rc-0 here would suppress the `|| handler` — the 19D under-execute family.
     // HOST: installed.
@@ -275,8 +276,8 @@ fn errexit_consumed_top_status_runs_c3() {
     // (`set -e`), converged. The committed engine special-cased this ("errexit-status
     // stays vouched, still elides") — the human's C-3 ruling rejects that: `set -e`
     // reads every command's rc (non-zero ⇒ abort), so it is an ordinary status consumer,
-    // marked the value-relaxable `AndOrStatus`. Composed with `fork-mutator-rc` (a
-    // mutator's rc is ⊤, never a fabricated rc-0), the `AndOrStatus` floor refuses the
+    // marked the value-relaxable `StatusRelaxable`. Composed with `fork-mutator-rc` (a
+    // mutator's rc is ⊤, never a fabricated rc-0), the `StatusRelaxable` floor refuses the
     // license ⇒ the install RUNS. This closes the priority-2 over-execute the old vouch
     // hid: a NON-conforming converged establish under `set -e` (one that exits non-zero
     // when converged) would abort a real run, which eliding to `true` silently masked.
@@ -296,7 +297,7 @@ fn errexit_consumed_top_status_runs_c3() {
 fn cmd_consuming_dollar_question_blocks_predecessor() {
     // C-3's second consumer (19A C-3 / 205 §2): a `$?`-reader makes its PREDECESSOR a
     // status consumer. `apt-get install -y nginx` (converged) then `[ $? -ne 0 ] && echo
-    // recover`: the install's rc is read by `$?`, so it is marked `AndOrStatus`. Its rc
+    // recover`: the install's rc is read by `$?`, so it is marked `StatusRelaxable`. Its rc
     // is ⊤ (`fork-mutator-rc` — a mutator has no sanctioned rc), so the license is
     // refused ⇒ the install RUNS. The committed engine left `$?` un-marked, so it would
     // have wrongly elided the install to `true` (rc 0) and suppressed the `recover`
@@ -328,7 +329,7 @@ fn andor_left_operand_undeclared_rc_runs_kfail_perform() {
     // for a non-conforming establish (`useradd` exits 9 converged) that suppresses the
     // `|| fallback` — the priority-1 `kFAIL-perform` under-execute the round-19
     // adversarial pass proved. Here `apt-get install` is converged but its rc is
-    // UNDECLARED (verdict-only): `AndOrStatus` consumed + rc None ⇒ the license is
+    // UNDECLARED (verdict-only): `StatusRelaxable` consumed + rc None ⇒ the license is
     // refused ⇒ Run. Round-20: with `fork-mutator-rc` adopted, undeclared is the ONLY
     // state a mutator's rc can be in — this floor is now the rule, not the default-half
     // of a declared/undeclared split.
@@ -610,6 +611,9 @@ fn plan_query(src: &str, guard_tool: &str, guard_rc: i32, pkg_holds: &[&str]) ->
                 } else {
                     Predicted::Top
                 },
+                // stdout/stderr unpredicted this round (19F §3 shape; nothing produces them).
+                stdout: Predicted::Top,
+                stderr: Predicted::Top,
             }
         } else if pkg_facts.contains(&f) {
             Observable::verdict_only(Verdict::Converged)
@@ -633,7 +637,7 @@ fn query_guard_holds_omits_install_and_substitutes_guard() {
     // nginx || apt-get install` with the guard's probed rc=0 (nginx on PATH) and no
     // upstream mutation (valid). The fold reads the guard's KNOWN rc 0 ⇒ the `||`
     // install is provably DEAD ⇒ Omit. The guard itself mutates nothing, its rc is
-    // known + `||`-consumed (AndOrStatus, relaxable) ⇒ value-preservingly substituted
+    // known + `||`-consumed (StatusRelaxable) ⇒ value-preservingly substituted
     // (Replace ⇒ `true`). HOST: nginx present; package irrelevant (the branch is dead).
     let plan = plan_query(
         "command -v nginx >/dev/null 2>&1 || apt-get install -y nginx\n",
@@ -696,7 +700,7 @@ fn query_guard_invalid_after_mutator_runs_for_real() {
     // package:curl#installed) ⇒ a write reaches the guard from entry ⇒ the guard is an
     // INVALID Query ⇒ the firewall withholds its rc (status ⊤) ⇒ the fold cannot resolve
     // the `||` ⇒ the nginx install stays LIVE, and the guard itself runs for real
-    // (AndOrStatus-consumed + ⊤ rc ⇒ no license). curl install runs (diverged). Nothing
+    // (StatusRelaxable-consumed + ⊤ rc ⇒ no license). curl install runs (diverged). Nothing
     // folds — the guard re-runs against the possibly-changed state (kFAIL-perform).
     let plan = plan_query(
         "apt-get install -y curl\ncommand -v nginx >/dev/null 2>&1 || apt-get install -y nginx\n",

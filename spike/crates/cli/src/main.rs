@@ -37,7 +37,7 @@ use std::collections::BTreeMap;
 use std::io::{Read, Write};
 use std::process::ExitCode;
 
-use dorc_core::{Interner, Observable, Predicted, Rc, Severity, Verdict};
+use dorc_core::{Interner, Observable, OutClaim, Predicted, Rc, Severity, Verdict};
 
 const USAGE: &str = "usage: dorc --book=<book.sh> [-o <oracle.sh>]...";
 
@@ -148,7 +148,7 @@ fn run() -> Result<(), String> {
     std::io::stdin()
         .read_to_string(&mut stdin_buf)
         .map_err(|e| format!("reading stdin: {e}"))?;
-    let results = parse_results(&stdin_buf);
+    let results = parse_results(&stdin_buf, &mut interner);
 
     // (3) re-key the site-keyed records to the FactKey-keyed observations `build_plan`
     // consumes (its fold/elision machinery is fact-keyed; only this probe-answer
@@ -175,12 +175,21 @@ fn run() -> Result<(), String> {
     Ok(())
 }
 
-/// gate-5 / cm-2 readout: per command site, emit `argv <leafid> <word|TOP per word>` on
-/// stderr (a resolved literal verbatim, an unresolved word `TOP`). The leaf-ids are the
-/// plan's own ([`dorc_plan::Step::leaf`]) — the same span-sorted space the probe records
-/// share (`inv-site-keyed-results`), so `argv N` keys to the same site as `site N`. The
-/// argv is the book-side value-flow ([`dorc_analysis::value::ValueFlow::argv_values`]),
-/// keyed by `CfgNodeId` (mapped back from the leaf's `AstId`). Cli-edge only.
+/// gate-5 / cm-2 readout: per command site, emit `argv <leafid> <disposition> <word|TOP
+/// per word>` on stderr (a resolved literal verbatim, an unresolved word `TOP`). The
+/// leaf-ids are the plan's own ([`dorc_plan::Step::leaf`]) — the same span-sorted space the
+/// probe records share (`inv-site-keyed-results`), so `argv N` keys to the same site as
+/// `site N`. The argv is the book-side value-flow
+/// ([`dorc_analysis::value::ValueFlow::argv_values`]), keyed by `CfgNodeId` (mapped back
+/// from the leaf's `AstId`). Cli-edge only.
+///
+/// The `<disposition>` tag (task-O / `tc-gate5-omit`, strain-D3b-fold-vs-gate5): one of
+/// `run`/`replace`/`omit`, so gate-5 can SKIP a site the plan does not run. An `Omit`ted or
+/// `Replace`d site legitimately never appears in the bare book's argv log when a preceding
+/// guard short-circuits it (e.g. a shimmed Query-guard fold) — asserting it ⊆ the log would
+/// be a false failure, the exact structural exclusion that confined the fold/omit
+/// demonstration to builtin guards (20G §5). Filtering on `run` removes that exclusion
+/// without weakening the gate for the sites that DO run.
 fn emit_debug_argv(
     plan: &dorc_plan::Plan,
     cfg: &dorc_analysis::cfg::Cfg,
@@ -207,7 +216,26 @@ fn emit_debug_argv(
                 ValueOf::Top => "TOP".to_string(),
             })
             .collect();
-        eprintln!("argv {} {}", step.leaf.0, words.join(" "));
+        eprintln!(
+            "argv {} {} {}",
+            step.leaf.0,
+            disposition_tag(&step.disposition),
+            words.join(" ")
+        );
+    }
+}
+
+/// The gate-5 disposition tag for a [`dorc_plan::Disposition`] — `run`/`replace`/`omit`.
+/// gate-5 asserts the bare-book argv-echo ONLY for `run` sites: a `replace`d or `omit`ted
+/// site is deliberately not in the apply run-set, and a guarded omit may be absent from the
+/// BARE book too (a preceding guard short-circuits it), so it must not be asserted ⊆ the
+/// log (task-O / strain-D3b-fold-vs-gate5).
+fn disposition_tag(disposition: &dorc_plan::Disposition) -> &'static str {
+    use dorc_plan::Disposition;
+    match disposition {
+        Disposition::Run => "run",
+        Disposition::Replace(_, _) => "replace",
+        Disposition::Omit { .. } => "omit",
     }
 }
 
@@ -252,7 +280,22 @@ fn facts_from_sites(
             // (stale resting rc) ⇒ withhold the rc, status stays ⊤.
             ProbeSiteKind::Establish | ProbeSiteKind::Query { valid: false } => Predicted::Top,
         };
-        by_fact.insert(check.fact, Observable { effect, status });
+        // The reserved Stdout/Stderr claims ride into the tuple verbatim (19F §3 shape).
+        // INERT this round: nothing emits them, and `consumption_ok` blocks a consumed
+        // stdout/stderr UNCONDITIONALLY (16F §3) — never reading the claim value — so a
+        // (hypothetical) non-⊤ claim cannot relax that block. The slot is plumbed so a
+        // future stdout-producing probe + vouch is a value change, not a representation one.
+        let stdout = record.map_or(Predicted::Top, |r| r.stdout);
+        let stderr = record.map_or(Predicted::Top, |r| r.stderr);
+        by_fact.insert(
+            check.fact,
+            Observable {
+                effect,
+                status,
+                stdout,
+                stderr,
+            },
+        );
     }
     by_fact
 }
@@ -269,12 +312,17 @@ struct SiteResults {
     records: BTreeMap<dorc_plan::LeafId, SiteRecord>,
 }
 
-/// One site's reported observation: the Effect-channel [`Verdict`] and the raw
-/// probe-command exit status.
+/// One site's reported observation: the Effect-channel [`Verdict`], the raw probe-command
+/// exit status, and the RESERVED `Stdout`/`Stderr` [`OutClaim`]s (`19F` §3 tuple shape).
+/// The out-claims are parsed-and-stored but produce NOTHING this round — the probe never
+/// emits `stdout=`/`stderr=`, so they arrive `Predicted::Top` in practice; the slots exist
+/// so a future stdout-producing probe is a value-plumbing change, not a grammar change.
 #[derive(Debug, Clone, Copy)]
 struct SiteRecord {
     verdict: Verdict,
     rc: Rc,
+    stdout: Predicted<OutClaim>,
+    stderr: Predicted<OutClaim>,
 }
 
 /// Parse stdin probe-results into the site-keyed [`SiteResults`]
@@ -283,17 +331,24 @@ struct SiteRecord {
 /// unrecognized line is dropped — a site with no record folds to `Unknown` ⇒ run (the
 /// `kFAIL-perform` floor; the `garbage-stdin` case pins it):
 ///
-/// * `site <leafid> effect=<holds|absent|cant-tell> rc=<n>` — the records the rendered
-///   probe emits (the return channel, 202 §3). `effect` is the Effect channel mapped to
-///   a [`Verdict`] (`holds`/`absent`/`cant-tell` ⇒ `Converged`/`Diverged`/`Unknown`).
-///   `rc` is the raw probe-command status, carried on the wire; the FIREWALL
-///   ([`facts_from_sites`]) decides whether it is fold-usable (only for a valid
-///   Query-class site). A missing/garbled `rc` defaults to `Rc(0)` for carriage but is
-///   irrelevant unless the firewall admits it.
+/// * `site <leafid> effect=<holds|absent|cant-tell> rc=<n> [stdout=<text> stderr=<text>]`
+///   — the records the rendered probe emits (the return channel, 202 §3). `effect` is the
+///   Effect channel mapped to a [`Verdict`] (`holds`/`absent`/`cant-tell` ⇒
+///   `Converged`/`Diverged`/`Unknown`). `rc` is the raw probe-command status, carried on
+///   the wire; the FIREWALL ([`facts_from_sites`]) decides whether it is fold-usable (only
+///   for a valid Query-class site). A missing/garbled `rc` defaults to `Rc(0)` for
+///   carriage but is irrelevant unless the firewall admits it.
+///
+/// `stdout=`/`stderr=` are RESERVED (`19F` §3 tuple shape): the parser accepts-and-stores
+/// them (interning the text into a [`OutClaim`] on the record) but NOTHING produces them —
+/// the rendered probe emits no such keys, and the consumed-stdout/stderr gate stays the
+/// unconditional block it is regardless. Reserving them means a future stdout-producing
+/// probe is a value-plumbing change, not a grammar change. The interner is threaded for
+/// this (the `cli` is the I/O edge; `inv-determinism` exempts it).
 ///
 /// (The transitional `declared-rc <leafid> rc=N` lane — the 19I §2 rc-injection
 /// mechanism — is DEAD as of task-D2: a Query site's own `rc=` carries the fold rc now.)
-fn parse_results(input: &str) -> SiteResults {
+fn parse_results(input: &str, interner: &mut Interner) -> SiteResults {
     let mut out = SiteResults::default();
     for line in input.lines() {
         let line = line.trim();
@@ -307,20 +362,34 @@ fn parse_results(input: &str) -> SiteResults {
         let Some(site) = it.next().and_then(parse_site) else {
             continue; // malformed site id ⇒ drop (⇒ Unknown ⇒ run)
         };
-        // The remaining tokens carry `effect=<word>` and `rc=<n>` in any order. A
-        // missing/garbled `effect` ⇒ Unknown (the safe direction); a missing/garbled
-        // `rc` ⇒ 0 (carried, but irrelevant unless the firewall admits it for a valid
-        // Query — and a Query reporting no rc is degenerate).
+        // The remaining tokens carry `effect=<word>`, `rc=<n>`, and the reserved
+        // `stdout=`/`stderr=` in any order. A missing/garbled `effect` ⇒ Unknown (the safe
+        // direction); a missing/garbled `rc` ⇒ 0 (carried, but irrelevant unless the
+        // firewall admits it for a valid Query). Absent out-claims stay `Predicted::Top`.
         let mut verdict = Verdict::Unknown;
         let mut rc = Rc(0);
+        let mut stdout = Predicted::Top;
+        let mut stderr = Predicted::Top;
         for tok in it {
             if let Some(w) = tok.strip_prefix("effect=") {
                 verdict = effect_word_to_verdict(w);
             } else if let Some(n) = tok.strip_prefix("rc=").and_then(|n| n.parse::<i32>().ok()) {
                 rc = Rc(n);
+            } else if let Some(t) = tok.strip_prefix("stdout=") {
+                stdout = Predicted::Value(OutClaim(interner.intern(t)));
+            } else if let Some(t) = tok.strip_prefix("stderr=") {
+                stderr = Predicted::Value(OutClaim(interner.intern(t)));
             }
         }
-        out.records.insert(site, SiteRecord { verdict, rc });
+        out.records.insert(
+            site,
+            SiteRecord {
+                verdict,
+                rc,
+                stdout,
+                stderr,
+            },
+        );
     }
     out
 }
@@ -396,8 +465,10 @@ mod tests {
     fn parse_results_maps_three_outcome_and_carries_rc() {
         // The record maps holds/absent/cant-tell to the Effect verdict and carries the
         // raw rc on the wire (whether it is fold-usable is the firewall's call).
+        let mut i = Interner::default();
         let r = parse_results(
             "site 0 effect=holds rc=0\nsite 1 effect=absent rc=1\nsite 2 effect=cant-tell rc=2\n",
+            &mut i,
         );
         assert_eq!(
             r.records.get(&LeafId(0)).map(|x| x.verdict),
@@ -420,9 +491,11 @@ mod tests {
         // Unrecognized / malformed lines are dropped (⇒ Unknown ⇒ run). Pins the
         // garbage-stdin behavior at the unit layer (`kFAIL-perform`). The dead
         // `declared-rc` lane is now just an unrecognized line ⇒ dropped.
+        let mut i = Interner::default();
         let r = parse_results(
             "this is not a record\nsite notanumber effect=holds\n\
              site 0 garbled-no-effect\ndeclared-rc 0 rc=0\n# a comment\n",
+            &mut i,
         );
         // `site 0 garbled-no-effect` parses the id but no effect= ⇒ Unknown (safe), rc 0.
         assert_eq!(
@@ -434,6 +507,50 @@ mod tests {
     }
 
     #[test]
+    fn parse_results_reserves_stdout_stderr_keys_inert() {
+        // item-2 (19F §3 tuple shape): the `stdout=`/`stderr=` keys are RESERVED — the
+        // parser accepts-and-stores them into the record's tuple, but they produce no
+        // behavior change. Pin BOTH halves: (1) absent ⇒ the slots are `Predicted::Top`
+        // (the default, the only state the probe actually emits today); (2) present ⇒
+        // they intern into a `Predicted::Value(OutClaim)` and ride the tuple, while the
+        // firewall + consumption gate are untouched (the consumed-stdout/stderr block is
+        // unconditional, never reading the claim). Anti-masking: this asserts the SHAPE
+        // exists end-to-end, NOT that a check predicts a value (nothing does this round).
+        let mut i = Interner::default();
+        let r = parse_results("site 0 effect=holds rc=0\n", &mut i);
+        let rec = r.records.get(&LeafId(0)).expect("site 0");
+        assert_eq!(
+            rec.stdout,
+            Predicted::Top,
+            "absent stdout= ⇒ ⊤ (the live default)"
+        );
+        assert_eq!(
+            rec.stderr,
+            Predicted::Top,
+            "absent stderr= ⇒ ⊤ (the live default)"
+        );
+        // Reserved keys parse-and-store (a future stdout-producing probe is value-plumbing).
+        let r = parse_results(
+            "site 0 effect=holds rc=0 stdout=hello stderr=warn\n",
+            &mut i,
+        );
+        let rec = r.records.get(&LeafId(0)).expect("site 0");
+        assert!(
+            matches!(rec.stdout, Predicted::Value(OutClaim(_))),
+            "a reserved stdout= is stored as a value claim: {:?}",
+            rec.stdout
+        );
+        assert!(
+            matches!(rec.stderr, Predicted::Value(OutClaim(_))),
+            "a reserved stderr= is stored as a value claim: {:?}",
+            rec.stderr
+        );
+        // The Effect/Status path is unaffected by the reserved keys' presence.
+        assert_eq!(rec.verdict, Verdict::Converged);
+        assert_eq!(rec.rc, Rc(0));
+    }
+
+    #[test]
     fn firewall_establish_site_rc_never_becomes_fold_status() {
         // THE wrong-concrete firewall, direction 1 (202 §3 / task-D2): an ESTABLISH
         // site's record-rc is the CHECK command's rc (dpkg-query's), NOT the mutator's.
@@ -442,7 +559,7 @@ mod tests {
         let mut i = Interner::default();
         let fact = pkg(&mut i, "nginx");
         let probe = probe1(fact, ProbeSiteKind::Establish);
-        let results = parse_results("site 0 effect=holds rc=0\n");
+        let results = parse_results("site 0 effect=holds rc=0\n", &mut i);
         let obs = facts_from_sites(&probe, &results)
             .get(&fact)
             .copied()
@@ -463,7 +580,7 @@ mod tests {
         let mut i = Interner::default();
         let fact = tool(&mut i, "nginx");
         let probe = probe1(fact, ProbeSiteKind::Query { valid: true });
-        let results = parse_results("site 0 effect=holds rc=0\n");
+        let results = parse_results("site 0 effect=holds rc=0\n", &mut i);
         let obs = facts_from_sites(&probe, &results)
             .get(&fact)
             .copied()
@@ -474,7 +591,7 @@ mod tests {
             "a valid Query guard's own rc supplies the fold Status"
         );
         // A non-zero guard rc (nginx absent) carries through identically (Exit(n) path).
-        let results = parse_results("site 0 effect=absent rc=1\n");
+        let results = parse_results("site 0 effect=absent rc=1\n", &mut i);
         let obs = facts_from_sites(&probe, &results)
             .get(&fact)
             .copied()
@@ -492,7 +609,7 @@ mod tests {
         let mut i = Interner::default();
         let fact = tool(&mut i, "nginx");
         let probe = probe1(fact, ProbeSiteKind::Query { valid: false });
-        let results = parse_results("site 0 effect=holds rc=0\n");
+        let results = parse_results("site 0 effect=holds rc=0\n", &mut i);
         let obs = facts_from_sites(&probe, &results)
             .get(&fact)
             .copied()

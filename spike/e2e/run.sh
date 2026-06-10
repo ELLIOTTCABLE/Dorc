@@ -283,6 +283,15 @@ EOF
 # a branch the bare run skips, or a site the engine ⊤s, would make a two-directional or
 # counting assertion a false failure. So: engine-resolved-and-shimmed ⊆ logged.
 #
+# THE DISPOSITION CARVE-OUT (task-O / tc-gate5-omit, strain-D3b-fold-vs-gate5): each engine
+# line is now `argv <leafid> <disposition> <words>`. We SKIP any site whose disposition is
+# not `run` — an `omit`/`replace`d site is intentionally absent from the apply run-set, and
+# a guarded `omit` may legitimately be absent from the BARE book too (a preceding guard
+# short-circuits it: e.g. a shimmed `dpkg -s X || install X` fold drops the install from
+# both). Asserting such a site ⊆ the bare log was a FALSE failure — the structural exclusion
+# that confined the fold/omit demonstration to un-shimmable BUILTIN guards (20G §5). The
+# `run`-only filter removes that exclusion without weakening the gate for sites that run.
+#
 # $4 = the `-o oracle …` arg string (already assembled by the caller; passed verbatim).
 argv_echo_check() {
   _case=$1; _dir=$2; _shims=$3
@@ -297,12 +306,16 @@ argv_echo_check() {
   ( cd -- "$_sand" && DORC_LOG="$_log" PATH="$_mocks" "$checker_abs" "$_book" ) >/dev/null 2>&1 || true
   _logged=$(sed 's/^ran: //' "$_log" 2>/dev/null || true)
   rm -rf "$_sand"; rm -f "$_log"
-  # Walk each engine argv line; assert the resolved+shimmed ones are in the log.
+  # Walk each engine argv line; assert the resolved+shimmed+RUN ones are in the log.
   _bad=""
   _oldifs=$IFS; IFS='
 '
   for _line in $_eng; do
-    _words=$(printf '%s' "$_line" | sed -E 's/^argv [0-9]+ ?//')
+    # Line shape: `argv <leafid> <disposition> <words…>`. Pull the disposition (3rd field)
+    # then strip both leading tokens to get the resolved words.
+    _disp=$(printf '%s' "$_line" | sed -E 's/^argv [0-9]+ ([a-z]+).*/\1/')
+    [ "$_disp" = "run" ] || continue                          # not run (omit/replace) ⇒ skip
+    _words=$(printf '%s' "$_line" | sed -E 's/^argv [0-9]+ [a-z]+ ?//')
     [ -z "$_words" ] && continue                              # assignment-only site
     case " $_words " in *" TOP "*) continue ;; esac           # not fully resolved ⇒ skip
     _cmd0=${_words%% *}

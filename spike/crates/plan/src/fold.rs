@@ -424,6 +424,8 @@ mod tests {
         Observable {
             effect: Verdict::Converged,
             status: Predicted::Value(Rc(rc)),
+            stdout: Predicted::Top,
+            stderr: Predicted::Top,
         }
     }
 

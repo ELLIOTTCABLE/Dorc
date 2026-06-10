@@ -132,6 +132,14 @@ and where* (→ `Research/notes/20x-*.md`, append-only), not green tests.
   no-mutation. Convergence is the *derived* state of the Effect channel —
   never a separate probe-reported verdict. Do not re-introduce a standalone
   `Verdict`, a bolted `Observed{rc}`, or a consumption-only observable enum.
+  The *consumed* Status splits by **render-expressibility, not construct
+  identity** (`206` §3): `Channel::StatusRenderFloor` (the lone `if`/`elif`
+  guard — the line-granular render cannot substitute it in-situ, an
+  unconditional block retired only by a guard-capable leaf-exact render) vs
+  `Channel::StatusRelaxable` (the FOUR readers a KNOWN rc reproduces exactly —
+  `&&`/`||` operands, errexit-region commands, `$?`-readers' predecessors).
+  The retired `AndOrStatus` name implied construct-identity; four-vs-one
+  sources prove the axis is render capability.
 - **inv-site-keyed-results** (round-20; default shape, 203 §1 + 205) — the
   probe-results lane is keyed by **command-site** (the stable LeafId→AstId
   back-map), not by fact, kind:entity, or check/command-family: a site-keyed

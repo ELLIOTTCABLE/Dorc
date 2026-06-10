@@ -289,6 +289,20 @@ pub enum Verdict {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Rc(pub i32);
 
+/// A predicted **output claim** for the `Stdout`/`Stderr` channels (`inv-one-observable`,
+/// `19F` §3 tuple completion): the captured text a substitution would have to reproduce.
+/// An interned [`Symbol`] (the cheapest deterministic `Copy` representation — keeps
+/// [`Observable`] `Copy`, and the interner is order-of-interning so it never leaks
+/// nondeterminism, `inv-determinism`). The engine NEVER decodes it (`inv-referent-agnostic`):
+/// a substitution compares/reproduces the claim, the analyzer does not branch on its text.
+///
+/// NOTHING produces a non-⊤ `OutClaim` this round (the existing consumed-stdout/stderr gate
+/// stays the unconditional block it is — a consumed channel with a ⊤ prediction blocks,
+/// today's rule). The newtype exists so a future stdout-producing probe is a value-plumbing
+/// change, not a representation change (the `19F` failure was exactly representation drift).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct OutClaim(pub Symbol);
+
 /// A predicted value for one observable channel (`inv-one-observable`): a concrete
 /// value, or a loud out-of-band ⊤ "can't-predict". A `Top` on a *consumed* channel
 /// forces the consuming leaf to run (`inv-kfail`/`kFAIL-perform`): the check could not
@@ -312,20 +326,35 @@ pub enum Predicted<T> {
 /// value-bearing channel; an enclosing context *consumes* a `Powerset<Channel>` (the
 /// liveness set). The `Effect` channel is vouched by convergence (the forward gate), so
 /// it never enters the *consumed* set — it gates the elision license instead.
+///
+/// The two status channels differ by **render-expressibility, not construct identity**
+/// (`206` §3, executed in task-O): four sources now feed the value-relaxable channel (a
+/// `&&`/`||` operand, an errexit-region command's rc, a `$?`-reader's predecessor, and any
+/// future reader a KNOWN rc reproduces exactly), but only ONE feeds the render-floor
+/// channel (an `if`/`elif` guard). With four-vs-one the axis is provably *can the
+/// line-granular render substitute the consumer in-situ*, not *which construct consumed
+/// the status* — so the names say which render capability retires each, not which syntax
+/// produced it. The `AndOrStatus` name (round-19, `19G`'s deferred `ch-wrong` bake-and-see)
+/// is retired as misleading.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Channel {
     /// The command's effect on managed state (mutation). Vouched by convergence ⇒ never
     /// in the consumed set; its predicted value is the [`Observable::effect`] verdict.
     Effect,
-    /// Exit status consumed by an `if`/`elif` **guard**. Blocks the license
-    /// unconditionally — the render floor (`19C` strain-D): the line-granular render
-    /// cannot substitute a guard sharing its line with the `if`/`then`/`fi` scaffolding.
-    Status,
-    /// Exit status consumed by a `&&`/`||` **left operand**. Rc-relaxable (`19D`): a
-    /// declared rc lets the value-preserving stand-in reproduce the exact status; an
-    /// undeclared rc (`Predicted::Top`) blocks (eliding to a fabricated rc-0 `true` would
-    /// suppress a `|| fallback` — the `kFAIL-perform` under-execute).
-    AndOrStatus,
+    /// Status consumed by an `if`/`elif` **guard** — blocks unconditionally TODAY because
+    /// the line-granular render cannot substitute a guard in-situ (it shares its line with
+    /// the `if`/`then`/`fi` scaffolding; eliding it breaks `dash -n`). Retired ONLY by a
+    /// guard-capable leaf-exact render (`C-5`), NOT by channel semantics — a ⊤ vs known rc
+    /// makes no difference here, the floor is the render, not the value (`19C` strain-D).
+    StatusRenderFloor,
+    /// Status consumed by a value-relaxable reader — `&&`/`||` operands, errexit-region
+    /// commands, `$?`-readers' predecessors, and any future reader whose decision a KNOWN
+    /// rc reproduces exactly (`206` §3: four sources feed this channel). A ⊤ rc blocks; a
+    /// probe-sourced/known rc substitutes (the value-preserving stand-in reproduces the
+    /// exact status, so the branch decides identically). Eliding a ⊤-rc operand to a
+    /// fabricated rc-0 `true` would suppress a `|| fallback` — the `kFAIL-perform`
+    /// under-execute (`19D`).
+    StatusRelaxable,
     /// fd 1 captured to a real (non-`/dev/null`) sink ⇒ value-bearing, vouched by
     /// nothing ⇒ a consumed `Stdout` always blocks (16F §3).
     Stdout,
@@ -346,21 +375,34 @@ pub struct Observable {
     /// of the Effect channel" (`19F` §3) — `Verdict` is its value, no longer a separate
     /// probe-reported concept.
     pub effect: Verdict,
-    /// `Status` channel: the predicted exit status when converged — the oracle's declared
-    /// converged-rc. `Predicted::Top` ⇒ undeclared ⇒ no fold through this leaf (the `19D`
-    /// `kFAIL-perform` floor: never fabricate a conforming rc-0).
+    /// The predicted exit **status** when converged — the oracle's declared converged-rc.
+    /// `Predicted::Top` ⇒ undeclared ⇒ no fold through this leaf (the `19D` `kFAIL-perform`
+    /// floor: never fabricate a conforming rc-0). The consuming side decides which status
+    /// channel reads it: a [`Channel::StatusRelaxable`] reader folds/substitutes a known
+    /// value; a [`Channel::StatusRenderFloor`] guard blocks regardless (the render floor).
     pub status: Predicted<Rc>,
+    /// `Stdout` channel: the predicted fd-1 [`OutClaim`] a substitution must reproduce.
+    /// ALWAYS `Predicted::Top` this round (`19F` §3 shape completion — nothing produces a
+    /// value yet): a *consumed* `Stdout` with a ⊤ prediction blocks the license
+    /// unconditionally, which is exactly today's rule (`consumption_ok`, 16F §3), now
+    /// expressed through the tuple rather than a side-channel.
+    pub stdout: Predicted<OutClaim>,
+    /// `Stderr` channel: the predicted fd-2 [`OutClaim`] — as [`stdout`](Self::stdout).
+    pub stderr: Predicted<OutClaim>,
 }
 
 impl Observable {
     /// An observable carrying only the convergence verdict, with an **unpredicted**
-    /// status (`Predicted::Top` ⇒ ⊤ for the fold). The conservative shape: convergence
-    /// still drives elision, but no branch folds through this leaf's status.
+    /// status and unpredicted stdout/stderr (all `Predicted::Top` ⇒ ⊤ for the fold). The
+    /// conservative shape: convergence still drives elision, but no branch folds through
+    /// this leaf's status, and a consumed stdout/stderr blocks (16F §3).
     #[must_use]
     pub fn verdict_only(effect: Verdict) -> Self {
         Self {
             effect,
             status: Predicted::Top,
+            stdout: Predicted::Top,
+            stderr: Predicted::Top,
         }
     }
 }

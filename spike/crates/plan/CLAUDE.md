@@ -37,11 +37,12 @@ guards a different failure (unmodeled execution context, not a stale fact). The
 no declared probe is absent from `compile_probe`'s output ⇒ the apply runs it
 (`kFAIL-perform`). Consumed `Stdout`/`Stderr` arrive as the engine's un-collapsed
 `May<Powerset<Observable>>` and per `inv-must-may` can only *block* (16F §3 / 16J).
-Status consumption (19A C-3 honored, round-20 — notes/205 §2, 206): the if-guard
-`Status` channel blocks unconditionally (the render floor, retired only by the
-leaf-exact render); EVERY other status consumer — `&&`/`||` operands, errexit-region
-commands, `$?`-readers' predecessors — is marked `AndOrStatus`, where a
-probe-sourced/declared rc substitutes exactly and a ⊤ rc blocks. Under
+Status consumption (19A C-3 honored, round-20 — notes/205 §2, 206 §3): the if-guard
+`StatusRenderFloor` channel blocks unconditionally (retired only by a guard-capable
+leaf-exact render, not by the rc value); EVERY other status consumer — `&&`/`||`
+operands, errexit-region commands, `$?`-readers' predecessors (the four 206 §3 sources) —
+is marked `StatusRelaxable`, where a probe-sourced/declared rc substitutes exactly and a
+⊤ rc blocks. Under
 fork-mutator-rc a mutator's rc is always ⊤, so converged mutators under `set -e`
 run (the 206 §2 headline cost). There is NO establishes-contract rc-0 vouch — that
 was the refuted assumption ("converged ⇒ rc 0", bought false three times).

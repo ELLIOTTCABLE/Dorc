@@ -1019,23 +1019,23 @@ fn consumed_enclosing_subshell_devnull_stays_quiet() {
     );
 }
 
-// --- F1 branch-status (round-19, `notes/195`): the engine marks `Channel::Status`
-// ONLY in an unambiguous-guard condition region (`if`/`elif`), so the phased caller
-// can block eliding a guard. The LOCUS is the whole fix — errexit and `&&`/`||` must
-// NOT mark it. These pin the engine-side fact directly (the `plan` collapse is in
-// `observable_matrix.rs`). ---
+// --- F1 branch-status (round-19, `notes/195`): the engine marks
+// `Channel::StatusRenderFloor` ONLY in an unambiguous-guard condition region
+// (`if`/`elif`), so the phased caller can block eliding a guard. The LOCUS is the whole
+// fix — errexit and `&&`/`||` must NOT mark it (they mark `StatusRelaxable`). These pin
+// the engine-side fact directly (the `plan` collapse is in `observable_matrix.rs`). ---
 
 #[test]
-fn consumed_if_guard_marks_status() {
+fn consumed_if_guard_marks_render_floor() {
     // The command in an `if` condition is a guard (a different branch runs on its rc);
-    // its status is branch-consumed ⇒ `Status` in the set. The `then`-body command is
-    // NOT in the condition region ⇒ stays quiet.
+    // its status is branch-consumed ⇒ `StatusRenderFloor` in the set. The `then`-body
+    // command is NOT in the condition region ⇒ stays quiet.
     let guard = consumed_of(
         "if apt-get install -y nginx; then systemctl start nginx; fi\n",
         "apt-get",
     );
     assert!(
-        guard.contains(&Channel::Status),
+        guard.contains(&Channel::StatusRenderFloor),
         "an if-condition command's status is branch-consumed"
     );
     // The then-body command (distinct command word so the helper finds IT, not the
@@ -1045,13 +1045,13 @@ fn consumed_if_guard_marks_status() {
         "systemctl",
     );
     assert!(
-        !body.contains(&Channel::Status),
+        !body.contains(&Channel::StatusRenderFloor),
         "the then-body command is not a guard ⇒ no branch-status"
     );
 }
 
 #[test]
-fn consumed_negated_if_guard_marks_status() {
+fn consumed_negated_if_guard_marks_render_floor() {
     // The Dorc idiom `if ! command -v X; then …` — the `!`-negated pipeline sits inside
     // the `if` condition, so its command's status is branch-consumed (the F1 headline
     // shape). `echo` is target-state-pure but the consumption fact is locus-based, not
@@ -1061,38 +1061,38 @@ fn consumed_negated_if_guard_marks_status() {
         "echo",
     );
     assert!(
-        c.contains(&Channel::Status),
+        c.contains(&Channel::StatusRenderFloor),
         "a negated if-guard command's status is branch-consumed"
     );
 }
 
 #[test]
-fn consumed_errexit_marks_andor_status_c3() {
+fn consumed_errexit_marks_relaxable_status_c3() {
     // 19A C-3 / 205 §2: `set -e` reads every command's rc (non-zero ⇒ abort), so an
     // errexit-region command IS a status-consumer — marked the value-relaxable
-    // `AndOrStatus`, NOT the `if`/`elif` render-floor `Status`. The committed engine
+    // `StatusRelaxable`, NOT the `if`/`elif` `StatusRenderFloor`. The committed engine
     // deliberately left this un-marked ("errexit stays vouched"); that is the C-3 hole
     // task-E closes (a converged ⊤-rc mutator under `set -e` must RUN, not elide). A
     // known/probe-sourced rc still folds — the relaxation is what Query-guard rcs ride.
     let c = consumed_of("set -e\napt-get install -y nginx\n", "apt-get");
     assert!(
-        c.contains(&Channel::AndOrStatus),
-        "errexit-consumed status is marked AndOrStatus (C-3: not special-cased-as-vouched)"
+        c.contains(&Channel::StatusRelaxable),
+        "errexit-consumed status is marked StatusRelaxable (C-3: not special-cased-as-vouched)"
     );
     assert!(
-        !c.contains(&Channel::Status),
-        "errexit marks the rc-relaxable AndOrStatus, never the if/elif render-floor Status"
+        !c.contains(&Channel::StatusRenderFloor),
+        "errexit marks the value-relaxable channel, never the if/elif render floor"
     );
 }
 
 #[test]
 fn consumed_errexit_off_does_not_mark_status() {
     // The dual: WITHOUT `set -e` a plain command has no status consumer (no failure-edge
-    // ⇒ no AndOrStatus from the errexit pass). Pins that the C-3 mark is errexit-gated,
+    // ⇒ no StatusRelaxable from the errexit pass). Pins that the C-3 mark is errexit-gated,
     // not blanket — a lone establish stays quiet (and so stays elidable when converged).
     let c = consumed_of("apt-get install -y nginx\n", "apt-get");
     assert!(
-        !c.contains(&Channel::AndOrStatus) && !c.contains(&Channel::Status),
+        !c.contains(&Channel::StatusRelaxable) && !c.contains(&Channel::StatusRenderFloor),
         "no errexit ⇒ no status consumer on a lone command"
     );
 }
@@ -1102,8 +1102,8 @@ fn consumed_errexit_mark_respects_precise_edge_pruning() {
     // EXCLUSION-CHECK (the precise-edge contract, note 166 + 205 §2): the C-3 errexit
     // mark reuses the errexit pass's failure-edge knowledge, so it is pruned EXACTLY
     // where the failure-edge is. An `if`-guard command under `set -e` is errexit-exempt
-    // (a condition region, no failure-edge) ⇒ it must NOT pick up `AndOrStatus` from the
-    // errexit pass; it carries only the `if`/`elif` render-floor `Status` from
+    // (a condition region, no failure-edge) ⇒ it must NOT pick up `StatusRelaxable` from
+    // the errexit pass; it carries only the `if`/`elif` `StatusRenderFloor` from
     // `mark_status`. (Were the mark over-broad — marking every command under `set -e` —
     // it would re-mark exempt guards and the precise-edge work would be moot.)
     let c = consumed_of(
@@ -1111,12 +1111,12 @@ fn consumed_errexit_mark_respects_precise_edge_pruning() {
         "apt-get",
     );
     assert!(
-        c.contains(&Channel::Status),
-        "the if-guard keeps its render-floor Status"
+        c.contains(&Channel::StatusRenderFloor),
+        "the if-guard keeps its render floor"
     );
     assert!(
-        !c.contains(&Channel::AndOrStatus),
-        "an errexit-exempt if-guard does NOT get the errexit AndOrStatus mark (precise-edge pruning)"
+        !c.contains(&Channel::StatusRelaxable),
+        "an errexit-exempt if-guard does NOT get the errexit StatusRelaxable mark (precise-edge pruning)"
     );
 }
 
@@ -1124,14 +1124,14 @@ fn consumed_errexit_mark_respects_precise_edge_pruning() {
 fn consumed_dollar_question_marks_predecessor_c3() {
     // 19A C-3 / 205 §2: `$?` reads the PREVIOUS command's rc, so the consumer is the
     // predecessor. `apt-get install …` then `[ $? -ne 0 ] && echo recover`: the install
-    // is marked AndOrStatus (its rc is read), so a converged ⊤-rc mutator there RUNS.
+    // is marked StatusRelaxable (its rc is read), so a converged ⊤-rc mutator there RUNS.
     let c = consumed_of(
         "apt-get install -y nginx\n[ $? -ne 0 ] && echo recover\n",
         "apt-get",
     );
     assert!(
-        c.contains(&Channel::AndOrStatus),
-        "a command whose rc `$?` reads is marked AndOrStatus (C-3 second consumer)"
+        c.contains(&Channel::StatusRelaxable),
+        "a command whose rc `$?` reads is marked StatusRelaxable (C-3 second consumer)"
     );
     // The `$?`-reader itself is NOT the consumer of its own rc — only the predecessor is.
     // Use a `$?`-reader that is NOT also a `&&`/`||` operand (which would mark it from a
@@ -1139,13 +1139,13 @@ fn consumed_dollar_question_marks_predecessor_c3() {
     // `$?` ⇒ its predecessor (the install) is marked, but `echo` itself is not.
     let reader = consumed_of("apt-get install -y nginx\necho $?\n", "echo");
     assert!(
-        !reader.contains(&Channel::AndOrStatus),
+        !reader.contains(&Channel::StatusRelaxable),
         "the `$?`-reader marks its predecessor, not itself"
     );
     // And the install IS the marked predecessor in that plain-statement shape too.
     let pred = consumed_of("apt-get install -y nginx\necho $?\n", "apt-get");
     assert!(
-        pred.contains(&Channel::AndOrStatus),
+        pred.contains(&Channel::StatusRelaxable),
         "the predecessor of a plain `echo $?` reader is marked"
     );
 }
@@ -1156,7 +1156,7 @@ fn consumed_dollar_question_first_command_marks_nothing() {
     // nothing — the pred-walk reaches only Entry. No panic, no spurious mark.
     let c = consumed_of("[ $? -ne 0 ]\napt-get install -y nginx\n", "apt-get");
     assert!(
-        !c.contains(&Channel::AndOrStatus),
+        !c.contains(&Channel::StatusRelaxable),
         "a `$?`-reader with no command predecessor marks nothing (walk hits Entry)"
     );
 }
@@ -1171,16 +1171,16 @@ fn consumed_dollar_question_in_assignment_marks_predecessor() {
         "apt-get",
     );
     assert!(
-        c.contains(&Channel::AndOrStatus),
+        c.contains(&Channel::StatusRelaxable),
         "`$?` in an assignment RHS marks the predecessor command too (rc=$? idiom)"
     );
 }
 
 #[test]
-fn consumed_andand_left_operand_marks_andor_status() {
+fn consumed_andand_left_operand_marks_relaxable_status() {
     // `19D` (generalised from the F1 `if`/`elif`-only stopgap): a `&&`/`||` left operand
-    // IS branch-consumed, so the engine marks it `Channel::AndOrStatus` (the
-    // rc-relaxable variant — distinct from the `if`/`elif` `Status` render floor). The
+    // IS branch-consumed, so the engine marks it `Channel::StatusRelaxable` (the
+    // value-relaxable variant — distinct from the `if`/`elif` `StatusRenderFloor`). The
     // phased caller collapses it rc-conditionally (`prove_replaceable`): undeclared rc ⇒
     // block (the `useradd[9] || mkdir` under-execute floor), declared rc ⇒ relax
     // (`install && start`'s rc-0 post-condition stays replaceable). Pins the engine-side
@@ -1190,25 +1190,25 @@ fn consumed_andand_left_operand_marks_andor_status() {
         "apt-get",
     );
     assert!(
-        c.contains(&Channel::AndOrStatus),
-        "a `&&`/`||` left operand's status is branch-consumed (marked AndOrStatus, 19D)"
+        c.contains(&Channel::StatusRelaxable),
+        "a `&&`/`||` left operand's status is branch-consumed (marked StatusRelaxable, 19D)"
     );
-    // It is the rc-relaxable variant, NOT the `if`/`elif` unconditional-block `Status`.
+    // It is the value-relaxable variant, NOT the `if`/`elif` unconditional-block floor.
     assert!(
-        !c.contains(&Channel::Status),
-        "the `&&`/`||` variant is AndOrStatus, not the `if`/`elif` render-floor Status"
+        !c.contains(&Channel::StatusRenderFloor),
+        "the `&&`/`||` variant is StatusRelaxable, not the `if`/`elif` render floor"
     );
 }
 
 #[test]
-fn consumed_oror_left_operand_marks_andor_status() {
+fn consumed_oror_left_operand_marks_relaxable_status() {
     // The `||` dual (the under-execute side): `useradd deploy || mkdir` — the left
-    // operand's status gates the `mkdir` fallback, so it is marked `AndOrStatus`. With
+    // operand's status gates the `mkdir` fallback, so it is marked `StatusRelaxable`. With
     // no declared rc the caller blocks ⇒ `useradd` runs ⇒ the `|| mkdir` fallback runs
     // (`19D` — the proven `kFAIL-perform` fix).
     let c = consumed_of("useradd deploy || mkdir /srv/app\n", "useradd");
     assert!(
-        c.contains(&Channel::AndOrStatus),
-        "a `||` left operand's status is branch-consumed (marked AndOrStatus, 19D)"
+        c.contains(&Channel::StatusRelaxable),
+        "a `||` left operand's status is branch-consumed (marked StatusRelaxable, 19D)"
     );
 }

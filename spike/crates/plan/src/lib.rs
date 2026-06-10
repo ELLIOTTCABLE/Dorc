@@ -226,30 +226,31 @@ impl ReplaceLicense {
     ///    engine's un-collapsed `May<Powerset<Channel>>` fact (`inv-superposition`,
     ///    note 16J); per `inv-must-may` a `May` value can only block. Branch-consumed
     ///    status comes in two engine variants by render-expressibility (`19D` / 19C
-    ///    strain-D); both gate a *different* command's reachability, so a *fabricated*
-    ///    rc-0 stand-in would destroy that decision. The unvouched set:
+    ///    strain-D / `206` §3); both gate a *different* command's reachability, so a
+    ///    *fabricated* rc-0 stand-in would destroy that decision. The unvouched set:
     ///    * `Stdout`/`Stderr` — the stub defaults them to empty, vouched by nothing
     ///      (16F §3); a consumed one ⇒ run (no in-spike bridge). A declared rc does
     ///      NOT vouch *output content*, so these block regardless of `observed_rc`.
-    ///    * `Status` (an `if`/`elif` guard) — blocks the license **unconditionally**.
-    ///      The line-granular render cannot substitute a guard on its `if`/`then`/`fi`
-    ///      line, so even a declared rc cannot be applied in-situ (the disposition would
-    ///      be sound, but the render breaks `dash -n`). The block is the render floor;
-    ///      full retirement waits on the leaf-exact render (`C-5`).
-    ///    * `AndOrStatus` (a `&&`/`||` left operand) — blocks **only when the rc is
-    ///      undeclared** (`observed_rc == None`): then the stand-in defaults to `true`
-    ///      (rc 0), a fabricated success that suppresses a `|| fallback` (the
+    ///    * `StatusRenderFloor` (an `if`/`elif` guard) — blocks the license
+    ///      **unconditionally**. The line-granular render cannot substitute a guard on its
+    ///      `if`/`then`/`fi` line, so even a declared rc cannot be applied in-situ (the
+    ///      disposition would be sound, but the render breaks `dash -n`). The block is the
+    ///      render floor; full retirement waits on the leaf-exact render (`C-5`).
+    ///    * `StatusRelaxable` (a `&&`/`||` left operand, an errexit-region command, or a
+    ///      `$?`-reader's predecessor — the four `206` §3 sources) — blocks **only when
+    ///      the rc is ⊤** (`status == Predicted::Top`): then the stand-in would default to
+    ///      `true` (rc 0), a fabricated success that suppresses a `|| fallback` (the
     ///      `kFAIL-perform` under-execute — the round-19 adversarial trace). A
-    ///      *declared* rc relaxes it (`observed_rc == Some(N)` ⇒ the stand-in is
-    ///      `StandIn::from_rc(N)`, reproducing the exact status, so the branch decides
-    ///      identically — the fold's declared-rc opt-in, `19A §5`). The render CAN
+    ///      *declared/probe-sourced* rc relaxes it (`status == Predicted::Value(N)` ⇒ the
+    ///      stand-in is `StandIn::from_rc(N)`, reproducing the exact status, so the branch
+    ///      decides identically — the fold's declared-rc opt-in, `19A §5`). The render CAN
     ///      express this (operand+operator on one line; the fold + omit-safety gate
     ///      handle it). (`tc-mint`/`tc-reliability`: the rc is a *declared observable*,
     ///      not inferred; an un-declared rc on a non-conforming establish is an
     ///      oracle-quality defect — build-2's contract, `19C` strain-B.)
     ///    * Errexit (`set -e`)-consumed status is NOT special-cased (19A C-3, honored
     ///      round-20 / 205 §2): the cfg pass marks errexit-region commands (and `$?`
-    ///      readers' predecessors) as `AndOrStatus`-consumed, so they ride the same
+    ///      readers' predecessors) `StatusRelaxable`-consumed, so they ride the same
     ///      declared-rc-or-block rule above. Under fork-mutator-rc a mutator's rc is
     ///      always ⊤ ⇒ converged mutators under `set -e` run (the 206 §2 headline cost).
     ///
@@ -310,9 +311,9 @@ impl ReplaceLicense {
     ///    stand-in needs a concrete rc to reproduce (`inv-probe-sourced-values`: no
     ///    fabricated rc-0); AND
     /// 3. the consumption gates pass ([`consumption_ok`]): a guard whose `Stdout`/
-    ///    `Stderr` is consumed, or whose `Status` is an `if`/`elif` guard (the render
-    ///    floor), still blocks. A `&&`/`||`-consumed status with a *known* rc relaxes
-    ///    (the whole point — the fold reads the exact rc and substitutes it).
+    ///    `Stderr` is consumed, or whose status is an `if`/`elif` guard
+    ///    (`StatusRenderFloor`), still blocks. A `StatusRelaxable`-consumed status with a
+    ///    *known* rc relaxes (the whole point — the fold reads the exact rc, substitutes it).
     ///
     /// An INVALID guard arrives with `status == ⊤` from its phased caller (the cli
     /// withholds the stale rc), so condition (2) already blocks it — but we also gate
@@ -361,18 +362,20 @@ impl ReplaceLicense {
 }
 
 /// The shared consumed-observable gate for both substitution paths (the un-vouched
-/// channel check, 16F §3 / 19C strain-D / 19D). The fact arrives un-collapsed as a
-/// `May` (over-approximate consumption): per `inv-must-may` a `May` value can only
+/// channel check, 16F §3 / 19C strain-D / 19D / `206` §3). The fact arrives un-collapsed
+/// as a `May` (over-approximate consumption): per `inv-must-may` a `May` value can only
 /// BLOCK a license, never grant one. Returns `true` iff NO unvouched observable
 /// forbids the substitution:
 /// * `Stdout`/`Stderr` — empty default vouched by nothing ⇒ a consumed one always
 ///   blocks (a declared/probed rc does NOT vouch output *content*);
-/// * `Status` (an `if`/`elif` guard) — blocks unconditionally (the render floor: the
-///   line-granular render cannot substitute a guard on its `if`/`then`/`fi` line);
-/// * `AndOrStatus` (a `&&`/`||` left operand, or an errexit/`$?` consumer marked the
-///   same, 205 §2) — blocks ONLY when the rc is ⊤ (a fabricated rc-0 `true` would
-///   suppress a `|| fallback`, the `kFAIL-perform` under-execute); a known/probe-sourced
-///   rc relaxes it (`StandIn::from_rc` reproduces the exact status).
+/// * `StatusRenderFloor` (an `if`/`elif` guard) — blocks unconditionally (the render
+///   floor: the line-granular render cannot substitute a guard on its `if`/`then`/`fi`
+///   line; retired only by a guard-capable leaf-exact render, not by the rc value);
+/// * `StatusRelaxable` (the four `206` §3 sources: a `&&`/`||` left operand, an
+///   errexit-region command, or a `$?`-reader's predecessor) — blocks ONLY when the rc is
+///   ⊤ (a fabricated rc-0 `true` would suppress a `|| fallback`, the `kFAIL-perform`
+///   under-execute); a known/probe-sourced rc relaxes it (`StandIn::from_rc` reproduces
+///   the exact status).
 ///
 /// Sound in BOTH phases; only what a blocked leaf *becomes* is phase-keyed (the
 /// caller's collapse, `inv-superposition`).
@@ -381,10 +384,10 @@ fn consumption_ok(consumed: &May<Powerset<Channel>>, status: Predicted<Rc>) -> b
     if consumed.contains(&Channel::Stdout) || consumed.contains(&Channel::Stderr) {
         return false;
     }
-    if consumed.contains(&Channel::Status) {
+    if consumed.contains(&Channel::StatusRenderFloor) {
         return false;
     }
-    if consumed.contains(&Channel::AndOrStatus) && matches!(status, Predicted::Top) {
+    if consumed.contains(&Channel::StatusRelaxable) && matches!(status, Predicted::Top) {
         return false;
     }
     true
@@ -664,6 +667,14 @@ impl ProbePlan {
 
 /// The probe artifact's header — documents the results-record grammar (205 §2
 /// rule-probe-exec-gate consumers, and the human reading the artifact, depend on it).
+///
+/// `stdout=`/`stderr=` are RESERVED record keys (`19F` §3 one-Observable tuple): the cli
+/// parser accepts-and-stores them ([`crate`]'s consumer, `parse_results`), but PRODUCING
+/// them is FUTURE WORK — this probe emits only `effect=`/`rc=`, so the EMITTED header text
+/// stays unchanged (the reserved keys live in the cli parser's doc + the record type, not
+/// in the shipped artifact bytes — which keeps every golden byte-identical). A consumed
+/// `Stdout`/`Stderr` blocks elision unconditionally regardless (16F §3), so reserving the
+/// keys is a SHAPE completion, not a behavior change.
 const PROBE_HEADER: &str = "#!/bin/sh\n\
     # dorc probe (read-only): checks per-SITE convergence, mutates nothing.\n\
     # When run, emits one results-record per site on stdout (the return channel):\n\
@@ -1566,14 +1577,14 @@ apt_get__check() {
     }
 
     #[test]
-    fn andor_status_blocks_only_when_rc_undeclared() {
+    fn relaxable_status_blocks_only_when_rc_undeclared() {
         // `19D` (the keystone of the kFAIL-perform fix): a `&&`/`||` left operand's
-        // `AndOrStatus` blocks the license iff the rc is UNDECLARED — then the stand-in
+        // `StatusRelaxable` blocks the license iff the rc is UNDECLARED — then the stand-in
         // would default to `true`/rc-0, a fabricated success suppressing a `|| fallback`
         // (the round-19 under-execute). A *declared* rc relaxes it (the value-preserving
         // stand-in reproduces the exact status, preserving the branch).
         let f = nginx_fact();
-        let consumed = || May(Powerset::singleton(Channel::AndOrStatus));
+        let consumed = || May(Powerset::singleton(Channel::StatusRelaxable));
         // Undeclared rc ⇒ BLOCK (the safe run-it floor).
         assert!(
             ReplaceLicense::prove_replaceable(
@@ -1603,11 +1614,11 @@ apt_get__check() {
     }
 
     #[test]
-    fn if_guard_status_blocks_unconditionally() {
-        // `19D` / 19C strain-D: the `if`/`elif`-guard `Status` is the render floor — it
+    fn render_floor_status_blocks_unconditionally() {
+        // `19D` / 19C strain-D / `206` §3: the `if`/`elif`-guard `StatusRenderFloor`
         // blocks the license EVEN with a declared rc (the line-granular render cannot
         // substitute a guard on its `if`/`then`/`fi` line; a declared-rc relaxation
-        // would break `dash -n`). Contrast `andor_status_blocks_only_when_rc_undeclared`.
+        // would break `dash -n`). Contrast `relaxable_status_blocks_only_when_rc_undeclared`.
         let f = nginx_fact();
         for rc in [
             Predicted::Top,
@@ -1619,11 +1630,11 @@ apt_get__check() {
                     &SkipClass::EstablishAmbient(f),
                     Grade::Must,
                     PhasedVerdict::<Probe>::new(Verdict::Converged),
-                    May(Powerset::singleton(Channel::Status)),
+                    May(Powerset::singleton(Channel::StatusRenderFloor)),
                     rc,
                 )
                 .is_none(),
-                "an if-guard's Status blocks unconditionally (render floor), rc={rc:?}"
+                "an if-guard's StatusRenderFloor blocks unconditionally (render floor), rc={rc:?}"
             );
         }
     }
@@ -1746,7 +1757,7 @@ apt_get__check() {
             // source — only its Effect channel (convergence) arrives from the probe, the
             // rc is ⊤. So `verdict_only` everywhere, never a fabricated `Rc(0)`. The
             // earlier `Rc(0)` masked C-3: under `set -e` the install's status is consumed
-            // (AndOrStatus), and a declared rc-0 would relax-and-elide it; with the
+            // (StatusRelaxable), and a declared rc-0 would relax-and-elide it; with the
             // faithful ⊤-rc it correctly RUNS (see `residual_poison_sources_isolated`).
             if f == target {
                 Observable::verdict_only(nginx_verdict)
