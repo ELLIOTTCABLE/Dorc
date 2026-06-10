@@ -17,11 +17,11 @@
 //! THE A/B CONTRAST this matrix makes concrete: a CONSUMED *stdout*/*stderr* is NOT
 //! fine — its empty default is unvouched — so every `spec_*stdout*` is "not replaced"
 //! (the backward observable-liveness gate landed, 16H/16J). A CONSUMED *status* is
-//! REFINED (F1/`19D`): vouched (replaceable) for an errexit/post-condition consumer,
-//! but NOT for a branch consumer — an `if`/`elif` guard
-//! (`f1_status_consumed_by_if_guard_blocks_replacement`, unconditional render floor) or
-//! a `&&`/`||` left operand (`andor_left_operand_undeclared_rc_runs_kfail_perform`,
-//! the `kFAIL-perform` floor), where eliding to a fabricated rc-0 would change which
+//! REFINED (F1/`19D`): vouched (replaceable) only when the consumer's rc is *known* —
+//! an `if`/`elif` guard always blocks (`f1_status_consumed_by_if_guard_blocks_replacement`,
+//! unconditional render floor); a `&&`/`||` left operand
+//! (`andor_left_operand_undeclared_rc_runs_kfail_perform`) blocks on an undeclared/⊤ rc
+//! (the `kFAIL-perform` floor), where eliding to a fabricated rc-0 would change which
 //! branch/operand runs.
 //!
 //! ROUND-20 (`fork-mutator-rc` adopted, notes/201 §1 + 202 §5): a MUTATOR's rc has NO
@@ -31,15 +31,26 @@
 //! cost (19H §2.3). The engine's `AndOrStatus`-relaxes-on-declared-rc seam STAYS —
 //! it is what probe-sourced *Query-guard* rcs ride next (202 §2); only the mutator-rc
 //! injection that previously exercised it here is gone (it was the masking 19I §2
-//! strips). The old 16F "status ← establishes-contract, rc-0 is free" vouch survives
-//! ONLY for the errexit consumer (structural: the engine never marks errexit-status;
-//! a non-conforming converged establish under `set -e` is the documented priority-2
-//! over-execute, 19E/19F §6).
+//! strips).
 //!
-//! NOTE — these cases deliberately omit `set -e` to isolate the observable
-//! dimension. `set -e` is itself un-oracled ⇒ it independently *poisons* downstream
-//! ambient-ness (an effect-precision bug, fs-4; see the adjacent spec at the
-//! bottom), so a real defensive book carries both confounds at once.
+//! ROUND-20 C-3 (19A C-3 / 205 §2, task-E): `set -e` and `$?` are now HONORED as
+//! ordinary rc-consumers, not special-cased-as-vouched. The engine marks an
+//! errexit-region command's rc — and a `$?`-reader's predecessor's rc — the
+//! value-relaxable `AndOrStatus` (`analysis/tests/cfg.rs` `consumed_errexit_marks_*` /
+//! `consumed_dollar_question_*`). Composed with `fork-mutator-rc` (a mutator's rc is
+//! ⊤): a converged mutator under `set -e` now RUNS (`errexit_consumed_top_status_runs_c3`
+//! below) — the priority-2 over-execute the committed engine hid by leaving errexit
+//! un-marked is closed. A *known/probe-sourced* rc still folds (the relaxation seam),
+//! so a conforming converged establish with a declared rc-0 stays replaceable; only the
+//! ⊤-rc case is lost. (fs-4 still holds at the EFFECT layer: `set -e` does not POISON
+//! ambient-ness — the install stays `EstablishAmbient`; it runs for the *status* reason,
+//! not the poison reason. The adjacent spec at the bottom pins exactly that separation.)
+//!
+//! NOTE — most cases below deliberately omit `set -e` to isolate the observable
+//! dimension; the C-3 errexit cell is exercised explicitly where named. `set -e` is
+//! target-state-pure (fs-4) so it does not poison the effect analysis, but under C-3 it
+//! DOES consume each command's status — two distinct effects a real defensive book
+//! carries at once.
 //!
 //! INVISIBLE GLOBAL STATE: a book's text never says whether the target is already
 //! in the desired state. `plan_for(src, holds)` injects it — `holds` is the set of
@@ -52,7 +63,7 @@
 //! asserts the END-TO-END collapse of that fact into a run/replace disposition
 //! (`inv-superposition`, note 16J). `is_replaced` localizes the disposition check.
 
-use dorc_analysis::effect::FactKey;
+use dorc_analysis::effect::{FactKey, SkipClass};
 use dorc_core::{
     EntityRef, Interner, KindId, Observable, OpaqueToken, ProviderId, SelectorId, Verdict,
 };
@@ -128,10 +139,11 @@ fn is_replaced(plan: &Plan, needle: &str) -> bool {
 // `converged_ambient_install_is_replaced_rest_runs`), which subsume them — this
 // matrix isolates the OBSERVABLE dimension, so every cell below assumes converged.
 //
-// "status consumed by `set -e`" cannot be pinned as *replaced* here — `set -e`
-// itself poisons (the adjacent spec at the bottom), so the install is
-// EstablishWritten and never reaches the status question. The status dimension is
-// exercised cleanly below via `&&` and `||`, which sit *after* the install.
+// "status consumed by `set -e`" IS now a clean cell (C-3, 205 §2): `set -e` is
+// target-state-pure (fs-4) so the install stays `EstablishAmbient` and DOES reach the
+// status question, where its ⊤-rc `AndOrStatus` mark blocks the license ⇒ it runs
+// (`errexit_consumed_top_status_runs_c3`). The `&&`/`||` cells exercise the same
+// rc-relaxable status from a different locus.
 
 #[test]
 fn pins_converged_status_via_andand_runs_mutator_rc_top() {
@@ -200,14 +212,15 @@ fn pins_converged_status_via_oror_runs_mutator_rc_top() {
 }
 
 // ===========================================================================
-// F1 — the BRANCH-vs-ERREXIT status A/B contrast (`notes/195` F1, round-19 stopgap).
+// F1/C-3 — the status A/B contrast (`notes/195` F1; 19A C-3 / 205 §2 honored).
 // The round-16 model decided "no status gate" (rc-0 vouched by the establishes-
-// contract). That is sound for a POST-condition / errexit consumer but UNSOUND for a
-// guard / PRE-condition consumer (a *different branch* runs on the rc), where eliding
-// the converged command to `:` (rc 0) destroys the branch decision — a `kFAIL-perform`
-// under-execute. The fix: **branch**-consumed status (the test of an `if`/`elif`)
-// blocks the license; **errexit**-consumed status (`set -e`) stays vouched. These two
-// cases ARE that contrast — same converged install, opposite disposition by locus.
+// contract). That is unsound wherever the rc is unknown and a decision turns on it. The
+// settled model: a status consumer blocks the license unless the rc is *known*. An
+// `if`/`elif` GUARD blocks unconditionally (render floor). An errexit-region command's
+// status is consumed too (C-3: `set -e` reads every rc — NOT special-cased-as-vouched);
+// composed with `fork-mutator-rc` (mutator rc ⊤), a converged mutator under `set -e`
+// RUNS. These two cases ARE that contrast — same converged install, both run, by locus:
+// one via the if-guard floor, one via the C-3 errexit ⊤-rc block.
 // ===========================================================================
 
 #[test]
@@ -230,21 +243,45 @@ fn f1_status_consumed_by_if_guard_blocks_replacement() {
 }
 
 #[test]
-fn f1_status_consumed_by_errexit_stays_vouched() {
-    // B: observable=STATUS, consumed=YES by ERREXIT (`set -e`), converged. This is the
-    // contrast to A: errexit-status IS the establishes-contract's domain (a converged
-    // idempotent establish exits 0, so `set -e` does not abort), so it stays vouched ⇒
-    // the install is still replaced. Gating *all* consumed status (the over-gate the
-    // 16G "load-bearing" tension warned of — under `set -e` every status is consumed)
-    // would never elide anything; the resolution is to gate BRANCH-status only. HOST:
-    // nginx installed. (`set -e` is target-state-pure — fs-4 — so it does not poison.)
+fn errexit_consumed_top_status_runs_c3() {
+    // B (FLIPPED for 19A C-3 / 205 §2): observable=STATUS, consumed=YES by ERREXIT
+    // (`set -e`), converged. The committed engine special-cased this ("errexit-status
+    // stays vouched, still elides") — the human's C-3 ruling rejects that: `set -e`
+    // reads every command's rc (non-zero ⇒ abort), so it is an ordinary status consumer,
+    // marked the value-relaxable `AndOrStatus`. Composed with `fork-mutator-rc` (a
+    // mutator's rc is ⊤, never a fabricated rc-0), the `AndOrStatus` floor refuses the
+    // license ⇒ the install RUNS. This closes the priority-2 over-execute the old vouch
+    // hid: a NON-conforming converged establish under `set -e` (one that exits non-zero
+    // when converged) would abort a real run, which eliding to `true` silently masked.
+    // A *known/probe-sourced* rc would still relax (the seam survives — `set -e` Query
+    // guards fold later, 202 §2); only the ⊤-rc mutator is lost. HOST: nginx installed.
     let plan = plan_for(
         "set -e\napt-get install -y nginx\n",
         &[("package", "nginx")],
     );
     assert!(
-        is_replaced(&plan, "install -y nginx"),
-        "errexit-consumed status stays vouched by the establishes-contract ⇒ still replaced"
+        !is_replaced(&plan, "install -y nginx"),
+        "errexit-consumed ⊤-rc status RUNS (C-3: not special-cased-as-vouched)"
+    );
+}
+
+#[test]
+fn cmd_consuming_dollar_question_blocks_predecessor() {
+    // C-3's second consumer (19A C-3 / 205 §2): a `$?`-reader makes its PREDECESSOR a
+    // status consumer. `apt-get install -y nginx` (converged) then `[ $? -ne 0 ] && echo
+    // recover`: the install's rc is read by `$?`, so it is marked `AndOrStatus`. Its rc
+    // is ⊤ (`fork-mutator-rc` — a mutator has no sanctioned rc), so the license is
+    // refused ⇒ the install RUNS. The committed engine left `$?` un-marked, so it would
+    // have wrongly elided the install to `true` (rc 0) and suppressed the `recover`
+    // branch a real non-conforming run would take — the priority-1 exposure C-3 names.
+    // HOST: nginx installed.
+    let plan = plan_for(
+        "apt-get install -y nginx\n[ $? -ne 0 ] && echo recover\n",
+        &[("package", "nginx")],
+    );
+    assert!(
+        !is_replaced(&plan, "install -y nginx"),
+        "a converged mutator whose rc `$?` reads must run (⊤ rc, no fabricated rc-0)"
     );
 }
 
@@ -391,30 +428,60 @@ fn spec_topcontext_background_leaf_must_run() {
 }
 
 // ===========================================================================
-// ADJACENT FINDING (effect-poison / fs-4) — surfaced by this matrix, NOT fixed by
-// the observable-liveness gate. Un-oracled commands are Opaque ⇒ poison downstream
-// ambient-ness — including ubiquitous builtins (`set`, `echo`, `cd`, `:`,
-// `[`/`test`), none of which touch *target-system* facts, yet each kills
-// replacement for everything after it. Since `set -e` opens nearly every defensive
-// book, this blocks ~all replacement in practice. The fix lives in the EFFECT
-// analysis (classify) — treat target-state-pure builtins as Pure, not Opaque —
-// and is distinct from the observable-liveness gate. Included because it is the
-// confound that stops "status under set -e" from being a clean cell above.
+// ADJACENT FINDING (effect-poison / fs-4) — surfaced by this matrix, distinct from
+// BOTH the observable-liveness gate AND the C-3 status mark. fs-4: target-state-pure
+// builtins (`set`, `echo`, `cd`, `:`, `[`/`test`) must classify Pure, not Opaque, so
+// they do not poison downstream ambient-ness. That fix is at the EFFECT layer
+// (classify). C-3 (205 §2) is a SEPARATE, later gate: even with `set -e` non-poisoning
+// at the effect layer, `set -e` consumes each command's status, so a ⊤-rc mutator under
+// it runs anyway. The exclusion-check below keeps the two cleanly apart — the install
+// stays `EstablishAmbient` (fs-4 holds) yet its plan disposition is Run (C-3 blocks).
 // ===========================================================================
 
 #[test]
-fn spec_converged_set_e_does_not_poison_replacement() {
-    // HOST: nginx installed (converged). `set -e` precedes the install; it toggles a
-    // shell option and touches NO package fact. EXPECTED: the install is replaced
-    // (set -e is irrelevant to package:nginx). CURRENT: NOT replaced — `set -e` is
-    // Opaque ⇒ Reach::Top ⇒ the install classifies EstablishWritten. Sound, but
-    // ruinously over-conservative (fs-4 on the most common builtin).
-    let plan = plan_for(
-        "set -e\napt-get install -y nginx\n",
-        &[("package", "nginx")],
-    );
+fn spec_set_e_pure_at_effect_layer_but_c3_status_blocks() {
+    // HOST: nginx installed (converged). Two separate claims, exclusion-checked apart:
+    //
+    // fs-4 (EFFECT layer): `set -e` toggles a shell option and touches NO package fact,
+    // so it must NOT poison — the install stays `EstablishAmbient` (NOT `EstablishWritten`
+    // / `MustRun`). Were `set -e` still Opaque ⇒ Reach::Top, the install would be Written.
+    //
+    // C-3 (STATUS layer, 205 §2): `set -e` nonetheless consumes the install's rc, which
+    // for a mutator is ⊤ (`fork-mutator-rc`) ⇒ the license is refused ⇒ disposition Run.
+    //
+    // So the install runs for the *status* reason, NOT the poison reason — the round's
+    // honest headline cost. (Pre-C-3 this asserted `is_replaced`; the committed engine's
+    // un-marked errexit made it pass, which is exactly the C-3 hole task-E closes.)
+    let mut i = Interner::default();
+    let idx = package_index(&mut i);
+    let installed = SelectorId(i.intern("installed"));
+    let nginx = FactKey {
+        kind: KindId(i.intern("package")),
+        entity: EntityRef::Operand(OpaqueToken(i.intern("nginx"))),
+        selector: installed,
+    };
+    let src = "set -e\napt-get install -y nginx\n";
+    let parsed = dorc_syntax::parse(src);
+    let cfg = dorc_analysis::cfg::build(&parsed.value).value;
+    let classes = dorc_analysis::effect::classify(&cfg, &parsed.value, &idx, &mut i);
+    // fs-4: the install is EstablishAmbient (set -e did not poison the effect analysis).
+    let install_is_ambient = classes
+        .iter()
+        .any(|(_, class)| matches!(class, SkipClass::EstablishAmbient(f) if *f == nginx));
     assert!(
-        is_replaced(&plan, "install -y nginx"),
-        "set -e is target-state-pure; it must not poison the install's ambient-ness"
+        install_is_ambient,
+        "fs-4: set -e is target-state-pure ⇒ the install stays EstablishAmbient (not poisoned)"
+    );
+    // C-3: but its ⊤-rc status is errexit-consumed ⇒ Run.
+    let plan = build_plan(src, &parsed.value, &cfg, &classes, move |f| {
+        if f == nginx {
+            Observable::verdict_only(Verdict::Converged)
+        } else {
+            Observable::verdict_only(Verdict::Diverged)
+        }
+    });
+    assert!(
+        !is_replaced(&plan, "install -y nginx"),
+        "C-3: errexit-consumed ⊤-rc status ⇒ the install runs (despite fs-4 non-poison)"
     );
 }

@@ -1,0 +1,7 @@
+# The host already has nginx (Converged) — but `apt-get install` is a mutator, so its rc
+# has no sanctioned source (`fork-mutator-rc`): the probe reports convergence only, no
+# `rc=`. The following `[ $? -ne 0 ]` consumes that rc (`$?` reads the predecessor's
+# status); an undeclared/⊤ rc on a status-consumed command is refused a replace license
+# ⇒ the install RUNS (C-3, 205 §2). The rendered apply keeps the install verbatim, so
+# `$?` reads its real exit status at runtime.
+package:nginx#installed converged

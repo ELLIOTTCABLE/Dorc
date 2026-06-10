@@ -1,2 +1,8 @@
+ran: apt-get install -y nginx
+ran: apt-get update
 ran: nginx -t
+ran: systemctl enable nginx
 ran: systemctl reload nginx
+ran: systemctl start nginx
+ran: ufw allow 443/tcp
+ran: ufw allow 80/tcp

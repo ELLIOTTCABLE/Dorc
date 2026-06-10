@@ -4,5 +4,5 @@
 # rc is undeclared ⇒ the engine refuses to replace it ⇒ it RUNS. The line stays
 # verbatim; real `useradd` exits 9 ⇒ `|| mkdir` fires ⇒ `mkdir` runs. Both run — the
 # safe floor. (Round-20 `fork-mutator-rc`: no declared-rc path exists for a mutator —
-# the old rc=9-injecting contrast case was cut as masking; notes/201 §4.)
+# the old rc=9-injecting contrast case was cut as masking; notes/203 §3.)
 user#present converged

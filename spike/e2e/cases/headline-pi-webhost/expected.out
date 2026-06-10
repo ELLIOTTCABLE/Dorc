@@ -24,20 +24,14 @@ service__check 'nginx'
 # pi-webhost provisioning (bare-mutation core; the lazy admin lets Dorc do idempotency)
 set -e
 
-# apt-get update   # dorc: elided (already converged / dead branch)
-true
-# apt-get install -y nginx   # dorc: elided (already converged / dead branch)
-true
+apt-get update
+apt-get install -y nginx
 
-# ufw allow 80/tcp   # dorc: elided (already converged / dead branch)
-true
-# ufw allow 443/tcp   # dorc: elided (already converged / dead branch)
-true
+ufw allow 80/tcp
+ufw allow 443/tcp
 
-# systemctl enable nginx   # dorc: elided (already converged / dead branch)
-true
-# systemctl start nginx   # dorc: elided (already converged / dead branch)
-true
+systemctl enable nginx
+systemctl start nginx
 
 nginx -t && systemctl reload nginx
 

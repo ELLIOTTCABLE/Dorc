@@ -1,0 +1,13 @@
+# exec-dollarq-blocks-elision (19A C-3 / 205 §2 — the `$?` consumer): `$?` reads the
+# PREVIOUS command's exit status, so a `$?`-reader makes its predecessor a status
+# consumer. Here the converged `apt-get install -y nginx` is followed by `[ $? -ne 0 ]`,
+# so the install's rc is consumed; under `fork-mutator-rc` a mutator's rc is ⊤, so the
+# `AndOrStatus` floor refuses the license ⇒ the install RUNS (it is NOT elided to a
+# fabricated rc-0 `true`, which would feed the recovery check a status the real command
+# never produced). The committed engine left `$?` un-marked and would have wrongly
+# elided the install — the priority-1 exposure C-3 names (`mkdir x; [ $? -ne 0 ] &&
+# recover` suppressing `recover`). The trailing `echo` just lands the script at rc 0
+# for the harness. HOST: nginx installed (converged).
+apt-get install -y nginx
+[ $? -ne 0 ] && echo recovery-needed
+echo finished

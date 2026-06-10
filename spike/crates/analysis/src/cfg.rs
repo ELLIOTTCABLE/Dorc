@@ -97,8 +97,11 @@ pub enum CfgNodeKind {
 // `true`-stub's default would NOT vouch — an un-collapsed fact (`inv-superposition`): the
 // engine names *what is consumed*; the phased caller (`plan`) collapses it. `Effect` is
 // vouched by convergence and never enters the set; `Stdout`/`Stderr` are vouched by
-// nothing (always block, 16F §3); the two branch-status variants (`Status` if-guard,
-// `AndOrStatus` &&/|| operand) differ only in render-expressibility — see `core::Channel`.
+// nothing (always block, 16F §3). Three status-consumers, all value-relaxable except the
+// `if`/`elif` render floor: `Status` (if-guard, unconditional block), and `AndOrStatus`
+// (&&/|| operand — AND now an errexit-region command's rc and a `$?`-reader's predecessor,
+// per 19A C-3 / 205 §2: `set -e` and `$?` are ordinary rc-consumers, not special-cased).
+// They differ only in render-expressibility — see `core::Channel`.
 
 /// One CFG node: its role plus the [`AstId`] it derives from (provenance). For
 /// synthetic nodes (`Entry`/`Exit`/`Merge`/scope) the `ast` points at the nearest
@@ -248,8 +251,14 @@ pub fn build(ast: &Ast) -> Carrier<Cfg> {
     let tail = b.lower_node(ast.root(), entry);
     b.add_edge(tail, exit);
 
-    // Phase 2: errexit failure-edges (the haz-seterr coupling).
+    // Phase 2: errexit failure-edges (the haz-seterr coupling) — and, as a by-product,
+    // errexit-region commands' rc is marked `AndOrStatus`-consumed (19A C-3 / 205 §2).
     b.materialise_errexit_edges();
+
+    // Phase 3: `$?`-readers mark their CFG-predecessor command(s)' rc consumed (C-3's
+    // second consumer). Runs after the structural walk so `pred` is populated; the
+    // errexit edges added in phase 2 do not change a command's predecessors.
+    b.mark_dollar_question_predecessors();
 
     b.finish()
 }
@@ -958,6 +967,16 @@ impl<'a> Builder<'a> {
         }
         for v in to_add {
             self.add_edge(CfgNodeId(v as u32), exit);
+            // 19A C-3 / 205 §2: a command errexit might abort on is a status-consumer
+            // (`set -e` reads every rc; non-zero ⇒ abort). Mark it the value-relaxing
+            // `AndOrStatus` — a known/probe-sourced rc still folds/substitutes exactly,
+            // but a ⊤ rc (every mutator under `fork-mutator-rc`) blocks the license, so a
+            // converged non-conforming establish under `set -e` RUNS (it does NOT stay
+            // vouched). Redir failure-edges abort too, but a `Redir` is never a plan leaf
+            // consulted for consumption, so only `Command` nodes are marked.
+            if self.nodes[v].kind == CfgNodeKind::Command {
+                self.consumed[v].0.insert(Channel::AndOrStatus);
+            }
         }
         if saw_top {
             self.diags.push(Diagnostic::warning(
@@ -967,6 +986,74 @@ impl<'a> Builder<'a> {
                  added conservatively (over-approximate, sound)",
             ));
         }
+    }
+
+    /// Mark each `$?`-reading command's CFG-**predecessor** command(s)' rc as consumed
+    /// (19A C-3 / 205 §2: `$?` is the second un-marked status-consumer the committed
+    /// engine missed). `$?` reads the *previous* command's exit status, so the consumer
+    /// is the predecessor, not the reader itself. Walk back over `pred`, skipping
+    /// structural nodes (`Entry`/`Merge`/scope/`Redir`/`Top`) until the first `Command`
+    /// on each incoming path; at a merge, every reaching command pred is marked. A walk
+    /// that reaches only structural nodes (e.g. `$?` as the first command) marks
+    /// nothing. The mark is `AndOrStatus` (value-relaxable): a known rc still
+    /// folds/substitutes, a ⊤ rc blocks the license.
+    ///
+    /// Conservative by construction (`inv-kfail`-safe): at a pipeline (`a | b` with `$?`
+    /// in `b`) or across a subshell boundary the "predecessor" is whatever command the
+    /// pred-edges reach — marking more can only *block* more, never license more, so the
+    /// marking-more direction is taken without resolving those ambiguities precisely.
+    fn mark_dollar_question_predecessors(&mut self) {
+        let readers: Vec<usize> = (0..self.nodes.len())
+            .filter(|&v| {
+                self.nodes[v].kind == CfgNodeKind::Command
+                    && self.command_reads_dollar_question(self.nodes[v].ast)
+            })
+            .collect();
+        for reader in readers {
+            // Backward walk: first `Command` on each path; structural nodes recurse.
+            let mut visited: BTreeSet<usize> = BTreeSet::new();
+            let mut stack: Vec<usize> = self.pred[reader].clone();
+            while let Some(p) = stack.pop() {
+                if !visited.insert(p) {
+                    continue;
+                }
+                if self.nodes[p].kind == CfgNodeKind::Command {
+                    self.consumed[p].0.insert(Channel::AndOrStatus);
+                } else {
+                    stack.extend(self.pred[p].iter().copied());
+                }
+            }
+        }
+    }
+
+    /// Does this `Simple`'s argv or assignment values read `$?` (the special status
+    /// parameter, lexed as `WordPart::Param { name: "?" }`)? Walks double-quoted nesting
+    /// (`"$?"` reads it too). Assignment RHS is included — `rc=$?` is the canonical idiom
+    /// — alongside the words; marking either way is the conservative direction.
+    fn command_reads_dollar_question(&self, id: AstId) -> bool {
+        let NodeKind::Simple { assigns, words, .. } = &self.ast.node(id).kind else {
+            return false;
+        };
+        let assign_values = assigns
+            .iter()
+            .filter_map(|&a| match &self.ast.node(a).kind {
+                NodeKind::Assign { value, .. } => *value,
+                _ => None,
+            });
+        words
+            .iter()
+            .copied()
+            .chain(assign_values)
+            .any(|w| self.word_reads_dollar_question(w))
+    }
+
+    /// Does a `Word` node contain the `$?` special parameter (recursing into
+    /// double-quoted parts)?
+    fn word_reads_dollar_question(&self, word_id: AstId) -> bool {
+        let NodeKind::Word { parts } = &self.ast.node(word_id).kind else {
+            return false;
+        };
+        parts_read_dollar_question(parts)
     }
 
     /// `before[v]` recomputed = join over predecessors of their after-states.
@@ -1077,10 +1164,13 @@ impl<'a> Builder<'a> {
     /// `if`/`elif` condition (`while`/`until` are ⊤-rejected today, so vacuous); a
     /// `&&`/`||` left operand is marked the *separate* `Channel::AndOrStatus` at its
     /// own call site (`lower_and_or`, the `19D` rc-relaxable variant — the render CAN
-    /// express it), not via this `Status`. This locus is also what separates
-    /// branch-status from errexit-status: the errexit pass never marks either status
-    /// variant, so errexit-consumed status stays vouched (a converged establish has
-    /// succeeded — `set -e` correctly does not abort).
+    /// express it), not via this `Status`. This locus separates *render-floor* status
+    /// (the `if`/`elif` guard) from *rc-relaxable* status: a `&&`/`||` operand, an
+    /// errexit-region command (`materialise_errexit_edges`), and a `$?`-reader's
+    /// predecessor (`mark_dollar_question_predecessors`) all mark `AndOrStatus`, not
+    /// `Status`. errexit is no longer special-cased-as-vouched (19A C-3 / 205 §2): a
+    /// converged conforming establish under `set -e` still folds via a known rc, but a
+    /// ⊤-rc mutator runs.
     ///
     /// Implemented as a node-range mark/clear: CFG nodes are arena-allocated in walk
     /// order, so the half-open range `[before, after)` is exactly the region's
@@ -1204,6 +1294,18 @@ fn word_text(ast: &Ast, w: AstId) -> Option<&str> {
         },
         _ => None,
     }
+}
+
+/// Does this list of word parts contain the `$?` special parameter (the lexer keeps
+/// it as `Param { name: "?" }`)? Recurses into double-quoted nesting (`"$?"` reads it).
+/// `ParamComplex` (`${...}` operator-forms) is opaque ⇒ conservatively NOT matched as
+/// `$?` (such a form is already ⊤-ward; this pass need not over-reach into it).
+fn parts_read_dollar_question(parts: &[WordPart]) -> bool {
+    parts.iter().any(|p| match p {
+        WordPart::Param { name } => name == "?",
+        WordPart::DoubleQuoted(inner) => parts_read_dollar_question(inner),
+        _ => false,
+    })
 }
 
 /// Recursively collect `$( … )` substitution body ids from word parts (walking

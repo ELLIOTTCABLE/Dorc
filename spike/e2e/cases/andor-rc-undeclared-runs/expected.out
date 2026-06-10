@@ -16,5 +16,5 @@ user__check
 # exits 9 (user present) ⇒ `|| mkdir` fires ⇒ `mkdir` runs. This is the safe
 # kFAIL-perform floor — WITHOUT 19D the fabricated rc 0 made the fold omit `mkdir` (a
 # proven priority-1 under-execute). Round-20: a mutator's rc has NO sanctioned source
-# (`fork-mutator-rc`; the old rc=9-injecting contrast case was cut as masking, 201 §4).
+# (`fork-mutator-rc`; the old rc=9-injecting contrast case was cut as masking, 203 §3).
 useradd deploy || mkdir /srv/app

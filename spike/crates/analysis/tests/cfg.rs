@@ -1067,15 +1067,112 @@ fn consumed_negated_if_guard_marks_status() {
 }
 
 #[test]
-fn consumed_errexit_does_not_mark_status() {
-    // The A/B contrast at the engine layer: `set -e` consumes status (errexit reads
-    // every rc) but that is the establishes-contract's domain, so the engine must NOT
-    // put `Status` in the set — only a condition region does. Over-marking here would
-    // re-break "a converged install under `set -e` still elides".
+fn consumed_errexit_marks_andor_status_c3() {
+    // 19A C-3 / 205 §2: `set -e` reads every command's rc (non-zero ⇒ abort), so an
+    // errexit-region command IS a status-consumer — marked the value-relaxable
+    // `AndOrStatus`, NOT the `if`/`elif` render-floor `Status`. The committed engine
+    // deliberately left this un-marked ("errexit stays vouched"); that is the C-3 hole
+    // task-E closes (a converged ⊤-rc mutator under `set -e` must RUN, not elide). A
+    // known/probe-sourced rc still folds — the relaxation is what Query-guard rcs ride.
     let c = consumed_of("set -e\napt-get install -y nginx\n", "apt-get");
     assert!(
+        c.contains(&Channel::AndOrStatus),
+        "errexit-consumed status is marked AndOrStatus (C-3: not special-cased-as-vouched)"
+    );
+    assert!(
         !c.contains(&Channel::Status),
-        "errexit-consumed status is NOT marked (stays vouched)"
+        "errexit marks the rc-relaxable AndOrStatus, never the if/elif render-floor Status"
+    );
+}
+
+#[test]
+fn consumed_errexit_off_does_not_mark_status() {
+    // The dual: WITHOUT `set -e` a plain command has no status consumer (no failure-edge
+    // ⇒ no AndOrStatus from the errexit pass). Pins that the C-3 mark is errexit-gated,
+    // not blanket — a lone establish stays quiet (and so stays elidable when converged).
+    let c = consumed_of("apt-get install -y nginx\n", "apt-get");
+    assert!(
+        !c.contains(&Channel::AndOrStatus) && !c.contains(&Channel::Status),
+        "no errexit ⇒ no status consumer on a lone command"
+    );
+}
+
+#[test]
+fn consumed_errexit_mark_respects_precise_edge_pruning() {
+    // EXCLUSION-CHECK (the precise-edge contract, note 166 + 205 §2): the C-3 errexit
+    // mark reuses the errexit pass's failure-edge knowledge, so it is pruned EXACTLY
+    // where the failure-edge is. An `if`-guard command under `set -e` is errexit-exempt
+    // (a condition region, no failure-edge) ⇒ it must NOT pick up `AndOrStatus` from the
+    // errexit pass; it carries only the `if`/`elif` render-floor `Status` from
+    // `mark_status`. (Were the mark over-broad — marking every command under `set -e` —
+    // it would re-mark exempt guards and the precise-edge work would be moot.)
+    let c = consumed_of(
+        "set -e\nif apt-get install -y nginx; then echo done; fi\n",
+        "apt-get",
+    );
+    assert!(
+        c.contains(&Channel::Status),
+        "the if-guard keeps its render-floor Status"
+    );
+    assert!(
+        !c.contains(&Channel::AndOrStatus),
+        "an errexit-exempt if-guard does NOT get the errexit AndOrStatus mark (precise-edge pruning)"
+    );
+}
+
+#[test]
+fn consumed_dollar_question_marks_predecessor_c3() {
+    // 19A C-3 / 205 §2: `$?` reads the PREVIOUS command's rc, so the consumer is the
+    // predecessor. `apt-get install …` then `[ $? -ne 0 ] && echo recover`: the install
+    // is marked AndOrStatus (its rc is read), so a converged ⊤-rc mutator there RUNS.
+    let c = consumed_of(
+        "apt-get install -y nginx\n[ $? -ne 0 ] && echo recover\n",
+        "apt-get",
+    );
+    assert!(
+        c.contains(&Channel::AndOrStatus),
+        "a command whose rc `$?` reads is marked AndOrStatus (C-3 second consumer)"
+    );
+    // The `$?`-reader itself is NOT the consumer of its own rc — only the predecessor is.
+    // Use a `$?`-reader that is NOT also a `&&`/`||` operand (which would mark it from a
+    // different source): a plain `echo $?` statement after the install. `echo` reads
+    // `$?` ⇒ its predecessor (the install) is marked, but `echo` itself is not.
+    let reader = consumed_of("apt-get install -y nginx\necho $?\n", "echo");
+    assert!(
+        !reader.contains(&Channel::AndOrStatus),
+        "the `$?`-reader marks its predecessor, not itself"
+    );
+    // And the install IS the marked predecessor in that plain-statement shape too.
+    let pred = consumed_of("apt-get install -y nginx\necho $?\n", "apt-get");
+    assert!(
+        pred.contains(&Channel::AndOrStatus),
+        "the predecessor of a plain `echo $?` reader is marked"
+    );
+}
+
+#[test]
+fn consumed_dollar_question_first_command_marks_nothing() {
+    // Boundary: `$?` with no command predecessor (the first statement reads it) marks
+    // nothing — the pred-walk reaches only Entry. No panic, no spurious mark.
+    let c = consumed_of("[ $? -ne 0 ]\napt-get install -y nginx\n", "apt-get");
+    assert!(
+        !c.contains(&Channel::AndOrStatus),
+        "a `$?`-reader with no command predecessor marks nothing (walk hits Entry)"
+    );
+}
+
+#[test]
+fn consumed_dollar_question_in_assignment_marks_predecessor() {
+    // The canonical idiom `cmd; rc=$?; …`: `$?` in the assignment RHS (not the argv)
+    // still marks the predecessor. `rc=$?` is an assignment-only Simple; the install
+    // before it is the consumed command.
+    let c = consumed_of(
+        "apt-get install -y nginx\nrc=$?\ntest \"$rc\" -eq 0\n",
+        "apt-get",
+    );
+    assert!(
+        c.contains(&Channel::AndOrStatus),
+        "`$?` in an assignment RHS marks the predecessor command too (rc=$? idiom)"
     );
 }
 
