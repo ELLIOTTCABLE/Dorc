@@ -1,0 +1,8 @@
+# probe-results: site-keyed records (task-D1 WIRE). Grammar:
+#   site <leafid> effect=<holds|absent|cant-tell>
+# site 0 = nginx (fully resolved + converged ⇒ elides to `true` — the contrast).
+# The `$UNSET_VAR` install (leaf 1) is UNRESOLVABLE (⊤ operand), so the probe emits NO
+# record for it (a `# site:1 skip-unresolvable` comment, never a printf) — there is no
+# site to attach a "bait" convergence to. THAT is the safe degrade: a ⊤-operand site can
+# never be elided because it has no resolvable cell, so it always runs (kFAIL-perform).
+site 0 effect=holds

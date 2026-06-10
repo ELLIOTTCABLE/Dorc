@@ -1,0 +1,21 @@
+#!/bin/sh
+# INERT probe shim for `grep` — the firewall kind's probe pipes `ufw status` into
+# `grep -q "<rule>"`. PATH is mocks-only, so the real grep is unavailable; this shim does
+# a minimal LITERAL substring match over stdin so the firewall probe is genuine (it still
+# depends on what `ufw status` printed — not a hardcoded answer). Supports the one form
+# the probe uses: `grep -q <pattern>` reading stdin. Read-only; no log (the firewall
+# check's running is witnessed by its record, and grep is not a tracked mutator).
+pat=
+for a in "$@"; do
+  case $a in
+    -q|-*) ;;        # flags (only -q is used) — skip
+    *) pat=$a ;;     # the pattern (last non-flag arg)
+  esac
+done
+found=1
+while IFS= read -r line; do
+  case $line in
+    *"$pat"*) found=0 ;;
+  esac
+done
+exit "$found"

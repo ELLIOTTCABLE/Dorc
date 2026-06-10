@@ -1,0 +1,8 @@
+# probe-results: site-keyed records (task-D1 WIRE). Grammar:
+#   site <leafid> effect=<holds|absent|cant-tell>
+# BAIT: site 0 (nginx, ABOVE the loop) is reported converged (holds). It is a resolvable
+# probe site, but the apply still RUNS it — its CFG successor is the ⊤ loop node, and
+# ⊤-containment (16G hole-5) refuses elision of a leaf with a ⊤ successor. curl (leaf 1,
+# below the loop) is poisoned to UNRESOLVABLE by the havoc, so the probe emits no record
+# for it (a `# site:1 skip-unresolvable` comment). Both installs run — the SAFE degrade.
+site 0 effect=holds

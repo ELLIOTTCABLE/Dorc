@@ -42,7 +42,7 @@ use dorc_analysis::lattice::{May, Powerset};
 use dorc_core::{
     AstId, Channel, EntityRef, Grade, Interner, KindId, Observable, Predicted, Rc, Verdict,
 };
-use dorc_syntax::ast::Ast;
+use dorc_syntax::ast::{Ast, NodeKind};
 use dorc_syntax::sem;
 
 mod fold;
@@ -998,22 +998,49 @@ impl Plan {
             src.get(..byte as usize)
                 .map_or(0, |s| s.bytes().filter(|&b| b == b'\n').count())
         };
+        // Byte offset of each source line's first byte (index = line number). Lets an
+        // absolute leaf span be mapped to an in-line byte column for the in-situ
+        // substitution (the T14 case-arm path below).
+        let line_start: Vec<usize> = std::iter::once(0)
+            .chain(
+                src.bytes()
+                    .enumerate()
+                    .filter_map(|(i, b)| (b == b'\n').then_some(i + 1)),
+            )
+            .collect();
         // Per-AstId disposition, so an `Omit`'s controller can be resolved for the
         // omit-safety gate.
         let by_ast: BTreeMap<AstId, &Disposition> =
             self.steps.iter().map(|s| (s.ast, &s.disposition)).collect();
+
+        // The T14 fix (leaf-exact case-arm render): leaves that are the body of a
+        // one-liner `case` arm (`pat) cmd ;;` all on one line) cannot be whole-line
+        // commented without swallowing the `pat)`/`;;` scaffolding. They are substituted
+        // IN-SITU instead (only the command span is replaced). Detected AST-structurally.
+        let arm_inline_leaves = case_arm_oneliner_leaves(ast, &line_of);
 
         // Per source line: does a Run leaf sit on it (⇒ verbatim)? and the surviving
         // value-preserving stand-in for a neutralised line.
         let mut run_lines: BTreeSet<usize> = BTreeSet::new();
         let mut neutral_lines: BTreeSet<usize> = BTreeSet::new();
         let mut line_standin: BTreeMap<usize, StandIn> = BTreeMap::new();
+        // line → (in-line byte start, in-line byte end, stand-in) for an in-situ
+        // case-arm substitution. The whole-line path skips these lines.
+        let mut inline_subst: BTreeMap<usize, (usize, usize, StandIn)> = BTreeMap::new();
         for step in &self.steps {
             let span = ast.node(step.ast).span;
             let last_byte = span.hi.0.saturating_sub(1).max(span.lo.0);
             let lines: Vec<usize> = (line_of(span.lo.0)..=line_of(last_byte)).collect();
             match &step.disposition {
                 Disposition::Run => run_lines.extend(&lines),
+                // A one-liner case-arm body `Replace`: substitute in-situ (keep `pat)`/`;;`).
+                Disposition::Replace(_, stand_in) if arm_inline_leaves.contains(&step.ast) => {
+                    let l = line_of(span.lo.0);
+                    let lo = line_start.get(l).copied().unwrap_or(0);
+                    let start = (span.lo.0 as usize).saturating_sub(lo);
+                    let end = (span.hi.0 as usize).saturating_sub(lo);
+                    inline_subst.insert(l, (start, end, *stand_in));
+                }
                 Disposition::Replace(_, stand_in) => {
                     for l in &lines {
                         neutral_lines.insert(*l);
@@ -1041,7 +1068,21 @@ impl Plan {
             "#!/bin/sh\n# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).\n\n",
         );
         for (i, line) in src.lines().enumerate() {
-            if neutral_lines.contains(&i) && !run_lines.contains(&i) {
+            if let Some((start, end, stand_in)) = inline_subst.get(&i).copied()
+                && !run_lines.contains(&i)
+            {
+                // T14 in-situ: keep the `pat)` prefix and ` ;;` suffix, replace only the
+                // command span with its value-preserving stand-in (`nginx) true ;;`). The
+                // provenance comment trails the arm (a `# …` after `;;` is a valid arm end).
+                let prefix = line.get(..start).unwrap_or(line);
+                let suffix = line.get(end..).unwrap_or_default();
+                out.push_str(prefix);
+                out.push_str(&stand_in.sh());
+                out.push_str(suffix);
+                out.push_str(
+                    "   # dorc: elided (already converged) — case-arm body substituted in situ\n",
+                );
+            } else if neutral_lines.contains(&i) && !run_lines.contains(&i) {
                 let indent: String = line
                     .chars()
                     .take_while(|c| *c == ' ' || *c == '\t')
@@ -1083,6 +1124,46 @@ fn is_neutralised(by_ast: &BTreeMap<AstId, &Disposition>, leaf: AstId, depth: u3
         Some(Disposition::Omit { controller }) => is_neutralised(by_ast, *controller, depth + 1),
         _ => false, // Run, or an un-classified controller ⇒ not neutralised
     }
+}
+
+/// The leaf [`AstId`]s that are a body command of a **one-liner `case` arm** — an arm
+/// whose pattern (`pat)`) and whose body command sit on the SAME source line (the T14
+/// render defect, `notes/199` cluster-C). Such a leaf cannot be whole-line-commented:
+/// the comment would also swallow the structural `pat)` / `;;` scaffolding, leaving an
+/// arm with no `pat)` (a `dash -n` syntax error). `render_apply` instead substitutes
+/// these leaves IN-SITU on the line (replacing only the command span), keeping the
+/// arm structure intact (`nginx) true ;;`).
+///
+/// Detection is AST-structural (not text-scanning for `)`/`;;`, which a command's own
+/// `)` would defeat): walk every [`NodeKind::Case`] arm, and if a body-`List` item's
+/// line equals the arm's first-pattern line, that item is a same-line arm body. Only
+/// the *direct* body items are collected — a leaf nested in a sub-group keeps the
+/// whole-line form (it has its own enclosing tokens, not the arm's). Scoped this
+/// narrowly so the ordinary whole-line path is untouched (zero golden churn elsewhere).
+fn case_arm_oneliner_leaves(ast: &Ast, line_of: &impl Fn(u32) -> usize) -> BTreeSet<AstId> {
+    let mut leaves = BTreeSet::new();
+    for (_id, node) in ast.iter() {
+        let NodeKind::Case { arms, .. } = &node.kind else {
+            continue;
+        };
+        for arm in arms {
+            let Some(&first_pat) = arm.patterns.first() else {
+                continue;
+            };
+            let pat_line = line_of(ast.node(first_pat).span.lo.0);
+            // The arm body is always a `List` (the parser wraps even a single command);
+            // its direct items are the candidate same-line leaves.
+            let NodeKind::List { items } = &ast.node(arm.body).kind else {
+                continue;
+            };
+            for &item in items {
+                if line_of(ast.node(item).span.lo.0) == pat_line {
+                    leaves.insert(item);
+                }
+            }
+        }
+    }
+    leaves
 }
 
 /// A round-trippable, unambiguous display label for a fact's re-keyed cell

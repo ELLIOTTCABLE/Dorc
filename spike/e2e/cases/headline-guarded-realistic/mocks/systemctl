@@ -1,0 +1,11 @@
+#!/bin/sh
+# INERT shim for `systemctl` — used as the apply mutator (`systemctl enable/start nginx`,
+# logs + exits 0) AND as the service kind's probe (`systemctl is-active --quiet nginx`).
+# The mock host has nginx active, so `is-active` exits 0 ⇒ both service sites (8 #enabled,
+# 9 #active — the oracle under-probes both via is-active) map to `holds`. The probe form
+# (`is-active`) is read-only; the mutating verbs just log.
+printf 'ran: %s %s\n' "${0##*/}" "$*" >>"$DORC_LOG"
+if [ "$1" = "is-active" ] || [ "$1" = "is-enabled" ]; then
+  exit 0   # nginx active/enabled on this mock host ⇒ holds
+fi
+exit 0

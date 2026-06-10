@@ -1,1 +1,0 @@
-probe runs package__check (dpkg-query), un-shimmed: mocks/ carries only the apply commands. Authored fixture stands until D3b ships a dpkg-query probe shim. (gate-1: site-completeness still enforced.)

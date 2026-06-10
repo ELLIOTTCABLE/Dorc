@@ -728,3 +728,79 @@ fn query_guard_consumed_stdout_blocks_substitution() {
         "a stdout-consumed Query guard blocks substitution (runs)"
     );
 }
+
+/// Drive the full pipeline keeping the AST, so a test can assert on `render_apply`
+/// (which needs both the `Plan` and the `&Ast`). Mirrors `plan_for` but returns the
+/// parsed tree alongside the plan.
+fn plan_and_ast(src: &str, holds: &[(&str, &str)]) -> (Plan, dorc_syntax::ast::Ast) {
+    let mut i = Interner::default();
+    let idx = package_index(&mut i);
+    let installed = SelectorId(i.intern("installed"));
+    let held: Vec<FactKey> = holds
+        .iter()
+        .map(|(k, e)| FactKey {
+            kind: KindId(i.intern(k)),
+            entity: EntityRef::Operand(OpaqueToken(i.intern(e))),
+            selector: installed,
+        })
+        .collect();
+    let parsed = dorc_syntax::parse(src);
+    let cfg = dorc_analysis::cfg::build(&parsed.value).value;
+    let classes = classify_value(&cfg, &parsed.value, &idx, &mut i);
+    let plan = build_plan(src, &parsed.value, &cfg, &classes, move |f| {
+        if held.contains(&f) {
+            Observable::verdict_only(Verdict::Converged)
+        } else {
+            Observable::verdict_only(Verdict::Diverged)
+        }
+    });
+    (plan, parsed.value)
+}
+
+#[test]
+fn render_one_liner_case_arm_body_substitutes_in_situ_keeping_arm_structure() {
+    // T14 (notes/199 cluster-C): a converged install that is the body of a one-liner
+    // `case` arm (`pat) cmd ;;` all on one line) must be substituted IN-SITU — only the
+    // command span replaced by its stand-in — NOT whole-line commented. Commenting the
+    // whole line would swallow the `nginx)`/`;;` scaffolding, leaving `case nginx in`
+    // followed by a bare stand-in where a `pat)` is required (a `dash -n` syntax error,
+    // the defect the standing xfail pinned). HOST: nginx installed (converged ⇒ replace).
+    let src = "case nginx in\n  nginx) apt-get install -y nginx ;;\n  *) : ;;\nesac\n";
+    let (plan, ast) = plan_and_ast(src, &[("package", "nginx")]);
+    let rendered = plan.render_apply(src, &ast);
+    assert!(
+        rendered.contains("  nginx) true ;;"),
+        "the arm body is substituted in situ, `nginx)` + `;;` intact:\n{rendered}"
+    );
+    assert!(
+        !rendered.contains("# nginx) apt-get install"),
+        "the structural `nginx)`/`;;` is NOT commented out (the T14 mangling):\n{rendered}"
+    );
+    // The `*) : ;;` arm and the `case`/`esac` keywords pass through verbatim.
+    assert!(
+        rendered.contains("case nginx in")
+            && rendered.contains("  *) : ;;")
+            && rendered.contains("esac"),
+        "the surrounding case structure is preserved:\n{rendered}"
+    );
+}
+
+#[test]
+fn render_multi_line_case_arm_body_keeps_whole_line_comment_form() {
+    // The negative control / scope guard for the T14 fix: when the arm body is on its
+    // OWN line (not sharing `pat)`/`;;`), the ordinary whole-line comment form is correct
+    // and already `dash -n`-clean — the in-situ path must NOT fire for it (it is keyed on
+    // the body sharing the pattern's line). This pins "zero churn to the ordinary path".
+    let src = "case nginx in\n  nginx)\n    apt-get install -y nginx\n    ;;\n  *) : ;;\nesac\n";
+    let (plan, ast) = plan_and_ast(src, &[("package", "nginx")]);
+    let rendered = plan.render_apply(src, &ast);
+    assert!(
+        rendered.contains("# apt-get install -y nginx   # dorc: elided"),
+        "an own-line arm body uses the whole-line comment form:\n{rendered}"
+    );
+    // The pattern line `  nginx)` survives verbatim (it was never on the body's line).
+    assert!(
+        rendered.contains("\n  nginx)\n"),
+        "the `nginx)` pattern line is untouched:\n{rendered}"
+    );
+}

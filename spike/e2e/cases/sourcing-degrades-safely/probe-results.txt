@@ -1,0 +1,7 @@
+# probe-results: site-keyed records (task-D1 WIRE). Grammar:
+#   site <leafid> effect=<holds|absent|cant-tell>
+# NO records: the OPAQUE source (`. helper.sh`, leaf 0) poisons downstream ambient-ness, so
+# the nginx install (leaf 1) is UNRESOLVABLE — the probe cannot even check a cell reached
+# through an opaque effect, so it emits NO record (a `# site:1 skip-unresolvable` comment).
+# With nothing probe-resolvable, the install simply runs (the SAFE degrade, kFAIL-perform).
+# (An empty fixture ⇒ gate-1 parity holds vacuously; the run-set is the real assertion.)

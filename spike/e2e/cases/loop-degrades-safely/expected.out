@@ -1,0 +1,24 @@
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc — the record is the out-of-band lane).
+
+# site 0: package:nginx#installed
+package__check() { dpkg-query -W "$1" >/dev/null 2>&1; }
+package__check 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'site 0 effect=%s rc=%s\n' "$_e" "$_rc"
+# site:1 skip-unresolvable
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+# loop-degrades-safely (19I floor / 20B §3 boundary strawman): a `for` loop mid-stream is
+# OUTSIDE the modeled subset ⇒ the parser ⊤-rejects it (inv-top-reject) and the cfg marks
+# it an absorbing ⊤ node. ⊤ poisons both neighbours: the install ABOVE has the ⊤ loop as
+# its CFG successor (⊤-containment, 16G hole-5 ⇒ no elision even though it probes converged
+# — the bait), and the install BELOW is poisoned to unresolvable by the havoc. BOTH run
+# VERBATIM — the SAFE degrade (kFAIL-perform): an unmodeled construct never silently
+# licenses elision. The run-set proves everything (incl. the loop body) runs.
+apt-get install -y nginx
+for x in a b; do apt-get install -y "$x"; done
+apt-get install -y curl

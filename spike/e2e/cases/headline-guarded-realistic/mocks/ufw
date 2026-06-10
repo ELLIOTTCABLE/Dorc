@@ -1,0 +1,12 @@
+#!/bin/sh
+# INERT shim for `ufw` — used as the apply mutator (`ufw allow 80/tcp`, logs + exits 0)
+# AND as the firewall kind's probe (`ufw status`, piped to grep). On `status` it prints
+# the mock host's rule table (80/tcp present ⇒ the firewall probe finds it ⇒ `holds`,
+# fixture site 12); on any mutating verb it just logs. Read-only on `status`.
+printf 'ran: %s %s\n' "${0##*/}" "$*" >>"$DORC_LOG"
+if [ "$1" = "status" ]; then
+  printf '%s\n' 'Status: active'
+  printf '%s\n' 'To                         Action      From'
+  printf '%s\n' '80/tcp                     ALLOW       Anywhere'
+fi
+exit 0
