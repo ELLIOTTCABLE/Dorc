@@ -10,3 +10,7 @@
 
 [tools]
 node = "22"
+
+# clone-vendor.sh deps
+gh = "2"
+jq = "1"

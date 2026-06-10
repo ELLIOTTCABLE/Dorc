@@ -1,0 +1,300 @@
+{
+   "_about": "Source-of-truth map for the research-source clones under Research/Vendor/. These are NOT submodules and are NOT committed (Research/.gitignore ignores Vendor/); this file plus clone-vendor.sh are the only things git tracks. Rebuild the corpus with `./clone-vendor.sh`; render the human-facing manifest table with `./clone-vendor.sh --table`. Enriched single-source-of-truth: replication fields + research metadata, replacing the hand-kept table that used to live in notes/000-source-manifest.md.",
+   "_fields": {
+      "path": "local directory under the vendor dir (the colis-anr/* entries nest by owner)",
+      "repo": "GitHub OWNER/NAME, passed to `gh repo clone`",
+      "commit": "pinned commit; checked out detached. Replaces any moving branch ref",
+      "lang": "characterizing language / paradigm (why-cloned framing, not necessarily GitHub's current primaryLanguage)",
+      "grade": "research grade per notes/000-source-manifest.md (A best human source, B practitioner; null = present-but-ungraded). Quality x relevance, recency not penalized",
+      "license": "best-known SPDX id. See licenseNote where GitHub's detector disagreed or returned NOASSERTION/none",
+      "licenseNote": "optional caveat: provenance of the license value, or copyleft-contamination flag (Phase-2-critical reuse risk)",
+      "relevance": "one-line Dorc relevance; [bracketed] slugs cross-ref sources.json",
+      "filter": "optional git partial-clone filter (e.g. blob:none) for the heavy repos; omitted = full history"
+   },
+   "schemaVersion": 1,
+   "vendorDir": "Vendor",
+   "repos": [
+      {
+         "path": "SVF",
+         "repo": "SVF-tools/SVF",
+         "commit": "5c45081f75d16afffc5fc9121e1f2f7a614e0bef",
+         "lang": "C++",
+         "grade": "A",
+         "license": "NOASSERTION",
+         "licenseNote": "GitHub could not map the LICENSE to an SPDX id; verify before any code reuse",
+         "relevance": "Sparse value-flow analysis; Graph/Rules/Solver factoring; mem-region partitioning. Sparsity + factoring (Q3). [sui-xue-svf-cc2016]",
+         "filter": "blob:none"
+      },
+      {
+         "path": "TAJS",
+         "repo": "cs-au-dk/TAJS",
+         "commit": "3bdf55a411d6fc278fce9a6b4198b104a07a7852",
+         "lang": "Java",
+         "grade": "A",
+         "license": "Apache-2.0",
+         "relevance": "Type Analyzer for JS: sound abstract interpretation of a messy dynamic language; recency abstraction; eval->top. Most direct methodological precedent. [jensen-moller-tajs-type-analysis-javascript-sas2009]",
+         "filter": "blob:none"
+      },
+      {
+         "path": "WALA",
+         "repo": "wala/WALA",
+         "commit": "3f73f62d11d966ebc50188e7a50dd72c954de46f",
+         "lang": "Java",
+         "grade": "A",
+         "license": "EPL-2.0",
+         "licenseNote": "Eclipse Public License: weak/file-level copyleft",
+         "relevance": "T.J. Watson analysis libraries: IFDS/slicing framework reference.",
+         "filter": "blob:none"
+      },
+      {
+         "path": "codeql",
+         "repo": "github/codeql",
+         "commit": "a16f1c555cea339ef5c8b4c7c9285b6e578c396c",
+         "lang": "QL",
+         "grade": "A",
+         "license": "MIT",
+         "licenseNote": "the QL libraries/queries are MIT; the CodeQL engine itself is proprietary",
+         "relevance": "QL libraries/queries over a relational program-fact DB: queryable fact base (Q2/Q3). [avgustinov-ql-codeql-ecoop2016]",
+         "filter": "blob:none"
+      },
+      {
+         "path": "doop",
+         "repo": "plast-lab/doop",
+         "commit": "ad051399b7bffa7b503067fa568f0aae18281215",
+         "lang": "Datalog",
+         "grade": "A",
+         "license": "NOASSERTION",
+         "licenseNote": "GitHub could not map the LICENSE to an SPDX id; verify before any code reuse",
+         "relevance": "Declarative points-to analysis in Datalog. [bravenboer-smaragdakis-doop-oopsla2009]"
+      },
+      {
+         "path": "fabricate",
+         "repo": "brushtechnology/fabricate",
+         "commit": "24a3acfc86129fda56c48a6ec1594e2cd5cd8e0c",
+         "lang": "Python",
+         "grade": "B",
+         "license": null,
+         "licenseNote": "no LICENSE file detected by GitHub; verify upstream terms before reuse",
+         "relevance": "strace/access-time-traced forward build (memoize.py lineage); trace-based dep inference."
+      },
+      {
+         "path": "flow",
+         "repo": "facebook/flow",
+         "commit": "6b6ebf0a75127dda99771edf3300b7e936bfdfe3",
+         "lang": "OCaml",
+         "grade": "A",
+         "license": "MIT",
+         "licenseNote": "manifest records 'MIT-ish'; GitHub's current primaryLanguage is Rust (the repo is mid-migration), but the pinned commit and the why-cloned framing are the OCaml JS-analyzer",
+         "relevance": "Facebook Flow: sound AI of JS.",
+         "filter": "blob:none"
+      },
+      {
+         "path": "fsatrace",
+         "repo": "jacereda/fsatrace",
+         "commit": "4d4a967293eed5bd2a0298c5be6858e3f7fccb28",
+         "lang": "C",
+         "grade": "B",
+         "license": "ISC",
+         "relevance": "LD_PRELOAD/file-access tracer rattle uses; pragmatic janky-box-friendly trace mechanism."
+      },
+      {
+         "path": "goblint-analyzer",
+         "repo": "goblint/analyzer",
+         "commit": "4c8b277a4cfcbb5b0e65bff2e7a60b0c96bd60d6",
+         "lang": "OCaml",
+         "grade": "A",
+         "license": "MIT",
+         "relevance": "Modular abstract-interpretation framework for C. Best OCaml AI-architecture reference."
+      },
+      {
+         "path": "infer",
+         "repo": "facebook/infer",
+         "commit": "743771d504d3d0b8a2132399aed5c2929098a5c4",
+         "lang": "OCaml",
+         "grade": "A",
+         "license": "MIT",
+         "licenseNote": "manifest round-1 says 'not cloned' but round-2 clones it; the heredoc included it, so it stays",
+         "relevance": "Compositional/bi-abduction static analyzer; diff-time deployment. [distefano-scaling-static-analyses-facebook-cacm2019]",
+         "filter": "blob:none"
+      },
+      {
+         "path": "mvdan-sh",
+         "repo": "mvdan/sh",
+         "commit": "f5c6e2779117ed9e742709a7f717aab927bf47cd",
+         "lang": "Go",
+         "grade": "A",
+         "license": "BSD-3-Clause",
+         "licenseNote": "permissive",
+         "relevance": "Production hand-rolled shell parser/AST/formatter. Best 'hand-roll a robust parser' reference."
+      },
+      {
+         "path": "oils",
+         "repo": "oils-for-unix/oils",
+         "commit": "8df6fec7531b9f608f33950c5467b81753b9e9dd",
+         "lang": "Python/C++",
+         "grade": "B-arrow",
+         "license": "Apache-2.0",
+         "licenseNote": "GitHub's detector returned NOASSERTION (compound license headers); upstream is Apache-2.0",
+         "relevance": "Andy Chu's statically-parseable shell (OSH/YSH). Per user: investigate, not assumed-useful."
+      },
+      {
+         "path": "rattle",
+         "repo": "ndmitchell/rattle",
+         "commit": "3c935ca004ec8557ad6edb92d42f8bdf5bc78f46",
+         "lang": "Haskell",
+         "grade": "A",
+         "license": "NOASSERTION",
+         "licenseNote": "GitHub could not map the LICENSE to an SPDX id (ndmitchell projects are typically BSD-3); verify before reuse",
+         "relevance": "Forward build, speculation, fsatrace-based: 'perfect dependencies' by tracing. Load-bearing recovery find. [spall-mitchell-rattle-perfect-dependencies-2020]"
+      },
+      {
+         "path": "salsa",
+         "repo": "salsa-rs/salsa",
+         "commit": "7e77c49f27210dc85b49ba28606542d72836b5ab",
+         "lang": "Rust",
+         "grade": "A",
+         "license": "Apache-2.0",
+         "licenseNote": "dual Apache-2.0/MIT upstream",
+         "relevance": "Generic on-demand incremental computation engine (~ Adapton). Incremental query engine."
+      },
+      {
+         "path": "shellcheck",
+         "repo": "koalaman/shellcheck",
+         "commit": "764802b7c023e9fdc191c12f57c418f186ad76ae",
+         "lang": "Haskell",
+         "grade": "A",
+         "license": "GPL-3.0",
+         "licenseNote": "copyleft: linking/reuse contaminates Dorc -> GPL-3",
+         "relevance": "Most mature real-world shell static analyzer. Pragmatic parser + checks over messy bash."
+      },
+      {
+         "path": "smoosh",
+         "repo": "mgree/smoosh",
+         "commit": "cc67dbe6a4953e51431997eac025b5e3f46c3d2d",
+         "lang": "OCaml/Lem",
+         "grade": "A",
+         "license": "MIT",
+         "relevance": "Reference implementation of executable POSIX shell semantics."
+      },
+      {
+         "path": "souffle",
+         "repo": "souffle-lang/souffle",
+         "commit": "c3861e0d3b82dcbcfce14a7bc8f434e70868bef9",
+         "lang": "C++",
+         "grade": "A",
+         "license": "UPL-1.0",
+         "licenseNote": "Universal Permissive License: permissive",
+         "relevance": "Datalog->native compiled analysis at scale. Queryable fact-base (Q2/Q3). [scholz-souffle-datalog-cc2016]",
+         "filter": "blob:none"
+      },
+      {
+         "path": "tree-sitter-bash",
+         "repo": "tree-sitter/tree-sitter-bash",
+         "commit": "a06c2e4415e9bc0346c6b86d401879ffb44058f7",
+         "lang": "C (grammar)",
+         "grade": "B",
+         "license": "MIT",
+         "relevance": "Incremental GLR grammar for bash: parser-generator-path reference."
+      },
+      {
+         "path": "tup",
+         "repo": "gittup/tup",
+         "commit": "2867b66e7105d432dce2609538117c1e6910bc73",
+         "lang": "C",
+         "grade": "B",
+         "license": "GPL-2.0",
+         "licenseNote": "copyleft",
+         "relevance": "File-based build system; FUSE-traced deps + undeclared-access detection (the M2 model)."
+      },
+      {
+         "path": "colis-anr/colis-batch",
+         "repo": "colis-anr/colis-batch",
+         "commit": "8f768a24063f44b1d46b2a52fcff94ff393fac88",
+         "lang": "OCaml",
+         "grade": null,
+         "license": "GPL-3.0",
+         "licenseNote": "no GitHub-detected LICENSE; CoLiS org is GPL-3 (inferred) - verify",
+         "relevance": "Runs colis-language over package corpora: corpus-tooling, like shstats. Ungraded in manifest; part of the CoLiS A-ecosystem."
+      },
+      {
+         "path": "colis-anr/colis-constraints",
+         "repo": "colis-anr/colis-constraints",
+         "commit": "470643707a8fdf445f4da7977b93ee1110522611",
+         "lang": "OCaml",
+         "grade": "A",
+         "license": "GPL-3.0",
+         "licenseNote": "no GitHub-detected LICENSE; CoLiS org GPL-3 (manifest contamination map) - copyleft",
+         "relevance": "Feature-tree constraint backend for the CoLiS symbolic interpreter."
+      },
+      {
+         "path": "colis-anr/colis-language",
+         "repo": "colis-anr/colis-language",
+         "commit": "62e8d77b9e83d6ce691013662cbeea2a9cb0e349",
+         "lang": "OCaml",
+         "grade": "A",
+         "license": "GPL-3.0",
+         "licenseNote": "no GitHub-detected LICENSE; CoLiS org GPL-3 (manifest contamination map) - copyleft",
+         "relevance": "The CoLiS symbolic analyser/engine. Parse->IR pipeline instructive (symbolic-exec itself rejected)."
+      },
+      {
+         "path": "colis-anr/ftwu",
+         "repo": "colis-anr/ftwu",
+         "commit": "ce1534b9c3715eb56f6078578d6046f3e7c07ff3",
+         "lang": "OCaml",
+         "grade": null,
+         "license": "GPL-3.0",
+         "licenseNote": "no GitHub-detected LICENSE; CoLiS org GPL-3 (inferred) - verify",
+         "relevance": "Feature-trees-with-updates implementation (CoLiS support lib). Ungraded in manifest."
+      },
+      {
+         "path": "colis-anr/lintshell",
+         "repo": "colis-anr/lintshell",
+         "commit": "f547ca4311b377583575c083e00ab33ae223f740",
+         "lang": "OCaml",
+         "grade": "A",
+         "license": "GPL-3.0",
+         "licenseNote": "no GitHub-detected LICENSE; CoLiS org GPL-3 (inferred) - copyleft",
+         "relevance": "User-extensible POSIX-sh lint: conceptually near our oracle model."
+      },
+      {
+         "path": "colis-anr/morbig",
+         "repo": "colis-anr/morbig",
+         "commit": "b97a5be622a7b5539f43617e74bf9cccad1d58b9",
+         "lang": "OCaml",
+         "grade": "A",
+         "license": "GPL-3.0",
+         "licenseNote": "GitHub returned NOASSERTION; CoLiS project GPL-3 (manifest contamination map) - copyleft contaminates",
+         "relevance": "The static POSIX parser; menhir-based. Cribbable front-end candidate."
+      },
+      {
+         "path": "colis-anr/morsmall",
+         "repo": "colis-anr/morsmall",
+         "commit": "572d04bbbe0bd12848e2abae886e4b69402ce6e9",
+         "lang": "OCaml",
+         "grade": "A",
+         "license": "GPL-3.0",
+         "licenseNote": "copyleft",
+         "relevance": "Concise POSIX-sh AST atop Morbig. Most-alive CoLiS piece (pushed 2025)."
+      },
+      {
+         "path": "colis-anr/shstats",
+         "repo": "colis-anr/shstats",
+         "commit": "a21f0461a20aa25caf20f97f3fdfec2412411d61",
+         "lang": "OCaml",
+         "grade": "A",
+         "license": "GPL-3.0",
+         "licenseNote": "copyleft",
+         "relevance": "Statistical analyzer for shell-script corpora: directly reusable for the skip-rate spike."
+      },
+      {
+         "path": "colis-anr/sourcil-poc",
+         "repo": "colis-anr/sourcil-poc",
+         "commit": "a706d1bc9e226a6600a48aa28ea3d8fc3e432c61",
+         "lang": "OCaml",
+         "grade": null,
+         "license": "GPL-3.0",
+         "licenseNote": "CoLiS org GPL-3; proof-of-concept. Ungraded in manifest",
+         "relevance": "Proof-of-concept for 'sourcil' (a CoLiS intermediate language)."
+      }
+   ]
+}

@@ -8,28 +8,15 @@ The graded **document-sources** — the original ~40 papers + learning-path note
 
 To-curate (links only so far; grade before saving): Clang "Data flow analysis: an informal introduction" (LLVM docs, B+); Ed Yang "Hoopl" blog series (A, functional dataflow lib); Wisconsin CS704 Horwitz notes (A). **Rejected: Grokipedia (AI-generated).**
 
-## Vendor repos (`Vendor/`, full history)
+## Vendor repos → `../vendor.json`
 
-| Repo | Lang | Q | Relevance |
-|---|---|---|---|
-| `colis-anr/morbig` | OCaml | A | The static POSIX parser. menhir-based. Cribbable front-end candidate. License: GPL3 (⚠ contamination if reused). |
-| `colis-anr/morsmall` | OCaml | A | Concise POSIX-sh AST atop Morbig. Pushed 2025 — most-alive CoLiS piece. |
-| `colis-anr/colis-language` | OCaml | A | The symbolic analyser/engine. (We rejected symbolic-exec, but parse→IR pipeline is instructive.) |
-| `colis-anr/colis-constraints` | OCaml | A | Feature-tree constraint backend. |
-| `colis-anr/shstats` | OCaml | A | **Statistical analyzer for shell-script corpora — directly reusable for the skip-rate spike.** |
-| `colis-anr/lintshell` | OCaml | A | User-extensible POSIX-sh lint — conceptually near our oracle model. |
-| `shellcheck` | Haskell | A | Most mature *real-world* shell static analyzer. Pragmatic parser + checks over messy bash. |
-| `mvdan-sh` | Go | A | Production hand-rolled shell parser/AST/formatter. Best "hand-roll a robust parser" reference. License: **BSD-3** (permissive). |
-| `smoosh` | OCaml/Lem | A | Reference implementation of the executable POSIX semantics. |
-| `oils` (OSH/YSH) | Python/C++ | B→ | Andy Chu's statically-parseable shell. Per user: *investigate*, not assumed-useful. |
-| `goblint-analyzer` | OCaml | A | Modular abstract-interpretation framework for C. Best OCaml AI-architecture reference. |
-| `tree-sitter-bash` | C/JS grammar | B | Incremental GLR grammar for bash — parser-generator-path reference. |
-
-Infer codebase deliberately **not** cloned (huge; the bi-abduction *concept* is captured by the POPL09 paper; Goblint covers the OCaml-AI-architecture need better for us).
+The 28 Vendor clones — local path, GitHub repo, **pinned commit**, language, grade, license, and Dorc-relevance — now live machine-queryable in [`../vendor.json`](../vendor.json), mirroring the `sources.json` delegation above so there is a single source of truth. Rebuild the checkouts from it with [`../clone-vendor.sh`](../clone-vendor.sh) (gh-auth'd, commit-pinned, self-healing, exponential-backoff, per-repo partial-clone for the heavy ones); regenerate the old table on demand with `../clone-vendor.sh --table`. (`infer` *is* among the 28, despite a round-1 "not cloned" aside that the round-2 clone superseded.)
 
 ## License contamination map (Phase-2-critical)
-- **GPL-3** (linking forces Dorc → GPL-3): morbig, morsmall, colis-language/constraints, shstats, **ShellCheck**.
-- **Permissive**: Goblint (MIT), Smoosh (MIT), tree-sitter-bash (MIT), Oils (Apache-2.0), mvdan/sh (BSD-3).
+Per-repo `license`/`licenseNote` live in `vendor.json`; the lever:
+- **GPL / copyleft** (reusing their *code* forces Dorc → GPL): the CoLiS set (morbig, morsmall, colis-language/constraints, lintshell, shstats), **ShellCheck** (GPL-3), **tup** (GPL-2); **WALA** is EPL-2 (weaker, file-level).
+- **Permissive**: MIT (Goblint, Smoosh, codeql, flow, infer, tree-sitter-bash), Apache-2 (TAJS, salsa, Oils), UPL (souffle), BSD-3 (mvdan/sh), ISC (fsatrace).
+- **Verify before reuse** (GitHub returned no SPDX id): SVF, doop, rattle, fabricate.
 - Consequence: the best-fit OCaml shell parser (Morbig) is GPL-3; reuse-as-code contaminates. Techniques are free. See `notes/040`.
 
 ## Analysis round (round 2) — soundness/reachability/mutation prior art
