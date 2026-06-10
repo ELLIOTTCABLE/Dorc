@@ -86,3 +86,29 @@ than before (named functions), the be-a-good-person direction. Engineering cost:
 must treat book-defined functions as command-families — i.e. seam-interproc-lite (call-edges
 for trivial wrapper fns), the seam 191 already names. Recorded as a direction worth a future
 round's strawman; NOT built, NOT a commitment.
+
+**§4b — the ONE-LINE pun (human's sharpening, same conversation):** the wrapper-pair above is
+still two lines of "oracle"; the daydream is one line total, for the very common case where
+dry-run mode is exactly one extra flag — "saves one writing an 'oracle' at all, even one in
+the file, in the happy-path." Two strawman spellings, both deferred:
+
+- **s-prefix-env** (the surprising one): `DORC_DRY=--dry-run systemctl reload nginx`.
+  Scorecard: pure sh; ONE line, zero prelude; off-ramp PERFECT (a command-scoped env prefix
+  is a no-op to any tool that doesn't read it — stock dash runs the real command verbatim);
+  statically trivial (the AST already exposes `Simple.assigns` for prefix-envs — face-book
+  handles the shape today); semantics = a site-keyed self-vouch, "appending this value makes
+  THIS invocation inert," same trust-class and shelf-life as a check() body. Cost: a reserved
+  magic env-name is a genuine dorc-ism — but DESIGN's off-ramp text explicitly budgets
+  "maybe some slight dorc-isms that you'd omit idiomatically," and this is the mildest
+  possible form (executable, inert, greppable). kOOB question to rule eventually: is a
+  recognized env-name "config-in-disguise" or legitimate in-band sh? (It IS sh — it executes.)
+  Collision risk with tools that read the name → reverse-DNS-ish spelling if pursued.
+- **s-helper-split**: `dorc_dry --dry-run -- systemctl reload nginx` with a one-line POSIX
+  definition at book top (`dorc_dry() { while [ "$1" != -- ]; do shift; done; shift; "$@" ;}`)
+  — runs the real command without Dorc; Dorc lifts the pre-`--` flags as the probe-variant.
+  One prelude line per book; handles nothing s-prefix-env doesn't, more visible, less magic.
+- Shared limit: both spell "append flag(s)"; a tool needing the flag at an interior position
+  (between verb and operand) falls back to the §4 wrapper-pair. Happy-path-only by design.
+- Shared soundness note: either form is an author self-vouch for probe-inertness of the
+  dry-variant — it must flow into the same vouch-closure accounting as check() bodies
+  (rule-anno-render/vouch-closure machinery, 205), never a special path.
