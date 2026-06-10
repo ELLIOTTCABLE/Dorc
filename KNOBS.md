@@ -161,6 +161,18 @@ Poles: `kLOCKIN-commit ↔ kLOCKIN-reversible`
 
 ---
 
+## Pseudo-knobs — consequence-gradients (named to watch, not to dial)
+
+A pseudo-knob is not an orthogonal dimension we can *choose* a position on, like the knobs above; it is a synthesis of other knobs plus what turns out to be decidable/provable in the analyzer — a gradient the design gets *shoved along* as those resolve. Named so the shove stays visible and attributable, and so we can reason about which real-knob moves shift it.
+
+### `kSILO`
+Poles: `kSILO-full-parity ↔ kSILO-different-limitations`
+
+**Tension:** where correctness-code (guards, checks, convergence predicates) accumulates over time, between its two possible homes. Under `kSILO-full-parity`, correctness-code is analyzed/lifted/rewarded identically wherever it lives — book or oracle — so admins keep writing guards in their books, books stay defensively rich, and the standalone off-ramp stays strong (the book still self-guards when run without Dorc). Under `kSILO-different-limitations`, the oracle-contract dialect is more analyzable than arbitrary book-sh (the kind-annotation, the constrained argparse, declared cardinality exist only there), so every capability gated behind it is a pull to migrate correctness out of books into oracle-libraries: books lean out, the world's published shell gets less defensive, and the book-alone off-ramp degrades to "runs, but re-runs blind."
+**Status:** pseudo — not directly settable; the position is an *output* of `kBURDEN` (who declares), `kTYANNOT`/`kOOB` (where annotation may live at all), `kLANG` (the off-ramp weld), the analyzer's per-file complexity dial (one machinery for books and oracles, thresholds may differ — 19H §1.3), and — the biggest near-term shover — which half of the probe model the UX visibly *rewards*: oracle-fact elision (Half A: in-book guards redundant ⇒ silo-pull) vs guard-subsumption (Half B: the admin's own guard is what buys them speed ⇒ anti-silo).
+**Owner:** emergent (analyzer decidability) + user (which gradient we *want*, expressed through the constituent knobs). **Lock-in:** low as a mechanism (it has none of its own); high as a watch-item — by the time the gradient shows up in user habit, the constituent decisions that caused it are baked.
+> Mitigations, so the gradient isn't over-feared: an admin's guard and an oracle's check are usually not duplicates (deployment-specific intent vs tool-state truth; the genuinely-siloable overlap is the narrow middle cohort), and in-book guards retain selfish value under any oracle regime (safe bare re-runs after partial failure, defense against engine misprediction, the unreliable-oracle cell) — surfaceable as a lint-nudge. Origin: the 2026-06-09 conversation (the human's "users will silo their correctness-code into the oracles … degrades the offramp-quality" concern); 19H §1.1/§1.3; 196 §2 (Half-B). *(Added 2026-06-09 by direct human instruction; human-named poles.)*
+
 ## Platform reach — *how far do we bend for odd hosts/targets?*
 
 ### `kTPLATFORMS`
