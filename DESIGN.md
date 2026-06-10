@@ -443,6 +443,20 @@ throughlines in the various moving parts:
 
 Contract & DX
 -------------
+For the two users, there are two 'flavours' of code. These *must* be
+intermixable in the same file (and will usually start that way); the terms are
+shorthand for the *style* of code, and two different ends of the UX-design-space
+we try to simultaneously inhabit:
+
+1. the 'oracle' - a body of sh, that we try to encourage the user to write
+   *well*, with extra, defensive guards and certain behavioural expectations. (a
+   region of code about which Dorc allows itself to make more requests and soft
+   constraints - think Ansible "role" or Ansible "task", in flavour); and
+
+2. the 'runbook' - the "rest" of the sh; allowed to be more chaotic, imperative,
+   mutative, and generally written *to get something done*: to make a server
+   behave a certain way, fix a bug, or so on. (think Ansible "playbook.")
+
 For the properties we desire to provide to the ops-team/admin, we need to demand
 certain things of the devops/engineer.
 
