@@ -41,6 +41,14 @@ Counterweight (~SUSPECT): lazy admins don't restructure scripts to chase a tool'
 stats unless the UX rubs their nose in it — which the planned why-elided/why-probed per-line
 disclosure (dir-soundiness-ux) would do. The disclosure surface and the incentive surface are
 the same surface.
+<!-- /* correction 2026-06-10, same conversation: the parenthetical above ("does NOT unlock
+elision either") misread the human's workaround. `|| exit 1` lines being blocked is not a
+failure — it IS the opt-in ("force treatment as mutation" = always run). The workaround is
+semantically coherent end-to-end and introduces ZERO Dorc-side unsoundness: bare lines under
+`set +e` spell "rc ignorable" = elidable-when-converged; `|| exit 1` lines spell "rc matters"
+= run. The user manually collapses the strictness superposition, spelled in sh. The problem
+is solely the externality the human's §1 already named (offboarded scripts less
+safe-by-default; the world's shell less defensive). */ -->
 
 ## §3 Naming + filing (orchestrator assessment)
 
