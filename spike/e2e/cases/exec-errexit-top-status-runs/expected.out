@@ -6,10 +6,10 @@
 # rc is the raw PROBE-command status (opaque to Dorc — the record is the out-of-band lane).
 
 # site 1: package:nginx#installed
-package__check() { dpkg-query -W "$1" >/dev/null 2>&1; }
-package__check 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'site 1 effect=%s rc=%s\n' "$_e" "$_rc"
+package_installed__check() { dpkg-query -W "$1" >/dev/null 2>&1; }
+package_installed__check 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'site 1 effect=%s rc=%s\n' "$_e" "$_rc"
 # site 2: package:curl#installed
-package__check 'curl'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'site 2 effect=%s rc=%s\n' "$_e" "$_rc"
+package_installed__check 'curl'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'site 2 effect=%s rc=%s\n' "$_e" "$_rc"
 # site:0 skip-unresolvable
 #!/bin/sh
 # dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
@@ -17,7 +17,7 @@ package__check 'curl'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc"
 # exec-errexit-top-status-runs (19A C-3 / 205 §2 — the FLIP of the old
 # exec-errexit-elide-vouched): under `set -e` every command's rc is consumed (non-zero
 # ⇒ abort), so an errexit-region command is an ordinary status consumer — NOT
-# special-cased-as-vouched. The engine marks it the value-relaxable `AndOrStatus`.
+# special-cased-as-vouched. The engine marks it the value-relaxable `StatusRelaxable`.
 # Composed with `fork-mutator-rc` (a mutator's rc has no sanctioned source ⇒ ⊤), the
 # converged `nginx` install can no longer be elided to `true`: a fabricated rc-0 would
 # hide the abort a NON-conforming converged establish (one that exits non-zero when

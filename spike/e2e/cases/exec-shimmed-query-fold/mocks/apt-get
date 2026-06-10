@@ -1,0 +1,7 @@
+#!/bin/sh
+# INERT shim for `apt-get` — the apply mutator (`apt-get install -y nginx`). On this host
+# the fold OMITS it (the guard holds ⇒ the `||` branch is dead), so it must NOT appear in
+# the apply run-set; it logs only if it (wrongly) runs. (The BARE book — gate-5 ground truth
+# — short-circuits past it too, since `dpkg -s nginx` exits 0.)
+printf 'ran: %s %s\n' "${0##*/}" "$*" >>"$DORC_LOG"
+exit 0

@@ -1,0 +1,7 @@
+# probe-results: the enabled≠active host (task-P/find-1 boundary). Site-keyed records:
+#   site <leafid> effect=<holds|absent|cant-tell> [rc=<n>]
+# site 0 = service:nginx#enabled (is-enabled ⇒ holds); site 1 = service:nginx#active
+# (is-active ⇒ absent). Establish sites carry no rc (firewalled from the fold — effect-only
+# parity, item-4). Distinct probes are what let #enabled hold while #active is absent.
+site 0 effect=holds
+site 1 effect=absent

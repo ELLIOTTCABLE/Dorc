@@ -6,7 +6,7 @@
 # firewall WITHHOLDS the guard's rc (status ⊤):
 #   - the fold cannot resolve the `||` (the guard rc is ⊤) ⇒ the nginx install stays
 #     LIVE (runs), never folded dead;
-#   - the guard itself is AndOrStatus-consumed with a ⊤ rc ⇒ no license ⇒ it RUNS for
+#   - the guard itself is StatusRelaxable-consumed with a ⊤ rc ⇒ no license ⇒ it RUNS for
 #     real at apply (re-observing the possibly-changed state — kFAIL-perform).
 # The run-set proves it: BOTH installs run (curl, and nginx — the latter's presence is
 # the proof the guard did NOT fold it). Contrast exec-query-guard-composition, where the

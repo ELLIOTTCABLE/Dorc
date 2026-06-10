@@ -589,6 +589,47 @@ pkgone__check() {
     );
 }
 
+#[test]
+fn naive_oracle_without_operand_guard_drops_trailing_operands_known_hazard() {
+    // KNOWN HAZARD — pinned, NOT fixed (20I §3 find-3 / 208 strain-W3). A NAIVE oracle
+    // that binds `pkg : package = "$1"` WITHOUT the single-operand guard `[ "$2" = "" ]`
+    // resolves `apt-get install nginx curl` to entity=nginx and ships a probe for nginx
+    // ALONE — silently DROPPING curl. If the host has nginx but not curl, the probe says
+    // `holds`, the apply elides the whole `install nginx curl`, and curl is NEVER
+    // installed: a priority-1 UNDER-EXECUTE.
+    //
+    // This is NOT an engine bug to fix here: the engine parses nothing
+    // (`inv-referent-agnostic`); the multi-operand refusal is the ORACLE's job, spelled
+    // `if [ "$2" = "" ]; then probe "$pkg"; fi` (which degrades a 2nd-operand argv to
+    // Top ⇒ run — see `test_context_past_end_positional_is_empty_string`). The defense
+    // lives in the oracle-quality bar (oracle/CLAUDE.md), and the example authors copy
+    // (19H §2.1's annotation). This test pins the naive drop as a DATUM so it can't be
+    // mistaken for correct, and so a future engine-side "fix" (which would re-introduce
+    // the deleted engine-side argparse) is visibly the wrong layer.
+    let src = r#"
+naive__check() {
+   pkg : com.debian.apt.Package = "$1"
+   dpkg-query -W "$pkg"
+}
+"#;
+    let res = resolve(src, "naive", &["install", "nginx", "curl"]);
+    let r = resolved(&res);
+    // The hazard, made concrete: entity = the FIRST operand (`install`, here — the check
+    // has no verb-strip either), and the trailing operands are simply gone. The probe
+    // resolves and would license eliding a multi-target install. SOUND oracles add the
+    // guard; this one didn't, and the drop is silent.
+    assert_eq!(
+        r.entity,
+        operand("install"),
+        "KNOWN HAZARD: the unguarded check binds $1 and drops every trailing operand"
+    );
+    assert_eq!(
+        probe_texts(src, &res),
+        vec![r#"dpkg-query -W "$pkg""#],
+        "…and it SHIPS a probe (resolvable ⇒ elidable) — the under-execute surface"
+    );
+}
+
 // =============================================================================
 // Quoting — `"$1"` vs `$1` vs `'$1'` in the annotation value-position.
 // =============================================================================

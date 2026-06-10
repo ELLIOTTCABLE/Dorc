@@ -77,6 +77,18 @@ exemplar of R2-SHADOW.
 - **The ≥enum floor (`F-BLESSED`).** Blessing is *not* "free read-off-the-command": an honest `service` probe is
   **two** commands (`is-enabled` *and* `is-active` — discharging `enable --now` needs both), and some kinds
   (group-membership) have no single clean blessed probe. Below the floor ⇒ over-correlation ⇒ under-execute.
+  **Now enforced structurally (task-P/find-1):** a probe is declared per `(kind, selector)`
+  (`oracle_probe_<kind>_<selector>`); a multi-selector kind shipping only the kind-default `oracle_probe_<kind>`
+  is UN-PROBEABLE (its sites run). So `service` MUST ship `oracle_probe_service_enabled` (is-enabled) AND
+  `oracle_probe_service_active` (is-active) to elide either — a single is-active body can no longer silently
+  discharge `#enabled` (`KindIndex::resolve_probe`).
+- **`R2-MULTIOP` — the single-operand guard.** A check binding one operand (`pkg : package = "$1"`) MUST gate its
+  probe on there being NO second operand: `if [ "$2" = "" ]; then probe "$pkg"; fi`. WITHOUT it, a multi-target
+  command (`apt-get install nginx curl`) resolves to entity=`nginx` ALONE and ships a probe for nginx only — so
+  a host with nginx-but-not-curl elides the whole install and **never installs curl** (a priority-1 under-execute;
+  20I §3 / 208 strain-W3, pinned in `tests/check.rs::naive_oracle_without_operand_guard_drops_trailing_operands_known_hazard`).
+  The engine cannot supply this (it parses nothing — `inv-referent-agnostic`); the guard is the oracle's job, and
+  the `[ "$2" = "" ]` form degrades the multi-operand argv to ⊤ ⇒ run (the safe direction).
 
 ## Honor (cite the slug when you rely on one)
 

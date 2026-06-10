@@ -46,9 +46,15 @@ Replace the round-19 stand-ins with the real input side (`19H`):
 - a real **value-flow analysis** — constant + argument/parameter propagation,
   across files, books and oracles uniformly — feeding entity-resolution
   *before* the probe and observable-flow *after* it;
-- the **command-keyed, full-args `check()`** lifted statically (resolve the
-  entity through the oracle's own argparse to its inline kind-annotation) and
-  shipped-as-a-function into the read-only probe body;
+- the **command-keyed, full-args `check()`** lifted statically — it resolves
+  the entity through the oracle's own argparse to its inline kind-annotation
+  (identity ONLY). **The probe bodies that SHIP come from the `oracle_probe_*`
+  declarations, NOT the `check()` (per st-2, 20A §4 / 20C §4):** the
+  `<provider>__check` argparse is the engine's entity-resolver and never ships;
+  the read-only probe wrapper is the kind's (or `(kind, selector)`'s, task-P)
+  declared `oracle_probe_*` body. (The earlier "shipped-as-a-function into the
+  probe body" framing predates st-2 — the placeholder check bodies must not
+  ship, 20B §3.)
 - completion of the **one-Observable unification** (`19F`/`19G`, half-landed).
 
 A case that passes because a fixture happened to feed the right value is not a
@@ -70,8 +76,15 @@ and where* (→ `Research/notes/20x-*.md`, append-only), not green tests.
   (`dq-reflexive-probe-inertness`, narrowed per 16Q's superseded-comment): a
   lifted probe body containing a call that is neither the oracle's own
   command, a declared Query, nor a blessed-pure builtin is REFUSED shipping —
-  that checks declared structure, not inferred mutation. It remains owed
-  (task-D scope; 205).
+  that checks declared structure, not inferred mutation. **Disposition (20I §3
+  find-5):** moot-at-HEAD under st-2 — the shipped probe wrapper contains ONLY
+  the kind's self-vouched `oracle_probe_*` body plus generated scaffolding
+  (printf/if, blessed-pure), so there is no un-vouched call for a static closure
+  check to refuse; the executable half (gate-1(c)'s rc-127 vouch scan) covers
+  the mocks cases. It REVIVES the moment any future emitter ships `check()`-body
+  spans (the per-selector emitter still ships only `oracle_probe_*` bodies, so
+  the trigger is unmoved by task-P — `rule-anno-render`'s residual rides the same
+  trigger, 20C §7).
 - **TOCTOU (probe→apply staleness) is deferred-to-actively-WONTFIX.** Do not
   build re-probe-before-apply, freshness windows, or anything aimed at it.
   (Maybe-someday shape, very deferred: oracle tooling for a super-cheap

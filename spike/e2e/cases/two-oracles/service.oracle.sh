@@ -1,10 +1,11 @@
 # minimal service oracle (systemd), lifted statically by dorc.
-# NB selector mismatch (notes/193 strain-2 / F-BLESSED): `enable` gates #enabled but
-# the probe reads is-active (#active). A real service oracle needs BOTH is-enabled and
-# is-active; this scrappy fixture under-probes. The e2e only `sh -n`-checks (never runs)
-# the rendered artifact, so the body is just syntax-checked, not executed.
+# This book only `enable`s (gating #enabled), so the oracle declares the matching
+# per-selector probe (task-P/find-1): is-enabled discharges #enabled. (Single-selector
+# here, so the kind-default rule would also permit a bare `oracle_probe_service`, but the
+# per-selector form is the correct, mismatch-free shape — the strain-2 F-BLESSED gripe
+# this fixture used to carry is now resolved for the selector it actually uses.)
 oracle_kind=service
-oracle_probe_service() { systemctl is-active --quiet "$1"; }
+oracle_probe_service_enabled() { systemctl is-enabled --quiet "$1"; }
 oracle_effect systemctl enable establish enabled
 oracle_effect systemctl disable kill enabled
 # command-keyed check(): the verb selects a different probe per arm (enable→is-enabled,

@@ -41,7 +41,7 @@ use dorc_core::{
     AstId, Carrier, DiagCode, Diagnostic, Interner, KindId, ProviderId, SelectorId, Span, Symbol,
 };
 use dorc_syntax::ast::{Ast, NodeKind, WordPart};
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 /// The command-keyed `check()` contract (19H §2 / 202 §1 face-check): a dedicated
 /// parser for the constrained oracle-contract dialect plus a concrete evaluator that
@@ -74,11 +74,19 @@ pub enum Polarity {
     Query,
 }
 
-/// A read-only fact-probe for one kind: shippable sh that observes whether
-/// `kind:entity` holds for an entity passed as `$1`. By contract it is
-/// three-outcome (exit `0` = holds, `1` = absent, `2` = can't-tell) and must not
+/// A read-only fact-probe for one kind (or one `(kind, selector)` cell): shippable sh
+/// that observes whether `kind:entity` holds for an entity passed as `$1`. By contract
+/// it is three-outcome (exit `0` = holds, `1` = absent, `2` = can't-tell) and must not
 /// mutate — the latter is the consumer's/runner's obligation to enforce, not this
 /// crate's (note 162 DP-4).
+///
+/// task-P / find-1 (`strain-D1-perselector`, F-BLESSED): a probe may be declared
+/// **per kind** (`oracle_probe_<kind>`, the kind-default) or **per `(kind, selector)`**
+/// (`oracle_probe_<kind>_<selector>`). The latter is what an honest `service` oracle
+/// needs — `is-enabled` discharges `#enabled`, `is-active` discharges `#active`, and a
+/// single body cannot soundly observe both ("an honest service probe is two commands").
+/// The resolution rule lives in [`KindIndex::resolve_probe`]; this struct only carries
+/// the lifted body and the cell coordinate the lift bound it to.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FactProbe {
     pub kind: KindId,
@@ -116,8 +124,17 @@ pub struct EffectConflict {
 /// by the analyses.
 #[derive(Debug, Clone, Default)]
 pub struct KindIndex {
-    /// kind → how to observe it (one probe per kind).
+    /// kind → the kind-default probe (`oracle_probe_<kind>`). Used by
+    /// [`resolve_probe`](KindIndex::resolve_probe) for a site ONLY when the kind has
+    /// exactly one declared selector in the effect-map (the sound floor — a
+    /// kind-default cannot soundly stand in for one of several distinct selectors;
+    /// `strain-D1-perselector`/F-BLESSED).
     probes: BTreeMap<KindId, FactProbe>,
+    /// `(kind, selector)` → a per-selector probe (`oracle_probe_<kind>_<selector>`),
+    /// task-P/find-1. When present it ALWAYS wins for that exact cell; it is the only
+    /// sound probe for a multi-selector kind (`service#enabled` via `is-enabled`,
+    /// `#active` via `is-active`).
+    selector_probes: BTreeMap<(KindId, SelectorId), FactProbe>,
     /// (provider, verb) → the declared effect cells. Accumulating + clobber-free:
     /// many providers and many verbs coexist (`apt-get install` vs `apt-get purge`
     /// vs `dpkg -i`), unlike a single `oracle_verb`. The value is a **Vec** of
@@ -132,10 +149,16 @@ pub struct KindIndex {
 }
 
 impl KindIndex {
-    /// Record a kind's probe. Last-writer-wins on a duplicate kind (the lifter
-    /// should diagnose duplicates; this stays total).
+    /// Record a kind's **kind-default** probe (`oracle_probe_<kind>`). Last-writer-wins
+    /// on a duplicate kind (the lifter should diagnose duplicates; this stays total).
     pub fn add_probe(&mut self, probe: FactProbe) {
         self.probes.insert(probe.kind, probe);
+    }
+
+    /// Record a **per-`(kind, selector)`** probe (`oracle_probe_<kind>_<selector>`,
+    /// task-P/find-1). Last-writer-wins on a duplicate cell.
+    pub fn add_selector_probe(&mut self, selector: SelectorId, probe: FactProbe) {
+        self.selector_probes.insert((probe.kind, selector), probe);
     }
 
     /// Record that `provider verb …` has `polarity` on `kind`'s `selector` cell.
@@ -167,10 +190,55 @@ impl KindIndex {
         None
     }
 
-    /// The read-only probe for `kind`, if any oracle declared one.
+    /// The **kind-default** read-only probe for `kind`, if any oracle declared one
+    /// (`oracle_probe_<kind>`). Prefer [`resolve_probe`](KindIndex::resolve_probe) at a
+    /// real site — it applies the per-selector resolution rule. This raw accessor is
+    /// kept for the unit/DST tests that pin the kind-default body directly.
     #[must_use]
     pub fn probe_for(&self, kind: KindId) -> Option<&FactProbe> {
         self.probes.get(&kind)
+    }
+
+    /// The distinct selectors any oracle declared an effect cell for, under `kind`.
+    /// Drives the [`resolve_probe`](KindIndex::resolve_probe) single-selector floor:
+    /// a kind-default may stand in only when this set has exactly one member (a
+    /// kind with one selector has nothing for the default to mis-observe).
+    #[must_use]
+    pub fn selectors_for_kind(&self, kind: KindId) -> BTreeSet<SelectorId> {
+        self.effects
+            .values()
+            .flatten()
+            .filter(|c| c.kind == kind)
+            .map(|c| c.selector)
+            .collect()
+    }
+
+    /// Resolve the read-only probe a SITE on `(kind, selector)` ships (task-P/find-1,
+    /// the F-BLESSED sound floor — `strain-D1-perselector`):
+    ///
+    /// 1. the **per-`(kind, selector)`** probe if declared (`oracle_probe_<kind>_<selector>`)
+    ///    — it always wins, and is the only sound probe for a multi-selector kind;
+    /// 2. else the **kind-default** (`oracle_probe_<kind>`) ONLY IF the effect-map
+    ///    declares exactly ONE selector for that kind. With one selector the default
+    ///    has nothing to mis-discharge; with several, a single body cannot soundly
+    ///    observe a specific cell (an `is-active` verdict must not satisfy an unmet
+    ///    `#enabled`), so the site is **un-probeable** (returns `None` ⇒
+    ///    `compile_probe` records it `skip-unresolvable` ⇒ the apply RUNS it —
+    ///    `kFAIL-perform`).
+    ///
+    /// `None` is always the safe direction (`can't-probe ⇒ can't-elide`). The selector
+    /// floor is intentionally a STRUCTURAL gate, not a semantic one: Dorc cannot read
+    /// whether `is-active` "means" `#enabled` (`inv-referent-agnostic`); it can only
+    /// observe that a multi-selector kind needs more than one probe body declared.
+    #[must_use]
+    pub fn resolve_probe(&self, kind: KindId, selector: SelectorId) -> Option<&FactProbe> {
+        if let Some(probe) = self.selector_probes.get(&(kind, selector)) {
+            return Some(probe);
+        }
+        if self.selectors_for_kind(kind).len() == 1 {
+            return self.probes.get(&kind);
+        }
+        None
     }
 
     /// The declared effect cells of a book's `provider verb …`, if any oracle
@@ -187,7 +255,7 @@ impl KindIndex {
 
     #[must_use]
     pub fn is_empty(&self) -> bool {
-        self.probes.is_empty() && self.effects.is_empty()
+        self.probes.is_empty() && self.selector_probes.is_empty() && self.effects.is_empty()
     }
 }
 
@@ -210,6 +278,25 @@ const BAD_EFFECT: DiagCode = DiagCode("oracle-bad-effect");
 const TOP_LEVEL_MUTATOR: DiagCode = DiagCode("oracle-top-level-mutator");
 const NON_DECL_CONSTRUCT: DiagCode = DiagCode("oracle-non-declaration");
 const DUPLICATE_EFFECT: DiagCode = DiagCode("oracle-duplicate-effect");
+/// A `oracle_probe_<kind>_<selector>` whose selector funcname-segment cannot
+/// round-trip through the hyphen↔underscore mangling (a selector name carrying a
+/// literal `_` is inexpressible; `tc-perselector-mangle`).
+const PROBE_SELECTOR_ROUNDTRIP: DiagCode = DiagCode("oracle-probe-selector-roundtrip");
+
+/// Map an interned kind/selector name to its **function-name segment** form: `-` → `_`
+/// (`package-index` ⇒ `package_index`). The inverse direction of
+/// [`check::map_provider_name`] (`_` → `-`), and the shared home of the
+/// hyphen↔underscore convention on the *emit*/match side (task-P: the per-selector
+/// probe funcname `oracle_probe_<kind>_<selector>` and the shipped wrapper name both
+/// route through here, so the two sides agree).
+///
+/// **Lossy** in the same way `map_provider_name` is: a literal `_` in the name is
+/// indistinguishable from a hyphen after the round-trip. The caller round-trip-checks
+/// and flags ([`PROBE_SELECTOR_ROUNDTRIP`]).
+#[must_use]
+pub fn to_funcname_segment(name: &str) -> String {
+    name.replace('-', "_")
+}
 
 /// Lift a set of oracle sh sources into the kind index, interning kind/provider/
 /// verb names through the shared `interner` (so they match the names the book
@@ -466,28 +553,79 @@ fn bind(
 
     let kind = KindId(interner.intern(kind_name));
 
-    match probe_bodies.get(kind_name) {
-        Some(&body_id) => {
+    // Classify each `oracle_probe_*` funcdef against THIS file's declared kind. The
+    // funcname kind-segment is the kind name in funcname form (`-` → `_`); a suffix
+    // equal to it is the kind-default, a suffix of `<kind-seg>_<rest>` is the
+    // per-selector probe for selector `<rest>` (mapped back `_` → `-`), and anything
+    // else is an unrelated helper-probe (ignored — a different kind's name, say).
+    let kind_seg = to_funcname_segment(kind_name);
+    let mut saw_kind_default = false;
+    for (&suffix, &body_id) in probe_bodies {
+        let body = || {
             let span = ast.node(body_id).span;
-            let body = src
-                .get(span.lo.0 as usize..span.hi.0 as usize)
+            src.get(span.lo.0 as usize..span.hi.0 as usize)
                 .unwrap_or_default()
-                .to_string();
-            out.value.add_probe(FactProbe { kind, body });
+                .to_string()
+        };
+        if suffix == kind_seg {
+            saw_kind_default = true;
+            out.value.add_probe(FactProbe { kind, body: body() });
+        } else if let Some(sel_seg) = suffix
+            .strip_prefix(&kind_seg)
+            .and_then(|r| r.strip_prefix('_'))
+            .filter(|s| !s.is_empty())
+        {
+            // Per-selector probe. Map the funcname segment back to the selector name
+            // through the SAME hyphen↔underscore convention providers use
+            // (`map_provider_name`: `_` → `-`). A funcname segment is `[A-Za-z0-9_]`
+            // (no hyphen), so this direction always round-trips; the *un*-expressible
+            // case (a selector NAME carrying a literal `_`) is detected against the
+            // effect-map selectors below (`tc-perselector-mangle`), where the real
+            // selector names live.
+            let selector = SelectorId(interner.intern(&check::map_provider_name(sel_seg)));
+            out.value
+                .add_selector_probe(selector, FactProbe { kind, body: body() });
         }
-        None => out.push(Diagnostic::error(
+        // else: an `oracle_probe_*` whose suffix is neither this kind nor a
+        // `<kind>_<selector>` — a benign mismatched helper; ignored (one kind per file).
+    }
+    // A declared kind with NO kind-default AND no per-selector probe is incomplete
+    // (the index would have an effect on an un-observable kind). A kind-default-less
+    // file that DOES ship per-selector probes is legal (the F-BLESSED service shape):
+    // diagnose only when neither form is present.
+    if !saw_kind_default && !out.value.selector_probes.keys().any(|(k, _)| *k == kind) {
+        out.push(Diagnostic::error(
             MISSING_PROBE,
             None,
             format!(
-                "oracle_kind=`{kind_name}` has no matching `oracle_probe_{kind_name}` function"
+                "oracle_kind=`{kind_name}` has no matching `oracle_probe_{kind_name}` \
+                 (nor any `oracle_probe_{kind_seg}_<selector>`) function"
             ),
-        )),
+        ));
     }
 
     for eff in effects {
         let provider = ProviderId(interner.intern(eff.provider));
         let verb = interner.intern(eff.verb);
         let selector = SelectorId(interner.intern(eff.selector));
+        // tc-perselector-mangle (task-P): a selector NAME carrying a literal `_` cannot
+        // be addressed by a per-selector probe funcname — `oracle_probe_<kind>_foo_bar`
+        // maps to selector `foo-bar`, never `foo_bar` (the funcname mapping is `_`↔`-`).
+        // Flag it WARNING (the cell is still usable via the kind-default; only its
+        // per-selector probe is unreachable). No corpus selector has a `_`, so this is a
+        // latent-footgun guard, not a live path.
+        if check::map_provider_name(&to_funcname_segment(eff.selector)) != eff.selector {
+            out.push(Diagnostic::warning(
+                PROBE_SELECTOR_ROUNDTRIP,
+                None,
+                format!(
+                    "selector `{}` contains an underscore, which cannot round-trip a \
+                     per-selector probe funcname (`oracle_probe_{kind_seg}_…` maps `_`→`-`); \
+                     this cell can only be probed by the kind-default",
+                    eff.selector
+                ),
+            ));
+        }
         if let Some(_conflict) = out
             .value
             .add_effect(provider, verb, kind, selector, eff.polarity)
@@ -884,6 +1022,209 @@ mod tests {
             out.diags.iter().any(|d| d.code == BAD_EFFECT),
             "an unknown polarity word must raise BAD_EFFECT: {:?}",
             out.diags
+        );
+    }
+
+    // --- task-P / find-1: per-selector probes + the resolution rule (F-BLESSED) ---
+
+    /// A multi-selector `service` oracle declaring BOTH per-selector probes
+    /// (`is-enabled` for `#enabled`, `is-active` for `#active`) — the honest F-BLESSED
+    /// shape. `resolve_probe` picks the per-selector body for each cell; the two bodies
+    /// are DISTINCT (the find-1 fix — one is-active body could not soundly observe both).
+    #[test]
+    fn per_selector_probes_resolve_distinct_bodies() {
+        let mut i = Interner::default();
+        let src = "oracle_kind=service\n\
+                   oracle_probe_service_enabled() { systemctl is-enabled --quiet \"$1\"; }\n\
+                   oracle_probe_service_active() { systemctl is-active --quiet \"$1\"; }\n\
+                   oracle_effect systemctl enable establish enabled\n\
+                   oracle_effect systemctl start establish active\n";
+        let out = lift(&mut i, &[src]);
+        assert!(
+            !out.has_errors(),
+            "the per-selector shape lifts: {:?}",
+            out.diags
+        );
+        let service = KindId(i.intern("service"));
+        let enabled = SelectorId(i.intern("enabled"));
+        let active = SelectorId(i.intern("active"));
+        let en = out
+            .value
+            .resolve_probe(service, enabled)
+            .expect("#enabled resolves to its per-selector probe");
+        let ac = out
+            .value
+            .resolve_probe(service, active)
+            .expect("#active resolves to its per-selector probe");
+        assert!(
+            en.body.contains("is-enabled"),
+            "#enabled ⇒ is-enabled: {}",
+            en.body
+        );
+        assert!(
+            ac.body.contains("is-active"),
+            "#active ⇒ is-active: {}",
+            ac.body
+        );
+        assert_ne!(
+            en.body, ac.body,
+            "the two selector probes are distinct bodies"
+        );
+    }
+
+    /// The F-BLESSED FLOOR: a multi-selector kind whose effect-map declares two
+    /// selectors but ships ONLY the kind-default probe is UN-PROBEABLE for both cells
+    /// (`resolve_probe` returns `None`) — a single body cannot soundly stand in for one
+    /// of several distinct selectors. This is the find-1 under-execute fix: the site
+    /// becomes skip-unresolvable ⇒ runs (`kFAIL-perform`).
+    #[test]
+    fn kind_default_under_multi_selector_kind_is_unprobeable() {
+        let mut i = Interner::default();
+        let src = "oracle_kind=service\n\
+                   oracle_probe_service() { systemctl is-active --quiet \"$1\"; }\n\
+                   oracle_effect systemctl enable establish enabled\n\
+                   oracle_effect systemctl start establish active\n";
+        let out = lift(&mut i, &[src]);
+        // The kind-default lifts (no MISSING_PROBE — there IS an oracle_probe_service).
+        assert!(!out.has_errors(), "lifts cleanly: {:?}", out.diags);
+        let service = KindId(i.intern("service"));
+        let enabled = SelectorId(i.intern("enabled"));
+        let active = SelectorId(i.intern("active"));
+        assert!(
+            out.value.resolve_probe(service, enabled).is_none(),
+            "multi-selector kind + only kind-default ⇒ #enabled un-probeable (F-BLESSED floor)"
+        );
+        assert!(
+            out.value.resolve_probe(service, active).is_none(),
+            "…and #active un-probeable too"
+        );
+    }
+
+    /// The single-selector escape hatch: a kind whose effect-map declares exactly ONE
+    /// selector MAY use the kind-default (it has nothing to mis-discharge). This is what
+    /// keeps `package` (one `#installed` selector) probeable from its `oracle_probe_package`.
+    #[test]
+    fn kind_default_under_single_selector_kind_resolves() {
+        let mut i = Interner::default();
+        let src = "oracle_kind=package\n\
+                   oracle_probe_package() { dpkg-query -W \"$1\" >/dev/null 2>&1; }\n\
+                   oracle_effect apt-get install establish installed\n\
+                   oracle_effect apt-get purge kill installed\n";
+        let out = lift(&mut i, &[src]);
+        assert!(!out.has_errors(), "{:?}", out.diags);
+        let package = KindId(i.intern("package"));
+        let installed = SelectorId(i.intern("installed"));
+        let p = out
+            .value
+            .resolve_probe(package, installed)
+            .expect("single-selector kind ⇒ kind-default resolves");
+        assert!(p.body.contains("dpkg-query"), "{}", p.body);
+    }
+
+    /// A per-selector probe ALWAYS wins, even when the kind is single-selector and a
+    /// kind-default also exists (the per-selector is strictly more specific).
+    #[test]
+    fn per_selector_probe_wins_over_kind_default() {
+        let mut i = Interner::default();
+        let src = "oracle_kind=package\n\
+                   oracle_probe_package() { dpkg-query -W \"$1\" >/dev/null 2>&1; }\n\
+                   oracle_probe_package_installed() { dpkg -s \"$1\" >/dev/null 2>&1; }\n\
+                   oracle_effect apt-get install establish installed\n";
+        let out = lift(&mut i, &[src]);
+        assert!(!out.has_errors(), "{:?}", out.diags);
+        let package = KindId(i.intern("package"));
+        let installed = SelectorId(i.intern("installed"));
+        let p = out
+            .value
+            .resolve_probe(package, installed)
+            .expect("resolves");
+        assert!(
+            p.body.contains("dpkg -s"),
+            "the per-selector probe wins over the kind-default: {}",
+            p.body
+        );
+    }
+
+    /// A file shipping ONLY per-selector probes (no `oracle_probe_<kind>` kind-default)
+    /// is legal — the canonical F-BLESSED service shape — and does NOT raise `MISSING_PROBE`.
+    #[test]
+    fn only_per_selector_probes_is_not_missing_probe() {
+        let mut i = Interner::default();
+        let src = "oracle_kind=service\n\
+                   oracle_probe_service_enabled() { systemctl is-enabled --quiet \"$1\"; }\n\
+                   oracle_probe_service_active() { systemctl is-active --quiet \"$1\"; }\n\
+                   oracle_effect systemctl enable establish enabled\n";
+        let out = lift(&mut i, &[src]);
+        assert!(
+            !out.diags.iter().any(|d| d.code == MISSING_PROBE),
+            "per-selector-only is a complete oracle (no kind-default needed): {:?}",
+            out.diags
+        );
+        // The kind-default is genuinely absent; the per-selector ones are present.
+        let service = KindId(i.intern("service"));
+        assert!(
+            out.value.probe_for(service).is_none(),
+            "no kind-default body"
+        );
+        assert!(
+            out.value
+                .resolve_probe(service, SelectorId(i.intern("enabled")))
+                .is_some()
+        );
+    }
+
+    /// Name-mangling: a hyphenated selector (`needs-restart`) is declared with an
+    /// underscore funcname segment (`oracle_probe_service_needs_restart`) and round-trips
+    /// to the hyphenated selector name through the shared `map_provider_name` convention.
+    #[test]
+    fn per_selector_probe_hyphen_underscore_mangling_round_trips() {
+        let mut i = Interner::default();
+        let src = "oracle_kind=service\n\
+                   oracle_probe_service_needs_restart() { needs-restart -- \"$1\"; }\n\
+                   oracle_effect systemctl restart establish needs-restart\n";
+        let out = lift(&mut i, &[src]);
+        assert!(
+            !out.has_errors(),
+            "the mangled selector lifts: {:?}",
+            out.diags
+        );
+        let service = KindId(i.intern("service"));
+        let needs_restart = SelectorId(i.intern("needs-restart"));
+        assert!(
+            out.value.resolve_probe(service, needs_restart).is_some(),
+            "funcname `service_needs_restart` ⇒ selector `needs-restart` (hyphen↔underscore)"
+        );
+    }
+
+    /// `tc-perselector-mangle`: a selector NAME carrying a literal `_` (declared in the
+    /// effect-map) is flagged WARNING — no `oracle_probe_<kind>_<selector>` funcname can
+    /// address it (the funcname `_`↔`-` mapping would read it as a hyphenated selector).
+    /// The cell still lifts and stays usable via the kind-default; only the diagnostic
+    /// surfaces the inexpressibility (latent-footgun guard; no corpus selector has a `_`).
+    #[test]
+    fn underscore_selector_name_flags_roundtrip_warning() {
+        let mut i = Interner::default();
+        let src = "oracle_kind=service\n\
+                   oracle_probe_service() { systemctl is-active --quiet \"$1\"; }\n\
+                   oracle_effect systemctl restart establish needs_restart\n";
+        let out = lift(&mut i, &[src]);
+        assert!(
+            out.diags.iter().any(|d| d.code == PROBE_SELECTOR_ROUNDTRIP),
+            "an underscore selector name must raise the round-trip warning: {:?}",
+            out.diags
+        );
+        // It is a WARNING, not an error — the cell still lifts (single-selector kind ⇒
+        // the kind-default probes it).
+        assert!(
+            !out.has_errors(),
+            "the round-trip flag is non-fatal (the cell lifts): {:?}",
+            out.diags
+        );
+        let service = KindId(i.intern("service"));
+        let needs_restart = SelectorId(i.intern("needs_restart"));
+        assert!(
+            out.value.resolve_probe(service, needs_restart).is_some(),
+            "single-selector kind ⇒ the kind-default still probes the cell"
         );
     }
 }

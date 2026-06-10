@@ -175,7 +175,12 @@ while-loop strips only LEADING flags, so as written the walkthrough below is wro
 annotation would bind entity=`-y`. The dialect evaluator faithfully reproduces whatever the
 check's own argparse does (engine-side flag-guessing would be the find-3 sin), so corrected
 fixture oracles strip post-verb flags too (verb=$1; shift; then strip). Both orderings are
-pinned in oracle/tests/check.rs. */ -->
+pinned in oracle/tests/check.rs. ALSO (task-P/find-3, 20I §3): this single-operand annotation
+must gate its probe on `if [ "$2" = "" ]; then dpkg-query -W "$pkg"; fi` — without that guard a
+multi-target `apt-get install nginx curl` binds entity=nginx ALONE and ships a probe for nginx
+only, silently dropping curl (a priority-1 under-execute; the naive-drop is pinned in
+oracle/tests/check.rs::naive_oracle_without_operand_guard_drops_trailing_operands_known_hazard,
+and the guard is an oracle-quality-bar line `R2-MULTIOP` in oracle/CLAUDE.md). */ -->
 
 What the engine does:
 

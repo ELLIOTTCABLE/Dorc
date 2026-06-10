@@ -136,8 +136,8 @@ fn run() -> Result<(), String> {
     // (1) compile + emit the read-only, SELF-REPORTING probe (site-keyed —
     // `inv-site-keyed-results`). Each resolvable site invokes its kind's
     // `oracle_probe_*` wrapper and emits `site <leafid> effect=… rc=…` on stdout.
-    let probe = dorc_plan::compile_probe(&parsed.value, &cfg.value, &classes, |kind| {
-        idx.probe_for(kind).map(|p| p.body.clone())
+    let probe = dorc_plan::compile_probe(&parsed.value, &cfg.value, &classes, |kind, selector| {
+        idx.resolve_probe(kind, selector).map(|p| p.body.clone())
     });
     print!("{}", probe.render_sh(&interner));
     std::io::stdout().flush().ok();
@@ -259,15 +259,20 @@ fn disposition_tag(disposition: &dorc_plan::Disposition) -> &'static str {
 /// * an **invalid Query** site (a mutator/opaque reached it from entry) has a stale
 ///   resting rc, so its status also stays `Predicted::Top` ⇒ the guard runs for real.
 ///
-/// Two sites sharing a fact (two same-command sites — `inv-site-keyed-results`) write
-/// the same fact; last-in-site-order wins, which is sound here (they are the same cell
-/// on the same host, so they report the same verdict).
+/// SAME-CELL CONFLICT FLOOR (20I find-6a / item-5): two sites mapping to the SAME cell
+/// merge **conservatively** — a per-channel DISAGREEMENT degrades that channel to ⊤
+/// (`Verdict::Unknown` for Effect, `Predicted::Top` for the others), NEVER last-write-wins.
+/// Normally only one site per cell is resolvable (a same-command re-establish is
+/// `EstablishWritten` ⇒ unresolvable ⇒ absent from `checks`, strain-D1-samecell), so this
+/// is a defensive floor: it cannot be argued the two records "must agree" (a forged or
+/// flaky host could disagree), and the conservative ⊤ folds to run (`kFAIL-perform`) — the
+/// only safe resolution of a self-contradicting host. [`merge_observable`] does the join.
 fn facts_from_sites(
     probe: &dorc_plan::ProbePlan,
     results: &SiteResults,
 ) -> BTreeMap<dorc_core::FactKey, Observable> {
     use dorc_plan::ProbeSiteKind;
-    let mut by_fact = BTreeMap::new();
+    let mut by_fact: BTreeMap<dorc_core::FactKey, Observable> = BTreeMap::new();
     for check in &probe.checks {
         let record = results.records.get(&check.site);
         let effect = record.map_or(Verdict::Unknown, |r| r.verdict);
@@ -287,17 +292,49 @@ fn facts_from_sites(
         // future stdout-producing probe + vouch is a value change, not a representation one.
         let stdout = record.map_or(Predicted::Top, |r| r.stdout);
         let stderr = record.map_or(Predicted::Top, |r| r.stderr);
-        by_fact.insert(
-            check.fact,
-            Observable {
-                effect,
-                status,
-                stdout,
-                stderr,
-            },
-        );
+        let obs = Observable {
+            effect,
+            status,
+            stdout,
+            stderr,
+        };
+        by_fact
+            .entry(check.fact)
+            .and_modify(|prior| *prior = merge_observable(*prior, obs))
+            .or_insert(obs);
     }
     by_fact
+}
+
+/// Conservatively merge two [`Observable`]s reported for the SAME cell (20I find-6a /
+/// item-5). Per channel: equal values pass through; ANY disagreement degrades the
+/// channel to ⊤ (`Verdict::Unknown` for Effect, `Predicted::Top` for status/stdout/
+/// stderr). This is the meet toward ⊤ — never last-write-wins — so a self-contradicting
+/// host folds to run (`kFAIL-perform`), the only safe resolution. Order-independent
+/// (commutative + idempotent): merging in any site order yields the same ⊤-on-conflict.
+fn merge_observable(a: Observable, b: Observable) -> Observable {
+    Observable {
+        effect: if a.effect == b.effect {
+            a.effect
+        } else {
+            Verdict::Unknown
+        },
+        status: if a.status == b.status {
+            a.status
+        } else {
+            Predicted::Top
+        },
+        stdout: if a.stdout == b.stdout {
+            a.stdout
+        } else {
+            Predicted::Top
+        },
+        stderr: if a.stderr == b.stderr {
+            a.stderr
+        } else {
+            Predicted::Top
+        },
+    }
 }
 
 /// The probe results parsed from stdin, keyed by command **site** (the stable
@@ -618,6 +655,106 @@ mod tests {
             obs.status,
             Predicted::Top,
             "an INVALID Query guard's rc is stale ⇒ withheld (status Top ⇒ runs for real)"
+        );
+    }
+
+    /// Two checks over the SAME fact (distinct sites) — the conflict-floor input.
+    fn probe2(fact: FactKey, k0: ProbeSiteKind, k1: ProbeSiteKind) -> ProbePlan {
+        ProbePlan {
+            checks: vec![
+                ProbeCheck {
+                    site: LeafId(0),
+                    fact,
+                    site_kind: k0,
+                    sh: "{ :; }".to_string(),
+                },
+                ProbeCheck {
+                    site: LeafId(1),
+                    fact,
+                    site_kind: k1,
+                    sh: "{ :; }".to_string(),
+                },
+            ],
+            unresolvable: vec![],
+        }
+    }
+
+    #[test]
+    fn same_cell_conflicting_records_degrade_to_top() {
+        // 20I find-6a / item-5 (the conflict floor): two sites on the SAME cell whose
+        // records DISAGREE merge to ⊤, never last-write-wins. Two establish sites: site 0
+        // reports holds, site 1 reports absent (a self-contradicting / forged host). The
+        // merged Effect must be `Unknown` (⊤) ⇒ the apply runs (kFAIL-perform), NOT the
+        // last-written `absent` (or `holds`). Anti-masking: a constructed conflict, not a
+        // hand-injected verdict the check should predict.
+        let mut i = Interner::default();
+        let fact = pkg(&mut i, "nginx");
+        let probe = probe2(fact, ProbeSiteKind::Establish, ProbeSiteKind::Establish);
+        let results = parse_results(
+            "site 0 effect=holds rc=0\nsite 1 effect=absent rc=1\n",
+            &mut i,
+        );
+        let obs = facts_from_sites(&probe, &results)
+            .get(&fact)
+            .copied()
+            .expect("keyed");
+        assert_eq!(
+            obs.effect,
+            Verdict::Unknown,
+            "disagreeing same-cell Effect verdicts degrade to ⊤ (Unknown), not last-write-wins"
+        );
+    }
+
+    #[test]
+    fn same_cell_agreeing_records_pass_through() {
+        // The floor's other half: two same-cell sites that AGREE pass the value through
+        // (no spurious ⊤). Two establish sites both reporting holds ⇒ merged Effect is
+        // Converged (the agreed value), so a genuinely-converged cell still elides.
+        let mut i = Interner::default();
+        let fact = pkg(&mut i, "nginx");
+        let probe = probe2(fact, ProbeSiteKind::Establish, ProbeSiteKind::Establish);
+        let results = parse_results(
+            "site 0 effect=holds rc=0\nsite 1 effect=holds rc=0\n",
+            &mut i,
+        );
+        let obs = facts_from_sites(&probe, &results)
+            .get(&fact)
+            .copied()
+            .expect("keyed");
+        assert_eq!(
+            obs.effect,
+            Verdict::Converged,
+            "agreeing same-cell records keep the agreed verdict (no spurious ⊤)"
+        );
+    }
+
+    #[test]
+    fn same_cell_conflicting_query_status_degrades_to_top() {
+        // The conflict floor on the Status channel: two VALID Query sites on one cell
+        // reporting DIFFERENT rcs (rc=0 vs rc=1) ⇒ merged status ⊤ (a self-contradicting
+        // guard cannot fold a branch). A valid Query's rc normally feeds Status (the
+        // firewall), but a conflict on it must still degrade — the meet beats the firewall.
+        let mut i = Interner::default();
+        let fact = tool(&mut i, "nginx");
+        let probe = probe2(
+            fact,
+            ProbeSiteKind::Query { valid: true },
+            ProbeSiteKind::Query { valid: true },
+        );
+        let results = parse_results(
+            "site 0 effect=holds rc=0\nsite 1 effect=holds rc=1\n",
+            &mut i,
+        );
+        let obs = facts_from_sites(&probe, &results)
+            .get(&fact)
+            .copied()
+            .expect("keyed");
+        // Effect agrees (both holds) ⇒ Converged; but the rcs disagree ⇒ status ⊤.
+        assert_eq!(obs.effect, Verdict::Converged, "effect agrees");
+        assert_eq!(
+            obs.status,
+            Predicted::Top,
+            "disagreeing same-cell Query rcs degrade Status to ⊤ (no fold off a contradiction)"
         );
     }
 }

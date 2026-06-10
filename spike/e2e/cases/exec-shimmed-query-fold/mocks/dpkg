@@ -1,0 +1,11 @@
+#!/bin/sh
+# INERT shim for `dpkg` — used BOTH as the apply's verbatim Query guard (`dpkg -s nginx`,
+# run for real in the BARE book) AND as the pkgstate kind's probe (`dpkg -s <pkg>`; $1=-s,
+# $2=the package). The mock host has nginx INSTALLED, so `dpkg -s nginx` exits 0 ⇒ the
+# pkgstate guard holds (site 1 ⇒ holds rc=0), the fold reads rc 0, and the `||` install is
+# dead. Read-only; logs the argv for the run-set.
+printf 'ran: %s %s\n' "${0##*/}" "$*" >>"$DORC_LOG"
+case $2 in
+  nginx) exit 0 ;;  # nginx installed ⇒ holds (the valid guard, folded + substituted to `true`)
+  *)     exit 1 ;;
+esac

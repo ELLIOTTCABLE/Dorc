@@ -14,9 +14,9 @@ dorc-core = { path = "../core", version = "0.0.0" }
 dorc-analysis = { path = "../analysis", version = "0.0.0" }
 # Rendering a leaf back to sh resolves its source span out of the AST.
 dorc-syntax = { path = "../syntax", version = "0.0.0" }
-
-[dev-dependencies]
-# The end-to-end tests build a kind-index and run the real analysis pipeline.
+# The probe-wrapper funcname mapping (`to_funcname_segment`) is shared with the
+# oracle lift's `oracle_probe_<kind>_<selector>` recognition — one home for the
+# hyphen↔underscore convention (task-P). The e2e tests also build a kind-index.
 dorc-oracle = { path = "../oracle", version = "0.0.0" }
 
 [lints]

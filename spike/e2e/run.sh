@@ -60,6 +60,14 @@ if [ ! -f "$redir_scan" ]; then
   echo "gate-2 scanner missing: $redir_scan" >&2
   exit 2
 fi
+# gate-1 parity rc-normalizer (item-4 / tc-probe-parity-projection): strips rc= from a
+# record only when the authored fixture omitted it for that site (so an rc-bearing site
+# is compared WITH its rc).
+parity_norm="$here/norm_parity.awk"
+if [ ! -f "$parity_norm" ]; then
+  echo "gate-1 parity normalizer missing: $parity_norm" >&2
+  exit 2
+fi
 
 # Syntax-check one artifact ($2) labelled ($1 = "probe"/"apply") for case ($3).
 # Returns non-zero and prints the shell's diagnostic if the artifact does not parse.
@@ -187,10 +195,17 @@ EOF
 #       swallow the not-found via their own `2>/dev/null`, so the only signal is rc=127
 #       in the record; we detect it explicitly rather than rely on a non-zero exit.)
 #
-#   (b) PARITY (unless PROBE_RESULTS=authored): the effect-words the mocked probe PRODUCES
-#       must match the case's hand-authored `probe-results.txt` records (the fixture the
-#       apply gate consumes). A case whose fixture intentionally diverges from what the
-#       mocks can reproduce opts out with a one-line `PROBE_RESULTS=authored` marker file.
+#   (b) PARITY (unless PROBE_RESULTS=authored): the records the mocked probe PRODUCES must
+#       match the case's hand-authored `probe-results.txt` records (the fixture the apply
+#       gate consumes). PER-SITE rc-tightening (item-4 / tc-probe-parity-projection): a
+#       site whose AUTHORED record carries an `rc=` is compared WITH its rc (the fold-valid
+#       Query/pkgstate rc — a wrong probe-emitted rc would be a wrong fold, 20E §2); a site
+#       whose fixture omits rc keeps the effect-only compare (an establish site's rc is the
+#       probe-command's, firewalled from the fold, so it is not a parity target — and the
+#       fixtures historically omit it, so this needs no mass re-authoring). `norm_parity.awk`
+#       strips rc from a record iff its site's authored record had none, applied to both
+#       sides. A case whose fixture intentionally diverges from what the mocks can reproduce
+#       opts out with a one-line `PROBE_RESULTS=authored` marker file.
 #
 # The PROBE_RESULTS=authored opt-out governs (b)+(c) ONLY — (a) always holds. The opt-out
 # is the HONEST residual of the convergence axis: today most mocks/ dirs carry only the
@@ -247,11 +262,18 @@ EOF
     return 1
   fi
 
-  # (b) parity: the PRODUCED effect-words must match the authored probe-results.txt. We
-  # compare on the `site N effect=W` projection (drop rc — the fixtures historically omit
-  # it, and the firewall governs rc usage; the effect-word is the convergence signal).
-  _produced=$(printf '%s\n' "$_rec_lines" | sed -E 's/ rc=-?[0-9]+$//' | LC_ALL=C sort)
-  _authored=$(grep -E '^site ' "${_dir}probe-results.txt" 2>/dev/null | sed -E 's/ rc=-?[0-9]+$//' | LC_ALL=C sort)
+  # (b) parity: the PRODUCED records must match the authored probe-results.txt. PER-SITE
+  # rc-tightening (item-4 / tc-probe-parity-projection): a site whose AUTHORED record
+  # carries an `rc=` is compared WITH its rc (the fold-valid Query/pkgstate rc — a wrong
+  # probe-emitted rc would be a wrong fold, 20E §2); a site whose fixture omits rc keeps
+  # the effect-only compare (the establish sites — their rc is the probe-command's,
+  # firewalled from the fold, so it is not a parity target, and the fixtures historically
+  # omit it — no mass re-authoring). The authored file is the source of truth for which
+  # sites carry rc; `norm_parity.awk` strips rc from a line ONLY when that site's authored
+  # record had none, applied identically to both sides.
+  _authfile="${_dir}probe-results.txt"
+  _produced=$(printf '%s\n' "$_rec_lines" | awk -f "$parity_norm" "$_authfile" - | LC_ALL=C sort)
+  _authored=$(grep -E '^site ' "$_authfile" 2>/dev/null | awk -f "$parity_norm" "$_authfile" - | LC_ALL=C sort)
   if [ "$_produced" = "$_authored" ]; then
     return 0
   fi

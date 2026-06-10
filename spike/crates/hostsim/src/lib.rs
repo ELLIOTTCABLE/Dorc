@@ -421,8 +421,8 @@ apt_get__check() {
 
             // (1) compile the SITE-keyed probe — the read-only checks to ship
             // (`inv-site-keyed-results`, round-20 task-D1).
-            let probe = compile_probe(&parsed.value, &cfg, &classes, |k| {
-                idx.probe_for(k).map(|p| p.body.clone())
+            let probe = compile_probe(&parsed.value, &cfg, &classes, |k, sel| {
+                idx.resolve_probe(k, sel).map(|p| p.body.clone())
             });
             assert!(
                 probe.checks_fact(nginx) && probe.checks_fact(curl),
@@ -511,8 +511,8 @@ apt_get__check() {
         let cfg = dorc_analysis::cfg::build(&parsed.value).value;
         let classes = classify_value(&cfg, &parsed.value, &idx, &mut i);
 
-        let probe = compile_probe(&parsed.value, &cfg, &classes, |k| {
-            idx.probe_for(k).map(|p| p.body.clone())
+        let probe = compile_probe(&parsed.value, &cfg, &classes, |k, sel| {
+            idx.resolve_probe(k, sel).map(|p| p.body.clone())
         });
         assert!(
             probe.checks.is_empty(),
