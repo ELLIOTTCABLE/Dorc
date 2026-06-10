@@ -41,6 +41,10 @@ its author as not-to-be-over-trusted. Recorded connections (mine, +SURE on the f
   exactly the elisions dir-timed-probe would recover: degrade-to-⊤-where-non-ambient is the
   conservative floor; program-point-keyed probing is the precise refinement. Floor first
   (this round), refinement reserved.
+  <!-- /* correction 2026-06-10 (notes/205 §2): "sound floor" was wrong — the 202 §2 gate was
+  same-cell-only and missed cross-kind entanglement; the actual floor is rule-query-validity
+  (pristine-prefix). The recover-by-ordering observation stands, and cross-kind dependency
+  knowledge is the shared prerequisite of both that rule's precision AND this reservation. */ -->
 - **Seam already preserved.** 202 §3's site-keyed probe results (`(site-id, channel, value)`,
   never fact-keyed flat verdicts) is precisely the transport a timed probe needs — a site-keyed
   answer IS a program-point-keyed answer. Standing rule from this note: do not regress the

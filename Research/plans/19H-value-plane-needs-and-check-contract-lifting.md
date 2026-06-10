@@ -169,6 +169,14 @@ apt_get__check() {                          # command-keyed: lifts/ships for `ap
 }
 ```
 
+<!-- /* defect noted 2026-06-10 (round-20 build, notes/204 strain-1): this example is internally
+inconsistent — the book line's argv is [install, -y, nginx] (flag AFTER the verb), but the
+while-loop strips only LEADING flags, so as written the walkthrough below is wrong and the
+annotation would bind entity=`-y`. The dialect evaluator faithfully reproduces whatever the
+check's own argparse does (engine-side flag-guessing would be the find-3 sin), so corrected
+fixture oracles strip post-verb flags too (verb=$1; shift; then strip). Both orderings are
+pinned in oracle/tests/check.rs. */ -->
+
 What the engine does:
 
 - In the book, propagate `pkg` ⇒ the install's argv is `[install, -y, nginx]` — the book's own value-flow,

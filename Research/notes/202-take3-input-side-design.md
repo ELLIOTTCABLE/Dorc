@@ -29,6 +29,12 @@ split, ~SUSPECT on naming):
   lookup key. ANY step outside the constrained dialect, any non-concrete value, any
   iteration-budget overrun ⇒ ⊤-with-reason ⇒ the site is unresolved ⇒ un-probeable, runs
   (`kFAIL` both directions: nothing ships, nothing elides).
+  <!-- /* update 2026-06-10 (notes/205 §4): §3's closing "(site-id, channel, value)" is the
+  binding shape — an earlier draft's "(check-id, …)" wording survives below; results are
+  SITE-keyed, never check/command-family-keyed (now inv-site-keyed-results in spike/CLAUDE.md).
+  And §4's "no strip/transpile pass gets built" governs oracle FILES only: the probe-artifact
+  EMITTER renders the annotation as a plain assignment (205 §1 rule-anno-render) — shipping it
+  verbatim breaks the probe under dash. */ -->
   Scope rule for this round (+SURE it's sound, ~SUSPECT it's the right precision point):
   face-check requires the site's argv **fully concrete**; a partially-⊤ argv (e.g.
   `apt-get install -y "$dynamic"`) is an unresolved site, period. Evaluating the argparse with
@@ -68,6 +74,14 @@ audit owed-halfb; 19I group E supersession) adds the read-only guard as a first-
   (taken on the resting host) is stale ⇒ Status=⊤ at that site ⇒ the guard runs for real at
   apply. Without this, the Query class is a wrong-elision factory. The ambient gate therefore
   applies to query-rc-USE, not only to establish-elision.**
+  <!-- /* superseded 2026-06-10 (round-20 crosscheck, notes/205 §2 find-stale-crosskind): the
+  rule above is WRONG as written — it is same-cell-only, and this very example defeats it:
+  purge kills `package:nginx#installed` while the guard's cell is `tool:nginx#present`
+  (DIFFERENT kind; also the `#exists` vocabulary above matches no fixture). Cross-kind
+  dependence is invisible to the cell-model, so an oracled upstream mutator leaves the guard
+  "valid" and the fold under-executes. Replaced by rule-query-validity (205 §2): a Query's
+  probed rc folds only when NO effect-bearing command reaches it from entry (pristine-prefix).
+  Do not implement the ambient-gate version. */ -->
 - Effect-map declaration shape (opt-c1, ~SUSPECT — cheapest faithful reading of "the union of
   the book's ordering-and-args with the oracles' declared check-bodies"): the per-verb effect
   declarations remain a separate oracle-side declared map — now keyed by the *argparse-derived*
