@@ -27,3 +27,4 @@ pub mod cfg;
 pub mod effect;
 pub mod lattice;
 pub mod solve;
+pub mod value;
