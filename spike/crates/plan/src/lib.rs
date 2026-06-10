@@ -29,7 +29,6 @@
 #![expect(
     missing_docs,
     clippy::arithmetic_side_effects,
-    clippy::format_push_string,
     reason = "seeded round-19 code predates the take-3 lint gate; ratchet away during the rebuild"
 )]
 
@@ -44,10 +43,11 @@ use dorc_core::{
     Verdict,
 };
 use dorc_syntax::ast::{Ast, NodeKind};
-use dorc_syntax::sem;
 
 mod fold;
 pub use fold::{AbstractRc, FoldResult};
+
+pub mod render;
 
 // ===========================================================================
 // Phase markers + the Unknown-fold bias (note 165 L1)
@@ -433,16 +433,13 @@ impl StandIn {
         }
     }
 
-    /// The sh that reproduces the status. `(exit n)` runs in a subshell so a
-    /// non-zero stand-in sets `$?` without aborting the script (a bare `exit n`
-    /// would terminate it).
+    /// The sh that reproduces the status — the value-preserving substitution bytes.
+    /// Delegates to [`render::standin_sh`] (the artifact assembler, task-R): the
+    /// `true`/`false`/`(exit n)` text lives in ONE audited home, with its
+    /// `dash -n`-clean / subshell-non-abort guarantee documented there.
     #[must_use]
     pub fn sh(self) -> String {
-        match self {
-            StandIn::True => "true".to_string(),
-            StandIn::False => "false".to_string(),
-            StandIn::Exit(n) => format!("(exit {n})"),
-        }
+        render::standin_sh(self)
     }
 }
 
@@ -629,48 +626,31 @@ impl ProbePlan {
     /// three-outcome word, and prints the record.
     #[must_use]
     pub fn render_sh(&self, interner: &Interner) -> String {
-        let mut out = String::from(PROBE_HEADER);
+        let mut out = String::from(render::probe::header());
         // Each `(kind, selector)` check fn is emitted once (first-seen ⇒ deterministic),
         // then invoked per SITE with the operand bound + the self-report wrapper. Keying
         // the dedup per CELL (not per kind) is task-P/find-1: a multi-selector kind ships
         // DISTINCT probe bodies per selector (`service` is-enabled vs is-active), so two
-        // such bodies must NOT collide under one `<kind>__check` name.
+        // such bodies must NOT collide under one `<kind>__check` name. All sh-text
+        // assembly routes through `render::probe` (task-R); this loop owns only the
+        // first-seen dedup + per-site walk.
         let mut defined = BTreeSet::new();
         for check in &self.checks {
             let fn_name = check_fn_name(interner, check.fact.kind, check.fact.selector);
-            out.push_str(&format!(
-                "# site {}: {}\n",
-                check.site.0,
-                fact_label(interner, check.fact)
+            out.push_str(&render::probe::site_comment(
+                check.site,
+                &fact_label(interner, check.fact),
             ));
             if defined.insert((check.fact.kind, check.fact.selector)) {
-                // body is a brace-group, so `name() <group>` is a valid POSIX funcdef.
-                out.push_str(&format!("{fn_name}() {}\n", check.sh));
+                out.push_str(&render::probe::wrapper_def(&fn_name, &check.sh));
             }
-            // The invocation: run the check (operand bound + single-quoted, F-QUOTE),
-            // capture its rc, map to the three-outcome word, emit the site-keyed record.
-            // `_e` chosen as a probe-local var name unlikely to clash with a check body.
-            let invocation = match check.fact.entity {
-                EntityRef::Operand(tok) => {
-                    // F-QUOTE: single-quote the operand so it is exactly one inert arg
-                    // in any sh (`sem::single_quote`, `inv-kfail` both directions).
-                    format!("{fn_name} {}", sem::single_quote(interner.resolve(tok.0)))
-                }
-                EntityRef::Singleton => fn_name,
-            };
-            out.push_str(&format!(
-                "{invocation}; _rc=$?; \
-                 if [ \"$_rc\" -eq 0 ]; then _e=holds; \
-                 elif [ \"$_rc\" -eq 1 ]; then _e=absent; \
-                 else _e=cant-tell; fi; \
-                 printf 'site {} effect=%s rc=%s\\n' \"$_e\" \"$_rc\"\n",
-                check.site.0
-            ));
+            let invocation = render::probe::invocation(&fn_name, check.fact.entity, interner);
+            out.push_str(&render::probe::record_scaffold(&invocation, check.site));
         }
         // Un-resolvable sites are recorded as comments (never invoked): transparency
         // for the human reading the artifact and the D3 argv-echo differential.
         for site in &self.unresolvable {
-            out.push_str(&format!("# site:{} skip-unresolvable\n", site.0));
+            out.push_str(&render::probe::unresolvable_comment(*site));
         }
         out
     }
@@ -684,30 +664,6 @@ impl ProbePlan {
         self.checks.iter().any(|c| c.fact == fact)
     }
 }
-
-/// The probe artifact's header — documents the results-record grammar (205 §2
-/// rule-probe-exec-gate consumers, and the human reading the artifact, depend on it).
-///
-/// `stdout=`/`stderr=` are RESERVED record keys (`19F` §3 one-Observable tuple): the cli
-/// parser accepts-and-stores them ([`crate`]'s consumer, `parse_results`), but PRODUCING
-/// them is FUTURE WORK — this probe emits only `effect=`/`rc=`, so the EMITTED header text
-/// stays unchanged (the reserved keys live in the cli parser's doc + the record type, not
-/// in the shipped artifact bytes — which keeps every golden byte-identical). A consumed
-/// `Stdout`/`Stderr` blocks elision unconditionally regardless (16F §3), so reserving the
-/// keys is a SHAPE completion, not a behavior change.
-///
-/// Wrapper naming (task-P/find-1, documented here per the artifact-header convention,
-/// kept out of the EMITTED bytes to honor zero-extra-golden-churn — same posture 20H
-/// took for the reserved keys): each probed cell's wrapper is named
-/// `<kind>_<selector>__check` ([`check_fn_name`]), one definition per `(kind, selector)`.
-/// The selector segment is what lets a multi-selector kind ship two distinct bodies
-/// without collision.
-const PROBE_HEADER: &str = "#!/bin/sh\n\
-    # dorc probe (read-only): checks per-SITE convergence, mutates nothing.\n\
-    # When run, emits one results-record per site on stdout (the return channel):\n\
-    #   site <leafid> effect=<holds|absent|cant-tell> rc=<n>\n\
-    # effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);\n\
-    # rc is the raw PROBE-command status (opaque to Dorc — the record is the out-of-band lane).\n\n";
 
 /// The canonical per-site ordering shared by [`compile_probe`] and [`build_plan`]
 /// (`inv-site-keyed-results`, the load-bearing back-map): assign each classified
@@ -985,29 +941,24 @@ impl Plan {
     /// leaf-seam / wo-1 provenance tension made concrete.
     #[must_use]
     pub fn render_sh(&self, interner: &Interner) -> String {
-        let mut out = String::from(
-            "#!/bin/sh\n# dorc plan (apply phase). Replaced leaves are already converged.\n\n",
-        );
+        let mut out = String::from(render::apply::plan_header());
         for step in &self.steps {
             match &step.disposition {
+                // A run leaf is emitted verbatim (the leaf-seam — never coalesced).
                 Disposition::Run => {
                     out.push_str(&step.sh);
                     out.push('\n');
                 }
                 Disposition::Replace(license, stand_in) => {
-                    out.push_str(&format!(
-                        "# replace[{}]: {}  (\u{2192} {})\n#   \u{21b3} {} already holds (probe: converged \u{b7} must \u{b7} ambient)\n",
+                    out.push_str(&render::apply::flat_replace_block(
                         step.leaf.0,
-                        step.sh,
-                        stand_in.sh(),
-                        fact_label(interner, license.fact()),
+                        &step.sh,
+                        *stand_in,
+                        &fact_label(interner, license.fact()),
                     ));
                 }
                 Disposition::Omit { .. } => {
-                    out.push_str(&format!(
-                        "# omit[{}]: {}\n#   \u{21b3} dead branch: a guard's known status proves it never runs\n",
-                        step.leaf.0, step.sh,
-                    ));
+                    out.push_str(&render::apply::flat_omit_block(step.leaf.0, &step.sh));
                 }
             }
         }
@@ -1117,24 +1068,16 @@ impl Plan {
                 }
             }
         }
-        let mut out = String::from(
-            "#!/bin/sh\n# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).\n\n",
-        );
+        let mut out = String::from(render::apply::apply_header());
         for (i, line) in src.lines().enumerate() {
             if let Some((start, end, stand_in)) = inline_subst.get(&i).copied()
                 && !run_lines.contains(&i)
             {
                 // T14 in-situ: keep the `pat)` prefix and ` ;;` suffix, replace only the
-                // command span with its value-preserving stand-in (`nginx) true ;;`). The
-                // provenance comment trails the arm (a `# …` after `;;` is a valid arm end).
+                // command span with its value-preserving stand-in (`nginx) true ;;`).
                 let prefix = line.get(..start).unwrap_or(line);
                 let suffix = line.get(end..).unwrap_or_default();
-                out.push_str(prefix);
-                out.push_str(&stand_in.sh());
-                out.push_str(suffix);
-                out.push_str(
-                    "   # dorc: elided (already converged) — case-arm body substituted in situ\n",
-                );
+                out.push_str(&render::apply::inline_arm_subst(prefix, stand_in, suffix));
             } else if neutral_lines.contains(&i) && !run_lines.contains(&i) {
                 let indent: String = line
                     .chars()
@@ -1147,12 +1090,7 @@ impl Plan {
                     Some(stand_in) => stand_in.sh(),
                     None => ":".to_string(),
                 };
-                out.push_str("# ");
-                out.push_str(line.trim_start());
-                out.push_str("   # dorc: elided (already converged / dead branch)\n");
-                out.push_str(&indent);
-                out.push_str(&filler);
-                out.push('\n');
+                out.push_str(&render::apply::commented_line(line, &indent, &filler));
             } else {
                 out.push_str(line);
                 out.push('\n');
