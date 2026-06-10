@@ -1,5 +1,12 @@
 # H2SaLS corpus — real-world conformance target (round-1A)
 
+> **LLM-GENERATED TESTING CORPUS — NOT REAL SECURITY CODE.** Everything in this
+> directory is AI-authored (round-1A, 2026-06; brief: `Research/notes/1A1`). Quality
+> and defensiveness are *intentionally varied* to mimic multiple human authors; this is
+> a testing corpus for Dorc's analyzer, an at-least-partly-artificial rendition that
+> cannot expose the truth of real-world ops-code, and must never be used to actually
+> secure a server.
+
 ⚠️ **FROZEN EVIDENCE — NEVER EXECUTE ANYTHING IN THIS DIRECTORY.** ⚠️
 
 `harden.sh` (and every `*.sh` here) reconfigures SSH, firewalls, PAM, sysctl-adjacent

@@ -28,6 +28,12 @@ pushback items answered; these are **rulings**, quoted near-verbatim:
 - **rul-1A-handlers** (push-4): end-of-section accumulated change-flag restarts accepted
   as the dominant convention; "more than one approach is not bad, as long as that's
   vaguely real-world-multiple-authors-realistic. don't stretch or artificially enforce."
+- **rul-1A-llm-disclosure** (interrupt, post-commit-c2b25f7): "Front-load in any product
+  and every file" that (1) it is LLM-generated, and (2) the brief's vibe — intentionally
+  varied quality; a testing corpus, not real security code; an at-least-partly-artificial
+  corpus that cannot expose the truth of real-world ops-code. Applied to: corpus README,
+  `harden.sh` preamble, every oracle seed, census tool + outputs, and the D4 durable's
+  header (which must also carry the N-of-1 + artificiality epistemic caveat).
 
 ## §2 Source recon (all read-only; +SURE throughout unless marked)
 
