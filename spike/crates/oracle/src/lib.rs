@@ -42,6 +42,17 @@ use dorc_core::{
 use dorc_syntax::ast::{Ast, NodeKind, WordPart};
 use std::collections::BTreeMap;
 
+/// The command-keyed `check()` contract (19H §2 / 202 §1 face-check): a dedicated
+/// parser for the constrained oracle-contract dialect plus a concrete evaluator that
+/// traces a known argv through a check's argparse to its kind-annotation.
+///
+/// ADDITIVE (round-20, task-C): this is the NEW input-side mechanism. It coexists
+/// with the existing [`lift`]/[`KindIndex`]/[`Polarity`] (which keep serving the
+/// corpus); a later wiring task (task-W) replaces the `find-3` engine-side argparse
+/// in `analysis::effect` with [`check::evaluate`] and decides the lift/index
+/// migration. Nothing here changes the existing public API.
+pub mod check;
+
 /// What a `(provider, verb)` invocation does to a fact of its kind.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Polarity {
