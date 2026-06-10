@@ -18,14 +18,23 @@
 //! fine — its empty default is unvouched — so every `spec_*stdout*` is "not replaced"
 //! (the backward observable-liveness gate landed, 16H/16J). A CONSUMED *status* is
 //! REFINED (F1/`19D`): vouched (replaceable) for an errexit/post-condition consumer,
-//! but NOT for a branch consumer whose rc is UNDECLARED — an `if`/`elif` guard
+//! but NOT for a branch consumer — an `if`/`elif` guard
 //! (`f1_status_consumed_by_if_guard_blocks_replacement`, unconditional render floor) or
-//! a `&&`/`||` left operand with no declared rc
-//! (`andor_left_operand_undeclared_rc_runs_kfail_perform`, the `kFAIL-perform` floor),
-//! where eliding to a fabricated rc-0 would change which branch/operand runs. A
-//! *declared* rc relaxes the `&&`/`||` case (the value-preserving stand-in reproduces
-//! the exact status). So status is establish-discharged ONLY when its rc is genuinely
-//! vouched (errexit on a converged establish) or declared.
+//! a `&&`/`||` left operand (`andor_left_operand_undeclared_rc_runs_kfail_perform`,
+//! the `kFAIL-perform` floor), where eliding to a fabricated rc-0 would change which
+//! branch/operand runs.
+//!
+//! ROUND-20 (`fork-mutator-rc` adopted, notes/201 §1 + 202 §5): a MUTATOR's rc has NO
+//! sanctioned source — the probe never runs mutators, and oracle-declared rc-values
+//! are rejected ("no values except what the probe gives us"). So a branch-consumed
+//! converged mutator RUNS, full stop; that lost elision is the ruling's deliberate
+//! cost (19H §2.3). The engine's `AndOrStatus`-relaxes-on-declared-rc seam STAYS —
+//! it is what probe-sourced *Query-guard* rcs ride next (202 §2); only the mutator-rc
+//! injection that previously exercised it here is gone (it was the masking 19I §2
+//! strips). The old 16F "status ← establishes-contract, rc-0 is free" vouch survives
+//! ONLY for the errexit consumer (structural: the engine never marks errexit-status;
+//! a non-conforming converged establish under `set -e` is the documented priority-2
+//! over-execute, 19E/19F §6).
 //!
 //! NOTE — these cases deliberately omit `set -e` to isolate the observable
 //! dimension. `set -e` is itself un-oracled ⇒ it independently *poisons* downstream
@@ -45,18 +54,16 @@
 
 use dorc_analysis::effect::FactKey;
 use dorc_core::{
-    EntityRef, Interner, KindId, Observable, OpaqueToken, Predicted, ProviderId, Rc, SelectorId,
-    Verdict,
+    EntityRef, Interner, KindId, Observable, OpaqueToken, ProviderId, SelectorId, Verdict,
 };
 use dorc_oracle::{KindIndex, Polarity};
-use dorc_plan::{Disposition, Plan, StandIn, build_plan};
+use dorc_plan::{Disposition, Plan, build_plan};
 
 /// The package oracle: `apt-get install ⇒ establishes package`, `apt-get purge ⇒
-/// kills`. It is **idempotent-success**: a converged `apt-get install` exits 0 —
-/// which is what vouches the STATUS default. (Contrast a hypothetical `mkdir`,
-/// which exits non-zero when its dir already exists; it is therefore NOT a
-/// conforming establish, and the converged-non-zero status hazard it represents is
-/// un-modellable here — see the note at the bottom of this file.)
+/// kills`. Round-20: whether the tool is "idempotent-success" (a converged install
+/// exits 0) no longer matters to these tests — a mutator's rc is ⊤ regardless
+/// (`fork-mutator-rc`); only the errexit consumer still leans on the
+/// establishes-contract vouch, structurally (see the module doc).
 fn package_index(i: &mut Interner) -> KindIndex {
     let package = KindId(i.intern("package"));
     let installed = SelectorId(i.intern("installed"));
@@ -90,13 +97,11 @@ fn plan_for(src: &str, holds: &[(&str, &str)]) -> Plan {
     let cfg = dorc_analysis::cfg::build(&parsed.value).value;
     let classes = dorc_analysis::effect::classify(&cfg, &parsed.value, &idx, &mut i);
     build_plan(src, &parsed.value, &cfg, &classes, move |f| {
-        // The package oracle is idempotent-success: a converged install exits 0, so a
-        // held fact is conforming `rc=0` (the value-preserving substitution's `true`).
+        // No rc is ever carried for these mutator facts: `fork-mutator-rc` (adopted,
+        // 202 §5) — a mutator's status is ⊤ (`inv-probe-sourced-values`); only the
+        // Effect channel (convergence) arrives from the probe.
         if held.contains(&f) {
-            Observable {
-                effect: Verdict::Converged,
-                status: Predicted::Value(Rc(0)),
-            }
+            Observable::verdict_only(Verdict::Converged)
         } else {
             Observable::verdict_only(Verdict::Diverged)
         }
@@ -114,17 +119,6 @@ fn is_replaced(plan: &Plan, needle: &str) -> bool {
         .any(|s| s.sh.contains(needle) && matches!(s.disposition, Disposition::Replace(_, _)))
 }
 
-/// The value-preserving [`StandIn`] of the (first) `Replace` leaf containing `needle`,
-/// or `None` if it is not a `Replace`. Lets a test assert the substitution reproduces
-/// the *exact* observed rc (the `19A §5` value-preserving fix), not just that it is
-/// replaced.
-fn replace_standin(plan: &Plan, needle: &str) -> Option<StandIn> {
-    plan.steps.iter().find_map(|s| match &s.disposition {
-        Disposition::Replace(_, stand_in) if s.sh.contains(needle) => Some(*stand_in),
-        _ => None,
-    })
-}
-
 // ===========================================================================
 // PINS — current behaviour that is correct; keep it correct.
 // ===========================================================================
@@ -140,14 +134,22 @@ fn replace_standin(plan: &Plan, needle: &str) -> Option<StandIn> {
 // exercised cleanly below via `&&` and `||`, which sit *after* the install.
 
 #[test]
-fn pins_converged_status_via_andand_replaced() {
-    // observable=STATUS, consumed=YES (&& reads the rc), converged. `true && …`
-    // runs the rhs as a converged install (rc 0) would. HOST: nginx installed.
+fn pins_converged_status_via_andand_runs_mutator_rc_top() {
+    // observable=STATUS, consumed=YES (&& reads the rc), converged — but the rc of a
+    // MUTATOR has no sanctioned source (`fork-mutator-rc`, 202 §5): the probe never
+    // runs `apt-get`, so its status is ⊤ and the `AndOrStatus` floor refuses the
+    // license ⇒ the install RUNS. (Pre-round-20 this pinned `Replace` via an injected
+    // conforming rc=0 — the masking class 19I §2 strips.) The lost elision is the
+    // ruling's deliberate cost; the relaxation seam re-activates for probe-sourced
+    // Query-guard rcs (202 §2), never for mutators. HOST: nginx installed.
     let plan = plan_for(
         "apt-get install -y nginx && systemctl enable nginx\n",
         &[("package", "nginx")],
     );
-    assert!(is_replaced(&plan, "install -y nginx"));
+    assert!(
+        !is_replaced(&plan, "install -y nginx"),
+        "a branch-consumed converged mutator runs: its rc is ⊤ (no fabricated rc-0)"
+    );
 }
 
 #[test]
@@ -180,15 +182,21 @@ fn pins_converged_devnull_discard_replaced() {
 }
 
 #[test]
-fn pins_converged_status_via_oror_replaced() {
+fn pins_converged_status_via_oror_runs_mutator_rc_top() {
     // observable=STATUS, consumed=YES (|| reads the rc — the dangerous dual of &&),
-    // converged. rc-0 is vouched by the establish contract ⇒ `true || …` does not
-    // fire the handler, matching a converged install (also rc 0). HOST: installed.
+    // converged. Same `fork-mutator-rc` disposition as the `&&` pin above: no
+    // sanctioned source for the install's rc ⇒ ⊤ ⇒ the `AndOrStatus` floor refuses ⇒
+    // RUNS. This is also the safer floor for the `||` shape specifically: a fabricated
+    // rc-0 here would suppress the `|| handler` — the 19D under-execute family.
+    // HOST: installed.
     let plan = plan_for(
         "apt-get install -y nginx || systemctl start nginx\n",
         &[("package", "nginx")],
     );
-    assert!(is_replaced(&plan, "install -y nginx"));
+    assert!(
+        !is_replaced(&plan, "install -y nginx"),
+        "a ||-consumed converged mutator runs: its rc is ⊤ (no fabricated rc-0)"
+    );
 }
 
 // ===========================================================================
@@ -240,27 +248,12 @@ fn f1_status_consumed_by_errexit_stays_vouched() {
     );
 }
 
-#[test]
-fn andand_left_operand_declared_rc0_relaxes_and_replaces() {
-    // `19D` (the former `tc-mint` gap, now RESOLVED): a `&&`/`||` left operand IS marked
-    // (`AndOrStatus`), so the caller's rc-conditional collapse decides — no
-    // post-condition-vs-guard guess. Here `install && start` is converged with a
-    // DECLARED rc 0 (`plan_for` injects it): the `AndOrStatus` block RELAXES (the
-    // value-preserving stand-in `true` reproduces the exact rc-0, so `start` decides
-    // identically — it would run after a real rc-0 install), and the install stays
-    // `Replace`d. CONTRAST `andor_left_operand_undeclared_rc_runs_kfail_perform` below
-    // (no declared rc ⇒ block ⇒ run) — the *declared rc*, not a structural guess, is
-    // what splits the post-condition (keep) from the under-execute (run).
-    let plan = plan_for(
-        "apt-get install -y nginx && systemctl enable nginx\n",
-        &[("package", "nginx")],
-    );
-    assert!(
-        is_replaced(&plan, "install -y nginx"),
-        "declared rc-0 relaxes the AndOrStatus block ⇒ the conforming post-condition \
-         `install && start` stays replaced (value-preserving rc-0 stand-in)"
-    );
-}
+// (Round-20 cut, `fork-mutator-rc`: `andand_left_operand_declared_rc0_relaxes_and_replaces`
+// asserted the declared-mutator-rc relaxation — rc=0 hand-injected for `apt-get install`.
+// No sanctioned source can produce a mutator's rc, so the test was masking (19I §2). The
+// engine's relaxation seam survives untested-here until probe-sourced Query-guard rcs land
+// (202 §2) — the e2e `fold-oror-guard-omits` carries the fold-from-known-rc behavior
+// meanwhile, via its stdin guard-rc, dying in stage-2.)
 
 #[test]
 fn andor_left_operand_undeclared_rc_runs_kfail_perform() {
@@ -272,8 +265,9 @@ fn andor_left_operand_undeclared_rc_runs_kfail_perform() {
     // `|| fallback` — the priority-1 `kFAIL-perform` under-execute the round-19
     // adversarial pass proved. Here `apt-get install` is converged but its rc is
     // UNDECLARED (verdict-only): `AndOrStatus` consumed + rc None ⇒ the license is
-    // refused ⇒ Run. The dual of `andand_left_operand_declared_rc0_relaxes_and_replaces`
-    // — same construct, opposite disposition, split ONLY by whether the rc is declared.
+    // refused ⇒ Run. Round-20: with `fork-mutator-rc` adopted, undeclared is the ONLY
+    // state a mutator's rc can be in — this floor is now the rule, not the default-half
+    // of a declared/undeclared split.
     let mut i = Interner::default();
     let idx = package_index(&mut i);
     let installed = SelectorId(i.intern("installed"));
@@ -422,110 +416,5 @@ fn spec_converged_set_e_does_not_poison_replacement() {
     assert!(
         is_replaced(&plan, "install -y nginx"),
         "set -e is target-state-pure; it must not poison the install's ambient-ness"
-    );
-}
-
-// ===========================================================================
-// NON-CONFORMING ESTABLISH as an `&&`/`||` LEFT operand — STATUS, converged-FAILURE.
-// The round-19 adversarial pass's proven `kFAIL-perform` under-execute, now FIXED at
-// two layers (`19C` the fold + value-preserving substitution; `19D` the rc-conditional
-// `AndOrStatus` gate + the un-fabricated rc default).
-//
-// A NON-conforming establish exits NON-ZERO when its fact already holds (`useradd x`
-// rc 9, `mkdir d` w/o `-p`, `ln` w/o `-f`, `docker network create`). Consumed as a `||`
-// LEFT operand and converged, the OLD engine wrongly `Replace`d it by `:` (rc 0), so
-// `useradd deploy || mkdir /x` (user present) became `: || mkdir` ⇒ the `||` never
-// fired ⇒ `mkdir` was skipped — the under-execute. Two independent failures fed it:
-//   1. the value-preserving substitution did not exist (the stand-in was a flat rc-0
-//      `:`), and
-//   2. the engine left `&&`/`||` status UNMARKED, and the CLI/hostsim FABRICATED a
-//      conforming `rc=0` for any converged fact.
-// `19C` fixed (1): the stand-in is now the EXACT observed rc (`(exit 9)`), so a
-// *declared* rc-9 keeps `mkdir` live. `19D` fixes (2): the engine marks `&&`/`||`
-// status (`AndOrStatus`) and the caller refuses the license when the rc is UNDECLARED
-// (no more fabricated rc-0) ⇒ the leaf runs. The two halves the engine could not
-// distinguish are now split by the *declared rc*, not a structural guess:
-//   * DECLARED rc (the oracle/build-2 produces it): the fold + exact-rc substitution
-//     decide — `install && start`[rc 0] stays replaced; `useradd || mkdir`[rc 9] keeps
-//     `mkdir` live. (`andand_left_operand_declared_rc0_relaxes_and_replaces` /
-//     `nonconforming_establish_andor_left_operand_substitutes_exact_rc`.)
-//   * UNDECLARED rc (the default): block ⇒ Run (the `kFAIL-perform` floor —
-//     `andor_left_operand_undeclared_rc_runs_kfail_perform`).
-// `useradd <name>` fits the (provider, verb) model: verb=`<name>` ⇒ a Singleton
-// `user#present` cell (the baked username is a fixture wart, not load-bearing).
-//
-// The case below keeps the DECLARED-rc-9 opt-in path (the build-2 contract's target):
-// the converged `useradd` is replaced by its EXACT `(exit 9)`, so `mkdir` stays live.
-// ===========================================================================
-
-/// Run the pipeline for the non-conforming-establish `||` cell. `useradd deploy` is a
-/// NON-conforming establish: it exits **9** when `deploy` already exists. The
-/// injected observation now carries that rc (`19B` build-1) — the apply fold reads it
-/// and the substitution reproduces it, instead of the old `:`/rc-0 lie.
-fn plan_for_user_oror(src: &str) -> Plan {
-    let mut i = Interner::default();
-    let user = KindId(i.intern("user"));
-    let present = SelectorId(i.intern("present"));
-    let useradd = ProviderId(i.intern("useradd"));
-    // `useradd deploy` ⇒ provider=useradd, verb=`deploy`, no further operand ⇒ a
-    // Singleton `user#present` cell.
-    let deploy = i.intern("deploy");
-    let mut idx = KindIndex::default();
-    idx.add_effect(useradd, deploy, user, present, Polarity::Establish);
-    // The host already has the user (Converged), and the observed exit status of a
-    // converged `useradd` is 9 (the non-conformance — now MODELED as an injected rc,
-    // the build-2 oracle-contract's job to produce for real).
-    let held = FactKey {
-        kind: user,
-        entity: EntityRef::Singleton,
-        selector: present,
-    };
-    let parsed = dorc_syntax::parse(src);
-    let cfg = dorc_analysis::cfg::build(&parsed.value).value;
-    let classes = dorc_analysis::effect::classify(&cfg, &parsed.value, &idx, &mut i);
-    build_plan(src, &parsed.value, &cfg, &classes, move |f| {
-        if f == held {
-            Observable {
-                effect: Verdict::Converged,
-                status: Predicted::Value(Rc(9)),
-            }
-        } else {
-            Observable::verdict_only(Verdict::Diverged)
-        }
-    })
-}
-
-#[test]
-fn nonconforming_establish_andor_left_operand_substitutes_exact_rc() {
-    // PROMOTED from `xfail_nonconforming_establish_andor_left_operand_wrongly_replaced`
-    // (`notes/198` §1.3 / `19C`). `useradd deploy || mkdir /srv/app`, user `deploy`
-    // already present (Converged), observed rc 9. The round-19 fold + value-preserving
-    // substitution fix the under-execute: the converged `useradd` IS replaced (it is a
-    // converged ambient establish), but by `(exit 9)` — its EXACT observed status — NOT
-    // `:`/rc-0. So `(exit 9) || mkdir` still fires the `|| mkdir` fallback ⇒ `mkdir`
-    // runs. The old xfail asserted "not replaced" (the only SAFE option when the
-    // substitution was a rc-0 lie); value-preserving substitution makes "replaced, but
-    // with the right rc" the correct, sound disposition.
-    let plan = plan_for_user_oror("useradd deploy || mkdir /srv/app\n");
-
-    // The fix: the stand-in reproduces rc 9, so the `||` still fires.
-    assert_eq!(
-        replace_standin(&plan, "useradd deploy"),
-        Some(StandIn::Exit(9)),
-        "the converged non-conforming establish must be replaced by its EXACT rc \
-         (exit 9), not a rc-0 stub — else the `|| mkdir` fallback is suppressed \
-         (the kFAIL-perform under-execute the round-19 adversarial pass proved)"
-    );
-    // `mkdir` is live (the fold proved the `||` right operand reachable: left rc 9 ≠ 0)
-    // and is not an oracled establish, so it RUNS — never replaced, never omitted.
-    assert!(
-        !is_replaced(&plan, "mkdir /srv/app"),
-        "mkdir runs (the fallback): it is not converged-elidable"
-    );
-    assert!(
-        plan.steps
-            .iter()
-            .any(|s| s.sh.contains("mkdir /srv/app") && matches!(s.disposition, Disposition::Run)),
-        "mkdir's disposition is Run — the fold keeps the `|| mkdir` fallback live"
     );
 }

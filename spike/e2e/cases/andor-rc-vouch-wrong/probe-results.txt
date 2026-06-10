@@ -1,8 +1,0 @@
-# The host already has the user (Converged), and a converged `useradd` exits 9 (the
-# NON-conforming establish — its observed rc rides the OOB lane as `rc=9`, 19B §2).
-# The round-19 fold reads that rc: `useradd(rc 9) || mkdir` ⇒ 9≠0 ⇒ `mkdir` stays
-# LIVE, so the value-preserving substitution `(exit 9)` keeps the `|| mkdir` fallback
-# firing — both run. WITHOUT the rc (the old default rc=0), the fold would WRONGLY
-# think useradd succeeded and omit mkdir — the kFAIL-perform under-execute this case
-# was built to catch. The rc injection is the fix (notes/19C).
-user#present converged rc=9
