@@ -48,6 +48,19 @@ if [ -z "$checker" ]; then
   exit 2
 fi
 
+# gate-2 (20B §3): the redirection sandbox needs awk for the pre-exec scan. awk is
+# already a load-bearing dependency (the shebang-split partition above); require it
+# explicitly so a missing awk is a clear failure, not a silently-skipped safety gate.
+if ! command -v awk >/dev/null 2>&1; then
+  echo "no awk for the gate-2 redirection-sandbox scan — cannot validate exec safety" >&2
+  exit 2
+fi
+redir_scan="$here/scan_redirects.awk"
+if [ ! -f "$redir_scan" ]; then
+  echo "gate-2 scanner missing: $redir_scan" >&2
+  exit 2
+fi
+
 # Syntax-check one artifact ($2) labelled ($1 = "probe"/"apply") for case ($3).
 # Returns non-zero and prints the shell's diagnostic if the artifact does not parse.
 # Quiet when XFAIL_ACTIVE=1 (a known-defect case's failure is expected; the `xfail`
@@ -64,23 +77,59 @@ syntax_check() {
   return 0
 }
 
+# gate-2 (20B §3): scan an artifact ($2, labelled $1 for case $3) for an unsafe
+# redirection BEFORE it is executed. PATH-isolation governs which COMMANDS run, but not
+# where their `>`/`>>` redirections write — `somecmd >/abs/path` in an executed artifact
+# hits the real fs. We run every exec_check with cwd = a throwaway sandbox (below), so a
+# bare relative target is disposable; this scan refuses the targets that escape it
+# (absolute, dynamic `$`/backtick, or `..`-climbing), allowlisting `/dev/null`. The
+# scanner is a conservative lexical pass over our OWN renders (scan_redirects.awk); an
+# over-refusal prints the offending line (legible, not silent). Returns non-zero on a
+# refusal.
+scan_redirect_safety() {
+  _label=$1; _art=$2; _case=$3
+  _bad=$(printf '%s\n' "$_art" | awk -f "$redir_scan") || true
+  if [ -n "$_bad" ]; then
+    if [ "${XFAIL_ACTIVE:-}" != "1" ]; then
+      echo "FAIL  $_case  [gate-2: rendered $_label has an unsafe redirect target (absolute/dynamic/escaping) — refused before exec]"
+      printf '      %s\n' "$_bad"
+    fi
+    return 1
+  fi
+  return 0
+}
+
 # The ap-2 EXECUTABLE acceptance (Deliverable A / an-render-executability-check):
 # `-n` proves the artifact PARSES; this proves the *right lines run*. A case opts in
 # by shipping a mocks/ dir + an expected.ran golden. We EXECUTE the rendered artifact
 # ($2) under PATH=<case>/mocks ONLY, so the sole things that can run are the inert
 # shims (each logs `ran: <argv>` and exits 0 — never a real apt-get/systemctl/ufw).
-# A `:`-stubbed (elided) command logs nothing; a `Run` command logs its argv. We
-# assert the sorted run-set == expected.ran. SAFETY: PATH is the mocks dir alone, and
-# an un-shimmed external command ⇒ `command not found` ⇒ a loud failure (never a real
-# system mutation). Deterministic: the log is sorted (`inv-determinism`).
+# A `:`-stubbed (elided) command logs nothing; a `Run` command logs its argv.
+#
+# gate-2 sandbox (20B §3): execution runs in a subshell whose cwd is a FRESH mktemp dir
+# (`_sand`), so any bare relative redirect the artifact performs lands in disposable
+# space, never the repo (today they would land in run.sh's cwd). The redirect scan
+# (`scan_redirect_safety`) has already refused absolute/dynamic/escaping targets, so the
+# sandbox + scan together bound where an executed render may write. The interpreter is
+# invoked by its own absolute path (`$checker_abs`, never found via the overridden PATH),
+# and DORC_LOG is an absolute path (resolved before the cd) so the shims log into it from
+# inside the sandbox.
+#
+# gate-4 (20B §2): the run-set is compared UNSORTED — execution order is deterministic
+# under sequential sh, and sorting would discard the welded book-order assertion ("the
+# book's order is sacred"). SAFETY: PATH is the mocks dir alone; an un-shimmed external
+# command ⇒ `command not found` ⇒ a loud failure (never a real system mutation).
 exec_check() {
   _label=$1; _art=$2; _case=$3; _dir=$4
+  scan_redirect_safety "$_label" "$_art" "$_case" || return 1
   _log=$(mktemp)
+  _sand=$(mktemp -d)
   # Absolute mocks dir: PATH is about to become *only* this dir, so a relative path
-  # would break — and the interpreter is invoked by its own absolute path
-  # (`$checker_abs`), never found via the overridden PATH.
+  # would break.
   _mocks=$(CDPATH= cd -- "${_dir}mocks" && pwd)
-  if ! _run_err=$(DORC_LOG="$_log" PATH="$_mocks" "$checker_abs" 2>&1 <<EOF
+  # Execute in a subshell cd'd into the sandbox (gate-2): a bare relative redirect lands
+  # under $_sand, not the repo. $_log + $checker_abs are absolute, unaffected by the cd.
+  if ! _run_err=$( cd -- "$_sand" && DORC_LOG="$_log" PATH="$_mocks" "$checker_abs" 2>&1 <<EOF
 $_art
 EOF
   ); then
@@ -88,10 +137,11 @@ EOF
       echo "FAIL  $_case  [ap-2-exec: rendered $_label errored when run under mocks]"
       printf '      %s\n' "$_run_err"
     fi
-    rm -f "$_log"
+    rm -rf "$_sand"; rm -f "$_log"
     return 1
   fi
-  _got_ran=$(LC_ALL=C sort < "$_log")
+  rm -rf "$_sand"
+  _got_ran=$(cat "$_log")
   rm -f "$_log"
   if [ "${BLESS:-}" = "1" ]; then
     printf '%s\n' "$_got_ran" > "${_dir}expected.ran"
@@ -106,15 +156,198 @@ EOF
     fi
     return 1
   fi
-  _want_ran=$(LC_ALL=C sort < "${_dir}expected.ran" 2>/dev/null || true)
+  # gate-4: ordered compare (no sort) — the log is in execution order, the golden in
+  # book order; a reorder is a real regression, not noise.
+  _want_ran=$(cat "${_dir}expected.ran" 2>/dev/null || true)
   if [ "$_got_ran" = "$_want_ran" ]; then
     return 0
   fi
   if [ "${XFAIL_ACTIVE:-}" != "1" ]; then
-    echo "FAIL  $_case  [ap-2-exec: $_label ran the wrong commands]"
+    echo "FAIL  $_case  [ap-2-exec: $_label ran the wrong commands or wrong order]"
     if command -v diff >/dev/null 2>&1; then
       printf '%s\n' "$_got_ran" | diff -u "${_dir}expected.ran" - 2>/dev/null || true
     fi
+  fi
+  return 1
+}
+
+# gate-1 (rule-probe-exec-gate, 205 §1 — the load-bearing one): EXECUTE the rendered
+# PROBE ($2) under the same inert-shim discipline as the apply gate (PATH=<case>/mocks,
+# sandbox cwd, DORC_LOG set), and assert three things on the records it emits on stdout:
+#
+#   (a) SITE-COMPLETENESS + GRAMMAR (always): every resolvable site (a `printf 'site N …`
+#       emitter in the probe) emits EXACTLY ONE record, and every record is grammar-valid
+#       (`site <int> effect=<holds|absent|cant-tell> rc=<int>`). A deleted/garbled record
+#       ⇒ loud fail. This is structural and does not depend on WHICH effect-word.
+#
+#   (c) VOUCH-CLOSURE / no-127 (unless PROBE_RESULTS=authored): no record carries rc=127
+#       (command-not-found). Under PATH=mocks-only, an rc=127 means the probe invoked a
+#       command with no shim — the executable half of vouch-closure failing loud. (NB:
+#       an un-shimmed probe command does NOT abort the probe — the `__check` wrappers
+#       swallow the not-found via their own `2>/dev/null`, so the only signal is rc=127
+#       in the record; we detect it explicitly rather than rely on a non-zero exit.)
+#
+#   (b) PARITY (unless PROBE_RESULTS=authored): the effect-words the mocked probe PRODUCES
+#       must match the case's hand-authored `probe-results.txt` records (the fixture the
+#       apply gate consumes). A case whose fixture intentionally diverges from what the
+#       mocks can reproduce opts out with a one-line `PROBE_RESULTS=authored` marker file.
+#
+# The PROBE_RESULTS=authored opt-out governs (b)+(c) ONLY — (a) always holds. The opt-out
+# is the HONEST residual of the convergence axis: today most mocks/ dirs carry only the
+# APPLY commands (apt-get …), not the PROBE commands (dpkg-query/getent/ufw/systemctl), so
+# their probe cannot be faithfully mock-executed until D3b ships probe-specific shims.
+# Authoring those shims is explicitly out of D3a scope; the opt-out records which cases
+# need them rather than silently re-blessing fixtures to match all-exit-0 mock output.
+probe_exec_check() {
+  _art=$1; _case=$2; _dir=$3
+  scan_redirect_safety probe "$_art" "$_case" || return 1
+  # The resolvable site-ids the probe will self-report (one `printf 'site N …` per site).
+  _emit_ids=$(printf '%s\n' "$_art" | sed -n "s/.*printf 'site \\([0-9][0-9]*\\) effect=.*/\\1/p" | LC_ALL=C sort -n)
+  _log=$(mktemp)
+  _sand=$(mktemp -d)
+  _mocks=$(CDPATH= cd -- "${_dir}mocks" && pwd)
+  # Execute the probe (sandbox cwd + mocks PATH + DORC_LOG). Its stdout is the records;
+  # its own stderr/the shim log are not asserted here (the probe is read-only — we assert
+  # the records it returns, not what it touched, beyond the no-127 vouch check below).
+  _recs=$( cd -- "$_sand" && DORC_LOG="$_log" PATH="$_mocks" "$checker_abs" 2>/dev/null <<EOF
+$_art
+EOF
+  )
+  rm -rf "$_sand"; rm -f "$_log"
+  _recs=$(printf '%s\n' "$_recs" | sed 's/\r$//')
+
+  # (a) grammar + site-completeness. Pull the well-formed records' ids; compare the SET
+  # to the emitters'. A record that is missing, duplicated, or malformed shifts the set.
+  _rec_lines=$(printf '%s\n' "$_recs" | grep -E '^site ' || true)
+  _good_ids=$(printf '%s\n' "$_rec_lines" \
+    | sed -n 's/^site \([0-9][0-9]*\) effect=\(holds\|absent\|cant-tell\) rc=-\{0,1\}[0-9][0-9]*$/\1/p' \
+    | LC_ALL=C sort -n)
+  if [ "$_good_ids" != "$_emit_ids" ]; then
+    if [ "${XFAIL_ACTIVE:-}" != "1" ]; then
+      echo "FAIL  $_case  [gate-1: probe records not site-complete/grammar-valid (every resolvable site must emit exactly one valid record)]"
+      printf '      emitters: %s\n' "$(printf '%s' "$_emit_ids" | tr '\n' ' ')"
+      printf '      valid records: %s\n' "$(printf '%s' "$_good_ids" | tr '\n' ' ')"
+      printf '      raw records:\n'; printf '%s\n' "$_recs" | sed 's/^/        /'
+    fi
+    return 1
+  fi
+
+  # The opt-out marker disables (b) parity + (c) vouch-closure (this case's probe cannot
+  # be faithfully mock-executed today — see the header). (a) above already passed.
+  if [ -f "${_dir}PROBE_RESULTS=authored" ]; then
+    return 0
+  fi
+
+  # (c) vouch-closure: no rc=127 (an un-shimmed probe command).
+  if printf '%s\n' "$_rec_lines" | grep -qE 'rc=127$'; then
+    if [ "${XFAIL_ACTIVE:-}" != "1" ]; then
+      echo "FAIL  $_case  [gate-1: probe invoked an un-shimmed command (rc=127) — vouch-closure: a probe command has no mock (add a probe shim, or mark PROBE_RESULTS=authored)]"
+      printf '%s\n' "$_rec_lines" | grep -E 'rc=127$' | sed 's/^/      /'
+    fi
+    return 1
+  fi
+
+  # (b) parity: the PRODUCED effect-words must match the authored probe-results.txt. We
+  # compare on the `site N effect=W` projection (drop rc — the fixtures historically omit
+  # it, and the firewall governs rc usage; the effect-word is the convergence signal).
+  _produced=$(printf '%s\n' "$_rec_lines" | sed -E 's/ rc=-?[0-9]+$//' | LC_ALL=C sort)
+  _authored=$(grep -E '^site ' "${_dir}probe-results.txt" 2>/dev/null | sed -E 's/ rc=-?[0-9]+$//' | LC_ALL=C sort)
+  if [ "$_produced" = "$_authored" ]; then
+    return 0
+  fi
+  if [ "${XFAIL_ACTIVE:-}" != "1" ]; then
+    echo "FAIL  $_case  [gate-1: mocked probe records diverge from authored probe-results.txt — re-author the fixture, add probe shims, or mark PROBE_RESULTS=authored (do NOT silently re-bless)]"
+    if command -v diff >/dev/null 2>&1; then
+      _af=$(mktemp); printf '%s\n' "$_authored" > "$_af"
+      printf '%s\n' "$_produced" | diff -u "$_af" - 2>/dev/null | sed 's/^/      /' || true
+      rm -f "$_af"
+    fi
+  fi
+  return 1
+}
+
+# gate-5 (cm-2 argv-echo differential, 20A §2 / 20B §3): cross-check the ENGINE's per-site
+# resolved argv against GROUND TRUTH from dash. dash is the semantic oracle for value-flow
+# (the prefix-env / `${N#pat}` bugs this round died to crosscheck would be caught here by
+# construction). Mechanism:
+#   - the engine's view: `dorc --debug-argv` emits `argv <leafid> <word|TOP …>` per site;
+#   - ground truth: run the BARE book.sh (NOT the elided apply — it is all-shims by
+#     construction, same trust envelope) under PATH=mocks + sandbox cwd; the shims log
+#     `ran: <name> <args>` — exactly the executed argv per site.
+#
+# The assertion is ONE-DIRECTIONAL and conservative (the prompt's mandate — "be
+# conservative, document, and flag rather than over-assert"): for each FULLY-RESOLVED site
+# (no `TOP`) whose argv[0] is a SHIMMED command (a builtin like `set`/`echo`/`command`/`:`
+# logs nothing, so it is exempt), the resolved argv MUST appear as a logged `ran:` line.
+# We do NOT assert the reverse (a logged line with no matching engine site) nor a count —
+# a branch the bare run skips, or a site the engine ⊤s, would make a two-directional or
+# counting assertion a false failure. So: engine-resolved-and-shimmed ⊆ logged.
+#
+# $4 = the `-o oracle …` arg string (already assembled by the caller; passed verbatim).
+argv_echo_check() {
+  _case=$1; _dir=$2; _shims=$3
+  shift 3   # the remaining args ($@) are the `-o <oracle> …` flags
+  # The engine's per-site argv (stderr, behind the flag). stdin is the probe-results (the
+  # flag does not change the round-trip; we just read the extra stderr lines).
+  _eng=$("$dorc" --debug-argv --book="${_dir}book.sh" "$@" < "${_dir}probe-results.txt" 2>&1 >/dev/null | grep '^argv ' || true)
+  # Ground truth: run the BARE book under mocks + sandbox; collect the shims' logged argvs.
+  _mocks=$(CDPATH= cd -- "${_dir}mocks" && pwd)
+  _book=$(CDPATH= cd -- "$_dir" && pwd)/book.sh
+  _log=$(mktemp); _sand=$(mktemp -d)
+  ( cd -- "$_sand" && DORC_LOG="$_log" PATH="$_mocks" "$checker_abs" "$_book" ) >/dev/null 2>&1 || true
+  _logged=$(sed 's/^ran: //' "$_log" 2>/dev/null || true)
+  rm -rf "$_sand"; rm -f "$_log"
+  # Walk each engine argv line; assert the resolved+shimmed ones are in the log.
+  _bad=""
+  _oldifs=$IFS; IFS='
+'
+  for _line in $_eng; do
+    _words=$(printf '%s' "$_line" | sed -E 's/^argv [0-9]+ ?//')
+    [ -z "$_words" ] && continue                              # assignment-only site
+    case " $_words " in *" TOP "*) continue ;; esac           # not fully resolved ⇒ skip
+    _cmd0=${_words%% *}
+    case "$_shims" in *" $_cmd0 "*) ;; *) continue ;; esac    # builtin / un-shimmed ⇒ skip
+    if ! printf '%s\n' "$_logged" | grep -qxF "$_words"; then
+      _bad="${_bad}${_line}
+"
+    fi
+  done
+  IFS=$_oldifs
+  [ -z "$_bad" ] && return 0
+  if [ "${XFAIL_ACTIVE:-}" != "1" ]; then
+    echo "FAIL  $_case  [gate-5: engine-resolved argv not in the bare book's executed argvs (dash disagrees with value-flow)]"
+    printf '%s' "$_bad" | sed 's/^/      /'
+  fi
+  return 1
+}
+
+# gate-3 (stderr-severity floor, 20B §2): dorc's stderr ($2 = the captured file) is the
+# diagnostic stream — previously discarded. FAIL the case ($1) if it carries an
+# ERROR-severity diagnostic (the `<stage>: error[<code>]: …` shape `report()` now emits)
+# that the case does not DECLARE. A case legitimately exercising an error path (a
+# ⊤-reject, a missing oracle probe) ships an `expected-diagnostics` file whose lines are
+# substring-matched against the stderr; every error-line must be covered by some pattern.
+# Warnings/notes are free-form and never fail a case (only `error[` is the floor). This
+# closes the 20B §2 residual: an error-class diagnostic that should fail a case used to
+# vanish into `2>/dev/null`.
+scan_diagnostics() {
+  _case=$1; _err=$2; _dir=$3
+  # The error-severity lines (the floor keys on the `error[` shape, not warnings/notes).
+  _errs=$(grep -E '^[a-z]+: error\[' "$_err" 2>/dev/null || true)
+  [ -z "$_errs" ] && return 0
+  # Declared? An error line is COVERED iff some `expected-diagnostics` pattern is a
+  # substring of it (fixed-string match, `grep -F -f`). The undeclared lines are exactly
+  # those NOT matched by any pattern; an empty pattern-file (or no file) declares nothing.
+  _decl="${_dir}expected-diagnostics"
+  if [ -f "$_decl" ] && [ -s "$_decl" ]; then
+    _undeclared=$(printf '%s\n' "$_errs" | grep -vF -f "$_decl" || true)
+  else
+    _undeclared=$_errs
+  fi
+  [ -z "$_undeclared" ] && return 0
+  if [ "${XFAIL_ACTIVE:-}" != "1" ]; then
+    echo "FAIL  $_case  [gate-3: undeclared error-severity diagnostic on stderr — fix the cause, or declare it in an expected-diagnostics file]"
+    printf '%s\n' "$_undeclared" | sed 's/^/      /'
   fi
   return 1
 }
@@ -132,17 +365,19 @@ for dir in "$here"/cases/*/; do
     set -- "$@" -o "$o"
   done
 
-  # stderr (diagnostics — ⊤-rejects, oracle warnings) is not part of the e2e
-  # assertion; the artifact is stdout (probe + apply). Suppress it for a clean run.
-  # dorc's exit status is captured (NOT piped away): a crashed/empty engine must
-  # hard-fail every case BEFORE the xfail lens and BEFORE bless — empty artifacts are
-  # `dash -n`-clean and a BLESS run would otherwise silently bless 43 empty goldens
+  # dorc's stdout is the artifact (probe + apply); its stderr is the diagnostic stream
+  # (gate-3 asserts it — below). Capture BOTH (stderr to a temp file, no longer
+  # discarded). dorc's exit status is captured (NOT piped away): a crashed/empty engine
+  # must hard-fail every case BEFORE the xfail lens and BEFORE bless — empty artifacts
+  # are `dash -n`-clean and a BLESS run would otherwise silently bless 43 empty goldens
   # (round-20 harness-crosscheck find-3, demonstrated with a crash-stub).
   dorc_rc=0
-  raw=$("$dorc" --book="${dir}book.sh" "$@" < "${dir}probe-results.txt" 2>/dev/null) || dorc_rc=$?
+  err_file=$(mktemp)
+  raw=$("$dorc" --book="${dir}book.sh" "$@" < "${dir}probe-results.txt" 2>"$err_file") || dorc_rc=$?
   got=$(printf '%s\n' "$raw" | sed 's/\r$//')
   if [ "$dorc_rc" -ne 0 ] || [ -z "$got" ]; then
     echo "FAIL  $name  [dorc exited rc=$dorc_rc / produced no output — a dead engine is never green]"
+    rm -f "$err_file"
     fails=$((fails + 1))
     continue
   fi
@@ -180,9 +415,29 @@ for dir in "$here"/cases/*/; do
   # of commands that ran (elided `:`-stubs run nothing). Analysis-only cases (no
   # mocks/) keep the `-n`+golden discipline and are never executed. Skipped if the
   # syntax gate already failed (a non-parseable artifact can't be meaningfully run).
+  #
+  # gate-1 (rule-probe-exec-gate): the PROBE half — for the same mocks/ cases, EXECUTE
+  # the rendered probe under the shims and assert site-completeness + grammar (always),
+  # plus parity + vouch-closure (unless the case carries a PROBE_RESULTS=authored marker).
+  # Bless does not re-author probe fixtures (the opt-out exists precisely so the suite
+  # never silently re-blesses fixtures to match all-exit-0 mock output).
   if [ "$case_ok" -eq 1 ] && [ -d "${dir}mocks" ]; then
     exec_check apply "$apply_art" "$name" "$dir" || case_ok=0
+    probe_exec_check "$probe_art" "$name" "$dir" || case_ok=0
+    # gate-5 (cm-2 argv-echo differential): cross-check the engine's per-site resolved
+    # argv against the bare book's executed argvs under dash. Conservative, one-directional
+    # (engine-resolved-and-shimmed ⊆ logged). Pass the space-delimited shim set + the
+    # `-o oracle …` args. Not run under BLESS (it asserts, never re-authors).
+    if [ "${BLESS:-}" != "1" ]; then
+      _shimset=" $(cd "${dir}mocks" && ls | tr '\n' ' ')"
+      argv_echo_check "$name" "$dir" "$_shimset" "$@" || case_ok=0
+    fi
   fi
+
+  # gate-3 (stderr-severity floor): an undeclared error-severity diagnostic fails the
+  # case (declare legitimate ones in expected-diagnostics). Always run — analysis-only
+  # cases (no mocks/) emit diagnostics too (⊤-rejects, missing-probe).
+  scan_diagnostics "$name" "$err_file" "$dir" || case_ok=0
 
   # Content golden-diff (secondary to the gates; -n is blind to *which* lines elided).
   # Skipped under bless and for xfail cases (goldens hand-authored there).
@@ -218,6 +473,7 @@ for dir in "$here"/cases/*/; do
   else
     fails=$((fails + 1))
   fi
+  rm -f "$err_file"
 done
 
 echo "---"
@@ -227,5 +483,5 @@ if [ "$fails" -ne 0 ]; then
 elif [ "${BLESS:-}" = "1" ]; then
   echo "blessed $total cases (all ap-2 gates passed)"
 else
-  echo "all $total e2e round-trips passed (incl. ap-2 $checker -n gate + exec gate where mocked)"
+  echo "all $total e2e round-trips passed (ap-2 $checker -n + apply/probe exec gates, redirect sandbox, ordered run-set, stderr floor, argv-echo differential)"
 fi

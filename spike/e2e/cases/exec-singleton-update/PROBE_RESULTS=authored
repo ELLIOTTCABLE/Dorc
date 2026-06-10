@@ -1,0 +1,1 @@
+probe runs pkgindex__check (test -n "$(find /var/lib/apt/lists/ -newermt '-1 hour')"): real find, filesystem-timing dependent — produces absent on a host with no fresh apt lists, not the authored holds. Inherently non-mock-reproducible without a find/test shim (D3b).

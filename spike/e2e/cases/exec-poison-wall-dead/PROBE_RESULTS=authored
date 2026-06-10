@@ -1,0 +1,1 @@
+probe runs package__check (dpkg-query, un-shimmed) and pkgindex__check (test -n find, filesystem-timing). Authored fixture stands until D3b ships package + pkgindex probe shims.

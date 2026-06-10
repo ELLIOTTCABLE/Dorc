@@ -1,0 +1,1 @@
+error[oracle-missing-probe]: oracle_kind=`package` has no matching `oracle_probe_package`

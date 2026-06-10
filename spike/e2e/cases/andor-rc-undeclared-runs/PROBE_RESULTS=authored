@@ -1,0 +1,1 @@
+probe runs user__check (getent passwd), un-shimmed: mocks/ carries only the apply commands (mkdir/useradd). Authored fixture stands until D3b ships a getent probe shim.

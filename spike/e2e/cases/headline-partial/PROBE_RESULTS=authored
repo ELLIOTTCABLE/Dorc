@@ -1,0 +1,1 @@
+probe runs a 4-kind mix: package__check (dpkg-query, un-shimmed), firewall__check (ufw status | grep — grep un-shimmed), pkgindex__check (find-timing), service__check (systemctl, shimmed). The authored fixture asserts whole-host convergence, irreproducible under apply-only mocks. Stands until D3b ships the missing probe shims.

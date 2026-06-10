@@ -1,0 +1,1 @@
+probe runs command -v (tool, builtin — resolves against PATH=mocks-only where the operand is absent) and dpkg-query (un-shimmed). The authored fixture asserts the real-host convergence, not all-exit-0/PATH-absent mock output. Stands until D3b ships tool+package probe shims.

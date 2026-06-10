@@ -1,2 +1,2 @@
-ran: apt-get install -y nginx
 ran: cat /etc/pkg
+ran: apt-get install -y nginx

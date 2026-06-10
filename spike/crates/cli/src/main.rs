@@ -37,7 +37,7 @@ use std::collections::BTreeMap;
 use std::io::{Read, Write};
 use std::process::ExitCode;
 
-use dorc_core::{Interner, Observable, Predicted, Rc, Verdict};
+use dorc_core::{Interner, Observable, Predicted, Rc, Severity, Verdict};
 
 const USAGE: &str = "usage: dorc --book=<book.sh> [-o <oracle.sh>]...";
 
@@ -54,13 +54,17 @@ fn main() -> ExitCode {
 struct Args {
     book: String,
     oracles: Vec<String>,
+    /// `--debug-argv` (gate-5 / cm-2): emit the engine's per-site resolved argv to stderr,
+    /// then proceed normally — a cli-edge readout the e2e argv-echo differential consumes.
+    debug_argv: bool,
 }
 
 /// Minimal hand-rolled parsing (no `clap` dep): `--book=PATH` / `--book PATH`, and
-/// `-o PATH` / `-oPATH` / `--oracle PATH` (repeatable).
+/// `-o PATH` / `-oPATH` / `--oracle PATH` (repeatable); `--debug-argv` (gate-5 readout).
 fn parse_args() -> Result<Args, String> {
     let mut book: Option<String> = None;
     let mut oracles = Vec::new();
+    let mut debug_argv = false;
     let mut it = std::env::args().skip(1);
     while let Some(arg) = it.next() {
         if let Some(p) = arg.strip_prefix("--book=") {
@@ -71,6 +75,8 @@ fn parse_args() -> Result<Args, String> {
             oracles.push(it.next().ok_or("-o needs a path")?);
         } else if let Some(p) = arg.strip_prefix("-o").filter(|p| !p.is_empty()) {
             oracles.push(p.to_string());
+        } else if arg == "--debug-argv" {
+            debug_argv = true;
         } else if arg == "-h" || arg == "--help" {
             return Err(USAGE.to_string());
         } else {
@@ -80,6 +86,7 @@ fn parse_args() -> Result<Args, String> {
     Ok(Args {
         book: book.ok_or(USAGE)?,
         oracles,
+        debug_argv,
     })
 }
 
@@ -158,8 +165,50 @@ fn run() -> Result<(), String> {
             .copied()
             .unwrap_or(Observable::verdict_only(Verdict::Unknown))
     });
+
+    // gate-5 (cm-2 argv-echo differential): per-site resolved argv to stderr, behind the flag.
+    if args.debug_argv {
+        emit_debug_argv(&plan, &cfg.value, &value, &interner);
+    }
+
     print!("{}", plan.render_apply(&book_src, &parsed.value));
     Ok(())
+}
+
+/// gate-5 / cm-2 readout: per command site, emit `argv <leafid> <word|TOP per word>` on
+/// stderr (a resolved literal verbatim, an unresolved word `TOP`). The leaf-ids are the
+/// plan's own ([`dorc_plan::Step::leaf`]) — the same span-sorted space the probe records
+/// share (`inv-site-keyed-results`), so `argv N` keys to the same site as `site N`. The
+/// argv is the book-side value-flow ([`dorc_analysis::value::ValueFlow::argv_values`]),
+/// keyed by `CfgNodeId` (mapped back from the leaf's `AstId`). Cli-edge only.
+fn emit_debug_argv(
+    plan: &dorc_plan::Plan,
+    cfg: &dorc_analysis::cfg::Cfg,
+    value: &dorc_analysis::value::ValueFlow,
+    interner: &Interner,
+) {
+    use dorc_analysis::value::ValueOf;
+    // AstId → CfgNodeId for Command nodes (argv_values is keyed by CfgNodeId; the plan
+    // step carries the AstId). One CfgNode per command AstId in the modeled subset.
+    let node_of_ast: BTreeMap<dorc_core::AstId, dorc_analysis::cfg::CfgNodeId> = cfg
+        .iter()
+        .filter(|(_, n)| n.kind == dorc_analysis::cfg::CfgNodeKind::Command)
+        .map(|(id, n)| (n.ast, id))
+        .collect();
+    for step in &plan.steps {
+        let Some(&node) = node_of_ast.get(&step.ast) else {
+            continue;
+        };
+        let words: Vec<String> = value
+            .argv_values(node)
+            .into_iter()
+            .map(|w| match w {
+                ValueOf::Literal(sym) => interner.resolve(sym).to_string(),
+                ValueOf::Top => "TOP".to_string(),
+            })
+            .collect();
+        eprintln!("argv {} {}", step.leaf.0, words.join(" "));
+    }
 }
 
 /// Re-key the site-keyed [`SiteResults`] to the `FactKey → Observable` map
@@ -293,9 +342,18 @@ fn effect_word_to_verdict(word: &str) -> Verdict {
 }
 
 /// Print a stage's diagnostics to stderr (keeping stdout = probe + apply).
+///
+/// Format `<stage>: <severity>[<code>]: <message>` — the severity word is load-bearing:
+/// the e2e gate-3 floor (20B §2) keys on the `error[` shape (an Error fails a case unless
+/// declared in `expected-diagnostics`; warnings stay free-form). I/O-edge formatting only.
 fn report(stage: &str, diags: &[dorc_core::Diagnostic]) {
     for d in diags {
-        eprintln!("{stage}: {}: {}", d.code.0, d.message);
+        let sev = match d.severity {
+            Severity::Error => "error",
+            Severity::Warning => "warning",
+            Severity::Note => "note",
+        };
+        eprintln!("{stage}: {sev}[{}]: {}", d.code.0, d.message);
     }
 }
 
