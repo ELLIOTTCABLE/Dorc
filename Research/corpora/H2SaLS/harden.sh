@@ -37,6 +37,9 @@ MAIL_PORT=587
 
 [ "$(id -u)" -eq 0 ] || { echo 'harden.sh: must run as root' >&2; exit 1; }
 
+# every apt step runs unattended (Ansible's apt module exports this per-task)
+export DEBIAN_FRONTEND=noninteractive
+
 #=======================================================================
 #== Section 1: requirements                               [author: A]
 #==   Play: requirements-playbook.yml, roles/requirements/tasks/main.yml @ 34975f1
@@ -92,7 +95,7 @@ nopasswd_line="$USER_NAME ALL=(ALL) NOPASSWD: ALL"
 sudoers_tmp=$(mktemp)
 cp /etc/sudoers "$sudoers_tmp"
 if grep -q "^$USER_NAME" "$sudoers_tmp"; then
-    sed -i "s|^$USER_NAME .*|$nopasswd_line|" "$sudoers_tmp"
+    sed -i "s|^$USER_NAME.*|$nopasswd_line|" "$sudoers_tmp"
 else
     printf '%s\n' "$nopasswd_line" >> "$sudoers_tmp"
 fi
@@ -303,10 +306,9 @@ if [ ! -f /etc/ssh/moduli.short ]; then
     fi
 fi
 
-# the play's notify/handler pattern: one guarded restart at section end
-if [ "$sshd_changed" -eq 1 ]; then
-    service ssh restart
-fi
+# sshd restart: deferred to the end-of-play handlers block at the bottom of
+# this script (Ansible runs notified handlers at the end of the PLAY, not at
+# role end; a mid-run failure means no restarts at all).
 
 
 #=======================================================================
@@ -500,15 +502,9 @@ maxretry = 5
 EOF
 fail2ban_changed=1
 
-if [ "$ufw_changed" -eq 1 ]; then
-  service ufw restart
-fi
-if [ "$psad_changed" -eq 1 ]; then
-  service psad restart
-fi
-if [ "$fail2ban_changed" -eq 1 ]; then
-  service fail2ban restart
-fi
+# restarts: deferred to the end-of-play handlers block at the bottom of this
+# script (Ansible handlers run at the end of the PLAY; a mid-run failure
+# means none of them run).
 
 #=======================================================================
 #== Section 7: mail                                       [author: B]
@@ -608,8 +604,11 @@ done <<EOF
 ^RUN_CHECK_ON_BATTERY	RUN_CHECK_ON_BATTERY="false"
 EOF
 
-# Both network/state-touching, both unguarded; the play runs them in one shell.
-rkhunter --update
+# Both network/state-touching, both unguarded; the play runs them in ONE
+# shell task, so only the LAST command's rc decides it — an --update failure
+# (rc 1 on download error, rc 2 after installing updates) never fails the
+# play. The || true renders that tolerance under set -e.
+rkhunter --update || true
 rkhunter --propupd
 
 #=======================================================================
@@ -619,11 +618,13 @@ rkhunter --propupd
 #==   https://github.com/imthenachoman/How-To-Secure-A-Linux-Server
 #=======================================================================
 
-# rm has no -f in the play: fine on first run (package ships the file) and on
-# repeats (the wget below refills the same filename), but aborts under set -e
-# if a prior wget ever failed and left it absent. Preserved as-is.
-rm /etc/audit/rules.d/audit.rules
-wget -P /etc/audit/rules.d/ https://raw.githubusercontent.com/Neo23x0/auditd/master/audit.rules
+# The play runs these three in ONE shell task: only the restart's rc decides
+# it — a failed rm (file absent after an earlier bad download) or a failed
+# wget is tolerated, and auditd restarts regardless, possibly with an empty
+# rules dir (upstream wart preserved). || true renders that per-line
+# tolerance under set -e.
+rm /etc/audit/rules.d/audit.rules || true
+wget -P /etc/audit/rules.d/ https://raw.githubusercontent.com/Neo23x0/auditd/master/audit.rules || true
 service auditd restart
 
 #=======================================================================
@@ -663,7 +664,33 @@ apt-get upgrade -y
 
 apt-get install -y lynis
 
-# ansi2html is piped here but no task ever installs it — preserved as upstream.
-lynis update info
-lynis audit system | ansi2html -l > /tmp/lynis-report.html
+# ansi2html is piped here but no task ever installs it — preserved upstream
+# wart. In the play all three lines are ONE shell task whose rc is the mail's:
+# the dead pipeline still creates an empty report via its redirect and the
+# mail goes out anyway. || true renders that tolerance under set -e.
+lynis update info || true
+lynis audit system | ansi2html -l > /tmp/lynis-report.html || true
 echo "First Lynis report see attachment" | mail -A /tmp/lynis-report.html -s "Lynis report" "$MAIL_TO"
+
+
+#=======================================================================
+#== Handlers (end of play)                                [assembler]
+#==   Ansible runs notified handlers ONCE at the end of the play, in
+#==   handler-definition order (ssh role's, then firewall's three) —
+#==   not at role/section end. A mid-run abort means no restarts run,
+#==   matching the play without force_handlers. The one inline
+#==   exception is Section 3's flush_handlers ufw restart.
+#=======================================================================
+
+if [ "$sshd_changed" -eq 1 ]; then
+    service ssh restart
+fi
+if [ "$ufw_changed" -eq 1 ]; then
+    service ufw restart
+fi
+if [ "$psad_changed" -eq 1 ]; then
+    service psad restart
+fi
+if [ "$fail2ban_changed" -eq 1 ]; then
+    service fail2ban restart
+fi
