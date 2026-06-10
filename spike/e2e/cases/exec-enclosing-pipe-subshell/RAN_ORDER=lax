@@ -1,0 +1,4 @@
+This book pipes a subshell stage into grep: `( … ) | grep`. The two pipeline stages run
+CONCURRENTLY under sh, so the order of their shim-log lines is genuinely nondeterministic
+(observed flake: 20J strain-P5, 20M ~1/15). Order-insensitive run-set comparison for this
+case only; inter-statement order assertions are unaffected elsewhere (gate-4 default).

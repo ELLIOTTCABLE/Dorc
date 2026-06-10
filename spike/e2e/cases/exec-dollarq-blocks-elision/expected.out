@@ -1,0 +1,29 @@
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc — the record is the out-of-band lane).
+
+# site 0: package:nginx#installed
+package_installed__check() { dpkg-query -W "$1" >/dev/null 2>&1; }
+package_installed__check 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'site 0 effect=%s rc=%s\n' "$_e" "$_rc"
+# site:1 skip-unresolvable
+# site:2 skip-unresolvable
+# site:3 skip-unresolvable
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+# exec-dollarq-blocks-elision (19A C-3 / 205 §2 — the `$?` consumer): `$?` reads the
+# PREVIOUS command's exit status, so a `$?`-reader makes its predecessor a status
+# consumer. Here the converged `apt-get install -y nginx` is followed by `[ $? -ne 0 ]`,
+# so the install's rc is consumed; under `fork-mutator-rc` a mutator's rc is ⊤, so the
+# `StatusRelaxable` floor refuses the license ⇒ the install RUNS (it is NOT elided to a
+# fabricated rc-0 `true`, which would feed the recovery check a status the real command
+# never produced). The committed engine left `$?` un-marked and would have wrongly
+# elided the install — the priority-1 exposure C-3 names (`mkdir x; [ $? -ne 0 ] &&
+# recover` suppressing `recover`). The trailing `echo` just lands the script at rc 0
+# for the harness. HOST: nginx installed (converged).
+apt-get install -y nginx
+[ $? -ne 0 ] && echo recovery-needed
+echo finished

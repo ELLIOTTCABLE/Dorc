@@ -1,0 +1,8 @@
+# probe-results: site-keyed records (task-P/item-3). site 1 = the pkgstate Query guard
+# `dpkg -s nginx` — a VALID Query (only `set -e` upstream, target-state-pure), so its OWN
+# rc=0 IS fold-usable (the fold reads it ⇒ the `|| install` branch is dead). site 2 = the
+# package install establish — its rc is the probe-command's (firewalled, never fold-usable),
+# so the fixture omits it (effect-only parity, item-4). HOST: nginx installed (both holds).
+# (`set -e` is site 0 — Pure/MustRun, unresolvable, no record.)
+site 1 effect=holds rc=0
+site 2 effect=holds

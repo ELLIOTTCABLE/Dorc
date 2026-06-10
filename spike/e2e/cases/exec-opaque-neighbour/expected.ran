@@ -1,0 +1,2 @@
+ran: ufw allow 80/tcp
+ran: apt-get install -y nginx

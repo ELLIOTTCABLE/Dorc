@@ -58,6 +58,12 @@ Grouped by behavior (exec-validated members noted; the rest are `dash -n` + gold
   probe-projection supersedes (the guard becomes a normal probed value).
 - F. errexit: `exec-errexit-elide-vouched`. Acceptance: a converged establish under `set -e` stays
   elidable (errexit-status is vouched by the establishes-contract; the engine does not mark it).
+  <!-- /* superseded 2026-06-10 (round-20): this group baked the PRE-RULING shape — it directly
+  contradicts the human's 19A §3 C-3 / §5 ("errexit is honored, not special-cased-as-vouched")
+  and was caught by the round-20 adversarial crosscheck (notes/205 §2). The engine now marks
+  errexit + `$?` as status-consumers (notes/206); the case is renamed
+  `exec-errexit-top-status-runs` and asserts the converged establish RUNS. Do not re-derive a
+  vouch from this entry. */ -->
 - G. Leaf-seam / lowering / classify boundary: `exec-subst-body-nonleaf`, `exec-subshell-establish`,
   `exec-detached-fn`, `exec-top-arith-in-arg-ok`, `background-amp-runs`, `exec-literal-unset-pure`,
   `exec-pure-builtin`, `exec-multi-entity`. Acceptance: a `$(…)`-internal command is effect-bearing but not
@@ -76,6 +82,14 @@ Grouped by behavior (exec-validated members noted; the rest are `dash -n` + gold
   scrappy realistic book, elide what is converged and run the rest. +SURE honest residual: on the full
   `pi-webhost` book most still runs (two un-oracled neighbours — `$(hostname)`, `command -v nginx` — each
   poison), which is the real measure of how much oracle coverage a real book needs to elide anything.
+  <!-- /* superseded 2026-06-10 (round-20): this group's description is doubly stale. (a) The
+  take-3 seed already used the bare-mutation core book (no $(hostname)/command -v neighbours —
+  that book exists only in quarantined spike-2). (b) After 19A C-3 was honored (notes/205 §2,
+  206) composed with fork-mutator-rc, BOTH headline books (which open `set -e`) elide ZERO
+  mutators — their run-sets are identical regardless of convergence, so group J currently
+  measures render+exec fidelity only, NOT elision (round-20 harness-crosscheck find-1).
+  Convergence-elision stays pinned by group A (exec-converged/exec-diverged, no set -e). The
+  headline value-story resumes when Query-guard folds land (task-D). */ -->
 - K. Render-fidelity (deferred — the one xfail): `render-case-arm-oneliner-wrong`. Pins the safe behavior
   (a one-line `case`-arm body must render `dash -n`-clean). A take-3 must-fix, on the leaf-exact /
   structural render (`C-5`).

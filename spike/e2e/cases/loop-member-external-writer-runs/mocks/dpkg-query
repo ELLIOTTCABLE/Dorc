@@ -1,0 +1,8 @@
+#!/bin/sh
+# INERT probe shim (gate-1 parity): the probe runs `dpkg-query -W <pkg>` once per member.
+# This shim exits 0 for EVERY package ⇒ BOTH members report `holds` (converged) — the BAIT.
+# Convergence alone must NOT license the elision here: the pre-loop purge of curl breaks
+# self-reach, so the apply runs despite these converged records. Mutates nothing; logs for
+# symmetry.
+printf 'ran: %s %s\n' "${0##*/}" "$*" >>"$DORC_LOG"
+exit 0

@@ -1,0 +1,7 @@
+#!/bin/sh
+# INERT probe shim (gate-1 parity): the `package` kind's probe runs `dpkg-query -W <pkg>`,
+# once PER MEMBER (nginx, curl). This shim exits 0 for EVERY package ⇒ both members map to
+# `holds` ⇒ both converged ⇒ the all-or-nothing in-loop license elides the body. Mutates
+# nothing (read-only query); logs for symmetry with the apply shims.
+printf 'ran: %s %s\n' "${0##*/}" "$*" >>"$DORC_LOG"
+exit 0

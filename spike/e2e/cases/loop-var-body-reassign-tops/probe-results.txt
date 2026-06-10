@@ -1,0 +1,7 @@
+# probe-results: site-keyed records (task-D1 WIRE). Grammar:
+#   site <leafid> effect=<holds|absent|cant-tell>
+# NO records: the body reassigns the for-var, so the install is NOT a Members site (item-1
+# degrade). The reassigned install is a self-establishing constant (`evil`) ⇒ EstablishWritten
+# via the back-edge ⇒ un-probeable; the body assignment is a pure leaf. Both sites
+# skip-unresolvable, so the body runs every iteration (the SAFE degrade). The run-set
+# (the install twice, once per a/b iteration) is the assertion; empty fixture ⇒ gate-1 vacuous.

@@ -1,0 +1,1 @@
+ran: apt-get install -y *.conf

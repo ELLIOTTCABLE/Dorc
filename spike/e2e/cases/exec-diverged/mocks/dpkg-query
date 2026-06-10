@@ -1,0 +1,8 @@
+#!/bin/sh
+# INERT probe shim (gate-1 parity): the `package` kind's probe runs `dpkg-query -W <pkg>`.
+# This case's fixture reports the cell `absent` (nginx NOT installed ⇒ the install must
+# run), so the shim exits 1 ⇒ the `package__check` wrapper maps rc 1 → `absent`,
+# reproducing the authored probe-results.txt. A shim exiting 1 where the fixture says
+# `absent` is the sanctioned form (spike/CLAUDE.md). Read-only; logs for symmetry.
+printf 'ran: %s %s\n' "${0##*/}" "$*" >>"$DORC_LOG"
+exit 1

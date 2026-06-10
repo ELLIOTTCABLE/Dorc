@@ -1,0 +1,23 @@
+[package]
+name = "dorc-plan"
+version = "0.0.0"
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+
+# The elision path: turn (analysis `SkipClass` + a host probe verdict) into a
+# plan, gated by the note-165 orientation locks. Consumes the analysis result and
+# the oracle grade; the host verdict is injected (the real host / `hostsim` is a
+# later seam), so this crate stays a pure, deterministic function of its inputs.
+[dependencies]
+dorc-core = { path = "../core", version = "0.0.0" }
+dorc-analysis = { path = "../analysis", version = "0.0.0" }
+# Rendering a leaf back to sh resolves its source span out of the AST.
+dorc-syntax = { path = "../syntax", version = "0.0.0" }
+# The probe-wrapper funcname mapping (`to_funcname_segment`) is shared with the
+# oracle lift's `oracle_probe_<kind>_<selector>` recognition — one home for the
+# hyphen↔underscore convention (task-P). The e2e tests also build a kind-index.
+dorc-oracle = { path = "../oracle", version = "0.0.0" }
+
+[lints]
+workspace = true

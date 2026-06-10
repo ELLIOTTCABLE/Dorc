@@ -1,0 +1,7 @@
+#!/bin/sh
+# INERT probe shim (gate-1 parity): the `user` kind's probe runs `getent passwd <user>`.
+# The fixture reports user `deploy` as `holds` (the account exists), so this shim exits 0
+# ⇒ the `user__check` wrapper maps rc 0 → `holds`, reproducing the authored
+# probe-results.txt. Read-only; logs for symmetry with the apply shims.
+printf 'ran: %s %s\n' "${0##*/}" "$*" >>"$DORC_LOG"
+exit 0

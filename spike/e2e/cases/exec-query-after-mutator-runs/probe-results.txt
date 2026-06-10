@@ -1,0 +1,10 @@
+# probe-results: site-keyed records (task-D2). Site 0 = `set -e` (Pure, no record).
+# Site 1 = `apt-get install -y curl` (establish). Site 2 = `command -v nginx` (Query) —
+# it reports holds/rc=0, BUT rule-query-validity FAILS (the curl install, a mutator,
+# reaches it), so the firewall WITHHOLDS this rc ⇒ the guard runs for real. Site 3 =
+# `apt-get install -y nginx` (establish). The guard's holds/rc=0 here is deliberately
+# the value that WOULD fold the install if it were valid — proving the validity gate,
+# not the rc, is what blocks the fold (anti-masking).
+site 1 effect=absent rc=1
+site 2 effect=holds rc=0
+site 3 effect=absent rc=1

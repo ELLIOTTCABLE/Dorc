@@ -1,0 +1,68 @@
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc — the record is the out-of-band lane).
+
+# site 1: pkgstate:ca-certificates#installed
+pkgstate_installed__check() { dpkg -s "$1" >/dev/null 2>&1; }
+pkgstate_installed__check 'ca-certificates'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'site 1 effect=%s rc=%s\n' "$_e" "$_rc"
+# site 2: pkgstate:nginx#installed
+pkgstate_installed__check 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'site 2 effect=%s rc=%s\n' "$_e" "$_rc"
+# site 3: package:nginx#installed
+package_installed__check() { dpkg-query -W "$1" >/dev/null 2>&1; }
+package_installed__check 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'site 3 effect=%s rc=%s\n' "$_e" "$_rc"
+# site 4: pkgindex#fresh
+pkgindex_fresh__check() { test -n "$(find /var/lib/apt/lists/ -maxdepth 1 -newermt '-1 hour' 2>/dev/null)"; }
+pkgindex_fresh__check; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'site 4 effect=%s rc=%s\n' "$_e" "$_rc"
+# site 5: package:curl#installed
+package_installed__check 'curl'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'site 5 effect=%s rc=%s\n' "$_e" "$_rc"
+# site 6: package:htop#installed
+package_installed__check 'htop'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'site 6 effect=%s rc=%s\n' "$_e" "$_rc"
+# site 7: service:nginx#enabled
+service_enabled__check() { systemctl is-enabled --quiet "$1"; }
+service_enabled__check 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'site 7 effect=%s rc=%s\n' "$_e" "$_rc"
+# site 8: service:nginx#active
+service_active__check() { systemctl is-active --quiet "$1"; }
+service_active__check 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'site 8 effect=%s rc=%s\n' "$_e" "$_rc"
+# site 9: pkgstate:vim#installed
+pkgstate_installed__check 'vim'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'site 9 effect=%s rc=%s\n' "$_e" "$_rc"
+# site 10: package:vim#installed
+package_installed__check 'vim'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'site 10 effect=%s rc=%s\n' "$_e" "$_rc"
+# site 11: firewall:80/tcp#allowed
+firewall_allowed__check() { ufw status 2>/dev/null | grep -q "$1"; }
+firewall_allowed__check '80/tcp'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'site 11 effect=%s rc=%s\n' "$_e" "$_rc"
+# site:0 skip-unresolvable
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+#!/bin/sh
+# pi-webhost provision — a scrappy real book (the lazy admin lets dorc do idempotency).
+# A Query-guard stack, a Singleton establish, converged+diverged installs, distinct-
+# selector service mutators, a guard BELOW the mutators, and a ufw rule. The run-set diff
+# proves which commands run vs which dorc neutralised (20B §2 group-J). `dpkg -s` is the
+# read-only status query the pkgstate oracle declares `query` (an EXTERNAL command, unlike
+# the un-shimmable `command -v` builtin — so its probe is mock-reproducible: gate-1 ENFORCES).
+set -e
+
+# A bare pre-flight Query: assert the base image already has ca-certificates. VALID
+# (nothing mutates above it) + holds ⇒ dorc value-substitutes it to its probed rc `true`.
+# dpkg -s ca-certificates >/dev/null 2>&1   # dorc: elided (already converged / dead branch)
+true
+
+# Idempotent install via the || idiom. The guard reports absent here (nginx not yet
+# installed), so the install is LIVE and runs; the guard runs for real to gate it.
+dpkg -s nginx >/dev/null 2>&1 || apt-get install -y nginx
+
+apt-get update
+apt-get install -y curl
+apt-get install -y htop
+
+systemctl enable nginx
+systemctl start nginx
+
+# A guard BELOW the mutators: writes have reached it ⇒ INVALID Query ⇒ it runs for real.
+dpkg -s vim >/dev/null 2>&1 || apt-get install -y vim
+
+ufw allow 80/tcp

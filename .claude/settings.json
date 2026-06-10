@@ -1,0 +1,8 @@
+{
+  "enabledPlugins": {
+    "rust-analyzer-lsp@claude-plugins-official": true
+  },
+  "env": {
+    "HK": "0"
+  }
+}

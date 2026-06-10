@@ -1,0 +1,3 @@
+ran: apt-get purge -y curl
+ran: apt-get install -y nginx
+ran: apt-get install -y curl

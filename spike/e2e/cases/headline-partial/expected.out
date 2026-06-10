@@ -1,0 +1,47 @@
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc — the record is the out-of-band lane).
+
+# site 1: pkgindex#fresh
+pkgindex_fresh__check() { test -n "$(find /var/lib/apt/lists/ -maxdepth 1 -newermt '-1 hour' 2>/dev/null)"; }
+pkgindex_fresh__check; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'site 1 effect=%s rc=%s\n' "$_e" "$_rc"
+# site 2: package:nginx#installed
+package_installed__check() { dpkg-query -W "$1" >/dev/null 2>&1; }
+package_installed__check 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'site 2 effect=%s rc=%s\n' "$_e" "$_rc"
+# site 3: firewall:80/tcp#allowed
+firewall_allowed__check() { ufw status 2>/dev/null | grep -q "$1"; }
+firewall_allowed__check '80/tcp'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'site 3 effect=%s rc=%s\n' "$_e" "$_rc"
+# site 4: firewall:443/tcp#allowed
+firewall_allowed__check '443/tcp'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'site 4 effect=%s rc=%s\n' "$_e" "$_rc"
+# site 5: service:nginx#enabled
+service_enabled__check() { systemctl is-enabled --quiet "$1"; }
+service_enabled__check 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'site 5 effect=%s rc=%s\n' "$_e" "$_rc"
+# site 6: service:nginx#active
+service_active__check() { systemctl is-active --quiet "$1"; }
+service_active__check 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'site 6 effect=%s rc=%s\n' "$_e" "$_rc"
+# site:0 skip-unresolvable
+# site:7 skip-unresolvable
+# site:8 skip-unresolvable
+# site:9 skip-unresolvable
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+#!/bin/sh
+# pi-webhost provisioning (bare-mutation core; the lazy admin lets Dorc do idempotency)
+set -e
+
+apt-get update
+apt-get install -y nginx
+
+ufw allow 80/tcp
+ufw allow 443/tcp
+
+systemctl enable nginx
+systemctl start nginx
+
+nginx -t && systemctl reload nginx
+
+echo "pi-web up"

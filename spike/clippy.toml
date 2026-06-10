@@ -1,0 +1,19 @@
+# Clippy config for the spike workspace.
+#
+# The workspace lint table (Cargo.toml) turns on the no-panic family
+# (unwrap_used/expect_used/panic/indexing_slicing/dbg_macro/print_*) at warn for
+# ALL code. The policy comment on those lints says "tests may opt out": tests are
+# allowed to panic/unwrap/index/print freely. These keys grant that allowance
+# centrally so test code needs no per-item `#[expect]`.
+#
+# Scope caveat (verified empirically against clippy 0.1.96): these keys suppress
+# the lints only in `#[cfg(test)]`/`#[test]` code compiled with `--cfg test`
+# (inline test modules). They do NOT reach separate integration-test crates under
+# `tests/*.rs` — those are ordinary library crates to clippy. Integration tests
+# that trip these lints carry a file-top `#![expect(...)]` instead.
+allow-unwrap-in-tests = true
+allow-expect-in-tests = true
+allow-panic-in-tests = true
+allow-indexing-slicing-in-tests = true
+allow-dbg-in-tests = true
+allow-print-in-tests = true

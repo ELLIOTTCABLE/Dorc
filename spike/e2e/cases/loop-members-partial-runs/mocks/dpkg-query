@@ -1,0 +1,10 @@
+#!/bin/sh
+# INERT probe shim (gate-1 parity), per-package divergence: the probe runs `dpkg-query -W
+# <pkg>` once per member. `curl` is reported ABSENT (exit 1 ⇒ the wrapper maps to `absent`
+# ⇒ diverged); every other package (here `nginx`) is `holds` (exit 0 ⇒ converged). This is
+# the partial-convergence the all-or-nothing license refuses. Mutates nothing; logs for
+# symmetry. The package is the last arg (`dpkg-query -W <pkg>`).
+printf 'ran: %s %s\n' "${0##*/}" "$*" >>"$DORC_LOG"
+for _a in "$@"; do _pkg=$_a; done
+if [ "$_pkg" = curl ]; then exit 1; fi
+exit 0

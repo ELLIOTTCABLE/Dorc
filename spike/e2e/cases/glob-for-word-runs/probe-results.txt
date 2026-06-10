@@ -1,0 +1,11 @@
+# probe-results: site-keyed records (task-D1 WIRE). Grammar:
+#   site <leafid> effect=<holds|absent|cant-tell>
+# THE CONVERGED BAIT: this record claims the install's site (1) is already converged
+# (effect=holds). It is the trap fix-1 defuses — pre-fix-1 the post-loop `$f` bound the
+# literal `*.conf`, the check resolved a phantom `package:*.conf`, and this `holds` record
+# would have ELIDED a runtime-determined install. fix-1 makes the for-var ⊤, so site 1 is
+# `skip-unresolvable` (no fold consumes this record) ⇒ the install RUNS regardless.
+# (Both sites emit `skip-unresolvable`; this bait record is intentionally NOT one the mocked
+# probe produces, so the case carries PROBE_RESULTS=authored — gate-1 (a) site-completeness
+# still holds vacuously, and the run-set below is the real assertion.)
+site 1 effect=holds

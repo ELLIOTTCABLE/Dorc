@@ -1,0 +1,21 @@
+# probe-results: site-keyed records (task-D1 WIRE). Grammar:
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# pkgstate (Query) sites carry an rc — the fold/substitution reads a VALID guard's rc.
+# site 1 (the bare ca-certificates guard) is VALID ⇒ its rc=0 substitutes it to `true`.
+# site 2 (nginx, valid) is absent ⇒ its || install is live (runs). site 9 (vim) is below
+# mutators ⇒ INVALID ⇒ its rc is withheld by the firewall regardless. Establish-site rcs
+# are firewalled (never fold-usable), so they are omitted.
+#
+# Mock host: ca-certificates + curl installed; nginx/vim/htop NOT; apt lists fresh; nginx
+# service active+enabled; ufw 80/tcp allowed. (A PARTIAL-convergence host.)
+site 1 effect=holds rc=0
+site 2 effect=absent rc=1
+site 3 effect=absent
+site 4 effect=holds
+site 5 effect=holds
+site 6 effect=absent
+site 7 effect=holds
+site 8 effect=holds
+site 9 effect=absent rc=1
+site 10 effect=absent
+site 11 effect=holds

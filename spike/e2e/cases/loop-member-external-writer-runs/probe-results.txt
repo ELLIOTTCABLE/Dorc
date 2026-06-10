@@ -1,0 +1,9 @@
+# probe-results: site-keyed records (task-D1 WIRE; task-L2 item-4 member sub-keys). Grammar:
+#   site <leafid>[.<member-idx>] effect=<holds|absent|cant-tell>
+# The loop body install is leaf 1 (the pre-loop purge is leaf 0, skip-unresolvable — a Kill).
+# BOTH members report `holds` (the bait): site 1.0 = nginx, site 1.1 = curl, both converged.
+# Yet the apply RUNS them — the pre-loop purge of curl breaks self-reach, so convergence
+# alone does not license. (Establish-class ⇒ rc firewalled, omitted; exit-0 dpkg-query shim
+# reproduces these for gate-1 parity.)
+site 1.0 effect=holds
+site 1.1 effect=holds

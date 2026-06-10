@@ -1,0 +1,11 @@
+#!/bin/sh
+# INERT shim for `systemctl` — the enabled≠active host. Logs the argv (for the run-set),
+# mutates NOTHING. The PROBE forms answer DISTINCTLY (the find-1 fix made visible): nginx
+# is enabled (is-enabled ⇒ rc 0 ⇒ holds) but NOT active (is-active ⇒ rc 1 ⇒ absent). The
+# mutating verbs (enable/start) just log and exit 0.
+printf 'ran: %s %s\n' "${0##*/}" "$*" >>"$DORC_LOG"
+case $1 in
+  is-enabled) exit 0 ;;  # nginx enabled on this host ⇒ holds
+  is-active)  exit 1 ;;  # …but NOT active ⇒ absent (so `start` must run)
+esac
+exit 0

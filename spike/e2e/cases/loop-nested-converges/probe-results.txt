@@ -1,0 +1,1 @@
+# no resolvable sites (all in-loop Opaque / pure); convergence + run-set is the assertion.

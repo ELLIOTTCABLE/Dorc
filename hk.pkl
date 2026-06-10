@@ -11,10 +11,11 @@ amends "package://github.com/jdx/hk/releases/download/v1.44.3/hk@1.44.3#/Config.
 // running `hk install`.
 //
 // Toolchain note: unlike the human's other Rust repos this does NOT use
-// `cargo +nightly fmt`. The spike pins its toolchain via `spike/mise.toml`'s
-// `[env]` (the self-contained gnu toolchain; this box has no MSVC linker), so
-// plain `cargo fmt` under `mise x` is correct here (spike/CLAUDE.md). The
-// `--manifest-path` lets the step run from the worktree-root repo top-level.
+// `cargo +nightly fmt`. The spike carries no toolchain pin — the global mise
+// config supplies `stable` (msvc-hosted on Windows; linker via VS Build Tools;
+// the previous spikes' per-dir gnu pin is tombstoned, do not resurrect it) — so
+// plain `cargo fmt` under `mise x` is correct here. The `--manifest-path`
+// lets the step run from the worktree-root repo top-level.
 local linters = new Mapping<String, Step> {
     ["cargo_fmt"] {
         glob = "spike/**/*.rs"
@@ -24,6 +25,24 @@ local linters = new Mapping<String, Step> {
         // without it cargo fmt misreads the args and dumps help (verified).
         check = "mise x -- cargo fmt --all --manifest-path spike/Cargo.toml --check"
         fix = "mise x -- cargo fmt --all --manifest-path spike/Cargo.toml"
+    }
+    ["cargo_clippy"] {
+        glob = "spike/**/*.rs"
+        workspace_indicator = "Cargo.toml"
+        // The spike's warnings-are-failures gate lives HERE (pre-commit), never in
+        // the manifest — mid-work builds shouldn't break on a toolchain bump.
+        check = "mise x -- cargo clippy --workspace --all-targets --manifest-path spike/Cargo.toml -- -D warnings"
+    }
+    ["cargo_deny"] {
+        glob = "spike/**/Cargo.toml"
+        // Offline checks only; `mise run audit` does the network-touching
+        // advisories pass on demand.
+        check = "mise x -- cargo deny --manifest-path spike/Cargo.toml check licenses bans sources"
+    }
+    ["typos"] {
+        glob = "spike/**"
+        check = "mise x -- typos spike"
+        fix = "mise x -- typos --write-changes spike"
     }
 }
 

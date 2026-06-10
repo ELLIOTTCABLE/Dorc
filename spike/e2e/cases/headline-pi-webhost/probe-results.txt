@@ -1,0 +1,9 @@
+# probe-results: site-keyed records (task-D1 WIRE). Grammar:
+#   site <leafid> effect=<holds|absent|cant-tell>
+# (the records the rendered probe emits; effect from the probe command rc).
+site 1 effect=holds
+site 2 effect=holds
+site 3 effect=holds
+site 4 effect=holds
+site 5 effect=holds
+site 6 effect=holds

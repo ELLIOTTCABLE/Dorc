@@ -1,0 +1,4 @@
+# Build artifacts. (SyncThing's .stignore.shared already ignores `target` tree-
+# wide, so these never sync either.) Cargo.lock IS committed — this is a
+# binary/workspace, and a pinned lockfile keeps the spike reproducible.
+/target

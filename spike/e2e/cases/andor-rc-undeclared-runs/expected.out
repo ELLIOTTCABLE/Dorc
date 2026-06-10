@@ -1,0 +1,25 @@
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc — the record is the out-of-band lane).
+
+# site 0: user:deploy#present
+user_present__check() { getent passwd "$1" >/dev/null 2>&1; }
+user_present__check 'deploy'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'site 0 effect=%s rc=%s\n' "$_e" "$_rc"
+# site:1 skip-unresolvable
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+# andor-rc-undeclared-runs (round-19 `19D`; round-20 `fork-mutator-rc` makes this THE
+# rule, not a default): a non-conforming-establish `||` book where the converged
+# `user#present` fact carries NO declared rc (probe-results has no `rc=`). After 19D an
+# un-injected rc is ⊤ (never a fabricated rc 0), and a `&&`/`||` left operand whose
+# status is branch-consumed with an UNDECLARED rc is REFUSED a replace license ⇒ it
+# RUNS. So the whole line stays verbatim and BOTH commands run: real `useradd deploy`
+# exits 9 (user present) ⇒ `|| mkdir` fires ⇒ `mkdir` runs. This is the safe
+# kFAIL-perform floor — WITHOUT 19D the fabricated rc 0 made the fold omit `mkdir` (a
+# proven priority-1 under-execute). Round-20: a mutator's rc has NO sanctioned source
+# (`fork-mutator-rc`; the old rc=9-injecting contrast case was cut as masking, 203 §3).
+useradd deploy || mkdir /srv/app

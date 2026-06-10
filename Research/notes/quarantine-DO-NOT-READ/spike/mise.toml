@@ -1,2 +1,5 @@
-﻿[env]
-RUSTUP_TOOLCHAIN = "stable-x86_64-pc-windows-gnu"
+# [removed 2026-06-09] This file pinned `RUSTUP_TOOLCHAIN = "stable-x86_64-pc-windows-gnu"`,
+# a Windows-host triple hard-coded into the synced cross-platform tree. Via mise's shim
+# env-injection it silently auto-installed and selected a rust-src-less GNU toolchain for
+# any cargo/rustc spawned with cwd in this subtree (notably rust-analyzer's), breaking
+# stdlib resolution. Toolchain selection now falls through to the global mise config.
