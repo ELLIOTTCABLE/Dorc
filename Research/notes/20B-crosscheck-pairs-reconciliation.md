@@ -74,7 +74,15 @@ sourcing/partial-⊤); stderr-severity floor; unsorted run-set assertion; CORPUS
 dedup; probe-source reconciliation per st-2 (probes stay declarations; placeholder check
 probe-bodies must not ship — pkgindex's tautological `test -n fresh` is the named hazard);
 cm-2 argv-echo differential gate (the 20A countermeasure, which subsumes the
-check-validation gap).
+check-validation gap); **exec-gate redirection sandbox** (human-surfaced hole: PATH
+isolation does not govern redirections — `somecmd >/a/path` in an EXECUTED artifact
+writes the real fs, and the gate executes engine-rendered output today, so a render bug
+could emit an absolute-path write right now; today's safety is observed fixture
+discipline, not enforcement. D3: run every exec_check with cwd = a per-case mktemp dir,
+and pre-gate the artifact by parsing it back with our own parser and refusing any
+redirect whose target is absolute, dynamic, or escapes the sandbox — allowlist
+`/dev/null`. Real mitigation on existing machinery; the Linux/VPS isolation tier stays
+the true answer for arbitrary books).
 
 ## §4 Dispatch ledger (meta-goal)
 
