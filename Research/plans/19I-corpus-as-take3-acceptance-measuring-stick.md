@@ -82,6 +82,14 @@ Grouped by behavior (exec-validated members noted; the rest are `dash -n` + gold
   scrappy realistic book, elide what is converged and run the rest. +SURE honest residual: on the full
   `pi-webhost` book most still runs (two un-oracled neighbours — `$(hostname)`, `command -v nginx` — each
   poison), which is the real measure of how much oracle coverage a real book needs to elide anything.
+  <!-- /* superseded 2026-06-10 (round-20): this group's description is doubly stale. (a) The
+  take-3 seed already used the bare-mutation core book (no $(hostname)/command -v neighbours —
+  that book exists only in quarantined spike-2). (b) After 19A C-3 was honored (notes/205 §2,
+  206) composed with fork-mutator-rc, BOTH headline books (which open `set -e`) elide ZERO
+  mutators — their run-sets are identical regardless of convergence, so group J currently
+  measures render+exec fidelity only, NOT elision (round-20 harness-crosscheck find-1).
+  Convergence-elision stays pinned by group A (exec-converged/exec-diverged, no set -e). The
+  headline value-story resumes when Query-guard folds land (task-D). */ -->
 - K. Render-fidelity (deferred — the one xfail): `render-case-arm-oneliner-wrong`. Pins the safe behavior
   (a one-line `case`-arm body must render `dash -n`-clean). A take-3 must-fix, on the leaf-exact /
   structural render (`C-5`).

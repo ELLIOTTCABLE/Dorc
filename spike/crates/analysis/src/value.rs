@@ -290,7 +290,7 @@ impl<'a> Prep<'a> {
     /// same confidently-wrong class as the ⊤-region case (the shell passes empty/unset where
     /// the analysis would claim the old value).
     fn transfer_command(&self, id: CfgNodeId, incoming: &ValueEnv) -> ValueEnv {
-        if let Some(env) = self.transfer_unset(id, incoming) {
+        if let Some(env) = self.transfer_lvalue_builtin(id, incoming) {
             return env;
         }
         let Some(list) = self.assigns.get(&self.cfg.node(id).ast) else {
@@ -304,34 +304,84 @@ impl<'a> Prep<'a> {
         env
     }
 
-    /// `unset …` handling: literal operand names are clobbered to ⊤; any flag or non-literal
-    /// operand means we cannot know which variable died ⇒ havoc all tracked vars (sound,
-    /// imprecise). Returns `None` when the node is not an `unset` command.
-    fn transfer_unset(&self, id: CfgNodeId, incoming: &ValueEnv) -> Option<ValueEnv> {
+    /// The lvalue-mutating-builtin family: `unset`, `read`, `export`, `readonly`, `local`,
+    /// `getopts` all mutate variables while being target-state-Pure at the effect layer (they
+    /// touch no system state, so they rightly do not poison the ambient gate) — which is
+    /// exactly why a stale concrete surviving one is the confidently-wrong no-floor class
+    /// (round-20 crosscheck F-read/F-export: `PKG=nginx; read PKG; install "$PKG"` elided a
+    /// runtime-determined install). Every clobber is to ⊤, never a modeled value — we degrade,
+    /// we do not re-implement these builtins' semantics. Returns `None` for other commands.
+    fn transfer_lvalue_builtin(&self, id: CfgNodeId, incoming: &ValueEnv) -> Option<ValueEnv> {
         let NodeKind::Simple { words, .. } = &self.ast.node(self.cfg.node(id).ast).kind else {
             return None;
         };
         let (&cmd_word, operands) = words.split_first()?;
-        if literal_text(self.ast, cmd_word).as_deref() != Some("unset") {
-            return None;
-        }
+        let cmd = literal_text(self.ast, cmd_word)?;
         let mut env = incoming.clone();
-        let mut names = Vec::new();
-        for &w in operands {
-            match literal_text(self.ast, w) {
-                // A flag (`-v`/`-f`) or a dynamic operand: which var died is unknowable.
-                Some(t) if t.starts_with('-') => names.clear(),
-                Some(t) => {
-                    names.push(t);
-                    continue;
-                }
-                None => names.clear(),
-            }
-            // Havoc-all fallback for the unknowable cases.
+        let mut names: Vec<String> = Vec::new();
+        let havoc_all = |env: &mut ValueEnv| {
             for v in &self.assigned_vars {
                 env.insert(v.clone(), Flat::Top);
             }
-            return Some(env);
+        };
+        match cmd.as_str() {
+            // `unset [-fv] name…` / `read [-r] name…`: every literal non-flag operand is a
+            // clobbered variable name. `-r` is read's one POSIX flag (value-irrelevant);
+            // any OTHER flag or a dynamic operand ⇒ which var mutated is unknowable ⇒
+            // havoc-all (sound, imprecise).
+            "unset" | "read" => {
+                for &w in operands {
+                    match literal_text(self.ast, w) {
+                        Some(t) if t == "-r" && cmd == "read" => {}
+                        Some(t) if t.starts_with('-') => {
+                            havoc_all(&mut env);
+                            return Some(env);
+                        }
+                        Some(t) => names.push(t),
+                        None => {
+                            havoc_all(&mut env);
+                            return Some(env);
+                        }
+                    }
+                }
+            }
+            // `export NAME=v` / `readonly NAME=v` / `local NAME=v`: an operand WITH `=`
+            // assigns (clobber the name — we do not model the value); a bare `NAME` operand
+            // only marks/exports the existing binding (no value change in dash — leave it).
+            // Dynamic operand ⇒ havoc-all.
+            "export" | "readonly" | "local" => {
+                for &w in operands {
+                    match literal_text(self.ast, w) {
+                        Some(t) if t.starts_with('-') => {
+                            havoc_all(&mut env);
+                            return Some(env);
+                        }
+                        Some(t) => {
+                            if let Some((name, _)) = t.split_once('=') {
+                                names.push(name.to_owned());
+                            }
+                        }
+                        None => {
+                            havoc_all(&mut env);
+                            return Some(env);
+                        }
+                    }
+                }
+            }
+            // `getopts optstring name [args…]`: clobbers `name` plus OPTIND/OPTARG, every
+            // call. (Usually inside a ⊤-rejected loop anyway; this covers the bare form.)
+            "getopts" => {
+                names.push("OPTIND".to_owned());
+                names.push("OPTARG".to_owned());
+                match operands.get(1).and_then(|&w| literal_text(self.ast, w)) {
+                    Some(t) if !t.starts_with('-') => names.push(t),
+                    _ => {
+                        havoc_all(&mut env);
+                        return Some(env);
+                    }
+                }
+            }
+            _ => return None,
         }
         for n in names {
             env.insert(n, Flat::Top);
@@ -901,6 +951,47 @@ mod tests {
             argv_of(r#"pkg=nginx; unset pkg; cmd "$pkg""#, "cmd"),
             vec![lit("cmd"), Word::Top],
             "`unset pkg` clobbers the tracked literal to ⊤"
+        );
+    }
+
+    #[test]
+    fn read_clobbers_target_to_top() {
+        // F-read (round-20 neutral crosscheck, demonstrated end-to-end): `read PKG`
+        // overwrites PKG with runtime stdin; a surviving static `nginx` elided a
+        // runtime-determined install. The lvalue family clobbers to ⊤.
+        assert_eq!(
+            argv_of("PKG=nginx\nread PKG\ncmd \"$PKG\"", "cmd"),
+            vec![lit("cmd"), Word::Top],
+            "`read PKG` clobbers the tracked literal (runtime stdin wins)"
+        );
+        // `-r` is read's value-irrelevant POSIX flag; the clobber still applies.
+        assert_eq!(
+            argv_of("PKG=nginx\nread -r PKG\ncmd \"$PKG\"", "cmd"),
+            vec![lit("cmd"), Word::Top]
+        );
+    }
+
+    #[test]
+    fn export_and_readonly_with_assignment_clobber_to_top() {
+        // F-export/F-readonly: `export PKG=nginx` is command-word `export` + an
+        // operand `PKG=nginx` — not a bare assignment, not a prefix — so the old
+        // transfer carried the stale prior binding (`apache`) past it; dash installs
+        // nginx. We clobber the assigned name to ⊤ (degrade, never model the value).
+        assert_eq!(
+            argv_of("PKG=apache\nexport PKG=nginx\ncmd \"$PKG\"", "cmd"),
+            vec![lit("cmd"), Word::Top],
+            "`export NAME=v` clobbers NAME (the engine does not model the new value)"
+        );
+        assert_eq!(
+            argv_of("PKG=apache\nreadonly PKG=nginx\ncmd \"$PKG\"", "cmd"),
+            vec![lit("cmd"), Word::Top]
+        );
+        // The bare no-`=` form only exports the EXISTING binding — dash does not
+        // change the value, so the tracked literal legitimately survives.
+        assert_eq!(
+            argv_of("PKG=apache\nexport PKG\ncmd \"$PKG\"", "cmd"),
+            vec![lit("cmd"), lit("apache")],
+            "`export NAME` (no `=`) changes no value; the binding survives"
         );
     }
 

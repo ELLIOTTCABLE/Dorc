@@ -9,8 +9,9 @@ become the shipped tool. Read the root docs for *what Dorc is*; this file is
 
 This is **spike-3 / take-3** (round-20). Charter: `Research/plans/19H` (what to
 build — the value-flow input side + command-keyed `check()` contract-lifting)
-and `Research/plans/19I` (what it is graded against — the e2e corpus, 42 cases
-after the stage-1 cut, with its stand-in axes tagged). Process spine:
+and `Research/plans/19I` (what it is graded against — the e2e corpus under
+`spike/e2e/cases/`, with its stand-in axes tagged; the case-COUNT drifts as the
+round adds/cuts — count the dirs, don't trust a literal). Process spine:
 `Research/plans/191` §5/§5b and the `16Q` `ap-*` correctives. The crate set was
 seeded from the round-19 spike-2 (the `19F` §4 keep-list); take-3 rebuilds the
 input side in place and re-grounds every stand-in `19I` tags.

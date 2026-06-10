@@ -219,10 +219,11 @@ impl ReplaceLicense {
     ///      handle it). (`tc-mint`/`tc-reliability`: the rc is a *declared observable*,
     ///      not inferred; an un-declared rc on a non-conforming establish is an
     ///      oracle-quality defect — build-2's contract, `19C` strain-B.)
-    ///    * Errexit (`set -e`)-consumed status stays vouched (a converged establish
-    ///      *has* succeeded — the establishes-contract) by never entering the set: the
-    ///      engine marks a status variant only in a branch region, never the errexit
-    ///      pass.
+    ///    * Errexit (`set -e`)-consumed status is NOT special-cased (19A C-3, honored
+    ///      round-20 / 205 §2): the cfg pass marks errexit-region commands (and `$?`
+    ///      readers' predecessors) as `AndOrStatus`-consumed, so they ride the same
+    ///      declared-rc-or-block rule above. Under fork-mutator-rc a mutator's rc is
+    ///      always ⊤ ⇒ converged mutators under `set -e` run (the 206 §2 headline cost).
     ///
     /// Generic over the phase `P` (`inv-superposition`): the engine never bakes a
     /// phase; the caller argues it. `build_plan` passes the verdict's own provenance
@@ -261,8 +262,8 @@ impl ReplaceLicense {
         }
         // `Status` (an `if`/`elif` guard): blocks unconditionally — the render floor
         // (19C strain-D; even a declared rc can't be substituted in-situ on the
-        // `if`/`then`/`fi` line). Never enters the set for errexit, so `set -e` stays
-        // vouched.
+        // `if`/`then`/`fi` line). Errexit-consumption does NOT land here — it is
+        // marked as the value-relaxing `AndOrStatus` below (19A C-3 / 205 §2).
         if consumed.contains(&Channel::Status) {
             return None;
         }

@@ -1,4 +1,4 @@
-# 208 — Where the two-machine value-plane breaks down (capability map, pre-strain)
+# 209 — Where the two-machine value-plane breaks down (capability map, pre-strain)
 
 > Round-20, written mid-round in conversation with the human ("how far can that approach be
 > pushed; what common constructs are unrepresentable; when do we need a 'real' engine?").

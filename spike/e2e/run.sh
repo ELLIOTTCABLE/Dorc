@@ -97,6 +97,15 @@ EOF
     printf '%s\n' "$_got_ran" > "${_dir}expected.ran"
     return 0
   fi
+  # A mocks/ case without its expected.ran is an authoring error, not an
+  # asserted-all-elide (the old empty-want fallback made the two indistinguishable —
+  # round-20 harness-crosscheck find-9).
+  if [ ! -f "${_dir}expected.ran" ]; then
+    if [ "${XFAIL_ACTIVE:-}" != "1" ]; then
+      echo "FAIL  $_case  [ap-2-exec: mocks/ present but expected.ran missing — author or bless it]"
+    fi
+    return 1
+  fi
   _want_ran=$(LC_ALL=C sort < "${_dir}expected.ran" 2>/dev/null || true)
   if [ "$_got_ran" = "$_want_ran" ]; then
     return 0
@@ -125,7 +134,18 @@ for dir in "$here"/cases/*/; do
 
   # stderr (diagnostics — ⊤-rejects, oracle warnings) is not part of the e2e
   # assertion; the artifact is stdout (probe + apply). Suppress it for a clean run.
-  got=$("$dorc" --book="${dir}book.sh" "$@" < "${dir}probe-results.txt" 2>/dev/null | sed 's/\r$//')
+  # dorc's exit status is captured (NOT piped away): a crashed/empty engine must
+  # hard-fail every case BEFORE the xfail lens and BEFORE bless — empty artifacts are
+  # `dash -n`-clean and a BLESS run would otherwise silently bless 43 empty goldens
+  # (round-20 harness-crosscheck find-3, demonstrated with a crash-stub).
+  dorc_rc=0
+  raw=$("$dorc" --book="${dir}book.sh" "$@" < "${dir}probe-results.txt" 2>/dev/null) || dorc_rc=$?
+  got=$(printf '%s\n' "$raw" | sed 's/\r$//')
+  if [ "$dorc_rc" -ne 0 ] || [ -z "$got" ]; then
+    echo "FAIL  $name  [dorc exited rc=$dorc_rc / produced no output — a dead engine is never green]"
+    fails=$((fails + 1))
+    continue
+  fi
 
   # Split stdout into the two emitted artifacts on their `#!/bin/sh` shebangs: the
   # FIRST block is the read-only probe, the SECOND is the eliding apply. Both must be

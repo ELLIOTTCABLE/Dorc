@@ -36,10 +36,15 @@ guards a different failure (unmodeled execution context, not a stale fact). The
 `can't-probe ⇒ can't-elide` link (`an-elision-predicate`): a kind with an effect but
 no declared probe is absent from `compile_probe`'s output ⇒ the apply runs it
 (`kFAIL-perform`). Consumed `Stdout`/`Stderr` arrive as the engine's un-collapsed
-`May<Powerset<Observable>>` and per `inv-must-may` can only *block* (16F §3 / 16J);
-a consumed *status* does NOT block (rc-0 is vouched by the `establishes` contract) —
-that A/B contrast is pinned in `tests/observable_matrix.rs`, the regression suite for
-the round-16 observable findings (`16P T10`).
+`May<Powerset<Observable>>` and per `inv-must-may` can only *block* (16F §3 / 16J).
+Status consumption (19A C-3 honored, round-20 — notes/205 §2, 206): the if-guard
+`Status` channel blocks unconditionally (the render floor, retired only by the
+leaf-exact render); EVERY other status consumer — `&&`/`||` operands, errexit-region
+commands, `$?`-readers' predecessors — is marked `AndOrStatus`, where a
+probe-sourced/declared rc substitutes exactly and a ⊤ rc blocks. Under
+fork-mutator-rc a mutator's rc is always ⊤, so converged mutators under `set -e`
+run (the 206 §2 headline cost). There is NO establishes-contract rc-0 vouch — that
+was the refuted assumption ("converged ⇒ rc 0", bought false three times).
 
 ## `ap-2` — executable acceptance is non-negotiable (`an-render-runnable` / `an-render-executability-check`)
 
