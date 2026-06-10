@@ -1,0 +1,9 @@
+# probe-results: site-keyed records (task-D1 WIRE). Grammar:
+#   site <leafid> effect=<holds|absent|cant-tell>
+# (the records the rendered probe emits; effect from the probe command rc).
+# brk-3 (`209`): the book writes `PKG="nginx"; apt-get install -y $PKG`. The unquoted
+# $PKG field-splits to a SINGLE field ⇒ argv [apt-get, install, -y, nginx] (one operand).
+# The check binds `nginx`, the `[ "$2" = "" ]` guard passes (no 2nd operand) ⇒ the probe
+# resolves package:nginx#installed at site 1. `holds` ⇒ converged ⇒ the install elides.
+# (site 0 unresolvable: the PKG= assignment — no command effect)
+site 1 effect=holds

@@ -360,6 +360,159 @@ pub fn single_quote(s: &str) -> String {
     out
 }
 
+// ===========================================================================
+// §7 Field splitting of a known literal under default IFS (XCU §2.6.5)
+// ===========================================================================
+
+/// The default-IFS field separators (XCU §2.6.5): `<space>`, `<tab>`, `<newline>`.
+/// When `IFS` is unset the shell behaves as if `IFS=" \t\n"`; this models *only* the
+/// default — any book-side `IFS` touch makes splitting unmodelable upstream (see
+/// `analysis::value`'s IFS-pristine pre-pass), so this module never sees a custom IFS.
+const DEFAULT_IFS: [char; 3] = [' ', '\t', '\n'];
+
+/// A character that triggers pathname expansion (XCU §2.6.6 / §2.13 fnmatch): `*`, `?`,
+/// `[`. A *split-result field* containing one of these is matched against the live
+/// filesystem (dash-verified: `V="*.txt"; cmd $V` expands to the matching paths), which
+/// is unmodelable statically ⇒ the word degrades to ⊤. (Tilde is deliberately absent:
+/// for a SPLIT-result field dash does *not* tilde-expand — `V="~"; cmd $V` passes a
+/// literal `~` — so a leading `~` in a split field is the safe literal, never a hazard.)
+const GLOB_CHARS: [char; 3] = ['*', '?', '['];
+
+/// Split one **literal value** into fields under default IFS (XCU §2.6.5), as the shell
+/// does for an *unquoted* expansion. Maximal runs of IFS-whitespace are field
+/// separators; leading, trailing, and repeated separators collapse and elide (they
+/// never produce empty fields); an empty value yields **zero** fields (field elision —
+/// `cmd $EMPTY x` runs `cmd x`, dash-verified).
+///
+/// This is the primitive behind [`split_fields_join`] (which handles a word *mixing*
+/// literals and split values). It models only the default IFS — the safety of using it
+/// at all (a known literal value + a book-pristine IFS + glob-free fields) is the
+/// caller's precondition (see [`field_is_modelable`] and `analysis::value`).
+///
+/// dash note: default IFS-whitespace separators are special — adjacent separators and
+/// leading/trailing separators do NOT create empty fields (XCU §2.6.5: a sequence of
+/// IFS white-space delimits with no null fields). This differs from a custom non-blank
+/// IFS, which we never model.
+#[must_use]
+pub fn split_default_ifs(value: &str) -> Vec<&str> {
+    value.split(DEFAULT_IFS).filter(|f| !f.is_empty()).collect()
+}
+
+/// Is a split-result `field` statically modelable (XCU §2.6.6)? `false` when it carries
+/// a pathname-expansion metacharacter (`*`, `?`, `[`): dash expands such a field against
+/// the remote filesystem, which is runtime-dependent ⇒ the whole word is ⊤ (the
+/// wrong-concrete frontier — see [`GLOB_CHARS`]). A `~`-leading field is modelable (it
+/// is a literal `~` post-split; tilde expansion fired, if at all, on the *original* word
+/// before splitting, never on a split-result field).
+#[must_use]
+pub fn field_is_modelable(field: &str) -> bool {
+    !field.contains(GLOB_CHARS)
+}
+
+/// One resolved fragment of an *unquoted* word, ready for field-splitting (XCU §2.6.5).
+/// A word that mixes literal text with a resolved-variable value (`pre$PKGS`,
+/// `$PKGS.deb`) is a sequence of these; [`split_fields_join`] applies the POSIX
+/// field-boundary rule across them.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Field<'a> {
+    /// Verbatim literal text (a literal fragment, or a *quoted* expansion that was
+    /// already resolved to a literal). Contributes to the current field; an IFS
+    /// character *inside* it is NOT a separator (it was quoted, or it would have been a
+    /// word boundary at parse time) — only [`Split`](Field::Split) introduces breaks.
+    Literal(&'a str),
+    /// A resolved-variable value appearing *unquoted* — subject to field-splitting. IFS
+    /// runs inside it ARE field separators (this is the only source of breaks).
+    Split(&'a str),
+}
+
+/// Apply POSIX field-splitting (XCU §2.6.5) under default IFS across a word's resolved
+/// fragments, reproducing dash's argv exactly for a known-literal unquoted (or
+/// mixed-literal) word. Returns the resulting field strings, or [`None`] if any field
+/// carries a glob metacharacter (unmodelable pathname expansion ⇒ caller degrades the
+/// word to ⊤).
+///
+/// The field-boundary rule (dash-verified against the differential gate): only a
+/// separator *contributed by a [`Split`](Field::Split) fragment* breaks a field;
+/// literal text and the boundaries *between* fragments join. So:
+/// * `[Literal("pre"), Split("nginx curl")]` ⇒ `["prenginx", "curl"]` — the literal
+///   joins the first split field; the internal separator breaks.
+/// * `[Split("nginx curl"), Literal(".deb")]` ⇒ `["nginx", "curl.deb"]` — the trailing
+///   literal joins the last split field.
+/// * `[Literal("pre"), Split(""), Literal(".post")]` ⇒ `["pre.post"]` — an empty value
+///   contributes no separator, so the literals join (one field).
+/// * `[Literal("pre"), Split("   "), Literal(".post")]` ⇒ `["pre", ".post"]` — an
+///   all-separator value DOES break (the separator run is internal to the word).
+///
+/// dash note: the algorithm is an open-field accumulator — literal text and split-field
+/// *text* extend the open field; an IFS run inside a [`Split`](Field::Split) flushes the
+/// open field (only when one is open, so leading/trailing/repeated separators neither
+/// create nor leave empty fields). This matches dash's "split only on expansion-
+/// introduced separators" precisely (a literal IFS byte in the word never splits).
+#[must_use]
+pub fn split_fields_join(frags: &[Field<'_>]) -> Option<Vec<String>> {
+    let mut acc = FieldAccumulator::default();
+    for frag in frags {
+        match frag {
+            Field::Literal(s) => acc.extend(s),
+            Field::Split(value) => {
+                // Each token sits between IFS runs; a non-first token means a separator
+                // run preceded it ⇒ break the open field. `str::split` yields an empty
+                // token for a separator at an edge or in a run, which `break_field`
+                // (open-only) and `extend` (no-op on empty) handle without empty fields.
+                for (i, token) in value.split(DEFAULT_IFS).enumerate() {
+                    if i > 0 {
+                        acc.break_field();
+                    }
+                    acc.extend(token);
+                }
+            }
+        }
+    }
+    let fields = acc.finish();
+    fields
+        .iter()
+        .all(|f| field_is_modelable(f))
+        .then_some(fields)
+}
+
+/// The open-field accumulator behind [`split_fields_join`] (XCU §2.6.5): builds fields
+/// left-to-right, where literal/split *text* extends the currently-open field and an
+/// IFS run inside a split value [`break`](FieldAccumulator::break_field)s it. Only an
+/// *open* field flushes, so leading/trailing/repeated separators neither create nor
+/// leave empty fields (the default-IFS-whitespace no-null-fields rule).
+#[derive(Default)]
+struct FieldAccumulator {
+    done: Vec<String>,
+    cur: String,
+    open: bool,
+}
+
+impl FieldAccumulator {
+    /// Append text to the open field (opening one if needed). Empty text is a no-op, so
+    /// it never spuriously opens a field.
+    fn extend(&mut self, text: &str) {
+        if !text.is_empty() {
+            self.cur.push_str(text);
+            self.open = true;
+        }
+    }
+
+    /// A field separator: flush the open field, if any. A closed field is a no-op, so
+    /// adjacent separators collapse.
+    fn break_field(&mut self) {
+        if self.open {
+            self.done.push(std::mem::take(&mut self.cur));
+            self.open = false;
+        }
+    }
+
+    /// Finish: flush any trailing open field and return the fields in order.
+    fn finish(mut self) -> Vec<String> {
+        self.break_field();
+        self.done
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -498,6 +651,147 @@ mod tests {
             name: "x".to_owned(),
         }])];
         assert_eq!(const_literal_text(&quoted), None);
+    }
+
+    // ---- §7 field splitting (XCU §2.6.5) --------------------------------------
+
+    #[test]
+    fn split_default_ifs_basic_and_whitespace_collapse() {
+        // The §2.6.5 corpus, each entry dash-verified against `cmd $V`:
+        assert_eq!(split_default_ifs("a b"), vec!["a", "b"]);
+        assert_eq!(split_default_ifs("a"), vec!["a"], "one field");
+        // Leading / trailing / repeated separators collapse, never empty fields.
+        assert_eq!(split_default_ifs(" a  b "), vec!["a", "b"]);
+        // Empty value ⇒ ZERO fields (field elision — `cmd $EMPTY x` ⇒ `cmd x`).
+        assert!(split_default_ifs("").is_empty(), "empty ⇒ zero fields");
+        // An all-separator value ⇒ ZERO fields too (still elision when alone).
+        assert!(
+            split_default_ifs("   ").is_empty(),
+            "all-sep alone ⇒ zero fields"
+        );
+        // Tab and newline are default-IFS whitespace alongside space.
+        assert_eq!(split_default_ifs("a\tb\nc"), vec!["a", "b", "c"]);
+        assert_eq!(split_default_ifs("\t a \n b \t"), vec!["a", "b"]);
+    }
+
+    #[test]
+    fn field_is_modelable_rejects_glob_keeps_tilde() {
+        assert!(field_is_modelable("nginx"));
+        assert!(field_is_modelable("-y"));
+        // A leading `~` in a split field is a LITERAL tilde (dash does not tilde-expand
+        // split-result fields), so it is modelable — never a ⊤ trigger.
+        assert!(
+            field_is_modelable("~"),
+            "split-field tilde is literal ⇒ modelable"
+        );
+        assert!(field_is_modelable("~root/x"));
+        // Glob metacharacters trigger pathname expansion against the live fs ⇒ ⊤.
+        assert!(!field_is_modelable("*.deb"));
+        assert!(!field_is_modelable("pkg?"));
+        assert!(!field_is_modelable("[abc]"));
+    }
+
+    #[test]
+    fn split_fields_join_single_unquoted_var() {
+        // The exactly-one-unquoted-var word `$PKGS` (PKGS="nginx curl") ⇒ two fields.
+        assert_eq!(
+            split_fields_join(&[Field::Split("nginx curl")]),
+            Some(vec!["nginx".to_owned(), "curl".to_owned()])
+        );
+        // One-element value ⇒ one field (the single-operand idiom that elides).
+        assert_eq!(
+            split_fields_join(&[Field::Split("nginx")]),
+            Some(vec!["nginx".to_owned()])
+        );
+        // Empty value ⇒ zero fields (the word disappears from argv — elision).
+        assert_eq!(split_fields_join(&[Field::Split("")]), Some(Vec::new()));
+        // All-separator value alone ⇒ zero fields.
+        assert_eq!(
+            split_fields_join(&[Field::Split("  \t ")]),
+            Some(Vec::new())
+        );
+    }
+
+    #[test]
+    fn split_fields_join_mixed_literal_and_split() {
+        // dash-verified field-boundary rule (T9–T13 in the strain note 20N):
+        // literal joins the FIRST split field; the internal separator breaks.
+        assert_eq!(
+            split_fields_join(&[Field::Literal("pre"), Field::Split("nginx curl")]),
+            Some(vec!["prenginx".to_owned(), "curl".to_owned()])
+        );
+        // Trailing literal joins the LAST split field.
+        assert_eq!(
+            split_fields_join(&[Field::Split("nginx curl"), Field::Literal(".deb")]),
+            Some(vec!["nginx".to_owned(), "curl.deb".to_owned()])
+        );
+        // Both sides.
+        assert_eq!(
+            split_fields_join(&[
+                Field::Literal("pre"),
+                Field::Split("nginx curl"),
+                Field::Literal(".post")
+            ]),
+            Some(vec!["prenginx".to_owned(), "curl.post".to_owned()])
+        );
+        // Single-field value in a mixed word ⇒ pure concatenation (one field).
+        assert_eq!(
+            split_fields_join(&[
+                Field::Literal("pre"),
+                Field::Split("nginx"),
+                Field::Literal(".deb")
+            ]),
+            Some(vec!["prenginx.deb".to_owned()])
+        );
+        // Empty value between literals ⇒ they JOIN (no separator contributed).
+        assert_eq!(
+            split_fields_join(&[
+                Field::Literal("pre"),
+                Field::Split(""),
+                Field::Literal(".post")
+            ]),
+            Some(vec!["pre.post".to_owned()])
+        );
+        // All-separator value between literals ⇒ they BREAK (internal separator run).
+        assert_eq!(
+            split_fields_join(&[
+                Field::Literal("pre"),
+                Field::Split("   "),
+                Field::Literal(".post")
+            ]),
+            Some(vec!["pre".to_owned(), ".post".to_owned()])
+        );
+        // Two adjacent split vars: A's last field concatenates B's first field.
+        assert_eq!(
+            split_fields_join(&[Field::Split("p q"), Field::Split("r s")]),
+            Some(vec!["p".to_owned(), "qr".to_owned(), "s".to_owned()])
+        );
+    }
+
+    #[test]
+    fn split_fields_join_pure_literal_is_one_field() {
+        // No split fragment at all ⇒ the literal text is exactly one field (a fully
+        // literal word never splits — IFS in literal text is not a separator).
+        assert_eq!(
+            split_fields_join(&[Field::Literal("a b c")]),
+            Some(vec!["a b c".to_owned()]),
+            "literal IFS does NOT split — only an expansion's separators do"
+        );
+    }
+
+    #[test]
+    fn split_fields_join_glob_field_refuses() {
+        // A split field bearing a glob char ⇒ None (caller degrades the word to ⊤):
+        // pathname expansion against the remote fs is unmodelable.
+        assert_eq!(split_fields_join(&[Field::Split("a *.deb b")]), None);
+        // The glob can be formed by a literal+split JOIN at the boundary, too.
+        assert_eq!(
+            split_fields_join(&[Field::Literal("*"), Field::Split("a.deb b")]),
+            None,
+            "the joined first field `*a.deb` is a glob ⇒ refuse"
+        );
+        // A glob char in a SAFE position must still refuse the whole word (any field).
+        assert_eq!(split_fields_join(&[Field::Split("ok [x]")]), None);
     }
 
     // ---- §6 single-quote ------------------------------------------------------

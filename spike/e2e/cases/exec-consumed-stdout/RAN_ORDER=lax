@@ -1,0 +1,4 @@
+This book pipes into tee: pipeline stages run CONCURRENTLY under sh, so the order of
+their shim-log lines is genuinely nondeterministic (re-observed during task-B3's bless;
+same class as exec-enclosing-pipe-subshell — tc-pipe-ran-order). Order-insensitive
+run-set comparison for this case only.

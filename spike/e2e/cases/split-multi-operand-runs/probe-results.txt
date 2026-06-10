@@ -1,0 +1,9 @@
+# probe-results: site-keyed records (task-D1 WIRE). Grammar:
+#   site <leafid> effect=<holds|absent|cant-tell>
+# (the records the rendered probe emits; effect from the probe command rc).
+# brk-3 (`209`): the book writes `PKGS="nginx curl"; apt-get install -y $PKGS`. The
+# unquoted $PKGS field-splits to argv [apt-get, install, -y, nginx, curl] (matching dash).
+# The check binds the FIRST operand `nginx` but its `[ "$2" = "" ]` guard sees a SECOND
+# operand (`curl`) ⇒ no probe ⇒ both sites unresolvable ⇒ the install RUNS (R2-MULTIOP).
+# (site 0 unresolvable: the PKGS= assignment — no command effect)
+# (site 1 unresolvable: package multi-operand — no probe invocation, runs)

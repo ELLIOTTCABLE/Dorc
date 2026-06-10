@@ -179,6 +179,13 @@ struct Prep<'a> {
     /// Per assignment-bearing AST node: `(lhs-name, RHS-recipe)` per assignment, in source
     /// order. Built once so the transfer/resolution closures stay pure.
     assigns: BTreeMap<AstId, Vec<(String, Recipe)>>,
+    /// Whether the book NEVER touches `IFS` (no assignment, prefix-env, `unset`, or
+    /// lvalue-builtin write of `IFS` anywhere). This is the brk-3 field-splitting
+    /// precondition (`209` brk-3): a known-literal unquoted `$PKGS` splits on default IFS
+    /// only when IFS is provably pristine; ANY touch ⇒ every unquoted-split word degrades to
+    /// `⊤` (we cannot model splitting under an unknown IFS). Computed once as a book-wide
+    /// pre-pass ([`scan_ifs_pristine`]).
+    ifs_pristine: bool,
 }
 
 /// A flattened recipe for one word's value: the ordered fragments to concatenate. Any
@@ -186,20 +193,28 @@ struct Prep<'a> {
 /// containing a `⊤`-var or an unmodeled expansion is `⊤`).
 #[derive(Debug, Clone)]
 enum Recipe {
-    /// Unconditionally `⊤` (held an unmodeled/dynamic part, or an unquoted splitting
-    /// expansion): no point tracking fragments.
+    /// Unconditionally `⊤` (held an unmodeled/dynamic part, an unquoted positional/special,
+    /// or an unquoted command-substitution/arithmetic): no point tracking fragments.
     Top,
     /// Concatenate these fragments left-to-right; if any resolves to `⊤`, the word is `⊤`.
+    /// If a [`Frag::SplitVar`] is present the word may field-split (`209` brk-3) — see
+    /// [`resolve_recipe_fields`].
     Parts(Vec<Frag>),
 }
 
-/// One concatenation fragment of a [`Recipe`].
+/// One fragment of a [`Recipe`].
 #[derive(Debug, Clone)]
 enum Frag {
-    /// Literal text.
+    /// Literal text (verbatim; contributes to a single field, never a split boundary).
     Lit(String),
-    /// A plain-variable reference, resolved against the per-point state at use.
+    /// A *quoted* plain-variable reference (`"$x"`), resolved against the per-point state.
+    /// Value-preserving: it does not field-split.
     Var(String),
+    /// An *unquoted* plain-variable reference (`$x`), resolved against the per-point state
+    /// and then **field-split** under default IFS (`209` brk-3, XCU §2.6.5). Modelable only
+    /// when IFS is book-pristine and the resulting fields are glob-free; otherwise the word
+    /// degrades to `⊤` (`resolve_recipe`/`site_argv`).
+    SplitVar(String),
 }
 
 impl<'a> Prep<'a> {
@@ -232,6 +247,7 @@ impl<'a> Prep<'a> {
         }
 
         let scope_exit_clobbers = compute_scope_clobbers(cfg, ast);
+        let ifs_pristine = scan_ifs_pristine(ast);
 
         Prep {
             cfg,
@@ -239,6 +255,7 @@ impl<'a> Prep<'a> {
             assigned_vars,
             scope_exit_clobbers,
             assigns,
+            ifs_pristine,
         }
     }
 
@@ -447,6 +464,12 @@ impl<'a> Prep<'a> {
     /// a wrong concrete that licensed a wrong elision end-to-end. Argv resolves against
     /// `incoming` only; the prefix bindings affect the command's ENVIRONMENT, which we do not
     /// model, and correctly never persist downstream — see `transfer_command`.)
+    ///
+    /// Each word resolves to one OR MORE argv slots (`209` brk-3): an unquoted known-literal
+    /// var field-splits in place under default IFS (`$PKGS` ⇒ `[nginx, curl]`), and an
+    /// empty-value split word contributes ZERO slots (field elision — `cmd $EMPTY x` ⇒
+    /// `[cmd, x]`, dash-verified). A non-splitting word is exactly one slot, preserving the
+    /// per-word independence the consumer relies on (`202 §1`). See [`resolve_recipe_fields`].
     fn site_argv(&self, id: CfgNodeId, states: &[ValueEnv], converged: bool) -> Vec<Abstract> {
         let NodeKind::Simple { words, .. } = &self.ast.node(self.cfg.node(id).ast).kind else {
             return Vec::new();
@@ -459,7 +482,9 @@ impl<'a> Prep<'a> {
         };
         words
             .iter()
-            .map(|&w| resolve_recipe(&recipe_of_word(self.ast, w), incoming))
+            .flat_map(|&w| {
+                resolve_recipe_fields(&recipe_of_word(self.ast, w), incoming, self.ifs_pristine)
+            })
             .collect()
     }
 }
@@ -473,6 +498,50 @@ fn literal_text(ast: &Ast, word: AstId) -> Option<String> {
         return None;
     };
     sem::const_literal_text(parts)
+}
+
+/// Book-wide pre-pass: is `IFS` provably never touched? (`209` brk-3 splitting
+/// precondition.) Field-splitting of an unquoted known literal is modelable only under the
+/// DEFAULT IFS; ANY book-side write to `IFS` makes the separator set unknown, so EVERY
+/// unquoted-split word must then degrade to `⊤`. We over-refuse deliberately — a single
+/// mention as an lvalue anywhere (even in dead/⊤-rejected code) flips the whole book — which
+/// is the safe direction (`inv-kfail`: a wrong split is a wrong argv ⇒ a wrong entity ⇒ a
+/// wrong elision). Pure over the AST.
+///
+/// What counts as a touch (each dash-confirmed to change IFS):
+/// * an [`Assign`](NodeKind::Assign) named `IFS` — covers `IFS=…` standalone, the
+///   command-prefix `IFS=… cmd` (a prefix assignment IS an `Assign` node), and the
+///   assignment carried by `export IFS=…` parsed as an assign;
+/// * an lvalue-builtin (`unset`/`export`/`readonly`/`local`/`read`) whose operand is `IFS`
+///   or `IFS=…` — `read IFS` reads runtime stdin into IFS, the others set/unset it. (The
+///   `read`-with-`IFS=`-prefix case is the `Assign` arm above; `getopts` writes only
+///   `OPTIND`/`OPTARG`/its name, never IFS, so it is irrelevant — prompt-confirmed.)
+fn scan_ifs_pristine(ast: &Ast) -> bool {
+    const IFS: &str = "IFS";
+    const LVALUE_BUILTINS: [&str; 5] = ["unset", "export", "readonly", "local", "read"];
+    for (_, node) in ast.iter() {
+        match &node.kind {
+            NodeKind::Assign { name, .. } if name == IFS => return false,
+            NodeKind::Simple { words, .. } => {
+                let Some((&cmd_word, operands)) = words.split_first() else {
+                    continue;
+                };
+                let Some(cmd) = literal_text(ast, cmd_word) else {
+                    continue;
+                };
+                if !LVALUE_BUILTINS.contains(&cmd.as_str()) {
+                    continue;
+                }
+                for &op in operands {
+                    if literal_text(ast, op).is_some_and(|t| t == IFS || t.starts_with("IFS=")) {
+                        return false;
+                    }
+                }
+            }
+            _ => {}
+        }
+    }
+    true
 }
 
 /// Apply a node's assignments left-to-right, each RHS resolved against the running state.
@@ -491,9 +560,16 @@ fn flat_of(v: &Abstract) -> Flat<String> {
     }
 }
 
-/// Resolve a [`Recipe`] against a state: concatenate its fragments; any `⊤` fragment, any
+/// Resolve a [`Recipe`] to a SINGLE [`Abstract`] against a state — the NON-argv contexts
+/// (assignment RHS, `for`-list words): concatenate fragments; any `⊤` fragment, any
 /// `⊤`-recipe, makes the whole word `⊤`. A concatenation of literals is the joined literal
 /// (`19H`: `x=ng; y="${x}inx"` ⇒ `nginx` when the AST exposes the parts).
+///
+/// Field-splitting is deliberately NOT applied here: an assignment RHS does not field-split
+/// (`x=$y` assigns the whole value, dash-verified), and `for`-list member splitting is the
+/// deferred brk-1 precision slice — so an unquoted [`Frag::SplitVar`] degrades to `⊤` in
+/// these contexts, exactly as it did before brk-3 (the existing conservative behavior, e.g.
+/// `b=$a` ⇒ ⊤). Only [`site_argv`] (via [`resolve_recipe_fields`]) splits.
 fn resolve_recipe(recipe: &Recipe, env: &ValueEnv) -> Abstract {
     let parts = match recipe {
         Recipe::Top => return Abstract::Top,
@@ -507,17 +583,86 @@ fn resolve_recipe(recipe: &Recipe, env: &ValueEnv) -> Abstract {
                 Abstract::Lit(s) => buf.push_str(&s),
                 Abstract::Top => return Abstract::Top, // ⊤ or absent-as-⊤ var ⇒ whole word ⊤
             },
+            // An unquoted var outside argv position is ⊤ here (no split applied — see doc).
+            Frag::SplitVar(_) => return Abstract::Top,
         }
     }
     Abstract::Lit(buf)
 }
 
+/// Resolve a [`Recipe`] in **argv position** to the field list it expands to (`209` brk-3,
+/// XCU §2.6.5): the ONE context where an unquoted [`Frag::SplitVar`] field-splits. Returns
+/// the resolved argv slots (one `Abstract` per field) — usually one, but N for a split word
+/// (`$PKGS` ⇒ `[nginx, curl]`) and ZERO for an empty-value word (`$EMPTY` ⇒ elided from
+/// argv, dash-verified).
+///
+/// `ifs_pristine` is the book-wide precondition (no `IFS` touch anywhere — see
+/// [`Prep::ifs_pristine`]): when `false`, every split-bearing word degrades to a single `⊤`
+/// (splitting under an unknown IFS is unmodelable). A word with NO split fragment resolves
+/// exactly as [`resolve_recipe`] (one slot, preserving the empty-string-is-one-slot
+/// behavior); a `⊤`/absent split-var value, or a resulting glob-bearing field, degrades the
+/// whole word to a single `⊤`.
+/// A resolved-to-text word fragment owning its string, so the borrowed [`sem::Field`]s
+/// built from it (which borrow `&str`) outlive the call into `sem`. `Split` marks an
+/// unquoted-var value subject to field-splitting; `Literal` marks non-splitting text.
+enum OwnedField {
+    Literal(String),
+    Split(String),
+}
+
+fn resolve_recipe_fields(recipe: &Recipe, env: &ValueEnv, ifs_pristine: bool) -> Vec<Abstract> {
+    let parts = match recipe {
+        Recipe::Top => return vec![Abstract::Top],
+        Recipe::Parts(p) => p,
+    };
+    // No unquoted split fragment ⇒ this word's arity is statically one; resolve it exactly
+    // as the single-value path (an empty literal stays one empty slot, never elided).
+    if !parts.iter().any(|f| matches!(f, Frag::SplitVar(_))) {
+        return vec![resolve_recipe(recipe, env)];
+    }
+    // A split-bearing word under a non-pristine IFS is unmodelable ⇒ one ⊤ slot.
+    if !ifs_pristine {
+        return vec![Abstract::Top];
+    }
+    // Resolve each fragment to OWNED text tagged splittable-or-not. Any ⊤/absent value ⇒
+    // the whole word is one ⊤ slot (we cannot split an unknown value). The owned buffer
+    // outlives the borrowed `sem::Field`s built from it just below.
+    let mut owned = Vec::with_capacity(parts.len());
+    for frag in parts {
+        let resolved = match frag {
+            Frag::Lit(s) => OwnedField::Literal(s.clone()),
+            Frag::Var(v) | Frag::SplitVar(v) => match lookup(env, v) {
+                Abstract::Lit(s) if matches!(frag, Frag::SplitVar(_)) => OwnedField::Split(s),
+                Abstract::Lit(s) => OwnedField::Literal(s),
+                Abstract::Top => return vec![Abstract::Top],
+            },
+        };
+        owned.push(resolved);
+    }
+    let fields: Vec<sem::Field<'_>> = owned
+        .iter()
+        .map(|f| match f {
+            OwnedField::Literal(s) => sem::Field::Literal(s),
+            OwnedField::Split(s) => sem::Field::Split(s),
+        })
+        .collect();
+    // `split_fields_join` returns `None` when any resulting field carries a glob char
+    // (pathname expansion against the remote fs ⇒ unmodelable ⇒ ⊤).
+    match sem::split_fields_join(&fields) {
+        Some(fs) => fs.into_iter().map(Abstract::Lit).collect(),
+        None => vec![Abstract::Top],
+    }
+}
+
 /// Flatten an AST word into a [`Recipe`] via the shared quoting-class rules
 /// ([`sem::classify_frag`]): a quoted plain variable is a trackable [`Frag::Var`]; a literal
-/// is a [`Frag::Lit`]; and any ⊤-class fragment (a quoted positional/special/subst —
-/// `FragClass::OpaqueValue` — or *any* unquoted expansion that may word-split —
-/// `FragClass::SplitRisk`) collapses the whole word to [`Recipe::Top`]. The
-/// arity/value-preservation split that was hand-rolled here now lives once in `sem`.
+/// is a [`Frag::Lit`]; an *unquoted* plain variable is a [`Frag::SplitVar`] (it may
+/// field-split, `209` brk-3); and any other ⊤-class fragment (a quoted positional/special/
+/// subst — `FragClass::OpaqueValue` — or an unquoted positional/special/subst/arithmetic)
+/// collapses the whole word to [`Recipe::Top`]. The arity/value-preservation split that was
+/// hand-rolled here lives once in `sem`; the field-split refinement of the unquoted-var case
+/// is applied here (it needs the resolved *value*, which `sem`'s quoting-classifier cannot
+/// hold).
 fn recipe_of_word(ast: &Ast, word: AstId) -> Recipe {
     let NodeKind::Word { parts } = &ast.node(word).kind else {
         return Recipe::Top;
@@ -530,10 +675,13 @@ fn recipe_of_word(ast: &Ast, word: AstId) -> Recipe {
     }
 }
 
-/// Collect concatenation fragments from word-parts; returns `false` (⇒ whole word `⊤`) on the
-/// first part that is not value-preserving as a tracked fragment. `quoted` tracks whether we
-/// are inside a double-quote. The per-part decision is [`sem::classify_frag`]; this only maps
-/// its [`FragClass`] onto the analysis's owned-text [`Frag`].
+/// Collect fragments from word-parts; returns `false` (⇒ whole word `⊤`) on the first part
+/// that is not value-preserving *and* not field-split-modelable. `quoted` tracks whether we
+/// are inside a double-quote. The per-part decision is [`sem::classify_frag`]; the one
+/// refinement this adds is the `209` brk-3 split case: an UNQUOTED plain `$name` is kept as a
+/// [`Frag::SplitVar`] (resolve-then-split) instead of collapsing the word — but an unquoted
+/// positional/special/command-subst/arithmetic still collapses (its value is not a known
+/// literal, so there is nothing to split).
 fn collect_frags(parts: &[WordPart], quoted: bool, out: &mut Vec<Frag>) -> bool {
     for part in parts {
         // Non-DoubleQuoted parts classify directly; a DoubleQuoted recurses at quoted=true.
@@ -541,9 +689,17 @@ fn collect_frags(parts: &[WordPart], quoted: bool, out: &mut Vec<Frag>) -> bool 
             match sem::classify_frag(part, quoted) {
                 Some(FragClass::Literal(s)) => out.push(Frag::Lit(s.to_owned())),
                 Some(FragClass::Var(name)) => out.push(Frag::Var(name.to_owned())),
-                // ⊤ classes collapse the word. `None` is only `DoubleQuoted` (handled
-                // above); a defensive ⊤ otherwise.
-                Some(FragClass::OpaqueValue | FragClass::SplitRisk) | None => return false,
+                // An unquoted expansion (`SplitRisk`): a plain `$name` is split-modelable
+                // (resolve its literal, then field-split); anything else (an unquoted
+                // positional/special, or a command-subst/arithmetic/operator-form) has no
+                // known literal value ⇒ collapse the word.
+                Some(FragClass::SplitRisk) => match split_var_name(part) {
+                    Some(name) => out.push(Frag::SplitVar(name.to_owned())),
+                    None => return false,
+                },
+                // A quoted positional/special/subst (`OpaqueValue`) is arity-safe but ⊤.
+                // `None` is only `DoubleQuoted` (handled above); defensive ⊤ otherwise.
+                Some(FragClass::OpaqueValue) | None => return false,
             }
             continue;
         };
@@ -552,6 +708,19 @@ fn collect_frags(parts: &[WordPart], quoted: bool, out: &mut Vec<Frag>) -> bool 
         }
     }
     true
+}
+
+/// If `part` is an unquoted plain-variable expansion (`$name` / `${name}` where `name` is a
+/// POSIX *name*), return that name — the one unquoted expansion whose split is modelable
+/// (`209` brk-3). A positional/special parameter (`$1`/`$@`) returns [`None`]: its value is
+/// runtime input, so there is no known literal to split.
+fn split_var_name(part: &WordPart) -> Option<&str> {
+    match part {
+        WordPart::Param { name } if matches!(sem::classify_param(name), sem::ParamClass::Name) => {
+            Some(name)
+        }
+        _ => None,
+    }
 }
 
 /// Compute, per `ScopeExit` node, the set of variable names assigned anywhere inside the
@@ -698,15 +867,16 @@ mod tests {
     }
 
     #[test]
-    fn bare_unquoted_variable_resolves_when_value_cannot_split() {
-        // `$pkg` UNQUOTED: in shell this may word-split, so its arity is not statically one
-        // argument — we conservatively ⊤ it (`Word::may_split`), even though `nginx` happens
-        // not to contain IFS/glob chars (the analyzer cannot know that statically). This is a
-        // deliberate precision floor, asserted so the choice is visible.
+    fn bare_unquoted_single_value_var_splits_to_one_field() {
+        // brk-3 (`209`): an unquoted known-literal var field-splits in place. A single-field
+        // value (`pkg=nginx`) splits to exactly ONE field ⇒ the slot resolves to `nginx`
+        // (matching dash: `$pkg` with pkg=nginx expands to one word). Before brk-3 this was a
+        // conservative ⊤ (the may-split floor); the split now lifts it precisely. The quoted
+        // form below resolves identically — they agree when the value has no IFS char.
         assert_eq!(
             argv_of(r"pkg=nginx; apt-get install -y $pkg", "apt-get"),
-            vec![lit("apt-get"), lit("install"), lit("-y"), Word::Top],
-            "unquoted $pkg ⇒ ⊤ (may word-split); the quoted form is the literal one"
+            vec![lit("apt-get"), lit("install"), lit("-y"), lit("nginx")],
+            "unquoted $pkg (single-field value) splits to one field ⇒ resolves to nginx"
         );
     }
 
@@ -903,6 +1073,191 @@ mod tests {
         assert_eq!(
             argv_of(r#"apt-get install -y "$dyn""#, "apt-get"),
             vec![lit("apt-get"), lit("install"), lit("-y"), Word::Top]
+        );
+    }
+
+    // ---- brk-3 deliberate word-splitting (`209` brk-3, XCU §2.6.5) -----------------------
+
+    #[test]
+    fn unquoted_multi_value_var_splits_to_multiple_argv_slots() {
+        // THE brk-3 headline: `PKGS="nginx curl"; apt-get install -y $PKGS` (unquoted,
+        // intentional) ⇒ the `$PKGS` word expands IN PLACE to TWO argv slots — matching
+        // dash's `[apt-get, install, -y, nginx, curl]` exactly, instead of the pre-brk-3 ⊤.
+        assert_eq!(
+            argv_of(r#"PKGS="nginx curl"; apt-get install -y $PKGS"#, "apt-get"),
+            vec![
+                lit("apt-get"),
+                lit("install"),
+                lit("-y"),
+                lit("nginx"),
+                lit("curl")
+            ],
+            "unquoted $PKGS splits into separate argv slots in place"
+        );
+    }
+
+    #[test]
+    fn quoted_multi_value_var_stays_one_slot() {
+        // The quoting contrast (existing behavior, preserved): `"$PKGS"` is ONE argv slot
+        // holding the whole value — double-quotes suppress field-splitting (dash: one word).
+        assert_eq!(
+            argv_of(
+                r#"PKGS="nginx curl"; apt-get install -y "$PKGS""#,
+                "apt-get"
+            ),
+            vec![lit("apt-get"), lit("install"), lit("-y"), lit("nginx curl")],
+            "quoted \"$PKGS\" stays a single (multi-word-valued) slot"
+        );
+    }
+
+    #[test]
+    fn empty_value_unquoted_var_elides_from_argv() {
+        // Field elision: `EMPTY=""; cmd $EMPTY x` ⇒ the `$EMPTY` word contributes ZERO argv
+        // slots ⇒ `[cmd, x]` (dash-verified). The empty word disappears entirely — it is NOT
+        // a `⊤` slot and NOT an empty-string slot.
+        assert_eq!(
+            argv_of(r#"EMPTY=""; cmd $EMPTY x"#, "cmd"),
+            vec![lit("cmd"), lit("x")],
+            "an empty unquoted var elides from argv (zero fields)"
+        );
+        // Contrast: QUOTED empty is a real (empty-string) slot, NOT elided.
+        assert_eq!(
+            argv_of(r#"EMPTY=""; cmd "$EMPTY" x"#, "cmd"),
+            vec![lit("cmd"), lit(""), lit("x")],
+            "quoted empty stays one empty-string slot"
+        );
+    }
+
+    #[test]
+    fn unquoted_var_collapsing_whitespace_splits_precisely() {
+        // Leading/trailing/repeated separators collapse: `V="  a   b  "; cmd $V` ⇒ [cmd,a,b].
+        assert_eq!(
+            argv_of(r#"V="  a   b  "; cmd $V"#, "cmd"),
+            vec![lit("cmd"), lit("a"), lit("b")],
+            "surrounding/repeated IFS whitespace collapses; no empty fields"
+        );
+    }
+
+    #[test]
+    fn mixed_word_literal_prefix_and_unquoted_var_splits_per_posix() {
+        // Mixed word (the precise §2.6.5 field-boundary join, dash-verified): a literal
+        // prefix joins the FIRST split field; the internal separator breaks. `PKGS="nginx
+        // curl"; cmd pre$PKGS` ⇒ [cmd, prenginx, curl].
+        assert_eq!(
+            argv_of(r#"PKGS="nginx curl"; cmd pre$PKGS"#, "cmd"),
+            vec![lit("cmd"), lit("prenginx"), lit("curl")],
+            "literal prefix joins the first split field"
+        );
+        // Trailing literal joins the LAST split field: `cmd $PKGS.deb` ⇒ [cmd, nginx, curl.deb].
+        assert_eq!(
+            argv_of(r#"PKGS="nginx curl"; cmd $PKGS.deb"#, "cmd"),
+            vec![lit("cmd"), lit("nginx"), lit("curl.deb")],
+            "trailing literal joins the last split field"
+        );
+        // A single-field value in a mixed word ⇒ pure concatenation, one slot (no split).
+        assert_eq!(
+            argv_of(r#"P="nginx"; cmd pre$P.deb"#, "cmd"),
+            vec![lit("cmd"), lit("prenginx.deb")],
+            "single-field value ⇒ mixed word is one concatenated slot"
+        );
+    }
+
+    #[test]
+    fn quoted_var_then_unquoted_var_splits_at_the_unquoted_boundary_only() {
+        // The cross-quoting boundary (dash-verified): `A="x y"; B="p q"; cmd "$A"$B` ⇒
+        // [cmd, "x yp", "q"]. The QUOTED `"$A"` is one literal field (its internal space
+        // does NOT split); the UNQUOTED `$B`'s first split field joins it (`x y`+`p`), then
+        // the internal separator breaks. Proves a quoted-resolved fragment is non-splitting
+        // text even when its value contains IFS, while an adjacent unquoted var splits.
+        assert_eq!(
+            argv_of(r#"A="x y"; B="p q"; cmd "$A"$B"#, "cmd"),
+            vec![lit("cmd"), lit("x yp"), lit("q")],
+            "quoted-var value is non-splitting text; only the unquoted var splits"
+        );
+    }
+
+    #[test]
+    fn ifs_touched_book_degrades_every_unquoted_split_to_top() {
+        // The IFS-pristine precondition: ANY book-side IFS write makes the separator set
+        // unknown ⇒ every unquoted-split word degrades to ⊤ (we cannot model the split).
+        // `IFS=,; PKGS="nginx curl"; apt-get install -y $PKGS` ⇒ the `$PKGS` slot is ⊤.
+        assert_eq!(
+            argv_of(
+                r#"IFS=,; PKGS="nginx curl"; apt-get install -y $PKGS"#,
+                "apt-get"
+            ),
+            vec![lit("apt-get"), lit("install"), lit("-y"), Word::Top],
+            "an IFS assignment anywhere ⇒ unquoted split is unmodelable ⇒ ⊤"
+        );
+        // `unset IFS` is also a touch (IFS becomes the default, but we over-refuse — a
+        // mention as an lvalue flips the book; the safe direction).
+        assert_eq!(
+            argv_of("unset IFS\nPKGS=nginx\napt-get install -y $PKGS", "apt-get"),
+            vec![lit("apt-get"), lit("install"), lit("-y"), Word::Top],
+            "`unset IFS` flips the book to non-pristine (conservative)"
+        );
+        // An IFS PREFIX-env on an unrelated command is a touch too (`IFS=: read x`).
+        assert_eq!(
+            argv_of("IFS=: read x\nPKGS=nginx\napt-get install $PKGS", "apt-get"),
+            vec![lit("apt-get"), lit("install"), Word::Top],
+            "an `IFS=…` command-prefix anywhere flips the book"
+        );
+    }
+
+    #[test]
+    fn touching_a_non_ifs_variable_keeps_splitting_modelable() {
+        // Control for the IFS scan: touching some OTHER variable (here a plain `FOO=bar`
+        // prefix, and an `unset OTHER`) does NOT flip the book — splitting still models.
+        assert_eq!(
+            argv_of("OTHER=x\nunset OTHER\nPKGS=\"a b\"\ncmd $PKGS", "cmd"),
+            vec![lit("cmd"), lit("a"), lit("b")],
+            "a non-IFS lvalue touch leaves IFS pristine ⇒ split still models"
+        );
+    }
+
+    #[test]
+    fn unquoted_var_with_glob_field_is_top() {
+        // The wrong-concrete frontier: a split-result field bearing a glob char triggers
+        // pathname expansion against the remote fs ⇒ unmodelable ⇒ the whole word is ⊤.
+        // `PKGS="*.deb nginx"; cmd $PKGS` ⇒ the word is ⊤ (we cannot enumerate the glob).
+        assert_eq!(
+            argv_of(r#"PKGS="*.deb nginx"; cmd $PKGS"#, "cmd"),
+            vec![lit("cmd"), Word::Top],
+            "a glob char in a split field ⇒ ⊤ (pathname expansion is runtime-dependent)"
+        );
+    }
+
+    #[test]
+    fn unquoted_var_with_tilde_field_is_literal_not_top() {
+        // The other side of the frontier: a leading `~` in a SPLIT field is a LITERAL tilde
+        // (dash does not tilde-expand split-result fields), so it resolves — never ⊤.
+        // `PKGS="~ ~root"; cmd $PKGS` ⇒ [cmd, ~, ~root] (literal tildes).
+        assert_eq!(
+            argv_of(r#"PKGS="~ ~root"; cmd $PKGS"#, "cmd"),
+            vec![lit("cmd"), lit("~"), lit("~root")],
+            "split-result tilde fields are literal ⇒ resolve, not ⊤"
+        );
+    }
+
+    #[test]
+    fn unquoted_top_valued_var_stays_one_top_slot() {
+        // A split-eligible var whose VALUE is ⊤ (here unset ⇒ absent-as-⊤) cannot be split —
+        // it stays a single ⊤ slot (not zero, not many). `cmd $undef x` ⇒ [cmd, ⊤, x].
+        assert_eq!(
+            argv_of(r"cmd $undef x", "cmd"),
+            vec![lit("cmd"), Word::Top, lit("x")],
+            "an unresolved split-var value ⇒ one ⊤ slot (cannot split the unknown)"
+        );
+    }
+
+    #[test]
+    fn unquoted_positional_in_argv_is_top_not_split() {
+        // A positional/special param is NOT a known literal, so even unquoted it does not
+        // become a split-var — it stays a single ⊤ slot. `cmd $1 $@` ⇒ [cmd, ⊤, ⊤].
+        assert_eq!(
+            argv_of(r"cmd $1 $@", "cmd"),
+            vec![lit("cmd"), Word::Top, Word::Top],
+            "unquoted positional/special ⇒ ⊤ slot, never a modeled split"
         );
     }
 
