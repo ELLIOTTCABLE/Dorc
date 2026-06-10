@@ -51,6 +51,13 @@ its author as not-to-be-over-trusted. Recorded connections (mine, +SURE on the f
   *downstream* probe answers derived through it. That blast-radius change is presumably why
   "exhaustive correctness-exercising" — record it so the future evaluation starts there.
 
+**§1-addendum (human, same day, clarifying):** "timed" means only an *abstract monotonic
+clock* — i.e. minimally maintain ORDER between call-sites with entangled effects (disallow
+parallelizing them against each other), NOT modeling/reproducing timing between sites. And the
+author's own confidence downgraded in the telling: "this is very not-well-thought-out and the
+more I talk about it the shakier it feels." Read §1 as a seam-preservation request (site-keyed
+results; don't weld out ordering) plus a sketch — NOT a firm direction; weight accordingly.
+
 ## §2 Hook resolution (human: "drop the hook if it's blocking you")
 
 Implemented as `HK=0` in `.claude/settings.json` `env` (worktree-local; every agent shell
