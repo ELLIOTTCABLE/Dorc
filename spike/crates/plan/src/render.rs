@@ -81,6 +81,19 @@ pub fn standin_sh(stand_in: StandIn) -> String {
 pub mod probe {
     use super::{EntityRef, Interner, LeafId, sem};
 
+    /// Format a record's site key: `N` for an ordinary single-fact site, `N.M` for member
+    /// `M` of an in-loop Members fact-family (task-L2 item-4). The `.M` sub-key is the one
+    /// grammar extension the member-precision slice adds; it keys a record back to a
+    /// specific member of a specific leaf (`site <leafid>.<member-idx>`). Centralised here
+    /// so the emitted grammar and the cli's `parse_results` stay in lockstep.
+    #[must_use]
+    pub fn site_key(site: LeafId, member: Option<u32>) -> String {
+        match member {
+            Some(m) => format!("{}.{m}", site.0),
+            None => site.0.to_string(),
+        }
+    }
+
     /// The probe artifact header — documents the results-record grammar (205 §2
     /// rule-probe-exec-gate consumers, and the human reading the artifact, depend on it).
     ///
@@ -111,14 +124,15 @@ pub mod probe {
          # rc is the raw PROBE-command status (opaque to Dorc — the record is the out-of-band lane).\n\n"
     }
 
-    /// A per-site provenance comment naming the cell the site checks (`# site N: label`).
+    /// A per-site provenance comment naming the cell the site (or member) checks (`# site
+    /// <key>: label`, `<key>` being `N` or `N.M` — [`site_key`]).
     ///
     /// GUARANTEE: one `#`-prefixed comment line ⇒ dash-n-clean. `label` is a
     /// [`fact_label`](crate::fact_label) (display-only, `inv-referent-agnostic`); it
     /// rides in a comment, never re-parsed.
     #[must_use]
-    pub fn site_comment(site: LeafId, label: &str) -> String {
-        format!("# site {}: {label}\n", site.0)
+    pub fn site_comment(key: &str, label: &str) -> String {
+        format!("# site {key}: {label}\n")
     }
 
     /// A POSIX function definition wrapping the kind's `oracle_probe_*` body
@@ -163,21 +177,20 @@ pub mod probe {
     /// sequence valid wherever a command-list is (here, at script top level). The rc is
     /// captured into `_rc` *immediately* (before any other command can clobber `$?`),
     /// mapped by the oracle's `an-probe-shape` convention (`0⇒holds`, `1⇒absent`, else
-    /// `cant-tell`), and the record (`site <id> effect=%s rc=%s`) is the out-of-band
+    /// `cant-tell`), and the record (`site <key> effect=%s rc=%s`) is the out-of-band
     /// lane (rc stays opaque to Dorc — a standing human ruling). `_e`/`_rc` are
-    /// probe-local names chosen unlikely to clash with a check body. The `site <id>`
-    /// keys the record back to the apply leaf (`inv-site-keyed-results`). Pinned by the
-    /// `printf 'site … effect=` assertions across the probe-render tests + the
-    /// `exec-*` gate-1 parity.
+    /// probe-local names chosen unlikely to clash with a check body. The `site <key>`
+    /// keys the record back to the apply leaf — or to a member of it (`N.M`, [`site_key`],
+    /// task-L2 item-4) — (`inv-site-keyed-results`). Pinned by the `printf 'site …
+    /// effect=` assertions across the probe-render tests + the `exec-*` gate-1 parity.
     #[must_use]
-    pub fn record_scaffold(invocation: &str, site: LeafId) -> String {
+    pub fn record_scaffold(invocation: &str, key: &str) -> String {
         format!(
             "{invocation}; _rc=$?; \
              if [ \"$_rc\" -eq 0 ]; then _e=holds; \
              elif [ \"$_rc\" -eq 1 ]; then _e=absent; \
              else _e=cant-tell; fi; \
-             printf 'site {} effect=%s rc=%s\\n' \"$_e\" \"$_rc\"\n",
-            site.0
+             printf 'site {key} effect=%s rc=%s\\n' \"$_e\" \"$_rc\"\n"
         )
     }
 

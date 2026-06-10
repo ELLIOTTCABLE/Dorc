@@ -224,8 +224,11 @@ EOF
 probe_exec_check() {
   _art=$1; _case=$2; _dir=$3
   scan_redirect_safety probe "$_art" "$_case" || return 1
-  # The resolvable site-ids the probe will self-report (one `printf 'site N …` per site).
-  _emit_ids=$(printf '%s\n' "$_art" | sed -n "s/.*printf 'site \\([0-9][0-9]*\\) effect=.*/\\1/p" | LC_ALL=C sort -n)
+  # The resolvable site-keys the probe will self-report (one `printf 'site <key> …` per
+  # site). A key is `N` or — for an in-loop Members member (task-L2 item-4) — `N.M`, so the
+  # pattern accepts a dot; the SET compare below uses a lexical sort (a `.M` key is not a
+  # plain integer, so `sort -n` would mis-order, but lexical equality of the two sets holds).
+  _emit_ids=$(printf '%s\n' "$_art" | sed -n "s/.*printf 'site \\([0-9][0-9.]*\\) effect=.*/\\1/p" | LC_ALL=C sort)
   _log=$(mktemp)
   _sand=$(mktemp -d)
   _mocks=$(CDPATH= cd -- "${_dir}mocks" && pwd)
@@ -243,8 +246,8 @@ EOF
   # to the emitters'. A record that is missing, duplicated, or malformed shifts the set.
   _rec_lines=$(printf '%s\n' "$_recs" | grep -E '^site ' || true)
   _good_ids=$(printf '%s\n' "$_rec_lines" \
-    | sed -n 's/^site \([0-9][0-9]*\) effect=\(holds\|absent\|cant-tell\) rc=-\{0,1\}[0-9][0-9]*$/\1/p' \
-    | LC_ALL=C sort -n)
+    | sed -n 's/^site \([0-9][0-9.]*\) effect=\(holds\|absent\|cant-tell\) rc=-\{0,1\}[0-9][0-9]*$/\1/p' \
+    | LC_ALL=C sort)
   if [ "$_good_ids" != "$_emit_ids" ]; then
     if [ "${XFAIL_ACTIVE:-}" != "1" ]; then
       echo "FAIL  $_case  [gate-1: probe records not site-complete/grammar-valid (every resolvable site must emit exactly one valid record)]"

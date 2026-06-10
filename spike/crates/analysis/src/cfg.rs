@@ -369,6 +369,18 @@ struct Builder<'a> {
     /// `BTreeMap` (not `HashMap`) for `inv-determinism`.
     exit_to_enter: BTreeMap<usize, usize>,
     enter_to_exit: BTreeMap<usize, usize>,
+    /// A `while`/`until` loop's exit `Merge` node → its BODY-exit node (20O find-6a /
+    /// task-L2 item-6a). dash's post-loop `$?` is the BODY's last command rc (when the
+    /// loop ran ≥1) or 0 (ran 0 times) — NEVER the condition's rc. But a `while` loop's
+    /// only control edge into the post-loop flow is `cond_exit → merge`, so a backward
+    /// `$?`-predecessor walk from a post-loop reader stops at the CONDITION command and
+    /// never reaches the body. This map lets [`mark_dollar_question_predecessors`] also
+    /// reach the body-exit when the walk passes the loop's exit `merge`, so the body's
+    /// last command is correctly marked `StatusRelaxable`-consumed. (A `for` loop needs
+    /// no entry here: its exit edge is `head → merge`, and `head`'s back-edge pred IS the
+    /// body-exit, so the walk reaches it already — `temp`-verified, item-6a "for verified
+    /// correct, leave".) `BTreeMap` for `inv-determinism`.
+    while_exit_to_body: BTreeMap<usize, usize>,
     /// Recursion-depth guard mirroring the parser's (`inv-no-throw`): an AST that
     /// is pathologically deep (despite the parser's own bound) cannot blow the
     /// native stack here either.
@@ -397,6 +409,7 @@ impl<'a> Builder<'a> {
             consumed: Vec::new(),
             exit_to_enter: BTreeMap::new(),
             enter_to_exit: BTreeMap::new(),
+            while_exit_to_body: BTreeMap::new(),
             depth: 0,
         }
     }
@@ -925,6 +938,11 @@ impl<'a> Builder<'a> {
         self.mark_in_loop_range(loop_start, self.nodes.len());
         let merge = self.fresh(id, CfgNodeKind::Merge);
         self.add_edge(cond_exit, merge); // exit edge (condition ends the loop)
+        // item-6a (20O find-6a): record this loop's body-exit against its exit `merge`, so
+        // a post-loop `$?`-predecessor walk reaches the BODY (dash's post-loop `$?` source),
+        // not just the condition the `cond_exit → merge` edge leads back to.
+        self.while_exit_to_body
+            .insert(merge.index(), body_exit.index());
         merge
     }
 
@@ -1126,6 +1144,16 @@ impl<'a> Builder<'a> {
     /// in `b`) or across a subshell boundary the "predecessor" is whatever command the
     /// pred-edges reach — marking more can only *block* more, never license more, so the
     /// marking-more direction is taken without resolving those ambiguities precisely.
+    ///
+    /// `while`/`until` post-loop `$?` (20O find-6a / task-L2 item-6a): dash's post-loop
+    /// `$?` is the BODY's last command rc (loop ran ≥1) or 0 (ran 0) — never the
+    /// condition's. A `while`'s only exit edge is `cond_exit → merge`, so the bare
+    /// pred-walk would stop at the condition command and miss the body. When the walk
+    /// reaches such a loop-exit `merge` ([`while_exit_to_body`]), it also seeds the
+    /// recorded body-exit, so the body's last command is marked too (the condition keeps
+    /// its mark — already `StatusRenderFloor`-blocked, so the over-mark is inert). A `for`
+    /// loop needs no special case: its exit is `head → merge` and `head`'s back-edge pred
+    /// is the body-exit, so the body is already reached.
     fn mark_dollar_question_predecessors(&mut self) {
         let readers: Vec<usize> = (0..self.nodes.len())
             .filter(|&v| {
@@ -1144,6 +1172,12 @@ impl<'a> Builder<'a> {
                 if self.nodes[p].kind == CfgNodeKind::Command {
                     self.consumed[p].0.insert(Channel::StatusRelaxable);
                 } else {
+                    // A `while`/`until` exit `merge`: also reach the body-exit (item-6a),
+                    // so the post-loop `$?` marks the body's last command, not only the
+                    // condition the `cond_exit → merge` edge leads back to.
+                    if let Some(&body_exit) = self.while_exit_to_body.get(&p) {
+                        stack.push(body_exit);
+                    }
                     stack.extend(self.pred[p].iter().copied());
                 }
             }

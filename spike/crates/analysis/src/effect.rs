@@ -200,6 +200,46 @@ pub fn command_effect(
         .collect()
 }
 
+/// Resolve an in-loop Members site to its establish-cell FAMILY (task-L2 item-2), or
+/// `None` if it is not a Members site OR any member fails to resolve to a single
+/// establish (ALL-OR-NOTHING — the family is never partial). For each per-member argv
+/// ([`crate::value::ValueFlow::member_argv`]) run the oracle's own `check()` exactly as a
+/// straight-line command; require `[CommandEffect::Establishes(fact)]` for EVERY member.
+/// Any member that is Opaque (a ⊤ word, no check, the check refuses), a Kill, a Query, a
+/// Pure, or a multi-cell verb ⇒ the whole site is `None` (it falls back to the single-cell
+/// classification, which for an in-loop site is the render-floored Flat path ⇒ `MustRun`).
+///
+/// The kind-disagreement diagnostics each member's check may raise accumulate in `diags`
+/// (shared with the straight-line path). Deterministic; never panics (`inv-no-throw`).
+fn member_family(
+    id: CfgNodeId,
+    cfg: &Cfg,
+    value: &ValueFlow,
+    idx: &KindIndex,
+    checks: &[CheckSet],
+    interner: &mut Interner,
+    diags: &mut Vec<Diagnostic>,
+) -> Option<Vec<FactKey>> {
+    if cfg.node(id).kind != CfgNodeKind::Command {
+        return None;
+    }
+    let members = value.member_argv(id)?;
+    let mut family = Vec::with_capacity(members.len());
+    for argv in members {
+        // Each member is a normal concrete argv; resolve it through the oracle check.
+        // All-or-nothing: ANY non-single-establish member kills the whole family.
+        match command_effect(idx, checks, argv, interner, diags).as_slice() {
+            [CommandEffect::Establishes(fact)] => family.push(*fact),
+            _ => return None,
+        }
+    }
+    // An empty family cannot arise (a Members site has ≥1 member), but guard defensively.
+    if family.is_empty() {
+        return None;
+    }
+    Some(family)
+}
+
 /// Build one [`CommandEffect`] from a declared [`EffectCell`] under the resolved
 /// (annotation-kind, entity). Enforces the kind-agreement rule (204 §6): the
 /// annotation is the declared identity, so on a mismatch the cell is re-keyed under
@@ -353,6 +393,29 @@ pub enum SkipClass {
     /// runs for real at apply — never a stale fold (`inv-superposition`: the bit is a
     /// phase-agnostic fact; the collapse stays in the caller).
     QueryResolvable { fact: FactKey, valid: bool },
+    /// An in-loop **Members** establish site (task-L2 item-2, `209` brk-1(b)): the
+    /// for-var is Members-bound and this body site's argv references it, so the site
+    /// evaluates the check ONCE PER MEMBER ([`crate::value::ValueFlow::member_argv`])
+    /// ⇒ a fact-FAMILY — one cell per member, in list order (duplicates kept). Each
+    /// member is a normal concrete establish.
+    ///
+    /// ALL-OR-NOTHING at resolution (item-2): if ANY member's per-member argv fails to
+    /// resolve to a single-establish cell (a ⊤ word, the check refuses, a multi-cell
+    /// verb, …) the WHOLE site is `MustRun` (the family is never partial).
+    ///
+    /// `self_reached` is the item-3(b) **self-reach** bit (the subtle core of the license),
+    /// a phase-agnostic engine fact (`inv-superposition`): the ONLY in-script writers
+    /// reaching this site (including via the loop back-edge) are THIS leaf's own per-member
+    /// establishes — no pre-loop writer, no in-loop sibling, no Opaque (⊤) reached it. The
+    /// license (item-3, in `plan`) may elide the body ONLY when `self_reached` AND every
+    /// member is Converged AND the consumption gates pass. RATIONALE (the fixed-point
+    /// argument, preserved at the license site): the elision's own effect removes the
+    /// body's writes, so under the elision the resting probe stays authoritative
+    /// (elide-all is self-consistent); ANY non-self writer breaks that argument ⇒ refuse.
+    EstablishMembers {
+        members: Vec<FactKey>,
+        self_reached: bool,
+    },
 }
 
 /// Nodes reachable from the program `entry` by forward edges. The reaching-defs
@@ -379,6 +442,46 @@ fn reachable_from_entry(cfg: &Cfg) -> Vec<bool> {
     seen
 }
 
+/// The reaching-defs transfer: `out = in ⊔ gen(node)`, with an optional `suppress` node
+/// whose gen is SKIPPED (task-L2 item-3(b) self-reach). Each cell gens its fact; an Opaque
+/// joins ⊤; Pure/Queries gen nothing. Suppressing a Members site's gen (its self-
+/// establishes) lets the back-edge carry only OTHER writers' cells to its in-state, so a
+/// pristine result there proves only-self-reaches. Pure; monotone (a smaller gen set is
+/// still monotone) and finite-height ⇒ `solve` converges.
+fn reach_transfer(
+    effects: &[Vec<CommandEffect>],
+    incoming: &Reach,
+    node: usize,
+    suppress: Option<usize>,
+) -> Reach {
+    if suppress == Some(node) {
+        return incoming.clone();
+    }
+    let mut state = incoming.clone();
+    for cell in &effects[node] {
+        state = match cell {
+            CommandEffect::Establishes(f) | CommandEffect::Kills(f) => state.with(*f),
+            CommandEffect::Opaque => state.join(&Reach::Top),
+            CommandEffect::Pure | CommandEffect::Queries(_) => state,
+        };
+    }
+    state
+}
+
+/// Does the item-3(b) **self-reach** condition hold at the Members site `site`? Re-solve
+/// the reaching-defs with `site`'s own gen suppressed and check the site's in-state is
+/// pristine (the empty fact-set, NOT ⊤). With the self-establish removed, the in-state is
+/// exactly the cells written by OTHER reaching paths (pre-loop, in-loop sibling, or an
+/// Opaque ⇒ ⊤); pristine ⟺ ONLY this leaf's own establishes reach it. A non-converged
+/// suppressed solve ⇒ `false` (conservative refuse — the safe direction). This is a small
+/// extra solve per Members site (≤ a handful per book; perf is network-dominated anyway).
+fn self_reach_holds(cfg: &Cfg, effects: &[Vec<CommandEffect>], site: usize) -> bool {
+    let sol = solve(cfg, Direction::Forward, |i, incoming: &Reach| {
+        reach_transfer(effects, incoming, i, Some(site))
+    });
+    sol.converged && sol.states.get(site).is_some_and(Reach::is_pristine)
+}
+
 /// Classify every `Command` node for the skip decision: resolve each command's
 /// effect cells (through the book's value-flow [`ValueFlow`] + the oracle's own
 /// `check()`), then a forward reaching-defs pass tells us, per establishing command,
@@ -400,11 +503,32 @@ pub fn classify(
 ) -> Carrier<Vec<(CfgNodeId, SkipClass)>> {
     let n = cfg.node_count();
     let mut diags: Vec<Diagnostic> = Vec::new();
+    // task-L2 item-2: per in-loop Members site, resolve its per-member argv family to a
+    // family of establish cells (`None` if not a Members site or any member fails to
+    // resolve — all-or-nothing). Computed FIRST so `effects` can gen the member cells into
+    // the reaching-defs (a resolved Members site gens its member cells, NOT Opaque — else
+    // its own back-edge would poison its in-state to ⊤ and break item-3's self-reach).
+    let member_families: Vec<Option<Vec<FactKey>>> = (0..n)
+        .map(|i| {
+            let id = CfgNodeId(i as u32);
+            member_family(id, cfg, value, idx, checks, interner, &mut diags)
+        })
+        .collect();
+
     // Precompute each node's effect cells once (interning happens here, with &mut).
-    // A multi-cell verb yields several cells; the reaching-defs gen applies each.
+    // A multi-cell verb yields several cells; the reaching-defs gen applies each. A
+    // resolved Members site's cells are its per-member establishes (item-2), so the
+    // reaching-defs writes exactly those member cells (its self-establishes), keeping its
+    // own in-state pristine-of-others for item-3's self-reach carve-out.
     let effects: Vec<Vec<CommandEffect>> = (0..n)
         .map(|i| {
             let id = CfgNodeId(i as u32);
+            if let Some(family) = &member_families[i] {
+                return family
+                    .iter()
+                    .map(|f| CommandEffect::Establishes(*f))
+                    .collect();
+            }
             match cfg.node(id).kind {
                 CfgNodeKind::Command => {
                     let argv = value.argv_values(id);
@@ -424,15 +548,7 @@ pub fn classify(
     // gen-side of rule-query-validity: because a Query gens nothing, `reach.states`
     // (the IN-state at each node) carries exactly the writes-or-opaque that reached it.
     let reach = solve(cfg, Direction::Forward, |i, incoming: &Reach| {
-        let mut state = incoming.clone();
-        for cell in &effects[i] {
-            state = match cell {
-                CommandEffect::Establishes(f) | CommandEffect::Kills(f) => state.with(*f),
-                CommandEffect::Opaque => state.join(&Reach::Top),
-                CommandEffect::Pure | CommandEffect::Queries(_) => state,
-            };
-        }
-        state
+        reach_transfer(&effects, incoming, i, None)
     });
     debug_assert!(
         reach.converged,
@@ -459,6 +575,34 @@ pub fn classify(
         // reaching-defs above, so its mutations still poison/establish) but is NOT
         // a leaf (find-cli-1, the dn-3 leaf-seam).
         if cfg.node(id).kind != CfgNodeKind::Command || cfg.is_expansion_internal(id) {
+            continue;
+        }
+        // task-L2 item-2: a resolved in-loop Members site (its per-member family resolved
+        // all-or-nothing) is `EstablishMembers` — reachable + converged required like any
+        // establish. An unreachable or non-converged Members site folds to MustRun
+        // (kFAIL-perform).
+        if let Some(family) = &member_families[i]
+            && trust_reach
+            && reachable[i]
+        {
+            // item-3(b) self-reach: the ONLY writers reaching this site (incl. the
+            // back-edge) are THIS leaf's own member-establishes. A cell-set in-state cannot
+            // tell "my own establish reached" from "a DIFFERENT writer wrote the same cell"
+            // (a pre-loop `purge curl` writes the very cell the loop's curl-member
+            // establishes), so we re-solve the reaching-defs with THIS site's gen SUPPRESSED
+            // and ask whether the site's in-state is then pristine (empty, not ⊤). With the
+            // self-establish removed, the back-edge carries only OTHER writers' cells, so a
+            // pristine result ⟺ no pre-loop writer, no in-loop sibling, no Opaque reached
+            // it ⟺ only this leaf's own establishes do. Phase-agnostic (engine fact); `plan`
+            // collapses it.
+            let self_reached = self_reach_holds(cfg, &effects, i);
+            out.push((
+                id,
+                SkipClass::EstablishMembers {
+                    members: family.clone(),
+                    self_reached,
+                },
+            ));
             continue;
         }
         // The elision candidate is a SINGLE establish cell (the corpus shape). A
@@ -1137,5 +1281,168 @@ command__check() {
             entity: EntityRef::Operand(OpaqueToken(i.intern(entity))),
             selector: SelectorId(i.intern("installed")),
         }
+    }
+
+    // --- task-L2 item-2 (`209` brk-1(b)): the in-loop Members fact-family ----------
+
+    #[test]
+    fn in_loop_members_site_classifies_as_establish_members_family() {
+        // THE item-2 unlock: `for pkg in nginx curl; do apt-get install -y "$pkg"; done` ⇒
+        // the body install is `EstablishMembers` carrying the per-member family
+        // [package:nginx#installed, package:curl#installed], in list order. Each member
+        // resolved through the oracle check exactly as a straight-line install would.
+        let (mut i, idx, s) = package_setup();
+        let classes = classify_src(
+            r#"for pkg in nginx curl; do apt-get install -y "$pkg"; done"#,
+            &mut i,
+            &idx,
+        );
+        let nginx = pkg_installed(&mut i, &s, "nginx");
+        let curl = pkg_installed(&mut i, &s, "curl");
+        assert!(
+            classes.contains(&SkipClass::EstablishMembers {
+                members: vec![nginx, curl],
+                self_reached: true,
+            }),
+            "the in-loop Members install resolves a per-member fact-family in list order, self-reached: {classes:?}"
+        );
+    }
+
+    #[test]
+    fn members_family_keeps_duplicate_cells() {
+        // Dups are kept (dash iterates them): `for p in nginx nginx` ⇒ a two-element family
+        // of the SAME cell. (item-1's no-dedup carried into the cell family.)
+        let (mut i, idx, s) = package_setup();
+        let classes = classify_src(
+            r#"for p in nginx nginx; do apt-get install -y "$p"; done"#,
+            &mut i,
+            &idx,
+        );
+        let nginx = pkg_installed(&mut i, &s, "nginx");
+        assert!(
+            classes.contains(&SkipClass::EstablishMembers {
+                members: vec![nginx, nginx],
+                self_reached: true,
+            }),
+            "duplicate members ⇒ duplicate cells in the family: {classes:?}"
+        );
+    }
+
+    #[test]
+    fn members_family_all_or_nothing_one_member_unresolvable_tops() {
+        // ALL-OR-NOTHING (item-2): if ANY member fails to resolve to a single establish,
+        // the WHOLE site is NOT a family. `for p in nginx "a b"; do apt-get install -y $p;
+        // done` — the list is two eligible single-concrete members (`nginx`, `a b`), but the
+        // body's UNQUOTED `$p` field-splits each member's value: `nginx` ⇒ one operand
+        // (resolves to package:nginx#installed), while `a b` ⇒ TWO operands (`apt-get
+        // install -y a b`) ⇒ the check's `[ "$2" = "" ]` guard refuses ⇒ that member is
+        // Opaque. One member unresolvable ⇒ NO family (not a partial [nginx-only] one) ⇒
+        // the in-loop site falls to the single-cell Flat path ⇒ MustRun (the floor).
+        let (mut i, idx, _s) = package_setup();
+        let classes = classify_src(
+            r#"for p in nginx "a b"; do apt-get install -y $p; done"#,
+            &mut i,
+            &idx,
+        );
+        assert!(
+            !classes
+                .iter()
+                .any(|c| matches!(c, SkipClass::EstablishMembers { .. })),
+            "one unresolvable member ⇒ NO family (all-or-nothing), falls to MustRun: {classes:?}"
+        );
+        assert!(
+            classes.contains(&SkipClass::MustRun),
+            "the all-or-nothing failure floors the in-loop site to MustRun: {classes:?}"
+        );
+    }
+
+    #[test]
+    fn members_family_gens_member_cells_not_opaque_post_loop_stays_clean() {
+        // The reaching-defs consequence (load-bearing for item-3's self-reach): a resolved
+        // Members site gens its MEMBER cells into Reach, NOT Opaque. So a post-loop install
+        // of a DISTINCT package is NOT poisoned to Written by the loop. `for pkg in nginx
+        // curl; do apt-get install -y "$pkg"; done; apt-get install -y redis` ⇒ the redis
+        // install stays EstablishAmbient (the loop genned nginx/curl cells, not ⊤).
+        let (mut i, idx, s) = package_setup();
+        let classes = classify_src(
+            "for pkg in nginx curl; do apt-get install -y \"$pkg\"; done\napt-get install -y redis",
+            &mut i,
+            &idx,
+        );
+        assert!(
+            classes.contains(&SkipClass::EstablishAmbient(pkg_installed(
+                &mut i, &s, "redis"
+            ))),
+            "a resolved Members loop gens member cells (not ⊤) ⇒ a distinct post-loop install stays ambient: {classes:?}"
+        );
+    }
+
+    #[test]
+    fn members_family_poisons_post_loop_same_cell() {
+        // Exclusion-check (the other cell): a post-loop install of a cell the LOOP
+        // establishes IS reached by the loop's member-establish ⇒ EstablishWritten (stale
+        // resting probe). `for pkg in nginx curl; …; apt-get install -y nginx` ⇒ the
+        // post-loop nginx install sees the loop's nginx member-cell upstream ⇒ Written.
+        let (mut i, idx, s) = package_setup();
+        let classes = classify_src(
+            "for pkg in nginx curl; do apt-get install -y \"$pkg\"; done\napt-get install -y nginx",
+            &mut i,
+            &idx,
+        );
+        // The post-loop nginx is Written (a member-cell reached it); curl was never
+        // post-installed. No EstablishAmbient for nginx.
+        assert!(
+            classes.contains(&SkipClass::EstablishWritten(pkg_installed(
+                &mut i, &s, "nginx"
+            ))),
+            "a post-loop install of a loop-member cell is Written (the member-establish reaches it): {classes:?}"
+        );
+    }
+
+    #[test]
+    fn members_self_reach_broken_by_pre_loop_writer() {
+        // item-3(b) self-reach FALSE (the `loop-member-external-writer-runs` core): a
+        // PRE-LOOP `apt-get purge curl` kills `package:curl#installed` — a member cell. That
+        // write reaches the in-loop install via the in-state, so the site's in-state is NOT
+        // a subset of its own family ⇒ `self_reached: false`. The family still resolves
+        // (item-2); only the self-reach bit flips ⇒ the license (item-3) will refuse.
+        let (mut i, idx, s) = package_setup();
+        let classes = classify_src(
+            "apt-get purge curl\nfor pkg in nginx curl; do apt-get install -y \"$pkg\"; done",
+            &mut i,
+            &idx,
+        );
+        let nginx = pkg_installed(&mut i, &s, "nginx");
+        let curl = pkg_installed(&mut i, &s, "curl");
+        assert!(
+            classes.contains(&SkipClass::EstablishMembers {
+                members: vec![nginx, curl],
+                self_reached: false,
+            }),
+            "a pre-loop purge of a member cell breaks self-reach (in-state ⊄ family): {classes:?}"
+        );
+    }
+
+    #[test]
+    fn members_self_reach_broken_by_opaque_in_body() {
+        // item-3(b) self-reach FALSE via an in-loop Opaque sibling: `for pkg in nginx curl;
+        // do ufw allow "$pkg"; apt-get install -y "$pkg"; done` — the un-oracled `ufw allow`
+        // is Opaque ⇒ Reach::Top reaches the install ⇒ `self_reached: false`. (The install's
+        // family still resolves; the sibling Opaque is the non-self writer.)
+        let (mut i, idx, s) = package_setup();
+        let classes = classify_src(
+            "for pkg in nginx curl; do ufw allow \"$pkg\"; apt-get install -y \"$pkg\"; done",
+            &mut i,
+            &idx,
+        );
+        let nginx = pkg_installed(&mut i, &s, "nginx");
+        let curl = pkg_installed(&mut i, &s, "curl");
+        assert!(
+            classes.contains(&SkipClass::EstablishMembers {
+                members: vec![nginx, curl],
+                self_reached: false,
+            }),
+            "an in-loop Opaque sibling (⊤) breaks self-reach: {classes:?}"
+        );
     }
 }

@@ -274,7 +274,12 @@ fn facts_from_sites(
     use dorc_plan::ProbeSiteKind;
     let mut by_fact: BTreeMap<dorc_core::FactKey, Observable> = BTreeMap::new();
     for check in &probe.checks {
-        let record = results.records.get(&check.site);
+        // Key the record by (site, member) — a member check (`site N.M`) reads its own
+        // sub-record (task-L2 item-4); an ordinary check (`site N`) reads `member: None`.
+        let record = results.records.get(&RecordKey {
+            site: check.site,
+            member: check.member,
+        });
         let effect = record.map_or(Verdict::Unknown, |r| r.verdict);
         // The firewall: only a VALID Query site's rc is fold-usable as Status.
         let status = match check.site_kind {
@@ -337,16 +342,26 @@ fn merge_observable(a: Observable, b: Observable) -> Observable {
     }
 }
 
-/// The probe results parsed from stdin, keyed by command **site** (the stable
-/// `LeafId`, `inv-site-keyed-results`). One record per site: the reported Effect
-/// [`Verdict`] plus the raw probe-command rc carried alongside it. Whether that rc is
-/// fold-usable is the FIREWALL's decision ([`facts_from_sites`]), not the parser's —
-/// the parser faithfully carries what the probe reported (`inv-superposition`: the
-/// wire transports the observed rc; the phased caller decides which channel, if any,
-/// it feeds).
+/// A record's key: the command **site** (the stable `LeafId`, `inv-site-keyed-results`)
+/// plus an optional MEMBER index (task-L2 item-4): `None` for an ordinary single-fact
+/// record (`site N`), `Some(m)` for member `m` of an in-loop Members family (`site N.M`).
+/// The probe's [`dorc_plan::ProbeCheck`] carries the same `(site, member)` pair, so the
+/// bridge ([`facts_from_sites`]) keys a member record back to that member's cell.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+struct RecordKey {
+    site: dorc_plan::LeafId,
+    member: Option<u32>,
+}
+
+/// The probe results parsed from stdin, keyed by [`RecordKey`] (site, optional member —
+/// `inv-site-keyed-results` + task-L2 item-4). One record per (site, member): the reported
+/// Effect [`Verdict`] plus the raw probe-command rc carried alongside it. Whether that rc
+/// is fold-usable is the FIREWALL's decision ([`facts_from_sites`]), not the parser's —
+/// the parser faithfully carries what the probe reported (`inv-superposition`: the wire
+/// transports the observed rc; the phased caller decides which channel, if any, it feeds).
 #[derive(Debug, Default)]
 struct SiteResults {
-    records: BTreeMap<dorc_plan::LeafId, SiteRecord>,
+    records: BTreeMap<RecordKey, SiteRecord>,
 }
 
 /// One site's reported observation: the Effect-channel [`Verdict`], the raw probe-command
@@ -396,8 +411,8 @@ fn parse_results(input: &str, interner: &mut Interner) -> SiteResults {
         if it.next() != Some("site") {
             continue; // unrecognized line ⇒ drop (kFAIL-perform: no verdict ⇒ run)
         }
-        let Some(site) = it.next().and_then(parse_site) else {
-            continue; // malformed site id ⇒ drop (⇒ Unknown ⇒ run)
+        let Some(key) = it.next().and_then(parse_site_key) else {
+            continue; // malformed site key ⇒ drop (⇒ Unknown ⇒ run)
         };
         // The remaining tokens carry `effect=<word>`, `rc=<n>`, and the reserved
         // `stdout=`/`stderr=` in any order. A missing/garbled `effect` ⇒ Unknown (the safe
@@ -419,7 +434,7 @@ fn parse_results(input: &str, interner: &mut Interner) -> SiteResults {
             }
         }
         out.records.insert(
-            site,
+            key,
             SiteRecord {
                 verdict,
                 rc,
@@ -431,9 +446,21 @@ fn parse_results(input: &str, interner: &mut Interner) -> SiteResults {
     out
 }
 
-/// Parse a site-id token (`LeafId`'s `u32`).
-fn parse_site(tok: &str) -> Option<dorc_plan::LeafId> {
-    tok.parse::<u32>().ok().map(dorc_plan::LeafId)
+/// Parse a record's site key token (task-L2 item-4): `N` ⇒ `RecordKey { site: N, member:
+/// None }`; `N.M` ⇒ `RecordKey { site: N, member: Some(M) }` (member `M` of an in-loop
+/// Members family). Both `N` and `M` are `u32`; a non-numeric / malformed token ⇒ `None`
+/// (the record is dropped ⇒ that cell folds to Unknown ⇒ run, the kFAIL-perform floor).
+fn parse_site_key(tok: &str) -> Option<RecordKey> {
+    match tok.split_once('.') {
+        Some((leaf, member)) => Some(RecordKey {
+            site: dorc_plan::LeafId(leaf.parse::<u32>().ok()?),
+            member: Some(member.parse::<u32>().ok()?),
+        }),
+        None => Some(RecordKey {
+            site: dorc_plan::LeafId(tok.parse::<u32>().ok()?),
+            member: None,
+        }),
+    }
 }
 
 /// Map the probe's three-outcome `effect=` word to a [`Verdict`] (the existing
@@ -485,11 +512,20 @@ mod tests {
         }
     }
 
+    /// A no-member record key (the common single-fact site, `site N`).
+    fn rk(n: u32) -> RecordKey {
+        RecordKey {
+            site: LeafId(n),
+            member: None,
+        }
+    }
+
     /// A one-check probe over `fact` with the given site-kind (the firewall input).
     fn probe1(fact: FactKey, site_kind: ProbeSiteKind) -> ProbePlan {
         ProbePlan {
             checks: vec![ProbeCheck {
                 site: LeafId(0),
+                member: None,
                 fact,
                 site_kind,
                 sh: "{ :; }".to_string(),
@@ -508,19 +544,19 @@ mod tests {
             &mut i,
         );
         assert_eq!(
-            r.records.get(&LeafId(0)).map(|x| x.verdict),
+            r.records.get(&rk(0)).map(|x| x.verdict),
             Some(Verdict::Converged)
         );
         assert_eq!(
-            r.records.get(&LeafId(1)).map(|x| x.verdict),
+            r.records.get(&rk(1)).map(|x| x.verdict),
             Some(Verdict::Diverged)
         );
         assert_eq!(
-            r.records.get(&LeafId(2)).map(|x| x.verdict),
+            r.records.get(&rk(2)).map(|x| x.verdict),
             Some(Verdict::Unknown)
         );
-        assert_eq!(r.records.get(&LeafId(0)).map(|x| x.rc), Some(Rc(0)));
-        assert_eq!(r.records.get(&LeafId(1)).map(|x| x.rc), Some(Rc(1)));
+        assert_eq!(r.records.get(&rk(0)).map(|x| x.rc), Some(Rc(0)));
+        assert_eq!(r.records.get(&rk(1)).map(|x| x.rc), Some(Rc(1)));
     }
 
     #[test]
@@ -536,7 +572,7 @@ mod tests {
         );
         // `site 0 garbled-no-effect` parses the id but no effect= ⇒ Unknown (safe), rc 0.
         assert_eq!(
-            r.records.get(&LeafId(0)).map(|x| x.verdict),
+            r.records.get(&rk(0)).map(|x| x.verdict),
             Some(Verdict::Unknown)
         );
         // `site notanumber` ⇒ no id ⇒ dropped; the dead `declared-rc` line ⇒ dropped.
@@ -555,7 +591,7 @@ mod tests {
         // exists end-to-end, NOT that a check predicts a value (nothing does this round).
         let mut i = Interner::default();
         let r = parse_results("site 0 effect=holds rc=0\n", &mut i);
-        let rec = r.records.get(&LeafId(0)).expect("site 0");
+        let rec = r.records.get(&rk(0)).expect("site 0");
         assert_eq!(
             rec.stdout,
             Predicted::Top,
@@ -571,7 +607,7 @@ mod tests {
             "site 0 effect=holds rc=0 stdout=hello stderr=warn\n",
             &mut i,
         );
-        let rec = r.records.get(&LeafId(0)).expect("site 0");
+        let rec = r.records.get(&rk(0)).expect("site 0");
         assert!(
             matches!(rec.stdout, Predicted::Value(OutClaim(_))),
             "a reserved stdout= is stored as a value claim: {:?}",
@@ -664,12 +700,14 @@ mod tests {
             checks: vec![
                 ProbeCheck {
                     site: LeafId(0),
+                    member: None,
                     fact,
                     site_kind: k0,
                     sh: "{ :; }".to_string(),
                 },
                 ProbeCheck {
                     site: LeafId(1),
+                    member: None,
                     fact,
                     site_kind: k1,
                     sh: "{ :; }".to_string(),

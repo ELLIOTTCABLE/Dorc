@@ -1,0 +1,6 @@
+#!/bin/sh
+# INERT mock (ap-2 exec harness): logs that it ran, mutates NOTHING, exits 0. Under
+# PATH=mocks-only this shim is the only thing that runs (the pre-loop purge AND the loop
+# installs all hit it), so executing a rendered apply is provably safe.
+printf 'ran: %s %s\n' "${0##*/}" "$*" >>"$DORC_LOG"
+exit 0

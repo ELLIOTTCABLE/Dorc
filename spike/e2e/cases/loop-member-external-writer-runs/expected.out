@@ -1,0 +1,26 @@
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc — the record is the out-of-band lane).
+
+# site 1.0: package:nginx#installed
+package_installed__check() { dpkg-query -W "$1" >/dev/null 2>&1; }
+package_installed__check 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'site 1.0 effect=%s rc=%s\n' "$_e" "$_rc"
+# site 1.1: package:curl#installed
+package_installed__check 'curl'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'site 1.1 effect=%s rc=%s\n' "$_e" "$_rc"
+# site:0 skip-unresolvable
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+# loop-member-external-writer-runs (task-L2 item-7c, `209` brk-1(b) — the self-reach core):
+# a PRE-LOOP `apt-get purge curl` writes `package:curl#installed` — a cell the loop's
+# curl-member establishes. So the in-loop install site is NOT self-reached (item-3(b)): a
+# NON-self writer (the purge) reaches it, breaking the fixed-point argument (the elision's
+# own effect no longer accounts for all writes). The license REFUSES even though BOTH members
+# are reported converged (the bait). The loop body RUNS both iterations. Run-set: the purge
+# + both installs. (Pin: convergence alone does NOT license an in-loop members elision; the
+# self-reach carve-out is the load-bearing guard.)
+apt-get purge -y curl
+for pkg in nginx curl; do apt-get install -y "$pkg"; done

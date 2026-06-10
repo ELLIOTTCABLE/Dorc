@@ -6,20 +6,14 @@
 # rc is the raw PROBE-command status (opaque to Dorc — the record is the out-of-band lane).
 
 # site:0 skip-unresolvable
-# site:1 skip-unresolvable
 #!/bin/sh
 # dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
 
-# loop-analyzed-body-runs (task-L1 re-pin of the former loop-degrades-safely; brk-1):
-# a `for` over a literal list now PARSES (no syntax-unsupported diagnostic) and lowers to
-# a real cyclic CFG with a back-edge — NOT an absorbing ⊤ node. The body install RUNS for
-# two reasons that stack (the SAFE degrade, kFAIL-perform):
-#   1. `"$x"` resolves to ⊤ (the for-var JOINs two distinct words a,b ⇒ ⊤) ⇒ Opaque; and
-#   2. even were it a single resolvable word, the in-loop render floor (`209` brk-1) bars
-#      eliding one iteration of a line-granular render.
-# The install BELOW the loop is poisoned to unresolvable: the body's Opaque propagates
-# Reach::Top across the back-edge and OUT, so curl runs too. Both body iterations (a, b)
-# and curl appear in the run-set; nothing elides. (The elision UNLOCK below a *pure* loop
-# is the sibling case loop-post-elision-revives.)
-for x in a b; do apt-get install -y "$x"; done
-apt-get install -y curl
+# loop-analyzed-body-runs (task-L2 re-ground; brk-1(b)): the in-loop render floor STILL
+# holds for a NON-Members in-loop establish. The body install does NOT reference the
+# for-var (`nginx` is constant), so it is NOT a member-family — it takes the single-fact
+# path: a self-establishing constant body becomes EstablishWritten via the back-edge
+# (iteration 2 sees iteration 1's establish), so it is un-probeable AND the in-loop floor
+# bars eliding one iteration. The body runs every iteration. (Contrast the loop-members-*
+# cases, where a body referencing the for-var IS a member-family that elides per item-3.)
+for x in a b; do apt-get install -y nginx; done

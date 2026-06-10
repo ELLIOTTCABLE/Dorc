@@ -173,6 +173,13 @@ pub enum LicenseVia {
     /// rc. Mutates nothing, so convergence does not gate it — only rule-query-validity
     /// + a known rc + the consumption gates do.
     QueryGuard,
+    /// In-loop Members convergence-elision (task-L2 item-3, `209` brk-1(b)): an in-loop
+    /// `EstablishMembers` body leaf whose EVERY member is Converged, that is self-reached
+    /// (only its own per-member establishes reach it), and that passes the consumption
+    /// gates. The all-or-nothing in-loop license — it lifts the in-loop render-floor for
+    /// exactly this shape; any non-converged member, any non-self writer, or a consumed ⊤
+    /// status refuses it (the whole leaf runs).
+    MembersLoop,
 }
 
 /// Why a replacement was licensed — the audit trail a plan UI greys-out as the "why"
@@ -345,6 +352,59 @@ impl ReplaceLicense {
                 ambient: false,
                 grade: Grade::Must,
                 verdict,
+            },
+        })
+    }
+
+    /// Mint a license for an in-loop **Members** body leaf's convergence-elision (task-L2
+    /// item-3, `209` brk-1(b)) — the all-or-nothing in-loop license. Implemented EXACTLY as
+    /// the four conjuncts of item-3, every ambiguity resolving to REFUSE:
+    ///
+    /// (a) EVERY member's fact is Converged — `member_verdicts` is the per-member host
+    ///     verdict (Effect channel); a single non-Converged member refuses (the family is
+    ///     all-or-nothing — partial-member elision is a deferred direction, not this).
+    /// (b) `self_reached` (the engine's item-3(b) bit): the only in-script writers reaching
+    ///     this site are its own per-member establishes (no pre-loop/sibling/Opaque). The
+    ///     RATIONALE this preserves: the elision's own effect removes the body's writes, so
+    ///     under the elision the resting probe stays authoritative (a fixed-point argument:
+    ///     elide-all is self-consistent); ANY non-self writer breaks that argument ⇒ refuse.
+    /// (c) the consumption gates pass ([`consumption_ok`]): the in-loop leaf's status is
+    ///     errexit/`$?`-marked by the existing machinery — under fork-mutator-rc a mutator's
+    ///     rc is ⊤, so a CONSUMED status (errexit-region, or a post-loop `$?` reading the
+    ///     body, item-6a) blocks; a consumed Stdout/Stderr or render-floor blocks too.
+    /// (d) per-member-resolvable (item-4): a member with no probe-sourced observation
+    ///     arrives `Verdict::Unknown` ⇒ not Converged ⇒ (a) refuses it. So (d) is subsumed.
+    ///
+    /// The leaf still ITERATES N times over `true` (the render substitutes a `true` body —
+    /// observable-preserving given (a)+(c)). `member_verdicts` empty ⇒ refuse (defensive;
+    /// a Members site has ≥1 member). The witness records the FIRST member's fact as the
+    /// representative `fact` (the family is the establish; provenance names one cell).
+    #[must_use]
+    fn prove_members_replaceable(
+        members: &[FactKey],
+        member_verdicts: &[Verdict],
+        self_reached: bool,
+        consumed: &May<Powerset<Channel>>,
+        status: Predicted<Rc>,
+    ) -> Option<ReplaceLicense> {
+        let representative = *members.first()?;
+        if !self_reached {
+            return None;
+        }
+        // (a) all members Converged — a non-Converged (Diverged/Unknown) member refuses.
+        if member_verdicts.is_empty() || !member_verdicts.iter().all(|v| *v == Verdict::Converged) {
+            return None;
+        }
+        // (c) the consumption gates (the in-loop leaf's status is ⊤ for a mutator —
+        // fork-mutator-rc — so a consumed status blocks; stdout/stderr/render-floor block).
+        consumption_ok(consumed, status).then_some(ReplaceLicense {
+            fact: representative,
+            derivation: Derivation {
+                fact: representative,
+                via: LicenseVia::MembersLoop,
+                ambient: true,
+                grade: Grade::Must,
+                verdict: Verdict::Converged,
             },
         })
     }
@@ -546,8 +606,13 @@ pub struct ProbeCheck {
     /// [`LeafId`] the apply plan assigns the source command. Two same-command sites
     /// carry distinct ids.
     pub site: LeafId,
-    /// The resolved cell this site establishes or queries (the probe checks whether
-    /// it holds).
+    /// The MEMBER index, for an in-loop Members site (task-L2 item-4): `Some(idx)` ⇒ this
+    /// check is member `idx` of a fact-FAMILY, emitting a sub-keyed record `site
+    /// <leafid>.<idx>`; `None` ⇒ an ordinary single-fact site, record `site <leafid>`. The
+    /// member index ranges over the loop's members in list order (duplicates kept).
+    pub member: Option<u32>,
+    /// The resolved cell this site (or member) establishes or queries (the probe checks
+    /// whether it holds). For a Members site this is the per-member cell.
     pub fact: FactKey,
     /// Establish-class or Query-class — the firewall discriminant ([`ProbeSiteKind`]).
     pub site_kind: ProbeSiteKind,
@@ -637,15 +702,20 @@ impl ProbePlan {
         let mut defined = BTreeSet::new();
         for check in &self.checks {
             let fn_name = check_fn_name(interner, check.fact.kind, check.fact.selector);
+            // The record's site key: `N` for a single-fact site, `N.M` for member M of an
+            // in-loop Members family (item-4). The wrapper is still deduped per
+            // `(kind, selector)` CELL — a Members family of one kind ships ONE wrapper,
+            // invoked per member with each member's operand bound.
+            let key = render::probe::site_key(check.site, check.member);
             out.push_str(&render::probe::site_comment(
-                check.site,
+                &key,
                 &fact_label(interner, check.fact),
             ));
             if defined.insert((check.fact.kind, check.fact.selector)) {
                 out.push_str(&render::probe::wrapper_def(&fn_name, &check.sh));
             }
             let invocation = render::probe::invocation(&fn_name, check.fact.entity, interner);
-            out.push_str(&render::probe::record_scaffold(&invocation, check.site));
+            out.push_str(&render::probe::record_scaffold(&invocation, &key));
         }
         // Un-resolvable sites are recorded as comments (never invoked): transparency
         // for the human reading the artifact and the D3 argv-echo differential.
@@ -714,7 +784,28 @@ pub fn compile_probe(
 ) -> ProbePlan {
     let mut checks = Vec::new();
     let mut unresolvable = Vec::new();
-    for (site, _node, class) in site_order(ast, cfg, classes) {
+    for (site, node, class) in site_order(ast, cfg, classes) {
+        // item-6b (20O find-6 / 20M §7): an in-loop QUERY site stays render-floored this
+        // round (`disposition_for` runs it regardless), so probing it is wasted remote
+        // work — and with the member-precision wire (item-4) it would ship per-member. So
+        // an in-loop Query is recorded unresolvable (never invoked). An in-loop MEMBERS
+        // establish is the one in-loop shape that DOES ship a (per-member) check (item-4),
+        // handled below; every other in-loop establish is single-fact and floored, so it
+        // takes the ordinary resolvable path but is never elided (the floor in `plan`).
+        if cfg.in_loop_body(node) && matches!(class, SkipClass::QueryResolvable { .. }) {
+            unresolvable.push(site);
+            continue;
+        }
+        // An in-loop MEMBERS establish ships ONE check PER MEMBER (item-4): each member is
+        // a concrete per-member cell, all-or-nothing — if any member's probe has no body,
+        // the WHOLE site is unresolvable (`can't-probe ⇒ can't-elide`, all members or
+        // none). The records it emits are sub-keyed `site <leafid>.<member-idx>`. (The probe
+        // queries every member regardless of `self_reached` — that bit gates the apply-side
+        // license, not what the probe needs to learn.)
+        if let SkipClass::EstablishMembers { members, .. } = class {
+            push_member_checks(&mut checks, &mut unresolvable, site, members, &probe_body);
+            continue;
+        }
         // Both an EstablishAmbient and a (resolvable) Query site ship a check — each
         // is probe-resolvable iff its `(kind, selector)` cell resolves to a declared
         // probe (task-P/find-1: a per-selector probe, or the kind-default ONLY when the
@@ -736,6 +827,7 @@ pub fn compile_probe(
             Some((fact, site_kind)) => match probe_body(fact.kind, fact.selector) {
                 Some(sh) => checks.push(ProbeCheck {
                     site,
+                    member: None,
                     fact,
                     site_kind,
                     sh,
@@ -749,6 +841,37 @@ pub fn compile_probe(
         checks,
         unresolvable,
     }
+}
+
+/// Compile the per-member checks for an in-loop MEMBERS establish site (item-4): one
+/// [`ProbeCheck`] per member, each carrying its `member` index and per-member cell. ALL
+/// members must have a declared probe body, or the WHOLE site is unresolvable — the
+/// all-or-nothing in-loop license (item-3) cannot elide a partial-member set, so a
+/// missing probe on any member kills the site (`can't-probe ⇒ can't-elide`). The records
+/// these emit are sub-keyed `site <leafid>.<member-idx>` ([`ProbeCheck::member`]).
+fn push_member_checks(
+    checks: &mut Vec<ProbeCheck>,
+    unresolvable: &mut Vec<LeafId>,
+    site: LeafId,
+    members: &[FactKey],
+    probe_body: &impl Fn(KindId, SelectorId) -> Option<String>,
+) {
+    let mut staged = Vec::with_capacity(members.len());
+    for (idx, fact) in members.iter().enumerate() {
+        let Some(sh) = probe_body(fact.kind, fact.selector) else {
+            // One member un-probeable ⇒ the whole site is unresolvable (all or none).
+            unresolvable.push(site);
+            return;
+        };
+        staged.push(ProbeCheck {
+            site,
+            member: Some(u32::try_from(idx).unwrap_or(u32::MAX)),
+            fact: *fact,
+            site_kind: ProbeSiteKind::Establish,
+            sh,
+        });
+    }
+    checks.extend(staged);
 }
 
 /// Build a plan from the analysis result + an injected host **observation** oracle.
@@ -792,7 +915,9 @@ pub fn build_plan(
                 SkipClass::EstablishAmbient(f)
                 | SkipClass::EstablishWritten(f)
                 | SkipClass::QueryResolvable { fact: f, .. } => *f,
-                SkipClass::MustRun => return None,
+                // An in-loop Members site is never a fold controller (its body is
+                // render-floored / multi-leaf-deferred), so it carries no fold status.
+                SkipClass::EstablishMembers { .. } | SkipClass::MustRun => return None,
             };
             Some((cfg.node(*node).ast, fact))
         })
@@ -808,13 +933,24 @@ pub fn build_plan(
         .map(|(node, class)| {
             let ast_id = cfg.node(*node).ast;
             let sh = command_text(src, ast, ast_id);
-            let observed = match class {
-                SkipClass::EstablishAmbient(f)
-                | SkipClass::EstablishWritten(f)
-                | SkipClass::QueryResolvable { fact: f, .. } => Some(observe(*f)),
-                SkipClass::MustRun => None,
+            // An in-loop Members site takes its own all-or-nothing license path (item-3),
+            // which needs the PER-MEMBER observations; every other class takes the
+            // single-fact `disposition_for`.
+            let disposition = if let SkipClass::EstablishMembers {
+                members,
+                self_reached,
+            } = class
+            {
+                members_disposition(cfg, *node, members, *self_reached, &observe)
+            } else {
+                let observed = match class {
+                    SkipClass::EstablishAmbient(f)
+                    | SkipClass::EstablishWritten(f)
+                    | SkipClass::QueryResolvable { fact: f, .. } => Some(observe(*f)),
+                    SkipClass::EstablishMembers { .. } | SkipClass::MustRun => None,
+                };
+                disposition_for(cfg, &fold, *node, class, ast_id, observed)
             };
-            let disposition = disposition_for(cfg, &fold, *node, class, ast_id, observed);
             Step {
                 leaf: LeafId(0),
                 ast: ast_id,
@@ -852,13 +988,13 @@ fn disposition_for(
     observed: Option<Observable>,
 ) -> Disposition {
     // (0) the in-loop render floor (task-L1, `209` brk-1): a leaf inside a loop body or
-    // condition is MustRun this round. The line-granular render cannot elide a SINGLE
-    // iteration (eliding the line removes the command from EVERY iteration), and a
-    // per-iteration `&&`/`||` deadness is likewise not line-expressible — so an in-loop
-    // leaf never mints a `Replace`/`Omit` license. This is the recorded floor the
-    // member-elision slice (`209` brk-1 (b): rewrite the iteration list to the diverged
-    // members) later lifts; POST-loop leaves are NOT in-loop, so the value below a
-    // converged loop unlocks normally (the brk-1 value-unlock).
+    // condition is MustRun — UNLESS it is the in-loop Members shape, which is routed to
+    // `members_disposition` BEFORE this function (task-L2 item-3 lifts the floor for
+    // exactly that shape). For every OTHER in-loop leaf (a single-fact establish, an
+    // in-loop Query, the loop condition) the floor stands: the line-granular render still
+    // cannot elide a single iteration, and per-iteration `&&`/`||` deadness is not
+    // line-expressible. POST-loop leaves are NOT in-loop, so the value below a converged
+    // loop unlocks normally (the brk-1 value-unlock).
     if cfg.in_loop_body(node) {
         return Disposition::Run;
     }
@@ -907,6 +1043,46 @@ fn disposition_for(
             }
         }
         _ => Disposition::Run,
+    }
+}
+
+/// The disposition for an in-loop **Members** body leaf (task-L2 item-3, `209` brk-1(b)) —
+/// the all-or-nothing in-loop license. Observe EVERY member's host verdict (the Effect
+/// channel), then mint a [`LicenseVia::MembersLoop`] `Replace` via
+/// [`ReplaceLicense::prove_members_replaceable`] iff all are Converged, the site is
+/// `self_reached`, and the consumption gates pass. The stand-in is always `true` (the body
+/// is replaced by a `true` that the loop still iterates N times over — observable-
+/// preserving given all-converged + the consumed-status gate). On refusal the leaf runs.
+///
+/// Top-containment (16G hole-5): a ⊤-successor leaf is never replaced (a loop body leaf
+/// with a `cmd &` shape, say). The in-loop leaf's status is ⊤ for a mutator (fork-mutator-
+/// rc), so a consumed status (errexit-region, or a post-loop `$?` reading the body —
+/// item-6a) blocks via the consumption gate, exactly as the single-fact path.
+fn members_disposition(
+    cfg: &Cfg,
+    node: CfgNodeId,
+    members: &[FactKey],
+    self_reached: bool,
+    observe: &impl Fn(FactKey) -> Observable,
+) -> Disposition {
+    if has_top_successor(cfg, node) {
+        return Disposition::Run;
+    }
+    let member_verdicts: Vec<Verdict> = members.iter().map(|f| observe(*f).effect).collect();
+    let consumed = May(cfg.consumed_observables(node).clone());
+    // The in-loop body leaf's status: a mutator's rc is ⊤ (fork-mutator-rc), and a Members
+    // site is a mutator (an establish), so ⊤. The consumption gate blocks a consumed ⊤.
+    let status = Predicted::Top;
+    match ReplaceLicense::prove_members_replaceable(
+        members,
+        &member_verdicts,
+        self_reached,
+        &consumed,
+        status,
+    ) {
+        // The body is substituted by `true` (the loop still iterates N times over it).
+        Some(license) => Disposition::Replace(license, StandIn::True),
+        None => Disposition::Run,
     }
 }
 
@@ -1943,6 +2119,34 @@ apt_get__check() {
         (plan, i)
     }
 
+    /// Run the pipeline on `src`, answering each `package:<entity>#installed` cell with
+    /// the verdict `verdict_of(entity)` returns (every non-package fact ⇒ Unknown). For the
+    /// task-L2 member tests that need DIFFERENT verdicts per member (e.g. nginx converged,
+    /// curl diverged). Status stays ⊤ (fork-mutator-rc), as `plan_for`.
+    fn plan_for_pkgs(src: &str, verdict_of: impl Fn(&str) -> Verdict) -> (Plan, Interner) {
+        let mut i = Interner::default();
+        let idx = package_index(&mut i);
+        let package = KindId(i.intern("package"));
+        let installed = SelectorId(i.intern("installed"));
+        let parsed = dorc_syntax::parse(src);
+        let cfg = dorc_analysis::cfg::build(&parsed.value).value;
+        let value = dorc_analysis::value::analyze(&cfg, &parsed.value, &mut i);
+        let checks = vec![dorc_oracle::check::lift_checks(&mut i, CORPUS_CHECK_SRC).value];
+        let classes = dorc_analysis::effect::classify(&cfg, &value, &idx, &checks, &mut i).value;
+        // Resolve each package entity's verdict by its interned operand text. The closure
+        // captures the entity strings it cares about; an unknown entity ⇒ Unknown.
+        let plan = build_plan(src, &parsed.value, &cfg, &classes, |f| {
+            if f.kind == package
+                && f.selector == installed
+                && let EntityRef::Operand(tok) = f.entity
+            {
+                return Observable::verdict_only(verdict_of(i.resolve(tok.0)));
+            }
+            Observable::verdict_only(Verdict::Unknown)
+        });
+        (plan, i)
+    }
+
     fn find<'a>(plan: &'a Plan, needle: &str) -> &'a Step {
         match plan.steps.iter().find(|s| s.sh.contains(needle)) {
             Some(s) => s,
@@ -2117,21 +2321,41 @@ apt_get__check() {
     }
 
     #[test]
-    fn in_loop_establish_runs_even_when_converged() {
-        // task-L1 in-loop render floor (`209` brk-1): a loop-body establish is MustRun
-        // this round EVEN WHEN the host reports it converged — the line-granular render
-        // cannot elide a single iteration. `for f in nginx; do apt-get install -y "$f";
-        // done` resolves the body install to package:nginx#installed (single-word for),
-        // and a Converged host would normally license a Replace — but the in-loop floor
-        // forces Run. (The post-elision-revives test below proves the floor is in-loop-
-        // scoped, not a blanket regression.)
+    fn in_loop_constant_establish_runs_even_when_converged() {
+        // The in-loop render floor STILL holds (task-L1 / task-L2 item-3) for an in-loop
+        // establish that is NOT a Members site — a CONSTANT install not referencing the
+        // for-var. `for f in a b; do apt-get install -y nginx; done`: nginx is the same
+        // cell every iteration (no member-family), so it takes the single-fact path and
+        // the in-loop floor in `disposition_for` forces Run even when Converged. (task-L2
+        // lifts the floor ONLY for the Members shape, below.)
+        let (plan, _) = plan_for(
+            "for f in a b; do apt-get install -y nginx; done\n",
+            Verdict::Converged,
+        );
+        assert!(
+            matches!(find(&plan, "apt-get install").disposition, Disposition::Run),
+            "a CONSTANT in-loop establish RUNS despite Converged (the floor still holds for non-Members)"
+        );
+    }
+
+    #[test]
+    fn in_loop_members_single_member_elides_when_converged() {
+        // task-L2 item-3: a single-word for-loop's body install IS a (1-member) Members
+        // site, so a Converged host + self-reach + no consumer ⇒ the in-loop floor LIFTS
+        // and the body is Replaced by `true` (the loop still iterates once over `true`).
+        // `for f in nginx; do apt-get install -y "$f"; done` ⇒ Replace. (Pre-L2 this was
+        // the L1 floor's RUN; the member-elision slice unlocks it — the brk-1(b) payoff.)
         let (plan, _) = plan_for(
             "for f in nginx; do apt-get install -y \"$f\"; done\n",
             Verdict::Converged,
         );
         assert!(
-            matches!(find(&plan, "apt-get install").disposition, Disposition::Run),
-            "an in-loop establish RUNS despite Converged (the in-loop render floor)"
+            matches!(
+                find(&plan, "apt-get install").disposition,
+                Disposition::Replace(_, StandIn::True)
+            ),
+            "a converged single-member in-loop install elides to `true` (item-3): {:?}",
+            find(&plan, "apt-get install").disposition
         );
     }
 
@@ -2153,6 +2377,180 @@ apt_get__check() {
             ),
             "a converged install below a pure loop ELIDES (the brk-1 value-unlock): {:?}",
             find(&plan, "apt-get install").disposition
+        );
+    }
+
+    // --- task-L2 item-3: the all-or-nothing in-loop Members license (plan layer) -------
+
+    #[test]
+    fn members_all_converged_elides_to_true() {
+        // THE item-3 payoff: `for pkg in nginx curl; do apt-get install -y "$pkg"; done`,
+        // BOTH members converged ⇒ the body install is Replaced by `true` (the loop still
+        // iterates twice over `true`). The brk-1(b) payoff at the plan layer.
+        let (plan, _) = plan_for_pkgs(
+            r#"for pkg in nginx curl; do apt-get install -y "$pkg"; done"#,
+            |_| Verdict::Converged,
+        );
+        assert!(
+            matches!(
+                find(&plan, "apt-get install").disposition,
+                Disposition::Replace(_, StandIn::True)
+            ),
+            "both members converged ⇒ in-loop install elides to `true`: {:?}",
+            find(&plan, "apt-get install").disposition
+        );
+    }
+
+    #[test]
+    fn members_partial_diverged_runs_whole_leaf() {
+        // item-3(a) all-or-nothing: ONE member diverged ⇒ the WHOLE leaf runs (no
+        // partial-member elision this slice). nginx converged, curl DIVERGED ⇒ Run.
+        let (plan, _) = plan_for_pkgs(
+            r#"for pkg in nginx curl; do apt-get install -y "$pkg"; done"#,
+            |e| {
+                if e == "curl" {
+                    Verdict::Diverged
+                } else {
+                    Verdict::Converged
+                }
+            },
+        );
+        assert!(
+            matches!(find(&plan, "apt-get install").disposition, Disposition::Run),
+            "one diverged member ⇒ the whole leaf RUNS (all-or-nothing): {:?}",
+            find(&plan, "apt-get install").disposition
+        );
+    }
+
+    #[test]
+    fn members_external_writer_runs_despite_both_converged() {
+        // item-3(b) self-reach: a PRE-LOOP `apt-get purge curl` writes a member cell ⇒
+        // self-reach broken ⇒ NO license, EVEN with BOTH members converged (the bait). The
+        // resting probe is no longer authoritative under the elision (the purge's effect is
+        // a non-self writer). The install RUNS.
+        let (plan, _) = plan_for_pkgs(
+            "apt-get purge curl\nfor pkg in nginx curl; do apt-get install -y \"$pkg\"; done",
+            |_| Verdict::Converged,
+        );
+        // The in-loop install (the SECOND `apt-get install` leaf — the purge is `apt-get
+        // purge`) runs.
+        let install = plan
+            .steps
+            .iter()
+            .find(|s| s.sh.contains("apt-get install"))
+            .expect("the in-loop install leaf");
+        assert!(
+            matches!(install.disposition, Disposition::Run),
+            "a pre-loop purge of a member cell breaks self-reach ⇒ the install RUNS despite both-converged: {:?}",
+            install.disposition
+        );
+    }
+
+    #[test]
+    fn members_in_loop_sibling_writer_runs_despite_both_converged() {
+        // item-3(b) self-reach, the IN-LOOP-SIBLING-via-back-edge case (the adversarial
+        // hunt the strain note flagged as the top crosscheck target): a sibling `apt-get
+        // purge curl` INSIDE the loop body writes a member cell. The suppressed-solve must
+        // catch it — the SIBLING's gen is NOT suppressed (only the install's own is), so the
+        // purge's `curl#installed` reaches the install's in-state via the back-edge as a
+        // NON-self writer ⇒ self-reach false ⇒ the install RUNS despite both members reported
+        // converged. (Proves the suppressed-solve is sound against back-edge siblings, not
+        // just pre-loop writers.)
+        let (plan, _) = plan_for_pkgs(
+            r#"for pkg in nginx curl; do apt-get install -y "$pkg"; apt-get purge -y curl; done"#,
+            |_| Verdict::Converged,
+        );
+        let install = plan
+            .steps
+            .iter()
+            .find(|s| s.sh.contains("apt-get install"))
+            .expect("the in-loop install leaf");
+        assert!(
+            matches!(install.disposition, Disposition::Run),
+            "an in-loop sibling purge of a member cell breaks self-reach ⇒ the install RUNS: {:?}",
+            install.disposition
+        );
+    }
+
+    #[test]
+    fn members_var_reassign_body_runs() {
+        // item-1 degrade at the plan layer: a body reassignment of the for-var ⇒ NOT a
+        // Members site (the value-plane degraded to None) ⇒ the in-loop floor runs it.
+        // `for pkg in nginx curl; do pkg=evil; apt-get install -y "$pkg"; done` ⇒ Run
+        // (the install's argv is `evil`-or-⊤, never a converged member family).
+        let (plan, _) = plan_for_pkgs(
+            r#"for pkg in nginx curl; do pkg=evil; apt-get install -y "$pkg"; done"#,
+            |_| Verdict::Converged,
+        );
+        assert!(
+            matches!(find(&plan, "apt-get install").disposition, Disposition::Run),
+            "a body var-reassign ⇒ not a Members site ⇒ the floor runs it: {:?}",
+            find(&plan, "apt-get install").disposition
+        );
+    }
+
+    #[test]
+    fn members_license_unit_all_conjuncts() {
+        // The license minter (item-3) directly, each conjunct (anti-masking: a constructed
+        // family + verdicts, not a hand-injected disposition). nginx+curl cells.
+        let mut i = Interner::default();
+        let kind = KindId(i.intern("package"));
+        let selector = SelectorId(i.intern("installed"));
+        let mut cell = |e: &str| FactKey {
+            kind,
+            entity: EntityRef::Operand(OpaqueToken(i.intern(e))),
+            selector,
+        };
+        let family = vec![cell("nginx"), cell("curl")];
+        let both_converged = vec![Verdict::Converged, Verdict::Converged];
+        // All converged + self-reached + quiet ⇒ license.
+        assert!(
+            ReplaceLicense::prove_members_replaceable(
+                &family,
+                &both_converged,
+                true,
+                &quiet(),
+                Predicted::Top,
+            )
+            .is_some(),
+            "all-converged + self-reached + quiet ⇒ license"
+        );
+        // One diverged ⇒ no license (all-or-nothing).
+        assert!(
+            ReplaceLicense::prove_members_replaceable(
+                &family,
+                &[Verdict::Converged, Verdict::Diverged],
+                true,
+                &quiet(),
+                Predicted::Top,
+            )
+            .is_none(),
+            "one diverged member ⇒ no license"
+        );
+        // self-reach false ⇒ no license (even all-converged).
+        assert!(
+            ReplaceLicense::prove_members_replaceable(
+                &family,
+                &both_converged,
+                false,
+                &quiet(),
+                Predicted::Top,
+            )
+            .is_none(),
+            "self-reach false ⇒ no license"
+        );
+        // A consumed StatusRelaxable with the (⊤) mutator status ⇒ blocked (item-3(c) — the
+        // errexit / post-loop-`$?` consumer with a ⊤ rc). This is why item-6a matters.
+        assert!(
+            ReplaceLicense::prove_members_replaceable(
+                &family,
+                &both_converged,
+                true,
+                &May(Powerset::singleton(Channel::StatusRelaxable)),
+                Predicted::Top,
+            )
+            .is_none(),
+            "a consumed status with a ⊤ mutator rc ⇒ blocked (item-3(c))"
         );
     }
 

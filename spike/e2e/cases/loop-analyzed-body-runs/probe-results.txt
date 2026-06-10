@@ -1,8 +1,9 @@
 # probe-results: site-keyed records (task-D1 WIRE). Grammar:
 #   site <leafid> effect=<holds|absent|cant-tell>
-# NO records: the loop body install (leaf 0) is Opaque (⊤ for-var operand), which propagates
-# Reach::Top across the back-edge and poisons the curl install (leaf 1) to EstablishWritten.
-# Neither site is probe-resolvable, so the probe emits NO record (two `skip-unresolvable`
-# comments). With nothing resolvable, both installs simply run (the SAFE degrade,
-# kFAIL-perform). The run-set (a, b from the loop body + curl) is the real assertion; the
-# empty fixture makes gate-1 parity hold vacuously.
+# NO records: the constant in-loop install (leaf 0) is a self-establishing body that
+# becomes EstablishWritten via the back-edge (iteration 2 sees iteration 1's establish),
+# so it is un-probeable (one `skip-unresolvable` comment) — and the in-loop render floor
+# would bar eliding one iteration anyway. With nothing resolvable the body simply runs
+# every iteration (the SAFE degrade, kFAIL-perform). The run-set (nginx twice, once per
+# loop iteration a/b) is the real assertion; the empty fixture makes gate-1 parity hold
+# vacuously.

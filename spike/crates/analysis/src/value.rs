@@ -74,6 +74,16 @@ pub struct ValueFlow {
     /// Per `Command` node: its resolved argv (command word first, then args, in order).
     /// Absent for non-`Command` nodes. When `!converged`, populated entirely with `⊤`.
     argv: BTreeMap<CfgNodeId, Vec<ValueOf>>,
+    /// Per in-loop body `Command` node: the PER-MEMBER resolved argvs (task-L2 item-1/2,
+    /// `209` brk-1(b)). Present ONLY for a site inside a `for`-loop whose iteration var is
+    /// **Members**-bound (every list word a single concrete, dups kept) and whose argv
+    /// references that var — the one place the Members value is read (it never flows
+    /// through the general transfer, item-1). Outer `Vec` = the members in list order
+    /// (duplicates kept — dash iterates them); inner `Vec` = that member's argv (the
+    /// for-var substituted to that one concrete, so each is a normal concrete argv). A
+    /// site whose argv has a non-member `⊤` word, or whose loop is Members-ineligible,
+    /// is ABSENT here ⇒ the consumer falls back to the (⊤) [`argv`] entry.
+    member_argv: BTreeMap<CfgNodeId, Vec<Vec<ValueOf>>>,
     converged: bool,
 }
 
@@ -89,6 +99,18 @@ impl ValueFlow {
     #[must_use]
     pub fn argv_values(&self, node: CfgNodeId) -> Vec<ValueOf> {
         self.argv.get(&node).cloned().unwrap_or_default()
+    }
+
+    /// The PER-MEMBER resolved argvs of an in-loop Members site (task-L2 item-1/2), or
+    /// `None` if this site is not a Members site (its loop is ineligible, or its argv does
+    /// not reference the for-var, or any member word fails to resolve concretely). Each
+    /// inner argv is a normal concrete argv (the for-var substituted to one member); the
+    /// consumer evaluates the check once per member ⇒ a fact-family (item-2). The order is
+    /// the list order with duplicates kept (dash iterates them; dedup would mis-model
+    /// `for x in a a`). See [`ValueFlow::member_argv`].
+    #[must_use]
+    pub fn member_argv(&self, node: CfgNodeId) -> Option<&Vec<Vec<ValueOf>>> {
+        self.member_argv.get(&node)
     }
 
     /// Did the underlying worklist reach a fixed point? `false` ⇒ all queries are all-`⊤`
@@ -146,8 +168,13 @@ pub fn analyze(cfg: &Cfg, ast: &Ast, interner: &mut Interner) -> ValueFlow {
         argv.insert(id, intern_argv(words, interner));
     }
 
+    // task-L2 item-1/2: the per-member argvs for in-loop Members sites — a SEPARATE pass
+    // off the same converged solution (the Members value never rode the lattice, item-1).
+    let member_argv = prep.members_pass(&solution.states, solution.converged, interner);
+
     ValueFlow {
         argv,
+        member_argv,
         converged: solution.converged,
     }
 }
@@ -489,6 +516,13 @@ impl<'a> Prep<'a> {
         let Some(incoming) = states.get(id.index()) else {
             return vec![Abstract::Top; words.len()];
         };
+        self.resolve_site_words(words, incoming)
+    }
+
+    /// Resolve a `Simple`'s `words` against a given environment to the flattened argv
+    /// slots (the shared core of [`site_argv`] and the per-member [`members_pass`]). Each
+    /// word expands to ≥0 slots per the glob/tilde-hazard + field-split rules.
+    fn resolve_site_words(&self, words: &[AstId], env: &ValueEnv) -> Vec<Abstract> {
         words
             .iter()
             .flat_map(|&w| {
@@ -499,10 +533,263 @@ impl<'a> Prep<'a> {
                 if word_expansion_hazard(self.ast, w) {
                     return vec![Abstract::Top];
                 }
-                resolve_recipe_fields(&recipe_of_word(self.ast, w), incoming, self.ifs_pristine)
+                resolve_recipe_fields(&recipe_of_word(self.ast, w), env, self.ifs_pristine)
             })
             .collect()
     }
+
+    /// Compute the per-member argvs for every in-loop **Members** site (task-L2 item-1/2,
+    /// `209` brk-1(b)). A SEPARATE pass off the converged solution — the Members value
+    /// never rode the dataflow lattice (item-1), so this reads each eligible `for`-loop's
+    /// list off the AST and substitutes each concrete member into the body sites' argv.
+    ///
+    /// Eligibility (item-1, STRICT — bias every ambiguity to ineligible ⇒ the existing ⊤):
+    /// * the body contains NO nested loop (this slice is single-level only; nested-loop
+    ///   member interactions are the deferred multi-leaf case, item-3 "stay floored"); and
+    /// * every list WORD resolves to a single concrete literal (post-F1: no glob/tilde; a
+    ///   split-literal list IS fine — it composes to more members); and
+    /// * the for-var is NOT reassigned anywhere inside the body (an assignment, an
+    ///   lvalue-builtin naming it, a nested binder, or an unmodeled ⊤-region) — any such
+    ///   reassignment ⇒ the Members binding is invalid ⇒ omit the loop (the consumer falls
+    ///   back to the Flat-⊤ `argv`, the existing degrade).
+    ///
+    /// A non-converged solve yields no Members sites (the all-⊤ fold, `16P` DP-9). Only a
+    /// body site whose argv actually REFERENCES the for-var (its per-member argvs differ)
+    /// is recorded — a body site that ignores the var has no member-family (it is the same
+    /// concrete every iteration; the ordinary `argv` entry already serves it).
+    fn members_pass(
+        &self,
+        states: &[ValueEnv],
+        converged: bool,
+        interner: &mut Interner,
+    ) -> BTreeMap<CfgNodeId, Vec<Vec<ValueOf>>> {
+        let mut out = BTreeMap::new();
+        if !converged {
+            return out;
+        }
+        for (head_id, node) in self.cfg.iter() {
+            if node.kind != CfgNodeKind::LoopHead {
+                continue;
+            }
+            // Single-level only this slice (item-3): a `for` head that is ITSELF inside an
+            // enclosing loop is the deferred multi-leaf/nested case ⇒ refuse (its body
+            // sites' members interact with the outer iteration). With `body_has_nested_loop`
+            // below, BOTH directions of a nested pair are refused.
+            if self.cfg.in_loop_body(head_id) {
+                continue;
+            }
+            let NodeKind::ForLoop {
+                var, words, body, ..
+            } = &self.ast.node(node.ast).kind
+            else {
+                continue; // while/until head: no loop var ⇒ never Members
+            };
+            let Some(members) = self.eligible_members(words, var, *body, states, head_id) else {
+                continue;
+            };
+            self.record_member_sites(*body, var, &members, states, interner, &mut out);
+        }
+        out
+    }
+
+    /// The eligible Members list for a `for`-loop, or `None` if ineligible (item-1). The
+    /// list is resolved against the loop head's INCOMING state (the same state
+    /// `transfer_loop_head` joins), so a split-literal list composes correctly; duplicates
+    /// are KEPT (dash iterates them — dedup would mis-count `for x in a a`).
+    fn eligible_members(
+        &self,
+        words: &[AstId],
+        var: &str,
+        body: AstId,
+        states: &[ValueEnv],
+        head_id: CfgNodeId,
+    ) -> Option<Vec<String>> {
+        if words.is_empty() {
+            return None; // empty list ⇒ 0 iterations ⇒ no members (the ⊤ degrade)
+        }
+        // Single-level only this slice (item-3): a nested loop inside the body is the
+        // deferred multi-leaf case ⇒ ineligible.
+        if self.body_has_nested_loop(body) {
+            return None;
+        }
+        // The for-var rebinding INVALIDATES Members if the body reassigns it — the
+        // Members value is the head binding only (item-1). Conservative: any write to the
+        // name inside the body subtree (assignment, lvalue-builtin, or a ⊤-region that
+        // havocs everything) ⇒ ineligible.
+        if self.body_reassigns_var(body, var) {
+            return None;
+        }
+        let incoming = states.get(head_id.index())?;
+        let mut members = Vec::with_capacity(words.len());
+        for &w in words {
+            // A for-list word is an expansion site (glob/tilde) — fix-1 ⇒ ineligible.
+            if word_expansion_hazard(self.ast, w) {
+                return None;
+            }
+            // Each word must resolve to single concretes (split-to-many composes into more
+            // members; a ⊤ slot ⇒ ineligible). `resolve_recipe_fields` gives the field
+            // slots in list order.
+            let recipe = recipe_of_word(self.ast, w);
+            for field in resolve_recipe_fields(&recipe, incoming, self.ifs_pristine) {
+                match field {
+                    Abstract::Lit(s) => members.push(s),
+                    Abstract::Top => return None,
+                }
+            }
+        }
+        if members.is_empty() {
+            return None;
+        }
+        Some(members)
+    }
+
+    /// Record the per-member argvs for each body command-site of a Members loop whose argv
+    /// REFERENCES the for-var. For each member, clone the site's incoming state, override
+    /// the for-var to that one concrete, and resolve the site's words — each is a normal
+    /// concrete argv (item-2: N members ⇒ N argvs ⇒ N cells). A site whose argv does NOT
+    /// reference the for-var is skipped (no family — the ordinary `argv` entry serves it,
+    /// the same concrete every iteration). A site that references it gets a family even for
+    /// a single member (one cell), so the in-loop license (item-3) routes uniformly through
+    /// the Members path rather than the Flat `EstablishAmbient` (which the in-loop floor
+    /// still runs).
+    fn record_member_sites(
+        &self,
+        body: AstId,
+        var: &str,
+        members: &[String],
+        states: &[ValueEnv],
+        interner: &mut Interner,
+        out: &mut BTreeMap<CfgNodeId, Vec<Vec<ValueOf>>>,
+    ) {
+        for (site_id, site) in self.cfg.iter() {
+            if site.kind != CfgNodeKind::Command || !self.cfg.in_loop_body(site_id) {
+                continue;
+            }
+            // Only THIS loop's body sites (span-contained), and never an expansion-internal
+            // non-leaf (`$(…)` body). With no nested loop allowed (eligibility), every such
+            // site belongs to this loop alone.
+            if self.cfg.is_expansion_internal(site_id) || !node_within(self.ast, site.ast, body) {
+                continue;
+            }
+            let NodeKind::Simple { words, .. } = &self.ast.node(site.ast).kind else {
+                continue;
+            };
+            // A site that does not reference the for-var is the same concrete every
+            // iteration — no family (the `argv` entry serves it).
+            if !words.iter().any(|&w| word_references_var(self.ast, w, var)) {
+                continue;
+            }
+            let Some(incoming) = states.get(site_id.index()) else {
+                continue;
+            };
+            let per_member: Vec<Vec<ValueOf>> = members
+                .iter()
+                .map(|m| {
+                    let mut env = incoming.clone();
+                    env.insert(var.to_owned(), Flat::Elem(m.clone()));
+                    intern_argv(self.resolve_site_words(words, &env), interner)
+                })
+                .collect();
+            out.insert(site_id, per_member);
+        }
+    }
+
+    /// Does `body`'s AST subtree contain a nested `for`/`while`/`until` loop? (item-1's
+    /// single-level restriction.) Span-contained scan; cheap (corpus bodies are tiny).
+    fn body_has_nested_loop(&self, body: AstId) -> bool {
+        self.ast.iter().any(|(id, n)| {
+            id != body
+                && node_within(self.ast, id, body)
+                && matches!(
+                    n.kind,
+                    NodeKind::ForLoop { .. } | NodeKind::WhileLoop { .. }
+                )
+        })
+    }
+
+    /// Does `body`'s AST subtree reassign `var`? (item-1's degrade trigger.) Any assignment
+    /// to the name, an lvalue-builtin (`read`/`unset`/`export`/`readonly`/`local`/
+    /// `getopts`) naming it, or a ⊤ (unmodeled) region inside the body ⇒ `true`
+    /// (conservative: a ⊤-region havocs everything, so it could rebind the var). Pure scan.
+    fn body_reassigns_var(&self, body: AstId, var: &str) -> bool {
+        for (id, n) in self.ast.iter() {
+            if id == body || !node_within(self.ast, id, body) {
+                continue;
+            }
+            match &n.kind {
+                NodeKind::Assign { name, .. } if name == var => return true,
+                NodeKind::Simple { words, .. } if self.simple_writes_var(words, var) => {
+                    return true;
+                }
+                // A ⊤ (unsupported) region inside the body may rebind anything.
+                NodeKind::Unsupported { .. } => return true,
+                _ => {}
+            }
+        }
+        false
+    }
+
+    /// Does this `Simple`'s command word make it an lvalue-builtin writing `var`? Mirrors
+    /// the [`Prep::transfer_lvalue_builtin`] family (`read`/`unset`/`export`/`readonly`/
+    /// `local`/`getopts`): a bare-name or `name=…` operand matching `var`, or ANY dynamic/
+    /// flagged operand to such a builtin (which havocs — conservative ⇒ treat as a write).
+    fn simple_writes_var(&self, words: &[AstId], var: &str) -> bool {
+        let Some((&cmd_word, operands)) = words.split_first() else {
+            return false;
+        };
+        let Some(cmd) = literal_text(self.ast, cmd_word) else {
+            return false;
+        };
+        match cmd.as_str() {
+            "read" | "unset" | "export" | "readonly" | "local" => operands.iter().any(|&op| {
+                match literal_text(self.ast, op) {
+                    // `name` or `name=…` naming the for-var ⇒ a write.
+                    Some(t) => t == var || t.strip_prefix(var).is_some_and(|r| r.starts_with('=')),
+                    // A dynamic operand ⇒ which var it writes is unknown ⇒ conservative write.
+                    None => true,
+                }
+            }),
+            // `getopts optstring name …` writes `name` (operand 1) plus OPTIND/OPTARG.
+            "getopts" => {
+                operands
+                    .get(1)
+                    .and_then(|&w| literal_text(self.ast, w))
+                    .as_deref()
+                    == Some(var)
+            }
+            _ => false,
+        }
+    }
+}
+
+/// Is node `inner` within node `outer`'s subtree, by span containment? The AST's spans
+/// nest by construction (a child's `[lo,hi)` lies within its parent's), so a byte-range
+/// containment test is a sound subtree-membership check. `inner == outer` counts as
+/// within. Used by the Members pass to scope a loop's body sites (task-L2 item-1/2).
+fn node_within(ast: &Ast, inner: AstId, outer: AstId) -> bool {
+    let i = ast.node(inner).span;
+    let o = ast.node(outer).span;
+    o.lo.0 <= i.lo.0 && i.hi.0 <= o.hi.0
+}
+
+/// Does a `Word` reference the named variable `var` (`$var`/`${var}`/`"$var"`)? A
+/// plain-`Param`-named reference, quoted or not, recursing into double-quotes (task-L2
+/// item-1/2: which body sites form a per-member family). Positional/special params
+/// (`$1`/`$@`) never name a for-var, so they don't match.
+fn word_references_var(ast: &Ast, word: AstId, var: &str) -> bool {
+    let NodeKind::Word { parts } = &ast.node(word).kind else {
+        return false;
+    };
+    parts_reference_var(parts, var)
+}
+
+/// Recurse word-parts for a plain `Param { name == var }` reference (double-quotes nest).
+fn parts_reference_var(parts: &[WordPart], var: &str) -> bool {
+    parts.iter().any(|p| match p {
+        WordPart::Param { name } => name == var,
+        WordPart::DoubleQuoted(inner) => parts_reference_var(inner, var),
+        _ => false,
+    })
 }
 
 /// The word's compile-time-constant text: `Some` iff every part is literal (no variable
@@ -851,6 +1138,24 @@ mod tests {
             ValueOf::Literal(s) => Word::Lit(interner.resolve(s).to_owned()),
             ValueOf::Top => Word::Top,
         }
+    }
+
+    /// The per-member argvs (task-L2 item-1/2) of the FIRST in-loop `Command` whose
+    /// command-word literal is `cmd`, or `None` if it is not a Members site. Each inner
+    /// `Vec<Word>` is one member's resolved argv. Resolves through the analysis's interner.
+    fn member_argv_of(src: &str, cmd: &str) -> Option<Vec<Vec<Word>>> {
+        let parsed = dorc_syntax::parse(src);
+        let cfg = build(&parsed.value).value;
+        let mut interner = Interner::default();
+        let flow = analyze(&cfg, &parsed.value, &mut interner);
+        let node = command_node(&cfg, &parsed.value, cmd)
+            .unwrap_or_else(|| panic!("no command `{cmd}` in {src:?}"));
+        flow.member_argv(node).map(|members| {
+            members
+                .iter()
+                .map(|argv| argv.iter().map(|&v| word_of(v, &interner)).collect())
+                .collect()
+        })
     }
 
     /// `argv_of` plus the convergence flag (for the loop test).
@@ -1520,6 +1825,167 @@ mod tests {
             argv_of(r#"for f in a a; do cmd "$f"; done"#, "cmd"),
             vec![lit("cmd"), lit("a")],
             "repeated identical word ⇒ the literal survives the join"
+        );
+    }
+
+    // ---- task-L2 item-1/2: Members-valued for-var + per-member argvs (`209` brk-1(b)) ---
+
+    #[test]
+    fn members_multi_word_loop_yields_per_member_argvs() {
+        // THE member-precision unlock: `for pkg in nginx curl; do apt-get install -y "$pkg";
+        // done`. The Flat `argv` stays ⊤ (everything-else-unchanged, item-1), but the SEPARATE
+        // member channel resolves a per-member argv per list word, each a normal concrete.
+        assert_eq!(
+            argv_of(
+                r#"for pkg in nginx curl; do apt-get install -y "$pkg"; done"#,
+                "apt-get"
+            ),
+            vec![lit("apt-get"), lit("install"), lit("-y"), Word::Top],
+            "the Flat argv stays ⊤ for a >1-member loop (Members rides a separate channel)"
+        );
+        assert_eq!(
+            member_argv_of(
+                r#"for pkg in nginx curl; do apt-get install -y "$pkg"; done"#,
+                "apt-get"
+            ),
+            Some(vec![
+                vec![lit("apt-get"), lit("install"), lit("-y"), lit("nginx")],
+                vec![lit("apt-get"), lit("install"), lit("-y"), lit("curl")],
+            ]),
+            "each member substitutes to a concrete per-member argv (item-2: N members ⇒ N argvs)"
+        );
+    }
+
+    #[test]
+    fn members_keeps_duplicates_no_dedup() {
+        // Dups are KEPT (dash iterates `for x in a a` twice) — dedup would mis-model the
+        // iteration count. Two identical members ⇒ two identical per-member argvs.
+        assert_eq!(
+            member_argv_of(
+                r#"for p in nginx nginx; do apt-get install "$p"; done"#,
+                "apt-get"
+            ),
+            Some(vec![
+                vec![lit("apt-get"), lit("install"), lit("nginx")],
+                vec![lit("apt-get"), lit("install"), lit("nginx")],
+            ]),
+            "duplicate list words are kept as duplicate members (no dedup)"
+        );
+    }
+
+    #[test]
+    fn members_split_literal_list_composes() {
+        // A split-literal list composes into more members (item-1: "a split literal list is
+        // fine"). `LIST="nginx curl"; for p in $LIST` ⇒ the unquoted `$LIST` field-splits to
+        // two members, exactly as if written `for p in nginx curl`.
+        assert_eq!(
+            member_argv_of(
+                r#"LIST="nginx curl"; for p in $LIST; do apt-get install "$p"; done"#,
+                "apt-get"
+            ),
+            Some(vec![
+                vec![lit("apt-get"), lit("install"), lit("nginx")],
+                vec![lit("apt-get"), lit("install"), lit("curl")],
+            ]),
+            "an unquoted split-literal for-list composes into per-member argvs"
+        );
+    }
+
+    #[test]
+    fn members_body_reassign_var_degrades_to_none() {
+        // item-1 degrade: a body that REASSIGNS the for-var invalidates the Members binding
+        // (the var no longer carries the head's member at the site) ⇒ NO member-family (the
+        // consumer falls back to the Flat ⊤). `for p in a b; do p=evil; apt-get install
+        // "$p"; done`.
+        assert_eq!(
+            member_argv_of(
+                r#"for p in nginx curl; do p=evil; apt-get install "$p"; done"#,
+                "apt-get"
+            ),
+            None,
+            "a body reassignment of the for-var degrades Members to None (the ⊤ fallback)"
+        );
+    }
+
+    #[test]
+    fn members_body_read_clobbers_var_degrades_to_none() {
+        // The lvalue-builtin degrade: `read pkg` inside the body overwrites the for-var with
+        // runtime stdin ⇒ ineligible (item-1, same family as the value-plane's `read`
+        // clobber). Bias-to-⊤.
+        assert_eq!(
+            member_argv_of(
+                "for pkg in nginx curl; do read pkg; apt-get install \"$pkg\"; done",
+                "apt-get"
+            ),
+            None,
+            "`read <for-var>` in the body degrades Members to None"
+        );
+    }
+
+    #[test]
+    fn members_nested_loop_degrades_to_none() {
+        // item-3 single-level restriction: a nested loop inside the body ⇒ the OUTER loop is
+        // ineligible (multi-leaf member interactions are deferred). The inner install site is
+        // not a Members site of the outer loop.
+        assert_eq!(
+            member_argv_of(
+                "for p in a b; do for q in c d; do apt-get install \"$q\"; done; done",
+                "apt-get"
+            ),
+            None,
+            "a nested loop in the body ⇒ Members ineligible (single-level only this slice)"
+        );
+    }
+
+    #[test]
+    fn members_glob_list_word_degrades_to_none() {
+        // fix-1 carry-through: an unquoted glob list word expands against the fs ⇒ ineligible
+        // (the for-var would bind ⊤). No member-family.
+        assert_eq!(
+            member_argv_of(r#"for f in *.conf; do cmd "$f"; done"#, "cmd"),
+            None,
+            "a glob for-list word ⇒ Members ineligible (fix-1)"
+        );
+    }
+
+    #[test]
+    fn members_body_site_not_reading_var_has_no_family() {
+        // A body site that does NOT read the for-var is the same concrete every iteration —
+        // no member-family (the ordinary `argv` entry serves it). `for f in a b; do echo hi;
+        // done` ⇒ `echo hi` is not a Members site.
+        assert_eq!(
+            member_argv_of(r"for f in nginx curl; do echo hi; done", "echo"),
+            None,
+            "a body site not referencing the for-var has no member-family"
+        );
+    }
+
+    #[test]
+    fn members_single_word_loop_has_no_family() {
+        // A single-member loop's body site is already precisely resolved by the Flat `argv`
+        // (the for-var binds that one literal). It is NOT a member-family (one member ⇒ the
+        // ordinary single-concrete argv suffices; `member_argv` is for the >1 case). Pins
+        // that we don't redundantly record a 1-element family.
+        assert_eq!(
+            argv_of(
+                r#"for f in nginx; do apt-get install -y "$f"; done"#,
+                "apt-get"
+            ),
+            vec![lit("apt-get"), lit("install"), lit("-y"), lit("nginx")],
+            "single-word for ⇒ the Flat argv already resolves the body site precisely"
+        );
+        assert_eq!(
+            member_argv_of(
+                r#"for f in nginx; do apt-get install -y "$f"; done"#,
+                "apt-get"
+            ),
+            Some(vec![vec![
+                lit("apt-get"),
+                lit("install"),
+                lit("-y"),
+                lit("nginx")
+            ]]),
+            "a single-member loop still yields a (1-element) family — all members substitute"
         );
     }
 

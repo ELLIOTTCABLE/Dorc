@@ -1,0 +1,8 @@
+# probe-results: site-keyed records (task-D1 WIRE; task-L2 item-4 member sub-keys). Grammar:
+#   site <leafid>[.<member-idx>] effect=<holds|absent|cant-tell>
+# The in-loop Members install (leaf 0) ships one check per member: site 0.0 = nginx (holds),
+# site 0.1 = curl (absent — diverged). One non-converged member ⇒ the all-or-nothing license
+# refuses ⇒ the whole leaf runs. (Establish-class records ⇒ rc firewalled, omitted; the
+# per-package dpkg-query shim reproduces holds/absent for gate-1 parity.)
+site 0.0 effect=holds
+site 0.1 effect=absent

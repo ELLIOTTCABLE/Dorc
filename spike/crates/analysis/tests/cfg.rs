@@ -1366,3 +1366,44 @@ fn consumed_oror_left_operand_marks_relaxable_status() {
         "a `||` left operand's status is branch-consumed (marked StatusRelaxable, 19D)"
     );
 }
+
+#[test]
+fn consumed_post_while_dollar_question_marks_body_not_only_condition() {
+    // task-L2 item-6a (20O find-6a), dash-verified: post-loop `$?` after a `while` is the
+    // BODY's last command rc (loop ran ≥1) or 0 (ran 0) — NEVER the condition's. So a
+    // post-loop `$?`-reader must mark the BODY's last command `StatusRelaxable`-consumed.
+    // The bug this pins: a `while`'s only exit edge is `cond_exit → merge`, so the bare
+    // pred-walk stopped at the condition (`dpkg`) and the body (`apt-get`) was left
+    // UNMARKED — under task-L2's member-license, a converged in-loop body establish whose
+    // rc a post-loop `$?` reads would then be wrongly elidable. (dash: `n=0; while [ $n
+    // -lt 2 ]; do n=$((n+1)); (exit 7); done; echo $?` ⇒ 7, the body-last, not the
+    // condition's `[ ]` false rc.)
+    let src = "while dpkg -s nginx; do apt-get install -y nginx; done\nrc=$?\n";
+    let body = consumed_of(src, "apt-get");
+    assert!(
+        body.contains(&Channel::StatusRelaxable),
+        "the while BODY's last command is marked (post-loop $? = body-last rc): {body:?}"
+    );
+    // The condition is ALSO marked (the walk still reaches it), but that mark is inert: a
+    // while condition is `StatusRenderFloor`-blocked unconditionally regardless.
+    let cond = consumed_of(src, "dpkg");
+    assert!(
+        cond.contains(&Channel::StatusRenderFloor),
+        "the while condition stays render-floored (its StatusRelaxable over-mark is inert): {cond:?}"
+    );
+}
+
+#[test]
+fn consumed_post_for_dollar_question_marks_body() {
+    // The `for` half of item-6a (verified-correct, left unchanged): a `for` loop's exit
+    // edge is `head → merge`, and `head`'s back-edge pred IS the body-exit, so a post-loop
+    // `$?`-walk reaches the body's last command already. (dash: `for x in a b; do (exit 5);
+    // done; echo $?` ⇒ 5, the body-last.) Pinned so a future change to `lower_for` that
+    // drops the back-edge regresses loudly here.
+    let src = "for f in a b; do apt-get install -y nginx; done\nrc=$?\n";
+    let body = consumed_of(src, "apt-get");
+    assert!(
+        body.contains(&Channel::StatusRelaxable),
+        "the for BODY's last command is marked (post-loop $? = body-last rc): {body:?}"
+    );
+}

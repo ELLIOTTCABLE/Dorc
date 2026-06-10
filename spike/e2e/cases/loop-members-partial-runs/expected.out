@@ -1,0 +1,22 @@
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc — the record is the out-of-band lane).
+
+# site 0.0: package:nginx#installed
+package_installed__check() { dpkg-query -W "$1" >/dev/null 2>&1; }
+package_installed__check 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'site 0.0 effect=%s rc=%s\n' "$_e" "$_rc"
+# site 0.1: package:curl#installed
+package_installed__check 'curl'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'site 0.1 effect=%s rc=%s\n' "$_e" "$_rc"
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+# loop-members-partial-runs (task-L2 item-7b, `209` brk-1(b) — the all-or-nothing floor):
+# `for pkg in nginx curl; do apt-get install -y "$pkg"; done`. nginx is converged but curl
+# is DIVERGED (the host reports curl absent). The in-loop Members license is all-or-nothing
+# (item-3(a)): a single non-converged member refuses the WHOLE leaf — partial-member elision
+# (rewriting the list to just the diverged members) is a recorded LATER direction, not this
+# slice. So the body RUNS every iteration: the run-set is BOTH installs (nginx AND curl).
+for pkg in nginx curl; do apt-get install -y "$pkg"; done
