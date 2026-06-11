@@ -669,3 +669,27 @@ warm-ups (d×d host-flip fixture; var-resolved redirect case) → 22x synthesis 
   the new surfaces is a recorded candidate, not scheduled. Dead-host window:
   accepted as a cost of the quarantine posture (the operator may fetch-on-notify
   while the tunnel lives, human-gated). All DIRECTION-grade pending the oven.
+- ru-23 (human; two corrections to ru-22's shape + rec-6 closure):
+  (a) CONSTRAINT caught from conductor contradiction: "fetch while the tunnel is
+  warm" REQUIRES an in-run interactive y/n flow — Dorc must keep running and HOLD
+  the SSH channel open through the offer; teardown ordering is the design point.
+  The Ansible scar behind it (human, firsthand): a long book holding a channel
+  open MASKED broken SSH access for half an hour — the warm tunnel hides
+  access-breakage. Conductor candidate logged (-GUESS, unscheduled):
+  fresh-connection canary at end-of-run — verify a NEW SSH connection succeeds
+  BEFORE closing the warm one, with the warm tunnel as the recovery lifeline if
+  it fails; converts the scar into a feature. (b) MODE-KEYED quarantine: the
+  ru-22 posture applies to UNATTENDED/fan-out/converge-the-world mode only. In
+  everyday INTERACTIVE mode (the default) the human wants realtime streaming
+  output visibly — the bytes already cross to the controller, quarantine is
+  already broken, so auto-RETAIN-on-error there has no marginal security cost
+  and applies by default (scrub-at-ingest still applies to what's retained;
+  ephemeral-terminal vs at-rest-file is the only delta). Unattended mode keeps
+  quarantine + notify-and-offer + human-held fetch. (c) rec-6 CLOSED-RATIFIED:
+  "no question, directly to richer metadata" — cause-tagged confirmed; B1 is
+  mid-reshape on exactly this in arch-1. Scheduling note: the human suspects
+  earlier-if-hitting-lots-of-sites and suggests sonnet-class agents for
+  so-mechanical multi-site edits — ADOPTED as a dispatch heuristic (candidate
+  for wave-2's 17-code catalog sweep: sonnet for the mechanical half, opus for
+  the design half); also fb-candidate for round close (class-discipline gains a
+  third tier: fable adversarial / opus build / sonnet mechanical).
