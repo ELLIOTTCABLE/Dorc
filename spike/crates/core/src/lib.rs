@@ -147,6 +147,12 @@ impl Diagnostic {
 
 pub mod diag;
 
+pub mod prov;
+pub use prov::{JOIN_PARENT_CAP, OriginKind, OriginNode, Parents, ProvArena, ProvId};
+
+pub mod unord;
+pub use unord::IterSuppressedMap;
+
 /// `result × accumulated diagnostics` — the type every pipeline stage returns
 /// (research chord `dn-7` / `ch-carrier`). A writer-monad shape: `map` transforms
 /// the value, `and_then` sequences a stage while concatenating its diagnostics.
