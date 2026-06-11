@@ -1556,17 +1556,16 @@ impl<'a> Builder<'a> {
             }
         }
         if saw_top {
-            // Span-less diagnostic (the errexit pass has no single source location to point at).
-            // Construct the payload to satisfy tidy `every_catalog_variant_is_constructed`; use
-            // the legacy Diagnostic path to preserve `span: None` CLI behavior.
+            // Spanless: the errexit pass spans a region, not a single point (arch-3-residual-2).
             let msg = "errexit state is ⊤ at one or more commands; failure-edges \
                        added conservatively (over-approximate, sound)";
-            let slug = Code::CfgErexitUnknown(CfgErexitUnknown {
-                detail: msg.to_string(),
-            })
-            .slug();
-            self.diags
-                .push(Diagnostic::warning(dorc_core::DiagCode(slug), None, msg));
+            self.diags.push(
+                Diag::new_spanless_site(Code::CfgErexitUnknown(CfgErexitUnknown {
+                    detail: msg.to_string(),
+                }))
+                .label(msg)
+                .to_legacy(&dorc_core::Interner::default()),
+            );
         }
     }
 

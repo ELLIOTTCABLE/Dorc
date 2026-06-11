@@ -579,12 +579,51 @@ pub struct Diag {
 /// A span with an optional label — the rustc primary/secondary-label model (`crib-1`). Fixes
 /// `21Z` drop-B: a span is no longer `Option`-on-the-whole-`Diag`; the PRIMARY span is mandatory,
 /// secondaries are the optional extras.
+///
+/// The span slot is a [`SpanSite`], not a bare [`Span`], to carry the second-class spanless case
+/// ([`SpanSite::Spanless`], arch-3-residual-2) WITHOUT making the field an `Option` everyone can
+/// reach. The field is PRIVATE: it is constructed only inside this module (the two `Diag`
+/// constructors and [`Diag::secondary`]), and read through [`span`](Self::span), so external code
+/// cannot mint a spanless label — span-lessness is reachable solely via [`Diag::new_spanless_site`].
 #[derive(Debug, Clone)]
 pub struct SpanLabel {
-    /// The source span (mandatory on the primary).
-    pub span: Span,
+    /// The source span slot (mandatory-real on every PRIMARY minted by [`Diag::new`] and on every
+    /// secondary; [`SpanSite::Spanless`] only on a [`Diag::new_spanless_site`] primary). Private so
+    /// the spanless variant is unconstructable outside this module — read it via [`span`](Self::span).
+    span: SpanSite,
     /// The caret-label prose ("this went ⊤", "first poisoned here"), if any.
     pub label: Option<String>,
+}
+
+impl SpanLabel {
+    /// This label's source span, or `None` when the label is the second-class spanless case
+    /// ([`SpanSite::Spanless`], arch-3-residual-2). Ordinary readers see `Option<Span>` (the same
+    /// shape the legacy [`crate::Diagnostic::span`] carries); they still cannot CONSTRUCT a spanless
+    /// label (the field is private).
+    #[must_use]
+    pub fn span(&self) -> Option<Span> {
+        match self.span {
+            SpanSite::At(s) => Some(s),
+            SpanSite::Spanless => None,
+        }
+    }
+}
+
+/// The span slot of a [`SpanLabel`] — almost always [`SpanSite::At`] (a real source span).
+/// [`SpanSite::Spanless`] is the deliberately SECOND-CLASS sentinel for the six arch-3-residual-2
+/// codes whose emit context genuinely has no source location (`cfg-errexit-unknown`,
+/// `effect-kind-disagreement`, `oracle-missing-kind`, `oracle-missing-probe`,
+/// `oracle-duplicate-effect`, `oracle-probe-selector-roundtrip`). It lives INSIDE the span slot
+/// (not as an `Option` on the whole primary) precisely so the mandatory-primary-span guarantee
+/// (`21Z` drop-B) stays intact for every ordinary `Diag`: [`Diag::new`] takes a real [`Span`] and
+/// cannot produce `Spanless`; only [`Diag::new_spanless_site`] can. Private — `Spanless` is
+/// unnameable and unconstructable outside this module.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum SpanSite {
+    /// A real source span (every primary from [`Diag::new`], every secondary).
+    At(Span),
+    /// No source span — the second-class arch-3-residual-2 case (see type docs).
+    Spanless,
 }
 
 /// A note or help child (`crib-1`/`crib-3`). `Help` is remediation-facing (CLI-only,
@@ -848,7 +887,39 @@ impl Diag {
         Self {
             code,
             primary: SpanLabel {
-                span: primary,
+                span: SpanSite::At(primary),
+                label: None,
+            },
+            secondary: Vec::new(),
+            children: Vec::new(),
+            suggestion: None,
+        }
+    }
+
+    /// The deliberately SECOND-CLASS mint for a diagnostic whose emit context genuinely has NO
+    /// source span (arch-3-residual-2). It produces a [`Diag`] whose primary [`SpanLabel`] carries
+    /// [`SpanSite::Spanless`] — `to_legacy` then lowers it to `span: None`, byte-identically to the
+    /// pre-spine `Diagnostic::{warning,error}(code, None, msg)` form those sites used.
+    ///
+    /// This exists ONLY for the six codes whose give-up site has no span to point at:
+    /// [`DiagCode::CfgErexitUnknown`] (the errexit pass spans a region, not a point),
+    /// [`DiagCode::EffectKindDisagreement`] (the annotation-vs-effect-map check fires mid-resolution
+    /// with no leaf), and the four oracle-lifter codes [`DiagCode::OracleMissingKind`],
+    /// [`DiagCode::OracleMissingProbe`], [`DiagCode::OracleDuplicateEffect`],
+    /// [`DiagCode::OracleProbeSelectRoundtrip`] (a whole-file contract verdict, not a token). It is
+    /// NOT a general escape hatch: [`new`](Self::new) with a real [`Span`] stays the only ordinary
+    /// path, and `core/tests/diag_tidy.rs` hard-codes the allow-list of exactly these six slugs — a
+    /// seventh spanless-mint site fails the gate. Do NOT use it to dodge plumbing a span that exists.
+    ///
+    /// `inv-no-throw`: returns data, never panics. The mandatory-primary-span guarantee (`21Z`
+    /// drop-B) is preserved for everything else BECAUSE this is the lone, self-describing, gated
+    /// door to the spanless case.
+    #[must_use]
+    pub fn new_spanless_site(code: DiagCode) -> Self {
+        Self {
+            code,
+            primary: SpanLabel {
+                span: SpanSite::Spanless,
                 label: None,
             },
             secondary: Vec::new(),
@@ -870,7 +941,7 @@ impl Diag {
     #[must_use]
     pub fn secondary(mut self, span: Span, label: impl Into<String>) -> Self {
         self.secondary.push(SpanLabel {
-            span,
+            span: SpanSite::At(span),
             label: Some(label.into()),
         });
         self
@@ -939,13 +1010,20 @@ pub fn render_cli(diag: &Diag, src: &str, interner: &crate::Interner) -> String 
         diag.primary.label.as_deref().unwrap_or("")
     );
     // region: the primary span as `<lo>:<hi> \`source\`` (the simple no-caret form). drop-A fix:
-    // the span is rendered, never dropped.
-    let _ = write!(out, "\n  --> {}", render_span(diag.primary.span, src));
-    // secondary labeled spans (cause-then-effect in one window — 228).
+    // the span is rendered, never dropped. The spanless second-class case (arch-3-residual-2)
+    // omits the region line entirely — there is no location to point at (matches the legacy
+    // `span: None` sites, whose cli `report()` likewise emits no `-->` line).
+    if let Some(primary) = diag.primary.span() {
+        let _ = write!(out, "\n  --> {}", render_span(primary, src));
+    }
+    // secondary labeled spans (cause-then-effect in one window — 228); secondaries always carry a
+    // real span (`Diag::secondary` takes a `Span`), so this never elides.
     for sec in &diag.secondary {
-        let _ = write!(out, "\n  --> {}", render_span(sec.span, src));
-        if let Some(l) = &sec.label {
-            let _ = write!(out, "  {l}");
+        if let Some(span) = sec.span() {
+            let _ = write!(out, "\n  --> {}", render_span(span, src));
+            if let Some(l) = &sec.label {
+                let _ = write!(out, "  {l}");
+            }
         }
     }
     out.push_str(&render_body(diag, interner));
@@ -1092,10 +1170,13 @@ impl Diag {
     /// slug, and the primary span. This keeps the 96 untouched consumers working while the spine
     /// is proven; the B4 sweep migrates them and this bridge's callers shrink.
     ///
-    /// The span is `Some(primary.span)` — ALWAYS, never `None` (the mandatory-primary-span fix,
-    /// `21Z` drop-B). The erasability gate's `canon_diag` keys an Error-class diagnostic on
-    /// `(code, span, severity)`; this lowering preserves all three, so a migrated Error-class
-    /// code lands on the identity plane exactly as its legacy form did.
+    /// The span is `Some(primary.span)` for every ordinary [`Diag::new`] diagnostic — the
+    /// mandatory-primary-span fix (`21Z` drop-B). The six arch-3-residual-2 spanless-site codes
+    /// (minted via [`Diag::new_spanless_site`]) lower to `span: None`, byte-identically to the
+    /// pre-spine `Diagnostic::{warning,error}(code, None, msg)` form they used. The erasability
+    /// gate's `canon_diag` keys an Error-class diagnostic on `(code, span, severity)`; this lowering
+    /// preserves all three (a spanless Error-class code carries `None` exactly as its legacy form
+    /// did — none of the six are Error-floored gate-3 cases at HEAD, but the identity stays faithful).
     ///
     /// The legacy `message` is `<primary label><body>` — NO title and NO region line (the cli's
     /// `report()` produces `<stage>: <sev>[<code>]: ` and renders the span itself, so embedding
@@ -1109,7 +1190,9 @@ impl Diag {
         crate::Diagnostic {
             severity: self.severity(),
             code: crate::DiagCode(self.code.slug()),
-            span: Some(self.primary.span),
+            // `Some(span)` for an ordinary diagnostic; `None` for a spanless-site code
+            // (arch-3-residual-2) — exactly the legacy `span: None` those sites produced.
+            span: self.primary.span(),
             message,
         }
     }
@@ -1169,19 +1252,54 @@ mod tests {
         SiteId::leaf(LeafId(n))
     }
 
-    /// The mandatory primary span is structural (`21Z` drop-A/drop-B): a `Diag` always has a
-    /// span, and `to_legacy` always sets `Some(span)` — the legacy `None` that dropped the span
-    /// is unrepresentable through this spine.
+    /// The mandatory primary span is structural for the ORDINARY path (`21Z` drop-A/drop-B):
+    /// [`Diag::new`] always carries a real span, and `to_legacy` lowers it to `Some(span)` — the
+    /// legacy `None` is unreachable through `new`. (Span-lessness is reachable ONLY via the gated
+    /// [`Diag::new_spanless_site`]; see `spanless_site_lowers_to_none`.)
     #[test]
     fn primary_span_is_mandatory_and_reaches_legacy() {
         let d = Diag::new(
             DiagCode::RenderHeredocRefused(RenderHeredocRefused { site: site(3) }),
             span(10, 20),
         );
-        assert_eq!(d.primary.span.lo.0, 10);
+        assert_eq!(d.primary.span(), Some(span(10, 20)));
         let i = Interner::default();
         let legacy = d.to_legacy(&i);
-        assert_eq!(legacy.span, Some(span(10, 20)), "the span is never None");
+        assert_eq!(
+            legacy.span,
+            Some(span(10, 20)),
+            "an ordinary diagnostic's span is never None"
+        );
+    }
+
+    /// The second-class spanless mint (arch-3-residual-2): [`Diag::new_spanless_site`] produces a
+    /// primary whose span is `None`, and `to_legacy` lowers it to `span: None` with the label as
+    /// the verbatim legacy `message` — byte-identical to the pre-spine
+    /// `Diagnostic::warning(code, None, msg)` form the six migrated sites used. This pins that the
+    /// spanless door reproduces the legacy output exactly (the round-22 behavior-preservation
+    /// constraint), and that the ordinary mandatory-span guarantee is untouched.
+    #[test]
+    fn spanless_site_lowers_to_none() {
+        let msg = "errexit state is ⊤ at one or more commands; failure-edges added conservatively";
+        let d = Diag::new_spanless_site(DiagCode::CfgErexitUnknown(CfgErexitUnknown {
+            detail: msg.to_owned(),
+        }))
+        .label(msg);
+        assert_eq!(
+            d.primary.span(),
+            None,
+            "the spanless primary carries no span"
+        );
+        let i = Interner::default();
+        let legacy = d.to_legacy(&i);
+        assert_eq!(legacy.span, None, "lowers to the legacy span: None");
+        assert_eq!(legacy.message, msg, "message is the verbatim legacy text");
+        assert_eq!(legacy.severity, Severity::Warning, "registry severity");
+        assert_eq!(legacy.code.0, "cfg-errexit-unknown", "stable slug");
+        // render_cli must not panic on the spanless case (inv-no-throw) and must omit the region.
+        let cli = render_cli(&d, "irrelevant source", &i);
+        assert!(!cli.contains("-->"), "no region line when spanless: {cli}");
+        assert!(cli.starts_with("warning["), "title still renders: {cli}");
     }
 
     /// Severity comes ONLY from the registry (`crib-4`): there is no severity constructor, and a

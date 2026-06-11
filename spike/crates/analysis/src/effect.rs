@@ -334,17 +334,18 @@ fn cell_effect(
 ) -> CommandEffect {
     if cell.kind != annotation_kind {
         let em_kind = interner.resolve(cell.kind.0).to_owned();
-        // Span-less diagnostic (no source location available at this classification depth).
-        // Construct the payload to satisfy tidy; use legacy Diagnostic to preserve span: None.
+        // Spanless: no source location at this classification depth (arch-3-residual-2).
         let msg = format!(
             "check annotation kind `{annotation_kind_str}` disagrees with the effect-map \
              kind `{em_kind}` for this verb — the annotation (declared identity) wins"
         );
-        let slug = Code::EffectKindDisagreement(EffectKindDisagreement {
-            detail: msg.clone(),
-        })
-        .slug();
-        diags.push(Diagnostic::warning(dorc_core::DiagCode(slug), None, msg));
+        diags.push(
+            Diag::new_spanless_site(Code::EffectKindDisagreement(EffectKindDisagreement {
+                detail: msg.clone(),
+            }))
+            .label(msg)
+            .to_legacy(interner),
+        );
     }
     let fact = FactKey {
         kind: annotation_kind, // the annotation wins (declared identity)

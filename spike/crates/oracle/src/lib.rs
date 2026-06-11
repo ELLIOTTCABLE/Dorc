@@ -42,9 +42,7 @@ use dorc_core::diag::{
     OracleMissingProbe, OracleNonDeclaration, OracleNonLiteralKind, OracleProbeSelectRoundtrip,
     OracleTopLevelMutator,
 };
-use dorc_core::{
-    AstId, Carrier, Diagnostic, Interner, KindId, ProviderId, SelectorId, Span, Symbol,
-};
+use dorc_core::{AstId, Carrier, Interner, KindId, ProviderId, SelectorId, Span, Symbol};
 use dorc_syntax::ast::{Ast, NodeKind, WordPart};
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -114,7 +112,7 @@ pub struct EffectCell {
 /// A duplicate-effect conflict (`us-effectmap`, note 205 §3): a *second*
 /// `oracle_effect` for the same `(provider, verb)` on the **same** `selector` cell.
 /// First-writer-wins (the duplicate is dropped); the lifter turns this into a loud
-/// [`Diagnostic`]. A different *selector* for the same verb is NOT a conflict — that
+/// [`dorc_core::Diagnostic`]. A different *selector* for the same verb is NOT a conflict — that
 /// is the legitimate multi-cell case ([`EffectCell`]).
 #[derive(Debug, Clone, Copy)]
 pub struct EffectConflict {
@@ -583,13 +581,16 @@ fn bind(
         // Diagnose only if the file *tried* to be an oracle (declared a probe or an
         // effect); a plain/empty file contributes nothing, silently.
         if !probe_bodies.is_empty() || !effects.is_empty() {
+            // Spanless: a whole-file contract verdict, no token to point at (arch-3-residual-2).
             let msg =
                 "oracle file declares oracle_probe_*/oracle_effect but no `oracle_kind=<kind>`";
-            let slug = Code::OracleMissingKind(OracleMissingKind {
-                detail: msg.to_string(),
-            })
-            .slug();
-            out.push(Diagnostic::error(dorc_core::DiagCode(slug), None, msg));
+            out.push(
+                Diag::new_spanless_site(Code::OracleMissingKind(OracleMissingKind {
+                    detail: msg.to_string(),
+                }))
+                .label(msg)
+                .to_legacy(&Interner::default()),
+            );
         }
         return;
     };
@@ -637,15 +638,18 @@ fn bind(
     // file that DOES ship per-selector probes is legal (the F-BLESSED service shape):
     // diagnose only when neither form is present.
     if !saw_kind_default && !out.value.selector_probes.keys().any(|(k, _)| *k == kind) {
+        // Spanless: a whole-file contract verdict, no token to point at (arch-3-residual-2).
         let msg = format!(
             "oracle_kind=`{kind_name}` has no matching `oracle_probe_{kind_name}` \
              (nor any `oracle_probe_{kind_seg}_<selector>`) function"
         );
-        let slug = Code::OracleMissingProbe(OracleMissingProbe {
-            detail: msg.clone(),
-        })
-        .slug();
-        out.push(Diagnostic::error(dorc_core::DiagCode(slug), None, msg));
+        out.push(
+            Diag::new_spanless_site(Code::OracleMissingProbe(OracleMissingProbe {
+                detail: msg.clone(),
+            }))
+            .label(msg)
+            .to_legacy(&Interner::default()),
+        );
     }
 
     for eff in effects {
@@ -659,17 +663,22 @@ fn bind(
         // per-selector probe is unreachable). No corpus selector has a `_`, so this is a
         // latent-footgun guard, not a live path.
         if check::map_provider_name(&to_funcname_segment(eff.selector)) != eff.selector {
+            // Spanless: a whole-file contract verdict, no token to point at (arch-3-residual-2).
             let msg = format!(
                 "selector `{}` contains an underscore, which cannot round-trip a \
                  per-selector probe funcname (`oracle_probe_{kind_seg}_…` maps `_`→`-`); \
                  this cell can only be probed by the kind-default",
                 eff.selector
             );
-            let slug = Code::OracleProbeSelectRoundtrip(OracleProbeSelectRoundtrip {
-                detail: msg.clone(),
-            })
-            .slug();
-            out.push(Diagnostic::warning(dorc_core::DiagCode(slug), None, msg));
+            out.push(
+                Diag::new_spanless_site(Code::OracleProbeSelectRoundtrip(
+                    OracleProbeSelectRoundtrip {
+                        detail: msg.clone(),
+                    },
+                ))
+                .label(msg)
+                .to_legacy(&Interner::default()),
+            );
         }
         if let Some(_conflict) = out
             .value
@@ -679,16 +688,19 @@ fn bind(
             // (provider, verb, selector) cell is a footgun — loud diagnostic,
             // first-writer-wins. A different selector for the same verb is the
             // legitimate multi-cell case and is NOT diagnosed.
+            // Spanless: a whole-file contract verdict, no token to point at (arch-3-residual-2).
             let msg = format!(
                 "duplicate oracle_effect for (`{}`, verb=`{}`) on selector `{}` \
                  — first declaration wins, this one is dropped",
                 eff.provider, eff.verb, eff.selector
             );
-            let slug = Code::OracleDuplicateEffect(OracleDuplicateEffect {
-                detail: msg.clone(),
-            })
-            .slug();
-            out.push(Diagnostic::error(dorc_core::DiagCode(slug), None, msg));
+            out.push(
+                Diag::new_spanless_site(Code::OracleDuplicateEffect(OracleDuplicateEffect {
+                    detail: msg.clone(),
+                }))
+                .label(msg)
+                .to_legacy(&Interner::default()),
+            );
         }
     }
 }

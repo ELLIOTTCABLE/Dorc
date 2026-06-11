@@ -132,6 +132,27 @@ const MIGRATED_SLUGS: &[&str] = &[
 // un-migrated code that introduces a DiagCode("…") literal must be declared here immediately.
 const LEGACY_ALLOW_LIST: &[&str] = &[];
 
+/// The SPANLESS-MINT allow-list (arch-3-residual-2): EXACTLY the codes permitted to construct a
+/// diagnostic with no primary span, via [`dorc_core::diag::Diag::new_spanless_site`]. Every other
+/// code MUST point at a real source span ([`dorc_core::diag::Diag::new`] takes a mandatory
+/// [`dorc_core::Span`] — `21Z` drop-B). These six are the give-up sites whose emit context
+/// genuinely has no location: the errexit-region pass, the effect-map kind-disagreement check, and
+/// the four whole-file oracle-lifter contract verdicts. Entries are PAYLOAD-struct names (the
+/// `Code::<Payload>(` construction marker the grep sees), paired with the wire slug for reviewers.
+/// Two directions are enforced by [`spanless_mint_allow_list_is_exact`] (the "structural enforce"):
+/// * a `new_spanless_site(Code::X(…))` in PRODUCTION source whose `X` is NOT here ⇒ FAIL (a new
+///   spanless mint must be justified and declared, or given a real span);
+/// * an `X` here that no longer appears at a production `new_spanless_site` site ⇒ FAIL (the entry
+///   is stale — the code stopped minting spanless; remove it). Self-cleaning, like the legacy list.
+const SPANLESS_SITE_PAYLOADS: &[&str] = &[
+    "CfgErexitUnknown",           // cfg-errexit-unknown      (analysis/cfg.rs)
+    "EffectKindDisagreement",     // effect-kind-disagreement (analysis/effect.rs)
+    "OracleMissingKind",          // oracle-missing-kind      (oracle/lib.rs)
+    "OracleMissingProbe",         // oracle-missing-probe     (oracle/lib.rs)
+    "OracleDuplicateEffect",      // oracle-duplicate-effect  (oracle/lib.rs)
+    "OracleProbeSelectRoundtrip", // oracle-probe-selector-roundtrip (oracle/lib.rs)
+];
+
 /// The crate-`src` roots scanned (the emit surface). The workspace's analyzer crates; `core`
 /// itself is included for the `diag.rs` retire-guard + the `legacy` module's consts.
 const SCANNED_CRATES: &[&str] = &[
@@ -161,14 +182,11 @@ fn rs_files(dir: &Path, out: &mut Vec<PathBuf>) {
     }
 }
 
-/// The concatenated source text of every scanned crate's `src/` tree (production + inline tests;
-/// the legacy `DiagCode("…")` literals live in production code, and the test-only literals — the
-/// coverage `refusal_diag` helper, the erasability `x-err`/`boom`/`test-warn` fixtures — are
-/// EXCLUDED by scanning only the slugs we assert, never all literals).
-fn scanned_source() -> String {
+/// The concatenated source text of the named crates' `src/` trees (production + inline tests).
+fn concat_crate_src(crate_names: &[&str]) -> String {
     let crates = crates_dir();
     let mut files = Vec::new();
-    for c in SCANNED_CRATES {
+    for c in crate_names {
         rs_files(&crates.join(c).join("src"), &mut files);
     }
     let mut out = String::new();
@@ -176,6 +194,51 @@ fn scanned_source() -> String {
         if let Ok(text) = std::fs::read_to_string(&f) {
             out.push_str(&text);
             out.push('\n');
+        }
+    }
+    out
+}
+
+/// The concatenated source text of every scanned crate's `src/` tree (production + inline tests;
+/// the legacy `DiagCode("…")` literals live in production code, and the test-only literals — the
+/// coverage `refusal_diag` helper, the erasability `x-err`/`boom`/`test-warn` fixtures — are
+/// EXCLUDED by scanning only the slugs we assert, never all literals).
+fn scanned_source() -> String {
+    concat_crate_src(SCANNED_CRATES)
+}
+
+/// The PRODUCTION emit surface for the spanless-mint gate: every scanned crate EXCEPT `core`. The
+/// six real `new_spanless_site` sites live in `analysis`/`oracle`; `core` only DEFINES the
+/// constructor and exercises it in its own `#[cfg(test)]` module — excluding `core` keeps the
+/// self-cleaning direction honest (a removed production site is not masked by core's test usage).
+fn production_emit_source() -> String {
+    let non_core: Vec<&str> = SCANNED_CRATES
+        .iter()
+        .copied()
+        .filter(|c| *c != "core")
+        .collect();
+    concat_crate_src(&non_core)
+}
+
+/// Extract every payload-struct name constructed at a `new_spanless_site(…::<Payload>(…))` call in
+/// `source` — the spanless-mint marker. Matches both the `Code::` alias (the emit crates) and the
+/// fully-qualified `DiagCode::` form; the payload name is the identifier between `::` and the `(`.
+fn spanless_site_payloads(source: &str) -> BTreeSet<String> {
+    let mut out = BTreeSet::new();
+    let needle = "new_spanless_site(";
+    let mut rest = source;
+    while let Some(i) = rest.find(needle) {
+        let after = &rest[i + needle.len()..];
+        rest = after;
+        // After `new_spanless_site(` comes `Code::` or `DiagCode::`; take the segment up to the
+        // payload's own `(`, then keep the identifier after the LAST `::` (the payload name).
+        let Some(open) = after.find('(') else { break };
+        let head = &after[..open];
+        if let Some(sep) = head.rfind("::") {
+            let name = head[sep + 2..].trim();
+            if !name.is_empty() && name.chars().all(|c| c.is_alphanumeric() || c == '_') {
+                out.insert(name.to_string());
+            }
         }
     }
     out
@@ -378,6 +441,57 @@ fn legacy_allow_list_is_complete_and_self_cleaning() {
              self-cleaning, 226 §1)"
         );
     }
+}
+
+/// (4) The SPANLESS-MINT allow-list is EXACT (arch-3-residual-2). The mandatory-primary-span
+/// guarantee (`21Z` drop-B) means `Diag::new` cannot produce a span-less diagnostic; only the
+/// gated, second-class `Diag::new_spanless_site` can. This gate makes that privilege STRUCTURAL:
+/// the set of codes that actually mint spanless in PRODUCTION source must equal
+/// [`SPANLESS_SITE_PAYLOADS`] exactly. Two directions (self-cleaning, like the legacy list):
+/// * a `new_spanless_site(Code::X(…))` whose `X` is NOT allow-listed ⇒ FAIL (a new spanless mint
+///   slipped in without review — give it a real span, or justify and declare it here);
+/// * an allow-listed `X` that no longer appears at a production `new_spanless_site` site ⇒ FAIL
+///   (the entry is stale; the code now carries a span or was removed — delete it from the list).
+///
+/// Scans `production_emit_source` (excludes `core`): the six real sites live in `analysis`/
+/// `oracle`, and excluding core's own definition + `#[cfg(test)]` exercise keeps direction B from
+/// being masked by the test's construction.
+#[test]
+fn spanless_mint_allow_list_is_exact() {
+    let found = spanless_site_payloads(&production_emit_source());
+
+    // Direction A: every production spanless mint is allow-listed.
+    for payload in &found {
+        assert!(
+            SPANLESS_SITE_PAYLOADS.contains(&payload.as_str()),
+            "`Diag::new_spanless_site(Code::{payload}(…))` mints a span-less diagnostic but \
+             `{payload}` is NOT on SPANLESS_SITE_PAYLOADS — every code must point at a real span \
+             (Diag::new, 21Z drop-B) UNLESS its emit context genuinely has none. If this is a \
+             true no-span site, justify it and add `{payload}` to the allow-list; otherwise plumb \
+             a span and use Diag::new (arch-3-residual-2)."
+        );
+    }
+
+    // Direction B (self-cleaning): every allow-list entry is still a live production spanless site.
+    for &payload in SPANLESS_SITE_PAYLOADS {
+        assert!(
+            found.contains(payload),
+            "SPANLESS_SITE_PAYLOADS entry `{payload}` no longer appears at a production \
+             `new_spanless_site(Code::{payload}(…))` site — it now carries a span or was removed; \
+             delete it from the allow-list (the list is self-cleaning, arch-3-residual-2)."
+        );
+    }
+
+    // Belt-and-braces: the allow-list and the found set are EXACTLY equal (no duplicates-or-typos
+    // path the two directional loops could individually miss).
+    let allow: BTreeSet<String> = SPANLESS_SITE_PAYLOADS
+        .iter()
+        .map(ToString::to_string)
+        .collect();
+    assert_eq!(
+        found, allow,
+        "the production spanless-mint set must equal SPANLESS_SITE_PAYLOADS exactly"
+    );
 }
 
 /// The known TEST-FIXTURE diagnostic slugs (the erasability/carrier unit-test throwaways): never
