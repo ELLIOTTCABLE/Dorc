@@ -44,6 +44,20 @@ use std::collections::HashMap;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct AstId(pub u32);
 
+/// A stable identifier for one executable leaf (`dn-3`, the leaf-seam): executable
+/// work is a list of *individually wrappable* leaves, each with a stable back-map to
+/// its source — never one opaque `sh -c "$bigscript"`. The id is the leaf's position
+/// in source order.
+///
+/// Lives in `core` (the `dac-B` shared vocabulary), not `plan`, because the round-22
+/// structured diagnostic ([`diag::SiteId`]) keys on it — a diagnostic's first-class
+/// site identity must be expressible in the base crate every layer agrees on, the
+/// same `dec-seam-ownership` move that pulled [`FactKey`] down here. `plan` re-exports
+/// this type rather than holding a parallel one (`inv-site-keyed-results`: one shared
+/// site-id, never two).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct LeafId(pub u32);
+
 // ===========================================================================
 // Source positions
 // ===========================================================================

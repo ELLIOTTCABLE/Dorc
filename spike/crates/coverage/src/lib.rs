@@ -448,7 +448,8 @@ pub fn build_report(inputs: &Inputs<'_>) -> Report {
     // refused leaves so `attribute_door` demotes them to `runs(render-refusal)` instead of
     // mis-bucketing them `replace-converged` (the disposition's lie, 100% coverage that isn't).
     // `bridge_suspect` is the loud blind-spot count of refusals that did NOT bridge (217 §5 obs-3).
-    let (render_refused, bridge_suspect) = render_refused_leaves(&plan, &parsed.value, &leaf_of);
+    let (render_refused, bridge_suspect) =
+        render_refused_leaves(&plan, &parsed.value, &interner, &leaf_of);
 
     let mut rows: Vec<SiteRow> = classes
         .iter()
@@ -489,6 +490,7 @@ pub fn build_report(inputs: &Inputs<'_>) -> Report {
 fn render_refused_leaves(
     plan: &dorc_plan::Plan,
     ast: &dorc_syntax::ast::Ast,
+    interner: &Interner,
     leaf_of: &BTreeMap<dorc_core::AstId, LeafId>,
 ) -> (std::collections::BTreeSet<LeafId>, u32) {
     // span (lo,hi) → leaf, from the steps (the render-refusal diagnostics carry the same span).
@@ -502,7 +504,10 @@ fn render_refused_leaves(
                 .map(|&leaf| ((span.lo.0, span.hi.0), leaf))
         })
         .collect();
-    bridge_refusals_to_leaves(&plan.render_refusal_diagnostics(ast), &leaf_by_span)
+    bridge_refusals_to_leaves(
+        &plan.render_refusal_diagnostics(ast, interner),
+        &leaf_by_span,
+    )
 }
 
 /// The span-bridge from render-refusal diagnostics to leaf ids, returning the matched set AND a

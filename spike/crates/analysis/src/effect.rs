@@ -26,8 +26,10 @@ use crate::cfg::{Cfg, CfgNodeId, CfgNodeKind};
 use crate::lattice::Lattice;
 use crate::solve::{Direction, Graph, solve};
 use crate::value::{ValueFlow, ValueOf};
+use dorc_core::diag::{CmdsubOperandTop, Diag, DiagCode as Code, OperandPosition, SiteId};
 use dorc_core::{
-    Carrier, DiagCode, Diagnostic, EntityRef, Interner, KindId, OpaqueToken, ProviderId, Span, diag,
+    Carrier, DiagCode, Diagnostic, EntityRef, Interner, KindId, LeafId, OpaqueToken, ProviderId,
+    Span, diag,
 };
 use dorc_oracle::check::{self, CheckSet, ResolvedEntity};
 use dorc_oracle::{EffectCell, KindIndex, Polarity, empty_verb};
@@ -73,6 +75,67 @@ pub enum CommandEffect {
 /// effect-map (`ch-catalog`; 204 §6 open seam).
 const KIND_DISAGREEMENT: DiagCode = DiagCode("effect-kind-disagreement");
 
+/// The source identity of a give-up site for the migrated `dq-cmdsub-operand-top` spine
+/// (`22B` §5 worked-3): a real source [`Span`] (the drop-A fix — s-2 resolves it) and a stable
+/// [`SiteId`] for grouping. The leaf id is the CFG-node index: the kernel runs BEFORE the plan
+/// assigns plan-`LeafId`s, and this Note is render-plane-only (it never enters the probe-RESULTS
+/// lane `inv-site-keyed-results` governs), so the CFG-node-space id is an honest grouping site
+/// here (flagged `tc-cmdsub-siteid`). `command_effect` takes `Option<DiagSite>`: `Some` ⇒ emit
+/// the disclosure with a real span; `None` ⇒ suppress it (the member-family path, which
+/// re-discloses at the single-cell fallback — avoiding a double-report).
+#[derive(Debug, Clone, Copy)]
+pub struct DiagSite {
+    span: Span,
+    site: SiteId,
+}
+
+impl DiagSite {
+    /// Build a give-up site from a node's source span + its CFG-node id (the grouping leaf).
+    #[must_use]
+    fn of(span: Span, node: CfgNodeId) -> Self {
+        Self {
+            span,
+            site: SiteId::leaf(LeafId(node.0)),
+        }
+    }
+}
+
+/// Emit the migrated `DiagCode::CmdsubOperandTop` disclosure (`22B` §5 worked-3), lowered to the
+/// legacy stream for the coexistence `Vec<Diagnostic>` accumulator. `site == None` ⇒ SUPPRESS
+/// (the member-family path discloses at the single-cell fallback instead, avoiding a
+/// double-report — see `member_family`).
+///
+/// The payload carries `cause: None`: the arch-1 ⊤-cause is minted PER-OPAQUE-NODE in
+/// `mint_top_causes`, which runs AFTER this effects pass (Opaqueness is the effects pass's
+/// output — the ordering is inherent), so the cause is not yet available at this kernel-early
+/// emit site. The payload's `cause` field IS the `228` dc-1 hook; wiring the actual minted
+/// `ProvId` needs a post-mint emission and is deferred (flagged `tc-cmdsub-cause`). The label
+/// matches the legacy prose so the disclosure text is stable across the migration.
+fn emit_cmdsub_operand_top(
+    diags: &mut Vec<Diagnostic>,
+    site: Option<DiagSite>,
+    position: OperandPosition,
+    interner: &Interner,
+) {
+    let Some(site) = site else {
+        return; // member-family path: re-disclosed at the single-cell fallback (no double-report)
+    };
+    let diag = Diag::new(
+        Code::CmdsubOperandTop(CmdsubOperandTop {
+            site: site.site,
+            position,
+            cause: None,
+        }),
+        site.span,
+    )
+    .label(format!(
+        "command forced to run (never elided): {} is a command-substitution `$(…)` or \
+         runtime-dynamic value ⇒ its identity is unresolved (⊤)",
+        position.describe()
+    ));
+    diags.push(diag.to_legacy(interner));
+}
+
 /// Determine a `Command` node's effect cells from the book's resolved argv + the
 /// oracle's own `check()` (the real entity-resolution mechanism; replaces the deleted
 /// engine-side argparse stand-in). The engine parses NOTHING: it threads the
@@ -95,7 +158,7 @@ pub fn command_effect(
     argv: &[ValueOf],
     interner: &mut Interner,
     diags: &mut Vec<Diagnostic>,
-    site: Option<Span>,
+    site: Option<DiagSite>,
 ) -> Vec<CommandEffect> {
     // A bare assignment-only command (`pkg=nginx`) has an empty argv ⇒ no
     // system-state effect (value::analyze yields `[]` for words.is_empty()).
@@ -104,9 +167,10 @@ pub fn command_effect(
     };
     // The command word must be a concrete literal; a ⊤ word (`"$dyn" install …`) is
     // an un-modeled command ⇒ Opaque (`inv-top-reject`). The ⊤-degradation is no longer
-    // silent (q-2 / find-3 no-silent-phantoms): disclose it as a Note (`dq-cmdsub-operand-top`).
+    // silent (q-2 / find-3 no-silent-phantoms): disclose it through the migrated
+    // `DiagCode::CmdsubOperandTop` spine (`22B` §5 worked-3), lowered to the legacy stream.
     let ValueOf::Literal(provider_sym) = word0 else {
-        diags.push(diag::cmdsub_operand_top(site, "the command word"));
+        emit_cmdsub_operand_top(diags, site, OperandPosition::CommandWord, interner);
         return vec![CommandEffect::Opaque];
     };
     let provider_str = interner.resolve(provider_sym).to_owned();
@@ -133,12 +197,13 @@ pub fn command_effect(
         match word {
             ValueOf::Literal(s) => arg_texts.push(interner.resolve(*s).to_owned()),
             // ⊤ arg ⇒ unresolved ⇒ Opaque; disclose WHICH operand went ⊤ (q-2, the
-            // 1-based operand index excluding the command word — `dq-cmdsub-operand-top`).
+            // 1-based operand index excluding the command word — the migrated
+            // `DiagCode::CmdsubOperandTop` spine, `22B` §5 worked-3).
             ValueOf::Top => {
-                diags.push(diag::cmdsub_operand_top(
-                    site,
-                    &format!("operand {}", i + 1),
-                ));
+                let position = OperandPosition::Operand(
+                    u32::try_from(i.saturating_add(1)).unwrap_or(u32::MAX),
+                );
+                emit_cmdsub_operand_top(diags, site, position, interner);
                 return vec![CommandEffect::Opaque];
             }
         }
@@ -633,13 +698,16 @@ fn reach_transfer(
 #[expect(
     clippy::too_many_arguments,
     reason = "extracted verbatim from classify's per-node closure to stay under the line cap; \
-              the args are the closure's captured inputs (cfg/value/idx/checks/interner/diags)"
+              the args are the closure's captured inputs (cfg/value/idx/checks/interner/diags); \
+              s-2 adds `ast` so the q-2 ⊤-disclosures carry a REAL span (the migrated \
+              dq-cmdsub-operand-top spine), not None"
 )]
 fn node_effects(
     id: CfgNodeId,
     member_family: Option<&Vec<FactKey>>,
     cfg: &Cfg,
     value: &ValueFlow,
+    ast: &dorc_syntax::ast::Ast,
     idx: &KindIndex,
     checks: &[CheckSet],
     interner: &mut Interner,
@@ -657,13 +725,17 @@ fn node_effects(
     if cfg.call_body_sites(id).is_some() {
         return vec![CommandEffect::Pure];
     }
+    // s-2 (the EARLY classify-widening): resolve THIS node's real source span + a stable
+    // site identity, so the migrated `dq-cmdsub-operand-top` spine carries a real span (not
+    // None — drop-A) and a `SiteId`. The leaf id is the CFG-node index (the kernel runs
+    // BEFORE the plan assigns LeafIds; this Note is render-plane-only and never keys the
+    // probe-RESULTS lane, so the CFG-node-space id is an honest grouping site — flagged
+    // `tc-cmdsub-siteid`). The legacy `redir_target_top` (NOT migrated) gains the real span too.
+    let site = DiagSite::of(ast.node(cfg.node(id).ast).span, id);
     match cfg.node(id).kind {
         CfgNodeKind::Command => {
             let argv = value.argv_values(id);
-            // `site: None` — `classify` holds the CFG, not the AST, so a source span is not
-            // cheaply reachable here; the q-2 disclosure names the ⊤ POSITION (`the command
-            // word` / `operand N`), which is what the cli `report()` surfaces (no spans).
-            command_effect(idx, checks, &argv, interner, diags, None)
+            command_effect(idx, checks, &argv, interner, diags, Some(site))
         }
         // An unmodeled construct may mutate anything ⇒ ⊤.
         CfgNodeKind::Top => vec![CommandEffect::Opaque],
@@ -679,7 +751,8 @@ fn node_effects(
                 vec![CommandEffect::Establishes(file_write_cell(path, interner))]
             }
             Some(ValueOf::Top) => {
-                diags.push(diag::redir_target_top(None));
+                // NOT migrated this round (legacy survivor); s-2 still gives it a real span.
+                diags.push(diag::legacy::redir_target_top(Some(site.span)));
                 vec![CommandEffect::Opaque]
             }
             None => vec![CommandEffect::Pure],
@@ -795,6 +868,7 @@ pub fn classify(
                 member_families[i].as_ref(),
                 cfg,
                 value,
+                ast,
                 idx,
                 checks,
                 interner,
@@ -883,8 +957,9 @@ pub fn classify(
             // (`219` q-1.f). A Pure inner command discloses nothing (nothing un-elidable
             // happens), so gate on a non-Pure effect.
             if cells.iter().any(|e| *e != CommandEffect::Pure) {
-                diags.push(diag::cmdsub_inner_nonleaf(
-                    None,
+                // NOT migrated this round (legacy survivor); s-2 gives it a real span (drop-A).
+                diags.push(diag::legacy::cmdsub_inner_nonleaf(
+                    Some(ast.node(cfg.node(id).ast).span),
                     &render_argv(&value.argv_values(id), interner),
                 ));
             }

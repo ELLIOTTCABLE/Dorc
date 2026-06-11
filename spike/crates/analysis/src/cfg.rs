@@ -828,8 +828,9 @@ impl<'a> Builder<'a> {
         // positional resolves ⊤). Refuse THIS inner call LOUDLY (a catalogued Note) instead of
         // shipping a silent safe `MustRun`; the call runs verbatim, the limitation is disclosed.
         if !self.inline_stack.is_empty() && self.call_args_reference_positional(words) {
+            // NOT migrated this round (legacy survivor; the B4 sweep folds it onto the spine).
             self.diags
-                .push(dorc_core::diag::depth2_positional_unthreaded(
+                .push(dorc_core::diag::legacy::depth2_positional_unthreaded(
                     Some(self.span(id)),
                     name,
                 ));

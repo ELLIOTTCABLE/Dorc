@@ -952,8 +952,9 @@ fn refused_heredoc_guard_keeps_dead_oror_body_verbatim() {
         "no `:` may sit under a LIVE re-deciding guard (omit-safety):\n{rendered}"
     );
     // Exactly ONE refusal diagnostic: the guard's. The body is no longer would-elide
-    // (its controller is not neutralised), so it must not double-report.
-    let diags = plan.render_refusal_diagnostics(&ast);
+    // (its controller is not neutralised), so it must not double-report. The interner is
+    // unused by the render-refusal payload (it carries only a site), so a fresh one suffices.
+    let diags = plan.render_refusal_diagnostics(&ast, &Interner::default());
     assert_eq!(
         diags.len(),
         1,

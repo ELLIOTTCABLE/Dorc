@@ -190,7 +190,7 @@ fn run() -> Result<(), String> {
     // probe-unresolvable site's source command as a Note — the apply runs it (`kFAIL-perform`).
     report(
         "probe",
-        &unresolvable_diagnostics(&probe, &plan, &parsed.value, &book_src),
+        &unresolvable_diagnostics(&probe, &plan, &parsed.value, &book_src, &mut interner),
     );
 
     // gate-5 (cm-2 argv-echo differential): per-site resolved argv to stderr, behind the flag.
@@ -202,7 +202,7 @@ fn run() -> Result<(), String> {
     // edited (a heredoc-bearing command — its span covers `<<EOF`, not the body), running it
     // verbatim instead (kFAIL-perform). Surface WHY on stderr (else a converged mutator
     // silently running is invisible); the gate-3 floor requires the case to declare it.
-    let refusals = plan.render_refusal_diagnostics(&parsed.value);
+    let refusals = plan.render_refusal_diagnostics(&parsed.value, &interner);
     report("render", &refusals);
 
     print!("{}", plan.render_apply(&book_src, &parsed.value));
@@ -292,24 +292,43 @@ fn unresolvable_diagnostics(
     plan: &dorc_plan::Plan,
     ast: &dorc_syntax::ast::Ast,
     book_src: &str,
+    interner: &mut Interner,
 ) -> Vec<dorc_core::Diagnostic> {
+    use dorc_core::diag::{Diag, DiagCode, SiteId, SiteUnresolvable};
     let ast_of_leaf: BTreeMap<dorc_plan::LeafId, dorc_core::AstId> =
         plan.steps.iter().map(|s| (s.leaf, s.ast)).collect();
     probe
         .unresolvable
         .iter()
-        .map(|&leaf| {
-            let (span, source) =
-                ast_of_leaf
-                    .get(&leaf)
-                    .map_or((None, format!("<site {}>", leaf.0)), |&id| {
-                        let span = ast.node(id).span;
-                        let text = book_src
-                            .get(span.lo.0 as usize..span.hi.0 as usize)
-                            .unwrap_or("<source unavailable>");
-                        (Some(span), text.to_string())
-                    });
-            dorc_core::diag::site_unresolvable(span, &leaf.0.to_string(), &source)
+        .filter_map(|&leaf| {
+            // A site with no matching step cannot key a span; none is expected (every
+            // unresolvable site is a runnable command leaf), but skip it rather than fabricate a
+            // None span (the migrated spine's primary span is mandatory — drop-B).
+            let &id = ast_of_leaf.get(&leaf)?;
+            let span = ast.node(id).span;
+            let text = book_src
+                .get(span.lo.0 as usize..span.hi.0 as usize)
+                .unwrap_or("<source unavailable>");
+            // The migrated `DiagCode::SiteUnresolvable` spine (`22B` §5 worked-1): the SiteId is
+            // first-class (a real plan LeafId here), the source command is a referent-agnostic
+            // OutClaim, and the suggestion carries a remediation class. Lowered to the legacy
+            // stream so `report()`/gate-3 are unchanged.
+            let diag = Diag::new(
+                DiagCode::SiteUnresolvable(SiteUnresolvable {
+                    site: SiteId::leaf(leaf),
+                    source_excerpt: OutClaim(interner.intern(text)),
+                }),
+                span,
+            )
+            .label("no read-only probe could be shipped for this site")
+            .note("the apply runs it unconditionally (kFAIL-perform)")
+            .suggest(dorc_core::diag::Suggestion {
+                message: "declare a read-only probe for this kind's selector in its oracle"
+                    .to_owned(),
+                applicability: dorc_core::diag::Applicability::MaybeIncorrect,
+                remediation: dorc_core::diag::RemediationClass::AuthorOracle,
+            });
+            Some(diag.to_legacy(interner))
         })
         .collect()
 }
@@ -565,9 +584,16 @@ fn effect_word_to_verdict(word: &str) -> Verdict {
 
 /// Print a stage's diagnostics to stderr (keeping stdout = probe + apply).
 ///
-/// Format `<stage>: <severity>[<code>]: <message>` — the severity word is load-bearing:
-/// the e2e gate-3 floor (20B §2) keys on the `error[` shape (an Error fails a case unless
-/// declared in `expected-diagnostics`; warnings stay free-form). I/O-edge formatting only.
+/// Format `<stage>: <severity>[<code>]: <message>`, then a ` --> <lo>:<hi>` region line when the
+/// diagnostic carries a span (the round-22 drop-A fix: the span was previously DROPPED at this
+/// one user surface — `21Z` drop-A — so a structured diagnostic's location never reached the
+/// user; now it does). The severity word is load-bearing: the e2e gate-3 floor (20B §2) keys on
+/// the `error[` shape (an Error fails a case unless declared in `expected-diagnostics`; warnings
+/// stay free-form), and the region line never starts with `<stage>: error[`, so it is inert to
+/// gate-3. The byte-coordinate form (no source excerpt) is the multi-stage-safe minimum: `report`
+/// receives only the diagnostics, not the per-stage source (oracle vs book), so it renders the
+/// span coordinates; the source-resolved narrative is [`dorc_core::diag::render_cli`]'s job.
+/// I/O-edge formatting only.
 fn report(stage: &str, diags: &[dorc_core::Diagnostic]) {
     for d in diags {
         let sev = match d.severity {
@@ -576,6 +602,9 @@ fn report(stage: &str, diags: &[dorc_core::Diagnostic]) {
             Severity::Note => "note",
         };
         eprintln!("{stage}: {sev}[{}]: {}", d.code.0, d.message);
+        if let Some(span) = d.span {
+            eprintln!("  --> {}:{}", span.lo.0, span.hi.0);
+        }
     }
 }
 
@@ -918,7 +947,7 @@ mod tests {
             |_| Observable::verdict_only(Verdict::Unknown),
             &mut arena,
         );
-        let diags = unresolvable_diagnostics(&probe, &plan, &parsed.value, book);
+        let diags = unresolvable_diagnostics(&probe, &plan, &parsed.value, book, &mut interner);
         assert!(
             diags.iter().any(|d| d.code.0 == "dq-site-unresolvable"),
             "an Opaque site must be disclosed unresolvable: {diags:?}"

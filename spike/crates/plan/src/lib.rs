@@ -599,8 +599,12 @@ fn consumption_ok(consumed: &May<Powerset<Channel>>, status: Predicted<Rc>) -> b
 /// executable work is a list of *individually wrappable* leaves, each with a
 /// stable back-map to its source — NEVER one opaque `sh -c "$bigscript"`. The
 /// back-map is [`Step::ast`]; the id is this leaf's position in source order.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub struct LeafId(pub u32);
+///
+/// Defined in `core` (`dec-seam-ownership`, the `dac-B` shared vocabulary) and
+/// re-exported here: the round-22 structured diagnostic ([`dorc_core::diag::SiteId`])
+/// keys on it, so the base crate owns it and `plan` shares the one type rather than a
+/// parallel one (`inv-site-keyed-results`).
+pub use dorc_core::LeafId;
 
 /// The cheapest sh stand-in that reproduces a leaf's **exact** observed exit status
 /// (`19A §5` observable-value-MAINTAINING substitution / DESIGN `16F`/`16P-T10`).
@@ -1479,7 +1483,12 @@ impl Plan {
     /// converged mutator would otherwise be invisible). The cli `report()`s these on stderr;
     /// the e2e gate-3 floor requires a case exercising this path to declare the diagnostic.
     #[must_use]
-    pub fn render_refusal_diagnostics(&self, ast: &Ast) -> Vec<dorc_core::Diagnostic> {
+    pub fn render_refusal_diagnostics(
+        &self,
+        ast: &Ast,
+        interner: &Interner,
+    ) -> Vec<dorc_core::Diagnostic> {
+        use dorc_core::diag::{Diag, DiagCode, RenderHeredocRefused, SiteId};
         let by_ast: BTreeMap<AstId, &Disposition> =
             self.steps.iter().map(|s| (s.ast, &s.disposition)).collect();
         let mut diags = Vec::new();
@@ -1490,16 +1499,26 @@ impl Plan {
                 Disposition::Run => false,
             };
             if would_elide && leaf_has_heredoc(ast, step.ast) {
-                diags.push(dorc_core::Diagnostic::error(
-                    dorc_core::DiagCode("render-heredoc-refused"),
-                    Some(ast.node(step.ast).span),
-                    format!(
-                        "leaf-exact render refuses to elide a heredoc-bearing command \
-                         (`{}`): its span covers the `<<` operator, not the body lines, so \
-                         substituting it would strand the heredoc body — it runs verbatim",
-                        command_text_oneline(&step.sh),
-                    ),
-                ));
+                // The migrated `DiagCode::RenderHeredocRefused` spine (`22B` §5 worked-2 — the
+                // most-improved case: an inline literal becomes a first-class typed variant the
+                // grep gate sees and the registry pins Error+WarnOrDeny). Lowered to the legacy
+                // stream, preserving `(code-slug, span, Error)` so the coverage span-bridge and
+                // the erasability identity plane are unchanged. The interner resolves no excerpt
+                // here (the payload carries only a site) but is threaded for the shared lowering.
+                let diag = Diag::new(
+                    DiagCode::RenderHeredocRefused(RenderHeredocRefused {
+                        site: SiteId::leaf(step.leaf),
+                    }),
+                    ast.node(step.ast).span,
+                )
+                .label(format!(
+                    "leaf-exact render refuses to elide a heredoc-bearing command (`{}`): its \
+                     span covers the `<<` operator, not the body lines, so substituting it would \
+                     strand the heredoc body — it runs verbatim",
+                    command_text_oneline(&step.sh),
+                ))
+                .help("split the heredoc body to its own leaf, or mark the kind un-elidable");
+                diags.push(diag.to_legacy(interner));
             }
         }
         diags
