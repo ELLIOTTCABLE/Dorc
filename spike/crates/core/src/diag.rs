@@ -54,6 +54,16 @@ pub const SITE_UNRESOLVABLE: DiagCode = DiagCode("dq-site-unresolvable");
 /// `dq-cmdsub-operand-top` — a ⊤ that forces poison, surfaced not silent).
 pub const REDIR_TARGET_TOP: DiagCode = DiagCode("dq-redir-target-top");
 
+/// A transitively-inlined (depth-2) call whose OWN call-argument references a
+/// positional (`a() { b "$1"; }`): the positional overlay does NOT thread two levels
+/// (`216` §1.2 claimed it did; the wave-2 crosscheck disproved it — the inner `$1`
+/// resolves ⊤). Rather than ship a silent safe `MustRun`, the inner call is REFUSED
+/// inlining with this disclosure, so the limitation is loud, not invisible (note
+/// 216's false working-claim corrected). The call still runs verbatim (safe — the
+/// un-bound positional already degraded its body to ⊤), so this is a `Note`, not an
+/// error; it converts a hidden imprecision into a documented one.
+pub const DEPTH2_POSITIONAL_UNTHREADED: DiagCode = DiagCode("dq-depth-2-positional-unthreaded");
+
 /// Every code registered in this catalog (the rq-2 completeness-gate input). A code
 /// that resolves to an empty [`template`] is a catalog bug the test catches.
 pub const CATALOG: &[DiagCode] = &[
@@ -61,6 +71,7 @@ pub const CATALOG: &[DiagCode] = &[
     CMDSUB_INNER_NONLEAF,
     SITE_UNRESOLVABLE,
     REDIR_TARGET_TOP,
+    DEPTH2_POSITIONAL_UNTHREADED,
 ];
 
 /// The message TEMPLATE for a registered code, or `""` for an unregistered one
@@ -86,6 +97,12 @@ pub fn template(code: DiagCode) -> &'static str {
         REDIR_TARGET_TOP => {
             "write-redirect to a dynamic/unresolved target ⇒ no per-path `file` cell can be \
              keyed, so the write joins ⊤ and the command runs (never elided)"
+        }
+        DEPTH2_POSITIONAL_UNTHREADED => {
+            "call `{name}` not inlined: its argument references a positional (`$1`..`$9`/`$#`) \
+             that does not thread through two inline levels ⇒ the inner body's positional is ⊤ \
+             — it runs as an ordinary unmodeled command (depth-2 positional threading is out of \
+             the modeled subset)"
         }
         _ => "",
     }
@@ -139,6 +156,19 @@ pub fn redir_target_top(span: Option<Span>) -> Diagnostic {
         REDIR_TARGET_TOP,
         span,
         template(REDIR_TARGET_TOP).to_owned(),
+    )
+}
+
+/// Build the [`DEPTH2_POSITIONAL_UNTHREADED`] Note (arch-2 wave-2 correction): a
+/// depth-2 inner call whose own argument references a positional that does not thread
+/// two inline levels. `name` is the refused call's function name; `span` carries the
+/// call's source location.
+#[must_use]
+pub fn depth2_positional_unthreaded(span: Option<Span>, name: &str) -> Diagnostic {
+    Diagnostic::note(
+        DEPTH2_POSITIONAL_UNTHREADED,
+        span,
+        fill(template(DEPTH2_POSITIONAL_UNTHREADED), &[("name", name)]),
     )
 }
 
@@ -227,5 +257,19 @@ mod tests {
         let d = site_unresolvable(None, "1", ": > /etc/x");
         assert!(d.message.contains(": > /etc/x"));
         assert!(!d.message.contains('{'));
+
+        let d = depth2_positional_unthreaded(None, "b");
+        assert_eq!(d.code, DEPTH2_POSITIONAL_UNTHREADED);
+        assert_eq!(d.severity, Severity::Note);
+        assert!(
+            d.message.contains('b'),
+            "the name param lands: {}",
+            d.message
+        );
+        assert!(
+            !d.message.contains('{'),
+            "no unfilled placeholder: {}",
+            d.message
+        );
     }
 }

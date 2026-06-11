@@ -1793,6 +1793,106 @@ fn two_calls_to_one_function_produce_distinct_leaf_nodes_sharing_one_ast() {
     );
 }
 
+/// The REACHABLE (from entry) `Command` nodes whose command word is `lit` — filters out the
+/// detached funcdef-definition copies (which are non-leaf islands, unreachable).
+fn reachable_command_nodes_with_literal(cfg: &Cfg, src: &str, lit: &str) -> Vec<CfgNodeId> {
+    command_nodes_with_literal(cfg, src, lit)
+        .into_iter()
+        .filter(|&n| reaches(cfg, cfg.entry(), n))
+        .collect()
+}
+
+#[test]
+fn depth_2_positional_argument_refuses_inner_call_loudly() {
+    // arch-2 wave-2 correction: depth-2 positional threading does NOT work — note 216 §1.2
+    // claimed `a() { b "$1"; }` threads the outer `$1` into `b`'s body, but the overlay does
+    // not bind it (the inner `$1` resolves ⊤). Instead of a SILENT safe MustRun, the inner
+    // call `b "$1"` is REFUSED inlining with a catalogued Note (`dq-depth-2-positional-
+    // unthreaded`), so the limitation is loud. The book still RUNS verbatim (the reachable
+    // inner `b` stays Opaque/un-inlined — safe behavior unchanged).
+    let src = "b() { apt-get install -y \"$1\"; }\na() { b \"$1\"; }\na nginx\n";
+    let parsed = parse(src);
+    let built = build(&parsed.value);
+    assert!(
+        built
+            .diags
+            .iter()
+            .any(|d| d.code.0 == "dq-depth-2-positional-unthreaded"),
+        "the un-threaded depth-2 positional inner call refuses LOUDLY (catalogued Note): {:?}",
+        built.diags.iter().map(|d| d.code.0).collect::<Vec<_>>()
+    );
+    let cfg = &built.value;
+    // The OUTER call `a` still inlines (its argument `nginx` is a literal, threads fine).
+    assert!(
+        call_body_sites_of(cfg, src, "a").is_some(),
+        "the outer call `a` still inlines (its literal argument threads)"
+    );
+    // The REACHABLE inner `b` call (inside `a`'s splice) is refused — it is NOT an inlined call,
+    // so it has no body-site list (it runs verbatim as an ordinary command). (The detached
+    // definition copy of `a`'s body is a non-leaf island and is not the run-set's concern.)
+    let reachable_b = reachable_command_nodes_with_literal(cfg, src, "b");
+    assert_eq!(
+        reachable_b.len(),
+        1,
+        "one reachable `b` call (inside a's splice)"
+    );
+    assert!(
+        cfg.call_body_sites(reachable_b[0]).is_none(),
+        "the reachable inner `b` call is refused (runs verbatim, Opaque)"
+    );
+}
+
+#[test]
+fn depth_2_literal_argument_still_inlines() {
+    // The refusal is NARROW: a nested call with a LITERAL argument still inlines (only a
+    // positional-referencing nested call is the un-threaded shape). `a() { b nginx; }` threads
+    // `nginx` to `b`'s `$1` fine (one level), so the reachable `b` inlines and the install
+    // resolves.
+    let src = "b() { apt-get install -y \"$1\"; }\na() { b nginx; }\na\n";
+    let parsed = parse(src);
+    let built = build(&parsed.value);
+    assert!(
+        !built
+            .diags
+            .iter()
+            .any(|d| d.code.0 == "dq-depth-2-positional-unthreaded"),
+        "a literal-argument nested call is NOT refused (it threads one level fine)"
+    );
+    let reachable_b = reachable_command_nodes_with_literal(&built.value, src, "b");
+    assert_eq!(reachable_b.len(), 1, "one reachable `b` call");
+    assert!(
+        built.value.call_body_sites(reachable_b[0]).is_some(),
+        "the reachable inner call `b nginx` still inlines"
+    );
+}
+
+#[test]
+fn depth_2_inner_install_ships_exactly_one_site_record() {
+    // `i-6` depth-2 splice double-count regression (crosscheck wave-2): a depth-2 transitive
+    // splice (`b` called inside `a`'s body) must ship the inner install exactly ONCE under the
+    // OUTER call's leaf, not twice (the `site 0.0` AND `site 0.1` bug). The inner install sits
+    // both in the inner call's flattened site list AND directly in the outer arena range; the
+    // direct scan must skip the already-flattened leaf.
+    let src = "b() { apt-get install -y nginx >/dev/null 2>&1; }\na() { b; }\na\n";
+    let cfg = cfg_of(src);
+    let outer = require(call_body_sites_of(&cfg, src, "a"), "`a` is an inlined call");
+    assert_eq!(
+        outer.len(),
+        1,
+        "exactly one body-site record for the depth-2 install (no double-count): got {outer:?}"
+    );
+    // The single recorded site is the deepest install leaf, not the inner `b` call node.
+    assert_eq!(
+        command_word_literal(&parse(src).value, cfg.node(outer[0]).ast).as_deref(),
+        Some("apt-get"),
+        "the recorded site is the install leaf, not the `b` call"
+    );
+    assert!(
+        cfg.is_spliced_internal(outer[0]),
+        "the install is spliced_internal (the CALL is the render unit)"
+    );
+}
+
 #[test]
 fn splice_keeps_the_cfg_consistent_and_terminating() {
     // inv-no-throw + Graph consistency under the splice: an inlined book builds a consistent

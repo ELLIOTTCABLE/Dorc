@@ -1590,6 +1590,52 @@ command__check() {
         );
     }
 
+    #[test]
+    fn blessed_pure_colon_with_write_redirect_invalidates_downstream_query() {
+        // fix-4(a) regression pin (y-1): `: > f` is a blessed-pure colon builtin carrying a
+        // write-redirect. The `:` command itself gens nothing, but the `> f` Redir node gens
+        // `file:f#written` into reaching-defs — so a downstream Query reading the just-written
+        // file is non-pristine ⇒ INVALID. Pins that the redirect's file-write effect is NOT
+        // masked by the blessed-pure command word (the precise imp-1 hazard: the write is on the
+        // redirect, not the verb). Mirrors `write_redirect_invalidates_downstream_query`, kept
+        // as its own pin so the colon-specific shape has an explicit guard.
+        let mut i = Interner::default();
+        let idx = package_and_query_index(&mut i);
+        let classes = classify_src(": > /etc/app.conf\ncommand -v nginx", &mut i, &idx);
+        let nginx = tool_present(&mut i, "nginx");
+        assert!(
+            classes.contains(&SkipClass::QueryResolvable {
+                fact: nginx,
+                valid: false
+            }),
+            "`: > f` (blessed-pure colon + write-redirect) gens the file-write cell ⇒ the \
+             downstream Query is INVALID (the write is on the redirect, not the verb): {classes:?}"
+        );
+    }
+
+    #[test]
+    fn bare_redirect_empty_argv_invalidates_downstream_query() {
+        // fix-4(b) regression pin (y-1): a BARE `> f` (an empty-argv command — no command word,
+        // only a write-redirect) is still a file-write WRITER. The empty-argv command node is a
+        // `MustRun` (no verb to classify), but the `> f` Redir node gens `file:f#written` into
+        // reaching-defs — so a downstream Query is non-pristine ⇒ INVALID. Pins that the
+        // redirect-effect is seen even with NO command word (the redirect runs in the current
+        // shell, truncating the file). The novel shape the other y-1 pins (`:`/`printf`/`echo`
+        // prefixes) do not cover.
+        let mut i = Interner::default();
+        let idx = package_and_query_index(&mut i);
+        let classes = classify_src("> /etc/app.conf\ncommand -v nginx", &mut i, &idx);
+        let nginx = tool_present(&mut i, "nginx");
+        assert!(
+            classes.contains(&SkipClass::QueryResolvable {
+                fact: nginx,
+                valid: false
+            }),
+            "a bare `> f` (empty-argv command + write-redirect) gens the file-write cell ⇒ the \
+             downstream Query is INVALID (the redirect writes with no command word): {classes:?}"
+        );
+    }
+
     // --- task-L1 (`209` brk-1): reaching-defs over the loop back-edge -------------
 
     #[test]

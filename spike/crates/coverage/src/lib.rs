@@ -173,6 +173,12 @@ pub enum BlockReason {
     /// The fact was mutated upstream in-script (`EstablishWritten`) ⇒ the resting
     /// probe is stale ⇒ runs (the `purge X; … install X` shape).
     WrittenUpstream,
+    /// The disposition LICENSED an elision (`Replace`) but the leaf-exact render
+    /// REFUSES to edit its span — a heredoc-bearing leaf (`<<EOF`), whose span covers
+    /// the operator, not the body lines — so the artifact RUNS it verbatim (`20V` §4 d-6 /
+    /// `21B` hunt-1). Without this the dashboard would over-count it `replace-converged`
+    /// (the disposition's lie); we consult `Plan::render_refusal_diagnostics` and demote it.
+    RenderRefusal,
     /// The disposition was `Run` but the dashboard could not localise a more specific
     /// reason from the public surfaces — carries the `{:?}` of the class for the seam
     /// wishlist (what attribution cannot see).
@@ -193,6 +199,7 @@ impl BlockReason {
             BlockReason::InLoopFloor => "in-loop-floor",
             BlockReason::ConsumedOutput => "consumed-output",
             BlockReason::WrittenUpstream => "written-upstream",
+            BlockReason::RenderRefusal => "render-refusal",
             BlockReason::Unattributed(_) => "unattributed",
         }
     }
@@ -412,6 +419,13 @@ pub fn build_report(inputs: &Inputs<'_>) -> Report {
     let leaf_of: BTreeMap<dorc_core::AstId, LeafId> =
         plan.steps.iter().map(|s| (s.ast, s.leaf)).collect();
 
+    // fix-1 (the dashboard heredoc lie, `21B` hunt-1): a `Replace` disposition the leaf-exact
+    // render REFUSES (a heredoc-bearing leaf) runs verbatim despite the disposition. Consult the
+    // SAME refusal the render applies — `Plan::render_refusal_diagnostics` — and collect the
+    // refused leaves so `attribute_door` demotes them to `runs(render-refusal)` instead of
+    // mis-bucketing them `replace-converged` (the disposition's lie, 100% coverage that isn't).
+    let render_refused = render_refused_leaves(&plan, &parsed.value, &leaf_of);
+
     let mut rows: Vec<SiteRow> = classes
         .iter()
         .filter_map(|(node, class)| {
@@ -428,6 +442,7 @@ pub fn build_report(inputs: &Inputs<'_>) -> Report {
                 &parsed.value,
                 &value,
                 &probe_verdicts,
+                &render_refused,
                 inputs.weights,
                 &interner,
             ))
@@ -436,6 +451,37 @@ pub fn build_report(inputs: &Inputs<'_>) -> Report {
     rows.sort_by_key(|r| r.site.0);
 
     rollup(rows)
+}
+
+/// fix-1: the set of site [`LeafId`]s the leaf-exact render REFUSES to elide (a heredoc-bearing
+/// `Replace`/neutralised-`Omit` leaf, `20V` §4 d-6). Consults the SAME public refusal the cli
+/// reports — [`Plan::render_refusal_diagnostics`] — so the dashboard's "elided" set matches the
+/// artifact the render emits, never the disposition's bare claim (the heredoc lie, `21B` hunt-1).
+///
+/// Each refusal diagnostic carries the refused leaf's source span; `leaf_of` keys leaves by
+/// `AstId`, so we bridge span→leaf via the steps' own `AstId`→span. A diagnostic whose span
+/// matches no step is dropped (defensive; every refusal originates from a step today).
+fn render_refused_leaves(
+    plan: &dorc_plan::Plan,
+    ast: &dorc_syntax::ast::Ast,
+    leaf_of: &BTreeMap<dorc_core::AstId, LeafId>,
+) -> std::collections::BTreeSet<LeafId> {
+    // span (lo,hi) → leaf, from the steps (the render-refusal diagnostics carry the same span).
+    let leaf_by_span: BTreeMap<(u32, u32), LeafId> = plan
+        .steps
+        .iter()
+        .filter_map(|s| {
+            let span = ast.node(s.ast).span;
+            leaf_of
+                .get(&s.ast)
+                .map(|&leaf| ((span.lo.0, span.hi.0), leaf))
+        })
+        .collect();
+    plan.render_refusal_diagnostics(ast)
+        .iter()
+        .filter_map(|d| d.span)
+        .filter_map(|span| leaf_by_span.get(&(span.lo.0, span.hi.0)).copied())
+        .collect()
 }
 
 /// Drive `build_plan`'s `observe` closure from the supplied per-site verdicts. The
@@ -576,6 +622,7 @@ fn attribute_site(
     ast: &dorc_syntax::ast::Ast,
     value: &dorc_analysis::value::ValueFlow,
     probe_verdicts: &BTreeMap<LeafId, Verdict>,
+    render_refused: &std::collections::BTreeSet<LeafId>,
     weights: &weights::Weights,
     interner: &Interner,
 ) -> SiteRow {
@@ -597,6 +644,7 @@ fn attribute_site(
         class,
         probed,
         probe_verdicts.is_empty(),
+        render_refused.contains(&site),
     );
     let rung = attribute_rung(&door, class);
     // Criticality weight = the span's line-count (stand-in for the 1A matrix).
@@ -696,7 +744,16 @@ fn attribute_door(
     class: &SkipClass,
     probed: Option<Verdict>,
     no_probe_results: bool,
+    render_refused: bool,
 ) -> Door {
+    // fix-1 (the heredoc lie): the leaf-exact render REFUSES this leaf (a heredoc-bearing
+    // `Replace`/neutralised-`Omit`), so the artifact RUNS it verbatim despite the disposition
+    // licensing an elision. This OVERRIDES every elision door — a refused leaf is never elided in
+    // fact — so it is the run-set residue, attributed `runs(render-refusal)`, never
+    // `replace-converged`/`fold` (the disposition's bare claim, `21B` hunt-1).
+    if render_refused {
+        return Door::Runs(BlockReason::RenderRefusal);
+    }
     match disposition {
         Disposition::Omit { .. } => Door::Fold,
         Disposition::Replace(license, _) => {
@@ -1078,6 +1135,38 @@ dpkg__check() {
                 );
             }
         }
+    }
+
+    #[test]
+    fn heredoc_bearing_converged_mutator_reports_render_refusal_not_elided() {
+        // fix-1 (the dashboard heredoc lie, `21B` hunt-1): a converged heredoc-bearing mutator
+        // gets `Disposition::Replace` (the install establishes `package:nginx`, holds), but the
+        // leaf-exact render REFUSES to edit its span (the span covers `<<EOF`, not the body) and
+        // runs it VERBATIM. The dashboard must consult the SAME render refusal and bucket it
+        // `runs(render-refusal)`, NEVER `replace-converged` — and report 0% coverage, not the
+        // 100% the disposition alone would claim.
+        let book = "apt-get install -y nginx <<EOF\nconfig line\nEOF\n";
+        let r = report(book, Some("site 0 effect=holds\n"));
+        assert_eq!(
+            door_at(&r, 0),
+            Door::Runs(BlockReason::RenderRefusal),
+            "a render-refused heredoc mutator runs verbatim — never replace-converged: {:?}",
+            r.rows
+                .iter()
+                .map(|x| (x.site.0, x.door.clone()))
+                .collect::<Vec<_>>(),
+        );
+        assert_eq!(
+            r.full_elided_count(),
+            0,
+            "no site is a full elision (the render runs it): {r:?}"
+        );
+        assert_eq!(
+            r.full_elided_weight(),
+            0,
+            "0% criticality-weighted coverage (the heredoc lie corrected)"
+        );
+        assert_no_unattributed(&r);
     }
 
     #[test]

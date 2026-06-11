@@ -809,6 +809,20 @@ impl<'a> Builder<'a> {
             ));
             return None;
         }
+        // Depth-2 positional threading does NOT work (arch-2 wave-2 correction): a NESTED call
+        // (`inline_stack` already holds an enclosing body) whose own argument references a
+        // positional reads the ENCLOSING function's `$1`, which the overlay does not thread two
+        // levels (note 216 §1.2 claimed it did; the crosscheck disproved it — the inner body's
+        // positional resolves ⊤). Refuse THIS inner call LOUDLY (a catalogued Note) instead of
+        // shipping a silent safe `MustRun`; the call runs verbatim, the limitation is disclosed.
+        if !self.inline_stack.is_empty() && self.call_args_reference_positional(words) {
+            self.diags
+                .push(dorc_core::diag::depth2_positional_unthreaded(
+                    Some(self.span(id)),
+                    name,
+                ));
+            return None;
+        }
         if let Some(construct) = self.body_uses_unmodeled_positional(body) {
             self.diags.push(Diagnostic::warning(
                 CFG_INLINE_REFUSED,
@@ -907,8 +921,14 @@ impl<'a> Builder<'a> {
             .saturating_add(body_end - body_start);
 
         // The call's effect-bearing leaf sites (i-4), in arena order. An inner inlined CALL is
-        // not itself a site — flatten its own body leaves in (avoids double-counting it).
+        // not itself a site — flatten its own body leaves in. Those flattened leaves ALSO sit
+        // directly in `body_start..body_end` (a transitively-spliced body command is in this
+        // arena range too), so the direct scan must SKIP them, or each depth-2 inner leaf
+        // double-counts: once via the inner call's flatten, once via the direct push (the
+        // `site 0.0`/`site 0.1` bug). The inner CALL precedes its body leaves in arena order,
+        // so accumulating the flattened set as we go covers every later direct hit.
         let mut sites: Vec<CfgNodeId> = Vec::new();
+        let mut flattened_inner: BTreeSet<CfgNodeId> = BTreeSet::new();
         for v in body_start..body_end {
             let node = CfgNodeId(v as u32);
             if self.nodes[v].kind != CfgNodeKind::Command || self.expansion_internal[v] {
@@ -916,7 +936,8 @@ impl<'a> Builder<'a> {
             }
             if let Some(inner_sites) = self.call_body_sites.get(&node) {
                 sites.extend(inner_sites.iter().copied());
-            } else {
+                flattened_inner.extend(inner_sites.iter().copied());
+            } else if !flattened_inner.contains(&node) {
                 sites.push(node);
             }
         }
@@ -1693,6 +1714,18 @@ impl<'a> Builder<'a> {
         None
     }
 
+    /// arch-2 (wave-2): do this call's OWN argument words (`words[1..]`, the command word
+    /// excluded) reference a positional parameter (`$1`..`$9`, quoted or not, or `$#`)? Used to
+    /// refuse a NESTED call that threads a positional into a second inline level — the overlay
+    /// does not bind it (note 216 §1.2's false working-claim). Mirrors value.rs's
+    /// `word_references_positional`, kept local so cfg.rs stays self-contained.
+    fn call_args_reference_positional(&self, words: &[AstId]) -> bool {
+        let args = words.get(1..).unwrap_or(&[]);
+        args.iter().any(|&w| {
+            matches!(&self.ast.node(w).kind, NodeKind::Word { parts } if word_parts_reference_positional(parts))
+        })
+    }
+
     /// arch-2 (tc-M2): does the funcdef `body`'s AST subtree carry a WRITE-shaped redirect
     /// (`>`/`>>`/`<>`) to anything OTHER than `/dev/null`? Returns a short detail for the
     /// refusal diagnostic, or `None`. A body file-write is an unmodeled effect (y-1) that
@@ -1937,6 +1970,21 @@ fn word_parts_special_positional(parts: &[WordPart]) -> Option<&'static str> {
         }
     }
     None
+}
+
+/// arch-2 (wave-2): does this list of word parts reference a positional parameter —
+/// `$1`..`$9` (the lexer keeps `Param { name }` with an all-ASCII-digit name) or `$#`
+/// (the count)? Recurses into double-quoted nesting (`"$1"` is the common form). `$@`/`$*`
+/// are handled separately ([`word_parts_special_positional`], already refused); this is the
+/// positional-VALUE family that the depth-2 overlay fails to thread.
+fn word_parts_reference_positional(parts: &[WordPart]) -> bool {
+    parts.iter().any(|p| match p {
+        WordPart::Param { name } => {
+            name == "#" || (!name.is_empty() && name.bytes().all(|b| b.is_ascii_digit()))
+        }
+        WordPart::DoubleQuoted(inner) => word_parts_reference_positional(inner),
+        _ => false,
+    })
 }
 
 /// Does this list of word parts contain the `$?` special parameter (the lexer keeps
