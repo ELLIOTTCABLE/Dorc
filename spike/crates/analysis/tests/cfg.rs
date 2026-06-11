@@ -24,7 +24,7 @@ use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use dorc_analysis::cfg::{Cfg, CfgNodeId, CfgNodeKind, build};
 use dorc_analysis::lattice::Powerset;
 use dorc_analysis::solve::Graph;
-use dorc_core::Channel;
+use dorc_core::{Channel, Severity};
 use dorc_syntax::parse;
 
 const PI_WEBHOST: &str = include_str!(concat!(
@@ -1548,6 +1548,68 @@ fn consumed_oror_true_with_later_true_funcdef_keeps_relaxable() {
     assert!(
         c.contains(&Channel::StatusRelaxable) && !c.contains(&Channel::StatusInvariant),
         "a later `true()` funcdef still disqualifies door-3 (file-wide, conservative): {c:?}"
+    );
+}
+
+#[test]
+fn funcdef_shadowing_relied_builtin_warns_loudly() {
+    // find-I's wider half: EVERY `StandIn::True`/`False` emission — and the blessed-pure
+    // classification of bare words — assumes `true`/`false`/… resolve to builtins; a
+    // same-named funcdef breaks that book-wide. WARNING-class DISCLOSURE per offending
+    // definition (door-3's refusal is the separate, license-scoped half).
+    let src = "true() { systemctl restart sshd; }\napt-get install -y nginx || true\n";
+    let parsed = parse(src);
+    let built = build(&parsed.value);
+    let shadow: Vec<_> = built
+        .diags
+        .iter()
+        .filter(|d| d.code.0 == "cfg-builtin-shadowed")
+        .collect();
+    assert_eq!(
+        shadow.len(),
+        1,
+        "one warning per offending funcdef: {:?}",
+        built.diags.iter().map(|d| d.code.0).collect::<Vec<_>>()
+    );
+    assert_eq!(
+        shadow[0].severity,
+        Severity::Warning,
+        "WARNING-class disclosure (not a Note, not an Error)"
+    );
+    assert!(
+        shadow[0].message.contains("`true`"),
+        "the warning names the shadowed builtin: {}",
+        shadow[0].message
+    );
+    assert!(
+        shadow[0].span.is_some(),
+        "the warning carries the definition's span"
+    );
+
+    // `false` is the other minted stand-in word — equally disclosed.
+    let parsed = parse("false() { systemctl restart sshd; }\nfalse || apt-get install -y nginx\n");
+    assert!(
+        build(&parsed.value)
+            .diags
+            .iter()
+            .any(|d| d.code.0 == "cfg-builtin-shadowed" && d.message.contains("`false`")),
+        "a `false()` funcdef is disclosed too (the other stand-in word)"
+    );
+}
+
+#[test]
+fn funcdef_ordinary_name_does_not_warn() {
+    // The clean-book pole (zero-churn): an ordinary funcdef name triggers NO shadowing
+    // warning — the disclosure fires only on engine-relied builtin names, so books
+    // without one see zero new diagnostics (and zero behavior change).
+    let src = "p() { apt-get install -y nginx; }\np\napt-get install -y curl || true\n";
+    let parsed = parse(src);
+    assert!(
+        !build(&parsed.value)
+            .diags
+            .iter()
+            .any(|d| d.code.0 == "cfg-builtin-shadowed"),
+        "an ordinary funcdef name (`p`) must not trip the shadowing disclosure"
     );
 }
 

@@ -297,7 +297,12 @@ fn cell_effect(
 /// anything not listed stays `Opaque` (the safe over-refusing direction); the
 /// dynamic-lvalue forms (`unset "$x"`, `printf -v`) are already ⊤-rejected upstream
 /// by the parser, so only their static uses reach here.
-fn is_target_state_pure_builtin(word: &str) -> bool {
+///
+/// The classification assumes the word resolves to the BUILTIN — a book-defined
+/// same-named function shadows a regular builtin in dash, which `cfg` discloses
+/// per-funcdef (find-I, `cfg-builtin-shadowed`); `pub(crate)` so that disclosure
+/// shares this one list.
+pub(crate) fn is_target_state_pure_builtin(word: &str) -> bool {
     matches!(
         word,
         "set"

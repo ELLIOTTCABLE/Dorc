@@ -42,6 +42,14 @@ const CFG_ERREXIT_TOP: DiagCode = DiagCode("cfg-errexit-unknown");
 /// ordinary unmodeled command (`Opaque`), but the refusal is surfaced (never silent —
 /// proportional degradation, `211` §1). Each variant names *why* the splice was refused.
 const CFG_INLINE_REFUSED: DiagCode = DiagCode("cfg-inline-refused");
+/// find-I (note 213 §5 hunt-4): a book funcdef shadows a builtin name the engine RELIES
+/// on resolving to the actual builtin — the blessed-pure classification
+/// ([`crate::effect::is_target_state_pure_builtin`] treats the bare word as Pure) and the
+/// render's minted stand-ins (`true`/`false`/`(exit N)`, `plan`'s `standin_sh`). dash
+/// resolves a function before a regular builtin, so those assumptions are unsound for
+/// such a book. WARNING-class DISCLOSURE only — the one place the license judgment itself
+/// depends on the assumption (door-3) refuses separately ([`Builder::right_is_bare_true`]).
+const CFG_BUILTIN_SHADOWED: DiagCode = DiagCode("cfg-builtin-shadowed");
 
 /// arch-2 inlining budgets (`211` §1 / `209` brk-2; pre-spelled in the round-21 charter).
 /// Over-budget ⇒ the call stays `Opaque` WITH a [`CFG_INLINE_REFUSED`] diagnostic naming the
@@ -341,6 +349,10 @@ pub fn build(ast: &Ast) -> Carrier<Cfg> {
     let exit = b.fresh(ast.root(), CfgNodeKind::Exit);
     b.entry = entry;
     b.exit = exit;
+
+    // Phase 0: book-level disclosure — a funcdef shadowing an engine-relied builtin
+    // name warns per definition (find-I; door-3's own refusal is in lowering).
+    b.warn_shadowed_relied_builtins();
 
     // Phase 1: structural walk. The script body flows entry → … → exit; a path
     // that runs off the end (no terminator) falls through to `exit`.
@@ -1856,6 +1868,37 @@ impl<'a> Builder<'a> {
 
     // ---- misc -----------------------------------------------------------------
 
+    /// find-I disclosure: one [`CFG_BUILTIN_SHADOWED`] warning per funcdef whose name is
+    /// an engine-relied builtin ([`is_engine_relied_builtin`]). Walks the AST (not
+    /// `self.funcdefs`) so the warning carries the definition's own `name_span`; arena
+    /// iteration order keeps it deterministic (`inv-determinism`). Disclosure, not
+    /// refusal: calls to the function still inline/⊤-reject exactly as arch-2 decides —
+    /// what this surfaces is the engine's BUILTIN-resolution assumptions (blessed-pure
+    /// classification of non-call uses, minted stand-in words) being unsound book-wide.
+    fn warn_shadowed_relied_builtins(&mut self) {
+        for (_, node) in self.ast.iter() {
+            let NodeKind::FuncDef {
+                name, name_span, ..
+            } = &node.kind
+            else {
+                continue;
+            };
+            if is_engine_relied_builtin(name) {
+                self.diags.push(Diagnostic::warning(
+                    CFG_BUILTIN_SHADOWED,
+                    Some(*name_span),
+                    format!(
+                        "function `{name}` shadows a shell builtin the engine relies on \
+                         (dash resolves a function before a regular builtin): analysis \
+                         treats the bare word `{name}` as the builtin when classifying \
+                         effects and minting stand-ins, so builtin-dependent conclusions \
+                         may be unsound for this book"
+                    ),
+                ));
+            }
+        }
+    }
+
     fn span(&self, id: AstId) -> Span {
         self.ast.node(id).span
     }
@@ -1945,6 +1988,18 @@ fn collect_funcdefs(ast: &Ast) -> BTreeMap<String, Vec<(AstId, BytePos)>> {
         }
     }
     out
+}
+
+/// find-I: the builtin names the engine RELIES on resolving to the actual shell builtin —
+/// the blessed-pure set (`effect` classifies these bare words `Pure` without consulting
+/// funcdefs) plus `exit` (the third minted stand-in shape, `(exit N)`; `true`/`false` are
+/// already blessed). Special builtins among them (`set`/`export`/`:`…) are unshadowable
+/// in conformant dash — and `:`/`[` cannot even parse as funcdef names — but the warning
+/// keeps them anyway: a book *defining* one is pathological enough to disclose, `build`
+/// is total over hand-constructed ASTs (`inv-no-throw`), and encoding dash's
+/// special-builtin precedence here would be a second resolution model to keep in sync.
+fn is_engine_relied_builtin(name: &str) -> bool {
+    crate::effect::is_target_state_pure_builtin(name) || name == "exit"
 }
 
 /// arch-2: a conservative node-count estimate for a funcdef body — the number of AST nodes in
