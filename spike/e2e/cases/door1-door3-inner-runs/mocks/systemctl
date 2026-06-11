@@ -1,0 +1,5 @@
+#!/bin/sh
+# INERT mock: logs argv, exits 0. RUNS here — it sits inside the LIVE block (the outer guard
+# diverged ⇒ the `||` fires), after the inner install. Read-only stand-in for the real restart.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0

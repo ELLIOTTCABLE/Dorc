@@ -1,0 +1,6 @@
+#!/bin/sh
+# INERT mock: logs argv, exits 0. RUNS here in BOTH rails — the outer block is live (the guard
+# diverged) AND the inner install is diverged (curl absent), so the door-3 site does not elide.
+# Mutates NOTHING; the `|| true` would swallow a real non-zero rc, but the run-set is what matters.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0

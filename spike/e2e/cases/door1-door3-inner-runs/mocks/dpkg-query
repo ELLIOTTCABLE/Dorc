@@ -1,0 +1,6 @@
+#!/bin/sh
+# INERT probe shim for the `package` establish site (`dpkg-query -W curl`; $2=curl). curl is NOT
+# installed ⇒ rc 1 (absent): the INNER `apt-get install curl || true` is DIVERGED ⇒ door-3's
+# Status-clear does NOT relax the Effect gate ⇒ the inner install RUNS. Read-only.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 1
