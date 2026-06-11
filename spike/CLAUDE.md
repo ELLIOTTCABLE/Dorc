@@ -100,6 +100,29 @@ and where* (→ `Research/notes/20x-*.md`, append-only), not green tests.
 - **Identity is declared, never inferred** — the find-3 flag-strip stand-in is
   being *removed* this round; never re-introduce engine-side argparse.
 
+## Standing human rulings (round-22 additions; full text `Research/notes/224` §7)
+
+- **rec-1 TWO SURFACES (ru-12 + ru-20).** The shipped/off-ramp `.sh` artifact is
+  byte-floored and receipt-free: byte-identical under receipt-stripping,
+  INCLUDING its comments; the existing fact-plane disposition/provenance
+  comments stand and grow nothing. The PLAN-RENDER surface (TUI/CLI
+  presentation, `why`-query) is NOT an artifact: it is the sanctioned home for
+  per-line claimed-vs-proven disclosure, OVERLAID on the artifact bytes, never
+  embedded in them. Contracts stay PLANE-based (artifact vs render); the four
+  UIs (ru-20 ui-1..4) are consumers, never contract subjects.
+- **rec-5 probe-tape ≠ kSTATE reuse-cache.** The ru-18 probe-TAPE is a
+  write-only postmortem durable (capture-always-lean, render-on-demand), never
+  re-ingested to elide work. DESIGN's "may short-term-persist probe results to
+  reduce work on re-runs" is the PARKED kSTATE reuse-cache — a distinct,
+  still-parked thing. Do not conflate them; nothing re-ingests receipts across
+  runs (f-6).
+- **held-4 sanctioned exception (ru-17): the diag-API is battlefield-bound.**
+  The structured diagnostic API (`Research/notes/22B`) "could become The
+  Product of the spike" — design-for-keeps applies to that leaf module as a
+  sanctioned exception to this charter's disposability: the spike PROVES the
+  design, the real codebase extracts/reimplements it (extraction stays cheap;
+  diag is a leaf). Nothing else gains design-for-keeps status by analogy.
+
 ## Hard invariants (do not violate; cite the slug when you rely on one)
 
 - **inv-no-unsafe** — `unsafe` is `forbid`-den workspace-wide. No FFI. No
@@ -209,7 +232,7 @@ through mise, from inside `spike/`:**
 mise exec -- cargo build --workspace
 mise exec -- cargo test --workspace
 mise exec -- cargo clippy --workspace --all-targets
-sh e2e/run.sh        # the 43-case corpus: dash -n gate + exec-under-mocks
+sh e2e/run.sh        # the 99-case corpus (count drifts — trust the dirs): dash -n gate + exec-under-mocks
 ```
 
 Pre-commit gate set: `cargo fmt --check` · `clippy -D warnings` ·
