@@ -1,4 +1,7 @@
-# 21J — research: author-declared behavioral claims in real ecosystems (trust, lies, calibration)
+# 222 — research: author-declared behavioral claims in real ecosystems (trust, lies, calibration)
+<!-- /* slug corrected 2026-06-11: drafted under provisional title "21J" before being
+filed under the 22x research convention; 21J was never a filed note. Old slug preserved
+here for grep. (note 217 §7) */ -->
 
 > Deep-research note serving 20V (door-2 "declared converged-run", door-4 guard-insertion,
 > §8 dq-errexit ledger). Question: how do real automation/build ecosystems handle

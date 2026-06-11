@@ -82,6 +82,12 @@ lattice transfer — no scope node), so the site's incoming env already carries 
 scoped overlay is the positionals. Nesting (depth ≤ 2): the pass is BOUNDED-iterated
 (`MAX_INLINE_PASSES = 3`) so an inner-of-inner positional settles once the outer binding lands
 (monotone: a concrete binding never changes).
+<!-- /* REFUTED 2026-06-11 (wave-2 crosscheck m-8 → task #13, commit 60e04f3; note 217 §3):
+the inner-of-inner positional does NOT settle — depth-2 positional threading never worked
+(the inner $1 resolves ⊤; broken-but-safe, runs). At HEAD a nested call whose own args
+reference a positional ($1..$9/$#/${N}) REFUSES inlining loudly (dq-depth-2-positional-
+unthreaded, Note); literal-arg nested calls still inline. Do not build on depth-2
+positional threading. */ -->
 
 **Recorded imprecision (flag arch2-positional-via-assignment, ~SUSPECT benign).** The overlay
 applies to the body command site's DIRECT word resolution, NOT to an intermediate ASSIGNMENT
@@ -305,6 +311,9 @@ not the engine.
   call's bound argv, itself bound from the outer — the bounded-iteration `inline_pass`.) Verify
   a depth-2 `a() { b "$1"; } b() { apt-get install "$1"; } a nginx` resolves the deepest install
   to `nginx` and ships ONE record under `a`'s call leaf.
+  <!-- /* ATTACKED 2026-06-11 (wave-2 m-8): both halves FAILED — the positional did not
+  thread (⊤) and the record double-counted (site 0.0 + 0.1). Fixed in #13 (60e04f3):
+  loud refusal + flattened_inner dedupe; see note 217 §2/§3. */ -->
 - **hunt-2 — the call-status terminal-path question (i-5, I claim NO mini-fold).** I set the
   CALL status to ⊤ unconditionally. ATTACK: a body whose terminal status is KNOWN and a
   consumer reads it — e.g. `w() { command -v x; }; w foo && bar` where the body's LAST command

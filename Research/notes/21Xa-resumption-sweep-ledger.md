@@ -670,6 +670,24 @@
   from another agent, already line-reviewed; rewriting its comments would break
   snapshot≡tree equivalence and the d-4 evidence-preservation intent.
 
+## Phase 3: note 217 + IB amendments (2026-06-11, this session)
+
+- obs-1 settled by source-read before drafting: `lexer.rs::lex_braced_param` lowers any
+  all-alphanumeric `${body}` to `Param{name}` ⇒ `${1}` IS caught by fix-3's refusal; the
+  only unmatched spellings are operator-forms (`${1:-x}` ⇒ ParamComplex ⇒ old
+  silent-but-safe path) — recorded in 217 §5 as resolved-no-gap.
+- Note 217 written (wave-1+2 reconciliation tables; the formal 216 depth-2 correction;
+  #13 harvest + re-verified gates; obs-1/2/3; tc-fix3-severity RESOLVED keep-Note-this-
+  round with the per-code-severity catalog evolution deferred to the round-22 retrofit;
+  detached-copy asymmetry recorded-untouched; carried tc-* list; queue restated).
+- IB amendments applied under the human-ratified discipline (genuine incorrectness
+  likely to mislead a grepping agent; `<!-- /*` annotations, never prose rewrites):
+  216 §1.2 + §6 hunt-1 (depth-2 REFUTED), 21B §6 hunt-1 (render-refusal fix DONE),
+  221 header NB (21D exists now), and H1 slug corrections on 220/221/222 (provisional
+  21H/21I/21J titles → filed 22x slugs, in-place title fix + provenance annotation —
+  the one amendment class that edits a line, since a wrong TITLE is itself the
+  grep-hazard; human may veto and revert the titles).
+
 ## SWEEP VERDICT (2026-06-11, this session)
 
 Every document in the round-21 corpus plus the three round-22 research notes read clean

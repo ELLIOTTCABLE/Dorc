@@ -280,6 +280,10 @@ The charter named three; I hunted each and add others.
   the fix is to consult `plan.render_refusal_diagnostics` and demote a refused leaf to a
   `runs(render-refusal)` door. Deferred (no corpus case exercises it; would need a
   render-crate read I judged out-of-scope for the first cut).
+  <!-- /* DONE 2026-06-11 (task #13 fix-1, commit 60e04f3; note 217 §2 m-6): build_report
+  now consults Plan::render_refusal_diagnostics and demotes refused leaves to
+  runs(render-refusal) (BlockReason::RenderRefusal), unit-pinned. This residual is
+  CLOSED — do not re-implement. */ -->
 - **hunt-2 (charter): double-counting under loops/Members.** Defence: a Members site is
   ONE `SkipClass::EstablishMembers` ⇒ ONE `SiteRow` ⇒ counted once (the members are
   sub-records, not sites). Verified the `loop-members-all-converged-elides` case reports

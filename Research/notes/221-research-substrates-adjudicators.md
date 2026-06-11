@@ -1,4 +1,7 @@
-# notes/21I — Execution substrates & independent adjudicators (deep-research, round 21)
+# 221 — Execution substrates & independent adjudicators (deep-research, round 21)
+<!-- /* slug corrected 2026-06-11: drafted under provisional title "notes/21I" before
+being filed under the 22x research convention; 21I was never a filed note. Old slug
+preserved here for grep. (note 217 §7) */ -->
 
 **Stamp:** round 21 · 2026-06-11 · web deep-dive (deep-research agent). Feeds arch-7
 ("hostsim DST at scale — seeded-random book/oracle generation through the gate-5
@@ -11,6 +14,9 @@ and notes/020 (CoLiS verdict) — referenced, not re-litigated. NB: the priming 
 named `21D-arch7-differential-harness.md`; that note does not exist at HEAD (21D was
 "overflow" in the 211 §4 reservations and was never written) — the harness ground-truth
 used here is run.sh itself plus 211/20K's gate-5 description.
+<!-- /* OVERTAKEN 2026-06-11: 21D-arch7-differential-harness.md EXISTS now — the arch-7
+build landed after this research note was drafted (commit 8d87e15). The NB was true at
+writing; the harness ground-truth is now 21D itself. (note 217 §7) */ -->
 **Method:** interactive-research discipline; ~33 sources surveyed, 12 full-read;
 source-grades [A|B|C|D-slug-year]; all synthesis confidence-marked
 (+SURE/~SUSPECT/-GUESS/--WONDER).

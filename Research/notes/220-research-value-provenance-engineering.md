@@ -1,4 +1,7 @@
-# 21H — research: engineering the value-provenance plane (receipts)
+# 220 — research: engineering the value-provenance plane (receipts)
+<!-- /* slug corrected 2026-06-11: drafted under provisional title "21H" before being
+filed under the 22x research convention; the REAL 21H is the y-1/q-2 build note. Old
+slug preserved here for grep. (note 217 §7) */ -->
 
 > Deep-research round, 2026-06-11, serving the 21G §2 layer-2 direction (every value carries
 > receipts: `value × set-of-contributing-origins`, built forward, queried backward, surfaced as
