@@ -257,3 +257,38 @@ warm-ups (d×d host-flip fixture; var-resolved redirect case) → 22x synthesis 
   `traceparent` trivially hand-emittable (import value-format, choose carrier);
   conduit-style edge-mapping keeps the SDK out-of-process; the OTel env-carriers
   spec (Beta) surfaced UNREAD — conductor must-read at digestion.
+- W1 fixtures → branch ai/r22-fixtures, HARVESTED by cherry-pick onto ai/spike3 as
+  `5da879c` (door1-door3-dead-block-folds) + `5b58c5f`
+  (y1-var-resolved-target-invalidates-query): Opus, 212K harness-tokens (self-reported
+  ~118K), 133 tool uses, ~27 min. Both zero-engine-change; goldens hand-derived then
+  engine-confirmed; gate-6 needed NO exclusion marker on fixture-1 (the bare-only
+  `dpkg -s` line is license-attributed to the guard's replace entry). Harvest
+  verification: base proven code-unchanged since the verified-green `ada085d`
+  (diff-empty), full chain re-run post-pick on the main tree — build/fmt/clippy/deny
+  0 · tests 463/0/1-ignore (20 suites) · e2e **98/98 ×2** real exits · typos 0.
+  fb-11 content-diff audit ai/spike3↔ai/r22-fixtures on spike/: EMPTY. Originals
+  remain in %TEMP%\dorc-r22\w1-fixtures (human's look-don't-touch inventory).
+  flag-dxd-third-cell (W1's, carried): 215 §5 labels the OPPOSITE cell (outer-live ×
+  inner-DIVERGED-runs) "the d×d cell"; the corpus now brackets outer-dead-folds and
+  outer-live-inner-converged-elides, but 215's labeled cell remains unauthored —
+  candidate third fixture, decide at GATE-2.
+- R1' rq-B+H → notes/226 (final `e2ab06b`): Opus, 179K harness-tokens, 85 tool uses,
+  ~17 min, 1047 lines, 26 sources. Design-shaping: finding-gate-exists — rustc tidy's
+  error_codes.rs is the registry↔emit-site cross-check to copy, but the cheapest
+  Dorc spine is an exhaustive Rust enum catalog (compiler enforces handling) + a
+  tidy-style grep for the reachability half; Dorc's give-up sites are nameable source
+  points (structural advantage over Menhir's derived automaton states).
+  finding-fluent-regret — rustc tracking #132181: deny-level authoring-mandate lints
+  downgraded to allow; cheap structural gates endure, heavyweight authoring mandates
+  earn hundreds of #[allow]s and die. finding-errorguaranteed-holes — ZST-minted-by-
+  emit() transplants without proc-macros, BUT delayed-bugs can mint it and it carries
+  no kind; type system ≈90%, end-of-run flush assertion covers the rest.
+  finding-severity-fragments — every surveyed scheme drifts toward all-warnings
+  unless an un-overridable tier exists (forbid/force-warn analogs); rustc `expect`
+  level = a positive must-emit assertion, the severity-system form of the
+  completeness wish. finding-elm-counterpole — world-class diagnostics with ZERO
+  catalog machinery; a catalog buys regression-safety + multi-author consistency,
+  never message quality. Menhir completeness kept green where wired into the BUILD
+  GRAPH (Stan/dune; CompCert 5283-line database). Ratchet: env-side -D warnings,
+  never #![deny(warnings)] (documented anti-pattern). cargo-mutants on error paths =
+  adoptable-this-round.
