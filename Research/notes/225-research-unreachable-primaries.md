@@ -300,3 +300,99 @@ Read for the receipts plane:
   through the tuple) is the formalism behind Soufflé's "min-proof-height picks one of
   infinitely many proofs" trick — -GUESS the height-annotation is an engineering shortcut
   around the power-series machinery (relevant to 220:vp-18's recompute-on-retraction).
+
+---
+
+## Livshits & Chong, "Towards Fully Automatic Placement of Security Sanitizers and Declassifiers" (POPL 2013) — FULL READ, Chong/Harvard author copy
+
+Read full from local PDF by this agent. Source: `[A-livshits-chong-automatic-placement-2013]`.
+Printed folios coincide with extractor sheets (pp.1–14); locators are those page
+numbers. Footnote 1 (p1) makes the sanitizer↔declassifier identification explicit, so
+everything below applies to declassifier placement equally.
+
+What this paper is, for the receipts plane: the load-bearing evidence for 220:vp-27
+("permits are capabilities, never inferences; make permit-points few/explicit/owned").
+It argues — from large-application experience — that humans systematically *misplace*
+permit-points (sanitizers/declassifiers), to the degree that the authors advocate
+removing the human from placement entirely and inferring it. It also shows placement is
+a *computed* property whose correctness is independent of analyzer precision, and that
+the count of permit-points is small relative to a naive instrument-everything baseline.
+See finding-8..9.
+
+Load-bearing excerpts:
+
+> [A-livshits-chong-automatic-placement-2013]:p1 Abstract — the thesis (relevance
+> +SURE):
+> "However, in pretty much all work thus far, the burden of sanitizer placement has
+> fallen on the developer. However, sanitizer placement in large-scale applications is
+> difficult, and developers are likely to make errors, and thus create security
+> vulnerabilities. … This paper advocates a radically different approach: we aim to
+> fully automate the placement of sanitizers by analyzing the flow of tainted data in
+> the program. We argue that developers are better off leaving out sanitizers entirely
+> instead of trying to place them."
+
+> [A-livshits-chong-automatic-placement-2013]:p2 §1.1 — why developers should not own
+> the placement (relevance +SURE):
+> "Developers are heavily discouraged from writing their own sanitizers. This is in part
+> because most of the time, they get them wrong [4, 15]."
+
+> [A-livshits-chong-automatic-placement-2013]:p1 §1 — the scale evidence (relevance
+> +SURE):
+> "Additional motivation for exploring run-time techniques comes from the complexity of
+> large-scale web applications with multiple, potentially nested sanitizers, which
+> recent assessments [38, 39] suggest is well beyond the ability of developers to
+> address using static reasoning and code reviews."
+> [the cited assessments are Samuel et al. CCS'11 and Saxena–Molnar–Livshits ScriptGard
+> CCS'11 — both empirical studies of real placement failure; see fetch-requests.]
+
+> [A-livshits-chong-automatic-placement-2013]:p4 §3.1 — placement correctness is
+> orthogonal to analyzer precision (relevance +SURE):
+> "This work is not directly concerned with the precision or soundness of the analysis
+> used to produce the dataflow graph: improvements to the precision and soundness of
+> analyses for dataflow graph construction will seamlessly improve the quality and
+> soundness of our results."
+
+> [A-livshits-chong-automatic-placement-2013]:p12 §5.1.2 / Figure 14 — the
+> instrument-fewer-points payoff (relevance +SURE):
+> "Savings in terms of the number of instrumentation points in the last column of
+> Figure 14 are 6.19× on average."
+> [Figure 13 / p11 context: the naive taint-everything baseline must instrument as many
+> as "60+% of nodes"; the purely-static node-based placement instruments far fewer but
+> "in most cases it fails to provide sanitization on all paths" — so few-and-correct
+> requires the edge-based analysis.]
+
+> [A-livshits-chong-automatic-placement-2013]:p12 §6 — they INFER permit-points rather
+> than require annotation (relevance +SURE):
+> "Hammer et al. require certain nodes in a program dependence [graph] to be annotated
+> as declassifiers, whereas we seek to infer where to insert declassifiers and
+> sanitizers."
+
+> [A-livshits-chong-automatic-placement-2013]:p13 §7 — the honest limitation: no notion
+> of optimal placement (relevance ~SUSPECT):
+> "However, we do not offer a formal notion of optimality of our algorithms. This is in
+> part because it is unclear what we should aim to optimize. Possible candidates include
+> reducing the number of instrumentation points or run-time overhead for the worst-case
+> or average-case workloads."
+
+Read for the receipts plane:
+- finding-8: the paper is direct empirical/argumentative support for the "humans
+  misplace permit-points" premise behind 220:vp-27. Note the *direction* of their
+  conclusion differs from Dorc's: they remove the human and INFER permit-points; Dorc
+  keeps the human but makes the permit-point an explicit, owned, capability-style
+  oracle-claim (the License type constructible only from a claim). Both share the core
+  finding — *implicit, developer-scattered* permit-points are the failure mode. ~SUSPECT
+  the contrast is actually complementary: Dorc's oracle-author is exactly the
+  "specialist who gets it right" that Livshits–Chong say the average developer is not.
+- finding-9: the orthogonality quote (p4) is a clean prior-art anchor for Dorc's
+  best-effort posture — placement/licensing correctness does not depend on analyzer
+  precision; a more precise analyzer just yields fewer/tighter licenses. The 6.19×
+  reduction is the quantitative shape of "permit-points are FEW relative to the values
+  that flow through them."
+- The no-optimality admission (p7) is a caution: Dorc should likewise NOT claim its
+  license placement is optimal, only correct-and-few. There is no agreed objective to
+  optimize against, which matches Dorc's "we like extra work on non-human timescales"
+  stance — minimizing license count is not obviously the right objective.
+- Their edge-based "spill to run time only when static placement can't decide" mirrors
+  Dorc's probe-then-apply staging (static where possible, measure live when necessary) —
+  -GUESS a structural echo worth noting, though their run-time taint-tracking is not a
+  Dorc mechanism.
