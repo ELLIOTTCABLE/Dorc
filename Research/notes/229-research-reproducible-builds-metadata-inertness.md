@@ -134,3 +134,143 @@ Relevant as a *variance-injection axis* (vary the seed between the two builds to
 seed-dependence) and as the canonical "pin the one nondeterminism source" move — Dorc's analogue
 is the hash-seed for any `HashMap` that survived the BTreeMap mandate.
 
+---
+
+## §2 LLVM/Clang: `debugify` / `check-debugify` and "debug info must not affect optimizations"
+
+LLVM's mechanism differs from GCC's in a way that is *more* adoptable for Dorc: instead of
+comparing two whole compilations, it **injects synthetic metadata, runs the transform, then
+checks the metadata survived** — a single-run, inject-then-verify shape. All verbatim from
+[A-llvm-howtoupdatedebuginfo-2025].
+
+**finding-debugify-mechanism (+SURE).** The core utility:
+
+> The `debugify` testing utility is just a pair of passes: `debugify` and `check-debugify`. The
+> first applies synthetic debug information to every instruction of the module, and the second
+> checks that this DI is still available after an optimization has occurred, reporting any
+> errors/warnings while doing so. The instructions are assigned sequentially increasing line
+> locations, and are immediately used by debug value records everywhere possible.
+
+So `debugify` *manufactures a known, dense, checkable metadata plane* (every instruction gets a
+synthetic source line) precisely so that any pass that drops/corrupts it is caught. The Dorc
+analogue: rather than relying on real receipts being present, the gate could *synthesize* a
+maximal receipt plane (tag every value) and assert decisions are unchanged AND all receipts are
+accounted-for — denser coverage than real input provides.
+
+**finding-debugify-each (+SURE).** The per-pass variant, explicitly modeled on `-verify-each`:
+
+> `$ opt -debugify-each -O2 sample.ll` — Prepend `-debugify` before and append `-check-debugify
+> -strip` after each pass on the pipeline (similar to `-verify-each`).
+
+This localizes the violation to the *individual pass* that broke the invariant — the gate runs
+between every transformation, not just end-to-end, so the blame is attributed to one pass.
+Maps to Dorc: run the erasability check after each analyzer *stage* (parse → taint → elision-
+decide) to localize which stage leaked receipts into decisions, not just "somewhere".
+
+**finding-debugify-regression-stability (+SURE).** The gate's own output is held stable:
+
+> The output of the `debugify` pass must be stable enough to use in regression tests. Changes
+> to this pass are not allowed to break existing tests. … Regression tests must be robust.
+> Avoid hardcoding line/variable numbers in check lines.
+
+I.e. the *injected metadata itself* is deterministic and the comparison avoids brittle exact
+numbers — a flaky-diff-avoidance design decision baked in from the start.
+
+### §2 the sanctioned-divergence partition (DebugLoc special values)
+
+**finding-debugloc-partition (+SURE).** This is the cleanest comparison-partition vocabulary I
+found anywhere. LLVM does NOT treat "no source location" as one thing; it has four *named*
+reasons an instruction can legitimately lack a location, so the verifier can tell a sanctioned
+absence from a bug — verbatim:
+
+> - `DebugLoc::getCompilerGenerated()`: This indicates that the instruction is a compiler-
+>   generated instruction, i.e. it is not associated with any user source code.
+> - `DebugLoc::getDropped()`: This indicates that the instruction has intentionally had its
+>   source location removed, according to the rules for dropping locations; this is set
+>   automatically by `Instruction::dropLocation()`.
+> - `DebugLoc::getUnknown()`: This indicates that the instruction does not have a known or
+>   currently knowable source location, e.g. that it is infeasible to determine the correct
+>   source location, or that the source location is ambiguous in a way that LLVM cannot
+>   currently represent.
+> - `DebugLoc::getTemporary()`: This is used for instructions that we don't expect to be emitted
+>   (e.g. `UnreachableInst`), and so should not need a valid location; if we ever try to emit a
+>   temporary location into an object/asm file, this indicates that something has gone wrong.
+
+And the design rule that follows (the partition-design principle, verbatim):
+
+> Ordinarily these special locations are identical to an absent location, but LLVM built with
+> coverage-tracking … will keep track of these special locations in order to detect
+> unintentionally-missing locations; for this reason, the most important rule is to not apply
+> any of these if it isn't clear which, if any, is appropriate — an absent location can be
+> detected and fixed, while an incorrectly annotated instruction is much [harder to detect].
+
+The load-bearing insight for Dorc's gate spec: **make the EXEMPT category an explicit, named,
+narrow allowlist of reasons, and bias toward "not exempt" when unsure** — because a wrongly-
+exempted divergence hides a real leak forever, whereas a wrongly-flagged divergence is a noisy
+but *fixable* false positive. This is the inverse of the usual "suppress false positives"
+instinct, and it's the right bias for a *correctness* gate.
+
+**finding-debugify-coverage-tracking (+SURE).** False-positive suppression is opt-in and
+build-gated, not default:
+
+> there are valid reasons for instructions to not have source locations. Therefore, when
+> detecting dropped or not-generated source locations, it may be preferable to avoid detecting
+> cases where the missing source location is intentional. For this, you can use the "coverage
+> tracking" feature … by setting the CMake flag
+> `-DLLVM_ENABLE_DEBUGLOC_COVERAGE_TRACKING=COVERAGE`. When this has been set, LLVM will enable
+> runtime tracking of `DebugLoc` annotations, allowing debugify to ignore instructions that
+> have an explicitly recorded reason for not having a source location.
+
+**finding-debugify-origin-tracking (+SURE).** The provenance-of-the-bug feature — directly
+mirrors Dorc's own receipts-as-debugging-aid idea, applied recursively to the gate itself:
+
+> set the CMake flag to enable "origin tracking", `-DLLVM_ENABLE_DEBUGLOC_COVERAGE_TRACKING=
+> COVERAGE_AND_ORIGIN`. This flag adds more detail to debugify's output, by including one or
+> more stacktraces with every missing source location, capturing the point at which the empty
+> source location was created, and every point at which it was copied to an instruction, making
+> it trivial in most cases to find the origin of the underlying bug.
+
+So when the gate fires, LLVM can tell you *where the metadata was lost AND every hop it was
+propagated* — a worked example of "receipts on the receipt failure." Effort note: this is a
+heavyweight build-mode feature, not free.
+
+### §2 regression routing and cost management
+
+**finding-verify-each-preserve-routing (+SURE).** The original-DI-preservation mode exports
+machine-readable findings and renders them human-readable — the regression-routing pipeline:
+
+> `$ opt -verify-debuginfo-preserve -verify-di-preserve-export=sample.json -pass-to-test
+> sample.ll` … and then use the `llvm/utils/llvm-original-di-preservation.py` script to
+> generate an HTML page with the issues reported in a more human-readable form: `$
+> llvm-original-di-preservation.py sample.json --report-file sample.html`.
+
+JSON for machines (CI gating), HTML for humans (triage) — the two-audience split Dorc's note
+220 already identified for provenance UX, here applied to the inertness gate's own output.
+
+**finding-verify-each-cost (+SURE).** The honest cost caveat — a "where compare-gates rot:
+they get too slow" data point, with the shipped mitigation:
+
+> Please do note that running `-verify-each-debuginfo-preserve` on big projects could be heavily
+> time consuming. Therefore, we suggest using `-debugify-func-limit` with a suitable limit
+> number to prevent extremely long builds. … `-debugify-func-limit=100` [tests] up to 100
+> functions (per compile unit) per pass.
+
+The per-pass gate is acknowledged as expensive enough to need a sampling knob. For Dorc this is
+reassuring rather than alarming (per AGENTS: analyzer-local big-O is dominated by network), but
+it's the documented failure-pressure: a per-stage gate that's too slow gets a sampling escape
+hatch, which is itself a coverage hole.
+
+**finding-mir-debugify-secondlevel (+SURE).** The same mechanism is re-implemented at a second
+IR level (machine IR), with `mir-debugify` / `mir-check-debugify` — evidence that the inject-
+then-verify pattern generalizes across representation levels. Relevant only as confirmation the
+pattern is robust, not as a distinct mechanism.
+
+**finding-known-false-positives (~SUSPECT).** The doc admits residual unsoundness:
+
+> Please do note that there are some known false positives, for source locations and debug
+> record checking, so that will be addressed as a future work.
+
+Even LLVM's mature gate has acknowledged false positives — a realistic expectation-setter: a
+metadata-inertness gate is rarely perfectly clean, and the team treats remaining FPs as known
+debt rather than a reason to abandon the gate.
+
