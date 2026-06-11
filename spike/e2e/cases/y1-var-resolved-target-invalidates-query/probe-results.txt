@@ -1,0 +1,7 @@
+# probe says the grep-guard HOLDS (site 3, the file already contains the pattern) — but the
+# var-resolved upstream write (`printf 'x' >> "$conf"`, $conf ⇒ nginx.conf) gens
+# file:nginx.conf#written, invalidating the guard ⇒ its rc is withheld ⇒ the install (site 4)
+# stays LIVE. The var-resolved target is the only change from y1-redirect-write-invalidates-query;
+# sites shift by 1 (the `conf=nginx.conf` assignment is site 1, the redirect site 2).
+site 3 effect=holds rc=0
+site 4 effect=holds rc=0
