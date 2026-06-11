@@ -85,9 +85,12 @@ if the human re-hands it): quarantine 223. Do NOT read quarantine otherwise.
   (branch ai/r22-xcheck1, tip `b68fc66`) holds the x-1 coverage-doc test, NOT
   harvested (fold-or-re-derive at arch-2 prep). Originals left for the human.
   b3-arch3 (branch ai/r22-arch3, tip `b6c0b78`) HARVESTED by cherry-pick
-  (`894109c`+`9c4b621`, fb-11 EMPTY). b4-arch3m (branch ai/r22-arch3m @
-  `fdb12af`) IN FLIGHT: arch-3's mechanical half — the 20-code sweep,
-  Sonnet (ru-23 third tier, first use).
+  (`894109c`+`9c4b621`, fb-11 EMPTY). b4-arch3m: ABANDONED-DIRTY (fb-19
+  recursive-self-delegation failure; 7 uncommitted files, human inventory;
+  branch ai/r22-arch3m has zero commits past base). b4b-arch3m2 (branch
+  ai/r22-arch3m2) IN FLIGHT: the same 20-code sweep, sonnet, with the fb-19
+  no-subagents clamp. PROCESS RULE (fb-19): every builder brief carries an
+  explicit no-subagents/do-it-yourself clamp; sonnet-tier especially.
 - `.claude/research/` GITIGNORED scratch was REMOVED (`d4277e0`); ~3.2MB untracked
   re-fetchable residue (incl. the four rqA primary PDFs) remains on disk for the
   human's inventory. (Stale prior note said "remove at digestion" — done.)

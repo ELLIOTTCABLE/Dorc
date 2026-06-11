@@ -304,6 +304,12 @@ specific `inv-*` slugs it must honor; tell it to flag (not resolve) any
 `tc-*`-shaped judgment call; require it to report back context other
 subagents must maintain.
 
+Every builder brief MUST also forbid sub-spawning in so many words: "do the
+work yourself; you MUST NOT spawn subagents." Sonnet-class agents have an
+observed recursive-self-delegation failure mode (fb-19, 2026-06-11: a
+mechanical-sweep brief re-delegated to a near-identical sonnet, four deep,
+zero work done) — never hand sonnet-tier a brief without the clamp.
+
 ## Confidence + reference discipline
 
 Mark uncertain claims with `+SURE` / `~SUSPECT` / `-GUESS` / `--WONDER`. Give

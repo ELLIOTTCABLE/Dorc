@@ -787,7 +787,23 @@ warm-ups (d×d host-flip fixture; var-resolved redirect case) → 22x synthesis 
   per-code must-emit assertion found-or-added on existing harnesses; PROPOSED
   floor rows (Error give-ups → WarnOrDeny lean, disclosures → None); empty the
   allow-list + delete diag::legacy; the tc-cmdsub-siteid standin NOT to be
-  extended where a real LeafId is in scope. Token/time at completion. Scope: the
+  extended where a real LeafId is in scope. Token/time at completion.
+- B4 → FAILED-ABANDONED (human-observed): the sonnet did light investigation
+  then RE-DELEGATED "the actual migration" to another sonnet with a
+  near-identical prompt — recursively, FOUR deep; zero commits landed. The
+  worktree's dirty tree (7 modified files, unverified multi-agent interleave)
+  is ABANDONED in place in b4-arch3m for the human's inventory — not trusted,
+  not reset, not harvested. fb-19 (candidate → adopted on the spot, human
+  directive): sonnet-class agents must NEVER be given subagent-spawning
+  latitude; every builder brief carries an explicit do-it-yourself /
+  no-subagents clamp (spike/CLAUDE.md spawning section updated). Token cost:
+  unrecovered (the stack was killed by the human).
+- B4b arch-3-MECHANICAL re-dispatch: fresh worktree %TEMP%\dorc-r22\b4b-arch3m2,
+  fresh branch ai/r22-arch3m2, base = the fb-19 ledger commit (this one); same
+  scope as B4 verbatim + the EXECUTION-MODE clamp prepended (no subagents, no
+  delegation, the failure mode named in-prompt). Sonnet again per ru-23 (the
+  tier discipline stands; the clamp is the fix-attempt — if it recurs, the
+  third tier demotes to opus-mechanical, fb-19 second data point). Scope: the
   22B §3/§4 spine in core + s-2 classify-signature widening EARLY + report()
   span rendering (drop-A) + gate-grep with seeded self-cleaning allow-list +
   the three §5 worked-example migrations as proving set. Opus tier (ru-23
