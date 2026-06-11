@@ -28,16 +28,17 @@ pkgstate_installed__check 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; e
 # probe-sourced value); the block omits to `{ :; :; }`. Renders `false && { :; :; }`,
 # dash-clean, run-set EMPTY (provable by inspection — every leaf is `:`/`false`).
 #
-# ANALYSIS-ONLY (no mocks/, no exec gate) — a deliberate, honest choice: a `set -e` book
-# ending in `guard && { … }` whose guard FAILS legitimately exits NON-ZERO (the AND-OR
-# list's rc is the failed left's; dash confirms `set -e; false && { … }` does NOT abort but
-# the script's final rc is 1). The bare book ITSELF exits 1 under the same host — the
-# artifact faithfully reproduces that. The exec harness treats ANY non-zero exit as
-# "errored when run" (no expected-nonzero-exit opt-out), so the exec gate would FALSE-fail a
-# faithful artifact. The `-n` + exact golden here STRUCTURALLY prove the empty run-set (no
-# runnable command survives). The `&&` RUN pole (guard holds ⇒ block RUNS) is exec-asserted
-# by the sibling door1-and-form-runs instead (its block ends in a logging command and exits
-# 0, so the exec gate accepts it). See note 215 §3 strain-and-exit. HOST: nginx absent (the
-# guard fails ⇒ `&&` skips the block).
+# EXEC-ASSERTED via EXIT_RC=1 (slice-1 closed tc-exec-nonzero-exit; was analysis-only): a
+# `set -e` book ending in `guard && { … }` whose guard FAILS legitimately exits NON-ZERO
+# (the AND-OR list's rc is the failed left's; dash confirms `set -e; false && { … }` does
+# NOT abort but the script's final rc is 1). The bare book ITSELF exits 1 under the same
+# host — the artifact faithfully reproduces that. The old exec gate treated ANY non-zero
+# exit as "errored when run" and FALSE-failed the faithful artifact; the EXIT_RC=1 marker
+# now tells the gate to assert rc == 1 EXACTLY, so the empty run-set is EXEC-VERIFIED (the
+# apply `false && { :; :; }` logs nothing under mocks and exits 1), not merely golden-proved.
+# The probe runs `dpkg -s nginx` against an nginx-ABSENT mock host (gate-1 parity: `site 1
+# effect=absent rc=1`). The `&&` RUN pole (guard holds ⇒ block RUNS) is the sibling
+# door1-and-form-runs (its live block exits 0). See note 215 §3 strain-and-exit. HOST: nginx
+# absent (the guard fails ⇒ `&&` skips the block).
 set -e
 false && { :; :; }   # dorc: elided [dpkg -s nginx >/dev/null 2>&1; systemctl stop nginx; rm -f /etc/nginx/sites-enabled/default] (already converged / dead branch)

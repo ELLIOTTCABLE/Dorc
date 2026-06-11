@@ -10,6 +10,18 @@
 # Usage:  sh run.sh                 # auto-locates target/{debug,release}/dorc[.exe]
 #         DORC=/path/to/dorc sh run.sh
 #         BLESS=1 sh run.sh         # regenerate every expected.out from current output
+#
+# PER-CASE MARKER FILES (the marker idiom — opt-in behaviour spelled by a file's PRESENCE,
+# the value, where one exists, carried in the filename so no parsing is needed):
+#   RAN_ORDER=lax          — compare the apply run-set order-INsensitively (concurrent
+#                            pipeline stages log nondeterministically; tc-pipe-ran-order).
+#   PROBE_RESULTS=authored — disable gate-1 probe parity + vouch-closure for this case (its
+#                            probe cannot be faithfully mock-executed yet; (a) still holds).
+#   EXIT_RC=<n>            — assert the APPLY artifact exits exactly <n> (default 0); for a
+#                            faithful nonzero-exit artifact (`set -e; guard && {dead}` exits
+#                            1). Governs the apply exec only; bless never creates it.
+#   XFAIL                  — documented known-defect pin (its 1st line is the reason); the
+#                            case asserts the SAFE behaviour and is expected to fail at HEAD.
 set -eu
 
 here=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
@@ -127,9 +139,46 @@ scan_redirect_safety() {
 # under sequential sh, and sorting would discard the welded book-order assertion ("the
 # book's order is sacred"). SAFETY: PATH is the mocks dir alone; an un-shimmed external
 # command ⇒ `command not found` ⇒ a loud failure (never a real system mutation).
+#
+# EXPECTED-EXIT (tc-exec-nonzero-exit, 215 §3 strain-and-exit): by default the APPLY
+# artifact must exit 0 — a nonzero exit is "errored when run". But a FAITHFUL artifact can
+# legitimately exit nonzero: `set -e; guard && { … }` with a failing guard short-circuits
+# the `&&` and the AND-OR list's rc is the failed left's (dash: `set -e; false && {…}`
+# exits 1, does NOT abort). The bare book exits the same, so the artifact is correct — the
+# old gate FALSE-failed it (door1-and-form had to be analysis-only). A case asserts its
+# expected exit with a per-case marker FILE `EXIT_RC=<n>` (the marker idiom — the value
+# lives in the filename, like RAN_ORDER=lax). Present ⇒ assert rc == n EXACTLY (equality,
+# not tolerance: a 0 exit when n≠0 is ALSO a failure — the artifact stopped reproducing the
+# faithful nonzero rc). Absent ⇒ rc == 0 as before. Governs the APPLY exec ONLY; the probe
+# is never expected nonzero (probe_exec_check is unchanged). BLESS never creates/consults
+# the marker (an expected-exit is a hand-derived assertion, not blessable output).
 exec_check() {
   _label=$1; _art=$2; _case=$3; _dir=$4
   scan_redirect_safety "$_label" "$_art" "$_case" || return 1
+
+  # Resolve the EXIT_RC=<n> marker (default 0). Glob it; refuse >1 marker loudly (an
+  # ambiguous expected-exit is an authoring error, not a silently-picked one).
+  _exp_rc=0
+  _marker_count=0
+  for _m in "${_dir}"EXIT_RC=*; do
+    [ -e "$_m" ] || continue       # glob with no match yields the literal pattern
+    _marker_count=$((_marker_count + 1))
+    _exp_rc=${_m##*EXIT_RC=}
+  done
+  if [ "$_marker_count" -gt 1 ]; then
+    if [ "${XFAIL_ACTIVE:-}" != "1" ]; then
+      echo "FAIL  $_case  [ap-2-exec: multiple EXIT_RC=<n> markers — exactly one expected-exit is permitted]"
+    fi
+    return 1
+  fi
+  case $_exp_rc in
+    ''|*[!0-9]*)
+      if [ "${XFAIL_ACTIVE:-}" != "1" ]; then
+        echo "FAIL  $_case  [ap-2-exec: EXIT_RC marker value '$_exp_rc' is not a non-negative integer]"
+      fi
+      return 1 ;;
+  esac
+
   _log=$(mktemp)
   _sand=$(mktemp -d)
   # Absolute mocks dir: PATH is about to become *only* this dir, so a relative path
@@ -137,12 +186,16 @@ exec_check() {
   _mocks=$(CDPATH= cd -- "${_dir}mocks" && pwd)
   # Execute in a subshell cd'd into the sandbox (gate-2): a bare relative redirect lands
   # under $_sand, not the repo. $_log + $checker_abs are absolute, unaffected by the cd.
-  if ! _run_err=$( cd -- "$_sand" && DORC_LOG="$_log" PATH="$_mocks" "$checker_abs" 2>&1 <<EOF
+  # The artifact's real exit status is captured (not collapsed to success/failure by `if !`)
+  # so EXIT_RC can assert it exactly.
+  _run_rc=0
+  _run_err=$( cd -- "$_sand" && DORC_LOG="$_log" PATH="$_mocks" "$checker_abs" 2>&1 <<EOF
 $_art
 EOF
-  ); then
+  ) || _run_rc=$?
+  if [ "$_run_rc" -ne "$_exp_rc" ]; then
     if [ "${XFAIL_ACTIVE:-}" != "1" ]; then
-      echo "FAIL  $_case  [ap-2-exec: rendered $_label errored when run under mocks]"
+      echo "FAIL  $_case  [ap-2-exec: rendered $_label exited rc=$_run_rc, expected $_exp_rc]"
       printf '      %s\n' "$_run_err"
     fi
     rm -rf "$_sand"; rm -f "$_log"
