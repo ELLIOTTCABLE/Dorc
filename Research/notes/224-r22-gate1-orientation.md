@@ -123,3 +123,61 @@ ANALYZER-NEEDS, notes/110/112/113, 21L/21N/218/218a/219, crate CLAUDE.mds — pe
 GATE-1 presented, awaiting go → then: PHASE-R (interactive-research, rq-A..E ± F/G) ∥
 warm-ups (d×d host-flip fixture; var-resolved redirect case) → 22x synthesis → GATE-2
 → ratified arcs. 22Z resumption prompt starts once PHASE-R holds state worth resuming.
+
+---
+
+## §7 GATE-1 rulings (human, in-session, 2026-06-11; appended at human direction —
+## "write anything there… no reason to waste an entire slug")
+
+- ru-1 (g1-3): premature-optimization caution CONFIRMED; exception named — optimize
+  early only when likely AND its ergonomic/safety consequences make early spike-mapping
+  design-direction-finding.
+- ru-2: human wants an idiot-proof slow explainer of "no full why-provenance" —
+  deferred deliverable, "when waiting"; queued as a task.
+- ru-3 (g1-4): the why/where plane division RATIFIED — "definitely encode that clearly
+  into the typings." Carries into arch-1's contract.
+- ru-4 (g1-6): dedicate research to error-DISCIPLINE TOOLING ("how we keep ourselves
+  disciplined"), Pottier-sense expanded across languages/domains; CI-triggered
+  protections around error-handling/edge-cases/warnings/provenance. Registered as rq-H.
+- ru-5 (g1-7): gentle human lean IN (one error system; DST tooling likely exposes to
+  oracle-authors); not married. GATE-2 default flips to in-catalog unless evidence
+  pushes back.
+- ru-6 (f-3): ratified store-most-data + leave-UX-doors-open (k-capped join store,
+  render-late). Pushback: both my framings were implementation-axes; the render should
+  key on what's most useful to the admin — suspects a missing axis as direct proxy.
+  Conductor candidate (chat): REMEDIATION-CLASS — classify origins by what user action
+  clears them (author-oracle / add-declaration / fix-book / structural), rank renders
+  by that; the dashboard's four-cause decomposition generalized per-site. Season-to-
+  taste acknowledged.
+- ru-7 (f-4): human leans AWAY from promising trace-stability upfront (~harness
+  convenience, not user benefit); needs a concrete user-story to buy it. rq-C brief
+  reframed to skepticism (evidence for OR against; default no-promise).
+- ru-8 (rq-F): EXTREMELY hard yes — reproducible-builds literature gets a dedicated
+  research agent and synthesis attention.
+- ru-9 (rq-G): approved (o11y angle).
+- ru-10: parallelization GO — warm-up fixtures + research fan-out (~4 Opus research
+  agents primed with the interactive-research brief); wall-resilience required (commit
+  durables early/often; no gigantic lose-it-all tasks). g1-1/f-1 explainer demanded
+  slow-and-thorough, frontloaded (delivered in chat this turn). All rulings direct
+  in-session (no [spike]/[product] marker needed).
+
+## §8 PHASE-R launch (dispatch ledger v1)
+
+- Research-dir mechanics — deviation-with-reason from the human's single-sources.json
+  sketch (he marked it "idk"): per-agent dirs `.claude/research/r22-<front>/` while
+  gathering (zero write-contention, per-dir validate.sh clean); conductor re-registers
+  the adjudicated keep-set into a master `r22-errprov/` dir at digestion via
+  new-source.sh — which doubles as the skill-mandated re-verification of
+  `graded-by: subagent` grades. Agents commit their own dirs granularly.
+- W1 fixtures builder (Opus, own worktree %TEMP%\dorc-r22\w1-fixtures, branch
+  ai/r22-fixtures @ fa78935 verified): door1-door3-dead-block-folds (21W §4/§6 spec)
+  + var-resolved redirect case (21H §9 residual-2). Zero-design pins; STOP-and-flag on
+  any engine-change temptation; full unpiped gate chain before every commit; no BLESS.
+- R0 (Opus): rq-A unpaywalled-primary hunt (Zdancewic–Myers CSFW'01; ACM Queue primer
+  tail; Green–Tannen PODS'07; CACM-walled list) → fetch+register or hand human
+  fetch-requests.
+- R1 (Opus): rq-B catalog practice + rq-H discipline tooling.
+- R2 (Opus): rq-C derivation-dump/why-query (f-4-skeptical) + rq-D minimal OTel.
+- R3 (Opus): rq-E suppression/root-cause dedup + rq-G fleet fingerprinting.
+- R4 (Opus): rq-F reproducible-builds / metadata-inertness (dedicated per ru-8).
+- Token log: to be appended at harvest (agents report; fb-16).
