@@ -52,18 +52,25 @@ The split that matters: the durable-dump idea is well-supported; the *upfront st
 on its byte-format is the costly part everyone defers (Bazel kept the compact format
 `experimental` across the entire 7.x line precisely to avoid that promise [B-bazel-execlog-issue-2023]).
 
-**Best postmortem user-story found (partial; the hunt is still under-served).**
-`userstory-1` (~SUSPECT): the recurring real use is **non-determinism / unexpected-cache-miss
-hunting via dump-diff**, not free-form postmortem. tbaing's motivating ask is verbatim "which
-actions needed a rebuild (rather than being reusable from cache) and which dependencies drove
-that need" [B-bazel-execlog-issue-2023]; the entire `coeuvre/bazel-find-non-deterministic-actions`
-tool and Buck2's `diff action-divergence` exist for this one job. acecilia proposed a concrete
-CI gate at BazelCon: compare cache-miss set to git-diff-derived target set; "if the list of the
-cache misses is not a subset … the pull request is introducing non-determinism"
-[B-bazel-execlog-issue-2023]. This is a *prevention* story (catch non-determinism in CI), which
-is closer to Dorc's golden-TRACE-fixture use than to ad-hoc postmortem. A clean "the always-on
-log solved a production mystery nothing else could" narrative remains NOT yet found — flagged as
-the top open thread.
+**Best postmortem user-story found — and it argues for receipts, NOT for trace-pinning (§9).**
+`userstory-1` (~SUSPECT): in the *build/derivation* register the recurring real use is
+**non-determinism / unexpected-cache-miss hunting via dump-diff**, not free-form postmortem.
+tbaing's motivating ask is verbatim "which actions needed a rebuild (rather than being reusable
+from cache) and which dependencies drove that need" [B-bazel-execlog-issue-2023]; the
+`coeuvre/bazel-find-non-deterministic-actions` tool and Buck2's `diff action-divergence` exist for
+this one job; acecilia's BazelCon CI gate ("if the list of the cache misses is not a subset … the
+pull request is introducing non-determinism") is the prevention version. The STRONGEST affirmative
+story is the runtime-ops *silent-green-dashboard* failure class (§9 `userstory-2/3`): a cluster of
+incident teardowns where every instrument was green while data was silently lost, cracked only by
+*wider, timestamp-correlated, event/derivation-shaped* data — "Three independent, individually-
+reasonable decisions … stack into one silent data shredder … The failure is emergent. That is why
+it survives every test you have" [C-silentconsumer-2026]. That maps onto Dorc's own compositional-
+elision risk (note 222 `c-2`) and is the best case for the durable — BUT it argues for the
+per-value *receipts / why-query* (note 220) far more than for *golden-TRACE pinning*. A clean
+"always-on log solved a production mystery nothing else could" narrative *for a static analyzer*
+remains NOT found; the runtime analogs are graded C (vendor-adjacent, ops-not-analysis) — top open
+thread. Net: d-1's two halves separate — the receipts/dump half has affirmative support; the
+golden-trace-pinning half has cost evidence (§4, §6) but no affirmative user-story of its own.
 
 **rq-D (minimal OTel) — what to keep, what to drop.**
 `finding-otel-1` (+SURE the working minimal shape is: emit a neutral event stream, map to OTel
@@ -545,9 +552,92 @@ edge-projection (not a kernel dependency) is the right boundary: the accretion s
 optional exporter, never in the deterministic core. (A dedicated written "we did ideas-only OTel
 and here's what regrew" report was NOT found as a single strong primary — open thread.)
 
+## §9 — the postmortem user-story hunt: what an always-on event/derivation record actually buys (rq-C)
+
+The prompt's highest-value gap. The honest result: a clean "an always-on DERIVATION log solved a
+production mystery nothing else could" narrative for a static analyzer does NOT exist in the
+public record (the closest, the Bazel non-determinism hunt, is in §2). But a strong *cluster* of
+runtime-ops incident write-ups converges on one pattern that transfers to Dorc by analogy, and it
+is sharper than "dumps are good."
+
+`userstory-2` (~SUSPECT, the event-log-as-diagnostic-key story, with caveats). "The Spot Instance
+That Killed Our Payments Service" [C-spotinstance-postmortem-2026] is the cleanest "event log was
+the thing" narrative. A 47-minute incident where the fix was 2 lines of YAML; the breakthrough,
+verbatim section title: "Minute 27: The Event Log (Should Have Started Here)". The author's
+post-incident rule:
+
+> Start every investigation with events, not logs. `kubectl get events --sort-by='.lastTimestamp'`
+> is now the first command in our runbook. Logs show what happened to the process. Events show
+> what [the system] did about it. Start wider, then drill down.
+
+and the diagnosis of WHY the dump didn't help sooner — the load-bearing nuance for Dorc:
+
+> The signals that cracked it were all there from minute zero … The problem is that these signals
+> live in three different places, and under pressure … humans don't naturally start with the most
+> diagnostic view. We start with the most familiar one (logs) and dig deeper instead of wider.
+
+So the value is NOT the dump existing — the events existed and were ignored for 27 minutes. The
+value is a *single correlated, timestamp-ordered, derivation-shaped view* presented as the FIRST
+thing. For Dorc's `why`-query this is the design lesson: the dump only pays off if the query lens
+makes the most-diagnostic slice (the failing license-check + its contributing origins, ordered)
+the default first view — exactly note 220's `r-2(i)` minimal-witness-first. (Caveat: this post is
+partly a vendor pitch for an automated-investigation product, and it is a RUNTIME-ops story, not a
+static-derivation one — graded C, transfer is by analogy.)
+
+`userstory-3` (~SUSPECT, the silent-green-dashboard failure class — the real recurring shape).
+Across an independent set of 2026 incident teardowns the SAME structure recurs: every instrument
+green, the thing the instruments protect being silently destroyed, and the crack coming from
+*wider/correlated* data. Verbatim, the "Silent Consumer" teardown [C-silentconsumer-2026]:
+
+> Every instrument you trust is reporting green while the thing the instruments exist to protect
+> is being lost in real time. You cannot follow an error trail because there is no error trail. You
+> have to debug a system that is lying to you with a straight face.
+
+and the emergent-composition diagnosis (strikingly close to Dorc's own compositional-elision risk,
+note 222 `c-2`):
+
+> Three independent, individually-reasonable decisions … stack into one silent data shredder. Each
+> one passed review on its own. Nobody reviewed the composition, because the composition does not
+> live in any single file. … The failure is emergent. That is why it survives every test you have.
+
+The "Schrödinger's Event" teardown [C-schrodinger-2026] supplies the timestamp-correlation crack:
+"We found our ghost because someone noticed a six-millisecond gap in the timestamps … Log your
+transaction boundaries. Correlate timestamps across services. The bug you can't see is the bug you
+can't fix." For Dorc, this is the affirmative case for the durable, reframed precisely: the dump
+earns its keep against *emergent, silent-success* failures — where each step "passed" but the
+composition is wrong and no error fired. A per-value derivation record that shows *which origins
+actually contributed to a ⊤* is exactly the artifact that surfaces an emergent wrong-elision that
+"survives every test." This is the strongest affirmative argument found for d-1 — but it argues for
+the *receipts/why-query* (per-value provenance, note 220) more than for *golden-TRACE pinning*; the
+two halves of d-1 do not stand or fall together.
+
+`userstory-4` (-GUESS, the canonical fate-sharing caution, for the propagation/transport design).
+AWS's Kinesis 2020 outage (reconstructed from AWS's official post-event summary)
+[C-kinesis-2020-reconstruction-2026]: CloudWatch ingested through Kinesis, so when Kinesis failed
+"the system designed to detect failures was itself impaired by the failure" — a "blindness loop".
+For Dorc's d-2 (verdict-lane as trace carrier): a caution that the observability/derivation channel
+must not share fate with the thing it observes. If the controller→host derivation record rides the
+same channel whose failure it must diagnose, a host-comms failure blinds the very postmortem. Argues
+for the dump being durable-locally-first (survives the channel), then exfiltrated — consistent with
+§2's `bes-tension-1` resolution. (Graded -GUESS for Dorc-transfer: the source is solid on AWS, the
+mapping to Dorc's transport is my inference.)
+
+`incremental-debug-1` (-GUESS, salsa/incremental-engine debug surfaces — lightly covered, corpus
+already holds the mechanism). The corpus already holds rust-analyzer's durability/early-cutoff
+machinery as `[B-ra-durability-2023]` (note 220 `r-1`). On the *debugging-surface* sub-question
+(how people inspect a live incremental derivation graph): salsa exposes per-query event callbacks
+and the rustc query system supports `-Z dump-dep-graph`/query-DAG inspection, but I did NOT surface
+a strong dedicated primary on an *accumulated-query-dump* debugging UX this turn — the public
+material is mostly the durability blog (held) and API docs. Flagged as a thin spot; -GUESS that the
+salsa debug-event API is the closest analog to a Dorc "stream the derivation as it happens" mode,
+worth a dedicated dig if the conductor wants it. Did NOT over-invest, per the corpus already
+covering the durability core.
+
 ## Graded sources
 
 Grades assigned by gathering subagent (R2'); conductor re-verification pending. Scale A>B>C>D.
+Cross-corpus citations carried from earlier notes (here: `[B-ra-durability-2023]`, note 220 `r-1`)
+are referenced inline with their origin note and are intentionally NOT re-graded in this list.
 
 - `[B-buck2-log-2024]` · Meta/Buck2 team, official `buck2 log` command reference ·
   https://buck2.build/docs/users/commands/log/ · 2024 · read-depth full (disk copy + API-confirmed
@@ -659,4 +749,32 @@ Grades assigned by gathering subagent (R2'); conductor re-verification pending. 
   trivially hand-emittable; the spec is HTTP-header-framed so a non-HTTP carrier (Dorc stdout/env/verdict
   lane) is a sanctioned hand-roll — exactly d-2's import-the-idea · via Kagi "W3C trace context
   traceparent propagation without SDK shell".
+- `[C-spotinstance-postmortem-2026]` · "The Spot Instance That Killed Our Payments Service (And Why It
+  Took Us 47 Minutes to Find It)" (dev.to, Peter/Infranexis) · https://dev.to/peterinfranexis/the-spot-instance-that-killed-our-payments-service-and-why-it-took-us-47-minutes-to-find-it-2ehp
+  · 2026-04-26 · read-depth full · grading: C not B — a real, specific, well-told incident narrative
+  (exact commands, timeline, fix) BUT partly a vendor pitch for the author's automated-investigation
+  product (Causa) and a runtime-ops story not a static-derivation one; bias + register-mismatch cap it at
+  C · relevance: the cleanest "event log was the diagnostic key" story; the load-bearing nuance that the
+  dump's value is the correlated first-view, not its existence · via Exa "always-on event log diagnosed a
+  hard production failure".
+- `[C-silentconsumer-2026]` · "The Silent Consumer: A Teardown of the Incident That Loses Data While
+  Reporting Success" (Substack, Devrim Özcay) · https://devrimozcay1.substack.com/p/the-silent-consumer-a-teardown-of
+  · 2026-05-17 · read-depth targeted (Exa highlights) · grading: C — vivid practitioner teardown read via
+  highlights only, paywalled-teardown framing, single-author; the emergent-composition + silent-success
+  framing is load-bearing and quotable · relevance: the silent-green-dashboard failure class; emergent
+  compositional failure that "survives every test" — the best affirmative case for receipts vs the
+  silent-wrong-elision risk · via Exa (same).
+- `[C-schrodinger-2026]` · "Stack Crash Investigations: Schrödinger's Event" (Medium, Karan Saklani) ·
+  https://medium.com/@karansaklani20/stack-crash-investigations-schrodingers-event-6e5fb2661ce0 ·
+  2026-01-22 · read-depth targeted (Exa highlights) · grading: C — practitioner war-story via highlights;
+  the timestamp-gap crack ("six-millisecond gap in the timestamps") is the cited, load-bearing detail ·
+  relevance: timestamp-correlation across an event record as the breakthrough; "the bug you can't see is
+  the bug you can't fix" · via Exa (same).
+- `[C-kinesis-2020-reconstruction-2026]` · Sujeet Jaiswal, "AWS Kinesis 2020 Outage: Thread Limits,
+  Thundering Herds, and Hidden Dependencies" (reconstruction grounded in AWS's official post-event
+  summary) · https://sujeet.pro/articles/aws-kinesis-2020-outage · 2026-02-16 · read-depth targeted (Exa
+  highlights) · grading: C as cited here — a secondary reconstruction (the primary is AWS's post-event
+  summary, not read this turn) read via highlights; the fate-sharing/blindness-loop pattern is the cited
+  point · relevance: the observability channel must not share fate with what it observes — caution for
+  d-2's verdict-lane-as-carrier; durable-locally-first then exfiltrate · via Exa (same).
 
