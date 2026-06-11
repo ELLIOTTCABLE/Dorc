@@ -740,7 +740,44 @@ warm-ups (d×d host-flip fixture; var-resolved redirect case) → 22x synthesis 
 - B3 arch-3-DESIGN → LAUNCHED (background; token/time figures appended at
   completion): worktree %TEMP%\dorc-r22\b3-arch3, branch ai/r22-arch3, base =
   `cb695a9` (the housekeeping tip; housekeeping commits `463c0b0` spike/CLAUDE.md
-  + `cb695a9` 22B rename). Scope: the
+  + `cb695a9` 22B rename).
+- B3 arch-3-DESIGN → HARVESTED as `894109c`+`9c4b621` (spine+3-migration / tidy
+  gate): Opus, 390,910 harness-tokens (self-reported ~145K — fb-16 delta again;
+  harness authoritative), 170 tool uses, ~50 min. Builder series `67d7f1d`/
+  `b6c0b78` @ cb695a9; fb-11 content-diff EMPTY. Post-harvest conductor chain:
+  all gates rc=0 · core 27 tests + diag_tidy 4 (new) · erasability 3/3 untouched
+  · e2e 99/99 ×2 real exits · typos 0. ZERO goldens changed (coexistence: Diag
+  lowers via to_legacy preserving (slug, span, severity); canon drops message ⇒
+  digest-inert). Landed: exhaustive DiagCode (3 variants migrated:
+  SiteUnresolvable / RenderHeredocRefused / CmdsubOperandTop; NO non_exhaustive —
+  builder VERIFIED all consumers in-workspace, exhaustiveness is the feature),
+  typed payloads, registry severity+Floor, mandatory primary SpanLabel, builder
+  chain API, render_cli / render_artifact_comment / project_oob, diag::legacy
+  submodule (3 dq-* survivors), LeafId promoted to core (dac-B), s-2 widening
+  (real spans reach the ⊤-disclosures; `--> 20:45` proven in production CLI),
+  report() renders spans (drop-A CLOSED), tidy gate with 20-code self-cleaning
+  allow-list.
+- CONDUCTOR ADJUDICATIONS (B3 tc-flags): tc-exempt-partition ACCEPTED-DEFERRED —
+  structured Diag never reaches the canon at HEAD (only its to_legacy projection,
+  already classified); proposed field classification BANKED for B4/arch-2:
+  spans+code+payload-facts = identity / cause = Exempt::ReceiptId / prose
+  children+suggestion = Exempt::Explanation. tc-wire-format ACCEPTED — slug() is
+  the OOB wire token per the 22B-fork-wire-code disposition; consequence (rename
+  = wire break) surfaced to the human. tc-gate3-evolution ACCEPTED — all-Note
+  invariant replaced by per-code pin; render-refusal was already Error-declared
+  in expected-diagnostics, no floor breach. tc-probe-site-ref ACCEPTED-HONEST —
+  no first-class probe-record handle exists at HEAD; SiteId stands in; payload
+  strengthens when probe records become first-class (ru-16 flag-up working as
+  designed). tc-cmdsub-siteid ACCEPTED-WITH-DEBT — kernel-early code carries a
+  CFG-node index in the LeafId-typed SiteId.leaf; safe today (render-plane-only)
+  but two id-spaces in one type is NAMED DEBT: when diags grow site-keyed
+  consumers (fleet rollup, OOB-lane keyed stores) the split must become typed;
+  B4 told NOT to extend the standin where a real LeafId is in scope.
+  tc-cmdsub-cause ACCEPTED-DEFERRED — cause hook present, None at the
+  kernel-early site (mint_top_causes runs post-effects; inherent ordering);
+  actual ProvId wiring lands in arch-2's emit-at-origin. PROPOSED floor column
+  → to the human for PR-disposal: RenderHeredocRefused = Error+WarnOrDeny;
+  SiteUnresolvable / CmdsubOperandTop = Note+None. Scope: the
   22B §3/§4 spine in core + s-2 classify-signature widening EARLY + report()
   span rendering (drop-A) + gate-grep with seeded self-cleaning allow-list +
   the three §5 worked-example migrations as proving set. Opus tier (ru-23

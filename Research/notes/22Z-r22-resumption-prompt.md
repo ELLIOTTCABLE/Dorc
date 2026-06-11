@@ -65,10 +65,11 @@ if the human re-hands it): quarantine 223. Do NOT read quarantine otherwise.
 
 ## Verified state (at last update)
 
-- Durable HEAD: the wave-2-prep ledger commit (this update's own). Code HEAD =
-  arch-1's `6b869a9` (every commit since is notes/plans/CLAUDE.md only — incl.
-  `463c0b0` spike/CLAUDE.md round-22 standing rulings + corpus-count, and
-  `cb695a9` the 22B fork-slug rename). Lineage milestones: `ada085d`
+- Durable HEAD: the wave-2 ledger commit (this update's own). Code HEAD =
+  B3's harvested `9c4b621` (spine `894109c` + tidy gate `9c4b621`; builder series
+  `67d7f1d`/`b6c0b78` on ai/r22-arch3, fb-11-verified). Earlier housekeeping:
+  `463c0b0` spike/CLAUDE.md round-22 rulings + corpus-count, `cb695a9` 22B
+  fork-slug rename. Post-harvest chain green (e2e 99/99 ×2, zero goldens moved). Lineage milestones: `ada085d`
   inherited-green base → `fa78935` notes/224 → research notes 225-229 → `5da879c`/
   `5b58c5f`/`8421ecb` the three e2e warm-up/d×d fixtures → `29d3c78` 22B diag draft →
   arch-1 `54a4b84`/`38acbec`/`6b869a9` (arena / Top(cause)+GATE / witness-split) →
@@ -114,12 +115,13 @@ WAVE-2 PREP DONE (2026-06-11, clean-context successor): 22B read in full;
 spike/CLAUDE.md gained the round-22 standing rulings + corpus-count fix
 (`463c0b0`); 22B fork slugs renamed note-scoped (`cb695a9`); owed-1 explainers
 delivered in-chat; resume chain verified green at `e6ea836` (all gates rc=0, e2e
-99/99 ×2, typos 0). B3 (arch-3 design half, Opus) DISPATCHED @ `cb695a9` — scope +
-conductor dispositions in 224 §10, incl. the #[non_exhaustive]-omission catch
-(builder verifies). NEXT = harvest B3 (chain before/after; adjudicate its
-tc-flags; relay the PROPOSED floor column to the human for disposal) → dispatch
-B4-Sonnet (ru-23 mechanical tier: the remaining-site sweep, per-code must-emit
-DST assertions, empty the gate-grep allow-list). WAVE-3: arch-2 (emit-at-origin,
+99/99 ×2, typos 0). B3 (arch-3 design half, Opus) HARVESTED + ADJUDICATED — `894109c`+`9c4b621`,
+chain green ×2, zero goldens; six tc-flags adjudicated in §10 (incl. the
+verified #[non_exhaustive] omission); PROPOSED floor column awaiting the
+human's PR-disposal (RenderHeredocRefused=Error+WarnOrDeny; the two
+disclosures=Note+None). NEXT = B4-Sonnet (ru-23 mechanical tier, first sonnet
+use this round): the remaining-site sweep off the allow-list,
+behavior-preserving, per-code must-emit assertions, empty the allow-list. WAVE-3: arch-2 (emit-at-origin,
 mvs-1..5, remediation-class render, + arch2-gate-obligation; fold-or-re-derive
 x-1's coverage-doc test at prep) then arch-4-thin (cer-1..6, host-side durables
 per ru-21/22/23, traceparent tail — read OTel env-carriers spec first). x-2
@@ -205,13 +207,18 @@ declared-never-inferred).
   site keys; span-bridge tier-2/3; rec-1 two-surfaces (disclosure on the render
   surface, never embedded in the byte-floored artifact); + arch2-gate-obligation;
   x-2 over-suppression pass (wants fr-2 first).
-- arch-3 (catalog retrofit) — **wave-2, on the 22B spine.** 17 codes → exhaustive
-  enum; tidy-style bidirectional grep + git-diff retire-guard + self-cleaning
-  allow-lists; per-code severity in the registry + un-overridable floor tier (ru-16
-  factoring; human disposes floor membership at the PR); `expect`-style must-emit +
-  DST fault-injection; report() renders spans; s-2 classify-widening EARLY; hostsim
-  Finding folds IN; gate completeness/registration, NEVER prose. SPLIT
-  Opus-design/Sonnet-mechanical (ru-23).
+- arch-3 (catalog retrofit) — **SPINE HARVESTED (B3, `894109c`+`9c4b621`);
+  mechanical sweep = B4-Sonnet.** Landed: exhaustive DiagCode + typed payloads +
+  registry severity/Floor + mandatory primary span + builder API + 3-lane render
+  partition + tidy gate (20-code self-cleaning allow-list) + s-2 widening +
+  report() spans (drop-A closed). Remaining (B4, ru-23 sonnet tier): migrate the
+  3 diag::legacy survivors + the 17 scattered codes off the allow-list,
+  behavior-preserving; registry rows with PROPOSED floor entries (human disposes
+  at PR); per-code must-emit assertions on existing harnesses; hostsim-Finding
+  fold rides AFTER the sweep (core-expressible payloads — core cannot dep
+  hostsim). Adjudicated debts tracked in §10: tc-cmdsub-siteid two-id-spaces
+  (typed split when site-keyed consumers arrive), tc-cmdsub-cause (ProvId wiring
+  lands in arch-2 emit-at-origin).
 - arch-4 (durable + why) — **wave-3.** Thin durable (probe-tape + inputs + seed +
   digest; JSONL version-tagged; no byte-stability promise) + `why` lens
   minimal-witness-first; cer-1..6 ceremony; host-side durables per ru-21/22/23;
