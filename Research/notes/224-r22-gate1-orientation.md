@@ -803,7 +803,41 @@ warm-ups (d×d host-flip fixture; var-resolved redirect case) → 22x synthesis 
   scope as B4 verbatim + the EXECUTION-MODE clamp prepended (no subagents, no
   delegation, the failure mode named in-prompt). Sonnet again per ru-23 (the
   tier discipline stands; the clamp is the fix-attempt — if it recurs, the
-  third tier demotes to opus-mechanical, fb-19 second data point). Scope: the
+  third tier demotes to opus-mechanical, fb-19 second data point).
+- B4b → HARVESTED as `6f4862c`+`0e0a470` (20-code migration / tidy-gate empty):
+  Sonnet, 148,680 harness-tokens, 248 tool uses, ~52 min — the fb-19 CLAMP
+  HELD (no sub-spawning; mechanical tier ~2.6× cheaper than B3's design half,
+  ru-23 economics confirmed). Builder series `27e6510`/`4085bd4` @ b217073;
+  fb-11 content-diff EMPTY; "legacy deleted in prior context" report phrasing
+  checked — all remaining diag::legacy strings are descriptive comments, the
+  module is gone (builder likely self-compacted mid-run). Post-harvest
+  conductor chain, unpiped: all gates rc=0 · core 25 tests + diag_tidy 4/4
+  (allow-list EMPTY) · erasability 3/3 · e2e 99/99 ×2 real exits · typos 0 ·
+  ZERO golden diffs (behavior-preservation held).
+- CONDUCTOR ADJUDICATIONS (B4b flags): b4-cfg-top-severity ACCEPTED-FLAGGED —
+  legacy emitted ONE code at two severities (Warning at the depth-limit site,
+  Error at unsupported-construct); one-code-one-registry-row cannot represent
+  that, builder unified at Error (the louder/kFAIL-safe direction; no fixture
+  pinned the old Warning — e2e green proves the corpus never observes it).
+  Human disposes at the PR; the split-into-two-codes alternative is the
+  fallback if louder is unwanted. b4-spanless-codes ACCEPTED-AS-DEBT — six
+  legacy span-None codes use slug-extraction (typed payload still constructed,
+  evidence-demand enforced; legacy Diagnostic carries the None span so CLI
+  output is identical); arch-3-residual-2: a `Diag::new_spanless` (or per-site
+  span plumbing) cleans this up. b4-oracle-span-split consistent, no action.
+  CONDUCTOR-FOUND residual: the promised per-code must-emit table was not
+  delivered — tidy direction-A proves source-construction, not test-driven
+  paths; arch-3-residual-1: cheap audit (map each of the 23 codes to a driving
+  test, fill gaps) at arch-2 prep. FLOOR COLUMN state: B4b proposed
+  Floor::None universally (conservative; brief's WarnOrDeny lean for Error
+  give-ups NOT applied — builder chose flag-over-judgment, acceptable);
+  full PROPOSED column = B3's three rows + B4b's twenty, human PR pass
+  pending (gate2-ask-1's successor).
+- Process self-log (fb-17 near-repeat, conductor, this turn): my first B4b
+  post-harvest chain attempt piped `cargo test | grep` and `e2e | tail` to
+  save tokens — the literal fb-17 scar (pipes mask rc; tail hides per-case
+  output). Caught before any result was read; killed; re-run unpiped. The
+  canonical chain stays literal, no pipes, even under token pressure. Scope: the
   22B §3/§4 spine in core + s-2 classify-signature widening EARLY + report()
   span rendering (drop-A) + gate-grep with seeded self-cleaning allow-list +
   the three §5 worked-example migrations as proving set. Opus tier (ru-23

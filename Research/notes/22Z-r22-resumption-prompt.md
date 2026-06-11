@@ -65,11 +65,12 @@ if the human re-hands it): quarantine 223. Do NOT read quarantine otherwise.
 
 ## Verified state (at last update)
 
-- Durable HEAD: the wave-2 ledger commit (this update's own). Code HEAD =
-  B3's harvested `9c4b621` (spine `894109c` + tidy gate `9c4b621`; builder series
-  `67d7f1d`/`b6c0b78` on ai/r22-arch3, fb-11-verified). Earlier housekeeping:
-  `463c0b0` spike/CLAUDE.md round-22 rulings + corpus-count, `cb695a9` 22B
-  fork-slug rename. Post-harvest chain green (e2e 99/99 ×2, zero goldens moved). Lineage milestones: `ada085d`
+- Durable HEAD: the wave-2 ledger commit (this update's own). Code HEAD = B4b's
+  harvested `0e0a470` (B3 spine `894109c`+`9c4b621`; B4b sweep `6f4862c`+
+  `0e0a470`; both fb-11-verified). ARCH-3 CORE COMPLETE: all 23 diagnostic
+  codes on the typed spine, allow-list EMPTY, diag::legacy deleted, chain
+  green unpiped (e2e 99/99 ×2, ZERO golden diffs across both harvests).
+  Earlier housekeeping: `463c0b0` + `cb695a9`; fb-19 process commit `b217073`. Lineage milestones: `ada085d`
   inherited-green base → `fa78935` notes/224 → research notes 225-229 → `5da879c`/
   `5b58c5f`/`8421ecb` the three e2e warm-up/d×d fixtures → `29d3c78` 22B diag draft →
   arch-1 `54a4b84`/`38acbec`/`6b869a9` (arena / Top(cause)+GATE / witness-split) →
@@ -123,9 +124,13 @@ delivered in-chat; resume chain verified green at `e6ea836` (all gates rc=0, e2e
 chain green ×2, zero goldens; six tc-flags adjudicated in §10 (incl. the
 verified #[non_exhaustive] omission); PROPOSED floor column awaiting the
 human's PR-disposal (RenderHeredocRefused=Error+WarnOrDeny; the two
-disclosures=Note+None). NEXT = B4-Sonnet (ru-23 mechanical tier, first sonnet
-use this round): the remaining-site sweep off the allow-list,
-behavior-preserving, per-code must-emit assertions, empty the allow-list. WAVE-3: arch-2 (emit-at-origin,
+disclosures=Note+None). B4 FAILED (fb-19 recursive self-delegation; abandoned); B4b re-dispatch with
+the no-subagents clamp SUCCEEDED and is HARVESTED — arch-3 core COMPLETE
+(see arcs). NEXT = ARCH-2 PREP (fresh conductor turn): fold-or-re-derive
+x-1's coverage-doc test from ai/r22-xcheck1 `b68fc66`; the arch-3-residual-1
+must-emit audit rides along; then arch-2 build dispatch (emit-at-origin,
+mvs-1..5, remediation-class render, arch2-gate-obligation, rec-1
+two-surfaces). x-2 (over-suppression) wants fr-2 (VMCAI PDF) first. WAVE-3: arch-2 (emit-at-origin,
 mvs-1..5, remediation-class render, + arch2-gate-obligation; fold-or-re-derive
 x-1's coverage-doc test at prep) then arch-4-thin (cer-1..6, host-side durables
 per ru-21/22/23, traceparent tail — read OTel env-carriers spec first). x-2
@@ -211,18 +216,20 @@ declared-never-inferred).
   site keys; span-bridge tier-2/3; rec-1 two-surfaces (disclosure on the render
   surface, never embedded in the byte-floored artifact); + arch2-gate-obligation;
   x-2 over-suppression pass (wants fr-2 first).
-- arch-3 (catalog retrofit) — **SPINE HARVESTED (B3, `894109c`+`9c4b621`);
-  mechanical sweep = B4-Sonnet.** Landed: exhaustive DiagCode + typed payloads +
-  registry severity/Floor + mandatory primary span + builder API + 3-lane render
-  partition + tidy gate (20-code self-cleaning allow-list) + s-2 widening +
-  report() spans (drop-A closed). Remaining (B4, ru-23 sonnet tier): migrate the
-  3 diag::legacy survivors + the 17 scattered codes off the allow-list,
-  behavior-preserving; registry rows with PROPOSED floor entries (human disposes
-  at PR); per-code must-emit assertions on existing harnesses; hostsim-Finding
-  fold rides AFTER the sweep (core-expressible payloads — core cannot dep
-  hostsim). Adjudicated debts tracked in §10: tc-cmdsub-siteid two-id-spaces
-  (typed split when site-keyed consumers arrive), tc-cmdsub-cause (ProvId wiring
-  lands in arch-2 emit-at-origin).
+- arch-3 (catalog retrofit) — **CORE COMPLETE** (spine B3 `894109c`+`9c4b621`;
+  sweep B4b `6f4862c`+`0e0a470`): all 23 codes are typed DiagCode variants
+  with payloads + registry severity/Floor; allow-list EMPTY; diag::legacy
+  deleted; s-2 widening + report() spans (drop-A closed); 3-lane render
+  partition; tidy gate live. ZERO golden diffs across both harvests. TAIL
+  ITEMS (not blocking arch-2): arch-3-residual-1 must-emit audit (map all 23
+  codes to driving tests, fill gaps — at arch-2 prep); arch-3-residual-2
+  Diag::new_spanless for the six slug-extraction span-less codes;
+  hostsim-Finding fold (core-expressible payloads — core cannot dep hostsim);
+  HUMAN PR PASS pending: the PROPOSED floor column (B3's 3 rows + B4b's 20,
+  all-None except RenderHeredocRefused=WarnOrDeny) + the b4-cfg-top-severity
+  Warning→Error unification (split-into-two-codes is the fallback). Debts:
+  tc-cmdsub-siteid two-id-spaces (typed split when site-keyed consumers
+  arrive), tc-cmdsub-cause (ProvId wiring lands in arch-2 emit-at-origin).
 - arch-4 (durable + why) — **wave-3.** Thin durable (probe-tape + inputs + seed +
   digest; JSONL version-tagged; no byte-stability promise) + `why` lens
   minimal-witness-first; cer-1..6 ceremony; host-side durables per ru-21/22/23;
