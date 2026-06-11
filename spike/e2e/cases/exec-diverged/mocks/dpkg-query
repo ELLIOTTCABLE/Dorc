@@ -4,5 +4,5 @@
 # run), so the shim exits 1 ⇒ the `package__check` wrapper maps rc 1 → `absent`,
 # reproducing the authored probe-results.txt. A shim exiting 1 where the fixture says
 # `absent` is the sanctioned form (spike/CLAUDE.md). Read-only; logs for symmetry.
-printf 'ran: %s %s\n' "${0##*/}" "$*" >>"$DORC_LOG"
+. "${0%/*}/.log"; _dorc_logged "$@"
 exit 1

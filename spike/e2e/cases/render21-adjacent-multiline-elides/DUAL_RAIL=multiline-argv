@@ -1,0 +1,8 @@
+gate-6 (cm-1 dual-rail) EXCLUSION — literal-NEWLINE argument (tc-gate6-multiline-argv). The
+book has adjacent multiline-string mutator args. The engine's `--debug-argv` renders only each
+arg's FIRST line, but the slice-4 mock-log protocol encodes the whole arg onto one line
+(newline → `\n`). gate-6's surface-argv attribution cannot match the truncated ledger line
+against the encoded bare line, so the elision false-fails as "unattributable". (Pre-slice-4 this
+false-PASSED by accident — the un-encoded newline split the bare log into pieces that
+coincidentally matched.) gate-5 + the exec gates still cover the case; only gate-6 opts out. The
+value lives in the filename; this text is documentation.

@@ -6,5 +6,5 @@
 # 9, so `|| mkdir` fires and `mkdir` runs. Were the engine to wrongly elide `useradd`
 # to a fabricated `true` (the pre-19D bug), the `||` would not fire and `mkdir` would
 # be skipped — the kFAIL-perform under-execute this case guards against.
-printf 'ran: %s %s\n' "${0##*/}" "$*" >>"$DORC_LOG"
+. "${0%/*}/.log"; _dorc_logged "$@"
 exit 9

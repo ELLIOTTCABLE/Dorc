@@ -3,5 +3,5 @@
 # host has nginx ABSENT (rc 1), so the probe records `site 1 effect=absent rc=1` and the
 # `&&` guard FAILS ⇒ the block is dead. Read-only; logs argv. NB: the APPLY artifact does
 # NOT invoke dpkg (the guard is substituted to `false`); only the PROBE runs it (gate-1).
-printf 'ran: %s %s\n' "${0##*/}" "$*" >>"$DORC_LOG"
+. "${0%/*}/.log"; _dorc_logged "$@"
 exit 1   # nginx absent ⇒ guard fails ⇒ `&&` short-circuits the dead block

@@ -1,4 +1,4 @@
 #!/bin/sh
 # INERT mock: logs argv, exits 0. RUNS here (the outer block is live — the guard diverged).
-printf 'ran: %s %s\n' "${0##*/}" "$*" >>"$DORC_LOG"
+. "${0%/*}/.log"; _dorc_logged "$@"
 exit 0

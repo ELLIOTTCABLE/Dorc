@@ -1,5 +1,5 @@
 #!/bin/sh
 # INERT mock (ap-2 exec harness): logs that it ran, mutates NOTHING, exits 0. In this
 # converged case it NEVER runs (the block is dead); the diverged sibling exercises it.
-printf 'ran: %s %s\n' "${0##*/}" "$*" >>"$DORC_LOG"
+. "${0%/*}/.log"; _dorc_logged "$@"
 exit 0

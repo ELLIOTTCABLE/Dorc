@@ -4,7 +4,7 @@
 # installed (`holds`), curl is not (`absent`) — so the shim branches on the operand to
 # reproduce the authored probe-results.txt exactly (site 1 nginx=holds, site 2 curl=absent).
 # Read-only; logs for symmetry with the apply shims.
-printf 'ran: %s %s\n' "${0##*/}" "$*" >>"$DORC_LOG"
+. "${0%/*}/.log"; _dorc_logged "$@"
 case $2 in
   nginx) exit 0 ;;  # installed ⇒ holds
   *)     exit 1 ;;  # curl (and any other) not installed ⇒ absent

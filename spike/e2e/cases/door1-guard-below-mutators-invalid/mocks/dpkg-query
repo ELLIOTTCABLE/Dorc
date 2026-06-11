@@ -1,5 +1,5 @@
 #!/bin/sh
 # INERT probe shim for the `package` establish site (`dpkg-query -W <pkg>`; $2=pkg). curl IS
 # installed here (converged) ⇒ rc 0 (holds), matching probe-results.txt site 1. Read-only.
-printf 'ran: %s %s\n' "${0##*/}" "$*" >>"$DORC_LOG"
+. "${0%/*}/.log"; _dorc_logged "$@"
 exit 0

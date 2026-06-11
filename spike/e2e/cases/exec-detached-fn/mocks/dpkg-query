@@ -3,5 +3,5 @@
 # arch-2: this is the SPLICED inline body's establish probe (`site 0.0`). nginx is NOT
 # installed here (diverged) ⇒ rc 1 (absent), matching probe-results.txt ⇒ the inlined call
 # `prov` runs the real body.
-printf 'ran: %s %s\n' "${0##*/}" "$*" >>"$DORC_LOG"
+. "${0%/*}/.log"; _dorc_logged "$@"
 exit 1

@@ -1,5 +1,5 @@
 #!/bin/sh
 # INERT mock (ap-2 exec harness): logs argv, mutates NOTHING, exits 0. RUNS here (a bare
 # oracled mutator under set -e is ⊤ via fork-mutator-rc ⇒ un-elidable ⇒ runs).
-printf 'ran: %s %s\n' "${0##*/}" "$*" >>"$DORC_LOG"
+. "${0%/*}/.log"; _dorc_logged "$@"
 exit 0

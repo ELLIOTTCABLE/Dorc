@@ -2,5 +2,5 @@
 # INERT probe shim for the `package` establish site (`dpkg-query -W curl`; $2=curl). curl IS
 # installed ⇒ rc 0 (holds): the INNER `apt-get install curl || true` is converged ⇒ door-3
 # (StatusInvariant) mints the install's elision even though the outer block is live. Read-only.
-printf 'ran: %s %s\n' "${0##*/}" "$*" >>"$DORC_LOG"
+. "${0%/*}/.log"; _dorc_logged "$@"
 exit 0

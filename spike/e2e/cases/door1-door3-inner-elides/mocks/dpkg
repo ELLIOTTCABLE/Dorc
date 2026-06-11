@@ -1,5 +1,5 @@
 #!/bin/sh
 # INERT shim for `dpkg` — the pkgstate Query guard `dpkg -s nginx` ($2=nginx). nginx is NOT
 # installed ⇒ rc 1 (absent): the OUTER guard fails ⇒ the `|| { … }` block is LIVE. Read-only.
-printf 'ran: %s %s\n' "${0##*/}" "$*" >>"$DORC_LOG"
+. "${0%/*}/.log"; _dorc_logged "$@"
 exit 1

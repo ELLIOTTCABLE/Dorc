@@ -5,6 +5,6 @@
 # pkgindex check maps to `holds` (fixture site 5). Authoring the fixture AND the shim
 # together for a fresh-host mock is honest (not retro-fabrication — contrast the existing
 # exec-singleton-update, whose fixture asserts a real host; tc-find-shim, 20G). Read-only.
-printf 'ran: %s %s\n' "${0##*/}" "$*" >>"$DORC_LOG"
+. "${0%/*}/.log"; _dorc_logged "$@"
 printf '%s\n' '/var/lib/apt/lists/deb.debian.org_dists_stable_InRelease'
 exit 0

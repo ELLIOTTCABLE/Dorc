@@ -4,5 +4,5 @@
 # `while` runs ZERO iterations and TERMINATES — a holds (exit 0) would loop forever, which is
 # exactly the disaster a constant-substituted loop condition would also cause (the rationale
 # StatusIterated blocks on). Logs the argv for the run-set.
-printf 'ran: %s %s\n' "${0##*/}" "$*" >>"$DORC_LOG"
+. "${0%/*}/.log"; _dorc_logged "$@"
 exit 1

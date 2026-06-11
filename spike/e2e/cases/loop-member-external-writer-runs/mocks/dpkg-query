@@ -4,5 +4,5 @@
 # Convergence alone must NOT license the elision here: the pre-loop purge of curl breaks
 # self-reach, so the apply runs despite these converged records. Mutates nothing; logs for
 # symmetry.
-printf 'ran: %s %s\n' "${0##*/}" "$*" >>"$DORC_LOG"
+. "${0%/*}/.log"; _dorc_logged "$@"
 exit 0

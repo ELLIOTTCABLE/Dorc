@@ -25,6 +25,10 @@
 #                            wrapper-pun case whose `--debug-argv` ledger is the call-site
 #                            surface argv, not the inlined-body argv the bare run logs
 #                            (arch-2; tc-gate6-inlining). gate-5 + exec gates still apply.
+#   DUAL_RAIL=multiline-argv — exclude from gate-6: a literal-NEWLINE-arg case where
+#                            `--debug-argv` shows only the arg's first line but the slice-4 bare
+#                            log encodes the whole arg (`… multi\nline`); the ledger and bare
+#                            argv representations can't match (tc-gate6-multiline-argv).
 #   XFAIL                  — documented known-defect pin (its 1st line is the reason); the
 #                            case asserts the SAFE behaviour and is expected to fail at HEAD.
 #
@@ -51,6 +55,21 @@
 #   - wall-clock / RNG reached by a shim that calls `date`/`$RANDOM` (the shims don't).
 # The kernel-level DST guarantee lives in the Rust `hostsim` seam (21D); this rail only fixes
 # the SHELL-EXEC environment of the e2e corpus, not those deeper axes.
+#
+# MOCK-LOG PROTOCOL (slice-4) — every inert mock shim logs its invocation by sourcing a shared
+# per-mocks-dir dot-helper (`mocks/.log`, a DOTFILE so the `ls`-derived shimset never lists it)
+# via `. "${0%/*}/.log"; _dorc_logged "$@"`, instead of the old inline
+# `printf 'ran: %s %s\n' "${0##*/}" "$*"`. WHY: an argument containing a NEWLINE would split the
+# old single `ran:` line and silently corrupt every line-based compare (exec_check, gate-5,
+# gate-6). Shims run under PATH=mocks-only ⇒ BUILTINS ONLY, so the helper encodes in pure sh.
+# GRAMMAR (what expected.ran goldens carry): one `ran: <name> <arg>…` line per invocation, args
+# space-joined; each arg is encoded — a literal backslash → `\\`, an embedded newline → the two
+# chars `\n`. Passes run backslash-FIRST so a newline's encoded `\n` is not re-doubled. A
+# newline-free, backslash-free argv encodes to itself, and per-arg space-join reproduces the old
+# `"$*"` join byte-for-byte ⇒ ZERO golden churn (no current golden embeds a newline). gate-5's
+# `grep -qxF` and gate-6's judge operate on the encoded lines unchanged. (Two NON-logging mocks
+# files are exempt and untouched: a `grep` probe that does a real substring match, and a sourced
+# `helper.sh` no-op — neither emits a `ran:` line.)
 set -eu
 
 here=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
@@ -522,6 +541,13 @@ argv_echo_check() {
 #     (arch-2 / note 216 inv-leaf-seam: the LeafId→AstId map is non-injective under inlining).
 #     The AUTHORITATIVE cm-1 (21D's hostsim differential) attributes these via the in-process
 #     API; the corpus tier cannot, so it declares them out of scope with the marker.
+#   - DUAL_RAIL=multiline-argv cases are EXCLUDED (tc-gate6-multiline-argv): a command with a
+#     literal-NEWLINE argument. `--debug-argv` renders only the arg's FIRST line (`… multi`),
+#     but the slice-4 mock-log protocol encodes the whole arg into one line (`… multi\nline`),
+#     so the ledger and bare argv cannot match. (Pre-slice-4 this false-PASSED by accident: the
+#     un-encoded newline split the bare log into two records, the first of which coincidentally
+#     equalled the truncated ledger line — a match that ignored the second line entirely. Slice-4
+#     removed that accident; the honest disposition is exclusion.)
 #   - TWO-DIRECTIONAL branch-divergence attribution + HOST-STATE variation are NOT done here —
 #     that is the hostsim differential's domain (21D). gate-6 judges ONE fixed host-state per
 #     case (the authored probe-results); it does not sweep host-states to catch a wildcard
@@ -771,12 +797,16 @@ for dir in "$here"/cases/*/; do
       argv_echo_check "$name" "$dir" "$_shimset" "$@" || case_ok=0
       # gate-6 (cm-1 dual-rail): bare-vs-apply run-set delta ⊆ the replace/omit license ledger.
       # EXCLUDES (a) PROBE_RESULTS=authored — its mock-rc and authored probe-results diverge, so a
-      # bare-vs-apply difference is expected; and (b) DUAL_RAIL=inlined — a function-inlined/
-      # wrapper-pun case whose `--debug-argv` ledger reports the CALL-site surface argv
-      # (`apt_install nginx`) while the bare run logs the inlined-body resolved argv
-      # (`apt-get install -y nginx`); gate-6's surface-argv matching cannot reconcile the two
-      # (arch-2, note 216 inv-leaf-seam). See the gate-6 header. Not run under BLESS.
-      if [ ! -f "${dir}PROBE_RESULTS=authored" ] && [ ! -f "${dir}DUAL_RAIL=inlined" ]; then
+      # bare-vs-apply difference is expected; (b) DUAL_RAIL=inlined — a function-inlined/wrapper-
+      # pun case whose `--debug-argv` ledger reports the CALL-site surface argv (`apt_install
+      # nginx`) while the bare run logs the inlined-body resolved argv (`apt-get install -y
+      # nginx`); and (c) DUAL_RAIL=multiline-argv — a case with a literal-NEWLINE arg, where the
+      # engine's `--debug-argv` shows only the arg's FIRST line (`… multi`) while the slice-4 bare
+      # log encodes the whole arg (`… multi\nline`); the two representations cannot match. Both
+      # DUAL_RAIL values are ledger-vs-bare argv-representation mismatches gate-6's matching cannot
+      # reconcile (arch-2, note 216 inv-leaf-seam). See the gate-6 header. Not run under BLESS.
+      if [ ! -f "${dir}PROBE_RESULTS=authored" ] && [ ! -f "${dir}DUAL_RAIL=inlined" ] \
+         && [ ! -f "${dir}DUAL_RAIL=multiline-argv" ]; then
         dual_rail_check "$name" "$dir" "$_shimset" "$@" || case_ok=0
       fi
     fi

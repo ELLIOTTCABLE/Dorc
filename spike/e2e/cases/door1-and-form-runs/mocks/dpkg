@@ -2,7 +2,7 @@
 # INERT shim for `dpkg` — the pkgstate kind's probe (`dpkg -s <pkg>`; $1=-s, $2=pkg) AND
 # the apply's verbatim Query guard when it runs. The mock host has nginx INSTALLED (the
 # guard holds, rc 0), so the `|| { … }` block is dead and elides. Read-only; logs argv.
-printf 'ran: %s %s\n' "${0##*/}" "$*" >>"$DORC_LOG"
+. "${0%/*}/.log"; _dorc_logged "$@"
 case $2 in
   nginx) exit 0 ;;  # installed ⇒ holds ⇒ the guard substitutes to `true`, block dead
   *)     exit 1 ;;  # anything else absent
