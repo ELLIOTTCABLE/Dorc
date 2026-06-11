@@ -1,0 +1,4 @@
+# probe-results (PROBE-TIME world): nginx ABSENT (rc 1) ⇒ the `&&` reload is fold-dead
+# (Omit). The MOCK host below is the APPLY-TIME world — nginx PRESENT — so the kept
+# (render-refused, live) guard re-decides rc 0 and the verbatim reload runs.
+site 1 effect=absent rc=1

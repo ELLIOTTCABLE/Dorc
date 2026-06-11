@@ -1,0 +1,2 @@
+ran: dpkg -s nginx
+ran: systemctl reload nginx
