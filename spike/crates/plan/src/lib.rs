@@ -633,7 +633,10 @@ pub enum Disposition {
     /// probed observable); an unknown/⊤ controller never folds (the branch stays
     /// live ⇒ run). Rendering an `Omit` is additionally gated on the controller being
     /// itself neutralised (Replace/Omit), so the artifact never re-evaluates a kept,
-    /// possibly-stale guard against an omitted body (`render_apply`).
+    /// possibly-stale guard against an omitted body (`render_apply`). "Kept" includes
+    /// a render-REFUSED Replace (a heredoc-bearing controller): [`is_neutralised`]
+    /// consults the same refusal predicate as the render, so a licensed-but-refused
+    /// guard keeps its dependent body verbatim too.
     Omit { controller: AstId },
 }
 
@@ -1787,6 +1790,11 @@ fn region_ends_in_quote(line: &str) -> bool {
 /// (d-6): the AST span covers the `<<EOF` operator, NOT the body lines (they are generated
 /// content the parser captures separately), so editing the command span would strand the
 /// body as stray artifact lines. Such a leaf refuses the edit and runs verbatim.
+///
+/// This predicate is the ONE refusal definition and must stay in lockstep across its three
+/// consumers: [`Plan::collect_edits`] (drop the edit), [`Plan::render_refusal_diagnostics`]
+/// (disclose it), and [`is_neutralised`] (a refused controller is KEPT, so it is not
+/// neutralised — the omit-safety gate). A future refusal class must extend all three.
 fn leaf_has_heredoc(ast: &Ast, leaf: AstId) -> bool {
     let (NodeKind::Simple { redirs, .. }
     | NodeKind::Subshell { redirs, .. }
@@ -1811,6 +1819,18 @@ fn leaf_has_heredoc(ast: &Ast, leaf: AstId) -> bool {
 /// against a removed body (a `kFAIL-perform` under-execute), so a kept-guard `Omit` body
 /// renders verbatim (it runs; the runtime guard gates it).
 ///
+/// A `Replace` counts ONLY if the render will actually express it: a render-REFUSED
+/// controller (heredoc-bearing, [`leaf_has_heredoc`]) is kept verbatim by `collect_edits`,
+/// so its rendered form is the LIVE command — it re-decides at apply time, and the dead
+/// body must stay verbatim behind it (it runs when the live guard says so —
+/// `kFAIL-perform`). Without this check the licensed-but-refused guard pierced the gate:
+/// `dpkg -s nginx <<EOF … || install` rendered a live guard over a `:`-substituted body,
+/// exactly the kept-guard/omitted-body configuration this gate forbids (and in the `&&`
+/// form its flipped-world list-rc became a fabricated success no probe ever sourced).
+/// An `Omit`-disposed node carrying a heredoc is different: its verbatim text sits BEHIND
+/// its own controller's frozen short-circuit, so the transitive controller check below is
+/// the honest gate for it (no heredoc check on the `Omit` arm).
+///
 /// A `node` that is a plan LEAF (a [`Step`], so present in `by_ast`) is neutralised iff its
 /// disposition is `Replace` (substituted to its stand-in) or an `Omit` whose own controller
 /// is neutralised (transitive, depth-capped — `inv-no-throw`). A `node` that is NOT a leaf —
@@ -1831,7 +1851,7 @@ fn is_neutralised(
     }
     if let Some(disposition) = by_ast.get(&node) {
         return match disposition {
-            Disposition::Replace(_, _) => true,
+            Disposition::Replace(_, _) => !leaf_has_heredoc(ast, node),
             Disposition::Omit { controller } => is_neutralised(by_ast, ast, *controller, depth + 1),
             Disposition::Run => false,
         };
@@ -1847,7 +1867,9 @@ fn is_neutralised(
             node,
             &mut any_leaf,
             &mut |leaf| match by_ast.get(&leaf) {
-                Some(Disposition::Replace(_, _)) => true,
+                // Same render-refusal gate as the leaf arm: a heredoc-bearing Replace is
+                // kept verbatim, so it does NOT reproduce the compound's decision.
+                Some(Disposition::Replace(_, _)) => !leaf_has_heredoc(ast, leaf),
                 Some(Disposition::Omit { controller }) => {
                     is_neutralised(by_ast, ast, *controller, depth + 1)
                 }

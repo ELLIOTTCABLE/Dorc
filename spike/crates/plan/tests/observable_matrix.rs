@@ -667,6 +667,17 @@ fn query_index(i: &mut Interner) -> KindIndex {
 /// answered verdict-only by `pkg_holds` (a mutator's rc is always ⊤). The Effect verdict
 /// of the guard cell is derived from its rc (0 ⇒ Converged/holds, else Diverged).
 fn plan_query(src: &str, guard_tool: &str, guard_rc: i32, pkg_holds: &[&str]) -> Plan {
+    plan_query_and_ast(src, guard_tool, guard_rc, pkg_holds).0
+}
+
+/// [`plan_query`] keeping the parsed AST, for `render_apply`/`render_refusal_diagnostics`
+/// assertions (the omit-safety render gate needs both the `Plan` and the `&Ast`).
+fn plan_query_and_ast(
+    src: &str,
+    guard_tool: &str,
+    guard_rc: i32,
+    pkg_holds: &[&str],
+) -> (Plan, dorc_syntax::ast::Ast) {
     let mut i = Interner::default();
     let idx = query_index(&mut i);
     let installed = SelectorId(i.intern("installed"));
@@ -704,7 +715,7 @@ fn plan_query(src: &str, guard_tool: &str, guard_rc: i32, pkg_holds: &[&str]) ->
         Verdict::Diverged
     };
 
-    build_plan(src, &parsed.value, &cfg, &classes, move |f| {
+    let plan = build_plan(src, &parsed.value, &cfg, &classes, move |f| {
         if f == guard_fact {
             Observable {
                 effect: guard_effect,
@@ -723,7 +734,8 @@ fn plan_query(src: &str, guard_tool: &str, guard_rc: i32, pkg_holds: &[&str]) ->
         } else {
             Observable::verdict_only(Verdict::Diverged)
         }
-    })
+    });
+    (plan, parsed.value)
 }
 
 /// Is the leaf containing `needle` **omitted** (fold-dead branch)? Distinct from
@@ -833,6 +845,135 @@ fn query_guard_consumed_stdout_blocks_substitution() {
     assert!(
         !is_replaced(&plan, "command -v nginx"),
         "a stdout-consumed Query guard blocks substitution (runs)"
+    );
+}
+
+// ===========================================================================
+// OMIT-SAFETY × RENDER-REFUSAL (round-21 f1): a heredoc-bearing Query guard is
+// LICENSED a Replace (license-time never consults the render's refuse-set) but the
+// leaf-exact render REFUSES its edit (d-6) — the guard is physically KEPT, live,
+// re-deciding at apply time. `is_neutralised` must therefore NOT count it as
+// neutralised, or its fold-dead dependent body renders `:` under a live guard —
+// verbatim the kept-guard/omitted-body configuration the omit-safety gate forbids
+// (`Disposition::Omit` doc). In the `&&` form the flipped-world damage is rc-
+// observable: `G && :` yields list-rc 0 ("guard held AND body succeeded") though
+// the body never ran — a fabricated composite no probe sourced
+// (`inv-probe-sourced-values`) and no baseline world produces. The conservative
+// collapse: refused controller ⇒ dependent body stays VERBATIM ⇒ runs when the
+// live guard says so (`kFAIL-perform`).
+// ===========================================================================
+
+#[test]
+fn refused_heredoc_guard_keeps_dead_oror_body_verbatim() {
+    // The hazard shape, `||` arm: guard holds (rc 0) ⇒ the install is fold-dead (Omit
+    // mints — the DISPOSITION layer is untouched), but the heredoc guard is render-
+    // refused ⇒ NOT neutralised ⇒ the body must render VERBATIM, never `:`.
+    let src = "command -v nginx <<EOF >/dev/null 2>&1 || apt-get install -y nginx\npayload\nEOF\n";
+    let (plan, ast) = plan_query_and_ast(src, "nginx", 0, &[]);
+    assert!(
+        is_omitted(&plan, "apt-get install"),
+        "the disposition still folds the dead body (the fix is render-side only): {:?}",
+        plan.steps
+            .iter()
+            .map(|s| (&s.sh, &s.disposition))
+            .collect::<Vec<_>>()
+    );
+    let rendered = plan.render_apply(src, &ast);
+    assert!(
+        rendered.contains("|| apt-get install -y nginx"),
+        "the dead body stays verbatim behind the kept (refused) guard:\n{rendered}"
+    );
+    assert!(
+        !rendered.contains("|| :"),
+        "no `:` may sit under a LIVE re-deciding guard (omit-safety):\n{rendered}"
+    );
+    // Exactly ONE refusal diagnostic: the guard's. The body is no longer would-elide
+    // (its controller is not neutralised), so it must not double-report.
+    let diags = plan.render_refusal_diagnostics(&ast);
+    assert_eq!(
+        diags.len(),
+        1,
+        "one refusal (the guard), none for the kept-verbatim body: {diags:?}"
+    );
+}
+
+#[test]
+fn refused_heredoc_guard_keeps_dead_andand_body_verbatim() {
+    // The `&&` arm — the rc-DIVERGENT one: pre-fix, `G && :` in the guard-flipped world
+    // exits 0 where frozen-both (`false && :`) exits 1 and the bare book runs the body
+    // (or errexit-aborts on its failure). Guard rc 1 ⇒ `&&` body fold-dead; refused
+    // guard ⇒ body verbatim.
+    let src = "command -v nginx <<EOF >/dev/null 2>&1 && systemctl reload nginx\npayload\nEOF\n";
+    let (plan, ast) = plan_query_and_ast(src, "nginx", 1, &[]);
+    assert!(
+        is_omitted(&plan, "systemctl reload"),
+        "guard rc 1 ⇒ the && body is fold-dead (disposition untouched)"
+    );
+    let rendered = plan.render_apply(src, &ast);
+    assert!(
+        rendered.contains("&& systemctl reload nginx"),
+        "the dead body stays verbatim behind the kept (refused) guard:\n{rendered}"
+    );
+    assert!(
+        !rendered.contains("&& :"),
+        "no fabricated `:` rc-0 may be reachable behind a live `&&` guard:\n{rendered}"
+    );
+}
+
+#[test]
+fn refused_heredoc_guard_in_if_cond_keeps_dead_branch_verbatim() {
+    // The COMPOUND-controller arm (`subtree_leaves_all`): the controller is the if-cond
+    // node, not the guard leaf — the walk must apply the same refusal gate to the
+    // Replace leaves it visits. Guard holds (rc 0) ⇒ else-branch fold-dead; refused
+    // guard ⇒ the else body must stay verbatim.
+    let src =
+        "if command -v nginx <<EOF\npayload\nEOF\nthen :\nelse apt-get install -y nginx\nfi\n";
+    let (plan, ast) = plan_query_and_ast(src, "nginx", 0, &[]);
+    assert!(
+        is_omitted(&plan, "apt-get install"),
+        "cond known-true ⇒ the else body is fold-dead (disposition untouched)"
+    );
+    let rendered = plan.render_apply(src, &ast);
+    assert!(
+        rendered.contains("else apt-get install -y nginx"),
+        "the dead else-branch stays verbatim behind the kept (refused) cond guard:\n{rendered}"
+    );
+}
+
+#[test]
+fn clean_guard_still_elides_dead_body_heredoc_sibling_stays_unreachable_verbatim() {
+    // The adjacent cell the fix must NOT break (over-reach pole): the heredoc sits on a
+    // leaf INSIDE the dead block, the CONTROLLER is clean. The guard freezes to `true`,
+    // the clean sibling still elides to `:`, and the heredoc leaf is kept verbatim but
+    // UNREACHABLE behind the frozen short-circuit — sound, and still elision-bearing.
+    let src = "command -v nginx >/dev/null 2>&1 || { apt-get install -y nginx <<EOF\npayload\nEOF\nsystemctl restart nginx; }\n";
+    let (plan, ast) = plan_query_and_ast(src, "nginx", 0, &[]);
+    let rendered = plan.render_apply(src, &ast);
+    assert!(
+        rendered.contains("true || {"),
+        "the clean guard still freezes to its stand-in:\n{rendered}"
+    );
+    assert!(
+        rendered.contains("apt-get install -y nginx <<EOF"),
+        "the heredoc leaf inside the dead block is kept verbatim (unreachable):\n{rendered}"
+    );
+    assert!(
+        rendered.contains(":; }") && !rendered.contains("systemctl restart nginx; }"),
+        "the clean dead sibling still elides to `:`:\n{rendered}"
+    );
+}
+
+#[test]
+fn clean_query_guard_still_renders_dead_body_as_colon() {
+    // The plain pole (no heredoc anywhere): the omit-safety gate must keep LICENSING
+    // the `:`-edit when the controller genuinely freezes — `true || :`. Guards against
+    // an over-broad refusal collapse.
+    let src = "command -v nginx >/dev/null 2>&1 || apt-get install -y nginx\n";
+    let (plan, ast) = plan_query_and_ast(src, "nginx", 0, &[]);
+    let rendered = plan.render_apply(src, &ast);
+    assert!(
+        rendered.contains("true || :"),
+        "frozen guard over `:`-elided body is the licensed shape:\n{rendered}"
     );
 }
 
