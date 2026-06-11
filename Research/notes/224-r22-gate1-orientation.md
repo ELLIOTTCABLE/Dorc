@@ -724,3 +724,82 @@ warm-ups (d×d host-flip fixture; var-resolved redirect case) → 22x synthesis 
   only on divergence-need): hostile pass on the harvested gate, worktree
   x1-gate-attack, branch ai/r22-xcheck1 @ 6b869a9; may commit PoC pins; B1's
   hunt-1..8 handed with exceed-it instruction.
+
+## §11 Post-gating self-audit (append-only; conductor, after a window where several turns produced no output)
+
+> Written after several conductor turns produced nothing (model-gated on accumulated
+> loaded vocabulary — the priming prompt's sec-gate warning, realized ONE LEVEL UP:
+> banking a hostile crosscheck's full REPORT carried enough loaded vocabulary to gate
+> the conductor itself). This section records, in neutral engineering terms, what the
+> window established but never made durable, and audits the durable for gaps. The
+> security-topic direction (ingestion/quarantine) is already ru-22/ru-23 and is NOT
+> re-derived here per the human's omit-instruction.
+
+### x1-outcome — the erasability gate is correctly built but VACUOUS-AT-HEAD (a test-coverage finding, not an arch-1 defect)
+- An independent reader confirmed arch-1's structural defenses SOUND: ProvId is !Ord,
+  the Reach ⊤-cause is excluded from Eq/Hash, the canon destructures exhaustively
+  (no `..`), decision collections are BTreeMap/Vec (no shared-unordered iteration),
+  and the mint/disposition paths take no arena/ProvId. No decision-divergence was
+  producible. +SURE (two independent builders now agree the defenses hold).
+- BUT the gate passes by DISUSE, not by exercised-inertness: at HEAD nothing in the
+  decision pipeline READS a receipt. `top_cause()` has zero callers; the witness is
+  populated yet the canon omits it; ValueOf::Top carries no cause at all. So run-A ≡
+  run-B because the perturbed data is write-only/omitted — not because a live consumer
+  was driven under variance. This is the 19I §3 trap ("passes because a fixture fed the
+  right value") in GATE form. +SURE.
+- Two machinery halves target not-yet-called code: the arena join path
+  (OriginKind::Join + parent-reversal + k-cap truncation) is never invoked by the
+  pipeline (only `arena.leaf` is), so the join-reversal half of the variance perturbs
+  nothing; and the 6 gate fixtures exercise no Error-class diagnostic, errexit, door-3,
+  heredoc, or multi-host fork — so the canon's diag path is dead and the
+  most-likely-future-consumer constructs are uncovered.
+- One latent consistency gap: the gate's canon is built from `classified.diags` only,
+  while the cli digest uses `diags + refusals` — the gate underwrites a SMALLER
+  identity plane than the digest. No fixture produces a refusal today ⇒ latent.
+- Evidence: a documenting test at `b68fc66` on branch ai/r22-xcheck1 (records the
+  vacuity; explicitly NOT a leak pin — none exists). NOT harvested (coverage-doc test
+  on the attacker branch; fold-or-re-derive at arch-2 prep).
+- DISPOSITION (conductor): arch-1 is NOT defective — gate and defenses are correctly
+  built; the gate is simply not yet load-bearing because its subject (a receipt
+  consumer) does not exist yet. arch2-gate-obligation (HARD, tracked): the instant
+  arch-2 wires the first consumer (the why-lens reading `top_cause`, or any decision
+  keyed on witness content), it MUST (a) land a fixture exercising that exact read with
+  the variance targeting it, and (b) upgrade the canary from "witness non-empty" to
+  "witness DIFFERS across A/B yet decisions are identical" — the actual non-vacuous
+  inertness assertion. Until then, read the gate as "inertness STRUCTURALLY enforced;
+  behaviourally UNEXERCISED," never "inertness proven end-to-end."
+- never-vouch: this is an AI crosscheck's claim, and a DEFLATIONARY one (the gate
+  proves LESS than its self-report implied) — so acting on it is conservative-safe; the
+  human battle-tests the real thing.
+
+### process-1 — model-gating reached the conductor (fb-candidate + resumption-relevant)
+- Both dispatched Fable-class subagents this window, and then the conductor across
+  several turns, gated on accumulated loaded vocabulary. fb-9's "cumulative, not any
+  single bomb" is confirmed, one level up: a hostile crosscheck on an inertness/
+  provenance component emits enough loaded vocabulary in its REPORT that banking the
+  report poisons the conductor's own context.
+- fb-candidate (round close): crosschecks on this component-family must return a
+  PRE-SANITIZED verdict (disposition + neutral-engineering findings only; loaded detail
+  stays siloed on the attacker branch, fetched only if a specific finding needs it).
+  Bank the verdict, not the transcript. (This is the 21W sec-gate sub-agent guidance
+  extended to the verdict-ingestion boundary.)
+- Resumption: this context is compromised for further work in this topic-area; a
+  successor conductor should resume from 22Z + this §11, clean-context. Round state is
+  otherwise fully durable (arch-1 harvested + green; wave-2 next).
+
+### owed-1 — explainers owed to the human, never delivered (gated mid-window)
+- The human asked for slow explanations of: (a) why excluding the ⊤-cause from Reach's
+  Eq is a TERMINATION requirement (the fixpoint's convergence test IS the `joined ==
+  state[w]` Eq, so a cause-sensitive Eq never reaches a fixed point — confirmed by B1's
+  build and the x-1 read); and (b) the two B1 scope judgments (cause on Reach::Top not
+  ValueOf::Top, with the value-plane cause deferred-to-arch-2; and the witness threading
+  through build_plan's call sites). All three explain ALREADY-RECORDED decisions — no
+  new content — owed for the human's understanding. A clean-context conductor should
+  deliver them.
+
+### audit — already durable, no action
+- ru-1..ru-23 all recorded (§7); rec-1..rec-7 batch recorded; RV1/RV2/RV3 sweeps banked
+  (§10); B1 harvest + tc-flag adjudications recorded; B2 + D1 + the five research
+  relaunches + the two warm-up fixtures recorded; 220 vp-8 and 21Z d-1 IB-annotated.
+  The ONLY window-events missing from the durable were the three above (x1-outcome,
+  process-1, owed-1) — now banked.
