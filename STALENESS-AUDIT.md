@@ -172,6 +172,13 @@ file.
     false-poison is dead; the bare-mutation headline book elides 6 mutations, proven by
     execution) AND the full guarded realistic book still does not elide (two un-oracled
     neighbours — `case "$(hostname)"` and `if ! command -v nginx` — re-poison it).
+    <!-- /* superseded 2026-06-10 (round-20, notes/206 §2): the 6-elisions half is now 0 — the
+    headline books open `set -e`, and honoring 19A C-3 (errexit is a status-consumer) composed
+    with fork-mutator-rc (a mutator's rc is always ⊤) blocks every mutator-elision there. The
+    selector re-key claim itself stands (the false-poison is still dead — group B pins it);
+    the VALUE story moves to Query-guard folds (probe-sourced rcs). Do not write "elides 6
+    mutations" into the DESIGN rewrite. Also: the "full guarded realistic book" lives at the
+    UNIT layer (fixtures/pi-webhost.book.sh), not in the e2e corpus — see notes/20B. */ -->
     Oracle-coverage, not analyzer machinery, is the binding constraint (193 strain-5, 19I
     group J).
 

@@ -121,7 +121,7 @@ Poles: `kSTATE-persist ↔ kSTATE-recompute`
 ### `kELISION`
 Poles: `kELISION-scoped ↔ kELISION-full`
 
-**Tension:** elide genuine checks / expressed desired-state *for now, at user request* outside a declared scope — hot-loop speed, accepting staleness (`dorc some-smart-ish-diffing-update-from-git`) **vs** elide nothing un-proven — completeness / no drift (`dorc some-reconcile-all-state-completely`). *(Elision = deliberately not-checking-right-this-second something unknown/possibly-bad; distinct from skipping-because-known-good, which is just applying-for-free.)*
+**Tension:** elide genuine checks / expressed desired-state *for now, at user request* outside a declared scope — hot-loop speed, accepting staleness (`dorc some-smart-ish-diffing-update-from-git`) **vs** elide nothing un-proven — completeness / no drift (`dorc some-reconcile-all-state-completely`). *(Naming caution: this entry predates the terminology-firming in AGENTS.md and uses "elision" for check-**scope** — deliberately not-checking-right-this-second something unknown/possibly-bad, at user request. The now-canonical sense of "elision" — observable-preserving *replacement* of a proven-converged command — is a distinct mechanism this knob never touches: scope-elision changes what gets checked at all; replacement-elision is licensed only by probe-facts, under `kFAIL`, regardless of mode.)*
 **Status:** mode (user picks via update/reconcile; changes elision *scope*, never elision *soundness*). **Owner:** user (runtime). **Lock-in:** low.
 
 ### `kOBJECTIVE`

@@ -3065,5 +3065,18 @@
     "sha256": "a62dc725419d68dd33f052005ccec257de4b0aa548e4d63654cfd99adeb519fc",
     "acquired": "url",
     "via": "mcp__octocode__githubSearchRepositories(differential datalog, Rust) -> flowlog-rs/flowlog"
+  },
+  "B-imthenachoman-h2sals-2026": {
+    "url": "https://raw.githubusercontent.com/imthenachoman/How-To-Secure-A-Linux-Server/5abb8c77cf0bded508ca3a31a3de579563db891f/README.md",
+    "grading-certainty": "+1:SURE",
+    "grading-reasoning": "not A: community-maintained practitioner guide, not peer-reviewed or official vendor docs; not C: human-authored, actively maintained, CC-BY-SA, widely referenced with many contributors and a companion Ansible playbook repo; thus B",
+    "relevance-certainty": "+1:SURE",
+    "relevance-description": "comprehensive Linux server hardening reference (SSH, UFW, fail2ban, auditd, etc.) — domain corpus for what Dorc admin-end books and oracles operate against; directly relevant to notes/100 security prior art",
+    "graded-by": "top-level-agent",
+    "published": "2026-03-05",
+    "retrieved": "2026-06-10",
+    "sha256": "0b1100dc972029cb837d9158cac3459fe39476b3300c16a73155f2fb5e99bd7a",
+    "acquired": "url",
+    "via": "direct user instruction (pinned commit 5abb8c7)"
   }
 }

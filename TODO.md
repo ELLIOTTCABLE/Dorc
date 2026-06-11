@@ -28,3 +28,22 @@
 - [ ] **version & binary-identity as oracle-contract-menu items (the parked versioning spike).** An oracle's grounding (e.g. "`docker --dry-run` is inert") is silently parameterised by the *exact binary* it was authored against; version-drift — or even a *same-version* distro-backport — breaks both the read-only and oracle-soundness claims without announcing it. Candidates to lift into the oracle-contract menu:
   - **binary-contents-hash guard** — oracle binds its grounding to a content-hash; runner hash-checks `$PATH` at probe/apply, fail-safe on mismatch. Jointly defends version-drift *and* injection; lightweight — *record-and-compare*, **no registry** (only Nix-style content-addressed *storage* would be "a registry").
   - **version coordinate** — cf. [package-url/purl-spec](https://github.com/package-url/purl-spec) as a prior-art identity format encoding namespace/distro/version (`pkg:apk/alpine/musl@1.2.5-r9?distro=3.21`), which distinguishes "same version string, different bytes" across distros/patch-levels. Distinct job from the hash: purl = comparable *intent*/coordinate; hash = *identity* for the soundness gate.
+
+*(machine-added 2026-06-08, round-17 adversarial-crosscheck — for human review/integration; full context: `Research/notes/17O` R2-CHANGEDELTA + `notes/17x-strawmen/adversarial/`)*
+
+- [ ] **run-delta convergence: the un-probeable, change-gated effect class — to write into DESIGN.** A class of effects is idempotent on a *run-delta* ("did A change *this run*"), not on host *state*: restart-on-change, `systemctl reload` after a config write, the whole Ansible `notify`/handler pattern. Their convergence ("the daemon is running the *current* config") is generally **not host-state-probeable** — `kVOLATILES` even forbids caching the freshness signal. So the probe optimizer can elide such an effect *only* via (a) the **author's own change-flag** data-flow, which Dorc must **preserve, not elide** (it is a *consumed observable* — needs `q1-precision` to track the variable across the cp→reload edge), or (b) a safe **over-execute** (run it every bump; priority-2). Dorc must **never** elide it via a *state*-probe (mapping `reload`→`is-active` = a priority-1 wrong-skip), and must **not** *synthesise* the cross-kind causal edge (`MUST-grade-to-correlate` correctly refuses). Sharpens `Research/notes/17B`'s cert→reload from "cross-facet" to "this whole class." Boundary to state in DESIGN: *the probe phase elides a delta-gated effect only by preserving the author's change-flag, else it over-executes; convergence-via-state-probe is forbidden for this class.*
+
+*(machine-added 2026-06-09, round-19 find-3 — for human review/integration; full context: `Research/notes/19G` + `ch-shape-anno` / the foundational compiled-probe)*
+
+- [ ] **oracle-argparse + inline kind-annotation: the entity-resolution that replaces the engine's flag-strip stand-in.** find-3: the engine must do ZERO argstring parsing — identity is *declared, never inferred* (SF-1 / `an-entity-uniqueness` / `inv-referent-agnostic`). The oracle writes a mini-argparse in our *constrained* oracle-contract dialect (NOT arbitrary sh) and inline-annotates the operand's kind; the analyzer flow-tracks the book's constant *through that argparse* to the annotation. Needs a narrow value-plane (constants + simple `$n` — the spike lacks it, `16C`) and call-edges into oracle bodies (`seam-interproc`). The strawman:
+
+    ```sh
+    apt_get__check() {                          # the oracle's check: a mini-argparse mirroring apt-get
+       while [ "${1#-}" != "$1" ]; do           # skip options the way apt-get really does
+          case $1 in -t|-o) shift 2 ;; *) shift ;; esac
+       done
+       verb=$1; shift
+       pkg : com.debian.apt.Package = "$1"      # ← inline-declare: bless THIS value's kind, on THIS path
+       dpkg-query -W "$pkg"
+    }
+    ```
