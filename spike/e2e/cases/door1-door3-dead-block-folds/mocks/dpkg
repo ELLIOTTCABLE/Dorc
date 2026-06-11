@@ -1,0 +1,6 @@
+#!/bin/sh
+# INERT shim for `dpkg` — the pkgstate Query guard `dpkg -s nginx` ($2=nginx). nginx IS
+# installed here ⇒ rc 0 (holds): the OUTER guard holds ⇒ the `|| { … }` block is DEAD ⇒ the
+# whole block folds (fold-Omit), and fold-Omit pre-empts the inner door-3 mint. Read-only.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0

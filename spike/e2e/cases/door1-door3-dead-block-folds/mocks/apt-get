@@ -1,0 +1,6 @@
+#!/bin/sh
+# INERT mock: logs argv, exits 0. NEVER runs in either rail — the outer block is DEAD (the guard
+# holds), so the inner install is dead-folded in the apply AND short-circuited in the bare book.
+# Shipped so the shimset is complete and a stray invocation would be logged, not a real apt-get.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0

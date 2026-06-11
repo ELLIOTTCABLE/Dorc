@@ -1,0 +1,7 @@
+#!/bin/sh
+# INERT probe shim for the `package` establish site (`dpkg-query -W curl`; $2=curl). curl IS
+# installed ⇒ rc 0 (holds): the INNER `apt-get install curl || true` is converged. (Irrelevant
+# to the apply — the outer block is dead-folded, so the inner install is OMITted regardless of
+# its convergence; the probe still ships site 2 phase-separately.) Read-only.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
