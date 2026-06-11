@@ -39,7 +39,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use dorc_core::{AstId, Interner, Symbol};
-use dorc_syntax::ast::{Ast, NodeKind, WordPart};
+use dorc_syntax::ast::{Ast, NodeKind, RedirOp, RedirTarget, WordPart};
 use dorc_syntax::sem::{self, FragClass};
 
 use crate::cfg::{Cfg, CfgNodeId, CfgNodeKind};
@@ -96,6 +96,17 @@ pub struct ValueFlow {
     /// ⇒ the consumer reads the ordinary (⊤-positional) [`argv`] entry. `BTreeMap` for
     /// `inv-determinism`.
     positional_argv: BTreeMap<CfgNodeId, Vec<ValueOf>>,
+    /// Per WRITE-shaped [`Redir`](CfgNodeKind::Redir) node (y-1, redirect-effects): the
+    /// resolved redirect TARGET word for a file-write redirect (`>`/`>>`), keyed by the
+    /// `Redir` node. A [`ValueOf::Literal`] is the resolved path (the effect classifier gens a
+    /// per-path `file` cell); [`ValueOf::Top`] is an unresolved/dynamic target (Opaque-poison +
+    /// a diagnostic). Present ONLY for a write-shaped redirect to a REAL sink; a read, an fd-dup
+    /// (`2>&1`), a here-doc, and the `/dev/null` discard are ABSENT (not file-write effects, the
+    /// existing devnull/dup vocabulary — `cfg::body_has_unmodeled_write_redirect`). Resolved
+    /// against the `Redir` node's incoming env state (a target word is an ordinary expansion,
+    /// `>> "$logfile"` following `logfile`), so it composes with constant propagation. `BTreeMap`
+    /// for `inv-determinism`.
+    redir_target: BTreeMap<CfgNodeId, ValueOf>,
     converged: bool,
 }
 
@@ -133,6 +144,17 @@ impl ValueFlow {
     #[must_use]
     pub fn member_argv(&self, node: CfgNodeId) -> Option<&Vec<Vec<ValueOf>>> {
         self.member_argv.get(&node)
+    }
+
+    /// The resolved file-write redirect TARGET for a WRITE-shaped [`Redir`](CfgNodeKind::Redir)
+    /// node (y-1, redirect-effects), or `None` if this node is not a write-shaped file redirect
+    /// (a read/fd-dup/here-doc, the `/dev/null` discard, or a non-`Redir` node). A
+    /// [`ValueOf::Literal`] is the resolved path (⇒ the effect classifier gens a `file` cell);
+    /// [`ValueOf::Top`] is a dynamic/unresolved target (⇒ Opaque-poison + diagnostic). See
+    /// [`redir_target`](Self::redir_target) (the field).
+    #[must_use]
+    pub fn redir_target(&self, node: CfgNodeId) -> Option<ValueOf> {
+        self.redir_target.get(&node).copied()
     }
 
     /// Did the underlying worklist reach a fixed point? `false` ⇒ all queries are all-`⊤`
@@ -205,10 +227,17 @@ pub fn analyze(cfg: &Cfg, ast: &Ast, interner: &mut Interner) -> ValueFlow {
     // resolved argv and re-resolve each body site's words.
     let positional_argv = prep.inline_pass(&argv, &solution.states, solution.converged, interner);
 
+    // y-1 (redirect-effects): the resolved write-redirect TARGETS — a SEPARATE pass off the
+    // same converged solution. A redirect target is an ordinary expansion (`>> "$logfile"`),
+    // so it resolves against the `Redir` node's incoming env state exactly as a command word
+    // does; the effect classifier gens a per-path `file` cell from a resolved target.
+    let redir_target = prep.redir_pass(&solution.states, solution.converged, interner);
+
     ValueFlow {
         argv,
         member_argv,
         positional_argv,
+        redir_target,
         converged: solution.converged,
     }
 }
@@ -760,6 +789,73 @@ impl<'a> Prep<'a> {
                 .collect();
             out.insert(site_id, per_member);
         }
+    }
+
+    /// Compute the resolved write-redirect TARGET for every WRITE-shaped [`Redir`](CfgNodeKind::Redir)
+    /// node (y-1, redirect-effects) — a SEPARATE pass off the converged solution. Only a file-write
+    /// redirect to a REAL sink is recorded (the existing devnull/dup vocabulary, mirroring
+    /// `cfg::body_has_unmodeled_write_redirect` / `output_redir_observables`):
+    /// * `op` is `Write`/`Append` (a read `<`, an fd-dup `2>&1`/`>&3`, a here-doc are NOT
+    ///   file-write effects ⇒ absent — the consumer reads them as `Pure`);
+    /// * `target` is a `Word` (an fd-dup / here-doc target is not a path) that is NOT the
+    ///   `/dev/null` discard sink (devnull-exemption — checked SYNTACTICALLY on the source
+    ///   literal, before value resolution, so `> /dev/null` is exempt regardless of state).
+    ///
+    /// The target word is resolved against the `Redir` node's INCOMING env state (a redirect
+    /// target is an ordinary single-field expansion — `>> "$logfile"` follows `logfile`), using
+    /// [`resolve_recipe`] (single value, NOT field-split: the shell expands a redirect target to
+    /// ONE field and errors on multiple). An expansion-hazard target (`>> *.log` glob, `>> ~/x`
+    /// tilde) ⇒ `⊤` (we cannot reproduce the live-fs/`$HOME` expansion — the Opaque-poison path).
+    /// A non-converged solve records nothing (the all-⊤ fold, `16P` DP-9 ⇒ the consumer's absent
+    /// entry; but the whole pipeline is already ⊤ then). `BTreeMap` for `inv-determinism`.
+    fn redir_pass(
+        &self,
+        states: &[ValueEnv],
+        converged: bool,
+        interner: &mut Interner,
+    ) -> BTreeMap<CfgNodeId, ValueOf> {
+        let mut out = BTreeMap::new();
+        if !converged {
+            return out;
+        }
+        for (id, node) in self.cfg.iter() {
+            if node.kind != CfgNodeKind::Redir {
+                continue;
+            }
+            let NodeKind::Redir { op, target, .. } = &self.ast.node(node.ast).kind else {
+                continue;
+            };
+            // Only file-write redirects gen a cell (`>`, `>>`). A read, an fd-dup, and a
+            // here-doc are not a write-to-file effect (the existing vocabulary).
+            if !matches!(op, RedirOp::Write | RedirOp::Append) {
+                continue;
+            }
+            let RedirTarget::Word(w) = target else {
+                continue; // fd-dup / here-doc target: not a path
+            };
+            // devnull-exemption (the discard sink, the precision scalpel): checked on the
+            // SOURCE literal before resolution, exactly as `output_redir_observables` does.
+            if literal_text(self.ast, *w).as_deref() == Some("/dev/null") {
+                continue;
+            }
+            let Some(incoming) = states.get(id.index()) else {
+                continue;
+            };
+            // A redirect target is a single-field expansion (the shell errors on multiple);
+            // an unquoted glob / word-leading tilde expands against the live fs / `$HOME`
+            // ⇒ ⊤ (we cannot reproduce it — the Opaque-poison path).
+            let resolved = if word_expansion_hazard(self.ast, *w) {
+                Abstract::Top
+            } else {
+                resolve_recipe(&recipe_of_word(self.ast, *w), incoming)
+            };
+            let value = match resolved {
+                Abstract::Lit(s) => ValueOf::Literal(interner.intern(&s)),
+                Abstract::Top => ValueOf::Top,
+            };
+            out.insert(id, value);
+        }
+        out
     }
 
     /// Compute the positional-bound argvs for every spliced funcdef-body `Command` site

@@ -1,0 +1,5 @@
+# probe says the grep-guard HOLDS (the file already contains the pattern) — the imp-1
+# stale-guard trap: pre-y-1 this folded the install dead. With y-1 the upstream write
+# invalidates the guard (its rc is withheld) ⇒ the install stays LIVE.
+site 2 effect=holds rc=0
+site 3 effect=holds rc=0

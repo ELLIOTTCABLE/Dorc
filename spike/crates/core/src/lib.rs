@@ -128,7 +128,24 @@ impl Diagnostic {
             message: message.into(),
         }
     }
+
+    /// A `Note`-severity diagnostic — a disclosure, never a failure. The e2e
+    /// stderr-floor gate (gate-3) keys only on the `error[…]` shape, so a Note
+    /// surfaces information (a silent ⊤-degradation, a probe-unresolvable site)
+    /// without tripping any case (`219` q-2.b: the `$()` ⊤-diagnostics are
+    /// Note-severity disclosures).
+    #[must_use]
+    pub fn note(code: DiagCode, span: Option<Span>, message: impl Into<String>) -> Self {
+        Self {
+            severity: Severity::Note,
+            code,
+            span,
+            message: message.into(),
+        }
+    }
 }
+
+pub mod diag;
 
 /// `result × accumulated diagnostics` — the type every pipeline stage returns
 /// (research chord `dn-7` / `ch-carrier`). A writer-monad shape: `map` transforms
