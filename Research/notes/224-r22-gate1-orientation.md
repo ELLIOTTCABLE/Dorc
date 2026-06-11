@@ -693,3 +693,34 @@ warm-ups (d×d host-flip fixture; var-resolved redirect case) → 22x synthesis 
   for wave-2's 17-code catalog sweep: sonnet for the mechanical half, opus for
   the design half); also fb-candidate for round close (class-discipline gains a
   third tier: fable adversarial / opus build / sonnet mechanical).
+- B1 arch-1 → HARVESTED as `54a4b84`+`38acbec`+`6b869a9` (arena+unord / Top(cause)+
+  GATE / witness split): Opus, 479K harness-tokens (self-reported ~150K — largest
+  delta yet; harness authoritative), 272 tool uses, ~70 min. Post-harvest chain:
+  all gates rc=0 · 21 suites ok (481+ incl. the 3-test erasability gate) · e2e
+  99/99 ×2 · typos 0 · fb-11 delta = exactly B2's fixture (expected). Build
+  highlights: ProvId is !Ord BY DESIGN (can't key a decision BTreeMap — the weld's
+  structural half); Reach Eq excludes the cause — found to be a TERMINATION
+  requirement, not just contract (fixpoint converges on Eq); exempt-plane assigned
+  via exhaustive destructuring with no `..` (new field = compile error until
+  classified — include-by-default without proc-macros); canary asserts ran +
+  nonzero arena + ≥1 Replace + ≥1 non-empty witness (non-vacuous exemption proof).
+  PROOF-OF-BITE done: injected synthetic leak (cause-parity flipping effects) —
+  gate caught it; reverted. strain-1 (load-bearing): first adversarial scheme
+  (additive id offset) PRESERVED parity/residues — gate didn't bite; fixed with
+  high-range odd-strided sentinels (concl-1's sentinel lesson re-learned in
+  miniature). strain-2: first fixtures passed VACUOUSLY (no-establish oracle ⇒
+  nothing elided) — caught, fixed, total_replaces>0 canary added (the 19I §3 trap
+  in gate form). CONDUCTOR ADJUDICATIONS: tc-flag-1 ACCEPTED — cause lands on
+  Reach::Top (21Z's literal causally-opaque complaint), ValueOf::Top cause
+  DEFERRED-TO-ARCH-2 as a tracked item (vp-23-aligned: its consumer is the
+  value-plane why-lens; rec-6's richer-metadata ratification carries scheduling
+  latitude "wherever you prefer"; candidate sonnet-mechanical per ru-23).
+  tc-flag-2 ACCEPTED — witness population threading is in-scope (the gate IS the
+  consumer; witness-at-licenses is ratified vp-17 design, not speculative
+  capture). Reach first-cause-wins join: accepted (decision-invariant; k-capped
+  Join machinery exists in the arena for value-plane joins when needed; f-3's
+  store-k-capped ruling was value-plane-scoped).
+- x-1 DISPATCHED (the round's first Fable spend, per ru-14 one-sharp-pass; second
+  only on divergence-need): hostile pass on the harvested gate, worktree
+  x1-gate-attack, branch ai/r22-xcheck1 @ 6b869a9; may commit PoC pins; B1's
+  hunt-1..8 handed with exceed-it instruction.
