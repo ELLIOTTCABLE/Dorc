@@ -212,3 +212,17 @@ warm-ups (d×d host-flip fixture; var-resolved redirect case) → 22x synthesis 
   sure it would ever be fine for this to always be collected by default" — direct
   caution against d-1's always-on durable. rqF mapped the full r-b.org leak-category
   page taxonomy. rqA read+graded Zdancewic–Myers and Green–Tannen before the stop.
+
+## §10 Dispatch ledger (running; fb-16 — subagent-reported tokens)
+
+- R0' rq-A primaries → notes/225 (final `32bac89`): Opus, ~115-135K tokens, 42 tool
+  uses, ~9 min. All four primaries grade-A full-read; ZERO human fetch-requests
+  blocking. Substantive corrections delivered: finding-zm-attribution — 220 vp-26's
+  one-way slogan is the Sabelfeld–Sands GLOSS, not Zdancewic–Myers verbatim (ZM01's
+  own Thm 4.2 carries a published self-correction, fn4: corrected bound weaker, "not
+  tight") — the synthesis must cite the engineering rationale, not lean on ZM01 as a
+  tight formal anchor. finding-carata-tail — SPADEv2 <10% overhead on production
+  Apache; tail confirms vp-23 (noise/unbounded capture kill, not payload).
+  finding-livshits — full-paper support for vp-27, devs "better off leaving out
+  sanitizers entirely instead of trying to place them." Housekeeping: stale duplicate
+  B-green key in rqA scratch sources.json (auto-resolves at the §9 cleanup).
