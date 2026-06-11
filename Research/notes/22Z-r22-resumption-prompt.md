@@ -90,7 +90,11 @@ if the human re-hands it): quarantine 223. Do NOT read quarantine otherwise.
   recursive-self-delegation failure; 7 uncommitted files, human inventory;
   branch ai/r22-arch3m has zero commits past base). b4b-arch3m2 (branch
   ai/r22-arch3m2, tip `4085bd4`) HARVESTED by cherry-pick (`6f4862c`+`0e0a470`,
-  fb-11 EMPTY). PROCESS RULE (fb-19): every builder brief carries an explicit
+  fb-11 EMPTY). b5-e2equiet (ai/r22-e2equiet @ c630726) + b6-spanless
+  (ai/r22-spanless @ c630726) possibly IN FLIGHT (end-of-window opus burn,
+  224 §10 tail entry: the quiet knob + the spanless mint path) — a resuming
+  successor should check those branches for unharvested commits FIRST.
+  PROCESS RULE (fb-19): every builder brief carries an explicit
   no-subagents/do-it-yourself clamp; sonnet-tier especially.
 - `.claude/research/` GITIGNORED scratch was REMOVED (`d4277e0`); ~3.2MB untracked
   re-fetchable residue (incl. the four rqA primary PDFs) remains on disk for the
