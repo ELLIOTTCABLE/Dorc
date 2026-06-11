@@ -449,6 +449,28 @@ fn door3_oror_chain_true_replaces_only_outer_left() {
 }
 
 #[test]
+fn door3_true_funcdef_redefinition_blocks_mint() {
+    // find-I (note 213 §5 hunt-4, the verified wrong-elision): the book defines
+    // `true() { systemctl restart sshd; }` and then `apt-get install -y nginx || true`,
+    // converged. dash resolves a FUNCTION before a regular builtin, so the rhs `true` —
+    // and the minted stand-in `true` the render would splice in for the install — both
+    // run the function's mutator body. At HEAD-before-fix the install minted Replace on
+    // a false inertness premise and the artifact ran the mutator UNCONDITIONALLY where
+    // the bare book ran it only on install-failure. With the funcdef present door-3
+    // refuses at the cfg mark: the site carries the ordinary `StatusRelaxable`, the ⊤
+    // mutator rc blocks, the install RUNS. HOST: nginx installed.
+    let plan = plan_for(
+        "true() { systemctl restart sshd; }\napt-get install -y nginx || true\n",
+        &[("package", "nginx")],
+    );
+    assert!(
+        !is_replaced(&plan, "install -y nginx"),
+        "a book defining `true()` gets NO door-3 mint — its `|| true` blocks at ⊤ and runs \
+         (the stand-in would resolve to the function, not the builtin)"
+    );
+}
+
+#[test]
 fn door3_oror_true_then_dollar_question_runs_residual() {
     // The documented RESIDUAL (`20V` §4 UNIT PINS / note 213): `cmd || true; echo $?`. The
     // `$?`-reader marks the predecessors (`cmd` AND `true`) `StatusRelaxable` via the

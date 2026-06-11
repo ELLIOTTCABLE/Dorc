@@ -1222,6 +1222,9 @@ fn disposition_for(
                     // licensed by INVARIANCE (both `||` continuations rejoin identically, so any rc
                     // is extensionally faithful), NOT by a claim cmd exits 0. This keeps weld-5 (no
                     // fabricated values for LIVE reads) intact: the `||` read is dead-in-fact.
+                    // (A book defining a `true()` function never reaches this arm — door-3
+                    // refuses at the cfg mark, find-I: the stand-in word would resolve to the
+                    // function, not the builtin.)
                     let stand_in = match status {
                         Predicted::Value(rc) => StandIn::from_rc(rc),
                         Predicted::Top => StandIn::True,

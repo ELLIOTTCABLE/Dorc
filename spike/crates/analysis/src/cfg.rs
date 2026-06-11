@@ -1036,7 +1036,9 @@ impl<'a> Builder<'a> {
         // the rc is consumed-in-form, dead-in-fact (see the variant doc for why). Only the
         // EXACT bare-`true` rhs qualifies ([`right_is_bare_true`]); `|| :`/`|| false`/
         // `&& true`/`|| true >/dev/null`/`|| { …; }` keep `StatusRelaxable` (a deliberately
-        // narrow license-widening, `20V` §4 d-2). The mark covers the whole left arena range;
+        // narrow license-widening, `20V` §4 d-2), and a book defining a `true()` function
+        // disqualifies door-3 file-wide (find-I: the word would resolve to the function,
+        // not the inert builtin). The mark covers the whole left arena range;
         // in a chain `a || b || true` (left-assoc) that range also spans `a`, but `a` already
         // carries `StatusRelaxable` from the inner `||` (its rc gates whether `b` runs), and
         // that blocking mark wins over the inert Invariant over-mark — so only `b` (the direct
@@ -1644,6 +1646,14 @@ impl<'a> Builder<'a> {
     /// identical, but every license-surface widening is a disaster-class-bug locus —
     /// `20V` §4 widens deliberately, candidate-by-candidate; the `|| :` deferral is
     /// pinned as a unit test). `false` does not qualify (it changes the list rc).
+    ///
+    /// find-I (note 213 §5 hunt-4): the word `true` is only inert when it resolves to
+    /// the BUILTIN — dash resolves a function before a regular builtin, so a book-defined
+    /// `true() { … }` makes the rhs (and any minted stand-in `true`) run the function
+    /// body instead. The check is FILE-WIDE, not positional: a textually-later definition
+    /// can be live when the site executes (loop re-entry), and over-refusing a
+    /// pathological book is the safe direction — it gets NO door-3 marks, its `|| true`
+    /// lefts stay `StatusRelaxable` and block at ⊤ (they run).
     fn right_is_bare_true(&self, id: AstId) -> bool {
         let NodeKind::Simple {
             assigns,
@@ -1656,6 +1666,7 @@ impl<'a> Builder<'a> {
         assigns.is_empty()
             && redirs.is_empty()
             && matches!(words.as_slice(), [w] if self.word_literal(*w) == Some("true"))
+            && !self.funcdefs.contains_key("true")
     }
 
     /// The statically-fixed literal of a word (the only case treated as a known

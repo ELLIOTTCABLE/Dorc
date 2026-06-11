@@ -1518,6 +1518,40 @@ fn consumed_oror_chain_true_marks_only_outer_left_invariant() {
 }
 
 #[test]
+fn consumed_oror_true_with_true_funcdef_keeps_relaxable() {
+    // find-I (note 213 §5 hunt-4): a book-defined `true() { … }` shadows the builtin in
+    // dash (a function wins over a regular builtin), so the `|| true` rhs is NOT the inert
+    // builtin and door-3's rejoin-identical premise fails. The left operand must keep the
+    // blocking `StatusRelaxable` — at HEAD-before-fix it was marked `StatusInvariant`
+    // purely syntactically, minting a Replace whose stand-in `true` would RUN the
+    // function's mutator body unconditionally (the verified wrong-elision).
+    let src = "true() { systemctl restart sshd; }\napt-get install -y nginx || true\n";
+    let c = consumed_of(src, "apt-get");
+    assert!(
+        c.contains(&Channel::StatusRelaxable),
+        "with a `true` funcdef in the book, `|| true` keeps the blocking StatusRelaxable: {c:?}"
+    );
+    assert!(
+        !c.contains(&Channel::StatusInvariant),
+        "a book-defined `true()` disqualifies door-3 (the rhs is not the inert builtin): {c:?}"
+    );
+}
+
+#[test]
+fn consumed_oror_true_with_later_true_funcdef_keeps_relaxable() {
+    // The funcdef-check is FILE-WIDE, not positional ("defined before this point"): a
+    // textually-later `true() { … }` can still be live when the site executes (re-entry
+    // under a loop; and the minted stand-in inherits the site's program point). Over-
+    // refusing a pathological book is the safe direction — no door-3 mark anywhere in it.
+    let src = "apt-get install -y nginx || true\ntrue() { systemctl restart sshd; }\n";
+    let c = consumed_of(src, "apt-get");
+    assert!(
+        c.contains(&Channel::StatusRelaxable) && !c.contains(&Channel::StatusInvariant),
+        "a later `true()` funcdef still disqualifies door-3 (file-wide, conservative): {c:?}"
+    );
+}
+
+#[test]
 fn consumed_post_while_dollar_question_marks_body_not_only_condition() {
     // task-L2 item-6a (20O find-6a), dash-verified: post-loop `$?` after a `while` is the
     // BODY's last command rc (loop ran ≥1) or 0 (ran 0) — NEVER the condition's. So a
