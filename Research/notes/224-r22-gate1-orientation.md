@@ -850,7 +850,31 @@ warm-ups (d×d host-flip fixture; var-resolved redirect case) → 22x synthesis 
   worktree b6-spanless, branch ai/r22-spanless @ c630726. Both opus, both
   carry the fb-19 clamp. Held back deliberately: must-emit audit (collides
   with B6 files; arch-2-prep item) and the x-1 test fold (needs
-  post-arch-3-spine adaptation judgment; conductor-shaped). Scope: the
+  post-arch-3-spine adaptation judgment; conductor-shaped).
+- B5+B6 → HARVESTED as `606dc5c` (B5 quiet knob) + `bf3b4e3` (B6 spanless):
+  B5 Opus 88,621 harness-tokens / 39 tools / ~43 min (self-rep ~70-85K — small
+  fb-16 delta); B6 Opus 181,745 / 98 tools / ~28 min (self-rep ~95-105K).
+  Builder commits `d14bfa2` @ c630726 / `3eb6283` @ c630726; per-branch fb-11
+  diffs EMPTY. DEVIATION LOGGED: one combined post-harvest chain for both
+  (independent smalls, disjoint files, human token-economy directive) instead
+  of per-harvest chains. Chain green, e2e run QUIET (first conductor use of
+  the knob — the two e2e sections totalled 8 lines): all gates rc=0 · core 26
+  · diag_tidy 5/5 (new spanless_mint_allow_list_is_exact) · erasability 3/3 ·
+  e2e 99/99 ×2 real exits · typos 0.
+- CONDUCTOR ADJUDICATIONS: B6's representation ACCEPTED-COMMENDED — private
+  `SpanSite{At,Spanless}` inside a now-private SpanLabel.span field +
+  `span() -> Option<Span>` accessor; STRONGER than briefed (Spanless is
+  unnameable outside core::diag — `new_spanless_site` is the literal only
+  door; field-privatization verified zero-consumer-breakage). Allowlist gate
+  is set-equal both directions over a production-only scan, both directions
+  negative-controlled. b6-flag-1 ACCEPTED: the two check-* codes are
+  span-OPTIONAL (real spans at 2 of 4 sites), correctly excluded from the six.
+  b6-flag-3 atomic-commit ACCEPTED (constructor+migrations+gate genuinely
+  co-dependent). B5 verified incl. the perturb-restore failure-path proof and
+  default byte-identity. arch-3-residual-2 RESOLVED. PROCESS UPDATE: conductor
+  chains now run e2e with DORC_E2E_QUIET=1 (failures print verbatim, so the
+  fb-17 read-the-output discipline is intact; unquieted remains the default
+  for builders/humans). Scope: the
   22B §3/§4 spine in core + s-2 classify-signature widening EARLY + report()
   span rendering (drop-A) + gate-grep with seeded self-cleaning allow-list +
   the three §5 worked-example migrations as proving set. Opus tier (ru-23
