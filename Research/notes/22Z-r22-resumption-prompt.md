@@ -3,9 +3,9 @@
 > Cold-conductor onboarding document. If you are reading this to resume round-22
 > after a conductor death OR a context-compromise: this file + notes/224 (the round
 > ledger, esp. §7 rulings / §10 dispatch / §11 self-audit) + plans/22A (the research
-> truth) + TaskList are your state. Updated at: build phase — wave-2 LIVE: prep DONE
-> (housekeeping landed, owed-1 delivered), B3 arch-3-design IN FLIGHT @ `cb695a9`;
-> clean-context successor conducting (2026-06-11).
+> truth) + TaskList are your state. Updated at: build phase — WAVE-2 COMPLETE
+> (arch-3 core done: B3 spine + B4b sweep both harvested, chain green, zero
+> goldens; fb-19 logged); NEXT = arch-2 prep, fresh conductor turn (2026-06-11).
 
 ## Role
 
@@ -89,9 +89,9 @@ if the human re-hands it): quarantine 223. Do NOT read quarantine otherwise.
   (`894109c`+`9c4b621`, fb-11 EMPTY). b4-arch3m: ABANDONED-DIRTY (fb-19
   recursive-self-delegation failure; 7 uncommitted files, human inventory;
   branch ai/r22-arch3m has zero commits past base). b4b-arch3m2 (branch
-  ai/r22-arch3m2) IN FLIGHT: the same 20-code sweep, sonnet, with the fb-19
-  no-subagents clamp. PROCESS RULE (fb-19): every builder brief carries an
-  explicit no-subagents/do-it-yourself clamp; sonnet-tier especially.
+  ai/r22-arch3m2, tip `4085bd4`) HARVESTED by cherry-pick (`6f4862c`+`0e0a470`,
+  fb-11 EMPTY). PROCESS RULE (fb-19): every builder brief carries an explicit
+  no-subagents/do-it-yourself clamp; sonnet-tier especially.
 - `.claude/research/` GITIGNORED scratch was REMOVED (`d4277e0`); ~3.2MB untracked
   re-fetchable residue (incl. the four rqA primary PDFs) remains on disk for the
   human's inventory. (Stale prior note said "remove at digestion" — done.)
