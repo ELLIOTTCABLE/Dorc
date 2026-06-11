@@ -396,3 +396,241 @@ Read for the receipts plane:
   Dorc's probe-then-apply staging (static where possible, measure live when necessary) —
   -GUESS a structural echo worth noting, though their run-time taint-tracking is not a
   Dorc mechanism.
+
+---
+
+## Carata et al., "A Primer on Provenance" (ACM Queue, 2014) — FULL READ, Seltzer author copy
+
+Read full from local PDF by this agent (the previously-403'd full text). Source:
+`[A-carata-primer-2014]`. Printed folios 1–14 coincide with extractor sheets; locators
+are those page numbers. This read closes the gap a prior round flagged: note 220's
+`B-carata-primer-2014` had only the front material; the load-bearing TAIL (the overhead
+section, the system-properties table, SPADEv2's fusion mechanism, the
+granularity/noise/n-by-m tradeoffs, and pruning-as-open-problem) is captured below.
+
+What this paper is, for the receipts plane: a practitioner survey of eight provenance
+systems (PASS/PASSv2, SPADE/SPADEv2, VisTrails, ZOOM, Burrito, SPROV, Lipstick, RAMP)
+along five axes — what's captured (granularity, layering), integration effort, querying,
+overhead, security. It is the corroborating evidence for 220:vp-23 (capture-without-
+consumer drowns systems) and supplies the overhead numbers that show payload size is NOT
+the killer — noise and unbounded capture are. See finding-10..11.
+
+Load-bearing excerpts — the overhead tail (the part the prior round was missing):
+
+> [A-carata-primer-2014]:p9 §Understanding overhead / Time overhead — the headline
+> numbers (relevance +SURE):
+> "Both ZOOM and VisTrails, for example, report an approximately 1 percent increase in
+> execution time. … Kernel-based system-call interception mechanisms such as in PASSv2
+> have a 1 to 23 percent overhead on workloads representative of real-world applications.
+> Similarly, SPADEv2, which uses kernel auditing infrastructure for provenance capture,
+> reports less than a 10 percent overhead on Windows, Linux, and OS X for production
+> Apache runs. … For I/O-heavy workloads, however, provenance capture may impose larger
+> runtime overheads. PASS, for example, reports up to a 230 percent overhead on small
+> file benchmarks, even though the absolute increase in execution times remains small."
+
+> [A-carata-primer-2014]:p9 — the interception-mechanism sensitivity, and fine-grained
+> cost (relevance +SURE):
+> "SPADEv2, for example, supports operation interception via the kernel auditing
+> mechanisms on OS X, while on Windows it requires a file-system filter driver that
+> relays operations to the provenance collector. As a consequence, provenance-enabled
+> Apache builds are 50 percent slower on Windows but only 5 percent slower on OS X. …
+> it is common for the cost of provenance capture to equal or exceed the cost of the
+> recorded operation, leading to slowdowns exceeding 100 percent. For example, in the
+> Lipstick system, operator-level provenance is reported to lead to a slowdown of two to
+> three times, while in the RAMP system … it is common to observe a temporal overhead of
+> up to 75 percent."
+
+> [A-carata-primer-2014]:p9 §Spatial overhead — the storage numbers (relevance +SURE):
+> "The general-purpose PASSv2 system requires, on average, approximately 20 percent
+> additional space overhead (as compared with the original output size) to log all the
+> operations for a workload representative of real-world applications. … The Burrito
+> system, running on a real user workload, required 800 MB for provenance storage and
+> 2 GB for file versions over a two-month period. … These results indicate that storage
+> overhead should not be prohibitive for most cases."
+
+> [A-carata-primer-2014]:p10 §Overhead tradeoffs — granularity-vs-overhead, and delayed
+> construction (relevance +SURE):
+> "Generally speaking, there is a direct tradeoff between capture granularity and
+> provenance overhead. … Most systems also delay provenance construction in order to
+> minimize capture overhead. PASSv2, for example, captures raw operation records,
+> converting them to their final representation via an asynchronous user-space daemon. …
+> Other systems delay provenance collection to query time to avoid wasting resources
+> computing provenance that will never be accessed. For example, Lipstick carries out
+> provenance construction only when a query is made."
+
+The noise / n-by-m / granularity tradeoffs (the second part the prior round wanted):
+
+> [A-carata-primer-2014]:p4 §What can it capture? / Granularity — the noise problem and
+> the heuristics admission (relevance +SURE):
+> "Consider a Python script that copies one file to another. When running the script,
+> the Python interpreter will first read and load any required modules from disk. Thus,
+> beyond the dependency on the actual input, the final provenance graph will link the
+> output file to all the Python modules used by the interpreter. This extra data can make
+> it difficult to sift through the provenance graph as an end user, so, generally,
+> heuristics are needed to determine which entities are important and which should be
+> ignored."
+
+> [A-carata-primer-2014]:p4–5 §The n-by-m problem (relevance +SURE):
+> "the n-by-m problem, where a program reads n input files and writes m output files.
+> Even when tracing system calls for individual reads and writes, it's not possible to
+> infer which reads affected a particular write, so the provenance graph has to link each
+> output file to all of the inputs. A system that is unaware of the semantics of
+> individual data transformations within a process will always present a number of such
+> false-positive relationships. Both PASS and VisTrails have this problem, as they treat
+> the process or each workflow step as a black box."
+
+> [A-carata-primer-2014]:p6 §Cooperation between layers — SPADEv2's fusion/composition
+> filters (relevance ~SUSPECT, the SPADEv2 figure the prior round cited):
+> "SPADEv2, for example, uses a multisource fusion filter (with process ID as a tag) to
+> combine provenance data from multiple sources describing the same event and working at
+> the same level of abstraction. When provenance is reported at different levels of
+> abstraction, SPADEv2 uses a cross-layer composition filter that has the same purpose."
+
+> [A-carata-primer-2014]:p7 §Integrating provenance — disclosed vs observed, the trust
+> axis (relevance +SURE):
+> "As a group, the literature refers to these as disclosed provenance systems, and they
+> are recognized for their ability to offer improved semantic descriptions of provenance.
+> The trustworthiness of the provenance captured in this way, however, is a concern when
+> running in untrusted environments. … [observed systems] tend to have the lowest
+> intrusiveness. … Observed provenance systems have their own shortcomings, however,
+> mostly because of the loss of semantic information when treating each process as a
+> black box."
+
+> [A-carata-primer-2014]:p11 §Research challenges — pruning/querying still open
+> (relevance +SURE, the pruning-as-open-problem point):
+> "Despite the research carried out so far toward querying and visualizing provenance,
+> these are still challenging problems. … even small provenance graphs can easily contain
+> thousands of nodes." [§How do you answer questions, p8] And: "Moving beyond human
+> queries, provenance should be made available to applications, allowing automated
+> validation of inputs, limiting error propagation, or self-diagnosing changes in output
+> quality." [§Computing with provenance, p11]
+
+> [A-carata-primer-2014]:p10 §Security issues — provenance needs its own access policy
+> (relevance ~SUSPECT):
+> "It is imperative for provenance data to be secured against unauthorized access and not
+> to leak any information about the data against which it is collected. Fundamentally,
+> this requires provenance to be managed under different access policies than those of
+> the data. … the security aspects of provenance are defined as its confidentiality (only
+> authorized parties can read it) and its integrity (it cannot be forged or altered)."
+
+Read for the receipts plane:
+- finding-10: the overhead numbers settle the "is per-value capture affordable" worry —
+  every shipping system lands in a tolerable band (disclosed ~1%; observed system-call
+  1–23%; SPADEv2 <10%; spatial ~20%); the I/O-heavy and fine-grained outliers (PASS 230%,
+  Lipstick 2–3×, RAMP 75%) are exactly the *finest* granularities. Corroborates 220:vp-23
+  and the broader note-220 r-4 thesis ("payload bloat per se killed almost nobody"): the
+  killer is noise + capture-without-consumer, not bytes-per-value.
+- The Python-modules noise example + "heuristics are needed to determine which entities
+  are important" is the canonical capture-without-consumer pathology; the n-by-m problem
+  is the structural source of false-positive edges. Dorc inoculation (already in 220:vp-23):
+  build receipts against the *closed* consumer list (⊤-blame; license-witness;
+  refusal-delta; dashboard why-not; erasability gate) and refuse speculative capture —
+  Dorc's origin sets are NOT a black-box n-by-m link-everything, they are computed from
+  the analyzer's own dataflow, which is precisely the semantic information PASS/VisTrails
+  lack.
+- finding-11: disclosed-vs-observed is the trust axis that maps cleanly onto Dorc's
+  claim-vs-receipt split — disclosed = author-attested = better semantics but trust-on-
+  the-author (Dorc's oracle-claims); observed = cheap, inferred, semantics-poor, "a
+  concern in untrusted environments" (Dorc's inferred receipts, which may only refuse/
+  explain). The primer independently arrives at the same reason receipts must not grant:
+  observed/inferred provenance is not trustworthy enough to be authoritative.
+- The "different access policies than the data" point (p10) is a -GUESS prior-art anchor
+  for keeping the receipts plane separate from the value/where plane (220:vp-20) and for
+  the erasability gate — provenance can leak about its subject and may warrant its own
+  visibility rules. Weaker relevance; flagged ~SUSPECT.
+- "Computing with provenance" as future work (p11) — provenance made available to
+  *applications* for "automated validation of inputs, limiting error propagation" — is
+  exactly Dorc's machine-consumer stance (receipts consumed by the analyzer's license
+  check, not just a human dashboard). The primer lists this as aspirational in 2014;
+  Dorc's closed-consumer design is the concrete instance.
+
+---
+
+## Fetch-requests for the human
+
+Nothing in the four target primaries was unreachable — all read in full from local
+copies. The items below are OPTIONAL follow-ups surfaced in the reference chains, none
+blocking this round:
+
+- **fetch-opt-1 (the ZM01 enforcement sequel).** finding-2 notes ZM01 gives the
+  *semantic property* of robust declassification but not an *enforcement* (type/dataflow)
+  mechanism. The canonical sequel is Myers, Sabelfeld & Zdancewic, "Enforcing Robust
+  Declassification" (CSFW 2004) / its JCS 2006 journal version. If round-22 wants the
+  one-way rule as an actually-enforceable typing discipline (not just a property to cite),
+  that paper is the source. Best URL: `https://www.cs.cornell.edu/andru/papers/` (Myers's
+  author page lists csfw04/jcs copies). Why needed: only if the design moves from "cite
+  the property" to "adopt an enforcement rule." Not required now.
+
+- **fetch-opt-2 (the two placement-failure assessments Livshits–Chong leans on).** The
+  "well beyond the ability of developers" claim (p1) cites [38] Samuel/Saxena/Song,
+  "Context-sensitive auto-sanitization …" (CCS 2011) and [39] Saxena/Molnar/Livshits,
+  "ScriptGard …" (CCS 2011). If a primary-source measurement of *human misplacement rate*
+  is wanted (rather than Livshits–Chong's secondhand summary of it), those two are the
+  empirical origin. Both are ACM DL; ScriptGard has a Microsoft Research author copy.
+  Why needed: only to harden finding-8 from "asserted by L–C" to "measured in [38,39]."
+  Low priority — note 220 already treats vp-27 as well-supported.
+
+I did not fight any paywall; no archive copies were created (per the saved local copies
+in `.claude/research/r22-rqA/staging/`, which are scratch, not committed archives).
+
+---
+
+## Graded sources
+
+Grades assigned by gathering subagent; conductor re-verification pending. Read-depth:
+full = whole paper read; targeted = specific sections; snippet = abstract/excerpt only.
+All four were read full. Grade letter encodes source quality (A = peer-reviewed primary,
+canonical author copy, no rot); the letter lives in the slug, so a slug change ⇒ a
+grade change.
+
+- `[A-zdancewic-myers-robust-declassification-2001]` · Zdancewic & Myers, "Robust
+  Declassification" · `https://www.cs.cornell.edu/andru/papers/csfw01.pdf` · published
+  IEEE CSFW 2001 · read-depth full · grading: A not B because it is the peer-reviewed
+  CSFW primary in the canonical author-posted Cornell copy with no rot, AND notably a
+  *corrected* version (fn4 fixes a proceedings-version error) — strictly better provenance
+  than note 220's secondhand survey-read it replaces; would only be B if access were
+  degraded/secondhand, which it is not. · Relevance: the named origin of robust
+  declassification, closest formal statement of Dorc's one-way receipts rule (220:vp-26);
+  attacker model + the `glb(D)` who-declassified blame construction (220:vp-16) both
+  transfer. · Via: rq-A list / predecessor's turn-1 read.
+
+- `[A-green-karvounarakis-tannen-provenance-semirings-2007]` · Green, Karvounarakis &
+  Tannen, "Provenance Semirings" · `https://web.cs.ucdavis.edu/~green/papers/pods07.pdf` ·
+  published ACM PODS 2007 · read-depth full · grading: A not B because it is the seminal
+  peer-reviewed PODS'07 primary (origin of the semiring provenance framework, thousands of
+  citations) in the canonical author-posted UC Davis copy, no rot, fully read; note 220
+  held it at B only by access-grade ("not directly read"), which no longer applies. The
+  local copy is the author preprint (no ACM folios) — a quality-neutral packaging detail,
+  not a grade reduction. · Relevance: formal source for 220:vp-3/16..19 — factorization
+  theorem (polynomials universal, coarser forms are homomorphic images), why-vs-how
+  limitation (motivates minimal-witness-at-licenses, vp-17), distributive-lattice
+  containment collapse (corroborates avoiding how-polynomials, vp-19). · Via: rq-A list /
+  predecessor's turn-1 read. (Conductor housekeeping: the predecessor's stale
+  `B-green-karvounarakis-tannen-provenance-semirings-2007` duplicate key + archived PDF in
+  the r22-rqA sources.json should be pruned; cited nowhere.)
+
+- `[A-livshits-chong-automatic-placement-2013]` · Livshits & Chong, "Towards Fully
+  Automatic Placement of Security Sanitizers and Declassifiers" ·
+  `https://people.seas.harvard.edu/~chong/pubs/popl13-automatic-placement.pdf` · published
+  ACM POPL 2013 · read-depth full · grading: A not B because it is the peer-reviewed POPL
+  primary in the canonical author-posted Harvard copy, no rot, fully read in main context;
+  note 220's `B-livshits-chong-2013` was the access-grade for a not-directly-read source,
+  now superseded. Directly on-point and foundational for the permit-point-placement
+  argument. · Relevance: the load-bearing evidence for 220:vp-27 (humans misplace
+  permit-points → make them few/explicit/owned); also supplies the placement-is-orthogonal-
+  to-precision result (Dorc's best-effort posture) and the 6.19× few-points payoff. · Via:
+  rq-A list (downloaded by predecessor, read by this agent).
+
+- `[A-carata-primer-2014]` · Carata, Akoush, Balakrishnan, Bytheway, Sohan, Seltzer,
+  Hopper, "A Primer on Provenance" · `https://www.seltzer.com/assets/publications/A-Primer-on-Provenance.pdf` ·
+  published ACM Queue 12(3) / CACM 2014 · read-depth full · grading: A not B because it is
+  a peer-reviewed ACM Queue article in the canonical author-posted (Seltzer) copy, no rot,
+  now fully read including the previously-403'd tail; note 220 held it at B with only the
+  front material accessible, which no longer applies. It is a survey rather than a results
+  primary, but an authoritative, peer-reviewed one by the PASS/Burrito principals — an A
+  for what it is (a practitioner survey), not over-graded as if it were a primary results
+  paper. · Relevance: corroborates 220:vp-23 (capture-without-consumer) with concrete
+  overhead numbers (payload size is not the killer; noise + unbounded capture are), the
+  n-by-m and granularity/noise tradeoffs, SPADEv2's fusion mechanism, and disclosed-vs-
+  observed as the trust axis mapping onto Dorc's claim-vs-receipt split. · Via: rq-A list
+  (downloaded by predecessor, tail read by this agent).
