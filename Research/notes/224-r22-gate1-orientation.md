@@ -559,3 +559,41 @@ warm-ups (d×d host-flip fixture; var-resolved redirect case) → 22x synthesis 
   best-effort-vs-hard-gate; IMPLEMENTATION's dictate carve-out covers the severity
   floor (residual noted: floor-tier diagnostics about USER code brush
   contract-over-dictate — concl-8 drift evidence justifies; future note).
+- RV3 engine/charter sweep → final-message deliverable (no files): Opus, 132K
+  harness-tokens, 31 tool uses, ~4 min. Read 19H/19I/219/21Z/21G/21K/111/220 +
+  4 KNOBS entries fresh. VERDICT: no breaks-a-human-ruling; held-3 confirmed-mild
+  (rv3-find-1: vp-8 epoch vector demoted by ru-13 — 22A already omits it; 220 §6
+  now IB-annotated in place); TWO catches the conductor did not have:
+  rv3-find-2 (~SUSPECT) fork-cmdsub-top-cause is being resolved BY BUILD-ORDERING
+  toward cause-tagged (the arena makes the generic-floor/reshape split moot;
+  219/21G's "cheap floor ships first" sequencing is superseded) — low-stakes,
+  human confirmation wanted = rec-6. rv3-find-3 (+SURE, process): 219's fork-1..4
+  and 22B's fork-1..4 are DISJOINT sets under IDENTICAL names — cross-note
+  confusion hazard; fix at next 22B touch by note-scoped slugs (22B-fork-payload
+  etc.) = housekeeping-3 (and a vindication of ru-15's full-word-slug nit).
+  rv3-find-5 (~SUSPECT, latent for the future q-3 round): the ru-18 replay gate
+  proves tape→replay determinism, NOT probe-records-match-real-execution — a
+  wrong-but-self-consistent tape passes; it is a SIBLING of, not substitute for,
+  219 fm-1 / 19I §3's probe-exec gate = rec-7, recorded not actioned. find-4/6/7/8
+  false-alarms/reinforcements (21K d-1 was PROVISIONAL by design and cleanly
+  reversed — 21Z clause IB-annotated; kFACTS/kSTATE/kPRECISION fences all honored;
+  kFIDELITY needs one capture-what-vs-exec-granularity disambiguation line =
+  housekeeping-4). Reinforcement highlight: ru-11 went STRICTER than 220 vp-26..29
+  recommended and the base fully supports it.
+- CONSOLIDATED RECONCILIATION BATCH (all three sweeps; to the human for
+  ratification): rec-1 TWO-SURFACES (shipped/off-ramp artifact byte-floored
+  receipt-free; plan-render surface NOT an artifact — sanctioned home for per-line
+  claimed-vs-proven disclosure, overlaid never embedded) [held-1; RV1+RV2
+  convergent; THE genuine collision — two human directions meeting at the
+  plan-render]. rec-2 one-budget-both-ends (cer-6 = controller terminus of 142's
+  per-leaf size-cap residual). rec-3 crown-jewel posture for the rotated durable
+  (at-rest protections like key material; scrub=floor; no-exfiltrate-by-default
+  WELDED; OTel off-ramp strictly opt-in). rec-4 lane-routing resolves 21N's
+  heredoc disclosure hole (record; m-5 caveat answered). rec-5 tape ≠ kSTATE
+  reuse-cache (write-only postmortem durable, never re-ingested to elide work;
+  DESIGN ~180's may-short-term-persist = the PARKED cache, distinct). rec-6
+  fork-cmdsub-top-cause resolved-by-ordering toward cause-tagged (confirm). rec-7
+  replay-gate ≠ probe-exec-gate (recorded for the q-3 round). Housekeeping
+  (conductor's, no ratification): 220+21Z IB annotations DONE this commit; 22B
+  fork-slug rename at wave-2 touch; kFIDELITY disambiguation line; spike/CLAUDE.md
+  gains held-4 sanctioned-exception + rec-1 two-surfaces + rec-5 at next touch.
