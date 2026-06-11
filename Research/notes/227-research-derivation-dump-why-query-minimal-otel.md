@@ -386,6 +386,165 @@ overhead the SQL/build worlds fight is largely a non-issue (per AGENTS.md: the a
 dominated by the SSH tunnels that follow). The volume/retention problem (6GB-class artifacts
 nobody prunes) does carry over, and is the real reason to tier and to default the full dump OFF.
 
+## §6 — rustc UI tests / `--bless`: the canonical golden-OUTPUT churn-fighting machinery (rq-C, golden-trace FOR-mechanism + churn-cost)
+
+The Rust compiler's UI test suite pins the compiler's diagnostic output (`.stderr`/`.stdout`
+snapshots) for tens of thousands of tests. It is the most battle-tested golden-output system in
+open source and the closest *mechanism* prior art for d-1's golden-trace tier. The decisive
+lessons are about HOW they keep goldens from churning — and the answer is heavy normalization +
+a regenerate workflow + redundant non-golden assertions. [B-rustc-uitest-2026]
+
+`golden-mechanism-1` (+SURE, the bless workflow). "UI tests store the expected output … in
+`.stderr` and `.stdout` snapshots next to the test. You normally generate these files with the
+`--bless` CLI option, and then inspect them manually to verify they contain what you expect"
+[B-rustc-uitest-2026]. So the golden is machine-regenerated, human-reviewed — never hand-written.
+Direct shape for a Dorc golden-trace: `dorc test --bless` regenerates the pinned derivation; the
+human reviews the diff. The pin is a *checkpoint of reviewed output*, not a hand-authored spec.
+
+`golden-churn-1` (+SURE, normalization is the entire game, and it is explicitly a churn-vs-
+readability tradeoff). The compiler is run under `-Z ui-testing` and the harness normalizes:
+test dir → `$DIR`, stdlib dir → `$SRC_DIR`, "[l]ine and column numbers for paths in `$SRC_DIR`
+are replaced with `LL:COL`", build dir → `$TEST_BUILD_DIR`, tabs → `\t`, backslashes → forward
+slashes, CRLF → LF, error annotations stripped, and "[v]arious v0 and legacy symbol hashes are
+replaced with placeholders like `[HASH]`" [B-rustc-uitest-2026]. The load-bearing rationale,
+verbatim:
+
+> Line and column numbers for paths in `$SRC_DIR` are replaced with `LL:COL`. This helps ensure
+> that changes to the layout of the standard library do not cause widespread changes to the
+> `.stderr` files.
+
+and the deliberate *non*-normalization, with its own rationale:
+
+> the line and column numbers for `-->` lines pointing to the test are not normalized … This
+> ensures that the compiler continues to point to the correct location, and keeps the stderr
+> files readable. Ideally all line/column information would be retained, but small changes to the
+> source causes large diffs, and more frequent merge conflicts and test errors.
+
+This is the single most direct datapoint for the human's reframe. The rustc team — who pin traces
+(diagnostic output) at enormous scale and clearly find it worth it — pay for it with a *large,
+carefully-tuned normalization layer* whose explicit purpose is "small changes don't cause
+widespread golden churn / merge conflicts." For Dorc: pinning a derivation is viable ONLY with a
+matching normalizer that erases the volatile coordinates (host-specific paths, timestamps,
+probe-ordering, hashes) — and designing that normalizer is the real cost, not the pinning. Without
+it, golden traces "cause large diffs and more frequent merge conflicts," i.e. they rot into churn.
+Note 220's `r-2` query-UX habits reappear here as *golden-fixture* habits: normalize away the
+uninteresting, keep the legible witness.
+
+`golden-redundancy-1` (~SUSPECT, the golden is not the sole oracle). UI tests *also* require inline
+`//~ ERROR <substring>` annotations next to the source line, redundantly with the `.stderr` file:
+"This redundancy helps avoid mistakes since the `.stderr` files are usually auto-generated … they
+ensure that no additional unexpected errors are generated" [B-rustc-uitest-2026]. The lesson: an
+auto-blessed golden can silently bless a *regression* (you regenerate, the bad output becomes the
+new "expected"); the inline human-written assertion is the guard against rubber-stamping. For a
+Dorc golden-trace tier, the analog is: pin the full trace for diffing, but ALSO keep a small
+human-written assertion on the *verdict* (the thing that actually matters) so a blessed-in
+regression in the trace can't pass unnoticed. This directly supports the d-1 tiering split
+(critical pins trace; everyone pins verdict) — but says even the critical tier should keep the
+verdict assertion alongside the trace, never trace-only.
+
+## §7 — rr / Pernosco: the store-minimal-recompute-the-rest economics (rq-C)
+
+rr records a program once and replays deterministically; Pernosco builds an "omniscient database"
+over an rr recording. The relevant axis for d-1: what do they STORE vs RE-DERIVE, and how does
+that scale? Authoritative because the source is Robert O'Callahan, rr's author.
+[B-ocallahan-debt-2024]
+
+`recompute-1` (+SURE, the split: record cheap, re-derive heavy). Community summary of Klock's
+demo: "Pernosco uses record and replay. Record is fast and records just enough to be able to
+replay, and all heavy computation is [re-derived at replay]" [snippet, confirmed by author's
+framing]. O'Callahan on the limit, verbatim [B-ocallahan-debt-2024]:
+
+> Scalability of omniscience to very compute-heavy workloads is a problem (although not as
+> problematic as everyone assumes).
+
+The shape: store the minimal nondeterminism-capture (enough to deterministically replay), then
+recompute everything else (register values at time T, last-modification) on demand via massive
+parallelism. This is precisely note 220's `r-1` rule in the debugging register — a constant-ish
+capture + lazy backward re-derivation — and it is the affirmative model for d-1's dump: you do NOT
+need to store the full derivation if you can deterministically *re-run the analysis* to
+reconstruct it. Dorc's DST determinism is exactly what makes "re-derive instead of store" sound:
+given the same seed + recorded probe-responses, the analyzer reproduces the identical derivation.
+That argues the durable can be *thin* (the seed + the probe-response tape), with the full trace
+reconstructed on demand — a strong cost-reducer for the always-on worry.
+
+`negative-query-1` (+SURE, independent confirmation that "why NOT" is the universal hard gap).
+O'Callahan's open-problems list, verbatim [B-ocallahan-debt-2024]:
+
+> We still lack direct approaches to understanding why things didn't happen. … we need good tools
+> for understanding why something happened in one situation … but not another very similar
+> situation, assuming we have complete recordings of the two runs.
+
+Note 220's `r-2` already claimed Dorc dodges the why-NOT problem because refusals are positive
+events. Here the frontier of omniscient debugging — with *complete recordings of both runs* —
+still calls why-didn't-it the unsolved problem. That strengthens 220's claim into a genuine
+structural advantage: Dorc's "why did this NOT get replaced" is answerable precisely because the
+failing license-check is a recorded positive event, where rr/Pernosco (which record everything)
+still can't cheaply answer the counterfactual. The diff-two-runs framing (acecilia's CI gate,
+Buck2 `diff action-divergence`) is the practical substitute everyone reaches for instead.
+
+`ubiquity-1` (~SUSPECT, the always-on dream and its cost). O'Callahan's ubiquity vision
+[B-ocallahan-debt-2024]: "I dream of a world where, when you hit a bug … your test runs are
+always being recorded and any necessary debuginfo is always available." This is the *pro*-always-on
+voice — but note it is aspirational, gated on cost, and from the vendor of a *non*-always-on tool
+(rr recording is opt-in precisely because always-on record has overhead). The honest read: even
+the strongest omniscient-debugging advocate frames always-on capture as a not-yet-achieved goal,
+not a solved default. Consistent with Bazel/SQL: the always-on durable is desirable and costly;
+nobody ships it on-by-default.
+
+## §8 — OTel file-dump formats + tracecontext-WITHOUT-SDK (rq-C dump-shape, rq-D propagation)
+
+`dumpformat-1` (+SURE, the OTLP file exporter is JSON-lines, immature, order-unstable). The OTel
+spec for file output is explicitly `Status: Development` and "provides a placeholder" — it
+"only describes the serialization … to the OTLP JSON format" [B-otel-fileexporter-2026]. Shape:
+
+> This file is a JSON lines file … UTF-8 … Each line is a valid JSON value … The line separator
+> is `\n` … preferred file extension is `jsonl`.
+
+and crucially for a dump consumed later:
+
+> There is no guarantee that the data in the file is ordered. There is no guarantee in particular
+> that timestamps will be monotonically increasing.
+
+Read back via the "OTLP JSON File receiver" in the collector [B-otel-fileexporter-2026]. For Dorc:
+JSON-lines is the natural append-only dump shape (matches Buck2 `show-user` JSONL and conduit's
+NDJSON intake), tooling exists to re-ingest, BUT the format is young and the spec itself disclaims
+ordering — reinforcing that a Dorc dump should NOT promise byte/order-stability and should carry
+its own version tag. The example payload is one `{"resourceSpans":[...]}` object per line, spans
+carrying `traceId/spanId/parentSpanId/name/startTimeUnixNano/endTimeUnixNano/events/links/status`
+— a compact, well-understood span record if Dorc wants OTLP-shaped output at the edge.
+
+`propagation-1` (+SURE, the on-the-wire format is trivial and SDK-free — but the spec is HTTP-header
+framed). W3C Trace Context is a W3C Recommendation [B-w3c-tracecontext-2021]; the carrier is two
+headers, `traceparent` (core identity: version-traceid-spanid-flags) and `tracestate` (vendor
+data). The format is a fixed-width hex string — `00-<32hex traceid>-<16hex spanid>-<2hex flags>`
+— with no library required to emit or parse it. The catch for Dorc: the spec is *defined over HTTP
+headers*, so propagating it over a non-HTTP carrier (Dorc's controller→host stdout protocol / env
+vars / the verdict lane) is a hand-roll — you adopt the *value format* and the propagate-unchanged
++ mutate-your-own-span semantics, but you choose the carrier. This is exactly d-2's "import the
+ideas not the machinery": the traceparent string is an idea (16 bytes of id + 8 of span + flags)
+you can carry in an env var or a protocol line.
+
+`propagation-2` (~SUSPECT, CI systems already do this — context into shell steps). General practice
+(multiple secondary sources, e.g. uptrace/dash0 explainers [snippet]) is to inject `traceparent`
+as an environment variable into child/shell steps so a build step joins the parent trace; the
+recurring hand-roll pitfalls are the SAME determinism seams conduit hit — ID generation (needs
+RNG), timestamp capture (needs clock), and sampling-flag handling. For Dorc's deterministic kernel
+this is a clean fit ONLY if id-generation and timestamps route through the existing DI seams (seed
+→ deterministic traceid; injected clock → span times); a naive `rand()`/`now()` traceparent emitter
+would break DST. (Graded ~SUSPECT: synthesized from explainer snippets + the conduit primary, not a
+single dedicated hand-rolled-shell-propagation primary — flagged as an open thread to harden with a
+concrete CI-propagates-to-shell source, e.g. GitLab/Jenkins OTel docs.)
+
+`propagation-3` (~SUSPECT, the minimalism-regrows-into-the-SDK counter-thesis — partially observed).
+The conduit datapoint [B-bazelconduit-readme-2026] is itself a mild instance: it set out to "just
+map BEP to spans" but had to re-import BatchSpanProcessor tuning, redaction, clamp_time_range,
+flush-timing workarounds — i.e. minimal-OTel accreted real SDK-adjacent machinery once it hit a
+real backend (Datadog/Jaeger). The lesson is not "don't go minimal" but "the machinery you skip
+at the model layer reappears at the *export/backend* layer" — so Dorc keeping OTel as an
+edge-projection (not a kernel dependency) is the right boundary: the accretion stays in the
+optional exporter, never in the deterministic core. (A dedicated written "we did ideas-only OTel
+and here's what regrew" report was NOT found as a single strong primary — open thread.)
+
 ## Graded sources
 
 Grades assigned by gathering subagent (R2'); conductor re-verification pending. Scale A>B>C>D.
@@ -468,4 +627,36 @@ Grades assigned by gathering subagent (R2'); conductor re-verification pending. 
   · n.d. · read-depth snippet · grading: secondary blog, snippet-only → capped low; cited only for the
   "10–30% with log_analyze" figure, corroborating the timing-overhead direction · relevance: per-node
   timing raises dump cost · via Kagi (same auto_explain query).
+- `[B-rustc-uitest-2026]` · Rust project, rustc-dev-guide "UI tests" chapter · https://rustc-dev-guide.rust-lang.org/tests/ui.html
+  · living doc (read 2026-06-11) · read-depth full · grading: not A — it is project developer
+  documentation, not a peer-reviewed source or a retrospective; but it is the canonical, authoritative
+  description of the most battle-tested golden-output system in OSS, with the churn-vs-readability
+  tradeoff stated in the maintainers' own words; depth + authority → high B, just shy of A on the
+  golden-trace-mechanism question · relevance: THE golden-output prior art — `--bless` regenerate
+  workflow, the normalization layer as the real cost, redundant inline assertions guarding blessed-in
+  regressions · via Kagi "rustc UI test --bless normalization churn".
+- `[B-ocallahan-debt-2024]` · Robert O'Callahan (author of rr; co-founder of Pernosco), "Advanced
+  Debugging Technology In Practice" (DEBT/ECOOP 2024 keynote summary) ·
+  https://robert.ocallahan.org/2024/10/debt-workshop.html · 2024-10-01 · read-depth full · grading:
+  not A — a personal blog summary of a talk, not a paper; but it is the primary author's first-hand
+  account of omniscient-debugging economics and open problems, uniquely authoritative on the
+  store-vs-recompute split and the why-NOT gap; → strong B · relevance: store-minimal-recompute-the-rest
+  model for a thin durable; independent confirmation that why-didn't-it is the universal hard gap (Dorc's
+  positive-refusal advantage); the honest always-on-as-aspiration framing · via Kagi "rr Pernosco
+  omniscient debugging storage vs recompute".
+- `[B-otel-fileexporter-2026]` · OpenTelemetry, "OTLP File Exporter" specification (Status: Development)
+  · https://opentelemetry.io/docs/specs/otel/protocol/file-exporter/ · living spec (read 2026-06-11) ·
+  read-depth full · grading: first-party canonical OTel spec, but explicitly Development/"placeholder"
+  status → not A on stability grounds (it disclaims maturity itself); the JSON-lines shape + the
+  order/timestamp non-guarantees are authoritative → B · relevance: the candidate dump shape (JSONL,
+  re-ingestible) AND direct evidence the format is young + order-unstable → don't promise byte-stability,
+  carry a version tag · via Kagi "OpenTelemetry OTLP file exporter JSON format stability".
+- `[B-w3c-tracecontext-2021]` · W3C, "Trace Context" Recommendation · https://www.w3.org/TR/trace-context/
+  · 2021-11-23 (W3C Rec) · read-depth targeted (search result + prior corpus knowledge of the header
+  format) · grading: canonical W3C standard → would be A on authority, but read only targeted this turn
+  (format + HTTP-header framing confirmed via search, not a fresh full read of the Rec) → capped at B per
+  full-read-before-grade rule · relevance: the SDK-free wire format (`traceparent` fixed hex string) is
+  trivially hand-emittable; the spec is HTTP-header-framed so a non-HTTP carrier (Dorc stdout/env/verdict
+  lane) is a sanctioned hand-roll — exactly d-2's import-the-idea · via Kagi "W3C trace context
+  traceparent propagation without SDK shell".
 
