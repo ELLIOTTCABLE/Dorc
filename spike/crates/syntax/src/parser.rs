@@ -20,17 +20,14 @@
 //! it appears where the grammar expects a command to start. `echo if` keeps `if`
 //! as an argument because it is not in command position.
 
-use dorc_core::{BytePos, Carrier, DiagCode, Diagnostic, Span};
+use dorc_core::diag::{Diag, DiagCode as Code, SyntaxMalformed, SyntaxUnsupported};
+use dorc_core::{BytePos, Carrier, Diagnostic, Interner, Span};
 
 use crate::ast::{
     AndOrOp, Ast, AstBuilder, CaseArm, ElseIf, Node, NodeKind, RedirOp, RedirTarget,
     UnsupportedReason, WordPart,
 };
 use crate::lexer::{LexPart, RedirToken, TokKind, Token, lex};
-
-/// Diagnostic codes this parser emits (kept greppable; `ch-catalog`).
-const UNSUPPORTED: DiagCode = DiagCode("syntax-unsupported");
-const MALFORMED: DiagCode = DiagCode("syntax-malformed");
 
 /// Parse sh `src` into an arena AST + diagnostics. The single public entry of the
 /// crate's parser (see [`crate::parse`]).
@@ -149,8 +146,28 @@ impl Parser {
         }
     }
 
-    fn push_error(&mut self, code: DiagCode, span: Span, msg: impl Into<String>) {
-        self.diags.push(Diagnostic::error(code, Some(span), msg));
+    fn push_unsupported(&mut self, span: Span, msg: impl Into<String>) {
+        let msg = msg.into();
+        let diag = Diag::new(
+            Code::SyntaxUnsupported(SyntaxUnsupported {
+                detail: msg.clone(),
+            }),
+            span,
+        )
+        .label(msg);
+        self.diags.push(diag.to_legacy(&Interner::default()));
+    }
+
+    fn push_malformed(&mut self, span: Span, msg: impl Into<String>) {
+        let msg = msg.into();
+        let diag = Diag::new(
+            Code::SyntaxMalformed(SyntaxMalformed {
+                detail: msg.clone(),
+            }),
+            span,
+        )
+        .label(msg);
+        self.diags.push(diag.to_legacy(&Interner::default()));
     }
 
     /// Allocate an `Unsupported` ⊤-node and emit the paired `Error` diagnostic
@@ -163,7 +180,7 @@ impl Parser {
         salvaged: Vec<dorc_core::AstId>,
         msg: impl Into<String>,
     ) -> dorc_core::AstId {
-        self.push_error(UNSUPPORTED, span, msg);
+        self.push_unsupported(span, msg);
         self.builder.alloc(Node {
             span,
             kind: NodeKind::Unsupported { reason, salvaged },
@@ -518,11 +535,7 @@ impl Parser {
                 break;
             }
             if self.at_eof() || self.peek_reserved() == Some(Reserved::Esac) {
-                self.push_error(
-                    MALFORMED,
-                    arm_lo,
-                    "unterminated `case` arm (no `)` before esac/EOF)",
-                );
+                self.push_malformed(arm_lo, "unterminated `case` arm (no `)` before esac/EOF)");
                 return None;
             }
             let pat = self.parse_word_or_placeholder();
@@ -537,7 +550,7 @@ impl Parser {
         if matches!(self.peek(), TokKind::RParen) {
             self.bump(); // `)`
         } else {
-            self.push_error(MALFORMED, arm_lo, "expected `)` after case pattern");
+            self.push_malformed(arm_lo, "expected `)` after case pattern");
             return None;
         }
 
@@ -586,7 +599,7 @@ impl Parser {
         let close_hi = if matches!(self.peek(), TokKind::RParen) {
             self.bump().span
         } else {
-            self.push_error(MALFORMED, open.span, "unterminated subshell `(` (no `)`）");
+            self.push_malformed(open.span, "unterminated subshell `(` (no `)`）");
             self.peek_span()
         };
         let redirs = self.parse_redirs();
@@ -605,11 +618,8 @@ impl Parser {
         let close_hi = if matches!(self.peek(), TokKind::RBrace) {
             self.bump().span
         } else {
-            self.push_error(
-                MALFORMED,
-                open.span,
-                "unterminated brace group `{` (no `}`)",
-            );
+            self.push_malformed(open.span, "unterminated brace group `{` (no `}`)");
+
             self.peek_span()
         };
         let redirs = self.parse_redirs();
@@ -1375,7 +1385,7 @@ impl Parser {
             self.bump().span
         } else {
             let span = self.peek_span();
-            self.push_error(MALFORMED, span, msg.to_string());
+            self.push_malformed(span, msg);
             span
         }
     }

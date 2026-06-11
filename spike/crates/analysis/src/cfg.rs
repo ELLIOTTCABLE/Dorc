@@ -27,7 +27,11 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
-use dorc_core::{AstId, BytePos, Carrier, Channel, DiagCode, Diagnostic, Span};
+use dorc_core::diag::{
+    CfgBuiltinShadowed, CfgErexitUnknown, CfgInlineRefused, CfgTopNode, Depth2PositionalUnthreaded,
+    Diag, DiagCode as Code, SiteId,
+};
+use dorc_core::{AstId, BytePos, Carrier, Channel, Diagnostic, LeafId, Span};
 use dorc_syntax::{
     Ast, NodeKind, WordPart,
     ast::{CaseArm, ElseIf, RedirOp, RedirTarget},
@@ -35,24 +39,11 @@ use dorc_syntax::{
 
 use crate::lattice::Powerset;
 
-/// Diagnostic codes this module emits (greppable; `ch-catalog`).
-const CFG_TOP: DiagCode = DiagCode("cfg-top-node");
-const CFG_ERREXIT_TOP: DiagCode = DiagCode("cfg-errexit-unknown");
-/// arch-2 (brk-2): a call to an eligible-but-over-budget / refused funcdef stays an
-/// ordinary unmodeled command (`Opaque`), but the refusal is surfaced (never silent —
-/// proportional degradation, `211` §1). Each variant names *why* the splice was refused.
-const CFG_INLINE_REFUSED: DiagCode = DiagCode("cfg-inline-refused");
-/// find-I (note 213 §5 hunt-4): a book funcdef shadows a builtin name the engine RELIES
-/// on resolving to the actual builtin — the blessed-pure classification
-/// ([`crate::effect::is_target_state_pure_builtin`] treats the bare word as Pure) and the
-/// render's minted stand-ins (`true`/`false`/`(exit N)`, `plan`'s `standin_sh`). dash
-/// resolves a function before a regular builtin, so those assumptions are unsound for
-/// such a book. WARNING-class DISCLOSURE only — the one place the license judgment itself
-/// depends on the assumption (door-3) refuses separately ([`Builder::right_is_bare_true`]).
-const CFG_BUILTIN_SHADOWED: DiagCode = DiagCode("cfg-builtin-shadowed");
+// B4 mechanical sweep: cfg codes migrated onto the Diag spine. Payloads live in
+// `dorc_core::diag`; emit sites use `Diag::new(Code::Variant(…), span).label(…).to_legacy(…)`.
 
 /// arch-2 inlining budgets (`211` §1 / `209` brk-2; pre-spelled in the round-21 charter).
-/// Over-budget ⇒ the call stays `Opaque` WITH a [`CFG_INLINE_REFUSED`] diagnostic naming the
+/// Over-budget ⇒ the call stays `Opaque` WITH a `CfgInlineRefused` diagnostic naming the
 /// exceeded budget — proportional degradation, never a silent cliff.
 mod inline_budget {
     /// Maximum inline-splice depth (a call inside an inlined body inside an inlined body is
@@ -564,11 +555,19 @@ impl<'a> Builder<'a> {
         if self.depth >= MAX_DEPTH {
             // Over-deep: a ⊤ node, wired in, so we neither panic nor silently drop.
             let top = self.fresh(id, CfgNodeKind::Top);
-            self.diags.push(Diagnostic::warning(
-                CFG_TOP,
-                Some(self.span(id)),
-                "CFG nesting bound hit; construct treated as ⊤ (un-probeable)",
-            ));
+            // B4 sweep: migrated onto Diag spine. registry() severity is Error (vs. the prior
+            // Warning here) — flagged `b4-cfg-top-severity`: two sites, two severities in legacy;
+            // the spine unifies at Error (louder, safer). Human disposes at PR.
+            let diag = Diag::new(
+                Code::CfgTopNode(CfgTopNode {
+                    detail: "CFG nesting bound hit; construct treated as ⊤ (un-probeable)"
+                        .to_string(),
+                }),
+                self.span(id),
+            )
+            .label("CFG nesting bound hit; construct treated as ⊤ (un-probeable)");
+            self.diags
+                .push(diag.to_legacy(&dorc_core::Interner::default()));
             self.add_edge(entry_pred, top);
             return top;
         }
@@ -771,6 +770,10 @@ impl<'a> Builder<'a> {
     /// * the splice fits the node budgets (`≤ MAX_NODES_PER_SITE` for this site, and the
     ///   running total `≤ MAX_NODES_PER_BOOK`) — over-budget ⇒ `Opaque` WITH a diagnostic
     ///   naming the exceeded budget.
+    #[expect(
+        clippy::too_many_lines,
+        reason = "B4 sweep expanded diagnostic emit sites; refactor deferred to a later pass"
+    )]
     fn try_inline_call(&mut self, id: AstId, words: &[AstId], cmd: CfgNodeId) -> Option<CfgNodeId> {
         // A non-literal word, or a name no funcdef declares, is an ordinary command (None,
         // silent — it might be a PATH binary).
@@ -779,15 +782,21 @@ impl<'a> Builder<'a> {
 
         let call_lo = self.span(id).lo;
         if defs.len() > 1 {
-            self.diags.push(Diagnostic::warning(
-                CFG_INLINE_REFUSED,
-                Some(self.span(id)),
-                format!(
-                    "function `{name}` is defined more than once; the call is not inlined \
-                     (redefinition tracking is out of the modeled subset) — it runs as an \
-                     ordinary unmodeled command"
-                ),
-            ));
+            let detail = format!(
+                "function `{name}` is defined more than once; the call is not inlined \
+                 (redefinition tracking is out of the modeled subset) — it runs as an \
+                 ordinary unmodeled command"
+            );
+            self.diags.push(
+                Diag::new(
+                    Code::CfgInlineRefused(CfgInlineRefused {
+                        detail: detail.clone(),
+                    }),
+                    self.span(id),
+                )
+                .label(detail)
+                .to_legacy(&dorc_core::Interner::default()),
+            );
             return None;
         }
         // The LAST definition strictly BEFORE the call; a forward/absent definition resolves to
@@ -799,26 +808,38 @@ impl<'a> Builder<'a> {
             .map(|(body, _)| *body)?;
 
         if self.inline_stack.contains(&body) {
-            self.diags.push(Diagnostic::warning(
-                CFG_INLINE_REFUSED,
-                Some(self.span(id)),
-                format!(
-                    "recursive call to `{name}` (direct or transitive within the active inline \
-                     stack); not inlined — it runs as an ordinary unmodeled command"
-                ),
-            ));
+            let detail = format!(
+                "recursive call to `{name}` (direct or transitive within the active inline \
+                 stack); not inlined — it runs as an ordinary unmodeled command"
+            );
+            self.diags.push(
+                Diag::new(
+                    Code::CfgInlineRefused(CfgInlineRefused {
+                        detail: detail.clone(),
+                    }),
+                    self.span(id),
+                )
+                .label(detail)
+                .to_legacy(&dorc_core::Interner::default()),
+            );
             return None;
         }
         if self.inline_stack.len() as u32 >= inline_budget::MAX_DEPTH {
-            self.diags.push(Diagnostic::warning(
-                CFG_INLINE_REFUSED,
-                Some(self.span(id)),
-                format!(
-                    "call to `{name}` exceeds the inline-depth budget ({}); not inlined — it \
-                     runs as an ordinary unmodeled command",
-                    inline_budget::MAX_DEPTH
-                ),
-            ));
+            let detail = format!(
+                "call to `{name}` exceeds the inline-depth budget ({}); not inlined — it \
+                 runs as an ordinary unmodeled command",
+                inline_budget::MAX_DEPTH
+            );
+            self.diags.push(
+                Diag::new(
+                    Code::CfgInlineRefused(CfgInlineRefused {
+                        detail: detail.clone(),
+                    }),
+                    self.span(id),
+                )
+                .label(detail)
+                .to_legacy(&dorc_core::Interner::default()),
+            );
             return None;
         }
         // Depth-2 positional threading does NOT work (arch-2 wave-2 correction): a NESTED call
@@ -828,36 +849,62 @@ impl<'a> Builder<'a> {
         // positional resolves ⊤). Refuse THIS inner call LOUDLY (a catalogued Note) instead of
         // shipping a silent safe `MustRun`; the call runs verbatim, the limitation is disclosed.
         if !self.inline_stack.is_empty() && self.call_args_reference_positional(words) {
-            // NOT migrated this round (legacy survivor; the B4 sweep folds it onto the spine).
+            // Migrated onto the Diag spine (B4 sweep). `cmd` is the CFG node for the call site;
+            // `self.span(id)` is the AST source span. CFG-node-space SiteId (pre-plan, same
+            // precedent as CmdsubOperandTop — flagged `tc-cmdsub-siteid`).
+            let diag = Diag::new(
+                Code::Depth2PositionalUnthreaded(Depth2PositionalUnthreaded {
+                    site: SiteId::leaf(LeafId(cmd.0)),
+                    name: name.to_owned(),
+                }),
+                self.span(id),
+            )
+            .label(format!(
+                "call `{name}` not inlined: its argument references a positional \
+                 (`$1`..`$9`/`$#`) that does not thread through two inline levels ⇒ the inner \
+                 body's positional is ⊤ — it runs as an ordinary unmodeled command \
+                 (depth-2 positional threading is out of the modeled subset)"
+            ));
+            // The payload carries no OutClaim (no interner resolution needed); a fresh
+            // default interner is sufficient for the to_legacy bridge.
             self.diags
-                .push(dorc_core::diag::legacy::depth2_positional_unthreaded(
-                    Some(self.span(id)),
-                    name,
-                ));
+                .push(diag.to_legacy(&dorc_core::Interner::default()));
             return None;
         }
         if let Some(construct) = self.body_uses_unmodeled_positional(body) {
-            self.diags.push(Diagnostic::warning(
-                CFG_INLINE_REFUSED,
-                Some(self.span(id)),
-                format!(
-                    "call to `{name}` not inlined: its body uses `{construct}` (out of the \
-                     modeled subset) — it runs as an ordinary unmodeled command"
-                ),
-            ));
+            let detail = format!(
+                "call to `{name}` not inlined: its body uses `{construct}` (out of the \
+                 modeled subset) — it runs as an ordinary unmodeled command"
+            );
+            self.diags.push(
+                Diag::new(
+                    Code::CfgInlineRefused(CfgInlineRefused {
+                        detail: detail.clone(),
+                    }),
+                    self.span(id),
+                )
+                .label(detail)
+                .to_legacy(&dorc_core::Interner::default()),
+            );
             return None;
         }
         // tc-M2: inlining would EXPOSE an invisible body file-write as wrong-ambience
         // (redirect-effects are unmodeled, y-1); `/dev/null` stays exempt (devnull-exemption).
         if let Some(detail) = self.body_has_unmodeled_write_redirect(body) {
-            self.diags.push(Diagnostic::warning(
-                CFG_INLINE_REFUSED,
-                Some(self.span(id)),
-                format!(
-                    "call to `{name}` not inlined: its body has an unmodeled write-redirect \
-                     ({detail}) — it runs as an ordinary unmodeled command (tc-M2)"
-                ),
-            ));
+            let detail = format!(
+                "call to `{name}` not inlined: its body has an unmodeled write-redirect \
+                 ({detail}) — it runs as an ordinary unmodeled command (tc-M2)"
+            );
+            self.diags.push(
+                Diag::new(
+                    Code::CfgInlineRefused(CfgInlineRefused {
+                        detail: detail.clone(),
+                    }),
+                    self.span(id),
+                )
+                .label(detail)
+                .to_legacy(&dorc_core::Interner::default()),
+            );
             return None;
         }
         self.splice_funcdef_body(id, name, body, cmd)
@@ -890,30 +937,42 @@ impl<'a> Builder<'a> {
         // leaves a body lowers to). Checked BEFORE allocation so refusal needs no rollback.
         let estimate = subtree_node_count(self.ast, body);
         if estimate > inline_budget::MAX_NODES_PER_SITE {
-            self.diags.push(Diagnostic::warning(
-                CFG_INLINE_REFUSED,
-                Some(self.span(id)),
-                format!(
-                    "call to `{name}` exceeds the per-call inline-node budget ({} > {}); not \
-                     inlined — it runs as an ordinary unmodeled command",
-                    estimate,
-                    inline_budget::MAX_NODES_PER_SITE
-                ),
-            ));
+            let detail = format!(
+                "call to `{name}` exceeds the per-call inline-node budget ({} > {}); not \
+                 inlined — it runs as an ordinary unmodeled command",
+                estimate,
+                inline_budget::MAX_NODES_PER_SITE
+            );
+            self.diags.push(
+                Diag::new(
+                    Code::CfgInlineRefused(CfgInlineRefused {
+                        detail: detail.clone(),
+                    }),
+                    self.span(id),
+                )
+                .label(detail)
+                .to_legacy(&dorc_core::Interner::default()),
+            );
             return None;
         }
         if self.spliced_node_total.saturating_add(estimate) > inline_budget::MAX_NODES_PER_BOOK {
-            self.diags.push(Diagnostic::warning(
-                CFG_INLINE_REFUSED,
-                Some(self.span(id)),
-                format!(
-                    "call to `{name}` exceeds the per-book inline-node budget ({} spliced + {} \
-                     more > {}); not inlined — it runs as an ordinary unmodeled command",
-                    self.spliced_node_total,
-                    estimate,
-                    inline_budget::MAX_NODES_PER_BOOK
-                ),
-            ));
+            let detail = format!(
+                "call to `{name}` exceeds the per-book inline-node budget ({} spliced + {} \
+                 more > {}); not inlined — it runs as an ordinary unmodeled command",
+                self.spliced_node_total,
+                estimate,
+                inline_budget::MAX_NODES_PER_BOOK
+            );
+            self.diags.push(
+                Diag::new(
+                    Code::CfgInlineRefused(CfgInlineRefused {
+                        detail: detail.clone(),
+                    }),
+                    self.span(id),
+                )
+                .label(detail)
+                .to_legacy(&dorc_core::Interner::default()),
+            );
             return None;
         }
 
@@ -1336,11 +1395,15 @@ impl<'a> Builder<'a> {
     fn lower_top(&mut self, id: AstId, entry_pred: CfgNodeId) -> CfgNodeId {
         let top = self.fresh(id, CfgNodeKind::Top);
         self.add_edge(entry_pred, top);
-        self.diags.push(Diagnostic::error(
-            CFG_TOP,
-            Some(self.span(id)),
-            "unsupported construct (⊤): un-probeable and un-skippable",
-        ));
+        let diag = Diag::new(
+            Code::CfgTopNode(CfgTopNode {
+                detail: "unsupported construct (⊤): un-probeable and un-skippable".to_string(),
+            }),
+            self.span(id),
+        )
+        .label("unsupported construct (⊤): un-probeable and un-skippable");
+        self.diags
+            .push(diag.to_legacy(&dorc_core::Interner::default()));
         top
     }
 
@@ -1493,12 +1556,17 @@ impl<'a> Builder<'a> {
             }
         }
         if saw_top {
-            self.diags.push(Diagnostic::warning(
-                CFG_ERREXIT_TOP,
-                None,
-                "errexit state is ⊤ at one or more commands; failure-edges \
-                 added conservatively (over-approximate, sound)",
-            ));
+            // Span-less diagnostic (the errexit pass has no single source location to point at).
+            // Construct the payload to satisfy tidy `every_catalog_variant_is_constructed`; use
+            // the legacy Diagnostic path to preserve `span: None` CLI behavior.
+            let msg = "errexit state is ⊤ at one or more commands; failure-edges \
+                       added conservatively (over-approximate, sound)";
+            let slug = Code::CfgErexitUnknown(CfgErexitUnknown {
+                detail: msg.to_string(),
+            })
+            .slug();
+            self.diags
+                .push(Diagnostic::warning(dorc_core::DiagCode(slug), None, msg));
         }
     }
 
@@ -1885,17 +1953,21 @@ impl<'a> Builder<'a> {
                 continue;
             };
             if is_engine_relied_builtin(name) {
-                self.diags.push(Diagnostic::warning(
-                    CFG_BUILTIN_SHADOWED,
-                    Some(*name_span),
-                    format!(
-                        "function `{name}` shadows a shell builtin the engine relies on \
-                         (dash resolves a function before a regular builtin): analysis \
-                         treats the bare word `{name}` as the builtin when classifying \
-                         effects and minting stand-ins, so builtin-dependent conclusions \
-                         may be unsound for this book"
-                    ),
-                ));
+                let detail = format!(
+                    "function `{name}` shadows a shell builtin the engine relies on \
+                     (dash resolves a function before a regular builtin): analysis \
+                     treats the bare word `{name}` as the builtin when classifying \
+                     effects and minting stand-ins, so builtin-dependent conclusions \
+                     may be unsound for this book"
+                );
+                self.diags.push(
+                    Diag::new(
+                        Code::CfgBuiltinShadowed(CfgBuiltinShadowed { name: name.clone() }),
+                        *name_span,
+                    )
+                    .label(detail)
+                    .to_legacy(&dorc_core::Interner::default()),
+                );
             }
         }
     }

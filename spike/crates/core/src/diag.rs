@@ -52,10 +52,11 @@ use crate::{LeafId, OutClaim, ProvId, Severity, Span};
 /// here + ONE [`registry`] arm + ONE arm in each render — the `22B` §7 friction test, bounded
 /// and compiler-guided.
 ///
-/// Scope: only the three `22B` §5 worked examples are migrated this round; the rest stay on
-/// [`crate::Diagnostic`] (coexistence is deliberate — `22B` §1).
+/// Scope: the three `22B` §5 worked examples PLUS the full B4 mechanical sweep of every
+/// legacy give-up code (all 20 codes landed; the `diag::legacy` submodule is deleted).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum DiagCode {
+    // ── round-22 §5 worked examples ─────────────────────────────────────────
     /// A `$(…)`/runtime-dynamic operand (or the command word itself) forced a command to ⊤
     /// (`Opaque` ⇒ it runs, never elided). The find-3 no-silent-phantoms disclosure.
     CmdsubOperandTop(CmdsubOperandTop),
@@ -67,6 +68,72 @@ pub enum DiagCode {
     /// (`kFAIL-perform`; arch-1 d-6). An Error-class give-up (a broken artifact would ship
     /// otherwise).
     RenderHeredocRefused(RenderHeredocRefused),
+
+    // ── B4 mechanical sweep: former `diag::legacy` survivors ────────────────
+    /// A command runs inside a `$(…)` substitution body — effect-bearing but not independently
+    /// elidable (it runs whenever its enclosing line runs). `219` q-1.f silent-1/silent-4.
+    CmdsubInnerNonleaf(CmdsubInnerNonleaf),
+    /// A WRITE-shaped redirect (`>`/`>>`) to a DYNAMIC/unresolved target joins ⊤ (y-1, `21F`
+    /// imp-1). The redirect target is unresolvable so no per-path `file` cell can be keyed.
+    RedirTargetTop(RedirTargetTop),
+    /// A transitively-inlined (depth-2) call whose own call-argument references a positional
+    /// that does not thread two inline levels (`216` §1.2 correction). The call runs verbatim.
+    Depth2PositionalUnthreaded(Depth2PositionalUnthreaded),
+
+    // ── B4 mechanical sweep: syntax/parser.rs ───────────────────────────────
+    /// An unmodeled or out-of-scope sh construct (a ⊤-reject); the construct becomes an
+    /// `Unsupported` node and parsing continues (`inv-top-reject`).
+    SyntaxUnsupported(SyntaxUnsupported),
+    /// A structurally malformed sh construct (a parse error); parsing continues fail-soft.
+    SyntaxMalformed(SyntaxMalformed),
+
+    // ── B4 mechanical sweep: analysis/cfg.rs ────────────────────────────────
+    /// An `Unsupported` AST ⊤-node became a CFG `Top` node — any command that runs after
+    /// it may mutate anything (the conservative ⊤-absorbing semantics).
+    CfgTopNode(CfgTopNode),
+    /// The errexit-region analysis encountered an unknown/unmodeled command; the `set -e`
+    /// failure-edge is conservatively assumed.
+    CfgErexitUnknown(CfgErexitUnknown),
+    /// A call to a function could not be inlined (budget exceeded, recursive, or out-of-
+    /// modeled-subset); the call runs as an ordinary unmodeled command.
+    CfgInlineRefused(CfgInlineRefused),
+    /// A book funcdef shadows a shell builtin the engine assumes resolves to the real builtin
+    /// (`is_target_state_pure_builtin`, `standin_sh`); the assumption may be unsound (find-I).
+    CfgBuiltinShadowed(CfgBuiltinShadowed),
+
+    // ── B4 mechanical sweep: analysis/effect.rs ─────────────────────────────
+    /// A check's declared kind annotation disagrees with the effect-map kind for the same verb;
+    /// the annotation (declared identity) wins (204 §6 open seam).
+    EffectKindDisagreement(EffectKindDisagreement),
+
+    // ── B4 mechanical sweep: oracle/lib.rs ──────────────────────────────────
+    /// `oracle_kind=` value is not a single literal (a variable/substitution cannot be lifted).
+    OracleNonLiteralKind(OracleNonLiteralKind),
+    /// The oracle file declares probe/effect markers but no `oracle_kind=<kind>`.
+    OracleMissingKind(OracleMissingKind),
+    /// A declared `oracle_kind=<k>` has no matching `oracle_probe_<k>` function.
+    OracleMissingProbe(OracleMissingProbe),
+    /// An `oracle_effect` marker has the wrong arity or an unrecognized polarity word.
+    OracleBadEffect(OracleBadEffect),
+    /// An oracle file has a top-level mutating command (only assignments/markers/funcdefs
+    /// are allowed at the oracle top level).
+    OracleTopLevelMutator(OracleTopLevelMutator),
+    /// An oracle file has a non-declaration top-level construct (an unsupported node or
+    /// a control-flow compound).
+    OracleNonDeclaration(OracleNonDeclaration),
+    /// Two `oracle_effect` markers declare the same `(provider, verb, selector)` cell;
+    /// first-writer-wins and the duplicate is dropped.
+    OracleDuplicateEffect(OracleDuplicateEffect),
+    /// A `oracle_probe_<kind>_<selector>` whose selector funcname-segment cannot round-trip
+    /// through the hyphen↔underscore mangling (`tc-perselector-mangle`).
+    OracleProbeSelectRoundtrip(OracleProbeSelectRoundtrip),
+
+    // ── B4 mechanical sweep: oracle/check/parser.rs ─────────────────────────
+    /// A check function body contains a construct outside the check dialect (the check
+    /// dialect is a strict subset of sh; out-of-dialect input is a lift failure).
+    CheckOutOfDialect(CheckOutOfDialect),
+    /// A check function body is structurally unterminated (a missing `;;` or `esac` etc.).
+    CheckUnterminated(CheckUnterminated),
 }
 
 impl DiagCode {
@@ -82,6 +149,26 @@ impl DiagCode {
             DiagCode::CmdsubOperandTop(_) => "dq-cmdsub-operand-top",
             DiagCode::SiteUnresolvable(_) => "dq-site-unresolvable",
             DiagCode::RenderHeredocRefused(_) => "render-heredoc-refused",
+            DiagCode::CmdsubInnerNonleaf(_) => "dq-cmdsub-inner-nonleaf",
+            DiagCode::RedirTargetTop(_) => "dq-redir-target-top",
+            DiagCode::Depth2PositionalUnthreaded(_) => "dq-depth-2-positional-unthreaded",
+            DiagCode::SyntaxUnsupported(_) => "syntax-unsupported",
+            DiagCode::SyntaxMalformed(_) => "syntax-malformed",
+            DiagCode::CfgTopNode(_) => "cfg-top-node",
+            DiagCode::CfgErexitUnknown(_) => "cfg-errexit-unknown",
+            DiagCode::CfgInlineRefused(_) => "cfg-inline-refused",
+            DiagCode::CfgBuiltinShadowed(_) => "cfg-builtin-shadowed",
+            DiagCode::EffectKindDisagreement(_) => "effect-kind-disagreement",
+            DiagCode::OracleNonLiteralKind(_) => "oracle-non-literal-kind",
+            DiagCode::OracleMissingKind(_) => "oracle-missing-kind",
+            DiagCode::OracleMissingProbe(_) => "oracle-missing-probe",
+            DiagCode::OracleBadEffect(_) => "oracle-bad-effect",
+            DiagCode::OracleTopLevelMutator(_) => "oracle-top-level-mutator",
+            DiagCode::OracleNonDeclaration(_) => "oracle-non-declaration",
+            DiagCode::OracleDuplicateEffect(_) => "oracle-duplicate-effect",
+            DiagCode::OracleProbeSelectRoundtrip(_) => "oracle-probe-selector-roundtrip",
+            DiagCode::CheckOutOfDialect(_) => "check-out-of-dialect",
+            DiagCode::CheckUnterminated(_) => "check-unterminated",
         }
     }
 }
@@ -156,6 +243,182 @@ pub struct RenderHeredocRefused {
 }
 
 // ===========================================================================
+// B4 sweep payload structs — one per migrated legacy code
+// ===========================================================================
+
+/// Payload of [`DiagCode::CmdsubInnerNonleaf`]: a command inside a `$(…)` body is
+/// effect-bearing but not an independent plan leaf. The `site` uses the CFG-node-id space
+/// (pre-plan — same precedent as `CmdsubOperandTop`; flagged `tc-cmdsub-siteid`).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CmdsubInnerNonleaf {
+    /// The CFG-node-space site of the inner command (pre-plan id space).
+    pub site: SiteId,
+    /// The inner command's resolved text (display only — `inv-referent-agnostic`).
+    pub inner: String,
+}
+
+/// Payload of [`DiagCode::RedirTargetTop`]: a write-redirect to a dynamic/unresolved
+/// target joins ⊤. The site uses the CFG-node-id space (pre-plan).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct RedirTargetTop {
+    /// The CFG-node-space site of the redirect node (pre-plan id space).
+    pub site: SiteId,
+}
+
+/// Payload of [`DiagCode::Depth2PositionalUnthreaded`]: a depth-2 inlined call whose
+/// argument references a positional that does not thread two inline levels. The site
+/// uses the CFG-node-id space (pre-plan).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Depth2PositionalUnthreaded {
+    /// The CFG-node-space site of the refused call (pre-plan id space).
+    pub site: SiteId,
+    /// The refused call's function name (display only — `inv-referent-agnostic`).
+    pub name: String,
+}
+
+/// Payload of [`DiagCode::SyntaxUnsupported`]: a parser-level ⊤-reject. The detail is the
+/// parser's own description of what was unmodeled. No `SiteId` (the syntax layer runs before
+/// CFG construction; `site()` returns `None` for this code).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SyntaxUnsupported {
+    /// The parser's description of the unmodeled construct (display only).
+    pub detail: String,
+}
+
+/// Payload of [`DiagCode::SyntaxMalformed`]: a parse error. The detail is the parser's
+/// description of the malformed construct. No `SiteId` (pre-CFG).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SyntaxMalformed {
+    /// The parser's description of the parse error (display only).
+    pub detail: String,
+}
+
+/// Payload of [`DiagCode::CfgTopNode`]: an AST `Unsupported` node became a CFG `Top` node.
+/// The detail is the CFG builder's reason. No `SiteId` at this level (the CFG node's own
+/// index is not surfaced to the CFG builder at the point it emits this; `site()` returns
+/// `None`).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CfgTopNode {
+    /// The CFG builder's description of the ⊤-trigger (display only).
+    pub detail: String,
+}
+
+/// Payload of [`DiagCode::CfgErexitUnknown`]: the errexit pass encountered an unknown command;
+/// the failure-edge is conservatively assumed. No `SiteId` (`site()` returns `None`).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CfgErexitUnknown {
+    /// The CFG builder's description of the unknown construct (display only).
+    pub detail: String,
+}
+
+/// Payload of [`DiagCode::CfgInlineRefused`]: a call could not be inlined. The detail names
+/// which budget or constraint was exceeded. No `SiteId` (`site()` returns `None`).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CfgInlineRefused {
+    /// The CFG builder's description of the refusal reason (display only).
+    pub detail: String,
+}
+
+/// Payload of [`DiagCode::CfgBuiltinShadowed`]: a book funcdef shadows a shell builtin the
+/// engine relies on. The `name` is the shadowed builtin. No `SiteId` (`site()` returns `None`).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CfgBuiltinShadowed {
+    /// The builtin name that is shadowed (display only).
+    pub name: String,
+}
+
+/// Payload of [`DiagCode::EffectKindDisagreement`]: a check's annotation kind disagrees with
+/// the effect-map kind for the verb; the annotation wins. No `SiteId` (this fires mid-effect-
+/// resolution with no plan leaf; `site()` returns `None`). Note: this code currently emits
+/// with `span: None` at its legacy site (no span available at the annotation-vs-map check).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct EffectKindDisagreement {
+    /// Description of the disagreement (annotation kind vs effect-map kind; display only).
+    pub detail: String,
+}
+
+/// Payload of [`DiagCode::OracleNonLiteralKind`]: `oracle_kind=` value is not a single
+/// literal. No `SiteId` (`site()` returns `None`).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct OracleNonLiteralKind {
+    /// The oracle lifter's description (display only).
+    pub detail: String,
+}
+
+/// Payload of [`DiagCode::OracleMissingKind`]: the oracle file has probe/effect markers but
+/// no `oracle_kind=`. No `SiteId`; emits with `span: None` at the legacy site.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct OracleMissingKind {
+    /// The oracle lifter's description (display only).
+    pub detail: String,
+}
+
+/// Payload of [`DiagCode::OracleMissingProbe`]: a declared `oracle_kind=<k>` has no matching
+/// probe function. No `SiteId`; emits with `span: None` at the legacy site.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct OracleMissingProbe {
+    /// The oracle lifter's description (display only).
+    pub detail: String,
+}
+
+/// Payload of [`DiagCode::OracleBadEffect`]: an `oracle_effect` marker has wrong arity or
+/// an unrecognized polarity word. No `SiteId` (`site()` returns `None`).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct OracleBadEffect {
+    /// The oracle lifter's description (display only).
+    pub detail: String,
+}
+
+/// Payload of [`DiagCode::OracleTopLevelMutator`]: an oracle file has a top-level mutating
+/// command. No `SiteId` (`site()` returns `None`).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct OracleTopLevelMutator {
+    /// The oracle lifter's description (display only).
+    pub detail: String,
+}
+
+/// Payload of [`DiagCode::OracleNonDeclaration`]: an oracle file has a non-declaration
+/// top-level construct. No `SiteId` (`site()` returns `None`).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct OracleNonDeclaration {
+    /// The oracle lifter's description (display only).
+    pub detail: String,
+}
+
+/// Payload of [`DiagCode::OracleDuplicateEffect`]: two `oracle_effect` markers declare the
+/// same cell. No `SiteId`; emits with `span: None` at the legacy site.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct OracleDuplicateEffect {
+    /// The oracle lifter's description (display only).
+    pub detail: String,
+}
+
+/// Payload of [`DiagCode::OracleProbeSelectRoundtrip`]: a per-selector probe funcname cannot
+/// round-trip the selector name through the hyphen↔underscore mangling. No `SiteId`; emits
+/// with `span: None` at the legacy site.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct OracleProbeSelectRoundtrip {
+    /// The oracle lifter's description (display only).
+    pub detail: String,
+}
+
+/// Payload of [`DiagCode::CheckOutOfDialect`]: a check function body uses a construct outside
+/// the check dialect. No `SiteId` (`site()` returns `None`).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CheckOutOfDialect {
+    /// The check parser's description (display only).
+    pub detail: String,
+}
+
+/// Payload of [`DiagCode::CheckUnterminated`]: a check function body is structurally
+/// unterminated. No `SiteId` (`site()` returns `None`).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CheckUnterminated {
+    /// The check parser's description (display only).
+    pub detail: String,
+}
+
+// ===========================================================================
 // First-class site identity (type-sketch-5) — the slot, not the fleet machinery
 // ===========================================================================
 
@@ -207,12 +470,18 @@ pub trait GroupingKey {
 /// The fine grouping key (`228` dc-3): a code slug paired with the site. Distinguishes the
 /// per-host detail an engineer debugging one host wants. Ordered/`Hash` so a render can group by
 /// it deterministically (`inv-determinism`).
+///
+/// `site` is `Option<SiteId>` because codes emitted before CFG construction (the `syntax-*`
+/// codes) or mid-resolution without a plan leaf (oracle lifter codes, `effect-kind-disagreement`)
+/// carry no natural site. For those codes the fine key degenerates to a code-slug-only key
+/// (`site == None`), which is still correct for tidy/coverage purposes — it just does not
+/// collapse per-site (which is fine since those codes have no per-site identity to collapse).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct FineKey {
     /// The diagnostic code's stable slug.
     pub code: &'static str,
-    /// The originating site.
-    pub site: SiteId,
+    /// The originating site, if available (see type-level comment).
+    pub site: Option<SiteId>,
 }
 
 /// The coarse grouping key (`228` dc-3): for fleet rollup, drops the call-site so M
@@ -241,16 +510,40 @@ impl GroupingKey for Diag {
 }
 
 impl DiagCode {
-    /// The originating [`SiteId`] this code's payload cites — every migrated payload carries a
-    /// `site`, so the grouping keys can be computed uniformly without each render arm digging it
-    /// out. (A future code with no single site would need a different grouping story; none
-    /// exists yet.)
+    /// The originating [`SiteId`] this code's payload cites, if one is available.
+    ///
+    /// Codes that carry a natural `SiteId` (plan-`LeafId` or CFG-node-id-space standin) return
+    /// `Some`; codes that emit before CFG construction (the `syntax-*` codes), mid-effect-
+    /// resolution with no plan leaf (`effect-kind-disagreement`), or from the oracle lifter
+    /// with no plan context return `None`. The grouping keys degenerate to a site-less form in
+    /// that case (`FineKey::site` is `Option<SiteId>`).
     #[must_use]
-    fn site(&self) -> SiteId {
+    fn site(&self) -> Option<SiteId> {
         match self {
-            DiagCode::CmdsubOperandTop(p) => p.site,
-            DiagCode::SiteUnresolvable(p) => p.site,
-            DiagCode::RenderHeredocRefused(p) => p.site,
+            DiagCode::CmdsubOperandTop(p) => Some(p.site),
+            DiagCode::SiteUnresolvable(p) => Some(p.site),
+            DiagCode::RenderHeredocRefused(p) => Some(p.site),
+            DiagCode::CmdsubInnerNonleaf(p) => Some(p.site),
+            DiagCode::RedirTargetTop(p) => Some(p.site),
+            DiagCode::Depth2PositionalUnthreaded(p) => Some(p.site),
+            // Pre-CFG or no-plan-leaf sites: no SiteId available.
+            DiagCode::SyntaxUnsupported(_)
+            | DiagCode::SyntaxMalformed(_)
+            | DiagCode::CfgTopNode(_)
+            | DiagCode::CfgErexitUnknown(_)
+            | DiagCode::CfgInlineRefused(_)
+            | DiagCode::CfgBuiltinShadowed(_)
+            | DiagCode::EffectKindDisagreement(_)
+            | DiagCode::OracleNonLiteralKind(_)
+            | DiagCode::OracleMissingKind(_)
+            | DiagCode::OracleMissingProbe(_)
+            | DiagCode::OracleBadEffect(_)
+            | DiagCode::OracleTopLevelMutator(_)
+            | DiagCode::OracleNonDeclaration(_)
+            | DiagCode::OracleDuplicateEffect(_)
+            | DiagCode::OracleProbeSelectRoundtrip(_)
+            | DiagCode::CheckOutOfDialect(_)
+            | DiagCode::CheckUnterminated(_) => None,
         }
     }
 }
@@ -388,6 +681,7 @@ pub enum RemediationClass {
 )]
 pub fn registry(code: &DiagCode) -> CodeSpec {
     match code {
+        // ── round-22 §5 worked examples ─────────────────────────────────────
         DiagCode::CmdsubOperandTop(_) => CodeSpec {
             severity: Severity::Note,
             floor: Floor::None,
@@ -400,6 +694,115 @@ pub fn registry(code: &DiagCode) -> CodeSpec {
             severity: Severity::Error,
             // PROPOSED floor (22B-fork-floor-membership): a render-refusal that would otherwise
             // ship a broken artifact must never be silenced below a warning.
+            floor: Floor::WarnOrDeny,
+        },
+        // ── B4 sweep: former diag::legacy survivors ──────────────────────────
+        // Pure disclosures (the apply runs these sites regardless) → Note + Floor::None.
+        DiagCode::CmdsubInnerNonleaf(_) => CodeSpec {
+            severity: Severity::Note,
+            // PROPOSED floor: pure disclosure, no correctness floor needed.
+            floor: Floor::None,
+        },
+        DiagCode::RedirTargetTop(_) => CodeSpec {
+            severity: Severity::Note,
+            // PROPOSED floor: pure disclosure.
+            floor: Floor::None,
+        },
+        DiagCode::Depth2PositionalUnthreaded(_) => CodeSpec {
+            severity: Severity::Note,
+            // PROPOSED floor: pure disclosure of a depth-2 limitation.
+            floor: Floor::None,
+        },
+        // ── B4 sweep: syntax/parser.rs ───────────────────────────────────────
+        // Syntax errors are Error-class correctness give-ups → WarnOrDeny floor.
+        DiagCode::SyntaxUnsupported(_) => CodeSpec {
+            severity: Severity::Error,
+            // PROPOSED floor: an unmodeled construct causes ⊤; silencing it would hide a
+            // correctness give-up.
+            floor: Floor::WarnOrDeny,
+        },
+        DiagCode::SyntaxMalformed(_) => CodeSpec {
+            severity: Severity::Error,
+            // PROPOSED floor: a parse error is a hard correctness boundary.
+            floor: Floor::WarnOrDeny,
+        },
+        // ── B4 sweep: analysis/cfg.rs ────────────────────────────────────────
+        DiagCode::CfgTopNode(_) => CodeSpec {
+            severity: Severity::Error,
+            // PROPOSED floor: a ⊤-reject is a correctness give-up.
+            floor: Floor::WarnOrDeny,
+        },
+        DiagCode::CfgErexitUnknown(_) => CodeSpec {
+            severity: Severity::Warning,
+            // PROPOSED floor: a conservative assumption, but silencing could mask a missed edge.
+            floor: Floor::None,
+        },
+        DiagCode::CfgInlineRefused(_) => CodeSpec {
+            severity: Severity::Warning,
+            // PROPOSED floor: a capability disclosure; the call runs as unmodeled (MustRun, safe).
+            floor: Floor::None,
+        },
+        DiagCode::CfgBuiltinShadowed(_) => CodeSpec {
+            severity: Severity::Warning,
+            // PROPOSED floor: a disclosure of an assumption that may be unsound.
+            floor: Floor::None,
+        },
+        // ── B4 sweep: analysis/effect.rs ─────────────────────────────────────
+        DiagCode::EffectKindDisagreement(_) => CodeSpec {
+            severity: Severity::Warning,
+            // PROPOSED floor: the annotation wins; the warning is informational.
+            floor: Floor::None,
+        },
+        // ── B4 sweep: oracle/lib.rs ──────────────────────────────────────────
+        DiagCode::OracleNonLiteralKind(_) => CodeSpec {
+            severity: Severity::Error,
+            // PROPOSED floor: a non-liftable oracle is a correctness gap.
+            floor: Floor::WarnOrDeny,
+        },
+        DiagCode::OracleMissingKind(_) => CodeSpec {
+            severity: Severity::Error,
+            // PROPOSED floor: an oracle with no kind cannot contribute any effects.
+            floor: Floor::WarnOrDeny,
+        },
+        DiagCode::OracleMissingProbe(_) => CodeSpec {
+            severity: Severity::Error,
+            // PROPOSED floor: a kind with no probe means no probe can ship — correctness gap.
+            floor: Floor::WarnOrDeny,
+        },
+        DiagCode::OracleBadEffect(_) => CodeSpec {
+            severity: Severity::Error,
+            // PROPOSED floor: a malformed effect marker — the cell is dropped.
+            floor: Floor::WarnOrDeny,
+        },
+        DiagCode::OracleTopLevelMutator(_) => CodeSpec {
+            severity: Severity::Error,
+            // PROPOSED floor: a top-level mutator in an oracle is a hard contract violation.
+            floor: Floor::WarnOrDeny,
+        },
+        DiagCode::OracleNonDeclaration(_) => CodeSpec {
+            severity: Severity::Error,
+            // PROPOSED floor: a non-declaration construct at oracle top level is a violation.
+            floor: Floor::WarnOrDeny,
+        },
+        DiagCode::OracleDuplicateEffect(_) => CodeSpec {
+            severity: Severity::Error,
+            // PROPOSED floor: a duplicate effect cell — first-writer-wins, dropped.
+            floor: Floor::WarnOrDeny,
+        },
+        DiagCode::OracleProbeSelectRoundtrip(_) => CodeSpec {
+            severity: Severity::Warning,
+            // PROPOSED floor: a latent footgun; the cell still usable via kind-default.
+            floor: Floor::None,
+        },
+        // ── B4 sweep: oracle/check/parser.rs ─────────────────────────────────
+        DiagCode::CheckOutOfDialect(_) => CodeSpec {
+            severity: Severity::Error,
+            // PROPOSED floor: an out-of-dialect check cannot be lifted — correctness gap.
+            floor: Floor::WarnOrDeny,
+        },
+        DiagCode::CheckUnterminated(_) => CodeSpec {
+            severity: Severity::Error,
+            // PROPOSED floor: an unterminated check body cannot be lifted — correctness gap.
             floor: Floor::WarnOrDeny,
         },
     }
@@ -615,9 +1018,31 @@ pub fn render_artifact_comment(diag: &Diag) -> Option<String> {
             p.site.leaf.0,
             p.site.member.map(|m| format!(".{m}")).unwrap_or_default()
         )),
-        // Pure render-plane disclosures: no fact-plane artifact comment (the apply runs the site;
-        // the existing skip-unresolvable comment, if any, is the cli's, not this projection's).
-        DiagCode::SiteUnresolvable(_) | DiagCode::CmdsubOperandTop(_) => None,
+        // All other codes: pure render-plane disclosures or give-ups; no fact-plane artifact
+        // comment (the apply runs the site; the existing skip-unresolvable comment, if any,
+        // is the cli's, not this projection's).
+        DiagCode::SiteUnresolvable(_)
+        | DiagCode::CmdsubOperandTop(_)
+        | DiagCode::CmdsubInnerNonleaf(_)
+        | DiagCode::RedirTargetTop(_)
+        | DiagCode::Depth2PositionalUnthreaded(_)
+        | DiagCode::SyntaxUnsupported(_)
+        | DiagCode::SyntaxMalformed(_)
+        | DiagCode::CfgTopNode(_)
+        | DiagCode::CfgErexitUnknown(_)
+        | DiagCode::CfgInlineRefused(_)
+        | DiagCode::CfgBuiltinShadowed(_)
+        | DiagCode::EffectKindDisagreement(_)
+        | DiagCode::OracleNonLiteralKind(_)
+        | DiagCode::OracleMissingKind(_)
+        | DiagCode::OracleMissingProbe(_)
+        | DiagCode::OracleBadEffect(_)
+        | DiagCode::OracleTopLevelMutator(_)
+        | DiagCode::OracleNonDeclaration(_)
+        | DiagCode::OracleDuplicateEffect(_)
+        | DiagCode::OracleProbeSelectRoundtrip(_)
+        | DiagCode::CheckOutOfDialect(_)
+        | DiagCode::CheckUnterminated(_) => None,
     }
 }
 
@@ -641,10 +1066,14 @@ pub fn project_oob(diag: &Diag) -> OobProjection {
 
 /// The fact-plane fields a [`Diag`] projects to the OOB site-keyed lane ([`project_oob`]). A pure
 /// projection — prose/help/receipts are NOT here (the OOB lane is fact-plane, `render-2`).
+///
+/// `site` is `Option<SiteId>` because some codes (pre-CFG `syntax-*`, oracle lifter codes)
+/// carry no natural site. The lane key degenerates gracefully — these codes are not probe-result
+/// codes and never key a site-keyed record anyway.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct OobProjection {
-    /// The lane key (shared with the diagnostic's site identity).
-    pub site: SiteId,
+    /// The lane key (shared with the diagnostic's site identity), if available.
+    pub site: Option<SiteId>,
     /// The stable wire slug (`22B-fork-wire-code`).
     pub code: &'static str,
     /// The registry severity.
@@ -722,134 +1151,10 @@ fn render_span(span: Span, src: &str) -> String {
     }
 }
 
-// ===========================================================================
-// Legacy survivors — the not-yet-migrated catalog codes (B4 sweep target)
-// ===========================================================================
-
-/// The three give-up codes that lived in the round-21 `core::diag` catalog and are NOT migrated
-/// this round (`22B` §1 coexistence): they stay on [`crate::Diagnostic`] until the B4 mechanical
-/// sweep folds them onto the [`Diag`] spine and empties the gate-grep allow-list. Kept verbatim
-/// (templates + structured-param constructors) so the analysis crate's emit sites are unchanged
-/// while the spine is proven on the three `22B` §5 worked examples only.
-///
-/// (`render-heredoc-refused` is NOT here — it migrated; `dq-site-unresolvable` and
-/// `dq-cmdsub-operand-top` are NOT here — they migrated. This module is exactly the residual.)
-pub mod legacy {
-    use crate::{DiagCode, Diagnostic, Span};
-
-    /// A command runs inside a `$( … )` substitution body — effect-bearing but not independently
-    /// elidable (`219` q-1.f silent-1/silent-4). NOT migrated this round.
-    pub const CMDSUB_INNER_NONLEAF: DiagCode = DiagCode("dq-cmdsub-inner-nonleaf");
-
-    /// A WRITE-shaped redirect (`>`/`>>`) to a DYNAMIC/unresolved target joins ⊤ (y-1, `21F`
-    /// imp-1). NOT migrated this round.
-    pub const REDIR_TARGET_TOP: DiagCode = DiagCode("dq-redir-target-top");
-
-    /// A transitively-inlined (depth-2) call whose own call-argument references a positional that
-    /// does not thread two inline levels (`216` §1.2 correction). NOT migrated this round.
-    pub const DEPTH2_POSITIONAL_UNTHREADED: DiagCode = DiagCode("dq-depth-2-positional-unthreaded");
-
-    /// The not-yet-migrated codes (the allow-list cross-check reads this to confirm the residual
-    /// is exactly these three legacy catalog codes).
-    pub const RESIDUAL_CATALOG: &[DiagCode] = &[
-        CMDSUB_INNER_NONLEAF,
-        REDIR_TARGET_TOP,
-        DEPTH2_POSITIONAL_UNTHREADED,
-    ];
-
-    /// The message TEMPLATE for a residual code (the round-21 `rq-1` shape — phrasing lives here).
-    #[must_use]
-    pub fn template(code: DiagCode) -> &'static str {
-        match code {
-            CMDSUB_INNER_NONLEAF => {
-                "command `{inner}` runs inside a `$(…)` substitution ⇒ effect-bearing but not \
-                 independently elidable (it runs whenever its enclosing line runs)"
-            }
-            REDIR_TARGET_TOP => {
-                "write-redirect to a dynamic/unresolved target ⇒ no per-path `file` cell can be \
-                 keyed, so the write joins ⊤ and the command runs (never elided)"
-            }
-            DEPTH2_POSITIONAL_UNTHREADED => {
-                "call `{name}` not inlined: its argument references a positional (`$1`..`$9`/`$#`) \
-                 that does not thread through two inline levels ⇒ the inner body's positional is ⊤ \
-                 — it runs as an ordinary unmodeled command (depth-2 positional threading is out of \
-                 the modeled subset)"
-            }
-            _ => "",
-        }
-    }
-
-    /// Build the [`CMDSUB_INNER_NONLEAF`] Note (`inner` = the inner command's resolved text).
-    #[must_use]
-    pub fn cmdsub_inner_nonleaf(span: Option<Span>, inner: &str) -> Diagnostic {
-        Diagnostic::note(
-            CMDSUB_INNER_NONLEAF,
-            span,
-            fill(template(CMDSUB_INNER_NONLEAF), &[("inner", inner)]),
-        )
-    }
-
-    /// Build the [`REDIR_TARGET_TOP`] Note (parameterless; the offending word is ⊤, text
-    /// unavailable; `span` carries the redirect's source location).
-    #[must_use]
-    pub fn redir_target_top(span: Option<Span>) -> Diagnostic {
-        Diagnostic::note(
-            REDIR_TARGET_TOP,
-            span,
-            template(REDIR_TARGET_TOP).to_owned(),
-        )
-    }
-
-    /// Build the [`DEPTH2_POSITIONAL_UNTHREADED`] Note (`name` = the refused call's function name).
-    #[must_use]
-    pub fn depth2_positional_unthreaded(span: Option<Span>, name: &str) -> Diagnostic {
-        Diagnostic::note(
-            DEPTH2_POSITIONAL_UNTHREADED,
-            span,
-            fill(template(DEPTH2_POSITIONAL_UNTHREADED), &[("name", name)]),
-        )
-    }
-
-    /// Substitute `{key}` placeholders from `params` — a deterministic, allocation-light fill (an
-    /// unmatched placeholder is left verbatim so a mismatch is visible). `inv-determinism`.
-    fn fill(template: &str, params: &[(&str, &str)]) -> String {
-        let mut out = template.to_owned();
-        for (key, value) in params {
-            let needle = format!("{{{key}}}");
-            out = out.replace(&needle, value);
-        }
-        out
-    }
-
-    #[cfg(test)]
-    mod tests {
-        use super::*;
-
-        /// Every residual code resolves to a non-empty template (the round-21 `rq-2` gate, kept
-        /// for the legacy survivors until B4 sweeps them).
-        #[test]
-        fn every_residual_code_has_a_nonempty_template() {
-            for &code in RESIDUAL_CATALOG {
-                assert!(
-                    !template(code).is_empty(),
-                    "residual code `{}` has no template",
-                    code.0
-                );
-            }
-        }
-
-        /// The constructors fill their templates (a drift would leave a `{placeholder}`).
-        #[test]
-        fn residual_constructors_fill_templates() {
-            let d = cmdsub_inner_nonleaf(None, "apt-get install -y nginx");
-            assert!(d.message.contains("apt-get install -y nginx"));
-            assert!(!d.message.contains('{'));
-            let d = depth2_positional_unthreaded(None, "b");
-            assert!(d.message.contains('b'));
-            assert!(!d.message.contains('{'));
-        }
-    }
-}
+// The `diag::legacy` submodule has been deleted by the B4 sweep — all three former
+// legacy survivors (`dq-cmdsub-inner-nonleaf`, `dq-redir-target-top`,
+// `dq-depth-2-positional-unthreaded`) are now first-class variants of [`DiagCode`] above.
+// The LEGACY_ALLOW_LIST in `core/tests/diag_tidy.rs` no longer contains them.
 
 #[cfg(test)]
 mod tests {
@@ -1006,8 +1311,9 @@ mod tests {
         );
         let p = project_oob(&d);
         assert_eq!(p.code, "dq-site-unresolvable", "stable wire slug");
-        assert_eq!(p.site.leaf, LeafId(4));
-        assert_eq!(p.site.member, Some(2));
+        let site = p.site.expect("SiteUnresolvable always has a site");
+        assert_eq!(site.leaf, LeafId(4));
+        assert_eq!(site.member, Some(2));
         assert_eq!(p.severity, Severity::Note);
     }
 
@@ -1058,7 +1364,7 @@ mod tests {
         );
         let fine = d.fine_key();
         assert_eq!(fine.code, "render-heredoc-refused");
-        assert_eq!(fine.site, site(5));
+        assert_eq!(fine.site, Some(site(5)));
         // STUB: the coarse key wraps the fine key unchanged this round.
         assert_eq!(d.coarse_key().fine, fine);
     }

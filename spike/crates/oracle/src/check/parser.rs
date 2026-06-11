@@ -12,7 +12,7 @@ use super::ast::{
     Annotation, CaseArm, Check, CheckSet, Command, Pattern, Stmt, Test, TestOp, Word,
 };
 use super::lexer::{Tok, Token, lex};
-use super::{OUT_OF_DIALECT, UNTERMINATED, VERB_BINDING, lift_failure, map_provider_name};
+use super::{VERB_BINDING, lift_failure, map_provider_name};
 use dorc_core::{Carrier, Interner, Span, Symbol};
 use dorc_syntax::sem;
 
@@ -632,15 +632,14 @@ impl Parser<'_> {
     /// return `true` (the "diagnostic already emitted" signal for `parse_block`).
     fn fail_here(&mut self, msg: &str) -> bool {
         let span = self.peek_span();
-        self.out
-            .push(lift_failure(OUT_OF_DIALECT, span, msg.to_owned()));
+        self.out.push(lift_failure(false, span, msg.to_owned()));
         true
     }
 
     /// Emit an out-of-dialect diagnostic at a specific span.
     fn fail(&mut self, span: Span, msg: &str) {
         self.out
-            .push(lift_failure(OUT_OF_DIALECT, Some(span), msg.to_owned()));
+            .push(lift_failure(false, Some(span), msg.to_owned()));
     }
 
     /// Skip one top-level non-check item: advance to the next statement boundary,
@@ -783,7 +782,7 @@ fn true_with(p: &mut Parser<'_>, end: BlockEnd) -> bool {
         BlockEnd::Keyword(kw) => {
             return {
                 p.out.push(lift_failure(
-                    UNTERMINATED,
+                    true,
                     span,
                     format!("unterminated block (expected `{kw}`)"),
                 ));
@@ -793,7 +792,7 @@ fn true_with(p: &mut Parser<'_>, end: BlockEnd) -> bool {
         BlockEnd::CaseArmEnd => "unterminated case arm (expected `;;` or `esac`)",
         BlockEnd::IfThenEnd => "unterminated `if` (expected `else`/`fi`)",
     };
-    p.out.push(lift_failure(UNTERMINATED, span, msg.to_owned()));
+    p.out.push(lift_failure(true, span, msg.to_owned()));
     true
 }
 

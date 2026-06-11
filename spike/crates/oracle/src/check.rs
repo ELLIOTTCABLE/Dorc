@@ -31,7 +31,8 @@
 //! entity (by tracing the oracle's own argparse); it never branches on what the
 //! entity's text *means*. Kind strings are opaque coordination handles.
 
-use dorc_core::{DiagCode, Diagnostic, Span};
+use dorc_core::diag::{CheckOutOfDialect, CheckUnterminated, DiagCode as Code};
+use dorc_core::{Diagnostic, Span};
 
 mod ast;
 mod eval;
@@ -57,9 +58,7 @@ pub fn map_provider_name(raw: &str) -> String {
     raw.replace('_', "-")
 }
 
-/// Diagnostic codes the dialect parser emits (greppable; `ch-catalog`).
-const OUT_OF_DIALECT: DiagCode = DiagCode("check-out-of-dialect");
-const UNTERMINATED: DiagCode = DiagCode("check-unterminated");
+// B4 sweep: check codes migrated onto Diag spine.
 
 /// The conventional local variable name an oracle assigns the verb to (`verb=$1`,
 /// 19H §2.1/§2.5). Recognizing it is a *structural convention in the oracle's own
@@ -73,6 +72,27 @@ const VERB_BINDING: &str = "verb";
 /// A per-function lift failure: the named function is in the file but its body is
 /// out of dialect. Fail-soft (`inv-no-throw`): the function contributes no [`Check`]
 /// and the rest of the file still lifts.
-fn lift_failure(code: DiagCode, span: Option<Span>, message: impl Into<String>) -> Diagnostic {
-    Diagnostic::error(code, span, message)
+///
+/// `is_unterminated`: selects `CheckUnterminated` vs `CheckOutOfDialect`. Both carry
+/// the message as `detail`; the span is `Option<Span>` to preserve the caller's
+/// optional-location contract (EOF sites have no span to report).
+pub(crate) fn lift_failure(
+    is_unterminated: bool,
+    span: Option<Span>,
+    message: impl Into<String>,
+) -> Diagnostic {
+    let msg = message.into();
+    if is_unterminated {
+        let slug = Code::CheckUnterminated(CheckUnterminated {
+            detail: msg.clone(),
+        })
+        .slug();
+        Diagnostic::error(dorc_core::DiagCode(slug), span, msg)
+    } else {
+        let slug = Code::CheckOutOfDialect(CheckOutOfDialect {
+            detail: msg.clone(),
+        })
+        .slug();
+        Diagnostic::error(dorc_core::DiagCode(slug), span, msg)
+    }
 }

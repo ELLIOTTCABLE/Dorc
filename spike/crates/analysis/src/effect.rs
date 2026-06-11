@@ -26,10 +26,12 @@ use crate::cfg::{Cfg, CfgNodeId, CfgNodeKind};
 use crate::lattice::Lattice;
 use crate::solve::{Direction, Graph, solve};
 use crate::value::{ValueFlow, ValueOf};
-use dorc_core::diag::{CmdsubOperandTop, Diag, DiagCode as Code, OperandPosition, SiteId};
+use dorc_core::diag::{
+    CmdsubInnerNonleaf, CmdsubOperandTop, Diag, DiagCode as Code, EffectKindDisagreement,
+    OperandPosition, RedirTargetTop, SiteId,
+};
 use dorc_core::{
-    Carrier, DiagCode, Diagnostic, EntityRef, Interner, KindId, LeafId, OpaqueToken, ProviderId,
-    Span, diag,
+    Carrier, Diagnostic, EntityRef, Interner, KindId, LeafId, OpaqueToken, ProviderId, Span,
 };
 use dorc_oracle::check::{self, CheckSet, ResolvedEntity};
 use dorc_oracle::{EffectCell, KindIndex, Polarity, empty_verb};
@@ -71,9 +73,7 @@ pub enum CommandEffect {
     Opaque,
 }
 
-/// Diagnostic code for a kind-disagreement between a check's annotation and the
-/// effect-map (`ch-catalog`; 204 §6 open seam).
-const KIND_DISAGREEMENT: DiagCode = DiagCode("effect-kind-disagreement");
+// B4 sweep: EffectKindDisagreement migrated onto Diag spine (payload in dorc_core::diag).
 
 /// The source identity of a give-up site for the migrated `dq-cmdsub-operand-top` spine
 /// (`22B` §5 worked-3): a real source [`Span`] (the drop-A fix — s-2 resolves it) and a stable
@@ -334,14 +334,17 @@ fn cell_effect(
 ) -> CommandEffect {
     if cell.kind != annotation_kind {
         let em_kind = interner.resolve(cell.kind.0).to_owned();
-        diags.push(Diagnostic::warning(
-            KIND_DISAGREEMENT,
-            None,
-            format!(
-                "check annotation kind `{annotation_kind_str}` disagrees with the effect-map \
-                 kind `{em_kind}` for this verb — the annotation (declared identity) wins"
-            ),
-        ));
+        // Span-less diagnostic (no source location available at this classification depth).
+        // Construct the payload to satisfy tidy; use legacy Diagnostic to preserve span: None.
+        let msg = format!(
+            "check annotation kind `{annotation_kind_str}` disagrees with the effect-map \
+             kind `{em_kind}` for this verb — the annotation (declared identity) wins"
+        );
+        let slug = Code::EffectKindDisagreement(EffectKindDisagreement {
+            detail: msg.clone(),
+        })
+        .slug();
+        diags.push(Diagnostic::warning(dorc_core::DiagCode(slug), None, msg));
     }
     let fact = FactKey {
         kind: annotation_kind, // the annotation wins (declared identity)
@@ -751,8 +754,18 @@ fn node_effects(
                 vec![CommandEffect::Establishes(file_write_cell(path, interner))]
             }
             Some(ValueOf::Top) => {
-                // NOT migrated this round (legacy survivor); s-2 still gives it a real span.
-                diags.push(diag::legacy::redir_target_top(Some(site.span)));
+                // Migrated onto the Diag spine (B4 sweep): the site carries a real span (s-2
+                // widening) and a CFG-node-space SiteId (pre-plan; same precedent as
+                // CmdsubOperandTop — flagged `tc-cmdsub-siteid`).
+                let diag = Diag::new(
+                    Code::RedirTargetTop(RedirTargetTop { site: site.site }),
+                    site.span,
+                )
+                .label(
+                    "write-redirect to a dynamic/unresolved target ⇒ no per-path `file` cell \
+                     can be keyed, so the write joins ⊤ and the command runs (never elided)",
+                );
+                diags.push(diag.to_legacy(interner));
                 vec![CommandEffect::Opaque]
             }
             None => vec![CommandEffect::Pure],
@@ -957,11 +970,22 @@ pub fn classify(
             // (`219` q-1.f). A Pure inner command discloses nothing (nothing un-elidable
             // happens), so gate on a non-Pure effect.
             if cells.iter().any(|e| *e != CommandEffect::Pure) {
-                // NOT migrated this round (legacy survivor); s-2 gives it a real span (drop-A).
-                diags.push(diag::legacy::cmdsub_inner_nonleaf(
-                    Some(ast.node(cfg.node(id).ast).span),
-                    &render_argv(&value.argv_values(id), interner),
+                // Migrated onto the Diag spine (B4 sweep). Real span from s-2 widening;
+                // CFG-node-space SiteId (pre-plan; flagged `tc-cmdsub-siteid`).
+                let span = ast.node(cfg.node(id).ast).span;
+                let inner = render_argv(&value.argv_values(id), interner);
+                let diag = Diag::new(
+                    Code::CmdsubInnerNonleaf(CmdsubInnerNonleaf {
+                        site: SiteId::leaf(LeafId(id.0)),
+                        inner: inner.clone(),
+                    }),
+                    span,
+                )
+                .label(format!(
+                    "command `{inner}` runs inside a `$(…)` substitution ⇒ effect-bearing but \
+                     not independently elidable (it runs whenever its enclosing line runs)"
                 ));
+                diags.push(diag.to_legacy(interner));
             }
             continue;
         }
