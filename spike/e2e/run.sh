@@ -22,6 +22,30 @@
 #                            1). Governs the apply exec only; bless never creates it.
 #   XFAIL                  — documented known-defect pin (its 1st line is the reason); the
 #                            case asserts the SAFE behaviour and is expected to fail at HEAD.
+#
+# DETERMINISM RAIL (slice-2 / 221 dc-1) — the three artifact-execution sites (exec_check,
+# probe_exec_check, gate-5's bare-book run) run the artifact under a FIXED environment:
+# `env -i PATH=<mocks-only> DORC_LOG=<abs> LC_ALL=C TZ=UTC <checker> …`, with `umask 022`
+# set in the execution subshell first. So the artifact sees ONLY those four vars + that
+# umask — an ambient LANG/LC_*/TZ/umask can no longer perturb a render's exec trace. `env`
+# is found via the harness's own PATH; only the ARTIFACT's PATH is mocks-only. (The existing
+# `sort` calls keep their `LC_ALL=C`.) `env -i` is verified portable under msys/dash here.
+#
+# WHAT IS DELIBERATELY NOT PINNED (the honest residual — these can still vary run-to-run; a
+# case that depends on any of them is non-hermetic and out of this harness's contract):
+#   - filesystem state: the sandbox is a fresh `mktemp -d`, but the broader fs (existence of
+#     /etc, /tmp, device nodes, the mocks dir's own inode) is the ambient host's.
+#   - mktemp PATHS: `$_log` / `$_sand` names embed a random/PID component (different each run);
+#     never assert on them. They are passed in, not discovered by the artifact.
+#   - the checker binary's IDENTITY/VERSION: whichever `dash`/`sh` `command -v` found first,
+#     at whatever version the host ships — its parser/builtin quirks are not pinned.
+#   - kernel / OS / msys-vs-real-POSIX: syscall and tool behaviour differences are ambient.
+#   - hostname / uid / cwd-of-record leakage VIA THE ARTIFACT'S OWN READS: a render that runs
+#     `hostname`/`id`/`pwd` (none in the corpus today) would read the real host; `env -i`
+#     scrubs the ENVIRONMENT, not these syscalls. PWD inside the sandbox is the mktemp dir.
+#   - wall-clock / RNG reached by a shim that calls `date`/`$RANDOM` (the shims don't).
+# The kernel-level DST guarantee lives in the Rust `hostsim` seam (21D); this rail only fixes
+# the SHELL-EXEC environment of the e2e corpus, not those deeper axes.
 set -eu
 
 here=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
@@ -65,6 +89,14 @@ fi
 # explicitly so a missing awk is a clear failure, not a silently-skipped safety gate.
 if ! command -v awk >/dev/null 2>&1; then
   echo "no awk for the gate-2 redirection-sandbox scan — cannot validate exec safety" >&2
+  exit 2
+fi
+# determinism rail (slice-2, 221 dc-1): the three artifact-execution sites run the artifact
+# under `env -i` (a scrubbed environment). Require `env` explicitly — a missing one would
+# otherwise drop the determinism pin silently. (`env -i` verified portable under msys/dash on
+# this machine; if a future host fights it, an explicit `unset`-based fallback is acceptable.)
+if ! command -v env >/dev/null 2>&1; then
+  echo "no env for the determinism rail (env -i scrubbed-environment exec) — cannot pin the artifact env" >&2
   exit 2
 fi
 redir_scan="$here/scan_redirects.awk"
@@ -186,10 +218,16 @@ exec_check() {
   _mocks=$(CDPATH= cd -- "${_dir}mocks" && pwd)
   # Execute in a subshell cd'd into the sandbox (gate-2): a bare relative redirect lands
   # under $_sand, not the repo. $_log + $checker_abs are absolute, unaffected by the cd.
-  # The artifact's real exit status is captured (not collapsed to success/failure by `if !`)
-  # so EXIT_RC can assert it exactly.
+  # DETERMINISM RAIL (slice-2, 221 dc-1): `env -i` scrubs the ambient environment so the
+  # artifact runs under a FIXED env (only PATH=mocks, DORC_LOG, LC_ALL=C, TZ=UTC) — an
+  # ambient LANG/LC_*/TZ can no longer perturb a locale-sensitive command's output. `env`
+  # itself is found via the harness's own PATH (this subshell still has it); only the
+  # ARTIFACT's PATH is mocks-only. `umask 022` is set before exec (umask is a process
+  # attribute, inherited THROUGH `env -i` — verified on this msys box) so file-creation mode
+  # is fixed. The artifact's real exit status is captured (not collapsed by `if !`) so
+  # EXIT_RC can assert it exactly.
   _run_rc=0
-  _run_err=$( cd -- "$_sand" && DORC_LOG="$_log" PATH="$_mocks" "$checker_abs" 2>&1 <<EOF
+  _run_err=$( cd -- "$_sand" && umask 022 && env -i PATH="$_mocks" DORC_LOG="$_log" LC_ALL=C TZ=UTC "$checker_abs" 2>&1 <<EOF
 $_art
 EOF
   ) || _run_rc=$?
@@ -288,7 +326,9 @@ probe_exec_check() {
   # Execute the probe (sandbox cwd + mocks PATH + DORC_LOG). Its stdout is the records;
   # its own stderr/the shim log are not asserted here (the probe is read-only — we assert
   # the records it returns, not what it touched, beyond the no-127 vouch check below).
-  _recs=$( cd -- "$_sand" && DORC_LOG="$_log" PATH="$_mocks" "$checker_abs" 2>/dev/null <<EOF
+  # DETERMINISM RAIL (slice-2, 221 dc-1): same fixed-env discipline as exec_check — `env -i`
+  # + `umask 022` so the probe's records cannot drift on an ambient locale/TZ/umask.
+  _recs=$( cd -- "$_sand" && umask 022 && env -i PATH="$_mocks" DORC_LOG="$_log" LC_ALL=C TZ=UTC "$checker_abs" 2>/dev/null <<EOF
 $_art
 EOF
   )
@@ -386,10 +426,13 @@ argv_echo_check() {
   # flag does not change the round-trip; we just read the extra stderr lines).
   _eng=$("$dorc" --debug-argv --book="${_dir}book.sh" "$@" < "${_dir}probe-results.txt" 2>&1 >/dev/null | grep '^argv ' || true)
   # Ground truth: run the BARE book under mocks + sandbox; collect the shims' logged argvs.
+  # DETERMINISM RAIL (slice-2, 221 dc-1): same fixed-env discipline as the other two exec
+  # sites — `env -i` + `umask 022`. Here the artifact is a FILE arg (not stdin); `env -i`
+  # passes the file path through and dash still runs it (verified on this msys box).
   _mocks=$(CDPATH= cd -- "${_dir}mocks" && pwd)
   _book=$(CDPATH= cd -- "$_dir" && pwd)/book.sh
   _log=$(mktemp); _sand=$(mktemp -d)
-  ( cd -- "$_sand" && DORC_LOG="$_log" PATH="$_mocks" "$checker_abs" "$_book" ) >/dev/null 2>&1 || true
+  ( cd -- "$_sand" && umask 022 && env -i PATH="$_mocks" DORC_LOG="$_log" LC_ALL=C TZ=UTC "$checker_abs" "$_book" ) >/dev/null 2>&1 || true
   _logged=$(sed 's/^ran: //' "$_log" 2>/dev/null || true)
   rm -rf "$_sand"; rm -f "$_log"
   # Walk each engine argv line; assert the resolved+shimmed+RUN ones are in the log.
