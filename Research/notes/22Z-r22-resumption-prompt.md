@@ -84,9 +84,10 @@ if the human re-hands it): quarantine 223. Do NOT read quarantine otherwise.
   HARVESTED by cherry-pick (fb-11 content-diffs verified); x1-gate-attack
   (branch ai/r22-xcheck1, tip `b68fc66`) holds the x-1 coverage-doc test, NOT
   harvested (fold-or-re-derive at arch-2 prep). Originals left for the human.
-  b3-arch3 (branch ai/r22-arch3 @ `cb695a9`) IN FLIGHT: arch-3's design half —
-  the 22B spine + s-2 widening + report() spans + gate-grep + the 3-code proving
-  set; Opus per the ru-23 split; B4-Sonnet mechanical sweep follows its harvest.
+  b3-arch3 (branch ai/r22-arch3, tip `b6c0b78`) HARVESTED by cherry-pick
+  (`894109c`+`9c4b621`, fb-11 EMPTY). b4-arch3m (branch ai/r22-arch3m @
+  `fdb12af`) IN FLIGHT: arch-3's mechanical half — the 20-code sweep,
+  Sonnet (ru-23 third tier, first use).
 - `.claude/research/` GITIGNORED scratch was REMOVED (`d4277e0`); ~3.2MB untracked
   re-fetchable residue (incl. the four rqA primary PDFs) remains on disk for the
   human's inventory. (Stale prior note said "remove at digestion" — done.)

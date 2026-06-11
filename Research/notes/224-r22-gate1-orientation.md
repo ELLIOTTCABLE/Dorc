@@ -777,7 +777,17 @@ warm-ups (d×d host-flip fixture; var-resolved redirect case) → 22x synthesis 
   kernel-early site (mint_top_causes runs post-effects; inherent ordering);
   actual ProvId wiring lands in arch-2's emit-at-origin. PROPOSED floor column
   → to the human for PR-disposal: RenderHeredocRefused = Error+WarnOrDeny;
-  SiteUnresolvable / CmdsubOperandTop = Note+None. Scope: the
+  SiteUnresolvable / CmdsubOperandTop = Note+None.
+- B4 arch-3-MECHANICAL → LAUNCHED (background; first sonnet-tier dispatch this
+  round, ru-23 third tier — class-discipline data point for round close):
+  worktree %TEMP%\dorc-r22\b4-arch3m, branch ai/r22-arch3m, base = `fdb12af`
+  (the B3-harvest ledger tip). Scope: migrate the 3 diag::legacy survivors then
+  the 17 allow-list codes, behavior-preserving (verbatim message text, severity
+  values unchanged into the registry, zero golden diffs expected, NEVER BLESS);
+  per-code must-emit assertion found-or-added on existing harnesses; PROPOSED
+  floor rows (Error give-ups → WarnOrDeny lean, disclosures → None); empty the
+  allow-list + delete diag::legacy; the tc-cmdsub-siteid standin NOT to be
+  extended where a real LeafId is in scope. Token/time at completion. Scope: the
   22B §3/§4 spine in core + s-2 classify-signature widening EARLY + report()
   span rendering (drop-A) + gate-grep with seeded self-cleaning allow-list +
   the three §5 worked-example migrations as proving set. Opus tier (ru-23
