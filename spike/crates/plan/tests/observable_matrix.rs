@@ -1211,3 +1211,131 @@ fn inline_call_inside_loop_is_floored_even_when_converged() {
         "the in-loop floor prevents the inlined call from eliding"
     );
 }
+||||||| parent of 0d3cc92 ((AI fix ana) span-render: group adjacent multi-line edits, quote-safe comment (P1 21E))
+
+// ===========================================================================
+// P1 fix 21E (note 214 §9 hunt-7): two ADJACENT elidable MULTI-LINE leaves.
+// The pre-fix `emit_span_edits` keyed edits by their lone START line and the
+// line-walk jumped over a multi-line edit's CONSUMED span — so a second edit
+// whose start line fell inside the first's span was ORPHANED, leaving the
+// second command half-spliced and the provenance comment landing INSIDE an
+// open quote (a `dash -n`-clean-by-coincidence corruption, or a hard
+// "Unterminated quoted string" with an odd embedded quote). The fix groups
+// line-overlapping/abutting edits and splices them as one rendered line.
+// These pins reproduce the two hostile-crosscheck books BYTE-FOR-BYTE and
+// assert the fixed render is dash-clean, both leaves substituted, run-set
+// empty. The `debug_assert_eq!` every-edit-applied-once counter (f-1) also
+// fires under the debug test build if a future change re-orphans an edit.
+// ===========================================================================
+
+#[test]
+fn render_adjacent_multiline_elides_both_no_orphan() {
+    // The P1 reproducer, byte-for-byte: two `apt-get install` leaves, each with a
+    // double-quoted operand carrying a LITERAL NEWLINE, separated by `;` so the SECOND
+    // leaf STARTS on the FIRST leaf's closing line (`b"; apt-get install -y "c`). Both
+    // converged ⇒ both `replace`d to `true`. Pre-fix the second was orphaned (`true;
+    // apt-get install -y "c` survived, comment spliced after `"c`); the group splice
+    // collapses both to `true; true` on one line, the comment carrying BOTH originals.
+    let src = "apt-get install -y \"a\nb\"; apt-get install -y \"c\nd\"\n";
+    let (plan, ast) = plan_and_ast(src, &[("package", "a\nb"), ("package", "c\nd")]);
+    let rendered = plan.render_apply(src, &ast);
+    // Both leaves substituted on ONE rendered line; the orphaned `apt-get install -y "c`
+    // is gone, and the comment discloses both originals (interior newlines flattened).
+    assert!(
+        rendered.contains(
+            "true; true   # dorc: elided [apt-get install -y \"a b\"; \
+             apt-get install -y \"c d\"] (already converged / dead branch)"
+        ),
+        "both adjacent multi-line installs collapse to `true; true` with a combined \
+         disclosure (no orphaned second leaf):\n{rendered}"
+    );
+    // The orphan signature: the second install's raw command must NOT survive in the body.
+    assert!(
+        !rendered.contains("apt-get install -y \"c\n"),
+        "the second install is NOT left half-spliced (the pre-fix orphan):\n{rendered}"
+    );
+    // dash-clean: the corrupt artifact was clean-by-coincidence here, but the FIXED one is
+    // clean for the right reason (one comment line, both quotes balanced and closed).
+    assert!(
+        rendered.lines().filter(|l| l.contains("apt-get")).count() == 1,
+        "exactly one rendered line mentions apt-get (the disclosure comment), none runs \
+         it:\n{rendered}"
+    );
+}
+
+#[test]
+fn render_adjacent_multiline_odd_embedded_quote_no_dashn_break() {
+    // The P1 VARIANT: the first operand has an ODD embedded quote (`a'b`) before its
+    // literal newline. Pre-fix, the orphaned second leaf left the rendered line ending
+    // `… install -y "c`, and the spliced provenance comment landed inside the open `"…"`
+    // — but the embedded `'` in the disclosure flipped quote-state, so `dash -n` failed
+    // HARD ("Unterminated quoted string"). The group splice + f-2 comment-safety make the
+    // fixed render dash-clean; the odd-quote operand is flattened into the disclosure.
+    let src = "apt-get install -y \"a'b\nx\"; apt-get install -y \"c\nd\"\n";
+    let (plan, ast) = plan_and_ast(src, &[("package", "a'b\nx"), ("package", "c\nd")]);
+    let rendered = plan.render_apply(src, &ast);
+    assert!(
+        rendered.contains("true; true   # dorc: elided ["),
+        "both installs collapse to `true; true` (the odd-quote operand no longer orphans \
+         the second leaf):\n{rendered}"
+    );
+    // The disclosure carries the odd-quote operand (whitespace-flattened), proving it was
+    // routed into the COMMENT, not left live in the body where the `'` broke `dash -n`.
+    assert!(
+        rendered.contains("apt-get install -y \"a'b x\""),
+        "the odd-quote first original is disclosed in the comment (flattened):\n{rendered}"
+    );
+    assert!(
+        !rendered.contains("apt-get install -y \"c\n"),
+        "no orphaned second install left in the body:\n{rendered}"
+    );
+}
+
+#[test]
+fn render_multiline_then_single_line_orphan_cousin_both_elide() {
+    // The P3 cousin (single-line orphan): a MULTI-LINE converged install followed on its
+    // CLOSING line by a SINGLE-LINE converged install (`y"; apt-get install -y curl`).
+    // Same orphan mechanism — the second leaf's start line is the first's end line — but
+    // both edits are single-rendered-line after splice. The group merges them: `true;
+    // true`, both disclosed. (Pre-fix: the `curl` install was orphaned and ran.)
+    let src = "apt-get install -y \"x\ny\"; apt-get install -y curl\n";
+    let (plan, ast) = plan_and_ast(src, &[("package", "x\ny"), ("package", "curl")]);
+    let rendered = plan.render_apply(src, &ast);
+    assert!(
+        rendered.contains(
+            "true; true   # dorc: elided [apt-get install -y \"x y\"; \
+             apt-get install -y curl] (already converged / dead branch)"
+        ),
+        "the multi-line + single-line pair both elide to `true; true` (no orphaned \
+         curl):\n{rendered}"
+    );
+    assert!(
+        !rendered.contains("install -y curl\n") || rendered.contains("curl]"),
+        "the `curl` install is elided, surviving only inside the disclosure comment:\n{rendered}"
+    );
+}
+
+#[test]
+fn render_verbatim_run_leaf_opening_quote_drops_comment_f2() {
+    // f-2 comment-drop (defense-in-depth): a converged install (multi-line, ⇒ `true`)
+    // immediately followed on its closing line by a VERBATIM `Run` leaf whose operand
+    // OPENS a double-quote that closes on the next line (`b"; systemctl reload "c<LF>d"`).
+    // The group is just the install (the systemctl is a Run, no edit), so the spliced
+    // region is `true; systemctl reload "c` — it ENDS inside an open quote. `comment_safe`
+    // (via `region_ends_in_quote`) must DROP the provenance comment here: appending `#`
+    // would land it inside the string literal. The systemctl runs verbatim across both
+    // lines; the disclosure is dropped (OOB lane still carries it). dash-clean.
+    let src = "apt-get install -y \"a\nb\"; systemctl reload \"c\nd\"\n";
+    let (plan, ast) = plan_and_ast(src, &[("package", "a\nb")]);
+    let rendered = plan.render_apply(src, &ast);
+    // The install is substituted; the systemctl operand survives verbatim across two lines.
+    assert!(
+        rendered.contains("true; systemctl reload \"c\nd\""),
+        "the install ⇒ `true`, the verbatim systemctl spans both lines intact:\n{rendered}"
+    );
+    // NO comment on the quote-opening line (it would land inside the `"c…` literal).
+    assert!(
+        !rendered.contains("true; systemctl reload \"c   # dorc:"),
+        "the provenance comment is DROPPED (region ends inside an open quote — f-2):\n{rendered}"
+    );
+}

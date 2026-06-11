@@ -1549,39 +1549,84 @@ fn normalise_edits(mut edits: Vec<SpanEdit>) -> Vec<SpanEdit> {
     kept
 }
 
-/// Emit the apply artifact by splicing the span edits into the source bytes (arch-1, note
-/// 214). Edits are applied **right-to-left** (highest `lo` first) so an earlier edit's byte
-/// offsets stay valid as later ones splice. Then a provenance comment is appended to each
-/// rendered line that carries ≥1 edit (d-3) — disclosing the replaced commands' originals —
-/// IFF the line end is comment-safe.
-///
-/// `edits` must be the normalised (sorted, non-partial-overlap) set from [`normalise_edits`].
-fn emit_span_edits(src: &str, edits: &[SpanEdit]) -> String {
-    // Group each edit by the SOURCE line its replacement lands on (the line of `lo`). After
-    // splicing, a multi-line edit collapses its span onto that one line, and single-line
-    // replacements never add lines — so the rendered line that carries an edit corresponds
-    // 1:1 to the edit's start line. We splice the whole source, then re-emit line-by-line,
-    // appending the comment to lines that had an edit. To keep the line↔edit mapping stable
-    // across the multi-line collapse, we splice and emit in ONE line-walk over the source.
+/// One line-overlap GROUP of span edits, spliced together as a single rendered line (arch-1
+/// note 214 §9 hunt-7; P1 fix 21E). A group is the transitive closure of edits whose covered
+/// source-line ranges intersect or ABUT (one edit's start line ≤ a prior edit's end line):
+/// such edits collapse onto the SAME rendered line after splicing, so they must be processed
+/// together. Keying edits by their lone start line (the pre-fix shape) ORPHANS an edit whose
+/// start line falls inside a prior multi-line edit's consumed span — the line-walk skips that
+/// line — corrupting the artifact (a half-spliced second command, a provenance comment landing
+/// inside an open quote). The group's region spans the first member's start-line start → the
+/// last member's end-line end; every member is spliced into it exactly once.
+struct EditGroup<'a> {
+    /// First source line the group covers (where the rendered line is emitted).
+    first_line: usize,
+    /// Last source line the group covers (lines `first_line+1..=last_line` are consumed).
+    last_line: usize,
+    /// The group's edits, in source order (`lo` ascending — `normalise_edits` guarantees they
+    /// are span-disjoint, so the order is total and the disclosure reads left-to-right).
+    members: Vec<&'a SpanEdit>,
+}
+
+/// Partition the normalised edits into line-overlap [`EditGroup`]s (P1 fix 21E f-1). `edits`
+/// is sorted by `(lo, …)`, hence by start line; sweep left-to-right, extending the running
+/// group while the next edit's start line is within the group's covered line span (intersect
+/// or abut), else start a new group. Returns groups keyed by `first_line` so the emit walk can
+/// look one up at each line. Every edit lands in EXACTLY ONE group's `members` (the f-1
+/// no-edit-dropped invariant; the caller counts them).
+fn group_edits<'a>(src: &str, edits: &'a [SpanEdit]) -> BTreeMap<usize, EditGroup<'a>> {
     let line_of = |byte: usize| -> usize {
         src.get(..byte)
             .map_or(0, |s| s.bytes().filter(|&b| b == b'\n').count())
     };
-    // Edits whose replacement lands on each source line (start line), in source order.
-    let mut by_line: BTreeMap<usize, Vec<&SpanEdit>> = BTreeMap::new();
-    // The last source line each multi-line edit CONSUMES (its `hi`'s line): lines strictly
-    // between an edit's start and end are absorbed into the spliced replacement, so they are
-    // not emitted on their own.
-    let mut consumed_through: BTreeMap<usize, usize> = BTreeMap::new();
+    let mut groups: BTreeMap<usize, EditGroup<'a>> = BTreeMap::new();
+    let mut current: Option<EditGroup<'a>> = None;
     for e in edits {
         let start = line_of(e.lo);
+        // The edit's last covered line: `hi` is exclusive, so the last byte is `hi-1`; an
+        // empty/zero-width span (hi==lo) covers only its start line.
         let end = line_of(e.hi.saturating_sub(1).max(e.lo));
-        by_line.entry(start).or_default().push(e);
-        if end > start {
-            let slot = consumed_through.entry(start).or_insert(end);
-            *slot = (*slot).max(end);
+        match &mut current {
+            // Abut/overlap test: the edit starts on or before the group's current last line ⇒
+            // it shares the group's rendered line (`normalise_edits` already dropped fully
+            // contained edits and asserts no PARTIAL overlap, so `start <= last_line` here
+            // means "same rendered line", never a crossing splice).
+            Some(g) if start <= g.last_line => {
+                g.last_line = g.last_line.max(end);
+                g.members.push(e);
+            }
+            // A gap ⇒ flush the running group and open a fresh one.
+            _ => {
+                if let Some(g) = current.take() {
+                    groups.insert(g.first_line, g);
+                }
+                current = Some(EditGroup {
+                    first_line: start,
+                    last_line: end,
+                    members: vec![e],
+                });
+            }
         }
     }
+    if let Some(g) = current.take() {
+        groups.insert(g.first_line, g);
+    }
+    groups
+}
+
+/// Emit the apply artifact by splicing the span edits into the source bytes (arch-1, note
+/// 214; P1 fix 21E). Edits that collapse onto one rendered line are processed as a GROUP
+/// ([`group_edits`]) and spliced **right-to-left** (highest `lo` first) so an earlier edit's
+/// byte offsets stay valid as later ones splice. A provenance comment is appended to each
+/// rendered line that carries ≥1 edit (d-3) — disclosing every group member's replaced
+/// original — IFF the line end is comment-safe ([`comment_safe`]).
+///
+/// `edits` must be the normalised (sorted, non-partial-overlap) set from [`normalise_edits`].
+fn emit_span_edits(src: &str, edits: &[SpanEdit]) -> String {
+    // Group edits that share a rendered line (the P1 fix: a multi-line edit whose consumed span
+    // contains a later edit's start line MUST splice both, or the second is orphaned and the
+    // artifact corrupts — note 214 §9 hunt-7). Keyed by the group's first source line.
+    let groups = group_edits(src, edits);
 
     // Byte offset of each source line's first byte (index = line number).
     let line_start: Vec<usize> = std::iter::once(0)
@@ -1593,70 +1638,89 @@ fn emit_span_edits(src: &str, edits: &[SpanEdit]) -> String {
         .collect();
 
     let mut out = String::from(render::apply::apply_header());
+    // f-1 invariant: every edit is applied EXACTLY once. Structurally guaranteed —
+    // `group_edits` puts each edit in exactly one group, and the walk visits every group
+    // (consecutive groups never share a line, so the post-group jump lands at or before the
+    // next group's first line). `spliced_count` is the runtime tripwire (counted in release
+    // too); the `debug_assert_eq!` below is the loud debug catch for a future regression.
+    let mut spliced_count = 0usize;
     let total_lines = src.lines().count();
     let mut i = 0usize;
     while i < total_lines {
-        match by_line.get(&i) {
+        match groups.get(&i) {
             None => {
-                // No edit starts here ⇒ verbatim (the default, by construction).
+                // No edit-group starts here ⇒ verbatim (the default, by construction).
                 if let Some(line) = src.lines().nth(i) {
                     out.push_str(line);
                     out.push('\n');
                 }
                 i += 1;
             }
-            Some(line_edits) => {
-                let last_consumed = consumed_through.get(&i).copied().unwrap_or(i);
-                // The spliced region's source bytes: from this line's start to the last
-                // consumed line's end (covering any multi-line edit). Splice each edit
-                // right-to-left within it (offsets relative to the region start).
-                let region_lo = line_start.get(i).copied().unwrap_or(0);
+            Some(group) => {
+                // The spliced region's source bytes: from the group's first line start to its
+                // last line end (covering every member, multi-line ones included). Splice each
+                // member right-to-left within it (offsets relative to the region start).
+                let region_lo = line_start.get(group.first_line).copied().unwrap_or(0);
                 let region_hi = line_start
-                    .get(last_consumed + 1)
+                    .get(group.last_line + 1)
                     .copied()
                     .map_or(src.len(), |start| start.saturating_sub(1)); // exclude the '\n'
                 let mut spliced = src
                     .get(region_lo..region_hi)
                     .unwrap_or_default()
                     .to_string();
-                // Right-to-left so earlier offsets stay valid.
-                let mut ordered: Vec<&&SpanEdit> = line_edits.iter().collect();
+                // Right-to-left so earlier offsets stay valid (members are span-disjoint).
+                let mut ordered: Vec<&&SpanEdit> = group.members.iter().collect();
                 ordered.sort_by_key(|e| core::cmp::Reverse(e.lo));
                 for e in &ordered {
                     let lo = e.lo.saturating_sub(region_lo).min(spliced.len());
                     let hi = e.hi.saturating_sub(region_lo).min(spliced.len()).max(lo);
                     spliced.replace_range(lo..hi, &e.replacement);
+                    spliced_count += 1;
                 }
                 out.push_str(&spliced);
-                // d-3: append the provenance comment disclosing the replaced originals, IFF
-                // the line end is comment-safe.
+                // d-3: append the provenance comment disclosing every member's replaced
+                // original, IFF the post-splice line end is comment-safe.
                 if comment_safe(&spliced) {
-                    let originals: Vec<String> = {
-                        // Source order (left-to-right) for the disclosure.
-                        let mut es: Vec<&&SpanEdit> = line_edits.iter().collect();
-                        es.sort_by_key(|e| e.lo);
-                        es.iter().map(|e| e.original.clone()).collect()
-                    };
+                    // Source order (left-to-right) for the disclosure.
+                    let mut es: Vec<&&SpanEdit> = group.members.iter().collect();
+                    es.sort_by_key(|e| e.lo);
+                    let originals: Vec<String> = es.iter().map(|e| e.original.clone()).collect();
                     out.push_str(&render::apply::provenance_comment(&originals));
                 }
                 out.push('\n');
-                i = last_consumed + 1;
+                i = group.last_line + 1;
             }
         }
     }
+    debug_assert_eq!(
+        spliced_count,
+        edits.len(),
+        "span-edit count mismatch: {spliced_count} spliced vs {} collected — an edit was \
+         orphaned or double-applied (P1 21E f-1 invariant)",
+        edits.len(),
+    );
     out
 }
 
-/// Is appending a ` # …` comment to this rendered line safe (d-3 SAFETY RULE)? A trailing
-/// `#` begins a comment-to-end-of-line after a complete command, but NOT when the line ends
-/// inside a shape where `#` is not a comment boundary: a backslash-continuation (`\` at end
-/// ⇒ the next line continues the command, so `#` would be appended mid-command), or a line
-/// involving a heredoc operator (`<<` ⇒ the following lines are the heredoc body, not new
-/// commands — a `#` here is inside neither). Conservative: when unsure, DROP the comment
-/// (artifact correctness over provenance prose; the OOB verdict lane still discloses). A
-/// heredoc-bearing leaf is already refused an edit upstream (d-6), so a heredoc operator only
-/// reaches here on a VERBATIM (un-edited) line that happens to share the rendered line — we
-/// still guard it.
+/// Is appending a ` # …` comment to this rendered line safe (d-3 SAFETY RULE; P1 fix 21E f-2)?
+/// A trailing `#` begins a comment-to-end-of-line after a complete command, but NOT when the
+/// line ends inside a shape where `#` is not a comment boundary:
+///   - INSIDE AN OPEN QUOTE — the f-2 fix. A grouped/multi-line splice can leave the rendered
+///     line ending mid-string (e.g. `… install -y "c` when a second leaf's quoted operand was
+///     half-consumed by a now-fixed orphan, OR any genuinely quote-crossing rendered line). A
+///     `#` there lands INSIDE the literal, not as a comment — silently corrupting the operand
+///     (and, with an odd embedded quote, breaking `dash -n` outright). A minimal POSIX
+///     quote-state machine ([`region_ends_in_quote`]) decides this.
+///   - A BACKSLASH-CONTINUATION (`\` at end) ⇒ the next line continues the command, so `#`
+///     would be appended mid-command.
+///   - A HEREDOC operator (`<<`) ⇒ the following lines are the heredoc body; a `#` here is in
+///     neither a command nor a comment. (A heredoc-bearing leaf is refused an edit upstream
+///     — d-6 — so `<<` only reaches here on a verbatim line sharing the rendered line; we still
+///     guard it. We keep the simple substring check: no heredoc parsing, per the f-2 scope.)
+///
+/// Conservative: when unsure, DROP the comment (artifact correctness over provenance prose; the
+/// OOB verdict lane still discloses).
 fn comment_safe(rendered_line: &str) -> bool {
     let trimmed = rendered_line.trim_end();
     if trimmed.ends_with('\\') {
@@ -1665,7 +1729,58 @@ fn comment_safe(rendered_line: &str) -> bool {
     if rendered_line.contains("<<") {
         return false; // a heredoc operator: following lines are the body, not commentable here
     }
+    if region_ends_in_quote(rendered_line) {
+        return false; // ends inside an open '…' or "…": a `#` would land inside the literal
+    }
     true
+}
+
+/// Does this rendered line end INSIDE an open single- or double-quote (P1 fix 21E f-2)? A
+/// minimal POSIX quote-state scan — single-quote (`'…'`: every byte literal until the next
+/// `'`), double-quote (`"…"`: `\` escapes the next byte, `"` closes), and an unquoted backslash
+/// (escapes the next byte, so `\'`/`\"` are literals, not quote toggles). NOT a lexer and NOT a
+/// heredoc/expansion parser (the `<<` guard stays separate): it tracks ONLY the three quote
+/// states needed to answer "is a trailing `#` inside a string literal?". Returns true when the
+/// scan finishes still inside a quote (or on a dangling unquoted `\`, which is its own
+/// continuation hazard the trailing-`\` check also covers). Mirrors the dash semantics
+/// [`dorc_syntax::sem::single_quote`] encodes (single-quotes suppress all escaping).
+fn region_ends_in_quote(line: &str) -> bool {
+    #[derive(PartialEq)]
+    enum Q {
+        Out,
+        Single,
+        Double,
+    }
+    let mut state = Q::Out;
+    let mut escaped = false; // previous byte was an unquoted/in-double `\`
+    for ch in line.chars() {
+        if escaped {
+            // The `\` consumed this byte as a literal — no state change (a `\'` outside or
+            // `\"` inside double never toggles a quote).
+            escaped = false;
+            continue;
+        }
+        match state {
+            Q::Out => match ch {
+                '\\' => escaped = true,
+                '\'' => state = Q::Single,
+                '"' => state = Q::Double,
+                _ => {}
+            },
+            // Single-quotes suppress ALL escaping (dash): only a `'` closes, `\` is literal.
+            Q::Single => {
+                if ch == '\'' {
+                    state = Q::Out;
+                }
+            }
+            Q::Double => match ch {
+                '\\' => escaped = true, // escapes the next byte (incl. a `"`)
+                '"' => state = Q::Out,
+                _ => {}
+            },
+        }
+    }
+    state != Q::Out || escaped
 }
 
 /// Does a leaf command carry a **heredoc** redirect (`<<EOF`)? The render-capability refusal
@@ -2905,5 +3020,145 @@ apt_get__check() {
         }
         assert!(marked >= 1, "the group-redirected install is marked Stdout");
         assert!(quiet >= 1, "the lone curl install is quiet");
+    }
+
+    // === P1 fix 21E: the comment-safety quote machine (f-2) + edit grouping (f-1) ===
+
+    #[test]
+    fn region_ends_in_quote_tracks_posix_quote_state() {
+        // f-2: the trailing-`#` safety hinges on "does the rendered line end inside a string
+        // literal?". These pin the minimal POSIX quote machine against dash's semantics.
+        // OUTSIDE any quote ⇒ safe (false):
+        assert!(!region_ends_in_quote("true; true"), "balanced, no quote");
+        assert!(
+            !region_ends_in_quote(r#"echo "closed""#),
+            "closed double-quote"
+        );
+        assert!(
+            !region_ends_in_quote("echo 'closed'"),
+            "closed single-quote"
+        );
+        assert!(
+            !region_ends_in_quote(r#"echo "a 'nested' b""#),
+            "single inside a closed double does not leak"
+        );
+        assert!(
+            !region_ends_in_quote(r#"echo \""#),
+            "an unquoted-escaped quote is a literal, not an opener"
+        );
+        // INSIDE an open quote ⇒ unsafe (true) — a `#` would land in the literal:
+        assert!(
+            region_ends_in_quote(r#"apt-get install -y "c"#),
+            "open double-quote"
+        );
+        assert!(
+            region_ends_in_quote("apt-get install -y 'c"),
+            "open single-quote"
+        );
+        assert!(
+            region_ends_in_quote(r#"echo "a'b x"; foo "c"#),
+            "the SECOND double-quote is still open (the P1 odd-quote shape)"
+        );
+        assert!(
+            region_ends_in_quote(r#"echo "a\""#),
+            "a `\\\"` inside double does NOT close it ⇒ still open"
+        );
+        // A single-quote suppresses escaping: `\` is literal, so the quote stays open.
+        assert!(
+            region_ends_in_quote(r"echo 'a\"),
+            "backslash is literal inside single-quotes ⇒ quote still open"
+        );
+        // A dangling unquoted backslash is its own continuation hazard ⇒ unsafe.
+        assert!(
+            region_ends_in_quote(r"echo a\"),
+            "dangling unquoted backslash"
+        );
+    }
+
+    #[test]
+    fn comment_safe_refuses_open_quote_line() {
+        // The f-2 wiring: `comment_safe` now refuses a line that ends inside an open quote,
+        // on TOP of the prior trailing-`\` and `<<` rejections.
+        assert!(comment_safe("true; true"), "balanced ⇒ safe");
+        assert!(
+            !comment_safe(r#"true; apt-get install -y "c"#),
+            "ends inside an open double-quote ⇒ refuse (the orphan-corruption shape)"
+        );
+        assert!(!comment_safe(r"echo foo \"), "trailing backslash ⇒ refuse");
+        assert!(!comment_safe("cat <<EOF"), "heredoc operator ⇒ refuse");
+    }
+
+    #[test]
+    fn group_edits_merges_abutting_multiline_edits() {
+        // f-1: two edits whose line ranges ABUT (edit B starts on edit A's end line) must
+        // land in ONE group — the pre-fix orphan. Source (4 lines, 0-indexed):
+        //   0: apt-get install -y "a
+        //   1: b"; apt-get install -y "c
+        //   2: d"
+        // Edit A spans lines 0-1, edit B spans lines 1-2. Build the two span edits by hand
+        // (byte offsets into `src`) and assert they group into a single 0..2 region.
+        let src = "apt-get install -y \"a\nb\"; apt-get install -y \"c\nd\"\n";
+        let a_lo = 0;
+        let a_hi = src.find("\";").unwrap() + 1; // through the closing `"` of operand a/b
+        let b_lo = src.find("; ").unwrap() + 2; // the second `apt-get`
+        let b_hi = src.rfind('"').unwrap() + 1; // through the closing `"` of operand c/d
+        let edits = normalise_edits(vec![
+            SpanEdit {
+                lo: a_lo,
+                hi: a_hi,
+                replacement: "true".into(),
+                original: "apt-get install -y \"a\nb\"".into(),
+            },
+            SpanEdit {
+                lo: b_lo,
+                hi: b_hi,
+                replacement: "true".into(),
+                original: "apt-get install -y \"c\nd\"".into(),
+            },
+        ]);
+        let groups = group_edits(src, &edits);
+        assert_eq!(
+            groups.len(),
+            1,
+            "the two abutting edits form ONE group: {groups:#?}",
+            groups = groups.keys()
+        );
+        let g = groups.get(&0).expect("group keyed by its first line (0)");
+        assert_eq!(
+            g.last_line, 2,
+            "the group covers through line 2 (operand c/d's close)"
+        );
+        assert_eq!(g.members.len(), 2, "both edits are members (none orphaned)");
+    }
+
+    #[test]
+    fn group_edits_keeps_disjoint_edits_separate() {
+        // f-1 counter-check: edits on NON-adjacent lines stay in distinct groups (the fix
+        // must not over-merge). Two single-line installs separated by a blank line.
+        let src = "apt-get install -y nginx\n\napt-get install -y curl\n";
+        let a_hi = src.find('\n').unwrap();
+        let b_lo = src.rfind("apt-get").unwrap();
+        let b_hi = src.rfind("curl").unwrap() + "curl".len();
+        let edits = normalise_edits(vec![
+            SpanEdit {
+                lo: 0,
+                hi: a_hi,
+                replacement: "true".into(),
+                original: "apt-get install -y nginx".into(),
+            },
+            SpanEdit {
+                lo: b_lo,
+                hi: b_hi,
+                replacement: "true".into(),
+                original: "apt-get install -y curl".into(),
+            },
+        ]);
+        let groups = group_edits(src, &edits);
+        assert_eq!(
+            groups.len(),
+            2,
+            "disjoint-line edits are NOT merged: {:#?}",
+            groups.keys()
+        );
     }
 }
