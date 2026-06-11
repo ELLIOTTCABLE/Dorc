@@ -74,7 +74,7 @@
   paper proves the underlying math.
 
 - **finding-6 (why-provenance is too coarse exactly at licenses) — +SURE.** Green–
-  Tannen's why-vs-how passage (p32): two output tuples can share why-provenance `{r,s}`
+  Tannen's why-vs-how passage (sheet 4 §4): two output tuples can share why-provenance `{r,s}`
   yet be computed `from s alone` and `from r alone` respectively; "in a provenance
   application in which one of r or s is perhaps less trusted or less usable than the
   other the effect can be different … and this cannot be detected by why-provenance."
@@ -212,3 +212,91 @@ Read for the receipts plane:
   always distributive.
 - Use the corrected, weaker Thm 4.2 and do not claim a tight info-flow bound
   (finding-3).
+
+---
+
+## Green / Karvounarakis / Tannen, "Provenance Semirings" (PODS 2007) — FULL READ (predecessor), UC Davis author copy
+
+Read+graded full by the predecessor agent; banked here verbatim from its turn-1
+scratch. Source: `[A-green-karvounarakis-tannen-provenance-semirings-2007]`. (Housekeeping
+for the conductor: the predecessor first registered this paper at a `B-` slug by
+erroneous carry-over of note-220's access-grade, then re-registered it correctly at the
+`A-` slug after the full read; the stale `B-green-karvounarakis-tannen-provenance-semirings-2007`
+key + its archived PDF remain in the r22-rqA `sources.json` as an append-only artifact,
+cited nowhere — prune that one duplicate key + file.)
+
+What this paper is, for the receipts plane: the seminal source of the semiring
+provenance framework. It proves the mathematical fact the named `lineage ⊂ why ⊂ how`
+hierarchy rests on — the **factorization theorem** — and frames coarser provenance forms
+as principled, homomorphic coarsenings of a universal polynomial. It directly grounds
+the "coarsen safely" argument for Dorc's flat-lineage-on-values choice (220:vp-16/19) and
+the "store the minimal witness at licenses" choice (220:vp-17). See finding-5..7.
+
+Load-bearing excerpts:
+
+Locator note: the local copy is the author preprint — it carries the PODS'07 copyright
+block but NOT ACM printed folios (pp.31–40 in the proceedings). Locators below are
+extractor *sheet* indices (10 sheets total), verified by content search; the
+predecessor's "pN" were the same sheet indices. Conductor: if a folio-accurate cite is
+wanted, map sheet→folio as sheet N → p(30+N).
+
+> [A-green-karvounarakis-tannen-provenance-semirings-2007]:sheet 9 §Conclusions — the
+> paper's own framing of coarser-forms-as-coarsenings (relevance +SURE):
+> "Beyond the technical results, this paper can be regarded also as arguing that various
+> forms of K-relations, even multisets, provide coarser forms of provenance while the
+> polynomial and formal power series annotations are, by virtue of their 'universality'
+> (as illustrated by the factorization theorems) the most general form of annotation
+> possible with[in] the boundaries of semiring structures."
+
+> [A-green-karvounarakis-tannen-provenance-semirings-2007]:sheet 4 §4 — the why-vs-how
+> limitation, verbatim motivation for storing the minimal witness (relevance +SURE;
+> exact text re-verified on sheet 4):
+> "in Figure 5(b) (f, e) and (d, e) have the same why-provenance … However, the query
+> can also calculate (f, e) from s alone and (d, e) from r alone. In a provenance
+> application in which one of r or s is perhaps less trusted or less usable than the
+> other the effect can be different on (f, e) than on (d, e) and this cannot be detected
+> by why-provenance … we need to know not just which input tuples contribute but also
+> how they contribute."
+
+> [A-green-karvounarakis-tannen-provenance-semirings-2007]:sheet 4 §3 Prop 3.5 — the
+> algebraic license to coarsen (relevance +SURE):
+> "Let h : K → K' … The transformation given by h from K-relations to K'-relations
+> commutes with any RA+ query … q(h(R)) = h(q(R)) if and only if h is a semiring
+> homomorphism."
+> [a coarse view is the homomorphic image of the fine one exactly when the coarsening
+> map is a semiring homomorphism — this IS the safety condition for coarsening.]
+
+> [A-green-karvounarakis-tannen-provenance-semirings-2007]:sheet 4 §4 Thm 4.3 — the
+> factorization theorem (relevance ~SUSPECT):
+> "For any RA+ query q we have q(R) = Eval_v ∘ q(R̄)"
+> [any-semiring semantics factors through the universal provenance polynomial N[X];
+> stated sheet 4, the N^∞[[X]] datalog/power-series version on sheets 7–8.]
+
+> [A-green-karvounarakis-tannen-provenance-semirings-2007]:sheets 8–9 §9 Thm 9.2 — the
+> distributive-lattice containment collapse (relevance ~SUSPECT):
+> "If K is a distributive lattice then for any q1, q2 unions of conjunctive queries we
+> have q1 ⊑K q2 iff q1 ⊑B q2."
+> [for lattice-shaped annotation the finer structure adds nothing to containment —
+> corroborates avoiding how-polynomials in Dorc's lattice setting.]
+
+> [A-green-karvounarakis-tannen-provenance-semirings-2007]:sheet 4 fn — where the paper
+> coins the term (relevance ~SUSPECT):
+> "In contrast to why-provenance, the notion of provenance we propose could justifiably
+> be called how-provenance."
+
+Read for the receipts plane:
+- The Conclusion passage + Prop 3.5 together say: pick the cheapest representation that
+  is a homomorphic image of the universal one, and the coarsening is *provably*
+  information-preserving up to that image. Flat lineage on values (220:vp-16) is a
+  sanctioned coarsening, not accidental loss (finding-5).
+- The why-vs-how passage is the precise reason flat lineage is too coarse *at licenses*:
+  it cannot tell "licensed because of r alone" from "licensed because of s alone." Store
+  the minimal witness the license was granted on, at licenses only (220:vp-17,
+  finding-6).
+- Thm 9.2 is a hard-theorem corroboration that, in a lattice setting, the polynomial
+  machinery buys nothing on containment — reinforcing "don't reach for how-polynomials"
+  (220:vp-19, finding-7) beyond the mere absence-of-consumer argument.
+- Recursion handling (formal power series `N^∞[[X]]`, finite iff no cycle of unit rules
+  through the tuple) is the formalism behind Soufflé's "min-proof-height picks one of
+  infinitely many proofs" trick — -GUESS the height-annotation is an engineering shortcut
+  around the power-series machinery (relevant to 220:vp-18's recompute-on-retraction).
