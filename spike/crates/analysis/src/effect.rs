@@ -1503,6 +1503,28 @@ command__check() {
     }
 
     #[test]
+    fn var_resolved_redirect_target_gens_concrete_cell_not_top() {
+        // Companion to var_resolved_redirect_target_invalidates_query (21H §9 correction): that
+        // test's lone `valid: false` ALSO passes if `$logfile` had degraded to ⊤ — a ⊤ target
+        // invalidates the Query too (top_target_redirect_poisons_downstream_query). The cheap
+        // discriminator is the disclosure: the resolved-literal arm gens a CONCRETE file cell and
+        // fires NO `dq-redir-target-top` (only the ⊤ arm discloses — pinned by
+        // top_target_redirect_discloses_not_silent). Pinning its ABSENCE here proves the value
+        // plane RESOLVED `$logfile` ⇒ `app.log`, never that it silently collapsed to ⊤.
+        let mut i = Interner::default();
+        let idx = package_and_query_index(&mut i);
+        let diags = classify_src_diags(
+            "logfile=app.log\n: > \"$logfile\"\ncommand -v nginx",
+            &mut i,
+            &idx,
+        );
+        assert!(
+            !has_code(&diags, "dq-redir-target-top"),
+            "a var-RESOLVED redirect target takes the concrete-cell path (no ⊤ disclosure): {diags:?}"
+        );
+    }
+
+    #[test]
     fn devnull_redirect_does_not_invalidate_query() {
         // The exemption set (the charter unit pin): `>/dev/null` is the discard sink — NOT a
         // file-write effect — so it gens no cell and a downstream Query stays valid. This is
