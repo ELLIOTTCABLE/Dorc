@@ -52,6 +52,32 @@ const MIGRATED_PAYLOADS: &[&str] = &[
     "CmdsubOperandTop",
     "SiteUnresolvable",
     "RenderHeredocRefused",
+    // B4 sweep: former diag::legacy survivors
+    "CmdsubInnerNonleaf",
+    "RedirTargetTop",
+    "Depth2PositionalUnthreaded",
+    // B4 sweep: syntax/parser.rs
+    "SyntaxUnsupported",
+    "SyntaxMalformed",
+    // B4 sweep: analysis/cfg.rs
+    "CfgTopNode",
+    "CfgErexitUnknown",
+    "CfgInlineRefused",
+    "CfgBuiltinShadowed",
+    // B4 sweep: analysis/effect.rs
+    "EffectKindDisagreement",
+    // B4 sweep: oracle/lib.rs
+    "OracleNonLiteralKind",
+    "OracleMissingKind",
+    "OracleMissingProbe",
+    "OracleBadEffect",
+    "OracleTopLevelMutator",
+    "OracleNonDeclaration",
+    "OracleDuplicateEffect",
+    "OracleProbeSelectRoundtrip",
+    // B4 sweep: oracle/check/parser.rs
+    "CheckOutOfDialect",
+    "CheckUnterminated",
 ];
 
 /// Every catalog slug (the stable wire string) — for the retire-guard and reachability. KEEP IN
@@ -61,6 +87,32 @@ const MIGRATED_SLUGS: &[&str] = &[
     "dq-cmdsub-operand-top",
     "dq-site-unresolvable",
     "render-heredoc-refused",
+    // B4 sweep: former diag::legacy survivors
+    "dq-cmdsub-inner-nonleaf",
+    "dq-redir-target-top",
+    "dq-depth-2-positional-unthreaded",
+    // B4 sweep: syntax/parser.rs
+    "syntax-unsupported",
+    "syntax-malformed",
+    // B4 sweep: analysis/cfg.rs
+    "cfg-top-node",
+    "cfg-errexit-unknown",
+    "cfg-inline-refused",
+    "cfg-builtin-shadowed",
+    // B4 sweep: analysis/effect.rs
+    "effect-kind-disagreement",
+    // B4 sweep: oracle/lib.rs
+    "oracle-non-literal-kind",
+    "oracle-missing-kind",
+    "oracle-missing-probe",
+    "oracle-bad-effect",
+    "oracle-top-level-mutator",
+    "oracle-non-declaration",
+    "oracle-duplicate-effect",
+    "oracle-probe-selector-roundtrip",
+    // B4 sweep: oracle/check/parser.rs
+    "check-out-of-dialect",
+    "check-unterminated",
 ];
 
 /// The self-cleaning ALLOW-LIST (`226` §1): every legacy give-up code still on
@@ -75,34 +127,10 @@ const MIGRATED_SLUGS: &[&str] = &[
 /// Seeded at this HEAD by inventorying every `DiagCode("…")` literal across the crate sources
 /// (the conductor's re-inventory mandate — `21Z`/`22B` site counts were stale). The migrated
 /// three are deliberately ABSENT (they moved to the spine).
-const LEGACY_ALLOW_LIST: &[&str] = &[
-    // syntax/parser.rs
-    "syntax-unsupported",
-    "syntax-malformed",
-    // analysis/cfg.rs
-    "cfg-top-node",
-    "cfg-errexit-unknown",
-    "cfg-inline-refused",
-    "cfg-builtin-shadowed",
-    // analysis/effect.rs
-    "effect-kind-disagreement",
-    // analysis/effect.rs diag::legacy survivors (constructed via the legacy module's consts)
-    "dq-cmdsub-inner-nonleaf",
-    "dq-redir-target-top",
-    "dq-depth-2-positional-unthreaded",
-    // oracle/lib.rs
-    "oracle-non-literal-kind",
-    "oracle-missing-kind",
-    "oracle-missing-probe",
-    "oracle-bad-effect",
-    "oracle-top-level-mutator",
-    "oracle-non-declaration",
-    "oracle-duplicate-effect",
-    "oracle-probe-selector-roundtrip",
-    // oracle/check.rs
-    "check-out-of-dialect",
-    "check-unterminated",
-];
+// B4 sweep complete: all 20 codes migrated onto the Diag spine. The allow-list is now empty
+// (all legacy DiagCode("…") string-constructions have been replaced). Self-cleaning: a new
+// un-migrated code that introduces a DiagCode("…") literal must be declared here immediately.
+const LEGACY_ALLOW_LIST: &[&str] = &[];
 
 /// The crate-`src` roots scanned (the emit surface). The workspace's analyzer crates; `core`
 /// itself is included for the `diag.rs` retire-guard + the `legacy` module's consts.
