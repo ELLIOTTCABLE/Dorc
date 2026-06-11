@@ -190,6 +190,32 @@ warm-ups (d×d host-flip fixture; var-resolved redirect case) → 22x synthesis 
   Conductor watch-item (-GUESS): if rerun-to-fixpoint becomes the change-handling
   story, the per-tier epoch vector (220 vp-8) demotes from invalidation-machinery to
   a pure dashboard/why hint — don't build it load-bearing.
+- ru-16 (human; GATE-2 PASSED): need-2 (hostsim Finding in-catalog), need-3 (retire
+  arch-5 into arch-4's tail — approved "(sad)"; the projection-sidecar door stays
+  reserved for the o11y future), need-4 (verdicts-everywhere, no trace-pinning),
+  need-5 (third d×d fixture), need-6 (build GO, ordering arch-1 → s-2-early/arch-3 →
+  arch-2 → arch-4-thin) all APPROVED. need-1 (severity): human leans severity-as-TYPE
+  (capability-gated minting: "need an elision-site-license in-hand to mint a
+  CRITICAL-tier error"), vibes-grade, defers to literature. Conductor resolution
+  (proceeding under it; human veto window open): FACTOR the two axes — (a) treatment
+  severity = registry-declared data + un-overridable floor tier (the surveyed
+  consensus; no system gates TIERS by capability, and tier-gating polices severity
+  INFLATION, the safe/noisy direction, while deflation — the dangerous one — is
+  policed by completeness+expect, not constructors); (b) the human's evidence
+  instinct lands structurally anyway: catalog codes are exhaustive-enum variants
+  whose TYPED PAYLOADS demand exactly the objects the diagnostic cites (a
+  probe-blaming error takes a ProbeRecord; license-adjacent errors take the
+  site/license evidence) — make-bad-states-unrepresentable, near-zero cost at
+  legitimate sites, impossible at fabricating sites. Builders flag-up any emit site
+  where the natural evidence is NOT in hand (design smell, surfaced not threaded).
+  ~SUSPECT on the asymmetry argument; revisit at retrofit time if payload-typing
+  alone doesn't give the constraint-feel wanted.
+- WAVE-1 DISPATCHED (post-GATE-2, ru-15-lean briefs): B1 arch-1 (arena + Top(cause) +
+  erasability gate + unord-newtype + canary + digest) → worktree b1-arch1, branch
+  ai/r22-arch1 @ 69c21ab. B2 third d×d fixture (outer-live × inner-diverged, 215 §5)
+  → worktree b2-fixture3, branch ai/r22-fixture3 @ 69c21ab. Crosscheck x-1 (hostile
+  pass on the gate, Fable) queued for post-B1-harvest per ru-14; x-2 queued at
+  arch-2; x-3 demoted to B-brief hunt-list item.
 - ru-14 (human, end-of-window economics): be judicious with adversarial-crosscheck /
   Fable-class spend for the remainder of the window — his intuition stands that one
   well-targeted pair at the right juncture is very high value; so fewer, sharper

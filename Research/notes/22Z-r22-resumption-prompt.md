@@ -74,14 +74,18 @@ if the human re-hands it): quarantine 223. Do NOT read quarantine otherwise.
 
 ## Queue (mirror of TaskList at update time)
 
-DONE since v1: digestion (all five notes full-read by conductor; honesty flags in
-22A §8) · plans/22A synthesis COMMITTED (`61fa8e4` — 13 conclusions, arc re-scopes,
-gate2-ask-1..5) · tracked .claude/research scratch REMOVED (`d4277e0`; ~3.2MB
-untracked residue on disk left for the human, incl. rqA staging PDFs) · W1 fixtures
-HARVESTED (corpus 98, chain green). NOW: GATE-2 presented in-chat, WAITING on human
-adjudication of 22A §1 (re-scoped arcs) + §2 (gate2-ask-1..5). After go: arch-1
-first (the gate lands with the arena's first commit), arch-3's s-2 widening early,
-arch-2, arch-4-thin; crosscheck budget ~25-30%, first targets x-1..x-3 (22A §1).
+GATE-2 PASSED (ru-16, notes/224 §7): need-2..6 approved; need-1 resolved by
+conductor factoring (registry severity + floor tier + typed enum-variant payloads
+as the evidence mechanism; human veto window open). BUILD PHASE LIVE, wave-1
+dispatched: B1 arch-1 (worktree b1-arch1, branch ai/r22-arch1 @ 69c21ab — arena +
+Top(cause) + adversarial erasability gate + canary + unord-newtype + digest,
+contract in its brief + 22A §1) · B2 third d×d fixture (b2-fixture3 @ 69c21ab).
+Post-B1-harvest: x-1 Fable hostile pair on the gate (ru-14: judicious spend — x-2
+at arch-2 needs fr-2 first; x-3 demoted to hunt-list). Wave-2 after B1: s-2
+widening + arch-3 catalog retrofit. Wave-3: arch-2 then arch-4-thin (+ traceparent
+value-format tail; read OTel env-carriers spec first). Prompt style per ru-15
+(lean briefs). Conductor context was ~600k/1M at dispatch — if you are a successor:
+22A is the compressed research truth; Grep-slice 225-229, never wholesale re-read.
 #7 keep this file current.
 
 ## GATE state
