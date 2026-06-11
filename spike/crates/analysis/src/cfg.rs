@@ -27,7 +27,7 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
-use dorc_core::{AstId, Carrier, Channel, DiagCode, Diagnostic, Span};
+use dorc_core::{AstId, BytePos, Carrier, Channel, DiagCode, Diagnostic, Span};
 use dorc_syntax::{
     Ast, NodeKind, WordPart,
     ast::{CaseArm, ElseIf, RedirOp, RedirTarget},
@@ -38,6 +38,24 @@ use crate::lattice::Powerset;
 /// Diagnostic codes this module emits (greppable; `ch-catalog`).
 const CFG_TOP: DiagCode = DiagCode("cfg-top-node");
 const CFG_ERREXIT_TOP: DiagCode = DiagCode("cfg-errexit-unknown");
+/// arch-2 (brk-2): a call to an eligible-but-over-budget / refused funcdef stays an
+/// ordinary unmodeled command (`Opaque`), but the refusal is surfaced (never silent —
+/// proportional degradation, `211` §1). Each variant names *why* the splice was refused.
+const CFG_INLINE_REFUSED: DiagCode = DiagCode("cfg-inline-refused");
+
+/// arch-2 inlining budgets (`211` §1 / `209` brk-2; pre-spelled in the round-21 charter).
+/// Over-budget ⇒ the call stays `Opaque` WITH a [`CFG_INLINE_REFUSED`] diagnostic naming the
+/// exceeded budget — proportional degradation, never a silent cliff.
+mod inline_budget {
+    /// Maximum inline-splice depth (a call inside an inlined body inside an inlined body is
+    /// depth 2; deeper ⇒ refuse). Keeps the recursion-stack shallow and the spliced-node
+    /// count bounded.
+    pub(super) const MAX_DEPTH: u32 = 2;
+    /// Maximum spliced CFG nodes for ONE call site (the body's whole lowering, recursively).
+    pub(super) const MAX_NODES_PER_SITE: usize = 64;
+    /// Maximum spliced CFG nodes across the WHOLE book (all call sites summed).
+    pub(super) const MAX_NODES_PER_BOOK: usize = 1024;
+}
 
 // ===========================================================================
 // Public types
@@ -144,6 +162,25 @@ pub struct Cfg {
     /// mints a `Replace`/`Omit` license (`plan::disposition_for`). The recorded floor
     /// the member-elision slice (`209` brk-1 (b)) later lifts.
     in_loop: Vec<bool>,
+    /// Per-node: lowered as part of a function-body SPLICE at a call site (arch-2, brk-2).
+    /// Such a `Command` is effect-bearing (its mutations gen into reaching-defs exactly as
+    /// inline code would — `i-5`), reachable from entry (un-detaching the body — the find-7
+    /// fix), and probe-resolvable as a sub-record OF THE CALL (`site N.M`, `i-4`); but it is
+    /// NOT a plan/apply Step LEAF of its own (`i-3`): its source span belongs to the SHARED
+    /// definition, which every call site reuses, so editing it for one call would rewrite the
+    /// others (and the definition). The render/substitution unit is the CALL leaf; a spliced
+    /// body site is excluded from the leaf list exactly like an expansion-internal `$()` body
+    /// command. (`spliced_internal ⊆ ¬is_expansion_internal`: a `$()` inside a spliced body is
+    /// flagged BOTH; both exclude it from the leaf set.)
+    spliced_internal: Vec<bool>,
+    /// arch-2 (`i-1`/`i-3`/`i-4`): a CALL [`CfgNodeKind::Command`] node → the ordered list of
+    /// body LEAF [`Command`](CfgNodeKind::Command) CFG nodes the splice produced for it (its
+    /// own spliced copy; a transitively-inlined body's leaves are flattened in here too — the
+    /// call's WHOLE effect-bearing leaf set). Empty for a non-call command. The all-or-nothing
+    /// CALL license (`plan`) aggregates these sites' classifications; the probe emits one
+    /// `site N.M` sub-record per body site (M = the index into this list). `BTreeMap` for
+    /// `inv-determinism`.
+    call_body_sites: BTreeMap<CfgNodeId, Vec<CfgNodeId>>,
     /// Per-node: the unvouched output observables this node's *context* consumes
     /// (note 16J, `inv-superposition`). Computed during lowering — the single
     /// exhaustive structural traversal — so it is **total over nodes**: an empty
@@ -204,6 +241,39 @@ impl Cfg {
     #[must_use]
     pub fn in_loop_body(&self, id: CfgNodeId) -> bool {
         self.in_loop[id.index()]
+    }
+
+    /// Was this node lowered as part of a function-body SPLICE at a call site (arch-2,
+    /// brk-2)? A spliced body `Command` is effect-bearing and probe-resolvable (a `site N.M`
+    /// sub-record OF THE CALL), but is NOT a plan/apply Step LEAF of its own — its span
+    /// belongs to the shared definition, so the CALL leaf is the render/substitution unit
+    /// (`i-3`). Excluded from the leaf set exactly like [`is_expansion_internal`]. A POST-call
+    /// command is NOT spliced-internal, so the value below an eliding call unlocks normally.
+    #[must_use]
+    pub fn is_spliced_internal(&self, id: CfgNodeId) -> bool {
+        self.spliced_internal[id.index()]
+    }
+
+    /// The ordered body LEAF [`CfgNodeKind::Command`] nodes a function-call splice produced for
+    /// the CALL node `id` (arch-2, brk-2; `i-3`/`i-4`), or `None` if `id` is not an inlined
+    /// call. The all-or-nothing CALL license (`plan`) aggregates these sites' classifications;
+    /// the probe ships one `site N.M` sub-record per entry (M = the list index). The list is
+    /// the call's WHOLE effect-bearing-and-probeable leaf set (a transitively-inlined body's
+    /// own leaves are flattened in, depth-bounded). In source order (`inv-determinism`).
+    #[must_use]
+    pub fn call_body_sites(&self, id: CfgNodeId) -> Option<&[CfgNodeId]> {
+        self.call_body_sites.get(&id).map(Vec::as_slice)
+    }
+
+    /// Every inlined-CALL node paired with its body-leaf list (arch-2; the whole splice map).
+    /// Deterministic key order (`BTreeMap`). Consumers: `effect::classify` (builds the call's
+    /// aggregate `SkipClass`), `plan::compile_probe`/`build_plan` (per-call sub-records + the
+    /// CALL Step). A call with an EMPTY body-leaf list (a wrapper of pure builtins only) is
+    /// still present — its call elides trivially (nothing effect-bearing to gate).
+    pub fn inlined_calls(&self) -> impl Iterator<Item = (CfgNodeId, &[CfgNodeId])> {
+        self.call_body_sites
+            .iter()
+            .map(|(&id, sites)| (id, sites.as_slice()))
     }
 
     /// The unvouched output observables (`Stdout`/`Stderr`) this node's context
@@ -356,6 +426,28 @@ struct Builder<'a> {
     /// arena-range pass in `lower_for`/`lower_while` (the same range trick
     /// `expansion_internal` uses); emitted on the [`Cfg`] for `plan`'s in-loop floor.
     in_loop: Vec<bool>,
+    /// Per-node: lowered as part of a function-body splice (arch-2). Set by an arena-range
+    /// pass in [`splice_funcdef_body`](Builder::splice_funcdef_body); emitted on the [`Cfg`]
+    /// so the leaf set excludes a spliced body command (the CALL is the render unit, `i-3`).
+    spliced_internal: Vec<bool>,
+    /// arch-2: the funcdef registry — name ↦ each definition's `(body AstId, def-start
+    /// BytePos)`, in source order. Built once in [`new`](Builder::new) over the AST. A name
+    /// with `len() > 1` is REDEFINED ⇒ every call to it ⊤-rejects (out of slice, `i-1`); a
+    /// call resolves to the LAST definition strictly BEFORE the call site (so a call before any
+    /// definition stays an ordinary unmodeled command). `BTreeMap` for `inv-determinism`.
+    funcdefs: BTreeMap<String, Vec<(AstId, BytePos)>>,
+    /// arch-2: the ACTIVE inline stack — the body-AstIds currently being spliced (call-stack
+    /// order). A call whose resolved body is already on this stack is direct/transitive
+    /// RECURSION ⇒ ⊤-reject naming the cycle (`i-1`). Pushed before splicing a body, popped
+    /// after.
+    inline_stack: Vec<AstId>,
+    /// arch-2: spliced CFG nodes minted across the WHOLE book so far (the per-book budget,
+    /// `i-1`). Each splice adds its node count; a splice that would exceed
+    /// [`inline_budget::MAX_NODES_PER_BOOK`] is refused (the call stays `Opaque`).
+    spliced_node_total: usize,
+    /// arch-2: the CALL node → its ordered body-leaf list, accumulated as splices complete
+    /// (`i-3`/`i-4`). Emitted on the [`Cfg`] as [`Cfg::call_body_sites`].
+    call_body_sites: BTreeMap<CfgNodeId, Vec<CfgNodeId>>,
     /// Per-node: the unvouched output observables this node's context consumes
     /// (note 16J). Populated in lowering by `mark_consumed_range` (the enclosing
     /// pipeline-stage / redirected-group context propagated to inner leaves, the
@@ -407,6 +499,11 @@ impl<'a> Builder<'a> {
             toggle: Vec::new(),
             expansion_internal: Vec::new(),
             in_loop: Vec::new(),
+            spliced_internal: Vec::new(),
+            funcdefs: collect_funcdefs(ast),
+            inline_stack: Vec::new(),
+            spliced_node_total: 0,
+            call_body_sites: BTreeMap::new(),
             consumed: Vec::new(),
             exit_to_enter: BTreeMap::new(),
             enter_to_exit: BTreeMap::new(),
@@ -426,6 +523,7 @@ impl<'a> Builder<'a> {
         self.toggle.push(None);
         self.expansion_internal.push(false);
         self.in_loop.push(false);
+        self.spliced_internal.push(false);
         self.consumed.push(Powerset::default());
         id
     }
@@ -630,7 +728,236 @@ impl<'a> Builder<'a> {
             let dead = self.fresh(id, CfgNodeKind::Merge);
             return dead;
         }
+
+        // arch-2 (brk-2): if this command's word resolves to a funcdef DEFINED EARLIER in
+        // this file, SPLICE a fresh lowering of the body's AST right after the CALL node, so
+        // the body becomes reachable (un-detaching it — the find-7 fix) and its effects flow
+        // downstream exactly as inline code would (`i-1`/`i-5`). The CALL `cmd` node stays the
+        // render/substitution LEAF (`i-3`); the spliced body commands are `spliced_internal`
+        // (not Step leaves) and become the call's per-site probe sub-records (`site N.M`,
+        // `i-4`). Eligibility (`i-1`) is strict + every exclusion loud; a non-eligible call
+        // stays an ordinary unmodeled command (`Opaque`, status quo). The argv (for positional
+        // binding) is resolved by the value plane (`i-2`), not here.
+        if let Some(call_exit) = self.try_inline_call(id, words, cmd) {
+            return call_exit;
+        }
         cmd
+    }
+
+    /// arch-2 (brk-2): try to splice a function-body inline at a call site. Returns
+    /// `Some(region-exit)` when the call was inlined (the body spliced after `cmd`, the body
+    /// leaves recorded against `cmd` for the plan/probe), or `None` when the command is not an
+    /// eligible call (it stays an ordinary unmodeled command — `Opaque`, status quo). Every
+    /// refusal is loud (a [`CFG_INLINE_REFUSED`] diagnostic) so the proportional degradation
+    /// is never silent (`211` §1). `i-1` eligibility, in order:
+    ///
+    /// * the command word is a fixed literal that names a funcdef with a definition strictly
+    ///   BEFORE this call (a call before any definition, or a non-funcdef word, ⇒ `None`: it
+    ///   might be a PATH binary — ordinary `Opaque`, no diagnostic);
+    /// * the name is defined exactly ONCE (`> 1` ⇒ ⊤-reject with a specific diagnostic —
+    ///   redefinition tracking is out of slice);
+    /// * the resolved body is not already on the active inline stack (direct/transitive
+    ///   RECURSION ⇒ ⊤-reject naming the cycle);
+    /// * inline depth `≤ MAX_DEPTH` (the stack depth);
+    /// * the body uses none of `$@`/`$*`/`shift`/`local` (out of slice — the diagnostic names
+    ///   the construct);
+    /// * no body WRITE-redirect (`>`/`>>`/`<>`) to anything but `/dev/null` (tc-M2: a body
+    ///   file-write is an unmodeled effect (y-1) inlining would EXPOSE as wrong-ambience);
+    /// * the splice fits the node budgets (`≤ MAX_NODES_PER_SITE` for this site, and the
+    ///   running total `≤ MAX_NODES_PER_BOOK`) — over-budget ⇒ `Opaque` WITH a diagnostic
+    ///   naming the exceeded budget.
+    fn try_inline_call(&mut self, id: AstId, words: &[AstId], cmd: CfgNodeId) -> Option<CfgNodeId> {
+        // The command word must be a fixed literal naming a defined function. A ⊤/expansion
+        // word, or a name no funcdef declares, is an ordinary unmodeled command (no diagnostic
+        // — it might be a PATH binary; `i-1`).
+        let name = self.word_literal(*words.first()?)?;
+        let defs = self.funcdefs.get(name)?;
+
+        let call_lo = self.span(id).lo;
+        // A name DEFINED MORE THAN ONCE ⇒ every call ⊤-rejects (redefinition tracking is out of
+        // slice). A specific, loud diagnostic; the call stays Opaque.
+        if defs.len() > 1 {
+            self.diags.push(Diagnostic::warning(
+                CFG_INLINE_REFUSED,
+                Some(self.span(id)),
+                format!(
+                    "function `{name}` is defined more than once; the call is not inlined \
+                     (redefinition tracking is out of the modeled subset) — it runs as an \
+                     ordinary unmodeled command"
+                ),
+            ));
+            return None;
+        }
+        // Resolve to the LAST definition strictly BEFORE the call. A definition AFTER the call
+        // (or none) ⇒ not a same-file-earlier call ⇒ ordinary unmodeled command (no diagnostic:
+        // a forward-call might legitimately be a PATH binary at that program point).
+        let body = defs
+            .iter()
+            .filter(|(_, def_lo)| def_lo.0 < call_lo.0)
+            .max_by_key(|(_, def_lo)| def_lo.0)
+            .map(|(body, _)| *body)?;
+
+        // RECURSION (direct or transitive within the active inline stack) ⇒ ⊤-reject naming the
+        // cycle. The call stays Opaque (the poison stays — nothing downstream wrongly elides).
+        if self.inline_stack.contains(&body) {
+            self.diags.push(Diagnostic::warning(
+                CFG_INLINE_REFUSED,
+                Some(self.span(id)),
+                format!(
+                    "recursive call to `{name}` (direct or transitive within the active inline \
+                     stack); not inlined — it runs as an ordinary unmodeled command"
+                ),
+            ));
+            return None;
+        }
+        // Inline DEPTH budget (`i-1`): the active stack is the inline depth so far.
+        if self.inline_stack.len() as u32 >= inline_budget::MAX_DEPTH {
+            self.diags.push(Diagnostic::warning(
+                CFG_INLINE_REFUSED,
+                Some(self.span(id)),
+                format!(
+                    "call to `{name}` exceeds the inline-depth budget ({}); not inlined — it \
+                     runs as an ordinary unmodeled command",
+                    inline_budget::MAX_DEPTH
+                ),
+            ));
+            return None;
+        }
+        // Out-of-slice body constructs (`i-1`): `$@`/`$*`/`shift`/`local` (the positional-array
+        // and dynamic-scope forms the value plane does not model). The diagnostic names the
+        // construct.
+        if let Some(construct) = self.body_uses_unmodeled_positional(body) {
+            self.diags.push(Diagnostic::warning(
+                CFG_INLINE_REFUSED,
+                Some(self.span(id)),
+                format!(
+                    "call to `{name}` not inlined: its body uses `{construct}` (out of the \
+                     modeled subset) — it runs as an ordinary unmodeled command"
+                ),
+            ));
+            return None;
+        }
+        // tc-M2 weld (the r1A capability-matrix crosscheck): a body containing a WRITE-shaped
+        // redirect (`>`/`>>`/`<>`) to anything but `/dev/null` ⇒ refuse. Inlining alone would
+        // EXPOSE an invisible body file-write as wrong-ambience (redirect-effects are unmodeled,
+        // y-1). `>/dev/null`, `2>&1`, fd-dup forms stay exempt (the devnull-exemption vocabulary).
+        if let Some(detail) = self.body_has_unmodeled_write_redirect(body) {
+            self.diags.push(Diagnostic::warning(
+                CFG_INLINE_REFUSED,
+                Some(self.span(id)),
+                format!(
+                    "call to `{name}` not inlined: its body has an unmodeled write-redirect \
+                     ({detail}) — it runs as an ordinary unmodeled command (tc-M2)"
+                ),
+            ));
+            return None;
+        }
+
+        // Eligible. Splice the body after the CALL node, depth-bounding the node count.
+        self.splice_funcdef_body(id, name, body, cmd)
+    }
+
+    /// arch-2: splice a fresh lowering of `body` (the funcdef body's AST) right after the CALL
+    /// node `cmd`, returning the spliced region's exit (so the caller sequences the
+    /// continuation onto the BODY's last node — POSIX: the call's continuation follows the
+    /// body, and the call's rc is the body's last rc, `i-5`). Records the body's effect-bearing
+    /// LEAF [`Command`](CfgNodeKind::Command) nodes against `cmd` (`call_body_sites`, for the
+    /// `plan` aggregate + `site N.M` probe records, `i-3`/`i-4`) and marks every spliced node
+    /// `spliced_internal` (excluded from the Step leaf set; the CALL is the render unit).
+    ///
+    /// Budgets (`i-1`, proportional degradation): the per-site budget is checked from the
+    /// body's AST-subtree node count (a conservative pre-estimate — AST descendants ≥ the CFG
+    /// leaf nodes the body lowers to; over-estimating is the safe refuse direction), and the
+    /// per-book budget from the running tally of actually-spliced nodes. Over either ⇒ refuse
+    /// WITH a diagnostic naming the exceeded budget; the call stays `Opaque` (no splice happens
+    /// — the estimate is checked BEFORE any node is allocated, so there is nothing to roll
+    /// back). `inv-determinism`: the arena is append-only and the body-leaf collection is in
+    /// arena (== source) order.
+    fn splice_funcdef_body(
+        &mut self,
+        id: AstId,
+        name: &str,
+        body: AstId,
+        cmd: CfgNodeId,
+    ) -> Option<CfgNodeId> {
+        // Per-site budget: a conservative AST-subtree estimate (never under-counts the CFG
+        // leaves a body lowers to). Checked BEFORE allocation so refusal needs no rollback.
+        let estimate = subtree_node_count(self.ast, body);
+        if estimate > inline_budget::MAX_NODES_PER_SITE {
+            self.diags.push(Diagnostic::warning(
+                CFG_INLINE_REFUSED,
+                Some(self.span(id)),
+                format!(
+                    "call to `{name}` exceeds the per-call inline-node budget ({} > {}); not \
+                     inlined — it runs as an ordinary unmodeled command",
+                    estimate,
+                    inline_budget::MAX_NODES_PER_SITE
+                ),
+            ));
+            return None;
+        }
+        // Per-book budget: the running tally of actually-spliced nodes, plus this body's
+        // estimate, must not exceed the whole-book cap. (A transitively-inlined inner call adds
+        // to the tally when ITS splice runs, so this composes across depths.)
+        if self.spliced_node_total.saturating_add(estimate) > inline_budget::MAX_NODES_PER_BOOK {
+            self.diags.push(Diagnostic::warning(
+                CFG_INLINE_REFUSED,
+                Some(self.span(id)),
+                format!(
+                    "call to `{name}` exceeds the per-book inline-node budget ({} spliced + {} \
+                     more > {}); not inlined — it runs as an ordinary unmodeled command",
+                    self.spliced_node_total,
+                    estimate,
+                    inline_budget::MAX_NODES_PER_BOOK
+                ),
+            ));
+            return None;
+        }
+
+        // Splice the body. Push the body onto the active inline stack so a recursive call
+        // INSIDE the body ⊤-rejects (the cycle guard, `i-1`); a deeper eligible call splices
+        // (depth-bounded). `lower_node` re-enters `lower_simple` for body commands, so a
+        // transitively-inlined call recurses through here naturally.
+        let body_start = self.nodes.len();
+        self.inline_stack.push(body);
+        let body_exit = self.lower_node(body, cmd);
+        self.inline_stack.pop();
+        let body_end = self.nodes.len();
+
+        // Mark every spliced node `spliced_internal` (the CALL is the render unit; a body leaf
+        // is never an independent Step, `i-3`). A nested `$()` inside the body is already
+        // `expansion_internal`; flagging it `spliced_internal` too is harmless (both exclude
+        // it from the leaf set).
+        for v in body_start..body_end {
+            self.spliced_internal[v] = true;
+        }
+        self.spliced_node_total = self
+            .spliced_node_total
+            .saturating_add(body_end - body_start);
+
+        // Collect the body's effect-bearing/probeable LEAF Command nodes (the call's per-site
+        // sub-record set, `i-4`): a spliced `Command` that is NOT itself an inner inlined CALL
+        // (an inner call's OWN body leaves are the call's sites; the inner call node is a
+        // pass-through aggregate, not a leaf — flatten its leaves in instead) and is NOT a
+        // `$()`-internal non-leaf. In arena (source) order (`inv-determinism`).
+        let mut sites: Vec<CfgNodeId> = Vec::new();
+        for v in body_start..body_end {
+            let node = CfgNodeId(v as u32);
+            if self.nodes[v].kind != CfgNodeKind::Command || self.expansion_internal[v] {
+                continue;
+            }
+            // An inner inlined CALL node is itself NOT a site — its body leaves are already in
+            // `call_body_sites[inner]` and were appended to `sites` via the flatten below. The
+            // inner call node has its OWN body-site entry, so skip it here to avoid double
+            // counting (a body command that is a plain mutator IS a site).
+            if let Some(inner_sites) = self.call_body_sites.get(&node) {
+                sites.extend(inner_sites.iter().copied());
+            } else {
+                sites.push(node);
+            }
+        }
+        self.call_body_sites.insert(cmd, sites);
+        Some(body_exit)
     }
 
     /// A pipeline `a | b | c`: stages run left-to-right; the *last* stage's status
@@ -861,23 +1188,35 @@ impl<'a> Builder<'a> {
         self.attach_redirs(id, redirs, leave)
     }
 
-    /// A function definition's body is a **detached** sub-CFG (Tier-A is
-    /// intraprocedural — note 163 §5): it is built (so its nodes/effects exist and
-    /// a future Tier-B call edge can target them) but NOT wired into the main
-    /// flow. Defining a function has no runtime effect; a *call* to it would be
-    /// Tier-B → ⊤ (no call detection in the modeled subset). The definition is a
-    /// pass-through in the enclosing flow.
+    /// A function DEFINITION's body is a **detached** sub-CFG (Tier-A is intraprocedural —
+    /// note 163 §5): it is built (so its nodes/effects exist) but NOT wired into the main flow.
+    /// Defining a function has no runtime effect; the body runs only when CALLED, and a call is
+    /// now a CFG-level body SPLICE (arch-2, brk-2 — [`try_inline_call`](Builder::try_inline_call)).
+    ///
+    /// The detached definition body's command nodes are marked `spliced_internal` (`i-3`): a
+    /// definition's body commands are NEVER independent plan/apply Step LEAVES — the body text
+    /// renders verbatim inside the `name() { … }` definition, and its effects reach the analysis
+    /// only via the per-call splices. Pre-arch-2 these detached commands surfaced as
+    /// `MustRun`/`skip-unresolvable` leaves of their own (unreachable, harmless, but noisy and
+    /// double-counting the spliced copy); marking them non-leaf collapses the definition to its
+    /// proper "no runnable leaf of its own" shape.
+    ///
+    /// errexit residue (the old find-7 TODO): the detached body's `Entry` is pred-less, so the
+    /// forward errexit pass computes `Off` throughout and its commands get no failure-edges.
+    /// This is now MOOT for the body's runtime semantics — the SPLICED copy at each call site
+    /// gets its errexit inflow from the call (it is wired in, `i-5`), and the detached copy is
+    /// a non-leaf island that never runs. The detached body remains only so its nodes exist for
+    /// arena consistency; it is not consulted for any apply/probe decision.
     fn lower_funcdef(&mut self, id: AstId, body: AstId, entry_pred: CfgNodeId) -> CfgNodeId {
         // Detached region: its own entry, unreferenced by `entry_pred`.
-        //
-        // TODO(find-7): the body's `Entry` is pred-less, so the errexit forward pass
-        // computes `Off` throughout the body and its commands get no failure-edges
-        // even when the *call site* runs under `set -e`. Harmless today (calls
-        // aren't modeled — the body is dead), but wrong once Tier-B call edges land:
-        // the body's errexit inflow must then come from the call site, not a seeded
-        // `Off`. Fix together with call-edge modeling, not piecemeal here (note 166).
         let func_entry = self.fresh(body, CfgNodeKind::Entry);
+        let body_start = self.nodes.len();
         let body_exit = self.lower_node(body, func_entry);
+        // The definition's body commands are not independent leaves (`i-3`): the body renders
+        // inside the `name() { … }` definition and runs only via the per-call splices.
+        for v in body_start..self.nodes.len() {
+            self.spliced_internal[v] = true;
+        }
         let func_exit = self.fresh(body, CfgNodeKind::Exit);
         self.add_edge(body_exit, func_exit);
 
@@ -1356,6 +1695,72 @@ impl<'a> Builder<'a> {
         out
     }
 
+    // ---- arch-2 funcdef-body scanners (pure; `i-1` eligibility) ----------------
+
+    /// arch-2 (`i-1`): does the funcdef `body`'s AST subtree use an out-of-slice positional
+    /// construct (`$@`/`$*`/`shift`/`local`)? Returns the offending construct's spelling for
+    /// the refusal diagnostic, or `None`. These are out of the modeled subset (the
+    /// positional-array forms `$@`/`$*` the value plane folds to ⊤; `shift`/`local` mutate the
+    /// positional/scope state the splice's positional overlay does not model). Span-contained
+    /// scan over the AST (cheap; corpus bodies are tiny). A `$@`/`$*` is a
+    /// `WordPart::Param { name }` whose name is the special `@`/`*`; `shift`/`local` are command
+    /// words.
+    fn body_uses_unmodeled_positional(&self, body: AstId) -> Option<&'static str> {
+        for (aid, node) in self.ast.iter() {
+            if !node_within(self.ast, aid, body) {
+                continue;
+            }
+            match &node.kind {
+                NodeKind::Word { parts } => {
+                    if let Some(p) = word_parts_special_positional(parts) {
+                        return Some(p);
+                    }
+                }
+                NodeKind::Simple { words, .. } => {
+                    match words.first().and_then(|&w| self.word_literal(w)) {
+                        Some("shift") => return Some("shift"),
+                        Some("local") => return Some("local"),
+                        _ => {}
+                    }
+                }
+                _ => {}
+            }
+        }
+        None
+    }
+
+    /// arch-2 (tc-M2): does the funcdef `body`'s AST subtree carry a WRITE-shaped redirect
+    /// (`>`/`>>`/`<>`) to anything OTHER than `/dev/null`? Returns a short detail for the
+    /// refusal diagnostic, or `None`. A body file-write is an unmodeled effect (y-1) that
+    /// inlining alone would EXPOSE as wrong-ambience — so the call refuses (the wrapper-pun
+    /// population redirects only to `/dev/null`, which stays exempt, keeping it alive). `2>&1`
+    /// fd-dups and here-docs are NOT write-to-file redirects (a `Dup`/`HereDoc` op), so they
+    /// are exempt; only `Write`/`Append`/`<>`-class file targets fence. Span-contained scan.
+    fn body_has_unmodeled_write_redirect(&self, body: AstId) -> Option<String> {
+        for (aid, node) in self.ast.iter() {
+            if !node_within(self.ast, aid, body) {
+                continue;
+            }
+            let NodeKind::Redir { op, target, .. } = &node.kind else {
+                continue;
+            };
+            // Only file-write redirects fence (`>`, `>>`). A read (`<`), an fd-dup (`2>&1`,
+            // `>&3`), and a here-doc (`<<EOF`) are not a write-to-file effect.
+            if !matches!(op, RedirOp::Write | RedirOp::Append) {
+                continue;
+            }
+            let RedirTarget::Word(w) = target else {
+                continue; // fd-dup / here-doc target: not a file write
+            };
+            match word_text(self.ast, *w) {
+                Some("/dev/null") => {} // the discard sink stays exempt (devnull-exemption)
+                Some(path) => return Some(format!("`> {path}`")),
+                None => return Some("`>` to a dynamic/unresolved target".to_string()),
+            }
+        }
+        None
+    }
+
     // ---- condition-context tagging --------------------------------------------
 
     /// Lower a *condition-context* region (the test of an `if`/`elif`, or the left
@@ -1451,6 +1856,8 @@ impl<'a> Builder<'a> {
             pred: self.pred,
             expansion_internal: self.expansion_internal,
             in_loop: self.in_loop,
+            spliced_internal: self.spliced_internal,
+            call_body_sites: self.call_body_sites,
             consumed: self.consumed,
         };
         debug_assert!(
@@ -1508,6 +1915,64 @@ fn word_text(ast: &Ast, w: AstId) -> Option<&str> {
         },
         _ => None,
     }
+}
+
+/// arch-2: build the funcdef registry — every `name() { … }` definition's `(body AstId,
+/// def-start BytePos)`, grouped by name in source order. A name with more than one entry is
+/// REDEFINED ⇒ every call ⊤-rejects (`i-1`); a call resolves to the latest definition strictly
+/// before it. `BTreeMap` for `inv-determinism`. Pure over the AST (the `FuncDef` node carries
+/// `name`, `name_span`, `body`; the definition's start is the node's own span `lo`).
+fn collect_funcdefs(ast: &Ast) -> BTreeMap<String, Vec<(AstId, BytePos)>> {
+    let mut out: BTreeMap<String, Vec<(AstId, BytePos)>> = BTreeMap::new();
+    for (aid, node) in ast.iter() {
+        if let NodeKind::FuncDef { name, body, .. } = &node.kind {
+            out.entry(name.clone())
+                .or_default()
+                .push((*body, ast.node(aid).span.lo));
+        }
+    }
+    out
+}
+
+/// arch-2: a conservative node-count estimate for a funcdef body — the number of AST nodes in
+/// its subtree (`i-1` per-site budget). AST descendants are ≥ the CFG leaf nodes the body
+/// lowers to (each `Simple` ⇒ ≥1 `Command`; structural nodes add more CFG nodes but the AST
+/// count over-estimates conservatively for the budget's purpose — over-estimating refuses
+/// MORE, the safe direction). Pure span-containment count over the AST.
+fn subtree_node_count(ast: &Ast, body: AstId) -> usize {
+    ast.iter()
+        .filter(|(aid, _)| node_within(ast, *aid, body))
+        .count()
+}
+
+/// Is node `inner` within node `outer`'s subtree, by span containment? AST spans nest by
+/// construction (a child's `[lo,hi)` lies within its parent's), so a byte-range containment
+/// test is a sound subtree-membership check. `inner == outer` counts as within. (Mirrors
+/// `value::node_within`; arch-2's body scanners + budget use it.)
+fn node_within(ast: &Ast, inner: AstId, outer: AstId) -> bool {
+    let i = ast.node(inner).span;
+    let o = ast.node(outer).span;
+    o.lo.0 <= i.lo.0 && i.hi.0 <= o.hi.0
+}
+
+/// arch-2 (`i-1`): if any word part is the special positional-array parameter `$@`/`$*`,
+/// return its spelling (`"$@"`/`"$*"`) for the refusal diagnostic; else `None`. Recurses into
+/// double-quoted nesting (`"$@"` is the common form). The lexer keeps `$@`/`$*` as
+/// `WordPart::Param { name: "@" | "*" }`.
+fn word_parts_special_positional(parts: &[WordPart]) -> Option<&'static str> {
+    for part in parts {
+        match part {
+            WordPart::Param { name } if name == "@" => return Some("$@"),
+            WordPart::Param { name } if name == "*" => return Some("$*"),
+            WordPart::DoubleQuoted(inner) => {
+                if let Some(p) = word_parts_special_positional(inner) {
+                    return Some(p);
+                }
+            }
+            _ => {}
+        }
+    }
+    None
 }
 
 /// Does this list of word parts contain the `$?` special parameter (the lexer keeps

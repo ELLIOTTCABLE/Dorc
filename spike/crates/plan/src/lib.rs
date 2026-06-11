@@ -36,7 +36,7 @@ use core::marker::PhantomData;
 use std::collections::{BTreeMap, BTreeSet};
 
 use dorc_analysis::cfg::{Cfg, CfgNodeId, CfgNodeKind};
-use dorc_analysis::effect::{FactKey, SkipClass};
+use dorc_analysis::effect::{FactKey, InlineSite, SkipClass};
 use dorc_analysis::lattice::{May, Powerset};
 use dorc_core::{
     AstId, Channel, EntityRef, Grade, Interner, KindId, Observable, Predicted, Rc, SelectorId,
@@ -180,6 +180,14 @@ pub enum LicenseVia {
     /// exactly this shape; any non-converged member, any non-self writer, or a consumed ⊤
     /// status refuses it (the whole leaf runs).
     MembersLoop,
+    /// Inlined function-CALL convergence-elision (arch-2, brk-2, `i-3`): an
+    /// [`SkipClass::InlineCall`] whose EVERY effect-bearing spliced body leaf licenses elision
+    /// — each body Establish is `EstablishAmbient` + Converged (a body Kill/Opaque/⊤/written
+    /// establish, or a non-Converged one, blocks the WHOLE call), Queries pass their gates, and
+    /// the CALL site's own consumed channels are reproduced. The all-or-nothing CALL license
+    /// (the Members precedent): the CALL leaf's span substitutes to `true`; one non-licensing
+    /// body leaf ⇒ the call RUNS (the real body executes). No partial-body render (`i-3`).
+    InlineCall,
 }
 
 /// Why a replacement was licensed — the audit trail a plan UI greys-out as the "why"
@@ -405,6 +413,85 @@ impl ReplaceLicense {
             derivation: Derivation {
                 fact: representative,
                 via: LicenseVia::MembersLoop,
+                ambient: true,
+                grade: Grade::Must,
+                verdict: Verdict::Converged,
+            },
+        })
+    }
+
+    /// Mint a license for an inlined function-CALL's convergence-elision (arch-2, brk-2,
+    /// `i-3`) — the all-or-nothing CALL license (the Members precedent, 20S). The call's
+    /// command word resolved to a same-file-earlier funcdef and its body was spliced; this
+    /// mints a [`LicenseVia::InlineCall`] `Replace` (the CALL span → `true`) iff EVERY
+    /// effect-bearing body leaf licenses elision, every ambiguity ⇒ REFUSE:
+    ///
+    /// * every body site that is an `EstablishAmbient` has a Converged fact (`observe`(fact)
+    ///   reports the Effect channel; a single non-Converged ⇒ refuse — the whole call runs);
+    /// * NO body site is a blocker — an `EstablishWritten` (stale resting probe), a `MustRun`
+    ///   (a body Kill, an Opaque/⊤ command, a multi-cell verb, an unreachable establish), an
+    ///   in-loop `EstablishMembers` (an in-loop call body — out of slice), or a nested
+    ///   `InlineCall` (defensive — transitive inlines are flattened to leaves, so one should
+    ///   never appear here);
+    /// * a body `QueryResolvable` does NOT block (it is read-only — the wrapper-pun's
+    ///   `dpkg -s "$1"` guard); its convergence is irrelevant to the call's elision (the call
+    ///   elides on the body's ESTABLISH facts, not the guard's rc);
+    /// * the CALL site's own consumed channels are reproduced ([`consumption_ok`]): the call's
+    ///   rc is ⊤ (a mutator-shaped aggregate, fork-mutator-rc), so a consumed status
+    ///   (errexit-region, a `$?`-reader, a bare `||` operand) blocks; a consumed Stdout/Stderr
+    ///   or a `while`/`until` condition blocks; door-3 (`call || true`) does NOT block (the
+    ///   `StatusInvariant` channel) — the composition case (`i-5`).
+    ///
+    /// RATIONALE (the all-or-nothing fixed point, the i-3 weld): the elision removes the WHOLE
+    /// body, so under the elision the resting probe stays authoritative only if every body
+    /// effect is accounted Converged. A call whose body has NO converged establish to elide —
+    /// a wrapper of pure builtins (`foo() { echo hi; }`), or a body whose only effects are
+    /// Queries — RUNS (refuse): eliding it would gain nothing and would suppress whatever its
+    /// pure leaves do (an `echo`'s stdout); the run-it floor is harmless (`kFAIL-perform`). The
+    /// witness records the FIRST establishing body fact as the representative `fact` (the call
+    /// IS the aggregate establish; provenance names one cell).
+    #[must_use]
+    fn prove_inline_replaceable(
+        sites: &[InlineSite],
+        observe: &impl Fn(FactKey) -> Observable,
+        consumed: &May<Powerset<Channel>>,
+        status: Predicted<Rc>,
+    ) -> Option<ReplaceLicense> {
+        let mut representative: Option<FactKey> = None;
+        for site in sites {
+            match &site.class {
+                SkipClass::EstablishAmbient(f) => {
+                    if observe(*f).effect != Verdict::Converged {
+                        return None; // a non-converged body establish ⇒ the whole call runs
+                    }
+                    representative.get_or_insert(*f);
+                }
+                // A read-only Query guard never blocks (the wrapper-pun's `dpkg -s "$1"`); its
+                // own convergence does not gate the call's elision.
+                SkipClass::QueryResolvable { .. } => {}
+                // Every other class blocks the whole call (all-or-nothing): a written establish
+                // (stale probe), a MustRun (Kill/Opaque/⊤), an in-loop Members body, or a
+                // nested InlineCall (defensive — should be flattened).
+                SkipClass::EstablishWritten(_)
+                | SkipClass::MustRun
+                | SkipClass::EstablishMembers { .. }
+                | SkipClass::InlineCall { .. } => return None,
+            }
+        }
+        // A call with NO converged establish to elide runs (the run-it floor): there is no
+        // mutation to be already-done, and eliding a pure-builtin wrapper would suppress its
+        // observable (an `echo`'s stdout) for no gain.
+        let fact = representative?;
+        // The CALL site's own consumed channels (the aggregate rc is ⊤ — a mutator-shaped
+        // call, fork-mutator-rc — so a consumed status blocks; door-3 `|| true` does not).
+        if !consumption_ok(consumed, status) {
+            return None;
+        }
+        Some(ReplaceLicense {
+            fact,
+            derivation: Derivation {
+                fact,
+                via: LicenseVia::InlineCall,
                 ambient: true,
                 grade: Grade::Must,
                 verdict: Verdict::Converged,
@@ -826,6 +913,18 @@ pub fn compile_probe(
             push_member_checks(&mut checks, &mut unresolvable, site, members, &probe_body);
             continue;
         }
+        // arch-2 (`i-4`): an inlined CALL ships ONE check per spliced BODY SITE (a `site N.M`
+        // sub-record, M = the body-site index), with the body site's positionals BOUND (the
+        // entity resolved at the call site). All-or-nothing on probe-ability: if any body
+        // ESTABLISH site has no probe body, the WHOLE call is unresolvable (`can't-probe ⇒
+        // can't-elide`); the call's all-or-nothing license cannot elide a partial body. A body
+        // Query/Pure/MustRun site ships no record (only the elision-gating establishes are
+        // probed, like the single-fact path). (The probe queries every body establish
+        // regardless of the apply-side license — `inv-superposition`.)
+        if let SkipClass::InlineCall { sites } = class {
+            push_inline_checks(&mut checks, &mut unresolvable, site, sites, &probe_body);
+            continue;
+        }
         // Both an EstablishAmbient and a (resolvable) Query site ship a check — each
         // is probe-resolvable iff its `(kind, selector)` cell resolves to a declared
         // probe (task-P/find-1: a per-selector probe, or the kind-default ONLY when the
@@ -894,6 +993,67 @@ fn push_member_checks(
     checks.extend(staged);
 }
 
+/// Compile the per-body-site checks for an inlined function-CALL (arch-2, brk-2, `i-4`): one
+/// [`ProbeCheck`] per effect-bearing/probeable spliced body site, each carrying its body-site
+/// index as `member` (the `site N.M` sub-record, M = the index into the call's body-site list)
+/// and the body site's resolved cell (positionals bound at the call, `i-2`). An `EstablishAmbient`
+/// body site is an Establish-class record; a `QueryResolvable` body site is a Query-class record
+/// (its rc is fold-usable per its `valid` bit, the wrapper-pun's `dpkg -s "$1"`); a Pure/MustRun/
+/// Written body site ships nothing (not elision-gating).
+///
+/// ALL-OR-NOTHING on probe-ability (the call's all-or-nothing license cannot elide a partial
+/// body): if any ESTABLISH body site has no declared probe body, the WHOLE call is unresolvable
+/// (`can't-probe ⇒ can't-elide`). A Query body site with no probe body is NOT a blocker (it does
+/// not gate the call's elision — the call elides on the body's establishes), so it is simply
+/// omitted; the records are staged and committed only if no establish is un-probeable.
+fn push_inline_checks(
+    checks: &mut Vec<ProbeCheck>,
+    unresolvable: &mut Vec<LeafId>,
+    site: LeafId,
+    sites: &[InlineSite],
+    probe_body: &impl Fn(KindId, SelectorId) -> Option<String>,
+) {
+    let mut staged = Vec::new();
+    for (idx, body) in sites.iter().enumerate() {
+        let member = Some(u32::try_from(idx).unwrap_or(u32::MAX));
+        match &body.class {
+            SkipClass::EstablishAmbient(fact) => {
+                let Some(sh) = probe_body(fact.kind, fact.selector) else {
+                    // An un-probeable ESTABLISH ⇒ the whole call is unresolvable (all or none).
+                    unresolvable.push(site);
+                    return;
+                };
+                staged.push(ProbeCheck {
+                    site,
+                    member,
+                    fact: *fact,
+                    site_kind: ProbeSiteKind::Establish,
+                    sh,
+                });
+            }
+            SkipClass::QueryResolvable { fact, valid } => {
+                // A read-only guard: ship its check if probeable (it does NOT gate the call's
+                // elision, so an un-probeable guard is simply omitted, never a blocker).
+                if let Some(sh) = probe_body(fact.kind, fact.selector) {
+                    staged.push(ProbeCheck {
+                        site,
+                        member,
+                        fact: *fact,
+                        site_kind: ProbeSiteKind::Query { valid: *valid },
+                        sh,
+                    });
+                }
+            }
+            // Not elision-gating ⇒ no record.
+            SkipClass::EstablishWritten(_)
+            | SkipClass::MustRun
+            | SkipClass::EstablishMembers { .. }
+            | SkipClass::InlineCall { .. } => {}
+        }
+    }
+    checks.extend(staged);
+}
+
 /// Build a plan from the analysis result + an injected host **observation** oracle.
 ///
 /// `observe` is the host probe (the real host / `hostsim` is a later seam): it
@@ -935,9 +1095,12 @@ pub fn build_plan(
                 SkipClass::EstablishAmbient(f)
                 | SkipClass::EstablishWritten(f)
                 | SkipClass::QueryResolvable { fact: f, .. } => *f,
-                // An in-loop Members site is never a fold controller (its body is
-                // render-floored / multi-leaf-deferred), so it carries no fold status.
-                SkipClass::EstablishMembers { .. } | SkipClass::MustRun => return None,
+                // An in-loop Members site, and an inlined CALL (arch-2), are never fold
+                // controllers (a Members body is render-floored; a CALL is an aggregate whose
+                // own rc is ⊤), so neither carries a fold status.
+                SkipClass::EstablishMembers { .. }
+                | SkipClass::InlineCall { .. }
+                | SkipClass::MustRun => return None,
             };
             Some((cfg.node(*node).ast, fact))
         })
@@ -953,23 +1116,27 @@ pub fn build_plan(
         .map(|(node, class)| {
             let ast_id = cfg.node(*node).ast;
             let sh = command_text(src, ast, ast_id);
-            // An in-loop Members site takes its own all-or-nothing license path (item-3),
-            // which needs the PER-MEMBER observations; every other class takes the
-            // single-fact `disposition_for`.
-            let disposition = if let SkipClass::EstablishMembers {
-                members,
-                self_reached,
-            } = class
-            {
-                members_disposition(cfg, *node, members, *self_reached, &observe)
-            } else {
-                let observed = match class {
-                    SkipClass::EstablishAmbient(f)
-                    | SkipClass::EstablishWritten(f)
-                    | SkipClass::QueryResolvable { fact: f, .. } => Some(observe(*f)),
-                    SkipClass::EstablishMembers { .. } | SkipClass::MustRun => None,
-                };
-                disposition_for(cfg, &fold, *node, class, ast_id, observed)
+            // An in-loop Members site and an inlined CALL each take their own all-or-nothing
+            // license path (the PER-MEMBER / PER-BODY-SITE observations); every other class
+            // takes the single-fact `disposition_for`.
+            let disposition = match class {
+                SkipClass::EstablishMembers {
+                    members,
+                    self_reached,
+                } => members_disposition(cfg, *node, members, *self_reached, &observe),
+                // arch-2 (`i-3`): the CALL aggregates its body sites' observations.
+                SkipClass::InlineCall { sites } => inline_disposition(cfg, *node, sites, &observe),
+                _ => {
+                    let observed = match class {
+                        SkipClass::EstablishAmbient(f)
+                        | SkipClass::EstablishWritten(f)
+                        | SkipClass::QueryResolvable { fact: f, .. } => Some(observe(*f)),
+                        SkipClass::EstablishMembers { .. }
+                        | SkipClass::InlineCall { .. }
+                        | SkipClass::MustRun => None,
+                    };
+                    disposition_for(cfg, &fold, *node, class, ast_id, observed)
+                }
             };
             Step {
                 leaf: LeafId(0),
@@ -1106,6 +1273,40 @@ fn members_disposition(
         status,
     ) {
         // The body is substituted by `true` (the loop still iterates N times over it).
+        Some(license) => Disposition::Replace(license, StandIn::True),
+        None => Disposition::Run,
+    }
+}
+
+/// The disposition for an inlined function-CALL leaf (arch-2, brk-2, `i-3`) — the
+/// all-or-nothing CALL license. Observe each spliced body Establish site's host verdict, then
+/// mint a [`LicenseVia::InlineCall`] `Replace` (the CALL span → `true`) via
+/// [`ReplaceLicense::prove_inline_replaceable`] iff every effect-bearing body leaf licenses
+/// elision. On refusal the call RUNS — the real function body executes (the run-it floor,
+/// `kFAIL-perform`).
+///
+/// The CALL leaf's own status is ⊤ (a mutator-shaped aggregate, fork-mutator-rc), so a consumed
+/// status (errexit-region, a `$?`-reader, a bare `||` operand) blocks via the consumption gate
+/// — exactly the single-fact path. Top-containment (16G hole-5): a ⊤-successor CALL (e.g. a
+/// `prov &` background) is never replaced. The body sites are NOT render-edited (`i-3`); only
+/// the CALL span is. `observe` reads the same per-fact host oracle the rest of the plan uses.
+fn inline_disposition(
+    cfg: &Cfg,
+    node: CfgNodeId,
+    sites: &[InlineSite],
+    observe: &impl Fn(FactKey) -> Observable,
+) -> Disposition {
+    if has_top_successor(cfg, node) {
+        return Disposition::Run;
+    }
+    let consumed = May(cfg.consumed_observables(node).clone());
+    // The CALL aggregate's status: ⊤ (a mutator-shaped call's rc has no sanctioned source,
+    // fork-mutator-rc). A consumed ⊤ status blocks via the consumption gate (door-3 `|| true`
+    // does not — `StatusInvariant`).
+    let status = Predicted::Top;
+    match ReplaceLicense::prove_inline_replaceable(sites, observe, &consumed, status) {
+        // The whole CALL span substitutes to `true` (the body is gone — observable-preserving
+        // given every body establish is converged + the consumed-status gate).
         Some(license) => Disposition::Replace(license, StandIn::True),
         None => Disposition::Run,
     }

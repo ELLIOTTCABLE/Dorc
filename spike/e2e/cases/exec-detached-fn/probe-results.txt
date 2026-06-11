@@ -1,4 +1,9 @@
-# probe-results: site-keyed records (task-D1 WIRE). Grammar:
-#   site <leafid> effect=<holds|absent|cant-tell>
-# (the records the rendered probe emits; effect from the probe command rc).
-# (site-unresolvable: package:nginx#installed — no probe invocation, runs)
+# probe-results: site-keyed records (task-D1 WIRE; arch-2 inline body sub-keys). Grammar:
+#   site <leafid>[.<body-site-idx>] effect=<holds|absent|cant-tell>
+# arch-2 (brk-2): `prov` resolves to the same-file-earlier funcdef `prov() { apt-get install
+# -y nginx; }` and its body is SPLICED at the call. The body's `apt-get install -y nginx`
+# establish is a sub-record OF THE CALL: `site 0.0`. The host reports the package ABSENT
+# (diverged), so the all-or-nothing CALL license refuses — the call `prov` RUNS (the real
+# body executes). Run-set: `apt-get install -y nginx`. (This pins that an inlined call whose
+# body establish is NOT converged runs the body, the diverged pole of the CALL license.)
+site 0.0 effect=absent

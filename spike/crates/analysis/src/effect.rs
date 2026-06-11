@@ -416,6 +416,37 @@ pub enum SkipClass {
         members: Vec<FactKey>,
         self_reached: bool,
     },
+    /// An inlined function-CALL site (arch-2, brk-2, `i-3`/`i-4`): the call's command word
+    /// resolved to a same-file-earlier funcdef and its body was spliced into the CFG. This is
+    /// the render/substitution LEAF (the call's own span); the spliced body commands are
+    /// `spliced_internal` (not their own leaves). It carries the per-body-site classifications
+    /// (`sites`, one [`InlineSite`] per effect-bearing/probeable body leaf, in source order) so
+    /// the all-or-nothing CALL license (`plan`) can aggregate them and the probe can ship a
+    /// `site N.M` sub-record per site.
+    ///
+    /// ALL-OR-NOTHING (the Members precedent, 20S): the call licenses a `Replace` ONLY when
+    /// EVERY effect-bearing body site licenses elision — every body Establish/Kill is an
+    /// `EstablishAmbient` whose fact is Converged (a body Kill, an Opaque, a ⊤, or a non-self/
+    /// written establish blocks the WHOLE call), Queries pass their own gates, and the CALL
+    /// site's own consumed channels are reproduced. One non-licensing body leaf ⇒ the call
+    /// RUNS (the real body executes). No partial-body render ever (`i-3`).
+    InlineCall { sites: Vec<InlineSite> },
+}
+
+/// arch-2 (`i-3`/`i-4`): one spliced funcdef-body LEAF site under an [`SkipClass::InlineCall`].
+/// Carries the body command's CFG node (provenance + the plan's `has_top_successor` check) and
+/// its own [`SkipClass`] classification (resolved with the call's positional bindings — `i-2`).
+/// The plan aggregates these into the all-or-nothing CALL license; the probe ships one
+/// `site N.M` sub-record per site (M = the index into the call's site list).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct InlineSite {
+    /// The spliced body command's CFG node (provenance; `has_top_successor` gate; never a Step
+    /// leaf of its own — the CALL is the render unit, `i-3`).
+    pub node: CfgNodeId,
+    /// The body site's own classification (with the call's positionals bound, `i-2`): an
+    /// `EstablishAmbient`/`QueryResolvable` is per-site probeable (`site N.M`); a Kill/Opaque/
+    /// MustRun/EstablishWritten blocks the whole call.
+    pub class: SkipClass,
 }
 
 /// Nodes reachable from the program `entry` by forward edges. The reaching-defs
@@ -529,6 +560,17 @@ pub fn classify(
                     .map(|f| CommandEffect::Establishes(*f))
                     .collect();
             }
+            // arch-2 (`i-1`/`i-5`): an inlined CALL node gens NOTHING into reaching-defs —
+            // it is `Pure`, NOT the `Opaque` the unmodeled command word `prov` would resolve
+            // to. The body is spliced AFTER the call (its commands gen their own effects
+            // downstream exactly as inline code would), so the call node itself is a
+            // pass-through; classifying it `Opaque` would poison its OWN spliced body
+            // (`prov` ⊤ ⇒ the body's establish reads as Written, never Ambient) — the exact
+            // poison the splice exists to remove. The body's effects reach the analysis
+            // through the spliced commands, not the call word.
+            if cfg.call_body_sites(id).is_some() {
+                return vec![CommandEffect::Pure];
+            }
             match cfg.node(id).kind {
                 CfgNodeKind::Command => {
                     let argv = value.argv_values(id);
@@ -567,53 +609,23 @@ pub fn classify(
     let trust_reach = reach.converged;
     let reachable = reachable_from_entry(cfg);
 
-    let mut out = Vec::new();
-    for (i, cells) in effects.iter().enumerate() {
-        let id = CfgNodeId(i as u32);
-        // Only genuinely-runnable command leaves are plan/apply units. A command
-        // inside a `$( … )` substitution body is effect-bearing (it stayed in the
-        // reaching-defs above, so its mutations still poison/establish) but is NOT
-        // a leaf (find-cli-1, the dn-3 leaf-seam).
-        if cfg.node(id).kind != CfgNodeKind::Command || cfg.is_expansion_internal(id) {
-            continue;
-        }
-        // task-L2 item-2: a resolved in-loop Members site (its per-member family resolved
-        // all-or-nothing) is `EstablishMembers` — reachable + converged required like any
-        // establish. An unreachable or non-converged Members site folds to MustRun
-        // (kFAIL-perform).
+    // The per-site single-fact / member classification (the shared core, used by both the
+    // ordinary leaf path below and the arch-2 inlined-call body-site aggregation). Reads only
+    // already-computed state (`effects`, `member_families`, `reach`, `trust_reach`,
+    // `reachable`), so it is a pure closure.
+    let classify_site = |i: usize| -> SkipClass {
+        // task-L2: a resolved in-loop Members site (reachable + converged) ⇒ EstablishMembers.
         if let Some(family) = &member_families[i]
             && trust_reach
             && reachable[i]
         {
-            // item-3(b) self-reach: the ONLY writers reaching this site (incl. the
-            // back-edge) are THIS leaf's own member-establishes. A cell-set in-state cannot
-            // tell "my own establish reached" from "a DIFFERENT writer wrote the same cell"
-            // (a pre-loop `purge curl` writes the very cell the loop's curl-member
-            // establishes), so we re-solve the reaching-defs with THIS site's gen SUPPRESSED
-            // and ask whether the site's in-state is then pristine (empty, not ⊤). With the
-            // self-establish removed, the back-edge carries only OTHER writers' cells, so a
-            // pristine result ⟺ no pre-loop writer, no in-loop sibling, no Opaque reached
-            // it ⟺ only this leaf's own establishes do. Phase-agnostic (engine fact); `plan`
-            // collapses it.
             let self_reached = self_reach_holds(cfg, &effects, i);
-            out.push((
-                id,
-                SkipClass::EstablishMembers {
-                    members: family.clone(),
-                    self_reached,
-                },
-            ));
-            continue;
+            return SkipClass::EstablishMembers {
+                members: family.clone(),
+                self_reached,
+            };
         }
-        // The elision candidate is a SINGLE establish cell (the corpus shape). A
-        // multi-cell establish has no single-fact `SkipClass` representation yet, so
-        // it folds to `MustRun` — sound (`kFAIL-perform`: never wrongly elided), the
-        // run-it floor; the reaching-defs above still tracked every cell. (Flagged:
-        // multi-fact elision is unbuilt past `SkipClass`'s single-fact shape.)
-        let class = match cells.as_slice() {
-            // Only a reachable establish under a converged solve is reasoned about;
-            // every other case — opaque/pure/kill, multi-cell, an unreachable
-            // establish, or a non-converged solve — folds to MustRun.
+        match effects[i].as_slice() {
             [CommandEffect::Establishes(f)] if trust_reach && reachable[i] => {
                 if reach.states[i].mutated(f) {
                     SkipClass::EstablishWritten(*f)
@@ -621,13 +633,6 @@ pub fn classify(
                     SkipClass::EstablishAmbient(*f)
                 }
             }
-            // A read-only Query guard, reachable + converged: probe-resolvable, with
-            // its rule-query-validity bit (205 §2 / 20A §4 st-3) read off the IN-state
-            // — pristine (no write-or-unknown reached from entry) ⇒ the probed rc is
-            // fold-usable. `reach.states[i]` is the in-state (solve.rs: states[v] is
-            // the state *before* node v); a Query gens nothing, so it is exactly the
-            // writes-or-opaque that reached the guard. An unreachable/non-converged
-            // guard folds to MustRun like any other (kFAIL-perform).
             [CommandEffect::Queries(f)] if trust_reach && reachable[i] => {
                 SkipClass::QueryResolvable {
                     fact: *f,
@@ -635,8 +640,41 @@ pub fn classify(
                 }
             }
             _ => SkipClass::MustRun,
-        };
-        out.push((id, class));
+        }
+    };
+
+    let mut out = Vec::new();
+    for i in 0..effects.len() {
+        let id = CfgNodeId(i as u32);
+        // Only genuinely-runnable command leaves are plan/apply units. A command
+        // inside a `$( … )` substitution body is effect-bearing (it stayed in the
+        // reaching-defs above, so its mutations still poison/establish) but is NOT
+        // a leaf (find-cli-1, the dn-3 leaf-seam). arch-2 (`i-3`): a SPLICED funcdef-body
+        // command is likewise effect-bearing-but-not-a-leaf — the CALL is the render unit,
+        // and the body site is a `site N.M` sub-record OF THE CALL (handled at the call node
+        // below), never its own Step.
+        if cfg.node(id).kind != CfgNodeKind::Command
+            || cfg.is_expansion_internal(id)
+            || cfg.is_spliced_internal(id)
+        {
+            continue;
+        }
+        // arch-2 (`i-3`/`i-4`): an inlined CALL node aggregates its spliced body sites'
+        // classifications into one `InlineCall` (the all-or-nothing license + per-site probe
+        // sub-records live in `plan`). The body sites are classified with the call's
+        // positionals bound (the value plane resolved their argv, `i-2`).
+        if let Some(body_sites) = cfg.call_body_sites(id) {
+            let sites = body_sites
+                .iter()
+                .map(|&site| InlineSite {
+                    node: site,
+                    class: classify_site(site.index()),
+                })
+                .collect();
+            out.push((id, SkipClass::InlineCall { sites }));
+            continue;
+        }
+        out.push((id, classify_site(i)));
     }
     Carrier { value: out, diags }
 }
@@ -926,22 +964,69 @@ command__check() {
     }
 
     #[test]
-    fn detached_function_body_establish_is_not_ambient() {
-        // Why (find-A; both adversarial reviews independently, brk-1 / fs-1): a
-        // function body is a detached sub-CFG — its caller has no modeled call-edge
-        // (cfg find-7), so the in-body install is unreachable from entry and its
-        // reaching-in-state is a vacuous ⊥. Reading that as "nothing upstream" would
-        // advertise the establish skippable under an unknown call context — a
-        // kFAIL-perform wrong-skip. It must fold to MustRun (with the `p` call, also
-        // MustRun) until interprocedural call-edges land. The contrast with
-        // `lone_install_is_ambient` (identical establish, ambient at top level)
-        // proves the reachability gate is doing the work.
+    fn called_function_body_inlines_to_a_single_call_leaf() {
+        // arch-2 (brk-2): a call to a same-file-earlier funcdef is INLINED — the body is
+        // spliced at the call, and the CALL is the one render/apply leaf, aggregating the
+        // body's effect-bearing sites. `p() { apt-get install nginx; }\np` ⇒ exactly ONE
+        // leaf: an `InlineCall` whose single body site is the install's `EstablishAmbient`
+        // (the body becomes reachable through the splice — the find-7 un-detaching). The
+        // detached DEFINITION body is no longer an independent leaf (`i-3`), so there is no
+        // second `MustRun`. (Supersedes the round-20 `detached_function_body_establish_is_
+        // not_ambient`: the detached-poison shape is re-homed to the refused-call cases below.)
         let (mut i, idx, _s) = package_setup();
         let classes = classify_src("p() { apt-get install nginx; }\np", &mut i, &idx);
         assert_eq!(
-            classes,
-            vec![SkipClass::MustRun, SkipClass::MustRun],
-            "detached body install + the call both fold to MustRun, no ambient skip"
+            classes.len(),
+            1,
+            "the call is the only leaf (body is non-leaf)"
+        );
+        let SkipClass::InlineCall { sites } = &classes[0] else {
+            panic!("the call must classify InlineCall, got {:?}", classes[0]);
+        };
+        assert_eq!(sites.len(), 1, "one effect-bearing body site (the install)");
+        assert!(
+            matches!(sites[0].class, SkipClass::EstablishAmbient(_)),
+            "the body install is EstablishAmbient (reachable via the splice), not Written/\
+             MustRun — the call node gens Pure, so it does not poison its own spliced body"
+        );
+    }
+
+    #[test]
+    fn uncalled_function_definition_contributes_no_runnable_leaf() {
+        // arch-2: a funcdef DEFINED but never CALLED stays a detached, non-leaf island — its
+        // body commands are not independent plan/apply leaves (`i-3`: a definition's body runs
+        // only via a call, which would splice it). So `p() { apt-get install nginx; }\necho hi`
+        // has exactly ONE leaf — the top-level `echo hi` — and the install does NOT surface as
+        // a `MustRun`/`skip-unresolvable` leaf of its own. (This re-homes the find-A
+        // reachability intent: an unreachable funcdef body advertises no elidable establish.)
+        let (mut i, idx, _s) = package_setup();
+        let classes = classify_src("p() { apt-get install nginx; }\necho hi", &mut i, &idx);
+        assert_eq!(classes.len(), 1, "only the top-level `echo hi` is a leaf");
+        assert_eq!(
+            classes[0],
+            SkipClass::MustRun,
+            "echo hi is unmodeled ⇒ MustRun"
+        );
+    }
+
+    #[test]
+    fn recursive_call_refuses_inline_and_poisons_the_body() {
+        // arch-2 (`i-1`): a recursive call ⊤-rejects the inline (the cycle guard) — the inner
+        // `p` stays an ordinary unmodeled command (Opaque). The OUTER call still inlines, but
+        // its body now contains that Opaque, which poisons the body install to `MustRun` ⇒ the
+        // whole call cannot elide (one non-licensing body leaf runs the call). This pins that
+        // the detached-poison semantics survive a refused (recursive) call — the brief's
+        // re-homed poison pin.
+        let (mut i, idx, _s) = package_setup();
+        let classes = classify_src("p() { p; apt-get install nginx; }\np", &mut i, &idx);
+        assert_eq!(classes.len(), 1, "the outer call is the only leaf");
+        let SkipClass::InlineCall { sites } = &classes[0] else {
+            panic!("the outer call inlines, got {:?}", classes[0]);
+        };
+        assert!(
+            sites.iter().any(|s| s.class == SkipClass::MustRun),
+            "the recursion-refused inner `p` (Opaque) poisons the body ⇒ a MustRun body site \
+             ⇒ the call will run (the poison-pin is preserved across a refused call)"
         );
     }
 
