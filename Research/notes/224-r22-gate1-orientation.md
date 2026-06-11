@@ -181,3 +181,34 @@ warm-ups (d×d host-flip fixture; var-resolved redirect case) → 22x synthesis 
 - R3 (Opus): rq-E suppression/root-cause dedup + rq-G fleet fingerprinting.
 - R4 (Opus): rq-F reproducible-builds / metadata-inertness (dedicated per ru-8).
 - Token log: to be appended at harvest (agents report; fb-16).
+
+## §9 Mid-launch re-site (two human directives, ~15min after first dispatch)
+
+- directive-resite: research-front OUTCOMES go to `Research/notes/22x-slug.md`, one
+  per front, rich ("don't compress away interesting context"); do NOT use the skill's
+  `.claude/research/` siting — keep its mechanisms/practices only.
+- directive-slugs: stop minting terse letter-code slugs; full-word slugs from now on
+  (`finding-1`, `cost-1`, `front-1` style). Adopted conductor-wide, relayed in all
+  relaunch briefs. (Prior notes keep their old slugs; append-only.)
+- Execution: no agent-messaging tool exists in this session, so the five research
+  agents were STOPPED (~1 turn in each) and RELAUNCHED with corrected contracts. The
+  stopped agents' work is banked: four force-added commits (`acc6cbe` rqCD, `6b6dd23`
+  rqBH, `85c4c3e`+`91d006c` rqEG — note `.claude/research` is GITIGNORED; those
+  commits got in via -f) plus on-disk untracked scratch for rqA (all four
+  previously-unreachable primaries DOWNLOADED: Zdancewic–Myers, Green–Tannen
+  semirings, Livshits–Chong, Carata primer) and rqF. Relaunched agents read
+  predecessor scratch as seed and write/commit ONLY their assigned corpus note.
+- Assigned notes: 225 unreachable-primaries (R0') · 226 error-catalog-and-discipline-
+  tooling (R1') · 227 derivation-dump-why-query-minimal-otel (R2') · 228 suppression-
+  dedup-and-fleet-fingerprinting (R3') · 229 reproducible-builds-metadata-inertness
+  (R4'). W1 (fixtures, own worktree) unaffected by the re-site.
+- Conductor cleanup obligation at digestion: verify each front's scratch content is
+  folded into its 22x note, then `git rm -r .claude/research` in one cleanup commit
+  (history retains the force-added blobs; that is acceptable and append-only-safe).
+- Kill-moment snapshots worth keeping (fb-15 bank): rqBH found rustc Fluent-migration
+  tracking issue #132181 — first-party regret doc, deny-lints downgraded to allow,
+  four named friction points. rqCD found the Bazel exec-log thread: 99GB→450MB compact
+  format, 75min-vs-7min pre-optimization overhead, and the shipping maintainer "not
+  sure it would ever be fine for this to always be collected by default" — direct
+  caution against d-1's always-on durable. rqF mapped the full r-b.org leak-category
+  page taxonomy. rqA read+graded Zdancewic–Myers and Green–Tannen before the stop.
