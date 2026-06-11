@@ -642,3 +642,30 @@ warm-ups (d×d host-flip fixture; var-resolved redirect case) → 22x synthesis 
   boundary) — cer-3 reframes accordingly. Settles at arch-4 spec time with the
   cost measurement; replay gate (cer-1) unaffected (replay needs only the
   controller-resident analyzer tape).
+- ru-22 (human; the ingestion-as-declassification lens — hardens ru-21 a notch,
+  still oven-time on the rest): host stdout/stderr quarantined per-host is the
+  PRUDENT DEFAULT; the worry, in his words — any arbitrary subprocess of any
+  process the book dispatches (package install-scripts, the whole heterogeneous
+  meta-orchestrated mess) becoming an EXFILTRATION vector when not necessary; "we're
+  already a massive security-hole by posture, in ways I haven't fully thought
+  through." Conductor analysis adopted into the direction: (a) the
+  failure-TRIGGERED auto-fetch from the prior synthesis is OUT — a host-influenced
+  trigger (the host controls whether "failure" occurs) is an attacker-controllable
+  declassification event; (b) the surviving shape: quarantine-by-default +
+  NOTIFY-AND-OFFER (on failure/divergence Dorc prompts "evidence retained on host;
+  run `dorc fetch-evidence <run> --site N.M`") + the FETCH itself is a human-held
+  capability (the operator is the declassifier — Livshits-Chong few/explicit/owned
+  permit-points, mirrored from release to INGESTION); same window as auto-fetch
+  when the operator is present, and the unattended case — exactly where auto-fetch
+  is attacker-shaped — stays closed; (c) the verdict lane is named as the ONE
+  sanctioned ingestion point (fixed grammar, site-keyed, size-bounded,
+  freeform-separated per 19B) — an orchestrator cannot ingest nothing, so the
+  discipline is few/explicit/owned channels, not zero; (d) whatever ever gets
+  ingested (lane today, slurped evidence later) is treated as hostile input at the
+  controller: fixed-grammar parsing only, terminal-escape neutralization, size
+  caps, scrub-at-ingest (102 E5 family). (e) flag-security-round-2: plans/102
+  predates the r22 surfaces (durables, ingestion paths, OTel offramp) and the
+  human's "haven't fully thought through" — a future-round security re-pass over
+  the new surfaces is a recorded candidate, not scheduled. Dead-host window:
+  accepted as a cost of the quarantine posture (the operator may fetch-on-notify
+  while the tunnel lives, human-gated). All DIRECTION-grade pending the oven.
