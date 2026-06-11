@@ -590,3 +590,89 @@ gate.
 > many authors) and NOT over-built into prose-quality enforcement (which Elm shows is a human
 > craft problem no gate solves). It also flags a risk: golden/snapshot tests (§8) impose a churn
 > cost Elm deliberately refused — adopt them only where the regression-safety payoff is real.
+
+## §8 rq-H — diagnostic snapshot / golden-test economics
+
+The question: what does it cost to golden-test diagnostic output, and is it sustainable?
+
+**rustc UI tests** [A-rustc-devguide-uitests-2026]. The model: a `.rs` test in `tests/ui/`,
+expected compiler output stored in adjacent `.stderr`/`.stdout` snapshots, regenerated with
+`--bless` and *"then inspect them manually to verify they contain what you expect."* Economics
+signals from the dev-guide:
+
+- *Normalization is mandatory and substantial.* Output is normalized (`$DIR`, `$SRC_DIR`,
+  pointer-width, etc.) to survive platform differences — i.e. raw golden comparison is too brittle;
+  a whole normalization layer exists to keep goldens stable [A-rustc-devguide-uitests-2026].
+- *Stray-output tracking is a named problem.* The filename grammar
+  (`test-name.revision.compare_mode.extension`) exists explicitly so the harness can *"pattern
+  match on [it] in order to track stray test output files."* Golden suites accumulate orphan files;
+  rustc engineers a convention to police them.
+- *Bless is a footgun.* Issue #134793: a `--bless` run *"ended up generating a bunch of stderr
+  files for compiler runs that shouldn't fail"* — blessing blindly accepts whatever the compiler
+  currently emits, including newly-wrong output [B-rust-issue-134793-2024]. The review burden is
+  the actual cost: bless is cheap, *reviewing the blessed diff* is the work, and skipping that
+  review silently codifies regressions.
+- *Anti-dedup for honesty.* UI tests run with `-Zdeduplicate-diagnostics=no` *"which disables
+  rustc's built-in diagnostic deduplication ... This helps illuminate situations where duplicate
+  diagnostics are being generated."* [A-rustc-devguide-uitests-2026] — a deliberate
+  discipline choice to make the goldens surface duplicate-emission bugs.
+
+**insta** (the de-facto Rust snapshot library) [B-insta-docs-2026]. Workflow: `assert_snapshot!`
+macros store `.snap` files next to tests; failing tests write `.snap.new`; `cargo insta review`
+interactively accepts/rejects; controllable via `INSTA_UPDATE` (`auto` writes `.new` only when no
+CI is detected). The load-bearing economics line from its own docs: *"Snapshot tests are
+particularly useful if your reference values are very large or change often."* — and the CI-aware
+default (won't auto-write snapshots when CI is detected) is the built-in guard against the
+bless-footgun.
+
+> design-takeaways for Dorc (golden economics):
+> - golden-1. golden diagnostic tests are cheap to WRITE/REGENERATE and expensive to REVIEW; the
+>   sustainability hinge is review discipline, not tooling. rustc's `--bless` and insta's
+>   `.snap.new` both make regeneration trivial — which is exactly why the regression risk moves to
+>   the human reviewing the diff.
+> - golden-2. raw output is too brittle to golden directly; budget for a normalization layer
+>   (rustc's `$DIR` substitutions). For Dorc this means snapshotting the *structured diagnostic*
+>   (code + slug + structured fields) not the rendered prose, or the goldens churn on every wording
+>   tweak — aligning with finding-6 (code stable, message free).
+> - golden-3. CI-detection (insta) is the cheap correctness guard: never auto-accept snapshots in
+>   CI, force local review. Directly adoptable.
+> - golden-4. Elm (§7) refused goldens precisely for the churn; the reconciliation is golden-2 —
+>   snapshot the stable structured layer, not the volatile prose, and the churn Elm feared mostly
+>   evaporates.
+
+## §9 rq-H — warning-ratchet / no-new-warnings CI enforcement
+
+The question: how do projects mechanically prevent NEW warnings without the costs of a blanket
+deny? The Rust-ecosystem answer is unusually crisp, and it is a *cautionary* one.
+
+**`#![deny(warnings)]` in source is a documented ANTI-PATTERN** [A-rust-patterns-denywarnings-2026].
+Verbatim drawback: *"By disallowing the compiler to build with warnings, a crate author opts out of
+Rust's famed stability. Sometimes new features or old misfeatures need a change in how things are
+done, thus lints are written that `warn` for a certain grace period before being turned to
+`deny`. ... All this conspires to potentially break the build whenever something changes."*
+Reinforced by the widely-cited "PSA: `deny(warnings)` is actively harmful" — when a future rustc
+adds a warning, *every* `deny(warnings)` crate breaks, and (the Crater angle) it pollutes the
+compiler team's regression signal [C-reddit-denywarnings-2020].
+
+**The recommended decoupling** [A-rust-patterns-denywarnings-2026]: keep the ratchet OUT of the
+source and IN the CI environment — `RUSTFLAGS="-D warnings" cargo build` *"can be done by any
+individual developer (or be set in a CI tool ...) without requiring a change to the code."* — or,
+if in-source, enumerate specific lints rather than the blanket `warnings` group (the doc ships a
+curated ~25-lint list "safe to deny as of rustc 1.48.0"). The internals discussion
+[C-internals-notice-2023] surfaces the gap Dorc cares about: *"lints you want reported to the user
+but you don't want to deny"* — handled by `RUSTFLAGS=-D warnings --allow <specific>` (deny-all,
+allow-some), the standard ratchet shape.
+
+> design-takeaways for Dorc (warning ratchet):
+> - ratchet-1. +SURE the lesson is *environment-side ratchet, not source-side*: enforce
+>   no-new-warnings via a CI flag (`-D warnings`-equivalent on Dorc's own analyzer build), NOT a
+>   blanket in-source deny that breaks every time the toolchain or the catalog grows. This keeps
+>   the analyzer buildable as Rust evolves while still failing CI on a regression.
+> - ratchet-2. the deny-all-allow-specific pattern is the adoptable shape for Dorc's *own* code
+>   hygiene; it is orthogonal to Dorc's user-facing diagnostic severities (don't conflate the
+>   analyzer's internal lint posture with the catalog's per-code severity model from §6).
+> - ratchet-3. a true "no-NEW-warnings" baseline ratchet (count warnings, fail if the count rises
+>   above a committed baseline) is the heavier Chromium/Google-style mechanism; the Rust ecosystem
+>   mostly does the binary `-D warnings` instead. --WONDER whether Dorc needs the counting-ratchet
+>   at all given a clean from-scratch catalog; the binary gate is far cheaper and probably
+>   sufficient this round.
