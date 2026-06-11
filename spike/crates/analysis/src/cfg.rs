@@ -935,6 +935,11 @@ impl<'a> Builder<'a> {
                 continue;
             }
             if let Some(inner_sites) = self.call_body_sites.get(&node) {
+                debug_assert!(
+                    inner_sites.iter().all(|&s| s.0 > node.0),
+                    "inline ordering: inner CALL {node:?} must precede its flattened body sites \
+                     {inner_sites:?} (the flattened_inner dedupe relies on arena order; 217 §5 obs-2)"
+                );
                 sites.extend(inner_sites.iter().copied());
                 flattened_inner.extend(inner_sites.iter().copied());
             } else if !flattened_inner.contains(&node) {
