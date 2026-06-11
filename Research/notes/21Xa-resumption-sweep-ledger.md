@@ -688,6 +688,33 @@
   the one amendment class that edits a line, since a wrong TITLE is itself the
   grep-hazard; human may veto and revert the titles).
 
+## Phase 4: in-flight completeness audit + 21Y v2 (2026-06-11, this session)
+
+- Human challenged "totally sure the in-flight work is complete?" — correctly: prior
+  evidence was 21Y-v1's CLAIM + tree≡snapshot + gates, not an independent audit. Audit
+  run: `git worktree list` + all-refs reachability + per-%TEMP%-worktree status and
+  content-diff. Findings: {cmdsub, door1, xcheck2} hold only untracked leftover copies
+  of committed files; {hostsim 9884dbc, p1fix 0d3cc92+df6ee46} builder commits are
+  BYTE-IDENTICAL to harvested counterparts (8d87e15; 685a61f+30b5432 — p1fix's apparent
+  ±407 was arch-2's own later additions to the same files; all 8 named P1 tests + both
+  P1 functions + the e2e case verified present at HEAD); {coverage 07d960b} harvest
+  2a0f3c4 is a verified SUPERSET (the 2 deletions are the LicenseVia match restructure
+  from InlineCall attribution, named in the harvest commit message). shapecheck =
+  non-git scratch. VERDICT: round-21 in-flight work fully harvested. Audit gotcha
+  recorded for future conductors: d-4 harvest-by-reapply leaves original builder
+  commits in worktrees — ancestry checks alone read as "unharvested"; verify by
+  content-diff against the counterpart commit. Also observed, flagged-not-touched:
+  ai/r1A-H2SALS deliberately unmerged (212); pre-round worktree-agent-*/bridge-*
+  branches + three *.sync-conflict-* branch ghosts (SyncThing class) — human-owned
+  cleanup candidates. (Hook note: `git merge-base` is blocked by the deny-hook's
+  `git merge` pattern; use `git rev-list --count A ^B` for read-only ancestry.)
+- 21Y REPLACED with v2 (the singular resumption prompt, 210-cribbed structure: role →
+  SAFETY+sec-gate discipline → orientation order incl. 217-required and the grep-
+  `<!-- /*` rule → verified state w/ audit gotcha → fork-a/fork-b job + task cards →
+  GATE w/ fork-ask → standing rulings incl. the amendment two-part test and d-4 →
+  process notes → open-flags inventory → meta-goal → north star). v1 preserved in git
+  history at a6c7c53.
+
 ## SWEEP VERDICT (2026-06-11, this session)
 
 Every document in the round-21 corpus plus the three round-22 research notes read clean
