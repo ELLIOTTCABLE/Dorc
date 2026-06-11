@@ -725,3 +725,107 @@ compilers to produce the 'same outputs' byte for byte." The nondeterminism it re
 different root directories." (MSVC C++ spells `/DETERMINISTIC` + `/PATHMAP` as *linker* options;
 not captured verbatim — minor gap, the C#/Roslyn equivalents above are the on-point ones.)
 
+---
+
+## §9 where compare-gates rot — the war stories (highest-value direction-shaper)
+
+The human flagged this explicitly: find the war story where a compare-gate gets disabled from
+flaky-diff fatigue. I found two clean, recent, numeric accounts plus the GCC bootstrap-compare
+mechanism and a live cost-debate. These shape *how Dorc's gate must be built to survive*.
+
+**finding-war-tax-on-happy-path (+SURE, the single best account).** Christopher Meiklejohn,
+2026-04-21 [B-meiklejohn-tax-2026], built a per-PR gate ("Caucus Permit Gate") that re-ran
+allowlisted build/test commands and validated a proof fingerprinted against the working tree —
+then *removed it*. Verbatim:
+
+> Over the last hundred CI runs … there were four Caucus Permit Gate failures. Every one of them
+> was a 'Proof failed' result… The same commands run in the Build Backend, Unit Tests, and E2E
+> Tests jobs, which are separate CI jobs on every PR. In every case, those dedicated jobs also
+> failed, for the same reason, on the same PR. … The gate caught exactly nothing in that window
+> that the plain test jobs wouldn't have caught five minutes later.
+
+And the cost-scaling argument that maps *directly* onto a run-twice gate:
+
+> Every `git merge origin/main` changes that fingerprint, which invalidates the proof, which
+> means the proof has to be regenerated, which means the allowlisted commands have to be re-run
+> end to end. … A gate whose cost grows with how much work is happening, and whose benefit does
+> not grow at all, is not a guardrail. It is a tax on the branches doing the right thing,
+> collected in service of nothing.
+
+The decision rule he distills (verbatim) is the one Dorc's gate must pass:
+
+> Every gate has to answer two questions. Does it catch failures the other checks wouldn't catch?
+> And does the cost of passing it, summed over the lifetime of the repo, stay below the cost of
+> whatever it's preventing?
+
+For Dorc this is reassuring on *both* axes — but only because of a property the Caucus gate
+lacked: the erasability gate catches a failure class *no other check can* (a receipt leaking
+into a decision is invisible to functional tests, which only see decisions), and its cost is
+~2× one analyzer run (cheap, network-dominated per AGENTS), *not* growing with merge activity.
+finding-gate-survives-meiklejohn-test: +SURE the erasability gate passes both questions, which
+is exactly why it's worth shipping where the Caucus gate wasn't. The danger to avoid is making
+it *fingerprint-coupled to unrelated churn* (the thing that killed Caucus).
+
+**finding-war-ci-theater (+SURE, the flaky-quarantine-rot account).** Justin Abrahms / Thrive
+Market, 2026-02-26 [B-abrahms-citheater-2026]. Numbers: "~150 flaky tests and a 76% deploy
+success rate … one in four deploys failed. Not because the code was wrong, but because the
+pipeline couldn't be trusted." The quarantine-rot accident, verbatim:
+
+> Those flaky test detectors we put in would quarantine the flaky tests and bugs would be
+> filed.. but through a fluke of jira tagging conventions, those bugs went unnoticed. By the
+> beginning of this year, 80% of scenarios in our e2e test suite were being skipped. The defect
+> rate remained consistent. We'd accidentally run a controlled experiment: remove most of the
+> tests, measure what happens. The answer was nothing.
+
+The mechanism lesson (verbatim): "Adding retries and delays or adjusting test ordering to solve
+race conditions doesn't work … It just adds a new balance point to a wobbly system that can tip
+over at any moment." And the emotional driver that keeps dead gates alive: "Even an ineffective
+blanket can feel comforting." finding-quarantine-is-the-rot: +SURE the failure mode isn't the
+gate being *deleted* — it's the gate being *silently auto-quarantined into a no-op* while
+appearing green. Dorc's gate must therefore (a) have NO auto-quarantine/auto-retry path, and (b)
+borrow GCC's coverage-canary (finding-compare-debug-coverage-enforcement) so "did the gate
+actually run and assert?" is itself checked — otherwise it rots into CI theater.
+
+**finding-gcc-bootstrap-compare (+SURE).** GCC's *own* shipped deterministic-compare gate: it
+compiles itself in stage2, recompiles with the stage2 compiler in stage3, and the `.o` outputs
+must be bit-identical or the build aborts with "Bootstrap comparison failure!"
+[B-gcc-bootstrap-failures-2026]. Real instances are common on toolchain/libc/host mismatches
+(LLVM-gcc, Gentoo musl, go/expressions.o). This is the proof that a byte-identity compare gate
+*can* be load-bearing and survive for decades in a production compiler — but note it compares
+*stripped* objects (the partition: debug info stripped before compare) and is a known source of
+build-abort friction on heterogeneous hosts. Combined with GCC's `compare-debug-failure` keyword
+carrying **253 tagged bugs** [B-gcc-bugzilla-kw-2026], the evidence is: these gates catch a
+large, real, otherwise-invisible bug class, at the cost of recurring friction that must be
+actively managed (hence the `bootstrap-debug-lean` vs `-big` vs `-ckovw` knobs balancing
+coverage against disk/time).
+
+**finding-war-zephyr-cost-debate (+SURE).** Zephyr RTOS issue #50205 "Verify builds are
+reproducible in the CI" [B-zephyr-50205-2022] is a live statement of the per-PR-vs-nightly cost
+tradeoff for a double-build gate, verbatim: "reproducible builds were broken for an unknown
+amount of time" (gate-rot via *absence*); and the explicit reasoning: "Running this check
+against every PR will incur additional computing time … Alternatives: Run the reproducible build
+check less frequently, such as nightly. However, this will require a significant bisect effort
+to identify the culprit PR … The incremental cost of some additional builds on each PR seems
+worth the trouble." They also shipped a *cheap always-on signal* alongside the gate — a single
+checksum line per build log — justified as "makes a non-measurable build time difference" and
+"accelerates the investigation." finding-cheap-signal-plus-gate: the dual pattern (expensive
+gate + cheap always-visible fingerprint) is worth copying — Dorc could emit a one-line
+decision-digest on every analyzer run, with the full erasability gate in CI.
+
+**finding-gcc-oliva-design-goal (+SURE, the cross-compiler convergence).** I read the GCC
+var-tracking design doc directly [A-gcc-wiki-vta-2007]. Its goals are stated as a clean
+*separation invariant* identical to Dorc's: under "Run-time efficiency" — "Stop missing
+optimizations for the sake of preserving variable location debug information"; under "Compile-
+time efficiency" — "Avoid using additional memory and CPU cycles that would be needed only to
+generate debug information when compiling without generating debug information"; and the headline
+"enabling debug information isn't supposed to modify the executable code in any way whatsoever.
+… If debug information disables any optimization, that's a bug that needs fixing"
+[A-gcc-wiki-vta-2007, via gathering]. The doc *also* independently arrives at LLVM's named-
+special-value partition: "A special value needs to be specified for each debug annotation
+representation that denotes an unavailable variable … because it was completely optimized away
+… or because the compiler has been unable to … keep track." Two compilers, two decades apart,
+converging on: (1) the metadata-must-not-change-the-artifact invariant, and (2) a small set of
+*named sanctioned-absence values* as the comparison partition. That convergence is strong
+evidence the pattern is fundamental, not incidental — and that Dorc's gate spec should center on
+the same named-exempt-reasons partition.
+
