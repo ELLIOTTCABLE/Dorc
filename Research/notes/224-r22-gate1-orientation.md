@@ -508,3 +508,29 @@ warm-ups (d×d host-flip fixture; var-resolved redirect case) → 22x synthesis 
   surface; (held-3, weaker) ru-13 rerun vs vp-8 epoch assumptions + bump-loop
   framing; (held-4, process) ru-17 vs spike-disposability charter —
   spike/CLAUDE.md gains the sanctioned exception at next touch.
+- RV2 transport/security sweep → final-message deliverable (no files): Opus, 103K
+  harness-tokens, 21 tool uses, ~3 min. Read 142/102/19B/20V/222 s5-7/21L/21N in
+  full. VERDICT: no breaks-a-human-ruling; one breaks-a-recorded-assumption
+  (reconciled); two friction-needs-a-sentence; rest reinforcement/false-alarm.
+  CONVERGENCE with conductor's held candidates: finding-3 == held-1 (REAL: 20V s5 +
+  222 m-6 want the counterfactual text in artifact comments; ru-12 evicts it) with
+  the clean split = rec-1: the DISPOSITION/ATTRIBUTION line ("line 14 elided per
+  package-oracle's converged-claim") is fact-plane and stays in-artifact inside the
+  byte-exact floor; the COUNTERFACTUAL PAYLOAD ("assumes rc=0, 'already newest'")
+  renders only on the OOB site-keyed lane + why-query (m-6's where-the-human-reads
+  satisfied by the why-query). finding-1+2 == held-2 split in half: rec-2 cross-lock
+  cer-6's controller tape-budget with 142's per-leaf remote size-cap residual (one
+  bound, both ends; capture-always IS the workload that residual reserved against —
+  re-pressures, does not break, the executor deferral); rec-3 the rotated durable
+  inherits 102's crown-jewel posture (at-rest protections in-scope like key
+  material; cer-3 scrub = floor not ceiling; no-exfiltrate-by-default welded; OTel
+  off-ramp strictly opt-in — 102's omission rule is creds-scoped so not literally
+  violated, but the at-rest aggregate is a NEW surface 102 never weighed).
+  BONUS rec-4: ru-12 RESOLVES 21N's heredoc comment-drop disclosure hole by lane-
+  routing (the one place artifact comments structurally can't carry disclosure is
+  exactly where ru-12 says don't rely on them); m-5's muddies-plan/apply caveat
+  answered the same way. watch-1: cer-2's binary-hash refusal is a hostsim-seam-tier
+  property, NOT corpus-shell-exec tier (21L's documented lax-set) — deferred, track
+  at arch-4. Gating-lane sizing and 19B collision-freedom: checked, untouched
+  (capture rides per-leaf + verdict-triple lanes only). Reconciliation batch rec-1..4
+  goes to the human after RV1/RV3 land.
