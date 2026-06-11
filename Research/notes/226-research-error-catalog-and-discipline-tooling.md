@@ -676,3 +676,121 @@ allow-some), the standard ratchet shape.
 >   mostly does the binary `-D warnings` instead. --WONDER whether Dorc needs the counting-ratchet
 >   at all given a clean from-scratch catalog; the binary gate is far cheaper and probably
 >   sufficient this round.
+
+## §10 rq-H — error-path coverage / fault-injection in CI
+
+The question: does anyone mechanically verify that *give-up paths* are actually exercised by tests?
+
+**cargo-mutants** [A-cargo-mutants-2026] is the most directly relevant Rust tool. Its premise:
+*"finding places where bugs can be inserted without causing any tests to fail."* It replaces
+function bodies with default/alternative values and reports *missed mutants* — mutations no test
+caught. For Dorc this is exactly the "is this give-up path tested?" check inverted: if cargo-mutants
+can replace a `return Err(GiveUp(code))` (or delete the give-up condition) and all tests still pass,
+that error path is unverified. Two limits the tool itself documents [B-cargo-mutants-missed-2026]:
+mutations that are genuinely equivalent (e.g. `||`→`&&` where the OS makes both equal) produce
+*unactionable* missed-mutants, and *"attributes on expressions are experimental"* so you cannot
+always annotate a line to exempt it — the noise has to be managed at the config/glob level. So
+cargo-mutants gives error-path coverage signal but with a false-positive tax that needs curation.
+
+**failpoints** (the `fail` crate / FreeBSD-style fault injection) — the other mechanism: explicit
+injection points compiled in, triggered at runtime to force error branches. Heavier
+(instrumentation in source), more common in distributed-systems testing than compiler work.
+~SUSPECT this is closer to Dorc's existing DST/DI discipline than cargo-mutants is: Dorc already
+injects clock/network/disk/randomness via DI seams (per AGENTS.md), so forcing a probe to "fail" to
+exercise a give-up path is *already* expressible through the existing mock seams — Dorc likely does
+NOT need the `fail` crate, it needs to point its existing DST fuzzer at give-up branches.
+
+> design-takeaways for Dorc (fault-injection):
+> - fault-1. ~SUSPECT cargo-mutants is the cheapest *adoptable-this-round* mechanism to answer "are
+>   our give-up paths tested" — run it scoped to the analyzer's error-emitting functions; treat a
+>   missed mutant on a give-up site as a coverage gap. Budget for curating equivalent-mutant noise.
+> - fault-2. Dorc's DST harness already provides fault-injection *for free* via its DI seams — the
+>   higher-value move is a DST scenario that forces each probe/oracle interaction to fail and
+>   asserts a registered give-up code is emitted (this composes with the §6-`expect` idea: assert
+>   *which* code). This is more targeted than blanket mutation testing and reuses existing
+>   machinery.
+> - fault-3. the completeness gate (§1) and fault-injection are COMPLEMENTARY, not redundant: the
+>   gate proves every give-up *site* carries a registered code (static); fault-injection proves
+>   every give-up *path* is reachable and tested (dynamic). Dorc wants both halves.
+
+## §11 rq-H — how rustc keeps ITSELF honest: the internal-lint family
+
+Beyond the tidy gate (§1), rustc enforces internal discipline through a family of *compiler-only
+lints* declared with `declare_tool_lint!` in `compiler/rustc_lint/src/internal.rs`
+[A-rustc-internal-lints-2026]. The diagnostic-discipline lints (`untranslatable_diagnostic`,
+`diagnostic_outside_of_impl`) that were downgraded in §2 are members of this exact family. The
+mechanism is uniform and instructive:
+
+- Each lint is declared `pub rustc::SOME_LINT, Allow, "...", report_in_external_macro: true` — i.e.
+  default-`Allow`, then *enabled crate-wide for the compiler's own build*. So the discipline is
+  opt-in by the policed codebase, invisible to downstream users.
+- The policed API is *marked with an attribute* (e.g. `#[rustc_lint_query_instability]`), and a
+  lint-pass greps the HIR for calls to attribute-marked items. Verbatim example from the file:
+
+> ```rust
+> /// The `potential_query_instability` lint detects use of methods which can lead to potential
+> /// query instability, such as iterating over a `HashMap`. ... queries must return
+> /// deterministic, stable results. `HashMap` iteration order can change between compilations,
+> /// and will introduce instability if query results expose the order.
+> pub rustc::POTENTIAL_QUERY_INSTABILITY, Allow, ...
+> ```
+
+This `POTENTIAL_QUERY_INSTABILITY` lint is a near-perfect structural analog to Dorc's *own*
+hermeticity discipline (AGENTS.md: clock/network/disk/randomness only through DI seams,
+correctness-kernels dependency-clean): rustc marks non-deterministic-order methods with an
+attribute and lints any compiler code that touches them. Dorc could mark non-hermetic primitives
+and lint kernel code that reaches them — the same attribute-plus-lint-pass shape. The file also
+carries `usage_of_ty_tykind`, `untracked_query_information`, a `rustc_must_match_exhaustively`
+exhaustiveness lint, and `bad_opt_access` — a whole self-policing suite [A-rustc-internal-lints-2026].
+
+> design-takeaway for Dorc: the `declare_tool_lint!` + marker-attribute + lint-pass pattern is how a
+> Rust project enforces "don't call the dangerous thing" discipline ON ITSELF without proc-macros
+> (these are `rustc::`-tool lints, not proc-macros). BUT finding-4's caution applies hardest here:
+> the *diagnostic-structure* members of this very family (`untranslatable_diagnostic`) were the ones
+> downgraded to `allow` under friction. ~SUSPECT the durable members are those policing a *crisp,
+> mechanical* property (query determinism, TyKind usage); the fragile member policed a *high-friction
+> authoring mandate*. Dorc's hermeticity lint (crisp property) is in the durable category; a "you
+> must phrase give-ups through this exact builder" lint (authoring mandate) is in the fragile
+> category — keep the give-up API friction near-zero if it is to be lint-enforced. (Caveat: a
+> custom `rustc::`-style tool lint requires either compiler-plugin machinery or clippy; for a plain
+> workspace the cheaper realization of the same idea is a tidy-style grep test, §1, or
+> dylint — flagged as an open thread.)
+
+## §12 rq-H — exhaustiveness-as-completeness analogs beyond Menhir
+
+The question: who else turns parser/automaton state enumeration (or match-exhaustiveness) into a
+diagnostic-completeness gate?
+
+- **LALRPOP** — has *error recovery* (the `!` token producing `ErrorRecovery`
+  [B-lalrpop-errorrecovery-2026]) but, crucially, NO `.messages`-style completeness gate. Error
+  messages are produced ad-hoc from the recovered state, not from an enumerated-and-checked
+  database. So LALRPOP is a same-domain tool that *declined* the Menhir discipline — evidence that
+  the completeness gate is a deliberate, costly choice, not a free byproduct of LR parsing.
+- **tree-sitter / Lezer** — error recovery produces `ERROR`/`MISSING` nodes
+  [B-treesitter-errornode-2026] but emits *no diagnostic messages at all* by design; downstream
+  tools (editors) interpret the error nodes. There is no message catalog to keep complete. Another
+  "declined the discipline" data point, for a different reason (the tool's job is a tree, not
+  messages).
+- **rustc match-exhaustiveness as a catalog driver** — the compiler's own
+  `rustc_must_match_exhaustively` internal lint (§11) and Rust's ordinary non-exhaustive-match
+  error are the *language-level* version: an `enum` of give-up reasons + exhaustive `match` makes
+  "did you handle every variant" a *type-checker-enforced* completeness gate, for free, with no
+  external tool. +SURE this is the cheapest completeness mechanism available to Dorc that it is not
+  yet fully using: if every give-up reason is a variant of one `enum DiagnosticCode` (or the catalog
+  is one exhaustive enum), then *both* "every code has a template" (match on emit) *and* "every
+  give-up maps to a code" (the give-up function returns the enum) become exhaustiveness checks the
+  Rust compiler already performs. The tidy-style grep gate (§1) then only needs to cover what the
+  type system cannot: that the enum variants are actually *reached* (stage-4 emission) and
+  *documented/tested* (stages 2-3).
+
+> design-takeaway for Dorc: the spectrum is (a) type-system exhaustiveness (free, but only proves
+> "every variant handled", not "every variant reachable/documented"); (b) Menhir-style enumerate +
+> compare (proves reachability-completeness, costs a generate+compare CI step and human message
+> upkeep); (c) tidy-style bidirectional grep (proves registry↔emit-site sync + docs + tests, costs
+> a regex test). +SURE Dorc should lean on (a) as the spine — make the catalog one exhaustive Rust
+> enum so the compiler enforces handle-every-code for free — and add (c) for the reachability/docs
+> half the type system misses. (b)'s heavyweight generate-from-scratch is unnecessary for Dorc
+> because give-up sites are *explicit code points*, not *implicit automaton states* — Dorc can grep
+> its own emit-sites (like tidy stage 4) rather than having to *derive* the complete set the way
+> Menhir must derive error states from the grammar. This is a genuine structural advantage: Dorc's
+> "states" are nameable in source; Menhir's are not.
