@@ -221,6 +221,15 @@ consumer — not a bolted accessor. Flagged for the dashboard slice.
 - ~SUSPECT: the var-resolved redirect target (`>> "$logfile"`) works via shared constant-prop
   machinery but lacks its own e2e/unit pin (hunt-1); the kind-vocabulary `file#written` vs a richer
   shape is the one design choice a human should ratify (§5).
+  <!-- /* STALE 2026-06-11 (round-21 close verification): the "lacks its own e2e/unit pin" half of
+  this bullet is wrong — the unit pin EXISTS (`effect.rs` `var_resolved_redirect_target_invalidates_query`,
+  ~:1482); §6 hunt-1's "NOW PINNED" is the correct line; this §9 bullet fossilized the pre-pin state.
+  Residuals (round-close ledger): that test's lone `valid:false` assertion can't discriminate the
+  resolved-concrete-cell path from the ⊤ path (both invalidate) — a companion
+  no-`dq-redir-target-top` assertion plus an optional e2e case are queued; no e2e var-resolved case
+  exists. Also: the `<>` reject claim's MECHANISM as stated in §6 is imprecise (`<>` lexes as
+  Read+Write and fails on the Read's target-word, not as a recognized operator) — outcome and safety
+  direction unchanged. */ -->
 - -GUESS: the span-provenance gap (hunt-6) is low-priority while `report()` ignores spans.
 - Flagged-not-resolved: s-2 skipped as not-≤20-lines (§7); q-2 disclosure volume on large books
   (hunt-5).

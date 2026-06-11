@@ -136,6 +136,16 @@ needs-declaration  1      1
 not-applicable     194    270
 ```
 
+<!-- /* CORRECTION 2026-06-11 (round-21 close re-derivation, verified against BOTH this note's
+own commit 2a0f3c4 and HEAD, corpus unchanged): the integer 195 (and crit-wt 271) does NOT
+reproduce — the dashboard at 2a0f3c4 reports 172 sites / crit-wt 238, byte-identical site set to
+HEAD; 195 was a stale mid-development snapshot never reconciled. Everything QUALITATIVE here
+reproduces: 0.0% in both probe modes, the four-cause decomposition below, needs-declaration=1,
+unattributed=0. §3's recorded e2e per-door totals are likewise stale snapshots (at 2a0f3c4's own
+83 cases: fold=4 dead-inv=2 replace-conv=42 qs=6 runs=138; at HEAD's 93 cases: fold=12 dead-inv=3
+replace-conv=42 qs=12 runs=162, unattributed=0 — deltas fully attributed to 10 new door1-*/y1-*
+cases plus exactly one engine-drift flip: render21-heredoc-refusal, whose false replace-converged
+became the correct runs(render-refusal) after #13 fix-1). Cite 172, never 195. */ -->
 ### Why 0% — and why that is the RIGHT answer (the decomposition the charter wanted)
 The north-star ceiling here is `oracle-coverage × declaration-coverage`, NOT engine
 quality or guard-idiom density (`20V` §7 / `211` §1). The 0% decomposes into four
