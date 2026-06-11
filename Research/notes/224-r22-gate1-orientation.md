@@ -724,6 +724,37 @@ warm-ups (d×d host-flip fixture; var-resolved redirect case) → 22x synthesis 
   only on divergence-need): hostile pass on the harvested gate, worktree
   x1-gate-attack, branch ai/r22-xcheck1 @ 6b869a9; may commit PoC pins; B1's
   hunt-1..8 handed with exceed-it instruction.
+- WAVE-2 PREP (fresh-context conductor, clean-context resume per §11 process-1;
+  2026-06-11): resumed from 22Z. Resume chain at `e6ea836`: all gates rc=0 ·
+  test suites all green (1 ignored SPEC) · e2e 99/99 ×2 real exits · typos 0.
+  Housekeeping landed: spike/CLAUDE.md gains the round-22 standing-rulings
+  section (rec-1 two-surfaces / rec-5 tape≠kSTATE-cache / held-4
+  battlefield-bound sanctioned exception) + corpus-count fix 43→99; 22B fork
+  slugs renamed note-scoped `22B-fork-*` per rv3-find-3 (decoder note left in
+  22B's header; ledger references above keep the old names). 22B read in full
+  by the conductor. owed-1 explainers delivered in-chat this turn. Conductor
+  catch at 22B read (~SUSPECT, handed to B3 to verify): the sketched
+  `#[non_exhaustive]` on DiagCode inverts the stated intent — it forces
+  DOWNSTREAM-crate matches to carry wildcard arms, defeating workspace-wide
+  handle-every-code; B3 directed to omit it and push back if wrong.
+- B3 arch-3-DESIGN → LAUNCHED (background; token/time figures appended at
+  completion): worktree %TEMP%\dorc-r22\b3-arch3, branch ai/r22-arch3, base =
+  `cb695a9` (the housekeeping tip; housekeeping commits `463c0b0` spike/CLAUDE.md
+  + `cb695a9` 22B rename). Scope: the
+  22B §3/§4 spine in core + s-2 classify-signature widening EARLY + report()
+  span rendering (drop-A) + gate-grep with seeded self-cleaning allow-list +
+  the three §5 worked-example migrations as proving set. Opus tier (ru-23
+  split); the mechanical ~14-site sweep is B4-Sonnet post-harvest. Conductor
+  dispositions handed: use the EXISTING arch-1 arena ProvId (22B sketches a
+  duplicate); 22B-fork dispositions (payload=typed per ru-16 · scope-key=stub
+  coarse=fine · wire-code=string-slug, flagged at PR · floor-membership=
+  builder-PROPOSES-only, human disposes · severity-help=no); goldens evolve
+  hand-edited per-case with justification, NEVER BLESS (conductor-only);
+  every new Diag field's exempt-partition classification = a tc-flag in the
+  report; hostsim-Finding fold deferred beyond B3 (constraint noted: core
+  cannot dep hostsim — Finding codes live in core's enum with core-expressible
+  payloads, hostsim constructs); legacy Diagnostic coexists until B4 empties
+  the allow-list.
 
 ## §11 Post-gating self-audit (append-only; conductor, after a window where several turns produced no output)
 

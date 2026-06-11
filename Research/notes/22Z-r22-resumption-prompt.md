@@ -3,9 +3,9 @@
 > Cold-conductor onboarding document. If you are reading this to resume round-22
 > after a conductor death OR a context-compromise: this file + notes/224 (the round
 > ledger, esp. §7 rulings / §10 dispatch / §11 self-audit) + plans/22A (the research
-> truth) + TaskList are your state. Updated at: build phase — GATE-2 passed, arch-1
-> HARVESTED + x-1 done, wave-2 PENDING; conductor context compromised (§11), resume
-> clean (2026-06-11).
+> truth) + TaskList are your state. Updated at: build phase — wave-2 LIVE: prep DONE
+> (housekeeping landed, owed-1 delivered), B3 arch-3-design IN FLIGHT @ `cb695a9`;
+> clean-context successor conducting (2026-06-11).
 
 ## Role
 
@@ -65,8 +65,10 @@ if the human re-hands it): quarantine 223. Do NOT read quarantine otherwise.
 
 ## Verified state (at last update)
 
-- Durable HEAD: `61844b1` (the 22Z self-update). Code HEAD = arch-1's `6b869a9`
-  (notes/plans commits since carry no code delta). Lineage milestones: `ada085d`
+- Durable HEAD: the wave-2-prep ledger commit (this update's own). Code HEAD =
+  arch-1's `6b869a9` (every commit since is notes/plans/CLAUDE.md only — incl.
+  `463c0b0` spike/CLAUDE.md round-22 standing rulings + corpus-count, and
+  `cb695a9` the 22B fork-slug rename). Lineage milestones: `ada085d`
   inherited-green base → `fa78935` notes/224 → research notes 225-229 → `5da879c`/
   `5b58c5f`/`8421ecb` the three e2e warm-up/d×d fixtures → `29d3c78` 22B diag draft →
   arch-1 `54a4b84`/`38acbec`/`6b869a9` (arena / Top(cause)+GATE / witness-split) →
@@ -81,6 +83,9 @@ if the human re-hands it): quarantine 223. Do NOT read quarantine otherwise.
   HARVESTED by cherry-pick (fb-11 content-diffs verified); x1-gate-attack
   (branch ai/r22-xcheck1, tip `b68fc66`) holds the x-1 coverage-doc test, NOT
   harvested (fold-or-re-derive at arch-2 prep). Originals left for the human.
+  b3-arch3 (branch ai/r22-arch3 @ `cb695a9`) IN FLIGHT: arch-3's design half —
+  the 22B spine + s-2 widening + report() spans + gate-grep + the 3-code proving
+  set; Opus per the ru-23 split; B4-Sonnet mechanical sweep follows its harvest.
 - `.claude/research/` GITIGNORED scratch was REMOVED (`d4277e0`); ~3.2MB untracked
   re-fetchable residue (incl. the four rqA primary PDFs) remains on disk for the
   human's inventory. (Stale prior note said "remove at digestion" — done.)
@@ -105,15 +110,20 @@ artifact, carries per-line disclosure overlaid). x-1 crosscheck DONE — verdict
 §11: the gate is correctly built but VACUOUS-AT-HEAD (write-only plane, no consumer
 reads a receipt yet); arch2-gate-obligation tracks the fix.
 
-NEXT = WAVE-2 PREP (a fresh-context conductor turn): (1) read 22B in full; (2) write
-the ratified sentences into spike/CLAUDE.md — rec-1 two-surfaces, rec-5 tape≠kSTATE-
-cache, the held-4 battlefield-bound sanctioned-exception, the corpus-count fix
-(43→99), and rename 22B's fork-1..4 to note-scoped slugs (RV3 find-3 collision with
-219's fork-1..4); (3) dispatch the 17-code catalog retrofit on the 22B spine, SPLIT
-Opus-design / Sonnet-mechanical (ru-23); s-2 span-widening early. WAVE-3: arch-2
-(emit-at-origin, mvs-1..5, remediation-class render, + arch2-gate-obligation) then
-arch-4-thin (cer-1..6, host-side durables per ru-21/22/23, traceparent tail — read
-OTel env-carriers spec first). x-2 (over-suppression) wants fr-2 (VMCAI PDF) first.
+WAVE-2 PREP DONE (2026-06-11, clean-context successor): 22B read in full;
+spike/CLAUDE.md gained the round-22 standing rulings + corpus-count fix
+(`463c0b0`); 22B fork slugs renamed note-scoped (`cb695a9`); owed-1 explainers
+delivered in-chat; resume chain verified green at `e6ea836` (all gates rc=0, e2e
+99/99 ×2, typos 0). B3 (arch-3 design half, Opus) DISPATCHED @ `cb695a9` — scope +
+conductor dispositions in 224 §10, incl. the #[non_exhaustive]-omission catch
+(builder verifies). NEXT = harvest B3 (chain before/after; adjudicate its
+tc-flags; relay the PROPOSED floor column to the human for disposal) → dispatch
+B4-Sonnet (ru-23 mechanical tier: the remaining-site sweep, per-code must-emit
+DST assertions, empty the gate-grep allow-list). WAVE-3: arch-2 (emit-at-origin,
+mvs-1..5, remediation-class render, + arch2-gate-obligation; fold-or-re-derive
+x-1's coverage-doc test at prep) then arch-4-thin (cer-1..6, host-side durables
+per ru-21/22/23, traceparent tail — read OTel env-carriers spec first). x-2
+(over-suppression) wants fr-2 (VMCAI PDF) first.
 
 CONTEXT-COMPROMISE NOTE (the reason this update exists): the conductor gated
 repeatedly this window on accumulated loaded vocabulary (see §11 process-1) after
@@ -235,11 +245,9 @@ brief agents COMPLETELY at launch; stop-and-relaunch is the only re-brief.
   after banking a hostile crosscheck's full report; fb-candidate = crosschecks on the
   inertness/provenance family must return PRE-SANITIZED verdicts (bank verdict, not
   transcript). Resume clean-context.
-- **owed-1 (224 §11):** three explainers owed the human (Eq-as-termination; the two
-  B1 scope judgments) — already-recorded decisions, deliver on a clean turn.
-- **housekeeping for wave-2 prep:** spike/CLAUDE.md gains rec-1 two-surfaces + rec-5
-  tape≠kSTATE-cache + held-4 battlefield-bound sanctioned-exception + corpus-count
-  43→99; rename 22B's fork-1..4 (collides with 219's fork-1..4, RV3 find-3).
+- **owed-1 (224 §11): DELIVERED** (in-chat, wave-2-prep turn, 2026-06-11).
+- **housekeeping for wave-2 prep: RESOLVED** (`463c0b0` spike/CLAUDE.md +
+  `cb695a9` 22B fork-rename).
 - flag-zm-attribution (225): vp-26's slogan is the Sabelfeld–Sands gloss, NOT
   Zdancewic–Myers verbatim — cite as engineering-precedent, not a tight bound.
 - flag-untracked-query-information (229): rustc's lint is a direct gate analogue —
