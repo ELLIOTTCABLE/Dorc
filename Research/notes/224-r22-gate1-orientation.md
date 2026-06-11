@@ -216,6 +216,37 @@ warm-ups (d×d host-flip fixture; var-resolved redirect case) → 22x synthesis 
   → worktree b2-fixture3, branch ai/r22-fixture3 @ 69c21ab. Crosscheck x-1 (hostile
   pass on the gate, Fable) queued for post-B1-harvest per ru-14; x-2 queued at
   arch-2; x-3 demoted to B-brief hunt-list item.
+- ru-17 (human; scope direction): add a first-draft of the BATTLEFIELD-BOUND
+  structured diagnostic API to this spike — "could become The Product of the spike,
+  and one of the first bits of actual code to write for the real codebase"; crib
+  rustc (spans/labels/suggestions/applicability API shape) and Elm (rendered
+  narrative philosophy) explicitly. Conductor integration: a design note FIRST
+  (notes/22B, dispatched, parallel-safe to B1), then it becomes wave-2's spine —
+  the 17-code retrofit doubles as the new API's proving ground. Guardrails carried
+  into the design brief: the Fluent-regret friction test (adding a code = ~one
+  edit, no DSL, no multi-file mandate), ru-16 typed payloads, ru-12 out-of-artifact
+  receipt rendering. Tension stated (spike charter vs battlefield-bound): the spike
+  PROVES the design; the real codebase extracts/reimplements — diag is a leaf
+  module, extraction is cheap; we design-for-keeps without violating
+  the-spike-is-disposable.
+- ru-18 (human; process concern + direction): DST/re-runability just became
+  user-facing, design-promise-fulfilling components ("help you be defensive +
+  save pain when oracles go wrong" is foundational). Consequences adopted:
+  (a) the probe-tape format is product surface, not test plumbing — design
+  attention + versioning; (b) arch-4 gains a REPLAY GATE as its first test (run
+  live recording the tape → re-run from tape → assert identity-plane identical;
+  the erasability gate's sibling, proves the postmortem promise mechanically);
+  (c) the deferred wish "figure out what happened with verbose OFF" returns as:
+  capture-always-lean / render-on-demand — verbose becomes a DISPLAY knob, never a
+  capture knob (~SUSPECT affordable at Dorc scale: probe outputs are small reads,
+  O(sites×hosts) per run, human-timescale ops — NOT Bazel-scale; needs a cheap
+  cost-measurement in arch-4 before welding); (d) retention = local rotated
+  last-N-runs artifacts; Dorc is NEVER a postmortem-reliability-class log/trace
+  ACCEPTOR — the OTel value-format/projection seam is the off-ramp for real
+  retention (ship spans to YOUR collector), which upgrades that seam from
+  tail-item to postmortem-story-adjacent (the need-3 "(sad)" gets its consolation).
+  Secret-scrub-at-capture and durable-locally-first (fate-sharing) carry as
+  constraints from 227.
 - ru-14 (human, end-of-window economics): be judicious with adversarial-crosscheck /
   Fable-class spend for the remainder of the window — his intuition stands that one
   well-targeted pair at the right juncture is very high value; so fewer, sharper
