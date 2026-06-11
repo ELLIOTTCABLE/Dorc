@@ -292,4 +292,96 @@ deepened below with compiler source. Verbatim core:
 > * ErrorGuaranteed should not be used to indicate that a compilation will emit an error in the
 >   future. It should be used to indicate that an error has already been emitted
 
-[deepened with compiler source + the delayed-bug hole below]
+**The mechanism (compiler source).** The type lives in `rustc_span` (defined via a newtype
+macro with a private inner field, hence unconstructable elsewhere) and is re-exported through
+`rustc_errors`; it is minted by `Diag::emit()`. The dev-guide's closing line is the tell on
+its *holes*: *"Thankfully, **in most cases**, it should be statically impossible to abuse
+`ErrorGuaranteed`."* [A-rustc-devguide-errorguaranteed-2024] — "most cases" because two
+escape hatches exist:
+
+**hole-eg-1 (delayed-bug minting).** An `ErrorGuaranteed` can be produced by the *delayed bug*
+machinery, not only by a real user-facing error. Direct source evidence from `stash_diagnostic`
+(`compiler/rustc_errors/src/lib.rs:584-620`), where stashing an `Error`-level diagnostic mints
+its guarantee through a *delayed* bug rather than an emitted error (verbatim):
+
+> ```rust
+> let guar = match diag.level {
+>     ...
+>     // We delay a bug here so that `-Ztreat-err-as-bug -Zeagerly-emit-delayed-bugs`
+>     // can be used to create a backtrace at the stashing site ...
+>     Error => Some(self.span_delayed_bug(span, format!("stashing {key:?}"))),
+>     DelayedBug => { return self.inner.borrow_mut().emit_diagnostic(...); }
+>     ForceWarning | Warning | Note | ... | Allow | Expect => None,
+> };
+> ```
+
+A `span_delayed_bug` is a *promise* that an error will surface before compilation ends; if that
+promise is broken (the delayed bug is never "promoted" to a real error because the code path
+that should re-encounter it is skipped), the `ErrorGuaranteed` was, in effect, minted for an
+error that never reached the user. rustc backstops this with an end-of-compilation assertion
+that any unflushed delayed bugs ICE the compiler — i.e. the guarantee is enforced by a *runtime
+self-check*, not purely by the type system. ~SUSPECT this is the precise analog Dorc must
+worry about: a "give-up token" minted optimistically must be backed by an actual end-of-run
+flush check, or it silently becomes vacuous.
+
+**hole-eg-2 (no kind information → cannot drive control flow).** Because the token can come
+from a delayed bug or an unrelated earlier error, branching emission decisions on possessing one
+is explicitly forbidden by the dev-guide. For Dorc: an `ErrorGuaranteed`-shaped "a refusal was
+recorded" token proves *a* give-up happened, but cannot tell you *which* — so it is sound for
+"this path is known-failing, suppress cascades" but unsound as the *input* to "should I emit
+code X". (The sibling agent covers the cascade-suppression use; the discipline point here is
+that the token's deliberate information-poverty is what keeps it sound as a *proof of
+emission* while making it useless as a *decision input*.)
+
+> design-takeaway for Dorc: the ZST-minted-only-by-emit pattern is directly transplantable to
+> Rust with no proc-macros (a `#[non_exhaustive]`-or-private-field ZST in the diagnostics module,
+> returned only by the `.emit()`-equivalent). But finding-5's lesson is that the type-level proof
+> is only as good as (a) the absence of an `unchecked`-style public constructor and (b) a runtime
+> end-of-run assertion that nothing was promised-but-not-delivered. The type system gets you 90%;
+> the last 10% is a `debug_assert!`-grade flush check.
+
+## §4 rq-B — TypeScript's numeric error codes
+
+Source: `microsoft/TypeScript@main`, `src/compiler/diagnosticMessages.json` (8560 lines) +
+`DiagnosticCategory` enum [A-typescript-diagmessages-2026].
+
+**The registry shape.** One generated JSON file maps each English message *string* (the key)
+to `{category, code}`. Verbatim sample (lines 1-12):
+
+> ```json
+> {
+>     "Unterminated string literal.": { "category": "Error", "code": 1002 },
+>     "Identifier expected.": { "category": "Error", "code": 1003 },
+>     "'{0}' expected.": { "category": "Error", "code": 1005 },
+> ```
+
+A build step (`generateDiagnostics`) compiles this JSON into `diagnosticInformationMap.generated.ts`,
+giving each message a typed accessor. The *key is the message text*, which has a consequence:
+renaming a message means touching the JSON key and the generated map, but the *code number*
+stays put — codes and messages are decoupled at the storage layer.
+
+**Per-code declared severity = the `category` field.** TypeScript ships exactly four categories
+(`DiagnosticCategory` enum, `Warning, Error, Suggestion, Message`)
+[A-typescript-diagmessages-2026]. Each registry entry hardcodes one. This is *per-code declared
+severity baked into the registry* — the closest direct prior art to what Dorc wants. Note the
+ordering quirk in the enum (`Warning = 0, Error = 1, Suggestion = 2, Message = 3`) is *not*
+ascending severity, so the enum is an identity tag, not an orderable rank.
+
+**Code-number stability vs message freedom — the policy split (finding-6).** ~SUSPECT (pending a
+verbatim policy-doc quote; this is the widely-documented TS team practice rather than a
+single-line policy file): TypeScript treats *message text* as explicitly outside semver — wording
+changes between minor versions freely — while *code numbers* are de-facto stable identifiers.
+Downstream tooling relies on this: `// @ts-expect-error` and error-suppression comments,
+`tsc --build` baseline diffs, eslint integrations, and editor quick-fix registries all key on the
+numeric code, never the message string. The maintenance economics that follow: adding a diagnostic
+= add a JSON entry with the next free code (codes are loosely grouped by subsystem — 1xxx
+syntactic/parser, 2xxx semantic, 5xxx command-line, 6xxx etc.), no central registrar; codes are
+effectively never reused even when a message is deleted, mirroring rustc's append-only discipline.
+[fetch-request filed for the canonical stability statement.]
+
+> design-takeaway for Dorc: TS validates the *decouple code from message* principle — the stable
+> identifier is the number/slug, the prose is free to improve. Dorc's catalog should treat the
+> code-slug as the API surface (what tooling/tests/users key on) and the message as mutable. The
+> `category`-in-registry pattern is the cheap severity-declaration model; TS's four-way split (and
+> the fact that downstream keys on code, never severity) suggests severity is metadata *on* the
+> code, not part of its identity.
