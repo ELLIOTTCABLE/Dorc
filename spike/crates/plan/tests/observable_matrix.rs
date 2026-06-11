@@ -893,22 +893,25 @@ fn render_one_liner_case_arm_body_substitutes_in_situ_keeping_arm_structure() {
 }
 
 #[test]
-fn render_multi_line_case_arm_body_keeps_whole_line_comment_form() {
-    // The negative control / scope guard for the T14 fix: when the arm body is on its
-    // OWN line (not sharing `pat)`/`;;`), the ordinary whole-line comment form is correct
-    // and already `dash -n`-clean — the in-situ path must NOT fire for it (it is keyed on
-    // the body sharing the pattern's line). This pins "zero churn to the ordinary path".
+fn render_multi_line_case_arm_body_substitutes_span_in_situ() {
+    // Re-homed for arch-1 (was `…_keeps_whole_line_comment_form`): the leaf-exact render
+    // substitutes a leaf's exact byte-span regardless of whether it shares the `pat)`/`;;`
+    // line. An OWN-LINE arm body now substitutes in-situ too — the line-granular whole-line
+    // comment form is retired (the "source line" was the wrong unit; the leaf span is). The
+    // `case`/arm scaffolding is untouched.
     let src = "case nginx in\n  nginx)\n    apt-get install -y nginx\n    ;;\n  *) : ;;\nesac\n";
     let (plan, ast) = plan_and_ast(src, &[("package", "nginx")]);
     let rendered = plan.render_apply(src, &ast);
     assert!(
-        rendered.contains("# apt-get install -y nginx   # dorc: elided"),
-        "an own-line arm body uses the whole-line comment form:\n{rendered}"
+        rendered.contains(
+            "    true   # dorc: elided [apt-get install -y nginx] (already converged / dead branch)"
+        ),
+        "an own-line arm body is span-substituted in-situ (leaf-exact render):\n{rendered}"
     );
-    // The pattern line `  nginx)` survives verbatim (it was never on the body's line).
+    // The pattern line `  nginx)` and the `;;`/`case`/`esac` scaffolding survive verbatim.
     assert!(
-        rendered.contains("\n  nginx)\n"),
-        "the `nginx)` pattern line is untouched:\n{rendered}"
+        rendered.contains("\n  nginx)\n") && rendered.contains("\n    ;;\n"),
+        "the `nginx)` pattern + `;;` scaffolding are untouched:\n{rendered}"
     );
 }
 
@@ -980,24 +983,20 @@ fn render_post_if_install_sharing_fi_line_substitutes_in_situ() {
 }
 
 #[test]
-fn render_own_line_then_body_keeps_whole_line_comment_form() {
-    // Zero-churn negative control (the `guarded` e2e shape): a converged install that is
-    // the then-body but sits ALONE on its own line (the `then`/`fi` keywords are on OTHER
-    // lines) must keep the ORIGINAL whole-line comment form — it is already `dash -n`-clean
-    // and the in-situ path must NOT fire (it is gated on the leaf SHARING its line with
-    // scaffolding). This pins "zero golden churn outside the new cases".
+fn render_own_line_then_body_substitutes_span_in_situ() {
+    // Re-homed for arch-1 (was `…_keeps_whole_line_comment_form`, the `guarded` e2e shape):
+    // a converged install that is the then-body and sits ALONE on its line is now
+    // span-substituted in-situ to its stand-in `true` (the leaf-exact render — the
+    // whole-line comment form is gone). The `if true; then`/`fi` scaffolding is untouched
+    // (the guard `true` is Pure ⇒ Run ⇒ no edit).
     let src = "if true; then\n   apt-get install -y nginx\nfi\necho done\n";
     let (plan, ast) = plan_and_ast(src, &[("package", "nginx")]);
     let rendered = plan.render_apply(src, &ast);
     assert!(
         rendered.contains(
-            "# apt-get install -y nginx   # dorc: elided (already converged / dead branch)\n"
+            "   true   # dorc: elided [apt-get install -y nginx] (already converged / dead branch)"
         ),
-        "an own-line then-body install keeps the whole-line comment form (not in-situ):\n{rendered}"
-    );
-    assert!(
-        !rendered.contains("in situ"),
-        "the in-situ path must NOT fire for an own-line leaf (zero churn):\n{rendered}"
+        "an own-line then-body install is span-substituted in-situ to `true`:\n{rendered}"
     );
     // The `then`/`fi` keywords survive verbatim on their own lines.
     assert!(
@@ -1007,24 +1006,29 @@ fn render_own_line_then_body_keeps_whole_line_comment_form() {
 }
 
 #[test]
-fn render_multiline_leaf_on_scaffolding_line_refuses_license_and_runs_verbatim() {
-    // The refuse-the-license fallback (task-F2): a converged install whose argv operand
-    // carries a LITERAL NEWLINE, so its source span crosses two lines, while sharing the
-    // loop's `done` line. The in-situ splice operates on ONE line's bytes, so it cannot
-    // express a multi-line leaf — the conservative path REFUSES the license and renders
-    // the leaf VERBATIM (it RUNS — kFAIL-perform; over-executing an already-converged
-    // mutator is safe, a broken artifact is not). Critically the `done` is NOT eaten.
+fn render_multiline_leaf_on_scaffolding_line_substitutes_cleanly() {
+    // Re-derived for arch-1 (d-6; was `…_refuses_license_and_runs_verbatim`): a MULTI-LINE
+    // leaf is NEWLY EXPRESSIBLE under the leaf-exact render — a span edit may cover multiple
+    // source lines, so a converged install whose argv operand carries a LITERAL NEWLINE
+    // (span crosses two lines) while sharing the loop's `done` line is substituted CLEANLY:
+    // its whole span collapses to `true`, keeping `done` (the line-render's old multi-line
+    // refusal is retired). The provenance comment's embedded original newline is flattened
+    // (else the `#` comment would split into a stray unterminated-quote line).
     let src = "for x in a b; do echo \"$x\"\ndone; apt-get install -y \"multi\nline\"\n";
-    // The operand resolves to a concrete literal (`multi\nline`); converged ⇒ would be a
-    // Replace, but the multi-line span forces the verbatim-run fallback.
     let (plan, ast) = plan_and_ast(src, &[("package", "multi\nline")]);
     let rendered = plan.render_apply(src, &ast);
     assert!(
-        rendered.contains("\ndone; apt-get install -y \"multi\nline\"\n"),
-        "the multi-line install is rendered VERBATIM (refuse-the-license), `done` kept:\n{rendered}"
+        rendered.contains("\ndone; true   # dorc: elided ["),
+        "the multi-line install is span-substituted to `true`, `done` kept:\n{rendered}"
     );
+    // The provenance comment is a SINGLE line (the operand's interior newline flattened).
+    assert!(
+        !rendered.contains("\nline\"]"),
+        "the comment's embedded original newline is flattened (no stray `line\"]` line):\n{rendered}"
+    );
+    // No `# done` (the loop terminator is never commented/eaten).
     assert!(
         !rendered.contains("# done"),
-        "the `done` is NOT commented (the fallback must not break the loop):\n{rendered}"
+        "the `done` is NOT commented (the splice must not break the loop):\n{rendered}"
     );
 }

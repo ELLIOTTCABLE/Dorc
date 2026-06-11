@@ -1,0 +1,4 @@
+# probe-results: NONE. The in-loop Query condition (`dpkg -s nginx`) is excluded from probe
+# compilation (task-L2 item-6b — probing an in-loop site is wasted remote work), so the probe
+# ships NO resolvable sites (both the condition and the body are `skip-unresolvable`). With no
+# resolvable site there is no fact to inject; the apply runs the loop verbatim regardless.

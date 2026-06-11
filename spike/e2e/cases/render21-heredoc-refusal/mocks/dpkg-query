@@ -1,0 +1,8 @@
+#!/bin/sh
+# INERT shim for `dpkg-query` — the package kind's install probe (`dpkg-query -W nginx`).
+# The mock host has nginx installed, so it exits 0 ⇒ the install's establish probe reports
+# holds (site 2 ⇒ holds rc=0). (The install is OMITTED by the fold regardless of its own
+# verdict — the fold reads the GUARD's rc — but the probe still ships this check, so it
+# needs a shim for gate-1 parity; the host is consistent: nginx installed both ways.)
+printf 'ran: %s %s\n' "${0##*/}" "$*" >>"$DORC_LOG"
+exit 0

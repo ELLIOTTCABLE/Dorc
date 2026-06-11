@@ -327,33 +327,34 @@ pub enum Predicted<T> {
 /// liveness set). The `Effect` channel is vouched by convergence (the forward gate), so
 /// it never enters the *consumed* set — it gates the elision license instead.
 ///
-/// The two status channels differ by **render-expressibility, not construct identity**
-/// (`206` §3, executed in task-O): four sources now feed the value-relaxable channel (a
-/// `&&`/`||` operand, an errexit-region command's rc, a `$?`-reader's predecessor, and any
-/// future reader a KNOWN rc reproduces exactly), but only ONE feeds the render-floor
-/// channel (an `if`/`elif` guard). With four-vs-one the axis is provably *can the
-/// line-granular render substitute the consumer in-situ*, not *which construct consumed
-/// the status* — so the names say which render capability retires each, not which syntax
-/// produced it. The `AndOrStatus` name (round-19, `19G`'s deferred `ch-wrong` bake-and-see)
-/// is retired as misleading.
+/// The status consumers split by **what reproduces the read**, not construct identity
+/// (`206` §3, executed in task-O; refined by arch-1, note 214). The leaf-exact (span-based)
+/// apply render (arch-1) substitutes a leaf's exact byte-span in-situ, so the round-21
+/// render-EXPRESSIBILITY floor (`StatusRenderFloor` — "the line-granular render cannot
+/// substitute a guard sharing its line with `if`/`then`/`fi`") is GONE: an `if`/`elif` guard
+/// is now an ordinary `StatusRelaxable` reader (a probe-sourced KNOWN rc reproduces the read
+/// exactly; ⊤ blocks). What remains keyed on a REAL reason, not render capability:
+/// `StatusRelaxable` (a KNOWN rc reproduces the consumer's decision — `&&`/`||` operands,
+/// errexit-region commands, `$?`-readers' predecessors, and now if/elif guards),
+/// `StatusInvariant` (the consumer decides nothing observable — the `cmd || true` shape),
+/// and `StatusIterated` (the consumed value is a per-iteration SEQUENCE no single predicted
+/// rc can reproduce — a `while`/`until` condition). The `AndOrStatus` (round-19) and
+/// `StatusRenderFloor` (round-20/21) names are both retired.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Channel {
     /// The command's effect on managed state (mutation). Vouched by convergence ⇒ never
     /// in the consumed set; its predicted value is the [`Observable::effect`] verdict.
     Effect,
-    /// Status consumed by an `if`/`elif` **guard** — blocks unconditionally TODAY because
-    /// the line-granular render cannot substitute a guard in-situ (it shares its line with
-    /// the `if`/`then`/`fi` scaffolding; eliding it breaks `dash -n`). Retired ONLY by a
-    /// guard-capable leaf-exact render (`C-5`), NOT by channel semantics — a ⊤ vs known rc
-    /// makes no difference here, the floor is the render, not the value (`19C` strain-D).
-    StatusRenderFloor,
     /// Status consumed by a value-relaxable reader — `&&`/`||` operands, errexit-region
-    /// commands, `$?`-readers' predecessors, and any future reader whose decision a KNOWN
-    /// rc reproduces exactly (`206` §3: four sources feed this channel). A ⊤ rc blocks; a
-    /// probe-sourced/known rc substitutes (the value-preserving stand-in reproduces the
-    /// exact status, so the branch decides identically). Eliding a ⊤-rc operand to a
-    /// fabricated rc-0 `true` would suppress a `|| fallback` — the `kFAIL-perform`
-    /// under-execute (`19D`).
+    /// commands, `$?`-readers' predecessors, and (since arch-1, note 214) `if`/`elif`
+    /// **guards** (`206` §3 + the leaf-exact render). A ⊤ rc blocks; a probe-sourced/known
+    /// rc substitutes (the value-preserving stand-in reproduces the exact status, so the
+    /// branch decides identically). Eliding a ⊤-rc operand to a fabricated rc-0 `true` would
+    /// suppress a `|| fallback` — the `kFAIL-perform` under-execute (`19D`). The if/elif
+    /// guard joined this channel when the leaf-exact render retired the `StatusRenderFloor`
+    /// expressibility block: a guard's command byte-span is now substitutable in-situ
+    /// (`if (exit 1); then` is dash-clean), so the only remaining question is the value one
+    /// this channel already asks — does a KNOWN rc reproduce the guard's branch decision?
     StatusRelaxable,
     /// Status consumed-in-form but dead-in-fact — the `cmd || true` shape (door-3, charter
     /// `20V` §4). The `||` *reads* the left rc, yet both continuations rejoin with identical
@@ -367,6 +368,21 @@ pub enum Channel {
     /// under-execute; here the decisions converge. Still RECORDED in the consumed set —
     /// disclosure/provenance must see the read; only the *blocking* judgment differs.
     StatusInvariant,
+    /// Status consumed **per-iteration** by a `while`/`until` **condition** (arch-1, note
+    /// 214 — the honest successor to the retired `StatusRenderFloor` block for loop
+    /// conditions). The condition is re-evaluated every iteration, so the value it consumes
+    /// is a SEQUENCE of rc's (one per pass), not a single value — and a substitution emits
+    /// ONE predicted rc, which can never reproduce a sequence. Worse, a `while CMD` whose
+    /// condition is replaced by a *constant* `true` is an **infinite loop** (the
+    /// disaster-class shape), and a constant `false` runs the body zero times: either way
+    /// the iteration count is wrong. So this channel **blocks unconditionally**, even with a
+    /// known rc — keyed on the REAL reason (iteration), not on render capability (which the
+    /// leaf-exact render removed). Distinct from [`StatusRelaxable`] (a single-shot guard a
+    /// known rc reproduces) precisely because the loop condition is multi-shot. NB the
+    /// in-loop structural floor (`Cfg::in_loop_body`) ALSO forces a loop-condition leaf to
+    /// run this round (defense in depth); this mark stands independently so the block is
+    /// honest about *why* even if that floor later lifts.
+    StatusIterated,
     /// fd 1 captured to a real (non-`/dev/null`) sink ⇒ value-bearing, vouched by
     /// nothing ⇒ a consumed `Stdout` always blocks (16F §3).
     Stdout,
@@ -390,8 +406,10 @@ pub struct Observable {
     /// The predicted exit **status** when converged — the oracle's declared converged-rc.
     /// `Predicted::Top` ⇒ undeclared ⇒ no fold through this leaf (the `19D` `kFAIL-perform`
     /// floor: never fabricate a conforming rc-0). The consuming side decides which status
-    /// channel reads it: a [`Channel::StatusRelaxable`] reader folds/substitutes a known
-    /// value; a [`Channel::StatusRenderFloor`] guard blocks regardless (the render floor).
+    /// channel reads it: a [`Channel::StatusRelaxable`] reader (now including an if/elif
+    /// guard, arch-1) folds/substitutes a known value; a [`Channel::StatusIterated`]
+    /// `while`/`until` condition blocks regardless (the per-iteration sequence no single rc
+    /// reproduces).
     pub status: Predicted<Rc>,
     /// `Stdout` channel: the predicted fd-1 [`OutClaim`] a substitution must reproduce.
     /// ALWAYS `Predicted::Top` this round (`19F` §3 shape completion — nothing produces a

@@ -373,8 +373,8 @@ fn for_loop_lowers_a_back_edge_not_a_top_node() {
 #[test]
 fn while_loop_lowers_condition_region_and_back_edge() {
     // `while`: a condition region between head and body, plus the back-edge. The
-    // condition command is in-loop and consumes its status at the render floor
-    // (StatusRenderFloor — pinned in the consumed-observable tests); here we pin the
+    // condition command is in-loop and consumes its status per-iteration
+    // (StatusIterated — pinned in the consumed-observable tests); here we pin the
     // cyclic shape + the body reachability.
     let src = "while dpkg -s nginx; do apt-get install -y nginx; done";
     let cfg = cfg_of(src);
@@ -1132,24 +1132,27 @@ fn consumed_enclosing_subshell_devnull_stays_quiet() {
     );
 }
 
-// --- F1 branch-status (round-19, `notes/195`): the engine marks
-// `Channel::StatusRenderFloor` ONLY in an unambiguous-guard condition region
-// (`if`/`elif`), so the phased caller can block eliding a guard. The LOCUS is the whole
-// fix — errexit and `&&`/`||` must NOT mark it (they mark `StatusRelaxable`). These pin
-// the engine-side fact directly (the `plan` collapse is in `observable_matrix.rs`). ---
+// --- branch-status (round-19 `notes/195`; arch-1 note 214): an `if`/`elif` guard's
+// command consumes `Channel::StatusRelaxable` — the leaf-exact render retired the
+// `StatusRenderFloor` expressibility block, so a guard is an ordinary single-shot
+// substitution site (a probe-sourced KNOWN rc reproduces its branch decision; ⊤ blocks).
+// A `while`/`until` condition consumes `Channel::StatusIterated` (the per-pass sequence no
+// single rc reproduces — an unconditional block, the honest successor). These pin the
+// engine-side fact directly (the `plan` collapse is in `observable_matrix.rs`). ---
 
 #[test]
-fn consumed_if_guard_marks_render_floor() {
-    // The command in an `if` condition is a guard (a different branch runs on its rc);
-    // its status is branch-consumed ⇒ `StatusRenderFloor` in the set. The `then`-body
-    // command is NOT in the condition region ⇒ stays quiet.
+fn consumed_if_guard_marks_relaxable() {
+    // The command in an `if` condition is a guard (a different branch runs on its rc); its
+    // status is branch-consumed ⇒ `StatusRelaxable` in the set (arch-1: a guard is now an
+    // ordinary substitution site, not the retired render floor). The `then`-body command is
+    // NOT in the condition region ⇒ stays quiet.
     let guard = consumed_of(
         "if apt-get install -y nginx; then systemctl start nginx; fi\n",
         "apt-get",
     );
     assert!(
-        guard.contains(&Channel::StatusRenderFloor),
-        "an if-condition command's status is branch-consumed"
+        guard.contains(&Channel::StatusRelaxable),
+        "an if-condition command's status is branch-consumed (StatusRelaxable, arch-1)"
     );
     // The then-body command (distinct command word so the helper finds IT, not the
     // guard) is not in the condition region ⇒ no branch-status.
@@ -1158,24 +1161,24 @@ fn consumed_if_guard_marks_render_floor() {
         "systemctl",
     );
     assert!(
-        !body.contains(&Channel::StatusRenderFloor),
+        !body.contains(&Channel::StatusRelaxable),
         "the then-body command is not a guard ⇒ no branch-status"
     );
 }
 
 #[test]
-fn consumed_negated_if_guard_marks_render_floor() {
-    // The Dorc idiom `if ! command -v X; then …` — the `!`-negated pipeline sits inside
-    // the `if` condition, so its command's status is branch-consumed (the F1 headline
-    // shape). `echo` is target-state-pure but the consumption fact is locus-based, not
-    // effect-based, so it is still marked.
+fn consumed_negated_if_guard_marks_relaxable() {
+    // The Dorc idiom `if ! command -v X; then …` — the `!`-negated pipeline sits inside the
+    // `if` condition, so its command's status is branch-consumed `StatusRelaxable` (arch-1).
+    // `echo` is target-state-pure but the consumption fact is locus-based, not effect-based,
+    // so it is still marked.
     let c = consumed_of(
         "if ! echo probe; then apt-get install -y nginx; fi\n",
         "echo",
     );
     assert!(
-        c.contains(&Channel::StatusRenderFloor),
-        "a negated if-guard command's status is branch-consumed"
+        c.contains(&Channel::StatusRelaxable),
+        "a negated if-guard command's status is branch-consumed (StatusRelaxable, arch-1)"
     );
 }
 
@@ -1183,18 +1186,18 @@ fn consumed_negated_if_guard_marks_render_floor() {
 fn consumed_errexit_marks_relaxable_status_c3() {
     // 19A C-3 / 205 §2: `set -e` reads every command's rc (non-zero ⇒ abort), so an
     // errexit-region command IS a status-consumer — marked the value-relaxable
-    // `StatusRelaxable`, NOT the `if`/`elif` `StatusRenderFloor`. The committed engine
-    // deliberately left this un-marked ("errexit stays vouched"); that is the C-3 hole
-    // task-E closes (a converged ⊤-rc mutator under `set -e` must RUN, not elide). A
-    // known/probe-sourced rc still folds — the relaxation is what Query-guard rcs ride.
+    // `StatusRelaxable`. The committed engine deliberately left this un-marked ("errexit
+    // stays vouched"); that is the C-3 hole task-E closes (a converged ⊤-rc mutator under
+    // `set -e` must RUN, not elide). A known/probe-sourced rc still folds — the relaxation
+    // is what Query-guard rcs ride.
     let c = consumed_of("set -e\napt-get install -y nginx\n", "apt-get");
     assert!(
         c.contains(&Channel::StatusRelaxable),
         "errexit-consumed status is marked StatusRelaxable (C-3: not special-cased-as-vouched)"
     );
     assert!(
-        !c.contains(&Channel::StatusRenderFloor),
-        "errexit marks the value-relaxable channel, never the if/elif render floor"
+        !c.contains(&Channel::StatusIterated),
+        "errexit is not a loop condition ⇒ never StatusIterated"
     );
 }
 
@@ -1205,50 +1208,55 @@ fn consumed_errexit_off_does_not_mark_status() {
     // not blanket — a lone establish stays quiet (and so stays elidable when converged).
     let c = consumed_of("apt-get install -y nginx\n", "apt-get");
     assert!(
-        !c.contains(&Channel::StatusRelaxable) && !c.contains(&Channel::StatusRenderFloor),
+        !c.contains(&Channel::StatusRelaxable) && !c.contains(&Channel::StatusIterated),
         "no errexit ⇒ no status consumer on a lone command"
     );
 }
 
 #[test]
 fn consumed_errexit_mark_respects_precise_edge_pruning() {
-    // EXCLUSION-CHECK (the precise-edge contract, note 166 + 205 §2): the C-3 errexit
-    // mark reuses the errexit pass's failure-edge knowledge, so it is pruned EXACTLY
-    // where the failure-edge is. An `if`-guard command under `set -e` is errexit-exempt
-    // (a condition region, no failure-edge) ⇒ it must NOT pick up `StatusRelaxable` from
-    // the errexit pass; it carries only the `if`/`elif` `StatusRenderFloor` from
-    // `mark_status`. (Were the mark over-broad — marking every command under `set -e` —
-    // it would re-mark exempt guards and the precise-edge work would be moot.)
-    let c = consumed_of(
-        "set -e\nif apt-get install -y nginx; then echo done; fi\n",
-        "apt-get",
-    );
+    // EXCLUSION-CHECK (the precise-edge contract, note 166 + 205 §2; re-homed for arch-1):
+    // the C-3 errexit mark reuses the errexit pass's failure-edge knowledge, so it is pruned
+    // EXACTLY where the failure-edge is. An `if`-guard command under `set -e` is
+    // errexit-exempt (a condition region, no failure-edge). Under arch-1 the if-guard mark is
+    // ALSO `StatusRelaxable` (no longer the retired render floor), so the channel alone can no
+    // longer distinguish "errexit mark" from "if-guard mark" — the precise-edge property is
+    // pinned by the FAILURE-EDGE: an errexit-exempt guard has NO failure→exit edge (whereas a
+    // bare errexit-region command does). The guard still carries `StatusRelaxable` (from the
+    // if-guard mark), but it must NOT carry a failure-edge (errexit-exempt).
+    let src = "set -e\nif apt-get install -y nginx; then echo done; fi\n";
+    let c = consumed_of(src, "apt-get");
     assert!(
-        c.contains(&Channel::StatusRenderFloor),
-        "the if-guard keeps its render floor"
+        c.contains(&Channel::StatusRelaxable),
+        "the if-guard carries StatusRelaxable (arch-1: an ordinary guard substitution site)"
     );
+    let cfg = cfg_of(src);
+    let guard_n = command_nodes_with_literal(&cfg, src, "apt-get")[0];
     assert!(
-        !c.contains(&Channel::StatusRelaxable),
-        "an errexit-exempt if-guard does NOT get the errexit StatusRelaxable mark (precise-edge pruning)"
+        !has_exit_edge(&cfg, guard_n),
+        "the errexit-exempt if-guard has NO failure→exit edge (precise-edge pruning — the \
+         real property, now that the channel no longer distinguishes guard-vs-errexit)"
     );
 }
 
 #[test]
-fn while_condition_is_render_floor_and_errexit_exempt() {
-    // task-L1 item-2(a)+(b), the dash-fidelity heart of the while loop. Under `set -e`:
+fn while_condition_is_iterated_and_errexit_exempt() {
+    // task-L1 item-2(a)+(b) (re-homed for arch-1), the dash-fidelity heart of the while
+    // loop. Under `set -e`:
     //   * the CONDITION command (`dpkg -s nginx`) is errexit-EXEMPT (a failing while
     //     condition does NOT abort — dash: `set -e; while false; do :; done; echo ok`
-    //     prints ok), so it has NO failure→exit edge, and its status is consumed at the
-    //     render FLOOR (`StatusRenderFloor`, like an if-guard — a loop condition is not
-    //     in-situ substitutable); whereas
+    //     prints ok), so it has NO failure→exit edge, and its status is consumed
+    //     per-iteration (`StatusIterated`, arch-1 — the per-pass rc-sequence no single
+    //     predicted rc reproduces; the honest successor to the retired render floor, and a
+    //     loop condition is still never substituted — now keyed on iteration); whereas
     //   * the BODY command (`apt-get install`) is in the errexit region (a failing body
     //     command DOES abort), so it has a failure-edge AND is `StatusRelaxable`-consumed
-    //     (C-3). The two split exactly as `if`-guard vs errexit-region command do.
+    //     (C-3). The two split exactly as loop-condition vs errexit-region command do.
     let src = "set -e\nwhile dpkg -s nginx; do apt-get install -y nginx; done\n";
     let cond = consumed_of(src, "dpkg");
     assert!(
-        cond.contains(&Channel::StatusRenderFloor),
-        "the while CONDITION is StatusRenderFloor-consumed (render floor, like if-guard): {cond:?}"
+        cond.contains(&Channel::StatusIterated),
+        "the while CONDITION is StatusIterated-consumed (per-iteration sequence): {cond:?}"
     );
     assert!(
         !cond.contains(&Channel::StatusRelaxable),
@@ -1332,10 +1340,10 @@ fn consumed_dollar_question_in_assignment_marks_predecessor() {
 
 #[test]
 fn consumed_andand_left_operand_marks_relaxable_status() {
-    // `19D` (generalised from the F1 `if`/`elif`-only stopgap): a `&&`/`||` left operand
-    // IS branch-consumed, so the engine marks it `Channel::StatusRelaxable` (the
-    // value-relaxable variant — distinct from the `if`/`elif` `StatusRenderFloor`). The
-    // phased caller collapses it rc-conditionally (`prove_replaceable`): undeclared rc ⇒
+    // `19D`: a `&&`/`||` left operand IS branch-consumed, so the engine marks it
+    // `Channel::StatusRelaxable` (a KNOWN rc reproduces the operand's branch decision —
+    // the same channel an `if`/`elif` guard now uses, arch-1). The phased caller collapses
+    // it rc-conditionally (`prove_replaceable`): undeclared rc ⇒
     // block (the `useradd[9] || mkdir` under-execute floor), declared rc ⇒ relax
     // (`install && start`'s rc-0 post-condition stays replaceable). Pins the engine-side
     // fact; the rc-conditional collapse is in `plan`'s `observable_matrix.rs`.
@@ -1347,10 +1355,10 @@ fn consumed_andand_left_operand_marks_relaxable_status() {
         c.contains(&Channel::StatusRelaxable),
         "a `&&`/`||` left operand's status is branch-consumed (marked StatusRelaxable, 19D)"
     );
-    // It is the value-relaxable variant, NOT the `if`/`elif` unconditional-block floor.
+    // It is the value-relaxable variant, NOT the loop-condition unconditional block.
     assert!(
-        !c.contains(&Channel::StatusRenderFloor),
-        "the `&&`/`||` variant is StatusRelaxable, not the `if`/`elif` render floor"
+        !c.contains(&Channel::StatusIterated),
+        "a `&&`/`||` operand is StatusRelaxable, never the loop-condition StatusIterated block"
     );
 }
 
@@ -1527,11 +1535,11 @@ fn consumed_post_while_dollar_question_marks_body_not_only_condition() {
         "the while BODY's last command is marked (post-loop $? = body-last rc): {body:?}"
     );
     // The condition is ALSO marked (the walk still reaches it), but that mark is inert: a
-    // while condition is `StatusRenderFloor`-blocked unconditionally regardless.
+    // while condition is `StatusIterated`-blocked unconditionally regardless (arch-1).
     let cond = consumed_of(src, "dpkg");
     assert!(
-        cond.contains(&Channel::StatusRenderFloor),
-        "the while condition stays render-floored (its StatusRelaxable over-mark is inert): {cond:?}"
+        cond.contains(&Channel::StatusIterated),
+        "the while condition stays StatusIterated-blocked (its StatusRelaxable over-mark is inert): {cond:?}"
     );
 }
 

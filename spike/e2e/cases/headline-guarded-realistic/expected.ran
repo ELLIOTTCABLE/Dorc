@@ -1,4 +1,3 @@
-ran: dpkg -s nginx
 ran: apt-get install -y nginx
 ran: apt-get update
 ran: apt-get install -y curl

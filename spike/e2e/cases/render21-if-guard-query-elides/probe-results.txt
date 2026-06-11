@@ -1,0 +1,8 @@
+# probe-results: site 1 is the guard `dpkg -s nginx` (a VALID pkgstate Query); holds rc 0 ⇒
+# the fold reads rc 0, `! 0` ⇒ if-false ⇒ the then-body install (site 2) is DEAD. The guard's
+# own rc 0 is fold-usable (rule-query-validity passes — nothing mutates upstream of it). The
+# install (site 2, an establish) is OMITTED by the fold regardless of its own verdict (the
+# fold reads the GUARD's rc); the host is consistent — nginx installed both ways (the dpkg
+# guard AND the dpkg-query install probe report holds). (set -e is site 0 — unresolvable.)
+site 1 effect=holds rc=0
+site 2 effect=holds

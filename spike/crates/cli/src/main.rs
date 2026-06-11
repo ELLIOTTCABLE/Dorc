@@ -171,6 +171,12 @@ fn run() -> Result<(), String> {
         emit_debug_argv(&plan, &cfg.value, &value, &interner);
     }
 
+    // arch-1 d-6: the leaf-exact render refuses to elide a leaf whose span can't be safely
+    // edited (a heredoc-bearing command — its span covers `<<EOF`, not the body), running it
+    // verbatim instead (kFAIL-perform). Surface WHY on stderr (else a converged mutator
+    // silently running is invisible); the gate-3 floor requires the case to declare it.
+    report("render", &plan.render_refusal_diagnostics(&parsed.value));
+
     print!("{}", plan.render_apply(&book_src, &parsed.value));
     Ok(())
 }

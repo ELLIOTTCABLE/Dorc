@@ -105,12 +105,13 @@ pub enum CfgNodeKind {
 // `true`-stub's default would NOT vouch — an un-collapsed fact (`inv-superposition`): the
 // engine names *what is consumed*; the phased caller (`plan`) collapses it. `Effect` is
 // vouched by convergence and never enters the set; `Stdout`/`Stderr` are vouched by
-// nothing (always block, 16F §3). The status-consumers split by render-expressibility, not
-// construct identity (`206` §3): `StatusRenderFloor` (the `if`/`elif` guard — the ONE
-// source the line-granular render cannot substitute in-situ, an unconditional block), and
-// `StatusRelaxable` (FOUR sources — a &&/|| operand, an errexit-region command's rc, and a
-// `$?`-reader's predecessor, per 19A C-3 / 205 §2: `set -e` and `$?` are ordinary
-// rc-consumers, not special-cased). See `core::Channel`.
+// nothing (always block, 16F §3). The status-consumers split by what reproduces the read
+// (`206` §3 + arch-1 / note 214: the leaf-exact render retired the render-expressibility
+// `StatusRenderFloor`): `StatusRelaxable` (a KNOWN rc reproduces the decision — a &&/||
+// operand, an errexit-region command's rc, a `$?`-reader's predecessor, and an `if`/`elif`
+// guard), `StatusInvariant` (the consumer decides nothing — `cmd || true`), and
+// `StatusIterated` (a `while`/`until` condition — the per-pass SEQUENCE no single rc
+// reproduces, an unconditional block). See `core::Channel`.
 
 /// One CFG node: its role plus the [`AstId`] it derives from (provenance). For
 /// synthetic nodes (`Entry`/`Exit`/`Merge`/scope) the `ast` points at the nearest
@@ -699,11 +700,10 @@ impl<'a> Builder<'a> {
         entry_pred: CfgNodeId,
     ) -> CfgNodeId {
         // A `&&`/`||` left operand's status is **branch-consumed** (the right operand's
-        // reachability turns on it). `lower_condition_region(_, false)` clears its
-        // errexit-fallibility (a `&&`/`||` left operand is errexit-exempt) WITHOUT
-        // marking `Channel::StatusRenderFloor` (that variant is the `if`/`elif` render
-        // floor, an unconditional block); instead it is marked `Channel::StatusRelaxable`
-        // (the `19D` generalisation — render-expressible). The phased caller
+        // reachability turns on it). `lower_condition_region(_, None)` clears its
+        // errexit-fallibility (a `&&`/`||` left operand is errexit-exempt) but marks NO
+        // channel itself; this site then marks `Channel::StatusRelaxable` (a KNOWN rc
+        // reproduces the operand's branch decision). The phased caller
         // (`plan`) collapses it **rc-conditionally** (`prove_replaceable`): an undeclared
         // rc blocks the license (eliding to a fabricated `true`/rc-0 would suppress a
         // `cmd || fallback` — the `kFAIL-perform` under-execute the round-19 adversarial
@@ -731,7 +731,7 @@ impl<'a> Builder<'a> {
             Channel::StatusRelaxable
         };
         let before_left = self.nodes.len();
-        let left_exit = self.lower_condition_region(left, entry_pred, false);
+        let left_exit = self.lower_condition_region(left, entry_pred, None);
         self.mark_consumed_range(
             before_left,
             self.nodes.len(),
@@ -780,10 +780,13 @@ impl<'a> Builder<'a> {
         // The WHOLE condition is errexit-exempt, not just its tail (find-2): every
         // command/redir in the test region is cleared of fallibility (`[RAN]`
         // `if false; true; then …` runs the body, no abort; note 166). It is also an
-        // UNAMBIGUOUS guard — a different branch runs on the rc — so its commands'
-        // status is branch-consumed (`mark_status=true`): a converged guard must run,
-        // not elide (F1 / `notes/195`).
-        let cond_exit = self.lower_condition_region(cond, entry_pred, true);
+        // UNAMBIGUOUS guard — a different branch runs on the rc — so its commands' status is
+        // branch-consumed `Channel::StatusRelaxable` (arch-1 / note 214: the leaf-exact
+        // render retired the `StatusRenderFloor` block, so an if/elif guard is an ordinary
+        // single-shot substitution site — a probe-sourced KNOWN rc reproduces its branch
+        // decision; ⊤ blocks, the `19D`/`kFAIL-perform` floor).
+        let cond_exit =
+            self.lower_condition_region(cond, entry_pred, Some(Channel::StatusRelaxable));
 
         // Success path: then_body.
         let then_exit = self.lower_node(then_body, cond_exit);
@@ -931,9 +934,12 @@ impl<'a> Builder<'a> {
     /// errexit-exemption as an `if`/`elif` test — extended here via
     /// [`lower_condition_region`]); a failing BODY command DOES abort (its failure-edge
     /// is materialised in phase 2, and it is `StatusRelaxable`-consumed per C-3). The
-    /// condition CONSUMES its last command's status (it decides whether the body or the
-    /// exit runs) at the render floor — `Channel::StatusRenderFloor`, like an `if`-guard
-    /// (item-2(b)): the line-granular render cannot substitute a loop condition in-situ.
+    /// condition CONSUMES its last command's status (it decides whether the body or the exit
+    /// runs) as `Channel::StatusIterated` (arch-1 / note 214): a loop condition is
+    /// re-evaluated per pass, so its consumed value is a SEQUENCE no single predicted rc can
+    /// reproduce, and replacing it with a constant is an infinite/zero-iteration disaster —
+    /// so it blocks unconditionally, the honest successor to the retired `StatusRenderFloor`
+    /// (keyed on iteration, not the line-granular render the leaf-exact render replaced).
     /// `until` vs `while` only flips the runtime continuation sense, not the CFG shape
     /// (both a body-entry and an exit edge exist either way); the value/effect planes
     /// are continuation-sense-agnostic, so one lowering serves both.
@@ -947,9 +953,14 @@ impl<'a> Builder<'a> {
         let head = self.fresh(id, CfgNodeKind::LoopHead);
         self.add_edge(entry_pred, head);
         let loop_start = self.nodes.len();
-        // The condition is an errexit-exempt guard whose status is consumed at the
-        // render floor (`mark_status = true`, like `if`/`elif`).
-        let cond_exit = self.lower_condition_region(cond, head, true);
+        // The condition is an errexit-exempt guard whose status is consumed per-iteration —
+        // `Channel::StatusIterated` (arch-1): a single predicted rc can never reproduce the
+        // condition's per-pass sequence, and a constant-substituted loop condition is an
+        // infinite/zero-iteration disaster, so it blocks unconditionally. (NB: `loop_start`
+        // is captured BEFORE the condition is lowered, so the condition nodes are ALSO
+        // flagged `in_loop` below — the structural floor independently forces them to run;
+        // this mark records the honest *reason* regardless.)
+        let cond_exit = self.lower_condition_region(cond, head, Some(Channel::StatusIterated));
         let body_exit = self.lower_node(body, cond_exit);
         self.add_edge(body_exit, head); // the back-edge
         self.mark_in_loop_range(loop_start, self.nodes.len());
@@ -1168,7 +1179,7 @@ impl<'a> Builder<'a> {
     /// pred-walk would stop at the condition command and miss the body. When the walk
     /// reaches such a loop-exit `merge` ([`while_exit_to_body`]), it also seeds the
     /// recorded body-exit, so the body's last command is marked too (the condition keeps
-    /// its mark — already `StatusRenderFloor`-blocked, so the over-mark is inert). A `for`
+    /// its mark — already `StatusIterated`-blocked, so the over-mark is inert). A `for`
     /// loop needs no special case: its exit is `head → merge` and `head`'s back-edge pred
     /// is the body-exit, so the body is already reached.
     fn mark_dollar_question_predecessors(&mut self) {
@@ -1354,23 +1365,29 @@ impl<'a> Builder<'a> {
     /// operands of a compound test (find-3) — both of which the old tail-only
     /// `mark_condition_context` missed when the region exit was a `Merge`.
     ///
-    /// `mark_status` additionally marks every command in the region as consuming
-    /// `Channel::StatusRenderFloor` (F1 / `notes/195`): the test of an `if`/`elif` — or
-    /// a `while`/`until` condition (task-L1) — is an **unambiguous guard** (a *different*
-    /// branch runs on its rc: the then/else, or the body/exit), and the line-granular
-    /// render cannot substitute a guard sharing its line with the `if`/`then`/`fi` (or
-    /// `while`/`do`/`done`) scaffolding, so this blocks the license **unconditionally** —
-    /// the render floor (19C strain-D). It is `true` for an `if`/`elif` condition AND a
-    /// loop condition (the L1 generalisation — these were ⊤-rejected when this was
-    /// written); a `&&`/`||` left operand is marked the *separate*
-    /// `Channel::StatusRelaxable` at its own call site (`lower_and_or`, the `19D`
-    /// value-relaxable variant — the render CAN express it), not via this floor. This
-    /// locus is the ONE source of the render-floor channel; the value-relaxable channel
-    /// has FOUR (`206` §3): a `&&`/`||` operand, an errexit-region command
-    /// (`materialise_errexit_edges`), and a `$?`-reader's predecessor
-    /// (`mark_dollar_question_predecessors`). errexit is no longer
-    /// special-cased-as-vouched (19A C-3 / 205 §2): a converged conforming establish under
-    /// `set -e` still folds via a known rc, but a ⊤-rc mutator runs.
+    /// `mark_status`, when `Some(channel)`, additionally marks every command in the region
+    /// as consuming `channel` — the test of an `if`/`elif`, or a `while`/`until` condition,
+    /// is an **unambiguous guard** (a *different* branch runs on its rc: the then/else, or
+    /// the body/exit), so its status is branch-consumed. The CHANNEL differs by what can
+    /// reproduce the read (arch-1 / note 214; the round-21 `StatusRenderFloor` render-floor
+    /// is retired now that the leaf-exact render substitutes a guard's byte-span in-situ):
+    /// * an `if`/`elif` condition is marked `Channel::StatusRelaxable` — a single-shot guard
+    ///   a probe-sourced KNOWN rc reproduces exactly (`if (exit 1); then` is dash-clean), ⊤
+    ///   blocks. The guard became an ordinary substitution site;
+    /// * a `while`/`until` condition is marked `Channel::StatusIterated` — the condition is
+    ///   re-evaluated per pass, so the consumed value is a SEQUENCE no single rc reproduces,
+    ///   and substituting a loop condition with a constant is an infinite/zero-iteration
+    ///   disaster, so it blocks UNCONDITIONALLY (the honest successor to the old floor,
+    ///   keyed on iteration not render capability).
+    ///
+    /// A `&&`/`||` left operand is marked the value-relaxable `Channel::StatusRelaxable` (or
+    /// `StatusInvariant` for `|| true`) at its OWN call site (`lower_and_or`), not here —
+    /// it passes `None`. So the `StatusRelaxable` channel has these sources (`206` §3 +
+    /// arch-1): a `&&`/`||` operand, an errexit-region command (`materialise_errexit_edges`),
+    /// a `$?`-reader's predecessor (`mark_dollar_question_predecessors`), and an `if`/`elif`
+    /// guard (here); `StatusIterated` has the lone `while`/`until` condition (here). errexit
+    /// is not special-cased-as-vouched (19A C-3 / 205 §2): a converged conforming establish
+    /// under `set -e` still folds via a known rc, but a ⊤-rc mutator runs.
     ///
     /// Implemented as a node-range mark/clear: CFG nodes are arena-allocated in walk
     /// order, so the half-open range `[before, after)` is exactly the region's
@@ -1379,17 +1396,13 @@ impl<'a> Builder<'a> {
         &mut self,
         cond: AstId,
         entry_pred: CfgNodeId,
-        mark_status: bool,
+        mark_status: Option<Channel>,
     ) -> CfgNodeId {
         let first = self.nodes.len();
         let exit = self.lower_node(cond, entry_pred);
         self.clear_fallible_range(first, self.nodes.len());
-        if mark_status {
-            self.mark_consumed_range(
-                first,
-                self.nodes.len(),
-                &Powerset::singleton(Channel::StatusRenderFloor),
-            );
+        if let Some(channel) = mark_status {
+            self.mark_consumed_range(first, self.nodes.len(), &Powerset::singleton(channel));
         }
         exit
     }

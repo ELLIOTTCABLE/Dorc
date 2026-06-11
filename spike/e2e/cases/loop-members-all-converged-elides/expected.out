@@ -22,4 +22,4 @@ package_installed__check 'curl'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; eli
 # all-or-nothing in-loop license (item-3) lifts the render-floor: the body is substituted
 # by `true` and the loop iterates twice over `true`. Run-set: EMPTY — no apt-get runs.
 # THIS is the brk-1 payoff finally landed (a converged install loop fully elided).
-for pkg in nginx curl; do true; done   # dorc: elided (already converged / dead branch) — substituted in situ (shares line with scaffolding)
+for pkg in nginx curl; do true; done   # dorc: elided [apt-get install -y "$pkg"] (already converged / dead branch)

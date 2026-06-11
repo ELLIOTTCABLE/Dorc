@@ -1,0 +1,26 @@
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc — the record is the out-of-band lane).
+
+# site 0: package:nginx#installed
+package_installed__check() { dpkg-query -W "$1" >/dev/null 2>&1; }
+package_installed__check 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'site 0 effect=%s rc=%s\n' "$_e" "$_rc"
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+# render21-heredoc-refusal (arch-1, note 214 d-6 — the render-capability REFUSAL): an oracled,
+# CONVERGED mutator that the disposition layer LICENSES to elide (it is an EstablishAmbient
+# whose effect already holds) is REFUSED by the leaf-exact render because it carries a HEREDOC
+# (`<<EOF`). The leaf's AST span covers the `<<EOF` operator, NOT the body lines (the body is
+# generated content the parser captures separately), so substituting the command span would
+# strand `some config`/`EOF` as stray artifact lines. The render refuses the license and runs
+# the command VERBATIM (kFAIL-perform — over-executing an already-converged mutator is safe; a
+# broken artifact is not), and emits an `error[render-heredoc-refused]` diagnostic so the
+# converged mutator silently running is NOT invisible. HOST: nginx installed (converged, so it
+# WOULD have elided but for the heredoc). expected.ran: the install runs (refused).
+apt-get install -y nginx <<EOF
+some config
+EOF

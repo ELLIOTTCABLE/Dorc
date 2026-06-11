@@ -13,24 +13,18 @@ package_installed__check 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; el
 #!/bin/sh
 # dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
 
-# door3-or-true-elides (door-3 PAYOFF, charter 20V §4 / note 213): `cmd || true` under `set -e`,
-# CONVERGED. The install's rc is consumed by `|| true` ⇒ `StatusInvariant` (never blocks), so
-# the convergence-elision license MINTS even though the mutator's rc is ⊤ (`fork-mutator-rc`).
-# The mutator is REPLACED by its stand-in `true` (licensed by INVARIANCE — both `||`
-# continuations rejoin identically — not by a claim it exits 0). TARGET artifact: the line
-# collapses to a value-preserving stand-in (`true || true` or the whole-line-comment
-# equivalent) and expected.ran is EMPTY (nothing mutating runs).
+# door3-or-true-elides (door-3 PAYOFF, charter 20V §4 / notes 213+214): `cmd || true` under
+# `set -e`, CONVERGED. The install's rc is consumed by `|| true` ⇒ `StatusInvariant` (never
+# blocks), so the convergence-elision license MINTS even though the mutator's rc is ⊤
+# (`fork-mutator-rc`). The mutator is REPLACED by its stand-in `true` (licensed by INVARIANCE —
+# both `||` continuations rejoin identically — not by a claim it exits 0).
 #
-# XFAIL (note 213 / d-5 checkpoint-2): the license mints correctly at the PLAN level (the
-# disposition flips Replace — see analysis/tests/cfg.rs + plan/tests/observable_matrix.rs
-# door3_* pins, which pass), but the round-21 LINE-GRANULAR render cannot EXPRESS it: the
-# bare `|| true` line's `true` right operand is a Pure builtin ⇒ `Run`, and a line carrying a
-# `Run` leaf renders VERBATIM (run_lines wins), so the mutator is not actually substituted in
-# the artifact and the install RUNS. Collapsing the line needs the leaf-exact render (arch-1,
-# wave-2) OR omitting the `true` leaf — both are render-machinery extensions d-5 forbids door-3
-# from making (door-3 must not grow a line-granular carve-out arch-1 is concurrently deleting).
-# This case asserts the CORRECT behavior (empty run-set) and is EXPECTED to fail until arch-1
-# lands; a surprise pass (XPASS) means the leaf-exact render arrived — promote it then.
+# arch-1 PAYOFF LANDED (note 214; was XFAIL until the leaf-exact render arrived): the
+# leaf-exact (span-based) apply render substitutes the install's exact byte-span with `true`
+# in-situ, leaving the `|| true` verbatim ⇒ the line becomes `true || true`, dash-clean, with
+# an EMPTY run-set (nothing mutating runs). The line-granular render could not express this
+# (the `true` Run leaf forced the whole line verbatim, so the install ran). The mutator's span
+# is substituted (Replace, the door-3 StatusInvariant license); the `true` rhs is verbatim
+# (NOT a spurious fold — note 213 §5 hunt-6).
 set -e
-# apt-get install -y nginx || true   # dorc: elided (already converged / dead branch)
-true
+true || true   # dorc: elided [apt-get install -y nginx] (already converged / dead branch)

@@ -1,1 +1,0 @@
-door-3 license mints (Replace) but the line-granular render can't collapse `cmd || true` (the `true` Run leaf forces verbatim); needs arch-1 leaf-exact render (d-5 checkpoint-2 — render extension forbidden to door-3). Target: empty run-set.

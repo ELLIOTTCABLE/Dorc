@@ -1,0 +1,1 @@
+render: error[render-heredoc-refused]: leaf-exact render refuses to elide a heredoc-bearing command

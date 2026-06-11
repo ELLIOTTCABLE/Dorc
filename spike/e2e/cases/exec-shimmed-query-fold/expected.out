@@ -27,5 +27,4 @@ package_installed__check 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; el
 # branch is DEAD ⇒ the install is OMITTED, and the guard is value-substituted to its exact
 # `true`. The whole line collapses to `true` under errexit; the run-set is empty.
 set -e
-# dpkg -s nginx >/dev/null 2>&1 || apt-get install -y nginx   # dorc: elided (already converged / dead branch)
-true
+true || :   # dorc: elided [dpkg -s nginx >/dev/null 2>&1; apt-get install -y nginx] (already converged / dead branch)

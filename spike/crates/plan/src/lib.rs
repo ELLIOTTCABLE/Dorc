@@ -239,14 +239,15 @@ impl ReplaceLicense {
     ///    * `Stdout`/`Stderr` — the stub defaults them to empty, vouched by nothing
     ///      (16F §3); a consumed one ⇒ run (no in-spike bridge). A declared rc does
     ///      NOT vouch *output content*, so these block regardless of `observed_rc`.
-    ///    * `StatusRenderFloor` (an `if`/`elif` guard) — blocks the license
-    ///      **unconditionally**. The line-granular render cannot substitute a guard on its
-    ///      `if`/`then`/`fi` line, so even a declared rc cannot be applied in-situ (the
-    ///      disposition would be sound, but the render breaks `dash -n`). The block is the
-    ///      render floor; full retirement waits on the leaf-exact render (`C-5`).
-    ///    * `StatusRelaxable` (a `&&`/`||` left operand, an errexit-region command, or a
-    ///      `$?`-reader's predecessor — the four `206` §3 sources) — blocks **only when
-    ///      the rc is ⊤** (`status == Predicted::Top`): then the stand-in would default to
+    ///    * `StatusIterated` (a `while`/`until` condition) — blocks **unconditionally**.
+    ///      The condition is re-evaluated per pass, so its consumed value is a SEQUENCE no
+    ///      single predicted rc reproduces, and a constant-substituted loop condition is an
+    ///      infinite/zero-iteration disaster (arch-1, note 214 — the honest successor to the
+    ///      retired render-floor, keyed on iteration not render capability).
+    ///    * `StatusRelaxable` (a `&&`/`||` left operand, an errexit-region command, a
+    ///      `$?`-reader's predecessor, or — since arch-1 — an `if`/`elif` guard) — blocks
+    ///      **only when the rc is ⊤** (`status == Predicted::Top`): then the stand-in would
+    ///      default to
     ///      `true` (rc 0), a fabricated success that suppresses a `|| fallback` (the
     ///      `kFAIL-perform` under-execute — the round-19 adversarial trace). A
     ///      *declared/probe-sourced* rc relaxes it (`status == Predicted::Value(N)` ⇒ the
@@ -319,9 +320,11 @@ impl ReplaceLicense {
     ///    stand-in needs a concrete rc to reproduce (`inv-probe-sourced-values`: no
     ///    fabricated rc-0); AND
     /// 3. the consumption gates pass ([`consumption_ok`]): a guard whose `Stdout`/
-    ///    `Stderr` is consumed, or whose status is an `if`/`elif` guard
-    ///    (`StatusRenderFloor`), still blocks. A `StatusRelaxable`-consumed status with a
-    ///    *known* rc relaxes (the whole point — the fold reads the exact rc, substitutes it).
+    ///    `Stderr` is consumed, or whose status is a `while`/`until` loop condition
+    ///    (`StatusIterated`), still blocks. A `StatusRelaxable`-consumed status with a
+    ///    *known* rc relaxes (the whole point — the fold reads the exact rc, substitutes it);
+    ///    an `if`/`elif` guard is now `StatusRelaxable` too (arch-1), so a known-rc guard
+    ///    Query is exactly this path.
     ///
     /// An INVALID guard arrives with `status == ⊤` from its phased caller (the cli
     /// withholds the stale rc), so condition (2) already blocks it — but we also gate
@@ -429,14 +432,15 @@ impl ReplaceLicense {
 /// forbids the substitution:
 /// * `Stdout`/`Stderr` — empty default vouched by nothing ⇒ a consumed one always
 ///   blocks (a declared/probed rc does NOT vouch output *content*);
-/// * `StatusRenderFloor` (an `if`/`elif` guard) — blocks unconditionally (the render
-///   floor: the line-granular render cannot substitute a guard on its `if`/`then`/`fi`
-///   line; retired only by a guard-capable leaf-exact render, not by the rc value);
-/// * `StatusRelaxable` (the four `206` §3 sources: a `&&`/`||` left operand, an
-///   errexit-region command, or a `$?`-reader's predecessor) — blocks ONLY when the rc is
-///   ⊤ (a fabricated rc-0 `true` would suppress a `|| fallback`, the `kFAIL-perform`
-///   under-execute); a known/probe-sourced rc relaxes it (`StandIn::from_rc` reproduces
-///   the exact status);
+/// * `StatusIterated` (a `while`/`until` condition) — blocks unconditionally: the
+///   condition's per-iteration rc-sequence cannot be reproduced by one predicted rc, and a
+///   constant-substituted loop condition is an infinite/zero-iteration disaster (arch-1,
+///   note 214 — the honest successor to the retired `StatusRenderFloor`, keyed on iteration);
+/// * `StatusRelaxable` (a `&&`/`||` left operand, an errexit-region command, a
+///   `$?`-reader's predecessor, or — since arch-1 — an `if`/`elif` guard) — blocks ONLY
+///   when the rc is ⊤ (a fabricated rc-0 `true` would suppress a `|| fallback`, the
+///   `kFAIL-perform` under-execute); a known/probe-sourced rc relaxes it
+///   (`StandIn::from_rc` reproduces the exact status);
 /// * `StatusInvariant` (the `cmd || true` shape — door-3, `20V` §4) — NEVER blocks,
 ///   regardless of prediction (⊤ included): both `||` continuations rejoin with identical
 ///   observables, so any stand-in rc is extensionally faithful (`19D`'s under-execute
@@ -451,7 +455,11 @@ fn consumption_ok(consumed: &May<Powerset<Channel>>, status: Predicted<Rc>) -> b
     if consumed.contains(&Channel::Stdout) || consumed.contains(&Channel::Stderr) {
         return false;
     }
-    if consumed.contains(&Channel::StatusRenderFloor) {
+    if consumed.contains(&Channel::StatusIterated) {
+        // A `while`/`until` condition's per-iteration rc-sequence cannot be reproduced by a
+        // single predicted rc, and a constant-substituted loop condition is an
+        // infinite/zero-iteration disaster ⇒ blocks unconditionally (arch-1, note 214 — the
+        // honest successor to the retired `StatusRenderFloor`, keyed on iteration).
         return false;
     }
     if consumed.contains(&Channel::StatusRelaxable) && matches!(status, Predicted::Top) {
@@ -459,9 +467,10 @@ fn consumption_ok(consumed: &May<Powerset<Channel>>, status: Predicted<Rc>) -> b
     }
     // `Channel::StatusInvariant` (door-3) is intentionally absent from every block above:
     // a site carrying ONLY it (its sole status-consumer is a `|| true`) passes even at ⊤.
-    // A site that ALSO carries a blocking mark (`StatusRelaxable` from an inner `||`, an
-    // `if`-guard's `StatusRenderFloor`, a consumed `Stdout`) is still blocked by that mark
-    // — Invariant never *un*-blocks, it only declines to block (the d-3 mark-union rule).
+    // A site that ALSO carries a blocking mark (`StatusRelaxable` from an inner `||` or an
+    // if/elif guard, `StatusIterated` from a loop condition, a consumed `Stdout`) is still
+    // blocked by that mark — Invariant never *un*-blocks, it only declines to block (the
+    // d-3 mark-union rule).
     true
 }
 
@@ -1102,6 +1111,13 @@ fn members_disposition(
     }
 }
 
+/// A leaf's source text flattened to one line (interior whitespace collapsed) for an
+/// inline diagnostic message — a heredoc leaf's text spans lines, which would garble a
+/// single-line `error[…]:` line otherwise.
+fn command_text_oneline(sh: &str) -> String {
+    sh.split_whitespace().collect::<Vec<_>>().join(" ")
+}
+
 /// The verbatim source text of a node's `[lo, hi)` span — the exact sh the admin
 /// wrote. Resolving a span for display is allowed under `inv-referent-agnostic`
 /// (it is provenance, not a logic branch).
@@ -1157,384 +1173,442 @@ impl Plan {
         out
     }
 
-    /// Render the apply as the ORIGINAL book with elided (`Replace`) command-lines
-    /// replaced by their no-op stand-in — "a copy of book.sh with the safe-to-omit
-    /// lines commented", the CLI's final artifact. Line-granular (the spike's books
-    /// are ~one-command-per-line): a source line is elided iff a `Replace` leaf lies
-    /// on it and no `Run` leaf does. Everything else (guards, blanks, comments,
-    /// multi-leaf lines) passes verbatim, so the output keeps the original control
-    /// flow (contrast [`render_sh`](Plan::render_sh), the flat leaf-list).
+    /// Render the apply as the ORIGINAL book with each elided leaf's **exact byte-span**
+    /// substituted in-situ (arch-1, note 214 — the leaf-exact / span-based render). A
+    /// `Replace`d leaf's command span becomes its value-preserving [`StandIn`]; a
+    /// fold-dead `Omit` leaf (whose controller is itself neutralised) becomes `:`; a `Run`
+    /// leaf gets NO edit (verbatim is the default, by construction). Every other byte —
+    /// scaffolding keywords (`for`/`done`/`if`/`fi`/`then`/`case`/`esac`), the `pat)`/`;;`
+    /// of a case arm, the `||`/`&&` of a list, blanks, comments — is kept verbatim, so the
+    /// artifact preserves the book's control flow (contrast [`render_sh`](Plan::render_sh),
+    /// the flat leaf-list). The leaf-exact render RETIRES the round-21 carve-out family
+    /// (T14 case-arm, F2 scaffolding-shared, the group-closer) and the
+    /// `StatusRenderFloor`: "the source line" was the wrong substitution unit; the leaf's
+    /// byte-span is the right one.
     ///
-    /// `ap-2` / `an-render-runnable` (`notes/193` strain-6 + `19C`): a neutralised
-    /// line emits a provenance comment **then its value-preserving [`StandIn`]** at the
-    /// original indentation — `true` (rc 0), `false` (rc 1), `(exit n)` (other), or `:`
-    /// for a wholly-dead (`Omit`) line whose status is unreachable. The stand-in is the
-    /// substitution *itself*, not filler: a `Replace` reproduces the leaf's observed
-    /// status (`19A §5`); a comment *alone* deletes the command, so commenting the lone
-    /// body of an `if`/`while`/`case` arm leaves an empty clause — a `sh -n` syntax
-    /// error — which the stand-in (valid in *every* context a command was) prevents.
+    /// `ap-2` / `an-render-runnable`: each substitution is value-preserving — `true`
+    /// (rc 0), `false` (rc 1), `(exit n)` (other), or `:` for a wholly-dead `Omit`. The
+    /// stand-in is the substitution *itself*, not filler: a `Replace` reproduces the leaf's
+    /// observed status (`19A §5`), so `useradd[rc9] || mkdir` would substitute `(exit 9)`,
+    /// keeping `|| mkdir` live. Because the edit replaces ONLY the command span and leaves
+    /// the surrounding keywords intact, no empty-clause `dash -n` error can arise (the
+    /// trap the whole-line-comment form fell into). The leaf-exact render makes the door-3
+    /// `cmd || true` payoff expressible (`true || true`) and lets an if/elif guard
+    /// substitute in-situ (`if (exit 1); then`) — both unreachable under the line render.
     ///
-    /// Two new gates over the round-16 line-render:
-    /// * **value-preserving stand-in** — a line's stand-in reproduces its folded exit
-    ///   status (the surviving `Replace` leaf's, or the sequence's last), not a blanket
-    ///   `:`. This is what makes `useradd[rc9] || mkdir` safe end-to-end: were that line
-    ///   ever neutralised, its stand-in would be `(exit 9)`, not `true` (so `|| mkdir`
-    ///   still fires).
-    /// * **omit-safety** — an `Omit` (fold-dead) leaf is neutralised **only when its
-    ///   controlling guard is itself neutralised** (`is_neutralised`). If the guard is
-    ///   kept (`Run` — e.g. an `if`/`elif` guard held by `mark_status`, which the
-    ///   line-render cannot substitute in-situ), omitting the body would let the kept,
-    ///   possibly-stale guard re-decide against a removed body (a `kFAIL-perform`
-    ///   under-execute). So such an `Omit` body is rendered **verbatim** (it runs; the
-    ///   runtime guard gates it — the F1 floor). Coherent in-situ guard substitution is
-    ///   the deferred leaf-exact / structural render (`C-5`/`seam-prov`).
+    /// Edit-model invariants (asserted in [`collect_edits`]): edits never partially
+    /// overlap; under full containment the OUTER edit wins (a folded construct's edit
+    /// subsumes its interior leaves' — though no current shape produces a containing
+    /// construct-edit). The omit-safety gate survives: an `Omit` leaf is edited to `:`
+    /// ONLY when its controlling guard is itself neutralised ([`is_neutralised`]); a kept
+    /// (`Run`) guard leaves the dead body verbatim (it runs; the runtime guard gates it —
+    /// `kFAIL-perform`). The render-capability refusal (`20V` §4 d-6) refuses a leaf
+    /// carrying a **heredoc** redirect (the AST span covers `<<EOF`, not the body lines, so
+    /// substituting the command span would strand the body as stray artifact lines): such a
+    /// leaf is run verbatim.
     #[must_use]
     pub fn render_apply(&self, src: &str, ast: &Ast) -> String {
-        emit_apply_lines(src, &self.classify_lines(src, ast))
+        let edits = self.collect_edits(src, ast);
+        emit_span_edits(src, &edits)
     }
 
-    /// Compute the per-line render decisions (the [`LineRender`] maps) — the *decision*
-    /// half of `render_apply`, split from the byte-emission half ([`emit_apply_lines`]) so
-    /// each stays length-bounded. Walks every leaf [`Step`], routing it to in-situ
-    /// substitution (case-arm T14 or scaffolding-shared task-F2), whole-line
-    /// neutralisation, or verbatim, per the omit-safety + scaffolding-safety gates.
-    fn classify_lines(&self, src: &str, ast: &Ast) -> LineRender {
-        let line_of = |byte: u32| -> usize {
-            src.get(..byte as usize)
-                .map_or(0, |s| s.bytes().filter(|&b| b == b'\n').count())
-        };
-        // Byte offset of each source line's first byte (index = line number) — maps an
-        // absolute leaf span to an in-line byte column for the in-situ paths.
-        let line_start: Vec<usize> = std::iter::once(0)
-            .chain(
-                src.bytes()
-                    .enumerate()
-                    .filter_map(|(i, b)| (b == b'\n').then_some(i + 1)),
-            )
-            .collect();
+    /// The render-capability refusal diagnostics (arch-1 d-6): one `error` per leaf that the
+    /// disposition layer LICENSED to elide (a `Replace`, or a fold-dead `Omit` whose
+    /// controller is neutralised) but the leaf-exact render must REFUSE because its span
+    /// cannot be safely edited. The refuse-set this round: a leaf carrying a **heredoc**
+    /// redirect (`<<EOF`) — the AST span covers the operator, not the body lines, so
+    /// substituting the command span would strand the body as stray artifact lines. Such a
+    /// leaf runs verbatim (`kFAIL-perform` — over-executing an already-converged mutator is
+    /// safe; a broken artifact is not), and this surfaces WHY (the apply silently running a
+    /// converged mutator would otherwise be invisible). The cli `report()`s these on stderr;
+    /// the e2e gate-3 floor requires a case exercising this path to declare the diagnostic.
+    #[must_use]
+    pub fn render_refusal_diagnostics(&self, ast: &Ast) -> Vec<dorc_core::Diagnostic> {
+        let by_ast: BTreeMap<AstId, &Disposition> =
+            self.steps.iter().map(|s| (s.ast, &s.disposition)).collect();
+        let mut diags = Vec::new();
+        for step in &self.steps {
+            let would_elide = match &step.disposition {
+                Disposition::Replace(_, _) => true,
+                Disposition::Omit { controller } => is_neutralised(&by_ast, ast, *controller, 0),
+                Disposition::Run => false,
+            };
+            if would_elide && leaf_has_heredoc(ast, step.ast) {
+                diags.push(dorc_core::Diagnostic::error(
+                    dorc_core::DiagCode("render-heredoc-refused"),
+                    Some(ast.node(step.ast).span),
+                    format!(
+                        "leaf-exact render refuses to elide a heredoc-bearing command \
+                         (`{}`): its span covers the `<<` operator, not the body lines, so \
+                         substituting it would strand the heredoc body — it runs verbatim",
+                        command_text_oneline(&step.sh),
+                    ),
+                ));
+            }
+        }
+        diags
+    }
+
+    /// Collect the span edits the leaf-exact render applies (arch-1) — one `(Span,
+    /// replacement, original)` per elided leaf — and enforce the edit-model invariants.
+    ///
+    /// A `Replace`d leaf contributes its command-node span (which the parser sets to
+    /// include the leaf's trailing redirects — d-2(a)) edited to its [`StandIn`]'s sh; a
+    /// fold-dead `Omit` whose controller is neutralised contributes its span edited to `:`
+    /// (the omit-safety gate — an un-neutralised controller leaves the body verbatim). A
+    /// `Run` leaf contributes nothing (verbatim by default).
+    ///
+    /// REFUSE (d-6 render-capability): a leaf carrying a heredoc redirect is dropped (no
+    /// edit ⇒ runs verbatim) — its AST span covers only `<<EOF`, not the body, so editing
+    /// the command span would orphan the heredoc body as stray lines. Multi-line spans are
+    /// NOT refused (a span edit may cover multiple lines — the line-render's old refusal
+    /// retired); they collapse cleanly to the single-line replacement.
+    fn collect_edits(&self, src: &str, ast: &Ast) -> Vec<SpanEdit> {
         // Per-AstId disposition, so an `Omit`'s controller resolves for the omit-safety gate.
         let by_ast: BTreeMap<AstId, &Disposition> =
             self.steps.iter().map(|s| (s.ast, &s.disposition)).collect();
 
-        // Leaves needing in-situ substitution: one-liner case-arm bodies (T14, keep
-        // `pat)`/`;;`) and leaves sharing a loop/`if`/`case` scaffolding line (task-F2,
-        // keep `done`/`fi`/… — else a whole-line comment eats the keyword, breaking
-        // `dash -n` and aborting the apply mid-run on the host).
-        let arm_inline_leaves = case_arm_oneliner_leaves(ast, &line_of);
-        let scaffold_lines = scaffolding_boundary_lines(src, ast, &line_of);
-
-        let mut r = LineRender::default();
-        // The in-line byte span of a leaf on its (single) source line, or `None` if the
-        // leaf's span crosses a line boundary (the refuse-the-license precondition below).
-        let inline_span = |span: dorc_core::Span| -> Option<(usize, usize)> {
-            let l = line_of(span.lo.0);
-            if l != line_of(span.hi.0.saturating_sub(1).max(span.lo.0)) {
-                return None; // multi-line leaf — not expressible as one in-line splice
-            }
-            let lo = line_start.get(l).copied().unwrap_or(0);
-            Some((
-                (span.lo.0 as usize).saturating_sub(lo),
-                (span.hi.0 as usize).saturating_sub(lo),
-            ))
-        };
-        // Does a single-line leaf SHARE its line with non-whitespace bytes (a scaffolding
-        // keyword or another command)? If it sits ALONE on its line (only indentation
-        // brackets it), the ordinary whole-line comment form is correct and `dash -n`
-        // -clean — and must be kept byte-identical (zero churn: an own-line `then`-body
-        // install, `guarded` case). The in-situ splice is reserved for a leaf actually
-        // bracketed by other line content.
-        let shares_line = |start: usize, end: usize, line_idx: usize| -> bool {
-            src.lines().nth(line_idx).is_some_and(|line| {
-                let pre = line.get(..start).unwrap_or("");
-                let suf = line.get(end..).unwrap_or("");
-                !pre.trim().is_empty() || !suf.trim().is_empty()
-            })
-        };
+        let mut edits: Vec<SpanEdit> = Vec::new();
         for step in &self.steps {
             let span = ast.node(step.ast).span;
-            let last_byte = span.hi.0.saturating_sub(1).max(span.lo.0);
-            let first_line = line_of(span.lo.0);
-            let lines: Vec<usize> = (first_line..=line_of(last_byte)).collect();
-            // task-F2: a Replace/Omit leaf sharing its line with loop/`if` scaffolding (not
-            // a case-arm leaf — T14 routes those) cannot be whole-line-commented without
-            // eating the keyword (breaking `dash -n`). Splice it in-situ instead.
-            let on_scaffold = lines.iter().any(|l| scaffold_lines.contains(l))
-                && !arm_inline_leaves.contains(&step.ast);
-            let scaffold_filler: Option<String> = match &step.disposition {
-                Disposition::Replace(_, stand_in) if on_scaffold => Some(stand_in.sh()),
+            // d-6: a leaf carrying a heredoc redirect refuses the edit (runs verbatim) —
+            // its span does not cover the body lines, so substituting it would strand them.
+            if leaf_has_heredoc(ast, step.ast) {
+                continue;
+            }
+            let replacement: String = match &step.disposition {
+                Disposition::Replace(_, stand_in) => stand_in.sh(),
                 Disposition::Omit { controller }
-                    if on_scaffold && is_neutralised(&by_ast, *controller, 0) =>
+                    if is_neutralised(&by_ast, ast, *controller, 0) =>
                 {
-                    Some(":".to_string())
+                    // A neutralised-controller dead body: `:` (a pure structural placeholder
+                    // — its status is unreachable, never observed).
+                    ":".to_string()
                 }
-                _ => None,
+                // A kept-controller `Omit` (the runtime guard gates it) and a `Run` leaf are
+                // both verbatim — no edit.
+                Disposition::Omit { .. } | Disposition::Run => continue,
             };
-            if let Some(filler) = scaffold_filler {
-                match inline_span(span) {
-                    Some((start, end)) if shares_line(start, end, first_line) => {
-                        // Bracketed by line content (the keyword) ⇒ splice in-situ.
-                        r.scaffold_subst
-                            .entry(first_line)
-                            .or_default()
-                            .push((start, end, filler));
-                        continue;
-                    }
-                    // Alone on its line (keyword elsewhere) ⇒ the whole-line form is safe +
-                    // byte-identical; fall through to it.
-                    Some(_) => {}
-                    // Multi-line leaf ⇒ not in-situ-expressible: REFUSE the license, run it
-                    // verbatim (kFAIL-perform; the comment path would eat the keyword).
-                    None => {
-                        r.run_lines.extend(&lines);
-                        continue;
-                    }
-                }
-            }
-            match &step.disposition {
-                Disposition::Run => r.run_lines.extend(&lines),
-                // A one-liner case-arm body `Replace`: substitute in-situ (keep `pat)`/`;;`).
-                Disposition::Replace(_, stand_in) if arm_inline_leaves.contains(&step.ast) => {
-                    if let Some((start, end)) = inline_span(span) {
-                        r.inline_subst.insert(first_line, (start, end, *stand_in));
-                    } else {
-                        // A multi-line case-arm body cannot be spliced in-situ either —
-                        // refuse and run it verbatim (same kFAIL-perform fallback).
-                        r.run_lines.extend(&lines);
-                    }
-                }
-                Disposition::Replace(_, stand_in) => {
-                    for l in &lines {
-                        r.neutral_lines.insert(*l);
-                        // A `Replace` leaf's stand-in is the line's surviving value (the
-                        // short-circuit survivor / sequence tail). Last writer wins.
-                        r.line_standin.insert(*l, *stand_in);
-                    }
-                }
-                Disposition::Omit { controller } => {
-                    if is_neutralised(&by_ast, *controller, 0) {
-                        // Guard neutralised ⇒ safe to omit the dead body (unreachable, no
-                        // status — its stand-in stays whatever a surviving `Replace` set).
-                        r.neutral_lines.extend(&lines);
-                    } else {
-                        // Guard kept (`Run`) ⇒ the F1 floor: render the body verbatim (it
-                        // runs; the runtime guard gates it).
-                        r.run_lines.extend(&lines);
-                    }
-                }
-            }
+            edits.push(SpanEdit {
+                lo: span.lo.0 as usize,
+                hi: span.hi.0 as usize,
+                replacement,
+                original: command_text(src, ast, step.ast),
+            });
         }
-        r
+        normalise_edits(edits)
     }
 }
 
-/// The per-line render decisions [`Plan::classify_lines`] computes, bundled so the
-/// byte-emission loop ([`emit_apply_lines`]) is its own length-bounded function. Each map
-/// is keyed by source line index; the priority among them is encoded in the emitter.
-#[derive(Default)]
-struct LineRender {
-    /// Lines bearing a `Run` leaf (or a refused/floored leaf) ⇒ emitted verbatim. Wins
-    /// over every neutralisation below (a line with ANY run leaf keeps all its bytes).
-    run_lines: BTreeSet<usize>,
-    /// Lines whose every leaf is neutralised (whole-line comment + stand-in filler).
-    neutral_lines: BTreeSet<usize>,
-    /// The surviving value-preserving stand-in for a neutralised line (else `:`).
-    line_standin: BTreeMap<usize, StandIn>,
-    /// T14 in-situ case-arm substitution: line → (in-line start, end, stand-in).
-    inline_subst: BTreeMap<usize, (usize, usize, StandIn)>,
-    /// task-F2 in-situ scaffolding substitution: line → the elided leaf spans + fillers.
-    scaffold_subst: BTreeMap<usize, Vec<(usize, usize, String)>>,
+/// One leaf-exact span edit (arch-1, note 214): replace `src[lo..hi]` with `replacement`,
+/// disclosing the `original` command text in the line's provenance comment. Byte offsets
+/// are absolute into the source.
+#[derive(Debug, Clone)]
+struct SpanEdit {
+    lo: usize,
+    hi: usize,
+    replacement: String,
+    original: String,
 }
 
-/// Emit the apply artifact line-by-line from the pre-computed [`LineRender`] decisions.
-/// Priority (highest first): a `run_line` is always verbatim; else a scaffolding-shared
-/// in-situ splice (task-F2); else a case-arm in-situ splice (T14); else a whole-line
-/// comment + stand-in; else verbatim. Split out of `render_apply` to keep each function
-/// length-bounded and the emission independently legible.
-fn emit_apply_lines(src: &str, r: &LineRender) -> String {
+/// Enforce the edit-model invariants (arch-1 d-1) and return the surviving edits sorted by
+/// `lo`: edits never PARTIALLY overlap (a `debug_assert` — the leaf-seam guarantees command
+/// spans are disjoint-or-nested, never crossing); under full containment the OUTER edit
+/// wins and the inner is DROPPED (a folded construct's edit subsumes its interior leaves').
+/// No current shape produces a containing construct-edit (only leaf commands are edited, and
+/// two leaf command spans are disjoint), so the containment branch is defensive; it keeps
+/// the splice correct if a future construct-span edit lands.
+fn normalise_edits(mut edits: Vec<SpanEdit>) -> Vec<SpanEdit> {
+    edits.sort_by_key(|e| (e.lo, core::cmp::Reverse(e.hi)));
+    let mut kept: Vec<SpanEdit> = Vec::with_capacity(edits.len());
+    for e in edits {
+        if let Some(prev) = kept.last()
+            && e.lo < prev.hi
+        {
+            // Overlap of some kind. Full containment (e ⊆ prev) ⇒ the OUTER prev wins, drop e.
+            // A PARTIAL overlap (e.lo < prev.hi < e.hi) is a leaf-seam violation — assert in
+            // debug, and conservatively drop e in release (never produce a corrupt splice).
+            debug_assert!(
+                e.hi <= prev.hi,
+                "partial span-edit overlap [{},{}) vs [{},{}) — leaf-seam violated",
+                prev.lo,
+                prev.hi,
+                e.lo,
+                e.hi
+            );
+            continue;
+        }
+        kept.push(e);
+    }
+    kept
+}
+
+/// Emit the apply artifact by splicing the span edits into the source bytes (arch-1, note
+/// 214). Edits are applied **right-to-left** (highest `lo` first) so an earlier edit's byte
+/// offsets stay valid as later ones splice. Then a provenance comment is appended to each
+/// rendered line that carries ≥1 edit (d-3) — disclosing the replaced commands' originals —
+/// IFF the line end is comment-safe.
+///
+/// `edits` must be the normalised (sorted, non-partial-overlap) set from [`normalise_edits`].
+fn emit_span_edits(src: &str, edits: &[SpanEdit]) -> String {
+    // Group each edit by the SOURCE line its replacement lands on (the line of `lo`). After
+    // splicing, a multi-line edit collapses its span onto that one line, and single-line
+    // replacements never add lines — so the rendered line that carries an edit corresponds
+    // 1:1 to the edit's start line. We splice the whole source, then re-emit line-by-line,
+    // appending the comment to lines that had an edit. To keep the line↔edit mapping stable
+    // across the multi-line collapse, we splice and emit in ONE line-walk over the source.
+    let line_of = |byte: usize| -> usize {
+        src.get(..byte)
+            .map_or(0, |s| s.bytes().filter(|&b| b == b'\n').count())
+    };
+    // Edits whose replacement lands on each source line (start line), in source order.
+    let mut by_line: BTreeMap<usize, Vec<&SpanEdit>> = BTreeMap::new();
+    // The last source line each multi-line edit CONSUMES (its `hi`'s line): lines strictly
+    // between an edit's start and end are absorbed into the spliced replacement, so they are
+    // not emitted on their own.
+    let mut consumed_through: BTreeMap<usize, usize> = BTreeMap::new();
+    for e in edits {
+        let start = line_of(e.lo);
+        let end = line_of(e.hi.saturating_sub(1).max(e.lo));
+        by_line.entry(start).or_default().push(e);
+        if end > start {
+            let slot = consumed_through.entry(start).or_insert(end);
+            *slot = (*slot).max(end);
+        }
+    }
+
+    // Byte offset of each source line's first byte (index = line number).
+    let line_start: Vec<usize> = std::iter::once(0)
+        .chain(
+            src.bytes()
+                .enumerate()
+                .filter_map(|(i, b)| (b == b'\n').then_some(i + 1)),
+        )
+        .collect();
+
     let mut out = String::from(render::apply::apply_header());
-    for (i, line) in src.lines().enumerate() {
-        if r.run_lines.contains(&i) {
-            // A run leaf (or a refused/floored leaf) keeps the whole line verbatim — wins
-            // over any neutralisation that also touched the line.
-            out.push_str(line);
-            out.push('\n');
-        } else if let Some(subs) = r.scaffold_subst.get(&i) {
-            // task-F2 in-situ: splice each elided leaf's stand-in into the line, keeping
-            // every other byte (the scaffolding keyword) intact.
-            out.push_str(&render::apply::inline_scaffold_subst(line, subs));
-        } else if let Some((start, end, stand_in)) = r.inline_subst.get(&i).copied() {
-            // T14 in-situ: keep the `pat)` prefix and ` ;;` suffix, replace only the
-            // command span with its value-preserving stand-in (`nginx) true ;;`).
-            let prefix = line.get(..start).unwrap_or(line);
-            let suffix = line.get(end..).unwrap_or_default();
-            out.push_str(&render::apply::inline_arm_subst(prefix, stand_in, suffix));
-        } else if r.neutral_lines.contains(&i) {
-            let indent: String = line
-                .chars()
-                .take_while(|c| *c == ' ' || *c == '\t')
-                .collect();
-            // A surviving `Replace` leaf reproduces the line's exact status; a wholly-dead
-            // (`Omit`-only) line is unreachable code, so `:` (a pure structural
-            // placeholder — status never observed) is the honest filler.
-            let filler = match r.line_standin.get(&i) {
-                Some(stand_in) => stand_in.sh(),
-                None => ":".to_string(),
-            };
-            out.push_str(&render::apply::commented_line(line, &indent, &filler));
-        } else {
-            out.push_str(line);
-            out.push('\n');
+    let total_lines = src.lines().count();
+    let mut i = 0usize;
+    while i < total_lines {
+        match by_line.get(&i) {
+            None => {
+                // No edit starts here ⇒ verbatim (the default, by construction).
+                if let Some(line) = src.lines().nth(i) {
+                    out.push_str(line);
+                    out.push('\n');
+                }
+                i += 1;
+            }
+            Some(line_edits) => {
+                let last_consumed = consumed_through.get(&i).copied().unwrap_or(i);
+                // The spliced region's source bytes: from this line's start to the last
+                // consumed line's end (covering any multi-line edit). Splice each edit
+                // right-to-left within it (offsets relative to the region start).
+                let region_lo = line_start.get(i).copied().unwrap_or(0);
+                let region_hi = line_start
+                    .get(last_consumed + 1)
+                    .copied()
+                    .map_or(src.len(), |start| start.saturating_sub(1)); // exclude the '\n'
+                let mut spliced = src
+                    .get(region_lo..region_hi)
+                    .unwrap_or_default()
+                    .to_string();
+                // Right-to-left so earlier offsets stay valid.
+                let mut ordered: Vec<&&SpanEdit> = line_edits.iter().collect();
+                ordered.sort_by_key(|e| core::cmp::Reverse(e.lo));
+                for e in &ordered {
+                    let lo = e.lo.saturating_sub(region_lo).min(spliced.len());
+                    let hi = e.hi.saturating_sub(region_lo).min(spliced.len()).max(lo);
+                    spliced.replace_range(lo..hi, &e.replacement);
+                }
+                out.push_str(&spliced);
+                // d-3: append the provenance comment disclosing the replaced originals, IFF
+                // the line end is comment-safe.
+                if comment_safe(&spliced) {
+                    let originals: Vec<String> = {
+                        // Source order (left-to-right) for the disclosure.
+                        let mut es: Vec<&&SpanEdit> = line_edits.iter().collect();
+                        es.sort_by_key(|e| e.lo);
+                        es.iter().map(|e| e.original.clone()).collect()
+                    };
+                    out.push_str(&render::apply::provenance_comment(&originals));
+                }
+                out.push('\n');
+                i = last_consumed + 1;
+            }
         }
     }
     out
 }
 
-/// Is `leaf` neutralised (its line will be commented out)? Used by `render_apply`'s
-/// omit-safety gate: an `Omit` body may only be neutralised if its controlling guard
-/// also is. A `Replace` is neutralised; a `Run` is not; an `Omit` is iff *its*
-/// controller is (transitively, with a small depth cap to defeat any pathological
-/// cycle — `inv-no-throw`). A missing controller folds to "not neutralised" (the safe
-/// run-it direction).
-fn is_neutralised(by_ast: &BTreeMap<AstId, &Disposition>, leaf: AstId, depth: u32) -> bool {
+/// Is appending a ` # …` comment to this rendered line safe (d-3 SAFETY RULE)? A trailing
+/// `#` begins a comment-to-end-of-line after a complete command, but NOT when the line ends
+/// inside a shape where `#` is not a comment boundary: a backslash-continuation (`\` at end
+/// ⇒ the next line continues the command, so `#` would be appended mid-command), or a line
+/// involving a heredoc operator (`<<` ⇒ the following lines are the heredoc body, not new
+/// commands — a `#` here is inside neither). Conservative: when unsure, DROP the comment
+/// (artifact correctness over provenance prose; the OOB verdict lane still discloses). A
+/// heredoc-bearing leaf is already refused an edit upstream (d-6), so a heredoc operator only
+/// reaches here on a VERBATIM (un-edited) line that happens to share the rendered line — we
+/// still guard it.
+fn comment_safe(rendered_line: &str) -> bool {
+    let trimmed = rendered_line.trim_end();
+    if trimmed.ends_with('\\') {
+        return false; // backslash-continuation: the command continues on the next line
+    }
+    if rendered_line.contains("<<") {
+        return false; // a heredoc operator: following lines are the body, not commentable here
+    }
+    true
+}
+
+/// Does a leaf command carry a **heredoc** redirect (`<<EOF`)? The render-capability refusal
+/// (d-6): the AST span covers the `<<EOF` operator, NOT the body lines (they are generated
+/// content the parser captures separately), so editing the command span would strand the
+/// body as stray artifact lines. Such a leaf refuses the edit and runs verbatim.
+fn leaf_has_heredoc(ast: &Ast, leaf: AstId) -> bool {
+    let (NodeKind::Simple { redirs, .. }
+    | NodeKind::Subshell { redirs, .. }
+    | NodeKind::Group { redirs, .. }) = &ast.node(leaf).kind
+    else {
+        return false;
+    };
+    redirs.iter().any(|&r| {
+        matches!(
+            &ast.node(r).kind,
+            NodeKind::Redir {
+                target: dorc_syntax::ast::RedirTarget::HereDoc { .. },
+                ..
+            }
+        )
+    })
+}
+
+/// Is `node` neutralised (its rendered form reproduces its decision without running it)?
+/// Used by [`Plan::collect_edits`]'s omit-safety gate: an `Omit` body may only be edited to
+/// `:` if its controlling guard is neutralised — else a KEPT (`Run`) guard would re-decide
+/// against a removed body (a `kFAIL-perform` under-execute), so a kept-guard `Omit` body
+/// renders verbatim (it runs; the runtime guard gates it).
+///
+/// A `node` that is a plan LEAF (a [`Step`], so present in `by_ast`) is neutralised iff its
+/// disposition is `Replace` (substituted to its stand-in) or an `Omit` whose own controller
+/// is neutralised (transitive, depth-capped — `inv-no-throw`). A `node` that is NOT a leaf —
+/// a COMPOUND controller (`if`'s condition node, a `! pipeline`, an `&&`/`||`) — is
+/// neutralised iff EVERY `Simple` command leaf in its AST subtree is neutralised: a guard
+/// whose every command is substituted reproduces the branch decision in the artifact, so the
+/// dead body is safe to elide. (At HEAD this fell through to "not neutralised" because a
+/// floored guard never elided; arch-1 makes a known-rc guard substitute, so the compound
+/// case now matters — `guard-status`/`render21-if-guard-query-elides`.)
+fn is_neutralised(
+    by_ast: &BTreeMap<AstId, &Disposition>,
+    ast: &Ast,
+    node: AstId,
+    depth: u32,
+) -> bool {
     if depth > 64 {
         return false; // defensive: never loop; default to run-it
     }
-    match by_ast.get(&leaf) {
-        Some(Disposition::Replace(_, _)) => true,
-        Some(Disposition::Omit { controller }) => is_neutralised(by_ast, *controller, depth + 1),
-        _ => false, // Run, or an un-classified controller ⇒ not neutralised
-    }
-}
-
-/// The leaf [`AstId`]s that are a body command of a **one-liner `case` arm** — an arm
-/// whose pattern (`pat)`) and whose body command sit on the SAME source line (the T14
-/// render defect, `notes/199` cluster-C). Such a leaf cannot be whole-line-commented:
-/// the comment would also swallow the structural `pat)` / `;;` scaffolding, leaving an
-/// arm with no `pat)` (a `dash -n` syntax error). `render_apply` instead substitutes
-/// these leaves IN-SITU on the line (replacing only the command span), keeping the
-/// arm structure intact (`nginx) true ;;`).
-///
-/// Detection is AST-structural (not text-scanning for `)`/`;;`, which a command's own
-/// `)` would defeat): walk every [`NodeKind::Case`] arm, and if a body-`List` item's
-/// line equals the arm's first-pattern line, that item is a same-line arm body. Only
-/// the *direct* body items are collected — a leaf nested in a sub-group keeps the
-/// whole-line form (it has its own enclosing tokens, not the arm's). Scoped this
-/// narrowly so the ordinary whole-line path is untouched (zero golden churn elsewhere).
-fn case_arm_oneliner_leaves(ast: &Ast, line_of: &impl Fn(u32) -> usize) -> BTreeSet<AstId> {
-    let mut leaves = BTreeSet::new();
-    for (_id, node) in ast.iter() {
-        let NodeKind::Case { arms, .. } = &node.kind else {
-            continue;
+    if let Some(disposition) = by_ast.get(&node) {
+        return match disposition {
+            Disposition::Replace(_, _) => true,
+            Disposition::Omit { controller } => is_neutralised(by_ast, ast, *controller, depth + 1),
+            Disposition::Run => false,
         };
-        for arm in arms {
-            let Some(&first_pat) = arm.patterns.first() else {
-                continue;
-            };
-            let pat_line = line_of(ast.node(first_pat).span.lo.0);
-            // The arm body is always a `List` (the parser wraps even a single command);
-            // its direct items are the candidate same-line leaves.
-            let NodeKind::List { items } = &ast.node(arm.body).kind else {
-                continue;
-            };
-            for &item in items {
-                if line_of(ast.node(item).span.lo.0) == pat_line {
-                    leaves.insert(item);
-                }
-            }
-        }
     }
-    leaves
+    // Not a plan leaf ⇒ a compound controller. Neutralised iff every Simple leaf under it is.
+    // An empty subtree (no command leaf — a bare structural node) is vacuously NOT a guard
+    // whose decision we must reproduce, but it also reproduces nothing — treat as not
+    // neutralised (the safe run-it direction; no current shape reaches it).
+    let mut any_leaf = false;
+    let all_leaves_neutralised =
+        subtree_leaves_all(
+            ast,
+            node,
+            &mut any_leaf,
+            &mut |leaf| match by_ast.get(&leaf) {
+                Some(Disposition::Replace(_, _)) => true,
+                Some(Disposition::Omit { controller }) => {
+                    is_neutralised(by_ast, ast, *controller, depth + 1)
+                }
+                _ => false,
+            },
+        );
+    any_leaf && all_leaves_neutralised
 }
 
-/// The source lines that carry a compound construct's **structural scaffolding** — the
-/// opener keyword (`for`/`while`/`until`/`if`/`case`), the closer keyword
-/// (`done`/`fi`/`esac`), and the first line of each interior body region (where a
-/// `do`/`then`/`elif`/`else` keyword sits when it shares a line with the body's first
-/// command). The 20O find-2 / task-F2 generalisation of the T14 case-arm fix.
-///
-/// Why this set, and why it is enough (the structural argument): a whole-line comment is
-/// catastrophic only when a `Replace`/`Omit` leaf shares its line with NON-leaf bytes
-/// that the comment would also swallow — a scaffolding keyword. A keyword can share a
-/// line with an elidable leaf in exactly three positions: AFTER a closer
-/// (`done; install`, `fi; install`, `esac; install`), BEFORE an opener
-/// (`install; for …`), or BEFORE a body's first command (`then install`, `do install`,
-/// `else install`). The closer line is `line_of(span.hi-1)`; the opener line is
-/// `line_of(span.lo)`; a body keyword shares the body-first-command's line, which is
-/// `line_of(body.span.lo)`. A keyword on its OWN line carries no leaf, so the comment
-/// path (which fires only on lines bearing a leaf) never reaches it — hence only these
-/// leaf-bearing boundary lines matter. The render's own prefix/suffix check then
-/// distinguishes a leaf that truly shares the line with scaffolding (⇒ in-situ) from a
-/// leaf alone on a boundary line (⇒ the ordinary whole-line comment, byte-identical to
-/// before — zero churn).
-///
-/// Detection is AST-structural (node spans + position-bounded separator skipping, never
-/// a free text-scan for keywords — a command's own `done`-substring or `)` would defeat
-/// that). `case` ARM interiors (`pat)`/`;;`) are owned by [`case_arm_oneliner_leaves`]
-/// (T14); this set adds the `case`/`esac` opener/closer lines, which T14 does not cover.
-///
-/// Span caveat (`20O` find-2): an `If` span includes `fi` and a `Case` span includes
-/// `esac`, but a `ForLoop`/`WhileLoop` span ends at its BODY, **excluding `done`** (the
-/// parser sets `span = kw.to(span_of(body))`). So the loop closer line is found by
-/// skipping the separators (`;`/newline/whitespace) that follow the body — the next
-/// content byte is `done` (the parser guarantees that gap holds only the separator and
-/// `done`), giving its line without a free keyword scan.
-fn scaffolding_boundary_lines(
-    src: &str,
+/// Walk every `Simple` command leaf in `node`'s AST subtree, returning whether `pred` holds
+/// for ALL of them (short-circuit `false`). Sets `any` true if at least one leaf was seen.
+/// A small recursive descent mirroring the modeled `NodeKind` set (the fold's `kill_rec`
+/// shape) — used by [`is_neutralised`] to resolve a COMPOUND controller (an `if`-cond /
+/// `! pipeline` / `&&`/`||`) to its guard leaves. Detached funcdef bodies and word/redir
+/// nodes carry no command leaf the render reasons about, so they are skipped.
+fn subtree_leaves_all(
     ast: &Ast,
-    line_of: &impl Fn(u32) -> usize,
-) -> BTreeSet<usize> {
-    let mut lines = BTreeSet::new();
-    // The opener line (`span.lo`) and closer line (last byte) of a compound.
-    let span_lines = |span: dorc_core::Span| {
-        [
-            line_of(span.lo.0),
-            line_of(span.hi.0.saturating_sub(1).max(span.lo.0)),
-        ]
-    };
-    // The line of `done` for a loop whose span excludes it: skip `;`/newline/whitespace
-    // after the body's last byte to the next content byte (`done`).
-    let loop_closer_line = |body_hi: u32| -> usize {
-        let from = body_hi as usize;
-        let after = src.get(from..).unwrap_or_default();
-        let skip = after
-            .bytes()
-            .take_while(|b| matches!(b, b' ' | b'\t' | b'\n' | b'\r' | b';'))
-            .count();
-        line_of(u32::try_from(from.saturating_add(skip)).unwrap_or(u32::MAX))
-    };
-    for (_id, node) in ast.iter() {
-        match &node.kind {
-            NodeKind::ForLoop { body, .. } | NodeKind::WhileLoop { body, .. } => {
-                // opener (`for`/`while`/`until …`) + closer (`done`, span-excluded).
-                lines.insert(line_of(node.span.lo.0));
-                lines.insert(loop_closer_line(ast.node(*body).span.hi.0));
-            }
-            NodeKind::If {
-                then_body,
-                elifs,
-                else_body,
-                ..
-            } => {
-                // opener (`if …`) + closer (`fi`, span-included) + each body's first line
-                // (where a `then`/`elif`/`else` keyword sits when it shares that line).
-                lines.extend(span_lines(node.span));
-                lines.insert(line_of(ast.node(*then_body).span.lo.0));
-                lines.extend(elifs.iter().map(|e| line_of(ast.node(e.body).span.lo.0)));
-                lines.extend(else_body.map(|eb| line_of(ast.node(eb).span.lo.0)));
-            }
-            // `case`/`esac` opener+closer (span-included); arm interiors are T14's.
-            NodeKind::Case { .. } => lines.extend(span_lines(node.span)),
-            // `( … )` subshell / `{ …; }` group delimiters: the SAME find-2 class
-            // (`( install\n); run` ⇒ commenting the install eats `(` ⇒ stray `)` ⇒
-            // broken `dash -n`). tc-group-closer ruled EXTEND (orchestrator, post-20R);
-            // their spans include both delimiters, so opener/closer lines suffice.
-            NodeKind::Subshell { .. } | NodeKind::Group { .. } => {
-                lines.extend(span_lines(node.span));
-            }
-            _ => {}
+    node: AstId,
+    any: &mut bool,
+    pred: &mut impl FnMut(AstId) -> bool,
+) -> bool {
+    match &ast.node(node).kind {
+        NodeKind::Simple { .. } => {
+            *any = true;
+            pred(node)
         }
+        NodeKind::Script { items } | NodeKind::List { items } => {
+            let items = items.clone();
+            items.iter().all(|&i| subtree_leaves_all(ast, i, any, pred))
+        }
+        NodeKind::Pipeline { stages, .. } => {
+            let stages = stages.clone();
+            stages
+                .iter()
+                .all(|&s| subtree_leaves_all(ast, s, any, pred))
+        }
+        NodeKind::AndOr { left, right, .. } => {
+            let (left, right) = (*left, *right);
+            // Evaluate both (no short-circuit on the AND of the two — both must hold).
+            let l = subtree_leaves_all(ast, left, any, pred);
+            let r = subtree_leaves_all(ast, right, any, pred);
+            l && r
+        }
+        NodeKind::Subshell { body, .. } | NodeKind::Group { body, .. } => {
+            subtree_leaves_all(ast, *body, any, pred)
+        }
+        NodeKind::If {
+            cond,
+            then_body,
+            elifs,
+            else_body,
+        } => {
+            let cond = *cond;
+            let then_body = *then_body;
+            let elifs: Vec<AstId> = elifs.iter().flat_map(|e| [e.cond, e.body]).collect();
+            let else_body = *else_body;
+            let mut ok = subtree_leaves_all(ast, cond, any, pred);
+            ok = subtree_leaves_all(ast, then_body, any, pred) && ok;
+            for e in elifs {
+                ok = subtree_leaves_all(ast, e, any, pred) && ok;
+            }
+            if let Some(eb) = else_body {
+                ok = subtree_leaves_all(ast, eb, any, pred) && ok;
+            }
+            ok
+        }
+        NodeKind::Case { arms, .. } => {
+            let bodies: Vec<AstId> = arms.iter().map(|a| a.body).collect();
+            bodies
+                .iter()
+                .all(|&b| subtree_leaves_all(ast, b, any, pred))
+        }
+        NodeKind::ForLoop { body, .. } => subtree_leaves_all(ast, *body, any, pred),
+        NodeKind::WhileLoop { cond, body, .. } => {
+            let (cond, body) = (*cond, *body);
+            let c = subtree_leaves_all(ast, cond, any, pred);
+            let b = subtree_leaves_all(ast, body, any, pred);
+            c && b
+        }
+        // funcdef body is detached; word/assign/redir/unsupported carry no command leaf.
+        _ => true,
     }
-    lines
 }
 
 /// A round-trippable, unambiguous display label for a fact's re-keyed cell
@@ -1981,11 +2055,13 @@ apt_get__check() {
     }
 
     #[test]
-    fn render_floor_status_blocks_unconditionally() {
-        // `19D` / 19C strain-D / `206` §3: the `if`/`elif`-guard `StatusRenderFloor`
-        // blocks the license EVEN with a declared rc (the line-granular render cannot
-        // substitute a guard on its `if`/`then`/`fi` line; a declared-rc relaxation
-        // would break `dash -n`). Contrast `relaxable_status_blocks_only_when_rc_undeclared`.
+    fn iterated_status_blocks_unconditionally() {
+        // arch-1 (note 214; successor to the retired `render_floor_status_blocks_unconditionally`):
+        // a `while`/`until` condition's `StatusIterated` blocks the license EVEN with a
+        // declared rc — the condition's per-iteration rc-sequence cannot be reproduced by one
+        // predicted value, and a constant-substituted loop condition is an infinite/zero-
+        // iteration disaster. Contrast `relaxable_status_blocks_only_when_rc_undeclared` (a
+        // single-shot guard a known rc relaxes) — the if/elif guard moved to THAT channel.
         let f = nginx_fact();
         for rc in [
             Predicted::Top,
@@ -1997,11 +2073,11 @@ apt_get__check() {
                     &SkipClass::EstablishAmbient(f),
                     Grade::Must,
                     PhasedVerdict::<Probe>::new(Verdict::Converged),
-                    May(Powerset::singleton(Channel::StatusRenderFloor)),
+                    May(Powerset::singleton(Channel::StatusIterated)),
                     rc,
                 )
                 .is_none(),
-                "an if-guard's StatusRenderFloor blocks unconditionally (render floor), rc={rc:?}"
+                "a loop condition's StatusIterated blocks unconditionally (per-iteration sequence), rc={rc:?}"
             );
         }
     }
