@@ -837,7 +837,20 @@ warm-ups (d×d host-flip fixture; var-resolved redirect case) → 22x synthesis 
   post-harvest chain attempt piped `cargo test | grep` and `e2e | tail` to
   save tokens — the literal fb-17 scar (pipes mask rc; tail hides per-case
   output). Caught before any result was read; killed; re-run unpiped. The
-  canonical chain stays literal, no pipes, even under token pressure. Scope: the
+  canonical chain stays literal, no pipes, even under token pressure.
+- B5+B6 PARALLEL DISPATCH (human-directed end-of-window opus burn; both small,
+  file-disjoint, arch-2-independent; token/time at completion): B5 e2e
+  quiet-success knob (DORC_E2E_QUIET=1: ok-lines suppressed, failures verbatim,
+  tally always, default byte-identical, POSIX sh; + one CLAUDE.md build-section
+  sentence) → worktree b5-e2equiet, branch ai/r22-e2equiet @ c630726, with a
+  perturb-restore failure-path proof required. B6 arch-3-residual-2 spanless
+  mint path (visibly-second-class constructor; primary stays non-Option — no
+  drop-B reopening; tidy test gains a hardcoded six-code spanless allowlist,
+  self-cleaning; migrate the six slug-extraction sites; zero output change) →
+  worktree b6-spanless, branch ai/r22-spanless @ c630726. Both opus, both
+  carry the fb-19 clamp. Held back deliberately: must-emit audit (collides
+  with B6 files; arch-2-prep item) and the x-1 test fold (needs
+  post-arch-3-spine adaptation judgment; conductor-shaped). Scope: the
   22B §3/§4 spine in core + s-2 classify-signature widening EARLY + report()
   span rendering (drop-A) + gate-grep with seeded self-cleaning allow-list +
   the three §5 worked-example migrations as proving set. Opus tier (ru-23
