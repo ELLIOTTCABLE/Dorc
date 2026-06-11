@@ -477,3 +477,116 @@ grammar surgery. So: completeness is cheap to *enforce* (machine-checkable, bina
 > will mislead when the same code fires from a different script. The cheap win: wire the
 > completeness check into the build (Stan-style `cargo test`/CI dependency), accept that
 > message-quality is a separate, human, un-gateable maintenance line.
+
+## §6 rq-B — per-code DECLARED severity prior art (and the override/fragmentation question)
+
+Four schemes, ordered by granularity of *grouping* and *override power*. The recurring lesson:
+every scheme makes severity *overridable by the consumer*, and the systems that wanted a few
+diagnostics to be NON-negotiable invented explicit un-overridable levels for exactly that
+purpose (`finding-8`).
+
+**rustc lint levels — SIX levels, two of them un-overridable** [A-rustc-lint-levels-2026].
+Verbatim ordering: *"lints are divided into six levels: 1. allow 2. expect 3. warn 4. force-warn
+5. deny 6. forbid."* The two that resist drift:
+
+> 'force-warn' is a special lint level. It's the same as 'warn' in that a lint at this level will
+> produce a warning, but unlike the 'warn' level, the 'force-warn' level cannot be overridden. If
+> a lint is set to 'force-warn', it is guaranteed to warn: no more, no less.
+
+> 'forbid' ... is the same as 'deny' in that a lint at this level will produce an error, but
+> unlike the 'deny' level, the 'forbid' level can not be overridden to be anything lower than an
+> error.
+
+Two more rustc mechanisms map *directly* onto Dorc's "every give-up path must carry a code":
+
+- `expect` level — verbatim: *"it can be helpful to suppress lints, but at the same time ensure
+  that the code in question still emits them ... If the lint in question is not emitted, the
+  `unfulfilled_lint_expectations` lint triggers ... notifying you that the expectation is no
+  longer fulfilled."* This is *the inverse-completeness check at the type/lint level*: a way to
+  assert "this site MUST produce diagnostic X" and get told when it stops. ~SUSPECT this is the
+  single most relevant severity-prior-art idea for Dorc beyond the tidy gate — an `#[expect]`-style
+  assertion on a give-up site that fails CI if that site stops giving up.
+- `future-incompatible` lints — a distinguished class that *cannot be silenced*, only warn-or-deny
+  (rust issue #34596: *"the behavior for future-incompatible lints would be that they can either
+  be 'warn' or 'deny' but can never be completely silenced"*) [B-rust-issue-34596-2016]. A
+  severity *floor*, not a fixed level.
+- `--cap-lints` — a global ceiling that lowers ALL levels (even `forbid` → warn), used when
+  compiling dependencies. So even the "un-overridable" levels have one global escape, deliberately.
+
+**Clang — per-diagnostic severity *class* in tablegen, default-overridable, grouped**
+[A-clang-diagnostic-td-2026]. Each diagnostic is declared with a severity-bearing class in
+`Diagnostic.td`; verbatim the class hierarchy:
+
+> ```tablegen
+> class Error<string str>     : Diagnostic<str, CLASS_ERROR, SEV_Error>, SFINAEFailure { ... }
+> class Warning<string str>   : Diagnostic<str, CLASS_WARNING, SEV_Warning>;   // default-on
+> class Remark<string str>    : Diagnostic<str, CLASS_REMARK, SEV_Ignored>;
+> class Extension<string str> : Diagnostic<str, CLASS_EXTENSION, SEV_Ignored>; // on via -pedantic
+> class ExtWarn<string str>   : Diagnostic<str, CLASS_EXTENSION, SEV_Warning>; // default-on
+> class DefaultIgnore { Severity DefaultSeverity = SEV_Ignored; }
+> class DefaultWarn   { Severity DefaultSeverity = SEV_Warning; }
+> ```
+
+Severity is thus declared structurally (the class you pick), modifiable per-diagnostic
+(`DefaultIgnore`/`DefaultWarn`), and groupable via `class InGroup<DiagGroup G>`
+[A-clang-diagnostic-td-2026]. Consumers override by group: `-Werror=<group>` promotes a whole
+group to error, `-Wno-<group>` silences it. So Clang's granularity is *per-diagnostic declaration,
+per-group override* — finer than ESLint, coarser-overridable than rustc's per-lint.
+
+**ESLint — three numeric levels, per-rule, last-wins** [B-eslint-rules-2026]. Verbatim: *"off"
+or 0; "warn" or 1; "error" or 2*. The config is an array `[severity, ...options]`, fully
+consumer-controlled, no un-overridable tier. This is the *maximally fragmentable* end: every
+project re-decides every rule's severity, and the well-known failure mode is exactly that
+(thousand-line `.eslintrc` severity maps, "everything is warn" drift).
+
+**clippy lint *groups*** (correctness/suspicious/style/complexity/perf/pedantic/nursery/cargo) —
+severity is assigned *by group*, with `correctness` defaulting to `deny` and most others to
+`warn`/`allow`; the whole group is toggleable (`-W clippy::pedantic`). Group-level default
+severity, per-lint override. [covered via A-rustc-lint-levels-2026 ecosystem; not separately
+deep-read — ~SUSPECT.]
+
+> design-takeaways for Dorc (severity model):
+> - sev-1. EVERY mature scheme makes severity overridable; the only way to keep a chosen few
+>   non-negotiable is an explicit un-overridable tier (rustc `forbid`/`force-warn`). +SURE Dorc
+>   should declare per-code severity AND mark which codes are floor-pinned (cannot be downgraded
+>   by an admin/oracle), or the catalog WILL drift toward all-warnings (ESLint's fate).
+> - sev-2. severity-as-a-class-you-instantiate (Clang) couples the declaration site to the
+>   severity cheaply and greppably; severity-as-config (ESLint) maximizes fragmentation. Dorc's
+>   "spelled in the catalog registry, not at the call site" (TS `category`, Clang class) is the
+>   anti-fragmentation choice.
+> - sev-3. rustc's `expect` is the sleeper: a positive assertion that a site MUST emit a given
+>   diagnostic, CI-failing when it stops. This is the *severity-system expression* of Dorc's
+>   completeness wish and worth stealing alongside the tidy-style gate.
+> - sev-4. a *severity floor* (future-incompat: warn-or-deny, never off) is a lighter-weight
+>   non-negotiability than full `forbid`; useful for "this give-up is always at least a warning."
+
+## §7 rq-B — Elm's error-message ecosystem (the counter-data-point: NO catalog, NO test suite)
+
+Elm is famous for best-in-class compiler errors ("Compiler Errors for Humans", 2015
+[B-elm-errors-humans-2015]) yet, crucially for Dorc's maintenance-cost question, maintains them
+with *neither a code registry NOR a golden-test suite*. Direct primary evidence: Evan Czaplicki
+(Elm's author), answering "how is the Elm compiler tested?" [A-elm-compiler-testing-2018]:
+
+> I have found that testing the compiler gives a relatively uncommon set of tradeoffs. It is a
+> project where things may not compile for a week or a month at a time. ... So in the actual
+> process of development, I have not found that having tests that run on every single build give
+> significant benefits. ... So the time where testing is important is in the lead up to a public
+> release ... there are a great deal of things written in Elm, so the process of going through
+> things that exist to make them work actually finds pretty much everything.
+
+He explicitly declines to maintain even a regression corpus of "weird programs": *"I am not
+personally able to collect and maintain such a list given my existing tasks."* Elm's error
+messages have no numeric codes at all — they are hand-crafted prose, version-controlled as code,
+validated by *dogfooding against the ecosystem* rather than by any mechanical catalog/snapshot
+gate.
+
+> design-takeaway for Dorc: Elm is the existence-proof of the *opposite* pole from rustc/Menhir —
+> world-class diagnostics with ZERO catalog/registry/golden machinery, sustained by single-author
+> craft + ecosystem battle-testing. The lesson is NOT "skip the gate" (Elm is a one-language,
+> one-author project; Dorc is multi-author infra with a correctness mandate). The lesson is that
+> the *catalog/gate buys you regression-safety and multi-author consistency, not message quality*
+> — quality is orthogonal and comes from craft. ~SUSPECT this sharpens the case that Dorc's gate
+> should be scoped narrowly to *completeness/registration* (the thing that rots silently across
+> many authors) and NOT over-built into prose-quality enforcement (which Elm shows is a human
+> craft problem no gate solves). It also flags a risk: golden/snapshot tests (§8) impose a churn
+> cost Elm deliberately refused — adopt them only where the regression-safety payoff is real.
