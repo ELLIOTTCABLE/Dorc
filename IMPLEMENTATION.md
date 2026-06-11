@@ -93,6 +93,7 @@ to keep all my other correctness-tooling similarly overbuilt:
    [video]: <https://www.youtube.com/watch?v=4fFDFbi3toc> "'Testing Distributed Systems w/ Deterministic Simulation' by Will Wilson, Strange Loop 2014, R.I.P."
    [fdb-paper]: <https://www.foundationdb.org/files/fdb-paper.pdf> "FoundationDB: A Distributed Unbundled Transactional Key Value Store; Zhou, Miller, et al. SIGMOD 2021"
 
+
 ### Correctness vs. best-effort: a band
 
 Something worth diving into directly, because it's one of the most critical
@@ -125,6 +126,7 @@ as either admin-user-behaviour or oracle-author-behaviour degrades, *our*
 behaviour degrades *only as much as necessary*, in the precise ways forced by
 the user error/omission, and no further.
 
+
 ### To execute, or not to execute?
 
 For every mutative command in a playbook from a user, there's three possible
@@ -138,7 +140,8 @@ outcomes:
    necessary to converge;
 4. "over-execute": to run, *more* than once, any mutative command.
 
-These four are necessarily in tension and cannot be perfectly reconciled, given imperfect user-behaviour; thus, we've an established priority amongst them:
+These four are necessarily in tension and cannot be perfectly reconciled, given
+imperfect user-behaviour; thus, we've an established priority amongst them:
 
 1. (highest) *never* under-execute: do not risk skipping the execution of a
    command that is desired/required (except by explicit user-dictum, i.e. `dorc
@@ -183,3 +186,25 @@ running the script, blind, which is what you would have done without Dorc":
     - but it *would not* result in blind, unknowing *multiple-execution* within
       a single script-execution (thus, a failure-mode we're *less* allowed to
       make, because it is surprising.)
+
+
+By-contract and by-dictate
+--------------------------
+
+Besides ~computer science and hard engineering~, there's really only a small
+spectrum of ways we can *make* something true. We can "contract" it
+(we'll-do-if-you-do), or we can "dictate" it ("we-*stop*-if-you-don't".)
+
+We generally want to steer hard towards *contract* over dictate; that's a more
+precise meaning of 'best-effort.' We play defensively against exactly the errors
+we ask you not to make.
+
+However, there's some cases where we're either *forced*, or very very rarely
+choose, to *dictate* things - that is, explicitly exclude handling them, and
+*fail-fast*, in your face, abandoning our best-effort stance. For example:
+
+ - clear, immediate errors in *Dorc-created* language features and idioms (i.e.
+   static typing errors when there *are* declared types, and they *disagree
+   irreconcilably*)
+
+(UNFINISHED, FILLME)
