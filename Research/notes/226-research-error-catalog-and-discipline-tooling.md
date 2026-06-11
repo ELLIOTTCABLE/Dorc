@@ -794,3 +794,250 @@ diagnostic-completeness gate?
 > its own emit-sites (like tidy stage 4) rather than having to *derive* the complete set the way
 > Menhir must derive error states from the grammar. This is a genuine structural advantage: Dorc's
 > "states" are nameable in source; Menhir's are not.
+
+## Graded sources
+
+> Grades assigned by gathering subagent (R1', this turn); conductor re-verification pending.
+> Scale: A = canonical primary artifact / first-party authoritative; B = solid primary or
+> well-sourced secondary; C = commentary / community / single-thread. Read-depth: full /
+> targeted / snippet. Relevance/grade certainty marks per project convention.
+>
+> Predecessor's two additionally-read-but-not-bracketed sources informed §2 background and are
+> recorded in its `sources.json`: `A-rustc-devguide-errorcodes-2026`
+> (rustc-dev-guide.rust-lang.org/diagnostics/error-codes.html — the E-code registration workflow)
+> and `A-rustc-devguide-translation-2024`
+> (rustc-dev-guide.rust-lang.org/diagnostics/translation.html — the Oct-2024 "not mandated"
+> status). Both A-grade first-party; not given rows here as the live tracking issue #132181 and
+> tidy source superseded them as the bracketed evidence.
+
+`[A-rustc-tidy-errorcodes-2026]` · rust-lang/rust, the actual tidy error-code completeness-gate
+source `src/tools/tidy/src/error_codes.rs` ·
+https://github.com/rust-lang/rust/blob/master/src/tools/tidy/src/error_codes.rs · 2026 (live
+`@main`, 362 lines) · read-depth: full · grading: A (not merely A-minus — it is THE artifact the
+Rust CI runs, read top-to-bottom and re-verified fresh via octocode against the predecessor's
+local copy; canonical, executable, authoritative) · relevance: +SURE near-exact prior art for
+Dorc's r22 gate — 4-stage bidirectional registry↔emit check, retire-via-git-diff, self-cleaning
+allow-lists · via: predecessor `[A-rustc-tidy-errorcodes-2026]`, re-fetched
+`mcp__octocode__githubGetFileContent(rust-lang/rust, src/tools/tidy/src/error_codes.rs, full)`.
+
+`[A-rustc-tracking-132181-2024]` · rust-lang/rust issue #132181 "Tracking Issue for rustc's
+translatable diagnostics infrastructure", by jieyouxu (T-compiler MEMBER) ·
+https://github.com/rust-lang/rust/issues/132181 · opened 2024-10-26, updated 2025-03 · read-depth:
+full (body + comment) · grading: A (canonical first-party "Fluent-migration regret" doc, authored
+by a team member, carries the verbatim downgrade decision and four friction points; the strongest
+counter-thesis primary source) · relevance: +SURE direct maintenance-cost evidence that a
+deny-level diagnostic-discipline mandate was walked back · via: predecessor kill-note pointer;
+`mcp__github__issue_read(rust-lang/rust #132181 get + get_comments)`.
+
+`[A-rustc-pr-132182-2024]` · rust-lang/rust PR #132182 "Downgrade `untranslatable_diagnostic` and
+`diagnostic_outside_of_impl` to `allow`", by jieyouxu · https://github.com/rust-lang/rust/pull/132182
+· merged 2024-10-26 · read-depth: targeted (metadata + body + review summary) · grading: A (the
+executed decision; changedFiles=1 confirms the discipline was a single lint-level declaration;
+primary) · relevance: +SURE proves the downgrade shipped and that the discipline had metastasized
+into per-site `#[allow]`s not worth removing · via:
+`mcp__octocode__githubSearchPullRequests(prNumber 132182, withComments)`.
+
+`[A-rustc-devguide-errorguaranteed-2024]` · rustc-dev-guide "Guaranteeing an error was emitted"
+(`ErrorGuaranteed`) · https://rustc-dev-guide.rust-lang.org/diagnostics/error-guaranteed.html ·
+2024 (page) / re-fetched live 2026-06 · read-depth: full · grading: A (canonical first-party
+description of the ZST emission-proof mechanism and its two caveats; the "in most cases statically
+impossible to abuse" line is the load-bearing hole-signal) · relevance: +SURE near-exact shape for
+Dorc's give-up-path-carries-a-diagnostic token · via: predecessor `sources.json`; re-fetched
+`mcp__fetch__fetch` + compiler-source cross-check
+`mcp__octocode__githubGetFileContent/SearchCode(rustc_errors stash_diagnostic, span_delayed_bug)`.
+
+`[A-typescript-diagmessages-2026]` · microsoft/TypeScript `src/compiler/diagnosticMessages.json`
+(8560 lines) + `DiagnosticCategory` enum · https://github.com/microsoft/TypeScript/blob/main/src/compiler/diagnosticMessages.json
+· 2026 (live `@main`) · read-depth: targeted (registry head + enum + program.ts category switch) ·
+grading: A (the actual generated registry source + the severity enum; primary, authoritative for
+the registry shape and the four `category` values) · relevance: +SURE per-code declared severity
+(`category`) + the code-stable/message-free split Dorc should mirror · via:
+`mcp__octocode__githubGetFileContent/SearchCode(microsoft/TypeScript diagnosticMessages.json,
+DiagnosticCategory)`.
+
+`[A-menhir-manual-2026]` · Menhir Reference Manual §11.1-11.3 (Pottier & Régis-Gianas, INRIA),
+version 20260209 · http://cambium.inria.fr/~fpottier/menhir/manual.html · 2026-02 · read-depth:
+targeted (full §11.1/11.2/11.3 read, plus §8-9 context) · grading: A (the authoritative manual by
+the tool's authors; carries the verbatim three-properties definition, the CLI-check mechanics, AND
+the load-bearing maintenance-cost admission + §11.3 state-vs-sentence rot explanation) · relevance:
++SURE the central structural analog for Dorc's completeness gate · via:
+`mcp__kagi-ken__kagi_search_fetch` → `mcp__fetch__fetch` (paged to §11).
+
+`[A-compcert-cparser-makefile-2026]` · AbsInt/CompCert `cparser/GNUmakefile` (correct/complete/
+update targets) + `cparser/handcrafted.messages` (5283 lines, partly Pottier-authored) ·
+https://github.com/AbsInt/CompCert/blob/master/cparser/GNUmakefile · 2026 (live `@master`) ·
+read-depth: targeted (full Makefile message-workflow section + handcrafted.messages head) ·
+grading: A (real reference project's actual build rules — the canonical exemplar of the Menhir
+completeness ritual in production, the file being co-authored by Menhir's author) · relevance:
++SURE proof a real project keeps `.messages` completeness green via wired CI targets · via:
+`mcp__octocode__githubSearchCode/GetFileContent(AbsInt/CompCert list-errors compare-errors)`.
+
+`[B-stan-dune-messages-2026]` · stan-dev/stanc3 `src/frontend/dune` (menhir --list-errors /
+--compare-errors build rules) · https://github.com/stan-dev/stanc3/blob/master/src/frontend/dune ·
+2026 (live) · read-depth: snippet (the two rule fragments) · grading: B not A — only the rule
+fragments were read, not the full dune file or its history, but it is primary source code
+directly showing completeness wired into the *build graph* (stronger "kept green" signal than
+CompCert's manual targets) · relevance: +SURE strongest "completeness as a build dependency, not a
+manual ritual" data point · via: `mcp__octocode__githubSearchCode(stan-dev/stanc3 compare-errors)`.
+
+`[C-dune-issue-3284-2020]` · ocaml/dune issue #3284 "Support for menhir's .messages files" ·
+https://github.com/ocaml/dune/issues/3284 · 2020-03 · read-depth: snippet (search-result summary;
+issue body not fully opened) · grading: C — surfaced via search, body summarized not full-read;
+community feature-request, used only as a friction/ergonomics signal · relevance: -GUESS (capped:
+unread body) that `.messages` tooling was DIY in raw Makefile/dune for years · via:
+`mcp__kagi-ken__kagi_search_fetch(Menhir .messages workflow)`.
+
+`[A-rustc-lint-levels-2026]` · The rustc book, "Lint Levels" (six levels; force-warn/forbid
+un-overridable; expect; cap-lints) · https://doc.rust-lang.org/rustc/lints/levels.html · 2026
+(current stable book) · read-depth: full (page top through configuration) · grading: A (canonical
+first-party rustc documentation; verbatim the six levels and the un-overridable/expect semantics) ·
+relevance: +SURE the richest severity-prior-art with the two anti-fragmentation tiers and the
+`expect` completeness-assertion idea · via: `mcp__kagi-ken__kagi_search_fetch` → `mcp__fetch__fetch`.
+
+`[B-rust-issue-34596-2016]` · rust-lang/rust issue #34596 "Future-incompatible warnings should
+always print a warning" · https://github.com/rust-lang/rust/issues/34596 · 2016-07 · read-depth:
+snippet (search-result summary) · grading: B — primary issue but only the summary line read;
+sufficient for the narrow "future-incompat = warn-or-deny, never silenced" claim · relevance:
+~SUSPECT (severity-floor concept; claim capped at snippet read) · via: `mcp__kagi-ken__kagi_search_fetch`.
+
+`[A-clang-diagnostic-td-2026]` · llvm/llvm-project `clang/include/clang/Basic/Diagnostic.td`
+(severity classes Error/Warning/Remark/Extension/ExtWarn + DefaultIgnore/DefaultWarn + InGroup) ·
+https://github.com/llvm/llvm-project/blob/main/clang/include/clang/Basic/Diagnostic.td · 2026 (live
+`@main`) · read-depth: targeted (the class-hierarchy region, lines ~129-173) · grading: A (the
+actual tablegen source defining per-diagnostic severity classes; primary, authoritative) ·
+relevance: +SURE the severity-as-a-class-you-instantiate model + group-based override · via:
+`mcp__octocode__githubSearchCode/GetFileContent(llvm InGroup, class Error)`.
+
+`[B-eslint-rules-2026]` · ESLint docs "Configure Rules" (0/1/2 = off/warn/error, last-wins) ·
+https://eslint.org/docs/latest/use/configure/rules · 2026 (current docs) · read-depth: snippet
+(search-result summaries across several ESLint pages) · grading: B — first-party docs but read via
+search summaries not a full page fetch; the 0/1/2 severity model is uncontested and corroborated
+across multiple results · relevance: +SURE the maximally-fragmentable per-rule severity end of the
+spectrum · via: `mcp__kagi-ken__kagi_search_fetch(ESLint rule severity)`.
+
+`[B-elm-errors-humans-2015]` · Elm blog "Compiler Errors for Humans", Evan Czaplicki ·
+https://elm-lang.org/news/compiler-errors-for-humans · 2015-06 · read-depth: snippet (title +
+search summary; used only to establish Elm's reputation for diagnostic quality) · grading: B —
+first-party but not full-read this turn; cited only for the uncontroversial "Elm has famously good
+errors" framing · relevance: ~SUSPECT (background framing only) · via: `mcp__kagi-ken__kagi_search_fetch`.
+
+`[A-elm-compiler-testing-2018]` · Elm Discourse "How is the elm compiler tested?", with Evan
+Czaplicki's direct reply · https://discourse.elm-lang.org/t/how-is-the-elm-compiler-tested/1798 ·
+2018-08 · read-depth: full (the thread incl. Evan's verbatim answer) · grading: A (primary
+first-person statement by the compiler's sole author about the actual testing/maintenance process;
+the load-bearing "no per-build tests, dogfood the ecosystem" counter-data-point) · relevance: +SURE
+the existence-proof that world-class diagnostics need no catalog/golden machinery · via:
+`mcp__kagi-ken__kagi_search_fetch` → `mcp__fetch__fetch`.
+
+`[A-rustc-devguide-uitests-2026]` · rustc-dev-guide "UI tests" (bless workflow, normalization,
+stray-output tracking, -Zdeduplicate-diagnostics=no) · https://rustc-dev-guide.rust-lang.org/tests/ui.html
+· 2026 (current) · read-depth: targeted (intro through normalization) · grading: A (canonical
+first-party description of rustc's golden-test economics) · relevance: +SURE the golden-test
+churn/normalization/review-burden evidence · via: `mcp__kagi-ken__kagi_search_fetch` → `mcp__fetch__fetch`.
+
+`[B-rust-issue-134793-2024]` · rust-lang/rust issue #134793 "compiletest --bless fails to delete
+stderr files" · https://github.com/rust-lang/rust/issues/134793 · 2024-12 · read-depth: snippet
+(search-result summary) · grading: B — primary issue, summary-read only; sufficient for the narrow
+"bless blindly accepts wrong output" footgun claim · relevance: ~SUSPECT (golden-footgun anecdote;
+claim capped at snippet) · via: `mcp__kagi-ken__kagi_search_fetch`.
+
+`[B-insta-docs-2026]` · insta crate docs (mitsuhiko) — snapshot workflow, INSTA_UPDATE, cargo insta
+review, CI-detection · https://docs.rs/insta/latest/insta/ · 2026 (current) · read-depth: targeted
+(the crate-root overview) · grading: B not A — first-party docs, targeted-read of the overview only
+(not the full insta.rs site/CLI docs); the CI-detection + .snap.new workflow is clearly stated ·
+relevance: +SURE the de-facto Rust snapshot tool's economics + the CI-auto-accept guard · via:
+`mcp__kagi-ken__kagi_search_fetch` → `mcp__fetch__fetch`.
+
+`[A-rust-patterns-denywarnings-2026]` · "Rust Design Patterns" book, `#![deny(warnings)]`
+anti-pattern · https://rust-unofficial.github.io/patterns/anti_patterns/deny-warnings.html · 2026
+(current; content as-of rustc 1.48 examples) · read-depth: full · grading: A — the widely-cited
+canonical community reference on the deny-warnings anti-pattern (the rust-unofficial patterns book
+is the de-facto standard for this); full-read, verbatim drawbacks + the decoupling recommendation ·
+relevance: +SURE the warning-ratchet economics answer (environment-side not source-side) · via:
+`mcp__kagi-ken__kagi_search_fetch` → `mcp__fetch__fetch`.
+
+`[C-reddit-denywarnings-2020]` · r/rust "PSA: `deny(warnings)` is actively harmful" ·
+https://www.reddit.com/r/rust/comments/f5xpib/psa_denywarnings_is_actively_harmful/ · 2020-02 ·
+read-depth: snippet (search-result summary; not opened, per robots/Reddit-block caution) ·
+grading: C — community thread, summary-only; used as corroborating-sentiment for the Crater-signal
+angle, not as standalone evidence · relevance: ~SUSPECT (corroboration; capped) · via:
+`mcp__kagi-ken__kagi_search_fetch` (Reddit not directly fetched).
+
+`[C-internals-notice-2023]` · internals.rust-lang.org "Forbid, deny, warn, allow, and ... notice?"
+· https://internals.rust-lang.org/t/forbid-deny-warn-allow-and-notice/19986 · 2023-12 · read-depth:
+snippet (search-result summary) · grading: C — community design discussion, summary-only · relevance:
+-GUESS (the deny-all-allow-specific shape; capped) · via: `mcp__kagi-ken__kagi_search_fetch`.
+
+`[A-cargo-mutants-2026]` · cargo-mutants book (sourcefrog), landing/goals ·
+https://mutants.rs/ · 2026 (current) · read-depth: targeted (landing page + premise) · grading: A
+not B — first-party authoritative tool documentation, read directly; the premise statement
+("places where bugs can be inserted without causing tests to fail") is verbatim and exactly the
+error-path-coverage framing · relevance: +SURE the cheapest adoptable error-path-coverage
+mechanism · via: `mcp__kagi-ken__kagi_search_fetch` → `mcp__fetch__fetch`.
+
+`[B-cargo-mutants-missed-2026]` · cargo-mutants wiki "Handling missed mutants" ·
+https://github.com/sourcefrog/cargo-mutants/wiki/Handling-missed-mutants · 2026 (current) ·
+read-depth: targeted (the redundant-comparison example) · grading: B not A — first-party wiki but a
+single example page read, not the whole limitations corpus; sufficient for the equivalent-mutant
+noise + "attributes on expressions are experimental" caveats · relevance: ~SUSPECT→+SURE for the
+false-positive-tax claim (directly quoted) · via: `mcp__fetch__fetch`.
+
+`[A-rustc-internal-lints-2026]` · rust-lang/rust `compiler/rustc_lint/src/internal.rs` (the
+compiler's self-discipline tool-lint family) · https://github.com/rust-lang/rust/blob/main/compiler/rustc_lint/src/internal.rs
+· 2026 (live `@main`, 826 lines) · read-depth: targeted (imports + first ~200 lines incl.
+declare_tool_lint blocks) · grading: A (actual compiler source defining the
+`declare_tool_lint!`-based self-policing mechanism; primary, authoritative; the verbatim
+POTENTIAL_QUERY_INSTABILITY declaration read directly) · relevance: +SURE the "how rustc keeps
+itself honest" mechanism + a near-exact analog to Dorc's hermeticity discipline · via:
+`mcp__octocode__githubGetFileContent(rust-lang/rust compiler/rustc_lint/src/internal.rs, lines
+1-200)`.
+
+`[B-lalrpop-errorrecovery-2026]` · LALRPOP book "Error recovery" + lalrpop_util ErrorRecovery docs ·
+https://lalrpop.github.io/lalrpop/tutorial/008_error_recovery.html · 2026 (current) · read-depth:
+snippet (search-result summaries) · grading: B — first-party docs, summary-read; sufficient for the
+narrow "LALRPOP has error recovery but no .messages completeness gate" contrast · relevance:
+~SUSPECT (the "declined the discipline" contrast; capped at snippet) · via: `mcp__kagi-ken__kagi_search_fetch`.
+
+`[B-treesitter-errornode-2026]` · tree-sitter ERROR/MISSING node behavior (issue #1870 +
+treesitter node-metadata docs) · https://github.com/tree-sitter/tree-sitter/issues/1870 · 2026
+(current refs) · read-depth: snippet (search-result summaries) · grading: B — primary refs but
+summary-read; the "error nodes, no messages" design is uncontested · relevance: ~SUSPECT (second
+"declined the discipline" contrast; capped) · via: `mcp__kagi-ken__kagi_search_fetch`.
+
+## Fetch-requests for the human (paywalled / blocked / worth a direct human read)
+
+- fetch-1. TypeScript's CANONICAL code-stability policy statement (finding-6 is currently
+  ~SUSPECT). Best primary candidates to confirm "message text not semver-stable, code numbers
+  de-facto stable": the TS wiki/handbook contribution guidelines or a maintainer statement. I
+  inferred it from registry mechanics + downstream-tooling behavior; a verbatim policy quote would
+  upgrade it to +SURE.
+- fetch-2. r/rust "PSA: deny(warnings) is actively harmful" full thread
+  (https://www.reddit.com/r/rust/comments/f5xpib/) — Reddit blocks model fetches; if you want the
+  Crater-signal argument verbatim (per your CLAUDE.md, Kagi `site:reddit.com` may work where direct
+  fetch does not). Currently C-grade corroboration only.
+- fetch-3. ocaml/dune #3284 full thread (https://github.com/ocaml/dune/issues/3284) — I read only
+  the search summary; the body + current status (is `.messages` now natively supported in dune?)
+  would firm `[C-dune-issue-3284-2020]` from -GUESS. Not load-bearing for any conclusion.
+
+## Open threads (for the conductor / next turn)
+
+- thread-1. The exact declaration site + current lint-level of `untranslatable_diagnostic` /
+  `diagnostic_outside_of_impl` was NOT located in source this turn (octocode code-search returned
+  empty for those identifiers, likely an index gap; `internal.rs` imports a different subset). The
+  facts (names, deny→allow downgrade, PR #132182 changed 1 file) are confirmed from the tracking
+  issue + PR; only the literal `declare_tool_lint!` block for these two is unread. Low value to
+  chase further.
+- thread-2. A *custom* `rustc::`-style tool lint (the §11 mechanism) is NOT directly available to a
+  plain Rust workspace without compiler-plugin machinery or clippy. The adoptable realizations of
+  the same "police give-up discipline" idea for Dorc are: (a) a tidy-style grep test (§1), or (b)
+  `dylint` (Trail-of-Bits' out-of-tree lint runner). `dylint` was NOT investigated this turn —
+  flagged as the obvious next lead if Dorc wants real lint-grade (not grep-grade) enforcement of
+  "every give-up goes through the catalog API".
+- thread-3. Catala's `.messages` handling did not surface via octocode search (it may vendor or
+  path-place differently); only CompCert + Stan were confirmed as real-project completeness-gate
+  exemplars. Two strong data points suffice for the conclusion, but a third (Catala, or
+  Coq/Rocq's parser) would strengthen the "kept green in practice" claim if wanted.
+- thread-4. The counting/baseline warning-ratchet (Chromium-style "no more than N warnings") was
+  treated lightly (--WONDER in ratchet-3) — if the conductor decides Dorc's catalog will grow
+  incrementally rather than from-scratch, that mechanism deserves a dedicated dig (e.g. how
+  Chromium/Android enforce it, `cargo-deny`-style baselines).
