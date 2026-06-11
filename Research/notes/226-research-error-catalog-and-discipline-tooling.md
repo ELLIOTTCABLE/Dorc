@@ -385,3 +385,95 @@ effectively never reused even when a message is deleted, mirroring rustc's appen
 > `category`-in-registry pattern is the cheap severity-declaration model; TS's four-way split (and
 > the fact that downstream keys on code, never severity) suggests severity is metadata *on* the
 > code, not part of its identity.
+
+## §5 rq-B/rq-H — Menhir `.messages` completeness (the central analog)
+
+This is the closest structural analog to Dorc's "every give-up path carries a registered code"
+gate: Menhir enumerates *every error state* of an LR(1) automaton and mechanically checks that a
+hand-written message database covers them all. Source: Menhir Reference Manual §11.1-11.3
+(version 20260209) [A-menhir-manual-2026]; real-project build files from CompCert
+[A-compcert-cparser-makefile-2026], Stan [B-stan-dune-messages-2026].
+
+**The three properties, verbatim** (§11.2):
+
+> Ideally, the set of input sentences in a .messages file should be correct (that is, every
+> sentence causes an error on its last token), irredundant (that is, no two sentences lead to the
+> same error state), and complete (that is, every error state is reached by some sentence).
+
+**The mechanism = two CLI checks** (§11.2):
+
+- `--compile-errors <file>` verifies *correctness + irredundancy*, and on success compiles the
+  database to an OCaml function `message : int -> string` mapping a state number to a message.
+  The completeness consequence is encoded *in the generated code's totality*: verbatim, *"It
+  raises the exception `Not_found` if its argument is not the number of a state for which a
+  message has been defined. If the set of input sentences is complete, then it cannot raise
+  `Not_found`."* [A-menhir-manual-2026]. So completeness = the generated function is total.
+- `--list-errors` generates *from scratch* a minimal sentence reaching every error state;
+  `--compare-errors A B` checks the state-set of A ⊆ B. Completeness check = `--list-errors >
+  generated; --compare-errors generated handwritten`.
+
+**The maintenance cost is acknowledged IN THE MANUAL** (the load-bearing rot-economics quote,
+§11.2, `finding-7`):
+
+> In the case of a grammar that evolves fairly often, it can take significant human time and
+> effort to update the .messages file and ensure correctness, irredundancy, and completeness. A
+> tempting way of reducing this effort is to abandon completeness. ... We prefer to discourage
+> this approach, as it implies that the end user is exposed to a mixture of specific and generic
+> syntax error messages ... Instead, we recommend waiting for the grammar to become stable and
+> enforcing completeness.
+
+Two further cost signals from the manual: `--list-errors` *"may require large amounts of time
+(typically in the tens of seconds, possibly more) and memory (typically in the gigabytes,
+possibly more). It requires a 64-bit machine."* [A-menhir-manual-2026]. And there is an explicit
+`--merge-errors` command solely to reconcile two contributors' partial `.messages` files — i.e.
+the maintenance burden is heavy enough that Menhir ships a *merge tool* for collaborative editing.
+
+**Why message CONTENT rots even when completeness does not (§11.3 "Writing accurate diagnostic
+messages").** The deep reason, verbatim:
+
+> The first thing to keep in mind is that a diagnostic message is associated with a *state* s, as
+> opposed to a sentence. ... The diagnostic message should not be specific of the sentence w: it
+> should make sense regardless of how the state s is reached.
+
+State numbers churn when the grammar changes; `--update-errors` re-generates the `##`
+auto-comments but the *human prose* attached to a state may now describe the wrong state. Worse,
+in the default (noncanonical) automaton the LR(1) lookahead sets are *over-approximated* (the
+manual's Figure 19 worked example: state 8 appears to allow both `SEMICOLON` and `RPAREN` but
+"It is *never* the case that both ... are valid continuations") — so even a *complete, correct*
+database can carry *inaccurate* messages. The manual offers three workarounds (`--canonical` =
+state explosion; selective duplication via phantom params; `%on_error_reduce`), all manual
+grammar surgery. So: completeness is cheap to *enforce* (machine-checkable, binary) but message
+*accuracy* is expensive to *maintain* (human, fuzzy, churns with the grammar).
+
+**Real-project evidence (do they keep it green?).**
+
+- CompCert: `cparser/GNUmakefile` defines `.PHONY: correct complete update`
+  [A-compcert-cparser-makefile-2026]. Verbatim the `complete` rule re-generates and compares,
+  printing *"OK. The set of erroneous inputs is complete."*; `correct` prints *"OK. The set of
+  erroneous inputs is correct and irredundant."*; `update` runs `--update-errors` to refresh the
+  `##` comments after grammar changes. The committed `handcrafted.messages` is **5283 lines**
+  (authored partly by Pottier himself — it is the reference exemplar) [A-compcert-cparser-makefile-2026].
+  +SURE CompCert keeps completeness green (the `complete` target is wired and the file is large
+  and current).
+- Stan (`stanc3`): `src/frontend/dune` wires the same two commands directly into the *build
+  graph* — a dune rule runs `menhir --list-errors` to produce `parser_new.messages`, then
+  `--compare-errors` against the checked-in `parser.messages`, so a stale database FAILS THE
+  BUILD [B-stan-dune-messages-2026]. This is the strongest "kept green by CI mechanically" data
+  point: completeness is a build dependency, not a manual ritual.
+- Tooling friction signal: the dune-native support for `.messages` (auto-generate/update/compile)
+  was filed as a feature request (ocaml/dune #3284, 2020) — i.e. for years projects hand-rolled
+  the rules in raw `dune`/`Makefile` because the build tool had no first-class support
+  [C-dune-issue-3284-2020]. The discipline is real and adopted, but the ergonomics were
+  do-it-yourself.
+
+> design-takeaway for Dorc: Menhir is the proof that the *completeness* half of Dorc's gate (every
+> give-up state is covered by a registered code) is mechanically enforceable and projects DO keep
+> it green when it is wired into the build (Stan) rather than a manual target (weaker). But the
+> §11.3 lesson is the warning: the part that rots is *message accuracy/relevance*, which no gate
+> catches — Dorc's analog is that a give-up code can be *registered and emitted* yet carry a
+> *misleading* explanation, and completeness-checking will never flag it. ~SUSPECT Dorc's
+> equivalent of the "state vs sentence" trap is: a give-up code's message must describe the
+> *analysis condition* (why the license failed) not the *specific script* that tripped it, or it
+> will mislead when the same code fires from a different script. The cheap win: wire the
+> completeness check into the build (Stan-style `cargo test`/CI dependency), accept that
+> message-quality is a separate, human, un-gateable maintenance line.
