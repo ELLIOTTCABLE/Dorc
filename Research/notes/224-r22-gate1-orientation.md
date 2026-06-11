@@ -226,3 +226,34 @@ warm-ups (d×d host-flip fixture; var-resolved redirect case) → 22x synthesis 
   finding-livshits — full-paper support for vp-27, devs "better off leaving out
   sanitizers entirely instead of trying to place them." Housekeeping: stale duplicate
   B-green key in rqA scratch sources.json (auto-resolves at the §9 cleanup).
+- R3' rq-E+G → notes/228 (final `04606d7`): Opus, 164K harness-tokens (agent
+  self-reported ~95K — harness counts are authoritative in this ledger), 59 tool uses,
+  ~13 min, 18 sources, 743 lines. Design-shaping: finding-emit-at-origin — Clang's
+  primary author deliberately moved AWAY from post-hoc visitor re-walking to NoteTags
+  captured at transition-time ("generate the message where the info already exists");
+  cuts against any emit-then-dedup design and matches the arena's
+  capture-cause-at-creation shape. finding-min-suppression — 5-rule minimum set
+  (carry-cause/prevent-cascade-at-origin · interestingness-from-sink pruning ·
+  same-fact tie-break by speaker priority · observe-THAT-⊤-never-WHY ·
+  flush-or-trip net). finding-site-key — CodeChecker's deployed stability ladder,
+  sweet spot `(checker, file, enclosing-decl, whitespace-normalized line, range
+  cols)`; Sentry hierarchical multi-hash (emit fine+coarse, match coarsest stable);
+  WER condensing/expanding as the two failure directions. VMCAI'12 sound
+  alarm-clustering = candidate formal cause-pointer prior art, capped ~SUSPECT
+  pending fr-2.
+- R2' rq-C+D → notes/227 (final `c526c87`): Opus, 178K harness-tokens, 56 tool uses,
+  ~14 min, 780 lines. THE d-1 VERDICT (ru-7-shaped): d-1 SPLITS — the dump+`why`
+  half has affirmative support (Buck2 `buck2 log` is the shipping architecture,
+  ~15 lenses incl. a built-in golden-diff lens; thin-durable + recompute-on-demand is
+  sound for Dorc because DST determinism lets the trace be reconstructed from
+  seed+probe-tape); the golden-trace-PINNING half has only cost evidence plus a
+  decade-scale regret analog — SQL plan-forcing (practitioner reversal "I do not
+  recommend enabling"; key-drift rot; pins corrupting adjacent identity), Bazel
+  keeping its dump format `experimental` across all of 7.x, and rustc UI-tests
+  showing the real cost is the NORMALIZATION layer (and they keep human-written
+  assertions so --bless can't rubber-stamp — trace-only pinning is anti-pattern even
+  where pinning works). Best postmortem user-story found argues for RECEIPTS, not
+  pinning (the silent-green-dashboard emergent-composition class). rq-D:
+  `traceparent` trivially hand-emittable (import value-format, choose carrier);
+  conduit-style edge-mapping keeps the SDK out-of-process; the OTel env-carriers
+  spec (Beta) surfaced UNREAD — conductor must-read at digestion.
