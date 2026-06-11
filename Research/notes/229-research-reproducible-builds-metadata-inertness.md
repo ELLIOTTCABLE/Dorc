@@ -20,19 +20,160 @@
 
 ## §0 Conclusions up front
 
-*(filled incrementally; see per-question sections for evidence)*
+**finding-1 (the gate is mainstream, not exotic) (+SURE).** Run-the-tool-twice-with/without-the-
+metadata-and-compare is a *shipped, decades-old* discipline in at least two production compilers:
+GCC's `-fcompare-debug` (compile twice, `-gtoggle` between, error if the final RTL dumps differ;
+§1) and GCC's `bootstrap-debug` stage2-vs-stage3 object compare (§9). The motivating invariant is
+stated identically to Dorc's, by Alexandre Oliva in 2007: "enabling debug information isn't
+supposed to modify the executable code in any way whatsoever … If debug information disables any
+optimization, that's a bug that needs fixing" [A-gcc-wiki-vta-2007]. LLVM states the same policy
+and verifies it with `debugify`/`check-debugify` (§2). reproducible-builds.org generalizes it:
+output "MUST … depend only on the source code" [A-rb-source-date-epoch-2017]. Dorc's erasability
+gate is a faithful instance of a fundamental pattern — proceed with confidence.
 
-### The leak-category taxonomy (compact, cited)
+**finding-2 (make it ADVERSARIAL — variance injection — not just run-twice) (+SURE, the key
+direction-shaper).** The mature systems do not run the *same* build twice; they inject *maximal
+variance* between the two and assert invariance. Debian's tests.reproducible-builds.org varies
+~20 axes (hostname, TZ 26h apart, locale, uid/gid, umask, `/bin/sh` dash↔bash, date +398 days,
+…; full table §6/§0-table-below) [A-debian-variations-2026]. LLVM ships `-reverse-iterate`
+(force worst-case container order) and `llvm::sort`'s pre-shuffle and an *ASLR-derived hash seed*
+so order-dependence breaks immediately [B-llvm-discourse-43131-2016, B-maskray-hyrum-2026]. Go
+gates *every release* on a Linux-vs-Windows double-build: "must produce bit-for-bit identical
+archives or else we do not proceed with the release" [B-go-rebuild-2023]. For Dorc: don't strip
+receipts and re-run identically — *populate the stripped run's receipts with adversarial values*
+(sentinels, reversed origin-set order, randomized receipt IDs, a different hash seed) and assert
+decisions are unchanged. The variance axes that map to an analyzer: receipt-ID assignment order,
+origin-set iteration order, `HashMap` seed (for any non-`BTreeMap` survivor), thread/codegen
+parallelism if the analyzer parallelizes, and allocation order.
 
-*(table — filled after the r-b.org sweep)*
+**finding-3 (where gates ROT: silent no-op, not deletion) (+SURE).** The failure mode is not
+someone deleting the gate — it's the gate *silently becoming a no-op while showing green*.
+Abrahms: a flaky-test auto-quarantine, through a JIRA-tagging fluke, skipped 80% of e2e scenarios
+with "the defect rate remained consistent" — an accidental controlled experiment proving the gate
+caught nothing [B-abrahms-citheater-2026]. Meiklejohn killed a per-PR proof-gate that "caught
+exactly nothing … the plain test jobs wouldn't have caught five minutes later," whose cost grew
+with merge activity while its benefit didn't [B-meiklejohn-tax-2026]. GCC pre-empted this with a
+*coverage canary*: `GCC_COMPARE_DEBUG=-fcompare-debug-not-overridden` makes the compiler *error
+if the gate didn't actually run* [A-gcc-developer-options-2024]. Mandate for Dorc: (a) NO
+auto-retry/auto-quarantine on the gate; (b) ship a coverage-canary so "did the gate run AND
+assert?" is itself asserted; (c) ensure the gate catches a class *no functional test can* — and
+it does, because a receipt-into-decision leak is invisible to decision-only tests, which is
+exactly the property that makes it pass Meiklejohn's two-question test where his gate failed.
 
-### Recommended enforcement mechanisms for an analyzer-inertness gate (Rust workspace)
+**finding-4 (the comparison partition is the real design work) (+SURE).** "Identical" is never
+raw-byte-identical; every system defines a *partition* of identity-relevant vs exempt output, and
+that definition IS the spec. Three distinct partition strategies recur (all three usable for
+Dorc): (i) *strip the noise* — GCC's `-fdump-noaddr`/`-fdump-unnumbered` erase addresses and
+instruction-numbers before diff ("makes it more feasible to use diff … with and without `-g`")
+[A-gcc-developer-options-2024]; (ii) *named sanctioned-absence reasons* — LLVM's four
+`DebugLoc::get{CompilerGenerated,Dropped,Unknown,Temporary}()` enumerate *why* a divergence is
+legitimate, biased so "an absent location can be detected and fixed, while an incorrectly
+annotated instruction is much [harder]" [A-llvm-howtoupdatedebuginfo-2025]; (iii) *canonicalize
+the volatile field* — r-b.org's timestamp-clamping rewrites volatile values to a deterministic
+function of source rather than exempting them [A-rb-source-date-epoch-2017]. diffoscope
+operationalizes (i)+(ii): recursively unpack/normalize each known format, hexdump-fallback only
+for unknown ones [A-diffoscope-2026]. See the partition-language recommendation below.
 
-*(2-3 mechanisms with effort guesses — filled after mechanism evidence collected)*
+**finding-5 (enforce ordering beyond convention) (+SURE).** Dorc's BTreeMap-everywhere mandate is
+*convention*; the prior art mandates it *mechanically*. rustc ships the `potential_query_
+instability` lint (fires at the call site of `HashMap` iteration in query code) and a *type-level*
+split — `FxIndexMap` (ordered) vs `UnordMap`/`UnordSet` (iteration API *removed* so a leak won't
+compile) [A-rustc-fx-src-2026, A-rustc-potential-query-instability-2025]. LLVM ships the
+`bugprone-nondeterministic-pointer-iteration-order` clang-tidy check and a coding-standard rule
+[A-llvm-coding-2026, B-clang-tidy-nondeterministic-2026]. Recommendation in §0-mechanisms: a Dorc
+`Unord*`-style newtype is stronger than convention because the leak becomes a *type error*.
 
-### The cleanest comparison-partition definition language found
+**finding-6 (rustc is the cautionary "no in-tree gate" case) (+SURE).** rustc *can* reproduce but
+relies on Debian's *external* checker and has no in-tree CI gate — issue #75362 is still OPEN
+since 2020 — and consequently regressed the moment it was achieved (1.44.1 reproducible → 1.45.0
+not), with maintainers noting contributors "are not aware of all of the details needed"
+[B-rust-issue-75362-2020]. This is the empirical argument for Dorc shipping the gate *in-tree from
+day one*: the regression pressure is constant and silent without it.
 
-*(filled after the partition evidence is collected)*
+### §0-table — the leak-category taxonomy (compact, cited)
+
+Each category = one environment/state variable that leaks into the artifact; the fix is either
+*normalize-to-constant* or *freeze-into-declared-perimeter*. The Dorc-analogue column maps each to
+the receipts-into-decisions risk. (Full verbatim defs+fixes in §8a.)
+
+| leak-category | what leaks | canonical fix | Dorc analogue (receipts→decisions) |
+| --- | --- | --- | --- |
+| **ordering** (stable-inputs) | filesystem/`readdir`/container iteration order | `LC_ALL=C sort`; explicit list; `--sort=name`; deterministic containers | origin-set / receipt-ID iteration order leaking into a decision — THE central risk; [A-rb-stable-inputs-2026] |
+| **timestamps** | current time embedded | `SOURCE_DATE_EPOCH`; clamp; strip | a probe-record timestamp feeding a decision; [A-rb-timestamps-2026] |
+| **build-path** | source path in debug info | `-ffile-prefix-map`; remap | a receipt's source-locator string reaching a decision; debugedit war-story: in-place strip fails if presence perturbed ordering; [A-rb-build-path-2026] |
+| **locales** | collation/format vary by `LC_*` | `LC_ALL=C` | any locale-sensitive comparison in decision code; [A-rb-locales-2026] |
+| **timezones** | tz-dependent rendering | `TZ=UTC` | (subsumed by timestamps); [A-rb-timezones-2026] |
+| **value-initialization** | uninitialized memory / struct padding | zero-init; Valgrind | reading uninitialized receipt fields into a decision; [A-rb-value-init-2026] |
+| **randomness** | PRNG / hash seed | seed from source; `-frandom-seed` | a `HashMap` seed (non-`BTreeMap` survivor) affecting a decision; [A-rb-randomness-2026] |
+| **version-information** | build counter; *abbrev-hash length* | pin from VCS; `--abbrev=12` | a monotonic receipt counter leaking; [A-rb-version-info-2026] |
+| **archive-metadata** | file order, uid/gid, mtime, *tar PID* | `tar --sort=name --owner=0 --numeric-owner`; `ar` det-mode | serialization-order/identity of decision output; [A-rb-archives-2026] |
+| **volatile-inputs** | network/remote data | checksums; lockfiles; vendoring | (less applicable — Dorc input is the sh + probes) |
+| **stripping** | unavoidable metadata (atime, ownership) | `strip-nondeterminism` post-process | normalize residual receipt fields before compare; [A-rb-stripping-2026] |
+
+Cross-cutting (+SURE): **ordering is the most entangled category** — a naive `sort` is itself
+locale-dependent, so the fix is always `LC_ALL=C sort`; it recurs in locales, stable-inputs, and
+archives. For Dorc (BTreeMap already mandated) the residual ordering risks are: (a) the *order
+receipts are assigned/emitted*, (b) any `HashSet`/`HashMap` that escaped the mandate, (c) any
+`Vec` built by iterating a non-deterministic source then not sorted.
+
+### §0-mechanisms — recommended enforcement for an analyzer-inertness gate (Rust workspace)
+
+Ranked; effort is a -GUESS in engineer-days for a first cut in a plain Rust workspace (no
+proc-macros; build-scripts/tests/lints in scope).
+
+- **mechanism-erasability-gate (the core, model on `-fcompare-debug` + `reprotest`) — effort
+  ~3-6d.** A `#[test]` (or `cargo xtask`) that runs the analyzer twice on a fixture corpus: run-A
+  with the real receipts plane, run-B with receipts **stripped AND adversarially varied** (see
+  finding-2 — reversed origin-set order, sentinel receipt IDs, different `HashMap` seed via
+  `RUSTC`/env or a DI'd seed), then asserts the *canonicalized decision output* is byte-identical
+  (explanation output excluded by construction — serialize only the decision plane). DST-clean:
+  the two runs are pure given fixed inputs + injected seed; clock/net/disk/rand already DI'd per
+  AGENTS, so the gate just varies the DI'd seed. Cost ~2× one analyzer run per fixture —
+  network-free, cheap. The hard part is *defining the canonical decision serialization* (the
+  partition — see below), not the harness. ~SUSPECT this is the single highest-value deliverable.
+- **mechanism-coverage-canary (model on `GCC_COMPARE_DEBUG=-fcompare-debug-not-overridden`) —
+  effort ~0.5d.** Make the gate *prove it ran*: a sentinel that fails if the comparison was
+  skipped (e.g. the gate writes a marker the CI step greps for; or the test panics unless it
+  actually performed ≥1 comparison). Pre-empts finding-3 (silent no-op rot). Cheap, do it.
+- **mechanism-unord-newtype (model on rustc `UnordMap`/`untracked_query_information`) — effort
+  ~2-4d.** A newtype wrapper around decision-internal maps that *does not expose iteration*, only
+  `get`/`insert`/`into_sorted_vec` — so "iterate this in decision code" is a *compile error*, not
+  a review catch. Optionally a `clippy`/`dylint` lint firing when a decision-producing fn takes a
+  receipt-typed argument (the `untracked_query_information` analogue). The newtype is pure-Rust
+  and cheap; the custom lint (`dylint`) is the higher-effort, higher-assurance option. Strengthens
+  the BTreeMap mandate from convention to type-enforcement (finding-5).
+- **mechanism-per-stage-localization (model on `-debugify-each`/`-verify-each`) — effort ~1-2d on
+  top of the core gate.** Run the erasability check after each analyzer *stage* (parse → taint →
+  elision-decide), not just end-to-end, so a leak is attributed to one stage. Optional;
+  defer until the end-to-end gate exists and a leak is hard to localize.
+- **mechanism-decision-digest (model on Zephyr's per-build checksum line) — effort ~0.5d.** Emit a
+  one-line hash of the canonicalized decision output on *every* analyzer run (not just CI). Cheap
+  always-on signal; "accelerates the investigation of temporary reproducibility issues"
+  [B-zephyr-50205-2022]; complements the in-CI gate.
+
+### §0-partition-language — the cleanest comparison-partition definition found
+
+The single cleanest definitional vocabulary is **LLVM's named sanctioned-absence reasons**
+[A-llvm-howtoupdatedebuginfo-2025]: rather than a boolean "exempt/not-exempt," enumerate the
+*specific reasons* a divergence is legitimate (`getCompilerGenerated`, `getDropped`, `getUnknown`,
+`getTemporary`), each set *at the point the divergence is created*, with the governing bias:
+
+> the most important rule is to not apply any of these if it isn't clear which, if any, is
+> appropriate — an absent location can be detected and fixed, while an incorrectly annotated
+> instruction is much [harder].
+
+Translated to Dorc's gate spec, the recommended partition language: the decision output is split
+into an **identity plane** (must be byte-identical across the two runs — the verdict per command:
+replace/keep/refuse, the chosen substitution, the per-host applicability) and an **exempt plane**
+(may differ — explanation text, receipt IDs, origin-set *ordering*, timing, any diagnostic). The
+exempt plane is defined by a *closed enumeration of named reasons* (e.g. `Exempt::Explanation`,
+`Exempt::ReceiptId`, `Exempt::OriginOrdering`, `Exempt::Timing`), each applied *at the field's
+definition site*, and the gate **fails on any field not explicitly assigned an exempt reason** —
+the LLVM bias (unknown ⇒ not-exempt ⇒ loud-but-fixable, never silently-exempt-and-leaking). This
+beats a strip-list (GCC style) because new decision fields are *included by default* and must be
+*deliberately* exempted — the safe direction for a correctness gate. Pair with r-b.org's
+*canonicalize-don't-exempt* for fields that legitimately vary but must still be compared (clamp/
+normalize them in both runs rather than exempting).
 
 ---
 
