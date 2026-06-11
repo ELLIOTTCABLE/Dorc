@@ -274,3 +274,78 @@ Even LLVM's mature gate has acknowledged false positives — a realistic expecta
 metadata-inertness gate is rarely perfectly clean, and the team treats remaining FPs as known
 debt rather than a reason to abandon the gate.
 
+---
+
+## §3 reproducible-builds.org: the invariant, SOURCE_DATE_EPOCH, and the leak taxonomy
+
+**finding-rb-invariant (+SURE).** The canonical statement of the metadata-inertness invariant,
+in RFC2119 keywords [A-rb-source-date-epoch-2017]:
+
+> The value MUST be reproducible (deterministic) across different executions of the build,
+> depending only on the source code. … Build processes MUST use this variable for embedded
+> timestamps in place of the "current" date and time.
+
+"Depending only on the source code" is the reproducible-builds north star, and it is exactly
+Dorc's gate spec restated: decision output MUST depend only on the analyzed sh + probe records,
+NOT on the receipts plane (the build's "current time" analogue — present, useful, but must not
+leak into the artifact).
+
+**finding-rb-normalize-dont-prohibit (+SURE).** The *timestamp-clamping* pattern is the key
+engineering move — you don't forbid the volatile input, you *normalize* it to a deterministic
+function of source [A-rb-source-date-epoch-2017]:
+
+> Where build processes embed timestamps that are not "current", but are nevertheless still
+> specific to one execution of the build process, they MUST use a timestamp no later than the
+> value of this variable. This is often called "timestamp clamping". … One can reasonably
+> assume that all source timestamps are before SOURCE_DATE_EPOCH and all builds take place
+> after it. This means we can efficiently both preserve source-based timestamps and omit
+> build-specific timestamps, by rewriting timestamps more recent than SOURCE_DATE_EPOCH back to
+> the latter. See for example the `--clamp-mtime` option to GNU tar.
+
+This is the third comparison-partition strategy (alongside GCC's strip-the-noise and LLVM's
+named-exempt-reasons): **canonicalize the volatile field to a deterministic value before it can
+leak.** For Dorc: if some decision-adjacent field legitimately varies (a timestamp in a probe
+record), clamp/canonicalize it in BOTH runs rather than trying to exempt it from comparison.
+
+**finding-rb-deferred-formatting (+SURE).** A subtle partition rule worth noting verbatim:
+
+> Formatting MUST be deferred until runtime if an end user should observe the value in their own
+> locale or timezone. … Build processes MUST NOT unset this variable for child processes if it
+> is already present. … If the value is malformed, the build process SHOULD exit with a
+> non-zero error code.
+
+"Defer locale/timezone formatting to runtime" = keep the volatile *presentation* out of the
+*artifact*; the value travels as a normalized integer, rendered only at the human boundary.
+Direct analogue: Dorc's receipts may be richly formatted in *explanation* output (the human
+boundary) but must travel as normalized data that never touches decisions.
+
+*(The broader r-b.org leak-category page sweep — env-variations, volatile-inputs, stable-inputs/
+ordering, value-initialization, stripping, version-information, timestamps, timezones, locales,
+archives — is gathered in §4 below and tabulated in §0.)*
+
+---
+
+## §4 rustc reproducibility & the ordering-nondeterminism lint
+
+**finding-rustc-query-instability-lint (+SURE).** rustc ships a *first-class compiler lint*
+against the canonical ordering leak — iterating a `HashMap` whose order leaks into output.
+Verbatim from the internal-lint definition [A-rustc-potential-query-instability-2025]:
+
+> The `potential_query_instability` lint detects use of methods which can lead to potential
+> query instability, such as iterating over a `HashMap`. Due to the incremental compilation
+> model, queries must return deterministic, stable results. `HashMap` iteration order can
+> change between compilations, and will introduce instability if query results expose the
+> order.
+
+This is the strongest *enforcement-beyond-convention* mechanism for Dorc's ordering discipline:
+not "we agreed to use BTreeMap" but a lint that *fires at the call site* of an order-exposing
+iteration. rustc's own codebase denies this lint and routes all order-sensitive iteration
+through deterministic wrappers (`FxIndexMap`/sorted helpers) — the structural ban, not the
+convention. (The mechanism's adoptability for a plain Rust workspace — via `clippy` or a custom
+`dylint` — is assessed in §0 mechanisms; the rustc lint itself is `rustc`-internal and not
+directly usable, so Dorc would reimplement the *idea*.)
+
+*(rustc's `--remap-path-prefix`, the reproducible-build tracking issues, and the other known
+nondeterminism sources — codegen-unit parallelism, incremental fingerprints — are gathered by
+sub-subagent in §5 and folded into §0.)*
+
