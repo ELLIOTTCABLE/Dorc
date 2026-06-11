@@ -847,7 +847,10 @@ for dir in "$here"/cases/*/; do
       fails=$((fails + 1))
     fi
   elif [ "$case_ok" -eq 1 ]; then
-    echo "ok    $name"
+    # DORC_E2E_QUIET=1 suppresses the per-case `ok` lines (~1/case ⇒ ~200/double-run
+    # of conductor input-tokens before every commit; TODO.md). FAILURES, xfail/XPASS,
+    # and the final tally still print unconditionally; exit semantics are unchanged.
+    [ "${DORC_E2E_QUIET:-}" = "1" ] || echo "ok    $name"
   else
     fails=$((fails + 1))
   fi

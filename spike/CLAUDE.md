@@ -235,6 +235,10 @@ mise exec -- cargo clippy --workspace --all-targets
 sh e2e/run.sh        # the 99-case corpus (count drifts — trust the dirs): dash -n gate + exec-under-mocks
 ```
 
+Set `DORC_E2E_QUIET=1` to suppress the per-case `ok` lines (just the final tally
+prints, ~200 fewer conductor input-tokens per double-run); failures still print in
+full and the exit code is unchanged.
+
 Pre-commit gate set: `cargo fmt --check` · `clippy -D warnings` ·
 `cargo deny check licenses bans sources` · `typos`. **There is NO git
 pre-commit hook** (the hk config-hook was uninstalled repo-wide at human
