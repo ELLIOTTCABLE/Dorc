@@ -128,9 +128,14 @@ disclosures=Note+None). B4 FAILED (fb-19 recursive self-delegation; abandoned); 
 the no-subagents clamp SUCCEEDED and is HARVESTED — arch-3 core COMPLETE
 (see arcs). NEXT = ARCH-2 PREP (fresh conductor turn): fold-or-re-derive
 x-1's coverage-doc test from ai/r22-xcheck1 `b68fc66`; the arch-3-residual-1
-must-emit audit rides along; then arch-2 build dispatch (emit-at-origin,
-mvs-1..5, remediation-class render, arch2-gate-obligation, rec-1
-two-surfaces). x-2 (over-suppression) wants fr-2 (VMCAI PDF) first. WAVE-3: arch-2 (emit-at-origin,
+must-emit audit rides along; ALSO: TODO.md carries an UNCOMMITTED human line
+(2026-06-11, this worktree) — harness output too noisy at 2× e2e per commit;
+candidate fix = a quiet-success knob in e2e/run.sh (failures verbatim + the
+tally line; keeps fb-17's no-pipe/real-rc/read-the-output discipline, just
+makes the output worth reading) — propose to the human at prep. Then arch-2
+build dispatch (emit-at-origin, mvs-1..5, remediation-class render,
+arch2-gate-obligation, rec-1 two-surfaces). x-2 (over-suppression) wants fr-2
+(VMCAI PDF) first. WAVE-3: arch-2 (emit-at-origin,
 mvs-1..5, remediation-class render, + arch2-gate-obligation; fold-or-re-derive
 x-1's coverage-doc test at prep) then arch-4-thin (cer-1..6, host-side durables
 per ru-21/22/23, traceparent tail — read OTel env-carriers spec first). x-2
