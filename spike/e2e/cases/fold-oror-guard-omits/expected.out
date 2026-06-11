@@ -25,5 +25,4 @@ package_installed__check 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; el
 # with `command -v` as the guard. (An un-probed/⊤ guard rc would NOT fold — the
 # kFAIL-perform floor; and an invalid guard, below a mutator, runs for real — see
 # exec-query-after-mutator-runs.)
-# command -v nginx >/dev/null 2>&1 || apt-get install -y nginx   # dorc: elided (already converged / dead branch)
-true
+true || :   # dorc: elided [command -v nginx >/dev/null 2>&1; apt-get install -y nginx] (already converged / dead branch)

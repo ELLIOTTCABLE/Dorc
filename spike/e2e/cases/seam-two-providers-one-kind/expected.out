@@ -13,7 +13,5 @@ package_installed__check 'httpd'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; el
 #!/bin/sh
 # dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
 
-# apt-get install -y nginx   # dorc: elided (already converged / dead branch)
-true
-# yum install -y httpd   # dorc: elided (already converged / dead branch)
-true
+true   # dorc: elided [apt-get install -y nginx] (already converged / dead branch)
+true   # dorc: elided [yum install -y httpd] (already converged / dead branch)

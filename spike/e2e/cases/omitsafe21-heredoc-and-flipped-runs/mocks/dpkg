@@ -1,0 +1,9 @@
+#!/bin/sh
+# INERT shim for `dpkg` — the APPLY-TIME host: nginx PRESENT (rc 0), FLIPPED from the
+# authored probe-time fixture (absent rc=1). The kept live guard reads THIS world and
+# proceeds through the `&&`. Read-only; logs.
+. "${0%/*}/.log"; _dorc_logged "$@"
+case $2 in
+  nginx) exit 0 ;;  # present at APPLY time (flipped from the authored probe)
+  *)     exit 1 ;;
+esac

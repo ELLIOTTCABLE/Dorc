@@ -4,7 +4,7 @@
 # ⇒ diverged); every other package (here `nginx`) is `holds` (exit 0 ⇒ converged). This is
 # the partial-convergence the all-or-nothing license refuses. Mutates nothing; logs for
 # symmetry. The package is the last arg (`dpkg-query -W <pkg>`).
-printf 'ran: %s %s\n' "${0##*/}" "$*" >>"$DORC_LOG"
+. "${0%/*}/.log"; _dorc_logged "$@"
 for _a in "$@"; do _pkg=$_a; done
 if [ "$_pkg" = curl ]; then exit 1; fi
 exit 0

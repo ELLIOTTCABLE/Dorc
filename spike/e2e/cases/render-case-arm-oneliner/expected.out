@@ -13,6 +13,6 @@ package_installed__check 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; el
 # dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
 
 case nginx in
-  nginx) true ;;   # dorc: elided (already converged) — case-arm body substituted in situ
+  nginx) true ;;   # dorc: elided [apt-get install -y nginx] (already converged / dead branch)
   *) : ;;
 esac

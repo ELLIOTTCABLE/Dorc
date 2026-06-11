@@ -1,0 +1,5 @@
+# probe-results: site 0 is the multi-line install (`apt-get install -y "multi\nline"`, an
+# EstablishAmbient on the oddly-named package); holds ⇒ converged ⇒ the leaf-exact render
+# substitutes its (two-line) span with `true`. The unoracled `systemctl reload` is a Run leaf
+# (no record). The dpkg-query probe is invoked with the newline-bearing operand single-quoted.
+site 0 effect=holds

@@ -4,7 +4,7 @@
 # $1=-s, $2=the package). The mock host has ca-certificates installed but NOT nginx/vim,
 # so the shim branches on the operand to reproduce the fixture's pkgstate sites (site 1
 # ca-certificates=holds, sites 2/9 nginx/vim=absent). Read-only; logs the argv for the run-set.
-printf 'ran: %s %s\n' "${0##*/}" "$*" >>"$DORC_LOG"
+. "${0%/*}/.log"; _dorc_logged "$@"
 case $2 in
   ca-certificates) exit 0 ;;  # installed ⇒ holds (the valid bare guard, substituted to `true`)
   *)               exit 1 ;;  # nginx/vim not installed ⇒ absent

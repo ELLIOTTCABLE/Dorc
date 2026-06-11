@@ -1,0 +1,8 @@
+#!/bin/sh
+# INERT shim for `dpkg` — the while-condition Query guard, run VERBATIM (the leaf-exact render
+# never substitutes a StatusIterated loop condition). It exits 1 (nginx "absent") so the
+# `while` runs ZERO iterations and TERMINATES — a holds (exit 0) would loop forever, which is
+# exactly the disaster a constant-substituted loop condition would also cause (the rationale
+# StatusIterated blocks on). Logs the argv for the run-set.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 1

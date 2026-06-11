@@ -1,0 +1,8 @@
+gate-6 (cm-1 dual-rail) EXCLUSION — function-inlining / wrapper-pun (arch-2, note 216
+inv-leaf-seam; tc-gate6-inlining). The book wraps the mutator in `apt_install()` and calls
+it. The engine's `--debug-argv` reports the disposition on the CALL-site surface argv
+(`replace apt_install curl`), while the BARE run logs the INLINED body
+(`apt-get install -y curl`). gate-6's surface-argv attribution cannot match the two, so the
+converged elision false-fails as "unattributable". 21D's hostsim differential attributes
+these via the in-process API; the corpus tier cannot. gate-5 + the exec gates still cover
+the case; only gate-6 opts out. The value lives in the filename; this text is documentation.

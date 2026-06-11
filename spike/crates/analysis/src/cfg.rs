@@ -27,7 +27,7 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
-use dorc_core::{AstId, Carrier, Channel, DiagCode, Diagnostic, Span};
+use dorc_core::{AstId, BytePos, Carrier, Channel, DiagCode, Diagnostic, Span};
 use dorc_syntax::{
     Ast, NodeKind, WordPart,
     ast::{CaseArm, ElseIf, RedirOp, RedirTarget},
@@ -38,6 +38,32 @@ use crate::lattice::Powerset;
 /// Diagnostic codes this module emits (greppable; `ch-catalog`).
 const CFG_TOP: DiagCode = DiagCode("cfg-top-node");
 const CFG_ERREXIT_TOP: DiagCode = DiagCode("cfg-errexit-unknown");
+/// arch-2 (brk-2): a call to an eligible-but-over-budget / refused funcdef stays an
+/// ordinary unmodeled command (`Opaque`), but the refusal is surfaced (never silent —
+/// proportional degradation, `211` §1). Each variant names *why* the splice was refused.
+const CFG_INLINE_REFUSED: DiagCode = DiagCode("cfg-inline-refused");
+/// find-I (note 213 §5 hunt-4): a book funcdef shadows a builtin name the engine RELIES
+/// on resolving to the actual builtin — the blessed-pure classification
+/// ([`crate::effect::is_target_state_pure_builtin`] treats the bare word as Pure) and the
+/// render's minted stand-ins (`true`/`false`/`(exit N)`, `plan`'s `standin_sh`). dash
+/// resolves a function before a regular builtin, so those assumptions are unsound for
+/// such a book. WARNING-class DISCLOSURE only — the one place the license judgment itself
+/// depends on the assumption (door-3) refuses separately ([`Builder::right_is_bare_true`]).
+const CFG_BUILTIN_SHADOWED: DiagCode = DiagCode("cfg-builtin-shadowed");
+
+/// arch-2 inlining budgets (`211` §1 / `209` brk-2; pre-spelled in the round-21 charter).
+/// Over-budget ⇒ the call stays `Opaque` WITH a [`CFG_INLINE_REFUSED`] diagnostic naming the
+/// exceeded budget — proportional degradation, never a silent cliff.
+mod inline_budget {
+    /// Maximum inline-splice depth (a call inside an inlined body inside an inlined body is
+    /// depth 2; deeper ⇒ refuse). Keeps the recursion-stack shallow and the spliced-node
+    /// count bounded.
+    pub(super) const MAX_DEPTH: u32 = 2;
+    /// Maximum spliced CFG nodes for ONE call site (the body's whole lowering, recursively).
+    pub(super) const MAX_NODES_PER_SITE: usize = 64;
+    /// Maximum spliced CFG nodes across the WHOLE book (all call sites summed).
+    pub(super) const MAX_NODES_PER_BOOK: usize = 1024;
+}
 
 // ===========================================================================
 // Public types
@@ -105,12 +131,13 @@ pub enum CfgNodeKind {
 // `true`-stub's default would NOT vouch — an un-collapsed fact (`inv-superposition`): the
 // engine names *what is consumed*; the phased caller (`plan`) collapses it. `Effect` is
 // vouched by convergence and never enters the set; `Stdout`/`Stderr` are vouched by
-// nothing (always block, 16F §3). The status-consumers split by render-expressibility, not
-// construct identity (`206` §3): `StatusRenderFloor` (the `if`/`elif` guard — the ONE
-// source the line-granular render cannot substitute in-situ, an unconditional block), and
-// `StatusRelaxable` (FOUR sources — a &&/|| operand, an errexit-region command's rc, and a
-// `$?`-reader's predecessor, per 19A C-3 / 205 §2: `set -e` and `$?` are ordinary
-// rc-consumers, not special-cased). See `core::Channel`.
+// nothing (always block, 16F §3). The status-consumers split by what reproduces the read
+// (`206` §3 + arch-1 / note 214: the leaf-exact render retired the render-expressibility
+// `StatusRenderFloor`): `StatusRelaxable` (a KNOWN rc reproduces the decision — a &&/||
+// operand, an errexit-region command's rc, a `$?`-reader's predecessor, and an `if`/`elif`
+// guard), `StatusInvariant` (the consumer decides nothing — `cmd || true`), and
+// `StatusIterated` (a `while`/`until` condition — the per-pass SEQUENCE no single rc
+// reproduces, an unconditional block). See `core::Channel`.
 
 /// One CFG node: its role plus the [`AstId`] it derives from (provenance). For
 /// synthetic nodes (`Entry`/`Exit`/`Merge`/scope) the `ast` points at the nearest
@@ -143,6 +170,25 @@ pub struct Cfg {
     /// mints a `Replace`/`Omit` license (`plan::disposition_for`). The recorded floor
     /// the member-elision slice (`209` brk-1 (b)) later lifts.
     in_loop: Vec<bool>,
+    /// Per-node: lowered as part of a function-body SPLICE at a call site (arch-2, brk-2).
+    /// Such a `Command` is effect-bearing (its mutations gen into reaching-defs exactly as
+    /// inline code would — `i-5`), reachable from entry (un-detaching the body — the find-7
+    /// fix), and probe-resolvable as a sub-record OF THE CALL (`site N.M`, `i-4`); but it is
+    /// NOT a plan/apply Step LEAF of its own (`i-3`): its source span belongs to the SHARED
+    /// definition, which every call site reuses, so editing it for one call would rewrite the
+    /// others (and the definition). The render/substitution unit is the CALL leaf; a spliced
+    /// body site is excluded from the leaf list exactly like an expansion-internal `$()` body
+    /// command. (`spliced_internal ⊆ ¬is_expansion_internal`: a `$()` inside a spliced body is
+    /// flagged BOTH; both exclude it from the leaf set.)
+    spliced_internal: Vec<bool>,
+    /// arch-2 (`i-1`/`i-3`/`i-4`): a CALL [`CfgNodeKind::Command`] node → the ordered list of
+    /// body LEAF [`Command`](CfgNodeKind::Command) CFG nodes the splice produced for it (its
+    /// own spliced copy; a transitively-inlined body's leaves are flattened in here too — the
+    /// call's WHOLE effect-bearing leaf set). Empty for a non-call command. The all-or-nothing
+    /// CALL license (`plan`) aggregates these sites' classifications; the probe emits one
+    /// `site N.M` sub-record per body site (M = the index into this list). `BTreeMap` for
+    /// `inv-determinism`.
+    call_body_sites: BTreeMap<CfgNodeId, Vec<CfgNodeId>>,
     /// Per-node: the unvouched output observables this node's *context* consumes
     /// (note 16J, `inv-superposition`). Computed during lowering — the single
     /// exhaustive structural traversal — so it is **total over nodes**: an empty
@@ -203,6 +249,39 @@ impl Cfg {
     #[must_use]
     pub fn in_loop_body(&self, id: CfgNodeId) -> bool {
         self.in_loop[id.index()]
+    }
+
+    /// Was this node lowered as part of a function-body SPLICE at a call site (arch-2,
+    /// brk-2)? A spliced body `Command` is effect-bearing and probe-resolvable (a `site N.M`
+    /// sub-record OF THE CALL), but is NOT a plan/apply Step LEAF of its own — its span
+    /// belongs to the shared definition, so the CALL leaf is the render/substitution unit
+    /// (`i-3`). Excluded from the leaf set exactly like [`is_expansion_internal`]. A POST-call
+    /// command is NOT spliced-internal, so the value below an eliding call unlocks normally.
+    #[must_use]
+    pub fn is_spliced_internal(&self, id: CfgNodeId) -> bool {
+        self.spliced_internal[id.index()]
+    }
+
+    /// The ordered body LEAF [`CfgNodeKind::Command`] nodes a function-call splice produced for
+    /// the CALL node `id` (arch-2, brk-2; `i-3`/`i-4`), or `None` if `id` is not an inlined
+    /// call. The all-or-nothing CALL license (`plan`) aggregates these sites' classifications;
+    /// the probe ships one `site N.M` sub-record per entry (M = the list index). The list is
+    /// the call's WHOLE effect-bearing-and-probeable leaf set (a transitively-inlined body's
+    /// own leaves are flattened in, depth-bounded). In source order (`inv-determinism`).
+    #[must_use]
+    pub fn call_body_sites(&self, id: CfgNodeId) -> Option<&[CfgNodeId]> {
+        self.call_body_sites.get(&id).map(Vec::as_slice)
+    }
+
+    /// Every inlined-CALL node paired with its body-leaf list (arch-2; the whole splice map).
+    /// Deterministic key order (`BTreeMap`). Consumers: `effect::classify` (builds the call's
+    /// aggregate `SkipClass`), `plan::compile_probe`/`build_plan` (per-call sub-records + the
+    /// CALL Step). A call with an EMPTY body-leaf list (a wrapper of pure builtins only) is
+    /// still present — its call elides trivially (nothing effect-bearing to gate).
+    pub fn inlined_calls(&self) -> impl Iterator<Item = (CfgNodeId, &[CfgNodeId])> {
+        self.call_body_sites
+            .iter()
+            .map(|(&id, sites)| (id, sites.as_slice()))
     }
 
     /// The unvouched output observables (`Stdout`/`Stderr`) this node's context
@@ -270,6 +349,10 @@ pub fn build(ast: &Ast) -> Carrier<Cfg> {
     let exit = b.fresh(ast.root(), CfgNodeKind::Exit);
     b.entry = entry;
     b.exit = exit;
+
+    // Phase 0: book-level disclosure — a funcdef shadowing an engine-relied builtin
+    // name warns per definition (find-I; door-3's own refusal is in lowering).
+    b.warn_shadowed_relied_builtins();
 
     // Phase 1: structural walk. The script body flows entry → … → exit; a path
     // that runs off the end (no terminator) falls through to `exit`.
@@ -355,6 +438,28 @@ struct Builder<'a> {
     /// arena-range pass in `lower_for`/`lower_while` (the same range trick
     /// `expansion_internal` uses); emitted on the [`Cfg`] for `plan`'s in-loop floor.
     in_loop: Vec<bool>,
+    /// Per-node: lowered as part of a function-body splice (arch-2). Set by an arena-range
+    /// pass in [`splice_funcdef_body`](Builder::splice_funcdef_body); emitted on the [`Cfg`]
+    /// so the leaf set excludes a spliced body command (the CALL is the render unit, `i-3`).
+    spliced_internal: Vec<bool>,
+    /// arch-2: the funcdef registry — name ↦ each definition's `(body AstId, def-start
+    /// BytePos)`, in source order. Built once in [`new`](Builder::new) over the AST. A name
+    /// with `len() > 1` is REDEFINED ⇒ every call to it ⊤-rejects (out of slice, `i-1`); a
+    /// call resolves to the LAST definition strictly BEFORE the call site (so a call before any
+    /// definition stays an ordinary unmodeled command). `BTreeMap` for `inv-determinism`.
+    funcdefs: BTreeMap<String, Vec<(AstId, BytePos)>>,
+    /// arch-2: the ACTIVE inline stack — the body-AstIds currently being spliced (call-stack
+    /// order). A call whose resolved body is already on this stack is direct/transitive
+    /// RECURSION ⇒ ⊤-reject naming the cycle (`i-1`). Pushed before splicing a body, popped
+    /// after.
+    inline_stack: Vec<AstId>,
+    /// arch-2: spliced CFG nodes minted across the WHOLE book so far (the per-book budget,
+    /// `i-1`). Each splice adds its node count; a splice that would exceed
+    /// [`inline_budget::MAX_NODES_PER_BOOK`] is refused (the call stays `Opaque`).
+    spliced_node_total: usize,
+    /// arch-2: the CALL node → its ordered body-leaf list, accumulated as splices complete
+    /// (`i-3`/`i-4`). Emitted on the [`Cfg`] as [`Cfg::call_body_sites`].
+    call_body_sites: BTreeMap<CfgNodeId, Vec<CfgNodeId>>,
     /// Per-node: the unvouched output observables this node's context consumes
     /// (note 16J). Populated in lowering by `mark_consumed_range` (the enclosing
     /// pipeline-stage / redirected-group context propagated to inner leaves, the
@@ -406,6 +511,11 @@ impl<'a> Builder<'a> {
             toggle: Vec::new(),
             expansion_internal: Vec::new(),
             in_loop: Vec::new(),
+            spliced_internal: Vec::new(),
+            funcdefs: collect_funcdefs(ast),
+            inline_stack: Vec::new(),
+            spliced_node_total: 0,
+            call_body_sites: BTreeMap::new(),
             consumed: Vec::new(),
             exit_to_enter: BTreeMap::new(),
             enter_to_exit: BTreeMap::new(),
@@ -425,6 +535,7 @@ impl<'a> Builder<'a> {
         self.toggle.push(None);
         self.expansion_internal.push(false);
         self.in_loop.push(false);
+        self.spliced_internal.push(false);
         self.consumed.push(Powerset::default());
         id
     }
@@ -629,7 +740,226 @@ impl<'a> Builder<'a> {
             let dead = self.fresh(id, CfgNodeKind::Merge);
             return dead;
         }
+
+        // arch-2 (brk-2): a call to a same-file-earlier funcdef splices the body after `cmd`
+        // (see `try_inline_call`); `cmd` stays the render leaf, the body becomes reachable.
+        if let Some(call_exit) = self.try_inline_call(id, words, cmd) {
+            return call_exit;
+        }
         cmd
+    }
+
+    /// arch-2 (brk-2): try to splice a function-body inline at a call site. Returns
+    /// `Some(region-exit)` when the call was inlined (the body spliced after `cmd`, the body
+    /// leaves recorded against `cmd` for the plan/probe), or `None` when the command is not an
+    /// eligible call (it stays an ordinary unmodeled command — `Opaque`, status quo). Every
+    /// refusal is loud (a [`CFG_INLINE_REFUSED`] diagnostic) so the proportional degradation
+    /// is never silent (`211` §1). `i-1` eligibility, in order:
+    ///
+    /// * the command word is a fixed literal that names a funcdef with a definition strictly
+    ///   BEFORE this call (a call before any definition, or a non-funcdef word, ⇒ `None`: it
+    ///   might be a PATH binary — ordinary `Opaque`, no diagnostic);
+    /// * the name is defined exactly ONCE (`> 1` ⇒ ⊤-reject with a specific diagnostic —
+    ///   redefinition tracking is out of slice);
+    /// * the resolved body is not already on the active inline stack (direct/transitive
+    ///   RECURSION ⇒ ⊤-reject naming the cycle);
+    /// * inline depth `≤ MAX_DEPTH` (the stack depth);
+    /// * the body uses none of `$@`/`$*`/`shift`/`local` (out of slice — the diagnostic names
+    ///   the construct);
+    /// * no body WRITE-redirect (`>`/`>>`/`<>`) to anything but `/dev/null` (tc-M2: a body
+    ///   file-write is an unmodeled effect (y-1) inlining would EXPOSE as wrong-ambience);
+    /// * the splice fits the node budgets (`≤ MAX_NODES_PER_SITE` for this site, and the
+    ///   running total `≤ MAX_NODES_PER_BOOK`) — over-budget ⇒ `Opaque` WITH a diagnostic
+    ///   naming the exceeded budget.
+    fn try_inline_call(&mut self, id: AstId, words: &[AstId], cmd: CfgNodeId) -> Option<CfgNodeId> {
+        // A non-literal word, or a name no funcdef declares, is an ordinary command (None,
+        // silent — it might be a PATH binary).
+        let name = self.word_literal(*words.first()?)?;
+        let defs = self.funcdefs.get(name)?;
+
+        let call_lo = self.span(id).lo;
+        if defs.len() > 1 {
+            self.diags.push(Diagnostic::warning(
+                CFG_INLINE_REFUSED,
+                Some(self.span(id)),
+                format!(
+                    "function `{name}` is defined more than once; the call is not inlined \
+                     (redefinition tracking is out of the modeled subset) — it runs as an \
+                     ordinary unmodeled command"
+                ),
+            ));
+            return None;
+        }
+        // The LAST definition strictly BEFORE the call; a forward/absent definition resolves to
+        // None (silent — the word might be a PATH binary at that program point, i-1).
+        let body = defs
+            .iter()
+            .filter(|(_, def_lo)| def_lo.0 < call_lo.0)
+            .max_by_key(|(_, def_lo)| def_lo.0)
+            .map(|(body, _)| *body)?;
+
+        if self.inline_stack.contains(&body) {
+            self.diags.push(Diagnostic::warning(
+                CFG_INLINE_REFUSED,
+                Some(self.span(id)),
+                format!(
+                    "recursive call to `{name}` (direct or transitive within the active inline \
+                     stack); not inlined — it runs as an ordinary unmodeled command"
+                ),
+            ));
+            return None;
+        }
+        if self.inline_stack.len() as u32 >= inline_budget::MAX_DEPTH {
+            self.diags.push(Diagnostic::warning(
+                CFG_INLINE_REFUSED,
+                Some(self.span(id)),
+                format!(
+                    "call to `{name}` exceeds the inline-depth budget ({}); not inlined — it \
+                     runs as an ordinary unmodeled command",
+                    inline_budget::MAX_DEPTH
+                ),
+            ));
+            return None;
+        }
+        // Depth-2 positional threading does NOT work (arch-2 wave-2 correction): a NESTED call
+        // (`inline_stack` already holds an enclosing body) whose own argument references a
+        // positional reads the ENCLOSING function's `$1`, which the overlay does not thread two
+        // levels (note 216 §1.2 claimed it did; the crosscheck disproved it — the inner body's
+        // positional resolves ⊤). Refuse THIS inner call LOUDLY (a catalogued Note) instead of
+        // shipping a silent safe `MustRun`; the call runs verbatim, the limitation is disclosed.
+        if !self.inline_stack.is_empty() && self.call_args_reference_positional(words) {
+            self.diags
+                .push(dorc_core::diag::depth2_positional_unthreaded(
+                    Some(self.span(id)),
+                    name,
+                ));
+            return None;
+        }
+        if let Some(construct) = self.body_uses_unmodeled_positional(body) {
+            self.diags.push(Diagnostic::warning(
+                CFG_INLINE_REFUSED,
+                Some(self.span(id)),
+                format!(
+                    "call to `{name}` not inlined: its body uses `{construct}` (out of the \
+                     modeled subset) — it runs as an ordinary unmodeled command"
+                ),
+            ));
+            return None;
+        }
+        // tc-M2: inlining would EXPOSE an invisible body file-write as wrong-ambience
+        // (redirect-effects are unmodeled, y-1); `/dev/null` stays exempt (devnull-exemption).
+        if let Some(detail) = self.body_has_unmodeled_write_redirect(body) {
+            self.diags.push(Diagnostic::warning(
+                CFG_INLINE_REFUSED,
+                Some(self.span(id)),
+                format!(
+                    "call to `{name}` not inlined: its body has an unmodeled write-redirect \
+                     ({detail}) — it runs as an ordinary unmodeled command (tc-M2)"
+                ),
+            ));
+            return None;
+        }
+        self.splice_funcdef_body(id, name, body, cmd)
+    }
+
+    /// arch-2: splice a fresh lowering of `body` (the funcdef body's AST) right after the CALL
+    /// node `cmd`, returning the spliced region's exit (so the caller sequences the
+    /// continuation onto the BODY's last node — POSIX: the call's continuation follows the
+    /// body, and the call's rc is the body's last rc, `i-5`). Records the body's effect-bearing
+    /// LEAF [`Command`](CfgNodeKind::Command) nodes against `cmd` (`call_body_sites`, for the
+    /// `plan` aggregate + `site N.M` probe records, `i-3`/`i-4`) and marks every spliced node
+    /// `spliced_internal` (excluded from the Step leaf set; the CALL is the render unit).
+    ///
+    /// Budgets (`i-1`, proportional degradation): the per-site budget is checked from the
+    /// body's AST-subtree node count (a conservative pre-estimate — AST descendants ≥ the CFG
+    /// leaf nodes the body lowers to; over-estimating is the safe refuse direction), and the
+    /// per-book budget from the running tally of actually-spliced nodes. Over either ⇒ refuse
+    /// WITH a diagnostic naming the exceeded budget; the call stays `Opaque` (no splice happens
+    /// — the estimate is checked BEFORE any node is allocated, so there is nothing to roll
+    /// back). `inv-determinism`: the arena is append-only and the body-leaf collection is in
+    /// arena (== source) order.
+    fn splice_funcdef_body(
+        &mut self,
+        id: AstId,
+        name: &str,
+        body: AstId,
+        cmd: CfgNodeId,
+    ) -> Option<CfgNodeId> {
+        // Per-site budget: a conservative AST-subtree estimate (never under-counts the CFG
+        // leaves a body lowers to). Checked BEFORE allocation so refusal needs no rollback.
+        let estimate = subtree_node_count(self.ast, body);
+        if estimate > inline_budget::MAX_NODES_PER_SITE {
+            self.diags.push(Diagnostic::warning(
+                CFG_INLINE_REFUSED,
+                Some(self.span(id)),
+                format!(
+                    "call to `{name}` exceeds the per-call inline-node budget ({} > {}); not \
+                     inlined — it runs as an ordinary unmodeled command",
+                    estimate,
+                    inline_budget::MAX_NODES_PER_SITE
+                ),
+            ));
+            return None;
+        }
+        if self.spliced_node_total.saturating_add(estimate) > inline_budget::MAX_NODES_PER_BOOK {
+            self.diags.push(Diagnostic::warning(
+                CFG_INLINE_REFUSED,
+                Some(self.span(id)),
+                format!(
+                    "call to `{name}` exceeds the per-book inline-node budget ({} spliced + {} \
+                     more > {}); not inlined — it runs as an ordinary unmodeled command",
+                    self.spliced_node_total,
+                    estimate,
+                    inline_budget::MAX_NODES_PER_BOOK
+                ),
+            ));
+            return None;
+        }
+
+        // `inline_stack.push(body)` is the cycle guard: a recursive call inside the body
+        // ⊤-rejects. `lower_node` re-enters `lower_simple`, so a transitive call recurses here.
+        let body_start = self.nodes.len();
+        self.inline_stack.push(body);
+        let body_exit = self.lower_node(body, cmd);
+        self.inline_stack.pop();
+        let body_end = self.nodes.len();
+
+        // Spliced body commands are non-leaves (the CALL is the render unit, i-3).
+        for v in body_start..body_end {
+            self.spliced_internal[v] = true;
+        }
+        self.spliced_node_total = self
+            .spliced_node_total
+            .saturating_add(body_end - body_start);
+
+        // The call's effect-bearing leaf sites (i-4), in arena order. An inner inlined CALL is
+        // not itself a site — flatten its own body leaves in. Those flattened leaves ALSO sit
+        // directly in `body_start..body_end` (a transitively-spliced body command is in this
+        // arena range too), so the direct scan must SKIP them, or each depth-2 inner leaf
+        // double-counts: once via the inner call's flatten, once via the direct push (the
+        // `site 0.0`/`site 0.1` bug). The inner CALL precedes its body leaves in arena order,
+        // so accumulating the flattened set as we go covers every later direct hit.
+        let mut sites: Vec<CfgNodeId> = Vec::new();
+        let mut flattened_inner: BTreeSet<CfgNodeId> = BTreeSet::new();
+        for v in body_start..body_end {
+            let node = CfgNodeId(v as u32);
+            if self.nodes[v].kind != CfgNodeKind::Command || self.expansion_internal[v] {
+                continue;
+            }
+            if let Some(inner_sites) = self.call_body_sites.get(&node) {
+                debug_assert!(
+                    inner_sites.iter().all(|&s| s.0 > node.0),
+                    "inline ordering: inner CALL {node:?} must precede its flattened body sites \
+                     {inner_sites:?} (the flattened_inner dedupe relies on arena order; 217 §5 obs-2)"
+                );
+                sites.extend(inner_sites.iter().copied());
+                flattened_inner.extend(inner_sites.iter().copied());
+            } else if !flattened_inner.contains(&node) {
+                sites.push(node);
+            }
+        }
+        self.call_body_sites.insert(cmd, sites);
+        Some(body_exit)
     }
 
     /// A pipeline `a | b | c`: stages run left-to-right; the *last* stage's status
@@ -693,17 +1023,16 @@ impl<'a> Builder<'a> {
     /// covered by *its* enclosing `lower_and_or`.
     fn lower_and_or(
         &mut self,
-        _op: dorc_syntax::ast::AndOrOp,
+        op: dorc_syntax::ast::AndOrOp,
         left: AstId,
         right: AstId,
         entry_pred: CfgNodeId,
     ) -> CfgNodeId {
         // A `&&`/`||` left operand's status is **branch-consumed** (the right operand's
-        // reachability turns on it). `lower_condition_region(_, false)` clears its
-        // errexit-fallibility (a `&&`/`||` left operand is errexit-exempt) WITHOUT
-        // marking `Channel::StatusRenderFloor` (that variant is the `if`/`elif` render
-        // floor, an unconditional block); instead it is marked `Channel::StatusRelaxable`
-        // (the `19D` generalisation — render-expressible). The phased caller
+        // reachability turns on it). `lower_condition_region(_, None)` clears its
+        // errexit-fallibility (a `&&`/`||` left operand is errexit-exempt) but marks NO
+        // channel itself; this site then marks `Channel::StatusRelaxable` (a KNOWN rc
+        // reproduces the operand's branch decision). The phased caller
         // (`plan`) collapses it **rc-conditionally** (`prove_replaceable`): an undeclared
         // rc blocks the license (eliding to a fabricated `true`/rc-0 would suppress a
         // `cmd || fallback` — the `kFAIL-perform` under-execute the round-19 adversarial
@@ -713,12 +1042,31 @@ impl<'a> Builder<'a> {
         // former `tc-mint` ambiguity (`notes/198` §1.3): the engine no longer guesses
         // post-condition-vs-guard — it emits the un-collapsed status fact, and the
         // *declared rc* (the fold's input) decides, per `inv-superposition`/`19A §5`.
+        //
+        // door-3 (charter `20V` §4 / note 213): `lhs || true` marks the left operand
+        // `Channel::StatusInvariant` (never blocks, even at ⊤) instead of `StatusRelaxable` —
+        // the rc is consumed-in-form, dead-in-fact (see the variant doc for why). Only the
+        // EXACT bare-`true` rhs qualifies ([`right_is_bare_true`]); `|| :`/`|| false`/
+        // `&& true`/`|| true >/dev/null`/`|| { …; }` keep `StatusRelaxable` (a deliberately
+        // narrow license-widening, `20V` §4 d-2), and a book defining a `true()` function
+        // disqualifies door-3 file-wide (find-I: the word would resolve to the function,
+        // not the inert builtin). The mark covers the whole left arena range;
+        // in a chain `a || b || true` (left-assoc) that range also spans `a`, but `a` already
+        // carries `StatusRelaxable` from the inner `||` (its rc gates whether `b` runs), and
+        // that blocking mark wins over the inert Invariant over-mark — so only `b` (the direct
+        // `|| true` left) unlocks. The d-3 asymmetry falls out of mark-union composition.
+        let door3 = matches!(op, dorc_syntax::ast::AndOrOp::Or) && self.right_is_bare_true(right);
+        let left_status = if door3 {
+            Channel::StatusInvariant
+        } else {
+            Channel::StatusRelaxable
+        };
         let before_left = self.nodes.len();
-        let left_exit = self.lower_condition_region(left, entry_pred, false);
+        let left_exit = self.lower_condition_region(left, entry_pred, None);
         self.mark_consumed_range(
             before_left,
             self.nodes.len(),
-            &Powerset::singleton(Channel::StatusRelaxable),
+            &Powerset::singleton(left_status),
         );
 
         let right_exit = self.lower_node(right, left_exit);
@@ -763,10 +1111,13 @@ impl<'a> Builder<'a> {
         // The WHOLE condition is errexit-exempt, not just its tail (find-2): every
         // command/redir in the test region is cleared of fallibility (`[RAN]`
         // `if false; true; then …` runs the body, no abort; note 166). It is also an
-        // UNAMBIGUOUS guard — a different branch runs on the rc — so its commands'
-        // status is branch-consumed (`mark_status=true`): a converged guard must run,
-        // not elide (F1 / `notes/195`).
-        let cond_exit = self.lower_condition_region(cond, entry_pred, true);
+        // UNAMBIGUOUS guard — a different branch runs on the rc — so its commands' status is
+        // branch-consumed `Channel::StatusRelaxable` (arch-1 / note 214: the leaf-exact
+        // render retired the `StatusRenderFloor` block, so an if/elif guard is an ordinary
+        // single-shot substitution site — a probe-sourced KNOWN rc reproduces its branch
+        // decision; ⊤ blocks, the `19D`/`kFAIL-perform` floor).
+        let cond_exit =
+            self.lower_condition_region(cond, entry_pred, Some(Channel::StatusRelaxable));
 
         // Success path: then_body.
         let then_exit = self.lower_node(then_body, cond_exit);
@@ -841,23 +1192,35 @@ impl<'a> Builder<'a> {
         self.attach_redirs(id, redirs, leave)
     }
 
-    /// A function definition's body is a **detached** sub-CFG (Tier-A is
-    /// intraprocedural — note 163 §5): it is built (so its nodes/effects exist and
-    /// a future Tier-B call edge can target them) but NOT wired into the main
-    /// flow. Defining a function has no runtime effect; a *call* to it would be
-    /// Tier-B → ⊤ (no call detection in the modeled subset). The definition is a
-    /// pass-through in the enclosing flow.
+    /// A function DEFINITION's body is a **detached** sub-CFG (Tier-A is intraprocedural —
+    /// note 163 §5): it is built (so its nodes/effects exist) but NOT wired into the main flow.
+    /// Defining a function has no runtime effect; the body runs only when CALLED, and a call is
+    /// now a CFG-level body SPLICE (arch-2, brk-2 — [`try_inline_call`](Builder::try_inline_call)).
+    ///
+    /// The detached definition body's command nodes are marked `spliced_internal` (`i-3`): a
+    /// definition's body commands are NEVER independent plan/apply Step LEAVES — the body text
+    /// renders verbatim inside the `name() { … }` definition, and its effects reach the analysis
+    /// only via the per-call splices. Pre-arch-2 these detached commands surfaced as
+    /// `MustRun`/`skip-unresolvable` leaves of their own (unreachable, harmless, but noisy and
+    /// double-counting the spliced copy); marking them non-leaf collapses the definition to its
+    /// proper "no runnable leaf of its own" shape.
+    ///
+    /// errexit residue (the old find-7 TODO): the detached body's `Entry` is pred-less, so the
+    /// forward errexit pass computes `Off` throughout and its commands get no failure-edges.
+    /// This is now MOOT for the body's runtime semantics — the SPLICED copy at each call site
+    /// gets its errexit inflow from the call (it is wired in, `i-5`), and the detached copy is
+    /// a non-leaf island that never runs. The detached body remains only so its nodes exist for
+    /// arena consistency; it is not consulted for any apply/probe decision.
     fn lower_funcdef(&mut self, id: AstId, body: AstId, entry_pred: CfgNodeId) -> CfgNodeId {
         // Detached region: its own entry, unreferenced by `entry_pred`.
-        //
-        // TODO(find-7): the body's `Entry` is pred-less, so the errexit forward pass
-        // computes `Off` throughout the body and its commands get no failure-edges
-        // even when the *call site* runs under `set -e`. Harmless today (calls
-        // aren't modeled — the body is dead), but wrong once Tier-B call edges land:
-        // the body's errexit inflow must then come from the call site, not a seeded
-        // `Off`. Fix together with call-edge modeling, not piecemeal here (note 166).
         let func_entry = self.fresh(body, CfgNodeKind::Entry);
+        let body_start = self.nodes.len();
         let body_exit = self.lower_node(body, func_entry);
+        // The definition's body commands are not independent leaves (`i-3`): the body renders
+        // inside the `name() { … }` definition and runs only via the per-call splices.
+        for v in body_start..self.nodes.len() {
+            self.spliced_internal[v] = true;
+        }
         let func_exit = self.fresh(body, CfgNodeKind::Exit);
         self.add_edge(body_exit, func_exit);
 
@@ -914,9 +1277,12 @@ impl<'a> Builder<'a> {
     /// errexit-exemption as an `if`/`elif` test — extended here via
     /// [`lower_condition_region`]); a failing BODY command DOES abort (its failure-edge
     /// is materialised in phase 2, and it is `StatusRelaxable`-consumed per C-3). The
-    /// condition CONSUMES its last command's status (it decides whether the body or the
-    /// exit runs) at the render floor — `Channel::StatusRenderFloor`, like an `if`-guard
-    /// (item-2(b)): the line-granular render cannot substitute a loop condition in-situ.
+    /// condition CONSUMES its last command's status (it decides whether the body or the exit
+    /// runs) as `Channel::StatusIterated` (arch-1 / note 214): a loop condition is
+    /// re-evaluated per pass, so its consumed value is a SEQUENCE no single predicted rc can
+    /// reproduce, and replacing it with a constant is an infinite/zero-iteration disaster —
+    /// so it blocks unconditionally, the honest successor to the retired `StatusRenderFloor`
+    /// (keyed on iteration, not the line-granular render the leaf-exact render replaced).
     /// `until` vs `while` only flips the runtime continuation sense, not the CFG shape
     /// (both a body-entry and an exit edge exist either way); the value/effect planes
     /// are continuation-sense-agnostic, so one lowering serves both.
@@ -930,9 +1296,14 @@ impl<'a> Builder<'a> {
         let head = self.fresh(id, CfgNodeKind::LoopHead);
         self.add_edge(entry_pred, head);
         let loop_start = self.nodes.len();
-        // The condition is an errexit-exempt guard whose status is consumed at the
-        // render floor (`mark_status = true`, like `if`/`elif`).
-        let cond_exit = self.lower_condition_region(cond, head, true);
+        // The condition is an errexit-exempt guard whose status is consumed per-iteration —
+        // `Channel::StatusIterated` (arch-1): a single predicted rc can never reproduce the
+        // condition's per-pass sequence, and a constant-substituted loop condition is an
+        // infinite/zero-iteration disaster, so it blocks unconditionally. (NB: `loop_start`
+        // is captured BEFORE the condition is lowered, so the condition nodes are ALSO
+        // flagged `in_loop` below — the structural floor independently forces them to run;
+        // this mark records the honest *reason* regardless.)
+        let cond_exit = self.lower_condition_region(cond, head, Some(Channel::StatusIterated));
         let body_exit = self.lower_node(body, cond_exit);
         self.add_edge(body_exit, head); // the back-edge
         self.mark_in_loop_range(loop_start, self.nodes.len());
@@ -1151,7 +1522,7 @@ impl<'a> Builder<'a> {
     /// pred-walk would stop at the condition command and miss the body. When the walk
     /// reaches such a loop-exit `merge` ([`while_exit_to_body`]), it also seeds the
     /// recorded body-exit, so the body's last command is marked too (the condition keeps
-    /// its mark — already `StatusRenderFloor`-blocked, so the over-mark is inert). A `for`
+    /// its mark — already `StatusIterated`-blocked, so the over-mark is inert). A `for`
     /// loop needs no special case: its exit is `head → merge` and `head`'s back-edge pred
     /// is the body-exit, so the body is already reached.
     fn mark_dollar_question_predecessors(&mut self) {
@@ -1277,6 +1648,39 @@ impl<'a> Builder<'a> {
         )
     }
 
+    /// Is `id` the EXACT bare-`true` rhs that licenses door-3 (`20V` §4 d-2)? A
+    /// [`NodeKind::Simple`] whose argv is exactly the single literal word `true` —
+    /// zero arguments, zero redirections, zero assignment-prefixes, and (because
+    /// [`word_literal`](Self::word_literal) only matches a lone `Literal`/`SingleQuoted`
+    /// part) no command-substitution. This is a deliberately narrow slice: `true x`,
+    /// `X=1 true`, `true >/dev/null`, and `$(echo true)` all fail it and keep the
+    /// blocking `StatusRelaxable` mark. `:` does NOT qualify (it is semantically
+    /// identical, but every license-surface widening is a disaster-class-bug locus —
+    /// `20V` §4 widens deliberately, candidate-by-candidate; the `|| :` deferral is
+    /// pinned as a unit test). `false` does not qualify (it changes the list rc).
+    ///
+    /// find-I (note 213 §5 hunt-4): the word `true` is only inert when it resolves to
+    /// the BUILTIN — dash resolves a function before a regular builtin, so a book-defined
+    /// `true() { … }` makes the rhs (and any minted stand-in `true`) run the function
+    /// body instead. The check is FILE-WIDE, not positional: a textually-later definition
+    /// can be live when the site executes (loop re-entry), and over-refusing a
+    /// pathological book is the safe direction — it gets NO door-3 marks, its `|| true`
+    /// lefts stay `StatusRelaxable` and block at ⊤ (they run).
+    fn right_is_bare_true(&self, id: AstId) -> bool {
+        let NodeKind::Simple {
+            assigns,
+            words,
+            redirs,
+        } = &self.ast.node(id).kind
+        else {
+            return false;
+        };
+        assigns.is_empty()
+            && redirs.is_empty()
+            && matches!(words.as_slice(), [w] if self.word_literal(*w) == Some("true"))
+            && !self.funcdefs.contains_key("true")
+    }
+
     /// The statically-fixed literal of a word (the only case treated as a known
     /// token — command names, sub-verbs; mirrors `ast::Word::as_literal`). A word
     /// that may word-split / is an expansion is NOT a fixed literal.
@@ -1304,6 +1708,84 @@ impl<'a> Builder<'a> {
         out
     }
 
+    // ---- arch-2 funcdef-body scanners (pure; `i-1` eligibility) ----------------
+
+    /// arch-2 (`i-1`): does the funcdef `body`'s AST subtree use an out-of-slice positional
+    /// construct (`$@`/`$*`/`shift`/`local`)? Returns the offending construct's spelling for
+    /// the refusal diagnostic, or `None`. These are out of the modeled subset (the
+    /// positional-array forms `$@`/`$*` the value plane folds to ⊤; `shift`/`local` mutate the
+    /// positional/scope state the splice's positional overlay does not model). Span-contained
+    /// scan over the AST (cheap; corpus bodies are tiny). A `$@`/`$*` is a
+    /// `WordPart::Param { name }` whose name is the special `@`/`*`; `shift`/`local` are command
+    /// words.
+    fn body_uses_unmodeled_positional(&self, body: AstId) -> Option<&'static str> {
+        for (aid, node) in self.ast.iter() {
+            if !node_within(self.ast, aid, body) {
+                continue;
+            }
+            match &node.kind {
+                NodeKind::Word { parts } => {
+                    if let Some(p) = word_parts_special_positional(parts) {
+                        return Some(p);
+                    }
+                }
+                NodeKind::Simple { words, .. } => {
+                    match words.first().and_then(|&w| self.word_literal(w)) {
+                        Some("shift") => return Some("shift"),
+                        Some("local") => return Some("local"),
+                        _ => {}
+                    }
+                }
+                _ => {}
+            }
+        }
+        None
+    }
+
+    /// arch-2 (wave-2): do this call's OWN argument words (`words[1..]`, the command word
+    /// excluded) reference a positional parameter (`$1`..`$9`, quoted or not, or `$#`)? Used to
+    /// refuse a NESTED call that threads a positional into a second inline level — the overlay
+    /// does not bind it (note 216 §1.2's false working-claim). Mirrors value.rs's
+    /// `word_references_positional`, kept local so cfg.rs stays self-contained.
+    fn call_args_reference_positional(&self, words: &[AstId]) -> bool {
+        let args = words.get(1..).unwrap_or(&[]);
+        args.iter().any(|&w| {
+            matches!(&self.ast.node(w).kind, NodeKind::Word { parts } if word_parts_reference_positional(parts))
+        })
+    }
+
+    /// arch-2 (tc-M2): does the funcdef `body`'s AST subtree carry a WRITE-shaped redirect
+    /// (`>`/`>>`/`<>`) to anything OTHER than `/dev/null`? Returns a short detail for the
+    /// refusal diagnostic, or `None`. A body file-write is an unmodeled effect (y-1) that
+    /// inlining alone would EXPOSE as wrong-ambience — so the call refuses (the wrapper-pun
+    /// population redirects only to `/dev/null`, which stays exempt, keeping it alive). `2>&1`
+    /// fd-dups and here-docs are NOT write-to-file redirects (a `Dup`/`HereDoc` op), so they
+    /// are exempt; only `Write`/`Append`/`<>`-class file targets fence. Span-contained scan.
+    fn body_has_unmodeled_write_redirect(&self, body: AstId) -> Option<String> {
+        for (aid, node) in self.ast.iter() {
+            if !node_within(self.ast, aid, body) {
+                continue;
+            }
+            let NodeKind::Redir { op, target, .. } = &node.kind else {
+                continue;
+            };
+            // Only file-write redirects fence (`>`, `>>`). A read (`<`), an fd-dup (`2>&1`,
+            // `>&3`), and a here-doc (`<<EOF`) are not a write-to-file effect.
+            if !matches!(op, RedirOp::Write | RedirOp::Append) {
+                continue;
+            }
+            let RedirTarget::Word(w) = target else {
+                continue; // fd-dup / here-doc target: not a file write
+            };
+            match word_text(self.ast, *w) {
+                Some("/dev/null") => {} // the discard sink stays exempt (devnull-exemption)
+                Some(path) => return Some(format!("`> {path}`")),
+                None => return Some("`>` to a dynamic/unresolved target".to_string()),
+            }
+        }
+        None
+    }
+
     // ---- condition-context tagging --------------------------------------------
 
     /// Lower a *condition-context* region (the test of an `if`/`elif`, or the left
@@ -1313,23 +1795,29 @@ impl<'a> Builder<'a> {
     /// operands of a compound test (find-3) — both of which the old tail-only
     /// `mark_condition_context` missed when the region exit was a `Merge`.
     ///
-    /// `mark_status` additionally marks every command in the region as consuming
-    /// `Channel::StatusRenderFloor` (F1 / `notes/195`): the test of an `if`/`elif` — or
-    /// a `while`/`until` condition (task-L1) — is an **unambiguous guard** (a *different*
-    /// branch runs on its rc: the then/else, or the body/exit), and the line-granular
-    /// render cannot substitute a guard sharing its line with the `if`/`then`/`fi` (or
-    /// `while`/`do`/`done`) scaffolding, so this blocks the license **unconditionally** —
-    /// the render floor (19C strain-D). It is `true` for an `if`/`elif` condition AND a
-    /// loop condition (the L1 generalisation — these were ⊤-rejected when this was
-    /// written); a `&&`/`||` left operand is marked the *separate*
-    /// `Channel::StatusRelaxable` at its own call site (`lower_and_or`, the `19D`
-    /// value-relaxable variant — the render CAN express it), not via this floor. This
-    /// locus is the ONE source of the render-floor channel; the value-relaxable channel
-    /// has FOUR (`206` §3): a `&&`/`||` operand, an errexit-region command
-    /// (`materialise_errexit_edges`), and a `$?`-reader's predecessor
-    /// (`mark_dollar_question_predecessors`). errexit is no longer
-    /// special-cased-as-vouched (19A C-3 / 205 §2): a converged conforming establish under
-    /// `set -e` still folds via a known rc, but a ⊤-rc mutator runs.
+    /// `mark_status`, when `Some(channel)`, additionally marks every command in the region
+    /// as consuming `channel` — the test of an `if`/`elif`, or a `while`/`until` condition,
+    /// is an **unambiguous guard** (a *different* branch runs on its rc: the then/else, or
+    /// the body/exit), so its status is branch-consumed. The CHANNEL differs by what can
+    /// reproduce the read (arch-1 / note 214; the round-21 `StatusRenderFloor` render-floor
+    /// is retired now that the leaf-exact render substitutes a guard's byte-span in-situ):
+    /// * an `if`/`elif` condition is marked `Channel::StatusRelaxable` — a single-shot guard
+    ///   a probe-sourced KNOWN rc reproduces exactly (`if (exit 1); then` is dash-clean), ⊤
+    ///   blocks. The guard became an ordinary substitution site;
+    /// * a `while`/`until` condition is marked `Channel::StatusIterated` — the condition is
+    ///   re-evaluated per pass, so the consumed value is a SEQUENCE no single rc reproduces,
+    ///   and substituting a loop condition with a constant is an infinite/zero-iteration
+    ///   disaster, so it blocks UNCONDITIONALLY (the honest successor to the old floor,
+    ///   keyed on iteration not render capability).
+    ///
+    /// A `&&`/`||` left operand is marked the value-relaxable `Channel::StatusRelaxable` (or
+    /// `StatusInvariant` for `|| true`) at its OWN call site (`lower_and_or`), not here —
+    /// it passes `None`. So the `StatusRelaxable` channel has these sources (`206` §3 +
+    /// arch-1): a `&&`/`||` operand, an errexit-region command (`materialise_errexit_edges`),
+    /// a `$?`-reader's predecessor (`mark_dollar_question_predecessors`), and an `if`/`elif`
+    /// guard (here); `StatusIterated` has the lone `while`/`until` condition (here). errexit
+    /// is not special-cased-as-vouched (19A C-3 / 205 §2): a converged conforming establish
+    /// under `set -e` still folds via a known rc, but a ⊤-rc mutator runs.
     ///
     /// Implemented as a node-range mark/clear: CFG nodes are arena-allocated in walk
     /// order, so the half-open range `[before, after)` is exactly the region's
@@ -1338,17 +1826,13 @@ impl<'a> Builder<'a> {
         &mut self,
         cond: AstId,
         entry_pred: CfgNodeId,
-        mark_status: bool,
+        mark_status: Option<Channel>,
     ) -> CfgNodeId {
         let first = self.nodes.len();
         let exit = self.lower_node(cond, entry_pred);
         self.clear_fallible_range(first, self.nodes.len());
-        if mark_status {
-            self.mark_consumed_range(
-                first,
-                self.nodes.len(),
-                &Powerset::singleton(Channel::StatusRenderFloor),
-            );
+        if let Some(channel) = mark_status {
+            self.mark_consumed_range(first, self.nodes.len(), &Powerset::singleton(channel));
         }
         exit
     }
@@ -1384,6 +1868,37 @@ impl<'a> Builder<'a> {
 
     // ---- misc -----------------------------------------------------------------
 
+    /// find-I disclosure: one [`CFG_BUILTIN_SHADOWED`] warning per funcdef whose name is
+    /// an engine-relied builtin ([`is_engine_relied_builtin`]). Walks the AST (not
+    /// `self.funcdefs`) so the warning carries the definition's own `name_span`; arena
+    /// iteration order keeps it deterministic (`inv-determinism`). Disclosure, not
+    /// refusal: calls to the function still inline/⊤-reject exactly as arch-2 decides —
+    /// what this surfaces is the engine's BUILTIN-resolution assumptions (blessed-pure
+    /// classification of non-call uses, minted stand-in words) being unsound book-wide.
+    fn warn_shadowed_relied_builtins(&mut self) {
+        for (_, node) in self.ast.iter() {
+            let NodeKind::FuncDef {
+                name, name_span, ..
+            } = &node.kind
+            else {
+                continue;
+            };
+            if is_engine_relied_builtin(name) {
+                self.diags.push(Diagnostic::warning(
+                    CFG_BUILTIN_SHADOWED,
+                    Some(*name_span),
+                    format!(
+                        "function `{name}` shadows a shell builtin the engine relies on \
+                         (dash resolves a function before a regular builtin): analysis \
+                         treats the bare word `{name}` as the builtin when classifying \
+                         effects and minting stand-ins, so builtin-dependent conclusions \
+                         may be unsound for this book"
+                    ),
+                ));
+            }
+        }
+    }
+
     fn span(&self, id: AstId) -> Span {
         self.ast.node(id).span
     }
@@ -1397,6 +1912,8 @@ impl<'a> Builder<'a> {
             pred: self.pred,
             expansion_internal: self.expansion_internal,
             in_loop: self.in_loop,
+            spliced_internal: self.spliced_internal,
+            call_body_sites: self.call_body_sites,
             consumed: self.consumed,
         };
         debug_assert!(
@@ -1454,6 +1971,91 @@ fn word_text(ast: &Ast, w: AstId) -> Option<&str> {
         },
         _ => None,
     }
+}
+
+/// arch-2: build the funcdef registry — every `name() { … }` definition's `(body AstId,
+/// def-start BytePos)`, grouped by name in source order. A name with more than one entry is
+/// REDEFINED ⇒ every call ⊤-rejects (`i-1`); a call resolves to the latest definition strictly
+/// before it. `BTreeMap` for `inv-determinism`. Pure over the AST (the `FuncDef` node carries
+/// `name`, `name_span`, `body`; the definition's start is the node's own span `lo`).
+fn collect_funcdefs(ast: &Ast) -> BTreeMap<String, Vec<(AstId, BytePos)>> {
+    let mut out: BTreeMap<String, Vec<(AstId, BytePos)>> = BTreeMap::new();
+    for (aid, node) in ast.iter() {
+        if let NodeKind::FuncDef { name, body, .. } = &node.kind {
+            out.entry(name.clone())
+                .or_default()
+                .push((*body, ast.node(aid).span.lo));
+        }
+    }
+    out
+}
+
+/// find-I: the builtin names the engine RELIES on resolving to the actual shell builtin —
+/// the blessed-pure set (`effect` classifies these bare words `Pure` without consulting
+/// funcdefs) plus `exit` (the third minted stand-in shape, `(exit N)`; `true`/`false` are
+/// already blessed). Special builtins among them (`set`/`export`/`:`…) are unshadowable
+/// in conformant dash — and `:`/`[` cannot even parse as funcdef names — but the warning
+/// keeps them anyway: a book *defining* one is pathological enough to disclose, `build`
+/// is total over hand-constructed ASTs (`inv-no-throw`), and encoding dash's
+/// special-builtin precedence here would be a second resolution model to keep in sync.
+fn is_engine_relied_builtin(name: &str) -> bool {
+    crate::effect::is_target_state_pure_builtin(name) || name == "exit"
+}
+
+/// arch-2: a conservative node-count estimate for a funcdef body — the number of AST nodes in
+/// its subtree (`i-1` per-site budget). AST descendants are ≥ the CFG leaf nodes the body
+/// lowers to (each `Simple` ⇒ ≥1 `Command`; structural nodes add more CFG nodes but the AST
+/// count over-estimates conservatively for the budget's purpose — over-estimating refuses
+/// MORE, the safe direction). Pure span-containment count over the AST.
+fn subtree_node_count(ast: &Ast, body: AstId) -> usize {
+    ast.iter()
+        .filter(|(aid, _)| node_within(ast, *aid, body))
+        .count()
+}
+
+/// Is node `inner` within node `outer`'s subtree, by span containment? AST spans nest by
+/// construction (a child's `[lo,hi)` lies within its parent's), so a byte-range containment
+/// test is a sound subtree-membership check. `inner == outer` counts as within. (Mirrors
+/// `value::node_within`; arch-2's body scanners + budget use it.)
+fn node_within(ast: &Ast, inner: AstId, outer: AstId) -> bool {
+    let i = ast.node(inner).span;
+    let o = ast.node(outer).span;
+    o.lo.0 <= i.lo.0 && i.hi.0 <= o.hi.0
+}
+
+/// arch-2 (`i-1`): if any word part is the special positional-array parameter `$@`/`$*`,
+/// return its spelling (`"$@"`/`"$*"`) for the refusal diagnostic; else `None`. Recurses into
+/// double-quoted nesting (`"$@"` is the common form). The lexer keeps `$@`/`$*` as
+/// `WordPart::Param { name: "@" | "*" }`.
+fn word_parts_special_positional(parts: &[WordPart]) -> Option<&'static str> {
+    for part in parts {
+        match part {
+            WordPart::Param { name } if name == "@" => return Some("$@"),
+            WordPart::Param { name } if name == "*" => return Some("$*"),
+            WordPart::DoubleQuoted(inner) => {
+                if let Some(p) = word_parts_special_positional(inner) {
+                    return Some(p);
+                }
+            }
+            _ => {}
+        }
+    }
+    None
+}
+
+/// arch-2 (wave-2): does this list of word parts reference a positional parameter —
+/// `$1`..`$9` (the lexer keeps `Param { name }` with an all-ASCII-digit name) or `$#`
+/// (the count)? Recurses into double-quoted nesting (`"$1"` is the common form). `$@`/`$*`
+/// are handled separately ([`word_parts_special_positional`], already refused); this is the
+/// positional-VALUE family that the depth-2 overlay fails to thread.
+fn word_parts_reference_positional(parts: &[WordPart]) -> bool {
+    parts.iter().any(|p| match p {
+        WordPart::Param { name } => {
+            name == "#" || (!name.is_empty() && name.bytes().all(|b| b.is_ascii_digit()))
+        }
+        WordPart::DoubleQuoted(inner) => word_parts_reference_positional(inner),
+        _ => false,
+    })
 }
 
 /// Does this list of word parts contain the `$?` special parameter (the lexer keeps

@@ -3,5 +3,5 @@
 # The fixture reports user `deploy` as `holds` (the account exists), so this shim exits 0
 # ⇒ the `user__check` wrapper maps rc 0 → `holds`, reproducing the authored
 # probe-results.txt. Read-only; logs for symmetry with the apply shims.
-printf 'ran: %s %s\n' "${0##*/}" "$*" >>"$DORC_LOG"
+. "${0%/*}/.log"; _dorc_logged "$@"
 exit 0

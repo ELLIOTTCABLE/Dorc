@@ -367,6 +367,131 @@ fn andor_left_operand_undeclared_rc_runs_kfail_perform() {
 }
 
 // ===========================================================================
+// door-3 (`20V` §4 / note 213): `cmd || true` — the admin's spelled-in-sh "this rc is
+// not load-bearing". The left operand is `StatusInvariant`-consumed (never blocks), so a
+// converged mutator there MINTS a license even at ⊤ rc — the ONLY behavioral delta. The
+// classification pins (which channel) are in `analysis/tests/cfg.rs`; these pin the gate
+// collapse + disposition. Contrast `andor_left_operand_undeclared_rc_runs_kfail_perform`
+// directly above: a plain `|| systemctl start` left RUNS (StatusRelaxable + ⊤), a
+// `|| true` left REPLACES (StatusInvariant + ⊤).
+// ===========================================================================
+
+#[test]
+fn door3_oror_true_converged_mutator_is_replaced() {
+    // The payoff: `apt-get install -y nginx || true`, converged. The install's rc is ⊤
+    // (`fork-mutator-rc`), but its consumer is `|| true` ⇒ `StatusInvariant` ⇒ the gate does
+    // NOT block ⇒ the convergence-elision license mints. The stand-in is `True` — licensed
+    // by INVARIANCE (both `||` continuations rejoin identically), not by a claim the mutator
+    // exits 0 (weld-5 intact). HOST: nginx installed.
+    let plan = plan_for(
+        "apt-get install -y nginx || true\n",
+        &[("package", "nginx")],
+    );
+    assert!(
+        is_replaced(&plan, "install -y nginx"),
+        "a converged `cmd || true` left mints despite ⊤ rc (door-3: StatusInvariant never blocks)"
+    );
+    assert!(
+        plan.steps.iter().any(|s| s.sh.contains("install -y nginx")
+            && matches!(&s.disposition, Disposition::Replace(_, stand_in) if stand_in.sh() == "true")),
+        "the door-3 stand-in is `true` (the idiom, not a predicted rc-0)"
+    );
+}
+
+#[test]
+fn door3_oror_true_diverged_mutator_runs_effect_still_gates() {
+    // door-3 clears ONLY the Status channel; the Effect channel still gates. A DIVERGED
+    // `cmd || true` must RUN — the StatusInvariant mark unblocks Status, but
+    // `prove_replaceable`'s convergence check (`verdict.resolve() != Replaceable`) refuses a
+    // non-converged effect. This pins that door-3 is NOT an elision-license relaxation.
+    // HOST: nginx NOT installed (diverged).
+    let plan = plan_for("apt-get install -y nginx || true\n", &[]);
+    assert!(
+        !is_replaced(&plan, "install -y nginx"),
+        "a diverged `cmd || true` runs: door-3 clears Status, Effect (convergence) still gates"
+    );
+}
+
+#[test]
+fn door3_oror_false_converged_mutator_still_runs() {
+    // The `|| false` pole at the gate level: `false` changes the list rc, so the left
+    // operand keeps the blocking `StatusRelaxable` mark (not StatusInvariant). Composed with
+    // ⊤ (`fork-mutator-rc`), the gate refuses ⇒ the install RUNS. door-3 must NOT widen to
+    // `|| false`. HOST: nginx installed.
+    let plan = plan_for(
+        "apt-get install -y nginx || false\n",
+        &[("package", "nginx")],
+    );
+    assert!(
+        !is_replaced(&plan, "install -y nginx"),
+        "`|| false` keeps the blocking StatusRelaxable ⇒ converged ⊤-rc mutator runs (not door-3)"
+    );
+}
+
+#[test]
+fn door3_oror_chain_true_replaces_only_outer_left() {
+    // d-3 asymmetry at the plan level: `a || b || true`, both converged. `a` (nginx) keeps
+    // StatusRelaxable (inner `||` reads its rc) ⇒ runs. `b` (curl) is StatusInvariant (outer
+    // `|| true`) ⇒ replaces. Two same-command sites must NOT collapse (`inv-site-keyed-results`).
+    // HOST: nginx + curl both installed.
+    let plan = plan_for(
+        "apt-get install -y nginx || apt-get install -y curl || true\n",
+        &[("package", "nginx"), ("package", "curl")],
+    );
+    assert!(
+        !is_replaced(&plan, "install -y nginx"),
+        "a (inner-`||` left) runs — its rc controls whether b runs (StatusRelaxable + ⊤)"
+    );
+    assert!(
+        is_replaced(&plan, "install -y curl"),
+        "b (outer `|| true` left) replaces — its rc is dead-in-fact (StatusInvariant)"
+    );
+}
+
+#[test]
+fn door3_true_funcdef_redefinition_blocks_mint() {
+    // find-I (note 213 §5 hunt-4, the verified wrong-elision): the book defines
+    // `true() { systemctl restart sshd; }` and then `apt-get install -y nginx || true`,
+    // converged. dash resolves a FUNCTION before a regular builtin, so the rhs `true` —
+    // and the minted stand-in `true` the render would splice in for the install — both
+    // run the function's mutator body. At HEAD-before-fix the install minted Replace on
+    // a false inertness premise and the artifact ran the mutator UNCONDITIONALLY where
+    // the bare book ran it only on install-failure. With the funcdef present door-3
+    // refuses at the cfg mark: the site carries the ordinary `StatusRelaxable`, the ⊤
+    // mutator rc blocks, the install RUNS. HOST: nginx installed.
+    let plan = plan_for(
+        "true() { systemctl restart sshd; }\napt-get install -y nginx || true\n",
+        &[("package", "nginx")],
+    );
+    assert!(
+        !is_replaced(&plan, "install -y nginx"),
+        "a book defining `true()` gets NO door-3 mint — its `|| true` blocks at ⊤ and runs \
+         (the stand-in would resolve to the function, not the builtin)"
+    );
+}
+
+#[test]
+fn door3_oror_true_then_dollar_question_runs_residual() {
+    // The documented RESIDUAL (`20V` §4 UNIT PINS / note 213): `cmd || true; echo $?`. The
+    // `$?`-reader marks the predecessors (`cmd` AND `true`) `StatusRelaxable` via the
+    // pred-walk, and that blocking mark is added to `cmd`'s set alongside its
+    // StatusInvariant. Mark-union: a present StatusRelaxable + ⊤ blocks ⇒ `cmd` RUNS. This is
+    // acceptable-conservative this slice (kFAIL-perform): although `$?` after `cmd || true` is
+    // ALWAYS 0 (the list rc is invariant), the pred-walk does not yet know the read is
+    // invariant, so it blocks. A later slice that propagates the list-rc-invariance to the
+    // `$?`-read could unlock it. HOST: nginx installed.
+    let plan = plan_for(
+        "apt-get install -y nginx || true\necho $?\n",
+        &[("package", "nginx")],
+    );
+    assert!(
+        !is_replaced(&plan, "install -y nginx"),
+        "`cmd || true; echo $?` runs the mutator: the $?-pred StatusRelaxable mark blocks \
+         (residual — conservative, could later unlock via list-rc-invariance)"
+    );
+}
+
+// ===========================================================================
 // SPECS — the gate's must-run cases: a consumed UNVOUCHED output (stdout/stderr/fd)
 // ⇒ run. Formerly the #[ignore]d build-against targets; all pass now the gate has
 // landed. (Only the HOLE#1 subst-in-redir-target spec below stays #[ignore]d.)
@@ -564,6 +689,17 @@ fn query_index(i: &mut Interner) -> KindIndex {
 /// answered verdict-only by `pkg_holds` (a mutator's rc is always ⊤). The Effect verdict
 /// of the guard cell is derived from its rc (0 ⇒ Converged/holds, else Diverged).
 fn plan_query(src: &str, guard_tool: &str, guard_rc: i32, pkg_holds: &[&str]) -> Plan {
+    plan_query_and_ast(src, guard_tool, guard_rc, pkg_holds).0
+}
+
+/// [`plan_query`] keeping the parsed AST, for `render_apply`/`render_refusal_diagnostics`
+/// assertions (the omit-safety render gate needs both the `Plan` and the `&Ast`).
+fn plan_query_and_ast(
+    src: &str,
+    guard_tool: &str,
+    guard_rc: i32,
+    pkg_holds: &[&str],
+) -> (Plan, dorc_syntax::ast::Ast) {
     let mut i = Interner::default();
     let idx = query_index(&mut i);
     let installed = SelectorId(i.intern("installed"));
@@ -601,7 +737,7 @@ fn plan_query(src: &str, guard_tool: &str, guard_rc: i32, pkg_holds: &[&str]) ->
         Verdict::Diverged
     };
 
-    build_plan(src, &parsed.value, &cfg, &classes, move |f| {
+    let plan = build_plan(src, &parsed.value, &cfg, &classes, move |f| {
         if f == guard_fact {
             Observable {
                 effect: guard_effect,
@@ -620,7 +756,8 @@ fn plan_query(src: &str, guard_tool: &str, guard_rc: i32, pkg_holds: &[&str]) ->
         } else {
             Observable::verdict_only(Verdict::Diverged)
         }
-    })
+    });
+    (plan, parsed.value)
 }
 
 /// Is the leaf containing `needle` **omitted** (fold-dead branch)? Distinct from
@@ -733,6 +870,135 @@ fn query_guard_consumed_stdout_blocks_substitution() {
     );
 }
 
+// ===========================================================================
+// OMIT-SAFETY × RENDER-REFUSAL (round-21 f1): a heredoc-bearing Query guard is
+// LICENSED a Replace (license-time never consults the render's refuse-set) but the
+// leaf-exact render REFUSES its edit (d-6) — the guard is physically KEPT, live,
+// re-deciding at apply time. `is_neutralised` must therefore NOT count it as
+// neutralised, or its fold-dead dependent body renders `:` under a live guard —
+// verbatim the kept-guard/omitted-body configuration the omit-safety gate forbids
+// (`Disposition::Omit` doc). In the `&&` form the flipped-world damage is rc-
+// observable: `G && :` yields list-rc 0 ("guard held AND body succeeded") though
+// the body never ran — a fabricated composite no probe sourced
+// (`inv-probe-sourced-values`) and no baseline world produces. The conservative
+// collapse: refused controller ⇒ dependent body stays VERBATIM ⇒ runs when the
+// live guard says so (`kFAIL-perform`).
+// ===========================================================================
+
+#[test]
+fn refused_heredoc_guard_keeps_dead_oror_body_verbatim() {
+    // The hazard shape, `||` arm: guard holds (rc 0) ⇒ the install is fold-dead (Omit
+    // mints — the DISPOSITION layer is untouched), but the heredoc guard is render-
+    // refused ⇒ NOT neutralised ⇒ the body must render VERBATIM, never `:`.
+    let src = "command -v nginx <<EOF >/dev/null 2>&1 || apt-get install -y nginx\npayload\nEOF\n";
+    let (plan, ast) = plan_query_and_ast(src, "nginx", 0, &[]);
+    assert!(
+        is_omitted(&plan, "apt-get install"),
+        "the disposition still folds the dead body (the fix is render-side only): {:?}",
+        plan.steps
+            .iter()
+            .map(|s| (&s.sh, &s.disposition))
+            .collect::<Vec<_>>()
+    );
+    let rendered = plan.render_apply(src, &ast);
+    assert!(
+        rendered.contains("|| apt-get install -y nginx"),
+        "the dead body stays verbatim behind the kept (refused) guard:\n{rendered}"
+    );
+    assert!(
+        !rendered.contains("|| :"),
+        "no `:` may sit under a LIVE re-deciding guard (omit-safety):\n{rendered}"
+    );
+    // Exactly ONE refusal diagnostic: the guard's. The body is no longer would-elide
+    // (its controller is not neutralised), so it must not double-report.
+    let diags = plan.render_refusal_diagnostics(&ast);
+    assert_eq!(
+        diags.len(),
+        1,
+        "one refusal (the guard), none for the kept-verbatim body: {diags:?}"
+    );
+}
+
+#[test]
+fn refused_heredoc_guard_keeps_dead_andand_body_verbatim() {
+    // The `&&` arm — the rc-DIVERGENT one: pre-fix, `G && :` in the guard-flipped world
+    // exits 0 where frozen-both (`false && :`) exits 1 and the bare book runs the body
+    // (or errexit-aborts on its failure). Guard rc 1 ⇒ `&&` body fold-dead; refused
+    // guard ⇒ body verbatim.
+    let src = "command -v nginx <<EOF >/dev/null 2>&1 && systemctl reload nginx\npayload\nEOF\n";
+    let (plan, ast) = plan_query_and_ast(src, "nginx", 1, &[]);
+    assert!(
+        is_omitted(&plan, "systemctl reload"),
+        "guard rc 1 ⇒ the && body is fold-dead (disposition untouched)"
+    );
+    let rendered = plan.render_apply(src, &ast);
+    assert!(
+        rendered.contains("&& systemctl reload nginx"),
+        "the dead body stays verbatim behind the kept (refused) guard:\n{rendered}"
+    );
+    assert!(
+        !rendered.contains("&& :"),
+        "no fabricated `:` rc-0 may be reachable behind a live `&&` guard:\n{rendered}"
+    );
+}
+
+#[test]
+fn refused_heredoc_guard_in_if_cond_keeps_dead_branch_verbatim() {
+    // The COMPOUND-controller arm (`subtree_leaves_all`): the controller is the if-cond
+    // node, not the guard leaf — the walk must apply the same refusal gate to the
+    // Replace leaves it visits. Guard holds (rc 0) ⇒ else-branch fold-dead; refused
+    // guard ⇒ the else body must stay verbatim.
+    let src =
+        "if command -v nginx <<EOF\npayload\nEOF\nthen :\nelse apt-get install -y nginx\nfi\n";
+    let (plan, ast) = plan_query_and_ast(src, "nginx", 0, &[]);
+    assert!(
+        is_omitted(&plan, "apt-get install"),
+        "cond known-true ⇒ the else body is fold-dead (disposition untouched)"
+    );
+    let rendered = plan.render_apply(src, &ast);
+    assert!(
+        rendered.contains("else apt-get install -y nginx"),
+        "the dead else-branch stays verbatim behind the kept (refused) cond guard:\n{rendered}"
+    );
+}
+
+#[test]
+fn clean_guard_still_elides_dead_body_heredoc_sibling_stays_unreachable_verbatim() {
+    // The adjacent cell the fix must NOT break (over-reach pole): the heredoc sits on a
+    // leaf INSIDE the dead block, the CONTROLLER is clean. The guard freezes to `true`,
+    // the clean sibling still elides to `:`, and the heredoc leaf is kept verbatim but
+    // UNREACHABLE behind the frozen short-circuit — sound, and still elision-bearing.
+    let src = "command -v nginx >/dev/null 2>&1 || { apt-get install -y nginx <<EOF\npayload\nEOF\nsystemctl restart nginx; }\n";
+    let (plan, ast) = plan_query_and_ast(src, "nginx", 0, &[]);
+    let rendered = plan.render_apply(src, &ast);
+    assert!(
+        rendered.contains("true || {"),
+        "the clean guard still freezes to its stand-in:\n{rendered}"
+    );
+    assert!(
+        rendered.contains("apt-get install -y nginx <<EOF"),
+        "the heredoc leaf inside the dead block is kept verbatim (unreachable):\n{rendered}"
+    );
+    assert!(
+        rendered.contains(":; }") && !rendered.contains("systemctl restart nginx; }"),
+        "the clean dead sibling still elides to `:`:\n{rendered}"
+    );
+}
+
+#[test]
+fn clean_query_guard_still_renders_dead_body_as_colon() {
+    // The plain pole (no heredoc anywhere): the omit-safety gate must keep LICENSING
+    // the `:`-edit when the controller genuinely freezes — `true || :`. Guards against
+    // an over-broad refusal collapse.
+    let src = "command -v nginx >/dev/null 2>&1 || apt-get install -y nginx\n";
+    let (plan, ast) = plan_query_and_ast(src, "nginx", 0, &[]);
+    let rendered = plan.render_apply(src, &ast);
+    assert!(
+        rendered.contains("true || :"),
+        "frozen guard over `:`-elided body is the licensed shape:\n{rendered}"
+    );
+}
+
 /// Drive the full pipeline keeping the AST, so a test can assert on `render_apply`
 /// (which needs both the `Plan` and the `&Ast`). Mirrors `plan_for` but returns the
 /// parsed tree alongside the plan.
@@ -790,22 +1056,25 @@ fn render_one_liner_case_arm_body_substitutes_in_situ_keeping_arm_structure() {
 }
 
 #[test]
-fn render_multi_line_case_arm_body_keeps_whole_line_comment_form() {
-    // The negative control / scope guard for the T14 fix: when the arm body is on its
-    // OWN line (not sharing `pat)`/`;;`), the ordinary whole-line comment form is correct
-    // and already `dash -n`-clean — the in-situ path must NOT fire for it (it is keyed on
-    // the body sharing the pattern's line). This pins "zero churn to the ordinary path".
+fn render_multi_line_case_arm_body_substitutes_span_in_situ() {
+    // Re-homed for arch-1 (was `…_keeps_whole_line_comment_form`): the leaf-exact render
+    // substitutes a leaf's exact byte-span regardless of whether it shares the `pat)`/`;;`
+    // line. An OWN-LINE arm body now substitutes in-situ too — the line-granular whole-line
+    // comment form is retired (the "source line" was the wrong unit; the leaf span is). The
+    // `case`/arm scaffolding is untouched.
     let src = "case nginx in\n  nginx)\n    apt-get install -y nginx\n    ;;\n  *) : ;;\nesac\n";
     let (plan, ast) = plan_and_ast(src, &[("package", "nginx")]);
     let rendered = plan.render_apply(src, &ast);
     assert!(
-        rendered.contains("# apt-get install -y nginx   # dorc: elided"),
-        "an own-line arm body uses the whole-line comment form:\n{rendered}"
+        rendered.contains(
+            "    true   # dorc: elided [apt-get install -y nginx] (already converged / dead branch)"
+        ),
+        "an own-line arm body is span-substituted in-situ (leaf-exact render):\n{rendered}"
     );
-    // The pattern line `  nginx)` survives verbatim (it was never on the body's line).
+    // The pattern line `  nginx)` and the `;;`/`case`/`esac` scaffolding survive verbatim.
     assert!(
-        rendered.contains("\n  nginx)\n"),
-        "the `nginx)` pattern line is untouched:\n{rendered}"
+        rendered.contains("\n  nginx)\n") && rendered.contains("\n    ;;\n"),
+        "the `nginx)` pattern + `;;` scaffolding are untouched:\n{rendered}"
     );
 }
 
@@ -877,24 +1146,20 @@ fn render_post_if_install_sharing_fi_line_substitutes_in_situ() {
 }
 
 #[test]
-fn render_own_line_then_body_keeps_whole_line_comment_form() {
-    // Zero-churn negative control (the `guarded` e2e shape): a converged install that is
-    // the then-body but sits ALONE on its own line (the `then`/`fi` keywords are on OTHER
-    // lines) must keep the ORIGINAL whole-line comment form — it is already `dash -n`-clean
-    // and the in-situ path must NOT fire (it is gated on the leaf SHARING its line with
-    // scaffolding). This pins "zero golden churn outside the new cases".
+fn render_own_line_then_body_substitutes_span_in_situ() {
+    // Re-homed for arch-1 (was `…_keeps_whole_line_comment_form`, the `guarded` e2e shape):
+    // a converged install that is the then-body and sits ALONE on its line is now
+    // span-substituted in-situ to its stand-in `true` (the leaf-exact render — the
+    // whole-line comment form is gone). The `if true; then`/`fi` scaffolding is untouched
+    // (the guard `true` is Pure ⇒ Run ⇒ no edit).
     let src = "if true; then\n   apt-get install -y nginx\nfi\necho done\n";
     let (plan, ast) = plan_and_ast(src, &[("package", "nginx")]);
     let rendered = plan.render_apply(src, &ast);
     assert!(
         rendered.contains(
-            "# apt-get install -y nginx   # dorc: elided (already converged / dead branch)\n"
+            "   true   # dorc: elided [apt-get install -y nginx] (already converged / dead branch)"
         ),
-        "an own-line then-body install keeps the whole-line comment form (not in-situ):\n{rendered}"
-    );
-    assert!(
-        !rendered.contains("in situ"),
-        "the in-situ path must NOT fire for an own-line leaf (zero churn):\n{rendered}"
+        "an own-line then-body install is span-substituted in-situ to `true`:\n{rendered}"
     );
     // The `then`/`fi` keywords survive verbatim on their own lines.
     assert!(
@@ -904,24 +1169,335 @@ fn render_own_line_then_body_keeps_whole_line_comment_form() {
 }
 
 #[test]
-fn render_multiline_leaf_on_scaffolding_line_refuses_license_and_runs_verbatim() {
-    // The refuse-the-license fallback (task-F2): a converged install whose argv operand
-    // carries a LITERAL NEWLINE, so its source span crosses two lines, while sharing the
-    // loop's `done` line. The in-situ splice operates on ONE line's bytes, so it cannot
-    // express a multi-line leaf — the conservative path REFUSES the license and renders
-    // the leaf VERBATIM (it RUNS — kFAIL-perform; over-executing an already-converged
-    // mutator is safe, a broken artifact is not). Critically the `done` is NOT eaten.
+fn render_multiline_leaf_on_scaffolding_line_substitutes_cleanly() {
+    // Re-derived for arch-1 (d-6; was `…_refuses_license_and_runs_verbatim`): a MULTI-LINE
+    // leaf is NEWLY EXPRESSIBLE under the leaf-exact render — a span edit may cover multiple
+    // source lines, so a converged install whose argv operand carries a LITERAL NEWLINE
+    // (span crosses two lines) while sharing the loop's `done` line is substituted CLEANLY:
+    // its whole span collapses to `true`, keeping `done` (the line-render's old multi-line
+    // refusal is retired). The provenance comment's embedded original newline is flattened
+    // (else the `#` comment would split into a stray unterminated-quote line).
     let src = "for x in a b; do echo \"$x\"\ndone; apt-get install -y \"multi\nline\"\n";
-    // The operand resolves to a concrete literal (`multi\nline`); converged ⇒ would be a
-    // Replace, but the multi-line span forces the verbatim-run fallback.
     let (plan, ast) = plan_and_ast(src, &[("package", "multi\nline")]);
     let rendered = plan.render_apply(src, &ast);
     assert!(
-        rendered.contains("\ndone; apt-get install -y \"multi\nline\"\n"),
-        "the multi-line install is rendered VERBATIM (refuse-the-license), `done` kept:\n{rendered}"
+        rendered.contains("\ndone; true   # dorc: elided ["),
+        "the multi-line install is span-substituted to `true`, `done` kept:\n{rendered}"
     );
+    // The provenance comment is a SINGLE line (the operand's interior newline flattened).
+    assert!(
+        !rendered.contains("\nline\"]"),
+        "the comment's embedded original newline is flattened (no stray `line\"]` line):\n{rendered}"
+    );
+    // No `# done` (the loop terminator is never commented/eaten).
     assert!(
         !rendered.contains("# done"),
-        "the `done` is NOT commented (the fallback must not break the loop):\n{rendered}"
+        "the `done` is NOT commented (the splice must not break the loop):\n{rendered}"
+    );
+}
+
+// ===========================================================================
+// arch-2 (brk-2): the all-or-nothing inlined-CALL license + site N.M probe records.
+// `plan_for` drives the whole pipeline; the CALL leaf (whose text is the call word)
+// is what elides, not the spliced body. `i-3` (the license, both poles), `i-4` (the
+// per-body-site probe sub-records).
+// ===========================================================================
+
+/// Is the CALL leaf whose verbatim text is exactly `call` REPLACED? (The call's own span is
+/// the render unit — its `Step.sh` is the call text, e.g. `w nginx`.)
+fn call_replaced(plan: &Plan, call: &str) -> bool {
+    plan.steps
+        .iter()
+        .any(|s| s.sh.trim() == call && matches!(s.disposition, Disposition::Replace(_, _)))
+}
+
+/// Is the CALL leaf whose verbatim text is exactly `call` a RUN step?
+fn call_runs(plan: &Plan, call: &str) -> bool {
+    plan.steps
+        .iter()
+        .any(|s| s.sh.trim() == call && matches!(s.disposition, Disposition::Run))
+}
+
+#[test]
+fn inline_call_converged_body_elides_the_call() {
+    // `i-3` pole A (all body establishes converged ⇒ the CALL elides): `w() { apt-get install
+    // -y "$1"; }; w nginx`, nginx converged ⇒ the call `w nginx` is Replaced (its whole span →
+    // a stand-in). The body is gone; the call is the render unit.
+    let plan = plan_for(
+        "w() { apt-get install -y \"$1\"; }\nw nginx\n",
+        &[("package", "nginx")],
+    );
+    assert!(
+        call_replaced(&plan, "w nginx"),
+        "the converged inline call elides (all-or-nothing license, body establish converged)"
+    );
+}
+
+#[test]
+fn inline_call_diverged_body_runs_the_call() {
+    // `i-3` pole B (a non-converged body establish ⇒ the CALL runs whole): same wrapper, nginx
+    // NOT in `holds` ⇒ Diverged ⇒ the call runs (the real body executes).
+    let plan = plan_for("w() { apt-get install -y \"$1\"; }\nw nginx\n", &[]);
+    assert!(
+        call_runs(&plan, "w nginx"),
+        "a diverged body establish runs the whole call (all-or-nothing)"
+    );
+}
+
+#[test]
+fn inline_call_independent_per_call() {
+    // `i-3`: calls are INDEPENDENT — nginx converged ⇒ `w nginx` elides; curl diverged ⇒
+    // `w curl` runs. One diverged call does not affect the other's elision.
+    let plan = plan_for(
+        "w() { apt-get install -y \"$1\"; }\nw nginx\nw curl\n",
+        &[("package", "nginx")],
+    );
+    assert!(call_replaced(&plan, "w nginx"), "the converged call elides");
+    assert!(
+        call_runs(&plan, "w curl"),
+        "the diverged call runs (independent)"
+    );
+}
+
+#[test]
+fn inline_call_with_body_kill_blocks_the_whole_call() {
+    // `i-3` all-or-nothing: a body containing a KILL (`apt-get purge`) blocks the call even
+    // when the host reports the install converged — a Kill is a mutation with no
+    // already-done convergence story, so the whole call runs. `w() { apt-get install -y "$1";
+    // apt-get purge -y old; }; w nginx`, nginx converged.
+    let plan = plan_for(
+        "w() { apt-get install -y \"$1\"; apt-get purge -y old; }\nw nginx\n",
+        &[("package", "nginx")],
+    );
+    assert!(
+        call_runs(&plan, "w nginx"),
+        "a body Kill blocks the all-or-nothing license ⇒ the call runs"
+    );
+}
+
+#[test]
+fn inline_call_with_unoracled_body_command_blocks() {
+    // `i-3` all-or-nothing: a body with an UNORACLED command (Opaque ⇒ MustRun body site)
+    // blocks the call — the Opaque could mutate anything. `w() { apt-get install -y "$1";
+    // frobnicate; }; w nginx`, nginx converged ⇒ the call still runs.
+    let plan = plan_for(
+        "w() { apt-get install -y \"$1\"; frobnicate; }\nw nginx\n",
+        &[("package", "nginx")],
+    );
+    assert!(
+        call_runs(&plan, "w nginx"),
+        "an Opaque body command blocks the all-or-nothing license ⇒ the call runs"
+    );
+}
+
+#[test]
+fn inline_call_emits_site_n_m_probe_records() {
+    // `i-4`: an inlined call ships ONE probe check per spliced body establish, keyed
+    // `site N.M` (N = the call's LeafId, M = the body-site index) with the entity bound at the
+    // call. Two calls (`w nginx`/`w curl`) ⇒ records `site 0.0` (nginx) and `site 1.0` (curl).
+    let mut i = Interner::default();
+    let idx = package_index(&mut i);
+    let src = "w() { apt-get install -y \"$1\"; }\nw nginx\nw curl\n";
+    let parsed = dorc_syntax::parse(src);
+    let cfg = dorc_analysis::cfg::build(&parsed.value).value;
+    let classes = classify_value(&cfg, &parsed.value, &idx, &mut i);
+    let probe = dorc_plan::compile_probe(&parsed.value, &cfg, &classes, |_kind, _sel| {
+        Some("{ dpkg-query -W \"$1\"; }".to_string())
+    });
+    // Each check carries (site, member); collect the (site.0, member) pairs.
+    let mut keys: Vec<(u32, Option<u32>)> =
+        probe.checks.iter().map(|c| (c.site.0, c.member)).collect();
+    keys.sort();
+    assert_eq!(
+        keys,
+        vec![(0, Some(0)), (1, Some(0))],
+        "two calls ⇒ two body-site sub-records site 0.0 and site 1.0"
+    );
+    // The bound entities differ (nginx for call 0, curl for call 1) — the back-map
+    // non-injectivity (`i-6`) keeps the records distinct by call-site even though the body
+    // AstId is shared.
+    let entities: Vec<EntityRef> = {
+        let mut v: Vec<_> = probe
+            .checks
+            .iter()
+            .map(|c| (c.site.0, c.fact.entity))
+            .collect();
+        v.sort_by_key(|(s, _)| *s);
+        v.into_iter().map(|(_, e)| e).collect()
+    };
+    assert_eq!(entities.len(), 2);
+    assert_ne!(
+        entities[0], entities[1],
+        "the two calls' body establishes resolve DISTINCT entities (nginx vs curl)"
+    );
+}
+
+#[test]
+fn inline_call_unprobeable_body_establish_is_unresolvable() {
+    // `i-4` all-or-nothing probe-ability: if a body establish has no probe body, the WHOLE
+    // call is unresolvable (`can't-probe ⇒ can't-elide`). With the probe_body returning None,
+    // the call's site appears in `unresolvable`, not `checks`.
+    let mut i = Interner::default();
+    let idx = package_index(&mut i);
+    let src = "w() { apt-get install -y \"$1\"; }\nw nginx\n";
+    let parsed = dorc_syntax::parse(src);
+    let cfg = dorc_analysis::cfg::build(&parsed.value).value;
+    let classes = classify_value(&cfg, &parsed.value, &idx, &mut i);
+    let probe = dorc_plan::compile_probe(&parsed.value, &cfg, &classes, |_kind, _sel| None);
+    assert!(probe.checks.is_empty(), "no probe body ⇒ no checks");
+    assert!(
+        !probe.unresolvable.is_empty(),
+        "the call is unresolvable when its body establish can't be probed"
+    );
+}
+
+#[test]
+fn inline_call_inside_loop_is_floored_even_when_converged() {
+    // arch-2 + task-L1 composition (note 216 hunt-6, the riskiest edge): an inlined CALL inside
+    // a `for` loop is MustRun this round (the in-loop render floor), EVEN when its body
+    // establish is converged. `for pkg in nginx; do w "$pkg"; done` with `w` inlining + nginx
+    // converged ⇒ the call `w "$pkg"` RUNS (the loop renders verbatim). `inline_disposition`
+    // re-checks `in_loop_body` EXPLICITLY (not relying on the back-edge self-poison that also
+    // tends to make the in-loop body establish EstablishWritten). The single-member loop makes
+    // the for-var a CONCRETE `nginx` (so the positional binds and the body would otherwise be
+    // an EstablishAmbient site), isolating the floor as the operative block.
+    let plan = plan_for(
+        "w() { apt-get install -y \"$1\" >/dev/null 2>&1; }\nfor pkg in nginx; do w \"$pkg\"; done\n",
+        &[("package", "nginx")],
+    );
+    assert!(
+        call_runs(&plan, "w \"$pkg\""),
+        "an in-loop inlined call is floored (runs) even when converged"
+    );
+    assert!(
+        !call_replaced(&plan, "w \"$pkg\""),
+        "the in-loop floor prevents the inlined call from eliding"
+    );
+}
+
+// ===========================================================================
+// P1 fix 21E (note 214 §9 hunt-7): two ADJACENT elidable MULTI-LINE leaves.
+// The pre-fix `emit_span_edits` keyed edits by their lone START line and the
+// line-walk jumped over a multi-line edit's CONSUMED span — so a second edit
+// whose start line fell inside the first's span was ORPHANED, leaving the
+// second command half-spliced and the provenance comment landing INSIDE an
+// open quote (a `dash -n`-clean-by-coincidence corruption, or a hard
+// "Unterminated quoted string" with an odd embedded quote). The fix groups
+// line-overlapping/abutting edits and splices them as one rendered line.
+// These pins reproduce the two hostile-crosscheck books BYTE-FOR-BYTE and
+// assert the fixed render is dash-clean, both leaves substituted, run-set
+// empty. The `debug_assert_eq!` every-edit-applied-once counter (f-1) also
+// fires under the debug test build if a future change re-orphans an edit.
+// ===========================================================================
+
+#[test]
+fn render_adjacent_multiline_elides_both_no_orphan() {
+    // The P1 reproducer, byte-for-byte: two `apt-get install` leaves, each with a
+    // double-quoted operand carrying a LITERAL NEWLINE, separated by `;` so the SECOND
+    // leaf STARTS on the FIRST leaf's closing line (`b"; apt-get install -y "c`). Both
+    // converged ⇒ both `replace`d to `true`. Pre-fix the second was orphaned (`true;
+    // apt-get install -y "c` survived, comment spliced after `"c`); the group splice
+    // collapses both to `true; true` on one line, the comment carrying BOTH originals.
+    let src = "apt-get install -y \"a\nb\"; apt-get install -y \"c\nd\"\n";
+    let (plan, ast) = plan_and_ast(src, &[("package", "a\nb"), ("package", "c\nd")]);
+    let rendered = plan.render_apply(src, &ast);
+    // Both leaves substituted on ONE rendered line; the orphaned `apt-get install -y "c`
+    // is gone, and the comment discloses both originals (interior newlines flattened).
+    assert!(
+        rendered.contains(
+            "true; true   # dorc: elided [apt-get install -y \"a b\"; \
+             apt-get install -y \"c d\"] (already converged / dead branch)"
+        ),
+        "both adjacent multi-line installs collapse to `true; true` with a combined \
+         disclosure (no orphaned second leaf):\n{rendered}"
+    );
+    // The orphan signature: the second install's raw command must NOT survive in the body.
+    assert!(
+        !rendered.contains("apt-get install -y \"c\n"),
+        "the second install is NOT left half-spliced (the pre-fix orphan):\n{rendered}"
+    );
+    // dash-clean: the corrupt artifact was clean-by-coincidence here, but the FIXED one is
+    // clean for the right reason (one comment line, both quotes balanced and closed).
+    assert!(
+        rendered.lines().filter(|l| l.contains("apt-get")).count() == 1,
+        "exactly one rendered line mentions apt-get (the disclosure comment), none runs \
+         it:\n{rendered}"
+    );
+}
+
+#[test]
+fn render_adjacent_multiline_odd_embedded_quote_no_dashn_break() {
+    // The P1 VARIANT: the first operand has an ODD embedded quote (`a'b`) before its
+    // literal newline. Pre-fix, the orphaned second leaf left the rendered line ending
+    // `… install -y "c`, and the spliced provenance comment landed inside the open `"…"`
+    // — but the embedded `'` in the disclosure flipped quote-state, so `dash -n` failed
+    // HARD ("Unterminated quoted string"). The group splice + f-2 comment-safety make the
+    // fixed render dash-clean; the odd-quote operand is flattened into the disclosure.
+    let src = "apt-get install -y \"a'b\nx\"; apt-get install -y \"c\nd\"\n";
+    let (plan, ast) = plan_and_ast(src, &[("package", "a'b\nx"), ("package", "c\nd")]);
+    let rendered = plan.render_apply(src, &ast);
+    assert!(
+        rendered.contains("true; true   # dorc: elided ["),
+        "both installs collapse to `true; true` (the odd-quote operand no longer orphans \
+         the second leaf):\n{rendered}"
+    );
+    // The disclosure carries the odd-quote operand (whitespace-flattened), proving it was
+    // routed into the COMMENT, not left live in the body where the `'` broke `dash -n`.
+    assert!(
+        rendered.contains("apt-get install -y \"a'b x\""),
+        "the odd-quote first original is disclosed in the comment (flattened):\n{rendered}"
+    );
+    assert!(
+        !rendered.contains("apt-get install -y \"c\n"),
+        "no orphaned second install left in the body:\n{rendered}"
+    );
+}
+
+#[test]
+fn render_multiline_then_single_line_orphan_cousin_both_elide() {
+    // The P3 cousin (single-line orphan): a MULTI-LINE converged install followed on its
+    // CLOSING line by a SINGLE-LINE converged install (`y"; apt-get install -y curl`).
+    // Same orphan mechanism — the second leaf's start line is the first's end line — but
+    // both edits are single-rendered-line after splice. The group merges them: `true;
+    // true`, both disclosed. (Pre-fix: the `curl` install was orphaned and ran.)
+    let src = "apt-get install -y \"x\ny\"; apt-get install -y curl\n";
+    let (plan, ast) = plan_and_ast(src, &[("package", "x\ny"), ("package", "curl")]);
+    let rendered = plan.render_apply(src, &ast);
+    assert!(
+        rendered.contains(
+            "true; true   # dorc: elided [apt-get install -y \"x y\"; \
+             apt-get install -y curl] (already converged / dead branch)"
+        ),
+        "the multi-line + single-line pair both elide to `true; true` (no orphaned \
+         curl):\n{rendered}"
+    );
+    assert!(
+        !rendered.contains("install -y curl\n") || rendered.contains("curl]"),
+        "the `curl` install is elided, surviving only inside the disclosure comment:\n{rendered}"
+    );
+}
+
+#[test]
+fn render_verbatim_run_leaf_opening_quote_drops_comment_f2() {
+    // f-2 comment-drop (defense-in-depth): a converged install (multi-line, ⇒ `true`)
+    // immediately followed on its closing line by a VERBATIM `Run` leaf whose operand
+    // OPENS a double-quote that closes on the next line (`b"; systemctl reload "c<LF>d"`).
+    // The group is just the install (the systemctl is a Run, no edit), so the spliced
+    // region is `true; systemctl reload "c` — it ENDS inside an open quote. `comment_safe`
+    // (via `region_ends_in_quote`) must DROP the provenance comment here: appending `#`
+    // would land it inside the string literal. The systemctl runs verbatim across both
+    // lines; the disclosure is dropped (OOB lane still carries it). dash-clean.
+    let src = "apt-get install -y \"a\nb\"; systemctl reload \"c\nd\"\n";
+    let (plan, ast) = plan_and_ast(src, &[("package", "a\nb")]);
+    let rendered = plan.render_apply(src, &ast);
+    // The install is substituted; the systemctl operand survives verbatim across two lines.
+    assert!(
+        rendered.contains("true; systemctl reload \"c\nd\""),
+        "the install ⇒ `true`, the verbatim systemctl spans both lines intact:\n{rendered}"
+    );
+    // NO comment on the quote-opening line (it would land inside the `"c…` literal).
+    assert!(
+        !rendered.contains("true; systemctl reload \"c   # dorc:"),
+        "the provenance comment is DROPPED (region ends inside an open quote — f-2):\n{rendered}"
     );
 }

@@ -1,0 +1,12 @@
+gate-6 (cm-1 dual-rail) EXCLUSION — function-inlining / wrapper-pun (arch-2, note 216
+inv-leaf-seam; tc-gate6-inlining). The book wraps the mutator in a shell function
+(`apt_install() { apt-get install -y "$1" …; }`) and calls it (`apt_install nginx`). The
+engine's `--debug-argv` reports the disposition keyed on the CALL site's surface argv
+(`replace apt_install nginx`), but the BARE run executes the INLINED body, so the shim
+logs the resolved argv (`apt-get install -y nginx`). gate-6 attributes a bare-only elided
+line by matching it against the ledger's argv — surface `apt_install nginx` never matches
+resolved `apt-get install -y nginx`, so the converged elision false-fails as
+"unattributable". The authoritative cm-1 (21D's hostsim differential) attributes these via
+the in-process API; the corpus tier's surface-argv matching cannot, so this case is exempt.
+gate-5 (resolution) + the exec gates still cover it; only gate-6's elision-attribution opts
+out. The value lives in the filename; this text is documentation.

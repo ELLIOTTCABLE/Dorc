@@ -3,5 +3,5 @@
 # The fixture reports nginx as `holds` (installed), so this shim exits 0 ⇒ the
 # `package__check` wrapper maps rc 0 → `holds`, reproducing the authored probe-results.txt.
 # Mutates nothing (read-only query); logs for symmetry with the apply shims.
-printf 'ran: %s %s\n' "${0##*/}" "$*" >>"$DORC_LOG"
+. "${0%/*}/.log"; _dorc_logged "$@"
 exit 0

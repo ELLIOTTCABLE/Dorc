@@ -1,0 +1,5 @@
+# probe-results: EMPTY. The in-loop inlined call's body establish reads EstablishWritten (the
+# loop back-edge carries its own establish to the next iteration's in-state — the 20M §5
+# self-establish-via-back-edge), so it is unresolvable ⇒ NOT probed (no `site 0.0` record).
+# The call is ALSO floored by the explicit in-loop floor (note 216 hunt-6). Either way the
+# call runs whole — doubly safe.

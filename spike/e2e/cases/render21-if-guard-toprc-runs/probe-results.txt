@@ -1,0 +1,6 @@
+# probe-results: site 0 is the guard `apt-get install -y nginx` (an establish, NOT a Query) —
+# its record-rc is the PROBE command's (dpkg-query's), firewalled from the fold (an establish's
+# fold Status stays ⊤, fork-mutator-rc), so the guard's rc is ⊤ ⇒ StatusRelaxable + ⊤ blocks
+# ⇒ it RUNS. holds = nginx installed (the effect is converged, but the rc is unusable). The
+# then-body `echo` is a builtin (no probe). The whole construct runs verbatim.
+site 0 effect=holds

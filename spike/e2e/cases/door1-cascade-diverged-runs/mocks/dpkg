@@ -1,0 +1,6 @@
+#!/bin/sh
+# INERT shim for `dpkg` — the pkgstate probe (`dpkg -s <pkg>`; $2=pkg) AND the apply's
+# verbatim guard. The mock host has nginx NOT installed (the guard is ABSENT, rc 1), so
+# the `|| { … }` block runs LIVE. Read-only; logs argv.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 1   # nginx absent ⇒ the guard fails ⇒ the block runs

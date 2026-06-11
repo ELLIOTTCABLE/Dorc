@@ -1,0 +1,4 @@
+# probe-results: site 1 is the `dpkg -s nginx` pkgstate Query guard; holds ⇒ rc 0. For
+# `&&`, a SUCCEEDING guard proceeds ⇒ the `{ systemctl reload nginx; }` block is LIVE and
+# runs. The guard's Query rc is fold-usable (substitutes to `true`); the block stays live.
+site 1 effect=holds rc=0

@@ -1,0 +1,4 @@
+# probe-results: site 1 is the `dpkg -s nginx` pkgstate Query guard; absent ⇒ rc 1. For
+# `&&`, a FAILING guard short-circuits ⇒ the `{ systemctl stop; rm; }` block is DEAD ⇒ both
+# block commands omit. The guard's Query rc is fold-usable (substitutes to `false`).
+site 1 effect=absent rc=1

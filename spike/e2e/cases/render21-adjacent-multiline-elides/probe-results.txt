@@ -1,0 +1,8 @@
+# probe-results: site 0 is the FIRST multi-line install (`apt-get install -y "a\nb"`), site 1
+# the SECOND (`apt-get install -y "c\nd"`). Both are EstablishAmbient on oddly-named packages;
+# both hold ⇒ both converged ⇒ the leaf-exact render substitutes each (multi-line) span with
+# `true`. The P1 was that site 1's edit was ORPHANED by the pre-fix start-line keying; with the
+# group-splice fix both collapse onto one rendered line. The dpkg-query probe is invoked with
+# each newline-bearing operand single-quoted (gate-1 parity: the mock host has both installed).
+site 0 effect=holds
+site 1 effect=holds

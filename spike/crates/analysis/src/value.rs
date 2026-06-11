@@ -39,7 +39,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use dorc_core::{AstId, Interner, Symbol};
-use dorc_syntax::ast::{Ast, NodeKind, WordPart};
+use dorc_syntax::ast::{Ast, NodeKind, RedirOp, RedirTarget, WordPart};
 use dorc_syntax::sem::{self, FragClass};
 
 use crate::cfg::{Cfg, CfgNodeId, CfgNodeKind};
@@ -84,6 +84,29 @@ pub struct ValueFlow {
     /// site whose argv has a non-member `⊤` word, or whose loop is Members-ineligible,
     /// is ABSENT here ⇒ the consumer falls back to the (⊤) [`argv`] entry.
     member_argv: BTreeMap<CfgNodeId, Vec<Vec<ValueOf>>>,
+    /// Per spliced funcdef-body `Command` node (arch-2, brk-2, `i-2`): its argv resolved with
+    /// the CALL site's positionals BOUND. A spliced body's `$1`..`$9` are runtime input to the
+    /// general transfer (folded to ⊤, the sound default for an un-inlined funcdef), so — exactly
+    /// like the Members side-channel (`i-2` mirrors the 20S precedent) — the positional binding
+    /// rides a SEPARATE post-solve pass that never flows through the lattice. For each inlined
+    /// call, the body sites' `$N` are substituted from the call's resolved argv (`$#` from its
+    /// operand count), then the words re-resolved. A site whose binding cannot resolve (a ⊤
+    /// call operand, an unmodeled body word) yields a `⊤` argv slot per the normal value rules.
+    /// Present ONLY for spliced body `Command` nodes whose argv references a positional; absent
+    /// ⇒ the consumer reads the ordinary (⊤-positional) [`argv`] entry. `BTreeMap` for
+    /// `inv-determinism`.
+    positional_argv: BTreeMap<CfgNodeId, Vec<ValueOf>>,
+    /// Per WRITE-shaped [`Redir`](CfgNodeKind::Redir) node (y-1, redirect-effects): the
+    /// resolved redirect TARGET word for a file-write redirect (`>`/`>>`), keyed by the
+    /// `Redir` node. A [`ValueOf::Literal`] is the resolved path (the effect classifier gens a
+    /// per-path `file` cell); [`ValueOf::Top`] is an unresolved/dynamic target (Opaque-poison +
+    /// a diagnostic). Present ONLY for a write-shaped redirect to a REAL sink; a read, an fd-dup
+    /// (`2>&1`), a here-doc, and the `/dev/null` discard are ABSENT (not file-write effects, the
+    /// existing devnull/dup vocabulary — `cfg::body_has_unmodeled_write_redirect`). Resolved
+    /// against the `Redir` node's incoming env state (a target word is an ordinary expansion,
+    /// `>> "$logfile"` following `logfile`), so it composes with constant propagation. `BTreeMap`
+    /// for `inv-determinism`.
+    redir_target: BTreeMap<CfgNodeId, ValueOf>,
     converged: bool,
 }
 
@@ -96,8 +119,18 @@ impl ValueFlow {
     /// `[Literal, Literal, Literal, Top]` — the dynamic word is `⊤`, its literal neighbours
     /// are not. Collapsing a partially-`⊤` argv to a single verdict is the *consumer's* rule
     /// (202 §1's fully-concrete-argv scope), never imposed here.
+    ///
+    /// arch-2 (`i-2`): for a spliced funcdef-body `Command` node whose argv references a
+    /// positional, the CALL-bound argv (positionals substituted) is returned in place of the
+    /// ⊤-positional general-transfer argv — so the effect classifier resolves `dpkg -s "$1"` to
+    /// `dpkg -s nginx` at the call `apt_install nginx` (`i-4` entity resolution). The
+    /// positional binding rides [`positional_argv`](Self::positional_argv) (a side-channel,
+    /// never the lattice); a body site without a positional reference reads the ordinary entry.
     #[must_use]
     pub fn argv_values(&self, node: CfgNodeId) -> Vec<ValueOf> {
+        if let Some(bound) = self.positional_argv.get(&node) {
+            return bound.clone();
+        }
         self.argv.get(&node).cloned().unwrap_or_default()
     }
 
@@ -113,6 +146,17 @@ impl ValueFlow {
         self.member_argv.get(&node)
     }
 
+    /// The resolved file-write redirect TARGET for a WRITE-shaped [`Redir`](CfgNodeKind::Redir)
+    /// node (y-1, redirect-effects), or `None` if this node is not a write-shaped file redirect
+    /// (a read/fd-dup/here-doc, the `/dev/null` discard, or a non-`Redir` node). A
+    /// [`ValueOf::Literal`] is the resolved path (⇒ the effect classifier gens a `file` cell);
+    /// [`ValueOf::Top`] is a dynamic/unresolved target (⇒ Opaque-poison + diagnostic). See
+    /// [`redir_target`](Self::redir_target) (the field).
+    #[must_use]
+    pub fn redir_target(&self, node: CfgNodeId) -> Option<ValueOf> {
+        self.redir_target.get(&node).copied()
+    }
+
     /// Did the underlying worklist reach a fixed point? `false` ⇒ all queries are all-`⊤`
     /// (the non-convergence fold, `16P` DP-9).
     #[must_use]
@@ -124,6 +168,11 @@ impl ValueFlow {
 /// The dataflow lattice element: shell variable name ↦ abstract string value (owned text, so
 /// concatenation is interner-free; interned only at the public boundary).
 type ValueEnv = MapL<String, Flat<String>>;
+
+/// arch-2 (`i-2`): bounded iterations of the inline positional-binding pass — depth ≤ 2 ⇒ at
+/// most 3 passes for an inner-of-inner positional (`outer() { inner "$1"; }`) to settle once the
+/// outer binding lands. Monotone (a concrete binding never changes) ⇒ the fixed count suffices.
+const MAX_INLINE_PASSES: usize = 3;
 
 /// An abstract word value mid-analysis: known literal text, or `⊤`.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -172,9 +221,23 @@ pub fn analyze(cfg: &Cfg, ast: &Ast, interner: &mut Interner) -> ValueFlow {
     // off the same converged solution (the Members value never rode the lattice, item-1).
     let member_argv = prep.members_pass(&solution.states, solution.converged, interner);
 
+    // arch-2 (`i-2`): the positional-bound argvs for spliced funcdef-body sites — a SEPARATE
+    // pass off the same converged solution (positionals never ride the lattice either, the
+    // 20S Members precedent). For each inlined call, bind `$1`..`$9`/`$#` from the call's
+    // resolved argv and re-resolve each body site's words.
+    let positional_argv = prep.inline_pass(&argv, &solution.states, solution.converged, interner);
+
+    // y-1 (redirect-effects): the resolved write-redirect TARGETS — a SEPARATE pass off the
+    // same converged solution. A redirect target is an ordinary expansion (`>> "$logfile"`),
+    // so it resolves against the `Redir` node's incoming env state exactly as a command word
+    // does; the effect classifier gens a per-path `file` cell from a resolved target.
+    let redir_target = prep.redir_pass(&solution.states, solution.converged, interner);
+
     ValueFlow {
         argv,
         member_argv,
+        positional_argv,
+        redir_target,
         converged: solution.converged,
     }
 }
@@ -242,6 +305,40 @@ enum Frag {
     /// when IFS is book-pristine and the resulting fields are glob-free; otherwise the word
     /// degrades to `⊤` (`resolve_recipe`/`site_argv`).
     SplitVar(String),
+    /// arch-2 (`i-2`): a *quoted* positional reference (`"$1"`) already resolved to its
+    /// call-bound value (the positional overlay holds it directly — there is no live var to
+    /// look up). Value-preserving (one field, like [`Var`](Frag::Var)). [`None`] ⇒ the
+    /// positional is ⊤ (a ⊤ call operand, or past the end) ⇒ the word degrades to ⊤.
+    PosLit(Option<String>),
+    /// arch-2 (`i-2`): an *unquoted* positional reference (`$1`) resolved to its call-bound
+    /// value, subject to field-splitting (like [`SplitVar`](Frag::SplitVar)). [`None`] ⇒ ⊤.
+    PosSplit(Option<String>),
+}
+
+/// arch-2 (`i-2`): the call-bound positional parameters a spliced funcdef body sees — `$1`..
+/// `$9` and `$#`. A positional past the end of the call's operands, or bound to a ⊤ operand,
+/// is `None` (⊤); `$#` is always a known literal count. Built by [`positional_overlay`] from
+/// the call's resolved argv.
+#[derive(Debug, Clone, Default)]
+struct Positionals {
+    /// 0-based: `args[N-1]` is `$N`. `Some(text)` ⇒ a known literal; `None` ⇒ ⊤. The vector
+    /// length is the call's operand count (so a `$N` past it is treated as ⊤ — see
+    /// [`Positionals::param`]).
+    args: Vec<Option<String>>,
+    /// `$#`: the operand count (always a known literal — the call's argv arity is static).
+    count: usize,
+}
+
+impl Positionals {
+    /// The value of `$N` (1-based positional): the bound literal, ⊤ (`None`) if that operand
+    /// is itself ⊤, or ⊤ (`None`) if `N` is past the end (an unset positional — strictly ⊤ for
+    /// entity resolution, the `Unresolved` policy, never a fabricated empty).
+    fn param(&self, n: u32) -> Option<String> {
+        if n == 0 {
+            return None; // `$0` is the function name — a special, ⊤ for our purposes.
+        }
+        self.args.get((n - 1) as usize).cloned().flatten()
+    }
 }
 
 impl<'a> Prep<'a> {
@@ -694,6 +791,180 @@ impl<'a> Prep<'a> {
         }
     }
 
+    /// Compute the resolved write-redirect TARGET for every WRITE-shaped [`Redir`](CfgNodeKind::Redir)
+    /// node (y-1, redirect-effects) — a SEPARATE pass off the converged solution. Only a file-write
+    /// redirect to a REAL sink is recorded (the existing devnull/dup vocabulary, mirroring
+    /// `cfg::body_has_unmodeled_write_redirect` / `output_redir_observables`):
+    /// * `op` is `Write`/`Append` (a read `<`, an fd-dup `2>&1`/`>&3`, a here-doc are NOT
+    ///   file-write effects ⇒ absent — the consumer reads them as `Pure`);
+    /// * `target` is a `Word` (an fd-dup / here-doc target is not a path) that is NOT the
+    ///   `/dev/null` discard sink (devnull-exemption — checked SYNTACTICALLY on the source
+    ///   literal, before value resolution, so `> /dev/null` is exempt regardless of state).
+    ///
+    /// The target word is resolved against the `Redir` node's INCOMING env state (a redirect
+    /// target is an ordinary single-field expansion — `>> "$logfile"` follows `logfile`), using
+    /// [`resolve_recipe`] (single value, NOT field-split: the shell expands a redirect target to
+    /// ONE field and errors on multiple). An expansion-hazard target (`>> *.log` glob, `>> ~/x`
+    /// tilde) ⇒ `⊤` (we cannot reproduce the live-fs/`$HOME` expansion — the Opaque-poison path).
+    /// A non-converged solve records nothing (the all-⊤ fold, `16P` DP-9 ⇒ the consumer's absent
+    /// entry; but the whole pipeline is already ⊤ then). `BTreeMap` for `inv-determinism`.
+    fn redir_pass(
+        &self,
+        states: &[ValueEnv],
+        converged: bool,
+        interner: &mut Interner,
+    ) -> BTreeMap<CfgNodeId, ValueOf> {
+        let mut out = BTreeMap::new();
+        if !converged {
+            return out;
+        }
+        for (id, node) in self.cfg.iter() {
+            if node.kind != CfgNodeKind::Redir {
+                continue;
+            }
+            let NodeKind::Redir { op, target, .. } = &self.ast.node(node.ast).kind else {
+                continue;
+            };
+            // Only file-write redirects gen a cell (`>`, `>>`). A read, an fd-dup, and a
+            // here-doc are not a write-to-file effect (the existing vocabulary).
+            if !matches!(op, RedirOp::Write | RedirOp::Append) {
+                continue;
+            }
+            let RedirTarget::Word(w) = target else {
+                continue; // fd-dup / here-doc target: not a path
+            };
+            // devnull-exemption (the discard sink, the precision scalpel): checked on the
+            // SOURCE literal before resolution, exactly as `output_redir_observables` does.
+            if literal_text(self.ast, *w).as_deref() == Some("/dev/null") {
+                continue;
+            }
+            let Some(incoming) = states.get(id.index()) else {
+                continue;
+            };
+            // A redirect target is a single-field expansion (the shell errors on multiple);
+            // an unquoted glob / word-leading tilde expands against the live fs / `$HOME`
+            // ⇒ ⊤ (we cannot reproduce it — the Opaque-poison path).
+            let resolved = if word_expansion_hazard(self.ast, *w) {
+                Abstract::Top
+            } else {
+                resolve_recipe(&recipe_of_word(self.ast, *w), incoming)
+            };
+            let value = match resolved {
+                Abstract::Lit(s) => ValueOf::Literal(interner.intern(&s)),
+                Abstract::Top => ValueOf::Top,
+            };
+            out.insert(id, value);
+        }
+        out
+    }
+
+    /// Compute the positional-bound argvs for every spliced funcdef-body `Command` site
+    /// (arch-2, brk-2, `i-2`) — a SEPARATE pass off the converged solution (positionals never
+    /// ride the lattice; the 20S Members precedent). For each inlined call, the body sites'
+    /// `$1`..`$9`/`$#` bind from the CALL's resolved argv; the words are then re-resolved with
+    /// that positional overlay (and the site's own incoming variable state).
+    ///
+    /// POSIX scope (`i-2`): body variable ASSIGNMENTS leak to the caller (they ride the
+    /// ordinary lattice transfer — no scope boundary), so the site's `incoming` env already
+    /// carries them; the ONE scoped overlay is the positionals (the caller's `$1`..`$N` are NOT
+    /// visible inside the body — a body's `$1` is the CALL's first operand, not the caller's).
+    ///
+    /// Nesting (depth ≤ 2): a transitively-inlined inner call's own operands may reference the
+    /// OUTER call's positionals (`outer() { inner "$1"; }`), so the pass is BOUNDED-iterated
+    /// (`MAX_INLINE_PASSES = depth + 1`): each iteration resolves call argvs using the
+    /// positional bindings landed so far, so an inner call's operands resolve once the outer's
+    /// binding is in. Monotone (a binding, once concrete, never changes) ⇒ the fixed iteration
+    /// count suffices. A non-converged solve yields no bindings (the all-⊤ fold, `16P` DP-9).
+    fn inline_pass(
+        &self,
+        argv: &BTreeMap<CfgNodeId, Vec<ValueOf>>,
+        states: &[ValueEnv],
+        converged: bool,
+        interner: &mut Interner,
+    ) -> BTreeMap<CfgNodeId, Vec<ValueOf>> {
+        let mut out: BTreeMap<CfgNodeId, Vec<ValueOf>> = BTreeMap::new();
+        if !converged {
+            return out;
+        }
+        for _ in 0..MAX_INLINE_PASSES {
+            let mut changed = false;
+            for (call, body_sites) in self.cfg.inlined_calls() {
+                // The call's resolved operands. If the call node is ITSELF a spliced body site
+                // of an enclosing call, its operands may be positional — prefer the binding
+                // landed so far (`out`), else the general-transfer argv.
+                let call_argv = out
+                    .get(&call)
+                    .or_else(|| argv.get(&call))
+                    .cloned()
+                    .unwrap_or_default();
+                // The positional binding from the call argv: `$N` = operand N (argv[N], the
+                // command word excluded), `$#` = operand count. A ⊤ operand binds that
+                // positional ⊤ (the body's use degrades per normal value rules).
+                let positionals = positional_overlay(&call_argv, interner);
+                for &site_id in body_sites {
+                    let NodeKind::Simple { words, .. } =
+                        &self.ast.node(self.cfg.node(site_id).ast).kind
+                    else {
+                        continue;
+                    };
+                    // Only a body site that REFERENCES a positional needs binding (one that
+                    // does not is the same concrete the ordinary `argv` entry already serves).
+                    if !words
+                        .iter()
+                        .any(|&w| word_references_positional(self.ast, w))
+                    {
+                        continue;
+                    }
+                    let Some(incoming) = states.get(site_id.index()) else {
+                        continue;
+                    };
+                    let resolved = intern_argv(
+                        self.resolve_site_words_with_positionals(words, incoming, &positionals),
+                        interner,
+                    );
+                    match out.get(&site_id) {
+                        Some(prev) if *prev == resolved => {}
+                        _ => {
+                            out.insert(site_id, resolved);
+                            changed = true;
+                        }
+                    }
+                }
+            }
+            if !changed {
+                break;
+            }
+        }
+        out
+    }
+
+    /// Resolve a spliced body site's `Simple` words with a positional OVERLAY (arch-2, `i-2`):
+    /// each word resolves against the site's variable env AND the call-bound positionals
+    /// (`$1`..`$9`, `$#`). The shared core of [`resolve_site_words`] generalized to substitute a
+    /// positional/`$#` reference from `positionals` instead of degrading it to ⊤. A word that is
+    /// not positional-bearing resolves exactly as before; a positional bound to ⊤, or any other
+    /// unmodeled part, still degrades to ⊤ per the normal value rules.
+    fn resolve_site_words_with_positionals(
+        &self,
+        words: &[AstId],
+        env: &ValueEnv,
+        positionals: &Positionals,
+    ) -> Vec<Abstract> {
+        words
+            .iter()
+            .flat_map(|&w| {
+                if word_expansion_hazard(self.ast, w) {
+                    return vec![Abstract::Top];
+                }
+                resolve_recipe_fields_pos(
+                    &recipe_of_word_with_positionals(self.ast, w, positionals),
+                    env,
+                    self.ifs_pristine,
+                )
+            })
+            .collect()
+    }
+
     /// Does `body`'s AST subtree contain a nested `for`/`while`/`until` loop? (item-1's
     /// single-level restriction.) Span-contained scan; cheap (corpus bodies are tiny).
     fn body_has_nested_loop(&self, body: AstId) -> bool {
@@ -894,7 +1165,10 @@ fn resolve_recipe(recipe: &Recipe, env: &ValueEnv) -> Abstract {
                 Abstract::Top => return Abstract::Top, // ⊤ or absent-as-⊤ var ⇒ whole word ⊤
             },
             // An unquoted var outside argv position is ⊤ here (no split applied — see doc).
-            Frag::SplitVar(_) => return Abstract::Top,
+            // The positional [`Frag`] variants are only built by the inline-pass's
+            // positional-aware path ([`resolve_recipe_pos`]); a non-inline recipe never holds
+            // them, so this arm is defensively ⊤ (never exercised).
+            Frag::SplitVar(_) | Frag::PosLit(_) | Frag::PosSplit(_) => return Abstract::Top,
         }
     }
     Abstract::Lit(buf)
@@ -946,6 +1220,9 @@ fn resolve_recipe_fields(recipe: &Recipe, env: &ValueEnv, ifs_pristine: bool) ->
                 Abstract::Lit(s) => OwnedField::Literal(s),
                 Abstract::Top => return vec![Abstract::Top],
             },
+            // Positional frags never reach this non-inline path (see [`resolve_recipe`]);
+            // defensively ⊤.
+            Frag::PosLit(_) | Frag::PosSplit(_) => return vec![Abstract::Top],
         };
         owned.push(resolved);
     }
@@ -983,6 +1260,194 @@ fn recipe_of_word(ast: &Ast, word: AstId) -> Recipe {
     } else {
         Recipe::Top
     }
+}
+
+/// arch-2 (`i-2`): [`recipe_of_word`] with a positional OVERLAY — a `$N`/`$#` reference is
+/// substituted from `positionals` (the call's bound argv) instead of collapsing the word to ⊤.
+/// All other fragment classes behave exactly as [`collect_frags`] (a body-local `"$x"` is still
+/// a [`Frag::Var`] resolved against the site's env; an unmodeled expansion still ⊤s the word).
+fn recipe_of_word_with_positionals(ast: &Ast, word: AstId, positionals: &Positionals) -> Recipe {
+    let NodeKind::Word { parts } = &ast.node(word).kind else {
+        return Recipe::Top;
+    };
+    let mut frags = Vec::new();
+    if collect_frags_pos(parts, /* quoted = */ false, positionals, &mut frags) {
+        Recipe::Parts(frags)
+    } else {
+        Recipe::Top
+    }
+}
+
+/// arch-2 (`i-2`): like [`collect_frags`] but resolving a positional/`$#` reference from the
+/// `positionals` overlay (the body's `$1`..`$9`/`$#` bind from the call's argv). A `$N` becomes
+/// a [`Frag::PosLit`]/[`Frag::PosSplit`] carrying its bound value (quoted ⇒ value-preserving,
+/// unquoted ⇒ field-splits); `$#` becomes a [`Frag::Lit`] of the operand count. Every other
+/// part routes through the shared [`sem::classify_frag`] exactly as [`collect_frags`].
+fn collect_frags_pos(
+    parts: &[WordPart],
+    quoted: bool,
+    positionals: &Positionals,
+    out: &mut Vec<Frag>,
+) -> bool {
+    for part in parts {
+        // A positional/`$#` is a `WordPart::Param`; intercept it before the generic classifier.
+        if let WordPart::Param { name } = part {
+            match sem::classify_param(name) {
+                sem::ParamClass::Positional(n) => {
+                    let val = positionals.param(n);
+                    out.push(if quoted {
+                        Frag::PosLit(val)
+                    } else {
+                        Frag::PosSplit(val)
+                    });
+                    continue;
+                }
+                // `$#` is the one special parameter the splice binds (a known literal count);
+                // every OTHER special (`$@`/`$*`/`$?`/…) is out of slice / ⊤ ⇒ collapse. (`$@`/
+                // `$*` already ⊤-refuse the whole inline at eligibility, so they cannot reach
+                // here for an inlined body — defensive ⊤.)
+                sem::ParamClass::Special if name == "#" => {
+                    out.push(Frag::Lit(positionals.count.to_string()));
+                    continue;
+                }
+                sem::ParamClass::Special => return false,
+                // A plain `$name` falls through to the generic classifier (a body-local var).
+                sem::ParamClass::Name => {}
+            }
+        }
+        let WordPart::DoubleQuoted(inner) = part else {
+            match sem::classify_frag(part, quoted) {
+                Some(FragClass::Literal(s)) => out.push(Frag::Lit(s.to_owned())),
+                Some(FragClass::Var(name)) => out.push(Frag::Var(name.to_owned())),
+                Some(FragClass::SplitRisk) => match split_var_name(part) {
+                    Some(name) => out.push(Frag::SplitVar(name.to_owned())),
+                    None => return false,
+                },
+                Some(FragClass::OpaqueValue) | None => return false,
+            }
+            continue;
+        };
+        if !collect_frags_pos(inner, true, positionals, out) {
+            return false;
+        }
+    }
+    true
+}
+
+/// arch-2 (`i-2`): build the positional overlay from a call's resolved argv. `$1`..`$N` map to
+/// operands 1..N (the command word excluded), each `Some(text)`/`None` (⊤); `$#` is the operand
+/// count. A ⊤ command word does not matter (a ⊤-word command would not have inlined — the call
+/// resolved to a funcdef name); positionals index the OPERANDS only.
+fn positional_overlay(call_argv: &[ValueOf], interner: &Interner) -> Positionals {
+    // Operands: everything after the command word (argv[0]).
+    let operands = call_argv.get(1..).unwrap_or(&[]);
+    let args = operands
+        .iter()
+        .map(|v| match v {
+            ValueOf::Literal(s) => Some(interner.resolve(*s).to_owned()),
+            ValueOf::Top => None,
+        })
+        .collect();
+    Positionals {
+        args,
+        count: operands.len(),
+    }
+}
+
+/// arch-2 (`i-2`): [`resolve_recipe_fields`] extended for the positional [`Frag`] variants —
+/// a [`Frag::PosLit`] is a value-preserving literal (one field, ⊤ if the positional is ⊤); a
+/// [`Frag::PosSplit`] field-splits its bound value exactly like [`Frag::SplitVar`]. The
+/// non-positional fragments behave identically to [`resolve_recipe_fields`].
+fn resolve_recipe_fields_pos(recipe: &Recipe, env: &ValueEnv, ifs_pristine: bool) -> Vec<Abstract> {
+    let parts = match recipe {
+        Recipe::Top => return vec![Abstract::Top],
+        Recipe::Parts(p) => p,
+    };
+    // No splitting fragment (var or positional, unquoted) ⇒ arity is statically one.
+    let splits = parts
+        .iter()
+        .any(|f| matches!(f, Frag::SplitVar(_) | Frag::PosSplit(_)));
+    if !splits {
+        return vec![resolve_recipe_pos(recipe, env)];
+    }
+    if !ifs_pristine {
+        return vec![Abstract::Top];
+    }
+    let mut owned = Vec::with_capacity(parts.len());
+    for frag in parts {
+        let resolved = match frag {
+            Frag::Lit(s) | Frag::PosLit(Some(s)) => OwnedField::Literal(s.clone()),
+            Frag::PosSplit(Some(s)) => OwnedField::Split(s.clone()),
+            Frag::Var(v) => match lookup(env, v) {
+                Abstract::Lit(s) => OwnedField::Literal(s),
+                Abstract::Top => return vec![Abstract::Top],
+            },
+            Frag::SplitVar(v) => match lookup(env, v) {
+                Abstract::Lit(s) => OwnedField::Split(s),
+                Abstract::Top => return vec![Abstract::Top],
+            },
+            Frag::PosLit(None) | Frag::PosSplit(None) => return vec![Abstract::Top],
+        };
+        owned.push(resolved);
+    }
+    let fields: Vec<sem::Field<'_>> = owned
+        .iter()
+        .map(|f| match f {
+            OwnedField::Literal(s) => sem::Field::Literal(s),
+            OwnedField::Split(s) => sem::Field::Split(s),
+        })
+        .collect();
+    match sem::split_fields_join(&fields) {
+        Some(fs) => fs.into_iter().map(Abstract::Lit).collect(),
+        None => vec![Abstract::Top],
+    }
+}
+
+/// arch-2 (`i-2`): [`resolve_recipe`] extended for the positional [`Frag`] variants (the
+/// single-value, non-splitting path). A [`Frag::PosLit`] concatenates its bound value (⊤ ⇒
+/// whole word ⊤); a [`Frag::PosSplit`] outside a split-eligible word degrades to ⊤ (the same
+/// posture [`resolve_recipe`] takes for an unquoted [`Frag::SplitVar`] in a non-argv context).
+fn resolve_recipe_pos(recipe: &Recipe, env: &ValueEnv) -> Abstract {
+    let parts = match recipe {
+        Recipe::Top => return Abstract::Top,
+        Recipe::Parts(p) => p,
+    };
+    let mut buf = String::new();
+    for frag in parts {
+        match frag {
+            Frag::Lit(s) | Frag::PosLit(Some(s)) => buf.push_str(s),
+            Frag::Var(v) => match lookup(env, v) {
+                Abstract::Lit(s) => buf.push_str(&s),
+                Abstract::Top => return Abstract::Top,
+            },
+            // An unquoted split (var or positional) outside argv position, or a ⊤ positional,
+            // degrades the whole word to ⊤ (the non-argv posture, mirroring [`resolve_recipe`]).
+            Frag::SplitVar(_) | Frag::PosLit(None) | Frag::PosSplit(_) => return Abstract::Top,
+        }
+    }
+    Abstract::Lit(buf)
+}
+
+/// arch-2 (`i-2`): does a `Word` node reference a positional parameter (`$1`..`$9`, quoted or
+/// not)? `$#` counts (a positional-family reference the overlay binds). A plain `$name` or a
+/// non-positional special does NOT. Recurses into double-quotes. Used to decide which spliced
+/// body sites need a positional-bound argv (one without a positional is the same concrete the
+/// ordinary `argv` entry already serves).
+fn word_references_positional(ast: &Ast, word: AstId) -> bool {
+    let NodeKind::Word { parts } = &ast.node(word).kind else {
+        return false;
+    };
+    parts_reference_positional(parts)
+}
+
+fn parts_reference_positional(parts: &[WordPart]) -> bool {
+    parts.iter().any(|p| match p {
+        WordPart::Param { name } => {
+            matches!(sem::classify_param(name), sem::ParamClass::Positional(_)) || name == "#"
+        }
+        WordPart::DoubleQuoted(inner) => parts_reference_positional(inner),
+        _ => false,
+    })
 }
 
 /// Collect fragments from word-parts; returns `false` (⇒ whole word `⊤`) on the first part
@@ -2287,6 +2752,130 @@ mod tests {
                 "cmd"
             ),
             vec![lit("cmd"), Word::Top]
+        );
+    }
+
+    // ===========================================================================
+    // arch-2 (brk-2, `i-2`): positional binding into spliced funcdef bodies.
+    // The body's `$1`..`$9`/`$#` bind from the CALL's resolved argv (a side-channel,
+    // never the lattice — the 20S Members precedent). Resolved via `argv_values` on
+    // the SPLICED body site (the reachable copy, not the detached definition copy).
+    // ===========================================================================
+
+    /// The bound argv of the FIRST *spliced & reachable* `Command` whose command word is `cmd`
+    /// (the call-site body copy — the detached definition copy is unreachable). Resolves
+    /// `argv_values`, which returns the positional-bound argv for a spliced site (`i-2`).
+    fn bound_argv_of(src: &str, cmd: &str) -> Vec<Word> {
+        let parsed = dorc_syntax::parse(src);
+        let cfg = build(&parsed.value).value;
+        let mut interner = Interner::default();
+        let flow = analyze(&cfg, &parsed.value, &mut interner);
+        // Forward reachability over succ (a spliced body site at a call is reachable; the
+        // detached definition copy is not).
+        let mut reachable = vec![false; cfg.iter().count()];
+        let mut stack = vec![cfg.entry()];
+        reachable[cfg.entry().index()] = true;
+        while let Some(v) = stack.pop() {
+            for w in cfg.succ_ids(v) {
+                if !reachable[w.index()] {
+                    reachable[w.index()] = true;
+                    stack.push(w);
+                }
+            }
+        }
+        let found = cfg
+            .iter()
+            .filter(|(id, n)| {
+                n.kind == CfgNodeKind::Command
+                    && cfg.is_spliced_internal(*id)
+                    && reachable[id.index()]
+            })
+            .find(|(_, n)| command_word(&parsed.value, n.ast).as_deref() == Some(cmd))
+            .map(|(id, _)| id);
+        let Some(node) = found else {
+            panic!("no spliced+reachable `{cmd}` in {src:?}")
+        };
+        flow.argv_values(node)
+            .into_iter()
+            .map(|v| word_of(v, &interner))
+            .collect()
+    }
+
+    #[test]
+    fn positional_binds_call_operand_into_spliced_body() {
+        // `i-2`: `apt_install nginx` binds the body's `$1` to `nginx`, so the spliced
+        // `apt-get install -y "$1"` resolves to `[apt-get, install, -y, nginx]` (the entity
+        // resolves at the call site — `i-4`).
+        let src = "apt_install() { apt-get install -y \"$1\"; }\napt_install nginx\n";
+        assert_eq!(
+            bound_argv_of(src, "apt-get"),
+            vec![lit("apt-get"), lit("install"), lit("-y"), lit("nginx")],
+            "the body's $1 binds to the call's operand"
+        );
+    }
+
+    #[test]
+    fn two_calls_bind_distinct_operands() {
+        // `i-2`: two calls bind their OWN operand — the same body resolves differently per call
+        // (the back-map non-injectivity, `i-6`, surfaced in the value plane). We can only query
+        // the FIRST spliced site by word here, so assert the first call's binding; the second
+        // is covered end-to-end by `inline21-wrapper-converged-elides` (site 0.0 nginx / 1.0
+        // curl).
+        let src = "w() { apt-get install -y \"$1\"; }\nw nginx\nw curl\n";
+        assert_eq!(
+            bound_argv_of(src, "apt-get"),
+            vec![lit("apt-get"), lit("install"), lit("-y"), lit("nginx")],
+            "the first call binds nginx"
+        );
+    }
+
+    #[test]
+    fn top_call_operand_binds_positional_top() {
+        // `i-2`: a ⊤ call operand binds that positional ⊤ — the body's use degrades per the
+        // normal value rules (the site stays un-elidable). `w "$dyn"` (an unmodeled var) ⇒ the
+        // body's `$1` is ⊤ ⇒ the install's operand is ⊤.
+        let src = "w() { apt-get install -y \"$1\"; }\nw \"$dyn\"\n";
+        assert_eq!(
+            bound_argv_of(src, "apt-get"),
+            vec![lit("apt-get"), lit("install"), lit("-y"), Word::Top],
+            "a ⊤ call operand makes the body's $1 ⊤"
+        );
+    }
+
+    #[test]
+    fn body_assignment_leaks_positional_scope_does_not() {
+        // `i-2` POSIX scope: a body ASSIGNMENT leaks to the caller (it rides the ordinary
+        // lattice transfer — no scope boundary), but POSITIONALS are scoped (the caller's $1 is
+        // NOT visible inside; the body's $1 is the CALL's operand). Here the caller binds
+        // `pkg=outer`, then calls `w nginx`; the body reads `"$1"` (⇒ nginx, the CALL operand,
+        // NOT the caller's anything) and assigns `pkg="$1"` (⇒ leaks). We assert the body's
+        // install resolves to nginx (positional = call operand), proving the positional overlay
+        // is the call's, not a caller variable.
+        let src = "w() { pkg=\"$1\"; apt-get install -y \"$1\"; }\npkg=outer\nw nginx\n";
+        assert_eq!(
+            bound_argv_of(src, "apt-get"),
+            vec![lit("apt-get"), lit("install"), lit("-y"), lit("nginx")],
+            "the body's $1 is the CALL operand (nginx), independent of the caller's `pkg`"
+        );
+    }
+
+    #[test]
+    fn body_assignment_from_positional_is_top_recorded_imprecision() {
+        // `i-2` RECORDED IMPRECISION (flag arch2-positional-via-assignment): the positional
+        // overlay applies to the body command site's DIRECT word resolution, NOT to an
+        // intermediate ASSIGNMENT inside the body that reads a positional. `w() { p="$1";
+        // apt-get install -y "$p"; }` — the `p="$1"` RHS is resolved by the general LATTICE
+        // transfer (which sees `$1` as ⊤, positionals never ride the lattice), so `p` is ⊤ and
+        // `"$p"` ⇒ ⊤ (the install's operand is ⊤ ⇒ the site stays un-elidable). This is the
+        // SAFE degrade (`kFAIL-perform`), not a wrong concrete; the wrapper-pun population uses
+        // `$1` DIRECTLY at command sites (`dpkg -s "$1"`), which IS bound (the test above), so
+        // the imprecision does not bite the target idiom. Pinned so the boundary is explicit.
+        let src = "w() { p=\"$1\"; apt-get install -y \"$p\"; }\nw nginx\n";
+        assert_eq!(
+            bound_argv_of(src, "apt-get"),
+            vec![lit("apt-get"), lit("install"), lit("-y"), Word::Top],
+            "an intermediate `p=$1` does NOT propagate the positional (p is ⊤) — the safe \
+             degrade, not the bound value"
         );
     }
 }

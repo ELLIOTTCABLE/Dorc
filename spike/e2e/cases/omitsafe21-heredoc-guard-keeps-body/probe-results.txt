@@ -1,0 +1,6 @@
+# probe-results: site 1 is the heredoc-bearing `dpkg -s nginx` pkgstate Query guard; its
+# OWN rc (0 = nginx installed) is fold-usable (rule-query-validity holds — only `set -e`
+# upstream). The fold kills the `||` install (site 2, un-oracled, dead ⇒ Omit) — but the
+# render REFUSES the heredoc guard's edit, so the omit-safety gate keeps the install
+# verbatim behind the live guard. `set -e` is site 0 (MustRun, no record).
+site 1 effect=holds rc=0

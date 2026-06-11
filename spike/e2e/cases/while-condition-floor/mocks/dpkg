@@ -2,5 +2,5 @@
 # INERT mock: logs that it ran, mutates NOTHING. Exits 1 so a `while dpkg -s …` loop
 # condition is FALSE first iteration ⇒ 0 iterations ⇒ the executed apply terminates
 # (an inert shim cannot count, so a true-condition while would hang the exec gate).
-printf 'ran: %s %s\n' "${0##*/}" "$*" >>"$DORC_LOG"
+. "${0%/*}/.log"; _dorc_logged "$@"
 exit 1

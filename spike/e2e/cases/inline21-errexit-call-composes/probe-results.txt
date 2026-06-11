@@ -1,0 +1,6 @@
+# probe-results: `set -e` is leaf 0, so the calls are leaf 1 (nginx) / leaf 2 (curl); each
+# ships ONE body establish sub-record (`site 1.0` / `site 2.0`). BOTH report `holds`
+# (converged). The bare call (leaf 1) RUNS anyway (consumed ⊤ status under `set -e` blocks);
+# the `|| true` call (leaf 2) ELIDES (door-3 StatusInvariant never blocks).
+site 1.0 effect=holds
+site 2.0 effect=holds

@@ -1,0 +1,27 @@
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc — the record is the out-of-band lane).
+
+# site 0: package:multi
+line#installed
+package_installed__check() { dpkg-query -W "$1" >/dev/null 2>&1; }
+package_installed__check 'multi
+line'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'site 0 effect=%s rc=%s\n' "$_e" "$_rc"
+# site:1 skip-unresolvable
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+# render21-multiline-leaf-substitutes (arch-1, note 214 d-6 — the NEWLY-EXPRESSIBLE multi-line
+# substitution pin): a leaf whose source span crosses MULTIPLE lines (an argv operand with a
+# LITERAL NEWLINE) is substitutable under the leaf-exact render — a span edit may cover several
+# lines, collapsing them to the single-line stand-in. The round-21 line-granular render REFUSED
+# a multi-line leaf (it could not splice across a line boundary); the leaf-exact render retires
+# that refusal. The converged install (operand spans two lines) collapses to `true`; the
+# unoracled `systemctl reload` runs. The provenance comment flattens the operand's interior
+# newline (else the `#` comment would split into a stray unterminated-quote line). HOST: the
+# (oddly-named) package is installed. expected.ran: only systemctl (the multi-line install elided).
+true   # dorc: elided [apt-get install -y "multi line"] (already converged / dead branch)
+systemctl reload nginx

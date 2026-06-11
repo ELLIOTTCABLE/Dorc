@@ -37,14 +37,19 @@ guards a different failure (unmodeled execution context, not a stale fact). The
 no declared probe is absent from `compile_probe`'s output ⇒ the apply runs it
 (`kFAIL-perform`). Consumed `Stdout`/`Stderr` arrive as the engine's un-collapsed
 `May<Powerset<Observable>>` and per `inv-must-may` can only *block* (16F §3 / 16J).
-Status consumption (19A C-3 honored, round-20 — notes/205 §2, 206 §3): the if-guard
-`StatusRenderFloor` channel blocks unconditionally (retired only by a guard-capable
-leaf-exact render, not by the rc value); EVERY other status consumer — `&&`/`||`
-operands, errexit-region commands, `$?`-readers' predecessors (the four 206 §3 sources) —
-is marked `StatusRelaxable`, where a probe-sourced/declared rc substitutes exactly and a
-⊤ rc blocks. Under
-fork-mutator-rc a mutator's rc is always ⊤, so converged mutators under `set -e`
-run (the 206 §2 headline cost). There is NO establishes-contract rc-0 vouch — that
+Status consumption (19A C-3 honored; channel-set re-keyed by arch-1 — note 214,
+`StatusRenderFloor` deleted): `StatusRelaxable` — `&&`/`||` operands, errexit-region
+commands, `$?`-readers' predecessors, AND `if`/`elif` guards — a probe-sourced/declared
+rc substitutes exactly, a ⊤ rc blocks (the arch-1 guard-elision class rides this: a
+known-rc Query guard substitutes in-situ, span-exact). `StatusInvariant` — the bare
+`|| true` left operand (door-3, `20V` §4 / note 213): consumed-in-form, dead-in-fact
+(both continuations rejoin with identical observables), never blocks even at ⊤;
+mark-union still applies, so any OTHER blocking mark on the same site wins.
+`StatusIterated` — a `while`/`until` condition: a per-iteration consumed sequence no
+single rc reproduces; blocks unconditionally. Under
+fork-mutator-rc a mutator's rc is always ⊤, so BARE converged mutators under `set -e`
+run (the 206 §2 headline cost; door-3 and the remaining 20V doors are the recovery
+program). There is NO establishes-contract rc-0 vouch — that
 was the refuted assumption ("converged ⇒ rc 0", bought false three times).
 
 ## `ap-2` — executable acceptance is non-negotiable (`an-render-runnable` / `an-render-executability-check`)
@@ -110,17 +115,14 @@ host / `hostsim` is a later seam). Never reach for clock/RNG/fs/net here, direct
 transitively. Output order is observable (the rendered plan) → sort by span, key on
 `BTreeSet`/sorted vecs, never iterate a `HashMap`.
 
-## Tension to flag, not resolve
+## Tension RESOLVED (round-21, arch-1 — note 214; kept for history)
 
-`an-render-modes` makes the optimized-vs-faithful split (`an-fidelity-mode`) concrete,
-and it pulls against `seam-prov` + the priority order. A *line-granular* book-faithful
-render (`render_apply`) preserves the admin's control-flow and reads cleanly, but
-(a) risks the empty-clause `sh -n` break above, and (b) attributes at *line* not
-*leaf* granularity — so a multi-leaf line, or a leaf spanning lines, blurs the
-`LeafId → AstId` back-map that `seam-prov` and `inv-leaf-seam` (`dn-3`) depend on. The
-*flat* `render_sh` keeps per-leaf provenance crisp but throws away the guards, so it is
-not a runnable artifact at all. --WONDER whether a faithful *control-flow rewrite*
-(comment the elided leaf *in situ* with a `:`-stub keeping arms non-empty, leaf-keyed)
-reconciles them, or whether render-fidelity and leaf-exact provenance are genuinely in
-tension under real nested guards — which would be a `seam-prov`-vs-`ap-2` finding worth
-recording (`Research/notes/19x-*.md`), not a bug to quietly fix.
+`an-render-modes` posed line-granular faithfulness vs leaf-exact provenance as a
+possible genuine tension. arch-1's span-edit render IS the faithful control-flow
+rewrite the --WONDER hypothesised: a Replace splices the leaf's exact byte-span
+in-situ (the stand-in for Replaces, a `:` for dead Omits — arms never empty), the
+`LeafId → AstId` back-map is byte-exact rather than line-blurred, and the artifact
+stays runnable/`sh -n`-clean (gate ap-2). Render-fidelity and leaf-exact provenance
+were NOT in tension; the line was simply the wrong substitution unit. The carve-out
+family (`inline_arm_subst`/`inline_scaffold_subst`/`commented_line` + the
+`classify_lines` walk) and the `StatusRenderFloor` channel retired with it.

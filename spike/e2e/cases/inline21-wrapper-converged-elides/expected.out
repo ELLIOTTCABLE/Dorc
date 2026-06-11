@@ -1,0 +1,27 @@
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc — the record is the out-of-band lane).
+
+# site 0.0: package:nginx#installed
+package_installed__check() { dpkg-query -W "$1" >/dev/null 2>&1; }
+package_installed__check 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'site 0.0 effect=%s rc=%s\n' "$_e" "$_rc"
+# site 1.0: package:curl#installed
+package_installed__check 'curl'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'site 1.0 effect=%s rc=%s\n' "$_e" "$_rc"
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+# inline21-wrapper-converged-elides (arch-2, brk-2 — the payoff; the 207 wrapper-pun shape):
+# a one-line wrapper function defined once, called twice (`apt_install nginx`/`apt_install curl`).
+# Each call INLINES — the body (`apt-get install -y "$1" >/dev/null 2>&1`) is spliced, its `$1`
+# bound to the call's operand (nginx / curl), and the install is an EstablishMembers-like body
+# sub-record OF THE CALL (`site 0.0` / `site 1.0`). BOTH packages are already installed
+# (converged), so the all-or-nothing CALL license substitutes EACH call to `true` — run-set
+# EMPTY. The body redirects to /dev/null (the tc-M2 devnull-exemption: a `>/dev/null` body
+# write does NOT refuse the inline; a write to a real file would). This is the arch-2 payoff:
+# the wrapper idiom real books and oracle libraries use, which used to kill every elision below.
+apt_install() { apt-get install -y "$1" >/dev/null 2>&1; }
+true   # dorc: elided [apt_install nginx] (already converged / dead branch)
+true   # dorc: elided [apt_install curl] (already converged / dead branch)

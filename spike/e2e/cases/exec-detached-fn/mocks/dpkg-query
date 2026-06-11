@@ -1,0 +1,7 @@
+#!/bin/sh
+# INERT probe shim (gate-1 parity): the `package` kind probes `dpkg-query -W <pkg>`.
+# arch-2: this is the SPLICED inline body's establish probe (`site 0.0`). nginx is NOT
+# installed here (diverged) ⇒ rc 1 (absent), matching probe-results.txt ⇒ the inlined call
+# `prov` runs the real body.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 1

@@ -1,0 +1,5 @@
+# probe-results: the body install ships `site 0.0` (probed regardless of the apply-side
+# license — `inv-superposition`), but the call runs anyway (the recursion-Opaque body site
+# blocks the all-or-nothing license). The curl is `site:1 skip-unresolvable` (poisoned ⇒
+# unresolvable ⇒ runs). A `holds` here does NOT make the call elide (the Opaque body wins).
+site 0.0 effect=holds

@@ -13,4 +13,4 @@ package_installed__check 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; el
 # dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
 
 for x in a b; do echo "$x"
-done; true   # dorc: elided (already converged / dead branch) — substituted in situ (shares line with scaffolding)
+done; true   # dorc: elided [apt-get install -y nginx] (already converged / dead branch)

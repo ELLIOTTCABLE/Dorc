@@ -166,10 +166,24 @@ fn run() -> Result<(), String> {
             .unwrap_or(Observable::verdict_only(Verdict::Unknown))
     });
 
+    // q-2 (`dq-site-unresolvable`, the cli-edge readout): a `skip-unresolvable` comment lands
+    // in the probe artifact, but nothing reached stderr (`219` q-1.f silent-3). Disclose each
+    // probe-unresolvable site's source command as a Note — the apply runs it (`kFAIL-perform`).
+    report(
+        "probe",
+        &unresolvable_diagnostics(&probe, &plan, &parsed.value, &book_src),
+    );
+
     // gate-5 (cm-2 argv-echo differential): per-site resolved argv to stderr, behind the flag.
     if args.debug_argv {
         emit_debug_argv(&plan, &cfg.value, &value, &interner);
     }
+
+    // arch-1 d-6: the leaf-exact render refuses to elide a leaf whose span can't be safely
+    // edited (a heredoc-bearing command — its span covers `<<EOF`, not the body), running it
+    // verbatim instead (kFAIL-perform). Surface WHY on stderr (else a converged mutator
+    // silently running is invisible); the gate-3 floor requires the case to declare it.
+    report("render", &plan.render_refusal_diagnostics(&parsed.value));
 
     print!("{}", plan.render_apply(&book_src, &parsed.value));
     Ok(())
@@ -223,6 +237,41 @@ fn emit_debug_argv(
             words.join(" ")
         );
     }
+}
+
+/// q-2 (`dq-site-unresolvable`): one Note per probe-unresolvable site, naming its source
+/// command text. The cli-edge readout of [`dorc_plan::ProbePlan::unresolvable`] — a
+/// `skip-unresolvable` comment lands in the probe artifact, but nothing reaches stderr today
+/// (`219` q-1.f silent-3). Mirrors the `report()`/`emit_debug_argv` plumbing: the
+/// `unresolvable` [`LeafId`]s share the apply plan's span-sorted site space
+/// (`inv-site-keyed-results`), so each maps to a [`dorc_plan::Step`]'s `ast`, whose span
+/// resolves to the book's source text. A site with no matching step (none expected — every
+/// unresolvable site is a runnable command leaf) is named by its bare id.
+fn unresolvable_diagnostics(
+    probe: &dorc_plan::ProbePlan,
+    plan: &dorc_plan::Plan,
+    ast: &dorc_syntax::ast::Ast,
+    book_src: &str,
+) -> Vec<dorc_core::Diagnostic> {
+    let ast_of_leaf: BTreeMap<dorc_plan::LeafId, dorc_core::AstId> =
+        plan.steps.iter().map(|s| (s.leaf, s.ast)).collect();
+    probe
+        .unresolvable
+        .iter()
+        .map(|&leaf| {
+            let (span, source) =
+                ast_of_leaf
+                    .get(&leaf)
+                    .map_or((None, format!("<site {}>", leaf.0)), |&id| {
+                        let span = ast.node(id).span;
+                        let text = book_src
+                            .get(span.lo.0 as usize..span.hi.0 as usize)
+                            .unwrap_or("<source unavailable>");
+                        (Some(span), text.to_string())
+                    });
+            dorc_core::diag::site_unresolvable(span, &leaf.0.to_string(), &source)
+        })
+        .collect()
 }
 
 /// The gate-5 disposition tag for a [`dorc_plan::Disposition`] — `run`/`replace`/`omit`.
@@ -793,6 +842,43 @@ mod tests {
             obs.status,
             Predicted::Top,
             "disagreeing same-cell Query rcs degrade Status to ⊤ (no fold off a contradiction)"
+        );
+    }
+
+    #[test]
+    fn unresolvable_diagnostics_name_the_source_command() {
+        // q-2 (`dq-site-unresolvable`, the cli-edge readout): a probe-unresolvable site is
+        // disclosed on stderr naming its SOURCE command text (`219` q-1.f silent-3 closed). An
+        // un-oracled command (`make install`) is Opaque ⇒ unresolvable ⇒ the apply runs it; the
+        // Note must carry its source. Drives the full pipeline (parse → classify → compile_probe
+        // → build_plan) so the LeafId→source mapping is the real one.
+        let mut interner = Interner::default();
+        let book = "make install\n";
+        let parsed = dorc_syntax::parse(book);
+        let cfg = dorc_analysis::cfg::build(&parsed.value);
+        let value = dorc_analysis::value::analyze(&cfg.value, &parsed.value, &mut interner);
+        let idx = dorc_oracle::KindIndex::default();
+        let classified =
+            dorc_analysis::effect::classify(&cfg.value, &value, &idx, &[], &mut interner);
+        let classes = classified.value;
+        let probe = dorc_plan::compile_probe(&parsed.value, &cfg.value, &classes, |_, _| None);
+        let plan = dorc_plan::build_plan(book, &parsed.value, &cfg.value, &classes, |_| {
+            Observable::verdict_only(Verdict::Unknown)
+        });
+        let diags = unresolvable_diagnostics(&probe, &plan, &parsed.value, book);
+        assert!(
+            diags.iter().any(|d| d.code.0 == "dq-site-unresolvable"),
+            "an Opaque site must be disclosed unresolvable: {diags:?}"
+        );
+        assert!(
+            diags
+                .iter()
+                .any(|d| d.code.0 == "dq-site-unresolvable" && d.message.contains("make install")),
+            "the disclosure must name the source command: {diags:?}"
+        );
+        assert!(
+            diags.iter().all(|d| d.severity == Severity::Note),
+            "the readout is Note-severity (never trips gate-3): {diags:?}"
         );
     }
 }

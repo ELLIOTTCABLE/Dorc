@@ -1,0 +1,4 @@
+# probe-results: site 0 is the install `apt-get install -y nginx` (an EstablishAmbient); holds
+# ⇒ converged ⇒ the disposition layer LICENSES a Replace. But the leaf carries a heredoc, so
+# the leaf-exact render REFUSES the edit (d-6) ⇒ it runs verbatim regardless of convergence.
+site 0 effect=holds

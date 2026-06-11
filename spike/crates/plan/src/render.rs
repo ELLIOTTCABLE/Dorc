@@ -211,13 +211,15 @@ pub mod probe {
 // Apply-artifact emitters (`Plan::render_sh` flat + `Plan::render_apply` line)
 // ===========================================================================
 
-/// Apply-artifact emitters: the two apply-phase renders' bytes. `render_sh` is the
-/// FLAT leaf-list (per-leaf provenance, throws away guards — not runnable); `render_apply`
-/// is the LINE-granular book-faithful rewrite (keeps control flow, runnable). Assembly
-/// only — the methods decide which leaf/line is run/replaced/omitted; these emit one
-/// decided piece. The two renders' headers differ on purpose (they are different
-/// artifacts), preserved as named variants below (see module-level note on
-/// same-construct-different-assembly).
+/// Apply-artifact emitters: the two apply-phase renders' bytes. `render_sh` is the FLAT
+/// leaf-list (per-leaf provenance, throws away guards — not runnable); `render_apply` is the
+/// LEAF-EXACT (span-based) book-faithful rewrite (arch-1, note 214: keeps control flow,
+/// runnable, substitutes each elided leaf's exact byte-span in-situ). Assembly only — the
+/// methods decide which leaf is run/replaced/omitted and compute the span edits; these emit
+/// one decided piece. The two headers differ on purpose (different artifacts), preserved as
+/// named variants below. The span render's byte-splicing lives in the method (`render_apply`)
+/// because it needs the source bytes + edit set; this module owns the lone provenance comment
+/// ([`provenance_comment`]) the span edit appends.
 pub mod apply {
     use super::{StandIn, standin_sh};
 
@@ -270,91 +272,45 @@ pub mod apply {
         )
     }
 
-    /// LINE-granular **in-situ** substitution for a one-liner `case`-arm body
-    /// (`pat) <stand-in> ;;   # …`): keep the `pat)` prefix + ` ;;` suffix, replace ONLY
-    /// the command's byte-span with its value-preserving stand-in (the T14 fix, `20G`
-    /// item-4 / `notes/199` cluster-C).
+    /// The trailing provenance comment for a rendered line that carries ≥1 leaf-exact span
+    /// edit (arch-1, note 214 — the ONE provenance emitter the span render appends). It
+    /// discloses each replaced command's ORIGINAL text (the whole-line-comment form the
+    /// span render retired carried the original; the new form must not lose that — `20V` §4
+    /// d-3), so the human still sees what was elided.
     ///
-    /// GUARANTEE: dash-n-clean **iff** `prefix`/`suffix` are the verbatim line bytes
-    /// bracketing the command span (the caller slices them from `line_start`), because
-    /// then the arm keeps its `pat)`/`;;` scaffolding intact (`nginx) true ;;`) — the
-    /// empty-clause `dash -n` error that whole-line commenting an arm body would cause is
-    /// what this path exists to avoid. The trailing comment after `;;` is a valid arm
-    /// end. Caller-precondition: the leaf was detected by `case_arm_oneliner_leaves`
-    /// (AST-structural, DIRECT arm-body items only). Pinned by `render-case-arm-oneliner`
-    /// (e2e, exec-gated) + `render_one_liner_case_arm_body_substitutes_in_situ_…`.
+    /// GUARANTEE: dash-n-clean ONLY when appended at a comment-safe line end — a `#` begins
+    /// a comment to end-of-line, valid after any complete command. The CALLER is responsible
+    /// for the safety precondition (`20V` §4 d-3 SAFETY RULE): it must NOT append this on a
+    /// line whose post-edit content involves a heredoc operator, a backslash-continuation,
+    /// or any shape where a trailing `#` is not a comment boundary — there it DROPS the
+    /// comment (artifact correctness over provenance prose; the OOB verdict lane still
+    /// carries the disclosure). `originals` is the list of replaced commands' source text in
+    /// left-to-right line order. Returns the bare ` # dorc: …` suffix (no newline) to splice
+    /// onto the already-built edited line.
     #[must_use]
-    pub fn inline_arm_subst(prefix: &str, stand_in: StandIn, suffix: &str) -> String {
-        let mut out =
-            String::with_capacity(prefix.len().saturating_add(suffix.len()).saturating_add(64));
-        out.push_str(prefix);
-        out.push_str(&standin_sh(stand_in));
-        out.push_str(suffix);
-        out.push_str("   # dorc: elided (already converged) — case-arm body substituted in situ\n");
-        out
-    }
-
-    /// LINE-granular **in-situ** substitution for one or more `Replace`/`Omit` leaves
-    /// that share their source line with a loop/`if`/`case` **scaffolding keyword**
-    /// (`done`/`fi`/`esac`/`for`/`while`/`if`/`then`/`else`/`elif`/`do`) — the task-F2
-    /// generalisation of [`inline_arm_subst`] (20O find-2). Each `(start, end, filler)`
-    /// replaces that in-line byte span with `filler` (the leaf's value-preserving
-    /// stand-in, or `:` for a dead `Omit`); every other byte — crucially the keyword — is
-    /// kept verbatim.
-    ///
-    /// GUARANTEE: dash-n-clean **iff** the spans are the in-line byte ranges of the
-    /// line's elidable leaves (the caller slices them via `line_start`) and the bytes
-    /// OUTSIDE the spans are valid sh (here, the scaffolding keyword the book wrote). This
-    /// is the whole point: whole-line commenting `done; install` yields
-    /// `# done; install` ⇒ the `done` is gone ⇒ `for…do…` has no terminator ⇒ a
-    /// `dash -n` "expecting done" error ⇒ the apply aborts MID-RUN on the host (violating
-    /// fail-before-network). Splicing only the leaf span (`done; true`) keeps the keyword.
-    /// Spans are applied **right-to-left** (highest `start` first) so an earlier span's
-    /// offsets are unperturbed by a later splice. Caller-precondition: every span is on a
-    /// single line (a multi-line leaf is refused upstream and run verbatim — the
-    /// kFAIL-perform fallback). Pinned by `post-loop-shared-done-line` /
-    /// `pre-loop-shared-for-line` / `fi-shared-line` (e2e, exec-gated) + the
-    /// `render_*_shared_*` unit tests.
-    #[must_use]
-    pub fn inline_scaffold_subst(line: &str, subs: &[(usize, usize, String)]) -> String {
-        let mut spliced = line.to_string();
-        // Right-to-left: replacing a later span first leaves earlier byte offsets valid.
-        let mut ordered: Vec<&(usize, usize, String)> = subs.iter().collect();
-        ordered.sort_by_key(|s| core::cmp::Reverse(s.0));
-        for (start, end, filler) in ordered {
-            let lo = (*start).min(spliced.len());
-            let hi = (*end).min(spliced.len()).max(lo);
-            spliced.replace_range(lo..hi, filler);
+    pub fn provenance_comment(originals: &[String]) -> String {
+        // The disclosure: each original command's text, `;`-joined inside `[…]` (a single
+        // line, so multi-command lines read as one bracketed list). An empty `originals`
+        // (an Omit-only line whose dead command we substituted with `:`) still discloses the
+        // dead command, so this is never called with an empty slice in practice; guard it
+        // anyway (a bare marker, no brackets).
+        if originals.is_empty() {
+            return "   # dorc: elided (already converged / dead branch)".to_string();
         }
-        let mut out = String::with_capacity(spliced.len().saturating_add(64));
-        out.push_str(&spliced);
-        out.push_str("   # dorc: elided (already converged / dead branch) — substituted in situ (shares line with scaffolding)\n");
-        out
-    }
-
-    /// LINE-granular **whole-line** neutralisation: comment the original command, then
-    /// emit its value-preserving stand-in (`filler`) at the original indent.
-    ///
-    /// GUARANTEE: dash-n-clean for an ordinary one-command line — the original becomes a
-    /// `#`-comment and the `filler` (a [`standin_sh`] string, or `:` for a wholly-dead
-    /// `Omit`-only line) is a valid command at the line's position. This is the
-    /// `an-render-runnable` rule: a comment *alone* would delete the command and leave an
-    /// empty clause if it were the lone body of a guard — the stand-in (valid in every
-    /// context a command was) prevents that. It does NOT cover an `if`/`then`/`fi` guard
-    /// line (the `StatusRenderFloor`, blocked upstream in `prove_replaceable`) nor a
-    /// one-liner case arm (routed to [`inline_arm_subst`] instead). `indent` is the
-    /// leading whitespace of the original line, preserved so the filler sits where the
-    /// command did. Pinned by `render-multileaf-line-all-elide` + the `exec-*` cases.
-    #[must_use]
-    pub fn commented_line(line: &str, indent: &str, filler: &str) -> String {
-        let mut out =
-            String::with_capacity(line.len().saturating_add(indent.len()).saturating_add(64));
-        out.push_str("# ");
-        out.push_str(line.trim_start());
-        out.push_str("   # dorc: elided (already converged / dead branch)\n");
-        out.push_str(indent);
-        out.push_str(filler);
-        out.push('\n');
-        out
+        // A `#` comment runs to the next NEWLINE, so a multi-line original's embedded `\n`
+        // would split the comment — the second line becoming a stray (possibly
+        // unterminated-quote) command. Flatten interior newlines to a single space so the
+        // disclosure stays ONE comment line and dash-n-clean (the comment is provenance
+        // prose; collapsing its whitespace loses nothing load-bearing). The CALLER's
+        // comment-safety check (`comment_safe`) guards the rendered-line shape; this guards
+        // the injected original.
+        let flat: Vec<String> = originals
+            .iter()
+            .map(|o| o.split_whitespace().collect::<Vec<_>>().join(" "))
+            .collect();
+        format!(
+            "   # dorc: elided [{}] (already converged / dead branch)",
+            flat.join("; "),
+        )
     }
 }

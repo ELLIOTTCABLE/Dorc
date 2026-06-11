@@ -1,0 +1,4 @@
+# probe-results: site 1 is the `dpkg -s nginx` pkgstate Query guard; absent ⇒ rc 1. The
+# fold reads rc=1 ⇒ the `|| { … }` block is REACHABLE ⇒ both block commands run. The
+# guard's Query rc is fold-usable (it substitutes to `false`); the block stays live.
+site 1 effect=absent rc=1

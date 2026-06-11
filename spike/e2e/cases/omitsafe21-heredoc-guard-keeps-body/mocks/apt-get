@@ -1,0 +1,6 @@
+#!/bin/sh
+# INERT shim for `apt-get` — the fold-dead install KEPT VERBATIM behind the refused
+# heredoc guard. On this (agreeing) host the live guard exits 0, so the `||` never fires:
+# it must NOT appear in the run-set. It logs only if it (wrongly) runs.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0

@@ -10,6 +10,66 @@
 # Usage:  sh run.sh                 # auto-locates target/{debug,release}/dorc[.exe]
 #         DORC=/path/to/dorc sh run.sh
 #         BLESS=1 sh run.sh         # regenerate every expected.out from current output
+#
+# PER-CASE MARKER FILES (the marker idiom — opt-in behaviour spelled by a file's PRESENCE,
+# the value, where one exists, carried in the filename so no parsing is needed):
+#   RAN_ORDER=lax          — compare the apply run-set order-INsensitively (concurrent
+#                            pipeline stages log nondeterministically; tc-pipe-ran-order).
+#   PROBE_RESULTS=authored — disable gate-1 probe parity + vouch-closure for this case (its
+#                            probe cannot be faithfully mock-executed yet; (a) still holds).
+#                            ALSO excludes the case from gate-6 (authored-divergence).
+#   EXIT_RC=<n>            — assert the APPLY artifact exits exactly <n> (default 0); for a
+#                            faithful nonzero-exit artifact (`set -e; guard && {dead}` exits
+#                            1). Governs the apply exec only; bless never creates it.
+#   DUAL_RAIL=inlined      — exclude the case from gate-6 (cm-1 dual-rail): a function-inlined/
+#                            wrapper-pun case whose `--debug-argv` ledger is the call-site
+#                            surface argv, not the inlined-body argv the bare run logs
+#                            (arch-2; tc-gate6-inlining). gate-5 + exec gates still apply.
+#   DUAL_RAIL=multiline-argv — exclude from gate-6: a literal-NEWLINE-arg case where
+#                            `--debug-argv` shows only the arg's first line but the slice-4 bare
+#                            log encodes the whole arg (`… multi\nline`); the ledger and bare
+#                            argv representations can't match (tc-gate6-multiline-argv).
+#   XFAIL                  — documented known-defect pin (its 1st line is the reason); the
+#                            case asserts the SAFE behaviour and is expected to fail at HEAD.
+#
+# DETERMINISM RAIL (slice-2 / 221 dc-1) — the three artifact-execution sites (exec_check,
+# probe_exec_check, gate-5's bare-book run) run the artifact under a FIXED environment:
+# `env -i PATH=<mocks-only> DORC_LOG=<abs> LC_ALL=C TZ=UTC <checker> …`, with `umask 022`
+# set in the execution subshell first. So the artifact sees ONLY those four vars + that
+# umask — an ambient LANG/LC_*/TZ/umask can no longer perturb a render's exec trace. `env`
+# is found via the harness's own PATH; only the ARTIFACT's PATH is mocks-only. (The existing
+# `sort` calls keep their `LC_ALL=C`.) `env -i` is verified portable under msys/dash here.
+#
+# WHAT IS DELIBERATELY NOT PINNED (the honest residual — these can still vary run-to-run; a
+# case that depends on any of them is non-hermetic and out of this harness's contract):
+#   - filesystem state: the sandbox is a fresh `mktemp -d`, but the broader fs (existence of
+#     /etc, /tmp, device nodes, the mocks dir's own inode) is the ambient host's.
+#   - mktemp PATHS: `$_log` / `$_sand` names embed a random/PID component (different each run);
+#     never assert on them. They are passed in, not discovered by the artifact.
+#   - the checker binary's IDENTITY/VERSION: whichever `dash`/`sh` `command -v` found first,
+#     at whatever version the host ships — its parser/builtin quirks are not pinned.
+#   - kernel / OS / msys-vs-real-POSIX: syscall and tool behaviour differences are ambient.
+#   - hostname / uid / cwd-of-record leakage VIA THE ARTIFACT'S OWN READS: a render that runs
+#     `hostname`/`id`/`pwd` (none in the corpus today) would read the real host; `env -i`
+#     scrubs the ENVIRONMENT, not these syscalls. PWD inside the sandbox is the mktemp dir.
+#   - wall-clock / RNG reached by a shim that calls `date`/`$RANDOM` (the shims don't).
+# The kernel-level DST guarantee lives in the Rust `hostsim` seam (21D); this rail only fixes
+# the SHELL-EXEC environment of the e2e corpus, not those deeper axes.
+#
+# MOCK-LOG PROTOCOL (slice-4) — every inert mock shim logs its invocation by sourcing a shared
+# per-mocks-dir dot-helper (`mocks/.log`, a DOTFILE so the `ls`-derived shimset never lists it)
+# via `. "${0%/*}/.log"; _dorc_logged "$@"`, instead of the old inline
+# `printf 'ran: %s %s\n' "${0##*/}" "$*"`. WHY: an argument containing a NEWLINE would split the
+# old single `ran:` line and silently corrupt every line-based compare (exec_check, gate-5,
+# gate-6). Shims run under PATH=mocks-only ⇒ BUILTINS ONLY, so the helper encodes in pure sh.
+# GRAMMAR (what expected.ran goldens carry): one `ran: <name> <arg>…` line per invocation, args
+# space-joined; each arg is encoded — a literal backslash → `\\`, an embedded newline → the two
+# chars `\n`. Passes run backslash-FIRST so a newline's encoded `\n` is not re-doubled. A
+# newline-free, backslash-free argv encodes to itself, and per-arg space-join reproduces the old
+# `"$*"` join byte-for-byte ⇒ ZERO golden churn (no current golden embeds a newline). gate-5's
+# `grep -qxF` and gate-6's judge operate on the encoded lines unchanged. (Two NON-logging mocks
+# files are exempt and untouched: a `grep` probe that does a real substring match, and a sourced
+# `helper.sh` no-op — neither emits a `ran:` line.)
 set -eu
 
 here=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
@@ -55,6 +115,14 @@ if ! command -v awk >/dev/null 2>&1; then
   echo "no awk for the gate-2 redirection-sandbox scan — cannot validate exec safety" >&2
   exit 2
 fi
+# determinism rail (slice-2, 221 dc-1): the three artifact-execution sites run the artifact
+# under `env -i` (a scrubbed environment). Require `env` explicitly — a missing one would
+# otherwise drop the determinism pin silently. (`env -i` verified portable under msys/dash on
+# this machine; if a future host fights it, an explicit `unset`-based fallback is acceptable.)
+if ! command -v env >/dev/null 2>&1; then
+  echo "no env for the determinism rail (env -i scrubbed-environment exec) — cannot pin the artifact env" >&2
+  exit 2
+fi
 redir_scan="$here/scan_redirects.awk"
 if [ ! -f "$redir_scan" ]; then
   echo "gate-2 scanner missing: $redir_scan" >&2
@@ -68,6 +136,32 @@ if [ ! -f "$parity_norm" ]; then
   echo "gate-1 parity normalizer missing: $parity_norm" >&2
   exit 2
 fi
+
+# Shared sandbox+mocks execution (slice-3 — gate-5's bare-book run and dual_rail's two rails
+# all need a run-set, so the sandbox/env-i/umask machinery lives here ONCE instead of being
+# copied per gate). Run a payload under the determinism rail (umask 022 + `env -i` fixed env,
+# slice-2) with PATH = the case's mocks ($3, absolute) and DORC_LOG → a fresh temp, then echo
+# the shims' logged argvs (the `ran: ` prefix stripped), one per line, in execution order.
+#   $1 = mode: `file` (payload is a script PATH) or `stdin` (payload is artifact TEXT on stdin)
+#   $2 = payload (a book path, or the artifact text)
+#   $3 = absolute mocks dir
+# A nonzero payload exit is tolerated (`|| true`) — a faithful book/artifact may exit nonzero
+# (slice-1 EXIT_RC); we want its TRACE, not its rc. NB exec_check keeps its OWN run (it must
+# capture the rc to assert EXIT_RC); this helper is for the trace-only consumers.
+capture_run() {
+  _mode=$1; _payload=$2; _cmocks=$3
+  _crlog=$(mktemp); _crsand=$(mktemp -d)
+  if [ "$_mode" = file ]; then
+    ( cd -- "$_crsand" && umask 022 && env -i PATH="$_cmocks" DORC_LOG="$_crlog" LC_ALL=C TZ=UTC "$checker_abs" "$_payload" ) >/dev/null 2>&1 || true
+  else
+    ( cd -- "$_crsand" && umask 022 && env -i PATH="$_cmocks" DORC_LOG="$_crlog" LC_ALL=C TZ=UTC "$checker_abs" >/dev/null 2>&1 <<EOF
+$_payload
+EOF
+    ) || true
+  fi
+  sed 's/^ran: //' "$_crlog" 2>/dev/null || true
+  rm -rf "$_crsand"; rm -f "$_crlog"
+}
 
 # Syntax-check one artifact ($2) labelled ($1 = "probe"/"apply") for case ($3).
 # Returns non-zero and prints the shell's diagnostic if the artifact does not parse.
@@ -127,9 +221,46 @@ scan_redirect_safety() {
 # under sequential sh, and sorting would discard the welded book-order assertion ("the
 # book's order is sacred"). SAFETY: PATH is the mocks dir alone; an un-shimmed external
 # command ⇒ `command not found` ⇒ a loud failure (never a real system mutation).
+#
+# EXPECTED-EXIT (tc-exec-nonzero-exit, 215 §3 strain-and-exit): by default the APPLY
+# artifact must exit 0 — a nonzero exit is "errored when run". But a FAITHFUL artifact can
+# legitimately exit nonzero: `set -e; guard && { … }` with a failing guard short-circuits
+# the `&&` and the AND-OR list's rc is the failed left's (dash: `set -e; false && {…}`
+# exits 1, does NOT abort). The bare book exits the same, so the artifact is correct — the
+# old gate FALSE-failed it (door1-and-form had to be analysis-only). A case asserts its
+# expected exit with a per-case marker FILE `EXIT_RC=<n>` (the marker idiom — the value
+# lives in the filename, like RAN_ORDER=lax). Present ⇒ assert rc == n EXACTLY (equality,
+# not tolerance: a 0 exit when n≠0 is ALSO a failure — the artifact stopped reproducing the
+# faithful nonzero rc). Absent ⇒ rc == 0 as before. Governs the APPLY exec ONLY; the probe
+# is never expected nonzero (probe_exec_check is unchanged). BLESS never creates/consults
+# the marker (an expected-exit is a hand-derived assertion, not blessable output).
 exec_check() {
   _label=$1; _art=$2; _case=$3; _dir=$4
   scan_redirect_safety "$_label" "$_art" "$_case" || return 1
+
+  # Resolve the EXIT_RC=<n> marker (default 0). Glob it; refuse >1 marker loudly (an
+  # ambiguous expected-exit is an authoring error, not a silently-picked one).
+  _exp_rc=0
+  _marker_count=0
+  for _m in "${_dir}"EXIT_RC=*; do
+    [ -e "$_m" ] || continue       # glob with no match yields the literal pattern
+    _marker_count=$((_marker_count + 1))
+    _exp_rc=${_m##*EXIT_RC=}
+  done
+  if [ "$_marker_count" -gt 1 ]; then
+    if [ "${XFAIL_ACTIVE:-}" != "1" ]; then
+      echo "FAIL  $_case  [ap-2-exec: multiple EXIT_RC=<n> markers — exactly one expected-exit is permitted]"
+    fi
+    return 1
+  fi
+  case $_exp_rc in
+    ''|*[!0-9]*)
+      if [ "${XFAIL_ACTIVE:-}" != "1" ]; then
+        echo "FAIL  $_case  [ap-2-exec: EXIT_RC marker value '$_exp_rc' is not a non-negative integer]"
+      fi
+      return 1 ;;
+  esac
+
   _log=$(mktemp)
   _sand=$(mktemp -d)
   # Absolute mocks dir: PATH is about to become *only* this dir, so a relative path
@@ -137,12 +268,22 @@ exec_check() {
   _mocks=$(CDPATH= cd -- "${_dir}mocks" && pwd)
   # Execute in a subshell cd'd into the sandbox (gate-2): a bare relative redirect lands
   # under $_sand, not the repo. $_log + $checker_abs are absolute, unaffected by the cd.
-  if ! _run_err=$( cd -- "$_sand" && DORC_LOG="$_log" PATH="$_mocks" "$checker_abs" 2>&1 <<EOF
+  # DETERMINISM RAIL (slice-2, 221 dc-1): `env -i` scrubs the ambient environment so the
+  # artifact runs under a FIXED env (only PATH=mocks, DORC_LOG, LC_ALL=C, TZ=UTC) — an
+  # ambient LANG/LC_*/TZ can no longer perturb a locale-sensitive command's output. `env`
+  # itself is found via the harness's own PATH (this subshell still has it); only the
+  # ARTIFACT's PATH is mocks-only. `umask 022` is set before exec (umask is a process
+  # attribute, inherited THROUGH `env -i` — verified on this msys box) so file-creation mode
+  # is fixed. The artifact's real exit status is captured (not collapsed by `if !`) so
+  # EXIT_RC can assert it exactly.
+  _run_rc=0
+  _run_err=$( cd -- "$_sand" && umask 022 && env -i PATH="$_mocks" DORC_LOG="$_log" LC_ALL=C TZ=UTC "$checker_abs" 2>&1 <<EOF
 $_art
 EOF
-  ); then
+  ) || _run_rc=$?
+  if [ "$_run_rc" -ne "$_exp_rc" ]; then
     if [ "${XFAIL_ACTIVE:-}" != "1" ]; then
-      echo "FAIL  $_case  [ap-2-exec: rendered $_label errored when run under mocks]"
+      echo "FAIL  $_case  [ap-2-exec: rendered $_label exited rc=$_run_rc, expected $_exp_rc]"
       printf '      %s\n' "$_run_err"
     fi
     rm -rf "$_sand"; rm -f "$_log"
@@ -235,7 +376,9 @@ probe_exec_check() {
   # Execute the probe (sandbox cwd + mocks PATH + DORC_LOG). Its stdout is the records;
   # its own stderr/the shim log are not asserted here (the probe is read-only — we assert
   # the records it returns, not what it touched, beyond the no-127 vouch check below).
-  _recs=$( cd -- "$_sand" && DORC_LOG="$_log" PATH="$_mocks" "$checker_abs" 2>/dev/null <<EOF
+  # DETERMINISM RAIL (slice-2, 221 dc-1): same fixed-env discipline as exec_check — `env -i`
+  # + `umask 022` so the probe's records cannot drift on an ambient locale/TZ/umask.
+  _recs=$( cd -- "$_sand" && umask 022 && env -i PATH="$_mocks" DORC_LOG="$_log" LC_ALL=C TZ=UTC "$checker_abs" 2>/dev/null <<EOF
 $_art
 EOF
   )
@@ -333,12 +476,11 @@ argv_echo_check() {
   # flag does not change the round-trip; we just read the extra stderr lines).
   _eng=$("$dorc" --debug-argv --book="${_dir}book.sh" "$@" < "${_dir}probe-results.txt" 2>&1 >/dev/null | grep '^argv ' || true)
   # Ground truth: run the BARE book under mocks + sandbox; collect the shims' logged argvs.
+  # Shared via capture_run (slice-3) — file mode, the determinism rail (env -i + umask, slice-2)
+  # lives in that helper now. dual_rail_check (rail-1) runs the identical bare-book capture.
   _mocks=$(CDPATH= cd -- "${_dir}mocks" && pwd)
   _book=$(CDPATH= cd -- "$_dir" && pwd)/book.sh
-  _log=$(mktemp); _sand=$(mktemp -d)
-  ( cd -- "$_sand" && DORC_LOG="$_log" PATH="$_mocks" "$checker_abs" "$_book" ) >/dev/null 2>&1 || true
-  _logged=$(sed 's/^ran: //' "$_log" 2>/dev/null || true)
-  rm -rf "$_sand"; rm -f "$_log"
+  _logged=$(capture_run file "$_book" "$_mocks")
   # Walk each engine argv line; assert the resolved+shimmed+RUN ones are in the log.
   _bad=""
   _oldifs=$IFS; IFS='
@@ -365,6 +507,178 @@ argv_echo_check() {
     printf '%s' "$_bad" | sed 's/^/      /'
   fi
   return 1
+}
+
+# gate-6 — the DUAL-RAIL corpus judge (cm-1, 20K §4's "the one gate that observes elided
+# sites"; the corpus-tier analogue of the hostsim differential, note 21D). gate-5 checks the
+# engine's RESOLUTION (argv ⊆ bare). This checks the engine's ELISION: that the apply's
+# run-set differs from the bare book's run-set ONLY by licensed elisions. Two rails:
+#   rail-1 (bare run-set): the BARE book under mocks (capture_run, shared with gate-5).
+#   rail-2 (apply run-set): the eliding-apply artifact under the SAME mocks (re-run here — the
+#     21D-sanctioned "else re-run"; cheap, and keeps this gate self-contained vs threading a
+#     global out of exec_check).
+# License ledger = the engine's OWN `replace`/`omit` dispositions (`--debug-argv`), the stabler
+# choice over artifact-comment parsing (21D §1). The judge is CONSERVATIVE + ONE-DIRECTIONAL
+# like gate-5 (the prompt's mandate):
+#   (i)  every apply `ran:` line MUST appear in the bare run — the apply never runs anything
+#        NEW. (door-4-era amends this — an apply could synthesize a re-probe; leave the comment.)
+#   (ii) every BARE line ABSENT from the apply MUST be license-attributable: it matches the
+#        resolved argv of a `replace`/`omit` site, with TOP as a position-wildcard (a converged
+#        loop is `replace … TOP`; the bare run has the concrete members — 21D find-5). Same
+#        builtin/shimset skip as gate-5 (a builtin never logs, so it can't be a delta anyway).
+# An omitted site absent from BOTH rails simply never enters the delta (the fold-short-circuit
+# subtlety, gate-5's carve-out, falls out of direction (ii)'s framing — a guarded `omit` the
+# bare book also short-circuits is just not in `bare`). Any unattributable delta ⇒ loud FAIL.
+#
+# WHAT THIS GATE DOES NOT DO (the honest non-coverage — exclusions + structural limits):
+#   - PROBE_RESULTS=authored cases are EXCLUDED: their mock-rc and authored probe-results diverge,
+#     so the bare control-flow and the apply's elision are driven by DIFFERENT convergence —
+#     bare-vs-apply divergence is then expected, not a license violation (would false-fail).
+#   - DUAL_RAIL=inlined cases are EXCLUDED (tc-gate6-inlining): under function inlining the
+#     engine's `--debug-argv` reports the CALL-site surface argv (`replace apt_install nginx`)
+#     while the bare run logs the inlined-BODY resolved argv (`apt-get install -y nginx`). The
+#     two argv spellings cannot match, so surface-argv attribution false-fails the wrapper-pun
+#     (arch-2 / note 216 inv-leaf-seam: the LeafId→AstId map is non-injective under inlining).
+#     The AUTHORITATIVE cm-1 (21D's hostsim differential) attributes these via the in-process
+#     API; the corpus tier cannot, so it declares them out of scope with the marker.
+#   - DUAL_RAIL=multiline-argv cases are EXCLUDED (tc-gate6-multiline-argv): a command with a
+#     literal-NEWLINE argument. `--debug-argv` renders only the arg's FIRST line (`… multi`),
+#     but the slice-4 mock-log protocol encodes the whole arg into one line (`… multi\nline`),
+#     so the ledger and bare argv cannot match. (Pre-slice-4 this false-PASSED by accident: the
+#     un-encoded newline split the bare log into two records, the first of which coincidentally
+#     equalled the truncated ledger line — a match that ignored the second line entirely. Slice-4
+#     removed that accident; the honest disposition is exclusion.)
+#   - TWO-DIRECTIONAL branch-divergence attribution + HOST-STATE variation are NOT done here —
+#     that is the hostsim differential's domain (21D). gate-6 judges ONE fixed host-state per
+#     case (the authored probe-results); it does not sweep host-states to catch a wildcard
+#     license masking a diverged loop member (21D's removed_line_is_converged cross-check).
+#     Consequence: a TOP-wildcard `replace … TOP` is honored for ANY concrete member here; a
+#     wrongly-whole-replaced loop with a diverged member would be caught by 21D, not gate-6.
+
+# dual_rail_judge — the PURE judge (no I/O, no case dir): given the rails + the RAW disposition
+# ledger as newline lists, echo every violation line (empty output ⇒ pass). Factored out so
+# dual_rail_selftest can drive it on FABRICATED inputs (a lying judge is worse than no judge —
+# the self-test proves it screams). $1=bare run-set, $2=apply run-set, $3=RAW `--debug-argv`
+# disposition lines (`argv <leafid> <disp> <words>`), $4=shimset (space-delimited+bracketed).
+# The license filter (replace/omit ONLY — `run` is NOT a license) lives HERE, not in the caller,
+# so cf-3 can feed a `run` line and prove the judge ignores it.
+dual_rail_judge() {
+  _jbare=$1; _japply=$2; _jdisp=$3; _jshims=$4
+  _viol=""
+  # The LICENSE LEDGER: resolved argvs of replace/omit sites only. A `run` disposition never
+  # enters here (cf-3's invariant). TOP is kept (wildcard-matched below).
+  _jledger=$(printf '%s\n' "$_jdisp" | sed -nE 's/^argv [0-9]+ (replace|omit) (.+)$/\2/p')
+  _oldifs=$IFS; IFS='
+'
+  # (i) apply ⊆ bare — the apply never runs anything NEW. (door-4-era amends this: an apply could
+  # synthesize a last-second re-probe with no bare counterpart; widen direction (i) then.)
+  for _al in $_japply; do
+    [ -z "$_al" ] && continue
+    printf '%s\n' "$_jbare" | grep -qxF "$_al" || _viol="${_viol}apply-only (ran in apply, not in bare): $_al
+"
+  done
+  # (ii) every bare-only line attributable to a replace/omit ledger entry (TOP-wildcard).
+  for _bl in $_jbare; do
+    [ -z "$_bl" ] && continue
+    printf '%s\n' "$_japply" | grep -qxF "$_bl" && continue   # in apply ⇒ not elided ⇒ not a delta
+    _bcmd0=${_bl%% *}
+    case "$_jshims" in *" $_bcmd0 "*) ;; *) continue ;; esac    # builtin/un-shimmed never logs
+    _ok=0
+    for _le in $_jledger; do
+      [ -z "$_le" ] && continue
+      if argv_words_match "$_le" "$_bl"; then _ok=1; break; fi
+    done
+    [ "$_ok" -eq 1 ] || _viol="${_viol}unattributable bare-only (elided with no replace/omit license): $_bl
+"
+  done
+  IFS=$_oldifs
+  printf '%s' "$_viol"
+}
+
+# argv_words_match: ledger entry ($1, may contain TOP) vs concrete line ($2), word-by-word,
+# TOP = single-word wildcard. Pure-builtin (no sed/awk). MUST restore the DEFAULT IFS (space/
+# tab/newline) for its word-splitting — its caller dual_rail_judge runs with IFS=newline to walk
+# run-set LINES, under which `set -- $argv` would NOT split on spaces (the whole argv would be
+# one "word", breaking the arity + per-word compare). Runs in a SUBSHELL so the `unset IFS` is
+# scoped (the caller's newline-IFS is untouched on return).
+argv_words_match() (
+  unset IFS
+  _aw_ledg=$1; _aw_conc=$2
+  set -- $_aw_ledg; _aw_ln=$#
+  set -- $_aw_conc; _aw_cn=$#
+  [ "$_aw_ln" -eq "$_aw_cn" ] || exit 1   # arity differs ⇒ no match (subshell: exit, not return)
+  # Lockstep walk: iterate the ledger words; for each, pop the next concrete word off $@.
+  set -- $_aw_conc
+  for _aw_lw in $_aw_ledg; do
+    _aw_cw=$1; shift
+    [ "$_aw_lw" = TOP ] || [ "$_aw_lw" = "$_aw_cw" ] || exit 1
+  done
+  exit 0
+)
+
+# dual_rail_check (gate-6 per-case driver): assemble the three rails + shimset, run the judge,
+# report. $1=case, $2=dir, $3=shimset; remaining $@ = the `-o oracle …` flags.
+dual_rail_check() {
+  _case=$1; _dir=$2; _shims=$3
+  shift 3
+  _mocks=$(CDPATH= cd -- "${_dir}mocks" && pwd)
+  # RAW disposition ledger: every `argv …` line (the judge filters to replace/omit itself).
+  _disp=$("$dorc" --debug-argv --book="${_dir}book.sh" "$@" < "${_dir}probe-results.txt" 2>&1 >/dev/null | grep '^argv ' || true)
+  # rail-1: bare book (shared capture_run, file mode).
+  _book=$(CDPATH= cd -- "$_dir" && pwd)/book.sh
+  _bare=$(capture_run file "$_book" "$_mocks")
+  # rail-2: the eliding-apply artifact (re-run; 2nd shebang block).
+  _apply_art=$("$dorc" --book="${_dir}book.sh" "$@" < "${_dir}probe-results.txt" 2>/dev/null \
+    | awk 'BEGIN{c=0} /^#!\/bin\/sh/{c++} c>=2{print}')
+  _apply=$(capture_run stdin "$_apply_art" "$_mocks")
+  _viol=$(dual_rail_judge "$_bare" "$_apply" "$_disp" "$_shims")
+  [ -z "$_viol" ] && return 0
+  if [ "${XFAIL_ACTIVE:-}" != "1" ]; then
+    echo "FAIL  $_case  [gate-6: apply/bare run-set delta not covered by the license ledger (cm-1 dual-rail)]"
+    printf '%s' "$_viol" | sed 's/^/      /'
+  fi
+  return 1
+}
+
+# dual_rail_selftest (the confound battery, run ONCE at harness start): drive dual_rail_judge
+# on FABRICATED fixtures proving it SCREAMS on the failure modes. A judge that passes a real
+# under-execute is worse than no judge, so a self-test failure ABORTS the harness (exit 3). The
+# fixtures are hand-built strings, not corpus cases (no engine, no mocks — pure judge logic).
+# The 3rd arg is RAW `argv <id> <disp> <words>` lines, exactly as the judge receives in-corpus.
+dual_rail_selftest() {
+  _st_shims=" instpkg systemctl "
+  _fails=""
+  # cf-1: an apply-only line (apply ran something absent from bare) ⇒ must scream (direction (i):
+  # the apply must never run anything the bare book didn't).
+  _r=$(dual_rail_judge "instpkg install nginx" "instpkg install nginx
+systemctl restart sshd" "argv 1 run instpkg install nginx" "$_st_shims")
+  case $_r in *apply-only*) ;; *) _fails="${_fails}cf-1 (apply-only line not caught)
+" ;; esac
+  # cf-2: an unattributable bare-only line — bare ran a shimmed cmd that the apply elided, with NO
+  # replace/omit license covering it ⇒ must scream (direction (ii): the under-execute disaster).
+  _r=$(dual_rail_judge "instpkg install nginx
+systemctl restart sshd" "instpkg install nginx" "argv 1 run instpkg install nginx" "$_st_shims")
+  case $_r in *unattributable*) ;; *) _fails="${_fails}cf-2 (unattributable bare-only not caught)
+" ;; esac
+  # cf-3: the bare-only line IS covered by a ledger entry, but that entry's disposition is `run`
+  # (NOT replace/omit) ⇒ must STILL scream. `run` is not a license — only replace/omit attribute.
+  # This is the load-bearing confound: it proves the judge's replace/omit filter actually fires
+  # (a judge that attributed via ANY disposition would wrongly pass this).
+  _r=$(dual_rail_judge "systemctl restart sshd" "" "argv 7 run systemctl restart sshd" "$_st_shims")
+  case $_r in *unattributable*) ;; *) _fails="${_fails}cf-3 (a `run`-disposition entry wrongly attributed an elided line)
+" ;; esac
+  # cf-PASS (negative control): a converged loop's TOP-wildcard `replace` ledger DOES license its
+  # concrete bare members ⇒ must NOT scream (proves the wildcard isn't vacuously failing — and
+  # that cf-1..3's screams are real discrimination, not a judge that rejects everything).
+  _r=$(dual_rail_judge "instpkg install nginx
+instpkg install curl" "" "argv 0 replace instpkg install TOP" "$_st_shims")
+  case $_r in "") ;; *) _fails="${_fails}cf-PASS (TOP-wildcard failed to license a converged member: $_r)
+" ;; esac
+  if [ -n "$_fails" ]; then
+    echo "FATAL  dual_rail_selftest FAILED — the cm-1 judge does not scream as required; aborting:" >&2
+    printf '%s' "$_fails" | sed 's/^/  /' >&2
+    exit 3
+  fi
 }
 
 # gate-3 (stderr-severity floor, 20B §2): dorc's stderr ($2 = the captured file) is the
@@ -397,6 +711,10 @@ scan_diagnostics() {
   fi
   return 1
 }
+
+# gate-6 self-test (the confound battery) runs ONCE here, before any case — a lying judge is
+# worse than no judge, so this aborts (exit 3) if the dual-rail judge fails to scream.
+dual_rail_selftest
 
 fails=0
 total=0
@@ -477,6 +795,20 @@ for dir in "$here"/cases/*/; do
     if [ "${BLESS:-}" != "1" ]; then
       _shimset=" $(cd "${dir}mocks" && ls | tr '\n' ' ')"
       argv_echo_check "$name" "$dir" "$_shimset" "$@" || case_ok=0
+      # gate-6 (cm-1 dual-rail): bare-vs-apply run-set delta ⊆ the replace/omit license ledger.
+      # EXCLUDES (a) PROBE_RESULTS=authored — its mock-rc and authored probe-results diverge, so a
+      # bare-vs-apply difference is expected; (b) DUAL_RAIL=inlined — a function-inlined/wrapper-
+      # pun case whose `--debug-argv` ledger reports the CALL-site surface argv (`apt_install
+      # nginx`) while the bare run logs the inlined-body resolved argv (`apt-get install -y
+      # nginx`); and (c) DUAL_RAIL=multiline-argv — a case with a literal-NEWLINE arg, where the
+      # engine's `--debug-argv` shows only the arg's FIRST line (`… multi`) while the slice-4 bare
+      # log encodes the whole arg (`… multi\nline`); the two representations cannot match. Both
+      # DUAL_RAIL values are ledger-vs-bare argv-representation mismatches gate-6's matching cannot
+      # reconcile (arch-2, note 216 inv-leaf-seam). See the gate-6 header. Not run under BLESS.
+      if [ ! -f "${dir}PROBE_RESULTS=authored" ] && [ ! -f "${dir}DUAL_RAIL=inlined" ] \
+         && [ ! -f "${dir}DUAL_RAIL=multiline-argv" ]; then
+        dual_rail_check "$name" "$dir" "$_shimset" "$@" || case_ok=0
+      fi
     fi
   fi
 
@@ -529,5 +861,5 @@ if [ "$fails" -ne 0 ]; then
 elif [ "${BLESS:-}" = "1" ]; then
   echo "blessed $total cases (all ap-2 gates passed)"
 else
-  echo "all $total e2e round-trips passed (ap-2 $checker -n + apply/probe exec gates, redirect sandbox, ordered run-set, stderr floor, argv-echo differential)"
+  echo "all $total e2e round-trips passed (ap-2 $checker -n + apply/probe exec gates, redirect sandbox, ordered run-set, stderr floor, argv-echo differential, dual-rail license judge)"
 fi

@@ -3,5 +3,5 @@
 # book calls the real name; under the harness's PATH=mocks-only this shim is the only
 # thing that runs, so executing a rendered apply is provably safe. `${0##*/}` (not
 # `basename`) reads the invoked name with no external command (PATH is mocks-only).
-printf 'ran: %s %s\n' "${0##*/}" "$*" >>"$DORC_LOG"
+. "${0%/*}/.log"; _dorc_logged "$@"
 exit 0

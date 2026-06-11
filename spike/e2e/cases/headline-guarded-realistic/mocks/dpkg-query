@@ -3,7 +3,7 @@
 # $1=-W, $2=the package name). The mock host has curl installed but NOT nginx/vim/htop, so
 # the shim branches on the operand to reproduce the fixture's per-package convergence
 # (site 5 curl=holds; sites 3/6/10 nginx/htop/vim=absent). Read-only; logs for symmetry.
-printf 'ran: %s %s\n' "${0##*/}" "$*" >>"$DORC_LOG"
+. "${0%/*}/.log"; _dorc_logged "$@"
 case $2 in
   curl) exit 0 ;;  # installed ⇒ holds (the converged install, runs anyway under set -e)
   *)    exit 1 ;;  # nginx/htop/vim not installed ⇒ absent

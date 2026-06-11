@@ -1,0 +1,8 @@
+# probe-results: site 1 is the OUTER `dpkg -s nginx` pkgstate Query guard; absent ⇒ rc 1 ⇒
+# the `|| { … }` block is LIVE (door-1 does NOT fold). site 2 is the INNER `apt-get install
+# curl` ESTABLISH probe (package:curl#installed); holds ⇒ converged (rc firewalled ⇒ omitted),
+# so the inner `apt-get install || true` mints a door-3 (StatusInvariant) elision ⇒ the install
+# is REPLACED by `true` inside the live block. (`set -e` is site 0; the inner `true` is site 3;
+# systemctl is site 4 — live.)
+site 1 effect=absent rc=1
+site 2 effect=holds

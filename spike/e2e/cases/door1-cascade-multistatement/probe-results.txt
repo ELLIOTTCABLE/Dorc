@@ -1,0 +1,4 @@
+# probe-results: site 1 is the `dpkg -s nginx` pkgstate Query guard; holds ⇒ rc 0 ⇒ the
+# `|| { … }` block (with its inner `if`) is DEAD ⇒ the whole nested region omits. sites
+# 0/2/3/4/5 are set -e / sed / the inner-if test / cp / systemctl (unresolvable or dead).
+site 1 effect=holds rc=0

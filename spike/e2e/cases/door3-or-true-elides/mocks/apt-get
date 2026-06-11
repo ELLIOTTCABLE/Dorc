@@ -1,0 +1,5 @@
+#!/bin/sh
+# INERT mock (ap-2 exec harness): logs that it ran, mutates NOTHING, exits 0. Present so a
+# REGRESSION (the install NOT being elided) is caught as a non-empty run-set, not a missing shim.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0

@@ -1,0 +1,8 @@
+Faithful nonzero exit (215 §3 strain-and-exit, tc-exec-nonzero-exit closed): this is a
+`set -e; dpkg -s nginx && { … }` book whose guard FAILS (nginx absent, rc 1). The `&&`
+short-circuits the dead block; the AND-OR list's rc is the failed left's, so the script
+exits 1 WITHOUT aborting (dash: `set -e; false && {…}` exits 1, prints no error). The bare
+book exits 1 identically, so the apply artifact (`false && { :; :; }`) is FAITHFUL. Without
+this marker the exec gate treats the nonzero exit as "errored when run" and false-fails;
+with it the gate asserts rc == 1 exactly and the empty run-set is exec-verified (was
+analysis-only before slice-1). The value lives in the filename; this text is documentation.

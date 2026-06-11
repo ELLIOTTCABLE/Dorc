@@ -1,0 +1,3 @@
+# probe-results: site-keyed records. site 1 is the install (package:nginx#installed);
+# absent ⇒ diverged ⇒ the install runs (Effect gates, regardless of door-3's Status clear).
+site 1 effect=absent

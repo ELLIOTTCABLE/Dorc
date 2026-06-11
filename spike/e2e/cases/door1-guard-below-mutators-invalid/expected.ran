@@ -1,0 +1,4 @@
+ran: apt-get install -y curl
+ran: dpkg -s nginx
+ran: sed -i s/^.*PermitRootLogin.*/PermitRootLogin no/ /etc/ssh/sshd_config
+ran: systemctl restart sshd

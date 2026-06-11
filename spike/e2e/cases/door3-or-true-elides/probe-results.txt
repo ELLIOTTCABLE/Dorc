@@ -1,0 +1,4 @@
+# probe-results: site 1 is the install (package:nginx#installed); holds ⇒ converged. door-3
+# applies (the rhs is bare `true`), so the install mints a license and is replaced — TARGET
+# run-set EMPTY. (XFAIL until the leaf-exact render can express the line collapse.)
+site 1 effect=holds

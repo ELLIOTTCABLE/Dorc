@@ -142,7 +142,11 @@ and where* (→ `Research/notes/20x-*.md`, append-only), not green tests.
   single-crate subagent.
 - **inv-leaf-seam** — executable work is a list of individually wrappable
   leaves with a stable `LeafId → AstId` back-map; never one opaque
-  `sh -c "$bigscript"`.
+  `sh -c "$bigscript"`. (arch-2 nuance, note 216: under function inlining the
+  map is non-injective AstId-ward — two call sites' spliced bodies share the
+  one definition's AstIds — while the Step-level map stays injective; body
+  sites are never render-edited (the CALL leaf is the render unit) and probe
+  records stay distinct via `site N.M` keying.)
 - **inv-one-observable** (`19F`/`19G`; do not let it re-fragment) — exactly ONE
   concept of a command's observable: its output-tuple over channels
   `{Effect, Status, Stdout, Stderr}` (extensible). The oracle `check()`
@@ -152,14 +156,27 @@ and where* (→ `Research/notes/20x-*.md`, append-only), not green tests.
   no-mutation. Convergence is the *derived* state of the Effect channel —
   never a separate probe-reported verdict. Do not re-introduce a standalone
   `Verdict`, a bolted `Observed{rc}`, or a consumption-only observable enum.
-  The *consumed* Status splits by **render-expressibility, not construct
-  identity** (`206` §3): `Channel::StatusRenderFloor` (the lone `if`/`elif`
-  guard — the line-granular render cannot substitute it in-situ, an
-  unconditional block retired only by a guard-capable leaf-exact render) vs
-  `Channel::StatusRelaxable` (the FOUR readers a KNOWN rc reproduces exactly —
-  `&&`/`||` operands, errexit-region commands, `$?`-readers' predecessors).
-  The retired `AndOrStatus` name implied construct-identity; four-vs-one
-  sources prove the axis is render capability.
+  The *consumed* Status splits THREE ways, each keyed on a real consumption
+  semantic (the older render-expressibility axis retired with the
+  line-granular render — arch-1, note 214; `StatusRenderFloor` is DELETED):
+  `Channel::StatusRelaxable` — a KNOWN rc reproduces the consumer's decision
+  (`&&`/`||` operands, errexit-region commands, `$?`-readers' predecessors,
+  and `if`/`elif` guards); a probe-sourced rc substitutes exactly, ⊤ blocks.
+  `Channel::StatusInvariant` (door-3, `20V` §4 / note 213) — the bare
+  `cmd || true` left operand: consumed-in-form, dead-in-fact (both
+  continuations rejoin with identical observables — list rc 0, `$?`=0,
+  errexit sees 0 either way); NEVER blocks, even at ⊤; still RECORDED in the
+  consumed set (disclosure sees the read); mark-union composes — any OTHER
+  blocking mark on the site wins. `Channel::StatusIterated` — a
+  `while`/`until` condition: the consumed value is a per-iteration SEQUENCE
+  no single rc can reproduce; blocks unconditionally (a constant-substituted
+  loop condition is the infinite-loop/zero-iteration disaster). Shortest
+  framing: Relaxable asks "can a known rc reproduce the consumer's
+  decision?"; Invariant asks "does the consumer decide anything observable
+  at all?"; Iterated asks "is the read once, or per-pass?". Render
+  capability is no longer a channel: a leaf the span render cannot safely
+  edit (a heredoc-carrying leaf — its span covers `<<EOF`, never the body)
+  REFUSES its license at render time with a loud diagnostic instead.
 - **inv-site-keyed-results** (round-20; default shape, 203 §1 + 205) — the
   probe-results lane is keyed by **command-site** (the stable LeafId→AstId
   back-map), not by fact, kind:entity, or check/command-family: a site-keyed

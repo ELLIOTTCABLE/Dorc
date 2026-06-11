@@ -3,7 +3,7 @@
 # AND as the firewall kind's probe (`ufw status`, piped to grep). On `status` it prints
 # the mock host's rule table (80/tcp present ⇒ the firewall probe finds it ⇒ `holds`,
 # fixture site 12); on any mutating verb it just logs. Read-only on `status`.
-printf 'ran: %s %s\n' "${0##*/}" "$*" >>"$DORC_LOG"
+. "${0%/*}/.log"; _dorc_logged "$@"
 if [ "$1" = "status" ]; then
   printf '%s\n' 'Status: active'
   printf '%s\n' 'To                         Action      From'

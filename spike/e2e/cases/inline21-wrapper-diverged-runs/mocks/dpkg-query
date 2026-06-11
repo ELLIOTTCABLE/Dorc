@@ -1,0 +1,9 @@
+#!/bin/sh
+# INERT probe shim (gate-1 parity): `package` probes `dpkg-query -W <pkg>` ($2=pkg). nginx IS
+# installed (rc 0 holds), curl is NOT (rc 1 absent) — matching probe-results.txt, so the
+# nginx call elides and the curl call runs.
+. "${0%/*}/.log"; _dorc_logged "$@"
+case "$2" in
+  curl) exit 1 ;;
+  *) exit 0 ;;
+esac

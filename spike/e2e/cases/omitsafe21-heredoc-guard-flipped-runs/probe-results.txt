@@ -1,0 +1,4 @@
+# probe-results (PROBE-TIME world): nginx installed ⇒ the guard's rc 0 folds the `||`
+# install dead (Omit). The MOCK host below is the APPLY-TIME world — nginx absent — so the
+# kept (render-refused, live) guard re-decides rc 1 and the verbatim install runs.
+site 1 effect=holds rc=0

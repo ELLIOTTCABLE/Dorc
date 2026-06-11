@@ -33,6 +33,8 @@ use std::collections::BTreeSet;
 use dorc_analysis::effect::FactKey;
 use dorc_core::{Observable, Phase, Verdict};
 
+pub mod differential;
+
 /// A tiny deterministic linear-congruential PRNG — the host's seeded
 /// nondeterminism. Hand-rolled (no `rand` dependency): the DST host must be
 /// reproducible bit-for-bit from its seed, and the kernel stays dep-free. The

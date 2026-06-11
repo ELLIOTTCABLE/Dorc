@@ -12,4 +12,4 @@ package_installed__check 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; el
 #!/bin/sh
 # dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
 
-apt-get install -y nginx; systemctl reload nginx
+true; systemctl reload nginx   # dorc: elided [apt-get install -y nginx] (already converged / dead branch)

@@ -14,6 +14,5 @@ service_active__check 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif 
 #!/bin/sh
 # dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
 
-# systemctl enable nginx   # dorc: elided (already converged / dead branch)
-true
+true   # dorc: elided [systemctl enable nginx] (already converged / dead branch)
 systemctl start nginx

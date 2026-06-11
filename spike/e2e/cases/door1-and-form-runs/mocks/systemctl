@@ -1,0 +1,4 @@
+#!/bin/sh
+# INERT mock: logs argv, mutates nothing, exits 0. RUNS here (the && block is live — guard held).
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0

@@ -27,7 +27,7 @@ use crate::lattice::Lattice;
 use crate::solve::{Direction, Graph, solve};
 use crate::value::{ValueFlow, ValueOf};
 use dorc_core::{
-    Carrier, DiagCode, Diagnostic, EntityRef, Interner, KindId, OpaqueToken, ProviderId,
+    Carrier, DiagCode, Diagnostic, EntityRef, Interner, KindId, OpaqueToken, ProviderId, Span, diag,
 };
 use dorc_oracle::check::{self, CheckSet, ResolvedEntity};
 use dorc_oracle::{EffectCell, KindIndex, Polarity, empty_verb};
@@ -95,6 +95,7 @@ pub fn command_effect(
     argv: &[ValueOf],
     interner: &mut Interner,
     diags: &mut Vec<Diagnostic>,
+    site: Option<Span>,
 ) -> Vec<CommandEffect> {
     // A bare assignment-only command (`pkg=nginx`) has an empty argv ⇒ no
     // system-state effect (value::analyze yields `[]` for words.is_empty()).
@@ -102,8 +103,10 @@ pub fn command_effect(
         return vec![CommandEffect::Pure];
     };
     // The command word must be a concrete literal; a ⊤ word (`"$dyn" install …`) is
-    // an un-modeled command ⇒ Opaque (`inv-top-reject`).
+    // an un-modeled command ⇒ Opaque (`inv-top-reject`). The ⊤-degradation is no longer
+    // silent (q-2 / find-3 no-silent-phantoms): disclose it as a Note (`dq-cmdsub-operand-top`).
     let ValueOf::Literal(provider_sym) = word0 else {
+        diags.push(diag::cmdsub_operand_top(site, "the command word"));
         return vec![CommandEffect::Opaque];
     };
     let provider_str = interner.resolve(provider_sym).to_owned();
@@ -126,10 +129,18 @@ pub fn command_effect(
     // ⇒ Opaque (runs). Collect the resolved text, holding it so `&str` slices borrow
     // it for `evaluate`.
     let mut arg_texts: Vec<String> = Vec::with_capacity(argv.len().saturating_sub(1));
-    for word in &argv[1..] {
+    for (i, word) in argv[1..].iter().enumerate() {
         match word {
             ValueOf::Literal(s) => arg_texts.push(interner.resolve(*s).to_owned()),
-            ValueOf::Top => return vec![CommandEffect::Opaque], // ⊤ arg ⇒ unresolved
+            // ⊤ arg ⇒ unresolved ⇒ Opaque; disclose WHICH operand went ⊤ (q-2, the
+            // 1-based operand index excluding the command word — `dq-cmdsub-operand-top`).
+            ValueOf::Top => {
+                diags.push(diag::cmdsub_operand_top(
+                    site,
+                    &format!("operand {}", i + 1),
+                ));
+                return vec![CommandEffect::Opaque];
+            }
         }
     }
     let arg_refs: Vec<&str> = arg_texts.iter().map(String::as_str).collect();
@@ -228,7 +239,11 @@ fn member_family(
     for argv in members {
         // Each member is a normal concrete argv; resolve it through the oracle check.
         // All-or-nothing: ANY non-single-establish member kills the whole family.
-        match command_effect(idx, checks, argv, interner, diags).as_slice() {
+        // `site: None` for the ⊤-disclosure (q-2): a ⊤ member collapses the family ⇒ the
+        // site falls back to the single-cell `argv` classification below, which re-runs
+        // `command_effect` with the REAL span and discloses there — emitting here too would
+        // double-report the same site.
+        match command_effect(idx, checks, argv, interner, diags, None).as_slice() {
             [CommandEffect::Establishes(fact)] => family.push(*fact),
             _ => return None,
         }
@@ -282,7 +297,12 @@ fn cell_effect(
 /// anything not listed stays `Opaque` (the safe over-refusing direction); the
 /// dynamic-lvalue forms (`unset "$x"`, `printf -v`) are already ⊤-rejected upstream
 /// by the parser, so only their static uses reach here.
-fn is_target_state_pure_builtin(word: &str) -> bool {
+///
+/// The classification assumes the word resolves to the BUILTIN — a book-defined
+/// same-named function shadows a regular builtin in dash, which `cfg` discloses
+/// per-funcdef (find-I, `cfg-builtin-shadowed`); `pub(crate)` so that disclosure
+/// shares this one list.
+pub(crate) fn is_target_state_pure_builtin(word: &str) -> bool {
     matches!(
         word,
         "set"
@@ -301,6 +321,37 @@ fn is_target_state_pure_builtin(word: &str) -> bool {
             | "test"
             | "["
     )
+}
+
+/// The per-path `file` cell a write-redirect (`>`/`>>`) to `path` establishes (y-1,
+/// redirect-effects, `21F` imp-1). Follows the existing FactKey/kind vocabulary: a
+/// blessed `file` kind (core: the Tier-A well-known kind names include `file`), the
+/// resolved path as the entity operand (referent-agnostic — the path is an interned
+/// token, never decoded beyond the syntactic `/dev/null` exemption at resolution), and
+/// a single `written` selector (append vs truncate are BOTH write-shaped ⇒ the same
+/// cell this round; no read-back / content discrimination). The cell GENS into
+/// reaching-defs (so it poisons ambient-ness + invalidates a downstream Query, st-3),
+/// but a `file` cell has no oracle/probe ⇒ it never licenses an elision (the charter's
+/// "gen and poison, nothing licenses" — a `Redir` node is never a plan leaf anyway).
+fn file_write_cell(path: dorc_core::Symbol, interner: &mut Interner) -> FactKey {
+    FactKey {
+        kind: KindId(interner.intern("file")),
+        entity: EntityRef::Operand(OpaqueToken(path)),
+        selector: dorc_core::SelectorId(interner.intern("written")),
+    }
+}
+
+/// Render a resolved argv to display text for a diagnostic (q-2): each literal
+/// resolved to its text, a `⊤` word shown as `⟨⊤⟩`. Display/provenance only — never
+/// branched on (`inv-referent-agnostic`). Deterministic.
+fn render_argv(argv: &[ValueOf], interner: &Interner) -> String {
+    argv.iter()
+        .map(|w| match w {
+            ValueOf::Literal(s) => interner.resolve(*s).to_owned(),
+            ValueOf::Top => "⟨⊤⟩".to_owned(),
+        })
+        .collect::<Vec<_>>()
+        .join(" ")
 }
 
 /// Facts mutated by some command on a path to here — or `Top` once an `Opaque`
@@ -416,6 +467,37 @@ pub enum SkipClass {
         members: Vec<FactKey>,
         self_reached: bool,
     },
+    /// An inlined function-CALL site (arch-2, brk-2, `i-3`/`i-4`): the call's command word
+    /// resolved to a same-file-earlier funcdef and its body was spliced into the CFG. This is
+    /// the render/substitution LEAF (the call's own span); the spliced body commands are
+    /// `spliced_internal` (not their own leaves). It carries the per-body-site classifications
+    /// (`sites`, one [`InlineSite`] per effect-bearing/probeable body leaf, in source order) so
+    /// the all-or-nothing CALL license (`plan`) can aggregate them and the probe can ship a
+    /// `site N.M` sub-record per site.
+    ///
+    /// ALL-OR-NOTHING (the Members precedent, 20S): the call licenses a `Replace` ONLY when
+    /// EVERY effect-bearing body site licenses elision — every body Establish/Kill is an
+    /// `EstablishAmbient` whose fact is Converged (a body Kill, an Opaque, a ⊤, or a non-self/
+    /// written establish blocks the WHOLE call), Queries pass their own gates, and the CALL
+    /// site's own consumed channels are reproduced. One non-licensing body leaf ⇒ the call
+    /// RUNS (the real body executes). No partial-body render ever (`i-3`).
+    InlineCall { sites: Vec<InlineSite> },
+}
+
+/// arch-2 (`i-3`/`i-4`): one spliced funcdef-body LEAF site under an [`SkipClass::InlineCall`].
+/// Carries the body command's CFG node (provenance + the plan's `has_top_successor` check) and
+/// its own [`SkipClass`] classification (resolved with the call's positional bindings — `i-2`).
+/// The plan aggregates these into the all-or-nothing CALL license; the probe ships one
+/// `site N.M` sub-record per site (M = the index into the call's site list).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct InlineSite {
+    /// The spliced body command's CFG node (provenance; `has_top_successor` gate; never a Step
+    /// leaf of its own — the CALL is the render unit, `i-3`).
+    pub node: CfgNodeId,
+    /// The body site's own classification (with the call's positionals bound, `i-2`): an
+    /// `EstablishAmbient`/`QueryResolvable` is per-site probeable (`site N.M`); a Kill/Opaque/
+    /// MustRun/EstablishWritten blocks the whole call.
+    pub class: SkipClass,
 }
 
 /// Nodes reachable from the program `entry` by forward edges. The reaching-defs
@@ -466,6 +548,71 @@ fn reach_transfer(
         };
     }
     state
+}
+
+/// The effect cells one CFG node gens into the reaching-defs (the per-node closure body of
+/// [`classify`], extracted so `classify` stays under the line cap). A resolved Members site
+/// gens its per-member establishes; an inlined CALL gens `Pure` (the spliced body carries the
+/// effects); a `Command` resolves through the oracle check; a `Top` node is `Opaque`; a
+/// WRITE-shaped `Redir` gens a per-path `file` cell (y-1) or `Opaque`+disclosure on a ⊤
+/// target; everything else is `Pure`. Diagnostics (kind-disagreement, the q-2/y-1 ⊤
+/// disclosures) accumulate in `diags`. Deterministic; never panics (`inv-no-throw`).
+#[expect(
+    clippy::too_many_arguments,
+    reason = "extracted verbatim from classify's per-node closure to stay under the line cap; \
+              the args are the closure's captured inputs (cfg/value/idx/checks/interner/diags)"
+)]
+fn node_effects(
+    id: CfgNodeId,
+    member_family: Option<&Vec<FactKey>>,
+    cfg: &Cfg,
+    value: &ValueFlow,
+    idx: &KindIndex,
+    checks: &[CheckSet],
+    interner: &mut Interner,
+    diags: &mut Vec<Diagnostic>,
+) -> Vec<CommandEffect> {
+    if let Some(family) = member_family {
+        return family
+            .iter()
+            .map(|f| CommandEffect::Establishes(*f))
+            .collect();
+    }
+    // arch-2: an inlined CALL gens Pure, NOT the Opaque its unmodeled word would resolve to —
+    // the body (spliced after it) carries the effects. Opaque here would poison the call's OWN
+    // spliced body (the establish reads Written) — the very poison the splice removes.
+    if cfg.call_body_sites(id).is_some() {
+        return vec![CommandEffect::Pure];
+    }
+    match cfg.node(id).kind {
+        CfgNodeKind::Command => {
+            let argv = value.argv_values(id);
+            // `site: None` — `classify` holds the CFG, not the AST, so a source span is not
+            // cheaply reachable here; the q-2 disclosure names the ⊤ POSITION (`the command
+            // word` / `operand N`), which is what the cli `report()` surfaces (no spans).
+            command_effect(idx, checks, &argv, interner, diags, None)
+        }
+        // An unmodeled construct may mutate anything ⇒ ⊤.
+        CfgNodeKind::Top => vec![CommandEffect::Opaque],
+        // y-1 (redirect-effects): a WRITE-shaped redirect (`>`/`>>`) to a real sink is a
+        // file-write EFFECT — previously invisibly `Pure`, which MASKED a downstream guard
+        // reading the just-written file (`21F` imp-1: a `printf >> f` before a `grep`-guard of
+        // `f` minted a stale-guard elision). A resolved target gens a per-path `file` cell (a
+        // WRITER ⇒ st-3's coarse invalidation makes a downstream Query non-pristine ⇒ `valid:
+        // false`); a ⊤ target joins ⊤ (Opaque-poison) + a disclosure. A non-write redirect
+        // (read, fd-dup, here-doc, `/dev/null`) is absent from `redir_target` ⇒ stays Pure.
+        CfgNodeKind::Redir => match value.redir_target(id) {
+            Some(ValueOf::Literal(path)) => {
+                vec![CommandEffect::Establishes(file_write_cell(path, interner))]
+            }
+            Some(ValueOf::Top) => {
+                diags.push(diag::redir_target_top(None));
+                vec![CommandEffect::Opaque]
+            }
+            None => vec![CommandEffect::Pure],
+        },
+        _ => vec![CommandEffect::Pure],
+    }
 }
 
 /// Does the item-3(b) **self-reach** condition hold at the Members site `site`? Re-solve
@@ -522,22 +669,16 @@ pub fn classify(
     // own in-state pristine-of-others for item-3's self-reach carve-out.
     let effects: Vec<Vec<CommandEffect>> = (0..n)
         .map(|i| {
-            let id = CfgNodeId(i as u32);
-            if let Some(family) = &member_families[i] {
-                return family
-                    .iter()
-                    .map(|f| CommandEffect::Establishes(*f))
-                    .collect();
-            }
-            match cfg.node(id).kind {
-                CfgNodeKind::Command => {
-                    let argv = value.argv_values(id);
-                    command_effect(idx, checks, &argv, interner, &mut diags)
-                }
-                // An unmodeled construct may mutate anything ⇒ ⊤.
-                CfgNodeKind::Top => vec![CommandEffect::Opaque],
-                _ => vec![CommandEffect::Pure],
-            }
+            node_effects(
+                CfgNodeId(i as u32),
+                member_families[i].as_ref(),
+                cfg,
+                value,
+                idx,
+                checks,
+                interner,
+                &mut diags,
+            )
         })
         .collect();
 
@@ -567,53 +708,23 @@ pub fn classify(
     let trust_reach = reach.converged;
     let reachable = reachable_from_entry(cfg);
 
-    let mut out = Vec::new();
-    for (i, cells) in effects.iter().enumerate() {
-        let id = CfgNodeId(i as u32);
-        // Only genuinely-runnable command leaves are plan/apply units. A command
-        // inside a `$( … )` substitution body is effect-bearing (it stayed in the
-        // reaching-defs above, so its mutations still poison/establish) but is NOT
-        // a leaf (find-cli-1, the dn-3 leaf-seam).
-        if cfg.node(id).kind != CfgNodeKind::Command || cfg.is_expansion_internal(id) {
-            continue;
-        }
-        // task-L2 item-2: a resolved in-loop Members site (its per-member family resolved
-        // all-or-nothing) is `EstablishMembers` — reachable + converged required like any
-        // establish. An unreachable or non-converged Members site folds to MustRun
-        // (kFAIL-perform).
+    // The per-site single-fact / member classification (the shared core, used by both the
+    // ordinary leaf path below and the arch-2 inlined-call body-site aggregation). Reads only
+    // already-computed state (`effects`, `member_families`, `reach`, `trust_reach`,
+    // `reachable`), so it is a pure closure.
+    let classify_site = |i: usize| -> SkipClass {
+        // task-L2: a resolved in-loop Members site (reachable + converged) ⇒ EstablishMembers.
         if let Some(family) = &member_families[i]
             && trust_reach
             && reachable[i]
         {
-            // item-3(b) self-reach: the ONLY writers reaching this site (incl. the
-            // back-edge) are THIS leaf's own member-establishes. A cell-set in-state cannot
-            // tell "my own establish reached" from "a DIFFERENT writer wrote the same cell"
-            // (a pre-loop `purge curl` writes the very cell the loop's curl-member
-            // establishes), so we re-solve the reaching-defs with THIS site's gen SUPPRESSED
-            // and ask whether the site's in-state is then pristine (empty, not ⊤). With the
-            // self-establish removed, the back-edge carries only OTHER writers' cells, so a
-            // pristine result ⟺ no pre-loop writer, no in-loop sibling, no Opaque reached
-            // it ⟺ only this leaf's own establishes do. Phase-agnostic (engine fact); `plan`
-            // collapses it.
             let self_reached = self_reach_holds(cfg, &effects, i);
-            out.push((
-                id,
-                SkipClass::EstablishMembers {
-                    members: family.clone(),
-                    self_reached,
-                },
-            ));
-            continue;
+            return SkipClass::EstablishMembers {
+                members: family.clone(),
+                self_reached,
+            };
         }
-        // The elision candidate is a SINGLE establish cell (the corpus shape). A
-        // multi-cell establish has no single-fact `SkipClass` representation yet, so
-        // it folds to `MustRun` — sound (`kFAIL-perform`: never wrongly elided), the
-        // run-it floor; the reaching-defs above still tracked every cell. (Flagged:
-        // multi-fact elision is unbuilt past `SkipClass`'s single-fact shape.)
-        let class = match cells.as_slice() {
-            // Only a reachable establish under a converged solve is reasoned about;
-            // every other case — opaque/pure/kill, multi-cell, an unreachable
-            // establish, or a non-converged solve — folds to MustRun.
+        match effects[i].as_slice() {
             [CommandEffect::Establishes(f)] if trust_reach && reachable[i] => {
                 if reach.states[i].mutated(f) {
                     SkipClass::EstablishWritten(*f)
@@ -621,13 +732,6 @@ pub fn classify(
                     SkipClass::EstablishAmbient(*f)
                 }
             }
-            // A read-only Query guard, reachable + converged: probe-resolvable, with
-            // its rule-query-validity bit (205 §2 / 20A §4 st-3) read off the IN-state
-            // — pristine (no write-or-unknown reached from entry) ⇒ the probed rc is
-            // fold-usable. `reach.states[i]` is the in-state (solve.rs: states[v] is
-            // the state *before* node v); a Query gens nothing, so it is exactly the
-            // writes-or-opaque that reached the guard. An unreachable/non-converged
-            // guard folds to MustRun like any other (kFAIL-perform).
             [CommandEffect::Queries(f)] if trust_reach && reachable[i] => {
                 SkipClass::QueryResolvable {
                     fact: *f,
@@ -635,8 +739,50 @@ pub fn classify(
                 }
             }
             _ => SkipClass::MustRun,
-        };
-        out.push((id, class));
+        }
+    };
+
+    let mut out = Vec::new();
+    for (i, cells) in effects.iter().enumerate() {
+        let id = CfgNodeId(i as u32);
+        // Only genuinely-runnable command leaves are plan/apply units. A command
+        // inside a `$( … )` substitution body is effect-bearing (it stayed in the
+        // reaching-defs above, so its mutations still poison/establish) but is NOT
+        // a leaf (find-cli-1, the dn-3 leaf-seam). arch-2: a SPLICED funcdef-body command is
+        // likewise effect-bearing-but-not-a-leaf — its `site N.M` record rides the CALL (below).
+        if cfg.node(id).kind == CfgNodeKind::Command && cfg.is_expansion_internal(id) {
+            // q-2 (`dq-cmdsub-inner-nonleaf`, the `exec-subst-body-nonleaf` disclosure): an
+            // EFFECT-BEARING `$()`-internal command runs un-elidably (it has no leaf of its
+            // own, so it executes whenever its enclosing line runs). Today this is silent
+            // (`219` q-1.f). A Pure inner command discloses nothing (nothing un-elidable
+            // happens), so gate on a non-Pure effect.
+            if cells.iter().any(|e| *e != CommandEffect::Pure) {
+                diags.push(diag::cmdsub_inner_nonleaf(
+                    None,
+                    &render_argv(&value.argv_values(id), interner),
+                ));
+            }
+            continue;
+        }
+        if cfg.node(id).kind != CfgNodeKind::Command || cfg.is_spliced_internal(id) {
+            continue;
+        }
+        // arch-2 (`i-3`/`i-4`): an inlined CALL node aggregates its spliced body sites'
+        // classifications into one `InlineCall` (the all-or-nothing license + per-site probe
+        // sub-records live in `plan`). The body sites are classified with the call's
+        // positionals bound (the value plane resolved their argv, `i-2`).
+        if let Some(body_sites) = cfg.call_body_sites(id) {
+            let sites = body_sites
+                .iter()
+                .map(|&site| InlineSite {
+                    node: site,
+                    class: classify_site(site.index()),
+                })
+                .collect();
+            out.push((id, SkipClass::InlineCall { sites }));
+            continue;
+        }
+        out.push((id, classify_site(i)));
     }
     Carrier { value: out, diags }
 }
@@ -750,6 +896,20 @@ command__check() {
             .into_iter()
             .map(|(_, c)| c)
             .collect()
+    }
+
+    /// Like [`classify_src`] but return the classify-stage diagnostics (the q-2 emit-site
+    /// pins): the codes a `$()`/⊤ book discloses.
+    fn classify_src_diags(src: &str, interner: &mut Interner, idx: &KindIndex) -> Vec<Diagnostic> {
+        let parsed = dorc_syntax::parse(src);
+        let built = cfg::build(&parsed.value);
+        let value = analyze(&built.value, &parsed.value, interner);
+        let checks = vec![lift_checks(interner, CORPUS_CHECK_SRC).value];
+        classify(&built.value, &value, idx, &checks, interner).diags
+    }
+
+    fn has_code(diags: &[Diagnostic], code: &str) -> bool {
+        diags.iter().any(|d| d.code.0 == code)
     }
 
     #[test]
@@ -926,22 +1086,69 @@ command__check() {
     }
 
     #[test]
-    fn detached_function_body_establish_is_not_ambient() {
-        // Why (find-A; both adversarial reviews independently, brk-1 / fs-1): a
-        // function body is a detached sub-CFG — its caller has no modeled call-edge
-        // (cfg find-7), so the in-body install is unreachable from entry and its
-        // reaching-in-state is a vacuous ⊥. Reading that as "nothing upstream" would
-        // advertise the establish skippable under an unknown call context — a
-        // kFAIL-perform wrong-skip. It must fold to MustRun (with the `p` call, also
-        // MustRun) until interprocedural call-edges land. The contrast with
-        // `lone_install_is_ambient` (identical establish, ambient at top level)
-        // proves the reachability gate is doing the work.
+    fn called_function_body_inlines_to_a_single_call_leaf() {
+        // arch-2 (brk-2): a call to a same-file-earlier funcdef is INLINED — the body is
+        // spliced at the call, and the CALL is the one render/apply leaf, aggregating the
+        // body's effect-bearing sites. `p() { apt-get install nginx; }\np` ⇒ exactly ONE
+        // leaf: an `InlineCall` whose single body site is the install's `EstablishAmbient`
+        // (the body becomes reachable through the splice — the find-7 un-detaching). The
+        // detached DEFINITION body is no longer an independent leaf (`i-3`), so there is no
+        // second `MustRun`. (Supersedes the round-20 `detached_function_body_establish_is_
+        // not_ambient`: the detached-poison shape is re-homed to the refused-call cases below.)
         let (mut i, idx, _s) = package_setup();
         let classes = classify_src("p() { apt-get install nginx; }\np", &mut i, &idx);
         assert_eq!(
-            classes,
-            vec![SkipClass::MustRun, SkipClass::MustRun],
-            "detached body install + the call both fold to MustRun, no ambient skip"
+            classes.len(),
+            1,
+            "the call is the only leaf (body is non-leaf)"
+        );
+        let SkipClass::InlineCall { sites } = &classes[0] else {
+            panic!("the call must classify InlineCall, got {:?}", classes[0]);
+        };
+        assert_eq!(sites.len(), 1, "one effect-bearing body site (the install)");
+        assert!(
+            matches!(sites[0].class, SkipClass::EstablishAmbient(_)),
+            "the body install is EstablishAmbient (reachable via the splice), not Written/\
+             MustRun — the call node gens Pure, so it does not poison its own spliced body"
+        );
+    }
+
+    #[test]
+    fn uncalled_function_definition_contributes_no_runnable_leaf() {
+        // arch-2: a funcdef DEFINED but never CALLED stays a detached, non-leaf island — its
+        // body commands are not independent plan/apply leaves (`i-3`: a definition's body runs
+        // only via a call, which would splice it). So `p() { apt-get install nginx; }\necho hi`
+        // has exactly ONE leaf — the top-level `echo hi` — and the install does NOT surface as
+        // a `MustRun`/`skip-unresolvable` leaf of its own. (This re-homes the find-A
+        // reachability intent: an unreachable funcdef body advertises no elidable establish.)
+        let (mut i, idx, _s) = package_setup();
+        let classes = classify_src("p() { apt-get install nginx; }\necho hi", &mut i, &idx);
+        assert_eq!(classes.len(), 1, "only the top-level `echo hi` is a leaf");
+        assert_eq!(
+            classes[0],
+            SkipClass::MustRun,
+            "echo hi is unmodeled ⇒ MustRun"
+        );
+    }
+
+    #[test]
+    fn recursive_call_refuses_inline_and_poisons_the_body() {
+        // arch-2 (`i-1`): a recursive call ⊤-rejects the inline (the cycle guard) — the inner
+        // `p` stays an ordinary unmodeled command (Opaque). The OUTER call still inlines, but
+        // its body now contains that Opaque, which poisons the body install to `MustRun` ⇒ the
+        // whole call cannot elide (one non-licensing body leaf runs the call). This pins that
+        // the detached-poison semantics survive a refused (recursive) call — the brief's
+        // re-homed poison pin.
+        let (mut i, idx, _s) = package_setup();
+        let classes = classify_src("p() { p; apt-get install nginx; }\np", &mut i, &idx);
+        assert_eq!(classes.len(), 1, "the outer call is the only leaf");
+        let SkipClass::InlineCall { sites } = &classes[0] else {
+            panic!("the outer call inlines, got {:?}", classes[0]);
+        };
+        assert!(
+            sites.iter().any(|s| s.class == SkipClass::MustRun),
+            "the recursion-refused inner `p` (Opaque) poisons the body ⇒ a MustRun body site \
+             ⇒ the call will run (the poison-pin is preserved across a refused call)"
         );
     }
 
@@ -965,7 +1172,7 @@ command__check() {
                 return vec![CommandEffect::Opaque];
             };
             let mut diags = Vec::new();
-            command_effect(idx, &checks, &value.argv_values(node), i, &mut diags)
+            command_effect(idx, &checks, &value.argv_values(node), i, &mut diags, None)
         }
         let (mut i, idx, s) = package_setup();
         // One operand ⇒ Operand cell; the flag `-y` is post-verb-stripped by the check.
@@ -1202,6 +1409,257 @@ command__check() {
                 valid: false
             }),
             "a Query below an Opaque command is INVALID (⊤ reached it): {classes:?}"
+        );
+    }
+
+    // --- y-1 (redirect-effects, `21F` imp-1): a write-redirect is a file-write WRITER ----
+
+    /// `file:<path>#written` — the cell a write-redirect (`>`/`>>`) to `path` gens.
+    fn file_written(i: &mut Interner, path: &str) -> FactKey {
+        FactKey {
+            kind: KindId(i.intern("file")),
+            entity: EntityRef::Operand(OpaqueToken(i.intern(path))),
+            selector: SelectorId(i.intern("written")),
+        }
+    }
+
+    /// The y-1 file-write cell is built by `file_write_cell` from the resolved path; the
+    /// test-side `file_written` must reproduce its exact shape (kind `file`, entity = the
+    /// path operand, selector `written`), or every other y-1 pin is asserting the wrong cell.
+    #[test]
+    fn file_write_cell_has_the_declared_shape() {
+        let mut i = Interner::default();
+        let path = i.intern("/etc/app.conf");
+        assert_eq!(
+            file_write_cell(path, &mut i),
+            file_written(&mut i, "/etc/app.conf"),
+            "the gen'd file-write cell shape must match the documented (file, path, written)"
+        );
+    }
+
+    #[test]
+    fn write_redirect_invalidates_downstream_query() {
+        // THE `21F` imp-1 regression pin (the reason y-1 exists). A write-redirect to a real
+        // sink is a WRITER: `: > /etc/marker` gens `file:/etc/marker#written`, so the
+        // downstream `command -v nginx` guard fails rule-query-validity (its resting rc is now
+        // stale — a file the book just wrote sits between entry and the guard). Pre-y-1 the
+        // redirect was invisibly Pure ⇒ the guard read `valid: true` ⇒ a stale-guard fold
+        // MANUFACTURED a wrong-elision (the imp-1 hole). Same shape as
+        // `query_after_mutator_is_invalid`, but the invalidator is a redirect, not an oracled
+        // mutator.
+        let mut i = Interner::default();
+        let idx = package_and_query_index(&mut i);
+        let classes = classify_src(": > /etc/marker\ncommand -v nginx", &mut i, &idx);
+        let nginx = tool_present(&mut i, "nginx");
+        assert!(
+            classes.contains(&SkipClass::QueryResolvable {
+                fact: nginx,
+                valid: false
+            }),
+            "a write-redirect upstream must invalidate the downstream Query (imp-1 pin): {classes:?}"
+        );
+    }
+
+    #[test]
+    fn append_redirect_also_invalidates_query() {
+        // Append vs truncate are BOTH write-shaped (the charter unit pin): `printf x >> f`
+        // (append) invalidates exactly as `>` (truncate) does. `printf` is a blessed-pure
+        // builtin, so WITHOUT y-1 the `>> f` would be the only write — and it was invisible
+        // (the precise imp-1 strawman: `set -e; printf 'x' >> f; grep ... f || mutator`).
+        let mut i = Interner::default();
+        let idx = package_and_query_index(&mut i);
+        let classes = classify_src(
+            "printf 'x' >> /etc/app.conf\ncommand -v nginx",
+            &mut i,
+            &idx,
+        );
+        let nginx = tool_present(&mut i, "nginx");
+        assert!(
+            classes.contains(&SkipClass::QueryResolvable {
+                fact: nginx,
+                valid: false
+            }),
+            "an APPEND (`>>`) redirect is write-shaped too ⇒ invalidates the Query: {classes:?}"
+        );
+    }
+
+    #[test]
+    fn var_resolved_redirect_target_invalidates_query() {
+        // The value-plane integration the charter emphasizes (y1-a: "resolve the target word
+        // through the EXISTING value plane"): a redirect target is an ordinary expansion, so
+        // `logfile=app.log; : > "$logfile"` resolves `$logfile` ⇒ `app.log` ⇒ gens
+        // `file:app.log#written` ⇒ invalidates the downstream Query. Constant propagation
+        // composes with the redirect-target resolution (shared `resolve_recipe` machinery).
+        let mut i = Interner::default();
+        let idx = package_and_query_index(&mut i);
+        let classes = classify_src(
+            "logfile=app.log\n: > \"$logfile\"\ncommand -v nginx",
+            &mut i,
+            &idx,
+        );
+        let nginx = tool_present(&mut i, "nginx");
+        assert!(
+            classes.contains(&SkipClass::QueryResolvable {
+                fact: nginx,
+                valid: false
+            }),
+            "a var-resolved redirect target (via the value plane) invalidates the Query: {classes:?}"
+        );
+    }
+
+    #[test]
+    fn var_resolved_redirect_target_gens_concrete_cell_not_top() {
+        // Companion to var_resolved_redirect_target_invalidates_query (21H §9 correction): that
+        // test's lone `valid: false` ALSO passes if `$logfile` had degraded to ⊤ — a ⊤ target
+        // invalidates the Query too (top_target_redirect_poisons_downstream_query). The cheap
+        // discriminator is the disclosure: the resolved-literal arm gens a CONCRETE file cell and
+        // fires NO `dq-redir-target-top` (only the ⊤ arm discloses — pinned by
+        // top_target_redirect_discloses_not_silent). Pinning its ABSENCE here proves the value
+        // plane RESOLVED `$logfile` ⇒ `app.log`, never that it silently collapsed to ⊤.
+        let mut i = Interner::default();
+        let idx = package_and_query_index(&mut i);
+        let diags = classify_src_diags(
+            "logfile=app.log\n: > \"$logfile\"\ncommand -v nginx",
+            &mut i,
+            &idx,
+        );
+        assert!(
+            !has_code(&diags, "dq-redir-target-top"),
+            "a var-RESOLVED redirect target takes the concrete-cell path (no ⊤ disclosure): {diags:?}"
+        );
+    }
+
+    #[test]
+    fn devnull_redirect_does_not_invalidate_query() {
+        // The exemption set (the charter unit pin): `>/dev/null` is the discard sink — NOT a
+        // file-write effect — so it gens no cell and a downstream Query stays valid. This is
+        // the `exec-devnull-exempt` mechanism at the validity layer: a redirect to the bit
+        // bucket must not poison.
+        let mut i = Interner::default();
+        let idx = package_and_query_index(&mut i);
+        let classes = classify_src(": > /dev/null\ncommand -v nginx", &mut i, &idx);
+        let nginx = tool_present(&mut i, "nginx");
+        assert!(
+            classes.contains(&SkipClass::QueryResolvable {
+                fact: nginx,
+                valid: true
+            }),
+            "`>/dev/null` is exempt (the discard sink) ⇒ the Query stays valid: {classes:?}"
+        );
+    }
+
+    #[test]
+    fn fd_dup_redirect_does_not_invalidate_query() {
+        // The exemption set, the fd-dup arm: `2>&1` is a file-descriptor dup, NOT a
+        // file-write — so it gens no cell and a downstream Query stays valid. (`2>&1` stays
+        // exempt per the existing devnull/dup vocabulary — charter y1-a.)
+        let mut i = Interner::default();
+        let idx = package_and_query_index(&mut i);
+        let classes = classify_src("echo hi 2>&1\ncommand -v nginx", &mut i, &idx);
+        let nginx = tool_present(&mut i, "nginx");
+        assert!(
+            classes.contains(&SkipClass::QueryResolvable {
+                fact: nginx,
+                valid: true
+            }),
+            "`2>&1` is an fd-dup, not a file-write ⇒ the Query stays valid: {classes:?}"
+        );
+    }
+
+    #[test]
+    fn write_redirect_poisons_downstream_establish_ambientness() {
+        // A write-redirect is a WRITER, so — like any Opaque/mutator — it makes a downstream
+        // establish non-ambient when... actually NO: a `file` cell is a DIFFERENT cell from
+        // `package:nginx#installed`, so by the poison-wall keystone it must NOT poison the
+        // install (distinct cells don't cross-poison). The install stays EstablishAmbient.
+        // This pins that the file-cell is a real per-path cell (not a ⊤ that havocs): only
+        // the SAME cell (or an Opaque ⊤) invalidates ambient-ness.
+        let (mut i, idx, s) = package_setup();
+        let classes = classify_src(": > /etc/marker\napt-get install -y nginx", &mut i, &idx);
+        assert!(
+            classes.contains(&SkipClass::EstablishAmbient(pkg_installed(
+                &mut i, &s, "nginx"
+            ))),
+            "a file-write cell is a distinct cell ⇒ it must NOT poison a package install (keystone): {classes:?}"
+        );
+    }
+
+    #[test]
+    fn top_target_redirect_poisons_downstream_query() {
+        // A ⊤ (dynamic) redirect target joins ⊤ (the Opaque-poison shape, charter y1-a): the
+        // path is unresolved so no per-path cell can be keyed, and a downstream Query is
+        // INVALID (an unknown file — possibly anything — was written). `> "$dyn"` where `$dyn`
+        // is never assigned ⇒ the target is ⊤. (The disclosure `dq-redir-target-top` fires;
+        // the validity-invalidation is the behavior pinned here.)
+        let mut i = Interner::default();
+        let idx = package_and_query_index(&mut i);
+        let classes = classify_src(": > \"$dyn\"\ncommand -v nginx", &mut i, &idx);
+        let nginx = tool_present(&mut i, "nginx");
+        assert!(
+            classes.contains(&SkipClass::QueryResolvable {
+                fact: nginx,
+                valid: false
+            }),
+            "a ⊤-target redirect joins ⊤ ⇒ invalidates the downstream Query: {classes:?}"
+        );
+    }
+
+    #[test]
+    fn top_target_redirect_discloses_not_silent() {
+        // The ⊤-target redirect disclosure (`dq-redir-target-top`, the redirect-effects analog
+        // of `dq-cmdsub-operand-top`): a write to a dynamic target is surfaced, never silent.
+        let mut i = Interner::default();
+        let idx = package_and_query_index(&mut i);
+        let diags = classify_src_diags(": > \"$dyn\"\ncommand -v nginx", &mut i, &idx);
+        assert!(
+            has_code(&diags, "dq-redir-target-top"),
+            "a ⊤-target write-redirect must disclose dq-redir-target-top: {diags:?}"
+        );
+    }
+
+    #[test]
+    fn blessed_pure_colon_with_write_redirect_invalidates_downstream_query() {
+        // fix-4(a) regression pin (y-1): `: > f` is a blessed-pure colon builtin carrying a
+        // write-redirect. The `:` command itself gens nothing, but the `> f` Redir node gens
+        // `file:f#written` into reaching-defs — so a downstream Query reading the just-written
+        // file is non-pristine ⇒ INVALID. Pins that the redirect's file-write effect is NOT
+        // masked by the blessed-pure command word (the precise imp-1 hazard: the write is on the
+        // redirect, not the verb). Mirrors `write_redirect_invalidates_downstream_query`, kept
+        // as its own pin so the colon-specific shape has an explicit guard.
+        let mut i = Interner::default();
+        let idx = package_and_query_index(&mut i);
+        let classes = classify_src(": > /etc/app.conf\ncommand -v nginx", &mut i, &idx);
+        let nginx = tool_present(&mut i, "nginx");
+        assert!(
+            classes.contains(&SkipClass::QueryResolvable {
+                fact: nginx,
+                valid: false
+            }),
+            "`: > f` (blessed-pure colon + write-redirect) gens the file-write cell ⇒ the \
+             downstream Query is INVALID (the write is on the redirect, not the verb): {classes:?}"
+        );
+    }
+
+    #[test]
+    fn bare_redirect_empty_argv_invalidates_downstream_query() {
+        // fix-4(b) regression pin (y-1): a BARE `> f` (an empty-argv command — no command word,
+        // only a write-redirect) is still a file-write WRITER. The empty-argv command node is a
+        // `MustRun` (no verb to classify), but the `> f` Redir node gens `file:f#written` into
+        // reaching-defs — so a downstream Query is non-pristine ⇒ INVALID. Pins that the
+        // redirect-effect is seen even with NO command word (the redirect runs in the current
+        // shell, truncating the file). The novel shape the other y-1 pins (`:`/`printf`/`echo`
+        // prefixes) do not cover.
+        let mut i = Interner::default();
+        let idx = package_and_query_index(&mut i);
+        let classes = classify_src("> /etc/app.conf\ncommand -v nginx", &mut i, &idx);
+        let nginx = tool_present(&mut i, "nginx");
+        assert!(
+            classes.contains(&SkipClass::QueryResolvable {
+                fact: nginx,
+                valid: false
+            }),
+            "a bare `> f` (empty-argv command + write-redirect) gens the file-write cell ⇒ the \
+             downstream Query is INVALID (the redirect writes with no command word): {classes:?}"
         );
     }
 
@@ -1443,6 +1901,72 @@ command__check() {
                 self_reached: false,
             }),
             "an in-loop Opaque sibling (⊤) breaks self-reach: {classes:?}"
+        );
+    }
+
+    // ---- q-2: the `$()` ⊤-diagnostics floor (find-3 no-silent-phantoms) ----
+
+    #[test]
+    fn cmdsub_operand_top_disclosed_not_silent() {
+        // Why (219 q-1.f silent-2, the find-3 violation q-2 closes): a `$()`-captured operand
+        // forces the command Opaque, and that degradation used to be SILENT. The disclosure must
+        // now fire (`dq-cmdsub-operand-top`). `PKG=$(cat /etc/pkg)` ⇒ `$PKG` is ⊤ ⇒ the install's
+        // operand is ⊤ ⇒ Opaque + the Note.
+        let (mut i, idx, _s) = package_setup();
+        let diags = classify_src_diags(
+            "PKG=$(cat /etc/pkg)\napt-get install -y \"$PKG\"",
+            &mut i,
+            &idx,
+        );
+        assert!(
+            has_code(&diags, "dq-cmdsub-operand-top"),
+            "a ⊤ operand must disclose dq-cmdsub-operand-top, never silently Opaque: {diags:?}"
+        );
+    }
+
+    #[test]
+    fn cmdsub_inner_nonleaf_disclosed_for_effectbearing_inner() {
+        // Why (219 q-1.f, the exec-subst-body-nonleaf disclosure): an EFFECT-BEARING command
+        // inside `$()` runs un-elidably (no leaf of its own) and is invisible today. The
+        // disclosure surfaces it (`dq-cmdsub-inner-nonleaf`). `apt-get install -y nginx` inside
+        // `$()` is oracled (Establishes) ⇒ effect-bearing ⇒ disclosed; the enclosing `echo` is
+        // Pure so it never independently elides the inner install.
+        let (mut i, idx, _s) = package_setup();
+        let diags = classify_src_diags(
+            "echo \"installed: $(apt-get install -y nginx)\"",
+            &mut i,
+            &idx,
+        );
+        assert!(
+            has_code(&diags, "dq-cmdsub-inner-nonleaf"),
+            "an effect-bearing $()-inner command must be disclosed: {diags:?}"
+        );
+    }
+
+    #[test]
+    fn pure_inner_cmdsub_discloses_nothing() {
+        // Why (the gate on the disclosure): a PURE `$()`-inner command does nothing un-elidable,
+        // so it must NOT emit `dq-cmdsub-inner-nonleaf` (warning-fatigue floor — disclose only
+        // what actually runs un-elidably). `echo "$(echo hi)"`: the inner `echo` is Pure.
+        let (mut i, idx, _s) = package_setup();
+        let diags = classify_src_diags("echo \"got: $(echo hi)\"", &mut i, &idx);
+        assert!(
+            !has_code(&diags, "dq-cmdsub-inner-nonleaf"),
+            "a pure $()-inner command discloses nothing un-elidable: {diags:?}"
+        );
+    }
+
+    #[test]
+    fn straightline_concrete_book_has_no_cmdsub_diagnostics() {
+        // Why (the negative pin): a fully-concrete straight-line book has no ⊤ and no `$()`, so
+        // NEITHER cmdsub code fires — the disclosure is specific to the degradation, not noise on
+        // every command.
+        let (mut i, idx, _s) = package_setup();
+        let diags = classify_src_diags("apt-get install -y nginx", &mut i, &idx);
+        assert!(
+            !has_code(&diags, "dq-cmdsub-operand-top")
+                && !has_code(&diags, "dq-cmdsub-inner-nonleaf"),
+            "a concrete book emits no cmdsub ⊤-diagnostics: {diags:?}"
         );
     }
 }

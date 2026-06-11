@@ -1,0 +1,5 @@
+#!/bin/sh
+# INERT shim for `systemctl` — an unoracled run leaf (it shares no oracle, so it runs). Logs
+# its argv for the run-set.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0

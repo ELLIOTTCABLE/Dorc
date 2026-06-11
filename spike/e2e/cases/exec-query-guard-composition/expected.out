@@ -30,5 +30,4 @@ package_installed__check 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; el
 # `set -e`, whose ⊤ rc forbids elision — exec-errexit-top-status-runs; a Query rc is
 # probe-sourced, so it folds.) HOST: nginx on PATH (the guard holds).
 set -e
-# command -v nginx >/dev/null 2>&1 || apt-get install -y nginx   # dorc: elided (already converged / dead branch)
-true
+true || :   # dorc: elided [command -v nginx >/dev/null 2>&1; apt-get install -y nginx] (already converged / dead branch)

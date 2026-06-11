@@ -1,0 +1,6 @@
+#!/bin/sh
+# INERT shim for `systemctl` — the fold-dead-but-KEPT reload. The flipped live guard
+# succeeds at apply time, so the `&&` proceeds and THIS MUST RUN (kFAIL-perform).
+# Pre-fix the artifact carried `:` here: rc 0 with nothing run (the fabricated success).
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
