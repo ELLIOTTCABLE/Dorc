@@ -247,6 +247,27 @@ warm-ups (d×d host-flip fixture; var-resolved redirect case) → 22x synthesis 
   tail-item to postmortem-story-adjacent (the need-3 "(sad)" gets its consolation).
   Secret-scrub-at-capture and durable-locally-first (fate-sharing) carry as
   constraints from 227.
+- ru-19 (human, completing ru-18's thought): graduating DST/re-runability to
+  product tier demands corresponding CI/testing ceremony — "the testing-value
+  floors out at the runtime-value of the-thing-being-tested." Adopted, with the
+  two distinctions that keep need-4 (no trace-pinning) standing: (dist-1)
+  SELF-CONSISTENCY testing vs STORED-GOLDEN testing — the replay gate regenerates
+  both sides every run (live ≡ replay-from-tape), so nothing is keyed to a stored
+  artifact that can drift (dodges the entire plan-forcing rot class); (dist-2)
+  same-inputs/same-binary trace DETERMINISM (needed by the runtime promise; given
+  by inv-determinism; now TESTED) vs cross-code-change trace STABILITY (the
+  expensive normalization-burdened promise — still correctly un-made; a postmortem
+  replays the run as recorded, never across versions). The arch-4 ceremony set:
+  cer-1 replay gate per fixture (ru-18b, the spine) · cer-2 tape format
+  version-tag + binary-hash; replay REFUSES loudly on mismatch, refusal
+  CI-pinned (cross-version replay explicitly not promised v1) · cer-3 secret-scrub
+  sentinel test (planted token in probe output ⇒ asserted absent from durable) ·
+  cer-4 tape round-trip (serialize→parse→identical) · cer-5 fold replay into the
+  hostsim DST trials (each seeded trial records + replays + compares — the
+  600-trial harness becomes a replay-fidelity fuzzer for free) · cer-6 a
+  capture-cost budget assertion on fixtures (tape size bounded; guards accidental
+  capture explosions). Stored-tape compat fixtures deferred until a format
+  stability declaration (Bazel's experimental-across-7.x precedent).
 - ru-14 (human, end-of-window economics): be judicious with adversarial-crosscheck /
   Fable-class spend for the remainder of the window — his intuition stands that one
   well-targeted pair at the right juncture is very high value; so fewer, sharper
