@@ -970,3 +970,243 @@ converging on: (1) the metadata-must-not-change-the-artifact invariant, and (2) 
 evidence the pattern is fundamental, not incidental — and that Dorc's gate spec should center on
 the same named-exempt-reasons partition.
 
+---
+
+## Graded sources
+
+Grades assigned by gathering subagent + conductor; **conductor re-verification pending** except
+where marked "[self-read]" (the four seed sources, the GCC VTA design doc, and the LLVM
+CodingStandards section list — read directly in main context). Access-depth stated per row;
+sub-subagent-gathered sources I did not personally full-read are graded from the verbatim excerpts
+returned (honest source-authority grade, access-depth flagged): treat their *interpretation* as
+~SUSPECT-until-reverified, but the *verbatim quotes* are first-party canonical text. Grade key:
+A = first-party canonical/primary spec or source; B = authoritative secondary or primary-but-
+narrower (issues, expert blog, wiki); C = community/indirect (none used at C this round).
+
+Row format: `[slug]` · what · URL · published · read-depth · grade-reasoning · relevance · via.
+
+**A — first-party canonical / primary**
+
+- `[A-gcc-developer-options-2024]` · GCC manual, Developer-Options (`-fcompare-debug`, `-gtoggle`,
+  `-fcompare-debug-second`, `-fdump-noaddr`/`-unnumbered`, `-frandom-seed`) ·
+  https://gcc.gnu.org/onlinedocs/gcc/Developer-Options.html · 2024 (current) · full [self-read,
+  local copy] · A: literal first-party spec of the shipped erasability gate, no rot · THE closest
+  prior-art to Dorc's gate + its normalization step · predecessor seed (Exa "GCC -fcompare-debug").
+- `[A-llvm-howtoupdatedebuginfo-2025]` · LLVM HowToUpdateDebugInfo (debugify/check-debugify,
+  `-verify-each-debuginfo-preserve`, the 4 DebugLoc special-values, coverage/origin tracking,
+  JSON→HTML) · https://llvm.org/docs/HowToUpdateDebugInfo.html · 2025 · full [self-read, local
+  copy] · A: official LLVM doc; defines inject-then-verify + the cleanest partition vocabulary ·
+  the named-sanctioned-divergence partition maps onto Dorc's gate spec · predecessor seed (Kagi).
+- `[A-rb-source-date-epoch-2017]` · r-b.org SOURCE_DATE_EPOCH *spec* (RFC2119 MUSTs; clamping) ·
+  https://reproducible-builds.org/specs/source-date-epoch/ · 2017-11 · full [self-read, local copy]
+  · A: authoritative r-b.org standard, named contributors · canonical metadata-inertness invariant
+  + normalize-don't-prohibit · predecessor seed (Kagi).
+- `[A-rustc-potential-query-instability-2025]` · rustc lint `POTENTIAL_QUERY_INSTABILITY` (rustdoc)
+  · https://doc.rust-lang.org/stable/nightly-rustc/rustc_lint/internal/static.POTENTIAL_QUERY_INSTABILITY.html
+  · 2025 · full [self-read, local copy] · A: the actual lint definition page · strongest
+  ordering-enforcement-beyond-convention mechanism · predecessor seed (Kagi).
+- `[A-gcc-wiki-vta-2007]` · A. Oliva, "A plan to fix local variable debug information in GCC"
+  (motivates `-fcompare-debug`; the must-not-change-codegen invariant + bootstrap-debug) ·
+  https://gcc.gnu.org/wiki/Var_Tracking_Assignments · 2007-12-20 draft · targeted [self-read, main
+  context] · A: primary design doc by the author · cross-compiler convergence on Dorc's exact
+  invariant + named-sanctioned-absence values · gathering subagent (Kagi), self-verified.
+- `[A-llvm-coding-2026]` · LLVM Coding Standards (two non-determinism rules; `llvm::sort` shuffle) ·
+  https://llvm.org/docs/CodingStandards.html · current · targeted [self-read section list; rule
+  bodies via gathering] · A: official coding standard · codifies the ordering-leak ban · gathering
+  subagent + self-verified headers.
+- `[A-rustc-fx-src-2026]` · rustc `rustc_data_structures/src/fx.rs` + `internal.rs` (FxIndexMap,
+  UnordMap/UnordSet, `define_stable_id_collections!`, `untracked_query_information`) ·
+  https://doc.rust-lang.org/stable/nightly-rustc/src/rustc_data_structures/fx.rs.html · 2026
+  (master) · targeted [gathered, verbatim source] · A: primary rustc source · the
+  ordered-vs-iteration-suppressed type split · gathering subagent (github MCP).
+- `[A-debian-variations-2026]` · tests.r-b.org Debian variations table (~20 injected variance axes)
+  · https://tests.reproducible-builds.org/debian/index_variations.html · self-dated 2026-05-27 ·
+  full [gathered, verbatim table] · A: live first-party config of the flagship variance-injection
+  system · THE variance-injection direction-shaper · gathering subagent (direct fetch).
+- `[A-debian-reproducible-2026]` · tests.r-b.org Debian stats (95.4% forky/amd64) ·
+  https://tests.reproducible-builds.org/debian/reproducible.html · fetched 2026-06-11 · full
+  [gathered] · A: live first-party stats · current reproducibility fraction + donated-compute note
+  · gathering subagent.
+- `[A-debian-issues-2026]` · tests.r-b.org ranked issues ("gcc captures build path" = 1,842 pkgs) ·
+  https://tests.reproducible-builds.org/debian/index_issues.html · fetched 2026-06-11 · full
+  [gathered] · A: live first-party ranked-offender list · recurring-offender data · gathering
+  subagent.
+- `[A-nixos-r13y-2026]` · reproducible.nixos.org GNOME-ISO tracker (95.18%) ·
+  https://reproducible.nixos.org/nixos-iso-gnome-r13y/ · fetched 2026-06-11 · full [gathered] · A:
+  live first-party NixOS dashboard · cross-distro rate · gathering subagent.
+- `[A-rb-deterministic-systems-2026]` · r-b.org "Deterministic build systems" (the 3-line unifying
+  rule) · https://reproducible-builds.org/docs/deterministic-build-systems/ · undated (actively
+  maintained) · full [gathered, verbatim] · A: first-party · unifying frame for the taxonomy ·
+  gathering subagent.
+- `[A-rb-perimeter-2026]` · r-b.org "Perimeter" (build-environment; what may be frozen) ·
+  https://reproducible-builds.org/docs/perimeter/ · undated · full [gathered, verbatim] · A:
+  first-party · the normalize-vs-freeze split → decision-vs-explanation planes · gathering subagent.
+- `[A-rb-stable-inputs-2026]` · r-b.org "Stable inputs" (ORDERING; `$(sort $(wildcard))`) ·
+  https://reproducible-builds.org/docs/stable-inputs/ · undated · full [gathered, verbatim] · A:
+  first-party · THE central ordering-leak category · gathering subagent.
+- `[A-rb-timestamps-2026]` · r-b.org "Timestamps" · https://reproducible-builds.org/docs/timestamps/
+  · ~2015 vintage · full [gathered, verbatim] · A: first-party · #1 leak category · gathering
+  subagent.
+- `[A-rb-build-path-2026]` · r-b.org "Build path" (`-ffile-prefix-map`; debugedit war-story) ·
+  https://reproducible-builds.org/docs/build-path/ · undated · full [gathered, verbatim] · A:
+  first-party · in-place-strip-fails-if-presence-perturbed-ordering warning · gathering subagent.
+- `[A-rb-value-init-2026]` · r-b.org "Value initialization" (uninitialized memory; coreboot `={0}`)
+  · https://reproducible-builds.org/docs/value-initialization/ · undated · full [gathered,
+  verbatim] · A: first-party · garbage-from-environment leak · gathering subagent.
+- `[A-rb-archives-2026]` · r-b.org "Archives" (file order/uid/gid/mtime; tar-PID leak) ·
+  https://reproducible-builds.org/docs/archives/ · actively maintained (2024 refs) · full
+  [gathered, verbatim] · A: first-party · serialization-identity analogue · gathering subagent.
+- `[A-rb-randomness-2026]` · r-b.org "Randomness" · https://reproducible-builds.org/docs/randomness/
+  · undated · full [gathered, verbatim] · A: first-party · PRNG/seed leak · gathering subagent.
+- `[A-rb-version-info-2026]` · r-b.org "Version information" (abbrev-hash-length surprise) ·
+  https://reproducible-builds.org/docs/version-information/ · undated · full [gathered, verbatim] ·
+  A: first-party · version/counter leak · gathering subagent.
+- `[A-rb-locales-2026]` · r-b.org "Locales" · https://reproducible-builds.org/docs/locales/ ·
+  undated · full [gathered, verbatim] · A: first-party · collation-order entanglement · gathering
+  subagent.
+- `[A-rb-timezones-2026]` · r-b.org "Timezones" · https://reproducible-builds.org/docs/timezones/ ·
+  undated · full [gathered, verbatim] · A: first-party · tz leak · gathering subagent.
+- `[A-rb-volatile-inputs-2026]` · r-b.org "Volatile inputs" ·
+  https://reproducible-builds.org/docs/volatile-inputs/ · undated · full [gathered, verbatim] · A:
+  first-party · network-input leak (less Dorc-applicable) · gathering subagent.
+- `[A-rb-stripping-2026]` · r-b.org "Stripping unreproducible information" ·
+  https://reproducible-builds.org/docs/stripping-unreproducible-information/ · undated · full
+  [gathered, verbatim] · A: first-party · post-hoc normalization category · gathering subagent.
+- `[A-rb-tools-2026]` · r-b.org tools page (reprotest, disorderfs defs) ·
+  https://reproducible-builds.org/tools/ · current · full [gathered, verbatim] · A: first-party ·
+  variance-injection + adversarial-fs tooling · gathering subagent.
+- `[A-diffoscope-2026]` · diffoscope home (recursive-unpack/normalize compare strategy) ·
+  https://diffoscope.org/ · release 318, 2026-05-01 · full [gathered, verbatim] · A: first-party
+  tool home · the comparison-partition-as-tool design · gathering subagent.
+
+**B — authoritative secondary / primary-but-narrower**
+
+- `[B-meiklejohn-tax-2026]` · C. Meiklejohn, "The Tax on the Happy Path" (killed a redundant per-PR
+  proof-gate) · https://christophermeiklejohn.com/ai/zabriskie/agents/reliability/caucus/2026/04/21/the-tax-on-the-happy-path.html
+  · 2026-04-21 · full [gathered, verbatim] · B not A: single-practitioner postmortem (distsys
+  researcher), exactly the compare-gate-rot war story · the two-question gate test +
+  cost-grows-benefit-doesn't · gathering subagent (Exa).
+- `[B-abrahms-citheater-2026]` · J. Abrahms, "CI Theater: we deleted our flaky tests and nothing
+  broke" (80% silent quarantine) · https://justin.abrah.ms/blog/2026-02-26-ci-theater-we-deleted-our-flaky-tests-and-nothing-broke.html
+  · 2026-02-26 · full [gathered, verbatim] · B: practitioner account w/ hard numbers (Thrive
+  Market) · the silent-no-op rot failure mode · gathering subagent (Exa).
+- `[B-go-rebuild-2023]` · R. Cox, "Perfectly Reproducible, Verified Go Toolchains" ·
+  https://go.dev/blog/rebuild · 2023-08-28 · full [gathered, verbatim] · B not A: official Go blog
+  but a post not a spec · release-gating double-build + what-Go-banned · gathering subagent
+  (Kagi+Exa).
+- `[B-llvm-discourse-43131-2016]` · M.S. Grang, "Non-determinism in LLVM codegen" (reverse-iterate
+  effort) · https://discourse.llvm.org/t/non-determinism-in-llvm-codegen/43131 · 2016-11-15 · full
+  [gathered, verbatim] · B/A-: primary mailing-list thread, foundational ordering effort · the
+  adversarial reverse-iteration mechanism · gathering subagent (Kagi).
+- `[B-maskray-hyrum-2026]` · MaskRay, "Fighting Hyrum's Law in LLVM" (survey w/ commits) ·
+  https://maskray.me/blog/2026-05-10-fighting-hyrum-s-law-in-llvm · 2026-05-10 · targeted [gathered]
+  · B as secondary; author is a senior LLVM contributor quoting A-grade source/commits verbatim ·
+  hash-seed-perturbation + llvm::sort-shuffle + reverse-iteration consolidated · gathering subagent.
+- `[B-llvm-progman-2026]` · LLVM Programmer's Manual (SetVector/MapVector defs) ·
+  https://llvm.org/docs/ProgrammersManual.html · current · targeted [gathered, verbatim] · B (could
+  be A — first-party; B only because access was excerpt-level) · the named deterministic container
+  types · gathering subagent.
+- `[B-clang-tidy-nondeterministic-2026]` · clang-tidy
+  `bugprone-nondeterministic-pointer-iteration-order` ·
+  https://clang.llvm.org/extra/clang-tidy/checks/bugprone/nondeterministic-pointer-iteration-order.html
+  · current · targeted [gathered, verbatim] · B (first-party doc, excerpt access) · proof the
+  ordering ban can be a static lint · gathering subagent.
+- `[B-gcc-bugzilla-kw-2026]` · GCC Bugzilla keyword descriptions (`compare-debug-failure` = 253) ·
+  https://gcc.gnu.org/bugzilla/describekeywords.cgi · live 2026-06-11 · targeted [gathered] · B:
+  live first-party count, but a floor (only third-category failures) · the bug-class magnitude ·
+  gathering subagent (Kagi, corrected a mis-scrape that read 87).
+- `[B-gcc-bootstrap-failures-2026]` · GCC install/build.html + bootstrap-comparison-failure reports
+  (bootstrap-debug variants; "Bootstrap comparison failure!") · https://gcc.gnu.org/install/build.html
+  (+ bugzilla 122482, discourse 10966, gentoo 932782) · current/various · targeted [gathered,
+  verbatim] · B: official build doc + real bug instances · the shipped byte-identity compare gate +
+  its friction · gathering subagent (Kagi).
+- `[B-rust-issue-75362-2020]` · rust-lang/rust #75362 "CI for deterministic / reproducible builds"
+  (OPEN) · https://github.com/rust-lang/rust/issues/75362 · 2020→2025-04 · full [gathered,
+  verbatim] · B: primary issue · the cautionary no-in-tree-gate case · gathering subagent (github
+  MCP).
+- `[B-rust-issue-34902-2016]` · rust-lang/rust #34902 "Bit-for-bit deterministic / reproducible
+  builds" (closed 2020) · https://github.com/rust-lang/rust/issues/34902 · 2016→2020 · targeted
+  [gathered, verbatim body; 76 comments not paged] · B: primary tracking issue · rustc repro
+  history · gathering subagent.
+- `[B-rust-issue-90301-2021]` · rust-lang/rust #90301 (LLVM-13 codegen drift) ·
+  https://github.com/rust-lang/rust/issues/90301 · 2021 · targeted [gathered, verbatim] · B:
+  primary issue · codegen-nondeterminism source · gathering subagent.
+- `[B-rust-issue-71361-2020]` · rust-lang/rust #71361 (`-C metadata` hash differs by OS) ·
+  https://github.com/rust-lang/rust/issues/71361 · 2020 · targeted [gathered, verbatim] · B:
+  primary issue · hash-nondeterminism source · gathering subagent.
+- `[B-rust-issue-50556-2018]` · rust-lang/rust #50556 (parallel-codegen nondeterminism) ·
+  https://github.com/rust-lang/rust/issues/50556 · 2018 · targeted [gathered, verbatim] · B:
+  primary issue · parallelism-nondeterminism source · gathering subagent.
+- `[B-rust-issue-97955-2022]` · rust-lang/rust #97955 (source-path in panic/debug strings) ·
+  https://github.com/rust-lang/rust/issues/97955 · 2022 · targeted [gathered, verbatim] · B:
+  primary issue · the path-leak motivating `--remap-path-prefix` · gathering subagent.
+- `[B-rust-issue-63713-2019]` · rust-lang/rust #63713 ("Create a deterministic FxHashMap wrapper" —
+  genesis of UnordMap) · https://github.com/rust-lang/rust/issues/63713 · 2019 · targeted
+  [gathered, verbatim] · B: primary issue · the iteration-suppressed-type design intent · gathering
+  subagent.
+- `[B-rustc-cli-args-2026]` · rustc book, command-line-arguments (`--remap-path-prefix`/`-scope`) ·
+  https://doc.rust-lang.org/rustc/command-line-arguments.html · 2026 · targeted [gathered,
+  verbatim] · B (first-party book, excerpt access) · build-path normalization flag · gathering
+  subagent.
+- `[B-rustc-devguide-incr-2026]` · rustc-dev-guide, incremental-compilation (determinism rationale;
+  ordered query-read tracking) · https://rustc-dev-guide.rust-lang.org/queries/incremental-compilation.html
+  · 2026 · targeted [gathered, verbatim] · B (first-party guide, excerpt access) · why determinism
+  is load-bearing (green-means-skip) · gathering subagent.
+- `[B-roslyn-det-2026]` · dotnet/roslyn "Deterministic Inputs" + Learn (`/deterministic`,
+  `/pathmap`) · https://github.com/dotnet/roslyn/blob/main/docs/compilers/Deterministic%20Inputs.md
+  · current · targeted [gathered, verbatim] · B: primary Roslyn doc · the same determinism move in
+  .NET · gathering subagent.
+- `[B-rebuilderd-2026]` · kpcyrd/rebuilderd README (independent-rebuild verifier) ·
+  https://github.com/kpcyrd/rebuilderd · current · targeted [gathered, verbatim] · B: primary repo
+  README · the rebuild-vs-shipped-binary verification model · gathering subagent.
+- `[B-archwiki-rebuilderd-2026]` · ArchWiki Rebuilderd (per-worker RAM; retry cadence) ·
+  https://wiki.archlinux.org/title/Rebuilderd · current · targeted [gathered, verbatim] · B:
+  authoritative wiki · infra-cost data point · gathering subagent.
+- `[B-debian-micronews-2025]` · Debian micronews ">95% reproducible" announcement ·
+  https://micronews.debian.org/2025/1746302888.html · 2025-05-03 · targeted [gathered, verbatim] ·
+  B: official Debian micronews · dated rate corroboration · gathering subagent.
+- `[B-malka-nixpkgs-2025]` · Malka/Zacchiroli/Zimmermann, "Does Functional Package Management Enable
+  Reproducible Builds at Scale?" (709,816 pkgs, 69-91%) · https://hal.science/hal-04913007 · 2025 ·
+  snippet [gathered, via RB report + HN, NOT full-read] · B: peer-reviewed academic accessed via
+  secondary quote · nixpkgs-scale numbers · gathering subagent.
+- `[B-arxiv-java-2025]` · arXiv 2504.21679 "Causes and Canonicalization of Unreproducible Builds in
+  Java" (12,803 artifacts; timestamps #1) · https://arxiv.org/html/2504.21679v3 · 2025 · targeted
+  [gathered, verbatim] · B: arXiv preprint w/ large dataset · ranked-cause + canonicalization
+  taxonomy · gathering subagent.
+- `[B-rb-report-2025-01]` · r-b.org monthly report Jan 2025 (15% build-date failures) ·
+  https://reproducible-builds.org/reports/2025-01/ · 2025-01 · targeted [gathered, verbatim] · B:
+  first-party report quoting the academic figure · cause-fraction data · gathering subagent.
+- `[B-yocto-repro-2026]` · Yocto reproducible-build results (100.00%) ·
+  https://www.yoctoproject.org/reproducible-build-results/ · fetched 2026-06-11 · targeted
+  [gathered, verbatim] · B: first-party dashboard · cross-distro rate · gathering subagent.
+- `[B-r13y-2021]` · r13y.com NixOS minimal-ISO tracker (99.77%) · https://r13y.com/ · ~2021 snapshot
+  · snippet [gathered, NOT full-read] · B: first-party tracker via older index snapshot · NixOS
+  minimal-ISO rate · gathering subagent.
+- `[B-zephyr-50205-2022]` · zephyrproject-rtos/zephyr #50205 "Verify builds are reproducible in the
+  CI" (per-PR-vs-nightly cost debate; cheap-checksum-line) ·
+  https://github.com/zephyrproject-rtos/zephyr/issues/50205 · 2022 · targeted [gathered, verbatim]
+  · B: primary issue · the live cost-tradeoff + dual expensive-gate-plus-cheap-signal pattern ·
+  gathering subagent (Kagi).
+- `[B-wikipedia-reproducible-2026]` · Wikipedia "Reproducible builds" (expert survey 58.8%/70.6%;
+  ASLR/hash-seed normalization summary) · https://en.wikipedia.org/wiki/Reproducible_builds ·
+  current · targeted [gathered, verbatim] · B: tertiary but well-cited · cost/utility perception +
+  historical anchor · gathering subagent.
+
+### Open threads / fetch-requests (blocked or not-yet-read — for a follow-up turn)
+
+- ot-1. `strip-nondeterminism` authoritative per-format handler list — salsa.debian.org robots.txt
+  blocks `/*/raw`; metacpan JS-challenged; no GitHub mirror. Substitute used (Debian package
+  long-description + r-b.org tools page). A browser fetch of the salsa README closes it. Low
+  priority (the concept is fully captured).
+- ot-2. Live Arch reproducibility % — reproducible.archlinux.org is JS-rendered. Needs JS fetch or
+  `rebuildctl -H https://reproducible.archlinux.org pkgs ls`. Low priority.
+- ot-3. rustc-book "Remap source paths" deep sub-chapter body
+  (https://doc.rust-lang.org/rustc/command-line-arguments/remap-path-prefix.html). Low priority.
+- ot-4. A consolidated nondeterminism-source checklist inside rust #34902 — its body has none; would
+  require paging 76 comments. Low priority (the per-bug issues §5 cover the taxonomy).
+- ot-5. MSVC C++ *linker* `/DETERMINISTIC` + `/PATHMAP` verbatim docs (live under the linker
+  reference). Low priority; C#/Roslyn equivalents are the on-point ones.
+- ot-6. `[B-malka-nixpkgs-2025]` and `[B-r13y-2021]` accessed via secondary quote / older snapshot,
+  not full-read — interpretation ~SUSPECT pending a direct read; numbers corroborated by
+  `[A-nixos-r13y-2026]` (live), so low risk.
+
