@@ -180,6 +180,28 @@ warm-ups (d×d host-flip fixture; var-resolved redirect case) → 22x synthesis 
   necessary (stable per-line ID-comment + <artifact>.sh.log mapping IDs→receipts) —
   human explicitly dislikes it; do not pursue unless necessary. Closes
   ask-partition + ask-comments.
+- ru-13 (human, post-synthesis): full-engine-rerun-to-fixpoint is a likely
+  attempted-if-not-fully-built path — wanted ALSO to avoid back-propagation /
+  phase-fusing in the analyzer generally, not just for receipts-retraction. Effect:
+  the no-full-why bet (lineage + witness-at-licenses, retraction-by-recompute) rides
+  an engine mechanism that is planned anyway; the receipts plane stays forward-built/
+  backward-queried with no feedback edges; and the erasability gate's run-twice shape
+  matches the engine's native mode (synergy: the gate's marginal harness cost drops).
+  Conductor watch-item (-GUESS): if rerun-to-fixpoint becomes the change-handling
+  story, the per-tier epoch vector (220 vp-8) demotes from invalidation-machinery to
+  a pure dashboard/why hint — don't build it load-bearing.
+- fr-criticality ruling context (conductor answer, recorded): fr-1 (CACM WER paper)
+  = verification garnish, drop-in-whenever; fr-2 (VMCAI'12) = drop-in-later but with
+  a soft deadline — wanted before arch-2's over-suppression hostile pass (crosscheck
+  x-2), since it's the formal grounding for the suppression-soundness posture (dc-7).
+  Neither is go-to-the-machine-now load-bearing; the build arcs don't block on either.
+- Context-practice directive (human, post-synthesis): heavy note re-reads risk
+  auto-compaction (conductor at ~565k/1M at the time); prefer one-at-a-time reads
+  feeding a single running synthesis. State when received: digestion already complete
+  and plans/22A already written — 22A now serves as the canonical compressed
+  artifact; FORWARD practice adopted: post-compaction and during the build phase,
+  work from 22A + targeted Grep-slices of 225-229, never wholesale re-reads; builder
+  briefs cite 22A conclusions + specific note sections, not full notes.
 - Conductor analysis recorded with ru-12 (~SUSPECT, verify at arch-1 spec time): the
   EXISTING provenance_comment emitter is fact-plane-derived (edit/disposition
   ledger, not receipts), so current artifact comments sit safely INSIDE the
