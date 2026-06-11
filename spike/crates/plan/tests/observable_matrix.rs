@@ -1211,7 +1211,6 @@ fn inline_call_inside_loop_is_floored_even_when_converged() {
         "the in-loop floor prevents the inlined call from eliding"
     );
 }
-||||||| parent of 0d3cc92 ((AI fix ana) span-render: group adjacent multi-line edits, quote-safe comment (P1 21E))
 
 // ===========================================================================
 // P1 fix 21E (note 214 §9 hunt-7): two ADJACENT elidable MULTI-LINE leaves.
