@@ -201,41 +201,108 @@ pub const JOIN_PARENT_CAP: usize = 4;
 /// all — the order leak is a compile error, not a discipline-by-convention), used only for
 /// `mint`'s already-present-lookup. The arena is a write-only-then-read log; nothing
 /// re-ingests it across runs (`kSTATE` stays parked — `ru-12`/`f-6`).
+///
+/// # The erasability gate's adversarial seam ([`ProvArena::adversarial`])
+///
+/// The gate's run-B needs an arena that assigns deliberately-WRONG receipt values and
+/// *reverses* join-parent order, so any decision that secretly read a receipt value or
+/// origin-order would diverge from run-A (`22A` concl-1, the variance-injection mandate;
+/// `notes/229` finding-2 — Debian's SENTINEL values, not a tame shift). [`Variation`] is that
+/// DI'd seam: in `Adversarial` mode every freshly-assigned id is a high-range SENTINEL with an
+/// odd stride (so its value, parity, ordering, and modulo-residues are all unrelated to a
+/// `None` run's small append-order ids — a leak doing ANY arithmetic on a receipt diverges),
+/// and every [`join`](Self::join) reverses its inbound parents. The arena stays internally
+/// consistent (hash-consing still returns the stored id; a parallel `ids` vector makes
+/// [`node`](Self::node) resolve any id scheme), so the analyzer runs identically — only the
+/// receipt *values/order* differ. The gate asserts the decision output is byte-identical
+/// regardless; a divergence IS a receipt-into-decision leak. The seam is the analyzer's only
+/// nondeterminism knob here and stays fully injected (`inv-determinism`): production always
+/// uses [`new`](Self::new) (`Variation::None`).
 #[derive(Debug, Default)]
 pub struct ProvArena {
-    /// The origins, indexed by `ProvId(i+1)`. Append-only.
+    /// The origins, in insertion order. Append-only. Indexed positionally; the assigned id is
+    /// in `ids` at the same position (so any id scheme resolves back via [`node`](Self::node)).
     nodes: Vec<OriginNode>,
+    /// The assigned [`ProvId`] per node-index (parallel to `nodes`). Lets [`node`](Self::node)
+    /// resolve an id under ANY assignment scheme (the adversarial sentinels are not a simple
+    /// arithmetic shift), by matching the id here.
+    ids: Vec<ProvId>,
     /// Dedup index: a structurally-equal node maps to its existing id (hash-consing). An
     /// [`IterSuppressedMap`] — equality, not order, is all it needs, and the missing iteration
     /// API guarantees its hash order can never leak into output.
     cons: IterSuppressedMap<OriginNode, ProvId>,
+    /// The gate's variance knob (production: `None`).
+    variation: Variation,
 }
 
+/// How a [`ProvArena`] varies its receipt assignment — the erasability gate's DI'd seam
+/// (`22A` concl-1). Production is always [`Variation::None`]; the gate's run-B is
+/// [`Variation::Adversarial`].
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub enum Variation {
+    /// Plain append-order ids, parents in offered order — the production arena.
+    #[default]
+    None,
+    /// Receipt values are high-range SENTINELS (odd-strided, seed-shifted) and join parents
+    /// REVERSED, so a decision reading a receipt value/order/parity/residue diverges from a
+    /// `None` run (the gate's leak probe — `22A` concl-1's sentinel mandate, not a tame shift).
+    Adversarial { seed: u32 },
+}
+
+/// The adversarial sentinel base — a high u32 so run-B's ids cannot collide with or relate to a
+/// `None` run's small append-order ids. Far below `u32::MAX` so the odd-strided counter never
+/// overflows for any realistic arena (`inv-no-throw`: a saturating add guards even so).
+const SENTINEL_BASE: u32 = 0xF000_0000;
+/// An odd stride (so successive sentinels alternate parity — a leak reading id-parity diverges)
+/// that is not a small power of two (so modulo-residue leaks diverge too).
+const SENTINEL_STRIDE: u32 = 0x0001_9E37;
+
 impl ProvArena {
-    /// A fresh empty arena (one per analyzer run).
+    /// A fresh empty arena (one per analyzer run) — the production arena ([`Variation::None`]).
     #[must_use]
     pub fn new() -> Self {
         Self::default()
+    }
+
+    /// A fresh arena that ADVERSARIALLY varies receipt assignment (the erasability gate's
+    /// run-B, `22A` concl-1): high-range odd-strided SENTINEL ids, join parents reversed.
+    /// Internally consistent (the analyzer runs identically); only receipt values/order differ,
+    /// so a decision divergence from a [`new`](Self::new) run is a receipt-into-decision leak.
+    #[must_use]
+    pub fn adversarial(seed: u32) -> Self {
+        Self {
+            variation: Variation::Adversarial { seed },
+            ..Self::default()
+        }
     }
 
     /// Mint (or hash-cons) an origin, returning its receipt. A structurally-identical origin
     /// already in the arena returns the SAME id without growing — the sharing that keeps the
     /// arena bounded under fixpoint re-derivation.
     ///
-    /// Append-order id assignment is deterministic; `u32::MAX` is the saturating ceiling (the
-    /// no-throw posture — an arena that large is a pathological corpus, not a correctness bug).
+    /// Append-order id assignment is deterministic (`Variation::None`: id = `index + 1`);
+    /// `u32::MAX` is the saturating ceiling (the no-throw posture). Under
+    /// [`Variation::Adversarial`] the value is a high-range odd-strided SENTINEL (deliberately
+    /// unrelated to a `None` run's ids — the gate's leak probe), but hash-consing still returns
+    /// the stored id for a repeat, so the arena stays internally consistent regardless.
     pub fn mint(&mut self, node: OriginNode) -> ProvId {
         if let Some(&id) = self.cons.get(&node) {
             return id;
         }
-        // The next id is the current count + 1 (id 0 reserved for the Option niche). Saturate
-        // rather than panic (`inv-no-throw`); a clash at the ceiling re-cons's onto MAX, which
-        // is sound (it only ever over-shares provenance, never a decision).
-        let raw = u32::try_from(self.nodes.len())
-            .unwrap_or(u32::MAX - 1)
-            .saturating_add(1);
+        let index = u32::try_from(self.nodes.len()).unwrap_or(u32::MAX - 1);
+        let raw = match self.variation {
+            // id 0 reserved for the Option niche ⇒ index + 1.
+            Variation::None => index.saturating_add(1),
+            // A high SENTINEL with an odd stride + seed shift: value/parity/ordering/residue all
+            // unrelated to a `None` run's ids (`22A` concl-1). Saturating throughout (no panic).
+            Variation::Adversarial { seed } => SENTINEL_BASE
+                .saturating_add(seed)
+                .saturating_add(index.saturating_mul(SENTINEL_STRIDE))
+                .max(1),
+        };
         let id = ProvId(NonZeroU32::new(raw).unwrap_or(NonZeroU32::MAX));
         self.nodes.push(node.clone());
+        self.ids.push(id);
         self.cons.insert(node, id);
         id
     }
@@ -260,12 +327,20 @@ impl ProvArena {
     /// re-sort (it cannot — `ProvId` has no `Ord`); it trusts the caller's stable order and
     /// caps positionally. A single-element `inbound` is returned as-is (no join node — a join
     /// of one origin IS that origin), keeping the arena minimal.
+    ///
+    /// Under [`Variation::Adversarial`] the inbound order is REVERSED before capping (the
+    /// gate's run-B origin-order perturbation, `22A` concl-1): if any decision read the
+    /// surviving-parent set or its order, run-B would diverge from a `None` run.
     pub fn join(&mut self, site: Option<Span>, inbound: &[ProvId]) -> Option<ProvId> {
         match inbound {
             [] => None,
             [only] => Some(*only),
             many => {
-                let kept: Vec<ProvId> = many.iter().take(JOIN_PARENT_CAP).copied().collect();
+                let mut offered: Vec<ProvId> = many.to_vec();
+                if matches!(self.variation, Variation::Adversarial { .. }) {
+                    offered.reverse();
+                }
+                let kept: Vec<ProvId> = offered.iter().take(JOIN_PARENT_CAP).copied().collect();
                 let truncated =
                     u32::try_from(many.len().saturating_sub(JOIN_PARENT_CAP)).unwrap_or(u32::MAX);
                 Some(self.mint(OriginNode {
@@ -284,9 +359,19 @@ impl ProvArena {
     /// not hold the arena cannot read receipt data, so a license cannot depend on one). For
     /// the lazy controller-side why-render and the gate's structural assertions. Returns
     /// `None` for an id not from this arena (defensive; never panics — `inv-no-throw`).
+    ///
+    /// Resolves under ANY id scheme (the `None` index-arithmetic OR an adversarial sentinel) by
+    /// the parallel `ids` vector: the fast `None` path is direct indexing; otherwise a scan
+    /// (arenas are tiny and `node` is lazy/controller-side, never hot).
     #[must_use]
     pub fn node(&self, id: ProvId) -> Option<&OriginNode> {
-        self.nodes.get((id.index() as usize).checked_sub(1)?)
+        match self.variation {
+            Variation::None => self.nodes.get((id.index() as usize).checked_sub(1)?),
+            Variation::Adversarial { .. } => {
+                let pos = self.ids.iter().position(|&stored| stored == id)?;
+                self.nodes.get(pos)
+            }
+        }
     }
 
     /// How many origins the arena holds — for the gate's growth assertions and the digest's
@@ -313,7 +398,7 @@ mod tests {
     }
 
     #[test]
-    fn provid_is_option_niche_packed() {
+    fn prov_id_is_option_niche_packed() {
         // notes/220 §6: ProvId must be Option-niche-friendly so a value with no origin pays
         // nothing. NonZeroU32 backing makes Option<ProvId> one word.
         assert_eq!(
@@ -409,5 +494,54 @@ mod tests {
         // An id whose index exceeds the arena resolves to None (defensive; never panics).
         let bogus = ProvId(NonZeroU32::new(999).unwrap());
         assert_eq!(a.node(bogus), None);
+    }
+
+    #[test]
+    fn adversarial_arena_assigns_different_ids_but_reads_back() {
+        // The gate's run-B seam (22A concl-1): an adversarial arena assigns DIFFERENT receipt
+        // VALUES than a plain one (so a decision reading a specific value would diverge), yet
+        // a node still reads back through `node()` (the offset is reversed). This is the
+        // sentinel-ProvId mechanism: run-B's ids are deliberately not run-A's.
+        let mut plain = ProvArena::new();
+        let mut adv = ProvArena::adversarial(1000);
+        let p = plain.leaf(OriginKind::TopCause, Some(span(0, 3)));
+        let v = adv.leaf(OriginKind::TopCause, Some(span(0, 3)));
+        assert_ne!(
+            p.index(),
+            v.index(),
+            "adversarial ids differ from plain (the leak probe)"
+        );
+        // …but the adversarial node still resolves (offset reversed in `node`).
+        let node = adv.node(v).expect("adversarial node reads back");
+        assert_eq!(node.kind, OriginKind::TopCause);
+        assert_eq!(node.site, Some(span(0, 3)));
+    }
+
+    #[test]
+    fn adversarial_arena_reverses_join_parents() {
+        // The gate's origin-order perturbation (22A concl-1): an adversarial join reverses the
+        // offered parents before capping, so the surviving-parent SET differs when truncation
+        // bites. Over-cap by one so reversal changes which parent is dropped.
+        let n = JOIN_PARENT_CAP + 1;
+        let mut plain = ProvArena::new();
+        let p_parents: Vec<ProvId> = (0..u32::try_from(n).unwrap())
+            .map(|i| plain.leaf(OriginKind::BookSource, Some(span(i, i + 1))))
+            .collect();
+        let p_join = plain.join(Some(span(0, 99)), &p_parents).unwrap();
+        let p_kept = plain.node(p_join).unwrap().parents.ids().to_vec();
+
+        let mut adv = ProvArena::adversarial(0); // seed 0 ⇒ same ids, but join still reverses
+        let a_parents: Vec<ProvId> = (0..u32::try_from(n).unwrap())
+            .map(|i| adv.leaf(OriginKind::BookSource, Some(span(i, i + 1))))
+            .collect();
+        let a_join = adv.join(Some(span(0, 99)), &a_parents).unwrap();
+        let a_kept = adv.node(a_join).unwrap().parents.ids().to_vec();
+
+        // Plain keeps the FIRST cap parents; adversarial keeps the LAST cap (reversed), so the
+        // dropped parent differs — the order perturbation is observable in the witness.
+        assert_ne!(
+            p_kept, a_kept,
+            "adversarial join reverses parents ⇒ a different survivor set when truncated"
+        );
     }
 }

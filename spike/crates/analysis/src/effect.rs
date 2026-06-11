@@ -357,26 +357,66 @@ fn render_argv(argv: &[ValueOf], interner: &Interner) -> String {
 /// Facts mutated by some command on a path to here — or `Top` once an `Opaque`
 /// command has run (then ANY fact may have changed). This is the reaching-defs
 /// lattice; a fact is ambient at a point iff it is NOT in the in-state here.
-#[derive(Debug, Clone, PartialEq, Eq)]
+///
+/// `Top` now carries a **cause receipt** (arch-1 `Top(cause)`, `notes/220` §6 / `21Z`):
+/// `Reach::Top` was "causally opaque" — it recorded THAT a give-up happened, not WHICH
+/// command caused it. The [`ProvId`] makes the ⊤-poison cascade attributable (the
+/// why-lens consumer, arch-2): every poisoned downstream site can name the origin that
+/// poisoned it.
+///
+/// THE WELD (ru-11 / `22A` §1 arch-1): the cause is on the **exempt** plane — it may
+/// influence no decision. Two structural facts enforce that here:
+/// * the cause is **excluded from `Eq`** (the hand-written impl below compares only the
+///   variant + fact-set), so `Top(a) ≡ Top(b)` exactly as the contract demands. This is
+///   not merely a keying nicety — `solve`'s fixpoint test is `joined != state[w]`
+///   (`solve.rs`), so a cause-sensitive `Eq` would make a ⊤ re-derived with a fresh cause
+///   look "changed" forever and the worklist would NOT terminate. Excluding the cause is
+///   correctness-critical, and the gate (`plan::erasability`) re-proves it adversarially.
+/// * `classify` returns only [`SkipClass`]es; the cause never rides out of this module
+///   into a license input. It is read only by the (controller-side, lazy) why-render.
+#[derive(Debug, Clone)]
 pub enum Reach {
     Facts(BTreeSet<FactKey>),
-    Top,
+    /// ⊤ with its cause receipt (the give-up origin). The cause is EXEMPT (excluded from
+    /// `Eq`/the fixpoint), per the WELD.
+    Top(dorc_core::ProvId),
 }
+
+/// `Eq` **excludes the `Top` cause** (the WELD + termination, see [`Reach`]): two `Top`s
+/// are equal regardless of cause, so the lattice fixpoint converges and a receipt can never
+/// perturb the reaching-defs solution. `Facts` compares its set as usual.
+impl PartialEq for Reach {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Reach::Top(_), Reach::Top(_)) => true,
+            (Reach::Facts(a), Reach::Facts(b)) => a == b,
+            _ => false,
+        }
+    }
+}
+impl Eq for Reach {}
 
 impl Lattice for Reach {
     fn bottom() -> Self {
         Reach::Facts(BTreeSet::new())
     }
     fn join(&self, other: &Self) -> Self {
-        match (self, other) {
-            (Reach::Top, _) | (_, Reach::Top) => Reach::Top,
-            (Reach::Facts(a), Reach::Facts(b)) => Reach::Facts(a.union(b).copied().collect()),
+        // ⊤ absorbs, carrying a cause. First-cause-wins (`notes/220` §6: "keep first-cause or
+        // a k-capped Join node" — first-cause is termination-trivial here, and since `Eq`
+        // ignores the cause the choice is decision-invariant by construction). When `self` is
+        // ⊤ its cause carries; else if `other` is ⊤ that cause carries; else union the facts.
+        match self {
+            Reach::Top(cause) => Reach::Top(*cause),
+            Reach::Facts(a) => match other {
+                Reach::Top(cause) => Reach::Top(*cause),
+                Reach::Facts(b) => Reach::Facts(a.union(b).copied().collect()),
+            },
         }
     }
     fn meet(&self, other: &Self) -> Self {
         match (self, other) {
             // `Top` is the join-absorbing ⊤, hence meet's identity (`⊤ ⊓ x = x`).
-            (Reach::Top, x) | (x, Reach::Top) => x.clone(),
+            (Reach::Top(_), x) | (x, Reach::Top(_)) => x.clone(),
             (Reach::Facts(a), Reach::Facts(b)) => {
                 Reach::Facts(a.intersection(b).copied().collect())
             }
@@ -387,7 +427,8 @@ impl Lattice for Reach {
 impl Reach {
     fn with(&self, fact: FactKey) -> Reach {
         match self {
-            Reach::Top => Reach::Top,
+            // ⊤ absorbs an establish (its cause is preserved).
+            Reach::Top(cause) => Reach::Top(*cause),
             Reach::Facts(s) => {
                 let mut s = s.clone();
                 s.insert(fact);
@@ -397,8 +438,18 @@ impl Reach {
     }
     fn mutated(&self, fact: &FactKey) -> bool {
         match self {
-            Reach::Top => true,
+            Reach::Top(_) => true,
             Reach::Facts(s) => s.contains(fact),
+        }
+    }
+
+    /// The ⊤ cause receipt, if this state is `Top` (the why-lens's read; never a decision
+    /// input — the WELD). `None` for a `Facts` state.
+    #[must_use]
+    pub fn top_cause(&self) -> Option<dorc_core::ProvId> {
+        match self {
+            Reach::Top(cause) => Some(*cause),
+            Reach::Facts(_) => None,
         }
     }
 
@@ -526,12 +577,22 @@ fn reachable_from_entry(cfg: &Cfg) -> Vec<bool> {
 
 /// The reaching-defs transfer: `out = in ⊔ gen(node)`, with an optional `suppress` node
 /// whose gen is SKIPPED (task-L2 item-3(b) self-reach). Each cell gens its fact; an Opaque
-/// joins ⊤; Pure/Queries gen nothing. Suppressing a Members site's gen (its self-
+/// joins ⊤ **with this node's pre-minted cause** (`top_causes[node]`, the arch-1
+/// `Top(cause)`); Pure/Queries gen nothing. Suppressing a Members site's gen (its self-
 /// establishes) lets the back-edge carry only OTHER writers' cells to its in-state, so a
 /// pristine result there proves only-self-reaches. Pure; monotone (a smaller gen set is
 /// still monotone) and finite-height ⇒ `solve` converges.
+///
+/// `top_causes[node]` is the node's pre-minted give-up cause, present iff the node bears an
+/// `Opaque` (`classify` mints one per such node); `fallback_cause` is a single arena-real
+/// `TopCause` covering the should-not-happen case. Both are computed ONCE up front (in
+/// [`classify`], where the arena's `&mut` lives), so the transfer stays a pure `Fn` callable
+/// inside `solve`'s closure and the arena is never mutated mid-fixpoint. The cause is EXEMPT
+/// (excluded from `Reach`'s `Eq`, [`Reach`]), so it cannot perturb the fixpoint or any decision.
 fn reach_transfer(
     effects: &[Vec<CommandEffect>],
+    top_causes: &[Option<dorc_core::ProvId>],
+    fallback_cause: dorc_core::ProvId,
     incoming: &Reach,
     node: usize,
     suppress: Option<usize>,
@@ -543,7 +604,19 @@ fn reach_transfer(
     for cell in &effects[node] {
         state = match cell {
             CommandEffect::Establishes(f) | CommandEffect::Kills(f) => state.with(*f),
-            CommandEffect::Opaque => state.join(&Reach::Top),
+            // An Opaque ALWAYS poisons to ⊤ (the correctness floor — never lose the poison);
+            // it carries THIS node's give-up cause (`top_causes[node]`, the arch-1
+            // `Top(cause)`). `fallback_cause` is a defensive arena-real cause for the
+            // invariant-should-hold case where a per-node cause is unexpectedly absent
+            // (`debug_assert`ed in `classify`); it keeps ⊤ correct without an arena `&mut` here.
+            CommandEffect::Opaque => {
+                let cause = top_causes
+                    .get(node)
+                    .copied()
+                    .flatten()
+                    .unwrap_or(fallback_cause);
+                state.join(&Reach::Top(cause))
+            }
             CommandEffect::Pure | CommandEffect::Queries(_) => state,
         };
     }
@@ -622,11 +695,49 @@ fn node_effects(
 /// Opaque ⇒ ⊤); pristine ⟺ ONLY this leaf's own establishes reach it. A non-converged
 /// suppressed solve ⇒ `false` (conservative refuse — the safe direction). This is a small
 /// extra solve per Members site (≤ a handful per book; perf is network-dominated anyway).
-fn self_reach_holds(cfg: &Cfg, effects: &[Vec<CommandEffect>], site: usize) -> bool {
+fn self_reach_holds(
+    cfg: &Cfg,
+    effects: &[Vec<CommandEffect>],
+    top_causes: &[Option<dorc_core::ProvId>],
+    fallback_cause: dorc_core::ProvId,
+    site: usize,
+) -> bool {
     let sol = solve(cfg, Direction::Forward, |i, incoming: &Reach| {
-        reach_transfer(effects, incoming, i, Some(site))
+        reach_transfer(effects, top_causes, fallback_cause, incoming, i, Some(site))
     });
     sol.converged && sol.states.get(site).is_some_and(Reach::is_pristine)
+}
+
+/// Mint the arch-1 `Top(cause)` receipts: a per-node give-up origin for every Opaque-bearing
+/// node, keyed on that node's source [`Span`] (the stable site, `vp-9`), plus one site-less
+/// `fallback_cause` for the defensive [`reach_transfer`] path. Done in ONE place (the only one
+/// with the arena's `&mut`) so the transfer stays a pure `Fn` for `solve`. Hash-consing makes
+/// two give-ups at the same site share one id and a re-mint across the self-reach re-solve
+/// free. The causes are EXEMPT — they ride [`Reach::Top`] (excluded from its `Eq`) and never
+/// leave `classify` as a decision input (`plan::erasability` proves the inertness).
+fn mint_top_causes(
+    cfg: &Cfg,
+    ast: &dorc_syntax::ast::Ast,
+    effects: &[Vec<CommandEffect>],
+    arena: &mut dorc_core::ProvArena,
+) -> (Vec<Option<dorc_core::ProvId>>, dorc_core::ProvId) {
+    let top_causes: Vec<Option<dorc_core::ProvId>> = (0..effects.len())
+        .map(|i| {
+            if effects[i].contains(&CommandEffect::Opaque) {
+                let site = ast.node(cfg.node(CfgNodeId(i as u32)).ast).span;
+                Some(arena.leaf(dorc_core::OriginKind::TopCause, Some(site)))
+            } else {
+                None
+            }
+        })
+        .collect();
+    let fallback_cause = arena.leaf(dorc_core::OriginKind::TopCause, None);
+    debug_assert!(
+        (0..effects.len())
+            .all(|i| !effects[i].contains(&CommandEffect::Opaque) || top_causes[i].is_some()),
+        "every Opaque-bearing node must have a pre-minted Top(cause)"
+    );
+    (top_causes, fallback_cause)
 }
 
 /// Classify every `Command` node for the skip decision: resolve each command's
@@ -638,15 +749,25 @@ fn self_reach_holds(cfg: &Cfg, effects: &[Vec<CommandEffect>], site: usize) -> b
 ///
 /// `value` is the book-side value-flow (`analysis::value::analyze`, the caller
 /// threads it); `checks` are the per-oracle-file `CheckSet`s (the engine parses no
-/// argv itself — `inv-referent-agnostic`). Returns a [`Carrier`] so kind-disagreement
-/// warnings (204 §6) surface. Deterministic; never panics (`inv-no-throw`).
+/// argv itself — `inv-referent-agnostic`). `ast` is threaded only to mint each give-up
+/// site's `Top(cause)` receipt at its source [`Span`] (arch-1, `notes/220` §6); `arena`
+/// is the per-run receipts plane the causes land in. Returns a [`Carrier`] so
+/// kind-disagreement warnings (204 §6) surface. Deterministic; never panics (`inv-no-throw`).
+///
+/// THE WELD (ru-11): the minted causes are EXEMPT — they ride [`Reach::Top`] (excluded from
+/// its `Eq`, so they cannot perturb the fixpoint) and never leave this function as a
+/// [`SkipClass`] field, so no license input can depend on one. The arena grows but the
+/// classification is byte-identical with the causes stripped (the `plan::erasability` gate
+/// proves exactly this).
 #[must_use]
 pub fn classify(
     cfg: &Cfg,
     value: &ValueFlow,
+    ast: &dorc_syntax::ast::Ast,
     idx: &KindIndex,
     checks: &[CheckSet],
     interner: &mut Interner,
+    arena: &mut dorc_core::ProvArena,
 ) -> Carrier<Vec<(CfgNodeId, SkipClass)>> {
     let n = cfg.node_count();
     let mut diags: Vec<Diagnostic> = Vec::new();
@@ -682,14 +803,19 @@ pub fn classify(
         })
         .collect();
 
+    // arch-1 `Top(cause)`: mint a give-up origin per Opaque-bearing node (+ a fallback),
+    // keyed on source spans, so the ⊤-poison cascade is attributable. The cause is EXEMPT
+    // (rides `Reach::Top`, excluded from `Eq`); it perturbs no decision.
+    let (top_causes, fallback_cause) = mint_top_causes(cfg, ast, &effects, arena);
+
     // Forward reaching-defs: out = in ⊔ gen(node). Each of a node's cells is genned
-    // (a multi-cell verb writes every cell); an Opaque cell joins ⊤. A `Queries` cell
-    // gens NOTHING — a read poisons no ambient-ness and invalidates no downstream
-    // Query (it is a write-free observation; task-D2 / st-3, 20A §4). This is the
-    // gen-side of rule-query-validity: because a Query gens nothing, `reach.states`
-    // (the IN-state at each node) carries exactly the writes-or-opaque that reached it.
+    // (a multi-cell verb writes every cell); an Opaque cell joins ⊤ (carrying its
+    // pre-minted cause). A `Queries` cell gens NOTHING — a read poisons no ambient-ness and
+    // invalidates no downstream Query (it is a write-free observation; task-D2 / st-3, 20A
+    // §4). This is the gen-side of rule-query-validity: because a Query gens nothing,
+    // `reach.states` (the IN-state at each node) carries exactly the writes-or-opaque reached.
     let reach = solve(cfg, Direction::Forward, |i, incoming: &Reach| {
-        reach_transfer(&effects, incoming, i, None)
+        reach_transfer(&effects, &top_causes, fallback_cause, incoming, i, None)
     });
     debug_assert!(
         reach.converged,
@@ -718,7 +844,7 @@ pub fn classify(
             && trust_reach
             && reachable[i]
         {
-            let self_reached = self_reach_holds(cfg, &effects, i);
+            let self_reached = self_reach_holds(cfg, &effects, &top_causes, fallback_cause, i);
             return SkipClass::EstablishMembers {
                 members: family.clone(),
                 self_reached,
@@ -891,11 +1017,20 @@ command__check() {
         let built = cfg::build(&parsed.value);
         let value = analyze(&built.value, &parsed.value, interner);
         let checks = vec![lift_checks(interner, CORPUS_CHECK_SRC).value];
-        classify(&built.value, &value, idx, &checks, interner)
-            .value
-            .into_iter()
-            .map(|(_, c)| c)
-            .collect()
+        let mut arena = dorc_core::ProvArena::new();
+        classify(
+            &built.value,
+            &value,
+            &parsed.value,
+            idx,
+            &checks,
+            interner,
+            &mut arena,
+        )
+        .value
+        .into_iter()
+        .map(|(_, c)| c)
+        .collect()
     }
 
     /// Like [`classify_src`] but return the classify-stage diagnostics (the q-2 emit-site
@@ -905,7 +1040,17 @@ command__check() {
         let built = cfg::build(&parsed.value);
         let value = analyze(&built.value, &parsed.value, interner);
         let checks = vec![lift_checks(interner, CORPUS_CHECK_SRC).value];
-        classify(&built.value, &value, idx, &checks, interner).diags
+        let mut arena = dorc_core::ProvArena::new();
+        classify(
+            &built.value,
+            &value,
+            &parsed.value,
+            idx,
+            &checks,
+            interner,
+            &mut arena,
+        )
+        .diags
     }
 
     fn has_code(diags: &[Diagnostic], code: &str) -> bool {

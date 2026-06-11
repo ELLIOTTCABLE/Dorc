@@ -95,7 +95,8 @@ fn classify_value(
 ) -> Vec<(dorc_analysis::cfg::CfgNodeId, SkipClass)> {
     let value = dorc_analysis::value::analyze(cfg, ast, i);
     let checks = vec![dorc_oracle::check::lift_checks(i, CORPUS_CHECK_SRC).value];
-    dorc_analysis::effect::classify(cfg, &value, idx, &checks, i).value
+    let mut arena = dorc_core::ProvArena::new();
+    dorc_analysis::effect::classify(cfg, &value, ast, idx, &checks, i, &mut arena).value
 }
 
 /// The package oracle: `apt-get install ⇒ establishes package`, `apt-get purge ⇒
@@ -724,7 +725,17 @@ fn plan_query_and_ast(
     let cfg = dorc_analysis::cfg::build(&parsed.value).value;
     let value = dorc_analysis::value::analyze(&cfg, &parsed.value, &mut i);
     let checks = vec![dorc_oracle::check::lift_checks(&mut i, CORPUS_CHECK_SRC_Q).value];
-    let classes = dorc_analysis::effect::classify(&cfg, &value, &idx, &checks, &mut i).value;
+    let mut arena = dorc_core::ProvArena::new();
+    let classes = dorc_analysis::effect::classify(
+        &cfg,
+        &value,
+        &parsed.value,
+        &idx,
+        &checks,
+        &mut i,
+        &mut arena,
+    )
+    .value;
 
     // Mirror the cli firewall: is the guard site a VALID Query? (Only then does its rc
     // reach Status.) Read the bit off the guard cell's classification.

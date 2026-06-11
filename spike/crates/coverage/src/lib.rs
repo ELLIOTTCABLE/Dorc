@@ -404,7 +404,17 @@ pub fn build_report(inputs: &Inputs<'_>) -> Report {
     let parsed = dorc_syntax::parse(inputs.book);
     let cfg = dorc_analysis::cfg::build(&parsed.value).value;
     let value = dorc_analysis::value::analyze(&cfg, &parsed.value, &mut interner);
-    let classes = dorc_analysis::effect::classify(&cfg, &value, &idx, &checks, &mut interner).value;
+    let mut arena = dorc_core::ProvArena::new();
+    let classes = dorc_analysis::effect::classify(
+        &cfg,
+        &value,
+        &parsed.value,
+        &idx,
+        &checks,
+        &mut interner,
+        &mut arena,
+    )
+    .value;
 
     // c3 source: per-site Effect verdict (the dashboard reads the plan's own
     // dispositions, not a fact re-key, so it only needs the verdict off the wire).

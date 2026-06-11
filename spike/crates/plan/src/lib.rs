@@ -47,6 +47,8 @@ use dorc_syntax::ast::{Ast, NodeKind};
 mod fold;
 pub use fold::{AbstractRc, FoldResult};
 
+pub mod erasability;
+
 pub mod render;
 
 // ===========================================================================
@@ -2049,7 +2051,16 @@ apt_get__check() {
         let cfg = dorc_analysis::cfg::build(&parsed.value).value;
         let value = dorc_analysis::value::analyze(&cfg, &parsed.value, &mut i);
         let checks = vec![dorc_oracle::check::lift_checks(&mut i, CORPUS_CHECK_SRC).value];
-        let classes = dorc_analysis::effect::classify(&cfg, &value, &idx, &checks, &mut i).value;
+        let classes = dorc_analysis::effect::classify(
+            &cfg,
+            &value,
+            &parsed.value,
+            &idx,
+            &checks,
+            &mut i,
+            &mut dorc_core::ProvArena::new(),
+        )
+        .value;
         let probe = compile_probe(&parsed.value, &cfg, &classes, |k, _sel| probe_body(k));
         (probe, i)
     }
@@ -2291,7 +2302,16 @@ apt_get__check() {
         let cfg = dorc_analysis::cfg::build(&parsed.value).value;
         let value = dorc_analysis::value::analyze(&cfg, &parsed.value, &mut i);
         let checks = vec![dorc_oracle::check::lift_checks(&mut i, CORPUS_CHECK_SRC).value];
-        let classes = dorc_analysis::effect::classify(&cfg, &value, &idx, &checks, &mut i).value;
+        let classes = dorc_analysis::effect::classify(
+            &cfg,
+            &value,
+            &parsed.value,
+            &idx,
+            &checks,
+            &mut i,
+            &mut dorc_core::ProvArena::new(),
+        )
+        .value;
 
         let package = KindId(i.intern("package"));
         let probe = compile_probe(&parsed.value, &cfg, &classes, |k, _sel| {
@@ -2540,7 +2560,16 @@ apt_get__check() {
         let cfg = dorc_analysis::cfg::build(&parsed.value).value;
         let value = dorc_analysis::value::analyze(&cfg, &parsed.value, &mut i);
         let checks = vec![dorc_oracle::check::lift_checks(&mut i, CORPUS_CHECK_SRC).value];
-        let classes = dorc_analysis::effect::classify(&cfg, &value, &idx, &checks, &mut i).value;
+        let classes = dorc_analysis::effect::classify(
+            &cfg,
+            &value,
+            &parsed.value,
+            &idx,
+            &checks,
+            &mut i,
+            &mut dorc_core::ProvArena::new(),
+        )
+        .value;
         let plan = build_plan(src, &parsed.value, &cfg, &classes, |f| {
             // fork-mutator-rc (202 §5 / 206 §3): a MUTATOR's status has no sanctioned
             // source — only its Effect channel (convergence) arrives from the probe, the
@@ -2570,7 +2599,16 @@ apt_get__check() {
         let cfg = dorc_analysis::cfg::build(&parsed.value).value;
         let value = dorc_analysis::value::analyze(&cfg, &parsed.value, &mut i);
         let checks = vec![dorc_oracle::check::lift_checks(&mut i, CORPUS_CHECK_SRC).value];
-        let classes = dorc_analysis::effect::classify(&cfg, &value, &idx, &checks, &mut i).value;
+        let classes = dorc_analysis::effect::classify(
+            &cfg,
+            &value,
+            &parsed.value,
+            &idx,
+            &checks,
+            &mut i,
+            &mut dorc_core::ProvArena::new(),
+        )
+        .value;
         // Resolve each package entity's verdict by its interned operand text. The closure
         // captures the entity strings it cares about; an unknown entity ⇒ Unknown.
         let plan = build_plan(src, &parsed.value, &cfg, &classes, |f| {
@@ -2709,8 +2747,16 @@ apt_get__check() {
             let cfg = dorc_analysis::cfg::build(&parsed.value).value;
             let value = dorc_analysis::value::analyze(&cfg, &parsed.value, &mut i);
             let checks = vec![dorc_oracle::check::lift_checks(&mut i, CORPUS_CHECK_SRC).value];
-            let classes =
-                dorc_analysis::effect::classify(&cfg, &value, &idx, &checks, &mut i).value;
+            let classes = dorc_analysis::effect::classify(
+                &cfg,
+                &value,
+                &parsed.value,
+                &idx,
+                &checks,
+                &mut i,
+                &mut dorc_core::ProvArena::new(),
+            )
+            .value;
             assert!(
                 classes
                     .iter()
@@ -3032,7 +3078,16 @@ apt_get__check() {
         let cfg = dorc_analysis::cfg::build(&parsed.value).value;
         let value = dorc_analysis::value::analyze(&cfg, &parsed.value, &mut i);
         let checks = vec![dorc_oracle::check::lift_checks(&mut i, CORPUS_CHECK_SRC).value];
-        let classes = dorc_analysis::effect::classify(&cfg, &value, &idx, &checks, &mut i).value;
+        let classes = dorc_analysis::effect::classify(
+            &cfg,
+            &value,
+            &parsed.value,
+            &idx,
+            &checks,
+            &mut i,
+            &mut dorc_core::ProvArena::new(),
+        )
+        .value;
         assert!(!classes.is_empty(), "fixture has classify leaves");
         let (mut marked, mut quiet) = (0, 0);
         for (node, _) in &classes {

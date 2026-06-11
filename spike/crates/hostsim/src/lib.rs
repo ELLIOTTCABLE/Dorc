@@ -219,7 +219,8 @@ apt_get__check() {
     )> {
         let value = dorc_analysis::value::analyze(cfg, ast, i);
         let checks = vec![dorc_oracle::check::lift_checks(i, CORPUS_CHECK_SRC).value];
-        dorc_analysis::effect::classify(cfg, &value, idx, &checks, i).value
+        let mut arena = dorc_core::ProvArena::new();
+        dorc_analysis::effect::classify(cfg, &value, ast, idx, &checks, i, &mut arena).value
     }
 
     /// `kind:entity#installed` — the re-keyed cell (`notes/193`). These host-model

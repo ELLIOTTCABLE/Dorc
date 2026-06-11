@@ -37,7 +37,7 @@ use std::collections::BTreeMap;
 use std::io::{Read, Write};
 use std::process::ExitCode;
 
-use dorc_core::{Interner, Observable, OutClaim, Predicted, Rc, Severity, Verdict};
+use dorc_core::{Interner, Observable, OutClaim, Predicted, ProvArena, Rc, Severity, Verdict};
 
 const USAGE: &str = "usage: dorc --book=<book.sh> [-o <oracle.sh>]...";
 
@@ -128,8 +128,20 @@ fn run() -> Result<(), String> {
     // Book-side value-flow: resolve each command-site's argv (constant/variable
     // propagation) — the input entity-resolution consumes (19H §1 / 202 §1).
     let value = dorc_analysis::value::analyze(&cfg.value, &parsed.value, &mut interner);
-    let classified =
-        dorc_analysis::effect::classify(&cfg.value, &value, &idx, &checks, &mut interner);
+    // The per-run receipts plane (arch-1): give-up causes (`Top(cause)`) and license
+    // witnesses land here. EXEMPT — it informs no decision (the `plan::erasability` gate
+    // proves the apply/probe artifacts are byte-identical with it stripped); the cli holds it
+    // only to emit the decision-digest line and (future) the why-lens.
+    let mut arena = ProvArena::new();
+    let classified = dorc_analysis::effect::classify(
+        &cfg.value,
+        &value,
+        &parsed.value,
+        &idx,
+        &checks,
+        &mut interner,
+        &mut arena,
+    );
     report("classify", &classified.diags);
     let classes = classified.value;
 
@@ -183,9 +195,30 @@ fn run() -> Result<(), String> {
     // edited (a heredoc-bearing command — its span covers `<<EOF`, not the body), running it
     // verbatim instead (kFAIL-perform). Surface WHY on stderr (else a converged mutator
     // silently running is invisible); the gate-3 floor requires the case to declare it.
-    report("render", &plan.render_refusal_diagnostics(&parsed.value));
+    let refusals = plan.render_refusal_diagnostics(&parsed.value);
+    report("render", &refusals);
 
     print!("{}", plan.render_apply(&book_src, &parsed.value));
+
+    // arch-1 decision-digest (`mechanism-decision-digest`, `22A` concl-3): a one-line hash of
+    // the canonical IDENTITY plane, emitted on every run as a cheap always-on drift signal
+    // (Zephyr's per-build checksum). Receipts cannot move it — it hashes only the identity
+    // plane (the `plan::erasability` gate proves that). To stderr (stdout stays the artifact).
+    // The Error-class diagnostics on the identity plane are the analyzer's accumulated ones
+    // (classify) plus the render refusals; warnings/notes are exempt (dropped by the canon).
+    let mut identity_diags = classified.diags;
+    identity_diags.extend(refusals);
+    eprintln!(
+        "dorc: decision-digest {}",
+        dorc_plan::erasability::decision_digest(
+            &plan,
+            &probe,
+            &book_src,
+            &parsed.value,
+            &interner,
+            &identity_diags,
+        )
+    );
     Ok(())
 }
 
@@ -858,8 +891,16 @@ mod tests {
         let cfg = dorc_analysis::cfg::build(&parsed.value);
         let value = dorc_analysis::value::analyze(&cfg.value, &parsed.value, &mut interner);
         let idx = dorc_oracle::KindIndex::default();
-        let classified =
-            dorc_analysis::effect::classify(&cfg.value, &value, &idx, &[], &mut interner);
+        let mut arena = ProvArena::new();
+        let classified = dorc_analysis::effect::classify(
+            &cfg.value,
+            &value,
+            &parsed.value,
+            &idx,
+            &[],
+            &mut interner,
+            &mut arena,
+        );
         let classes = classified.value;
         let probe = dorc_plan::compile_probe(&parsed.value, &cfg.value, &classes, |_, _| None);
         let plan = dorc_plan::build_plan(book, &parsed.value, &cfg.value, &classes, |_| {
