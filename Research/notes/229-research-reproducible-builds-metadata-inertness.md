@@ -528,3 +528,200 @@ for all packages [B-archwiki-rebuilderd-2026]. Used by `reproduce.debian.net` an
   [B-wikipedia-reproducible-2026]. The compute is sponsor-donated (IONOS VMs, OSUOSL, Codethink),
   no published budget (finding-repro-cost-gap).
 
+---
+
+## §7 ordering-nondeterminism scars & the named deterministic-container types
+
+Dorc already mandates `BTreeMap` everywhere by convention. This section brings back *enforcement
+beyond convention*: the named container types other projects mandate, the lints that fire at the
+leak site, and — most valuable — the *adversarial* reverse-iteration mechanism that actively
+hunts for residual ordering-dependence.
+
+**finding-llvm-ordering-effort (+SURE).** The foundational LLVM statement of the problem
+[B-llvm-discourse-43131-2016], verbatim:
+
+> There is non-determinism in LLVM codegen in the following scenarios: 1. Between back-to-back
+> runs of the same LLVM toolchain 2. Between Release vs Release+Asserts toolchains 3. Between
+> Linux vs Windows toolchains. The main reasons for the non-determinism in codegen are: 1.
+> Iteration of unordered containers (like SmallPtrSet, DenseMap, etc) where the iteration order
+> is undefined 2. Use of non-stable sorts (like std:sort which uses quicksort) where the
+> relative order of elements with the same key is undefined.
+
+**finding-reverse-iterate-adversarial (+SURE).** The mechanism — and this is the key
+direction-shaper for Dorc's "make the gate adversarial" question. Verbatim
+[B-llvm-discourse-43131-2016]:
+
+> Given a flag (`-mllvm -reverse-iterate`) this patch will enable iteration of SmallPtrSet in
+> reverse order. The idea is to compile the same source with and without this flag and expect
+> the code to not change. If there is a difference in codegen then it would mean that the
+> codegen is sensitive to the iteration order of SmallPtrSet.
+
+This is *exactly* variance-injection applied to ordering: don't just hope iteration order is
+irrelevant — *force the worst-case order* and assert the output is unchanged. It is shipped as a
+build mode `-DLLVM_REVERSE_ITERATION=ON` and still catching bugs in 2026 (MaskRay documents 2026
+fixes triggered by it: MLIR SSA-value completion order, SROA alloca order [B-maskray-hyrum-2026]).
+The 2016 patch series broke ~11 real tests (Clang static-analyzer, LoopVectorize, MemorySSA),
+each fixed by switching to a deterministic container.
+
+**finding-named-deterministic-types (+SURE).** The concrete types each project mandates — Dorc
+should adopt the *naming discipline*, not just "use BTreeMap":
+
+- **LLVM** [B-llvm-progman-2026]: `SetVector` — "the order of iteration is guaranteed to match
+  the order of insertion … This property is really important for things like sets of pointers.
+  Because pointer values are non-deterministic … iterating over the pointers in the set will not
+  be in a well-defined order. … Use it **only** if you need to iterate over the elements in a
+  deterministic order." `MapVector` — "iteration order is guaranteed to be the insertion order,
+  making it an easy (but somewhat expensive) solution for non-deterministic iteration over maps
+  of pointers." Plus `SmallSetVector`/`SmallMapVector`.
+- **rustc** [A-rustc-fx-src-2026]: `FxIndexMap`/`FxIndexSet` (indexmap-backed, insertion-
+  ordered = deterministic), AND a deliberately order-*suppressing* pair `UnordMap`/`UnordSet`
+  ("unordered, so you can't accidentally leak order"). The genesis issue #63713 [B-rust-issue-
+  63713-2019] states the design intent verbatim: "It should not provide iteration support, but
+  only insert/remove/get/get_mut and conversion to a sorted vec. … This could prevent
+  accidentally causing hashmap related non determinism in most cases."
+
+The rustc split is the sharper idea than Dorc's blanket BTreeMap: provide *two* named types —
+an ordered one for when you iterate, and an `Unord*` one that *removes the iteration API
+entirely* so a leak is a compile error, not a code-review catch. finding-unord-split: ~SUSPECT
+Dorc should consider an `Unord*`-style newtype around its decision-internal maps so that
+"iterate this in decision code" doesn't typecheck.
+
+**finding-llvm-coding-standard (+SURE).** The codified rule [A-llvm-coding-2026], verbatim
+(I confirmed the section headers exist in the live doc; the rule body as gathered):
+
+> **Beware of non-determinism due to ordering of pointers.** In general, there is no relative
+> ordering among pointers. As a result, when unordered containers like sets and maps are used
+> with pointer keys the iteration order is undefined. Hence, iterating such containers may
+> result in non-deterministic code generation. … In case an ordered result is expected, remember
+> to sort an unordered container before iteration. Or use ordered containers like
+> `vector`/`MapVector`/`SetVector` if you want to iterate pointer keys.
+>
+> **Beware of non-deterministic sorting order of equal elements.** `std::sort` uses a non-stable
+> sorting algorithm … To uncover such instances of non-determinism, LLVM has introduced a new
+> `llvm::sort` wrapper function. For an `EXPENSIVE_CHECKS` build this will randomly shuffle the
+> container before sorting. Default to using `llvm::sort` instead of `std::sort`.
+
+**finding-llvm-sort-shuffle (+SURE).** `llvm::sort` is itself a variance-injection mechanism: in
+checked builds it *pre-shuffles before sorting* to surface any code that depends on the order of
+equal elements [A-llvm-coding-2026, B-maskray-hyrum-2026]. The parallel `llvm::stable_sort`
+"deliberately does not pre-shuffle; it is the explicit opt-in for code that legitimately needs
+ordering of equal elements." This is the comparison-partition idea applied to sorting: stable
+vs unstable sort is the "is this ordering identity-relevant?" decision, made explicit at each
+call site.
+
+**finding-clang-tidy-check (+SURE).** The rule is *mechanized as a linter*
+[B-clang-tidy-nondeterministic-2026]: `bugprone-nondeterministic-pointer-iteration-order` —
+"Iteration of a containers of pointers may present the order of different pointers differently
+across different runs … This check only detects range-based for loops over unordered sets and
+maps. It also detects calls [to] sorting-like algorithms on containers holding pointers." This
+is the proof that "ban ordering leaks" can be a *static check*, not just a convention — directly
+adoptable idea for Dorc (a clippy/dylint rule; see §0 mechanisms).
+
+**finding-hash-seed-perturbation (+SURE).** LLVM's most aggressive anti-Hyrum move
+[B-maskray-hyrum-2026]: the hash seed in `llvm/include/llvm/ADT/Hashing.h` is "non-deterministic
+per process (address of a function in LLVMSupport) to prevent having users depend on the
+particular hash values." I.e. they *deliberately randomize* the hash seed each run so that any
+output depending on hash-order breaks *immediately and locally* rather than mysteriously later.
+This is variance-injection as a *default runtime behavior*, not a test mode. (Rust does the same
+for `std::HashMap` via random seeds — the very reason rustc's query code can't use it.) Dorc
+analogue: if any `HashMap` survives in non-decision code, randomizing its seed in tests forces
+any accidental decision-dependence to fail loudly.
+
+---
+
+## §8 the leak-category taxonomy (r-b.org) & cross-toolchain determinism flags
+
+### §8a the reproducible-builds.org taxonomy (one cited row per category)
+
+The unifying frame the site itself states [A-rb-deterministic-systems-2026], verbatim: "Ensure
+stable inputs. Ensure stable outputs. Capture as little as possible from the environment." And
+the *perimeter* concept [A-rb-perimeter-2026]: reproducibility is defined relative to a declared
+*build environment* — some variables are normalized away, others explicitly *frozen into the
+declared environment* (legitimately pinned: OS, arch, build path, user, locale, timezone,
+`SOURCE_DATE_EPOCH`). This perimeter/normalize split maps one-to-one onto Dorc's decision-plane
+(must be invariant) vs explanation-plane (may carry the frozen context). The compact taxonomy is
+tabulated in §0; per-category verbatim definitions + fixes:
+
+- **leak-category-timestamps** [A-rb-timestamps-2026]: "Timestamps make the biggest source of
+  reproducibility issues." Fix: `SOURCE_DATE_EPOCH`; else post-process (strip-nondeterminism) or
+  `libfaketime`. War-story: libfaketime + parallel compilation broke the Tor Browser build.
+- **leak-category-timezones** [A-rb-timezones-2026]: build output varies with build timezone.
+  Fix: `TZ=UTC LC_ALL=C`. Subtle: zip has no tz field → must unpack in a fixed tz.
+- **leak-category-locales** [A-rb-locales-2026]: "tools which output is influenced by the current
+  locale". Fix: `LC_ALL=C`. The case-fold sort surprise (`fr_FR` sorts `a B c`, C sorts `B a c`).
+- **leak-category-ordering** ("stable inputs") [A-rb-stable-inputs-2026]: "Most filesystems do
+  not guarantee that listing files in a directory always results in the same order." Fix: sort
+  explicitly — but `LC_ALL=C sort`, because a naive sort is itself locale-dependent. Canonical
+  trap: GNU Make `$(wildcard *.c)` → `$(sort $(wildcard *.c))`. THE most cross-cutting category
+  (entangled with locales + archives). Adversarial tool: `disorderfs`.
+- **leak-category-build-path** [A-rb-build-path-2026]: "Most compilers write the path of the
+  source in the debug information." Fix: `-ffile-prefix-map`/`-fdebug-prefix-map`/
+  `-fmacro-prefix-map`. War-story (directly relevant to Dorc): `debugedit` "rewrites bytes in
+  place. As this does not reorder the hash table of strings, the resulting bytes are still
+  depending on the original build path" — i.e. *post-hoc normalization of a leaked field can
+  fail if the field's POSITION was itself order-dependent.* This is a sharp warning: stripping a
+  receipt value isn't enough if its *presence* perturbed an ordering.
+- **leak-category-value-initialization** [A-rb-value-init-2026]: "In languages which don't
+  initialize values, this needs to be explicitly done in order to avoid capturing what random
+  bytes are in memory." The coreboot fix: `struct … data_hdr = { 0 };`. Detect with Valgrind.
+  (Uninitialized struct padding leaking into output — the "garbage from the environment" leak.)
+- **leak-category-randomness** [A-rb-randomness-2026]: "Random data will make builds
+  unreproducible and must be avoided." Fix: seed the PRNG from source/changelog/VCS; GCC LTO →
+  `-frandom-seed`. Admission: "There's no general solutions for [embedded temp paths], better
+  fix the code directly."
+- **leak-category-version-information** [A-rb-version-info-2026]: build counters / dates embedded
+  as version. Surprising sub-case: *abbreviated git-hash length is non-deterministic* (depends on
+  total object count, changes with shallow clones) → pin `--abbrev=12`.
+- **leak-category-archive-metadata** [A-rb-archives-2026]: "file ordering, users, groups, numeric
+  ids, and permissions" captured by archive formats. Fix: `tar --sort=name --mtime=@$SDE
+  --owner=0 --group=0 --numeric-owner`; `ar` deterministic mode (`--enable-deterministic-
+  archives`, `ARFLAGS=Dcvr`). Surprise: pax-format tar with `POSIXLY_CORRECT` "adds the PID of
+  the tar process" (a process-ID leak into an archive).
+- **leak-category-volatile-inputs** [A-rb-volatile-inputs-2026]: network inputs are volatile.
+  Fix: checksums + backups + lockfiles + vendoring + `snapshot.debian.org`.
+- **leak-category-stripping** [A-rb-stripping-2026]: normalize the metadata you can't avoid
+  emitting (uid/gid, atime) via `strip-nondeterminism`, "a temporary workaround which should not
+  be needed in the long term; upstream software should be reproducible even without using such a
+  tool."
+
+**finding-diffoscope-partition (+SURE).** The comparison tool's strategy IS a comparison-
+partition design [A-diffoscope-2026], verbatim: "diffoscope tries to get to the bottom of what
+makes files or directories different. It will recursively unpack archives of many kinds and
+transform various binary formats into more human-readable form to compare them." Plus "Fallback
+on hexdump comparison" and "Fuzzy-matching to handle renamings." The design principle: don't
+compare raw bytes — *normalize each known format into a canonical/readable representation,
+recurse into nested containers, fall back to hex only for unknown formats.* For Dorc: the gate
+shouldn't diff raw decision dumps; it should canonicalize the decision output (sorted, receipt-
+IDs stripped, into a stable serialization) and diff *that* — and treat an unknown/unnormalized
+field as a *loud failure*, not silently hexdump-compared.
+
+### §8b cross-toolchain determinism flags (the same move, elsewhere)
+
+**finding-go-reproducible-default (+SURE).** Go made reproducibility *default* by banning/
+normalizing several sources [B-go-rebuild-2023], all verbatim:
+
+- Map/goroutine randomness: "Map iteration and running work in multiple goroutines … both
+  introduce randomness in the order that results may be generated. … To make the build
+  reproducible, we had to find each of these and sort the relevant list of items before using it
+  to generate output."
+- Sort-equal ambiguity banned: "the comparison function used must never report two distinct
+  elements as equal."
+- Timestamps banned; paths via `-trimpath` (default in release builds since Go 1.21); user IDs
+  cleared from archives.
+- The end-user recipe: "a reproducible build is as simple as compiling with `CGO_ENABLED=0 go
+  build -trimpath`."
+- **The CI double-build gate (contrast with rustc's missing one):** "we now build all Go
+  distributions on both a trusted Linux/x86-64 system and a Windows/x86-64 system. … The two
+  systems must produce bit-for-bit identical archives or else we do not proceed with the
+  release." Plus a published verifier (`gorebuild`) run nightly. This is variance-injection
+  (different OS/arch between the two builds) gating *every release*.
+
+**finding-dotnet-deterministic (+SURE).** Roslyn (C#/VB) `/deterministic` [B-roslyn-det-2026]:
+"The C# and VB compilers are fully deterministic when the `/deterministic` option is specified
+(this is the default in the .NET SDK). This means that the 'same inputs' will cause the
+compilers to produce the 'same outputs' byte for byte." The nondeterminism it removes is named:
+"the compiler also depends on the time of day and random numbers for GUIDs." And `/pathmap`:
+"can be used to normalize [the full path of source files] between compiles of the same code in
+different root directories." (MSVC C++ spells `/DETERMINISTIC` + `/PATHMAP` as *linker* options;
+not captured verbatim — minor gap, the C#/Roslyn equivalents above are the on-point ones.)
+
