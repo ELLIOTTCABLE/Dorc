@@ -14,7 +14,13 @@
 > structure re-verified live against rustc-dev-guide + nightly-rustc docs this turn.
 > AI-authored design; process evidence, never proof (never-vouch). Confidence marks
 > +SURE / ~SUSPECT / -GUESS / --WONDER. Slugs: `crib-N`, `refuse-N`, `type-sketch-N`,
-> `render-N`, `worked-N`, `fork-N`.
+> `render-N`, `worked-N`, `22B-fork-*`. (Editorial, wave-2 prep 2026-06-11: the
+> fork slugs were renamed note-scoped — originally `fork-1..5` — per rv3-find-3 /
+> housekeeping-3, because 219's `fork-1..4` are a DISJOINT set under identical
+> names. Mapping: fork-1→`22B-fork-payload`, fork-2→`22B-fork-scope-key`,
+> fork-3→`22B-fork-wire-code`, fork-4→`22B-fork-floor-membership`,
+> fork-5→`22B-fork-severity-help`. Ledger references in 224 §10 keep the old
+> names; this note is the decoder.)
 
 ## §0 The thesis up front
 
@@ -383,7 +389,7 @@ pub enum Floor { None, WarnOrDeny, Pinned }
 ```
 
 Note `Severity` itself I'd extend with `Help` (rustc has it; our `SubDiag::Help`
-needs no top-level severity, so this is optional — flagged as `fork-5`). The
+needs no top-level severity, so this is optional — flagged as `22B-fork-severity-help`). The
 floor concept is the anti-fragmentation guarantee: even when admin override lands
 (not this round), the floor-pinned codes cannot be silenced — exactly the few-chosen
 non-negotiables rustc's `forbid` protects (`226` sev-1).
@@ -429,7 +435,7 @@ The two keys are the structural answer to dc-3's four-by-two check: fine serves 
 fleet UI is built, but `22A` arch-2 says "pre-build the seam without committing to
 fleet UI." ~SUSPECT `enclosing-structural-scope` needs an analyzer-side notion (the
 enclosing function/oracle-decl) that the spike has only partially (`AstId` →
-enclosing-decl is computable but not currently surfaced); flagged `fork-2`.
+enclosing-decl is computable but not currently surfaced); flagged `22B-fork-scope-key`.
 
 ### type-sketch-6 — the ProvId hook (artifact-exempt by construction)
 
@@ -752,7 +758,7 @@ but name it as the pressure-relief if the friction test starts failing in practi
 
 ## §8 Open forks for the human (confidence-marked)
 
-- `fork-1 (the big one — payload-struct proliferation vs flat-enum).` ~SUSPECT the
+- `22B-fork-payload (the big one — payload-struct proliferation vs flat-enum).` ~SUSPECT the
   typed-payload-per-variant (`type-sketch-1`) is the right call (it IS the capability
   instinct made structural, the contract's word), but it is ~15-20 new small structs
   for the 17-code retrofit. The lighter alternative is a flat `enum DiagCode { ... }`
@@ -764,7 +770,7 @@ but name it as the pressure-relief if the friction test starts failing in practi
   bought at priority-2 (a little more code), the trade your priority order endorses.
   But it's the highest-code-volume decision in the design, so it's yours.
 
-- `fork-2 (enclosing-structural-scope — does the spike have it?).` ~SUSPECT the
+- `22B-fork-scope-key (enclosing-structural-scope — does the spike have it?).` ~SUSPECT the
   coarse grouping key (`type-sketch-5`, `228` dc-3) wants an "enclosing function /
   oracle-decl identity" the spike computes only partially (`AstId` → enclosing-decl
   is derivable but not currently surfaced as a first-class scope id). **Decision
@@ -775,7 +781,7 @@ but name it as the pressure-relief if the friction test starts failing in practi
   this round). The trait slot is the deliverable; a degenerate coarse=fine is honest
   for now.
 
-- `fork-3 (the OOB lane `code=` field — discriminant or slug?).` -GUESS the lane
+- `22B-fork-wire-code (the OOB lane `code=` field — discriminant or slug?).` -GUESS the lane
   projection (`render-2`) needs a stable wire token for the code. A numeric
   discriminant is compact but churns if variants are reordered; a string slug
   (`"site-unresolvable"`) is stable and greppable (the `226` finding-6 code-stable
@@ -784,7 +790,7 @@ but name it as the pressure-relief if the friction test starts failing in practi
   and the OOB lane is not perf-critical, `AGENTS.md` network-dominated) or a numeric
   id? Minor, but it's a wire-format commitment, so flag it.
 
-- `fork-4 (gate2-ask-1 lands here — which codes are floor-pinned?).` This is the
+- `22B-fork-floor-membership (gate2-ask-1 lands here — which codes are floor-pinned?).` This is the
   `22A` gate2-ask-1 the synthesis already routed to you: with the registry as the
   home (`type-sketch-4`), the concrete question is *which of the 17+ codes get
   `Floor::WarnOrDeny` or `Floor::Pinned`*. -GUESS the kFAIL-correctness give-ups
@@ -793,7 +799,7 @@ but name it as the pressure-relief if the friction test starts failing in practi
   `Floor::None`. **Decision needed:** ratify the floor column when the retrofit PR
   proposes one — I'd have the builder propose, you dispose, per the contract line.
 
-- `fork-5 (does `Severity` gain a top-level `Help` variant?).` --WONDER. rustc has
+- `22B-fork-severity-help (does `Severity` gain a top-level `Help` variant?).` --WONDER. rustc has
   `Help` as a level; our help is a `SubDiag::Help` child, so a top-level `Severity::
   Help` may be redundant. Trivial, but it's a `core` enum touch — flagging only so
   the retrofit doesn't quietly add it without a reason. My lean: no (the child
