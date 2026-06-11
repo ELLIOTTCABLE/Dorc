@@ -913,14 +913,8 @@ pub fn compile_probe(
             push_member_checks(&mut checks, &mut unresolvable, site, members, &probe_body);
             continue;
         }
-        // arch-2 (`i-4`): an inlined CALL ships ONE check per spliced BODY SITE (a `site N.M`
-        // sub-record, M = the body-site index), with the body site's positionals BOUND (the
-        // entity resolved at the call site). All-or-nothing on probe-ability: if any body
-        // ESTABLISH site has no probe body, the WHOLE call is unresolvable (`can't-probe ⇒
-        // can't-elide`); the call's all-or-nothing license cannot elide a partial body. A body
-        // Query/Pure/MustRun site ships no record (only the elision-gating establishes are
-        // probed, like the single-fact path). (The probe queries every body establish
-        // regardless of the apply-side license — `inv-superposition`.)
+        // arch-2 (i-4): an inlined CALL ships one `site N.M` check per spliced body establish
+        // (see `push_inline_checks` for the all-or-nothing probe-ability).
         if let SkipClass::InlineCall { sites } = class {
             push_inline_checks(&mut checks, &mut unresolvable, site, sites, &probe_body);
             continue;
@@ -1296,6 +1290,17 @@ fn inline_disposition(
     sites: &[InlineSite],
     observe: &impl Fn(FactKey) -> Observable,
 ) -> Disposition {
+    // The in-loop render floor (task-L1, `209` brk-1): an inlined CALL inside a loop body is
+    // MustRun this round — the line/span render cannot elide a single iteration of a call, and
+    // a member-precision path for inlined calls is not built (it would compose the Members
+    // value with the call's positionals, a deferred multi-leaf case). EXPLICIT here (not
+    // relying on the back-edge self-poison that incidentally tends to make an in-loop body
+    // establish `EstablishWritten`): an in-loop inlined call NEVER mints a license, robustly.
+    // (`inline_disposition` runs BEFORE `disposition_for`'s floor — the Members precedent — so
+    // the floor must be re-checked here, like `members_disposition` re-checks `has_top_successor`.)
+    if cfg.in_loop_body(node) {
+        return Disposition::Run;
+    }
     if has_top_successor(cfg, node) {
         return Disposition::Run;
     }

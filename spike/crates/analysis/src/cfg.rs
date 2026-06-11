@@ -729,15 +729,8 @@ impl<'a> Builder<'a> {
             return dead;
         }
 
-        // arch-2 (brk-2): if this command's word resolves to a funcdef DEFINED EARLIER in
-        // this file, SPLICE a fresh lowering of the body's AST right after the CALL node, so
-        // the body becomes reachable (un-detaching it — the find-7 fix) and its effects flow
-        // downstream exactly as inline code would (`i-1`/`i-5`). The CALL `cmd` node stays the
-        // render/substitution LEAF (`i-3`); the spliced body commands are `spliced_internal`
-        // (not Step leaves) and become the call's per-site probe sub-records (`site N.M`,
-        // `i-4`). Eligibility (`i-1`) is strict + every exclusion loud; a non-eligible call
-        // stays an ordinary unmodeled command (`Opaque`, status quo). The argv (for positional
-        // binding) is resolved by the value plane (`i-2`), not here.
+        // arch-2 (brk-2): a call to a same-file-earlier funcdef splices the body after `cmd`
+        // (see `try_inline_call`); `cmd` stays the render leaf, the body becomes reachable.
         if let Some(call_exit) = self.try_inline_call(id, words, cmd) {
             return call_exit;
         }
@@ -767,15 +760,12 @@ impl<'a> Builder<'a> {
     ///   running total `≤ MAX_NODES_PER_BOOK`) — over-budget ⇒ `Opaque` WITH a diagnostic
     ///   naming the exceeded budget.
     fn try_inline_call(&mut self, id: AstId, words: &[AstId], cmd: CfgNodeId) -> Option<CfgNodeId> {
-        // The command word must be a fixed literal naming a defined function. A ⊤/expansion
-        // word, or a name no funcdef declares, is an ordinary unmodeled command (no diagnostic
-        // — it might be a PATH binary; `i-1`).
+        // A non-literal word, or a name no funcdef declares, is an ordinary command (None,
+        // silent — it might be a PATH binary).
         let name = self.word_literal(*words.first()?)?;
         let defs = self.funcdefs.get(name)?;
 
         let call_lo = self.span(id).lo;
-        // A name DEFINED MORE THAN ONCE ⇒ every call ⊤-rejects (redefinition tracking is out of
-        // slice). A specific, loud diagnostic; the call stays Opaque.
         if defs.len() > 1 {
             self.diags.push(Diagnostic::warning(
                 CFG_INLINE_REFUSED,
@@ -788,17 +778,14 @@ impl<'a> Builder<'a> {
             ));
             return None;
         }
-        // Resolve to the LAST definition strictly BEFORE the call. A definition AFTER the call
-        // (or none) ⇒ not a same-file-earlier call ⇒ ordinary unmodeled command (no diagnostic:
-        // a forward-call might legitimately be a PATH binary at that program point).
+        // The LAST definition strictly BEFORE the call; a forward/absent definition resolves to
+        // None (silent — the word might be a PATH binary at that program point, i-1).
         let body = defs
             .iter()
             .filter(|(_, def_lo)| def_lo.0 < call_lo.0)
             .max_by_key(|(_, def_lo)| def_lo.0)
             .map(|(body, _)| *body)?;
 
-        // RECURSION (direct or transitive within the active inline stack) ⇒ ⊤-reject naming the
-        // cycle. The call stays Opaque (the poison stays — nothing downstream wrongly elides).
         if self.inline_stack.contains(&body) {
             self.diags.push(Diagnostic::warning(
                 CFG_INLINE_REFUSED,
@@ -810,7 +797,6 @@ impl<'a> Builder<'a> {
             ));
             return None;
         }
-        // Inline DEPTH budget (`i-1`): the active stack is the inline depth so far.
         if self.inline_stack.len() as u32 >= inline_budget::MAX_DEPTH {
             self.diags.push(Diagnostic::warning(
                 CFG_INLINE_REFUSED,
@@ -823,9 +809,6 @@ impl<'a> Builder<'a> {
             ));
             return None;
         }
-        // Out-of-slice body constructs (`i-1`): `$@`/`$*`/`shift`/`local` (the positional-array
-        // and dynamic-scope forms the value plane does not model). The diagnostic names the
-        // construct.
         if let Some(construct) = self.body_uses_unmodeled_positional(body) {
             self.diags.push(Diagnostic::warning(
                 CFG_INLINE_REFUSED,
@@ -837,10 +820,8 @@ impl<'a> Builder<'a> {
             ));
             return None;
         }
-        // tc-M2 weld (the r1A capability-matrix crosscheck): a body containing a WRITE-shaped
-        // redirect (`>`/`>>`/`<>`) to anything but `/dev/null` ⇒ refuse. Inlining alone would
-        // EXPOSE an invisible body file-write as wrong-ambience (redirect-effects are unmodeled,
-        // y-1). `>/dev/null`, `2>&1`, fd-dup forms stay exempt (the devnull-exemption vocabulary).
+        // tc-M2: inlining would EXPOSE an invisible body file-write as wrong-ambience
+        // (redirect-effects are unmodeled, y-1); `/dev/null` stays exempt (devnull-exemption).
         if let Some(detail) = self.body_has_unmodeled_write_redirect(body) {
             self.diags.push(Diagnostic::warning(
                 CFG_INLINE_REFUSED,
@@ -852,8 +833,6 @@ impl<'a> Builder<'a> {
             ));
             return None;
         }
-
-        // Eligible. Splice the body after the CALL node, depth-bounding the node count.
         self.splice_funcdef_body(id, name, body, cmd)
     }
 
@@ -896,9 +875,6 @@ impl<'a> Builder<'a> {
             ));
             return None;
         }
-        // Per-book budget: the running tally of actually-spliced nodes, plus this body's
-        // estimate, must not exceed the whole-book cap. (A transitively-inlined inner call adds
-        // to the tally when ITS splice runs, so this composes across depths.)
         if self.spliced_node_total.saturating_add(estimate) > inline_budget::MAX_NODES_PER_BOOK {
             self.diags.push(Diagnostic::warning(
                 CFG_INLINE_REFUSED,
@@ -914,20 +890,15 @@ impl<'a> Builder<'a> {
             return None;
         }
 
-        // Splice the body. Push the body onto the active inline stack so a recursive call
-        // INSIDE the body ⊤-rejects (the cycle guard, `i-1`); a deeper eligible call splices
-        // (depth-bounded). `lower_node` re-enters `lower_simple` for body commands, so a
-        // transitively-inlined call recurses through here naturally.
+        // `inline_stack.push(body)` is the cycle guard: a recursive call inside the body
+        // ⊤-rejects. `lower_node` re-enters `lower_simple`, so a transitive call recurses here.
         let body_start = self.nodes.len();
         self.inline_stack.push(body);
         let body_exit = self.lower_node(body, cmd);
         self.inline_stack.pop();
         let body_end = self.nodes.len();
 
-        // Mark every spliced node `spliced_internal` (the CALL is the render unit; a body leaf
-        // is never an independent Step, `i-3`). A nested `$()` inside the body is already
-        // `expansion_internal`; flagging it `spliced_internal` too is harmless (both exclude
-        // it from the leaf set).
+        // Spliced body commands are non-leaves (the CALL is the render unit, i-3).
         for v in body_start..body_end {
             self.spliced_internal[v] = true;
         }
@@ -935,21 +906,14 @@ impl<'a> Builder<'a> {
             .spliced_node_total
             .saturating_add(body_end - body_start);
 
-        // Collect the body's effect-bearing/probeable LEAF Command nodes (the call's per-site
-        // sub-record set, `i-4`): a spliced `Command` that is NOT itself an inner inlined CALL
-        // (an inner call's OWN body leaves are the call's sites; the inner call node is a
-        // pass-through aggregate, not a leaf — flatten its leaves in instead) and is NOT a
-        // `$()`-internal non-leaf. In arena (source) order (`inv-determinism`).
+        // The call's effect-bearing leaf sites (i-4), in arena order. An inner inlined CALL is
+        // not itself a site — flatten its own body leaves in (avoids double-counting it).
         let mut sites: Vec<CfgNodeId> = Vec::new();
         for v in body_start..body_end {
             let node = CfgNodeId(v as u32);
             if self.nodes[v].kind != CfgNodeKind::Command || self.expansion_internal[v] {
                 continue;
             }
-            // An inner inlined CALL node is itself NOT a site — its body leaves are already in
-            // `call_body_sites[inner]` and were appended to `sites` via the flatten below. The
-            // inner call node has its OWN body-site entry, so skip it here to avoid double
-            // counting (a body command that is a plain mutator IS a site).
             if let Some(inner_sites) = self.call_body_sites.get(&node) {
                 sites.extend(inner_sites.iter().copied());
             } else {

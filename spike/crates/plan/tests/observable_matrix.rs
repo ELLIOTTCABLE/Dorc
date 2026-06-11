@@ -1187,3 +1187,27 @@ fn inline_call_unprobeable_body_establish_is_unresolvable() {
         "the call is unresolvable when its body establish can't be probed"
     );
 }
+
+#[test]
+fn inline_call_inside_loop_is_floored_even_when_converged() {
+    // arch-2 + task-L1 composition (note 216 hunt-6, the riskiest edge): an inlined CALL inside
+    // a `for` loop is MustRun this round (the in-loop render floor), EVEN when its body
+    // establish is converged. `for pkg in nginx; do w "$pkg"; done` with `w` inlining + nginx
+    // converged ⇒ the call `w "$pkg"` RUNS (the loop renders verbatim). `inline_disposition`
+    // re-checks `in_loop_body` EXPLICITLY (not relying on the back-edge self-poison that also
+    // tends to make the in-loop body establish EstablishWritten). The single-member loop makes
+    // the for-var a CONCRETE `nginx` (so the positional binds and the body would otherwise be
+    // an EstablishAmbient site), isolating the floor as the operative block.
+    let plan = plan_for(
+        "w() { apt-get install -y \"$1\" >/dev/null 2>&1; }\nfor pkg in nginx; do w \"$pkg\"; done\n",
+        &[("package", "nginx")],
+    );
+    assert!(
+        call_runs(&plan, "w \"$pkg\""),
+        "an in-loop inlined call is floored (runs) even when converged"
+    );
+    assert!(
+        !call_replaced(&plan, "w \"$pkg\""),
+        "the in-loop floor prevents the inlined call from eliding"
+    );
+}

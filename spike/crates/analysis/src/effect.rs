@@ -560,14 +560,10 @@ pub fn classify(
                     .map(|f| CommandEffect::Establishes(*f))
                     .collect();
             }
-            // arch-2 (`i-1`/`i-5`): an inlined CALL node gens NOTHING into reaching-defs —
-            // it is `Pure`, NOT the `Opaque` the unmodeled command word `prov` would resolve
-            // to. The body is spliced AFTER the call (its commands gen their own effects
-            // downstream exactly as inline code would), so the call node itself is a
-            // pass-through; classifying it `Opaque` would poison its OWN spliced body
-            // (`prov` ⊤ ⇒ the body's establish reads as Written, never Ambient) — the exact
-            // poison the splice exists to remove. The body's effects reach the analysis
-            // through the spliced commands, not the call word.
+            // arch-2: an inlined CALL gens Pure, NOT the Opaque its unmodeled word would
+            // resolve to — the body (spliced after it) carries the effects. Opaque here would
+            // poison the call's OWN spliced body (the establish reads Written) — the very
+            // poison the splice removes.
             if cfg.call_body_sites(id).is_some() {
                 return vec![CommandEffect::Pure];
             }
@@ -649,10 +645,8 @@ pub fn classify(
         // Only genuinely-runnable command leaves are plan/apply units. A command
         // inside a `$( … )` substitution body is effect-bearing (it stayed in the
         // reaching-defs above, so its mutations still poison/establish) but is NOT
-        // a leaf (find-cli-1, the dn-3 leaf-seam). arch-2 (`i-3`): a SPLICED funcdef-body
-        // command is likewise effect-bearing-but-not-a-leaf — the CALL is the render unit,
-        // and the body site is a `site N.M` sub-record OF THE CALL (handled at the call node
-        // below), never its own Step.
+        // a leaf (find-cli-1, the dn-3 leaf-seam). arch-2: a SPLICED funcdef-body command is
+        // likewise effect-bearing-but-not-a-leaf — its `site N.M` record rides the CALL (below).
         if cfg.node(id).kind != CfgNodeKind::Command
             || cfg.is_expansion_internal(id)
             || cfg.is_spliced_internal(id)

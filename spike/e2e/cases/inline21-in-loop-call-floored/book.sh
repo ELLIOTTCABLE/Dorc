@@ -1,0 +1,10 @@
+# inline21-in-loop-call-floored (arch-2 + task-L1 composition — the in-loop floor holds for an
+# inlined CALL): a wrapper called INSIDE a `for` loop. The call inlines (the body's `$1` binds
+# to the for-var, here a single concrete member `nginx`), and the body establish reports
+# converged — but the in-loop render floor (task-L1) forces the CALL to RUN this round (the
+# line/span render cannot elide one iteration of a call; a member-precision path for inlined
+# calls is not built). So the loop runs verbatim and `apt-get install -y nginx` executes. This
+# pins that `inline_disposition` re-checks the in-loop floor EXPLICITLY (not relying on the
+# back-edge self-poison) — the riskiest unverified composition (note 216 hunt-6).
+w() { apt-get install -y "$1" >/dev/null 2>&1; }
+for pkg in nginx; do w "$pkg"; done
