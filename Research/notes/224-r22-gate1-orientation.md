@@ -597,3 +597,48 @@ warm-ups (d×d host-flip fixture; var-resolved redirect case) → 22x synthesis 
   (conductor's, no ratification): 220+21Z IB annotations DONE this commit; 22B
   fork-slug rename at wave-2 touch; kFIDELITY disambiguation line; spike/CLAUDE.md
   gains held-4 sanctioned-exception + rec-1 two-surfaces + rec-5 at next touch.
+- ru-20 (human; the four-UI enumeration — held-1/rec-1 dissolved properly): UI was
+  deliberately punted ("baking it into any conversation seems dangerous — that
+  leads to building correctness machinery targeting specific UI structures instead
+  of vice versa"); correctness follows GRAND UX GOALS; UIs fall out. The quiet
+  assumption, now enumerated (feature-parity-NOT-included): ui-1 actual-application
+  mode (the "UI" is an SSH tunnel + rack lights; be very careful about mutation
+  between input-script and on-wire bytes; DEFERRED-BUT-LEAN-NO on embedding much
+  additional metadata as shell comments there — the existing fact-plane disposition
+  comments stand, grow nothing). ui-2 TUI/pretty-mode (full ANSI UI; grey-out,
+  rustc-arrow-style inserted not-really-script lines, scrollable cause lists;
+  looks-like-shell-script is an aesthetic affectation THERE; realtime feedback =
+  the wow-factor that converts to oracle-authors; needs significant architecture).
+  ui-3 traditional phased CLI (`dorc plan` → file → `dorc apply` ships it) — THE
+  home of the warnings-representation problem: sh-on-stdout dislocates
+  stderr-warnings from code; human lean = direct-WRITE the script artifact, DOUBLY
+  emit cited sections with their warnings/errors to the console. ui-4 mechanized
+  (fixed formats, no fluff: scripting/automation/LSP/LLMs). Conductor mapping:
+  still TWO PLANES (artifact vs render) with render having three modes; contracts
+  stay PLANE-based per the human's own warning — the four UIs are consumers, never
+  contract subjects. Happy convergence: 22B §4's one-value-four-projections maps
+  ~1:1 onto ui-1..4 (artifact-comment / TUI-dashboard / CLI-narrative / OOB-lane).
+  rec-1 RATIFIED in substance via this enumeration; the ui-3 cited-sections lean
+  is the 22B narrative render. (rec-2/4/5/7 uncontested-recorded; rec-6 still
+  awaiting an explicit nod.)
+- ru-21 (human; crown-jewel counter-proposal, DIRECTION-grade — he is on the
+  fence): lean = do NOT ingest output we don't need (security argument hard to
+  overcome); instead take on the rotation-discipline pain of owning PER-HOST
+  durables directories; postmortem reconstruction = reach out and slurp the
+  relevant durables AT POSTMORTEM TIME, not prospectively; maybe with tooling.
+  Conductor synthesis to propose (threading his lean against the fate-sharing
+  counter): default host-side rich durables (142's per-leaf files already live
+  host-side — simply don't drain by default) + NEED-DRIVEN eager fetch (on
+  failure/refusal/divergence at a site, fetch THAT site's durables immediately
+  while the connection lives) + `dorc postmortem <run>` slurp tooling. Controller
+  keeps only the analyzer tape (verdict-lane records it consumed anyway + seed +
+  digest) — RV2 finding-2's at-rest aggregate dissolves. COSTS flagged honestly:
+  (cost-1, strongest) the dead-host window — the postmortem you most need (host
+  went sideways/unreachable) is the one where slurping fails; need-driven fetch
+  shrinks but does not close it. (cost-2) a persistent Dorc footprint on every
+  host: rotation tooling + not-being-a-dick discipline = a new product commitment.
+  (cost-3) scrub moves to INGEST (host-side sh can't scrub cheaply; the host
+  already saw its own output, so aggregation-time scrubbing is the meaningful
+  boundary) — cer-3 reframes accordingly. Settles at arch-4 spec time with the
+  cost measurement; replay gate (cer-1) unaffected (replay needs only the
+  controller-resident analyzer tape).
