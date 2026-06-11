@@ -1367,6 +1367,148 @@ fn consumed_oror_left_operand_marks_relaxable_status() {
     );
 }
 
+// ===========================================================================
+// door-3 (`20V` §4 / note 213): the `cmd || true` left operand is marked
+// `Channel::StatusInvariant` (never blocks) instead of `StatusRelaxable` (blocks at
+// ⊤). The classification pins live here (engine-side fact); the consumption-gate
+// collapse + disposition flip live in `plan`'s `observable_matrix.rs`.
+// ===========================================================================
+
+#[test]
+fn consumed_oror_true_left_operand_marks_invariant_not_relaxable() {
+    // The door-3 mark: `cmd || true` — both `||` continuations rejoin with identical
+    // observables, so the consumed left rc is dead-in-fact. The left operand is marked
+    // `StatusInvariant` (never blocks, even at ⊤), NOT the blocking `StatusRelaxable`.
+    let c = consumed_of("apt-get install -y nginx || true\n", "apt-get");
+    assert!(
+        c.contains(&Channel::StatusInvariant),
+        "a `cmd || true` left operand is marked StatusInvariant (door-3): {c:?}"
+    );
+    assert!(
+        !c.contains(&Channel::StatusRelaxable),
+        "the `|| true` mark REPLACES StatusRelaxable (else the blocking mark would still block): {c:?}"
+    );
+}
+
+#[test]
+fn consumed_oror_false_keeps_relaxable_not_invariant() {
+    // The `|| false` pole: `false` CHANGES the list rc (cmd rc=0 ⇒ short-circuit, list rc
+    // 0; cmd rc≠0 ⇒ `false` runs ⇒ list rc 1), so the continuations do NOT rejoin
+    // identically — the left rc is genuinely load-bearing. It keeps the blocking
+    // `StatusRelaxable` mark; door-3 must NOT widen to it.
+    let c = consumed_of("apt-get install -y nginx || false\n", "apt-get");
+    assert!(
+        c.contains(&Channel::StatusRelaxable),
+        "`|| false` keeps the blocking StatusRelaxable (the list rc differs by the left rc): {c:?}"
+    );
+    assert!(
+        !c.contains(&Channel::StatusInvariant),
+        "`|| false` is NOT door-3 (it is not the bare-true shape): {c:?}"
+    );
+}
+
+#[test]
+fn consumed_oror_colon_keeps_relaxable_deliberate_deferral() {
+    // The `|| :` deferral: `:` is the null command — semantically IDENTICAL to `true`
+    // (rc 0, no observable), so this shape is extensionally a door-3 candidate. We
+    // deliberately DECLINE to widen to it this slice: every license-surface widening is a
+    // disaster-class-bug locus (`20V` §4 d-2 widens candidate-by-candidate). `:` keeps the
+    // blocking `StatusRelaxable`. This is a CANDIDATE-WIDENING marker — a future slice that
+    // adds `:` (and audits it) flips this pin.
+    let c = consumed_of("apt-get install -y nginx || :\n", "apt-get");
+    assert!(
+        c.contains(&Channel::StatusRelaxable),
+        "`|| :` stays StatusRelaxable-blocked (deliberate deferral, not yet a door-3 shape): {c:?}"
+    );
+    assert!(
+        !c.contains(&Channel::StatusInvariant),
+        "`|| :` is deliberately NOT widened into door-3 this slice (the colon is a candidate): {c:?}"
+    );
+}
+
+#[test]
+fn consumed_oror_true_with_redirect_keeps_relaxable() {
+    // `|| true >/dev/null`: the redirect makes the rhs not the BARE `true` (`right_is_bare_true`
+    // requires zero redirs). A redirect is its own effect node and could change observables,
+    // so door-3's identity-of-continuations argument does not hold — keep the blocking mark.
+    let c = consumed_of("apt-get install -y nginx || true >/dev/null\n", "apt-get");
+    assert!(
+        c.contains(&Channel::StatusRelaxable),
+        "`|| true >/dev/null` keeps StatusRelaxable (a redirect disqualifies the bare-true slice): {c:?}"
+    );
+    assert!(
+        !c.contains(&Channel::StatusInvariant),
+        "a redirected `true` is not the door-3 bare-true shape: {c:?}"
+    );
+}
+
+#[test]
+fn consumed_andand_true_keeps_relaxable_not_invariant() {
+    // `cmd && true`: door-3 is `||`-only. Under `&&`, cmd's FAILURE short-circuits past
+    // `true` and the LIST rc is cmd's non-zero rc (which fires errexit), so the
+    // continuations differ — the left rc is load-bearing. Keep the blocking
+    // `StatusRelaxable`; the `op == Or` guard in `lower_and_or` must exclude `&&`.
+    let c = consumed_of("apt-get install -y nginx && true\n", "apt-get");
+    assert!(
+        c.contains(&Channel::StatusRelaxable),
+        "`&& true` keeps StatusRelaxable (failure short-circuits, list rc ≠ 0): {c:?}"
+    );
+    assert!(
+        !c.contains(&Channel::StatusInvariant),
+        "door-3 is `||`-only — `&& true` is not it: {c:?}"
+    );
+}
+
+#[test]
+fn consumed_oror_handler_group_keeps_relaxable() {
+    // `cmd || { …; }`: the rhs is a `Group`, not a bare `true` Simple — its continuations
+    // can differ observably (the handler prints, exits, etc.). Keep the blocking mark; only
+    // the EXACT bare-`true` Simple qualifies.
+    let c = consumed_of(
+        "apt-get install -y nginx || { printf 'recovering\\n'; }\n",
+        "apt-get",
+    );
+    assert!(
+        c.contains(&Channel::StatusRelaxable),
+        "`|| {{ …; }}` keeps StatusRelaxable (a handler group is not the bare-true shape): {c:?}"
+    );
+    assert!(
+        !c.contains(&Channel::StatusInvariant),
+        "an `|| {{ …; }}` handler is not door-3: {c:?}"
+    );
+}
+
+#[test]
+fn consumed_oror_chain_true_marks_only_outer_left_invariant() {
+    // d-3 asymmetry: `a || b || true` parses left-assoc as `(a || b) || true`. `a`'s rc is
+    // read by the INNER `||` (it controls whether `b` runs — genuinely live), so `a` keeps
+    // `StatusRelaxable` (blocks at ⊤). `b`'s consumer is the OUTER `|| true`, so `b` is
+    // marked `StatusInvariant` (unlocks). The mark-union composition produces this: the inner
+    // call marks `a` Relaxable; the outer call's `StatusInvariant` over the whole left range
+    // ALSO lands on `a` (verified: `a` = {StatusRelaxable, StatusInvariant}), but is INERT
+    // there — its Relaxable still blocks. We assert the CONTRACT (a blocks via Relaxable; b
+    // unlocks via Invariant-without-Relaxable), NOT the incidental over-mark on `a` (a future
+    // precision pass could stop over-marking `a` without changing the contract).
+    let src = "apt-get install -y nginx || apt-get install -y curl || true\n";
+    let cfg = cfg_of(src);
+    let nodes = command_nodes_with_literal(&cfg, src, "apt-get");
+    assert_eq!(
+        nodes.len(),
+        2,
+        "two apt-get sites (a=nginx, b=curl): {nodes:?}"
+    );
+    let a = cfg.consumed_observables(nodes[0]).clone(); // source-order first: nginx
+    let b = cfg.consumed_observables(nodes[1]).clone(); // second: curl
+    assert!(
+        a.contains(&Channel::StatusRelaxable),
+        "a (inner-`||` left) keeps the blocking StatusRelaxable — its rc controls whether b runs: {a:?}"
+    );
+    assert!(
+        b.contains(&Channel::StatusInvariant) && !b.contains(&Channel::StatusRelaxable),
+        "b (outer `|| true` left) is StatusInvariant, not Relaxable — its rc is dead-in-fact: {b:?}"
+    );
+}
+
 #[test]
 fn consumed_post_while_dollar_question_marks_body_not_only_condition() {
     // task-L2 item-6a (20O find-6a), dash-verified: post-loop `$?` after a `while` is the

@@ -367,6 +367,109 @@ fn andor_left_operand_undeclared_rc_runs_kfail_perform() {
 }
 
 // ===========================================================================
+// door-3 (`20V` §4 / note 213): `cmd || true` — the admin's spelled-in-sh "this rc is
+// not load-bearing". The left operand is `StatusInvariant`-consumed (never blocks), so a
+// converged mutator there MINTS a license even at ⊤ rc — the ONLY behavioral delta. The
+// classification pins (which channel) are in `analysis/tests/cfg.rs`; these pin the gate
+// collapse + disposition. Contrast `andor_left_operand_undeclared_rc_runs_kfail_perform`
+// directly above: a plain `|| systemctl start` left RUNS (StatusRelaxable + ⊤), a
+// `|| true` left REPLACES (StatusInvariant + ⊤).
+// ===========================================================================
+
+#[test]
+fn door3_oror_true_converged_mutator_is_replaced() {
+    // The payoff: `apt-get install -y nginx || true`, converged. The install's rc is ⊤
+    // (`fork-mutator-rc`), but its consumer is `|| true` ⇒ `StatusInvariant` ⇒ the gate does
+    // NOT block ⇒ the convergence-elision license mints. The stand-in is `True` — licensed
+    // by INVARIANCE (both `||` continuations rejoin identically), not by a claim the mutator
+    // exits 0 (weld-5 intact). HOST: nginx installed.
+    let plan = plan_for(
+        "apt-get install -y nginx || true\n",
+        &[("package", "nginx")],
+    );
+    assert!(
+        is_replaced(&plan, "install -y nginx"),
+        "a converged `cmd || true` left mints despite ⊤ rc (door-3: StatusInvariant never blocks)"
+    );
+    assert!(
+        plan.steps.iter().any(|s| s.sh.contains("install -y nginx")
+            && matches!(&s.disposition, Disposition::Replace(_, stand_in) if stand_in.sh() == "true")),
+        "the door-3 stand-in is `true` (the idiom, not a predicted rc-0)"
+    );
+}
+
+#[test]
+fn door3_oror_true_diverged_mutator_runs_effect_still_gates() {
+    // door-3 clears ONLY the Status channel; the Effect channel still gates. A DIVERGED
+    // `cmd || true` must RUN — the StatusInvariant mark unblocks Status, but
+    // `prove_replaceable`'s convergence check (`verdict.resolve() != Replaceable`) refuses a
+    // non-converged effect. This pins that door-3 is NOT an elision-license relaxation.
+    // HOST: nginx NOT installed (diverged).
+    let plan = plan_for("apt-get install -y nginx || true\n", &[]);
+    assert!(
+        !is_replaced(&plan, "install -y nginx"),
+        "a diverged `cmd || true` runs: door-3 clears Status, Effect (convergence) still gates"
+    );
+}
+
+#[test]
+fn door3_oror_false_converged_mutator_still_runs() {
+    // The `|| false` pole at the gate level: `false` changes the list rc, so the left
+    // operand keeps the blocking `StatusRelaxable` mark (not StatusInvariant). Composed with
+    // ⊤ (`fork-mutator-rc`), the gate refuses ⇒ the install RUNS. door-3 must NOT widen to
+    // `|| false`. HOST: nginx installed.
+    let plan = plan_for(
+        "apt-get install -y nginx || false\n",
+        &[("package", "nginx")],
+    );
+    assert!(
+        !is_replaced(&plan, "install -y nginx"),
+        "`|| false` keeps the blocking StatusRelaxable ⇒ converged ⊤-rc mutator runs (not door-3)"
+    );
+}
+
+#[test]
+fn door3_oror_chain_true_replaces_only_outer_left() {
+    // d-3 asymmetry at the plan level: `a || b || true`, both converged. `a` (nginx) keeps
+    // StatusRelaxable (inner `||` reads its rc) ⇒ runs. `b` (curl) is StatusInvariant (outer
+    // `|| true`) ⇒ replaces. Two same-command sites must NOT collapse (`inv-site-keyed-results`).
+    // HOST: nginx + curl both installed.
+    let plan = plan_for(
+        "apt-get install -y nginx || apt-get install -y curl || true\n",
+        &[("package", "nginx"), ("package", "curl")],
+    );
+    assert!(
+        !is_replaced(&plan, "install -y nginx"),
+        "a (inner-`||` left) runs — its rc controls whether b runs (StatusRelaxable + ⊤)"
+    );
+    assert!(
+        is_replaced(&plan, "install -y curl"),
+        "b (outer `|| true` left) replaces — its rc is dead-in-fact (StatusInvariant)"
+    );
+}
+
+#[test]
+fn door3_oror_true_then_dollar_question_runs_residual() {
+    // The documented RESIDUAL (`20V` §4 UNIT PINS / note 213): `cmd || true; echo $?`. The
+    // `$?`-reader marks the predecessors (`cmd` AND `true`) `StatusRelaxable` via the
+    // pred-walk, and that blocking mark is added to `cmd`'s set alongside its
+    // StatusInvariant. Mark-union: a present StatusRelaxable + ⊤ blocks ⇒ `cmd` RUNS. This is
+    // acceptable-conservative this slice (kFAIL-perform): although `$?` after `cmd || true` is
+    // ALWAYS 0 (the list rc is invariant), the pred-walk does not yet know the read is
+    // invariant, so it blocks. A later slice that propagates the list-rc-invariance to the
+    // `$?`-read could unlock it. HOST: nginx installed.
+    let plan = plan_for(
+        "apt-get install -y nginx || true\necho $?\n",
+        &[("package", "nginx")],
+    );
+    assert!(
+        !is_replaced(&plan, "install -y nginx"),
+        "`cmd || true; echo $?` runs the mutator: the $?-pred StatusRelaxable mark blocks \
+         (residual — conservative, could later unlock via list-rc-invariance)"
+    );
+}
+
+// ===========================================================================
 // SPECS — the gate's must-run cases: a consumed UNVOUCHED output (stdout/stderr/fd)
 // ⇒ run. Formerly the #[ignore]d build-against targets; all pass now the gate has
 // landed. (Only the HOLE#1 subst-in-redir-target spec below stays #[ignore]d.)

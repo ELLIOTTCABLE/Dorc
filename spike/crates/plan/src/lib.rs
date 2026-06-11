@@ -436,7 +436,13 @@ impl ReplaceLicense {
 ///   errexit-region command, or a `$?`-reader's predecessor) — blocks ONLY when the rc is
 ///   ⊤ (a fabricated rc-0 `true` would suppress a `|| fallback`, the `kFAIL-perform`
 ///   under-execute); a known/probe-sourced rc relaxes it (`StandIn::from_rc` reproduces
-///   the exact status).
+///   the exact status);
+/// * `StatusInvariant` (the `cmd || true` shape — door-3, `20V` §4) — NEVER blocks,
+///   regardless of prediction (⊤ included): both `||` continuations rejoin with identical
+///   observables, so any stand-in rc is extensionally faithful (`19D`'s under-execute
+///   cannot arise — there is no `|| fallback` whose firing a fabricated rc-0 would
+///   suppress; the fallback *is* `true`, observable-free). Still RECORDED in `consumed`
+///   (disclosure/provenance sees the read); only the blocking judgment is "never".
 ///
 /// Sound in BOTH phases; only what a blocked leaf *becomes* is phase-keyed (the
 /// caller's collapse, `inv-superposition`).
@@ -451,6 +457,11 @@ fn consumption_ok(consumed: &May<Powerset<Channel>>, status: Predicted<Rc>) -> b
     if consumed.contains(&Channel::StatusRelaxable) && matches!(status, Predicted::Top) {
         return false;
     }
+    // `Channel::StatusInvariant` (door-3) is intentionally absent from every block above:
+    // a site carrying ONLY it (its sole status-consumer is a `|| true`) passes even at ⊤.
+    // A site that ALSO carries a blocking mark (`StatusRelaxable` from an inner `||`, an
+    // `if`-guard's `StatusRenderFloor`, a consumed `Stdout`) is still blocked by that mark
+    // — Invariant never *un*-blocks, it only declines to block (the d-3 mark-union rule).
     true
 }
 
@@ -1028,11 +1039,16 @@ fn disposition_for(
             match ReplaceLicense::prove_replaceable(class, Grade::Must, verdict, consumed, status) {
                 Some(license) => {
                     // The value-preserving stand-in reproduces the predicted Status channel.
-                    // An unpredicted status (`Predicted::Top`) falls back to the conforming
-                    // `true` (rc 0) — reached ONLY for a converged-establish whose status is
-                    // not branch-consumed (`prove_replaceable` blocks a branch-consumed `Top`,
-                    // `19D`; a Query guard always carries a known rc, never ⊤). So the rc-0
-                    // placeholder is never read by a branch.
+                    // An unpredicted status (`Predicted::Top`) falls back to `true` (rc 0) in
+                    // two cases, neither fabricating a value a LIVE reader consumes: (a) a
+                    // converged-establish whose status is not branch-consumed (`prove_replaceable`
+                    // blocks a branch-consumed `Top` via `StatusRelaxable`, `19D`; a Query guard
+                    // always carries a known rc) — the rc-0 placeholder is never read by a branch;
+                    // (b) door-3 (`20V` §4): a `cmd || true` left whose ⊤ status is `StatusInvariant`
+                    // -consumed. There `true` is the IDIOM, not a predicted value — the mint is
+                    // licensed by INVARIANCE (both `||` continuations rejoin identically, so any rc
+                    // is extensionally faithful), NOT by a claim cmd exits 0. This keeps weld-5 (no
+                    // fabricated values for LIVE reads) intact: the `||` read is dead-in-fact.
                     let stand_in = match status {
                         Predicted::Value(rc) => StandIn::from_rc(rc),
                         Predicted::Top => StandIn::True,

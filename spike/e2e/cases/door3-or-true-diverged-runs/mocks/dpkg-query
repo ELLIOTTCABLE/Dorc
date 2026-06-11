@@ -1,0 +1,5 @@
+#!/bin/sh
+# INERT probe shim (gate-1 parity): `package` kind probes `dpkg-query -W <pkg>` ($2=pkg).
+# nginx is NOT installed here (diverged) ⇒ rc 1 (absent), matching probe-results.txt.
+printf 'ran: %s %s\n' "${0##*/}" "$*" >>"$DORC_LOG"
+exit 1

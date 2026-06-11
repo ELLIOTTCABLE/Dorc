@@ -355,6 +355,18 @@ pub enum Channel {
     /// fabricated rc-0 `true` would suppress a `|| fallback` — the `kFAIL-perform`
     /// under-execute (`19D`).
     StatusRelaxable,
+    /// Status consumed-in-form but dead-in-fact — the `cmd || true` shape (door-3, charter
+    /// `20V` §4). The `||` *reads* the left rc, yet both continuations rejoin with identical
+    /// observables: cmd rc=0 ⇒ short-circuit, list rc 0; cmd rc≠0 ⇒ `true` runs (no
+    /// observable) ⇒ list rc 0; `$?` after the list is 0 on both paths, and `set -e` sees 0
+    /// on both paths (the left of `||` is errexit-exempt). So a ⊤ prediction is harmless and
+    /// ANY stand-in rc is extensionally faithful — this channel NEVER blocks a license,
+    /// regardless of prediction (⊤ included). It is the admin's own spelled-in-sh "this rc
+    /// is not load-bearing" declaration. Distinct from [`StatusRelaxable`] (which a ⊤ rc
+    /// blocks): there the readers' DECISIONS differ by rc, so a fabricated rc-0 would
+    /// under-execute; here the decisions converge. Still RECORDED in the consumed set —
+    /// disclosure/provenance must see the read; only the *blocking* judgment differs.
+    StatusInvariant,
     /// fd 1 captured to a real (non-`/dev/null`) sink ⇒ value-bearing, vouched by
     /// nothing ⇒ a consumed `Stdout` always blocks (16F §3).
     Stdout,

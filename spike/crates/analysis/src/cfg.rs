@@ -693,7 +693,7 @@ impl<'a> Builder<'a> {
     /// covered by *its* enclosing `lower_and_or`.
     fn lower_and_or(
         &mut self,
-        _op: dorc_syntax::ast::AndOrOp,
+        op: dorc_syntax::ast::AndOrOp,
         left: AstId,
         right: AstId,
         entry_pred: CfgNodeId,
@@ -713,12 +713,29 @@ impl<'a> Builder<'a> {
         // former `tc-mint` ambiguity (`notes/198` §1.3): the engine no longer guesses
         // post-condition-vs-guard — it emits the un-collapsed status fact, and the
         // *declared rc* (the fold's input) decides, per `inv-superposition`/`19A §5`.
+        //
+        // door-3 (charter `20V` §4 / note 213): `lhs || true` marks the left operand
+        // `Channel::StatusInvariant` (never blocks, even at ⊤) instead of `StatusRelaxable` —
+        // the rc is consumed-in-form, dead-in-fact (see the variant doc for why). Only the
+        // EXACT bare-`true` rhs qualifies ([`right_is_bare_true`]); `|| :`/`|| false`/
+        // `&& true`/`|| true >/dev/null`/`|| { …; }` keep `StatusRelaxable` (a deliberately
+        // narrow license-widening, `20V` §4 d-2). The mark covers the whole left arena range;
+        // in a chain `a || b || true` (left-assoc) that range also spans `a`, but `a` already
+        // carries `StatusRelaxable` from the inner `||` (its rc gates whether `b` runs), and
+        // that blocking mark wins over the inert Invariant over-mark — so only `b` (the direct
+        // `|| true` left) unlocks. The d-3 asymmetry falls out of mark-union composition.
+        let door3 = matches!(op, dorc_syntax::ast::AndOrOp::Or) && self.right_is_bare_true(right);
+        let left_status = if door3 {
+            Channel::StatusInvariant
+        } else {
+            Channel::StatusRelaxable
+        };
         let before_left = self.nodes.len();
         let left_exit = self.lower_condition_region(left, entry_pred, false);
         self.mark_consumed_range(
             before_left,
             self.nodes.len(),
-            &Powerset::singleton(Channel::StatusRelaxable),
+            &Powerset::singleton(left_status),
         );
 
         let right_exit = self.lower_node(right, left_exit);
@@ -1275,6 +1292,30 @@ impl<'a> Builder<'a> {
             words.first().and_then(|&w| self.word_literal(w)),
             Some("exit" | "return")
         )
+    }
+
+    /// Is `id` the EXACT bare-`true` rhs that licenses door-3 (`20V` §4 d-2)? A
+    /// [`NodeKind::Simple`] whose argv is exactly the single literal word `true` —
+    /// zero arguments, zero redirections, zero assignment-prefixes, and (because
+    /// [`word_literal`](Self::word_literal) only matches a lone `Literal`/`SingleQuoted`
+    /// part) no command-substitution. This is a deliberately narrow slice: `true x`,
+    /// `X=1 true`, `true >/dev/null`, and `$(echo true)` all fail it and keep the
+    /// blocking `StatusRelaxable` mark. `:` does NOT qualify (it is semantically
+    /// identical, but every license-surface widening is a disaster-class-bug locus —
+    /// `20V` §4 widens deliberately, candidate-by-candidate; the `|| :` deferral is
+    /// pinned as a unit test). `false` does not qualify (it changes the list rc).
+    fn right_is_bare_true(&self, id: AstId) -> bool {
+        let NodeKind::Simple {
+            assigns,
+            words,
+            redirs,
+        } = &self.ast.node(id).kind
+        else {
+            return false;
+        };
+        assigns.is_empty()
+            && redirs.is_empty()
+            && matches!(words.as_slice(), [w] if self.word_literal(*w) == Some("true"))
     }
 
     /// The statically-fixed literal of a word (the only case treated as a known
