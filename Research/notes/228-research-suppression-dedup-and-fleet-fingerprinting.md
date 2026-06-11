@@ -389,11 +389,168 @@ fuzzy aggregation it belongs strictly as a non-authoritative suggestion layer at
 deterministic site-keyed receipts (and Dorc, unlike Sentry, has the analyzer-known cause
 and likely never needs it).
 
-*(rq-G next: WER bucketing condensing/expanding failure taxonomy (CACM "Debugging in
-the Very Large" — paywalled, see fetch-requests; ReBucket + Wikipedia for the
-mechanics); Mozilla Socorro signature-rules config-as-maintenance; lighter-touch
-journald/log dedup. rq-E: abstract-interp alarm clustering (Astrée/Frama-C/Infer);
-ESLint/clippy duplicate-suppression.)*
+### Windows Error Reporting — the canonical bucket-failure taxonomy
+
+`[B-wer-wikipedia-2026]` (Wikipedia, citing the CACM "Debugging in the Very Large"
+paper `[D-cacm-debugging-large-2011]`, paywalled — see fetch-requests). WER buckets a
+crash *client-side*, before any symbol analysis, on eight fields:
+
+> "buckets classify issues by: Application Name, Application Version, Application Build
+> Date, Module Name, Module Version, Module Build Date, OS Exception Code/System Error
+> Code, and Module Code Offset."
+
+The bucket-failure taxonomy is the most-cited result in this whole literature, and it is
+exactly Dorc's two-sided risk:
+
+> "Ideally, each bucket contains crash reports that are caused by one and only one root
+> cause. However… First, the heuristics that group failures can result in a single
+> failure's being attributed to multiple buckets; for instance, each time an
+> application… is recompiled, the application will have a new Module Build Date, and
+> resulting failures will then map to multiple buckets. Second… multiple distinct bugs
+> can be mapped to a single bucket; for instance, if an application calls a single
+> function like `strlen` with strings corrupted in different ways by different
+> underlying code defects, the failures could map to the same bucket because they
+> appear to be crashes in the same function… This occurs because the bucket is
+> generated on the Windows OS client without performing any symbol analysis… The module
+> that is picked… is the module at the top of the stack."
+
+The CACM paper names these two failure directions *condensing* (under-keying → many
+bugs in one bucket) and *expanding* (over-keying → one bug in many buckets). **Dorc
+read:** (a) the *expanding* failure is exactly the receipts-stability problem — keying
+on a volatile dimension (Module Build Date ≈ "the exact sh bytes / a timestamp / a
+version") shatters one cause into many groups on every rebuild/edit; Dorc must keep
+volatile dimensions OUT of the grouping key. (b) the *condensing* failure is the
+over-suppression failure mode — keying too coarse (top-of-stack module ≈ "the immediate
+consumer of the ⊤" rather than the ⊤-origin) merges genuinely distinct causes; this is
+the war story the briefing asked for: WER's coarse client-side key provably merges
+distinct `strlen` corruptions because it keys on the *crash site* (immediate symptom)
+not the *root cause* — which is precisely why Dorc keying on the ⊤-CAUSE-pointer (the
+origin) rather than the symptom site is the correct call, and the inverse of WER's
+known defect. (Note the scale that makes coarse keying attractive: WER is "provisioned
+to receive and process well over 100 million error reports per day" — bucketing exists
+to make a firehose tractable, the 80/20 Pareto point Ballmer cited.)
+
+### Mozilla Socorro — grouping rules as maintained, first-class config
+
+`[A-socorro-siggen-2026]` (Socorro docs) + `[B-willkg-siggen-2017]` (the maintainer's
+overhaul retrospective). Socorro generates a crash *signature* (its grouping key) by a
+*pipeline of transform rules plus regex lists* ("siglists"), explicitly maintained as
+config by non-core contributors. The stability tension is stated as a first principle:
+
+> "Signature generation is finicky. When it generates too coarse a signature, then
+> crash reports that have nothing to do with one another end up grouped together. When
+> it generates too fine a signature, then crash reports end up in very small groups
+> which are unlikely to be looked at. Since technologies are constantly changing, we're
+> constantly honing signature generation."
+
+The signature algorithm is a *stack-walk with accumulation* (not a whole-stack hash):
+
+> "1. We walk the crashing thread's stack, looking for things that would match the
+> Signature Sentinels. The first matching element… becomes the top of the sub-stack…
+> 2. We walk the stack, ignoring everything that matches the Irrelevant Signatures…
+> 4. We accumulate signatures that match the Prefix Signatures, until something doesn't
+> match. 5. We normalize each signature… The generated signature is a concatenation of
+> all the accumulated signatures, separated with a pipe sign."
+
+Two lists drive it, with an explicit decision rule for which list a frame goes in:
+
+> "Irrelevant Signatures… Add symbols to this list that: 1. have platform variants that
+> prevent crash signatures from being the same across platforms 2. are involved in
+> panic, error, or crash handling code that happens *after* the actual crash."
+
+**Dorc read (the config-maintenance economics):** this is the strongest evidence that
+the grouping key is a *living artifact*, not a fixed function. Socorro averages "a
+change a week" to the siglists; changes require a Bugzilla bug with example crash URLs
+"because signature generation is tricky and we need the historical data for what
+changes we made, for whom, why, and how it affected signature generation." The
+"irrelevant list" rule — strip frames that are *crash-handling code that runs after the
+cause* — is directly transferable: Dorc's analog is stripping the *downstream consumers*
+of a ⊤ from the cause-identity (they are the "after the cause" frames), keeping the
+ⓣ-origin (the "cause" frame) as the signature head. The prefix-list "accumulate until
+non-match" is a tunable-depth identity: include just enough of the causal chain to
+disambiguate, stop early to stay stable. And the testability lesson: Socorro's whole
+overhaul was motivated by "there's no way to test a grouping-rule change before merging
+it" — if Dorc makes site-identity/suppression rules configurable, they MUST be testable
+offline against recorded receipts (Dorc's DST harness is the natural home).
+
+### CodeChecker — the deployed Clang-SA hash, with a NAMED stability spectrum
+
+`[A-codechecker-reportid-2026]` (Ericsson CodeChecker docs). The single most actionable
+site-identity reference: it documents the *spectrum* of report-hash methods used over
+Clang SA / Clang-Tidy in production, each row spelling out exactly which dimensions it
+keys on and therefore what destabilizes it. From most to least context-sensitive:
+
+> "**Context sensitive** (default for Clang Static Analyzer)… calculated based on:
+> signature of the enclosing function declaration…; content of the line where the bug
+> is; checker name…; position (column) within the line."
+> "**Context free / context-free-v2**… the hash will not be changed so easily for
+> example on code indentation or when a checker is renamed… file name; checker name;
+> content of the line where the bug is if it can be read up. All the whitespaces from
+> the source content are removed; range column numbers where the bug is."
+> "**diagnostic-message**… Same as context-free-v2 plus bug step messages… **Note**:
+> this is an experimental hash and it is not recommended… because this hash can change
+> very easily for example on variable / function renames."
+
+And the operational warning:
+
+> "the same hash method should be used consistently for a product. Mixing them can cause
+> a lot of confusion when the compare or other features are used."
+
+**Dorc read (the concrete grouping-key design):** this is a ready-made stability ladder
+for site-keyed receipts. The progression encodes the exact tradeoffs: keying on
+*column position* or *bug-step messages* (the most precise) churns on reformatting and
+renames; keying on *normalized line content with whitespace stripped + enclosing
+declaration name + checker* is the stable sweet spot CodeChecker ships as
+"context-free-v2". For Dorc: a receipt's stable identity should be roughly
+`(analysis-rule-id, enclosing-structural-scope, whitespace-normalized command text)` —
+NOT the byte offset, NOT the line number alone (moves on edit), NOT the full step trace.
+The "use one method consistently" warning maps to: Dorc must not mix identity schemes
+across a fleet comparison, or M-host aggregation silently fragments.
+
+## §3 (rq-E) Abstract-interpretation alarm clustering — the lattice-analyzer prior art
+
+This is the closest academic prior art to Dorc's exact problem: a sound lattice analyzer
+(⊤ = "I lost precision here") that emits correlated alarms from ONE imprecision source,
+and wants to report the source once. Findings are from the Astrée literature and the
+VMCAI'12 sound-clustering work (read at abstract/snippet depth this turn — see
+fetch-requests for the full PDFs; claims capped ~SUSPECT accordingly).
+
+**(alarm-selectivity-economics)** `[B-astree-site-2026]` / `[C-absint-astree-2026]`.
+Astrée frames the entire problem economically: even a 1%-false-alarm rate is unusable at
+scale — "on a program with 100,000 operations, a selectivity rate of only 1% yields 1000
+false alarms." ~SUSPECT this is the same driver as Dorc's ⊤-cascade: the cost isn't one
+⊤, it's that one ⊤ × N downstream consumers produces an unreviewable list, so dedup is a
+*usability prerequisite*, not a nicety. The Astrée design answer (per the ENS/AbsInt
+material) is precision-by-construction — analyze precisely enough that ⊤ is rare —
+rather than post-hoc clustering, which is a different bet than Dorc can make (Dorc's ⊤ is
+often unavoidable: an unmodeled command).
+
+**(sound-non-statistical-clustering)** `[B-vmcai-clustering-2012]` (Lee, Yi et al.,
+"Sound Non-Statistical Clustering of Static Analysis Alarms"). The directly-relevant
+academic result: instead of statistically *ranking* alarms (showing likely-true ones
+first), they compute *dependencies between alarms* so that clearing one "dominant" alarm
+provably clears a cluster of dependent ones. ~SUSPECT (abstract-depth) this is the
+formal version of Dorc's cause-pointer: an alarm B is *subsumed* by alarm A when A's
+imprecision is what triggered B; report A, fold B under it, and a fix to A discharges B.
+The "non-statistical / sound" framing matters for Dorc's correctness posture: the
+clustering is a *proof* of dependence, not a heuristic guess, so suppressing the
+dependent alarm cannot hide an independent bug — exactly the over-suppression guarantee
+Dorc needs. This is the strongest candidate for "published prior art for ⊤-origin-keyed
+deduplication in lattice analyzers specifically," and the full PDF is a priority
+fetch-request.
+
+**(infer-codechecker-dedup)** `[C-fb-infer-2017]` / `[A-codechecker-reportid-2026]`.
+Infer (Facebook/Meta, inter-procedural, OCaml) and CodeChecker both reduce repeated
+findings to a stable per-bug identifier so the same bug across runs/files reports once;
+CodeChecker's hash (above) is the concrete mechanism. Infer's scale story (run on every
+Meta diff) is evidence that *per-report stable identity* is the deployed answer to "same
+cause, many manifestations" — but I did not reach Infer's bug-hash source this turn
+(capped ~SUSPECT / -GUESS).
+
+*(rq-E remaining: ESLint/clippy per-site-vs-per-cause emission — lighter, lower
+priority. rq-G remaining: lighter-touch journald/Datadog pattern grouping. Synthesis of
+§0 minimum-viable-suppression sketch and grouping-key design pending after those or as
+final pass.)*
 
 ## Graded sources
 
@@ -407,3 +564,12 @@ ESLint/clippy duplicate-suppression.)*
 - `[B-rustc-errorguaranteed-2026]` · rust-lang/rustc-dev-guide, `src/diagnostics/error-guaranteed.md` · https://github.com/rust-lang/rustc-dev-guide/blob/main/src/diagnostics/error-guaranteed.md (raw read) · 2026 (main) · read: full · grade B not A: authoritative maintained dev-guide, fully read, but it is the *guide* prose; the actual `Ty::new_error`/`TyKind::Error` suppression code in `rustc` proper is one level deeper (not read this turn) so the suppression-USE mechanics are corroborated-from-docs not source-verified. · relevance: the "poisoned value carries proof an error was already emitted" pattern = Dorc's ⊤-with-cause-pointer; the explicit caveats (does NOT convey kind; don't branch on it; flush-or-ICE delayed-bug) directly inform Dorc's cause-pointer discipline. · via Kagi `rustc ErrorGuaranteed span_delayed_bug suppress cascade`.
 - `[C-rustc-101869-2022]` · rust-lang/rust#101869, "internal compiler error: no errors encountered even though `delay_span_bug` issued" · https://github.com/rust-lang/rust/issues/101869 · 2022-09-15 · read: snippet (title + symptom from search result) · grade C: real-world artifact of the delayed-bug discipline failing, but read only as a snippet, so capped low. · relevance: concrete evidence that the over-suppression net (delayed bug never flushed) is itself treated as a bug — the safety-net pattern for Dorc's "suppressed cascade whose root never rendered". · via Kagi result alongside the ErrorGuaranteed query.
 - `[A-sentry-grouping-dev-2026]` · develop.sentry.dev, Sentry "Grouping" backend developer documentation (the implementing team's own internals doc) · https://develop.sentry.dev/backend/application-domains/grouping/ · 2026 (live docs) · read: full · grade A not B: first-party engineering documentation by the team that built it, read in full, exceptionally candid about failure modes (caller-vs-callee impossibility, merge/split lossiness, the secondary-sweep future plan, native-platform mangling instability); reads as primary design rationale, not marketing. · relevance: THE most transferable rq-G source — every load-bearing rq-G finding (hierarchical-hash stability, callee-by-construction, group-fine-sweep-coarse, merge irreversibility, ML-as-fallback) comes from here. · via Kagi `Sentry error grouping fingerprinting algorithm evolution`.
+- `[B-wer-wikipedia-2026]` · Wikipedia, "Windows Error Reporting" (summarizing Glerum et al., CACM 2011) · https://en.wikipedia.org/wiki/Windows_Error_Reporting · 2026 (live) · read: full (targeted on the bucketing section) · grade B not C: encyclopedic but the bucketing-key list and the condensing/expanding failure description are quoted-and-cited from the primary CACM paper, accurate and load-bearing; not A because it is the secondary summary, not the paper itself (which is paywalled). · relevance: the canonical two-sided bucket-failure taxonomy (recompile→many buckets = expanding/over-keying; `strlen`→one bucket many bugs = condensing/under-keying) and the client-side top-of-stack keying that proves symptom-keying merges distinct causes — the direct argument for Dorc keying on ⊤-origin not symptom. · via Kagi `Windows Error Reporting bucketing !analyze heuristics`.
+- `[D-cacm-debugging-large-2011]` · Glerum, Kinshumann, et al. (Microsoft), "Debugging in the (Very) Large: Ten Years of Implementation and Experience," Communications of the ACM 54(7), 2011 · https://cacm.acm.org/research/debugging-in-the-very-large/ (also dl.acm.org/doi/10.1145/1965724.1965749) · 2011 · read: UNREAD (403 paywall on both mirrors) · grade D: not retrieved; the primary source behind the WER taxonomy. Capped at unread; all WER claims sourced via `[B-wer-wikipedia-2026]` instead. · relevance: would give exact condensing/expanding heuristic mechanics and the ~quoted noise figures; priority fetch-request. · via Kagi result + Wikipedia citation.
+- `[A-socorro-siggen-2026]` · Mozilla, "Signature Generation — Socorro documentation" · https://socorro.readthedocs.io/en/latest/signaturegeneration.html · 2026 (live docs) · read: full · grade A not B: first-party docs of a long-running production crash-grouping system, read in full, including the 5-step stack-walk algorithm, the siglists (sentinel/prefix/irrelevant), the prefix-vs-irrelevant decision rule, and the change-management process; primary and operationally candid. · relevance: grouping-key as maintained first-class config; the "irrelevant = crash-handling code that runs AFTER the cause" rule maps to stripping ⊤-downstream-consumers; prefix-accumulate-until-non-match = tunable-depth causal identity; testability-before-merge lesson. · via Kagi `Mozilla Socorro crash signature generation siglists`.
+- `[B-willkg-siggen-2017]` · Will Kahn-Greene (Socorro maintainer), "Socorro signature generation overhaul and command line interface" · https://bluesock.org/~willkg/blog/mozilla/socorro_signature_generation.html · 2017-10-06 · read: full · grade B not A: first-hand maintainer account (primary on the maintenance economics), but a retrospective blog the author himself flags as possibly dated; corroborates the docs rather than defining mechanism. · relevance: the maintenance-burden reality — "~a change a week," signatures "in constant flux," good-vs-bad signature definition (same cause different symptoms → one group), and the no-way-to-test-before-merge pain that motivated extracting a testable CLI. · via Kagi result alongside Socorro docs.
+- `[A-codechecker-reportid-2026]` · Ericsson, CodeChecker docs, "Analyzer report identification" · https://github.com/Ericsson/codechecker/blob/master/docs/analyzer/report_identification.md (raw read) · 2026 (main) · read: full · grade A not B: first-party docs of the deployed report-hashing used over Clang SA/Clang-Tidy at scale, read in full; documents the actual named hash methods and their stability tradeoffs — directly executable design guidance, not theory. · relevance: THE concrete site-identity stability ladder (context-sensitive → context-free-v2 → diagnostic-message), each row naming what destabilizes it (column position, line number, whitespace, renames, bug-step messages); the "use one method consistently or comparison fragments" warning = Dorc's fleet-aggregation invariant. · via Kagi `Infer static analyzer bug hash deduplication`.
+- `[B-vmcai-clustering-2012]` · Lee, Lee, Yi (Seoul National Univ.), "Sound Non-Statistical Clustering of Static Analysis Alarms," VMCAI 2012 · https://psl.hanyang.ac.kr/assets/pdf/vmcai12.pdf · 2012 · read: snippet/abstract (search-surfaced abstract; full PDF not read this turn) · grade B not A: peer-reviewed primary academic source directly on the problem (dependence-based, sound clustering of lattice-analyzer alarms), but read only at abstract depth, so mechanism claims are corroborated-from-abstract not verified — full read needed before relying. · relevance: the strongest candidate for published ⊤-origin-keyed dedup in a lattice analyzer — clustering by *proven* alarm-dependence (clear the dominant alarm, the cluster clears) is the formal cause-pointer with a soundness guarantee against over-suppression. · via Kagi `Astree static analyzer alarm clustering`.
+- `[B-astree-site-2026]` · ENS, "The Astrée Static Analyzer" project site · https://www.astree.ens.fr/ · 2026 (live) · read: snippet (selectivity framing) · grade B not C: authoritative project site (the analyzer's academic home), but only the selectivity/false-alarm framing was read. · relevance: the alarm-economics driver (1% false-alarm rate unusable at scale) = why ⊤-cascade dedup is a usability prerequisite; Astrée's precision-by-construction is a contrast case to Dorc's unavoidable-⊤ situation. · via Kagi `Astree static analyzer alarm clustering`.
+- `[C-absint-astree-2026]` · AbsInt, "Astrée Static Analyzer for C and C++" (commercial product page) · https://www.absint.com/astree/index.htm · 2026 (live) · read: snippet · grade C: vendor marketing page; corroborates the selectivity figure only. · relevance: same selectivity-economics point as `[B-astree-site-2026]`. · via Kagi `Astree static analyzer alarm clustering`.
+- `[C-fb-infer-2017]` · Meta Engineering, "Finding inter-procedural bugs at scale with Infer static analyzer" · https://engineering.fb.com/2017/09/06/android/finding-inter-procedural-bugs-at-scale-with-infer-static-analyzer/ · 2017-09-06 · read: snippet · grade C: first-party but read only as a search snippet; the bug-hash/dedup mechanism was not reached. · relevance: evidence that per-report stable identity at diff-scale is the deployed answer to same-cause-many-manifestations; mechanism deferred. · via Kagi `Infer static analyzer bug hash deduplication`.
