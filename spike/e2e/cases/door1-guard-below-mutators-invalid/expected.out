@@ -1,0 +1,37 @@
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc — the record is the out-of-band lane).
+
+# site 1: package:curl#installed
+package_installed__check() { dpkg-query -W "$1" >/dev/null 2>&1; }
+package_installed__check 'curl'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'site 1 effect=%s rc=%s\n' "$_e" "$_rc"
+# site 2: pkgstate:nginx#installed
+pkgstate_installed__check() { dpkg -s "$1" >/dev/null 2>&1; }
+pkgstate_installed__check 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'site 2 effect=%s rc=%s\n' "$_e" "$_rc"
+# site:0 skip-unresolvable
+# site:3 skip-unresolvable
+# site:4 skip-unresolvable
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+# door1-guard-below-mutators-invalid (door-1 NEGATIVE pole, charter 20V §4 / note 215): a
+# cascade guard sitting BELOW an oracled MUTATOR. The upstream `apt-get install -y curl`
+# establishes package:curl#installed — a WRITE — so the downstream `dpkg -s nginx` Query
+# guard fails rule-query-validity (the pristine-prefix rule, st-3 / 20A §4 / 205 §2): ANY
+# upstream write makes the Query's resting rc STALE, so its probed rc is NOT fold-usable
+# (QueryResolvable but `valid: false`). With the guard un-foldable, the `|| { … }` branch
+# can never be proven dead ⇒ the WHOLE construct stays live ⇒ EVERYTHING runs: the install,
+# the guard (verbatim), and — when the runtime guard fails (nginx absent here) — the sed and
+# the systemctl restart.
+#
+# This is the pristine-prefix firewall that stops a cascade fold from trusting a guard whose
+# world a preceding mutator may have changed. The install itself runs too (a bare oracled
+# mutator under `set -e` is ⊤ via fork-mutator-rc — the 206 §2 cost — so it cannot elide
+# either). Renders verbatim (no substitution anywhere). HOST: curl installed (converged but
+# un-elidable under errexit), nginx absent (the runtime guard fails ⇒ the block runs).
+set -e
+apt-get install -y curl
+dpkg -s nginx >/dev/null 2>&1 || { sed -i 's/^.*PermitRootLogin.*/PermitRootLogin no/' /etc/ssh/sshd_config; systemctl restart sshd; }

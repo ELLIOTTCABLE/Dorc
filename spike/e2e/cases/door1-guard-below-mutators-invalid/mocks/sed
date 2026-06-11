@@ -1,0 +1,5 @@
+#!/bin/sh
+# INERT mock: logs argv, mutates nothing, exits 0. RUNS here (the block is reachable — the
+# invalid guard never folds, and at runtime it fails so the `||` fires).
+printf 'ran: %s %s\n' "${0##*/}" "$*" >>"$DORC_LOG"
+exit 0

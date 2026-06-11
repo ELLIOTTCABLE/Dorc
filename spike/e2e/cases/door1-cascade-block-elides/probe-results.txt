@@ -1,0 +1,8 @@
+# probe-results: site-keyed records (task-D2). site 1 is the `dpkg -s nginx` pkgstate
+# Query guard: its OWN rc (0 = nginx installed) is fold-usable as the Status channel
+# (rule-query-validity passes — nothing mutates upstream). The fold reads rc=0 ⇒ the
+# `|| { sed …; systemctl restart sshd; }` block is DEAD ⇒ both block commands omit, each
+# with NO rc-provenance of its own (they are unreachable, not vouched). `set -e` is site 0
+# (Pure/MustRun, unresolvable, no record); the block's sed/systemctl are sites 2/3
+# (un-oracled, but dead ⇒ omitted regardless).
+site 1 effect=holds rc=0

@@ -1,0 +1,6 @@
+#!/bin/sh
+# INERT shim for `dpkg` — the pkgstate Query guard `dpkg -s nginx` ($2=nginx), BOTH as the
+# probe (site 2) and as the verbatim runtime guard. nginx is NOT installed here ⇒ rc 1
+# (absent): the probe records absent, AND at runtime the `||` fires ⇒ the block runs.
+printf 'ran: %s %s\n' "${0##*/}" "$*" >>"$DORC_LOG"
+exit 1   # nginx absent ⇒ guard fails ⇒ block runs

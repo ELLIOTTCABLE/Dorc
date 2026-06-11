@@ -1,0 +1,9 @@
+# probe-results: site-keyed records. site 1 is the `apt-get install -y curl` ESTABLISH
+# probe (package:curl#installed): its rc is the probe-command's, NEVER fold-usable
+# (firewalled), so the rc is OMITTED (effect-only). site 2 is the `dpkg -s nginx` pkgstate
+# Query guard (pkgstate:nginx#installed); absent ⇒ rc 1. NOTE: site 2's Query rc is recorded
+# but is NOT fold-used — the guard is INVALID (a write, apt-get install curl, precedes it ⇒
+# pristine-prefix fails, rule-query-validity / st-3). So the `|| { … }` block never folds
+# and everything runs. (`set -e` is site 0; the block's sed/systemctl are sites 3/4 — live.)
+site 1 effect=holds
+site 2 effect=absent rc=1
