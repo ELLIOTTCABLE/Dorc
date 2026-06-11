@@ -286,6 +286,106 @@ mechanism note 220 holds from the OTel basics) and sampling — it keeps a stric
 this is a datapoint that the *tree* projection is the cheap, sufficient default and span-links
 are an advanced extra, not a day-one need.
 
+## §4 — SQL plan-pinning: the decade-scale "pin a golden derivation" analog, and its regret (rq-C, the AGAINST case)
+
+A pinned/forced SQL execution plan is structurally a *golden derivation*: you captured the
+"right" plan once and told the engine to reuse it instead of re-deriving. DBAs have done this for
+~15 years (Oracle SQL Plan Baselines/SPM since 11g; SQL Server Plan Guides → Query Store forced
+plans → Automatic Plan Correction). This is the single best evidence base for d-1's golden-trace
+question, and the verdict is heavily cautionary. Three distinct rot-modes, all of which a Dorc
+golden-trace tier would structurally inherit.
+
+`regret-against-2a` (+SURE, outright abandonment by an expert practitioner). Kendra Little, after
+shipping a paid course on the feature, 2024-01-17 [B-kendra-apc-regret-2024]:
+
+> Today I'm updating that course with a note: after using Automatic Plan Correction in anger for
+> a good amount of time, I do not recommend enabling the feature. I've had it cause too many
+> performance problems, and there are not a ton of options for an administrator when it's causing
+> those problems.
+
+And the lock-in trap — the pinned-derivation mechanism becomes load-bearing and can't be removed:
+
+> becoming reliant on the feature for the places where it does help makes it difficult to disable
+> the feature. You end up stuck with a very weird set of problems that are oddly similar to the
+> problems the feature was designed to solve.
+
+`regret-against-2b` (+SURE, the silent key-drift rot — the most Dorc-relevant). A forced plan is
+keyed to a query fingerprint; when the fingerprint changes the pin silently applies to nothing,
+with NO failure reported. Milos R., "Dude, Where's My Forced Plan?" [B-milos-forcedplan-2019]:
+
+> a forced plan is associated not to a particular query, but to a given query_id … our SELECT
+> query got a new query_id! … The forcing plan is correctly configured – there is no forced plan
+> failure, it is just waiting for execution of the query with the query_id 1 … Forced plans are
+> stable and will remain in the system only if query_id does not change.
+
+This is *exactly* the failure d-1's golden-TRACE fixture would hit: pin a derivation keyed to
+some hash of the analysis inputs; the moment the script or oracle-claim or probe-shape changes
+the hash, the golden silently matches nothing and the "passing" fixture is verifying air. Note
+220's `r-2(v)` (suppression heuristics are the deliverable) inverts here — the danger isn't noise,
+it's a *silent no-op* that reads green. Kendra Little's GENERAL_FAILURE finding is the same rot
+with teeth [B-kendra-genfail-2024]: a forced plan that fails to apply leaves the query with
+"slower or potentially infinite compile time" (measured: 28s → >1 hour), and "Automatic Tuning
+doesn't notice and clean that up" — the pinned artifact rotted into an actively-harmful,
+unmonitored channel. Her standing remediation advice is to run a scheduled job that *finds and
+un-forces failed pins* — i.e. the pin needs its own janitor.
+
+`regret-against-2c` (+SURE, the pin gets silently ignored / can't be reproduced — soft-pin
+gradient). Oracle's softer pin (SQL Profile) "provide[s] guidance to the optimizer — not
+enforcement. They can be ignored" [B-oracle-ckpt-baselines-2025]; the team escalated through SQL
+Patch to a hard SQL Plan Baseline to get enforcement. But even the hard baseline can fail to
+reproduce: Jonathan Lewis documents a baseline "accepted, enabled, and fixed … it clearly
+'belongs' to our query. So it should have been used" — yet "the optimizer says it can't
+reproduce the plan we wanted" because the stored hints don't actually regenerate the captured
+plan [B-jlewis-fakebaselines-2020]. The golden-derivation analog: even when the pin matches and
+is honored, the engine may be unable to *reconstruct* the pinned artifact from the stored
+representation — pinning the *output* and pinning the *means to reproduce it* are different, and
+the gap is a bug-farm.
+
+`regret-against-2d` (~SUSPECT, pinning corrupts adjacent observability). Paul White: forcing a
+plan (any method) overwrites the plan's `query_hash` with its `query_plan_hash`, so "[t]his will
+break anything you have that uses `query_hash` for any purpose, including scripts and tools"
+[B-paulwhite-queryhash-2024]. A pinned-derivation mechanism mutated the very identifiers other
+tooling keys on. For Dorc: a golden-trace plane that rewrites or shadows provenance identity
+could break the `why`-query lenses that read it — keep the pin a *separate, additive* artifact,
+never a mutation of the live receipt identity.
+
+`autocapture-bloat-1` (~SUSPECT, auto-capturing every derivation bloats the store — the
+capture-without-curation hazard). Oracle's own optimizer blog warns against leaving SPM
+auto-capture on indefinitely [snippet, B-oracle-spm-autocapture-2023]; a user reports "SYSAUX
+grows huge after SQL Plan Baseline capture turned on. I only had auto capture on for a couple
+hours" [snippet, forums.oracle.com]; sqlmaria (Maria Colgan) "wouldn't recommend automatic
+capture because it would result in a SQL plan baseline being created for every repeatable SQL
+statement executed" [snippet]. The directly-applicable lesson, consistent with Bazel's
+default-OFF ruling: capture-everything-by-default bloats and is regretted; capture is opt-in and
+curated. (Graded ~SUSPECT: read from search snippets, not full posts — capped per note rules.)
+
+Net for d-1's golden-TRACE half: the decade-scale analog says PIN SPARINGLY, EXPECT SILENT
+DRIFT, and BUILD A JANITOR. It is consistent with the human's reframe — the value of pinning a
+derivation (vs pinning the *verdict* and re-deriving) is real only for a small critical set, and
+even there the pin needs active staleness-detection or it rots green. This corroborates the
+round-22 d-1 tiering instinct (critical-tier pins traces, the rest pins verdicts) but pushes the
+critical tier *smaller* and demands the staleness-detector be designed in from day one, not bolted
+on. It does NOT, on its own, supply the affirmative user-story; it supplies the cost side.
+
+## §5 — auto_explain: the dump-everything-vs-filter economics, in the SQL register (rq-C)
+
+`size-economics-2` (+SURE, the threshold lesson, measured). pgMustard benchmarked PostgreSQL's
+`auto_explain` (log execution plans automatically) [B-pgmustard-autoexplain-2021]. Logging EVERY
+plan (`log_min_duration = 0`, no timing): "about 26% slower than our baseline … This test
+generated ~6GB of logs, which is another good reason to not log everything!" Logging only the
+slowest (`log_min_duration = 10`ms): "only 0.8% slower … the threshold of 10ms meant we avoided
+logging ~99.9% of the query plans." With per-operation timing (`log_analyze = on`) the cost rises
+further — third-party summary cites "10–30% execution overhead for logged queries"
+[snippet, B-jusdb-autoexplain-nd]; PostgreSQL 13+ adds `sample_rate` precisely to cap volume.
+
+This is the Bazel execlog finding in a second, independent system: **the always-on full dump is
+expensive (perf + volume); a threshold/sample makes it nearly free; the lever is filtering at
+capture, not after.** For Dorc the analogy is imperfect in a *favorable* direction — Dorc's
+analysis runs once per orchestration and is dominated by network round-trips, so the per-run dump
+overhead the SQL/build worlds fight is largely a non-issue (per AGENTS.md: the analyzer cost is
+dominated by the SSH tunnels that follow). The volume/retention problem (6GB-class artifacts
+nobody prunes) does carry over, and is the real reason to tier and to default the full dump OFF.
+
 ## Graded sources
 
 Grades assigned by gathering subagent (R2'); conductor re-verification pending. Scale A>B>C>D.
@@ -315,4 +415,57 @@ Grades assigned by gathering subagent (R2'); conductor re-verification pending. 
   lift it above ephemeral C/D, hence B · relevance: best hand-rolling-OTel pitfall catalogue — clock/RNG/
   ordering seams + secret-scrub-before-set + emit-neutral-convert-at-edge architecture · via predecessor
   (Exa, same query as above).
+- `[B-kendra-apc-regret-2024]` · Kendra Little (independent SQL Server expert/educator),
+  "Automatic Plan Correction Could Be a Great Auto Tuning Feature … Here Is What It Needs" ·
+  https://kendralittle.com/2024/01/17/automatic-plan-forcing-could-be-great-but-isnt-sql-server/ ·
+  2024-01-17 · read-depth full · grading: not A — a single practitioner blog, not peer-reviewed; but a
+  named, reputationally-staked expert reversing her own published course recommendation after extended
+  production use, with concrete mechanism (lock-in, temp-table sniffing) — high-trust regret evidence,
+  hence B · relevance: the strongest abandonment narrative for auto-pinning derivations; lock-in trap ·
+  via Exa "engineer regret about forcing SQL execution plans".
+- `[B-kendra-genfail-2024]` · Kendra Little, "General Failure Failed Forced Plans in Query Store Cause
+  Even Slower Compile Times" · https://kendralittle.com/2024/08/12/query-store-failed-forced-plans-general-failure-even-slower-compile-time/
+  · 2024-08-12 · read-depth targeted (Exa highlights, not full body) · grading: same author/venue as
+  above but read only via highlights, so capped; the reproduction (28s→>1hr compile, "Automatic Tuning
+  doesn't notice and clean that up") is specific and load-bearing · relevance: the silent-rot-with-teeth
+  mode — a failed pin actively harms and is unmonitored; motivates a staleness-janitor · via Exa (same).
+- `[B-milos-forcedplan-2019]` · Milos R., "Dude, Where's My Forced Plan?! – Part 1" ·
+  https://milossql.wordpress.com/2019/10/21/dude-wheres-my-forced-plan-part-1/ · 2019-10-21 · read-depth
+  targeted (Exa highlights) · grading: practitioner blog, read via highlights → capped; but the
+  query_id-drift mechanism is precisely demonstrated and directly analogous to golden-trace key drift,
+  hence B not C · relevance: the silent key-drift no-op — pin matches nothing, no failure raised; THE
+  golden-trace cautionary mechanism · via Exa (same).
+- `[B-oracle-ckpt-baselines-2025]` · Nassyam Basha (Oracle CKPT), "Oracle SQL Plan Instability: Why SQL
+  Profiles Are Not Enough and SQL Plan Baselines Are the Reliable Solution" ·
+  https://oracle-ckpt.com/oracle-sql-plan-instability-why-sql-profiles-are-not-enough-and-sql-plan-baselines-are-the-reliable-solution/
+  · 2025-05-13 · read-depth targeted (Exa highlights) · grading: practitioner case study via highlights →
+  capped at B; concrete plan-hashes + the profile-ignored→baseline-enforced escalation are load-bearing ·
+  relevance: the soft-pin-gets-ignored gradient; enforcement requires the hard pin · via Exa (same).
+- `[B-jlewis-fakebaselines-2020]` · Jonathan Lewis (Oracle optimizer authority), "Fake Baselines (2)" ·
+  https://jonathanlewis.wordpress.com/2020/02/24/fake-baselines-2/ · 2020-02-24 · read-depth targeted
+  (Exa highlights) · grading: among the most authoritative Oracle-optimizer voices, but read via
+  highlights → capped at B; the "accepted/enabled/fixed baseline the optimizer can't reproduce" finding
+  is specific · relevance: pinning the output ≠ pinning the means to reproduce it; reproduction-gap
+  bug-farm · via Exa (same).
+- `[B-paulwhite-queryhash-2024]` · Paul White (SQL Server internals authority), "SQL Server Forced Plans
+  Overwrite the Query Hash" · https://www.sql.kiwi/2024/11/forced-plans-query-hash/ · 2024-11-28 ·
+  read-depth targeted (Exa highlights) · grading: top-tier internals author, highlights-only → capped at
+  B; the query_hash-overwrite is a precise, reproducible claim · relevance: pinning corrupts adjacent
+  observability identity — keep the pin additive, never a mutation of live receipt identity · via Exa.
+- `[B-oracle-spm-autocapture-2023]` · Oracle Optimizer team blog, "What you need to know about SQL Plan
+  Management and auto-capture" · https://blogs.oracle.com/optimizer/what-you-need-to-know-about-sql-plan-management-and-auto-capture
+  · 2023-12-01 · read-depth snippet (search result only) · grading: first-party Oracle, but read only via
+  search snippet → capped at ~SUSPECT-tier evidence; the "don't leave it enabled indefinitely" caution is
+  the cited line · relevance: capture-everything-by-default bloats; corroborates default-OFF · via Kagi
+  "Oracle SQL Plan Management SPM automatic capture SYSAUX bloat".
+- `[B-pgmustard-autoexplain-2021]` · pgMustard, "Can auto_explain (with timing) have low overhead?" ·
+  https://www.pgmustard.com/blog/auto-explain-overhead-with-timing · 2021-03-16 · read-depth full ·
+  grading: vendor engineering blog but a careful, reproducible pgbench benchmark with method + numbers,
+  not marketing; not peer-reviewed → B · relevance: the dump-everything-vs-filter economics in SQL — 26%
+  + 6GB for log-all vs 0.8% for threshold; the filter-at-capture lever · via Kagi "auto_explain log
+  overhead postgresql always on".
+- `[B-jusdb-autoexplain-nd]` · JusDB blog, "PostgreSQL auto_explain" · https://www.jusdb.com/blog/postgresql-auto-explain-automatic-query-plan-logging
+  · n.d. · read-depth snippet · grading: secondary blog, snippet-only → capped low; cited only for the
+  "10–30% with log_analyze" figure, corroborating the timing-overhead direction · relevance: per-node
+  timing raises dump cost · via Kagi (same auto_explain query).
 
