@@ -190,6 +190,20 @@ warm-ups (d×d host-flip fixture; var-resolved redirect case) → 22x synthesis 
   Conductor watch-item (-GUESS): if rerun-to-fixpoint becomes the change-handling
   story, the per-tier epoch vector (220 vp-8) demotes from invalidation-machinery to
   a pure dashboard/why hint — don't build it load-bearing.
+- ru-14 (human, end-of-window economics): be judicious with adversarial-crosscheck /
+  Fable-class spend for the remainder of the window — his intuition stands that one
+  well-targeted pair at the right juncture is very high value; so fewer, sharper
+  hostile passes at real junctures rather than the full inherited cadence. Conductor
+  application: collapse the named crosscheck targets toward the highest-value (the
+  gate itself, x-1, and over-suppression, x-2); x-3 (catalog-gate evasion) rides as
+  a hunt-list item in the builder brief instead of a dedicated pass unless evidence
+  demands one.
+- ru-15 (human, prompt-style nit; also seeding-feedback material for round close):
+  agent briefs are overly-constrained. Opus-class: drop constraints inferable from
+  goals and context. Fable-class even more so: the verbatim safety block + ~a
+  paragraph of prose on immediate goals + context of what's done/being-done
+  elsewhere + reading pointers — not rule-lists. Adopted for all subsequent
+  dispatches; candidate fb-18 at round close.
 - fr-criticality ruling context (conductor answer, recorded): fr-1 (CACM WER paper)
   = verification garnish, drop-in-whenever; fr-2 (VMCAI'12) = drop-in-later but with
   a soft deadline — wanted before arch-2's over-suppression hostile pass (crosscheck
