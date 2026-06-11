@@ -461,8 +461,50 @@ warm-ups (d×d host-flip fixture; var-resolved redirect case) → 22x synthesis 
   Ordering = the most entangled leak category (LC_ALL=C sort). Caveat carried:
   sub-subagent-gathered B-rows are quote-trustworthy but interpretation ~SUSPECT
   pending conductor re-verification; six sources marked [self-read].
-- PHASE-R GATHERING COMPLETE at this row. Wave totals (harness): R0' 135K · R1' 179K
-  · R2' 178K · R3' 164K · R4' 173K+~463K subs · W1 212K ≈ 1.50M, plus the stopped
-  first wave (partial turns, banked scratch). All five notes committed; corpus 98/98
-  ×2 green at `5b58c5f`+notes; next = 22Z, then digestion (#9) → synthesis (#3) →
+- D1 diag-structure design → notes/22B (final `29d3c78`): Opus, 146K harness-tokens,
+  35 tool uses, ~8 min. Verified-against-live-source draft: exhaustive DiagCode enum
+  with typed per-variant payloads (ru-16 realized); mandatory-primary SpanLabel
+  (span-poverty killed by construction); Suggestion{applicability, remediation}
+  (rustc Applicability verbatim); registry() with Floor{None, WarnOrDeny, Pinned};
+  SiteId + GroupingKey fine/coarse SLOT; information-poor ProvId hook; small
+  builder API. Refusals by name: Fluent/derive DSL, i18n, Menhir generate/compare,
+  no-catalog pole, prose-goldens. Friction test answered honestly: three match-arms
+  in ONE file, compiler-guided. Forks: fork-1 typed-vs-flat (disposed: typed, per
+  standing ru-16; struct-count flagged at retrofit if it balloons) · fork-2
+  coarse-key now-vs-stub (disposed: stub, per the design-the-slot brief) · fork-4 =
+  floor membership (builder-proposes / human-disposes at the retrofit PR, as
+  already slated). Process flag (correct call, noted): D1 followed spike/CLAUDE.md's
+  no-Co-Authored-By rule over the generic harness instruction. Conductor reads 22B
+  in full at wave-2 prep (context-practice: one-at-a-time, at need).
+- PHASE-R GATHERING COMPLETE (line restored — a conductor edit accidentally consumed
+  this bullet's lead-in; content unchanged). Wave totals (harness): R0' 135K ·
+  R1' 179K · R2' 178K · R3' 164K · R4' 173K+~463K subs · W1 212K ≈ 1.50M, plus the
+  stopped first wave (partial turns, banked scratch). All five notes committed;
+  corpus 98/98 ×2 green at `5b58c5f`+notes; next = 22Z, then digestion (#9) →
+  synthesis (#3) →
   GATE-2 (#4).
+- B2 third d×d fixture → HARVESTED as `8421ecb` (door1-door3-inner-runs; outer-live
+  × inner-diverged): Opus, 109K harness-tokens, 64 tool uses, ~17 min. Zero engine
+  changes; golden hand-traced then engine-confirmed (`argv 1 replace / 2-4 run`);
+  proves the doors compose without masking (door-1 keeps the block live; door-3
+  still defers to Effect — Status-clear is not a license). Post-harvest chain: all
+  gates rc=0, e2e 99/99 x2 unmasked, fb-11 audit EMPTY. The d-by-d bracket is now
+  complete (three cells exec-pinned). Label nit: B2 used `(AI test)` vs the house
+  `tests` label — preserved as-is (harvest keeps the builder series verbatim).
+- CONFLICT-SWEEP WAVE (human-directed, post-ru-19): the r21/r22 ruling cascade
+  (ru-11..ru-19 + GATE-2 dispositions) may have planned-in breakage against corpus
+  assumptions compressed out of conductor inputs. Three Opus READ-ONLY reviewers
+  dispatched on DISJOINT corpus regions, given the decision ledger but NOT the
+  conductor's own conflict-candidates (held back for convergence checking):
+  RV1 human-authority layer (DESIGN/KNOBS/STALENESS-AUDIT/TODO-pair/README —
+  kOOB redline, dir-soundiness-ux, disclosure floor, contract-and-DX).
+  RV2 transport/security/ops layer (plans/142, plans/102, 19B, 20V s5, 222 s7 —
+  vs capture-always + tape + OTel-offramp). RV3 engine/charter layer (19H/19I,
+  kFACTS/kSTATE, 219 forks, 21Z seams — vs rerun-to-fixpoint + receipts +
+  diag-API-first). Conductor's HELD candidates: (held-1) ru-12 byte-exact/lean
+  artifacts vs dir-soundiness-ux per-line IN-RENDER disclosure + 222 m-6
+  render-the-assumption-where-the-human-reads; (held-2) ru-18 capture-always vs
+  142's fast-lane/per-leaf-file split + 102's stderr-aggregation-as-fleet-target
+  surface; (held-3, weaker) ru-13 rerun vs vp-8 epoch assumptions + bump-loop
+  framing; (held-4, process) ru-17 vs spike-disposability charter —
+  spike/CLAUDE.md gains the sanctioned exception at next touch.
