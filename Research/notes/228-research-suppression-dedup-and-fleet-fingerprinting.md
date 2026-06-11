@@ -211,9 +211,189 @@ stability-control: a checker can declare a *uniqueing location* distinct from th
 location so that, e.g., all leaks of an object uniqueed at its allocation site collapse
 to one report regardless of which return path leaked it.
 
-*(rq-E next: the note-tag API redesign discourse thread — primary-author intent to
-eliminate visitors in favor of tags attached at analysis time; rustc ErrorGuaranteed
-cascade-suppression. rq-G: Sentry/WER/Socorro corpus — entirely unstarted.)*
+### The note-tag redesign — generate the note WHERE the fact is known
+
+`[B-llvm-eliminating-visitors-2019]` (discourse) + `[B-llvm-d58367-2019]` (the patch).
+The analyzer's primary author (Artem Dergachev, "NoQ") opened "[analyzer] On
+eliminating BugReporterVisitors" (2019-02-19) to publicize patch D58367, landed as
+`rL357323` "[analyzer] Introduce a simplified API for adding custom path notes":
+
+> "it's an improved checker API that eliminates the need to write bug reporter
+> visitors in checkers, but instead enables squeezing note-generating code directly
+> into `addTransition`. This is cool because the message is generated within the part
+> of code that already has all the information that's necessary to generate the
+> message, which is much easier than reverse-engineering what happened 'a posteriori'
+> in order to re-construct that information." — NoQ
+
+This is a deep design lesson for Dorc, and it cuts AGAINST a naive "re-walk and dedup"
+implementation. The visitor model = emit nothing during analysis, then *after* analysis
+re-walk the exploded graph and have each visitor reverse-engineer what happened to
+produce a note. The note-tag model (`NoteTag`, attached at the `addTransition` that
+creates the state change) = capture the explanation *at the moment and site the fact
+becomes known*, carry it on the transition, and render it later only if that node ends
+up on the surfaced path. The note-tag closure even returns an *empty* string to
+self-suppress when the surrounding report makes it irrelevant — interestingness-gating
+folded into the note itself. **Dorc read (load-bearing):** when a command goes ⊤, the
+cause is known *at that site, at that moment*. Attaching the cause-explanation to the ⊤
+value at its origin (round-22's cause-pointer) is the note-tag pattern, and it is
+strictly easier and more accurate than the alternative of letting each downstream
+consumer reconstruct "why is my input ⊤?" after the fact. The cascade-dedup is then a
+*consequence* of carrying the explanation on the value rather than re-deriving it N
+times: downstream consumers don't generate competing notes because they were never the
+ones holding the explanation. This reframes rq-E: the win is less "dedup N notes" and
+more "only the origin ever had standing to emit the note."
+
+### rustc `ErrorGuaranteed` — the type-level proof that suppresses the cascade
+
+`[B-rustc-errorguaranteed-2026]` (rustc-dev-guide). rustc's mechanism for "only
+complain once" is a zero-sized token threaded through the types:
+
+> "`ErrorGuaranteed` is a zero-sized type that is unconstructable outside of the
+> `rustc_errors` crate. It is generated whenever an error is reported to the user, so
+> that if your compiler code ever encounters a value of type `ErrorGuaranteed`, the
+> compilation is _statically guaranteed to fail_."
+
+The suppression USE: once an error is emitted, the compiler manufactures error
+placeholder values (`Ty::new_error(tcx, guar)` / `TyKind::Error(ErrorGuaranteed)`) and
+keeps going; downstream type-checking that touches an error type is taught to stay
+silent rather than emit derived nonsense ("this `_` has unknown type" cascades). The
+*proof an error was already emitted* travels inside the poisoned value — which is
+exactly Dorc's ⊤-with-cause-pointer shape, with one crucial caveat the guide states:
+
+> "It does _not_ convey information about the _kind_ of error. For example, the error
+> may be due (indirectly) to a delayed bug or other compiler error. Thus, you should
+> not rely on `ErrorGuaranteed` when deciding whether to emit an error, or what kind of
+> error to emit."
+
+And the *delayed-bug* discipline (`span_delayed_bug`, formerly `delay_span_bug`):
+record a diagnostic that MUST be flushed iff compilation actually fails; if the compiler
+finishes without ever surfacing a real error, an un-flushed delayed bug is itself an ICE
+("no errors encountered even though `delay_span_bug` issued" —
+`[C-rustc-101869-2022]`). **Dorc read:** two transferable rules. (rule-a) the poisoned
+value carries only "an error/⊤ was established and points HERE", deliberately NOT the
+full classification — downstream code must not branch on the *kind* of the upstream
+failure, only on the fact of it (this protects Dorc from consumers second-guessing the
+root cause). (rule-b) the delayed-bug pattern is a safety net for the over-suppression
+failure mode: if you suppress a cascade on the assumption a root error was reported, and
+it turns out NO root error ever surfaced, that silent success is itself a bug to be
+caught — Dorc's analog: a ⊤ that suppressed downstream notes but whose cause-note never
+actually rendered should trip an internal invariant, not vanish.
+
+## §2 (rq-G) Fleet-scale error grouping & fingerprinting
+
+The o11y/crash-reporting corpus. The shared problem with Dorc's rq-G: a single fault
+manifests as a flood of events across many sites/hosts/paths; group them to ONE so the
+operator sees one cause, while not over-merging genuinely distinct faults. The recurring
+tension is **stability vs precision**: a coarse key survives code movement but over-
+groups; a precise key (full stack/path) splits one bug into many groups and churns on
+every refactor.
+
+### Sentry — the most directly transferable design
+
+`[A-sentry-grouping-dev-2026]` (Sentry's own developer docs, the implementing team).
+Sentry groups events into "issues" by a *fingerprint*; the default is computed from the
+stack trace, NOT the whole event. The findings most relevant to Dorc:
+
+**(g-caller-vs-callee) the fundamental ambiguity, stated cleanly:**
+
+> "Sentry has a general tendency to group different paths towards an issue separately…
+> Take a hypothetical function `get_current_user`. Let's imagine this function has a bug
+> where it now starts failing with a `DataConsistencyError`… each of these callers will
+> now create a different group. We can thus think of grouping as a problem of the source
+> of the error. At any point the question can be asked if the source of the error is
+> 'how we call a function' (caller error) or 'in the function' (callee error). Making
+> this decision is impossible to make in a general sense."
+
+This IS Dorc's rq-G problem verbatim: one bad oracle-declaration (the callee) fails
+across M hosts × N scripts (the callers). Sentry's admission that caller-vs-callee "is
+impossible to make in a general sense" is the strongest evidence that Dorc must not try
+to auto-decide it — it must key on the thing it KNOWS is the single source (the
+oracle-declaration site / the ⊤-origin site), i.e. choose callee-grouping by
+construction because Dorc's analyzer actually knows where the rot originates, unlike a
+post-hoc crash grouper. ~SUSPECT this is a genuine structural advantage: Dorc's
+cause-pointer gives it the callee identity that Sentry has to *guess*.
+
+**(g-stability-hierarchical-hash) survive code movement by emitting MULTIPLE hashes:**
+Sentry's answer to "a frame gets reclassified / code moves" is to compute *both* a
+fine and a coarse hash and associate the event with any group matching *either*:
+
+> "consider a stack trace with three frames 'A1 B1 A2 A3'… they are all feeding into the
+> fingerprint `[A1, B1, A2, A3]`. At a later point… marks `B1` as not in-app. The
+> grouping algorithm if it were to fully ignore the `B1` frame now would create a new
+> hash… However because we still create the full hash anyways the new event… would
+> still find the already existing group. The hashes created are `[A1, B1, A2, A3]` as
+> well as `[A1, A2, A3]`."
+
+**Dorc read (load-bearing for site-keyed receipts):** the stability mechanism is
+*emit a set of keys at varying coarseness and match on any*. When the site-identity
+scheme changes (a script is edited, a line moves), keying receipts on a *hierarchy* —
+e.g. `(oracle-decl-identity)` coarse + `(oracle-decl-identity, call-site-span)` fine —
+lets a moved fine-key still collapse to the surviving coarse-key group. This is the
+concrete grouping-key design the briefing asked for: do NOT pick one granularity; emit
+nested keys and match the coarsest stable one.
+
+**(g-source-line-overgroup-tradeoff) why including the source line both helps and
+hurts:** Sentry's Python grouping feeds `module + function + context-line`:
+
+> "modules and functions are relatively coarse indicators and a function can often fail
+> from different branches, so taking the source code into account in addition is less
+> likely to over-group. This however also means that when a refactoring takes place in a
+> line that does not change the functionality but the source code, it can cause a new
+> [group] to be created unnecessarily."
+
+This is the direct statement of the receipts-stability tension: the more precisely you
+key (include the literal sh text of the command), the more a no-op edit churns the
+grouping. Dorc should key on *site identity* (which command, structurally) over *site
+content* (the exact bytes) wherever it wants stability — content belongs in the
+displayed evidence, not the grouping key.
+
+**(g-merge-split-asymmetry) over-suppression is hard to UNDO:**
+
+> "The system does not cope particularly well with merges and splits because the events
+> in Snuba are generally considered immutable… a split fails to fully reconstruct the
+> original state as some information… was lost in the process."
+
+**Dorc read:** evidence for the over-suppression failure mode. Once you merge two
+causes (or root-cause-suppress a second independent fire), recovering the lost
+distinction is lossy. Argues for *under*-merging at capture time (keep the receipts that
+would let you split later) and merging only in the *rendering* layer — never destroy the
+per-site receipt just because it deduped to a root in one view.
+
+**(g-secondary-sweep) the north-star aggregation pattern — group fine, sweep coarse
+LATER:** Sentry's stated future direction is precisely Dorc's rq-G north-star:
+
+> "the grouping algorithm could continue to just fingerprint the stack trace but a
+> secondary process could come in periodically and sweep up related fingerprints into a
+> larger group. If we take the `get_current_user` example the creation of 50 independent
+> groups is not much of an issue if no alerts are fired. If after 5 minutes the system
+> detected that they are in fact all very related (eg: the bug is 'in
+> `get_current_user`') it could leave the 50 generated groups alone but create a new
+> group that links the other 50… and let the user work with the larger group instead."
+
+**Dorc read:** this is the "one rot event reads as ONE cause, fleet-aggregable"
+requirement, and Sentry's framing tells Dorc HOW to get it cheaply: don't force the
+single-group decision at capture; capture per-site (M hosts each get their receipt), and
+aggregate to "one cause across the fleet" as a *separate, later, non-destructive* pass
+keyed on the shared cause-identity. The alert/noise cost is what makes over-grouping
+*feel* mandatory; if the fleet view aggregates without destroying the per-host detail,
+both "one cause" and "which hosts" survive. Note the explicit cost signal: group
+creation is "relatively expensive… due to the number of additional actions" (alerts,
+regression detection) — the economic driver of grouping is alert-noise, not storage.
+
+**(g-ai-embedding-caveat) the newest layer, and why it's a *fallback* not a *primary*:**
+Sentry added an embedding-similarity merge (`should_call_seer_for_grouping`) that runs
+*after* hash lookup and *before* new-group creation, gated by a circuit breaker and rate
+limits. It exists to paper over the caller-vs-callee problem when the deterministic hash
+over-splits. **Dorc read:** keep ML out of the correctness path; if Dorc ever wants
+fuzzy aggregation it belongs strictly as a non-authoritative suggestion layer atop
+deterministic site-keyed receipts (and Dorc, unlike Sentry, has the analyzer-known cause
+and likely never needs it).
+
+*(rq-G next: WER bucketing condensing/expanding failure taxonomy (CACM "Debugging in
+the Very Large" — paywalled, see fetch-requests; ReBucket + Wikipedia for the
+mechanics); Mozilla Socorro signature-rules config-as-maintenance; lighter-touch
+journald/log dedup. rq-E: abstract-interp alarm clustering (Astrée/Frama-C/Infer);
+ESLint/clippy duplicate-suppression.)*
 
 ## Graded sources
 
@@ -222,3 +402,8 @@ cascade-suppression. rq-G: Sentry/WER/Socorro corpus — entirely unstarted.)*
 - `[A-llvm-bugreporter-2025]` · LLVM project, `clang/lib/StaticAnalyzer/Core/BugReporter.cpp` (the post-analysis diagnostic-path construction, pruning, dedup, and equivalence-class machinery) · https://raw.githubusercontent.com/llvm/llvm-project/main/clang/lib/StaticAnalyzer/Core/BugReporter.cpp · 2025 (main branch) · read: targeted-full (read `removeRedundantMsgs`, `eventsDescribeSameCondition`, `removeUnneededCalls`, `markInteresting`/`isInteresting`, both `Profile()` impls, `emitReport`/equivalence-class selection in full) · grade A not B: canonical first-party implementation, the executable answer to "how path notes are constructed by re-walking the exploded graph and then deduplicated/pruned to root-cause"; no rot (main). · relevance: THE primary rq-E dedup source AND the rq-G fingerprint precedent (coarse `Profile` key + equivalence classes). · via predecessor `[A-llvm-bugreporter-2025]` (octocode `githubSearchCode` keywords `removeRedundantMsgs,removeUnneededCalls`).
 - `[A-llvm-bugreportervisitors-2025]` · LLVM project, `clang/lib/StaticAnalyzer/Core/BugReporterVisitors.cpp` (the visitors that enhance/suppress reports; whole-report heuristic suppression) · https://raw.githubusercontent.com/llvm/llvm-project/main/clang/lib/StaticAnalyzer/Core/BugReporterVisitors.cpp · 2025 (main branch) · read: targeted (read `LikelyFalsePositiveSuppressionBRVisitor::finalizeVisitor` and the interestingness-gated note pattern in full; rest of file is per-visitor note-text generation) · grade A not B: canonical first-party note-construction/suppression implementation, directly answers rq-E with executable code; no rot. · relevance: layer-2 whole-report denylist suppression (`markInvalid`) — the "minimum shippable suppression set" pattern. · via predecessor `[A-llvm-bugreportervisitors-2025]` (octocode `githubGetFileContent`, matchString `LikelyFalsePositiveSuppressionBRVisitor`).
 - `[B-llvm-bugsuppression-2025]` · LLVM project, `clang/lib/StaticAnalyzer/Core/BugSuppression.cpp` (the `[[clang::suppress]]` user-directed suppression path) · https://raw.githubusercontent.com/llvm/llvm-project/main/clang/lib/StaticAnalyzer/Core/BugSuppression.cpp · 2025 (main branch) · read: full (small file, ~280 lines) · grade B not A: canonical first-party source, fully read, but covers the user-directed attribute path (decl/range containment), not the automatic note-pruning that is rq-E's core; primary but narrow-scope. · relevance: layer-1 admin region-mute model (range containment); a candidate model for Dorc's per-site vouching, but user-driven not cause-driven. · via predecessor `[B-llvm-bugsuppression-2025]` (octocode `githubGetFileContent`).
+- `[B-llvm-eliminating-visitors-2019]` · discourse.llvm.org, Artem Dergachev (NoQ), "[analyzer] On eliminating BugReporterVisitors" · https://discourse.llvm.org/t/analyzer-on-eliminating-bugreportervisitors/51206 · 2019-02-19 · read: full (short thread; OP is the load-bearing statement) · grade B not A: primary-author statement of design intent, fully read, but it is a brief announcement pointing at the patch rather than the implementation itself; the executable detail lives in D58367/the NoteTag code. · relevance: the note-tag-at-analysis-time rationale ("generate the message where the info already exists, not by reverse-engineering a posteriori") — directly motivates attaching Dorc's ⊤-cause at origin rather than re-deriving downstream. · via Kagi `Clang static analyzer note tag API redesign eliminate BugReporterVisitor`.
+- `[B-llvm-d58367-2019]` · reviews.llvm.org, Phabricator review D58367 → `rL357323` "[analyzer] Introduce a simplified API for adding custom path notes" (author NoQ; reviewers dcoughlin, xazax.hun, Szelethus, et al.) · https://reviews.llvm.org/D58367 · 2019 (landed Apr 2019) · read: targeted (review metadata, commit list, changed-files; inline diffs not rendered by fetch) · grade B not C: first-party patch record confirming the NoteTag API landed and which files it touched (`BugReporterVisitors.h/.cpp`, `CheckerContext.h`, `ExprEngine`, `MIGChecker` as the first adopter); not A because the diff body itself didn't render, so the mechanism detail is corroborated rather than read line-by-line. · relevance: confirms the eliminate-visitors proposal became shipped code; MIGChecker as the migration exemplar. · via the discourse thread `[B-llvm-eliminating-visitors-2019]`.
+- `[B-rustc-errorguaranteed-2026]` · rust-lang/rustc-dev-guide, `src/diagnostics/error-guaranteed.md` · https://github.com/rust-lang/rustc-dev-guide/blob/main/src/diagnostics/error-guaranteed.md (raw read) · 2026 (main) · read: full · grade B not A: authoritative maintained dev-guide, fully read, but it is the *guide* prose; the actual `Ty::new_error`/`TyKind::Error` suppression code in `rustc` proper is one level deeper (not read this turn) so the suppression-USE mechanics are corroborated-from-docs not source-verified. · relevance: the "poisoned value carries proof an error was already emitted" pattern = Dorc's ⊤-with-cause-pointer; the explicit caveats (does NOT convey kind; don't branch on it; flush-or-ICE delayed-bug) directly inform Dorc's cause-pointer discipline. · via Kagi `rustc ErrorGuaranteed span_delayed_bug suppress cascade`.
+- `[C-rustc-101869-2022]` · rust-lang/rust#101869, "internal compiler error: no errors encountered even though `delay_span_bug` issued" · https://github.com/rust-lang/rust/issues/101869 · 2022-09-15 · read: snippet (title + symptom from search result) · grade C: real-world artifact of the delayed-bug discipline failing, but read only as a snippet, so capped low. · relevance: concrete evidence that the over-suppression net (delayed bug never flushed) is itself treated as a bug — the safety-net pattern for Dorc's "suppressed cascade whose root never rendered". · via Kagi result alongside the ErrorGuaranteed query.
+- `[A-sentry-grouping-dev-2026]` · develop.sentry.dev, Sentry "Grouping" backend developer documentation (the implementing team's own internals doc) · https://develop.sentry.dev/backend/application-domains/grouping/ · 2026 (live docs) · read: full · grade A not B: first-party engineering documentation by the team that built it, read in full, exceptionally candid about failure modes (caller-vs-callee impossibility, merge/split lossiness, the secondary-sweep future plan, native-platform mangling instability); reads as primary design rationale, not marketing. · relevance: THE most transferable rq-G source — every load-bearing rq-G finding (hierarchical-hash stability, callee-by-construction, group-fine-sweep-coarse, merge irreversibility, ML-as-fallback) comes from here. · via Kagi `Sentry error grouping fingerprinting algorithm evolution`.
