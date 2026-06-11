@@ -10,7 +10,8 @@
 > r22 retrofits every code into one catalog with per-code DECLARED severity, then builds a
 > CI completeness gate in the Menhir/Pottier direction — *every give-up path must carry a
 > registered catalog code*, not merely "every registered code has a template". Findings
-> slugged `finding-N` / topical (`friction-fluent-N`, `rot-N`, `ratchet-N`); sources
+> slugged `finding-N` (§0) and topical per-section (`friction-fluent-N`, `sev-N`, `golden-N`,
+> `ratchet-N`, `fault-N` in the design-takeaway blocks); sources
 > `[grade-slug-year]`, graded list in final section. Confidence marks per project
 > convention (+SURE / ~SUSPECT / -GUESS / --WONDER).
 >
@@ -84,15 +85,17 @@ cascade-suppression USE).
 ~2000+ numeric codes live in one generated registry (`diagnosticMessages.json`), but the
 *message text* is explicitly NOT covered by semver and changes freely, while *code numbers*
 are treated as stable identifiers that downstream tooling (eslint, error-suppression
-comments, baseline files) keys on. [topic developed below.]
+comments, baseline files) keys on. [§4]
 
 **finding-7 (Menhir .messages: completeness is mechanically enforceable but the *content*
 rots).** ~SUSPECT the Menhir model splits cleanly into two costs: (a) *completeness* — that
 every error state has a message — is machine-checked by `--list-errors` /
 `--compare-errors`, so it cannot silently rot; but (b) the *quality/accuracy* of the message
 prose rots hard when the grammar moves, because state numbers churn and messages get
-auto-migrated to wrong states. Real projects (CompCert, Catala) keep the *completeness*
-green via CI but carry stale message *content*. [developed below.]
+auto-migrated to wrong states. Real projects (CompCert, Stan) keep the *completeness*
+green via CI; the manual itself documents that message *content* upkeep is the costly,
+human, rot-prone half. (CompCert + Stan confirmed; Catala unconfirmed this turn — see
+thread-3.) [§5]
 
 **finding-8 (severity-declaration prior art clusters into two granularities, and override
 is the norm).** +SURE every mature system lets severity be *overridden* by the consumer, and
@@ -100,9 +103,10 @@ the prior art splits by *grouping* granularity: rustc lint levels are per-lint
 (allow/warn/deny/forbid, plus `forbid` = un-overridable, plus a `future-incompatible`
 ratchet class); Clang ships per-diagnostic *groups* with `-Werror=<group>` selectively
 promoting; ESLint is per-rule `off/warn/error` (0/1/2). The fragmentation failure mode Dorc
-should fear is real (developed in `finding-13`): when severity is overridable per-call-site,
-catalogs drift toward everything-is-a-warning. The one un-overridable level (`forbid`) exists
-precisely to prevent that for a chosen few. [developed below.]
+should fear is real (developed in §6, takeaway `sev-1`): when severity is overridable
+per-call-site, catalogs drift toward everything-is-a-warning (ESLint's fate). The one
+un-overridable level (`forbid`/`force-warn`) exists precisely to prevent that for a chosen few.
+[developed in §6.]
 
 ---
 
