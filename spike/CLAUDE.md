@@ -142,7 +142,11 @@ and where* (→ `Research/notes/20x-*.md`, append-only), not green tests.
   single-crate subagent.
 - **inv-leaf-seam** — executable work is a list of individually wrappable
   leaves with a stable `LeafId → AstId` back-map; never one opaque
-  `sh -c "$bigscript"`.
+  `sh -c "$bigscript"`. (arch-2 nuance, note 216: under function inlining the
+  map is non-injective AstId-ward — two call sites' spliced bodies share the
+  one definition's AstIds — while the Step-level map stays injective; body
+  sites are never render-edited (the CALL leaf is the render unit) and probe
+  records stay distinct via `site N.M` keying.)
 - **inv-one-observable** (`19F`/`19G`; do not let it re-fragment) — exactly ONE
   concept of a command's observable: its output-tuple over channels
   `{Effect, Status, Stdout, Stderr}` (extensible). The oracle `check()`
