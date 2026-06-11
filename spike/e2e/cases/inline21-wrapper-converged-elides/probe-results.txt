@@ -1,0 +1,9 @@
+# probe-results: site-keyed records (arch-2 inline body sub-keys: `site <call-leaf>.<body-site>`).
+#   site <leafid>[.<body-site-idx>] effect=<holds|absent|cant-tell>
+# Each inlined call ships ONE check per spliced body establish, the entity bound at the call:
+# call leaf 0 (`apt_install nginx`) ⇒ site 0.0 = package:nginx#installed; call leaf 1
+# (`apt_install curl`) ⇒ site 1.0 = package:curl#installed. BOTH report `holds` (converged) ⇒
+# the all-or-nothing CALL license elides each call to `true`. (Establish-class records, rc
+# firewalled from the fold — omitted; gate-1 parity reproduces these from the exit-0 dpkg-query.)
+site 0.0 effect=holds
+site 1.0 effect=holds

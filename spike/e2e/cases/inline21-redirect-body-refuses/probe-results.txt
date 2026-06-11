@@ -1,0 +1,3 @@
+# probe-results: the body write-redirect refuses the inline ⇒ no body sub-records; the call
+# `note` is Opaque (site:0 skip-unresolvable) and poisons the curl below (site:1
+# skip-unresolvable). No records.

@@ -1,0 +1,23 @@
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc — the record is the out-of-band lane).
+
+# site:0 skip-unresolvable
+# site:1 skip-unresolvable
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+# inline21-overbudget-degrades (arch-2, `i-1` — the per-call node budget, proportional
+# degradation never a cliff): a wrapper whose body exceeds the 64-CFG-node per-call inline
+# budget. The call stays an ordinary unmodeled command (Opaque) WITH a loud diagnostic naming
+# the exceeded budget; downstream behaviour is IDENTICAL to the pre-arch-2 detached-fn poison
+# — `big` reads Opaque, so `site:0 skip-unresolvable` (the call runs) and the
+# `apt-get install -y curl` below is poisoned (a ⊤ reached it) ⇒ `site:1 skip-unresolvable`
+# (it runs too). Analysis-only: the pins are the refusal diagnostic + the Opaque-poison
+# skip-unresolvable lines + the verbatim apply.
+big() { echo line0; echo line1; echo line2; echo line3; echo line4; echo line5; echo line6; echo line7; echo line8; echo line9; echo line10; echo line11; echo line12; echo line13; echo line14; echo line15; echo line16; echo line17; echo line18; echo line19; echo line20; echo line21; echo line22; echo line23; echo line24; echo line25; echo line26; echo line27; echo line28; echo line29; echo line30; echo line31; echo line32; echo line33; echo line34; echo line35; echo line36; echo line37; echo line38; echo line39; apt-get install -y nginx; }
+big
+apt-get install -y curl

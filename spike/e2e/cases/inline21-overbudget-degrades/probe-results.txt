@@ -1,0 +1,2 @@
+# probe-results: an over-budget call is NOT inlined ⇒ no body sub-records; the call is Opaque
+# (site:0 skip-unresolvable) and poisons the curl below (site:1 skip-unresolvable). No records.

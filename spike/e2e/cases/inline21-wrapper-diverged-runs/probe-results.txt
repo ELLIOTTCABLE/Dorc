@@ -1,0 +1,5 @@
+# probe-results: arch-2 inline body sub-keys. site 0.0 (nginx) holds ⇒ call 0 elides; site
+# 1.0 (curl) absent ⇒ call 1 runs whole. Calls are independent (the all-or-nothing license is
+# per call).
+site 0.0 effect=holds
+site 1.0 effect=absent
