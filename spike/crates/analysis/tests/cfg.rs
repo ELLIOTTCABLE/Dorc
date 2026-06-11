@@ -1557,3 +1557,255 @@ fn consumed_post_for_dollar_question_marks_body() {
         "the for BODY's last command is marked (post-loop $? = body-last rc): {body:?}"
     );
 }
+
+// ===========================================================================
+// arch-2 (brk-2): budget-bounded function inlining — the CFG splice + eligibility.
+// `cfg_of`/`build` only; structural pins (no `solve`), plus the loud refusal
+// diagnostics. The call resolution + budgets are `i-1`; the back-map is `i-6`.
+// ===========================================================================
+
+/// Did `build(src)` emit a `cfg-inline-refused` diagnostic mentioning `needle`?
+fn inline_refused_for(src: &str, needle: &str) -> bool {
+    let parsed = parse(src);
+    build(&parsed.value)
+        .diags
+        .iter()
+        .any(|d| d.code.0 == "cfg-inline-refused" && d.message.contains(needle))
+}
+
+/// The body-leaf list (CFG node ids) of the FIRST inlined call whose call-word is `lit`.
+fn call_body_sites_of(cfg: &Cfg, src: &str, lit: &str) -> Option<Vec<CfgNodeId>> {
+    let call = first_command_with_literal(cfg, src, lit)?;
+    cfg.call_body_sites(call).map(<[CfgNodeId]>::to_vec)
+}
+
+#[test]
+fn earlier_funcdef_call_splices_body_and_is_an_inlined_call() {
+    // The base case (`i-1`): a call to a same-file-earlier funcdef splices the body. The CALL
+    // node carries a body-site list (the install), and the spliced body command is reachable
+    // from entry (un-detached — the find-7 fix) and is `spliced_internal` (not its own leaf).
+    let src = "p() { apt-get install -y nginx; }\np\n";
+    let cfg = cfg_of(src);
+    let sites = require(call_body_sites_of(&cfg, src, "p"), "`p` is an inlined call");
+    assert_eq!(sites.len(), 1, "one body leaf (the install)");
+    assert!(
+        cfg.is_spliced_internal(sites[0]),
+        "the spliced body command is spliced_internal (not an independent leaf, i-3)"
+    );
+    assert!(
+        reaches(&cfg, cfg.entry(), sites[0]),
+        "the spliced body command IS reachable from entry (un-detached)"
+    );
+}
+
+#[test]
+fn forward_call_before_definition_is_not_inlined() {
+    // `i-1`: a call BEFORE any definition of the name stays an ordinary unmodeled command (it
+    // might be a PATH binary at that program point) — NOT inlined, and NO diagnostic (a
+    // forward call is legitimate, not a refusal). The later definition is detached/non-leaf.
+    let src = "p\np() { apt-get install -y nginx; }\n";
+    let cfg = cfg_of(src);
+    assert!(
+        call_body_sites_of(&cfg, src, "p").is_none(),
+        "a call before the definition is not an inlined call"
+    );
+    let parsed = parse(src);
+    assert!(
+        !build(&parsed.value)
+            .diags
+            .iter()
+            .any(|d| d.code.0 == "cfg-inline-refused"),
+        "a forward call is silent (no refusal diagnostic — it might be a PATH binary)"
+    );
+}
+
+#[test]
+fn redefined_function_call_refuses_with_diagnostic() {
+    // `i-1`: a name defined MORE THAN ONCE ⇒ every call ⊤-rejects (redefinition tracking is
+    // out of slice). Loud diagnostic; the call is not inlined.
+    let src = "p() { apt-get install -y nginx; }\np() { apt-get install -y curl; }\np\n";
+    let cfg = cfg_of(src);
+    assert!(
+        call_body_sites_of(&cfg, src, "p").is_none(),
+        "a call to a redefined function is not inlined"
+    );
+    assert!(
+        inline_refused_for(src, "defined more than once"),
+        "the redefinition refusal is loud"
+    );
+}
+
+#[test]
+fn direct_recursion_refuses_with_cycle_diagnostic() {
+    // `i-1`: a direct self-call inside the body ⇒ ⊤-reject naming the cycle. The OUTER call
+    // still inlines, but the inner recursive call is NOT inlined (Opaque) — so the body-site
+    // list does NOT recurse infinitely, and a diagnostic names the recursion.
+    let src = "p() { apt-get install -y nginx; p; }\np\n";
+    let cfg = cfg_of(src);
+    assert!(
+        call_body_sites_of(&cfg, src, "p").is_some(),
+        "the outer call still inlines (the recursion guard stops the inner, not the outer)"
+    );
+    assert!(
+        inline_refused_for(src, "recursive call to `p`"),
+        "the recursion refusal names the cycle"
+    );
+}
+
+#[test]
+fn mutual_recursion_terminates_no_infinite_splice() {
+    // `i-1` recursion safety — TWO guards compose: the textual "definition strictly before the
+    // call" rule (a body call inside a definition can only resolve to a function defined before
+    // THAT definition's position, so the resolvable-call relation is a strict partial order
+    // with NO cycle), AND the active-inline-stack guard (the belt-and-suspenders for direct
+    // recursion). A mutual pair `a(){ b; } b(){ a; }` calls `b` (which inlines, its body calls
+    // `a` — `a` is defined before, so it inlines, its body calls `b` — but `b` is defined AFTER
+    // `a`'s definition position, so that body-call is a FORWARD call, refused-silently — the
+    // chain terminates). The key property: build TERMINATES (no infinite splice) and produces a
+    // consistent CFG. (A true body-call cycle is structurally unreachable; the stack guard is
+    // exercised by `direct_recursion_refuses_with_cycle_diagnostic`.)
+    let src = "a() { b; }\nb() { a; }\nb\n";
+    let cfg = cfg_of(src); // must not hang / overflow
+    assert!(
+        consistent(&cfg),
+        "the mutual-recursion splice stays consistent"
+    );
+    assert!(
+        reaches(&cfg, cfg.entry(), cfg.exit()),
+        "build terminates, exit reachable"
+    );
+}
+
+#[test]
+fn depth_budget_refuses_a_fourth_level() {
+    // `i-1`: inline depth <= 2. A chain `a`->`b`->`c` inlines `b` (depth 1) and `c` (depth 2);
+    // a fourth level `a`->`b`->`c`->`d` refuses `d` at depth 2 (the stack is already 2 deep).
+    let src = "d() { apt-get install -y nginx; }\nc() { d; }\nb() { c; }\na() { b; }\na\n";
+    assert!(
+        inline_refused_for(src, "inline-depth budget"),
+        "the 4th-level call refuses at the depth budget"
+    );
+}
+
+#[test]
+fn body_using_shift_refuses() {
+    // `i-1`: a body using `shift` (positional-array mutation, out of slice) ⇒ refuse naming it.
+    let src = "p() { shift; apt-get install -y nginx; }\np x\n";
+    assert!(call_body_sites_of(&cfg_of(src), src, "p").is_none());
+    assert!(
+        inline_refused_for(src, "shift"),
+        "the shift refusal names it"
+    );
+}
+
+#[test]
+fn body_using_local_refuses() {
+    let src = "p() { local x; apt-get install -y nginx; }\np\n";
+    assert!(
+        inline_refused_for(src, "local"),
+        "the local refusal names it"
+    );
+}
+
+#[test]
+fn body_using_dollar_at_refuses() {
+    // `i-1`: the positional array is out of slice — refuse naming it. (The value plane cannot
+    // bind the whole operand list this slice.)
+    let src = "p() { apt-get install -y \"$@\"; }\np nginx\n";
+    assert!(
+        inline_refused_for(src, "$@"),
+        "the positional-array refusal names the construct"
+    );
+}
+
+#[test]
+fn body_write_redirect_to_real_file_refuses_but_devnull_is_exempt() {
+    // tc-M2: a body write-redirect to a REAL file ⇒ refuse (an unmodeled effect inlining would
+    // expose). A `>/dev/null` body write stays EXEMPT (the wrapper-pun population redirects
+    // there) ⇒ that body DOES inline.
+    let fences = "p() { apt-get install -y nginx >> /etc/motd; }\np\n";
+    assert!(call_body_sites_of(&cfg_of(fences), fences, "p").is_none());
+    assert!(
+        inline_refused_for(fences, "write-redirect"),
+        "a real-file body write-redirect refuses (tc-M2)"
+    );
+
+    let exempt = "p() { apt-get install -y nginx >/dev/null 2>&1; }\np\n";
+    assert!(
+        call_body_sites_of(&cfg_of(exempt), exempt, "p").is_some(),
+        "a `>/dev/null` body write-redirect is EXEMPT => the call still inlines"
+    );
+    assert!(
+        !inline_refused_for(exempt, "write-redirect"),
+        "no write-redirect refusal for the devnull-exempt body"
+    );
+}
+
+#[test]
+fn at_budget_body_inlines_over_budget_refuses() {
+    // `i-1` budget boundary: a tiny body inlines (well under the 64-node budget); a large body
+    // (100 `:` commands, well over) refuses with a budget diagnostic. The estimate is the
+    // AST-subtree node count (a conservative proxy); the test finds the boundary by extremes so
+    // it does not hard-code the per-node AST cost.
+    let body_of = |n: usize| {
+        let mut b = String::from("p() { ");
+        for _ in 0..n {
+            b.push_str(": ; ");
+        }
+        b.push_str("apt-get install -y nginx; }\np\n");
+        b
+    };
+    let small = body_of(1);
+    assert!(call_body_sites_of(&cfg_of(&small), &small, "p").is_some());
+    assert!(!inline_refused_for(&small, "budget"));
+    let big = body_of(100);
+    assert!(
+        call_body_sites_of(&cfg_of(&big), &big, "p").is_none(),
+        "an over-budget body is not inlined"
+    );
+    assert!(
+        inline_refused_for(&big, "per-call inline-node budget"),
+        "the over-budget refusal names the per-call budget"
+    );
+}
+
+#[test]
+fn two_calls_to_one_function_produce_distinct_leaf_nodes_sharing_one_ast() {
+    // `i-6` back-map non-injectivity: two calls to one function splice DISTINCT body CFG nodes
+    // (their own LeafIds downstream) that map to the SAME body AstId. Verify the two calls'
+    // body sites are different CFG nodes but their provenance AstId is shared.
+    let src = "p() { apt-get install -y nginx; }\np\np\n";
+    let cfg = cfg_of(src);
+    let calls = command_nodes_with_literal(&cfg, src, "p");
+    assert_eq!(calls.len(), 2, "two call sites");
+    let s0 = require(cfg.call_body_sites(calls[0]), "call 0 inlined").to_vec();
+    let s1 = require(cfg.call_body_sites(calls[1]), "call 1 inlined").to_vec();
+    assert_eq!(s0.len(), 1);
+    assert_eq!(s1.len(), 1);
+    assert_ne!(
+        s0[0], s1[0],
+        "the two calls' body sites are DISTINCT CFG nodes"
+    );
+    assert_eq!(
+        cfg.node(s0[0]).ast,
+        cfg.node(s1[0]).ast,
+        "but they map to the SAME shared body AstId (the back-map is non-injective, i-6)"
+    );
+}
+
+#[test]
+fn splice_keeps_the_cfg_consistent_and_terminating() {
+    // inv-no-throw + Graph consistency under the splice: an inlined book builds a consistent
+    // graph whose exit is reachable (the spliced region is properly sequenced into the flow).
+    // The post-call install is a real (non-spliced) leaf — the value below an eliding call
+    // unlocks normally.
+    let src = "p() { apt-get install -y nginx; }\np\napt-get install -y curl\n";
+    let cfg = cfg_of(src);
+    assert!(consistent(&cfg), "succ/pred consistent under the splice");
+    assert!(reaches(&cfg, cfg.entry(), cfg.exit()), "exit reachable");
+    let installs = command_nodes_with_literal(&cfg, src, "apt-get");
+    assert!(
+        installs.iter().any(|&n| !cfg.is_spliced_internal(n)),
+        "the post-call install is a real (non-spliced) leaf"
+    );
+}

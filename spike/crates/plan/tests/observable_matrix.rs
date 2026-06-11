@@ -1032,3 +1032,158 @@ fn render_multiline_leaf_on_scaffolding_line_substitutes_cleanly() {
         "the `done` is NOT commented (the splice must not break the loop):\n{rendered}"
     );
 }
+
+// ===========================================================================
+// arch-2 (brk-2): the all-or-nothing inlined-CALL license + site N.M probe records.
+// `plan_for` drives the whole pipeline; the CALL leaf (whose text is the call word)
+// is what elides, not the spliced body. `i-3` (the license, both poles), `i-4` (the
+// per-body-site probe sub-records).
+// ===========================================================================
+
+/// Is the CALL leaf whose verbatim text is exactly `call` REPLACED? (The call's own span is
+/// the render unit — its `Step.sh` is the call text, e.g. `w nginx`.)
+fn call_replaced(plan: &Plan, call: &str) -> bool {
+    plan.steps
+        .iter()
+        .any(|s| s.sh.trim() == call && matches!(s.disposition, Disposition::Replace(_, _)))
+}
+
+/// Is the CALL leaf whose verbatim text is exactly `call` a RUN step?
+fn call_runs(plan: &Plan, call: &str) -> bool {
+    plan.steps
+        .iter()
+        .any(|s| s.sh.trim() == call && matches!(s.disposition, Disposition::Run))
+}
+
+#[test]
+fn inline_call_converged_body_elides_the_call() {
+    // `i-3` pole A (all body establishes converged ⇒ the CALL elides): `w() { apt-get install
+    // -y "$1"; }; w nginx`, nginx converged ⇒ the call `w nginx` is Replaced (its whole span →
+    // a stand-in). The body is gone; the call is the render unit.
+    let plan = plan_for(
+        "w() { apt-get install -y \"$1\"; }\nw nginx\n",
+        &[("package", "nginx")],
+    );
+    assert!(
+        call_replaced(&plan, "w nginx"),
+        "the converged inline call elides (all-or-nothing license, body establish converged)"
+    );
+}
+
+#[test]
+fn inline_call_diverged_body_runs_the_call() {
+    // `i-3` pole B (a non-converged body establish ⇒ the CALL runs whole): same wrapper, nginx
+    // NOT in `holds` ⇒ Diverged ⇒ the call runs (the real body executes).
+    let plan = plan_for("w() { apt-get install -y \"$1\"; }\nw nginx\n", &[]);
+    assert!(
+        call_runs(&plan, "w nginx"),
+        "a diverged body establish runs the whole call (all-or-nothing)"
+    );
+}
+
+#[test]
+fn inline_call_independent_per_call() {
+    // `i-3`: calls are INDEPENDENT — nginx converged ⇒ `w nginx` elides; curl diverged ⇒
+    // `w curl` runs. One diverged call does not affect the other's elision.
+    let plan = plan_for(
+        "w() { apt-get install -y \"$1\"; }\nw nginx\nw curl\n",
+        &[("package", "nginx")],
+    );
+    assert!(call_replaced(&plan, "w nginx"), "the converged call elides");
+    assert!(
+        call_runs(&plan, "w curl"),
+        "the diverged call runs (independent)"
+    );
+}
+
+#[test]
+fn inline_call_with_body_kill_blocks_the_whole_call() {
+    // `i-3` all-or-nothing: a body containing a KILL (`apt-get purge`) blocks the call even
+    // when the host reports the install converged — a Kill is a mutation with no
+    // already-done convergence story, so the whole call runs. `w() { apt-get install -y "$1";
+    // apt-get purge -y old; }; w nginx`, nginx converged.
+    let plan = plan_for(
+        "w() { apt-get install -y \"$1\"; apt-get purge -y old; }\nw nginx\n",
+        &[("package", "nginx")],
+    );
+    assert!(
+        call_runs(&plan, "w nginx"),
+        "a body Kill blocks the all-or-nothing license ⇒ the call runs"
+    );
+}
+
+#[test]
+fn inline_call_with_unoracled_body_command_blocks() {
+    // `i-3` all-or-nothing: a body with an UNORACLED command (Opaque ⇒ MustRun body site)
+    // blocks the call — the Opaque could mutate anything. `w() { apt-get install -y "$1";
+    // frobnicate; }; w nginx`, nginx converged ⇒ the call still runs.
+    let plan = plan_for(
+        "w() { apt-get install -y \"$1\"; frobnicate; }\nw nginx\n",
+        &[("package", "nginx")],
+    );
+    assert!(
+        call_runs(&plan, "w nginx"),
+        "an Opaque body command blocks the all-or-nothing license ⇒ the call runs"
+    );
+}
+
+#[test]
+fn inline_call_emits_site_n_m_probe_records() {
+    // `i-4`: an inlined call ships ONE probe check per spliced body establish, keyed
+    // `site N.M` (N = the call's LeafId, M = the body-site index) with the entity bound at the
+    // call. Two calls (`w nginx`/`w curl`) ⇒ records `site 0.0` (nginx) and `site 1.0` (curl).
+    let mut i = Interner::default();
+    let idx = package_index(&mut i);
+    let src = "w() { apt-get install -y \"$1\"; }\nw nginx\nw curl\n";
+    let parsed = dorc_syntax::parse(src);
+    let cfg = dorc_analysis::cfg::build(&parsed.value).value;
+    let classes = classify_value(&cfg, &parsed.value, &idx, &mut i);
+    let probe = dorc_plan::compile_probe(&parsed.value, &cfg, &classes, |_kind, _sel| {
+        Some("{ dpkg-query -W \"$1\"; }".to_string())
+    });
+    // Each check carries (site, member); collect the (site.0, member) pairs.
+    let mut keys: Vec<(u32, Option<u32>)> =
+        probe.checks.iter().map(|c| (c.site.0, c.member)).collect();
+    keys.sort();
+    assert_eq!(
+        keys,
+        vec![(0, Some(0)), (1, Some(0))],
+        "two calls ⇒ two body-site sub-records site 0.0 and site 1.0"
+    );
+    // The bound entities differ (nginx for call 0, curl for call 1) — the back-map
+    // non-injectivity (`i-6`) keeps the records distinct by call-site even though the body
+    // AstId is shared.
+    let entities: Vec<EntityRef> = {
+        let mut v: Vec<_> = probe
+            .checks
+            .iter()
+            .map(|c| (c.site.0, c.fact.entity))
+            .collect();
+        v.sort_by_key(|(s, _)| *s);
+        v.into_iter().map(|(_, e)| e).collect()
+    };
+    assert_eq!(entities.len(), 2);
+    assert_ne!(
+        entities[0], entities[1],
+        "the two calls' body establishes resolve DISTINCT entities (nginx vs curl)"
+    );
+}
+
+#[test]
+fn inline_call_unprobeable_body_establish_is_unresolvable() {
+    // `i-4` all-or-nothing probe-ability: if a body establish has no probe body, the WHOLE
+    // call is unresolvable (`can't-probe ⇒ can't-elide`). With the probe_body returning None,
+    // the call's site appears in `unresolvable`, not `checks`.
+    let mut i = Interner::default();
+    let idx = package_index(&mut i);
+    let src = "w() { apt-get install -y \"$1\"; }\nw nginx\n";
+    let parsed = dorc_syntax::parse(src);
+    let cfg = dorc_analysis::cfg::build(&parsed.value).value;
+    let classes = classify_value(&cfg, &parsed.value, &idx, &mut i);
+    let probe = dorc_plan::compile_probe(&parsed.value, &cfg, &classes, |_kind, _sel| None);
+    assert!(probe.checks.is_empty(), "no probe body ⇒ no checks");
+    assert!(
+        !probe.unresolvable.is_empty(),
+        "the call is unresolvable when its body establish can't be probed"
+    );
+}

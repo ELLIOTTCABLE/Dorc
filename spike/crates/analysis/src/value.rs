@@ -2658,4 +2658,128 @@ mod tests {
             vec![lit("cmd"), Word::Top]
         );
     }
+
+    // ===========================================================================
+    // arch-2 (brk-2, `i-2`): positional binding into spliced funcdef bodies.
+    // The body's `$1`..`$9`/`$#` bind from the CALL's resolved argv (a side-channel,
+    // never the lattice — the 20S Members precedent). Resolved via `argv_values` on
+    // the SPLICED body site (the reachable copy, not the detached definition copy).
+    // ===========================================================================
+
+    /// The bound argv of the FIRST *spliced & reachable* `Command` whose command word is `cmd`
+    /// (the call-site body copy — the detached definition copy is unreachable). Resolves
+    /// `argv_values`, which returns the positional-bound argv for a spliced site (`i-2`).
+    fn bound_argv_of(src: &str, cmd: &str) -> Vec<Word> {
+        let parsed = dorc_syntax::parse(src);
+        let cfg = build(&parsed.value).value;
+        let mut interner = Interner::default();
+        let flow = analyze(&cfg, &parsed.value, &mut interner);
+        // Forward reachability over succ (a spliced body site at a call is reachable; the
+        // detached definition copy is not).
+        let mut reachable = vec![false; cfg.iter().count()];
+        let mut stack = vec![cfg.entry()];
+        reachable[cfg.entry().index()] = true;
+        while let Some(v) = stack.pop() {
+            for w in cfg.succ_ids(v) {
+                if !reachable[w.index()] {
+                    reachable[w.index()] = true;
+                    stack.push(w);
+                }
+            }
+        }
+        let found = cfg
+            .iter()
+            .filter(|(id, n)| {
+                n.kind == CfgNodeKind::Command
+                    && cfg.is_spliced_internal(*id)
+                    && reachable[id.index()]
+            })
+            .find(|(_, n)| command_word(&parsed.value, n.ast).as_deref() == Some(cmd))
+            .map(|(id, _)| id);
+        let Some(node) = found else {
+            panic!("no spliced+reachable `{cmd}` in {src:?}")
+        };
+        flow.argv_values(node)
+            .into_iter()
+            .map(|v| word_of(v, &interner))
+            .collect()
+    }
+
+    #[test]
+    fn positional_binds_call_operand_into_spliced_body() {
+        // `i-2`: `apt_install nginx` binds the body's `$1` to `nginx`, so the spliced
+        // `apt-get install -y "$1"` resolves to `[apt-get, install, -y, nginx]` (the entity
+        // resolves at the call site — `i-4`).
+        let src = "apt_install() { apt-get install -y \"$1\"; }\napt_install nginx\n";
+        assert_eq!(
+            bound_argv_of(src, "apt-get"),
+            vec![lit("apt-get"), lit("install"), lit("-y"), lit("nginx")],
+            "the body's $1 binds to the call's operand"
+        );
+    }
+
+    #[test]
+    fn two_calls_bind_distinct_operands() {
+        // `i-2`: two calls bind their OWN operand — the same body resolves differently per call
+        // (the back-map non-injectivity, `i-6`, surfaced in the value plane). We can only query
+        // the FIRST spliced site by word here, so assert the first call's binding; the second
+        // is covered end-to-end by `inline21-wrapper-converged-elides` (site 0.0 nginx / 1.0
+        // curl).
+        let src = "w() { apt-get install -y \"$1\"; }\nw nginx\nw curl\n";
+        assert_eq!(
+            bound_argv_of(src, "apt-get"),
+            vec![lit("apt-get"), lit("install"), lit("-y"), lit("nginx")],
+            "the first call binds nginx"
+        );
+    }
+
+    #[test]
+    fn top_call_operand_binds_positional_top() {
+        // `i-2`: a ⊤ call operand binds that positional ⊤ — the body's use degrades per the
+        // normal value rules (the site stays un-elidable). `w "$dyn"` (an unmodeled var) ⇒ the
+        // body's `$1` is ⊤ ⇒ the install's operand is ⊤.
+        let src = "w() { apt-get install -y \"$1\"; }\nw \"$dyn\"\n";
+        assert_eq!(
+            bound_argv_of(src, "apt-get"),
+            vec![lit("apt-get"), lit("install"), lit("-y"), Word::Top],
+            "a ⊤ call operand makes the body's $1 ⊤"
+        );
+    }
+
+    #[test]
+    fn body_assignment_leaks_positional_scope_does_not() {
+        // `i-2` POSIX scope: a body ASSIGNMENT leaks to the caller (it rides the ordinary
+        // lattice transfer — no scope boundary), but POSITIONALS are scoped (the caller's $1 is
+        // NOT visible inside; the body's $1 is the CALL's operand). Here the caller binds
+        // `pkg=outer`, then calls `w nginx`; the body reads `"$1"` (⇒ nginx, the CALL operand,
+        // NOT the caller's anything) and assigns `pkg="$1"` (⇒ leaks). We assert the body's
+        // install resolves to nginx (positional = call operand), proving the positional overlay
+        // is the call's, not a caller variable.
+        let src = "w() { pkg=\"$1\"; apt-get install -y \"$1\"; }\npkg=outer\nw nginx\n";
+        assert_eq!(
+            bound_argv_of(src, "apt-get"),
+            vec![lit("apt-get"), lit("install"), lit("-y"), lit("nginx")],
+            "the body's $1 is the CALL operand (nginx), independent of the caller's `pkg`"
+        );
+    }
+
+    #[test]
+    fn body_assignment_from_positional_is_top_recorded_imprecision() {
+        // `i-2` RECORDED IMPRECISION (flag arch2-positional-via-assignment): the positional
+        // overlay applies to the body command site's DIRECT word resolution, NOT to an
+        // intermediate ASSIGNMENT inside the body that reads a positional. `w() { p="$1";
+        // apt-get install -y "$p"; }` — the `p="$1"` RHS is resolved by the general LATTICE
+        // transfer (which sees `$1` as ⊤, positionals never ride the lattice), so `p` is ⊤ and
+        // `"$p"` ⇒ ⊤ (the install's operand is ⊤ ⇒ the site stays un-elidable). This is the
+        // SAFE degrade (`kFAIL-perform`), not a wrong concrete; the wrapper-pun population uses
+        // `$1` DIRECTLY at command sites (`dpkg -s "$1"`), which IS bound (the test above), so
+        // the imprecision does not bite the target idiom. Pinned so the boundary is explicit.
+        let src = "w() { p=\"$1\"; apt-get install -y \"$p\"; }\nw nginx\n";
+        assert_eq!(
+            bound_argv_of(src, "apt-get"),
+            vec![lit("apt-get"), lit("install"), lit("-y"), Word::Top],
+            "an intermediate `p=$1` does NOT propagate the positional (p is ⊤) — the safe \
+             degrade, not the bound value"
+        );
+    }
 }
