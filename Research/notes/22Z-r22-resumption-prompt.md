@@ -74,12 +74,15 @@ if the human re-hands it): quarantine 223. Do NOT read quarantine otherwise.
 
 ## Queue (mirror of TaskList at update time)
 
-#9 digestion IN PROGRESS NEXT: read notes/225-229 + the agents' must-read sources in
-main context; re-verify load-bearing `graded-by: subagent` grades; fold-check +
-remove .claude/research; append token-true ledger rows. → #3 plans/22x synthesis (in
-the 111/220 mold; graded registry + design consequences) → #4 GATE-2: present
-synthesis + re-scoped arcs (arch-1..5, expected reshapes below) + crosscheck budget
-(~25-30% of build spend), WAIT for human go. #7 keep this file current.
+DONE since v1: digestion (all five notes full-read by conductor; honesty flags in
+22A §8) · plans/22A synthesis COMMITTED (`61fa8e4` — 13 conclusions, arc re-scopes,
+gate2-ask-1..5) · tracked .claude/research scratch REMOVED (`d4277e0`; ~3.2MB
+untracked residue on disk left for the human, incl. rqA staging PDFs) · W1 fixtures
+HARVESTED (corpus 98, chain green). NOW: GATE-2 presented in-chat, WAITING on human
+adjudication of 22A §1 (re-scoped arcs) + §2 (gate2-ask-1..5). After go: arch-1
+first (the gate lands with the arena's first commit), arch-3's s-2 widening early,
+arch-2, arch-4-thin; crosscheck budget ~25-30%, first targets x-1..x-3 (22A §1).
+#7 keep this file current.
 
 ## GATE state
 
