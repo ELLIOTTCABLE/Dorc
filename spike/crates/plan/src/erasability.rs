@@ -191,12 +191,14 @@ fn canon_disposition(d: &Disposition) -> String {
     }
 }
 
-/// Canonicalize a [`Derivation`] — EXHAUSTIVE destructure. Today every field is decision-state
-/// (fact/via/ambient/grade/verdict), so all are identity. The arch-1 receipt fields land here
-/// in the k-cap/witness slice; when they do, each is dropped WITH a named [`Exempt`] reason at
-/// this site (`Exempt::ReceiptId` for a `ProvId`/witness, `Exempt::OriginOrdering` for its
-/// order). The exhaustive destructure is the gate: a new field will not compile until
-/// classified here.
+/// Canonicalize a [`Derivation`] — EXHAUSTIVE destructure. `fact`/`via`/`ambient`/`grade`/
+/// `verdict` are decision-state ⇒ identity. `witness` is the arch-1 full granted witness
+/// (`vp-17`/`vp-18`): EXEMPT — [`Exempt::ReceiptId`] (the origins themselves) compounded with
+/// [`Exempt::OriginOrdering`] (their order) — so it is OMITTED here. This is the load-bearing
+/// exemption the gate's adversarial run-B exercises: run-B's witness holds different sentinel
+/// `ProvId`s in reversed order, and because this fn drops it, the canonical decision is
+/// unchanged. The exhaustive destructure is the gate: a future field will not compile until
+/// classified identity-or-exempt.
 fn canon_derivation(d: &Derivation) -> String {
     let Derivation {
         fact,
@@ -204,9 +206,9 @@ fn canon_derivation(d: &Derivation) -> String {
         ambient,
         grade,
         verdict,
+        witness: _, // EXEMPT: Exempt::ReceiptId + Exempt::OriginOrdering — the full granted
+                    // witness is output-only provenance; the adversarial gate proves it inert.
     } = d;
-    // All identity (decision state). NB the receipt fields (arch-1 k-cap/witness slice) attach
-    // here as `Exempt::ReceiptId`/`Exempt::OriginOrdering` and will be OMITTED from this string.
     format!(
         "deriv(fact={} via={} ambient={ambient} grade={grade:?} verdict={verdict:?})",
         canon_fact(*fact),

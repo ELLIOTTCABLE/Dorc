@@ -148,7 +148,9 @@ impl Diagnostic {
 pub mod diag;
 
 pub mod prov;
-pub use prov::{JOIN_PARENT_CAP, OriginKind, OriginNode, Parents, ProvArena, ProvId, Variation};
+pub use prov::{
+    JOIN_PARENT_CAP, OriginKind, OriginNode, Parents, ProvArena, ProvId, Variation, Witness,
+};
 
 pub mod unord;
 pub use unord::IterSuppressedMap;

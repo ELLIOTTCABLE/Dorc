@@ -171,12 +171,19 @@ fn run() -> Result<(), String> {
     // VALID Query-class site (the guard's own rc); an establish site's rc is the PROBE
     // command's (dpkg-query's), NOT the mutator's, so it feeds the fold NOTHING.
     let by_fact = facts_from_sites(&probe, &results);
-    let plan = dorc_plan::build_plan(&book_src, &parsed.value, &cfg.value, &classes, |f| {
-        by_fact
-            .get(&f)
-            .copied()
-            .unwrap_or(Observable::verdict_only(Verdict::Unknown))
-    });
+    let plan = dorc_plan::build_plan(
+        &book_src,
+        &parsed.value,
+        &cfg.value,
+        &classes,
+        |f| {
+            by_fact
+                .get(&f)
+                .copied()
+                .unwrap_or(Observable::verdict_only(Verdict::Unknown))
+        },
+        &mut arena,
+    );
 
     // q-2 (`dq-site-unresolvable`, the cli-edge readout): a `skip-unresolvable` comment lands
     // in the probe artifact, but nothing reached stderr (`219` q-1.f silent-3). Disclose each
@@ -903,9 +910,14 @@ mod tests {
         );
         let classes = classified.value;
         let probe = dorc_plan::compile_probe(&parsed.value, &cfg.value, &classes, |_, _| None);
-        let plan = dorc_plan::build_plan(book, &parsed.value, &cfg.value, &classes, |_| {
-            Observable::verdict_only(Verdict::Unknown)
-        });
+        let plan = dorc_plan::build_plan(
+            book,
+            &parsed.value,
+            &cfg.value,
+            &classes,
+            |_| Observable::verdict_only(Verdict::Unknown),
+            &mut arena,
+        );
         let diags = unresolvable_diagnostics(&probe, &plan, &parsed.value, book);
         assert!(
             diags.iter().any(|d| d.code.0 == "dq-site-unresolvable"),

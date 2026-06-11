@@ -136,16 +136,23 @@ fn plan_for(src: &str, holds: &[(&str, &str)]) -> Plan {
     let parsed = dorc_syntax::parse(src);
     let cfg = dorc_analysis::cfg::build(&parsed.value).value;
     let classes = classify_value(&cfg, &parsed.value, &idx, &mut i);
-    build_plan(src, &parsed.value, &cfg, &classes, move |f| {
-        // No rc is ever carried for these mutator facts: `fork-mutator-rc` (adopted,
-        // 202 §5) — a mutator's status is ⊤ (`inv-probe-sourced-values`); only the
-        // Effect channel (convergence) arrives from the probe.
+    // No rc is ever carried for these mutator facts: `fork-mutator-rc` (adopted, 202 §5) — a
+    // mutator's status is ⊤ (`inv-probe-sourced-values`); only the Effect channel arrives.
+    let observe = move |f: FactKey| {
         if held.contains(&f) {
             Observable::verdict_only(Verdict::Converged)
         } else {
             Observable::verdict_only(Verdict::Diverged)
         }
-    })
+    };
+    build_plan(
+        src,
+        &parsed.value,
+        &cfg,
+        &classes,
+        observe,
+        &mut dorc_core::ProvArena::new(),
+    )
 }
 
 /// Is the leaf whose verbatim text contains `needle` **replaced** (elided to a value-
@@ -348,13 +355,21 @@ fn andor_left_operand_undeclared_rc_runs_kfail_perform() {
     let classes = classify_value(&cfg, &parsed.value, &idx, &mut i);
     // Converged, but NO rc declared (the real CLI/hostsim default after `19D` — an
     // un-injected rc is ⊤, never a fabricated 0).
-    let plan = build_plan(src, &parsed.value, &cfg, &classes, move |f| {
+    let observe = move |f: FactKey| {
         if f == nginx {
             Observable::verdict_only(Verdict::Converged)
         } else {
             Observable::verdict_only(Verdict::Diverged)
         }
-    });
+    };
+    let plan = build_plan(
+        src,
+        &parsed.value,
+        &cfg,
+        &classes,
+        observe,
+        &mut dorc_core::ProvArena::new(),
+    );
     assert!(
         !is_replaced(&plan, "install -y nginx"),
         "undeclared-rc `&&`/`||` left operand must NOT be replaced (kFAIL-perform floor)"
@@ -626,13 +641,21 @@ fn spec_set_e_pure_at_effect_layer_but_c3_status_blocks() {
         "fs-4: set -e is target-state-pure ⇒ the install stays EstablishAmbient (not poisoned)"
     );
     // C-3: but its ⊤-rc status is errexit-consumed ⇒ Run.
-    let plan = build_plan(src, &parsed.value, &cfg, &classes, move |f| {
+    let observe = move |f: FactKey| {
         if f == nginx {
             Observable::verdict_only(Verdict::Converged)
         } else {
             Observable::verdict_only(Verdict::Diverged)
         }
-    });
+    };
+    let plan = build_plan(
+        src,
+        &parsed.value,
+        &cfg,
+        &classes,
+        observe,
+        &mut dorc_core::ProvArena::new(),
+    );
     assert!(
         !is_replaced(&plan, "install -y nginx"),
         "C-3: errexit-consumed ⊤-rc status ⇒ the install runs (despite fs-4 non-poison)"
@@ -748,7 +771,7 @@ fn plan_query_and_ast(
         Verdict::Diverged
     };
 
-    let plan = build_plan(src, &parsed.value, &cfg, &classes, move |f| {
+    let observe = move |f: FactKey| {
         if f == guard_fact {
             Observable {
                 effect: guard_effect,
@@ -767,7 +790,15 @@ fn plan_query_and_ast(
         } else {
             Observable::verdict_only(Verdict::Diverged)
         }
-    });
+    };
+    let plan = build_plan(
+        src,
+        &parsed.value,
+        &cfg,
+        &classes,
+        observe,
+        &mut dorc_core::ProvArena::new(),
+    );
     (plan, parsed.value)
 }
 
@@ -1028,13 +1059,21 @@ fn plan_and_ast(src: &str, holds: &[(&str, &str)]) -> (Plan, dorc_syntax::ast::A
     let parsed = dorc_syntax::parse(src);
     let cfg = dorc_analysis::cfg::build(&parsed.value).value;
     let classes = classify_value(&cfg, &parsed.value, &idx, &mut i);
-    let plan = build_plan(src, &parsed.value, &cfg, &classes, move |f| {
+    let observe = move |f: FactKey| {
         if held.contains(&f) {
             Observable::verdict_only(Verdict::Converged)
         } else {
             Observable::verdict_only(Verdict::Diverged)
         }
-    });
+    };
+    let plan = build_plan(
+        src,
+        &parsed.value,
+        &cfg,
+        &classes,
+        observe,
+        &mut dorc_core::ProvArena::new(),
+    );
     (plan, parsed.value)
 }
 

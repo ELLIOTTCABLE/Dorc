@@ -355,8 +355,15 @@ apt_get__check() {
             let parsed = dorc_syntax::parse(src);
             let cfg = dorc_analysis::cfg::build(&parsed.value).value;
             let classes = classify_value(&cfg, &parsed.value, &idx, &mut i);
-            let plan =
-                dorc_plan::build_plan(src, &parsed.value, &cfg, &classes, |f| host.observe(f));
+            let mut arena = dorc_core::ProvArena::new();
+            let plan = dorc_plan::build_plan(
+                src,
+                &parsed.value,
+                &cfg,
+                &classes,
+                |f| host.observe(f),
+                &mut arena,
+            );
 
             let is_skipped = |needle: &str| {
                 plan.steps
@@ -457,7 +464,14 @@ apt_get__check() {
                     .unwrap_or(Observable::verdict_only(Verdict::Unknown))
             };
             // (3) compile the eliding apply from the simulated probe results.
-            let apply = build_plan(src, &parsed.value, &cfg, &classes, observe);
+            let apply = build_plan(
+                src,
+                &parsed.value,
+                &cfg,
+                &classes,
+                observe,
+                &mut dorc_core::ProvArena::new(),
+            );
 
             let elided = |needle: &str| {
                 apply
@@ -534,7 +548,14 @@ apt_get__check() {
                 Observable::verdict_only(Verdict::Unknown)
             }
         };
-        let apply = build_plan(src, &parsed.value, &cfg, &classes, observe);
+        let apply = build_plan(
+            src,
+            &parsed.value,
+            &cfg,
+            &classes,
+            observe,
+            &mut dorc_core::ProvArena::new(),
+        );
         assert!(
             matches!(apply.steps[0].disposition, Disposition::Run),
             "un-probeable fact must run even though the host holds it"

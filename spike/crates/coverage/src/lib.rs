@@ -427,7 +427,14 @@ pub fn build_report(inputs: &Inputs<'_>) -> Report {
         idx.resolve_probe(kind, selector).map(|p| p.body.clone())
     });
     let observe = observe_from_sites(&probe, &probe_verdicts);
-    let plan = dorc_plan::build_plan(inputs.book, &parsed.value, &cfg, &classes, observe);
+    let plan = dorc_plan::build_plan(
+        inputs.book,
+        &parsed.value,
+        &cfg,
+        &classes,
+        observe,
+        &mut arena,
+    );
 
     // classify yields CfgNodeId→SkipClass; the plan keys by AstId. Bridge via AstId.
     let disposition_of: BTreeMap<dorc_core::AstId, &Disposition> =

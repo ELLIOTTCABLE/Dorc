@@ -172,7 +172,7 @@ fn run_pipeline(book: &str, variation: ArenaMode) -> RunOutcome {
             Observable::verdict_only(Verdict::Diverged)
         }
     };
-    let plan = build_plan(book, &parsed.value, &cfg, &classes, observe);
+    let plan = build_plan(book, &parsed.value, &cfg, &classes, observe, &mut arena);
 
     // Tally the dispositions so the canary can prove the elision plane was actually exercised
     // (the anti-masking floor: a fixture set that NEVER elides cannot test receipt-inertness of
@@ -182,21 +182,34 @@ fn run_pipeline(book: &str, variation: ArenaMode) -> RunOutcome {
         .iter()
         .filter(|s| matches!(s.disposition, Disposition::Replace(_, _)))
         .count();
+    // Count licenses whose FULL granted witness is non-empty (arch-1 `vp-17`/`vp-18`). The
+    // gate's witness-exemption test is VACUOUS if no witness is ever populated, so the canary
+    // asserts ≥1 across the fixtures (catches a regression that stops populating it).
+    let witnessed = plan
+        .steps
+        .iter()
+        .filter(|s| match &s.disposition {
+            Disposition::Replace(license, _) => !license.derivation().witness.is_empty(),
+            _ => false,
+        })
+        .count();
 
     let canon = canonical_decision(&plan, &probe, book, &parsed.value, &i, &classified.diags);
     RunOutcome {
         canon,
         arena_nodes: arena.len(),
         replaces,
+        witnessed,
     }
 }
 
 /// What one pipeline run produced — the canonical decision plus the canary's "the plane was
-/// exercised" signals (arena size, replace count).
+/// exercised" signals (arena size, replace count, populated-witness count).
 struct RunOutcome {
     canon: String,
     arena_nodes: usize,
     replaces: usize,
+    witnessed: usize,
 }
 
 #[derive(Clone, Copy)]
@@ -214,6 +227,7 @@ fn decision_is_identity_exact_under_adversarial_receipts() {
     let mut comparisons = 0usize;
     let mut total_arena_nodes = 0usize;
     let mut total_replaces = 0usize;
+    let mut total_witnessed = 0usize;
     for (name, book) in FIXTURES {
         let a = run_pipeline(book, ArenaMode::Normal);
         // Run-B: a per-fixture seed (so the perturbation is not a fixed shift a leak could
@@ -240,6 +254,7 @@ fn decision_is_identity_exact_under_adversarial_receipts() {
         comparisons += 1;
         total_arena_nodes += a.arena_nodes;
         total_replaces += a.replaces;
+        total_witnessed += a.witnessed;
     }
 
     // THE COVERAGE CANARY (concl-3 / `mechanism-coverage-canary`): assert the gate ACTUALLY
@@ -264,6 +279,15 @@ fn decision_is_identity_exact_under_adversarial_receipts() {
         "anti-masking canary: NO fixture produced a Replace disposition — the gate never \
          exercised the elision plane (the half a receipt-into-license leak would touch). Fix \
          the oracle/host so ≥1 fixture elides (the effect-map must declare establishes)."
+    );
+    // The WITNESS canary (arch-1 `vp-17`/`vp-18`): ≥1 license must carry a NON-EMPTY full
+    // granted witness, else the gate's witness-exemption proof is vacuous (it would be
+    // confirming that an empty field doesn't perturb the decision — trivially true). A
+    // regression that stops populating the witness trips here.
+    assert!(
+        total_witnessed > 0,
+        "witness canary: NO license carried a populated witness — the gate's witness-exemption \
+         test is vacuous. `build_plan` must attach the establish site's origin to a Replace."
     );
 }
 
@@ -307,7 +331,7 @@ fn digest_is_receipt_invariant_across_runs() {
                 Observable::verdict_only(Verdict::Diverged)
             }
         };
-        let plan = build_plan(book, &parsed.value, &cfg, &classes, observe);
+        let plan = build_plan(book, &parsed.value, &cfg, &classes, observe, &mut arena);
         decision_digest(&plan, &probe, book, &parsed.value, i, &[])
     };
 

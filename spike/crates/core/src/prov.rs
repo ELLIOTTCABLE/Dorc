@@ -184,9 +184,60 @@ impl std::hash::Hash for Parents {
 /// The cap on a join node's retained parents (`notes/220` §6 / `vp-6`: "Join nodes k-capped").
 /// A small constant: provenance is a refuse-or-explain aid, and "…and N more" is a faithful
 /// summary past a handful. Licenses are EXEMPT from this cap (they store the full granted
-/// witness — `plan`'s concern; `vp-17`/`vp-18`): values are many and capped, licenses are
+/// witness — see [`Witness`]; `vp-17`/`vp-18`): values are many and capped, licenses are
 /// few and exact.
 pub const JOIN_PARENT_CAP: usize = 4;
+
+/// The FULL granted witness of a license — the **uncapped** license-tier of the two-tier
+/// receipts budget (`notes/220` §6 / `vp-17`/`vp-18`: "Licenses are exempt from the [k-]cap and
+/// store their full granted witness … values are many and capped; licenses are few and
+/// exact"). Contrast [`Parents`] (the value-tier, k-capped at [`JOIN_PARENT_CAP`] with a
+/// truncation marker): a license is a rare, deliberate decision, so its full justification is
+/// worth recording exactly — there is no "…and N more" here.
+///
+/// THE WELD: a `Witness` is pure OUTPUT provenance carried beside a decision (a
+/// `plan::Derivation`); it is computed from the site the license already keys on, never feeds
+/// back into the mint, and is on the EXEMPT plane (`Exempt::ReceiptId` — the
+/// `plan::erasability` gate omits it from the identity comparison). Order is NOT significant
+/// (`Exempt::OriginOrdering`); it is stored in the deterministic order the minter offered.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct Witness {
+    /// The full set of origin receipts that justified the license, uncapped. In minter-offered
+    /// order (deterministic, but order is exempt — see the type doc).
+    origins: Vec<ProvId>,
+}
+
+impl Witness {
+    /// An empty witness (no origins recorded yet).
+    #[must_use]
+    pub fn empty() -> Self {
+        Self::default()
+    }
+
+    /// A witness over the given origins (the full granted set — never capped).
+    #[must_use]
+    pub fn of(origins: Vec<ProvId>) -> Self {
+        Self { origins }
+    }
+
+    /// The justifying origin receipts (the full set).
+    #[must_use]
+    pub fn origins(&self) -> &[ProvId] {
+        &self.origins
+    }
+
+    /// How many origins justified the license.
+    #[must_use]
+    pub fn len(&self) -> usize {
+        self.origins.len()
+    }
+
+    /// Whether the witness is empty.
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.origins.is_empty()
+    }
+}
 
 /// An append-only, per-run, hash-consed store of [`OriginNode`]s — the receipts plane's
 /// backing arena (`notes/220` §6: "One append-only per-run arena of origin nodes").
@@ -515,6 +566,31 @@ mod tests {
         let node = adv.node(v).expect("adversarial node reads back");
         assert_eq!(node.kind, OriginKind::TopCause);
         assert_eq!(node.site, Some(span(0, 3)));
+    }
+
+    #[test]
+    fn witness_is_uncapped_unlike_join_parents() {
+        // vp-17/vp-18 two-tier budget: a license Witness stores the FULL granted set (no cap),
+        // CONTRASTING a value join which truncates past JOIN_PARENT_CAP. Build a witness far
+        // larger than the join cap and confirm every origin is retained.
+        let mut a = ProvArena::new();
+        let many: Vec<ProvId> = (0..u32::try_from(JOIN_PARENT_CAP * 3).unwrap())
+            .map(|k| a.leaf(OriginKind::BookSource, Some(span(k, k + 1))))
+            .collect();
+        let w = Witness::of(many.clone());
+        assert_eq!(
+            w.len(),
+            JOIN_PARENT_CAP * 3,
+            "the license witness keeps ALL origins (no k-cap — the license tier is exact)"
+        );
+        assert_eq!(w.origins(), many.as_slice());
+        // Contrast: the same origins JOINED truncate to the value-tier cap.
+        let joined = a.join(Some(span(0, 99)), &many).unwrap();
+        assert_eq!(
+            a.node(joined).unwrap().parents.ids().len(),
+            JOIN_PARENT_CAP,
+            "a value join caps; the witness does not — the two-tier budget"
+        );
     }
 
     #[test]
