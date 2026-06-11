@@ -165,6 +165,18 @@ fn render_report(report: &Report, book_path: &str, has_probe: bool, with_table: 
         }
     );
 
+    // 217 §5 obs-3 tier-1: a render-refusal the span-bridge could not attribute is a silently-
+    // dropped demotion ⇒ a render-refused leaf re-counted as an elision (the heredoc OVER-count).
+    // MUST be 0; surface any miss LOUDLY in the report itself, never let it regrow the lie.
+    if report.bridge_suspect > 0 {
+        let _ = writeln!(
+            out,
+            "!! WARNING: {} render-refusal(s) unattributed by the span bridge — elision counts \
+             may OVER-count (217 §5 obs-3); the per-site doors for these leaves are SUSPECT.\n",
+            report.bridge_suspect,
+        );
+    }
+
     if with_table {
         // Per-site rows. Columns: site·line·c1·c2·c3·door·why·wt·rung·cmd.
         let rows: Vec<Vec<String>> = report.rows.iter().map(site_columns).collect();
@@ -458,6 +470,9 @@ fn render_tsv(report: &Report) -> String {
             report.rung_weight.get(label).copied().unwrap_or(0),
         );
     }
+    // 217 §5 obs-3: the span-bridge blind-spot count (MUST be 0) in the machine-readable artifact.
+    let _ = write!(out, "\n# bridge-suspect (unattributed-render-refusals)\n");
+    let _ = writeln!(out, "bridge-suspect\t{}", report.bridge_suspect);
     out
 }
 
@@ -583,6 +598,32 @@ apt_get__check() {
         assert!(
             tsv.contains("\truns\t") || tsv.contains("unprobed"),
             "tsv:\n{tsv}"
+        );
+    }
+
+    #[test]
+    fn bridge_suspect_renders_loud_warning_only_when_nonzero() {
+        // 217 §5 obs-3: the span-bridge blind-spot must surface LOUDLY in the binary's output.
+        // A clean book renders no warning; a report carrying an unattributed refusal renders the
+        // loud line. (The bridge-counting logic itself is unit-pinned in lib; here we pin the
+        // user-visible signal — that the count is not computed-then-swallowed.)
+        let clean = report_for(
+            "apt-get install -y nginx\n",
+            PKG_ORACLE,
+            Some("site 0 effect=holds\n"),
+        );
+        assert_eq!(clean.bridge_suspect, 0, "the clean book has no blind spot");
+        assert!(
+            !render_report(&clean, "book.sh", true, false).contains("WARNING"),
+            "no warning on a clean bridge"
+        );
+
+        let mut suspect = clean;
+        suspect.bridge_suspect = 2;
+        let out = render_report(&suspect, "book.sh", true, false);
+        assert!(
+            out.contains("WARNING") && out.contains("217 §5 obs-3"),
+            "a non-zero bridge_suspect renders the loud warning: {out}"
         );
     }
 }

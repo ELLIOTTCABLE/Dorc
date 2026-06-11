@@ -299,6 +299,12 @@ pub struct Report {
     pub rung_count: BTreeMap<&'static str, u32>,
     /// The dq-2 rung-population split, criticality-weighted.
     pub rung_weight: BTreeMap<&'static str, u32>,
+    /// Count of render-refusal diagnostics the span-bridge could NOT attribute to a leaf
+    /// (217 §5 obs-3). MUST be 0: a non-zero value means a refusal silently dropped, so a
+    /// render-refused leaf was re-counted as an elision (the heredoc OVER-count fix-1 kills).
+    /// The binary prints it as a loud warning; `> 0` is a "go re-read the span bridge" signal,
+    /// the honest-blind-spot analog of [`Door::Unattributed`] keyed on the bridge not an enum.
+    pub bridge_suspect: u32,
 }
 
 impl Report {
@@ -424,7 +430,8 @@ pub fn build_report(inputs: &Inputs<'_>) -> Report {
     // SAME refusal the render applies — `Plan::render_refusal_diagnostics` — and collect the
     // refused leaves so `attribute_door` demotes them to `runs(render-refusal)` instead of
     // mis-bucketing them `replace-converged` (the disposition's lie, 100% coverage that isn't).
-    let render_refused = render_refused_leaves(&plan, &parsed.value, &leaf_of);
+    // `bridge_suspect` is the loud blind-spot count of refusals that did NOT bridge (217 §5 obs-3).
+    let (render_refused, bridge_suspect) = render_refused_leaves(&plan, &parsed.value, &leaf_of);
 
     let mut rows: Vec<SiteRow> = classes
         .iter()
@@ -450,7 +457,7 @@ pub fn build_report(inputs: &Inputs<'_>) -> Report {
         .collect();
     rows.sort_by_key(|r| r.site.0);
 
-    rollup(rows)
+    rollup(rows, bridge_suspect)
 }
 
 /// fix-1: the set of site [`LeafId`]s the leaf-exact render REFUSES to elide (a heredoc-bearing
@@ -459,13 +466,14 @@ pub fn build_report(inputs: &Inputs<'_>) -> Report {
 /// artifact the render emits, never the disposition's bare claim (the heredoc lie, `21B` hunt-1).
 ///
 /// Each refusal diagnostic carries the refused leaf's source span; `leaf_of` keys leaves by
-/// `AstId`, so we bridge span→leaf via the steps' own `AstId`→span. A diagnostic whose span
-/// matches no step is dropped (defensive; every refusal originates from a step today).
+/// `AstId`, so we bridge span→leaf via the steps' own `AstId`→span. Returns the matched-leaf set
+/// AND the `bridge_suspect` count of refusals that did NOT bridge (217 §5 obs-3 / the span-bridge
+/// crosscheck's tier-1): see [`bridge_refusals_to_leaves`] for why that count is load-bearing.
 fn render_refused_leaves(
     plan: &dorc_plan::Plan,
     ast: &dorc_syntax::ast::Ast,
     leaf_of: &BTreeMap<dorc_core::AstId, LeafId>,
-) -> std::collections::BTreeSet<LeafId> {
+) -> (std::collections::BTreeSet<LeafId>, u32) {
     // span (lo,hi) → leaf, from the steps (the render-refusal diagnostics carry the same span).
     let leaf_by_span: BTreeMap<(u32, u32), LeafId> = plan
         .steps
@@ -477,11 +485,44 @@ fn render_refused_leaves(
                 .map(|&leaf| ((span.lo.0, span.hi.0), leaf))
         })
         .collect();
-    plan.render_refusal_diagnostics(ast)
-        .iter()
-        .filter_map(|d| d.span)
-        .filter_map(|span| leaf_by_span.get(&(span.lo.0, span.hi.0)).copied())
-        .collect()
+    bridge_refusals_to_leaves(&plan.render_refusal_diagnostics(ast), &leaf_by_span)
+}
+
+/// The span-bridge from render-refusal diagnostics to leaf ids, returning the matched set AND a
+/// `bridge_suspect` count of refusals that could NOT be attributed (a `None`-span diagnostic, or
+/// one whose span matches no step). Split out as a pure function so the mismatch path is unit-
+/// testable without constructing a whole [`dorc_plan::Plan`].
+///
+/// **Why count the misses (217 §5 obs-3 / the honest-blind-spot discipline):** a refusal that
+/// silently fails to bridge means a leaf the render runs verbatim is NOT demoted — so the
+/// dashboard re-counts it as an elision (`replace-converged`/`fold`), the exact flattering
+/// OVER-count fix-1 exists to kill (`21B` hunt-1). The bridge is sound TODAY under
+/// `inv-leaf-seam` span-disjointness (every refusal originates from a step with a unique span),
+/// but a future lowering/render change that breaks span-identity must surface LOUDLY, never
+/// regrow the heredoc lie. The count is reported in [`Report::bridge_suspect`] and the binary
+/// prints it as a loud warning — the crate's `Unattributed`-style "report my own blind spot"
+/// idiom, here keyed on the span bridge rather than an engine enum.
+///
+/// Matches are counted per-diagnostic (NOT as the matched set's len) so two refusals resolving
+/// to one leaf — were span-disjointness ever violated — could not mask a miss by set-dedup.
+fn bridge_refusals_to_leaves(
+    refusals: &[dorc_core::Diagnostic],
+    leaf_by_span: &BTreeMap<(u32, u32), LeafId>,
+) -> (std::collections::BTreeSet<LeafId>, u32) {
+    let mut refused = std::collections::BTreeSet::new();
+    let mut unbridged: u32 = 0;
+    for d in refusals {
+        match d
+            .span
+            .and_then(|s| leaf_by_span.get(&(s.lo.0, s.hi.0)).copied())
+        {
+            Some(leaf) => {
+                refused.insert(leaf);
+            }
+            None => unbridged = unbridged.saturating_add(1),
+        }
+    }
+    (refused, unbridged)
 }
 
 /// Drive `build_plan`'s `observe` closure from the supplied per-site verdicts. The
@@ -894,7 +935,7 @@ fn attribute_rung(door: &Door, class: &SkipClass) -> Rung {
 /// Roll the per-site rows into the count- and criticality-weighted tallies. EVERY
 /// door label is seeded to 0 first (including the not-yet-existing door-4/door-2), so
 /// the table column set is stable regardless of which doors a particular book hits.
-fn rollup(rows: Vec<SiteRow>) -> Report {
+fn rollup(rows: Vec<SiteRow>, bridge_suspect: u32) -> Report {
     let mut by_door_count: BTreeMap<String, u32> = BTreeMap::new();
     let mut by_door_weight: BTreeMap<String, u32> = BTreeMap::new();
     for label in DOOR_COLUMNS {
@@ -923,6 +964,7 @@ fn rollup(rows: Vec<SiteRow>) -> Report {
         by_door_weight,
         rung_count,
         rung_weight,
+        bridge_suspect,
     }
 }
 
@@ -1167,6 +1209,72 @@ dpkg__check() {
             "0% criticality-weighted coverage (the heredoc lie corrected)"
         );
         assert_no_unattributed(&r);
+        // The happy-path bridge attributes its one refusal cleanly ⇒ no blind spot (217 §5 obs-3).
+        assert_eq!(
+            r.bridge_suspect, 0,
+            "the heredoc refusal bridges to its leaf — no unattributed refusal: {r:?}"
+        );
+    }
+
+    /// A render-refusal diagnostic shaped like the real one (`render-heredoc-refused`).
+    fn refusal_diag(span: Option<dorc_core::Span>) -> dorc_core::Diagnostic {
+        dorc_core::Diagnostic::error(
+            dorc_core::DiagCode("render-heredoc-refused"),
+            span,
+            "leaf-exact render refuses a heredoc-bearing leaf",
+        )
+    }
+
+    fn span_at(lo: u32, hi: u32) -> dorc_core::Span {
+        dorc_core::Span {
+            lo: dorc_core::BytePos(lo),
+            hi: dorc_core::BytePos(hi),
+        }
+    }
+
+    #[test]
+    fn bridge_counts_a_none_span_refusal_as_suspect() {
+        // 217 §5 obs-3 tier-1: a refusal with NO span cannot reach a leaf, so the demotion is
+        // silently lost ⇒ a render-refused leaf would re-count as an elision (the heredoc lie).
+        // It MUST be counted loud, not dropped. (None-span refusals don't arise today — every
+        // refusal carries `Some(step.span)` — but a future refusal path that forgets the span
+        // must trip this, not silently regrow the over-count.)
+        let leaf_by_span: BTreeMap<(u32, u32), LeafId> =
+            [((0, 10), LeafId(0))].into_iter().collect();
+        let (matched, suspect) = bridge_refusals_to_leaves(&[refusal_diag(None)], &leaf_by_span);
+        assert!(matched.is_empty(), "a None-span refusal bridges to nothing");
+        assert_eq!(
+            suspect, 1,
+            "the unbridged refusal is counted, never dropped"
+        );
+    }
+
+    #[test]
+    fn bridge_counts_an_unmatched_span_refusal_as_suspect() {
+        // The other silent-drop arm: a refusal whose span matches NO step (span-identity broke —
+        // the obs-3 failure mode). Must surface, never silently miss the demotion.
+        let leaf_by_span: BTreeMap<(u32, u32), LeafId> =
+            [((0, 10), LeafId(0))].into_iter().collect();
+        let (matched, suspect) =
+            bridge_refusals_to_leaves(&[refusal_diag(Some(span_at(99, 105)))], &leaf_by_span);
+        assert!(matched.is_empty(), "a non-matching span bridges to nothing");
+        assert_eq!(suspect, 1, "the unmatched refusal is counted loudly");
+    }
+
+    #[test]
+    fn bridge_matches_a_known_span_with_no_suspect() {
+        // The positive control: a refusal whose span IS a step's span bridges to that leaf and is
+        // NOT counted suspect — so the tripwire fires ONLY on a real miss, never on the happy path.
+        let leaf_by_span: BTreeMap<(u32, u32), LeafId> =
+            [((0, 10), LeafId(7))].into_iter().collect();
+        let (matched, suspect) =
+            bridge_refusals_to_leaves(&[refusal_diag(Some(span_at(0, 10)))], &leaf_by_span);
+        assert_eq!(
+            matched.into_iter().collect::<Vec<_>>(),
+            vec![LeafId(7)],
+            "the matching refusal bridges to its leaf"
+        );
+        assert_eq!(suspect, 0, "a bridged refusal is not suspect");
     }
 
     #[test]
