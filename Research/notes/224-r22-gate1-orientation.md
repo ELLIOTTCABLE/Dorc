@@ -534,3 +534,28 @@ warm-ups (d×d host-flip fixture; var-resolved redirect case) → 22x synthesis 
   at arch-4. Gating-lane sizing and 19B collision-freedom: checked, untouched
   (capture rides per-leaf + verdict-triple lanes only). Reconciliation batch rec-1..4
   goes to the human after RV1/RV3 land.
+- RV1 human-authority sweep → final-message deliverable (no files): Opus, 106K
+  harness-tokens, 12 tool uses, ~3.5 min. Read README/DESIGN/IMPLEMENTATION/KNOBS/
+  STALENESS-AUDIT/TODO-pair fresh. VERDICT: region overwhelmingly CONVERGENT; one
+  breaks-a-recorded-assumption (== held-1, now CONFIRMED by two independent
+  reviewers); one friction clause; one deferred-to-RV2; eight reinforcements; no
+  breaks-a-human-ruling survived scrutiny. THE finding (rv1-finding-1, +SURE): the
+  held-1 crux is sharper than the conductor had it — DESIGN approach-3 presents the
+  PLAN "still as a simple shell-script", so if the plan-render counts as a
+  "default-mode artifact" under ru-12's byte-floor, the human's dir-soundiness-ux
+  per-line claimed-vs-proven disclosure is forbidden ON the surface he asked for it.
+  Reconciliation rec-1-sharpened: TWO SURFACES, stated where builders read —
+  the shipped/off-ramp .sh artifact is byte-floored and receipt-free; the
+  PLAN-RENDER surface (TUI/CLI presentation, why-query) is NOT an artifact and is
+  the sanctioned home for per-line disclosure, OVERLAID on artifact bytes, never
+  embedded. rv1-finding-2 (~SUSPECT false-alarm, clause anyway): DESIGN ~180 "may
+  short-term-persist probe results to reduce work on re-runs" = the kSTATE
+  reuse-cache (still parked), NOT the ru-18 probe-TAPE (write-only postmortem
+  durable, never re-ingested to elide work) — nominally distinct, builders could
+  conflate; one clause = rec-5. Reinforcement highlights: kOOB's human
+  clarification BLESSES ru-12's OOB routing; the byte-floor SERVES the off-ramp
+  weld; the where/why two-plane split PRESERVES kFIDELITY's loc-DAG (watch-2:
+  don't over-apply dac-B to the where-plane); owed-dst resolves
+  best-effort-vs-hard-gate; IMPLEMENTATION's dictate carve-out covers the severity
+  floor (residual noted: floor-tier diagnostics about USER code brush
+  contract-over-dictate — concl-8 drift evidence justifies; future note).
