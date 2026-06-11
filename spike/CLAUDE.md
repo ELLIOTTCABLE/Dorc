@@ -159,7 +159,17 @@ and where* (→ `Research/notes/20x-*.md`, append-only), not green tests.
   `Channel::StatusRelaxable` (the FOUR readers a KNOWN rc reproduces exactly —
   `&&`/`||` operands, errexit-region commands, `$?`-readers' predecessors).
   The retired `AndOrStatus` name implied construct-identity; four-vs-one
-  sources prove the axis is render capability.
+  sources prove the axis is render capability. A THIRD consumed-Status
+  variant, `Channel::StatusInvariant` (door-3, `20V` §4 / note 213), splits
+  on a DIFFERENT axis — continuation-identity, not render/value capability:
+  the `cmd || true` left operand is consumed-in-form (the `||` reads the rc)
+  but dead-in-fact (both continuations rejoin with identical observables —
+  list rc 0, `$?`=0, errexit sees 0 either way), so it NEVER blocks a
+  license, even at ⊤, and needs no known rc. It is still RECORDED in the
+  consumed set (disclosure sees the read), and mark-union composes: any
+  OTHER blocking mark on the site still blocks. Shortest framing: Relaxable
+  asks "can a known rc reproduce the consumer's decision?"; Invariant asks
+  "does the consumer decide anything observable at all?".
 - **inv-site-keyed-results** (round-20; default shape, 203 §1 + 205) — the
   probe-results lane is keyed by **command-site** (the stable LeafId→AstId
   back-map), not by fact, kind:entity, or check/command-family: a site-keyed

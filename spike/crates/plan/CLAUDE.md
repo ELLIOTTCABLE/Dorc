@@ -42,7 +42,10 @@ Status consumption (19A C-3 honored, round-20 — notes/205 §2, 206 §3): the i
 leaf-exact render, not by the rc value); EVERY other status consumer — `&&`/`||`
 operands, errexit-region commands, `$?`-readers' predecessors (the four 206 §3 sources) —
 is marked `StatusRelaxable`, where a probe-sourced/declared rc substitutes exactly and a
-⊤ rc blocks. Under
+⊤ rc blocks — EXCEPT the bare `|| true` left operand (door-3, `20V` §4 / note 213), marked
+`StatusInvariant`: consumed-in-form, dead-in-fact (both continuations rejoin with identical
+observables), it never blocks even at ⊤; mark-union still applies, so any OTHER blocking
+mark on the same site wins. Under
 fork-mutator-rc a mutator's rc is always ⊤, so converged mutators under `set -e`
 run (the 206 §2 headline cost). There is NO establishes-contract rc-0 vouch — that
 was the refuted assumption ("converged ⇒ rc 0", bought false three times).
