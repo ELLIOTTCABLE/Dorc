@@ -349,3 +349,182 @@ directly usable, so Dorc would reimplement the *idea*.)
 nondeterminism sources — codegen-unit parallelism, incremental fingerprints — are gathered by
 sub-subagent in §5 and folded into §0.)*
 
+---
+
+## §5 rustc reproducibility: tracking issues, path-remap, and the determinism rationale
+
+**finding-rustc-remap-path-prefix (+SURE).** The build-path normalization flag, verbatim
+[B-rustc-cli-args-2026]:
+
+> `--remap-path-prefix`: remap source paths in output — Remap source path prefixes in all
+> output, including compiler diagnostics, debug information, macro expansions, etc. It takes a
+> value of the form `FROM=TO` where a path prefix equal to `FROM` is rewritten to the value
+> `TO`. This flag may be specified multiple times.
+
+There is also `--remap-path-scope` defining *which* output scopes get remapped — i.e. the
+normalization is *scoped*, not all-or-nothing. (Dorc analogue: if any decision-adjacent string
+carries a path, it must be remapped in both gate runs.)
+
+**finding-rustc-tracking-issues (+SURE).** Rust's reproducibility effort is tracked under the
+`A-reproducibility` label. Two issues are load-bearing for Dorc's gate question:
+
+- **#34902** `Bit-for-bit deterministic / reproducible builds` [B-rust-issue-34902-2016] —
+  opened 2016, closed *completed* 2020-08-06 (76 comments). Notably the issue body is a
+  *discussion*, not a checklist: "Much of the diff output is due to build-id differences, which
+  can be ignored since they are caused by other deeper issues and will go away once these deeper
+  issues are fixed." (No verbatim source-taxonomy in the body; it lives scattered in comments.)
+- **#75362** `CI for deterministic / reproducible builds` [B-rust-issue-75362-2020] — opened
+  2020, **still OPEN** as of 2025-04-16. This is the directly-relevant evidence: *rustc itself
+  has no standing CI reproducibility gate.* Verbatim:
+
+  > #34902 was finally closed as we got a positive result on tests.r-b.org for rustc 1.44.1 on
+  > Debian Unstable, where we test for build-path-independent reproducibility. However for rustc
+  > 1.45.0 the test turned negative again. … Since many/most contributors are not aware of all
+  > of the details needed to retain build-path-independent reproducibility, it would be good to
+  > have some CI to ensure this property in the long run. Running a full build twice is costly,
+  > but perhaps some other solution would be just as effective, e.g. running a stage1 build
+  > twice, or running it for the beta channel, and/or running with a pre-built LLVM.
+
+The lesson for Dorc (finding-rustc-no-ci, ~SUSPECT→+SURE on the absence): a project that *can*
+reproduce but relies on an *external* checker (Debian's) and lacks an *internal* gate watched
+its property regress immediately (1.44.1 reproducible → 1.45.0 not) and acknowledges
+contributors "are not aware of all the details." This is the strongest argument FOR Dorc
+shipping the erasability gate in-tree from day one rather than relying on after-the-fact audit:
+the regression pressure is constant and silent without a gate.
+
+**finding-rustc-nondeterminism-sources (+SURE).** Concrete, separately-filed nondeterminism
+bugs (the de-facto source taxonomy):
+
+- **LLVM-codegen drift on toolchain bump:** #90301 `reproducible builds broken in rustc 1.56.0
+  due to LLVM 13 update` [B-rust-issue-90301-2021] — bisected to the LLVM-13 upgrade,
+  "differences seem to start in `rustc_codegen_ssa`."
+- **`-C metadata` hash differs across OS:** #71361 `Non-reproducible builds depending on the
+  compiling OS` [B-rust-issue-71361-2020] — same crate getting `-C metadata=92487154152022d3`
+  on Linux vs `9fc982d890c0358d` on macOS.
+- **Parallel-codegen nondeterminism survives `codegen-units=1`:** #50556 `reproducible builds:
+  non-deterministic use of cmpq` [B-rust-issue-50556-2018] — "still non-deterministic … I'm not
+  sure if this decision is made by llvm or rustc, but it seems this happens in a
+  non-deterministic way."
+- **Source-path leak into panic/debug strings:** #97955 [B-rust-issue-97955-2022] — full paths
+  like `/Users/runner/.cargo/registry/src/…` embedded in the binary; the `--remap-path-prefix`
+  motivating case.
+
+**finding-rustc-determinism-rationale (+SURE).** The incremental-compilation model is *why*
+rustc must be deterministic — and it makes the inverse explicit (verbatim, rustc-dev-guide
+[B-rustc-devguide-incr-2026]):
+
+> First, if all the inputs to query Q are colored green, then the query Q **must** result in
+> the same value as last time and hence need not be re-executed (or else the compiler is not
+> deterministic). … One key point is that the query DAG also tracks ordering; that is, for each
+> query Q, we not only track the queries that Q reads, we track the **order** in which they
+> were read.
+
+So rustc's determinism isn't aesthetic — incrementality *depends* on it (a non-deterministic
+query breaks the green-means-skip optimization). Dorc parallel: the *receipts plane is the
+"debug info" that must not change the "green" decision* — if receipts leaked into a decision,
+two runs differing only in receipts would diverge, exactly the failure rustc's model forbids.
+
+**finding-rustc-untracked-query-lint (+SURE).** Beyond ordering, rustc lints a *second* leak
+class — reading state the query system doesn't track. Verbatim from the lint source
+[A-rustc-fx-src-2026 / internal.rs]:
+
+> The `untracked_query_information` lint detects use of methods which leak information not
+> tracked by the query system, such as whether a `Steal<T>` value has already been stolen. In
+> order not to break incremental compilation, such methods must be used very carefully or not
+> at all.
+
+This is a *direct analogue of Dorc's gate*: a lint against "decisions reading un-tracked side
+information." The receipts plane is precisely "information the decision must not read." ~SUSPECT
+a custom Dorc lint modeled on `untracked_query_information` (fire when a decision-producing
+function takes a receipt-typed argument) is the cleanest static enforcement — see §0 mechanisms.
+
+---
+
+## §6 distro-scale CI economics & the variance-injection practice
+
+This is where "run twice and compare" becomes *adversarial* — Debian doesn't run the same build
+twice, it runs it twice with **deliberately maximized environmental variance** between the two,
+so any environment-dependence surfaces as a diff. This is the single most important
+direction-shaper for Dorc's gate.
+
+**finding-debian-variance-table (+SURE).** The complete variation set Debian injects between
+"first build" and "second build" [A-debian-variations-2026], verbatim-derived (page self-dates
+to 2026-05-27):
+
+| axis | first build | second build |
+| --- | --- | --- |
+| hostname | a real builder name (infom01-amd64, ionos1-amd64, …) | `i-capture-the-hostname` (sentinel) |
+| domainname | `debian.net` | `i-capture-the-domainname` (sentinel) |
+| `CAPTURE_ENVIRONMENT` env | *unset* | `"I capture the environment"` (sentinel) |
+| `TZ` | `Etc/GMT+12` | `Etc/GMT-14` (26h apart) |
+| `LANG` / `LANGUAGE` / `LC_ALL` | `C.UTF-8` / `en_US:en` / unset | `et_EE.UTF-8` (amd64) or `nl_BE.UTF-8` (arm64) |
+| `PATH` | normal | normal + `/i/capture/the/path` |
+| build user (uid/gid/name/HOME) | 1111 / `pbuilder1` / `…/first-build` | 2222 / `pbuilder2` / `…/second-build` |
+| `niceness` | 10 | 11 |
+| `/bin/sh` | dash | bash |
+| login shell, GECOS | `/bin/sh`, "first user,…" | `/bin/bash`, "second user,…" |
+| `DEB_BUILD_OPTIONS` parallel | e.g. `parallel=16` | `nocheck parallel=15` (different count) |
+| UTS namespace | shared with host | `unshare --uts` |
+| kernel version | one of a set | systematically varied (amd64) |
+| umask | 0022 | 0002 |
+| date/time | today | +398 days (and "future builds" run +6h23min ahead) |
+
+Two structural lessons beyond the list:
+
+- **Sentinel/canary strings** (`i-capture-the-hostname`, `"I capture the environment"`): the
+  varied value is a *recognizable marker*, so a diff doesn't just say "differs" — it says "your
+  output literally contains the hostname." This is a strictly better failure-mode than an opaque
+  byte-diff, and it's cheap. (Dorc analogue: when varying a decision-irrelevant receipt field
+  between runs, set it to a sentinel so any leak into a decision is *self-identifying* in the
+  diff.) +SURE this is adoptable and high-value.
+- **The variance set was WALKED BACK over time** [A-debian-variations-2026, finding-variance-
+  walkback]: "build path … *(not varied anymore)*" and filesystem-order via disorderfs
+  "*temporarily not* varied." These were *historically* varied and got tuned down — direct
+  evidence that maximal variance injection has a noise cost that even the flagship project
+  retreated from on specific axes. ~SUSPECT the lesson is: variance axes need individual
+  enable/disable, because some are higher-noise-per-bug-caught than others.
+
+**finding-reprotest-tool (+SURE).** The variance-injection is packaged as a reusable tool,
+`reprotest` [A-rb-tools-2026]: "reprotest builds the same source code in different environments
+and then checks the binaries produced by the builds to see if changing the environment, without
+changing the source code, changed the generated binaries." And the *adversarial filesystem*,
+`disorderfs`: "an overlay FUSE filesystem that deliberately introduces non-determinism into
+filesystem metadata. For example, it can randomize the order in which directory entries are
+read." disorderfs is the purest "variance injection for the ordering leak" — it actively
+randomizes `readdir` order to flush out ordering-dependence. (Dorc analogue: a test harness that
+*randomizes* the iteration order of any collection feeding a decision — the dynamic complement
+to the BTreeMap static mandate; see §7.)
+
+**finding-distro-repro-rates (+SURE).** Current reproducibility fractions, with dates:
+
+- **Debian forky/amd64: 95.4%** (36403/38170); unstable/amd64 94.0%; experimental only 67.1%
+  [A-debian-reproducible-2026, fetched 2026-06-11]. Debian micronews 2025-05-03: "Debian
+  testing/trixie release on amd64 is now reproducible for over 95%" [B-debian-micronews-2025].
+- **NixOS GNOME ISO: 95.18%** (4621/4855); minimal ISO historically ~99.77% [A-nixos-r13y-2026 /
+  B-r13y-2021]. At nixpkgs scale, a Télécom-Paris study rebuilt 709,816 packages and found
+  "between 69 and 91% with an upward trend" bitwise, ">99%" rebuildability [B-malka-nixpkgs-2025].
+- **Yocto: 100.00%** (38127/38127) [B-yocto-repro-2026].
+- **Arch:** dashboard is JS-rendered; live % not captured (gap).
+
+**finding-rebuilderd (+SURE).** The independent-rebuild verifier, `rebuilderd`
+[B-rebuilderd-2026]: "monitors the package repository of a linux distribution and uses rebuilder
+backends … to verify the provided binary packages can be reproduced from the given source code
+… optionally generates a report of differences with diffoscope." Distinct from Debian's
+double-build: rebuilderd compares a fresh rebuild against the *actually-shipped* binary (the
+supply-chain-attestation use case). Per-worker cost: "at least 16 GiB RAM … closer to 32 GiB"
+for all packages [B-archwiki-rebuilderd-2026]. Used by `reproduce.debian.net` and
+`reproducible.archlinux.org`.
+
+**finding-repro-recurring-offenders (+SURE).** The ranked cause data:
+
+- **Timestamps / embedded build dates are #1.** A Java study of "12,803 unreproducible
+  artifacts": "Timestamps are the most common cause of unreproducibility in our dataset"
+  [B-arxiv-java-2025]. The nixpkgs study: "about 15% of failures are due to embedded build
+  dates" [B-rb-report-2025-01].
+- **Debian's machine-ranked #1 single issue: "gcc captures build path" — 1,842 packages
+  affected** (popcon-summed score 13.8M) [A-debian-issues-2026].
+- **Cost/utility perception:** a survey of 17 experts — "reproducible builds had a very high
+  utility rating from 58.8% participants, but also a high-cost rating from 70.6%"
+  [B-wikipedia-reproducible-2026]. The compute is sponsor-donated (IONOS VMs, OSUOSL, Codethink),
+  no published budget (finding-repro-cost-gap).
+
