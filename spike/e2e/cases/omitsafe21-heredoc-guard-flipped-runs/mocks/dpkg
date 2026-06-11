@@ -2,7 +2,7 @@
 # INERT shim for `dpkg` — the APPLY-TIME host: nginx ABSENT (rc 1), FLIPPED from the
 # authored probe-time fixture (holds rc=0). The kept live guard reads THIS world and
 # fires the `||`. Read-only; logs.
-printf 'ran: %s %s\n' "${0##*/}" "$*" >>"$DORC_LOG"
+. "${0%/*}/.log"; _dorc_logged "$@"
 case $2 in
   nginx) exit 1 ;;  # absent at APPLY time (flipped from the authored probe)
   *)     exit 1 ;;

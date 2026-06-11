@@ -2,5 +2,5 @@
 # INERT shim for `apt-get` — the fold-dead-but-KEPT install. The flipped live guard fails
 # at apply time, so the `||` fires and THIS MUST RUN (kFAIL-perform). Pre-fix the artifact
 # carried `:` here and logged nothing. Logs; exits 0 (list rc 0 ⇒ the artifact exits 0).
-printf 'ran: %s %s\n' "${0##*/}" "$*" >>"$DORC_LOG"
+. "${0%/*}/.log"; _dorc_logged "$@"
 exit 0
