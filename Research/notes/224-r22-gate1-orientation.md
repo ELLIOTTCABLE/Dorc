@@ -160,6 +160,35 @@ warm-ups (d×d host-flip fixture; var-resolved redirect case) → 22x synthesis 
   durables early/often; no gigantic lose-it-all tasks). g1-1/f-1 explainer demanded
   slow-and-thorough, frontloaded (delivered in chat this turn). All rulings direct
   in-session (no [spike]/[product] marker needed).
+- ru-11 (human, post-explainer; WELD): receipts are FULLY one-way — the "may REFUSE"
+  allowance is OMITTED from the principle itself; neither allow nor reject may be
+  affected by explanation-plane data, ever. Any receipt-prompted trigger must be
+  re-derived as a first-class fact ("hard agree… welded"). Consequence: the
+  erasability gate's decision assertion is strict equality permanently; any future
+  receipt-influenced behavior is a WELD re-litigation, not a default loosening.
+  Closes ask-zero-influence.
+- ru-12 (human, post-explainer): the matching partition is AUTH'D with two
+  corrections. (a) Naming honesty — stop saying "identical" when exemptions exist;
+  naming delegated to conductor → ADOPTED: "identity plane" (byte-exact) vs "exempt
+  plane" (closed enum of named reasons, per R4'/LLVM); the gate asserts
+  IDENTITY-EXACT under strip+variance. (b) Artifact floor — comment text inside
+  shipped .sh artifacts is NOT exempt: "shipped .sh artifacts are byte-identical" is
+  the minimum floor; droppable stability promises live above it (separate --verbose
+  output, temp .log files, why/dump channels). INVERSION AUTH'D: do not ship
+  unstable tracing/receipt-derived data into finished artifacts in default modes.
+  Last-resort sidecar shape if artifact-adjacent receipts ever become genuinely
+  necessary (stable per-line ID-comment + <artifact>.sh.log mapping IDs→receipts) —
+  human explicitly dislikes it; do not pursue unless necessary. Closes
+  ask-partition + ask-comments.
+- Conductor analysis recorded with ru-12 (~SUSPECT, verify at arch-1 spec time): the
+  EXISTING provenance_comment emitter is fact-plane-derived (edit/disposition
+  ledger, not receipts), so current artifact comments sit safely INSIDE the
+  byte-exact floor; what ru-12 forbids is the drift 21Z's wishlist pointed at
+  (enriching artifact comments with receipt fragments). Receipt-derived explanation
+  renders OUT-OF-ARTIFACT (CLI, why-query, dashboard); vp-12's
+  evidence-in-the-user's-artifact is satisfied by the why-query SHOWING sh text,
+  not by embedding it. 21Z note-C's dropped-disclosure hole now has a ruled
+  direction: the carrier is the OOB lane/log, never fancier in-artifact comments.
 
 ## §8 PHASE-R launch (dispatch ledger v1)
 
@@ -292,3 +321,34 @@ warm-ups (d×d host-flip fixture; var-resolved redirect case) → 22x synthesis 
   GRAPH (Stan/dune; CompCert 5283-line database). Ratchet: env-side -D warnings,
   never #![deny(warnings)] (documented anti-pattern). cargo-mutants on error paths =
   adoptable-this-round.
+- R4' rq-F → notes/229 (final `edf269d`): Opus, 173K harness-tokens for the top agent
+  + four gathering sub-subagents (87/120/113/143K ≈ 463K; agent-reported ~520K
+  all-in), 53 top-level tool uses, ~23 min, 1212 lines, 55 sources (all A/B). THE
+  GATE BLUEPRINT, three upgrades to the GATE-1 f-1 proposal: (1) partition-language —
+  adopt LLVM debugify's NAMED sanctioned-absence reasons over my severity-keyed
+  boolean: closed `Exempt::{Explanation, ReceiptId, OriginOrdering, Timing}` enum
+  assigned per-field AT THE DEFINITION SITE, gate FAILS on any field without an
+  explicit assignment (new fields included-by-default = the safe direction); pair
+  with canonicalize-don't-exempt for legitimately-varying compared fields.
+  (2) adversarial-variance — run-B doesn't just strip receipts, it injects variance
+  (reversed origin-set order, sentinel receipt IDs, varied DI'd hash seed — Debian's
+  ~20-axis blueprint + sentinel canaries that make leaks self-identifying);
+  DST-clean. (3) coverage-canary — the gate must prove it RAN
+  (GCC_COMPARE_DEBUG=-fcompare-debug-not-overridden precedent); rot evidence says
+  the failure mode is silent-no-op-while-green (the 80%-quarantine war story), and
+  the gate passes the Meiklejohn two-question test (receipt-into-decision is
+  invisible to decision-only tests — a class nothing else catches). Precedents: GCC
+  -fcompare-debug shipped ~17 YEARS (253 tagged bugs); the Oliva doc states our
+  invariant verbatim ("debug information isn't supposed to modify the executable
+  code in any way whatsoever"); rustc's cautionary inverse — no in-tree gate, #75362
+  open since 2020, regressed the moment it first succeeded (1.44.1→1.45.0).
+  mechanism-unord-newtype (~2-4d): iteration-API-suppressed map newtype (rustc
+  UnordMap precedent) turns the f-2 ordering-leak class into a COMPILE ERROR.
+  Ordering = the most entangled leak category (LC_ALL=C sort). Caveat carried:
+  sub-subagent-gathered B-rows are quote-trustworthy but interpretation ~SUSPECT
+  pending conductor re-verification; six sources marked [self-read].
+- PHASE-R GATHERING COMPLETE at this row. Wave totals (harness): R0' 135K · R1' 179K
+  · R2' 178K · R3' 164K · R4' 173K+~463K subs · W1 212K ≈ 1.50M, plus the stopped
+  first wave (partial turns, banked scratch). All five notes committed; corpus 98/98
+  ×2 green at `5b58c5f`+notes; next = 22Z, then digestion (#9) → synthesis (#3) →
+  GATE-2 (#4).
