@@ -1011,7 +1011,22 @@ warm-ups (d×d host-flip fixture; var-resolved redirect case) → 22x synthesis 
   preservation (own overclaim recorded) · act-6 adjudicate f-3b/f-7 intent +
   fix the stale doc-comment (fold into act-1..3 PR). The four deliberate
   changes (drop-A lines, s-2 spans, 22B enrichments) are ratified work —
-  action is CERTIFICATION (act-4 pins), not reversion. Scope: the
+  action is CERTIFICATION (act-4 pins), not reversion.
+- B7 x3-FIX dispatched (human ack'd the action direction; conductor
+  CONTINUING in-context per human lean — fresh-conductor note in 22Z was
+  written under compromised-resumption conditions, no longer binding;
+  handoff only at a clean post-harvest seam if compaction nears): worktree
+  %TEMP%\dorc-r22\b7-x3fix, branch ai/r22-x3fix @ `2d09a9e`, Opus,
+  fb-19-clamped. Scope: act-1 check.rs typed-path (registry bypass dies;
+  spanless allowlist honestly 6→8 with documented WHY + emit-vs-registry
+  agreement test) · act-2 retire-guard real source→list direction,
+  negative-controlled · act-3 constructed-scan excludes diag.rs's own match
+  arms, negative-controlled; needle-shape limit documented per ru-26 · act-6
+  f-7 restore-or-document + doc-comment fix, f-3b reachability-check then
+  restore-or-document. Behavior-preserving except explicit restorations;
+  zero golden/stdout change expected. B8 (act-4 + residual-1 must-emit pins,
+  the x3n unpinned∧changed list as worklist) dispatches at B7 harvest —
+  serialized: file overlap on core tests. Token/time at completion. Scope: the
   22B §3/§4 spine in core + s-2 classify-signature widening EARLY + report()
   span rendering (drop-A) + gate-grep with seeded self-cleaning allow-list +
   the three §5 worked-example migrations as proving set. Opus tier (ru-23
