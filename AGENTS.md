@@ -46,10 +46,11 @@ Some terms have shifted throughout the planning documents; be careful of these m
 
 ## Conversation style
 - try to use greppable, pointable reference-slugs in documentation and conversation:
-  - source-ID-with-grading (as per the interactive-research skill instructions; [Z-slug-id-1995])
+  - particually for any *source*: *must* use source-ID-with-grading (as per the interactive-research skill instructions; [Z-slug-id-1995])
   - similarly, reuse the named 'knobs' when referring to the shared-axis/"pair-in-tension" design-space components we're working with (see `KNOBS.md`)
-  - when generating 'lists' during conversation (a list of questions, a list of results, a list of nits ...), try and give them vaguely-unique slug-IDs (`nit-1. nit-2. nit-3.`) instead of bare Markdown lists (`1. 2. 3.`), to make it easier to refer-back (and help me see what *you're* referring-back to)
-  - try and use real/short words, or a clear abbrev (`axis-N`, `concl-N`, etc); or at least follow prior-art in the documents. avoid opaque IDs like `cc-1`
+  - when generating 'lists' during conversation (a list of questions, a list of results, a list of nits ...), try and give them (round-specific) slug-IDs (`17-nit1. 17-nit2. 17-nit3.`) instead of bare Markdown lists (`1. 2. 3.`), to make it easier to refer-back (and help me see what *you're* referring-back to)
+  - try and use real/short words, or a clear abbrev (`22-axisN`, `23-conclN`, etc); or at least follow prior-art in the documents. avoid opaque IDs like `cc-1`, `w-7`, etc
+  - sanctioned/reused short-slugs: `NN-huN` for human comments/rulings, like `17-hu41`; `NN-fdN` for findings/results/conclusions, like `22-fd3`
 
 - while using dense reasoning is preferable in general (to yourself, in design-documents, and in subagent prompts), *when discussing a complex topic with the human*, attempt to break things down in simpler, clearer language. (this mostly applies when asking a specific question; denser 'reporting' mid-task is more acceptable.)
   - try to explain/break-down references you make to other design-docs (cite/unroll/explain planning-corpus-slugs)
