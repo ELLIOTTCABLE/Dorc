@@ -23,15 +23,20 @@
 >   round-scoped list slugs (`22-nit1`); avoid opaque/unprefixed IDs (`cc-1`,
 >   `w-7`). The conductor's earlier `learn-N`/`w-N`/`act-N` slugs predate this and
 >   should migrate to the new scheme as they're next touched. Do NOT mass-rename.
-> - B7 (x-3 defect fixes, opus, branch ai/r22-x3fix, worktree b7-x3fix) was IN
->   FLIGHT at freeze: it had landed `783894a` (fix-1 check.rs typed-path) and was
->   continuing (fix-2 retire-guard, fix-3 constructed-scan, fix-4 adjudications).
->   It is ISOLATED — commits to its own branch only, harvests nothing. On restart:
->   check `git log ai/r22-x3fix` for its final state; it may have completed or been
->   interrupted (check for a dirty b7-x3fix worktree). NOTHING from it is harvested.
->   Its brief is 224 §10's B7 entry. DO NOT harvest without re-reviewing — the
->   spanless-allowlist 6→8 expansion (act-1) AMENDS a stated property and is a
->   human-disposal flag.
+> - B7 (x-3 defect fixes, opus, branch ai/r22-x3fix, worktree b7-x3fix) was
+>   STOPPED at freeze (TaskStop, status killed — it was confirmed actively
+>   mutating, not hung). DETERMINISTIC END STATE: branch tip `783894a` = fix-1
+>   ONLY (check.rs onto the typed path, severity from registry). fix-2
+>   (retire-guard), fix-3 (constructed-scan), fix-4 (the two adjudications) were
+>   NOT done — the b7-x3fix worktree was left with one uncommitted in-progress
+>   edit (`M spike/crates/core/tests/diag_tidy.rs`), which is DISCARDABLE
+>   (isolated; no value committed). `783894a` is isolated, harvests nothing into
+>   ai/spike3. On restart, the fix wave must be RE-DISPATCHED from 224 §10's B7
+>   brief (act-1..3 + act-6); treat `783894a` as either harvestable-after-review
+>   OR cleanly re-derivable — do NOT harvest without re-reviewing, because act-1's
+>   spanless-allowlist 6→8 expansion AMENDS a stated property (human-disposal
+>   flag, not a builder call). Simplest clean restart: discard the b7 worktree
+>   edit, re-dispatch B7 whole.
 > - OWED TO THE HUMAN (undelivered; the degraded conductor correctly did NOT
 >   attempt them): TaskList #13 (slow explainer of remaining round work) and #14
 >   (slow detailed unroll of learn-4's phrases). The human asked for these one at a
