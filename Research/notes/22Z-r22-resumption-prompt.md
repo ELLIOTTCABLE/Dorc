@@ -92,7 +92,11 @@ if the human re-hands it): quarantine 223. Do NOT read quarantine otherwise.
   ai/r22-arch3m2, tip `4085bd4`) HARVESTED by cherry-pick (`6f4862c`+`0e0a470`,
   fb-11 EMPTY). b5-e2equiet (tip `d14bfa2`) + b6-spanless (tip `3eb6283`) both
   HARVESTED by cherry-pick (`606dc5c`+`bf3b4e3`, fb-11 EMPTY; one combined
-  chain, deviation logged in §10). NO builders in flight.
+  chain, deviation logged in §10). x3n-neutral (ai/r22-x3n) + x3a-attack
+  (ai/r22-x3a) possibly IN FLIGHT @ 6657a65: the x-3 Fable crosscheck PAIR on
+  the arch-3 diag family (§10 tail entry) — a resuming successor checks those
+  branches/results FIRST, banks verdicts PRE-SANITIZED (process-1), and
+  presents BOTH passes to the human without collapsing them.
   PROCESS RULE (fb-19): every builder brief carries an explicit
   no-subagents/do-it-yourself clamp; sonnet-tier especially. PROCESS UPDATE:
   conductor gate chains run e2e with DORC_E2E_QUIET=1 (failures print

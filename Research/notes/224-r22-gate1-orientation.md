@@ -874,7 +874,26 @@ warm-ups (d×d host-flip fixture; var-resolved redirect case) → 22x synthesis 
   default byte-identity. arch-3-residual-2 RESOLVED. PROCESS UPDATE: conductor
   chains now run e2e with DORC_E2E_QUIET=1 (failures print verbatim, so the
   fb-17 read-the-output discipline is intact; unquieted remains the default
-  for builders/humans). Scope: the
+  for builders/humans).
+- x-3 CROSSCHECK PAIR dispatched (2026-06-12; human-ruled Fable-tier,
+  adversarial-crosscheck skill protocol — neutral + disowned-adversarial in
+  clean contexts; the round's second+third Fable spends): subject = the whole
+  arch-3 diag family (B3 spine / B4b sweep / B6 spanless / diag_tidy gate) at
+  base `6657a65`, all-legacy baseline `cb695a9`. Three test surfaces: (1)
+  systematic legacy-vs-new observable-output equivalence for all ~23 codes
+  (the comparison no builder produced; the corpus provably doesn't pin all
+  codes and B4b rewrote its own verifying assertions); (2) empirical
+  negative-control of every diag_tidy tripwire at HEAD (post-sweep grep-shape
+  drift = the concl-3 green-while-asserting-nothing class); (3) hunt the
+  remaining members of the cfg-top-node silent-change class. Exclusion set
+  briefed gently as already-recorded context (known unification, spanless six,
+  PROPOSED floors, abstract coverage-incompleteness), not as no-look zones.
+  x3n-neutral (branch ai/r22-x3n) + x3a-attack (branch ai/r22-x3a, may commit
+  PoC pins), both @ 6657a65, both fb-19-clamped, verdicts PRE-SANITIZED per
+  process-1. Conductor presents BOTH to the human per the skill (convergence =
+  signal; adversarial-only findings = suspect-until-checked); no single-verdict
+  collapse. Token/time at completion. IF RESUMING COLD: check both branches +
+  the two output notifications before any other action. Scope: the
   22B §3/§4 spine in core + s-2 classify-signature widening EARLY + report()
   span rendering (drop-A) + gate-grep with seeded self-cleaning allow-list +
   the three §5 worked-example migrations as proving set. Opus tier (ru-23
