@@ -122,6 +122,14 @@ and where* (→ `Research/notes/20x-*.md`, append-only), not green tests.
   sanctioned exception to this charter's disposability: the spike PROVES the
   design, the real codebase extracts/reimplements it (extraction stays cheap;
   diag is a leaf). Nothing else gains design-for-keeps status by analogy.
+- **ru-26 churn-avoidance disclosure.** Any implementation shaped by a
+  "would churn unnecessarily" scope-cut — at ANY point in the spike — MUST
+  carry a nearby inline code note stating plainly that it was deliberately
+  scoped-down for spike-specific churn-avoidance, so the cut can NEVER leak
+  silently into greenfield work referencing the spike (a leaked spike
+  constraint defeats the point of a spike). Live instance: anything
+  not-handling-stderr (goldens, gates, pins) must say so, locally and
+  upfront, in the code it shapes.
 
 ## Hard invariants (do not violate; cite the slug when you rely on one)
 

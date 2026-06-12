@@ -282,6 +282,14 @@ warm-ups (d×d host-flip fixture; var-resolved redirect case) → 22x synthesis 
   paragraph of prose on immediate goals + context of what's done/being-done
   elsewhere + reading pointers — not rule-lists. Adopted for all subsequent
   dispatches; candidate fb-18 at round close.
+- ru-26 (human, 2026-06-12; code discipline, triggered by act-4's
+  stderr-goldens-rejected lean — which he otherwise ACK'D): any
+  implementation shaped by a "would churn unnecessarily" avoidance, at ANY
+  point in the spike, MUST carry a nearby inline note that it was
+  deliberately scoped-down for spike-specific churn reasons; such constraints
+  must NEVER leak into greenfield work referencing the spike (defeats the
+  spike's purpose). Live instance: anything not-handling-stderr says so
+  locally and upfront. Written into spike/CLAUDE.md standing rulings.
 - ru-25 (human, 2026-06-12; spike scope ADDITION): minimal-UI work added
   explicitly — his justification: the spike has not accumulated enough
   cruft/pain to make UI work unproductive or unrepresentative. ui-A: a

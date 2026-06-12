@@ -227,7 +227,9 @@ ru-24 Fable ask-first gate (2026-06-12): normal cost discipline; Fable-tier
 dispatches need ahead-of-time human approval + justification; lean = reserve
 Fable for ADVERSARIAL-CROSSCHECK (the skill's pair protocol — lone-hostile
 dispatches without the skill are poor practice), rare exceptions for
-extremely sensitive code.
+extremely sensitive code. ru-26 churn-avoidance disclosure (2026-06-12):
+every "avoid churn" scope-cut carries a nearby inline spike-specific note;
+never leaks into greenfield (full text spike/CLAUDE.md + 224 §7).
 Standing round-21 rulings in spike/CLAUDE.md hold (mutation-analysis impossible;
 TOCTOU WONTFIX; no intra-host reordering; rc opaque; "skip" banned; identity
 declared-never-inferred).
