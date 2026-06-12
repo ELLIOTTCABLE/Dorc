@@ -3,9 +3,50 @@
 > Cold-conductor onboarding document. If you are reading this to resume round-22
 > after a conductor death OR a context-compromise: this file + notes/224 (the round
 > ledger, esp. §7 rulings / §10 dispatch / §11 self-audit) + plans/22A (the research
-> truth) + TaskList are your state. Updated at: build phase — WAVE-2 COMPLETE
-> (arch-3 core done: B3 spine + B4b sweep both harvested, chain green, zero
-> goldens; fb-19 logged); NEXT = arch-2 prep, fresh conductor turn (2026-06-11).
+> truth) + TaskList are your state. Updated at: FROZEN FOR CLEAN RESTART
+> (2026-06-12). The conductor model-degraded again on accumulated security-adjacent
+> vocabulary (the x-3 crosscheck was on the diag system, but the report-ingestion +
+> the corpus's hardening-vocabulary cumulatively re-poisoned the window — process-1
+> repeating one level up); human is restarting a fresh Fable conductor. THIS TURN
+> MADE NO DECISIONS — it only recorded state and froze. See "FREEZE STATE" block
+> directly below before anything else.
+>
+> ## FREEZE STATE (read FIRST on restart, 2026-06-12)
+> - Durable code HEAD on ai/spike3: `d709b0c` (notes-only since B4b's `0e0a470`;
+>   the actual diag code is at `0e0a470`/arch-3-core-complete). Main worktree has
+>   TWO uncommitted non-conductor edits: `TODO.md` (human's noisy-harness line) and
+>   `AGENTS.md` (HUMAN EDIT — new slug conventions, see below). Neither is the
+>   conductor's to commit. Leave for the human.
+> - NEW HUMAN SLUG CONVENTION (uncommitted in AGENTS.md, 2026-06-12, BINDING going
+>   forward): round-prefixed slugs — `NN-huN` for human comments/rulings (e.g.
+>   `22-hu41`), `NN-fdN` for findings/results/conclusions (e.g. `22-fd3`),
+>   round-scoped list slugs (`22-nit1`); avoid opaque/unprefixed IDs (`cc-1`,
+>   `w-7`). The conductor's earlier `learn-N`/`w-N`/`act-N` slugs predate this and
+>   should migrate to the new scheme as they're next touched. Do NOT mass-rename.
+> - B7 (x-3 defect fixes, opus, branch ai/r22-x3fix, worktree b7-x3fix) was IN
+>   FLIGHT at freeze: it had landed `783894a` (fix-1 check.rs typed-path) and was
+>   continuing (fix-2 retire-guard, fix-3 constructed-scan, fix-4 adjudications).
+>   It is ISOLATED — commits to its own branch only, harvests nothing. On restart:
+>   check `git log ai/r22-x3fix` for its final state; it may have completed or been
+>   interrupted (check for a dirty b7-x3fix worktree). NOTHING from it is harvested.
+>   Its brief is 224 §10's B7 entry. DO NOT harvest without re-reviewing — the
+>   spanless-allowlist 6→8 expansion (act-1) AMENDS a stated property and is a
+>   human-disposal flag.
+> - OWED TO THE HUMAN (undelivered; the degraded conductor correctly did NOT
+>   attempt them): TaskList #13 (slow explainer of remaining round work) and #14
+>   (slow detailed unroll of learn-4's phrases). The human asked for these one at a
+>   time, awaiting his ack between. Deliver on a clean turn.
+> - PENDING HUMAN DECISIONS, none made this freeze (do NOT pre-decide): (a) B7's
+>   spanless 6→8 amendment + fix-4 calls at its harvest; (b) ui-A/ui-B sequencing
+>   (ru-25) at arch-2 harvest; (c) the act-1..6 batch is dispatched as B7/B8 but
+>   their RESULTS need adjudication. (d) x-2 reshaped to skill-pair per ru-24, fr-2
+>   still owed by the human.
+> - Prior FROM-SCRATCH resume target (still valid after the freeze items above):
+>   arch-2 prep then arch-2 build (see "The arcs" + queue below).
+>
+> PRE-FREEZE STATUS (historical): build phase — WAVE-2 COMPLETE (arch-3 core done:
+> B3 spine + B4b sweep harvested; x-3 crosscheck pair done + adjudicated, fix
+> wave B7/B8 launched); NEXT = finish the fix wave, then arch-2 prep.
 
 ## Role
 
