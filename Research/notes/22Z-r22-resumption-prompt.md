@@ -144,7 +144,9 @@ tally line; keeps fb-17's no-pipe/real-rc/read-the-output discipline, just
 makes the output worth reading) — propose to the human at prep. Then arch-2
 build dispatch (emit-at-origin, mvs-1..5, remediation-class render,
 arch2-gate-obligation, rec-1 two-surfaces). x-2 (over-suppression) wants fr-2
-(VMCAI PDF) first. WAVE-3: arch-2 (emit-at-origin,
+(VMCAI PDF) first; per ru-24 its ru-14-era lone-hostile shape is SUPERSEDED —
+default to the adversarial-crosscheck skill pair, with the tier-ask put to the
+human at dispatch time. WAVE-3: arch-2 (emit-at-origin,
 mvs-1..5, remediation-class render, + arch2-gate-obligation; fold-or-re-derive
 x-1's coverage-doc test at prep) then arch-4-thin (cer-1..6, host-side durables
 per ru-21/22/23, traceparent tail — read OTel env-carriers spec first). x-2
@@ -290,6 +292,9 @@ brief agents COMPLETELY at launch; stop-and-relaunch is the only re-brief.
   `cb695a9` 22B fork-rename).
 - flag-zm-attribution (225): vp-26's slogan is the Sabelfeld–Sands gloss, NOT
   Zdancewic–Myers verbatim — cite as engineering-precedent, not a tight bound.
+- the ru-22(e) recorded future-round re-pass candidate: human notes
+  (2026-06-12) it is not currently actionable under model-tier availability
+  constraints; stays recorded-not-scheduled, revisit when constraints change.
 - flag-untracked-query-information (229): rustc's lint is a direct gate analogue —
   candidate dylint enforcement, machinery cost unknown. watch-1 (rec): cer-2's
   binary-hash refusal is a hostsim-seam-tier property, not corpus-shell-exec tier.
