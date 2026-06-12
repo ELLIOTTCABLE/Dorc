@@ -1012,6 +1012,15 @@ warm-ups (d×d host-flip fixture; var-resolved redirect case) → 22x synthesis 
   fix the stale doc-comment (fold into act-1..3 PR). The four deliberate
   changes (drop-A lines, s-2 spans, 22B enrichments) are ratified work —
   action is CERTIFICATION (act-4 pins), not reversion.
+- 22W-MATERIAL CORRECTION (human, 2026-06-12, on the conductor's in-chat
+  spike review): the "context-compromise was a non-event / cold resume lost
+  nothing" framing OVERSTATES. Demonstrated: the resume passed its gates and
+  produced no DETECTED loss. Not demonstrated (unmeasurable): whether the
+  round did a poorer job for the lost context — what the intact conductor
+  would have caught, weighed, or steered differently. Lack of proof is not
+  proof of absence; the effects at play are too subtle to settle empirically
+  (as usual in engineering). 22W must carry the durability claim in this
+  corrected, weaker form.
 - B7 x3-FIX dispatched (human ack'd the action direction; conductor
   CONTINUING in-context per human lean — fresh-conductor note in 22Z was
   written under compromised-resumption conditions, no longer binding;
