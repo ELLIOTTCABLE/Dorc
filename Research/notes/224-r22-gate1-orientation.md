@@ -906,7 +906,32 @@ warm-ups (d×d host-flip fixture; var-resolved redirect case) → 22x synthesis 
   process-1. Conductor presents BOTH to the human per the skill (convergence =
   signal; adversarial-only findings = suspect-until-checked); no single-verdict
   collapse. Token/time at completion. IF RESUMING COLD: check both branches +
-  the two output notifications before any other action. Scope: the
+  the two output notifications before any other action.
+- x3a RETURNED (Fable, 227,070 harness-tokens, 119 tools, ~45 min; verdict
+  sanitized-as-briefed; PoCs on ai/r22-x3a, each committed-then-reverted, tip
+  tree byte-identical to base; NOT harvested). Verdict summary (UNADJUDICATED
+  — held for x3n convergence): A/B executed both revisions over all 99 cases;
+  stdout 0/99 differ, stderr 78/99 differ. Observable: x3a-1 region lines
+  added universally (drop-A — deliberate, but goldens are stdout-only ⇒
+  structurally blind; the conductor's "zero golden diffs = behavior held"
+  framing was an overclaim); x3a-2 site-unresolvable message reshaped +
+  enriched (the 22B worked-example enrichment — deliberate-but-uncertified);
+  x3a-3 heredoc-refused gained a help line (same class); x3a-4 span
+  None→Some on three Notes (s-2 — deliberate, unpinned). Latent: x3a-5
+  check.rs lift_failure hardcodes Error via slug-extraction, BYPASSING
+  registry() — "severity only from the registry" is false for check-*; a
+  future registry edit is a silent no-op; no emit-vs-registry agreement test.
+  Gate evasions (PoC hashes on the attack branch): x3a-B dead-catalog passes
+  reachability (`e82b0c0` — the catalog's own match arms satisfy the grep);
+  x3a-C unregistered legacy code via const-indirection (`8e6e224`); x3a-D
+  spanless mint of a span-required code via binding-indirection (`8e6e224`;
+  scanner also false-positives on comment prose); x3a-E retire-guard VACUOUS
+  (`9db824d` — filter-then-assert-same-membership; cannot fire). ATTACKS THAT
+  FAILED (machinery held): severity drift beyond known cfg-top-node — none of
+  22; B4b message text character-identical across all 20 swept codes;
+  span-presence preserved on all 14 corpus-unreached codes; stdout artifact
+  byte-equal 0/99. Net shape: B4b's mechanical preservation is REAL; the
+  certification language and the tidy gate's anti-drift power are what failed. Scope: the
   22B §3/§4 spine in core + s-2 classify-signature widening EARLY + report()
   span rendering (drop-A) + gate-grep with seeded self-cleaning allow-list +
   the three §5 worked-example migrations as proving set. Opus tier (ru-23
