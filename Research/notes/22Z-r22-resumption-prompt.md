@@ -215,7 +215,9 @@ sonnet-mechanical dispatch tier. rec-1..rec-7 reconciliation batch: see 224 §10
 clauses; rec-4 heredoc-hole-resolved; rec-6 closed; rec-7 replay≠probe-exec gate).
 ru-24 Fable ask-first gate (2026-06-12): normal cost discipline; Fable-tier
 dispatches need ahead-of-time human approval + justification; lean = reserve
-Fable for adversarial review, rare exceptions for extremely sensitive code.
+Fable for ADVERSARIAL-CROSSCHECK (the skill's pair protocol — lone-hostile
+dispatches without the skill are poor practice), rare exceptions for
+extremely sensitive code.
 Standing round-21 rulings in spike/CLAUDE.md hold (mutation-analysis impossible;
 TOCTOU WONTFIX; no intra-host reordering; rc opaque; "skip" banned; identity
 declared-never-inferred).
