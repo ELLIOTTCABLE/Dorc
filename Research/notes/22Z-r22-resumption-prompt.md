@@ -143,7 +143,15 @@ candidate fix = a quiet-success knob in e2e/run.sh (failures verbatim + the
 tally line; keeps fb-17's no-pipe/real-rc/read-the-output discipline, just
 makes the output worth reading) — propose to the human at prep. Then arch-2
 build dispatch (emit-at-origin, mvs-1..5, remediation-class render,
-arch2-gate-obligation, rec-1 two-surfaces). x-2 (over-suppression) wants fr-2
+arch2-gate-obligation, rec-1 two-surfaces); the arch-2 prep turn ALSO
+adjudicates the x-3 proposed actions act-1..6 (§10; check.rs typed-path fix,
+retire-guard rewrite, constructed-scan fix, unpinned∧changed pins) with the
+human. THEN ru-25's additions: ui-A fair-shape CLI exercising every core
+behavioral mode (vacuous multi-hostsim only-as-driver — named rabbit-hole);
+ui-B maximally-minimal streaming proof (needs a DST timing/logical-clock
+seam — NEW design surface, spec before build); conductor lean: ui-A after
+arch-2, ui-B as r23-opener unless arch-4 lands light — human disposes at
+arch-2 harvest. x-2 (over-suppression) wants fr-2
 (VMCAI PDF) first; per ru-24 its ru-14-era lone-hostile shape is SUPERSEDED —
 default to the adversarial-crosscheck skill pair, with the tier-ask put to the
 human at dispatch time. WAVE-3: arch-2 (emit-at-origin,

@@ -282,6 +282,19 @@ warm-ups (d×d host-flip fixture; var-resolved redirect case) → 22x synthesis 
   paragraph of prose on immediate goals + context of what's done/being-done
   elsewhere + reading pointers — not rule-lists. Adopted for all subsequent
   dispatches; candidate fb-18 at round close.
+- ru-25 (human, 2026-06-12; spike scope ADDITION): minimal-UI work added
+  explicitly — his justification: the spike has not accumulated enough
+  cruft/pain to make UI work unproductive or unrepresentative. ui-A: a
+  fair-shape CLI over the core invocation modes discussed across the corpus
+  (NOT flag-complete) such that every behavioral mode of the core is
+  exercised; a vacuous multi-hostsim-in-DST is sanctioned ONLY as a driver —
+  named rabbit-hole, avoid. ui-B: a very-focused STREAMING proof — the one
+  feature threading every component with zero testing to date; maximally
+  minimal acceptable (ANSI-sequence update emission or least-effort
+  equivalent); human expects a DST timing/logical-clock dependency. Escape
+  valve (human's words): if the spike grows heavy, this becomes r23.
+  Continuity: ui-A ≈ ru-20's ui-3 phased-CLI shape; ui-B ≈ a minimal ui-2
+  streaming slice — the contracts stay plane-based, these are consumers.
 - ru-24 (human, 2026-06-12; token-economics normalized; lean wording corrected
   by the human immediately after first recording): the end-of-window burn is
   OVER; normal cost discipline applies. FABLE-tier dispatches now require
@@ -931,7 +944,66 @@ warm-ups (d×d host-flip fixture; var-resolved redirect case) → 22x synthesis 
   22; B4b message text character-identical across all 20 swept codes;
   span-presence preserved on all 14 corpus-unreached codes; stdout artifact
   byte-equal 0/99. Net shape: B4b's mechanical preservation is REAL; the
-  certification language and the tidy gate's anti-drift power are what failed. Scope: the
+  certification language and the tidy gate's anti-drift power are what failed.
+- x3n RETURNED (Fable, 307,926 harness-tokens, 125 tools, ~50 min; worktree
+  left clean, scratch baseline removed). Verdict: none of the three areas
+  fully clean. Area-1 fidelity: f-1 region lines (=x3a-1) · f-2
+  site-unresolvable rewrite (=x3a-2) · f-3 cmdsub-operand-top span gain
+  (=x3a-4) PLUS member-family emission 2→1 (x3n-ONLY; -GUESS reachability,
+  parser may reject the triggering shape) · f-4/f-5 redir/inner-nonleaf span
+  gains (=x3a-4) · f-6 heredoc help line (=x3a-3) · f-7 site-unresolvable
+  no-matching-step defensive path now emits NOTHING + stale doc-comment
+  (x3n-ONLY) · f-8 the known cfg-top-node depth-limit unification is pinned
+  by NOTHING (no unit test, no corpus reach — enriches the known item).
+  Verified-identical list covers the other 18 codes byte-level. Area-2 gate
+  efficacy (all empirical, mutate→test→revert): t-1 "every variant
+  constructed" VACUOUS for all 23 (diag.rs's own match arms satisfy the grep;
+  deleted a sole production emit → green) = x3a-B, stronger proof · t-2
+  retire-guard TAUTOLOGICAL (filter-then-assert same membership; full silent
+  retirement → green) = x3a-E · t-3 working invariants enumerated (rename
+  -drift, legacy A+B, spanless A; spanless B fails loud-by-staleness BUT its
+  failure message instructs deleting the entry = institutionalizing the
+  evasion) · t-4 SYSTEMIC: non-literal `DiagCode(expr)` emits bypass all five
+  tests; check.rs lift_failure is the live instance (severity hardcoded,
+  registry bypassed, span optionally None ⇒ structurally EIGHT codes can emit
+  span-less, not six) = x3a-5 + x3a-C unified · t-5 gate-3 is one-directional
+  error[-only (severity downgrades + vanished errors invisible; warning[
+  patterns in 3 expected-diagnostics files are inert dead weight; x3n-ONLY).
+  Area-3 coverage map (x3n-ONLY): e2e reaches 9 of 23 codes;
+  PINNED-BY-NOTHING: effect-kind-disagreement, oracle-missing-kind,
+  oracle-non-declaration, oracle-non-literal-kind, check-out-of-dialect,
+  check-unterminated, syntax-malformed. UNPINNED∧CHANGED cross-cut: the three
+  span-gain dq codes, site-unresolvable prose, heredoc help line, cfg-top-node
+  depth site, the universal region lines.
+- x-3 CONVERGENCE MAP (conductor): CONVERGENT-BOTH (highest trust): the four
+  deliberate-but-uncertified observable change classes (f-1/2/3a/4/5/6 ≡
+  x3a-1/2/3/4); t-1≡x3a-B and t-2≡x3a-E (both empirically proven twice,
+  same root causes); t-4≡x3a-5+C (the indirection-bypass class, found from
+  opposite directions); B4b's 20-code text+severity fidelity REAL; stdout
+  0/99; no severity drift beyond the known one. NEUTRAL-ONLY (no hostile
+  incentive — treat as solid leads): f-3b member-emission 2→1, f-7 silenced
+  defensive path, t-5 gate-3 directionality + dead patterns, the coverage
+  map, t-3's bad failure-message nuance. ADVERSARIAL-ONLY (suspect-until-
+  checked per protocol, though all carry green PoC commits on ai/r22-x3a):
+  x3a-D's specific binding-form NEW-mint evasion (x3n tested adjacent cells:
+  literal-new caught, binding-existing caught-by-staleness; root cause
+  converges). NO material contradictions between the passes. Pair cost:
+  ~535K Fable harness-tokens combined.
+- CONDUCTOR PROPOSED ACTIONS (pending human disposal; none executed): act-1
+  fix check.rs lift_failure to route through the typed path (kills the
+  registry-bypass severity fork, restores the six-code spanless boundary) ·
+  act-2 rewrite the retire-guard with a real committed-source→list direction
+  · act-3 make "every variant constructed" scan production emits only (the
+  test's own comment already describes the unimplemented exclusion) — or
+  re-doc it honestly · act-4 pin the UNPINNED∧CHANGED set with per-code unit
+  assertions (absorbs into residual-1 must-emit work; option of stderr
+  goldens REJECTED-lean: 78/99 churn) · act-5 process/22W: builders must
+  separate "preserved" from "deliberately-changed-per-ruling" per surface;
+  conductor must not equate stdout-golden-stability with behavior
+  preservation (own overclaim recorded) · act-6 adjudicate f-3b/f-7 intent +
+  fix the stale doc-comment (fold into act-1..3 PR). The four deliberate
+  changes (drop-A lines, s-2 spans, 22B enrichments) are ratified work —
+  action is CERTIFICATION (act-4 pins), not reversion. Scope: the
   22B §3/§4 spine in core + s-2 classify-signature widening EARLY + report()
   span rendering (drop-A) + gate-grep with seeded self-cleaning allow-list +
   the three §5 worked-example migrations as proving set. Opus tier (ru-23
