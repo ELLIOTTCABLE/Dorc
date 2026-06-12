@@ -282,6 +282,15 @@ warm-ups (d×d host-flip fixture; var-resolved redirect case) → 22x synthesis 
   paragraph of prose on immediate goals + context of what's done/being-done
   elsewhere + reading pointers — not rule-lists. Adopted for all subsequent
   dispatches; candidate fb-18 at round close.
+- ru-24 (human, 2026-06-12; token-economics normalized): the end-of-window
+  burn is OVER; normal cost discipline applies. FABLE-tier dispatches now
+  require ahead-of-time human approval with explicit per-dispatch
+  justification. Human lean (gentle, not welded): reserve Fable for
+  ADVERSARIAL REVIEW — suspected highest value-per-token there vs
+  implementation — with rare exceptions for extremely sensitive code regions.
+  Refines ru-14 and the ru-23 three-tier discipline: the fable tier gains an
+  ask-first gate. The in-flight x-3 pair (pre-authorized this window) is
+  unaffected.
 - fr-criticality ruling context (conductor answer, recorded): fr-1 (CACM WER paper)
   = verification garnish, drop-in-whenever; fr-2 (VMCAI'12) = drop-in-later but with
   a soft deadline — wanted before arch-2's over-suppression hostile pass (crosscheck

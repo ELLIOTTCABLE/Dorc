@@ -213,6 +213,9 @@ default=stream+auto-retain, no marginal cost) + rec-6 CLOSED (cause-tagged) +
 sonnet-mechanical dispatch tier. rec-1..rec-7 reconciliation batch: see 224 §10/§11
 (rec-1 two-surfaces RATIFIED-in-substance via ru-20; rec-2/3/5 transport/at-rest
 clauses; rec-4 heredoc-hole-resolved; rec-6 closed; rec-7 replay≠probe-exec gate).
+ru-24 Fable ask-first gate (2026-06-12): normal cost discipline; Fable-tier
+dispatches need ahead-of-time human approval + justification; lean = reserve
+Fable for adversarial review, rare exceptions for extremely sensitive code.
 Standing round-21 rulings in spike/CLAUDE.md hold (mutation-analysis impossible;
 TOCTOU WONTFIX; no intra-host reordering; rc opaque; "skip" banned; identity
 declared-never-inferred).
