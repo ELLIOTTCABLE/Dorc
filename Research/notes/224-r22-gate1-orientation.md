@@ -1301,6 +1301,21 @@ warm-ups (d×d host-flip fixture; var-resolved redirect case) → 22x synthesis 
   `classify_src_diags` + count by `dq-cmdsub-operand-top`). Until B8 lands, the
   harvested f-3b doc on ai/spike3 is KNOWN-FALSE (comment-only; flagged here).
 
+- B8 DISPATCHED (2026-06-13, Opus, fb-19-clamped, human "Proceed"): worktree
+  %TEMP%\dorc-r22\b8-mustemit, branch ai/r22-b8-mustemit, base = ai/spike3 HEAD
+  `37703cb` (rev-parse-verified, mise trusted). Four parts, granular commits:
+  PART A f-3b doc correction (effect.rs emit_cmdsub_operand_top + member_family
+  comment + value.rs member_argv field doc → the 22-q4 truth; NO assert; the
+  fd-1..fd-4 facts handed as confirm-then-correct) · PART B pinning test (loop
+  body non-member ⊤ operand ⇒ MustRun + EXACTLY ONE dq-cmdsub-operand-top;
+  count-not-presence, told to STOP if ≠1) · PART C must-emit audit — map all 23
+  codes to driving tests, per-code pins for the unpinned set (x3n: the 7
+  pinned-by-nothing + the UNPINNED∧CHANGED cross-cut), honest call-out for any
+  un-pinnable code, stderr-goldens rejected · PART D the two needle-shape
+  honesty notes at the diag_tidy scans (residual-a single-line-arm,
+  residual-b non-core-cfg(test) basis). Token/time at completion. At harvest:
+  review (esp. PART B count + PART C honesty), verify chain, cherry-pick, fb-11.
+
 ## §11 Post-gating self-audit (append-only; conductor, after a window where several turns produced no output)
 
 > Written after several conductor turns produced nothing (model-gated on accumulated
