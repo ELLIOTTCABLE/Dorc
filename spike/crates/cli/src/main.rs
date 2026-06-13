@@ -285,8 +285,16 @@ fn emit_debug_argv(
 /// (`219` q-1.f silent-3). Mirrors the `report()`/`emit_debug_argv` plumbing: the
 /// `unresolvable` [`LeafId`]s share the apply plan's span-sorted site space
 /// (`inv-site-keyed-results`), so each maps to a [`dorc_plan::Step`]'s `ast`, whose span
-/// resolves to the book's source text. A site with no matching step (none expected — every
-/// unresolvable site is a runnable command leaf) is named by its bare id.
+/// resolves to the book's source text.
+///
+/// A site with NO matching step is SKIPPED (no diagnostic emitted), not named by a bare id. None is
+/// expected — every unresolvable site is a runnable command leaf with a plan step — so this is an
+/// unreachable defensive `?`-skip. NB (f-7, `224` §10): the legacy form could emit a bare-id/no-span
+/// Note here; the migration onto the mandatory-primary-span spine (`21Z` drop-B) replaced that with
+/// the skip rather than fabricate a span-less `SiteUnresolvable` for a path that cannot fire.
+/// Observably a no-op (the path is dead); restoring an emission would only add a spanless mint for a
+/// branch nothing reaches, so it stays a skip. The site still RUNS at apply (it is in
+/// `unresolvable`), so no disclosure-correctness is lost even if it somehow did fire.
 fn unresolvable_diagnostics(
     probe: &dorc_plan::ProbePlan,
     plan: &dorc_plan::Plan,

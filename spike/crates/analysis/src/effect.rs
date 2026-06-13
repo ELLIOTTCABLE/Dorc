@@ -101,9 +101,16 @@ impl DiagSite {
 }
 
 /// Emit the migrated `DiagCode::CmdsubOperandTop` disclosure (`22B` §5 worked-3), lowered to the
-/// legacy stream for the coexistence `Vec<Diagnostic>` accumulator. `site == None` ⇒ SUPPRESS
-/// (the member-family path discloses at the single-cell fallback instead, avoiding a
-/// double-report — see `member_family`).
+/// legacy stream for the coexistence `Vec<Diagnostic>` accumulator. `site == None` ⇒ SUPPRESS.
+///
+/// f-3b (`224` §10): the `None` caller is `member_family`'s per-member loop, and that suppressed
+/// path is in fact UNREACHABLE for a ⊤ disclosure — a member argv is concrete-BY-CONSTRUCTION (a
+/// site whose argv carries any ⊤ word is absent from `ValueFlow::member_argv` ⇒ `member_family`
+/// returns `None` at `value.member_argv(id)?` before ever calling here), so no `OperandPosition`
+/// ⊤ can arise inside the family resolution. The suppression is therefore belt-and-braces, not the
+/// deduplication of a live double-emit: any genuine site-level ⊤ is disclosed exactly ONCE, at the
+/// single-cell fallback (`node_effects`' `Some(site)` path, which holds the real ⊤ word and span).
+/// Kept as a guard so a future member channel that COULD carry ⊤ stays single-reported.
 ///
 /// The payload carries `cause: None`: the arch-1 ⊤-cause is minted PER-OPAQUE-NODE in
 /// `mint_top_causes`, which runs AFTER this effects pass (Opaqueness is the effects pass's
@@ -118,7 +125,7 @@ fn emit_cmdsub_operand_top(
     interner: &Interner,
 ) {
     let Some(site) = site else {
-        return; // member-family path: re-disclosed at the single-cell fallback (no double-report)
+        return; // member-family path: unreachable for ⊤ (concrete members); see fn doc f-3b
     };
     let diag = Diag::new(
         Code::CmdsubOperandTop(CmdsubOperandTop {
@@ -304,10 +311,10 @@ fn member_family(
     for argv in members {
         // Each member is a normal concrete argv; resolve it through the oracle check.
         // All-or-nothing: ANY non-single-establish member kills the whole family.
-        // `site: None` for the ⊤-disclosure (q-2): a ⊤ member collapses the family ⇒ the
-        // site falls back to the single-cell `argv` classification below, which re-runs
-        // `command_effect` with the REAL span and discloses there — emitting here too would
-        // double-report the same site.
+        // `site: None` (q-2 ⊤-disclosure suppressed): a member argv is concrete, so no ⊤-disclosure
+        // can fire here anyway (f-3b); the `None` is belt-and-braces. If a member resolves Opaque/
+        // Kill/etc. the family collapses (`_ => None` below) and the site falls back to the
+        // single-cell `argv` path, which discloses any real ⊤ once, with the REAL span.
         match command_effect(idx, checks, argv, interner, diags, None).as_slice() {
             [CommandEffect::Establishes(fact)] => family.push(*fact),
             _ => return None,
