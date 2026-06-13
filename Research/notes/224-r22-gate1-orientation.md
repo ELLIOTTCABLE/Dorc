@@ -1061,9 +1061,10 @@ warm-ups (d×d host-flip fixture; var-resolved redirect case) → 22x synthesis 
   edit — left IN PLACE for the human's inventory (freeze marked it discardable;
   fresh-worktree dispatch makes the discard unnecessary). Resume gate chain on
   the main tree at `44aa05d`, unpiped, e2e QUIET: ALL GREEN — build/fmt/clippy/
-  deny rc=0 · cargo test 488 passed / 0 failed / 1 known-ignore (SPEC) across all
-  suites incl. diag_tidy 5/5 + erasability 3/3 · e2e **99/99 ×2** real exits ·
-  typos rc=0. One 22Z
+  deny rc=0 · cargo test **493** passed / 0 failed / 1 known-ignore (SPEC) across
+  all suites incl. diag_tidy 5/5 + erasability 3/3 (an earlier draft of this entry
+  said 488 — conductor arithmetic slip, corrected against the chain output at B7b
+  review) · e2e **99/99 ×2** real exits · typos rc=0. One 22Z
   imprecision corrected there: code-HEAD equivalence class is `bf3b4e3` (B6), not
   `0e0a470` — B5/B6 code commits postdate 0e0a470; since bf3b4e3 only
   spike/CLAUDE.md gained the ru-26 doc lines (`2d09a9e`), rest notes-only.
@@ -1089,6 +1090,71 @@ warm-ups (d×d host-flip fixture; var-resolved redirect case) → 22x synthesis 
   convergence cross-check, then 783894a stays unharvested (human inventory).
   B8 (act-4 + residual-1 must-emit pins) still serialized behind this harvest
   (file overlap on core tests). Token/time at completion.
+- B7b RETURNED (2026-06-12): Opus, 286,776 harness-tokens (self-reported
+  ~135-150K — the fb-16 delta again; harness authoritative), 134 tool uses,
+  ~25 min. Builder series `817e050` (act-1/2/3) + `47d4e97` (act-6, doc-only)
+  @ 44aa05d; worktree clean. GRANULARITY DEVIATION reported by builder,
+  conductor-accepted-pending-human: act-1/2/3 in ONE commit — bidirectionally
+  gate-coupled through the self-cleaning spanless allowlist (6 entries with 8
+  minting fails one direction, 8 with 6 the other; b6-flag-3 atomic precedent).
+- CONDUCTOR REVIEW (both diffs read in full): act-1 four-cell (terminated ×
+  span) match, payloads spelled literal at each site (the grep-gates' eyes,
+  needle-shape limit documented per ru-26); agreement test compares emitted
+  severity to registry() SYMBOLICALLY (no hardcoded Error — survives a future
+  human re-grade; better discipline than the stopped B7's hardcoded variant).
+  act-2 extractor de-circularized (shape-scan bounded to the fn-slug body, the
+  MIGRATED_SLUGS pre-filter deleted) PLUS a new anti-vacuity guard (empty
+  extraction fails loud); two negative controls genuinely fire (catch_unwind
+  asserting panic). act-3 scan basis switched to production_emit_source
+  (excludes core); negative control is a PROPERTY-PIN (old basis contains a
+  core-only marker, new basis doesn't — honest about why a true
+  mutate-and-watch can't run in-test). act-6 both DOCUMENT, no observable
+  change: f-7 ?-skip argued unreachable (every unresolvable site is a runnable
+  leaf with a plan step; restoring would add a NINTH spanless mint for a dead
+  branch); f-3b argued unreachable-for-⊤ STRONGER than x3n's parser -GUESS
+  (member argvs concrete-by-construction — ⊤-carrying argvs never enter
+  ValueFlow::member_argv). Conductor residuals (recorded, spike-acceptable,
+  both needle-shape class): (residual-a, ~SUSPECT) the act-2 shape-scan reads
+  only single-line `=> "…"` arms; an exotically-formatted arm is invisible —
+  the non-empty guard catches catastrophic reshapes. (residual-b, +SURE,
+  conductor-verified in the tip source): `production_emit_source()` excludes
+  core but NOT non-core in-file `#[cfg(test)]` modules — so a test-only literal
+  construction (e.g. the new agreement test's `registry(&Code::CheckUnterminated
+  (…))` calls in oracle/src/check.rs) can satisfy the constructed-scan for a
+  code whose production emit vanished. Strictly better than the old
+  fully-vacuous basis (compile-coupling also softens the live instance), but
+  the scan remains best-effort: B8's per-code must-emit pins (test-DRIVEN
+  emission, not source grep) are the real liveness instrument — residual-b goes
+  into B8's brief verbatim, with a one-line honesty note at the scan to land in
+  B8's commit.
+- x3fix CONVERGENCE CHECK (the clean-re-derivation dividend): B7b never saw
+  `783894a`, yet the two act-1 derivations agree on EVERY substantive decision —
+  identical four-cell match structure, identical literal-spelling choice (both
+  with the needle-shape rationale written down), identical 6→8 growth, and both
+  independently invented an emit-vs-registry agreement test. Divergences are
+  cosmetic (interner param position/mutability; test naming) plus the
+  symbolic-vs-hardcoded assertion nuance above. `783894a` confirmed a strict
+  subset; stays UNHARVESTED (human inventory). Two independent derivations
+  converging this hard is strong process evidence the fix shape is forced, not
+  idiosyncratic.
+- Builder test-count claim 497/0/1 VERIFIED-CONSISTENT: main at 44aa05d is 493
+  (the corrected count above) + 3 negative controls + 1 agreement test = 497.
+- fb-17 SELF-LOG (conductor, third near-repeat this round): my first B7b
+  verify-chain script piped `cargo test | grep` and added a redirect-then-tail —
+  the literal scar — caught at launch, task killed before any result was read,
+  chain re-run literal/unpiped. The pattern recurs under token pressure;
+  pre-commit self-check stays mandatory.
+- B7b VERIFY CHAIN (conductor, on tip `47d4e97` in the builder worktree,
+  literal/unpiped, e2e QUIET): ALL GREEN — build/fmt/clippy/deny rc=0 · cargo
+  test **497/0/1-ignore** (diag_tidy 5→8: +3 negative controls; oracle lib
+  20→21: +1 agreement test; arithmetic closes against main's 493 exactly) ·
+  e2e **99/99 ×2** real exits · typos rc=0. Zero golden/stdout changes
+  corroborated (e2e green both runs, no goldens touched in either commit).
+- HARVEST GATED ON HUMAN (per the freeze's pending-decisions; presented
+  in-chat this turn as 22-q1/22-q2/22-q3): spanless 6→8 amendment · f-7/f-3b
+  document-vs-restore · granularity-deviation acceptance. Cherry-pick + fb-11
+  content-diff + post-harvest main-tree chain follow the rulings; B8 dispatch
+  follows the harvest.
 
 ## §11 Post-gating self-audit (append-only; conductor, after a window where several turns produced no output)
 
