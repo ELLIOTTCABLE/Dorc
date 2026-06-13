@@ -135,24 +135,15 @@ const LEGACY_ALLOW_LIST: &[&str] = &[];
 /// The SPANLESS-MINT allow-list (arch-3-residual-2): EXACTLY the codes permitted to construct a
 /// diagnostic with no primary span, via [`dorc_core::diag::Diag::new_spanless_site`]. Every other
 /// code MUST point at a real source span ([`dorc_core::diag::Diag::new`] takes a mandatory
-/// [`dorc_core::Span`] — `21Z` drop-B). These EIGHT are the give-up sites whose emit context
-/// genuinely has no location: the errexit-region pass, the effect-map kind-disagreement check, the
-/// four whole-file oracle-lifter contract verdicts, and (act-1, 6→8) the two check-dialect codes at
-/// END-OF-INPUT. Entries are PAYLOAD-struct names (the `Code::<Payload>(` construction marker the
-/// grep sees), paired with the wire slug for reviewers.
+/// [`dorc_core::Span`] — `21Z` drop-B). These SIX are the give-up sites whose emit context
+/// genuinely has no location: the errexit-region pass, the effect-map kind-disagreement check, and
+/// the four whole-file oracle-lifter contract verdicts. Entries are PAYLOAD-struct names (the
+/// `Code::<Payload>(` construction marker the grep sees), paired with the wire slug for reviewers.
 /// Two directions are enforced by [`spanless_mint_allow_list_is_exact`] (the "structural enforce"):
 /// * a `new_spanless_site(Code::X(…))` in PRODUCTION source whose `X` is NOT here ⇒ FAIL (a new
 ///   spanless mint must be justified and declared, or given a real span);
 /// * an `X` here that no longer appears at a production `new_spanless_site` site ⇒ FAIL (the entry
 ///   is stale — the code stopped minting spanless; remove it). Self-cleaning, like the legacy list.
-// GROWN 6→8 by the x3a-5/t-4 fix (`224` §10, act-1): routing `oracle::check::lift_failure` through
-// the typed spine (killing its registry-bypassing hardcoded `Error`) means the two check codes now
-// mint span-less when their give-up site is at END-OF-INPUT — an unterminated check body or a
-// `fail_here` at EOF genuinely has no token to point at. This AMENDS the stated six-code spanless
-// boundary; it is a HUMAN-disposed change (the conductor flags it at harvest), recorded here so the
-// growth is reviewer-visible at the gate. A cheap span could NOT honestly dissolve it: synthesizing
-// a zero-width end-of-input span would point the diagnostic at nothing real, which is worse than an
-// honest spanless mint. (If a future change threads a real end-span cheaply, drop the two entries.)
 const SPANLESS_SITE_PAYLOADS: &[&str] = &[
     "CfgErexitUnknown",           // cfg-errexit-unknown      (analysis/cfg.rs)
     "EffectKindDisagreement",     // effect-kind-disagreement (analysis/effect.rs)
@@ -160,9 +151,6 @@ const SPANLESS_SITE_PAYLOADS: &[&str] = &[
     "OracleMissingProbe",         // oracle-missing-probe     (oracle/lib.rs)
     "OracleDuplicateEffect",      // oracle-duplicate-effect  (oracle/lib.rs)
     "OracleProbeSelectRoundtrip", // oracle-probe-selector-roundtrip (oracle/lib.rs)
-    // act-1 (6→8): EOF give-up sites in the check dialect parser have no token span.
-    "CheckUnterminated", // check-unterminated       (oracle/check.rs lift_failure)
-    "CheckOutOfDialect", // check-out-of-dialect     (oracle/check.rs lift_failure)
 ];
 
 /// The crate-`src` roots scanned (the emit surface). The workspace's analyzer crates; `core`

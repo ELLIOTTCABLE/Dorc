@@ -74,26 +74,27 @@ const VERB_BINDING: &str = "verb";
 /// and the rest of the file still lifts.
 ///
 /// `is_unterminated`: selects `CheckUnterminated` vs `CheckOutOfDialect`. Both carry
-/// the message as `detail`; the span is `Option<Span>` because EOF sites (an
-/// unterminated body, a `fail_here` at end-of-input) have no token to point at.
+/// the message as `detail`. The `span` is ALWAYS real: every caller that previously had
+/// no token (an EOF give-up — an unterminated body, a `fail_here`/`true_with` at
+/// end-of-input) now synthesizes a zero-width end-of-input span via
+/// [`Parser::eof_span`](super::parser) (human ruling 22-q1: pointing the UI at
+/// end-of-file is right for a truncated/chopped check body), so these two codes lower
+/// through [`Diag::new`] like every other and do NOT join the spanless-mint allow-list.
 ///
 /// Routed through the typed [`Diag`] spine, NOT `Diagnostic::error` (x3a-5/t-4 fix,
 /// `224` §10): severity comes from [`dorc_core::diag::registry`] keyed on the code, never
 /// hardcoded here. Both check codes are registry-declared `Error`, so the lowered output is
 /// byte-identical to the prior `Diagnostic::error(…)` form — but a future registry edit now
-/// actually takes effect instead of being a silent no-op. A real span lowers via [`Diag::new`];
-/// a span-less EOF site lowers via [`Diag::new_spanless_site`] (the arch-3-residual-2 second-class
-/// door), so these two codes JOIN the spanless-mint allow-list (`core/tests/diag_tidy.rs` grows
-/// 6→8 — a HUMAN-disposed amendment to the stated six-code spanless boundary; see that gate).
+/// actually takes effect instead of being a silent no-op.
 ///
-/// The four `Code::Check…(…)` payloads are spelled as LITERALS at each `Diag::new`/
-/// `new_spanless_site` site (not built once into a variable and threaded), so the `diag_tidy`
-/// grep-shape scans actually SEE these emits — a `new_spanless_site(var)` form would be invisible
-/// to the needle-shape scanner (t-4 non-literal bypass) and silently defeat the spanless gate for
-/// exactly the two codes this fix adds to it. Verbose-on-purpose; the literals are the gate's eyes.
+/// The two `Code::Check…(…)` payloads are spelled as LITERALS at each `Diag::new` site (not
+/// built once into a variable and threaded), so the `diag_tidy` constructed-scan actually SEES
+/// these emits — a `Diag::new(var, …)` form would be invisible to the needle-shape scanner (t-4
+/// non-literal bypass) and read as dead catalog. Verbose-on-purpose; the literals are the gate's
+/// eyes.
 pub(crate) fn lift_failure(
     is_unterminated: bool,
-    span: Option<Span>,
+    span: Span,
     message: impl Into<String>,
     interner: &mut Interner,
 ) -> Diagnostic {
@@ -101,25 +102,20 @@ pub(crate) fn lift_failure(
     // `Diag::to_legacy` rebuilds the legacy `message` from the primary label plus the render body
     // (empty for these `detail`-only payloads), so `.label(msg)` reproduces the prior bare text
     // exactly. Severity/code/span all flow from the typed value (severity via `registry`).
-    let diag = match (is_unterminated, span) {
-        (true, Some(s)) => Diag::new(
+    let diag = if is_unterminated {
+        Diag::new(
             Code::CheckUnterminated(CheckUnterminated {
                 detail: msg.clone(),
             }),
-            s,
-        ),
-        (true, None) => Diag::new_spanless_site(Code::CheckUnterminated(CheckUnterminated {
-            detail: msg.clone(),
-        })),
-        (false, Some(s)) => Diag::new(
+            span,
+        )
+    } else {
+        Diag::new(
             Code::CheckOutOfDialect(CheckOutOfDialect {
                 detail: msg.clone(),
             }),
-            s,
-        ),
-        (false, None) => Diag::new_spanless_site(Code::CheckOutOfDialect(CheckOutOfDialect {
-            detail: msg.clone(),
-        })),
+            span,
+        )
     }
     .label(msg);
     diag.to_legacy(interner)
@@ -127,7 +123,7 @@ pub(crate) fn lift_failure(
 
 #[cfg(test)]
 mod lift_failure_tests {
-    use super::{Code, lift_failure};
+    use super::{Code, lift_checks, lift_failure};
     use dorc_core::diag::{CheckOutOfDialect, CheckUnterminated, registry};
     use dorc_core::{BytePos, Interner, Span};
 
@@ -141,45 +137,76 @@ mod lift_failure_tests {
     /// Adversarial discipline (`inv-probe-sourced-values` spirit): the assertion does NOT hardcode
     /// `Severity::Error` on the emit side — it compares the EMITTED severity against the registry's,
     /// so the test stays correct (and keeps protecting) if the human re-grades the code at harvest.
+    ///
+    /// Span is ALWAYS real now (human ruling 22-q1): `lift_failure` takes a [`Span`], not
+    /// `Option<Span>`, so this exercises the single real-span path per code (the EOF-synthesis path
+    /// is pinned separately in [`eof_give_up_carries_a_real_end_span`]).
     #[test]
     fn lift_failure_severity_agrees_with_registry() {
         let mut interner = Interner::default();
-        let span = Some(Span::new(BytePos(3), BytePos(7)));
-        // CheckUnterminated, with and without a span.
+        let span = Span::new(BytePos(3), BytePos(7));
         let want_unterm = registry(&Code::CheckUnterminated(CheckUnterminated {
             detail: String::new(),
         }))
         .severity;
-        for s in [span, None] {
-            let d = lift_failure(true, s, "unterminated", &mut interner);
-            assert_eq!(d.code.0, "check-unterminated");
-            assert_eq!(
-                d.severity, want_unterm,
-                "unterminated severity must equal the registry's, not a hardcoded value"
-            );
-            assert_eq!(
-                d.span, s,
-                "span flows through unchanged (Some preserved, None at EOF)"
-            );
-            assert_eq!(
-                d.message, "unterminated",
-                "message is the bare text (no body added)"
-            );
-        }
-        // CheckOutOfDialect, with and without a span.
+        let d = lift_failure(true, span, "unterminated", &mut interner);
+        assert_eq!(d.code.0, "check-unterminated");
+        assert_eq!(
+            d.severity, want_unterm,
+            "unterminated severity must equal the registry's, not a hardcoded value"
+        );
+        assert_eq!(d.span, Some(span), "span flows through unchanged");
+        assert_eq!(
+            d.message, "unterminated",
+            "message is the bare text (no body added)"
+        );
+
         let want_dialect = registry(&Code::CheckOutOfDialect(CheckOutOfDialect {
             detail: String::new(),
         }))
         .severity;
-        for s in [span, None] {
-            let d = lift_failure(false, s, "out of dialect", &mut interner);
-            assert_eq!(d.code.0, "check-out-of-dialect");
-            assert_eq!(
-                d.severity, want_dialect,
-                "out-of-dialect severity must equal the registry's, not a hardcoded value"
-            );
-            assert_eq!(d.span, s);
-            assert_eq!(d.message, "out of dialect");
-        }
+        let d = lift_failure(false, span, "out of dialect", &mut interner);
+        assert_eq!(d.code.0, "check-out-of-dialect");
+        assert_eq!(
+            d.severity, want_dialect,
+            "out-of-dialect severity must equal the registry's, not a hardcoded value"
+        );
+        assert_eq!(d.span, Some(span));
+        assert_eq!(d.message, "out of dialect");
+    }
+
+    /// An EOF give-up now carries a REAL zero-width end-of-input span, never a span-less mint
+    /// (human ruling 22-q1: point the UI at end-of-file for a truncated/chopped body). Pins the
+    /// observable change — a truncated check body's diagnostic gains a `Some(span)` where it
+    /// previously had `None` — through the public [`lift_checks`] entry, so it exercises the real
+    /// `eof_span()`-via-`fail_here`/`true_with` wiring rather than a hand-built span.
+    #[test]
+    fn eof_give_up_carries_a_real_end_span() {
+        let mut interner = Interner::default();
+        // An unterminated function body: the lexer runs out of tokens inside `parse_block`, so
+        // `true_with` fires at EOF (the pre-22-q1 span-less case).
+        let src = "x__check() { x : K = \"$1\"";
+        let lifted = lift_checks(&mut interner, src);
+        let diag = lifted
+            .diags
+            .first()
+            .expect("an unterminated body yields a lift diagnostic");
+        let span = diag
+            .span
+            .expect("the EOF give-up carries a real span now, not None (22-q1)");
+        assert_eq!(
+            span.lo, span.hi,
+            "the synthesized EOF span is zero-width (a caret at end-of-input)"
+        );
+        // It lands at end-of-input — the last real token's `hi`, somewhere PAST the file start
+        // (so it is genuinely the EOF position, not the byte-0 `ZERO_SPAN` fallback) and within
+        // the source bytes. We avoid pinning the exact offset (lexer token-end detail), only the
+        // load-bearing property: a real, non-zero end-of-input caret.
+        let src_len = u32::try_from(src.len()).expect("fixture fits u32");
+        assert!(
+            span.hi.0 > 0 && span.hi.0 <= src_len,
+            "the EOF caret lands where input ran out (0 < {} <= {src_len}), not at byte 0",
+            span.hi.0
+        );
     }
 }

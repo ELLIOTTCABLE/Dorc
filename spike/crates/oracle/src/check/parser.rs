@@ -80,6 +80,19 @@ impl Parser<'_> {
         self.toks.get(self.pos).map(|t| t.span)
     }
 
+    /// A ZERO-WIDTH span at end-of-input: `[hi, hi)` where `hi` is the last real token's `hi`
+    /// (or `BytePos(0)` for the empty-token degenerate case). The honest location for an
+    /// EOF give-up (a truncated/chopped check body): the caret lands exactly where input ran
+    /// out, pointing the UI at end-of-file (human ruling 22-q1). Distinct from [`ZERO_SPAN`]
+    /// (byte 0): byte-0 would point at the file START, wrong for an EOF diagnostic.
+    fn eof_span(&self) -> Span {
+        let hi = self
+            .toks
+            .last()
+            .map_or(dorc_core::BytePos(0), |t| t.span.hi);
+        Span::new(hi, hi)
+    }
+
     fn bump(&mut self) -> Option<&Token> {
         let t = self.toks.get(self.pos);
         if t.is_some() {
@@ -628,10 +641,11 @@ impl Parser<'_> {
         }
     }
 
-    /// Emit an out-of-dialect diagnostic pointing at the current token (or EOF) and
-    /// return `true` (the "diagnostic already emitted" signal for `parse_block`).
+    /// Emit an out-of-dialect diagnostic pointing at the current token (or, at end-of-input,
+    /// a synthesized EOF span; human ruling 22-q1) and return `true` (the "diagnostic already
+    /// emitted" signal for `parse_block`).
     fn fail_here(&mut self, msg: &str) -> bool {
-        let span = self.peek_span();
+        let span = self.peek_span().unwrap_or_else(|| self.eof_span());
         let diag = lift_failure(false, span, msg.to_owned(), self.interner);
         self.out.push(diag);
         true
@@ -639,7 +653,7 @@ impl Parser<'_> {
 
     /// Emit an out-of-dialect diagnostic at a specific span.
     fn fail(&mut self, span: Span, msg: &str) {
-        let diag = lift_failure(false, Some(span), msg.to_owned(), self.interner);
+        let diag = lift_failure(false, span, msg.to_owned(), self.interner);
         self.out.push(diag);
     }
 
@@ -777,7 +791,9 @@ impl BlockEnd {
 /// with a small bit of parser state set just before returning. We thread it via a
 /// field; this free fn computes the unterminated-error code.
 fn true_with(p: &mut Parser<'_>, end: BlockEnd) -> bool {
-    let span = p.peek_span();
+    // Always a real span: a `parse_block` that ran off the end is at EOF, so synthesize an
+    // end-of-input span there (human ruling 22-q1 — point the UI at end-of-file).
+    let span = p.peek_span().unwrap_or_else(|| p.eof_span());
     let msg = match end {
         BlockEnd::Brace => "unterminated function body (expected `}`)",
         BlockEnd::Keyword(kw) => {

@@ -613,13 +613,12 @@ impl SpanLabel {
 /// [`SpanSite::Spanless`] is the deliberately SECOND-CLASS sentinel for the arch-3-residual-2 codes
 /// whose emit context genuinely has no source location. The exact set is enforced by the
 /// `SPANLESS_SITE_PAYLOADS` allow-list in `core/tests/diag_tidy.rs` (the gate, not this comment, is
-/// the source of truth): the original six (`cfg-errexit-unknown`, `effect-kind-disagreement`, and
-/// the four `oracle-*` whole-file verdicts) plus the two check-dialect EOF codes
-/// (`check-unterminated`, `check-out-of-dialect`) act-1 added (6→8, `224` §10). It lives INSIDE the
-/// span slot (not as an `Option` on the whole primary) precisely so the mandatory-primary-span
-/// guarantee (`21Z` drop-B) stays intact for every ordinary `Diag`: [`Diag::new`] takes a real
-/// [`Span`] and cannot produce `Spanless`; only [`Diag::new_spanless_site`] can. Private —
-/// `Spanless` is unnameable and unconstructable outside this module.
+/// the source of truth): the six codes `cfg-errexit-unknown`, `effect-kind-disagreement`, and the
+/// four `oracle-*` whole-file verdicts. It lives INSIDE the span slot (not as an `Option` on the
+/// whole primary) precisely so the mandatory-primary-span guarantee (`21Z` drop-B) stays intact for
+/// every ordinary `Diag`: [`Diag::new`] takes a real [`Span`] and cannot produce `Spanless`; only
+/// [`Diag::new_spanless_site`] can. Private — `Spanless` is unnameable and unconstructable outside
+/// this module.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum SpanSite {
     /// A real source span (every primary from [`Diag::new`], every secondary).
@@ -906,15 +905,15 @@ impl Diag {
     /// This exists ONLY for the codes whose give-up site has no span to point at:
     /// [`DiagCode::CfgErexitUnknown`] (the errexit pass spans a region, not a point),
     /// [`DiagCode::EffectKindDisagreement`] (the annotation-vs-effect-map check fires mid-resolution
-    /// with no leaf), the four oracle-lifter codes [`DiagCode::OracleMissingKind`],
+    /// with no leaf), and the four oracle-lifter codes [`DiagCode::OracleMissingKind`],
     /// [`DiagCode::OracleMissingProbe`], [`DiagCode::OracleDuplicateEffect`],
-    /// [`DiagCode::OracleProbeSelectRoundtrip`] (a whole-file contract verdict, not a token), and the
-    /// two check-dialect codes [`DiagCode::CheckUnterminated`] / [`DiagCode::CheckOutOfDialect`] when
-    /// their give-up is at END-OF-INPUT (act-1, 6→8 — an unterminated body has no token to point at).
-    /// It is NOT a general escape hatch: [`new`](Self::new) with a real [`Span`] stays the only
-    /// ordinary path, and `core/tests/diag_tidy.rs` hard-codes the allow-list (`SPANLESS_SITE_PAYLOADS`,
-    /// the source of truth for the exact set) — a spanless-mint site not on it fails the gate. Do NOT
-    /// use it to dodge plumbing a span that exists.
+    /// [`DiagCode::OracleProbeSelectRoundtrip`] (a whole-file contract verdict, not a token).
+    /// (The two check-dialect codes [`DiagCode::CheckUnterminated`] / [`DiagCode::CheckOutOfDialect`]
+    /// are NOT here: their EOF give-up synthesizes a zero-width end-of-input span and lowers through
+    /// [`new`](Self::new) — human ruling 22-q1.) It is NOT a general escape hatch: [`new`](Self::new)
+    /// with a real [`Span`] stays the only ordinary path, and `core/tests/diag_tidy.rs` hard-codes the
+    /// allow-list (`SPANLESS_SITE_PAYLOADS`, the source of truth for the exact set) — a spanless-mint
+    /// site not on it fails the gate. Do NOT use it to dodge plumbing a span that exists.
     ///
     /// `inv-no-throw`: returns data, never panics. The mandatory-primary-span guarantee (`21Z`
     /// drop-B) is preserved for everything else BECAUSE this is the lone, self-describing, gated
