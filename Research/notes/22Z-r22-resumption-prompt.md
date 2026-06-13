@@ -11,26 +11,30 @@
 > queue here on every cold resume (done: 12 tasks; the old #13/#14 owed items are
 > new #1/#2). See "RESUME STATE" block directly below before anything else.
 >
-> ## RESUME STATE (2026-06-12; supersedes the FREEZE block, which it absorbs)
-> - HEAD on ai/spike3 at resume: `44aa05d`. Code equivalence class is `bf3b4e3`
->   (B6) — the freeze's "notes-only since `0e0a470`" was imprecise (B5/B6 code
->   commits postdate it); since bf3b4e3 only spike/CLAUDE.md gained the ru-26
->   doc lines (`2d09a9e`), rest notes-only. Resume gate chain re-run at 44aa05d:
->   results in 224 §10. Main worktree still has TWO uncommitted HUMAN edits:
->   `TODO.md` (noisy-harness line + a new Spike-3 ui-A/ui-B section) and
->   `AGENTS.md` (slug conventions, see below). Neither is the conductor's to
->   commit. ALSO untracked on disk: `Research/plans/223-…sync-conflict-…PHNHRER.md`
->   — a SyncThing conflict husk of the QUARANTINED priming prompt, materialized
->   2026-06-12 despite sync being disabled. Do NOT read it; cleanup is
->   human-owned.
-> - B7b (the fix-wave re-dispatch: act-1..3 + act-6, Opus, branch ai/r22-x3fix2,
->   worktree b7b-x3fix2, base `44aa05d`) IN FLIGHT since 2026-06-12. Clean
->   re-derivation — briefed NOT to read the stopped B7's branch; at harvest,
->   diff the two independent fix-1 derivations as a convergence cross-check.
->   The old b7-x3fix worktree (tip `783894a` fix-1-only, plus one uncommitted
->   discardable `diag_tidy.rs` edit) is left untouched for the human's
->   inventory; `783894a` stays unharvested. B8 (act-4 + residual-1 must-emit
->   pins) is still serialized behind the B7b harvest (core-tests file overlap).
+> ## RESUME STATE (updated 2026-06-13; supersedes the FREEZE block, which it absorbs)
+> - HEAD on ai/spike3: `1641f9a` (notes). CODE tip `a798847` — the B7b+B7c fix
+>   wave HARVESTED (four-commit series cherry-picked; conductor chain green
+>   497/0/1, e2e 99/99 ×2, fb-11 empty; full receipts 224 §10). Earlier code
+>   equivalence class was `bf3b4e3` (B6); the fix wave is the first code past it.
+>   Main worktree still has TWO uncommitted HUMAN edits: `TODO.md` (noisy-harness
+>   line + a new Spike-3 ui-A/ui-B section) and `AGENTS.md` (slug conventions,
+>   see below). Neither is the conductor's to commit. ALSO untracked on disk:
+>   `Research/plans/223-…sync-conflict-…PHNHRER.md` — a SyncThing conflict husk
+>   of the QUARANTINED priming prompt, materialized 2026-06-12 despite sync being
+>   disabled. Do NOT read it; cleanup is human-owned.
+> - FIX WAVE STATUS (act-1..6 from x-3): act-1 (registry-routed lift_failure) +
+>   act-2/act-3 (de-vacuumed diag_tidy gates + 3 negative controls) + act-6 f-7
+>   (debug_assert) HARVESTED. Human ruled 22-q1 (EOF-span synthesis dissolves
+>   the spanless amendment, allowlist stays 6), 22-q2 (asserts), 22-q3 (accept
+>   granularity). OPEN: act-6 f-3b → 22-q4 PENDING HUMAN (conductor verified-fact
+>   was wrong; f-3b's None-site is an overloaded suppress-channel reached by a
+>   test, NOT an unreachable path; options opt-1 doc-fix [conductor lean] /
+>   opt-3 split-the-param / opt-4 assert-at-source-in-member_family; full text
+>   224 §10). B8 (act-4 + residual-1 must-emit pins, + the two needle-shape
+>   residuals from B7b review as worklist) GATED on the 22-q4 ruling (kernel/test
+>   file overlap). Builder worktrees left for human inventory: b7-x3fix (DEAD
+>   B7, tip `783894a` unharvested + a discardable edit), b7b-x3fix2 (B7b tip
+>   `47d4e97`), b7c-x3fix3 (B7c tip `b562422` — the harvested series).
 > - OWED TO THE HUMAN: old-#13 (slow explainer of remaining round work)
 >   DELIVERED in-chat at resume, pending ack. Old-#14 (slow unroll of learn-4's
 >   phrases) BLOCKED — learn-4 was chat-only in a dead conductor's window, not
