@@ -103,14 +103,19 @@ impl DiagSite {
 /// Emit the migrated `DiagCode::CmdsubOperandTop` disclosure (`22B` §5 worked-3), lowered to the
 /// legacy stream for the coexistence `Vec<Diagnostic>` accumulator. `site == None` ⇒ SUPPRESS.
 ///
-/// f-3b (`224` §10): the `None` caller is `member_family`'s per-member loop, and that suppressed
-/// path is in fact UNREACHABLE for a ⊤ disclosure — a member argv is concrete-BY-CONSTRUCTION (a
-/// site whose argv carries any ⊤ word is absent from `ValueFlow::member_argv` ⇒ `member_family`
-/// returns `None` at `value.member_argv(id)?` before ever calling here), so no `OperandPosition`
-/// ⊤ can arise inside the family resolution. The suppression is therefore belt-and-braces, not the
-/// deduplication of a live double-emit: any genuine site-level ⊤ is disclosed exactly ONCE, at the
-/// single-cell fallback (`node_effects`' `Some(site)` path, which holds the real ⊤ word and span).
-/// Kept as a guard so a future member channel that COULD carry ⊤ stays single-reported.
+/// f-3b (`224` §10 22-q4, CORRECTED): the `None` caller is `member_family`'s per-member loop, and
+/// that suppress is a LIVE dedup, REACHED in production — not belt-and-braces. `member_argv` is NOT
+/// ⊤-free (`record_member_sites` resolves each member argv with no ⊤-gate; only the for-LIST words
+/// and for-var reassignment are eligibility-gated, never other body-command operands), so
+/// `for p in nginx curl; do apt-get install "$p" "$(date)"; done` yields a member argv carrying a ⊤
+/// word. When `member_family` resolves it, the first ⊤ member hits `command_effect`'s ⊤-operand arm
+/// → `Opaque` → the family's `_ => return None` → the family COLLAPSES → the site falls to the
+/// single-cell fallback, which discloses the ⊤ once with the REAL span. Suppressing the member-scan
+/// emit here stops that disclosure from doubling the fallback's. No mis-elision rides this: a ⊤
+/// operand always returns `Opaque` ⇒ the site runs (`kFAIL-perform`), so the ⊤ is never silently
+/// elided — it is disclosed exactly once, at the fallback. (There is no sound assert to add: the
+/// member argv legitimately CAN carry ⊤, so an "members are concrete" assertion would fire on the
+/// valid input above.)
 ///
 /// The payload carries `cause: None`: the arch-1 ⊤-cause is minted PER-OPAQUE-NODE in
 /// `mint_top_causes`, which runs AFTER this effects pass (Opaqueness is the effects pass's
@@ -309,12 +314,14 @@ fn member_family(
     let members = value.member_argv(id)?;
     let mut family = Vec::with_capacity(members.len());
     for argv in members {
-        // Each member is a normal concrete argv; resolve it through the oracle check.
-        // All-or-nothing: ANY non-single-establish member kills the whole family.
-        // `site: None` (q-2 ⊤-disclosure suppressed): a member argv is concrete, so no ⊤-disclosure
-        // can fire here anyway (f-3b); the `None` is belt-and-braces. If a member resolves Opaque/
-        // Kill/etc. the family collapses (`_ => None` below) and the site falls back to the
-        // single-cell `argv` path, which discloses any real ⊤ once, with the REAL span.
+        // Each member is a concrete-or-⊤ argv; resolve it through the oracle check. All-or-nothing:
+        // ANY non-single-establish member kills the whole family. `site: None` is a LIVE dedup
+        // (f-3b CORRECTED, `224` §10 22-q4): a member argv CAN carry a ⊤ word (`record_member_sites`
+        // does not ⊤-gate body operands), and a ⊤ member resolves Opaque → the family collapses
+        // (`_ => None` below) → the site falls back to the single-cell `argv` path, which discloses
+        // that ⊤ once with the REAL span. Passing `None` here stops the member-scan emit from
+        // doubling that single fallback disclosure. (⊤ ⇒ Opaque ⇒ MustRun ⇒ the site runs, so the
+        // ⊤ is disclosed, never mis-elided.)
         match command_effect(idx, checks, argv, interner, diags, None).as_slice() {
             [CommandEffect::Establishes(fact)] => family.push(*fact),
             _ => return None,
@@ -2173,6 +2180,44 @@ command__check() {
         assert!(
             has_code(&diags, "dq-cmdsub-operand-top"),
             "a ⊤ operand must disclose dq-cmdsub-operand-top, never silently Opaque: {diags:?}"
+        );
+    }
+
+    #[test]
+    fn member_body_top_operand_collapses_family_and_dedups_disclosure() {
+        // Why (f-3b CORRECTED, `224` §10 22-q4): pins the LIVE dedup the corrected doc describes.
+        // `record_member_sites` does not ⊤-gate body operands, so this loop's member argv carries a
+        // ⊤ word (`$(date)`). `member_family` resolves the first ⊤ member to Opaque ⇒ the family
+        // collapses (`_ => None`) ⇒ the in-loop site falls to the single-cell Flat path ⇒ MustRun
+        // (it RUNS; not an EstablishMembers family, not elided — kFAIL-perform). The member-scan emit
+        // passes `site: None` (suppressed); the single-cell fallback discloses the ⊤ once. So exactly
+        // ONE `dq-cmdsub-operand-top` fires — the COUNT (not mere presence) is what proves the dedup:
+        // a count ≠ 1 would mean the conductor's dedup model is wrong, not that the assertion is.
+        let src = r#"for p in nginx curl; do apt-get install "$p" "$(date)"; done"#;
+
+        let (mut i1, idx1, _s1) = package_setup();
+        let classes = classify_src(src, &mut i1, &idx1);
+        assert!(
+            classes.contains(&SkipClass::MustRun),
+            "the ⊤-operand member site runs (single-cell fallback), not an elided family: {classes:?}"
+        );
+        assert!(
+            !classes
+                .iter()
+                .any(|c| matches!(c, SkipClass::EstablishMembers { .. })),
+            "the collapsed family must NOT classify as EstablishMembers (all-or-nothing): {classes:?}"
+        );
+
+        let (mut i2, idx2, _s2) = package_setup();
+        let diags = classify_src_diags(src, &mut i2, &idx2);
+        let count = diags
+            .iter()
+            .filter(|d| d.code.0 == "dq-cmdsub-operand-top")
+            .count();
+        assert_eq!(
+            count, 1,
+            "exactly ONE dq-cmdsub-operand-top must fire — the member-scan emit is suppressed and \
+             the single-cell fallback discloses once (the dedup). count={count}, diags={diags:?}"
         );
     }
 

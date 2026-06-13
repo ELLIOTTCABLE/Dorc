@@ -80,9 +80,14 @@ pub struct ValueFlow {
     /// references that var — the one place the Members value is read (it never flows
     /// through the general transfer, item-1). Outer `Vec` = the members in list order
     /// (duplicates kept — dash iterates them); inner `Vec` = that member's argv (the
-    /// for-var substituted to that one concrete, so each is a normal concrete argv). A
-    /// site whose argv has a non-member `⊤` word, or whose loop is Members-ineligible,
-    /// is ABSENT here ⇒ the consumer falls back to the (⊤) [`argv`] entry.
+    /// for-var substituted to that one concrete; each is concrete-or-⊤, NOT ⊤-free).
+    /// `record_member_sites` does NOT ⊤-gate body operands — only the for-LIST words and
+    /// for-var reassignment are eligibility-gated — so a site whose argv has a non-member
+    /// `⊤` word (`apt-get install "$p" "$(date)"`) is PRESENT here with a ⊤-bearing entry,
+    /// not absent (f-3b CORRECTED, `224` §10 22-q4). The consumer (`effect::member_family`)
+    /// then collapses such a site: the ⊤ member resolves Opaque ⇒ the family is `None` ⇒ the
+    /// site falls back to the single-cell `argv` path. (A site whose loop is Members-ineligible
+    /// IS genuinely absent here — that is the eligibility gate, distinct from the per-member ⊤.)
     member_argv: BTreeMap<CfgNodeId, Vec<Vec<ValueOf>>>,
     /// Per spliced funcdef-body `Command` node (arch-2, brk-2, `i-2`): its argv resolved with
     /// the CALL site's positionals BOUND. A spliced body's `$1`..`$9` are runtime input to the
@@ -136,11 +141,14 @@ impl ValueFlow {
 
     /// The PER-MEMBER resolved argvs of an in-loop Members site (task-L2 item-1/2), or
     /// `None` if this site is not a Members site (its loop is ineligible, or its argv does
-    /// not reference the for-var, or any member word fails to resolve concretely). Each
-    /// inner argv is a normal concrete argv (the for-var substituted to one member); the
-    /// consumer evaluates the check once per member ⇒ a fact-family (item-2). The order is
-    /// the list order with duplicates kept (dash iterates them; dedup would mis-model
-    /// `for x in a a`). See [`ValueFlow::member_argv`].
+    /// not reference the for-var). A site WITH a Members entry can still carry a ⊤ word in
+    /// some member's argv (a non-member `$(…)`/dynamic body operand): the entry is PRESENT,
+    /// and the consumer (`effect::member_family`) collapses it to the single-cell fallback —
+    /// a ⊤ word does NOT make this `None` (f-3b CORRECTED, `224` §10 22-q4). Each inner argv
+    /// is the for-var substituted to one member (concrete-or-⊤); the consumer evaluates the
+    /// check once per member ⇒ a fact-family (item-2). The order is the list order with
+    /// duplicates kept (dash iterates them; dedup would mis-model `for x in a a`). See
+    /// [`ValueFlow::member_argv`].
     #[must_use]
     pub fn member_argv(&self, node: CfgNodeId) -> Option<&Vec<Vec<ValueOf>>> {
         self.member_argv.get(&node)
