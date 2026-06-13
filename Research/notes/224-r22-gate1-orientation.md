@@ -1343,6 +1343,29 @@ warm-ups (d×d host-flip fixture; var-resolved redirect case) → 22x synthesis 
   e2e **99/99 ×2** real exits · typos rc=0. ZERO golden diffs (PART A
   comment-only; B/C/D new tests + comments).
 
+- PROCESS CHANGE (human, 2026-06-13): Fable-class DISABLED by Anthropic. Opus is
+  now the tier ceiling for the conductor, validators, and all agents. ru-24's
+  Fable ask-first gate is MOOT. Standing direction: (1) move slower, reason more;
+  (2) dial UP adversarial-crosscheck use (less potent same-model, MORE necessary
+  — no higher tier catches cross-cutting error); (3) surface foundational/
+  cross-cutting design concerns to the human more often, don't resolve silently.
+  Memory [[fable-ask-first]] updated to record the disablement.
+- XC-1 TWO-PAIR ADVERSARIAL CROSSCHECK dispatched (2026-06-13, human-directed,
+  adversarial-crosscheck skill protocol; first post-Fable, all Opus-vs-Opus):
+  subject = the whole x-3 fix wave (44aa05d..d003e04 on spike/). Pair A
+  TEST-QUALITY (are the must-emit pins / negative controls / f-3b dedup pin /
+  EOF-span test genuine or vacuous-in-a-new-way): neutral `aa2e419e` + adversarial
+  `a7cfaa6a`, each in an ISOLATED detached worktree (xc-a-neutral / xc-a-adversarial
+  @ d003e04) so they can empirically mutate-then-revert to test whether a pin
+  fires. Pair B DESIGN-COHERENCE (do the changes uphold/erode the inv-* + design
+  tensions, run through the AGENTS exclusion-check four-by-two): neutral `ab79c262`
+  + adversarial `a8c17b2f`, read-only on the main tree vs README/DESIGN/AGENTS/
+  spike-CLAUDE/analysis-CLAUDE/core-CLAUDE. Clean contexts — none given the
+  conductor's framing or this ledger's positive spin. RECONCILE on return:
+  convergence (both passes) = highest trust; adversarial-only = suspect-until-
+  conductor-verifies-in-source; present BOTH to the human uncollapsed (never
+  vouch). Token/time at completion; xc-a-* worktrees cleaned after.
+
 ## §11 Post-gating self-audit (append-only; conductor, after a window where several turns produced no output)
 
 > Written after several conductor turns produced nothing (model-gated on accumulated
