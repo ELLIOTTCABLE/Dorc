@@ -1195,6 +1195,62 @@ warm-ups (d×d host-flip fixture; var-resolved redirect case) → 22x synthesis 
   by cherry-pick; the honest history shows the human's ruling
   (spanless→eof-span) as a forward commit. Token/time at completion.
 
+- B7c RETURNED (2026-06-13): Opus, 199,344 harness-tokens (self-reported
+  ~95-105K — fb-16 delta), 85 tool uses, ~25 min. Builder commits `db6ca52`
+  (CHANGE-1 eof-span) + `b562422` (CHANGE-2 f-7 assert) @ 47d4e97. CHANGE-1 and
+  f-7 LANDED clean; f-3b HELD BACK with a verified-fact contradiction the
+  builder correctly refused to code around (AGENTS exclusion-check working as
+  designed).
+- CONDUCTOR-FACT ERROR, owned (fb-candidate, process): my B7c brief asserted as
+  VERIFIED that `emit_cmdsub_operand_top` is "called with site:None only from
+  member_family's loop." FALSE. The unit test
+  `command_effect_resolves_operand_singleton_and_top` (effect.rs ~1422) calls
+  `command_effect(..., None)` DIRECTLY with a ⊤ operand (`apt-get install
+  $PKG`), reaching the None-site arm WITH a ⊤ — which a `debug_assert!(false)`
+  there trips. I traced the PRODUCTION call graph and never grepped for
+  test/direct callers. Root finding: `site: Option<DiagSite>`'s `None` is
+  OVERLOADED — (a) member-family path (⊤-impossible, production) AND (b)
+  suppress-the-disclosure (the test's meaning, legitimately driving ⊤ to check
+  classification return-values only). The f-3b path is therefore NOT a clean
+  unreachable-path (it's a reached suppress-channel), so 22-hu-q2's
+  "unreachable→assert" premise does not hold for it. fb-candidate: when
+  "verifying" a reachability claim, grep ALL callers (tests + direct), not just
+  the production graph — exactly the cell-coverage discipline AGENTS mandates,
+  which I applied to the production cell only. The independent builder + the
+  test suite caught it; never-vouch vindicated in both directions (don't trust
+  the conductor's "VERIFIED" either).
+- f-3b DISPOSITION → TO THE HUMAN (22-q4, not pre-decided): options —
+  (opt-1) leave the None-branch a silent suppress, CORRECT its doc to state the
+  overload (suppress-channel reached by tests, ⊤-unreachable in production), no
+  assert [conductor lean: the premise dissolved, so docs-not-asserts is the
+  honest 22-hu-q2 outcome for this site]; (opt-3) split `site` into typed
+  states (`Suppress | At(site)`, or a member-family marker) so an assert can
+  fire only on a genuine member-family ⊤ — honors the ruling but adds kernel
+  machinery for a production-unreachable path (maintainability/simplicity cost
+  vs low marginal validation value: a member ⊤ already collapses the family);
+  (opt-4) assert the underlying invariant at its SOURCE — in member_family,
+  that `value.member_argv(id)` yielded ⊤-free argvs — which the test does not
+  reach, so it lands cleanly without touching the overloaded param [conductor
+  second-lean if an assert is wanted]. f-7 (the clean unreachable path) got its
+  assert; f-3b is the one that turned out not to be one.
+- B7b+B7c HARVESTED as `<cherry-pick tip a798847>` (four-commit series
+  817e050+47d4e97+db6ca52+b562422 cherry-picked onto ai/spike3; new hashes,
+  builder series preserved on ai/r22-x3fix2/x3fix3). fb-11 content-diff
+  ai/spike3↔ai/r22-x3fix3 on spike/: EMPTY. Net landed: registry-routed
+  lift_failure (act-1) with EOF-span synthesis (22-hu-q1, allowlist stays 6) ·
+  de-vacuumed diag_tidy gates + 3 negative controls (act-2/act-3) · f-7
+  debug_assert (22-hu-q2 half) · act-6 docs. The harvested effect.rs f-3b
+  doc is B7b's (production-accurate; due an overload-enrichment when 22-q4
+  lands). `783894a` (dead B7) stays UNHARVESTED. Post-harvest conductor chain
+  on the main tree at `a798847`, unpiped, e2e QUIET: ALL GREEN — build/fmt/
+  clippy/deny rc=0 · cargo test **497/0/1-ignore** (diag_tidy 8: the 3 negative
+  controls live; oracle 22: eof_give_up_carries_a_real_end_span +
+  lift_failure_severity_agrees_with_registry; allowlist gate
+  spanless_mint_allow_list_is_exact green at exactly 6) · e2e **99/99 ×2** real
+  exits · typos rc=0. ZERO golden diffs (the two EOF-span codes are
+  corpus-unreached, as predicted — the deliberate None→Some(eof) change reaches
+  no golden).
+
 ## §11 Post-gating self-audit (append-only; conductor, after a window where several turns produced no output)
 
 > Written after several conductor turns produced nothing (model-gated on accumulated
