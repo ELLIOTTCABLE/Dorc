@@ -1441,6 +1441,36 @@ warm-ups (d×d host-flip fixture; var-resolved redirect case) → 22x synthesis 
   (human-owned per [[syncthing-device-identity]]). Surfaced to the human — may
   indicate sync re-enabled or misbehaving on this folder.
 
+- ARCH-2 PREP (2026-06-13, human-directed: full design-doc read first, then prep,
+  then an adversarial review-pair). FULL-CORPUS READ done in main context (human
+  authorized the ~40k-token spend, 1M window): README/DESIGN/IMPLEMENTATION/KNOBS/
+  ANALYZER-NEEDS + 22B + the TODO trio, all in full; plus the live seams
+  (prov.rs arena, erasability.rs gate/canary, diag.rs cause hooks). KEY framing
+  that grounds arch-2: the why-lens is the concrete realization of
+  dir-soundiness-ux (STALENESS-AUDIT: per-line at-decision-point disclosure of
+  the unsoundness), and the consumer that de-vacuums the erasability gate WITHOUT
+  breaching ru-11 because it is a RENDERER (exempt-plane), never a decider.
+  DELIVERABLE: notes/22C (`9b4943f`) — the arch-2 build contract: §2 build order
+  (mvs-A emit-at-origin cause-wiring → mvs-B why-lens consumer → mvs-C suppression
+  rules → mvs-D gate-obligation canary upgrade → mvs-E secondary-span → mvs-F
+  ValueOf::Top deferred); §3 the welds (ru-11 one-way / rec-1 two-surfaces /
+  dir-soundiness-ux / emit-at-origin / kFAIL); §5 the gate-obligation in detail
+  (the load-bearing test: upgrade canary to "witness DIFFERS A/B yet identity
+  plane identical" + proof-of-bite); §6 forks (origins / why-surface / value-⊤ /
+  remediation-class). x-1 coverage-doc test (b68fc66): disposition = SUPERSEDE
+  (it documented the vacuity arch-2 makes false), not fold.
+- XC-2 ADVERSARIAL REVIEW-PAIR dispatched (2026-06-13, adversarial-crosscheck
+  skill protocol, Opus-vs-Opus) on the 22C arch-2 PLAN (not code — a design
+  critique): neutral `a5db7680` (assess soundness/scope, verify seam-claims vs
+  code) + disowned-adversarial `a23ec87a` (5 named attacks: gate-obligation is a
+  NEW vacuity · why-lens breaches the weld via remediation/tie-break · emit-at-
+  origin contradicts the mint_top_causes-runs-after-effects ordering · one-origin
+  scope leaves arch-1's passes-by-disuse hole · exclusion-check cells). Both
+  read-only, clean contexts, told to verify against actual code + flag where a
+  criticism does NOT hold. RECONCILE on return: convergence = trust; adversarial-
+  only = conductor-verifies-in-source; present both to the human; THEN dispatch
+  the arch-2 build only after the plan survives + the human rules the §6 forks.
+
 ## §11 Post-gating self-audit (append-only; conductor, after a window where several turns produced no output)
 
 > Written after several conductor turns produced nothing (model-gated on accumulated
