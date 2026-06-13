@@ -3,51 +3,52 @@
 > Cold-conductor onboarding document. If you are reading this to resume round-22
 > after a conductor death OR a context-compromise: this file + notes/224 (the round
 > ledger, esp. §7 rulings / §10 dispatch / §11 self-audit) + plans/22A (the research
-> truth) + TaskList are your state. Updated at: FROZEN FOR CLEAN RESTART
-> (2026-06-12). The conductor model-degraded again on accumulated security-adjacent
-> vocabulary (the x-3 crosscheck was on the diag system, but the report-ingestion +
-> the corpus's hardening-vocabulary cumulatively re-poisoned the window — process-1
-> repeating one level up); human is restarting a fresh Fable conductor. THIS TURN
-> MADE NO DECISIONS — it only recorded state and froze. See "FREEZE STATE" block
-> directly below before anything else.
+> truth) + TaskList are your state. Updated at: RESUMED 2026-06-12, fresh Fable
+> conductor (third this round). The 2026-06-12 freeze (prior conductor re-degraded
+> on accumulated security-adjacent vocabulary — process-1 one level up) is
+> resolved: the fix wave is re-dispatched as B7b. NOTE learned at this resume: the
+> harness TaskList does NOT survive a session boundary — reconstruct it from the
+> queue here on every cold resume (done: 12 tasks; the old #13/#14 owed items are
+> new #1/#2). See "RESUME STATE" block directly below before anything else.
 >
-> ## FREEZE STATE (read FIRST on restart, 2026-06-12)
-> - Durable code HEAD on ai/spike3: `d709b0c` (notes-only since B4b's `0e0a470`;
->   the actual diag code is at `0e0a470`/arch-3-core-complete). Main worktree has
->   TWO uncommitted non-conductor edits: `TODO.md` (human's noisy-harness line) and
->   `AGENTS.md` (HUMAN EDIT — new slug conventions, see below). Neither is the
->   conductor's to commit. Leave for the human.
+> ## RESUME STATE (2026-06-12; supersedes the FREEZE block, which it absorbs)
+> - HEAD on ai/spike3 at resume: `44aa05d`. Code equivalence class is `bf3b4e3`
+>   (B6) — the freeze's "notes-only since `0e0a470`" was imprecise (B5/B6 code
+>   commits postdate it); since bf3b4e3 only spike/CLAUDE.md gained the ru-26
+>   doc lines (`2d09a9e`), rest notes-only. Resume gate chain re-run at 44aa05d:
+>   results in 224 §10. Main worktree still has TWO uncommitted HUMAN edits:
+>   `TODO.md` (noisy-harness line + a new Spike-3 ui-A/ui-B section) and
+>   `AGENTS.md` (slug conventions, see below). Neither is the conductor's to
+>   commit. ALSO untracked on disk: `Research/plans/223-…sync-conflict-…PHNHRER.md`
+>   — a SyncThing conflict husk of the QUARANTINED priming prompt, materialized
+>   2026-06-12 despite sync being disabled. Do NOT read it; cleanup is
+>   human-owned.
+> - B7b (the fix-wave re-dispatch: act-1..3 + act-6, Opus, branch ai/r22-x3fix2,
+>   worktree b7b-x3fix2, base `44aa05d`) IN FLIGHT since 2026-06-12. Clean
+>   re-derivation — briefed NOT to read the stopped B7's branch; at harvest,
+>   diff the two independent fix-1 derivations as a convergence cross-check.
+>   The old b7-x3fix worktree (tip `783894a` fix-1-only, plus one uncommitted
+>   discardable `diag_tidy.rs` edit) is left untouched for the human's
+>   inventory; `783894a` stays unharvested. B8 (act-4 + residual-1 must-emit
+>   pins) is still serialized behind the B7b harvest (core-tests file overlap).
+> - OWED TO THE HUMAN: old-#13 (slow explainer of remaining round work)
+>   DELIVERED in-chat at resume, pending ack. Old-#14 (slow unroll of learn-4's
+>   phrases) BLOCKED — learn-4 was chat-only in a dead conductor's window, not
+>   durable anywhere (sole grep hit is this file); the human must paste or
+>   recall it. Ask if not yet supplied.
 > - NEW HUMAN SLUG CONVENTION (uncommitted in AGENTS.md, 2026-06-12, BINDING going
 >   forward): round-prefixed slugs — `NN-huN` for human comments/rulings (e.g.
 >   `22-hu41`), `NN-fdN` for findings/results/conclusions (e.g. `22-fd3`),
 >   round-scoped list slugs (`22-nit1`); avoid opaque/unprefixed IDs (`cc-1`,
 >   `w-7`). The conductor's earlier `learn-N`/`w-N`/`act-N` slugs predate this and
 >   should migrate to the new scheme as they're next touched. Do NOT mass-rename.
-> - B7 (x-3 defect fixes, opus, branch ai/r22-x3fix, worktree b7-x3fix) was
->   STOPPED at freeze (TaskStop, status killed — it was confirmed actively
->   mutating, not hung). DETERMINISTIC END STATE: branch tip `783894a` = fix-1
->   ONLY (check.rs onto the typed path, severity from registry). fix-2
->   (retire-guard), fix-3 (constructed-scan), fix-4 (the two adjudications) were
->   NOT done — the b7-x3fix worktree was left with one uncommitted in-progress
->   edit (`M spike/crates/core/tests/diag_tidy.rs`), which is DISCARDABLE
->   (isolated; no value committed). `783894a` is isolated, harvests nothing into
->   ai/spike3. On restart, the fix wave must be RE-DISPATCHED from 224 §10's B7
->   brief (act-1..3 + act-6); treat `783894a` as either harvestable-after-review
->   OR cleanly re-derivable — do NOT harvest without re-reviewing, because act-1's
->   spanless-allowlist 6→8 expansion AMENDS a stated property (human-disposal
->   flag, not a builder call). Simplest clean restart: discard the b7 worktree
->   edit, re-dispatch B7 whole.
-> - OWED TO THE HUMAN (undelivered; the degraded conductor correctly did NOT
->   attempt them): TaskList #13 (slow explainer of remaining round work) and #14
->   (slow detailed unroll of learn-4's phrases). The human asked for these one at a
->   time, awaiting his ack between. Deliver on a clean turn.
-> - PENDING HUMAN DECISIONS, none made this freeze (do NOT pre-decide): (a) B7's
->   spanless 6→8 amendment + fix-4 calls at its harvest; (b) ui-A/ui-B sequencing
->   (ru-25) at arch-2 harvest; (c) the act-1..6 batch is dispatched as B7/B8 but
->   their RESULTS need adjudication. (d) x-2 reshaped to skill-pair per ru-24, fr-2
->   still owed by the human.
-> - Prior FROM-SCRATCH resume target (still valid after the freeze items above):
->   arch-2 prep then arch-2 build (see "The arcs" + queue below).
+> - PENDING HUMAN DECISIONS, none made at freeze or resume (do NOT pre-decide):
+>   (a) B7b's spanless 6→8 amendment + the act-6 f-7/f-3b calls at its harvest;
+>   (b) ui-A/ui-B sequencing (ru-25) at arch-2 harvest; (c) the act-1..6 batch is
+>   dispatched as B7b/B8 but their RESULTS need adjudication. (d) x-2 reshaped to
+>   skill-pair per ru-24, fr-2 still owed by the human.
+> - Resume target after the fix wave (unchanged): B8, then arch-2 prep, then
+>   arch-2 build (see "The arcs" + queue below).
 >
 > PRE-FREEZE STATUS (historical): build phase — WAVE-2 COMPLETE (arch-3 core done:
 > B3 spine + B4b sweep harvested; x-3 crosscheck pair done + adjudicated, fix

@@ -1051,6 +1051,42 @@ warm-ups (d×d host-flip fixture; var-resolved redirect case) → 22x synthesis 
   payloads, hostsim constructs); legacy Diagnostic coexists until B4 empties
   the allow-list.
 
+- RESUMPTION (2026-06-12, fresh Fable conductor — third this round, after the
+  security-vocab re-degradation recorded in the 22Z freeze): oriented from 22Z +
+  this ledger + 22A + spike/CLAUDE.md. Harness TaskList did NOT survive the
+  session boundary — reconstructed (12 tasks) from the 22Z queue; old task
+  numbering is dead (old #13/#14 owed-explainers = new #1/#2). Frozen state
+  verified exactly as recorded: ai/r22-x3fix tip `783894a` (fix-1 only), b7-x3fix
+  worktree carrying the single uncommitted `M spike/crates/core/tests/diag_tidy.rs`
+  edit — left IN PLACE for the human's inventory (freeze marked it discardable;
+  fresh-worktree dispatch makes the discard unnecessary). Resume gate chain
+  dispatched on the main tree (results appended at completion). One 22Z
+  imprecision corrected there: code-HEAD equivalence class is `bf3b4e3` (B6), not
+  `0e0a470` — B5/B6 code commits postdate 0e0a470; since bf3b4e3 only
+  spike/CLAUDE.md gained the ru-26 doc lines (`2d09a9e`), rest notes-only.
+- ledger-nit (recorded, no in-place fix — append-only): the "B7 x3-FIX dispatched"
+  entry above carries a contaminated tail from the degraded window — everything
+  from its second "Scope: the 22B §3/§4 spine…" sentence onward is B3's old scope
+  text, pasted in error. B7's true scope ends at its first "Token/time at
+  completion." The B7b entry below is authoritative for the fix-wave scope.
+- B7b x3-FIX re-dispatch (2026-06-12, per the 22Z freeze plan "re-dispatch whole"):
+  fresh worktree %TEMP%\dorc-r22\b7b-x3fix2, fresh branch ai/r22-x3fix2, base =
+  `44aa05d` (current HEAD; rev-parse-verified at worktree creation, mise trusted),
+  Opus, fb-19-clamped, ru-15-lean brief. Scope identical to B7: act-1 check.rs
+  lift_failure onto the typed path, severity from registry, emit-vs-registry
+  agreement test, spanless allowlist honestly 6→8 with documented WHY —
+  implemented-but-FLAGGED, human disposes at harvest · act-2 retire-guard real
+  committed-source→list direction, negative-controlled · act-3 constructed-scan
+  excludes diag.rs's own match arms, negative-controlled, needle-shape limit
+  documented per ru-26 · act-6 f-7 restore-or-document + stale doc-comment fix,
+  f-3b reachability-check then restore-or-document. Behavior-preserving except
+  explicit reported restorations; zero golden/stdout change expected; NEVER BLESS.
+  CLEAN RE-DERIVATION: builder directed NOT to read ai/r22-x3fix / `783894a`; at
+  harvest the conductor diffs the two independent fix-1 derivations as a free
+  convergence cross-check, then 783894a stays unharvested (human inventory).
+  B8 (act-4 + residual-1 must-emit pins) still serialized behind this harvest
+  (file overlap on core tests). Token/time at completion.
+
 ## §11 Post-gating self-audit (append-only; conductor, after a window where several turns produced no output)
 
 > Written after several conductor turns produced nothing (model-gated on accumulated
