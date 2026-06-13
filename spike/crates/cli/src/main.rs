@@ -287,14 +287,17 @@ fn emit_debug_argv(
 /// (`inv-site-keyed-results`), so each maps to a [`dorc_plan::Step`]'s `ast`, whose span
 /// resolves to the book's source text.
 ///
-/// A site with NO matching step is SKIPPED (no diagnostic emitted), not named by a bare id. None is
-/// expected — every unresolvable site is a runnable command leaf with a plan step — so this is an
-/// unreachable defensive `?`-skip. NB (f-7, `224` §10): the legacy form could emit a bare-id/no-span
-/// Note here; the migration onto the mandatory-primary-span spine (`21Z` drop-B) replaced that with
-/// the skip rather than fabricate a span-less `SiteUnresolvable` for a path that cannot fire.
-/// Observably a no-op (the path is dead); restoring an emission would only add a spanless mint for a
-/// branch nothing reaches, so it stays a skip. The site still RUNS at apply (it is in
-/// `unresolvable`), so no disclosure-correctness is lost even if it somehow did fire.
+/// A site with NO matching step is ASSERTED-UNREACHABLE then SKIPPED (no diagnostic emitted), not
+/// named by a bare id. None is expected — every unresolvable site is a runnable command leaf with a
+/// plan step (`unresolvable ⊆ plan.steps` by construction). NB (f-7, `224` §10): the legacy form
+/// could emit a bare-id/no-span Note here; the migration onto the mandatory-primary-span spine
+/// (`21Z` drop-B) replaced that with a skip rather than fabricate a span-less `SiteUnresolvable`.
+/// Per human ruling 22-q2 ("shouldn't something unreachable be an ASSERT?") the miss now fires a
+/// `debug_assert!(false, …)` — a miss is a Dorc-internal plan/probe divergence, not malformed input.
+/// This is the CLI EDGE (not the kernel, so `inv-no-throw` does not formally bind), but it
+/// deliberately does NOT release-panic: the reachability claim is OURS, not vouched-hard
+/// (never-vouch — so no `unreachable!()`), so release safe-degrades to the skip. The site still RUNS
+/// at apply (it is in `unresolvable`), so no disclosure-correctness is lost even if it somehow fired.
 fn unresolvable_diagnostics(
     probe: &dorc_plan::ProbePlan,
     plan: &dorc_plan::Plan,
@@ -309,10 +312,20 @@ fn unresolvable_diagnostics(
         .unresolvable
         .iter()
         .filter_map(|&leaf| {
-            // A site with no matching step cannot key a span; none is expected (every
-            // unresolvable site is a runnable command leaf), but skip it rather than fabricate a
-            // None span (the migrated spine's primary span is mandatory — drop-B).
-            let &id = ast_of_leaf.get(&leaf)?;
+            // A site with no matching step cannot key a span. ASSERTED-UNREACHABLE (human ruling
+            // 22-q2): unresolvable ⊆ plan.steps by construction, so a miss is a Dorc-internal
+            // plan/probe inconsistency, never malformed book input. debug_assert (not a release
+            // panic): this reachability claim is OURS, not vouched-hard (never-vouch), and the same
+            // safe-degrade shape as the kernel site keeps a release miss skipping rather than
+            // aborting — loud in debug/test/DST, safe fallback (skip) in release.
+            let Some(&id) = ast_of_leaf.get(&leaf) else {
+                debug_assert!(
+                    false,
+                    "unresolvable site has no plan step — unresolvable ⊆ plan.steps by \
+                     construction (f-7); a hit means the probe/plan site spaces diverged"
+                );
+                return None;
+            };
             let span = ast.node(id).span;
             let text = book_src
                 .get(span.lo.0 as usize..span.hi.0 as usize)
