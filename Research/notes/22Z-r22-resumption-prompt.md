@@ -12,13 +12,19 @@
 > new #1/#2). See "RESUME STATE" block directly below before anything else.
 >
 > ## RESUME STATE (updated 2026-06-13; supersedes the FREEZE block, which it absorbs)
-> - HEAD on ai/spike3: `7c91587` (notes). CODE tip `d003e04` — the ENTIRE x-3
->   fix wave (B7b+B7c+B8) HARVESTED; conductor chain green **505/0/1**, e2e
->   99/99 ×2, fb-11 empty (receipts 224 §10). Code milestones since bf3b4e3 (B6):
->   `a798847` (B7b+B7c: registry-routed lift_failure, EOF-span synthesis,
->   de-vacuumed diag_tidy gates + negative controls, f-7 debug_assert) →
->   `d003e04` (B8: f-3b doc correction + all-23-codes must-emit pins +
->   needle-shape notes). Main worktree still has TWO uncommitted HUMAN edits:
+> - HEAD on ai/spike3: notes-on-top of CODE tip `d4b3826` — the ENTIRE x-3 fix
+>   wave (B7b+B7c+B8) PLUS the XC-1 crosscheck cleanup HARVESTED; conductor chain
+>   green **506/0/1**, e2e 99/99 ×2 (receipts 224 §10). Code milestones since
+>   bf3b4e3 (B6): `a798847` (B7b+B7c) → `d003e04` (B8: all-23 must-emit pins) →
+>   `d4b3826` (XC-1 cleanup: 2 stale f-3b comments fixed + unit code-pins for the
+>   2 e2e-only codes syntax-unsupported/render-heredoc-refused). XC-1 = a
+>   human-directed two-pair adversarial crosscheck (first post-Fable); its
+>   headline "missing pins" findings were FALSE (same-model shared no-e2e blind
+>   spot; codes are e2e-gate-3-pinned) — the lesson, not the code, was the value.
+>   NEW ENV FLAG: SyncThing conflict husks reappeared 2026-06-13 despite the
+>   folder being disabled (incl. one of the live 224 ledger) — live files/git
+>   intact, husks untouched (human-owned), surfaced to the human. Main worktree
+>   still has TWO uncommitted HUMAN edits:
 >   `TODO.md` (noisy-harness line + a Spike-3 ui-A/ui-B section) and `AGENTS.md`
 >   (slug conventions, see below) — neither the conductor's to commit. Untracked
 >   husk on disk: `Research/plans/223-…sync-conflict-…PHNHRER.md` (SyncThing

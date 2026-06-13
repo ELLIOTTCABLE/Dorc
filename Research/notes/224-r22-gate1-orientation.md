@@ -1414,6 +1414,33 @@ warm-ups (d×d host-flip fixture; var-resolved redirect case) → 22x synthesis 
   negative control to guard the gate wiring? accept the severity-test limit? —
   all ru-26-flavored spike-scope calls. xc-a-* worktrees to clean.
 
+- XC-1 CLEANUP HARVESTED as `d4b3826` (conductor-direct on main, human "clean up
+  as you see fit" + per-finding rulings; chain green 506/0/1, e2e 99/99 ×2, typos
+  0; zero golden diffs — comments + tests only). Four edits: (a) effect.rs:133
+  inline comment corrected ("unreachable for ⊤" → "a ⊤ member IS reached + SUPPRESSED
+  (dedup), disclosed once at the fallback"); (b) value.rs record_member_sites doc
+  corrected ("each is a normal concrete argv" → for-var concrete but other operands
+  MAY be ⊤, not ⊤-free); (c) NEW unit pin background_amp_emits_syntax_unsupported
+  (parse.rs — `foo &` ⇒ push_unsupported ⇒ asserts code.0); (d) render-heredoc
+  driver strengthened (observable_matrix.rs — added code.0 assertion to the
+  existing count test). HUMAN RULINGS on the surfaced calls: add both unit pins
+  (DONE c/d); negative-control hardening = LEAVE AS-IS; severity-test docstring =
+  LEAVE AS-IS (explained, not changed). Finding (e) DROPPED — verified non-issue
+  (the dedup test comment says "the ⊤" generically, never claims the fallback
+  discloses $(date); adversarial-pass overstatement that did not survive source
+  check — a verify-before-act win against overcorrection). KNOWN-ACCEPTED residuals
+  (low-severity, disclosed, spike-scope): severity-test severity-half vacuous at
+  HEAD (no non-Error lift_failure code to distinguish; registry-sourcing verified
+  by code-read not test); constructed-scan negative-control is a property-pin (a
+  basis-revert stays green). XC-1 COMPLETE; xc-a-* worktrees removed.
+- ENV FLAG (2026-06-13, conductor noticed at cleanup commit): NEW SyncThing
+  conflict husks materialized despite the folder being disabled 2026-06-11 —
+  including `Research/notes/224-…sync-conflict-…030715-PHNHRER.md` (a husk of the
+  ACTIVELY-EDITED ledger) + a second `plans/223-…233757` husk. Live files +
+  git state are intact (husks are separate inert snapshots); NOT read/touched
+  (human-owned per [[syncthing-device-identity]]). Surfaced to the human — may
+  indicate sync re-enabled or misbehaving on this folder.
+
 ## §11 Post-gating self-audit (append-only; conductor, after a window where several turns produced no output)
 
 > Written after several conductor turns produced nothing (model-gated on accumulated
