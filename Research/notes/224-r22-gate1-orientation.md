@@ -1059,8 +1059,11 @@ warm-ups (d×d host-flip fixture; var-resolved redirect case) → 22x synthesis 
   verified exactly as recorded: ai/r22-x3fix tip `783894a` (fix-1 only), b7-x3fix
   worktree carrying the single uncommitted `M spike/crates/core/tests/diag_tidy.rs`
   edit — left IN PLACE for the human's inventory (freeze marked it discardable;
-  fresh-worktree dispatch makes the discard unnecessary). Resume gate chain
-  dispatched on the main tree (results appended at completion). One 22Z
+  fresh-worktree dispatch makes the discard unnecessary). Resume gate chain on
+  the main tree at `44aa05d`, unpiped, e2e QUIET: ALL GREEN — build/fmt/clippy/
+  deny rc=0 · cargo test 488 passed / 0 failed / 1 known-ignore (SPEC) across all
+  suites incl. diag_tidy 5/5 + erasability 3/3 · e2e **99/99 ×2** real exits ·
+  typos rc=0. One 22Z
   imprecision corrected there: code-HEAD equivalence class is `bf3b4e3` (B6), not
   `0e0a470` — B5/B6 code commits postdate 0e0a470; since bf3b4e3 only
   spike/CLAUDE.md gained the ru-26 doc lines (`2d09a9e`), rest notes-only.
