@@ -1316,6 +1316,33 @@ warm-ups (d×d host-flip fixture; var-resolved redirect case) → 22x synthesis 
   residual-b non-core-cfg(test) basis). Token/time at completion. At harvest:
   review (esp. PART B count + PART C honesty), verify chain, cherry-pick, fb-11.
 
+- B8 RETURNED + REVIEWED (2026-06-13): Opus, 224,828 harness-tokens
+  (self-reported ~118K — fb-16 delta), 129 tool uses, ~32 min. Builder series
+  `640b3c6` (PART A f-3b doc + PART B pin) + `e40d50d` (PART C 7 must-emit pins)
+  + `d520f59` (PART D needle-shape notes) @ 37703cb. CONDUCTOR REVIEW (diffs read):
+  PART A doc rewrite ACCURATE — states the live-dedup/reached/no-mis-elision/
+  no-sound-assert truth precisely, no new false claim. PART B count==1 OBSERVED
+  by builder (dedup model HELD; builder did not need to STOP); test asserts
+  MustRun ∧ ¬EstablishMembers ∧ exactly-one dq-cmdsub-operand-top, with the
+  count-not-presence rationale intact. PART C: the two check-* pins drive
+  `lift_checks` over REAL sh (unterminated body; a `for` in the body) and assert
+  the code identity — genuinely closing the x3a-B/t-1 direct-construction
+  vacuity, not re-committing it; all 7 PINNED-BY-NOTHING codes matched x3n's
+  list exactly, none faked, none needed disproportionate scaffolding; all 23
+  codes now have ≥1 driving pin. PART D both ru-26 notes landed at the two
+  scans. tc-flags: none new.
+- B8 HARVESTED as `<cherry-pick tip d003e04>` (three-commit series cherry-picked
+  onto ai/spike3; new hashes, builder series preserved on ai/r22-b8-mustemit).
+  fb-11 content-diff ai/spike3↔ai/r22-b8-mustemit on spike/: EMPTY. The 22-q4
+  f-3b docs are now CORRECTED on ai/spike3 (the known-false-pending-B8 flag
+  cleared). x-3 FIX WAVE COMPLETE: act-1..6 all landed/dispositioned (act-5 was
+  process-only, already in this ledger). Post-harvest conductor chain on the
+  main tree at `d003e04`, unpiped, e2e QUIET: ALL GREEN — build/fmt/clippy/deny
+  rc=0 · cargo test **505/0/1-ignore** (497 + B8's 8 new pins: the f-3b dedup
+  pin, the 7 must-emit pins; analysis 133, oracle 26+check, syntax-parse 29) ·
+  e2e **99/99 ×2** real exits · typos rc=0. ZERO golden diffs (PART A
+  comment-only; B/C/D new tests + comments).
+
 ## §11 Post-gating self-audit (append-only; conductor, after a window where several turns produced no output)
 
 > Written after several conductor turns produced nothing (model-gated on accumulated
