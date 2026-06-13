@@ -1156,6 +1156,45 @@ warm-ups (d×d host-flip fixture; var-resolved redirect case) → 22x synthesis 
   content-diff + post-harvest main-tree chain follow the rulings; B8 dispatch
   follows the harvest.
 
+- HUMAN RULINGS on B7b harvest (2026-06-13; the three freeze-reserved calls,
+  recorded as 22-q1/q2/q3):
+  - 22-hu-q1 (act-1 spanless): SYNTHESIZE an EOF span, do NOT mint span-less.
+    Human reasoning: pointing the UI at end-of-file is genuinely right for a
+    truncated/chopped file (the diagnostic lands at the real failure at least
+    some of the time); a zero-width EOF caret is honest, not "pointing at
+    nothing" (overrides the builder's + conductor's earlier
+    spanless-is-more-honest lean). CONDUCTOR FINDING that sharpens it: BOTH
+    check codes' only spanless source is `peek_span()==None`, which is EOF-only
+    (pos≥toks.len()); there is NO non-EOF spanless case. So both get the
+    synthesized span and the spanless allowlist reverts 6→8 → **6** — the
+    amendment DISSOLVES ENTIRELY (a strictly better outcome than the freeze
+    feared; act-1's registry fix lands with zero amendment to the stated
+    spanless boundary). eof_span = zero-width at last-token `hi`.
+  - 22-hu-q2 (act-6 silenced paths): an unreachable path should be an ASSERT,
+    not a silent handled-skip. CONDUCTOR RECONCILIATION with inv-no-throw: both
+    sites become `debug_assert!(false, <invariant>)` + retained safe fallback
+    (loud in debug/test/DST, safe-degrading in release — rustc span_delayed_bug
+    shape). NOT a release-panicking unreachable!(): f-3b is KERNEL (inv-no-throw
+    forbids it outright); f-7 is CLI-edge but rides a reachability claim we
+    decline to vouch hard (never-vouch). Both invariants conductor-verified
+    construction-guaranteed + book-independent before authorizing the assert
+    (f-7: unresolvable ⊆ plan.steps; f-3b: member argvs concrete-by-construction
+    so no ⊤ on the None-site path).
+  - 22-hu-q3 (commit granularity): act-1/2/3 coupled-commit ACCEPTED ("not my
+    favourite, but let's not redo at this point").
+- B7c REWORK dispatched (2026-06-13, Opus, fb-19-clamped): worktree
+  %TEMP%\dorc-r22\b7c-x3fix3, branch ai/r22-x3fix3, base = `47d4e97` (B7b tip —
+  keeps the accepted act-2/act-3 gate de-vacuuming underneath). Two surgical
+  changes as separate commits: CHANGE-1 (22-hu-q1) add Parser::eof_span,
+  `lift_failure` signature Option<Span>→Span, drop both new_spanless_site arms,
+  allowlist back to 6, update agreement test, revert 6→8 narrative; CHANGE-2
+  (22-hu-q2) both act-6 sites → debug_assert + safe fallback. Verified-facts
+  handed as confirm-then-implement (caller set, EOF-only spanlessness, eof_span
+  shape, both invariants' construction-guarantee). At completion: review +
+  verify chain, then harvest the WHOLE series (817e050 + 47d4e97 + B7c commits)
+  by cherry-pick; the honest history shows the human's ruling
+  (spanless→eof-span) as a forward commit. Token/time at completion.
+
 ## §11 Post-gating self-audit (append-only; conductor, after a window where several turns produced no output)
 
 > Written after several conductor turns produced nothing (model-gated on accumulated
