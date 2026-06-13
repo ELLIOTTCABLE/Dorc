@@ -960,6 +960,13 @@ fn refused_heredoc_guard_keeps_dead_oror_body_verbatim() {
         1,
         "one refusal (the guard), none for the kept-verbatim body: {diags:?}"
     );
+    // MUST-EMIT pin (XC-1, 224 §10): assert the CODE, not just the count — `render-heredoc-refused`
+    // otherwise had only count/behavior pins in the unit suite, so a wrong-code regression on the
+    // refusal path was invisible to `cargo test` (e2e gate-3 caught it; the unit suite did not).
+    assert_eq!(
+        diags[0].code.0, "render-heredoc-refused",
+        "the refusal carries the registered render-heredoc-refused code: {diags:?}"
+    );
 }
 
 #[test]

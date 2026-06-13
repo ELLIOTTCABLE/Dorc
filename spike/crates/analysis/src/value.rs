@@ -750,8 +750,10 @@ impl<'a> Prep<'a> {
 
     /// Record the per-member argvs for each body command-site of a Members loop whose argv
     /// REFERENCES the for-var. For each member, clone the site's incoming state, override
-    /// the for-var to that one concrete, and resolve the site's words — each is a normal
-    /// concrete argv (item-2: N members ⇒ N argvs ⇒ N cells). A site whose argv does NOT
+    /// the for-var to that one concrete, and resolve the site's words (the for-var bound to the
+    /// concrete member; OTHER operands resolve per the normal value rules and MAY be `⊤` — a
+    /// member argv is NOT guaranteed ⊤-free, see `effect::emit_cmdsub_operand_top`'s f-3b note).
+    /// item-2: N members ⇒ N argvs ⇒ N cells. A site whose argv does NOT
     /// reference the for-var is skipped (no family — the ordinary `argv` entry serves it,
     /// the same concrete every iteration). A site that references it gets a family even for
     /// a single member (one cell), so the in-loop license (item-3) routes uniformly through

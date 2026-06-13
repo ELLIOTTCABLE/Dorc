@@ -130,7 +130,7 @@ fn emit_cmdsub_operand_top(
     interner: &Interner,
 ) {
     let Some(site) = site else {
-        return; // member-family path: unreachable for ⊤ (concrete members); see fn doc f-3b
+        return; // member-family path: a ⊤ member IS reached here and SUPPRESSED (dedup) — disclosed once at the single-cell fallback; see fn doc f-3b
     };
     let diag = Diag::new(
         Code::CmdsubOperandTop(CmdsubOperandTop {
