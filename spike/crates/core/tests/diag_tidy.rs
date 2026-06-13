@@ -211,6 +211,15 @@ fn scanned_source() -> String {
 /// six real `new_spanless_site` sites live in `analysis`/`oracle`; `core` only DEFINES the
 /// constructor and exercises it in its own `#[cfg(test)]` module — excluding `core` keeps the
 /// self-cleaning direction honest (a removed production site is not masked by core's test usage).
+///
+/// ru-26 residual-b (B8 disclosure): this excludes `core` but NOT the `#[cfg(test)]` modules of the
+/// OTHER scanned crates — `rs_files` collects every `.rs` under `src/`, test modules included. So a
+/// test-only construction of a payload in a non-core crate (a `DiagCode::X(…)` inside that crate's
+/// own `#[cfg(test)]`) would satisfy `every_catalog_variant_is_constructed` for code `X` even if its
+/// PRODUCTION emit were deleted — the grep cannot tell a `#[cfg(test)]` line from a real one. The
+/// PART C must-emit per-code pins are the real liveness instrument (they FAIL when a production emit
+/// dies); this grep is a cheap belt-and-braces backstop, not a soundness guarantee. Greenfield wants
+/// cfg-aware source partitioning (or an emit-side registration) rather than a whole-`src/` scan.
 fn production_emit_source() -> String {
     let non_core: Vec<&str> = SCANNED_CRATES
         .iter()
@@ -441,6 +450,12 @@ fn committed_slug_arms(diag_rs: &str) -> BTreeSet<String> {
         if trimmed.starts_with("fn ") || trimmed.starts_with("pub fn ") {
             break;
         }
+        // ru-26 residual-a (B8 disclosure): this reads only single-line `=> "…"` arms. An arm
+        // formatted exotically (the `=>` and the string literal split across lines, or a slug
+        // built by an expression) is INVISIBLE to this scan ⇒ a silent retirement of such an arm
+        // would slip the retire-guard. rustfmt keeps `slug()`'s arms single-line today, so this
+        // holds at HEAD; greenfield needs a real token-aware scan (or an emit-side registration),
+        // not a line-shape grep, if the catalog ever carries multi-line arms.
         if let Some(arrow) = trimmed.find("=> \"") {
             let after = &trimmed[arrow + 4..];
             if let Some(end) = after.find('"') {
