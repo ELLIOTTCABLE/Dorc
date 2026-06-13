@@ -1251,6 +1251,56 @@ warm-ups (d×d host-flip fixture; var-resolved redirect case) → 22x synthesis 
   corpus-unreached, as predicted — the deliberate None→Some(eof) change reaches
   no golden).
 
+- 22-q4 DEEP-DIVE (human pushed on the foundational assumption "members are
+  ⊤-free"; conductor traced value.rs + effect.rs in full — the human's doubt was
+  justified). FINDINGS:
+  - fd-1 (+SURE, code-confirmed): `member_argv` is NOT ⊤-free. `record_member_sites`
+    (value.rs ~782) resolves each member's argv via `resolve_site_words` and
+    inserts it with NO ⊤-gate; `members_pass` does not post-filter; the only
+    eligibility gates are on the FOR-LIST words + for-var reassignment, NOT on
+    other body-command operands. So `for p in a b; do cmd "$p" $(date); done`
+    produces member argvs `[cmd, <concrete>, ⊤]` — a ⊤-bearing entry.
+  - fd-2 (+SURE): NO test exercises a loop body with a non-member ⊤ operand
+    (grep `for…in…; do…$(` over value.rs/effect.rs tests = empty). That is why
+    the false "⊤-free" claim was never falsified — the untested-invariant =
+    vacuous-claim pattern, in miniature, in the very component the x-3 wave was
+    auditing.
+  - fd-3 (+SURE): the harvested f-3b doc ("None-site UNREACHABLE for a ⊤;
+    belt-and-braces, NOT a live double-emit dedup") is BACKWARDS. effect.rs
+    command_effect (195-217): a ⊤ operand emits CmdsubOperandTop + `return
+    [Opaque]`. So a ⊤-bearing member argv → member_family's first ⊤ member →
+    Opaque → `_ => return None` → family COLLAPSES → single-cell fallback
+    discloses with the real span. The None-site emit IS reached in production
+    (member-resolution scan) and the suppress is a LIVE dedup (prevents the
+    member-scan emit from doubling the fallback emit). The value.rs field doc
+    (84/138 "is ABSENT here") is also mechanically wrong: the entry is
+    PRESENT-but-collapsed-by-the-consumer, not absent.
+  - fd-4 (+SURE, the reassuring half): NO mis-elision. A ⊤ operand ALWAYS
+    returns Opaque ⇒ MustRun ⇒ runs (kFAIL-perform holds); the ⊤ is disclosed
+    exactly once (fallback). The bug is in the REASONING/DOCS, not behavior.
+  - CONSEQUENCES: opt-4 (assert "members concrete" in member_family) is UNSOUND
+    — it would fire on the valid `cmd "$p" $(date)` input; RULED OUT (caught
+    before implementing — the value of the human's check + never-vouch). opt-1
+    is the only sound disposition AND it is forced (no sound assert exists; the
+    path is reachable). The corrected opt-1 doc must say: None = live suppress,
+    reached when a loop-body command carries a non-member ⊤ operand; dedups
+    against the single-cell fallback which discloses once with the real span;
+    ⊤-operand⇒Opaque⇒runs so no mis-elision.
+  - fb-candidate (process, stronger now): a false invariant survived B7b
+    authoring + B7c + conductor review + would-have-been-"fixed"-wrong by opt-4;
+    the human's "are you sure?" caught it. Untested invariants are where false
+    claims hide — reinforces B8's must-emit/coverage remit and never-vouch.
+- 22-q4 DISPOSITION: opt-1 (human pre-authorized "opt-1 is otherwise fine"),
+  with the CORRECTED understanding above. Folded into B8 (its must-emit/coverage
+  remit is the natural home for the pinning test): (i) rewrite the effect.rs
+  f-3b doc + member_family call-site comment to the fd-3/fd-4 truth; (ii)
+  correct the value.rs member_argv field doc (84/138) present-but-collapsed;
+  (iii) ADD a pinning test — `for p in nginx curl; do apt-get install "$p"
+  "$(date)"; done` ⇒ the apt site is MustRun (runs) AND exactly ONE
+  dq-cmdsub-operand-top disclosure (proves the dedup; harness
+  `classify_src_diags` + count by `dq-cmdsub-operand-top`). Until B8 lands, the
+  harvested f-3b doc on ai/spike3 is KNOWN-FALSE (comment-only; flagged here).
+
 ## §11 Post-gating self-audit (append-only; conductor, after a window where several turns produced no output)
 
 > Written after several conductor turns produced nothing (model-gated on accumulated
