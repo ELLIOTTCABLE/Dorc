@@ -2266,4 +2266,50 @@ command__check() {
             "a concrete book emits no cmdsub ⊤-diagnostics: {diags:?}"
         );
     }
+
+    // ---- must-emit pin (B8 act-4 / residual-1): effect-kind-disagreement ----
+
+    #[test]
+    fn effect_kind_disagreement_emits_from_production_path() {
+        // MUST-EMIT pin (x3n PINNED-BY-NOTHING): `effect-kind-disagreement` had no driving test —
+        // a behavior change to it was invisible. Drive the real `cell_effect` give-up: a check whose
+        // annotation kind (`package`) disagrees with the effect-map cell's kind (`widget`) for the
+        // same (apt-get, install). The annotation wins (the cell re-keys under it), and the
+        // disagreement is disclosed. Asserts the registered code FIRES from production, not merely
+        // that the variant is constructed (the x3a-B/t-1 vacuity).
+        let mut i = Interner::default();
+        let check_src = "\
+apt_get__check() {
+   verb=$1; shift
+   pkg : package = \"$1\"
+   probe-pkg \"$pkg\"
+}
+";
+        let widget = KindId(i.intern("widget"));
+        let installed = SelectorId(i.intern("installed"));
+        let apt = ProviderId(i.intern("apt-get"));
+        let install = i.intern("install");
+        let mut idx = KindIndex::default();
+        idx.add_effect(apt, install, widget, installed, Polarity::Establish);
+        let checks = vec![lift_checks(&mut i, check_src).value];
+
+        let parsed = dorc_syntax::parse("apt-get install nginx");
+        let built = cfg::build(&parsed.value);
+        let value = analyze(&built.value, &parsed.value, &mut i);
+        let mut arena = dorc_core::ProvArena::new();
+        let diags = classify(
+            &built.value,
+            &value,
+            &parsed.value,
+            &idx,
+            &checks,
+            &mut i,
+            &mut arena,
+        )
+        .diags;
+        assert!(
+            has_code(&diags, "effect-kind-disagreement"),
+            "an annotation-vs-effect-map kind mismatch must disclose effect-kind-disagreement: {diags:?}"
+        );
+    }
 }

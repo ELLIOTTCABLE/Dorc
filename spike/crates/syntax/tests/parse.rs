@@ -1007,3 +1007,17 @@ fn determinism_same_input_same_arena() {
     }
     assert_eq!(a.diags.len(), b.diags.len());
 }
+
+#[test]
+fn unterminated_subshell_emits_syntax_malformed() {
+    // MUST-EMIT pin (x3n PINNED-BY-NOTHING): `syntax-malformed` had no driving test, so a behavior
+    // change to the parse-error give-up was invisible (the x3a-B/t-1 vacuity, in the parser). An
+    // unterminated subshell `(echo hi` (no closing `)`) is a structural parse error — `push_malformed`
+    // fires it. Pins the registered code from the real `parse` path (not a constructed variant).
+    let p = parse("(echo hi");
+    assert!(
+        p.diags.iter().any(|d| d.code.0 == "syntax-malformed"),
+        "an unterminated subshell must emit syntax-malformed: {:?}",
+        p.diags
+    );
+}

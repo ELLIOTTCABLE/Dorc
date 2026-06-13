@@ -209,4 +209,43 @@ mod lift_failure_tests {
             span.hi.0
         );
     }
+
+    /// MUST-EMIT pin (x3n PINNED-BY-NOTHING, B8): drive the production `lift_checks` path for an
+    /// UNTERMINATED body and pin the registered code `check-unterminated`. The existing
+    /// [`eof_give_up_carries_a_real_end_span`] drives the same path but pins only the SPAN, and
+    /// [`lift_failure_severity_agrees_with_registry`] pins the code via a DIRECT `lift_failure`
+    /// call (a construction, the x3a-B/t-1 vacuity). This closes the gap: the code identity is
+    /// asserted on a real source-driven give-up.
+    #[test]
+    fn unterminated_check_body_emits_check_unterminated_from_lift() {
+        let mut i = Interner::default();
+        let lifted = lift_checks(&mut i, "x__check() { x : K = \"$1\"");
+        assert!(
+            lifted
+                .diags
+                .iter()
+                .any(|d| d.code.0 == "check-unterminated"),
+            "an unterminated check body must disclose check-unterminated: {:?}",
+            lifted.diags
+        );
+    }
+
+    /// MUST-EMIT pin (x3n PINNED-BY-NOTHING, B8): drive `lift_checks` for an OUT-OF-DIALECT body
+    /// and pin `check-out-of-dialect`. The check dialect is a strict subset of sh with no `for`
+    /// loop, so a `for` in the body is rejected via `fail_here` (the `is_unterminated == false`
+    /// path). No prior test drove this give-up from source — only the direct-construction
+    /// `lift_failure(false, …)` did. Pins the registered code on a real source-driven path.
+    #[test]
+    fn out_of_dialect_check_body_emits_check_out_of_dialect_from_lift() {
+        let mut i = Interner::default();
+        let lifted = lift_checks(&mut i, "x__check() { for y in a b; do shift; done; }");
+        assert!(
+            lifted
+                .diags
+                .iter()
+                .any(|d| d.code.0 == "check-out-of-dialect"),
+            "a `for` loop (outside the check dialect) must disclose check-out-of-dialect: {:?}",
+            lifted.diags
+        );
+    }
 }

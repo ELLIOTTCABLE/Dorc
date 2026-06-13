@@ -829,10 +829,54 @@ mod tests {
     fn non_literal_kind_is_an_error_not_a_panic() {
         // `oracle_kind=$x` cannot be lifted (W4: we never decode/guess a token's
         // text); it must diagnose, not crash, and yield no kind.
+        //
+        // MUST-EMIT pin (x3n PINNED-BY-NOTHING, B8): this drives the real `scan_kind_assigns`
+        // give-up, so the `code.0` assertion (added here) pins `oracle-non-literal-kind` to a
+        // production path — a bare `has_errors()` could pass on ANY code, the vacuity x3a-B/t-1
+        // exposed. (A secondary `oracle-missing-kind` rides along — the unbound kind — which is
+        // why we assert the SPECIFIC code's presence, not the whole diag set.)
         let mut i = Interner::default();
         let out = lift(&mut i, &["oracle_kind=$x\noracle_probe_x() { :; }\n"]);
         assert!(out.has_errors(), "non-literal oracle_kind must error");
+        assert!(
+            out.diags
+                .iter()
+                .any(|d| d.code.0 == "oracle-non-literal-kind"),
+            "a non-literal oracle_kind must disclose oracle-non-literal-kind: {:?}",
+            out.diags
+        );
         assert!(out.value.probe_for(KindId(i.intern("x"))).is_none());
+    }
+
+    #[test]
+    fn probe_without_kind_emits_oracle_missing_kind() {
+        // MUST-EMIT pin (x3n PINNED-BY-NOTHING, B8): a file that DECLARES an `oracle_probe_*` but
+        // no `oracle_kind=<kind>` is an incomplete oracle — `bind`'s no-kind path discloses it. No
+        // prior test drove this give-up, so the code was pinned by nothing. Drives the real `lift`.
+        let mut i = Interner::default();
+        let out = lift(&mut i, &["oracle_probe_x() { :; }\n"]);
+        assert!(
+            out.diags.iter().any(|d| d.code.0 == "oracle-missing-kind"),
+            "a probe with no oracle_kind= must disclose oracle-missing-kind: {:?}",
+            out.diags
+        );
+    }
+
+    #[test]
+    fn top_level_control_flow_emits_oracle_non_declaration() {
+        // MUST-EMIT pin (x3n PINNED-BY-NOTHING, B8): an oracle file is declarations only; a
+        // top-level control-flow compound (here a `for` loop) is a non-declaration construct —
+        // the lift's `_ =>` arm discloses it. (A plain command routes to `oracle-top-level-mutator`
+        // instead, pinned separately; this pins the DISTINCT non-declaration give-up.) Drives `lift`.
+        let mut i = Interner::default();
+        let out = lift(&mut i, &["oracle_kind=package\nfor x in a b; do :; done\n"]);
+        assert!(
+            out.diags
+                .iter()
+                .any(|d| d.code.0 == "oracle-non-declaration"),
+            "a top-level control-flow compound must disclose oracle-non-declaration: {:?}",
+            out.diags
+        );
     }
 
     #[test]
