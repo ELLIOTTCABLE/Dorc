@@ -632,14 +632,15 @@ impl Parser<'_> {
     /// return `true` (the "diagnostic already emitted" signal for `parse_block`).
     fn fail_here(&mut self, msg: &str) -> bool {
         let span = self.peek_span();
-        self.out.push(lift_failure(false, span, msg.to_owned()));
+        let diag = lift_failure(false, span, msg.to_owned(), self.interner);
+        self.out.push(diag);
         true
     }
 
     /// Emit an out-of-dialect diagnostic at a specific span.
     fn fail(&mut self, span: Span, msg: &str) {
-        self.out
-            .push(lift_failure(false, Some(span), msg.to_owned()));
+        let diag = lift_failure(false, Some(span), msg.to_owned(), self.interner);
+        self.out.push(diag);
     }
 
     /// Skip one top-level non-check item: advance to the next statement boundary,
@@ -781,18 +782,21 @@ fn true_with(p: &mut Parser<'_>, end: BlockEnd) -> bool {
         BlockEnd::Brace => "unterminated function body (expected `}`)",
         BlockEnd::Keyword(kw) => {
             return {
-                p.out.push(lift_failure(
+                let diag = lift_failure(
                     true,
                     span,
                     format!("unterminated block (expected `{kw}`)"),
-                ));
+                    p.interner,
+                );
+                p.out.push(diag);
                 true
             };
         }
         BlockEnd::CaseArmEnd => "unterminated case arm (expected `;;` or `esac`)",
         BlockEnd::IfThenEnd => "unterminated `if` (expected `else`/`fi`)",
     };
-    p.out.push(lift_failure(true, span, msg.to_owned()));
+    let diag = lift_failure(true, span, msg.to_owned(), p.interner);
+    p.out.push(diag);
     true
 }
 

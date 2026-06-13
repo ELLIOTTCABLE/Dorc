@@ -135,15 +135,24 @@ const LEGACY_ALLOW_LIST: &[&str] = &[];
 /// The SPANLESS-MINT allow-list (arch-3-residual-2): EXACTLY the codes permitted to construct a
 /// diagnostic with no primary span, via [`dorc_core::diag::Diag::new_spanless_site`]. Every other
 /// code MUST point at a real source span ([`dorc_core::diag::Diag::new`] takes a mandatory
-/// [`dorc_core::Span`] — `21Z` drop-B). These six are the give-up sites whose emit context
-/// genuinely has no location: the errexit-region pass, the effect-map kind-disagreement check, and
-/// the four whole-file oracle-lifter contract verdicts. Entries are PAYLOAD-struct names (the
-/// `Code::<Payload>(` construction marker the grep sees), paired with the wire slug for reviewers.
+/// [`dorc_core::Span`] — `21Z` drop-B). These EIGHT are the give-up sites whose emit context
+/// genuinely has no location: the errexit-region pass, the effect-map kind-disagreement check, the
+/// four whole-file oracle-lifter contract verdicts, and (act-1, 6→8) the two check-dialect codes at
+/// END-OF-INPUT. Entries are PAYLOAD-struct names (the `Code::<Payload>(` construction marker the
+/// grep sees), paired with the wire slug for reviewers.
 /// Two directions are enforced by [`spanless_mint_allow_list_is_exact`] (the "structural enforce"):
 /// * a `new_spanless_site(Code::X(…))` in PRODUCTION source whose `X` is NOT here ⇒ FAIL (a new
 ///   spanless mint must be justified and declared, or given a real span);
 /// * an `X` here that no longer appears at a production `new_spanless_site` site ⇒ FAIL (the entry
 ///   is stale — the code stopped minting spanless; remove it). Self-cleaning, like the legacy list.
+// GROWN 6→8 by the x3a-5/t-4 fix (`224` §10, act-1): routing `oracle::check::lift_failure` through
+// the typed spine (killing its registry-bypassing hardcoded `Error`) means the two check codes now
+// mint span-less when their give-up site is at END-OF-INPUT — an unterminated check body or a
+// `fail_here` at EOF genuinely has no token to point at. This AMENDS the stated six-code spanless
+// boundary; it is a HUMAN-disposed change (the conductor flags it at harvest), recorded here so the
+// growth is reviewer-visible at the gate. A cheap span could NOT honestly dissolve it: synthesizing
+// a zero-width end-of-input span would point the diagnostic at nothing real, which is worse than an
+// honest spanless mint. (If a future change threads a real end-span cheaply, drop the two entries.)
 const SPANLESS_SITE_PAYLOADS: &[&str] = &[
     "CfgErexitUnknown",           // cfg-errexit-unknown      (analysis/cfg.rs)
     "EffectKindDisagreement",     // effect-kind-disagreement (analysis/effect.rs)
@@ -151,6 +160,9 @@ const SPANLESS_SITE_PAYLOADS: &[&str] = &[
     "OracleMissingProbe",         // oracle-missing-probe     (oracle/lib.rs)
     "OracleDuplicateEffect",      // oracle-duplicate-effect  (oracle/lib.rs)
     "OracleProbeSelectRoundtrip", // oracle-probe-selector-roundtrip (oracle/lib.rs)
+    // act-1 (6→8): EOF give-up sites in the check dialect parser have no token span.
+    "CheckUnterminated", // check-unterminated       (oracle/check.rs lift_failure)
+    "CheckOutOfDialect", // check-out-of-dialect     (oracle/check.rs lift_failure)
 ];
 
 /// The crate-`src` roots scanned (the emit surface). The workspace's analyzer crates; `core`
@@ -266,24 +278,40 @@ fn legacy_string_slugs(source: &str) -> BTreeSet<String> {
     out
 }
 
-/// (1a) Every catalog variant is CONSTRUCTED at some emit site (`226` §1 reachability). A
-/// `pub enum` variant the type system never forces to be used would be dead catalog; the grep is
+/// (1a) Every catalog variant is CONSTRUCTED at some PRODUCTION emit site (`226` §1 reachability).
+/// A `pub enum` variant the type system never forces to be used would be dead catalog; the grep is
 /// the only thing that sees it.
+///
+/// REWRITTEN (x3a-B/t-1 fix, `224` §10 act-3): the prior scan used `scanned_source()`, which
+/// INCLUDES `core` — so `diag.rs`'s OWN `match` arms (every `DiagCode::Variant(_) =>` in `slug`/
+/// `site`/`registry`/the renders) and `core`'s `#[cfg(test)]` constructions satisfied the grep for
+/// EVERY variant. The result: deleting a sole PRODUCTION emit left the test green (proven twice — a
+/// dead-catalog variant the gate was built to catch sailed through). The fix scans
+/// `production_emit_source()` (every crate EXCEPT `core`), so only a real emit in a consuming crate
+/// counts — exactly what `spanless_mint_allow_list_is_exact` already does for the same reason.
+///
+/// NEEDLE-SHAPE LIMIT (ru-26 disclosure; t-4): this is a grep for the LITERAL forms
+/// `DiagCode::Payload(` / `Code::Payload(`. It CANNOT see a construction that builds the variant
+/// into a variable and passes it on (`let c = Code::Payload(..); Diag::new(c, ..)`) or any
+/// `DiagCode(expr)` indirection — such an emit is invisible here and would read as dead catalog. So
+/// production emits must spell the variant literally at the `Diag::new`/`new_spanless_site` site
+/// (act-1's `lift_failure` does, deliberately, for precisely this reason). A non-literal emit is a
+/// spike-scoped blind spot, not a general guarantee; greenfield needs a real reachability pass
+/// (an emit-side registration call, or a derive) rather than a source grep.
 #[test]
 fn every_catalog_variant_is_constructed() {
-    let source = scanned_source();
+    let source = production_emit_source();
     for payload in MIGRATED_PAYLOADS {
-        // The construction marker: `Payload {` (the struct literal) appears at the emit site AND
-        // at the `core::diag` definition/test sites — so it is present iff the variant is live.
-        // We require it OUTSIDE core's own diag.rs definition too: an emit site in a consuming
-        // crate. The simplest robust check is presence of a `DiagCode::Payload(` or
-        // `Code::Payload(` enum-construction anywhere.
+        // The construction marker, in PRODUCTION (non-core) source only: a real `DiagCode::Payload(`
+        // or `Code::Payload(` emit at a give-up site, NOT diag.rs's own match arms or core's tests.
         let constructed = source.contains(&format!("DiagCode::{payload}("))
             || source.contains(&format!("Code::{payload}("));
         assert!(
             constructed,
-            "catalog variant `{payload}` is registered but never constructed (dead catalog — \
-             either emit it at a give-up site or remove the variant + its registry/render arms)"
+            "catalog variant `{payload}` is registered but never constructed at a PRODUCTION emit \
+             site (dead catalog — either emit it at a give-up site in a consuming crate, or remove \
+             the variant + its registry/render arms). NB the scan excludes core, so diag.rs's own \
+             match arms do not count (act-3); a non-literal emit is invisible to it (needle-shape)."
         );
     }
 }
@@ -366,38 +394,69 @@ fn retire_guard_no_silent_slug_deletion() {
 }
 
 /// The retire-guard's core assertion: every slug the COMMITTED diag.rs carried must still be in
-/// `MIGRATED_SLUGS` (i.e. still a live catalog code) UNLESS it is a brand-new addition. We only
-/// check the deletion direction: a committed slug that is no longer in `MIGRATED_SLUGS` means the
-/// code was retired silently — record it deliberately (here, in a retired-list) instead.
+/// the CURRENT `MIGRATED_SLUGS` (i.e. still a live catalog code). The deletion direction only: a
+/// committed slug no longer in `MIGRATED_SLUGS` means the code was retired — record it deliberately
+/// (a retired-list) instead of letting it quietly stop existing (`226` §1 retire-guard).
+///
+/// REWRITTEN (x3a-E/t-2 fix, `224` §10 act-2): the prior guard was TAUTOLOGICAL — its extractor
+/// pre-filtered committed slugs by membership in the CURRENT `MIGRATED_SLUGS`, then asserted that
+/// same membership, so the assertion could never fail (a slug deleted from BOTH `diag.rs` and the
+/// list vanished from the extracted set and was never checked; a full silent catalog retirement
+/// stayed green, proven twice). The fix is a real committed-source→current-list direction:
+/// [`committed_slug_arms`] reads the slugs the committed `slug()` carried by their SHAPE alone
+/// (bounded to the `fn slug` body, never gated on the current list), so a slug the working tree
+/// dropped from `MIGRATED_SLUGS` is still extracted from the committed source and trips the assert.
 fn assert_no_slug_vanished(committed_diag_rs: &str) {
-    for slug in extract_committed_slugs(committed_diag_rs) {
+    let committed = committed_slug_arms(committed_diag_rs);
+    // Sanity: the committed `slug()` body MUST yield at least one arm, or the shape-scan silently
+    // matched nothing and the guard would be vacuous again (a refactor of `slug()` that this scan
+    // can't read must fail loudly, not pass empty). The catalog is never empty at any real HEAD.
+    assert!(
+        !committed.is_empty(),
+        "retire-guard: the committed diag.rs `slug()` body yielded no slug arms — the shape-scan \
+         matched nothing (a `slug()` refactor this guard cannot read, or a corrupt fetch). Fix the \
+         scan; do not let the retire-guard pass vacuously (the x3a-E/t-2 tautology class)."
+    );
+    for slug in committed {
         assert!(
             MIGRATED_SLUGS.contains(&slug.as_str()),
-            "retire-guard: catalog slug `{slug}` was in the committed diag.rs but is gone from \
-             MIGRATED_SLUGS — a silent catalog deletion. If intentional, record it as retired \
+            "retire-guard: catalog slug `{slug}` was in the committed diag.rs `slug()` but is gone \
+             from MIGRATED_SLUGS — a silent catalog deletion. If intentional, record it as retired \
              deliberately; do not let a code quietly stop existing (226 §1 retire-guard)."
         );
     }
 }
 
-/// Pull the catalog slugs out of a committed diag.rs by scanning `slug`'s arms — the
-/// `=> "dq-…"` shape. Conservative: only matches the `=> "…"` form inside the migrated-code
-/// region, so it does not pick up doc-comment mentions or the legacy-module strings.
-fn extract_committed_slugs(diag_rs: &str) -> BTreeSet<String> {
+/// Pull the catalog slugs out of a committed diag.rs by their SHAPE inside the `slug()` function
+/// body — the `=> "…"` arms — WITHOUT consulting the current `MIGRATED_SLUGS` (that circular
+/// pre-filter was the t-2 tautology). The scan is bounded to the `fn slug(` body (from its header
+/// to the next top-level `fn ` at the same indentation) so it never picks up doc-comment mentions
+/// or unrelated `=> "…"` string arms elsewhere in the file. Every arm slug inside that body is a
+/// real catalog wire token by construction.
+fn committed_slug_arms(diag_rs: &str) -> BTreeSet<String> {
     let mut out = BTreeSet::new();
-    for line in diag_rs.lines() {
-        let trimmed = line.trim();
-        // The `slug` match arms: `DiagCode::Variant(_) => "slug",`.
+    // Locate the `slug` method body. `pub fn slug(` is unique in diag.rs (the one wire-token fn);
+    // scan from there to the next line that begins a sibling item (`    fn ` / `    pub fn ` /
+    // a `}` at column 0 closing the impl) — generous enough to cover the whole match, tight enough
+    // to exclude the rest of the file.
+    let Some(start) = diag_rs.find("fn slug(") else {
+        // No `slug` fn in the committed source at all — return empty; `assert_no_slug_vanished`'s
+        // non-empty guard turns this into a loud failure (the scan could not read the catalog).
+        return out;
+    };
+    let body = &diag_rs[start..];
+    for line in body.lines().skip(1) {
+        // Stop at the next `fn` after `slug`'s body — `slug`'s arms are all before it, so a stray
+        // `=> "…"` in a later method (`OperandPosition::describe`, `remediation_tag`, the renders)
+        // is excluded. The skip(1) drops the `fn slug(` header line itself.
+        let trimmed = line.trim_start();
+        if trimmed.starts_with("fn ") || trimmed.starts_with("pub fn ") {
+            break;
+        }
         if let Some(arrow) = trimmed.find("=> \"") {
             let after = &trimmed[arrow + 4..];
             if let Some(end) = after.find('"') {
-                let slug = &after[..end];
-                // Only catalog slugs (the migrated ones use the dq-/render- shapes); ignore
-                // unrelated `=> "…"` string arms by requiring the slug be one we know is a
-                // catalog code. This keeps the guard focused on the catalog, not every string.
-                if MIGRATED_SLUGS.contains(&slug) {
-                    out.insert(slug.to_string());
-                }
+                out.insert(after[..end].to_string());
             }
         }
     }
@@ -502,4 +561,99 @@ fn is_test_fixture_slug(slug: &str) -> bool {
         slug,
         "test-warn" | "boom" | "x-note" | "x-warn" | "x-err" | "e"
     )
+}
+
+// ===========================================================================
+// Negative controls — prove the rewritten guards can actually FIRE (the t-1/t-2 class)
+// ===========================================================================
+
+/// act-2 NEGATIVE CONTROL (x3a-E/t-2): the rewritten retire-guard must TRIP on a silent catalog
+/// retirement. We synthesize a committed-`diag.rs` `slug()` body carrying a ghost slug that is NOT
+/// in the current `MIGRATED_SLUGS`, and assert (a) the shape-scan extracts it ANYWAY — the property
+/// the old circular pre-filter destroyed — and (b) `assert_no_slug_vanished` panics on it. The old
+/// guard passed this same input green (the ghost was filtered out before the assert); this pins
+/// that it no longer can.
+#[test]
+fn retire_guard_negative_control_trips_on_silent_retirement() {
+    // A minimal stand-in for a COMMITTED diag.rs `slug()` whose source still carried a code that
+    // the working tree has since silently dropped from MIGRATED_SLUGS.
+    let committed = r#"
+        pub fn slug(&self) -> &'static str {
+            match self {
+                DiagCode::SomeLiveCode(_) => "dq-site-unresolvable",
+                DiagCode::GhostRetired(_) => "ghost-retired-code",
+            }
+        }
+        fn something_else(&self) -> u32 { 0 }
+    "#;
+    let extracted = committed_slug_arms(committed);
+    // (a) The anti-tautology property: the scan sees the ghost regardless of MIGRATED_SLUGS.
+    assert!(
+        extracted.contains("ghost-retired-code"),
+        "the shape-scan must extract a committed slug even when it is absent from the current \
+         MIGRATED_SLUGS — that independence is exactly what kills the t-2 tautology"
+    );
+    assert!(
+        !MIGRATED_SLUGS.contains(&"ghost-retired-code"),
+        "precondition: the ghost slug is genuinely not a current catalog code"
+    );
+    // (b) The guard panics on this committed source (a silent retirement is caught).
+    let result = std::panic::catch_unwind(|| assert_no_slug_vanished(committed));
+    assert!(
+        result.is_err(),
+        "assert_no_slug_vanished MUST panic when a committed slug vanished from MIGRATED_SLUGS \
+         (silent retirement) — if it passes, the guard is vacuous again (t-2)"
+    );
+}
+
+/// act-2 companion: the non-empty guard inside `assert_no_slug_vanished` must itself fire when the
+/// shape-scan reads nothing (a `slug()` refactor this scan cannot parse). Proves the guard cannot
+/// pass vacuously on an empty extraction — the other half of the t-2 class (a scan that silently
+/// matches nothing is as bad as a circular filter).
+#[test]
+fn retire_guard_negative_control_trips_on_unreadable_slug_body() {
+    let no_slug_fn = "pub fn unrelated(&self) -> u32 { match self { _ => 0 } }";
+    assert!(
+        committed_slug_arms(no_slug_fn).is_empty(),
+        "precondition: a source with no `fn slug(` yields no arms"
+    );
+    let result = std::panic::catch_unwind(|| assert_no_slug_vanished(no_slug_fn));
+    assert!(
+        result.is_err(),
+        "assert_no_slug_vanished MUST panic on an empty extraction (an unreadable `slug()` body), \
+         never pass vacuously"
+    );
+}
+
+/// act-3 NEGATIVE CONTROL (x3a-B/t-1): the constructed-scan must scan PRODUCTION emits only, so a
+/// variant satisfied solely by `diag.rs`'s own match arms (or core's tests) would NOT pass. We
+/// cannot delete a real production emit inside a test, so we pin the load-bearing PROPERTY directly:
+/// the scan basis (`production_emit_source`) excludes `core`'s `diag.rs`, while the OLD basis
+/// (`scanned_source`) included it. A unique `diag.rs`-only marker present in the old basis and
+/// ABSENT from the new one proves diag.rs's own arms can no longer satisfy the grep — which is
+/// exactly why deleting a sole production emit now fails the scan (the t-1 vacuity is closed).
+#[test]
+fn constructed_scan_negative_control_excludes_core_diag_arms() {
+    // A token that exists ONLY in core/src/diag.rs (the spanless-mint constructor's name). It is a
+    // `core`-internal definition, never written in a consuming crate's emit.
+    let core_only_marker = "pub fn new_spanless_site(";
+    let old_basis = scanned_source();
+    let new_basis = production_emit_source();
+    assert!(
+        old_basis.contains(core_only_marker),
+        "precondition: the old `scanned_source` basis DID include core/diag.rs (that inclusion was \
+         the t-1 vacuity — diag.rs's own arms satisfied the grep for every variant)"
+    );
+    assert!(
+        !new_basis.contains(core_only_marker),
+        "the rewritten scan basis must EXCLUDE core/diag.rs, so a variant constructed only in \
+         diag.rs's own match arms / core tests is NOT seen — deleting its sole production emit now \
+         trips `every_catalog_variant_is_constructed` (act-3, t-1 closed)"
+    );
+    // Belt-and-braces: confirm a fabricated payload name appearing ONLY as a diag.rs-style arm is
+    // not findable in the production basis (the scan cannot be satisfied by an arm).
+    assert!(
+        !new_basis.contains("DiagCode::ThisVariantDoesNotExistAnywhere("),
+        "sanity: a non-emitted variant is absent from the production basis"
+    );
 }
