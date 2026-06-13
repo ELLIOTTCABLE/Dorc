@@ -1366,6 +1366,54 @@ warm-ups (d×d host-flip fixture; var-resolved redirect case) → 22x synthesis 
   conductor-verifies-in-source; present BOTH to the human uncollapsed (never
   vouch). Token/time at completion; xc-a-* worktrees cleaned after.
 
+- XC-1 RECONCILED (2026-06-13; all four passes in, conductor-verified). HEADLINE
+  LESSON (the round's most valuable same-model-crosscheck data point): the two
+  most prominent Pair A findings were FALSE POSITIVES from a SHARED BLIND SPOT.
+  Both test-quality agents (neutral + adversarial, independently) claimed
+  `syntax-unsupported` (and, neutral-only, `render-heredoc-refused`) have "no
+  behavioral pin / pass every gate" — because BOTH ran only `cargo test`, never
+  `sh e2e/run.sh`. Conductor verification (one mutation push_unsupported→wrong
+  code through the FULL chain + a grep of the corpus) overturned it: e2e gate-3
+  (run.sh §684-707, the stderr-severity floor) matches every Error diagnostic
+  against per-case `expected-diagnostics` patterns that EMBED the code
+  (`error[syntax-unsupported]:`), so a wrong code = undeclared = case FAILS.
+  Both codes are declared ×4 each (syntax-unsupported: background-amp-runs/
+  top-eval/toprejected/while-read-file-rejects; render-heredoc-refused: 3×
+  omitsafe21 + render21). B8's pin-map "×4" was RIGHT; the conductor's relayed
+  "all 23 pinned" was RIGHT; the AGENTS under-counted by skipping e2e.
+  CONVERGENCE OF TWO SAME-MODEL AGENTS ≠ INDEPENDENT CONFIRMATION when they
+  share a method gap — exactly the human's "less valuable, same model" caution,
+  and why verify-survivors is non-negotiable post-Fable. (Recorded as a 22W
+  feedback item.)
+- XC-1 REAL SURVIVORS (verified): (a) effect.rs:133 stale inline comment
+  "member-family path: unreachable for ⊤ (concrete members)" CONTRADICTS the
+  corrected f-3b fn-doc 20 lines above + the dedup test — B8 fixed the fn-doc +
+  the member_family comment but missed this third co-located one
+  (Pair-B-adversarial, conductor-verified in source). (b) value.rs:~753
+  `record_member_sites` doc "each is a normal concrete argv" — same refuted
+  framing, pre-existing (outside B8's briefed scope), conductor-verified. (c)
+  Pair-A: `lift_failure_severity_agrees_with_registry`'s SEVERITY half is
+  vacuous-at-HEAD — both sides read the registry, and both check codes are
+  registry-Error, so a reversion to hardcoded `Diagnostic::error` would NOT trip
+  it (its docstring oversells; the code/span/message halves are genuine). Real,
+  low-severity, NO clean fix (no non-Error lift_failure code exists to
+  distinguish). PUNCTURES the conductor's earlier "B7c symbolic test strictly
+  better" praise — still better for the re-grade case, but it does NOT pin the
+  registry-sourcing at HEAD. (d) Pair-A: `constructed_scan_negative_control`
+  is a PROPERTY-pin (re-derives production_emit_source) — it does not guard the
+  gate's basis WIRING, so a future revert of the gate to scanned_source() stays
+  green (control + gate both). Real, low-severity. (e) minor: the f-3b dedup
+  test comment's which-operand detail (conductor to verify-and-fix with the
+  others). CONVERGENCE THAT HELD (trustworthy): Pair-B both passes — the 5
+  design changes uphold the inv-* set (registry-routing, EOF-span determinism,
+  debug_assert discriminant correct + inv-no-throw-respecting, f-3b substance
+  TRUE, must-emit de-vacuuming) with no biting exclusion-check cell; Pair-A both
+  — the 7 real must-emit pins + dedup-count + EOF-span all genuinely fire under
+  mutation. CLEANUP (pending/surfaced to human): fix comments (a/b/e); judgment
+  calls SURFACED — add unit code-pins for the 2 e2e-only codes? harden the
+  negative control to guard the gate wiring? accept the severity-test limit? —
+  all ru-26-flavored spike-scope calls. xc-a-* worktrees to clean.
+
 ## §11 Post-gating self-audit (append-only; conductor, after a window where several turns produced no output)
 
 > Written after several conductor turns produced nothing (model-gated on accumulated
