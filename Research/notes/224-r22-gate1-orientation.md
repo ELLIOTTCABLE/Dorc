@@ -1770,6 +1770,23 @@ warm-ups (d×d host-flip fixture; var-resolved redirect case) → 22x synthesis 
   apply/round-trip), the streaming unit is the per-site advisory line, the
   logical-clock is per-site probe-return ordering, REUSE `advisory_filter` (don't
   invent a 2nd severity policy — dac-B two-sources hazard).
+- ru-29 tc-flag RULINGS + CLI-shape refinement (human, 2026-06-14, at ui-A harvest):
+  - tc-subcommand-shape (NOTE for wire/real-reimpl, NOT a spike change now): the REAL
+    UX is TWO user-phases, not 4 commands. `plan` = dispatch probes + WAIT + slurp
+    results (concurrent) + build coherent per-host plan(s) → emits a few `.sh` files,
+    ONE-PER-HOST; `apply` = TAKES IN those (possibly USER-EDITED — the point of plan)
+    files + ships them. {probe&plan} → wait-for-user-action → {apply}. TUI may collapse
+    to ONE interface + an "apply?" button; CLI may keep a `generate-probes`-only cmd.
+    ui-A's separate probe/plan are a spike CONVENIENCE; the real `plan` INTERNALIZES
+    probe-dispatch+slurp. Directly shapes ui-B: the `plan` phase IS the realtime
+    concurrent probe-slurp + incremental-build.
+  - tc-probe-no-digest: RETURN later; NOTE it — belongs in the WIRE-FORMAT (the probe
+    artifact should carry a drift/identity signal).
+  - tc-probe-results-roundtrip: the tests SHOULD execute the FULL split-phase
+    round-trip; NOT critical now — roll into a later builder-task / round-end cleanup
+    (task #19).
+  - tc-apply-receipt-floor: RATIFIED (error-only acceptable for the spike; a CLI flag
+    could tune it later). Builder default stands.
 
 ## §11 Post-gating self-audit (append-only; conductor, after a window where several turns produced no output)
 
