@@ -126,6 +126,31 @@ as either admin-user-behaviour or oracle-author-behaviour degrades, *our*
 behaviour degrades *only as much as necessary*, in the precise ways forced by
 the user error/omission, and no further.
 
+This dimension also intereacts in a complicated fashion with the probe/apply
+inequality. There's two similar-sounding questions we ask the oracle-writer to
+be accurate about:
+
+1. "does your oracle-implementation ever cause mutation" and,
+2. "what aspects of the runtime behaviour of the command have you modeled, and
+   how completely?"
+
+Unfortunately, they have very different constraints in practice. There's *no*
+fallback for mutation. We can't meaningfully describe ourselves as 'best-effort'
+there - what 'best-effort' means, in functional implementation terms, is
+establishing a *failure gradient*. "We only fail you as much as you've already
+failed yourself." But there's no *gradient* to accidental mutation: we've told
+you to keep your oracle mutation-free; and we've told you we won't cause
+mutation-on-probe. If that contract is broken, it *fully* collapses; there's no
+"partially mutated" state for us to aspire to, nor a "partially mutating" state
+to cause us to reach for it.
+
+The opposite is true for the apply-time semantic, though: *partial benefit
+exists*. Dorc could, potentially, elide *many* runbook commands; but it could
+also, potentially, elide *less*, while still providing value in the few it does
+manage to elide. Therefore an *under-modeled* command - a poorly-written,
+low-resolution oracle - can/should/hopefully reach toward that half-beneficial
+outcome.
+
 
 ### To execute, or not to execute?
 

@@ -6,6 +6,11 @@
 - [ ] prior-art on linking oracles' binaries-to-be-invoked to *hash*, spelled-in-sh (`if [ "$(shasum thebin)" = "abcdef..." ]; then ...`)
 - [x] (DEFERRED) skim shell-script corpii to validate design
 
+## Spike-3
+
+- [ ] phased CLI (not TUI); actual plan/apply as-driven-by-a-user
+- [ ] *just* the streaming-updates part of the TUI;
+
 ## Preparation-for-agentic-implementation 🤢 phase
 
 - [ ] how to TDD: how do we *architect* a network-scale appliance? even miniaturely? is there any better option than "I keep a proxmox host up at all times to dynamically Become A Network Of Fake Hosts, then execute tests against that?" I need something *fast* and I just don't know how to structure. (also, sandboxed, for agents.)
