@@ -712,6 +712,31 @@ scan_diagnostics() {
   return 1
 }
 
+# gate-7 (why-lens emission, 22D stage-3 / #16, x2-fd1): if a case ships an `expected-why` file,
+# assert each of its (substring) patterns appears in some `why:` stderr line — pinning that the
+# user-visible why-lens disclosure actually REACHES stderr end-to-end for a real book (the XC-3
+# gap: the render logic was unit-pinned, the cli EMISSION was not). Substring-matched (grep -F)
+# like gate-3, so a pattern need not carry the why line's volatile byte-offsets. A case without
+# the file is unaffected (the why-lens is additive — most cases emit why lines, unasserted).
+scan_why() {
+  _case=$1; _err=$2; _dir=$3
+  _decl="${_dir}expected-why"
+  { [ -f "$_decl" ] && [ -s "$_decl" ]; } || return 0   # opt-in
+  _whys=$(grep -E '^why: ' "$_err" 2>/dev/null || true)
+  _missing=
+  while IFS= read -r _pat; do
+    [ -z "$_pat" ] && continue
+    printf '%s\n' "$_whys" | grep -qF -- "$_pat" || _missing="${_missing}${_pat}
+"
+  done < "$_decl"
+  [ -z "$_missing" ] && return 0
+  if [ "${XFAIL_ACTIVE:-}" != "1" ]; then
+    echo "FAIL  $_case  [gate-7: expected why-lens line(s) not emitted on stderr — fix the cause, or update expected-why]"
+    printf '%s' "$_missing" | sed 's/^/      missing: /'
+  fi
+  return 1
+}
+
 # gate-6 self-test (the confound battery) runs ONCE here, before any case — a lying judge is
 # worse than no judge, so this aborts (exit 3) if the dual-rail judge fails to scream.
 dual_rail_selftest
@@ -816,6 +841,8 @@ for dir in "$here"/cases/*/; do
   # case (declare legitimate ones in expected-diagnostics). Always run — analysis-only
   # cases (no mocks/) emit diagnostics too (⊤-rejects, missing-probe).
   scan_diagnostics "$name" "$err_file" "$dir" || case_ok=0
+  # gate-7 (why-lens emission): opt-in expected-why substring assertion (#16, x2-fd1).
+  scan_why "$name" "$err_file" "$dir" || case_ok=0
 
   # Content golden-diff (secondary to the gates; -n is blind to *which* lines elided).
   # Skipped under bless and for xfail cases (goldens hand-authored there).
@@ -864,5 +891,5 @@ if [ "$fails" -ne 0 ]; then
 elif [ "${BLESS:-}" = "1" ]; then
   echo "blessed $total cases (all ap-2 gates passed)"
 else
-  echo "all $total e2e round-trips passed (ap-2 $checker -n + apply/probe exec gates, redirect sandbox, ordered run-set, stderr floor, argv-echo differential, dual-rail license judge)"
+  echo "all $total e2e round-trips passed (ap-2 $checker -n + apply/probe exec gates, redirect sandbox, ordered run-set, stderr floor, argv-echo differential, dual-rail license judge, why-lens emission)"
 fi

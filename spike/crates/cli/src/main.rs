@@ -367,44 +367,123 @@ fn unresolvable_diagnostics(
 
 /// stage-3 (the why-lens render, `22D` §1): surface — on stderr, the RENDER surface — the
 /// per-line "why did this command RUN (never elided)?" disclosure for each forced-run command
-/// whose ⊤ carries a wired cause. Reads each TYPED cmdsub-⊤ [`dorc_core::diag::Diag`]'s cause +
-/// the `arena` via [`dorc_core::diag::why`] (the first receipt-READER), printing the cause-derived,
-/// remediation-classed explanation at the decision point (the diag's span, rendered by `why`).
+/// whose ⊤ carries a wired cause. The render + stage-4 dedup is [`why_lens_lines`] (pure,
+/// unit-testable); this is just its stderr driver.
 ///
 /// rec-1 WELD (two surfaces): this prints to STDERR only — the plan-render surface. It is NEVER
 /// woven into the byte-floored `.sh` artifact on stdout (the artifact stays receipt-free). The
 /// line is prefixed `why:` and never `error[`, so the e2e gate-3 stderr-floor (which keys on the
 /// `<stage>: error[` shape) ignores it — the why-lens is additive, never a case-failing diagnostic.
-///
-/// stage-4 (suppression scoping, mvs-C): DEDUP IN RENDERING — the cause-site is shown ONCE across
-/// N consumers poisoned by the same ⊤ origin. Dedup is by the cause [`dorc_core::ProvId`] (its
-/// origin IS the shared cause-site), tracked in a `Vec` preserving first-occurrence order — a
-/// deterministic dedup (`inv-determinism`; `ProvId` is `!Ord`, so a `BTreeSet` is unavailable and
-/// a `HashSet` iterated to output is forbidden — the diags arrive in node order, so first-seen
-/// order is stable). This is the dedup the render ACTUALLY exercises; nothing more is built here
-/// (no general suppression subsystem — `22D` §1 stage-4).
 fn emit_why_lens(why_diags: &[dorc_core::diag::Diag], arena: &ProvArena, src: &str) {
-    let mut shown_causes: Vec<dorc_core::ProvId> = Vec::new();
-    for diag in why_diags {
-        if let Some(cause) = cmdsub_cause(diag) {
-            if shown_causes.contains(&cause) {
-                continue; // stage-4: this cause-site was already explained — show it once
-            }
-            shown_causes.push(cause);
-        }
-        if let Some(explanation) = dorc_core::diag::why(diag, arena, src) {
-            eprintln!("why: {}", explanation.reason);
-        }
+    for line in why_lens_lines(why_diags, arena, src) {
+        eprintln!("why: {line}");
     }
 }
 
-/// The ⊤-cause [`dorc_core::ProvId`] a why-lens diag carries, if any — the stage-4 render-dedup
-/// key. Only a `CmdsubOperandTop` carries a cause at HEAD (stage-1). Returns `None` for any other
-/// diag (which the why-lens does not explain anyway, fd-G), so it never participates in the dedup.
-fn cmdsub_cause(diag: &dorc_core::diag::Diag) -> Option<dorc_core::ProvId> {
+/// The why-lens render + stage-4 dedup, factored PURE (the stderr side is [`emit_why_lens`]) so
+/// the dedup is unit-testable (`x2-fd1`). For each caused-⊤ diag it renders the "why did this run"
+/// line via [`dorc_core::diag::why`], showing a given cause-SITE once.
+///
+/// stage-4 DEDUP KEY = `(cause, site)`, NOT the cause [`dorc_core::ProvId`] alone (`x2-fd1` fix,
+/// `224` §10): under function inlining two call-sites splice the SAME body `AstId` (`inv-leaf-seam`)
+/// ⇒ both `CmdsubOperandTop` diags hash-cons to ONE cause `ProvId`. Keying on cause alone collapsed
+/// two GENUINELY INDEPENDENT forced runs (suppressing the 2nd `why:` — the over-suppression). They
+/// differ by `site` (the stable `site N.M` leaf), so `(cause, site)` keeps them separately disclosed
+/// while still deduping a true re-disclosure (same cause AND same site). Tracked in a `Vec` of
+/// first-occurrences — `ProvId` is `!Ord` (no `BTreeSet`) and the diags arrive in node order, so
+/// first-seen order is deterministic (`inv-determinism`). The only suppression built (no general
+/// subsystem — `22D` §1 stage-4).
+fn why_lens_lines(
+    why_diags: &[dorc_core::diag::Diag],
+    arena: &ProvArena,
+    src: &str,
+) -> Vec<String> {
+    let mut shown: Vec<(dorc_core::ProvId, dorc_core::diag::SiteId)> = Vec::new();
+    let mut lines = Vec::new();
+    for diag in why_diags {
+        if let Some(key) = cmdsub_cause_site(diag) {
+            if shown.contains(&key) {
+                continue; // stage-4: this (cause, site) was already explained — show it once
+            }
+            shown.push(key);
+        }
+        if let Some(explanation) = dorc_core::diag::why(diag, arena, src) {
+            lines.push(explanation.reason);
+        }
+    }
+    lines
+}
+
+/// The stage-4 render-dedup key a why-lens diag carries, if any: `(⊤-cause, site)`. Only a
+/// `CmdsubOperandTop` carries a cause at HEAD (stage-1); any other diag returns `None` (the why-lens
+/// does not explain it anyway, fd-G), so it never participates in the dedup. The `site` half is what
+/// separates two inlined call-sites sharing one cause `ProvId` (`x2-fd1`).
+fn cmdsub_cause_site(
+    diag: &dorc_core::diag::Diag,
+) -> Option<(dorc_core::ProvId, dorc_core::diag::SiteId)> {
     match &diag.code {
-        dorc_core::diag::DiagCode::CmdsubOperandTop(p) => p.cause,
+        dorc_core::diag::DiagCode::CmdsubOperandTop(p) => p.cause.map(|c| (c, p.site)),
         _ => None,
+    }
+}
+
+#[cfg(test)]
+mod why_lens_dedup_tests {
+    //! `x2-fd1` (`22E`, `224` §10): the stage-4 render-dedup must key on `(cause, site)`, not the
+    //! cause `ProvId` alone — else two inlined call-sites sharing one body-span cause collapse and
+    //! the 2nd forced run's `why:` is wrongly suppressed. The arena hash-conses identical
+    //! `(OriginKind, span)` origins (`core::prov` `hash_cons_shares_identical_origins`), so two
+    //! `arena.leaf(TopCause, same_span)` calls reproduce the inlined-body cause collision.
+    use dorc_core::diag::{CmdsubOperandTop, Diag, DiagCode, OperandPosition, SiteId};
+    use dorc_core::{BytePos, LeafId, OriginKind, ProvArena, Span};
+
+    fn cmdsub_top(arena: &mut ProvArena, leaf: u32, body_span: Span) -> Diag {
+        let cause = arena.leaf(OriginKind::TopCause, Some(body_span));
+        Diag::new(
+            DiagCode::CmdsubOperandTop(CmdsubOperandTop {
+                site: SiteId::leaf(LeafId(leaf)),
+                position: OperandPosition::Operand(1),
+                cause: Some(cause),
+            }),
+            Span::new(BytePos(0), BytePos(20)),
+        )
+    }
+
+    #[test]
+    fn two_inlined_sites_sharing_one_cause_both_disclose() {
+        // `apt_install "$(curl a)"; apt_install "$(curl b)"`: both calls inline ONE wrapper body ⇒
+        // one shared cause ProvId, distinct call-site leaves. (cause, site) keeps BOTH `why:`s; the
+        // old cause-alone key suppressed the 2nd (x2-fd1, disclosure-only over-suppression).
+        let mut arena = ProvArena::new();
+        let body = Span::new(BytePos(11), BytePos(20));
+        let diags = [
+            cmdsub_top(&mut arena, 3, body),
+            cmdsub_top(&mut arena, 7, body),
+        ];
+        let lines = super::why_lens_lines(&diags, &arena, "apt_install \"$(curl a)\"");
+        assert_eq!(
+            lines.len(),
+            2,
+            "two inlined sites sharing one cause must BOTH disclose: {lines:?}"
+        );
+    }
+
+    #[test]
+    fn an_identical_cause_and_site_is_shown_once() {
+        // The dedup still FIRES for a true duplicate (same cause AND same site) — the (cause, site)
+        // key didn't neuter the stage-4 dedup into a no-op.
+        let mut arena = ProvArena::new();
+        let body = Span::new(BytePos(11), BytePos(20));
+        let diags = [
+            cmdsub_top(&mut arena, 3, body),
+            cmdsub_top(&mut arena, 3, body),
+        ];
+        let lines = super::why_lens_lines(&diags, &arena, "apt-get install \"$(date)\"");
+        assert_eq!(
+            lines.len(),
+            1,
+            "an identical (cause, site) re-disclosure is shown once: {lines:?}"
+        );
     }
 }
 
