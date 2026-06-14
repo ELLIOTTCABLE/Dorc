@@ -1555,6 +1555,41 @@ warm-ups (d×d host-flip fixture; var-resolved redirect case) → 22x synthesis 
   no cause field) + fd-G (reliable-oracle quadrant only) still stand as real
   corrections for the why-lens build.
 
+- WHY-LENS RETURNED + XC-3 RECONCILED + HARVESTED (2026-06-14). Builder
+  (Opus, ~115K self-rep) landed 4 stages in 3 commits on ai/r22-whylens
+  (`14c0166`/`2cf4ac5`/`e410537` @ 6c76a14): stage-1 cause-wiring via the
+  deferred-typed-diag mechanism (a `&mut Vec<CmdsubTop>` collector through the
+  effects pass; finalize the typed Diag with cause=top_causes[node] AFTER
+  mint_top_causes — the corrected post-mint ordering, NO &mut arena in the pass);
+  stage-2 `why(diag,&arena,src)->Option<Explanation>`; stage-3 cli disclosure to
+  STDERR (`why: ran because …`); stage-4 dedup-by-cause-ProvId (Vec, !Ord). XC-3
+  (human-directed crosscheck, can't-be-over-cautious; Opus pair, read-only): both
+  passes + the conductor's own gate chain CONVERGE on SOUND-TO-HARVEST. Neutral:
+  all 4 areas code-verified (pure/deterministic effects pass; ru-11 render-only;
+  rec-1 artifact receipt-free; tests genuine). Adversarial: all 5 attacks
+  (purity-broke / weld-breach / artifact-not-byte-identical / dedup-over-suppress /
+  vacuous-tests) traced to source, NONE LANDS. Conductor chain on builder tip:
+  GREEN (e2e 99/99 ×2 BYTE-IDENTICAL = artifact receipt-free + deterministic,
+  independently confirmed; erasability 3/3 untouched). REAL FINDINGS (neither a
+  blocker): (1) dormant fwd-hazard — CmdsubOperandTop derives Eq over `cause`
+  (vs Reach which excludes it); harmless today, IS the 22D §2 named weld-breach
+  watch-point (a future suppression tie-break comparing payloads would pull cause
+  in) — no action, recorded. (2) COVERAGE GAP — the user-visible `why:` stderr
+  render has NO e2e pin (render logic unit-pinned; artifact byte-identity
+  e2e-pinned; the cli emission itself isn't — the e2e harness checks stdout +
+  expected-diagnostics Error-floor, not the why: stderr line). Follow-up task,
+  not a harvest blocker. HARVESTED as `<cherry-pick tip f40dded>` (3 commits
+  onto ai/spike3; fb-11 EMPTY). REMEDIATION-CLASS disposition (tc-whylens-
+  remediation): builder proposed CmdsubOperandTop⇒FixBookLine (Structural alt);
+  conductor ACCEPTS FixBookLine — the render text is honest-CONDITIONAL ("to
+  elide it, make the operand a literal Dorc can resolve+probe"), which doesn't
+  lie (it says IF you can make it static); flagged for human override to
+  Structural if the "don't imply it's the admin's fault when the dynamism may be
+  essential" framing is preferred. Post-harvest chain results appended.
+  METHOD NOTE: this is the first arc where the conductor's own design (22C) was
+  caught wrong by XC-2 AND the corrected build (22D) sailed XC-3 clean — the
+  crosscheck-on-design then crosscheck-on-build loop worked end to end post-Fable.
+
 ## §11 Post-gating self-audit (append-only; conductor, after a window where several turns produced no output)
 
 > Written after several conductor turns produced nothing (model-gated on accumulated
