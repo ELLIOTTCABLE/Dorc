@@ -1,0 +1,9 @@
+# probe-results: site 1 is the OUTER `dpkg -s nginx` pkgstate Query guard; absent ⇒ rc 1 ⇒
+# the `|| { … }` block is LIVE (door-1 does NOT fold; the guard's fold-usable rc keeps the
+# branch reachable). site 2 is the INNER `apt-get install curl` ESTABLISH probe
+# (package:curl#installed); absent ⇒ DIVERGED (rc firewalled ⇒ omitted) ⇒ the inner door-3
+# site's Effect channel gates ⇒ the install RUNS (door-3 clears only Status, not Effect —
+# contrast door1-door3-inner-elides, where curl converged and the install elided).
+# (`set -e` is site 0; the inner `true` is site 3; systemctl is site 4 — live.)
+site 1 effect=absent rc=1
+site 2 effect=absent

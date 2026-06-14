@@ -99,6 +99,9 @@
   root-cause dedup), and thread it into the provenance-comment emitter + the lane.
   The 21K d-1 derivation-DUMP mode (one durable log per run; `why` becomes a query
   over it; golden-TRACE fixtures for critical-tier DST) consumes exactly this.
+  <!-- /* corrected 2026-06-11 (round-22, ru-16 need-4 + ru-19): the golden-TRACE
+  half of d-1 was adjudicated AGAINST (no trace-pinning; verdicts everywhere); the
+  dump+`why` half stands and is arch-4. See 22A concl-9 + 224 ru-19 dist-1/dist-2. */ -->
 - **Catalog-completeness as a real gate.** The existing test asserts
   registered⇒templated (the trivial direction); NOTHING asserts give-up-path⇒registered
   (the Pottier direction). No build-script/CI mechanism enforces catalog membership;

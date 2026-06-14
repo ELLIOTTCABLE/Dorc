@@ -47,6 +47,8 @@ use dorc_syntax::ast::{Ast, NodeKind};
 mod fold;
 pub use fold::{AbstractRc, FoldResult};
 
+pub mod erasability;
+
 pub mod render;
 
 // ===========================================================================
@@ -214,6 +216,18 @@ pub struct Derivation {
     /// Query guard, the guard's observed Effect verdict (`holds`/`absent` — the guard
     /// is substituted regardless, since it mutates nothing).
     pub verdict: Verdict,
+    /// The FULL granted witness (arch-1 `vp-17`/`vp-18`, the uncapped license-tier of the
+    /// two-tier receipts budget — [`dorc_core::Witness`]): the origin receipts that justified
+    /// this license, stored EXACTLY (no k-cap, unlike a value join's [`dorc_core::Parents`]).
+    ///
+    /// THE WELD: this is pure OUTPUT provenance — `build_plan` computes it from the site the
+    /// license already keys on, AFTER the mint decision, so it can never influence the
+    /// decision. It is on the EXEMPT plane (`Exempt::ReceiptId`): the `erasability` gate omits
+    /// it from the identity comparison, and the gate's run-B (adversarial arena) proves a
+    /// different witness does not perturb any decision. Empty for a license minted without an
+    /// arena (the tests' throwaway path); populated with the establish site's `BookSource`
+    /// origin on the real `build_plan` path.
+    pub witness: dorc_core::Witness,
 }
 
 /// The witness authorising the one irreversible verb — *elide a command*. Its
@@ -307,6 +321,9 @@ impl ReplaceLicense {
                         ambient: true,
                         grade,
                         verdict: Verdict::Converged,
+                        // Empty at mint (the minter has no arena); `build_plan` attaches the
+                        // real witness post-mint via `with_witness` (arch-1, output-only/exempt).
+                        witness: dorc_core::Witness::empty(),
                     },
                 })
             }
@@ -363,6 +380,7 @@ impl ReplaceLicense {
                 ambient: false,
                 grade: Grade::Must,
                 verdict,
+                witness: dorc_core::Witness::empty(),
             },
         })
     }
@@ -416,6 +434,7 @@ impl ReplaceLicense {
                 ambient: true,
                 grade: Grade::Must,
                 verdict: Verdict::Converged,
+                witness: dorc_core::Witness::empty(),
             },
         })
     }
@@ -495,8 +514,19 @@ impl ReplaceLicense {
                 ambient: true,
                 grade: Grade::Must,
                 verdict: Verdict::Converged,
+                witness: dorc_core::Witness::empty(),
             },
         })
+    }
+
+    /// Attach the FULL granted witness post-mint (arch-1 `vp-17`/`vp-18`) — pure OUTPUT
+    /// provenance, set AFTER the decision so it cannot influence the mint (the WELD). Called by
+    /// `build_plan` with the establish site's origin(s); the witness is on the EXEMPT plane
+    /// (`Exempt::ReceiptId`), so the `erasability` gate proves it perturbs no decision.
+    #[must_use]
+    pub fn with_witness(mut self, witness: dorc_core::Witness) -> Self {
+        self.derivation.witness = witness;
+        self
     }
 
     /// The fact whose established-ness licensed this skip.
@@ -569,8 +599,12 @@ fn consumption_ok(consumed: &May<Powerset<Channel>>, status: Predicted<Rc>) -> b
 /// executable work is a list of *individually wrappable* leaves, each with a
 /// stable back-map to its source — NEVER one opaque `sh -c "$bigscript"`. The
 /// back-map is [`Step::ast`]; the id is this leaf's position in source order.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub struct LeafId(pub u32);
+///
+/// Defined in `core` (`dec-seam-ownership`, the `dac-B` shared vocabulary) and
+/// re-exported here: the round-22 structured diagnostic ([`dorc_core::diag::SiteId`])
+/// keys on it, so the base crate owns it and `plan` shares the one type rather than a
+/// parallel one (`inv-site-keyed-results`).
+pub use dorc_core::LeafId;
 
 /// The cheapest sh stand-in that reproduces a leaf's **exact** observed exit status
 /// (`19A §5` observable-value-MAINTAINING substitution / DESIGN `16F`/`16P-T10`).
@@ -1079,6 +1113,7 @@ pub fn build_plan(
     cfg: &Cfg,
     classes: &[(CfgNodeId, SkipClass)],
     observe: impl Fn(FactKey) -> Observable,
+    arena: &mut dorc_core::ProvArena,
 ) -> Plan {
     // Map each classified leaf's AstId → its fact (establish + query classes carry
     // one). The fold reaches over the AST and needs each leaf's observed status keyed
@@ -1108,41 +1143,54 @@ pub fn build_plan(
     // through it (`inv-kfail`).
     let fold = fold::fold(ast, |leaf| leaf_fact.get(&leaf).map(|f| observe(*f)));
 
-    let mut steps: Vec<Step> = classes
-        .iter()
-        .map(|(node, class)| {
-            let ast_id = cfg.node(*node).ast;
-            let sh = command_text(src, ast, ast_id);
-            // An in-loop Members site and an inlined CALL each take their own all-or-nothing
-            // license path (the PER-MEMBER / PER-BODY-SITE observations); every other class
-            // takes the single-fact `disposition_for`.
-            let disposition = match class {
-                SkipClass::EstablishMembers {
-                    members,
-                    self_reached,
-                } => members_disposition(cfg, *node, members, *self_reached, &observe),
-                // arch-2 (`i-3`): the CALL aggregates its body sites' observations.
-                SkipClass::InlineCall { sites } => inline_disposition(cfg, *node, sites, &observe),
-                _ => {
-                    let observed = match class {
-                        SkipClass::EstablishAmbient(f)
-                        | SkipClass::EstablishWritten(f)
-                        | SkipClass::QueryResolvable { fact: f, .. } => Some(observe(*f)),
-                        SkipClass::EstablishMembers { .. }
-                        | SkipClass::InlineCall { .. }
-                        | SkipClass::MustRun => None,
-                    };
-                    disposition_for(cfg, &fold, *node, class, ast_id, observed)
-                }
-            };
-            Step {
-                leaf: LeafId(0),
-                ast: ast_id,
-                sh,
-                disposition,
+    let mut steps: Vec<Step> = Vec::with_capacity(classes.len());
+    for (node, class) in classes {
+        let ast_id = cfg.node(*node).ast;
+        let sh = command_text(src, ast, ast_id);
+        // An in-loop Members site and an inlined CALL each take their own all-or-nothing
+        // license path (the PER-MEMBER / PER-BODY-SITE observations); every other class
+        // takes the single-fact `disposition_for`.
+        let mut disposition = match class {
+            SkipClass::EstablishMembers {
+                members,
+                self_reached,
+            } => members_disposition(cfg, *node, members, *self_reached, &observe),
+            // arch-2 (`i-3`): the CALL aggregates its body sites' observations.
+            SkipClass::InlineCall { sites } => inline_disposition(cfg, *node, sites, &observe),
+            _ => {
+                let observed = match class {
+                    SkipClass::EstablishAmbient(f)
+                    | SkipClass::EstablishWritten(f)
+                    | SkipClass::QueryResolvable { fact: f, .. } => Some(observe(*f)),
+                    SkipClass::EstablishMembers { .. }
+                    | SkipClass::InlineCall { .. }
+                    | SkipClass::MustRun => None,
+                };
+                disposition_for(cfg, &fold, *node, class, ast_id, observed)
             }
-        })
-        .collect();
+        };
+        // arch-1 witness (`vp-17`/`vp-18`): a licensed `Replace` records its FULL granted
+        // witness — the establish site's `BookSource` origin — uncapped (the license tier).
+        // Pure OUTPUT provenance attached AFTER the mint (the WELD): the origin is the site
+        // the license already keys on, so it cannot influence the decision; it is EXEMPT
+        // (`Exempt::ReceiptId`) and the `erasability` gate proves it perturbs nothing.
+        if let Disposition::Replace(license, stand_in) = disposition {
+            let origin = arena.leaf(
+                dorc_core::OriginKind::BookSource,
+                Some(ast.node(ast_id).span),
+            );
+            disposition = Disposition::Replace(
+                license.with_witness(dorc_core::Witness::of(vec![origin])),
+                stand_in,
+            );
+        }
+        steps.push(Step {
+            leaf: LeafId(0),
+            ast: ast_id,
+            sh,
+            disposition,
+        });
+    }
 
     // Source order (classify yields CFG-alloc order; sort by span for a faithful
     // reading), then assign stable leaf ids. This MUST stay byte-identical to
@@ -1435,7 +1483,12 @@ impl Plan {
     /// converged mutator would otherwise be invisible). The cli `report()`s these on stderr;
     /// the e2e gate-3 floor requires a case exercising this path to declare the diagnostic.
     #[must_use]
-    pub fn render_refusal_diagnostics(&self, ast: &Ast) -> Vec<dorc_core::Diagnostic> {
+    pub fn render_refusal_diagnostics(
+        &self,
+        ast: &Ast,
+        interner: &Interner,
+    ) -> Vec<dorc_core::Diagnostic> {
+        use dorc_core::diag::{Diag, DiagCode, RenderHeredocRefused, SiteId};
         let by_ast: BTreeMap<AstId, &Disposition> =
             self.steps.iter().map(|s| (s.ast, &s.disposition)).collect();
         let mut diags = Vec::new();
@@ -1446,16 +1499,26 @@ impl Plan {
                 Disposition::Run => false,
             };
             if would_elide && leaf_has_heredoc(ast, step.ast) {
-                diags.push(dorc_core::Diagnostic::error(
-                    dorc_core::DiagCode("render-heredoc-refused"),
-                    Some(ast.node(step.ast).span),
-                    format!(
-                        "leaf-exact render refuses to elide a heredoc-bearing command \
-                         (`{}`): its span covers the `<<` operator, not the body lines, so \
-                         substituting it would strand the heredoc body — it runs verbatim",
-                        command_text_oneline(&step.sh),
-                    ),
-                ));
+                // The migrated `DiagCode::RenderHeredocRefused` spine (`22B` §5 worked-2 — the
+                // most-improved case: an inline literal becomes a first-class typed variant the
+                // grep gate sees and the registry pins Error+WarnOrDeny). Lowered to the legacy
+                // stream, preserving `(code-slug, span, Error)` so the coverage span-bridge and
+                // the erasability identity plane are unchanged. The interner resolves no excerpt
+                // here (the payload carries only a site) but is threaded for the shared lowering.
+                let diag = Diag::new(
+                    DiagCode::RenderHeredocRefused(RenderHeredocRefused {
+                        site: SiteId::leaf(step.leaf),
+                    }),
+                    ast.node(step.ast).span,
+                )
+                .label(format!(
+                    "leaf-exact render refuses to elide a heredoc-bearing command (`{}`): its \
+                     span covers the `<<` operator, not the body lines, so substituting it would \
+                     strand the heredoc body — it runs verbatim",
+                    command_text_oneline(&step.sh),
+                ))
+                .help("split the heredoc body to its own leaf, or mark the kind un-elidable");
+                diags.push(diag.to_legacy(interner));
             }
         }
         diags
@@ -2049,7 +2112,16 @@ apt_get__check() {
         let cfg = dorc_analysis::cfg::build(&parsed.value).value;
         let value = dorc_analysis::value::analyze(&cfg, &parsed.value, &mut i);
         let checks = vec![dorc_oracle::check::lift_checks(&mut i, CORPUS_CHECK_SRC).value];
-        let classes = dorc_analysis::effect::classify(&cfg, &value, &idx, &checks, &mut i).value;
+        let classes = dorc_analysis::effect::classify(
+            &cfg,
+            &value,
+            &parsed.value,
+            &idx,
+            &checks,
+            &mut i,
+            &mut dorc_core::ProvArena::new(),
+        )
+        .value;
         let probe = compile_probe(&parsed.value, &cfg, &classes, |k, _sel| probe_body(k));
         (probe, i)
     }
@@ -2291,15 +2363,29 @@ apt_get__check() {
         let cfg = dorc_analysis::cfg::build(&parsed.value).value;
         let value = dorc_analysis::value::analyze(&cfg, &parsed.value, &mut i);
         let checks = vec![dorc_oracle::check::lift_checks(&mut i, CORPUS_CHECK_SRC).value];
-        let classes = dorc_analysis::effect::classify(&cfg, &value, &idx, &checks, &mut i).value;
+        let classes = dorc_analysis::effect::classify(
+            &cfg,
+            &value,
+            &parsed.value,
+            &idx,
+            &checks,
+            &mut i,
+            &mut dorc_core::ProvArena::new(),
+        )
+        .value;
 
         let package = KindId(i.intern("package"));
         let probe = compile_probe(&parsed.value, &cfg, &classes, |k, _sel| {
             (k == package).then(|| "{ dpkg-query -W \"$1\"; }".to_string())
         });
-        let plan = build_plan(src, &parsed.value, &cfg, &classes, |_f| {
-            Observable::verdict_only(Verdict::Diverged)
-        });
+        let plan = build_plan(
+            src,
+            &parsed.value,
+            &cfg,
+            &classes,
+            |_f| Observable::verdict_only(Verdict::Diverged),
+            &mut dorc_core::ProvArena::new(),
+        );
 
         let install_site = probe
             .checks
@@ -2540,20 +2626,34 @@ apt_get__check() {
         let cfg = dorc_analysis::cfg::build(&parsed.value).value;
         let value = dorc_analysis::value::analyze(&cfg, &parsed.value, &mut i);
         let checks = vec![dorc_oracle::check::lift_checks(&mut i, CORPUS_CHECK_SRC).value];
-        let classes = dorc_analysis::effect::classify(&cfg, &value, &idx, &checks, &mut i).value;
-        let plan = build_plan(src, &parsed.value, &cfg, &classes, |f| {
-            // fork-mutator-rc (202 §5 / 206 §3): a MUTATOR's status has no sanctioned
-            // source — only its Effect channel (convergence) arrives from the probe, the
-            // rc is ⊤. So `verdict_only` everywhere, never a fabricated `Rc(0)`. The
-            // earlier `Rc(0)` masked C-3: under `set -e` the install's status is consumed
-            // (StatusRelaxable), and a declared rc-0 would relax-and-elide it; with the
-            // faithful ⊤-rc it correctly RUNS (see `residual_poison_sources_isolated`).
+        let classes = dorc_analysis::effect::classify(
+            &cfg,
+            &value,
+            &parsed.value,
+            &idx,
+            &checks,
+            &mut i,
+            &mut dorc_core::ProvArena::new(),
+        )
+        .value;
+        // fork-mutator-rc (202 §5 / 206 §3): a MUTATOR's status has no sanctioned source —
+        // only its Effect channel (convergence) arrives from the probe, the rc is ⊤. So
+        // `verdict_only` everywhere, never a fabricated `Rc(0)`.
+        let observe = |f: FactKey| {
             if f == target {
                 Observable::verdict_only(nginx_verdict)
             } else {
                 Observable::verdict_only(Verdict::Unknown)
             }
-        });
+        };
+        let plan = build_plan(
+            src,
+            &parsed.value,
+            &cfg,
+            &classes,
+            observe,
+            &mut dorc_core::ProvArena::new(),
+        );
         (plan, i)
     }
 
@@ -2570,10 +2670,19 @@ apt_get__check() {
         let cfg = dorc_analysis::cfg::build(&parsed.value).value;
         let value = dorc_analysis::value::analyze(&cfg, &parsed.value, &mut i);
         let checks = vec![dorc_oracle::check::lift_checks(&mut i, CORPUS_CHECK_SRC).value];
-        let classes = dorc_analysis::effect::classify(&cfg, &value, &idx, &checks, &mut i).value;
+        let classes = dorc_analysis::effect::classify(
+            &cfg,
+            &value,
+            &parsed.value,
+            &idx,
+            &checks,
+            &mut i,
+            &mut dorc_core::ProvArena::new(),
+        )
+        .value;
         // Resolve each package entity's verdict by its interned operand text. The closure
         // captures the entity strings it cares about; an unknown entity ⇒ Unknown.
-        let plan = build_plan(src, &parsed.value, &cfg, &classes, |f| {
+        let observe = |f: FactKey| {
             if f.kind == package
                 && f.selector == installed
                 && let EntityRef::Operand(tok) = f.entity
@@ -2581,7 +2690,15 @@ apt_get__check() {
                 return Observable::verdict_only(verdict_of(i.resolve(tok.0)));
             }
             Observable::verdict_only(Verdict::Unknown)
-        });
+        };
+        let plan = build_plan(
+            src,
+            &parsed.value,
+            &cfg,
+            &classes,
+            observe,
+            &mut dorc_core::ProvArena::new(),
+        );
         (plan, i)
     }
 
@@ -2709,8 +2826,16 @@ apt_get__check() {
             let cfg = dorc_analysis::cfg::build(&parsed.value).value;
             let value = dorc_analysis::value::analyze(&cfg, &parsed.value, &mut i);
             let checks = vec![dorc_oracle::check::lift_checks(&mut i, CORPUS_CHECK_SRC).value];
-            let classes =
-                dorc_analysis::effect::classify(&cfg, &value, &idx, &checks, &mut i).value;
+            let classes = dorc_analysis::effect::classify(
+                &cfg,
+                &value,
+                &parsed.value,
+                &idx,
+                &checks,
+                &mut i,
+                &mut dorc_core::ProvArena::new(),
+            )
+            .value;
             assert!(
                 classes
                     .iter()
@@ -3032,7 +3157,16 @@ apt_get__check() {
         let cfg = dorc_analysis::cfg::build(&parsed.value).value;
         let value = dorc_analysis::value::analyze(&cfg, &parsed.value, &mut i);
         let checks = vec![dorc_oracle::check::lift_checks(&mut i, CORPUS_CHECK_SRC).value];
-        let classes = dorc_analysis::effect::classify(&cfg, &value, &idx, &checks, &mut i).value;
+        let classes = dorc_analysis::effect::classify(
+            &cfg,
+            &value,
+            &parsed.value,
+            &idx,
+            &checks,
+            &mut i,
+            &mut dorc_core::ProvArena::new(),
+        )
+        .value;
         assert!(!classes.is_empty(), "fixture has classify leaves");
         let (mut marked, mut quiet) = (0, 0);
         for (node, _) in &classes {

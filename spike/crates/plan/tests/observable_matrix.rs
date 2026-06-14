@@ -95,7 +95,8 @@ fn classify_value(
 ) -> Vec<(dorc_analysis::cfg::CfgNodeId, SkipClass)> {
     let value = dorc_analysis::value::analyze(cfg, ast, i);
     let checks = vec![dorc_oracle::check::lift_checks(i, CORPUS_CHECK_SRC).value];
-    dorc_analysis::effect::classify(cfg, &value, idx, &checks, i).value
+    let mut arena = dorc_core::ProvArena::new();
+    dorc_analysis::effect::classify(cfg, &value, ast, idx, &checks, i, &mut arena).value
 }
 
 /// The package oracle: `apt-get install ⇒ establishes package`, `apt-get purge ⇒
@@ -135,16 +136,23 @@ fn plan_for(src: &str, holds: &[(&str, &str)]) -> Plan {
     let parsed = dorc_syntax::parse(src);
     let cfg = dorc_analysis::cfg::build(&parsed.value).value;
     let classes = classify_value(&cfg, &parsed.value, &idx, &mut i);
-    build_plan(src, &parsed.value, &cfg, &classes, move |f| {
-        // No rc is ever carried for these mutator facts: `fork-mutator-rc` (adopted,
-        // 202 §5) — a mutator's status is ⊤ (`inv-probe-sourced-values`); only the
-        // Effect channel (convergence) arrives from the probe.
+    // No rc is ever carried for these mutator facts: `fork-mutator-rc` (adopted, 202 §5) — a
+    // mutator's status is ⊤ (`inv-probe-sourced-values`); only the Effect channel arrives.
+    let observe = move |f: FactKey| {
         if held.contains(&f) {
             Observable::verdict_only(Verdict::Converged)
         } else {
             Observable::verdict_only(Verdict::Diverged)
         }
-    })
+    };
+    build_plan(
+        src,
+        &parsed.value,
+        &cfg,
+        &classes,
+        observe,
+        &mut dorc_core::ProvArena::new(),
+    )
 }
 
 /// Is the leaf whose verbatim text contains `needle` **replaced** (elided to a value-
@@ -347,13 +355,21 @@ fn andor_left_operand_undeclared_rc_runs_kfail_perform() {
     let classes = classify_value(&cfg, &parsed.value, &idx, &mut i);
     // Converged, but NO rc declared (the real CLI/hostsim default after `19D` — an
     // un-injected rc is ⊤, never a fabricated 0).
-    let plan = build_plan(src, &parsed.value, &cfg, &classes, move |f| {
+    let observe = move |f: FactKey| {
         if f == nginx {
             Observable::verdict_only(Verdict::Converged)
         } else {
             Observable::verdict_only(Verdict::Diverged)
         }
-    });
+    };
+    let plan = build_plan(
+        src,
+        &parsed.value,
+        &cfg,
+        &classes,
+        observe,
+        &mut dorc_core::ProvArena::new(),
+    );
     assert!(
         !is_replaced(&plan, "install -y nginx"),
         "undeclared-rc `&&`/`||` left operand must NOT be replaced (kFAIL-perform floor)"
@@ -625,13 +641,21 @@ fn spec_set_e_pure_at_effect_layer_but_c3_status_blocks() {
         "fs-4: set -e is target-state-pure ⇒ the install stays EstablishAmbient (not poisoned)"
     );
     // C-3: but its ⊤-rc status is errexit-consumed ⇒ Run.
-    let plan = build_plan(src, &parsed.value, &cfg, &classes, move |f| {
+    let observe = move |f: FactKey| {
         if f == nginx {
             Observable::verdict_only(Verdict::Converged)
         } else {
             Observable::verdict_only(Verdict::Diverged)
         }
-    });
+    };
+    let plan = build_plan(
+        src,
+        &parsed.value,
+        &cfg,
+        &classes,
+        observe,
+        &mut dorc_core::ProvArena::new(),
+    );
     assert!(
         !is_replaced(&plan, "install -y nginx"),
         "C-3: errexit-consumed ⊤-rc status ⇒ the install runs (despite fs-4 non-poison)"
@@ -724,7 +748,17 @@ fn plan_query_and_ast(
     let cfg = dorc_analysis::cfg::build(&parsed.value).value;
     let value = dorc_analysis::value::analyze(&cfg, &parsed.value, &mut i);
     let checks = vec![dorc_oracle::check::lift_checks(&mut i, CORPUS_CHECK_SRC_Q).value];
-    let classes = dorc_analysis::effect::classify(&cfg, &value, &idx, &checks, &mut i).value;
+    let mut arena = dorc_core::ProvArena::new();
+    let classes = dorc_analysis::effect::classify(
+        &cfg,
+        &value,
+        &parsed.value,
+        &idx,
+        &checks,
+        &mut i,
+        &mut arena,
+    )
+    .value;
 
     // Mirror the cli firewall: is the guard site a VALID Query? (Only then does its rc
     // reach Status.) Read the bit off the guard cell's classification.
@@ -737,7 +771,7 @@ fn plan_query_and_ast(
         Verdict::Diverged
     };
 
-    let plan = build_plan(src, &parsed.value, &cfg, &classes, move |f| {
+    let observe = move |f: FactKey| {
         if f == guard_fact {
             Observable {
                 effect: guard_effect,
@@ -756,7 +790,15 @@ fn plan_query_and_ast(
         } else {
             Observable::verdict_only(Verdict::Diverged)
         }
-    });
+    };
+    let plan = build_plan(
+        src,
+        &parsed.value,
+        &cfg,
+        &classes,
+        observe,
+        &mut dorc_core::ProvArena::new(),
+    );
     (plan, parsed.value)
 }
 
@@ -910,12 +952,20 @@ fn refused_heredoc_guard_keeps_dead_oror_body_verbatim() {
         "no `:` may sit under a LIVE re-deciding guard (omit-safety):\n{rendered}"
     );
     // Exactly ONE refusal diagnostic: the guard's. The body is no longer would-elide
-    // (its controller is not neutralised), so it must not double-report.
-    let diags = plan.render_refusal_diagnostics(&ast);
+    // (its controller is not neutralised), so it must not double-report. The interner is
+    // unused by the render-refusal payload (it carries only a site), so a fresh one suffices.
+    let diags = plan.render_refusal_diagnostics(&ast, &Interner::default());
     assert_eq!(
         diags.len(),
         1,
         "one refusal (the guard), none for the kept-verbatim body: {diags:?}"
+    );
+    // MUST-EMIT pin (XC-1, 224 §10): assert the CODE, not just the count — `render-heredoc-refused`
+    // otherwise had only count/behavior pins in the unit suite, so a wrong-code regression on the
+    // refusal path was invisible to `cargo test` (e2e gate-3 caught it; the unit suite did not).
+    assert_eq!(
+        diags[0].code.0, "render-heredoc-refused",
+        "the refusal carries the registered render-heredoc-refused code: {diags:?}"
     );
 }
 
@@ -1017,13 +1067,21 @@ fn plan_and_ast(src: &str, holds: &[(&str, &str)]) -> (Plan, dorc_syntax::ast::A
     let parsed = dorc_syntax::parse(src);
     let cfg = dorc_analysis::cfg::build(&parsed.value).value;
     let classes = classify_value(&cfg, &parsed.value, &idx, &mut i);
-    let plan = build_plan(src, &parsed.value, &cfg, &classes, move |f| {
+    let observe = move |f: FactKey| {
         if held.contains(&f) {
             Observable::verdict_only(Verdict::Converged)
         } else {
             Observable::verdict_only(Verdict::Diverged)
         }
-    });
+    };
+    let plan = build_plan(
+        src,
+        &parsed.value,
+        &cfg,
+        &classes,
+        observe,
+        &mut dorc_core::ProvArena::new(),
+    );
     (plan, parsed.value)
 }
 

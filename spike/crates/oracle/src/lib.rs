@@ -37,9 +37,12 @@
     reason = "seeded round-19 code predates the take-3 lint gate; ratchet away during the rebuild"
 )]
 
-use dorc_core::{
-    AstId, Carrier, DiagCode, Diagnostic, Interner, KindId, ProviderId, SelectorId, Span, Symbol,
+use dorc_core::diag::{
+    Diag, DiagCode as Code, OracleBadEffect, OracleDuplicateEffect, OracleMissingKind,
+    OracleMissingProbe, OracleNonDeclaration, OracleNonLiteralKind, OracleProbeSelectRoundtrip,
+    OracleTopLevelMutator,
 };
+use dorc_core::{AstId, Carrier, Interner, KindId, ProviderId, SelectorId, Span, Symbol};
 use dorc_syntax::ast::{Ast, NodeKind, WordPart};
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -109,7 +112,7 @@ pub struct EffectCell {
 /// A duplicate-effect conflict (`us-effectmap`, note 205 §3): a *second*
 /// `oracle_effect` for the same `(provider, verb)` on the **same** `selector` cell.
 /// First-writer-wins (the duplicate is dropped); the lifter turns this into a loud
-/// [`Diagnostic`]. A different *selector* for the same verb is NOT a conflict — that
+/// [`dorc_core::Diagnostic`]. A different *selector* for the same verb is NOT a conflict — that
 /// is the legitimate multi-cell case ([`EffectCell`]).
 #[derive(Debug, Clone, Copy)]
 pub struct EffectConflict {
@@ -270,18 +273,7 @@ pub fn empty_verb(interner: &mut Interner) -> Symbol {
     interner.intern("")
 }
 
-/// Diagnostic codes the lifter emits (greppable; `ch-catalog`).
-const NON_LITERAL_KIND: DiagCode = DiagCode("oracle-non-literal-kind");
-const MISSING_KIND: DiagCode = DiagCode("oracle-missing-kind");
-const MISSING_PROBE: DiagCode = DiagCode("oracle-missing-probe");
-const BAD_EFFECT: DiagCode = DiagCode("oracle-bad-effect");
-const TOP_LEVEL_MUTATOR: DiagCode = DiagCode("oracle-top-level-mutator");
-const NON_DECL_CONSTRUCT: DiagCode = DiagCode("oracle-non-declaration");
-const DUPLICATE_EFFECT: DiagCode = DiagCode("oracle-duplicate-effect");
-/// A `oracle_probe_<kind>_<selector>` whose selector funcname-segment cannot
-/// round-trip through the hyphen↔underscore mangling (a selector name carrying a
-/// literal `_` is inexpressible; `tc-perselector-mangle`).
-const PROBE_SELECTOR_ROUNDTRIP: DiagCode = DiagCode("oracle-probe-selector-roundtrip");
+// B4 sweep: oracle codes migrated onto Diag spine. Payloads in dorc_core::diag.
 
 /// Map an interned kind/selector name to its **function-name segment** form: `-` → `_`
 /// (`package-index` ⇒ `package_index`). The inverse direction of
@@ -389,17 +381,35 @@ fn lift_one(interner: &mut Interner, src: &str, out: &mut Carrier<KindIndex>) {
                 }
                 // A helper function with any other name is allowed and ignored.
             }
-            NodeKind::Unsupported { .. } => out.push(Diagnostic::error(
-                NON_DECL_CONSTRUCT,
-                Some(node.span),
-                "oracle file has an unsupported top-level construct (⊤-rejected)",
-            )),
-            _ => out.push(Diagnostic::error(
-                NON_DECL_CONSTRUCT,
-                Some(node.span),
-                "oracle file has a non-declaration top-level construct \
-                 (only assignments, oracle_* markers, and function defs are allowed)",
-            )),
+            NodeKind::Unsupported { .. } => {
+                let detail =
+                    "oracle file has an unsupported top-level construct (⊤-rejected)".to_string();
+                out.push(
+                    Diag::new(
+                        Code::OracleNonDeclaration(OracleNonDeclaration {
+                            detail: detail.clone(),
+                        }),
+                        node.span,
+                    )
+                    .label(detail)
+                    .to_legacy(&Interner::default()),
+                );
+            }
+            _ => {
+                let detail = "oracle file has a non-declaration top-level construct \
+                              (only assignments, oracle_* markers, and function defs are allowed)"
+                    .to_string();
+                out.push(
+                    Diag::new(
+                        Code::OracleNonDeclaration(OracleNonDeclaration {
+                            detail: detail.clone(),
+                        }),
+                        node.span,
+                    )
+                    .label(detail)
+                    .to_legacy(&Interner::default()),
+                );
+            }
         }
     }
 
@@ -449,12 +459,21 @@ fn scan_kind_assigns<'a>(
             Some(NodeKind::Word { parts }) if parts_literal(parts).is_some() => {
                 *declared_kind = parts_literal(parts);
             }
-            _ => out.push(Diagnostic::error(
-                NON_LITERAL_KIND,
-                Some(*name_span),
-                "oracle_kind must be a single literal (e.g. `oracle_kind=package`); \
-                 a variable/substitution value cannot be lifted",
-            )),
+            _ => {
+                let detail = "oracle_kind must be a single literal (e.g. `oracle_kind=package`); \
+                              a variable/substitution value cannot be lifted"
+                    .to_string();
+                out.push(
+                    Diag::new(
+                        Code::OracleNonLiteralKind(OracleNonLiteralKind {
+                            detail: detail.clone(),
+                        }),
+                        *name_span,
+                    )
+                    .label(detail)
+                    .to_legacy(&Interner::default()),
+                );
+            }
         }
     }
 }
@@ -472,12 +491,19 @@ fn lift_command<'a>(
     if words.first().and_then(|&w| word_literal(ast, w)) != Some("oracle_effect") {
         // The parser ⊤-rejects dynamic command names, so a `Simple` with words is a
         // real, statically-named command. At an oracle's top level that is a mutator.
-        out.push(Diagnostic::error(
-            TOP_LEVEL_MUTATOR,
-            Some(span),
-            "oracle file has a top-level mutator (an oracle file must be only \
-             assignments, oracle_* markers, and function defs)",
-        ));
+        let detail = "oracle file has a top-level mutator (an oracle file must be only \
+                      assignments, oracle_* markers, and function defs)"
+            .to_string();
+        out.push(
+            Diag::new(
+                Code::OracleTopLevelMutator(OracleTopLevelMutator {
+                    detail: detail.clone(),
+                }),
+                span,
+            )
+            .label(detail)
+            .to_legacy(&Interner::default()),
+        );
         return None;
     }
 
@@ -493,12 +519,19 @@ fn lift_command<'a>(
     let Some([provider, verb, polarity, selector]) = literal_args.as_deref() else {
         // Either a non-literal arg (collect → None) or the wrong arity (slice
         // pattern fails). Both are the same kind of malformed marker.
-        out.push(Diagnostic::error(
-            BAD_EFFECT,
-            Some(span),
-            "oracle_effect takes exactly four literal arguments: \
-             <provider> <verb> <establish|kill> <selector>",
-        ));
+        let detail = "oracle_effect takes exactly four literal arguments: \
+                      <provider> <verb> <establish|kill> <selector>"
+            .to_string();
+        out.push(
+            Diag::new(
+                Code::OracleBadEffect(OracleBadEffect {
+                    detail: detail.clone(),
+                }),
+                span,
+            )
+            .label(detail)
+            .to_legacy(&Interner::default()),
+        );
         return None;
     };
     let polarity = match *polarity {
@@ -506,13 +539,19 @@ fn lift_command<'a>(
         "kill" => Polarity::Kill,
         "query" => Polarity::Query,
         other => {
-            out.push(Diagnostic::error(
-                BAD_EFFECT,
-                Some(span),
-                format!(
-                    "oracle_effect polarity must be `establish`, `kill`, or `query`, not `{other}`"
-                ),
-            ));
+            let detail = format!(
+                "oracle_effect polarity must be `establish`, `kill`, or `query`, not `{other}`"
+            );
+            out.push(
+                Diag::new(
+                    Code::OracleBadEffect(OracleBadEffect {
+                        detail: detail.clone(),
+                    }),
+                    span,
+                )
+                .label(detail)
+                .to_legacy(&Interner::default()),
+            );
             return None;
         }
     };
@@ -542,11 +581,16 @@ fn bind(
         // Diagnose only if the file *tried* to be an oracle (declared a probe or an
         // effect); a plain/empty file contributes nothing, silently.
         if !probe_bodies.is_empty() || !effects.is_empty() {
-            out.push(Diagnostic::error(
-                MISSING_KIND,
-                None,
-                "oracle file declares oracle_probe_*/oracle_effect but no `oracle_kind=<kind>`",
-            ));
+            // Spanless: a whole-file contract verdict, no token to point at (arch-3-residual-2).
+            let msg =
+                "oracle file declares oracle_probe_*/oracle_effect but no `oracle_kind=<kind>`";
+            out.push(
+                Diag::new_spanless_site(Code::OracleMissingKind(OracleMissingKind {
+                    detail: msg.to_string(),
+                }))
+                .label(msg)
+                .to_legacy(&Interner::default()),
+            );
         }
         return;
     };
@@ -594,14 +638,18 @@ fn bind(
     // file that DOES ship per-selector probes is legal (the F-BLESSED service shape):
     // diagnose only when neither form is present.
     if !saw_kind_default && !out.value.selector_probes.keys().any(|(k, _)| *k == kind) {
-        out.push(Diagnostic::error(
-            MISSING_PROBE,
-            None,
-            format!(
-                "oracle_kind=`{kind_name}` has no matching `oracle_probe_{kind_name}` \
-                 (nor any `oracle_probe_{kind_seg}_<selector>`) function"
-            ),
-        ));
+        // Spanless: a whole-file contract verdict, no token to point at (arch-3-residual-2).
+        let msg = format!(
+            "oracle_kind=`{kind_name}` has no matching `oracle_probe_{kind_name}` \
+             (nor any `oracle_probe_{kind_seg}_<selector>`) function"
+        );
+        out.push(
+            Diag::new_spanless_site(Code::OracleMissingProbe(OracleMissingProbe {
+                detail: msg.clone(),
+            }))
+            .label(msg)
+            .to_legacy(&Interner::default()),
+        );
     }
 
     for eff in effects {
@@ -615,16 +663,22 @@ fn bind(
         // per-selector probe is unreachable). No corpus selector has a `_`, so this is a
         // latent-footgun guard, not a live path.
         if check::map_provider_name(&to_funcname_segment(eff.selector)) != eff.selector {
-            out.push(Diagnostic::warning(
-                PROBE_SELECTOR_ROUNDTRIP,
-                None,
-                format!(
-                    "selector `{}` contains an underscore, which cannot round-trip a \
-                     per-selector probe funcname (`oracle_probe_{kind_seg}_…` maps `_`→`-`); \
-                     this cell can only be probed by the kind-default",
-                    eff.selector
-                ),
-            ));
+            // Spanless: a whole-file contract verdict, no token to point at (arch-3-residual-2).
+            let msg = format!(
+                "selector `{}` contains an underscore, which cannot round-trip a \
+                 per-selector probe funcname (`oracle_probe_{kind_seg}_…` maps `_`→`-`); \
+                 this cell can only be probed by the kind-default",
+                eff.selector
+            );
+            out.push(
+                Diag::new_spanless_site(Code::OracleProbeSelectRoundtrip(
+                    OracleProbeSelectRoundtrip {
+                        detail: msg.clone(),
+                    },
+                ))
+                .label(msg)
+                .to_legacy(&Interner::default()),
+            );
         }
         if let Some(_conflict) = out
             .value
@@ -634,15 +688,19 @@ fn bind(
             // (provider, verb, selector) cell is a footgun — loud diagnostic,
             // first-writer-wins. A different selector for the same verb is the
             // legitimate multi-cell case and is NOT diagnosed.
-            out.push(Diagnostic::error(
-                DUPLICATE_EFFECT,
-                None,
-                format!(
-                    "duplicate oracle_effect for (`{}`, verb=`{}`) on selector `{}` \
-                     — first declaration wins, this one is dropped",
-                    eff.provider, eff.verb, eff.selector
-                ),
-            ));
+            // Spanless: a whole-file contract verdict, no token to point at (arch-3-residual-2).
+            let msg = format!(
+                "duplicate oracle_effect for (`{}`, verb=`{}`) on selector `{}` \
+                 — first declaration wins, this one is dropped",
+                eff.provider, eff.verb, eff.selector
+            );
+            out.push(
+                Diag::new_spanless_site(Code::OracleDuplicateEffect(OracleDuplicateEffect {
+                    detail: msg.clone(),
+                }))
+                .label(msg)
+                .to_legacy(&Interner::default()),
+            );
         }
     }
 }
@@ -771,10 +829,54 @@ mod tests {
     fn non_literal_kind_is_an_error_not_a_panic() {
         // `oracle_kind=$x` cannot be lifted (W4: we never decode/guess a token's
         // text); it must diagnose, not crash, and yield no kind.
+        //
+        // MUST-EMIT pin (x3n PINNED-BY-NOTHING, B8): this drives the real `scan_kind_assigns`
+        // give-up, so the `code.0` assertion (added here) pins `oracle-non-literal-kind` to a
+        // production path — a bare `has_errors()` could pass on ANY code, the vacuity x3a-B/t-1
+        // exposed. (A secondary `oracle-missing-kind` rides along — the unbound kind — which is
+        // why we assert the SPECIFIC code's presence, not the whole diag set.)
         let mut i = Interner::default();
         let out = lift(&mut i, &["oracle_kind=$x\noracle_probe_x() { :; }\n"]);
         assert!(out.has_errors(), "non-literal oracle_kind must error");
+        assert!(
+            out.diags
+                .iter()
+                .any(|d| d.code.0 == "oracle-non-literal-kind"),
+            "a non-literal oracle_kind must disclose oracle-non-literal-kind: {:?}",
+            out.diags
+        );
         assert!(out.value.probe_for(KindId(i.intern("x"))).is_none());
+    }
+
+    #[test]
+    fn probe_without_kind_emits_oracle_missing_kind() {
+        // MUST-EMIT pin (x3n PINNED-BY-NOTHING, B8): a file that DECLARES an `oracle_probe_*` but
+        // no `oracle_kind=<kind>` is an incomplete oracle — `bind`'s no-kind path discloses it. No
+        // prior test drove this give-up, so the code was pinned by nothing. Drives the real `lift`.
+        let mut i = Interner::default();
+        let out = lift(&mut i, &["oracle_probe_x() { :; }\n"]);
+        assert!(
+            out.diags.iter().any(|d| d.code.0 == "oracle-missing-kind"),
+            "a probe with no oracle_kind= must disclose oracle-missing-kind: {:?}",
+            out.diags
+        );
+    }
+
+    #[test]
+    fn top_level_control_flow_emits_oracle_non_declaration() {
+        // MUST-EMIT pin (x3n PINNED-BY-NOTHING, B8): an oracle file is declarations only; a
+        // top-level control-flow compound (here a `for` loop) is a non-declaration construct —
+        // the lift's `_ =>` arm discloses it. (A plain command routes to `oracle-top-level-mutator`
+        // instead, pinned separately; this pins the DISTINCT non-declaration give-up.) Drives `lift`.
+        let mut i = Interner::default();
+        let out = lift(&mut i, &["oracle_kind=package\nfor x in a b; do :; done\n"]);
+        assert!(
+            out.diags
+                .iter()
+                .any(|d| d.code.0 == "oracle-non-declaration"),
+            "a top-level control-flow compound must disclose oracle-non-declaration: {:?}",
+            out.diags
+        );
     }
 
     #[test]
@@ -784,7 +886,9 @@ mod tests {
         let mut i = Interner::default();
         let out = lift(&mut i, &["oracle_kind=package\napt-get install nginx\n"]);
         assert!(
-            out.diags.iter().any(|d| d.code == TOP_LEVEL_MUTATOR),
+            out.diags
+                .iter()
+                .any(|d| d.code.0 == "oracle-top-level-mutator"),
             "a top-level mutator must raise the mutator diagnostic: {:?}",
             out.diags
         );
@@ -814,7 +918,7 @@ mod tests {
             &["oracle_kind=package\noracle_effect apt-get install establish installed\n"],
         );
         assert!(
-            out.diags.iter().any(|d| d.code == MISSING_PROBE),
+            out.diags.iter().any(|d| d.code.0 == "oracle-missing-probe"),
             "{:?}",
             out.diags
         );
@@ -843,7 +947,10 @@ mod tests {
                    oracle_effect apt-get purge kill installed\n";
         let out = lift(&mut i, &[src]);
         assert_eq!(
-            out.diags.iter().filter(|d| d.code == BAD_EFFECT).count(),
+            out.diags
+                .iter()
+                .filter(|d| d.code.0 == "oracle-bad-effect")
+                .count(),
             2,
             "{:?}",
             out.diags
@@ -904,7 +1011,7 @@ mod tests {
         assert_eq!(
             out.diags
                 .iter()
-                .filter(|d| d.code == DUPLICATE_EFFECT)
+                .filter(|d| d.code.0 == "oracle-duplicate-effect")
                 .count(),
             1,
             "the duplicate same-cell effect must be diagnosed: {:?}",
@@ -938,7 +1045,9 @@ mod tests {
                    oracle_effect apt-get purge kill configured\n";
         let out = lift(&mut i, &[src]);
         assert!(
-            !out.diags.iter().any(|d| d.code == DUPLICATE_EFFECT),
+            !out.diags
+                .iter()
+                .any(|d| d.code.0 == "oracle-duplicate-effect"),
             "distinct selectors for one verb are NOT a duplicate: {:?}",
             out.diags
         );
@@ -1019,7 +1128,7 @@ mod tests {
                    oracle_effect command '' observe present\n";
         let out = lift(&mut i, &[src]);
         assert!(
-            out.diags.iter().any(|d| d.code == BAD_EFFECT),
+            out.diags.iter().any(|d| d.code.0 == "oracle-bad-effect"),
             "an unknown polarity word must raise BAD_EFFECT: {:?}",
             out.diags
         );
@@ -1156,7 +1265,7 @@ mod tests {
                    oracle_effect systemctl enable establish enabled\n";
         let out = lift(&mut i, &[src]);
         assert!(
-            !out.diags.iter().any(|d| d.code == MISSING_PROBE),
+            !out.diags.iter().any(|d| d.code.0 == "oracle-missing-probe"),
             "per-selector-only is a complete oracle (no kind-default needed): {:?}",
             out.diags
         );
@@ -1209,7 +1318,9 @@ mod tests {
                    oracle_effect systemctl restart establish needs_restart\n";
         let out = lift(&mut i, &[src]);
         assert!(
-            out.diags.iter().any(|d| d.code == PROBE_SELECTOR_ROUNDTRIP),
+            out.diags
+                .iter()
+                .any(|d| d.code.0 == "oracle-probe-selector-roundtrip"),
             "an underscore selector name must raise the round-trip warning: {:?}",
             out.diags
         );

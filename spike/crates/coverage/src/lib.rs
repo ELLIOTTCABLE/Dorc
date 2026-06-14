@@ -404,7 +404,17 @@ pub fn build_report(inputs: &Inputs<'_>) -> Report {
     let parsed = dorc_syntax::parse(inputs.book);
     let cfg = dorc_analysis::cfg::build(&parsed.value).value;
     let value = dorc_analysis::value::analyze(&cfg, &parsed.value, &mut interner);
-    let classes = dorc_analysis::effect::classify(&cfg, &value, &idx, &checks, &mut interner).value;
+    let mut arena = dorc_core::ProvArena::new();
+    let classes = dorc_analysis::effect::classify(
+        &cfg,
+        &value,
+        &parsed.value,
+        &idx,
+        &checks,
+        &mut interner,
+        &mut arena,
+    )
+    .value;
 
     // c3 source: per-site Effect verdict (the dashboard reads the plan's own
     // dispositions, not a fact re-key, so it only needs the verdict off the wire).
@@ -417,7 +427,14 @@ pub fn build_report(inputs: &Inputs<'_>) -> Report {
         idx.resolve_probe(kind, selector).map(|p| p.body.clone())
     });
     let observe = observe_from_sites(&probe, &probe_verdicts);
-    let plan = dorc_plan::build_plan(inputs.book, &parsed.value, &cfg, &classes, observe);
+    let plan = dorc_plan::build_plan(
+        inputs.book,
+        &parsed.value,
+        &cfg,
+        &classes,
+        observe,
+        &mut arena,
+    );
 
     // classify yields CfgNodeId→SkipClass; the plan keys by AstId. Bridge via AstId.
     let disposition_of: BTreeMap<dorc_core::AstId, &Disposition> =
@@ -431,7 +448,8 @@ pub fn build_report(inputs: &Inputs<'_>) -> Report {
     // refused leaves so `attribute_door` demotes them to `runs(render-refusal)` instead of
     // mis-bucketing them `replace-converged` (the disposition's lie, 100% coverage that isn't).
     // `bridge_suspect` is the loud blind-spot count of refusals that did NOT bridge (217 §5 obs-3).
-    let (render_refused, bridge_suspect) = render_refused_leaves(&plan, &parsed.value, &leaf_of);
+    let (render_refused, bridge_suspect) =
+        render_refused_leaves(&plan, &parsed.value, &interner, &leaf_of);
 
     let mut rows: Vec<SiteRow> = classes
         .iter()
@@ -472,6 +490,7 @@ pub fn build_report(inputs: &Inputs<'_>) -> Report {
 fn render_refused_leaves(
     plan: &dorc_plan::Plan,
     ast: &dorc_syntax::ast::Ast,
+    interner: &Interner,
     leaf_of: &BTreeMap<dorc_core::AstId, LeafId>,
 ) -> (std::collections::BTreeSet<LeafId>, u32) {
     // span (lo,hi) → leaf, from the steps (the render-refusal diagnostics carry the same span).
@@ -485,7 +504,10 @@ fn render_refused_leaves(
                 .map(|&leaf| ((span.lo.0, span.hi.0), leaf))
         })
         .collect();
-    bridge_refusals_to_leaves(&plan.render_refusal_diagnostics(ast), &leaf_by_span)
+    bridge_refusals_to_leaves(
+        &plan.render_refusal_diagnostics(ast, interner),
+        &leaf_by_span,
+    )
 }
 
 /// The span-bridge from render-refusal diagnostics to leaf ids, returning the matched set AND a

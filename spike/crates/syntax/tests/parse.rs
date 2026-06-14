@@ -1007,3 +1007,34 @@ fn determinism_same_input_same_arena() {
     }
     assert_eq!(a.diags.len(), b.diags.len());
 }
+
+#[test]
+fn unterminated_subshell_emits_syntax_malformed() {
+    // MUST-EMIT pin (x3n PINNED-BY-NOTHING): `syntax-malformed` had no driving test, so a behavior
+    // change to the parse-error give-up was invisible (the x3a-B/t-1 vacuity, in the parser). An
+    // unterminated subshell `(echo hi` (no closing `)`) is a structural parse error — `push_malformed`
+    // fires it. Pins the registered code from the real `parse` path (not a constructed variant).
+    let p = parse("(echo hi");
+    assert!(
+        p.diags.iter().any(|d| d.code.0 == "syntax-malformed"),
+        "an unterminated subshell must emit syntax-malformed: {:?}",
+        p.diags
+    );
+}
+
+#[test]
+fn background_amp_emits_syntax_unsupported() {
+    // MUST-EMIT pin (XC-1, 224 §10): `syntax-unsupported` had no UNIT code-assertion — only e2e
+    // gate-3's expected-diagnostics declarations and the AST `Unsupported` node pinned it, so a
+    // wrong-code regression on the give-up path was invisible to `cargo test`. (The crosscheck's two
+    // test-quality agents both flagged the unit-suite gap; it is real — they only missed that e2e
+    // still catches it. This closes the unit gap.) A background `&` is a recognized-but-unmodeled
+    // construct ⇒ `push_unsupported` fires it (`inv-top-reject`). Pins the registered code from the
+    // real `parse` path, not a constructed variant nor the node alone.
+    let p = parse("foo &");
+    assert!(
+        p.diags.iter().any(|d| d.code.0 == "syntax-unsupported"),
+        "a background `&` must emit syntax-unsupported: {:?}",
+        p.diags
+    );
+}

@@ -1,0 +1,6 @@
+#!/bin/sh
+# INERT mock: logs argv, exits 0. NEVER runs in either rail — it sits inside the DEAD block (the
+# guard holds ⇒ the `||` short-circuits in bare, the leaf is fold-Omitted in the apply). Shipped
+# so the shimset is complete.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0

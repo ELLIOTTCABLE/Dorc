@@ -1,0 +1,743 @@
+# 228 — research: suppression / root-cause dedup, and fleet-scale error fingerprinting
+
+> Deep-research round, 2026-06-11. Fronts **rq-E** (suppression / root-cause dedup
+> *engineering*) and **rq-G** (fleet-scale error grouping/fingerprinting). Serves
+> round-22's two live problems: (rq-E) the ⊤-cascade — one command going ⊤ ("unknown/
+> unmodeled, poisons downstream") makes every downstream consumer emit its own Note, so
+> one unmodeled command sprays N notes; round-22 gives ⊤ a cause-pointer so diagnostics
+> can be deduplicated to the root, and this note finds the *machinery* + prior art.
+> (rq-G) one wrong oracle-declaration fails identically across M hosts × N scripts; the
+> north-star is "one rot event reads as ONE cause, fleet-aggregable" — the
+> error-grouping/fingerprinting problem o11y vendors have a decade of practice in.
+> Extends `plans/111` (round-11 error/provenance) and notes 220/222; does NOT re-cover
+> the Clang note-explosion *story* (10→170, the GSoC heuristic overview), ninja/Bazel
+> explain-flood, SQL-Server plan-warning fatigue, or Lee&See trust psych — those are
+> held elsewhere in the corpus. New ground: Clang's suppression/dedup AS CODE, rustc
+> `ErrorGuaranteed` cascade-*suppression* use, abstract-interp alarm clustering, and the
+> o11y fingerprinting/bucketing corpus (Sentry, WER, Socorro). Findings slugged
+> `finding-N`; sources `[grade-slug-year]`, graded list at end. Confidence marks per
+> project convention (+SURE / ~SUSPECT / -GUESS / --WONDER).
+
+## §0 Conclusions up front
+
+*(filled incrementally as evidence lands; see per-question sections below.)*
+
+**finding-clang-three-layers.** +SURE Clang's static analyzer separates suppression
+into THREE independent layers that map cleanly onto distinct Dorc needs, and conflating
+them is the trap: (1) *user-directed range suppression* (`[[clang::suppress]]` →
+`SourceRange`, suppressed iff `fullyContains(range, bug)`) — the ADMIN "shut up about
+this region" knob, NOT cause-dedup [B-llvm-bugsuppression-2025]; (2) *whole-report
+heuristic suppression* — a hand-curated ~denylist of known-imprecision constructs
+(`std::`, `list`/`basic_string`/`shared_ptr`, `sys/queue.h` macros) that calls
+`BR.markInvalid()` to kill the entire report [A-llvm-bugreportervisitors-2025]; (3)
+*path-piece dedup + interestingness-pruning* — the post-analysis re-walk that is the
+real analog of Dorc's "⊤ carries a cause-pointer; only the cause-site note is
+interesting" [A-llvm-bugreporter-2025]. Dorc's ⊤-cascade is layer (3); the cause-pointer
+is Dorc's version of *interestingness propagated backward from the sink*.
+
+**finding-clang-dedup-is-coarse-fingerprint.** +SURE Clang collapses the
+combinatorial explosion of exploded-graph paths into user-visible reports with a
+deliberately COARSE fingerprint: `FoldingSetNodeID Profile()` over `(BugType*,
+short-description string, uniqueing-location, source-ranges)` — NOT the path, NOT the
+node. N reports with the same Profile join one `BugReportEquivClass`; exactly ONE
+representative is rendered [A-llvm-bugreporter-2025]. This is the same move rq-G needs
+("M identical failures → one rendered cause"): *the grouping key omits the volatile
+path and keys on the stable site identity*.
+
+**finding-emit-at-origin-not-rewalk.** ~SUSPECT the deeper rq-E lesson cuts against a
+naive "let consumers emit, then re-walk and dedup" design. Clang's own primary author
+moved the analyzer AWAY from post-hoc reconstruction (the visitor model) toward
+capturing the explanation *at the site/moment the fact becomes known* (the `NoteTag`
+attached at `addTransition`), because "the message is generated within the part of code
+that already has all the information… much easier than reverse-engineering what happened
+'a posteriori'" [B-llvm-eliminating-visitors-2019]. rustc does the same with
+`ErrorGuaranteed`/`Ty::new_error`: the poisoned value *carries the proof an error was
+already emitted*, and downstream code stays silent because it sees the poison, not
+because a later pass deduplicates competing complaints [B-rustc-errorguaranteed-2026].
+For Dorc: round-22's ⊤-cause-pointer should be the *carrier* of the explanation
+(note-tag style), so downstream consumers never have standing to emit at all — the
+cascade is prevented at the source, and "dedup" is mostly a consequence, not a separate
+post-pass. The minority post-pass that remains (two analyses describing the same fact at
+the same site) is Clang's `eventsDescribeSameCondition` shape: resolve by a fixed
+speaker-priority rule.
+
+**finding-minimum-viable-suppression.** +SURE (synthesized from the three Clang layers +
+rustc) the smallest suppression rule-set that the evidence supports for Dorc's ⊤-cascade,
+in priority order. **mvs-rule-1 (carry-the-cause, prevent the cascade):** when a value
+becomes ⊤, attach the cause-pointer (site + reason) to it at origin; downstream consumers
+that are ⊤ *solely because* an operand is ⊤ emit NO diagnostic of their own — they
+inherit the poison silently (rustc `Ty::new_error` discipline; Clang note-tag). This
+alone collapses N→1 for the pure-propagation case, which is the live failure. **mvs-rule-2
+(interestingness from the sink):** a note survives only if its subject is on the causal
+chain from the surfaced failure back to the ⊤-origin; everything off that chain is
+prunable-by-default and dropped (Clang `removeUnneededCalls` + `isPrunable()==true`
+default). **mvs-rule-3 (same-fact tie-break):** if two analyses do produce notes at the
+*same site* about the *same* ⊤, keep one by a fixed priority order, preferring the
+more-specific message over a generic fallback (Clang `eventsDescribeSameCondition`).
+**mvs-rule-4 (do-not-branch-on-kind):** downstream code may observe THAT an input is ⊤
+(to stay silent) but must not branch on WHY — the cause classification is for rendering
+only, never for control flow (rustc's explicit `ErrorGuaranteed` caveat). **mvs-rule-5
+(over-suppression safety net):** if a ⊤ suppressed downstream notes but its own
+cause-note never actually renders, trip an internal invariant rather than vanishing
+(rustc's flush-or-ICE delayed-bug). Layers beyond this — a hand-curated denylist of
+"boring ⊤ constructs" (Clang layer-2 `markInvalid`) and an admin region-mute (Clang
+layer-1 `[[clang::suppress]]`) — are *optional add-ons*, useful but not part of the
+cascade-dedup core; keep them conceptually separate (Clang does).
+
+**finding-grouping-key-design.** +SURE the cross-system consensus on a stable grouping
+key, and it directly answers "a grouping-key design that survives code movement." The
+key must (gk-a) OMIT volatile dimensions — Sentry churns when the source `context-line`
+changes on a no-op edit [A-sentry-grouping-dev-2026]; WER's *expanding* failure is keying
+on Module Build Date so every recompile shatters one bug across buckets
+[B-wer-wikipedia-2026]; CodeChecker's experimental `diagnostic-message` hash "can change
+very easily on variable / function renames" [A-codechecker-reportid-2026]. (gk-b) key on
+*structural site identity*, not content/position — CodeChecker's shipped sweet spot
+("context-free-v2") is `(checker, file, enclosing-declaration, whitespace-normalized line
+content, range columns)`, explicitly chosen to resist indentation and rename churn. For
+Dorc: a receipt's stable identity ≈ `(analysis-rule-id, enclosing-structural-scope,
+whitespace-normalized command text)` — NOT byte offset, NOT bare line number, NOT the
+full step trace. (gk-c) emit a HIERARCHY of keys and match the coarsest stable one —
+Sentry's answer to frame-reclassification is computing both a fine `[A1,B1,A2,A3]` and a
+coarse `[A1,A2,A3]` hash and matching either, so a moved fine-key still collapses to the
+surviving coarse group [A-sentry-grouping-dev-2026]. Dorc analog: emit
+`(oracle-decl-identity)` coarse + `(oracle-decl-identity, call-site)` fine; fleet
+aggregation matches the coarse, per-host detail keeps the fine. (gk-d) the key is a
+*living, testable artifact* — Socorro maintains its grouping rules as first-class config
+("~a change a week"), gated on offline testability against recorded crashes
+[A-socorro-siggen-2026][B-willkg-siggen-2017]; if Dorc makes identity/suppression rules
+configurable, they must be replayable against recorded receipts in the DST harness.
+
+**finding-over-suppression-risk.** +SURE root-cause-only rendering has a real, documented
+failure mode — hiding a genuinely-independent second cause — and the literature shows
+exactly where it bites and how to bound it. WER's *condensing* failure is the canonical
+war story: keying on the immediate crash site (top-of-stack module) provably merges
+distinct `strlen`-corruption bugs into one bucket because they share a symptom
+[B-wer-wikipedia-2026]. Sentry's caller-vs-callee analysis proves the merge decision "is
+impossible to make in a general sense" [A-sentry-grouping-dev-2026], and its merge/split
+asymmetry shows the damage is hard to undo (a split "fails to fully reconstruct the
+original state"). The bound: (os-a) Dorc's structural advantage is that it keys on the
+analyzer-KNOWN ⊤-origin (the actual cause), not a guessed symptom site — this is the
+inverse of WER's defect, so Dorc should be *less* prone to condensing than symptom-based
+groupers, IF it always keys on the origin and never the consumer. (os-b) prefer the
+*sound* clustering posture: VMCAI'12 clusters alarms only by *proven* dependence so a fix
+to the dominant alarm provably discharges the cluster — suppression that is a proof, not a
+heuristic, cannot hide an independent bug [B-vmcai-clustering-2012] (~SUSPECT, abstract-
+depth). (os-c) never destroy the per-site receipt at capture; dedup in the *rendering*
+layer only, so a second independent cause that was wrongly folded can still be recovered
+(Sentry's lesson that capture-time merges are lossy). (os-d) the delayed-bug net
+(mvs-rule-5) catches the worst case: a suppressed cascade whose root never surfaced.
+
+## §1 (rq-E) Clang Static Analyzer suppression & dedup AS CODE
+
+Three first-party sources, all `llvm/llvm-project` main branch, read from local copies
+the predecessor downloaded (re-cited to canonical raw URLs). The analyzer builds a bug
+report at a *sink* node in the exploded graph, then walks the graph backward to the
+root constructing a `PathDiagnostic` (a list of `PathDiagnosticPiece`s — events,
+control-flow edges, call/macro subpaths), then prunes. The machinery is in three files.
+
+### Layer 1 — user-directed range suppression (`BugSuppression.cpp`)
+
+`[B-llvm-bugsuppression-2025]` (the `[[clang::suppress]]` attribute path). A
+suppression attribute on a decl/stmt yields a `SourceRange`; a bug is suppressed iff
+its location is lexically contained:
+
+> ```cpp
+> bool BugSuppression::isSuppressed(const PathDiagnosticLocation &Location,
+>                                   const Decl *DeclWithIssue, ...) {
+>   ... return llvm::any_of(SuppressionRanges, [BugRange, &SM](SourceRange Suppression) {
+>     return fullyContains(Suppression, BugRange, SM); });
+> ```
+
+Lexical-parent walk: an attribute on a class covers its inline methods. Carries a FIXME
+("Introduce stable IDs for checkers") — Clang itself wants per-checker suppression
+granularity and lacks it; suppression is all-or-nothing per range. **Dorc read:** this
+is the admin's region-mute, the analog of an oracle/book line saying "I vouch for this
+command; don't diagnose it" — *not* the cascade-dedup mechanism. Keep it conceptually
+separate (the round-21 vouching work is the right home), exactly as Clang does.
+
+### Layer 2 — whole-report heuristic suppression (`LikelyFalsePositiveSuppressionBRVisitor`)
+
+`[A-llvm-bugreportervisitors-2025]`, `finalizeVisitor`. A hardcoded denylist of
+known-imprecision sites; if the bug's stack-frame decl matches, `BR.markInvalid()`
+kills the ENTIRE report:
+
+> ```cpp
+> void LikelyFalsePositiveSuppressionBRVisitor::finalizeVisitor(
+>     BugReporterContext &BRC, const ExplodedNode *N, PathSensitiveBugReport &BR) {
+>   ... if (AnalysisDeclContext::isInStdNamespace(D)) {
+>         if (Options.ShouldSuppressFromCXXStandardLibrary) {
+>           BR.markInvalid(getTag(), nullptr); return; }
+>   ...
+>   if (CD->getName() == "list")  { BR.markInvalid(getTag(), nullptr); return; }
+>   ... "basic_string" ... "shared_ptr" ... "__independent_bits_engine" ...
+>   while (Loc.isMacroID()) { Loc = Loc.getSpellingLoc();
+>     if (SM.getFilename(Loc).ends_with("sys/queue.h")) {
+>       BR.markInvalid(getTag(), nullptr); return; } }
+> ```
+
+This is the "minimum shippable suppression set" pattern: don't *model* the imprecision,
+just enumerate the few constructs the analyzer is empirically wrong about and silence
+reports whose path bottoms out there. Tiny (~100 lines), hand-curated from real
+false-positive bug reports. **Dorc read:** the analog of a curated "these sh constructs
+reliably go ⊤ for boring reasons; don't even surface the ⊤" denylist — a stopgap that
+is cheap and effective but is *not* principled cause-dedup. A candidate for Dorc's
+shippable v0 only where a construct is known-uninteresting.
+
+### Layer 3 — path-piece dedup + interestingness pruning (`BugReporter.cpp`)
+
+`[A-llvm-bugreporter-2025]`. THIS is the direct analog of Dorc's ⊤-cascade dedup. The
+pruning pipeline (from `generatePathDiagnostics`, in execution order, lines 2082-2118):
+
+> ```cpp
+> if (R->shouldPrunePath() && Opts.ShouldPrunePaths) {
+>   bool stillHasNotes = removeUnneededCalls(Construct, ...pieces, R);
+>   assert(stillHasNotes); }            // 1. interestingness-gated subpath pruning
+> ...removePopUpNotes(...);
+> adjustCallLocations(...); removePiecesWithInvalidLocations(...);
+> ...optimizeEdges(...) ... dropFunctionEntryEdge(...);   // 2. edge aesthetics
+> removeRedundantMsgs(Construct.getMutablePieces());      // 3. two-visitor dedup
+> removeEdgesToDefaultInitializers(...);
+> ```
+
+**(3a) two-engines-one-fact → one note** (`removeRedundantMsgs` +
+`eventsDescribeSameCondition`, lines 378-450). When `ConditionBRVisitor` and
+`TrackConstraintBRVisitor` both emit an event at the *identical* `getLocation()`, keep
+one by a fixed tag-preference order (prefer `ConditionBRVisitor` unless its message is
+the generic fallback):
+
+> ```cpp
+> static PathDiagnosticEventPiece *
+> eventsDescribeSameCondition(PathDiagnosticEventPiece *X, PathDiagnosticEventPiece *Y) {
+>   const void *tagPreferred = ConditionBRVisitor::getTag();
+>   const void *tagLesser    = TrackConstraintBRVisitor::getTag();
+>   if (X->getLocation() != Y->getLocation()) return nullptr;
+>   if (X->getTag() == tagPreferred && Y->getTag() == tagLesser)
+>     return ConditionBRVisitor::isPieceMessageGeneric(X) ? Y : X;
+>   ...
+> ```
+
+This is *precisely* Dorc's per-⊤-operand multiplication shape: N consumers each want to
+say something about the same ⊤ fact at the same site; the resolver keeps one by a
+priority rule keyed on *who is speaking* (the visitor tag) and *whether its message is
+generic*. The generic-fallback exception is notable: a more-specific speaker wins, but
+a speaker reduced to its generic message yields to the other.
+
+**(3b) recursive interestingness-gated pruning** (`removeUnneededCalls`, lines 452-505).
+A call/macro subpath survives only if it `containsSomethingInteresting`, computed
+recursively; an event is kept wholesale only if `!event.isPrunable()` (events default
+`isPrunable()==true`, i.e. droppable) OR it lies on an interesting stack frame:
+
+> ```cpp
+> static bool removeUnneededCalls(const PathDiagnosticConstruct &C, PathPieces &pieces,
+>                                 const PathSensitiveBugReport *R, bool IsInteresting) {
+>   bool containsSomethingInteresting = IsInteresting;
+>   ... case Call: if (!removeUnneededCalls(C, call.path, R,
+>                        R->isInteresting(C.getStackFrameFor(&call.path)))) continue;
+>                  containsSomethingInteresting = true; break;
+>   ... case Event: containsSomethingInteresting |= !event.isPrunable(); break;
+> ```
+
+The "interesting" set is built during the backward walk by `markInteresting(SymbolRef
+| MemRegion | SVal | StackFrame)` (lines 2277-2335), recorded in
+`InterestingSymbols`/`InterestingRegions`/`InterestingStackFrames` maps; queried by
+`isInteresting(...)` (2389-2405). **Dorc read:** this is the mechanized form of "only
+root-cause is reported." The bug *site* seeds interestingness; the backward walk marks
+the symbols/frames that contributed to it; everything not on that chain is prunable and
+dropped. Dorc's ⊤ cause-pointer is the seed; the dedup keeps only notes whose subject
+is on the chain from the consumer back to the ⊤ origin.
+
+**(3c) note-level dedup via FoldingSet** (lines 2054-2069). Even within one node's
+visitor notes, identical pieces are de-duplicated by profiling each into a
+`FoldingSetNodeID` and skipping repeats:
+
+> ```cpp
+> std::set<llvm::FoldingSetNodeID> DeduplicationSet;
+> for (const PathDiagnosticPieceRef &Note : VisitorNotes->second) {
+>   llvm::FoldingSetNodeID ID; Note->Profile(ID);
+>   if (!DeduplicationSet.insert(ID).second) continue;   // identical note → drop
+>   ...
+> ```
+
+### Report-level dedup = a coarse fingerprint (rq-E *and* rq-G hinge)
+
+`[A-llvm-bugreporter-2025]` lines 2210-2246, 2983-2997. The single most transferable
+mechanism. Each bug report computes a `Profile` hash and is filed into a
+`BugReportEquivClass` (a `FoldingSet` bucket). The key is deliberately COARSE:
+
+> ```cpp
+> void PathSensitiveBugReport::Profile(llvm::FoldingSetNodeID &hash) const {
+>   hash.AddInteger(static_cast<int>(getKind()));
+>   hash.AddPointer(&BT);                       // the BugType (checker identity)
+>   hash.AddString(getShortDescription());      // the message text
+>   PathDiagnosticLocation UL = getUniqueingLocation();
+>   if (UL.isValid()) UL.Profile(hash);
+>   else hash.AddPointer(ErrorNode->getCurrentOrPreviousStmtForDiagnostics());
+>   for (SourceRange range : Ranges) { ...; hash.Add(range.getBegin());
+>                                            hash.Add(range.getEnd()); }
+> }
+> ```
+> ```cpp
+> // emitReport:
+> llvm::FoldingSetNodeID ID; R->Profile(ID);
+> BugReportEquivClass *EQ = EQClasses.FindNodeOrInsertPos(ID, InsertPos);
+> if (!EQ) { EQ = new BugReportEquivClass(std::move(R)); EQClasses.InsertNode(...); }
+> else EQ->AddReport(std::move(R));            // N paths, same key → one class
+> ```
+
+Then `findReportInEquivalenceClass` picks ONE representative report from the class to
+render (lines 3037+). The grouping key is `(checker, message, uniqueing-location,
+ranges)` — it OMITS the exploded path entirely. The *path* is the volatile,
+high-cardinality artifact; the *site + checker + message* is the stable identity. This
+is exactly the rq-G lesson: **group on stable site identity, not on the volatile
+trace**. The `getUniqueingLocation` indirection is itself a deliberate
+stability-control: a checker can declare a *uniqueing location* distinct from the bug
+location so that, e.g., all leaks of an object uniqueed at its allocation site collapse
+to one report regardless of which return path leaked it.
+
+### The note-tag redesign — generate the note WHERE the fact is known
+
+`[B-llvm-eliminating-visitors-2019]` (discourse) + `[B-llvm-d58367-2019]` (the patch).
+The analyzer's primary author (Artem Dergachev, "NoQ") opened "[analyzer] On
+eliminating BugReporterVisitors" (2019-02-19) to publicize patch D58367, landed as
+`rL357323` "[analyzer] Introduce a simplified API for adding custom path notes":
+
+> "it's an improved checker API that eliminates the need to write bug reporter
+> visitors in checkers, but instead enables squeezing note-generating code directly
+> into `addTransition`. This is cool because the message is generated within the part
+> of code that already has all the information that's necessary to generate the
+> message, which is much easier than reverse-engineering what happened 'a posteriori'
+> in order to re-construct that information." — NoQ
+
+This is a deep design lesson for Dorc, and it cuts AGAINST a naive "re-walk and dedup"
+implementation. The visitor model = emit nothing during analysis, then *after* analysis
+re-walk the exploded graph and have each visitor reverse-engineer what happened to
+produce a note. The note-tag model (`NoteTag`, attached at the `addTransition` that
+creates the state change) = capture the explanation *at the moment and site the fact
+becomes known*, carry it on the transition, and render it later only if that node ends
+up on the surfaced path. The note-tag closure even returns an *empty* string to
+self-suppress when the surrounding report makes it irrelevant — interestingness-gating
+folded into the note itself. **Dorc read (load-bearing):** when a command goes ⊤, the
+cause is known *at that site, at that moment*. Attaching the cause-explanation to the ⊤
+value at its origin (round-22's cause-pointer) is the note-tag pattern, and it is
+strictly easier and more accurate than the alternative of letting each downstream
+consumer reconstruct "why is my input ⊤?" after the fact. The cascade-dedup is then a
+*consequence* of carrying the explanation on the value rather than re-deriving it N
+times: downstream consumers don't generate competing notes because they were never the
+ones holding the explanation. This reframes rq-E: the win is less "dedup N notes" and
+more "only the origin ever had standing to emit the note."
+
+### rustc `ErrorGuaranteed` — the type-level proof that suppresses the cascade
+
+`[B-rustc-errorguaranteed-2026]` (rustc-dev-guide). rustc's mechanism for "only
+complain once" is a zero-sized token threaded through the types:
+
+> "`ErrorGuaranteed` is a zero-sized type that is unconstructable outside of the
+> `rustc_errors` crate. It is generated whenever an error is reported to the user, so
+> that if your compiler code ever encounters a value of type `ErrorGuaranteed`, the
+> compilation is _statically guaranteed to fail_."
+
+The suppression USE: once an error is emitted, the compiler manufactures error
+placeholder values (`Ty::new_error(tcx, guar)` / `TyKind::Error(ErrorGuaranteed)`) and
+keeps going; downstream type-checking that touches an error type is taught to stay
+silent rather than emit derived nonsense ("this `_` has unknown type" cascades). The
+*proof an error was already emitted* travels inside the poisoned value — which is
+exactly Dorc's ⊤-with-cause-pointer shape, with one crucial caveat the guide states:
+
+> "It does _not_ convey information about the _kind_ of error. For example, the error
+> may be due (indirectly) to a delayed bug or other compiler error. Thus, you should
+> not rely on `ErrorGuaranteed` when deciding whether to emit an error, or what kind of
+> error to emit."
+
+And the *delayed-bug* discipline (`span_delayed_bug`, formerly `delay_span_bug`):
+record a diagnostic that MUST be flushed iff compilation actually fails; if the compiler
+finishes without ever surfacing a real error, an un-flushed delayed bug is itself an ICE
+("no errors encountered even though `delay_span_bug` issued" —
+`[C-rustc-101869-2022]`). **Dorc read:** two transferable rules. (rule-a) the poisoned
+value carries only "an error/⊤ was established and points HERE", deliberately NOT the
+full classification — downstream code must not branch on the *kind* of the upstream
+failure, only on the fact of it (this protects Dorc from consumers second-guessing the
+root cause). (rule-b) the delayed-bug pattern is a safety net for the over-suppression
+failure mode: if you suppress a cascade on the assumption a root error was reported, and
+it turns out NO root error ever surfaced, that silent success is itself a bug to be
+caught — Dorc's analog: a ⊤ that suppressed downstream notes but whose cause-note never
+actually rendered should trip an internal invariant, not vanish.
+
+## §2 (rq-G) Fleet-scale error grouping & fingerprinting
+
+The o11y/crash-reporting corpus. The shared problem with Dorc's rq-G: a single fault
+manifests as a flood of events across many sites/hosts/paths; group them to ONE so the
+operator sees one cause, while not over-merging genuinely distinct faults. The recurring
+tension is **stability vs precision**: a coarse key survives code movement but over-
+groups; a precise key (full stack/path) splits one bug into many groups and churns on
+every refactor.
+
+### Sentry — the most directly transferable design
+
+`[A-sentry-grouping-dev-2026]` (Sentry's own developer docs, the implementing team).
+Sentry groups events into "issues" by a *fingerprint*; the default is computed from the
+stack trace, NOT the whole event. The findings most relevant to Dorc:
+
+**(g-caller-vs-callee) the fundamental ambiguity, stated cleanly:**
+
+> "Sentry has a general tendency to group different paths towards an issue separately…
+> Take a hypothetical function `get_current_user`. Let's imagine this function has a bug
+> where it now starts failing with a `DataConsistencyError`… each of these callers will
+> now create a different group. We can thus think of grouping as a problem of the source
+> of the error. At any point the question can be asked if the source of the error is
+> 'how we call a function' (caller error) or 'in the function' (callee error). Making
+> this decision is impossible to make in a general sense."
+
+This IS Dorc's rq-G problem verbatim: one bad oracle-declaration (the callee) fails
+across M hosts × N scripts (the callers). Sentry's admission that caller-vs-callee "is
+impossible to make in a general sense" is the strongest evidence that Dorc must not try
+to auto-decide it — it must key on the thing it KNOWS is the single source (the
+oracle-declaration site / the ⊤-origin site), i.e. choose callee-grouping by
+construction because Dorc's analyzer actually knows where the rot originates, unlike a
+post-hoc crash grouper. ~SUSPECT this is a genuine structural advantage: Dorc's
+cause-pointer gives it the callee identity that Sentry has to *guess*.
+
+**(g-stability-hierarchical-hash) survive code movement by emitting MULTIPLE hashes:**
+Sentry's answer to "a frame gets reclassified / code moves" is to compute *both* a
+fine and a coarse hash and associate the event with any group matching *either*:
+
+> "consider a stack trace with three frames 'A1 B1 A2 A3'… they are all feeding into the
+> fingerprint `[A1, B1, A2, A3]`. At a later point… marks `B1` as not in-app. The
+> grouping algorithm if it were to fully ignore the `B1` frame now would create a new
+> hash… However because we still create the full hash anyways the new event… would
+> still find the already existing group. The hashes created are `[A1, B1, A2, A3]` as
+> well as `[A1, A2, A3]`."
+
+**Dorc read (load-bearing for site-keyed receipts):** the stability mechanism is
+*emit a set of keys at varying coarseness and match on any*. When the site-identity
+scheme changes (a script is edited, a line moves), keying receipts on a *hierarchy* —
+e.g. `(oracle-decl-identity)` coarse + `(oracle-decl-identity, call-site-span)` fine —
+lets a moved fine-key still collapse to the surviving coarse-key group. This is the
+concrete grouping-key design the briefing asked for: do NOT pick one granularity; emit
+nested keys and match the coarsest stable one.
+
+**(g-source-line-overgroup-tradeoff) why including the source line both helps and
+hurts:** Sentry's Python grouping feeds `module + function + context-line`:
+
+> "modules and functions are relatively coarse indicators and a function can often fail
+> from different branches, so taking the source code into account in addition is less
+> likely to over-group. This however also means that when a refactoring takes place in a
+> line that does not change the functionality but the source code, it can cause a new
+> [group] to be created unnecessarily."
+
+This is the direct statement of the receipts-stability tension: the more precisely you
+key (include the literal sh text of the command), the more a no-op edit churns the
+grouping. Dorc should key on *site identity* (which command, structurally) over *site
+content* (the exact bytes) wherever it wants stability — content belongs in the
+displayed evidence, not the grouping key.
+
+**(g-merge-split-asymmetry) over-suppression is hard to UNDO:**
+
+> "The system does not cope particularly well with merges and splits because the events
+> in Snuba are generally considered immutable… a split fails to fully reconstruct the
+> original state as some information… was lost in the process."
+
+**Dorc read:** evidence for the over-suppression failure mode. Once you merge two
+causes (or root-cause-suppress a second independent fire), recovering the lost
+distinction is lossy. Argues for *under*-merging at capture time (keep the receipts that
+would let you split later) and merging only in the *rendering* layer — never destroy the
+per-site receipt just because it deduped to a root in one view.
+
+**(g-secondary-sweep) the north-star aggregation pattern — group fine, sweep coarse
+LATER:** Sentry's stated future direction is precisely Dorc's rq-G north-star:
+
+> "the grouping algorithm could continue to just fingerprint the stack trace but a
+> secondary process could come in periodically and sweep up related fingerprints into a
+> larger group. If we take the `get_current_user` example the creation of 50 independent
+> groups is not much of an issue if no alerts are fired. If after 5 minutes the system
+> detected that they are in fact all very related (eg: the bug is 'in
+> `get_current_user`') it could leave the 50 generated groups alone but create a new
+> group that links the other 50… and let the user work with the larger group instead."
+
+**Dorc read:** this is the "one rot event reads as ONE cause, fleet-aggregable"
+requirement, and Sentry's framing tells Dorc HOW to get it cheaply: don't force the
+single-group decision at capture; capture per-site (M hosts each get their receipt), and
+aggregate to "one cause across the fleet" as a *separate, later, non-destructive* pass
+keyed on the shared cause-identity. The alert/noise cost is what makes over-grouping
+*feel* mandatory; if the fleet view aggregates without destroying the per-host detail,
+both "one cause" and "which hosts" survive. Note the explicit cost signal: group
+creation is "relatively expensive… due to the number of additional actions" (alerts,
+regression detection) — the economic driver of grouping is alert-noise, not storage.
+
+**(g-ai-embedding-caveat) the newest layer, and why it's a *fallback* not a *primary*:**
+Sentry added an embedding-similarity merge (`should_call_seer_for_grouping`) that runs
+*after* hash lookup and *before* new-group creation, gated by a circuit breaker and rate
+limits. It exists to paper over the caller-vs-callee problem when the deterministic hash
+over-splits. **Dorc read:** keep ML out of the correctness path; if Dorc ever wants
+fuzzy aggregation it belongs strictly as a non-authoritative suggestion layer atop
+deterministic site-keyed receipts (and Dorc, unlike Sentry, has the analyzer-known cause
+and likely never needs it).
+
+### Windows Error Reporting — the canonical bucket-failure taxonomy
+
+`[B-wer-wikipedia-2026]` (Wikipedia, citing the CACM "Debugging in the Very Large"
+paper `[D-cacm-debugging-large-2011]`, paywalled — see fetch-requests). WER buckets a
+crash *client-side*, before any symbol analysis, on eight fields:
+
+> "buckets classify issues by: Application Name, Application Version, Application Build
+> Date, Module Name, Module Version, Module Build Date, OS Exception Code/System Error
+> Code, and Module Code Offset."
+
+The bucket-failure taxonomy is the most-cited result in this whole literature, and it is
+exactly Dorc's two-sided risk:
+
+> "Ideally, each bucket contains crash reports that are caused by one and only one root
+> cause. However… First, the heuristics that group failures can result in a single
+> failure's being attributed to multiple buckets; for instance, each time an
+> application… is recompiled, the application will have a new Module Build Date, and
+> resulting failures will then map to multiple buckets. Second… multiple distinct bugs
+> can be mapped to a single bucket; for instance, if an application calls a single
+> function like `strlen` with strings corrupted in different ways by different
+> underlying code defects, the failures could map to the same bucket because they
+> appear to be crashes in the same function… This occurs because the bucket is
+> generated on the Windows OS client without performing any symbol analysis… The module
+> that is picked… is the module at the top of the stack."
+
+The CACM paper names these two failure directions *condensing* (under-keying → many
+bugs in one bucket) and *expanding* (over-keying → one bug in many buckets). **Dorc
+read:** (a) the *expanding* failure is exactly the receipts-stability problem — keying
+on a volatile dimension (Module Build Date ≈ "the exact sh bytes / a timestamp / a
+version") shatters one cause into many groups on every rebuild/edit; Dorc must keep
+volatile dimensions OUT of the grouping key. (b) the *condensing* failure is the
+over-suppression failure mode — keying too coarse (top-of-stack module ≈ "the immediate
+consumer of the ⊤" rather than the ⊤-origin) merges genuinely distinct causes; this is
+the war story the briefing asked for: WER's coarse client-side key provably merges
+distinct `strlen` corruptions because it keys on the *crash site* (immediate symptom)
+not the *root cause* — which is precisely why Dorc keying on the ⊤-CAUSE-pointer (the
+origin) rather than the symptom site is the correct call, and the inverse of WER's
+known defect. (Note the scale that makes coarse keying attractive: WER is "provisioned
+to receive and process well over 100 million error reports per day" — bucketing exists
+to make a firehose tractable, the 80/20 Pareto point Ballmer cited.)
+
+### Mozilla Socorro — grouping rules as maintained, first-class config
+
+`[A-socorro-siggen-2026]` (Socorro docs) + `[B-willkg-siggen-2017]` (the maintainer's
+overhaul retrospective). Socorro generates a crash *signature* (its grouping key) by a
+*pipeline of transform rules plus regex lists* ("siglists"), explicitly maintained as
+config by non-core contributors. The stability tension is stated as a first principle:
+
+> "Signature generation is finicky. When it generates too coarse a signature, then
+> crash reports that have nothing to do with one another end up grouped together. When
+> it generates too fine a signature, then crash reports end up in very small groups
+> which are unlikely to be looked at. Since technologies are constantly changing, we're
+> constantly honing signature generation."
+
+The signature algorithm is a *stack-walk with accumulation* (not a whole-stack hash):
+
+> "1. We walk the crashing thread's stack, looking for things that would match the
+> Signature Sentinels. The first matching element… becomes the top of the sub-stack…
+> 2. We walk the stack, ignoring everything that matches the Irrelevant Signatures…
+> 4. We accumulate signatures that match the Prefix Signatures, until something doesn't
+> match. 5. We normalize each signature… The generated signature is a concatenation of
+> all the accumulated signatures, separated with a pipe sign."
+
+Two lists drive it, with an explicit decision rule for which list a frame goes in:
+
+> "Irrelevant Signatures… Add symbols to this list that: 1. have platform variants that
+> prevent crash signatures from being the same across platforms 2. are involved in
+> panic, error, or crash handling code that happens *after* the actual crash."
+
+**Dorc read (the config-maintenance economics):** this is the strongest evidence that
+the grouping key is a *living artifact*, not a fixed function. Socorro averages "a
+change a week" to the siglists; changes require a Bugzilla bug with example crash URLs
+"because signature generation is tricky and we need the historical data for what
+changes we made, for whom, why, and how it affected signature generation." The
+"irrelevant list" rule — strip frames that are *crash-handling code that runs after the
+cause* — is directly transferable: Dorc's analog is stripping the *downstream consumers*
+of a ⊤ from the cause-identity (they are the "after the cause" frames), keeping the
+ⓣ-origin (the "cause" frame) as the signature head. The prefix-list "accumulate until
+non-match" is a tunable-depth identity: include just enough of the causal chain to
+disambiguate, stop early to stay stable. And the testability lesson: Socorro's whole
+overhaul was motivated by "there's no way to test a grouping-rule change before merging
+it" — if Dorc makes site-identity/suppression rules configurable, they MUST be testable
+offline against recorded receipts (Dorc's DST harness is the natural home).
+
+### CodeChecker — the deployed Clang-SA hash, with a NAMED stability spectrum
+
+`[A-codechecker-reportid-2026]` (Ericsson CodeChecker docs). The single most actionable
+site-identity reference: it documents the *spectrum* of report-hash methods used over
+Clang SA / Clang-Tidy in production, each row spelling out exactly which dimensions it
+keys on and therefore what destabilizes it. From most to least context-sensitive:
+
+> "**Context sensitive** (default for Clang Static Analyzer)… calculated based on:
+> signature of the enclosing function declaration…; content of the line where the bug
+> is; checker name…; position (column) within the line."
+> "**Context free / context-free-v2**… the hash will not be changed so easily for
+> example on code indentation or when a checker is renamed… file name; checker name;
+> content of the line where the bug is if it can be read up. All the whitespaces from
+> the source content are removed; range column numbers where the bug is."
+> "**diagnostic-message**… Same as context-free-v2 plus bug step messages… **Note**:
+> this is an experimental hash and it is not recommended… because this hash can change
+> very easily for example on variable / function renames."
+
+And the operational warning:
+
+> "the same hash method should be used consistently for a product. Mixing them can cause
+> a lot of confusion when the compare or other features are used."
+
+**Dorc read (the concrete grouping-key design):** this is a ready-made stability ladder
+for site-keyed receipts. The progression encodes the exact tradeoffs: keying on
+*column position* or *bug-step messages* (the most precise) churns on reformatting and
+renames; keying on *normalized line content with whitespace stripped + enclosing
+declaration name + checker* is the stable sweet spot CodeChecker ships as
+"context-free-v2". For Dorc: a receipt's stable identity should be roughly
+`(analysis-rule-id, enclosing-structural-scope, whitespace-normalized command text)` —
+NOT the byte offset, NOT the line number alone (moves on edit), NOT the full step trace.
+The "use one method consistently" warning maps to: Dorc must not mix identity schemes
+across a fleet comparison, or M-host aggregation silently fragments.
+
+## §3 (rq-E) Abstract-interpretation alarm clustering — the lattice-analyzer prior art
+
+This is the closest academic prior art to Dorc's exact problem: a sound lattice analyzer
+(⊤ = "I lost precision here") that emits correlated alarms from ONE imprecision source,
+and wants to report the source once. Findings are from the Astrée literature and the
+VMCAI'12 sound-clustering work (read at abstract/snippet depth this turn — see
+fetch-requests for the full PDFs; claims capped ~SUSPECT accordingly).
+
+**(alarm-selectivity-economics)** `[B-astree-site-2026]` / `[C-absint-astree-2026]`.
+Astrée frames the entire problem economically: even a 1%-false-alarm rate is unusable at
+scale — "on a program with 100,000 operations, a selectivity rate of only 1% yields 1000
+false alarms." ~SUSPECT this is the same driver as Dorc's ⊤-cascade: the cost isn't one
+⊤, it's that one ⊤ × N downstream consumers produces an unreviewable list, so dedup is a
+*usability prerequisite*, not a nicety. The Astrée design answer (per the ENS/AbsInt
+material) is precision-by-construction — analyze precisely enough that ⊤ is rare —
+rather than post-hoc clustering, which is a different bet than Dorc can make (Dorc's ⊤ is
+often unavoidable: an unmodeled command).
+
+**(sound-non-statistical-clustering)** `[B-vmcai-clustering-2012]` (Lee, Yi et al.,
+"Sound Non-Statistical Clustering of Static Analysis Alarms"). The directly-relevant
+academic result: instead of statistically *ranking* alarms (showing likely-true ones
+first), they compute *dependencies between alarms* so that clearing one "dominant" alarm
+provably clears a cluster of dependent ones. ~SUSPECT (abstract-depth) this is the
+formal version of Dorc's cause-pointer: an alarm B is *subsumed* by alarm A when A's
+imprecision is what triggered B; report A, fold B under it, and a fix to A discharges B.
+The "non-statistical / sound" framing matters for Dorc's correctness posture: the
+clustering is a *proof* of dependence, not a heuristic guess, so suppressing the
+dependent alarm cannot hide an independent bug — exactly the over-suppression guarantee
+Dorc needs. This is the strongest candidate for "published prior art for ⊤-origin-keyed
+deduplication in lattice analyzers specifically," and the full PDF is a priority
+fetch-request.
+
+**(infer-codechecker-dedup)** `[C-fb-infer-2017]` / `[A-codechecker-reportid-2026]`.
+Infer (Facebook/Meta, inter-procedural, OCaml) and CodeChecker both reduce repeated
+findings to a stable per-bug identifier so the same bug across runs/files reports once;
+CodeChecker's hash (above) is the concrete mechanism. Infer's scale story (run on every
+Meta diff) is evidence that *per-report stable identity* is the deployed answer to "same
+cause, many manifestations" — but I did not reach Infer's bug-hash source this turn
+(capped ~SUSPECT / -GUESS).
+
+## §4 Lighter fronts (capped fast — thin or tangential primary sources)
+
+These two sub-questions were explicitly lower-priority; searches surfaced no clean
+first-party "per-site vs per-cause emission" or "fleet log dedup" primary worth a deep
+read, so I capped them rather than burn budget. What is reliably known, hedged:
+
+**(lint-dedup)** -GUESS / ~SUSPECT. Linters mostly side-step the *cascade* problem
+because they are largely non-flow-sensitive: a rule fires per-AST-node, so "one cause →
+N notes" is rarer than in a dataflow analyzer. The transferable mechanisms are narrower:
+(i) *report-once-per-node* — a lint reports at the node it matched, and the engine does
+not re-walk to produce derived notes, so there is little to dedup; (ii) *overlap
+governance as config* — clippy gates overlapping lints off-by-default (the `nursery`/
+`restriction`/`pedantic` groups) precisely so two lints don't both fire on one
+construct, and tooling like SonarJS documents where its rules duplicate base ESLint
+rules [C-sonar-eslint-dup-2024] — this is the same "grouping/suppression policy is
+maintained config" lesson as Socorro, at lower stakes. I did NOT find a primary source
+describing a *per-cause* (vs per-site) emission decision in ESLint/clippy core; absent
+that, no confident finding. Cap: this front adds little beyond what Clang/Socorro
+already establish.
+
+**(fleet-log-dedup)** -GUESS. journald collapses immediately-repeated identical lines
+("Message repeated N times") — a trivial *adjacent-identical* run-length dedup, not
+cause-grouping; it informs only the weakest version of "M identical → one line" and
+nothing about stable keys. Datadog/ELK-style log-pattern clustering (tokenize a line,
+replace variable tokens — numbers, UUIDs, timestamps — with placeholders, group by the
+template) is the same move as Socorro's message-based fallback normalization and Sentry's
+message-grouping fallback (replace numbers/UUIDs with a placeholder). It is explicitly a
+*fallback* in those systems precisely because it over-groups. Cap: confirms the
+"normalize volatile tokens out of the key" principle (already in finding-grouping-key-
+design gk-a) and nothing new; no deep read warranted.
+
+## §5 Design consequences for Dorc (r22 seeding)
+
+- **dc-1 (cause-pointer is a note-tag carrier, not a re-walk seed).** Implement round-22's
+  ⊤-cause-pointer as the *carrier of the explanation*, captured at the site/moment the ⊤
+  arises (finding-emit-at-origin-not-rewalk). Pure-propagation consumers inherit the
+  poison silently and emit nothing. This prevents the cascade at the source; it is
+  strictly simpler and more accurate than emit-then-dedup, per Clang's own
+  away-from-visitors migration [B-llvm-eliminating-visitors-2019] and rustc's
+  `Ty::new_error` [B-rustc-errorguaranteed-2026].
+- **dc-2 (ship the 5-rule minimum suppression set).** mvs-rule-1…5 (finding-minimum-
+  viable-suppression) is the smallest set the evidence supports; rules 1-2 do the heavy
+  lifting (carry-the-cause + interestingness-from-sink), rule-3 handles same-fact ties,
+  rules 4-5 are the correctness guards. Denylist/region-mute are optional, separate.
+- **dc-3 (site identity = structural, whitespace-normalized, hierarchical).** Key receipts
+  on `(analysis-rule-id, enclosing-structural-scope, whitespace-normalized command text)`
+  and emit a coarse+fine hierarchy (finding-grouping-key-design). This is CodeChecker's
+  shipped "context-free-v2" adapted, plus Sentry's match-either-hash stability trick.
+  Verify under the four-by-two: the *fine* key serves per-host detail (the "other user":
+  an engineer debugging one host); the *coarse* key serves fleet aggregation (the admin
+  seeing "one rot, 12 hosts"). Survives the AGENTS exclusion-check because neither cell is
+  dropped — both keys are emitted.
+- **dc-4 (dedup in rendering, never destroy receipts at capture).** Over-suppression is
+  real and lossy-to-undo (finding-over-suppression-risk, Sentry merge/split asymmetry).
+  Keep every per-site receipt; collapse to root-cause only in the view. A wrongly-folded
+  independent second cause must remain recoverable.
+- **dc-5 (Dorc's structural edge over o11y groupers).** Dorc keys on the analyzer-KNOWN
+  ⊤-origin, not a guessed symptom site — the inverse of WER's condensing defect
+  [B-wer-wikipedia-2026] and a resolution of Sentry's "impossible in general"
+  caller-vs-callee problem [A-sentry-grouping-dev-2026]. ~SUSPECT this is a genuine
+  advantage and should be stated as such in design docs, but it holds ONLY if Dorc never
+  falls back to keying on the consumer/symptom.
+- **dc-6 (grouping/suppression rules, if configurable, are testable config).** Follow
+  Socorro: any tunable list (boring-⊤ denylist, irrelevant-frame stripping) is first-class
+  config with offline replay against recorded receipts in the DST harness
+  [A-socorro-siggen-2026]. Do not bake them where they can't be regression-tested.
+- **dc-7 (the sound-clustering bar).** If Dorc ever clusters beyond pure ⊤-propagation
+  (correlated-but-not-identical causes), prefer dependence-PROVEN clustering over heuristic
+  similarity, so suppression cannot hide an independent bug [B-vmcai-clustering-2012]
+  (~SUSPECT — verify against the full paper before relying).
+
+## Fetch-requests (paywalled / non-extractable this turn)
+
+- **fr-1** `[D-cacm-debugging-large-2011]` — Glerum et al., "Debugging in the (Very)
+  Large," CACM 54(7) 2011. Both cacm.acm.org and dl.acm.org returned 403. Want the exact
+  condensing/expanding heuristic mechanics and the quoted noise/bucket figures (the
+  Wikipedia summary `[B-wer-wikipedia-2026]` covers the taxonomy but not the numbers).
+  A Microsoft Research PDF mirror may exist.
+- **fr-2** `[B-vmcai-clustering-2012]` — Lee/Lee/Yi, "Sound Non-Statistical Clustering of
+  Static Analysis Alarms," VMCAI 2012, https://psl.hanyang.ac.kr/assets/pdf/vmcai12.pdf
+  — the PDF has no extractable text layer via mcp-fetch (binary stream only). This is the
+  load-bearing rq-E academic source (dependence-based sound clustering = formal cause-
+  pointer); currently capped ~SUSPECT at abstract-depth. A text-extracted copy would let
+  me verify the subsumption mechanism and lift the cap. (Human render/paste, or a
+  text-layer PDF, would settle dc-7.)
+- **fr-3** (low priority) Infer bug-hash / issue-identity source in `facebook/infer`
+  (OCaml) — to confirm the deployed per-report stable-identity mechanism at Meta scale;
+  `[C-fb-infer-2017]` read only as a snippet.
+
+## Graded sources
+
+*(grades assigned by gathering subagent; conductor re-verification pending.)*
+
+- `[A-llvm-bugreporter-2025]` · LLVM project, `clang/lib/StaticAnalyzer/Core/BugReporter.cpp` (the post-analysis diagnostic-path construction, pruning, dedup, and equivalence-class machinery) · https://raw.githubusercontent.com/llvm/llvm-project/main/clang/lib/StaticAnalyzer/Core/BugReporter.cpp · 2025 (main branch) · read: targeted-full (read `removeRedundantMsgs`, `eventsDescribeSameCondition`, `removeUnneededCalls`, `markInteresting`/`isInteresting`, both `Profile()` impls, `emitReport`/equivalence-class selection in full) · grade A not B: canonical first-party implementation, the executable answer to "how path notes are constructed by re-walking the exploded graph and then deduplicated/pruned to root-cause"; no rot (main). · relevance: THE primary rq-E dedup source AND the rq-G fingerprint precedent (coarse `Profile` key + equivalence classes). · via predecessor `[A-llvm-bugreporter-2025]` (octocode `githubSearchCode` keywords `removeRedundantMsgs,removeUnneededCalls`).
+- `[A-llvm-bugreportervisitors-2025]` · LLVM project, `clang/lib/StaticAnalyzer/Core/BugReporterVisitors.cpp` (the visitors that enhance/suppress reports; whole-report heuristic suppression) · https://raw.githubusercontent.com/llvm/llvm-project/main/clang/lib/StaticAnalyzer/Core/BugReporterVisitors.cpp · 2025 (main branch) · read: targeted (read `LikelyFalsePositiveSuppressionBRVisitor::finalizeVisitor` and the interestingness-gated note pattern in full; rest of file is per-visitor note-text generation) · grade A not B: canonical first-party note-construction/suppression implementation, directly answers rq-E with executable code; no rot. · relevance: layer-2 whole-report denylist suppression (`markInvalid`) — the "minimum shippable suppression set" pattern. · via predecessor `[A-llvm-bugreportervisitors-2025]` (octocode `githubGetFileContent`, matchString `LikelyFalsePositiveSuppressionBRVisitor`).
+- `[B-llvm-bugsuppression-2025]` · LLVM project, `clang/lib/StaticAnalyzer/Core/BugSuppression.cpp` (the `[[clang::suppress]]` user-directed suppression path) · https://raw.githubusercontent.com/llvm/llvm-project/main/clang/lib/StaticAnalyzer/Core/BugSuppression.cpp · 2025 (main branch) · read: full (small file, ~280 lines) · grade B not A: canonical first-party source, fully read, but covers the user-directed attribute path (decl/range containment), not the automatic note-pruning that is rq-E's core; primary but narrow-scope. · relevance: layer-1 admin region-mute model (range containment); a candidate model for Dorc's per-site vouching, but user-driven not cause-driven. · via predecessor `[B-llvm-bugsuppression-2025]` (octocode `githubGetFileContent`).
+- `[B-llvm-eliminating-visitors-2019]` · discourse.llvm.org, Artem Dergachev (NoQ), "[analyzer] On eliminating BugReporterVisitors" · https://discourse.llvm.org/t/analyzer-on-eliminating-bugreportervisitors/51206 · 2019-02-19 · read: full (short thread; OP is the load-bearing statement) · grade B not A: primary-author statement of design intent, fully read, but it is a brief announcement pointing at the patch rather than the implementation itself; the executable detail lives in D58367/the NoteTag code. · relevance: the note-tag-at-analysis-time rationale ("generate the message where the info already exists, not by reverse-engineering a posteriori") — directly motivates attaching Dorc's ⊤-cause at origin rather than re-deriving downstream. · via Kagi `Clang static analyzer note tag API redesign eliminate BugReporterVisitor`.
+- `[B-llvm-d58367-2019]` · reviews.llvm.org, Phabricator review D58367 → `rL357323` "[analyzer] Introduce a simplified API for adding custom path notes" (author NoQ; reviewers dcoughlin, xazax.hun, Szelethus, et al.) · https://reviews.llvm.org/D58367 · 2019 (landed Apr 2019) · read: targeted (review metadata, commit list, changed-files; inline diffs not rendered by fetch) · grade B not C: first-party patch record confirming the NoteTag API landed and which files it touched (`BugReporterVisitors.h/.cpp`, `CheckerContext.h`, `ExprEngine`, `MIGChecker` as the first adopter); not A because the diff body itself didn't render, so the mechanism detail is corroborated rather than read line-by-line. · relevance: confirms the eliminate-visitors proposal became shipped code; MIGChecker as the migration exemplar. · via the discourse thread `[B-llvm-eliminating-visitors-2019]`.
+- `[B-rustc-errorguaranteed-2026]` · rust-lang/rustc-dev-guide, `src/diagnostics/error-guaranteed.md` · https://github.com/rust-lang/rustc-dev-guide/blob/main/src/diagnostics/error-guaranteed.md (raw read) · 2026 (main) · read: full · grade B not A: authoritative maintained dev-guide, fully read, but it is the *guide* prose; the actual `Ty::new_error`/`TyKind::Error` suppression code in `rustc` proper is one level deeper (not read this turn) so the suppression-USE mechanics are corroborated-from-docs not source-verified. · relevance: the "poisoned value carries proof an error was already emitted" pattern = Dorc's ⊤-with-cause-pointer; the explicit caveats (does NOT convey kind; don't branch on it; flush-or-ICE delayed-bug) directly inform Dorc's cause-pointer discipline. · via Kagi `rustc ErrorGuaranteed span_delayed_bug suppress cascade`.
+- `[C-rustc-101869-2022]` · rust-lang/rust#101869, "internal compiler error: no errors encountered even though `delay_span_bug` issued" · https://github.com/rust-lang/rust/issues/101869 · 2022-09-15 · read: snippet (title + symptom from search result) · grade C: real-world artifact of the delayed-bug discipline failing, but read only as a snippet, so capped low. · relevance: concrete evidence that the over-suppression net (delayed bug never flushed) is itself treated as a bug — the safety-net pattern for Dorc's "suppressed cascade whose root never rendered". · via Kagi result alongside the ErrorGuaranteed query.
+- `[A-sentry-grouping-dev-2026]` · develop.sentry.dev, Sentry "Grouping" backend developer documentation (the implementing team's own internals doc) · https://develop.sentry.dev/backend/application-domains/grouping/ · 2026 (live docs) · read: full · grade A not B: first-party engineering documentation by the team that built it, read in full, exceptionally candid about failure modes (caller-vs-callee impossibility, merge/split lossiness, the secondary-sweep future plan, native-platform mangling instability); reads as primary design rationale, not marketing. · relevance: THE most transferable rq-G source — every load-bearing rq-G finding (hierarchical-hash stability, callee-by-construction, group-fine-sweep-coarse, merge irreversibility, ML-as-fallback) comes from here. · via Kagi `Sentry error grouping fingerprinting algorithm evolution`.
+- `[B-wer-wikipedia-2026]` · Wikipedia, "Windows Error Reporting" (summarizing Glerum et al., CACM 2011) · https://en.wikipedia.org/wiki/Windows_Error_Reporting · 2026 (live) · read: full (targeted on the bucketing section) · grade B not C: encyclopedic but the bucketing-key list and the condensing/expanding failure description are quoted-and-cited from the primary CACM paper, accurate and load-bearing; not A because it is the secondary summary, not the paper itself (which is paywalled). · relevance: the canonical two-sided bucket-failure taxonomy (recompile→many buckets = expanding/over-keying; `strlen`→one bucket many bugs = condensing/under-keying) and the client-side top-of-stack keying that proves symptom-keying merges distinct causes — the direct argument for Dorc keying on ⊤-origin not symptom. · via Kagi `Windows Error Reporting bucketing !analyze heuristics`.
+- `[D-cacm-debugging-large-2011]` · Glerum, Kinshumann, et al. (Microsoft), "Debugging in the (Very) Large: Ten Years of Implementation and Experience," Communications of the ACM 54(7), 2011 · https://cacm.acm.org/research/debugging-in-the-very-large/ (also dl.acm.org/doi/10.1145/1965724.1965749) · 2011 · read: UNREAD (403 paywall on both mirrors) · grade D: not retrieved; the primary source behind the WER taxonomy. Capped at unread; all WER claims sourced via `[B-wer-wikipedia-2026]` instead. · relevance: would give exact condensing/expanding heuristic mechanics and the ~quoted noise figures; priority fetch-request. · via Kagi result + Wikipedia citation.
+- `[A-socorro-siggen-2026]` · Mozilla, "Signature Generation — Socorro documentation" · https://socorro.readthedocs.io/en/latest/signaturegeneration.html · 2026 (live docs) · read: full · grade A not B: first-party docs of a long-running production crash-grouping system, read in full, including the 5-step stack-walk algorithm, the siglists (sentinel/prefix/irrelevant), the prefix-vs-irrelevant decision rule, and the change-management process; primary and operationally candid. · relevance: grouping-key as maintained first-class config; the "irrelevant = crash-handling code that runs AFTER the cause" rule maps to stripping ⊤-downstream-consumers; prefix-accumulate-until-non-match = tunable-depth causal identity; testability-before-merge lesson. · via Kagi `Mozilla Socorro crash signature generation siglists`.
+- `[B-willkg-siggen-2017]` · Will Kahn-Greene (Socorro maintainer), "Socorro signature generation overhaul and command line interface" · https://bluesock.org/~willkg/blog/mozilla/socorro_signature_generation.html · 2017-10-06 · read: full · grade B not A: first-hand maintainer account (primary on the maintenance economics), but a retrospective blog the author himself flags as possibly dated; corroborates the docs rather than defining mechanism. · relevance: the maintenance-burden reality — "~a change a week," signatures "in constant flux," good-vs-bad signature definition (same cause different symptoms → one group), and the no-way-to-test-before-merge pain that motivated extracting a testable CLI. · via Kagi result alongside Socorro docs.
+- `[A-codechecker-reportid-2026]` · Ericsson, CodeChecker docs, "Analyzer report identification" · https://github.com/Ericsson/codechecker/blob/master/docs/analyzer/report_identification.md (raw read) · 2026 (main) · read: full · grade A not B: first-party docs of the deployed report-hashing used over Clang SA/Clang-Tidy at scale, read in full; documents the actual named hash methods and their stability tradeoffs — directly executable design guidance, not theory. · relevance: THE concrete site-identity stability ladder (context-sensitive → context-free-v2 → diagnostic-message), each row naming what destabilizes it (column position, line number, whitespace, renames, bug-step messages); the "use one method consistently or comparison fragments" warning = Dorc's fleet-aggregation invariant. · via Kagi `Infer static analyzer bug hash deduplication`.
+- `[B-vmcai-clustering-2012]` · Lee, Lee, Yi (Seoul National Univ.), "Sound Non-Statistical Clustering of Static Analysis Alarms," VMCAI 2012 · https://psl.hanyang.ac.kr/assets/pdf/vmcai12.pdf · 2012 · read: snippet/abstract (search-surfaced abstract; full PDF not read this turn) · grade B not A: peer-reviewed primary academic source directly on the problem (dependence-based, sound clustering of lattice-analyzer alarms), but read only at abstract depth, so mechanism claims are corroborated-from-abstract not verified — full read needed before relying. · relevance: the strongest candidate for published ⊤-origin-keyed dedup in a lattice analyzer — clustering by *proven* alarm-dependence (clear the dominant alarm, the cluster clears) is the formal cause-pointer with a soundness guarantee against over-suppression. · via Kagi `Astree static analyzer alarm clustering`.
+- `[B-astree-site-2026]` · ENS, "The Astrée Static Analyzer" project site · https://www.astree.ens.fr/ · 2026 (live) · read: snippet (selectivity framing) · grade B not C: authoritative project site (the analyzer's academic home), but only the selectivity/false-alarm framing was read. · relevance: the alarm-economics driver (1% false-alarm rate unusable at scale) = why ⊤-cascade dedup is a usability prerequisite; Astrée's precision-by-construction is a contrast case to Dorc's unavoidable-⊤ situation. · via Kagi `Astree static analyzer alarm clustering`.
+- `[C-absint-astree-2026]` · AbsInt, "Astrée Static Analyzer for C and C++" (commercial product page) · https://www.absint.com/astree/index.htm · 2026 (live) · read: snippet · grade C: vendor marketing page; corroborates the selectivity figure only. · relevance: same selectivity-economics point as `[B-astree-site-2026]`. · via Kagi `Astree static analyzer alarm clustering`.
+- `[C-fb-infer-2017]` · Meta Engineering, "Finding inter-procedural bugs at scale with Infer static analyzer" · https://engineering.fb.com/2017/09/06/android/finding-inter-procedural-bugs-at-scale-with-infer-static-analyzer/ · 2017-09-06 · read: snippet · grade C: first-party but read only as a search snippet; the bug-hash/dedup mechanism was not reached. · relevance: evidence that per-report stable identity at diff-scale is the deployed answer to same-cause-many-manifestations; mechanism deferred. · via Kagi `Infer static analyzer bug hash deduplication`.
+- `[C-sonar-eslint-dup-2024]` · SonarSource community forum, "Documenting and clarifying duplicate ESLint rules" · https://community.sonarsource.com/t/documenting-and-clarifying-duplicate-eslint-rules/129385 · 2024-10-29 · read: snippet · grade C: community/vendor-forum thread read only as a snippet; corroborates the "overlapping-lint governance as maintained config" point at low stakes, nothing mechanistic. · relevance: minor support for §4 lint-dedup (rule-overlap is managed as config, echoing Socorro); not load-bearing. · via Kagi `ESLint duplicate messages same rule clippy lint deduplication`.

@@ -1,0 +1,9 @@
+# probe-results: site 1 is the OUTER `dpkg -s nginx` pkgstate Query guard; present ⇒ rc 0 ⇒
+# the guard HOLDS ⇒ the `|| { … }` block is DEAD (door-1 folds it whole). site 2 is the INNER
+# `apt-get install curl` ESTABLISH probe (package:curl#installed); holds ⇒ converged (rc
+# firewalled ⇒ omitted). But the inner install is dead-folded by the OUTER fold REGARDLESS of
+# site 2 — fold-Omit pre-empts the door-3 mint, so site 2's value does not change the apply
+# (contrast door1-door3-inner-elides, where the live block lets the inner door-3 mint fire).
+# (`set -e` is site 0; the inner `true` is site 3; systemctl is site 4 — all dead.)
+site 1 effect=holds rc=0
+site 2 effect=holds

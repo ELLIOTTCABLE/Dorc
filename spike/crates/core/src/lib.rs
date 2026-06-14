@@ -44,6 +44,20 @@ use std::collections::HashMap;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct AstId(pub u32);
 
+/// A stable identifier for one executable leaf (`dn-3`, the leaf-seam): executable
+/// work is a list of *individually wrappable* leaves, each with a stable back-map to
+/// its source — never one opaque `sh -c "$bigscript"`. The id is the leaf's position
+/// in source order.
+///
+/// Lives in `core` (the `dac-B` shared vocabulary), not `plan`, because the round-22
+/// structured diagnostic ([`diag::SiteId`]) keys on it — a diagnostic's first-class
+/// site identity must be expressible in the base crate every layer agrees on, the
+/// same `dec-seam-ownership` move that pulled [`FactKey`] down here. `plan` re-exports
+/// this type rather than holding a parallel one (`inv-site-keyed-results`: one shared
+/// site-id, never two).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct LeafId(pub u32);
+
 // ===========================================================================
 // Source positions
 // ===========================================================================
@@ -147,6 +161,14 @@ impl Diagnostic {
 
 pub mod diag;
 
+pub mod prov;
+pub use prov::{
+    JOIN_PARENT_CAP, OriginKind, OriginNode, Parents, ProvArena, ProvId, Variation, Witness,
+};
+
+pub mod unord;
+pub use unord::IterSuppressedMap;
+
 /// `result × accumulated diagnostics` — the type every pipeline stage returns
 /// (research chord `dn-7` / `ch-carrier`). A writer-monad shape: `map` transforms
 /// the value, `and_then` sequences a stage while concatenating its diagnostics.
@@ -215,6 +237,17 @@ impl<T> Carrier<T> {
 /// An interned string handle. Cheap to copy and compare.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Symbol(u32);
+
+impl Symbol {
+    /// The interning-order index — a stable scalar identity for serialization/canonicalization
+    /// (the erasability digest renders a `FactKey` by its symbols' ids). Referent-agnostic
+    /// (`inv-referent-agnostic`): an identity, never decoded text. Stable within one run's
+    /// [`Interner`] (order-of-interning), which is all the intra-run digest needs.
+    #[must_use]
+    pub fn as_u32(self) -> u32 {
+        self.0
+    }
+}
 
 /// Interns strings to [`Symbol`]s. Deterministic: equal input → equal symbol,
 /// and symbol assignment is order-of-interning (never hashed/random).

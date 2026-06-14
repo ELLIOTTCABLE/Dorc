@@ -1,0 +1,36 @@
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc — the record is the out-of-band lane).
+
+# site 3: confline:nginx.conf#present
+confline_present__check() { grep -q x "$1" >/dev/null 2>&1; }
+confline_present__check 'nginx.conf'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'site 3 effect=%s rc=%s\n' "$_e" "$_rc"
+# site 4: package:nginx#installed
+package_installed__check() { dpkg-query -W "$1" >/dev/null 2>&1; }
+package_installed__check 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'site 4 effect=%s rc=%s\n' "$_e" "$_rc"
+# site:0 skip-unresolvable
+# site:1 skip-unresolvable
+# site:2 skip-unresolvable
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+# y1-var-resolved-target-invalidates-query (21H §9 residual-2; the e2e companion to the unit
+# pin var_resolved_redirect_target_invalidates_query + var_resolved_redirect_target_gens_concrete_cell_not_top):
+# the y-1 redirect-write machinery fires on a VALUE-RESOLVED target, not just a literal one. A
+# redirect target is an ordinary expansion, so `conf=nginx.conf; printf 'x' >> "$conf"` resolves
+# `$conf` through the value plane to `nginx.conf` ⇒ gens `file:nginx.conf#written` (a WRITER) ⇒
+# the downstream `grep -q x nginx.conf` confline Query is non-pristine ⇒ `valid: false` ⇒ the
+# guard's rc is withheld ⇒ the `||` cannot resolve ⇒ the install stays LIVE (renders verbatim).
+# This is the literal-target case `y1-redirect-write-invalidates-query` with the target arriving
+# through a RESOLVED variable — the ⊤-vs-concrete distinction the unit pin `ecf326d` closed,
+# now as an e2e case. The cell is CONCRETE (resolved to `nginx.conf`), NOT ⊤: so NO
+# `dq-redir-target-top` fires (the ⊤ path is `y1-top-target-poisons`). Mocks-free (dash -n +
+# golden), like the sibling y1-* cases: a `file` cell has no probe/leaf, so there is nothing to
+# exec — the invalidation is a static poison, asserted by the verbatim (un-folded) render.
+set -e
+conf=nginx.conf
+printf 'x' >> "$conf"
+grep -q x nginx.conf || apt-get install -y nginx

@@ -1,16 +1,32 @@
-//! `dorc` — the thin spike CLI: the whole apply-2 round-trip over real files.
+//! `dorc` — the thin spike CLI: the apply-2 round-trip over real files, as a
+//! multi-mode plan/apply surface (ui-A, ru-25 / ru-20 ui-3).
 //!
-//! Reads a book + oracle files, prints a read-only **probe** to stdout, reads the
-//! probe **results** from stdin, then prints the eliding **apply** (the book with
-//! already-converged lines commented out) to stdout. No executor — it *compiles* a
-//! probe and an apply; it runs neither. The simulated host's answers arrive on stdin
-//! (in a real deployment those come from running the probe on the host).
+//! Reads a book + oracle files, runs the pure analyzer kernel, and emits one of the
+//! engine's distinct user-facing behavioral modes. No executor — it *compiles* a probe
+//! and an apply; it runs neither. The simulated host's answers arrive on stdin (in a
+//! real deployment those come from running the probe on the host).
 //!
 //! ```text
-//! usage: dorc --book=<book.sh> [-o <oracle.sh>]...
-//!   stdin : probe results, one per line — `site <leafid> effect=<holds|absent|cant-tell> rc=<n>`
-//!   stdout: the probe script, then (after stdin EOF) the eliding-apply book
+//! usage: dorc [<mode>] --book=<book.sh> [-o <oracle.sh>]... [--debug-argv]
+//!   modes:
+//!     probe      emit the read-only probe artifact (phase 1) to stdout; reads no stdin
+//!     plan       PREVIEW (ru-20 ui-3): the eliding-apply to stdout, PLUS the why-lens +
+//!                diagnostics doubly-emitted to stderr (the cited-sections render surface)
+//!     apply      the byte-floored, receipt-free shippable apply artifact to stdout;
+//!                stderr carries ONLY error-severity diagnostics + the decision-digest
+//!     <none>     the legacy round-trip: probe THEN apply on stdout, full disclosure on
+//!                stderr — the shape the e2e harness drives (kept verbatim, do not break)
+//!   stdin : probe results (plan/apply/round-trip), one per line —
+//!           `site <leafid> effect=<holds|absent|cant-tell> rc=<n>`
+//!   stdout: the selected mode's artifact(s); stderr: diagnostics / why-lens / digest
 //! ```
+//!
+//! rec-1 TWO SURFACES (ru-12 + ru-20, spike/CLAUDE.md): the shipped `.sh` artifact on
+//! stdout is byte-floored and receipt-free — `plan` and `apply` emit BYTE-IDENTICAL
+//! apply bytes. The only difference is the RENDER surface (stderr): `plan` overlays the
+//! per-line why-lens + advisory disclosure there; `apply` (the off-ramp) suppresses the
+//! advisory plane, keeping only the error floor + digest. The why-lens is never woven
+//! into the artifact bytes in any mode.
 //!
 //! Round-20 task-D1 (the WIRE — `inv-site-keyed-results`): the probe is a real,
 //! self-reporting artifact; its results-records are keyed by command **site** (the
@@ -19,7 +35,9 @@
 //! the site-keyed records the probe itself emits.
 //!
 //! I/O edge: `inv-determinism` exempts `cli`; the analyzer kernel it calls is pure.
-//! Diagnostics go to stderr so stdout stays the probe+apply.
+//! Diagnostics go to stderr so stdout stays the artifact. The mode dispatch is a thin
+//! driver over ONE pipeline call ([`analyze`]) — no kernel logic moves here (the
+//! thin-driver mandate, crates/cli/CLAUDE.md).
 
 #![forbid(unsafe_code)]
 // The cli is the sanctioned I/O edge (workspace Cargo.toml: "I/O-edge crates may
@@ -37,9 +55,10 @@ use std::collections::BTreeMap;
 use std::io::{Read, Write};
 use std::process::ExitCode;
 
-use dorc_core::{Interner, Observable, OutClaim, Predicted, Rc, Severity, Verdict};
+use dorc_core::{Interner, Observable, OutClaim, Predicted, ProvArena, Rc, Severity, Verdict};
 
-const USAGE: &str = "usage: dorc --book=<book.sh> [-o <oracle.sh>]...";
+const USAGE: &str =
+    "usage: dorc [probe|plan|apply] --book=<book.sh> [-o <oracle.sh>]... [--debug-argv]";
 
 fn main() -> ExitCode {
     match run() {
@@ -51,7 +70,30 @@ fn main() -> ExitCode {
     }
 }
 
+/// Which user-facing behavioral mode of the core to drive (ui-A — a fair-shape CLI over
+/// the core invocation modes, NOT flag-complete; ru-25). Each maps to one of the engine's
+/// distinct surfaces; `RoundTrip` is the legacy bare-flag invocation the e2e harness drives
+/// (kept so the corpus stays green without a harness rewrite — the least-disruptive path).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Mode {
+    /// `dorc probe …`: emit ONLY the read-only probe artifact (round-trip phase 1). Reads no
+    /// stdin (there are no results yet — this is what you ship to the host to GET them).
+    Probe,
+    /// `dorc plan …`: the human-facing PREVIEW (ru-20 ui-3 / DESIGN approach-3 "still as a
+    /// simple shell-script"). Emits the eliding-apply to stdout AND doubly-emits the why-lens
+    /// + diagnostics to stderr — the cited-sections render surface.
+    Plan,
+    /// `dorc apply …`: the byte-floored, receipt-free shippable artifact (rec-1). Emits the
+    /// SAME apply bytes as `plan` to stdout, but the stderr render surface carries only the
+    /// error floor + the decision-digest (no why-lens, no advisory notes).
+    Apply,
+    /// No mode token: the legacy round-trip (probe THEN apply on stdout, full disclosure on
+    /// stderr). The exact shape `e2e/run.sh` drives — preserved verbatim (tc-subcommand-shape).
+    RoundTrip,
+}
+
 struct Args {
+    mode: Mode,
     book: String,
     oracles: Vec<String>,
     /// `--debug-argv` (gate-5 / cm-2): emit the engine's per-site resolved argv to stderr,
@@ -59,13 +101,35 @@ struct Args {
     debug_argv: bool,
 }
 
-/// Minimal hand-rolled parsing (no `clap` dep): `--book=PATH` / `--book PATH`, and
-/// `-o PATH` / `-oPATH` / `--oracle PATH` (repeatable); `--debug-argv` (gate-5 readout).
+/// Minimal hand-rolled parsing (no `clap` dep): an OPTIONAL leading mode token
+/// (`probe`/`plan`/`apply`; absent ⇒ [`Mode::RoundTrip`]), then `--book=PATH` / `--book
+/// PATH`, `-o PATH` / `-oPATH` / `--oracle PATH` (repeatable), and `--debug-argv` (gate-5
+/// readout). The mode is positional-first ONLY (a bare word after flags is still an
+/// error) so the legacy `dorc --book=… < results` invocation parses unchanged.
 fn parse_args() -> Result<Args, String> {
     let mut book: Option<String> = None;
     let mut oracles = Vec::new();
     let mut debug_argv = false;
-    let mut it = std::env::args().skip(1);
+    let mut it = std::env::args().skip(1).peekable();
+
+    // A leading bare word (no `-` prefix) selects the mode; anything else ⇒ RoundTrip and
+    // the token is left for the flag loop (which rejects an unexpected bare word, as before).
+    let mode = match it.peek().map(String::as_str) {
+        Some("probe") => {
+            it.next();
+            Mode::Probe
+        }
+        Some("plan") => {
+            it.next();
+            Mode::Plan
+        }
+        Some("apply") => {
+            it.next();
+            Mode::Apply
+        }
+        _ => Mode::RoundTrip,
+    };
+
     while let Some(arg) = it.next() {
         if let Some(p) = arg.strip_prefix("--book=") {
             book = Some(p.to_string());
@@ -84,6 +148,7 @@ fn parse_args() -> Result<Args, String> {
         }
     }
     Ok(Args {
+        mode,
         book: book.ok_or(USAGE)?,
         oracles,
         debug_argv,
@@ -93,6 +158,17 @@ fn parse_args() -> Result<Args, String> {
 fn run() -> Result<(), String> {
     let args = parse_args()?;
     let mut interner = Interner::default();
+    let mode = args.mode;
+    // rec-1 advisory routing: `plan` and the legacy round-trip overlay the FULL advisory plane
+    // on stderr (warnings, notes, the why-lens, the unresolvable readout); `apply` (the
+    // off-ramp shippable) suppresses it, keeping only the error floor + digest. `probe`'s
+    // stage diagnostics are advisory-or-error like any analysis run. tc-apply-receipt-floor:
+    // WHERE this line falls (advisory-suppressed but error-kept, digest-kept) is the
+    // load-bearing surface judgment — flagged to the conductor, not silently settled.
+    let advisory = !matches!(mode, Mode::Apply);
+
+    // ---- the shared, pure pipeline (one call-shape for every mode — the thin-driver
+    // mandate: no mode branches the kernel; only the stdout/stderr ROUTING below differs) ----
 
     // Lift the oracle files into one shared kind-index.
     let oracle_srcs: Vec<String> = args
@@ -102,7 +178,7 @@ fn run() -> Result<(), String> {
         .collect::<Result<_, _>>()?;
     let oracle_refs: Vec<&str> = oracle_srcs.iter().map(String::as_str).collect();
     let lifted = dorc_oracle::lift(&mut interner, &oracle_refs);
-    report("oracle", &lifted.diags);
+    report_at(advisory, "oracle", &lifted.diags);
     let idx = lifted.value;
 
     // Lift each oracle's `<provider>__check` functions into a per-file CheckSet (the
@@ -113,7 +189,7 @@ fn run() -> Result<(), String> {
         .iter()
         .map(|src| {
             let lifted = dorc_oracle::check::lift_checks(&mut interner, src);
-            report("check", &lifted.diags);
+            report_at(advisory, "check", &lifted.diags);
             lifted.value
         })
         .collect();
@@ -122,35 +198,67 @@ fn run() -> Result<(), String> {
     let book_src = std::fs::read_to_string(&args.book)
         .map_err(|e| format!("reading book {}: {e}", args.book))?;
     let parsed = dorc_syntax::parse(&book_src);
-    report("parse", &parsed.diags);
+    report_at(advisory, "parse", &parsed.diags);
     let cfg = dorc_analysis::cfg::build(&parsed.value);
-    report("cfg", &cfg.diags);
+    report_at(advisory, "cfg", &cfg.diags);
     // Book-side value-flow: resolve each command-site's argv (constant/variable
     // propagation) — the input entity-resolution consumes (19H §1 / 202 §1).
     let value = dorc_analysis::value::analyze(&cfg.value, &parsed.value, &mut interner);
-    let classified =
-        dorc_analysis::effect::classify(&cfg.value, &value, &idx, &checks, &mut interner);
-    report("classify", &classified.diags);
+    // The per-run receipts plane (arch-1): give-up causes (`Top(cause)`) and license
+    // witnesses land here. EXEMPT — it informs no decision (the `plan::erasability` gate
+    // proves the apply/probe artifacts are byte-identical with it stripped); the cli holds it
+    // only to emit the decision-digest line and (future) the why-lens.
+    let mut arena = ProvArena::new();
+    // stage-3 (the why-lens): take the TYPED cmdsub-⊤ disclosures too — `report`/gate-3 consume the
+    // LOWERED `diags` (cause-dropped), but the why-lens render reads the `cause` off the typed
+    // `Diag`s (`to_legacy` drops it). The arena is shared (the typed diags' causes resolve in it).
+    let (classified, why_diags) = dorc_analysis::effect::classify_with_why_diags(
+        &cfg.value,
+        &value,
+        &parsed.value,
+        &idx,
+        &checks,
+        &mut interner,
+        &mut arena,
+    );
+    report_at(advisory, "classify", &classified.diags);
     let classes = classified.value;
 
-    // (1) compile + emit the read-only, SELF-REPORTING probe (site-keyed —
-    // `inv-site-keyed-results`). Each resolvable site invokes its kind's
-    // `oracle_probe_*` wrapper and emits `site <leafid> effect=… rc=…` on stdout.
+    // compile the read-only, SELF-REPORTING probe (site-keyed — `inv-site-keyed-results`).
+    // Each resolvable site invokes its kind's `oracle_probe_*` wrapper and emits `site
+    // <leafid> effect=… rc=…` on stdout when run. ALWAYS compiled (the unresolvable readout +
+    // the digest + the site→fact re-key all need it), but only PRINTED in probe/round-trip.
     let probe = dorc_plan::compile_probe(&parsed.value, &cfg.value, &classes, |kind, selector| {
         idx.resolve_probe(kind, selector).map(|p| p.body.clone())
     });
-    print!("{}", probe.render_sh(&interner));
-    std::io::stdout().flush().ok();
 
-    // (2) read the (simulated) probe results from stdin — the site-keyed records the
-    // rendered probe would emit when run remotely.
+    // `probe` mode stops here: emit the probe artifact and return. It reads no stdin (no
+    // results exist yet — this is phase 1, what you ship to GET them), builds no plan, and so
+    // emits no apply, no why-lens, no digest (there is no plan/identity-plane to hash —
+    // tc-probe-no-digest, flagged). Stage diagnostics above already routed to stderr.
+    if mode == Mode::Probe {
+        print!("{}", probe.render_sh(&interner));
+        std::io::stdout().flush().ok();
+        return Ok(());
+    }
+
+    // The round-trip emits the probe FIRST (phase 1 on stdout), then the apply (phase 2)
+    // after stdin EOF — the e2e harness splits the two on the `#!/bin/sh` shebang. `plan`
+    // and `apply` emit ONLY the apply artifact (the probe is an internal compile there).
+    if mode == Mode::RoundTrip {
+        print!("{}", probe.render_sh(&interner));
+        std::io::stdout().flush().ok();
+    }
+
+    // read the (simulated) probe results from stdin — the site-keyed records the rendered
+    // probe would emit when run remotely (the round-trip's return channel).
     let mut stdin_buf = String::new();
     std::io::stdin()
         .read_to_string(&mut stdin_buf)
         .map_err(|e| format!("reading stdin: {e}"))?;
     let results = parse_results(&stdin_buf, &mut interner);
 
-    // (3) re-key the site-keyed records to the FactKey-keyed observations `build_plan`
+    // re-key the site-keyed records to the FactKey-keyed observations `build_plan`
     // consumes (its fold/elision machinery is fact-keyed; only this probe-answer
     // plumbing re-keys — `inv-site-keyed-results`). The probe's `checks` carry each
     // site's resolved fact + its `site_kind`, so a site-record maps site→fact AND the
@@ -159,22 +267,47 @@ fn run() -> Result<(), String> {
     // VALID Query-class site (the guard's own rc); an establish site's rc is the PROBE
     // command's (dpkg-query's), NOT the mutator's, so it feeds the fold NOTHING.
     let by_fact = facts_from_sites(&probe, &results);
-    let plan = dorc_plan::build_plan(&book_src, &parsed.value, &cfg.value, &classes, |f| {
-        by_fact
-            .get(&f)
-            .copied()
-            .unwrap_or(Observable::verdict_only(Verdict::Unknown))
-    });
+    let plan = dorc_plan::build_plan(
+        &book_src,
+        &parsed.value,
+        &cfg.value,
+        &classes,
+        |f| {
+            by_fact
+                .get(&f)
+                .copied()
+                .unwrap_or(Observable::verdict_only(Verdict::Unknown))
+        },
+        &mut arena,
+    );
 
     // q-2 (`dq-site-unresolvable`, the cli-edge readout): a `skip-unresolvable` comment lands
     // in the probe artifact, but nothing reached stderr (`219` q-1.f silent-3). Disclose each
     // probe-unresolvable site's source command as a Note — the apply runs it (`kFAIL-perform`).
-    report(
+    // ADVISORY (Note-severity): the off-ramp `apply` mode suppresses it; `plan`/round-trip show
+    // it (the ui-3 cited-disclosure surface). The apply still RUNS the site either way, so no
+    // correctness rides on this readout — it is purely the render surface (rec-1).
+    report_at(
+        advisory,
         "probe",
-        &unresolvable_diagnostics(&probe, &plan, &parsed.value, &book_src),
+        &unresolvable_diagnostics(&probe, &plan, &parsed.value, &book_src, &mut interner),
     );
 
+    // stage-3 (the why-lens, `22D` §1): the FIRST receipt-READER made user-visible. For each
+    // forced-run (never-elided) command whose ⊤ has a wired cause, surface — on the RENDER surface
+    // (stderr), at the decision point — "why did this run?", cause-derived + remediation-classed.
+    // rec-1 WELD: this is the plan-render surface ONLY; it is NEVER woven into the byte-floored
+    // `.sh` artifact on stdout (the artifact stays receipt-free). The off-ramp `apply` mode
+    // suppresses it (advisory); `plan` + round-trip emit it (ru-20 ui-3: "doubly-emit cited
+    // sections + their warnings to the console").
+    if advisory {
+        emit_why_lens(&why_diags, &arena, &book_src);
+    }
+
     // gate-5 (cm-2 argv-echo differential): per-site resolved argv to stderr, behind the flag.
+    // Independent of the advisory plane — it is a mechanized readout the harness consumes, not
+    // human-facing disclosure, so it fires in any mode when asked (the round-trip is the only
+    // caller in-corpus, but `plan --debug-argv` is a legitimate inspection).
     if args.debug_argv {
         emit_debug_argv(&plan, &cfg.value, &value, &interner);
     }
@@ -182,10 +315,38 @@ fn run() -> Result<(), String> {
     // arch-1 d-6: the leaf-exact render refuses to elide a leaf whose span can't be safely
     // edited (a heredoc-bearing command — its span covers `<<EOF`, not the body), running it
     // verbatim instead (kFAIL-perform). Surface WHY on stderr (else a converged mutator
-    // silently running is invisible); the gate-3 floor requires the case to declare it.
-    report("render", &plan.render_refusal_diagnostics(&parsed.value));
+    // silently running is invisible); the gate-3 floor requires the case to declare it. These
+    // are ERROR-severity, so they cross the floor in EVERY mode (incl. `apply`): the off-ramp
+    // must never silently ship an artifact whose render had to refuse a licensed elision.
+    let refusals = plan.render_refusal_diagnostics(&parsed.value, &interner);
+    report("render", &refusals);
 
+    // rec-1 / ru-12 BYTE FLOOR: `plan` and `apply` emit BYTE-IDENTICAL apply bytes here — the
+    // artifact is receipt-free in both; only the stderr disclosure above differed. The
+    // round-trip emits the same bytes as its second shebang block.
     print!("{}", plan.render_apply(&book_src, &parsed.value));
+
+    // arch-1 decision-digest (`mechanism-decision-digest`, `22A` concl-3): a one-line hash of
+    // the canonical IDENTITY plane, emitted on every plan-building run as a cheap always-on
+    // drift signal (Zephyr's per-build checksum). Receipts cannot move it — it hashes only the
+    // identity plane (the `plan::erasability` gate proves that). To stderr (stdout stays the
+    // artifact). KEPT even in the receipt-free `apply` mode: the digest is identity-plane, not
+    // a receipt — it is the always-on integrity signal, not advisory disclosure. The
+    // Error-class diagnostics on the identity plane are the analyzer's accumulated ones
+    // (classify) plus the render refusals; warnings/notes are exempt (dropped by the canon).
+    let mut identity_diags = classified.diags;
+    identity_diags.extend(refusals);
+    eprintln!(
+        "dorc: decision-digest {}",
+        dorc_plan::erasability::decision_digest(
+            &plan,
+            &probe,
+            &book_src,
+            &parsed.value,
+            &interner,
+            &identity_diags,
+        )
+    );
     Ok(())
 }
 
@@ -245,33 +406,195 @@ fn emit_debug_argv(
 /// (`219` q-1.f silent-3). Mirrors the `report()`/`emit_debug_argv` plumbing: the
 /// `unresolvable` [`LeafId`]s share the apply plan's span-sorted site space
 /// (`inv-site-keyed-results`), so each maps to a [`dorc_plan::Step`]'s `ast`, whose span
-/// resolves to the book's source text. A site with no matching step (none expected — every
-/// unresolvable site is a runnable command leaf) is named by its bare id.
+/// resolves to the book's source text.
+///
+/// A site with NO matching step is ASSERTED-UNREACHABLE then SKIPPED (no diagnostic emitted), not
+/// named by a bare id. None is expected — every unresolvable site is a runnable command leaf with a
+/// plan step (`unresolvable ⊆ plan.steps` by construction). NB (f-7, `224` §10): the legacy form
+/// could emit a bare-id/no-span Note here; the migration onto the mandatory-primary-span spine
+/// (`21Z` drop-B) replaced that with a skip rather than fabricate a span-less `SiteUnresolvable`.
+/// Per human ruling 22-q2 ("shouldn't something unreachable be an ASSERT?") the miss now fires a
+/// `debug_assert!(false, …)` — a miss is a Dorc-internal plan/probe divergence, not malformed input.
+/// This is the CLI EDGE (not the kernel, so `inv-no-throw` does not formally bind), but it
+/// deliberately does NOT release-panic: the reachability claim is OURS, not vouched-hard
+/// (never-vouch — so no `unreachable!()`), so release safe-degrades to the skip. The site still RUNS
+/// at apply (it is in `unresolvable`), so no disclosure-correctness is lost even if it somehow fired.
 fn unresolvable_diagnostics(
     probe: &dorc_plan::ProbePlan,
     plan: &dorc_plan::Plan,
     ast: &dorc_syntax::ast::Ast,
     book_src: &str,
+    interner: &mut Interner,
 ) -> Vec<dorc_core::Diagnostic> {
+    use dorc_core::diag::{Diag, DiagCode, SiteId, SiteUnresolvable};
     let ast_of_leaf: BTreeMap<dorc_plan::LeafId, dorc_core::AstId> =
         plan.steps.iter().map(|s| (s.leaf, s.ast)).collect();
     probe
         .unresolvable
         .iter()
-        .map(|&leaf| {
-            let (span, source) =
-                ast_of_leaf
-                    .get(&leaf)
-                    .map_or((None, format!("<site {}>", leaf.0)), |&id| {
-                        let span = ast.node(id).span;
-                        let text = book_src
-                            .get(span.lo.0 as usize..span.hi.0 as usize)
-                            .unwrap_or("<source unavailable>");
-                        (Some(span), text.to_string())
-                    });
-            dorc_core::diag::site_unresolvable(span, &leaf.0.to_string(), &source)
+        .filter_map(|&leaf| {
+            // A site with no matching step cannot key a span. ASSERTED-UNREACHABLE (human ruling
+            // 22-q2): unresolvable ⊆ plan.steps by construction, so a miss is a Dorc-internal
+            // plan/probe inconsistency, never malformed book input. debug_assert (not a release
+            // panic): this reachability claim is OURS, not vouched-hard (never-vouch), and the same
+            // safe-degrade shape as the kernel site keeps a release miss skipping rather than
+            // aborting — loud in debug/test/DST, safe fallback (skip) in release.
+            let Some(&id) = ast_of_leaf.get(&leaf) else {
+                debug_assert!(
+                    false,
+                    "unresolvable site has no plan step — unresolvable ⊆ plan.steps by \
+                     construction (f-7); a hit means the probe/plan site spaces diverged"
+                );
+                return None;
+            };
+            let span = ast.node(id).span;
+            let text = book_src
+                .get(span.lo.0 as usize..span.hi.0 as usize)
+                .unwrap_or("<source unavailable>");
+            // The migrated `DiagCode::SiteUnresolvable` spine (`22B` §5 worked-1): the SiteId is
+            // first-class (a real plan LeafId here), the source command is a referent-agnostic
+            // OutClaim, and the suggestion carries a remediation class. Lowered to the legacy
+            // stream so `report()`/gate-3 are unchanged.
+            let diag = Diag::new(
+                DiagCode::SiteUnresolvable(SiteUnresolvable {
+                    site: SiteId::leaf(leaf),
+                    source_excerpt: OutClaim(interner.intern(text)),
+                }),
+                span,
+            )
+            .label("no read-only probe could be shipped for this site")
+            .note("the apply runs it unconditionally (kFAIL-perform)")
+            .suggest(dorc_core::diag::Suggestion {
+                message: "declare a read-only probe for this kind's selector in its oracle"
+                    .to_owned(),
+                applicability: dorc_core::diag::Applicability::MaybeIncorrect,
+                remediation: dorc_core::diag::RemediationClass::AuthorOracle,
+            });
+            Some(diag.to_legacy(interner))
         })
         .collect()
+}
+
+/// stage-3 (the why-lens render, `22D` §1): surface — on stderr, the RENDER surface — the
+/// per-line "why did this command RUN (never elided)?" disclosure for each forced-run command
+/// whose ⊤ carries a wired cause. The render + stage-4 dedup is [`why_lens_lines`] (pure,
+/// unit-testable); this is just its stderr driver.
+///
+/// rec-1 WELD (two surfaces): this prints to STDERR only — the plan-render surface. It is NEVER
+/// woven into the byte-floored `.sh` artifact on stdout (the artifact stays receipt-free). The
+/// line is prefixed `why:` and never `error[`, so the e2e gate-3 stderr-floor (which keys on the
+/// `<stage>: error[` shape) ignores it — the why-lens is additive, never a case-failing diagnostic.
+fn emit_why_lens(why_diags: &[dorc_core::diag::Diag], arena: &ProvArena, src: &str) {
+    for line in why_lens_lines(why_diags, arena, src) {
+        eprintln!("why: {line}");
+    }
+}
+
+/// The why-lens render + stage-4 dedup, factored PURE (the stderr side is [`emit_why_lens`]) so
+/// the dedup is unit-testable (`x2-fd1`). For each caused-⊤ diag it renders the "why did this run"
+/// line via [`dorc_core::diag::why`], showing a given cause-SITE once.
+///
+/// stage-4 DEDUP KEY = `(cause, site)`, NOT the cause [`dorc_core::ProvId`] alone (`x2-fd1` fix,
+/// `224` §10): under function inlining two call-sites splice the SAME body `AstId` (`inv-leaf-seam`)
+/// ⇒ both `CmdsubOperandTop` diags hash-cons to ONE cause `ProvId`. Keying on cause alone collapsed
+/// two GENUINELY INDEPENDENT forced runs (suppressing the 2nd `why:` — the over-suppression). They
+/// differ by `site` (the stable `site N.M` leaf), so `(cause, site)` keeps them separately disclosed
+/// while still deduping a true re-disclosure (same cause AND same site). Tracked in a `Vec` of
+/// first-occurrences — `ProvId` is `!Ord` (no `BTreeSet`) and the diags arrive in node order, so
+/// first-seen order is deterministic (`inv-determinism`). The only suppression built (no general
+/// subsystem — `22D` §1 stage-4).
+fn why_lens_lines(
+    why_diags: &[dorc_core::diag::Diag],
+    arena: &ProvArena,
+    src: &str,
+) -> Vec<String> {
+    let mut shown: Vec<(dorc_core::ProvId, dorc_core::diag::SiteId)> = Vec::new();
+    let mut lines = Vec::new();
+    for diag in why_diags {
+        if let Some(key) = cmdsub_cause_site(diag) {
+            if shown.contains(&key) {
+                continue; // stage-4: this (cause, site) was already explained — show it once
+            }
+            shown.push(key);
+        }
+        if let Some(explanation) = dorc_core::diag::why(diag, arena, src) {
+            lines.push(explanation.reason);
+        }
+    }
+    lines
+}
+
+/// The stage-4 render-dedup key a why-lens diag carries, if any: `(⊤-cause, site)`. Only a
+/// `CmdsubOperandTop` carries a cause at HEAD (stage-1); any other diag returns `None` (the why-lens
+/// does not explain it anyway, fd-G), so it never participates in the dedup. The `site` half is what
+/// separates two inlined call-sites sharing one cause `ProvId` (`x2-fd1`).
+fn cmdsub_cause_site(
+    diag: &dorc_core::diag::Diag,
+) -> Option<(dorc_core::ProvId, dorc_core::diag::SiteId)> {
+    match &diag.code {
+        dorc_core::diag::DiagCode::CmdsubOperandTop(p) => p.cause.map(|c| (c, p.site)),
+        _ => None,
+    }
+}
+
+#[cfg(test)]
+mod why_lens_dedup_tests {
+    //! `x2-fd1` (`22E`, `224` §10): the stage-4 render-dedup must key on `(cause, site)`, not the
+    //! cause `ProvId` alone — else two inlined call-sites sharing one body-span cause collapse and
+    //! the 2nd forced run's `why:` is wrongly suppressed. The arena hash-conses identical
+    //! `(OriginKind, span)` origins (`core::prov` `hash_cons_shares_identical_origins`), so two
+    //! `arena.leaf(TopCause, same_span)` calls reproduce the inlined-body cause collision.
+    use dorc_core::diag::{CmdsubOperandTop, Diag, DiagCode, OperandPosition, SiteId};
+    use dorc_core::{BytePos, LeafId, OriginKind, ProvArena, Span};
+
+    fn cmdsub_top(arena: &mut ProvArena, leaf: u32, body_span: Span) -> Diag {
+        let cause = arena.leaf(OriginKind::TopCause, Some(body_span));
+        Diag::new(
+            DiagCode::CmdsubOperandTop(CmdsubOperandTop {
+                site: SiteId::leaf(LeafId(leaf)),
+                position: OperandPosition::Operand(1),
+                cause: Some(cause),
+            }),
+            Span::new(BytePos(0), BytePos(20)),
+        )
+    }
+
+    #[test]
+    fn two_inlined_sites_sharing_one_cause_both_disclose() {
+        // `apt_install "$(curl a)"; apt_install "$(curl b)"`: both calls inline ONE wrapper body ⇒
+        // one shared cause ProvId, distinct call-site leaves. (cause, site) keeps BOTH `why:`s; the
+        // old cause-alone key suppressed the 2nd (x2-fd1, disclosure-only over-suppression).
+        let mut arena = ProvArena::new();
+        let body = Span::new(BytePos(11), BytePos(20));
+        let diags = [
+            cmdsub_top(&mut arena, 3, body),
+            cmdsub_top(&mut arena, 7, body),
+        ];
+        let lines = super::why_lens_lines(&diags, &arena, "apt_install \"$(curl a)\"");
+        assert_eq!(
+            lines.len(),
+            2,
+            "two inlined sites sharing one cause must BOTH disclose: {lines:?}"
+        );
+    }
+
+    #[test]
+    fn an_identical_cause_and_site_is_shown_once() {
+        // The dedup still FIRES for a true duplicate (same cause AND same site) — the (cause, site)
+        // key didn't neuter the stage-4 dedup into a no-op.
+        let mut arena = ProvArena::new();
+        let body = Span::new(BytePos(11), BytePos(20));
+        let diags = [
+            cmdsub_top(&mut arena, 3, body),
+            cmdsub_top(&mut arena, 3, body),
+        ];
+        let lines = super::why_lens_lines(&diags, &arena, "apt-get install \"$(date)\"");
+        assert_eq!(
+            lines.len(),
+            1,
+            "an identical (cause, site) re-disclosure is shown once: {lines:?}"
+        );
+    }
 }
 
 /// The gate-5 disposition tag for a [`dorc_plan::Disposition`] — `run`/`replace`/`omit`.
@@ -523,11 +846,48 @@ fn effect_word_to_verdict(word: &str) -> Verdict {
     }
 }
 
+/// Advisory-gated [`report`] (rec-1 / tc-apply-receipt-floor): the stderr driver over
+/// [`advisory_filter`]. When `advisory` is true, emit every severity (the `plan` /
+/// round-trip render surface — the ui-3 cited-disclosure console); when false (the off-ramp
+/// `apply` mode), emit ONLY Error-severity diagnostics. The error floor is never suppressed
+/// in any mode — a shippable artifact must never hide an error — so `apply` stays
+/// receipt-free WITHOUT going blind. The filter is factored PURE (the printing is the I/O
+/// edge) so the lone per-severity routing decision rec-1 forces here is unit-testable, the
+/// same pure/driver split as [`why_lens_lines`]/[`emit_why_lens`].
+fn report_at(advisory: bool, stage: &str, diags: &[dorc_core::Diagnostic]) {
+    report(stage, &advisory_filter(advisory, diags));
+}
+
+/// The advisory severity-filter (rec-1 / tc-apply-receipt-floor), factored pure for
+/// testing. `advisory` ⇒ pass every diagnostic through (the `plan`/round-trip render
+/// surface); `!advisory` (the receipt-free `apply` off-ramp) ⇒ keep ONLY Error-severity,
+/// dropping warnings + notes. Errors are NEVER dropped — the floor that keeps `apply`
+/// honest while receipt-free. Returns owned clones (the call sites are cold — once per
+/// pipeline stage — so the copy is irrelevant against the SSH-tunnel cost DESIGN floors on).
+fn advisory_filter(advisory: bool, diags: &[dorc_core::Diagnostic]) -> Vec<dorc_core::Diagnostic> {
+    if advisory {
+        diags.to_vec()
+    } else {
+        diags
+            .iter()
+            .filter(|d| d.severity == Severity::Error)
+            .cloned()
+            .collect()
+    }
+}
+
 /// Print a stage's diagnostics to stderr (keeping stdout = probe + apply).
 ///
-/// Format `<stage>: <severity>[<code>]: <message>` — the severity word is load-bearing:
-/// the e2e gate-3 floor (20B §2) keys on the `error[` shape (an Error fails a case unless
-/// declared in `expected-diagnostics`; warnings stay free-form). I/O-edge formatting only.
+/// Format `<stage>: <severity>[<code>]: <message>`, then a ` --> <lo>:<hi>` region line when the
+/// diagnostic carries a span (the round-22 drop-A fix: the span was previously DROPPED at this
+/// one user surface — `21Z` drop-A — so a structured diagnostic's location never reached the
+/// user; now it does). The severity word is load-bearing: the e2e gate-3 floor (20B §2) keys on
+/// the `error[` shape (an Error fails a case unless declared in `expected-diagnostics`; warnings
+/// stay free-form), and the region line never starts with `<stage>: error[`, so it is inert to
+/// gate-3. The byte-coordinate form (no source excerpt) is the multi-stage-safe minimum: `report`
+/// receives only the diagnostics, not the per-stage source (oracle vs book), so it renders the
+/// span coordinates; the source-resolved narrative is [`dorc_core::diag::render_cli`]'s job.
+/// I/O-edge formatting only.
 fn report(stage: &str, diags: &[dorc_core::Diagnostic]) {
     for d in diags {
         let sev = match d.severity {
@@ -536,6 +896,9 @@ fn report(stage: &str, diags: &[dorc_core::Diagnostic]) {
             Severity::Note => "note",
         };
         eprintln!("{stage}: {sev}[{}]: {}", d.code.0, d.message);
+        if let Some(span) = d.span {
+            eprintln!("  --> {}:{}", span.lo.0, span.hi.0);
+        }
     }
 }
 
@@ -858,14 +1221,27 @@ mod tests {
         let cfg = dorc_analysis::cfg::build(&parsed.value);
         let value = dorc_analysis::value::analyze(&cfg.value, &parsed.value, &mut interner);
         let idx = dorc_oracle::KindIndex::default();
-        let classified =
-            dorc_analysis::effect::classify(&cfg.value, &value, &idx, &[], &mut interner);
+        let mut arena = ProvArena::new();
+        let classified = dorc_analysis::effect::classify(
+            &cfg.value,
+            &value,
+            &parsed.value,
+            &idx,
+            &[],
+            &mut interner,
+            &mut arena,
+        );
         let classes = classified.value;
         let probe = dorc_plan::compile_probe(&parsed.value, &cfg.value, &classes, |_, _| None);
-        let plan = dorc_plan::build_plan(book, &parsed.value, &cfg.value, &classes, |_| {
-            Observable::verdict_only(Verdict::Unknown)
-        });
-        let diags = unresolvable_diagnostics(&probe, &plan, &parsed.value, book);
+        let plan = dorc_plan::build_plan(
+            book,
+            &parsed.value,
+            &cfg.value,
+            &classes,
+            |_| Observable::verdict_only(Verdict::Unknown),
+            &mut arena,
+        );
+        let diags = unresolvable_diagnostics(&probe, &plan, &parsed.value, book, &mut interner);
         assert!(
             diags.iter().any(|d| d.code.0 == "dq-site-unresolvable"),
             "an Opaque site must be disclosed unresolvable: {diags:?}"
@@ -879,6 +1255,44 @@ mod tests {
         assert!(
             diags.iter().all(|d| d.severity == Severity::Note),
             "the readout is Note-severity (never trips gate-3): {diags:?}"
+        );
+    }
+
+    #[test]
+    fn advisory_filter_drops_warnings_notes_but_keeps_errors_in_apply() {
+        // rec-1 / tc-apply-receipt-floor (ui-A): the receipt-free `apply` off-ramp keeps the
+        // ERROR floor (a shippable artifact must never hide an error) while dropping the
+        // advisory plane (warnings + notes); `plan`/round-trip (advisory=true) pass everything
+        // through. This is the lone place the artifact-vs-render two-surface split becomes a
+        // per-severity routing decision — pin BOTH directions so a future edit cannot silently
+        // (a) leak advisory disclosure into the off-ramp surface, or (b) swallow an error there.
+        // The slugs are the diag_tidy-recognized throwaway-fixture set (`x-err`/`x-warn`/
+        // `x-note`, core::tests::diag_tidy::is_test_fixture_slug) — NOT real catalog codes, so
+        // the legacy-allow-list completeness gate (226 §1) exempts them without an allow-list entry.
+        use dorc_core::{BytePos, DiagCode, Diagnostic, Span};
+        let span = Some(Span::new(BytePos(0), BytePos(1)));
+        let mixed = vec![
+            Diagnostic::error(DiagCode("x-err"), span, "an error"),
+            Diagnostic::warning(DiagCode("x-warn"), span, "a warning"),
+            Diagnostic::note(DiagCode("x-note"), span, "a note"),
+        ];
+
+        // advisory=true (plan / round-trip): every severity survives — the full cited-disclosure
+        // render surface (ru-20 ui-3).
+        let kept = advisory_filter(true, &mixed);
+        assert_eq!(kept.len(), 3, "plan surface keeps every severity: {kept:?}");
+
+        // advisory=false (apply off-ramp): ONLY the error survives — receipt-free, not blind.
+        let kept = advisory_filter(false, &mixed);
+        assert_eq!(
+            kept.len(),
+            1,
+            "apply keeps only the error floor (no warnings/notes): {kept:?}"
+        );
+        assert_eq!(
+            kept[0].severity,
+            Severity::Error,
+            "the surviving diagnostic is the Error (the never-hide floor): {kept:?}"
         );
     }
 }

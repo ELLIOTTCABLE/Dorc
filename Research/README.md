@@ -32,6 +32,10 @@ kind/'types' question) + **`notes/17O`** (its adversarial crosscheck). The prior
 spike** is still the build reality (`plans/16P` §3-ledger first, then `plans/16Q`). The per-facet conclusions
 below (`055`/`099`/`102`/`111`/`128`/`139`/`142`/`17N`) are the durable answers each round settled.
 
+> **Major upcoming work surfaced by round 22 (errors + provenance) — flagged here so it is NOT buried in the corpus.** Two foundational arcs, both deferred:
+> 1. **`plans/230` — best-effort / collapsed-gradients (the r23 focus).** Turn the early rounds' *boolean* "oracle is perfect/complete" assumptions into proper trust/coverage **gradients** — i.e. actually implement "soundiness" (graceful degradation as the user's oracle/admin quality degrades) *in code*. This is the **decision-side** of r22's errors+provenance (the why-lens shipped the reporting side). Opens with a corpus sweep for *which* gradients got collapsed (not just trust).
+> 2. **`plans/22H` — the live-plan / concurrent-incremental / streaming engine (deferred, foundational).** The founding anti-Ansible real-time motivator: probes streaming concurrently from N hosts, the per-host plan re-folding live. Threading reactivity through the kernel is deep work; also tracked at the top of `../TODO-ADDTL.md`. (Was the "ui-B" misnomer; r22 corrected its monotonicity story and sized the unbuilt concurrency seam.)
+
 - **What is it, and where's the hard part?** — `plans/021` (empty dir → CFG/effect engine) +
   `plans/041` (language / parser / orchestration decisions).
 - **Can sh be analyzed soundly enough?** — `plans/055` (analysis architecture: sound+precise

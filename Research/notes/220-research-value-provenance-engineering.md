@@ -385,6 +385,10 @@ from 21G/219/21B):
   are many and capped; licenses are few and exact. Two-tier budget.
 - A per-tier epoch vector over origin tiers (oracle-claim / book-source / probe-result /
   runtime), durability-style, for O(1) "anything changed in tier X?" (vp-8).
+  <!-- /* demoted 2026-06-11 (round-22, ru-13 + RV3 find-1): rerun-to-fixpoint is the
+  likely change-handling path, which removes this item's motivating use-case. Do NOT
+  build load-bearing; at most a dashboard/why hint. 22A §1 arch-1 deliberately omits
+  it. */ -->
 - Receipts key on stable site identities (`site N.M`), never on visit order (vp-9).
 - It is a *plane inside the analyzer crates* — no sidecar store, no own query engine; queries are
   Rust APIs the CLI/dashboard call; rendering passes through the DiagCode catalog with ProvIds as
