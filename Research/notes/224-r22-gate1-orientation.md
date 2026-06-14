@@ -1739,6 +1739,37 @@ warm-ups (d×d host-flip fixture; var-resolved redirect case) → 22x synthesis 
   PROCESS: contract drafted AFTER ui-A lands (its surface findings inform the
   presentation layer) → adversarial-crosscheck (the serious work gets crosschecked
   before build) → build.
+- ui-A HARVESTED + GREEN (2026-06-14): the probe/plan/apply mode surface (ru-25
+  ui-A; ru-20 ui-3). Opus builder (worktree ai/r22-uia @ base 70cfa7a, 246K
+  harness-tokens, 73 tool uses, ~22min); 2 commits cherry-picked onto ai/spike3:
+  `48bd4c2` (cli mode surface, single-file crates/cli) + `3127575` (notes/22F strain
+  deliverable). fb-11 audit ai/spike3↔ai/r22-uia on spike/ EMPTY; conductor gate
+  chain GREEN (fmt/build/clippy-D/deny/test 0, e2e 99/99 ×2 identical, typos 0). THE
+  SHAPE: a leading-mode-token dispatch (`Mode{Probe,Plan,Apply,RoundTrip}`) over ONE
+  kernel call; mode routes ONLY stdout/stderr via a ~40-line `advisory_filter`
+  projection (`advisory = !matches!(mode, Apply)`); the legacy bare-flag round-trip
+  kept VERBATIM ⇒ e2e harness untouched. NO bump/apply-3 mode (the May/Must/Backward
+  tower is uninstantiated — exposing it = the ru-25 vacuous-driver rabbit-hole;
+  builder correctly skipped). KEY FINDING 22F-fd1 (+SURE): rec-1's two surfaces
+  ALREADY physically existed in the single-shot driver — ui-A only NAMED them; the UI
+  fell OUT of the plane split (ru-20 "UIs are consumers, not contract subjects"
+  CONFIRMED); no engine-design tension surfaced, all tensions are render-surface-
+  contract.
+  tc-* DISPOSITIONS (conductor): tc-subcommand-shape APPROVED; tc-probe-no-digest
+  DEFERRED (no consumer); tc-probe-results-roundtrip (fd4) → RECORD for arch-4 (the
+  split-phase leafid-desync hazard = the SAME book-identity check as cer-2 tape-hash,
+  fd7 — one hash both ends; latent, gated behind "before split-phase blessed").
+  tc-apply-receipt-floor (fd2) OWED TO HUMAN: builder default = apply console keeps
+  Error + decision-digest, DROPS advisory; conductor recommendation = keep digest
+  (fd2a, identity not receipt), drop warnings (fd2b — SAFE ONLY BECAUSE the severity
+  registry floors every must-not-silently-ship code as Error = "trust the registry"),
+  errors-cross-the-floor (fd2c) CORRECT + standing guard "never clean apply to
+  zero-stderr."
+  ui-B INPUT (22F-fd5/fd6, +SURE — folds into the ru-28 contract): ui-B's streaming
+  surface IS the `plan` advisory plane incrementalized — EXTEND `plan` (not
+  apply/round-trip), the streaming unit is the per-site advisory line, the
+  logical-clock is per-site probe-return ordering, REUSE `advisory_filter` (don't
+  invent a 2nd severity policy — dac-B two-sources hazard).
 
 ## §11 Post-gating self-audit (append-only; conductor, after a window where several turns produced no output)
 
