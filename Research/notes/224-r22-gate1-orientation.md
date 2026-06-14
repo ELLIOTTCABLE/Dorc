@@ -1809,7 +1809,7 @@ warm-ups (d×d host-flip fixture; var-resolved redirect case) → 22x synthesis 
   VACUOUS (`build_plan` pure ⇒ independent by construction — tests the easy direction).
   SURVIVING reusables: per-call static/dynamic purity, order-independent same-cell merge,
   terminal determinism, render+`advisory_filter`. DISPOSITION (human): rename off "ui-B"
-  (silly from the start); the plan is the r23 SEED `plans/230` (live-plan: concurrent-probe
+  (silly from the start); the plan is the r23 SEED `plans/22H` (live-plan: concurrent-probe
   streaming → incremental per-host re-analysis), NOT a 22x note; DEFER to r23 — the engine
   AND arch-4's durable tape both key on the probe-result STREAM, so building either against
   the single-shot model before this engine exists is the rework/cruft the deferral avoids.
@@ -1817,7 +1817,7 @@ warm-ups (d×d host-flip fixture; var-resolved redirect case) → 22x synthesis 
   it (a) forced the precise single-pass monotonicity definition and (b) correctly sized the
   unbuilt concurrency engine — net positive, and a reminder that an UNDER-SPECIFIED contract
   mis-aims the adversary at a strawman (state the model's assumptions up front).
-- live-plan MONOTONICITY DOWNGRADE + provenance-type tension (human, 2026-06-14; plans/230
+- live-plan MONOTONICITY DOWNGRADE + provenance-type tension (human, 2026-06-14; plans/22H
   §1 REWORKED). The conductor's "run-count monotone non-increasing" was wrong on UNIT (it is
   REPLACEMENT — what "not run" MEANS changes: Replace-with-v / -v′ / Omit) AND on CERTAINTY:
   a replacement is NOT provably stable — a consumed channel's `Predicted<T>` flips `Value`→`Top`
@@ -1832,6 +1832,22 @@ warm-ups (d×d host-flip fixture; var-resolved redirect case) → 22x synthesis 
   NO clean home today — r23 design Q (a NEW ru-11-compatible decision-plane source-tag, or stay
   best-effort + explanation-tiered). LESSON: do NOT write certainty-tier claims into durable docs
   without the type-level basis; downgrade when the basis is hand-waved.
+- r22 WRAPUP — seeds split + filed (human, 2026-06-14). "ui-B" misnomer DROPPED. The
+  streaming/incremental work (the analyzer's TIME axis) moved OUT of r23 → `plans/22H`
+  (deferred, foundational; flagged near the TOP of root `TODO-ADDTL.md` + an explicit
+  `Research/README.md` callout so it is not buried). r23 REFRAMED + BROADENED to the
+  BEST-EFFORT design: a deep pass converting accidentally-collapsed BOOLEANS into proper
+  GRADIENTS (trust is ONE exemplar; NOT assuming it is only user-trustingness) — the
+  DECISION-side of errors+provenance, grounded in human-authored `IMPLEMENTATION.md`
+  "Correctness vs. best-effort: a band" (the two provenance angles; trust = competence +
+  security-privilege, already ≥2 axes). SEED: `plans/230` (best-effort / collapsed-
+  gradients): opens with a fan-out corpus+source sweep for collapsed gradients → walk-back
+  map → xfail pins (the `dc-*` decision cases + the `||true` certainty-recovery + the
+  `dc-probe-NOT` must-stay-boolean exclusion) → gradient/lattice design → adversarial
+  crosscheck → build. ru-11-ORTHOGONAL (the taint is a SEPARATE decision-plane cell the
+  receipts reference; receipts stay inert; erasability holds). The TIME axis + the
+  CERTAINTY axis are ORTHOGONAL; likely MULTI-round; the r23 research decides any later
+  interleave. 22Z dropped (no in-flight r22 work to hand off; r23 starts fresh).
 
 ## §11 Post-gating self-audit (append-only; conductor, after a window where several turns produced no output)
 

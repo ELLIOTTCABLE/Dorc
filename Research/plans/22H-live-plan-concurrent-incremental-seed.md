@@ -1,12 +1,15 @@
-# 230 — live-plan: concurrent-probe streaming → incremental per-host re-analysis (r23 seed)
+# 22H — live-plan: concurrent-probe streaming → incremental per-host re-analysis (DEFERRED)
 
-> r23 SEED (forward-looking; the dense starting point, not a build-contract — a
-> build-contract gets drafted from this in r23, then adversarial-crosschecked before
-> building). Renamed from the misnomer "ui-B" (it expanded far past a streaming-UI
-> proof). This seed is the OUTPUT of an r22 design pass: a first contract draft
-> (the removed notes/22G), a two-pass adversarial crosscheck on it, and the human's
-> correction of its central premise. DEFERRED out of r22 deliberately (see §8). Marks:
-> +SURE / ~SUSPECT / -GUESS / --WONDER.
+> DEFERRED PLAN — the analyzer's "TIME axis" (concurrent multi-host probe arrival →
+> incremental per-host plan re-fold; the live plan-render). NO LONGER scheduled for r23:
+> r23 is the orthogonal "CERTAINTY axis" (best-effort / gradient soundiness, `plans/230`).
+> Deferred because this work AND arch-4's durable tape both key on the probe-result
+> STREAM, which this reshapes — building either against the single-shot model first is
+> rework. FOUNDATIONAL, and threading reactivity through the whole kernel is deep work
+> (likely UNDER-scoped in this doc); tracked near the TOP of `TODO-ADDTL.md`. Renamed from
+> the misnomer "ui-B". This doc is the OUTPUT of an r22 design pass — a first contract
+> draft (the removed notes/22G), a two-pass adversarial crosscheck, and the human's
+> correction of its central premise. Marks: +SURE / ~SUSPECT / -GUESS / --WONDER.
 
 ## §0 What it IS (the reframe — ru-28)
 
