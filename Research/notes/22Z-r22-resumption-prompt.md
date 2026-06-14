@@ -40,10 +40,26 @@
 >   Builder worktrees for human inventory: b7-x3fix (DEAD B7, tip `783894a`
 >   unharvested + a discardable edit), b7b-x3fix2 (`47d4e97`), b7c-x3fix3
 >   (`b562422`), b8-mustemit (`d520f59`).
-> - NEXT: arch-2 prep (the first real build arc after the catalog work) — see
->   the queue + "The arcs". Owed-explainer tasks DROPPED at human direction
->   (learn-4 unrecoverable + not wanted). No work pending on the human except
->   forward direction.
+> - ARCH-2 RESHAPED → "the why-lens end-to-end" (2026-06-14). arch-2 prep done
+>   (full design-corpus read in main context + 22C plan + XC-2 adversarial
+>   review-pair). XC-2 found the 22C plan had real errors (mvs-A pass-ordering
+>   BACKWARDS; the gate-obligation non-durable). Human then RULED: DROP the
+>   gate-obligation entirely — the TYPE SYSTEM enforces the one-way weld
+>   (structural leaks unrepresentable), so the erasability test is a cheap
+>   redundant backstop and the x-1 "vacuous gate" is a RED HERRING; the why-lens
+>   is built for its OWN user-facing value (dir-soundiness-ux per-line "why did
+>   this run"). And MERGED arch-2 with ui-A's why-slice (build the why
+>   end-to-end, consumer-first — all of arch-2's remaining content only pays off
+>   through the why-UI). CONTRACT = notes/22D (supersedes 22C §2/§5). Why-lens
+>   BUILDER in flight (Opus, ai/r22-whylens @ 6c76a14): cause-wiring (corrected
+>   post-mint ordering) → why-lens render → minimal inline CLI disclosure →
+>   suppression-dedup; CmdsubOperandTop only; gate-obligation/erasability test
+>   untouched. At harvest: review + verify + cherry-pick + fb-11; then x-2
+>   over-suppression crosscheck (wants fr-2). NEXT human decisions: remaining-ui-A
+>   + ui-B sequencing (#9), the remediation-class column (at harvest), fr-2 drop
+>   for x-2. METHOD NOTE (post-Fable): conductor's own design work (22C) had
+>   load-bearing errors a same-model adversarial pair caught — lean on crosschecks
+>   for design, not just code.
 > - NEW HUMAN SLUG CONVENTION (uncommitted in AGENTS.md, 2026-06-12, BINDING going
 >   forward): round-prefixed slugs — `NN-huN` for human comments/rulings (e.g.
 >   `22-hu41`), `NN-fdN` for findings/results/conclusions (e.g. `22-fd3`),
