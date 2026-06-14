@@ -1817,6 +1817,21 @@ warm-ups (d×d host-flip fixture; var-resolved redirect case) → 22x synthesis 
   it (a) forced the precise single-pass monotonicity definition and (b) correctly sized the
   unbuilt concurrency engine — net positive, and a reminder that an UNDER-SPECIFIED contract
   mis-aims the adversary at a strawman (state the model's assumptions up front).
+- live-plan MONOTONICITY DOWNGRADE + provenance-type tension (human, 2026-06-14; plans/230
+  §1 REWORKED). The conductor's "run-count monotone non-increasing" was wrong on UNIT (it is
+  REPLACEMENT — what "not run" MEANS changes: Replace-with-v / -v′ / Omit) AND on CERTAINTY:
+  a replacement is NOT provably stable — a consumed channel's `Predicted<T>` flips `Value`→`Top`
+  when a DISAGREEING same-cell fact merges (`merge_observable` = meet-toward-⊤) ⇒ `Replace`→`Run`,
+  needing NO TOCTOU (single-pass reachability ~SUSPECT-unverified). Pure-CFG-structural folds ARE
+  monotone (fully-trusted immutable input); the probe/oracle-tainted replacement-CONTENT is not.
+  The taint type the human wanted certainty-claims to rest on EXISTS — `OriginKind`
+  (`BookSource`/`OracleClaim`/`ProbeResult`/`TopCause`/`Join`, core/prov.rs) — but is ru-11
+  DECISION-INERT (grounds the why-lens EXPLANATION, never a decision; `OracleClaim`/`ProbeResult`
+  RESERVED-not-minted); the decision-plane certainty type `Predicted<T>` (`Value`/`Top`) is
+  SOURCE-BLIND. So a decision-driving "pure-CFG-can-only-downgrade vs tainted" certainty-tier has
+  NO clean home today — r23 design Q (a NEW ru-11-compatible decision-plane source-tag, or stay
+  best-effort + explanation-tiered). LESSON: do NOT write certainty-tier claims into durable docs
+  without the type-level basis; downgrade when the basis is hand-waved.
 
 ## §11 Post-gating self-audit (append-only; conductor, after a window where several turns produced no output)
 

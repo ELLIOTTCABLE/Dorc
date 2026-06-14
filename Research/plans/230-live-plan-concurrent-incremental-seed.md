@@ -22,39 +22,51 @@ elision-relevant state on various targets." WHY: realtime feedback (the operator
 blocked on the slowest host; the plan visibly resolves) + per-host plans (a command
 replaceable on host A may still run on host B).
 
-## §1 Monotonicity — stated CORRECTLY (the central r22 correction)
+## §1 Replacement-stability — a best-effort property to INVESTIGATE, not a proven invariant
 
-The original contract claimed "facts are per-command-site, independent across sites" and
-"the plan only tightens, never un-replaces a shown line." BOTH were wrong framings; the
-human corrected them and they are the load-bearing thing this seed fixes.
+(Downgraded per the human, 2026-06-14.) The first draft centered a critical-tier claim —
+"facts are per-site independent; the plan only tightens; run-count monotone non-increasing."
+That was wrong on premise, certainty, AND unit, and it is NOT the center of this engine (§2
+is). What's true, carefully:
 
-- **Cross-site coupling is the ENGINE, not a flaw.** It is a dataflow analysis — of course
-  a guard controls a body (`dpkg -s nginx || apt-get install nginx`). The fold
-  (`plan/src/fold.rs` `eval_and_or`/`eval_if`) reads a controller leaf's Status to mark a
-  *different* leaf dead → `Disposition::Omit`, cross-site by construction
-  (`dead: BTreeMap<AstId_body, AstId_controller>`), and that fold-Omit takes precedence
-  over a site's own convergence-`Replace` (`build_plan`'s `disposition_for` runs the fold
-  first). This is correct and expected.
-- **The monotone quantity is the RUN-COUNT, not the per-line disposition.** With each
-  probe-fact received, the NUMBER of commands that will RUN equals-or-reduces — never
-  increases (+SURE, verified against the fold logic):
-  - no fact ⇒ a command is conservatively RUN (kFAIL-perform: when unsure, run) — the max.
-  - a fact moves a command run → not-run: `Replace` (its own state came back converged) or
-    `Omit` (a controlling guard's fact resolved its branch dead).
-  - once not-run, it STAYS not-run; reversing needs a CORRECTED fact (same site, a different
-    value later) — which does NOT occur here (see the single-pass model below).
-- **What is NOT monotone, and is FINE:** WHICH commands run, and HOW each not-run command
-  renders. A line shown `Replace` (its own fact arrived first) can flip to `Omit` when its
-  guard's fact lands; the display churns, the count only shrinks. As a higher CFG node
-  resolves, the nodes beneath it necessarily change — that is the plan updating live, not a
-  violation.
-- **THE SINGLE-PASS / NO-CORRECTION MODEL (load-bearing; its absence made both the crosscheck
-  and the conductor over-worry a non-issue).** During the plan-phase slurp, each site reports
-  ONCE. There is NO re-probing/correction at this stage: the only re-probe ever considered is
-  baked into the apply-script body (far-future, not-set-in-stone; the human leans toward
-  STATIC apply-scripts). So no fact is ever corrected mid-stream ⇒ the run-count is strictly
-  monotone non-increasing. (If apply-embedded re-probe ever lands, revisit — a corrected
-  controller fact could un-Omit a body; out of scope now, tripwire registered.)
+- **Cross-site coupling is the ENGINE, not a flaw.** It is a dataflow analysis — of course a
+  guard controls a body (`dpkg -s nginx || apt-get install nginx`). The fold
+  (`plan/src/fold.rs` `eval_and_or`) reads a controller leaf's Status to mark a *different*
+  leaf dead → `Disposition::Omit`, cross-site by construction
+  (`dead: BTreeMap<AstId_body, AstId_controller>`), precedence over a site's own
+  convergence-`Replace`. Expected.
+- **The unit is REPLACEMENT, not run/not-run.** What "not run" MEANS changes (Replace-with-v
+  / Replace-with-v′ / Omit), so a "run-count" is the wrong thing to call monotone — the
+  replacement's CONTENT is what moves.
+- **Replacement is NOT provably stable (the over-claim, retracted).** A replacement reproduces
+  a command's consumed observables, each a `Predicted<T>` = `Value(v)` | `Top`; a `Top` on a
+  consumed channel FORBIDS the substitution (`core/lib.rs:362`, kFAIL-perform). Across arrivals
+  one cell goes `Top` (no fact) → `Value` (a fact lands) → and a DISAGREEING second fact merges
+  BACK to `Top` (`merge_observable` = meet-toward-⊤), flipping a consumer `Replace` → `Run`.
+  That is a replace-then-re-replace-in-a-different-direction, needing NO TOCTOU — just two
+  sites disagreeing on one cell, in sequence. Reachability in single-pass (two establishers
+  genuinely disagreeing on one host-cell) is UNVERIFIED (~SUSPECT); correction/TOCTOU breaks it
+  further (out of scope). So replacement-stability is a best-effort GOAL ("mostly don't
+  introduce new changes"), NOT a proven monotone invariant.
+- **CERTAINTY IS TIERED BY PROVENANCE — but the type to do it with is welded OUT of decisions
+  (the load-bearing tension).** Trustworthy-monotone: the pure-CFG-structural tier (control-flow
+  + data-dependencies — fully-trusted immutable input; folds kill, never revive). NOT: the
+  replacement-content riding on probe/oracle-tainted `Predicted` values. The type that
+  distinguishes these EXISTS — `OriginKind` (`core/prov.rs:76`): `BookSource` / `OracleClaim` /
+  `ProbeResult` / `TopCause` / `Join` — but (a) ru-11 welds it DECISION-INERT (it may "influence
+  nothing — not a license, not a fold, not a disposition"; the kind grounds the why-lens
+  EXPLANATION, never a decision), and (b) `OracleClaim`/`ProbeResult` are RESERVED-not-yet-minted.
+  The decision-plane certainty type `Predicted<T>` (`Value`/`Top`) IS read by decisions but is
+  SOURCE-BLIND. So an algorithmic "pure-CFG-can-only-downgrade vs probe/oracle-tainted"
+  certainty-claim has NO clean home today: the source-type is decision-inert, the decision-type
+  is source-blind. **r23 design question (do NOT pre-decide):** does the engine need a NEW
+  ru-11-compatible decision-plane source-distinction to make replacement-stability a TYPED
+  guarantee, or does it stay best-effort + explanation-tiered? Either way, any certainty-tier
+  claim must rest on that typed analysis, never on a hand-waved "monotone."
+- The single-pass / no-correction model (each site reports once in the plan-phase; re-probe is
+  apply-script-embedded, far-future, human leans STATIC apply-scripts) removes the
+  correction-retraction but NOT the same-cell-disagreement retraction above — necessary, not
+  sufficient.
 
 Terminology: run / `Replace` / `Omit`. Avoid "elide".
 
