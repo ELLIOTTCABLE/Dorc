@@ -1590,6 +1590,38 @@ warm-ups (d×d host-flip fixture; var-resolved redirect case) → 22x synthesis 
   caught wrong by XC-2 AND the corrected build (22D) sailed XC-3 clean — the
   crosscheck-on-design then crosscheck-on-build loop worked end to end post-Fable.
 
+- fr-2 GRADED + STAMPED (2026-06-14): "Sound Non-Statistical Clustering of
+  Static Analysis Alarms" (Lee/Lee/Yi, VMCAI'12) — at Desktop/vmcai12.pdf,
+  CLEAN text-layer (pdftotext, 6460w, NO OCR needed — the Tesseract plan is
+  moot). Grade **B** = `B-lee-lee-yi-sound-nonstatistical-alarm-clustering-
+  vmcai-2012.{pdf,txt}` in Research/sources/ (GITIGNORED per Research/.gitignore
+  — on-disk-only convention, NOT committed, durable through the context-clear;
+  matches the 228/22A pre-grade `[B-vmcai-clustering-2012]`). THE FINDING (dc-7,
+  grader digest): the paper grounds the POSTURE, not a drop-in mechanism — its
+  soundness is manufactured by REFINEMENT-BY-REFUTATION (re-run the analyzer
+  under "assume this alarm false"), which is exactly the backward re-derivation
+  Dorc RULED OUT (ru-13). Dorc's actual dedup (collapse a ⊤-origin's pure
+  poison-descendants by cause-ProvId) is the paper's TRIVIALLY-SOUND special
+  case — "syntactic clustering" (§4.1, Example 4), needs no refutation. So sound
+  clustering transfers to Dorc ONLY in the pure-propagation/syntactic-identity
+  regime; the over-suppression risk is exactly where it might collapse
+  CORRELATED-BUT-INDEPENDENT ⊤s. dc-7 cap lifts `~SUSPECT` → qualified `+SURE`.
+  Relevant sections: §2.1 (alarm dependence), §2.2 (Def 3 + Thm 1), §4.1
+  (syntactic clustering).
+- x-2 OVER-SUPPRESSION CROSSCHECK dispatched (2026-06-14, adversarial-crosscheck
+  skill, Opus pair) on the why-lens stage-4 dedup, GROUNDED in fr-2's
+  sound-dependence-vs-correlation criterion: neutral `accb7687` + adversarial
+  `aa2ef334`. Sharp attacks: two independent ⊤s sharing one cause-ProvId
+  (hash-cons collision); a command with MULTIPLE independent ⊤ operands
+  (`cmd "$(a)" "$(b)"` — command_effect returns Opaque on the FIRST ⊤, so the
+  why-lens may disclose only one cause while a second independent ⊤ also forces
+  the run — incomplete/misleading = the paper's over-suppression); non-descendant
+  swept into a cluster; non-determinism. ON RETURN: reconcile, then write a
+  notes/22x SYNTHESIZING the fr-2 finding + the x-2 verdict (human-directed —
+  "stamp notes for the combination"), THEN a full durability sweep (ledger/22Z/
+  tasks/harvest) because a CONTEXT-CLEAR follows. This is the last crosscheck
+  before the clear.
+
 ## §11 Post-gating self-audit (append-only; conductor, after a window where several turns produced no output)
 
 > Written after several conductor turns produced nothing (model-gated on accumulated
