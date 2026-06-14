@@ -1,13 +1,21 @@
 ## Reading guide
 
-- README, DESIGN, IMPLEMENTATION, and TODO are human-written; KNOBS and ANALYZER-NEEDS are LLM-generated but relatively authoritative.
-  - consider re-reading them first if they are not in-context (important context in those is *not* duplicated into this AGENTS.md, intentionally);
+Follow this pattern to get bootstrapped on the codebase and design, *no matter what your task is*. You *must* understand the project before you can work on it effectively.
+
+1. README, DESIGN, IMPLEMENTATION, and TODO are human-written; KNOBS and ANALYZER-NEEDS are LLM-generated but relatively authoritative.
+  - re-read them first if they are not in-context (important context in those is *not* duplicated into this AGENTS.md, intentionally);
   - do not edit them, under any circumstances - suggest edits to the user if you see clear incorrectness; and
   - trust them over the ocean of unreviewed, LLM-generated planning-slop in the Research/ folder
 
-- The Research/ is deep, but noisy; second-best after human-written is the live `000-source-manifest` and synthesized `plans/`, which are denser and least context-wasteful.
-  - the per-turn  `notes/` are the noisiest/lowest-value, only dive into them when something leads you there, not prospectively; and amongst them, prioritize later turns (i.e. when digging into "spike 09x,", choose the higest "x" first.)
-  - `plans/` are mildly-actively kept scanned for currency/correctness (there's annotations from later work marking where they're deeply incorrect); but `notes/` are *not*. if you fall back to reading `notes/`, note that you're reading historical thoughts verbatim with inaccuracies.
+2. The Research/ is deep, but noisy; you need to approach it context-carefully:
+  A. `Research/README.md` is the only onboarding-"always-read", and should provide significant 'how to read the planning-docs' information; `000-source-manifest.md` also exists, but is probably mildly out-of-date, and focused on research-sources more than implementation details.
+
+    > Depending on your task, if a human is in-the-loop while you're onboarding, you might stop after reading the Research/README, and consult the human or your prompt for directions on how to proceed. There may be a set of *specific* `plans/` documents relating to your task.
+
+  B. `plans/` are mildly-actively kept scanned for currency/correctness (there's annotations from later work marking where they're deeply incorrect); but `notes/` are *not*. if you fall back to reading `notes/`, note that you're reading historical thoughts verbatim with inaccuracies.
+  C. the per-turn  `notes/` are the noisiest/lowest-value, only dive into them when something leads you there, not prospectively; and amongst them, prioritize later turns (i.e. when digging into "spike 09x,", choose the higest "x" first.)
+
+(If you're a top-level conductor, or review-agent, skilling-up on significant context is usually worthwhile, subject to the specific instructions in your prompt of course - you may be told not to. If you're a subagent focused on implementation, a more focused read of the specifically-relevant documents is usually sufficient.)
 
 ## Critical engineering reminders
 - this codebase depends heavily on deterministic systems-testing, DST, for correctness. you *must* analyze all changes for hermeticity; and all non-hermetic (non-pure) actions *must* be DI'd so as to be mockable for DST.
@@ -53,7 +61,7 @@ Some terms have shifted throughout the planning documents; be careful of these m
   - sanctioned/reused short-slugs: `NN-huN` for human comments/rulings, like `17-hu41`; `NN-fdN` for findings/results/conclusions, like `22-fd3`
 
 - while using dense reasoning is preferable in general (to yourself, in design-documents, and in subagent prompts), *when discussing a complex topic with the human*, attempt to break things down in simpler, clearer language. (this mostly applies when asking a specific question; denser 'reporting' mid-task is more acceptable.)
-  - try to explain/break-down references you make to other design-docs (cite/unroll/explain planning-corpus-slugs)
+  - try to explain/break-down references you make to other design-docs (cite/unroll/explain planning-docs-slugs)
   - try and explain academic concepts simply, whether or not you expect the human to already understand; it aids in clear communication and direction-setting
 
 - try and create 'strawman scripts' during conversation and reasoning (that is, *write actual sh* to ground the conversation in, constantly)
