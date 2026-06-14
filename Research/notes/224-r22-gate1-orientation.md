@@ -1651,6 +1651,56 @@ warm-ups (d×d host-flip fixture; var-resolved redirect case) → 22x synthesis 
   remaining-ui-A/ui-B (#9, human), arch-4-thin (#10), round close (#12); carries
   #16 (why e2e-pin), the remediation-tag nod, the dormant Eq-cause hazard.
 
+- RERUN-REFUTATION CORRECTION + TWO-DEDUP-MECHANISM DIRECTION (human, 2026-06-14
+  post-clear; CORRECTS 22E §1 dc-7 — notes/ are not kept current per AGENTS, this
+  ledger is the live record). 22E overclaimed that the paper's refutation MECHANISM
+  is "off the table / welded out." Wrong: ru-13 bans IN-ENGINE back-propagation /
+  phase-fusing (feedback edges WITHIN one analysis run), NOT re-running the whole
+  pure-FORWARD analyzer on a counterfactual input (N independent forward passes —
+  weld-compatible, and ALREADY the planned mechanism for ru-13's own
+  retraction-by-recompute + the run-twice erasability/replay gates). Refinement-by-
+  refutation IS achievable: take the warning set, replace a ⊤-origin AST node with a
+  known-valid node, RE-RUN, drop the warnings that vanish (dependents), repeat.
+  PERF UNKNOWN (human correction 2026-06-14 — do NOT overclaim, the conductor's first
+  writeup did): the rerun is POSSIBLE / weld-compatible, but NOT necessarily cheap.
+  The "analysis ≪ network" reasoning is the APPLY phase (network-dominated), NOT the
+  why-phase — which is a local analysis/render concern, so a rerun-to-fixpoint there
+  is not free and is not masked by network latency. Default posture: correctness-over-
+  perf for now, in general — explicitly FLAGGED that a why-phase refutation-rerun may
+  bite. forward-only stays chosen for simple/boring/verifiable, not because backward
+  is impossible. (Refutation would even separate x2-fd1 — swap operand-a's $(…)→literal,
+  re-run, operand-b stays ⊤ ⇒ un-collapsed — but the cheap (cause,site) key already
+  handles fd1; rerun is the GENERAL tool, for the harder non-shared-cause class only.) TWO DEDUP MECHANISMS (human point-3, ratified as design DIRECTION,
+  not this-spike work): mechanism-1 by-construction (collapse a ⊤-origin's pure
+  poison-descendants by shared cause-ProvId, keyed (cause,site); sound for the
+  syntactic/propagation class; errs toward OVER-disclosure = safe; BUILD NOW) +
+  mechanism-2 by-refutation (the rerun, for genuinely-dependent-but-NOT-shared-cause
+  warnings only a re-run reveals; DEFERRED, not weld-banned; build only if
+  disclosure-noise ever demands tighter sound collapse).
+- ru-27 REMEDIATION VOCABULARY = HOW-NOT-WHO (human, 2026-06-14; explicitly
+  LOW-PRIORITY / "very in-the-weeds" / SPIKE-DEFERS — greenfield direction only).
+  Medium-term the remediation vocabulary should be cut along HOW the fix is done,
+  NOT who does it — Dorc can never tell who authored the opaque sh (human / AI /
+  curl'd-from-GitHub / coworker library). Corollary (charter): do NOT encode
+  oracle-vs-book anywhere yet (often the same file, same author — just shorthands).
+  Current RemediationClass{AuthorOracle, AddDeclaration, FixBookLine, Structural} +
+  its "two-user exclusion-check" doc-framing LEANS WHO (AuthorOracle/FixBookLine
+  bake the role + the oracle/book shorthand). DISPOSITION: FixBookLine/Structural
+  FINE for the spike (human OK'd, twice); the how-axis re-cut (resolve-dynamism /
+  declare-identity / provide-model / structural-no-fix — AddDeclaration is already
+  how-shaped) is NOT spike work — record + a one-line in-file pointer only; surfaces
+  at round-close (#12) as greenfield seeding-feedback. NO churn, NO half-rename.
+- #17 DISPOSITION (conductor, under human "proceed 17+16 as you please"): fix
+  x2-fd1 NOW = key the why-lens render-dedup on (cause, site) not cause-alone (cli
+  emit_why_lens; the CmdsubOperandTop payload carries .site{leaf,member} — two
+  inlined call-sites separate by site, confirmed in source). x2-fd2 DEFERRED as a
+  documented+now-explained cut (command_effect first-⊤ early-return = onion-peel
+  disclosure; the command always RUNS = disclosure-only; the bigger fix touches the
+  effects-pass + operand-span cause-keying; = the f-3 onion-peel UX anticipated at
+  GATE-1; onion-peel-via-rerun is acceptable given the rerun direction above). #16
+  (the why: stderr e2e pin) done alongside fd1, incl an INLINING regression pin (the
+  x2-fd1 guard). arena explainer delivered in-chat (owed-style).
+
 ## §11 Post-gating self-audit (append-only; conductor, after a window where several turns produced no output)
 
 > Written after several conductor turns produced nothing (model-gated on accumulated
