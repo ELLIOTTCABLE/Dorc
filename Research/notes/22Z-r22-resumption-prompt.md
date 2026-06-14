@@ -51,11 +51,19 @@
 >   this run"). And MERGED arch-2 with ui-A's why-slice (build the why
 >   end-to-end, consumer-first — all of arch-2's remaining content only pays off
 >   through the why-UI). CONTRACT = notes/22D (supersedes 22C §2/§5). Why-lens
->   BUILDER in flight (Opus, ai/r22-whylens @ 6c76a14): cause-wiring (corrected
+>   HARVESTED 2026-06-14 as `f40dded` (3 commits onto ai/spike3, fb-11 empty,
+>   chain green / e2e 99/99 ×2 byte-identical). XC-3 crosscheck (human-directed)
+>   PASSED — both passes + conductor chain converge sound; all 5 adversarial
+>   attacks traced to source, NONE land. Open (none blocking): remediation-class
+>   CmdsubOperandTop=FixBookLine (human may flip to Structural); dormant
+>   Eq-includes-cause hazard (recorded); #16 e2e-pin gap. The (now-DONE) staged
+>   plan was: cause-wiring (corrected
 >   post-mint ordering) → why-lens render → minimal inline CLI disclosure →
 >   suppression-dedup; CmdsubOperandTop only; gate-obligation/erasability test
->   untouched. At harvest: review + verify + cherry-pick + fb-11; then x-2
->   over-suppression crosscheck (wants fr-2). NEXT human decisions: remaining-ui-A
+>   untouched. At harvest: review + verify + cherry-pick + fb-11; THEN an
+>   adversarial crosscheck over the why-lens (XC-3, human-directed 2026-06-14 —
+>   "can't be over-cautious"; targets weld/determinism/ordering + maybe
+>   test-quality), THEN x-2 over-suppression (wants fr-2). NEXT human decisions: remaining-ui-A
 >   + ui-B sequencing (#9), the remediation-class column (at harvest), fr-2 drop
 >   for x-2. METHOD NOTE (post-Fable): conductor's own design work (22C) had
 >   load-bearing errors a same-model adversarial pair caught — lean on crosschecks
