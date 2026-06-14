@@ -100,8 +100,27 @@ impl DiagSite {
     }
 }
 
-/// Emit the migrated `DiagCode::CmdsubOperandTop` disclosure (`22B` §5 worked-3), lowered to the
-/// legacy stream for the coexistence `Vec<Diagnostic>` accumulator. `site == None` ⇒ SUPPRESS.
+/// A `DiagCode::CmdsubOperandTop` disclosure DEFERRED until after `mint_top_causes` (stage-1
+/// cause-wiring, the corrected `tc-cmdsub-cause` resolution). The effects pass discovers WHICH
+/// nodes went ⊤-via-`$(…)`-operand and at WHICH position, but the arch-1 ⊤-cause that links the
+/// origin to its poisoned consumers is minted only AFTER the effects pass (a node's opaqueness IS
+/// the effects pass's output — the ordering is inherent; see [`mint_top_causes`]). So the emit
+/// site records just `(site, position)` here; [`classify`] finalizes the typed [`Diag`] with the
+/// real `top_causes[node]` cause and lowers it once the arena's `&mut` is live and the causes are
+/// minted. This keeps the effects pass a pure `Fn` (no `&mut arena` threaded into `solve`).
+///
+/// `pub` only because it appears in the (already-`pub`) [`command_effect`] signature as the
+/// deferred-collector parameter; it carries no decision data and is never consumed cross-crate.
+#[derive(Debug, Clone, Copy)]
+pub struct CmdsubTop {
+    /// The ⊤-origin site (its `site.leaf.0` is the CFG node index — the cause-lookup key).
+    site: DiagSite,
+    /// Which argv position is the `$(…)`/dynamic value (command word or 1-based operand).
+    position: OperandPosition,
+}
+
+/// RECORD a `DiagCode::CmdsubOperandTop` disclosure for post-mint finalization (`22B` §5
+/// worked-3; stage-1 cause-wiring). `site == None` ⇒ SUPPRESS (record nothing).
 ///
 /// f-3b (`224` §10 22-q4, CORRECTED): the `None` caller is `member_family`'s per-member loop, and
 /// that suppress is a LIVE dedup, REACHED in production — not belt-and-braces. `member_argv` is NOT
@@ -111,41 +130,69 @@ impl DiagSite {
 /// word. When `member_family` resolves it, the first ⊤ member hits `command_effect`'s ⊤-operand arm
 /// → `Opaque` → the family's `_ => return None` → the family COLLAPSES → the site falls to the
 /// single-cell fallback, which discloses the ⊤ once with the REAL span. Suppressing the member-scan
-/// emit here stops that disclosure from doubling the fallback's. No mis-elision rides this: a ⊤
+/// record here stops that disclosure from doubling the fallback's. No mis-elision rides this: a ⊤
 /// operand always returns `Opaque` ⇒ the site runs (`kFAIL-perform`), so the ⊤ is never silently
 /// elided — it is disclosed exactly once, at the fallback. (There is no sound assert to add: the
 /// member argv legitimately CAN carry ⊤, so an "members are concrete" assertion would fire on the
 /// valid input above.)
 ///
-/// The payload carries `cause: None`: the arch-1 ⊤-cause is minted PER-OPAQUE-NODE in
-/// `mint_top_causes`, which runs AFTER this effects pass (Opaqueness is the effects pass's
-/// output — the ordering is inherent), so the cause is not yet available at this kernel-early
-/// emit site. The payload's `cause` field IS the `228` dc-1 hook; wiring the actual minted
-/// `ProvId` needs a post-mint emission and is deferred (flagged `tc-cmdsub-cause`). The label
-/// matches the legacy prose so the disclosure text is stable across the migration.
+/// The actual [`Diag`] (carrying the minted `cause`) is built in [`finalize_cmdsub_tops`], post-
+/// mint. The label is produced there from `position` (pure) so the disclosure text stays stable.
 fn emit_cmdsub_operand_top(
-    diags: &mut Vec<Diagnostic>,
+    cmdsub_tops: &mut Vec<CmdsubTop>,
     site: Option<DiagSite>,
     position: OperandPosition,
-    interner: &Interner,
 ) {
     let Some(site) = site else {
         return; // member-family path: a ⊤ member IS reached here and SUPPRESSED (dedup) — disclosed once at the single-cell fallback; see fn doc f-3b
     };
-    let diag = Diag::new(
-        Code::CmdsubOperandTop(CmdsubOperandTop {
-            site: site.site,
-            position,
-            cause: None,
-        }),
-        site.span,
-    )
-    .label(format!(
-        "command forced to run (never elided): {} is a command-substitution `$(…)` or \
-         runtime-dynamic value ⇒ its identity is unresolved (⊤)",
-        position.describe()
-    ));
-    diags.push(diag.to_legacy(interner));
+    cmdsub_tops.push(CmdsubTop { site, position });
+}
+
+/// Finalize the deferred [`CmdsubTop`] records into typed [`Diag`]s, NOW carrying the real
+/// arch-1 ⊤-cause (stage-1 cause-wiring; the corrected `tc-cmdsub-cause`). Runs in [`classify`]
+/// AFTER [`mint_top_causes`], so `top_causes[node]` is available: the disclosure's site leaf IS
+/// the CFG node index, so the cause for the node that went ⊤ is `top_causes[leaf]` (present
+/// because the node bears an `Opaque` — that is why the disclosure fired; `fallback_cause` guards
+/// the should-not-happen miss, matching [`reach_transfer`]).
+///
+/// Returns TYPED [`Diag`]s (cause-bearing); [`classify`] lowers them to the legacy stream. Kept
+/// typed at this boundary because `to_legacy` DROPS the cause — the why-lens consumer reads the
+/// cause off the typed `Diag`, so the cause must live on a typed value, not the lowered one.
+///
+/// THE WELD (ru-11): the `cause` is EXEMPT-plane — it rides the diagnostic for the why-lens /
+/// dashboard dedup (`228` dc-1) but reaches no artifact (`to_legacy` keeps it off the bytes; the
+/// `render_artifact_comment` for this code is `None`) and drives no decision. The cause is a
+/// pure [`dorc_core::ProvId`] (non-`Display`, !`Ord`), so it cannot key a decision-output map.
+fn finalize_cmdsub_tops(
+    cmdsub_tops: &[CmdsubTop],
+    top_causes: &[Option<dorc_core::ProvId>],
+    fallback_cause: dorc_core::ProvId,
+) -> Vec<Diag> {
+    cmdsub_tops
+        .iter()
+        .map(|top| {
+            let node = top.site.site.leaf.0 as usize;
+            let cause = top_causes
+                .get(node)
+                .copied()
+                .flatten()
+                .unwrap_or(fallback_cause);
+            Diag::new(
+                Code::CmdsubOperandTop(CmdsubOperandTop {
+                    site: top.site.site,
+                    position: top.position,
+                    cause: Some(cause),
+                }),
+                top.site.span,
+            )
+            .label(format!(
+                "command forced to run (never elided): {} is a command-substitution `$(…)` or \
+                 runtime-dynamic value ⇒ its identity is unresolved (⊤)",
+                top.position.describe()
+            ))
+        })
+        .collect()
 }
 
 /// Determine a `Command` node's effect cells from the book's resolved argv + the
@@ -170,6 +217,7 @@ pub fn command_effect(
     argv: &[ValueOf],
     interner: &mut Interner,
     diags: &mut Vec<Diagnostic>,
+    cmdsub_tops: &mut Vec<CmdsubTop>,
     site: Option<DiagSite>,
 ) -> Vec<CommandEffect> {
     // A bare assignment-only command (`pkg=nginx`) has an empty argv ⇒ no
@@ -180,9 +228,10 @@ pub fn command_effect(
     // The command word must be a concrete literal; a ⊤ word (`"$dyn" install …`) is
     // an un-modeled command ⇒ Opaque (`inv-top-reject`). The ⊤-degradation is no longer
     // silent (q-2 / find-3 no-silent-phantoms): disclose it through the migrated
-    // `DiagCode::CmdsubOperandTop` spine (`22B` §5 worked-3), lowered to the legacy stream.
+    // `DiagCode::CmdsubOperandTop` spine (`22B` §5 worked-3). RECORDED here, finalized with
+    // its arch-1 ⊤-cause post-mint (stage-1; see [`finalize_cmdsub_tops`]).
     let ValueOf::Literal(provider_sym) = word0 else {
-        emit_cmdsub_operand_top(diags, site, OperandPosition::CommandWord, interner);
+        emit_cmdsub_operand_top(cmdsub_tops, site, OperandPosition::CommandWord);
         return vec![CommandEffect::Opaque];
     };
     let provider_str = interner.resolve(provider_sym).to_owned();
@@ -210,12 +259,13 @@ pub fn command_effect(
             ValueOf::Literal(s) => arg_texts.push(interner.resolve(*s).to_owned()),
             // ⊤ arg ⇒ unresolved ⇒ Opaque; disclose WHICH operand went ⊤ (q-2, the
             // 1-based operand index excluding the command word — the migrated
-            // `DiagCode::CmdsubOperandTop` spine, `22B` §5 worked-3).
+            // `DiagCode::CmdsubOperandTop` spine, `22B` §5 worked-3). RECORDED; finalized
+            // with its arch-1 ⊤-cause post-mint (stage-1; see [`finalize_cmdsub_tops`]).
             ValueOf::Top => {
                 let position = OperandPosition::Operand(
                     u32::try_from(i.saturating_add(1)).unwrap_or(u32::MAX),
                 );
-                emit_cmdsub_operand_top(diags, site, position, interner);
+                emit_cmdsub_operand_top(cmdsub_tops, site, position);
                 return vec![CommandEffect::Opaque];
             }
         }
@@ -321,8 +371,10 @@ fn member_family(
         // (`_ => None` below) → the site falls back to the single-cell `argv` path, which discloses
         // that ⊤ once with the REAL span. Passing `None` here stops the member-scan emit from
         // doubling that single fallback disclosure. (⊤ ⇒ Opaque ⇒ MustRun ⇒ the site runs, so the
-        // ⊤ is disclosed, never mis-elided.)
-        match command_effect(idx, checks, argv, interner, diags, None).as_slice() {
+        // ⊤ is disclosed, never mis-elided.) `site: None` records NO cmdsub-top disclosure, so a
+        // discarded local collector is honest here (nothing is ever pushed to it).
+        let mut suppressed = Vec::new();
+        match command_effect(idx, checks, argv, interner, diags, &mut suppressed, None).as_slice() {
             [CommandEffect::Establishes(fact)] => family.push(*fact),
             _ => return None,
         }
@@ -718,7 +770,8 @@ fn reach_transfer(
     reason = "extracted verbatim from classify's per-node closure to stay under the line cap; \
               the args are the closure's captured inputs (cfg/value/idx/checks/interner/diags); \
               s-2 adds `ast` so the q-2 ⊤-disclosures carry a REAL span (the migrated \
-              dq-cmdsub-operand-top spine), not None"
+              dq-cmdsub-operand-top spine), not None; stage-1 adds `cmdsub_tops` so the cmdsub-⊤ \
+              disclosures are RECORDED for post-mint cause-finalization (tc-cmdsub-cause)"
 )]
 fn node_effects(
     id: CfgNodeId,
@@ -730,6 +783,7 @@ fn node_effects(
     checks: &[CheckSet],
     interner: &mut Interner,
     diags: &mut Vec<Diagnostic>,
+    cmdsub_tops: &mut Vec<CmdsubTop>,
 ) -> Vec<CommandEffect> {
     if let Some(family) = member_family {
         return family
@@ -753,7 +807,7 @@ fn node_effects(
     match cfg.node(id).kind {
         CfgNodeKind::Command => {
             let argv = value.argv_values(id);
-            command_effect(idx, checks, &argv, interner, diags, Some(site))
+            command_effect(idx, checks, &argv, interner, diags, cmdsub_tops, Some(site))
         }
         // An unmodeled construct may mutate anything ⇒ ⊤.
         CfgNodeKind::Top => vec![CommandEffect::Opaque],
@@ -841,6 +895,69 @@ fn mint_top_causes(
     (top_causes, fallback_cause)
 }
 
+/// Precompute, per CFG node, its in-loop Members family (task-L2 item-2) and its effect cells,
+/// collecting the deferred cmdsub-⊤ disclosures (stage-1) along the way. Extracted from
+/// [`classify`]'s body to keep it under the line cap; reads only `&` inputs plus `&mut interner`
+/// (interning) and `&mut diags` (the kind-disagreement / `$()`-inner-nonleaf disclosures).
+///
+/// Member-families are computed FIRST so `effects` can gen the member cells into the reaching-
+/// defs (a resolved Members site gens its member cells, NOT Opaque — else its own back-edge would
+/// poison its in-state to ⊤ and break item-3's self-reach). The cmdsub-⊤ records carry no cause
+/// yet (the arch-1 cause is minted post-effects-pass); [`classify`] finalizes them after
+/// [`mint_top_causes`]. Deterministic; never panics (`inv-no-throw`).
+#[expect(
+    clippy::type_complexity,
+    reason = "the three precomputed parallel-by-node products (member families, effect cells, \
+              deferred cmdsub-⊤ records) are returned as one tuple so classify stays under the \
+              line cap; naming a struct for a single-call-site internal helper buys nothing"
+)]
+fn resolve_node_effects(
+    cfg: &Cfg,
+    value: &ValueFlow,
+    ast: &dorc_syntax::ast::Ast,
+    idx: &KindIndex,
+    checks: &[CheckSet],
+    interner: &mut Interner,
+    diags: &mut Vec<Diagnostic>,
+) -> (
+    Vec<Option<Vec<FactKey>>>,
+    Vec<Vec<CommandEffect>>,
+    Vec<CmdsubTop>,
+) {
+    let n = cfg.node_count();
+    let member_families: Vec<Option<Vec<FactKey>>> = (0..n)
+        .map(|i| {
+            member_family(
+                CfgNodeId(i as u32),
+                cfg,
+                value,
+                idx,
+                checks,
+                interner,
+                diags,
+            )
+        })
+        .collect();
+    let mut cmdsub_tops: Vec<CmdsubTop> = Vec::new();
+    let effects: Vec<Vec<CommandEffect>> = (0..n)
+        .map(|i| {
+            node_effects(
+                CfgNodeId(i as u32),
+                member_families[i].as_ref(),
+                cfg,
+                value,
+                ast,
+                idx,
+                checks,
+                interner,
+                diags,
+                &mut cmdsub_tops,
+            )
+        })
+        .collect();
+    (member_families, effects, cmdsub_tops)
+}
+
 /// Classify every `Command` node for the skip decision: resolve each command's
 /// effect cells (through the book's value-flow [`ValueFlow`] + the oracle's own
 /// `check()`), then a forward reaching-defs pass tells us, per establishing command,
@@ -870,45 +987,27 @@ pub fn classify(
     interner: &mut Interner,
     arena: &mut dorc_core::ProvArena,
 ) -> Carrier<Vec<(CfgNodeId, SkipClass)>> {
-    let n = cfg.node_count();
     let mut diags: Vec<Diagnostic> = Vec::new();
-    // task-L2 item-2: per in-loop Members site, resolve its per-member argv family to a
-    // family of establish cells (`None` if not a Members site or any member fails to
-    // resolve — all-or-nothing). Computed FIRST so `effects` can gen the member cells into
-    // the reaching-defs (a resolved Members site gens its member cells, NOT Opaque — else
-    // its own back-edge would poison its in-state to ⊤ and break item-3's self-reach).
-    let member_families: Vec<Option<Vec<FactKey>>> = (0..n)
-        .map(|i| {
-            let id = CfgNodeId(i as u32);
-            member_family(id, cfg, value, idx, checks, interner, &mut diags)
-        })
-        .collect();
-
-    // Precompute each node's effect cells once (interning happens here, with &mut).
-    // A multi-cell verb yields several cells; the reaching-defs gen applies each. A
-    // resolved Members site's cells are its per-member establishes (item-2), so the
-    // reaching-defs writes exactly those member cells (its self-establishes), keeping its
-    // own in-state pristine-of-others for item-3's self-reach carve-out.
-    let effects: Vec<Vec<CommandEffect>> = (0..n)
-        .map(|i| {
-            node_effects(
-                CfgNodeId(i as u32),
-                member_families[i].as_ref(),
-                cfg,
-                value,
-                ast,
-                idx,
-                checks,
-                interner,
-                &mut diags,
-            )
-        })
-        .collect();
+    // Precompute every node's member-family + effect cells, recording the deferred cmdsub-⊤
+    // disclosures (stage-1). Extracted so `classify` stays under the line cap.
+    let (member_families, effects, cmdsub_tops) =
+        resolve_node_effects(cfg, value, ast, idx, checks, interner, &mut diags);
 
     // arch-1 `Top(cause)`: mint a give-up origin per Opaque-bearing node (+ a fallback),
     // keyed on source spans, so the ⊤-poison cascade is attributable. The cause is EXEMPT
     // (rides `Reach::Top`, excluded from `Eq`); it perturbs no decision.
     let (top_causes, fallback_cause) = mint_top_causes(cfg, ast, &effects, arena);
+
+    // stage-1 cause-wiring (the corrected `tc-cmdsub-cause`): NOW that `top_causes` is minted,
+    // finalize the deferred cmdsub-⊤ disclosures with each node's real ⊤-cause, then lower them
+    // into `diags`. This is the post-mint pass the ordering DEMANDS (a node's opaqueness is the
+    // effects pass's output, so its cause cannot exist earlier). The cause is EXEMPT (ru-11) —
+    // it rides the typed diagnostic for the why-lens, never an artifact or a decision.
+    diags.extend(
+        finalize_cmdsub_tops(&cmdsub_tops, &top_causes, fallback_cause)
+            .iter()
+            .map(|d| d.to_legacy(interner)),
+    );
 
     // Forward reaching-defs: out = in ⊔ gen(node). Each of a node's cells is genned
     // (a multi-cell verb writes every cell); an Opaque cell joins ⊤ (carrying its
@@ -1431,7 +1530,16 @@ command__check() {
                 return vec![CommandEffect::Opaque];
             };
             let mut diags = Vec::new();
-            command_effect(idx, &checks, &value.argv_values(node), i, &mut diags, None)
+            let mut cmdsub_tops = Vec::new();
+            command_effect(
+                idx,
+                &checks,
+                &value.argv_values(node),
+                i,
+                &mut diags,
+                &mut cmdsub_tops,
+                None,
+            )
         }
         let (mut i, idx, s) = package_setup();
         // One operand ⇒ Operand cell; the flag `-y` is post-verb-stripped by the check.
@@ -2180,6 +2288,61 @@ command__check() {
         assert!(
             has_code(&diags, "dq-cmdsub-operand-top"),
             "a ⊤ operand must disclose dq-cmdsub-operand-top, never silently Opaque: {diags:?}"
+        );
+    }
+
+    #[test]
+    fn cmdsub_operand_top_carries_real_arena_cause_post_mint() {
+        // STAGE-1 cause-wiring (the corrected `tc-cmdsub-cause`, 22D §1): the `dq-cmdsub-operand-top`
+        // disclosure's `cause` was hard-`None` (the cause is minted AFTER the effects pass, so it was
+        // unavailable at the kernel-early emit site). It must now carry the REAL arch-1 ⊤-cause
+        // (`top_causes[node]`) — the why-lens consumer reads it off the typed `Diag`. Drive the
+        // classify-internal pipeline (the same steps `classify` runs) and assert the finalized typed
+        // diag carries `cause: Some(id)` AND that the id resolves to a `TopCause` node in the arena
+        // (a real receipt, not a fabricated `ProvId`). `$(date)` makes the install's operand ⊤.
+        let (mut i, idx, _s) = package_setup();
+        let parsed = dorc_syntax::parse("apt-get install -y \"$(date)\"");
+        let built = cfg::build(&parsed.value);
+        let value = analyze(&built.value, &parsed.value, &mut i);
+        let checks = vec![lift_checks(&mut i, CORPUS_CHECK_SRC).value];
+        let mut diags: Vec<Diagnostic> = Vec::new();
+        // The same precompute classify runs (member families + effects + the deferred cmdsub-⊤
+        // records), then the same post-mint finalize — so this exercises the real wiring.
+        let (_families, effects, cmdsub_tops) = resolve_node_effects(
+            &built.value,
+            &value,
+            &parsed.value,
+            &idx,
+            &checks,
+            &mut i,
+            &mut diags,
+        );
+        let mut arena = dorc_core::ProvArena::new();
+        let (top_causes, fallback) =
+            mint_top_causes(&built.value, &parsed.value, &effects, &mut arena);
+        let finalized = finalize_cmdsub_tops(&cmdsub_tops, &top_causes, fallback);
+        assert_eq!(
+            finalized.len(),
+            1,
+            "exactly one cmdsub-⊤ disclosure (the ⊤ operand): {finalized:?}"
+        );
+        let Code::CmdsubOperandTop(payload) = &finalized[0].code else {
+            panic!(
+                "the finalized diag must be a CmdsubOperandTop: {:?}",
+                finalized[0].code
+            );
+        };
+        let cause = payload
+            .cause
+            .expect("stage-1: the cmdsub-⊤ disclosure now carries a Some(cause), not None");
+        // The cause is a REAL arena receipt: it resolves to a TopCause give-up node (not a fabricated id).
+        let node = arena
+            .node(cause)
+            .expect("the cause resolves to a real arena node");
+        assert_eq!(
+            node.kind,
+            dorc_core::OriginKind::TopCause,
+            "the wired cause is the ⊤-give-up origin: {node:?}"
         );
     }
 
