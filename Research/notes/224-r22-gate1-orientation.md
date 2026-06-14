@@ -1471,6 +1471,70 @@ warm-ups (d×d host-flip fixture; var-resolved redirect case) → 22x synthesis 
   only = conductor-verifies-in-source; present both to the human; THEN dispatch
   the arch-2 build only after the plan survives + the human rules the §6 forks.
 
+- XC-2 RECONCILED (2026-06-13; both passes in, conductor-verified in source).
+  VERDICT: the 22C arch-2 plan's DIRECTION is sound (why-lens as de-vacuuming
+  consumer; the one-way weld HOLDS) but it has SEVERAL real, convergent errors
+  that block dispatch — the review did exactly its job, catching them before a
+  builder touched code. CONVERGENT (both passes, code-cited, conductor-confirmed):
+  - fd-A (THE dispatch-blocker): mvs-A "mint the cause at ⊤-creation in the
+    effect pass" is INFEASIBLE — `mint_top_causes` runs AFTER the effects pass
+    (Opaqueness is the effects pass's OUTPUT; the ordering is inherent;
+    effect.rs:120-125 + 819-842 + 224 §10 fd-3). My contract inverted the
+    documented `tc-cmdsub-cause` resolution. FIX = option-(b): move the
+    cause-bearing diag emission to a POST-`mint_top_causes` pass reading
+    top_causes[node]; emit-at-origin is satisfied in SPIRIT (cause minted at the
+    ⊤-origin node) but the diagnostic is assembled post-mint. NOT option-(a)
+    (thread `&mut arena` into the kernel-early site — risks solve's pure-Fn
+    determinism posture; both passes flag this). Wrinkle: the per-node cause is
+    keyed on the CFG node's span (whole command), not the operand sub-span — so
+    the why-lens cause is "this command went ⊤," not operand-level (fine for
+    why-lens; worked-3's operand pairing is aspirational).
+  - fd-B (the weld HOLDS — both passes, deflating attack-2): ProvId !Ord
+    (prov.rs:54), Reach::Top cause excluded from Eq (effect.rs:471 — a
+    termination requirement), RemediationClass/Suggestion render-only,
+    render_artifact_comment/project_oob don't read exempt fields. No breach at
+    HEAD/as-scoped. Forward-hazard to fence: a future mvs-C tie-break keying a
+    disposition on which-cause-won WOULD breach (contract line needed).
+  - fd-C (the gate-obligation de-vacuums WEAKLY/non-durably): the why-lens output
+    is canon-EXEMPT by severity (CmdsubOperandTop=Note; canon_diag drops
+    non-Error, conductor-verified erasability.rs:314 + the doc says "the gate
+    would otherwise forbid the why-lens"). So "decisions identical under
+    receipt-strip" stays trivially true. NEUTRAL: the de-vacuuming is
+    consumer-REACHABILITY, not compared-plane-variance. ADVERSARIAL (deflating
+    its own attack-1 strong form): mvs-D's canary upgrade IS a real strengthening
+    BUT proof-of-bite as a one-off inject-and-REVERT pins nothing durable — the
+    shipped gate stays vacuous against a FUTURE decision-reader = the XC-1
+    finding-d property-pin-doesn't-guard-WIRING hole, again. CORRECTED
+    gate-obligation = THREE durable assertions: (1) variance-bit: run-B receipts
+    ≠ run-A (the perturbation reached the data — concl-3 coverage-canary); (2)
+    consumer-saw-it: why-lens output DIFFERS A/B (a reader demonstrably saw the
+    variance); (3) DURABLE proof-of-bite: a PERMANENT negative-control test where
+    a synthetic decision-reader makes the gate FAIL — not a manual revert. My §0
+    also mischaracterized the canary (it ALREADY asserts A/B byte-identity; the
+    missing piece is asserting the variance bit + the reader).
+  - fd-D (mvs-B underspecified + load-bearing): the why-lens (`why(site)->
+    Explanation`) is the thinnest-specified step and the WHOLE de-vacuuming hinges
+    on it; currently zero implementation (top_cause() zero callers). Needs real
+    spec.
+  - fd-E (fixture path): the de-vacuuming fixture MUST be a non-Members top-level
+    ⊤-operand — the Members path SUPPRESSES the CmdsubOperandTop emit (f-3b
+    dedup), so a `for p in…; do …"$(date)"; done` reads nothing.
+  - fd-F (RedirTargetTop asymmetry): it has NO cause field at HEAD (payload
+    {site} only) — wiring it is a PAYLOAD change, not a ride-along emit change;
+    my contract wrongly presented the two as symmetric.
+  - fd-G (reliability quadrant): the oracle-lifter ⊤ codes (OracleMissingProbe,
+    CheckOutOfDialect) have no cause + site()==None → the why-lens reads NOTHING
+    for the unreliable-oracle ⊤ class; the de-vacuuming covers only the
+    reliable-oracle value-⊤ quadrant. PLUS the fallback-cause (site:None) render
+    path is unaddressed (adversarial Area-5).
+  ADVERSARIAL well-behaved (deflated its own attacks 1-strong + 2 honestly; no
+  manufactured faults). DISPOSITION: REVISE 22C before any dispatch (fd-A..G);
+  surface to human the gate-obligation reframe (fd-C three-part durable) + the
+  mvs-A option-(b) re-architecture + the §6 forks. The plan SURVIVES in
+  direction; it does not survive as a dispatch brief. XC-2 = high-value:
+  same-model adversarial review caught a backwards pass-ordering and a
+  non-durable gate that would have shipped the x-3 vacuity in a new coat.
+
 ## §11 Post-gating self-audit (append-only; conductor, after a window where several turns produced no output)
 
 > Written after several conductor turns produced nothing (model-gated on accumulated
