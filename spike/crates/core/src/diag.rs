@@ -1128,6 +1128,117 @@ pub fn render_artifact_comment(diag: &Diag) -> Option<String> {
     }
 }
 
+// ===========================================================================
+// The why-lens (round-22 arch-2 / 22D): the first receipt-READER. Reads a diag's ⊤-cause +
+// the arena → a per-line "why did this command run (never elided)?" explanation.
+// ===========================================================================
+
+/// A per-line why-lens explanation (`22D` stage-2): the smallest honest answer to "why did this
+/// command RUN (never elided)?", paired with the remediation class that says WHICH user clears it.
+///
+/// This is the CONSUMER side of the arch-1 receipt plane — it READS the ⊤-cause minted in the
+/// `ProvArena` and surfaced on a [`Diag`] (stage-1 wired [`CmdsubOperandTop::cause`]). It is
+/// render-plane only (`dir-soundiness-ux`: frontload the unsoundness where the operator reads, at
+/// the decision point); it reaches no artifact and (ru-11 WELD) drives no decision — it is pure
+/// OUTPUT explanation, on the [`crate::Exempt::Explanation`] plane.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Explanation {
+    /// The cause-derived reason this command was forced to run ("ran because …, ⊤ originated …").
+    pub reason: String,
+    /// Which user action clears the forced run (ru-6; PROPOSED per code — `tc-whylens-remediation`).
+    pub remediation: RemediationClass,
+}
+
+/// The why-lens primitive (`22D` stage-2): read a [`Diag`]'s ⊤-cause + the [`ProvArena`] →
+/// a per-line [`Explanation`] of why the command was forced to run, or `None` when this
+/// diagnostic carries no caused-⊤ the why-lens can honestly explain.
+///
+/// HONESTY (fd-G, the load-bearing scope): the why-lens covers CAUSED ⊤s only — today the
+/// reliable-oracle value-⊤ case carried by [`DiagCode::CmdsubOperandTop`] with a wired
+/// `cause: Some`. For every other code (the oracle-lifter give-up codes carry no cause and
+/// `site() == None`; the other migrated codes have no cause field at HEAD) this returns `None`
+/// — those codes keep their OWN existing message; the why-lens is ADDITIVE for caused ⊤s, and
+/// must NOT overclaim "every forced-run has a why". A `CmdsubOperandTop` whose `cause` is
+/// somehow `None`, or whose cause does not resolve in `arena`, also yields `None` (no fabrication).
+///
+/// THE WELD (ru-11 one-way): this READS the cause to render text; it makes no decision, keys no
+/// disposition, and returns data, never panicking (`inv-no-throw`). The cause is a non-`Display`,
+/// non-`Ord` [`ProvId`] resolved through the arena's sole reader ([`ProvArena::node`]).
+///
+/// Minimal-witness-first (228): the cause-site is shown ONCE, the smallest honest explanation.
+/// `src` resolves the cause's origin span to source text for orientation (referent-agnostic —
+/// shown, never decoded).
+#[must_use]
+pub fn why(diag: &Diag, arena: &crate::ProvArena, src: &str) -> Option<Explanation> {
+    // Only a CmdsubOperandTop carries a ⊤-cause at HEAD (stage-1). Other codes: no caused-⊤ to
+    // read ⇒ no why-lens line (fd-G honesty — they keep their own message).
+    let DiagCode::CmdsubOperandTop(payload) = &diag.code else {
+        return None;
+    };
+    // The cause must be present (stage-1 wires it) AND resolve to a real arena origin. A `None`
+    // cause or an unresolvable id yields no explanation — the why-lens never fabricates a why.
+    let cause = payload.cause?;
+    let origin = arena.node(cause)?;
+    // The cause-site, shown once (minimal-witness): the give-up origin's source span, resolved
+    // for orientation. A site-less origin (the defensive fallback cause) degrades to "(no site)".
+    let where_top = match origin.site {
+        Some(span) => render_span(span, src),
+        None => "(no source site)".to_owned(),
+    };
+    let remediation = remediation_for(&diag.code);
+    let reason = format!(
+        "ran because {} is a command-substitution `$(…)` or runtime-dynamic value — its identity \
+         is unknowable (⊤ originated at {where_top}); the apply runs it (kFAIL-perform: when \
+         unsure, act). {}",
+        payload.position.describe(),
+        remediation_hint(remediation),
+    );
+    Some(Explanation {
+        reason,
+        remediation,
+    })
+}
+
+/// The PROPOSED remediation class for a code, for the why-lens (`tc-whylens-remediation` — the
+/// builder PROPOSES, the conductor disposes at harvest, per `22D` §3 fork-remediation). My
+/// per-code judgment, clearly marked:
+/// * [`DiagCode::CmdsubOperandTop`] ⇒ [`RemediationClass::FixBookLine`] — the forced run comes
+///   from a DYNAMIC operand in the BOOK (`$(…)`/runtime value); the actionable fix is the admin's
+///   (make the operand a literal so Dorc can resolve+probe it). It is NOT `AuthorOracle` (no
+///   oracle gap forces it) nor `Structural` (the book line CAN be written to resolve). ~SUSPECT:
+///   a defensible alternative is `Structural` (Dorc fundamentally cannot resolve a runtime
+///   substitution) — flagged for the conductor.
+/// * every other code ⇒ [`RemediationClass::Structural`] as a conservative default; the why-lens
+///   does not currently explain them (it returns `None`), so this is only a placeholder the
+///   harvest revisits if those codes ever gain a why.
+fn remediation_for(code: &DiagCode) -> RemediationClass {
+    match code {
+        DiagCode::CmdsubOperandTop(_) => RemediationClass::FixBookLine,
+        _ => RemediationClass::Structural,
+    }
+}
+
+/// The one-line remediation hint for a class (the why-lens's `<remediation hint>` tail). Addresses
+/// the right user (AGENTS two-user exclusion-check): the admin for [`RemediationClass::FixBookLine`],
+/// the oracle author for [`RemediationClass::AuthorOracle`], and an honest "no user fix" for
+/// [`RemediationClass::Structural`].
+fn remediation_hint(class: RemediationClass) -> &'static str {
+    match class {
+        RemediationClass::AuthorOracle => {
+            "to elide it, an oracle must declare a read-only probe for this kind [author-oracle]"
+        }
+        RemediationClass::AddDeclaration => {
+            "to elide it, add the missing kind/selector/Query declaration [add-declaration]"
+        }
+        RemediationClass::FixBookLine => {
+            "to elide it, make the operand a literal Dorc can resolve+probe [fix-book-line]"
+        }
+        RemediationClass::Structural => {
+            "no user fix — Dorc cannot model this construct [structural]"
+        }
+    }
+}
+
 /// The OOB-lane projection (`22B` `render-2`): the FACT-PLANE fields a diagnostic contributes to
 /// the out-of-band site-keyed record lane — `{ site, code-slug, severity }`. No prose, no help,
 /// no [`ProvId`]. The [`SiteId`] is already the lane's key, so a diagnostic and its OOB record
@@ -1489,5 +1600,89 @@ mod tests {
         assert_eq!(fine.site, Some(site(5)));
         // STUB: the coarse key wraps the fine key unchanged this round.
         assert_eq!(d.coarse_key().fine, fine);
+    }
+
+    /// STAGE-2 the why-lens (`22D` §1): `why` reads a [`CmdsubOperandTop`]'s wired ⊤-cause + the
+    /// arena and renders the cause-derived "ran because … ⊤ originated at <site>; <remediation>"
+    /// line. The cause-site is resolved from the arena origin's span (shown once, minimal-witness).
+    /// Pins that the why-lens consumes the real receipt (a [`crate::OriginKind::TopCause`] origin at
+    /// a known span) and surfaces the position + remediation hint. The first real receipt-READER.
+    #[test]
+    fn why_lens_renders_cause_derived_reason() {
+        let mut arena = crate::ProvArena::new();
+        // The ⊤-cause origin: a give-up minted at the operand's source span (as classify mints it).
+        let cause = arena.leaf(crate::OriginKind::TopCause, Some(span(11, 20)));
+        let d = Diag::new(
+            DiagCode::CmdsubOperandTop(CmdsubOperandTop {
+                site: site(0),
+                position: OperandPosition::Operand(1),
+                cause: Some(cause),
+            }),
+            span(0, 20),
+        );
+        let src = "apt-get install $(date)";
+        let exp = why(&d, &arena, src).expect("a caused-⊤ has a why-lens explanation");
+        assert_eq!(
+            exp.remediation,
+            RemediationClass::FixBookLine,
+            "PROPOSED remediation class for a dynamic-operand forced run (tc-whylens-remediation)"
+        );
+        assert!(
+            exp.reason.contains("operand 1"),
+            "names the ⊤ position: {}",
+            exp.reason
+        );
+        assert!(
+            exp.reason.contains("⊤ originated at"),
+            "names the cause-site (the receipt the why-lens READS): {}",
+            exp.reason
+        );
+        assert!(
+            exp.reason.contains("kFAIL-perform"),
+            "the why-lens explains the RUN, never licenses a skip: {}",
+            exp.reason
+        );
+        assert!(
+            exp.reason.contains("[fix-book-line]"),
+            "the remediation hint addresses the right user (admin): {}",
+            exp.reason
+        );
+    }
+
+    /// STAGE-2 honesty (fd-G): the why-lens covers CAUSED ⊤s ONLY. A code with no cause field
+    /// (every code but [`CmdsubOperandTop`] at HEAD) ⇒ `why` returns `None` (it does NOT overclaim
+    /// a why for a give-up that carries none). A [`CmdsubOperandTop`] with `cause: None` (the
+    /// stage-1 hard-None that should no longer occur, but the type permits) ⇒ also `None`.
+    #[test]
+    fn why_lens_returns_none_without_a_caused_top() {
+        let arena = crate::ProvArena::new();
+        let src = "irrelevant";
+        // A cause-less code: SiteUnresolvable has no cause field ⇒ the why-lens explains nothing.
+        let unresolvable = Diag::new(
+            DiagCode::SiteUnresolvable(SiteUnresolvable {
+                site: site(0),
+                source_excerpt: OutClaim(Interner::default().intern("make install")),
+            }),
+            span(0, 12),
+        );
+        assert_eq!(
+            why(&unresolvable, &arena, src),
+            None,
+            "a code with no ⊤-cause must NOT get a fabricated why (fd-G honesty)"
+        );
+        // A CmdsubOperandTop with cause: None ⇒ no fabrication either.
+        let causeless_top = Diag::new(
+            DiagCode::CmdsubOperandTop(CmdsubOperandTop {
+                site: site(0),
+                position: OperandPosition::CommandWord,
+                cause: None,
+            }),
+            span(0, 5),
+        );
+        assert_eq!(
+            why(&causeless_top, &arena, src),
+            None,
+            "a cause: None CmdsubOperandTop yields no why (no fabrication)"
+        );
     }
 }
