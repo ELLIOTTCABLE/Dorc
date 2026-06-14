@@ -1535,6 +1535,26 @@ warm-ups (d×d host-flip fixture; var-resolved redirect case) → 22x synthesis 
   same-model adversarial review caught a backwards pass-ordering and a
   non-durable gate that would have shipped the x-3 vacuity in a new coat.
 
+- HUMAN RULING (2026-06-14): DROP the gate-obligation / durable-negative-control
+  from arch-2 entirely. Reasoning (human-driven adversarial pushback, conductor
+  conceded): the one-way weld is enforced by the TYPE SYSTEM (ProvId !Ord, cause
+  out of lattice Eq, render-partition scope) — structural leaks are UNREPRESENTABLE
+  (won't compile), so a runtime "prove it has teeth" test is redundant for that
+  class AND a negative-control is impossible without weakening the types (= testing
+  a different program); an intentionally-leaky/substituted engine is fragile and
+  tests-little. The runtime erasability test's ONLY non-redundant job is catching
+  type-VALID semantic content-reads (`if reach.top_cause().is_some() {…}`), a narrow
+  class whose coverage is itself PARTIAL (the scrambler varies values, not presence).
+  So the x-1 "vacuous-at-HEAD" alarm is largely a RED HERRING — the compiler does
+  the real enforcement; the erasability test stays the cheap partial type-backstop
+  it already is, NOT a load-bearing thing arch-2 must de-vacuum. CONSEQUENCE: the
+  why-lens is arch-2's real deliverable, built for its OWN user-facing value
+  (dir-soundiness-ux: per-line "why did this run"), not as a gate vehicle. 22C's
+  §5 (gate-obligation) + mvs-D are VOID; 22C to be revised. fd-A (mvs-A ordering
+  backwards → post-mint emission) + fd-E (non-Members fixture) + fd-F (RedirTargetTop
+  no cause field) + fd-G (reliable-oracle quadrant only) still stand as real
+  corrections for the why-lens build.
+
 ## §11 Post-gating self-audit (append-only; conductor, after a window where several turns produced no output)
 
 > Written after several conductor turns produced nothing (model-gated on accumulated
