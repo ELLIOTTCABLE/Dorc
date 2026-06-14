@@ -28,6 +28,27 @@ engine *reasons* best-effort. `IMPLEMENTATION.md`'s "two angles on provenance" �
 **security-privilege** — already says trust alone is ≥2 axes; and there are likely
 *other* collapsed gradients beyond trust entirely.
 
+**The CRITERION for which booleans become gradients** (human, `IMPLEMENTATION.md`
+2026-06-14 — the load-bearing test): a gradient exists **iff partial-benefit /
+partial-failure exists**. Best-effort IS precisely a *failure gradient* — "we only fail
+you as much as you've already failed yourself." Two questions we ask the oracle-author
+show the asymmetry, and they bound the whole r23 hunt:
+- **"Does your oracle ever MUTATE?" (probe-safety) — NO gradient, by nature.** The
+  contract (oracle mutation-free; no mutation-on-probe) either holds or **fully
+  collapses** — there is no "partially mutated" state to aspire to, nor a "partially
+  mutating" one to reach toward. So it stays BINARY, and that is *why* `dc-probe-NOT`
+  (§3) is a hard, **principled** exclusion — not an arbitrary weld.
+- **"How COMPLETELY have you modeled the command?" (apply-time coverage) — a gradient,
+  by nature.** Partial benefit exists: Dorc can elide many commands, or fewer-but-still-
+  some; an under-modeled / low-resolution oracle should reach toward the half-beneficial
+  outcome rather than cliff to ⊤. The canonical gradient (`dc-elide-on-trusted-default`, §3).
+So §1's sweep has a sharp test: hunt for booleans where *partial benefit genuinely exists
+but we collapsed it* — and do NOT gradient where the failure mode is total (mutation, and
+anything else with no partial state). This also re-frames `inv-kfail` (§5): the
+execute-priority ladder (never under-execute > avoid over-execute > avoid
+unnecessary-execute) is the *direction* the apply-coverage gradient may move (toward
+over-/unnecessary-execute), never the mutation contract.
+
 ## §1 r23 OPENS with research — the collapsed-gradient sweep (fan-out + main-context adjudicated)
 
 A fan-out sweep of the planning corpus + the spike source for every place a decision
