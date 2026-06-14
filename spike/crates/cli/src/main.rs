@@ -133,7 +133,10 @@ fn run() -> Result<(), String> {
     // proves the apply/probe artifacts are byte-identical with it stripped); the cli holds it
     // only to emit the decision-digest line and (future) the why-lens.
     let mut arena = ProvArena::new();
-    let classified = dorc_analysis::effect::classify(
+    // stage-3 (the why-lens): take the TYPED cmdsub-⊤ disclosures too — `report`/gate-3 consume the
+    // LOWERED `diags` (cause-dropped), but the why-lens render reads the `cause` off the typed
+    // `Diag`s (`to_legacy` drops it). The arena is shared (the typed diags' causes resolve in it).
+    let (classified, why_diags) = dorc_analysis::effect::classify_with_why_diags(
         &cfg.value,
         &value,
         &parsed.value,
@@ -192,6 +195,14 @@ fn run() -> Result<(), String> {
         "probe",
         &unresolvable_diagnostics(&probe, &plan, &parsed.value, &book_src, &mut interner),
     );
+
+    // stage-3 (the why-lens, `22D` §1): the FIRST receipt-READER made user-visible. For each
+    // forced-run (never-elided) command whose ⊤ has a wired cause, surface — on the RENDER surface
+    // (stderr), at the decision point — "why did this run?", cause-derived + remediation-classed.
+    // rec-1 WELD: this is the plan-render surface ONLY; it is NEVER woven into the byte-floored
+    // `.sh` artifact on stdout (the artifact stays receipt-free — `render_artifact_comment` is the
+    // fact-plane projection, and the why-lens reaches it not at all).
+    emit_why_lens(&why_diags, &arena, &book_src);
 
     // gate-5 (cm-2 argv-echo differential): per-site resolved argv to stderr, behind the flag.
     if args.debug_argv {
@@ -352,6 +363,49 @@ fn unresolvable_diagnostics(
             Some(diag.to_legacy(interner))
         })
         .collect()
+}
+
+/// stage-3 (the why-lens render, `22D` §1): surface — on stderr, the RENDER surface — the
+/// per-line "why did this command RUN (never elided)?" disclosure for each forced-run command
+/// whose ⊤ carries a wired cause. Reads each TYPED cmdsub-⊤ [`dorc_core::diag::Diag`]'s cause +
+/// the `arena` via [`dorc_core::diag::why`] (the first receipt-READER), printing the cause-derived,
+/// remediation-classed explanation at the decision point (the diag's span, rendered by `why`).
+///
+/// rec-1 WELD (two surfaces): this prints to STDERR only — the plan-render surface. It is NEVER
+/// woven into the byte-floored `.sh` artifact on stdout (the artifact stays receipt-free). The
+/// line is prefixed `why:` and never `error[`, so the e2e gate-3 stderr-floor (which keys on the
+/// `<stage>: error[` shape) ignores it — the why-lens is additive, never a case-failing diagnostic.
+///
+/// stage-4 (suppression scoping, mvs-C): DEDUP IN RENDERING — the cause-site is shown ONCE across
+/// N consumers poisoned by the same ⊤ origin. Dedup is by the cause [`dorc_core::ProvId`] (its
+/// origin IS the shared cause-site), tracked in a `Vec` preserving first-occurrence order — a
+/// deterministic dedup (`inv-determinism`; `ProvId` is `!Ord`, so a `BTreeSet` is unavailable and
+/// a `HashSet` iterated to output is forbidden — the diags arrive in node order, so first-seen
+/// order is stable). This is the dedup the render ACTUALLY exercises; nothing more is built here
+/// (no general suppression subsystem — `22D` §1 stage-4).
+fn emit_why_lens(why_diags: &[dorc_core::diag::Diag], arena: &ProvArena, src: &str) {
+    let mut shown_causes: Vec<dorc_core::ProvId> = Vec::new();
+    for diag in why_diags {
+        if let Some(cause) = cmdsub_cause(diag) {
+            if shown_causes.contains(&cause) {
+                continue; // stage-4: this cause-site was already explained — show it once
+            }
+            shown_causes.push(cause);
+        }
+        if let Some(explanation) = dorc_core::diag::why(diag, arena, src) {
+            eprintln!("why: {}", explanation.reason);
+        }
+    }
+}
+
+/// The ⊤-cause [`dorc_core::ProvId`] a why-lens diag carries, if any — the stage-4 render-dedup
+/// key. Only a `CmdsubOperandTop` carries a cause at HEAD (stage-1). Returns `None` for any other
+/// diag (which the why-lens does not explain anyway, fd-G), so it never participates in the dedup.
+fn cmdsub_cause(diag: &dorc_core::diag::Diag) -> Option<dorc_core::ProvId> {
+    match &diag.code {
+        dorc_core::diag::DiagCode::CmdsubOperandTop(p) => p.cause,
+        _ => None,
+    }
 }
 
 /// The gate-5 disposition tag for a [`dorc_plan::Disposition`] — `run`/`replace`/`omit`.

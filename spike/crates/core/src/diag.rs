@@ -1685,4 +1685,34 @@ mod tests {
             "a cause: None CmdsubOperandTop yields no why (no fabrication)"
         );
     }
+
+    /// STAGE-3/4 the rec-1 two-surfaces WELD at the type level: a caused-⊤ has a why-lens
+    /// explanation (the RENDER surface) BUT no artifact comment (the byte-floored `.sh` surface).
+    /// The why-lens lives ONLY on the render plane; the cause/receipt never reaches the artifact.
+    /// This is the partition the cli's stage-3 render relies on — the artifact stays receipt-free.
+    #[test]
+    fn why_lens_is_render_plane_artifact_is_receipt_free() {
+        let mut arena = crate::ProvArena::new();
+        let cause = arena.leaf(crate::OriginKind::TopCause, Some(span(11, 20)));
+        let d = Diag::new(
+            DiagCode::CmdsubOperandTop(CmdsubOperandTop {
+                site: site(0),
+                position: OperandPosition::Operand(1),
+                cause: Some(cause),
+            }),
+            span(0, 20),
+        );
+        // RENDER surface: the why-lens explains it.
+        assert!(
+            why(&d, &arena, "apt-get install $(date)").is_some(),
+            "a caused-⊤ has a why-lens explanation (the render surface)"
+        );
+        // ARTIFACT surface: NO fact-plane comment for a CmdsubOperandTop ⇒ the cause/receipt
+        // never reaches the byte-floored `.sh` (rec-1 — the artifact stays receipt-free).
+        assert_eq!(
+            render_artifact_comment(&d),
+            None,
+            "the why-lens (cause/receipt) must NEVER reach the artifact (rec-1 two-surfaces weld)"
+        );
+    }
 }

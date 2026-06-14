@@ -977,6 +977,9 @@ fn resolve_node_effects(
 /// [`SkipClass`] field, so no license input can depend on one. The arena grows but the
 /// classification is byte-identical with the causes stripped (the `plan::erasability` gate
 /// proves exactly this).
+///
+/// This is the thin wrapper over [`classify_with_why_diags`] for the 13 callers that do not
+/// consume the typed why-lens diags (the cli's stage-3 disclosure is the one that does).
 #[must_use]
 pub fn classify(
     cfg: &Cfg,
@@ -987,9 +990,31 @@ pub fn classify(
     interner: &mut Interner,
     arena: &mut dorc_core::ProvArena,
 ) -> Carrier<Vec<(CfgNodeId, SkipClass)>> {
+    classify_with_why_diags(cfg, value, ast, idx, checks, interner, arena).0
+}
+
+/// [`classify`] PLUS the TYPED cause-bearing cmdsub-⊤ disclosures for the why-lens (`22D`
+/// stage-3). The legacy [`Carrier`]'s `diags` already carries these LOWERED (cause-dropped, for
+/// `report`/gate-3); this ALSO returns them TYPED so the cli's why-lens render can read the
+/// `cause` off them (`to_legacy` drops it — [`dorc_core::diag::why`] needs the typed value).
+///
+/// Returns `(Carrier<dispositions+legacy-diags>, typed-why-lens-diags)`. The typed diags are a
+/// subset-by-construction of the lowered ones (the same `CmdsubOperandTop`s, before lowering) —
+/// no second pass, no divergence. EXEMPT (ru-11): the typed diags' `cause` informs the render
+/// only, never a decision.
+#[must_use]
+pub fn classify_with_why_diags(
+    cfg: &Cfg,
+    value: &ValueFlow,
+    ast: &dorc_syntax::ast::Ast,
+    idx: &KindIndex,
+    checks: &[CheckSet],
+    interner: &mut Interner,
+    arena: &mut dorc_core::ProvArena,
+) -> (Carrier<Vec<(CfgNodeId, SkipClass)>>, Vec<Diag>) {
     let mut diags: Vec<Diagnostic> = Vec::new();
     // Precompute every node's member-family + effect cells, recording the deferred cmdsub-⊤
-    // disclosures (stage-1). Extracted so `classify` stays under the line cap.
+    // disclosures (stage-1). Extracted so this fn stays under the line cap.
     let (member_families, effects, cmdsub_tops) =
         resolve_node_effects(cfg, value, ast, idx, checks, interner, &mut diags);
 
@@ -999,15 +1024,13 @@ pub fn classify(
     let (top_causes, fallback_cause) = mint_top_causes(cfg, ast, &effects, arena);
 
     // stage-1 cause-wiring (the corrected `tc-cmdsub-cause`): NOW that `top_causes` is minted,
-    // finalize the deferred cmdsub-⊤ disclosures with each node's real ⊤-cause, then lower them
-    // into `diags`. This is the post-mint pass the ordering DEMANDS (a node's opaqueness is the
-    // effects pass's output, so its cause cannot exist earlier). The cause is EXEMPT (ru-11) —
-    // it rides the typed diagnostic for the why-lens, never an artifact or a decision.
-    diags.extend(
-        finalize_cmdsub_tops(&cmdsub_tops, &top_causes, fallback_cause)
-            .iter()
-            .map(|d| d.to_legacy(interner)),
-    );
+    // finalize the deferred cmdsub-⊤ disclosures with each node's real ⊤-cause. The TYPED diags
+    // are returned for the why-lens (stage-3); a LOWERED copy rides `diags` for `report`/gate-3.
+    // This is the post-mint pass the ordering DEMANDS (a node's opaqueness is the effects pass's
+    // output, so its cause cannot exist earlier). The cause is EXEMPT (ru-11) — it rides the
+    // typed diagnostic for the why-lens, never an artifact or a decision.
+    let why_diags = finalize_cmdsub_tops(&cmdsub_tops, &top_causes, fallback_cause);
+    diags.extend(why_diags.iter().map(|d| d.to_legacy(interner)));
 
     // Forward reaching-defs: out = in ⊔ gen(node). Each of a node's cells is genned
     // (a multi-cell verb writes every cell); an Opaque cell joins ⊤ (carrying its
@@ -1123,7 +1146,7 @@ pub fn classify(
         }
         out.push((id, classify_site(i)));
     }
-    Carrier { value: out, diags }
+    (Carrier { value: out, diags }, why_diags)
 }
 
 #[cfg(test)]
