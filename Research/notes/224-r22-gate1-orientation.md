@@ -1787,6 +1787,36 @@ warm-ups (d×d host-flip fixture; var-resolved redirect case) → 22x synthesis 
     (task #19).
   - tc-apply-receipt-floor: RATIFIED (error-only acceptable for the spike; a CLI flag
     could tune it later). Builder default stands.
+- live-plan (RENAMED from "ui-B") CROSSCHECK + REFRAME + DEFER to r23 (2026-06-14). The
+  ru-28 realtime-incremental contract (drafted notes/22G, now REMOVED) went through a
+  two-pass adversarial crosscheck (neutral + adversarial, clean-context Opus, read-only;
+  framed EXCLUSIONS-only per the human's no-inclusions guidance — see the new memory).
+  VERDICT (reconciled + conductor-verified-in-source): the contract's central premise was
+  NAIVE and the human corrected it. "Facts are per-site independent" is FALSE — it is a
+  dataflow engine; the fold IS cross-site (fold.rs `eval_and_or`: a controller leaf's
+  Status marks a body `Omit`, taking precedence over convergence-`Replace` in
+  `disposition_for`; CONFIRMED in source). The REAL monotonicity (human's restatement):
+  with each probe-fact the RUN-COUNT equals-or-reduces, never increases — under the
+  SINGLE-PASS / no-correction model (each site reports once in the plan-phase; re-probe is
+  apply-script-embedded / far-future, human leans STATIC apply-scripts). WHICH commands run
+  + HOW each renders (`Replace`↔`Omit`) churns, and that is EXPECTED (a higher CFG node
+  resolving forces the lower ones to change). The "monotonicity broken" scare was an
+  artifact of the contract UNDER-SPECIFYING the single-pass model (both agents + conductor
+  over-worried a corrected-fact case that is out of scope). SURVIVING finding (+SURE, both
+  passes + crate docs): `hostsim` has NO clock/concurrency/per-host — the arrival-ordering
+  seam (DI'd seeded logical clock) + per-host accumulators + session loop must be BUILT
+  (real engine, NOT a thin surface); and the original ACC-4 (per-host independence) is
+  VACUOUS (`build_plan` pure ⇒ independent by construction — tests the easy direction).
+  SURVIVING reusables: per-call static/dynamic purity, order-independent same-cell merge,
+  terminal determinism, render+`advisory_filter`. DISPOSITION (human): rename off "ui-B"
+  (silly from the start); the plan is the r23 SEED `plans/230` (live-plan: concurrent-probe
+  streaming → incremental per-host re-analysis), NOT a 22x note; DEFER to r23 — the engine
+  AND arch-4's durable tape both key on the probe-result STREAM, so building either against
+  the single-shot model before this engine exists is the rework/cruft the deferral avoids.
+  METHOD NOTE: the crosscheck headline was largely dissolved by the human's reframing, but
+  it (a) forced the precise single-pass monotonicity definition and (b) correctly sized the
+  unbuilt concurrency engine — net positive, and a reminder that an UNDER-SPECIFIED contract
+  mis-aims the adversary at a strawman (state the model's assumptions up front).
 
 ## §11 Post-gating self-audit (append-only; conductor, after a window where several turns produced no output)
 
