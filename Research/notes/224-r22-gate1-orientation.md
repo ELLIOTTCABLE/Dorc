@@ -1622,6 +1622,35 @@ warm-ups (d×d host-flip fixture; var-resolved redirect case) → 22x synthesis 
   tasks/harvest) because a CONTEXT-CLEAR follows. This is the last crosscheck
   before the clear.
 
+- x-2 RECONCILED + SYNTHESIS STAMPED (2026-06-14; full writeup notes/22E). Both
+  passes + conductor reconciliation: the why-lens cross-consumer dedup is SOUND
+  in the straight-line/pure-propagation (paper's syntactic) regime + deterministic
+  + the f-3b member-family suppress is sound. BUT two real OVER-SUPPRESSIONS
+  (both DISCLOSURE-incompleteness only — ⊤⇒Opaque⇒runs / kFAIL-perform / stderr
+  exempt-plane / NO mis-elision / NO weld-or-artifact-or-gate touched; low-sev,
+  real vs fr-2): (x2-fd1, headline, ADVERSARIAL-found, neutral MISSED — the
+  divergence) function INLINING gives two call-sites' spliced bodies the SAME body
+  AstId (inv-leaf-seam) ⇒ same cause ProvId ⇒ the dedup collapses two GENUINELY
+  INDEPENDENT dynamic operands (`apt_install "$(a)"; apt_install "$(b)"`),
+  suppressing the 2nd why: line; reachable (1 literal-swap from passing e2e
+  `inline21-wrapper-converged-elides`), unpinned; the exclusion-check the dedup
+  skipped = the inlining cell (span-identity ⟺ cause-identity holds straight-line,
+  BREAKS under inlining). (x2-fd2, both passes, upstream of the dedup) command_effect
+  returns Opaque on the FIRST ⊤ operand → `cmd "$(a)" "$(b)"` discloses only
+  operand 1; documented scope-cut (22D §1 "operand-level aspirational"). FIX
+  (recorded 22E §3, NOT built): key the dedup on `(cause, site)` not cause-alone
+  (cheap; cli/main.rs) + for fd2 disclose-all-⊤-operands or key cause on operand
+  span; pin with the inlining + two-operand cases (folds into #16). Human
+  disposition owed: fix-now vs accept-documented-cut (both disclosure-only, so
+  deferrable; fd1 recommend-fix — cheap, contradicts "never hide an independent
+  cause"). x-2 = the post-Fable crosscheck-grounded-in-research loop working:
+  fr-2's "you'd need a refutation-proof (ru-13-banned)" is precisely why fd1
+  can't be hand-waved. CONTEXT-CLEAR FOLLOWS — everything below is durable:
+  why-lens harvested+green (f40dded), fr-2 graded+stamped, x-2 done+synthesized
+  (22E), fixes recorded as #17. Round queue (post-clear): x2-fd1/fd2 fix (#17),
+  remaining-ui-A/ui-B (#9, human), arch-4-thin (#10), round close (#12); carries
+  #16 (why e2e-pin), the remediation-tag nod, the dormant Eq-cause hazard.
+
 ## §11 Post-gating self-audit (append-only; conductor, after a window where several turns produced no output)
 
 > Written after several conductor turns produced nothing (model-gated on accumulated

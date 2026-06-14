@@ -63,9 +63,16 @@
 >   untouched. At harvest: review + verify + cherry-pick + fb-11; THEN an
 >   adversarial crosscheck over the why-lens (XC-3, human-directed 2026-06-14 —
 >   "can't be over-cautious"; targets weld/determinism/ordering + maybe
->   test-quality), THEN x-2 over-suppression (wants fr-2). NEXT human decisions: remaining-ui-A
->   + ui-B sequencing (#9), the remediation-class column (at harvest), fr-2 drop
->   for x-2. METHOD NOTE (post-Fable): conductor's own design work (22C) had
+>   test-quality). x-2 DONE 2026-06-14 (fr-2 GRADED B + stamped Research/sources/;
+>   synthesis notes/22E): the why-lens dedup is SOUND straight-line/pure-propagation
+>   + deterministic, but OVER-SUPPRESSES under function INLINING (x2-fd1 — two
+>   independent dynamic operands collapse on a shared body-span cause, 2nd why:
+>   suppressed; reachable, unpinned) and on multi-⊤ commands (x2-fd2, first-⊤
+>   early-return). BOTH disclosure-only (⊤⇒runs, no mis-elision); FIX recorded as
+>   #17 (key dedup on (cause,site) not cause-alone). NEXT human decisions: #17
+>   fix-now-vs-defer, remaining-ui-A + ui-B sequencing (#9), the remediation tag
+>   (CmdsubOperandTop=FixBookLine, may flip Structural). METHOD NOTE (post-Fable):
+>   conductor's own design work (22C) had
 >   load-bearing errors a same-model adversarial pair caught — lean on crosschecks
 >   for design, not just code.
 > - NEW HUMAN SLUG CONVENTION (uncommitted in AGENTS.md, 2026-06-12, BINDING going
