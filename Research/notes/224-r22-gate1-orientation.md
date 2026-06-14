@@ -1701,6 +1701,45 @@ warm-ups (d×d host-flip fixture; var-resolved redirect case) → 22x synthesis 
   (the why: stderr e2e pin) done alongside fd1, incl an INLINING regression pin (the
   x2-fd1 guard). arena explainer delivered in-chat (owed-style).
 
+- ru-28 ui-B REFRAME + minimal-slice (human, 2026-06-14; the ru-25 "streaming
+  proof / ANSI emission" framing is a MISNOMER). ui-B is NOT primarily a
+  UI/streaming-display feature — it is "how the analyzer runs in a REALTIME
+  scenario where probe results arrive CONCURRENTLY from multiple probes/hosts, and
+  batches are RE-ANALYZED to find NEW elisions / changes to the being-built plan."
+  Grounded verbatim in DESIGN ("Dorc's approach" §3: the plan is "dynamically
+  updated in real-time as the probe-phase asynchronously proceeds over-the-network,
+  and uncovers elision-relevant state on various targets"). FIRST multi-party-
+  adjacent work (concurrent per-host probe streams); the UI is only the thin FINAL
+  surface. Conductor cruxes (pin in the contract; attack in the crosscheck):
+  - uib-1 (static/dynamic split; structurally +SURE / fold-internals ~SUSPECT):
+    `classify` is probe-INDEPENDENT (runs before any probe result is read in the
+    current cli); only `build_plan` consumes facts. So "incremental re-analysis" =
+    RE-FOLD the plan over accumulated facts, `classify` computed ONCE — NOT a full
+    analyzer rerun. Sidesteps the rerun-perf-unknown (ru-13-correction entry above).
+  - uib-2 (MONOTONICITY; ~SUSPECT — the load-bearing property): converged-facts
+    only ADD elisions (kFAIL-perform defaults to run; site-keyed independence; ⊤ is
+    static-from-unmodeledness — facts answer convergence, not modeledness) ⇒ the
+    streaming plan only TIGHTENS, never retracts, no churn. If FALSE, the streaming
+    story gets a retraction problem. Crosscheck must attack this hardest.
+  - uib-3 (per-TARGET elision ⇒ MULTI-FILE OUTPUT): a command elidable on host A may
+    run on host B, so the realtime plan is N hosts' folds tightening concurrently.
+    HUMAN CONFIRMED the minimal slice MUST write MULTIPLE per-host plan FILES (one
+    per host) — IN the immediate ui-B spike. The concurrency is where ru-25's DST
+    logical-clock lives (seeded arrival ordering ⇒ reproducible incremental-fold).
+  - uib-scope: PROMOTES ui-B from ru-25's "maximally minimal" to the incremental-
+    concurrent-re-analysis CORE — substantial; bumps the r23 escape valve. Contract
+    MUST carve an explicit minimal-viable slice (incremental re-fold + concurrent
+    arrival + monotone tightening + per-host multi-file out) vs the full vision.
+  - PARKED (human, deferred-NOT-irrelevant, EXTREMELY far-future, ZERO cycles now):
+    one host's plan MAY someday depend on ANOTHER host's probe results (cross-host
+    dependency — per-host-independence is a spike SIMPLIFICATION). Real ops axis
+    (rolling-update / quorum / drain-before-update) but NO corpus user-story; human
+    flagged the assumption flying by + explicitly defers. Recorded so it cannot
+    sneak back silently (AGENTS exclusion-check).
+  PROCESS: contract drafted AFTER ui-A lands (its surface findings inform the
+  presentation layer) → adversarial-crosscheck (the serious work gets crosschecked
+  before build) → build.
+
 ## §11 Post-gating self-audit (append-only; conductor, after a window where several turns produced no output)
 
 > Written after several conductor turns produced nothing (model-gated on accumulated
