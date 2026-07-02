@@ -12,14 +12,23 @@ three baked-in rulings (jc-dpkg-i, jc-fblessed, jc-polarity-vs-rc FINAL). Design
 
 ## §0 Outcome in one line (honest scope)
 
-**R2's derivation CORE landed, proven, committed** (the linchpin — the riskiest novel logic, built
-ADDITIVE with the 23E-mandated differential proof). A required R1 parser-gap fix landed with it. The
-remaining bulk — the cross-crate wiring swap, the R3 probe-emitter reshape, the 25-shape / 152-file
-fixture conversion, and the ~120-golden big-bang re-bless — is DESIGNED-AND-RECIPE'd here but NOT yet
-landed: it is a large, correctness-critical (wrong-elision is THE sin), attention-intensive change whose
-BLESS-discipline re-bless I could not complete AND responsibly verify in one sibling-free session
-without risking the exact failure the safety mandate forbids. Tree is GREEN at every checkpoint; nothing
-is half-wired or broken. This note makes the remainder mechanical.
+**R2's derivation CORE landed+proven, and R4a (the fixture conversion) landed for 146/151 oracle
+fixtures — all golden-stable, committed.** The linchpin (the derivation + the polarity-free `ValueClaim`)
+was built ADDITIVE with the 23E-mandated differential proof; a required R1 parser-gap fix landed with it;
+then the inline dialect was rolled across every derivable corpus shape additively (case-$verb arms +
+marks, markers retained ⇒ always-green). **STOPPED at `jc-singleton-mark` (UNRULED, §4):** the 5
+`pkgindex` oracles are true nullary Singletons (`apt-get update`, no operand) whose effect-mark selector
+cannot be spelled in the `kind:entity.prop` grammar (no entity), and 23E's recipe does not cover it —
+so those 5 fixtures are NOT converted, and the WIRING (P4, analysis→derivation) cannot land without
+either a Singleton-mark ruling or a marker-fallback (which contradicts "retire entirely"). The remaining
+bulk — the wiring swap, the R3 probe-emitter reshape, and the ~120-golden big-bang re-bless — is
+DESIGNED-AND-RECIPE'd here but NOT landed (blocked on jc-singleton-mark for the wiring; the re-bless is a
+large, correctness-critical, attention-intensive step I did not rush). Tree is GREEN at every checkpoint
+(e2e 123/9/0/0); nothing is half-wired or broken. This note makes the remainder mechanical.
+
+Commits this session (all on `ai/spike3-r23`, gates green each): `fe50437` (R2 derivation core + lexer
+fix), `d59efa3` (this note), `e743d7c` (R4a package shape ×61), `9a3faef` (R4a package-family ×47),
+`0785fa6` (R4a non-package shapes ×38).
 
 ## §1 LANDED — R2 derivation core (commit `fe50437 (AI new ana) R2: derive effect-map …`)
 
@@ -116,6 +125,20 @@ survives as a distinct claim → `CommandEffect::Queries` (gens nothing, `QueryR
   esac; pkg : package = "$1"; dpkg-query -W "$pkg" … : package:"$pkg".installed`). Small, honest;
   preserves the pin's intent (dpkg -i establishes `package:X#installed`). NB no e2e book uses `dpkg -i`
   (only the unit test pins it), so this is a unit-fixture-only edit.
+- **jc-singleton-mark** (UNRULED — STOP, blocks the wiring): a nullary/Singleton verb (`apt-get update`
+  ⇒ `pkgindex#fresh`, no operand) cannot spell its effect-mark selector. The mark grammar is
+  `kind:entity.prop`; `split_mark_target` needs an entity fragment between the `:` and the `.` to parse a
+  `.prop` (a `pkgindex:.fresh` yields prop=None; a `pkgindex.fresh` reads the whole as a reverse-DNS
+  kind). A Singleton has no entity, so there is no place to hang the selector. 23E §5 gives no Singleton
+  recipe. Candidate spellings, each a design choice I did NOT make (task: flag, don't invent): (a) a
+  placeholder entity token `: pkgindex:index.fresh` (derive reads selector=fresh; the entity fragment is
+  opaque+unused — but it invents a meaningless token into the fixture); (b) a new `#selector` mark form
+  `: pkgindex#fresh`; (c) extend the two-part `kind.prop` reading for a kind proven single-segment. The
+  5 affected fixtures (`exec-poison-wall-dead`, `exec-singleton-update`, `headline-{guarded-realistic,
+  partial,pi-webhost}` — each a `pkgindex.oracle.sh`) stay marker-only. **This blocks P4** (wiring
+  analysis to the derivation): with these 5 un-derivable, the derived effect-map would drop the
+  `apt-get update ⇒ pkgindex#fresh` cells ⇒ the poison-wall cases would change behaviour. Needs a human
+  ruling before the wiring can proceed.
 - **jc-fblessed** (RULED — accepted): the multi-selector F-BLESSED structural floor
   (`KindIndex::resolve_probe` → `None` for a multi-selector kind with only a kind-default probe)
   EVAPORATES under check-as-oracle — annotation-on-the-reached-arm IS the per-selector declaration; do
@@ -132,10 +155,15 @@ even before goldens re-bless — golden text is NOT the safety net, the exec dif
 exclusive + case-by-case-inspected; lens-verify each of the 9 xfails still fails for its DESIGNED reason
 (23A §1 / 23G §1 reasons).
 
-### P3 — fixture conversion (25 shapes, 152 files; 23E §5 recipe)
-Convert each shape's check body to carry `case $verb` arms + trailing marks, KEEPING the markers
-(additive ⇒ always-green; the differential test then proves derive==old across the REAL corpus before
-any retire). Per-shape recipes (23E §5), keeping the legacy `…__check` funcname (jc-fixture-funcname):
+### P3 — fixture conversion — LANDED for 146/151 (R4a, commits e743d7c/9a3faef/0785fa6)
+DONE additively (case-$verb arms + marks, markers retained ⇒ always-green; e2e 123/9/0/0 after every
+batch): all 108 package-family + 17 pkgstate + 10 service (marker-aware) + 3 firewall + 4 tool + 2
+confline + 1 user + 1 yum. Empirically golden-stable (the old lift still reads markers; evaluate's
+entity resolution is unchanged by the added marks; the shipped probe is still `oracle_probe_*` pre-R3).
+The MARKER-AWARE subtlety (found in `two-oracles`): mark an arm ONLY if its verb is in that file's
+markers — its check body had a `start` arm with no `start` marker; marking it would make derive gain a
+cell the old lift lacks (differential break). NOT DONE: the 5 pkgindex Singletons (jc-singleton-mark
+STOP). Per-shape recipes as applied (23E §5), keeping the legacy `…__check` funcname (jc-fixture-funcname):
 - **package (61×, apt-get):** keep `pkg : package = "$1"`; inside the `[ "$2" = "" ]` guard add
   `case $verb in install|reinstall) dpkg-query -W "$pkg" >/dev/null 2>&1 : package:"$pkg".installed ;;
   purge|remove) … : package:"$pkg".installed! ;; esac`. (Split install/purge into distinct arms — the
@@ -185,7 +213,18 @@ tests). Final gates + e2e 123/9/0/0 + lens-verify each xfail. Big-bang re-bless 
 inspection (BLESS exclusivity — orchestrator/sole-agent only, freshly-verified binary).
 
 ## §6 Validation ledger (this session)
-- Baseline before edits AND after the R2 core commit — behaviour IDENTICAL: e2e `123 round-trips / 9
-  xfail / 0 XPASS / 0 red`; `cargo fmt --check` · `clippy -D warnings` · `cargo deny check licenses bans
-  sources` · `typos` all clean; full workspace tests green (oracle lib 42 → 47, +5 differential).
-- No golden re-blessed (the R2 core touches no emitted surface). No behaviour changed (additive).
+- Baseline before edits AND after every commit — behaviour IDENTICAL: e2e `123 round-trips / 9 xfail /
+  0 XPASS / 0 red` (re-run clean after each R4a batch); `cargo fmt --check` · `clippy -D warnings` ·
+  `cargo deny check licenses bans sources` · `typos` all clean; full workspace tests green (oracle lib
+  42 → 47, +5 differential). No golden re-blessed (nothing emitted-surface touched; R3 not done). No
+  behaviour changed (the whole session is additive — derive is dead code outside its tests, the added
+  fixture marks are inert under the old lift + removed by strip).
+- R4a golden-stability is CORPUS-SCALE behaviour evidence (146 fixtures through the full apply/probe
+  exec pipeline unchanged), stronger than the lift-only differential — but never-vouch still applies:
+  this is machine-run process-evidence, not a human-battle-tested correctness claim.
+- OPEN before the mission completes: (1) jc-singleton-mark ruling (unblocks pkgindex + P4 wiring);
+  (2) P4 wiring + the EstablishInverted→MustRun freeze (with the §3 code-note); (3) P4b R3 probe reshape
+  + all 7 compile_probe call sites (incl. coverage/lib.rs:426 byte-mirror) + probe-golden re-bless;
+  (4) P5 marker retirement + old-lift deletion; (5) the big-bang re-bless with case-by-case inspection +
+  lens-verify each of the 9 xfails. A corpus-wide `derive == old-lift` iterating test (over the 146
+  converted fixtures) is worth adding before the wiring flips, as the final differential gate.
