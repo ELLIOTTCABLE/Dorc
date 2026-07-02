@@ -86,8 +86,7 @@ off from readable idioms (`guard-readable`) vs which await an oracle declaration
   (`SkipClass::InlineCall`, new `Channel`s/`LicenseVia`s) and reports its own blind
   spots instead of failing to compile or miscounting.
 - It consumes the other crates as libraries; it never re-implements engine logic. The
-  design-as-built, external-corpus rollups, census discrepancies, and the seam wishlist
-  are in `Research/notes/21B-arch6-coverage-dashboard.md` — NB that note references the
-  quarantined external corpus; agents under the corpus quarantine should maintain this
-  crate from THIS file + the source alone (deliberately sufficient: the crate is opaque
-  input → report, and needs no knowledge of any corpus).
+  historical design-as-built record lives under `Research/notes/quarantine-DO-NOT-READ/`
+  (quarantined — do not follow). Maintain this crate from THIS file + the source alone;
+  that is deliberately sufficient: the crate is opaque input → report, and needs no
+  knowledge of any corpus or of its own history.
