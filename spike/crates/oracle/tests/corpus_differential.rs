@@ -18,7 +18,7 @@
 
 use dorc_core::Interner;
 use dorc_oracle::check::{ValueClaim, derive_check, lift_checks};
-use dorc_oracle::{Polarity, lift};
+use dorc_oracle::lift;
 use std::collections::BTreeSet;
 use std::path::{Path, PathBuf};
 
@@ -26,22 +26,15 @@ use std::path::{Path, PathBuf};
 /// `(provider, verb, kind, selector, claim-label)`. The ε-verb is the empty string.
 type Cell = (String, String, String, String, &'static str);
 
-/// The differential-comparison label — the ONLY place the polarity-free [`ValueClaim`]
-/// is mapped back onto the old `Polarity` vocabulary. The lifted end-state carries no
-/// polarity (jc-polarity-vs-rc); the `!`-inverted claim maps to the former `kill`.
+/// A stable label for a [`ValueClaim`], so it can key a `BTreeSet` (`ValueClaim` is not
+/// `Ord`). Both sides of the differential now speak `ValueClaim` — the marker `lift` maps
+/// its words onto it exactly as `derive_check` does — so this is a shared normalizer, not a
+/// polarity bridge (the retired `Polarity` vocabulary is gone).
 fn claim_label(c: ValueClaim) -> &'static str {
     match c {
         ValueClaim::Establish => "establish",
-        ValueClaim::EstablishInverted => "kill",
-        ValueClaim::Observe => "query",
-    }
-}
-
-fn polarity_label(p: Polarity) -> &'static str {
-    match p {
-        Polarity::Establish => "establish",
-        Polarity::Kill => "kill",
-        Polarity::Query => "query",
+        ValueClaim::EstablishInverted => "inverted",
+        ValueClaim::Observe => "observe",
     }
 }
 
@@ -86,7 +79,7 @@ fn oldlift_set(src: &str) -> BTreeSet<Cell> {
                 verb_s.clone(),
                 i.resolve(cell.kind.0).to_owned(),
                 i.resolve(cell.selector.0).to_owned(),
-                polarity_label(cell.polarity),
+                claim_label(cell.claim),
             ));
         }
     }

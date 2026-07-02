@@ -331,7 +331,7 @@ apt_get__check() {
         // un-oracled `systemctl reload` always runs. Looping seeds fuzzes the four
         // host states, reproducibly, with no network.
         use dorc_core::ProviderId;
-        use dorc_oracle::{KindIndex, Polarity};
+        use dorc_oracle::{KindIndex, ValueClaim};
 
         let src = "apt-get install -y nginx\napt-get install -y curl\nsystemctl reload nginx\n";
         for seed in 0..64u64 {
@@ -341,7 +341,7 @@ apt_get__check() {
             let apt = ProviderId(i.intern("apt-get"));
             let install = i.intern("install");
             let mut idx = KindIndex::default();
-            idx.add_effect(apt, install, package, installed, Polarity::Establish);
+            idx.add_effect(apt, install, package, installed, ValueClaim::Establish);
 
             let cell = |i: &mut Interner, e: &str| FactKey {
                 kind: package,
@@ -399,7 +399,7 @@ apt_get__check() {
         // checked it); the un-oracled reload always runs. Looping seeds fuzzes the
         // host states, reproducibly, no network.
         use dorc_core::ProviderId;
-        use dorc_oracle::{FactProbe, KindIndex, Polarity};
+        use dorc_oracle::{FactProbe, KindIndex, ValueClaim};
         use dorc_plan::{Disposition, build_plan, compile_probe};
 
         let src = "apt-get install -y nginx\napt-get install -y curl\nsystemctl reload nginx\n";
@@ -410,7 +410,7 @@ apt_get__check() {
             let apt = ProviderId(i.intern("apt-get"));
             let install = i.intern("install");
             let mut idx = KindIndex::default();
-            idx.add_effect(apt, install, package, installed, Polarity::Establish);
+            idx.add_effect(apt, install, package, installed, ValueClaim::Establish);
             idx.add_probe(FactProbe {
                 kind: package,
                 body: "dpkg-query -W \"$1\"".into(),
@@ -505,7 +505,7 @@ apt_get__check() {
         // omitted from the probe ⇒ the apply runs its install even on a host that
         // HOLDS the fact (kFAIL-perform — no convergence knowledge ⇒ run).
         use dorc_core::ProviderId;
-        use dorc_oracle::{KindIndex, Polarity};
+        use dorc_oracle::{KindIndex, ValueClaim};
         use dorc_plan::{Disposition, build_plan, compile_probe};
 
         let mut i = Interner::default();
@@ -514,7 +514,7 @@ apt_get__check() {
         let apt = ProviderId(i.intern("apt-get"));
         let install = i.intern("install");
         let mut idx = KindIndex::default();
-        idx.add_effect(apt, install, package, installed, Polarity::Establish); // effect, but NO add_probe
+        idx.add_effect(apt, install, package, installed, ValueClaim::Establish); // effect, but NO add_probe
 
         let nginx = FactKey {
             kind: package,

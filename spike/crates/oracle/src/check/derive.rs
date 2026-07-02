@@ -211,7 +211,7 @@ mod tests {
     //! marker is deleted.
     use super::*;
     use crate::check::lift_checks;
-    use crate::{Polarity, empty_verb, lift};
+    use crate::{empty_verb, lift};
     use dorc_core::{Interner, ProviderId};
     use std::collections::BTreeSet;
 
@@ -221,21 +221,13 @@ mod tests {
     type Cell = (String, String, String, &'static str);
 
     fn claim_label(c: ValueClaim) -> &'static str {
-        // Differential-comparison ONLY: the eventual lifted representation carries NO
-        // polarity (jc-polarity-vs-rc). The `!`-inverted claim maps to the old `kill`
-        // label so the derived set is comparable to the marker effect-map.
+        // A stable label for the set key (`ValueClaim` is not `Ord`). Both sides now speak
+        // `ValueClaim` — the marker `lift` maps its words onto it exactly as `derive_check`
+        // does — so this normalizes both; the retired `Polarity` vocabulary is gone.
         match c {
             ValueClaim::Establish => "establish",
-            ValueClaim::EstablishInverted => "kill",
-            ValueClaim::Observe => "query",
-        }
-    }
-
-    fn polarity_label(p: Polarity) -> &'static str {
-        match p {
-            Polarity::Establish => "establish",
-            Polarity::Kill => "kill",
-            Polarity::Query => "query",
+            ValueClaim::EstablishInverted => "inverted",
+            ValueClaim::Observe => "observe",
         }
     }
 
@@ -279,7 +271,7 @@ mod tests {
                     v.to_owned(),
                     i.resolve(cell.kind.0).to_owned(),
                     i.resolve(cell.selector.0).to_owned(),
-                    polarity_label(cell.polarity),
+                    claim_label(cell.claim),
                 ));
             }
         }

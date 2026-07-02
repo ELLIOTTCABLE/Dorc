@@ -34,7 +34,7 @@ use dorc_core::{
     Carrier, Diagnostic, EntityRef, Interner, KindId, LeafId, OpaqueToken, ProviderId, Span,
 };
 use dorc_oracle::check::{self, CheckSet, ResolvedEntity};
-use dorc_oracle::{EffectCell, KindIndex, Polarity, empty_verb};
+use dorc_oracle::{EffectCell, KindIndex, ValueClaim, empty_verb};
 use std::collections::BTreeSet;
 
 /// The dataflow fact-key the engine reaches over. **Re-exported from `core`**
@@ -418,10 +418,19 @@ fn cell_effect(
         entity,
         selector: cell.selector,
     };
-    match cell.polarity {
-        Polarity::Establish => CommandEffect::Establishes(fact),
-        Polarity::Kill => CommandEffect::Kills(fact),
-        Polarity::Query => CommandEffect::Queries(fact),
+    match cell.claim {
+        ValueClaim::Establish => CommandEffect::Establishes(fact),
+        // TRANSITIONAL freeze (jc-polarity-vs-rc FINAL, ru-26 churn-disclosure): "no
+        // polarity doctrine here — dissolves into the uniform no-vouch-no-elide license
+        // when the guard/vouch tier lands." An rc-INVERTED claim (the former `kill` mark,
+        // now rc-inversion plumbing on an OPAQUE value — NO create/destroy concept)
+        // classifies MustRun: `Kills` gens the fact into `Reach` AND falls to the site
+        // classifier's `_ => MustRun` arm, reproducing HEAD's Kill behaviour EXACTLY so
+        // this re-spelling never begins eliding a formerly-kill site as a side effect.
+        // DELIBERATELY spike-scoped churn-avoidance — this is NOT a polarity doctrine and
+        // MUST NOT leak into greenfield work; it vanishes when the guard/vouch tier lands.
+        ValueClaim::EstablishInverted => CommandEffect::Kills(fact),
+        ValueClaim::Observe => CommandEffect::Queries(fact),
     }
 }
 
@@ -1221,9 +1230,15 @@ command__check() {
         let purge = interner.intern("purge");
         let update = interner.intern("update");
         let mut idx = KindIndex::default();
-        idx.add_effect(apt, install, package, installed, Polarity::Establish);
-        idx.add_effect(apt, purge, package, installed, Polarity::Kill);
-        idx.add_effect(apt, update, package_index, fresh, Polarity::Establish);
+        idx.add_effect(apt, install, package, installed, ValueClaim::Establish);
+        idx.add_effect(
+            apt,
+            purge,
+            package,
+            installed,
+            ValueClaim::EstablishInverted,
+        );
+        idx.add_effect(apt, update, package_index, fresh, ValueClaim::Establish);
         (
             interner,
             idx,
@@ -1407,8 +1422,8 @@ command__check() {
         let enable = i.intern("enable");
         let start = i.intern("start");
         let mut idx = KindIndex::default();
-        idx.add_effect(systemctl, enable, service, enabled, Polarity::Establish);
-        idx.add_effect(systemctl, start, service, active, Polarity::Establish);
+        idx.add_effect(systemctl, enable, service, enabled, ValueClaim::Establish);
+        idx.add_effect(systemctl, start, service, active, ValueClaim::Establish);
 
         let classes = classify_src(
             "systemctl enable nginx\nsystemctl start nginx",
@@ -1692,10 +1707,16 @@ command__check() {
         let command = ProviderId(i.intern("command"));
         let eps = empty_verb(i);
         let mut idx = KindIndex::default();
-        idx.add_effect(apt, install, package, installed, Polarity::Establish);
-        idx.add_effect(apt, purge, package, installed, Polarity::Kill);
-        idx.add_effect(apt, update, package_index, fresh, Polarity::Establish);
-        idx.add_effect(command, eps, tool, present, Polarity::Query);
+        idx.add_effect(apt, install, package, installed, ValueClaim::Establish);
+        idx.add_effect(
+            apt,
+            purge,
+            package,
+            installed,
+            ValueClaim::EstablishInverted,
+        );
+        idx.add_effect(apt, update, package_index, fresh, ValueClaim::Establish);
+        idx.add_effect(command, eps, tool, present, ValueClaim::Observe);
         idx
     }
 
@@ -2476,7 +2497,7 @@ apt_get__check() {
         let apt = ProviderId(i.intern("apt-get"));
         let install = i.intern("install");
         let mut idx = KindIndex::default();
-        idx.add_effect(apt, install, widget, installed, Polarity::Establish);
+        idx.add_effect(apt, install, widget, installed, ValueClaim::Establish);
         let checks = vec![lift_checks(&mut i, check_src).value];
 
         let parsed = dorc_syntax::parse("apt-get install nginx");

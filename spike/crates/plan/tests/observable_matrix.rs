@@ -69,7 +69,7 @@ use dorc_core::{
     EntityRef, Interner, KindId, Observable, OpaqueToken, Predicted, ProviderId, Rc, SelectorId,
     Verdict,
 };
-use dorc_oracle::{KindIndex, Polarity};
+use dorc_oracle::{KindIndex, ValueClaim};
 use dorc_plan::{Disposition, Plan, build_plan};
 
 /// Corpus-shaped apt-get check (flag-strip → verb → single-operand `package`
@@ -111,8 +111,14 @@ fn package_index(i: &mut Interner) -> KindIndex {
     let install = i.intern("install");
     let purge = i.intern("purge");
     let mut idx = KindIndex::default();
-    idx.add_effect(apt, install, package, installed, Polarity::Establish);
-    idx.add_effect(apt, purge, package, installed, Polarity::Kill);
+    idx.add_effect(apt, install, package, installed, ValueClaim::Establish);
+    idx.add_effect(
+        apt,
+        purge,
+        package,
+        installed,
+        ValueClaim::EstablishInverted,
+    );
     idx
 }
 
@@ -702,7 +708,7 @@ fn query_index(i: &mut Interner) -> KindIndex {
     let present = SelectorId(i.intern("present"));
     let command = ProviderId(i.intern("command"));
     let eps = dorc_oracle::empty_verb(i);
-    idx.add_effect(command, eps, tool, present, Polarity::Query);
+    idx.add_effect(command, eps, tool, present, ValueClaim::Observe);
     idx
 }
 

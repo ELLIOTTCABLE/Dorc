@@ -2054,7 +2054,7 @@ pub fn fact_label(interner: &Interner, fact: FactKey) -> String {
 mod tests {
     use super::*;
     use dorc_core::{Interner, KindId, OpaqueToken, ProviderId, SelectorId};
-    use dorc_oracle::{KindIndex, Polarity};
+    use dorc_oracle::{KindIndex, ValueClaim};
 
     /// Corpus-shaped check dialect for the pipeline tests: the `apt-get` check
     /// (flag-strip → verb → `update` Singleton arm `package-index`; else single-operand
@@ -2607,8 +2607,8 @@ apt_get__check() {
         let install = i.intern("install");
         let update = i.intern("update");
         let mut idx = KindIndex::default();
-        idx.add_effect(apt, install, package, installed, Polarity::Establish);
-        idx.add_effect(apt, update, package_index, fresh, Polarity::Establish);
+        idx.add_effect(apt, install, package, installed, ValueClaim::Establish);
+        idx.add_effect(apt, update, package_index, fresh, ValueClaim::Establish);
         idx
     }
 

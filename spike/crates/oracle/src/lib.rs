@@ -53,29 +53,20 @@ use std::collections::{BTreeMap, BTreeSet};
 /// Round-20 input-side mechanism, wired in by task-W: `analysis::effect` threads a
 /// book's value-flow through [`check::evaluate`] (the oracle's own argparse) to its
 /// inline kind-annotation — the real entity-resolution, replacing the former
-/// engine-side argparse stand-in. Coexists with [`lift`]/[`KindIndex`]/[`Polarity`]
-/// (the effect-map still supplies selector/polarity per `(provider, verb)`).
+/// engine-side argparse stand-in. Coexists with [`lift`]/[`KindIndex`]/[`ValueClaim`]
+/// (the effect-map still supplies selector + value-claim per `(provider, verb)`).
 pub mod check;
 
-/// What a `(provider, verb)` invocation does to — or *observes about* — a fact of
-/// its kind (202 §2). Establish/Kill are MUTATORS; `Query` is the read-only
-/// guard-class (`command -v`, `dpkg -s`, `getent`), first-classed in round-20 task-D2.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Polarity {
-    /// Makes the fact hold (`apt-get install` ⇒ `package:X` present).
-    Establish,
-    /// Makes the fact not hold (`apt-get purge` ⇒ `package:X` absent).
-    Kill,
-    /// Reads the fact and mutates NOTHING (`command -v X` ⇒ observes
-    /// `tool:X#present`). The read-only guard-class (202 §2 / task-D2): a `Query`
-    /// poisons no reaching-defs and establishes nothing, but its check IS the probe
-    /// — and its probed rc becomes the guard site's Status channel (gated by
-    /// rule-query-validity, 205 §2). The disaster-class asymmetry: a Query site's
-    /// record-rc is the guard's OWN rc (fold-usable), unlike a mutator site's
-    /// record-rc (the probe-command's rc, never the mutator's — the wrong-concrete
-    /// firewall, 20C §2).
-    Query,
-}
+/// How a `(provider, verb)` reads/writes a fact's OPAQUE boolean — the lifted
+/// representation is [`ValueClaim`] (jc-polarity-vs-rc, FINAL — human 2026-07-02).
+/// The former `Polarity{Establish, Kill, Query}` is RETIRED: no create/destroy axis
+/// survives the lifted representation, ever. Re-exported at the crate root so consumers
+/// (and the marker [`lift`], which maps `establish`→[`ValueClaim::Establish`] /
+/// `kill`→[`ValueClaim::EstablishInverted`] / `query`→[`ValueClaim::Observe`]) name one
+/// type. `EstablishInverted` (the former `Kill`'s `!` mark) carries rc-inversion only —
+/// no "kill" concept; a site reaching it classifies `MustRun` under the transitional
+/// freeze (see `analysis::effect::cell_effect`).
+pub use check::ValueClaim;
 
 /// A read-only fact-probe for one kind (or one `(kind, selector)` cell): shippable sh
 /// that observes whether `kind:entity` holds for an entity passed as `$1`. By contract
@@ -98,7 +89,7 @@ pub struct FactProbe {
 }
 
 /// One declared effect cell of a `(provider, verb)`: which `kind`, which `selector`
-/// facet, and the `polarity`. A `(provider, verb)` may declare **several** cells
+/// facet, and the [`ValueClaim`]. A `(provider, verb)` may declare **several** cells
 /// (`us-effectmap`, note 205 §3: a multi-cell verb is real — `purge` kills
 /// `#installed` and may dirty a `#config` cell). The wiring (`analysis::effect`)
 /// treats each cell as written, in declaration order.
@@ -106,7 +97,7 @@ pub struct FactProbe {
 pub struct EffectCell {
     pub kind: KindId,
     pub selector: SelectorId,
-    pub polarity: Polarity,
+    pub claim: ValueClaim,
 }
 
 /// A duplicate-effect conflict (`us-effectmap`, note 205 §3): a *second*
@@ -175,7 +166,7 @@ impl KindIndex {
         verb: Symbol,
         kind: KindId,
         selector: SelectorId,
-        polarity: Polarity,
+        claim: ValueClaim,
     ) -> Option<EffectConflict> {
         let cells = self.effects.entry((provider, verb)).or_default();
         if cells.iter().any(|c| c.selector == selector) {
@@ -188,7 +179,7 @@ impl KindIndex {
         cells.push(EffectCell {
             kind,
             selector,
-            polarity,
+            claim,
         });
         None
     }
@@ -323,6 +314,48 @@ pub fn lift(interner: &mut Interner, oracle_sources: &[&str]) -> Carrier<KindInd
     out
 }
 
+/// Lift oracle sources into a kind index whose EFFECT-map is derived from the inline
+/// dialect ([`check::derive_check`]) rather than the `oracle_effect` markers — the R2
+/// wiring flip (23H §5 P4). The kind anchor + `oracle_probe_*` bodies are lifted exactly
+/// as [`lift`] does (probes stay marker-sourced until R3/P4b); ONLY the effect cells swap
+/// source, from the markers to the check bodies' `case $verb` arms + trailing marks.
+///
+/// The `tests/corpus_differential` gate proves this index's effect cells equal [`lift`]'s
+/// across the whole corpus, so swapping analysis onto it is behaviour-preserving — but it
+/// makes the CHECK BODIES the source of truth, so the `oracle_effect` markers can be deleted
+/// (P5) without changing what analysis sees. Deterministic + `inv-no-throw` (derive is total;
+/// a check that fails to lift simply contributes no effects, the safe direction).
+#[must_use]
+pub fn lift_derived(interner: &mut Interner, oracle_sources: &[&str]) -> Carrier<KindIndex> {
+    // Probes + kind anchor from the marker lift; then REPLACE its marker-effects with the
+    // derived ones (proven-equal by the differential gate, but now check-body-sourced).
+    let mut out = lift(interner, oracle_sources);
+    out.value.effects.clear();
+    for src in oracle_sources {
+        let checks = check::lift_checks(interner, src).value;
+        for provider in checks.providers() {
+            let Some(c) = checks.get(provider) else {
+                continue;
+            };
+            let (effects, _vouches) = check::derive_check(c);
+            for e in effects {
+                let verb = match e.verb {
+                    Some(v) => interner.intern(&v),
+                    None => empty_verb(interner),
+                };
+                let kind = KindId(interner.intern(&e.kind));
+                let selector = SelectorId(interner.intern(&e.selector));
+                // Duplicate-cell conflicts cannot arise from the corpus (each verb-arm
+                // names a distinct selector); the marker lift's conflict-diagnostic path is
+                // the authority for malformed markers, so drop a derived duplicate silently.
+                out.value
+                    .add_effect(ProviderId(provider), verb, kind, selector, e.claim);
+            }
+        }
+    }
+    out
+}
+
 /// Lift a single oracle source into `out` (index + diagnostics), in two passes:
 /// first scan the top-level items (recording the declared kind, the
 /// `oracle_probe_*` bodies, and the effects); then resolve the one probe whose
@@ -441,7 +474,7 @@ struct RawEffect<'a> {
     provider: &'a str,
     verb: &'a str,
     selector: &'a str,
-    polarity: Polarity,
+    claim: ValueClaim,
 }
 
 /// Scan an assignment-only command's `assigns` for the `oracle_kind` anchor,
@@ -544,10 +577,14 @@ fn lift_command<'a>(
         );
         return None;
     };
-    let polarity = match *polarity {
-        "establish" => Polarity::Establish,
-        "kill" => Polarity::Kill,
-        "query" => Polarity::Query,
+    // The marker word maps onto the polarity-free [`ValueClaim`] (jc-polarity-vs-rc): the
+    // legacy `kill` word is rc-inversion plumbing (`EstablishInverted`), carrying no "kill"
+    // concept; `query` is the read-only `Observe`. This keeps the marker `lift` in the SAME
+    // vocabulary as `derive_check`, so the corpus differential gate compares like-for-like.
+    let claim = match *polarity {
+        "establish" => ValueClaim::Establish,
+        "kill" => ValueClaim::EstablishInverted,
+        "query" => ValueClaim::Observe,
         other => {
             let detail = format!(
                 "oracle_effect polarity must be `establish`, `kill`, or `query`, not `{other}`"
@@ -569,7 +606,7 @@ fn lift_command<'a>(
         provider,
         verb,
         selector,
-        polarity,
+        claim,
     })
 }
 
@@ -692,7 +729,7 @@ fn bind(
         }
         if let Some(_conflict) = out
             .value
-            .add_effect(provider, verb, kind, selector, eff.polarity)
+            .add_effect(provider, verb, kind, selector, eff.claim)
         {
             // us-effectmap (note 205 §3): a second oracle_effect on the SAME
             // (provider, verb, selector) cell is a footgun — loud diagnostic,
@@ -747,13 +784,13 @@ mod tests {
         i: &mut Interner,
         provider: &str,
         verb: &str,
-    ) -> Option<(KindId, SelectorId, Polarity)> {
+    ) -> Option<(KindId, SelectorId, ValueClaim)> {
         // The index now holds a Vec of cells per (provider, verb) (`us-effectmap`);
         // these tests model single-cell verbs, so project the sole cell to the old
         // tuple shape. A genuine multi-cell verb is exercised by `multi_cell_verb_*`.
         match idx.effect_of(ProviderId(i.intern(provider)), i.intern(verb)) {
             [] => None,
-            [cell, ..] => Some((cell.kind, cell.selector, cell.polarity)),
+            [cell, ..] => Some((cell.kind, cell.selector, cell.claim)),
         }
     }
 
@@ -771,14 +808,14 @@ mod tests {
             kind: package,
             body: "dpkg-query -W \"$1\"".into(),
         });
-        idx.add_effect(apt, install, package, installed, Polarity::Establish);
+        idx.add_effect(apt, install, package, installed, ValueClaim::Establish);
 
         assert_eq!(
             idx.effect_of(apt, install),
             &[EffectCell {
                 kind: package,
                 selector: installed,
-                polarity: Polarity::Establish
+                claim: ValueClaim::Establish
             }]
         );
         assert!(idx.probe_for(package).is_some());
@@ -822,16 +859,16 @@ mod tests {
 
         assert_eq!(
             effect(&out.value, &mut i, "apt-get", "install"),
-            Some((package, installed, Polarity::Establish))
+            Some((package, installed, ValueClaim::Establish))
         );
         assert_eq!(
             effect(&out.value, &mut i, "apt-get", "purge"),
-            Some((package, installed, Polarity::Kill))
+            Some((package, installed, ValueClaim::EstablishInverted))
         );
         // A sub-verb flag (`-i`) is just another verb token — no flag grammar here.
         assert_eq!(
             effect(&out.value, &mut i, "dpkg", "-i"),
-            Some((package, installed, Polarity::Establish))
+            Some((package, installed, ValueClaim::Establish))
         );
     }
 
@@ -938,7 +975,7 @@ mod tests {
         let installed = SelectorId(i.intern("installed"));
         assert_eq!(
             effect(&out.value, &mut i, "apt-get", "install"),
-            Some((package, installed, Polarity::Establish))
+            Some((package, installed, ValueClaim::Establish))
         );
         assert!(out.value.probe_for(package).is_none());
     }
@@ -971,7 +1008,7 @@ mod tests {
         assert!(out.value.probe_for(package).is_some());
         assert_eq!(
             effect(&out.value, &mut i, "apt-get", "purge"),
-            Some((package, installed, Polarity::Kill))
+            Some((package, installed, ValueClaim::EstablishInverted))
         );
         assert_eq!(
             effect(&out.value, &mut i, "apt-get", "install"),
@@ -998,11 +1035,11 @@ mod tests {
         let installed = SelectorId(i.intern("installed"));
         assert_eq!(
             effect(&out.value, &mut i, "apt-get", "install"),
-            Some((package, installed, Polarity::Establish))
+            Some((package, installed, ValueClaim::Establish))
         );
         assert_eq!(
             effect(&out.value, &mut i, "yum", "install"),
-            Some((package, installed, Polarity::Establish))
+            Some((package, installed, ValueClaim::Establish))
         );
     }
 
@@ -1031,7 +1068,7 @@ mod tests {
         let installed = SelectorId(i.intern("installed"));
         assert_eq!(
             effect(&out.value, &mut i, "apt-get", "install"),
-            Some((package, installed, Polarity::Establish)),
+            Some((package, installed, ValueClaim::Establish)),
             "first-writer-wins: the establish survives, the kill is dropped"
         );
         // Only ONE cell recorded (the duplicate did not append).
@@ -1094,7 +1131,7 @@ mod tests {
             &[EffectCell {
                 kind: user,
                 selector: present,
-                polarity: Polarity::Establish
+                claim: ValueClaim::Establish
             }],
             "the verbless effect keys on the ε-verb: {cells:?}"
         );
@@ -1123,7 +1160,7 @@ mod tests {
             &[EffectCell {
                 kind: tool,
                 selector: present,
-                polarity: Polarity::Query
+                claim: ValueClaim::Observe
             }],
             "the verbless guard keys on the ε-verb with Query polarity: {cells:?}"
         );
