@@ -1,0 +1,32 @@
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc — the record is the out-of-band lane).
+
+# site 0: package:nginx#installed
+package_installed__check() { dpkg-query -W "$1" >/dev/null 2>&1; }
+package_installed__check 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'site 0 effect=%s rc=%s\n' "$_e" "$_rc"
+# site:1 skip-unresolvable
+# site:2 skip-unresolvable
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+# guard23-canttell-plan-runs (ruling h1 RATIFIED — converged-only mint: a guard mints only where
+# the plan-time probe verdict is CONVERGED; can't-tell ⇒ run — a PASSING floor). A vouched site
+# past a wall whose PLAN-TIME probe verdict is CANT-TELL:
+#   apt-get install -y nginx  — converged before the wall ⇒ elides
+#   hork wombat               — opaque wall
+#   apt-get install -y curl   — vouched + past wall, but probe = CANT-TELL ⇒ NO witness (the mint
+#                               is converged-only) ⇒ runs BARE
+# A cant-tell mint would guard a line the approved plan displayed as RUN (a front-load-doctrine
+# breach — the decision made post-approval) even though runtime-safe-ish; h1 forecloses it. The
+# pin: curl runs bare, forever. If a build ever mints a guard on a cant-tell (rc 2+) verdict —
+# treating "unsure" as "converged" — an extra `dpkg-query -W curl` check appears in the run-set
+# (or the install is suppressed) and this floor reds. PROBE_RESULTS=authored: the cant-tell is a
+# PLAN-TIME authored verdict (the past-wall establish-probe never ships at HEAD to reproduce it),
+# exactly the drift-trio pattern; gate-1 parity + gate-6 are off, exec_check carries the pin.
+true   # dorc: elided [apt-get install -y nginx] (already converged / dead branch)
+hork wombat
+apt-get install -y curl
