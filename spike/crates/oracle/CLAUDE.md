@@ -82,6 +82,15 @@ exemplar of R2-SHADOW.
   is UN-PROBEABLE (its sites run). So `service` MUST ship `oracle_probe_service_enabled` (is-enabled) AND
   `oracle_probe_service_active` (is-active) to elide either — a single is-active body can no longer silently
   discharge `#enabled` (`KindIndex::resolve_probe`).
+  - **[CORRECTION — round-23 phase-0.5, 2026-07-02, per `23D §1`, human-directed]** `oracle_probe_*`
+    is RETIRED by the reconciled design: the check IS the oracle, and the stripped `check()` body is
+    the shipped probe (in both lanes). The per-selector distinction this floor enforces is reproduced
+    by the check body's per-verb arms (`systemctl.check`'s `enable` arm runs is-enabled, `start` runs
+    is-active). NOTE the residual (`jc-fblessed`, `23E §3`): the STRUCTURAL `resolve_probe` floor
+    evaporates under check-as-oracle (the engine cannot verify `is-enabled` "means" `#enabled` —
+    `inv-referent-agnostic`), consistent with `23D §1.2` ("constrained in what we ASSUME, not what
+    they contain") but a real posture shift. Original text stands as history; R2/R3 code is
+    designed-and-deferred (blocked on the C2/coverage ruling — `23E §2`).
 - **`R2-MULTIOP` — the single-operand guard.** A check binding one operand (`pkg : package = "$1"`) MUST gate its
   probe on there being NO second operand: `if [ "$2" = "" ]; then probe "$pkg"; fi`. WITHOUT it, a multi-target
   command (`apt-get install nginx curl`) resolves to entity=`nginx` ALONE and ships a probe for nginx only — so

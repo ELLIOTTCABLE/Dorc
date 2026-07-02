@@ -55,6 +55,17 @@ Replace the round-19 stand-ins with the real input side (`19H`):
   declared `oracle_probe_*` body. (The earlier "shipped-as-a-function into the
   probe body" framing predates st-2 — the placeholder check bodies must not
   ship, 20B §3.)
+  - **[CORRECTION — round-23 phase-0.5, 2026-07-02, per the oracle ground-truth
+    (`23D §1`), human-directed]** The st-2 check/probe split above is
+    spike-INTERNAL implementation fiction, not design truth: the check IS the
+    oracle, and the STRIPPED CHECK BODY is the shipped unit in BOTH lanes (probe
+    under structural self-vouch; apply as guard). `oracle_probe_*` is retired by
+    the design; the probe ships `strip_check(<provider>.check)` invoked per-site
+    with the site's argv. The original text is left standing as history. The CODE
+    reconciliation (R3: emitter ships the stripped check body) is DESIGNED-AND-
+    DEFERRED — it changes `dorc_plan::compile_probe`'s signature, which the
+    C2-excluded `crates/coverage/` consumes, so it needs a human ruling first.
+    Full design + the blocker: `Research/notes/23E-spike-reconciliation.md`.
 - completion of the **one-Observable unification** (`19F`/`19G`, half-landed).
 
 A case that passes because a fixture happened to feed the right value is not a
@@ -85,6 +96,16 @@ and where* (→ `Research/notes/20x-*.md`, append-only), not green tests.
   spans (the per-selector emitter still ships only `oracle_probe_*` bodies, so
   the trigger is unmoved by task-P — `rule-anno-render`'s residual rides the same
   trigger, 20C §7).
+  - **[CORRECTION — round-23 phase-0.5, 2026-07-02, per `23D §1`, human-directed]**
+    The disposition's premise ("the shipped probe wrapper contains ONLY the
+    `oracle_probe_*` body") is st-2 fiction. Under the reconciled design the
+    shipped unit IS the stripped `check()` body (`23D §1`; see the corrected
+    round-20 "the job" bullet). So the vouch-closure check's REVIVAL condition
+    ("a future emitter ships `check()`-body spans") is the *intended* end-state,
+    not a hazard — the self-vouch carve-out covers it (a command inside its own
+    oracle's `check()` is the self-vouched unit by construction). The R3 code
+    reconciliation is designed-and-deferred (blocked on the C2/coverage ruling);
+    see `Research/notes/23E-spike-reconciliation.md`.
 - **TOCTOU (probe→apply staleness) is deferred-to-actively-WONTFIX.** Do not
   build re-probe-before-apply, freshness windows, or anything aimed at it.
   (Maybe-someday shape, very deferred: oracle tooling for a super-cheap
