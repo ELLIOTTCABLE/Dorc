@@ -17,16 +17,21 @@ They have a small Debian VPS, and one runbook they've been SSH-piping at it for 
 ```sh
 #!/bin/sh
 # webhost.sh - bring up the static site
+set -eu
+CERTS=/etc/nginx/certs
 apt-get update
-apt-get install -y nginx
+dpkg -s nginx >/dev/null 2>&1 || apt-get install -y nginx
 cp ./nginx.conf /etc/nginx/nginx.conf
-foobar sync-certs /etc/nginx/certs
+foobar sync-certs "$CERTS"
 systemctl enable --now nginx
-hork tune --profile web
+hork tune --profile web >>/var/log/hork.log 2>&1
 ufw allow 443/tcp
 ```
 
-Seven commands. Five are boring, famous tools. `foobar` is their own little cert-distribution
+A year of accreted habit shows: strict-mode at the top; the classic hand-written
+idempotence-guard on the nginx install (they got burned once); the noisy vendor tool's
+output banished to a logfile. Seven tool-commands, plus two lines of plain housekeeping.
+Five of the tools are boring and famous. `foobar` is their own little cert-distribution
 tool — sane, scriptable, just theirs; nobody has ever written an oracle for it. `hork` is a
 proprietary vendor tuning daemon-poker that nobody understands, including the vendor.
 
@@ -36,8 +41,8 @@ the occasional *drifted* day. Watch three currencies: what the run MUTATES, what
 (wall-clock), and what it demands of the user's ATTENTION.
 
 
-Stage 0 — day zero: install, first contact
-------------------------------------------
+Stage 0 — a thought-experiment: Dorc with its standard library disabled
+------------------------------------------------------------------------
 
 ```
 $ apt-get install dorc
@@ -48,19 +53,29 @@ The floor promise: this is *no worse than what they already did*. The book runs,
 bottom, in order, once. Dorc will never reorder or parallelize within a host; the book's
 order is sacred.
 
-But even un-enriched, `dorc plan` already exists:
+This stage as a whole, though, is an illustrative impossibility: the base oracle library
+ships *with* the tool, so real day-one behaviour is stage 1 below. Pretend for a moment it
+didn't — because the bare mechanism is worth seeing once:
 
 ```
-$ dorc plan webhost.sh web1.example.net
-apt-get update                                   # runs
-apt-get install -y nginx                         # runs
-cp ./nginx.conf /etc/nginx/nginx.conf            # runs
-foobar sync-certs /etc/nginx/certs               # runs: unmodeled ('foobar')
-systemctl enable --now nginx                     # runs
-hork tune --profile web                          # runs: unmodeled ('hork')
-ufw allow 443/tcp                                # runs
+$ dorc plan --verbose webhost.sh web1.example.net
+ 1  #!/bin/sh
+ 2  # webhost.sh - bring up the static site
+ 3  set -eu
+ 4  CERTS=/etc/nginx/certs
+ 5  apt-get update                                     # runs
+ 6  dpkg -s nginx >/dev/null 2>&1 \
+ 6     || apt-get install -y nginx                     # runs
+ 7  cp ./nginx.conf /etc/nginx/nginx.conf              # runs
+ 8  foobar sync-certs "$CERTS"                         # runs: unmodeled ('foobar')
+ 9  systemctl enable --now nginx                       # runs
+10  hork tune --profile web >>/var/log/hork.log 2>&1   # runs: unmodeled ('hork')
+11  ufw allow 443/tcp                                  # runs
 plan: 7 run, 0 verify, 0 elided
 ```
+
+(Line-numbers are the *input* line-numbers, always — a line broken for display repeats its
+number rather than incrementing.)
 
 Nothing was probed (nothing could be: probing requires an oracle to vouch that a check is
 safe to run in the read-only probe phase, and no amount of cleverness substitutes for that
@@ -75,31 +90,45 @@ Stage 1 — the base library: the famous half
 -------------------------------------------
 
 Dorc ships with a small base library of oracles for the boring famous things — the
-`org.dorc.*` bootstrap vocabulary: dpkg/apt, coreutils, and friends. With those loaded, the
-probe phase has something to do. `dorc plan` now ships each covered oracle's own *check* —
-its read-only convergence probe, stripped of annotations, byte-for-byte the author's sh — to
-the host, in parallel, and folds the results into the plan.
+`sm.dorc.*` bootstrap vocabulary (an intentionally-invalid TLD, so strawman names cannot
+leak into reality): dpkg/apt, coreutils, and friends. With those loaded, the probe phase has
+something to do. `dorc plan` now ships each covered oracle's own *check* — its read-only
+convergence probe, stripped of annotations, byte-for-byte the author's sh — to the host, in
+parallel, and folds the results into the plan.
 
 Steady state (nginx installed, config already correct, index fresh):
 
 ```
-$ dorc plan webhost.sh web1.example.net
-# apt-get update                                 # converged: apt.Cache:.fresh
-# apt-get install -y nginx                       # converged: apt.Package:nginx.installed
-# cp ./nginx.conf /etc/nginx/nginx.conf          # converged: content match
-foobar sync-certs /etc/nginx/certs               # runs: unmodeled ('foobar')
-systemctl enable --now nginx                     # runs: unmodeled ('systemctl')
-hork tune --profile web                          # runs: unmodeled ('hork')
-ufw allow 443/tcp                                # runs: unmodeled ('ufw')
+$ dorc plan --verbose webhost.sh web1.example.net
+ 1  #!/bin/sh
+ 2  # webhost.sh - bring up the static site
+ 3  set -eu
+ 4  CERTS=/etc/nginx/certs
+ 5  # apt-get update                                   # converged: package index fresh
+ 6  # dpkg -s nginx >/dev/null 2>&1 \
+ 6  #    || apt-get install -y nginx                   # converged: your guard holds (dpkg -s rc 0)
+ 7  # cp ./nginx.conf /etc/nginx/nginx.conf            # converged: content match
+ 8  foobar sync-certs "$CERTS"                         # runs: unmodeled ('foobar')
+ 9  systemctl enable --now nginx                       # runs: unmodeled ('systemctl')
+10  hork tune --profile web >>/var/log/hork.log 2>&1   # runs: unmodeled ('hork')
+11  ufw allow 443/tcp                                  # runs: unmodeled ('ufw')
 plan: 4 run, 0 verify, 3 elided
 ```
 
-The top three lines are *elided*: commented out, literally removed from what will execute,
+The top three sites are *elided*: commented out, literally removed from what will execute,
 because the probe proved them already-true on this host and their oracles explicitly vouch
 that proven-converged means safe-to-not-run. (That vouch is an authored judgment, not an
-inference; more on it at stage 3.) Note `apt.Cache:.fresh` — the package index is a
-*singleton* piece of state, one instance in the world, so its property hangs on an empty
-entity slot.
+inference; more on it at stage 3.)
+
+Line 6 deserves a pause: that's the admin's own, hand-written, pre-Dorc idempotence guard —
+and it is *exactly the shape the analyzer lifts*. The condition is a read the base library
+vouches safe to probe; its measured exit code proves the fallback branch dead on this host;
+the whole line goes. Years of defensive habit turn out to have been hand-written oracle
+material all along — that continuity is the entire bet of the tool.
+
+Critically to the value-proposition, without the illustrative `--verbose`, Dorc
+knows enough to *not even show those first lines to the user most of the time.*
+User-attention is conserved, safety is preserved.
 
 What did NOT happen is as important. `foobar` is the first opaque command — the first
 *poison wall*. Dorc knows nothing about what it touches, so no probe result from above the
@@ -112,43 +141,52 @@ anything. And with no oracles at all for the bottom four, they simply run.
   `apt-get`s can no longer surprise); a few seconds of wall-clock; three lines of attention.
 - Gained, drifted day: if the config file has been fiddled, the `cp` line comes back into the
   plan on its own — the plan is a function of the probed world, not of hope.
-- Still lost: the bottom four lines run blind, every single time, exactly as before Dorc.
+- Still not gained: the bottom four sites run blind, every single time, exactly as before
+  Dorc.
 
 
-Stage 2 — the community library: guards appear
-----------------------------------------------
+Stage 2 — more coverage, below a wall: guards appear
+----------------------------------------------------
 
 The plan has been nagging, politely, with attribution and counts:
 
 ```
-hint: 'foobar' (line 4) is unmodeled: it degrades 3 downstream sites; an oracle for it
+hint: 'foobar' (line 8) is unmodeled: it degrades 3 downstream sites; an oracle for it
       would recover them whenever its state is converged
 hint: 'systemctl', 'ufw' are covered by library 'debian-service-essentials'
 ```
 
 So they install the library. Now `systemctl` and `ufw` have quality oracles — probes,
-convergence vouches, the works. Steady state:
+convergence vouches, the works, every bit as good as the base library's. Steady state:
 
 ```
-$ dorc plan webhost.sh web1.example.net
-# apt-get update                                 # converged: apt.Cache:.fresh
-# apt-get install -y nginx                       # converged: apt.Package:nginx.installed
-# cp ./nginx.conf /etc/nginx/nginx.conf          # converged: content match
-foobar sync-certs /etc/nginx/certs               # runs: unmodeled ('foobar')
-( systemctl_check enable --now nginx ) \
-   || systemctl enable --now nginx               # verify: converged, but past 'foobar' (line 4)
-hork tune --profile web                          # runs: unmodeled ('hork')
-( ufw_check allow 443/tcp ) \
-   || ufw allow 443/tcp                          # verify: converged, but past 'hork' (line 6)
+$ dorc plan --verbose webhost.sh web1.example.net
+ 1  #!/bin/sh
+ 2  # webhost.sh - bring up the static site
+ 3  set -eu
+ 4  CERTS=/etc/nginx/certs
+ 5  # apt-get update                                   # converged: package index fresh
+ 6  # dpkg -s nginx >/dev/null 2>&1 \
+ 6  #    || apt-get install -y nginx                   # converged: your guard holds (dpkg -s rc 0)
+ 7  # cp ./nginx.conf /etc/nginx/nginx.conf            # converged: content match
+ 8  foobar sync-certs "$CERTS"                         # runs: unmodeled ('foobar')
+ 9  ( systemctl_check enable --now nginx ) \
+ 9     || systemctl enable --now nginx                 # verify: converged, but past 'foobar' (line 8)
+10  hork tune --profile web >>/var/log/hork.log 2>&1   # runs: unmodeled ('hork')
+11  ( ufw_check allow 443/tcp ) \
+11     || ufw allow 443/tcp                            # verify: converged, but past 'hork' (line 10)
 plan: 2 run, 2 verify, 3 elided
 ```
 
-Two new things on screen, and they are the crux of the whole design.
+Two new things on screen, and they are the crux of the whole design. Note first what they
+are *not*: the new sites arrived as guards because of their *position* — modeled-but-below
+an unmodeled command — not because library oracles are somehow lesser. Had `foobar` sat
+last, both would have elided like the top three.
 
 The `systemctl` site probed converged — but it sits below the `foobar` wall, so that fact
 may be stale by the time the apply reaches it. Instead of eliding (forbidden) or running
 blind (wasteful, and mutation-risky), the plan *inserts a guard*: the oracle's own check,
-in-sequence, immediately in front of the untouched original command. At apply time —
+in-sequence, immediately in front of the untouched original command. At runtime —
 *after* `foobar` has done whatever it does — the check re-verifies convergence live. If it
 holds, the command short-circuits; if not (or if the check itself fails or can't tell), the
 original bytes run, exactly as written. An in-sequence check has no staleness problem *by
@@ -160,9 +198,8 @@ Read the guard's anatomy once, closely, because everything rides on it:
   stripped — the same bytes the probe phase already ran. Dorc never synthesizes shell; there
   is always a human author to point at.
 - The `check || command` shape means a broken or confused check *falls through to running
-  the command* — failure lands on the safe side, and an errexit book survives a failing
-  guard (a `||`-left is exempt).
-- The subshell-wrapped invocation keeps the check's variables from leaking into the book's.
+  the command* — failure lands on the safe side. And it composes with the book's own habits:
+  the `set -eu` on line 3 is survived by design, because an `||`-left is errexit-exempt.
 - It still reads as the check-then-execute idiom a diligent human writes by hand, and the
   rendered plan is still just a runnable script — the off-ramp holds.
 
@@ -190,7 +227,7 @@ Stage 3 — two minutes of engineering: the minimal foobar oracle
 The hint has sharpened (it knows the topology now):
 
 ```
-hint: 'foobar' (line 4) is unmodeled: it is the first wall - an oracle vouching its
+hint: 'foobar' (line 8) is unmodeled: it is the first wall - an oracle vouching its
       convergence would elide it when converged, and un-wall 1 downstream site
 ```
 
@@ -203,8 +240,8 @@ foobar.check() {
    verb="$1"; shift
    case "$verb" in
    sync-certs)
-      dest : foobar.Certs = "$1"
-      foobar status --certs-current -- "$dest"   : foobar.Certs:"$dest".synced
+      dest : fb.Certs = "$1"
+      foobar status --certs-current -- "$dest"   : fb.Certs:"$dest".synced
       : foobar:sync-certs~   # vouch: synced certs = nothing worth re-running (STRAWMAN spelling)
       ;;
    esac
@@ -215,29 +252,35 @@ Eight lines, one verb, one probe, one vouch. In order:
 
 - `foobar.check()` declares "this body is the oracle for `foobar`". The period-name is the
   opt-in semaphore; *stripped*, it is a plain `foobar_check()` function any shell can run.
-- `dest : foobar.Certs = "$1"` binds the operand as the entity, in a kind this author just
+- `dest : fb.Certs = "$1"` binds the operand as the entity, in a kind this author just
   minted. Nobody approves kind names; there is no registry. It only has to agree with
-  itself.
-- The trailing `: foobar.Certs:"$dest".synced` says: this probe's exit code *establishes*
+  itself. (At the call-site that operand was `"$CERTS"` — the analyzer resolves plain
+  variable-flow to the constant before binding; ordinary shell habits don't defeat it.)
+- The trailing `: fb.Certs:"$dest".synced` says: this probe's exit code *establishes*
   that property. The engine never interprets what "synced" means — it is an opaque value
   bound to the author's probe.
 - The `~` vouch is the license, and it is a *judgment*, not a fact: "when this arm's probes
   hold, I judge re-running this to be noise." The plan attributes every elision and guard
   to the vouch that licensed it, by name; when a vouch is wrong, there is a person to be
-  wrong. Its exact spelling is still strawman-tier design.
+  wrong. (FIXME: exact spelling is still strawman-tier design.)
 
 Steady state, after two minutes of work:
 
 ```
-$ dorc plan webhost.sh web1.example.net
-# apt-get update                                 # converged: apt.Cache:.fresh
-# apt-get install -y nginx                       # converged: apt.Package:nginx.installed
-# cp ./nginx.conf /etc/nginx/nginx.conf          # converged: content match
-# foobar sync-certs /etc/nginx/certs             # converged: foobar.Certs:/etc/nginx/certs.synced
-# systemctl enable --now nginx                   # converged: service enabled+active
-hork tune --profile web                          # runs: unmodeled ('hork')
-( ufw_check allow 443/tcp ) \
-   || ufw allow 443/tcp                          # verify: converged, but past 'hork' (line 6)
+$ dorc plan --verbose webhost.sh web1.example.net
+ 1  #!/bin/sh
+ 2  # webhost.sh - bring up the static site
+ 3  set -eu
+ 4  CERTS=/etc/nginx/certs
+ 5  # apt-get update                                   # converged: package index fresh
+ 6  # dpkg -s nginx >/dev/null 2>&1 \
+ 6  #    || apt-get install -y nginx                   # converged: your guard holds (dpkg -s rc 0)
+ 7  # cp ./nginx.conf /etc/nginx/nginx.conf            # converged: content match
+ 8  # foobar sync-certs "$CERTS"                       # converged: fb.Certs:/etc/nginx/certs.synced
+ 9  # systemctl enable --now nginx                     # converged: service enabled+active
+10  hork tune --profile web >>/var/log/hork.log 2>&1   # runs: unmodeled ('hork')
+11  ( ufw_check allow 443/tcp ) \
+11     || ufw allow 443/tcp                            # verify: converged, but past 'hork' (line 10)
 plan: 1 run, 1 verify, 5 elided
 ```
 
@@ -246,22 +289,43 @@ Two separate things just happened, and the second is the one people miss:
 1. `foobar`'s own line elides when converged. That's the direct purchase.
 2. The `systemctl` line — *untouched since stage 2* — upgraded from guard to full elision.
    Because **an elided command casts no wall**: a command that will not run cannot
-   invalidate anything, so the wall at line 4 simply is not there on a converged day. The
+   invalidate anything, so the wall at line 8 simply is not there on a converged day. The
    two-minute oracle didn't just buy its own line; it bought back every downstream fact it
    had been poisoning. This is why the minimal oracle is the steepest part of the
    value-curve, and why the hint machinery pushes it first.
 
-On a drifted day (certs actually stale), the same plan honestly re-degrades: `foobar` comes
-back as a run, and `systemctl` falls back to its guard *for that apply* — the wall is real
-again, because `foobar` will really act. The plan is per-world-state; the promise ("plan
-mirrors what apply will do; divergence discovered mid-apply is proceed-and-flag, never a
-mid-apply question") is not.
+On a drifted day — certs actually stale — the same plan honestly re-degrades:
+
+```
+$ dorc plan --verbose webhost.sh web1.example.net
+ 1  #!/bin/sh
+ 2  # webhost.sh - bring up the static site
+ 3  set -eu
+ 4  CERTS=/etc/nginx/certs
+ 5  # apt-get update                                   # converged: package index fresh
+ 6  # dpkg -s nginx >/dev/null 2>&1 \
+ 6  #    || apt-get install -y nginx                   # converged: your guard holds (dpkg -s rc 0)
+ 7  # cp ./nginx.conf /etc/nginx/nginx.conf            # converged: content match
+ 8  foobar sync-certs "$CERTS"                         # runs: diverged (fb.Certs not synced)
+ 9  ( systemctl_check enable --now nginx ) \
+ 9     || systemctl enable --now nginx                 # verify: converged, but past 'foobar' (line 8)
+10  hork tune --profile web >>/var/log/hork.log 2>&1   # runs: unmodeled ('hork')
+11  ( ufw_check allow 443/tcp ) \
+11     || ufw allow 443/tcp                            # verify: converged, but past 'hork' (line 10)
+plan: 2 run, 2 verify, 3 elided
+```
+
+`foobar` comes back as a run, and `systemctl` falls back to its guard *for that apply* —
+the wall is real again, because `foobar` will really act. The plan is per-world-state; the
+promise ("plan mirrors what apply will do; divergence discovered mid-apply is
+proceed-and-flag, never a mid-apply question") is not.
 
 And a plan-time can't-tell — probe timeout, weird rc — is not quietly rounded to converged:
 no verdict, no guard, no elision; the site runs. Everything fails toward run.
 
-- Spent: ~2 minutes, 8 lines of sh, zero new languages, zero config formats.
-- Gained, steady state: 7 lines of attention down to 2; foobar's re-sync mutation avoided.
+- Spent: ~15 minutes skimming docs, 8 lines of sh, zero new languages, zero config formats.
+- Gained, steady state: seven tool-sites of attention down to two; foobar's re-sync mutation
+  avoided.
 - Gained, structurally: the certs state is now *described* — future books that touch it
   inherit the coverage for free.
 - Not gained: anything about `hork`. Walls fall one tool at a time, each by its own author.
@@ -280,15 +344,15 @@ foobar.check() {
    verb="$1"; shift
    case "$verb" in
    sync-certs|renew)
-      dest : foobar.Certs = "$1"
+      dest : fb.Certs = "$1"
       [ "$2" = "" ] || { printf 'UNK multi-operand foobar\n' >>"$DORC_REPORT"; exit 254; }
-      foobar status --certs-current -- "$dest"   : foobar.Certs:"$dest".synced
+      foobar status --certs-current -- "$dest"   : fb.Certs:"$dest".synced
       : foobar:sync-certs~
       : foobar:renew~
       ;;
    purge-certs)
-      dest : foobar.Certs = "$1"
-      foobar status --certs-current -- "$dest"   : foobar.Certs:"$dest".synced!
+      dest : fb.Certs = "$1"
+      foobar status --certs-current -- "$dest"   : fb.Certs:"$dest".synced!
       ;;
    *) printf 'UNK unmodeled foobar verb: %s\n' "$verb" >>"$DORC_REPORT"; exit 254 ;;
    esac
@@ -315,8 +379,8 @@ What each addition buys — and refuses:
 - Still just sh: stripped, it runs on any POSIX box with no Dorc in sight. Publishing it is
   pushing a file to a repo. Adopting it is downloading one.
 
-- Spent: an hour, maybe, plus ownership — a published vouch is a standing judgment with
-  their name on it, and the attribution machinery will cite it.
+- Spent: an hour or two, maybe, plus ownership — a published vouch is a standing judgment
+  with their name on it, and the attribution machinery will cite it.
 - Gained: every `foobar` site in every book on every host they (or anyone) run, forever;
   honest refusals at the edges instead of quiet wrongness.
 - Explicitly not gained, and never will be by this route: `hork`.
@@ -326,22 +390,24 @@ The residue, and the honest product statement
 ---------------------------------------------
 
 `hork` never gets an oracle. The vendor won't document it; nobody sane will vouch for it.
-So line 6 runs on every apply until the end of time, and the `ufw` line behind it verifies
+So line 10 runs on every apply until the end of time, and the `ufw` line behind it verifies
 rather than elides, forever. Past the last wall the product statement is exactly this: *Dorc
 narrows your attention only where the world is described; elsewhere it makes your book fast
 and safe, but not shorter.* The plan's honesty about that — nothing hidden, every surviving
 line carrying its reason, every reason naming its wall — is itself the feature. A tool that
 commented out `ufw allow 443/tcp` on vibes would be worse than no tool.
 
-The final ledger, steady state on the same seven-line book:
+The final ledger, steady state on the same book (counting the seven tool-sites; the two
+housekeeping lines always show, and attention-lines counts everything still facing the
+user):
 
 ```
 stage    ran   verified   elided   attention-lines   spent
-0        7     0          0        7                 nothing
-1        4     0          3        4                 nothing (bundled)
-2        2     2          3        4                 a library install
-3        1     1          5        2                 2 minutes of sh
-4        1     1          5        2                 an hour, for everyone else's benefit
+0        7     0          0        9                 nothing
+1        4     0          3        6                 nothing (bundled)
+2        2     2          3        6                 a library install
+3        1     1          5        4                 2 minutes of sh
+4        1     1          5        4                 an hour, for everyone else's benefit
 ```
 
 TODO/UNFILLED: the propagation frontier. Everything above elides *around* walls by removing
