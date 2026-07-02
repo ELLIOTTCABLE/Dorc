@@ -31,6 +31,27 @@
 #                            argv representations can't match (tc-gate6-multiline-argv).
 #   XFAIL                  — documented known-defect pin (its 1st line is the reason); the
 #                            case asserts the SAFE behaviour and is expected to fail at HEAD.
+#   head-expected.ran      — TWO-SIDED xfail pin (23B-fd1/23C-fd4). Present ONLY on an XFAIL
+#                            case: records that case's CURRENT (HEAD, defect-present) apply
+#                            run-set. While the XFAIL is present the harness asserts the current
+#                            run-set STILL equals it — so a disaster-shaped behaviour change (a
+#                            regression wrongly ELIDING a vouched past-wall mutator, the elide
+#                            tier softening the poison wall) goes RED instead of camouflaging as
+#                            an ordinary one-sided `xfail`. Consulted only while case_ok=0 (once
+#                            the designed behaviour fully lands, case_ok=1 ⇒ XPASS and the drift
+#                            is the intended promotion). BLESS never creates it (hand-captured).
+#
+# PROMOTION DISCIPLINE (guard-tier build window; 23C-fd4) — the XFAIL/XPASS/bless path is
+# structurally BLIND to golden TEXT: the content golden-diff is skipped for XFAIL cases, XPASS
+# fires on gates alone, and BLESS regenerates expected.out from whatever the engine emitted.
+# So every artifact-shape law that lives only in golden text (rul-ternary-verdict's two nevers,
+# bytes-survive-verbatim, strip-only) has NO mechanical teeth on the promotion path unless a
+# GATE asserts it. Two teeth exist for guards (guard_shape_check + the head-expected.ran pin),
+# but they are floors, not a full diff. THE RULE: when an XFAIL guard case turns XPASS, DIFF the
+# engine's stdout against the hand-authored expected.out and inspect it line-by-line BEFORE
+# deleting the XFAIL or running BLESS — never bless-first. Cosmetic divergence (comment wording,
+# whitespace) is re-golden'd under review; a shape-law divergence (engine-synthesized sh in
+# guard position, mutated fall-through bytes, a probe-half that stopped shipping) is a STOP.
 #
 # DETERMINISM RAIL (slice-2 / 221 dc-1) — the three artifact-execution sites (exec_check,
 # probe_exec_check, gate-5's bare-book run) run the artifact under a FIXED environment:
@@ -161,6 +182,26 @@ EOF
   fi
   sed 's/^ran: //' "$_crlog" 2>/dev/null || true
   rm -rf "$_crsand"; rm -f "$_crlog"
+}
+
+# head_ran_check (the TWO-SIDED xfail pin, 23B-fd1/23C-fd4): assert an XFAIL case's CURRENT
+# apply run-set still equals its `head-expected.ran` marker (the HEAD, defect-present signature
+# captured when the pin was authored). $1=case, $2=dir, $3=the current apply artifact text.
+# Returns 0 (equal / no marker / no mocks — nothing to drift) or 1 (DRIFTED). The caller only
+# heeds a drift while case_ok=0: a drift with case_ok=1 is the designed behaviour landing (⇒
+# XPASS), a drift with case_ok=0 is a disaster-shaped change hiding as an ordinary xfail. The
+# marker keeps the `ran: ` prefix (author-consistent with expected.ran); capture_run strips it,
+# so strip the marker side too before comparing. Ordered compare (the pinned cases are all
+# sequential — no pipes — so book order is deterministic; no RAN_ORDER=lax case carries one).
+head_ran_check() {
+  _case=$1; _dir=$2; _apply=$3
+  [ -f "${_dir}head-expected.ran" ] || return 0     # opt-in marker
+  [ -d "${_dir}mocks" ] || return 0                 # nothing to execute
+  _hmocks=$(CDPATH= cd -- "${_dir}mocks" && pwd)
+  _hgot=$(capture_run stdin "$_apply" "$_hmocks")
+  _hwant=$(sed 's/^ran: //' "${_dir}head-expected.ran" 2>/dev/null || true)
+  [ "$_hgot" = "$_hwant" ] && return 0
+  return 1
 }
 
 # Syntax-check one artifact ($2) labelled ($1 = "probe"/"apply") for case ($3).
@@ -674,8 +715,107 @@ systemctl restart sshd" "instpkg install nginx" "argv 1 run instpkg install ngin
 instpkg install curl" "" "argv 0 replace instpkg install TOP" "$_st_shims")
   case $_r in "") ;; *) _fails="${_fails}cf-PASS (TOP-wildcard failed to license a converged member: $_r)
 " ;; esac
+  # cf-5 (guard-disposition forward-lock, 23C-fd5): once gate-6 is WIDENED to admit a `guard`
+  # disposition (build-round work — 23A §5's "direction (i) allowlists apply-only lines that
+  # match the shipped preamble's command set"), a lazy widening that simply stops screaming on
+  # apply-only lines whenever a guard is present would go BLIND to the cf-1 mutation class
+  # exactly where guards live. This confound locks the requirement in AHEAD of the widening: a
+  # `guard` ledger entry must NEVER license an UNRELATED apply-only line (only the guard's own
+  # check-command may be allowlisted). Against the CURRENT (un-widened) judge it passes trivially
+  # — `guard` is not in the replace/omit license filter, so direction (i) screams on ANY
+  # apply-only line regardless — but it will red a widening that over-broadly whitelists, which
+  # is the whole point. (The PAIRED negative control — a guard licensing its OWN suppressed
+  # mutator ⇒ must NOT scream — is DEFERRED to the widening: the current judge has no `guard`
+  # license semantics, so a non-scream assertion there would wrongly fire this FATAL now. Add
+  # cf-6 when the judge learns to attribute a guard's own site.)
+  _r=$(dual_rail_judge "instpkg install nginx" "instpkg install nginx
+systemctl restart sshd" "argv 2 guard instpkg install curl" "$_st_shims")
+  case $_r in *apply-only*) ;; *) _fails="${_fails}cf-5 (a guard disposition wrongly licensed an unrelated apply-only line)
+" ;; esac
   if [ -n "$_fails" ]; then
     echo "FATAL  dual_rail_selftest FAILED — the cm-1 judge does not scream as required; aborting:" >&2
+    printf '%s' "$_fails" | sed 's/^/  /' >&2
+    exit 3
+  fi
+}
+
+# guard_shape_violations — the PURE artifact-shape judge (no I/O, no case dir; 23C-fd4). The
+# XFAIL/XPASS/bless path never reads the golden TEXT, so rul-ternary-verdict's artifact-shape
+# law (the two nevers, bytes-survive-verbatim) has no teeth on the promotion path unless a GATE
+# asserts it. This is that gate's logic, factored out so guard_shape_selftest can drive it on
+# fabricated strings (a shape floor that does not actually scream is worse than none). $1 = the
+# apply artifact text, $2 = the book text. Echoes one line per violation (empty ⇒ pass). It keys
+# on the `dorc: guard` disposition comment the guard tier postfixes to a guarded line (jc-guard-
+# comment); INERT until such lines appear, so HEAD (no guards) is unaffected. For each guarded
+# line it asserts the two shape laws:
+#   never-1 (no engine-synthesized sh): the code carries a `<check> || <original>` fall-through;
+#   bytes-verbatim: the text after the FIRST ` || ` is byte-identical (modulo surrounding
+#     whitespace) to an ORIGINAL command line in book.sh — a dropped flag (`-y`) or any other
+#     mutation of the original command's bytes fails this.
+guard_shape_violations() {
+  _gsv_art=$1; _gsv_book=$2
+  _gsv_booklines=$(printf '%s\n' "$_gsv_book" | sed -E 's/^[[:space:]]+//; s/[[:space:]]+$//')
+  _gsv_out=""
+  _gsv_oldifs=$IFS; IFS='
+'
+  for _gsv_l in $(printf '%s\n' "$_gsv_art" | grep -F 'dorc: guard' || true); do
+    [ -z "$_gsv_l" ] && continue
+    # Isolate the code: strip the trailing `# dorc: guard …` disposition comment.
+    _gsv_code=$(printf '%s' "$_gsv_l" | sed -E 's/[[:space:]]*#[[:space:]]*dorc: guard.*$//')
+    case $_gsv_code in
+      *" || "*) ;;
+      *) _gsv_out="${_gsv_out}thin guard (no '|| <original>' fall-through — never-1: engine-synthesized sh in guard position): $_gsv_code
+"; continue ;;
+    esac
+    _gsv_orig=${_gsv_code#* || }                        # text after the FIRST ` || `
+    _gsv_origtrim=$(printf '%s' "$_gsv_orig" | sed -E 's/^[[:space:]]+//; s/[[:space:]]+$//')
+    printf '%s\n' "$_gsv_booklines" | grep -qxF "$_gsv_origtrim" \
+      || _gsv_out="${_gsv_out}fall-through bytes not verbatim from book.sh (mutated original — e.g. a dropped flag): $_gsv_orig
+"
+  done
+  IFS=$_gsv_oldifs
+  printf '%s' "$_gsv_out"
+}
+
+# guard_shape_check (the per-case driver for the shape floor): run guard_shape_violations on the
+# case's apply artifact ($2) + book ($3's book.sh) and report. Returns non-zero on any violation.
+# LOUD REGARDLESS OF XFAIL (it does NOT consult XFAIL_ACTIVE): a malformed guard is a disaster
+# whether or not the case is still pinned, so it must never hide as `xfail`. INERT when the apply
+# carries no guard line (HEAD).
+guard_shape_check() {
+  _case=$1; _art=$2; _dir=$3
+  _gsc_book=$(cat "${_dir}book.sh" 2>/dev/null || true)
+  _gsc_viol=$(guard_shape_violations "$_art" "$_gsc_book")
+  [ -z "$_gsc_viol" ] && return 0
+  echo "FAIL  $_case  [guard-shape: a guarded line violates rul-ternary-verdict's artifact-shape law (never-1 / bytes-verbatim); the shape floor screams even under XFAIL — 23C-fd4]"
+  printf '%s' "$_gsc_viol" | sed 's/^/      /'
+  return 1
+}
+
+# guard_shape_selftest (the shape-floor confound battery, run ONCE at harness start alongside
+# dual_rail_selftest; 23C-fd4/fd5). Drives guard_shape_violations on the two demonstrated
+# violation shapes plus a pass control — a floor that does not scream on these is worse than
+# none, so a self-test failure ABORTS (exit 3). These are exactly 23C-fd4's fake-engine
+# artifacts: an engine-synthesized thin guard, and a fall-through with mutated original bytes.
+guard_shape_selftest() {
+  _fails=""
+  _gss_book='apt-get install -y nginx
+apt-get install -y curl'
+  # gf-PASS (negative control): a well-formed guard (`<check> || <verbatim original>`) ⇒ must
+  # NOT scream (proves gf-1/gf-2's screams are real discrimination, not a floor that rejects all).
+  _r=$(guard_shape_violations 'apt_get__check install -y curl || apt-get install -y curl   # dorc: guard [package converged-vouch; probe: holds]' "$_gss_book")
+  case $_r in "") ;; *) _fails="${_fails}gf-PASS (a well-formed guard was wrongly flagged: $_r)
+" ;; esac
+  # gf-1: an engine-synthesized THIN guard (no `|| <original>` fall-through) ⇒ must scream (never-1).
+  _r=$(guard_shape_violations 'dorc_guard curl   # dorc: guard [synthesized — no oracle body]' "$_gss_book")
+  case $_r in *thin*) ;; *) _fails="${_fails}gf-1 (an engine-synthesized thin guard was not caught)
+" ;; esac
+  # gf-2: a fall-through whose original bytes were MUTATED (`-y` dropped) ⇒ must scream (bytes-verbatim).
+  _r=$(guard_shape_violations 'apt_get__check install -y curl || apt-get install curl   # dorc: guard [package converged-vouch; probe: holds]' "$_gss_book")
+  case $_r in *verbatim*) ;; *) _fails="${_fails}gf-2 (a mutated fall-through — dropped -y — was not caught)
+" ;; esac
+  if [ -n "$_fails" ]; then
+    echo "FATAL  guard_shape_selftest FAILED — the artifact-shape floor does not scream as required; aborting:" >&2
     printf '%s' "$_fails" | sed 's/^/  /' >&2
     exit 3
   fi
@@ -738,8 +878,10 @@ scan_why() {
 }
 
 # gate-6 self-test (the confound battery) runs ONCE here, before any case — a lying judge is
-# worse than no judge, so this aborts (exit 3) if the dual-rail judge fails to scream.
+# worse than no judge, so this aborts (exit 3) if the dual-rail judge fails to scream. The
+# guard-shape floor's confound battery (23C-fd4) runs alongside it for the same reason.
 dual_rail_selftest
+guard_shape_selftest
 
 fails=0
 total=0
@@ -793,6 +935,11 @@ for dir in "$here"/cases/*/; do
   # case_ok accumulates every gate + content check; interpreted through XFAIL below.
   # (Not early-`continue`d, so an xfail case that fails a gate is reported, not fatal.)
   case_ok=1
+  # guard_shape_bad (23C-fd4): a malformed guard artifact — RED even under XFAIL (below).
+  # head_ran_drifted (23B-fd1): an XFAIL case's current run-set diverged from its pinned HEAD
+  # signature — consulted only while case_ok=0 (a disaster hiding as an ordinary xfail).
+  guard_shape_bad=0
+  head_ran_drifted=0
 
   # The ap-2 runnability gate — ALWAYS, and (for non-xfail) BEFORE bless (blessing a
   # non-runnable artifact is exactly the ap-2 trap).
@@ -844,6 +991,18 @@ for dir in "$here"/cases/*/; do
   # gate-7 (why-lens emission): opt-in expected-why substring assertion (#16, x2-fd1).
   scan_why "$name" "$err_file" "$dir" || case_ok=0
 
+  # guard-shape floor (23C-fd4): assert every guarded line in the apply obeys the artifact-shape
+  # law (never-1 + bytes-verbatim). INERT until guards appear; a violation fails the case AND is
+  # loud even under XFAIL (guard_shape_bad ⇒ RED, not silent `xfail`).
+  guard_shape_check "$name" "$apply_art" "$dir" || { case_ok=0; guard_shape_bad=1; }
+
+  # head-expected.ran two-sided pin (23B-fd1): for an XFAIL case carrying the marker, has the
+  # CURRENT run-set drifted from the pinned HEAD signature? (Only heeded while case_ok=0 — a
+  # drift with case_ok=1 is the designed behaviour landing, i.e. a legitimate XPASS.)
+  if [ -n "$xfail_reason" ]; then
+    head_ran_check "$name" "$dir" "$apply_art" || head_ran_drifted=1
+  fi
+
   # Content golden-diff (secondary to the gates; -n is blind to *which* lines elided).
   # Skipped under bless and for xfail cases (goldens hand-authored there).
   if [ "$case_ok" -eq 1 ] && [ "${BLESS:-}" != "1" ] && [ -z "$xfail_reason" ]; then
@@ -857,10 +1016,20 @@ for dir in "$here"/cases/*/; do
     fi
   fi
 
-  # Interpret case_ok through the XFAIL lens.
+  # Interpret case_ok through the XFAIL lens. A malformed-guard shape violation
+  # (guard_shape_bad) is a disaster REGARDLESS of xfail status, so it pre-empts the lens: the
+  # guard_shape_check already printed its FAIL, we only count it. Otherwise, for an XFAIL case,
+  # a head-expected.ran DRIFT while case_ok=0 is a disaster-shaped change hiding as an ordinary
+  # xfail — RED, not a quiet `xfail` (23B-fd1/23C-fd4).
   if [ -n "$xfail_reason" ]; then
     if [ "$case_ok" -eq 1 ]; then
       echo "XPASS $name  [known defect appears FIXED — promote this case: $xfail_reason]"
+      fails=$((fails + 1))
+    elif [ "$guard_shape_bad" -eq 1 ]; then
+      # A guarded artifact appeared but is MALFORMED — never a quiet xfail (floor already printed).
+      fails=$((fails + 1))
+    elif [ "$head_ran_drifted" -eq 1 ]; then
+      echo "FAIL  $name  [head-expected.ran: current run-set drifted from the pinned HEAD signature while still XFAIL — a disaster-shaped behaviour change is hiding as an ordinary xfail (two-sided pin, 23B-fd1/23C-fd4)]"
       fails=$((fails + 1))
     else
       echo "xfail $name  [$xfail_reason]"
