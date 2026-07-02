@@ -1,4 +1,4 @@
-# typos config for the spike. Two project-vocabulary false positives, each
+# typos config for the spike. Project-vocabulary false positives, each
 # pinned as narrowly as the typos regex engine (no lookaround) allows.
 [default]
 extend-ignore-re = [
@@ -9,4 +9,7 @@ extend-ignore-re = [
    # mis-parsing, ...). Matching only the "mis-" span leaves the suffix word
    # (chosen/reads/...) spell-checked normally; typos otherwise reads "mis" as "miss".
    "\\bmis-",
+   # "the two nevers" is round-23 ruling vocabulary (rul-ternary-verdict's pair of
+   # never-clauses; spike/CLAUDE.md + notes/23A) — a plural noun, not a misspelt "never".
+   "\\bnevers\\b",
 ]
