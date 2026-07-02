@@ -228,3 +228,99 @@ inspection (BLESS exclusivity — orchestrator/sole-agent only, freshly-verified
   (4) P5 marker retirement + old-lift deletion; (5) the big-bang re-bless with case-by-case inspection +
   lens-verify each of the 9 xfails. A corpus-wide `derive == old-lift` iterating test (over the 146
   converted fixtures) is worth adding before the wiring flips, as the final differential gate.
+
+## §7 Finishing session (2026-07-02, jc-singleton-mark RULED) — P3-remainder + flip-gate + P4 LANDED; R3 STOPPED on jc-probe-command-divergence
+
+AI-authored, append-only. Never-vouch applies (machine-run process-evidence, not proof). Confidence marks throughout.
+
+### §7.1 LANDED (4 commits on `ai/spike3-r23`, each gates-green + e2e 123/9/0/0)
+- **`be1f8da (AI new ana) R4a-remainder: 5 pkgindex Singletons via the empty-entity mark`** — the jc-singleton-mark
+  ruling (empty entity slot `kind:.prop`) implemented in `split_mark_target` (`oracle/src/check/parser.rs`):
+  `pkgindex:.fresh` now parses DELIBERATELY as `entity=Some("")` (the-one, a real value ≠ `None`),
+  `prop=Some("fresh")` — 23H flagged the prior parse as accidental (read `.fresh` as the entity, dropped the
+  selector). The 5 `pkgindex.oracle.sh` (byte-identical) converted: `update) idx : pkgindex; test -n fresh : pkgindex:.fresh`.
+  +SURE tested (3 new parser tests: the empty-entity parse, the same AFTER an fd-dup redirect per the ruling,
+  and the two near-miss typos `pkgindex.fresh`/`pkgindex:fresh` that drop the selector — "fail loudly" at the gate).
+  RESERVED wildcard (`kind:*.prop`) untouched, as ruled.
+- **`af83ba0 (AI new ana test) R2: corpus-wide derive==markers flip-gate`** — the mandated flip-gate
+  (`oracle/tests/corpus_differential.rs`): iterates ALL 151 e2e oracle fixtures asserting
+  `derive_check(inline) == lift(markers).effects` in BOTH directions (a transitional `KindIndex::effects_iter`
+  accessor makes it total; deleted with the lift in P5). **The gate CAUGHT a real R4a bug** (+SURE):
+  `guard-status-blocks-elision/tool.oracle.sh` models `command -v` as ESTABLISH (its marker + comment say so,
+  to block an idempotency-guard's elision) but was converted with an OBSERVE `:?` mark — corrected to `:`.
+  This is the flip-gate earning its keep; gate green 151/151.
+- **`8ac750c (AI ana) R2 P4a: retire Polarity → ValueClaim`** — cov-q4/jc-polarity-vs-rc FINAL: `Polarity`
+  DELETED workspace-wide; `EffectCell.claim: ValueClaim`; the marker `lift` maps `establish/kill/query` →
+  `Establish/EstablishInverted/Observe` (so the gate stays valid, both sides speak ValueClaim). **The §3 FREEZE
+  code-note lives at `analysis/src/effect.rs::cell_effect`** on the `ValueClaim::EstablishInverted => CommandEffect::Kills`
+  arm (verbatim-in-spirit: "no polarity doctrine here — dissolves into the uniform no-vouch-no-elide license
+  when the guard/vouch tier lands"; ru-26 spike-scoped-churn disclosure present). Behaviour-identical
+  (`Kill`→`EstablishInverted`→`Kills`: gen-into-Reach + `_ => MustRun`). NB `hostsim/differential.rs` has its OWN
+  local `Polarity{Establish,Query}` enum (the DST judge's model) — deliberately UNTOUCHED. Added `lift_derived`
+  (derive-sourced effects + marker-sourced probes) as groundwork.
+- **`0557f2e (AI ana) R2 P4b: flip analysis to derive-sourced effects`** — cli + coverage build the effect-map
+  via `lift_derived` (check bodies), not the markers. THE WIRING IS FLIPPED: analysis now reads the inline
+  derivation. Converted the callers' inline oracle fixtures to carry marks (coverage `PACKAGE`/`PKGSTATE`,
+  coverage/main `PKG_ORACLE`, hostsim's `oracle_text` generator). e2e 123/9/0/0 — the differential gate + stable
+  e2e ARE the zero-behaviour-change evidence.
+
+### §7.2 DIFFERENTIAL EVIDENCE (the zero-behaviour-change anchor)
+- The corpus flip-gate (`derive == old-lift` over all 151 fixtures) is GREEN, and it caught the one real conversion
+  bug (§7.1). Because analysis (P4b) now consumes the derivation, the gate's `derive==markers` equality is the proof
+  that the marker→derive swap changed no effect cell.
+- e2e stayed `123 round-trips / 9 xfail / 0 XPASS / 0 red` across every commit AND after the P4 flip (the exec
+  gates — apply/probe-under-mocks + gate-1 parity + argv differential — are the behaviour anchor, golden-independent).
+  gates: fmt/clippy(-D)/deny/typos all clean; full workspace tests green. No golden re-blessed (nothing emitted-surface
+  touched — R3 not landed).
+
+### §7.3 R3/P4b — ATTEMPTED, CODE-CORRECT-IN-CORE, then STOPPED (jc-probe-command-divergence, --WONDER→+SURE)
+Implemented the full R3 reshape (ProbeCheck: `provider`+`argv`+stripped-funcdef `sh`; `compile_probe` threads
+`ValueFlow` + a `Fn(Symbol)->Option<String>` provider→`strip_check` closure; `render_sh` dedups the funcdef per
+provider + invokes `<provider>__check <F-quoted argv…>`; `render::probe::{check_def,invocation(argv)}`; cli+coverage
+build the provider→stripped-body map). **The core is CORRECT** (+SURE): the `converged` and `seam` probes emit exactly
+the 23D §1 shape (`apt_get__check 'install' '-y' 'nginx'` running the stripped body). 80/88 non-xfail cases were
+exec-behaviour-CORRECT (only golden TEXT churned — expected re-bless).
+
+**THE STOP (a design-shaped finding the recipe got wrong):** 8 cases FAILED gate-1 (mocked-probe records diverge),
+because **the R4a check-body probe commands DIVERGE from the retired `oracle_probe_*` bodies** the mocks + goldens were
+authored against. §5-P4b's "+SURE the probe rc is preserved" is DISPROVEN for `pkgstate`/`tool`/`service`/`firewall`:
+- `pkgstate`: old `dpkg -s "$1"` vs check `dpkg -s -- "$pkg"` — the `--` shifts the operand to `$3`; the positional
+  mock (`case $2 in nginx)…`) reads `--`≠nginx ⇒ reports `absent rc=1` where authored is `holds rc=0`. VERIFIED by exec.
+- `service`: old `systemctl is-enabled --quiet "$1"` vs check `systemctl is-enabled -- "$svc"` (drops `--quiet`, adds `--`).
+- `tool`: old `command -v "$1"` vs check `command -v -- "$tool"` (adds `--`; and `command -v` is a shell BUILTIN, un-shimmable).
+- `firewall`: old `ufw status 2>/dev/null | grep -q "$1"` (a PIPE) vs check `ufw status "$rule" >/dev/null 2>&1`. The old
+  grep-pipe form is **NOT EXPRESSIBLE in the check dialect** (no `|`), so the check body CANNOT ship the old probe — the
+  shipped probe MUST differ.
+- `seam-two-providers-one-kind`: old kind-default `dpkg-query` for BOTH apt AND yum sites (an imprecision) vs NEW
+  per-provider `apt_get__check`(dpkg-query) + `yum__check`(rpm -q). The per-provider probe is MORE correct but the case
+  has no `rpm` mock.
+
+**Why this is a STOP, not just churn (+SURE, the load-bearing reason):** most `--`/`--quiet` divergences are
+behaviour-EQUIVALENT on a REAL host (dpkg/systemctl tolerate `--`/`--quiet`, same rc) — the mocks are merely brittle
+(positional `$2`). BUT completing R3 requires re-authoring the mocks (+ some probe-results) to match the check-body
+commands AND re-blessing the goldens **in the same pass**. Co-authoring the mock (ground truth) and the golden
+(prediction) together **defeats the exec-gate firewall**: a mock and a golden that agree on a WRONG behaviour both pass,
+masking a regression — the exact anti-masking hazard `inv-probe-sourced-values` forbids ("no test may hand-inject an
+observable the check itself should predict"). I will NOT autonomously co-re-author ground-truth + prediction and vouch
+the result (never-vouch). The firewall case additionally forces a genuine probe-behaviour change (the dialect can't
+express the old grep-pipe).
+
+**jc-probe-command-divergence (FLAG, needs a human ruling before R3 lands):** for the divergent kinds, which shipped
+probe is correct — (a) ALIGN each check-body probe command to its old `oracle_probe_*` body (zero-behaviour-change under
+the existing mocks; but IMPOSSIBLE for firewall's grep-pipe, and it makes the "authored check body" bow to the retired
+stand-in), or (b) SHIP the check-body command as-authored and re-author every diverging mock + probe-results + golden
+(design-pure — the check IS the oracle — but a behaviour change under mocks, and the mock+golden co-authoring must be
+adversarially cross-checked to avoid masking)? A third option: (c) a per-kind case-by-case mix (align where dialect-
+expressible + rc-identical, re-author where not). This is design-shaped and unruled; per the mission's "flag jc-, stop
+that item" I stopped. The R3 CODE reshape above is re-implementable in ~1 focused pass once (b/c) is chosen — the
+compile_probe/render/ProbeCheck design is settled and validated on `converged`/`seam`.
+
+### §7.4 The remaining recipe (unchanged from §5 except the jc-probe-command-divergence gate)
+P4b (R3): reshape as in §7.3 (validated) → **resolve jc-probe-command-divergence FIRST** → then re-author the ~8
+divergent cases' mocks/probe-results → re-bless probe goldens (case-by-case; the exec differential must stay the
+independent ground truth — do NOT co-author a mock and its golden without an adversarial cross-check). P5: author the
+minimal `dpkg.check()` for jc-dpkg-i (the unit fixture `fixtures/package.oracle.sh` breaks when `oracle_effect` is
+deleted — it has no check to derive from); delete markers from ALL fixtures + the old `lift`/`KindIndex`/`Polarity`(gone)
+/`FactProbe`/`resolve_probe` + the `corpus_differential` gate + `KindIndex::effects_iter` + `lift`-not-`lift_derived`
+(rename `lift_derived`→`lift`). Step 6: add `: provider:verb~` vouch-marks to the guard23 install arms, re-lens-verify
+each xfail. Step 7: big-bang re-bless, all 9 xfails fail for their designed reason.
