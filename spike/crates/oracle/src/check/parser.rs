@@ -9,15 +9,25 @@
 //! this module does not own — that is the existing [`crate::lift`]).
 
 use super::ast::{
-    Annotation, CaseArm, Check, CheckSet, Command, Pattern, Stmt, Test, TestOp, Word,
+    Annotation, CaseArm, Check, CheckSet, Command, Mark, MarkKind, MarkTarget, Pattern, Stmt, Test,
+    TestOp, Word,
 };
 use super::lexer::{Tok, Token, lex};
 use super::{VERB_BINDING, lift_failure, map_provider_name};
 use dorc_core::{Carrier, Interner, Span, Symbol};
 use dorc_syntax::sem;
 
-/// The provider-name suffix marking a command-keyed check (`apt_get__check`).
+/// The legacy provider-name suffix marking a command-keyed check (`apt_get__check`);
+/// the provider before it maps `_` → `-` ([`map_provider_name`]).
 const CHECK_SUFFIX: &str = "__check";
+
+/// The period-form check suffix (233 / 23D §1: the opt-in oracle semaphore
+/// `<provider>.check()`). The provider before it is the LITERAL command word (it may
+/// carry `-`, e.g. `apt-get.check`), so no `_`→`-` mapping is applied. The strip (R1c)
+/// rewrites `<provider>.check` to the legacy `<mangled>__check` form the engine keys on
+/// (jc-strip-funcname: 23D/R1a write it `name_check`, but the engine's `CHECK_SUFFIX`
+/// and the flagship golden use `__check`; the `__check` convention is authoritative).
+const PERIOD_CHECK_SUFFIX: &str = ".check";
 
 /// Lift every `<provider>__check` function in `src` into a [`CheckSet`], interning
 /// provider/local names through `interner`. Fail-soft (`inv-no-throw`): a body that
@@ -170,8 +180,10 @@ impl Parser<'_> {
         }
     }
 
-    /// If the cursor is at `<name>__check (` (a check function header), return the
-    /// provider symbol + the name span. Does not consume.
+    /// If the cursor is at a check-function header — the period form `<provider>.check (`
+    /// (233 / 23D §1) or the legacy `<provider>__check (` — return the provider symbol +
+    /// the name span. Does not consume. The period form's provider is the literal command
+    /// word (may hold `-`); the legacy form's maps `_` → `-` ([`map_provider_name`]).
     fn at_check_funcdef(&mut self) -> Option<CheckHeader> {
         let Some(Tok::Word {
             lexeme,
@@ -183,10 +195,22 @@ impl Parser<'_> {
         if *single_quoted {
             return None;
         }
-        let provider_raw = lexeme.strip_suffix(CHECK_SUFFIX)?;
-        if provider_raw.is_empty() {
+        // Prefer the period form (the opt-in oracle semaphore); fall back to the legacy
+        // mangled form. `apt-get.check` ⇒ provider `apt-get` (literal); `apt_get__check`
+        // ⇒ provider `apt-get` (via `_`→`-`). Both recover the same command word.
+        let provider_name = if let Some(p) = lexeme.strip_suffix(PERIOD_CHECK_SUFFIX) {
+            if p.is_empty() {
+                return None;
+            }
+            p.to_owned()
+        } else if let Some(p) = lexeme.strip_suffix(CHECK_SUFFIX) {
+            if p.is_empty() {
+                return None;
+            }
+            map_provider_name(p)
+        } else {
             return None;
-        }
+        };
         // Must be followed by `(` `)` for a function definition.
         if !matches!(
             self.toks.get(self.pos.saturating_add(1)).map(|t| &t.kind),
@@ -195,7 +219,7 @@ impl Parser<'_> {
             return None;
         }
         let name_span = self.peek_span()?;
-        let provider = self.interner.intern(&map_provider_name(provider_raw));
+        let provider = self.interner.intern(&provider_name);
         Some(CheckHeader {
             provider,
             name_span,
@@ -224,9 +248,16 @@ impl Parser<'_> {
         match self.parse_block(BlockEnd::Brace) {
             Ok(body) => {
                 let verb_sym = self.interner.intern(VERB_BINDING);
+                // `parse_block(Brace)` consumed the closing `}`; its span ends the funcdef.
+                let close_hi = self
+                    .pos
+                    .checked_sub(1)
+                    .and_then(|i| self.toks.get(i))
+                    .map_or(header.name_span.hi, |t| t.span.hi);
                 let check = Check {
                     provider: header.provider,
                     name_span: header.name_span,
+                    span: Span::new(header.name_span.lo, close_hi),
                     verb_sym,
                     body,
                 };
@@ -447,6 +478,14 @@ impl Parser<'_> {
         let first_sq = *single_quoted;
         let start_span = self.peek_span().unwrap_or(ZERO_SPAN);
 
+        // Bare inline-dialect mark in statement position (233 §1–§4, R1b): a leading
+        // standalone `:` / `:?` marker word (`: kind`, `: kind:entity.prop~`,
+        // `: provider:verb~`). The dialect uses a leading marker ONLY for a mark (probe
+        // bodies never begin with `:`), so this is unambiguous.
+        if let Some(observe) = (!first_sq).then(|| mark_marker(&first)).flatten() {
+            return self.parse_bare_mark(observe, start_span);
+        }
+
         // `name=value` assignment: an unquoted word of the form IDENT=REST (a bare
         // `name=` is degenerate; its value is the empty literal).
         if let Some((name, rest)) = (!first_sq).then(|| split_assignment(&first)).flatten() {
@@ -458,22 +497,40 @@ impl Parser<'_> {
             });
         }
 
-        // Annotation `name : kind = value`: first word is a plain ident, next token
-        // is the standalone word `:`. We must distinguish `:` the word from the
-        // `name=value` case (already handled). Look ahead.
+        // Identity annotation `name : kind [= value]`: first word is a plain ident, next
+        // is the standalone word `:`, AND the kind word after it is a BARE kind (no inner
+        // `:`). A `kind:entity.prop` after the `:` means this is a trailing ESTABLISH on
+        // the single-word command `name` (not an identity annotation) — fall through to
+        // `parse_command`, which re-sees the `:` marker and parses the trailing mark.
         if !first_sq
             && sem::is_name(&first)
-            && matches!(
-                self.toks.get(self.pos.saturating_add(1)).map(|t| &t.kind),
-                Some(Tok::Word { lexeme, .. }) if lexeme == ":"
-            )
+            && self.next_word_is(":")
+            && self.kind_after_colon_is_bare()
         {
             return self.parse_annotation(&first, start_span);
         }
 
-        // Otherwise: a plain command. Consume words/redirects to the statement end,
-        // recording the verbatim span.
+        // Otherwise: a plain command (optionally with a trailing ESTABLISH/OBSERVE mark).
+        // Consume words/redirects to the statement end or a `:`/`:?` marker.
         self.parse_command(start_span)
+    }
+
+    /// Peek: is the token at `pos+1` the standalone word `s`?
+    fn next_word_is(&self, s: &str) -> bool {
+        matches!(
+            self.toks.get(self.pos.saturating_add(1)).map(|t| &t.kind),
+            Some(Tok::Word { lexeme, single_quoted: false }) if lexeme == s
+        )
+    }
+
+    /// Peek: is the word at `pos+2` (after a `name :`) a BARE kind — a plain word with no
+    /// inner `:` (so it is an identity-annotation kind, not a `kind:entity.prop` mark
+    /// target)? Absent/quoted/`:`-bearing ⇒ not bare.
+    fn kind_after_colon_is_bare(&self) -> bool {
+        matches!(
+            self.toks.get(self.pos.saturating_add(2)).map(|t| &t.kind),
+            Some(Tok::Word { lexeme, single_quoted: false }) if !lexeme.contains(':')
+        )
     }
 
     /// Parse the inline annotation `name : kind = value` (the operand form) or
@@ -501,6 +558,8 @@ impl Parser<'_> {
                 kind,
                 value: None,
                 span: start_span.to(kind_span),
+                name_span: start_span,
+                value_span: None,
             }));
         }
         self.bump(); // `=`
@@ -513,6 +572,8 @@ impl Parser<'_> {
             kind,
             value: Some(value),
             span: start_span.to(val_span),
+            name_span: start_span,
+            value_span: Some(val_span),
         }))
     }
 
@@ -522,6 +583,7 @@ impl Parser<'_> {
     fn parse_command(&mut self, start_span: Span) -> Result<Stmt, bool> {
         let mut words = Vec::new();
         let mut end_span = start_span;
+        let mut mark_observe: Option<bool> = None;
         let guard = self.toks.len().saturating_add(1);
         let mut steps = 0usize;
         loop {
@@ -532,12 +594,22 @@ impl Parser<'_> {
             // Classify the current token without holding a borrow across the body.
             let class = match self.peek() {
                 None | Some(Tok::Newline | Tok::Semi | Tok::DSemi | Tok::RBrace) => CmdTok::End,
-                // A block-ending keyword (`done`/`fi`/`esac`/`then`/`do`/`else`/`in`)
-                // ends the command without being consumed.
+                // An unquoted word: a block-ending keyword (`done`/`fi`/…) ends the command
+                // without being consumed; a standalone `:`/`:?` marker begins a TRAILING
+                // effect mark (233 ESTABLISH/OBSERVE); anything else is a command word.
                 Some(Tok::Word {
                     lexeme,
                     single_quoted: false,
-                }) if is_block_keyword(lexeme) => CmdTok::End,
+                }) => {
+                    if is_block_keyword(lexeme) {
+                        CmdTok::End
+                    } else if let Some(observe) = mark_marker(lexeme) {
+                        CmdTok::MarkStart(observe)
+                    } else {
+                        CmdTok::Word
+                    }
+                }
+                // A single-quoted word is always a plain command word (`':'` is a literal).
                 Some(Tok::Word { .. }) => CmdTok::Word,
                 Some(Tok::Redirect(_)) => CmdTok::Redirect,
                 Some(Tok::Error(msg)) => CmdTok::Error(msg.clone()),
@@ -548,6 +620,10 @@ impl Parser<'_> {
             };
             match class {
                 CmdTok::End => break,
+                CmdTok::MarkStart(observe) => {
+                    mark_observe = Some(observe);
+                    break;
+                }
                 CmdTok::Word => {
                     end_span = self.peek_span().unwrap_or(end_span);
                     if let Some((lexeme, single_quoted, _)) = self.take_word() {
@@ -567,8 +643,66 @@ impl Parser<'_> {
         if words.is_empty() {
             return Err(self.fail_here("empty command"));
         }
+        // The command span ends at its last real word/redirect (EXCLUDING the trailing
+        // mark), so the strip deletes exactly `[span.hi .. mark.span.hi]`.
         let span = start_span.to(end_span);
-        Ok(Stmt::Command(Command { words, span }))
+        let mark = match mark_observe {
+            Some(observe) => Some(self.parse_mark(observe, false)?),
+            None => None,
+        };
+        Ok(Stmt::Command(Command { words, span, mark }))
+    }
+
+    /// Parse a bare inline-dialect mark statement (`: TARGET` / `:? TARGET`): a POISON
+    /// no-op mention, an ACK vouch, or the CONVERGED-VOUCH placeholder (233 §1–§4). The
+    /// caller verified the first token is a `:`/`:?` marker; `observe` is true for `:?`.
+    fn parse_bare_mark(&mut self, observe: bool, _start_span: Span) -> Result<Stmt, bool> {
+        Ok(Stmt::Mark(self.parse_mark(observe, true)?))
+    }
+
+    /// Parse a dialect mark starting at the `:`/`:?` marker token: consume the marker,
+    /// the target word, and an optional `= value` tail; split the target and classify by
+    /// (`observe`, `bare`, suffix). `bare` ⇒ a statement-position mark (POISON/ACK/vouch);
+    /// `!bare` ⇒ a trailing mark on a command (ESTABLISH/OBSERVE). Malformed ⇒ ⊤-reject
+    /// (the parser's standing bias — never guess).
+    fn parse_mark(&mut self, observe: bool, bare: bool) -> Result<Mark, bool> {
+        let marker_span = self.peek_span().unwrap_or(ZERO_SPAN);
+        self.bump(); // the `:` / `:?` marker word
+        let Some((lexeme, _sq, target_span)) = self.take_word() else {
+            return Err(self.fail_here("dialect mark requires a `kind:entity.prop` target"));
+        };
+        // Optional `= value` tail (233 §1: an ESTABLISH explicit-value assignment).
+        let mut end_span = target_span;
+        let value = if matches!(self.peek(), Some(Tok::Word { lexeme, .. }) if lexeme == "=") {
+            self.bump(); // `=`
+            let Some((v, vsq, vspan)) = self.take_word() else {
+                return Err(self.fail_here("dialect mark `=` requires a value word"));
+            };
+            end_span = vspan;
+            Some(parse_word_lexeme(&v, vsq, self.interner))
+        } else {
+            None
+        };
+
+        let Some(parsed) = split_mark_target(&lexeme) else {
+            return Err(
+                self.fail_here("malformed dialect mark target (expected `kind:entity.prop`)")
+            );
+        };
+        let kind = match classify_mark(observe, bare, &parsed) {
+            Ok(k) => k,
+            Err(reason) => return Err(self.fail_here(reason)),
+        };
+        Ok(Mark {
+            kind,
+            target: MarkTarget {
+                kind: parsed.kind,
+                entity: parsed.entity,
+                prop: parsed.prop,
+                value,
+            },
+            span: marker_span.to(end_span),
+        })
     }
 
     // --- words & tests ------------------------------------------------------
@@ -719,6 +853,9 @@ struct CheckHeader {
 enum CmdTok {
     /// A statement terminator / block keyword — ends the command (not consumed).
     End,
+    /// A standalone `:`/`:?` marker begins a trailing effect mark — ends the command
+    /// (not consumed); the bool is the observe flag (`:?` ⇒ true).
+    MarkStart(bool),
     /// A plain word to add to the command.
     Word,
     /// A redirection chunk to fold into the verbatim span.
@@ -875,6 +1012,119 @@ fn parse_word_lexeme(lexeme: &str, single_quoted: bool, interner: &mut Interner)
     Word::Literal(lexeme.to_owned())
 }
 
+/// Is `lexeme` a standalone inline-dialect mark marker? `:` ⇒ `Some(false)` (ESTABLISH /
+/// POISON / ACK / vouch), `:?` ⇒ `Some(true)` (OBSERVE), anything else ⇒ `None`. The
+/// space-flanked marker lexes as its own word (the target `kind:entity.prop` is a
+/// separate, adjacent word).
+fn mark_marker(lexeme: &str) -> Option<bool> {
+    match lexeme {
+        ":" => Some(false),
+        ":?" => Some(true),
+        _ => None,
+    }
+}
+
+/// A syntactically-split mark target — every fragment OPAQUE (`inv-referent-agnostic`,
+/// never decoded). See [`split_mark_target`].
+struct ParsedTarget {
+    kind: String,
+    entity: Option<String>,
+    prop: Option<String>,
+    /// A trailing `~` (vouch/ack) or `!` (invert), if present.
+    suffix: Option<char>,
+}
+
+/// Split a mark target lexeme `kind[:entity[.prop]][~|!]` into its opaque fragments
+/// (R1b, "parse mediocre"): strip a single trailing `~`/`!`; split the body on the FIRST
+/// `:` (kind ⟂ rest) and the rest on the LAST `.` (entity ⟂ prop). `None` if empty or
+/// kind-less (⊤-reject upstream). Kind fragments keep any inner `.` (reverse-DNS stays
+/// intact); no fragment is interpreted.
+fn split_mark_target(lexeme: &str) -> Option<ParsedTarget> {
+    if lexeme.is_empty() {
+        return None;
+    }
+    let (body, suffix) = if let Some(b) = lexeme.strip_suffix('~') {
+        (b, Some('~'))
+    } else if let Some(b) = lexeme.strip_suffix('!') {
+        (b, Some('!'))
+    } else {
+        (lexeme, None)
+    };
+    if body.is_empty() {
+        return None;
+    }
+    let (kind, rest) = match body.split_once(':') {
+        Some((k, r)) => (k.to_owned(), Some(r)),
+        None => (body.to_owned(), None),
+    };
+    if kind.is_empty() {
+        return None;
+    }
+    let (entity, prop) = match rest {
+        None | Some("") => (None, None),
+        Some(r) => match r.rsplit_once('.') {
+            Some((e, p)) if !p.is_empty() && !e.is_empty() => {
+                (Some(e.to_owned()), Some(p.to_owned()))
+            }
+            _ => (Some(r.to_owned()), None),
+        },
+    };
+    Some(ParsedTarget {
+        kind,
+        entity,
+        prop,
+        suffix,
+    })
+}
+
+/// Classify a parsed mark into a [`MarkKind`] from (`observe`, `bare`, suffix, entity?,
+/// prop?). Malformed combinations ⊤-reject (`Err(reason)`) — the parser's standing bias
+/// (never guess). `bare` ⇒ statement-position (POISON/ACK/vouch); `!bare` ⇒ a trailing
+/// command mark (ESTABLISH/OBSERVE). The ACK-vs-vouch split is the dot-presence heuristic
+/// (jc-vouch-vs-ack): `kind:entity.prop~` ⇒ ACK, two-level `provider:verb~` ⇒ vouch.
+fn classify_mark(
+    observe: bool,
+    bare: bool,
+    target: &ParsedTarget,
+) -> Result<MarkKind, &'static str> {
+    if observe {
+        // `:?` OBSERVE (233 depends-upon). A `~`/`!` suffix on it is malformed.
+        return if target.suffix.is_some() {
+            Err("`:?` observe mark takes no `~`/`!` suffix")
+        } else {
+            Ok(MarkKind::Observe)
+        };
+    }
+    match target.suffix {
+        Some('!') => {
+            if bare {
+                Err("`!` (invert) is a trailing ESTABLISH suffix, not a bare mark")
+            } else {
+                Ok(MarkKind::EstablishInverted)
+            }
+        }
+        Some('~') => {
+            if !bare {
+                Err("`~` (vouch/ack) is a bare statement mark, not a trailing command mark")
+            } else if target.prop.is_some() {
+                Ok(MarkKind::Ack)
+            } else if target.entity.is_some() {
+                Ok(MarkKind::ConvergedVouch)
+            } else {
+                Ok(MarkKind::Ack)
+            }
+        }
+        Some(_) => Err("unrecognized mark suffix"),
+        None => {
+            if bare {
+                Ok(MarkKind::Poison)
+            } else {
+                Ok(MarkKind::Establish)
+            }
+        }
+    }
+}
+
 /// Split `name=value` if `name` is a valid POSIX name (`sem::is_name`) and the lexeme
 /// contains `=` at the boundary. Returns `(name, value)`. A bare `name=` yields
 /// `("name", "")`.
@@ -897,4 +1147,238 @@ fn is_block_keyword(s: &str) -> bool {
 /// keywords.
 fn is_statement_terminator_word(s: &str) -> bool {
     is_block_keyword(s)
+}
+
+#[cfg(test)]
+mod dialect_tests {
+    //! R1a/R1b: the period-form funcdef + the 233 inline-mark dialect. These tests
+    //! reach the internal AST (Marks aren't re-exported), so they live here rather than
+    //! in `tests/check.rs`. Every ambiguity ⊤-rejects (`inv-top-reject` bias); a lift
+    //! failure is a diagnostic, never a panic (`inv-no-throw`).
+    use super::{Interner, Mark, MarkKind, Stmt, lift_checks};
+
+    /// Lift `src`, assert exactly one check, and return its body statements.
+    fn body_of(src: &str) -> Vec<Stmt> {
+        let mut i = Interner::default();
+        let out = lift_checks(&mut i, src);
+        assert!(
+            out.diags.is_empty(),
+            "expected a clean lift, got diags: {:?}",
+            out.diags
+        );
+        assert_eq!(out.value.len(), 1, "expected exactly one check");
+        let provider = out.value.providers().next().expect("one provider");
+        out.value.get(provider).expect("the check").body.clone()
+    }
+
+    /// Find the first trailing [`Mark`] on any command in `body`.
+    fn first_command_mark(body: &[Stmt]) -> Option<Mark> {
+        fn walk(stmts: &[Stmt]) -> Option<Mark> {
+            for s in stmts {
+                match s {
+                    Stmt::Command(c) => {
+                        if let Some(m) = &c.mark {
+                            return Some(m.clone());
+                        }
+                    }
+                    Stmt::Case { arms, .. } => {
+                        for a in arms {
+                            if let Some(m) = walk(&a.body) {
+                                return Some(m);
+                            }
+                        }
+                    }
+                    Stmt::If {
+                        then_body,
+                        else_body,
+                        ..
+                    } => {
+                        if let Some(m) = walk(then_body).or_else(|| walk(else_body)) {
+                            return Some(m);
+                        }
+                    }
+                    Stmt::While { body, .. } => {
+                        if let Some(m) = walk(body) {
+                            return Some(m);
+                        }
+                    }
+                    _ => {}
+                }
+            }
+            None
+        }
+        walk(body)
+    }
+
+    #[test]
+    fn period_form_funcdef_recovers_the_hyphenated_provider() {
+        // `apt-get.check()` (the 23D §1 opt-in semaphore) resolves to provider `apt-get`
+        // — the literal command word, no `_`→`-` mapping (that is the legacy form's rule).
+        let mut i = Interner::default();
+        let out = lift_checks(
+            &mut i,
+            "apt-get.check() { pkg : package = \"$1\"; dpkg-query -W \"$pkg\"; }",
+        );
+        assert!(out.diags.is_empty(), "clean lift: {:?}", out.diags);
+        let apt = i.intern("apt-get");
+        assert!(
+            out.value.get(apt).is_some(),
+            "the period form keys the check on `apt-get`"
+        );
+    }
+
+    #[test]
+    fn period_and_legacy_forms_agree_on_provider() {
+        // `systemctl.check` and `systemctl__check` name the SAME provider (no hyphen, so
+        // the two spellings coincide) — the strip's job is to turn the former into the
+        // latter, so they must lift identically.
+        let mut i = Interner::default();
+        let period = lift_checks(
+            &mut i,
+            "systemctl.check() { svc : service = \"$1\"; systemctl is-active -- \"$svc\"; }",
+        );
+        let legacy = lift_checks(
+            &mut i,
+            "systemctl__check() { svc : service = \"$1\"; systemctl is-active -- \"$svc\"; }",
+        );
+        let sc = i.intern("systemctl");
+        assert!(period.value.get(sc).is_some() && legacy.value.get(sc).is_some());
+    }
+
+    #[test]
+    fn trailing_establish_mark_splits_kind_and_selector() {
+        // `dpkg-query … : package:"$pkg".installed` — a trailing ESTABLISH. kind/selector
+        // are split opaquely; the entity fragment (`$pkg`) is carried but not decoded.
+        let body = body_of(
+            "apt-get.check() { pkg : package = \"$1\"; dpkg-query -W \"$pkg\" : package:\"$pkg\".installed; }",
+        );
+        let m = first_command_mark(&body).expect("a trailing mark");
+        assert_eq!(m.kind, MarkKind::Establish);
+        assert_eq!(m.target.kind, "package");
+        assert_eq!(m.target.prop.as_deref(), Some("installed"));
+        assert_eq!(m.target.entity.as_deref(), Some("$pkg"));
+    }
+
+    #[test]
+    fn trailing_bang_is_establish_inverted() {
+        // `… : package:"$pkg".installed!` — the `!` pun (233 §1): the verb makes the fact
+        // NOT hold ⇒ the lift reads Kill polarity.
+        let body = body_of(
+            "apt-get.check() { pkg : package = \"$1\"; dpkg-query -W \"$pkg\" : package:\"$pkg\".installed!; }",
+        );
+        let m = first_command_mark(&body).expect("a trailing mark");
+        assert_eq!(m.kind, MarkKind::EstablishInverted);
+        assert_eq!(m.target.prop.as_deref(), Some("installed"));
+    }
+
+    #[test]
+    fn trailing_query_marker_is_observe() {
+        // `command -v … :? tool:"$tool".present` — OBSERVE (read-only depends-upon).
+        let body = body_of(
+            "command.check() { tool : tool = \"$1\"; command -v -- \"$tool\" :? tool:\"$tool\".present; }",
+        );
+        let m = first_command_mark(&body).expect("a trailing mark");
+        assert_eq!(m.kind, MarkKind::Observe);
+        assert_eq!(m.target.kind, "tool");
+        assert_eq!(m.target.prop.as_deref(), Some("present"));
+    }
+
+    #[test]
+    fn bare_poison_mention_parses() {
+        // `: fs.Path` — a bare no-op POISON mention; kind-only (the `.` stays in the
+        // opaque kind), no entity/prop.
+        let body = body_of(
+            "apt-get.check() { pkg : package = \"$1\"; dpkg-query -W \"$pkg\"; : fs.Path; }",
+        );
+        let Some(Stmt::Mark(m)) = body.iter().find(|s| matches!(s, Stmt::Mark(_))) else {
+            panic!("expected a bare Mark statement: {body:?}");
+        };
+        assert_eq!(m.kind, MarkKind::Poison);
+        assert_eq!(m.target.kind, "fs.Path");
+        assert_eq!(m.target.entity, None);
+    }
+
+    #[test]
+    fn bare_three_level_tilde_is_ack() {
+        // `: package:"$pkg".held~` — a three-level considered-untouched ACK.
+        let body = body_of(
+            "apt-get.check() { pkg : package = \"$1\"; dpkg-query -W \"$pkg\"; : package:\"$pkg\".held~; }",
+        );
+        let Some(Stmt::Mark(m)) = body.iter().find(|s| matches!(s, Stmt::Mark(_))) else {
+            panic!("expected a bare Mark statement: {body:?}");
+        };
+        assert_eq!(m.kind, MarkKind::Ack, "three-level ~ ⇒ ACK");
+        assert_eq!(m.target.prop.as_deref(), Some("held"));
+    }
+
+    #[test]
+    fn bare_two_level_tilde_is_converged_vouch() {
+        // `: apt-get:install~` — the CONVERGED-VOUCH placeholder (two-level provider:verb~,
+        // no `.prop`). STRAWMAN spelling (dq-kOOB); distinguished from ACK by dot-absence.
+        let body = body_of(
+            "apt-get.check() { pkg : package = \"$1\"; dpkg-query -W \"$pkg\"; : apt-get:install~; }",
+        );
+        let Some(Stmt::Mark(m)) = body.iter().find(|s| matches!(s, Stmt::Mark(_))) else {
+            panic!("expected a bare Mark statement: {body:?}");
+        };
+        assert_eq!(
+            m.kind,
+            MarkKind::ConvergedVouch,
+            "two-level ~ ⇒ converged-vouch"
+        );
+        assert_eq!(m.target.kind, "apt-get");
+        assert_eq!(m.target.entity.as_deref(), Some("install"));
+        assert_eq!(m.target.prop, None);
+    }
+
+    #[test]
+    fn establish_with_explicit_value_parses() {
+        // `… : service:"$svc".active = false` — the 233 §1 explicit-value ESTABLISH.
+        let body = body_of(
+            "systemctl.check() { svc : service = \"$1\"; systemctl is-active -- \"$svc\" : service:\"$svc\".active = false; }",
+        );
+        let m = first_command_mark(&body).expect("a trailing mark");
+        assert_eq!(m.kind, MarkKind::Establish);
+        assert!(m.target.value.is_some(), "the `= value` tail is captured");
+    }
+
+    #[test]
+    fn identity_annotation_still_parses_unchanged() {
+        // The existing identity annotation `pkg : package = "$1"` (bare kind, no inner `:`)
+        // must NOT be mis-read as a trailing mark — it stays an Annotation.
+        let body = body_of("apt-get.check() { pkg : package = \"$1\"; dpkg-query -W \"$pkg\"; }");
+        assert!(
+            body.iter().any(|s| matches!(s, Stmt::Annotation(_))),
+            "the identity annotation survives: {body:?}"
+        );
+    }
+
+    #[test]
+    fn malformed_bang_on_bare_mark_rejects() {
+        // `!` is a trailing-ESTABLISH suffix; on a bare statement mark it is malformed and
+        // ⊤-rejects loudly (a diagnostic, never a silent mis-read).
+        let mut i = Interner::default();
+        let out = lift_checks(
+            &mut i,
+            "apt-get.check() { pkg : package = \"$1\"; : package:\"$pkg\".installed!; }",
+        );
+        assert!(
+            !out.diags.is_empty(),
+            "a bare `!` mark must ⊤-reject with a diagnostic"
+        );
+    }
+
+    #[test]
+    fn tilde_on_trailing_command_mark_rejects() {
+        // `~` (vouch/ack) is a bare statement mark; trailing a command it is malformed.
+        let mut i = Interner::default();
+        let out = lift_checks(
+            &mut i,
+            "apt-get.check() { pkg : package = \"$1\"; dpkg-query -W \"$pkg\" : package:\"$pkg\".installed~; }",
+        );
+        assert!(
+            !out.diags.is_empty(),
+            "a trailing `~` mark must ⊤-reject with a diagnostic"
+        );
+    }
 }

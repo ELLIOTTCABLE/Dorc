@@ -47,6 +47,9 @@ pub struct Check {
     pub provider: Symbol,
     /// The function-name span (for diagnostics pointing at the definition).
     pub name_span: Span,
+    /// The whole funcdef span (from the name word through the closing `}`), so the
+    /// strip (R1c) can slice the funcdef out of the oracle source and surgically edit it.
+    pub span: Span,
     /// The interned symbol of the conventional verb-binding name (`verb`), stamped
     /// at lift time so the (interner-free) evaluator can recognize a `verb=…`
     /// assignment by symbol equality without decoding text. Always present (the
@@ -81,8 +84,77 @@ pub enum Stmt {
     Annotation(Annotation),
     /// A plain command (a read-only probe body, e.g. `dpkg-query -W "$pkg"`). Its
     /// VERBATIM SOURCE TEXT is preserved span-exactly ([`Command::span`]) for
-    /// shipping into a probe artifact later.
+    /// shipping into a probe artifact later. May carry a trailing effect [`Mark`]
+    /// (233 ESTABLISH/OBSERVE — `Command::mark`).
     Command(Command),
+    /// A bare inline-dialect mark in statement position (233 §1–§4, R1b): a POISON
+    /// no-op mention (`: kind`), an ACK vouch (`: kind:entity.prop~`), or the
+    /// CONVERGED-VOUCH placeholder (`: provider:verb~`). Distinguished from a trailing
+    /// [`Command::mark`] by having no command in front of the `:` marker. Never
+    /// evaluated (a no-op for entity-resolution); consumed by the lift + strip.
+    Mark(Mark),
+}
+
+/// A parsed inline-dialect mark (233 §1–§4, R1b): an effect / vouch / mention
+/// annotation, either trailing a command (ESTABLISH/OBSERVE) or standing alone
+/// (ACK/POISON/converged-vouch). Every fragment is an OPAQUE syntactic string
+/// (`inv-referent-agnostic`): the parser splits `kind:entity.prop` structurally and
+/// NEVER decodes what the tokens mean. Carries a [`span`](Mark::span) covering the
+/// marker plus target (for the surgical strip, R1c).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Mark {
+    /// Which dialect mark this is.
+    pub kind: MarkKind,
+    /// The `kind:entity.prop` coordinate (any level may be absent).
+    pub target: MarkTarget,
+    /// The mark span, from the `:`/`:?` marker token through the end of the target
+    /// (including any `~`/`!` suffix). The strip deletes/rewrites exactly this region.
+    pub span: Span,
+}
+
+/// The dialect mark discriminant (233 §1–§4 / R1b). ESTABLISH/OBSERVE trail a
+/// command; ACK/POISON/converged-vouch stand alone.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum MarkKind {
+    /// `cmd … : kind:entity.prop` — the command's rc establishes the property
+    /// (→ `Polarity::Establish` in the lift).
+    Establish,
+    /// `cmd … : kind:entity.prop!` — ESTABLISH with the rc sense inverted; the verb
+    /// makes the fact NOT hold (→ `Polarity::Kill` in the lift; 233 §1's `!` pun).
+    EstablishInverted,
+    /// `cmd … :? kind:entity.prop` — depends-upon / read-only observe
+    /// (→ `Polarity::Query` in the lift; 233 OBSERVE).
+    Observe,
+    /// `: kind:entity.prop~` — a considered-untouched vouch (233 ACK). A no-op under
+    /// the dead m×n negative-enumeration (23D §5): parsed and carried, licenses
+    /// nothing. Distinguished from [`ConvergedVouch`](MarkKind::ConvergedVouch) by
+    /// carrying a `.prop` (three-level `kind:entity.prop`), where the vouch is
+    /// two-level `provider:verb` (jc-vouch-vs-ack).
+    Ack,
+    /// bare `: kind` / `: kind:entity` / `: kind:entity.prop` — a no-op mention
+    /// (233 POISON). Its cells are what the lift may poison (a mention with no `~`).
+    Poison,
+    /// `: provider:verb~` in statement position — the CONVERGED-VOUCH placeholder.
+    /// A STRAWMAN for an open spelling (dq-kOOB); the parser carries it to where the
+    /// former `oracle_vouch_converged=` datum went. Two-level (`provider:verb`, no
+    /// `.prop`) + a `~` suffix.
+    ConvergedVouch,
+}
+
+/// The `kind:entity.prop` coordinate of a [`Mark`], split syntactically and left
+/// OPAQUE (`inv-referent-agnostic` — never decoded). Any level may be absent (a
+/// kind-only POISON `: fs.Path`). For a [`MarkKind::ConvergedVouch`] the two-level
+/// `provider:verb` shape reuses `kind`=provider and `entity`=verb.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct MarkTarget {
+    /// The kind fragment (everything before the first `:`). Opaque.
+    pub kind: String,
+    /// The entity fragment (between the first `:` and the last `.`), if present.
+    pub entity: Option<String>,
+    /// The property/selector fragment (after the last `.`), if present. Opaque.
+    pub prop: Option<String>,
+    /// The optional `= value` tail on an ESTABLISH (233 §1: an explicit value).
+    pub value: Option<Word>,
 }
 
 /// The inline kind-annotation `name : kind = value` (19H §2.1, ch-shape-anno).
@@ -106,8 +178,16 @@ pub struct Annotation {
     /// operand (`apt-get update`; 202 §2). A present value resolves to a concrete
     /// argv element (else ⊤); `None` resolves to the Singleton entity.
     pub value: Option<Word>,
-    /// The whole annotation span (diagnostics).
+    /// The whole annotation span (diagnostics), covering `name : kind [= value]`.
+    /// The strip (R1c) replaces exactly this region with `name=value` (or `name=`
+    /// for the nullary form).
     pub span: Span,
+    /// The span of the bound `name` token (`pkg`), for the surgical strip: the
+    /// stripped assignment reuses the author's verbatim name bytes.
+    pub name_span: Span,
+    /// The span of the value word (`"$1"`), if present. For the nullary form it is
+    /// `None` (the strip emits `name=`).
+    pub value_span: Option<Span>,
 }
 
 /// A plain command in a probe body, with its verbatim source span preserved.
@@ -117,10 +197,16 @@ pub struct Command {
     /// evaluator can confirm the command is well-formed dialect; the *shipped* form
     /// is the verbatim [`span`](Command::span), not a re-render of these.
     pub words: Vec<Word>,
-    /// VERBATIM source span of the whole command (including any `>/dev/null`
-    /// redirection that is part of it). This is what ships into the probe artifact
-    /// — span-exact, never re-serialized (202 §3 / C-1).
+    /// VERBATIM source span of the whole command, EXCLUDING any trailing [`mark`](Command::mark)
+    /// (the span ends at the last real word/redirect). Includes any `>/dev/null`
+    /// redirection that is part of it. This is what ships into the probe artifact —
+    /// span-exact, never re-serialized (202 §3 / C-1).
     pub span: Span,
+    /// The trailing effect [`Mark`] (233 ESTABLISH/OBSERVE), if the command carried
+    /// one. `None` for a bare probe command. Not evaluated (the command still runs as
+    /// the probe body); consumed by the lift (effect-map derivation) and the strip
+    /// (removal — the byte-region `[span.hi .. mark.span.hi]` is deleted).
+    pub mark: Option<Mark>,
 }
 
 /// A test inside `while`/`if`. The dialect admits exactly the shape the flag-strip

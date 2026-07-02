@@ -39,9 +39,131 @@ mod eval;
 mod lexer;
 mod parser;
 
-pub use ast::{Check, CheckSet};
+pub use ast::{Check, CheckSet, Mark, MarkKind, MarkTarget, Stmt};
 pub use eval::{Resolution, Resolved, ResolvedEntity, TopReason, evaluate};
 pub use parser::lift_checks;
+
+/// Strip an authored check funcdef to runnable sh — the STRIP-ONLY pass (R1c / 23D §1).
+/// It does exactly two things: rewrites a period-form name (`apt-get.check`) to the
+/// mangled `<provider>__check` the engine keys on, and removes the inline type
+/// annotations (the identity `name : kind = value` → `name=value`; a trailing effect
+/// mark `cmd … : kind:entity.prop` → just `cmd …`; a bare mark `: kind` → the `:` null
+/// command). Nothing else changes — the author's other bytes (whitespace, `while`/`case`,
+/// redirs, comments inside the body) are preserved verbatim.
+///
+/// `src` is the whole oracle source; [`Check::span`] locates the funcdef within it. The
+/// result is `dash -n`-clean (the period name is the only dash-rejected form; annotations
+/// are dash-valid-but-runtime-wrong, so removing them fixes the shipped probe's runtime,
+/// not its syntax) and **byte-stable** — a deterministic function of its input, so a
+/// golden built from it never churns without an authored change.
+///
+/// Surgical (`23A §1`: "the annotation-strip is the only byte delta from the authored
+/// oracle"): it edits source byte-ranges rather than re-rendering the AST, so formatting
+/// survives. `inv-no-throw`: a non-char-boundary span is skipped rather than panicking
+/// (the ASCII sh corpus never hits this).
+#[must_use]
+pub fn strip_check(src: &str, check: &Check, interner: &Interner) -> String {
+    let base = check.span.lo.0 as usize;
+    let funcdef = src
+        .get(base..check.span.hi.0 as usize)
+        .unwrap_or_default()
+        .to_owned();
+
+    // (lo, hi, replacement) — all funcdef-relative; applied back-to-front so earlier
+    // offsets stay valid. The regions (funcname, each annotation, each mark) are disjoint.
+    let mut edits: Vec<(usize, usize, String)> = Vec::new();
+    let rel = |p: Span| {
+        (
+            (p.lo.0 as usize).saturating_sub(base),
+            (p.hi.0 as usize).saturating_sub(base),
+        )
+    };
+
+    // 1. Funcname: `apt-get.check` / `apt_get__check` → `apt_get__check` (idempotent on
+    //    the already-mangled form).
+    let (nlo, nhi) = rel(check.name_span);
+    edits.push((
+        nlo,
+        nhi,
+        format!(
+            "{}__check",
+            crate::to_funcname_segment(interner.resolve(check.provider))
+        ),
+    ));
+
+    // 2/3/4. Annotations + marks, recursively through the body's control-flow.
+    collect_strip_edits(&check.body, src, base, &mut edits);
+
+    edits.sort_by_key(|e| core::cmp::Reverse(e.0));
+    let mut out = funcdef;
+    for (lo, hi, repl) in edits {
+        if lo <= hi && hi <= out.len() && out.is_char_boundary(lo) && out.is_char_boundary(hi) {
+            out.replace_range(lo..hi, &repl);
+        }
+    }
+    out
+}
+
+/// Collect the strip edits for a statement list, recursing into `case`/`if`/`while`
+/// bodies (annotations and marks nest there). `base` is the funcdef start offset (edits
+/// are funcdef-relative); `src` is sliced for verbatim value text.
+fn collect_strip_edits(
+    body: &[Stmt],
+    src: &str,
+    base: usize,
+    edits: &mut Vec<(usize, usize, String)>,
+) {
+    let rel = |p: Span| {
+        (
+            (p.lo.0 as usize).saturating_sub(base),
+            (p.hi.0 as usize).saturating_sub(base),
+        )
+    };
+    for stmt in body {
+        match stmt {
+            // identity `name : kind [= value]` → `name=value` (verbatim name + value bytes).
+            Stmt::Annotation(a) => {
+                let (lo, hi) = rel(a.span);
+                let name = src
+                    .get(a.name_span.lo.0 as usize..a.name_span.hi.0 as usize)
+                    .unwrap_or_default();
+                let value = a.value_span.map_or("", |vs| {
+                    src.get(vs.lo.0 as usize..vs.hi.0 as usize)
+                        .unwrap_or_default()
+                });
+                edits.push((lo, hi, format!("{name}={value}")));
+            }
+            // trailing effect mark: delete ` : target` (command-end .. mark-end).
+            Stmt::Command(c) => {
+                if let Some(m) = &c.mark {
+                    let lo = (c.span.hi.0 as usize).saturating_sub(base);
+                    let hi = (m.span.hi.0 as usize).saturating_sub(base);
+                    edits.push((lo, hi, String::new()));
+                }
+            }
+            // bare mark → the `:` null command (inert, dash-n-clean).
+            Stmt::Mark(m) => {
+                let (lo, hi) = rel(m.span);
+                edits.push((lo, hi, ":".to_owned()));
+            }
+            Stmt::Case { arms, .. } => {
+                for a in arms {
+                    collect_strip_edits(&a.body, src, base, edits);
+                }
+            }
+            Stmt::If {
+                then_body,
+                else_body,
+                ..
+            } => {
+                collect_strip_edits(then_body, src, base, edits);
+                collect_strip_edits(else_body, src, base, edits);
+            }
+            Stmt::While { body, .. } => collect_strip_edits(body, src, base, edits),
+            Stmt::Assign { .. } | Stmt::Shift { .. } => {}
+        }
+    }
+}
 
 /// Map a check function's provider-name fragment to the command word: `_` → `-`
 /// (`apt_get` ⇒ `apt-get`). The **single** home of the underscore↔hyphen convention
@@ -119,6 +241,103 @@ pub(crate) fn lift_failure(
     }
     .label(msg);
     diag.to_legacy(interner)
+}
+
+#[cfg(test)]
+mod strip_tests {
+    //! R1c: the STRIP-ONLY pass. Every fixture-shaped body strips to runnable sh whose
+    //! only deltas from the author are the funcname rewrite and annotation removal, and
+    //! the strip is byte-stable (a golden built from it never churns).
+    use super::{lift_checks, strip_check};
+    use dorc_core::Interner;
+
+    fn strip_one(src: &str) -> String {
+        let mut i = Interner::default();
+        let out = lift_checks(&mut i, src);
+        assert!(out.diags.is_empty(), "clean lift: {:?}", out.diags);
+        let provider = out.value.providers().next().expect("one provider");
+        let check = out.value.get(provider).expect("the check");
+        strip_check(src, check, &i)
+    }
+
+    /// The flagship strip (23A §1): `apt-get.check` → `apt_get__check` and
+    /// `pkg : package = "$1"` → `pkg="$1"` — and NOTHING else. Byte-exact against the
+    /// hand-authored flagship golden's apply preamble.
+    #[test]
+    fn flagship_body_strips_to_the_golden_preamble() {
+        let authored = "\
+apt-get.check() {
+   while [ \"${1#-}\" != \"$1\" ]; do shift; done
+   verb=$1; shift
+   while [ \"${1#-}\" != \"$1\" ]; do shift; done
+   pkg : package = \"$1\"
+   if [ \"$2\" = \"\" ]; then dpkg-query -W \"$pkg\" >/dev/null 2>&1; fi
+}";
+        let expected = "\
+apt_get__check() {
+   while [ \"${1#-}\" != \"$1\" ]; do shift; done
+   verb=$1; shift
+   while [ \"${1#-}\" != \"$1\" ]; do shift; done
+   pkg=\"$1\"
+   if [ \"$2\" = \"\" ]; then dpkg-query -W \"$pkg\" >/dev/null 2>&1; fi
+}";
+        assert_eq!(strip_one(authored), expected);
+    }
+
+    /// A trailing effect mark is deleted cleanly (no dangling `:` / argv residue): the
+    /// probe command that ships is the bare `dpkg-query …`.
+    #[test]
+    fn trailing_mark_is_removed_leaving_the_bare_command() {
+        let authored = "apt-get.check() { pkg : package = \"$1\"; dpkg-query -W \"$pkg\" : package:\"$pkg\".installed; }";
+        let stripped = strip_one(authored);
+        assert!(
+            stripped.contains("dpkg-query -W \"$pkg\";")
+                || stripped.contains("dpkg-query -W \"$pkg\" "),
+            "the probe command survives bare: {stripped}"
+        );
+        assert!(
+            !stripped.contains(": package:"),
+            "no annotation residue: {stripped}"
+        );
+        assert!(
+            stripped.starts_with("apt_get__check()"),
+            "funcname mangled: {stripped}"
+        );
+    }
+
+    /// A bare mark (POISON/ACK/vouch) becomes the `:` null command — inert, dash-clean.
+    #[test]
+    fn bare_mark_becomes_null_command() {
+        let authored = "apt-get.check() { pkg : package = \"$1\"; dpkg-query -W \"$pkg\"; : apt-get:install~; }";
+        let stripped = strip_one(authored);
+        assert!(
+            !stripped.contains("apt-get:install"),
+            "the vouch target is stripped: {stripped}"
+        );
+        // The `:` null command remains where the bare mark stood.
+        assert!(
+            stripped.contains(';'),
+            "statement structure preserved: {stripped}"
+        );
+    }
+
+    /// Byte-stability (R1c): strip is a deterministic function of its input.
+    #[test]
+    fn strip_is_byte_stable() {
+        let authored = "systemctl.check() { verb=$1; shift; svc : service = \"$1\"; case $verb in enable) systemctl is-enabled -- \"$svc\" : service:\"$svc\".enabled ;; esac; }";
+        assert_eq!(strip_one(authored), strip_one(authored));
+        let stripped = strip_one(authored);
+        assert!(stripped.starts_with("systemctl__check()"));
+        assert!(!stripped.contains(".check("), "no period name: {stripped}");
+        assert!(
+            !stripped.contains(": service:"),
+            "no establish annotation: {stripped}"
+        );
+        assert!(
+            stripped.contains("svc=\"$1\""),
+            "identity stripped to assignment: {stripped}"
+        );
+    }
 }
 
 #[cfg(test)]

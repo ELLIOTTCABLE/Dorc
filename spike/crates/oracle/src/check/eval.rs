@@ -221,10 +221,16 @@ impl Evaluator {
             Stmt::Annotation(anno) => self.run_annotation(anno),
             Stmt::Command(cmd) => {
                 // a probe body on the selected path: record its verbatim span (we run
-                // statically — the span ships into the probe artifact, C-1)
+                // statically — the span ships into the probe artifact, C-1). A trailing
+                // effect mark (`cmd.mark`) is metadata for the lift/strip only; it does
+                // not change what the probe command DOES, so evaluation ignores it.
                 self.probe_body.push(cmd.span);
                 Flow::Normal
             }
+            // A bare inline-dialect mark (POISON/ACK/converged-vouch) is a no-op for
+            // entity-resolution — it establishes/observes/vouches nothing at eval time
+            // (the lift reads it statically; the strip removes it). Fall through.
+            Stmt::Mark(_) => Flow::Normal,
         }
     }
 
