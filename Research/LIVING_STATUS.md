@@ -30,15 +30,23 @@ adjudicated **`23F`**), repaired, conductor-verified **123 round-trips / 9 xfail
 0 red**. The compilation tree is corpus-clean (coverage crate opacified; historical
 corpus-touching notes quarantined).
 
-**IN FLIGHT:** the atomic re-spelling session (Opus, MAIN tree, granular commits — resumable
-if interrupted): R2 retire marker spellings / R3 emitter ships stripped check body / R4 all
-fixtures to the inline dialect + re-bless. Acceptance = exact behaviour-identity (123/9/0/0 +
-differential lift evidence). Brief carries the cov-q1..q4 rulings (**durable home: `23F`
-Addendum 2**) — headline: *property values are opaque booleans; NO polarity/kill class survives
-anywhere, ever; `!` = rc-inversion plumbing; verb asymmetries are the oracle-author's, expressed
-via which arms they vouch; one engine default (no vouch ⟹ run); the MustRun freeze on
-inverted-claim sites is TRANSITIONAL, in-code-marked, dissolves into the uniform license.*
-Record lands in `notes/23H`.
+**The atomic re-spelling session — PARTIAL LANDING 2026-07-02, honest STOP** (record + the
+mechanical remainder-recipe: **`notes/23H`**; conductor re-verified 123/9/0/0 + gates green).
+LANDED, all additive/always-green: the **R2 derivation core** (`check/derive.rs` — structural
+walk over inline `case $verb` arms + marks reproduces the retired-marker effect-map;
+**ValueClaim{Establish, EstablishInverted, Observe} replaces Polarity — no kill/creation axis**,
+per the cov-q4 FINAL ruling in `23F` Addendum 2; 5 differential tests prove derive == old-lift;
+`derive` is deliberately dead code until wiring); an R1 lexer-gap fix (mark after fd-dup
+redirect); **146/151 fixtures** converted additively (markers RETAINED for the differential
+two-step; golden-stable at every batch). BLOCKED on **ask jc-singleton-mark**: nullary
+Singleton kinds (`apt-get update ⇒ pkgindex#fresh` — no entity operand) have no spelling in the
+`kind:entity.prop` mark grammar; 5 pkgindex fixtures + the P4 wiring wait on the human's
+provisional-spelling ruling (candidates in 23H). THEN: P4 wire analysis to the derivation
+(+ the EstablishInverted→MustRun transitional freeze WITH its ru-26 code-note, text ready in
+23H §3), P4b the R3 probe reshape (`compile_probe` → stripped check body + argv; 7 call-sites
+incl. the coverage byte-mirror), P5 marker retirement, big-bang re-bless with case-by-case
+inspection + a corpus-wide derive==lift gate first. Vouch-marks on guard23 install arms
+deferred to wiring (kept xfail pins unperturbed).
 
 **The bindings (hold these; full text at the cited homes):**
 - The four round-23 rulings — `spike/CLAUDE.md` (guard sourcing: the check IS the oracle,
