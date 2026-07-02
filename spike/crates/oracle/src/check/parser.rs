@@ -1063,6 +1063,14 @@ fn split_mark_target(lexeme: &str) -> Option<ParsedTarget> {
     let (entity, prop) = match rest {
         None | Some("") => (None, None),
         Some(r) => match r.rsplit_once('.') {
+            // `kind:.prop` — the Singleton empty-entity slot (jc-singleton-mark, human
+            // 2026-07-02): the colon introduces a DELIBERATELY empty entity (the-one),
+            // and the prop follows the dot. `entity = Some("")` is a real entity value,
+            // not absence (`inv-referent-agnostic`: empty ≠ None) — so a Singleton cell
+            // keys distinctly from a kind-only mark, and mixed empty+named entities on one
+            // kind are simply two cells. A colon-LESS `kind.prop` stays a whole reverse-DNS
+            // kind (handled below, the `None` split arm), so `.prop` never accidents in.
+            Some(("", p)) if !p.is_empty() => (Some(String::new()), Some(p.to_owned())),
             Some((e, p)) if !p.is_empty() && !e.is_empty() => {
                 (Some(e.to_owned()), Some(p.to_owned()))
             }
@@ -1281,6 +1289,75 @@ mod dialect_tests {
         assert_eq!(m.kind, MarkKind::Observe);
         assert_eq!(m.target.kind, "tool");
         assert_eq!(m.target.prop.as_deref(), Some("present"));
+    }
+
+    #[test]
+    fn singleton_mark_has_an_explicit_empty_entity() {
+        // `… : pkgindex:.fresh` — the Singleton empty-entity slot (jc-singleton-mark, human
+        // 2026-07-02). The colon terminates the kind, the prop follows the dot, and the
+        // entity between them is DELIBERATELY empty (`Some("")`, the-one) — not `None`
+        // (absent). 23H flagged the pre-fix parse as accidental (it read `.fresh` as the
+        // entity, dropping the selector); this pins the deliberate reading.
+        let body = body_of(
+            "apt-get.check() { verb=$1; shift; idx : pkgindex; test -n fresh : pkgindex:.fresh; }",
+        );
+        let m = first_command_mark(&body).expect("a trailing Singleton mark");
+        assert_eq!(m.kind, MarkKind::Establish);
+        assert_eq!(m.target.kind, "pkgindex");
+        assert_eq!(
+            m.target.entity.as_deref(),
+            Some(""),
+            "the entity slot is an EXPLICIT empty string (the-one), never None"
+        );
+        assert_eq!(m.target.prop.as_deref(), Some("fresh"));
+    }
+
+    #[test]
+    fn singleton_mark_survives_an_fd_dup_redirect() {
+        // The empty-entity parse must hold AFTER an fd-dup redirect (`2>&1`) — the exact
+        // shape the R1 lexer gap (jc-lexer-redirect-mark) fixed. A greedy redirect target
+        // must not swallow the `:` marker, and the split must still land the empty entity.
+        let body = body_of(
+            "apt-get.check() { verb=$1; shift; idx : pkgindex; test -n fresh >/dev/null 2>&1 : pkgindex:.fresh; }",
+        );
+        let m = first_command_mark(&body).expect("a trailing Singleton mark after 2>&1");
+        assert_eq!(m.kind, MarkKind::Establish);
+        assert_eq!(m.target.kind, "pkgindex");
+        assert_eq!(m.target.entity.as_deref(), Some(""));
+        assert_eq!(m.target.prop.as_deref(), Some("fresh"));
+    }
+
+    #[test]
+    fn singleton_near_miss_typos_do_not_yield_the_selector() {
+        // The empty-slot spelling is the ONLY way to key a Singleton selector: both
+        // near-miss typos read differently (and so drop the selector ⇒ the differential
+        // gate catches a mis-spelled effect, "fails loudly"). `kind.prop` (no colon) is a
+        // whole reverse-DNS kind; `kind:prop` (colon, no dot) reads prop as the entity.
+        let colon_less = body_of(
+            "apt-get.check() { verb=$1; shift; idx : pkgindex; test -n fresh : pkgindex.fresh; }",
+        );
+        let m = first_command_mark(&colon_less).expect("a trailing mark");
+        assert_eq!(
+            m.target.kind, "pkgindex.fresh",
+            "no colon ⇒ whole reverse-DNS kind"
+        );
+        assert_eq!(m.target.entity, None);
+        assert_eq!(
+            m.target.prop, None,
+            "no selector without the empty-entity colon"
+        );
+
+        let dot_less = body_of(
+            "apt-get.check() { verb=$1; shift; idx : pkgindex; test -n fresh : pkgindex:fresh; }",
+        );
+        let m = first_command_mark(&dot_less).expect("a trailing mark");
+        assert_eq!(m.target.kind, "pkgindex");
+        assert_eq!(
+            m.target.entity.as_deref(),
+            Some("fresh"),
+            "no dot ⇒ prop reads as entity"
+        );
+        assert_eq!(m.target.prop, None, "no selector without the `.`");
     }
 
     #[test]
