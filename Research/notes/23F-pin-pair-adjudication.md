@@ -104,6 +104,26 @@ pin) and the *build-window promotion path* (one-sided xfails + bless). Ledger:
 - **h4** ratify redirect-carrying lines as a refuse-home (guards refuse; site runs) pending
   real design.
 
-## Addendum: repairs executed
+## Addendum: rulings received + repair dispatch (2026-07-02)
 
-(to be appended when the repair pass lands)
+- **h1 RATIFIED:** converged-only mint. A guard mints only where the plan-time verdict is
+  *converged*; can't-tell ⇒ run.
+- **h2:** munge fine-for-now — spike-temporary territory; map the provider through the standard
+  funcname munge; the human is not married to it either way.
+- **h3:** the language target is dash-ish, barely-more-than-classic-POSIX ("POSIX2024-ish",
+  which carves out `local` without specifying it) — LEAN INTO `local`: expect/encourage
+  sanitary check bodies as good hygiene, never as sandboxing (the rm-rf example reigns; Dorc
+  is not and never will be a sandbox). Forking gently deferred, both directions sanctioned —
+  "or hell, do both": subshell-wrap acceptable now (removable later; more expensive to ADD
+  later if anything starts depending on leaked context), local-hygiene encouraged regardless.
+  Behaviour pins land independent of mechanism.
+- **h4 ACK:** redirect-carrying lines refuse guards loudly; anything easy that avoids
+  long-term design lock-in.
+- **h5 DROPPED** by the human — do not pursue.
+
+Repair pass dispatched to an Opus-class agent (isolated worktree; spec = this note + 23B/23C):
+the five new pins (var-namespace, nounset, cross-oracle vouch scoping, cant-tell-runs,
+redirect-refuses), two-sided xfails (`head-expected.ran` markers), the dpkg-query shims,
+why-attribution per-line conjunction, the cmdsub exec upgrade, gate-6 selftest guard-confounds
++ the artifact-shape grep-floor, conflict-artifact deletion, and the diff-before-bless
+promotion rule. Record: `notes/23G` on integration.
