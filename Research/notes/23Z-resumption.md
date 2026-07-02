@@ -49,12 +49,20 @@ notes-slugs 23B/23C; asymmetric context — the adversary is barred from 23A/23Z
 
 ## The arc ahead (ordered; who/when/why)
 
-0. **IMMEDIATE (this conductor, pre-clear):** adjudicate 23B/23C under the standing skepticism
-   calibration (convergence = signal; adversarial-only = suspect; verify against primary text);
-   harvest both notes files from the agents' worktrees into the main tree; repair pins per
-   adjudication; commit clean.
-0.5. **SPIKE-vs-DESIGN RECONCILIATION — frontloaded by the human (2026-07-02) before any guard
-   building:** correct the spike where it is *genuinely wrong* against the design, so the guard
+0. **IMMEDIATE (this conductor, pre-clear):** DONE — pair adjudicated (**`notes/23F`**: both
+   passes say build-against-the-set; the demonstrated adversarial composition holes adv-1
+   variable-clobbering / adv-2 nounset; the convergent build-window blindness conv-1; the
+   h1–h4 asks) and notes harvested (23B/23C committed). REMAINING pre-clear: human rules
+   h1–h4 → execute the repair pass (new composition/scoping pins, two-sided xfails, shims,
+   gate-6 selftest confounds, conflict-file removal — list in 23F) → append the repair
+   addendum to 23F → integrate the phase-0.5 Opus branch when it lands → final harness run →
+   commit clean.
+0.5. **SPIKE-vs-DESIGN RECONCILIATION — frontloaded by the human (2026-07-02); DISPATCHED
+   same day to an OPUS-class agent in an ISOLATED WORKTREE** (enumerated brief per the human's
+   Opus-prompting guidance — the inverse of the Fable style; H2SaLS fixture trees scoped OUT
+   per the quarantine; deliverables: reconciled branch + `notes/23E` + granular commits;
+   INTEGRATE its branch into main only AFTER the pin-pair adjudication + repairs land, so main
+   stays stable for adjudication). Content: correct the spike where it is *genuinely wrong* against the design, so the guard
    work lands on corrected substrate. Known items: the **fake probe/check division** (the st-2
    `oracle_probe_*`-vs-`check()` split is spike-internal fiction — design truth per `23D` §1:
    the check IS the oracle, strip-only, whole stripped body ships in both lanes; rewrite the
