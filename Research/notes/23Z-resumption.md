@@ -253,11 +253,28 @@ suspect-until-checked; present passes side-by-side, human judges; no single-verd
    delta-4 APPLIED to KNOBS (kELISION second naming-caution, with the 233/239 pointers);
    delta-5 deferred (human, DESIGN's rewrite is his); delta-6 was already applied (233's
    end-annotation). **THE CRISIS IS FORMALLY CLOSED; the build resumes.**
-3. IN FLIGHT — guard-tier xfail set (task #7's unblocked half): human directed a FABLE-class
-   subagent for the derivation (tier explicitly authorized — "the written specification is
-   important enough"), prompt in the human's 236-style (general, goals-focused, no
-   over-instruction), notes-slug `Research/notes/23A-*`; prompt drafted, AWAITING HUMAN REVIEW
-   before dispatch. Then THE ONE PLANNED CROSSCHECK of this sequence: a neutral+adversarial
+3. LANDED + CONDUCTOR-VERIFIED 2026-07-02 — the guard-tier pin-set (Fable agent, 3 commits:
+   `4792f9c` typos-conf · `e5bdbf9` cases · `b9e7627` notes): **19 cases under
+   `spike/e2e/cases/guard23-*`** — 6 XFAIL (fall-through drift/cant-tell, mutator-fails-book-
+   continues, heredoc-refuses-loudly, the ternary flagship, why-attribution) + 13 passing
+   floors (no-vouch, ⊤-argv, run-delta-never, explicit-rc-readers, consumed-stdout, cmdsub,
+   background, multi-operand-atomic, in-loop, already-hand-guarded, vouch-inert differential
+   pair, reingest-collision). Conductor re-ran the harness fresh: **all 118 round-trips pass,
+   exactly 6 xfail, 0 XPASS, 0 red, exit 0.** Mid-run rulings honored (no errexit pins — both
+   directions unpinned per task #13; no partial-member pins; refuse-homes pinned). Register =
+   **`Research/notes/23A-guard-tier-pin-set.md`** (arguments per pin, judgment-calls, hazards,
+   builder-churn expectations, crosscheck attack-list). Agent's sharpest finding
+   (**hz-refusepath**): corpus-standard check bodies exit 0 on their REFUSE paths (unmatched
+   case / failed arity-guard ⇒ rc 0), so shipping a check as a guard without proving the
+   invocation constant-propagates to a VOUCHED path mints a vacuously-passing guard that
+   silently suppresses the mutator — empirical grounding for why the witness's reached-path
+   component is load-bearing. Also flagged: gate-6 (dual-rail judge) must be widened before
+   flagship promotion (sketch in 23A §5); the vouch-inert pair's goldens ENCODE the known 233
+   §0 ambient-elision hole as a lockstep differential (documented not-endorsed); the strawman
+   vouch spelling (`oracle_vouch_converged='provider verb'`) is byte-inert at HEAD, marked
+   NOT-DESIGN everywhere, and knowingly wrong about per-verb-vs-per-reached-path keying in a
+   way no pin's behaviour depends on. NEXT GATE: the neutral+adversarial crosscheck PAIR over
+   the pin-set, then promotion + the build slice. Then THE ONE PLANNED CROSSCHECK of this sequence: a neutral+adversarial
    PAIR over the pin-set ("find the pin that licenses a wrong-elision; find the licensing hole
    no pin covers"). Crosscheck applies NOWHERE else in the sequence (human asked; conductor's per-step
    reasoning 2026-07-02: ceiling-note = non-binding, closure-deltas = human hand-applies each,
@@ -302,6 +319,104 @@ with four reader-must-honor corrections. NEW candidate invariant, flagged not we
 **one-body-two-lanes** (byte-exact probe/guard bodies; probe runs exercise guard code; tensions
 with apply-guard-thin; routed to task #2). AWAITING FINAL HUMAN ACK before step 3 (xfail
 derivation) begins.
+
+## Elide-half mechanics clarified (2026-07-02 — the human's post-triage logic-check)
+
+The human stress-tested whether the m×n negative-enumeration horror (`: fs.Path:.is_directory~`
+from every published oracle) survives anywhere for true elision. Verdict, derived not assumed:
+**NO — it died with poison-default.** It existed only to buy back elidability under
+silence-means-unknown; no surviving license consults non-effect enumerations. What replaced it,
+three tiers: (1) converged-case total elision — self-consistency, zero cross-oracle knowledge
+(modulo retained-opaque walls, the human's own first-opaque point; wall-wave = the recovery);
+(2) past retained CONTRACT-BOUND tools — authored POSITIVE first-order footprints (O(own
+effects), honest under the horizon) cleared against the book's demand set by DISJOINTNESS;
+(3) past retained PAYLOAD-BOUND tools (apt-class) — derived footprints / wave / guards only.
+**NEW SOUNDNESS FLAG from the check: disjointness-clearing is soundness-critical on
+kind-coherence** — same-cell-under-different-names ⇒ false disjointness ⇒ wrong elision (the
+round-17 symbol-grounding seam carrying under-execute weight). Containing rule candidate:
+disjointness may only be concluded within a shared/curated kind-vocabulary; community kinds get
+no disjointness power (⇒ wall). Logged for the elide-half design arc. Guards unaffected by all
+of this.
+
+REFINED (same day, the human's "what if we don't own a type-library" probe): the failure-mode is
+the SYNONYM dual of round-17's homonym problem — two honest names, one referent; the falsehood
+emergent from the pair, authored by nobody, so attribution has no target. "No shared name" is
+233's SILENCE one layer up: a license reading meaning into match-absence over an open vocabulary.
+Candidates walked, verdicts: author-side coherence testimony = dead (vacuous-universal, third
+appearance); author-side positive equivalences = honest but only heal known synonyms, can never
+license disjointness; admin consent = honest risk-allocation but trust-well-corrosive + rot-prone
+⇒ escape-hatch family only; engine flag = rejected outright. MAINLINE CANDIDATE: the
+**namespace-ownership convention** — reverse-DNS kinds already have owners; an owner CAN honestly
+guarantee no-synonyms within their own namespace (local, attributable, fixable); so disjointness
+concludes only WITHIN one namespace, never across; Dorc owns nothing but `org.dorc.*` (the
+bootstrap vocabulary, adopted by gravity, no registry/arbiter — wish-C survives as
+no-central-authority); vocabulary convergence is incentive-driven (reusing the popular namespace
+buys your users tier-2 elision). THE LAW (keep): *positive conclusions may ride open vocabulary;
+negative conclusions require owned vocabulary or explicit consent.* Tier-2 disjointness is the
+design's one negative-conclusion license; guards/walls need only positives, which is why the
+floor never touches this.
+
+CROSS-NAMESPACE MECHANICS (same day, after the human's "vapid win?" probe — ~SUSPECT, elide-half
+design pile, adversarial pass owed): tier-1/converged elision is NAMESPACE-BLIND (own-oracle
+vouch + probe; the golden hill never consults disjointness — community kinds elide fine there).
+Raw tier-2 is pairwise-per-namespace (within = owner-coherence clears; across = wall). The
+un-vapiding mechanism: **substrate-GROUNDING bridges** — a positive, local, author-side line
+("my `com.me.HorkState:x` is backed by `org.dorc.fs.Path:/var/lib/hork/x`") translates a
+community kind into the shared coordinate space, where disjointness runs; permissionless (no PR,
+no registry, no consent — rides the law's positive side). Properties: hidden synonyms become
+VISIBLE INTERSECTIONS (both ground ⇒ coupling ⇒ blocks clearing ⇒ safe); attribution restored
+(each grounding individually owned — the emergent-lie problem dissolves); residue = the
+grounding's own "only"-shaped completeness claim about YOUR OWN kind's substrate
+(honest-signable class: local, horizon-bounded, container-testable; converged-vouch trust-tier).
+Economics: real books' retained mutators are core-vocabulary tools, so grounding buys tier-2
+against everything that matters. Effort-gradient rung-list: nothing → run; oracle → guard +
+converged-elide; grounding → tier-2 past the core; negatives about others' vocabularies → never
+(correctly). Third convergence with 236b's substrate-token idea.
+
+CLARIFIED under the human's challenge (late 2026-07-02 — he suspected a regress to 233's
+enumeration): the bridge is NOT a kind-to-kind equivalence/disjointness map (that WOULD regress
+to pairwise matrices or scoped-global review-vouches — dead). It is COORDINATE TRANSLATION:
+"my kind's state lives at these ENTITIES of the shared kind" (mentions zero other kinds), after
+which disjointness is COMPUTED entity-vs-entity inside the shared kind, never asserted per
+kind-pair. Ungrounded kinds have no disjointness power in EITHER direction (absence = wall,
+never = disjoint — silence still means nothing). Passes 233's acid test: a stranger minting a
+new kind invalidates nothing (positive local claims don't rot). "One line" corrected to
+"O(own-substrate) lines, possibly probe-DERIVED when the substrate is data-dependent."
+**NEW FENCE (the human's catch): within-kind ENTITY aliasing** — two path-strings, one file
+(symlinks/hardlinks/mounts/normalization/case-folding) is the synonym problem at entity
+granularity, silently assumed away by string comparison. Each shared kind's owner must pin its
+entity-identity semantics; OS-level aliasing = named horizon-residue or probe-time resolution
+(`realpath`). Elide-half pile, adversarial pass owed.
+
+## Task-4 rulings (human, 2026-07-02 — guards-can't-serve walkthrough; task #4 CLOSED)
+
+Seven can't-serve classes walked (captured stdout · pipelines · admin-read rc · run-delta verbs
+· loops · multi-operand · awkward homes); every fallback is `run`, so the whole list is priced
+performance, never soundness. Rulings:
+
+- **rc-consumer split DEFERRED pending experimentation** (→ task #13): whether errexit-implicit
+  consumption blocks guarding is genuinely open — the human suspects painful breakage under
+  EITHER default and wants a richer, as-yet-unknown resolution. Interim binding posture: guards
+  mint only where NO explicit status reader exists (`&&`/`||` operands, `if`/`elif`/`while`
+  conditions, `$?` readers all refuse); no pin encodes either default as desired. Uncontested
+  regardless: a written `|| fallback` site never guards (the stacked-failure disaster).
+- **Refuse-loudly-initially RATIFIED** for structurally-awkward homes (background, substitution
+  positions, heredoc lines) — conditional on default=run and a quiet/conflation mechanism
+  existing. His memory of prior-art checks out: the r22 errors+provenance arc (the why-lens
+  reporting side; the structured diag-API ruled battlefield-bound) + round-11's
+  root-cause-only / warning-fatigue doctrine are exactly that machinery.
+- **NEW AXIOM — "the command is the atomic unit"** (his word: a "perfectly cromulent axiomatic
+  atomic unit of Dorc Doing Stuff"): disassembling commands is fraught; HARD DEFER, possibly
+  forever. Multi-operand invocations guard whole-line, all-or-nothing (one diverged member ⇒
+  whole line runs — the safe direction). REFINED same day (human): the enrichment path for
+  multi-operand granularity is the AUTHOR rewriting to a loop (`for p in a b c; do install $p`)
+  — command-specific "you don't need a shell-loop!" cleverness is mildly an antipattern anyway —
+  so the whole question folds under "figure out loops eventually" (per-iteration guarding,
+  currently deferred), and NO engine investment goes to member-handling. The pre-crisis
+  partial-member arc (the 231-1e family, per-member self-reach, `xf-partial-member-elide`) is
+  PARKED accordingly.
+- The in-flight xfail agent was notified of all three mid-run (SendMessage), so its pin-set
+  doesn't encode against fresh rulings.
 
 ## Task-3 rulings (human, 2026-07-02 — the plan-surface contract; task #3 CLOSED)
 
