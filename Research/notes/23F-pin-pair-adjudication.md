@@ -147,8 +147,22 @@ pin) and the *build-window promotion path* (one-sided xfails + bless). Ledger:
   breakage) so HEAD's pre-vouch-law elision machinery cannot begin consuming inverted claims
   as a side-effect of a re-spelling; it dissolves into the uniform no-vouch-no-elide license
   when the guard/vouch tier lands. No polarity doctrine is encoded by the freeze.
+- **jc-singleton-mark RULED (human, 2026-07-02): the empty entity slot** — `kind:.prop`, e.g.
+  `pkgindex:.fresh`. The colon always terminates the kind (reverse-DNS kind handles contain
+  dots, so colon-less two-part forms are ambiguous — rejected); the emptiness reads as
+  deliberate, and both near-miss typos fail loudly. Attested in stamped-233's strawmen under a
+  related-but-different historical reading (entity-GENERIC "column" references in the dead m×n
+  exclusion lists — killed by the vacuous-universal law; no live home), but for Singletons the
+  column and the cell denotationally coincide, so the stale association is harmless. **FORWARD
+  RESERVATION:** if the elide-half footprint design ever needs a true all-entities-of-kind
+  spelling, it must take an explicit wildcard shape (`kind:*.prop`-flavored), never the empty
+  slot — empty = the-one, star = all. No arity registry: the engine stays referent-agnostic,
+  Singleton-ness is emergent from usage; mixed empty+named entities on one kind are simply two
+  cells (attribute, don't prevent). Spike-provisional like h2 (the human is not married to it).
 - Provenance: ruled in-conversation immediately pre-context-clear; the atomic re-spelling
   session was dispatched with all of the above baked into its brief; its record → `notes/23H`.
+  The singleton ruling arrived after that session's honest STOP; the finishing session
+  (isolated worktree, per the new dispatch-hygiene rule) executes the 23H §5 remainder-recipe.
 
 Repair pass dispatched to an Opus-class agent (isolated worktree; spec = this note + 23B/23C):
 the five new pins (var-namespace, nounset, cross-oracle vouch scoping, cant-tell-runs,
