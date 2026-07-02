@@ -79,7 +79,19 @@ notes-slugs 23B/23C; asymmetric context — the adversary is barred from 23A/23Z
    opaque-input→report plumbing. R2/R3/R4 = ONE atomic workspace session, sibling-free
    (BLESS exclusivity), engine + coverage touch-points + re-bless together; the exact
    coverage touch-points are restated in spike/CLAUDE.md's corrected round-20 bullet. The
-   23E `jc-dpkg-i` / `jc-fblessed` design-STOPs remain human rulings first. Full design + blocker + the design-shaped `jc-*` flags (dpkg-i effect
+   design-STOPs are RULED (human, 2026-07-02): jc-dpkg-i → author a minimal dpkg.check() in
+   affected fixtures; jc-fblessed → accepted (annotation-on-the-reached-arm IS the per-selector
+   declaration; the old filing-floor was a spelling-era artifact); jc-polarity-vs-rc → **FINAL:
+   property values are OPAQUE booleans — the engine knows no creation/destruction, and NO
+   polarity class survives anywhere, ever.** `!` lifts as plain rc-inversion plumbing on a
+   value-claim. Verb asymmetries ("install touches extra files and that's wanted; uninstall
+   leaves extra files and that's a footgun") are the ORACLE-AUTHOR's domain, expressed by which
+   arms they choose to vouch — the engine has ONE default (no vouch ⟹ run) plus attribution.
+   INTERIM (transitional, marked in-code per the churn-disclosure discipline):
+   rc-inverted-claim sites classify MustRun so HEAD's pre-vouch-law elision machinery cannot
+   start consuming them — a behaviour-FREEZE, not a breakage; it dissolves into the uniform
+   no-vouch-no-elide license when the guard/vouch tier lands. Atomic session DISPATCHED
+   2026-07-02 (Opus, main tree, granular commits — resumable if interrupted; notes → 23H). Full design + blocker + the design-shaped `jc-*` flags (dpkg-i effect
    derivation; the multi-selector resolve_probe floor evaporating under check-as-oracle;
    `!`-polarity vs rc-inversion semantics): **`notes/23E`**. NB a tooling quirk for future
    dispatches: the isolation worktree branched from the DEFAULT branch, not this ai-branch's
