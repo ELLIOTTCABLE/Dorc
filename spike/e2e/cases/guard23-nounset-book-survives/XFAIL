@@ -1,0 +1,1 @@
+guard tier unbuilt (23C-fd2 set-u crash): the shipped check body reads `"$2"` unconditionally, so a single-operand guard under set -u must not DIE at that read — the artifact must complete exactly as the bare book (hork, curl, vim; exit 0). HEAD ships no guard/no past-wall probe (gate-1 parity); a naive whole-body guard would die rc 2 and drift the two-sided head-expected.ran pin

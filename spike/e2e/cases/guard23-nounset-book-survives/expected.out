@@ -1,0 +1,47 @@
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc — the record is the out-of-band lane).
+
+# site:0 skip-unresolvable
+# site:1 skip-unresolvable
+# site 2: package:curl#installed
+package_installed__check() { dpkg-query -W "$1" >/dev/null 2>&1; }
+package_installed__check 'curl'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'site 2 effect=%s rc=%s\n' "$_e" "$_rc"
+# site 3: package:vim#installed
+package_installed__check 'vim'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'site 3 effect=%s rc=%s\n' "$_e" "$_rc"
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+# dorc guard preamble: the vouching oracle's own check body, shipped strip-only
+# (annotations removed, `name.check()` -> `name_check()`, nothing else changed --
+# rul-ternary-verdict: the same authored bytes the probe lane self-vouches).
+apt_get__check() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   pkg="$1"
+   if [ "$2" = "" ]; then dpkg-query -W "$pkg" >/dev/null 2>&1; fi
+}
+
+# guard23-nounset-book-survives (23C-fd2: a `set -u` book — the inserted guard must not kill
+# the book tail; XFAIL until the guard tier lands). The corpus-standard check body reads `"$2"`
+# unconditionally (`if [ "$2" = "" ]; …`); a single-operand guard invocation
+# (`apt_get__check install -y curl`) leaves `$2` unset, so under `set -u` the shipped whole-body
+# guard DIES rc 2 at that read — curl, vim, and everything downstream under-executed by the
+# insertion (the 218a set-u hazard, demonstrated; distinct from the deferred errexit-CONSUMPTION
+# axis — this is the inserted code's OWN crash). Composition:
+#   set -u                    — nounset active for the whole book
+#   hork wombat               — opaque wall
+#   apt-get install -y curl   — vouched + converged-past-wall ⇒ GUARD (the crash site)
+#   apt-get install -y vim    — DIVERGED (vim absent) ⇒ the downstream victim; must still run
+# Desired (mechanism-NEUTRAL per human ruling h3 — check-body `${2:-}` hygiene OR subshell-wrap,
+# the engine's choice): the guarded artifact COMPLETES exactly as the bare book does — curl
+# guarded (converged ⇒ suppressed), vim installed, artifact exits 0. The bare book completes rc
+# 0 (three commands); a naive guard dies rc 2 at the guard and under-executes the tail. The
+# load-bearing pins are expected.ran (vim present) and the default exit-0 assertion (survives).
+set -u
+hork wombat
+( apt_get__check install -y curl ) || apt-get install -y curl   # dorc: guard [package converged-vouch; probe: holds] (subshell contains the set-u fatal `"$2"` read; the book survives — 23C-fd2/h3; mechanism-illustrative, not pinned)
+apt-get install -y vim

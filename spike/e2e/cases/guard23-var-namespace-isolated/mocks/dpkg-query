@@ -1,0 +1,9 @@
+#!/bin/sh
+# INERT probe shim for `dpkg-query -W <pkg>` (the package kind's probe) — the flagship
+# host: nginx and curl installed (rc 0 ⇒ holds), vim ABSENT (rc 1 ⇒ absent). Read-only;
+# logs argv. Under the guard tier this same body re-runs at apply as site 2's guard.
+. "${0%/*}/.log"; _dorc_logged "$@"
+case $* in
+  *vim*) exit 1 ;;
+esac
+exit 0

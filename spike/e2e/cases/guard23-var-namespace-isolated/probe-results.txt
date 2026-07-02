@@ -1,0 +1,10 @@
+# probe-results: site-keyed records (task-D1 WIRE). Grammar:
+#   site <leafid> effect=<holds|absent|cant-tell>
+# site 0 = `pkg=vim` (assignment, no probe); site 1 = hork (opaque wall). sites 2/3 sit PAST
+# the wall; at HEAD their establish-probes never ship (skip-unresolvable), so these records are
+# consumed by nothing (half of the xfail). Under the guard tier the vouched sites keep their
+# read-only probes so the witness has its verdict and the plan its prediction.
+# site 2 (curl) holds ⇒ guard minted — and the check's `pkg="$1"` must NOT clobber the book's pkg.
+# site 3 (vim) absent ⇒ diverged ⇒ runs with original bytes `"$pkg"` ⇒ must install VIM.
+site 2 effect=holds
+site 3 effect=absent
