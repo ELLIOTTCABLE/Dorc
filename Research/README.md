@@ -26,15 +26,27 @@ least a little bit of prior rounds as context; older ones, although focused, are
 often also full of superseded/incorrect info. peruse older rounds with care.)
 
 **Start here (current state):** the standing design accord is the human-authored `../DESIGN.md` +
-`../KNOBS.md` (now incl. `kTYANNOT`); the most recent *event* is the **round-17 type/kind/naming research** —
-read **`plans/17N`** (the K1+K2 reunion: how a kind is spelled, analyzed, and reconciled — the on-ramp for the
-kind/'types' question) + **`notes/17O`** (its adversarial crosscheck). The prior **round-16 implementation
-spike** is still the build reality (`plans/16P` §3-ledger first, then `plans/16Q`). The per-facet conclusions
-below (`055`/`099`/`102`/`111`/`128`/`139`/`142`/`17N`) are the durable answers each round settled.
+`../KNOBS.md` **plus (new, binding) the round-23 standing-rulings block in `../spike/CLAUDE.md`**; the most
+recent *event* is **round 23 — the oracle-contract crisis and its resolution into the ternary verdict
+{elide, guard, run}**. On-ramp for the current state: **`plans/233`** (HUMAN-written, stamped; read its
+end-annotation — it carries corrections) → **`notes/239`** (the signed crisis-closure + re-welds) →
+**`notes/23Z`** (the living resumption doc: state, bindings, the arc ahead) → `notes/23D` (the rulings/seeds
+ledger). The kind/'types' on-ramp remains **`plans/17N`**; the **round-16 spike** remains the build reality
+(`plans/16P` §3-ledger first, then `plans/16Q`), now plus the round-23 `guard23-*` pin-set (`notes/23A`).
+The per-facet conclusions below (`055`/`099`/`102`/`111`/`128`/`139`/`142`/`17N`) are the durable answers
+each round settled.
 
-> **Major upcoming work surfaced by round 22 (errors + provenance) — flagged here so it is NOT buried in the corpus.** Two foundational arcs, both deferred:
-> 1. **`plans/230` — best-effort / collapsed-gradients (the r23 focus).** Turn the early rounds' *boolean* "oracle is perfect/complete" assumptions into proper trust/coverage **gradients** — i.e. actually implement "soundiness" (graceful degradation as the user's oracle/admin quality degrades) *in code*. This is the **decision-side** of r22's errors+provenance (the why-lens shipped the reporting side). Opens with a corpus sweep for *which* gradients got collapsed (not just trust).
-> 2. **`plans/22H` — the live-plan / concurrent-incremental / streaming engine (deferred, foundational).** The founding anti-Ansible real-time motivator: probes streaming concurrently from N hosts, the per-host plan re-folding live. Threading reactivity through the kernel is deep work; also tracked at the top of `../TODO-ADDTL.md`. (Was the "ui-B" misnomer; r22 corrected its monotonicity story and sized the unbuilt concurrency seam.)
+> **The two foundational arcs flagged after round 22 — status as of round 23:**
+> 1. **`plans/230` — best-effort / collapsed-gradients.** OPENED round 23 (sweep `notes/231`, design
+> dialogue `232`), then overtaken: the human's **`plans/233`** crisis-log showed the oracle effect/poison
+> contract broken at its core, and the round's true output became the **ternary verdict architecture**
+> (233's update section + the signed `notes/239`). The surviving un-collapse work lives on in the
+> **elide-half design arc** (seeds: `notes/238` + `notes/23D` §5) and the arc-list in `notes/23Z`.
+> 2. **`plans/22H` — the live-plan / concurrent-incremental / streaming engine (still deferred, still
+> foundational).** The founding anti-Ansible real-time motivator: probes streaming concurrently from N
+> hosts, the per-host plan re-folding live. NB from round 23: the guard tier **pins apply to book-order**
+> (guards are in-sequence by construction), and the commissioned re-verification placement-spectrum round
+> overlaps 22H's re-fold machinery — these must compose, not collide.
 
 - **What is it, and where's the hard part?** — `plans/021` (empty dir → CFG/effect engine) +
   `plans/041` (language / parser / orchestration decisions).
@@ -75,7 +87,21 @@ Through-line worth holding: the **soundness story keeps getting re-cut** — bia
 relational MUST/MAY contracts (`099`). Later cuts supersede earlier framings of *how much Dorc
 can know without running the host*; on that question, the later round wins.
 
-> *Latest — round 17, 2026-06-07/08, the type/kind/naming research:* the **symbol-grounding / 'types'
+> *Latest — round 23, 2026-06-15 → 2026-07-02, the oracle-contract crisis:* the human's **`plans/233`**
+> showed the effect/poison contract broken — with a binary per-site verdict, oracle-*silence* must mean
+> trusted (a partial oracle becomes WORSE than none) or poisoned (real books elide nothing); the frame
+> problem, and no default escapes it. Resolution: the **ternary verdict {elide, guard, run}** — a `guard`
+> inserts the oracle's own stripped check in front of the original bytes (`check || command`); silence
+> licenses nothing. Crisis formally CLOSED: `notes/239` signed, rulings welded into `spike/CLAUDE.md`
+> (round-23 block), 233 stamped with a correcting end-annotation. The attention-product is re-priced
+> honestly (the **two-halves doctrine**, 239 §1: full elision stays THE goal; the guard-half is sister and
+> permanent fallback). A 3-agent adversarial crosscheck validated the mechanism 3-way (`notes/236a-c`,
+> adjudicated `237`); the ceiling for the elide-goal is mapped (`238`: horizon-bounded claims, derived
+> footprints). Guard-tier behaviour is pinned as 19 e2e cases before any build (`notes/23A`,
+> `spike/e2e/cases/guard23-*`). Next: the build slice, the placement-spectrum round, the elide-half round —
+> **`notes/23Z`** carries the live arc. Prior: round 17 (below).
+>
+> *Round 17, 2026-06-07/08, the type/kind/naming research:* the **symbol-grounding / 'types'
 > problem** — the unspelled named-kind contract `151` flagged as the hinge. Two firewalled kernels (K1
 > identity-spelling `plans/175` · K2 type-discipline `plans/17H`) **reunited** in **`plans/17N`** (the on-ramp
 > for the kind/types story), then **adversarially crosschecked** in **`notes/17O`**. Net: one genuine new knob
@@ -259,6 +285,36 @@ crosschecked. Charter: `plans/170`.*
   run-delta-convergence entry (to-write-into-DESIGN) · `[REVISED→17N]` annotations on `plans/099` §C +
   `plans/175` + `plans/17H` (the `094`-g1 shared-arg→hint downgrade) · the `getent hosts` non-hermetic
   canonical example.
+
+### The oracle-contract crisis → the ternary verdict (round 23 — 2026-06-15 → 2026-07-02)
+*Opened as the best-effort/collapsed-gradients round (`plans/230` seed); interrupted by the human's crisis
+log and became the round that re-architected the verdict vocabulary. Read `plans/233` first; `notes/23Z`
+for the live state.*
+- **`plans/233`** — HUMAN-written crisis log, stamped: the poison-default dilemma (silence-as-vouch unsound
+  / silence-as-poison valueless; the frame problem), four exhausted approaches, then the update section —
+  the ternary escape, the frontloaded trade, the settled guard-license (converged-vouch). The
+  end-annotation carries corrections a reader MUST honor.
+- `notes/231` (collapsed-gradient sweep) · `232` (completeness-vouch design dialogue) — the pre-crisis r23
+  work; heed `231` §4's correction pointer.
+- `notes/234` — 4-agent adversarial crosscheck of pre-update 233, conductor-adjudicated (the
+  explicit-positive-frame salvage; the sealed-vs-open fork, later dissolved).
+- `notes/235` — the fork's resolution + the escape-hatch taxonomy (hatch-isolate ·
+  hatch-bump-exclude · hatch-dont-run-dismissed; parked).
+- `notes/236a/b/c` + **`notes/237`** — the 3-agent crosscheck of stamped-233 (neutral / find-better /
+  kill-direction) + the skeptical adjudication: mechanism validated 3-way; the vouch-tier weakness
+  convergence; re-observation → the commissioned placement-spectrum round; FOUR post-adjudication
+  corrections (incl. the check()-body reversal — read them).
+- `notes/238` — the ceiling: horizon-bounded claims, the derivation gradient, derived footprints; "no
+  claim without a horizon; no closure authored where it can only be derived."
+- **`notes/239`** — the crisis-closure package, SIGNED: closure criteria, six re-weld deltas (applied:
+  `spike/CLAUDE.md` round-23 rulings block + KNOBS notes), the two-halves doctrine (§1).
+- `notes/23A` — the guard-tier pin-set register: 19 e2e cases (`spike/e2e/cases/guard23-*`, 6 xfail + 13
+  floors), landed + conductor-verified; hazards (hz-refusepath) + promotion mechanics.
+- `notes/23B` / `23C` — the pin-set crosscheck pair (neutral / adversarial; in flight at time of writing).
+- `notes/23D` — the round's rulings + design-seeds ledger (oracle ground-truth; plan-surface,
+  can't-serve, attention-chronology rulings; the elide-half seeds and the vocabulary law).
+- **`notes/23Z`** — the living resumption doc (state · bindings · the arc ahead). **Start there for
+  current status.**
 
 ## Vendor/ (full-history clones)
 CoLiS ecosystem (morbig, morsmall, colis-language, colis-constraints, shstats, lintshell, …), shellcheck, mvdan-sh, smoosh, oils, goblint-analyzer, tree-sitter-bash. See manifest for grades/licenses.
