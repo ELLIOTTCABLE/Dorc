@@ -57,12 +57,25 @@ notes-slugs 23B/23C; asymmetric context — the adversary is barred from 23A/23Z
    gate-6 selftest confounds, conflict-file removal — list in 23F) → append the repair
    addendum to 23F → integrate the phase-0.5 Opus branch when it lands → final harness run →
    commit clean.
-0.5. **SPIKE-vs-DESIGN RECONCILIATION — frontloaded by the human (2026-07-02); DISPATCHED
-   same day to an OPUS-class agent in an ISOLATED WORKTREE** (enumerated brief per the human's
-   Opus-prompting guidance — the inverse of the Fable style; H2SaLS fixture trees scoped OUT
-   per the quarantine; deliverables: reconciled branch + `notes/23E` + granular commits;
-   INTEGRATE its branch into main only AFTER the pin-pair adjudication + repairs land, so main
-   stays stable for adjudication). Content: correct the spike where it is *genuinely wrong* against the design, so the guard
+0.5. **SPIKE-vs-DESIGN RECONCILIATION — PARTIALLY LANDED 2026-07-02** (Opus agent, isolated
+   worktree; its 3 commits cherry-picked onto main, conflict-free; merged tree verified by the
+   conductor: all unit tests + 118 e2e / 6 designed xfails / 0 red). **DONE: R1** — strip-only
+   parsing of the full inline dialect (period-named funcdefs; ESTABLISH/`!`/`= value`, OBSERVE
+   `:?`, ACK `~`, POISON, the `: provider:verb~` vouch placeholder; a byte-stable strip pass;
+   16 new tests; additive — old spellings still parse, nothing regressed, no goldens touched)
+   + the st-2 correction notes in spike/CLAUDE.md and oracle/CLAUDE.md (originals kept as
+   history). **DESIGNED-AND-DEFERRED: R2/R3/R4** (marker retirement, emitter ships the
+   stripped check body, fixture conversion) — BLOCKED on a crisp human ruling (**ask h5**):
+   the changes propagate into `crates/coverage/`, which is H2SaLS-entangled; the quarantine's
+   LETTER excludes only its two H2SaLS-referencing files, its SPIRIT arguably the crate —
+   option (A) coverage/lib.rs+main.rs call-sites are fair game (mechanical, unblocks
+   everything) vs (B) freeze the crate (human edits the call-sites or sanctions a dual-mode
+   transition). Full design + blocker + the design-shaped `jc-*` flags (dpkg-i effect
+   derivation; the multi-selector resolve_probe floor evaporating under check-as-oracle;
+   `!`-polarity vs rc-inversion semantics): **`notes/23E`**. NB a tooling quirk for future
+   dispatches: the isolation worktree branched from the DEFAULT branch, not this ai-branch's
+   HEAD — the agent noticed and self-corrected (23E §0); check new agent-worktree baselines.
+   Original content of this step: correct the spike where it is *genuinely wrong* against the design, so the guard
    work lands on corrected substrate. Known items: the **fake probe/check division** (the st-2
    `oracle_probe_*`-vs-`check()` split is spike-internal fiction — design truth per `23D` §1:
    the check IS the oracle, strip-only, whole stripped body ships in both lanes; rewrite the
