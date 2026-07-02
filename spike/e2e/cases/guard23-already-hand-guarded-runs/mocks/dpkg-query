@@ -1,0 +1,10 @@
+#!/bin/sh
+# INERT shim for `dpkg-query -W <pkg>` — nginx ABSENT (rc 1), world-consistent with the
+# `dpkg -s` shim (both report nginx absent). NOTHING invokes it at HEAD (the hand-guarded
+# line runs verbatim; the probe uses `dpkg -s`). It is a TRIPWIRE (conv-2 / 23C-fd6): if a
+# build wrongly STACKS a machine-guard onto the admin's hand-written one, the stacked check
+# calls `dpkg-query -W nginx`, which now LOGS an extra run-set line (rc 1 ⇒ falls through, the
+# install still runs) ⇒ the exec gate reds — instead of 127-ing invisibly into a
+# byte-identical log that only the (bless-rewritable) content diff could catch.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 1
