@@ -72,12 +72,14 @@ notes-slugs 23B/23C; asymmetric context — the adversary is barred from 23A/23Z
    16 new tests; additive — old spellings still parse, nothing regressed, no goldens touched)
    + the st-2 correction notes in spike/CLAUDE.md and oracle/CLAUDE.md (originals kept as
    history). **DESIGNED-AND-DEFERRED: R2/R3/R4** (marker retirement, emitter ships the
-   stripped check body, fixture conversion) — BLOCKED on a crisp human ruling (**ask h5**):
-   the changes propagate into `crates/coverage/`, which is H2SaLS-entangled; the quarantine's
-   LETTER excludes only its two H2SaLS-referencing files, its SPIRIT arguably the crate —
-   option (A) coverage/lib.rs+main.rs call-sites are fair game (mechanical, unblocks
-   everything) vs (B) freeze the crate (human edits the call-sites or sanctions a dual-mode
-   transition). Full design + blocker + the design-shaped `jc-*` flags (dpkg-i effect
+   stripped check body, fixture conversion) — **UNBLOCKED 2026-07-02**: the human lifted the
+   coverage-crate restriction; the crate's sources were OPACIFIED (its two doc-surfaces no
+   longer reference the external corpus; only the corpus directory under `Research/` stays
+   excluded for quarantined agents) and are maintainable by any agent as pure
+   opaque-input→report plumbing. R2/R3/R4 = ONE atomic workspace session, sibling-free
+   (BLESS exclusivity), engine + coverage touch-points + re-bless together; the exact
+   coverage touch-points are restated in spike/CLAUDE.md's corrected round-20 bullet. The
+   23E `jc-dpkg-i` / `jc-fblessed` design-STOPs remain human rulings first. Full design + blocker + the design-shaped `jc-*` flags (dpkg-i effect
    derivation; the multi-selector resolve_probe floor evaporating under check-as-oracle;
    `!`-polarity vs rc-inversion semantics): **`notes/23E`**. NB a tooling quirk for future
    dispatches: the isolation worktree branched from the DEFAULT branch, not this ai-branch's

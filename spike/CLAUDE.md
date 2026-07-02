@@ -63,9 +63,17 @@ Replace the round-19 stand-ins with the real input side (`19H`):
     the design; the probe ships `strip_check(<provider>.check)` invoked per-site
     with the site's argv. The original text is left standing as history. The CODE
     reconciliation (R3: emitter ships the stripped check body) is DESIGNED-AND-
-    DEFERRED — it changes `dorc_plan::compile_probe`'s signature, which the
-    C2-excluded `crates/coverage/` consumes, so it needs a human ruling first.
-    Full design + the blocker: `Research/notes/23E-spike-reconciliation.md`.
+    DEFERRED; full design in `Research/notes/23E-spike-reconciliation.md`.
+    **RESOLVED 2026-07-02 (human):** the former coverage-crate blocker is lifted —
+    `crates/coverage/` sources were opacified and are maintainable by ANY agent with no
+    external-corpus knowledge (only the corpus directory under `Research/` stays
+    excluded for quarantined agents). R2/R3/R4 proceed as ONE atomic workspace change
+    in a sibling-free session (BLESS exclusivity): the engine edits + coverage's three
+    touch-points — `coverage/src/lib.rs:426` mirrors the cli's `compile_probe` call
+    byte-for-byte (apply the same edit), the two inline fixtures (`lib.rs` ~1134,
+    `main.rs` ~527) convert with all other fixtures, coverage emits no e2e goldens —
+    + the R4 re-bless. The `jc-dpkg-i` and `jc-fblessed` design-STOPs in 23E remain
+    human rulings before that session.
 - completion of the **one-Observable unification** (`19F`/`19G`, half-landed).
 
 A case that passes because a fixture happened to feed the right value is not a
@@ -104,8 +112,9 @@ and where* (→ `Research/notes/20x-*.md`, append-only), not green tests.
     ("a future emitter ships `check()`-body spans") is the *intended* end-state,
     not a hazard — the self-vouch carve-out covers it (a command inside its own
     oracle's `check()` is the self-vouched unit by construction). The R3 code
-    reconciliation is designed-and-deferred (blocked on the C2/coverage ruling);
-    see `Research/notes/23E-spike-reconciliation.md`.
+    reconciliation is designed-and-deferred (the former coverage-crate blocker is
+    RESOLVED 2026-07-02 — see the corrected round-20 "the job" bullet above for the
+    atomic-session shape); design in `Research/notes/23E-spike-reconciliation.md`.
 - **TOCTOU (probe→apply staleness) is deferred-to-actively-WONTFIX.** Do not
   build re-probe-before-apply, freshness windows, or anything aimed at it.
   (Maybe-someday shape, very deferred: oracle tooling for a super-cheap

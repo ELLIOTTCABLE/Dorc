@@ -90,7 +90,9 @@ exemplar of R2-SHADOW.
     evaporates under check-as-oracle (the engine cannot verify `is-enabled` "means" `#enabled` —
     `inv-referent-agnostic`), consistent with `23D §1.2` ("constrained in what we ASSUME, not what
     they contain") but a real posture shift. Original text stands as history; R2/R3 code is
-    designed-and-deferred (blocked on the C2/coverage ruling — `23E §2`).
+    designed-and-deferred (`23E §2`; the former coverage-crate blocker is RESOLVED
+    2026-07-02 — spike/CLAUDE.md's corrected round-20 bullet carries the
+    atomic-session shape).
 - **`R2-MULTIOP` — the single-operand guard.** A check binding one operand (`pkg : package = "$1"`) MUST gate its
   probe on there being NO second operand: `if [ "$2" = "" ]; then probe "$pkg"; fi`. WITHOUT it, a multi-target
   command (`apt-get install nginx curl`) resolves to entity=`nginx` ALONE and ships a probe for nginx only — so

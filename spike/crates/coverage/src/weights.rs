@@ -1,16 +1,18 @@
-//! Criticality weights — the line-count stand-in for the future 1A-matrix weights.
+//! Criticality weights — the line-count stand-in for future externally-supplied weights.
 //!
 //! The north-star number is **criticality-weighted** (`211` §1: "count- AND
-//! criticality-weighted (1A matrix when it lands; line-count stand-in)"). Until the
-//! round-1A capability matrix lands real per-site criticality, the stand-in is the
+//! criticality-weighted (external scores when they land; line-count stand-in)"). Until
+//! an external source lands real per-site criticality, the stand-in is the
 //! site's line-span (a one-line command weighs 1; a heredoc-bearing or multi-line
 //! command weighs its line-count) — a crude proxy for "how much of the book this site
 //! represents".
 //!
-//! This module is the CLEARLY-MARKED adapter seam: when the 1A weights land (as
-//! per-line or per-site criticality scores from `.claude/worktrees/ai-r1A-H2SALS`),
+//! This module is the CLEARLY-MARKED adapter seam: when real per-line criticality
+//! scores land (from an external, out-of-tree scoring artifact whose location and
+//! provenance are deliberately opaque to in-tree agents — the human owns the hookup),
 //! [`Weights::from_line_scores`] is the single swap-point; nothing else in the crate
-//! knows where a weight came from.
+//! knows where a weight came from. Maintain this module as pure
+//! opaque-input-to-report plumbing: it needs no knowledge of what the scores mean.
 
 use std::collections::BTreeMap;
 
@@ -36,11 +38,11 @@ impl Weights {
         }
     }
 
-    /// **The 1A adapter seam** (FUTURE — not wired today): build weights from the
-    /// round-1A matrix's per-line criticality scores. When that artifact lands at
-    /// `.claude/worktrees/ai-r1A-H2SALS`, parse it into `line → score` and hand it
-    /// here; the rest of the crate is unchanged. `default` is the weight for a line the
-    /// matrix did not score (a structural/blank line — typically 0 or 1).
+    /// **The criticality adapter seam** (FUTURE — not wired today): build weights from
+    /// externally-supplied per-line scores. The score source is out-of-tree and opaque
+    /// by design (the human owns parsing/hookup); callers hand a ready `line → score`
+    /// map here and the rest of the crate is unchanged. `default` is the weight for a
+    /// line the source did not score (a structural/blank line — typically 0 or 1).
     #[must_use]
     pub fn from_line_scores(by_line: BTreeMap<u32, u32>, default: u32) -> Self {
         Self {
