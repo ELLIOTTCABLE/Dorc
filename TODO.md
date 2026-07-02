@@ -2,9 +2,10 @@
 
 - [.] (PARTIAL) deep security-dive on both the 1. language/analysis and 2. orchestrator architectures,
   - specifically flag 'including seccomp in the core'; LLM claims it's secure-by-design, but I very much do not trust that claim without a specific threat-model and analysis
-- [ ] dig into control-flow hazards that will easily pass parsing (`set -e`, `trap`.) may be mined for contract-sh-spellings?
+- [.] dig into control-flow hazards that will easily pass parsing (`set -e`, `trap`.) may be mined for contract-sh-spellings?
 - [ ] prior-art on linking oracles' binaries-to-be-invoked to *hash*, spelled-in-sh (`if [ "$(shasum thebin)" = "abcdef..." ]; then ...`)
 - [x] (DEFERRED) skim shell-script corpii to validate design
+- [ ] came up in R23, but i've seen hints before: difference between two potential things an oracle-author *could* be intending to claim: "I'm converged in live state" (this is in the state I wanted it to be in, modulo unknown/irrelevant-to-me noisy changes; and I wish to elide the mutator) vs. "this is a no-op in live state" (this command is *fully* state-precise as of probing; it will literally do nothing when run)
 
 ## Spike-3
 
