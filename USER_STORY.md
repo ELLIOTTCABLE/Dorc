@@ -74,9 +74,6 @@ $ dorc plan --verbose webhost.sh web1.example.net
 plan: 7 run, 0 verify, 0 elided
 ```
 
-(Line-numbers are the *input* line-numbers, always — a line broken for display repeats its
-number rather than incrementing.)
-
 Nothing was probed (nothing could be: probing requires an oracle to vouch that a check is
 safe to run in the read-only probe phase, and no amount of cleverness substitutes for that
 vouch). The plan is just the book, annotated. Spent: nothing. Gained: nothing yet, minus a
@@ -90,7 +87,7 @@ Stage 1 — the base library: the famous half
 -------------------------------------------
 
 Dorc ships with a small base library of oracles for the boring famous things — the
-`sm.dorc.*` bootstrap vocabulary (an intentionally-invalid TLD, so strawman names cannot
+`sm.dorc.*` bootstrap vocabulary (FIXME: intentionally-invalid TLD, so strawman names cannot
 leak into reality): dpkg/apt, coreutils, and friends. With those loaded, the probe phase has
 something to do. `dorc plan` now ships each covered oracle's own *check* — its read-only
 convergence probe, stripped of annotations, byte-for-byte the author's sh — to the host, in
@@ -409,6 +406,8 @@ stage    ran   verified   elided   attention-lines   spent
 3        1     1          5        4                 2 minutes of sh
 4        1     1          5        4                 an hour, for everyone else's benefit
 ```
+
+----
 
 TODO/UNFILLED: the propagation frontier. Everything above elides *around* walls by removing
 them (stage 3) or verifies *behind* them (stage 2). Whether facts can ever statically
