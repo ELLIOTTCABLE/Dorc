@@ -6,6 +6,6 @@ systemctl__check() {
    verb=$1; shift
    svc : service = "$1"
    case $verb in
-      enable)  systemctl is-enabled -- "$svc" ;;
+      enable)  systemctl is-enabled -- "$svc" : service:"$svc".enabled ;;
    esac
 }

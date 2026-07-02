@@ -12,5 +12,5 @@ oracle_effect command '' establish present
 command__check() {
    case $1 in -v) shift ;; esac
    tool : tool = "$1"
-   command -v -- "$tool" >/dev/null 2>&1
+   command -v -- "$tool" >/dev/null 2>&1 :? tool:"$tool".present
 }

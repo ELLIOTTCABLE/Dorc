@@ -8,5 +8,5 @@ oracle_effect dpkg '' query installed
 dpkg__check() {
    case $1 in -s) shift ;; esac
    pkg : pkgstate = "$1"
-   dpkg -s -- "$pkg" >/dev/null 2>&1
+   dpkg -s -- "$pkg" >/dev/null 2>&1 :? pkgstate:"$pkg".installed
 }

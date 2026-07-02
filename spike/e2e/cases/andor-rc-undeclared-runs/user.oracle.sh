@@ -12,5 +12,5 @@ oracle_effect useradd '' establish present
 # dies: the entity is the operand, not a Singleton (task-W / 19I §2).
 useradd__check() {
    user : user = "$1"
-   getent passwd "$user" >/dev/null 2>&1
+   getent passwd "$user" >/dev/null 2>&1 : user:"$user".present
 }

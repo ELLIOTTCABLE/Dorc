@@ -13,5 +13,10 @@ yum__check() {
    verb=$1; shift
    while [ "${1#-}" != "$1" ]; do shift; done
    pkg : package = "$1"
-   if [ "$2" = "" ]; then rpm -q "$pkg" >/dev/null 2>&1; fi
+   if [ "$2" = "" ]; then
+      case $verb in
+         install) rpm -q "$pkg" >/dev/null 2>&1 : package:"$pkg".installed ;;
+         remove) rpm -q "$pkg" >/dev/null 2>&1 : package:"$pkg".installed! ;;
+      esac
+   fi
 }

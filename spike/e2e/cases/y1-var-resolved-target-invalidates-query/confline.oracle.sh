@@ -11,5 +11,5 @@ grep__check() {
    case $1 in -q) shift ;; esac
    pat=$1; shift
    file : confline = "$1"
-   grep -q -- "$pat" "$file" >/dev/null 2>&1
+   grep -q -- "$pat" "$file" >/dev/null 2>&1 :? confline:"$file".present
 }

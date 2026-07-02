@@ -11,5 +11,8 @@ oracle_effect ufw deny kill allowed
 ufw__check() {
    verb=$1; shift
    rule : firewall = "$1"
-   ufw status "$rule" >/dev/null 2>&1
+   case $verb in
+      allow) ufw status "$rule" >/dev/null 2>&1 : firewall:"$rule".allowed ;;
+      deny) ufw status "$rule" >/dev/null 2>&1 : firewall:"$rule".allowed! ;;
+   esac
 }
