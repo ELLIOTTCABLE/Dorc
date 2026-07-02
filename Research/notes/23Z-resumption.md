@@ -52,11 +52,18 @@ notes-slugs 23B/23C; asymmetric context — the adversary is barred from 23A/23Z
 0. **IMMEDIATE (this conductor, pre-clear):** DONE — pair adjudicated (**`notes/23F`**: both
    passes say build-against-the-set; the demonstrated adversarial composition holes adv-1
    variable-clobbering / adv-2 nounset; the convergent build-window blindness conv-1; the
-   h1–h4 asks) and notes harvested (23B/23C committed). REMAINING pre-clear: human rules
-   h1–h4 → execute the repair pass (new composition/scoping pins, two-sided xfails, shims,
-   gate-6 selftest confounds, conflict-file removal — list in 23F) → append the repair
-   addendum to 23F → integrate the phase-0.5 Opus branch when it lands → final harness run →
-   commit clean.
+   h1–h4 asks) and notes harvested (23B/23C committed). FULLY DONE 2026-07-02: rulings h1–h5
+   landed (23F addendum), the repair pass executed (Opus agent; 9 commits cherry-picked;
+   register **`notes/23G`**), conductor-verified: **123 e2e round-trips / 9 xfail / 0 XPASS /
+   0 red**. The pin-set now includes the composition pins (variable-capture, set-u), the
+   scoping floors (cross-oracle vouch, cant-tell), the redirect refuse-home, two-sided xfail
+   markers, tripwire shims, the guard-shape floor + selftest confounds, and the
+   diff-before-bless rule. ONE design flag for the build round (23G `jc-nounset-desired`): the
+   set-u end-state is mechanism-SENSITIVE — subshell-wrap survives-but-defeats-the-guard vs
+   `local`/`${n:-}` hygiene survives-and-works; bare-survival is pinned for now; rule which
+   end-state is desired when the mechanism lands. Also 23G `jc-rust-diff`: the hostsim
+   differential judge needs the same guard-disposition widening as gate-6 when the tier
+   builds (deferred, correctly). Task #7 CLOSED; the round-23 conductor handoff is complete.
 0.5. **SPIKE-vs-DESIGN RECONCILIATION — PARTIALLY LANDED 2026-07-02** (Opus agent, isolated
    worktree; its 3 commits cherry-picked onto main, conflict-free; merged tree verified by the
    conductor: all unit tests + 118 e2e / 6 designed xfails / 0 red). **DONE: R1** — strip-only
