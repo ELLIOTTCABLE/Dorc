@@ -30,7 +30,7 @@ often also full of superseded/incorrect info. peruse older rounds with care.)
 recent *event* is **round 23 — the oracle-contract crisis and its resolution into the ternary verdict
 {elide, guard, run}**. On-ramp for the current state: **`plans/233`** (HUMAN-written, stamped; read its
 end-annotation — it carries corrections) → **`notes/239`** (the signed crisis-closure + re-welds) →
-**`notes/23Z`** (the living resumption doc: state, bindings, the arc ahead) → `notes/23D` (the rulings/seeds
+**`LIVING_STATUS.md`** (the living resumption doc: state, bindings, the arc ahead) → `notes/23D` (the rulings/seeds
 ledger). The kind/'types' on-ramp remains **`plans/17N`**; the **round-16 spike** remains the build reality
 (`plans/16P` §3-ledger first, then `plans/16Q`), now plus the round-23 `guard23-*` pin-set (`notes/23A`).
 The per-facet conclusions below (`055`/`099`/`102`/`111`/`128`/`139`/`142`/`17N`) are the durable answers
@@ -41,7 +41,7 @@ each round settled.
 > dialogue `232`), then overtaken: the human's **`plans/233`** crisis-log showed the oracle effect/poison
 > contract broken at its core, and the round's true output became the **ternary verdict architecture**
 > (233's update section + the signed `notes/239`). The surviving un-collapse work lives on in the
-> **elide-half design arc** (seeds: `notes/238` + `notes/23D` §5) and the arc-list in `notes/23Z`.
+> **elide-half design arc** (seeds: `notes/238` + `notes/23D` §5) and the arc-list in `LIVING_STATUS.md`.
 > 2. **`plans/22H` — the live-plan / concurrent-incremental / streaming engine (still deferred, still
 > foundational).** The founding anti-Ansible real-time motivator: probes streaming concurrently from N
 > hosts, the per-host plan re-folding live. NB from round 23: the guard tier **pins apply to book-order**
@@ -99,7 +99,7 @@ can know without running the host*; on that question, the later round wins.
 > adjudicated `237`); the ceiling for the elide-goal is mapped (`238`: horizon-bounded claims, derived
 > footprints). Guard-tier behaviour is pinned as 19 e2e cases before any build (`notes/23A`,
 > `spike/e2e/cases/guard23-*`). Next: the build slice, the placement-spectrum round, the elide-half round —
-> **`notes/23Z`** carries the live arc. Prior: round 17 (below).
+> **`LIVING_STATUS.md`** carries the live arc. Prior: round 17 (below).
 >
 > *Round 17, 2026-06-07/08, the type/kind/naming research:* the **symbol-grounding / 'types'
 > problem** — the unspelled named-kind contract `151` flagged as the hinge. Two firewalled kernels (K1
@@ -288,7 +288,7 @@ crosschecked. Charter: `plans/170`.*
 
 ### The oracle-contract crisis → the ternary verdict (round 23 — 2026-06-15 → 2026-07-02)
 *Opened as the best-effort/collapsed-gradients round (`plans/230` seed); interrupted by the human's crisis
-log and became the round that re-architected the verdict vocabulary. Read `plans/233` first; `notes/23Z`
+log and became the round that re-architected the verdict vocabulary. Read `plans/233` first; `LIVING_STATUS.md`
 for the live state.*
 - **`plans/233`** — HUMAN-written crisis log, stamped: the poison-default dilemma (silence-as-vouch unsound
   / silence-as-poison valueless; the frame problem), four exhausted approaches, then the update section —
@@ -313,7 +313,7 @@ for the live state.*
 - `notes/23B` / `23C` — the pin-set crosscheck pair (neutral / adversarial; in flight at time of writing).
 - `notes/23D` — the round's rulings + design-seeds ledger (oracle ground-truth; plan-surface,
   can't-serve, attention-chronology rulings; the elide-half seeds and the vocabulary law).
-- **`notes/23Z`** — the living resumption doc (state · bindings · the arc ahead). **Start there for
+- **`LIVING_STATUS.md`** — the living resumption doc (state · bindings · the arc ahead). **Start there for
   current status.**
 
 ## Vendor/ (full-history clones)
