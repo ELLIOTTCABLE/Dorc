@@ -1,0 +1,22 @@
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc — the record is the out-of-band lane).
+
+# site:0 skip-unresolvable
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+# guard23-rundelta-never-guards (rul-guard-license: "Run-delta verbs never guard (an oracle
+# declines by not vouching)" — a PASSING floor). `systemctl restart nginx` is the canonical
+# run-delta command: its VALUE IS THE RUN (the delta it applies), not a state its oracle
+# could re-derive — a state-guard here is precisely the forbidden wrong-skip (a "restart if
+# not active" guard EATS a restart the book demanded; plans/233 downsides list). The
+# service oracle below models (and vouches) `enable` — and stays SILENT on restart: no
+# effect row, no vouched path for restart argv to reach, so no witness ever forms and the
+# site runs, forever, vouch-or-no-vouch. Tripwire against provider-keyed vouch scoping
+# ("some systemctl path is vouched, so systemctl restart may guard" is the claim-noop
+# conflation one storey up).
+systemctl restart nginx

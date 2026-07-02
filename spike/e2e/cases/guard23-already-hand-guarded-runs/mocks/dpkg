@@ -1,0 +1,5 @@
+#!/bin/sh
+# INERT shim for `dpkg -s <pkg>` — nginx ABSENT (rc 1): the admin's hand-guard falls
+# through at exec and the install runs, exactly as on the real host.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 1

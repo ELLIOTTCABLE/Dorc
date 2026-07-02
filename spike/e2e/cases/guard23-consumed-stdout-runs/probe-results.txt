@@ -1,0 +1,5 @@
+# probe-results: site-keyed records (task-D1 WIRE). Grammar:
+#   site <leafid> effect=<holds|absent|cant-tell>
+# site 0 (the pipe-left install): holds — converged, vouched, and still must run (its
+# stdout is consumed; no stand-in and no guard may replace consumed output).
+site 0 effect=holds

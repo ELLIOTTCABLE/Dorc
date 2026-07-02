@@ -1,0 +1,4 @@
+# probe-results: site-keyed records (task-D1 WIRE). Grammar:
+#   site <leafid> effect=<holds|absent|cant-tell>
+# NO records: the funcdef is not a probeable site, the call is an un-oracled opaque, and
+# the install sits behind the call's rc in the AndOr; nothing probes at HEAD.

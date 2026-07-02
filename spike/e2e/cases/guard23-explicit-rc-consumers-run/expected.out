@@ -1,0 +1,35 @@
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc — the record is the out-of-band lane).
+
+# site 0: package:nginx#installed
+package_installed__check() { dpkg-query -W "$1" >/dev/null 2>&1; }
+package_installed__check 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'site 0 effect=%s rc=%s\n' "$_e" "$_rc"
+# site 2: package:curl#installed
+package_installed__check 'curl'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'site 2 effect=%s rc=%s\n' "$_e" "$_rc"
+# site 4: package:vim#installed
+package_installed__check 'vim'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'site 4 effect=%s rc=%s\n' "$_e" "$_rc"
+# site:1 skip-unresolvable
+# site:3 skip-unresolvable
+# site:5 skip-unresolvable
+# site:6 skip-unresolvable
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+# guard23-explicit-rc-consumers-run (the narrowest, uncontested slice of the rc-consumer
+# question — a PASSING floor). Three converged, VOUCHED sites whose exit status the admin's
+# own sh explicitly reads: an `if` condition, a `||` left operand with a written fallback,
+# and a `$?` reader. The admin's spelled intent wins, always: a guard's pass-direction
+# would swap the tool's rc for the check's rc under the reader (a wrong-vouch suppressing
+# a written `|| fallback` is the stacked-failure disaster, notes/218a hunt-B), so NONE of
+# these sites may ever mint a guard — they run, vouch or no vouch, converged or not.
+# (Deliberately narrow: whether errexit-IMPLICIT consumption also blocks guarding is
+# DEFERRED by human ruling 2026-07-02 pending experimentation — no book here sets -e, and
+# no pin in the guard23 set asserts either answer to that question; Research/notes/23A.)
+if apt-get install -y nginx; then echo ok; fi
+apt-get install -y curl || echo fallback
+apt-get install -y vim; rc=$?
+echo "rc was $rc"

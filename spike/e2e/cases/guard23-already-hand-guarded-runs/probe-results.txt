@@ -1,0 +1,9 @@
+# probe-results: site-keyed records (task-D1 WIRE). Grammar:
+#   site <leafid> effect=<holds|absent|cant-tell> [rc=<n>]
+# site 1 is the admin's hand-written QUERY guard (`dpkg -s`, pkgstate oracle): query
+# probes ship even past the hork wall (their FOLD-validity is what the wall kills, not
+# their shipping) — nginx absent, rc 1. site 2 (the vouched install) ships nothing at
+# HEAD (establish past wall); if the guard tier's past-wall probing lands
+# (guard23-ternary-flagship pins it), re-author consciously — the load-bearing pin HERE
+# is only that the hand-guarded line runs VERBATIM, with no second guard stacked on.
+site 1 effect=absent rc=1

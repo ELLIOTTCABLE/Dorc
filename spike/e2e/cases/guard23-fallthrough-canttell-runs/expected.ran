@@ -1,0 +1,4 @@
+ran: hork wombat
+ran: dpkg-query -W nginx
+ran: apt-get install -y nginx
+ran: marker done

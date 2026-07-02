@@ -1,0 +1,40 @@
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc — the record is the out-of-band lane).
+
+# site 0: package:nginx#installed
+package_installed__check() { dpkg-query -W "$1" >/dev/null 2>&1; }
+package_installed__check 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'site 0 effect=%s rc=%s\n' "$_e" "$_rc"
+# site:1 skip-unresolvable
+# site:2 skip-unresolvable
+# site:3 skip-unresolvable
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+# guard23-ternary-flagship (rul-ternary-verdict; the {elide, guard, run} verdict map on one
+# book — the guard pin-set's centerpiece; XFAIL until the guard tier lands). Four sites:
+#   site 0  apt-get install nginx — converged BEFORE any wall ⇒ the elide-tier fires exactly
+#           as at HEAD (attention is saved ONLY by provable elision, rul-attention-honesty;
+#           the guard tier must never downgrade a provable elision — two-halves doctrine).
+#   site 1  hork wombat — un-oracled ⇒ opaque ⇒ runs verbatim, and stands as the poison
+#           wall: every downstream site loses its elide-license (plans/233 §0).
+#   site 2  apt-get install curl — converged PAST the wall, and the package oracle carries
+#           a converged-vouch ⇒ the (call-site, reached vouch, probe-verdict) witness mints
+#           a GUARD (rul-guard-license): the oracle's own check body ships strip-only as a
+#           preamble function and the line becomes `check-invocation || original-bytes`;
+#           the original command's bytes survive verbatim (rul-ternary-verdict). At apply
+#           the check re-reads the live host (mock: curl installed, rc 0) ⇒ short-circuit
+#           ⇒ the mutator is skipped by LIVE re-check, never by the stale plan verdict.
+#   site 3  apt-get install vim — DIVERGED past the wall (probe: absent) ⇒ plain run, vouch
+#           or no vouch: the mint is converged-past-wall only (a guard at a predicted-change
+#           site buys nothing); no guard, no check-tax, the mutator runs bare.
+# The probe half additionally pins the sibling the witness needs: a VOUCHED site past the
+# wall still ships its read-only probe (plan-prediction and apply-guard are the same code,
+# plans/233 §"The guard-license"; no probe-verdict ⇒ no witness ⇒ no guard).
+true   # dorc: elided [apt-get install -y nginx] (already converged / dead branch)
+hork wombat
+apt-get install -y curl
+apt-get install -y vim

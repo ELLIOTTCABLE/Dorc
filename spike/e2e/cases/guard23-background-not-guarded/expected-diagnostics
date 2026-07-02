@@ -1,0 +1,2 @@
+error[syntax-unsupported]: background/async `&`
+error[cfg-top-node]: unsupported construct

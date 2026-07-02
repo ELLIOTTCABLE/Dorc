@@ -1,0 +1,5 @@
+#!/bin/sh
+# INERT probe shim for `dpkg-query -W <pkg>` — exits 2 AT APPLY TIME: the world has
+# drifted since the plan-time probe (probe-results.txt says holds). Read-only; logs argv.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 2

@@ -1,0 +1,9 @@
+# probe-results: site-keyed records (task-D1 WIRE). Grammar:
+#   site <leafid> effect=<holds|absent|cant-tell>
+# site 0 = package:nginx#installed BEFORE the wall: holds => elides (probe-licensed).
+# site 2 (curl, past the hork wall) is deliberately ABSENT from this file: at HEAD its
+# probe never ships, and whether an UN-vouched site past a wall should ever ship a
+# hint-probe is an OPEN question this pin deliberately does not settle (Research/notes/23A)
+# — re-author consciously if that lands; the load-bearing pin here is only that the SITE
+# RUNS BARE (no vouch => no witness => no guard).
+site 0 effect=holds

@@ -1,0 +1,4 @@
+#!/bin/sh
+# INERT probe shim for `dpkg-query -W <pkg>` — nginx installed (rc 0 => holds). Read-only.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0

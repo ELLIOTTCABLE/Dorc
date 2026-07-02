@@ -1,0 +1,1 @@
+PROBE_RESULTS=authored: plan-time holds deliberately contradicts the mock host (drift between probe and apply is the case)

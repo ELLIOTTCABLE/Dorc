@@ -1,0 +1,23 @@
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc — the record is the out-of-band lane).
+
+# site:0 skip-unresolvable
+# site:1 skip-unresolvable
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+# guard23-top-argv-runs (rul-guard-license: "Unpropagatable argv => no path reached => no
+# vouch => run" — a PASSING floor). The vouch exists, but the operand is a command-
+# substitution RHS: the value-plane marks PKG TOP, the check() is never evaluated, no path
+# through the check-body is reached, and the witness cannot form — with or without the
+# vouch, the site RUNS. This is the constprop half of the witness triple, and the tripwire
+# against any build that keys the vouch on the PROVIDER (all apt-get sites) instead of on
+# REACHED PATHS: such a build would guard (or worse, elide) a site whose entity it cannot
+# even name. kFAIL-perform: unknown identity never elides — and never guards either (a
+# guard needs an entity to check).
+PKG=$(cat /etc/pkg)
+apt-get install -y "$PKG"

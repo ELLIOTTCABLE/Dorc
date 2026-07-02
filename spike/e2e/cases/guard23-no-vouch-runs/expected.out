@@ -1,0 +1,28 @@
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc — the record is the out-of-band lane).
+
+# site 0: package:nginx#installed
+package_installed__check() { dpkg-query -W "$1" >/dev/null 2>&1; }
+package_installed__check 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'site 0 effect=%s rc=%s\n' "$_e" "$_rc"
+# site:1 skip-unresolvable
+# site:2 skip-unresolvable
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+# guard23-no-vouch-runs (rul-guard-license: "No vouch => run" — the flagship's CONTROL, a
+# PASSING floor that must never regress). Same shape as guard23-ternary-flagship, but the
+# package oracle carries NO converged-vouch. site 0 (nginx, converged, before the wall)
+# elides on probe-facts exactly as at HEAD; site 1 (hork) is the opaque wall; site 2
+# (curl, converged-past-wall) has NO vouch => NO witness => runs BARE, forever. If a build
+# ever mints a guard here — from the effect-map headline, from the probe verdict, from
+# anything but an explicit converged-vouch — this case goes red: that is the claim-noop
+# conflation (`dpkg -s nginx` passing does not make `apt-get install nginx` skippable;
+# plans/233 §"The guard-license"), and silence must stay meaningless (233: silence
+# neither vouches nor poisons; it merely fails to upgrade).
+true   # dorc: elided [apt-get install -y nginx] (already converged / dead branch)
+hork wombat
+apt-get install -y curl

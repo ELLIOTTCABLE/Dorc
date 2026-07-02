@@ -1,0 +1,10 @@
+# probe-results: site-keyed records (task-D1 WIRE). Grammar:
+#   site <leafid> effect=<holds|absent|cant-tell>
+# site 0 = package:nginx#installed, BEFORE the wall: holds ⇒ elide-licensed (as at HEAD).
+# sites 2/3 sit PAST the hork wall. At HEAD their probes never ship, so these two records
+# are consumed by nothing (half of the xfail); under the guard tier the vouched sites keep
+# their read-only probes so the witness has its verdict and the plan its prediction.
+# site 2 holds ⇒ guard minted; site 3 absent ⇒ diverged ⇒ plain run, no guard.
+site 0 effect=holds
+site 2 effect=holds
+site 3 effect=absent

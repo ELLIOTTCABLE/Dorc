@@ -1,0 +1,1 @@
+guard tier unbuilt: a cant-tell check answer (rc 2) must FALL THROUGH to the mutator exactly like divergence (when unsure, act); HEAD ships no guard

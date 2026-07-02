@@ -1,0 +1,5 @@
+# probe-results: site-keyed records (task-D1 WIRE). Grammar:
+#   site <leafid> effect=<holds|absent|cant-tell>
+# site 1 (the vouched heredoc-carrying install, past the hork wall): holds. The witness
+# completes — and the guard is then REFUSED at its structurally-awkward home; run verbatim.
+site 1 effect=holds

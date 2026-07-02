@@ -1,0 +1,5 @@
+#!/bin/sh
+# INERT probe shim for `dpkg-query -W <pkg>` — nginx ABSENT (rc 1): the book's own
+# hand-carried guard function falls through at exec and the install runs.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 1

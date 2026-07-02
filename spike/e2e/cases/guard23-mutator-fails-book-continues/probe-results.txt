@@ -1,0 +1,7 @@
+# probe-results: site-keyed records (task-D1 WIRE). Grammar:
+#   site <leafid> effect=<holds|absent|cant-tell>
+# site 1 (the vouched install, past the hork wall) reports HOLDS at plan time; the mocks
+# then contradict it at exec time — that contradiction is this case's entire point (the
+# world drifted between probe and apply), hence PROBE_RESULTS=authored: gate-1 parity is
+# structurally impossible here and honestly declared so.
+site 1 effect=holds

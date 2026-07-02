@@ -1,0 +1,4 @@
+# probe-results: site-keyed records (task-D1 WIRE). Grammar:
+#   site <leafid> effect=<holds|absent|cant-tell>
+# NO records: the two-operand install resolves no entity (the check's `[ "$2" = "" ]`
+# refusal), ships no probe; parity holds on the empty set.
