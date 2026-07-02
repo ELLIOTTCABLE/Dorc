@@ -121,6 +121,35 @@ pin) and the *build-window promotion path* (one-sided xfails + bless). Ledger:
   long-term design lock-in.
 - **h5 DROPPED** by the human — do not pursue.
 
+## Addendum 2: the coverage/re-spelling rulings (human, 2026-07-02 — DURABLE HOME; 23Z carries only pointers)
+
+- **cov-q1 (workspace-decoupling): DECLINED.** The coverage crate stays a gated workspace
+  member — the friction it solved died with the opacification (any agent can now fix its
+  call-sites); gate coverage prevents silent rot in a crate nothing else exercises.
+- **cov-q2 (provider with no check body): RULED** — the re-spelling authors a minimal
+  `dpkg.check()` in the affected fixtures; small, honest fixture-work, no new spelling
+  invented, pin intent preserved.
+- **cov-q3 (the per-selector filing floor): ACCEPTED as a posture shift.** Under
+  check-is-the-oracle, annotation-on-the-reached-arm IS the per-selector declaration; the old
+  per-(kind,selector) declared-function floor was a spelling-era bookkeeping artifact, not a
+  meaning-guarantee (the engine never verified that `is-enabled` "means" enabled — that trust
+  was always the author's claim). Acknowledged casualty: filing-shape lints must become
+  branch-aware or die; the globally-enumerable one-to-one probe table is gone.
+- **cov-q4 (the `!` mark): FINAL, after two human levelings.** Property values are OPAQUE
+  booleans — the engine knows no "creation" or "destruction," and NO polarity/kill class
+  survives in the lifted representation, ever. `!` lifts as plain rc-inversion plumbing on a
+  value-claim (how an author maps an exit code onto their opaque value). Verb asymmetries —
+  "install touches extra files and that's wanted; uninstall leaves extra files and that's a
+  footgun" — are the ORACLE-AUTHOR's domain, expressed through *which arms they choose to
+  vouch*; the engine keeps exactly ONE default (no vouch ⟹ run) plus attribution when a vouch
+  is wrong. INTERIM, transitional, in-code-marked (churn-disclosure discipline): sites whose
+  reached arm carries an rc-inverted claim classify MustRun — a behaviour-FREEZE (not a
+  breakage) so HEAD's pre-vouch-law elision machinery cannot begin consuming inverted claims
+  as a side-effect of a re-spelling; it dissolves into the uniform no-vouch-no-elide license
+  when the guard/vouch tier lands. No polarity doctrine is encoded by the freeze.
+- Provenance: ruled in-conversation immediately pre-context-clear; the atomic re-spelling
+  session was dispatched with all of the above baked into its brief; its record → `notes/23H`.
+
 Repair pass dispatched to an Opus-class agent (isolated worktree; spec = this note + 23B/23C):
 the five new pins (var-namespace, nounset, cross-oracle vouch scoping, cant-tell-runs,
 redirect-refuses), two-sided xfails (`head-expected.ran` markers), the dpkg-query shims,
