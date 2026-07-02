@@ -256,6 +256,16 @@ impl KindIndex {
             .map_or(&[], Vec::as_slice)
     }
 
+    /// Iterate every declared `(provider, verb) → cells` entry, in deterministic
+    /// `BTreeMap` order. TRANSITIONAL (R2, ru-26 churn-disclosure): the corpus-wide
+    /// differential gate (`tests/corpus_differential.rs`) needs to enumerate the marker
+    /// effect-map so `derive(inline) == lift(markers)` is total in BOTH directions
+    /// (a derived cell the markers lack, AND a marker cell the derivation misses). This
+    /// accessor is deleted with the marker lift in P5 — no production caller relies on it.
+    pub fn effects_iter(&self) -> impl Iterator<Item = (&(ProviderId, Symbol), &Vec<EffectCell>)> {
+        self.effects.iter()
+    }
+
     #[must_use]
     pub fn is_empty(&self) -> bool {
         self.probes.is_empty() && self.selector_probes.is_empty() && self.effects.is_empty()
