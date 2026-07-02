@@ -1,0 +1,34 @@
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc — the record is the out-of-band lane).
+
+# site:0 skip-unresolvable
+# site 1: package:nginx#installed
+package_installed__check() { dpkg-query -W "$1" >/dev/null 2>&1; }
+package_installed__check 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'site 1 effect=%s rc=%s\n' "$_e" "$_rc"
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+# guard23-redirect-line-runs (ruling h4 ACK — a non-devnull redirect is a ratified refuse-home:
+# guards refuse LOUDLY and the site runs; XFAIL until the guard tier lands). A vouched,
+# converged-past-wall site whose leaf carries a file redirect (`>>log`):
+#   hork wombat                     — opaque wall
+#   apt-get install -y nginx >>log  — vouched + converged past the wall (the witness is complete),
+#                                     but the admin-spelled `>>log` is a real file side-effect a
+#                                     guard's pass-direction would SUPPRESS (on a converged pass
+#                                     the append never happens) — an effect corruption at the
+#                                     consumer. HEAD's elide tier already refuses non-devnull
+#                                     redirects as a blocking side-effect (23C-fd10); the guard
+#                                     tier's analogue is the same refuse-home.
+# Desired: NO guard is inserted — the line runs VERBATIM, redirect intact (kFAIL-perform:
+# over-running a converged mutator is safe; suppressing an admin-spelled side-effect is not) —
+# and the refusal is DISCLOSED on the why-lens (gate-7 pattern: `refus`), never silent. The
+# run-set is unchanged from HEAD; the loudness is the xfail. (If the built refusal lands
+# error-severity, it matches the pre-declared `guard` pattern in expected-diagnostics; inert at
+# HEAD.) `>/dev/null` is exempt — only a non-devnull target blocks; this pins the non-devnull
+# case representatively, mirroring guard23-heredoc-refuses-loudly's split (RUN floor + loud xfail).
+hork wombat
+apt-get install -y nginx >>log

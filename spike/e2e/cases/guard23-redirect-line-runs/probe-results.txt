@@ -1,0 +1,7 @@
+# probe-results: site-keyed records (task-D1 WIRE). Grammar:
+#   site <leafid> effect=<holds|absent|cant-tell>
+# site 0 = hork (opaque wall). site 1 = the vouched redirect-carrying install, past the wall:
+# holds. The witness completes — and the guard is then REFUSED at its non-devnull-redirect
+# refuse-home; the line runs verbatim. At HEAD the past-wall establish-probe never ships
+# (skip-unresolvable), so this record drives the gate-1-parity half of the xfail.
+site 1 effect=holds
