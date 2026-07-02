@@ -36,8 +36,9 @@ notes-slugs 23B/23C; asymmetric context — the adversary is barred from 23A/23Z
 - **Oracle ground-truth** — `23D` §1 (strip-only; arbitrary sh; analyzer-trick-not-language).
 - **Plan-surface + attention-chronology + atomic-command axiom + can't-serve rulings** —
   `23D` §2–§4 (plan-is-the-code render; no late attention-demands ever; no command disassembly).
-- **Interim rc-consumer posture** — task #13: guards mint only where NO explicit status reader
-  exists; errexit-implicit is OPEN, unpinned both ways, needs experimentation.
+- **Interim rc-consumer posture** (deferred experiment; runs during the build phase): guards
+  mint only where NO explicit status reader exists; errexit-implicit is OPEN, unpinned both
+  ways — the human suspects painful breakage under either default (`23D` §3).
 - **The vocabulary law + elide-half seeds** — `23D` §5 (positive rides open vocabulary;
   negative needs ownership/consent; grounding-bridges; entity-aliasing fence) — ~SUSPECT tier,
   adversarial pass OWED before any of it welds.
@@ -52,39 +53,50 @@ notes-slugs 23B/23C; asymmetric context — the adversary is barred from 23A/23Z
    calibration (convergence = signal; adversarial-only = suspect; verify against primary text);
    harvest both notes files from the agents' worktrees into the main tree; repair pins per
    adjudication; commit clean.
-1. **THE BUILD SLICE — the next conductor's spine (task #7's tail + the real work):** make the
-   6 xfails flip green, honestly. Sequence per `23A` §5: widen gate-6 (the dual-rail judge has
-   no license class for apply-only check commands / guard-suppressed mutators) FIRST; then the
-   guard emitter per the round-21 door-4 mechanics (`notes/218a`: `||`-form errexit-exemption,
-   preamble functions, call-site silencing; collision-refusal falls out of strip-only sourcing);
-   the GuardLicense witness (mint only from call-site × reached-vouch × probe-verdict — mind
-   **hz-refusepath**: corpus-standard check bodies exit 0 on refuse paths, so the reached-path
-   component is load-bearing against vacuously-passing guards); the strawman vouch lift
-   (byte-inert assignment, marked NOT-DESIGN, cheap to swap). Reconcile the st-2
-   build-vs-design divergence inside the spike while there. During the build: run task #13's
-   experiment (both rc-consumer postures against realistic set-e books) and task #2's residuals
-   (render forms; the one-body-two-lanes candidate is nearly automatic under whole-body
-   shipping). Update ANALYZER-NEEDS rows for the guard tier as they materialize.
+0.5. **SPIKE-vs-DESIGN RECONCILIATION — frontloaded by the human (2026-07-02) before any guard
+   building:** correct the spike where it is *genuinely wrong* against the design, so the guard
+   work lands on corrected substrate. Known items: the **fake probe/check division** (the st-2
+   `oracle_probe_*`-vs-`check()` split is spike-internal fiction — design truth per `23D` §1:
+   the check IS the oracle, strip-only, whole stripped body ships in both lanes; rewrite the
+   st-2 ruling text in spike/CLAUDE.md to match, rework the emitters/fixtures that assume the
+   split); and the **drifted strawman spellings** (`oracle_effect` marker rows and kin have
+   wandered far from the design conversation's direction — re-ground fixtures against 233's
+   inline vocabulary while keeping every spelling byte-cheap to swap and loudly marked
+   strawman). Sweep for further genuine-incorrectness while in there; flag borderline cases up
+   rather than deciding.
+1. **THE BUILD SLICE — the next conductor's spine:** make the 6 xfails flip green, honestly.
+   Sequence per `23A` §5: widen gate-6 (the dual-rail judge has no license class for apply-only
+   check commands / guard-suppressed mutators) FIRST; then the guard emitter per the round-21
+   door-4 mechanics (`notes/218a`: `||`-form errexit-exemption, preamble functions, call-site
+   silencing; collision-refusal falls out of strip-only sourcing); the GuardLicense witness
+   (mint only from call-site × reached-vouch × probe-verdict — mind **hz-refusepath**:
+   corpus-standard check bodies exit 0 on refuse paths, so the reached-path component is
+   load-bearing against vacuously-passing guards); the strawman vouch lift. Build-phase notes
+   (no longer tasks): run the rc-consumer experiment here (both postures against realistic
+   set-e books — the deferred split, interim posture in the bindings above); settle guard
+   render-forms as they materialize (the one-body-two-lanes candidate is nearly automatic under
+   whole-body shipping); update ANALYZER-NEEDS rows for the guard tier as they appear.
 2. **The placement-spectrum design round (task #11, COMMISSIONED):** the re-verification
    placement dial (per-site guard ↔ hoisted post-wall wave). Wall-density cost-model FIRST
    (density is endogenous — falls as core-oracle coverage grows); single-approval,
    no-late-attention, no mid-apply re-planning; quiescence-window named; adversarial-crosscheck
-   before ANY re-weld. Gates task #5 (the wave-related re-welds are all that remain of it) and
-   the wave-pins half of the xfail plan.
+   before ANY re-weld. The round CONCLUDES with the wave-related re-welds (all that remained of
+   the old re-weld task) and the wave half of the pin plan.
 3. **The elide-half design round (equal standing per two-halves; not before the human wants
    it):** seeds = `238` (horizon, derivation gradient) + `23D` §5 (footprints, demand-
    disjointness, namespace convention, grounding bridges, entity-aliasing) + the refiled 234
    items (demand-anchored poisoning; provider-equivalence; traced footprints). EVERYTHING here
    is ~SUSPECT-tier until its own adversarial pass runs.
-4. **Parked, human-keyed:** the escape-hatches (task #10 — un-park signals: admin-recourse
-   pressure or bump-mode work; the 236 convergence supports it); check-cost banding (task #8 —
-   needs a sanctioned data source; corpus is QUARANTINED); the vouch-spelling family (the
-   dq-kOOB/kTYANNOT cluster — gates replacing the strawman with real spelling); the 22H
-   live-plan arc (r22-deferred, foundational; its Research/README entry now carries the
-   guards-pin-book-order composition note).
-5. **Small loose ends:** a `[REVISED]`-style annotation on `notes/093` recording that round-9's
-   closed-world frame axiom was consciously revoked for the elide tier (236a's archaeology;
-   237 erratum 4th item); task #9's walk-through backlog dissolves into "explain on demand."
+4. **Parked, human-keyed (NOTES, not tasks — the human de-tasked these 2026-07-02):** the
+   escape-hatches (`notes/235`; un-park signals: admin-recourse pressure or bump-mode work; the
+   236 convergence supports it); check-cost banding (needs a sanctioned data source; corpus is
+   QUARANTINED); the vouch-spelling family (the dq-kOOB/kTYANNOT cluster — gates replacing the
+   strawman with real spelling); the 22H live-plan arc (r22-deferred, foundational; its
+   Research/README entry carries the guards-pin-book-order composition note).
+5. **Gentle notes for the next conductor (not tasks):** a `[REVISED]`-style annotation on
+   `notes/093` recording that round-9's closed-world frame axiom was consciously revoked for
+   the elide tier (236a's archaeology; 237's erratum list); slow walk-throughs (self-reach
+   fixed-point, the prefix rule, door-4 mechanics) are explain-on-demand duty, not work items.
 
 ## Conduct fences (binding on any successor conductor)
 
