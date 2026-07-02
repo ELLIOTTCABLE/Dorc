@@ -155,6 +155,17 @@ impl Polarity {
             Polarity::Query => "query",
         }
     }
+
+    /// The inline-dialect trailing-mark marker for this polarity (R2): `:` for an
+    /// ESTABLISH write-claim, `:?` for a read-only OBSERVE. The generated check body
+    /// carries this so `lift_derived` derives the SAME effect the `oracle_effect` marker
+    /// declares (the effect-map is now check-body-sourced, 23H §5 P4).
+    fn mark_marker(self) -> &'static str {
+        match self {
+            Polarity::Establish => ":",
+            Polarity::Query => ":?",
+        }
+    }
 }
 
 /// The fixed modeled-kind vocabulary. Small, distinct entities (so trace argv lines are
@@ -543,7 +554,20 @@ fn oracle_text(k: &KindSpec) -> String {
         let _ = writeln!(s, "   verb=$1; shift");
         let _ = writeln!(s, "   while [ \"${{1#-}}\" != \"$1\" ]; do shift; done");
         let _ = writeln!(s, "   e : {} = \"$1\"", k.kind);
-        let _ = writeln!(s, "   if [ \"$2\" = \"\" ]; then {probe} \"$e\"; fi");
+        // R2: the effect-map is derived from the check body — the verb-arm carries the
+        // trailing mark so `lift_derived` reproduces the `oracle_effect` cell above.
+        let _ = writeln!(s, "   if [ \"$2\" = \"\" ]; then");
+        let _ = writeln!(s, "      case $verb in");
+        let _ = writeln!(
+            s,
+            "         {}) {probe} \"$e\" {} {}:\"$e\".{} ;;",
+            k.verb,
+            k.polarity.mark_marker(),
+            k.kind,
+            k.selector
+        );
+        let _ = writeln!(s, "      esac");
+        let _ = writeln!(s, "   fi");
         let _ = writeln!(s, "}}");
     } else {
         // Verbless effect (the `command -v X` query shape): the effect-map keys on the
@@ -559,7 +583,15 @@ fn oracle_text(k: &KindSpec) -> String {
         let _ = writeln!(s, "{}() {{", check_fn_name(k.provider));
         let _ = writeln!(s, "   while [ \"${{1#-}}\" != \"$1\" ]; do shift; done");
         let _ = writeln!(s, "   e : {} = \"$1\"", k.kind);
-        let _ = writeln!(s, "   if [ \"$2\" = \"\" ]; then {probe} \"$e\"; fi");
+        // R2: verbless (ε-verb) — the trailing mark on the probe command carries the
+        // derived effect (`:` establish / `:?` observe), matching the ε marker above.
+        let _ = writeln!(
+            s,
+            "   if [ \"$2\" = \"\" ]; then {probe} \"$e\" {} {}:\"$e\".{}; fi",
+            k.polarity.mark_marker(),
+            k.kind,
+            k.selector
+        );
         let _ = writeln!(s, "}}");
     }
     s

@@ -393,7 +393,9 @@ pub fn build_report(inputs: &Inputs<'_>) -> Report {
     let mut interner = Interner::default();
 
     // Shared interner across oracles + book ⇒ provider symbols match (cli parity).
-    let lifted = dorc_oracle::lift(&mut interner, inputs.oracles);
+    // R2 wiring flip (23H §5 P4, cli-mirror): effect-map derived from the check bodies,
+    // not the `oracle_effect` markers (behaviour-identical per the corpus differential gate).
+    let lifted = dorc_oracle::lift_derived(&mut interner, inputs.oracles);
     let idx = lifted.value;
     let checks: Vec<dorc_oracle::check::CheckSet> = inputs
         .oracles
@@ -1140,7 +1142,12 @@ apt_get__check() {
    verb=$1; shift
    while [ "${1#-}" != "$1" ]; do shift; done
    pkg : package = "$1"
-   if [ "$2" = "" ]; then dpkg-query -W "$pkg" >/dev/null 2>&1; fi
+   if [ "$2" = "" ]; then
+      case $verb in
+         install) dpkg-query -W "$pkg" >/dev/null 2>&1 : package:"$pkg".installed ;;
+         purge) dpkg-query -W "$pkg" >/dev/null 2>&1 : package:"$pkg".installed! ;;
+      esac
+   fi
 }
 "#;
 
@@ -1154,7 +1161,7 @@ oracle_effect dpkg '' query installed
 dpkg__check() {
    case $1 in -s) shift ;; esac
    pkg : pkgstate = "$1"
-   dpkg -s -- "$pkg" >/dev/null 2>&1
+   dpkg -s -- "$pkg" >/dev/null 2>&1 :? pkgstate:"$pkg".installed
 }
 "#;
 
