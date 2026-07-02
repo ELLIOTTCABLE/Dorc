@@ -89,6 +89,15 @@ and where* (→ `Research/notes/20x-*.md`, append-only), not green tests.
   build re-probe-before-apply, freshness windows, or anything aimed at it.
   (Maybe-someday shape, very deferred: oracle tooling for a super-cheap
   last-second check. Not this spike, probably not this year.)
+  > Clarified 2026-07-02 (crisis-closure, `Research/notes/239` delta-2): apply-lane guards
+  > (rul-ternary-verdict, below) are NOT this ruling's target. The line is IDENTIFIED-CAUSE vs
+  > OPEN-WORLD: a guard re-verifies a fact whose invalidation has a *named, in-book,
+  > potentially-responsible cause the analyzer can point at* (the opaque wall — this ruling's
+  > own "super-cheap last-second check" parenthetical is the guard's ancestry). What stays
+  > banned is accounting for *unattributed* drift — third-party modifications, wallclock, host
+  > background-automation — via freshness windows or systematic re-probe machinery. Shorthand:
+  > TOCTOU stays out; hork-catching is in. Any change to THAT posture waits on the
+  > re-verification placement-spectrum round and its crosscheck.
 - **No intra-host apply parallelization or reordering, ever.** The book's
   order is sacred; apply-phase speed comes from elision only; probe-phase
   parallelism is where wall-clock is won.
@@ -130,6 +139,40 @@ and where* (→ `Research/notes/20x-*.md`, append-only), not green tests.
   constraint defeats the point of a spike). Live instance: anything
   not-handling-stderr (goldens, gates, pins) must say so, locally and
   upfront, in the code it shapes.
+
+## Standing human rulings (round-23 additions; crisis-closure — full context `Research/plans/233` + `Research/notes/237`–`239`; GO signed 2026-07-02)
+
+- **rul-ternary-verdict.** The per-site verdict vocabulary is {elide, guard, run}. A `guard`
+  is an observable-preserving insertion — `<oracle-check-invocation> || <original bytes>` —
+  where the original command's bytes always survive verbatim (no code path removes them), and
+  the inserted code obeys ONE sourcing principle: *guard code is the oracle's own authored
+  body — the check IS the oracle — shipped strip-only (annotations removed, `name.check()` →
+  `name_check()`, nothing else changed; the strip's output is runnable sh), the same bytes the
+  probe lane ships under the structural self-vouch.* Whole-body shipping is the default; a
+  lifted/deconstructed form is an OPTIONAL analyzer edge-case, and even then must be
+  byte-identical to a *substring* of the oracle body — sh's own control-flow performs
+  path-selection at runtime anyway, so lifting buys bytes and readability, never different
+  behaviour. Two nevers: never engine-synthesized sh (no author, no self-vouch, no attribution
+  — and a second source of convergence-truth that could disagree with the probe); never
+  declared/claimed output in guard-position (testimony may inform licensing but never becomes
+  code or output there; the inverse case — reproducing values for a fully-ELIDED command's
+  consumers — is the existing probe-provenance stand-in machinery, governed by
+  inv-probe-sourced-values, untouched). This ruling IS the conscious supersession of the
+  round-21 door-4 deferral ("flag-gated, default `Never`, builds last, product hard-defers").
+- **rul-guard-license.** A guard mints only from a matching (call-site, reached
+  converged-vouch, probe-verdict) witness. The vouch is a mark on a path through the oracle's
+  own check-body, scoped by constant-propagation reachability; it NEVER enters the fact-plane
+  and is inadmissible in any other site's elide/poison reasoning. Run-delta verbs never guard
+  (an oracle declines by not vouching). No vouch ⇒ run. The vouch's concrete sh SPELLING is
+  OPEN — build against a stub explicitly marked strawman, kept trivially cheap to swap.
+- **rul-attention-honesty (welded).** Attention is saved ONLY by provable elision. The plan
+  render is the whole book in original order; lines that will execute are never hidden or
+  folded (at most dimmed, warily). "Scrappy, but correct: never hide risk from the user."
+- **rul-divergence-proceed.** Apply-time divergence from plan prediction: proceed-and-flag; no
+  abort, no strict mode. All decisions front-load into the single approval; late events are
+  report-items only (the attention-chronology doctrine). The engine adds no second-guess layer
+  above guards; defensive surfacing of broken world-state is the oracle's job on its own
+  channels.
 
 ## Hard invariants (do not violate; cite the slug when you rely on one)
 
@@ -229,6 +272,11 @@ and where* (→ `Research/notes/20x-*.md`, append-only), not green tests.
   tracing who could read it. **Anti-masking test discipline**: no test may
   hand-inject an observable the check itself should predict; a check returning
   can't-predict must flip its dependent case to *run*.
+  Carve-out (2026-07-02, crisis-closure, `Research/notes/239` delta-3): guard-insertion is NOT
+  a Replace and mints no values — a GuardInsert carries no StandIn, no Predicted, no Observable
+  (on pass, the check's own live rc is the line's rc; on fall-through, the original command
+  executes and its observables are genuine). The no-fabricated-values discipline is untouched;
+  guards are licensed by rul-guard-license, never by probe-provenance of values.
 
 ## Build / test / run
 
