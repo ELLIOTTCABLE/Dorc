@@ -866,8 +866,32 @@ scan_why() {
   _missing=
   while IFS= read -r _pat; do
     [ -z "$_pat" ] && continue
-    printf '%s\n' "$_whys" | grep -qF -- "$_pat" || _missing="${_missing}${_pat}
+    # A pattern may CONJOIN needles with ` && ` (23C-fd13): all parts must occur in a SINGLE
+    # why-line, not spread across lines — so an attribution line naming the mechanism, the
+    # license, AND the oracle together is required, and three unrelated notes can no longer
+    # each satisfy one loose needle to XPASS the disclosure floor. A plain pattern (no ` && `)
+    # keeps the original per-set substring match. Implemented as a progressive `grep -F` filter:
+    # start from all why-lines, narrow by each needle in turn; a non-empty residue ⇒ some one
+    # line carried every needle (order-independent).
+    case $_pat in
+      *" && "*)
+        _cand=$_whys
+        _rest=$_pat
+        while [ -n "$_rest" ]; do
+          _needle=${_rest%%" && "*}
+          case $_rest in *" && "*) _rest=${_rest#*" && "} ;; *) _rest= ;; esac
+          [ -z "$_needle" ] && continue
+          _cand=$(printf '%s\n' "$_cand" | grep -F -- "$_needle" || true)
+          [ -z "$_cand" ] && break
+        done
+        [ -n "$_cand" ] || _missing="${_missing}${_pat}
 "
+        ;;
+      *)
+        printf '%s\n' "$_whys" | grep -qF -- "$_pat" || _missing="${_missing}${_pat}
+"
+        ;;
+    esac
   done < "$_decl"
   [ -z "$_missing" ] && return 0
   if [ "${XFAIL_ACTIVE:-}" != "1" ]; then
