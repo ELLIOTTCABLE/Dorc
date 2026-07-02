@@ -22,5 +22,10 @@ apt_get__check() {
    verb=$1; shift
    while [ "${1#-}" != "$1" ]; do shift; done
    pkg : package = "$1"
-   if [ "$2" = "" ]; then dpkg-query -W "$pkg" >/dev/null 2>&1; fi
+   if [ "$2" = "" ]; then
+      case $verb in
+         install) dpkg-query -W "$pkg" >/dev/null 2>&1 : package:"$pkg".installed ;;
+         purge) dpkg-query -W "$pkg" >/dev/null 2>&1 : package:"$pkg".installed! ;;
+      esac
+   fi
 }
