@@ -85,6 +85,22 @@ R2/R3 must change**:
   differently ⇒ `cargo test --workspace` may fail ⇒ unfixable without editing coverage.
 - `dorc_plan::ProbePlan` / `ProbeSiteKind::Query` — R3 reshapes the probe wrapper; coverage reads it.
 
+**Letter-vs-spirit of C2 (the crisp decision the human must make):** by the LETTER, C2 excludes only
+files whose name/content references H2SaLS — that is `coverage/README.md` + `coverage/src/weights.rs`,
+NOT `coverage/src/lib.rs`/`main.rs` (their content is H2SaLS-free, verified by grep). So the letter
+would PERMIT editing `coverage/lib.rs`'s single `compile_probe` call site to follow a new signature.
+I chose the SPIRIT ("leave those entirely alone" + the whole crate is the H2SaLS workstream): I did
+not edit any coverage file, because (i) making coverage COMPILE against a new signature means
+constructing the new probe-sourcing in coverage's own code, which feeds its ANALYZER-NEEDS dashboard
+in ways entangled with the off-limits `weights.rs` I cannot read/verify; and (ii) `cargo test
+--workspace` runs coverage's tests, which I cannot safely reason about half-blind. Editing coverage to
+accommodate my change, unable to verify the H2SaLS half, is exactly the "don't break the isolated
+workstream" hazard the exclusion guards. **Human ruling wanted:** either (A) "coverage/lib.rs+main.rs
+are fair game (they're H2SaLS-free) — edit the call sites", which unblocks R3 mechanically; or (B) the
+whole coverage crate stays frozen — then R2/R3 need a human to do the two coverage call-site edits, or
+a sanctioned dual-mode transition. (-GUESS (A) is cheapest and the signature-follow is mechanical, but
+this is the human's call, not mine to make around the exclusion.)
+
 Consequence: R2/R3 as *retire-and-replace* (the task's mandate — "retired", "entirely", "no longer a
 separate surface") cannot be completed without either (a) touching the coverage crate (forbidden by
 C2), or (b) a dual-mode additive scaffold that keeps the old markers + old `compile_probe` signature
