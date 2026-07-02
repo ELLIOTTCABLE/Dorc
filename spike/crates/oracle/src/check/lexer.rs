@@ -239,11 +239,16 @@ impl Lexer<'_> {
                 self.pos = self.pos.saturating_add(1);
             }
         }
-        // optional target after one separating space (POSIX allows `> /dev/null`)
+        // optional target after one separating space (POSIX allows `> /dev/null`).
+        // A leading `:` marks a trailing dialect mark (`… 2>&1 : k:e.p` / `… :? …`),
+        // NOT a redirect target: `:` is a word byte, so without this guard the redirect
+        // would greedily eat the marker token (`2>&1 :` ⇒ one redirect, the mark lost).
+        // Real filenames in this corpus never start with `:`, so excluding it is safe
+        // and is what lets a marked probe command carry `>/dev/null 2>&1` (R2 fixtures).
         if matches!(self.peek(0), Some(b' ' | b'\t')) {
             let save = self.pos;
             self.pos = self.pos.saturating_add(1);
-            if !matches!(self.peek(0), Some(c) if is_word_byte(c)) {
+            if !matches!(self.peek(0), Some(c) if is_word_byte(c) && c != b':') {
                 self.pos = save;
             }
         }

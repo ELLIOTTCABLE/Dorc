@@ -35,11 +35,13 @@ use dorc_core::diag::{CheckOutOfDialect, CheckUnterminated, Diag, DiagCode as Co
 use dorc_core::{Diagnostic, Interner, Span};
 
 mod ast;
+mod derive;
 mod eval;
 mod lexer;
 mod parser;
 
 pub use ast::{Check, CheckSet, Mark, MarkKind, MarkTarget, Stmt};
+pub use derive::{DerivedEffect, DerivedVouch, ValueClaim, derive_check};
 pub use eval::{Resolution, Resolved, ResolvedEntity, TopReason, evaluate};
 pub use parser::lift_checks;
 
