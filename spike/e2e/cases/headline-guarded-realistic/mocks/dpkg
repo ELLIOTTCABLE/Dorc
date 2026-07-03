@@ -5,7 +5,10 @@
 # so the shim branches on the operand to reproduce the fixture's pkgstate sites (site 1
 # ca-certificates=holds, sites 2/9 nginx/vim=absent). Read-only; logs the argv for the run-set.
 . "${0%/*}/.log"; _dorc_logged "$@"
-case $2 in
+# R3: the probe ships `dpkg -s -- <pkg>` (the stripped check body); the book's own guards
+# ship `dpkg -s <pkg>` — skip the `-s` flag + optional `--` separator to read the operand.
+pkg=$2; [ "$pkg" = "--" ] && pkg=$3
+case $pkg in
   ca-certificates) exit 0 ;;  # installed ⇒ holds (the valid bare guard, substituted to `true`)
   *)               exit 1 ;;  # nginx/vim not installed ⇒ absent
 esac

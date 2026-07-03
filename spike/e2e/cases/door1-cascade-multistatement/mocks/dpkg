@@ -3,7 +3,10 @@
 # the apply's verbatim Query guard when it runs. The mock host has nginx INSTALLED (the
 # guard holds, rc 0), so the `|| { … }` block is dead and elides. Read-only; logs argv.
 . "${0%/*}/.log"; _dorc_logged "$@"
-case $2 in
+# R3: the probe ships `dpkg -s -- <pkg>` (the stripped check body); the book's own guard
+# ships `dpkg -s <pkg>` — skip the `-s` flag + optional `--` separator to read the operand.
+pkg=$2; [ "$pkg" = "--" ] && pkg=$3
+case $pkg in
   nginx) exit 0 ;;  # installed ⇒ holds ⇒ the guard substitutes to `true`, block dead
   *)     exit 1 ;;  # anything else absent
 esac
