@@ -67,3 +67,57 @@ the erasability gate — rec-1 honored).
   walk are unchanged, only the footprint SOURCE moves.
 - `core/tests/diag_tidy.rs`: `footprint-incoherent` added to the legacy allow-list, tc-flagged
   pending the typed-diagnostic-spine migration — a small owed cleanup, not a blocker.
+
+## Stage 2b — the chronology net (LANDED 2026-07-03; the DST net has teeth)
+
+Merged (`0455178`/`1ecba50`/`d018bd3`): a NEW `dorc-sweep` crate (24B flavour C) — in-memory
+seeded elision-soundness DST. 3000 seeds in the default `cargo test` (~1.3s), `SWEEP_SEEDS=n`
+for depth (100k/15.6s). Green: 25 suites, 145 e2e (2 state-bearing tie-downs), all gates.
+**Conductor review verdict: SOUND, strong work.** Verified the two load-bearing claims in code:
+(1) `TrueEffect`-isolation is enforced BY SIGNATURE — `run_kernel(&DeclaredScenario, &Host,
+flag_on, &mut Interner)` has no `GroundTruth` parameter, so the analyzer physically cannot see a
+command's true effect; (2) the attribution-under-lies assertion is strong AND non-vacuous
+(`tests/sweep.rs` asserts `lying_divergences > 0`, so the branch can never greenwash — the fc-5
+discipline applied to the assertion itself).
+
+**The net has teeth (builder planted three bugs, all caught + reverted):** a diverged-elides bug
+→ honest end-state RED (seed 22); a broken `total_wall` demotion → lying-attribution RED (witness
+named the wrong leaf, seed 11); a `HashMap`-order fingerprint → determinism-guard RED (seed 0).
+
+**Two conductor-surfaced findings (my domain — cross-cutting):**
+- **find-lcg-thinning (a REAL pre-existing bug the sweep exposed; fc-5 made concrete).**
+  `hostsim::Lcg::chance(1,2)` uses `% 2` on an odd-multiplier LCG ⇒ the low bit is periodic ⇒
+  consecutive coins CORRELATE. The builder hit this in the sweep (it silently erased the entire
+  MissConverged+Lying topology cell — 0 lying divergences until fixed) and fixed the SWEEP's draws
+  via a high-bit `below()`. BUT it is UNFIXED in `Host::seeded` (`hostsim/lib.rs:199`,
+  `.filter(|_| rng.chance(1,2))`) — so `Host::seeded`'s "random ½-subset" is a PATTERNED,
+  internally-correlated subset, and **every existing in-memory DST test that loops `Host::seeded`
+  over seeds has been exploring a THINNED slice of the 2^N initial-state space** (inherit humility
+  toward those "green across N seeds" results — `128` rg-1). Blast radius bounded: the frozen
+  subprocess `differential.rs` has its OWN `Rng` whose `chance` already routes through the high-bit
+  `below()` (the "21D triage" fix), so it is SAFE — only `Host::seeded` is affected. NOT a sweep
+  blocker (the sweep uses the correct path). Cheap fix owed (route `Host::seeded` through `below`;
+  re-run its consumers, confirm still-green — a state-CHANGE, do it consciously). → follow-up task.
+- **find-net-covers-what (structural; do not lose).** The builder's ~SUSPECT is correct and
+  sharp: in an HONEST world a wall that could invalidate the victim's cell makes the victim
+  non-ambient (`EstablishWritten`) ⇒ never a survival candidate ⇒ the frame rule is provably
+  sound. So the honest end-state net catches CORE wrong-elisions (eliding a diverged command) but
+  is BLIND to survival-tier bugs BY CONSTRUCTION — those are reachable ONLY via lying scenarios,
+  and the lying-attribution net is what carries them. Consequence: the survival tier's entire test
+  coverage rests on the (verified strong, non-vacuous) lying-attribution net; the lying scenarios
+  are load-bearing, never decorative. Keep this when reasoning about what "the sweep is green"
+  buys.
+
+**Tie-down faithfulness (partial — honest residual).** The 2 state-bearing tie-downs agree with
+real dash+emitter (gate-1 probe parity from a file-backed world; gate-6 elision attribution), but
+run.sh separates probe from apply and the books have no state-reading control flow, so a true
+bare-state-vs-apply-state end-state DIFF isn't exercised by real dash — the in-memory sweep IS
+that differential; a real-dash end-state-diff harness was deliberately NOT added (freezing run.sh
+per the testing refinement). ~SUSPECT a future `e2e/` end-state-diff gate is the clean closure;
+deferred.
+
+**Stage-6 adequacy substrate is READY (builder-confirmed + verified):** a converged≠no-op world
+is a `Host` whose mutator's `TrueEffect` exceeds what its probe reports converged — the SAME
+declared/ground-truth split already built, so the honesty enum generalizes {Honest, Lying-footprint}
+→ {…, Lying-adequacy}, keyed on the claim-tier once Stage 3 lands it. The dangerous residual the
+whole round exists to measure now has its measuring instrument.
