@@ -18,7 +18,7 @@ read this ruling as a general OOB ban:
 - **`foo.check()`** — facts and prediction. Its aggregate status keeps the INCUMBENT meaning:
   predicted-rc (the round-20 elision-substitution weld, untouched and un-reopened). Marks
   carry facts; richness unlimited.
-- **`foo.converged()` / `foo.diverged()`** — the guard-verdict function; the SENSE IS DECLARED
+- **`foo.is_converged()` / `foo.is_diverged()`** — the guard-verdict function; the SENSE IS DECLARED
   BY THE NAME. Its body is the ONE authored place tool-rc → guard-verdict crosses; its
   aggregate status, read under rul-rc-partition, IS the verdict — which settles the apply-rc
   mint's owner: the oracle contract, via this function.
@@ -35,22 +35,22 @@ read this ruling as a general OOB ban:
 The verdict-function's exit status is read against ONE fixed mechanical table — the POSIX
 utility convention, blessed rather than transformed:
 
-- **0** = the named sense holds (converged for `converged()`; diverged for `diverged()`);
+- **0** = the named sense holds (converged for `is_converged()`; diverged for `is_diverged()`);
 - **1** = the named sense's complement;
 - **≥ 2** = CONFUSED — and confusion always lands on run.
 
 Consequences, all mechanical:
 - The minimal guard-capable oracle collapses back to ~4 lines: a bare passthrough
-  `apt-get.converged() { dpkg-query -W -- "$1" >/dev/null 2>&1 ;}` is fully
+  `apt-get.is_converged() { dpkg-query -W -- "$1" >/dev/null 2>&1 ;}` is fully
   confusion-handled (127 → run) with ZERO boilerplate, because the tools already speak the
   partition. The three-way `case` boilerplate is dead.
 - The probe lane reads the SAME partition as the ternary plan-verdict
   (0/1/≥2 → converged/diverged/can't-tell); apply collapses can't-tell → run in the glue.
   One authored function, both lanes, one source of convergence-truth.
 - Direct-sense glue is the existing welded insertion, unchanged by a byte:
-  `( foo_converged args ) || <original bytes>`.
+  `( foo_is_converged args ) || <original bytes>`.
 - Declared-dual glue is engine-emitted mechanical sense-flipping (sanctioned scaffolding):
-  `( foo_diverged args; [ $? -eq 1 ] ) || <original bytes>` — lossless inversion: present(0)
+  `( foo_is_diverged args; [ $? -eq 1 ] ) || <original bytes>` — lossless inversion: present(0)
   → run, absent(1) → skip, confused(127/2/254) → run. **This RESTORES structural protection
   for inverted logic** (better than the earlier refuse-to-guard proposal): the engine sees
   the sense in the function name and flips in glue; no information is destroyed.
@@ -71,7 +71,7 @@ global churn explicitly sanctioned, historical naming-truth explicitly waived (t
 sequenced AFTER the in-flight P5 closer integrates — it is mid-flight in these files).
 The reservation-collapse is ACKED (human, same day): the whole predict-output-shaped
 contract-surface is exactly two invocation-contracts — "we call `predict()` when we need you
-to SIMULATE the command" and "we call `converged()`/`diverged()` when we need to know whether
+to SIMULATE the command" and "we call `is_converged()`/`is_diverged()` when we need to know whether
 system-state is STEADY." Future declared-output values EXTEND `predict()`; no third sibling.
 Conductor boundary-notes from the logic-check (neither breaks the collapse): (i) state-FACTS
 (the marks/establishes) are neither output- nor verdict-shaped — they ride `predict()`'s body
@@ -87,7 +87,7 @@ door. Mark the classifier accordingly when the tier builds.
 
 - The check-rc/verdict conflation (the "fifth appearance", `23J` conv-rc-soundness +
   the predicted-rc laundering) is resolved AT THE ROOT: one function's status no longer
-  serves two masters. A `converged()` written as a passthrough to `check()` asserts the
+  serves two masters. An `is_converged()` written as a passthrough to `predict()` asserts the
   predicted-rc≈convergence coincidence as an explicit, attributable one-line claim — visible,
   licensed, no longer ambient. `jc-predicted-rc-provenance` retires with a residual note:
   vacuous `check()` bodies still yield garbage predicted-rc, and consumed-status sites
@@ -95,14 +95,34 @@ door. Mark the classifier accordingly when the tier builds.
 - Pins to author (re-derived from `23J`'s deferred pair; routed to task #15): the
   declared-dual glue-flip is lossless (127 → RUN — the pin that makes the backwards-guard
   unspellable); partition floors (a ≥2 verdict-status never skips; a `!`-collapsed
-  converged() is a contract violation — pin the attribution surface, since the collapse
+  is_converged() is a contract violation — pin the attribution surface, since the collapse
   itself is undetectable in arbitrary sh).
 - Vouch SPELLING stays human-reserved (dq-kOOB), with one new open interplay for that pass:
   whether authoring a verdict-function on a verb-path partially IS the vouching act.
 - Doc-consequences (human's queue, task #16): USER_STORY's minimal-oracle stages and
-  stamped-233's exemplars eventually teach `converged()` + the partition + don't-collapse;
+  stamped-233's exemplars eventually teach `is_converged()` + the partition + don't-collapse;
   the type-encoding of the whole discipline (ProbeRc/GuardRc-class newtypes, two blessed
   crossings) lands in the build slice.
+
+## Addendum 2 (same day) — the is_ prefix; centering; "the oracle" defined
+
+- **Naming RULED:** the `is_` prefix — `foo.is_converged()` / `foo.is_diverged()` (stripped:
+  `foo_is_converged` etc.). Applied to the live rulings text above; rides task #18's sweep
+  everywhere else.
+- **The verdict-function is the guaranteed-to-run function** (convergence must be known at
+  ALL phases), and is therefore the DEFAULT-ASSUMED HOME for fact-establishes — authors will
+  naturally mark facts there. Marked bears-more-thought / good-enough-for-now (human); the
+  dialect stays available in every oracle function (no placement restriction); the lift walks
+  the UNION regardless.
+- **Expected authoring order + centering:** authors write `is_*verged()` FIRST; `predict()`
+  arrives later, on Dorc's hinting, when an observable-consumer makes it necessary. Docs,
+  defaults, hints, and discussion center on `is_*verged()`; historical material centers on
+  check()/predict() and that division is accepted as fine.
+- **"The oracle", defined precisely (ends the check-vs-oracle conflation, now purposeful):**
+  the oracle = *the union of all `<somecmd>.<someinterrogator>` bodies discovered through a
+  complete abstract-interpretation of the whole constructed code-unit* — subsuming both
+  `predict()` and `is_*verged()`. "check()"/"predict()" name specific members, never the
+  whole.
 - The human's evaluation stance, on the record: consequences of pushing correctness to the
   contract-surface are ASSESSED POST-BUILD — "we'll build the thing and make sure it's
   secure, and then see how painful the straightjacket of failures is and how they map to the
