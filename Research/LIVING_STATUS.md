@@ -14,159 +14,90 @@
 
 ---
 
-## NOW (2026-07-02 — end of the round-23 crisis arc)
+## NOW (2026-07-03 — round 23 CLOSED; round 24 is an empirical build)
 
-**Direction-crosscheck COMPLETE:** a Fable neutral+adversarial pair reviewed the whole r23
-pivot (incl. the human's `a92ad31` root-doc rewrite + the new USER_STORY.md); both verdicts:
-*the pivot is sound; the seam is docs-narrating-ahead-of-pins.* Reviews `23Ia`/`23Ib`,
-adjudication **`23J`** (headline product: the **rc-soundness cluster** — the guard consumes
-aggregate in-band exit status while design claims ride per-mark engine-interpreted semantics;
-three facets, one gap). **SETTLED IN-ROUND 2026-07-02, STAMPED — `notes/23L` + the new
-spike/CLAUDE.md interface-rulings block:** rul-role-split (predict() keeps incumbent
-predicted-rc; converged()/diverged() is the verdict-function, sense declared by name, owner
-of the apply-rc mint) + rul-rc-partition (0/1/≥2 = the POSIX convention blessed; minimal
-guard-capable oracle back to a one-line passthrough; declared-dual glue gives lossless
-inversion, restoring structural backwards-guard protection; don't-collapse is the authored
-contract). Re-derived pins → task #15; vouch SPELLING still human-reserved; doc-consequences
-→ task #16. Repairs → task #15 (post-closeout); the human's root-doc queue → task #16.
+**Round 23 is closed.** Its complete, durable, single-narrative history is **`notes/23O`** (the
+closeout — read it first). The crisis (233 = the frame problem, permanent) resolved to the
+**ternary verdict {elide, guard, run}** with the **converged-vouch** license and **silence = wall**;
+the interface was settled (**role-split** `predict`/`is_converged`/`is_diverged` + **rc-partition**
+0/1/≥2 + strip-fidelity); the spike was **realigned** to the design (marker fiction retired, 123/9/0/0
+green); the guard tier was **pinned** (24 `guard23-*` cases); and the elide-half design reached a
+**permanent floor** (`23M`/`23N`): the mechanism is the **separation-logic frame rule through a
+dynamic frame** = **lazy code motion for shell**, and its one live risk is the converged-vouch's
+**adequacy** (converged≠no-op), calibrated-never-proven. All settled law lives in `23O` §2 +
+`spike/CLAUDE.md`'s rulings blocks. Do not relitigate it.
 
-**State:** the `plans/233` design-crisis is **formally closed**. The verdict architecture is
-ternary — **{elide, guard, run}** — where a `guard` inserts the oracle's own stripped check in
-front of the original bytes (`check || command`), silence licenses *nothing* (it only fails to
-upgrade guard→elide), and the frontloaded trade stands (attention surrendered where the world
-is undescribed; guards rescue perf/safety/monotonicity at new cost). Rulings are welded in
-**`spike/CLAUDE.md`'s round-23 block** (rul-ternary-verdict · rul-guard-license ·
-rul-attention-honesty · rul-divergence-proceed) + the TOCTOU identified-cause clarifier + the
-inv-probe-sourced-values guard carve-out; KNOBS carries the kELISION caution + kSILO shove.
-Guard-tier behaviour is **pinned before build** — 24 `guard23-*` e2e cases (9 xfail + floors;
-registers `notes/23A` + `23G`), reviewed by a neutral+adversarial pair (`23B`/`23C`,
-adjudicated **`23F`**), repaired, conductor-verified **123 round-trips / 9 xfail / 0 XPASS /
-0 red**. The compilation tree is corpus-clean (coverage crate opacified; historical
-corpus-touching notes quarantined).
+**Round 24 = "head off 233 by building something and seeing what happens"** — the plan is
+**`plans/240`**. The theory is exhausted at its floor; the work is now empirical. Build the
+**elide machine** (the golden hill — the attention product Dorc exists for) FIRST, on hand-authored
+**strawman** books, because in the spike the **DST exec-differential is the correctness net** (run
+the elided plan under mocks, diff the bare book; a wrong elision goes red). The guard is the
+*production* net — deferrable. The yardstick, CLI-runnable at every stage: **elision frequency on
+a strawman family, differential-verified.**
 
-**The atomic re-spelling session — PARTIAL LANDING 2026-07-02, honest STOP** (record + the
-mechanical remainder-recipe: **`notes/23H`**; conductor re-verified 123/9/0/0 + gates green).
-LANDED, all additive/always-green: the **R2 derivation core** (`check/derive.rs` — structural
-walk over inline `case $verb` arms + marks reproduces the retired-marker effect-map;
-**ValueClaim{Establish, EstablishInverted, Observe} replaces Polarity — no kill/creation axis**,
-per the cov-q4 FINAL ruling in `23F` Addendum 2; 5 differential tests prove derive == old-lift;
-`derive` is deliberately dead code until wiring); an R1 lexer-gap fix (mark after fd-dup
-redirect); **146/151 fixtures** converted additively (markers RETAINED for the differential
-two-step; golden-stable at every batch). SECOND SESSION (finisher, 2026-07-02, conductor-verified on
-the merged tree — e2e 123/9/0/0, all 23 workspace suites green): **the SEMANTIC CORE IS
-LANDED** — the 5 pkgindex Singletons via the ruled empty-entity mark (`pkgindex:.fresh`,
-deliberate parse + near-miss-typo tests); the corpus-wide `derive==markers` flip-gate over
-all 151 fixtures (it CAUGHT a real R4a bug — an OBSERVE-vs-ESTABLISH mark on one tool
-oracle); **Polarity retired workspace-wide** (`ValueClaim`; the transitional-freeze ru-26
-code-note lives at `analysis/src/effect.rs::cell_effect` on the EstablishInverted arm); and
-the WIRING FLIP (cli+coverage effect-maps now derive from predict bodies, not markers).
-REMAINING, blocked on **ask-probe-divergence** (human ruling): R3's lane-swap revealed that
-the authored predict-body probe COMMANDS textually diverge from the retired `oracle_probe_*`
-bodies (`--` operands, dropped `--quiet`, firewall's old probe is a PIPELINE the mark grammar
-cannot annotate — a real dialect gap, flag `jc-mark-on-pipeline`), so completing R3 means
-re-authoring mocks + re-blessing goldens together — the finisher refused to co-author
-ground-truth and prediction in one unverifiable pass (anti-masking) and reverted its working
-R3 code to stop at a green boundary. Options + the refined recipe: `23H §7`. **R3 RE-LANDED
-2026-07-02** (third session; ruling (b) honored with mocks-first/goldens-second sequencing +
-old-binary verification — evidence `23H §8`). **P5 LANDED 2026-07-02 (closing session; task
-#14 CLOSED):** the marker fiction is fully retired — `lift` now derives purely from check
-bodies (~2,500 lines of old machinery + fixture-markers deleted; zero marker strings outside
-two flagged CLAUDE.md history-blocks); jc-dpkg-i authored; BLESS hardened (XFAIL expected.*
-protected, demonstrated); all 9 xfails lens-verified for designed reasons; conductor-verified
-123/9/0/0 + 22 suites green on the merged tree. RESIDUE, new-design-gated (NOT
-reconciliation): the guard23 in-body vouch-marks + flagship golden re-derivation STOPPED on
-**jc-vouch-mark-strip-fidelity** (`23H §9.4`) — a bare vouch-mark strips to a trailing `:`
-null-command that clobbers the check's tool-rc to 0 ⇒ an always-skip guard (wrong-elision).
-Resolutions: (A) strip deletes bare-mark STATEMENTS entirely (conductor-recommended as
-standing strip-contract — bare marks are pure annotation-statements, the `:` was only ever
-the sh-native carrier); (B) mark-first placement (works, cosmetically breaks P-pair
-byte-identity); defer-execution-to-the-vouch-respell either way (the strawman mark is 23L
-throwaway). Rides task #15 as a gated rider.
+The six-stage ladder (full detail in `plans/240`; golden hill lights up at Stage 2):
+1. **yardstick + honest baseline** — build the elision-count-plus-differential mode; land the
+   `fd10` fix so *silence = wall* actually holds (the "dangerous middle" is still live at HEAD).
+   Baseline: post-wall elisions = 0.
+2. **the frame-rule machine — first line vanishes past a wall.** authored footprint + backing +
+   disjointness + `elide-when-disjoint-else-run` (no guard; differential is the net). Yardstick 0→N.
+3. **the guard tier** (the 9 `guard23-*` xfails) — the production net; a side-quest off the golden
+   hill's critical path, slotted here per the human's ordering.
+4. **derived footprints** (`dpkg -L`) — elide past payload-bound tools.
+5. **grounding + collaboration** — coordinate-kinds, bridges, the `scan_cve` story; synonym =
+   dynamic-points-to-or-wall.
+6. **maximize + measure + conclude** — the ~80% question on strawmen; extract conclusions to the
+   human docs; then the spike can die.
 
-**The bindings (hold these; full text at the cited homes):**
-- The four round-23 rulings — `spike/CLAUDE.md` (guard sourcing: the predict() IS the oracle,
-  strip-only, whole-body both lanes; lifted forms byte-identical substrings; two nevers).
-- Two-halves doctrine + anti-creep — `plans/239` §1 (full elision is THE goal, never
-  aspirational-tier; guard-half = sister + permanent fallback, equal attention).
-- Oracle ground-truth — `plans/23D` §1 (strip-only; arbitrary sh; analyzer-trick-not-language).
-- Plan-surface, attention-chronology, atomic-command axiom, can't-serve rulings — `23D` §2–§4
-  (plan-is-the-code render; no late attention-demands ever; no command disassembly).
-- Interim rc-consumer posture — guards mint only where NO explicit status reader exists;
-  errexit-implicit is OPEN, unpinned both ways, needs build-phase experimentation (`23D` §3).
-- The vocabulary law + elide-half seeds — `23D` §5 (~SUSPECT tier; adversarial pass OWED).
-- Coverage/re-spelling rulings — `23F` Addendum 2. Guard-license + h1–h5 rulings — `23F`.
-- Statuses: `plans/233` STAMPED (end-annotation = correction channel). KNOBS was
-  conductor-editable-with-review THIS session only — re-confirm. DESIGN/IMPLEMENTATION are
-  human-only (his rewrite pending, low-spoons — do not nag).
+**Build on Opus** (mechanical-ish; reserve cheap-Fable for breadth + the round-25 reactivity
+design). The spike is freshly realigned — build now, before it drifts.
 
-**The arc ahead:**
-1. **Integrate the in-flight atomic session** (verify skeptically: gates, harness 123/9/0/0,
-   lens-checks, differential evidence; then task #14 closes).
-2. **THE BUILD SLICE — the next conductor's spine:** flip the xfails green honestly. ENTRY
-   GATE (23J, direction-crosscheck): refresh ANALYZER-NEEDS.md FIRST (stale rounds 19–23;
-   rows contradict the polarity-retirement ruling) and honor the **rc-soundness requirement**
-   — the guard-witness gains a structural rc-soundness component (the vouched path's
-   aggregate exit status IS the guard-verdict, by authored promise; refuse-to-guard loudly
-   where the engine can see the promise can't hold), settled by the in-round interface work
-   (2026-07-02, in-conversation; seeds `notes/23K` + `23J` conv-rc-soundness — the mark-`!`
-   inversion trap, refuse-path exit-0, rc-vacuous fact-reporting bodies) BEFORE any
-   vouch-consuming xfail flips. Then sequence per `23A` §5: widen gate-6 FIRST
-   (no license class yet for apply-only checks / guard-suppressed mutators; selftest
-   confounds landed in `23G`); the guard emitter per the round-21 door-4 mechanics
-   (`notes/218a`), the GuardLicense witness (mind **hz-refusepath** — the reached-path
-   component is load-bearing), the strawman vouch lift. During: the rc-consumer experiment;
-   guard render-forms.
-3. **Placement-spectrum design round (task #11, commissioned):** per-site guard ↔ hoisted
-   post-wall wave. Wall-density cost-model FIRST (density endogenous; NO corpus route);
-   single-approval, no-late-attention, no mid-apply re-planning; quiescence named;
-   adversarial-crosscheck before ANY re-weld. Concludes with the wave re-welds + wave pins.
-4. **Elide-half design round** (equal standing; when the human wants it): seeds = `238`
-   (horizon, derivation gradient) + `23D` §5 (footprints, demand-disjointness, namespace
-   convention, grounding bridges, entity-aliasing). All ~SUSPECT until its own hostile pass.
-   NB (23J / 23Ib-fd10): this arc OWNS the repair of 233 §0's original unsoundness, which is
-   design-closed but STILL LIVE AT HEAD (the dangerous-middle; `23A` hz-ambient-hole goldens
-   encode it) — the missing pin lands in the 23J repair pass (task #15), but the FIX rides
-   here; scheduling this arc is scheduling that repair.
-5. **Parked, human-keyed:** escape-hatches (`235`; un-park signals: admin-recourse pressure or
-   bump-mode work); check-cost banding (needs a sanctioned data source; corpus QUARANTINED);
-   the vouch-spelling family (dq-kOOB/kTYANNOT cluster); the 22H live-plan arc (see
-   Research/README's note: guards pin apply to book-order — compose, don't collide).
-6. Loose ends: a frozen-doc annotation on `notes/093` (round-9's closed-world axiom consciously
-   revoked for the elide tier); walk-throughs are explain-on-demand.
+**Live task state (reconciled at round-23 close):**
+- DONE: #7 pins · #14 spike reconciliation · #17 interface rulings · #18 rename · #19 golden-hill
+  design (floor reached → `23M`/`23N`/`23O`) · #20 closeout · #21 `plans/240`.
+- CARRIES INTO ROUND 24: **#15** — the repair pass; its `fd10`/silence=wall fix IS Stage 1, the
+  strip-fidelity implementation (ruled: bare marks deleted whole) rides along, plus the small pins
+  + the 231 disposal paragraph. **#16** — the human's root-doc queue (line-fixes + adopt the `23N`
+  vocabulary + the "lazy code motion for shell" README line).
+- TABLED: **#11** — the placement-spectrum / barrier round = the *performance* product; parked to
+  round-25+ (by the consent-wall it offers the attention goal nothing; `23O` §4).
 
-**Conduct fences (standing; bind any successor):** word-slugs only, explain prior-art inline
-(the human is often on his phone); silence ≠ ack — keep an ack-ledger, only what he TYPED
-counts; **HARD QUARANTINE on corpus/H2SaLS topics** (never route sizing through them; the
-`quarantine-DO-NOT-READ/` dir and `Research/corpora/` stay unread; do not ask why); crosscheck
-adjudication under maximum skepticism (convergence = signal; adversarial-only =
-suspect-until-checked); adversarial framing = exclusions-not-inclusions, strip authors'
-worry-lists from hostile agents' reading; Fable dispatch = ask-first, human dictates or reviews
-prompts (goals/desires, never instruction-lists — Opus gets the inverse: full enumeration);
-watch the noted Fable firewall-breach tendency (lead with the breach, price containment, offer
-the non-breaching cousin); strawman sh liberally in conversation, never as durable design;
-never edit README/DESIGN/IMPLEMENTATION/TODO/AGENTS/root-CLAUDE; notes are append-only —
-EXCEPT this file; echo the TaskList each round; the method is xfail-first → design →
-adversarial-crosscheck → build; tc-shaped judgment calls flag UP, never settle silently.
+**Deferred-work ledger** (durable now in `23O` §5 — 22H reactivity is round-25 and wants Fable
+ASAP; provenance-DAG is reorderable and may ride this spike; MH2 versioning; the language +
+`unsafe` hatch; kSTATE; DX tooling; `.diff`; the deferred surfaces incl. lane-privilege).
 
-**On-ramp order for a fresh conductor:** root docs → `spike/CLAUDE.md` → `plans/233` whole
-(incl. end-annotation) → `plans/239` → THIS FILE → `23D` → `23F` (both addenda) → `23A`+`23G` +
-`spike/e2e/run.sh` → `237` → `238` → `235`. Build reality: `plans/16P` §3 + `16Q` + closes
-`20K`/`21W`/`22W` + the `guard23-*` cases.
+**Conduct fences (standing; bind any successor):** word-slugs in full words, explain prior-art
+inline (the human is often on mobile); silence ≠ ack (only what he TYPED counts); **HARD
+QUARANTINE on corpus/H2SaLS** (the `quarantine-DO-NOT-READ/` dir + `Research/corpora/` stay
+unread; strawman measurement only, never the corpus); crosscheck adjudication under maximum
+skepticism (convergence = signal; a corpus doc's *existence* is never authority — reverse-
+sycophancy is a live failure mode); adversarial framing = exclusions-not-inclusions; Fable
+dispatch = ask-first, goals-not-instructions (Opus gets full enumeration); code-modifying agents
+→ isolated worktrees with a baseline-check + explicit-pathspec commits; never edit
+README/DESIGN/IMPLEMENTATION/TODO/AGENTS/root-CLAUDE (human-only); notes are append-only EXCEPT
+this file; **never use the AskUserQuestion tool** (his vi-mode breaks it — ask in prose); dump
+the full numbered TaskList when it changes or when he's remote; the method is now
+**build → measure the yardstick → let the evidence pick the next stage.**
+
+**On-ramp order for a fresh round-24 conductor:** root docs (`README`/`DESIGN`/`IMPLEMENTATION`) →
+`spike/CLAUDE.md` → **`notes/23O`** (the closeout — everything that happened + the settled law) →
+**`plans/240`** (the round-24 plan) → THIS FILE → then, as the build needs them: `23M`/`23N` (the
+elide mechanism's landmines + vocabulary), `23A`+`23G` + `spike/e2e/run.sh` (the guard-tier spec),
+`23H` (the spike's reconciliation record + the strip-fidelity residue for #15).
 
 ---
 
-## Yesterday-scale (2026-07-01/02, compressed — the crisis arc itself)
+## Yesterday-scale (round 23, 2026-06-15 → 2026-07-03 — compressed; full record `notes/23O`)
 
-The human's `plans/233` showed the oracle effect/poison contract broken (silence-as-vouch
-unsound / silence-as-poison valueless — the frame problem); the ternary reshape + guard-license
-were settled in-conversation, stamped into 233, crosschecked by three clean-context agents
-(`236a/b/c`, adjudicated `237` — mechanism validated 3-way; vouch-tier de-centered then
-superseded by the two-halves doctrine; re-observation re-priced into the placement-spectrum
-round), the ceiling mapped (`238`), the closure signed (`239`), the fork resolved + hatches
-parked (`235`), the pin-set authored/reviewed/repaired (`23A`/`23B`/`23C`/`23F`/`23G`), and the
-spike partially reconciled to the design (`23E`; R1 landed, atomic session in flight).
+Opened on `plans/230` (best-effort), intercepted by the human's `plans/233` crisis (the oracle
+poison contract was broken — the frame problem). Resolved to the ternary verdict + converged-vouch
+(crosschecked `236a/b/c` → `237`; ceiling `238`; signed closure `239` + the two-halves doctrine).
+Interface settled (`23K`/`23L`: role-split, rc-partition, strip-fidelity) after the rc-soundness
+cluster surfaced in the direction-crosscheck (`23I`/`23J`). Spike realigned to the design over five
+sessions (`23E`/`23H`: marker fiction retired). Guard tier pinned + reviewed (`23A`–`23G`). Elide
+half worked to its floor (`23M`/`23N`: 233 permanent; frame-rule/dynamic-frames/lazy-code-motion;
+consent-wall; survival-settled-vs-adequacy-is-the-risk). Turned empirical → `plans/240`.
 
 ## Ancient (pre-round-23)
 
-See `Research/README.md`'s per-round map (rounds 1–22) — the spine there is curated and
-current through round 23.
+See `Research/README.md`'s per-round map (rounds 1–22).

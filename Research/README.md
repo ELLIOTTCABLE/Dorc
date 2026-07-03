@@ -26,27 +26,28 @@ least a little bit of prior rounds as context; older ones, although focused, are
 often also full of superseded/incorrect info. peruse older rounds with care.)
 
 **Start here (current state):** the standing design accord is the human-authored `../DESIGN.md` +
-`../KNOBS.md` **plus (new, binding) the round-23 standing-rulings block in `../spike/CLAUDE.md`**; the most
-recent *event* is **round 23 — the oracle-contract crisis and its resolution into the ternary verdict
-{elide, guard, run}**. On-ramp for the current state: **`plans/233`** (HUMAN-written, stamped; read its
-end-annotation — it carries corrections) → **`plans/239`** (the signed crisis-closure + re-welds) →
-**`LIVING_STATUS.md`** (the living resumption doc: state, bindings, the arc ahead) → `plans/23D` (the rulings/seeds
-ledger). The kind/'types' on-ramp remains **`plans/17N`**; the **round-16 spike** remains the build reality
-(`plans/16P` §3-ledger first, then `plans/16Q`), now plus the round-23 `guard23-*` pin-set (`notes/23A`).
-The per-facet conclusions below (`055`/`099`/`102`/`111`/`128`/`139`/`142`/`17N`) are the durable answers
-each round settled.
+`../KNOBS.md` **plus (binding) the round-23 standing-rulings blocks in `../spike/CLAUDE.md`**. **Round 23 is
+CLOSED** (the oracle-contract crisis → the ternary verdict {elide, guard, run} → the empirical turn);
+**round 24 is OPEN** — an empirical build of the elide half ("lazy code motion for shell"). On-ramp for
+the current state: **`notes/23O`** (the round-23 closeout — the complete single-narrative history + all
+settled law) → **`plans/240`** (the round-24 charter — the empirical elide-build plan) →
+**`LIVING_STATUS.md`** (live state + task list). For the settled-law detail: **`plans/233`** (HUMAN-written,
+stamped; read its end-annotation) + **`plans/239`** (the signed closure) + `plans/23D`/`notes/23L` (rulings
+ledgers); the elide mechanism's landmines + academic grounding: `notes/23M`/`notes/23N`. The kind/'types'
+on-ramp remains **`plans/17N`**; the **round-16 spike** remains the build reality (`plans/16P` §3-ledger,
+then `plans/16Q`), now plus the round-23 `guard23-*` pin-set (`notes/23A`). The per-facet conclusions below
+(`055`/`099`/`102`/`111`/`128`/`139`/`142`/`17N`) are the durable answers each round settled.
 
-> **The two foundational arcs flagged after round 22 — status as of round 23:**
-> 1. **`plans/230` — best-effort / collapsed-gradients.** OPENED round 23 (sweep `notes/231`, design
-> dialogue `232`), then overtaken: the human's **`plans/233`** crisis-log showed the oracle effect/poison
-> contract broken at its core, and the round's true output became the **ternary verdict architecture**
-> (233's update section + the signed `plans/239`). The surviving un-collapse work lives on in the
-> **elide-half design arc** (seeds: `notes/238` + `plans/23D` §5) and the arc-list in `LIVING_STATUS.md`.
-> 2. **`plans/22H` — the live-plan / concurrent-incremental / streaming engine (still deferred, still
+> **The two foundational arcs flagged after round 22 — status as of round-24 open:**
+> 1. **`plans/230` — best-effort / collapsed-gradients.** CLOSED via round 23: overtaken by the human's
+> **`plans/233`** crisis, whose true output became the **ternary verdict architecture** (`233`/`239`); the
+> surviving un-collapse work became the elide-half, now the round-24 build (`notes/23O`, `plans/240`).
+> 2. **`plans/22H` — the live-plan / concurrent-incremental / streaming engine (deferred to round-25, still
 > foundational).** The founding anti-Ansible real-time motivator: probes streaming concurrently from N
-> hosts, the per-host plan re-folding live. NB from round 23: the guard tier **pins apply to book-order**
-> (guards are in-sequence by construction), and the commissioned re-verification placement-spectrum round
-> overlaps 22H's re-fold machinery — these must compose, not collide.
+> hosts, the per-host plan re-folding live. The human wants Fable-class attention on it *soon* (before Fable
+> gets expensive); it may reuse the round-24 spike if that stays un-crufty. NB: guards pin apply to
+> book-order, and the parked placement-spectrum (performance) round overlaps 22H's re-fold machinery — must
+> compose, not collide. (Deferred-work ledger: `notes/23O` §5.)
 
 - **What is it, and where's the hard part?** — `plans/021` (empty dir → CFG/effect engine) +
   `plans/041` (language / parser / orchestration decisions).
