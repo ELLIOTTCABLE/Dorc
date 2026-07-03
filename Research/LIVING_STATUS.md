@@ -68,10 +68,20 @@ re-authoring mocks + re-blessing goldens together — the finisher refused to co
 ground-truth and prediction in one unverifiable pass (anti-masking) and reverted its working
 R3 code to stop at a green boundary. Options + the refined recipe: `23H §7`. **R3 RE-LANDED
 2026-07-02** (third session; ruling (b) honored with mocks-first/goldens-second sequencing +
-old-binary verification — evidence `23H §8`; conductor-verified 123/9/0/0 on the merged tree
-after a fresh build). REMAINING: P5 marker retirement (+ the ruled `dpkg.check()`), guard23
-vouch-marks, final re-bless — NB `23H §8`'s BLESS hazard: a global BLESS clobbers
-hand-authored XFAIL goldens (hit + recovered); restore XFAIL expected.* after any bless.
+old-binary verification — evidence `23H §8`). **P5 LANDED 2026-07-02 (closing session; task
+#14 CLOSED):** the marker fiction is fully retired — `lift` now derives purely from check
+bodies (~2,500 lines of old machinery + fixture-markers deleted; zero marker strings outside
+two flagged CLAUDE.md history-blocks); jc-dpkg-i authored; BLESS hardened (XFAIL expected.*
+protected, demonstrated); all 9 xfails lens-verified for designed reasons; conductor-verified
+123/9/0/0 + 22 suites green on the merged tree. RESIDUE, new-design-gated (NOT
+reconciliation): the guard23 in-body vouch-marks + flagship golden re-derivation STOPPED on
+**jc-vouch-mark-strip-fidelity** (`23H §9.4`) — a bare vouch-mark strips to a trailing `:`
+null-command that clobbers the check's tool-rc to 0 ⇒ an always-skip guard (wrong-elision).
+Resolutions: (A) strip deletes bare-mark STATEMENTS entirely (conductor-recommended as
+standing strip-contract — bare marks are pure annotation-statements, the `:` was only ever
+the sh-native carrier); (B) mark-first placement (works, cosmetically breaks P-pair
+byte-identity); defer-execution-to-the-vouch-respell either way (the strawman mark is 23L
+throwaway). Rides task #15 as a gated rider.
 
 **The bindings (hold these; full text at the cited homes):**
 - The four round-23 rulings — `spike/CLAUDE.md` (guard sourcing: the check IS the oracle,
