@@ -221,7 +221,10 @@ fn run() -> Result<(), String> {
     // stage-3 (the why-lens): take the TYPED cmdsub-⊤ disclosures too — `report`/gate-3 consume the
     // LOWERED `diags` (cause-dropped), but the why-lens render reads the `cause` off the typed
     // `Diag`s (`to_legacy` drops it). The arena is shared (the typed diags' causes resolve in it).
-    let (classified, why_diags) = dorc_analysis::effect::classify_with_why_diags(
+    // `kills` (R3 / 24A §3): the kill-bearing leaf set the wall predicate cannot read off the
+    // `MustRun` SkipClass alone. Threaded to `build_plan_walled` so a running `apt-get purge`
+    // walls downstream, closing the kill gap fd10's establish-only wall left open.
+    let (classified, why_diags, kills) = dorc_analysis::effect::classify_with_why_diags(
         &cfg.value,
         &value,
         &parsed.value,
@@ -273,11 +276,12 @@ fn run() -> Result<(), String> {
     // VALID Query-class site (the guard's own rc); an establish site's rc is the PROBE
     // command's (dpkg-query's), NOT the mutator's, so it feeds the fold NOTHING.
     let by_fact = facts_from_sites(&probe, &results);
-    let plan = dorc_plan::build_plan(
+    let plan = dorc_plan::build_plan_walled(
         &book_src,
         &parsed.value,
         &cfg.value,
         &classes,
+        &kills,
         |f| {
             by_fact
                 .get(&f)

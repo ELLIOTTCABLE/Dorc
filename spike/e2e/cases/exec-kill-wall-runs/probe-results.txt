@@ -1,0 +1,6 @@
+# probe-results: site-keyed records (task-D1 WIRE). Grammar:
+#   site <leafid> effect=<holds|absent|cant-tell>
+# site 0 = apt-get purge oldpkg — a KILL (MustRun), un-probeable ⇒ ships no record here.
+# site 1 = apt-get install -y nginx (package:nginx#installed) CONVERGED on its own cell; it
+#          would elide by the static ambient gate, but the running purge (site 0) walls it ⇒ runs.
+site 1 effect=holds

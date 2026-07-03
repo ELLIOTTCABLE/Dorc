@@ -1007,11 +1007,26 @@ pub fn classify(
 /// `report`/gate-3); this ALSO returns them TYPED so the cli's why-lens render can read the
 /// `cause` off them (`to_legacy` drops it — [`dorc_core::diag::why`] needs the typed value).
 ///
-/// Returns `(Carrier<dispositions+legacy-diags>, typed-why-lens-diags)`. The typed diags are a
-/// subset-by-construction of the lowered ones (the same `CmdsubOperandTop`s, before lowering) —
-/// no second pass, no divergence. EXEMPT (ru-11): the typed diags' `cause` informs the render
-/// only, never a decision.
+/// Returns `(Carrier<dispositions+legacy-diags>, typed-why-lens-diags, kill-node-set)`. The
+/// typed diags are a subset-by-construction of the lowered ones (the same `CmdsubOperandTop`s,
+/// before lowering) — no second pass, no divergence. EXEMPT (ru-11): the typed diags' `cause`
+/// informs the render only, never a decision.
+///
+/// The **kill-node set** (R3 / 24A §3 — the kill gap) is the set of leaf [`CfgNodeId`]s whose
+/// [`CommandEffect`] is a `Kills` (`apt-get purge`; `EstablishInverted` ⇒ `Kills` ⇒ classifies
+/// `MustRun`, indistinguishable from a pure builtin / opaque in the [`SkipClass`] alone). A
+/// RUNNING kill mutates the world, so it must WALL downstream different-cell converged
+/// establishes (the same under-execute shape [`build_plan`](dorc_plan) closed at plan time for
+/// modeled mutators, fd10). The phased caller threads this set to
+/// [`dorc_plan::build_plan_walled`] so the wall predicate can see kills; the pure kernel stays
+/// phase-agnostic (`inv-superposition`). Deterministic (`BTreeSet`, `inv-determinism`).
 #[must_use]
+#[expect(
+    clippy::type_complexity,
+    reason = "the three parallel products (site classifications + typed why-lens diags + the R3 \
+              kill-node set) are the fn's whole output; a named struct for a two-call-site return \
+              (the cli + the plan test seam) buys nothing over the tuple"
+)]
 pub fn classify_with_why_diags(
     cfg: &Cfg,
     value: &ValueFlow,
@@ -1020,7 +1035,11 @@ pub fn classify_with_why_diags(
     checks: &[PredictSet],
     interner: &mut Interner,
     arena: &mut dorc_core::ProvArena,
-) -> (Carrier<Vec<(CfgNodeId, SkipClass)>>, Vec<Diag>) {
+) -> (
+    Carrier<Vec<(CfgNodeId, SkipClass)>>,
+    Vec<Diag>,
+    BTreeSet<CfgNodeId>,
+) {
     let mut diags: Vec<Diagnostic> = Vec::new();
     // Precompute every node's member-family + effect cells, recording the deferred cmdsub-⊤
     // disclosures (stage-1). Extracted so this fn stays under the line cap.
@@ -1102,6 +1121,12 @@ pub fn classify_with_why_diags(
     };
 
     let mut out = Vec::new();
+    // R3 (24A §3 — the kill gap): leaf nodes whose effect is a `Kills`. A `Kills` classifies
+    // `MustRun` (indistinguishable from pure/opaque in the `SkipClass`), so the plan-time wall
+    // predicate can't see it — this set carries it out to `build_plan_walled`. `Kills` is a
+    // real mutator: a RUNNING kill must wall downstream, exactly like a modeled establish.
+    let mut kills: BTreeSet<CfgNodeId> = BTreeSet::new();
+    let bears_kill = |cs: &[CommandEffect]| cs.iter().any(|e| matches!(e, CommandEffect::Kills(_)));
     for (i, cells) in effects.iter().enumerate() {
         let id = CfgNodeId(i as u32);
         // Only genuinely-runnable command leaves are plan/apply units. A command
@@ -1143,6 +1168,15 @@ pub fn classify_with_why_diags(
         // sub-records live in `plan`). The body sites are classified with the call's
         // positionals bound (the value plane resolved their argv, `i-2`).
         if let Some(body_sites) = cfg.call_body_sites(id) {
+            // A running CALL whose spliced body KILLS mutates when the call runs ⇒ it walls
+            // (the InlineCall analogue of the direct-leaf kill; no corpus case yet, cheap to
+            // cover). The CALL node is the render/wall unit (`i-3`).
+            if body_sites
+                .iter()
+                .any(|&s| effects.get(s.index()).is_some_and(|cs| bears_kill(cs)))
+            {
+                kills.insert(id);
+            }
             let sites = body_sites
                 .iter()
                 .map(|&site| InlineSite {
@@ -1153,9 +1187,12 @@ pub fn classify_with_why_diags(
             out.push((id, SkipClass::InlineCall { sites }));
             continue;
         }
+        if bears_kill(cells) {
+            kills.insert(id);
+        }
         out.push((id, classify_site(i)));
     }
-    (Carrier { value: out, diags }, why_diags)
+    (Carrier { value: out, diags }, why_diags, kills)
 }
 
 #[cfg(test)]

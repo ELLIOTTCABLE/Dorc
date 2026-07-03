@@ -33,7 +33,7 @@
 )]
 
 use core::marker::PhantomData;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use dorc_analysis::cfg::{Cfg, CfgNodeId, CfgNodeKind};
 use dorc_analysis::effect::{FactKey, InlineSite, SkipClass};
@@ -1207,12 +1207,42 @@ fn push_inline_predicts(
 ///
 /// A leaf that is neither folded-dead nor convergence-elidable **runs** (the
 /// `kFAIL-perform` safe direction).
+///
+/// This is the kill-unaware entry (empty kill-set): its plan-time wall keys only on
+/// establish-bearing classes, so a running `Kills`-only site (`apt-get purge`, classifies
+/// `MustRun`) does NOT wall downstream. Callers that have the kill-node set (the cli, via
+/// [`dorc_analysis::effect::classify_with_why_diags`]) use [`build_plan_walled`] to close
+/// that gap (24A §3). Kept for the callers that do not thread kills (`hostsim`, tests).
 #[must_use]
 pub fn build_plan(
     src: &str,
     ast: &Ast,
     cfg: &Cfg,
     classes: &[(CfgNodeId, SkipClass)],
+    observe: impl Fn(FactKey) -> Observable,
+    arena: &mut dorc_core::ProvArena,
+) -> Plan {
+    build_plan_walled(src, ast, cfg, classes, &BTreeSet::new(), observe, arena)
+}
+
+/// [`build_plan`] PLUS the **kill-node set** (R3 / 24A §3 — the kill gap). `kills` is the set
+/// of leaf [`CfgNodeId`]s the analysis flagged `Kills` (`apt-get purge` — an `EstablishInverted`
+/// claim ⇒ `CommandEffect::Kills` ⇒ classifies `MustRun`). A `MustRun` is opaque to the wall
+/// predicate — a pure builtin, an opaque, and a kill all classify `MustRun` — but a kill is a
+/// real mutator: a RUNNING kill may touch anything it did not declare (the frame problem, 233),
+/// so it must WALL downstream different-cell converged establishes, exactly like a modeled
+/// establish (the same under-execute shape fd10 closed). Pure builtins stay out of `kills` and
+/// never wall (`exec-pure-builtin`); opaque handling is unchanged (an opaque already ⊤-poisons
+/// downstream statically). Demotion stays Replace→Run only (`inv-kfail`). This is BASELINE
+/// ground-truth behaviour — never flag-gated (rul24-mode-gate governs the survival tier, not
+/// wall honesty). Deterministic (`kills` is a `BTreeSet`; `inv-determinism`).
+#[must_use]
+pub fn build_plan_walled(
+    src: &str,
+    ast: &Ast,
+    cfg: &Cfg,
+    classes: &[(CfgNodeId, SkipClass)],
+    kills: &BTreeSet<CfgNodeId>,
     observe: impl Fn(FactKey) -> Observable,
     arena: &mut dorc_core::ProvArena,
 ) -> Plan {
@@ -1289,6 +1319,11 @@ pub fn build_plan(
                 stand_in,
             );
         }
+        // Wall-bearing = an establish-bearing class OR a flagged kill (R3 / 24A §3): a running
+        // kill mutates but classifies `MustRun`, invisible to `class_is_establish_bearing`, so
+        // the threaded `kills` set restores it. A pure builtin / opaque `MustRun` is NOT in
+        // `kills`, so it still never walls.
+        let is_mutator = class_is_establish_bearing(class) || kills.contains(node);
         steps.push((
             Step {
                 leaf: LeafId(0),
@@ -1296,7 +1331,7 @@ pub fn build_plan(
                 sh,
                 disposition,
             },
-            class_is_establish_bearing(class),
+            is_mutator,
         ));
     }
 
@@ -1546,9 +1581,11 @@ fn has_top_successor(cfg: &Cfg, node: CfgNodeId) -> bool {
 ///   wall (see `exec-pure-builtin`: `cd /tmp` runs, the install below it still elides). An
 ///   *opaque* is also `MustRun`, but it already `⊤`-poisons every downstream fact in `classify`
 ///   (⇒ they are `EstablishWritten` ⇒ never elide), so not walling it here is harmless
-///   redundancy. A *kill* (`apt-get purge`) is `MustRun` too and DOES mutate — walling it
-///   would need the `CommandEffect`, which this phased caller does not receive; the corpus has
-///   no kill-then-different-cell-elision case, so it is a flagged latent gap, not a live hole.
+///   redundancy. A *kill* (`apt-get purge`) is `MustRun` too and DOES mutate — this predicate
+///   cannot see it (the `CommandEffect` is not in the `SkipClass`), so the R3 kill gap (24A §3)
+///   is closed one layer up: [`build_plan_walled`] ORs this predicate with a threaded
+///   kill-node set, so a running kill walls without a `SkipClass` change. Kill-unaware
+///   [`build_plan`] passes an empty set (unchanged behaviour for `hostsim`/tests).
 fn class_is_establish_bearing(class: &SkipClass) -> bool {
     match class {
         SkipClass::EstablishAmbient(_)
@@ -3222,6 +3259,128 @@ apt_get__predict() {
                 Disposition::Replace(_, _)
             ),
             "no wall (upstream elided) ⇒ the downstream converged install still elides"
+        );
+    }
+
+    /// R3 (24A §3 — the kill gap) test seam: the kill-aware pipeline. Like [`plan_for_pkgs`] but
+    /// drives [`classify_with_why_diags`] (for the kill-node set) + [`build_plan_walled`], and
+    /// registers `apt-get purge` as an `EstablishInverted` claim ⇒ `CommandEffect::Kills` (the
+    /// corpus `*` arm models any verb as a plain establish; a KILL needs the `!` polarity). With
+    /// `walled=false` the found kill-set is dropped (empty) — the kill-UNAWARE `build_plan` path,
+    /// for the differential that pins the wall is precisely kill-driven (a non-kill `MustRun`
+    /// never walls). Status stays ⊤ (fork-mutator-rc), as `plan_for_pkgs`.
+    fn kill_plan(
+        src: &str,
+        verdict_of: impl Fn(&str) -> Verdict,
+        walled: bool,
+    ) -> (Plan, Interner) {
+        let mut i = Interner::default();
+        let mut idx = package_index(&mut i);
+        let package = KindId(i.intern("package"));
+        let installed = SelectorId(i.intern("installed"));
+        let apt = ProviderId(i.intern("apt-get"));
+        let purge = i.intern("purge");
+        idx.add_effect(
+            apt,
+            purge,
+            package,
+            installed,
+            ValueClaim::EstablishInverted,
+        );
+        let parsed = dorc_syntax::parse(src);
+        let cfg = dorc_analysis::cfg::build(&parsed.value).value;
+        let value = dorc_analysis::value::analyze(&cfg, &parsed.value, &mut i);
+        let checks = vec![dorc_oracle::predict::lift_predicts(&mut i, CORPUS_PREDICT_SRC).value];
+        let mut arena = dorc_core::ProvArena::new();
+        let (classified, _why, kills_found) = dorc_analysis::effect::classify_with_why_diags(
+            &cfg,
+            &value,
+            &parsed.value,
+            &idx,
+            &checks,
+            &mut i,
+            &mut arena,
+        );
+        let classes = classified.value;
+        let kills = if walled { kills_found } else { BTreeSet::new() };
+        let observe = |f: FactKey| {
+            if f.kind == package
+                && f.selector == installed
+                && let EntityRef::Operand(tok) = f.entity
+            {
+                return Observable::verdict_only(verdict_of(i.resolve(tok.0)));
+            }
+            Observable::verdict_only(Verdict::Unknown)
+        };
+        let plan = build_plan_walled(
+            src,
+            &parsed.value,
+            &cfg,
+            &classes,
+            &kills,
+            observe,
+            &mut arena,
+        );
+        (plan, i)
+    }
+
+    #[test]
+    fn running_kill_walls_downstream_converged_establish() {
+        // R3 (24A §3 — closing the kill gap fd10 left open). `apt-get purge oldpkg` is a Kill
+        // (EstablishInverted ⇒ CommandEffect::Kills ⇒ classifies MustRun ⇒ ALWAYS runs). A
+        // running kill mutates the world, so by the frame problem (233) it may touch anything it
+        // did not declare — exactly like fd10's running modeled ESTABLISH. So the downstream
+        // CONVERGED `apt-get install -y nginx` (a DIFFERENT cell the static ambient gate would
+        // elide) is DEMOTED Replace→Run (`inv-kfail`). The kill-node set threaded to
+        // build_plan_walled restores the wall the opaque `MustRun` SkipClass hid.
+        let (plan, _) = kill_plan(
+            "apt-get purge oldpkg\napt-get install -y nginx\n",
+            |e| {
+                if e == "nginx" {
+                    Verdict::Converged
+                } else {
+                    Verdict::Unknown
+                }
+            },
+            true,
+        );
+        assert!(
+            matches!(find(&plan, "purge oldpkg").disposition, Disposition::Run),
+            "the kill always runs (Kills ⇒ MustRun)"
+        );
+        assert!(
+            matches!(
+                find(&plan, "install -y nginx").disposition,
+                Disposition::Run
+            ),
+            "silence=wall: the converged install is demoted to Run past the running kill"
+        );
+    }
+
+    #[test]
+    fn kill_unaware_plan_does_not_wall_the_gap() {
+        // The DIFFERENTIAL that pins the wall is precisely kill-driven (not a blanket `MustRun`
+        // wall — pure builtins/opaques are `MustRun` too and must NEVER wall, `exec-pure-builtin`).
+        // The SAME book through the kill-UNAWARE `build_plan` (empty kill-set) does NOT wall: the
+        // converged nginx install WRONGLY elides. This is the exact under-execution the e2e pin
+        // `exec-kill-wall-runs` reds pre-fix; threading `kills` (test above) is what closes it.
+        let (plan, _) = kill_plan(
+            "apt-get purge oldpkg\napt-get install -y nginx\n",
+            |e| {
+                if e == "nginx" {
+                    Verdict::Converged
+                } else {
+                    Verdict::Unknown
+                }
+            },
+            false,
+        );
+        assert!(
+            matches!(
+                find(&plan, "install -y nginx").disposition,
+                Disposition::Replace(_, _)
+            ),
+            "kill-unaware build_plan does NOT wall ⇒ the converged install elides (the gap)"
         );
     }
 
