@@ -8,18 +8,18 @@
 #  (2) NO ACCRETION: re-analysis must never stack `check || (check || cmd)` — the book
 #      already carries the guard (an inserted guard is recognized the same way a hand-
 #      written one is; plans/233 upsides list);
-#  (3) NAME COLLISION: the book defines `apt_get__check` — the very name the guard tier
+#  (3) NAME COLLISION: the book defines `apt_get__predict` — the very name the guard tier
 #      would ship. sh function redefinition is last-writer-wins, so a shipped preamble
 #      after this definition would be hijacked (or hijack); and a collision-dodging RENAME
-#      is unspellable under strip-only sourcing (rul-ternary-verdict: `name.check()` ->
-#      `name_check()`, nothing else changed) — so the only lawful verdicts here are
+#      is unspellable under strip-only sourcing (rul-ternary-verdict: `name.predict()` ->
+#      `name_predict()`, nothing else changed) — so the only lawful verdicts here are
 #      refuse-and-run. On this mock host nginx is ABSENT (dpkg-query mock: rc 1), so at exec
 #      the book carried guard falls through and the install runs, exactly as bare sh would.
-apt_get__check() {
+apt_get__predict() {
    while [ "${1#-}" != "$1" ]; do shift; done
    verb=$1; shift
    while [ "${1#-}" != "$1" ]; do shift; done
    pkg="$1"
    if [ "$2" = "" ]; then dpkg-query -W "$pkg" >/dev/null 2>&1; fi
 }
-apt_get__check install -y nginx || apt-get install -y nginx
+apt_get__predict install -y nginx || apt-get install -y nginx

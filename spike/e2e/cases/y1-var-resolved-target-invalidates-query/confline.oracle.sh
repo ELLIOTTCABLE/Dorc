@@ -2,9 +2,9 @@
 # read-only QUERY of confline:<file>#present, mutating nothing (task-D2 `query` polarity).
 # `grep` is external (shimmable), the file argument is the entity (the cell is keyed on
 # the file the guard reads).
-# command-keyed check(): `grep -q PATTERN FILE` — strip the `-q` flag, annotate the FILE
+# command-keyed predict(): `grep -q PATTERN FILE` — strip the `-q` flag, annotate the FILE
 # (operand 2, after the pattern) as `confline`; the probe re-greps the bound file.
-grep__check() {
+grep__predict() {
    case $1 in -q) shift ;; esac
    pat=$1; shift
    file : confline = "$1"

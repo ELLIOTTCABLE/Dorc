@@ -1,7 +1,7 @@
 # minimal package oracle (apt/dpkg), lifted statically by dorc.
-# command-keyed check(): flag-strip (pre- and post-verb), bind the verb, annotate the
+# command-keyed predict(): flag-strip (pre- and post-verb), bind the verb, annotate the
 # single operand as `package`; the `[ "$2" = "" ]` guard refuses a SECOND operand.
-apt_get__check() {
+apt_get__predict() {
    while [ "${1#-}" != "$1" ]; do shift; done
    verb=$1; shift
    while [ "${1#-}" != "$1" ]; do shift; done

@@ -1,7 +1,7 @@
 # exec-opaque-var-runs (round-20, replaces the old exec-opaque-var after task-W): the
 # group-H ⊤-floor, re-pinned with a GENUINELY dynamic operand. `PKG=$(cat /etc/pkg)` is a
 # command-substitution RHS ⇒ the value-plane marks PKG ⊤ (no static knowledge; value
-# synthesis stays refuted) ⇒ the install's operand is ⊤ ⇒ the check() is never evaluated
+# synthesis stays refuted) ⇒ the install's operand is ⊤ ⇒ the predict() is never evaluated
 # ⇒ the site is Opaque ⇒ it RUNS — even though the host claims package:nginx#installed
 # converged (the stdin fact is bait: an engine that guessed the entity could wrongly
 # elide). kFAIL-perform: unknown identity never elides.

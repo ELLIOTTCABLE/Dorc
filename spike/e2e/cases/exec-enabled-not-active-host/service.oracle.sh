@@ -4,9 +4,9 @@
 # single is-active kind-default could not report #enabled holds while #active is absent
 # (find-1's under-execute — it would have reported BOTH from is-active, wrongly eliding the
 # `start` too on an enabled-but-stopped host).
-# command-keyed check(): the verb selects a different probe per arm (enable→is-enabled,
+# command-keyed predict(): the verb selects a different probe per arm (enable→is-enabled,
 # start→is-active, disable→is-enabled); annotate the unit operand as `service`.
-systemctl__check() {
+systemctl__predict() {
    verb=$1; shift
    svc : service = "$1"
    case $verb in

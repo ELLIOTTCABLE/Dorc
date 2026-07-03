@@ -1,7 +1,7 @@
 # guard23-nounset-book-survives (23C-fd2: a `set -u` book — the inserted guard must not kill
 # the book tail; XFAIL until the guard tier lands). The corpus-standard check body reads `"$2"`
 # unconditionally (`if [ "$2" = "" ]; …`); a single-operand guard invocation
-# (`apt_get__check install -y curl`) leaves `$2` unset, so under `set -u` the shipped whole-body
+# (`apt_get__predict install -y curl`) leaves `$2` unset, so under `set -u` the shipped whole-body
 # guard DIES rc 2 at that read — curl, vim, and everything downstream under-executed by the
 # insertion (the 218a set-u hazard, demonstrated; distinct from the deferred errexit-CONSUMPTION
 # axis — this is the inserted code's OWN crash). Composition:

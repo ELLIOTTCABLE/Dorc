@@ -7,7 +7,7 @@
 
 # site 0: package:a
 b#installed
-apt_get__check() {
+apt_get__predict() {
    while [ "${1#-}" != "$1" ]; do shift; done
    verb=$1; shift
    while [ "${1#-}" != "$1" ]; do shift; done
@@ -19,11 +19,11 @@ apt_get__check() {
       esac
    fi
 }
-apt_get__check 'install' '-y' 'a
+apt_get__predict 'install' '-y' 'a
 b'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'site 0 effect=%s rc=%s\n' "$_e" "$_rc"
 # site 1: package:c
 d#installed
-apt_get__check 'install' '-y' 'c
+apt_get__predict 'install' '-y' 'c
 d'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'site 1 effect=%s rc=%s\n' "$_e" "$_rc"
 #!/bin/sh
 # dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).

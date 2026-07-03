@@ -6,7 +6,7 @@
 # oracle's site — a build keying "a vouch exists in the set" / provider-set membership rather
 # than THIS-site's-oracle's-reached-path would wrongly guard `systemctl enable foo` off the apt
 # vouch. There is deliberately no converged-vouch here.
-systemctl__check() {
+systemctl__predict() {
    verb=$1; shift
    svc : service = "$1"
    case $verb in

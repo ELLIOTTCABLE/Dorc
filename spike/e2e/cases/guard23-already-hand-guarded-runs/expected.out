@@ -6,19 +6,19 @@
 # rc is the raw PROBE-command status (opaque to Dorc — the record is the out-of-band lane).
 
 # site 1: pkgstate:nginx#installed
-dpkg__check() {
+dpkg__predict() {
    case $1 in -s) shift ;; esac
    pkg="$1"
    dpkg -s -- "$pkg" >/dev/null 2>&1
 }
-dpkg__check '-s' 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'site 1 effect=%s rc=%s\n' "$_e" "$_rc"
+dpkg__predict '-s' 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'site 1 effect=%s rc=%s\n' "$_e" "$_rc"
 # site:0 skip-unresolvable
 # site:2 skip-unresolvable
 #!/bin/sh
 # dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
 
 # guard23-already-hand-guarded-runs (no-double-guard — a PASSING floor). The admin already
-# wrote the check-then-act idiom by hand: `dpkg -s nginx || apt-get install -y nginx`,
+# wrote the predict-then-act idiom by hand: `dpkg -s nginx || apt-get install -y nginx`,
 # sitting past an opaque wall (hork), with the install's oracle VOUCHED — machine-guard
 # bait. The machine must never stack a second guard onto an admin's hand-written one
 # (`handguard || (check || install)` accretes noise and re-reads state the admin's own

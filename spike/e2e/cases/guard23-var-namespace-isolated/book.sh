@@ -5,7 +5,7 @@
 # as its OWN variable, composing the hazard from individually-pinned pieces:
 #   pkg=vim                   — a book variable, set early
 #   hork wombat               — opaque wall (downstream loses its elide-license, plans/233 §0)
-#   apt-get install -y curl   — vouched + converged-past-wall ⇒ GUARD; the check's `pkg="$1"`
+#   apt-get install -y curl   — vouched + converged-past-wall ⇒ GUARD; the predict's `pkg="$1"`
 #                               would clobber the book's `pkg` to "curl" in the caller namespace
 #   apt-get install -y "$pkg" — DIVERGED (vim absent) ⇒ runs with ORIGINAL BYTES (`"$pkg"`
 #                               survives verbatim); at apply it must still install VIM

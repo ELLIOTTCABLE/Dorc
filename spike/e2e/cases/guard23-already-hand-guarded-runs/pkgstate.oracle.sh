@@ -2,7 +2,7 @@
 # query polarity, mutates nothing). Present so the hand-written guard is a MODELED query —
 # the already-guarded refusal must eventually recognize the guard's fact, not merely fail
 # to analyze it (notes/218a hunt-C: same-fact detection is the fiddly part).
-dpkg__check() {
+dpkg__predict() {
    case $1 in -s) shift ;; esac
    pkg : pkgstate = "$1"
    dpkg -s -- "$pkg" >/dev/null 2>&1 :? pkgstate:"$pkg".installed

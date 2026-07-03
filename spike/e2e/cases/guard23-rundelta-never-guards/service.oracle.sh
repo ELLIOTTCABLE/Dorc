@@ -4,7 +4,7 @@
 # offer a guard by not vouching a path for it (rul-guard-license).
 # ---- STRAWMAN VOUCH SPELLING — NOT DESIGN (rul-guard-license: spelling OPEN; swap-cheap
 # ---- stub). Converged-vouch on the ENABLE path only; restart is deliberately unvouched.
-systemctl__check() {
+systemctl__predict() {
    verb=$1; shift
    svc : service = "$1"
    case $verb in

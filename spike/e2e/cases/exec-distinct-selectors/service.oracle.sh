@@ -4,9 +4,9 @@
 # probes — is-enabled for #enabled, is-active for #active. A multi-selector kind with only
 # a kind-default probe is UN-PROBEABLE (both sites run); these per-selector probes make the
 # two sites resolvable to DISTINCT bodies (the find-1 under-execute fix).
-# command-keyed check(): the verb selects a different probe per arm (enable→is-enabled,
+# command-keyed predict(): the verb selects a different probe per arm (enable→is-enabled,
 # start→is-active, disable→is-enabled); annotate the unit operand as `service`.
-systemctl__check() {
+systemctl__predict() {
    verb=$1; shift
    svc : service = "$1"
    case $verb in

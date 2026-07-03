@@ -1,5 +1,5 @@
 # guard23-already-hand-guarded-runs (no-double-guard — a PASSING floor). The admin already
-# wrote the check-then-act idiom by hand: `dpkg -s nginx || apt-get install -y nginx`,
+# wrote the predict-then-act idiom by hand: `dpkg -s nginx || apt-get install -y nginx`,
 # sitting past an opaque wall (hork), with the install's oracle VOUCHED — machine-guard
 # bait. The machine must never stack a second guard onto an admin's hand-written one
 # (`handguard || (check || install)` accretes noise and re-reads state the admin's own

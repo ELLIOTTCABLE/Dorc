@@ -10,7 +10,7 @@
 #           a GUARD (rul-guard-license): the oracle's own check body ships strip-only as a
 #           preamble function and the line becomes `check-invocation || original-bytes`;
 #           the original command's bytes survive verbatim (rul-ternary-verdict). At apply
-#           the check re-reads the live host (mock: curl installed, rc 0) ⇒ short-circuit
+#           the predict re-reads the live host (mock: curl installed, rc 0) ⇒ short-circuit
 #           ⇒ the mutator is skipped by LIVE re-check, never by the stale plan verdict.
 #   site 3  apt-get install vim — DIVERGED past the wall (probe: absent) ⇒ plain run, vouch
 #           or no vouch: the mint is converged-past-wall only (a guard at a predicted-change

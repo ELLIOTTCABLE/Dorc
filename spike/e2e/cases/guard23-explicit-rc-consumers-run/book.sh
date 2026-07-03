@@ -2,7 +2,7 @@
 # question — a PASSING floor). Three converged, VOUCHED sites whose exit status the admin's
 # own sh explicitly reads: an `if` condition, a `||` left operand with a written fallback,
 # and a `$?` reader. The admin's spelled intent wins, always: a guard's pass-direction
-# would swap the tool's rc for the check's rc under the reader (a wrong-vouch suppressing
+# would swap the tool's rc for the predict's rc under the reader (a wrong-vouch suppressing
 # a written `|| fallback` is the stacked-failure disaster, notes/218a hunt-B), so NONE of
 # these sites may ever mint a guard — they run, vouch or no vouch, converged or not.
 # (Deliberately narrow: whether errexit-IMPLICIT consumption also blocks guarding is

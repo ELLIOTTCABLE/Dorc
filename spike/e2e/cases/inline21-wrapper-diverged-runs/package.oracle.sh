@@ -1,8 +1,8 @@
 # minimal package oracle (apt/dpkg), lifted statically by dorc.
-# command-keyed check(): flag-strip (pre/post-verb), bind the verb, annotate the single
+# command-keyed predict(): flag-strip (pre/post-verb), bind the verb, annotate the single
 # operand as `package`; `[ "$2" = "" ]` refuses a second operand. The engine threads the
 # inlined call's POSITIONAL-bound argv (`apt-get install -y nginx`, `$1`→nginx) through this.
-apt_get__check() {
+apt_get__predict() {
    while [ "${1#-}" != "$1" ]; do shift; done
    verb=$1; shift
    while [ "${1#-}" != "$1" ]; do shift; done
