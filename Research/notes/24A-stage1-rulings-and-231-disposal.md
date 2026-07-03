@@ -230,6 +230,22 @@ e2e corpus: seeded/generated/outcome-shaped, not finite/authored/run-set-shaped.
 the same net is Stage-6's adequacy-measurement substrate (fact-tier license ⇒ red;
 vouch-tier ⇒ counted bite — keyed on the claim-tier algebra once Stage 3 lands it).
 
+**Testing-protocol refinement (human-typed, 2026-07-03, binding on the NEW test class):**
+the e2e/run.sh architecture (per-case file-dirs; extremely slow at <200 cases; anecdotally
+structurally brittle) must NOT be inherited by the new class — some of its costs are
+inherent to TRUE (UI-exercising) e2e and stay for that purpose, but "we don't need the
+perf and sanity costs of full UI-E2E for every single little hostsim story." Aim:
+**in-memory, Rust, performant-by-design.** Consequences threaded into tasks #9/#10: the
+chronology net is in-process-primary (real kernel per seed; two evolved Host copies;
+end-state equality; thousands of seeds) with at most a couple of subprocess/state-bearing-
+mock e2e cases as emitter/dash-semantics garnish; the battle-oracle suite delivers as
+in-memory fixtures + a SMALL number of e2e case-dirs (yardstick rows), never dozens.
+Bonus unlocked by in-memory: the generator controls declared claims and ground-truth
+effects INDEPENDENTLY ⇒ deliberately-minted lying footprints ⇒ the red-condition splits
+(mismatch without a lie = engine unsoundness, always red; mismatch with a lie = priced
+residue, and the assertion becomes DOES-THE-WITNESS-BLAME-THE-ACTUAL-LIAR) —
+attribution-under-lies as a first-class swept property.
+
 ## §1f. Stage 2c commissioned — the battle-oracle realism suite (human-typed, 2026-07-03)
 
 The suite contains nothing REAL (all small artificial isolated-truth e2es). Commissioned:
