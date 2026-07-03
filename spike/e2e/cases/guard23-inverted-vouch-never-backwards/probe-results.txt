@@ -1,0 +1,2 @@
+# probe-results: no records — the purge is a KILL (MustRun), un-probeable ⇒ ships no probe.
+# Its convergence is not a well-formed question; the run IS the value (and a kill always runs).

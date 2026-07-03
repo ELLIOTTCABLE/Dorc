@@ -1,0 +1,14 @@
+# guard23-refusepath-rc0-never-passes (23J conv-rc-soundness facet (ii) / hz-refusepath; the
+# rc-soundness pin-set, pinned BEFORE the guard tier — a FLOOR). `apt-get install -y nginx curl`
+# is MULTI-operand: the predict's own `[ "$2" = "" ]` arity gate REFUSES the second operand, so
+# no entity resolves ⇒ Top ⇒ MustRun ⇒ the WHOLE line runs (P-multiop, the atomic-command
+# axiom). THE LAW (a refusal never passes a guard): the corpus refuse idiom RETURNS 0 on its
+# refuse path (`if [ "$2" = "" ]` false ⇒ the `if` yields 0), and the house verdict-function
+# refusal is `return 2` (rul-rc-partition: >=2 = CONFUSED ⇒ run). A build that ships either body
+# as a guard WITHOUT proving the invocation reaches a VOUCHED path would read that refuse-rc as
+# check-PASSED ⇒ `check || install` short-circuits ⇒ the mutator is SUPPRESSED on a REFUSAL —
+# wrong-elision on a path the author never vouched. A correct build never guards a multi-operand
+# (no entity ⇒ no witness), so the floor is stable. Floor: `ran: apt-get install -y nginx curl`;
+# RED if a future build suppresses it via a refuse-path-rc0 read. The vouch is authored as
+# `apt-get.is_converged()` (rul24-vouch-is-verdict-authoring, 24A §1c), inert at HEAD.
+apt-get install -y nginx curl

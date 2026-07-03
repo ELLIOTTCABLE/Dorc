@@ -1,0 +1,2 @@
+# probe-results: no records — the multi-operand install RESOLVES NO ENTITY (the predict arity
+# gate refuses the second operand) ⇒ Top ⇒ MustRun ⇒ un-probeable. The run IS the outcome.
