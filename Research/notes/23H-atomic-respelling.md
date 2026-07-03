@@ -324,3 +324,64 @@ deleted — it has no check to derive from); delete markers from ALL fixtures + 
 /`FactProbe`/`resolve_probe` + the `corpus_differential` gate + `KindIndex::effects_iter` + `lift`-not-`lift_derived`
 (rename `lift_derived`→`lift`). Step 6: add `: provider:verb~` vouch-marks to the guard23 install arms, re-lens-verify
 each xfail. Step 7: big-bang re-bless, all 9 xfails fail for their designed reason.
+
+## §8 R3 RE-LANDED (2026-07-02, ask-probe-divergence RULED (b)) — LANDED + green; P5/vouch-marks REMAIN
+
+AI-authored, append-only. Never-vouch applies (machine-run process-evidence, not proof). Confidence marks throughout.
+Base: `b4d6dc0` (the ruling commit). Two commits landed on this worktree branch, gates+tests+e2e green at each:
+`8652e23` (mocks-first) and `269ab5e` (R3 code + 88 probe goldens).
+
+### §8.1 The R3 reshape (LANDED, `269ab5e`) — +SURE, compiles/tests/e2e green
+- `plan::ProbeCheck` now carries `provider: Symbol` + `argv: Vec<Symbol>` + `sh` = the whole stripped
+  `<provider>__check` funcdef ([`strip_check`], already-existing). `compile_probe` threads `&ValueFlow` and a
+  `Fn(Symbol,&[Symbol])->Option<String>` ship closure; `ship_for_argv` splits word0+operands, ⊤ command word or ⊤
+  operand ⇒ un-shippable (`kFAIL-perform`). member (`member_argv`) + inline (`argv_values(body.node)`) paths threaded.
+- `render_sh` dedups the funcdef per funcname BUT **re-emits when the body changes for a funcname** — the collision fix
+  (see §8.3). `render::probe::invocation` = `<provider>__check 'w0' 'w1' …` (F-quoted per word). `check_fn_name` is now
+  per-provider (`to_funcname_segment(map_provider_name(word0))`), matching what `strip_check` mangles the funcdef to.
+- 7 call sites: cli `ship_check_body` (re-runs the analysis's own check resolution — first check, oracle-file order,
+  whose provider matches + argparse resolves the argv — then strips it; so the shipped probe checks EXACTLY the fact the
+  analysis decided), coverage byte-mirror `ship_check_body`, hostsim ×2 + plan tests ×N (each threads a `ship_corpus`
+  seam). `resolve_probe`/`FactProbe`/`add_probe` are now dead outside the retained marker path (P5's to delete).
+
+### §8.2 Mock-vs-golden SEQUENCING evidence (the anti-masking spine — RULED (b))
+- **Discovery**: landed R3 in the working tree → e2e revealed EXACTLY 8 enforced gate-1 breaks (matching §7.3's "8
+  cases"), ALL mock-serviceable, and NO other exec-gate break; the other 50 (→88 after clippy/name churn shook out) are
+  content-diff only = behaviour-correct, expected re-bless. The divergent kinds §7.3 under-counted (pkgindex `test -n
+  fresh` tautology, confline `grep -q -- "$pat" "$file"`, service, tool, firewall) did NOT enforce-break: service mocks
+  branch on `$1` (the subcommand, unchanged by `--`); tool's `command -v --` is rc-identical to `command -v` (verified
+  dash+bash); firewall/pkgindex divergent cases are `PROBE_RESULTS=authored` (opted out). The enforced 8: 7 pkgstate
+  `dpkg` operand-mocks (break on `dpkg -s -- <pkg>` ⇒ `$2=--`) + seam `rpm` (unshimmed, rc=127).
+- **Mocks first, own commit** (`8652e23`): re-authored the 8 mocks `--`-tolerant (`pkg=$2; [ "$2"="--" ]&&pkg=$3`, +
+  add seam `rpm`) — behaviourally IDENTICAL for the old command `dpkg -s nginx` ($2=nginx); rpm inert under the old
+  probe. **Exec-verified with the OLD binary** (R3 stashed, rebuilt at b4d6dc0): `all 123 passed` — proves the mocks
+  serve the FROZEN `probe-results.txt` independently of any new golden. No pinned intent flipped (gate-1=0 under R3
+  confirms it the other direction). probe-results.txt NEVER moved — it is the immovable anchor both old+new mocks serve.
+- **Goldens second, separate commit** (`269ab5e`): R3 code + re-bless. Never a mock and a golden for one case in one
+  commit. The exec gates (gate-1 parity, ap-2 apply-exec) are the golden-independent behaviour anchor throughout.
+
+### §8.3 jc-provider-check-collision — RESOLVED WITHIN THE RULING (not a STOP), +SURE
+4 cases (`exec-poison-wall-dead`, 3× `headline-*`) have TWO files each defining `apt_get__check` (`package` +
+`pkgindex`). Per-provider dedup would collide (one funcname, two bodies). NO new naming scheme was invented: because the
+render emits the funcdef INTERLEAVED with invocations, re-emitting the body before an invocation whose funcname's
+currently-defined body differs makes sh's last-writer-wins + top-to-bottom exec give each invocation its own body. The
+cli/plan ship closures pick the SAME check the analysis resolved (per argv), so `install …` ⇒ package body, `update` ⇒
+pkgindex body. exec-poison-wall-dead + the headline cases pass (content-diff only). This is a genuine gap §7.3 didn't
+reach (it STOPPED earlier, on the command divergence); flagged here because it was un-anticipated, but it needed no
+ruling — the interleaved-render property carries it.
+
+### §8.4 BLESS hazard hit + recovered (process note, the sharpest)
+`BLESS=1 sh e2e/run.sh` regenerates EVERY `expected.out` AND `expected.ran` — INCLUDING the hand-authored XFAIL
+goldens/run-sets (the desired-FUTURE guarded state, which the guard-tier-unbuilt engine cannot produce). It overwrote
+the drift-trio's `expected.ran` (desired `dpkg-query -W curl` short-circuit → the no-guard `apt-get install -y curl`),
+turning 3 xfails XPASS. RECOVERY: R3 changes only the PROBE, never the apply, so ALL `expected.ran` changes were
+spurious/damaging → restored every one; restored the 9 XFAIL `expected.out` (hand-authored, content-diff-skipped);
+kept only the 88 NON-xfail `expected.out` re-bless. Re-verified `all 123 passed` / 9 xfail / 0 XPASS / 0 red,
+`head-expected.ran` untouched. LESSON for the P5 big-bang bless: BLESS the non-xfail set only; the XFAIL goldens are
+hand-authored future state — restore them after any global BLESS (the promotion rule, run.sh:44-52, in action).
+
+### §8.5 REMAINING (not started — P5 + vouch-marks + their bless)
+Unchanged from §7.4 steps: P5 (jc-dpkg-i minimal `dpkg.check()`; delete `oracle_kind`/`oracle_probe_*`/`oracle_effect`/
+`oracle_vouch_converged=` from all fixtures + old `lift`/`KindIndex`/`FactProbe`/`resolve_probe`/`corpus_differential`
+gate/`KindIndex::effects_iter`; `lift_derived`→`lift`) and Step 6 (guard23 `: apt-get:install~` vouch-marks + re-lens-
+verify each xfail). The §8.4 lesson governs any re-bless they need. R3 is the unblock they were waiting on.
