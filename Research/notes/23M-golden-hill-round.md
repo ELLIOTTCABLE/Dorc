@@ -5,6 +5,43 @@ raw working material, confidence-marked. Nothing here is welded; the round settl
 → (eventual) adversarial crosscheck → re-welds/pins. Seeds: `notes/238`, `plans/23D` §5, `23J`
 lane-privilege, the human's item-3 golden-hill statement (2026-07-03 chat).
 
+## THE ROUND'S SPINE (human-landing 2026-07-03; PROVISIONAL, unconfirmed against final reply): 233 is permanent — cage it, don't fix it
+
+The week's churn taught the human (and it survives the conductor's check): **233 — grounding
+soundness in a fallible completeness-UQ is unsound — is a PERMANENT CONDITION of
+eliding-past-a-running-command, not a fixable bug.** Sound past-a-wall elision requires SOMEONE
+promising completeness over SOME vocabulary; every such promise is human and fallible; no design
+removes the need for it. Accept-and-design-*around* is the only honest posture. "Design around"
+has a precise, three-move shape, and it IS what this round achieved:
+1. **CONCENTRATE** the naked UQ into its smallest, most-attendable, most-attributable home: an
+   owner's no-synonym promise over its OWN bounded, enumerable vocabulary. (The consumer-side
+   ecosystem-survey UQ de-fangs entirely to VALUE — miss the existing name → wall, not
+   wrong-skip.)
+2. **OPT-IN** — the real anti-233 move. 233's specific sin was silence DEFAULTING to trust. The
+   answer is not to make silence safe (impossible) but to make silence MEAN NOTHING: silence is
+   a wall. The trusted-UQ is never reached by default — only by an explicit grounding ACT, by a
+   named owner, over its own vocab. You never *default into* the unsoundness; you can only ever
+   *opt into* it, deliberately and attributably.
+3. **PRICE the residue honestly.** What's left — the owner's within-namespace no-synonym promise
+   — is genuinely NAKED, and (the hard truth) the guard-half is NOT a net under it, because
+   elision BYPASSES guards. A within-namespace synonym error is a silent under-execute defended
+   only by: attribution (after-the-fact), the conservative-fallback STANCE (pinkie-promise-tier,
+   not a typesystem), and an eventual weak coherence-lint (pre-facto). This is the ONE spot the
+   design ships naked 233 — it MUST be professed at the horizon in exactly those words.
+
+HOPEFUL CRACK (ques4, tentative): synonyms are a NAMING problem — they exist only because we
+reason over professed *names*. Disjointness computed over MEASURED referents (probe-time traced
+inodes / resolved entities) would EVAPORATE synonyms (measurement sees through two names to one
+referent). It does NOT kill 233 — it trades into "is your measurement complete," the
+backing-completeness UQ already flagged most-suspect — but it may dissolve the SYNONYM UQ
+specifically, for traceable coordinates (fs yes; abstract kinds no). The derived-footprint
+thread; the one place with genuine leverage left.
+
+DISCIPLINE going forward (the human's frame, cleaner than the six-question agenda): *name the
+quantifier; name its failure-direction; dangerous (under-execute) UQs go in bounded/attendable
+homes, opt-in, lint-where-possible; value (over-verify) UQs may be unbounded; everything residual
+is disclaimed at the professed horizon.*
+
 ## The two planes (PROPOSED terms — human said "mint specific terms"; not yet finally acked)
 
 Repeated conflation of two acts forced this. Provisional vocabulary, in effect for round docs
