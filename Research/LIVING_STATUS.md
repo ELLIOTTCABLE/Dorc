@@ -14,42 +14,55 @@
 
 ---
 
-## NOW (2026-07-03, late — round-24 Stage 1 LANDED; Stage 1c in flight; Stage 2 next)
+## NOW (2026-07-03, late — round-24 Stage 1 COMPLETE; Stage 2 in flight; the test-suite arc commissioned)
 
-**Stage 1 is built, merged, green** (`ai/spike3-r23`; e2e 131/131, 9 standing guard23
-xfails): the yardstick (CLI `dorc: plan-summary` stderr line + the `strawman24-*` family +
-`sh e2e/yardstick.sh`) and the fd10/silence=wall fix (an 8-line plan-time wall walk in
-`build_plan`; running modeled mutators wall downstream; elided mutators cast no shadow;
-probes still ship). **Honest-baseline family reading: elide-fraction 0.38, post-wall
-elisions = 0** (the charter's Stage-1 claim, mechanically true). Full evidence + strain
-ledgers: **`notes/24A` §3** (kill gap → Stage 1c; hz-ambient-hole lockstep RETIRED; errexit
-= known 206 §2 cost newly measured; gate-6 license-blindness bound).
+**Stage 1 fully built, merged, green** (`ai/spike3-r23`; e2e **135/135**, 9 standing guard23
+xfails; family elide-fraction **0.32**, post-wall elisions = 0 — the charter's honest
+baseline, mechanically true). The three sub-stages: 1a yardstick (CLI `dorc: plan-summary`
+stderr line + `strawman24-*` family + `sh e2e/yardstick.sh`); 1b fd10/silence=wall (plan-time
+wall walk in `build_plan_walled`; running modeled mutators wall downstream, elided cast no
+shadow); 1c riders (strip-fidelity — fixed a REAL latent rc-clobber bug; kill-wall; the first
+verdict-function-carrying floors; errexit-honesty row). Full evidence: **`notes/24A` §3**.
 
-**Session rulings (all typed, homed in `notes/24A` §1/§1a/§1b — binding):**
-rul24-wall-placement (verdict-aware plan-time re-verdicting, valid up to consent) ·
-rul24-threefunc-monotonic (the `touches()` third role-sibling RATIFIED as strawman;
-supersedes the two-contract sentence; monotonic gradual-enhancement law) ·
-rul24-claims-by-emission (accepted, reluctantly; explicit-syllable question open) ·
-**rul24-mode-gate** (the survival tier is FLAG-GATED, never default — strawman
-`--trust-footprints`; marketing-at-best/theatre-at-worst framing welded) ·
-rul24-divergence-is-the-game (license-site ≠ elision-site + claim-subject ≠ blast-subject;
-attribution promoted to co-primary for Stage 2; MH2 version-gate = the missing tether,
-seeded not-this-spike) · touches = WRITE-set only (backing = marked reads; reads-spelling
-already exists as fact-marks). USER_STORY gained stage 5 (the footprint tier, mocked, with
-the flag in its renders).
+**The round's durable homes (rotation discipline — 24A is CLOSED as the early-rulings ledger;
+new chunks get fresh notes):**
+- **`notes/24A`** — Stage-1 rulings + evidence + the 231 disposal. The typed rulings:
+  rul24-wall-placement · rul24-threefunc-monotonic (the `touches()` 3rd role-sibling;
+  supersedes the two-contract sentence) · **rul24-mode-gate** (survival tier FLAG-GATED
+  `--trust-footprints`, never default; marketing-at-best/theatre-at-worst) ·
+  rul24-divergence-is-the-game (license-site≠elision-site + claim-subject≠blast-subject;
+  attribution co-primary for Stage 2; MH2 version-gate = the missing tether, seeded
+  not-this-spike) · **rul24-vouch-is-verdict-authoring** (§1c — the tilde is DEAD; authoring
+  `is_converged()`/`is_diverged()` IS the vouch; provisos: read-erasure, family-open,
+  marks-survive) · **rul24-overtype + the ARC-WIN** (the claim-tier trust algebra:
+  `Claim<Tier,Payload>` Fact/Judgment/Silence; license-mints DEMAND tiers in signatures;
+  births Stage 3, pays hardest Stage 5; "uncheckable invariants ride WITH the types").
+- **`notes/24B`** — the TESTING ARCHITECTURE: three flavours (kernel-unit / real-path corpus
+  / the new in-memory sweep); battle-oracle corpus = STANDALONE fixtures, not e2e case-dirs;
+  the sweep is a NEW composition-root crate (hostsim stays the model). §5 reconciles against
+  the round-12 DST conclusion (`plans/128`): the net is elision-soundness DST at the
+  fact-verdict seam (NOT round-12 coordination-DST — that's round-25/22H); the determinism
+  guard is mandatory; approach-#3/cross-platform-by-purity; coverage humility.
+- **`ORACLE_PROVIDES.md`** (NEW root doc, pending human audit) — the ledger of information
+  shapes an oracle hands Dorc (provides-decoding/vocabulary/reading/binding/behavior/
+  convergence/license/margins); the license-LADDER (rung-0 display / rung-1 guard / rung-2
+  elide) is OPEN — the wary-engineer hatch, sibling of the admin's mode-gate flag.
 
-**In flight:** Stage 1c rider builder (strip-fidelity bare-marks; two rc-soundness pins —
-first vouch-mark-carrying fixtures; the kill gap). **Next:** Stage 2 (frame-rule machine)
-dispatches after 1c merges — same files; brief drafted (conductor scratchpad; settled
-content mirrored in task #4's description).
+**In flight:** Stage 2 frame-rule builder (footprint × backing × disjointness; `touches()`
+strawman; mode-gate; the 4 TC type-contracts; attribution co-primary). **Pipeline:** Stage 2
+→ **#9 Stage 2b (the chronology net** — in-memory elision-soundness DST; blocks Stage 3) →
+**#10 Stage 2c (battle-oracle suite** — whole-ledger exerciser; census found 17x/15x seeds
+reachable, H2SaLS quarantined + adjudged "not valuable") ∥ **#5 Stage 3 (guard tier + the
+claim-tier algebra)** → 4 derived footprints → 5 grounding → 6 measure/conclude.
 
-**Conduct addenda this session:** worktree-isolated agents base on ancient `main` — every
-brief opens with step-zero `git switch -C <branch> ai/spike3-r23` (`reset --hard` is
-hook-blocked) + tip verify · mechanical suite-running/verification rides Opus; conductor
-keeps judgment moments only · Fable conducts, Opus codes (high bar for conductor-written
-code).
+**Conduct addenda this session:** worktree-isolated agents base on ancient `main` — brief
+step-zero `git switch -C <branch> ai/spike3-r23` (`reset --hard` hook-blocked) + tip verify ·
+Fable conducts / Opus codes (type-contract design is the ONE conductor-code carve-out;
+mechanical verification rides Opus) · research grounds in-corpus first (the round-12 DST round
+is authoritative + current; no fresh Kagi) · new test coverage is in-memory/Rust/
+performant-by-design, NOT more e2e case-dirs.
 
-## Earlier today (2026-07-03 — round 23 CLOSED; round 24 charter)
+## Earlier today (2026-07-03 — round 23 CLOSED; round 24 charter + Stage 1)
 
 **Round 23 is closed.** Its complete, durable, single-narrative history is **`notes/23O`** (the
 closeout — read it first). The crisis (233 = the frame problem, permanent) resolved to the
