@@ -159,6 +159,16 @@ pin) and the *build-window promotion path* (one-sided xfails + bless). Ledger:
   slot — empty = the-one, star = all. No arity registry: the engine stays referent-agnostic,
   Singleton-ness is emergent from usage; mixed empty+named entities on one kind are simply two
   cells (attribute, don't prevent). Spike-provisional like h2 (the human is not married to it).
+- **ask-probe-divergence RULED (b) (human, 2026-07-02):** the check bodies ARE the spec. The
+  R3 lane-swap ships the author's own probe commands even where they textually diverge from
+  the retired `oracle_probe_*` bodies (`--` operands, dropped `--quiet`, firewall's pipeline
+  re-spelled as non-pipeline sh by author-freedom); the spike mocks re-author to serve the
+  AUTHORED commands. Anti-masking is managed by SEQUENCING, not fiction: mocks-first
+  (exec-verified against fixture intent), goldens-second (case-by-case-inspected re-bless),
+  never both for one case in one commit; a mock re-authoring that would flip a case's pinned
+  INTENT is a STOP-and-flag, never a reinterpretation. `jc-mark-on-pipeline` stays flagged as
+  a real dialect gap (the mark grammar cannot annotate a pipeline) — not to be grammar-fixed
+  in the spike.
 - Provenance: ruled in-conversation immediately pre-context-clear; the atomic re-spelling
   session was dispatched with all of the above baked into its brief; its record → `notes/23H`.
   The singleton ruling arrived after that session's honest STOP; the finishing session
