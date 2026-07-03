@@ -62,6 +62,18 @@ Consequences, all mechanical:
 - The corpus's existing refuse idiom (`exit 254`) lands in the confused bucket automatically
   — the hz-refusepath hazard resolves by the convention already taught.
 
+## Addendum (same day) — the rename ruling
+
+`check()` → **`predict()`**, corpus-wide, RULED: "unclear/compressed naming"; the rename
+aligns the function's name with its own rc-semantic (aggregate = predicted-rc) and with
+inv-one-observable's own verb ("the oracle … *predicts* per-channel values"). Mechanical
+global churn explicitly sanctioned, historical naming-truth explicitly waived (task #18;
+sequenced AFTER the in-flight P5 closer integrates — it is mid-flight in these files).
+PENDING the human's ack: the reservation-collapse — the renamed `predict()` absorbs the
+`inv-probe-sourced-values` carve-out occupancy (future declared-output values EXTEND
+`predict()` rather than minting a new sibling), leaving the family as: `predict()` predicts
+channels; `converged()`/`diverged()` decide.
+
 ## Residue + routing
 
 - The check-rc/verdict conflation (the "fifth appearance", `23J` conv-rc-soundness +
