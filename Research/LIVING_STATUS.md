@@ -43,17 +43,31 @@ new chunks get fresh notes):**
   the round-12 DST conclusion (`plans/128`): the net is elision-soundness DST at the
   fact-verdict seam (NOT round-12 coordination-DST — that's round-25/22H); the determinism
   guard is mandatory; approach-#3/cross-platform-by-purity; coverage humility.
+- **`notes/24C`** — STAGE LANDINGS + RESIDUE ledger (accretes per stage). Stage 2 (golden
+  hill lit 0→1) + its residue (resid-aliasing = the Stage-5 under-execute cell that MUST be
+  professed at the horizon; kill-coherence; argparse-drift contained). Stage 2b (the sweep
+  has teeth — 3 planted bugs caught) + two findings: **find-lcg-thinning** (Host::seeded's
+  low-bit coin correlates → existing DST tests under-explored; cheap fix owed, task #11) and
+  **find-net-covers-what** (survival-tier coverage rests entirely on the lying-attribution
+  net — honest survival is provably sound, so the lying scenarios are load-bearing).
+- **`notes/24D`** — the STAGE-3 TYPE-ARCHITECTURE SPEC (conductor-authored, rul24-overtype):
+  the claim-tier trust algebra `Claim<Tier,_>` (Fact/Judgment/Silence; 4 unrepresentability
+  props: one-way demotion, mints-demand-tiers, no-judgment→fact-plane, the OPEN rung reserve)
+  + the guard tier + the elide-weld + verdict-fn lift. **The round's most foundational
+  type-decision — the reviewable one.**
 - **`ORACLE_PROVIDES.md`** (NEW root doc, pending human audit) — the ledger of information
   shapes an oracle hands Dorc (provides-decoding/vocabulary/reading/binding/behavior/
   convergence/license/margins); the license-LADDER (rung-0 display / rung-1 guard / rung-2
   elide) is OPEN — the wary-engineer hatch, sibling of the admin's mode-gate flag.
 
-**In flight:** Stage 2 frame-rule builder (footprint × backing × disjointness; `touches()`
-strawman; mode-gate; the 4 TC type-contracts; attribution co-primary). **Pipeline:** Stage 2
-→ **#9 Stage 2b (the chronology net** — in-memory elision-soundness DST; blocks Stage 3) →
-**#10 Stage 2c (battle-oracle suite** — whole-ledger exerciser; census found 17x/15x seeds
-reachable, H2SaLS quarantined + adjudged "not valuable") ∥ **#5 Stage 3 (guard tier + the
-claim-tier algebra)** → 4 derived footprints → 5 grounding → 6 measure/conclude.
+**Landed since the Stage-1 refresh:** Stage 2 (frame-rule machine — merged, sound-reviewed,
+type-contracts + docs pass) · Stage 2b (the chronology net / `dorc-sweep` crate — merged,
+teeth-proven). **In flight:** **#5 Stage 3** (guard tier + the claim-tier algebra — the
+foundational arc-win; spec in `24D`; build claim-tier types FIRST so they're reviewable).
+**Pipeline:** Stage 3 → **#10 Stage 2c** (battle-oracle, now blocked on Stage 3 to exercise
+guards + dodge a sweep-crate collision) ∥ **#6 Stage 4** (derived footprints) → **#7 Stage 5**
+(grounding — where the claim-tier pays hardest) → **#8 Stage 6** (measure adequacy-bite /
+conclude). Loose: **#11** (the Lcg fix, between stages, non-blocking).
 
 **Conduct addenda this session:** worktree-isolated agents base on ancient `main` — brief
 step-zero `git switch -C <branch> ai/spike3-r23` (`reset --hard` hook-blocked) + tip verify ·
