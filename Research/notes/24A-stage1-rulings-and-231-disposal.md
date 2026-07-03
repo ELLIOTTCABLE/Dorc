@@ -46,6 +46,22 @@ evidence as it lands. Confidence-marked per the standing discipline.
   bases new worktrees on an ancient `main`, not the session branch — every builder brief
   now opens with an explicit step-zero `git reset --hard ai/spike3-r23` + tip-hash verify.
 
+## §1a-addendum. rul24-mode-gate (typed in-chat, 2026-07-03, post-Stage-1-merge — BINDING on Stage 2+)
+
+The elide-past-a-running-wall behaviour (the whole footprint/disjointness tier) **must be
+mode-gated behind an explicit flag and must never be a (literal) default.** Non-flagged
+behaviour stays Stage-1 ground truth: silence→run, no post-diverged-wall elision in any
+meaningful way, fallback-to-guard-only (once the guard tier exists). Flag requirements:
+clear name; SHORT enough that most users won't alias it away (an aliased opt-in is an
+invisible opt-in); not actively recommended by hints or docs beyond noting availability.
+Honest framing, never to be forgotten (human's words): the opt-in is likely to become a
+cargo-culted effective-default ("everybody running --unsafe-enable-dangerous-auto-mode");
+it is **marketing at best** (the user feels they chose the danger instead of instantly
+attributing it to a Dorc bug) **and theatre at worst** (every user enables it — why are we
+pretending). The last-ditch CYA "the user opted in" is demanded anyway, made as non-vacuous
+as possible. Stage-2 e2e must assert BOTH sides: flagged = survival-elisions; non-flagged =
+Stage-1 semantics unchanged.
+
 ## §1b. Footprint-spelling vibes session (typed in-chat, 2026-07-03; the USER_STORY stage-5 mock)
 
 The footprint strawman was mocked into `USER_STORY.md` stage 5 (commit `2c6c0f3`) as a

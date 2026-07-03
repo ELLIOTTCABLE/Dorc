@@ -462,10 +462,20 @@ clothes; the emitted-at-probe-time variant — stage-4 tools like `apt-get insta
 real file-payload only the host knows, answer by *asking the tool* inside `touches()` — is
 what the literature calls a dynamic frame.)
 
-The same stale-index morning, with footprints shipped:
+One more thing before the payoff, because it is deliberate and permanent: none of this is
+on by default. Surviving a wall means trusting authors' at-most claims with no runtime net,
+so the whole tier sits behind an explicit flag — spelled out here as `--trust-footprints`
+(STRAWMAN name). Without it, the plan above is what you get: honest walls, guards, runs.
+And an honesty note that must outlive every future edit of this document: this opt-in is
+marketing at best (you chose the danger; it isn't a Dorc bug when an author's claim is
+wrong) and theatre at worst (it is desirable enough that nearly everyone will turn it on and
+forget it). It exists anyway — the choice should be typed by the person who owns the
+consequences, even when everyone types it.
+
+The same stale-index morning, with footprints shipped and the trust typed:
 
 ```
-$ dorc plan --verbose webhost.sh web1.example.net
+$ dorc plan --verbose --trust-footprints webhost.sh web1.example.net
  1  #!/bin/sh
  2  # webhost.sh - bring up the static site
  3  set -eu
@@ -503,7 +513,8 @@ author's own attended substrate, attributed by name in every elision it licenses
 "past here, you are trusting authors' at-most claims." Attention saved on drifted days is
 bought with exactly that trust, and with nothing else.
 
-- Spent: one `touches()` arm per verb an author is willing to answer for.
+- Spent: one `touches()` arm per verb an author is willing to answer for; one typed flag
+  per invocation from the admin who owns the consequences.
 - Gained, drifted days: the book stops collapsing below the first thing that really runs;
   early-book churn (index refreshes, log rotations, cache warms) stops taxing every line
   after it.
