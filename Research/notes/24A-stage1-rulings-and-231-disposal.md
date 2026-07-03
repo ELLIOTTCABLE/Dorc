@@ -75,7 +75,18 @@ build on. Per-cluster, against the post-`23O` settled law:
   shape (opt-in, author-explicit, judgment-tier claim; silence stays ⊤⇒run — exactly the
   anti-233 posture). Its spelling remains `dq-kOOB`/`kTYANNOT`-gated and is now further
   entangled with the parked "is authoring a verdict-function partly the vouching act?"
-  question (`23O` §5). Round-24 boundaries explicitly defer all vouch spelling; hold.
+  question (`23O` §5). **[CORRECTED 2026-07-03, human catch — the original sentence here
+  ("round-24 defers all vouch spelling") was overbroad and wrong.]** Three tiers, not one:
+  (i) the *settled* vouch spelling is deferred, human-reserved (dq-kOOB) — not this round;
+  (ii) *strawman* vouch spellings are REQUIRED by this round's method (charter: "built
+  against strawman spellings"; rul-guard-license: "a stub explicitly marked strawman,
+  trivially cheap to swap") — at HEAD the converged-vouch strawman half-exists (the
+  predict-parser accepts the bare mark `: provider:verb~` as ConvergedVouch,
+  derived-and-discarded; NO fixture carries the mark yet — the guard23 oracle headers
+  narrate "PLUS the strawman vouch below" over bodies that contain none). Completing it
+  (mark in fixtures + witness consumption) is Stage-3 work; the footprint strawman is
+  Stage-2 work; (iii) only THIS cluster's channel-completeness vouch — which nothing on
+  the six-stage ladder consumes — holds entirely, no strawman needed.
 - **1d `multicell-establish-classify-cliff` — SURVIVES-LIVE; a yardstick-raiser.** Pure
   coverage/precision walk-back, orthogonal to the crisis, every piece built except the
   classify match. Becomes interesting exactly when the strawman family shows it binding
