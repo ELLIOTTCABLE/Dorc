@@ -127,8 +127,8 @@ behaviour degrades *only as much as necessary*, in the precise ways forced by
 the user error/omission, and no further.
 
 This dimension also intereacts in a complicated fashion with the probe/apply
-inequality. There's two similar-sounding questions we ask the oracle-writer to
-be accurate about:
+inequality. Two of the many things we ask an oracle-engineer to be accurate about
+may *sound* similar ...
 
 1. "does your oracle-implementation ever cause mutation" and,
 2. "what aspects of the runtime behaviour of the command have you modeled, and

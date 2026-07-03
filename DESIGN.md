@@ -186,15 +186,26 @@ Our approach is double-ended.
       re-runs.
 
 Importantly, all of this must be optimized for that 'embarrassingly shallow'
-case in an 'embarrassingly parallel' fashion:
+case in an 'embarrassingly parallel' fashion. We effectuate this plan in two
+phases, separated by an act of user-consent: constructing a plan, then applying
+it. (Thanks, Terraform, gonna steal ur best idea.)
 
-1. First, the "probing phase": For the state-establishment, we'll use one
-   static-analysis; we *lift* (on Dorc's part) & *author* (on the
-   user/community's part) any relevant state-oracles that can
-   vouched-safe-to-run; and ship *sanitised, non-mutative,
-   massively-parallelized* versions of the ops-automation to all the hosts in a
-   "probing phase". This allows us to learn correctness-affecting facts about
-   each machine, that we can use to tune the deployment/application phase.
+1. First, the "probing phase": Dorc constructs and executes 'probes'; for
+   state-establishment, a first static-analysis; we *lift* (on Dorc's part) &
+   *author* (on the user/community's part) any relevant state-oracles. These are
+   vouched-safe-to-run / non-mutative (either by the author, or by provable
+   Dorc-provenance); and they should be kept performant and reentrant. Dorc
+   collates and deploys *massively-parallelized* versions of this ops-automation
+   to all the hosts; and the oracles produce the information required by Dorc
+   for planning purposes. This allows us to learn correctness-affecting facts
+   about each machine, that we can use to tune the deployment/application phase.
+
+   Importantly, Dorc only contracts to the oracles *two* flavours of simple
+   information (simple in theory, not in practice; that's *why* it's important
+   that it's minimal): sh-spelled command-facts ("produce the RC this command
+   would produce", "decide if this command can be skipped"), or structured
+   collaboration/access facts ("mark all the paths this command would observe
+   modifications-to".)
 
    For these purposes, the probe-analysis must *under*-approximate - that is,
    it's better to not ship a probe at all (losing opportunity to skip costly
@@ -202,57 +213,71 @@ case in an 'embarrassingly parallel' fashion:
    to look at this: an optimizing compiler with an unusual idea of 'correct'; or
    a query-planner.)
 
-2. Then, the "application phase": a second, inverse view of the analysis,
-   potentially *skipping* portions of the control-flow-graph that are fully
-   irrelevant to the user's goals - either already correct on the target
-   system(s) (by-the-just-completed-probing, not by-stale-central-state), or
-   having no control-flow interdependency with the modified portion of the
-   ops-scripts, in partial-deploy-mode. ("Stuff that is already correct; *or*
-   stuff that, while potentially incorrect,
-   we-don't-care-about-right-this-second.")
+   (Since we're going to present a *plan* to the user, though, we won't have the
+   apply-phase 'convergence floor' for the probe-phase; it's relatively
+   performance-forward, as the user is sitting there, waiting on a coherent plan
+   (i.e. for all the probes to finish and return), before they can hit 'submit'
+   and go off and do something else in the worst/slowest case. We can't be
+   depending on multiple runs for truth. Further, we don't have a guarantee that
+   the user will *accept* the plan - by the very act of presenting a plan and
+   giving them an option, we're implicitly promising to *not* pre-apply parts of
+   the presented plan. (i.e. providing plan/apply limits the "safety fallback"
+   of probe-causes-mutation; even probe-causes-maybe-eventually-*desirable*-
+   mutation is, sadly, verboten.)
 
-   This apply is the *over*-approximation phase. Same analysis, different
-   fail-safe posture, different performance profile.
+2. Then, the construction: collate what we know about the world as information
+   flows in from hosts, constructing a unified view of what's-diverged.
 
-   Both #1 and #2 are *heavily* dependant upon oracle coverage, though: an
-   operation with no 'oracle' to reassure us that a particular check is
-   non-mutative, is something we can *never* run in non-mutative probing-mode,
-   no matter how obvious it may seem. Similarly, an operation with no 'oracle'
-   to declare its global-data-dependencies to us, is again an operation we can
-   never elide or rearrange during application. (We call such inevitable
-   unmodeled commands 'poison walls'; as they degrade Dorc's behaviour from
-   beautiful "full elision" to "runtime guard" for nearly all commands *after*
-   the unmodeled command - which preserves some performance properties, but
-   loses the mindshare/attention benefits that 'it's literally removed from the
-   plan' yields.)
+   (Notably, I also aspire to provide a mode where chunks of behaviour are
+   skipped by *relevance* instead of *state* - i.e. "check and apply only the
+   sections untracked in git" or "check and apply only the dataflow-dependencies
+   of line-14"; an opt-in 'partial reconciliation' mode for hot-loop iteration
+   and active runbook development. This requires an inverse view of the
+   static-analysis: start with the relevant leaves, work backwards to find
+   CFG/dataflow dependancies.)
 
-   Luckily, both are designed around gradual enhancement: you make the most
-   minimal claims to us that reassure *your* risk-profile, and Dorc will do as
-   much as it can for you, within the bounds of correctness. Put another way -
-   the more you put in the effort to tell Dorc, the more Dorc can skip.
+   This plan is presented to the user as an authoritative, and crucially,
+   *honest*, preview of what will happen. It stays spelled-as-sh (it just looks
+   like, well, a script; a slightly modified version of their own runbook); it
+   still includes all the same lines (byte-for-byte, where they're present at
+   all.) All *we* do is either remove lines entirely (when we're provably sure,
+   at least modulo well-behaved-oracles, that they're no-op on the live, remote
+   host-state), or *additively* guard them with a runtime short-circuit, if we
+   can't establish compile-time certainty that they're no-op. (I try very hard
+   not to 'hide' a line that may bite you; I treat user-trust as paramount. See
+   'priorities' below.)
 
-3. Finally, we can present all of this in Terraform's plan/apply UX: take our
-   constructed plan for the 'apply' phase (hopefully dynamically updated in
-   real-time as the probe-phase asynchronously proceeds over-the-network, and
-   uncovers skip-relevant state on various targets) and present it (*still
-   appearing as a simple shell-script* as much as possible) to the user for
-   approval/edition. In ideal cases, the entire
-   repo-full-of-shell-script-equivalent of "running an entire Ansible playbook"
-   can hopefully be reduced to one or two shell commands, directly narrowed to
-   the state-mutators relevant to the user's current
-   goals/changes/garbage-fire-with-business-consequences, which they can proceed
-   to interactively execute or modify as appropriate.
+3. Finally, with user's ack/edits, run that plan - the "application phase". This
+   apply is the *over*-approximation phase. Same analysis, different fail-safe
+   posture, different performance profile.
 
-Presenting a *plan* to the user, though, means we don't have the apply-phase
-'convergence floor' for the probe-phase; it's relatively performance-forward, as
-the user is sitting there, waiting on a coherent plan (i.e. for all the probes
-to finish and return), before they can hit 'submit' and go off and do something
-else in the worst/slowest case. We can't be depending on multiple runs for
-truth. Further, we don't have a guarantee that the user will *accept* the plan -
-by the very act of presenting a plan and giving them an option, we're implicitly
-promising to *not* pre-apply parts of the presented plan. (i.e. providing
-plan/apply limits the "safety fallback" of probe-causes-mutation; even
-probe-causes-maybe-eventually-*desirable*-mutation is, sadly, verboten.)
+The desirable behaviours are all *heavily* dependant upon oracle coverage,
+though: an operation with no 'oracle' to reassure us that a particular check is
+non-mutative, is something we can *never* run in non-mutative probing-mode, no
+matter how obvious it may seem. (That is, Dorc never generates probes, it
+*lifts* them; but even the very most basic ones must be spelled out, in sh, by
+somebody. Our only hope to make this tenable is to provide something of a
+standard-library of spellings for common commands.)
+
+Similarly, an operation with no 'oracle' to declare its global-data-interactions
+to us, is again an operation we can never *proactively drop*. (We call such
+inevitable unmodeled commands 'poison walls'; as they degrade Dorc's behaviour
+from beautiful "full elision" to "runtime guard" for nearly all commands *after*
+the unmodeled command - which preserves some performance properties, but loses
+the mindshare/attention benefits that 'it's literally removed from the plan'
+yields.)
+
+All of the above is designed around gradual enhancement: you make the most minimal
+claims to us that reassure *your* risk-profile, and Dorc will do as much as it
+can for you, within the bounds of correctness. Put another way - the more you
+put in the effort to tell Dorc, the more Dorc can skip.
+
+The upshot: In the ideal case, our shining golden hill, the entire repo-full of
+shell-script / equivalent of "running an entire Ansible playbook" can hopefully
+be reduced to one or two shell commands, directly narrowed to the state-mutators
+relevant to the user's current goals/changes/garbage-fire-with-business-
+consequences, which they can proceed to interactively execute or modify as
+appropriate.
 
    [not convergence]: <https://web.archive.org/web/20121109085116/http://chester.id.au/2012/06/27/a-not-sobrief-aside-on-reigning-in-chaos/>
    [corpus]: <FILLME>
@@ -494,15 +519,6 @@ violated), but:
    exploration/rewriting-in-POSIX-sh of the state-*dependencies* of their
    target) ... for which we hope to eventually provide tooling (containerized
    TDD, eBPF, more static-analysis, runtime warns, etc)
-
- - but conversely, high-quality oracles should *not* change behaviour in the
-   happy-case (*all* non-probing oracle-wrapping should consist of, effectively,
-   hopefully, no-op protective guards.) Oracles surface existing behaviour, they
-   don't change it (they express "docker will fail and exit if the file you pass
-   it doesn't exist on-disk" in a static-analyzable, native-sh-spelled,
-   fail-fast-and-cheap way; they don't *change* what `docker` will do if they
-   are omitted/elided-removed. They should always strive to be a functional
-   no-op to behaviour.)
 
 Our contract with the oracles is what makes our product, more than anything
 else. Encouraging and ensuring the maximal-quality of oracle; and gentle
