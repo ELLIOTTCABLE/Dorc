@@ -193,6 +193,25 @@ mid-flight; USER_STORY stages 3/4 re-spelled (see commit); spike/CLAUDE.md rul-g
 gains a resolution annotation. The engine's scoping stays reached-path-only (the §1b
 vocabulary fence applies to verdict-function paths identically).
 
+## §1d. ORACLE_PROVIDES.md minted (human-directed, 2026-07-03)
+
+A new root-level doc (USER_STORY/ANALYZER-NEEDS tier: AI-written, heavily-human-reviewed;
+pending first full audit): **the ledger of the distinct information-shapes an oracle-author
+hands Dorc** — provides-decoding · provides-vocabulary (kinds; still alive, churn-invisible)
+· provides-reading (+ the implicit inertness vouch) · provides-binding ·
+provides-behavior (predictions / at-least effects / at-most footprint) ·
+provides-convergence (an ANSWER; not subsumed by the license — drift-report/display/hints
+consume it license-free) · **provides-license (a pure liability speech-act; a LADDER:
+rung-0 display-only / rung-1 in-position=guard / rung-2 carried=elide — rung-selection
+spelling OPEN**, in tension with rul24-vouch-is-verdict-authoring's weld of
+convergence-authorship to rungs 1+2; the wary-engineer hatch, sibling of the admin's
+mode-gate flag) · provides-margins (refusals; reserved: cost-hints, bridges, MH2
+version-pins). NOT the contract — the ledger of what must eventually be firmed INTO the
+contract (docs ∪ static-checks ∪ promises-to-admins ∪ hints), each entry owing a settled
+spelling + an enforcement home + the monotonic gradual-degradation story (the blessed
+form). Origin: the ground-zero taxonomy dialogue following the wary-engineer question;
+the doc supersedes this note as the shapes' durable home.
+
 ## §2. The 231 disposal (carried from the 23J repair-pass routing: map the pre-crisis sweep's clusters to survivor/dead-with-reason)
 
 Context: `notes/231` is the *pre-crisis* collapsed-gradient sweep — round 23 §1 work,
