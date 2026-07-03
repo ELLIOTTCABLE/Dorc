@@ -212,6 +212,24 @@ spelling + an enforcement home + the monotonic gradual-degradation story (the bl
 form). Origin: the ground-zero taxonomy dialogue following the wary-engineer question;
 the doc supersedes this note as the shapes' durable home.
 
+## §1e. Stage 2b commissioned — the chronology net (human-typed, 2026-07-03)
+
+The human's DST instinct caught a **charter-vs-built gap**: the charter says "diff the
+END-STATE against the bare book" but the built differential diffs RUN-SETS against a
+frozen seeded world (mocks are state-independent — running a command changes nothing), so
+it is structurally blind to wrong SURVIVALS: a false-disjoint yields a perfectly
+license-attributable run-set with a wrong outcome; gate-6 attributes licensed deltas, it
+never judges licenses; the strawman pins catch only authored cases. Commissioned as
+**Stage 2b** (task #9, after the Stage-2 merge, BEFORE Stage 3 — retro-verify the young
+dangerous machinery): a state-bearing mock protocol (shims read/write per-trial sandbox
+state; probes answer from it, mutators mutate it), S_bare == S_apply end-state assertion
+(replay-seed on failure), an interference-topology seed axis (hit/miss × footprinted/bare
+× converged/diverged × kill/establish) with sometimes-asserts per topology class (a sweep
+that never generates a hit-case must fail loudly). A fundamentally new test kind vs the
+e2e corpus: seeded/generated/outcome-shaped, not finite/authored/run-set-shaped. Forward:
+the same net is Stage-6's adequacy-measurement substrate (fact-tier license ⇒ red;
+vouch-tier ⇒ counted bite — keyed on the claim-tier algebra once Stage 3 lands it).
+
 ## §2. The 231 disposal (carried from the 23J repair-pass routing: map the pre-crisis sweep's clusters to survivor/dead-with-reason)
 
 Context: `notes/231` is the *pre-crisis* collapsed-gradient sweep — round 23 §1 work,
