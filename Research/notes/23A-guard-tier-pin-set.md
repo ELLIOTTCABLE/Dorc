@@ -12,7 +12,7 @@ TOCTOU identified-cause clarifier; the inv-probe-sourced-values GuardInsert carv
 THREE MID-RUN HUMAN RULINGS relayed 2026-07-02 while this set was being derived (rc-consumer
 split DEFERRED → narrowest posture only; "the command is the atomic unit" → no partial-member
 pins; refuse-loudly RATIFIED for awkward homes) — now also recorded in `23Z` §"Task-4 rulings" ·
-stamped `plans/233` + its end-annotation · `notes/239` (closure, GO) · `notes/218a` (door-4
+stamped `plans/233` + its end-annotation · `plans/239` (closure, GO) · `notes/218a` (door-4
 mechanics prior art) · `notes/237` (crosscheck adjudication + post-adjudication corrections) ·
 the `23Z` ORACLE GROUND-TRUTH block.
 

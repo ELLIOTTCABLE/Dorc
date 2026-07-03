@@ -2,7 +2,7 @@
 
 AI-authored (review agent, own worktree, 2026-07-02). Scope: the 19 `spike/e2e/cases/guard23-*`
 cases (6 XFAIL + 13 floors) landed in `e5bdbf9`, judged against the round-23 rulings block
-(`spike/CLAUDE.md`), stamped `plans/233` (+ end-annotation), `notes/239`, `notes/23Z`, and the
+(`spike/CLAUDE.md`), stamped `plans/233` (+ end-annotation), `plans/239`, `notes/23Z`, and the
 authors' register `notes/23A`. Never-vouch applies: this is process-evidence, not proof. Method
 was empirical where possible — harness re-run, XFAIL lenses lifted, golden artifacts EXECUTED
 under their own mocks, wrong-build artifacts hand-crafted and executed to test floor

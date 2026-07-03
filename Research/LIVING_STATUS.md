@@ -70,9 +70,9 @@ hand-authored XFAIL goldens (hit + recovered); restore XFAIL expected.* after an
 **The bindings (hold these; full text at the cited homes):**
 - The four round-23 rulings — `spike/CLAUDE.md` (guard sourcing: the check IS the oracle,
   strip-only, whole-body both lanes; lifted forms byte-identical substrings; two nevers).
-- Two-halves doctrine + anti-creep — `notes/239` §1 (full elision is THE goal, never
+- Two-halves doctrine + anti-creep — `plans/239` §1 (full elision is THE goal, never
   aspirational-tier; guard-half = sister + permanent fallback, equal attention).
-- Oracle ground-truth — `notes/23D` §1 (strip-only; arbitrary sh; analyzer-trick-not-language).
+- Oracle ground-truth — `plans/23D` §1 (strip-only; arbitrary sh; analyzer-trick-not-language).
 - Plan-surface, attention-chronology, atomic-command axiom, can't-serve rulings — `23D` §2–§4
   (plan-is-the-code render; no late attention-demands ever; no command disassembly).
 - Interim rc-consumer posture — guards mint only where NO explicit status reader exists;
@@ -132,7 +132,7 @@ EXCEPT this file; echo the TaskList each round; the method is xfail-first → de
 adversarial-crosscheck → build; tc-shaped judgment calls flag UP, never settle silently.
 
 **On-ramp order for a fresh conductor:** root docs → `spike/CLAUDE.md` → `plans/233` whole
-(incl. end-annotation) → `notes/239` → THIS FILE → `23D` → `23F` (both addenda) → `23A`+`23G` +
+(incl. end-annotation) → `plans/239` → THIS FILE → `23D` → `23F` (both addenda) → `23A`+`23G` +
 `spike/e2e/run.sh` → `237` → `238` → `235`. Build reality: `plans/16P` §3 + `16Q` + closes
 `20K`/`21W`/`22W` + the `guard23-*` cases.
 

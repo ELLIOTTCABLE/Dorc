@@ -376,7 +376,7 @@ frozen-doc pointer; the document above remains stamped/unedited). Continuations 
 document's problem: the 3-agent adversarial crosscheck (notes/236a,236b,236c) and its
 adjudication incl. post-adjudication corrections (notes/237); the ceiling exploration —
 horizon-bounded claims, derived footprints (notes/238); the crisis-closure package / re-weld
-deltas (notes/239). Corrections a future reader MUST honor:
+deltas (plans/239). Corrections a future reader MUST honor:
 (1) [correction REVERSED 2026-07-02, human ground-truth] apply-guard-fat's "ship a check()-body"
 was RIGHT as written: at design level the check IS the oracle — arbitrary sh whose added syntax
 is strip-only (annotations removed; `name.check()` → `name_check()`; output is runnable sh) —

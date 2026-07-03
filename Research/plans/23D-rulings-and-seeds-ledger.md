@@ -4,7 +4,7 @@ AI-authored, 2026-07-02. When `23Z` was restructured into a lean resumption prom
 session rulings and design seeds that existed ONLY there were harvested here — this is the
 durable record; `23Z` points at it. Everything human-ruled is marked; everything conductor-
 synthesized is confidence-marked and NOT welded unless a signed home is cited. Authoritative
-homes outrank this file: `plans/233` (stamped) · `notes/239` (signed) · `spike/CLAUDE.md`
+homes outrank this file: `plans/233` (stamped) · `plans/239` (signed) · `spike/CLAUDE.md`
 round-23 rulings block.
 
 ## §1 The oracle ground-truth (human, 2026-07-02 — binds all future writing)

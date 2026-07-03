@@ -156,7 +156,7 @@ Proposed addition to the existing naming-caution note:
 > guard-insertion is vouch-licensed and reproduces nothing; scope-elision remains a user-mode
 > choice. Three mechanisms, three licenses — do not conflate. (Full contract and its
 > motivation: `Research/plans/233` §"Update, 2026-07-01" + §"The guard-license"; closure and
-> re-welds: `Research/notes/239`.)
+> re-welds: `Research/plans/239`.)
 
 ### delta-5 · DESIGN.md, candidate line  [HUMAN applies — DEFERRED by human 2026-07-02 (away from machine; DESIGN awaits a fuller rewrite on his timing); the doctrine is meanwhile welded via delta-1's rul-attention-honesty]
 

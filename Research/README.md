@@ -29,8 +29,8 @@ often also full of superseded/incorrect info. peruse older rounds with care.)
 `../KNOBS.md` **plus (new, binding) the round-23 standing-rulings block in `../spike/CLAUDE.md`**; the most
 recent *event* is **round 23 — the oracle-contract crisis and its resolution into the ternary verdict
 {elide, guard, run}**. On-ramp for the current state: **`plans/233`** (HUMAN-written, stamped; read its
-end-annotation — it carries corrections) → **`notes/239`** (the signed crisis-closure + re-welds) →
-**`LIVING_STATUS.md`** (the living resumption doc: state, bindings, the arc ahead) → `notes/23D` (the rulings/seeds
+end-annotation — it carries corrections) → **`plans/239`** (the signed crisis-closure + re-welds) →
+**`LIVING_STATUS.md`** (the living resumption doc: state, bindings, the arc ahead) → `plans/23D` (the rulings/seeds
 ledger). The kind/'types' on-ramp remains **`plans/17N`**; the **round-16 spike** remains the build reality
 (`plans/16P` §3-ledger first, then `plans/16Q`), now plus the round-23 `guard23-*` pin-set (`notes/23A`).
 The per-facet conclusions below (`055`/`099`/`102`/`111`/`128`/`139`/`142`/`17N`) are the durable answers
@@ -40,8 +40,8 @@ each round settled.
 > 1. **`plans/230` — best-effort / collapsed-gradients.** OPENED round 23 (sweep `notes/231`, design
 > dialogue `232`), then overtaken: the human's **`plans/233`** crisis-log showed the oracle effect/poison
 > contract broken at its core, and the round's true output became the **ternary verdict architecture**
-> (233's update section + the signed `notes/239`). The surviving un-collapse work lives on in the
-> **elide-half design arc** (seeds: `notes/238` + `notes/23D` §5) and the arc-list in `LIVING_STATUS.md`.
+> (233's update section + the signed `plans/239`). The surviving un-collapse work lives on in the
+> **elide-half design arc** (seeds: `notes/238` + `plans/23D` §5) and the arc-list in `LIVING_STATUS.md`.
 > 2. **`plans/22H` — the live-plan / concurrent-incremental / streaming engine (still deferred, still
 > foundational).** The founding anti-Ansible real-time motivator: probes streaming concurrently from N
 > hosts, the per-host plan re-folding live. NB from round 23: the guard tier **pins apply to book-order**
@@ -92,7 +92,7 @@ can know without running the host*; on that question, the later round wins.
 > trusted (a partial oracle becomes WORSE than none) or poisoned (real books elide nothing); the frame
 > problem, and no default escapes it. Resolution: the **ternary verdict {elide, guard, run}** — a `guard`
 > inserts the oracle's own stripped check in front of the original bytes (`check || command`); silence
-> licenses nothing. Crisis formally CLOSED: `notes/239` signed, rulings welded into `spike/CLAUDE.md`
+> licenses nothing. Crisis formally CLOSED: `plans/239` signed, rulings welded into `spike/CLAUDE.md`
 > (round-23 block), 233 stamped with a correcting end-annotation. The attention-product is re-priced
 > honestly (the **two-halves doctrine**, 239 §1: full elision stays THE goal; the guard-half is sister and
 > permanent fallback). A 3-agent adversarial crosscheck validated the mechanism 3-way (`notes/236a-c`,
@@ -306,12 +306,12 @@ for the live state.*
   corrections (incl. the check()-body reversal — read them).
 - `notes/238` — the ceiling: horizon-bounded claims, the derivation gradient, derived footprints; "no
   claim without a horizon; no closure authored where it can only be derived."
-- **`notes/239`** — the crisis-closure package, SIGNED: closure criteria, six re-weld deltas (applied:
+- **`plans/239`** — the crisis-closure package, SIGNED: closure criteria, six re-weld deltas (applied:
   `spike/CLAUDE.md` round-23 rulings block + KNOBS notes), the two-halves doctrine (§1).
 - `notes/23A` — the guard-tier pin-set register: 19 e2e cases (`spike/e2e/cases/guard23-*`, 6 xfail + 13
   floors), landed + conductor-verified; hazards (hz-refusepath) + promotion mechanics.
 - `notes/23B` / `23C` — the pin-set crosscheck pair (neutral / adversarial; in flight at time of writing).
-- `notes/23D` — the round's rulings + design-seeds ledger (oracle ground-truth; plan-surface,
+- `plans/23D` — the round's rulings + design-seeds ledger (oracle ground-truth; plan-surface,
   can't-serve, attention-chronology rulings; the elide-half seeds and the vocabulary law).
 - **`LIVING_STATUS.md`** — the living resumption doc (state · bindings · the arc ahead). **Start there for
   current status.**

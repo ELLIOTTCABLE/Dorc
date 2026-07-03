@@ -119,7 +119,7 @@ and where* (→ `Research/notes/20x-*.md`, append-only), not green tests.
   build re-probe-before-apply, freshness windows, or anything aimed at it.
   (Maybe-someday shape, very deferred: oracle tooling for a super-cheap
   last-second check. Not this spike, probably not this year.)
-  > Clarified 2026-07-02 (crisis-closure, `Research/notes/239` delta-2): apply-lane guards
+  > Clarified 2026-07-02 (crisis-closure, `Research/plans/239` delta-2): apply-lane guards
   > (rul-ternary-verdict, below) are NOT this ruling's target. The line is IDENTIFIED-CAUSE vs
   > OPEN-WORLD: a guard re-verifies a fact whose invalidation has a *named, in-book,
   > potentially-responsible cause the analyzer can point at* (the opaque wall — this ruling's
@@ -302,7 +302,7 @@ and where* (→ `Research/notes/20x-*.md`, append-only), not green tests.
   tracing who could read it. **Anti-masking test discipline**: no test may
   hand-inject an observable the check itself should predict; a check returning
   can't-predict must flip its dependent case to *run*.
-  Carve-out (2026-07-02, crisis-closure, `Research/notes/239` delta-3): guard-insertion is NOT
+  Carve-out (2026-07-02, crisis-closure, `Research/plans/239` delta-3): guard-insertion is NOT
   a Replace and mints no values — a GuardInsert carries no StandIn, no Predicted, no Observable
   (on pass, the check's own live rc is the line's rc; on fall-through, the original command
   executes and its observables are genuine). The no-fabricated-values discipline is untouched;

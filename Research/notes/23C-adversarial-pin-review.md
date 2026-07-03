@@ -2,7 +2,7 @@
 
 AI-written, 2026-07-02. Scope: the 19 `spike/e2e/cases/guard23-*` cases (6 XFAIL pins + 13
 floors) against the signed round-23 rulings (spike/CLAUDE.md), plans/233 (incl. end
-annotation), notes/239, and the harness (spike/e2e/run.sh). Explicitly NOT read: notes/23A,
+annotation), plans/239, and the harness (spike/e2e/run.sh). Explicitly NOT read: notes/23A,
 23B, 23Z (per brief). Out of scope by brief: vouch sh-spelling, errexit-implicit consumption
 (both directions), command-disassembly.
 
