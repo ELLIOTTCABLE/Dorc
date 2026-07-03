@@ -18,7 +18,7 @@ The latter breaks down further into a few inter-dependant parts:
 
 1. parser,
 2. analysis engine, and
-3. a probe-compiler.
+3. a probe/guard-compiler.
 
 ... as well as a few more-boring components like the CLI, a few shared types in
 `core`, and a host-simulator for determinstic testing.
@@ -147,8 +147,10 @@ to cause us to reach for it.
 The opposite is true for the apply-time semantic, though: *partial benefit
 exists*. Dorc could, potentially, elide *many* runbook commands; but it could
 also, potentially, elide *less*, while still providing value in the few it does
-manage to elide. Therefore an *under-modeled* command - a poorly-written,
-low-resolution oracle - can/should/hopefully reach toward that half-beneficial
+manage to elide. Similarly, 'elision' can collapse to 'guarding' and still
+provide *some* benefit, just not *most* of the benefit. Therefore an
+*under-modeled* command - a poorly-written, low-resolution oracle -
+can/should/hopefully reach toward that half-beneficial
 outcome.
 
 
@@ -211,6 +213,65 @@ running the script, blind, which is what you would have done without Dorc":
     - but it *would not* result in blind, unknowing *multiple-execution* within
       a single script-execution (thus, a failure-mode we're *less* allowed to
       make, because it is surprising.)
+
+
+### Guarding, full elision, and gradual-enhancement
+
+For our rather-draconian correctness requirements, 'full elision' (the original
+goal of the project) is substantially difficult in the requirements it places on
+the user (or rather, the 'collective user' - the user and the community of
+oracles their runbook depends upon.)
+
+In particular, as mentioned in DESIGN, some commands function as a 'poison
+wall': if the admin uses some little-known command, and writes no oracle for it,
+then Dorc can know nothing about it (the frame problem.) In particular, if
+*other* commands' oracles declare that they depend on particular shared state
+(and everything in ops depends on shared state), then *we have no way of knowing
+if those commands can be safely elided anymore*, after the unmodeled, opaque
+command runs.
+
+As a motivating example:
+
+```sh
+apt-get install -y nginx      # well-known tool w/ a battle-tested oracle
+hork tune-packages            # opaque, Dorc knows nothing about this
+systemctl enable --now nginx  # well-known tool w/ a battle-tested oracle
+```
+
+Dorc's general purpose is to 'lift' questions about that last `systemctl` to a
+"probing phase", along with many other questions, so that it can be removed if
+it's unnecessary. However, the `systemctl` *depends* on state established
+earlier in the control-flow - the installation of `nginx`. In ideal conditions,
+all these facts can be probed together, and elided together; but in cases like
+above, *we can no longer trust the results of our own probing.* (That is,
+perhaps nginx was indeed installed at probe-time, but `hork` is a little-known
+package-management tool that *specifically uninstalls `nginx`* in some cases.)
+
+So, when Dorc's 'knowability-model' of the world 'degrades' past a certain point
+in the CFG (the "poison wall"), we're left in a state where *probing* is
+relatively useless; and Dorc's *value proposition* changes: we can no longer
+'fully elide' commands (i.e. that `systemctl` line can *never* be removed safely
+from the planning-result "apply-script".) In this state, we still have plenty of
+information about the script, though, and we attempt to degrade into a
+secondary, still-useful mode, by *runtime-guarding* that command: wrapping it in
+a test that will skip it if, indeed, the convergence-state holds at runtime
+*after `hork` has run.* (Effectively "automatically coding defensively" against
+the unmodeled, unknowable behaviour of `hork`.)
+
+It's critical to understand that this is a *different product*, though: the
+*primary* value-proposition of Dorc is human-attention; performance is
+secondary. *Even if* the `systemctl` line never actually runs, we have to *show
+it to the user* in the apply-plan; it takes up mindshare and attention, and
+those are much more precious resources than 30 seconds of wallclock.
+
+Our only recourse is to push hard on gradual enhancement: ensure the user has
+high-quality reporting about *why* the last 50% of their script is 'still there'
+(fails full-elision), *what they can do* to improve Dorc's value to them
+(attribute and suggest repairs.) In an ideal world, the first step should
+devolve to "write a ~three-line convergence-focused oracle so `hork` itself can
+elide" (since elision casts no poisoned shadow.) Further enhancement providing
+reporting about `hork`'s actual first-order footprint will further improve
+behaviour to the point where it can avoid poisoning *even when unconverged*.
 
 
 By-contract and by-dictate

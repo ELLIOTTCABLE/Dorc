@@ -127,7 +127,11 @@ a way to fuck themselves up if you touch them.
 
 However, the *approach* to idempotence is very often a 'check-then-execute' one:
 
-    FILLME: CODE EXAMPLE
+```sh
+if ! dpkg -s ca-certificates >/dev/null 2>&1; then
+   apt-get install -y ca-certificates
+fi
+```
 
 When you have an entire Ops Ocean of state to interrogate and apply,
 imperatively, it can be quite silly to actually *execute* a deep tree of these
@@ -193,29 +197,34 @@ case in an 'embarrassingly parallel' fashion:
    each machine, that we can use to tune the deployment/application phase.
 
    For these purposes, the probe-analysis must *under*-approximate - that is,
-   it's better to not ship a probe at all (losing opportunity to elide
-   evaluation later), than it is to ship something that may be mutative.
-   (Another way to look at this: an optimizing compiler with an unusual idea of
-   'correct'; or a query-planner.)
+   it's better to not ship a probe at all (losing opportunity to skip costly
+   runs later), than it is to ship something that may be mutative. (Another way
+   to look at this: an optimizing compiler with an unusual idea of 'correct'; or
+   a query-planner.)
 
 2. Then, the "application phase": a second, inverse view of the analysis,
-   potentially (if running 'unsound') with *elision* of portions of the
-   control-flow-graph that is fully irrelevant to the user's goals - either
-   already correct on the target system(s) (by-probing, not
-   by-stale-central-state), or having no control-flow interdependency with the
-   modified portion of the ops-scripts, in partial-deploy-mode. ("Stuff that is
-   already correct; *or* stuff that, while potentially incorrect,
+   potentially *skipping* portions of the control-flow-graph that are fully
+   irrelevant to the user's goals - either already correct on the target
+   system(s) (by-the-just-completed-probing, not by-stale-central-state), or
+   having no control-flow interdependency with the modified portion of the
+   ops-scripts, in partial-deploy-mode. ("Stuff that is already correct; *or*
+   stuff that, while potentially incorrect,
    we-don't-care-about-right-this-second.")
 
    This apply is the *over*-approximation phase. Same analysis, different
    fail-safe posture, different performance profile.
 
-   (Both #1 and #2 are *heavily* dependant upon oracle coverage, though: an
+   Both #1 and #2 are *heavily* dependant upon oracle coverage, though: an
    operation with no 'oracle' to reassure us that a particular check is
    non-mutative, is something we can *never* run in non-mutative probing-mode,
    no matter how obvious it may seem. Similarly, an operation with no 'oracle'
-   to declare its (hopefully-lack-of) global-data-dependencies to us, is again
-   an operation we can never elide or rearrange during application.)
+   to declare its global-data-dependencies to us, is again an operation we can
+   never elide or rearrange during application. (We call such inevitable
+   unmodeled commands 'poison walls'; as they degrade Dorc's behaviour from
+   beautiful "full elision" to "runtime guard" for nearly all commands *after*
+   the unmodeled command - which preserves some performance properties, but
+   loses the mindshare/attention benefits that 'it's literally removed from the
+   plan' yields.)
 
    Luckily, both are designed around gradual enhancement: you make the most
    minimal claims to us that reassure *your* risk-profile, and Dorc will do as
@@ -225,11 +234,12 @@ case in an 'embarrassingly parallel' fashion:
 3. Finally, we can present all of this in Terraform's plan/apply UX: take our
    constructed plan for the 'apply' phase (hopefully dynamically updated in
    real-time as the probe-phase asynchronously proceeds over-the-network, and
-   uncovers elision-relevant state on various targets) and present it, *still as
-   a simple shell-script*, to the user for approval/edition. In ideal cases, the
-   entire repo-full-of-shell-script-equivalent of "running an entire Ansible
-   playbook" can hopefully be reduced to one or two shell commands, directly
-   narrowed to the state-mutators relevant to the user's current
+   uncovers skip-relevant state on various targets) and present it (*still
+   appearing as a simple shell-script* as much as possible) to the user for
+   approval/edition. In ideal cases, the entire
+   repo-full-of-shell-script-equivalent of "running an entire Ansible playbook"
+   can hopefully be reduced to one or two shell commands, directly narrowed to
+   the state-mutators relevant to the user's current
    goals/changes/garbage-fire-with-business-consequences, which they can proceed
    to interactively execute or modify as appropriate.
 
@@ -256,22 +266,31 @@ Given all the above, then, we care about, in approximately this order:
    promises ("plan stage doesn't mutate", as long as your handwritten oracles
    don't; "all state will be applied", as long as your oracles don't lie) *must*
    be kept;
-2. **user effort**, with respect to the value we then provide: again,
+2. **user authorship effort**, with respect to the value we then provide: again,
    NixOS/K8s/Terraform exist; if we 'ask too much' of our user, they might as
    well just use those, which will be strictly better, as they don't have to
    work off of *inference*. We're worthless if we aren't scrappy/best-effort
    based on very little user-input.
-3. **performance**, at the "cross-network wallclock total": this is the primary
+3. **user attention-budget**, strongly modulo safety: the original value-prop of
+   Dorc was to *entirely elide* commands that aren't relevant to the live work
+   (convergence/reconciliation, or hot-loop active iteration.) The real-world
+   value there is relaxation and focus: the user can, well, do more, faster.
+   This is subtle, though, as attention is tightly coupled to *trust*: if we
+   behave incorrectly, or *hide* things that later bite in an attempt to 'save
+   user attention', then the user will subconsciously distrust us *and pay more
+   attention later*, self-defeating. Hence why this is deeply and thoroughly
+   subordinate to #1-correctness.
+4. **performance**, at the "cross-network wallclock total": this is the primary
    pain-point we're trying to address, subject to the above two limitations,
    Ansible, while annoying, would be relatively *fine* if it didn't force you to
    choose between taking 45 minutes to re-execute an entire play after one minor
    change vs. trying to narrow down some overcomplicated manual set of
    tags-to-re-apply.
-4. and finally **invisibility**, which is basically an aesthetic reframing of
-   #2: we want to *feel*, to a user, like they're just writing bog-standard,
-   ops-y shell-scripts. In most domains, "magic" is bad - in a PLT regime, I'd
-   be pushing for precision and correctness and overspecification ... but NixOS
-   exists. We don't *need* to be that, here. So, let's be magic.
+5. and finally **invisibility**, which is basically reframing of #2/3 around
+   aesthetics: we want to *feel*, to a user, like they're just writing
+   bog-standard, ops-y shell-scripts. In most domains, "magic" is bad - in a PLT
+   regime, I'd be pushing for precision and correctness and overspecification
+   ... but NixOS exists. We don't *need* to be that, here. So, let's be magic.
 
 
 Project components
@@ -545,14 +564,16 @@ about this new, unknown `brew` command? How do we know that now? Concisely,
  - to *infer*, untold, that `hork` is a probe of kind K just from the CFG, you'd
    need to know that `wombat` is a K-entity.
 
-So, cross-oracle compatibility will *have* to be anchored with some sort of
-grounded anchor. A type-declaration, effectively. Without direction, even *with*
-our relative 'unsoundness', about the best we can do is collect a
+So, cross-oracle compatibility must be based on some sort of grounded anchor. A
+type-declaration, effectively. (Without that direction, even *with* our relative
+'unsoundness', about the best we could ever attempt to do is collect a
 "company-it-keeps" record and provide *hints* to the user that better beavhiour
-may be gained by categorizing/enriching `wombat` ("this looks like a guard,
-maybe write an oracle for it.")
+may be gained by categorizing/enriching `wombat` - "this looks like a guard,
+maybe write an oracle for it." That's, IMO, not good enough.)
 
-(UNSETTLED, CONTINUE)
+Thus, Dorc evolves into a typed-sh dialect, under protest:
+
+(UNFINISHED)
 
 
 "POSIX" sh
