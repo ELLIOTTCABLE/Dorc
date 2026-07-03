@@ -169,6 +169,9 @@ pub use prov::{
 pub mod unord;
 pub use unord::IterSuppressedMap;
 
+pub mod claim;
+pub use claim::{Claim, Fact, FactTier, Judgment, JudgmentTier, Rung, SilenceTier, Tier, Vouched};
+
 /// `result × accumulated diagnostics` — the type every pipeline stage returns
 /// (research chord `dn-7` / `ch-carrier`). A writer-monad shape: `map` transforms
 /// the value, `and_then` sequences a stage while concatenating its diagnostics.
