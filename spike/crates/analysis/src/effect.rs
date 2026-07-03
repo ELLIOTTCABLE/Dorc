@@ -4,7 +4,7 @@
 //! Two steps (note 163 §2):
 //! 1. **effect resolution** — for each `Command` node, thread the book's
 //!    flow-resolved argv (`analysis::value::ValueFlow`) through the oracle's own
-//!    `check()` (`oracle::check::evaluate`) to its inline kind-annotation, then key
+//!    `check()` (`oracle::predict::evaluate`) to its inline kind-annotation, then key
 //!    the resulting `(verb, entity, kind)` into the oracle effect-map for the
 //!    `(selector, polarity)` cells (`Establishes`/`Kills`, or `Opaque` on any ⊤).
 //!    The engine parses NO argv itself — *identity is declared, never inferred*
@@ -33,7 +33,7 @@ use dorc_core::diag::{
 use dorc_core::{
     Carrier, Diagnostic, EntityRef, Interner, KindId, LeafId, OpaqueToken, ProviderId, Span,
 };
-use dorc_oracle::check::{self, CheckSet, ResolvedEntity};
+use dorc_oracle::predict::{self, PredictSet, ResolvedEntity};
 use dorc_oracle::{EffectCell, KindIndex, ValueClaim, empty_verb};
 use std::collections::BTreeSet;
 
@@ -198,7 +198,7 @@ fn finalize_cmdsub_tops(
 /// Determine a `Command` node's effect cells from the book's resolved argv + the
 /// oracle's own `check()` (the real entity-resolution mechanism; replaces the deleted
 /// engine-side argparse stand-in). The engine parses NOTHING: it threads the
-/// flow-resolved argv through the oracle's argparse (`check::evaluate`) and reads
+/// flow-resolved argv through the oracle's argparse (`predict::evaluate`) and reads
 /// the inline kind-annotation. *Identity is declared, never inferred* — true in
 /// code now (`inv-referent-agnostic`).
 ///
@@ -213,7 +213,7 @@ fn finalize_cmdsub_tops(
 /// `diags`.
 pub fn command_effect(
     idx: &KindIndex,
-    checks: &[CheckSet],
+    checks: &[PredictSet],
     argv: &[ValueOf],
     interner: &mut Interner,
     diags: &mut Vec<Diagnostic>,
@@ -243,11 +243,11 @@ pub fn command_effect(
         return vec![CommandEffect::Pure];
     }
     // The provider symbol: the book's command word through the SHARED hyphen↔underscore
-    // convention (`check::map_provider_name`) — so it equals the `CheckSet` key and
+    // convention (`predict::map_provider_name`) — so it equals the `PredictSet` key and
     // `KindIndex`'s `ProviderId` (204 §6 seam #2). The book word is already hyphenated
     // (`apt-get`), so the map is a no-op here, but routing through the one helper keeps
     // the vocabularies welded.
-    let provider = ProviderId(interner.intern(&check::map_provider_name(&provider_str)));
+    let provider = ProviderId(interner.intern(&predict::map_provider_name(&provider_str)));
 
     // The trailing args (command word excluded — C-1) must ALL be concrete literals
     // to run the check (202 §1 fully-concrete-argv scope). A ⊤ hole ⇒ unresolved site
@@ -278,14 +278,14 @@ pub fn command_effect(
     // resolves concretely. A check that does not handle this verb falls through to its
     // own `Top` (no annotation reached / positional past end), so the partition is
     // clean for the corpus. (tc-*: if two checks both resolve, first-in-file-order
-    // wins — flagged; no corpus case is ambiguous.) The `CheckSet` key is the same
+    // wins — flagged; no corpus case is ambiguous.) The `PredictSet` key is the same
     // provider symbol (interning is idempotent; `ProviderId` wraps it).
     let resolved = checks
         .iter()
         .filter_map(|cs| cs.get(provider.0))
-        .find_map(|c| match check::evaluate(c, &arg_refs) {
-            check::Resolution::Resolved(r) => Some(r),
-            check::Resolution::Top(_) => None,
+        .find_map(|c| match predict::evaluate(c, &arg_refs) {
+            predict::Resolution::Resolved(r) => Some(r),
+            predict::Resolution::Top(_) => None,
         });
     let Some(resolved) = resolved else {
         // No check resolved this site (no check for the provider, or every candidate
@@ -354,7 +354,7 @@ fn member_family(
     cfg: &Cfg,
     value: &ValueFlow,
     idx: &KindIndex,
-    checks: &[CheckSet],
+    checks: &[PredictSet],
     interner: &mut Interner,
     diags: &mut Vec<Diagnostic>,
 ) -> Option<Vec<FactKey>> {
@@ -789,7 +789,7 @@ fn node_effects(
     value: &ValueFlow,
     ast: &dorc_syntax::ast::Ast,
     idx: &KindIndex,
-    checks: &[CheckSet],
+    checks: &[PredictSet],
     interner: &mut Interner,
     diags: &mut Vec<Diagnostic>,
     cmdsub_tops: &mut Vec<CmdsubTop>,
@@ -925,7 +925,7 @@ fn resolve_node_effects(
     value: &ValueFlow,
     ast: &dorc_syntax::ast::Ast,
     idx: &KindIndex,
-    checks: &[CheckSet],
+    checks: &[PredictSet],
     interner: &mut Interner,
     diags: &mut Vec<Diagnostic>,
 ) -> (
@@ -975,7 +975,7 @@ fn resolve_node_effects(
 /// converged solve; otherwise it folds to the safe `MustRun` (find-A/find-B).
 ///
 /// `value` is the book-side value-flow (`analysis::value::analyze`, the caller
-/// threads it); `checks` are the per-oracle-file `CheckSet`s (the engine parses no
+/// threads it); `checks` are the per-oracle-file `PredictSet`s (the engine parses no
 /// argv itself — `inv-referent-agnostic`). `ast` is threaded only to mint each give-up
 /// site's `Top(cause)` receipt at its source [`Span`] (arch-1, `notes/220` §6); `arena`
 /// is the per-run receipts plane the causes land in. Returns a [`Carrier`] so
@@ -995,7 +995,7 @@ pub fn classify(
     value: &ValueFlow,
     ast: &dorc_syntax::ast::Ast,
     idx: &KindIndex,
-    checks: &[CheckSet],
+    checks: &[PredictSet],
     interner: &mut Interner,
     arena: &mut dorc_core::ProvArena,
 ) -> Carrier<Vec<(CfgNodeId, SkipClass)>> {
@@ -1017,7 +1017,7 @@ pub fn classify_with_why_diags(
     value: &ValueFlow,
     ast: &dorc_syntax::ast::Ast,
     idx: &KindIndex,
-    checks: &[CheckSet],
+    checks: &[PredictSet],
     interner: &mut Interner,
     arena: &mut dorc_core::ProvArena,
 ) -> (Carrier<Vec<(CfgNodeId, SkipClass)>>, Vec<Diag>) {
@@ -1164,7 +1164,7 @@ mod tests {
     use crate::cfg;
     use crate::value::analyze;
     use dorc_core::{KindId, SelectorId};
-    use dorc_oracle::check::lift_checks;
+    use dorc_oracle::predict::lift_predicts;
 
     /// The shared corpus-shaped check dialect the classify tests lift: an `apt-get`
     /// check (flag-strip → verb → per-verb arm: `update` ⇒ a Singleton `package-index`
@@ -1175,11 +1175,11 @@ mod tests {
     /// `package-index`, `service`) so the kind-agreement rule never fires. The probe
     /// bodies are inert placeholders (this round resolves identity only).
     ///
-    /// Lifted with the CALLER's interner (`i`), so the [`CheckSet`]'s provider symbol
+    /// Lifted with the CALLER's interner (`i`), so the [`PredictSet`]'s provider symbol
     /// equals the one `classify` interns from the book's command word (Symbols only
     /// compare across one interner — 204 seam #2).
-    const CORPUS_CHECK_SRC: &str = r#"
-apt_get__check() {
+    const CORPUS_PREDICT_SRC: &str = r#"
+apt_get__predict() {
    while [ "${1#-}" != "$1" ]; do shift; done
    verb=$1; shift
    case $verb in
@@ -1190,7 +1190,7 @@ apt_get__check() {
          if [ "$2" = "" ]; then probe-pkg "$pkg"; fi ;;
    esac
 }
-systemctl__check() {
+systemctl__predict() {
    verb=$1; shift
    svc : service = "$1"
    case $verb in
@@ -1199,7 +1199,7 @@ systemctl__check() {
       disable) probe-enabled "$svc" ;;
    esac
 }
-command__check() {
+command__predict() {
    case $1 in -v) shift ;; esac
    tool : tool = "$1"
    command -v -- "$tool" >/dev/null 2>&1
@@ -1262,12 +1262,12 @@ command__check() {
 
     /// Run the full pipeline on `src` (value-flow + the corpus checks + classify) and
     /// return just the [`SkipClass`]es, in classify order. Everything shares one
-    /// interner so the [`CheckSet`]'s provider symbols match the book's command words.
+    /// interner so the [`PredictSet`]'s provider symbols match the book's command words.
     fn classify_src(src: &str, interner: &mut Interner, idx: &KindIndex) -> Vec<SkipClass> {
         let parsed = dorc_syntax::parse(src);
         let built = cfg::build(&parsed.value);
         let value = analyze(&built.value, &parsed.value, interner);
-        let checks = vec![lift_checks(interner, CORPUS_CHECK_SRC).value];
+        let checks = vec![lift_predicts(interner, CORPUS_PREDICT_SRC).value];
         let mut arena = dorc_core::ProvArena::new();
         classify(
             &built.value,
@@ -1290,7 +1290,7 @@ command__check() {
         let parsed = dorc_syntax::parse(src);
         let built = cfg::build(&parsed.value);
         let value = analyze(&built.value, &parsed.value, interner);
-        let checks = vec![lift_checks(interner, CORPUS_CHECK_SRC).value];
+        let checks = vec![lift_predicts(interner, CORPUS_PREDICT_SRC).value];
         let mut arena = dorc_core::ProvArena::new();
         classify(
             &built.value,
@@ -1556,7 +1556,7 @@ command__check() {
             let parsed = dorc_syntax::parse(src);
             let built = cfg::build(&parsed.value);
             let value = analyze(&built.value, &parsed.value, i);
-            let checks = vec![lift_checks(i, CORPUS_CHECK_SRC).value];
+            let checks = vec![lift_predicts(i, CORPUS_PREDICT_SRC).value];
             // A dynamic command word (`$cmd …`) is ⊤-rejected by the parser ⇒ a `Top`
             // CFG node, not a `Command` — classify treats that as Opaque. Mirror it.
             let Some(node) = built
@@ -2348,7 +2348,7 @@ command__check() {
         let parsed = dorc_syntax::parse("apt-get install -y \"$(date)\"");
         let built = cfg::build(&parsed.value);
         let value = analyze(&built.value, &parsed.value, &mut i);
-        let checks = vec![lift_checks(&mut i, CORPUS_CHECK_SRC).value];
+        let checks = vec![lift_predicts(&mut i, CORPUS_PREDICT_SRC).value];
         let mut diags: Vec<Diagnostic> = Vec::new();
         // The same precompute classify runs (member families + effects + the deferred cmdsub-⊤
         // records), then the same post-mint finalize — so this exercises the real wiring.
@@ -2485,8 +2485,8 @@ command__check() {
         // disagreement is disclosed. Asserts the registered code FIRES from production, not merely
         // that the variant is constructed (the x3a-B/t-1 vacuity).
         let mut i = Interner::default();
-        let check_src = "\
-apt_get__check() {
+        let predict_src = "\
+apt_get__predict() {
    verb=$1; shift
    pkg : package = \"$1\"
    probe-pkg \"$pkg\"
@@ -2498,7 +2498,7 @@ apt_get__check() {
         let install = i.intern("install");
         let mut idx = KindIndex::default();
         idx.add_effect(apt, install, widget, installed, ValueClaim::Establish);
-        let checks = vec![lift_checks(&mut i, check_src).value];
+        let checks = vec![lift_predicts(&mut i, predict_src).value];
 
         let parsed = dorc_syntax::parse("apt-get install nginx");
         let built = cfg::build(&parsed.value);

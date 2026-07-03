@@ -1,6 +1,6 @@
 //! `check` — the command-keyed `check()` contract (19H §2 / 202 §1 face-check).
 //!
-//! An oracle ships one sh function per command-family, `<provider>__check`, that
+//! An oracle ships one sh function per command-family, `<provider>__predict`, that
 //! argparses the command the way the real tool does, inline-annotates which value
 //! is which named kind, and is itself the read-only probe body. This module is the
 //! *static half* (202 §2.7's "read twice"): a dedicated mini-parser for the
@@ -31,7 +31,7 @@
 //! entity (by tracing the oracle's own argparse); it never branches on what the
 //! entity's text *means*. Kind strings are opaque coordination handles.
 
-use dorc_core::diag::{CheckOutOfDialect, CheckUnterminated, Diag, DiagCode as Code};
+use dorc_core::diag::{Diag, DiagCode as Code, PredictOutOfDialect, PredictUnterminated};
 use dorc_core::{Diagnostic, Interner, Span};
 
 mod ast;
@@ -40,20 +40,20 @@ mod eval;
 mod lexer;
 mod parser;
 
-pub use ast::{Check, CheckSet, Mark, MarkKind, MarkTarget, Stmt};
-pub use derive::{DerivedEffect, DerivedVouch, ValueClaim, derive_check};
+pub use ast::{Mark, MarkKind, MarkTarget, Predict, PredictSet, Stmt};
+pub use derive::{DerivedEffect, DerivedVouch, ValueClaim, derive_predict};
 pub use eval::{Resolution, Resolved, ResolvedEntity, TopReason, evaluate};
-pub use parser::lift_checks;
+pub use parser::lift_predicts;
 
 /// Strip an authored check funcdef to runnable sh — the STRIP-ONLY pass (R1c / 23D §1).
-/// It does exactly two things: rewrites a period-form name (`apt-get.check`) to the
-/// mangled `<provider>__check` the engine keys on, and removes the inline type
+/// It does exactly two things: rewrites a period-form name (`apt-get.predict`) to the
+/// mangled `<provider>__predict` the engine keys on, and removes the inline type
 /// annotations (the identity `name : kind = value` → `name=value`; a trailing effect
 /// mark `cmd … : kind:entity.prop` → just `cmd …`; a bare mark `: kind` → the `:` null
 /// command). Nothing else changes — the author's other bytes (whitespace, `while`/`case`,
 /// redirs, comments inside the body) are preserved verbatim.
 ///
-/// `src` is the whole oracle source; [`Check::span`] locates the funcdef within it. The
+/// `src` is the whole oracle source; [`Predict::span`] locates the funcdef within it. The
 /// result is `dash -n`-clean (the period name is the only dash-rejected form; annotations
 /// are dash-valid-but-runtime-wrong, so removing them fixes the shipped probe's runtime,
 /// not its syntax) and **byte-stable** — a deterministic function of its input, so a
@@ -64,7 +64,7 @@ pub use parser::lift_checks;
 /// survives. `inv-no-throw`: a non-char-boundary span is skipped rather than panicking
 /// (the ASCII sh corpus never hits this).
 #[must_use]
-pub fn strip_check(src: &str, check: &Check, interner: &Interner) -> String {
+pub fn strip_predict(src: &str, check: &Predict, interner: &Interner) -> String {
     let base = check.span.lo.0 as usize;
     let funcdef = src
         .get(base..check.span.hi.0 as usize)
@@ -81,14 +81,14 @@ pub fn strip_check(src: &str, check: &Check, interner: &Interner) -> String {
         )
     };
 
-    // 1. Funcname: `apt-get.check` / `apt_get__check` → `apt_get__check` (idempotent on
+    // 1. Funcname: `apt-get.predict` / `apt_get__predict` → `apt_get__predict` (idempotent on
     //    the already-mangled form).
     let (nlo, nhi) = rel(check.name_span);
     edits.push((
         nlo,
         nhi,
         format!(
-            "{}__check",
+            "{}__predict",
             crate::to_funcname_segment(interner.resolve(check.provider))
         ),
     ));
@@ -170,10 +170,10 @@ fn collect_strip_edits(
 /// Map a check function's provider-name fragment to the command word: `_` → `-`
 /// (`apt_get` ⇒ `apt-get`). The **single** home of the underscore↔hyphen convention
 /// (204 §3, the `tc-*`-flagged provider-name rule): the dialect parser keys a
-/// [`CheckSet`] by the mapped name, AND the engine's wiring (`analysis::effect`)
+/// [`PredictSet`] by the mapped name, AND the engine's wiring (`analysis::effect`)
 /// re-derives the provider symbol from a book's command word through this same
 /// function, so the book's command-word interning, `KindIndex`'s `ProviderId`
-/// interning, and the `CheckSet` key all agree (204 §6 seam #2). Exported so the
+/// interning, and the `PredictSet` key all agree (204 §6 seam #2). Exported so the
 /// mapping is never duplicated; a future provider-name escape lands here alone.
 ///
 /// **Lossy** (a literal `_` in a command name cannot be expressed); flagged `tc-*`.
@@ -186,7 +186,7 @@ pub fn map_provider_name(raw: &str) -> String {
 
 /// The conventional local variable name an oracle assigns the verb to (`verb=$1`,
 /// 19H §2.1/§2.5). Recognizing it is a *structural convention in the oracle's own
-/// code* (like the `__check` suffix or the annotation shape), NOT decoding entity
+/// code* (like the `__predict` suffix or the annotation shape), NOT decoding entity
 /// text — so it does not breach `inv-referent-agnostic`. Whether `verb` should be a
 /// reserved dialect name is a `tc-*`-shaped cross-cutting question (flagged in the
 /// build report); the conservative local choice is: if the oracle does not use this
@@ -194,10 +194,10 @@ pub fn map_provider_name(raw: &str) -> String {
 const VERB_BINDING: &str = "verb";
 
 /// A per-function lift failure: the named function is in the file but its body is
-/// out of dialect. Fail-soft (`inv-no-throw`): the function contributes no [`Check`]
+/// out of dialect. Fail-soft (`inv-no-throw`): the function contributes no [`Predict`]
 /// and the rest of the file still lifts.
 ///
-/// `is_unterminated`: selects `CheckUnterminated` vs `CheckOutOfDialect`. Both carry
+/// `is_unterminated`: selects `PredictUnterminated` vs `PredictOutOfDialect`. Both carry
 /// the message as `detail`. The `span` is ALWAYS real: every caller that previously had
 /// no token (an EOF give-up — an unterminated body, a `fail_here`/`true_with` at
 /// end-of-input) now synthesizes a zero-width end-of-input span via
@@ -211,7 +211,7 @@ const VERB_BINDING: &str = "verb";
 /// byte-identical to the prior `Diagnostic::error(…)` form — but a future registry edit now
 /// actually takes effect instead of being a silent no-op.
 ///
-/// The two `Code::Check…(…)` payloads are spelled as LITERALS at each `Diag::new` site (not
+/// The two `Code::Predict…(…)` payloads are spelled as LITERALS at each `Diag::new` site (not
 /// built once into a variable and threaded), so the `diag_tidy` constructed-scan actually SEES
 /// these emits — a `Diag::new(var, …)` form would be invisible to the needle-shape scanner (t-4
 /// non-literal bypass) and read as dead catalog. Verbose-on-purpose; the literals are the gate's
@@ -228,14 +228,14 @@ pub(crate) fn lift_failure(
     // exactly. Severity/code/span all flow from the typed value (severity via `registry`).
     let diag = if is_unterminated {
         Diag::new(
-            Code::CheckUnterminated(CheckUnterminated {
+            Code::PredictUnterminated(PredictUnterminated {
                 detail: msg.clone(),
             }),
             span,
         )
     } else {
         Diag::new(
-            Code::CheckOutOfDialect(CheckOutOfDialect {
+            Code::PredictOutOfDialect(PredictOutOfDialect {
                 detail: msg.clone(),
             }),
             span,
@@ -250,25 +250,25 @@ mod strip_tests {
     //! R1c: the STRIP-ONLY pass. Every fixture-shaped body strips to runnable sh whose
     //! only deltas from the author are the funcname rewrite and annotation removal, and
     //! the strip is byte-stable (a golden built from it never churns).
-    use super::{lift_checks, strip_check};
+    use super::{lift_predicts, strip_predict};
     use dorc_core::Interner;
 
     fn strip_one(src: &str) -> String {
         let mut i = Interner::default();
-        let out = lift_checks(&mut i, src);
+        let out = lift_predicts(&mut i, src);
         assert!(out.diags.is_empty(), "clean lift: {:?}", out.diags);
         let provider = out.value.providers().next().expect("one provider");
         let check = out.value.get(provider).expect("the check");
-        strip_check(src, check, &i)
+        strip_predict(src, check, &i)
     }
 
-    /// The flagship strip (23A §1): `apt-get.check` → `apt_get__check` and
+    /// The flagship strip (23A §1): `apt-get.predict` → `apt_get__predict` and
     /// `pkg : package = "$1"` → `pkg="$1"` — and NOTHING else. Byte-exact against the
     /// hand-authored flagship golden's apply preamble.
     #[test]
     fn flagship_body_strips_to_the_golden_preamble() {
         let authored = "\
-apt-get.check() {
+apt-get.predict() {
    while [ \"${1#-}\" != \"$1\" ]; do shift; done
    verb=$1; shift
    while [ \"${1#-}\" != \"$1\" ]; do shift; done
@@ -276,7 +276,7 @@ apt-get.check() {
    if [ \"$2\" = \"\" ]; then dpkg-query -W \"$pkg\" >/dev/null 2>&1; fi
 }";
         let expected = "\
-apt_get__check() {
+apt_get__predict() {
    while [ \"${1#-}\" != \"$1\" ]; do shift; done
    verb=$1; shift
    while [ \"${1#-}\" != \"$1\" ]; do shift; done
@@ -290,7 +290,7 @@ apt_get__check() {
     /// probe command that ships is the bare `dpkg-query …`.
     #[test]
     fn trailing_mark_is_removed_leaving_the_bare_command() {
-        let authored = "apt-get.check() { pkg : package = \"$1\"; dpkg-query -W \"$pkg\" : package:\"$pkg\".installed; }";
+        let authored = "apt-get.predict() { pkg : package = \"$1\"; dpkg-query -W \"$pkg\" : package:\"$pkg\".installed; }";
         let stripped = strip_one(authored);
         assert!(
             stripped.contains("dpkg-query -W \"$pkg\";")
@@ -302,7 +302,7 @@ apt_get__check() {
             "no annotation residue: {stripped}"
         );
         assert!(
-            stripped.starts_with("apt_get__check()"),
+            stripped.starts_with("apt_get__predict()"),
             "funcname mangled: {stripped}"
         );
     }
@@ -310,7 +310,7 @@ apt_get__check() {
     /// A bare mark (POISON/ACK/vouch) becomes the `:` null command — inert, dash-clean.
     #[test]
     fn bare_mark_becomes_null_command() {
-        let authored = "apt-get.check() { pkg : package = \"$1\"; dpkg-query -W \"$pkg\"; : apt-get:install~; }";
+        let authored = "apt-get.predict() { pkg : package = \"$1\"; dpkg-query -W \"$pkg\"; : apt-get:install~; }";
         let stripped = strip_one(authored);
         assert!(
             !stripped.contains("apt-get:install"),
@@ -326,11 +326,14 @@ apt_get__check() {
     /// Byte-stability (R1c): strip is a deterministic function of its input.
     #[test]
     fn strip_is_byte_stable() {
-        let authored = "systemctl.check() { verb=$1; shift; svc : service = \"$1\"; case $verb in enable) systemctl is-enabled -- \"$svc\" : service:\"$svc\".enabled ;; esac; }";
+        let authored = "systemctl.predict() { verb=$1; shift; svc : service = \"$1\"; case $verb in enable) systemctl is-enabled -- \"$svc\" : service:\"$svc\".enabled ;; esac; }";
         assert_eq!(strip_one(authored), strip_one(authored));
         let stripped = strip_one(authored);
-        assert!(stripped.starts_with("systemctl__check()"));
-        assert!(!stripped.contains(".check("), "no period name: {stripped}");
+        assert!(stripped.starts_with("systemctl__predict()"));
+        assert!(
+            !stripped.contains(".predict("),
+            "no period name: {stripped}"
+        );
         assert!(
             !stripped.contains(": service:"),
             "no establish annotation: {stripped}"
@@ -344,8 +347,8 @@ apt_get__check() {
 
 #[cfg(test)]
 mod lift_failure_tests {
-    use super::{Code, lift_checks, lift_failure};
-    use dorc_core::diag::{CheckOutOfDialect, CheckUnterminated, registry};
+    use super::{Code, lift_failure, lift_predicts};
+    use dorc_core::diag::{PredictOutOfDialect, PredictUnterminated, registry};
     use dorc_core::{BytePos, Interner, Span};
 
     /// The emit-vs-registry AGREEMENT pin (x3a-5/t-4 fix, `224` §10): `lift_failure` must source
@@ -366,12 +369,12 @@ mod lift_failure_tests {
     fn lift_failure_severity_agrees_with_registry() {
         let mut interner = Interner::default();
         let span = Span::new(BytePos(3), BytePos(7));
-        let want_unterm = registry(&Code::CheckUnterminated(CheckUnterminated {
+        let want_unterm = registry(&Code::PredictUnterminated(PredictUnterminated {
             detail: String::new(),
         }))
         .severity;
         let d = lift_failure(true, span, "unterminated", &mut interner);
-        assert_eq!(d.code.0, "check-unterminated");
+        assert_eq!(d.code.0, "predict-unterminated");
         assert_eq!(
             d.severity, want_unterm,
             "unterminated severity must equal the registry's, not a hardcoded value"
@@ -382,12 +385,12 @@ mod lift_failure_tests {
             "message is the bare text (no body added)"
         );
 
-        let want_dialect = registry(&Code::CheckOutOfDialect(CheckOutOfDialect {
+        let want_dialect = registry(&Code::PredictOutOfDialect(PredictOutOfDialect {
             detail: String::new(),
         }))
         .severity;
         let d = lift_failure(false, span, "out of dialect", &mut interner);
-        assert_eq!(d.code.0, "check-out-of-dialect");
+        assert_eq!(d.code.0, "predict-out-of-dialect");
         assert_eq!(
             d.severity, want_dialect,
             "out-of-dialect severity must equal the registry's, not a hardcoded value"
@@ -399,15 +402,15 @@ mod lift_failure_tests {
     /// An EOF give-up now carries a REAL zero-width end-of-input span, never a span-less mint
     /// (human ruling 22-q1: point the UI at end-of-file for a truncated/chopped body). Pins the
     /// observable change — a truncated check body's diagnostic gains a `Some(span)` where it
-    /// previously had `None` — through the public [`lift_checks`] entry, so it exercises the real
+    /// previously had `None` — through the public [`lift_predicts`] entry, so it exercises the real
     /// `eof_span()`-via-`fail_here`/`true_with` wiring rather than a hand-built span.
     #[test]
     fn eof_give_up_carries_a_real_end_span() {
         let mut interner = Interner::default();
         // An unterminated function body: the lexer runs out of tokens inside `parse_block`, so
         // `true_with` fires at EOF (the pre-22-q1 span-less case).
-        let src = "x__check() { x : K = \"$1\"";
-        let lifted = lift_checks(&mut interner, src);
+        let src = "x__predict() { x : K = \"$1\"";
+        let lifted = lift_predicts(&mut interner, src);
         let diag = lifted
             .diags
             .first()
@@ -431,41 +434,41 @@ mod lift_failure_tests {
         );
     }
 
-    /// MUST-EMIT pin (x3n PINNED-BY-NOTHING, B8): drive the production `lift_checks` path for an
-    /// UNTERMINATED body and pin the registered code `check-unterminated`. The existing
+    /// MUST-EMIT pin (x3n PINNED-BY-NOTHING, B8): drive the production `lift_predicts` path for an
+    /// UNTERMINATED body and pin the registered code `predict-unterminated`. The existing
     /// [`eof_give_up_carries_a_real_end_span`] drives the same path but pins only the SPAN, and
     /// [`lift_failure_severity_agrees_with_registry`] pins the code via a DIRECT `lift_failure`
     /// call (a construction, the x3a-B/t-1 vacuity). This closes the gap: the code identity is
     /// asserted on a real source-driven give-up.
     #[test]
-    fn unterminated_check_body_emits_check_unterminated_from_lift() {
+    fn unterminated_predict_body_emits_predict_unterminated_from_lift() {
         let mut i = Interner::default();
-        let lifted = lift_checks(&mut i, "x__check() { x : K = \"$1\"");
+        let lifted = lift_predicts(&mut i, "x__predict() { x : K = \"$1\"");
         assert!(
             lifted
                 .diags
                 .iter()
-                .any(|d| d.code.0 == "check-unterminated"),
-            "an unterminated check body must disclose check-unterminated: {:?}",
+                .any(|d| d.code.0 == "predict-unterminated"),
+            "an unterminated check body must disclose predict-unterminated: {:?}",
             lifted.diags
         );
     }
 
-    /// MUST-EMIT pin (x3n PINNED-BY-NOTHING, B8): drive `lift_checks` for an OUT-OF-DIALECT body
-    /// and pin `check-out-of-dialect`. The check dialect is a strict subset of sh with no `for`
+    /// MUST-EMIT pin (x3n PINNED-BY-NOTHING, B8): drive `lift_predicts` for an OUT-OF-DIALECT body
+    /// and pin `predict-out-of-dialect`. The check dialect is a strict subset of sh with no `for`
     /// loop, so a `for` in the body is rejected via `fail_here` (the `is_unterminated == false`
     /// path). No prior test drove this give-up from source — only the direct-construction
     /// `lift_failure(false, …)` did. Pins the registered code on a real source-driven path.
     #[test]
-    fn out_of_dialect_check_body_emits_check_out_of_dialect_from_lift() {
+    fn out_of_dialect_predict_body_emits_predict_out_of_dialect_from_lift() {
         let mut i = Interner::default();
-        let lifted = lift_checks(&mut i, "x__check() { for y in a b; do shift; done; }");
+        let lifted = lift_predicts(&mut i, "x__predict() { for y in a b; do shift; done; }");
         assert!(
             lifted
                 .diags
                 .iter()
-                .any(|d| d.code.0 == "check-out-of-dialect"),
-            "a `for` loop (outside the check dialect) must disclose check-out-of-dialect: {:?}",
+                .any(|d| d.code.0 == "predict-out-of-dialect"),
+            "a `for` loop (outside the check dialect) must disclose predict-out-of-dialect: {:?}",
             lifted.diags
         );
     }

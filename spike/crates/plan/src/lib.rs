@@ -704,7 +704,7 @@ pub struct Plan {
 // the per-fact dedup of spike-2 (which collapsed them) is gone.
 // ===========================================================================
 
-/// What kind of site a [`ProbeCheck`] is — the discriminant the wrong-concrete
+/// What kind of site a [`ProbePredict`] is — the discriminant the wrong-concrete
 /// firewall keys on (202 §3 / 20C §2 / task-D2). The two site-classes carry
 /// **different observables in their record-rc**, and conflating them is the
 /// disaster class:
@@ -733,9 +733,9 @@ pub enum ProbeSiteKind {
 /// rendered probe, when run, emits a results-record per site (`inv-site-keyed-results`).
 ///
 /// R3 (23D §1 / rul-ternary-verdict — the check IS the oracle): `sh` is the STRIPPED
-/// check funcdef (`<provider>__check() { … }`), shipped strip-only (annotations removed,
-/// nothing else changed — [`dorc_oracle::check::strip_check`]) and invoked per-site with
-/// the site's resolved argv (`<provider>__check install -y nginx`). The check's own
+/// check funcdef (`<provider>__predict() { … }`), shipped strip-only (annotations removed,
+/// nothing else changed — [`dorc_oracle::predict::strip_predict`]) and invoked per-site with
+/// the site's resolved argv (`<provider>__predict install -y nginx`). The check's own
 /// argparse resolves the entity from that argv (identical rc to a `dpkg-query` package
 /// site, and the AUTHORED command where it diverges — `dpkg -s --`, the firewall's
 /// non-pipeline re-spelling, per ask-probe-divergence RULED (b)). The check IS the
@@ -745,7 +745,7 @@ pub enum ProbeSiteKind {
 /// command), so the results-record keys back to exactly this program point. `fact` is
 /// the resolved cell (display/provenance + the cli's site→fact verdict re-key).
 #[derive(Debug, Clone)]
-pub struct ProbeCheck {
+pub struct ProbePredict {
     /// The stable command-site identity (`inv-site-keyed-results`): the same
     /// [`LeafId`] the apply plan assigns the source command. Two same-command sites
     /// carry distinct ids.
@@ -761,7 +761,7 @@ pub struct ProbeCheck {
     /// Establish-class or Query-class — the firewall discriminant ([`ProbeSiteKind`]).
     pub site_kind: ProbeSiteKind,
     /// R3: the book command word (argv[0]) — the provider whose stripped `check()` this
-    /// site ships. Its funcname (`<provider>__check`, [`check_fn_name`]) keys the render's
+    /// site ships. Its funcname (`<provider>__predict`, [`predict_fn_name`]) keys the render's
     /// wrapper dedup, re-emitted when the body changes (a provider with >1 check body —
     /// `apt-get` as both `package` and `pkgindex`).
     pub provider: Symbol,
@@ -769,7 +769,7 @@ pub struct ProbeCheck {
     /// resolved literal — the check's own argparse resolves the entity from it. F-quoted
     /// per word at render (`inv-kfail` both directions — one inert positional each).
     pub argv: Vec<Symbol>,
-    /// R3: the STRIPPED check funcdef (`<provider>__check() { … }`), shipped verbatim
+    /// R3: the STRIPPED check funcdef (`<provider>__predict() { … }`), shipped verbatim
     /// (strip-only — the check IS the oracle). Re-defined before an invocation whose
     /// provider's body differs from the last emitted (sh's last-writer-wins + top-to-bottom
     /// exec makes each invocation see its own body).
@@ -789,25 +789,25 @@ pub struct ProbeCheck {
 #[derive(Debug, Clone, Default)]
 pub struct ProbePlan {
     /// The resolvable sites' checks, in site-id order.
-    pub checks: Vec<ProbeCheck>,
+    pub checks: Vec<ProbePredict>,
     /// The un-resolvable sites' ids (rendered as `skip-unresolvable` comments).
     pub unresolvable: Vec<LeafId>,
 }
 
-/// The check-function name for a probed site's provider: `<provider>__check` (R3 /
+/// The check-function name for a probed site's provider: `<provider>__predict` (R3 /
 /// 23D §1 — the check IS the oracle, shipped strip-only under its own funcname). The
 /// book command word is normalised through the hyphen↔underscore provider convention
-/// ([`dorc_oracle::check::map_provider_name`] then [`dorc_oracle::to_funcname_segment`]),
+/// ([`dorc_oracle::predict::map_provider_name`] then [`dorc_oracle::to_funcname_segment`]),
 /// so it agrees byte-for-byte with the name
-/// [`strip_check`](dorc_oracle::check::strip_check) mangles the funcdef to (`apt-get` ⇒
-/// `apt_get__check`). Referent-agnostic: the name is passed to the host, never branched
-/// on. Two providers ⇒ two names (`apt_get__check` / `yum__check`, the seam); one
+/// [`strip_predict`](dorc_oracle::predict::strip_predict) mangles the funcdef to (`apt-get` ⇒
+/// `apt_get__predict`). Referent-agnostic: the name is passed to the host, never branched
+/// on. Two providers ⇒ two names (`apt_get__predict` / `yum__predict`, the seam); one
 /// provider with two check bodies (`apt-get` as `package` and `pkgindex`) shares the
 /// name — the render re-emits the body per invocation ([`ProbePlan::render_sh`]).
-fn check_fn_name(interner: &Interner, provider: Symbol) -> String {
+fn predict_fn_name(interner: &Interner, provider: Symbol) -> String {
     format!(
-        "{}__check",
-        dorc_oracle::to_funcname_segment(&dorc_oracle::check::map_provider_name(
+        "{}__predict",
+        dorc_oracle::to_funcname_segment(&dorc_oracle::predict::map_provider_name(
             interner.resolve(provider)
         )),
     )
@@ -837,8 +837,8 @@ impl ProbePlan {
     /// class is what will legitimately equate a guard's probe-rc with its site status).
     ///
     /// Emitted-function shape (R3 / 23D §1 — the check IS the oracle): the oracle's own
-    /// stripped `<provider>__check` funcdef, invoked **per site** with the site's full
-    /// resolved argv (`apt_get__check install -y nginx`). The check's argparse resolves
+    /// stripped `<provider>__predict` funcdef, invoked **per site** with the site's full
+    /// resolved argv (`apt_get__predict install -y nginx`). The check's argparse resolves
     /// the entity from that argv, so a multi-selector kind self-discriminates by verb-arm
     /// at runtime (no per-`(kind, selector)` wrapper). One provider with two distinct
     /// check bodies (`apt-get` as both `package` and `pkgindex`) re-emits each body
@@ -849,7 +849,7 @@ impl ProbePlan {
     pub fn render_sh(&self, interner: &Interner) -> String {
         let mut out = String::from(render::probe::header());
         // R3 (23D §1 — the check IS the oracle): emit each provider's stripped
-        // `<provider>__check` funcdef, then invoke it per SITE with the site's full argv +
+        // `<provider>__predict` funcdef, then invoke it per SITE with the site's full argv +
         // the self-report wrapper. The funcdef is deduped per funcname but RE-EMITTED
         // whenever the needed body differs from the one currently in scope: one provider
         // with two check bodies (`apt-get` as both `package` and `pkgindex`) ships each
@@ -858,7 +858,7 @@ impl ProbePlan {
         // routes through `render::probe` (task-R); this loop owns the re-emit bookkeeping.
         let mut defined: BTreeMap<String, &str> = BTreeMap::new();
         for check in &self.checks {
-            let fn_name = check_fn_name(interner, check.provider);
+            let fn_name = predict_fn_name(interner, check.provider);
             // The record's site key: `N` for a single-fact site, `N.M` for member M of an
             // in-loop Members family (item-4).
             let key = render::probe::site_key(check.site, check.member);
@@ -919,7 +919,7 @@ fn site_order<'a>(
 
 /// Compile the probe from the analysis result, keyed by command **site**
 /// (`inv-site-keyed-results`): each [`SkipClass::EstablishAmbient`] / resolvable-Query
-/// site becomes one [`ProbeCheck`] shipping its provider's stripped `<provider>__check`
+/// site becomes one [`ProbePredict`] shipping its provider's stripped `<provider>__predict`
 /// funcdef invoked with the site's argv (R3 / 23D §1 — the check IS the oracle). `ship_body`
 /// maps a site's (provider-word, argv-after-word0) to that stripped funcdef (the oracle seam
 /// the caller threads, so `plan` need not lift oracles itself); a site with a ⊤ argv word, or
@@ -962,7 +962,7 @@ pub fn compile_probe(
         // queries every member regardless of `self_reached` — that bit gates the apply-side
         // license, not what the probe needs to learn.)
         if let SkipClass::EstablishMembers { members, .. } = class {
-            push_member_checks(
+            push_member_predicts(
                 &mut checks,
                 &mut unresolvable,
                 site,
@@ -974,9 +974,9 @@ pub fn compile_probe(
             continue;
         }
         // arch-2 (i-4): an inlined CALL ships one `site N.M` check per spliced body establish
-        // (see `push_inline_checks` for the all-or-nothing probe-ability).
+        // (see `push_inline_predicts` for the all-or-nothing probe-ability).
         if let SkipClass::InlineCall { sites } = class {
-            push_inline_checks(
+            push_inline_predicts(
                 &mut checks,
                 &mut unresolvable,
                 site,
@@ -987,7 +987,7 @@ pub fn compile_probe(
             continue;
         }
         // Both an EstablishAmbient and a (resolvable) Query site ship a check — each is
-        // probe-resolvable iff the provider's `<provider>__check` resolves the site's argv
+        // probe-resolvable iff the provider's `<provider>__predict` resolves the site's argv
         // (R3 / 23D §1). The `site_kind` discriminant rides along so the cli's firewall
         // knows whether the record-rc is the probe command's (Establish ⇒ never fold) or
         // the guard's own (Query ⇒ fold iff valid). A written establish, an inverted
@@ -1005,7 +1005,7 @@ pub fn compile_probe(
             // ⊤ command word or operand, or no check resolving this argv, ⇒ un-shippable
             // (no concrete invocation ⇒ `can't-probe ⇒ can't-elide`, `kFAIL-perform`).
             Some((fact, site_kind)) => match ship_for_argv(&value.argv_values(node), &ship_body) {
-                Some((provider, argv, sh)) => checks.push(ProbeCheck {
+                Some((provider, argv, sh)) => checks.push(ProbePredict {
                     site,
                     member: None,
                     fact,
@@ -1025,7 +1025,7 @@ pub fn compile_probe(
     }
 }
 
-/// R3: resolve the (provider-word, argv-after-word0, stripped `<provider>__check` funcdef)
+/// R3: resolve the (provider-word, argv-after-word0, stripped `<provider>__predict` funcdef)
 /// a resolvable site ships, from its resolved `argv` ([`ValueFlow::argv_values`], or a
 /// per-member / per-inline-body argv). The command word and every operand must be a
 /// concrete literal — a ⊤ command word (a cmdsub/dynamic provider) or a ⊤ operand yields
@@ -1053,13 +1053,13 @@ fn ship_for_argv(
 }
 
 /// Compile the per-member checks for an in-loop MEMBERS establish site (item-4): one
-/// [`ProbeCheck`] per member, each carrying its `member` index and per-member cell. ALL
+/// [`ProbePredict`] per member, each carrying its `member` index and per-member cell. ALL
 /// members must have a declared probe body, or the WHOLE site is unresolvable — the
 /// all-or-nothing in-loop license (item-3) cannot elide a partial-member set, so a
 /// missing probe on any member kills the site (`can't-probe ⇒ can't-elide`). The records
-/// these emit are sub-keyed `site <leafid>.<member-idx>` ([`ProbeCheck::member`]).
-fn push_member_checks(
-    checks: &mut Vec<ProbeCheck>,
+/// these emit are sub-keyed `site <leafid>.<member-idx>` ([`ProbePredict::member`]).
+fn push_member_predicts(
+    checks: &mut Vec<ProbePredict>,
     unresolvable: &mut Vec<LeafId>,
     site: LeafId,
     node: CfgNodeId,
@@ -1086,7 +1086,7 @@ fn push_member_checks(
             unresolvable.push(site);
             return;
         };
-        staged.push(ProbeCheck {
+        staged.push(ProbePredict {
             site,
             member: Some(u32::try_from(idx).unwrap_or(u32::MAX)),
             fact: *fact,
@@ -1100,7 +1100,7 @@ fn push_member_checks(
 }
 
 /// Compile the per-body-site checks for an inlined function-CALL (arch-2, brk-2, `i-4`): one
-/// [`ProbeCheck`] per effect-bearing/probeable spliced body site, each carrying its body-site
+/// [`ProbePredict`] per effect-bearing/probeable spliced body site, each carrying its body-site
 /// index as `member` (the `site N.M` sub-record, M = the index into the call's body-site list)
 /// and the body site's resolved cell (positionals bound at the call, `i-2`). An `EstablishAmbient`
 /// body site is an Establish-class record; a `QueryResolvable` body site is a Query-class record
@@ -1112,8 +1112,8 @@ fn push_member_checks(
 /// (`can't-probe ⇒ can't-elide`). A Query body site with no probe body is NOT a blocker (it does
 /// not gate the call's elision — the call elides on the body's establishes), so it is simply
 /// omitted; the records are staged and committed only if no establish is un-probeable.
-fn push_inline_checks(
-    checks: &mut Vec<ProbeCheck>,
+fn push_inline_predicts(
+    checks: &mut Vec<ProbePredict>,
     unresolvable: &mut Vec<LeafId>,
     site: LeafId,
     sites: &[InlineSite],
@@ -1133,7 +1133,7 @@ fn push_inline_checks(
                     unresolvable.push(site);
                     return;
                 };
-                staged.push(ProbeCheck {
+                staged.push(ProbePredict {
                     site,
                     member,
                     fact: *fact,
@@ -1147,7 +1147,7 @@ fn push_inline_checks(
                 // A read-only guard: ship its check if resolvable (it does NOT gate the call's
                 // elision, so an un-shippable guard is simply omitted, never a blocker).
                 if let Some((provider, args, sh)) = ship_for_argv(&body_argv, ship_body) {
-                    staged.push(ProbeCheck {
+                    staged.push(ProbePredict {
                         site,
                         member,
                         fact: *fact,
@@ -2144,8 +2144,8 @@ mod tests {
     /// `package` with a `[ "$2" = "" ]` multi-operand refusal). Annotation kinds match
     /// the effect-map's, so the kind-agreement rule never fires. Lifted with the test's
     /// interner so provider symbols match the book's command words (204 seam #2).
-    const CORPUS_CHECK_SRC: &str = r#"
-apt_get__check() {
+    const CORPUS_PREDICT_SRC: &str = r#"
+apt_get__predict() {
    while [ "${1#-}" != "$1" ]; do shift; done
    verb=$1; shift
    case $verb in
@@ -2158,18 +2158,18 @@ apt_get__check() {
 }
 "#;
 
-    /// R3 test seam: resolve+strip the corpus `apt_get__check` for a site's (provider, argv),
-    /// the same resolution the cli's `ship_check_body` runs — the FIRST check whose provider
+    /// R3 test seam: resolve+strip the corpus `apt_get__predict` for a site's (provider, argv),
+    /// the same resolution the cli's `ship_predict_body` runs — the FIRST check whose provider
     /// matches and whose argparse resolves this argv, stripped to its runnable funcdef. Returns
     /// `None` when no check resolves (an un-oracled provider / a refused argv), so a test can
     /// spell "un-probeable" by giving a provider the corpus does not model.
     fn ship_corpus(
-        checks: &[dorc_oracle::check::CheckSet],
+        checks: &[dorc_oracle::predict::PredictSet],
         interner: &Interner,
         provider: Symbol,
         argv: &[Symbol],
     ) -> Option<String> {
-        use dorc_oracle::check::{Resolution, evaluate, map_provider_name, strip_check};
+        use dorc_oracle::predict::{Resolution, evaluate, map_provider_name, strip_predict};
         let want = map_provider_name(interner.resolve(provider));
         let arg_texts: Vec<String> = argv
             .iter()
@@ -2183,7 +2183,7 @@ apt_get__check() {
                 }
                 let Some(check) = cs.get(cp) else { continue };
                 if matches!(evaluate(check, &arg_refs), Resolution::Resolved(_)) {
-                    return Some(strip_check(CORPUS_CHECK_SRC, check, interner));
+                    return Some(strip_predict(CORPUS_PREDICT_SRC, check, interner));
                 }
             }
         }
@@ -2215,7 +2215,7 @@ apt_get__check() {
     /// fact-keyed tests of spike-2 could not exercise `site_order`.
     ///
     /// `probeable` picks whether the corpus apt check ships (R3: the whole stripped
-    /// `apt_get__check` funcdef, invoked per-site with the site's argv). `true` ⇒ every
+    /// `apt_get__predict` funcdef, invoked per-site with the site's argv). `true` ⇒ every
     /// site the apt argparse resolves is checked; `false` ⇒ the ship closure returns `None`
     /// for all, spelling "un-probeable" (⇒ all sites unresolvable). A provider the corpus
     /// does not model (`systemctl`) is un-probeable regardless (no check resolves it).
@@ -2225,7 +2225,7 @@ apt_get__check() {
         let parsed = dorc_syntax::parse(src);
         let cfg = dorc_analysis::cfg::build(&parsed.value).value;
         let value = dorc_analysis::value::analyze(&cfg, &parsed.value, &mut i);
-        let checks = vec![dorc_oracle::check::lift_checks(&mut i, CORPUS_CHECK_SRC).value];
+        let checks = vec![dorc_oracle::predict::lift_predicts(&mut i, CORPUS_PREDICT_SRC).value];
         let classes = dorc_analysis::effect::classify(
             &cfg,
             &value,
@@ -2338,9 +2338,9 @@ apt_get__check() {
     fn probe_render_self_reports_and_binds_operand() {
         // The WIRE (R3 / 23D §1 — the check IS the oracle): the rendered probe is
         // SELF-REPORTING — each resolvable site invokes the provider's stripped
-        // `<provider>__check` funcdef with the site's FULL argv, F-QUOTE'd per word, and
+        // `<provider>__predict` funcdef with the site's FULL argv, F-QUOTE'd per word, and
         // emits `site <id> effect=… rc=…` on stdout. The nullary verb (`apt-get update`)
-        // is invoked with just the verb as its argv (`apt_get__check 'update'`) — the
+        // is invoked with just the verb as its argv (`apt_get__predict 'update'`) — the
         // check's own argparse resolves the Singleton. The three sites share one provider
         // (`apt-get`), so its funcdef is emitted once and re-used (same body ⇒ no re-emit).
         let (probe, i) = probe_for_src(
@@ -2351,23 +2351,23 @@ apt_get__check() {
 
         // Full argv bound + single-quoted per word (F-QUOTE): the check argparses the entity.
         assert!(
-            rendered.contains("apt_get__check 'install' '-y' 'nginx'"),
+            rendered.contains("apt_get__predict 'install' '-y' 'nginx'"),
             "nginx site's argv bound + quoted:\n{rendered}"
         );
         assert!(
-            rendered.contains("apt_get__check 'install' '-y' 'curl'"),
+            rendered.contains("apt_get__predict 'install' '-y' 'curl'"),
             "curl site's argv bound + quoted:\n{rendered}"
         );
         // The provider funcdef is emitted exactly ONCE — three same-provider sites, one body.
         assert_eq!(
-            rendered.matches("apt_get__check() {").count(),
+            rendered.matches("apt_get__predict() {").count(),
             1,
             "apt-get's check funcdef emitted once, invoked per site:\n{rendered}"
         );
         // The nullary verb (`apt-get update`) is invoked with just the verb (no operand
         // exists) — the check argparse resolves the Singleton from `$verb`.
         assert!(
-            rendered.contains("apt_get__check 'update'; _rc=$?;"),
+            rendered.contains("apt_get__predict 'update'; _rc=$?;"),
             "a Singleton (nullary) site invokes the check with just its verb:\n{rendered}"
         );
         // Self-reporting: a site-keyed record printf per resolvable site (3 of them).
@@ -2400,7 +2400,7 @@ apt_get__check() {
         let (probe, i) = probe_for_src("PKG='my pkg'\napt-get install -y \"$PKG\"\n", true);
         let rendered = probe.render_sh(&i);
         assert!(
-            rendered.contains("apt_get__check 'install' '-y' 'my pkg'"),
+            rendered.contains("apt_get__predict 'install' '-y' 'my pkg'"),
             "spaced operand single-quoted to one arg:\n{rendered}"
         );
 
@@ -2411,7 +2411,7 @@ apt_get__check() {
         );
         let rendered = probe.render_sh(&i);
         assert!(
-            rendered.contains("apt_get__check 'install' '-y' 'x; touch /tmp/PWNED'"),
+            rendered.contains("apt_get__predict 'install' '-y' 'x; touch /tmp/PWNED'"),
             "metachar operand single-quoted ⇒ the `;` cannot split:\n{rendered}"
         );
         // No UNQUOTED metachar invocation leaked (the `;` only ever appears quoted).
@@ -2435,7 +2435,7 @@ apt_get__check() {
         let parsed = dorc_syntax::parse(src);
         let cfg = dorc_analysis::cfg::build(&parsed.value).value;
         let value = dorc_analysis::value::analyze(&cfg, &parsed.value, &mut i);
-        let checks = vec![dorc_oracle::check::lift_checks(&mut i, CORPUS_CHECK_SRC).value];
+        let checks = vec![dorc_oracle::predict::lift_predicts(&mut i, CORPUS_PREDICT_SRC).value];
         let classes = dorc_analysis::effect::classify(
             &cfg,
             &value,
@@ -2697,7 +2697,7 @@ apt_get__check() {
         let parsed = dorc_syntax::parse(src);
         let cfg = dorc_analysis::cfg::build(&parsed.value).value;
         let value = dorc_analysis::value::analyze(&cfg, &parsed.value, &mut i);
-        let checks = vec![dorc_oracle::check::lift_checks(&mut i, CORPUS_CHECK_SRC).value];
+        let checks = vec![dorc_oracle::predict::lift_predicts(&mut i, CORPUS_PREDICT_SRC).value];
         let classes = dorc_analysis::effect::classify(
             &cfg,
             &value,
@@ -2741,7 +2741,7 @@ apt_get__check() {
         let parsed = dorc_syntax::parse(src);
         let cfg = dorc_analysis::cfg::build(&parsed.value).value;
         let value = dorc_analysis::value::analyze(&cfg, &parsed.value, &mut i);
-        let checks = vec![dorc_oracle::check::lift_checks(&mut i, CORPUS_CHECK_SRC).value];
+        let checks = vec![dorc_oracle::predict::lift_predicts(&mut i, CORPUS_PREDICT_SRC).value];
         let classes = dorc_analysis::effect::classify(
             &cfg,
             &value,
@@ -2897,7 +2897,8 @@ apt_get__check() {
             let parsed = dorc_syntax::parse(src);
             let cfg = dorc_analysis::cfg::build(&parsed.value).value;
             let value = dorc_analysis::value::analyze(&cfg, &parsed.value, &mut i);
-            let checks = vec![dorc_oracle::check::lift_checks(&mut i, CORPUS_CHECK_SRC).value];
+            let checks =
+                vec![dorc_oracle::predict::lift_predicts(&mut i, CORPUS_PREDICT_SRC).value];
             let classes = dorc_analysis::effect::classify(
                 &cfg,
                 &value,
@@ -3228,7 +3229,7 @@ apt_get__check() {
         let parsed = dorc_syntax::parse(src);
         let cfg = dorc_analysis::cfg::build(&parsed.value).value;
         let value = dorc_analysis::value::analyze(&cfg, &parsed.value, &mut i);
-        let checks = vec![dorc_oracle::check::lift_checks(&mut i, CORPUS_CHECK_SRC).value];
+        let checks = vec![dorc_oracle::predict::lift_predicts(&mut i, CORPUS_PREDICT_SRC).value];
         let classes = dorc_analysis::effect::classify(
             &cfg,
             &value,

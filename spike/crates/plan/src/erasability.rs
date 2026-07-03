@@ -253,7 +253,7 @@ fn canon_fact(f: dorc_core::FactKey) -> String {
     format!("k{}#{}@{}", kind.0.as_u32(), selector.0.as_u32(), entity)
 }
 
-/// Canonicalize the probe plan — EXHAUSTIVE destructure of [`ProbePlan`] and each [`ProbeCheck`].
+/// Canonicalize the probe plan — EXHAUSTIVE destructure of [`ProbePlan`] and each [`ProbePredict`].
 /// Every field is decision-identity (the probe artifact's shape): the site key, member index,
 /// resolved fact, site-kind firewall discriminant, and the probe-body sh.
 fn canon_probe(probe: &ProbePlan) -> String {
@@ -264,7 +264,7 @@ fn canon_probe(probe: &ProbePlan) -> String {
     } = probe;
     let mut out = String::new();
     for c in checks {
-        let crate::ProbeCheck {
+        let crate::ProbePredict {
             site,
             member,
             fact,

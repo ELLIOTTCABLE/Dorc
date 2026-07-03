@@ -106,12 +106,12 @@ pub enum DiagCode {
     /// the annotation (declared identity) wins (204 §6 open seam).
     EffectKindDisagreement(EffectKindDisagreement),
 
-    // ── B4 mechanical sweep: oracle/check/parser.rs ─────────────────────────
+    // ── B4 mechanical sweep: oracle/predict/parser.rs ─────────────────────────
     /// A check function body contains a construct outside the check dialect (the check
     /// dialect is a strict subset of sh; out-of-dialect input is a lift failure).
-    CheckOutOfDialect(CheckOutOfDialect),
+    PredictOutOfDialect(PredictOutOfDialect),
     /// A check function body is structurally unterminated (a missing `;;` or `esac` etc.).
-    CheckUnterminated(CheckUnterminated),
+    PredictUnterminated(PredictUnterminated),
 }
 
 impl DiagCode {
@@ -137,8 +137,8 @@ impl DiagCode {
             DiagCode::CfgInlineRefused(_) => "cfg-inline-refused",
             DiagCode::CfgBuiltinShadowed(_) => "cfg-builtin-shadowed",
             DiagCode::EffectKindDisagreement(_) => "effect-kind-disagreement",
-            DiagCode::CheckOutOfDialect(_) => "check-out-of-dialect",
-            DiagCode::CheckUnterminated(_) => "check-unterminated",
+            DiagCode::PredictOutOfDialect(_) => "predict-out-of-dialect",
+            DiagCode::PredictUnterminated(_) => "predict-unterminated",
         }
     }
 }
@@ -307,18 +307,18 @@ pub struct EffectKindDisagreement {
     pub detail: String,
 }
 
-/// Payload of [`DiagCode::CheckOutOfDialect`]: a check function body uses a construct outside
+/// Payload of [`DiagCode::PredictOutOfDialect`]: a check function body uses a construct outside
 /// the check dialect. No `SiteId` (`site()` returns `None`).
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct CheckOutOfDialect {
+pub struct PredictOutOfDialect {
     /// The check parser's description (display only).
     pub detail: String,
 }
 
-/// Payload of [`DiagCode::CheckUnterminated`]: a check function body is structurally
+/// Payload of [`DiagCode::PredictUnterminated`]: a check function body is structurally
 /// unterminated. No `SiteId` (`site()` returns `None`).
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct CheckUnterminated {
+pub struct PredictUnterminated {
     /// The check parser's description (display only).
     pub detail: String,
 }
@@ -439,8 +439,8 @@ impl DiagCode {
             | DiagCode::CfgInlineRefused(_)
             | DiagCode::CfgBuiltinShadowed(_)
             | DiagCode::EffectKindDisagreement(_)
-            | DiagCode::CheckOutOfDialect(_)
-            | DiagCode::CheckUnterminated(_) => None,
+            | DiagCode::PredictOutOfDialect(_)
+            | DiagCode::PredictUnterminated(_) => None,
         }
     }
 }
@@ -690,13 +690,13 @@ pub fn registry(code: &DiagCode) -> CodeSpec {
             // PROPOSED floor: the annotation wins; the warning is informational.
             floor: Floor::None,
         },
-        // ── B4 sweep: oracle/check/parser.rs ─────────────────────────────────
-        DiagCode::CheckOutOfDialect(_) => CodeSpec {
+        // ── B4 sweep: oracle/predict/parser.rs ─────────────────────────────────
+        DiagCode::PredictOutOfDialect(_) => CodeSpec {
             severity: Severity::Error,
             // PROPOSED floor: an out-of-dialect check cannot be lifted — correctness gap.
             floor: Floor::WarnOrDeny,
         },
-        DiagCode::CheckUnterminated(_) => CodeSpec {
+        DiagCode::PredictUnterminated(_) => CodeSpec {
             severity: Severity::Error,
             // PROPOSED floor: an unterminated check body cannot be lifted — correctness gap.
             floor: Floor::WarnOrDeny,
@@ -762,7 +762,7 @@ impl Diag {
     /// [`DiagCode::CfgErexitUnknown`] (the errexit pass spans a region, not a point) and
     /// [`DiagCode::EffectKindDisagreement`] (the annotation-vs-effect-map check fires mid-resolution
     /// with no leaf).
-    /// (The two check-dialect codes [`DiagCode::CheckUnterminated`] / [`DiagCode::CheckOutOfDialect`]
+    /// (The two check-dialect codes [`DiagCode::PredictUnterminated`] / [`DiagCode::PredictOutOfDialect`]
     /// are NOT here: their EOF give-up synthesizes a zero-width end-of-input span and lowers through
     /// [`new`](Self::new) — human ruling 22-q1.) It is NOT a general escape hatch: [`new`](Self::new)
     /// with a real [`Span`] stays the only ordinary path, and `core/tests/diag_tidy.rs` hard-codes the
@@ -969,8 +969,8 @@ pub fn render_artifact_comment(diag: &Diag) -> Option<String> {
         | DiagCode::CfgInlineRefused(_)
         | DiagCode::CfgBuiltinShadowed(_)
         | DiagCode::EffectKindDisagreement(_)
-        | DiagCode::CheckOutOfDialect(_)
-        | DiagCode::CheckUnterminated(_) => None,
+        | DiagCode::PredictOutOfDialect(_)
+        | DiagCode::PredictUnterminated(_) => None,
     }
 }
 

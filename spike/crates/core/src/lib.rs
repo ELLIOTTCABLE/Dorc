@@ -443,7 +443,7 @@ pub enum Channel {
 /// The ONE Observable (`inv-one-observable`): a command's predicted output over
 /// [`Channel`]s. Replaces the round-19 three-way split — the `analysis::cfg::Observable`
 /// consumption enum, the standalone `core::Verdict`, and the bolted `Observed{verdict,
-/// rc}` (`19F`). The oracle `.check()` PREDICTS it; an enclosing context CONSUMES some
+/// rc}` (`19F`). The oracle `.predict()` PREDICTS it; an enclosing context CONSUMES some
 /// channels; a substitution REPRODUCES the consumed channels' predicted values, and is
 /// licensed only when the `Effect` channel predicts no-mutation.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

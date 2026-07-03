@@ -3,54 +3,54 @@
 //! The grammar IS the contract (`adj-dialect-parser`, note 203 §4). Anything
 //! outside it is a per-function lift failure: a [`Diagnostic`], never a panic
 //! (`inv-no-throw`), and the file's other checks still lift (fail-soft). The
-//! top-level entry [`lift_checks`] scans an oracle source for `<name>__check`
+//! top-level entry [`lift_predicts`] scans an oracle source for `<name>__predict`
 //! function definitions and parses each body; non-check top-level items (bare
 //! assignments, helper functions) are ignored — this module owns only the checks.
 
 use super::ast::{
-    Annotation, CaseArm, Check, CheckSet, Command, Mark, MarkKind, MarkTarget, Pattern, Stmt, Test,
-    TestOp, Word,
+    Annotation, CaseArm, Command, Mark, MarkKind, MarkTarget, Pattern, Predict, PredictSet, Stmt,
+    Test, TestOp, Word,
 };
 use super::lexer::{Tok, Token, lex};
 use super::{VERB_BINDING, lift_failure, map_provider_name};
 use dorc_core::{Carrier, Interner, Span, Symbol};
 use dorc_syntax::sem;
 
-/// The legacy provider-name suffix marking a command-keyed check (`apt_get__check`);
+/// The legacy provider-name suffix marking a command-keyed check (`apt_get__predict`);
 /// the provider before it maps `_` → `-` ([`map_provider_name`]).
-const CHECK_SUFFIX: &str = "__check";
+const PREDICT_SUFFIX: &str = "__predict";
 
-/// The period-form check suffix (233 / 23D §1: the opt-in oracle semaphore
-/// `<provider>.check()`). The provider before it is the LITERAL command word (it may
-/// carry `-`, e.g. `apt-get.check`), so no `_`→`-` mapping is applied. The strip (R1c)
-/// rewrites `<provider>.check` to the legacy `<mangled>__check` form the engine keys on
-/// (jc-strip-funcname: 23D/R1a write it `name_check`, but the engine's `CHECK_SUFFIX`
-/// and the flagship golden use `__check`; the `__check` convention is authoritative).
-const PERIOD_CHECK_SUFFIX: &str = ".check";
+/// The period-form predict suffix (233 / 23D §1: the opt-in oracle semaphore
+/// `<provider>.predict()`). The provider before it is the LITERAL command word (it may
+/// carry `-`, e.g. `apt-get.predict`), so no `_`→`-` mapping is applied. The strip (R1c)
+/// rewrites `<provider>.predict` to the legacy `<mangled>__predict` form the engine keys on
+/// (jc-strip-funcname: 23D/R1a write it `name_predict`, but the engine's `PREDICT_SUFFIX`
+/// and the flagship golden use `__predict`; the `__predict` convention is authoritative).
+const PERIOD_PREDICT_SUFFIX: &str = ".predict";
 
-/// Lift every `<provider>__check` function in `src` into a [`CheckSet`], interning
+/// Lift every `<provider>__predict` function in `src` into a [`PredictSet`], interning
 /// provider/local names through `interner`. Fail-soft (`inv-no-throw`): a body that
-/// is out of dialect yields a diagnostic and contributes no [`Check`]; the rest of
+/// is out of dialect yields a diagnostic and contributes no [`Predict`]; the rest of
 /// the file still lifts. Deterministic (`inv-determinism`): functions are processed
 /// in source order and the result is `BTreeMap`-backed.
 ///
 /// # Provider-name rule (underscore↔hyphen)
 ///
-/// The name before `__check` maps `_` → `-` to recover the command word
-/// (`apt_get__check` ⇒ `apt-get`, `command__check` ⇒ `command`). This is a
+/// The name before `__predict` maps `_` → `-` to recover the command word
+/// (`apt_get__predict` ⇒ `apt-get`, `command__predict` ⇒ `command`). This is a
 /// **lossy** mapping (a real `_` in a command name cannot be expressed) — flagged
 /// as a `tc-*`-shaped cross-cutting decision; chosen conservatively here (sh
 /// function names cannot contain `-`, so the mapping is the only way to name a
 /// hyphenated command, and hyphenated commands vastly outnumber underscored ones).
 /// A future wiring task may revisit; see this module's tests and the build report.
 #[must_use]
-pub fn lift_checks(interner: &mut Interner, src: &str) -> Carrier<CheckSet> {
+pub fn lift_predicts(interner: &mut Interner, src: &str) -> Carrier<PredictSet> {
     let tokens = lex(src);
     let mut p = Parser {
         toks: &tokens,
         pos: 0,
         interner,
-        out: Carrier::pure(CheckSet::default()),
+        out: Carrier::pure(PredictSet::default()),
         last_term: None,
     };
     p.parse_file();
@@ -61,7 +61,7 @@ struct Parser<'a> {
     toks: &'a [Token],
     pos: usize,
     interner: &'a mut Interner,
-    out: Carrier<CheckSet>,
+    out: Carrier<PredictSet>,
     /// Which terminator [`Parser::parse_block`] last consumed. Read by
     /// [`Parser::parse_if`] to tell an `else` branch from a bare `fi`.
     last_term: Option<BlockTerm>,
@@ -153,7 +153,7 @@ impl Parser<'_> {
 
     // --- file scan ----------------------------------------------------------
 
-    /// Scan top-level items, parsing each `<name>__check() { … }` and ignoring all
+    /// Scan top-level items, parsing each `<name>__predict() { … }` and ignoring all
     /// else. A malformed check body is diagnosed and skipped past its closing brace
     /// (best-effort resync) so a later check still parses.
     fn parse_file(&mut self) {
@@ -168,8 +168,8 @@ impl Parser<'_> {
             if self.pos >= self.toks.len() {
                 break;
             }
-            if let Some(name_info) = self.at_check_funcdef() {
-                self.parse_check_funcdef(name_info);
+            if let Some(name_info) = self.at_predict_funcdef() {
+                self.parse_predict_funcdef(name_info);
             } else {
                 // Not a check definition — skip this one top-level item. We do not
                 // diagnose (the file legitimately holds bare assignments / other
@@ -179,11 +179,11 @@ impl Parser<'_> {
         }
     }
 
-    /// If the cursor is at a check-function header — the period form `<provider>.check (`
-    /// (233 / 23D §1) or the legacy `<provider>__check (` — return the provider symbol +
+    /// If the cursor is at a check-function header — the period form `<provider>.predict (`
+    /// (233 / 23D §1) or the legacy `<provider>__predict (` — return the provider symbol +
     /// the name span. Does not consume. The period form's provider is the literal command
     /// word (may hold `-`); the legacy form's maps `_` → `-` ([`map_provider_name`]).
-    fn at_check_funcdef(&mut self) -> Option<CheckHeader> {
+    fn at_predict_funcdef(&mut self) -> Option<PredictHeader> {
         let Some(Tok::Word {
             lexeme,
             single_quoted,
@@ -195,14 +195,14 @@ impl Parser<'_> {
             return None;
         }
         // Prefer the period form (the opt-in oracle semaphore); fall back to the legacy
-        // mangled form. `apt-get.check` ⇒ provider `apt-get` (literal); `apt_get__check`
+        // mangled form. `apt-get.predict` ⇒ provider `apt-get` (literal); `apt_get__predict`
         // ⇒ provider `apt-get` (via `_`→`-`). Both recover the same command word.
-        let provider_name = if let Some(p) = lexeme.strip_suffix(PERIOD_CHECK_SUFFIX) {
+        let provider_name = if let Some(p) = lexeme.strip_suffix(PERIOD_PREDICT_SUFFIX) {
             if p.is_empty() {
                 return None;
             }
             p.to_owned()
-        } else if let Some(p) = lexeme.strip_suffix(CHECK_SUFFIX) {
+        } else if let Some(p) = lexeme.strip_suffix(PREDICT_SUFFIX) {
             if p.is_empty() {
                 return None;
             }
@@ -219,15 +219,15 @@ impl Parser<'_> {
         }
         let name_span = self.peek_span()?;
         let provider = self.interner.intern(&provider_name);
-        Some(CheckHeader {
+        Some(PredictHeader {
             provider,
             name_span,
         })
     }
 
-    /// Parse `<name>__check ( ) { BODY }`. On any out-of-dialect construct in the
+    /// Parse `<name>__predict ( ) { BODY }`. On any out-of-dialect construct in the
     /// body, emit a diagnostic, drop the whole check, and resync past `}`.
-    fn parse_check_funcdef(&mut self, header: CheckHeader) {
+    fn parse_predict_funcdef(&mut self, header: PredictHeader) {
         self.bump(); // the name word
         // `(` `)`
         if !self.expect(&Tok::LParen) || !self.expect(&Tok::RParen) {
@@ -253,7 +253,7 @@ impl Parser<'_> {
                     .checked_sub(1)
                     .and_then(|i| self.toks.get(i))
                     .map_or(header.name_span.hi, |t| t.span.hi);
-                let check = Check {
+                let check = Predict {
                     provider: header.provider,
                     name_span: header.name_span,
                     span: Span::new(header.name_span.lo, close_hi),
@@ -840,9 +840,9 @@ impl Parser<'_> {
     }
 }
 
-/// Header info for a recognized `<name>__check` function.
+/// Header info for a recognized `<name>__predict` function.
 #[derive(Clone, Copy)]
-struct CheckHeader {
+struct PredictHeader {
     provider: Symbol,
     name_span: Span,
 }
@@ -1160,14 +1160,14 @@ fn is_statement_terminator_word(s: &str) -> bool {
 mod dialect_tests {
     //! R1a/R1b: the period-form funcdef + the 233 inline-mark dialect. These tests
     //! reach the internal AST (Marks aren't re-exported), so they live here rather than
-    //! in `tests/check.rs`. Every ambiguity ⊤-rejects (`inv-top-reject` bias); a lift
+    //! in `tests/predict.rs`. Every ambiguity ⊤-rejects (`inv-top-reject` bias); a lift
     //! failure is a diagnostic, never a panic (`inv-no-throw`).
-    use super::{Interner, Mark, MarkKind, Stmt, lift_checks};
+    use super::{Interner, Mark, MarkKind, Stmt, lift_predicts};
 
     /// Lift `src`, assert exactly one check, and return its body statements.
     fn body_of(src: &str) -> Vec<Stmt> {
         let mut i = Interner::default();
-        let out = lift_checks(&mut i, src);
+        let out = lift_predicts(&mut i, src);
         assert!(
             out.diags.is_empty(),
             "expected a clean lift, got diags: {:?}",
@@ -1219,12 +1219,12 @@ mod dialect_tests {
 
     #[test]
     fn period_form_funcdef_recovers_the_hyphenated_provider() {
-        // `apt-get.check()` (the 23D §1 opt-in semaphore) resolves to provider `apt-get`
+        // `apt-get.predict()` (the 23D §1 opt-in semaphore) resolves to provider `apt-get`
         // — the literal command word, no `_`→`-` mapping (that is the legacy form's rule).
         let mut i = Interner::default();
-        let out = lift_checks(
+        let out = lift_predicts(
             &mut i,
-            "apt-get.check() { pkg : package = \"$1\"; dpkg-query -W \"$pkg\"; }",
+            "apt-get.predict() { pkg : package = \"$1\"; dpkg-query -W \"$pkg\"; }",
         );
         assert!(out.diags.is_empty(), "clean lift: {:?}", out.diags);
         let apt = i.intern("apt-get");
@@ -1236,17 +1236,17 @@ mod dialect_tests {
 
     #[test]
     fn period_and_legacy_forms_agree_on_provider() {
-        // `systemctl.check` and `systemctl__check` name the SAME provider (no hyphen, so
+        // `systemctl.predict` and `systemctl__predict` name the SAME provider (no hyphen, so
         // the two spellings coincide) — the strip's job is to turn the former into the
         // latter, so they must lift identically.
         let mut i = Interner::default();
-        let period = lift_checks(
+        let period = lift_predicts(
             &mut i,
-            "systemctl.check() { svc : service = \"$1\"; systemctl is-active -- \"$svc\"; }",
+            "systemctl.predict() { svc : service = \"$1\"; systemctl is-active -- \"$svc\"; }",
         );
-        let legacy = lift_checks(
+        let legacy = lift_predicts(
             &mut i,
-            "systemctl__check() { svc : service = \"$1\"; systemctl is-active -- \"$svc\"; }",
+            "systemctl__predict() { svc : service = \"$1\"; systemctl is-active -- \"$svc\"; }",
         );
         let sc = i.intern("systemctl");
         assert!(period.value.get(sc).is_some() && legacy.value.get(sc).is_some());
@@ -1257,7 +1257,7 @@ mod dialect_tests {
         // `dpkg-query … : package:"$pkg".installed` — a trailing ESTABLISH. kind/selector
         // are split opaquely; the entity fragment (`$pkg`) is carried but not decoded.
         let body = body_of(
-            "apt-get.check() { pkg : package = \"$1\"; dpkg-query -W \"$pkg\" : package:\"$pkg\".installed; }",
+            "apt-get.predict() { pkg : package = \"$1\"; dpkg-query -W \"$pkg\" : package:\"$pkg\".installed; }",
         );
         let m = first_command_mark(&body).expect("a trailing mark");
         assert_eq!(m.kind, MarkKind::Establish);
@@ -1271,7 +1271,7 @@ mod dialect_tests {
         // `… : package:"$pkg".installed!` — the `!` pun (233 §1): the verb makes the fact
         // NOT hold ⇒ the lift reads Kill polarity.
         let body = body_of(
-            "apt-get.check() { pkg : package = \"$1\"; dpkg-query -W \"$pkg\" : package:\"$pkg\".installed!; }",
+            "apt-get.predict() { pkg : package = \"$1\"; dpkg-query -W \"$pkg\" : package:\"$pkg\".installed!; }",
         );
         let m = first_command_mark(&body).expect("a trailing mark");
         assert_eq!(m.kind, MarkKind::EstablishInverted);
@@ -1282,7 +1282,7 @@ mod dialect_tests {
     fn trailing_query_marker_is_observe() {
         // `command -v … :? tool:"$tool".present` — OBSERVE (read-only depends-upon).
         let body = body_of(
-            "command.check() { tool : tool = \"$1\"; command -v -- \"$tool\" :? tool:\"$tool\".present; }",
+            "command.predict() { tool : tool = \"$1\"; command -v -- \"$tool\" :? tool:\"$tool\".present; }",
         );
         let m = first_command_mark(&body).expect("a trailing mark");
         assert_eq!(m.kind, MarkKind::Observe);
@@ -1298,7 +1298,7 @@ mod dialect_tests {
         // (absent). 23H flagged the pre-fix parse as accidental (it read `.fresh` as the
         // entity, dropping the selector); this pins the deliberate reading.
         let body = body_of(
-            "apt-get.check() { verb=$1; shift; idx : pkgindex; test -n fresh : pkgindex:.fresh; }",
+            "apt-get.predict() { verb=$1; shift; idx : pkgindex; test -n fresh : pkgindex:.fresh; }",
         );
         let m = first_command_mark(&body).expect("a trailing Singleton mark");
         assert_eq!(m.kind, MarkKind::Establish);
@@ -1317,7 +1317,7 @@ mod dialect_tests {
         // shape the R1 lexer gap (jc-lexer-redirect-mark) fixed. A greedy redirect target
         // must not swallow the `:` marker, and the split must still land the empty entity.
         let body = body_of(
-            "apt-get.check() { verb=$1; shift; idx : pkgindex; test -n fresh >/dev/null 2>&1 : pkgindex:.fresh; }",
+            "apt-get.predict() { verb=$1; shift; idx : pkgindex; test -n fresh >/dev/null 2>&1 : pkgindex:.fresh; }",
         );
         let m = first_command_mark(&body).expect("a trailing Singleton mark after 2>&1");
         assert_eq!(m.kind, MarkKind::Establish);
@@ -1333,7 +1333,7 @@ mod dialect_tests {
         // gate catches a mis-spelled effect, "fails loudly"). `kind.prop` (no colon) is a
         // whole reverse-DNS kind; `kind:prop` (colon, no dot) reads prop as the entity.
         let colon_less = body_of(
-            "apt-get.check() { verb=$1; shift; idx : pkgindex; test -n fresh : pkgindex.fresh; }",
+            "apt-get.predict() { verb=$1; shift; idx : pkgindex; test -n fresh : pkgindex.fresh; }",
         );
         let m = first_command_mark(&colon_less).expect("a trailing mark");
         assert_eq!(
@@ -1347,7 +1347,7 @@ mod dialect_tests {
         );
 
         let dot_less = body_of(
-            "apt-get.check() { verb=$1; shift; idx : pkgindex; test -n fresh : pkgindex:fresh; }",
+            "apt-get.predict() { verb=$1; shift; idx : pkgindex; test -n fresh : pkgindex:fresh; }",
         );
         let m = first_command_mark(&dot_less).expect("a trailing mark");
         assert_eq!(m.target.kind, "pkgindex");
@@ -1364,7 +1364,7 @@ mod dialect_tests {
         // `: fs.Path` — a bare no-op POISON mention; kind-only (the `.` stays in the
         // opaque kind), no entity/prop.
         let body = body_of(
-            "apt-get.check() { pkg : package = \"$1\"; dpkg-query -W \"$pkg\"; : fs.Path; }",
+            "apt-get.predict() { pkg : package = \"$1\"; dpkg-query -W \"$pkg\"; : fs.Path; }",
         );
         let Some(Stmt::Mark(m)) = body.iter().find(|s| matches!(s, Stmt::Mark(_))) else {
             panic!("expected a bare Mark statement: {body:?}");
@@ -1378,7 +1378,7 @@ mod dialect_tests {
     fn bare_three_level_tilde_is_ack() {
         // `: package:"$pkg".held~` — a three-level considered-untouched ACK.
         let body = body_of(
-            "apt-get.check() { pkg : package = \"$1\"; dpkg-query -W \"$pkg\"; : package:\"$pkg\".held~; }",
+            "apt-get.predict() { pkg : package = \"$1\"; dpkg-query -W \"$pkg\"; : package:\"$pkg\".held~; }",
         );
         let Some(Stmt::Mark(m)) = body.iter().find(|s| matches!(s, Stmt::Mark(_))) else {
             panic!("expected a bare Mark statement: {body:?}");
@@ -1392,7 +1392,7 @@ mod dialect_tests {
         // `: apt-get:install~` — the CONVERGED-VOUCH placeholder (two-level provider:verb~,
         // no `.prop`). STRAWMAN spelling (dq-kOOB); distinguished from ACK by dot-absence.
         let body = body_of(
-            "apt-get.check() { pkg : package = \"$1\"; dpkg-query -W \"$pkg\"; : apt-get:install~; }",
+            "apt-get.predict() { pkg : package = \"$1\"; dpkg-query -W \"$pkg\"; : apt-get:install~; }",
         );
         let Some(Stmt::Mark(m)) = body.iter().find(|s| matches!(s, Stmt::Mark(_))) else {
             panic!("expected a bare Mark statement: {body:?}");
@@ -1411,7 +1411,7 @@ mod dialect_tests {
     fn establish_with_explicit_value_parses() {
         // `… : service:"$svc".active = false` — the 233 §1 explicit-value ESTABLISH.
         let body = body_of(
-            "systemctl.check() { svc : service = \"$1\"; systemctl is-active -- \"$svc\" : service:\"$svc\".active = false; }",
+            "systemctl.predict() { svc : service = \"$1\"; systemctl is-active -- \"$svc\" : service:\"$svc\".active = false; }",
         );
         let m = first_command_mark(&body).expect("a trailing mark");
         assert_eq!(m.kind, MarkKind::Establish);
@@ -1422,7 +1422,7 @@ mod dialect_tests {
     fn identity_annotation_still_parses_unchanged() {
         // The existing identity annotation `pkg : package = "$1"` (bare kind, no inner `:`)
         // must NOT be mis-read as a trailing mark — it stays an Annotation.
-        let body = body_of("apt-get.check() { pkg : package = \"$1\"; dpkg-query -W \"$pkg\"; }");
+        let body = body_of("apt-get.predict() { pkg : package = \"$1\"; dpkg-query -W \"$pkg\"; }");
         assert!(
             body.iter().any(|s| matches!(s, Stmt::Annotation(_))),
             "the identity annotation survives: {body:?}"
@@ -1434,9 +1434,9 @@ mod dialect_tests {
         // `!` is a trailing-ESTABLISH suffix; on a bare statement mark it is malformed and
         // ⊤-rejects loudly (a diagnostic, never a silent mis-read).
         let mut i = Interner::default();
-        let out = lift_checks(
+        let out = lift_predicts(
             &mut i,
-            "apt-get.check() { pkg : package = \"$1\"; : package:\"$pkg\".installed!; }",
+            "apt-get.predict() { pkg : package = \"$1\"; : package:\"$pkg\".installed!; }",
         );
         assert!(
             !out.diags.is_empty(),
@@ -1448,9 +1448,9 @@ mod dialect_tests {
     fn tilde_on_trailing_command_mark_rejects() {
         // `~` (vouch/ack) is a bare statement mark; trailing a command it is malformed.
         let mut i = Interner::default();
-        let out = lift_checks(
+        let out = lift_predicts(
             &mut i,
-            "apt-get.check() { pkg : package = \"$1\"; dpkg-query -W \"$pkg\" : package:\"$pkg\".installed~; }",
+            "apt-get.predict() { pkg : package = \"$1\"; dpkg-query -W \"$pkg\" : package:\"$pkg\".installed~; }",
         );
         assert!(
             !out.diags.is_empty(),

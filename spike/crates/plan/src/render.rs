@@ -111,7 +111,7 @@ pub mod probe {
     ///
     /// Wrapper naming (task-P/find-1, kept OUT of the emitted bytes to honor
     /// zero-extra-golden-churn — same posture 20H took for the reserved keys): each probed
-    /// cell's wrapper is named `<kind>_<selector>__check` ([`check_fn_name`](crate::check_fn_name)),
+    /// cell's wrapper is named `<kind>_<selector>__predict` ([`predict_fn_name`](crate::predict_fn_name)),
     /// one definition per `(kind, selector)` ([`wrapper_def`]); the selector segment is what
     /// lets a multi-selector kind ship two distinct bodies without collision.
     #[must_use]
@@ -135,9 +135,9 @@ pub mod probe {
         format!("# site {key}: {label}\n")
     }
 
-    /// The oracle's stripped `<provider>__check` funcdef, emitted verbatim (R3 / 23D §1 —
+    /// The oracle's stripped `<provider>__predict` funcdef, emitted verbatim (R3 / 23D §1 —
     /// the check IS the oracle, shipped strip-only). `funcdef` is the whole
-    /// [`strip_check`](dorc_oracle::check::strip_check) output (`name() { …; }`), already
+    /// [`strip_predict`](dorc_oracle::predict::strip_predict) output (`name() { …; }`), already
     /// `dash -n`-clean and byte-stable; this only appends the trailing newline. The render
     /// re-emits it before an invocation whose provider's body differs (the multi-check
     /// provider — [`ProbePlan::render_sh`](crate::ProbePlan::render_sh)).

@@ -525,7 +525,7 @@ mod tests {
     }
 
     const PKG_ORACLE: &str = r#"
-apt_get__check() {
+apt_get__predict() {
    while [ "${1#-}" != "$1" ]; do shift; done
    verb=$1; shift
    while [ "${1#-}" != "$1" ]; do shift; done

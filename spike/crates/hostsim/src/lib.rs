@@ -197,8 +197,8 @@ mod tests {
     /// annotation, `[ "$2" = "" ]` multi-operand refusal). These DST tests model only
     /// `apt-get install` on `package`; `systemctl reload` has no check ⇒ Opaque ⇒ runs.
     /// Lifted with the test's interner so provider symbols match the book.
-    const CORPUS_CHECK_SRC: &str = r#"
-apt_get__check() {
+    const CORPUS_PREDICT_SRC: &str = r#"
+apt_get__predict() {
    while [ "${1#-}" != "$1" ]; do shift; done
    verb=$1; shift
    while [ "${1#-}" != "$1" ]; do shift; done
@@ -208,14 +208,14 @@ apt_get__check() {
 "#;
 
     /// R3 test seam: resolve+strip the corpus check for a site's (provider, argv) — the same
-    /// resolution the cli's `ship_check_body` runs. `None` ⇒ un-shippable (un-oracled provider).
+    /// resolution the cli's `ship_predict_body` runs. `None` ⇒ un-shippable (un-oracled provider).
     fn ship_corpus(
-        checks: &[dorc_oracle::check::CheckSet],
+        checks: &[dorc_oracle::predict::PredictSet],
         interner: &Interner,
         provider: dorc_core::Symbol,
         argv: &[dorc_core::Symbol],
     ) -> Option<String> {
-        use dorc_oracle::check::{Resolution, evaluate, map_provider_name, strip_check};
+        use dorc_oracle::predict::{Resolution, evaluate, map_provider_name, strip_predict};
         let want = map_provider_name(interner.resolve(provider));
         let arg_texts: Vec<String> = argv
             .iter()
@@ -229,7 +229,7 @@ apt_get__check() {
                 }
                 let Some(check) = cs.get(cp) else { continue };
                 if matches!(evaluate(check, &arg_refs), Resolution::Resolved(_)) {
-                    return Some(strip_check(CORPUS_CHECK_SRC, check, interner));
+                    return Some(strip_predict(CORPUS_PREDICT_SRC, check, interner));
                 }
             }
         }
@@ -247,7 +247,7 @@ apt_get__check() {
         dorc_analysis::effect::SkipClass,
     )> {
         let value = dorc_analysis::value::analyze(cfg, ast, i);
-        let checks = vec![dorc_oracle::check::lift_checks(i, CORPUS_CHECK_SRC).value];
+        let checks = vec![dorc_oracle::predict::lift_predicts(i, CORPUS_PREDICT_SRC).value];
         let mut arena = dorc_core::ProvArena::new();
         dorc_analysis::effect::classify(cfg, &value, ast, idx, &checks, i, &mut arena).value
     }
@@ -453,7 +453,8 @@ apt_get__check() {
             let parsed = dorc_syntax::parse(src);
             let cfg = dorc_analysis::cfg::build(&parsed.value).value;
             let value = dorc_analysis::value::analyze(&cfg, &parsed.value, &mut i);
-            let checks = vec![dorc_oracle::check::lift_checks(&mut i, CORPUS_CHECK_SRC).value];
+            let checks =
+                vec![dorc_oracle::predict::lift_predicts(&mut i, CORPUS_PREDICT_SRC).value];
             let classes = dorc_analysis::effect::classify(
                 &cfg,
                 &value,
@@ -568,7 +569,7 @@ apt_get__check() {
             &value,
             &parsed.value,
             &idx,
-            &[dorc_oracle::check::lift_checks(&mut i, CORPUS_CHECK_SRC).value],
+            &[dorc_oracle::predict::lift_predicts(&mut i, CORPUS_PREDICT_SRC).value],
             &mut i,
             &mut dorc_core::ProvArena::new(),
         )

@@ -66,9 +66,9 @@ const MIGRATED_PAYLOADS: &[&str] = &[
     "CfgBuiltinShadowed",
     // B4 sweep: analysis/effect.rs
     "EffectKindDisagreement",
-    // B4 sweep: oracle/check/parser.rs
-    "CheckOutOfDialect",
-    "CheckUnterminated",
+    // B4 sweep: oracle/predict/parser.rs
+    "PredictOutOfDialect",
+    "PredictUnterminated",
 ];
 
 /// Every catalog slug (the stable wire string) — for the retire-guard and reachability. KEEP IN
@@ -92,9 +92,9 @@ const MIGRATED_SLUGS: &[&str] = &[
     "cfg-builtin-shadowed",
     // B4 sweep: analysis/effect.rs
     "effect-kind-disagreement",
-    // B4 sweep: oracle/check/parser.rs
-    "check-out-of-dialect",
-    "check-unterminated",
+    // B4 sweep: oracle/predict/parser.rs
+    "predict-out-of-dialect",
+    "predict-unterminated",
 ];
 
 /// The self-cleaning ALLOW-LIST (`226` §1): every legacy give-up code still on

@@ -76,8 +76,8 @@ use dorc_plan::{Disposition, Plan, build_plan};
 /// annotation with a `[ "$2" = "" ]` multi-operand refusal). The matrix only models
 /// install/purge on `package`, so no `update`/Singleton arm is needed. Lifted with
 /// the test's interner so provider symbols match the book's command words.
-const CORPUS_CHECK_SRC: &str = r#"
-apt_get__check() {
+const CORPUS_PREDICT_SRC: &str = r#"
+apt_get__predict() {
    while [ "${1#-}" != "$1" ]; do shift; done
    verb=$1; shift
    while [ "${1#-}" != "$1" ]; do shift; done
@@ -87,14 +87,14 @@ apt_get__check() {
 "#;
 
 /// R3 test seam: resolve+strip the corpus check for a site's (provider, argv) — the same
-/// resolution the cli's `ship_check_body` runs. `None` ⇒ un-shippable (un-oracled provider).
+/// resolution the cli's `ship_predict_body` runs. `None` ⇒ un-shippable (un-oracled provider).
 fn ship_corpus(
-    checks: &[dorc_oracle::check::CheckSet],
+    checks: &[dorc_oracle::predict::PredictSet],
     interner: &Interner,
     provider: dorc_core::Symbol,
     argv: &[dorc_core::Symbol],
 ) -> Option<String> {
-    use dorc_oracle::check::{Resolution, evaluate, map_provider_name, strip_check};
+    use dorc_oracle::predict::{Resolution, evaluate, map_provider_name, strip_predict};
     let want = map_provider_name(interner.resolve(provider));
     let arg_texts: Vec<String> = argv
         .iter()
@@ -108,7 +108,7 @@ fn ship_corpus(
             }
             let Some(check) = cs.get(cp) else { continue };
             if matches!(evaluate(check, &arg_refs), Resolution::Resolved(_)) {
-                return Some(strip_check(CORPUS_CHECK_SRC, check, interner));
+                return Some(strip_predict(CORPUS_PREDICT_SRC, check, interner));
             }
         }
     }
@@ -123,7 +123,7 @@ fn classify_value(
     i: &mut Interner,
 ) -> Vec<(dorc_analysis::cfg::CfgNodeId, SkipClass)> {
     let value = dorc_analysis::value::analyze(cfg, ast, i);
-    let checks = vec![dorc_oracle::check::lift_checks(i, CORPUS_CHECK_SRC).value];
+    let checks = vec![dorc_oracle::predict::lift_predicts(i, CORPUS_PREDICT_SRC).value];
     let mut arena = dorc_core::ProvArena::new();
     dorc_analysis::effect::classify(cfg, &value, ast, idx, &checks, i, &mut arena).value
 }
@@ -715,15 +715,15 @@ fn spec_set_e_pure_at_effect_layer_but_c3_status_blocks() {
 
 /// apt-get check + the `command -v` check (verbless: strips `-v`, annotates the
 /// operand as `tool`). Lifted with the test's interner so provider symbols match.
-const CORPUS_CHECK_SRC_Q: &str = r#"
-apt_get__check() {
+const CORPUS_PREDICT_SRC_Q: &str = r#"
+apt_get__predict() {
    while [ "${1#-}" != "$1" ]; do shift; done
    verb=$1; shift
    while [ "${1#-}" != "$1" ]; do shift; done
    pkg : package = "$1"
    if [ "$2" = "" ]; then probe-pkg "$pkg"; fi
 }
-command__check() {
+command__predict() {
    case $1 in -v) shift ;; esac
    tool : tool = "$1"
    command -v -- "$tool" >/dev/null 2>&1
@@ -782,7 +782,7 @@ fn plan_query_and_ast(
     let parsed = dorc_syntax::parse(src);
     let cfg = dorc_analysis::cfg::build(&parsed.value).value;
     let value = dorc_analysis::value::analyze(&cfg, &parsed.value, &mut i);
-    let checks = vec![dorc_oracle::check::lift_checks(&mut i, CORPUS_CHECK_SRC_Q).value];
+    let checks = vec![dorc_oracle::predict::lift_predicts(&mut i, CORPUS_PREDICT_SRC_Q).value];
     let mut arena = dorc_core::ProvArena::new();
     let classes = dorc_analysis::effect::classify(
         &cfg,
@@ -1394,7 +1394,7 @@ fn inline_call_emits_site_n_m_probe_records() {
     let parsed = dorc_syntax::parse(src);
     let cfg = dorc_analysis::cfg::build(&parsed.value).value;
     let value = dorc_analysis::value::analyze(&cfg, &parsed.value, &mut i);
-    let checks = vec![dorc_oracle::check::lift_checks(&mut i, CORPUS_CHECK_SRC).value];
+    let checks = vec![dorc_oracle::predict::lift_predicts(&mut i, CORPUS_PREDICT_SRC).value];
     let classes = dorc_analysis::effect::classify(
         &cfg,
         &value,
@@ -1452,7 +1452,7 @@ fn inline_call_unprobeable_body_establish_is_unresolvable() {
         &value,
         &parsed.value,
         &idx,
-        &[dorc_oracle::check::lift_checks(&mut i, CORPUS_CHECK_SRC).value],
+        &[dorc_oracle::predict::lift_predicts(&mut i, CORPUS_PREDICT_SRC).value],
         &mut i,
         &mut dorc_core::ProvArena::new(),
     )

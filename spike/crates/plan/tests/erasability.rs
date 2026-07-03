@@ -61,16 +61,16 @@ use dorc_plan::erasability::{canonical_decision, decision_digest};
 use dorc_plan::{ProbePlan, build_plan, compile_probe};
 
 /// R3 test seam: resolve+strip the check a probe site ships, from `src` — the same resolution
-/// the cli's `ship_check_body` runs (first check whose provider matches + whose argparse
+/// the cli's `ship_predict_body` runs (first check whose provider matches + whose argparse
 /// resolves the argv). `None` ⇒ un-shippable.
 fn ship_from(
     src: &str,
-    checks: &[dorc_oracle::check::CheckSet],
+    checks: &[dorc_oracle::predict::PredictSet],
     interner: &Interner,
     provider: dorc_core::Symbol,
     argv: &[dorc_core::Symbol],
 ) -> Option<String> {
-    use dorc_oracle::check::{Resolution, evaluate, map_provider_name, strip_check};
+    use dorc_oracle::predict::{Resolution, evaluate, map_provider_name, strip_predict};
     let want = map_provider_name(interner.resolve(provider));
     let arg_texts: Vec<String> = argv
         .iter()
@@ -84,7 +84,7 @@ fn ship_from(
             }
             let Some(check) = cs.get(cp) else { continue };
             if matches!(evaluate(check, &arg_refs), Resolution::Resolved(_)) {
-                return Some(strip_check(src, check, interner));
+                return Some(strip_predict(src, check, interner));
             }
         }
     }
@@ -96,10 +96,10 @@ fn ship_from(
 /// purge ⇒ inverted) are what make a command classify as an Establish (and thus eligible for
 /// Replace) — WITHOUT them every command is Opaque and the gate would never exercise the
 /// elision plane (the anti-masking lesson: a fixture that elides nothing cannot test
-/// receipt-inertness OF a decision). The `apt_get__check` argparse is the entity-resolver and
+/// receipt-inertness OF a decision). The `apt_get__predict` argparse is the entity-resolver and
 /// the shipped probe. Lifted with the test interner so provider symbols match the book's words.
 const ORACLE_SRC: &str = r#"
-apt_get__check() {
+apt_get__predict() {
    while [ "${1#-}" != "$1" ]; do shift; done
    verb=$1; shift
    while [ "${1#-}" != "$1" ]; do shift; done
@@ -170,7 +170,7 @@ fn run_pipeline(book: &str, variation: ArenaMode) -> RunOutcome {
     use dorc_plan::Disposition;
     let mut i = Interner::default();
     let idx = dorc_oracle::lift(&mut i, &[ORACLE_SRC]).value;
-    let checks = vec![dorc_oracle::check::lift_checks(&mut i, ORACLE_SRC).value];
+    let checks = vec![dorc_oracle::predict::lift_predicts(&mut i, ORACLE_SRC).value];
     let converged = converged_facts(&mut i);
 
     let parsed = dorc_syntax::parse(book);
@@ -331,7 +331,7 @@ fn digest_is_receipt_invariant_across_runs() {
     // hint a receipt reached a decision input.)
     let mut i = Interner::default();
     let idx = dorc_oracle::lift(&mut i, &[ORACLE_SRC]).value;
-    let checks = vec![dorc_oracle::check::lift_checks(&mut i, ORACLE_SRC).value];
+    let checks = vec![dorc_oracle::predict::lift_predicts(&mut i, ORACLE_SRC).value];
     let converged = converged_facts(&mut i);
     let book = "ufw allow 80/tcp\napt-get install nginx\napt-get update\n";
 

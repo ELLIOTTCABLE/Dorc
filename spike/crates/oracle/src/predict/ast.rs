@@ -6,18 +6,18 @@
 
 use dorc_core::{Span, Symbol};
 
-/// The set of `<provider>__check` functions lifted from one oracle file. Keyed by
-/// the **provider** (the name before `__check`, with the underscore↔hyphen mapping
-/// applied — see [`Check::provider`]). `BTreeMap`-ordered (`inv-determinism`).
+/// The set of `<provider>__predict` functions lifted from one oracle file. Keyed by
+/// the **provider** (the name before `__predict`, with the underscore↔hyphen mapping
+/// applied — see [`Predict::provider`]). `BTreeMap`-ordered (`inv-determinism`).
 #[derive(Debug, Clone, Default)]
-pub struct CheckSet {
-    pub(super) checks: std::collections::BTreeMap<Symbol, Check>,
+pub struct PredictSet {
+    pub(super) checks: std::collections::BTreeMap<Symbol, Predict>,
 }
 
-impl CheckSet {
+impl PredictSet {
     /// The check for a provider, if the file declared one.
     #[must_use]
-    pub fn get(&self, provider: Symbol) -> Option<&Check> {
+    pub fn get(&self, provider: Symbol) -> Option<&Predict> {
         self.checks.get(&provider)
     }
 
@@ -37,13 +37,13 @@ impl CheckSet {
     }
 }
 
-/// One `<provider>__check` function: the provider it serves plus the dialect
+/// One `<provider>__predict` function: the provider it serves plus the dialect
 /// statements of its body, in source order. The evaluator ([`super::evaluate`])
-/// executes [`body`](Check::body) over a concrete argv.
+/// executes [`body`](Predict::body) over a concrete argv.
 #[derive(Debug, Clone)]
-pub struct Check {
-    /// The provider this check argparses for — the name before `__check`, with
-    /// underscores mapped to hyphens (`apt_get__check` ⇒ `apt-get`). Interned.
+pub struct Predict {
+    /// The provider this check argparses for — the name before `__predict`, with
+    /// underscores mapped to hyphens (`apt_get__predict` ⇒ `apt-get`). Interned.
     pub provider: Symbol,
     /// The function-name span (for diagnostics pointing at the definition).
     pub name_span: Span,

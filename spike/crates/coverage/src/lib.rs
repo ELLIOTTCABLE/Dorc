@@ -16,7 +16,7 @@
 //!
 //! Everything here is derived from the SAME public pipeline the cli drives
 //! (`syntax::parse → analysis::cfg::build → analysis::value::analyze →
-//! analysis::effect::classify → oracle::lift / check::lift_checks →
+//! analysis::effect::classify → oracle::lift / predict::lift_predicts →
 //! plan::compile_probe → plan::build_plan`). The dashboard reads the engine's
 //! outputs (the [`SkipClass`], the [`Disposition`], the consumed-channel set, the
 //! probe verdict) and *attributes* them; it makes no analysis decision of its own.
@@ -381,20 +381,20 @@ pub struct Inputs<'a> {
     pub weights: &'a weights::Weights,
 }
 
-/// R3 (23D §1 — the check IS the oracle): resolve the stripped `<provider>__check` funcdef
+/// R3 (23D §1 — the check IS the oracle): resolve the stripped `<provider>__predict` funcdef
 /// a probe site ships, given its (provider-word, argv). Byte-mirror of the cli's helper —
 /// re-runs the analysis's own resolution (first check, oracle-file order, whose provider
-/// matches through [`map_provider_name`](dorc_oracle::check::map_provider_name) and whose
-/// argparse resolves this argv) and [`strip_check`](dorc_oracle::check::strip_check)s it.
+/// matches through [`map_provider_name`](dorc_oracle::predict::map_provider_name) and whose
+/// argparse resolves this argv) and [`strip_predict`](dorc_oracle::predict::strip_predict)s it.
 /// `None` ⇒ un-shippable ⇒ un-elidable (`kFAIL-perform`).
-fn ship_check_body(
+fn ship_predict_body(
     oracle_srcs: &[&str],
-    checks: &[dorc_oracle::check::CheckSet],
+    checks: &[dorc_oracle::predict::PredictSet],
     interner: &Interner,
     provider: Symbol,
     argv: &[Symbol],
 ) -> Option<String> {
-    use dorc_oracle::check::{Resolution, evaluate, map_provider_name, strip_check};
+    use dorc_oracle::predict::{Resolution, evaluate, map_provider_name, strip_predict};
     let want = map_provider_name(interner.resolve(provider));
     let arg_texts: Vec<String> = argv
         .iter()
@@ -408,7 +408,7 @@ fn ship_check_body(
             }
             let Some(check) = cs.get(cp) else { continue };
             if matches!(evaluate(check, &arg_refs), Resolution::Resolved(_)) {
-                return Some(strip_check(src, check, interner));
+                return Some(strip_predict(src, check, interner));
             }
         }
     }
@@ -430,10 +430,10 @@ pub fn build_report(inputs: &Inputs<'_>) -> Report {
     // The effect-map is derived from the check bodies (23D §1 — the check is the oracle).
     let lifted = dorc_oracle::lift(&mut interner, inputs.oracles);
     let idx = lifted.value;
-    let checks: Vec<dorc_oracle::check::CheckSet> = inputs
+    let checks: Vec<dorc_oracle::predict::PredictSet> = inputs
         .oracles
         .iter()
-        .map(|src| dorc_oracle::check::lift_checks(&mut interner, src).value)
+        .map(|src| dorc_oracle::predict::lift_predicts(&mut interner, src).value)
         .collect();
 
     let parsed = dorc_syntax::parse(inputs.book);
@@ -459,11 +459,11 @@ pub fn build_report(inputs: &Inputs<'_>) -> Report {
         .unwrap_or_default();
 
     // R3 (23D §1 — the check IS the oracle): byte-mirror of the cli's `compile_probe`
-    // call — the probe ships each provider's stripped `<provider>__check` funcdef invoked
-    // per-site with its argv (`ship_check_body` re-runs the analysis's own check resolution).
+    // call — the probe ships each provider's stripped `<provider>__predict` funcdef invoked
+    // per-site with its argv (`ship_predict_body` re-runs the analysis's own check resolution).
     let probe =
         dorc_plan::compile_probe(&parsed.value, &cfg, &value, &classes, |provider, argv| {
-            ship_check_body(inputs.oracles, &checks, &interner, provider, argv)
+            ship_predict_body(inputs.oracles, &checks, &interner, provider, argv)
         });
     let observe = observe_from_sites(&probe, &probe_verdicts);
     let plan = dorc_plan::build_plan(
@@ -1170,7 +1170,7 @@ mod tests {
     /// The package oracle (apt/dpkg-query establish) — install/purge mutators. Mirrors
     /// the e2e `package.oracle.sh` idiom.
     const PACKAGE_ORACLE: &str = r#"
-apt_get__check() {
+apt_get__predict() {
    while [ "${1#-}" != "$1" ]; do shift; done
    verb=$1; shift
    while [ "${1#-}" != "$1" ]; do shift; done
@@ -1188,7 +1188,7 @@ apt_get__check() {
     /// `Queries` cell, the fold-usable guard. Mirrors the e2e `pkgstate.oracle.sh`
     /// (an EXTERNAL query, mock-reproducible, unlike the builtin `command -v`).
     const PKGSTATE_ORACLE: &str = r#"
-dpkg__check() {
+dpkg__predict() {
    case $1 in -s) shift ;; esac
    pkg : pkgstate = "$1"
    dpkg -s -- "$pkg" >/dev/null 2>&1 :? pkgstate:"$pkg".installed

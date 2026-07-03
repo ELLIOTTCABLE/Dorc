@@ -1,4 +1,4 @@
-//! The concrete evaluator — trace a known argv through a [`Check`]'s argparse to
+//! The concrete evaluator — trace a known argv through a [`Predict`]'s argparse to
 //! its kind-annotation (202 §1 face-check; 19H §2).
 //!
 //! This is *not* abstract interpretation. The book-side value-flow (task-A,
@@ -17,12 +17,12 @@
 //! module bakes no phase. Anything non-concrete ⇒ [`Resolution::Top`] with a reason
 //! string (`inv-kfail`, both directions: nothing ships, nothing elides).
 
-use super::ast::{Annotation, Check, Pattern, Stmt, Test, TestOp, Word};
+use super::ast::{Annotation, Pattern, Predict, Stmt, Test, TestOp, Word};
 use dorc_core::{Span, Symbol};
 use dorc_syntax::sem::{self, UnsetPolicy};
 use std::collections::BTreeMap;
 
-/// The result of evaluating a [`Check`] over a concrete argv.
+/// The result of evaluating a [`Predict`] over a concrete argv.
 ///
 /// Either a concrete resolution or [`Top`](Resolution::Top) — a single safe
 /// degrade for everything non-concrete (`inv-kfail`). A `Top` site stays
@@ -128,7 +128,7 @@ impl TopReason {
 /// collections only, and every path returns a [`Resolution`] — never panics, even on
 /// a pathological check (the budget bounds loops).
 #[must_use]
-pub fn evaluate(check: &Check, argv: &[&str]) -> Resolution {
+pub fn evaluate(check: &Predict, argv: &[&str]) -> Resolution {
     if argv.is_empty() {
         return Resolution::Top(TopReason::EmptyArgv);
     }

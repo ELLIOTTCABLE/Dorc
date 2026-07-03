@@ -22,7 +22,7 @@
 //! arms, its annotation shape, its mark punctuation) — never the meaning of a kind /
 //! entity / selector string. Those stay opaque coordination handles.
 
-use super::ast::{Check, MarkKind, MarkTarget, Pattern, Stmt, Word};
+use super::ast::{MarkKind, MarkTarget, Pattern, Predict, Stmt, Word};
 
 /// How a reached claim maps the probe command's rc onto the property's OPAQUE boolean
 /// (jc-polarity-vs-rc). This REPLACES the old `Polarity{Establish, Kill, Query}`: there
@@ -85,7 +85,7 @@ pub struct DerivedVouch {
 /// [`DerivedVouch`]. Deterministic and total (`inv-no-throw`: no panics — a shape the
 /// walk cannot characterize simply emits nothing, the safe direction).
 #[must_use]
-pub fn derive_check(check: &Check) -> (Vec<DerivedEffect>, Vec<DerivedVouch>) {
+pub fn derive_predict(check: &Predict) -> (Vec<DerivedEffect>, Vec<DerivedVouch>) {
     let mut effects = Vec::new();
     let mut vouches = Vec::new();
     let ctx = Ctx {
@@ -201,13 +201,13 @@ fn push_effect(ctx: &Ctx, kind: MarkKind, target: &MarkTarget, effects: &mut Vec
 mod tests {
     //! Derivation coverage (23E §3): each test builds the derived cell-set from a
     //! converted-dialect check body and asserts it equals a hand-authored expected set —
-    //! pinning that `derive_check` reads the `case $verb` arms + inline annotation +
+    //! pinning that `derive_predict` reads the `case $verb` arms + inline annotation +
     //! trailing marks correctly for each corpus oracle shape. (These were the marker
     //! differential tests; with the markers retired the comparison target is the
     //! hand-authored cell-set, not the old `lift`.) Process-evidence, not proof
     //! (never-vouch).
     use super::*;
-    use crate::check::lift_checks;
+    use crate::predict::lift_predicts;
     use dorc_core::Interner;
     use std::collections::BTreeSet;
 
@@ -226,11 +226,11 @@ mod tests {
     /// The cell-set the inline-dialect derivation produces for `provider`'s check.
     fn derived_set(dialect_src: &str, provider: &str) -> BTreeSet<Cell> {
         let mut i = Interner::default();
-        let cs = lift_checks(&mut i, dialect_src);
+        let cs = lift_predicts(&mut i, dialect_src);
         assert!(cs.diags.is_empty(), "dialect lifts clean: {:?}", cs.diags);
         let sym = i.intern(provider);
         let check = cs.value.get(sym).expect("a check for the provider");
-        let (effects, _vouches) = derive_check(check);
+        let (effects, _vouches) = derive_predict(check);
         effects
             .into_iter()
             .map(|e| {
@@ -255,7 +255,7 @@ mod tests {
     #[test]
     fn package_apt_get_derives_installed_cells() {
         let dialect = "\
-apt-get.check() {
+apt-get.predict() {
    while [ \"${1#-}\" != \"$1\" ]; do shift; done
    verb=$1; shift
    while [ \"${1#-}\" != \"$1\" ]; do shift; done
@@ -284,7 +284,7 @@ apt-get.check() {
         // The multi-selector service shape: enable→#enabled, start→#active (both
         // establish), disable→#enabled INVERTED (the `!` mark).
         let dialect = "\
-systemctl.check() {
+systemctl.predict() {
    verb=$1; shift
    svc : service = \"$1\"
    case $verb in
@@ -308,7 +308,7 @@ systemctl.check() {
         // The verbless read-only guard: `command -v` is an OBSERVE of tool:#present on the
         // ε-verb (the `:?` mark).
         let dialect = "\
-command.check() {
+command.predict() {
    case $1 in -v) shift ;; esac
    tool : tool = \"$1\"
    command -v -- \"$tool\" >/dev/null 2>&1 :? tool:\"$tool\".present
@@ -324,7 +324,7 @@ command.check() {
         // The converged-vouch is a bare `: apt-get:install~` mark on the install arm's
         // path (23E §5, flagship) — derived into a DerivedVouch.
         let dialect = "\
-apt-get.check() {
+apt-get.predict() {
    verb=$1; shift
    pkg : package = \"$1\"
    case $verb in
@@ -332,10 +332,10 @@ apt-get.check() {
    esac
 }";
         let mut i = Interner::default();
-        let cs = lift_checks(&mut i, dialect);
+        let cs = lift_predicts(&mut i, dialect);
         assert!(cs.diags.is_empty(), "{:?}", cs.diags);
         let check = cs.value.get(i.intern("apt-get")).expect("check");
-        let (_effects, vouches) = derive_check(check);
+        let (_effects, vouches) = derive_predict(check);
         assert_eq!(
             vouches,
             vec![DerivedVouch {
@@ -352,7 +352,7 @@ apt-get.check() {
         // entity-resolution / fall-through only). Pins that the walk never invents a
         // literal-`*` verb.
         let dialect = "\
-apt-get.check() {
+apt-get.predict() {
    verb=$1; shift
    pkg : package = \"$1\"
    case $verb in

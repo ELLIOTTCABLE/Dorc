@@ -1,5 +1,5 @@
 //! Adversarial integration tests for the command-keyed `check()` contract
-//! (`dorc_oracle::check`, 19H §2 / 202 §1 face-check).
+//! (`dorc_oracle::predict`, 19H §2 / 202 §1 face-check).
 //!
 //! Each test parses REAL dialect text (no AST-by-fiat) and pins one invariant with
 //! a reasoned argument. The five 19H §2 example bodies are transcribed verbatim; the
@@ -13,7 +13,7 @@
 //! `inv-determinism` (pure, ordered).
 
 use dorc_core::Interner;
-use dorc_oracle::check::{Resolution, ResolvedEntity, TopReason, evaluate, lift_checks};
+use dorc_oracle::predict::{Resolution, ResolvedEntity, TopReason, evaluate, lift_predicts};
 
 /// A resolved operand entity, for terse `assert_eq!(r.entity, operand("nginx"))`.
 /// (The nullary/Singleton form is asserted directly against
@@ -28,7 +28,7 @@ fn operand(s: &str) -> ResolvedEntity {
 
 /// 19H §2.1 — the apt-get check, transcribed verbatim from the design doc.
 const APT_GET: &str = r#"
-apt_get__check() {
+apt_get__predict() {
    while [ "${1#-}" != "$1" ]; do
       case $1 in -t|-o) shift 2 ;; *) shift ;; esac
    done
@@ -40,7 +40,7 @@ apt_get__check() {
 
 /// 19H §2.2 — the `command -v` idempotency guard, verbatim.
 const COMMAND: &str = r#"
-command__check() {
+command__predict() {
    case $1 in -v) shift ;; esac
    tool : org.freedesktop.Tool = "$1"
    command -v -- "$tool" >/dev/null
@@ -49,7 +49,7 @@ command__check() {
 
 /// 19H §2.3 — useradd: a bare-operand entity, NO verb.
 const USERADD: &str = r#"
-useradd__check() {
+useradd__predict() {
    user : org.openldap.PosixAccount = "$1"
    getent passwd "$user"
 }
@@ -57,7 +57,7 @@ useradd__check() {
 
 /// 19H §2.5 — systemctl: the verb selects a different probe per arm.
 const SYSTEMCTL: &str = r#"
-systemctl__check() {
+systemctl__predict() {
    verb=$1; shift
    svc : org.freedesktop.systemd.Unit = "$1"
    case $verb in
@@ -76,7 +76,7 @@ systemctl__check() {
 )]
 fn resolve(src: &str, provider: &str, argv: &[&str]) -> Resolution {
     let mut interner = Interner::default();
-    let lifted = lift_checks(&mut interner, src);
+    let lifted = lift_predicts(&mut interner, src);
     assert!(
         lifted.diags.is_empty(),
         "expected a clean lift, got diagnostics: {:?}",
@@ -116,7 +116,7 @@ fn probe_texts<'a>(src: &'a str, res: &Resolution) -> Vec<&'a str> {
     clippy::panic,
     reason = "test helper: an unexpected Top is a loud test failure, not production code"
 )]
-fn resolved(res: &Resolution) -> &dorc_oracle::check::Resolved {
+fn resolved(res: &Resolution) -> &dorc_oracle::predict::Resolved {
     match res {
         Resolution::Resolved(r) => r,
         Resolution::Top(reason) => panic!("expected Resolved, got Top({reason:?})"),
@@ -247,7 +247,7 @@ fn command_v_nginx_resolves_tool_no_verb() {
     let r = resolved(&res);
     assert_eq!(r.kind, "org.freedesktop.Tool");
     assert_eq!(r.entity, operand("nginx"));
-    assert_eq!(r.verb, None, "command__check binds no verb");
+    assert_eq!(r.verb, None, "command__predict binds no verb");
     assert_eq!(
         probe_texts(COMMAND, &res),
         vec![r#"command -v -- "$tool" >/dev/null"#],
@@ -302,7 +302,7 @@ fn nullary_verb_value_less_annotation_resolves_singleton() {
     // operand to bind). This is the explicit nullary spelling task-W needs to key the
     // cell on `EntityRef::Singleton` (preserving `package-index#fresh` semantics).
     let src = r"
-apt_get__check() {
+apt_get__predict() {
    verb=$1
    case $verb in
       update) index : pkgindex; test -n fresh ;;
@@ -325,9 +325,9 @@ fn value_less_annotation_with_equals_is_an_error() {
     // The nullary form is `name : kind` with NO `=`. A dangling `name : kind =` (an
     // `=` then no value) is malformed ⇒ a lift diagnostic, not a silent Singleton.
     // (Keeps the value-less spelling EXPLICIT and unambiguous.)
-    let src = "q__check() { x : pkgindex = ; true; }";
+    let src = "q__predict() { x : pkgindex = ; true; }";
     let mut interner = Interner::default();
-    let lifted = lift_checks(&mut interner, src);
+    let lifted = lift_predicts(&mut interner, src);
     assert!(
         !lifted.diags.is_empty(),
         "`name : kind =` with no value must diagnose"
@@ -397,19 +397,19 @@ fn cross_oracle_two_providers_share_one_kind() {
     // carries the verbatim reverse-DNS string through. The differing argparse is why
     // identity is command-keyed while the kind is cross-oracle.
     let src = r#"
-apt_get__check() {
+apt_get__predict() {
    verb=$1; shift
    pkg : com.debian.apt.Package = "$1"
    dpkg-query -W "$pkg"
 }
-dnf__check() {
+dnf__predict() {
    verb=$1
    pkg : com.debian.apt.Package = "$2"
    rpm -q "$pkg"
 }
 "#;
     let mut interner = Interner::default();
-    let lifted = lift_checks(&mut interner, src);
+    let lifted = lift_predicts(&mut interner, src);
     assert!(lifted.diags.is_empty(), "{:?}", lifted.diags);
     assert_eq!(lifted.value.len(), 2);
 
@@ -458,7 +458,7 @@ fn annotation_positional_past_end_is_top() {
     // position resolves to a positional past the end ⇒ Top. The disaster to avoid is
     // resolving to a stale/empty entity; biasing to Top is correct.
     let src = r#"
-foo__check() {
+foo__predict() {
    x : com.example.Thing = "$3"
    true
 }
@@ -473,7 +473,7 @@ fn missing_annotation_is_top() {
     // ⇒ Top(MissingAnnotation). (A check that argparses but never declares which value
     // is the entity is useless to entity-resolution; it must degrade, not guess.)
     let src = r#"
-bar__check() {
+bar__predict() {
    verb=$1; shift
    some-probe "$1"
 }
@@ -488,7 +488,7 @@ fn unbound_variable_in_annotation_is_top() {
     // does not resolve concretely ⇒ Top. (`$missing` is not a positional and has no
     // binding.) Pins that an undefined var never silently becomes empty-string.
     let src = r#"
-baz__check() {
+baz__predict() {
    x : com.example.K = "$undefined"
    true
 }
@@ -503,7 +503,7 @@ fn shift_past_end_is_top() {
     // degrades to Top rather than inventing positionals. (Reaching the annotation
     // after an over-shift would otherwise mis-resolve.)
     let src = r#"
-q__check() {
+q__predict() {
    shift 5
    x : com.example.K = "$1"
    true
@@ -524,7 +524,7 @@ fn unconsumed_flag_reaches_annotation_position() {
     // the literal flag as its entity — and the test pins that we do not second-guess
     // the oracle (`inv-referent-agnostic`: the engine parses NOTHING on its own).
     let src = r#"
-naive__check() {
+naive__predict() {
    x : com.example.K = "$1"
    probe "$x"
 }
@@ -547,7 +547,7 @@ fn budget_bounds_a_nonterminating_loop() {
     // the budget mechanism (the loops the dialect *usually* admits terminate by
     // construction, so we must construct a pathological one to test the guard).
     let src = r#"
-loopy__check() {
+loopy__predict() {
    while [ "$1" = "$1" ]; do
       probe-step
    done
@@ -570,7 +570,7 @@ fn test_context_past_end_positional_is_empty_string() {
     // gates the probe resolves `[nginx]` (one operand, `$2` empty ⇒ probe runs) but
     // degrades `[nginx, curl]` (a second operand ⇒ no probe ⇒ NoProbeReached).
     let src = r#"
-pkgone__check() {
+pkgone__predict() {
    pkg : package = "$1"
    if [ "$2" = "" ]; then probe "$pkg"; fi
 }
@@ -607,7 +607,7 @@ fn naive_oracle_without_operand_guard_drops_trailing_operands_known_hazard() {
     // mistaken for correct, and so a future engine-side "fix" (which would re-introduce
     // the deleted engine-side argparse) is visibly the wrong layer.
     let src = r#"
-naive__check() {
+naive__predict() {
    pkg : com.debian.apt.Package = "$1"
    dpkg-query -W "$pkg"
 }
@@ -638,7 +638,7 @@ naive__check() {
 fn double_quoted_positional_is_a_positional() {
     // `"$1"` resolves to the first argv element (the canonical idiom). Already
     // exercised by every §2 example; pinned here in isolation for the quoting matrix.
-    let src = r#"q__check() { x : K = "$1"; true; }"#;
+    let src = r#"q__predict() { x : K = "$1"; true; }"#;
     let res = resolve(src, "q", &["nginx"]);
     assert_eq!(resolved(&res).entity, operand("nginx"));
 }
@@ -648,7 +648,7 @@ fn bare_unquoted_positional_is_a_positional() {
     // `$1` (unquoted) resolves identically to `"$1"` for a single-token value. (Field
     // splitting/globbing on an unquoted expansion is not modeled — and irrelevant for
     // a single concrete argv element. The dialect treats `$1` and `"$1"` the same.)
-    let src = "q__check() { x : K = $1; true; }";
+    let src = "q__predict() { x : K = $1; true; }";
     let res = resolve(src, "q", &["nginx"]);
     assert_eq!(resolved(&res).entity, operand("nginx"));
 }
@@ -659,7 +659,7 @@ fn single_quoted_dollar_one_is_a_literal_not_a_positional() {
     // the first argument. The evaluator resolves entity to the literal "$1". This is
     // the documented choice (Word::SingleQuotedLiteral): a single-quoted value is a
     // literal, so the entity is the two-character string `$1`, regardless of argv.
-    let src = "q__check() { x : K = '$1'; true; }";
+    let src = "q__predict() { x : K = '$1'; true; }";
     let res = resolve(src, "q", &["nginx"]);
     assert_eq!(
         resolved(&res).entity,
@@ -673,23 +673,23 @@ fn single_quoted_dollar_one_is_a_literal_not_a_positional() {
 // =============================================================================
 
 #[test]
-fn half_garbage_file_lifts_the_good_check() {
+fn half_garbage_file_lifts_the_good_predict() {
     // One good check + one out-of-dialect check in the same file. Fail-soft
     // (`inv-no-throw`): the bad one yields a diagnostic and contributes nothing; the
     // good one still lifts. Pins that a single malformed function does not poison the
     // whole file.
     let src = r#"
-good__check() {
+good__predict() {
    x : com.example.K = "$1"
    probe "$x"
 }
-bad__check() {
+bad__predict() {
    x=`hostname`
    y : com.example.K = "$1"
 }
 "#;
     let mut interner = Interner::default();
-    let lifted = lift_checks(&mut interner, src);
+    let lifted = lift_predicts(&mut interner, src);
     assert!(
         !lifted.diags.is_empty(),
         "the bad check must produce a diagnostic"
@@ -706,9 +706,9 @@ bad__check() {
 fn backtick_command_substitution_is_out_of_dialect() {
     // Backticks (command substitution) are not in the dialect ⇒ lift diagnostic, no
     // check, no panic.
-    let src = "c__check() { x=`whoami`; y : K = \"$1\"; }";
+    let src = "c__predict() { x=`whoami`; y : K = \"$1\"; }";
     let mut interner = Interner::default();
-    let lifted = lift_checks(&mut interner, src);
+    let lifted = lift_predicts(&mut interner, src);
     assert!(!lifted.diags.is_empty());
     assert!(lifted.value.is_empty());
 }
@@ -716,9 +716,9 @@ fn backtick_command_substitution_is_out_of_dialect() {
 #[test]
 fn dollar_paren_command_substitution_is_out_of_dialect() {
     // `$(...)` command substitution — the modern spelling — is likewise rejected.
-    let src = r#"c__check() { x=$(whoami); y : K = "$1"; }"#;
+    let src = r#"c__predict() { x=$(whoami); y : K = "$1"; }"#;
     let mut interner = Interner::default();
-    let lifted = lift_checks(&mut interner, src);
+    let lifted = lift_predicts(&mut interner, src);
     assert!(!lifted.diags.is_empty(), "$(...) must be out of dialect");
     assert!(lifted.value.is_empty());
 }
@@ -733,9 +733,9 @@ fn eval_construct_is_out_of_dialect() {
     // be caught (if at all) by the separate reflexive-inertness check
     // (dq-reflexive-probe-inertness, 19H §1.3), which is out of scope for this
     // module. We assert the parser's actual behavior, not an aspiration.
-    let src = r#"c__check() { x : K = "$1"; eval "$x"; }"#;
+    let src = r#"c__predict() { x : K = "$1"; eval "$x"; }"#;
     let mut interner = Interner::default();
-    let lifted = lift_checks(&mut interner, src);
+    let lifted = lift_predicts(&mut interner, src);
     // It lifts (eval is a command word); the inertness gate is a different component.
     assert_eq!(
         lifted.value.len(),
@@ -750,33 +750,33 @@ fn bare_for_loop_is_out_of_dialect() {
     // ⊤-rejects loops by design; this dialect admits only the flag-strip `while`. A
     // `for` ⇒ lift diagnostic, no check.
     let src = r#"
-c__check() {
+c__predict() {
    for a in 1 2 3; do probe "$a"; done
    x : K = "$1"
 }
 "#;
     let mut interner = Interner::default();
-    let lifted = lift_checks(&mut interner, src);
+    let lifted = lift_predicts(&mut interner, src);
     assert!(!lifted.diags.is_empty(), "for-loops are out of dialect");
     assert!(lifted.value.is_empty());
 }
 
 #[test]
-fn non_check_functions_are_ignored_not_errors() {
+fn non_predict_functions_are_ignored_not_errors() {
     // A file with a bare assignment, a helper function, and a real check. The non-check
-    // top-level items are ignored (this module only owns `__check`); only the check
+    // top-level items are ignored (this module only owns `__predict`); only the check
     // lifts, with no spurious diagnostics.
     let src = r#"
 deploy_env=prod
 helper() { echo hi; }
-apt_get__check() {
+apt_get__predict() {
    verb=$1; shift
    pkg : com.debian.apt.Package = "$1"
    dpkg-query -W "$pkg"
 }
 "#;
     let mut interner = Interner::default();
-    let lifted = lift_checks(&mut interner, src);
+    let lifted = lift_predicts(&mut interner, src);
     assert!(
         lifted.diags.is_empty(),
         "non-check items must be ignored silently: {:?}",
@@ -799,27 +799,27 @@ fn hostile_garbage_never_panics() {
     let hostile: &[&str] = &[
         "",
         "\0\0\0",
-        "x__check() {",
-        "x__check() { \"unterminated",
-        "x__check() { 'unterminated",
-        "x__check() { case",
-        "x__check() { while",
-        "x__check() { ${",
-        "x__check() { $(((((",
-        "x__check() { [ [ [ [ [",
+        "x__predict() {",
+        "x__predict() { \"unterminated",
+        "x__predict() { 'unterminated",
+        "x__predict() { case",
+        "x__predict() { while",
+        "x__predict() { ${",
+        "x__predict() { $(((((",
+        "x__predict() { [ [ [ [ [",
         "}}}}}}}}",
         ";;;;;;;;",
         "((((((((",
-        "x__check() { x : : : = = = }",
+        "x__predict() { x : : : = = = }",
         &"{".repeat(5000),
-        &"x__check() { while [ \"$1\" != \"$1\" ]; do ".repeat(200),
-        "\u{feff}x__check() { x : K = \"$1\"; }", // BOM prefix
-        "𝓊𝓃𝒾𝒸ℴ𝒹ℯ__check() { x : K = \"$1\"; }",   // multibyte name
+        &"x__predict() { while [ \"$1\" != \"$1\" ]; do ".repeat(200),
+        "\u{feff}x__predict() { x : K = \"$1\"; }", // BOM prefix
+        "𝓊𝓃𝒾𝒸ℴ𝒹ℯ__predict() { x : K = \"$1\"; }",   // multibyte name
     ];
     for src in hostile {
         let mut interner = Interner::default();
         // The mere fact that this returns (no panic, no hang) is the assertion.
-        let lifted = lift_checks(&mut interner, src);
+        let lifted = lift_predicts(&mut interner, src);
         // And any lifted check must itself evaluate without panicking on any argv.
         for provider in lifted.value.providers().collect::<Vec<_>>() {
             if let Some(check) = lifted.value.get(provider) {
@@ -838,8 +838,8 @@ fn lift_is_deterministic() {
     // output.
     let mut i1 = Interner::default();
     let mut i2 = Interner::default();
-    let a = lift_checks(&mut i1, SYSTEMCTL);
-    let b = lift_checks(&mut i2, SYSTEMCTL);
+    let a = lift_predicts(&mut i1, SYSTEMCTL);
+    let b = lift_predicts(&mut i2, SYSTEMCTL);
     let pa: Vec<_> = a
         .value
         .providers()
@@ -859,14 +859,14 @@ fn lift_is_deterministic() {
 
 #[test]
 fn provider_name_underscore_maps_to_hyphen() {
-    // `apt_get__check` ⇒ provider `apt-get` (underscore→hyphen). This is the chosen
+    // `apt_get__predict` ⇒ provider `apt-get` (underscore→hyphen). This is the chosen
     // rule (flagged tc-*); pin it so a future change is visible. A single-segment
-    // name (`command__check` ⇒ `command`) has no underscore to map.
+    // name (`command__predict` ⇒ `command`) has no underscore to map.
     let mut interner = Interner::default();
-    let lifted = lift_checks(&mut interner, APT_GET);
+    let lifted = lift_predicts(&mut interner, APT_GET);
     assert!(
         lifted.value.get(interner.intern("apt-get")).is_some(),
-        "apt_get__check must key on provider `apt-get`"
+        "apt_get__predict must key on provider `apt-get`"
     );
     assert!(
         lifted.value.get(interner.intern("apt_get")).is_none(),
@@ -882,7 +882,7 @@ fn provider_name_underscore_maps_to_hyphen() {
 /// A check whose annotation value uses a GLOB prefix-strip (`${1#*=}` — dash strips
 /// up to the first `=` by fnmatch; a literal strip of `*=` matches nothing).
 const GLOB_ANNO: &str = r#"
-flagged__check() {
+flagged__predict() {
    pkg : package = "${1#*=}"
    dpkg-query -W "$pkg"
 }
@@ -891,7 +891,7 @@ flagged__check() {
 /// A check using the `##` longest-match form (`${1##*/}` — dash basename). The
 /// naive `split_once('#')` parse would mangle it into a literal `#*/` strip.
 const HASHHASH_ANNO: &str = r#"
-based__check() {
+based__predict() {
    pkg : package = "${1##*/}"
    dpkg-query -W "$pkg"
 }
@@ -900,7 +900,7 @@ based__check() {
 /// A check whose `[ ]` TEST uses a globby strip — the position where a Literal
 /// fallback would have silently compared the raw `${1#*=}` text (wrong concrete).
 const GLOB_TEST: &str = r#"
-globtest__check() {
+globtest__predict() {
    while [ "${1#-*}" != "$1" ]; do shift; done
    pkg : package = "$1"
    dpkg-query -W "$pkg"

@@ -1,12 +1,12 @@
 //! `dorc-oracle` — lifts the oracle contract out of plain sh into the analyzer's
 //! internal *kind index*.
 //!
-//! An oracle file is ordinary sh whose `<provider>__check` function IS the contract
+//! An oracle file is ordinary sh whose `<provider>__predict` function IS the contract
 //! (23D §1 — the check is the oracle). The analyzer reads the effect-map off the check
 //! body's own control flow, never by running it:
 //!
 //! ```sh
-//! apt_get__check() {
+//! apt_get__predict() {
 //!    verb=$1; shift
 //!    pkg : package = "$1"                                    # the kind annotation
 //!    case $verb in
@@ -19,7 +19,7 @@
 //! From a book's bare `apt-get install -y nginx`, the analyzer derives the effect
 //! `(apt-get, install) → (package, #installed, Establish)` (the `case $verb` arm names the
 //! verb, the inline `pkg : package` annotation names the kind, the trailing mark names the
-//! selector + rc convention — see [`check::derive_check`]). The kind name is the only
+//! selector + rc convention — see [`predict::derive_predict`]). The kind name is the only
 //! cross-oracle anchor (apt's `package` ≡ yum's `package`); it is never decoded for meaning
 //! (`inv-referent-agnostic`).
 //!
@@ -49,11 +49,11 @@ use std::collections::BTreeMap;
 /// traces a known argv through a check's argparse to its kind-annotation.
 ///
 /// Round-20 input-side mechanism, wired in by task-W: `analysis::effect` threads a
-/// book's value-flow through [`check::evaluate`] (the oracle's own argparse) to its
-/// inline kind-annotation — the real entity-resolution. [`derive_check`](check::derive_check)
+/// book's value-flow through [`predict::evaluate`] (the oracle's own argparse) to its
+/// inline kind-annotation — the real entity-resolution. [`derive_predict`](predict::derive_predict)
 /// reads the same check body's `case $verb` arms + trailing marks to build the effect-map
 /// [`lift`] indexes per `(provider, verb)`.
-pub mod check;
+pub mod predict;
 
 /// How a `(provider, verb)` reads/writes a fact's OPAQUE boolean — the lifted
 /// representation is [`ValueClaim`] (jc-polarity-vs-rc, FINAL — human 2026-07-02).
@@ -62,7 +62,7 @@ pub mod check;
 /// name one type. `EstablishInverted` (the former `Kill`'s `!` mark) carries rc-inversion
 /// only — no "kill" concept; a site reaching it classifies `MustRun` under the transitional
 /// freeze (see `analysis::effect::cell_effect`).
-pub use check::ValueClaim;
+pub use predict::ValueClaim;
 
 /// One declared effect cell of a `(provider, verb)`: which `kind`, which `selector`
 /// facet, and the [`ValueClaim`]. A `(provider, verb)` may declare **several** cells
@@ -166,8 +166,8 @@ pub fn empty_verb(interner: &mut Interner) -> Symbol {
 
 /// Map an interned kind/selector name to its **function-name segment** form: `-` → `_`
 /// (`package-index` ⇒ `package_index`). The inverse direction of
-/// [`check::map_provider_name`] (`_` → `-`), and the shared home of the
-/// hyphen↔underscore convention on the *emit*/match side (the shipped `<provider>__check`
+/// [`predict::map_provider_name`] (`_` → `-`), and the shared home of the
+/// hyphen↔underscore convention on the *emit*/match side (the shipped `<provider>__predict`
 /// wrapper name routes through here, so both sides agree).
 ///
 /// **Lossy** in the same way `map_provider_name` is: a literal `_` in the name is
@@ -179,14 +179,14 @@ pub fn to_funcname_segment(name: &str) -> String {
 
 /// Lift a set of oracle sh sources into the kind index, interning kind/provider/verb
 /// names through the shared `interner` (so they match the names the book analysis
-/// interns). The effect-map is DERIVED from each oracle's `<provider>__check` bodies
-/// (23D §1 — the check is the oracle): [`check::lift_checks`] parses the dialect,
-/// [`check::derive_check`] reads the `case $verb` arms + inline annotation + trailing
+/// interns). The effect-map is DERIVED from each oracle's `<provider>__predict` bodies
+/// (23D §1 — the check is the oracle): [`predict::lift_predicts`] parses the dialect,
+/// [`predict::derive_predict`] reads the `case $verb` arms + inline annotation + trailing
 /// marks off each check into `(provider, verb) → (kind, selector, claim)` cells.
 ///
-/// Never panics (`inv-no-throw`): `derive_check` is total (a shape it cannot characterize
+/// Never panics (`inv-no-throw`): `derive_predict` is total (a shape it cannot characterize
 /// simply contributes no cell, the safe direction), and a check that fails to lift is a
-/// per-function diagnostic surfaced by the caller's own [`check::lift_checks`] pass (the
+/// per-function diagnostic surfaced by the caller's own [`predict::lift_predicts`] pass (the
 /// cli reports check diagnostics separately), not a crash. Deterministic
 /// (`inv-determinism`): sources are walked in argument order, the index is
 /// `BTreeMap`-backed, and nothing here touches clock/RNG/IO.
@@ -195,14 +195,14 @@ pub fn lift(interner: &mut Interner, oracle_sources: &[&str]) -> Carrier<KindInd
     let mut out = Carrier::pure(KindIndex::default());
     for src in oracle_sources {
         // The check-lift's own diagnostics are reported by the caller's separate
-        // `lift_checks` pass (cli/coverage); here we consume only the parsed checks to
+        // `lift_predicts` pass (cli/coverage); here we consume only the parsed checks to
         // derive the effect-map, so a malformed check contributes no cells (safe).
-        let checks = check::lift_checks(interner, src).value;
+        let checks = predict::lift_predicts(interner, src).value;
         for provider in checks.providers() {
             let Some(c) = checks.get(provider) else {
                 continue;
             };
-            let (effects, _vouches) = check::derive_check(c);
+            let (effects, _vouches) = predict::derive_predict(c);
             for e in effects {
                 let verb = match e.verb {
                     Some(v) => interner.intern(&v),
@@ -307,8 +307,8 @@ mod tests {
     #[test]
     fn lifts_the_package_fixture_cleanly() {
         // The acceptance fixture: a real, fully-formed oracle must lift (check-based) to a
-        // complete effect-map. jc-dpkg-i: the fixture declares BOTH the `apt_get__check`
-        // (verb-dispatched) and the minimal verbless `dpkg__check` (strips `-i`, so `dpkg`
+        // complete effect-map. jc-dpkg-i: the fixture declares BOTH the `apt_get__predict`
+        // (verb-dispatched) and the minimal verbless `dpkg__predict` (strips `-i`, so `dpkg`
         // is verbless ⇒ the ε-verb), preserving the pinned intent "dpkg -i establishes
         // package#installed" under check-is-the-oracle.
         let fixture = include_str!(concat!(
@@ -352,9 +352,9 @@ mod tests {
     fn multiple_sources_accumulate_deterministically() {
         // dn-1's whole point: many oracle files contribute to one index, in argument
         // order, with no cross-file interference. Two providers, same kind (the Seam).
-        let a = "apt-get.check() { verb=$1; shift; pkg : package = \"$1\"; \
+        let a = "apt-get.predict() { verb=$1; shift; pkg : package = \"$1\"; \
                  case $verb in install) dpkg-query -W \"$pkg\" : package:\"$pkg\".installed ;; esac; }";
-        let b = "yum.check() { verb=$1; shift; pkg : package = \"$1\"; \
+        let b = "yum.predict() { verb=$1; shift; pkg : package = \"$1\"; \
                  case $verb in install) rpm -q \"$pkg\" : package:\"$pkg\".installed ;; esac; }";
         let mut i = Interner::default();
         let out = lift(&mut i, &[a, b]);
@@ -371,10 +371,10 @@ mod tests {
     }
 
     #[test]
-    fn verbless_check_keys_the_epsilon_verb() {
+    fn verbless_predict_keys_the_epsilon_verb() {
         // A verbless check (`command -v`) derives its effect on the ε-verb — the key the
         // wiring uses for a check that binds no verb (202 §2 / task-W §4).
-        let src = "command.check() { case $1 in -v) shift ;; esac; tool : tool = \"$1\"; \
+        let src = "command.predict() { case $1 in -v) shift ;; esac; tool : tool = \"$1\"; \
                    command -v -- \"$tool\" >/dev/null 2>&1 :? tool:\"$tool\".present; }";
         let mut i = Interner::default();
         let out = lift(&mut i, &[src]);

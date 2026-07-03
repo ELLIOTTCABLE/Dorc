@@ -3,7 +3,7 @@
 //!
 //! Before this module those beliefs were re-implemented independently in the
 //! value-plane (`analysis::value`), the contract-dialect parser+evaluator
-//! (`oracle::check`), and the probe render (`plan`). Each re-implementation was an
+//! (`oracle::predict`), and the probe render (`plan`). Each re-implementation was an
 //! *independent dash-divergence surface* — `20A` §1 fam-B — and the round's two
 //! priority-1 wrong-elision bugs were exactly such divergences (prefix-env argv
 //! visibility; the `${N#pat}` literal-vs-glob split). Collapsing them to one place
@@ -28,7 +28,7 @@
 //! policy, literal extraction, and shell-quoting. It does **not** own statement- or
 //! command-level semantics — errexit edge pruning (`analysis::cfg`), command-prefix
 //! argv-vs-environment ordering (`analysis::value::site_argv`), `case`/`while`
-//! argparse control-flow (`oracle::check::eval`), or leaf/word *assembly* in the two
+//! argparse control-flow (`oracle::predict::eval`), or leaf/word *assembly* in the two
 //! renders. Those remain where the control-flow they are entangled with lives.
 
 use crate::ast::WordPart;
@@ -60,7 +60,7 @@ pub enum ParamClass {
 /// close-brace) into its [`ParamClass`] (XCU §2.5).
 ///
 /// This is the **one** definition of "is this `$name` a plain var" the engine has;
-/// `analysis::value` and `oracle::check::parser` both keyed off private copies that
+/// `analysis::value` and `oracle::predict::parser` both keyed off private copies that
 /// agreed on the predicate but disagreed on what the *other* cases meant (the
 /// value-plane folded every non-name — positional, special, multi-digit `${12}` —
 /// into one ⊤ bucket via a `false` return, conflating three distinct POSIX classes;
@@ -99,7 +99,7 @@ pub fn classify_param(name: &str) -> ParamClass {
 ///
 /// dash note: dash rejects a leading digit (`1x=…` is not an assignment) and any
 /// non-`[A-Za-z0-9_]` byte; this predicate matches that exactly. It is the lexical
-/// rule behind `analysis::value::is_plain_var`, `oracle::check::parser::is_ident`,
+/// rule behind `analysis::value::is_plain_var`, `oracle::predict::parser::is_ident`,
 /// and `syntax::parser::is_func_name`/`is_assignment_name` — all four were
 /// byte-for-byte identical (no divergence) and now route here.
 #[must_use]
@@ -334,7 +334,7 @@ pub fn const_literal_text(parts: &[WordPart]) -> Option<String> {
 /// `inv-kfail` both directions).
 ///
 /// An operand is interned post-parse (quotes already stripped, embedded metachars
-/// preserved), so passing it raw into a rendered probe (`package__check my pkg`)
+/// preserved), so passing it raw into a rendered probe (`package__predict my pkg`)
 /// would word-split into two args (⇒ probes the wrong entity, a `kFAIL-perform`
 /// wrong-elision) or, for `x; touch /tmp/PWNED`, re-parse as a second command (⇒ a
 /// `kFAIL-withhold` probe-mutation). Wrapping in `'…'` makes the value inert and

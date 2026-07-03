@@ -185,14 +185,14 @@ fn run() -> Result<(), String> {
     report_at(advisory, "oracle", &lifted.diags);
     let idx = lifted.value;
 
-    // Lift each oracle's `<provider>__check` functions into a per-file CheckSet (the
+    // Lift each oracle's `<provider>__predict` functions into a per-file PredictSet (the
     // real entity-resolution mechanism — the engine threads the book's value-flow
     // through these, never parsing argv itself). Shared interner, so provider symbols
     // match the book's command words (204 seam #2).
-    let checks: Vec<dorc_oracle::check::CheckSet> = oracle_refs
+    let checks: Vec<dorc_oracle::predict::PredictSet> = oracle_refs
         .iter()
         .map(|src| {
-            let lifted = dorc_oracle::check::lift_checks(&mut interner, src);
+            let lifted = dorc_oracle::predict::lift_predicts(&mut interner, src);
             report_at(advisory, "check", &lifted.diags);
             lifted.value
         })
@@ -229,8 +229,8 @@ fn run() -> Result<(), String> {
     let classes = classified.value;
 
     // The read-only, SELF-REPORTING, site-keyed probe (R3 / 23D §1 — the check IS the oracle):
-    // each site ships its provider's stripped `<provider>__check` invoked with the site's argv.
-    let ship = |p, a: &[Symbol]| ship_check_body(&oracle_srcs, &checks, &interner, p, a);
+    // each site ships its provider's stripped `<provider>__predict` invoked with the site's argv.
+    let ship = |p, a: &[Symbol]| ship_predict_body(&oracle_srcs, &checks, &interner, p, a);
     let probe = dorc_plan::compile_probe(&parsed.value, &cfg.value, &value, &classes, ship);
 
     // `probe` mode stops here: emit the probe artifact and return. It reads no stdin (no
@@ -351,25 +351,25 @@ fn run() -> Result<(), String> {
     Ok(())
 }
 
-/// R3 (23D §1 — the check IS the oracle): resolve the stripped `<provider>__check` funcdef
+/// R3 (23D §1 — the check IS the oracle): resolve the stripped `<provider>__predict` funcdef
 /// a probe site ships, given its resolved (provider-word, argv-after-word0). Re-runs the
 /// SAME resolution [`dorc_analysis::effect`] used — the FIRST check, in oracle-file order,
 /// whose provider matches (through the shared hyphen↔underscore
-/// [`map_provider_name`](dorc_oracle::check::map_provider_name) convention) AND whose own
-/// argparse [`evaluate`](dorc_oracle::check::evaluate)s this argv concretely — then
-/// [`strip_check`](dorc_oracle::check::strip_check)s it. Matching the analysis's resolution
+/// [`map_provider_name`](dorc_oracle::predict::map_provider_name) convention) AND whose own
+/// argparse [`evaluate`](dorc_oracle::predict::evaluate)s this argv concretely — then
+/// [`strip_predict`](dorc_oracle::predict::strip_predict)s it. Matching the analysis's resolution
 /// is load-bearing: the shipped probe must check exactly the fact the analysis decided
 /// (a provider with two checks — `apt-get` as `package` and `pkgindex` — resolves per argv,
 /// `install …` ⇒ package, `update` ⇒ whichever resolves first). `None` ⇒ no check resolves
 /// ⇒ the site is un-shippable ⇒ un-elidable (`kFAIL-perform`).
-fn ship_check_body(
+fn ship_predict_body(
     oracle_srcs: &[String],
-    checks: &[dorc_oracle::check::CheckSet],
+    checks: &[dorc_oracle::predict::PredictSet],
     interner: &Interner,
     provider: Symbol,
     argv: &[Symbol],
 ) -> Option<String> {
-    use dorc_oracle::check::{Resolution, evaluate, map_provider_name, strip_check};
+    use dorc_oracle::predict::{Resolution, evaluate, map_provider_name, strip_predict};
     let want = map_provider_name(interner.resolve(provider));
     let arg_texts: Vec<String> = argv
         .iter()
@@ -383,7 +383,7 @@ fn ship_check_body(
             }
             let Some(check) = cs.get(cp) else { continue };
             if matches!(evaluate(check, &arg_refs), Resolution::Resolved(_)) {
-                return Some(strip_check(src, check, interner));
+                return Some(strip_predict(src, check, interner));
             }
         }
     }
@@ -757,7 +757,7 @@ fn merge_observable(a: Observable, b: Observable) -> Observable {
 /// A record's key: the command **site** (the stable `LeafId`, `inv-site-keyed-results`)
 /// plus an optional MEMBER index (task-L2 item-4): `None` for an ordinary single-fact
 /// record (`site N`), `Some(m)` for member `m` of an in-loop Members family (`site N.M`).
-/// The probe's [`dorc_plan::ProbeCheck`] carries the same `(site, member)` pair, so the
+/// The probe's [`dorc_plan::ProbePredict`] carries the same `(site, member)` pair, so the
 /// bridge ([`facts_from_sites`]) keys a member record back to that member's cell.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 struct RecordKey {
@@ -946,7 +946,7 @@ fn report(stage: &str, diags: &[dorc_core::Diagnostic]) {
 mod tests {
     use super::*;
     use dorc_core::{EntityRef, FactKey, Interner, KindId, OpaqueToken, SelectorId};
-    use dorc_plan::{LeafId, ProbeCheck, ProbePlan, ProbeSiteKind};
+    use dorc_plan::{LeafId, ProbePlan, ProbePredict, ProbeSiteKind};
 
     fn pkg(i: &mut Interner, e: &str) -> FactKey {
         FactKey {
@@ -975,7 +975,7 @@ mod tests {
     /// A one-check probe over `fact` with the given site-kind (the firewall input).
     fn probe1(fact: FactKey, site_kind: ProbeSiteKind) -> ProbePlan {
         ProbePlan {
-            checks: vec![ProbeCheck {
+            checks: vec![ProbePredict {
                 site: LeafId(0),
                 member: None,
                 fact,
@@ -1152,7 +1152,7 @@ mod tests {
     fn probe2(fact: FactKey, k0: ProbeSiteKind, k1: ProbeSiteKind) -> ProbePlan {
         ProbePlan {
             checks: vec![
-                ProbeCheck {
+                ProbePredict {
                     site: LeafId(0),
                     member: None,
                     fact,
@@ -1161,7 +1161,7 @@ mod tests {
                     site_kind: k0,
                     sh: "{ :; }".to_string(),
                 },
-                ProbeCheck {
+                ProbePredict {
                     site: LeafId(1),
                     member: None,
                     fact,

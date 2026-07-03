@@ -120,7 +120,7 @@ impl Rng {
 
 /// One modeled kind the generator can use — a `(kind, provider, verb, selector)` tuple
 /// plus the entity vocabulary it draws from. Mirrors `package.oracle.sh`'s shape: a
-/// `<provider>__check` argparse in the constrained dialect whose trailing marks the engine
+/// `<provider>__predict` argparse in the constrained dialect whose trailing marks the engine
 /// derives the effect-map from.
 #[derive(Debug, Clone)]
 struct KindSpec {
@@ -505,7 +505,7 @@ fn push_kind(v: &mut Vec<KindSpec>, k: &KindSpec) {
 }
 
 /// Build the oracle files for the used kinds (+ the query oracle if any guard was
-/// emitted). Mirrors `package.oracle.sh`: a `<provider>__check` argparse in the
+/// emitted). Mirrors `package.oracle.sh`: a `<provider>__predict` argparse in the
 /// constrained dialect, whose `case $verb` arms + trailing marks the engine derives the
 /// effect-map from (23D §1 — the check is the oracle).
 fn build_oracles(used_kinds: &[KindSpec], used_query: bool) -> Vec<(String, String)> {
@@ -522,7 +522,7 @@ fn build_oracles(used_kinds: &[KindSpec], used_query: bool) -> Vec<(String, Stri
     out
 }
 
-/// One oracle file's text — the constrained-dialect `<provider>__check` the engine lifts.
+/// One oracle file's text — the constrained-dialect `<provider>__predict` the engine lifts.
 /// The effect-map is DERIVED from the check body (23D §1): the `case $verb` arm's trailing
 /// mark (`:` establish / `:?` observe) names the selector + rc convention; a verbless check
 /// keys the ε-verb. No markers — the check is the whole contract.
@@ -531,7 +531,7 @@ fn oracle_text(k: &KindSpec) -> String {
     let mut s = String::new();
     let _ = writeln!(s, "#!/bin/sh");
     if k.has_verb {
-        let _ = writeln!(s, "{}() {{", check_fn_name(k.provider));
+        let _ = writeln!(s, "{}() {{", predict_fn_name(k.provider));
         let _ = writeln!(s, "   while [ \"${{1#-}}\" != \"$1\" ]; do shift; done");
         let _ = writeln!(s, "   verb=$1; shift");
         let _ = writeln!(s, "   while [ \"${{1#-}}\" != \"$1\" ]; do shift; done");
@@ -551,7 +551,7 @@ fn oracle_text(k: &KindSpec) -> String {
         let _ = writeln!(s, "}}");
     } else {
         // Verbless (the `command -v X` query shape): the trailing mark keys the ε-verb.
-        let _ = writeln!(s, "{}() {{", check_fn_name(k.provider));
+        let _ = writeln!(s, "{}() {{", predict_fn_name(k.provider));
         let _ = writeln!(s, "   while [ \"${{1#-}}\" != \"$1\" ]; do shift; done");
         let _ = writeln!(s, "   e : {} = \"$1\"", k.kind);
         let _ = writeln!(
@@ -566,11 +566,11 @@ fn oracle_text(k: &KindSpec) -> String {
     s
 }
 
-/// The `<provider>__check` function name: the provider with `-` → `_` (the engine keys
-/// the check by the command word; `apt-get` lifts as `apt_get__check`). Our generated
+/// The `<provider>__predict` function name: the provider with `-` → `_` (the engine keys
+/// the check by the command word; `apt-get` lifts as `apt_get__predict`). Our generated
 /// providers have no `-`, but keep the mapping faithful.
-fn check_fn_name(provider: &str) -> String {
-    format!("{}__check", provider.replace('-', "_"))
+fn predict_fn_name(provider: &str) -> String {
+    format!("{}__predict", provider.replace('-', "_"))
 }
 
 // ===========================================================================
