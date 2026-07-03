@@ -121,3 +121,49 @@ is a `Host` whose mutator's `TrueEffect` exceeds what its probe reports converge
 declared/ground-truth split already built, so the honesty enum generalizes {Honest, Lying-footprint}
 → {…, Lying-adequacy}, keyed on the claim-tier once Stage 3 lands it. The dangerous residual the
 whole round exists to measure now has its measuring instrument.
+
+## Stage 3 — the guard tier + claim-tier algebra (PARTIAL 2026-07-03; 3 of 4 pieces landed)
+
+The builder made a disciplined partial-stop: 3 clean green pieces landed
+(`3726f3b`/`fd40349`/`8fb80e6` → merged `b047e16`), the 4th (mint-wiring + elide-weld) handed off
+because it is large, cross-cutting, and coupled to corpus-wide churn that breaks the tree if
+partial. Green: 25 suites, 145 e2e (9 guard23 XFAILs intact — no guard fires yet), all gates.
+Landed: (1) the **claim-tier trust algebra** (`core/src/claim.rs`); (2) the **verdict-function
+lift** (`is_converged`/`is_diverged`, `oracle/src/verdict.rs`); (3) the **guard tier
+type-architecture** (`Disposition::Guard`, `GuardLicense`, the emitter — minted in tests only).
+
+**Conductor review of the FOUNDATION (the claim-tier algebra — the round's earmarked-reviewable
+decision): VERIFIED SOUND.** All four unrepresentability properties are genuine compile-errors,
+mechanism-checked in `claim.rs`: TC-tier-1 `demote` is the sole tier transition (no inverse fn ⇒
+upgrade un-spellable); TC-tier-2 the phantom tier makes `Fact<_>`/`Judgment<_>` non-unifiable at a
+mint signature; TC-tier-3 `observation()` is `FactTier`-only (a judgment has no fact-plane exit, no
+`From<vouch>` anywhere); TC-tier-4 `Rung` sits inside `Vouched<P>` (judgment-only payload),
+reserving the ladder seam as an ADD-not-resign. Sealed trait blocks a 4th tier; the honest-bound
+line is verbatim. Naming-and-docs gate PASSES. **NB (never-vouch discipline): this is conductor
+process-evidence, NOT proof — the foundation stays earmarked for the human's own eyes (it is the
+base the whole guard tier + corpus churn build on).**
+
+**strain-classify-coupling (builder's design discovery; corrects a 24D under-spec — +SURE,
+`--debug-argv`-verified).** The guard tier is NOT a localized plan change. Past-wall sites are
+`EstablishWritten` (an opaque `hork` poisons them at classify time), so they **skip probes entirely
+at HEAD** — they are NOT `EstablishAmbient`-walled `Replace`s. So the naive "convert a walled
+Replace→Guard" model is WRONG: the guard mint requires `compile_probe` to SHIP probes for vouched
+`EstablishWritten` sites, plus a `disposition_for` guard-arm for them — the guard reaches into the
+classify/probe boundary, not just the wall-walk. 24D §2/§3 under-specified this; the builder's
+hand-off is the corrected spec.
+
+**The A/B split (conductor decision, human asleep — the remainder is two risk-classes):**
+- **Part A — make guards fire (DISPATCHED as the continuation; additive, foundation-validating).**
+  The mint-wiring: cli lifts verdict-sets + `evaluate_verdict` per site → a `Judgment<VerdictVouch>`
+  map threaded into `build_plan_walled` (ALWAYS-ON — guards are the un-flagged baseline, NOT
+  `--trust-footprints`-gated); `compile_probe` ships probes for vouched `EstablishWritten` sites;
+  the guard mint (`EstablishWritten`+vouch+converged ⇒ `Disposition::Guard`); the guard23 fixtures
+  gain verdict functions; gate-6 widening + `cf-6`. The 9 `guard23-*` XFAILs become PROMOTABLE —
+  the builder PROPOSES (diffs), the conductor inspects + authorizes (promotion discipline). No
+  corpus churn beyond the 9 pins. This VALIDATES the foundation by exercising it end-to-end.
+- **Part B — the elide-weld (HELD for the human's foundation go/no-go).** Demanding a
+  `Judgment<VerdictVouch>` on `prove_replaceable`'s `EstablishAmbient` arm (closing the HEAD
+  vouchless-elide gap) requires churning EVERY converged oracle fixture to gain a verdict function
+  + re-goldening — the expensive-if-the-foundation-is-wrong change. Held deliberately: it is the
+  corpus-wide churn the "type-architecture is reviewable" earmark exists to gate. Un-hold on the
+  human's nod to the foundation (24D + `claim.rs`).
