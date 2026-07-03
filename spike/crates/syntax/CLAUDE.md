@@ -29,8 +29,8 @@ and the three oracle idioms. Already modeled (don't re-derive): `set -e`; `case`
 `&&`/`||` (left-assoc); pipelines; `( )` subshell / `{ }` group; `name() { … }`
 funcdef; redirs incl. `>/dev/null`, `2>&1` dup, and `cat > f <<'EOF'` heredoc
 (body captured, quoted-delimiter flag); the standalone-assignment statement
-(`oracle_kind=package`, the **dn-1** metadata-in-sh anchor) and the
-`oracle_effect apt-get install establish` marker-call (just a `Simple`). Lossless
+(a bare `name=value` — the shape a check's inline identity annotation strips to) and
+any statically-named `Simple` command word-list. Lossless
 quoting is wired (`WordPart`/`Word::may_split`). +SURE these are green
 (`tests/parse.rs::fixture_pi_webhost_top_level_shape`).
 
@@ -88,7 +88,7 @@ own node, not a flag on the command.
 `local w : com.frobber.Wombat{frocked} = "$1"` / a `return … : "$w" is …` /
 dotted `frobctl.check()` (see `17O F-OFFRAMP` strawman A). -GUESS the parse work
 lands on the `Assign`/word path + funcdef-name lexing; it is **not yet built** —
-the current `Assign` only carries the bare `oracle_kind=package` anchor. Parse it
+the current `Assign` only carries a bare `name=value`. Parse it
 demand-driven when the keystone/oracle-lift needs it.
 
 **Accepted debt — do not "fix" it.** This breaks the off-ramp weld

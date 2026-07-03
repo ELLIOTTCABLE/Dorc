@@ -1,11 +1,6 @@
-# yum provider for the SAME `package` kind (the 17N cross-oracle Seam). Effects only:
-# the probe is supplied by the sibling apt oracle (kind is the cross-oracle anchor).
-# NB this emits a spurious `oracle-missing-probe` diagnostic — the lifter checks probe-
-# completeness PER FILE, not per-kind-across-files; the index is complete anyway, so
-# both providers' converged installs still elide. notes/199 cluster-E (the Seam strain).
-oracle_kind=package
-oracle_effect yum install establish installed
-oracle_effect yum remove kill installed
+# yum provider for the SAME `package` kind (the 17N cross-oracle Seam). Its own check
+# carries the same `package` annotation — the kind name is the shared cross-oracle anchor,
+# so both providers' converged installs elide against one kind. notes/199 cluster-E.
 # command-keyed check(): yum argparses like apt-get here (verb then operand), same
 # `package` kind — the cross-oracle Seam (the kind name is the shared anchor).
 yum__check() {

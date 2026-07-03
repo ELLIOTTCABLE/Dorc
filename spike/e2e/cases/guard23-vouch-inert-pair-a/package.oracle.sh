@@ -1,8 +1,4 @@
 # minimal package oracle (apt/dpkg) — pair-a: NO vouch (the differential control).
-oracle_kind=package
-oracle_probe_package() { dpkg-query -W "$1" >/dev/null 2>&1; }
-oracle_effect apt-get install establish installed
-oracle_effect apt-get purge kill installed
 # command-keyed check(): the oracle's OWN argparse → inline kind-annotation (the real
 # entity-resolution; task-W). Flag-strip (pre- and post-verb), bind the verb, annotate
 # the single operand as `package`; the `[ "$2" = "" ]` guard refuses a SECOND operand

@@ -5,10 +5,7 @@
 # none). It exists to prove the package oracle's (A's) vouch NEVER licenses a guard on this
 # oracle's site — a build keying "a vouch exists in the set" / provider-set membership rather
 # than THIS-site's-oracle's-reached-path would wrongly guard `systemctl enable foo` off the apt
-# vouch. There is deliberately no `oracle_vouch_converged=` here.
-oracle_kind=service
-oracle_probe_service_enabled() { systemctl is-enabled --quiet "$1"; }
-oracle_effect systemctl enable establish enabled
+# vouch. There is deliberately no converged-vouch here.
 systemctl__check() {
    verb=$1; shift
    svc : service = "$1"

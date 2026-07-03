@@ -4,14 +4,11 @@
 # A real one must confirm an executable FILE, not a function/alias (17O R2-SHADOW);
 # this scrappy fixture is the minimal gate, and the apply is never executed against
 # this body (only the book's rendered apply runs, and only command -v is a builtin).
-oracle_kind=tool
-oracle_probe_tool() { command -v "$1" >/dev/null 2>&1; }
-oracle_effect command '' establish present
 # command-keyed check(): `command -v <tool>` binds NO verb (verbless provider, the
 # effect-map keys on the ε-verb); strip the `-v`, annotate the operand as `tool`.
-# NB this R2-SHADOW fixture models `command -v` as ESTABLISH (`:` not `:?`) — matching
-# its `oracle_effect … establish present` marker — so the idempotency guard blocks the
-# install's elision. The other tool oracles are read-only OBSERVE (`:?`, query).
+# NB this R2-SHADOW fixture models `command -v` as ESTABLISH (`:` not `:?`) — so the
+# idempotency guard blocks the install's elision. The other tool oracles are read-only
+# OBSERVE (`:?`, query).
 command__check() {
    case $1 in -v) shift ;; esac
    tool : tool = "$1"
