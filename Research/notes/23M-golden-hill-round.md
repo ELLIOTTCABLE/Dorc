@@ -5,14 +5,75 @@ raw working material, confidence-marked. Nothing here is welded; the round settl
 → (eventual) adversarial crosscheck → re-welds/pins. Seeds: `notes/238`, `plans/23D` §5, `23J`
 lane-privilege, the human's item-3 golden-hill statement (2026-07-03 chat).
 
-## THE ROUND'S SPINE (human-landing 2026-07-03; PROVISIONAL, unconfirmed against final reply): 233 is permanent — cage it, don't fix it
+## STATUS (read first): this round produced TERMINOLOGY + LANDMINES, not a design
+
+Honest scope, 2026-07-03: round #19-so-far has been DISCUSSION, not design. What now exists is
+(a) shared terminology for the problem-space (glossary below), (b) a map of where the naked
+unsoundness sits and where it has been caged, (c) one load-bearing reframe (233 is permanent;
+silence = wall; trust is opt-in). What does NOT exist: a software design — no spelled contract,
+no wire protocol, no engine mechanism, no pins, no strawman that survived scrutiny. Nothing here
+is welded or stamped. Do NOT build against this; it is the pre-design map, and the adversarial
+crosscheck has not run.
+
+## GLOSSARY (the round's main concrete product — all terms PROVISIONAL)
+
+- **spell / spelled** — write sh that Dorc mechanically lifts/analyzes/ships (code-plane;
+  typecheck/lint act here).
+- **profess / professed** — state in human-facing prose a promise/boundary a user READS
+  (trust-plane; NOT mechanical).
+- **horizon** — the ONE global, Dorc-professed liability boundary ("past here you're on your
+  own: [named residue]"). Not per-oracle; not a code concept.
+- **footprint** — the set of ENTITIES a command touches; authored for fixed tools, DERIVED at
+  probe time (a probe-time entity-set) for payload-bound tools (apt, hork). Positive, bounded.
+- **backing** — where a fact's truth lives, operationally = its verdict-probe's read-set. The
+  most ~SUSPECT surviving claim of the round.
+- **disjointness** — engine intersects a running command's footprint against a downstream fact's
+  backing; empty ⇒ elide-past-the-running-command; non-empty / ungrounded ⇒ guard or wall.
+- **coordinate-kind** — a shared vocabulary with an OWNER (apt.Package, systemd.Service,
+  dns.Zone, kernel.Sysctl…); anything with an owner, NOT filesystem-only.
+- **entity-identity** — what counts as an entity in a kind, and when two references are the same
+  one (aliasing); held by the ONE owner.
+- **contribution** — adding a property/cell to a shared kind + depending on its entities; OPEN to
+  all — the collaboration (scan_cve adds cve_clean onto apt.Package). Distinct from owning
+  identity.
+- **residue** — a DISCLOSED HOLE ("here is where we break, on purpose, and we tell you"); the
+  contents of the horizon; NOT a rescue mechanism.
+- **vetos** — [DEFERRED] optional owner-spelled protective veto of elisions it can't prove
+  unsound; parked someday-maybe.
+- **the three failure-directions** — *dangerous* (under-execute; must be caged in a
+  bounded/attendable/opt-in home), *value* (over-verify; may roam unbounded), *disclosed*
+  (horizon residue; professed, not defended).
+
+## CHANGED vs. CHURNED (the honest ledger — did we fix anything, or just churn?)
+
+CHANGED (concrete, load-bearing, vs the pre-crisis 233 "dangerous-middle"):
+1. **Silence semantics: DEFAULT-TRUST → DEFAULT-WALL.** Pre-crisis, an oracle's silence licensed
+   elision (unsound). Now silence licenses nothing; silence is a wall. This is the whole
+   ballgame and it is a real change, not a rename.
+2. **Burden assignment: nobody → the beneficiary, opt-in.** Pre-crisis nobody discharged the
+   completeness claim and everyone got wrong elisions. Now the author who WANTS cross-oracle
+   elision does the grounding work, opt-in, and slacking costs them VALUE, not correctness.
+3. **Blame: unattributable-and-silent → concentrated + mostly attributable.** Wrong elisions
+   went from silent-and-everywhere to {disclosed-horizon, owner-bounded-within-kind,
+   mechanical-dangling-reference}.
+4. **Understanding: entity-granular poisoning = the 233-impossibility = the collaboration
+   engine.** Conceptual, not a mechanism change, but load-bearing (below).
+
+CHURNED (relocated, not fixed — the human's own point, conceded):
+- The completeness-claim still EXISTS — relocated to the owner's within-kind identity-coherence,
+  never killed. 233 is caged, never beaten.
+- footprint / backing / disjointness IS the pre-crisis "declare your dependencies" idea,
+  rediscovered — now sound ONLY because of the silence=wall + opt-in fixes above. We churned
+  back to dependency-declaration with the single fix that makes it honest.
+
+## THE ROUND'S SPINE (human-landing 2026-07-03; PROVISIONAL): 233 is permanent — cage it, don't fix it
 
 The week's churn taught the human (and it survives the conductor's check): **233 — grounding
 soundness in a fallible completeness-claim is unsound — is a PERMANENT CONDITION of
 eliding-past-a-running-command, not a fixable bug.** Sound past-a-wall elision requires SOMEONE
 promising completeness over SOME vocabulary; every such promise is human and fallible; no design
 removes the need for it. Accept-and-design-*around* is the only honest posture. "Design around"
-has a precise, three-move shape, and it IS what this round achieved:
+has a precise, three-move shape (IDENTIFIED, not yet designed):
 1. **CONCENTRATE** the naked completeness-claim into its smallest, most-attendable, most-attributable home: an
    owner's no-synonym promise over its OWN bounded, enumerable vocabulary. (The consumer-side
    ecosystem-survey completeness-claim de-fangs entirely to VALUE — miss the existing name → wall, not
@@ -156,26 +217,36 @@ below — veto-only can only fail to prevent, never newly cause, a wrong elision
 extra machinery, moves neither correctness nor value needle on its own, just tunes the curve's
 middle; tolerable only with aggressive attribution + an admin off-switch. Parked.
 
-## THE DANGEROUS OPEN CELL — synonym/coherence (fails toward UNDER-execute; next up)
+## THE DANGEROUS CELL — synonym/coherence (fails toward UNDER-execute; WORKED, residue located)
 
-Every other gap in this design fails SAFE (missing/ungrounded/horizon-exceeded → wall → guard →
-over-verify). The one that fails UNSAFE: two honest oracle-authors using DIFFERENT names for the
-SAME referent (synonyms). Disjointness intersects coordinates; synonyms make the intersection
-come up EMPTY when it should HIT ⇒ false-disjoint ⇒ elide-when-shouldn't ⇒ under-execute (the
-cardinal sin). This is 233's "silence licenses nothing" one layer up (`23D` §5: "no shared name
-is 233's silence one layer up"), the SYNONYM dual of round-17's homonym problem. Proposed answer
-(mainline candidate, `23D` §5): the namespace-ownership convention — reverse-DNS kinds have
-owners; an owner honestly guarantees no-synonyms WITHIN their namespace; disjointness concludes
-only WITHIN one namespace, never across; Dorc owns only `sm.dorc.*` (bootstrap vocab, adopted by
-gravity, no registry/arbiter). Plus the entity-aliasing fence (within-kind identity ≠ string
-compare — symlinks/mounts/normalization; the kind-owner pins entity-identity semantics). NOT yet
-worked in dialogue — this is the next thread.
+Every other gap fails SAFE (missing/ungrounded/horizon-exceeded → wall → guard → over-verify).
+The one that fails UNSAFE: two honest authors using DIFFERENT names for the SAME referent
+(synonyms) ⇒ disjointness intersection comes up EMPTY when it should HIT ⇒ false-disjoint ⇒
+under-execute (the cardinal sin). 233's "silence licenses nothing" one layer up (`23D` §5); the
+SYNONYM dual of round-17's homonym problem. WORKED in dialogue (see "Contribution vs. identity"
+above); result:
+- The synonym danger is NOT "third parties writing my names" (that's contribution, encouraged).
+  It is the OWNER failing to keep coherent entity-identity WITHIN its own kind (declaring one
+  real referent under two real keys). Bounded, own-substrate, one owner to attribute.
+- The consumer's "did I find/use the right existing name" failure is VALUE-only (mint a private
+  name → cross-namespace → wall). Not dangerous.
+- A dangling reference (non-existent entity in an enumerable kind) is mechanically detectable at
+  probe time → diagnostic, not silent under-execute.
+- RESIDUAL NAKED SPOT (the one place we ship bare 233): owner within-kind identity incoherence,
+  defended only by attribution + the conservative-fallback STANCE (pinkie-promise) + an eventual
+  weak coherence-lint; NOT netted by the guard-half (elision bypasses guards). MUST be professed.
+- Entity-aliasing fence still owed: within-kind identity ≠ string compare
+  (symlinks/mounts/normalization); the kind-owner pins entity-identity semantics. Partly
+  addressed by the measurement crack (traced referents dissolve name-synonyms).
 
 ## Open, remaining (agenda)
-- synonym/coherence + namespace-ownership + entity-aliasing (THE dangerous cell — next).
-- the derived-footprint PROTOCOL: how a payload-bound oracle emits its per-run footprint at
-  probe time, and how it ships/is-consumed (touched, not worked).
+- **derived-footprint = a probe-time ENTITY-SET** (unlocked by entity-granular poisoning — the
+  derivation need only emit touched *entities*, not a property-map, and can't lie by omission):
+  what a tool is asked at probe time to yield its entity-set; how it's spelled (footprint meets
+  `predict()`); how it ships + is consumed in disjointness; its own horizon (residue still
+  professed). NEXT.
 - licensing tier + cross-site blast/attribution (a wrong footprint deletes SOMEONE ELSE's
   command — the permanently-sharp-knife tier; `23J` lane-privilege lives near here).
+- entity-identity spelling + the measurement-over-names crack (ques4-adjacent).
 - spelling (strawman-tier, LAST).
 - then: adversarial crosscheck of the whole package before any weld.
