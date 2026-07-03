@@ -41,17 +41,23 @@ mod lexer;
 mod parser;
 
 pub use ast::{Mark, MarkKind, MarkTarget, Predict, PredictSet, Stmt};
-pub use derive::{DerivedEffect, DerivedVouch, ValueClaim, derive_predict};
+pub use derive::{DerivedEffect, ValueClaim, derive_predict};
 pub use eval::{Resolution, Resolved, ResolvedEntity, TopReason, evaluate};
 pub use parser::lift_predicts;
 
 /// Strip an authored check funcdef to runnable sh — the STRIP-ONLY pass (R1c / 23D §1).
-/// It does exactly two things: rewrites a period-form name (`apt-get.predict`) to the
-/// mangled `<provider>__predict` the engine keys on, and removes the inline type
-/// annotations (the identity `name : kind = value` → `name=value`; a trailing effect
-/// mark `cmd … : kind:entity.prop` → just `cmd …`; a bare mark `: kind` → the `:` null
-/// command). Nothing else changes — the author's other bytes (whitespace, `while`/`case`,
-/// redirs, comments inside the body) are preserved verbatim.
+/// It rewrites a period-form name (`apt-get.predict`) to the mangled `<provider>__predict`
+/// the engine keys on, and removes the inline dialect annotations: the identity
+/// `name : kind = value` → `name=value`; a trailing effect mark `cmd … : kind:entity.prop`
+/// → just `cmd …`; and a BARE-mark statement (`: kind`, `: kind:entity.prop~`, …) → DELETED
+/// WHOLE — the mark line and one adjacent separator gone, never left as a `:` null command
+/// (23H §9.4 strip-fidelity: a bare mark is an annotation-LINE, equivalent to a comment; a
+/// stripped-in trailing `:` would clobber the preceding command's tool-rc to 0, which in
+/// guard position is an always-skip guard — the disaster shape). The author's LAST
+/// substantive command thus stays the last exit-status-affecting statement. Nothing else
+/// changes — other bytes (whitespace, `while`/`case`, redirs, comments) are preserved
+/// verbatim. A compound body containing ONLY bare marks would strip to an empty block
+/// (invalid sh); that is ⊤-rejected at LIFT (`parser`), so it never reaches the strip.
 ///
 /// `src` is the whole oracle source; [`Predict::span`] locates the funcdef within it. The
 /// result is `dash -n`-clean (the period name is the only dash-rejected form; annotations
@@ -143,10 +149,21 @@ fn collect_strip_edits(
                     edits.push((lo, hi, String::new()));
                 }
             }
-            // bare mark → the `:` null command (inert, dash-n-clean).
+            // bare mark → DELETE THE WHOLE STATEMENT (23H §9.4): a bare mark is an
+            // annotation-LINE, not a POSIX `:` command. A stripped-in `:` would clobber the
+            // preceding command's tool-rc to 0 (an always-skip guard). Consume the mark's
+            // own-line indentation + one trailing separator so the deletion leaves runnable
+            // sh (`A; ; B` and a dangling `:` are both wrong); a `;;`/block-end is NOT
+            // consumed (a case-arm's `A; ;;` is valid). A mark-only non-case-arm body is
+            // ⊤-rejected at lift, so the last substantive command is always preserved here.
             Stmt::Mark(m) => {
-                let (lo, hi) = rel(m.span);
-                edits.push((lo, hi, ":".to_owned()));
+                let del_lo = leading_ws_start(src, m.span.lo.0 as usize, base);
+                let del_hi = trailing_sep_end(src, m.span.hi.0 as usize);
+                edits.push((
+                    del_lo.saturating_sub(base),
+                    del_hi.saturating_sub(base),
+                    String::new(),
+                ));
             }
             Stmt::Case { arms, .. } => {
                 for a in arms {
@@ -164,6 +181,43 @@ fn collect_strip_edits(
             Stmt::While { body, .. } => collect_strip_edits(body, src, base, edits),
             Stmt::Assign { .. } | Stmt::Shift { .. } => {}
         }
+    }
+}
+
+/// Scan backward from `from` over horizontal whitespace (space/tab) only, stopping at a
+/// newline, a non-whitespace byte, or `floor` (the funcdef start). Returns the absolute
+/// offset of a bare-mark statement's own-line indentation start — deleting from here removes
+/// the mark's leading whitespace with it (clean output) without crossing into the previous
+/// line (whose separator must survive as the statement boundary).
+fn leading_ws_start(src: &str, from: usize, floor: usize) -> usize {
+    let bytes = src.as_bytes();
+    let mut i = from;
+    while i > floor {
+        let Some(prev) = i.checked_sub(1) else { break };
+        if !matches!(bytes.get(prev), Some(b' ' | b'\t')) {
+            break;
+        }
+        i = prev;
+    }
+    i
+}
+
+/// Scan forward from `from` over horizontal whitespace, then consume ONE statement separator
+/// — a single `;` (never `;;`, the case-arm terminator) or a newline. Returns the absolute
+/// offset past the consumed separator, or `from` unchanged when the next token is a
+/// `;;`/block-end (there the mark's OWN preceding separator already terminates the previous
+/// statement — a case-arm's `A; ;;` is valid sh). Consuming the trailing separator is what
+/// keeps a mid-body mark removal from leaving `A; ; B` (a syntax error).
+fn trailing_sep_end(src: &str, from: usize) -> usize {
+    let bytes = src.as_bytes();
+    let mut i = from;
+    while matches!(bytes.get(i), Some(b' ' | b'\t')) {
+        i = i.saturating_add(1);
+    }
+    match bytes.get(i) {
+        Some(b'\n') => i.saturating_add(1),
+        Some(b';') if bytes.get(i.saturating_add(1)) != Some(&b';') => i.saturating_add(1),
+        _ => from,
     }
 }
 
@@ -307,20 +361,47 @@ apt_get__predict() {
         );
     }
 
-    /// A bare mark (POISON/ACK/vouch) becomes the `:` null command — inert, dash-clean.
+    /// A TRAILING bare mark is deleted WHOLE (23H §9.4 strip-fidelity), never left as a `:`
+    /// null command — so the author's last substantive command (`dpkg-query`) stays the last
+    /// exit-status-affecting statement. A stripped-in trailing `:` would clobber that rc to 0
+    /// (an always-skip guard). Byte-exact: the mark line and its trailing `;` are gone.
+    /// (Canonical bare-mark example is the surviving three-level ACK `: kind:entity.prop~`;
+    /// the two-level converged-vouch mark is retired — rul24-vouch-is-verdict-authoring.)
     #[test]
-    fn bare_mark_becomes_null_command() {
-        let authored = "apt-get.predict() { pkg : package = \"$1\"; dpkg-query -W \"$pkg\"; : apt-get:install~; }";
-        let stripped = strip_one(authored);
-        assert!(
-            !stripped.contains("apt-get:install"),
-            "the vouch target is stripped: {stripped}"
-        );
-        // The `:` null command remains where the bare mark stood.
-        assert!(
-            stripped.contains(';'),
-            "statement structure preserved: {stripped}"
-        );
+    fn trailing_bare_mark_is_deleted_whole_not_a_null_command() {
+        let authored = "apt-get.predict() { pkg : package = \"$1\"; dpkg-query -W \"$pkg\"; : package:\"$pkg\".held~; }";
+        let expected = "apt_get__predict() { pkg=\"$1\"; dpkg-query -W \"$pkg\"; }";
+        assert_eq!(strip_one(authored), expected);
+    }
+
+    /// A MID-BODY bare mark is deleted whole, following statements intact, with NO leftover
+    /// `; ;` (a syntax error) — the mid-body deletion consumes one trailing separator.
+    #[test]
+    fn mid_body_bare_mark_is_deleted_leaving_following_statements() {
+        let authored = "apt-get.predict() { pkg : package = \"$1\"; : package:\"$pkg\".held~; dpkg-query -W \"$pkg\"; }";
+        let expected = "apt_get__predict() { pkg=\"$1\"; dpkg-query -W \"$pkg\"; }";
+        assert_eq!(strip_one(authored), expected);
+    }
+
+    /// A bare mark as the SOLE statement of a CASE ARM strips to a legal EMPTY arm
+    /// (`enable) ;;` is valid sh — a case-arm may be empty; the `;;` terminator is not
+    /// consumed). Contrast a mark-only if/function body, which ⊤-rejects at lift.
+    #[test]
+    fn mark_only_case_arm_strips_to_empty_arm() {
+        let authored = "systemctl.predict() { verb=$1; shift; case $verb in enable) : service:nginx.enabled~ ;; esac; }";
+        let expected = "systemctl__predict() { verb=$1; shift; case $verb in enable) ;; esac; }";
+        assert_eq!(strip_one(authored), expected);
+    }
+
+    /// Idempotence / no-regression (R1c): a MARK-FREE body strips byte-identically to today —
+    /// the bare-mark change touches only `Stmt::Mark`, so a body with no bare marks is
+    /// unchanged (and re-stripping is byte-stable).
+    #[test]
+    fn mark_free_body_strips_unchanged_and_stably() {
+        let authored = "apt-get.predict() { pkg : package = \"$1\"; dpkg-query -W \"$pkg\" : package:\"$pkg\".installed; }";
+        let expected = "apt_get__predict() { pkg=\"$1\"; dpkg-query -W \"$pkg\"; }";
+        assert_eq!(strip_one(authored), expected);
+        assert_eq!(strip_one(authored), strip_one(authored));
     }
 
     /// Byte-stability (R1c): strip is a deterministic function of its input.

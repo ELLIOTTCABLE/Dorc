@@ -289,14 +289,35 @@ impl Parser<'_> {
             match self.peek() {
                 None => return Err(true_with(self, end)), // ran off the end unterminated
                 Some(tok) if end.matches(tok) => {
+                    // Capture the terminator span (for a possible mark-only ⊤-reject) BEFORE
+                    // consuming it; `mark_only` reads only the owned `stmts` + Copy `end`, so
+                    // it holds no borrow across the `bump`/`fail` below.
+                    let term_span = self.peek_span().unwrap_or(ZERO_SPAN);
                     let term = end.term_of(tok);
                     self.last_term = Some(term);
+                    let mark_only = !matches!(end, BlockEnd::CaseArmEnd)
+                        && !stmts.is_empty()
+                        && stmts.iter().all(|s| matches!(s, Stmt::Mark(_)));
                     // A case arm's terminating `esac` (the last arm omits `;;`) is
                     // left for the enclosing `parse_case` loop to consume; every
                     // other terminator is consumed here.
                     if !(matches!(end, BlockEnd::CaseArmEnd) && term == BlockTerm::Keyword("esac"))
                     {
                         self.bump();
+                    }
+                    // R1c mark-only-compound-body ⊤-reject (23H §9.4): a non-case-arm compound
+                    // body of ONLY bare marks strips to an EMPTY block — invalid sh (`f() { }` /
+                    // `if …; then fi` are syntax errors). It has no substantive command for the
+                    // strip to keep as the last exit-status statement, so it reads as an authoring
+                    // error ⇒ ⊤-reject loudly (inv-top-reject), never silent repair. A case-arm
+                    // may legally strip to empty (`install) ;;`), so it is exempt (above).
+                    if mark_only {
+                        self.fail(
+                            term_span,
+                            "compound body contains only inline-dialect marks — it strips to an \
+                             empty block (invalid sh); a probe body needs a substantive command",
+                        );
+                        return Err(true);
                     }
                     return Ok(stmts);
                 }
@@ -478,9 +499,10 @@ impl Parser<'_> {
         let start_span = self.peek_span().unwrap_or(ZERO_SPAN);
 
         // Bare inline-dialect mark in statement position (233 §1–§4, R1b): a leading
-        // standalone `:` / `:?` marker word (`: kind`, `: kind:entity.prop~`,
-        // `: provider:verb~`). The dialect uses a leading marker ONLY for a mark (probe
-        // bodies never begin with `:`), so this is unambiguous.
+        // standalone `:` / `:?` marker word (`: kind` POISON, `: kind:entity.prop~` ACK;
+        // a two-level `: provider:verb~` is a retired reject — rul24-vouch-is-verdict-
+        // authoring). The dialect uses a leading marker ONLY for a mark (probe bodies
+        // never begin with `:`), so this is unambiguous.
         if let Some(observe) = (!first_sq).then(|| mark_marker(&first)).flatten() {
             return self.parse_bare_mark(observe, start_span);
         }
@@ -653,8 +675,9 @@ impl Parser<'_> {
     }
 
     /// Parse a bare inline-dialect mark statement (`: TARGET` / `:? TARGET`): a POISON
-    /// no-op mention, an ACK vouch, or the CONVERGED-VOUCH placeholder (233 §1–§4). The
-    /// caller verified the first token is a `:`/`:?` marker; `observe` is true for `:?`.
+    /// no-op mention or an ACK vouch (233 §1–§4; the two-level converged-vouch is retired
+    /// and rejects — rul24-vouch-is-verdict-authoring). The caller verified the first token
+    /// is a `:`/`:?` marker; `observe` is true for `:?`.
     fn parse_bare_mark(&mut self, observe: bool, _start_span: Span) -> Result<Stmt, bool> {
         Ok(Stmt::Mark(self.parse_mark(observe, true)?))
     }
@@ -1086,9 +1109,10 @@ fn split_mark_target(lexeme: &str) -> Option<ParsedTarget> {
 
 /// Classify a parsed mark into a [`MarkKind`] from (`observe`, `bare`, suffix, entity?,
 /// prop?). Malformed combinations ⊤-reject (`Err(reason)`) — the parser's standing bias
-/// (never guess). `bare` ⇒ statement-position (POISON/ACK/vouch); `!bare` ⇒ a trailing
-/// command mark (ESTABLISH/OBSERVE). The ACK-vs-vouch split is the dot-presence heuristic
-/// (jc-vouch-vs-ack): `kind:entity.prop~` ⇒ ACK, two-level `provider:verb~` ⇒ vouch.
+/// (never guess). `bare` ⇒ statement-position (POISON/ACK); `!bare` ⇒ a trailing command
+/// mark (ESTABLISH/OBSERVE). A three-level `kind:entity.prop~` ⇒ ACK; a two-level
+/// `provider:verb~` (the retired converged-vouch strawman) ⇒ loud reject
+/// (rul24-vouch-is-verdict-authoring, 24A §1c).
 fn classify_mark(
     observe: bool,
     bare: bool,
@@ -1116,7 +1140,13 @@ fn classify_mark(
             } else if target.prop.is_some() {
                 Ok(MarkKind::Ack)
             } else if target.entity.is_some() {
-                Ok(MarkKind::ConvergedVouch)
+                // A two-level `provider:verb~` was the CONVERGED-VOUCH strawman — RETIRED
+                // (rul24-vouch-is-verdict-authoring, 24A §1c): a converged-vouch is now
+                // authored as an `is_converged()`/`is_diverged()` verdict function, not a
+                // tilde mark. Reject loudly (dead grammar), never a silent mis-read as ACK.
+                Err(
+                    "two-level `provider:verb~` vouch marks are retired — author a converged-vouch as an `is_converged()`/`is_diverged()` verdict function (rul24-vouch-is-verdict-authoring)",
+                )
             } else {
                 Ok(MarkKind::Ack)
             }
@@ -1388,23 +1418,20 @@ mod dialect_tests {
     }
 
     #[test]
-    fn bare_two_level_tilde_is_converged_vouch() {
-        // `: apt-get:install~` — the CONVERGED-VOUCH placeholder (two-level provider:verb~,
-        // no `.prop`). STRAWMAN spelling (dq-kOOB); distinguished from ACK by dot-absence.
-        let body = body_of(
+    fn bare_two_level_tilde_vouch_is_rejected() {
+        // `: apt-get:install~` — the two-level `provider:verb~` converged-vouch strawman is
+        // RETIRED (rul24-vouch-is-verdict-authoring, 24A §1c): vouching is now authoring an
+        // `is_converged()`/`is_diverged()` verdict function. So it ⊤-rejects loudly (dead
+        // grammar), never a silent mis-read as ACK. (Three-level `~` stays ACK; see above.)
+        let mut i = Interner::default();
+        let out = lift_predicts(
+            &mut i,
             "apt-get.predict() { pkg : package = \"$1\"; dpkg-query -W \"$pkg\"; : apt-get:install~; }",
         );
-        let Some(Stmt::Mark(m)) = body.iter().find(|s| matches!(s, Stmt::Mark(_))) else {
-            panic!("expected a bare Mark statement: {body:?}");
-        };
-        assert_eq!(
-            m.kind,
-            MarkKind::ConvergedVouch,
-            "two-level ~ ⇒ converged-vouch"
+        assert!(
+            !out.diags.is_empty(),
+            "a two-level `provider:verb~` vouch mark must ⊤-reject with a diagnostic"
         );
-        assert_eq!(m.target.kind, "apt-get");
-        assert_eq!(m.target.entity.as_deref(), Some("install"));
-        assert_eq!(m.target.prop, None);
     }
 
     #[test]
@@ -1455,6 +1482,39 @@ mod dialect_tests {
         assert!(
             !out.diags.is_empty(),
             "a trailing `~` mark must ⊤-reject with a diagnostic"
+        );
+    }
+
+    #[test]
+    fn mark_only_if_body_rejects() {
+        // R1c (23H §9.4): a non-case-arm compound body (here an `if`-then) of ONLY bare marks
+        // would strip to an empty block (`if …; then fi` is a syntax error), so it ⊤-rejects
+        // at lift — a probe body needs a substantive command. The disaster it forecloses: a
+        // silent repair leaving `:`/empty that mis-behaves in guard position downstream.
+        let mut i = Interner::default();
+        let out = lift_predicts(
+            &mut i,
+            "apt-get.predict() { pkg : package = \"$1\"; if [ \"$2\" = \"\" ]; then : package:\"$pkg\".held~; fi; }",
+        );
+        assert!(
+            !out.diags.is_empty(),
+            "a mark-only if-body must ⊤-reject with a diagnostic"
+        );
+    }
+
+    #[test]
+    fn mark_only_case_arm_lifts_clean() {
+        // The CONTRAST to the if-body reject: a case-arm may legally strip to an empty arm
+        // (`enable) ;;`), so a mark-only case-arm lifts WITHOUT a diagnostic.
+        let mut i = Interner::default();
+        let out = lift_predicts(
+            &mut i,
+            "systemctl.predict() { verb=$1; shift; case $verb in enable) : service:nginx.enabled~ ;; esac; }",
+        );
+        assert!(
+            out.diags.is_empty(),
+            "a mark-only case-arm must lift clean (empty arms are legal): {:?}",
+            out.diags
         );
     }
 }

@@ -65,36 +65,25 @@ pub struct DerivedEffect {
     pub claim: ValueClaim,
 }
 
-/// A converged-vouch the derivation read off a `: provider:verb~` bare mark
-/// (`MarkKind::ConvergedVouch`) — the guard tier's converged-vouch datum. Carries
-/// the two opaque fragments (provider, verb); the vouch's real sh spelling stays OPEN
-/// (dq-kOOB), so this is a strawman carrier, not a committed shape.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct DerivedVouch {
-    /// The provider fragment (`kind` slot of the two-level `provider:verb` target).
-    pub provider: String,
-    /// The verb fragment (`entity` slot), if the mark carried one.
-    pub verb: Option<String>,
-}
-
-/// Derive a check's effect-map rows + converged-vouches from its body (R2, 23E §3).
+/// Derive a check's effect-map rows from its body (R2, 23E §3).
 ///
 /// A structural walk in source order, accumulating the current annotation-kind and, on
 /// a `case $verb`, the current verb. Each command carrying a trailing ESTABLISH/OBSERVE
-/// mark emits one [`DerivedEffect`]; each bare CONVERGED-VOUCH mark emits a
-/// [`DerivedVouch`]. Deterministic and total (`inv-no-throw`: no panics — a shape the
-/// walk cannot characterize simply emits nothing, the safe direction).
+/// mark emits one [`DerivedEffect`]; bare marks (ACK/POISON) emit nothing. Deterministic
+/// and total (`inv-no-throw`: no panics — a shape the walk cannot characterize simply
+/// emits nothing, the safe direction). NB the converged-vouch is no longer a mark
+/// (rul24-vouch-is-verdict-authoring, 24A §1c): it is an authored `is_converged()`/
+/// `is_diverged()` verdict function, unread by this derivation.
 #[must_use]
-pub fn derive_predict(check: &Predict) -> (Vec<DerivedEffect>, Vec<DerivedVouch>) {
+pub fn derive_predict(check: &Predict) -> Vec<DerivedEffect> {
     let mut effects = Vec::new();
-    let mut vouches = Vec::new();
     let ctx = Ctx {
         verb: None,
         kind: None,
         verb_sym: check.verb_sym,
     };
-    walk(&check.body, ctx, &mut effects, &mut vouches);
-    (effects, vouches)
+    walk(&check.body, ctx, &mut effects);
+    effects
 }
 
 /// The path-local accumulation context. Passed BY VALUE into every recursion, so a
@@ -112,12 +101,7 @@ struct Ctx {
     verb_sym: dorc_core::Symbol,
 }
 
-fn walk(
-    body: &[Stmt],
-    mut ctx: Ctx,
-    effects: &mut Vec<DerivedEffect>,
-    vouches: &mut Vec<DerivedVouch>,
-) {
+fn walk(body: &[Stmt], mut ctx: Ctx, effects: &mut Vec<DerivedEffect>) {
     for stmt in body {
         match stmt {
             // An inline annotation names the kind for everything reached after it on
@@ -128,16 +112,6 @@ fn walk(
             Stmt::Command(c) => {
                 if let Some(mark) = &c.mark {
                     push_effect(&ctx, mark.kind, &mark.target, effects);
-                }
-            }
-            // A bare mark: a converged-vouch is carried; POISON/ACK are no-ops this
-            // round (the dead m×n negative-enumeration, 23D §5).
-            Stmt::Mark(m) => {
-                if m.kind == MarkKind::ConvergedVouch {
-                    vouches.push(DerivedVouch {
-                        provider: m.target.kind.clone(),
-                        verb: m.target.entity.clone(),
-                    });
                 }
             }
             // `case $verb`: recurse per literal-pattern arm, binding the verb. A `case`
@@ -153,11 +127,11 @@ fn walk(
                             if let Pattern::Literal(v) = pat {
                                 let mut arm_ctx = ctx.clone();
                                 arm_ctx.verb = Some(v.clone());
-                                walk(&arm.body, arm_ctx, effects, vouches);
+                                walk(&arm.body, arm_ctx, effects);
                             }
                         }
                     } else {
-                        walk(&arm.body, ctx.clone(), effects, vouches);
+                        walk(&arm.body, ctx.clone(), effects);
                     }
                 }
             }
@@ -166,11 +140,14 @@ fn walk(
                 else_body,
                 ..
             } => {
-                walk(then_body, ctx.clone(), effects, vouches);
-                walk(else_body, ctx.clone(), effects, vouches);
+                walk(then_body, ctx.clone(), effects);
+                walk(else_body, ctx.clone(), effects);
             }
-            Stmt::While { body, .. } => walk(body, ctx.clone(), effects, vouches),
-            Stmt::Assign { .. } | Stmt::Shift { .. } => {}
+            Stmt::While { body, .. } => walk(body, ctx.clone(), effects),
+            // A bare mark (ACK/POISON) is a derivation no-op (23D §5); the converged-vouch is
+            // no longer a mark (rul24-vouch-is-verdict-authoring, 24A §1c). Assign/Shift key
+            // no cell either.
+            Stmt::Mark(_) | Stmt::Assign { .. } | Stmt::Shift { .. } => {}
         }
     }
 }
@@ -183,8 +160,8 @@ fn push_effect(ctx: &Ctx, kind: MarkKind, target: &MarkTarget, effects: &mut Vec
         MarkKind::Establish => ValueClaim::Establish,
         MarkKind::EstablishInverted => ValueClaim::EstablishInverted,
         MarkKind::Observe => ValueClaim::Observe,
-        // ACK / POISON / CONVERGED-VOUCH never trail a probe command as an effect.
-        MarkKind::Ack | MarkKind::Poison | MarkKind::ConvergedVouch => return,
+        // ACK / POISON never trail a probe command as an effect.
+        MarkKind::Ack | MarkKind::Poison => return,
     };
     let (Some(kind_str), Some(selector)) = (ctx.kind.clone(), target.prop.clone()) else {
         return;
@@ -230,7 +207,7 @@ mod tests {
         assert!(cs.diags.is_empty(), "dialect lifts clean: {:?}", cs.diags);
         let sym = i.intern(provider);
         let check = cs.value.get(sym).expect("a check for the provider");
-        let (effects, _vouches) = derive_predict(check);
+        let effects = derive_predict(check);
         effects
             .into_iter()
             .map(|e| {
@@ -320,29 +297,24 @@ command.predict() {
     }
 
     #[test]
-    fn converged_vouch_mark_is_derived() {
-        // The converged-vouch is a bare `: apt-get:install~` mark on the install arm's
-        // path (23E §5, flagship) — derived into a DerivedVouch.
+    fn bare_marks_derive_no_cell() {
+        // Bare marks (ACK/POISON) are derivation no-ops (23D §5): only a trailing
+        // ESTABLISH/OBSERVE keys a cell. The two-level converged-vouch mark is retired
+        // entirely (rul24-vouch-is-verdict-authoring, 24A §1c) — `derive_predict` has no
+        // vouch output at all now. A three-level ACK on the install arm therefore adds
+        // NOTHING beyond that arm's own ESTABLISH cell.
         let dialect = "\
 apt-get.predict() {
    verb=$1; shift
    pkg : package = \"$1\"
    case $verb in
-      install) dpkg-query -W \"$pkg\" : package:\"$pkg\".installed; : apt-get:install~ ;;
+      install) dpkg-query -W \"$pkg\" : package:\"$pkg\".installed; : package:\"$pkg\".held~ ;;
    esac
 }";
-        let mut i = Interner::default();
-        let cs = lift_predicts(&mut i, dialect);
-        assert!(cs.diags.is_empty(), "{:?}", cs.diags);
-        let check = cs.value.get(i.intern("apt-get")).expect("check");
-        let (_effects, vouches) = derive_predict(check);
         assert_eq!(
-            vouches,
-            vec![DerivedVouch {
-                provider: "apt-get".to_owned(),
-                verb: Some("install".to_owned()),
-            }],
-            "the converged-vouch mark lifts to a (provider, verb) vouch"
+            derived_set(dialect, "apt-get"),
+            expect(&[("install", "package", "installed", "establish")]),
+            "the bare ACK adds no cell; only the trailing ESTABLISH keys one"
         );
     }
 

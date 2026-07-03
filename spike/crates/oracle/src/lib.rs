@@ -202,7 +202,7 @@ pub fn lift(interner: &mut Interner, oracle_sources: &[&str]) -> Carrier<KindInd
             let Some(c) = checks.get(provider) else {
                 continue;
             };
-            let (effects, _vouches) = predict::derive_predict(c);
+            let effects = predict::derive_predict(c);
             for e in effects {
                 let verb = match e.verb {
                     Some(v) => interner.intern(&v),

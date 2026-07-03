@@ -88,16 +88,17 @@ pub enum Stmt {
     /// (233 ESTABLISH/OBSERVE — `Command::mark`).
     Command(Command),
     /// A bare inline-dialect mark in statement position (233 §1–§4, R1b): a POISON
-    /// no-op mention (`: kind`), an ACK vouch (`: kind:entity.prop~`), or the
-    /// CONVERGED-VOUCH placeholder (`: provider:verb~`). Distinguished from a trailing
+    /// no-op mention (`: kind`) or an ACK vouch (`: kind:entity.prop~`). (The two-level
+    /// `: provider:verb~` converged-vouch strawman is retired — a loud reject now;
+    /// rul24-vouch-is-verdict-authoring, 24A §1c.) Distinguished from a trailing
     /// [`Command::mark`] by having no command in front of the `:` marker. Never
     /// evaluated (a no-op for entity-resolution); consumed by the lift + strip.
     Mark(Mark),
 }
 
-/// A parsed inline-dialect mark (233 §1–§4, R1b): an effect / vouch / mention
-/// annotation, either trailing a command (ESTABLISH/OBSERVE) or standing alone
-/// (ACK/POISON/converged-vouch). Every fragment is an OPAQUE syntactic string
+/// A parsed inline-dialect mark (233 §1–§4, R1b): an effect / mention annotation,
+/// either trailing a command (ESTABLISH/OBSERVE) or standing alone (ACK/POISON).
+/// Every fragment is an OPAQUE syntactic string
 /// (`inv-referent-agnostic`): the parser splits `kind:entity.prop` structurally and
 /// NEVER decodes what the tokens mean. Carries a [`span`](Mark::span) covering the
 /// marker plus target (for the surgical strip, R1c).
@@ -127,24 +128,18 @@ pub enum MarkKind {
     Observe,
     /// `: kind:entity.prop~` — a considered-untouched vouch (233 ACK). A no-op under
     /// the dead m×n negative-enumeration (23D §5): parsed and carried, licenses
-    /// nothing. Distinguished from [`ConvergedVouch`](MarkKind::ConvergedVouch) by
-    /// carrying a `.prop` (three-level `kind:entity.prop`), where the vouch is
-    /// two-level `provider:verb` (jc-vouch-vs-ack).
+    /// nothing. Three-level (`kind:entity.prop`); a two-level `provider:verb~` is NOT an
+    /// ACK — it is now a loud reject (the retired converged-vouch strawman;
+    /// rul24-vouch-is-verdict-authoring, 24A §1c).
     Ack,
     /// bare `: kind` / `: kind:entity` / `: kind:entity.prop` — a no-op mention
     /// (233 POISON). Its cells are what the lift may poison (a mention with no `~`).
     Poison,
-    /// `: provider:verb~` in statement position — the CONVERGED-VOUCH placeholder.
-    /// A STRAWMAN for an open spelling (dq-kOOB); the parser derives it into a
-    /// [`DerivedVouch`](super::DerivedVouch). Two-level (`provider:verb`, no `.prop`)
-    /// + a `~` suffix.
-    ConvergedVouch,
 }
 
 /// The `kind:entity.prop` coordinate of a [`Mark`], split syntactically and left
 /// OPAQUE (`inv-referent-agnostic` — never decoded). Any level may be absent (a
-/// kind-only POISON `: fs.Path`). For a [`MarkKind::ConvergedVouch`] the two-level
-/// `provider:verb` shape reuses `kind`=provider and `entity`=verb.
+/// kind-only POISON `: fs.Path`).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MarkTarget {
     /// The kind fragment (everything before the first `:`). Opaque.
