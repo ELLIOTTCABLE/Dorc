@@ -38,15 +38,23 @@ walk over inline `case $verb` arms + marks reproduces the retired-marker effect-
 per the cov-q4 FINAL ruling in `23F` Addendum 2; 5 differential tests prove derive == old-lift;
 `derive` is deliberately dead code until wiring); an R1 lexer-gap fix (mark after fd-dup
 redirect); **146/151 fixtures** converted additively (markers RETAINED for the differential
-two-step; golden-stable at every batch). BLOCKED on **ask jc-singleton-mark**: nullary
-Singleton kinds (`apt-get update ⇒ pkgindex#fresh` — no entity operand) have no spelling in the
-`kind:entity.prop` mark grammar; 5 pkgindex fixtures + the P4 wiring wait on the human's
-provisional-spelling ruling (candidates in 23H). THEN: P4 wire analysis to the derivation
-(+ the EstablishInverted→MustRun transitional freeze WITH its ru-26 code-note, text ready in
-23H §3), P4b the R3 probe reshape (`compile_probe` → stripped check body + argv; 7 call-sites
-incl. the coverage byte-mirror), P5 marker retirement, big-bang re-bless with case-by-case
-inspection + a corpus-wide derive==lift gate first. Vouch-marks on guard23 install arms
-deferred to wiring (kept xfail pins unperturbed).
+two-step; golden-stable at every batch). SECOND SESSION (finisher, 2026-07-02, conductor-verified on
+the merged tree — e2e 123/9/0/0, all 23 workspace suites green): **the SEMANTIC CORE IS
+LANDED** — the 5 pkgindex Singletons via the ruled empty-entity mark (`pkgindex:.fresh`,
+deliberate parse + near-miss-typo tests); the corpus-wide `derive==markers` flip-gate over
+all 151 fixtures (it CAUGHT a real R4a bug — an OBSERVE-vs-ESTABLISH mark on one tool
+oracle); **Polarity retired workspace-wide** (`ValueClaim`; the transitional-freeze ru-26
+code-note lives at `analysis/src/effect.rs::cell_effect` on the EstablishInverted arm); and
+the WIRING FLIP (cli+coverage effect-maps now derive from check bodies, not markers).
+REMAINING, blocked on **ask-probe-divergence** (human ruling): R3's lane-swap revealed that
+the authored check-body probe COMMANDS textually diverge from the retired `oracle_probe_*`
+bodies (`--` operands, dropped `--quiet`, firewall's old probe is a PIPELINE the mark grammar
+cannot annotate — a real dialect gap, flag `jc-mark-on-pipeline`), so completing R3 means
+re-authoring mocks + re-blessing goldens together — the finisher refused to co-author
+ground-truth and prediction in one unverifiable pass (anti-masking) and reverted its working
+R3 code to stop at a green boundary. Options + the refined recipe: `23H §7`. THEN: R3
+re-land (~1 pass), P5 marker retirement (+ the ruled `dpkg.check()`), guard23 vouch-marks,
+big-bang re-bless with case-by-case inspection + per-xfail lens-verify.
 
 **The bindings (hold these; full text at the cited homes):**
 - The four round-23 rulings — `spike/CLAUDE.md` (guard sourcing: the check IS the oracle,
