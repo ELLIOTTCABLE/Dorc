@@ -46,6 +46,55 @@ evidence as it lands. Confidence-marked per the standing discipline.
   bases new worktrees on an ancient `main`, not the session branch — every builder brief
   now opens with an explicit step-zero `git reset --hard ai/spike3-r23` + tip-hash verify.
 
+## §1b. Footprint-spelling vibes session (typed in-chat, 2026-07-03; the USER_STORY stage-5 mock)
+
+The footprint strawman was mocked into `USER_STORY.md` stage 5 (commit `2c6c0f3`) as a
+third role-sibling `<provider>.touches()` — invoked with the site's argv, emits the
+entity-coordinates the verb MUTATES one per line; emitting-anything-for-a-matched-verb
+claims at-most-these; unmatched verb emits nothing = no claim = wall. Human vibes, typed:
+
+- **rul24-threefunc-monotonic (shape RATIFIED).** The three-function oracle surface is
+  fine — "as long as they always all stay optional and there's a clear monotonic
+  gradual-enhancement path where every added component buys additional value, and no added
+  component loses previously-present value." (Human confirmed the mock satisfies this.)
+  NB this consciously supersedes rul-role-split's "exactly two invocation-contracts"
+  sentence — the surface is now exactly THREE, all optional; the rc-partition rules apply
+  to the two verdict-shaped members only (touches() emits coordinates on stdout, not a
+  verdict rc).
+- **rul24-claims-by-emission (ACCEPTED as strawman, reluctantly).** Opt-in-by-emission
+  ("this is 233, strawmanned into being, and a living, breathing nightmare. it's also the
+  entire brief of the round") stands for the build. OPEN question carried to build-evidence:
+  does the sharpest claim in the design deserve its own explicit visible syllable, rather
+  than riding an ordinary printf? If strawman-testing shows mis-authored footprints biting,
+  the explicit syllable is the first lever.
+- **Name: `touches` accepted** ("meh, don't care") — RESOLVED by the conductor's
+  mutation-vs-observation analysis (below): footprint = write-set only, and `touches` reads
+  write-flavored in sh culture (POSIX touch mutates), so the name matches the semantics.
+  Pending-ack analysis, not yet human-ratified: reads don't kill facts; order-sacred removes
+  the anti-dependency reason to track reads; the disjointness intersection is asymmetric
+  (wall's WRITES × fact's probe's READS). The one reads-flavored worry (wall writes what the
+  downstream COMMAND reads but its PROBE doesn't — update/install/pending-upgrade) is the
+  converged≠no-op adequacy residue, already priced at the vouch — risk relocated, not new
+  (23N §5 conserved-risk, again). Future consumer of read-sets = `dorc bump`
+  backward-slicing; if it ever consumes footprints, re-run the scoping analysis.
+- **Price: deferred to the round's evidence** (human: "we've ascertained this is dangerous.
+  now, is it *valuable*?" — the yardstick's question, not a spelling-chat's).
+- **Scoping analysis (conductor, pending-ack, answering the human's
+  danger-chronology question):** the footprint's danger is CO-LOCATED (danger-sites ⊆
+  benefit-sites, definitionally — only a disjointness-licensed elision can be wrongly
+  licensed) and CO-TIMED (both fire only on runs where the wall actually runs; steady-state
+  days never consult the footprint). Value is strictly monotone under
+  rul24-threefunc-monotonic. Two honest asymmetries: SOCIAL (damage lands on the admin's
+  line; blame on the footprint's author — the vouch's shape, one step sharper) and
+  STALENESS-DRIFT (scope never widens with tool age; wrongness-probability climbs — the
+  MH2 residue). The differentiator vs the pre-crisis dangerous-middle: same danger,
+  UNSCOPED there (silence licensed everything, unsigned); positional/opt-in/signed here.
+- **Sequencing flag (conductor, non-blocking):** post-crisis prose (23O §1.3) says the
+  elide-license itself ultimately rides the converged-vouch; the spike's live license
+  consumes no vouches yet. Stage-2 disjointness lands as an ADDITIONAL conjunct on the
+  existing license; Stage-3 vouch-plumbing tightens the same license later — monotone
+  composition, no conflict, tracked so neither stage silently "completes" the other's law.
+
 ## §2. The 231 disposal (carried from the 23J repair-pass routing: map the pre-crisis sweep's clusters to survivor/dead-with-reason)
 
 Context: `notes/231` is the *pre-crisis* collapsed-gradient sweep — round 23 §1 work,
