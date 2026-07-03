@@ -187,6 +187,21 @@ Future rungs graft onto the same ladder rather than becoming new shapes: the
 "literally-a-no-op, fully state-precise" precision claim (the stronger cousin of rung-2's
 judgment; 24A §1c proviso-family-open), the deferred `.diff`-style earned verbs.
 
+**The prohibitive polarity — vetos (PARKED, someday-maybe; `notes/23M`).** The same
+speech-act category run backwards: an owner-spelled, judgment-tier, veto-only list that
+*withdraws* license from elisions the machinery would otherwise grant — aimed at a named
+residue class (canonically the cross-kind escape: a footprint's professed hole). Inverted
+failure-direction makes it the safe twin: a wrong or stale veto only over-verifies (it can
+fail to prevent, never newly cause, a wrong elision; staleness degrades to the binary
+floor). Not the rung-0/1 hatch restated: rungs withhold permission for acting on *my own
+answer*; the veto protects *others' lines* from *my footprint's* residue. Parked verdict
+(human, 2026-07-03): moves neither correctness nor value needle alone; tolerable only with
+aggressive attribution + an admin off-switch — both of which Stage 2 is building for
+independent reasons (attribution co-primary; the mode-gate flag), so the marginal price is
+dropping. The unpark-bar stays: the Stage-5 expansion-bridge is the preferred non-blunt
+alternative for the same hole; the veto earns life only on empirical evidence that bridges
+don't suffice.
+
 - Trust-shape: pure liability. Enforcement is the attribution machinery (the why-lens
   naming the licensor per elision/guard) — and, on the *admin's* side of the same
   coin, the mode-gate flag (rul24-mode-gate: the opt-in that is marketing at best, theatre
