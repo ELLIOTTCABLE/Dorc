@@ -134,10 +134,72 @@ the injected model" layering. A new crate keeps every altitude clean. (The froze
 - **Every later stage** inherits the filing rule: new coverage is flavour A or C by default;
   flavour B only when the real emit/dash path or a yardstick row IS the point.
 
+## §5. Reconciliation against the round-12 DST conclusion (`plans/128`; human-prompted "do DST well")
+
+Read the whole round-12 DST/CI round (`plans/128` + `notes/120`–`127`) before finalizing —
+DST is powerful but a footgun, and this round already mapped the footguns. It is
+authoritative and current (2026-06-03; cites the canonical sources — FDB, madsim, eatonphil,
+Antithesis, TigerBeetle-VOPR, sled). **Judgment: no fresh external search warranted** — the
+round covers the footguns, and the one thing it flags UNSOLVED (state-space coverage) is
+unsolved industry-wide. Three corrections to §§1–4 above, and confirmations, fell out:
+
+- **CORRECTION C-altitude (the load-bearing one). Two DST targets exist; the chronology net
+  is the NARROWER one — name it honestly.** The round-12 canonical seam is
+  `ship(host,unit) → results` — the controller↔host *transport STREAM* (Seam-1), tested by
+  synthesizing the result stream from a seed under network faults
+  (drop/timeout/partition/truncate/reorder), asserting the orchestrator records **Unknown**
+  for leaves past the last marker, retries don't double-apply, provenance survives (`128`
+  se-2 "CAN", fc-2/fc-4). **That is the multi-host COORDINATION story — it needs the
+  orchestrator that does not exist in the spike yet (the round-25 reactivity/`22H` work),
+  and rides the transport-stream seam.** The **chronology net is a DIFFERENT, narrower
+  thing: ELISION-SOUNDNESS at the FACT-VERDICT seam** (does the elided plan reach the bare
+  book's end-state), consuming `hostsim::Host` as the Seam-1 *verdict* stand-in (a level
+  BELOW the result-stream — correct, because the analyzer consumes fact-verdicts). So: do
+  NOT call the net "the DST"; it is elision-soundness DST. RESERVE-NOT-COLLIDE: the net
+  rides Host as the verdict oracle; round-25 adds the transport-stream seam + fault
+  injection ON TOP; they compose (shared Host), never collide. `24A`'s deferred-work ledger
+  (22H reactivity) is where the coordination-DST lives.
+
+- **CORRECTION C-determinism-guard (a real gap I'd have shipped). Add the "is it actually
+  deterministic?" guard** (`128` fc-5; `notes/123` f20 — madsim `MADSIM_TEST_CHECK_
+  DETERMINISM`, S2's rerun-seed-diff-TRACE "down to the last byte"). §1-C had the
+  sometimes-asserts (the *reachability* half of the "is my DST working" defense) but MISSED
+  the other half: rerun a sampled/failing seed, assert the trial is BIT-IDENTICAL
+  (plan, S_bare, S_apply, witness). For a pure kernel any divergence is a real bug (an
+  observable `HashMap` iteration, a non-`BTree` order leak — exactly `inv-determinism`'s
+  ban). Cheap, and the single highest-value guard in an ~89%-agent-implemented codebase
+  because agents refactor blind and "seeds break on code change" (`128` rg-1).
+
+- **CORRECTION C-coverage-humility. The sometimes-asserts are the reachability half;
+  coverage is UNSOLVED** ("resembles science more than engineering", `128` fc-5/rg-1). The
+  net HUNTS bugs, never PROVES their absence (Jepsen's "presence not absence"). §1-C must
+  not read as "the sweep proves elision soundness" — it raises confidence at breadth, no
+  more. Inherit the humility.
+
+Confirmations (my §§1–4 instincts, now grounded, not assumed):
+- **Approach-#3 fit** (`notes/123` f18/f23): the net IS state-machine DST — a near-pure
+  kernel has no transitive nondeterminism to police; the seeded `Lcg` is the sole entropy;
+  divergence is injected by the generator (declared-vs-true), not by faulting a real socket.
+  **Consequence worth stating so the builder doesn't cargo-cult: NO madsim, NO tokio-shim,
+  NO libc-overrides — and therefore the net DODGES the `axis-platform` Mac/Windows
+  determinism trap entirely** (`notes/123` f19). It is trivially cross-platform, unlike
+  general Rust DST. (This is why se-3 calls DST "unusually cheap for Dorc.")
+- **Rigor placement** (`128` rg-2): elision-soundness IS kernel correctness — the right DST
+  target (kernel gets provable-grade rigor; the mocked edge stays oracle territory,
+  best-effort). The net's focus is validated, not incidental.
+
+Forward hooks (round-25, named so they aren't lost — explicitly NOT this arc): the
+three-valued-verdict-under-truncation test (`128` fc-2) and retry-safety/no-double-apply
+under Unknown (`128` fc-4, idempotency-as-test-oracle) live at the transport-stream seam
+with the coordination orchestrator. Builder source pointers: `notes/123` f18 (state-machine
+DST) + f20 (determinism guard); `128` se-1/se-3 (the seam + why cheap), rg-1/fc-5 (the
+footguns).
+
 ## Confidence
 
 +SURE: the 2×2 is the real taxonomy; B must not be the home for hostsim stories (the human's
-explicit cost concern); the battle-oracle is standalone fixtures. ~SUSPECT: the new-crate
-altitude for the sweep (vs extending hostsim) — high-value if right, cheap to relocate if
-the builder finds a dependency knot. -GUESS: freeze-not-delete for the legacy differential
-(a waking human may just delete it). The crate *name* `sweep` is a placeholder.
+explicit cost concern); the battle-oracle is standalone fixtures; the C-altitude and
+C-determinism-guard corrections (grounded in `128`). ~SUSPECT: the new-crate altitude for
+the sweep (vs extending hostsim) — high-value if right, cheap to relocate if the builder
+finds a dependency knot. -GUESS: freeze-not-delete for the legacy differential (a waking
+human may just delete it). The crate *name* `sweep` is a placeholder.
