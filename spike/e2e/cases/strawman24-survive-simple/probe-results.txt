@@ -1,0 +1,7 @@
+# probe-results: site-keyed records. site 0 = package:oldpkg#installed (absent ⇒ diverged ⇒
+# oldpkg install RUNS = the footprinted wall); site 1 = package:nginx#installed (holds ⇒
+# converged). Under --trust-footprints the nginx install SURVIVES the running oldpkg wall
+# (package:nginx disjoint from footprint package:oldpkg) ⇒ elides. Mock-reproducible (dpkg-query
+# returns 1 for oldpkg, 0 for nginx) ⇒ NOT PROBE_RESULTS=authored ⇒ gate-6 runs.
+site 0 effect=absent
+site 1 effect=holds

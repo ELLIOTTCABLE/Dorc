@@ -1,0 +1,4 @@
+# site 0 (install nginx) absent ⇒ diverged wall (footprint package:nginx); site 1 (enable nginx)
+# holds ⇒ converged. Cross-kind: service:nginx disjoint from package:nginx ⇒ enable survives.
+site 0 effect=absent
+site 1 effect=holds

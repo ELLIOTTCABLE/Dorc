@@ -1,0 +1,4 @@
+ran: apt-get install -y oldpkg
+ran: apt-get install -y badpkg
+ran: apt-get purge -y gonepkg
+ran: apt-get install -y curl

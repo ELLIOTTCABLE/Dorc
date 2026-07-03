@@ -1,0 +1,41 @@
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc — the record is the out-of-band lane).
+
+# site 0: package:oldpkg#installed
+apt_get__predict() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   pkg="$1"
+   if [ "$2" = "" ]; then
+      case $verb in
+         install) dpkg-query -W "$pkg" >/dev/null 2>&1 ;;
+         purge) dpkg-query -W "$pkg" >/dev/null 2>&1 ;;
+      esac
+   fi
+}
+apt_get__predict 'install' '-y' 'oldpkg'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'site 0 effect=%s rc=%s\n' "$_e" "$_rc"
+# site 1: package:nginx#installed
+apt_get__predict 'install' '-y' 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'site 1 effect=%s rc=%s\n' "$_e" "$_rc"
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+# strawman24-survive-simple (plans/240 Stage 2 — the golden hill flagship; INVERTS
+# exec-modeled-wall-runs). Same shape as strawman24-modeled-wall, but the apt oracle now grows
+# a touches() footprint AND the case carries DORC_FLAGS=--trust-footprints:
+#   site 0  apt-get install oldpkg — DIVERGED (absent) ⇒ RUNS. A running modeled mutator IS a
+#           wall — but now it declares its footprint (apt-get.touches() emits package:oldpkg).
+#   site 1  apt-get install nginx — CONVERGED (holds) on package:nginx#installed, PAST the
+#           running oldpkg wall. Its backing (package:nginx) is DISJOINT from the wall's
+#           footprint (package:oldpkg — same kind, DIFFERENT entity, entity-granular) ⇒ under
+#           --trust-footprints it ELIDES past the running wall (the frame rule). The yardstick
+#           goes 1->2 here vs the honest baseline; the why-lens names the licensor (site 0,
+#           apt-get, package:oldpkg). The UNFLAGGED sibling asserts the byte-identical baseline
+#           (both run). Differential: exec_check + expected.ran pin the run-set; gate-6 attributes
+#           the elided install to its replace license (probe is mock-reproducible ⇒ NOT authored).
+apt-get install -y oldpkg
+true   # dorc: elided [apt-get install -y nginx] (already converged / dead branch)

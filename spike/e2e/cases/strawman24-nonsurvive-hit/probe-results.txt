@@ -1,0 +1,4 @@
+# site 0 (oldpkg) absent ⇒ diverged wall; site 1 (nginx) holds ⇒ converged but its backing HITS
+# the wall's footprint ⇒ demotes even flagged.
+site 0 effect=absent
+site 1 effect=holds

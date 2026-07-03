@@ -1,0 +1,5 @@
+#!/bin/sh
+# INERT probe shim — `dpkg-query -W <pkg>`. HOST: oldpkg & badpkg NOT installed (rc 1 ⇒ absent
+# ⇒ their installs RUN = the two footprinted walls); nginx & curl installed (rc 0 ⇒ holds).
+. "${0%/*}/.log"; _dorc_logged "$@"
+case ${2:-} in oldpkg|badpkg) exit 1 ;; *) exit 0 ;; esac

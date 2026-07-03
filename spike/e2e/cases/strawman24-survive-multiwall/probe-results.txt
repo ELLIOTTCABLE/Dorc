@@ -1,0 +1,7 @@
+# sites 0,1 (oldpkg,badpkg) absent ⇒ diverged walls; site 2 (nginx) holds ⇒ converged, survives;
+# site 3 (purge gonepkg) is MustRun ⇒ unresolvable ⇒ no probe record; site 4 (curl) holds ⇒
+# converged but demotes past the footprint-less total wall.
+site 0 effect=absent
+site 1 effect=absent
+site 2 effect=holds
+site 4 effect=holds

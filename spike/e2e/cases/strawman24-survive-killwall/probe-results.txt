@@ -1,0 +1,3 @@
+# site 0 (purge oldpkg) is a KILL ⇒ MustRun ⇒ unresolvable ⇒ no probe record (it always runs).
+# site 1 (nginx) holds ⇒ converged ⇒ survives the running footprinted kill ⇒ elides.
+site 1 effect=holds

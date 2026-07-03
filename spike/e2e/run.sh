@@ -15,6 +15,11 @@
 # the value, where one exists, carried in the filename so no parsing is needed):
 #   RAN_ORDER=lax          — compare the apply run-set order-INsensitively (concurrent
 #                            pipeline stages log nondeterministically; tc-pipe-ran-order).
+#   DORC_FLAGS=<flags>     — append <flags> to EVERY dorc invocation for this case (the main
+#                            round-trip + gate-5 + BOTH gate-6 runs read one shared `$@`, so no
+#                            flag mismatch is possible). Stage 2's `DORC_FLAGS=--trust-footprints`
+#                            opts a case into the survival tier; its UNFLAGGED sibling (no marker)
+#                            asserts the byte-identical Stage-1 baseline. At most one marker.
 #   PROBE_RESULTS=authored — disable gate-1 probe parity + vouch-closure for this case (its
 #                            probe cannot be faithfully mock-executed yet; (a) still holds).
 #                            ALSO excludes the case from gate-6 (authored-divergence).
@@ -828,6 +833,26 @@ apt-get install -y curl'
   fi
 }
 
+# dorc_flags_selftest (Stage 2 — the DORC_FLAGS plumbing confound, run ONCE at harness start):
+# the flag threads through ONE shared `$@`, so a MISMATCH between gate invocations is structurally
+# impossible; the remaining failure mode is the flag being silently DROPPED (never reaching the
+# engine), which would make a survival case's apply match its unflagged baseline while gate-6
+# still attributed a licensed delta — the attribution would lie. This directly simulates the
+# mismatch: run the flagship WITH and WITHOUT `--trust-footprints` and assert the elision count
+# DIFFERS (flagged elides past the wall, plain does not). If they match, the flag is inert ⇒ abort.
+dorc_flags_selftest() {
+  _c="$here/cases/strawman24-survive-simple"
+  [ -d "$_c" ] || return 0   # the flagship anchors the self-test; skip if the corpus lacks it
+  _fl=$("$dorc" --book="$_c/book.sh" -o "$_c/package.oracle.sh" --trust-footprints \
+    < "$_c/probe-results.txt" 2>&1 >/dev/null | grep -oE 'elide=[0-9]+' || true)
+  _pl=$("$dorc" --book="$_c/book.sh" -o "$_c/package.oracle.sh" \
+    < "$_c/probe-results.txt" 2>&1 >/dev/null | grep -oE 'elide=[0-9]+' || true)
+  if [ "$_fl" = "$_pl" ]; then
+    echo "FATAL  dorc_flags_selftest FAILED — --trust-footprints did not change the flagship's elision count ($_fl flagged vs $_pl plain); the flag is not reaching the engine, so a flagged survival case's gate-6 attribution would lie. aborting." >&2
+    exit 3
+  fi
+}
+
 # gate-3 (stderr-severity floor, 20B §2): dorc's stderr ($2 = the captured file) is the
 # diagnostic stream — previously discarded. FAIL the case ($1) if it carries an
 # ERROR-severity diagnostic (the `<stage>: error[<code>]: …` shape `report()` now emits)
@@ -913,6 +938,7 @@ scan_why() {
 # guard-shape floor's confound battery (23C-fd4) runs alongside it for the same reason.
 dual_rail_selftest
 guard_shape_selftest
+dorc_flags_selftest
 
 fails=0
 total=0
@@ -926,6 +952,25 @@ for dir in "$here"/cases/*/; do
     [ -e "$o" ] || continue
     set -- "$@" -o "$o"
   done
+
+  # DORC_FLAGS marker (the value-in-filename idiom, like EXIT_RC=<n>): opt a case into extra
+  # engine flags, appended to the SAME `$@` every dorc invocation below shares — the main
+  # round-trip, gate-1's probe run (via the pre-rendered artifact), gate-5's `--debug-argv`, and
+  # BOTH gate-6 invocations. Single-source threading makes a flag MISMATCH between invocations
+  # structurally impossible (all read one `$@`), which is load-bearing: a mismatch would make
+  # gate-6's attribution lie. Stage 2's `DORC_FLAGS=--trust-footprints` is the sole in-corpus use.
+  # Refuse >1 marker loudly (an ambiguous flag-set is a fixture error). Self-checked below.
+  _dorc_flags_count=0
+  for _m in "${dir}"DORC_FLAGS=*; do
+    [ -e "$_m" ] || continue
+    _dorc_flags_count=$((_dorc_flags_count + 1))
+    set -- "$@" "${_m##*DORC_FLAGS=}"
+  done
+  if [ "$_dorc_flags_count" -gt 1 ]; then
+    echo "FAIL  $name  [DORC_FLAGS: multiple markers — exactly one flag-set is permitted]"
+    fails=$((fails + 1))
+    continue
+  fi
 
   # dorc's stdout is the artifact (probe + apply); its stderr is the diagnostic stream
   # (gate-3 asserts it — below). Capture BOTH (stderr to a temp file, no longer

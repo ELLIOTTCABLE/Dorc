@@ -59,9 +59,11 @@ for dir in "$here"/cases/strawman24-*/; do
   [ -d "$dir" ] || continue
   name=$(basename "$dir")
   n=$((n + 1))
-  # Collect -o oracles (glob-sorted, exactly as run.sh assembles them).
+  # Collect -o oracles (glob-sorted, exactly as run.sh assembles them) + the DORC_FLAGS marker
+  # (so a `--trust-footprints` case's survivals show in the yardstick — the number Stage 2 moves).
   set --
   for o in "$dir"*.oracle.sh; do [ -e "$o" ] || continue; set -- "$@" -o "$o"; done
+  for m in "$dir"DORC_FLAGS=*; do [ -e "$m" ] || continue; set -- "$@" "${m##*DORC_FLAGS=}"; done
   # Invoke as run.sh does: book + oracles, probe-results on stdin; the summary is on stderr.
   summary=$("$dorc" --book="${dir}book.sh" "$@" < "${dir}probe-results.txt" 2>&1 >/dev/null \
     | grep '^dorc: plan-summary ' || true)
