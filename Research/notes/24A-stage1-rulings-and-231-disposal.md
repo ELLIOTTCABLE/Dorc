@@ -95,6 +95,15 @@ claims at-most-these; unmatched verb emits nothing = no claim = wall. Human vibe
   backward-slicing; if it ever consumes footprints, re-run the scoping analysis.
 - **Price: deferred to the round's evidence** (human: "we've ascertained this is dangerous.
   now, is it *valuable*?" — the yardstick's question, not a spelling-chat's).
+- **Vocabulary fence (human catch, 2026-07-03): "verb" is author-plane shorthand, never an
+  engine key.** The engine's only scoping concept for marks AND for `touches()` emissions
+  is *the reached path under the site's constant-propagated argv* (rul-guard-license's
+  "reached", verbatim). The author's `case $verb in install)…` is ordinary sh control-flow;
+  per-verb judgment is expressed POSITIONALLY (decorate one arm, not another). A mark's
+  textual fragments (`apt-get:install`) are opaque attribution payload — a consumer that
+  token-matched them against argv would breach inv-referent-agnostic and duplicate
+  reachability. Builder briefs for Stages 2/3 carry this fence explicitly (the vouch
+  consumer and the touches-lift are both unbuilt — the drift would otherwise be easy).
 - **Scoping analysis (conductor, pending-ack, answering the human's
   danger-chronology question):** the footprint's danger is CO-LOCATED (danger-sites ⊆
   benefit-sites, definitionally — only a disjointness-licensed elision can be wrongly
