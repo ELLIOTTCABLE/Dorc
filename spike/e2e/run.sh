@@ -333,7 +333,14 @@ EOF
   rm -rf "$_sand"
   _got_ran=$(cat "$_log")
   rm -f "$_log"
-  if [ "${BLESS:-}" = "1" ]; then
+  # BLESS regenerates expected.ran from the CURRENT engine output — but NEVER for an
+  # XFAIL case: its expected.ran is the hand-authored DESIRED-FUTURE (guarded) run-set the
+  # unbuilt engine cannot yet produce, so blessing it from HEAD output silently clobbers
+  # the pin (23H §8 — a global BLESS overwrote the drift-trio's expected.ran, flipping 3
+  # xfails to XPASS; it has bitten twice). Under XFAIL we skip the bless and fall through to
+  # the ordinary compare, so the case stays a red `xfail` (goldens untouched). The
+  # expected.out bless (main loop) is already XFAIL-guarded structurally; this closes the ran side.
+  if [ "${BLESS:-}" = "1" ] && [ "${XFAIL_ACTIVE:-}" != "1" ]; then
     printf '%s\n' "$_got_ran" > "${_dir}expected.ran"
     return 0
   fi
