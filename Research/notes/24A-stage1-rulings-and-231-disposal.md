@@ -179,8 +179,76 @@ build on. Per-cluster, against the post-`23O` settled law:
   a re-run is moot post-crisis (the sweep's framing predates the ternary verdict) —
   recorded as an accepted loss.
 
-## §3. Stage-1 build evidence — PENDING (builders in flight at time of writing)
+## §3. Stage-1 build evidence — LANDED 2026-07-03 (both builders merged; 131/131 green)
 
-Two Opus builders dispatched in isolated worktrees (fd10/silence=wall; yardstick + strawman
-family). Their strain-ledgers, the honest-baseline yardstick reading, and the merge record
-land here when reviewed.
+Two Opus builders, isolated worktrees, cherry-picked onto `ai/spike3-r23` (yardstick
+`c78fba2`/`c70ca5e`/`44c7d1c`; fd10 wall `c1a9b2c`; XPASS promotion `ba805af`). Full gates +
+`cargo test` (523) + e2e **131/131** (9 standing guard23 xfails) green on the merged tree.
+
+**The honest-baseline yardstick reading (post-fd10; `sh e2e/yardstick.sh`):**
+
+```
+case                              sites  elide  omit  guard   run  elide-fr
+strawman24-adequacy-seed              1      1     0      0     0      1.00
+strawman24-all-converged-clean        3      3     0      0     0      1.00
+strawman24-floor-no-oracle            3      0     0      0     3      0.00
+strawman24-mixed-real                 6      2     1      0     3      0.33
+strawman24-modeled-wall               2      0     0      0     2      0.00
+strawman24-opaque-wall                3      1     0      0     2      0.33
+strawman24-partial-oracle             3      1     0      0     2      0.33
+FAMILY (7 cases)                     21      8     1      0    12      0.38
+```
+
+modeled-wall 0.50→0.00 was the fix landing as a visible metric change (pre-fix family 0.42).
+**Post-wall elisions = 0 — the charter's Stage-1 baseline claim, now mechanically true.**
+Stage 2 exists to move exactly these numbers back up, soundly.
+
+**The fd10 mechanism (commit `c1a9b2c`):** an 8-line plan-time walk in `build_plan`, after
+the span-sort (execution order — order-is-sacred), before leaf-id assignment. Wall predicate
+= establish-bearing classes (`EstablishAmbient`/`Written`/`Members` + establishing
+`InlineCall`), deliberately NOT `MustRun` (pure builtins never wall; opaques already ⊤-poison
+statically — harmless redundancy). Demotion Replace→Run only (`inv-kfail`). Elided/omitted
+mutators cast no shadow. A demoted mutator itself becomes a wall (it will run). Probes still
+ship for post-wall sites (static classify untouched) — the strawman XPASS confirmed it
+byte-identically against the pre-authored designed-future golden.
+
+**Strain-ledger extracts (conductor-reviewed; confidence marks are the builders'):**
+- **THE KILL GAP (A; flagged, open, routed to Stage 1c).** A running `Kills`-only command
+  (`apt-get purge`, classifies `MustRun`) does NOT wall downstream different-cell converged
+  establishes — the same under-execute shape as fd10. No corpus case exercises it (both kill
+  cases are same-cell ⇒ `EstablishWritten` ⇒ run anyway). Closure needs `CommandEffect`
+  threaded into `build_plan` (or a `SkipClass::Kill` variant) — localized, reversible.
+- **Path-insensitivity of the walk (A; ~SUSPECT narrow).** Mutually-exclusive branches
+  (`if q; then update; else install; fi`) can over-wall — but a plain `if [ -f x ]` condition
+  lowers to ⊤ and poisons downstream anyway, so the loss needs a live non-poisoning,
+  non-folding guard. Over-execution direction (safe); Stage-2 disjointness supersedes the
+  total wall regardless. No CFG-aware walk warranted now.
+- **hz-ambient-hole's lockstep-flip expectation RETIRED (A; conductor-verified).** The named
+  sweep candidates (`exec-poison-wall-dead`, `guard23-vouch-inert-pair-a/b`) did NOT flip:
+  their upstream mutators are CONVERGED ⇒ elided ⇒ no shadow — already honest at HEAD under
+  the ratified law ("elision casts no poisoned shadow"). The corpus simply had NO
+  diverged-upstream case until `exec-modeled-wall-runs`; that absence WAS the pin-open gap.
+- **errexit defeats converged-mutator elision (B; KNOWN cost, newly MEASURED).** Under
+  `set -e` a mutator's ⊤ rc is status-consumed ⇒ `consumption_ok` blocks ⇒ converged mutators
+  run. NOT a new finding — it is the `206 §2` headline cost with the 20V doors as its named
+  recovery program (door-3 landed) — but the yardstick now QUANTIFIES it (B's mixed-real
+  collapsed to 1 elide until `set -e` was dropped), and the round-24 strawman-family axis had
+  omitted it. Route: a dedicated `strawman24-errexit-defeats` case at Stage 6 (or 1c if
+  convenient); NB the USER_STORY's flagship book opens `set -eu` — the story's stage-1 render
+  depends on the doors program maturing. Family-axis lesson: book-IDIOM quality is an axis
+  alongside oracle-coverage quality.
+- **Gate-6 blindness bound (B; +SURE).** A wrong-but-LICENSED Replace is invisible to the
+  dual-rail judge (it attributes, it does not judge licenses). The modeled-wall defect was
+  pinned by the two-sided `head-expected.ran` + exec_check, not gate-6 — remember this when
+  reading "differential-verified": license-correctness rides the hostsim differential's
+  required-to-run judgment and the pins, not gate-6 alone.
+- **Ratified surfaces:** summary grammar `dorc: plan-summary sites= elide= omit= guard= run=`
+  (stderr, beneath gate-3's error-floor; parse target — grammar now stable); emitted in all
+  plan-building modes incl. apply; `elide-fr = elide/sites` (Replace only; omit shown
+  separately). `DispositionCounts`' exhaustive match forces Stage-3 to wire the guard bucket.
+
+**Process notes:** worktree-isolated agents CANNOT `git reset --hard` (hook-blocked) — the
+working step-zero is `git switch -C <worktree-branch> ai/spike3-r23` (both builders
+independently found equivalents); future briefs say so. Conductor lean going forward
+(human-typed): mechanical suite-running/verification rides Opus errands; the conductor keeps
+only judgment moments (promotion diff-inspection, adjudication).
