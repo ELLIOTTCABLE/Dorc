@@ -14,7 +14,15 @@
 
 ---
 
-## NOW (2026-07-02 — end of the round-23 crisis arc; context-clear imminent)
+## NOW (2026-07-02 — end of the round-23 crisis arc)
+
+**Direction-crosscheck COMPLETE:** a Fable neutral+adversarial pair reviewed the whole r23
+pivot (incl. the human's `a92ad31` root-doc rewrite + the new USER_STORY.md); both verdicts:
+*the pivot is sound; the seam is docs-narrating-ahead-of-pins.* Reviews `23Ia`/`23Ib`,
+adjudication **`23J`** (headline product: the **rc-soundness cluster** — the guard consumes
+aggregate in-band rc while design claims ride per-mark engine-interpreted semantics; three
+facets, one gap; chartered into the vouch-spelling round). Repairs → task #15
+(post-closeout); the human's root-doc queue → task #16.
 
 **State:** the `plans/233` design-crisis is **formally closed**. The verdict architecture is
 ternary — **{elide, guard, run}** — where a `guard` inserts the oracle's own stripped check in
@@ -75,13 +83,19 @@ big-bang re-bless with case-by-case inspection + per-xfail lens-verify.
 **The arc ahead:**
 1. **Integrate the in-flight atomic session** (verify skeptically: gates, harness 123/9/0/0,
    lens-checks, differential evidence; then task #14 closes).
-2. **THE BUILD SLICE — the next conductor's spine:** flip the 9 xfails green honestly. Sequence
-   per `23A` §5: widen gate-6 FIRST (no license class yet for apply-only checks /
-   guard-suppressed mutators; selftest confounds landed in `23G`); then the guard emitter per
-   the round-21 door-4 mechanics (`notes/218a`), the GuardLicense witness (mind
-   **hz-refusepath**: check bodies exit 0 on refuse paths — the reached-path component is
-   load-bearing), the strawman vouch lift. During: the rc-consumer experiment; guard
-   render-forms; ANALYZER-NEEDS rows.
+2. **THE BUILD SLICE — the next conductor's spine:** flip the xfails green honestly. ENTRY
+   GATE (23J, direction-crosscheck): refresh ANALYZER-NEEDS.md FIRST (stale rounds 19–23;
+   rows contradict the polarity-retirement ruling) and honor the **rc-soundness requirement**
+   — the guard-witness gains a structural rc-soundness component (aggregate rc-0 ⇔ the
+   vouched establish-set holds on the runtime-reached path; refuse-to-guard loudly
+   otherwise), chartered into the vouch-spelling round BEFORE any vouch-consuming xfail
+   flips (full cluster: `23J` conv-rc-soundness — the mark-`!` inversion trap, refuse-path
+   rc-0, rc-vacuous fact-reporting bodies). Then sequence per `23A` §5: widen gate-6 FIRST
+   (no license class yet for apply-only checks / guard-suppressed mutators; selftest
+   confounds landed in `23G`); the guard emitter per the round-21 door-4 mechanics
+   (`notes/218a`), the GuardLicense witness (mind **hz-refusepath** — the reached-path
+   component is load-bearing), the strawman vouch lift. During: the rc-consumer experiment;
+   guard render-forms.
 3. **Placement-spectrum design round (task #11, commissioned):** per-site guard ↔ hoisted
    post-wall wave. Wall-density cost-model FIRST (density endogenous; NO corpus route);
    single-approval, no-late-attention, no mid-apply re-planning; quiescence named;
@@ -89,6 +103,10 @@ big-bang re-bless with case-by-case inspection + per-xfail lens-verify.
 4. **Elide-half design round** (equal standing; when the human wants it): seeds = `238`
    (horizon, derivation gradient) + `23D` §5 (footprints, demand-disjointness, namespace
    convention, grounding bridges, entity-aliasing). All ~SUSPECT until its own hostile pass.
+   NB (23J / 23Ib-fd10): this arc OWNS the repair of 233 §0's original unsoundness, which is
+   design-closed but STILL LIVE AT HEAD (the dangerous-middle; `23A` hz-ambient-hole goldens
+   encode it) — the missing pin lands in the 23J repair pass (task #15), but the FIX rides
+   here; scheduling this arc is scheduling that repair.
 5. **Parked, human-keyed:** escape-hatches (`235`; un-park signals: admin-recourse pressure or
    bump-mode work); check-cost banding (needs a sanctioned data source; corpus QUARANTINED);
    the vouch-spelling family (dq-kOOB/kTYANNOT cluster); the 22H live-plan arc (see
