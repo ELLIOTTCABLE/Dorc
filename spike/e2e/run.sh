@@ -388,7 +388,7 @@ EOF
 #   (c) VOUCH-CLOSURE / no-127 (unless PROBE_RESULTS=authored): no record carries rc=127
 #       (command-not-found). Under PATH=mocks-only, an rc=127 means the probe invoked a
 #       command with no shim — the executable half of vouch-closure failing loud. (NB:
-#       an un-shimmed probe command does NOT abort the probe — the `__check` wrappers
+#       an un-shimmed probe command does NOT abort the probe — the `__predict` wrappers
 #       swallow the not-found via their own `2>/dev/null`, so the only signal is rc=127
 #       in the record; we detect it explicitly rather than rely on a non-zero exit.)
 #
@@ -810,7 +810,7 @@ guard_shape_selftest() {
 apt-get install -y curl'
   # gf-PASS (negative control): a well-formed guard (`<check> || <verbatim original>`) ⇒ must
   # NOT scream (proves gf-1/gf-2's screams are real discrimination, not a floor that rejects all).
-  _r=$(guard_shape_violations 'apt_get__check install -y curl || apt-get install -y curl   # dorc: guard [package converged-vouch; probe: holds]' "$_gss_book")
+  _r=$(guard_shape_violations 'apt_get__predict install -y curl || apt-get install -y curl   # dorc: guard [package converged-vouch; probe: holds]' "$_gss_book")
   case $_r in "") ;; *) _fails="${_fails}gf-PASS (a well-formed guard was wrongly flagged: $_r)
 " ;; esac
   # gf-1: an engine-synthesized THIN guard (no `|| <original>` fall-through) ⇒ must scream (never-1).
@@ -818,7 +818,7 @@ apt-get install -y curl'
   case $_r in *thin*) ;; *) _fails="${_fails}gf-1 (an engine-synthesized thin guard was not caught)
 " ;; esac
   # gf-2: a fall-through whose original bytes were MUTATED (`-y` dropped) ⇒ must scream (bytes-verbatim).
-  _r=$(guard_shape_violations 'apt_get__check install -y curl || apt-get install curl   # dorc: guard [package converged-vouch; probe: holds]' "$_gss_book")
+  _r=$(guard_shape_violations 'apt_get__predict install -y curl || apt-get install curl   # dorc: guard [package converged-vouch; probe: holds]' "$_gss_book")
   case $_r in *verbatim*) ;; *) _fails="${_fails}gf-2 (a mutated fall-through — dropped -y — was not caught)
 " ;; esac
   if [ -n "$_fails" ]; then
