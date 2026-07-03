@@ -117,13 +117,13 @@ pub struct Mark {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MarkKind {
     /// `cmd … : kind:entity.prop` — the command's rc establishes the property
-    /// (→ `Polarity::Establish` in the lift).
+    /// (→ `ValueClaim::Establish` in the derivation).
     Establish,
     /// `cmd … : kind:entity.prop!` — ESTABLISH with the rc sense inverted; the verb
-    /// makes the fact NOT hold (→ `Polarity::Kill` in the lift; 233 §1's `!` pun).
+    /// makes the fact NOT hold (→ `ValueClaim::EstablishInverted`; 233 §1's `!` pun).
     EstablishInverted,
     /// `cmd … :? kind:entity.prop` — depends-upon / read-only observe
-    /// (→ `Polarity::Query` in the lift; 233 OBSERVE).
+    /// (→ `ValueClaim::Observe` in the derivation; 233 OBSERVE).
     Observe,
     /// `: kind:entity.prop~` — a considered-untouched vouch (233 ACK). A no-op under
     /// the dead m×n negative-enumeration (23D §5): parsed and carried, licenses
@@ -135,9 +135,9 @@ pub enum MarkKind {
     /// (233 POISON). Its cells are what the lift may poison (a mention with no `~`).
     Poison,
     /// `: provider:verb~` in statement position — the CONVERGED-VOUCH placeholder.
-    /// A STRAWMAN for an open spelling (dq-kOOB); the parser carries it to where the
-    /// former `oracle_vouch_converged=` datum went. Two-level (`provider:verb`, no
-    /// `.prop`) + a `~` suffix.
+    /// A STRAWMAN for an open spelling (dq-kOOB); the parser derives it into a
+    /// [`DerivedVouch`](super::DerivedVouch). Two-level (`provider:verb`, no `.prop`)
+    /// + a `~` suffix.
     ConvergedVouch,
 }
 
@@ -168,10 +168,10 @@ pub struct Annotation {
     /// the evaluator's resolution (the value-position is what matters) but kept for
     /// provenance and so an over-eager future binding-tracker has it.
     pub name: Symbol,
-    /// The reverse-DNS kind string (`com.debian.apt.Package`) or the file's short
-    /// `oracle_kind` (task-W keeps these identical so annotation-kind ==
-    /// effect-map kind). An opaque coordination handle (`inv-referent-agnostic`);
-    /// never decoded for meaning.
+    /// The reverse-DNS kind string (`com.debian.apt.Package`) or a short kind name
+    /// (`package`) — the derivation keys the effect-map on exactly this string, so the
+    /// annotation-kind IS the effect-map kind. An opaque coordination handle
+    /// (`inv-referent-agnostic`); never decoded for meaning.
     pub kind: String,
     /// The annotated value word (`"$1"`), or `None` for the **nullary/Singleton**
     /// form (`index : pkgindex` with no `= value`): a verb whose resource has no

@@ -155,8 +155,8 @@ pub enum NodeKind {
     /// A word: a sequence of quoted/unquoted fragments (see [`WordPart`]).
     Word { parts: Vec<WordPart> },
     /// `name=value` (value `None` for `name=`). Used both as a leading
-    /// command-assignment and as a standalone statement (`oracle_kind=package`,
-    /// the dn-1 anchor).
+    /// command-assignment and as a standalone statement (a bare `name=value`; the
+    /// check's inline identity annotation strips to exactly this shape).
     Assign {
         name: String,
         name_span: Span,

@@ -92,23 +92,24 @@ fn ship_from(
 }
 
 /// The corpus-shaped apt-get oracle (mirrors `e2e/cases/converged/package.oracle.sh`): the
-/// `oracle_effect` declarations (install ⇒ establish `package#installed`, purge ⇒ kill) are
-/// what make a command classify as an Establish (and thus eligible for Replace) — WITHOUT them
-/// every command is Opaque and the gate would never exercise the elision plane (the
-/// anti-masking lesson: a fixture that elides nothing cannot test receipt-inertness OF a
-/// decision). The `apt_get__check` argparse is the entity-resolver; `oracle_probe_package` is
+/// check body's `case $verb` arms + trailing marks (install ⇒ establish `package#installed`,
+/// purge ⇒ inverted) are what make a command classify as an Establish (and thus eligible for
+/// Replace) — WITHOUT them every command is Opaque and the gate would never exercise the
+/// elision plane (the anti-masking lesson: a fixture that elides nothing cannot test
+/// receipt-inertness OF a decision). The `apt_get__check` argparse is the entity-resolver and
 /// the shipped probe. Lifted with the test interner so provider symbols match the book's words.
 const ORACLE_SRC: &str = r#"
-oracle_kind=package
-oracle_probe_package() { dpkg-query -W "$1" >/dev/null 2>&1; }
-oracle_effect apt-get install establish installed
-oracle_effect apt-get purge kill installed
 apt_get__check() {
    while [ "${1#-}" != "$1" ]; do shift; done
    verb=$1; shift
    while [ "${1#-}" != "$1" ]; do shift; done
    pkg : package = "$1"
-   if [ "$2" = "" ]; then dpkg-query -W "$pkg" >/dev/null 2>&1; fi
+   if [ "$2" = "" ]; then
+      case $verb in
+         install) dpkg-query -W "$pkg" >/dev/null 2>&1 : package:"$pkg".installed ;;
+         purge) dpkg-query -W "$pkg" >/dev/null 2>&1 : package:"$pkg".installed! ;;
+      esac
+   fi
 }
 "#;
 

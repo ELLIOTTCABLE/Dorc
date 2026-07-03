@@ -305,7 +305,7 @@ pub fn command_effect(
     if cells.is_empty() {
         // The check resolved an identity, but no oracle declared an effect for this
         // (provider, verb). Not this analysis's concern ⇒ ⊤ (runs). A read-only guard
-        // whose oracle declares `oracle_effect … query …` lands as `Queries` below;
+        // whose check declares an Observe (`:?`) mark lands as `Queries` below;
         // only an un-declared guard falls through to Opaque here (task-D2, 202 §2).
         return vec![CommandEffect::Opaque];
     }

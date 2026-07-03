@@ -119,9 +119,9 @@ impl Rng {
 }
 
 /// One modeled kind the generator can use — a `(kind, provider, verb, selector)` tuple
-/// plus the entity vocabulary it draws from. Mirrors `package.oracle.sh`'s shape: an
-/// establish effect, a simple mockable `oracle_probe_*` body, and a `<provider>__check`
-/// argparse in the constrained dialect.
+/// plus the entity vocabulary it draws from. Mirrors `package.oracle.sh`'s shape: a
+/// `<provider>__check` argparse in the constrained dialect whose trailing marks the engine
+/// derives the effect-map from.
 #[derive(Debug, Clone)]
 struct KindSpec {
     kind: &'static str,
@@ -132,16 +132,15 @@ struct KindSpec {
     /// (useradd <e>). Bare-verb commands have no oracle effect for the `check`'s verb
     /// branch — they resolve the operand directly.
     has_verb: bool,
-    /// The effect polarity the oracle declares: `establish` for a mutator (the default),
-    /// `query` for a read-only guard (`command -v` ⇒ a Query site whose own rc is
-    /// fold-usable). A Query kind MUST declare `oracle_effect <provider> '' query <sel>`
-    /// or the engine resolves the guard to Opaque and the whole `||` line poisons to ⊤
-    /// (the empty-probe-results bug this field fixes).
+    /// The claim the check's trailing mark declares: `establish` for a mutator (the
+    /// default), `query` for a read-only guard (`command -v` ⇒ a Query site whose own rc
+    /// is fold-usable). The verbless query keys the ε-verb; without its trailing mark the
+    /// engine resolves the guard to Opaque and the whole `||` line poisons to ⊤.
     polarity: Polarity,
     entities: &'static [&'static str],
 }
 
-/// The effect polarity a generated kind declares.
+/// The value-claim a generated kind declares (its check's trailing mark).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Polarity {
     Establish,
@@ -149,17 +148,9 @@ enum Polarity {
 }
 
 impl Polarity {
-    fn word(self) -> &'static str {
-        match self {
-            Polarity::Establish => "establish",
-            Polarity::Query => "query",
-        }
-    }
-
-    /// The inline-dialect trailing-mark marker for this polarity (R2): `:` for an
-    /// ESTABLISH write-claim, `:?` for a read-only OBSERVE. The generated check body
-    /// carries this so `lift_derived` derives the SAME effect the `oracle_effect` marker
-    /// declares (the effect-map is now check-body-sourced, 23H §5 P4).
+    /// The inline-dialect trailing-mark marker for this claim: `:` for an ESTABLISH
+    /// write-claim, `:?` for a read-only OBSERVE. The generated check body carries this so
+    /// the engine derives the effect off the check (23D §1 — the check is the oracle).
     fn mark_marker(self) -> &'static str {
         match self {
             Polarity::Establish => ":",
@@ -242,7 +233,7 @@ pub enum Shape {
 /// licensing expectations.
 #[derive(Debug, Clone)]
 struct EntityState {
-    /// The probe command the kind's `oracle_probe_*` body calls (one per kind).
+    /// The probe command the kind's check body calls (one per kind).
     probe_cmd: String,
     entity: String,
     converged: bool,
@@ -514,8 +505,9 @@ fn push_kind(v: &mut Vec<KindSpec>, k: &KindSpec) {
 }
 
 /// Build the oracle files for the used kinds (+ the query oracle if any guard was
-/// emitted). Mirrors `package.oracle.sh`: `oracle_kind`, a simple `oracle_probe_*`, an
-/// `oracle_effect` marker, and a `<provider>__check` argparse in the constrained dialect.
+/// emitted). Mirrors `package.oracle.sh`: a `<provider>__check` argparse in the
+/// constrained dialect, whose `case $verb` arms + trailing marks the engine derives the
+/// effect-map from (23D §1 — the check is the oracle).
 fn build_oracles(used_kinds: &[KindSpec], used_query: bool) -> Vec<(String, String)> {
     let mut out = Vec::new();
     for k in used_kinds {
@@ -530,32 +522,20 @@ fn build_oracles(used_kinds: &[KindSpec], used_query: bool) -> Vec<(String, Stri
     out
 }
 
-/// One oracle file's text — the constrained-dialect shape the engine lifts.
+/// One oracle file's text — the constrained-dialect `<provider>__check` the engine lifts.
+/// The effect-map is DERIVED from the check body (23D §1): the `case $verb` arm's trailing
+/// mark (`:` establish / `:?` observe) names the selector + rc convention; a verbless check
+/// keys the ε-verb. No markers — the check is the whole contract.
 fn oracle_text(k: &KindSpec) -> String {
     let probe = probe_cmd_name(k);
     let mut s = String::new();
     let _ = writeln!(s, "#!/bin/sh");
-    let _ = writeln!(s, "oracle_kind={}", k.kind);
-    let _ = writeln!(s, "oracle_probe_{}() {{", k.kind);
-    let _ = writeln!(s, "   {probe} \"$1\"");
-    let _ = writeln!(s, "}}");
     if k.has_verb {
-        // Verbed effect (`<provider> <verb> establish|query <selector>`).
-        let _ = writeln!(
-            s,
-            "oracle_effect {} {} {} {}",
-            k.provider,
-            k.verb,
-            k.polarity.word(),
-            k.selector
-        );
         let _ = writeln!(s, "{}() {{", check_fn_name(k.provider));
         let _ = writeln!(s, "   while [ \"${{1#-}}\" != \"$1\" ]; do shift; done");
         let _ = writeln!(s, "   verb=$1; shift");
         let _ = writeln!(s, "   while [ \"${{1#-}}\" != \"$1\" ]; do shift; done");
         let _ = writeln!(s, "   e : {} = \"$1\"", k.kind);
-        // R2: the effect-map is derived from the check body — the verb-arm carries the
-        // trailing mark so `lift_derived` reproduces the `oracle_effect` cell above.
         let _ = writeln!(s, "   if [ \"$2\" = \"\" ]; then");
         let _ = writeln!(s, "      case $verb in");
         let _ = writeln!(
@@ -570,21 +550,10 @@ fn oracle_text(k: &KindSpec) -> String {
         let _ = writeln!(s, "   fi");
         let _ = writeln!(s, "}}");
     } else {
-        // Verbless effect (the `command -v X` query shape): the effect-map keys on the
-        // ε-verb (`''`), so the marker MUST declare it or the guard resolves to Opaque
-        // (the empty-probe-results bug). Strip a single leading flag, then annotate $1.
-        let _ = writeln!(
-            s,
-            "oracle_effect {} '' {} {}",
-            k.provider,
-            k.polarity.word(),
-            k.selector
-        );
+        // Verbless (the `command -v X` query shape): the trailing mark keys the ε-verb.
         let _ = writeln!(s, "{}() {{", check_fn_name(k.provider));
         let _ = writeln!(s, "   while [ \"${{1#-}}\" != \"$1\" ]; do shift; done");
         let _ = writeln!(s, "   e : {} = \"$1\"", k.kind);
-        // R2: verbless (ε-verb) — the trailing mark on the probe command carries the
-        // derived effect (`:` establish / `:?` observe), matching the ε marker above.
         let _ = writeln!(
             s,
             "   if [ \"$2\" = \"\" ]; then {probe} \"$e\" {} {}:\"$e\".{}; fi",

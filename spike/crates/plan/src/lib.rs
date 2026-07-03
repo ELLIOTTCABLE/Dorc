@@ -736,10 +736,10 @@ pub enum ProbeSiteKind {
 /// check funcdef (`<provider>__check() { … }`), shipped strip-only (annotations removed,
 /// nothing else changed — [`dorc_oracle::check::strip_check`]) and invoked per-site with
 /// the site's resolved argv (`<provider>__check install -y nginx`). The check's own
-/// argparse resolves the entity from that argv (identical rc to the retired per-selector
-/// `oracle_probe_*` wrapper for a `dpkg-query` package site, and the AUTHORED command
-/// where it diverges — `dpkg -s --`, the firewall's non-pipeline re-spelling, per
-/// ask-probe-divergence RULED (b)). The former `oracle_probe_*` split is retired.
+/// argparse resolves the entity from that argv (identical rc to a `dpkg-query` package
+/// site, and the AUTHORED command where it diverges — `dpkg -s --`, the firewall's
+/// non-pipeline re-spelling, per ask-probe-divergence RULED (b)). The check IS the
+/// oracle: there is one shipped unit in both lanes (23D §1).
 ///
 /// `site` is the stable [`LeafId`] (== the apply plan's leaf-id for the same source
 /// command), so the results-record keys back to exactly this program point. `fact` is
@@ -836,17 +836,15 @@ impl ProbePlan {
     /// exception folds a probe-sourced rc, via its own `declared-rc` line — D2's Query
     /// class is what will legitimately equate a guard's probe-rc with its site status).
     ///
-    /// Emitted-function shape (205 §1 / st-2 ruling, task-P/find-1 per-selector): one
-    /// `<kind>_<selector>__check()` wrapper per **`(kind, selector)`** cell (first-seen
-    /// ⇒ deterministic), built from the resolved `oracle_probe_*` body
-    /// ([`dorc_oracle::KindIndex::resolve_probe`] picks per-selector-else-kind-default),
-    /// invoked **per site** with the resolved entity bound (`$1`). Keying per cell (not
-    /// per kind) is the find-1 fix: a multi-selector kind ships DISTINCT probe bodies
-    /// per selector (`service_enabled__check` runs `is-enabled`, `service_active__check`
-    /// runs `is-active`), which a per-kind name would collide. A
-    /// [`EntityRef::Singleton`] fact (no operand, `package-index#fresh`) is invoked with
-    /// no args. The wrapper captures `$?` immediately after the check, maps it to the
-    /// three-outcome word, and prints the record.
+    /// Emitted-function shape (R3 / 23D §1 — the check IS the oracle): the oracle's own
+    /// stripped `<provider>__check` funcdef, invoked **per site** with the site's full
+    /// resolved argv (`apt_get__check install -y nginx`). The check's argparse resolves
+    /// the entity from that argv, so a multi-selector kind self-discriminates by verb-arm
+    /// at runtime (no per-`(kind, selector)` wrapper). One provider with two distinct
+    /// check bodies (`apt-get` as both `package` and `pkgindex`) re-emits each body
+    /// immediately before its own invocation (sh's last-writer-wins). The wrapper captures
+    /// `$?` immediately after the check, maps it to the three-outcome word, and prints the
+    /// record.
     #[must_use]
     pub fn render_sh(&self, interner: &Interner) -> String {
         let mut out = String::from(render::probe::header());
@@ -988,14 +986,13 @@ pub fn compile_probe(
             );
             continue;
         }
-        // Both an EstablishAmbient and a (resolvable) Query site ship a check — each
-        // is probe-resolvable iff its `(kind, selector)` cell resolves to a declared
-        // probe (task-P/find-1: a per-selector probe, or the kind-default ONLY when the
-        // kind is single-selector — `KindIndex::resolve_probe`). The `site_kind`
-        // discriminant rides along so the cli's firewall knows whether the record-rc is
-        // the probe's (Establish ⇒ never fold) or the guard's own (Query ⇒ fold iff
-        // valid). A written establish, a kill, opaque, pure, MustRun — none resolvable
-        // (`can't-probe ⇒ can't-elide`, `kFAIL-perform`).
+        // Both an EstablishAmbient and a (resolvable) Query site ship a check — each is
+        // probe-resolvable iff the provider's `<provider>__check` resolves the site's argv
+        // (R3 / 23D §1). The `site_kind` discriminant rides along so the cli's firewall
+        // knows whether the record-rc is the probe command's (Establish ⇒ never fold) or
+        // the guard's own (Query ⇒ fold iff valid). A written establish, an inverted
+        // claim, opaque, pure, MustRun — none resolvable (`can't-probe ⇒ can't-elide`,
+        // `kFAIL-perform`).
         let resolvable = match class {
             SkipClass::EstablishAmbient(fact) => Some((*fact, ProbeSiteKind::Establish)),
             SkipClass::QueryResolvable { fact, valid } => {

@@ -427,9 +427,8 @@ pub fn build_report(inputs: &Inputs<'_>) -> Report {
     let mut interner = Interner::default();
 
     // Shared interner across oracles + book ⇒ provider symbols match (cli parity).
-    // R2 wiring flip (23H §5 P4, cli-mirror): effect-map derived from the check bodies,
-    // not the `oracle_effect` markers (behaviour-identical per the corpus differential gate).
-    let lifted = dorc_oracle::lift_derived(&mut interner, inputs.oracles);
+    // The effect-map is derived from the check bodies (23D §1 — the check is the oracle).
+    let lifted = dorc_oracle::lift(&mut interner, inputs.oracles);
     let idx = lifted.value;
     let checks: Vec<dorc_oracle::check::CheckSet> = inputs
         .oracles
@@ -1171,10 +1170,6 @@ mod tests {
     /// The package oracle (apt/dpkg-query establish) — install/purge mutators. Mirrors
     /// the e2e `package.oracle.sh` idiom.
     const PACKAGE_ORACLE: &str = r#"
-oracle_kind=package
-oracle_probe_package() { dpkg-query -W "$1" >/dev/null 2>&1; }
-oracle_effect apt-get install establish installed
-oracle_effect apt-get purge kill installed
 apt_get__check() {
    while [ "${1#-}" != "$1" ]; do shift; done
    verb=$1; shift
@@ -1193,9 +1188,6 @@ apt_get__check() {
     /// `Queries` cell, the fold-usable guard. Mirrors the e2e `pkgstate.oracle.sh`
     /// (an EXTERNAL query, mock-reproducible, unlike the builtin `command -v`).
     const PKGSTATE_ORACLE: &str = r#"
-oracle_kind=pkgstate
-oracle_probe_pkgstate() { dpkg -s "$1" >/dev/null 2>&1; }
-oracle_effect dpkg '' query installed
 dpkg__check() {
    case $1 in -s) shift ;; esac
    pkg : pkgstate = "$1"

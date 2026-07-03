@@ -179,10 +179,9 @@ fn run() -> Result<(), String> {
         .map(|p| std::fs::read_to_string(p).map_err(|e| format!("reading oracle {p}: {e}")))
         .collect::<Result<_, _>>()?;
     let oracle_refs: Vec<&str> = oracle_srcs.iter().map(String::as_str).collect();
-    // R2 wiring flip (23H §5 P4): the effect-map is derived from the inline check bodies,
-    // not the `oracle_effect` markers (probes still come from `oracle_probe_*` until R3).
-    // The corpus differential gate proves this is behaviour-identical to the marker lift.
-    let lifted = dorc_oracle::lift_derived(&mut interner, &oracle_refs);
+    // The effect-map is derived from the inline check bodies (23D §1 — the check is the
+    // oracle); the probe lane (R3) ships the same stripped check bodies per-site.
+    let lifted = dorc_oracle::lift(&mut interner, &oracle_refs);
     report_at(advisory, "oracle", &lifted.diags);
     let idx = lifted.value;
 
@@ -876,8 +875,8 @@ fn parse_site_key(tok: &str) -> Option<RecordKey> {
     }
 }
 
-/// Map the probe's three-outcome `effect=` word to a [`Verdict`] (the existing
-/// `oracle_probe` convention, 202 §3): `holds ⇒ Converged`, `absent ⇒ Diverged`,
+/// Map the probe's three-outcome `effect=` word to a [`Verdict`] (the probe-record
+/// convention, 202 §3): `holds ⇒ Converged`, `absent ⇒ Diverged`,
 /// anything else (`cant-tell` / garbled) ⇒ `Unknown` (the safe direction).
 fn effect_word_to_verdict(word: &str) -> Verdict {
     match word {

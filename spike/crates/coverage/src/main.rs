@@ -525,10 +525,6 @@ mod tests {
     }
 
     const PKG_ORACLE: &str = r#"
-oracle_kind=package
-oracle_probe_package() { dpkg-query -W "$1" >/dev/null 2>&1; }
-oracle_effect apt-get install establish installed
-oracle_effect apt-get purge kill installed
 apt_get__check() {
    while [ "${1#-}" != "$1" ]; do shift; done
    verb=$1; shift

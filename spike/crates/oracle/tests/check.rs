@@ -763,12 +763,11 @@ c__check() {
 
 #[test]
 fn non_check_functions_are_ignored_not_errors() {
-    // A file with `oracle_kind=`, a helper function, and a real check. The non-check
+    // A file with a bare assignment, a helper function, and a real check. The non-check
     // top-level items are ignored (this module only owns `__check`); only the check
-    // lifts, with no spurious diagnostics. Pins coexistence with the existing
-    // `oracle_kind`/`oracle_effect`/helper content (the existing `lift` owns those).
+    // lifts, with no spurious diagnostics.
     let src = r#"
-oracle_kind=package
+deploy_env=prod
 helper() { echo hi; }
 apt_get__check() {
    verb=$1; shift

@@ -106,28 +106,6 @@ pub enum DiagCode {
     /// the annotation (declared identity) wins (204 §6 open seam).
     EffectKindDisagreement(EffectKindDisagreement),
 
-    // ── B4 mechanical sweep: oracle/lib.rs ──────────────────────────────────
-    /// `oracle_kind=` value is not a single literal (a variable/substitution cannot be lifted).
-    OracleNonLiteralKind(OracleNonLiteralKind),
-    /// The oracle file declares probe/effect markers but no `oracle_kind=<kind>`.
-    OracleMissingKind(OracleMissingKind),
-    /// A declared `oracle_kind=<k>` has no matching `oracle_probe_<k>` function.
-    OracleMissingProbe(OracleMissingProbe),
-    /// An `oracle_effect` marker has the wrong arity or an unrecognized polarity word.
-    OracleBadEffect(OracleBadEffect),
-    /// An oracle file has a top-level mutating command (only assignments/markers/funcdefs
-    /// are allowed at the oracle top level).
-    OracleTopLevelMutator(OracleTopLevelMutator),
-    /// An oracle file has a non-declaration top-level construct (an unsupported node or
-    /// a control-flow compound).
-    OracleNonDeclaration(OracleNonDeclaration),
-    /// Two `oracle_effect` markers declare the same `(provider, verb, selector)` cell;
-    /// first-writer-wins and the duplicate is dropped.
-    OracleDuplicateEffect(OracleDuplicateEffect),
-    /// A `oracle_probe_<kind>_<selector>` whose selector funcname-segment cannot round-trip
-    /// through the hyphen↔underscore mangling (`tc-perselector-mangle`).
-    OracleProbeSelectRoundtrip(OracleProbeSelectRoundtrip),
-
     // ── B4 mechanical sweep: oracle/check/parser.rs ─────────────────────────
     /// A check function body contains a construct outside the check dialect (the check
     /// dialect is a strict subset of sh; out-of-dialect input is a lift failure).
@@ -159,14 +137,6 @@ impl DiagCode {
             DiagCode::CfgInlineRefused(_) => "cfg-inline-refused",
             DiagCode::CfgBuiltinShadowed(_) => "cfg-builtin-shadowed",
             DiagCode::EffectKindDisagreement(_) => "effect-kind-disagreement",
-            DiagCode::OracleNonLiteralKind(_) => "oracle-non-literal-kind",
-            DiagCode::OracleMissingKind(_) => "oracle-missing-kind",
-            DiagCode::OracleMissingProbe(_) => "oracle-missing-probe",
-            DiagCode::OracleBadEffect(_) => "oracle-bad-effect",
-            DiagCode::OracleTopLevelMutator(_) => "oracle-top-level-mutator",
-            DiagCode::OracleNonDeclaration(_) => "oracle-non-declaration",
-            DiagCode::OracleDuplicateEffect(_) => "oracle-duplicate-effect",
-            DiagCode::OracleProbeSelectRoundtrip(_) => "oracle-probe-selector-roundtrip",
             DiagCode::CheckOutOfDialect(_) => "check-out-of-dialect",
             DiagCode::CheckUnterminated(_) => "check-unterminated",
         }
@@ -337,71 +307,6 @@ pub struct EffectKindDisagreement {
     pub detail: String,
 }
 
-/// Payload of [`DiagCode::OracleNonLiteralKind`]: `oracle_kind=` value is not a single
-/// literal. No `SiteId` (`site()` returns `None`).
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct OracleNonLiteralKind {
-    /// The oracle lifter's description (display only).
-    pub detail: String,
-}
-
-/// Payload of [`DiagCode::OracleMissingKind`]: the oracle file has probe/effect markers but
-/// no `oracle_kind=`. No `SiteId`; emits with `span: None` at the legacy site.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct OracleMissingKind {
-    /// The oracle lifter's description (display only).
-    pub detail: String,
-}
-
-/// Payload of [`DiagCode::OracleMissingProbe`]: a declared `oracle_kind=<k>` has no matching
-/// probe function. No `SiteId`; emits with `span: None` at the legacy site.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct OracleMissingProbe {
-    /// The oracle lifter's description (display only).
-    pub detail: String,
-}
-
-/// Payload of [`DiagCode::OracleBadEffect`]: an `oracle_effect` marker has wrong arity or
-/// an unrecognized polarity word. No `SiteId` (`site()` returns `None`).
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct OracleBadEffect {
-    /// The oracle lifter's description (display only).
-    pub detail: String,
-}
-
-/// Payload of [`DiagCode::OracleTopLevelMutator`]: an oracle file has a top-level mutating
-/// command. No `SiteId` (`site()` returns `None`).
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct OracleTopLevelMutator {
-    /// The oracle lifter's description (display only).
-    pub detail: String,
-}
-
-/// Payload of [`DiagCode::OracleNonDeclaration`]: an oracle file has a non-declaration
-/// top-level construct. No `SiteId` (`site()` returns `None`).
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct OracleNonDeclaration {
-    /// The oracle lifter's description (display only).
-    pub detail: String,
-}
-
-/// Payload of [`DiagCode::OracleDuplicateEffect`]: two `oracle_effect` markers declare the
-/// same cell. No `SiteId`; emits with `span: None` at the legacy site.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct OracleDuplicateEffect {
-    /// The oracle lifter's description (display only).
-    pub detail: String,
-}
-
-/// Payload of [`DiagCode::OracleProbeSelectRoundtrip`]: a per-selector probe funcname cannot
-/// round-trip the selector name through the hyphen↔underscore mangling. No `SiteId`; emits
-/// with `span: None` at the legacy site.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct OracleProbeSelectRoundtrip {
-    /// The oracle lifter's description (display only).
-    pub detail: String,
-}
-
 /// Payload of [`DiagCode::CheckOutOfDialect`]: a check function body uses a construct outside
 /// the check dialect. No `SiteId` (`site()` returns `None`).
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -534,14 +439,6 @@ impl DiagCode {
             | DiagCode::CfgInlineRefused(_)
             | DiagCode::CfgBuiltinShadowed(_)
             | DiagCode::EffectKindDisagreement(_)
-            | DiagCode::OracleNonLiteralKind(_)
-            | DiagCode::OracleMissingKind(_)
-            | DiagCode::OracleMissingProbe(_)
-            | DiagCode::OracleBadEffect(_)
-            | DiagCode::OracleTopLevelMutator(_)
-            | DiagCode::OracleNonDeclaration(_)
-            | DiagCode::OracleDuplicateEffect(_)
-            | DiagCode::OracleProbeSelectRoundtrip(_)
             | DiagCode::CheckOutOfDialect(_)
             | DiagCode::CheckUnterminated(_) => None,
         }
@@ -793,47 +690,6 @@ pub fn registry(code: &DiagCode) -> CodeSpec {
             // PROPOSED floor: the annotation wins; the warning is informational.
             floor: Floor::None,
         },
-        // ── B4 sweep: oracle/lib.rs ──────────────────────────────────────────
-        DiagCode::OracleNonLiteralKind(_) => CodeSpec {
-            severity: Severity::Error,
-            // PROPOSED floor: a non-liftable oracle is a correctness gap.
-            floor: Floor::WarnOrDeny,
-        },
-        DiagCode::OracleMissingKind(_) => CodeSpec {
-            severity: Severity::Error,
-            // PROPOSED floor: an oracle with no kind cannot contribute any effects.
-            floor: Floor::WarnOrDeny,
-        },
-        DiagCode::OracleMissingProbe(_) => CodeSpec {
-            severity: Severity::Error,
-            // PROPOSED floor: a kind with no probe means no probe can ship — correctness gap.
-            floor: Floor::WarnOrDeny,
-        },
-        DiagCode::OracleBadEffect(_) => CodeSpec {
-            severity: Severity::Error,
-            // PROPOSED floor: a malformed effect marker — the cell is dropped.
-            floor: Floor::WarnOrDeny,
-        },
-        DiagCode::OracleTopLevelMutator(_) => CodeSpec {
-            severity: Severity::Error,
-            // PROPOSED floor: a top-level mutator in an oracle is a hard contract violation.
-            floor: Floor::WarnOrDeny,
-        },
-        DiagCode::OracleNonDeclaration(_) => CodeSpec {
-            severity: Severity::Error,
-            // PROPOSED floor: a non-declaration construct at oracle top level is a violation.
-            floor: Floor::WarnOrDeny,
-        },
-        DiagCode::OracleDuplicateEffect(_) => CodeSpec {
-            severity: Severity::Error,
-            // PROPOSED floor: a duplicate effect cell — first-writer-wins, dropped.
-            floor: Floor::WarnOrDeny,
-        },
-        DiagCode::OracleProbeSelectRoundtrip(_) => CodeSpec {
-            severity: Severity::Warning,
-            // PROPOSED floor: a latent footgun; the cell still usable via kind-default.
-            floor: Floor::None,
-        },
         // ── B4 sweep: oracle/check/parser.rs ─────────────────────────────────
         DiagCode::CheckOutOfDialect(_) => CodeSpec {
             severity: Severity::Error,
@@ -903,11 +759,9 @@ impl Diag {
     /// pre-spine `Diagnostic::{warning,error}(code, None, msg)` form those sites used.
     ///
     /// This exists ONLY for the codes whose give-up site has no span to point at:
-    /// [`DiagCode::CfgErexitUnknown`] (the errexit pass spans a region, not a point),
+    /// [`DiagCode::CfgErexitUnknown`] (the errexit pass spans a region, not a point) and
     /// [`DiagCode::EffectKindDisagreement`] (the annotation-vs-effect-map check fires mid-resolution
-    /// with no leaf), and the four oracle-lifter codes [`DiagCode::OracleMissingKind`],
-    /// [`DiagCode::OracleMissingProbe`], [`DiagCode::OracleDuplicateEffect`],
-    /// [`DiagCode::OracleProbeSelectRoundtrip`] (a whole-file contract verdict, not a token).
+    /// with no leaf).
     /// (The two check-dialect codes [`DiagCode::CheckUnterminated`] / [`DiagCode::CheckOutOfDialect`]
     /// are NOT here: their EOF give-up synthesizes a zero-width end-of-input span and lowers through
     /// [`new`](Self::new) — human ruling 22-q1.) It is NOT a general escape hatch: [`new`](Self::new)
@@ -1115,14 +969,6 @@ pub fn render_artifact_comment(diag: &Diag) -> Option<String> {
         | DiagCode::CfgInlineRefused(_)
         | DiagCode::CfgBuiltinShadowed(_)
         | DiagCode::EffectKindDisagreement(_)
-        | DiagCode::OracleNonLiteralKind(_)
-        | DiagCode::OracleMissingKind(_)
-        | DiagCode::OracleMissingProbe(_)
-        | DiagCode::OracleBadEffect(_)
-        | DiagCode::OracleTopLevelMutator(_)
-        | DiagCode::OracleNonDeclaration(_)
-        | DiagCode::OracleDuplicateEffect(_)
-        | DiagCode::OracleProbeSelectRoundtrip(_)
         | DiagCode::CheckOutOfDialect(_)
         | DiagCode::CheckUnterminated(_) => None,
     }

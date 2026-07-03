@@ -1,8 +1,7 @@
 //! Derive the effect-map from the inline oracle dialect (R2, 23E §3).
 //!
-//! The reconciled design (`23D §1`): the check IS the oracle. What the retired
-//! `oracle_effect`/`oracle_kind` markers used to declare — which `(provider, verb)`
-//! touches which `(kind, selector)` — is now READ OFF the check body's own control
+//! The reconciled design (`23D §1`): the check IS the oracle. Which `(provider, verb)`
+//! touches which `(kind, selector)` is READ OFF the check body's own control
 //! flow: the `case $verb` arms name the verbs, the inline identity annotation
 //! (`pkg : package = "$1"`) names the kind, and the trailing effect mark on the
 //! reached probe command (`… : package:"$pkg".installed`) names the selector and the
@@ -67,7 +66,7 @@ pub struct DerivedEffect {
 }
 
 /// A converged-vouch the derivation read off a `: provider:verb~` bare mark
-/// (`MarkKind::ConvergedVouch`) — the retired `oracle_vouch_converged=` datum. Carries
+/// (`MarkKind::ConvergedVouch`) — the guard tier's converged-vouch datum. Carries
 /// the two opaque fragments (provider, verb); the vouch's real sh spelling stays OPEN
 /// (dq-kOOB), so this is a strawman carrier, not a committed shape.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -200,30 +199,23 @@ fn push_effect(ctx: &Ctx, kind: MarkKind, target: &MarkTarget, effects: &mut Vec
 
 #[cfg(test)]
 mod tests {
-    //! The R2 differential discipline (23E §3, the mandated safety net): for every
-    //! oracle shape, the inline-dialect derivation must reproduce EXACTLY the effect-map
-    //! the retired markers used to lift. Each test builds the derived cell-set from a
-    //! converted-dialect check body AND the cell-set the OLD `lift` produces from the
-    //! equivalent marker source, then asserts they are identical (mapping the polarity-
-    //! free [`ValueClaim`] onto the old `Polarity` only for the comparison). This is
-    //! process-evidence, not proof (never-vouch): it pins that the re-spelling is
-    //! behaviour-preserving on these shapes, catching a wrong-derivation before any
-    //! marker is deleted.
+    //! Derivation coverage (23E §3): each test builds the derived cell-set from a
+    //! converted-dialect check body and asserts it equals a hand-authored expected set —
+    //! pinning that `derive_check` reads the `case $verb` arms + inline annotation +
+    //! trailing marks correctly for each corpus oracle shape. (These were the marker
+    //! differential tests; with the markers retired the comparison target is the
+    //! hand-authored cell-set, not the old `lift`.) Process-evidence, not proof
+    //! (never-vouch).
     use super::*;
     use crate::check::lift_checks;
-    use crate::{empty_verb, lift};
-    use dorc_core::{Interner, ProviderId};
+    use dorc_core::Interner;
     use std::collections::BTreeSet;
 
-    /// The comparison key: `(verb, kind, selector, polarity-label)` — the verb spelled
-    /// `""` for the ε-verb, the polarity as a stable label (`Polarity` is not `Ord`, so
-    /// a label keys the set) so both sides normalize identically.
+    /// The set key: `(verb, kind, selector, claim-label)` — the verb spelled `""` for the
+    /// ε-verb, the claim as a stable label (`ValueClaim` is not `Ord`).
     type Cell = (String, String, String, &'static str);
 
     fn claim_label(c: ValueClaim) -> &'static str {
-        // A stable label for the set key (`ValueClaim` is not `Ord`). Both sides now speak
-        // `ValueClaim` — the marker `lift` maps its words onto it exactly as `derive_check`
-        // does — so this normalizes both; the retired `Polarity` vocabulary is gone.
         match c {
             ValueClaim::Establish => "establish",
             ValueClaim::EstablishInverted => "inverted",
@@ -252,34 +244,16 @@ mod tests {
             .collect()
     }
 
-    /// The cell-set the OLD marker lift produces for `provider`, over `verbs` (the ε-verb
-    /// passed as `""`). Resolved back to strings so it is comparable to [`derived_set`].
-    fn oldlift_set(marker_src: &str, provider: &str, verbs: &[&str]) -> BTreeSet<Cell> {
-        let mut i = Interner::default();
-        let idx = lift(&mut i, &[marker_src]);
-        assert!(!idx.has_errors(), "marker src lifts: {:?}", idx.diags);
-        let pid = ProviderId(i.intern(provider));
-        let mut out = BTreeSet::new();
-        for &v in verbs {
-            let vsym = if v.is_empty() {
-                empty_verb(&mut i)
-            } else {
-                i.intern(v)
-            };
-            for cell in idx.value.effect_of(pid, vsym) {
-                out.insert((
-                    v.to_owned(),
-                    i.resolve(cell.kind.0).to_owned(),
-                    i.resolve(cell.selector.0).to_owned(),
-                    claim_label(cell.claim),
-                ));
-            }
-        }
-        out
+    /// Build an expected [`Cell`] set from `(verb, kind, selector, claim)` tuples.
+    fn expect(cells: &[(&str, &str, &str, &'static str)]) -> BTreeSet<Cell> {
+        cells
+            .iter()
+            .map(|(v, k, s, c)| ((*v).to_owned(), (*k).to_owned(), (*s).to_owned(), *c))
+            .collect()
     }
 
     #[test]
-    fn package_apt_get_matches_markers() {
+    fn package_apt_get_derives_installed_cells() {
         let dialect = "\
 apt-get.check() {
    while [ \"${1#-}\" != \"$1\" ]; do shift; done
@@ -293,26 +267,22 @@ apt-get.check() {
       esac
    fi
 }";
-        let markers = "\
-oracle_kind=package
-oracle_probe_package() { dpkg-query -W \"$1\" >/dev/null 2>&1; }
-oracle_effect apt-get install establish installed
-oracle_effect apt-get reinstall establish installed
-oracle_effect apt-get purge kill installed
-oracle_effect apt-get remove kill installed
-";
-        let verbs = ["install", "reinstall", "purge", "remove"];
         assert_eq!(
             derived_set(dialect, "apt-get"),
-            oldlift_set(markers, "apt-get", &verbs),
-            "the derived package cells must equal the marker effect-map"
+            expect(&[
+                ("install", "package", "installed", "establish"),
+                ("reinstall", "package", "installed", "establish"),
+                ("purge", "package", "installed", "inverted"),
+                ("remove", "package", "installed", "inverted"),
+            ]),
+            "install/reinstall establish #installed; purge/remove invert it (the `!` mark)"
         );
     }
 
     #[test]
-    fn service_systemctl_matches_markers() {
+    fn service_systemctl_derives_multi_selector_cells() {
         // The multi-selector service shape: enable→#enabled, start→#active (both
-        // establish), disable→#enabled INVERTED (the former Kill, now the `!` mark).
+        // establish), disable→#enabled INVERTED (the `!` mark).
         let dialect = "\
 systemctl.check() {
    verb=$1; shift
@@ -323,46 +293,36 @@ systemctl.check() {
       disable) systemctl is-enabled -- \"$svc\" : service:\"$svc\".enabled! ;;
    esac
 }";
-        let markers = "\
-oracle_kind=service
-oracle_probe_service_enabled() { systemctl is-enabled -- \"$1\"; }
-oracle_probe_service_active() { systemctl is-active -- \"$1\"; }
-oracle_effect systemctl enable establish enabled
-oracle_effect systemctl start establish active
-oracle_effect systemctl disable kill enabled
-";
-        let verbs = ["enable", "start", "disable"];
         assert_eq!(
             derived_set(dialect, "systemctl"),
-            oldlift_set(markers, "systemctl", &verbs),
+            expect(&[
+                ("enable", "service", "enabled", "establish"),
+                ("start", "service", "active", "establish"),
+                ("disable", "service", "enabled", "inverted"),
+            ]),
         );
     }
 
     #[test]
-    fn tool_command_v_verbless_observe_matches_markers() {
-        // The verbless read-only guard: `command -v` is an OBSERVE of tool:#present. The
-        // ε-verb on both sides; Observe maps to the old Query polarity.
+    fn tool_command_v_verbless_observe_derives_present() {
+        // The verbless read-only guard: `command -v` is an OBSERVE of tool:#present on the
+        // ε-verb (the `:?` mark).
         let dialect = "\
 command.check() {
    case $1 in -v) shift ;; esac
    tool : tool = \"$1\"
    command -v -- \"$tool\" >/dev/null 2>&1 :? tool:\"$tool\".present
 }";
-        let markers = "\
-oracle_kind=tool
-oracle_probe_tool() { command -v -- \"$1\" >/dev/null 2>&1; }
-oracle_effect command '' query present
-";
         assert_eq!(
             derived_set(dialect, "command"),
-            oldlift_set(markers, "command", &[""]),
+            expect(&[("", "tool", "present", "observe")]),
         );
     }
 
     #[test]
     fn converged_vouch_mark_is_derived() {
-        // The retired `oracle_vouch_converged='apt-get install'` becomes a bare
-        // `: apt-get:install~` on the install arm's path (23E §5, flagship).
+        // The converged-vouch is a bare `: apt-get:install~` mark on the install arm's
+        // path (23E §5, flagship) — derived into a DerivedVouch.
         let dialect = "\
 apt-get.check() {
    verb=$1; shift

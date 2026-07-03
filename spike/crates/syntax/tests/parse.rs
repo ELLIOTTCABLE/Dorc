@@ -901,9 +901,9 @@ fn quoting_single_quotes_are_literal_no_split() {
 
 #[test]
 fn idiom_standalone_assignment_statement() {
-    // Why (dn-1 anchor): `oracle_kind=package` is how an oracle declares its kind —
-    // a bare assignment with NO command word. Must be an Assign, value present.
-    let p = parse("oracle_kind=package");
+    // Why: a bare `name=value` assignment with NO command word (an oracle's inline
+    // identity annotation strips to exactly this) — must be an Assign, value present.
+    let p = parse("deploy_env=prod");
     assert!(!p.has_errors());
     match kind(&p.value, script_items(&p.value)[0]) {
         NodeKind::Simple { assigns, words, .. } => {
@@ -911,8 +911,8 @@ fn idiom_standalone_assignment_statement() {
             assert_eq!(assigns.len(), 1);
             match kind(&p.value, assigns[0]) {
                 NodeKind::Assign { name, value, .. } => {
-                    assert_eq!(name, "oracle_kind");
-                    assert!(value.is_some(), "value `package` present");
+                    assert_eq!(name, "deploy_env");
+                    assert!(value.is_some(), "value `prod` present");
                 }
                 other => panic!("{other:?}"),
             }

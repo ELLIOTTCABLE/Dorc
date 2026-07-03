@@ -66,15 +66,6 @@ const MIGRATED_PAYLOADS: &[&str] = &[
     "CfgBuiltinShadowed",
     // B4 sweep: analysis/effect.rs
     "EffectKindDisagreement",
-    // B4 sweep: oracle/lib.rs
-    "OracleNonLiteralKind",
-    "OracleMissingKind",
-    "OracleMissingProbe",
-    "OracleBadEffect",
-    "OracleTopLevelMutator",
-    "OracleNonDeclaration",
-    "OracleDuplicateEffect",
-    "OracleProbeSelectRoundtrip",
     // B4 sweep: oracle/check/parser.rs
     "CheckOutOfDialect",
     "CheckUnterminated",
@@ -101,15 +92,6 @@ const MIGRATED_SLUGS: &[&str] = &[
     "cfg-builtin-shadowed",
     // B4 sweep: analysis/effect.rs
     "effect-kind-disagreement",
-    // B4 sweep: oracle/lib.rs
-    "oracle-non-literal-kind",
-    "oracle-missing-kind",
-    "oracle-missing-probe",
-    "oracle-bad-effect",
-    "oracle-top-level-mutator",
-    "oracle-non-declaration",
-    "oracle-duplicate-effect",
-    "oracle-probe-selector-roundtrip",
     // B4 sweep: oracle/check/parser.rs
     "check-out-of-dialect",
     "check-unterminated",
@@ -145,12 +127,8 @@ const LEGACY_ALLOW_LIST: &[&str] = &[];
 /// * an `X` here that no longer appears at a production `new_spanless_site` site ⇒ FAIL (the entry
 ///   is stale — the code stopped minting spanless; remove it). Self-cleaning, like the legacy list.
 const SPANLESS_SITE_PAYLOADS: &[&str] = &[
-    "CfgErexitUnknown",           // cfg-errexit-unknown      (analysis/cfg.rs)
-    "EffectKindDisagreement",     // effect-kind-disagreement (analysis/effect.rs)
-    "OracleMissingKind",          // oracle-missing-kind      (oracle/lib.rs)
-    "OracleMissingProbe",         // oracle-missing-probe     (oracle/lib.rs)
-    "OracleDuplicateEffect",      // oracle-duplicate-effect  (oracle/lib.rs)
-    "OracleProbeSelectRoundtrip", // oracle-probe-selector-roundtrip (oracle/lib.rs)
+    "CfgErexitUnknown",       // cfg-errexit-unknown      (analysis/cfg.rs)
+    "EffectKindDisagreement", // effect-kind-disagreement (analysis/effect.rs)
 ];
 
 /// The crate-`src` roots scanned (the emit surface). The workspace's analyzer crates; `core`

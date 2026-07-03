@@ -4,9 +4,8 @@
 //! outside it is a per-function lift failure: a [`Diagnostic`], never a panic
 //! (`inv-no-throw`), and the file's other checks still lift (fail-soft). The
 //! top-level entry [`lift_checks`] scans an oracle source for `<name>__check`
-//! function definitions and parses each body; non-check top-level items are
-//! ignored (a real oracle file also carries `oracle_kind=`/`oracle_effect`, which
-//! this module does not own — that is the existing [`crate::lift`]).
+//! function definitions and parses each body; non-check top-level items (bare
+//! assignments, helper functions) are ignored — this module owns only the checks.
 
 use super::ast::{
     Annotation, CaseArm, Check, CheckSet, Command, Mark, MarkKind, MarkTarget, Pattern, Stmt, Test,
@@ -173,8 +172,8 @@ impl Parser<'_> {
                 self.parse_check_funcdef(name_info);
             } else {
                 // Not a check definition — skip this one top-level item. We do not
-                // diagnose (the file legitimately holds oracle_kind=/oracle_effect/
-                // other functions); we just advance past it.
+                // diagnose (the file legitimately holds bare assignments / other
+                // helper functions); we just advance past it.
                 self.skip_one_toplevel_item();
             }
         }
@@ -541,8 +540,8 @@ impl Parser<'_> {
         let name_sym = self.interner.intern(name);
         self.bump(); // name
         self.bump(); // `:`
-        // kind: a single plain word (reverse-DNS string, or the file's short
-        // oracle_kind — task-W keeps them identical so annotation-kind == effect-map kind).
+        // kind: a single plain word (reverse-DNS string, or a short kind name — the
+        // derivation keys the effect-map on it, so annotation-kind == effect-map kind).
         let Some((kind, false, kind_span)) = self.take_word() else {
             return Err(self.fail_here("annotation kind must be a single literal word"));
         };

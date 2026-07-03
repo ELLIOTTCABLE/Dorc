@@ -550,7 +550,7 @@ apt_get__check() {
         let apt = ProviderId(i.intern("apt-get"));
         let install = i.intern("install");
         let mut idx = KindIndex::default();
-        idx.add_effect(apt, install, package, installed, ValueClaim::Establish); // effect, but NO add_probe
+        idx.add_effect(apt, install, package, installed, ValueClaim::Establish); // one effect cell
 
         let nginx = FactKey {
             kind: package,
