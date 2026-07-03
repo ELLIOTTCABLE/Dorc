@@ -3078,5 +3078,31 @@
     "sha256": "0b1100dc972029cb837d9158cac3459fe39476b3300c16a73155f2fb5e99bd7a",
     "acquired": "url",
     "via": "direct user instruction (pinned commit 5abb8c7)"
+  },
+  "A-garcia-abstracting-gradual-typing-popl-2016": {
+    "url": "https://pleiad.cl/papers/2016/garciaAl-popl2016.pdf",
+    "grading-certainty": "+1:SURE",
+    "grading-reasoning": "A not B: primary foundational result (the AGT framework itself, not a survey or secondary overview), peer-reviewed POPL, read in full from the born-digital author PDF (pdftotext-slurped, ~14k words); rigorous, canonical, no rot. Deciding factor over B is primary-vs-secondary plus maximal read-depth.",
+    "relevance-certainty": "-1:GUESS",
+    "relevance-description": "Read in full. Marginal relevance to Dorc's hard problem (elision / the golden hill). (a) AGT's core 'consistency' is an OPTIMISTIC existential lifting (a judgment holds if SOME type in the concretization satisfies it = 'plausible') = the accept/guard side Dorc already has (inv-top-reject, run-if-unsure), NOT the must/universal reasoning elision needs; AGT never develops that dual. (b) It rigorously NAMES things Dorc already does: Opaque/top = concretization gamma(?)=all-types; precision = subset ordering on concretizations; no-cliff = the gradual guarantee = monotonicity of lifted operations (a proof technique for a property Dorc treats as a design invariant). (c) Its dynamic machinery (cast calculus / evidence / consistent transitivity) is type-safety metatheory the authors themselves call impractical (sec 8), not a liftable mechanism. Net: vindicates vocabulary, offers no mechanism for the elide-half, wrong polarity (exists/may) for it. NB AGT generalizes the gradual-EFFECTS work (Banados Schwerter et al. 2014), the more on-point paper for effect-shaped Dorc.",
+    "graded-by": "top-level-agent",
+    "published": "2016-01",
+    "retrieved": "2026-07-03",
+    "sha256": "7548d2c5d065dc8fa6adc8774cd34c534dc6c7e8d7583cb4f83f5a87fa45174e",
+    "acquired": "url",
+    "via": "mcp__kagi-ken__kagi_search_fetch(queries: ['Abstracting Gradual Typing Garcia Clark Tanter POPL 2016 framework gradualize static discipline'])"
+  },
+  "A-banados-gradual-effect-systems-icfp-2014": {
+    "url": "https://pleiad.cl/papers/2014/banadosAl-icfp2014.pdf",
+    "grading-certainty": "+1:SURE",
+    "grading-reasoning": "A not B: primary foundational result (the gradual-effect-systems framework itself, and the AGT lineage's originating paper), peer-reviewed ICFP, read in full from the born-digital author PDF (pdftotext-slurped, ~12k words); rigorous, canonical, no rot. Deciding factor over B is primary-vs-secondary plus maximal read-depth.",
+    "relevance-certainty": "-0:SUSPECT",
+    "relevance-description": "Read in full. LOW-MEDIUM relevance -- MORE relevant than AGT and it CORRECTS the AGT-derived prior that gradual approaches are may-only. GES explicitly builds the MUST/universal dual: alongside the optimistic CONSISTENT check (some concretization passes = exists), it defines STRICT check (Def 4: check holds for ALL concrete privilege sets in gamma(Xi) = forall), and uses strict-vs-consistent to drive check-elision -- where strict-check holds statically NO runtime check is emitted (pay-as-you-go), where only consistent holds it inserts a MINIMAL runtime 'has' guard (the Delta_C function computes the least missing privileges, minus the statically-known). That strict=>elide / consistent=>minimal-guard structure is a real formal analog of Dorc's {elide, guard} ternary, and the MINIMAL-GUARD idea (verify only the minimal residual, not re-check everything) is a genuinely adoptable refinement of Dorc's guard tier. Also useful: unknown-privilege stands for ANY-SIZED set of privileges (0/1/many) -- a better model of an opaque command's top-footprint than gradual typing's unknown TYPE (exactly one type); and Marino-Millstein's check/adjust parameterization is oracle-shaped (an effect discipline = two operations). LIMITS (why not higher): GES assumes effect info is DECLARED in a typed lambda-calculus -- it solves 'given the annotations, decide elide-vs-minimal-guard', assuming away Dorc's actual crisis (sound effect info from OPAQUE commands = 233 / the frame problem, untouched here); its elision-object is the runtime CHECK/guard, NOT the mutating command (it optimizes away the safety-check but KEEPS the operation; Dorc skips the operation); and strict-check quantifies over declared-unknowns, not over survival-across-an-interfering-command (GES has no notion of a wall disturbing a fact -- adjust evolves privileges lexically). Net: vindicates the architecture, donates the strict/consistent = must/may naming and the minimal-guard principle and the unknown-as-any-sized-set model; not a liftable mechanism for the information-layer hard part.",
+    "graded-by": "top-level-agent",
+    "published": "2014-09",
+    "retrieved": "2026-07-03",
+    "sha256": "aa60d04df7e7ad8bf4f4f0a3463fcfc8597646da3c4ca0126368386669c35816",
+    "acquired": "url",
+    "via": "mcp__kagi-ken__kagi_search_fetch(queries: ['pleiad.cl gradual effect systems Banados ICFP 2014 paper pdf'])"
   }
 }
