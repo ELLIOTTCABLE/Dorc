@@ -14,7 +14,42 @@
 
 ---
 
-## NOW (2026-07-03 — round 23 CLOSED; round 24 is an empirical build)
+## NOW (2026-07-03, late — round-24 Stage 1 LANDED; Stage 1c in flight; Stage 2 next)
+
+**Stage 1 is built, merged, green** (`ai/spike3-r23`; e2e 131/131, 9 standing guard23
+xfails): the yardstick (CLI `dorc: plan-summary` stderr line + the `strawman24-*` family +
+`sh e2e/yardstick.sh`) and the fd10/silence=wall fix (an 8-line plan-time wall walk in
+`build_plan`; running modeled mutators wall downstream; elided mutators cast no shadow;
+probes still ship). **Honest-baseline family reading: elide-fraction 0.38, post-wall
+elisions = 0** (the charter's Stage-1 claim, mechanically true). Full evidence + strain
+ledgers: **`notes/24A` §3** (kill gap → Stage 1c; hz-ambient-hole lockstep RETIRED; errexit
+= known 206 §2 cost newly measured; gate-6 license-blindness bound).
+
+**Session rulings (all typed, homed in `notes/24A` §1/§1a/§1b — binding):**
+rul24-wall-placement (verdict-aware plan-time re-verdicting, valid up to consent) ·
+rul24-threefunc-monotonic (the `touches()` third role-sibling RATIFIED as strawman;
+supersedes the two-contract sentence; monotonic gradual-enhancement law) ·
+rul24-claims-by-emission (accepted, reluctantly; explicit-syllable question open) ·
+**rul24-mode-gate** (the survival tier is FLAG-GATED, never default — strawman
+`--trust-footprints`; marketing-at-best/theatre-at-worst framing welded) ·
+rul24-divergence-is-the-game (license-site ≠ elision-site + claim-subject ≠ blast-subject;
+attribution promoted to co-primary for Stage 2; MH2 version-gate = the missing tether,
+seeded not-this-spike) · touches = WRITE-set only (backing = marked reads; reads-spelling
+already exists as fact-marks). USER_STORY gained stage 5 (the footprint tier, mocked, with
+the flag in its renders).
+
+**In flight:** Stage 1c rider builder (strip-fidelity bare-marks; two rc-soundness pins —
+first vouch-mark-carrying fixtures; the kill gap). **Next:** Stage 2 (frame-rule machine)
+dispatches after 1c merges — same files; brief drafted (conductor scratchpad; settled
+content mirrored in task #4's description).
+
+**Conduct addenda this session:** worktree-isolated agents base on ancient `main` — every
+brief opens with step-zero `git switch -C <branch> ai/spike3-r23` (`reset --hard` is
+hook-blocked) + tip verify · mechanical suite-running/verification rides Opus; conductor
+keeps judgment moments only · Fable conducts, Opus codes (high bar for conductor-written
+code).
+
+## Earlier today (2026-07-03 — round 23 CLOSED; round 24 charter)
 
 **Round 23 is closed.** Its complete, durable, single-narrative history is **`notes/23O`** (the
 closeout — read it first). The crisis (233 = the frame problem, permanent) resolved to the
