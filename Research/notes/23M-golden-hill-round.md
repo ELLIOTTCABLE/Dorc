@@ -25,10 +25,23 @@ crosscheck has not run.
   own: [named residue]"). Not per-oracle; not a code concept.
 - **footprint** — the set of ENTITIES a command touches; authored for fixed tools, DERIVED at
   probe time (a probe-time entity-set) for payload-bound tools (apt, hork). Positive, bounded.
-- **backing** — where a fact's truth lives, operationally = its verdict-probe's read-set. The
-  most ~SUSPECT surviving claim of the round.
+  (Prior-art name — the separation-logic **footprint** / mod-set the **frame rule** frames across;
+  the DERIVED probe-time form is a **dynamic frame**, Kassios 2006. Full grounding: `notes/23N`.)
+- **backing** — where a fact's truth lives, operationally = its verdict-probe's read-set.
+  (Prior-art name — the **frame R**, self-framed; implicit dynamic frames / Smans 2009.)
+  **CORRECTION (2026-07-03, conductor adjudicating 23N §5, human-directed):** backing is NOT
+  "the most-suspect claim" — that flag is RETIRED. Self-framing makes it complete *by
+  construction* (a fact can't claim more than its probe reads), so the SURVIVAL layer
+  (does F outlast an interfering command) is SOUND modulo aliasing (§6 dynamic-points-to). The
+  suspect risk RELOCATES, it does not vanish: it lands on **adequacy** (below), which = the
+  round-23 **converged-vouch** under a literature name. Net: the golden-hill survival step adds
+  NO new completeness-claim; total 233-risk is CONSERVED, not reduced. Adopt "self-framing";
+  keep "converged-vouch"/"converged≠no-op" over 23N's vaguer "adequacy".
 - **disjointness** — engine intersects a running command's footprint against a downstream fact's
   backing; empty ⇒ elide-past-the-running-command; non-empty / ungrounded ⇒ guard or wall.
+  (Prior-art name — the separation-logic **FRAME RULE** `{P}C{Q} ⊢ {P∗R}C{Q∗R}`; "F's proof
+  survives X" = **stability** under interference, rely-guarantee / Jones; the disjointness
+  criterion itself = **Bernstein's conditions**, 1966. `notes/23N`.)
 - **coordinate-kind** — a shared vocabulary with an OWNER (apt.Package, systemd.Service,
   dns.Zone, kernel.Sysctl…); anything with an owner, NOT filesystem-only.
 - **entity-identity** — what counts as an entity in a kind, and when two references are the same
@@ -317,6 +330,12 @@ construction — which is exactly why it is the golden hill and not the default.
 reverse-sycophancy, AND the dissolution is apply-time, after attention is spent — the tripwire is
 a PERFORMANCE-tier safety net, and to be honest it must be disclosed, which re-costs attention.)
 
+[LABEL CORRECTION 2026-07-03 (via `notes/23N`): the `#19`/`#11` tags here are NOT the corpus
+task-numbers. Task #11 really is the placement-spectrum round (≈ the performance product, so `#11`
+roughly fits); but task #19 is the probe-results wire-format/digest work (`22H`), NOT the attention
+product — and this note's `round #19` header (line 3) is itself a mislabel: per the README this is
+round 23. Prefer the grounded names "attention product" / "performance product" over `#19`/`#11`.]
+
 **#19 ≠ #11.** #19 (the golden hill) = the ATTENTION product = elide lines from the plan BEFORE
 consent = STATIC proof ONLY. #11/236b barrier = the PERFORMANCE product = skip work at apply =
 dynamic, offers the attention goal NOTHING. Different products; do not collapse them.
@@ -329,7 +348,23 @@ The ordinary authored footprint is the same shape: the oracle-AUTHOR pays the at
 the library, amortized across all users forever (the community-library value-prop).
 
 ACADEMIC VOCAB MAP (from `learning-path/gradual-success-typing.ai-pointers.md`, already curated —
-the research agent should VALIDATE + deepen, not re-gather):
+the research agent should VALIDATE + deepen, not re-gather; **the core-mechanism rows below were
+MISSING here and are added from `notes/23N` — see its churn diagnosis: they were gathered in
+`plans/090` §D2 back in r9 and dropped by `099`**):
+- **THE CORE MOVE (was absent): footprint × backing × disjointness ⇒ elide = the separation-logic
+  FRAME RULE (O'Hearn–Reynolds–Yang) applied through a DYNAMIC FRAME (Kassios 2006, = the DERIVED
+  footprint).**
+- derive-vs-declare the footprint = the `kBURDEN` knob; poles named **bi-abduction / Infer** (derive)
+  ↔ **modifies-clauses / dynamic frames, JML·Dafny·Kassios** (declare). [A-biabduction-popl-2009].
+- **poison = KILL** (gen/kill dataflow); **elide-past-a-running-command = (partial) redundancy
+  elimination** (Morel–Renvoise 1979; lazy code motion) over an abstract state-store — the establish
+  is redundant because still-available and not-killed; soundness = **over-approximate the kill
+  (may-mod) = silence-is-wall**. (Oracles = the function-summaries interprocedural DCE writes for
+  opaque callees; an unsummarized call ⇒ conservative clobber = wall.)
+- {elide, guard, run} = {fully-redundant, partially-redundant ⇒ insert-a-check (`check‖cmd` = PRE's
+  insertion step), not-available}.
+- horizon-attribution of a wrong elision = **blame** (Wadler–Findler, *Well-Typed Programs Can't Be
+  Blamed*, ESOP 2009).
 - Dorc's static layer = **gradual effect system**; ⊤/Opaque = `Dyn`/`?` + **consistency** (Siek & Taha).
 - no-cliff = the **gradual guarantee** (Siek/Vitousek/Cimini/Boyland).
 - warn-don't-reject = **success typings** (Lindahl & Sagonas / Dialyzer).
@@ -337,15 +372,40 @@ the research agent should VALIDATE + deepen, not re-gather):
 - static-derive + runtime-backstop = **soft typing** (Cartwright & Fagan).
 - effect-map = **effect systems** (Lucassen & Gifford; Koka).
 - guard-lifting (`[ -f X ] && …`) = **occurrence typing** (Tobin-Hochstadt & Felleisen; Typed Racket).
-- **SYNONYM / entity-identity / co-reference = a SEPARATE literature** (abstract string domains;
-  equivalence/**ontology alignment**; `owl:sameAs`; record linkage) — explicitly flagged as the
-  deferred hard-corner, NOT the gradual-encoding question. THE one genuinely-unresearched cell,
-  and where the research agent should dig hardest.
+- **SYNONYM splits into TWO literatures (corrected in `notes/23N`; the "dig hardest here" was
+  mis-aimed):** the *dangerous* cell — within-kind OBSERVABLE aliasing (symlinks/mounts/
+  normalization) — is **alias analysis / points-to / must-not-alias** (Andersen/Steensgaard; the
+  "measurement crack" = dynamic points-to; test disjointness over *resolved locations*, not names),
+  NOT the abstract literature. Cross-PROVIDER sameness (`owl:sameAs` / ontology-alignment / record-
+  linkage) is **already CLOSED by the reverse-DNS decision** (`17N`/`175`, chosen *because*
+  owl:sameAs is too-strong/misused) — not open work.
 - barrier / re-observe-after-interference = **OCC** + **incremental recomputation** (build systems
   `075`; Mokhov verifying-trace rebuilder; salsa/Adapton) — relevant to the PERFORMANCE product
   (#11), NOT the attention product (#19), per the consent-wall kill. Research it for #11, not #19.
 - measured-evidence-ratified-static (alt5) = **profile-guided optimization** shape + the
   record-linkage/entity-resolution literature (for turning traces into ratified entity-claims).
+
+## §5 (23N) ADJUDICATED — survival/adequacy split: real but modest, agent oversold it (2026-07-03)
+
+Conductor's independent read (human was shaky on 23N §5; verified rather than deferred). Two
+layers of every elision, DEAD-CONCRETE via `apt-get install nginx` / `dpkg -s nginx`:
+- **ADEQUACY** = does "dpkg says installed" mean "apt-get install is a no-op"? NO — a pending
+  1.20→1.24 upgrade makes the probe *correct* but the elision *wrong*. Needs no wall; it's the
+  most basic elision's risk. **= converged≠no-op = the round-23 converged-vouch** (author's
+  fallible judgment, attributed). NOT new, NOT unaddressed — already welded.
+- **SURVIVAL** = given adequacy, does the fact outlast an interposed command? Self-framing:
+  the fact IS "what its probe reads" (dpkg db), so an interferer kills it only by touching that
+  read-set. SOUND by construction, modulo aliasing (§6).
+
+THE VERDICT: self-framing does ONE real thing — retires the "is backing complete?" worry (it's
+complete by construction; stop trying to enlarge backing). But it does NOT reduce risk: by
+*defining* the fact narrowly it makes survival airtight and RELOCATES the completeness-gap onto
+adequacy ("dpkg-installed" was never quite "the version you wanted"). Total 233-risk CONSERVED —
+233 in one more shoe. The agent MISSED that adequacy = the converged-vouch (it lacked round-23
+context), so §5 re-derives a welded thing from the literature side and presents it as a new
+finding — CONFIRMATION (two independent paths → converged-vouch is the irreducible risk), not
+discovery. Design steer: point effort at converged-vouch QUALITY (calibration, converged≠no-op),
+NOT at backing-completeness. Small course-correction, not "the hard part is settled."
 
 ## Open, remaining (agenda)
 - **derived-footprint = a probe-time ENTITY-SET** (unlocked by entity-granular poisoning — the
