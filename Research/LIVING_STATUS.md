@@ -60,14 +60,29 @@ new chunks get fresh notes):**
   convergence/license/margins); the license-LADDER (rung-0 display / rung-1 guard / rung-2
   elide) is OPEN — the wary-engineer hatch, sibling of the admin's mode-gate flag.
 
-**Landed since the Stage-1 refresh:** Stage 2 (frame-rule machine — merged, sound-reviewed,
-type-contracts + docs pass) · Stage 2b (the chronology net / `dorc-sweep` crate — merged,
-teeth-proven). **In flight:** **#5 Stage 3** (guard tier + the claim-tier algebra — the
-foundational arc-win; spec in `24D`; build claim-tier types FIRST so they're reviewable).
-**Pipeline:** Stage 3 → **#10 Stage 2c** (battle-oracle, now blocked on Stage 3 to exercise
-guards + dodge a sweep-crate collision) ∥ **#6 Stage 4** (derived footprints) → **#7 Stage 5**
-(grounding — where the claim-tier pays hardest) → **#8 Stage 6** (measure adequacy-bite /
-conclude). Loose: **#11** (the Lcg fix, between stages, non-blocking).
+**Landed since the Stage-1 refresh:** Stage 2 (frame-rule machine) · Stage 2b (the chronology
+net / `dorc-sweep`) · **Stage 3 FOUNDATION** (the claim-tier trust algebra `core/src/claim.rs`
++ verdict-fn lift + guard type-architecture — merged, all 4 unrepresentability props
+conductor-VERIFIED as compile-errors; the earmarked-reviewable decision, `24C`/`24D`).
+
+**⚑ TWO THINGS HELD FOR THE HUMAN (durable so they survive a context-collapse):**
+1. **Stage-3 Part B — the elide-weld** — held for the human's go/no-go on the claim-tier
+   FOUNDATION. It demands a `Judgment<VerdictVouch>` on `prove_replaceable` + churns EVERY
+   converged oracle fixture (re-golden) — the expensive-if-foundation-wrong change the
+   "type-architecture is reviewable" earmark gates. Un-hold on the human's nod to `24D` +
+   `claim.rs`. (Conductor verified it sound, but that is process-evidence, not proof —
+   never-vouch.)
+2. **resid-aliasing horizon-profession** — the survival tier's silent under-execute (`24C`)
+   is owed a horizon disclosure in the human's voice. And `ORACLE_PROVIDES.md` awaits its
+   first audit. And the license-ladder rung-split stays human-open (reserved, not built).
+
+**In flight:** **#5 Stage 3 Part A** (make guards FIRE — the mint-wiring; additive,
+foundation-validating; the 9 `guard23-*` XFAILs become PROMOTABLE, conductor-gated diffs).
+**Pipeline:** Stage 3 Part A → (Part B on human nod) → **#10 Stage 2c** (battle-oracle;
+blocked on Stage 3 for guards) ∥ **#6 Stage 4** (derived footprints — `FactTier` ready) →
+**#7 Stage 5** (grounding — where the claim-tier pays hardest; a bridge = `Judgment<Bridge>`
+into disjointness) → **#8 Stage 6** (measure adequacy-bite / conclude). Loose: **#11** (the
+Lcg fix, non-blocking).
 
 **Conduct addenda this session:** worktree-isolated agents base on ancient `main` — brief
 step-zero `git switch -C <branch> ai/spike3-r23` (`reset --hard` hook-blocked) + tip verify ·
