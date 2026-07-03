@@ -270,6 +270,63 @@ above); result:
   (symlinks/mounts/normalization); the kind-owner pins entity-identity semantics. Partly
   addressed by the measurement crack (traced referents dissolve name-synonyms).
 
+## PRIOR-ART + THE 236b RELATIONSHIP (surfaced 2026-07-03 — MUST reconcile before #19 proceeds)
+
+Grep-and-read of the corpus surfaced that MUCH of this round RE-DERIVES `notes/236b` (the 233
+crosscheck's frame-problem-alternatives pass — already adversarially crosschecked, 18 findings +
+structural repairs), which was earmarked for the placement-spectrum round (#11), NOT #19. **#19
+and #11 are ONE problem-space.** Mapping:
+- 23M "derived footprint = probe-time entity-set" = **236b-alt3** (probe-computed manifests, `dpkg -L`).
+- 23M "backing = probe-read-set" = **236b-alt2** (generation-probes: a kind-owner's digest of the
+  substrate its probes read — a per-kind change-detector / generation-token; MORE developed).
+- 23M scan_cve "entity-granular poisoning" = **236b-alt6** (property invalidation-bases; refined
+  grammar core-cell ∪ own-substrate ∪ volatile/TTL — the EXTENDER declares what kills its property).
+- 23M "measurement crack" = **236b-alt5** (observed footprints: measure→ratify→verify).
+- The admin-lever gap I never named = **236b-alt4** (admin's one-line book-local stub =
+  `changed_when:`/`creates:` recast in sh — the missing cheap rung; 236b-fail9).
+
+THE BIG ONE 23M MISSED — **236b-alt1, the barrier / OCC-revalidation.** The whole 23M spine
+("233 is permanent; someone must promise completeness") rests on 236b-fd1's FALSE PREMISE
+("proof is static-only"). You need NOT statically prove disjointness (which needs the
+completeness-claim); you can RE-OBSERVE the crossing facts AFTER the wall runs (apply-time,
+read-only, batched) — frame-free by OBSERVATION not testimony — and **elide SURVIVES** (the
+re-observation feeds the fact-plane). Structure:
+- #19 static-disjointness (footprint ∩ backing = ∅ ⇒ elide, skip even the re-check) = the
+  FAST-PATH OPTIMISM.
+- #11/236b barrier (re-observe crossing facts post-wall ⇒ elide if still-true) = the CORRECTNESS
+  FLOOR that needs NO completeness-claim.
+- 233's guard = the degenerate barrier (re-observe inline at the site).
+
+**The naked-233 residue this round agonized over LARGELY DISSOLVES under 236b.** 236b's REPAIR-3
+(unconditional-tripwire, from its own crosscheck F6/F8): the kind's generation-probe runs at
+EVERY wall regardless of footprints — a footprint is plan-time optimism + attribution, never
+evidence-suppression. So a within-kind SYNONYM that makes static-disjointness wrong is confronted
+by the kind's generation-probe (which digests the whole substrate → moves when ANY entity
+changes, synonym or not) → contradiction → loud revoke → safe re-execution. The naked synonym
+residue = 23M working the static tier IN ISOLATION from the barrier floor 236b already designed.
+Honest caveats (not free): needs a cheap generation-substrate per kind (236b-oq2; RAM-state kinds
+stay guard/run), needs segmented-apply engine work (a subset of 22H), and 236b's OWN central open
+question is unresolved — the approval-contract for contingent plans (236b-oq1/F14: "elided
+contingent on wall-revalidation, else runs" — is that within what the user approved?) + a
+TOCTOU-weld re-ruling (walls-only).
+
+ACADEMIC VOCAB MAP (from `learning-path/gradual-success-typing.ai-pointers.md`, already curated —
+the research agent should VALIDATE + deepen, not re-gather):
+- Dorc's static layer = **gradual effect system**; ⊤/Opaque = `Dyn`/`?` + **consistency** (Siek & Taha).
+- no-cliff = the **gradual guarantee** (Siek/Vitousek/Cimini/Boyland).
+- warn-don't-reject = **success typings** (Lindahl & Sagonas / Dialyzer).
+- oracle-as-no-runtime-effect + library social model = **pluggable types** (Bracha) + DefinitelyTyped/typeshed.
+- static-derive + runtime-backstop = **soft typing** (Cartwright & Fagan).
+- effect-map = **effect systems** (Lucassen & Gifford; Koka).
+- guard-lifting (`[ -f X ] && …`) = **occurrence typing** (Tobin-Hochstadt & Felleisen; Typed Racket).
+- **SYNONYM / entity-identity / co-reference = a SEPARATE literature** (abstract string domains;
+  equivalence/**ontology alignment**; `owl:sameAs`; record linkage) — explicitly flagged as the
+  deferred hard-corner, NOT the gradual-encoding question. THE one genuinely-unresearched cell,
+  and where the research agent should dig hardest.
+- barrier / re-observe-after-interference = **OCC (optimistic concurrency control)** + **incremental
+  recomputation / cache-invalidation** (build systems `075`; Mokhov's verifying-trace rebuilder,
+  cited in 236b-alt2; self-adjusting computation / salsa/Adapton) — the research agent's second dig.
+
 ## Open, remaining (agenda)
 - **derived-footprint = a probe-time ENTITY-SET** (unlocked by entity-granular poisoning — the
   derivation need only emit touched *entities*, not a property-map, and can't lie by omission):
