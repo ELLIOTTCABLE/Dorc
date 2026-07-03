@@ -45,6 +45,14 @@ pub use derive::{DerivedEffect, ValueClaim, derive_predict};
 pub use eval::{Resolution, Resolved, ResolvedEntity, TopReason, evaluate};
 pub use parser::lift_predicts;
 
+// The touches-footprint lift (`crate::touches`, 24A §1b) reuses the predict dialect: the
+// same funcdef AST ([`ast`]) and the same word-resolution ([`eval`]) so footprint fragments
+// travel the exact value-flow predict does (the vocabulary fence). Re-exported `pub(crate)`
+// for that sibling module — these are internal to the oracle crate, not public API.
+pub(crate) use ast::{CaseArm, Command, Test, Word};
+pub(crate) use eval::{eval_test, pattern_matches, resolve_word};
+pub(crate) use parser::lift_touches;
+
 /// Strip an authored check funcdef to runnable sh — the STRIP-ONLY pass (R1c / 23D §1).
 /// It rewrites a period-form name (`apt-get.predict`) to the mangled `<provider>__predict`
 /// the engine keys on, and removes the inline dialect annotations: the identity

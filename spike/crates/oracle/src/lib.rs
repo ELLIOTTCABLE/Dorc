@@ -55,6 +55,11 @@ use std::collections::BTreeMap;
 /// [`lift`] indexes per `(provider, verb)`.
 pub mod predict;
 
+/// The at-most **footprint** lift (`provides-behavior` sub-shape 3; 24A §1b / 23M): the
+/// `<provider>.touches()` role-sibling, lifted STATICALLY to the entity-coordinates a verb
+/// mutates. Feeds the survival/disjointness tier (`dorc_plan`). Reuses the `predict` dialect.
+pub mod touches;
+
 /// How a `(provider, verb)` reads/writes a fact's OPAQUE boolean — the lifted
 /// representation is [`ValueClaim`] (jc-polarity-vs-rc, FINAL — human 2026-07-02).
 /// The former `Polarity{Establish, Kill, Query}` is RETIRED: no create/destroy axis

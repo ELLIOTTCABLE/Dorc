@@ -28,6 +28,37 @@ const PREDICT_SUFFIX: &str = "__predict";
 /// and the flagship golden use `__predict`; the `__predict` convention is authoritative).
 const PERIOD_PREDICT_SUFFIX: &str = ".predict";
 
+/// Which role-sibling funcdef this parse scans for (rul-role-split / rul24-threefunc-monotonic,
+/// 24A §1b). The dialect GRAMMAR is identical across siblings — only the name-suffix pair
+/// differs — so one parser lifts both, selected by [`FnRole`]. `touches()` (the at-most
+/// footprint sub-shape, `ORACLE_PROVIDES` `provides-behavior`) reuses `predict()`'s body dialect
+/// verbatim; its bodies just `printf` entity-coordinates where a predict body annotates + probes.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum FnRole {
+    /// `<provider>.predict` / `<provider>__predict` — the entity-resolver / probe body.
+    Predict,
+    /// `<provider>.touches` / `<provider>__touches` — the at-most footprint emitter (24A §1b).
+    Touches,
+}
+
+impl FnRole {
+    /// The period-form suffix (`.predict` / `.touches`): provider is the literal command word.
+    const fn period_suffix(self) -> &'static str {
+        match self {
+            FnRole::Predict => PERIOD_PREDICT_SUFFIX,
+            FnRole::Touches => ".touches",
+        }
+    }
+
+    /// The mangled suffix (`__predict` / `__touches`): provider recovered via `_`→`-`.
+    const fn mangled_suffix(self) -> &'static str {
+        match self {
+            FnRole::Predict => PREDICT_SUFFIX,
+            FnRole::Touches => "__touches",
+        }
+    }
+}
+
 /// Lift every `<provider>__predict` function in `src` into a [`PredictSet`], interning
 /// provider/local names through `interner`. Fail-soft (`inv-no-throw`): a body that
 /// is out of dialect yields a diagnostic and contributes no [`Predict`]; the rest of
@@ -45,6 +76,23 @@ const PERIOD_PREDICT_SUFFIX: &str = ".predict";
 /// A future wiring task may revisit; see this module's tests and the build report.
 #[must_use]
 pub fn lift_predicts(interner: &mut Interner, src: &str) -> Carrier<PredictSet> {
+    lift_role(interner, src, FnRole::Predict)
+}
+
+/// Lift every `<provider>__touches` / `<provider>.touches` function in `src` into a
+/// [`PredictSet`] (the touches funcdefs reuse the predict body dialect — 24A §1b). Same
+/// fail-soft / deterministic contract as [`lift_predicts`]; only the scanned name-suffix
+/// differs. The at-most footprint LIFT (`crate::touches`) walks these bodies to collect the
+/// entity-coordinates each verb emits. NB: `touches()` is never SHIPPED (no strip) — Stage 2
+/// lifts it statically only (probe-time derivation is Stage 4), so no `strip_predict` analogue
+/// exists.
+#[must_use]
+pub(crate) fn lift_touches(interner: &mut Interner, src: &str) -> Carrier<PredictSet> {
+    lift_role(interner, src, FnRole::Touches)
+}
+
+/// Shared lift over a chosen [`FnRole`] — the one parse both siblings route through.
+fn lift_role(interner: &mut Interner, src: &str, role: FnRole) -> Carrier<PredictSet> {
     let tokens = lex(src);
     let mut p = Parser {
         toks: &tokens,
@@ -52,6 +100,7 @@ pub fn lift_predicts(interner: &mut Interner, src: &str) -> Carrier<PredictSet> 
         interner,
         out: Carrier::pure(PredictSet::default()),
         last_term: None,
+        role,
     };
     p.parse_file();
     p.out
@@ -65,6 +114,8 @@ struct Parser<'a> {
     /// Which terminator [`Parser::parse_block`] last consumed. Read by
     /// [`Parser::parse_if`] to tell an `else` branch from a bare `fi`.
     last_term: Option<BlockTerm>,
+    /// Which role-sibling suffix pair this parse scans for ([`FnRole`]).
+    role: FnRole,
 }
 
 /// The concrete terminator a [`BlockEnd`] matched — needed because `else` and `fi`
@@ -196,13 +247,16 @@ impl Parser<'_> {
         }
         // Prefer the period form (the opt-in oracle semaphore); fall back to the legacy
         // mangled form. `apt-get.predict` ⇒ provider `apt-get` (literal); `apt_get__predict`
-        // ⇒ provider `apt-get` (via `_`→`-`). Both recover the same command word.
-        let provider_name = if let Some(p) = lexeme.strip_suffix(PERIOD_PREDICT_SUFFIX) {
+        // ⇒ provider `apt-get` (via `_`→`-`). Both recover the same command word. The suffix
+        // pair is role-selected ([`FnRole`]): a `lift_touches` parse matches `.touches`/
+        // `__touches` here and ignores predict funcdefs (and vice versa), so the two siblings
+        // coexist in one oracle file without cross-contamination.
+        let provider_name = if let Some(p) = lexeme.strip_suffix(self.role.period_suffix()) {
             if p.is_empty() {
                 return None;
             }
             p.to_owned()
-        } else if let Some(p) = lexeme.strip_suffix(PREDICT_SUFFIX) {
+        } else if let Some(p) = lexeme.strip_suffix(self.role.mangled_suffix()) {
             if p.is_empty() {
                 return None;
             }

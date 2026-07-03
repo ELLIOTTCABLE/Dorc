@@ -78,7 +78,7 @@ pub enum ResolvedEntity {
 
 /// Why an evaluation degraded to [`Resolution::Top`]. A closed enum so adding a new
 /// degrade-reason breaks every exhaustive match (the compiler-as-checklist).
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TopReason {
     /// The argv was empty (no command for the argparse to consume).
     EmptyArgv,
@@ -324,66 +324,15 @@ impl Evaluator {
 
     /// Resolve a [`Word`] in the **strict** context (annotation value, `case`
     /// scrutinee, assignment RHS): an unset positional is non-concrete ⇒ `Err`. See
-    /// [`Evaluator::resolve_with`].
+    /// [`resolve_word`].
     fn resolve(&self, word: &Word) -> Result<String, TopReason> {
-        self.resolve_with(word, UnsetPolicy::Unresolved)
+        resolve_word(word, &self.positionals, &self.vars, UnsetPolicy::Unresolved)
     }
 
-    /// Resolve a [`Word`] to a concrete string against the current positionals and
-    /// bindings under a named [`UnsetPolicy`] (the single home of the unset-parameter
-    /// context fork, `sem::UnsetPolicy`), or `Err` with a reason if it is non-concrete.
-    ///
-    /// A past-the-end positional / `${N#prefix}` forks on `policy`:
-    /// [`ExpandEmpty`](UnsetPolicy::ExpandEmpty) (test context) ⇒ the empty string;
-    /// [`Unresolved`](UnsetPolicy::Unresolved) (strict context) ⇒ `Err`. A `$0` or an
-    /// unbound *variable* is non-concrete under *both* policies (the safe direction).
-    fn resolve_with(&self, word: &Word, policy: UnsetPolicy) -> Result<String, TopReason> {
-        match word {
-            Word::Literal(s) | Word::SingleQuotedLiteral(s) => Ok(s.clone()),
-            Word::Positional(0) => Err(TopReason::NonConcreteWord("`$0` is not modeled")),
-            Word::Positional(n) => match self.positional(*n) {
-                Some(v) => Ok(v.to_owned()),
-                None => unset_positional(policy),
-            },
-            Word::PositionalStripPrefix { n, prefix } => match self.positional(*n) {
-                // literal-prefix shortest-match == the literal (`sem::strip_prefix_literal`)
-                Some(val) => Ok(sem::strip_prefix_literal(val, prefix).to_owned()),
-                None => unset_positional(policy),
-            },
-            Word::Var(sym) => self
-                .vars
-                .get(sym)
-                .cloned()
-                .ok_or(TopReason::NonConcreteWord("unbound variable")),
-            // Unmodeled expansions fail in every position — including `[ ]` tests:
-            // evaluating them as text or guessing dash's glob semantics would be a
-            // wrong concrete.
-            Word::Unmodeled(_) => Err(TopReason::NonConcreteWord("unmodeled parameter expansion")),
-        }
-    }
-
-    /// `$n` (1-based) of the current positionals, if in range.
-    fn positional(&self, n: u32) -> Option<&str> {
-        let idx = (n as usize).checked_sub(1)?;
-        self.positionals.get(idx).map(String::as_str)
-    }
-
-    /// Evaluate a `[ LHS OP RHS ]` string-comparison test.
-    ///
-    /// In a `[ … ]` test, a past-the-end positional is the **empty string**, faithful
-    /// to sh (an unset parameter expands to empty), NOT a degrade — so the flag-strip
-    /// `while [ "${1#-}" != "$1" ]` terminates cleanly when the argv is exhausted, and
-    /// an "is there a second operand?" guard `[ "$2" = "" ]` reads true at the end.
-    /// (The ANNOTATION value-position stays strict — past-end ⇒ Top — because an
-    /// entity must resolve concretely; only the *test* context takes sh's unset-empty
-    /// semantics. A `$0`/unbound-var is still non-concrete ⇒ Top, the safe direction.)
+    /// Evaluate a `[ LHS OP RHS ]` string-comparison test against this evaluator's state
+    /// (delegates to the shared [`eval_test`]).
     fn eval_test(&self, test: &Test) -> Result<bool, TopReason> {
-        let lhs = self.resolve_with(&test.lhs, UnsetPolicy::ExpandEmpty)?;
-        let rhs = self.resolve_with(&test.rhs, UnsetPolicy::ExpandEmpty)?;
-        Ok(match test.op {
-            TestOp::Eq => lhs == rhs,
-            TestOp::Ne => lhs != rhs,
-        })
+        eval_test(test, &self.positionals, &self.vars)
     }
 
     /// Assemble the final [`Resolution`] from accumulated state. Two degrade gates:
@@ -406,11 +355,81 @@ impl Evaluator {
 
 /// Does a [`Pattern`] match the scrutinee value? Literal ⇒ exact equality; wildcard
 /// ⇒ always. (No globbing — the parser already rejected non-trivial globs.)
-fn pattern_matches(pattern: &Pattern, value: &str) -> bool {
+///
+/// `pub(crate)`: the touches-footprint evaluator ([`crate::touches`]) dispatches `case`
+/// arms with the SAME sh semantics (24A §1b — one dialect, two collectors), so it reuses
+/// this rather than re-deriving arm-selection.
+pub(crate) fn pattern_matches(pattern: &Pattern, value: &str) -> bool {
     match pattern {
         Pattern::Literal(lit) => lit == value,
         Pattern::Wildcard => true,
     }
+}
+
+/// Resolve a [`Word`] to a concrete string against `positionals` (`$1..$n`, 1-based) and
+/// `vars` (name bindings) under a named [`UnsetPolicy`] (the single home of the
+/// unset-parameter context fork, `sem::UnsetPolicy`), or `Err` with a reason if it is
+/// non-concrete.
+///
+/// A past-the-end positional / `${N#prefix}` forks on `policy`:
+/// [`ExpandEmpty`](UnsetPolicy::ExpandEmpty) (test context) ⇒ the empty string;
+/// [`Unresolved`](UnsetPolicy::Unresolved) (strict context) ⇒ `Err`. A `$0` or an
+/// unbound *variable* is non-concrete under *both* policies (the safe direction).
+///
+/// `pub(crate)`: extracted from the predict evaluator so the touches-footprint evaluator
+/// reuses the exact same word-resolution (positional/var/prefix-strip/unmodeled) — the
+/// vocabulary fence (24A §1b) requires footprint fragments resolve through the SAME
+/// value-flow as predict, not a parallel one.
+pub(crate) fn resolve_word(
+    word: &Word,
+    positionals: &[String],
+    vars: &BTreeMap<Symbol, String>,
+    policy: UnsetPolicy,
+) -> Result<String, TopReason> {
+    let positional = |n: u32| -> Option<&str> {
+        let idx = (n as usize).checked_sub(1)?;
+        positionals.get(idx).map(String::as_str)
+    };
+    match word {
+        Word::Literal(s) | Word::SingleQuotedLiteral(s) => Ok(s.clone()),
+        Word::Positional(0) => Err(TopReason::NonConcreteWord("`$0` is not modeled")),
+        Word::Positional(n) => match positional(*n) {
+            Some(v) => Ok(v.to_owned()),
+            None => unset_positional(policy),
+        },
+        Word::PositionalStripPrefix { n, prefix } => match positional(*n) {
+            // literal-prefix shortest-match == the literal (`sem::strip_prefix_literal`)
+            Some(val) => Ok(sem::strip_prefix_literal(val, prefix).to_owned()),
+            None => unset_positional(policy),
+        },
+        Word::Var(sym) => vars
+            .get(sym)
+            .cloned()
+            .ok_or(TopReason::NonConcreteWord("unbound variable")),
+        // Unmodeled expansions fail in every position — including `[ ]` tests:
+        // evaluating them as text or guessing dash's glob semantics would be a
+        // wrong concrete.
+        Word::Unmodeled(_) => Err(TopReason::NonConcreteWord("unmodeled parameter expansion")),
+    }
+}
+
+/// Evaluate a `[ LHS OP RHS ]` string-comparison test against `positionals` + `vars`.
+///
+/// In a `[ … ]` test, a past-the-end positional is the **empty string**, faithful to sh
+/// (an unset parameter expands to empty), NOT a degrade — so the flag-strip
+/// `while [ "${1#-}" != "$1" ]` terminates cleanly when the argv is exhausted. `pub(crate)`
+/// for the shared touches evaluator (same reason as [`resolve_word`]).
+pub(crate) fn eval_test(
+    test: &Test,
+    positionals: &[String],
+    vars: &BTreeMap<Symbol, String>,
+) -> Result<bool, TopReason> {
+    let lhs = resolve_word(&test.lhs, positionals, vars, UnsetPolicy::ExpandEmpty)?;
+    let rhs = resolve_word(&test.rhs, positionals, vars, UnsetPolicy::ExpandEmpty)?;
+    Ok(match test.op {
+        TestOp::Eq => lhs == rhs,
+        TestOp::Ne => lhs != rhs,
+    })
 }
 
 /// The value of an *unset* positional under the [`UnsetPolicy`] fork (the single home
