@@ -255,9 +255,16 @@ exercises it heavily/difficultly, + light-but-COOPERATING shim-oracles standing 
 rest of the stdlib. Task #10, after the chronology net (which then seed-sweeps it);
 parallel-eligible with Stage 3. Its yardstick rows become the family's most honest
 numbers; it is the natural whole-ledger exerciser. A sanitized census scout (sonnet,
-read-only, existence/location/size ONLY — no content crosses the quarantine boundary) is
-sweeping for prior sizable oracle work the human half-remembers; if found outside
-quarantine ⇒ evaluate reuse; inside ⇒ human lift-or-rewrite decision.
+read-only, existence/location/size ONLY — no content crosses the quarantine boundary)
+swept for the prior sizable oracle work the human half-remembered. **Census results
+(2026-07-03):** OUTSIDE quarantine — `17x-strawmen/` (251/117/115-line books + 13
+oracle/adversarial files; round-17 dialect) and `15x-strawmen/` (213-line playbook +
+apt/systemctl/ufw/nginx strawman oracles) — strong 2c seeds (books nearly dialect-free;
+oracles need respelling). INSIDE quarantine — `Research/corpora/H2SaLS/` holds a 696-line
+runbook + an 11-file oracle set, battle-oracle-shaped by label; lift-or-rewrite is
+HUMAN-KEYED and NON-blocking (2c proceeds on the rewrite path absent a typed "lift"; the
+content stays unread). The e2e fixture population confirmed uniformly tiny (166 oracle
+files, median 17 lines, max 37) — "nothing real in the suite" was accurate.
 
 ## §2. The 231 disposal (carried from the 23J repair-pass routing: map the pre-crisis sweep's clusters to survivor/dead-with-reason)
 
