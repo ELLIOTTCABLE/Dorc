@@ -385,3 +385,139 @@ Unchanged from §7.4 steps: P5 (jc-dpkg-i minimal `dpkg.check()`; delete `oracle
 `oracle_vouch_converged=` from all fixtures + old `lift`/`KindIndex`/`FactProbe`/`resolve_probe`/`corpus_differential`
 gate/`KindIndex::effects_iter`; `lift_derived`→`lift`) and Step 6 (guard23 `: apt-get:install~` vouch-marks + re-lens-
 verify each xfail). The §8.4 lesson governs any re-bless they need. R3 is the unblock they were waiting on.
+
+## §9 CLOSING SESSION (2026-07-02) — P5 + BLESS-guard LANDED; vouch-marks STOPPED on a strip-fidelity bug
+
+AI-authored, append-only. Never-vouch applies (machine-run process-evidence, not proof — "the marker fiction
+is fully retired" is a machine-gate claim, not a human-battle-tested one). Confidence marks throughout. The
+`23K §2` rc/verdict naming discipline is in effect (never bare "rc": tool-rc / predicted-rc / apply-rc).
+Base: `09f1f54` (the round-23 tip). Four commits landed on this worktree branch, gates + workspace tests +
+e2e green at each (except the git-HEAD-relative diag retire-guard, which resolves the instant the diag.rs
+deletion is committed — pre-commit gates are fmt/clippy/deny/typos, not `cargo test`).
+
+### §9.1 LANDED — P5 marker retirement (2 commits)
+- **`9aaf5c1 (AI re) P5: retire the marker lift`** — `lift_derived`→`lift` (the sole lift now; it builds the
+  effect-map purely from `check::derive_check` over each `<provider>__check`). DELETED: the marker `lift`/
+  `lift_one`/`bind`/`RawEffect`/`scan_kind_assigns`/`lift_command` + `FactProbe` + `KindIndex.{probes,
+  selector_probes}` + `add_probe`/`add_selector_probe`/`probe_for`/`selectors_for_kind`/`resolve_probe`/
+  `effects_iter` + all marker-based oracle unit tests + `tests/corpus_differential.rs` (flip-gate; job done).
+  Converted the 3 derive differential tests to assert the derived cell-set directly (dropped the marker-`lift`
+  comparison half; the derivation coverage survives). **Diag-catalog consequence (+SURE, in-scope):** the 8
+  now-dead oracle marker diag codes (`oracle-{non-literal-kind,missing-kind,missing-probe,bad-effect,top-level-
+  mutator,non-declaration,duplicate-effect,probe-selector-roundtrip}`) were deleted from `core::diag` + the
+  `diag_tidy` MIGRATED_PAYLOADS/MIGRATED_SLUGS/SPANLESS allow-lists (else `every_catalog_variant_is_constructed`
+  reds — dead catalog). Callers `cli`/`coverage` swapped to `lift`; hostsim `oracle_text` generator + coverage
+  inline fixtures stopped emitting markers; `plan/tests/erasability` ORACLE_SRC + two parse/check-test samples
+  converted to the marked dialect. Behaviour-identical: the retired flip-gate had proven `derive == old-lift`,
+  and e2e stayed 123/9/0/0 (the exec gates are the golden-independent anchor).
+- **`5361238 (AI re) P5: delete the four markers from every fixture + jc-dpkg-i`** — stripped the four marker
+  forms + the transitional additive-differential comment blocks from all 151 e2e oracle fixtures. **ZERO golden
+  churn** (+SURE, verified): markers are top-level lines, never inside a `<provider>__check` body, so
+  `strip_check` never shipped them and no `expected.out`/`expected.ran` contained one (grep-verified before the
+  edit). **jc-dpkg-i RULED-and-done:** authored a minimal verbless `dpkg__check` (strips `-i`, so `dpkg` is the
+  ε-verb) + converted the unit fixture's `apt_get__check` to the marked dialect; the pinned test
+  `lifts_the_package_fixture_cleanly` now asserts the ε-verb establish cell (dpkg -i ⇒ package#installed),
+  intent preserved. **Seam consequence (RULED, cov-q3 / jc-fblessed):** deleted `seam-two-providers-one-kind/
+  expected-diagnostics` — its `oracle-missing-probe` was the per-file probe-completeness floor that "evaporates
+  under check-as-oracle"; gate-3 only fails on UNDECLARED errors, so its disappearance is clean.
+
+### §9.2 LANDED — BLESS hardening (1 commit, folded-in review item)
+- **`9c5f78c (AI test) harden BLESS`** — `exec_check` blessed `expected.ran` unconditionally, so a global
+  `BLESS=1` clobbered the hand-authored XFAIL run-sets (§8.4: flipped the drift-trio to XPASS, twice). Gated the
+  ran-bless on `XFAIL_ACTIVE != 1`; the case then falls through to the ordinary compare and stays a red `xfail`,
+  goldens untouched (the `expected.out` bless was already XFAIL-guarded structurally — the `elif BLESS` arm is
+  unreachable for an xfail case). **BLESS-guard DEMONSTRATION (+SURE):** snapshotted the md5 of all 25
+  `expected.{out,ran}`/`head-expected.ran` across the 9 XFAIL cases → ran `BLESS=1 sh e2e/run.sh` (blessed 123
+  non-xfail cases) → re-snapshot: **byte-identical, zero XFAIL goldens touched.** (The bless additionally
+  wanted to normalise 4 all-elided cases' empty `expected.ran` → a single `\n`; behaviourally identical, both
+  compare-empty; reverted as unrelated to this session's work.)
+
+### §9.3 LENS-VERIFY — all 9 xfails fail for their DESIGNED reason post-P5 (+SURE, one lens-lifted run)
+Removed all 9 `XFAIL` files, ran e2e, restored via `git checkout` (robust vs the §7.5/23G mv-fragility). Each
+case's designed gate-failure (23A §1 / 23G §1) reproduced exactly — none accidental, none for a new reason:
+
+| case | designed failure (23A/23G) | observed (lens-lifted) |
+|---|---|---|
+| guard23-ternary-flagship | ap-2-exec ran-mismatch + gate-1 parity | ap-2-exec + gate-1 ✓ |
+| guard23-fallthrough-drift-runs | ap-2-exec ran-mismatch | ap-2-exec ✓ |
+| guard23-fallthrough-canttell-runs | ap-2-exec ran-mismatch | ap-2-exec ✓ |
+| guard23-mutator-fails-book-continues | ap-2-exec ran-mismatch | ap-2-exec ✓ |
+| guard23-why-attribution | gate-7 (no why-line) | gate-7 ✓ |
+| guard23-heredoc-refuses-loudly | gate-7 (`refus`) + gate-1 parity | gate-1 + gate-7 ✓ |
+| guard23-var-namespace-isolated | ap-2-exec ran-mismatch + gate-1 parity | ap-2-exec + gate-1 ✓ |
+| guard23-nounset-book-survives | gate-1 parity ONLY | gate-1 ✓ |
+| guard23-redirect-line-runs | gate-7 (`refus`) + gate-1 parity | gate-1 + gate-7 ✓ |
+
+### §9.4 STOPPED — the guard23 vouch-marks + flagship golden re-derivation (jc-vouch-mark-strip-fidelity)
+**The sharpest finding of the session (--WONDER→+SURE, empirically verified). The mission/§7.4/23H-§5 recipe —
+"replace `oracle_vouch_converged=` with a bare `: apt-get:install~` mark on the install arm's path" — produces
+a BROKEN shipped check body under the current `strip_check`.** The vouch is a bare `MarkKind::ConvergedVouch`;
+`strip_check` maps every bare mark → the `:` null command (`check.rs:147`). Placed per the recipe (trailing the
+effect-marked probe command), the install arm strips to:
+
+```
+install) dpkg-query -W "$pkg" >/dev/null 2>&1; : ;;    # verified: dorc probe output on the flagship
+```
+
+The trailing `:` runs LAST, so the arm's exit status — the tool-rc the check body mints into the guard's
+apply-rc — is forced to 0 regardless of `dpkg-query`'s tool-rc. Consequences (both verified by exec):
+1. **As a probe:** every install site reports `holds` (apply-rc 0) even when the package is absent — the
+   convergence signal is destroyed.
+2. **As a guard:** `apt_get__check install -y curl || apt-get install -y curl` always short-circuits (apply-rc
+   0 ⇒ "converged") ⇒ the mutator NEVER runs ⇒ **wrong-elision**, the exact sin the guard tier exists to prevent.
+
+This is the `np-pathgrain` gap 23A explicitly left UNPINNED ("the vouch's own strip-fidelity — that the real
+spelling strips out of shipped bodies … my assignment-spelling never enters a body, so there is nothing to
+strip"). The mission MOVES the vouch INTO the body, so its strip-fidelity is now load-bearing and unruled. Three
+candidate resolutions, each a design decision I did NOT make (per the mission's flag-jc-and-stop rule):
+- **(A) strip deletes `ConvergedVouch` bare marks entirely** (not → `:`). Design-correct — the vouch "NEVER
+  enters the fact-plane … engine-side" (rul-guard-license), so it should not ship to the host at all. Fixes the
+  rc-clobber AND preserves the **P-pair byte-identity** (§9.5). Cost: a `strip_check` contract change (the
+  contract 23A hz-strip-scope already flagged as under-pinned). *My recommendation, ~SUSPECT.*
+- **(B) place the vouch mark FIRST in the arm** (`install) : apt-get:install~; dpkg-query … ;;`). Verified to
+  strip to `install) :; dpkg-query … ;;` — the `:` is first, `dpkg-query` last, so the arm's tool-rc survives
+  (correct). No code change. Cost: ships a leading `:;` ⇒ **breaks the P-pair byte-identity** (cosmetically; the
+  substantive "vouch changes no elide/poison/run" still holds, but the pin's enforcement weakens to
+  substantive-equivalence, review-judged per jc-pair-mechanics).
+- **(C) the mission's literal trailing placement** — BROKEN (the rc-clobber above). Not viable.
+- A fourth consideration: 23K makes the vouch spelling a NEXT-ROUND redesign (`foo_is_converged`/dq-kOOB), so
+  strip-fidelity work on the strawman `: provider:verb~` mark may be throwaway — an argument for deferring the
+  whole item to the interface round rather than fixing strip now.
+
+**Because the vouch-mark is blocked, the flagship golden re-derivation (mission step 3) is also blocked** — the
+flagship's guard is licensed ONLY by the vouch (rul-guard-license: no vouch ⇒ no guard), so re-deriving its
+guard preamble as `strip(oracle body)` presupposes the vouch mark is in the body in a settled form. The flagship
+`expected.out` therefore stays as-is: hand-authored future-state (xfail, content-diff-skipped), now stale in
+three compounding ways — pre-R3 probe half (`package_installed__check 'nginx'`, frozen at §8.4's restore),
+pre-R4a guard preamble (markless body), and shows-a-guard-without-a-vouch (post-P5 the oracle's vouch line is
+deleted). All three reconcile together once (A/B) is ruled + the guard tier is built. FLAGGED, not touched.
+
+### §9.5 Other flags (jc-*) — made-for-now, cheap to reverse, never silently
+- **jc-vouch-bait-scope** (~SUSPECT): 24 guard23 fixtures carried `oracle_vouch_converged=` (added by 23A/23G
+  AFTER 23H-§5's recipe, which names only flagship + pair-b). The acceptance grep forces deleting it from all
+  24; the mission re-marks only flagship + pair-b. So the other 22 FLOORS lose their vouch-BAIT (the "converged +
+  vouched, still runs" cases become "no vouch, runs" — weaker future-build discrimination). Kept mission-literal
+  because (a) at HEAD the vouch is inert (guard tier unbuilt) so e2e stays green, (b) re-marking 22 floors would
+  churn their probe goldens with the same `:` (§9.4) and hit the P-pair problem broadly, (c) 23K re-spells the
+  vouch next round anyway. Their orphaned `# STRAWMAN VOUCH` comment blocks are LEFT (grep-safe — they say
+  "vouch"/"converged-vouch", never `oracle_vouch`; and they still point at dq-kOOB/the next round). A reader
+  should know the 22 floors' vouch-bait is temporarily absent until the interface round restores it.
+- **jc-claude-md-history** (--WONDER): the acceptance grep (`grep -rI 'oracle_kind\|oracle_probe\|oracle_effect\
+  |oracle_vouch' spike/`) is empty across all source/fixtures/tests EXCEPT two docs — `spike/CLAUDE.md` (6) and
+  `spike/crates/oracle/CLAUDE.md` (4) — whose marker strings live ONLY inside human-directed `[CORRECTION — …
+  human-directed]` blocks explicitly labelled "left standing as history" / "Original text stands as history".
+  Editing human-directed content is out of an agent's remit, and the charter's own intent is to preserve that
+  history; I read these as the acceptance's "historical notes" exemption in spirit. `spike/crates/syntax/CLAUDE.md`
+  (3, plain stale examples, not history-tagged) WAS cleaned. If a strict grep-empty is wanted, the two history
+  blocks are the human's to purge. (The `spike/target/` binary matches are gitignored build artifacts.)
+- The seam `expected-diagnostics` deletion (§9.1) is a RULED consequence (cov-q3), recorded not flagged.
+
+### §9.6 Validation ledger (this session)
+- Gates green at each commit: `cargo fmt --check` · `clippy -D warnings` · `cargo deny check licenses bans
+  sources` · `typos`. Workspace tests: 521 passed / 0 failed (the diag retire-guard is HEAD-relative — red only
+  in the uncommitted window, green post-commit; pre-commit gates exclude `cargo test` by the spike/CLAUDE.md
+  discipline). Fresh-build `sh e2e/run.sh` = **123 round-trips / 9 xfail / 0 XPASS / 0 red**.
+- Marker retirement is CORPUS-COMPLETE in the source tree (grep-empty bar the two history-block docs above).
+- Never-vouch holds: all of the above is machine-run process-evidence. The vouch-mark STOP is the honest
+  boundary — I will not ship a probe/guard I verified is wrong-eliding, nor unilaterally change the strip
+  contract on an unruled, next-round-redesigned strawman.
