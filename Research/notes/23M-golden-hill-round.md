@@ -200,7 +200,38 @@ NOT filesystem-only. A coordinate-kind is anything with an owner: `apt.Package:n
 RECOVER elisions coarse ones lose (apt + a vendor tool both write /var/lib/dpkg/status →
 false-conflict by path; clean-disjoint by package-set). Grounding-bridges are owner-spelled
 translation functions (apt's `manifest() { dpkg -L "$1" ;}` expands a package-coordinate into
-file-coordinates) — coordinate translation, never kind-equivalence.
+file-coordinates) — coordinate translation, never kind-equivalence. (NB refined below — manifest()
+is a footprint-EXPANSION bridge, not co-reference.)
+
+## THE CROSS-KIND BOUNDARY — footprints do NOT cross kinds unaided (landmine + the NEXT thread, 2026-07-03)
+
+Entity-granular poisoning poisons all properties of a touched entity WITHIN ITS KIND — it does
+NOT propagate across kinds. `apt.Package:geo` poisoned does NOT poison `systemd.Service:geo`:
+different kinds, different entities. So a package postinst's CHARACTERISTIC effect — enabling its
+OWN service — crosses the package→service kind boundary and ESCAPES to residue unaided.
+(CORRECTS an over-optimistic conductor claim that "the common maintainer-script effect is
+self-caught by entity-granular poisoning": it is NOT — self-caught only WITHIN the touched
+entity's kind; the common enable-my-service case is a kind-crossing and escapes. So the deferred-
+veto hole is bigger than that reassurance implied, and it lives exactly here.) The BRIDGE is the
+non-blunt alternative to vetos for this hole.
+
+Two DISTINCT bridge senses — were sloppily conflated under "grounding-bridge"; separate before working:
+- **footprint-expansion bridge** — "touching X REACHES Y" (part-whole, like package→its-files
+  via manifest(); OR causal-effect, like package→its-service). DIRECTIONAL; broadens a footprint
+  ACROSS kinds. Same 233 shape: can add KNOWN edges, can't claim completeness (a postinst may
+  touch any service) → known edges broaden the footprint, the remainder stays residue. Improves
+  coverage without claiming completeness. This is what the cross-kind escape needs.
+- **co-reference / identity bridge** — "X and Y NAME THE SAME REFERENT" across two OWNED
+  namespaces (a vendor's `vendor.Pkg:nginx` ≡ `apt.Package:nginx`; a deliberate cross-namespace
+  synonym). SYMMETRIC. The OPT-IN that recovers disjointness across two owners (silence = wall; a
+  co-reference assertion reaches for the trusted-claim). The consumer-side grounding act.
+
+RECURRING THIRD OPTION — the measurement crack, AGAIN: traced referents (probe-time strace/eBPF
+of what actually got touched) cross kinds NATURALLY (measurement observes the real unit-file
+written, not a declared coordinate) AND dissolve name-synonyms (same referent → one inode). It
+keeps reappearing as the answer to the hard cells (synonyms, now cross-kind). Cost: needs tracing
+infra (the DX arc) + works only for locally-OBSERVABLE state (fs/process yes; dns.Zone / cloud
+API no). Its own hole: backing-completeness ("did I trace everything").
 
 ## Residue (HUMAN-CORRECTED framing) + vetos (HUMAN-NAMED + DEFERRED)
 
