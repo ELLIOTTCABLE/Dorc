@@ -178,7 +178,12 @@ and where* (→ `Research/notes/20x-*.md`, append-only), not green tests.
   the inserted code obeys ONE sourcing principle: *guard code is the oracle's own authored
   body — the check IS the oracle — shipped strip-only (annotations removed, `name.check()` →
   `name_check()`, nothing else changed; the strip's output is runnable sh), the same bytes the
-  probe lane ships under the structural self-vouch.* Whole-body shipping is the default; a
+  probe lane ships under the structural self-vouch.* Strip-fidelity clarification (human,
+  2026-07-02 — jc-vouch-mark-strip-fidelity, `23H §9.4`): a BARE-mark statement (a line that
+  is only a mark — vouch/ACK/POISON) is an annotation-LINE, equivalent to a comment, NOT a
+  POSIX `:` command — the strip deletes the whole statement; *the last substantive command the
+  author wrote must remain the last exit-status-affecting statement in the stripped body*
+  (a stripped-in trailing `:` would clobber the body's tool-rc to 0 = an always-skip guard). Whole-body shipping is the default; a
   lifted/deconstructed form is an OPTIONAL analyzer edge-case, and even then must be
   byte-identical to a *substring* of the oracle body — sh's own control-flow performs
   path-selection at runtime anyway, so lifting buys bytes and readability, never different

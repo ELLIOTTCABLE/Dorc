@@ -104,6 +104,18 @@ door. Mark the classifier accordingly when the tier builds.
   the type-encoding of the whole discipline (ProbeRc/GuardRc-class newtypes, two blessed
   crossings) lands in the build slice.
 
+## Addendum 3 (same day) — strip-fidelity ruled (jc-vouch-mark-strip-fidelity → resolution A)
+
+The human's principle, verbatim-in-spirit: *"the last substantive command written by the
+author should be the last exit-status-affecting statement in the stripped body. Our
+`:`-lookalikes are noop annotation-lines, equivalent to comments, NOT equivalent to POSIX-sh
+`:` commands."* So the strip deletes bare-mark STATEMENTS whole (vouch/ACK/POISON lines that
+are only a mark) — they were never commands, the `:` was only the sh-native carrier.
+Execution: the `strip_check` change + its unit pin ride task #15; the guard23 vouch-mark
+conversion + flagship golden re-derivation stay deferred into the vouch/is_*verged respell
+(converting to a throwaway strawman buys nothing). Welded home: the strip-fidelity
+clarification appended to rul-ternary-verdict in spike/CLAUDE.md.
+
 ## Addendum 2 (same day) — the is_ prefix; centering; "the oracle" defined
 
 - **Naming RULED:** the `is_` prefix — `foo.is_converged()` / `foo.is_diverged()` (stripped:
