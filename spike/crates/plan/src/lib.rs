@@ -691,6 +691,24 @@ pub struct Plan {
     pub steps: Vec<Step>,
 }
 
+/// The per-disposition tally that backs the CLI plan-summary surface (plans/240 Stage-1
+/// yardstick — the round's north-star metric, *elision frequency*, made CLI-visible).
+/// `sites` is the leaf total; `elide` counts [`Disposition::Replace`] (a converged/dead
+/// line value-substituted away — the golden-hill verb), `omit` counts [`Disposition::Omit`]
+/// (a fold-proved-dead branch), `run` the rest. `guard` is the ternary tier's bucket
+/// (rul-ternary-verdict's `{elide, guard, run}`): **0 at HEAD**, because no `Disposition`
+/// mints a guard until the Stage-3 guard tier — the field exists now so the summary's
+/// grammar is stable across that build (a parse target must not gain a column mid-round).
+/// `sites == elide + omit + guard + run` by construction.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub struct DispositionCounts {
+    pub sites: usize,
+    pub elide: usize,
+    pub omit: usize,
+    pub guard: usize,
+    pub run: usize,
+}
+
 // ===========================================================================
 // The probe (apply-2's convergence check) — DESIGN "probing phase", note 163 §1.
 // The FORWARD half of the compiler: what to check so the apply can elide. The
@@ -1480,6 +1498,29 @@ fn has_top_successor(cfg: &Cfg, node: CfgNodeId) -> bool {
 }
 
 impl Plan {
+    /// Tally the plan's leaves by disposition for the plan-summary UI (plans/240 Stage-1
+    /// yardstick). Pure over [`steps`](Plan::steps) — `inv-determinism`: the yardstick's
+    /// elision-frequency metric is a function of the Plan value alone, with no clock, env,
+    /// or iteration-order input. The `match` is deliberately exhaustive (no `_` arm): when
+    /// the Stage-3 guard tier adds a `Disposition::Guard`, this stops compiling until the
+    /// `guard` bucket counts it — so the summary's guard column becomes real, never silently
+    /// lost to a catch-all.
+    #[must_use]
+    pub fn disposition_counts(&self) -> DispositionCounts {
+        let mut c = DispositionCounts {
+            sites: self.steps.len(),
+            ..DispositionCounts::default()
+        };
+        for step in &self.steps {
+            match step.disposition {
+                Disposition::Replace(_, _) => c.elide += 1,
+                Disposition::Omit { .. } => c.omit += 1,
+                Disposition::Run => c.run += 1,
+            }
+        }
+        c
+    }
+
     /// Render the plan back as sh (the Terraform plan/apply UX, DESIGN): run leaves
     /// verbatim, skipped leaves as provenance comments carrying the why. Each leaf
     /// is emitted separately (the leaf-seam — never coalesced into one `sh -c`).
@@ -2244,6 +2285,60 @@ apt_get__predict() {
             }
         });
         (probe, i)
+    }
+
+    #[test]
+    fn disposition_counts_tally_bucketing_and_sites_invariant() {
+        // plans/240 Stage-1 yardstick: the plan-summary's per-disposition tally. Pin
+        // (1) each disposition lands in its own bucket, (2) `guard` is 0 at HEAD (no
+        // `Disposition` mints one until the Stage-3 guard tier), and (3) the
+        // `sites == elide + omit + guard + run` invariant the greppable grammar promises.
+        let fact = nginx_fact();
+        let license = ReplaceLicense::prove_replaceable::<Apply>(
+            &SkipClass::EstablishAmbient(fact),
+            Grade::Must,
+            PhasedVerdict::new(Verdict::Converged),
+            quiet(),
+            Predicted::Top,
+        )
+        .expect("a converged, ambient, Must fact with no consumption mints a Replace license");
+        let step = |leaf: u32, disposition: Disposition| Step {
+            leaf: LeafId(leaf),
+            ast: AstId(leaf),
+            sh: String::new(),
+            disposition,
+        };
+        let plan = Plan {
+            steps: vec![
+                step(0, Disposition::Replace(license.clone(), StandIn::True)),
+                step(1, Disposition::Replace(license, StandIn::True)),
+                step(
+                    2,
+                    Disposition::Omit {
+                        controller: AstId(0),
+                    },
+                ),
+                step(3, Disposition::Run),
+            ],
+        };
+        let c = plan.disposition_counts();
+        assert_eq!(c.sites, 4, "four leaves");
+        assert_eq!(c.elide, 2, "two Replace ⇒ elide=2");
+        assert_eq!(c.omit, 1, "one Omit ⇒ omit=1");
+        assert_eq!(c.guard, 0, "no Disposition mints a guard at HEAD");
+        assert_eq!(c.run, 1, "one Run ⇒ run=1");
+        assert_eq!(
+            c.sites,
+            c.elide + c.omit + c.guard + c.run,
+            "the summary grammar's partition invariant"
+        );
+
+        // The empty plan tallies to all-zero (the yardstick's honest floor for a probe-only
+        // or no-command book).
+        assert_eq!(
+            Plan { steps: vec![] }.disposition_counts(),
+            DispositionCounts::default()
+        );
     }
 
     #[test]

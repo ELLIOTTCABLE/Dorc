@@ -19,6 +19,11 @@
 //!   stdin : probe results (plan/apply/round-trip), one per line —
 //!           `site <leafid> effect=<holds|absent|cant-tell> rc=<n>`
 //!   stdout: the selected mode's artifact(s); stderr: diagnostics / why-lens / digest
+//!           + the plan-summary (every plan-building mode; the yardstick's metric):
+//!           `dorc: plan-summary sites=<N> elide=<E> omit=<O> guard=<G> run=<R>`
+//!           where sites == elide+omit+guard+run; elide = provably-skipped lines,
+//!           omit = fold-dead branches, guard = 0 until the Stage-3 guard tier, run
+//!           = the rest. Stable grammar (a parse target — plans/240 Stage-1 yardstick).
 //! ```
 //!
 //! rec-1 TWO SURFACES (ru-12 + ru-20, spike/CLAUDE.md): the shipped `.sh` artifact on
@@ -327,6 +332,9 @@ fn run() -> Result<(), String> {
     // round-trip emits the same bytes as its second shebang block.
     print!("{}", plan.render_apply(&book_src, &parsed.value));
 
+    // plans/240 Stage-1 yardstick: the plan-summary on stderr, alongside the digest below.
+    emit_plan_summary(&plan);
+
     // arch-1 decision-digest (`mechanism-decision-digest`, `22A` concl-3): a one-line hash of
     // the canonical IDENTITY plane, emitted on every plan-building run as a cheap always-on
     // drift signal (Zephyr's per-build checksum). Receipts cannot move it — it hashes only the
@@ -513,6 +521,21 @@ fn unresolvable_diagnostics(
             Some(diag.to_legacy(interner))
         })
         .collect()
+}
+
+/// plans/240 Stage-1 yardstick: emit the plan-summary — a one-line, greppable, stable-grammar
+/// readout of the per-disposition tally (the round's north-star metric, elision frequency) — on
+/// stderr, the render surface. rec-1 TWO SURFACES: NEVER woven into the byte-floored `.sh`
+/// artifact on stdout. The cli emits it in every plan-building mode (`probe` returns before any
+/// plan exists, so it emits none). Shaped `dorc: plan-summary …`, never `<stage>: error[…]`, so
+/// the e2e gate-3 stderr floor (keyed on the `error[` shape) ignores it. Counts derive from the
+/// Plan value alone (`inv-determinism`).
+fn emit_plan_summary(plan: &dorc_plan::Plan) {
+    let counts = plan.disposition_counts();
+    eprintln!(
+        "dorc: plan-summary sites={} elide={} omit={} guard={} run={}",
+        counts.sites, counts.elide, counts.omit, counts.guard, counts.run
+    );
 }
 
 /// stage-3 (the why-lens render, `22D` §1): surface — on stderr, the RENDER surface — the
