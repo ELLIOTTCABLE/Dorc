@@ -440,7 +440,10 @@ pub fn build_report(inputs: &Inputs<'_>) -> Report {
     let cfg = dorc_analysis::cfg::build(&parsed.value).value;
     let value = dorc_analysis::value::analyze(&cfg, &parsed.value, &mut interner);
     let mut arena = dorc_core::ProvArena::new();
-    let classes = dorc_analysis::effect::classify(
+    // Kill-AWARE classify (24A §3): mirrors the cli so the dashboard sees the same kill-wall the
+    // honest baseline does (a kill-UNAWARE plan would over-report elision on a kill book). The
+    // why-diags are cli-render-only; coverage discards them.
+    let (classified, _why_diags, kills) = dorc_analysis::effect::classify_with_why_diags(
         &cfg,
         &value,
         &parsed.value,
@@ -448,8 +451,8 @@ pub fn build_report(inputs: &Inputs<'_>) -> Report {
         &checks,
         &mut interner,
         &mut arena,
-    )
-    .value;
+    );
+    let classes = classified.value;
 
     // c3 source: per-site Effect verdict (the dashboard reads the plan's own
     // dispositions, not a fact re-key, so it only needs the verdict off the wire).
@@ -466,11 +469,15 @@ pub fn build_report(inputs: &Inputs<'_>) -> Report {
             ship_predict_body(inputs.oracles, &checks, &interner, provider, argv)
         });
     let observe = observe_from_sites(&probe, &probe_verdicts);
-    let plan = dorc_plan::build_plan(
+    // Kill-aware, survival-OFF (`None`): dashboard parity with the honest baseline only — the
+    // coverage crate carries no footprint/survival plumbing (24A §3 parity fix).
+    let plan = dorc_plan::build_plan_walled(
         inputs.book,
         &parsed.value,
         &cfg,
         &classes,
+        &kills,
+        None,
         observe,
         &mut arena,
     );

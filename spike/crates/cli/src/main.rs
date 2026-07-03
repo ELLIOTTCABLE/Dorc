@@ -106,6 +106,13 @@ struct Args {
     /// `--debug-argv` (gate-5 / cm-2): emit the engine's per-site resolved argv to stderr,
     /// then proceed normally — a cli-edge readout the e2e argv-echo differential consumes.
     debug_argv: bool,
+    /// `--trust-footprints` (rul24-mode-gate): opt into the survival tier — a converged line
+    /// may ELIDE past a RUNNING wall when the wall's authored `touches()` footprint is disjoint
+    /// from the line's fact's backing (Stage 2, the golden hill). DEFAULT OFF; not recommended
+    /// by hints/docs beyond noting availability. Honest framing (24A §1a-addendum): marketing at
+    /// best (the admin chose the danger), theatre at worst (everyone enables it) — demanded
+    /// anyway as the non-vacuous CYA. When off, the footprints are never even lifted (TC-1).
+    trust_footprints: bool,
 }
 
 /// Minimal hand-rolled parsing (no `clap` dep): an OPTIONAL leading mode token
@@ -117,6 +124,7 @@ fn parse_args() -> Result<Args, String> {
     let mut book: Option<String> = None;
     let mut oracles = Vec::new();
     let mut debug_argv = false;
+    let mut trust_footprints = false;
     let mut it = std::env::args().skip(1).peekable();
 
     // A leading bare word (no `-` prefix) selects the mode; anything else ⇒ RoundTrip and
@@ -148,6 +156,8 @@ fn parse_args() -> Result<Args, String> {
             oracles.push(p.to_string());
         } else if arg == "--debug-argv" {
             debug_argv = true;
+        } else if arg == "--trust-footprints" {
+            trust_footprints = true;
         } else if arg == "-h" || arg == "--help" {
             return Err(USAGE.to_string());
         } else {
@@ -159,9 +169,14 @@ fn parse_args() -> Result<Args, String> {
         book: book.ok_or(USAGE)?,
         oracles,
         debug_argv,
+        trust_footprints,
     })
 }
 
+#[expect(
+    clippy::too_many_lines,
+    reason = "the top-level pipeline driver: lift → analyze → probe → plan → render, one linear sequence with mode-routing; splitting it into sub-drivers would scatter the ONE call-shape the thin-driver mandate keeps here"
+)]
 fn run() -> Result<(), String> {
     let args = parse_args()?;
     let mut interner = Interner::default();
@@ -276,12 +291,28 @@ fn run() -> Result<(), String> {
     // VALID Query-class site (the guard's own rc); an establish site's rc is the PROBE
     // command's (dpkg-query's), NOT the mutator's, so it feeds the fold NOTHING.
     let by_fact = facts_from_sites(&probe, &results);
+
+    // The survival tier (Stage 2 / rul24-mode-gate, TC-1): footprints are lifted ONLY under
+    // `--trust-footprints` — off ⇒ `None` ⇒ the honest Stage-1 total wall, the data never exists.
+    let survival = args.trust_footprints.then(|| {
+        build_survival_footprints(
+            &oracle_refs,
+            &classes,
+            &kills,
+            &value,
+            &cfg.value,
+            &parsed.value,
+            &mut interner,
+            advisory,
+        )
+    });
     let plan = dorc_plan::build_plan_walled(
         &book_src,
         &parsed.value,
         &cfg.value,
         &classes,
         &kills,
+        survival.as_ref(),
         |f| {
             by_fact
                 .get(&f)
@@ -312,6 +343,12 @@ fn run() -> Result<(), String> {
     // sections + their warnings to the console").
     if advisory {
         emit_why_lens(&why_diags, &arena, &book_src);
+        // Stage 2 co-primary (rul24-divergence-is-the-game / TC-3): every SURVIVED elision names,
+        // on this same why-lens lane, which running walls it crossed and whose footprint licensed
+        // each crossing. This is the attribution tether under the sharpest claim in the design —
+        // a wrong footprint silently under-executes someone else's line, so the render surface
+        // must always say whose footprint you trusted. Empty when unflagged (no survivals).
+        emit_survival_attribution(&plan, &interner);
     }
 
     // gate-5 (cm-2 argv-echo differential): per-site resolved argv to stderr, behind the flag.
@@ -339,28 +376,47 @@ fn run() -> Result<(), String> {
     // plans/240 Stage-1 yardstick: the plan-summary on stderr, alongside the digest below.
     emit_plan_summary(&plan);
 
-    // arch-1 decision-digest (`mechanism-decision-digest`, `22A` concl-3): a one-line hash of
-    // the canonical IDENTITY plane, emitted on every plan-building run as a cheap always-on
-    // drift signal (Zephyr's per-build checksum). Receipts cannot move it — it hashes only the
-    // identity plane (the `plan::erasability` gate proves that). To stderr (stdout stays the
-    // artifact). KEPT even in the receipt-free `apply` mode: the digest is identity-plane, not
-    // a receipt — it is the always-on integrity signal, not advisory disclosure. The
-    // Error-class diagnostics on the identity plane are the analyzer's accumulated ones
-    // (classify) plus the render refusals; warnings/notes are exempt (dropped by the canon).
-    let mut identity_diags = classified.diags;
+    emit_decision_digest(
+        &plan,
+        &probe,
+        &book_src,
+        &parsed.value,
+        &interner,
+        classified.diags,
+        refusals,
+    );
+    Ok(())
+}
+
+/// arch-1 decision-digest (`mechanism-decision-digest`, `22A` concl-3): a one-line hash of the
+/// canonical IDENTITY plane, emitted on every plan-building run as a cheap always-on drift
+/// signal. Receipts cannot move it — it hashes only the identity plane (the `plan::erasability`
+/// gate proves that). To stderr (stdout stays the artifact). KEPT even in the receipt-free
+/// `apply` mode: the digest is identity-plane, not a receipt. The Error-class diagnostics on the
+/// identity plane are the analyzer's accumulated ones (classify) plus the render refusals;
+/// warnings/notes are exempt (dropped by the canon).
+fn emit_decision_digest(
+    plan: &dorc_plan::Plan,
+    probe: &dorc_plan::ProbePlan,
+    book_src: &str,
+    ast: &dorc_syntax::ast::Ast,
+    interner: &Interner,
+    classify_diags: Vec<dorc_core::Diagnostic>,
+    refusals: Vec<dorc_core::Diagnostic>,
+) {
+    let mut identity_diags = classify_diags;
     identity_diags.extend(refusals);
     eprintln!(
         "dorc: decision-digest {}",
         dorc_plan::erasability::decision_digest(
-            &plan,
-            &probe,
-            &book_src,
-            &parsed.value,
-            &interner,
+            plan,
+            probe,
+            book_src,
+            ast,
+            interner,
             &identity_diags,
         )
     );
-    Ok(())
 }
 
 /// R3 (23D §1 — the check IS the oracle): resolve the stripped `<provider>__predict` funcdef
@@ -400,6 +456,143 @@ fn ship_predict_body(
         }
     }
     None
+}
+
+/// Lift the survival footprints (Stage 2 / rul24-mode-gate) — called ONLY on the
+/// `--trust-footprints` path (TC-1: the footprint data does not exist unflagged). For each
+/// wall-candidate site (an establish-bearing class, or a kill) whose provider declares a
+/// `touches()`, trace it over the site's resolved argv and record the emitted footprint —
+/// after a **coherence check** (23M / the Stage-2 brief): the site's OWN establish coordinate
+/// must be ⊆ its lifted footprint (at-least ⊆ at-most), else the footprint is a loud
+/// contradiction and is REFUSED (⇒ the site walls). A ⊤/empty lift, a non-literal argv, or a
+/// missing `touches()` all mean "no trustworthy footprint" ⇒ absence from the map ⇒ wall.
+///
+/// `inv-referent-agnostic`: emitted `kind:entity` fragments are interned into the SAME
+/// vocabulary the book/predict analysis uses (one interner) — `package` here is the SAME
+/// [`KindId`] a predict annotation minted — never a parallel string-typed universe (24A §1b).
+#[expect(
+    clippy::too_many_arguments,
+    reason = "the cli-edge footprint lift threads the whole compiled context (oracles/classes/kills/value/cfg/ast/interner) + the advisory routing flag; each is a distinct pipeline output, not a bundle-able struct"
+)]
+fn build_survival_footprints(
+    oracle_refs: &[&str],
+    classes: &[(
+        dorc_analysis::cfg::CfgNodeId,
+        dorc_analysis::effect::SkipClass,
+    )],
+    kills: &std::collections::BTreeSet<dorc_analysis::cfg::CfgNodeId>,
+    value: &dorc_analysis::value::ValueFlow,
+    cfg: &dorc_analysis::cfg::Cfg,
+    ast: &dorc_syntax::ast::Ast,
+    interner: &mut Interner,
+    advisory: bool,
+) -> dorc_plan::TrustedFootprints {
+    use dorc_analysis::effect::SkipClass;
+    let touches_sets: Vec<dorc_oracle::touches::TouchesSet> = oracle_refs
+        .iter()
+        .map(|src| {
+            let lifted = dorc_oracle::touches::TouchesSet::lift(interner, src);
+            report_at(advisory, "touches", &lifted.diags);
+            lifted.value
+        })
+        .collect();
+
+    let mut footprints = dorc_plan::TrustedFootprints::new();
+    let mut diags = Vec::new();
+    for (node, class) in classes {
+        // A wall candidate: an establish-bearing class (carrying its own cell for the coherence
+        // check) or a kill (no single cell available ⇒ coherence skipped for kills).
+        let establish = match class {
+            SkipClass::EstablishAmbient(f) | SkipClass::EstablishWritten(f) => Some(*f),
+            _ => None,
+        };
+        if establish.is_none() && !kills.contains(node) {
+            continue; // not a wall candidate (a pure builtin, a Query, an opaque)
+        }
+        let Some((provider, coords)) =
+            resolve_touches_footprint(*node, value, &touches_sets, interner)
+        else {
+            continue; // no touches / non-literal argv / ⊤ / empty emission ⇒ no footprint ⇒ wall
+        };
+        // Coherence (establish sites): the site's own establish coordinate must be inside its
+        // footprint (at-least ⊆ at-most). A violation is a loud contradiction ⇒ refuse ⇒ wall.
+        if let Some(fact) = establish {
+            let own = dorc_plan::EntityCoord::new(fact.kind, fact.entity);
+            if !coords.contains(&own) {
+                let span = ast.node(cfg.node(*node).ast).span;
+                diags.push(dorc_core::Diagnostic::warning(
+                    dorc_core::DiagCode("footprint-incoherent"),
+                    Some(span),
+                    "touches() footprint omits this command's own establish coordinate \
+                     (at-least ⊄ at-most) — footprint refused, the site walls",
+                ));
+                continue;
+            }
+        }
+        if let Some(footprint) = dorc_plan::Footprint::new(provider, coords) {
+            footprints.insert(*node, footprint);
+        }
+    }
+    report_at(advisory, "footprint", &diags);
+    footprints
+}
+
+/// Resolve a wall-candidate site's `touches()` footprint: split its resolved argv into
+/// `(provider, operands)` (all must be literal — a ⊤ word ⇒ no footprint), find the provider's
+/// touches funcdef (through the shared hyphen↔underscore convention, like the probe), trace it,
+/// and intern the emitted coordinates. `None` ⇒ any of: non-literal argv, no matching
+/// `touches()`, a ⊤ trace, or an EMPTY emission (no claim = wall).
+fn resolve_touches_footprint(
+    node: dorc_analysis::cfg::CfgNodeId,
+    value: &dorc_analysis::value::ValueFlow,
+    touches_sets: &[dorc_oracle::touches::TouchesSet],
+    interner: &mut Interner,
+) -> Option<(Symbol, Vec<dorc_plan::EntityCoord>)> {
+    use dorc_analysis::value::ValueOf;
+    use dorc_oracle::predict::map_provider_name;
+    use dorc_oracle::touches::{TouchesResolution, evaluate_touches};
+
+    let argv = value.argv_values(node);
+    let (first, rest) = argv.split_first()?;
+    let ValueOf::Literal(provider) = first else {
+        return None; // ⊤ command word
+    };
+    let mut arg_texts = Vec::with_capacity(rest.len());
+    for w in rest {
+        let ValueOf::Literal(s) = w else {
+            return None; // a ⊤ operand ⇒ the argparse cannot resolve ⇒ no footprint
+        };
+        arg_texts.push(interner.resolve(*s).to_owned());
+    }
+    let arg_refs: Vec<&str> = arg_texts.iter().map(String::as_str).collect();
+
+    let want = map_provider_name(interner.resolve(*provider));
+    let coords = touches_sets.iter().find_map(|set| {
+        set.providers()
+            .find(|p| map_provider_name(interner.resolve(*p)) == want)
+            .and_then(|p| set.get(p))
+            .and_then(|touches| match evaluate_touches(touches, &arg_refs) {
+                TouchesResolution::Emitted(coords) if !coords.is_empty() => Some(coords),
+                // Emitted(empty) = no claim = wall; Top = ⊤ = wall. Both ⇒ no footprint.
+                TouchesResolution::Emitted(_) | TouchesResolution::Top(_) => None,
+            })
+    })?;
+
+    // Intern each opaque `kind:entity` fragment into the shared vocabulary (the fence).
+    let entity_coords = coords
+        .iter()
+        .map(|c| {
+            let kind = dorc_core::KindId(interner.intern(&c.kind));
+            let entity = match &c.entity {
+                Some(text) => {
+                    dorc_core::EntityRef::Operand(dorc_core::OpaqueToken(interner.intern(text)))
+                }
+                None => dorc_core::EntityRef::Singleton,
+            };
+            dorc_plan::EntityCoord::new(kind, entity)
+        })
+        .collect();
+    Some((*provider, entity_coords))
 }
 
 /// gate-5 / cm-2 readout: per command site, emit `argv <leafid> <disposition> <word|TOP
@@ -555,6 +748,63 @@ fn emit_why_lens(why_diags: &[dorc_core::diag::Diag], arena: &ProvArena, src: &s
     for line in why_lens_lines(why_diags, arena, src) {
         eprintln!("why: {line}");
     }
+}
+
+/// Stage 2 attribution (TC-3 / rul24-divergence-is-the-game): emit, on the why-lens stderr
+/// lane (the `why: ` prefix, alongside the run-cause disclosures — one lens, two directions:
+/// why-a-line-runs and why-a-line-survived), one line per SURVIVED elision — naming the
+/// surviving site, each running wall it crossed, whose footprint licensed the crossing (the
+/// provider and its claimed coordinates), and the backing coordinate proven disjoint. Reads the
+/// [`dorc_plan::SurvivalWitness`] the wall walk minted — NEVER recomputes disjointness (the
+/// witness IS the attribution). rec-1 WELD: stderr render surface only; the byte-floored `.sh`
+/// artifact stays receipt-free (a survived elision's artifact bytes are identical to any other
+/// elision's). Never `error[`, so the gate-3 stderr floor ignores it; the `why: ` prefix lets
+/// gate-7 (`expected-why`) pin the attribution end-to-end.
+fn emit_survival_attribution(plan: &dorc_plan::Plan, interner: &Interner) {
+    for step in &plan.steps {
+        let dorc_plan::Disposition::Replace(license, _) = &step.disposition else {
+            continue;
+        };
+        let Some(witness) = &license.derivation().survival else {
+            continue;
+        };
+        let crossings: Vec<String> = witness
+            .crossings()
+            .iter()
+            .map(|c| {
+                let provider = interner.resolve(c.provider());
+                let coords: Vec<String> = c
+                    .footprint()
+                    .iter()
+                    .map(|fc| render_coord(*fc, interner))
+                    .collect();
+                format!(
+                    "wall site {} ({provider} touches {{{}}})",
+                    c.wall_leaf().0,
+                    coords.join(" ")
+                )
+            })
+            .collect();
+        eprintln!(
+            "why: site {} survives+elides past {} — backing {} disjoint (trusted footprint)",
+            step.leaf.0,
+            crossings.join(", "),
+            render_coord(witness.backing(), interner),
+        );
+    }
+}
+
+/// Render a [`dorc_plan::EntityCoord`] as `kind:entity` for the attribution surface (empty
+/// entity ⇒ `kind:`, the singleton form). DISPLAY only — resolving an interned symbol for
+/// provenance is explicitly permitted; the engine never DECODES it for meaning
+/// (`inv-referent-agnostic`).
+fn render_coord(coord: dorc_plan::EntityCoord, interner: &Interner) -> String {
+    let kind = interner.resolve(coord.kind().0);
+    let entity = match coord.entity() {
+        dorc_core::EntityRef::Operand(token) => interner.resolve(token.0),
+        dorc_core::EntityRef::Singleton => "",
+    };
+    format!("{kind}:{entity}")
 }
 
 /// The why-lens render + stage-4 dedup, factored PURE (the stderr side is [`emit_why_lens`]) so

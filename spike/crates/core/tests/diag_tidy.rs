@@ -109,10 +109,14 @@ const MIGRATED_SLUGS: &[&str] = &[
 /// Seeded at this HEAD by inventorying every `DiagCode("…")` literal across the crate sources
 /// (the conductor's re-inventory mandate — `21Z`/`22B` site counts were stale). The migrated
 /// three are deliberately ABSENT (they moved to the spine).
-// B4 sweep complete: all 20 codes migrated onto the Diag spine. The allow-list is now empty
-// (all legacy DiagCode("…") string-constructions have been replaced). Self-cleaning: a new
+// B4 sweep complete: all 20 codes migrated onto the Diag spine. Self-cleaning: a new
 // un-migrated code that introduces a DiagCode("…") literal must be declared here immediately.
-const LEGACY_ALLOW_LIST: &[&str] = &[];
+// * `footprint-incoherent` (Stage 2 / 24A §1b coherence check): the loud refusal when a wall's
+//   touches() footprint omits its own establish coordinate (at-least ⊄ at-most). A cli-edge
+//   Warning; PENDING typed-spine migration (tc-footprint-diag — the diagnostic wants a
+//   registry-declared home like the predict-dialect codes, deferred with the guard-tier
+//   diagnostics it will share a render pass with).
+const LEGACY_ALLOW_LIST: &[&str] = &["footprint-incoherent"];
 
 /// The SPANLESS-MINT allow-list (arch-3-residual-2): EXACTLY the codes permitted to construct a
 /// diagnostic with no primary span, via [`dorc_core::diag::Diag::new_spanless_site`]. Every other

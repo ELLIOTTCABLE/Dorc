@@ -51,6 +51,12 @@ pub mod erasability;
 
 pub mod render;
 
+pub mod survival;
+pub use survival::{
+    Backing, Crossing, DisjointnessProof, EntityCoord, Footprint, SurvivalWitness,
+    TrustedFootprints, disjoint,
+};
+
 // ===========================================================================
 // Phase markers + the Unknown-fold bias (note 165 L1)
 // ===========================================================================
@@ -228,6 +234,13 @@ pub struct Derivation {
     /// arena (the tests' throwaway path); populated with the establish site's `BookSource`
     /// origin on the real `build_plan` path.
     pub witness: dorc_core::Witness,
+    /// The SURVIVAL attribution (Stage 2 / TC-3), if this elision crossed ≥1 running wall under
+    /// `--trust-footprints`. `None` for every ordinary elision (pre-wall, or flag-off); `Some`
+    /// names which walls it crossed + whose footprint licensed each. Attached post-mint by the
+    /// wall walk ([`ReplaceLicense::with_survival`]); read ONLY by the why-lens render (never the
+    /// artifact — rec-1). NOT a proof of adequacy (converged≠no-op stays the vouch's) — see
+    /// [`survival`].
+    pub survival: Option<SurvivalWitness>,
 }
 
 /// The witness authorising the one irreversible verb — *elide a command*. Its
@@ -324,6 +337,7 @@ impl ReplaceLicense {
                         // Empty at mint (the minter has no arena); `build_plan` attaches the
                         // real witness post-mint via `with_witness` (arch-1, output-only/exempt).
                         witness: dorc_core::Witness::empty(),
+                        survival: None,
                     },
                 })
             }
@@ -381,6 +395,7 @@ impl ReplaceLicense {
                 grade: Grade::Must,
                 verdict,
                 witness: dorc_core::Witness::empty(),
+                survival: None,
             },
         })
     }
@@ -435,6 +450,7 @@ impl ReplaceLicense {
                 grade: Grade::Must,
                 verdict: Verdict::Converged,
                 witness: dorc_core::Witness::empty(),
+                survival: None,
             },
         })
     }
@@ -515,6 +531,7 @@ impl ReplaceLicense {
                 grade: Grade::Must,
                 verdict: Verdict::Converged,
                 witness: dorc_core::Witness::empty(),
+                survival: None,
             },
         })
     }
@@ -526,6 +543,17 @@ impl ReplaceLicense {
     #[must_use]
     pub fn with_witness(mut self, witness: dorc_core::Witness) -> Self {
         self.derivation.witness = witness;
+        self
+    }
+
+    /// Attach the SURVIVAL witness post-mint (Stage 2 / TC-3) — the attribution for an elision
+    /// that crossed ≥1 running wall. Like [`with_witness`](Self::with_witness) it is pure OUTPUT
+    /// provenance set AFTER the mint (the survival decision happens in the wall walk, downstream
+    /// of the license mint), so it never influences whether the license was granted. Rides the
+    /// render surface (the why-lens) only — never the byte-floored artifact (rec-1).
+    #[must_use]
+    pub fn with_survival(mut self, witness: SurvivalWitness) -> Self {
+        self.derivation.survival = Some(witness);
         self
     }
 
@@ -1222,7 +1250,16 @@ pub fn build_plan(
     observe: impl Fn(FactKey) -> Observable,
     arena: &mut dorc_core::ProvArena,
 ) -> Plan {
-    build_plan_walled(src, ast, cfg, classes, &BTreeSet::new(), observe, arena)
+    build_plan_walled(
+        src,
+        ast,
+        cfg,
+        classes,
+        &BTreeSet::new(),
+        None,
+        observe,
+        arena,
+    )
 }
 
 /// [`build_plan`] PLUS the **kill-node set** (R3 / 24A §3 — the kill gap). `kills` is the set
@@ -1236,13 +1273,31 @@ pub fn build_plan(
 /// downstream statically). Demotion stays Replace→Run only (`inv-kfail`). This is BASELINE
 /// ground-truth behaviour — never flag-gated (rul24-mode-gate governs the survival tier, not
 /// wall honesty). Deterministic (`kills` is a `BTreeSet`; `inv-determinism`).
+///
+/// # Survival tier (Stage 2 — the golden hill; mode-gate `survival`, TC-1)
+///
+/// `survival` is the mode-gate DATA (`--trust-footprints`): `None` ⇒ the honest Stage-1 wall
+/// (a running mutator is a TOTAL wall — every downstream converged `Replace` demotes), the
+/// byte-identical baseline. `Some(footprints)` ⇒ the frame-rule walk: a running mutator WITH a
+/// lifted footprint scopes its wall (accumulates its coordinates) instead of totalising it, and
+/// a downstream converged `Replace` SURVIVES (elides past the running wall) iff its backing is
+/// disjoint from every accumulated footprint (`survival::wall_verdict`). A running mutator
+/// WITHOUT a footprint (silence, a ⊤ lift, a refused coherence check) still totalises the wall.
+/// Survival only ever *keeps* a `Replace`; demotion stays Replace→Run (`inv-kfail`). The
+/// survival arm is structurally unreachable when `survival` is `None` — the footprints were
+/// never lifted, so no maintainer can consult them unflagged (data-absence, not a checked bool).
 #[must_use]
+#[expect(
+    clippy::too_many_arguments,
+    reason = "the kernel entry threads the whole compiled context (src/ast/cfg/classes/kills/survival/observe/arena); each is a distinct input, not a bundle-able struct — widening it once here is clearer than a params object that hides the seams"
+)]
 pub fn build_plan_walled(
     src: &str,
     ast: &Ast,
     cfg: &Cfg,
     classes: &[(CfgNodeId, SkipClass)],
     kills: &BTreeSet<CfgNodeId>,
+    survival: Option<&TrustedFootprints>,
     observe: impl Fn(FactKey) -> Observable,
     arena: &mut dorc_core::ProvArena,
 ) -> Plan {
@@ -1278,7 +1333,9 @@ pub fn build_plan_walled(
     // modeled MUTATOR whose run would invalidate downstream elide-licenses (silence=wall,
     // `23Ib-fd10`)? Computed here where the `SkipClass` is in scope (a `Step` does not carry
     // it) and consumed by the plan-time wall walk after the span-sort below.
-    let mut steps: Vec<(Step, bool)> = Vec::with_capacity(classes.len());
+    // Each entry: the step, its wall-bearing bit, and its `CfgNodeId` (the footprint-lookup
+    // key for the survival walk — `TrustedFootprints` is node-keyed).
+    let mut steps: Vec<(Step, bool, CfgNodeId)> = Vec::with_capacity(classes.len());
     for (node, class) in classes {
         let ast_id = cfg.node(*node).ast;
         let sh = command_text(src, ast, ast_id);
@@ -1332,6 +1389,7 @@ pub fn build_plan_walled(
                 disposition,
             },
             is_mutator,
+            *node,
         ));
     }
 
@@ -1341,23 +1399,41 @@ pub fn build_plan_walled(
     // (`inv-site-keyed-results`), so a record `site N …` keys back to leaf N.
     // `probe_site_id_equals_plan_leaf_id` pins the equivalence. Sort BEFORE the wall walk so
     // the walk sees steps in execution order (book order IS execution order — order-is-sacred).
-    steps.sort_by_key(|(s, _)| (ast.node(s.ast).span.lo.0, ast.node(s.ast).span.hi.0));
+    steps.sort_by_key(|(s, _, _)| (ast.node(s.ast).span.lo.0, ast.node(s.ast).span.hi.0));
 
-    // The plan-time WALL (silence=wall / `23Ib-fd10` / `23O` §2 settled law). A MODELED
-    // mutator that will RUN at apply may touch anything it did not declare (the frame
-    // problem, `233`), so silence licenses nothing: it invalidates every downstream
-    // elide-license. The static ambient gate (`analysis::effect::classify`) is same-cell
-    // only — a running `apt-get update` (cell `pkgindex:.fresh`) leaves a converged
-    // `apt-get install nginx` (cell `package:nginx#installed`) `EstablishAmbient` ⇒ eliding —
-    // the "dangerous middle". This is the ADDITIONAL demotion layer the phased caller owns
-    // (`inv-superposition`: the kernel stays phase-agnostic; the wall depends on the
-    // run/elide *verdict*, known only here). Walk once, in execution order, maintaining a
-    // wall flag: an elided/omitted mutator casts NO shadow (it never runs), so only a
-    // *running* mutator walls; once walled, every later converged-establish `Replace` is
-    // demoted to `Run`. Demotion is ONLY ever Replace→Run (`inv-kfail`: when unsure, act) —
-    // never the reverse.
+    // Assign stable leaf ids in span order (the `inv-site-keyed-results` equivalence a record
+    // `site N …` depends on). Done BEFORE the wall walk so the survival walk can name the wall
+    // leaf a downstream elision crossed (the attribution witness, TC-3). Leaf-id assignment is
+    // a pure function of span order — the walk only reads/rewrites dispositions, never ids — so
+    // moving it earlier is byte-neutral for the flag-off path.
+    for (i, (step, _, _)) in steps.iter_mut().enumerate() {
+        step.leaf = LeafId(u32::try_from(i).unwrap_or(u32::MAX));
+    }
+
+    // The plan-time WALL (silence=wall / `23Ib-fd10` / `23O` §2 settled law). A MODELED mutator
+    // that will RUN at apply may touch anything it did not declare (the frame problem, `233`),
+    // so silence licenses nothing. `survival` selects HOW a running mutator walls (TC-1):
+    match survival {
+        // Flag-off (BASELINE, byte-identical to Stage-1): a running mutator is a TOTAL wall.
+        None => wall_walk_total(&mut steps),
+        // Flag-on (the golden hill): a running FOOTPRINTED mutator scopes its wall; a downstream
+        // converged `Replace` survives iff disjoint from every accumulated footprint (TC-3).
+        Some(footprints) => wall_walk_survival(&mut steps, footprints),
+    }
+
+    // Drop the wall bookkeeping; the leaf ids are already assigned.
+    let steps: Vec<Step> = steps.into_iter().map(|(step, _, _)| step).collect();
+    Plan { steps }
+}
+
+/// The BASELINE wall walk (flag-off / Stage-1 / `23Ib-fd10`): walk once in execution order
+/// maintaining a single `walled` flag. An elided/omitted mutator casts NO shadow (it never
+/// runs), so only a *running* mutator walls; once walled, every later establish-bearing
+/// `Replace` demotes to `Run`. Demotion is ONLY ever Replace→Run (`inv-kfail`). Structurally
+/// identical to the pre-Stage-2 inline walk — kept a `bool`, no footprints in sight.
+fn wall_walk_total(steps: &mut [(Step, bool, CfgNodeId)]) {
     let mut walled = false;
-    for (step, is_mutator) in &mut steps {
+    for (step, is_mutator, _node) in steps {
         if walled && *is_mutator && matches!(step.disposition, Disposition::Replace(..)) {
             step.disposition = Disposition::Run;
         }
@@ -1365,14 +1441,54 @@ pub fn build_plan_walled(
             walled = true;
         }
     }
+}
 
-    // Drop the wall bits and assign stable leaf ids (the span-order enumerate the
-    // `inv-site-keyed-results` equivalence above depends on).
-    let mut steps: Vec<Step> = steps.into_iter().map(|(step, _)| step).collect();
-    for (i, step) in steps.iter_mut().enumerate() {
-        step.leaf = LeafId(u32::try_from(i).unwrap_or(u32::MAX));
+/// The SURVIVAL wall walk (flag-on / Stage 2 / the golden hill). In execution order, maintain a
+/// `total_wall` flag (set by a running FOOTPRINT-LESS mutator — silence = wall, unchanged) plus
+/// the accumulated running-wall footprints. A downstream establish-bearing `Replace` is put
+/// through the ONE total [`survival::wall_verdict`]: it survives (stays `Replace`) iff no total
+/// wall stands AND its backing is disjoint from every accumulated footprint; a crossing of ≥1
+/// wall attaches the attribution witness (TC-3). A running mutator (whether it just demoted, or
+/// was never converged) then contributes: WITH a lifted footprint it scopes the wall (union its
+/// coordinates); WITHOUT one it totalises the wall. Demotion stays Replace→Run only (`inv-kfail`).
+fn wall_walk_survival(steps: &mut [(Step, bool, CfgNodeId)], footprints: &TrustedFootprints) {
+    let mut total_wall = false;
+    let mut accumulated: Vec<survival::AccumulatedWall> = Vec::new();
+    for (step, is_mutator, node) in steps {
+        // 1. Survival test for a converged mutator's `Replace` against the walls so far.
+        if *is_mutator && let Disposition::Replace(license, _) = &step.disposition {
+            let backing = Backing::of_fact(license.fact());
+            match survival::wall_verdict(total_wall, &accumulated, &backing) {
+                // Crossed no wall — an ordinary pre-wall elision; leave it exactly as the
+                // flag-off world would (no witness, `Replace` untouched).
+                survival::WallVerdict::SurvivedClean => {}
+                // Crossed ≥1 running wall, all disjoint — survives WITH attribution. Rebind the
+                // disposition to carry the witness (pure output provenance, post-mint).
+                survival::WallVerdict::Survived(witness) => {
+                    if let Disposition::Replace(license, stand_in) =
+                        std::mem::replace(&mut step.disposition, Disposition::Run)
+                    {
+                        step.disposition =
+                            Disposition::Replace(license.with_survival(witness), stand_in);
+                    }
+                }
+                // A total wall stands, or the backing hit a footprint — demote (`inv-kfail`).
+                survival::WallVerdict::Demoted => step.disposition = Disposition::Run,
+            }
+        }
+        // 2. Wall contribution: a RUNNING mutator walls — scoped if it has a footprint, total
+        // otherwise (silence = wall). An elided/omitted mutator (survived, or converged away)
+        // casts no shadow, so it is skipped here.
+        if *is_mutator && matches!(step.disposition, Disposition::Run) {
+            match footprints.get(*node) {
+                Some(footprint) => accumulated.push(survival::AccumulatedWall {
+                    wall_leaf: step.leaf,
+                    footprint: footprint.clone(),
+                }),
+                None => total_wall = true,
+            }
+        }
     }
-    Plan { steps }
 }
 
 /// The per-leaf disposition: the fold first (a provably-dead leaf is `Omit`ted), then
@@ -3318,6 +3434,7 @@ apt_get__predict() {
             &cfg,
             &classes,
             &kills,
+            None,
             observe,
             &mut arena,
         );
@@ -3383,6 +3500,213 @@ apt_get__predict() {
             "kill-unaware build_plan does NOT wall ⇒ the converged install elides (the gap)"
         );
     }
+
+    // ── Stage 2: the survival tier (the golden hill) ────────────────────────────────────────
+
+    /// The survival books the mode-gate equality test iterates (install-only shapes so the
+    /// corpus predict resolves them without the purge effect-add; the purge/kill and cross-kind
+    /// shapes ride the e2e cases). Each is a diverged wall (or two) plus a converged same-kind
+    /// different-entity survivor.
+    const SURVIVAL_BOOKS: &[&str] = &[
+        "apt-get install -y oldpkg\napt-get install -y nginx\n",
+        "apt-get install -y oldpkg\napt-get install -y badpkg\napt-get install -y nginx\n",
+    ];
+
+    /// Build a plan for an install-only book, answering `package:<entity>#installed` with
+    /// `verdict_of(entity)`. `survival` selects the walk: `None` ⇒ Stage-1 total wall;
+    /// `Some(self_footprints)` ⇒ every establish-bearing node footprints its OWN coordinate
+    /// (coherent by construction — the well-authored oracle shape), so a wall is disjoint from
+    /// any different-entity downstream.
+    fn survival_plan(
+        src: &str,
+        verdict_of: impl Fn(&str) -> Verdict,
+        self_footprints: bool,
+    ) -> Plan {
+        let mut i = Interner::default();
+        let idx = package_index(&mut i);
+        let package = KindId(i.intern("package"));
+        let installed = SelectorId(i.intern("installed"));
+        let provider = i.intern("apt-get");
+        let parsed = dorc_syntax::parse(src);
+        let cfg = dorc_analysis::cfg::build(&parsed.value).value;
+        let value = dorc_analysis::value::analyze(&cfg, &parsed.value, &mut i);
+        let checks = vec![dorc_oracle::predict::lift_predicts(&mut i, CORPUS_PREDICT_SRC).value];
+        let mut arena = dorc_core::ProvArena::new();
+        let classes = dorc_analysis::effect::classify(
+            &cfg,
+            &value,
+            &parsed.value,
+            &idx,
+            &checks,
+            &mut i,
+            &mut arena,
+        )
+        .value;
+        // Every establish-bearing node footprints its own coordinate (the coherent shape).
+        let footprints = self_footprints.then(|| {
+            let mut tf = TrustedFootprints::new();
+            for (node, class) in &classes {
+                let fact = match class {
+                    SkipClass::EstablishAmbient(f) | SkipClass::EstablishWritten(f) => *f,
+                    _ => continue,
+                };
+                let coord = EntityCoord::new(fact.kind, fact.entity);
+                if let Some(fp) = Footprint::new(provider, vec![coord]) {
+                    tf.insert(*node, fp);
+                }
+            }
+            tf
+        });
+        let observe = |f: FactKey| {
+            if f.kind == package
+                && f.selector == installed
+                && let EntityRef::Operand(tok) = f.entity
+            {
+                return Observable::verdict_only(verdict_of(i.resolve(tok.0)));
+            }
+            Observable::verdict_only(Verdict::Unknown)
+        };
+        build_plan_walled(
+            src,
+            &parsed.value,
+            &cfg,
+            &classes,
+            &BTreeSet::new(),
+            footprints.as_ref(),
+            observe,
+            &mut arena,
+        )
+    }
+
+    /// rul24-mode-gate BOTH-SIDES pin (the PRIMARY unflagged-equality guard, per the human's
+    /// testing-protocol trim): the flag-OFF plan must be byte-identical to the honest Stage-1
+    /// total wall. Proven by comparing `None` (unflagged) against `Some(EMPTY footprints)` — with
+    /// no footprints every running mutator is a TOTAL wall (silence=wall), so the survival walk's
+    /// output must MATCH the Stage-1 (`None`) walk's on every survival book. The flag buys
+    /// survivals ONLY where a real footprint licenses one; absent footprints, it changes nothing.
+    #[test]
+    fn flag_off_equals_stage1_total_wall_on_survival_books() {
+        let verdict = |e: &str| {
+            if e == "nginx" {
+                Verdict::Converged
+            } else {
+                Verdict::Diverged // oldpkg / badpkg diverged ⇒ the walls RUN
+            }
+        };
+        for src in SURVIVAL_BOOKS {
+            let none = survival_plan(src, verdict, false);
+            // Some(empty): the survival walk with NO footprints ⇒ every wall is total ⇒ Stage-1.
+            let empty = survival_plan_empty_footprints(src, verdict);
+            let tag = |d: &Disposition| match d {
+                Disposition::Run => "run",
+                Disposition::Replace(..) => "replace",
+                Disposition::Omit { .. } => "omit",
+            };
+            let disp = |p: &Plan| -> Vec<&'static str> {
+                p.steps.iter().map(|s| tag(&s.disposition)).collect()
+            };
+            assert_eq!(
+                disp(&none),
+                disp(&empty),
+                "flag-off (None) must equal Some(empty footprints) — the Stage-1 total wall — on {src:?}"
+            );
+            // And the survivor DEMOTES (the honest baseline: no footprint ⇒ no survival).
+            assert!(
+                matches!(
+                    find(&none, "install -y nginx").disposition,
+                    Disposition::Run
+                ),
+                "unflagged: the converged nginx demotes past the running wall on {src:?}"
+            );
+        }
+    }
+
+    /// The empty-footprints variant (a survival walk that finds no footprint for any wall ⇒
+    /// every wall total ⇒ Stage-1 behaviour). Separate helper so the equality test can compare
+    /// the two walk entries directly.
+    fn survival_plan_empty_footprints(src: &str, verdict_of: impl Fn(&str) -> Verdict) -> Plan {
+        let mut i = Interner::default();
+        let idx = package_index(&mut i);
+        let package = KindId(i.intern("package"));
+        let installed = SelectorId(i.intern("installed"));
+        let parsed = dorc_syntax::parse(src);
+        let cfg = dorc_analysis::cfg::build(&parsed.value).value;
+        let value = dorc_analysis::value::analyze(&cfg, &parsed.value, &mut i);
+        let checks = vec![dorc_oracle::predict::lift_predicts(&mut i, CORPUS_PREDICT_SRC).value];
+        let mut arena = dorc_core::ProvArena::new();
+        let classes = dorc_analysis::effect::classify(
+            &cfg,
+            &value,
+            &parsed.value,
+            &idx,
+            &checks,
+            &mut i,
+            &mut arena,
+        )
+        .value;
+        let empty = TrustedFootprints::new();
+        let observe = |f: FactKey| {
+            if f.kind == package
+                && f.selector == installed
+                && let EntityRef::Operand(tok) = f.entity
+            {
+                return Observable::verdict_only(verdict_of(i.resolve(tok.0)));
+            }
+            Observable::verdict_only(Verdict::Unknown)
+        };
+        build_plan_walled(
+            src,
+            &parsed.value,
+            &cfg,
+            &classes,
+            &BTreeSet::new(),
+            Some(&empty),
+            observe,
+            &mut arena,
+        )
+    }
+
+    /// The FLAGGED survival path at the plan level: a converged install past a running DIVERGED
+    /// install of a different package SURVIVES when the wall's footprint (package:oldpkg) is
+    /// disjoint from the downstream backing (package:nginx) — same kind, different entity. Its
+    /// `Replace` carries a survival witness naming the crossed wall.
+    #[test]
+    fn disjoint_footprint_survives_running_wall() {
+        let verdict = |e: &str| {
+            if e == "nginx" {
+                Verdict::Converged
+            } else {
+                Verdict::Diverged
+            }
+        };
+        let plan = survival_plan(
+            "apt-get install -y oldpkg\napt-get install -y nginx\n",
+            verdict,
+            true,
+        );
+        assert!(
+            matches!(
+                find(&plan, "install -y oldpkg").disposition,
+                Disposition::Run
+            ),
+            "the diverged oldpkg install RUNS = the footprinted wall"
+        );
+        match &find(&plan, "install -y nginx").disposition {
+            Disposition::Replace(license, _) => {
+                let witness = license
+                    .derivation()
+                    .survival
+                    .as_ref()
+                    .expect("a survived elision past a wall carries a survival witness");
+                assert_eq!(witness.crossings().len(), 1, "one wall crossed");
+            }
+            other => panic!("nginx must SURVIVE (Replace) past the disjoint wall, got {other:?}"),
+        }
+    }
+
+    // (The non-disjoint HIT direction — a footprint intersecting the backing demotes even
+    // flagged — is pinned by `survival::tests::poisoned_backing_demotes` + the
+    // `strawman24-nonsurvive-hit` e2e case; no plan-level duplicate here.)
 
     #[test]
     fn in_loop_constant_establish_runs_even_when_converged() {
