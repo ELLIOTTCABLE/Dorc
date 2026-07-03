@@ -20,9 +20,10 @@
 pivot (incl. the human's `a92ad31` root-doc rewrite + the new USER_STORY.md); both verdicts:
 *the pivot is sound; the seam is docs-narrating-ahead-of-pins.* Reviews `23Ia`/`23Ib`,
 adjudication **`23J`** (headline product: the **rc-soundness cluster** — the guard consumes
-aggregate in-band rc while design claims ride per-mark engine-interpreted semantics; three
-facets, one gap; chartered into the vouch-spelling round). Repairs → task #15
-(post-closeout); the human's root-doc queue → task #16.
+aggregate in-band exit status while design claims ride per-mark engine-interpreted semantics;
+three facets, one gap; being settled IN-ROUND, in-conversation — the human ruled it does not
+warrant its own round; seeds `notes/23K` + `23J`). Repairs → task #15 (post-closeout); the
+human's root-doc queue → task #16.
 
 **State:** the `plans/233` design-crisis is **formally closed**. The verdict architecture is
 ternary — **{elide, guard, run}** — where a `guard` inserts the oracle's own stripped check in
@@ -89,11 +90,12 @@ hand-authored XFAIL goldens (hit + recovered); restore XFAIL expected.* after an
 2. **THE BUILD SLICE — the next conductor's spine:** flip the xfails green honestly. ENTRY
    GATE (23J, direction-crosscheck): refresh ANALYZER-NEEDS.md FIRST (stale rounds 19–23;
    rows contradict the polarity-retirement ruling) and honor the **rc-soundness requirement**
-   — the guard-witness gains a structural rc-soundness component (aggregate rc-0 ⇔ the
-   vouched establish-set holds on the runtime-reached path; refuse-to-guard loudly
-   otherwise), chartered into the vouch-spelling round BEFORE any vouch-consuming xfail
-   flips (full cluster: `23J` conv-rc-soundness — the mark-`!` inversion trap, refuse-path
-   rc-0, rc-vacuous fact-reporting bodies). Then sequence per `23A` §5: widen gate-6 FIRST
+   — the guard-witness gains a structural rc-soundness component (the vouched path's
+   aggregate exit status IS the guard-verdict, by authored promise; refuse-to-guard loudly
+   where the engine can see the promise can't hold), settled by the in-round interface work
+   (2026-07-02, in-conversation; seeds `notes/23K` + `23J` conv-rc-soundness — the mark-`!`
+   inversion trap, refuse-path exit-0, rc-vacuous fact-reporting bodies) BEFORE any
+   vouch-consuming xfail flips. Then sequence per `23A` §5: widen gate-6 FIRST
    (no license class yet for apply-only checks / guard-suppressed mutators; selftest
    confounds landed in `23G`); the guard emitter per the round-21 door-4 mechanics
    (`notes/218a`), the GuardLicense witness (mind **hz-refusepath** — the reached-path
