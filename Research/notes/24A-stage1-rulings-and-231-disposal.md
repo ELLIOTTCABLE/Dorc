@@ -147,6 +147,52 @@ claims at-most-these; unmatched verb emits nothing = no claim = wall. Human vibe
   survived elisions (why-lens naming whose footprint licensed what) is promoted from
   nice-to-have to the primary tether in the builder brief.
 
+## §1c. rul24-vouch-is-verdict-authoring (typed-acked 2026-07-03: "kill the tilde, the function is the spelling")
+
+**The converged-vouch's sh spelling is settled: authoring the verdict-function IS the
+vouching act.** `<provider>.is_converged()`/`.is_diverged()` (the rul-role-split family,
+sense declared by name, rc-partition 0/1/≥2), invoked with the site's argv; a reached path
+answering 0-in-the-named-sense IS the license; declining per-path is `return 2` or an
+unhandled path. The two-level bare mark `: provider:verb~` is DEAD (grammar to be removed;
+1c redirected mid-flight). This resolves the dq-kOOB-parked "is authoring a verdict-function
+partly the vouching act?" interplay (23O §5) toward YES-ENTIRELY, and closes the human's
+TODO two-claims item as follows. Origin: the human's observation that the tilde needed six
+paragraphs of exposition = poor spelling; the verdict-function spelling collapses to one
+sentence ("if you write `foo.is_converged()`, Dorc trusts its yes to skip converged
+foo-lines — make its yes mean 'skipping is fine,' and `return 2` where you can't say").
+
+Corroboration: this IS the stamped LICENSE-SOURCE note ("ONE convergence source for
+licensing at vouched sites — the verdict-function's partition result; fact-plane ambience
+never a second license-source") extended by one clause; it also strengthens
+rul-ternary-verdict's no-second-source-of-convergence-truth (the tilde was arguably a second
+authority beside the verdict function). One authored truth, three consumers: probe-phase
+plan-verdict (the partition), apply-phase guard body, static license-by-authorship.
+
+**Three provisos, part of the weld (conductor-derived, human-acked with the ruling):**
+- **proviso-read-erasure.** "predict() is the non-licensing lane" is scoped: predict()
+  never licenses the erasure of a MUTATION; its values still back value-reproduction of
+  READS (the QueryGuard substitution) and StatusRelaxable relaxation, under fact-tier
+  provenance rules (inv-probe-sourced-values). Principled split: reads have no adequacy
+  gap; writes do — only the judgment-bearing lane may license skipping a write.
+- **proviso-family-open.** The TODO's claim-(a) ("converged modulo noise I accept; elide")
+  = is_converged-answers-0, exactly. Claim-(b) ("literally a no-op, fully state-precise")
+  gets no distinct home NOW — it loses nothing mechanical (no consumption-gate unlocks; a
+  skipped no-op's observables still need reproduction) — and if evidence ever demands it,
+  the family extends by NAME (an `is_noop`-style stronger sibling; the deferred `.diff`
+  verbs are the same pattern). The weld names "the verdict-family," never a closed set of
+  two functions.
+- **proviso-marks-survive.** The bare-mark grammar survives for ACK (three-level
+  `kind:entity.prop~`) and POISON; strip-fidelity (bare marks deleted whole) stays needed.
+  Only the two-level vouch form dies.
+
+Consequences: the spike's vouchless elide-tier at HEAD is now precisely "the gap Stage 3
+closes" (elide-license welds to the verdict-function partition); predict-only lift keying
+gains is_*verged lifting at Stage 3; the guard23 fixture-gap (headers claiming vouches
+bodies lack) resolves by adding verdict-FUNCTIONS, not marks; 1c's R2 pins re-spelled
+mid-flight; USER_STORY stages 3/4 re-spelled (see commit); spike/CLAUDE.md rul-guard-license
+gains a resolution annotation. The engine's scoping stays reached-path-only (the §1b
+vocabulary fence applies to verdict-function paths identically).
+
 ## §2. The 231 disposal (carried from the 23J repair-pass routing: map the pre-crisis sweep's clusters to survivor/dead-with-reason)
 
 Context: `notes/231` is the *pre-crisis* collapsed-gradient sweep — round 23 §1 work,

@@ -233,22 +233,30 @@ already has a status query (most tools do). They append to the book's own file �
 runbooks can share a file:
 
 ```sh
-foobar.predict() {
+foobar.is_converged() {
    verb="$1"; shift
    case "$verb" in
    sync-certs)
       dest : fb.Certs = "$1"
       foobar status --certs-current -- "$dest"   : fb.Certs:"$dest".synced
-      : foobar:sync-certs~   # vouch: synced certs = nothing worth re-running (STRAWMAN spelling)
       ;;
+   *) return 2 ;;
    esac
 }
 ```
 
-Eight lines, one verb, one probe, one vouch. In order:
+Nine lines, one verb, one probe — and the function's *name* is the license. In order:
 
-- `foobar.predict()` declares "this body is the oracle for `foobar`". The period-name is the
-  opt-in semaphore; *stripped*, it is a plain `foobar_check()` function any shell can run.
+- `foobar.is_converged()` declares "this body answers, for `foobar` invocations, the
+  question in its name." The period-name is the opt-in semaphore; *stripped*, it is a plain
+  `foobar_is_converged()` any shell can run. And the name is a *contract*: by writing a
+  function that answers "is it converged," the author licenses Dorc to act on its yes — so
+  its yes must mean "re-running this is noise I accept," not merely "some state holds." (A
+  dpkg-'installed' package with an upgrade pending is exactly the gap: whether that counts
+  as a yes is the author's judgment, and only theirs.) The plan attributes every elision
+  and guard to the function that answered, by name; when the answer is wrong, there is a
+  person to be wrong. (Spelling settled 2026-07-03 — authoring the verdict-function IS the
+  vouching act; no separate vouch syllable exists.)
 - `dest : fb.Certs = "$1"` binds the operand as the entity, in a kind this author just
   minted. Nobody approves kind names; there is no registry. It only has to agree with
   itself. (At the call-site that operand was `"$CERTS"` — the analyzer resolves plain
@@ -256,10 +264,10 @@ Eight lines, one verb, one probe, one vouch. In order:
 - The trailing `: fb.Certs:"$dest".synced` says: this probe's exit code *establishes*
   that property. The engine never interprets what "synced" means — it is an opaque value
   bound to the author's probe.
-- The `~` vouch is the license, and it is a *judgment*, not a fact: "when this arm's probes
-  hold, I judge re-running this to be noise." The plan attributes every elision and guard
-  to the vouch that licensed it, by name; when a vouch is wrong, there is a person to be
-  wrong. (FIXME: exact spelling is still strawman-tier design.)
+- `*) return 2` is the native *decline*. The exit-status partition is fixed and blessed:
+  0 = the named sense holds; 1 = its complement; anything ≥2 = "can't say," and can't-say
+  always runs. Paths the author won't answer for simply answer 2 — declining is ordinary
+  control-flow, not an annotation.
 
 Steady state, after two minutes of work:
 
@@ -320,7 +328,7 @@ proceed-and-flag, never a mid-apply question") is not.
 And a plan-time can't-tell — probe timeout, weird rc — is not quietly rounded to converged:
 no verdict, no guard, no elision; the site runs. Everything fails toward run.
 
-- Spent: ~15 minutes skimming docs, 8 lines of sh, zero new languages, zero config formats.
+- Spent: ~15 minutes skimming docs, nine lines of sh, zero new languages, zero config formats.
 - Gained, steady state: seven tool-sites of attention down to two; foobar's re-sync mutation
   avoided.
 - Gained, structurally: the certs state is now *described* — future books that touch it
@@ -337,40 +345,35 @@ the oracle *worth publishing*: correct for colleagues' books, other verbs, other
 argv shapes. The enriched oracle:
 
 ```sh
-foobar.predict() {
+foobar.is_converged() {
    verb="$1"; shift
    case "$verb" in
    sync-certs|renew)
       dest : fb.Certs = "$1"
-      [ "$2" = "" ] || { printf 'UNK multi-operand foobar\n' >>"$DORC_REPORT"; exit 254; }
+      [ "$2" = "" ] || { printf 'UNK multi-operand foobar\n' >>"$DORC_REPORT"; return 2; }
       foobar status --certs-current -- "$dest"   : fb.Certs:"$dest".synced
-      : foobar:sync-certs~
-      : foobar:renew~
       ;;
-   purge-certs)
-      dest : fb.Certs = "$1"
-      foobar status --certs-current -- "$dest"   : fb.Certs:"$dest".synced!
-      ;;
-   *) printf 'UNK unmodeled foobar verb: %s\n' "$verb" >>"$DORC_REPORT"; exit 254 ;;
+   purge-certs) return 2 ;;
+   *) printf 'UNK unmodeled foobar verb: %s\n' "$verb" >>"$DORC_REPORT"; return 2 ;;
    esac
 }
 ```
 
 What each addition buys — and refuses:
 
-- Verb breadth: `renew` shares the probe and earns its own vouch; a colleague's
-  `foobar renew /srv/certs` site now guards-or-elides in *their* book.
-- `purge-certs` reads the same probe *inverted* (`!`): exit-0 means certs present, which for
-  a purge means not-converged. The `!` is pure exit-code plumbing — the engine has no notion
-  of "removal", only opaque values. And note the author's own asymmetric judgment, expressed
-  the only place it belongs — in what they vouch: sync-certs converged is vouched skippable;
-  purge-certs deliberately carries *no* vouch (stale residue makes "looks absent" a bad
-  reason to not-run a purge, and the author knows it). No vouch, no guard, no elision: purge
-  sites always run. The engine did not decide that; the person who knows the tool did.
+- Verb breadth: `renew` shares the arm, so the author's yes now covers it too; a colleague's
+  `foobar renew /srv/certs` site guards-or-elides in *their* book.
+- `purge-certs` deliberately answers 2 — the author's asymmetric judgment, expressed as
+  ordinary control-flow: stale residue makes "looks absent" a bad reason to not-run a purge,
+  and the author knows it. Can't-say, so purge sites always run. The engine did not decide
+  that; the person who knows the tool did, by declining to answer. (If they ever want the
+  purge-side *fact* measured anyway — for the plan's display, not as a license — that
+  belongs in the describing sibling, `foobar.predict()`: the lane that states what is true
+  and predicts what would happen, and never licenses skipping a mutation.)
 - The arity gate: a two-operand invocation hits the loud `UNK` refusal instead of a probe
-  that quietly checked only the first operand. Refusal exits carry the report out-of-band;
-  the site just runs, with a reason in the plan.
-- The `*` arm: an unknown verb claims nothing, vouches nothing, licenses nothing — a
+  that quietly checked only the first operand — and a refusal is just an answer-2 with a
+  breadcrumb: the report goes out-of-band, the site runs, the plan carries the reason.
+- The `*` arm: an unknown verb claims nothing, answers nothing, licenses nothing — a
   colleague's `foobar frobnicate` is exactly as safe as it was with no oracle at all, plus a
   breadcrumb in the report.
 - Still just sh: stripped, it runs on any POSIX box with no Dorc in sight. Publishing it is

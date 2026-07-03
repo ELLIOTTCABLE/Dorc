@@ -200,6 +200,19 @@ and where* (→ `Research/notes/20x-*.md`, append-only), not green tests.
   and is inadmissible in any other site's elide/poison reasoning. Run-delta verbs never guard
   (an oracle declines by not vouching). No vouch ⇒ run. The vouch's concrete sh SPELLING is
   OPEN — build against a stub explicitly marked strawman, kept trivially cheap to swap.
+  - **[SPELLING RESOLVED — 2026-07-03, round 24, human-acked ("kill the tilde, the function
+    is the spelling"); full ruling + provisos `Research/notes/24A` §1c
+    (rul24-vouch-is-verdict-authoring).]** The vouch is no longer a mark: **authoring the
+    verdict-function IS the vouching act.** `<provider>.is_converged()`/`.is_diverged()`
+    (rul-role-split, below), invoked with the site's argv; a reached path answering
+    0-in-the-named-sense IS the license; declining per-path = `return 2` / unhandled path.
+    The two-level bare mark `: provider:verb~` is DEAD grammar (removal in flight); the
+    three-level ACK and POISON bare marks survive. The witness shape above is unchanged —
+    read "reached converged-vouch" as "the verdict-function's reached-path partition
+    result". "Run-delta verbs never guard" is spelled natively: those paths return 2 or are
+    simply not authored. predict() is thereby the non-MUTATION-licensing lane (its values
+    still back READ-substitution + StatusRelaxable relaxation under fact-tier provenance —
+    24A §1c proviso-read-erasure).
 - **rul-attention-honesty (welded).** Attention is saved ONLY by provable elision. The plan
   render is the whole book in original order; lines that will execute are never hidden or
   folded (at most dimmed, warily). "Scrappy, but correct: never hide risk from the user."
