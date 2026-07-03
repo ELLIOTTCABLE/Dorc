@@ -8,8 +8,12 @@ effect throughout.
 ## rul-role-split (STAMPED)
 
 A rich oracle is a family of role-sibling functions — separate functions giving separate
-channels for separate rc-meanings, all spelled-sh, chosen OVER out-of-band noise (printf
-verdict-tokens etc., rejected as ugly/anti-idiomatic/anti-offramp):
+channels for separate rc-meanings, all spelled-sh. SCOPE OF THE OOB-REJECTION (human
+clarification, same day): printf/OOB transport is ruled out *for this specific pair of
+purposes only* — predicted-rc and guard-verdict both have natural rc-shaped consumers, so
+forcing either out-of-band is ugly. OOB/printf communication remains alive and sanctioned
+for everything else (the probe-report lane, refusal records, facts, diagnostics) — do not
+read this ruling as a general OOB ban:
 
 - **`foo.check()`** — facts and prediction. Its aggregate status keeps the INCUMBENT meaning:
   predicted-rc (the round-20 elision-substitution weld, untouched and un-reopened). Marks
