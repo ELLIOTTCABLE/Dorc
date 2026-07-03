@@ -1,0 +1,23 @@
+[package]
+name = "dorc-sweep"
+version = "0.0.0"
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+
+# The round-24 chronology net (24B §1-C / §3 flavour-C): the composition-root DST harness
+# that drives the WHOLE kernel in-process against the hostsim model across seeded interference
+# topologies, asserting end-state equality (soundness-under-honesty) + attribution-under-lies.
+# A NEW crate, not more hostsim: the sweep composes every kernel crate + the host model, an
+# altitude above the lean host-MODEL (24B §3). The legacy subprocess differential
+# (`hostsim/differential.rs`) is FROZEN; this subsumes its generated-breadth role in-process.
+[dependencies]
+dorc-core = { path = "../core", version = "0.0.0" }
+dorc-syntax = { path = "../syntax", version = "0.0.0" }
+dorc-analysis = { path = "../analysis", version = "0.0.0" }
+dorc-oracle = { path = "../oracle", version = "0.0.0" }
+dorc-plan = { path = "../plan", version = "0.0.0" }
+dorc-hostsim = { path = "../hostsim", version = "0.0.0" }
+
+[lints]
+workspace = true

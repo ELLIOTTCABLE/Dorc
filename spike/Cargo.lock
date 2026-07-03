@@ -67,6 +67,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "dorc-sweep"
+version = "0.0.0"
+dependencies = [
+ "dorc-analysis",
+ "dorc-core",
+ "dorc-hostsim",
+ "dorc-oracle",
+ "dorc-plan",
+ "dorc-syntax",
+]
+
+[[package]]
 name = "dorc-syntax"
 version = "0.0.0"
 dependencies = [
