@@ -69,10 +69,19 @@ aligns the function's name with its own rc-semantic (aggregate = predicted-rc) a
 inv-one-observable's own verb ("the oracle … *predicts* per-channel values"). Mechanical
 global churn explicitly sanctioned, historical naming-truth explicitly waived (task #18;
 sequenced AFTER the in-flight P5 closer integrates — it is mid-flight in these files).
-PENDING the human's ack: the reservation-collapse — the renamed `predict()` absorbs the
-`inv-probe-sourced-values` carve-out occupancy (future declared-output values EXTEND
-`predict()` rather than minting a new sibling), leaving the family as: `predict()` predicts
-channels; `converged()`/`diverged()` decide.
+The reservation-collapse is ACKED (human, same day): the whole predict-output-shaped
+contract-surface is exactly two invocation-contracts — "we call `predict()` when we need you
+to SIMULATE the command" and "we call `converged()`/`diverged()` when we need to know whether
+system-state is STEADY." Future declared-output values EXTEND `predict()`; no third sibling.
+Conductor boundary-notes from the logic-check (neither breaks the collapse): (i) state-FACTS
+(the marks/establishes) are neither output- nor verdict-shaped — they ride `predict()`'s body
+as annotations and travel the probe-report lane; identity-annotations' canonical home stays
+`predict()` (the verdict-functions just consume argv). (ii) THE ONE TO NOT FORGET (build-slice
+reconciliation): post-build there must be ONE convergence source for LICENSING at vouched
+sites — the verdict-function's partition result — with the fact-plane's ambient-convergence
+machinery serving reasoning/display/propagation, never a second license-source; two
+convergence oracles for one site is the model-disagreement bug re-entering through the back
+door. Mark the classifier accordingly when the tier builds.
 
 ## Residue + routing
 
