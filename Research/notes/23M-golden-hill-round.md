@@ -272,10 +272,19 @@ above); result:
 
 ## PRIOR-ART + THE 236b RELATIONSHIP (surfaced 2026-07-03 — MUST reconcile before #19 proceeds)
 
-Grep-and-read of the corpus surfaced that MUCH of this round RE-DERIVES `notes/236b` (the 233
-crosscheck's frame-problem-alternatives pass — already adversarially crosschecked, 18 findings +
-structural repairs), which was earmarked for the placement-spectrum round (#11), NOT #19. **#19
-and #11 are ONE problem-space.** Mapping:
+CORRECTION (2026-07-03, human — the conductor got reverse-sycophancy'd on first pass): 236b is
+a SUBAGENT's adversarial-crosscheck output = SAME SLOP-TIER as 23M, NOT academic prior-art, and
+was de-centered by the human FOR A REASON (point 3 below). Its existence is not authority. Two
+things are true and were mis-framed on first pass:
+- **The re-derivation (23M ≈ 236b's static half) is MAXIMUM-VALUE SIGNAL, not wasted effort.**
+  Two INDEPENDENT passes through the slop converging on the same mechanism (footprints,
+  invalidation-bases, entity-granular poisoning) is one of the only trustworthy signals when
+  working through unreviewed AI output. Convergence ⇒ the static-footprint mechanism is probably
+  RIGHT. (Re-value all such convergences this way.)
+- **236b-alt1 (the barrier / dynamic re-observation) is DOA for #19, and the spine is VINDICATED
+  — see the consent-wall kill below. #19 and #11 are DIFFERENT PRODUCTS, not one problem-space.**
+
+Mapping of the re-derivation (convergence = signal the STATIC mechanism is sound):
 - 23M "derived footprint = probe-time entity-set" = **236b-alt3** (probe-computed manifests, `dpkg -L`).
 - 23M "backing = probe-read-set" = **236b-alt2** (generation-probes: a kind-owner's digest of the
   substrate its probes read — a per-kind change-detector / generation-token; MORE developed).
@@ -285,30 +294,39 @@ and #11 are ONE problem-space.** Mapping:
 - The admin-lever gap I never named = **236b-alt4** (admin's one-line book-local stub =
   `changed_when:`/`creates:` recast in sh — the missing cheap rung; 236b-fail9).
 
-THE BIG ONE 23M MISSED — **236b-alt1, the barrier / OCC-revalidation.** The whole 23M spine
-("233 is permanent; someone must promise completeness") rests on 236b-fd1's FALSE PREMISE
-("proof is static-only"). You need NOT statically prove disjointness (which needs the
-completeness-claim); you can RE-OBSERVE the crossing facts AFTER the wall runs (apply-time,
-read-only, batched) — frame-free by OBSERVATION not testimony — and **elide SURVIVES** (the
-re-observation feeds the fact-plane). Structure:
-- #19 static-disjointness (footprint ∩ backing = ∅ ⇒ elide, skip even the re-check) = the
-  FAST-PATH OPTIMISM.
-- #11/236b barrier (re-observe crossing facts post-wall ⇒ elide if still-true) = the CORRECTNESS
-  FLOOR that needs NO completeness-claim.
-- 233's guard = the degenerate barrier (re-observe inline at the site).
+THE CONSENT-WALL KILL (human, 2026-07-03 — load-bearing; this is WHY the barrier was
+de-centered, and why the spine STANDS): 236b-alt1's barrier re-observes crossing facts AFTER the
+wall runs — but the wall runs during APPLY, and:
+1. the wall runs during apply, when the user has ALREADY consented;
+2. the user can only consent once they've SEEN the plan;
+3. seeing the plan CONSUMES attention;
+4. elision-as-a-concept exists to CONSERVE attention.
+⇒ dynamic-proof-driving-elision is DOA: it spends the very currency it works to conserve. A
+dynamically-decided line cannot be ABSENT from the consented plan (probe is non-mutating, so the
+post-wall world is unobservable before the plan renders); at best it's a CONTINGENT line ("will
+run if re-check fails") — PRESENT, and a conditional costs MORE attention than a plain line. The
+barrier conserves PERFORMANCE (skip work at apply), categorically NOT attention.
 
-**The naked-233 residue this round agonized over LARGELY DISSOLVES under 236b.** 236b's REPAIR-3
-(unconditional-tripwire, from its own crosscheck F6/F8): the kind's generation-probe runs at
-EVERY wall regardless of footprints — a footprint is plan-time optimism + attribution, never
-evidence-suppression. So a within-kind SYNONYM that makes static-disjointness wrong is confronted
-by the kind's generation-probe (which digests the whole substrate → moves when ANY entity
-changes, synonym or not) → contradiction → loud revoke → safe re-execution. The naked synonym
-residue = 23M working the static tier IN ISOLATION from the barrier floor 236b already designed.
-Honest caveats (not free): needs a cheap generation-substrate per kind (236b-oq2; RAM-state kinds
-stay guard/run), needs segmented-apply engine work (a subset of 22H), and 236b's OWN central open
-question is unresolved — the approval-contract for contingent plans (236b-oq1/F14: "elided
-contingent on wall-revalidation, else runs" — is that within what the user approved?) + a
-TOCTOU-weld re-ruling (walls-only).
+**Consequence — the spine is VINDICATED, the naked residue is IRREDUCIBLE.** The attention
+product REQUIRES trusting a static plan-time proof with NO runtime net — because any net either
+costs attention (disclosed contingency) or hides risk (undisclosed → violates
+rul-attention-honesty). So the naked-233 residue is not a bug a cleverer mechanism dissolves; it
+is THE PRICE of the attention product, by construction. The golden hill is dangerous by
+construction — which is exactly why it is the golden hill and not the default. (My first-pass
+"236b dissolves the residue via unconditional generation-probe tripwire" was wrong twice:
+reverse-sycophancy, AND the dissolution is apply-time, after attention is spent — the tripwire is
+a PERFORMANCE-tier safety net, and to be honest it must be disclosed, which re-costs attention.)
+
+**#19 ≠ #11.** #19 (the golden hill) = the ATTENTION product = elide lines from the plan BEFORE
+consent = STATIC proof ONLY. #11/236b barrier = the PERFORMANCE product = skip work at apply =
+dynamic, offers the attention goal NOTHING. Different products; do not collapse them.
+
+**What survives from the 236b family for #19:** 236b-alt5 (measure → RATIFY → verify) is NOT
+dynamic-proof — it's measured evidence (prior runs, eBPF) RATIFIED into a static claim BEFORE the
+plan, so it pays attention ONCE (the human's "the consent-wall is a one-time thing") and
+amortizes forever. That is just static proof with better evidence; it survives the consent-wall.
+The ordinary authored footprint is the same shape: the oracle-AUTHOR pays the attention once, in
+the library, amortized across all users forever (the community-library value-prop).
 
 ACADEMIC VOCAB MAP (from `learning-path/gradual-success-typing.ai-pointers.md`, already curated —
 the research agent should VALIDATE + deepen, not re-gather):
@@ -323,9 +341,11 @@ the research agent should VALIDATE + deepen, not re-gather):
   equivalence/**ontology alignment**; `owl:sameAs`; record linkage) — explicitly flagged as the
   deferred hard-corner, NOT the gradual-encoding question. THE one genuinely-unresearched cell,
   and where the research agent should dig hardest.
-- barrier / re-observe-after-interference = **OCC (optimistic concurrency control)** + **incremental
-  recomputation / cache-invalidation** (build systems `075`; Mokhov's verifying-trace rebuilder,
-  cited in 236b-alt2; self-adjusting computation / salsa/Adapton) — the research agent's second dig.
+- barrier / re-observe-after-interference = **OCC** + **incremental recomputation** (build systems
+  `075`; Mokhov verifying-trace rebuilder; salsa/Adapton) — relevant to the PERFORMANCE product
+  (#11), NOT the attention product (#19), per the consent-wall kill. Research it for #11, not #19.
+- measured-evidence-ratified-static (alt5) = **profile-guided optimization** shape + the
+  record-linkage/entity-resolution literature (for turning traces into ratified entity-claims).
 
 ## Open, remaining (agenda)
 - **derived-footprint = a probe-time ENTITY-SET** (unlocked by entity-granular poisoning — the
