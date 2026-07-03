@@ -21,9 +21,14 @@ pivot (incl. the human's `a92ad31` root-doc rewrite + the new USER_STORY.md); bo
 *the pivot is sound; the seam is docs-narrating-ahead-of-pins.* Reviews `23Ia`/`23Ib`,
 adjudication **`23J`** (headline product: the **rc-soundness cluster** — the guard consumes
 aggregate in-band exit status while design claims ride per-mark engine-interpreted semantics;
-three facets, one gap; being settled IN-ROUND, in-conversation — the human ruled it does not
-warrant its own round; seeds `notes/23K` + `23J`). Repairs → task #15 (post-closeout); the
-human's root-doc queue → task #16.
+three facets, one gap). **SETTLED IN-ROUND 2026-07-02, STAMPED — `notes/23L` + the new
+spike/CLAUDE.md interface-rulings block:** rul-role-split (check() keeps incumbent
+predicted-rc; converged()/diverged() is the verdict-function, sense declared by name, owner
+of the apply-rc mint) + rul-rc-partition (0/1/≥2 = the POSIX convention blessed; minimal
+guard-capable oracle back to a one-line passthrough; declared-dual glue gives lossless
+inversion, restoring structural backwards-guard protection; don't-collapse is the authored
+contract). Re-derived pins → task #15; vouch SPELLING still human-reserved; doc-consequences
+→ task #16. Repairs → task #15 (post-closeout); the human's root-doc queue → task #16.
 
 **State:** the `plans/233` design-crisis is **formally closed**. The verdict architecture is
 ternary — **{elide, guard, run}** — where a `guard` inserts the oracle's own stripped check in

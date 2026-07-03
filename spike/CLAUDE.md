@@ -204,6 +204,29 @@ and where* (→ `Research/notes/20x-*.md`, append-only), not green tests.
   above guards; defensive surfacing of broken world-state is the oracle's job on its own
   channels.
 
+## Standing human rulings (round-23 interface additions; STAMPED 2026-07-02 — full text + rationale `Research/notes/23L`, seeds `23K`/`23J`)
+
+- **rul-role-split.** A rich oracle is a family of role-sibling functions: `foo.check()`
+  (facts + prediction; its aggregate status keeps the INCUMBENT predicted-rc meaning — the
+  round-20 elision-substitution weld is untouched) and `foo.converged()`/`foo.diverged()`
+  (the guard-verdict function; sense DECLARED BY NAME; its body is the ONE authored place
+  tool-rc → guard-verdict crosses; its aggregate under rul-rc-partition IS the verdict, which
+  makes the oracle contract the owner of the verdict → apply-rc mint). Sibling ≠ st-2:
+  role-split, whole authored functions invoked with the site's argv — never per-kind filing.
+  `foo.predict()` stays reserved-unbuilt (the inv-probe-sourced-values carve-out's future
+  occupant).
+- **rul-rc-partition.** A verdict-function's exit status reads against one fixed table — the
+  POSIX utility convention, blessed: 0 = the named sense holds; 1 = its complement; ≥2 =
+  CONFUSED, and confusion always lands on run. The probe lane reads the same partition as the
+  ternary plan-verdict (0/1/≥2 → converged/diverged/can't-tell); apply collapses can't-tell →
+  run in the glue. Direct glue = the welded `( foo_converged args ) || <original bytes>`,
+  unchanged. Declared-dual glue = engine-emitted mechanical sense-flip
+  (`( foo_diverged args; [ $? -eq 1 ] ) || <original bytes>`) — lossless inversion, restoring
+  structural backwards-guard protection. Author's negative contract (judgment-tier till
+  linted): never collapse statuses out of a verdict-function — no `!`, no `|| true`, mind
+  pipeline tails. The rc/verdict NAMING DISCIPLINE (`23K §2`) binds all design text: bare
+  "rc" is banned; qualify as tool-rc / predicted-rc / apply-rc; verdicts are never rc's.
+
 ## Hard invariants (do not violate; cite the slug when you rely on one)
 
 - **inv-no-unsafe** — `unsafe` is `forbid`-den workspace-wide. No FFI. No
