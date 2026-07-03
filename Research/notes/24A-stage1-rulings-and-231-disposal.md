@@ -404,3 +404,25 @@ available in a hostile correctness-domain. Type-contract design is the ONE sanct
 conductor-code domain (pure design instruction, no churn/trial-and-error) — conductor
 specifies type shapes in builder briefs; builders implement against them. (Amplifies
 IMPLEMENTATION.md's standing over-typing stance and assigns the duty.)
+
+**The arc-win (conductor prospective design, human-commissioned 2026-07-03): the
+CLAIM-TIER TRUST ALGEBRA.** Surveyed candidates (coordinate/identity algebra; probe-lane
+inertness typing; two-surfaces newtypes; channel completeness) all reduce to one question —
+*what tier of claim may feed what tier of decision* — which is also the shape of every
+crisis in the corpus (233 = silence consumed as license; the dangerous middle =
+partial-description as completeness; the HEAD vouchless elide = fact-tier consumed as
+mutation-skip license; plus the prose disciplines: vouch-never-in-fact-plane,
+proviso-read-erasure, May-never-licenses, at-least-never-at-most). The win: a phantom-
+indexed `Claim<T: Tier, Payload>` — `FactTier` (probe-measured/derived; licenses
+read-reproduction) / `JudgmentTier` (authored acceptance: vouches, footprints, bridges;
+licenses per its rung — the OPEN ladder slots in as the rung-parameter) / `SilenceTier`
+(representable, licenses NOTHING — "default" becomes spellable-and-useless, never
+absent-and-ambiguous); one-way demotion toward display; license-mints DEMAND exact tiers
+in their signatures (the Stage-3 elide-weld IS the signature change). Five hand-maintained
+disciplines collapse into one compile-error family. Birth: Stage 3 (judgment-tier first
+enters the decision path). Hardest payoff: Stage 5 (a co-reference bridge = a judgment-tier
+IDENTITY claim entering disjointness — the design's most dangerous tier-crossing, made
+loud). Stage-2's TC-1..4 verified forward-compatible embryos (the algebra wraps, never
+rewrites). Honest bound, to live in the module doc: types protect the PLUMBING (no claim
+consumed above its authority), never the TRUTH of a judgment — 233 stays permanent.
+Threaded into task #5's contract; Stage 5 inherits.
