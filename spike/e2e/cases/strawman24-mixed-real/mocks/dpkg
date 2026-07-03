@@ -1,0 +1,7 @@
+#!/bin/sh
+# INERT shim — dual-use: the book's Query guard (`dpkg -s nginx`) AND the pkgstate probe
+# (`dpkg -s -- <pkg>`). HOST: nginx installed ⇒ `dpkg -s nginx` exits 0 ⇒ the guard holds ⇒
+# the `|| apt-get install nginx` branch is dead (install omitted). Read-only; logs for run-set.
+. "${0%/*}/.log"; _dorc_logged "$@"
+pkg=$2; [ "$pkg" = "--" ] && pkg=$3
+case $pkg in nginx) exit 0 ;; *) exit 1 ;; esac

@@ -1,0 +1,5 @@
+# probe-results: site-keyed records (task-D1 WIRE). Grammar:
+#   site <leafid> effect=<holds|absent|cant-tell> [rc=<n>]
+# (the records the rendered probe emits; effect from the probe command rc). Establish sites
+# are effect-only (rc firewalled from the fold, item-4); a Query guard carries its fold rc.
+# (no records: no oracle supplied ⇒ every site is unresolvable ⇒ nothing is probed ⇒ nothing elides)

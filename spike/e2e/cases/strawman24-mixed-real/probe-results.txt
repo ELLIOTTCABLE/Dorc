@@ -1,0 +1,11 @@
+# probe-results: site-keyed records (task-D1 WIRE). Grammar:
+#   site <leafid> effect=<holds|absent|cant-tell> [rc=<n>]
+# (the records the rendered probe emits; effect from the probe command rc). Establish sites
+# are effect-only (rc firewalled from the fold, item-4); a Query guard carries its fold rc.
+# site 0 = pkgstate:nginx#installed — the `dpkg -s nginx` Query guard (holds rc=0 ⇒ the || install is dead).
+# site 1 = package:nginx#installed (the omitted install). site 2 = package:curl (holds ⇒ elides).
+# site 3 = package:oldpkg (absent ⇒ diverged ⇒ runs). vim is past the `hork` wall ⇒ unresolvable.
+site 0 effect=holds rc=0
+site 1 effect=holds
+site 2 effect=holds
+site 3 effect=absent

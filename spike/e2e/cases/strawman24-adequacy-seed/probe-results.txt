@@ -1,0 +1,7 @@
+# probe-results: site-keyed records (task-D1 WIRE). Grammar:
+#   site <leafid> effect=<holds|absent|cant-tell> [rc=<n>]
+# (the records the rendered probe emits; effect from the probe command rc). Establish sites
+# are effect-only (rc firewalled from the fold, item-4); a Query guard carries its fold rc.
+# site 0 = package:nginx#installed (holds ⇒ converged ⇒ elides). THE CALIBRATION TARGET:
+# converged≠no-op — the install would still upgrade a stale nginx, invisible to this installed-only probe.
+site 0 effect=holds

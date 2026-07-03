@@ -1,0 +1,2 @@
+ran: systemctl enable nginx
+ran: apt-get install -y curl

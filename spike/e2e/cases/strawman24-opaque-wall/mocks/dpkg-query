@@ -1,0 +1,6 @@
+#!/bin/sh
+# INERT probe shim — `dpkg-query -W <pkg>`. HOST: nginx installed (rc 0 ⇒ holds). Only the
+# PRE-wall nginx site is probed (curl is past the opaque `hork` wall ⇒ unresolvable ⇒ never
+# probed). Read-only; logs for symmetry.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0

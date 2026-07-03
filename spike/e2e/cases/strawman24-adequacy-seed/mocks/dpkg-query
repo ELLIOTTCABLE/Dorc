@@ -1,0 +1,7 @@
+#!/bin/sh
+# INERT probe shim — `dpkg-query -W nginx`. HOST: nginx installed (rc 0 ⇒ holds ⇒ converged).
+# THE ADEQUACY SEED (23O §2): the probe observes only INSTALLED-ness, not version — it is
+# state-INDEPENDENT, so it cannot express "installed but a newer version is pending". That is
+# exactly why the differential cannot see the converged≠no-op bite here (see book.sh header).
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0

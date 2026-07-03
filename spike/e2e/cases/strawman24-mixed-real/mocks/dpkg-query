@@ -1,0 +1,6 @@
+#!/bin/sh
+# INERT probe shim — the package kind's `dpkg-query -W <pkg>` ($2=pkg). HOST: oldpkg NOT
+# installed (rc 1 ⇒ absent ⇒ `apt-get install oldpkg` diverged ⇒ runs); nginx/curl/vim
+# installed (rc 0 ⇒ holds). Read-only; logs for symmetry.
+. "${0%/*}/.log"; _dorc_logged "$@"
+case ${2:-} in oldpkg) exit 1 ;; *) exit 0 ;; esac
