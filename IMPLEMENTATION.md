@@ -230,7 +230,7 @@ then Dorc can know nothing about it (the frame problem.) In particular, if
 if those commands can be safely elided anymore*, after the unmodeled, opaque
 command runs.
 
-As a motivating example:
+As a motivating example (see-also the USER_STORY.md):
 
 ```sh
 apt-get install -y nginx      # well-known tool w/ a battle-tested oracle
@@ -250,8 +250,8 @@ package-management tool that *specifically uninstalls `nginx`* in some cases.)
 So, when Dorc's 'knowability-model' of the world 'degrades' past a certain point
 in the CFG (the "poison wall"), we're left in a state where *probing* is
 relatively useless; and Dorc's *value proposition* changes: we can no longer
-'fully elide' commands (i.e. that `systemctl` line can *never* be removed safely
-from the planning-result "apply-script".) In this state, we still have plenty of
+'fully elide' commands (i.e. that `systemctl` line cannot be removed safely from
+the planning-result "apply-script".) In this state, we still have plenty of
 information about the script, though, and we attempt to degrade into a
 secondary, still-useful mode, by *runtime-guarding* that command: wrapping it in
 a test that will skip it if, indeed, the convergence-state holds at runtime
@@ -272,6 +272,35 @@ devolve to "write a ~three-line convergence-focused oracle so `hork` itself can
 elide" (since elision casts no poisoned shadow.) Further enhancement providing
 reporting about `hork`'s actual first-order footprint will further improve
 behaviour to the point where it can avoid poisoning *even when unconverged*.
+
+
+### Inter-oracle collaboration, global state, and the golden hill
+
+The above is somewhat mollified if one writes a basic oracle for `hork`. A
+simple truth: if `hork` never runs, `hork` *cannot* poison something unexpected
+between `apt-get` and `systemctl`. Thus, the trivially-true easiest route around
+the danger is to *make `hork` not run*.
+
+The simplest route to that is to write the most-minimal oracle that helps Dorc
+fully-elide `hork` itself, in isolation: a convergence-test thereof, plus the
+author's blessing to act on it (FIXME: spelling/details unsettled):
+
+```sh
+hork.is_converged() { hork --check "$@" ;}
+```
+
+This *doesn't* buy you all of Dorc's functionality, but it buys the most of it,
+with the least effort; now (again, speaking in a vaccuum, because all of this is
+modulo *other* state-actors and CFG participants), as long as `hork --dry-run`
+passes, Dorc can safely make assumptions about `apt-get` speaking to
+`systemctl`. Abstract-interpretation is unpoisoned, and the richer machinery can
+run for those other commands; the poison-wall is lifted.
+
+However, for *better* behaviour, to *fully* lift the poison-wall in all cases
+(i.e. enable Dorc to elide *later* commands, even when probing surfaces that
+hork is diverged), you must ....
+
+FILLME
 
 
 By-contract and by-dictate
