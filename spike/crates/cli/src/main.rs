@@ -925,6 +925,9 @@ fn disposition_tag(disposition: &dorc_plan::Disposition) -> &'static str {
         Disposition::Run => "run",
         Disposition::Replace(_, _) => "replace",
         Disposition::Omit { .. } => "omit",
+        // A guard's ledger tag (gate-6's widened judge reads it — cf-5/cf-6): gate-5 skips it (a
+        // guarded site's run-set argv is the check invocation, not the bare book's mutator argv).
+        Disposition::Guard(_) => "guard",
     }
 }
 

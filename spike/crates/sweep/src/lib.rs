@@ -244,6 +244,16 @@ fn plan_fingerprint(plan: &Plan, i: &Interner) -> String {
         let disp = match &step.disposition {
             Disposition::Run => "run".to_owned(),
             Disposition::Omit { .. } => "omit".to_owned(),
+            // The guard bucket (24D §2 / the Stage-3 sweep extension): fingerprint a guard by its
+            // fact + verdict funcname, so a nondeterministic guard mint perturbs the determinism
+            // comparand. NB the current scenario generator mints no vouches, so no guard appears in
+            // the sweep yet (tc-sweep-guard-scenarios deferred); the arm keeps the fingerprint
+            // total across the new disposition.
+            Disposition::Guard(license) => format!(
+                "guard(fn={},fact={})",
+                license.insert().fn_name(),
+                fact_label(license.fact(), i)
+            ),
             Disposition::Replace(license, stand_in) => {
                 let survival = license.derivation().survival.as_ref().map_or_else(
                     || "clean".to_owned(),

@@ -884,8 +884,11 @@ fn attribute_door(
             }
         }
         Disposition::Run => Door::Runs(block_reason(class, consumed, probed, no_probe_results)),
-        // A NEW Disposition variant the build predates ⇒ visible blind spot.
-        other => Door::Unattributed(format!("{other:?}")),
+        // The guard tier (24D §2) is a NEW disposition this coverage crate does not yet model — an
+        // honest visible blind spot (no guard reaches the corpus dashboard; Stage-3 guard-coverage
+        // is deferred). Named explicitly (the minimal mirror-fix for the Guard variant) so a
+        // FURTHER new disposition still breaks this match loudly (the compiler-as-checklist).
+        Disposition::Guard(_) => Door::Unattributed("Guard".to_string()),
     }
 }
 

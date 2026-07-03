@@ -188,6 +188,16 @@ fn canon_disposition(d: &Disposition) -> String {
             )
         }
         Disposition::Omit { controller } => format!("Omit controller={}", controller.0),
+        // A guard's identity is its fact + the emitter code (funcname/invocation/sense/preamble);
+        // its attribution overlay is EXEMPT (`GuardInsert::canonical` drops it), so a plan
+        // differing only in guard attribution digests identically (24D §2).
+        Disposition::Guard(license) => {
+            format!(
+                "Guard fact={} {}",
+                canon_fact(license.fact()),
+                license.insert().canonical(),
+            )
+        }
     }
 }
 

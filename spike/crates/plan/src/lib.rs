@@ -40,8 +40,10 @@ use dorc_analysis::effect::{FactKey, InlineSite, SkipClass};
 use dorc_analysis::lattice::{May, Powerset};
 use dorc_analysis::value::{ValueFlow, ValueOf};
 use dorc_core::{
-    AstId, Channel, EntityRef, Grade, Interner, Observable, Predicted, Rc, Symbol, Verdict,
+    AstId, Channel, EntityRef, Grade, Interner, Judgment, Observable, Predicted, Rc, Symbol,
+    Verdict,
 };
+use dorc_oracle::verdict::VerdictSense;
 use dorc_syntax::ast::{Ast, NodeKind};
 
 mod fold;
@@ -672,6 +674,184 @@ impl StandIn {
     }
 }
 
+// ===========================================================================
+// The guard tier (rul-ternary-verdict / rul-guard-license / 24D §2 — the third verb)
+// ===========================================================================
+
+/// The judgment-plane **vouch descriptor** — the payload a [`Judgment<VerdictVouch>`] carries
+/// (`core::claim`, TC-tier-4's `Vouched<VerdictVouch>` inner). It is what the guard emitter needs
+/// to ship the oracle's own verdict body strip-only and invoke it at position, plus the
+/// attribution label — and NOTHING that is a fact-plane value (TC-tier-3: a vouch informs a
+/// license, never becomes an ambient fact). Built by the cli edge from the lifted verdict function
+/// (`dorc_oracle::verdict`); the kernel receives it as data (`inv-determinism` — no oracle lift in
+/// the kernel). All fields are pre-resolved Strings so the byte-floored span render
+/// ([`Plan::render_apply`]) needs no interner.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct VerdictVouch {
+    /// The mangled verdict funcname (`apt_get__is_converged`) — the preamble-dedup key AND the
+    /// invocation's word 0.
+    fn_name: String,
+    /// The oracle's own verdict body, shipped STRIP-ONLY (`dorc_oracle::predict::strip_verdict`) —
+    /// the guard preamble def, the SAME authored bytes the probe lane self-vouches
+    /// (rul-ternary-verdict: the `predict()` IS the oracle; no engine-synthesized sh).
+    preamble: String,
+    /// The full check invocation the guard runs at position (`apt_get__is_converged install -y
+    /// curl`) — the cli builds it (funcname + the site's resolved argv). Ships as the `||`-LEFT.
+    invocation: String,
+    /// Which sense the author declared (rul-role-split): selects the `||`-glue — direct for
+    /// [`VerdictSense::Converged`], rul-rc-partition's lossless sense-flip for
+    /// [`VerdictSense::Diverged`].
+    sense: VerdictSense,
+    /// The fact's kind name (`package`) for the `# dorc: guard [<kind> converged-vouch; …]`
+    /// attribution comment (cli-resolved; the render has no interner).
+    kind_label: String,
+}
+
+impl VerdictVouch {
+    /// Build a vouch descriptor from the cli-resolved verdict-function data (the sole constructor;
+    /// the cli edge owns the lift + strip + argv-render). `fn_name`/`invocation` are the mangled
+    /// name and the full invocation; `preamble` is the stripped body; `sense` the declared sense;
+    /// `kind_label` the fact's kind for attribution.
+    #[must_use]
+    pub fn new(
+        fn_name: String,
+        preamble: String,
+        invocation: String,
+        sense: VerdictSense,
+        kind_label: String,
+    ) -> Self {
+        Self {
+            fn_name,
+            preamble,
+            invocation,
+            sense,
+            kind_label,
+        }
+    }
+}
+
+/// The **guard insertion** the render overlays at a site (rul-guard-license / crisis-closure
+/// carve-out, `inv-probe-sourced-values`): it mints NO values — no [`StandIn`], no [`Predicted`],
+/// no [`Observable`]. On PASS the check's own live rc is the line's rc; on fall-through the
+/// original command runs and its observables are genuine. Carries the consumed vouch's emitter
+/// data plus the plan-time probe [`Verdict`] (attribution only — the guard re-decides LIVE at
+/// apply, never trusting this stale prediction; that is the whole point, X-drift).
+#[derive(Debug, Clone)]
+pub struct GuardInsert {
+    vouch: VerdictVouch,
+    probe_verdict: Verdict,
+}
+
+impl GuardInsert {
+    /// The mangled verdict funcname (the preamble-dedup key).
+    #[must_use]
+    pub fn fn_name(&self) -> &str {
+        &self.vouch.fn_name
+    }
+
+    /// The guard preamble def to ship (deduped per [`fn_name`](Self::fn_name)).
+    #[must_use]
+    pub fn preamble(&self) -> &str {
+        &self.vouch.preamble
+    }
+
+    /// The erasability-IDENTITY canon (24D §2): the DECISION-relevant guard bytes (funcname,
+    /// invocation, sense, preamble) — the artifact code. EXCLUDES the attribution (the probe word,
+    /// the kind label): those OVERLAY the render as display and are erasability-EXEMPT, exactly as
+    /// `Derivation.survival` is, so a plan differing only in guard attribution digests identically.
+    /// A guard carries NO `ProvId`/arena witness (it mints no values — the carve-out), so there is
+    /// no receipt to strip here; this canon is the whole guard.
+    pub(crate) fn canonical(&self) -> String {
+        format!(
+            "fn={} inv={} sense={:?} preamble={}",
+            self.vouch.fn_name, self.vouch.invocation, self.vouch.sense, self.vouch.preamble
+        )
+    }
+
+    /// The plan-time probe word for the attribution comment (`holds`/`absent`/`cant-tell`). NB:
+    /// disclosure only — the guard's runtime rc, not this, decides the fall-through.
+    fn probe_word(&self) -> &'static str {
+        match self.probe_verdict {
+            Verdict::Converged => "holds",
+            Verdict::Diverged => "absent",
+            Verdict::Unknown => "cant-tell",
+        }
+    }
+
+    /// Render the guarded line: `( <check-invocation> ) || <original>   # dorc: guard [<kind>
+    /// converged-vouch; probe: <word>]` (24D §2 / rul-ternary-verdict). The original bytes survive
+    /// VERBATIM as the `||`-right (no code path removes them — the two never-clauses). The
+    /// [`VerdictSense::Diverged`] glue is rul-rc-partition's lossless sense-flip
+    /// `( f_is_diverged args; [ $? -eq 1 ] ) || <original>`, restoring the converged sense so the
+    /// same `||`-skip semantics hold. `original` is the site's verbatim command bytes.
+    #[must_use]
+    fn render_line(&self, original: &str) -> String {
+        let check = match self.vouch.sense {
+            VerdictSense::Converged => format!("( {} )", self.vouch.invocation),
+            VerdictSense::Diverged => format!("( {}; [ $? -eq 1 ] )", self.vouch.invocation),
+        };
+        format!(
+            "{check} || {original}   # dorc: guard [{} converged-vouch; probe: {}]",
+            self.vouch.kind_label,
+            self.probe_word(),
+        )
+    }
+}
+
+/// The witness authorising a **guard** — the third verb of rul-ternary-verdict's {elide, guard,
+/// run}. Mirrors [`ReplaceLicense`]'s private-fields / sole-mint pattern (TC-3-shaped): the ONLY
+/// way to obtain one is [`GuardLicense::mint`], which DEMANDS a [`Judgment<VerdictVouch>`] (the
+/// vouch; TC-tier-2) — no vouch ⇒ no `GuardLicense` ⇒ run (rul-guard-license). A plan emitter
+/// accepts a `GuardLicense`, never a `bool`, so a guard cannot be spelled without the judgment.
+///
+/// **Uncheckable invariant (rul24-overtype):** no vouch ⇒ no `GuardLicense` ⇒ run. The vouch is
+/// judgment-tier and NEVER enters the fact-plane (rul-guard-license); the guard re-verifies LIVE
+/// at apply and never trusts the plan-time verdict it carries (X-drift). Types protect the
+/// plumbing — that the guard is licensed by an authored judgment — never the truth of that
+/// judgment (a wrong verdict function still falls through to run, by the `||` glue).
+#[derive(Debug, Clone)]
+pub struct GuardLicense {
+    fact: FactKey,
+    insert: GuardInsert,
+}
+
+impl GuardLicense {
+    /// Mint a guard iff the plan-time probe [`Verdict`] is [`Verdict::Converged`] (jc-mint-policy
+    /// m-a: converged-past-wall ONLY — a guard at a predicted-change site buys nothing, flagship
+    /// site 3). CONSUMES the [`Judgment<VerdictVouch>`] by value (TC-tier-2: a [`core::claim::Fact`]
+    /// or a silence claim does not satisfy this signature). A diverged/unknown verdict ⇒ `None` ⇒
+    /// the site runs (`inv-kfail`).
+    #[must_use]
+    pub fn mint(
+        fact: FactKey,
+        vouch: Judgment<VerdictVouch>,
+        probe_verdict: Verdict,
+    ) -> Option<GuardLicense> {
+        if probe_verdict != Verdict::Converged {
+            return None;
+        }
+        Some(GuardLicense {
+            fact,
+            insert: GuardInsert {
+                vouch: vouch.into_vouch(),
+                probe_verdict,
+            },
+        })
+    }
+
+    /// The fact this guard re-verifies (attribution / the why-lens).
+    #[must_use]
+    pub fn fact(&self) -> FactKey {
+        self.fact
+    }
+
+    /// The guard insertion (the emitter data — the render reads it).
+    #[must_use]
+    pub fn insert(&self) -> &GuardInsert {
+        &self.insert
+    }
+}
+
 /// What the plan does with one leaf.
 #[derive(Debug, Clone)]
 pub enum Disposition {
@@ -700,6 +880,15 @@ pub enum Disposition {
     /// consults the same refusal predicate as the render, so a licensed-but-refused
     /// guard keeps its dependent body verbatim too.
     Omit { controller: AstId },
+    /// **Guard** the leaf (rul-ternary-verdict's third verb) — insert the oracle's own verdict
+    /// check before the original bytes: `( <check> ) || <original>`. The original command SURVIVES
+    /// VERBATIM as the `||`-right; on a live PASS it is skipped, on fall-through it runs for real.
+    /// Authorised by a [`GuardLicense`], the only way to reach here (no vouch ⇒ no license ⇒ run).
+    /// Distinct from [`Replace`](Disposition::Replace): a `Replace` value-substitutes an
+    /// already-proven elision; a `Guard` DEFERS the decision to a fresh apply-time re-check (the
+    /// past-a-wall fallback — the plan-time convergence can no longer be trusted, so the guard
+    /// re-reads live). Mints no values (the crisis-closure carve-out, `inv-probe-sourced-values`).
+    Guard(GuardLicense),
 }
 
 /// One leaf of the plan: its stable id, its source back-map (`dn-3`), the verbatim
@@ -1737,6 +1926,7 @@ impl Plan {
             match step.disposition {
                 Disposition::Replace(_, _) => c.elide += 1,
                 Disposition::Omit { .. } => c.omit += 1,
+                Disposition::Guard(_) => c.guard += 1,
                 Disposition::Run => c.run += 1,
             }
         }
@@ -1774,6 +1964,38 @@ impl Plan {
                 Disposition::Omit { .. } => {
                     out.push_str(&render::apply::flat_omit_block(step.leaf.0, &step.sh));
                 }
+                // A guard is inserted inline as real code: `( check ) || <original>` — the
+                // original bytes survive verbatim as the `||`-right (rul-ternary-verdict). The
+                // preamble defs are emitted once, up front, by [`guard_preamble`](Plan::guard_preamble).
+                Disposition::Guard(license) => {
+                    out.push_str(&license.insert().render_line(&step.sh));
+                    out.push('\n');
+                }
+            }
+        }
+        out
+    }
+
+    /// The guard **preamble** (24D §2 / rul-ternary-verdict): the verdict-function defs the guarded
+    /// lines invoke, each emitted ONCE (deduped by funcname; sh's last-writer-wins + top-to-bottom
+    /// exec means every invocation sees its own def). Empty when no site guards (so HEAD is byte-
+    /// unchanged). The cli prepends this to the apply artifact, above the guarded lines — the guard
+    /// lane's analogue of the probe's wrapper-def emission. The bodies are shipped STRIP-ONLY (the
+    /// oracle's own bytes; no engine-synthesized sh — the two never-clauses).
+    ///
+    /// A funcname appearing twice is emitted once; a provider with TWO distinct verdict bodies
+    /// under one funcname (the probe's `apt-get`-as-package-and-pkgindex shape) is not modeled here
+    /// (a verdict function has one body; tc-guard-preamble-reemit flags the re-emit case deferred).
+    #[must_use]
+    pub fn guard_preamble(&self) -> String {
+        let mut defined: BTreeSet<&str> = BTreeSet::new();
+        let mut out = String::new();
+        for step in &self.steps {
+            if let Disposition::Guard(license) = &step.disposition
+                && defined.insert(license.insert().fn_name())
+            {
+                out.push_str(license.insert().preamble());
+                out.push('\n');
             }
         }
         out
@@ -1840,7 +2062,10 @@ impl Plan {
         let mut diags = Vec::new();
         for step in &self.steps {
             let would_elide = match &step.disposition {
-                Disposition::Replace(_, _) => true,
+                // A Replace value-substitutes the span; a Guard EDITS it to `( check ) || <orig>` —
+                // both strand a heredoc body, so a heredoc-bearing leaf of either must REFUSE and
+                // run verbatim (X-heredoc: a vouched heredoc site stays RUN, loudly).
+                Disposition::Replace(_, _) | Disposition::Guard(_) => true,
                 Disposition::Omit { controller } => is_neutralised(&by_ast, ast, *controller, 0),
                 Disposition::Run => false,
             };
@@ -1906,6 +2131,14 @@ impl Plan {
                     // — its status is unreachable, never observed).
                     ":".to_string()
                 }
+                // A guard edits the span to `( check ) || <original>`, the original bytes embedded
+                // VERBATIM as the `||`-right (rul-ternary-verdict; the guard preamble def is
+                // prepended once by the cli via [`guard_preamble`](Plan::guard_preamble)). The
+                // heredoc case is already refused at the top of the loop (span cannot cover the
+                // body) — X-heredoc.
+                Disposition::Guard(license) => license
+                    .insert()
+                    .render_line(&command_text(src, ast, step.ast)),
                 // A kept-controller `Omit` (the runtime guard gates it) and a `Run` leaf are
                 // both verbatim — no edit.
                 Disposition::Omit { .. } | Disposition::Run => continue,
@@ -2265,7 +2498,9 @@ fn is_neutralised(
         return match disposition {
             Disposition::Replace(_, _) => !leaf_has_heredoc(ast, node),
             Disposition::Omit { controller } => is_neutralised(by_ast, ast, *controller, depth + 1),
-            Disposition::Run => false,
+            // A guard controller RUNS its check and MAY run the original ⇒ its decision is NOT
+            // reproduced by a `:` body, so (like Run) it is not neutralised (the run-it direction).
+            Disposition::Guard(_) | Disposition::Run => false,
         };
     }
     // Not a plan leaf ⇒ a compound controller. Neutralised iff every Simple leaf under it is.
@@ -2468,6 +2703,160 @@ apt_get__predict() {
     /// common case for the `prove_replaceable` unit tests.
     fn quiet() -> May<Powerset<Channel>> {
         May(Powerset::default())
+    }
+
+    // ---- the guard tier (24D §2): mint-policy + emitter shape (rul-ternary-verdict) ----
+
+    #[test]
+    fn guard_mints_only_on_a_converged_probe_verdict() {
+        use dorc_core::{Judgment, Rung};
+        let vouch = || {
+            VerdictVouch::new(
+                "apt_get__is_converged".to_string(),
+                "apt_get__is_converged() { dpkg-query -W \"$1\" >/dev/null 2>&1; }".to_string(),
+                "apt_get__is_converged install -y curl".to_string(),
+                VerdictSense::Converged,
+                "package".to_string(),
+            )
+        };
+        // jc-mint-policy m-a: a diverged/unknown probe-verdict NEVER guards (a guard at a
+        // predicted-change site buys nothing; `inv-kfail` → run). The mint DEMANDS a
+        // `Judgment<VerdictVouch>` (TC-tier-2) — a fact/silence claim would not typecheck here.
+        assert!(
+            GuardLicense::mint(
+                nginx_fact(),
+                Judgment::authored(vouch(), Rung::Both),
+                Verdict::Diverged
+            )
+            .is_none(),
+            "a diverged probe-verdict must not mint a guard"
+        );
+        assert!(
+            GuardLicense::mint(
+                nginx_fact(),
+                Judgment::authored(vouch(), Rung::Both),
+                Verdict::Unknown
+            )
+            .is_none(),
+            "an unknown probe-verdict must not mint a guard"
+        );
+        let license = GuardLicense::mint(
+            nginx_fact(),
+            Judgment::authored(vouch(), Rung::Both),
+            Verdict::Converged,
+        )
+        .expect("a converged probe-verdict + vouch mints a guard");
+        assert_eq!(license.fact(), nginx_fact());
+    }
+
+    #[test]
+    fn converged_guard_emitter_shape_obeys_the_two_never_clauses() {
+        use dorc_core::{Judgment, Rung};
+        let vouch = VerdictVouch::new(
+            "apt_get__is_converged".to_string(),
+            "apt_get__is_converged() { dpkg-query -W \"$1\" >/dev/null 2>&1; }".to_string(),
+            "apt_get__is_converged install -y curl".to_string(),
+            VerdictSense::Converged,
+            "package".to_string(),
+        );
+        let license = GuardLicense::mint(
+            nginx_fact(),
+            Judgment::authored(vouch, Rung::Both),
+            Verdict::Converged,
+        )
+        .unwrap();
+        // The guard_shape law: `( <check> ) || <original verbatim>   # dorc: guard [...]`.
+        let line = license.insert().render_line("apt-get install -y curl");
+        assert!(
+            line.starts_with(
+                "( apt_get__is_converged install -y curl ) || apt-get install -y curl"
+            ),
+            "converged direct glue + verbatim original: {line}"
+        );
+        assert!(
+            line.contains("# dorc: guard [package converged-vouch; probe: holds]"),
+            "attribution comment: {line}"
+        );
+        // The bytes after the FIRST ` || ` are the verbatim original (never-2 / bytes-verbatim —
+        // exactly what guard_shape_check asserts).
+        let (_lhs, rhs) = line.split_once(" || ").unwrap();
+        let rhs_code = rhs.split("   #").next().unwrap();
+        assert_eq!(
+            rhs_code, "apt-get install -y curl",
+            "original survives verbatim"
+        );
+    }
+
+    #[test]
+    fn diverged_sense_glue_is_the_lossless_rc_flip() {
+        use dorc_core::{Judgment, Rung};
+        // rul-rc-partition: `is_diverged` ships with the engine-emitted sense-flip
+        // `( f_is_diverged args; [ $? -eq 1 ] ) || <original>` — restoring the converged skip sense.
+        let vouch = VerdictVouch::new(
+            "systemctl__is_diverged".to_string(),
+            "systemctl__is_diverged() { ! systemctl is-enabled -- \"$1\"; }".to_string(),
+            "systemctl__is_diverged enable nginx".to_string(),
+            VerdictSense::Diverged,
+            "service".to_string(),
+        );
+        let license = GuardLicense::mint(
+            nginx_fact(),
+            Judgment::authored(vouch, Rung::Both),
+            Verdict::Converged,
+        )
+        .unwrap();
+        let line = license.insert().render_line("systemctl enable nginx");
+        assert!(
+            line.starts_with(
+                "( systemctl__is_diverged enable nginx; [ $? -eq 1 ] ) || systemctl enable nginx"
+            ),
+            "diverged lossless sense-flip glue: {line}"
+        );
+    }
+
+    #[test]
+    fn guard_preamble_dedups_and_counts() {
+        use dorc_core::{Judgment, Rung};
+        let mk = |leaf: u32| {
+            let vouch = VerdictVouch::new(
+                "apt_get__is_converged".to_string(),
+                "apt_get__is_converged() { dpkg-query -W \"$1\" >/dev/null 2>&1; }".to_string(),
+                "apt_get__is_converged install curl".to_string(),
+                VerdictSense::Converged,
+                "package".to_string(),
+            );
+            Step {
+                leaf: LeafId(leaf),
+                ast: AstId(leaf),
+                sh: "apt-get install curl".to_string(),
+                disposition: Disposition::Guard(
+                    GuardLicense::mint(
+                        nginx_fact(),
+                        Judgment::authored(vouch, Rung::Both),
+                        Verdict::Converged,
+                    )
+                    .unwrap(),
+                ),
+            }
+        };
+        let plan = Plan {
+            steps: vec![mk(0), mk(1)],
+        };
+        // Two guards sharing one funcname ⇒ ONE preamble def (sh last-writer-wins; the invocation
+        // sees its own def).
+        assert_eq!(
+            plan.guard_preamble()
+                .matches("apt_get__is_converged()")
+                .count(),
+            1,
+            "preamble deduped by funcname: {}",
+            plan.guard_preamble()
+        );
+        // The exhaustive `disposition_counts` match now feeds the guard bucket (the summary's
+        // guard column becomes real — DispositionCounts forced this wiring).
+        let counts = plan.disposition_counts();
+        assert_eq!(counts.guard, 2);
+        assert_eq!(counts.sites, 2);
     }
 
     /// Run the real pipeline (parse → cfg → value-flow → classify → `compile_probe`) on
@@ -3601,6 +3990,7 @@ apt_get__predict() {
                 Disposition::Run => "run",
                 Disposition::Replace(..) => "replace",
                 Disposition::Omit { .. } => "omit",
+                Disposition::Guard(_) => "guard",
             };
             let disp = |p: &Plan| -> Vec<&'static str> {
                 p.steps.iter().map(|s| tag(&s.disposition)).collect()
