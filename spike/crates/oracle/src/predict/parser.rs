@@ -39,22 +39,35 @@ enum FnRole {
     Predict,
     /// `<provider>.touches` / `<provider>__touches` — the at-most footprint emitter (24A §1b).
     Touches,
+    /// `<provider>.is_converged` / `<provider>__is_converged` — the guard-verdict function
+    /// (rul-role-split; sense declared by name — 0-in-the-named-sense = converged). Its authoring
+    /// IS the vouch (rul24-vouch-is-verdict-authoring, 24A §1c); its body reuses the predict body
+    /// dialect verbatim (argparse + check commands), so one parser lifts it (`FnRole`).
+    IsConverged,
+    /// `<provider>.is_diverged` / `<provider>__is_diverged` — the guard-verdict function in the
+    /// complementary sense (0 = diverged; the engine applies rul-rc-partition's lossless
+    /// sense-flip when shipping it in guard position).
+    IsDiverged,
 }
 
 impl FnRole {
-    /// The period-form suffix (`.predict` / `.touches`): provider is the literal command word.
+    /// The period-form suffix (provider is the literal command word).
     const fn period_suffix(self) -> &'static str {
         match self {
             FnRole::Predict => PERIOD_PREDICT_SUFFIX,
             FnRole::Touches => ".touches",
+            FnRole::IsConverged => ".is_converged",
+            FnRole::IsDiverged => ".is_diverged",
         }
     }
 
-    /// The mangled suffix (`__predict` / `__touches`): provider recovered via `_`→`-`.
+    /// The mangled suffix (provider recovered via `_`→`-`).
     const fn mangled_suffix(self) -> &'static str {
         match self {
             FnRole::Predict => PREDICT_SUFFIX,
             FnRole::Touches => "__touches",
+            FnRole::IsConverged => "__is_converged",
+            FnRole::IsDiverged => "__is_diverged",
         }
     }
 }
@@ -89,6 +102,26 @@ pub fn lift_predicts(interner: &mut Interner, src: &str) -> Carrier<PredictSet> 
 #[must_use]
 pub(crate) fn lift_touches(interner: &mut Interner, src: &str) -> Carrier<PredictSet> {
     lift_role(interner, src, FnRole::Touches)
+}
+
+/// Lift every `<provider>.is_converged` / `<provider>__is_converged` funcdef in `src` (the
+/// guard-verdict function, converged sense — rul24-vouch-is-verdict-authoring, 24A §1c). Reuses
+/// the predict body dialect (one grammar; `FnRole`). Same fail-soft / deterministic contract as
+/// [`lift_predicts`]; only the scanned name-suffix differs. The static consumer
+/// ([`crate::verdict`]) traces these bodies to decide whether a site's argv reaches a vouching
+/// path; the guard emitter ships the STRIPPED body ([`super::strip_verdict`]).
+#[must_use]
+pub(crate) fn lift_verdicts_converged(interner: &mut Interner, src: &str) -> Carrier<PredictSet> {
+    lift_role(interner, src, FnRole::IsConverged)
+}
+
+/// Lift every `<provider>.is_diverged` / `<provider>__is_diverged` funcdef in `src` (the
+/// guard-verdict function, diverged sense). As [`lift_verdicts_converged`]; the sense difference
+/// is carried by the caller ([`crate::verdict::VerdictSense`]) and applied as rul-rc-partition's
+/// lossless sense-flip only when the body is shipped in guard position.
+#[must_use]
+pub(crate) fn lift_verdicts_diverged(interner: &mut Interner, src: &str) -> Carrier<PredictSet> {
+    lift_role(interner, src, FnRole::IsDiverged)
 }
 
 /// Shared lift over a chosen [`FnRole`] — the one parse both siblings route through.

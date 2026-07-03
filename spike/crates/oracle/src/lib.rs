@@ -60,6 +60,13 @@ pub mod predict;
 /// mutates. Feeds the survival/disjointness tier (`dorc_plan`). Reuses the `predict` dialect.
 pub mod touches;
 
+/// The guard-**verdict** function lift (rul-role-split / rul24-vouch-is-verdict-authoring, 24A
+/// §1c / 24D §3): the `<provider>.is_converged()` / `.is_diverged()` role-siblings. Authoring one
+/// IS the vouch; this module decides STATICALLY whether a site's argv reaches a vouching path (the
+/// judgment-tier license source), and the guard emitter ships the same body strip-only. Reuses the
+/// `predict` dialect.
+pub mod verdict;
+
 /// How a `(provider, verb)` reads/writes a fact's OPAQUE boolean — the lifted
 /// representation is [`ValueClaim`] (jc-polarity-vs-rc, FINAL — human 2026-07-02).
 /// The former `Polarity{Establish, Kill, Query}` is RETIRED: no create/destroy axis
