@@ -426,3 +426,15 @@ loud). Stage-2's TC-1..4 verified forward-compatible embryos (the algebra wraps,
 rewrites). Honest bound, to live in the module doc: types protect the PLUMBING (no claim
 consumed above its authority), never the TRUTH of a judgment — 233 stays permanent.
 Threaded into task #5's contract; Stage 5 inherits.
+
+**Arc-win addenda (human-typed, 2026-07-03):** (i) ORACLE_PROVIDES stays
+implementation-agnostic — the tier-algebra is spike-code, and the spike dies whole; the
+only spike code-artifact so far with any cleanroom-translation survival chance is the
+error-handling type-shapes (the round-22 held-4 diag exception); the tier-algebra MIGHT
+join that category, but belongs in no root-doc yet. (ii) **A typesystem is only as good as
+its naming and documentation: uncheckable invariants must ride WITH the machine-checkable
+structure** — every tier/witness/claim type's doc-comment carries the half the compiler
+cannot see (survival≠adequacy; constructor-path contracts; at-most-never-from-at-least;
+types-protect-plumbing-never-judgment-truth). The conductor's review of each stage's type
+machinery includes a dedicated naming-and-docs pass BEFORE the work feeds the next
+builder down the chain.
