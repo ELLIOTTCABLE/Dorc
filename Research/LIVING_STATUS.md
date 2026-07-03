@@ -60,9 +60,12 @@ bodies (`--` operands, dropped `--quiet`, firewall's old probe is a PIPELINE the
 cannot annotate — a real dialect gap, flag `jc-mark-on-pipeline`), so completing R3 means
 re-authoring mocks + re-blessing goldens together — the finisher refused to co-author
 ground-truth and prediction in one unverifiable pass (anti-masking) and reverted its working
-R3 code to stop at a green boundary. Options + the refined recipe: `23H §7`. THEN: R3
-re-land (~1 pass), P5 marker retirement (+ the ruled `dpkg.check()`), guard23 vouch-marks,
-big-bang re-bless with case-by-case inspection + per-xfail lens-verify.
+R3 code to stop at a green boundary. Options + the refined recipe: `23H §7`. **R3 RE-LANDED
+2026-07-02** (third session; ruling (b) honored with mocks-first/goldens-second sequencing +
+old-binary verification — evidence `23H §8`; conductor-verified 123/9/0/0 on the merged tree
+after a fresh build). REMAINING: P5 marker retirement (+ the ruled `dpkg.check()`), guard23
+vouch-marks, final re-bless — NB `23H §8`'s BLESS hazard: a global BLESS clobbers
+hand-authored XFAIL goldens (hit + recovered); restore XFAIL expected.* after any bless.
 
 **The bindings (hold these; full text at the cited homes):**
 - The four round-23 rulings — `spike/CLAUDE.md` (guard sourcing: the check IS the oracle,
