@@ -355,8 +355,11 @@ apt_get__predict() {
     #[test]
     fn dst_plan_skips_match_the_modeled_host_over_seeds() {
         // Integration + DST: drive the REAL pipeline (parse → cfg → classify →
-        // plan) with the modeled host as the probe. Invariant per seed: an ambient
-        // install is Skipped iff the host holds its fact (skip ⟺ converged); the
+        // plan) with the modeled host as the probe. Invariant per seed: the FIRST ambient
+        // install (nginx) is Skipped iff the host holds its fact (skip ⟺ converged). The
+        // SECOND (curl) is Skipped iff curl converged AND nginx converged — because a
+        // DIVERGED nginx install RUNS, and by silence=wall (`23Ib-fd10`) a running modeled
+        // mutator walls every downstream elide-license, demoting the curl Replace→Run. The
         // un-oracled `systemctl reload` always runs. Looping seeds fuzzes the four
         // host states, reproducibly, with no network.
         use dorc_core::ProviderId;
@@ -407,8 +410,10 @@ apt_get__predict() {
             );
             assert_eq!(
                 is_skipped("install -y curl"),
-                host.verdict(curl) == Verdict::Converged,
-                "seed {seed}: curl skip ⟺ host holds curl"
+                host.verdict(curl) == Verdict::Converged
+                    && host.verdict(nginx) == Verdict::Converged,
+                "seed {seed}: curl skip ⟺ curl held AND nginx held (a diverged nginx install \
+                 RUNS and walls the curl elision — silence=wall, 23Ib-fd10)"
             );
             let reload_runs = plan
                 .steps
@@ -424,9 +429,11 @@ apt_get__predict() {
         // apply-2 end-to-end — the WHOLE compiler chain with NO executor (the human's
         // split): source → analyze → compile_probe → SIMULATE the probe against the
         // seeded host → build_plan from those verdicts → the eliding apply. Per seed:
-        // an install is elided (Replace) iff the host holds its fact (and the probe
-        // checked it); the un-oracled reload always runs. Looping seeds fuzzes the
-        // host states, reproducibly, no network.
+        // the FIRST install (nginx) is elided iff the host holds its fact; the SECOND (curl)
+        // is elided iff curl held AND nginx held — a DIVERGED nginx install RUNS and, by
+        // silence=wall (`23Ib-fd10`), walls the downstream curl elision (Replace→Run). The
+        // un-oracled reload always runs. Looping seeds fuzzes the host states, reproducibly,
+        // no network.
         use dorc_core::ProviderId;
         use dorc_oracle::{KindIndex, ValueClaim};
         use dorc_plan::{Disposition, build_plan, compile_probe};
@@ -524,8 +531,10 @@ apt_get__predict() {
             );
             assert_eq!(
                 elided("install -y curl"),
-                host.verdict(curl) == Verdict::Converged,
-                "seed {seed}: curl elided ⟺ host holds curl"
+                host.verdict(curl) == Verdict::Converged
+                    && host.verdict(nginx) == Verdict::Converged,
+                "seed {seed}: curl elided ⟺ host holds curl AND nginx (a diverged nginx install \
+                 RUNS and walls the curl elision — silence=wall, 23Ib-fd10)"
             );
             let reload_runs = apply
                 .steps

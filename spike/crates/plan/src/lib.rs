@@ -1244,7 +1244,11 @@ pub fn build_plan(
     // through it (`inv-kfail`).
     let fold = fold::fold(ast, |leaf| leaf_fact.get(&leaf).map(|f| observe(*f)));
 
-    let mut steps: Vec<Step> = Vec::with_capacity(classes.len());
+    // Each step is paired with the wall predicate (`class_is_establish_bearing`): is this a
+    // modeled MUTATOR whose run would invalidate downstream elide-licenses (silence=wall,
+    // `23Ib-fd10`)? Computed here where the `SkipClass` is in scope (a `Step` does not carry
+    // it) and consumed by the plan-time wall walk after the span-sort below.
+    let mut steps: Vec<(Step, bool)> = Vec::with_capacity(classes.len());
     for (node, class) in classes {
         let ast_id = cfg.node(*node).ast;
         let sh = command_text(src, ast, ast_id);
@@ -1285,20 +1289,51 @@ pub fn build_plan(
                 stand_in,
             );
         }
-        steps.push(Step {
-            leaf: LeafId(0),
-            ast: ast_id,
-            sh,
-            disposition,
-        });
+        steps.push((
+            Step {
+                leaf: LeafId(0),
+                ast: ast_id,
+                sh,
+                disposition,
+            },
+            class_is_establish_bearing(class),
+        ));
     }
 
     // Source order (classify yields CFG-alloc order; sort by span for a faithful
-    // reading), then assign stable leaf ids. This MUST stay byte-identical to
-    // [`site_order`]'s sort+enumerate: the probe's site-ids and these leaf-ids are ONE
-    // id space (`inv-site-keyed-results`), so a record `site N …` keys back to leaf N.
-    // `probe_site_id_equals_plan_leaf_id` pins the equivalence.
-    steps.sort_by_key(|s| (ast.node(s.ast).span.lo.0, ast.node(s.ast).span.hi.0));
+    // reading). This sort MUST stay byte-identical to [`site_order`]'s sort+enumerate: the
+    // probe's site-ids and the leaf-ids assigned below are ONE id space
+    // (`inv-site-keyed-results`), so a record `site N …` keys back to leaf N.
+    // `probe_site_id_equals_plan_leaf_id` pins the equivalence. Sort BEFORE the wall walk so
+    // the walk sees steps in execution order (book order IS execution order — order-is-sacred).
+    steps.sort_by_key(|(s, _)| (ast.node(s.ast).span.lo.0, ast.node(s.ast).span.hi.0));
+
+    // The plan-time WALL (silence=wall / `23Ib-fd10` / `23O` §2 settled law). A MODELED
+    // mutator that will RUN at apply may touch anything it did not declare (the frame
+    // problem, `233`), so silence licenses nothing: it invalidates every downstream
+    // elide-license. The static ambient gate (`analysis::effect::classify`) is same-cell
+    // only — a running `apt-get update` (cell `pkgindex:.fresh`) leaves a converged
+    // `apt-get install nginx` (cell `package:nginx#installed`) `EstablishAmbient` ⇒ eliding —
+    // the "dangerous middle". This is the ADDITIONAL demotion layer the phased caller owns
+    // (`inv-superposition`: the kernel stays phase-agnostic; the wall depends on the
+    // run/elide *verdict*, known only here). Walk once, in execution order, maintaining a
+    // wall flag: an elided/omitted mutator casts NO shadow (it never runs), so only a
+    // *running* mutator walls; once walled, every later converged-establish `Replace` is
+    // demoted to `Run`. Demotion is ONLY ever Replace→Run (`inv-kfail`: when unsure, act) —
+    // never the reverse.
+    let mut walled = false;
+    for (step, is_mutator) in &mut steps {
+        if walled && *is_mutator && matches!(step.disposition, Disposition::Replace(..)) {
+            step.disposition = Disposition::Run;
+        }
+        if *is_mutator && matches!(step.disposition, Disposition::Run) {
+            walled = true;
+        }
+    }
+
+    // Drop the wall bits and assign stable leaf ids (the span-order enumerate the
+    // `inv-site-keyed-results` equivalence above depends on).
+    let mut steps: Vec<Step> = steps.into_iter().map(|(step, _)| step).collect();
     for (i, step) in steps.iter_mut().enumerate() {
         step.leaf = LeafId(u32::try_from(i).unwrap_or(u32::MAX));
     }
@@ -1495,6 +1530,40 @@ fn command_text(src: &str, ast: &Ast, id: AstId) -> String {
 fn has_top_successor(cfg: &Cfg, node: CfgNodeId) -> bool {
     cfg.succ_ids(node)
         .any(|s| cfg.node(s).kind == CfgNodeKind::Top)
+}
+
+/// The plan-time wall predicate (silence=wall / `23Ib-fd10`): is this class a modeled
+/// **mutator** — an establish-bearing site whose *running* would invalidate downstream
+/// elide-licenses? A running such site walls; a walled such site's `Replace` is demoted.
+///
+/// Establish-bearing = `EstablishAmbient`/`EstablishWritten`/`EstablishMembers`, and an
+/// `InlineCall` any of whose body sites establish (a spliced body mutation runs when the call
+/// runs). Deliberately NOT establish-bearing, so they never wall:
+/// * `QueryResolvable` — a declared read-only guard; a read kills nothing (and a downstream
+///   Query of any upstream mutator is *already* run by rule-query-validity, so it never
+///   reaches a post-wall `Replace` to demote);
+/// * `MustRun` — the lossy residue. A pure builtin (`:`/`echo`/`cd`) is `MustRun` and must NOT
+///   wall (see `exec-pure-builtin`: `cd /tmp` runs, the install below it still elides). An
+///   *opaque* is also `MustRun`, but it already `⊤`-poisons every downstream fact in `classify`
+///   (⇒ they are `EstablishWritten` ⇒ never elide), so not walling it here is harmless
+///   redundancy. A *kill* (`apt-get purge`) is `MustRun` too and DOES mutate — walling it
+///   would need the `CommandEffect`, which this phased caller does not receive; the corpus has
+///   no kill-then-different-cell-elision case, so it is a flagged latent gap, not a live hole.
+fn class_is_establish_bearing(class: &SkipClass) -> bool {
+    match class {
+        SkipClass::EstablishAmbient(_)
+        | SkipClass::EstablishWritten(_)
+        | SkipClass::EstablishMembers { .. } => true,
+        SkipClass::InlineCall { sites } => sites.iter().any(|s| {
+            matches!(
+                s.class,
+                SkipClass::EstablishAmbient(_)
+                    | SkipClass::EstablishWritten(_)
+                    | SkipClass::EstablishMembers { .. }
+            )
+        }),
+        SkipClass::QueryResolvable { .. } | SkipClass::MustRun => false,
+    }
 }
 
 impl Plan {
@@ -2869,6 +2938,41 @@ apt_get__predict() {
         (plan, i)
     }
 
+    /// Run the pipeline answering EVERY fact `Converged` — for the plan-level keystone tests
+    /// where the upstream modeled mutator (`apt-get update`) must itself ELIDE (cast no shadow,
+    /// silence=wall) for a downstream converged establish to elide *past* it. `plan_for` gives
+    /// every non-nginx cell `Unknown` ⇒ `update` would RUN ⇒ wall the install; converging
+    /// `update`'s own cell is what keeps the keystone (distinct-cell, no poison) demonstrable at
+    /// the plan tier under the honest `23Ib-fd10` law.
+    fn plan_all_converged(src: &str) -> (Plan, Interner) {
+        let mut i = Interner::default();
+        let idx = package_index(&mut i);
+        let parsed = dorc_syntax::parse(src);
+        let cfg = dorc_analysis::cfg::build(&parsed.value).value;
+        let value = dorc_analysis::value::analyze(&cfg, &parsed.value, &mut i);
+        let checks = vec![dorc_oracle::predict::lift_predicts(&mut i, CORPUS_PREDICT_SRC).value];
+        let classes = dorc_analysis::effect::classify(
+            &cfg,
+            &value,
+            &parsed.value,
+            &idx,
+            &checks,
+            &mut i,
+            &mut dorc_core::ProvArena::new(),
+        )
+        .value;
+        let observe = |_f: FactKey| Observable::verdict_only(Verdict::Converged);
+        let plan = build_plan(
+            src,
+            &parsed.value,
+            &cfg,
+            &classes,
+            observe,
+            &mut dorc_core::ProvArena::new(),
+        );
+        (plan, i)
+    }
+
     fn find<'a>(plan: &'a Plan, needle: &str) -> &'a Step {
         match plan.steps.iter().find(|s| s.sh.contains(needle)) {
             Some(s) => s,
@@ -2963,16 +3067,20 @@ apt_get__predict() {
         // The exclusion-check behind strain-5 (`notes/193`): pin the TWO residual
         // poison sources independently, so the finding survives as a regression and not
         // just a narrated comment. Each upstream un-oracled construct, alone, forces the
-        // install to Written; with neither, it is Ambient (the keystone win). Host
-        // verdict is irrelevant here — this is the classify-level ambient gate.
+        // install to Written; with neither, it is Ambient (the keystone win). Uses
+        // `plan_all_converged`: post-`23Ib-fd10` a RUNNING modeled `update` would WALL the
+        // install (silence=wall), so to isolate the classify-level POISON gate the upstream
+        // `update` must itself ELIDE (converged ⇒ casts no shadow) — then only a real poison,
+        // not the wall, can force the install to run.
         let ambient = |src: &str| {
-            let (plan, _) = plan_for(src, Verdict::Converged);
+            let (plan, _) = plan_all_converged(src);
             matches!(
                 find(&plan, "apt-get install").disposition,
                 Disposition::Replace(_, _)
             )
         };
-        // Neither neighbour ⇒ ambient ⇒ elides (the clean keystone case).
+        // Neither neighbour ⇒ ambient ⇒ elides (the clean keystone case): a converged `update`
+        // elides (no shadow), so the converged install elides past it.
         assert!(
             ambient("apt-get update\napt-get install -y nginx\n"),
             "no poison ⇒ elides"
@@ -3031,23 +3139,89 @@ apt_get__predict() {
 
     #[test]
     fn fixture_install_elides_when_update_is_the_only_neighbour() {
-        // THE keystone win at the PLAN level (`notes/193` strain-5 / acceptance §7.2):
-        // with `apt-get update` the ONLY upstream neighbour (modeled, distinct cell)
-        // and the host Converged, the install is now `Disposition::Replace` — the
-        // poison wall is genuinely dead end-to-end, not just at classify. This is the
-        // `update → install` core of the realistic book with the un-oracled scrutinee/
-        // guard stripped (the residual poison the full-fixture test documents). Pre-key
-        // this was impossible: `update` Opaque ⇒ Top ⇒ install forced Written ⇒ Run.
-        let (plan, _) = plan_for(
-            "apt-get update\napt-get install -y nginx\n",
-            Verdict::Converged,
+        // THE keystone win at the PLAN level (`notes/193` strain-5 / acceptance §7.2), now
+        // stated honestly under `23Ib-fd10` (this is the wall's (b)-direction — the
+        // first-order escape "just elide yourself"): with `apt-get update` the ONLY upstream
+        // neighbour (modeled, distinct cell) AND update ITSELF converged, update ELIDES ⇒ casts
+        // no shadow ⇒ the converged install elides past it (`Disposition::Replace`). The poison
+        // wall is dead end-to-end (not just at classify). Pre-key this was impossible: `update`
+        // Opaque ⇒ Top ⇒ install forced Written ⇒ Run. Post-`fd10` the *running* case is the
+        // opposite: a DIVERGED update runs ⇒ WALLS the install (the (a)-direction test
+        // `running_modeled_mutator_walls_downstream_converged_establish`). `plan_all_converged`
+        // makes update converge so it elides — the honest keystone.
+        let (plan, _) = plan_all_converged("apt-get update\napt-get install -y nginx\n");
+        assert!(
+            matches!(
+                find(&plan, "apt-get update").disposition,
+                Disposition::Replace(_, _)
+            ),
+            "the upstream modeled `update` is itself converged ⇒ elides (casts no shadow)"
         );
         assert!(
             matches!(
                 find(&plan, "apt-get install").disposition,
                 Disposition::Replace(_, _)
             ),
-            "modeled `update` (distinct cell) no longer poisons ⇒ converged install elides"
+            "modeled `update` (distinct cell, and here ELIDED) does not wall ⇒ converged install elides"
+        );
+    }
+
+    #[test]
+    fn running_modeled_mutator_walls_downstream_converged_establish() {
+        // The (a)-direction of the plan-time wall (silence=wall / `23Ib-fd10` / `23O` §2 —
+        // the honest-baseline repair). Two installs of DIFFERENT packages ⇒ DISTINCT cells, so
+        // the static ambient gate (same-cell reasoning) leaves BOTH `EstablishAmbient` — no
+        // same-cell poison rescues this. curl is DIVERGED ⇒ it RUNS ⇒ it is a modeled mutator
+        // that runs, which by the frame problem (233) may touch anything it did not declare. So
+        // the downstream CONVERGED nginx install — which the static gate would elide — is
+        // DEMOTED Replace→Run (`inv-kfail`: when unsure, act). At HEAD nginx wrongly elides past
+        // the running curl; the wall closes that under-execution. No `set -e`, so the demotion
+        // is the wall's doing, not errexit consuming the mutator's ⊤ status.
+        let (plan, _) = plan_for_pkgs("apt-get install -y curl\napt-get install -y nginx\n", |e| {
+            if e == "curl" {
+                Verdict::Diverged
+            } else {
+                Verdict::Converged
+            }
+        });
+        assert!(
+            matches!(find(&plan, "install -y curl").disposition, Disposition::Run),
+            "the diverged upstream mutator runs (no license)"
+        );
+        assert!(
+            matches!(
+                find(&plan, "install -y nginx").disposition,
+                Disposition::Run
+            ),
+            "silence=wall: the converged install is demoted to Run past the running curl mutator"
+        );
+    }
+
+    #[test]
+    fn elided_upstream_mutator_casts_no_shadow() {
+        // The (b)-direction — the first-order escape "just elide yourself", the value the whole
+        // product rides on (`23Ib-fd10`; IMPLEMENTATION.md: "elision casts no poisoned shadow").
+        // Same two distinct-cell installs, but BOTH converged: the upstream curl install ELIDES
+        // (Replace) ⇒ it never runs ⇒ casts no shadow ⇒ the downstream converged nginx install
+        // still ELIDES. An elided mutator is not a wall. (The e2e counterparts:
+        // exec-poison-wall-dead / guard23-vouch-inert-pair, both converged-converged.)
+        let (plan, _) = plan_for_pkgs(
+            "apt-get install -y curl\napt-get install -y nginx\n",
+            |_| Verdict::Converged,
+        );
+        assert!(
+            matches!(
+                find(&plan, "install -y curl").disposition,
+                Disposition::Replace(_, _)
+            ),
+            "converged upstream install elides (casts no shadow)"
+        );
+        assert!(
+            matches!(
+                find(&plan, "install -y nginx").disposition,
+                Disposition::Replace(_, _)
+            ),
+            "no wall (upstream elided) ⇒ the downstream converged install still elides"
         );
     }
 

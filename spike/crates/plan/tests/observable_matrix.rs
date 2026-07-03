@@ -480,11 +480,17 @@ fn door3_oror_false_converged_mutator_still_runs() {
 }
 
 #[test]
-fn door3_oror_chain_true_replaces_only_outer_left() {
-    // d-3 asymmetry at the plan level: `a || b || true`, both converged. `a` (nginx) keeps
-    // StatusRelaxable (inner `||` reads its rc) ⇒ runs. `b` (curl) is StatusInvariant (outer
-    // `|| true`) ⇒ replaces. Two same-command sites must NOT collapse (`inv-site-keyed-results`).
-    // HOST: nginx + curl both installed.
+fn door3_oror_chain_outer_left_walled_by_running_inner_mutator() {
+    // d-3 asymmetry × silence=wall (`23Ib-fd10`): `a || b || true`, both converged. At the
+    // STATUS/classify tier the asymmetry stands — `a` (nginx) keeps StatusRelaxable (inner `||`
+    // reads its rc) ⇒ runs; `b` (curl) is StatusInvariant (outer `|| true`), so on status alone
+    // it would replace. But door-3 clears only the STATUS channel — b's replace still needs its
+    // EFFECT-convergence, and `a` is a modeled mutator that RUNS (unconditionally — it is the
+    // first operand), so by the frame problem it walls every downstream elide-license. b is
+    // therefore DEMOTED Replace→Run (`inv-kfail`). Both run; the whole `||`-chain renders
+    // verbatim. (Pure door-3 StatusInvariant elision, with NO upstream running mutator, is
+    // pinned by `door3_oror_true_converged_mutator_is_replaced`.) Two same-command sites must
+    // NOT collapse (`inv-site-keyed-results`). HOST: nginx + curl both installed.
     let plan = plan_for(
         "apt-get install -y nginx || apt-get install -y curl || true\n",
         &[("package", "nginx"), ("package", "curl")],
@@ -494,8 +500,9 @@ fn door3_oror_chain_true_replaces_only_outer_left() {
         "a (inner-`||` left) runs — its rc controls whether b runs (StatusRelaxable + ⊤)"
     );
     assert!(
-        is_replaced(&plan, "install -y curl"),
-        "b (outer `|| true` left) replaces — its rc is dead-in-fact (StatusInvariant)"
+        !is_replaced(&plan, "install -y curl"),
+        "b (outer `|| true` left) is StatusInvariant, but the running `a` mutator walls it \
+         (silence=wall) ⇒ b runs, not replaces"
     );
 }
 

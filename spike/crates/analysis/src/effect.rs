@@ -1370,6 +1370,15 @@ command__predict() {
         // longer poisons the `apt-get install nginx` below it. Before the re-key,
         // `update` was doubly-unkeyable (no operand, and — pre-modeling — no verb) ⇒
         // Opaque ⇒ Reach::Top ⇒ install forced EstablishWritten. Now it's ambient.
+        //
+        // This pins the STATIC (classify) tier, which `23Ib-fd10` leaves UNCHANGED: the
+        // ambient gate is same-cell only, so a distinct-cell `update` never poisons the
+        // install's ambient-ness *here*. The honest-baseline wall lives one tier UP, in
+        // `plan::build_plan` (the phased caller, `inv-superposition`): a *running* `update`
+        // (diverged) now WALLS the converged install at plan time (silence=wall), demoting
+        // its Replace→Run. See the plan-tier pins
+        // `running_modeled_mutator_walls_downstream_converged_establish` (the wall fires) and
+        // `elided_upstream_mutator_casts_no_shadow` (a converged/elided `update` does not).
         let (mut i, idx, s) = package_setup();
         let classes = classify_src("apt-get update\napt-get install nginx", &mut i, &idx);
         assert!(

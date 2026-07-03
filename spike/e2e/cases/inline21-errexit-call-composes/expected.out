@@ -26,19 +26,24 @@ apt_get__predict 'install' '-y' 'curl'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=hol
 #!/bin/sh
 # dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
 
-# inline21-errexit-call-composes (arch-2, `i-5` — the errexit composition): a `set -e` book
-# with two inlined wrapper calls, both packages converged. The CALL's own rc is ⊤ (a
-# mutator-shaped aggregate, fork-mutator-rc), and `set -e` CONSUMES every command's status,
+# inline21-errexit-call-composes (arch-2 `i-5` errexit composition × silence=wall `23Ib-fd10`):
+# a `set -e` book with two inlined wrapper calls, both packages converged. The CALL's own rc is
+# ⊤ (a mutator-shaped aggregate, fork-mutator-rc), and `set -e` CONSUMES every command's status,
 # so the call is StatusRelaxable-consumed. The composition:
 #   - bare `apt_install nginx`: consumed ⊤ status BLOCKS the all-or-nothing license ⇒ the call
 #     RUNS (the body's `apt-get install -y nginx` executes), even though nginx is converged —
-#     the 206 §2 headline cost (a converged mutator under `set -e` runs);
+#     the 206 §2 headline cost (a converged mutator under `set -e` runs). Because it RUNS, this
+#     modeled mutator is now a WALL: by the frame problem (233) it may touch anything it did not
+#     declare, so silence licenses no downstream elision.
 #   - `apt_install curl || true`: door-3 (`20V` §4) marks the `||` left StatusInvariant
-#     (consumed-in-form, dead-in-fact — both `||` continuations rejoin identically), which
-#     NEVER blocks, so the converged call ELIDES to `true` ⇒ `true || true`.
-# This composes for FREE: the errexit marking + door-3 ride the CALL node exactly as they ride
-# any single command (`i-5`, zero new special-casing). Run-set: `apt-get install -y nginx` only.
+#     (consumed-in-form, dead-in-fact — both `||` continuations rejoin identically), which never
+#     blocks the STATUS channel; so at classify/status this converged call would ELIDE. But
+#     door-3 is status-only — the elision still needs curl's EFFECT-convergence, and that is
+#     invalidated by the running nginx wall upstream (`23Ib-fd10`: a post-running-wall
+#     converged-establish is demoted Replace→Run, `inv-kfail`). So the curl call RUNS too.
+# Both mechanisms still ride the CALL node for free (`i-5`); the wall is one more plan-tier
+# demotion layered on top, zero new special-casing. Run-set: BOTH installs (nginx, then curl).
 set -e
 apt_install() { apt-get install -y "$1" >/dev/null 2>&1; }
 apt_install nginx
-true || true   # dorc: elided [apt_install curl] (already converged / dead branch)
+apt_install curl || true
