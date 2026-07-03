@@ -383,6 +383,135 @@ What each addition buys — and refuses:
 - Explicitly not gained, and never will be by this route: `hork`.
 
 
+Stage 5 — the footprint: facts surviving a wall that stays
+----------------------------------------------------------
+
+> (FIXME: everything in this stage is strawman-tier, design-in-progress — the round-24
+> build. The *mechanism* below is settled direction; the *spelling* is a mock to be vibed
+> at, not adopted.)
+
+Everything so far elides around walls by *removing* them (stage 3: a converged wall is an
+elided wall, and an elided command casts no wall) or verifies *behind* them (stage 2:
+guards). One pain is left, and a drifted morning shows it. Say the package index has gone
+stale overnight — nothing else; every other fact on the host still holds. Line 5 is now
+*really going to run*, and an honest wall is a wall:
+
+```
+$ dorc plan --verbose webhost.sh web1.example.net
+ 1  #!/bin/sh
+ 2  # webhost.sh - bring up the static site
+ 3  set -eu
+ 4  CERTS=/etc/nginx/certs
+ 5  apt-get update                                     # runs: diverged (index stale)
+ 6  dpkg -s nginx >/dev/null 2>&1 \
+ 6     || apt-get install -y nginx                     # runs: your own guard re-checks live (past line 5)
+ 7  ( file_check /etc/nginx/nginx.conf ./nginx.conf ) \
+ 7     || cp ./nginx.conf /etc/nginx/nginx.conf        # verify: converged, but past 'apt-get update' (line 5)
+ 8  ( foobar_check sync-certs "$CERTS" ) \
+ 8     || foobar sync-certs "$CERTS"                   # verify: converged, but past 'apt-get update' (line 5)
+ 9  ( systemctl_check enable --now nginx ) \
+ 9     || systemctl enable --now nginx                 # verify: converged, but past 'apt-get update' (line 5)
+10  hork tune --profile web >>/var/log/hork.log 2>&1   # runs: unmodeled ('hork')
+11  ( ufw_check allow 443/tcp ) \
+11     || ufw allow 443/tcp                            # verify: converged, but past 'hork' (line 10)
+plan: 3 run, 3 verify, 0 elided
+```
+
+One stale index cost the entire book its shape. And the frustrating part: *everyone
+watching knows* `apt-get update` doesn't touch nginx's config, or foobar's certs, or the
+service state. Everyone except Dorc — because knowing that is a claim about what a black-box
+binary touches, and silence licenses nothing. Somebody who knows the tool has to say it.
+
+The spelling being mocked here: a third role-sibling, next to `predict()` and
+`is_converged()`, that *answers the touch question as runnable sh*. The base library's apt
+oracle grows one; so does foobar's, one line in the author's stage-4 file:
+
+```sh
+apt-get.touches() {                          # base library (STRAWMAN spelling)
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb="$1"; shift
+   case "$verb" in
+   update) printf 'pkgindex:\n' ;;
+   esac
+}
+
+foobar.touches() {                           # appended by foobar's author (STRAWMAN spelling)
+   verb="$1"; shift
+   case "$verb" in
+   sync-certs|renew) printf 'fb.Certs:%s\n' "$1" ;;
+   esac
+}
+```
+
+Read it the way the analyzer does. Invoked with a site's argv (same contract as its
+siblings), the body *emits the entity-coordinates this verb mutates, one per line* — and by
+emitting anything at all for a matched verb, the author claims **at most these** ("whatever
+else this touches is residue I answer for"). An unmatched verb emits nothing: no claim, no
+license, the wall stands — silence stays safe. Stripped, it is a plain function any shell
+can run; `foobar_touches sync-certs /srv/certs` printing `fb.Certs:/srv/certs` is
+documentation that executes.
+
+The engine's move is then mechanical, and old as compilers: every probed fact already knows
+*where its own truth lives* — nothing new to author, a fact's backing simply *is* what its
+probe reads (`dpkg -s` reads the dpkg database; `systemctl is-enabled` reads unit state; it
+cannot claim more than that by construction). A running wall's footprint gets intersected
+against each downstream fact's backing. Empty intersection ⇒ the fact provably survives the
+wall ⇒ its elision stands *even though the wall runs*. Non-empty, or no footprint ⇒ exactly
+the stage-2 world: guard or run. (This is the separation-logic frame rule wearing work
+clothes; the emitted-at-probe-time variant — stage-4 tools like `apt-get install`, whose
+real file-payload only the host knows, answer by *asking the tool* inside `touches()` — is
+what the literature calls a dynamic frame.)
+
+The same stale-index morning, with footprints shipped:
+
+```
+$ dorc plan --verbose webhost.sh web1.example.net
+ 1  #!/bin/sh
+ 2  # webhost.sh - bring up the static site
+ 3  set -eu
+ 4  CERTS=/etc/nginx/certs
+ 5  apt-get update                                     # runs: diverged (index stale)
+ 6  # dpkg -s nginx >/dev/null 2>&1 \
+ 6  #    || apt-get install -y nginx                   # converged: guard holds; survives line 5 (footprint disjoint)
+ 7  # cp ./nginx.conf /etc/nginx/nginx.conf            # converged: content match; survives line 5 (footprint disjoint)
+ 8  # foobar sync-certs "$CERTS"                       # converged: certs synced; survives line 5 (footprint disjoint)
+ 9  # systemctl enable --now nginx                     # converged: enabled+active; survives line 5 (footprint disjoint)
+10  hork tune --profile web >>/var/log/hork.log 2>&1   # runs: unmodeled ('hork')
+11  ( ufw_check allow 443/tcp ) \
+11     || ufw allow 443/tcp                            # verify: converged, but past 'hork' (line 10)
+plan: 2 run, 1 verify, 5 elided
+```
+
+The book keeps its steady-state shape on a drifted day. `update`'s footprint is the package
+index; the install's guard reads the dpkg database, the `cp`'s fact lives in a config file's
+content, foobar's in its certs, the service's in unit state — all disjoint, all survive. And
+the honest cells stay honest: on a *foobar*-drifted day, `systemctl` now stays elided too
+(`fb.Certs` doesn't intersect service state) — but a hypothetical line below foobar whose
+fact *lives in those same certs* would correctly stay guarded, footprint or no. `hork` has
+no author, so it has no footprint, and no amount of machinery changes line 10 or 11 —
+silence is a wall, forever.
+
+Now the price, and it is the sharpest one in the whole design. A vouch (stage 3) that is
+wrong endangers *its own tool's line*. A footprint that is wrong — an author who forgot
+that `sync-certs` also rewrites a systemd unit — silently under-executes *someone else's
+line*: the elision it wrongly licensed belonged to a different tool, a different author, a
+different file. There is no runtime net under a survived elision; that is what "survives"
+means. This is the one place Dorc ships a naked human promise, and the design treats it
+accordingly: the footprint is opt-in (no oracle is required to grow one), scoped to the
+author's own attended substrate, attributed by name in every elision it licenses (the
+`why`-lens will say whose footprint you trusted), and priced at the professed horizon —
+"past here, you are trusting authors' at-most claims." Attention saved on drifted days is
+bought with exactly that trust, and with nothing else.
+
+- Spent: one `touches()` arm per verb an author is willing to answer for.
+- Gained, drifted days: the book stops collapsing below the first thing that really runs;
+  early-book churn (index refreshes, log rotations, cache warms) stops taxing every line
+  after it.
+- Gained, steady state: nothing. (Worth saying twice: on a fully-converged host the walls
+  were already elided away. The footprint tier buys back the *drifted* days.)
+- Not gained: `hork`, ever; and nothing below it.
+
+
 The residue, and the honest product statement
 ---------------------------------------------
 
@@ -405,12 +534,13 @@ stage    ran   verified   elided   attention-lines   spent
 2        2     2          3        6                 a library install
 3        1     1          5        4                 2 minutes of sh
 4        1     1          5        4                 an hour, for everyone else's benefit
+5        1     1          5        4                 a touches() arm per verb (pays out on drifted days, not here)
 ```
 
 ----
 
-TODO/UNFILLED: the propagation frontier. Everything above elides *around* walls by removing
-them (stage 3) or verifies *behind* them (stage 2). Whether facts can ever statically
-survive a wall that stays — "this running command provably cannot touch that state" — is the
-footprint/disjointness tier: real design-in-progress, deliberately not described here, and
-nothing in this document depends on its outcome.
+STATUS: the propagation frontier (stage 5) is the round-24 build — its mechanism
+(footprint × backing × disjointness) is settled direction, its spelling is strawman-tier,
+and nothing in stages 0–4 depends on its outcome. Stages 0–4 describe design the
+implementation spike is actively catching up to; stage 5 describes design being *learned by
+building*. Expect its render and spelling to churn before anything else here does.
