@@ -21,7 +21,7 @@ goldens the XFAIL/XPASS mechanism never reads.
 ## I. Under-execution reachable under the pinned law
 
 ### 23C-fd1 · DEMONSTRATED — guard-body variable capture silently drops a required install
-The pinned preamble is the oracle check body verbatim (strip-only; signed). POSIX functions
+The pinned preamble is the oracle predict body verbatim (strip-only; signed). POSIX functions
 share the caller's variable namespace; the fixture bodies assign `verb` and `pkg` bare.
 Composition (all pieces individually pinned/licensed): book
 `pkg=vim; hork wombat; apt-get install -y curl; apt-get install -y "$pkg"` — curl site vouched
@@ -40,11 +40,11 @@ declares renames unspellable under strip-only; the variable half is strictly wor
 `verb`, `svc`, `now` are ubiquitous book vars — the 233 §1 strawmen themselves use them) and
 is unpinned. Mitigation shapes (not mine to pick): oracle-contract `local` discipline in check
 bodies (dash ≥0.5.13 has `local`; contract-tier, pinnable as a lint/refusal), or
-refuse-the-mint when the check body's assigned names intersect the book's live variable set
+refuse-the-mint when the predict body's assigned names intersect the book's live variable set
 (the engine has both sets statically).
 
 ### 23C-fd2 · DEMONSTRATED — `set -u` book: the inserted guard kills the whole book tail
-Fixture check bodies read `"$2"` unconditionally; a single-operand invocation leaves `$2`
+Fixture predict bodies read `"$2"` unconditionally; a single-operand invocation leaves `$2`
 unset. Book `set -u; hork wombat; apt-get install -y curl; apt-get install -y vim`: bare
 completes rc 0 (3 commands); the pinned artifact dies rc 2 at the check's `"$2"` read
 (`parameter not set`) — curl, vim, everything downstream under-executed by the insertion.
@@ -55,12 +55,12 @@ fd1 (`${2:-}` spelling is contract-tier; strip-only forbids the engine adding it
 
 ### 23C-fd3 · argued (mechanics empirically confirmed) — dynamic-path escape from the static vouch
 rul-guard-license scopes the vouch by CONSTANT-PROPAGATION reachability (static); the shipped
-whole body path-selects at RUNTIME (rul-ternary-verdict blesses this). A check body with a
+whole body path-selects at RUNTIME (rul-ternary-verdict blesses this). A predict body with a
 world-dependent branch — 233's own "capability fallbacks" — can, after drift, terminate rc 0
 via an UNVOUCHED path: strawman `if command -v newtool >/dev/null 2>&1; then newtool query
 "$1"; else :; fi`, vouch on the newtool path, newtool removed by the wall-former between plan
 and apply ⇒ else-branch ⇒ rc 0 ⇒ mutator suppressed with ZERO live convergence verification.
-Both fixture check bodies already exit rc 0 on their refuse-paths (verified live: two-operand
+Both fixture predict bodies already exit rc 0 on their refuse-paths (verified live: two-operand
 apt check rc=0; unmodeled-verb systemctl check rc=0), so the corpus's own oracle idiom
 defaults fail-OPEN. The drift pins (fallthrough-drift/canttell) cover only rc≠0 drift; nothing
 pins drift-into-an-rc-0-unvouched-path. multioperand-atomic's comment says "the witness's
@@ -119,7 +119,7 @@ fall-through (fd6's mechanism) — safe-direction at runtime, but it makes exec_
 whole classes of wrong-guard (and of missing-shim fixture rot). The gate-1(c) rationale
 transfers verbatim; nothing implements it. Hardening: exec_check gains a (c)-analogue —
 refuse any apply run whose stderr shows `not found` from the artifact, or shim-set-closure
-over guard check bodies.
+over guard predict bodies.
 
 ## III. Missing pins (forbidden-but-mintable, or decisions that will get built by accident)
 

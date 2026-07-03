@@ -48,15 +48,15 @@ from HEAD — the guard tier must never downgrade a provable elision; two-halves
 attention-honesty make provable elision the only attention-saver); site 1 `hork` opaque ⇒ RUN +
 poison-wall; site 2 converged-past-wall + vouch ⇒ GUARD; site 3 diverged-past-wall + vouch ⇒
 RUN (mint is converged-only; jc-mint-policy below). Pins, concretely:
-- the artifact shape (golden bytes): preamble = the oracle's check body shipped STRIP-ONLY
+- the artifact shape (golden bytes): preamble = the oracle's predict body shipped STRIP-ONLY
   (`pkg : package = "$1"` → `pkg="$1"`, nothing else changed — the annotation-strip is the only
   byte delta from the authored oracle); the guarded line is exactly
-  `apt_get__check install -y curl || apt-get install -y curl` + a postfixed reason-comment —
+  `apt_get__predict install -y curl || apt-get install -y curl` + a postfixed reason-comment —
   original bytes verbatim as the `||`-right (inv-g2 ancestry, now rul-ternary-verdict's "no
   code path removes them"); NO engine-synthesized sh anywhere (the two never-clauses, pinned
   negatively: nothing in the golden exists that the oracle author did not write, save the
   invocation, the `||`, and comments);
-- the behaviour (expected.ran): apply under mocks runs `hork wombat`, then site 2's check-body
+- the behaviour (expected.ran): apply under mocks runs `hork wombat`, then site 2's predict-body
   command `dpkg-query -W curl` (rc 0 ⇒ short-circuit ⇒ NO `apt-get install -y curl`), then
   `apt-get install -y vim` bare. Book order preserved (gate-4 ordered compare);
 - the probe half: vouched sites PAST the wall still ship their read-only probes (records for
@@ -194,9 +194,9 @@ jc-pair-mechanics); reviewers must.
 The off-ramp closure, three pins in one: a hand-written guarded artifact (preamble fn + `check
 || original`) fed back to dorc (1) re-parses and runs VERBATIM, safely ("safe, merely
 unimproved" — the un-oracled fn call is opaque ⇒ conservative run); (2) never ACCRETES a second
-guard; (3) the book defines `apt_get__check` — the very name the guard tier ships — and a
+guard; (3) the book defines `apt_get__predict` — the very name the guard tier ships — and a
 collision-dodging RENAME is unspellable under strip-only sourcing (rul-ternary-verdict:
-`name.check()` → `name_check()`, nothing else changed), so refuse-and-run is the only lawful
+`name.predict()` → `name_predict()`, nothing else changed), so refuse-and-run is the only lawful
 verdict near this book. sh function redefinition is last-writer-wins; a preamble emitted after
 the book's def would be hijacked — the 218a name-collision refusal, now derivable from the
 strip-only ruling itself (+SURE of the derivation; the case comment carries it).
@@ -225,7 +225,7 @@ under a loud `STRAWMAN … NOT DESIGN` comment block at every use. Chosen becaus
 byte-inert through the HEAD engine (no diagnostics, no output delta — the P-pair cases pin
 exactly this inertness); (b) a single greppable line, trivially swappable (the ruling's
 requirement); (c) reads as data, not as a fake mechanism. Two knowingly-wrong aspects, flagged:
-- it keys (provider, verb) where the settled design keys REACHED PATHS through the check body
+- it keys (provider, verb) where the settled design keys REACHED PATHS through the predict body
   ("per-verb is sloppy vocabulary" — 233 §guard-license). For every fixture in this set the two
   scopings coincide (each vouched verb-path is reached exactly by the sites the row names), so
   no pin's BEHAVIOUR depends on the difference; the pins that police scope (P-topargv,
@@ -239,13 +239,13 @@ requirement); (c) reads as data, not as a fake mechanism. Two knowingly-wrong as
 
 - **jc-body-source** (the big one): golden guard bytes follow the ORACLE GROUND-TRUTH reading —
   whole stripped CHECK body shipped as the preamble, invoked with the site's argv
-  (`apt_get__check install -y curl`). The spike's probe lane at HEAD ships `oracle_probe_*`
+  (`apt_get__predict install -y curl`). The spike's probe lane at HEAD ships `oracle_probe_*`
   bodies instead (st-2), and 218a's inv-g3 pointed at THAT shape — the build-vs-design
   divergence `23Z` flags for reconciliation. I did NOT settle it: the behavioural pins
   (expected.ran) are IDENTICAL under either sourcing (both bodies reduce to `dpkg-query -W
   <pkg>` under mocks — verified), so only golden bytes commit; if the builder lands the
   probe-wrapper shape first, the goldens churn cosmetically at promotion, visibly, under
-  review. The golden documents the ruling's letter ("the check IS the oracle"); the
+  review. The golden documents the ruling's letter ("the predict() IS the oracle"); the
   probe-half of the same goldens stays at HEAD's st-2 shape, so "same bytes both lanes" is
   NOT yet satisfied inside any single golden — deliberately, since reshaping the probe lane
   is the reconciliation's job, not the guard tier's. Flagged, not resolved.
@@ -257,7 +257,7 @@ requirement); (c) reads as data, not as a fake mechanism. Two knowingly-wrong as
   test that reading.
 - **jc-silencing**: rul-ternary-verdict's form is bare `<check-invocation> || <original>`;
   218a d4-2 had call-site `>/dev/null 2>&1`. Goldens follow the ruling's letter (bare). Open
-  consequence for the builder: a check body that PRINTS leaks onto the apply transcript —
+  consequence for the builder: a predict body that PRINTS leaks onto the apply transcript —
   observable-preservation of the artifact's output argues for the 218a redirect; adding it
   later is one golden-visible change. Deliberately unpinned.
 - **jc-probe-scope**: probes-past-wall pinned ONLY for vouched sites (the witness needs the
@@ -336,7 +336,7 @@ requirement); (c) reads as data, not as a fake mechanism. Two knowingly-wrong as
 ## §5 What the builder must touch (the honest churn/coupling list)
 
 - **gate-6 widening (REQUIRED before flagship promotion)**: the dual-rail judge's direction
-  (i) "apply never runs anything NEW" false-fails a legitimate guard (apply-only check-body
+  (i) "apply never runs anything NEW" false-fails a legitimate guard (apply-only predict-body
   commands: `dpkg-query -W curl`), and direction (ii) has no license class for a
   guard-suppressed mutator (bare-only `apt-get install -y curl` with only replace/omit
   attributable). run.sh's own comments anticipate this ("door-4-era amends this"). Sketch,
@@ -365,10 +365,10 @@ requirement); (c) reads as data, not as a fake mechanism. Two knowingly-wrong as
 
 ## §6 Hazards surfaced for the crosscheck (hz-*) — attack here first
 
-- **hz-refusepath (found while authoring; the sharpest)**: the corpus-standard check bodies
+- **hz-refusepath (found while authoring; the sharpest)**: the corpus-standard predict bodies
   EXIT 0 ON THEIR REFUSE PATHS — `if [ "$2" = "" ]; then dpkg-query …; fi` returns 0 when a
   second operand makes the condition false, and `case` with no matching arm returns 0
-  (service oracle, restart). A build that ships a check body as a guard WITHOUT proving the
+  (service oracle, restart). A build that ships a predict body as a guard WITHOUT proving the
   invocation constant-propagates to a VOUCHED path mints `check || install` where the check
   rc-0s vacuously ⇒ the mutator is suppressed on a path the author never vouched — silent
   wrong-elision. The witness's reached-path component is load-bearing precisely here;
@@ -381,7 +381,7 @@ requirement); (c) reads as data, not as a fake mechanism. Two knowingly-wrong as
   endorsed). A reader could mistake the golden for an endorsement; the book comments say
   otherwise, loudly. The elide-tier fix will churn those goldens in lockstep — verify the
   lockstep when it happens.
-- **hz-correlated-lie**: a lying check body misleads the plan AND acts at apply (218a
+- **hz-correlated-lie**: a lying predict body misleads the plan AND acts at apply (218a
   world-4; 239's "identical in kind to the residue HEAD already carries", narrowed by
   fall-through-to-run). Nothing in this set can pin it away — it is the accepted trust edge
   (a) of 239 §1. The set pins its CONTAINMENT (attribution, fall-through, no values minted),
@@ -389,13 +389,13 @@ requirement); (c) reads as data, not as a fake mechanism. Two knowingly-wrong as
   its check should produce — the drift cases' contradiction is between PHASES (authored
   plan-verdict vs mock host), which is the modeled reality, not a mask (~SUSPECT this is the
   correct reading of the discipline; crosscheck should check it).
-- **hz-setu**: a shipped check body under the book's `set -u` can die on an unset-parameter
+- **hz-setu**: a shipped predict body under the book's `set -u` can die on an unset-parameter
   expansion (`[ "$2" = "" ]` with one arg — 218a u-11). No book in the set uses `set -u`;
   unpinned, unresolved, and it composes with np-errexit (both need the task #13-adjacent
-  round). The corpus-standard check-body idiom is itself set-u-unsafe — worth a lint
+  round). The corpus-standard predict-body idiom is itself set-u-unsafe — worth a lint
   eventually (oracle-author tooling).
-- **hz-strip-scope**: the strip is defined "annotations removed, `name.check()` →
-  `name_check()`, nothing else" — my goldens strip exactly one annotation form (`var : kind =
+- **hz-strip-scope**: the strip is defined "annotations removed, `name.predict()` →
+  `name_predict()`, nothing else" — my goldens strip exactly one annotation form (`var : kind =
   value` → `var=value`). Other annotation forms exist in the wild fixtures (`expr : T:i.p`
   punning, `!`-suffixes from 233's strawmen); none appear in guard23 oracles, so the strip's
   totality is UNPINNED beyond the one form (-GUESS this bites during the build; the

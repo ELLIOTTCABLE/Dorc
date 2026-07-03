@@ -70,7 +70,7 @@ refinement); Query effect-class + fold-oror re-grounding + stdin `rc=N` lane rem
 (stage-2); vouch-closure check; render xfail→pass + leaf-exact case-arm fix + xfail goldens;
 Exit(n) coverage via a nonzero Query-guard rc; set-e+probe-sourced-rc composition case;
 guarded realistic e2e book (the group-J restoration); floor-boundary strawmen (loops/
-sourcing/partial-⊤); stderr-severity floor; unsorted run-set assertion; CORPUS_CHECK_SRC
+sourcing/partial-⊤); stderr-severity floor; unsorted run-set assertion; CORPUS_PREDICT_SRC
 dedup; probe-source reconciliation per st-2 (probes stay declarations; placeholder check
 probe-bodies must not ship — pkgindex's tautological `test -n fresh` is the named hazard);
 cm-2 argv-echo differential gate (the 20A countermeasure, which subsumes the

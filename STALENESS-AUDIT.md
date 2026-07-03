@@ -127,11 +127,11 @@ file.
   pedagogy. kFAIL already encodes the asymmetry; the prose should too.
 
 ### drift-selfvouch — carried, with a fidelity and scope caution
-- Cite: DESIGN.md "Inference limitations" (~489–497: `mycmd.check() { mycmd --dry-run "$@" ;}`;
+- Cite: DESIGN.md "Inference limitations" (~489–497: `mycmd.predict() { mycmd --dry-run "$@" ;}`;
   "by existence, an oracle vouches for itself"); contract list ~444–476.
 - Carried finding (f-mined): self-vouch became a load-bearing contract axiom — probe default is
   withhold; a command ships into the probe only via the carve-out that a command inside its own
-  oracle's check() is the author's self-declaration of dry-run inertness. (chat 1bfc0c47, 06-07;
+  oracle's predict() is the author's self-declaration of dry-run inertness. (chat 1bfc0c47, 06-07;
   5b67ec3d 06-09 "we can never choose a safety-direction — oracles' choice".)
 - Caution (f-live): the strong tail of the mined quote ("'testing' applied to oracles is
   effectively DX/lint — it provides no new information") exists nowhere durable, and the human
@@ -162,7 +162,7 @@ file.
   - F1 (the guard-status wrong-elision) is the engine screaming this: with no guard/query
     category, a read-only check is either un-oracled → Opaque → poisons, or oracled-as-establish
     → treated as a mutator → wrongly stubbed when converged. Under the settled model the guard's
-    check() is itself the read-only probe and its rc is a normal probed value the fold flows
+    predict() is itself the read-only probe and its rc is a normal probed value the fold flows
     (19H §2.2; 19I group E); the genuine prerequisites are the value-plane and the structural
     render (C-5).
   - The entanglement (~SUSPECT, durable law): the poison wall was accidentally protecting
@@ -201,7 +201,7 @@ file.
     round's failure was three incoherent representations of one concept; the unification is
     half-landed and priority-1 for take-3.
   - A mutator's converged-observables are a separate oracle declaration, not the check mimicking
-    the mutator's rc (opt-B, 19B §1). No `.valid()` verb — the single check() self-guards.
+    the mutator's rc (opt-B, 19B §1). No `.valid()` verb — the single predict() self-guards.
   - C-1: the interceptor passes the command's full argument string; Dorc extracts nothing.
 
 ### owed-valueplane — value propagation (not synthesis) is the actual core
@@ -220,7 +220,7 @@ file.
 ### drift-verbset — oracle verb-set & fail-fast contract: decided, still unwritten
 - Carried (f-mined; archive L498/1204/1208/1265; chat c9fce2bc): check = the narrowest correct
   primitive (default; not list-all-then-grep); diff = strictly-stronger, opt-in, must-earn;
-  version verbs for gradual rollup; check() receives the full verbatim arg-string; fail-fast on
+  version verbs for gradual rollup; predict() receives the full verbatim arg-string; fail-fast on
   unparsable flag; byte-mechanics deferred to jq/diff/patch — only the convergence-predicate is
   Dorc's altitude.
 - Round-19 additions to the same owed contract: opt-B (separate converged-observables

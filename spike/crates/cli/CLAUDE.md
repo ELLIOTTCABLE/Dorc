@@ -31,7 +31,7 @@ engine behavior is in doubt.
 
 The probe today emits the oracle body with `$1` **unbound** — illustrative, no per-entity binding, and there is no separate *probe* plan-builder yet (`16P T16`/`T11`, `q1-probe-projection`). When that gets built, `cli` is where it surfaces: the probe-plan-builder is the **only** place `inv-superposition` ever gets a real *second* phased caller (`17O F-FW3`) — until now `build_plan` (apply) has stood in alone as if phase-agnostic. Building a real `Phase::Probe` caller here is the load-test of "engine emits, caller collapses": if `May`/`Must` superposition survives two real phased callers it earns its locks; if it breaks, they were premature (`inv-superposition`, `inv-kfail` — probe withholds on ⊤, apply performs on ⊤, never traded).
 
-The probe model `cli` drives is **speculate-and-intercept** (`17O R2-PROBEGATE`), not Ansible check-mode: oracles intercept (an `id__check` ships and replaces `id`), and a probe-gated branch is resolved by *running the read-only probe for real*. The probe is compiled from oracle bodies + minimal CFG fragments, **never the book's contents** — so it never inherits the book's ambient `trap`s. (`hostsim` answers it; `cli` just compiles + ships + reads back.)
+The probe model `cli` drives is **speculate-and-intercept** (`17O R2-PROBEGATE`), not Ansible check-mode: oracles intercept (an `id__predict` ships and replaces `id`), and a probe-gated branch is resolved by *running the read-only probe for real*. The probe is compiled from oracle bodies + minimal CFG fragments, **never the book's contents** — so it never inherits the book's ambient `trap`s. (`hostsim` answers it; `cli` just compiles + ships + reads back.)
 
 ## The stdin re-key gotcha (entity-algebra)
 

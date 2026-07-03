@@ -76,8 +76,8 @@ Grouped by behavior (exec-validated members noted; the rest are `dash -n` + gold
 - I. Probe render / oracle contract: `probe-operand-quoting` (F-QUOTE — single-quote the bound operand),
   `seam-two-providers-one-kind`, `two-oracles`. Acceptance: the probe renders safely; two providers share
   one named kind. Note: the round-19 probe ships the oracle body with the operand Dorc-extracted and bound
-  (Half-B.1) — take-3's command-keyed full-args `check()` (`19H §2`) supersedes the extraction, so these
-  re-express against the `check()` rather than the `oracle_*` markers.
+  (Half-B.1) — take-3's command-keyed full-args `predict()` (`19H §2`) supersedes the extraction, so these
+  re-express against the `predict()` rather than the `oracle_*` markers.
 - J. Flagship real-book: `headline-pi-webhost` (executed under mocks), `headline-partial`. Acceptance: on a
   scrappy realistic book, elide what is converged and run the rest. +SURE honest residual: on the full
   `pi-webhost` book most still runs (two un-oracled neighbours — `$(hostname)`, `command -v nginx` — each
@@ -133,7 +133,7 @@ Grouped by behavior (exec-validated members noted; the rest are `dash -n` + gold
 
 ---
 
-*Companion to `19H` (the value analysis + `check()` shape). Together they are the round-19 hand-forward:
+*Companion to `19H` (the value analysis + `predict()` shape). Together they are the round-19 hand-forward:
 `19H` says what take-3 must build, `19I` says what take-3 is graded against. The spike code itself is the
 disposable record (`16P`-style) — reach behavior through these two docs and the `notes/19*` strain-log, not
 by reviving the spike.*

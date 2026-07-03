@@ -45,7 +45,7 @@ defeats clarity in the *prose*.** ⇒ the fix must be in the types, and the inva
 
 A single `Observable` notion = a command's **output over channels** `{Effect, Status, Stdout, Stderr}`
 (extensible). The model, end to end:
-- the **check** (oracle `.check()`, the observable-PREDICTOR, `19B`) yields, per channel, either a
+- the **check** (oracle `.predict()`, the observable-PREDICTOR, `19B`) yields, per channel, either a
   predicted **value** or ⊤ / a loud OOB "can't-predict" — atomically for the command;
 - **consumption-liveness** = which channels the enclosing context reads (the existing replace-gate idea,
   but now over the *same* channel set the check predicts);

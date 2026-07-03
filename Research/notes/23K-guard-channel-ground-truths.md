@@ -57,7 +57,7 @@ IN EFFECT for all conductor writing from this note forward.
 >
 > Maybe this is a good indicator that it's time to **re-enrich the oracle language to "more
 > than just one function."** Not the accidental probe-vs-oracle split just removed, but
-> something space has been reserved for this entire time: *siblings* to `foo.check()` that
+> something space has been reserved for this entire time: *siblings* to `foo.predict()` that
 > perform other tasks than checking. The author has the full richness of turing-complete sh to
 > D.R.Y./dedupe them. Perhaps a *rich* oracle consists of both `foo.predict()` (only invoked
 > in rc-insertion-position) and `foo.converged()` (invoked to decide elision-potential, and
@@ -97,7 +97,7 @@ Parallel to skip→{elide, guard}: the old blurry words decompose, and no term c
 - Bare "rc" is a banned word in design text (like bare "skip"): always qualify (tool-rc /
   predicted-rc / apply-rc). Verdicts are never rc's. There are exactly TWO blessed crossings
   between the rc-world and the verdict-world, one per direction: tool-rc → verdict (authored,
-  in exactly ONE place per oracle — today the check body's path; post-round perhaps
+  in exactly ONE place per oracle — today the predict body's path; post-round perhaps
   `foo_is_converged`'s body) and verdict → apply-rc (minted once, per the bullet above).
   Everywhere else their non-correlation is an invariant, to be ENCODED as types/lints during
   the build (deferred from this design moment, owed).
@@ -107,7 +107,7 @@ Parallel to skip→{elide, guard}: the old blurry words decompose, and no term c
 - **sibling ≠ st-2.** The retired probe/check split filed MEASUREMENT per (kind, selector) —
   engine-keyed, engine-resolved. The sibling family splits by authored ROLE (decide / predict
   / check), each a whole authored function invoked with the site's argv, still
-  check-is-the-oracle in spirit: the author writes behaviour, the engine never synthesizes or
+  predict-is-the-oracle in spirit: the author writes behaviour, the engine never synthesizes or
   files it. Any drift back toward per-kind filing re-opens the jc-fblessed grave.
 - The guard-verdict channel question (how `foo_is_converged`'s boolean reaches the glue
   without re-multiplexing through an unqualified exit status — the broken-path/127 conflation

@@ -60,15 +60,15 @@ These are the human's rulings; they reframe wave-1 and set wave-2's shape.
 
 - **C-1 · the probe interceptor must pass the command's FULL argument string** (human, +SURE
   ruling). Dorc must NOT extract a subset of a command's argv (`command -v nginx` → `…check nginx`
-  drops `-v`; `apt-get install -y nginx` → `package__check nginx` drops `install -y`) — that assumes
-  the command's private arg-grammar Dorc cannot know (the `F7` argparse-zoo). The oracle's `check()`,
+  drops `-v`; `apt-get install -y nginx` → `package__predict nginx` drops `install -y`) — that assumes
+  the command's private arg-grammar Dorc cannot know (the `F7` argparse-zoo). The oracle's `predict()`,
   which alone knows its command, is invoked with the **full** argv and does any extraction. The
-  strawman already shows this (`id__check -nG deploy`; `id__check(){ command id "$@"; }`). **gw-1's
-  kind-keyed, Dorc-extracted-entity render (`package__check nginx`) VIOLATES this** — it is the
+  strawman already shows this (`id__predict -nG deploy`; `id__predict(){ command id "$@"; }`). **gw-1's
+  kind-keyed, Dorc-extracted-entity render (`package__predict nginx`) VIOLATES this** — it is the
   dangerous assumption. *Pending arg-grammar tooling (`q1-flaggrammar`), full-args is the only safe
   form.* Open: **q-1a** (does cell-keying / `resolve_entity` also stop relying on extraction, or only
   the probe invocation? — ~SUSPECT only the probe invocation for now); **q-1b** (mutator case: the
-  check becomes provider-keyed `apt_get__check install -y nginx` with the oracle parsing apt's grammar
+  check becomes provider-keyed `apt_get__predict install -y nginx` with the oracle parsing apt's grammar
   to reach `dpkg-query` — confirm the shape).
 - **C-2 · `if/then` ≡ `&&`; the real axis is rc-polarity, tracked in the CFG** (human, +SURE).
   `if cmd; then B` ≡ `cmd && B`; `if ! cmd; then B` ≡ `cmd || B`. gw-1's F1 fix special-cased

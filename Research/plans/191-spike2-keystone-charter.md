@@ -109,7 +109,7 @@ The fix is **not** band-aidable (marking `update` "pure" is a lie — it mutates
 **structured/selector entity-algebra** — `update` establishes `package-index#fresh`, `install` establishes
 `package:nginx#installed`; different cells ⇒ no poison. That is `an-entity-shape` + `an-strong-weak-update` +
 `an-per-entity-selector`, and re-keying `FactKey` propagates through `Reach`, `command_effect`, `classify`,
-the oracle effect-map (`Polarity` → a typestate transition, `inc-7`), `ProbeCheck`, and `prove_replaceable`
+the oracle effect-map (`Polarity` → a typestate transition, `inc-7`), `ProbePredict`, and `prove_replaceable`
 — i.e. nearly the whole engine. **The selector re-key is the spike's keystone — build it first** (the
 corrective to `16Q`'s `ap-1`; §5): the cells that kill the poison wall are per-entity *selectors* +
 strong/weak update, which need **no recursion**. The *recursive kind-embedding* richness (`ch-entity-algebra`)
@@ -217,7 +217,7 @@ Two `17O` model-findings to encode as tests, not new dimensions:
   change-gated effect class is a `TODO.md`-into-DESIGN item, **not spike scope.**
 - **R2-PROBEGATE → the speculate-and-intercept probe model** (the compiled-probe strawman,
   `17x-strawmen/adversarial/compiled-probe.straw.sh`, inlined at `17N §3`): lift read-only probes from the
-  CFG, dispatch concurrently, oracles **intercept** (`id__check` ships + replaces `id`); resolve a
+  CFG, dispatch concurrently, oracles **intercept** (`id__predict` ships + replaces `id`); resolve a
   probe-gated branch by *running the read-only probe for real* (unlike Ansible check-mode). The probe is
   compiled from oracle bodies + minimal CFG fragments, **never the book's contents** — so it never inherits
   the book's ambient `trap`s.

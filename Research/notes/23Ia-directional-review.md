@@ -77,7 +77,7 @@ Also related, one strawman-idiom consequence worth stating for the vouch-spellin
 233's own systemctl exemplar (the most-copied oracle text in the corpus) reports facts through
 if/else marks in CONDITION position, establishing enabled=true or =false without the body ever
 failing — its stripped aggregate rc is vacuously 0 on the modeled path. Fact-reporting-style
-check bodies (which the elide-half NEEDS: establishes-both-ways feed the fact-plane) are
+predict bodies (which the elide-half NEEDS: establishes-both-ways feed the fact-plane) are
 structurally rc-unsound as guards; tail-position single-probe bodies (the fixture style) are
 rc-sound. The two-halves doctrine's own rule ("no guard-half decision may quietly discard a
 constraint the elision-goal needs") cuts here in both directions and nobody has written the
@@ -94,7 +94,7 @@ wrong-elision generator later.
 
 ### 23Ia-fd2 — the flagship golden went stale through the XFAIL blind spot, and now contradicts the ruling it pins (+SURE, verified via git)
 
-At pin-authoring (e5bdbf9) the flagship check body was the simple tail-probe form and the
+At pin-authoring (e5bdbf9) the flagship predict body was the simple tail-probe form and the
 golden's preamble lawfully equaled strip(body). R4a (9a3faef, same day) rewrote the fixture
 oracle to the case-with-marks form and did NOT touch the golden — its commit message says
 "Golden-stable", which is true only because XFAIL content-diffs are inactive (exactly the

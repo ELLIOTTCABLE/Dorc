@@ -107,9 +107,9 @@ degrade spine held under every attack; every break was in precision-ADDING code"
   `fold-oror-guard-omits`'s real `tool.oracle.sh` carries `oracle_effect command '' query
   present`; I had omitted it.
 
-- **find-2 — generator: double `__check` suffix** (the empty-probe-results root cause).
-  My `check_fn_name(provider)` returned `instpkg__check`, then the format string appended
-  `__check` again → `instpkg__check__check`. The engine keys the check by `<provider>__check`
+- **find-2 — generator: double `__predict` suffix** (the empty-probe-results root cause).
+  My `predict_fn_name(provider)` returned `instpkg__predict`, then the format string appended
+  `__predict` again → `instpkg__predict__predict`. The engine keys the predict by `<provider>__predict`
   so it found none → every site `skip-unresolvable`. FIX: drop the redundant suffix. +SURE.
 
 - **find-3 — judge: gate-5 `argv ⊆ bare` false-positive on guarded sites** (seed 13).

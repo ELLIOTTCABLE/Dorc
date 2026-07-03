@@ -27,7 +27,7 @@ and cross-checks against the registry *both directions*: every registered code m
 emitted somewhere, every emitted code must be registered+documented+tested
 [A-rustc-tidy-errorcodes-2026]. This is exactly the Pottier-direction bidirectional gate,
 and it is cheap and adoptable in a plain Rust workspace as a `cargo test`/CI step (no
-proc-macros). The four stages run in `check()` in order: (1) extract the registry list from
+proc-macros). The four stages run in `predict()` in order: (1) extract the registry list from
 `rustc_error_codes/src/lib.rs`; (2) each code has a long-form `.md` explanation carrying a
 `compile_fail` doctest using *its own code*; (3) each code has a UI test (`Exxxx.rs` +
 `Exxxx.stderr`) mentioning its own code; (4) each code is actually emitted (the regex sweep)
@@ -135,7 +135,7 @@ This is the load-bearing artifact for Dorc's gate. Full canonical source read to
 actual constants are `IGNORE_DOCTEST_CHECK` / `IGNORE_UI_TEST_CHECK`. A small instance of the
 self-documentation rotting even here.)
 
-**The driver `check()`** runs five steps, the retire-guard first (verbatim):
+**The driver `predict()`** runs five steps, the retire-guard first (verbatim):
 
 > ```rust
 > pub fn check(root_path: &Path, search_paths: &[&Path], tidy_ctx: TidyCtx) {

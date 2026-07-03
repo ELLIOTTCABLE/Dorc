@@ -94,7 +94,7 @@ Git: a92ad31 (human root-doc absorption, full diff), e57aa62/f333db7/88f03ed/810
   convergence terminology; vacuous-universal test); only the spelling + first-class
   converged-vs-noop modeling are open, both disclosed. Keep as one line.
 - fd3 (apply-path trust) NARROWS: 23C demonstrated adv-1 (var-clobber: book `pkg` overwritten
-  by check body → vim never installs; +SURE, executed) + adv-2 (set-u kill); human h3 ruling:
+  by predict body → vim never installs; +SURE, executed) + adv-2 (set-u kill); human h3 ruling:
   subshell-wrap sanctioned + local-hygiene encouraged, explicitly "never as sandboxing" (rm-rf
   reigns). Behaviour-pins landed. RESIDUAL that stands: adv-3 runtime path-drift FAIL-OPEN
   (host-conditional branches land on unvouched rc-0 paths ⇒ guard suppresses with no live
@@ -150,7 +150,7 @@ Git: a92ad31 (human root-doc absorption, full diff), e57aa62/f333db7/88f03ed/810
   between signed-law and pin-lattice is real and exactly one un-authored case wide. +SURE of
   the components; ~SUSPECT of "unscheduled" (arc-4 has no date, that's the basis).
 - fd2 SHARPENED: 23A np-errexit: "NO book in the set uses `set -e`; no pin asserts either
-  answer... both defaults suspected painful" + hz-setu: "The corpus-standard check-body idiom
+  answer... both defaults suspected painful" + hz-setu: "The corpus-standard predict-body idiom
   is itself set-u-unsafe... unpinned, unresolved". The pinned e2e corpus deliberately avoids
   set -e/-u because open; USER_STORY's flagship book leads with `set -eu` (deliberately added
   in b941508 "real shell constructs") and narrates guard-minting there as settled ("survived

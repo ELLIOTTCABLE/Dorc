@@ -69,18 +69,18 @@ safe-by-default; the world's shell less defensive). */ -->
 ## §4 The inline-oracle observation (orchestrator; the promising one)
 
 The heavyweight form ALREADY exists by design: DESIGN's Contract & DX mandates oracle-flavour
-and book-flavour code "intermixable in the same file" — a `<provider>__check()` defined in
+and book-flavour code "intermixable in the same file" — a `<provider>__predict()` defined in
 the book IS an inline oracle; zero new mechanism. What's genuinely missing is the
 *punned/per-site* form, and there is a candidate spelling that stays 100% sh (--WONDER,
 unexplored): **user-defined wrapper functions as providers-of-one**. Strawman:
 
     reload_nginx()        { systemctl reload nginx ;}
-    reload_nginx__check() { systemctl reload nginx --dry-run >/dev/null ;}
+    reload_nginx__predict() { systemctl reload nginx --dry-run >/dev/null ;}
     ...
     reload_nginx
 
 The pun rides the existing command-keyed convention (the function name is the provider); the
-human's "write `--dry-run` inline" example is exactly the check body; no kTYANNOT/kOOB cost,
+human's "write `--dry-run` inline" example is exactly the predict body; no kTYANNOT/kOOB cost,
 no comment-parsing, no new syntax — and offboarding leaves a script that is BETTER-organized
 than before (named functions), the be-a-good-person direction. Engineering cost: the engine
 must treat book-defined functions as command-families — i.e. seam-interproc-lite (call-edges
@@ -97,7 +97,7 @@ the file, in the happy-path." Two strawman spellings, both deferred:
   is a no-op to any tool that doesn't read it — stock dash runs the real command verbatim);
   statically trivial (the AST already exposes `Simple.assigns` for prefix-envs — face-book
   handles the shape today); semantics = a site-keyed self-vouch, "appending this value makes
-  THIS invocation inert," same trust-class and shelf-life as a check() body. Cost: a reserved
+  THIS invocation inert," same trust-class and shelf-life as a predict() body. Cost: a reserved
   magic env-name is a genuine dorc-ism — but DESIGN's off-ramp text explicitly budgets
   "maybe some slight dorc-isms that you'd omit idiomatically," and this is the mildest
   possible form (executable, inert, greppable). kOOB question to rule eventually: is a
@@ -110,5 +110,5 @@ the file, in the happy-path." Two strawman spellings, both deferred:
 - Shared limit: both spell "append flag(s)"; a tool needing the flag at an interior position
   (between verb and operand) falls back to the §4 wrapper-pair. Happy-path-only by design.
 - Shared soundness note: either form is an author self-vouch for probe-inertness of the
-  dry-variant — it must flow into the same vouch-closure accounting as check() bodies
+  dry-variant — it must flow into the same vouch-closure accounting as predict() bodies
   (rule-anno-render/vouch-closure machinery, 205), never a special path.

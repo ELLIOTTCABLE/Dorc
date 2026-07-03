@@ -12,8 +12,8 @@
 ## §0 What landed
 
 - `plan::compile_probe` re-keyed: signature `(ast, cfg, classes, probe_body)` (was
-  `(classes, probe_body)`). Output `ProbePlan { checks: Vec<ProbeCheck>, unresolvable:
-  Vec<LeafId> }`; `ProbeCheck` gained `site: LeafId`. Per RESOLVABLE site (a site whose
+  `(classes, probe_body)`). Output `ProbePlan { checks: Vec<ProbePredict>, unresolvable:
+  Vec<LeafId> }`; `ProbePredict` gained `site: LeafId`. Per RESOLVABLE site (a site whose
   class is `EstablishAmbient` AND whose kind has a declared `oracle_probe_*`) one check;
   every other site recorded `unresolvable`. **The per-fact dedup is gone** — two
   same-command sites stay distinct (`inv-site-keyed-results`).
@@ -108,17 +108,17 @@ produced.
 ## §4 The emitted-function shape chosen (and why)
 
 **The SIMPLER sanctioned shape (205 §1 fallback / st-2 ruling, 20B §3): one
-`<kind>__check()` wrapper per kind from the kind's real `oracle_probe_*` body, invoked
+`<kind>__predict()` wrapper per kind from the kind's real `oracle_probe_*` body, invoked
 per-site with the resolved entity bound.** NOT the check's argparse skeleton.
 
 This is what shipped pre-D1 already (`compile_probe` pulled `idx.probe_for(kind).body`),
 so D1 preserved it and re-keyed the INVOCATIONS to per-site. Why this shape over the
 argparse-skeleton-with-declared-probe shape the prompt described first:
-- **st-2 compliance falls out for free.** The check bodies' PLACEHOLDER probe commands
+- **st-2 compliance falls out for free.** The predict bodies' PLACEHOLDER probe commands
   (`pkgindex`'s tautological `test -n fresh`; the simplified `dpkg-query -W "$pkg"` in the
   per-case apt checks) must NOT ship (20B §3). Because the shipped wrapper comes from
-  `oracle_probe_*` — NOT from the `<provider>__check` argparse — the placeholders never
-  reach the artifact. The `<provider>__check` functions remain the engine's entity-
+  `oracle_probe_*` — NOT from the `<provider>__predict` argparse — the placeholders never
+  reach the artifact. The `<provider>__predict` functions remain the engine's entity-
   resolver only (`analysis::effect::command_effect` reads them; they never ship).
 - It is the minimal diff over the working spike-2 render, and the prompt explicitly
   sanctioned it: "If reconciling argparse-skeleton + declared-probe-body is awkward, the
@@ -127,11 +127,11 @@ argparse-skeleton-with-declared-probe shape the prompt described first:
 
 ~SUSPECT cost of this shape (the per-selector limitation, strain-D1-perselector below):
 the wrapper is per-KIND, not per-(kind, selector). So `service:nginx#enabled` (site 5)
-and `service:nginx#active` (site 6) BOTH invoke `service__check 'nginx'` — the SAME probe
+and `service:nginx#active` (site 6) BOTH invoke `service__predict 'nginx'` — the SAME probe
 body (`systemctl is-active --quiet`), which only observes `#active`. The `#enabled` site
 gets the wrong probe. This is a pre-existing oracle/probe-model limitation (the probe is
 keyed by kind, the cell by selector), NOT introduced by D1, but D1's per-site invocation
-makes it visible in the artifact (two identical `service__check 'nginx'` invocations
+makes it visible in the artifact (two identical `service__predict 'nginx'` invocations
 reporting against different sites). Recorded as strain-D1-perselector; the real fix is a
 per-selector probe (`an-per-entity-selector` carried into the probe key), deferred.
 
@@ -175,7 +175,7 @@ per-selector probe (`an-per-entity-selector` carried into the probe key), deferr
 
 - **strain-D1-perselector — the probe wrapper is per-KIND, not per-(kind, selector); a
   multi-selector kind ships ONE probe body for all its selectors.** (§4.) The headline's
-  `service:nginx#enabled` and `#active` both invoke `service__check 'nginx'` →
+  `service:nginx#enabled` and `#active` both invoke `service__predict 'nginx'` →
   `systemctl is-active`, so the `#enabled` site is probed by the wrong (active-only) check.
   Harmless in the corpus (the headline host has both holding, and the e2e doesn't execute
   the probe against a real systemd), but it is a genuine probe-model gap the per-site
@@ -217,7 +217,7 @@ per-selector probe (`an-per-entity-selector` carried into the probe key), deferr
   deliberate choice to preserve the case's render-under-quoting purpose; updated its
   comment to note the grammar now COULD key them but deliberately doesn't). +SURE this is
   a real ergonomic win the re-key buys; the operand still F-QUOTE-binds correctly in the
-  INVOCATION (verified: `package__check 'web (proxy)'`, `package__check 'x; touch …'`),
+  INVOCATION (verified: `package__predict 'web (proxy)'`, `package__predict 'x; touch …'`),
   which was already the spike-2 behavior — only the RESULTS lane improved.
 
 - **strain-D1-unresolvable-leak (considered, ruled benign).** Un-resolvable sites render
@@ -232,7 +232,7 @@ per-selector probe (`an-per-entity-selector` carried into the probe key), deferr
 
 - **The transitional `declared-rc <site> rc=N` lane is the seam D2 replaces.** D2's Query
   effect-class makes `command -v`/`dpkg -s`/`getent` first-class read-only guards whose
-  check() IS the probe, and whose probed rc legitimately becomes the site's Status channel
+  predict() IS the probe, and whose probed rc legitimately becomes the site's Status channel
   (subject to rule-query-validity's pristine-prefix gate, 205 §2). At that point the
   `declared-rc` line dies: a Query site's `site <id> effect=W rc=N` record's rc BECOMES
   fold-valid (it is the guard's own rc, not a mutator's check-rc), so the firewall (§2)
@@ -277,5 +277,5 @@ the crash-guard intact (BLESS only after `cargo test` green, per the gate discip
   WIRE remit).
 - **tc-perselector-probe** (strain-D1-perselector): the per-kind probe wrapper under-serves
   multi-selector kinds. Not resolved (it is the deferred `an-per-entity-selector`-into-probe
-  work); flagged so D2/later doesn't mistake the single shared `service__check` for a bug
+  work); flagged so D2/later doesn't mistake the single shared `service__predict` for a bug
   in the WIRE.

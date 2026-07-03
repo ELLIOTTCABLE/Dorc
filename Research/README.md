@@ -303,7 +303,7 @@ for the live state.*
 - `notes/236a/b/c` + **`notes/237`** — the 3-agent crosscheck of stamped-233 (neutral / find-better /
   kill-direction) + the skeptical adjudication: mechanism validated 3-way; the vouch-tier weakness
   convergence; re-observation → the commissioned placement-spectrum round; FOUR post-adjudication
-  corrections (incl. the check()-body reversal — read them).
+  corrections (incl. the predict()-body reversal — read them).
 - `notes/238` — the ceiling: horizon-bounded claims, the derivation gradient, derived footprints; "no
   claim without a horizon; no closure authored where it can only be derived."
 - **`plans/239`** — the crisis-closure package, SIGNED: closure criteria, six re-weld deltas (applied:

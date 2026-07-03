@@ -56,8 +56,8 @@ Everything else fails toward run. Nothing rests on silence.
 >   is an observable-preserving insertion — `<oracle-check-invocation> || <original bytes>` —
 >   where the original command's bytes always survive verbatim (no code path removes them), and
 >   the inserted code obeys ONE sourcing principle: *guard code is the oracle's own authored
->   body — the check IS the oracle — shipped strip-only (annotations removed, `name.check()` →
->   `name_check()`, nothing else changed; the strip's output is runnable sh), the same bytes
+>   body — the predict() IS the oracle — shipped strip-only (annotations removed, `name.predict()` →
+>   `name_predict()`, nothing else changed; the strip's output is runnable sh), the same bytes
 >   the probe lane ships under the structural self-vouch.* Whole-body shipping is the default;
 >   a lifted/deconstructed form is an OPTIONAL analyzer edge-case, and even then must be
 >   byte-identical to a *substring* of the oracle body — sh's own control-flow performs
@@ -75,7 +75,7 @@ Everything else fails toward run. Nothing rests on silence.
 >   earlier decision.
 > - **rul-guard-license.** A guard mints only from a matching (call-site, reached
 >   converged-vouch, probe-verdict) witness. The vouch is a mark on a path through the oracle's
->   own check-body, scoped by constant-propagation reachability; it NEVER enters the fact-plane
+>   own predict-body, scoped by constant-propagation reachability; it NEVER enters the fact-plane
 >   and is inadmissible in any other site's elide/poison reasoning. Run-delta verbs never guard
 >   (an oracle declines by not vouching). No vouch ⇒ run. Spelling of the vouch is OPEN; build
 >   against a stub marked strawman.
@@ -171,7 +171,7 @@ Somewhere in Priorities or the plan/apply discussion, in your voice — the weld
 Applied using the corpus's sanctioned frozen-document annotation convention (the
 `<!-- /* … */ -->` block; precedent: the correction pointer in `notes/231` §4): a LATER-WORK
 block at 233's very end pointing to 236a–c/237/238/239 and carrying the four
-reader-must-honor corrections (check()-body → probe-body; the shadow overclaim; the
+reader-must-honor corrections (predict()-body → probe-body; the shadow overclaim; the
 family-participation over-promise and where the elide-goal's licensing moved; read-the-trade-
 with-the-two-halves-doctrine). The stamped text above the annotation is untouched.
 

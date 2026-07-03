@@ -62,7 +62,7 @@ none was applied on an auditor's word alone.
   consumer in this book). → 1AA §4 line corrected.
 - **conv-4 — the 1AC §1 trust-gap (w-1/w-2/w-3) is CLOSED, in the matrix's favor.**
   Both audits independently confirmed every taken-on-word relay against the unread
-  crates: check-dialect `TestOp`={Eq,Ne} and the `Word` ladder
+  crates: predict-dialect `TestOp`={Eq,Ne} and the `Word` ladder
   (Unmodeled-fails-everywhere); `resolve_probe`'s exact-then-single-selector-default-
   else-None; annotation-but-no-probe ⇒ Top; plan's StatusRenderFloor blocking
   unconditionally; solve's `n*1024+4096` cap + `converged` flag + states=IN-state. The

@@ -17,7 +17,7 @@ This is the in-process stand-in for **Seam-1**, the controller↔host transport 
 
 ## The probe model — speculate-and-intercept (`17O R2-PROBEGATE`)
 
-Oracles ship an interceptor that *replaces* the real command (an `id__check` ships and replaces `id`); a probe-gated branch is resolved by running the read-only probe **for real** — unlike Ansible check-mode, which is blind past a register-gated `when:`. The probe is compiled from oracle bodies + minimal CFG fragments, never the book's contents, so it never inherits the book's ambient `trap`s. Model that here as the host answers a *probed* fact; an un-probed fact must surface `Unknown` upstream (`can't-probe ⇒ can't-elide`, `an-elision-predicate`), never a synthesized Converged.
+Oracles ship an interceptor that *replaces* the real command (an `id__predict` ships and replaces `id`); a probe-gated branch is resolved by running the read-only probe **for real** — unlike Ansible check-mode, which is blind past a register-gated `when:`. The probe is compiled from oracle bodies + minimal CFG fragments, never the book's contents, so it never inherits the book's ambient `trap`s. Model that here as the host answers a *probed* fact; an un-probed fact must surface `Unknown` upstream (`can't-probe ⇒ can't-elide`, `an-elision-predicate`), never a synthesized Converged.
 
 ## The keystone re-key ripples *into this crate* (`ap-1`)
 

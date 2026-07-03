@@ -54,8 +54,8 @@ My first synthesis overstated it. The corrected, locked-for-this-spike model:
   oracle-anchored. The book gives the call-site (where + with-what); the oracle gives how-to-check-
   read-only. Today `compile_probe` does only a degenerate slice of this — it ships the oracle body per
   ambient fact with the **operand unbound** (`$1` empty; 16P T16 "Half A"). Half B = bind the book's
-  operand/args into the **interceptor** (`command -v nginx` → `command__check -v nginx` + the body of
-  `command.check()`, exactly the `id__check` strawman) and **subsume the guarded branch** from the
+  operand/args into the **interceptor** (`command -v nginx` → `command__predict -v nginx` + the body of
+  `command.predict()`, exactly the `id__predict` strawman) and **subsume the guarded branch** from the
   probe verdict instead of `:`-stubbing it.
 - **CFG-preservation (strawman variant B) is deferred, not this round.** Default = variant A (FLAT:
   independent interceptors dispatched concurrently). Variant B (`an-maintain-cfg`) is the rare case: a

@@ -6,12 +6,12 @@ untracked scratch. Preserved here because they are the only **non-quarantined** 
 artifacts (round-16's are `quarantine-DO-NOT-READ`), and round-17 (`plans/170`, the K1 brief) depends on them.
 
 > **Caveat — illustrative, not a model.** The oracles are **command-centric** (probe = dry-run the mutator),
-> the form `16P` DP-1 *refuted* in favour of fact-centric. Read them for the `check()`-shape **taxonomy** and
+> the form `16P` DP-1 *refuted* in favour of fact-centric. Read them for the `predict()`-shape **taxonomy** and
 > the **hazards**, never as the recommended contract. As authored they also fail `dash -n` (dotted function
 > names) — the off-ramp survives only as a mechanical rename (`notes/151` X4). Don't "fix" them; they are
 > frozen evidence.
 
-## oracles/ — one per `check()`-spelling shape (the engineer side)
+## oracles/ — one per `predict()`-spelling shape (the engineer side)
 - `apt-get.straw.sh` — **dry-run-flag** (`apt-get --simulate | grep`); carries the `--option=` arg-guard leak.
 - `systemctl.straw.sh` — **query-verb** (read-verb siblings `is-active`/`is-enabled`); the **structured-kind**
   case in the wild — `service{enabled,active}`, two selectors (the live `dq-entity-algebra` instance).

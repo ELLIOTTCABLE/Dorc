@@ -20,7 +20,7 @@
 `[convergent: neutral + adversarial + cancelled-pass + verified live]` · **FOLDED** (17N top paragraph) → `kTYANNOT`
 
 The `dq-kOOB` inline-annotation lean (`local w : T = "$1"`; `return 0 : "$w" is Wombat#frocked`; dotted
-`frobctl.check()`) is **not a behavioral no-op** and breaks the off-ramp weld + the behavioral-no-op
+`frobctl.predict()`) is **not a behavioral no-op** and breaks the off-ramp weld + the behavioral-no-op
 contract. Verified live: `dash` → `local: :: bad variable name` (aborts); `bash` → two warnings, `w` left
 empty, rc 0 (silent corruption); dotted name → `dash -n` "Bad function name"; un-stripped `{a,b}`
 brace-expands under bash, not dash. The off-ramp is *by definition without Dorc* (DESIGN L33, `ssh host 'dash
@@ -36,7 +36,7 @@ the off-ramp (`kLANG`), eol-comment re-opens `kOOB`'s no-comment-parsing redline
 
 ```sh
 # STRAWMAN A — 17N's spelling; FAILS the off-ramp (each line a regression assertion under stock dash/bash)
-frobctl.check() {                                          # dash -n: rc2 "Bad function name"
+frobctl.predict() {                                          # dash -n: rc2 "Bad function name"
    local w : com.frobber.Wombat{defrocked,frocked} = "$1"  # dash run: rc2 "local: :: bad variable name"
    frobctl --is-frocked "$w"                               #   bash run: w left EMPTY, rc0 (silent corruption)
 }
@@ -277,7 +277,7 @@ Lands on `q1-probe-projection` + `q1-interproc`. [strawman: `getent`→`needs_ad
   intelligent-bouncer / multi-host-step / bastion could be two-for-one for the ssh/docker case.) Still rated
   a strong finding.
 - **R2-PROBEGATE → RESOLVED (the probe model).** Dorc *speculates* — lifts read-only probes from the CFG and
-  runs them concurrently (oracles *intercept*: `id__check` ships + replaces `id`), reserving the right to
+  runs them concurrently (oracles *intercept*: `id__predict` ships + replaces `id`), reserving the right to
   preserve a CFG fragment where a probe is valid/inert only under a prior guard. A probe-gated branch is
   resolved by *running the read-only probe for real* (unlike Ansible check-mode, which is blind past a
   register-gated `when:` because it does not run the gating task — Dorc's probes are read-only, so it can).

@@ -3,7 +3,7 @@
 > AI-authored strain-log. Confidence-marked (+SURE / ~SUSPECT / -GUESS / --WONDER). Trust
 > R/D/I/K and `19A §5`/`19B` (the human's rulings) over this. Continues `19A`/`19B`. This is the
 > **decision-independent, INJECTED-observables** half (build-1); the real oracle-contract side that
-> *produces* observables (`19B` build-2: command-keyed `.check()` + the OOB verdict-lane + opt-B) is a
+> *produces* observables (`19B` build-2: command-keyed `.predict()` + the OOB verdict-lane + opt-B) is a
 > separate later build and was NOT built here.
 >
 > Landed (this worktree, `ai/round19-keystone`): `1ef05ce` (core+fold+plan engine), `b95ec86`
@@ -187,7 +187,7 @@ sandbox do.
   distinct token; the real rc is `rc=2` data. The cli stdin grammar (`rc=N`) is the build-1 stand-in for
   that lane; build-2 replaces the stand-in with `$DORC_VERDICT` records.
 - The check is **command-keyed, full-args** (`19B §1`/`C-1`); the fold consumes a *fact-keyed* rc here
-  (build-1 injection), but build-2's per-command `.check()` is what *produces* it. ~SUSPECT a single fact
+  (build-1 injection), but build-2's per-command `.predict()` is what *produces* it. ~SUSPECT a single fact
   probed by two different commands could yield two rcs — build-1's fact-keyed injection collapses that;
   build-2 must decide the keying (likely command-keyed production → fact-keyed consumption, per `19A §5`'s
   three-layer split: command-keyed invocation, named-kind identity, fact-keyed license).

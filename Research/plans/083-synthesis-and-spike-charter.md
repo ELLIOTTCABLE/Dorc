@@ -122,7 +122,7 @@ historical numbers conflate it):
   (mostly-independent roles) that compositional summaries + finer unit-granularity exploit.
 - **Q-INFER** `kBURDEN` `kOOB` — *the metadata-minimization question, made measurable*: how much of
   {effect-class, cost-class, memo-key} is **inferable** from sh-structure (e.g. a `curl`/`ssh`/`nc` in
-  a check body ⇒ `network` cost-class; the presence/shape of a leading guard ⇒ shallow) or cheap
+  a predict body ⇒ `network` cost-class; the presence/shape of a leading guard ⇒ shallow) or cheap
   observation, vs **must be declared**? This sizes the irreducible OOB floor — the smaller it is, the
   more we keep "all-sh, human-visible" and the less metadata sprawl we accrete.
 

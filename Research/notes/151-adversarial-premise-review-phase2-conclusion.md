@@ -168,7 +168,7 @@ unsourced until re-grounded.
     simulation the oracle relies on for non-mutation"* — a `kFAIL-withhold` (never-mutate-in-
     probe) violation.
   - *oracles aren't POSIX:* all four `.straw.sh` oracles **fail `dash -n`** ("Bad function
-    name" at the `cmd.check()` line); the "dash-clean / runs as-is" claim is false until a
+    name" at the `cmd.predict()` line); the "dash-clean / runs as-is" claim is false until a
     mechanical rename. The off-ramp survives "as a rename, not as-is" — on the oracle side.
   - **The lesson (X4):** *"hand-rolled sh arg-parsing in oracles is a recurring soundness hole;
     the fN-NOTATION contract cannot be carried by author-written `case` globs alone … the

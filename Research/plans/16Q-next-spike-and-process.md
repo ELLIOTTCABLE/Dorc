@@ -132,7 +132,7 @@ is exactly why they keep getting deferred.
   categorized as *needs-a-runtime-sandbox*, and the **static** option was dropped: the analyzer is
   *already an effect-analyzer* — point it at the lifted probe body and have it *certify* the probe touches
   no modeled mutation, refusing to ship a probe it cannot prove inert.
-  <!-- /* superseded 2026-06-06: over-strong as worded — "refuse a probe it cannot prove inert" would refuse the oracle's OWN declared command (`mycmd` inside `mycmd.check()`), which is opaque and can NEVER be proven inert, yet MUST ship or no oracle could exist (the forced self-vouch — see DESIGN "Inference limitations", the `mycmd.check` passage). Narrow carve-out: this certify gates the *non-self-vouched* calls + modeled-mutation contradictions; the oracle's own declared command is the accepted-unprovable axiom (ships + sandbox-contained per L136-137, not refused). */ -->
+  <!-- /* superseded 2026-06-06: over-strong as worded — "refuse a probe it cannot prove inert" would refuse the oracle's OWN declared command (`mycmd` inside `mycmd.predict()`), which is opaque and can NEVER be proven inert, yet MUST ship or no oracle could exist (the forced self-vouch — see DESIGN "Inference limitations", the `mycmd.check` passage). Narrow carve-out: this certify gates the *non-self-vouched* calls + modeled-mutation contradictions; the oracle's own declared command is the accepted-unprovable axiom (ships + sandbox-contained per L136-137, not refused). */ -->
   Spike-1 lifts the oracle statically
   but never effect-analyzes the probe body (the oracle lift only diagnoses a *declared* top-level mutator,
   not the probe's own reachable effects). Bound honestly: this certifies only against *modeled* effects —

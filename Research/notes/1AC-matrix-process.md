@@ -37,7 +37,7 @@ CONFIRMED by direct source read (file:line in 1AA §4; all +SURE):
 TAKEN ON WORD (not read this session; ~SUSPECT-confirmed):
 - w-1 oracle crate internals: the check-evaluator's `Word`/`TestOp` sub-dialect,
   `resolve_probe`, and "annotation-reached-but-no-probe ⇒ Resolution::Top" — from 1A8's
-  ground-truth-lift section + effect.rs's own CORPUS_CHECK_SRC test comment
+  ground-truth-lift section + effect.rs's own CORPUS_PREDICT_SRC test comment
   (effect.rs:655-690), which is engine-adjacent but not the crate itself.
 - w-2 `plan::disposition_for`'s honoring of the in-loop floor and the
   consumed-observable gates — from cfg.rs doc-comments + spike/CLAUDE.md.

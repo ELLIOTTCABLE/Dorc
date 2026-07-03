@@ -22,7 +22,7 @@ and scheduled; none had reached built code except the third (inherited from spik
 
 ## §1 Convergent findings (both passes independently) — adopted as rulings
 
-- **find-annotation-ships** (= neutral gap-1): the inline annotation inside a *shipped* check()
+- **find-annotation-ships** (= neutral gap-1): the inline annotation inside a *shipped* predict()
   body is not inert under dash — `pkg : Kind = "$1"` PATH-executes `pkg`, never binds `$pkg`,
   and the probe then produces wrong *concrete* observables (the no-floor class), while `dash
   -n`, the apply-only exec gate, and the fact-level hostsim are all structurally blind.

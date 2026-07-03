@@ -137,7 +137,7 @@ does not). `inline_disposition` (called from `build_plan` before `disposition_fo
 `members_disposition`) observes each body Establish's verdict and mints/refuses. The CALL span
 substitutes to `StandIn::True`.
 
-`push_inline_checks` ships one `ProbeCheck` per effect-bearing/probeable body site, `member =
+`push_inline_checks` ships one `ProbePredict` per effect-bearing/probeable body site, `member =
 Some(body-site-index)` (the `site N.M` sub-record), with the entity bound at the call.
 All-or-nothing on probe-ability: an un-probeable ESTABLISH ⇒ the WHOLE call unresolvable
 (`can't-probe ⇒ can't-elide`); a Query without a probe body is omitted, not a blocker.
@@ -228,7 +228,7 @@ dorc and inspecting).
   The literal 207 pun `dpkg -s "$1" >/dev/null 2>&1 || apt-get install -y "$1"` SPLICES and
   binds positionals correctly (`dpkg -s nginx`, `apt-get install nginx` per call — verified),
   but the `dpkg -s` guard misclassifies as MustRun (not Query) because the oracle's
-  `dpkg__check` verb-binding and the effect-map's `oracle_effect dpkg -s query …` verb key did
+  `dpkg__predict` verb-binding and the effect-map's `oracle_effect dpkg -s query …` verb key did
   not match (an oracle-AUTHORING gap, orthogonal to arch-2's mechanism — "the oracle dialect is
   UNTOUCHED" per the brief). So the e2e `inline21-wrapper-converged-elides` uses the
   devnull-ESTABLISH wrapper (`apt-get install -y "$1" >/dev/null 2>&1`) instead — same payoff,

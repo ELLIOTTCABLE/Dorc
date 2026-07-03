@@ -18,7 +18,7 @@ split, ~SUSPECT on naming):
   literal-word resolution. Anything non-literal (command-substitution results, arithmetic, env
   defaults `${x:-y}` beyond literal cases) ⇒ that var ⇒ ⊤. Output: for each command-site, the
   argv as `Vec<Flat<StrValue>>` — fully-concrete, partially-⊤, or ⊤.
-- **face-check** — *check-body concrete evaluation*: the key simplification this design banks
+- **face-check** — *predict-body concrete evaluation*: the key simplification this design banks
   on. At a command-site whose argv resolved fully-concrete, "tracing the value through the
   oracle's argparse" is not abstract interpretation at all — it is **concrete evaluation of a
   constrained sh dialect over a known argument list**. The argparse `while`/`case`/`shift`
@@ -48,7 +48,7 @@ rather than by survey): **no new substrate.** face-book rides the existing workl
 composed lattice (the combinators already exist: `MapL`, `Flat`, `Product`); face-check is not a
 dataflow problem. seam-finite risk is contained (Flat domains are height-2; the map is over
 program variables, finite per script); seam-interproc is *avoided*, not solved — the only
-cross-file flow is book-argv → check-body, which face-check handles by evaluation, and `. /path`
+cross-file flow is book-argv → predict-body, which face-check handles by evaluation, and `. /path`
 sourcing stays ⊤ this round (recorded as deferred, not irrelevant: it returns under the
 other-user axis — admins do source helper files; the degrade is safe meanwhile).
 
@@ -62,7 +62,7 @@ Spike-2's `CommandEffect` knows `Establish/Kill/Pure/Opaque`. The settled model 
 audit owed-halfb; 19I group E supersession) adds the read-only guard as a first-class class:
 
 - **Query(cell)** — a command the oracle declares *reads* a cell and mutates nothing
-  (`command -v`, `dpkg -s`, `getent …`). Its check() IS the guard, shipped and run read-only in
+  (`command -v`, `dpkg -s`, `getent …`). Its predict() IS the guard, shipped and run read-only in
   the probe; its **probed rc is the site's Status channel** (probe-sourced, per
   inv-probe-sourced-values) and flows into the fold to resolve the guarded branch. This — not
   an unconditional render-floor block — is how `if`/`||` guards participate (supersedes 19I
@@ -87,7 +87,7 @@ audit owed-halfb; 19I group E supersession) adds the read-only guard as a first-
   declarations remain a separate oracle-side declared map — now keyed by the *argparse-derived*
   verb (face-check output), never word-position; verbless providers (useradd) key on (provider,
   ε). The exact sh spelling of that map stays the old marker idiom for this spike (pending
-  dq-kOOB; disposable). The alternative — effects declared inline inside check() case-arms via
+  dq-kOOB; disposable). The alternative — effects declared inline inside predict() case-arms via
   marker calls — is prettier but couples the evaluator to more dialect; deferred, noted as a
   candidate for the real kOOB ruling.
 
@@ -96,7 +96,7 @@ audit owed-halfb; 19I group E supersession) adds the read-only guard as a first-
 Spike-2's stdin lane is `kind:entity#sel verdict [rc=N]` — fact-keyed, with the rc injected.
 Take-3 (+SURE on direction, the exact line-grammar is disposable):
 
-- The probe artifact contains, per *resolvable command-site*, the oracle's check() as a
+- The probe artifact contains, per *resolvable command-site*, the oracle's predict() as a
   function plus one invocation with the site's **full verbatim argv** (C-1); each invocation
   reports against a stable **site-id** (the LeafId/AstId back-map — inv-leaf-seam pays off
   here).
@@ -138,7 +138,7 @@ strip/transpile pass gets built (191 ch-shape-anno verbatim).
 
 - task-A (face-book propagation, `analysis::value`): Opus, tight spec — classical dataflow on
   an existing substrate with existing test idioms to copy; failure modes are visible (tests).
-- task-C (face-check evaluator + oracle re-key to command-keyed check()): the design-heaviest;
+- task-C (face-check evaluator + oracle re-key to command-keyed predict()): the design-heaviest;
   spec'd by me in detail (this note + a brief), built by Opus, with an explicit flag-up rule
   for any tc-* shaped call; graduate to Fable if it bogs.
 - task-D (probe-projection + cli/hostsim re-key + fold re-grounding + stage-2 de-cruft):

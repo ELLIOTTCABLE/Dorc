@@ -136,7 +136,7 @@ guard: it refuses to silently re-bless fixtures to match all-exit-0 mock output 
 ## §3 The gate-1 feasibility finding that shaped the design (+SURE, traced under mocks)
 
 Running the rendered probe under the present apply-mocks reveals the un-shimmed probe commands
-produce `rc=127 ⇒ cant-tell`, NOT a script abort: the `<kind>__check` wrappers swallow the
+produce `rc=127 ⇒ cant-tell`, NOT a script abort: the `<kind>__predict` wrappers swallow the
 not-found via their own `>/dev/null 2>&1`, so the only signal is `rc=127` in the emitted record.
 So "an un-shimmed invocation = command-not-found = loud fail" (the prompt's framing) could NOT be
 detected via the probe's exit code — I detect `rc=127` in the records explicitly. This is why

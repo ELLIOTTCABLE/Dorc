@@ -200,11 +200,11 @@
 
 - **236a-fd7 · fat-pole description is internally inconsistent with st-2/inv-g3 — decide
   which bytes ship.** +SURE on the inconsistency, low stakes now. 233's fat pole shows a
-  full-args `__check`-style invocation (`apt_get_check install -y nginx || …`) but the same
+  full-args `__predict`-style invocation (`apt_get_check install -y nginx || …`) but the same
   section's license mechanics ("unpropagatable argv ⟹ no path reached ⟹ no vouch ⟹ run")
   and `218a` inv-g3 (guards ship `resolve_probe` bodies with compile-resolved entities;
-  the `__check` argparse never ships — st-2, and it isn't valid sh once annotated) imply the
-  compile-resolved form (`package_installed__check 'nginx' >/dev/null 2>&1 || …`). If
+  the `__predict` argparse never ships — st-2, and it isn't valid sh once annotated) imply the
+  compile-resolved form (`package_installed__predict 'nginx' >/dev/null 2>&1 || …`). If
   full-args checks ever ship instead, three latent hazards activate: annotation-stripping
   becomes a correctness-critical transpile of shipped code (the F-OFFRAMP class), the check
   dialect's OOB idioms (`${DORC_VERDICT:?}` aborts when unset) crash in the apply lane, and

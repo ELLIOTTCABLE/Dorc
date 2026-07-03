@@ -52,7 +52,7 @@ token to key on, for two independent reasons that compound:
   command token, but one `sed -i "s|$re.*|$line|"` edits ANY file via ANY
   script. To bind it to a specific surface/path/line, the resolver would have to
   PARSE the `s|...|...|` argstring — which the analyzer must NEVER do
-  (`check()` annotates operands by position; it does not interpret argstrings;
+  (`predict()` annotates operands by position; it does not interpret argstrings;
   exemplars + `inv-referent-agnostic`). So even the real command can't be
   surface-keyed. (+SURE.)
 
@@ -363,7 +363,7 @@ Each: what it is, why it resists, and the SHAPE of what would be needed.
   primitive the dialect lacks.
 
 - **tc-F2 (two kinds keying the same `test` provider):** `crond` and `fetched`
-  BOTH declare `oracle_effect test '' query present` and a `test__check`. Within
+  BOTH declare `oracle_effect test '' query present` and a `test__predict`. Within
   each file there's no collision (one oracle per file), but at the ENGINE level a
   `[ -e X ]` site cannot be uniquely routed to crond-vs-fetched — two oracles
   claim the same provider command. The exemplars never share a provider across

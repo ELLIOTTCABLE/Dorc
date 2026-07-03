@@ -28,7 +28,7 @@
 > Provisional lean, *heavily* strawman: a minimal **TS/Flow-style inline type-annotation** (env-vars too
 > DSL-y / half-assed). Illustrative, NOT locked:
 > ```sh
-> frobctl.check() {
+> frobctl.predict() {
 >    local w : com.frobber.Wombat{defrocked,frocked} = "$1"   # …then e.g.  0) return 0 : "$w" is Wombat#frocked
 > }
 > ```
@@ -258,7 +258,7 @@ erasable, productivity-over-correctness (diverge: TS structural, Dorc nominal).
   Occurrence-typing narrowing (inc-6) is real but operates *downstream* of a known kind/instance; it refines
   *state*, it does not manufacture the *identity*.
 - **Fact-centric, never command-centric (`16Q` §4).** The anchor probes a **fact** ("does `kind:entity`
-  hold?", e.g. `dpkg -s nginx`), never dry-runs the mutator. A command-centric `mycmd.check() { mycmd
+  hold?", e.g. `dpkg -s nginx`), never dry-runs the mutator. A command-centric `mycmd.predict() { mycmd
   --dry-run "$@"; }` makes the named-kind index decorative in the skip path.
 - **The forced self-vouch (DESIGN; `16Q`).** No analysis decides whether `mycmd --dry-run` is probe-safe, so
   an oracle **vouches for its own command's inertness by existing** (the accepted-unprovable axiom). A static
@@ -267,17 +267,17 @@ erasable, productivity-over-correctness (diverge: TS structural, Dorc nominal).
 
 **Illustration — the *compiled probe* (grounds the round-2 probe-model discussion; `17O` R2-PROBEGATE).** The
 probe phase is not the book; it is *compiled from* the book's CFG — each potentially-mutating command is
-replaced by an oracle-vouched read-only check (the oracle *intercepts*: `id__check` ships and replaces `id`)
+replaced by an oracle-vouched read-only check (the oracle *intercepts*: `id__predict` ships and replaces `id`)
 or omitted; independent checks are dispatched **concurrently** (what "make them read-only" buys); output is
 out-of-band (per-leaf freeform → scratch files; gating verdicts on a *separate* lane — the GitHub-CVE lesson,
 P6). Dorc lifts the oracle *bodies* + (only where a probe is valid/inert solely under a prior guard) a minimal
 CFG fragment — never the book's *contents*, so it never inherits the book's `trap`s (`17O` R2-TRAP):
 ```sh
 D=${DORC_SCRATCH:?}; V=${DORC_VERDICT:?}                  # scratch dir + verdict lane (separate channels)
-id__check() { command id "$@"; }                          # oracle interceptor, shipped + replaces `id`
+id__predict() { command id "$@"; }                          # oracle interceptor, shipped + replaces `id`
 emit() { printf '%s\trc=%d\n' "$1" "$2" >>"$V"; }         # verdict off freeform; %d, never %n
 getent group app                >"$D"/p1.out 2>&1; emit p1 "$?"   # independent ⇒ dispatched concurrently
-id__check -nG deploy            >"$D"/p2.out 2>&1; emit p2 "$?"
+id__predict -nG deploy            >"$D"/p2.out 2>&1; emit p2 "$?"
 systemctl is-active --quiet app >"$D"/p3.out 2>&1; emit p3 "$?"
 ```
 A probe-gated branch is resolved by *running the read-only probe for real* (so Dorc, unlike Ansible
@@ -501,7 +501,7 @@ magic — exactly as DESIGN predicted.
 environment files [B-github-actions-setoutput-deprecation-2022]; `kCOMMS`) · `cmd | grep -q` (P2) ·
 over-coarsening a kind below its ≥enum mutation-gating floor (`is-enabled` discharging `is-active`, `17B`).
 **Narrow note, not a blanket ban:** a **dotted name carrying the 3-place `(kind,provider,verb)` relation**
-clobbers across providers (X3, F4) — but using `frobctl.check()` merely as a *probe function name* is **not**
+clobbers across providers (X3, F4) — but using `frobctl.predict()` merely as a *probe function name* is **not**
 ruled out by this (the "fails `dash -n`" objection is moot once Dorc owns its parser and may accept
 annotations); the X3 clobber is specifically about a 1-place name standing in for the 3-place relation.
 

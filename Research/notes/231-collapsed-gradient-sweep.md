@@ -374,7 +374,7 @@ can't-predict = Top = run; so `dc-elide-on-trusted-default` is NOT blocked on a 
 Three findings refute the first clause:
 
 1. **The proposed `kind#channel#prop` annotation form DOES NOT EXIST.** The inline annotation
-   (`oracle/src/check/ast.rs:88-111`, verified) carries `name : kind = value` — IDENTITY only
+   (`oracle/src/predict/ast.rs:88-111`, verified) carries `name : kind = value` — IDENTITY only
    (kind + entity), three fields, no channel. `#installed`/`#enabled`/`#fresh` are fact-CELL
    selectors that appear ONLY in `oracle_effect` rows, never in the annotation. The `kind` field
    is "an opaque coordination handle (`inv-referent-agnostic`); never decoded for meaning"
@@ -382,16 +382,16 @@ Three findings refute the first clause:
    - `pkg : package = "$1"` (`converged/package.oracle.sh:14`)
    - `svc : service = "$1"` (`exec-distinct-selectors/service.oracle.sh:17`)
    There is no channel-mention surface from which to read a vouch.
-2. **`check()` resolves IDENTITY, not per-channel observables.** `check()`
-   (`oracle/src/check.rs:30-32`, `eval.rs:16-18`) yields `(kind, entity, verb, probe_body)`. The
+2. **`predict()` resolves IDENTITY, not per-channel observables.** `predict()`
+   (`oracle/src/predict.rs:30-32`, `eval.rs:16-18`) yields `(kind, entity, verb, probe_body)`. The
    Effect channel is derived DOWNSTREAM by `command_effect` from the `(kind,verb)→effect-map`
    polarity (`effect.rs:304-310`); Status comes from probe rc; Stdout/Stderr are never vouched
    (`cfg.rs:123-131`: "Effect is vouched by convergence and never enters the consumed set").
-   `inv-one-observable`'s "check() PREDICTS per-channel values" is **aspirational wording** — the
+   `inv-one-observable`'s "predict() PREDICTS per-channel values" is **aspirational wording** — the
    built reality splits the prediction across three sources. No author "predicts a channel inside
-   `check()`" anywhere. (My note: this is the one place an agent contradicts an `inv-*` slug's
+   `predict()`" anywhere. (My note: this is the one place an agent contradicts an `inv-*` slug's
    literal text; it is a build-vs-spec gap the agent flags, not a weld breach — worth surfacing to
-   the human since `inv-one-observable` reads as if `check()` does this.)
+   the human since `inv-one-observable` reads as if `predict()` does this.)
 3. **The Stdout/Stderr completeness vouch the headline needs is hard-blocked with NO author
    surface.** `consumption_ok` (`plan/lib.rs:572-573`, verified) returns `false` on any consumed
    Stdout/Stderr unconditionally; `prove_replaceable` conjunct-4 doc (`:255-281`) "a declared rc
@@ -406,7 +406,7 @@ oracle_probe_pkgstate() { dpkg -s "$1" >/dev/null 2>&1; }
 oracle_effect dpkg '' query installed          # ← MENTIONING `query` vouches read-only
 ```
 (`headline-guarded-realistic/pkgstate.oracle.sh:9`, verified verbatim.) MENTIONING a verb with
-`query` polarity vouches it read-only ⇒ its `check()` becomes a Query-guard whose rc can
+`query` polarity vouches it read-only ⇒ its `predict()` becomes a Query-guard whose rc can
 substitute (`prove_query_replaceable`, `plan/lib.rs:337-356`, confirmed present at `:358`);
 ABSENCE of any effect-map row ⇒ `Opaque` ⇒ runs (`effect.rs:305-310`). That IS mention=vouch /
 absence=safe-Top — but spelled in `oracle_effect` ROWS, not the inline annotation, and it vouches
@@ -453,7 +453,7 @@ dimensions).** That is the `tc-`/design question, not a HEAD boolean.
 - `tc-convergence-per-value`: can solver-convergence be sliced per-value the way taint can? The
   `maymust-recovery` (pro) and `convergence-reachability` (con) agents DISAGREE; con is right for
   the decision; flagged, not in the walk-back map (§1f cross-note).
-- `tc-one-observable-build-vs-spec`: `inv-one-observable` says `check()` predicts per-channel
+- `tc-one-observable-build-vs-spec`: `inv-one-observable` says `predict()` predicts per-channel
   values; the build splits prediction across effect-map / probe-rc / never-vouched
   (`channel-vouch` finding 2). Surface to the human — the slug text and the code diverge.
 

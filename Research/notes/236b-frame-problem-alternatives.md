@@ -105,7 +105,7 @@ that "may resolve to no."
 
 - **236b-fail6 · Off-ramp/mindshare erosion at the realistic (fat) pole.** +SURE and
   conceded by 233 itself ("the mindshare cost is total" absent a uniform foldable
-  render): realistic guards are shipped check-body functions, so the artifact reads
+  render): realistic guards are shipped predict-body functions, so the artifact reads
   as machine-woven library calls threaded through your book. Runnable-without-Dorc
   survives; readable/ownable-without-Dorc (the actual off-ramp value, kLANG) erodes.
 

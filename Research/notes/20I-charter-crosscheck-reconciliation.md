@@ -54,7 +54,7 @@ re-bless; a boundary case expresses the enabled≠active host.
     probe wrapper contains ONLY the kind's self-vouched declared `oracle_probe_*` body
     plus generated scaffolding (printf/if — blessed-pure), so there is no un-vouched call
     for a static closure check to refuse; the executable half (gate-1(c) rc-127) covers
-    mocks cases. REVIVES the moment any future emitter ships check()-body spans
+    mocks cases. REVIVES the moment any future emitter ships predict()-body spans
     (rule-anno-render's residual rides the same trigger — 20C §7's hazard note is the
     pointer). spike/CLAUDE.md's "remains owed (task-D)" wording updated by task-P.
   - *rule-anno-render*: discharged-as-moot same trigger (no annotation line ships today —

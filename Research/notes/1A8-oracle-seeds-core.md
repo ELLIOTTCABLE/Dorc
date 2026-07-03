@@ -19,7 +19,7 @@ spike's lifter/evaluator actually accept, not a guess):
   `name : kind` for the nullary/Singleton case (`check/ast.rs` L88-111; `check/eval.rs`
   L301-317).
 - The shipped probe is the `oracle_probe_<kind>` (or `oracle_probe_<kind>_<selector>`)
-  body — NOT the check() body (st-2). A multi-selector kind with only a kind-default is
+  body — NOT the predict() body (st-2). A multi-selector kind with only a kind-default is
   UN-PROBEABLE ⇒ its sites run (`KindIndex::resolve_probe`, L216-242).
 - **The evaluator's modeled sub-dialect is NARROW** and this constrained every check:
   `Word` = {Literal, SingleQuotedLiteral, Positional(n), `${n#prefix}`, Var}; anything
@@ -51,7 +51,7 @@ REFUSES (→ run; never wrong-elide):
 - `apt-get update` / `apt-get upgrade` (L51/126/637/659/662; L127/638/663): no arm ⇒ no
   annotation ⇒ ⊤ ⇒ run (see um-pkg-2/3).
 
-+SURE on R2-MULTIOP (directly pinned by `tests/check.rs::naive_oracle_without_operand_
++SURE on R2-MULTIOP (directly pinned by `tests/predict.rs::naive_oracle_without_operand_
 guard_drops_trailing_operands_known_hazard` per the crate CLAUDE). +SURE the
 twenty-operand line is the worst-case for it.
 
@@ -220,4 +220,4 @@ is unsafe). Value-divergence (existing override with wrong mode) unmodelled (um-
   a book uses a long-form (`--shell`) or `=`-joined (`-s=/bin/sh`) flag the loop
   mis-consumes. The book uses only the short forms present, so it is correct HERE, but
   the brittleness is a general oracle-authoring concern (how much argv surface must an
-  oracle's check() replicate?).
+  oracle's predict() replicate?).

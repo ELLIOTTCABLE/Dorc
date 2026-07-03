@@ -22,7 +22,7 @@ pivot (incl. the human's `a92ad31` root-doc rewrite + the new USER_STORY.md); bo
 adjudication **`23J`** (headline product: the **rc-soundness cluster** — the guard consumes
 aggregate in-band exit status while design claims ride per-mark engine-interpreted semantics;
 three facets, one gap). **SETTLED IN-ROUND 2026-07-02, STAMPED — `notes/23L` + the new
-spike/CLAUDE.md interface-rulings block:** rul-role-split (check() keeps incumbent
+spike/CLAUDE.md interface-rulings block:** rul-role-split (predict() keeps incumbent
 predicted-rc; converged()/diverged() is the verdict-function, sense declared by name, owner
 of the apply-rc mint) + rul-rc-partition (0/1/≥2 = the POSIX convention blessed; minimal
 guard-capable oracle back to a one-line passthrough; declared-dual glue gives lossless
@@ -59,9 +59,9 @@ deliberate parse + near-miss-typo tests); the corpus-wide `derive==markers` flip
 all 151 fixtures (it CAUGHT a real R4a bug — an OBSERVE-vs-ESTABLISH mark on one tool
 oracle); **Polarity retired workspace-wide** (`ValueClaim`; the transitional-freeze ru-26
 code-note lives at `analysis/src/effect.rs::cell_effect` on the EstablishInverted arm); and
-the WIRING FLIP (cli+coverage effect-maps now derive from check bodies, not markers).
+the WIRING FLIP (cli+coverage effect-maps now derive from predict bodies, not markers).
 REMAINING, blocked on **ask-probe-divergence** (human ruling): R3's lane-swap revealed that
-the authored check-body probe COMMANDS textually diverge from the retired `oracle_probe_*`
+the authored predict-body probe COMMANDS textually diverge from the retired `oracle_probe_*`
 bodies (`--` operands, dropped `--quiet`, firewall's old probe is a PIPELINE the mark grammar
 cannot annotate — a real dialect gap, flag `jc-mark-on-pipeline`), so completing R3 means
 re-authoring mocks + re-blessing goldens together — the finisher refused to co-author
@@ -84,7 +84,7 @@ byte-identity); defer-execution-to-the-vouch-respell either way (the strawman ma
 throwaway). Rides task #15 as a gated rider.
 
 **The bindings (hold these; full text at the cited homes):**
-- The four round-23 rulings — `spike/CLAUDE.md` (guard sourcing: the check IS the oracle,
+- The four round-23 rulings — `spike/CLAUDE.md` (guard sourcing: the predict() IS the oracle,
   strip-only, whole-body both lanes; lifted forms byte-identical substrings; two nevers).
 - Two-halves doctrine + anti-creep — `plans/239` §1 (full elision is THE goal, never
   aspirational-tier; guard-half = sister + permanent fallback, equal attention).

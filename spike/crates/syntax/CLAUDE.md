@@ -86,7 +86,7 @@ own node, not a flag on the command.
 `ch-shape-anno` locks the **inline type-annotation strawman** for this spike (the
 `kTYANNOT` inline pole the human flagged). Concretely the shape is, e.g.,
 `local w : com.frobber.Wombat{frocked} = "$1"` / a `return … : "$w" is …` /
-dotted `frobctl.check()` (see `17O F-OFFRAMP` strawman A). -GUESS the parse work
+dotted `frobctl.predict()` (see `17O F-OFFRAMP` strawman A). -GUESS the parse work
 lands on the `Assign`/word path + funcdef-name lexing; it is **not yet built** —
 the current `Assign` only carries a bare `name=value`. Parse it
 demand-driven when the keystone/oracle-lift needs it.

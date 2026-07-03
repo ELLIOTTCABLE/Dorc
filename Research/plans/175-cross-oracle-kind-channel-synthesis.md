@@ -212,7 +212,7 @@ and *blessing* buys the rest for a bounded vocabulary").
   kind-name) — handle-free for the ~16 NSS kinds — but it does **not** generalize to an opaque kind (§5
   bound). `getent passwd "$u"  # arg-1 'passwd' = the kind; rc = found/absent/unknown; read-only`
 
-**Anti-patterns (documented costs, firm but narrow):** a dotted function-name handle (`frobctl.check()`)
+**Anti-patterns (documented costs, firm but narrow):** a dotted function-name handle (`frobctl.predict()`)
 fails `dash -n` (`notes/151` X4) + can't carry the 3-place relation (X3) · verdict mixed into freeform stdout
 (the GitHub CVE, P6) · `cmd | grep -q` (DP-3). *(Leanings, not costs:)* inferring the kind from token shape /
 co-occurrence appears unsound (`095 f27`); a full consumer-side schema appears heavier than consumer-driven

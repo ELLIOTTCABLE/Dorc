@@ -4,7 +4,7 @@
 > hoped for. Find SOME pattern that involves a **COMMAND EXECUTION** exposing analyzable coordination over a
 > shared kind. **EXCLUDED:** `# foo=bar` comments (the floor) **and** `FOO=bar` env-vars (k1c) — the
 > coordination must ride the **command execution itself**. **RELAXED constraint (human):** assume Dorc MAY
-> bless a small set of capabilities as hardcoded hooks/function-names in illegal-sh syntax (the `mycmd.check()`
+> bless a small set of capabilities as hardcoded hooks/function-names in illegal-sh syntax (the `mycmd.predict()`
 > model) — so blessing a few commands/idioms is ON the table. Feeds `plans/175`. AI-generated; conf-marked.
 
 ## Findings (lifted, most-load-bearing first)
@@ -45,7 +45,7 @@
 - **k1d-bound (+SURE) — the honest catch: this works only for a BLESSED, BOUNDED vocabulary.** getent's ~16
   NSS kinds; the finite wrapper-category; a blessed producer/consumer set. For an **arbitrary / opaque** kind
   (the `frobctl`/wombat case), command execution exposes nothing beyond co-reference — you are back to the
-  *blessed hook* (`mycmd.check()`) the human authorized, which is itself a blessing. So: **command-execution
+  *blessed hook* (`mycmd.predict()`) the human authorized, which is itself a blessing. So: **command-execution
   is a genuine kind-signal channel, but only via blessing**; the unbounded case stays co-reference-only,
   consistent with `notes/171`–`173`'s no-magic. **The blessing-allowance is the enabling condition** — and
   with it granted, this is the one place command-execution out-performs every prior channel.

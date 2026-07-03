@@ -11,7 +11,7 @@
   "verdict=Converged, rc=absent" exists ⇒ the CLI/hostsim defaulted that absent rc to `0` ⇒ **strain-B**,
   the live priority-1 under-execute (a non-conforming establish like `useradd` on a `|| fallback`).
 - **The cure = the contract we already agreed (`19B`): the check is an observable-PREDICTOR.**
-  `mycmd.check()` predicts the command's whole observable-tuple `{effect, rc, stdout, stderr}` for given
+  `mycmd.predict()` predicts the command's whole observable-tuple `{effect, rc, stdout, stderr}` for given
   inputs, atomically — or fails loudly OOB ⇒ unknown ⇒ run. There is no separable "converged-without-rc,"
   so strain-B *cannot arise*. **"Convergence" is then the engine's *derived* effect-state** (the check's
   `effect`-observable being no-mutation, refined by the ambient gate for in-script staleness) — **not
@@ -22,7 +22,7 @@
   undeclared rc ⇒ ⊤ ⇒ run); errexit-vouching is an **over-execute** (priority-2), *not* an under-execute
   (proven by executing `set -e; useradd[exit 9]; mkdir` under `dash`). It stands as the floor. Per the
   human, we are **not** investing further in patching/validating the hybrid.
-- **Hand-forward:** realizing the cure is build-2 — the observable-predictor `.check()` producing the
+- **Hand-forward:** realizing the cure is build-2 — the observable-predictor `.predict()` producing the
   atomic tuple (or OOB-failing), which dissolves the verdict/rc seam at the root. Until then, a
   branch-consumed converged establish elides only with a *declared* rc (the floor). The render-layer
   retirement of the `if`/`elif` `Status` floor still waits on the leaf-exact render (`C-5`).

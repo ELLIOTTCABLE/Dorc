@@ -14,7 +14,7 @@
 # So .check = validate-then-pessimistically-would-change; .diff is omitted
 # (degenerate — no running baseline to diff against). Helpers plain POSIX.
 
-nginx.check() {
+nginx.predict() {
    command -v nginx >/dev/null 2>&1 || { echo "nginx oracle: no nginx" >&2; return 2; }
    if ! nginx -t >/dev/null 2>&1; then
       # config invalid -> reload/start would FAIL at apply. A warning the admin

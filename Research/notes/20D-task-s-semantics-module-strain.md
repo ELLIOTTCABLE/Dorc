@@ -37,9 +37,9 @@ quoted var, the `'\''` escape). +SURE all green.
 Call-sites converted + local copies DELETED:
 - `analysis::value`: `is_plain_var` (deleted), `collect_frags` re-expressed over `classify_frag`,
   `literal_text` re-expressed over `const_literal_text`.
-- `oracle::check::parser`: `is_ident` (deleted; 3 call-sites → `sem::is_name`), `parse_word_lexeme`'s
+- `oracle::predict::parser`: `is_ident` (deleted; 3 call-sites → `sem::is_name`), `parse_word_lexeme`'s
   `${N#…}` parse → `sem::parse_prefix_strip`, the `${name}`/`$name` ident checks → `sem::is_name`.
-- `oracle::check::eval`: `strip_prefix_once` (deleted) → `sem::strip_prefix_literal`; `resolve` +
+- `oracle::predict::eval`: `strip_prefix_once` (deleted) → `sem::strip_prefix_literal`; `resolve` +
   `resolve_in_test` unified into `resolve_with(word, UnsetPolicy)` + free `unset_positional(policy)`.
 - `plan` render: `sh_single_quote` (deleted) → `sem::single_quote`.
 - `syntax::parser`: `is_func_name` → `sem::is_name` (and `is_assignment_name` transitively).
@@ -71,7 +71,7 @@ trap the enrichment roadmap (209) re-arms:
   `${12}` ⇒ `Param{name:"12"}`, which `classify_param` now calls `Positional(12)`. But the dialect's
   `parse_word_lexeme` only ever made a `${…}` into a `Var` (via `is_name`, which rejects "12") or
   `Unmodeled` — it has NO `Positional` path for the braced form (only bare `$N` reaches
-  `Word::Positional`). So `${12}` in a check body is `Unmodeled` ⇒ Top. **I deliberately PRESERVED
+  `Word::Positional`). So `${12}` in a predict body is `Unmodeled` ⇒ Top. **I deliberately PRESERVED
   this** rather than silently unify (routing the dialect's `${…}` through `classify_param` would
   have widened `${12}` from Top to a resolved positional — a behavior change, and exactly the
   "silent unification = behavior change" the prompt forbade). Flagged in-code at the dialect
@@ -79,8 +79,8 @@ trap the enrichment roadmap (209) re-arms:
   but it is a genuine asymmetry: the shared `classify_param` is RICHER than the dialect consumes.
 
 - **dv-3 — the `${N#pat}` glob-rejection logic was DUPLICATED verbatim in two places, now
-  single-sourced.** +SURE. `oracle::check::parser` (the modelable-form gate: digits-parse ∧
-  `!starts_with('#')` ∧ `!contains(['*','?','['])`) and `oracle::check::eval::strip_prefix_once` (the
+  single-sourced.** +SURE. `oracle::predict::parser` (the modelable-form gate: digits-parse ∧
+  `!starts_with('#')` ∧ `!contains(['*','?','['])`) and `oracle::predict::eval::strip_prefix_once` (the
   strip itself) implemented the two halves of one rule in two functions; the value-plane has NO
   prefix-strip model at all (it ⊤s any `ParamComplex`, which is where `${1#-}` lands book-side — see
   rs-1). The two oracle halves AGREED (both literal-only, both reject `##`/glob — the 20B fix landed
@@ -89,7 +89,7 @@ trap the enrichment roadmap (209) re-arms:
   prefix-strip forms are modelable" now has ONE home.
 
 - **dv-4 (minor, recorded) — the name-predicate had FIVE byte-for-byte-identical copies.** +SURE.
-  `value.rs::is_plain_var`, `check::parser::is_ident`, `check::parser::split_assignment` (inline via
+  `value.rs::is_plain_var`, `predict::parser::is_ident`, `predict::parser::split_assignment` (inline via
   is_ident), `syntax::parser::is_func_name`, `syntax::parser::is_assignment_name`, and the book
   lexer's inline `lex_dollar` scan — all encode `[A-Za-z_][A-Za-z0-9_]*`. No divergence (identical),
   but six maintenance sites for one POSIX clause. Four routed to `sem::is_name`; the lexer scan
@@ -161,7 +161,7 @@ STILL SCATTERED (named, NOT moved — the honest residual; these own their own d
 - **command-prefix argv-vs-environment ordering** (XCU §2.9.1) — `value::site_argv`'s "argv expands
   before prefix assignments take effect" (the priority-1 prefix-env fix). This is a *statement*-level
   expansion-ordering belief, not a word-level one; it stays in the value-plane's site logic.
-- **`case`/`while`/`shift` argparse control-flow** — `oracle::check::eval`'s loop/arm execution is
+- **`case`/`while`/`shift` argparse control-flow** — `oracle::predict::eval`'s loop/arm execution is
   control-flow semantics (XCU §2.9.4 / §2.6.2 case), distinct from word resolution. Stays in eval.
 - **the two lexers' tokenization** (book `lexer.rs`, dialect `check/lexer.rs`) — quote-grouping,
   metachar recognition, heredoc/subst balancing. Lexical, per-representation; rs-1/rs-2 note why
@@ -199,7 +199,7 @@ widen task-S's scope).
   needs.
 - **dv-2's asymmetry will bite if a check ever uses `${12}`.** The dialect drops it to Top today
   (safe). If a future oracle idiom needs braced multi-digit positionals, the fix is a one-line
-  `${…}`-arm change in `check::parser` routing through `classify_param` — but that is a *deliberate*
+  `${…}`-arm change in `predict::parser` routing through `classify_param` — but that is a *deliberate*
   behavior widening (a new resolvable form), to be made consciously, not a silent unification.
 - **cm-2 (the argv-echo / check-eval differential gate, 20A §2 / 20B §3) now has a single validation
   target.** The prompt's cm-3 rationale: "validated once by cm-2, reused everywhere." With the word

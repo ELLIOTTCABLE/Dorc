@@ -88,7 +88,7 @@ worktrees.)
 - Deliberately stayed: the stdin `rc=N` lane in cli + `fold-oror-guard-omits` (a GUARD-rc
   case — the behavior probe-projection re-grounds in stage-2; cutting it now would gap
   fold-coverage); `andor-rc-undeclared-runs` (the keeper; its baked-verb `user.oracle.sh` wart
-  re-expresses when check()-lifting lands); the `StandIn{True,False,Exit}` machinery and the
+  re-expresses when predict()-lifting lands); the `StandIn{True,False,Exit}` machinery and the
   engine's AndOrStatus-relaxes-on-declared-rc seam (what Query-guard rcs will ride);
   errexit's structural vouch (`exec-errexit-elide-vouched` green; the non-conforming-under-
   `set -e` priority-2 over-execute remains documented, 19E/19F §6).
@@ -108,7 +108,7 @@ worktrees.)
   with loops stay ⊤ — sound). Cost: a second small parser to maintain; accepted for the spike
   (the front-ends are disposable by charter). Books and oracles still share ONE value-plane
   (the 19H §1.1 uniformity) — the dialect parser is a *front-end*, not a second analysis.
-- **adj-parallel-additive**: task-A (`analysis::value`, face-book) and task-C (`oracle::check`,
+- **adj-parallel-additive**: task-A (`analysis::value`, face-book) and task-C (`oracle::predict`,
   face-check) run as parallel background agents, additive-only (no existing API may change, no
   cross-crate breaks), no agent commits (shared git index; the orchestrator commits after
   review). Wiring into `effect::classify` (replacing find-3) is task-W, sequential, after both.

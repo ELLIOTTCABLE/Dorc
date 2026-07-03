@@ -25,11 +25,11 @@ forms are ILLUSTRATIVE (subshell-wrap shown), the load-bearing pins are `expecte
 
 ### var-namespace-isolated (XFAIL) — 23C-fd1, the material variable-capture find
 Book: `pkg=vim; hork wombat; apt-get install -y curl; apt-get install -y "$pkg"`. The corpus
-check body assigns `pkg`/`verb` bare; POSIX functions run in the caller namespace, so a
+predict body assigns `pkg`/`verb` bare; POSIX functions run in the caller namespace, so a
 whole-body-ship guard on the converged-past-wall curl site clobbers the book's `pkg` to "curl"
 ⇒ the final line installs curl (which the guard just suppressed) and VIM NEVER INSTALLS. Pin
 (behaviour): `expected.ran`'s final `apt-get install -y vim`. Both isolation mechanisms
-(subshell-wrap OR check-body `local`) produce the SAME ran-set here (the check runs fine either
+(subshell-wrap OR predict-body `local`) produce the SAME ran-set here (the check runs fine either
 way; both isolate the write) ⇒ genuinely mechanism-neutral. HEAD failure (lens-lifted): ap-2-exec
 ran-mismatch (HEAD runs curl bare) + gate-1 parity (past-wall establish-probe doesn't ship).
 
@@ -49,7 +49,7 @@ deliberately different xfail-driver from var-namespace — jc-nounset-desired be
 Book: `apt-get install -y nginx` (package oracle A VOUCHED, converged before the wall ⇒ elides);
 `hork wombat`; `systemctl enable foo` (service oracle B UNVOUCHED, past the wall ⇒ runs bare).
 Pin: B's site RUNS; A's vouch is inadmissible in B's reasoning (rul-guard-license — the vouch
-marks a path through THIS oracle's check-body; provider-set membership is not a license). Verified
+marks a path through THIS oracle's predict-body; provider-set membership is not a license). Verified
 a wrong B-guard adds `systemctl is-enabled -- foo` to the run-set (or suppresses the enable) ⇒
 exec_check reds. Clean green floor: parity holds on `{site 0}` alone (the past-wall service record
 never ships at HEAD), gate-6 active, no marker. jc-cross-oracle-verdict.

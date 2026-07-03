@@ -95,7 +95,7 @@ UNLESS its rc is declared:
   add `rc=0` to its `probe-results.txt` to keep demonstrating the fold-omit — now explicitly the
   *declared-rc opt-in* path. ~SUSPECT this is the most visible real-world delta: the canonical
   `dpkg -s || install` idiom's guard (`command -v`, `dpkg -s`) is read-only and conformingly-rc-0, but
-  Dorc no longer *assumes* that — build-2's read-only `.check()` must declare/produce the rc (which it
+  Dorc no longer *assumes* that — build-2's read-only `.predict()` must declare/produce the rc (which it
   trivially does: it runs the check and reads `$?`, `19B §3`). So the idiom keeps eliding once oracled,
   which is the whole gradual-enhancement bargain.
 - **bare converged establish (no branch consumer)** ⇒ **unchanged**, still elides (status dead).
@@ -182,7 +182,7 @@ fabricated rc-0 was a confident wrong value.
   **runs** (safe) — no longer silently under-executes. So the failure mode shifted from
   *silent-under-execute* (catastrophic) to *unnecessary-execute* (benign) — the correct `kFAIL-perform`
   posture. The value (elision) is recovered iff build-2 declares the rc.
-- A read-only `.check()` (`command -v`, `dpkg -s`) trivially produces its rc (run the check, read `$?`,
+- A read-only `.predict()` (`command -v`, `dpkg -s`) trivially produces its rc (run the check, read `$?`,
   `19B §3`) — so the canonical `guard || install` idiom keeps eliding once the guard is oracled. The
   un-oracled / undeclared-rc case is the (safe) floor.
 - **`Observable::AndOrStatus` vs `Observable::Status`** is a render-expressibility split, NOT a

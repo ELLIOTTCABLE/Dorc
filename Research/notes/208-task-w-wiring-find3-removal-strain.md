@@ -3,17 +3,17 @@
 > Round-20 spike note, append-only. Records the keystone wiring (task-W, 205 §6): the
 > `find-3` engine-side argparse stand-in in `analysis::effect` is DELETED and replaced by
 > the real mechanism — book-side value-flow (`analysis::value`, task-A) threaded through
-> the oracle's own `check()` (`oracle::check::evaluate`, task-C) to its inline
+> the oracle's own `predict()` (`oracle::predict::evaluate`, task-C) to its inline
 > kind-annotation. "Identity is declared, never inferred" is true in code now. AI-authored,
 > confidence-marked. Trust R/D/I/K + 19H/19I + the human rulings over this.
 
 ## §0 What landed
 
 - `analysis::effect`: `command_effect`/`classify` re-keyed onto `ValueFlow` argv +
-  per-file `CheckSet`s; `resolve_entity` (find-3 flag-strip) and `verb = word-1` deleted;
+  per-file `PredictSet`s; `resolve_entity` (find-3 flag-strip) and `verb = word-1` deleted;
   every `find-3 STAND-IN` marker gone (`rg 'find-3' spike/crates` returns only the
   UNRELATED errexit-finding "note 166 find-3" in `cfg.rs` — see strain-W6).
-- `oracle::check`: `Resolved.entity` became `ResolvedEntity::{Operand(String), Singleton}`;
+- `oracle::predict`: `Resolved.entity` became `ResolvedEntity::{Operand(String), Singleton}`;
   a **value-less annotation** (`index : pkgindex` — no `= value`) is the explicit nullary
   spelling; `eval_test` now treats a past-end positional as the empty string (sh-faithful)
   so flag-strip `while`s terminate and a `[ "$2" = "" ]` single-operand guard works.
@@ -21,7 +21,7 @@
 - `oracle` (KindIndex): `effect_of` returns a `Vec<EffectCell>` (multi-cell verbs legal);
   `add_effect` does duplicate-detection (same `(provider, verb, selector)` ⇒ loud
   `oracle-duplicate-effect`, first-wins); `empty_verb()` is the shared ε-verb (`""`).
-- corpus: every `*.oracle.sh` + `fixtures/package.oracle.sh` gained a `<provider>__check()`
+- corpus: every `*.oracle.sh` + `fixtures/package.oracle.sh` gained a `<provider>__predict()`
   (ADDITIVE — the `oracle_probe_*` bodies stay; the probe artifact still reads them this
   round). `useradd`/`command -v` effect rows moved to the `''` ε-verb.
 - gates all green: `fmt`, `clippy --workspace --all-targets -D warnings` (no new expects),
@@ -37,30 +37,30 @@
 
 `classify` is now:
 ```rust
-pub fn classify(cfg, value: &ValueFlow, idx: &KindIndex, checks: &[CheckSet], interner)
+pub fn classify(cfg, value: &ValueFlow, idx: &KindIndex, checks: &[PredictSet], interner)
     -> Carrier<Vec<(CfgNodeId, SkipClass)>>
 ```
 Changes from the old `(cfg, ast, idx, interner) -> Vec<…>`: (a) `ast` dropped (the argv comes
 from `value`, which the caller built from the ast); (b) `value: &ValueFlow` added; (c)
-`checks: &[CheckSet]` added; (d) returns `Carrier` (kind-disagreement warnings, 204 §6).
+`checks: &[PredictSet]` added; (d) returns `Carrier` (kind-disagreement warnings, 204 §6).
 `command_effect` is now `(idx, checks, argv: &[ValueOf], interner, diags) -> Vec<CommandEffect>`.
 
 Call-sites updated (all build value-flow first, lift per-file CheckSets, thread both):
-- `cli/src/main.rs` `run()` — lifts a `CheckSet` per oracle source (shared interner),
+- `cli/src/main.rs` `run()` — lifts a `PredictSet` per oracle source (shared interner),
   `value::analyze`, `classify(...).value`, `report("check"/"classify", …)`.
 - `plan/src/lib.rs` `#[cfg(test)] plan_for` + `consumption_fact_total_…` (a local
-  `CORPUS_CHECK_SRC`).
-- `plan/tests/observable_matrix.rs` — a `classify_value` helper + `CORPUS_CHECK_SRC` (3 sites).
-- `hostsim/src/lib.rs` `#[cfg(test)]` — a `classify_value` helper + `CORPUS_CHECK_SRC` (3 sites).
-- `analysis::effect` tests — a `classify_src` helper + `CORPUS_CHECK_SRC`.
+  `CORPUS_PREDICT_SRC`).
+- `plan/tests/observable_matrix.rs` — a `classify_value` helper + `CORPUS_PREDICT_SRC` (3 sites).
+- `hostsim/src/lib.rs` `#[cfg(test)]` — a `classify_value` helper + `CORPUS_PREDICT_SRC` (3 sites).
+- `analysis::effect` tests — a `classify_src` helper + `CORPUS_PREDICT_SRC`.
 
 ## §2 The shared provider-mapping helper's home
 
-`dorc_oracle::check::map_provider_name(&str) -> String` (the `_`→`-` map). It was the
+`dorc_oracle::predict::map_provider_name(&str) -> String` (the `_`→`-` map). It was the
 parser's private `map_provider_name`; now `pub` at the `check` module root, re-used by
 `analysis::effect` (the book command word routes through it before interning the provider
 symbol). The book word is already hyphenated, so the map is a no-op there — but routing
-through the ONE helper is what welds the `CheckSet` key, `KindIndex`'s `ProviderId`, and the
+through the ONE helper is what welds the `PredictSet` key, `KindIndex`'s `ProviderId`, and the
 book's command-word interning to one vocabulary (204 §6 seam #2). Verified, not assumed: the
 classify tests resolve `apt-get`/`ufw`/`systemctl`/`command`/`useradd` checks through this
 path, all sharing the caller's interner.
@@ -82,7 +82,7 @@ value-plane landing). The other 41 are byte-identical.
 
 - **`andor-rc-undeclared-runs`** — `expected.out` only (the probe artifact); `expected.ran`
   UNCHANGED (`mkdir` + `useradd` still both run). The cell moved `user#present` (bare-kind
-  Singleton) → `user:deploy#present` (Operand), so the probe renders `user__check 'deploy'`
+  Singleton) → `user:deploy#present` (Operand), so the probe renders `user__predict 'deploy'`
   and the results key is `user:deploy#present`. Reason: the **baked-verb wart dies** (19I §2 /
   the prompt's keeper-oracle instruction). find-3 mis-read `useradd deploy` as verb=deploy ⇒
   Singleton; the no-verb check correctly binds the FIRST OPERAND `deploy` as the entity.
@@ -128,13 +128,13 @@ value-plane landing). The other 41 are byte-identical.
 
 - **strain-W2 — the nullary/Singleton case forced an evaluator extension (the sharp one).**
   `apt-get update` resolves to `package-index#fresh` as a **Singleton** (no operand), and the
-  probe golden (`pkgindex__check` with NO arg, results key `pkgindex#fresh`) is load-bearing.
+  probe golden (`pkgindex__predict` with NO arg, results key `pkgindex#fresh`) is load-bearing.
   But task-C's `evaluate` required an annotation with a resolved VALUE (entity mandatory;
   `MissingAnnotation`/`UnresolvedAnnotationValue` ⇒ Top). A nullary verb has no operand to
   annotate. I extended the dialect with a **value-less annotation** (`index : pkgindex`, no
   `= value`) ⇒ `ResolvedEntity::Singleton`; the wiring keys it on `EntityRef::Singleton`. The
   alternative (annotate the verb-string as the entity ⇒ `Operand("update")`) would have
-  changed the golden (`pkgindex__check 'update'`) and is semantically wrong (update has no
+  changed the golden (`pkgindex__predict 'update'`) and is semantically wrong (update has no
   entity). The value-less spelling is EXPLICIT (a wholly-missing annotation still ⇒
   `MissingAnnotation` Top, the safe direction) — pinned by `value_less_annotation_with_
   equals_is_an_error`. ~SUSPECT this is a `tc-*`-adjacent dialect decision (is a value-less
@@ -163,7 +163,7 @@ value-plane landing). The other 41 are byte-identical.
 - **strain-W4 — two checks per provider across files, resolved by "try each, first
   `Resolved` wins".** `apt-get` is declared in TWO oracle files at once
   (`package.oracle.sh`: install/purge → package; `pkgindex.oracle.sh`: update → pkgindex),
-  each with its OWN `apt_get__check`. `CheckSet` is keyed by provider per-file, so a merge
+  each with its OWN `apt_get__predict`. `PredictSet` is keyed by provider per-file, so a merge
   would collide. The wiring iterates ALL files' CheckSets for the provider and takes the first
   that yields a `Resolved` (the others `Top` on the verb they don't handle — the package check
   Tops on `update` via the strict annotation-value past-end; the pkgindex check Tops on
@@ -175,8 +175,8 @@ value-plane landing). The other 41 are byte-identical.
 
 - **strain-W5 — the dialect rejects pipelines, and an oracle's natural probe body IS a
   pipeline.** The `ufw` and (real) `package` probes are `ufw status | grep` / `dpkg-query |
-  grep` — the `|` is out of the check dialect (strain-4 in 204). When I first transcribed the
-  firewall check's body verbatim with the pipe, the WHOLE `ufw__check` failed to lift ⇒ ufw
+  grep` — the `|` is out of the predict dialect (strain-4 in 204). When I first transcribed the
+  firewall check's body verbatim with the pipe, the WHOLE `ufw__predict` failed to lift ⇒ ufw
   Opaque ⇒ it poisoned the systemctl commands downstream ⇒ the headline probe lost BOTH its
   firewall AND service checks (a cascade). I rewrote the check's probe body to a single command
   (`ufw status "$rule" >/dev/null`). This is harmless THIS round (the probe artifact comes from
@@ -186,14 +186,14 @@ value-plane landing). The other 41 are byte-identical.
   oracle's REAL probe (`dpkg-query … | case`) is in `oracle_probe_package`, not the check —
   the check's body is a simplified `dpkg-query -W "$pkg" >/dev/null 2>&1` placeholder.
 
-- **strain-W6 — two `oracle::lift` and `check::lift_checks` double-parse the same file, and
+- **strain-W6 — two `oracle::lift` and `predict::lift_predicts` double-parse the same file, and
   the book parser chokes on the dialect.** `oracle::lift` book-parses the WHOLE oracle file
-  (for `oracle_kind`/`oracle_probe_*`/`oracle_effect`); the `<provider>__check` funcdefs now
+  (for `oracle_kind`/`oracle_probe_*`/`oracle_effect`); the `<provider>__predict` funcdefs now
   contain `while`/`case`, which the book parser ⊤-rejects, emitting `syntax-unsupported: loop
   constructs` diagnostics that broke `lifts_the_package_fixture_cleanly` (it demands a clean
   lift) and polluted e2e stderr. Fix: `lift_one` now SUPPRESSES parse diagnostics whose span
-  falls inside a `*__check` funcdef body (those funcdefs are `check`'s dialect, not book sh,
-  and `lift` ignores them anyway). A parse error OUTSIDE a `__check` body still surfaces. This
+  falls inside a `*__predict` funcdef body (those funcdefs are `check`'s dialect, not book sh,
+  and `lift` ignores them anyway). A parse error OUTSIDE a `__predict` body still surfaces. This
   is the `adj-dialect-parser` separation (203 §4) biting at the file level: ONE file, TWO
   front-ends with incompatible grammars. ~SUSPECT the cleaner long-run shape is a single
   pre-pass that splits the file into book-items vs check-funcdefs before either parser runs.
@@ -226,9 +226,9 @@ value-plane landing). The other 41 are byte-identical.
   (202 §3 site-keyed artifact), it must reckon with strain-W5: a `probe_body` span that is a
   PIPELINE is out of dialect, so the corpus checks carry single-command placeholder bodies, NOT
   the real (pipelined) `oracle_probe_*` bodies. The two probe sources will need reconciling.
-- **rule-anno-render (205 §1) is still owed.** The check bodies' annotation lines
+- **rule-anno-render (205 §1) is still owed.** The predict bodies' annotation lines
   (`pkg : package = "$1"`) are NOT inert under dash (they PATH-execute `pkg`); when task-D
-  ships a check body, the emitter must render the annotation node as a plain assignment
+  ships a predict body, the emitter must render the annotation node as a plain assignment
   (`pkg="$1"`). The annotations currently reach the corpus oracle FILES only (which the e2e
   `dash -n`-checks but never executes, and which `oracle::lift` reads structurally); shipping
   them verbatim into a probe would break it.
@@ -237,6 +237,6 @@ value-plane landing). The other 41 are byte-identical.
   ε)`; the cell kind is the annotation kind (not the effect-map kind) on disagreement.
 - **`exec-opaque-var` is misnamed** (§4) — fold the rename + the new genuinely-⊤ case into
   task-D's corpus additions if the human approves.
-- **The "try each CheckSet, first-Resolved-wins" ambiguity (strain-W4)** is an unguarded
+- **The "try each PredictSet, first-Resolved-wins" ambiguity (strain-W4)** is an unguarded
   order-dependence; if task-D adds cross-oracle coherence checking, this is where a real
   collision would surface.

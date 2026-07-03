@@ -1,11 +1,11 @@
-# 19H — The value analysis the engine needs, and the shape of `check()` contract-lifting
+# 19H — The value analysis the engine needs, and the shape of `predict()` contract-lifting
 
 > What this is. A forward design synthesis (reference-quality, not a strain-log) distilling the round-19
 > finding into two things take-3 must get right. Round-19 validated the output side of the elision engine
 > — one coherent observable-tuple, the apply fold, the kind/entity/selector cell-model + ambient gate —
 > by feeding it injected stand-in values, then drove into the wall: the input side, a real value-flow
-> analysis (and the command-keyed `check()` it lifts and runs), is unbuilt, and is the actual core of the
-> tool. §1 specifies what that analysis needs; §2 the shape of `check()` contract-lifting, with examples;
+> analysis (and the command-keyed `predict()` it lifts and runs), is unbuilt, and is the actual core of the
+> tool. §1 specifies what that analysis needs; §2 the shape of `predict()` contract-lifting, with examples;
 > §3 the carry-forward; §4 the open questions, several of which a prior-art run should settle before any
 > rebuild.
 >
@@ -24,7 +24,7 @@
 
 ## 0. The finding
 
-The settled model — the probe runs the command-keyed read-only `check()`s, returns concrete observables,
+The settled model — the probe runs the command-keyed read-only `predict()`s, returns concrete observables,
 and the apply phase abstract-interprets the script over those values and omits what cannot run (`19A §5`)
 — rests on the engine actually *tracking values*. It tracks them twice: before the probe, to work out
 which command touches which entity and to compile the right read-only check; and after, to flow the
@@ -49,7 +49,7 @@ positional arguments, and the ordinary control constructs — wherever they flow
 participate (books and oracles alike). It does not need to be cutting-edge, but it needs to be real:
 constant propagation plus argument/parameter propagation is the floor, not the ceiling. A book that
 writes `pkg=nginx; apt-get install -y "$pkg"` must see `nginx` reach the install the same way an oracle's
-`check()` sees `nginx` reach its annotation — the moment you name a value, naming it cannot blind the
+`predict()` sees `nginx` reach its annotation — the moment you name a value, naming it cannot blind the
 analysis, or positional parameters die on the first `x=$1`.
 
 Two notes that the round-19 framing got wrong and this corrects. First, there is no useful book/oracle
@@ -66,7 +66,7 @@ because the analysis was absent.
 
 - Entity-resolution, before the probe. The cell-model (kind/entity/selector — the poison-wall fix,
   `19G §1`) needs each command resolved to a cell. That means following the script's own value (`nginx`,
-  however it arrived at the command) into the oracle's `check()`, through the `check()`'s argparse, to a
+  however it arrived at the command) into the oracle's `predict()`, through the `predict()`'s argparse, to a
   kind-annotation. Absent the analysis, the engine *infers* identity by flag-stripping argv — the find-3
   stand-in, which breaks the welded "identity is declared, never inferred" (SF-1 / `an-entity-uniqueness`
   / `17N F3`), breaches `inv-referent-agnostic`, and mis-reads no-verb commands.
@@ -78,7 +78,7 @@ because the analysis was absent.
   for a bare exit code over `&&`/`||`/`if`/`!`; the real thing flows dependency-state through whatever the
   book actually wrote. The fold is the seed of this analysis, not the whole of it.
 
-One mechanism serves both: the command-keyed `check()` (§2) is what the pre-probe pass lifts (to resolve
+One mechanism serves both: the command-keyed `predict()` (§2) is what the pre-probe pass lifts (to resolve
 the entity and pick the body to ship) and what the post-probe pass consumes (its result is the observable
 flowed into the fold). So the value analysis is not two features bolted together; it is one analysis with
 a pre- and post-probe face.
@@ -95,7 +95,7 @@ richer later — at no cost to correctness.
 Two things that floor does not cover, and take-3 must guarantee by other means (the correction an
 adversarial-crosscheck surfaced on the first draft of this doc):
 
-- The probe direction (`kFAIL-withhold`: never mutate in a read-only pass). The `check()` body is the
+- The probe direction (`kFAIL-withhold`: never mutate in a read-only pass). The `predict()` body is the
   read-only probe we ship and run; if the analysis mis-resolves an entity or lifts the wrong body, the
   degrade never fires — the engine confidently ships a wrong-entity or mutating probe. Probe-inertness is
   a separate obligation: the reflexive-inertness check (point the effect-analyzer at the lifted probe body
@@ -121,13 +121,13 @@ list.
 
 - Constant propagation through assignment and variable use (`pkg=nginx; … "$pkg"`).
 - Propagation through function parameters and positional arguments, including the re-binding the argparse
-  idiom relies on (`$@`, `$1`, `shift`) — the bridge from a call to a `check()`'s body.
+  idiom relies on (`$@`, `$1`, `shift`) — the bridge from a call to a `predict()`'s body.
 - Flow through the common control constructs already in the apply fold's reach (`case`, `if`, `while`,
   `&&`/`||`, `!`), now carrying values rather than only a bare exit code.
 - The inline kind-annotation as the grounding anchor (`pkg : com.debian.apt.Package = "$1"`) — the one
   non-sh-native token in the whole scheme, and the locus of the `kTYANNOT`/`kOOB` debt (§4).
 - Cross-file flow: a book calling a command an oracle defines, and `. /path`-style helper sourcing, so a
-  value can travel from a book through an oracle's `check()` and back (`seam-interproc`).
+  value can travel from a book through an oracle's `predict()` and back (`seam-interproc`).
 
 ### 1.5 How it relates to what round-19 validated
 
@@ -135,7 +135,7 @@ The apply fold is the first, smallest instance of this analysis: it already abst
 `&&`/`||`/`if`/`!`, only over a bare exit code and only on injected inputs. Take-3 widens its domain from
 "an exit code or ⊤" to "the values the script names or ⊤," and feeds it real probe results instead of
 fixtures. The cell-model is this analysis's output (the resolved entity, the annotation's kind, the verb's
-selector), and the one observable-tuple is the shape the `check()` populates per channel. None of that is
+selector), and the one observable-tuple is the shape the `predict()` populates per channel. None of that is
 thrown away; it is layered onto a real input side instead of stand-ins.
 
 Whether that widened analysis rides the existing worklist substrate unchanged, or wants something else, is
@@ -143,9 +143,9 @@ an open question for the prior-art run (§4), not a claim this doc should make.
 
 ---
 
-## 2. The shape of `check()` contract-lifting (examples)
+## 2. The shape of `predict()` contract-lifting (examples)
 
-The unifying object is the oracle's command-keyed, full-args `check()` (`19A §5` C-1/C-4): one sh function
+The unifying object is the oracle's command-keyed, full-args `predict()` (`19A §5` C-1/C-4): one sh function
 per command-family that argparses the command the way the real tool does, inline-annotates which value is
 which kind, and is itself the read-only probe body. The engine lifts it (to resolve the entity and pick
 what to ship) and ships+runs it (to get the observable). Examples build from simplest to hardest. The
@@ -159,7 +159,7 @@ pkg=nginx
 apt-get install -y "$pkg"
 
 # oracle:
-apt_get__check() {                          # command-keyed: lifts/ships for `apt-get …`
+apt_get__predict() {                          # command-keyed: lifts/ships for `apt-get …`
    while [ "${1#-}" != "$1" ]; do           # skip leading options the way apt-get really does
       case $1 in -t|-o) shift 2 ;; *) shift ;; esac
    done
@@ -175,34 +175,34 @@ while-loop strips only LEADING flags, so as written the walkthrough below is wro
 annotation would bind entity=`-y`. The dialect evaluator faithfully reproduces whatever the
 check's own argparse does (engine-side flag-guessing would be the find-3 sin), so corrected
 fixture oracles strip post-verb flags too (verb=$1; shift; then strip). Both orderings are
-pinned in oracle/tests/check.rs. ALSO (task-P/find-3, 20I §3): this single-operand annotation
+pinned in oracle/tests/predict.rs. ALSO (task-P/find-3, 20I §3): this single-operand annotation
 must gate its probe on `if [ "$2" = "" ]; then dpkg-query -W "$pkg"; fi` — without that guard a
 multi-target `apt-get install nginx curl` binds entity=nginx ALONE and ships a probe for nginx
 only, silently dropping curl (a priority-1 under-execute; the naive-drop is pinned in
-oracle/tests/check.rs::naive_oracle_without_operand_guard_drops_trailing_operands_known_hazard,
+oracle/tests/predict.rs::naive_oracle_without_operand_guard_drops_trailing_operands_known_hazard,
 and the guard is an oracle-quality-bar line `R2-MULTIOP` in oracle/CLAUDE.md). */ -->
 
 What the engine does:
 
 - In the book, propagate `pkg` ⇒ the install's argv is `[install, -y, nginx]` — the book's own value-flow,
   same machinery as the oracle's.
-- Bind those into the `check()`'s `$@`, then follow the argparse: the `while` consumes `-y` (it strips to
+- Bind those into the `predict()`'s `$@`, then follow the argparse: the `while` consumes `-y` (it strips to
   `y` under `${1#-}`), stops at `install`; `verb=install`, `shift`, `$1=nginx`.
 - The annotation binds `nginx : com.debian.apt.Package` on this path. The engine never decided `-y` was a
   flag — the oracle's own argparse did, and the analysis traced the value through it.
 - Pre-probe output: the cell `package:nginx#installed` (kind from the annotation, selector from the verb,
   §2.5), fed to the cell-model and ambient gate.
-- Post-probe output: ship `apt_get__check install -y nginx` (full argv, C-1); the host runs the
+- Post-probe output: ship `apt_get__predict install -y nginx` (full argv, C-1); the host runs the
   `dpkg-query` body; its rc is the observable the fold then flows.
 
 The round-19 stand-ins this removes: the engine flag-stripping `-y` itself (find-3), and the rc being
-injected (the masking). Both collapse into the one `check()`.
+injected (the masking). Both collapse into the one `predict()`.
 
 ### 2.2 The read-only guard — the idempotency idiom (the most common shape)
 
 ```sh
 # book:  command -v nginx || apt-get install nginx
-command__check() {
+command__predict() {
    case $1 in -v) shift ;; esac
    tool : org.freedesktop.Tool = "$1"
    command -v -- "$tool" >/dev/null         # R2-SHADOW: an executable file, not a fn/alias/builtin
@@ -219,7 +219,7 @@ ship it, run it, flow the result, elide.
 
 ```sh
 # book:  useradd deploy || mkdir /srv/app
-useradd__check() {
+useradd__predict() {
    # (option handling per useradd's real grammar)
    user : org.openldap.PosixAccount = "$1"  # `useradd <name>` → $1 is the User; no verb
    getent passwd "$user"                    # the read-only fact-probe (not useradd itself)
@@ -254,8 +254,8 @@ Either way, +SURE: a mutator's rc is never inferred or defaulted; it is a genuin
 ### 2.4 Cross-oracle identity — many commands, one named kind (`17N §5`)
 
 ```sh
-apt_get__check() { … pkg : com.debian.apt.Package = "$1"; dpkg-query -W "$pkg"; }
-dnf__check()     { … pkg : com.debian.apt.Package = "$2"; rpm -q "$pkg"; }   # different command, same kind
+apt_get__predict() { … pkg : com.debian.apt.Package = "$1"; dpkg-query -W "$pkg"; }
+dnf__predict()     { … pkg : com.debian.apt.Package = "$2"; rpm -q "$pkg"; }   # different command, same kind
 ```
 
 The named kind (the reverse-DNS handle, a lifted datum — `175 C2` / `17N`) is the coordination vocabulary:
@@ -270,7 +270,7 @@ that — a CI-lint, never a checked property.
 ### 2.5 The selector comes from the verb
 
 ```sh
-systemctl__check() {
+systemctl__predict() {
    verb=$1; shift
    svc : org.freedesktop.systemd.Unit = "$1"
    case $verb in
@@ -282,22 +282,22 @@ systemctl__check() {
 
 The annotation gives kind and entity (`service:nginx`); the verb selects the cell (`#enabled` vs
 `#active`). `enable` and `start` touch different cells of the same entity, and neither discharges the
-other — the round-19 selector regression, made to fall out of the `check()`'s own `case $verb`. The `≥enum`
+other — the round-19 selector regression, made to fall out of the `predict()`'s own `case $verb`. The `≥enum`
 floor (`17O F-BLESSED`) is why a service probe is genuinely two read-only commands; the contract-lifting
-must let one `check()` carry several selector-probes, not collapse a service to one bit.
+must let one `predict()` carry several selector-probes, not collapse a service to one bit.
 
 ### 2.6 The quality bar the lifting must preserve (`17O`)
 
-Because the `check()` body is the read-only probe, the `17O` regression class is contract, not engine
+Because the `predict()` body is the read-only probe, the `17O` regression class is contract, not engine
 holes, and the lifting must not paper over them: `R2-SHADOW` (`command -v` confirms an executable file,
 not a shadowing function); `R2-IDCACHE` (group membership via `getent group` field-4, never the stale
 `id` cache); `R2-ORTRUE` (refuse to read an errexit-masked rc — `… || true` forces 0 — as a verdict);
 `F-GETENT-HOSTS` (`getent hosts` routes to live DNS, non-hermetic — read-only is not hermetic). These are
-why the `check()` is authored, not generated.
+why the `predict()` is authored, not generated.
 
 ### 2.7 The static ⟷ dynamic duality
 
-One `check()` body is read twice. The pre-probe (static) read takes the argparse and annotation and yields
+One `predict()` body is read twice. The pre-probe (static) read takes the argparse and annotation and yields
 the cell, plus which read-only body to ship. The post-probe (dynamic) read is the shipped body run on the
 host, yielding the concrete observable the fold flows. Round-19 built consumers of the dynamic half but
 fed them fixtures, because the static half — resolve the entity, pick the body, run it — was the stand-in.

@@ -211,7 +211,7 @@ Inside cells, `/` replaces `|`; `↔` marks a dual.
 | an-cost-vector | cost as a vector: (local-cost, reach-frequency, shared-resource-id) — not a scalar | cost-model; throttle; schedule | — | 076#7, 083 Q-COSTVEC | S |
 | an-network-cost | per-leaf "opened AF_INET socket" fact (seccomp-BPF, scalar reg); keep-under-guard; the only big-O that bites is across the network | cost tier; undeclared-net backstop | an-undeclared-net | 077 seccomp, AGENTS perf | S |
 | an-undeclared-net | "leaf X opened a network socket the oracle didn't declare" surfaced to the deployer (both phases) | oracle-quality backstop | an-network-cost | 077 backstop, 102-E3 | S |
-| an-cost-inferred | infer cost-class from the check body (`curl`/`ssh`/`nc` ⇒ network) with no annotation | cost-model tier-2 | an-cost-profiled | 076§7, 083 Q-INFER | S |
+| an-cost-inferred | infer cost-class from the predict body (`curl`/`ssh`/`nc` ⇒ network) with no annotation | cost-model tier-2 | an-cost-profiled | 076§7, 083 Q-INFER | S |
 | an-check-depth-inferred | infer depth (shallow/deep) from guard *shape* — a leading structurally-blessed guard / single read ⇒ shallow; no annotation | VALUE-band sizing; kBURDEN floor | an-cost-inferred | 083 Q-INFER/Q-BAND | S |
 | an-cost-profiled | probe self-profiling (timing, exit-codes) harvested from realtime output (PGO/AutoFDO) | cost-model feedback | an-cost-inferred | 076#7, 074, 113 | S |
 | an-leaf-timing-actual | a host-side clock-read per leaf emitted into the stream (per-leaf actual duration) — the one genuine per-leaf instrumentation cost; faithful-mode opt-in | estimate-vs-actual; PGO | an-estimate-vs-actual | 113-f61 | S |

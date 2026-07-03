@@ -28,9 +28,9 @@ case $out in *TRAP-MUTATION-FIRED*) echo "HAZARD: probe failure ran the EXIT tra
 
 echo "== F-OFFRAMP: the inline type-annotation is not inert under a real shell =="
 # The bad spelling (cannot be live code — it does not parse/run):
-#   frobctl.check() { local w : com.frobber.Wombat{defrocked,frocked} = "$1"; ... }
+#   frobctl.predict() { local w : com.frobber.Wombat{defrocked,frocked} = "$1"; ... }
 #   dash: aborts 'local: :: bad variable name';  bash: w left EMPTY, rc 0 (corruption);
-#   dotted name frobctl.check() => dash -n 'Bad function name'.
+#   dotted name frobctl.predict() => dash -n 'Bad function name'.
 # The off-ramp-CLEAN datum form (17N P1) — runs identically with/without Dorc:
 oracle_kind=net.frobnitz.wombat
 frobctl_check() { w="$1"; printf 'checking %s\n' "$w"; }

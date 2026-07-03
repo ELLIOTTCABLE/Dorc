@@ -377,7 +377,7 @@ What the x-3 pair found and the wave fixed (all +SURE, source-landed, green at
   controls (catch_unwind asserting panic).
 - **Every code has a driving must-emit PIN** (B8 PART C): all 23 codes mapped to ≥1
   driving test; the 7 PINNED-BY-NOTHING (e.g. `effect-kind-disagreement`,
-  `oracle-missing-kind`, the two check-codes) got per-code pins driving `lift_checks` /
+  `oracle-missing-kind`, the two check-codes) got per-code pins driving `lift_predicts` /
   the real give-up path over real sh and asserting code identity — genuinely closing the
   direct-construction vacuity. +SURE.
 - **The f-3b member-⊤ dedup story was BACKWARDS** (B8 PART A + the 22-q4 deep-dive — the

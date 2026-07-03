@@ -8,7 +8,7 @@ become the shipped tool. Read the root docs for *what Dorc is*; this file is
 *how we build the spike*.
 
 This is **spike-3 / take-3** (round-20). Charter: `Research/plans/19H` (what to
-build — the value-flow input side + command-keyed `check()` contract-lifting)
+build — the value-flow input side + command-keyed `predict()` contract-lifting)
 and `Research/plans/19I` (what it is graded against — the e2e corpus under
 `spike/e2e/cases/`, with its stand-in axes tagged; the case-COUNT drifts as the
 round adds/cuts — count the dirs, don't trust a literal). Process spine:
@@ -46,23 +46,23 @@ Replace the round-19 stand-ins with the real input side (`19H`):
 - a real **value-flow analysis** — constant + argument/parameter propagation,
   across files, books and oracles uniformly — feeding entity-resolution
   *before* the probe and observable-flow *after* it;
-- the **command-keyed, full-args `check()`** lifted statically — it resolves
+- the **command-keyed, full-args `predict()`** lifted statically — it resolves
   the entity through the oracle's own argparse to its inline kind-annotation
   (identity ONLY). **The probe bodies that SHIP come from the `oracle_probe_*`
-  declarations, NOT the `check()` (per st-2, 20A §4 / 20C §4):** the
-  `<provider>__check` argparse is the engine's entity-resolver and never ships;
+  declarations, NOT the `predict()` (per st-2, 20A §4 / 20C §4):** the
+  `<provider>__predict` argparse is the engine's entity-resolver and never ships;
   the read-only probe wrapper is the kind's (or `(kind, selector)`'s, task-P)
   declared `oracle_probe_*` body. (The earlier "shipped-as-a-function into the
-  probe body" framing predates st-2 — the placeholder check bodies must not
+  probe body" framing predates st-2 — the placeholder predict bodies must not
   ship, 20B §3.)
   - **[CORRECTION — round-23 phase-0.5, 2026-07-02, per the oracle ground-truth
     (`23D §1`), human-directed]** The st-2 check/probe split above is
-    spike-INTERNAL implementation fiction, not design truth: the check IS the
-    oracle, and the STRIPPED CHECK BODY is the shipped unit in BOTH lanes (probe
+    spike-INTERNAL implementation fiction, not design truth: the predict() IS the
+    oracle, and the STRIPPED PREDICT BODY is the shipped unit in BOTH lanes (probe
     under structural self-vouch; apply as guard). `oracle_probe_*` is retired by
-    the design; the probe ships `strip_check(<provider>.check)` invoked per-site
+    the design; the probe ships `strip_predict(<provider>.predict)` invoked per-site
     with the site's argv. The original text is left standing as history. The CODE
-    reconciliation (R3: emitter ships the stripped check body) is DESIGNED-AND-
+    reconciliation (R3: emitter ships the stripped predict body) is DESIGNED-AND-
     DEFERRED; full design in `Research/notes/23E-spike-reconciliation.md`.
     **RESOLVED 2026-07-02 (human):** the former coverage-crate blocker is lifted —
     `crates/coverage/` sources were opacified and are maintainable by ANY agent with no
@@ -90,7 +90,7 @@ and where* (→ `Research/notes/20x-*.md`, append-only), not green tests.
   pipe declared claims around (book → oracle) and attribute failures
   best-effort. Consequence: probe-inertness comes *only* from structural
   vouching (the self-vouch carve-out — a command inside its own oracle's
-  `check()`); no analysis-confidence threshold ever makes a probe "safe".
+  `predict()`); no analysis-confidence threshold ever makes a probe "safe".
   This does NOT ban the cheap *vouch-closure check*
   (`dq-reflexive-probe-inertness`, narrowed per 16Q's superseded-comment): a
   lifted probe body containing a call that is neither the oracle's own
@@ -100,18 +100,18 @@ and where* (→ `Research/notes/20x-*.md`, append-only), not green tests.
   the kind's self-vouched `oracle_probe_*` body plus generated scaffolding
   (printf/if, blessed-pure), so there is no un-vouched call for a static closure
   check to refuse; the executable half (gate-1(c)'s rc-127 vouch scan) covers
-  the mocks cases. It REVIVES the moment any future emitter ships `check()`-body
+  the mocks cases. It REVIVES the moment any future emitter ships `predict()`-body
   spans (the per-selector emitter still ships only `oracle_probe_*` bodies, so
   the trigger is unmoved by task-P — `rule-anno-render`'s residual rides the same
   trigger, 20C §7).
   - **[CORRECTION — round-23 phase-0.5, 2026-07-02, per `23D §1`, human-directed]**
     The disposition's premise ("the shipped probe wrapper contains ONLY the
     `oracle_probe_*` body") is st-2 fiction. Under the reconciled design the
-    shipped unit IS the stripped `check()` body (`23D §1`; see the corrected
+    shipped unit IS the stripped `predict()` body (`23D §1`; see the corrected
     round-20 "the job" bullet). So the vouch-closure check's REVIVAL condition
-    ("a future emitter ships `check()`-body spans") is the *intended* end-state,
+    ("a future emitter ships `predict()`-body spans") is the *intended* end-state,
     not a hazard — the self-vouch carve-out covers it (a command inside its own
-    oracle's `check()` is the self-vouched unit by construction). The R3 code
+    oracle's `predict()` is the self-vouched unit by construction). The R3 code
     reconciliation is designed-and-deferred (the former coverage-crate blocker is
     RESOLVED 2026-07-02 — see the corrected round-20 "the job" bullet above for the
     atomic-session shape); design in `Research/notes/23E-spike-reconciliation.md`.
@@ -176,8 +176,8 @@ and where* (→ `Research/notes/20x-*.md`, append-only), not green tests.
   is an observable-preserving insertion — `<oracle-check-invocation> || <original bytes>` —
   where the original command's bytes always survive verbatim (no code path removes them), and
   the inserted code obeys ONE sourcing principle: *guard code is the oracle's own authored
-  body — the check IS the oracle — shipped strip-only (annotations removed, `name.check()` →
-  `name_check()`, nothing else changed; the strip's output is runnable sh), the same bytes the
+  body — the predict() IS the oracle — shipped strip-only (annotations removed, `name.predict()` →
+  `name_predict()`, nothing else changed; the strip's output is runnable sh), the same bytes the
   probe lane ships under the structural self-vouch.* Strip-fidelity clarification (human,
   2026-07-02 — jc-vouch-mark-strip-fidelity, `23H §9.4`): a BARE-mark statement (a line that
   is only a mark — vouch/ACK/POISON) is an annotation-LINE, equivalent to a comment, NOT a
@@ -196,7 +196,7 @@ and where* (→ `Research/notes/20x-*.md`, append-only), not green tests.
   round-21 door-4 deferral ("flag-gated, default `Never`, builds last, product hard-defers").
 - **rul-guard-license.** A guard mints only from a matching (call-site, reached
   converged-vouch, probe-verdict) witness. The vouch is a mark on a path through the oracle's
-  own check-body, scoped by constant-propagation reachability; it NEVER enters the fact-plane
+  own predict-body, scoped by constant-propagation reachability; it NEVER enters the fact-plane
   and is inadmissible in any other site's elide/poison reasoning. Run-delta verbs never guard
   (an oracle declines by not vouching). No vouch ⇒ run. The vouch's concrete sh SPELLING is
   OPEN — build against a stub explicitly marked strawman, kept trivially cheap to swap.
@@ -212,7 +212,7 @@ and where* (→ `Research/notes/20x-*.md`, append-only), not green tests.
 ## Standing human rulings (round-23 interface additions; STAMPED 2026-07-02 — full text + rationale `Research/notes/23L`, seeds `23K`/`23J`)
 
 - **rul-role-split.** A rich oracle is a family of role-sibling functions: `foo.predict()`
-  (né `check()` — the corpus-wide mechanical rename is task #18, post-closer; facts +
+  (né `check()` — the corpus-wide mechanical rename is task #18, applied 2026-07-03; facts +
   prediction; its aggregate status keeps the INCUMBENT predicted-rc meaning — the round-20
   elision-substitution weld is untouched; future declared-output values EXTEND predict(),
   absorbing the inv-probe-sourced-values carve-out reservation) and
@@ -291,7 +291,7 @@ and where* (→ `Research/notes/20x-*.md`, append-only), not green tests.
   records stay distinct via `site N.M` keying.)
 - **inv-one-observable** (`19F`/`19G`; do not let it re-fragment) — exactly ONE
   concept of a command's observable: its output-tuple over channels
-  `{Effect, Status, Stdout, Stderr}` (extensible). The oracle `check()`
+  `{Effect, Status, Stdout, Stderr}` (extensible). The oracle `predict()`
   **predicts** per-channel values (or a loud OOB can't-predict); an enclosing
   context **consumes** channels; a substitution **reproduces** the consumed
   channels' predicted values; elision is licensed only when Effect predicts

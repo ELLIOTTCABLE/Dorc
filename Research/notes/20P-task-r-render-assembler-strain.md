@@ -106,7 +106,7 @@ assembler home. "Before" line-refs are the pre-task-R `lib.rs`.
   Moving it to an `emit_verbatim(s) -> String` wrapper would be ceremony with zero audit value.
   LEFT inline. (Contrast e-12/e-13, which interleave the verbatim slice WITH stand-in/comment bytes —
   those carry the empty-clause hazard, so they ARE assembly and moved.)
-- **rs-2 — `check_fn_name`** (`<kind>_<selector>__check`). Assembles a POSIX *identifier*, not
+- **rs-2 — `predict_fn_name`** (`<kind>_<selector>__predict`). Assembles a POSIX *identifier*, not
   sh-statement text; its dash-correctness (hyphen→underscore) already lives in
   `dorc_oracle::to_funcname_segment` (a `cm-3`-style single source). It FEEDS the emitters (passed to
   `wrapper_def`/`invocation`) but is name-construction, not artifact-emission. LEFT in `lib.rs` (it
@@ -121,8 +121,8 @@ assembler home. "Before" line-refs are the pre-task-R `lib.rs`.
   `line_standin`, a per-line decision map). The `:` STRING is trivial; the stand-in string is
   `standin_sh`. The emitter (`commented_line`) takes the already-chosen `filler: &str`. Correct
   boundary: the byte-source is centralized, the *which-filler* policy stays with the line walk.
-- **rs-5 — test fixtures + assertions** (`CORPUS_CHECK_SRC`, `rendered.contains("printf 'site …")`).
-  Test INPUT (a check-dialect strawman) and test CONSUMERS of the assembler output. Not engine
+- **rs-5 — test fixtures + assertions** (`CORPUS_PREDICT_SRC`, `rendered.contains("printf 'site …")`).
+  Test INPUT (a predict-dialect strawman) and test CONSUMERS of the assembler output. Not engine
   emission. Untouched (per safety: fixtures are spec).
 
 ## §3 Same-construct-different-assembly divergences (the task-S dv-pattern — the headline)
@@ -213,7 +213,7 @@ quoting decision in any artifact, and it routes through `dorc_syntax::sem::singl
   - **member-elision list rewriting** (`209` brk-1(b)): a `render::apply` emitter rewriting a `for`'s
     iteration-list to the diverged members. Lives beside `inline_arm_subst` (both are in-situ
     byte-span rewrites of a structural construct).
-  - **check-body shipping with `rule-anno-render`**: the moment any emitter ships `check()`-body
+  - **predict-body shipping with `rule-anno-render`**: the moment any emitter ships `predict()`-body
     spans, `dq-reflexive-probe-inertness`'s vouch-closure REVIVES (20A standing ruling) — and the
     revival trigger is now a single grep-able place (`render::probe`), not scattered `format!`s.
 - **dv-render-1 is a standing tripwire**: do NOT merge `plan_header`/`apply_header`. If a future change
@@ -236,7 +236,7 @@ quoting decision in any artifact, and it routes through `dorc_syntax::sem::singl
   not a divergence.
 - +SURE: the `format_push_string` ratchet is the documented self-removal (last such pattern gone), not
   a policy relaxation.
-- ~SUSPECT: the rs-2/rs-3 boundary (leaving `check_fn_name`/`fact_label` in `lib.rs`) is the right line
+- ~SUSPECT: the rs-2/rs-3 boundary (leaving `predict_fn_name`/`fact_label` in `lib.rs`) is the right line
   — they are identifier/label construction with their dash-correctness already single-sourced
   elsewhere, not sh-statement assembly — but a stricter reading of "every place the engine emits text"
   could pull them in. I scoped to the `dash -n` statement surface; flagged for the orchestrator if a

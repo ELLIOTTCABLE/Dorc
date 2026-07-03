@@ -40,7 +40,7 @@ _apt_get_guard() {
    done
 }
 
-apt-get.check() {
+apt-get.predict() {
    _apt_get_guard "$@" || return 2
    if apt-get --simulate "$@" 2>/dev/null | grep -qE '^(Inst|Conf|Remv) '; then
       return 1

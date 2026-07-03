@@ -14,7 +14,7 @@ materially re-prices the biggest finding.
 ## Verification status (honesty first)
 
 Claims I could check against primary text in-context, and did: the spike ships `oracle_probe_*`
-bodies never `check()` bodies (the st-2 standing rule in spike/CLAUDE.md — confirms 236a's
+bodies never `predict()` bodies (the st-2 standing rule in spike/CLAUDE.md — confirms 236a's
 guard-body erratum); the TOCTOU-WONTFIX ruling's exact letter INCLUDING its "maybe-someday
 super-cheap last-second check" parenthetical (confirms both adversaries' characterization); the
 22H live-plan arc exists as deferred-foundational with streaming per-host re-fold (Research/README
@@ -163,15 +163,15 @@ agent-claims — re-verify before building on any.
 - **Fourth correction (2026-07-02, human — REVERSES the fd7-based erratum):** 236a-fd7, and this
   note's own verification of it, applied the spike's st-2 check/probe split to the design level —
   stale-layer contamination. Human ground-truth: oracles are just sh, often co-resident with the
-  book; the added syntax is STRIP-ONLY (annotations removed; `name.check()` → `name_check()`;
+  book; the added syntax is STRIP-ONLY (annotations removed; `name.predict()` → `name_predict()`;
   output is runnable sh — the period-names are a semaphore/lint-opt-in, not a language); the
   argparse-deconstruction is an analyzer trick, never a language constraint (an oracle may
   contain arbitrary sh — `rm -rf /` ships and wipes root; oracles are constrained in what we
-  ASSUME from them, not what they may contain); the check IS the oracle, and the stripped body
+  ASSUME from them, not what they may contain); the predict() IS the oracle, and the stripped body
   is exactly what ships, both lanes; lifting an invocation-relevant subset is an optional
   edge-case whose output must be byte-identical to a substring of the oracle body. st-2 stays
   true OF THE SPIKE — a build-vs-design divergence to reconcile, alongside the existing
-  check()-contract divergence flag. 233's original apply-guard-fat wording was correct; the 233
+  predict()-contract divergence flag. 233's original apply-guard-fat wording was correct; the 233
   annotation's correction (1) is reversed accordingly.
 - **Recommendation 3 below is accordingly RE-SCOPED** from "commission the re-observation
   ladder" to: a design round for the *re-verification placement spectrum* — per-site ↔ hoisted
@@ -186,7 +186,7 @@ agent-claims — re-verify before building on any.
    (stamped — recorded here as erratum, not an edit). Feeds task #6.
 3. **Commission the re-scoped placement-spectrum design round** (convergence-3 as corrected
    above). The one queue-changer; gates tasks #5 and #7.
-4. **233 errata list** (no edits to the stamped doc): fat-pole says "check()-body" where it must
+4. **233 errata list** (no edits to the stamped doc): fat-pole says "predict()-body" where it must
    be the probe body (st-2); the "shadow of the mutation" overclaim (convergence-4); the
    family-participation over-promise (convergence-2); round-9's closed-world axiom is being
    consciously revoked for the elide tier (236a's archaeology).

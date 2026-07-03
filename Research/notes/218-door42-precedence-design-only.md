@@ -123,7 +123,7 @@ value splits with them:
   died in — door-4 as re-run bugfix, strictly more valuable than door-2 for this class.
 - **flag-softened forms** (`mkdir -p`, `groupadd -f` ⇒ rc 0 on converged): benign-rc by
   spelling; the oracle's declaration may be conditioned on the flag's presence (the
-  check() argparse already sees the full argv — C-1).
+  predict() argparse already sees the full argv — C-1).
 
 Consequences: (a) the dashboard's needs-declaration column should EVENTUALLY split by
 rc-class — a hostile-rc site is door-4-only territory, mislabeling it "door-2 would
@@ -181,7 +181,7 @@ apt-get install -y nginx          dpkg -s nginx >/dev/null 2>&1 || apt-get insta
   guard's nonzero rc does NOT kill the book; it routes to the original mutator. +SURE
   this is the correct lowering reading; re-verify at build.
 - **Self-recognizability (the re-analysis closure clause — new in this note):** a kind
-  is door-4-eligible only if its own `check()` argparse resolves its probe body's
+  is door-4-eligible only if its own `predict()` argparse resolves its probe body's
   spelling (the package oracle's check must recognize `dpkg -s nginx`). Then re-running
   Dorc over an already-transformed book sees an ordinary admin-style guard → Query →
   door-1 fold — NO second transform, no guard-stacking, and the transformed artifact's
@@ -226,7 +226,7 @@ pass + the independent design, adopted):
    This RETRACTS this note's §3 first-draft framing of door-4 as "the rescue" for
    hostile-rc tools — the rescue framing changed book behavior and is withdrawn.
 8. **Already-guarded refusal, spelling-matched** (218a d4-6, sharpened by find-3): if
-   the site's `||`-left sibling is check()-recognizable as this kind's probe SPELLING —
+   the site's `||`-left sibling is predict()-recognizable as this kind's probe SPELLING —
    matched syntactically, NOT by query-validity, because in a transformed multi-mutator
    artifact the later guards are st-3-invalidated and validity-matching would re-mint ⇒
    `guard || guard || mutator` stacking — the policy refuses (AlreadyGuarded). Without

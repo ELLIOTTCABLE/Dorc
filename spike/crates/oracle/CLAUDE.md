@@ -12,7 +12,7 @@ The fact-centric pivot is settled and built (`16P` DP-1 / T7): an oracle declare
 `(provider, verb) → (kind, polarity)` (`an-effect-polarity`). A book's bare `apt-get install -y nginx`
 resolves through the effect-map to a fact; the kind name is the *only* cross-oracle anchor (apt's `package` ≡
 yum's `package`), never decoded for meaning (`inv-referent-agnostic`, `an-named-kind`). Never probe by
-dry-running the mutator — `an-fact-centric` (the command-centric strawman `mycmd.check(){ mycmd --dry-run; }`
+dry-running the mutator — `an-fact-centric` (the command-centric strawman `mycmd.predict(){ mycmd --dry-run; }`
 made the named-kind index decorative in the elision path; `16P` DP-1).
 
 +SURE, traced in `src/lib.rs`: today this crate is the **skeleton of `17N` Part-I with none of its
@@ -83,9 +83,9 @@ exemplar of R2-SHADOW.
   `oracle_probe_service_active` (is-active) to elide either — a single is-active body can no longer silently
   discharge `#enabled` (`KindIndex::resolve_probe`).
   - **[CORRECTION — round-23 phase-0.5, 2026-07-02, per `23D §1`, human-directed]** `oracle_probe_*`
-    is RETIRED by the reconciled design: the check IS the oracle, and the stripped `check()` body is
+    is RETIRED by the reconciled design: the predict() IS the oracle, and the stripped `predict()` body is
     the shipped probe (in both lanes). The per-selector distinction this floor enforces is reproduced
-    by the check body's per-verb arms (`systemctl.check`'s `enable` arm runs is-enabled, `start` runs
+    by the predict body's per-verb arms (`systemctl.check`'s `enable` arm runs is-enabled, `start` runs
     is-active). NOTE the residual (`jc-fblessed`, `23E §3`): the STRUCTURAL `resolve_probe` floor
     evaporates under check-as-oracle (the engine cannot verify `is-enabled` "means" `#enabled` —
     `inv-referent-agnostic`), consistent with `23D §1.2` ("constrained in what we ASSUME, not what
@@ -97,7 +97,7 @@ exemplar of R2-SHADOW.
   probe on there being NO second operand: `if [ "$2" = "" ]; then probe "$pkg"; fi`. WITHOUT it, a multi-target
   command (`apt-get install nginx curl`) resolves to entity=`nginx` ALONE and ships a probe for nginx only — so
   a host with nginx-but-not-curl elides the whole install and **never installs curl** (a priority-1 under-execute;
-  20I §3 / 208 strain-W3, pinned in `tests/check.rs::naive_oracle_without_operand_guard_drops_trailing_operands_known_hazard`).
+  20I §3 / 208 strain-W3, pinned in `tests/predict.rs::naive_oracle_without_operand_guard_drops_trailing_operands_known_hazard`).
   The engine cannot supply this (it parses nothing — `inv-referent-agnostic`); the guard is the oracle's job, and
   the `[ "$2" = "" ]` form degrades the multi-operand argv to ⊤ ⇒ run (the safe direction).
 

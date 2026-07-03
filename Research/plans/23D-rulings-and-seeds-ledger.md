@@ -10,13 +10,13 @@ round-23 rulings block.
 ## §1 The oracle ground-truth (human, 2026-07-02 — binds all future writing)
 
 1. Oracles are JUST SH, often in the same file as the book. The added syntax is STRIP-ONLY: the
-   strip removes type-annotations and rewrites `name.check()` → `name_check()`, nothing else;
+   strip removes type-annotations and rewrites `name.predict()` → `name_predict()`, nothing else;
    its output is runnable sh. Period-names are a semaphore opting into extra Dorc lint/warnings
    — NOT a different language.
 2. The argparse-deconstruction is an ANALYZER TRICK, never a language constraint. An oracle may
    contain arbitrary sh — `rm -rf /` ships and wipes root. Oracles are constrained in what we
    ASSUME from them, never in what they may contain.
-3. Therefore the check IS the oracle; the stripped whole body is what ships in BOTH lanes (probe
+3. Therefore the predict() IS the oracle; the stripped whole body is what ships in BOTH lanes (probe
    under structural self-vouch; apply as guard). Lifting an invocation-relevant subset (what old
    rounds dangerously called "verbs") is an optional edge-case gated on the author's sh matching
    the abstract-interpretation constraints, and any lifted form must be BYTE-IDENTICAL TO A

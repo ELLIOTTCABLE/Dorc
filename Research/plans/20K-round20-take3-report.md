@@ -14,7 +14,7 @@
 **19H §1 (the value analysis) — REAL.** `analysis::value` is a genuine flow-sensitive
 constant/parameter propagation over the existing worklist (entry-⊤-seed; joins; scope
 containment; lvalue-builtin clobbers; POSIX §2.9.1 prefix-env ordering; ⊤-region havoc;
-non-convergence⇒all-⊤), and `oracle::check` is a concrete evaluator tracing resolved argv
+non-convergence⇒all-⊤), and `oracle::predict` is a concrete evaluator tracing resolved argv
 through the oracle's OWN argparse to its inline kind-annotation. The two are joined at the
 argv boundary (the recorded shape-deviation from "one machinery": dataflow for books,
 concrete evaluation for the constrained dialect — 202 §1/203 §4; both audits graded it
@@ -23,15 +23,15 @@ independently confirmed no fallback path exists: **"identity is declared, never 
 is true in code.** Floor under-shoots are recorded + strawman-pinned (no book loops, no
 sourcing, no partial-⊤ argv, book-function params deferred — 209 maps the road).
 
-**19H §2 (check() contract-lifting) — entity half real; probe-body half a recorded
+**19H §2 (predict() contract-lifting) — entity half real; probe-body half a recorded
 retreat.** Entity/verb/kind resolution through the dialect evaluator is wired and
-e2e-witnessed. The chartered "check body IS the shipped probe" unification was retreated
+e2e-witnessed. The chartered "predict body IS the shipped probe" unification was retreated
 from under st-2 (probes remain separate per-(kind,selector) declarations; the check
 resolves identity only; `Resolved.probe_body` computed-and-unused) — revisitable at
 dq-kOOB, where the oracle-spelling ruling lives. The retreat's consequences were themselves
 chased down: the per-selector probe gap it left became 20I find-1 (a live under-execute,
 since FIXED structurally — see §4), and rule-anno-render is discharged-as-moot until any
-emitter ships check-body spans.
+emitter ships predict-body spans.
 
 **19H §3 / one-Observable — complete in shape, honestly labeled.** One `Observable` tuple
 over {Effect, Status, Stdout, Stderr}; stdout/stderr are `Predicted<OutClaim>` with nothing
@@ -85,7 +85,7 @@ to already be in the notes.
   probes). (201/205/206.)
 - **st-1** (orchestrator, delegated): short-form kinds ARE the kind this spike; reverse-DNS
   is the deferred namespacing design. **st-2** (orchestrator, delegated): probes stay
-  separate declarations; the dialect does not grow pipelines; check() resolves identity
+  separate declarations; the dialect does not grow pipelines; predict() resolves identity
   only — revisit at dq-kOOB. **st-3** (orchestrator, delegated): pristine-prefix Query
   validity, refined: upstream queries/pure-builtins don't invalidate; only an oracled
   mutator or Opaque does. (20A §4.)
@@ -96,7 +96,7 @@ to already be in the notes.
   review); kUNIT/kVOLATILES "skip"-wording residuals flagged, untouched. (201 §1.)
 - **Flagged, awaiting the human:** tc-query-bare-elision (substitute an unconsumed valid
   read — sound, possibly over-eager); tc-perselector-wrapper-scheme (uniform
-  `<kind>_<selector>__check` naming); tc-pipe-ran-order (pipe-stage concurrency vs the
+  `<kind>_<selector>__predict` naming); tc-pipe-ran-order (pipe-stage concurrency vs the
   ordered run-set gate — latent flake, design fix sketched in 20J); the errexit/YOLO-mode
   product tension (207 — his own reflection, with the incentive-gradient finding and the
   inline-oracle/prefix-env-pun directions).
@@ -196,7 +196,7 @@ twice (dead-engine-blesses-green; the vacuous headline lane) and fixed.
 ## §7 Note index (the round's full strain corpus)
 
 201 gate+rulings+seeding · 202 input-side design (+supersessions) · 203 timed-probe
-reservation + stage-1 (+addendum) · 204 check-dialect build · 205 crosscheck rulings ·
+reservation + stage-1 (+addendum) · 204 predict-dialect build · 205 crosscheck rulings ·
 206 C-3/headline cost · 207 errexit incentive + inline-oracle directions · 208 task-W
 wiring (+corrections) · 209 value-plane breakdown map · 20A whack-a-mole + st-judgments ·
 20B pairs reconciliation · 20C probe wire · 20D semantics module · 20E Query class ·

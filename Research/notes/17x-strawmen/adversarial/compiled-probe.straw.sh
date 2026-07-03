@@ -24,15 +24,15 @@
 D=${DORC_SCRATCH:?run-scoped writable scratch dir on the target — NOT managed state}
 V=${DORC_VERDICT:?the gating-verdict fast-lane — a channel separate from freeform output}
 
-# --- oracle interceptors: shipped BECAUSE id.check() exists; replaces the `id` invocation in the probe ---
+# --- oracle interceptors: shipped BECAUSE id.predict() exists; replaces the `id` invocation in the probe ---
 # (the real oracle body asserts arg-shape + sanitizes + vouches read-only; stub just calls the real binary.)
-id__check() { command id "$@"; }
+id__predict() { command id "$@"; }
 
 emit() { printf '%s\trc=%d\n' "$1" "$2" >>"$V"; }   # verdict on its own lane; %d (the rc), never %n
 
 # === variant A: FLAT — independent leaves (the dispatcher runs these concurrently across the connection) ===
 getent group app                >"$D"/p1.out 2>&1; emit p1 "$?"
-id__check -nG deploy            >"$D"/p2.out 2>&1; emit p2 "$?"
+id__predict -nG deploy            >"$D"/p2.out 2>&1; emit p2 "$?"
 systemctl is-active --quiet app >"$D"/p3.out 2>&1; emit p3 "$?"
 
 # === variant B: CFG PRESERVED — p2/p3 are valid/inert ONLY under p1's guard ===
@@ -40,7 +40,7 @@ systemctl is-active --quiet app >"$D"/p3.out 2>&1; emit p3 "$?"
 #  upstream check held — e.g. probing membership before the group is known to exist.)
 getent group app >"$D"/p1.out 2>&1; rc1=$?; emit p1 "$rc1"
 if [ "$rc1" = 0 ]; then
-   id__check -nG deploy            >"$D"/p2.out 2>&1; emit p2 "$?"
+   id__predict -nG deploy            >"$D"/p2.out 2>&1; emit p2 "$?"
    systemctl is-active --quiet app >"$D"/p3.out 2>&1; emit p3 "$?"
 fi
 

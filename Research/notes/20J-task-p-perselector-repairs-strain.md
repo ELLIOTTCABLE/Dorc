@@ -16,7 +16,7 @@
   `selector_probes: BTreeMap<(KindId, SelectorId), FactProbe>` alongside the kind-default `probes`. The
   lift recognizes `oracle_probe_<kind>_<selector>` funcdefs; resolution is `KindIndex::resolve_probe`.
   `plan::compile_probe`'s closure is now `Fn(KindId, SelectorId) -> Option<String>`; the emitted wrapper
-  is keyed per `(kind, selector)` (`check_fn_name` ⇒ `<kind>_<selector>__check`).
+  is keyed per `(kind, selector)` (`predict_fn_name` ⇒ `<kind>_<selector>__predict`).
 - **item-2 (corpus).** The five service oracles ship per-selector probes (is-enabled / is-active); new
   boundary case `exec-enabled-not-active-host`; all probe-shipping goldens re-blessed (the wrapper
   rename — §3).
@@ -26,7 +26,7 @@
   authored record carries `rc=` is compared with it; rc-less sites stay effect-only.
 - **item-5 (same-cell conflict floor).** `cli::facts_from_sites` merges same-cell records via
   `merge_observable` (⊤-on-disagreement), never last-write-wins.
-- **item-6 (pinned hazard).** `oracle/tests/check.rs::naive_oracle_without_operand_guard_drops_trailing_operands_known_hazard`;
+- **item-6 (pinned hazard).** `oracle/tests/predict.rs::naive_oracle_without_operand_guard_drops_trailing_operands_known_hazard`;
   `R2-MULTIOP` line in `oracle/CLAUDE.md`; the `[ "$2" = "" ]` sentence in 19H §2.1's defect annotation.
 - **item-7 (doc currency).** `spike/CLAUDE.md` round-job st-2 note + vouch-closure 20I §3 disposition;
   the six `AndOrStatus` fixture comments swept to `StatusRelaxable`.
@@ -51,11 +51,11 @@ multi-selector kind needs >1 probe body declared. So a single-selector kind whos
 "wrong" command (the old `two-oracles` is-active-for-#enabled mismatch) is NOT caught by the rule — that
 stays an oracle-quality (F-BLESSED) concern, not a structural one (§6 strain-P3).
 
-**Mangling scheme** (reuses `check::map_provider_name` semantics, as the prompt required):
+**Mangling scheme** (reuses `predict::map_provider_name` semantics, as the prompt required):
 - the funcname kind-segment is the kind name in funcname form (`-`→`_`, `to_funcname_segment`); a probe
   suffix equal to it is the kind-default;
 - a suffix `<kind-seg>_<rest>` is the per-selector probe for selector `map_provider_name(<rest>)` (`_`→`-`);
-- the emitted wrapper is `<to_funcname_segment(kind)>_<to_funcname_segment(selector)>__check`.
+- the emitted wrapper is `<to_funcname_segment(kind)>_<to_funcname_segment(selector)>__predict`.
 
 `to_funcname_segment` (new, in `oracle`) is the `-`→`_` inverse of `map_provider_name`'s `_`→`-`; it is
 the shared home of the convention on the emit/match side. `plan` depends on `oracle` for it now (moved
@@ -71,18 +71,18 @@ selector has a `_`, so this is a latent-footgun guard, not a live path.
 
 ## §2 The emitted-name scheme + its golden cost (a deliberate, scoped churn)
 
-The wrapper rename `<kind>__check` → `<kind>_<selector>__check` is UNIFORM (selector always in the name),
+The wrapper rename `<kind>__predict` → `<kind>_<selector>__predict` is UNIFORM (selector always in the name),
 because that is the only **deterministic, local, collision-free** scheme keyed per `(kind, selector)` —
-the prompt's `service_enabled__check` / `service_active__check` examples. Cost: every probe-shipping
-golden's probe SECTION re-blessed (the `__check` wrapper lines). I verified the discipline three ways:
-- **+SURE every `expected.out` delta across all cases is a `__check` wrapper line** (grep: zero
+the prompt's `service_enabled__predict` / `service_active__predict` examples. Cost: every probe-shipping
+golden's probe SECTION re-blessed (the `__predict` wrapper lines). I verified the discipline three ways:
+- **+SURE every `expected.out` delta across all cases is a `__predict` wrapper line** (grep: zero
   non-wrapper, non-header changed lines except item-7's three `AndOrStatus`→`StatusRelaxable` comments).
 - **+SURE every pre-existing case's APPLY section is byte-identical to HEAD** (a per-case apply-section
   diff over the whole corpus: the only apply-section change is the two NEW cases).
 - **+SURE no pre-existing `expected.ran` is modified** (only the two new cases add `.ran`).
 
 So item-1 is provably a probe-section-only change with zero disposition/run-set impact — the 20C §3
-discipline upheld. The scheme is documented in `check_fn_name`'s doc + the `PROBE_HEADER` doc-comment
+discipline upheld. The scheme is documented in `predict_fn_name`'s doc + the `PROBE_HEADER` doc-comment
 (NOT the emitted header bytes — same zero-extra-golden posture 20H took for the reserved keys; emitting a
 header line would churn ALL ~52 goldens incl. zero-probe cases).
 
@@ -158,15 +158,15 @@ run-set).
 
 - **strain-P1-uniform-rename-churn (the scope-vs-cleanliness tension).** "Keys per `(kind, selector)`"
   forces the wrapper name to carry the selector, which renames EVERY probe-shipping golden's wrapper
-  (`package__check` → `package_installed__check`, ×~35 cases) — far beyond item-2's nominal
+  (`package__predict` → `package_installed__predict`, ×~35 cases) — far beyond item-2's nominal
   service-oracle scope. I judged this IN scope for item-1 (the rename is item-1's direct, mechanical
   consequence, and the apply sections are provably untouched), not the "delta outside item-2/item-7 ⇒
   stop-and-flag" condition (which I read as a *disposition* change in an unrelated case — a bug signal).
-  ~SUSPECT a reviewer could prefer a scheme that keeps `<kind>__check` for single-selector kinds and
+  ~SUSPECT a reviewer could prefer a scheme that keeps `<kind>__predict` for single-selector kinds and
   only disambiguates multi-selector ones — but that is stateful/non-local (the name would depend on how
   many distinct bodies the kind ships) and I rejected it as non-deterministic-per-site. Flagged for
-  ratification: is the uniform `<kind>_<selector>__check` the right scheme, or should single-selector
-  kinds keep the bare `<kind>__check`?
+  ratification: is the uniform `<kind>_<selector>__predict` the right scheme, or should single-selector
+  kinds keep the bare `<kind>__predict`?
 
 - **strain-P2-no-existing-apply-flip (the find-1 fix is invisible in existing dispositions).** The
   prompt anticipated existing multi-selector sites flipping to skip-unresolvable ⇒ run. They did NOT
@@ -240,8 +240,8 @@ run-set).
 
 ## §8 tc-* / judgment calls flagged (conservative defaults; flagged up, not settled)
 
-- **tc-perselector-wrapper-scheme (strain-P1):** uniform `<kind>_<selector>__check` (chosen) vs.
-  bare-`<kind>__check`-for-single-selector. Conservative: uniform (deterministic, local); the golden
+- **tc-perselector-wrapper-scheme (strain-P1):** uniform `<kind>_<selector>__predict` (chosen) vs.
+  bare-`<kind>__predict`-for-single-selector. Conservative: uniform (deterministic, local); the golden
   churn is probe-section-only + apply-byte-identical. Flagged.
 - **tc-perselector-mangle (strain-P4):** the round-trip guard for a literal-`_` selector name — kept as a
   reachable-but-corpus-dead WARNING. Flagged.

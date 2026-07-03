@@ -33,13 +33,13 @@ this crosscheck.
   delta); (c) walls described as coming only from *unmodeled* commands, where the welded
   design walls the elide-tier below any *retained* command. All human-doc fixes.
 - **conv-rc-soundness** (23Ia-fd1 ≡ 23Ib-fd3 residue, facet-convergence — the pair's most
-  valuable product): the guard consumes the check body's AGGREGATE IN-BAND rc, while the
+  valuable product): the guard consumes the predict body's AGGREGATE IN-BAND rc, while the
   design's claims ride per-mark, engine-interpreted semantics. Three facets, one gap:
   (i) the `!`-inverted claim's inversion lives in the engine's interpretation and is
   STRIPPED from the shipped bytes — a vouched inverted arm would mint a guard that skips
   precisely when the world drifted to needing the command (conductor re-traced the
   mechanism: +SURE; today masked ONLY by the cov-q4 transitional freeze, and the freeze's
-  own dissolution note, followed naively, mints it); (ii) corpus check bodies rc-0 their
+  own dissolution note, followed naively, mints it); (ii) corpus predict bodies rc-0 their
   refuse paths (hz-refusepath / 23F adv-3) — runtime host-conditional branches can land on
   unvouched rc-0 paths and silently suppress a mutator; (iii) fact-reporting bodies
   (233's own systemctl exemplar) are rc-vacuous, so the check-shape the ELIDE-half wants is

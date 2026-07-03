@@ -22,7 +22,7 @@ _systemctl_is() {   # _systemctl_is enabled|active <unit> -> rc 0 iff in that st
    esac
 }
 
-systemctl.check() {
+systemctl.predict() {
    command -v systemctl >/dev/null 2>&1 || { echo "systemctl oracle: no systemctl" >&2; return 2; }
    [ "$#" -ge 1 ] || { echo "systemctl oracle: no verb" >&2; return 2; }
    local verb=$1 now=false unit= a

@@ -979,8 +979,8 @@ warm-ups (d×d host-flip fixture; var-resolved redirect case) → 22x synthesis 
   patterns in 3 expected-diagnostics files are inert dead weight; x3n-ONLY).
   Area-3 coverage map (x3n-ONLY): e2e reaches 9 of 23 codes;
   PINNED-BY-NOTHING: effect-kind-disagreement, oracle-missing-kind,
-  oracle-non-declaration, oracle-non-literal-kind, check-out-of-dialect,
-  check-unterminated, syntax-malformed. UNPINNED∧CHANGED cross-cut: the three
+  oracle-non-declaration, oracle-non-literal-kind, predict-out-of-dialect,
+  predict-unterminated, syntax-malformed. UNPINNED∧CHANGED cross-cut: the three
   span-gain dq codes, site-unresolvable prose, heredoc help line, cfg-top-node
   depth site, the universal region lines.
 - x-3 CONVERGENCE MAP (conductor): CONVERGENT-BOTH (highest trust): the four
@@ -1119,8 +1119,8 @@ warm-ups (d×d host-flip fixture; var-resolved redirect case) → 22x synthesis 
   the non-empty guard catches catastrophic reshapes. (residual-b, +SURE,
   conductor-verified in the tip source): `production_emit_source()` excludes
   core but NOT non-core in-file `#[cfg(test)]` modules — so a test-only literal
-  construction (e.g. the new agreement test's `registry(&Code::CheckUnterminated
-  (…))` calls in oracle/src/check.rs) can satisfy the constructed-scan for a
+  construction (e.g. the new agreement test's `registry(&Code::PredictUnterminated
+  (…))` calls in oracle/src/predict.rs) can satisfy the constructed-scan for a
   code whose production emit vanished. Strictly better than the old
   fully-vacuous basis (compile-coupling also softens the live instance), but
   the scan remains best-effort: B8's per-code must-emit pins (test-DRIVEN
@@ -1325,7 +1325,7 @@ warm-ups (d×d host-flip fixture; var-resolved redirect case) → 22x synthesis 
   by builder (dedup model HELD; builder did not need to STOP); test asserts
   MustRun ∧ ¬EstablishMembers ∧ exactly-one dq-cmdsub-operand-top, with the
   count-not-presence rationale intact. PART C: the two check-* pins drive
-  `lift_checks` over REAL sh (unterminated body; a `for` in the body) and assert
+  `lift_predicts` over REAL sh (unterminated body; a `for` in the body) and assert
   the code identity — genuinely closing the x3a-B/t-1 direct-construction
   vacuity, not re-committing it; all 7 PINNED-BY-NOTHING codes matched x3n's
   list exactly, none faked, none needed disproportionate scaffolding; all 23
@@ -1523,7 +1523,7 @@ warm-ups (d×d host-flip fixture; var-resolved redirect case) → 22x synthesis 
     {site} only) — wiring it is a PAYLOAD change, not a ride-along emit change;
     my contract wrongly presented the two as symmetric.
   - fd-G (reliability quadrant): the oracle-lifter ⊤ codes (OracleMissingProbe,
-    CheckOutOfDialect) have no cause + site()==None → the why-lens reads NOTHING
+    PredictOutOfDialect) have no cause + site()==None → the why-lens reads NOTHING
     for the unreliable-oracle ⊤ class; the de-vacuuming covers only the
     reliable-oracle value-⊤ quadrant. PLUS the fallback-cause (site:None) render
     path is unaddressed (adversarial Area-5).

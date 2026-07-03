@@ -54,7 +54,7 @@
   (the rq-2 Pottier embryo), all-Note-severity, constructors-fill-templates.
   **Coverage honesty — the load-bearing inversion (survey note-A):** the catalog is a
   Note-only island; all 17 SCATTERED codes bypass it (`syntax-unsupported`,
-  `syntax-malformed`, `check-out-of-dialect`, `check-unterminated`, 8× `oracle-*`,
+  `syntax-malformed`, `predict-out-of-dialect`, `predict-unterminated`, 8× `oracle-*`,
   `cfg-top-node`, `cfg-errexit-unknown`, `cfg-inline-refused` [6 distinct free-text
   emit sites], `effect-kind-disagreement`, `render-heredoc-refused` [inline literal,
   not even a named const]) — and the `error[`-severity codes that actually trip

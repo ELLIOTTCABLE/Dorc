@@ -38,20 +38,20 @@ pin) and the *build-window promotion path* (one-sided xfails + bless). Ledger:
   goldens model the probe/check split while rul-ternary-verdict says "same bytes, both lanes" —
   the signed rationale currently leans on the deferred one-body property. ALREADY IN FLIGHT:
   the phase-0.5 Opus reconciliation dismantles the split; after it lands, probe ships stripped
-  check bodies and the rationale becomes structurally true. Carry as integration-check, not new
+  predict bodies and the rationale becomes structurally true. Carry as integration-check, not new
   work.
 
 ## The demonstrated adversarial finds (single-source but executed; conductor-verified mechanism)
 
 - **adv-1 · variable-namespace clobbering (23C-fd1) — the material design finding.** POSIX
-  functions execute in the caller's variable namespace; the pinned preamble is the check body
+  functions execute in the caller's variable namespace; the pinned preamble is the predict body
   verbatim (strip-only is law); the corpus's own strawman check-bodies assign `verb`/`pkg`
   bare. Composition (every piece individually pinned): `pkg=vim; hork wombat; apt-get install
   -y curl; apt-get install -y "$pkg"` — curl's guard runs `pkg="$1"` ⇒ clobbers the book's
   variable ⇒ vim never installs AND the suppressed curl-install re-runs. Silent, rc 0, both
   execution commandments broken. Mechanism +SURE (POSIX scoping is certain; the demo executed).
   No pin composes a guard with downstream variable reads.
-- **adv-2 · nounset kills the book at the guard (23C-fd2).** Under `set -u`, the check body's
+- **adv-2 · nounset kills the book at the guard (23C-fd2).** Under `set -u`, the predict body's
   unconditional `"$2"` read is fatal on single-operand invocations — bare book completes,
   pinned artifact dies rc 2 at the guard, the tail under-executes. (The 218a set-u hazard,
   demonstrated; distinct from the deferred errexit-CONSUMPTION axis.)
@@ -85,8 +85,8 @@ pin) and the *build-window promotion path* (one-sided xfails + bless). Ledger:
   golden-churn-coupled → deferred to the phase-0.5 integration or the build round, not this
   repair pass.
 - 23B-fd2 (strip-rule hyphen munge letter-defect) — REAL and needs a human one-liner (dash
-  rejects both `apt-get.check(){}` and `apt_get-…` forms; fixtures pre-munge as
-  `apt_get__check`, which "nothing else changed" doesn't authorize). Not discounted — routed to
+  rejects both `apt-get.predict(){}` and `apt_get-…` forms; fixtures pre-munge as
+  `apt_get__predict`, which "nothing else changed" doesn't authorize). Not discounted — routed to
   the ask-list; recorded here because it is ruling-text debt, not pin debt.
 
 ## Asks put to the human (h-slugs)
@@ -97,9 +97,9 @@ pin) and the *build-window promotion path* (one-sided xfails + bless). Ledger:
   funcname munge (non-alnum → underscore; the engine's established convention) — one line
   amending rul-ternary-verdict's strip description.
 - **h3** the insertion-form mechanism for environment isolation (answers adv-1/adv-2):
-  subshell-wrapped call-site (`( name_check args ) || original` — engine-side, contract-free,
+  subshell-wrapped call-site (`( name_predict args ) || original` — engine-side, contract-free,
   isolates variables; ~ms fork per guard) VS an oracle-contract discipline (`local` + `${n:-}`
-  + lift-refusal of bare assignments in check bodies — no fork, but a new authored burden and
+  + lift-refusal of bare assignments in predict bodies — no fork, but a new authored burden and
   a lint to build). Behaviour-pins land either way; the mechanism is yours.
 - **h4** ratify redirect-carrying lines as a refuse-home (guards refuse; site runs) pending
   real design.
@@ -112,7 +112,7 @@ pin) and the *build-window promotion path* (one-sided xfails + bless). Ledger:
   funcname munge; the human is not married to it either way.
 - **h3:** the language target is dash-ish, barely-more-than-classic-POSIX ("POSIX2024-ish",
   which carves out `local` without specifying it) — LEAN INTO `local`: expect/encourage
-  sanitary check bodies as good hygiene, never as sandboxing (the rm-rf example reigns; Dorc
+  sanitary predict bodies as good hygiene, never as sandboxing (the rm-rf example reigns; Dorc
   is not and never will be a sandbox). Forking gently deferred, both directions sanctioned —
   "or hell, do both": subshell-wrap acceptable now (removable later; more expensive to ADD
   later if anything starts depending on leaked context), local-hygiene encouraged regardless.
@@ -126,11 +126,11 @@ pin) and the *build-window promotion path* (one-sided xfails + bless). Ledger:
 - **cov-q1 (workspace-decoupling): DECLINED.** The coverage crate stays a gated workspace
   member — the friction it solved died with the opacification (any agent can now fix its
   call-sites); gate coverage prevents silent rot in a crate nothing else exercises.
-- **cov-q2 (provider with no check body): RULED** — the re-spelling authors a minimal
-  `dpkg.check()` in the affected fixtures; small, honest fixture-work, no new spelling
+- **cov-q2 (provider with no predict body): RULED** — the re-spelling authors a minimal
+  `dpkg.predict()` in the affected fixtures; small, honest fixture-work, no new spelling
   invented, pin intent preserved.
 - **cov-q3 (the per-selector filing floor): ACCEPTED as a posture shift.** Under
-  check-is-the-oracle, annotation-on-the-reached-arm IS the per-selector declaration; the old
+  predict-is-the-oracle, annotation-on-the-reached-arm IS the per-selector declaration; the old
   per-(kind,selector) declared-function floor was a spelling-era bookkeeping artifact, not a
   meaning-guarantee (the engine never verified that `is-enabled` "means" enabled — that trust
   was always the author's claim). Acknowledged casualty: filing-shape lints must become
@@ -159,7 +159,7 @@ pin) and the *build-window promotion path* (one-sided xfails + bless). Ledger:
   slot — empty = the-one, star = all. No arity registry: the engine stays referent-agnostic,
   Singleton-ness is emergent from usage; mixed empty+named entities on one kind are simply two
   cells (attribute, don't prevent). Spike-provisional like h2 (the human is not married to it).
-- **ask-probe-divergence RULED (b) (human, 2026-07-02):** the check bodies ARE the spec. The
+- **ask-probe-divergence RULED (b) (human, 2026-07-02):** the predict bodies ARE the spec. The
   R3 lane-swap ships the author's own probe commands even where they textually diverge from
   the retired `oracle_probe_*` bodies (`--` operands, dropped `--quiet`, firewall's pipeline
   re-spelled as non-pipeline sh by author-freedom); the spike mocks re-author to serve the

@@ -6,7 +6,7 @@ This example (in the old style, implemented in `spike3`, not the one used later 
 
 ```sh
 # Oracle declares ONLY the package effect; says nothing about fs.Path.
-apt-get__check() { pkg : apt.Package = "$1"; dpkg-query -W "$pkg"; }
+apt-get__predict() { pkg : apt.Package = "$1"; dpkg-query -W "$pkg"; }
 oracle_effect apt-get install establish installed     # ← the entire effect-map for this verb
 ```
 
@@ -57,7 +57,7 @@ The majority of our research-corpus assumed that incomplete oracles would 'poiso
 Consider (spelling/syntax is just a strawman for the most part; focus on the value-flow and knowledge/trust/vouching-boundaries):
 
 ```sh
-apt-get.check() {
+apt-get.predict() {
    verb="$1"; shift
    while [ "${1#-}" != "$1" ]; do shift; done
    pkg : apt.Package = "$1"; shift  # identity (no cell)
@@ -90,7 +90,7 @@ apt-get.check() {
    esac
 }
 
-systemctl.check() {
+systemctl.predict() {
    verb="$1"; shift
    now=
    while [ "${1#-}" != "$1" ]; do [ "$1" = --now ] && now=1; shift; done
@@ -131,7 +131,7 @@ systemctl.check() {
    esac
 }
 
-cp.check() {
+cp.predict() {
    src="$1"; dst="$2"
    [ "$3" = "" ] || { printf 'UNK cp arity\n' >>"$DORC_REPORT"; exit 254; }
    file : fs.Path = "$dst"
@@ -160,7 +160,7 @@ systemctl enable --now nginx
 
 However, under this paradigm, the system is protected *both* from 'new state-properties manipulated by other tools' *and* 'new tools manipulating state':
 
-story-1. imagine adding a `scan_cve` tool that whose oracle imposes an `apt.Package:.cve_clean` *and* that `apt-get install nginx` inherently clears that property (a version-bump, if it happens, means `scan_cve` needs to re-run.) Under the above, the other oracle simply *saying it depends on* `apt.Package:.cve_clean` means `apt-get.check()` is no longer complete w.r.t. `apt.Package`, thus `apt-get` poisons `apt.Package:.cve_clean`, and thus `scan_cve` can't ever safely be elided (correctly, in this case.)
+story-1. imagine adding a `scan_cve` tool that whose oracle imposes an `apt.Package:.cve_clean` *and* that `apt-get install nginx` inherently clears that property (a version-bump, if it happens, means `scan_cve` needs to re-run.) Under the above, the other oracle simply *saying it depends on* `apt.Package:.cve_clean` means `apt-get.predict()` is no longer complete w.r.t. `apt.Package`, thus `apt-get` poisons `apt.Package:.cve_clean`, and thus `scan_cve` can't ever safely be elided (correctly, in this case.)
 story-2. separately, imagine adding an opaque `hork` tool, with an `hork nginx` command that's fully unmodeled. After an opaque `hork nginx` in the runbook, *all* commands with *any* state-dependency declared are poisoned; as we have no idea what `hork` does (i.e. it could be a little-known third-party package-mutation tool with no oracle; we can't ever elide an `apt` command after it ... and that logic extends to *every* single piece of potential state in the universe.)
 
 Clearly, every single oracle having to explicitly *list* every single thing that it *does not touch* is something of a non-starter, that would balloon to such size, so quickly.
@@ -172,7 +172,7 @@ Clearly, every single oracle having to explicitly *list* every single thing that
 One mitigation I considered is establising a 'default-vouch' stance:
 
 ```sh
-apt-get.check() {
+apt-get.predict() {
    # ... see above
    [ "$1" = "" ] || { printf 'UNK multi-operand apt-get\n' >>"$DORC_REPORT"; exit 254; }
 
@@ -193,7 +193,7 @@ apt-get.check() {
    # ... and so on
 }
 
-systemctl.check() {
+systemctl.predict() {
    # ... see above
 
    : systemd.Service~   # "this is complete"
@@ -203,7 +203,7 @@ systemctl.check() {
    # ... and so on
 }
 
-cp.check() {
+cp.predict() {
    # ... see above
 
    : fs.Path~           # complete on fs.Path; ignore any future-added properties
@@ -217,7 +217,7 @@ cp /etc/nginx/nginx.conf.new /etc/nginx/nginx.conf
 systemctl enable --now nginx
 ```
 
-This reduces per-property enumeration, at the cost of `story-1` soundness ... and still requires a painful amount of enumeration ... and, worse, it's *still* not fully safe; due to `hard-1`: the oracle-authors will make mistakes, no matter how much work they do; they will fail to consider some aspect a later author needs to declare dependency on. (i.e. the `story-1` author writing `apt-get.check()` couldn't possibly know that somebody was going to write a cve-checking tool)
+This reduces per-property enumeration, at the cost of `story-1` soundness ... and still requires a painful amount of enumeration ... and, worse, it's *still* not fully safe; due to `hard-1`: the oracle-authors will make mistakes, no matter how much work they do; they will fail to consider some aspect a later author needs to declare dependency on. (i.e. the `story-1` author writing `apt-get.predict()` couldn't possibly know that somebody was going to write a cve-checking tool)
 
 And this still does nothing to help with `story-2`.
 
@@ -228,7 +228,7 @@ Contrast with the approach of duplicating the above, but removing the 'blanket v
 (This is close to how the spike implemented it in code, somewhat by accident; although it's not nearly this thought-through and principaled. To be clear, *all* four cases assume that completely-unmodeled commands push all value-tracking to Top, there's just nothing you can assume about those, not even that a human *considered* them from the perspective of Dorc.)
 
 ```sh
-hork.check() { hork --dry-run $@ ;}
+hork.predict() { hork --dry-run $@ ;}
 
 apt-get install -y nginx
 hork nginx
@@ -244,7 +244,7 @@ However, in *this* case, let's say it's a third-party, not-often-used package-ma
 This approach tries to allow the 'broad default-poisonless' stance for "potentially irrelevant" properties: default to assuming that a given function-body *doesn't* interact with any kinds; then have them opt-in to analysis by using/mentioning any type. However, for any type they *do* interact with, the default is full-poison, forcing them to enumerate just the *properties*, not all the *kinds*:
 
 ```sh
-apt-get.check() {
+apt-get.predict() {
    # ... verb/opt parse ...
    pkg : apt.Package = "$1"; shift
    [ "$1" = "" ] || { printf 'UNK multi-operand\n' >>"$DORC_REPORT"; exit 254; }
@@ -267,14 +267,14 @@ apt-get.check() {
 #   assumed to broadly posion/invalidate *any* probed fs.Path unless it is elided;
 # - does not mention, and so is trusted not to touch: systemd.Service
 
-cp.check() {
+cp.predict() {
    src="$1"; dst="$2"; [ "$3" = "" ] || { printf 'UNK cp arity\n' >>"$DORC_REPORT"; exit 254; }
    file : fs.Path = "$dst"
    [ -f "$dst" ]   : fs.Path:"$dst".exists                                       # ESTABLISH
 }
 # apt.Package, systemd never named; so auto-clear. the whole verbosity win.
 
-systemctl.check() {
+systemctl.predict() {
    # ... svc : systemd.Service = "$1" ; --now ⟹ now=1 ...
    case "$verb" in
    enable)
@@ -289,7 +289,7 @@ systemctl.check() {
 }
 # no interaction with File or Package; all branches poison any systemd.Service property except :.active and :.enabled
 
-scan_cve.check() {
+scan_cve.predict() {
    x : apt.Package = "$1"
    cve-tool --check "$x"   :? apt.Package:"$x".cve_clean                         # OBSERVE
 }
@@ -297,9 +297,9 @@ scan_cve.check() {
 # that all apt.Package-interactors must *declare that they handle it*, or it
 # cannot be elided safely
 
-hork.check() { hork --dry-run "$@"; }
+hork.predict() { hork --dry-run "$@"; }
 # no ESTABLISH/ACK/OBSERVE/POISON ⟹ engages nothing ⟹ poisons nothing
-# i.e. the dangerous floor (while an opaque hork with NO .check() would poison
+# i.e. the dangerous floor (while an opaque hork with NO .predict() would poison
 # all, and therefor be safe)
 ```
 
@@ -329,9 +329,9 @@ What a `guard` concretely *is* - and the mindshare-cost question hinges on this 
       || apt-get install -y nginx
    ```
 
-   Treat that block with suspicion - it's dangerously simple-seeming. Even leaning *hard* into analysis, the vast majority of real-world guards are probably a check-body with genuine control-flow (case-on-verb, option-handling, capability fallbacks), not a single natural-looking command; whether *any* realistic oracle reduces to this rendering is an open question. This is the aspirational ceiling, and it must not drive the design.
+   Treat that block with suspicion - it's dangerously simple-seeming. Even leaning *hard* into analysis, the vast majority of real-world guards are probably a predict-body with genuine control-flow (case-on-verb, option-handling, capability fallbacks), not a single natural-looking command; whether *any* realistic oracle reduces to this rendering is an open question. This is the aspirational ceiling, and it must not drive the design.
 
-2. apply-guard-fat: at the near pole, ship a (perhaps mildly pared-down) `check()`-body into the artifact as a function, and invoke it: `apt_get_check install -y nginx || apt-get install -y nginx`. No new machinery - this is the probe-compiler's output relocated into the apply lane - but the artifact reads as calls into an opaque blob of checking-code, and the mindshare/render cost concentrates here.
+2. apply-guard-fat: at the near pole, ship a (perhaps mildly pared-down) `predict()`-body into the artifact as a function, and invoke it: `apt_get_check install -y nginx || apt-get install -y nginx`. No new machinery - this is the probe-compiler's output relocated into the apply lane - but the artifact reads as calls into an opaque blob of checking-code, and the mindshare/render cost concentrates here.
 
 Everything between the poles is the same knob at different settings (how much provably-irrelevant oracle-code gets dropped: unreached verb-branches, other selectors' probes, dead options). Soundness is identical at every setting; only artifact-readability and engineering-cost vary. Where the real-world equilibrium lands is an open, empirical question - so the design has to *work* at the fat pole, and treat thinning as a progressive upgrade, not an assumption.
 
@@ -342,7 +342,7 @@ An in-sequence check is *frame-free* at every point on that gradient: whatever t
 Upsides:
 
 - We retain the ability to *claim* no-op to the user, just not *prove* it. (That is, the thing we're guarding against with this entire architecture is *hopefully* an edge-case - accidental, unmodeled mutation between *the start of the runbook* and command N.) For most of those commands, in most cases, we can *hope* that the linear section "between" `poison-wall` and `first-meaningfully-mutating-command` will *mostly* be no-ops, re-verified by fast (hopefully) applytime guards; and we can pass that hope onto the user ("expected: 1 change, 96 no-op" in a 100-command runbook 'poisoned' by an unmodeled third command) - although that's objectively of less value than passing *proof* on to the user, in the form of fully eliding something and removing it from their limited attention-window.
-- Monotonicity is restored, which was the original sin of §3/§4: a partial oracle helps its own sites and *cannot* endanger anyone else's. The §4 "dangerous floor" oracle (`hork.check() { hork --dry-run "$@" ;}`) stops being a landmine - there is no silence-minted license left for it to accidentally grant - while still buying hork's own sites their guard.
+- Monotonicity is restored, which was the original sin of §3/§4: a partial oracle helps its own sites and *cannot* endanger anyone else's. The §4 "dangerous floor" oracle (`hork.predict() { hork --dry-run "$@" ;}`) stops being a landmine - there is no silence-minted license left for it to accidentally grant - while still buying hork's own sites their guard.
 - The safe default becomes *affordable*, which is what actually dissolves the §0 dilemma: full-poison now degrades a converged site from `elide` to `guard` (~one host-local read, hiding in the shadow of whatever real mutation forced the wall) instead of to `run`-in-full. Enumeration/completeness-vouching demotes from entry-fee-for-any-value to opt-in upgrade - where it's a normal engineering cost instead of an absurd ceiling.
 - Both stories degrade gracefully with zero coordination: `scan_cve`'s own guard re-runs at its position after any `apt-get` that actually executed, so cross-oracle vocabulary becomes necessary only to be *fast*, never to be *correct* (story-1); an opaque `hork` mid-book costs exactly "everything downstream keeps its guards" - degradation proportional to the opacity introduced (story-2).
 - The artifact keeps the check-then-execute *shape* a diligent author writes by hand, and runs identically without Dorc (the off-ramp holds at both poles of the thin↔fat gradient); how natural the guard itself reads *is* that gradient - thin approaches hand-written, fat is honest plain sh but visibly machine-shipped library-code. Re-analysis of a transformed book recognizes an inserted guard the same way it recognizes a hand-written one, so nothing accretes.
@@ -364,7 +364,7 @@ A guard is a real transform - its pass-direction suppresses a command the admin 
 
 - The license is an *explicit, spelled-in-sh oracle claim*, the **converged-vouch**: "when this establish-set holds, I judge this site skippable; whatever the command would still do is noise I know of, or residue I accept." Explicitly a *fallible judgment* (in exactly the terminology-sense of 'converged' fixed above), never a fact-claim. Treatment follows: claimed-tier trust, disclosed in the plan ("skipped-when-converged, per oracle X's vouch"), blame attributable to the mark. Oracle authors are making an opinionated *default* about what's-worth-caring-about for the command they model; we can't prevent that, and don't want to (we want a wide design-space for oracles that make admins' lives easier in sane ways) - so what we do is *attribute*. The floor-guarantee, honestly stated: a vouch-licensed guard behaves identically to the hand-written `check || cmd` idiom - no stronger - plus attribution.
 - Dead, refuted same-day: any universally-quantified license ("when converged, re-running does *nothing*"). Its quantifier ranges over exactly the observables the author never attended to, so it's vacuous as human testimony (the class: `hork` writing bytes into apt's nominally-private binary cache - no sane apt-oracle-author models a cell for a file they don't know exists, and the hork-user broke no contract). Corollary banked as a principle: *tooling never rescues a contract* - if a claim is only correct when a future build-tool maximally guards it, it's incorrect.
-- "Per-verb" is sloppy vocabulary - the engine has no notion of a *verb*, only control-flow and constant-propagation. Precisely: the vouch is a mark *on a path* through the oracle's own check-body; its scope is whichever invocations constant-propagate to reach it; and the guard's predicate is the establish-probes *on that reached path*, verbatim. (One source of truth: plan-prediction and apply-guard run the same code, so plan-vs-apply divergence can only be world-drift, never model-disagreement.) Unpropagatable argv ⟹ no path reached ⟹ no vouch ⟹ run.
+- "Per-verb" is sloppy vocabulary - the engine has no notion of a *verb*, only control-flow and constant-propagation. Precisely: the vouch is a mark *on a path* through the oracle's own predict-body; its scope is whichever invocations constant-propagate to reach it; and the guard's predicate is the establish-probes *on that reached path*, verbatim. (One source of truth: plan-prediction and apply-guard run the same code, so plan-vs-apply divergence can only be world-drift, never model-disagreement.) Unpropagatable argv ⟹ no path reached ⟹ no vouch ⟹ run.
 - Fence: a converged-vouch licenses guards at *its own command's sites only*, and is inadmissible in any other site's elide/poison reasoning - using it there would launder a local skip-judgment into a global non-interference claim (the "noise" the author dismissed is exactly where someone else's fact may live), rebuilding §0's disaster one storey up. Implementation-shape: a witness-type mintable only from a matching (call-site, reached vouch, probe-verdict) triple; and the vouch never enters the fact-plane at all, so it structurally *cannot* soften poison.
 - New hazard-class to carry forward: the guard tier *collapses the fact-indirection*. Probe-code previously affected wrong-elision only through the sanitized fact layer (probe → fact → license); a guard puts probe-code *directly in the execution path*, inside the *book's* shell environment (its `set -e`/`set -u`, its function namespace - the `218a` hazard list applies). Body-trust machinery must be inherited onto the execution path, and the disclosure/blame machinery must treat guard-code as execution-affecting.
 - Still open: the concrete spelling (the same open vouch-surface family as every other mark); the admin's per-site "always run this, ignore the vouch" idiom (parked).
@@ -377,9 +377,9 @@ document's problem: the 3-agent adversarial crosscheck (notes/236a,236b,236c) an
 adjudication incl. post-adjudication corrections (notes/237); the ceiling exploration —
 horizon-bounded claims, derived footprints (notes/238); the crisis-closure package / re-weld
 deltas (plans/239). Corrections a future reader MUST honor:
-(1) [correction REVERSED 2026-07-02, human ground-truth] apply-guard-fat's "ship a check()-body"
-was RIGHT as written: at design level the check IS the oracle — arbitrary sh whose added syntax
-is strip-only (annotations removed; `name.check()` → `name_check()`; output is runnable sh) —
+(1) [correction REVERSED 2026-07-02, human ground-truth] apply-guard-fat's "ship a predict()-body"
+was RIGHT as written: at design level the predict() IS the oracle — arbitrary sh whose added syntax
+is strip-only (annotations removed; `name.predict()` → `name_predict()`; output is runnable sh) —
 and the stripped oracle body is exactly what ships, in BOTH lanes. The spike's st-2 check/probe
 split is spike-internal implementation, not design truth (build-vs-design divergence, to
 reconcile). Any lifted/deconstructed guard form is an optional analyzer edge-case and must be
@@ -391,4 +391,5 @@ completeness-vouches are unwritable for arbitrary-payload commands, cp included 
 convergence-2; 238 §1 claim-4); the elide-goal survives via derived-at-probe-time footprints
 (238 §3) — the goal is NOT deprecated; its licensing basis moved from testimony to derivation.
 (4) Read the frontloaded trade with the two-halves doctrine (239 §1): the guard-half is sister
-and PERMANENT fallback; full elision remains THE goal, never aspirational-tier. */ -->
+and PERMANENT fallback; full elision remains THE goal, never aspirational-tier.
+2026-07-03: mechanical check()→predict() rename applied per ruling (23L addendum); content otherwise untouched. */ -->

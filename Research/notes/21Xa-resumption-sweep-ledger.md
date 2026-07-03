@@ -294,7 +294,7 @@
   judge proven able to scream via planted-under-execute pin). All six in-flight findings
   were HARNESS bugs, engine held every time (consistent with 20A's degrade-spine
   diagnosis): find-1 generator missing `oracle_effect … query` marker; find-2 doubled
-  `__check` suffix; find-3 judge's gate-5-style check false-positive on short-circuited
+  `__predict` suffix; find-3 judge's gate-5-style check false-positive on short-circuited
   guards (removed — redundant with the differential itself); find-4 cmdsub-in-argument
   wrongly classed hard-⊤ (only `eval` + break-in-loop havoc downstream — engine verified
   correctly eliding past `echo "$(echo sub)"`); find-5 TOP-wildcard loop-member matching —

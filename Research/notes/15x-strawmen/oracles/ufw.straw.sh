@@ -12,7 +12,7 @@
 # Handles only simple `allow|deny <rule>`; refuses anything richer. Streaming
 # grep, no collect-all [sp-nobuffer]. Helpers plain POSIX.
 
-ufw.check() {
+ufw.predict() {
    command -v ufw >/dev/null 2>&1 || { echo "ufw oracle: no ufw" >&2; return 2; }
    [ "$#" -le 2 ] || { echo "ufw oracle: complex rule form, refusing: $*" >&2; return 2; }
    local verb=$1 rule=$2 want

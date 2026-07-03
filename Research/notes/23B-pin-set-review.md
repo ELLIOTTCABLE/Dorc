@@ -39,11 +39,11 @@ build; review-fd1 deserves a cheap fix BEFORE the build slice starts.
   contradiction properly declared via PROBE_RESULTS=authored). The pins are not
   self-contradictory; a correct build can flip them. +SURE.
 - review-conf4 · floor discrimination, attack-tested live:
-  - P-rundelta: hand-crafted provider-bleed artifact (`systemctl__check restart nginx ||
+  - P-rundelta: hand-crafted provider-bleed artifact (`systemctl__predict restart nginx ||
     systemctl restart nginx`) yields an EMPTY ran-set — the case-statement's no-match rc-0
     silently suppresses the restart — the floor's expected.ran catches it. hz-refusepath
     demonstrated, not just argued.
-  - P-multiop: unlicensed whole-body ship (`apt_get__check install -y nginx curl || …`) yields
+  - P-multiop: unlicensed whole-body ship (`apt_get__predict install -y nginx curl || …`) yields
     an EMPTY ran-set (the `[ "$2" = "" ]` refuse-path rc-0) — caught.
   - P-novouch: a wrong mint adds `dpkg-query -W curl` and suppresses the install — caught.
   - P-reingest: guard accretion doubles the `dpkg-query -W nginx` line — caught by exec.
@@ -57,9 +57,9 @@ build; review-fd1 deserves a cheap fix BEFORE the build slice starts.
   (flagship site 3 bare); no `set -e`/`set -u` anywhere (np-errexit honored — grep-verified);
   no partial-member pins; refuse-homes pinned (X-heredoc loud, others RUN-half only, flagged).
   +SURE on each.
-- review-conf6 · jc-body-source's invariance claim verified: probe-wrapper and check-body
+- review-conf6 · jc-body-source's invariance claim verified: probe-wrapper and predict-body
   sourcings both reduce to the same `dpkg-query -W <pkg>` argv under these fixtures, so the
-  behavioural pins are sourcing-independent; only golden bytes commit to the check-body shape.
+  behavioural pins are sourcing-independent; only golden bytes commit to the predict-body shape.
 - review-conf7 · promotion story coherent: drift trio + X-heredoc + X-why can XPASS on
   engine work alone; the flagship additionally REQUIRES the gate-6 widening (23A §5 flags it,
   with a sketch and a confound-battery extension) — the one xfail with a harness-work
@@ -97,19 +97,19 @@ Cheap fixes, either/both:
   already generated exactly this artifact while verifying.
 
 ### review-fd2 · MODERATE (ruling-text, not pin) — the strip's name-rewrite half is unexercised and letter-broken for hyphenated names
-rul-ternary-verdict welds: strip = "annotations removed, `name.check()` → `name_check()`,
+rul-ternary-verdict welds: strip = "annotations removed, `name.predict()` → `name_predict()`,
 nothing else changed; the strip's output is runnable sh". Empirically (dash 0.5.x, this box):
-`apt-get.check() { …; }` is a SYNTAX ERROR (the authored period-form is not parseable sh —
+`apt-get.predict() { …; }` is a SYNTAX ERROR (the authored period-form is not parseable sh —
 tension with the 23Z oracle-ground-truth "oracles are JUST SH" at its letter), and
 `apt-get_check() { …; }` is ALSO rejected ("Bad function name" — dash forbids `-` in function
 names), so the rule's literal output for every hyphenated tool is non-runnable, contradicting
-the ruling's own runnability clause. The fixtures dodge both by pre-spelling `apt_get__check`
-(hyphen→underscore + the spike's `__check` convention — transforms the ruling's "nothing else
-changed" does not authorize), and no pin exercises any `.check()`-form strip. hz-strip-scope
+the ruling's own runnability clause. The fixtures dodge both by pre-spelling `apt_get__predict`
+(hyphen→underscore + the spike's `__predict` convention — transforms the ruling's "nothing else
+changed" does not authorize), and no pin exercises any `.predict()`-form strip. hz-strip-scope
 flags the annotation-form half of this but misses the name half entirely. Not a pin defect —
 the pins are consistent within the fixtures' world — but the welded rule needs an
 identifier-munge clause before the strip function is built, and the golden preambles' own
-pedagogy comments (which quote the `name.check()` rule while shipping `apt_get__check`) are
+pedagogy comments (which quote the `name.predict()` rule while shipping `apt_get__predict`) are
 mildly self-inconsistent. Surface to the human as ruling-text debt. +SURE of the dash
 behaviour (tested); ~SUSPECT the resolution is a one-line munge-spec amendment.
 
@@ -117,7 +117,7 @@ behaviour (tested); ~SUSPECT the resolution is a one-line munge-spec amendment.
 239 delta-1's rationale: apply-lane guard code is "bounded to the SAME trust-object the probe
 lane already ships — same bytes, both lanes, no new code-class crosses the boundary." The
 pinned end-state does NOT deliver that sameness: golden probe halves ship `oracle_probe_*`
-wrapper bodies (HEAD's st-2 shape), golden guard preambles ship stripped `__check` bodies —
+wrapper bodies (HEAD's st-2 shape), golden guard preambles ship stripped `__predict` bodies —
 different bytes, two lanes, so at promotion the guard lane executes code the probe lane never
 exercised (exactly the drift the human's one-body-two-lanes candidate invariant worries
 about: "tested in the probe so it can be trusted at apply"). 23A flags the sourcing question
@@ -163,7 +163,7 @@ noted for cheap hardening.
   sensitivity limit from review-fd1: the differential can catch vouch-CHANGES-something only
   in a book where something is changeable; pairing it with a walled book is the real fence.
 - Unpinnable-today items I hunted and judged acceptably absent, which the register does NOT
-  list: (i) book-defined function SHADOWING a shipped check-body's callee (book defines
+  list: (i) book-defined function SHADOWING a shipped predict-body's callee (book defines
   `dpkg-query()` fn → hijacks the guard's internals; the 218a in-environment hazard family —
   no ruling settles detection/refusal, so neither direction is pinnable; deserves a line
   beside hz-setu in any future register); (ii) `cmd || true` (StatusInvariant) + vouch + wall
@@ -172,7 +172,7 @@ noted for cheap hardening.
   guard-invocation quoting fidelity for resolved-but-space-containing operands (no fixture;
   builder-churn item — guard sites are constant-argv by construction, so the surface is
   small). -GUESS none of these three bites before task #13/#2 resolve.
-- The `name.check()` spelling question aside (review-fd2), the vouch strawman's
+- The `name.predict()` spelling question aside (review-fd2), the vouch strawman's
   (provider, verb)-vs-reached-path coincidence is correctly disclosed in 23A §2 and none of
   the scope-policing pins depend on the difference — verified by reading each (they turn on
   entity-resolution/constprop, which the strawman cannot influence).

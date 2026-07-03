@@ -1,7 +1,7 @@
-# 204 — task-C build: the `check()` dialect parser + evaluator, and where it strained
+# 204 — task-C build: the `predict()` dialect parser + evaluator, and where it strained
 
-> Round-20 spike note, append-only. Records the build of `dorc_oracle::check` (task-C,
-> 202 §6): the command-keyed `check()` contract — a dedicated mini-parser for the
+> Round-20 spike note, append-only. Records the build of `dorc_oracle::predict` (task-C,
+> 202 §6): the command-keyed `predict()` contract — a dedicated mini-parser for the
 > constrained oracle-contract dialect (`adj-dialect-parser`, 203 §4) plus a concrete
 > evaluator that traces a known argv through a check's argparse to its kind-annotation
 > (202 §1 face-check). AI-authored, confidence-marked. Additive-only: the existing
@@ -11,17 +11,17 @@
 
 ## §0 What landed
 
-A new `check` module in `dorc-oracle` (`src/check.rs` + `check/{ast,lexer,parser,eval}.rs`),
-plus `crates/oracle/tests/check.rs` (33 adversarial integration tests). All four gates
+A new `check` module in `dorc-oracle` (`src/predict.rs` + `check/{ast,lexer,parser,eval}.rs`),
+plus `crates/oracle/tests/predict.rs` (33 adversarial integration tests). All four gates
 green (`fmt`, `clippy --workspace --all-targets -D warnings` with **no new `#![expect]`**,
 `test --workspace`, `typos spike`); e2e 42/42 (xfail intact — corpus behavior unchanged).
 
-Public API (additive, in `dorc_oracle::check`):
-- `lift_checks(&mut Interner, &str) -> Carrier<CheckSet>` — parse one oracle source's
-  `<provider>__check` functions into a `CheckSet`, fail-soft per function.
+Public API (additive, in `dorc_oracle::predict`):
+- `lift_predicts(&mut Interner, &str) -> Carrier<PredictSet>` — parse one oracle source's
+  `<provider>__predict` functions into a `PredictSet`, fail-soft per function.
 - `evaluate(&Check, argv: &[&str]) -> Resolution` — concretely trace `argv` (the full
   verbatim args, NOT the command word — C-1) through a check.
-- `CheckSet` (`.get(Symbol) -> Option<&Check>`, `.providers()`, `.len/.is_empty`),
+- `PredictSet` (`.get(Symbol) -> Option<&Check>`, `.providers()`, `.len/.is_empty`),
   `Check`, `Resolution::{Resolved(Resolved)|Top(TopReason)}`, `Resolved{kind, entity,
   verb, probe_body}`, `TopReason` (closed enum).
 
@@ -30,7 +30,7 @@ Public API (additive, in `dorc_oracle::check`):
 The mini-parser admits exactly this and ⊤-rejects (per-function lift diagnostic)
 everything else. Grown only as 19H §2's five examples demanded.
 
-- **funcdef**: `<provider>__check () { <stmt>* }`. The name before `__check` is the
+- **funcdef**: `<provider>__predict () { <stmt>* }`. The name before `__predict` is the
   provider (underscore↔hyphen, §3). A leading `function` keyword is NOT admitted (no
   example uses it; bashism).
 - **stmt** = one of:
@@ -82,7 +82,7 @@ over a 2-arg argv, or an unbound var) · `BudgetExceeded`.
 
 ## §3 The underscore↔hyphen provider rule (chosen; flagged tc-*)
 
-`apt_get__check` ⇒ provider `apt-get` (every `_` in the pre-`__check` fragment → `-`).
+`apt_get__predict` ⇒ provider `apt-get` (every `_` in the pre-`__predict` fragment → `-`).
 **Lossy**: a command with a literal `_` cannot be named (none of the §2 examples have
 one; sh function names cannot contain `-`, so the mapping is the *only* way to name a
 hyphenated command, and hyphenated commands dominate). +SURE this is right for the
@@ -90,7 +90,7 @@ five examples; ~SUSPECT it bites eventually (e.g. a tool literally named `foo_ba
 This is a `tc-*`-shaped cross-cutting decision (the engine's provider-name vocabulary is
 shared with `KindIndex`'s `ProviderId` and the book's command-word interning) — **flagged
 up, not resolved locally**. The conservative knob if it ever matters: an explicit
-provider-name escape in the dialect, or a `__check`-adjacent declaration. Recorded so
+provider-name escape in the dialect, or a `__predict`-adjacent declaration. Recorded so
 task-W doesn't re-derive it.
 
 ## §4 What strained (primary deliverable)
@@ -189,8 +189,8 @@ How a caller goes from a book site to a `Resolution`:
    concrete strings. The command word selects the provider; **strip it** — pass only the
    trailing args to `evaluate` (C-1). If any argv element is ⊤, do not call `evaluate`
    (site unresolved ⇒ runs).
-2. Look up the provider's `Check` in the file's `CheckSet` (key = the interned,
-   hyphen-mapped provider `Symbol`). The `CheckSet` comes from `lift_checks` over the
+2. Look up the provider's `Check` in the file's `PredictSet` (key = the interned,
+   hyphen-mapped provider `Symbol`). The `PredictSet` comes from `lift_predicts` over the
    oracle source(s). Provider-name interning MUST match the book's command-word interning
    AND `KindIndex`'s `ProviderId` interning — same `Interner`, same hyphen convention
    (`apt-get`, not `apt_get`). **tc-* (§3) lives exactly here.**

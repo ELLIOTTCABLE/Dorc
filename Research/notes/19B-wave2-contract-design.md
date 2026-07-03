@@ -21,7 +21,7 @@ out-of-band on `$DORC_VERDICT` (the kCOMMS lane, `plans/142`) as **structured** 
 distinct token, and the command's real rc rides the lane as *data* (`rc=2`). No collision (structured,
 not an exit code). User-facing diagnostics go on the *separate* per-leaf freeform files — **signalling
 never shares a lane with freeform** (the GitHub `set-output` injection CVE; kCOMMS P6).
-- **No `.valid()` needed** (human floated it, was meh re: 2× execution). The single `.check()`
+- **No `.valid()` needed** (human floated it, was meh re: 2× execution). The single `.predict()`
   **self-guards** — inspects args and withholds *before* executing anything mutative — so no double-run;
   and the real enforcement against a mis-firing check is the `kFAIL-withhold` **sandbox**
   (`an-withhold-monitor`), not trust in the check's branching.
@@ -33,7 +33,7 @@ never shares a lane with freeform** (the GitHub `set-output` injection CVE; kCOM
 `-v`/`-V` forms; the execute form withholds.
 
 ```sh
-command__check() {                      # invoked: command__check <book's FULL args>, e.g. -pv nginx
+command__predict() {                      # invoked: command__predict <book's FULL args>, e.g. -pv nginx
    q=
    for a in "$@"; do
       case $a in
@@ -70,5 +70,5 @@ recorded as a round finding, deferred.
   guards uniformly — F1 dissolves) and **fixes the `&&`/`||` under-execute** (gw-5's disposition xfail
   should XPASS → promote; the tripwire shows `mkdir` running via the fold + exact-rc substitution). Fits
   the worklist substrate (domain = probed-observable-or-⊤).
-- **build-2 (oracle-contract side; needs §1–§3):** command-keyed `.check()` (full-args) + the OOB
+- **build-2 (oracle-contract side; needs §1–§3):** command-keyed `.predict()` (full-args) + the OOB
   verdict-lane + opt-B observable-production declaration; wires *real* probe output into build-1's fold.

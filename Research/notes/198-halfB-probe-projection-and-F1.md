@@ -19,7 +19,7 @@
   flipped to a passing, executed case `guard-status-blocks-elision`.
 - **(b) Half-B.1 — LANDED** (commit "Half-B.1: FLAT operand-bound probe
   interceptors"). `compile_probe`'s render now emits the FLAT interceptor model
-  (197 §2 variant A): `package__check() { … }; package__check nginx` — the book's
+  (197 §2 variant A): `package__predict() { … }; package__predict nginx` — the book's
   operand **bound**, not the Half-A `$1`-empty stub. Both legs oracle-anchored.
 - **(b) Half-B.2 (guard SUBSUMPTION) — NOT BUILT; wall mapped.** Subsuming a
   guarded branch from the probe verdict (instead of running the guard) is blocked on
@@ -135,21 +135,21 @@ a note in the code; no live surface to test now.
 
 ### 2.1 What changed
 
-`ProbePlan::render_sh` now emits, per kind, one `<kind>__check()` function (the
-strawman's `id__check` shape) wrapping the oracle's `oracle_probe_<kind>` body, then
+`ProbePlan::render_sh` now emits, per kind, one `<kind>__predict()` function (the
+strawman's `id__predict` shape) wrapping the oracle's `oracle_probe_<kind>` body, then
 **one invocation per fact with the book's operand bound**:
 
 ```sh
 # probe: package:nginx#installed
-package__check() { dpkg-query -W "$1" >/dev/null 2>&1; }
-package__check nginx                 # operand BOUND (was: $1 empty — Half A)
+package__predict() { dpkg-query -W "$1" >/dev/null 2>&1; }
+package__predict nginx                 # operand BOUND (was: $1 empty — Half A)
 # probe: firewall:80/tcp#allowed
-firewall__check() { ufw status 2>/dev/null | grep -q "$1"; }
-firewall__check 80/tcp              # one fn def, invoked per entity (dedup)
-firewall__check 443/tcp
+firewall__predict() { ufw status 2>/dev/null | grep -q "$1"; }
+firewall__predict 80/tcp              # one fn def, invoked per entity (dedup)
+firewall__predict 443/tcp
 # probe: pkgindex#fresh
-pkgindex__check() { … }
-pkgindex__check                      # Singleton ⇒ no operand
+pkgindex__predict() { … }
+pkgindex__predict                      # Singleton ⇒ no operand
 ```
 
 Both legs are oracle-anchored (197 §2): ordering + operand from the **book** (the
@@ -162,7 +162,7 @@ on — same latitude `fact_label` uses for display).
 ### 2.2 Strain finding S1 — the ≥enum floor: one probe per KIND can't distinguish selectors
 
 +SURE, surfaced directly by the headline render (§2.1): `service:nginx#enabled` and
-`service:nginx#active` BOTH render `service__check nginx` — *identical* invocations —
+`service:nginx#active` BOTH render `service__predict nginx` — *identical* invocations —
 because the oracle model has **one probe per kind** (`oracle_probe_service`), but the
 selectors are independent cells. The single body (`systemctl is-active --quiet "$1"`)
 checks `#active` only; it cannot answer `#enabled`. This is `F-BLESSED` (oracle
@@ -350,7 +350,7 @@ not a vague "more work."
 - **gw-4 (corpus):** S1 (§2.2, per-selector probe over-claim) and S2 (§3, body-in-
   guarded-branch elision) are uncovered state-space cells — pin them (xfail where
   unbuilt). The probe render changed (FLAT interceptors) — any e2e the corpus adds
-  must bless against the new `<kind>__check` shape (all 26 goldens re-blessed here).
+  must bless against the new `<kind>__predict` shape (all 26 goldens re-blessed here).
   gw-4 owns the non-guard surface; the guard cluster (`guard-status-blocks-elision`)
   is gw-1's — coordinate before adding guard cases.
 - **gw-3 (backward/apply-3):** confirm the F1 block (`prove_replaceable`'s
@@ -370,7 +370,7 @@ not a vague "more work."
   (`TODO(tc-mint)`).
 - `spike/crates/analysis/tests/cfg.rs` — four `consumed_*` engine-side F1 pins.
 - `spike/crates/plan/src/lib.rs` — `prove_replaceable` blocks on `Observable::Status`;
-  `ProbePlan::render_sh` = FLAT operand-bound interceptors; `check_fn_name` helper;
+  `ProbePlan::render_sh` = FLAT operand-bound interceptors; `predict_fn_name` helper;
   `probe_render_binds_operand_flat_interceptor` test.
 - `spike/crates/plan/tests/observable_matrix.rs` — the branch-vs-errexit A/B + the
   `tc-mint` gap pin.

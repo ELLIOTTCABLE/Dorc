@@ -191,7 +191,7 @@ construction*: everything above it has already happened.
 
 Read the guard's anatomy once, closely, because everything rides on it:
 
-- The check body is the *oracle author's own sh*, shipped with only its annotations
+- The predict body is the *oracle author's own sh*, shipped with only its annotations
   stripped â€” the same bytes the probe phase already ran. Dorc never synthesizes shell; there
   is always a human author to point at.
 - The `check || command` shape means a broken or confused check *falls through to running
@@ -233,7 +233,7 @@ already has a status query (most tools do). They append to the book's own file â
 runbooks can share a file:
 
 ```sh
-foobar.check() {
+foobar.predict() {
    verb="$1"; shift
    case "$verb" in
    sync-certs)
@@ -247,7 +247,7 @@ foobar.check() {
 
 Eight lines, one verb, one probe, one vouch. In order:
 
-- `foobar.check()` declares "this body is the oracle for `foobar`". The period-name is the
+- `foobar.predict()` declares "this body is the oracle for `foobar`". The period-name is the
   opt-in semaphore; *stripped*, it is a plain `foobar_check()` function any shell can run.
 - `dest : fb.Certs = "$1"` binds the operand as the entity, in a kind this author just
   minted. Nobody approves kind names; there is no registry. It only has to agree with
@@ -337,7 +337,7 @@ the oracle *worth publishing*: correct for colleagues' books, other verbs, other
 argv shapes. The enriched oracle:
 
 ```sh
-foobar.check() {
+foobar.predict() {
    verb="$1"; shift
    case "$verb" in
    sync-certs|renew)

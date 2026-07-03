@@ -69,7 +69,7 @@ only channel-values with *probe-provenance*. Spelled out (and now in spike/CLAUD
 - A `Replace` plan-step substitutes a leaf with a stand-in that must reproduce every *consumed*
   channel of the leaf's observable-tuple. The question is where those values may come from.
   Sanctioned sources: (a) a concrete observable the shipped probe actually produced (the
-  check()'s own rc/stdout, e.g. the guard idiom 19H §2.2); (b) nothing else, currently. The
+  predict()'s own rc/stdout, e.g. the guard idiom 19H §2.2); (b) nothing else, currently. The
   oracle-declared `fact-state → observable` bridge (19H §2.3's alternative pole) is exactly the
   "declared value" the human is rejecting under fork-mutator-rc; it stays unbuilt unless he
   rules otherwise.
@@ -98,8 +98,8 @@ only channel-values with *probe-provenance*. Spelled out (and now in spike/CLAUD
   day-1 (19I de-cruft instructions name specific Rust tests to strip — they must exist); token
   economics favor spending Fable/Opus capacity on the *new* input side, which is cleanroom by
   construction (it never existed in spike2). The "mild cleanroom attempt" lands as: (a) the
-  value-plane, check()-lifting, and probe-projection are built fresh from 19H/19F specs; (b)
-  the oracle-contract layer gets re-shaped around the command-keyed check() (superseding the
+  value-plane, predict()-lifting, and probe-projection are built fresh from 19H/19F specs; (b)
+  the oracle-contract layer gets re-shaped around the command-keyed predict() (superseding the
   `oracle_*` marker spelling per 19I group I); (c) poison-control is enforced by briefing — the
   spike CLAUDE.md now bans subagents from the quarantine, and build-subagents get specs, not
   spike2 internals. -GUESS this is what the human intended; if he wanted a harder cleanroom,
@@ -144,13 +144,13 @@ Sequence (keystone-first per ap-1; each step lands with its tests + a note entry
    reaching-defs/`MapL` machinery carries a flat `Flat<Value>`-per-var domain without a new
    engine; that IS the prior-art check, performed by building the smallest version and watching
    seam-interproc/seam-finite.
-3. **check()-contract lifting** (19H §2): the oracle crate re-keyed from `oracle_*` markers to
-   the command-keyed full-args `check()`; the engine flow-tracks book-constants through the
+3. **predict()-contract lifting** (19H §2): the oracle crate re-keyed from `oracle_*` markers to
+   the command-keyed full-args `predict()`; the engine flow-tracks book-constants through the
    check's argparse to the inline kind-annotation (fork-annotation-spelling: inline accepted as
    spike debt, parser stays a disposable front-end — massage, don't generalize). Entity
    resolution moves from find-3 flag-strip to declared-annotation + value-flow; the find-3
    markers come out.
-4. **Probe-projection**: ship the check body as a function + full verbatim argv into the probe
+4. **Probe-projection**: ship the predict body as a function + full verbatim argv into the probe
    artifact; the probe's concrete observables (not stdin fixtures) feed the fold. The cli
    round-trip re-keys from `kind:entity verdict` lines to per-check observable reporting.
    (Exact OOB framing minimal — enough to carry `(check-id, channel, value)`; kCOMMS stays

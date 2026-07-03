@@ -46,7 +46,7 @@ which is expensive, sampled, and aimed; it does not scale as the primary defense
   source-cure for propagation: per corpus book, replace every command word with an argv-logging
   shim and RUN the book under hermetic dash; the logged argvs are ground truth for `value.rs`'s
   per-site resolutions on the executed path. Same trick for the dialect evaluator: run the real
-  check() under dash with the same argv (annotation rendered to assignment + logger) and
+  predict() under dash with the same argv (annotation rendered to assignment + logger) and
   compare entity/verb/arm selection. The prefix-env bug dies by construction under this gate.
   Deterministic, one dash run per case, rides the same harness. Limitation: validates executed
   paths only (branch coverage = the corpus's job).
@@ -97,7 +97,7 @@ component anyway) → cm-5/cm-6 (process, immediate) → cm-4 (when a production
   reverse-DNS form's job is ecosystem-scale collision-avoidance, which is the deferred
   res-collision/res-curation design (social/namespacing), and inventing an alias mechanism now
   would be namespacing-by-accident. 19H §2's reverse-DNS examples stay aspirational vocabulary.
-- **st-2 ruled: probes stay a separate declaration this spike; the check() resolves identity
+- **st-2 ruled: probes stay a separate declaration this spike; the predict() resolves identity
   only.** The dialect does NOT grow pipelines (today's findings make vivid that every dialect
   production is new dash-divergence surface); the check's probe_body spans stay
   computed-but-unused; per-selector probes continue in whatever declared form the corpus

@@ -23,7 +23,7 @@
 - **The firewall RELAXATION, Query-only** (`cli::facts_from_sites`): a record's rc feeds the fold's
   Status channel ONLY for a `ProbeSiteKind::Query { valid: true }` site (the guard's own rc); an
   establish site's rc stays `Predicted::Top` UNCONDITIONALLY (it is the probe-command's rc, never the
-  mutator's), and an invalid Query's rc is withheld too (stale). `ProbeCheck` gained a `site_kind`
+  mutator's), and an invalid Query's rc is withheld too (stale). `ProbePredict` gained a `site_kind`
   discriminant to carry this engine fact to the cli.
 - **The guard's own elision** (`ReplaceLicense::prove_query_replaceable`): a valid Query guard with a
   known probe-sourced rc, passing the consumption gates, is `Replace`d by `StandIn::from_rc(rc)` — rc 0
@@ -220,7 +220,7 @@ xfail). `mise x -- typos spike` clean (from worktree root).
   a Query whose rc is unconsumed be substituted at all? Conservative-sound default is in place; the
   ruling is about aggressiveness.
 - **The vouch-closure check (`dq-reflexive-probe-inertness`, 205 §3 dev-reflexive) is STILL OWED.** D2
-  ships Query check bodies into the probe (`tool__check`, `command -v -- "$tool"`), but nothing refuses a
+  ships Query predict bodies into the probe (`tool__predict`, `command -v -- "$tool"`), but nothing refuses a
   probe body containing a call that is neither the oracle's own command, a declared Query, nor a
   blessed-pure builtin. The Query class makes "declared Query" a real category the closure-check can now
   name (a Query's check IS a sanctioned read), so D2 sharpens what the check should allow — but the check

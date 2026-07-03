@@ -102,11 +102,11 @@ away.** What I *do* de-bias is the rhetoric around it (below).
 
 ### 2.2 The floor-inversion — REAL but the human already knew; the sharp part is the pincer
 
-`p2a A1` ("kill-shot"): adding `hork.check(){ hork --dry-run "$@"; }` flips `hork` from
+`p2a A1` ("kill-shot"): adding `hork.predict(){ hork --dry-run "$@"; }` flips `hork` from
 poison-all-safe to poison-nothing-dangerous — the gradient runs *backwards* at `wish-B`'s entry point.
 
 **De-bias:** this is not a discovery — `233` *states it itself* ("the dangerous floor (while an opaque
-hork with NO `.check()` would poison all, and therefor be safe)"). Calling it a kill-shot over-credits
+hork with NO `.predict()` would poison all, and therefor be safe)"). Calling it a kill-shot over-credits
 the find. The genuinely-new and load-bearing part is `p2a A1'` (the **forced-mitigation pincer**, +SURE):
 the obvious patch — "name-nothing ⇒ poison-all, like no-oracle" — re-imposes the enumerate-the-world
 ceiling on *exactly the pure tools approach-4 wanted to support cheaply* (a `logger` that honestly

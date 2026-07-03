@@ -61,7 +61,7 @@ to verify; KEPT (`members_keeps_duplicates_no_dedup`, `members_family_keeps_dupl
 
 `SkipClass::EstablishMembers { members: Vec<FactKey>, self_reached: bool }` — the resolved
 per-member cells (list order, dups kept) + the self-reach bit (§3). `effect::member_family`
-resolves it: each per-member argv runs through `command_effect` (the oracle's own `check()`,
+resolves it: each per-member argv runs through `command_effect` (the oracle's own `predict()`,
 identically to a straight-line command); EVERY member must yield `[Establishes(fact)]` or the
 WHOLE site is `None` ⇒ falls to the single-cell path ⇒ the in-loop floor runs it
 (`members_family_all_or_nothing_one_member_unresolvable_tops`: `for p in nginx "a b"; do
@@ -125,7 +125,7 @@ authoritative (elide-all is self-consistent); ANY non-self writer breaks that ar
 
 ## §4 The record-grammar extension + the wire (item-4)
 
-`ProbeCheck` gains `member: Option<u32>`. `render::probe::site_key` formats the record key: `N`
+`ProbePredict` gains `member: Option<u32>`. `render::probe::site_key` formats the record key: `N`
 (single-fact) or `N.M` (member M of leaf N). The grammar becomes
 `site <leafid>[.<member-idx>] effect=… rc=…` (documented in the artifact header's existing
 `<leafid>` slot, kept byte-stable — the `.M` is an EXTENSION of the leafid token, same posture
