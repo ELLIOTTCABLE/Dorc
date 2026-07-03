@@ -39,15 +39,23 @@ pub mod differential;
 /// nondeterminism. Hand-rolled (no `rand` dependency): the DST host must be
 /// reproducible bit-for-bit from its seed, and the kernel stays dep-free. The
 /// multiplier/increment are the common 64-bit LCG constants (Knuth/PCG lineage).
+///
+/// PUBLIC as the spike's single home of seeded entropy (`inv-determinism`): the round-24
+/// `sweep` chronology net drives its scenario generator from this same `Lcg` rather than
+/// forking a second PRNG (24B §3 "reuses hostsim's `Lcg` for entropy — keep nondeterminism
+/// single-homed"). Not cryptographic; bit-reproducible from the seed is the whole contract.
 #[derive(Debug, Clone)]
-struct Lcg(u64);
+pub struct Lcg(u64);
 
 impl Lcg {
-    fn new(seed: u64) -> Self {
+    /// Seed the PRNG. Same seed ⇒ same stream, forever (`inv-determinism`).
+    #[must_use]
+    pub fn new(seed: u64) -> Self {
         Lcg(seed)
     }
 
-    fn next_u64(&mut self) -> u64 {
+    /// The next 64-bit draw (advances the state).
+    pub fn next_u64(&mut self) -> u64 {
         self.0 = self
             .0
             .wrapping_mul(6_364_136_223_846_793_005)
@@ -56,8 +64,24 @@ impl Lcg {
     }
 
     /// A coin flip true with probability `num / den` (deterministic given the seed).
-    fn chance(&mut self, num: u32, den: u32) -> bool {
+    pub fn chance(&mut self, num: u32, den: u32) -> bool {
         den != 0 && (self.next_u64() % u64::from(den)) < u64::from(num)
+    }
+
+    /// A draw in `0..bound` (deterministic; `0` for `bound == 0`), taken from the HIGH bits via
+    /// Lemire's multiply-high. This is load-bearing, NOT decorative: an odd-multiplier LCG's LOW
+    /// bits are periodic (the low bit flips every step, the low `k` bits have period `2^k`), so a
+    /// naive `next_u64() % small` — and thus [`chance`](Lcg::chance) — makes consecutive small-modulus
+    /// draws deterministically correlate. The round-24 sweep draws EVERY axis through here so its
+    /// independent coins are actually independent (a low-bit `% 2` made `lying` perfectly
+    /// anti-correlate `victim_converged`, silently erasing a whole topology cell). The high 64 bits
+    /// of the `u64 × bound` product are well-distributed for an LCG; bias is negligible for the
+    /// small option-sets a generator draws.
+    pub fn below(&mut self, bound: u64) -> u64 {
+        if bound == 0 {
+            return 0;
+        }
+        u64::try_from((u128::from(self.next_u64()) * u128::from(bound)) >> 64).unwrap_or(0)
     }
 }
 
@@ -81,6 +105,67 @@ pub enum HostOp {
 pub struct Violation {
     pub phase: Phase,
     pub op: HostOp,
+}
+
+/// A concrete GROUND-TRUTH cell-delta: the set of cells a running command really flips
+/// (the `sweep` chronology net's `TrueEffect` payload — 24B §3 "apply-a-cell-delta").
+///
+/// The model altitude the chronology net needs on `Host`: the `sweep` generator invents,
+/// per book command, what that command *actually does* to host state — independently of what
+/// the oracle *declares* it does (the declared-vs-true split, 24B §3 / §5). This type carries
+/// only the true half; enacting it is [`Host::apply_delta`]. Deltas are always applied during
+/// the sweep's host EVOLUTION (apply-semantics), never during a probe, so — unlike
+/// [`HostOp::Establish`]/[`HostOp::Kill`] under [`Host::run`] — there is no phase and no
+/// `kFAIL-withhold` monitoring here: a delta *is* a command running.
+///
+/// `establishes` and `kills` are disjoint by construction (a command flips a cell one way);
+/// [`Host::apply_delta`] applies establishes then kills, so a (mis-built) overlap resolves
+/// to killed, deterministically. Ordered sets (`inv-determinism`).
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct CellDelta {
+    establishes: BTreeSet<FactKey>,
+    kills: BTreeSet<FactKey>,
+}
+
+impl CellDelta {
+    /// An empty delta — a command that touches no modeled cell (a no-op mutator).
+    #[must_use]
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Add a cell this command makes hold. Consuming-builder shape so a generator can spell a
+    /// site's true effect inline (`CellDelta::new().establish(a).kill(b)`).
+    #[must_use]
+    pub fn establish(mut self, fact: FactKey) -> Self {
+        self.establishes.insert(fact);
+        self
+    }
+
+    /// Add a cell this command makes NOT hold (a kill/purge's true effect, or a LYING
+    /// footprint's undeclared clobber — the resid-aliasing disaster the net hunts).
+    #[must_use]
+    pub fn kill(mut self, fact: FactKey) -> Self {
+        self.kills.insert(fact);
+        self
+    }
+
+    /// Whether this delta flips nothing (a site with no ground-truth effect — e.g. an
+    /// already-converged re-run in a converged≠no-op-free world).
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.establishes.is_empty() && self.kills.is_empty()
+    }
+
+    /// The cells this delta makes hold (attribution/coverage inspection).
+    pub fn establishes(&self) -> impl Iterator<Item = FactKey> + '_ {
+        self.establishes.iter().copied()
+    }
+
+    /// The cells this delta makes not-hold (attribution/coverage inspection).
+    pub fn kills(&self) -> impl Iterator<Item = FactKey> + '_ {
+        self.kills.iter().copied()
+    }
 }
 
 /// A seeded, deterministic model of a target host: the set of facts that currently
@@ -185,6 +270,28 @@ impl Host {
     #[must_use]
     pub fn violations(&self) -> &[Violation] {
         &self.violations
+    }
+
+    /// Enact a concrete ground-truth [`CellDelta`] — the `sweep` chronology net's host
+    /// evolution (24B §3). Establishes are inserted then kills removed; NO phase, NO
+    /// `kFAIL-withhold` check (a delta *is* a command running, so it is apply-semantics by
+    /// definition — the same effect [`Host::run`] applies for `Establish`/`Kill` in
+    /// [`Phase::Apply`], factored for a whole delta). Deterministic (ordered sets).
+    pub fn apply_delta(&mut self, delta: &CellDelta) {
+        for fact in &delta.establishes {
+            self.facts.insert(*fact);
+        }
+        for fact in &delta.kills {
+            self.facts.remove(fact);
+        }
+    }
+
+    /// The full set of cells that currently hold — the modeled END-STATE (the chronology net's
+    /// `S_bare`/`S_apply` comparand, and the determinism-guard comparand). A cheap clone of the
+    /// ordered fact-set; end-state equality is set equality over this (`inv-determinism`).
+    #[must_use]
+    pub fn snapshot(&self) -> BTreeSet<FactKey> {
+        self.facts.clone()
     }
 }
 
@@ -333,6 +440,33 @@ apt_get__predict() {
             host.verdict(nginx),
             Verdict::Diverged,
             "apply kill takes effect"
+        );
+    }
+
+    #[test]
+    fn apply_delta_evolves_end_state_and_snapshot_reflects_it() {
+        // The sweep's host-evolution primitive: a CellDelta establishes + kills cells; the
+        // snapshot is the end-state comparand. No phase, no violation (a delta IS a run).
+        let mut i = Interner::default();
+        let nginx = fk(&mut i, "package", "nginx");
+        let oldpkg = fk(&mut i, "package", "oldpkg");
+        let mut host = Host::new([nginx]);
+        let delta = CellDelta::new().establish(oldpkg).kill(nginx);
+        host.apply_delta(&delta);
+        assert_eq!(
+            host.verdict(oldpkg),
+            Verdict::Converged,
+            "delta established oldpkg"
+        );
+        assert_eq!(host.verdict(nginx), Verdict::Diverged, "delta killed nginx");
+        assert!(
+            host.violations().is_empty(),
+            "a delta is apply-semantics — never a violation"
+        );
+        assert_eq!(
+            host.snapshot(),
+            BTreeSet::from([oldpkg]),
+            "snapshot is exactly the cells that now hold"
         );
     }
 
