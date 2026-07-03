@@ -1,0 +1,8 @@
+#!/bin/sh
+# INERT read-only probe mock (tie-down, state-bearing): `dpkg-query -W <pkg>` ($1=-W, $2=pkg).
+# rc 0 iff <pkg> is present in the per-run DB (./state, seeded from S0 = nginx installed, oldpkg
+# not). Read-only — reflects state, never mutates it; logs for symmetry. This is what makes gate-1
+# validate the model's S0 against a real file-backed world instead of a hardcoded rc table.
+. "${0%/*}/.log"; _dorc_logged "$@"
+. "${0%/*}/.state"; _state_init
+if _state_has "$2"; then exit 0; else exit 1; fi

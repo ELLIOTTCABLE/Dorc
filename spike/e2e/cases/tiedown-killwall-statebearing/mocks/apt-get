@@ -1,0 +1,14 @@
+#!/bin/sh
+# INERT state-bearing mock (tie-down; NEVER a real mutator): logs its argv for the run-set, and
+# reflects install/purge into the per-run package DB (./state) so a later dpkg-query probe reads
+# a faithful world. `apt-get install X` ⇒ X becomes present; `purge X` ⇒ absent. Mutates only the
+# disposable sandbox DB, never the host.
+. "${0%/*}/.log"; _dorc_logged "$@"
+. "${0%/*}/.state"; _state_init
+_verb=$1; shift
+while [ "${1#-}" != "$1" ]; do shift; done
+case $_verb in
+   install) _state_add "$1" ;;
+   purge)   _state_del "$1" ;;
+esac
+exit 0

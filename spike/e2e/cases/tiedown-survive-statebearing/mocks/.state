@@ -1,0 +1,33 @@
+# The tie-down's state-bearing package DB (24B §3). Pure sh only — PATH is mocks-only, so there
+# is NO grep/cp/mv/cat available; state is kept in ./state (the sandbox cwd, fresh per run) using
+# builtins + redirection. This is the ONLY home of the state-bearing-mock protocol: it makes
+# `apt-get install X` really make `dpkg-query -W X` succeed, so the probe reads a FAITHFUL
+# mini-world — the real-dash anchor that ties the in-memory hostsim model to reality.
+#
+# S0 (the probe-time world) is baked here: nginx installed, oldpkg NOT. Seeded into ./state on
+# first touch; install adds, purge removes. ru-26 spike note: authored inline (not derived) for
+# the spike's tie-down handful — a real oracle would emit its own footprint (Stage 4).
+_S0='nginx'
+
+_state_init() {
+   [ -f ./state ] && return 0
+   for _p in $_S0; do printf '%s\n' "$_p"; done > ./state
+}
+
+_state_has() {
+   while IFS= read -r _sl; do
+      [ "$_sl" = "$1" ] && return 0
+   done < ./state
+   return 1
+}
+
+_state_add() { _state_has "$1" || printf '%s\n' "$1" >> ./state; }
+
+_state_del() {
+   _kept=''
+   while IFS= read -r _sl; do
+      [ "$_sl" = "$1" ] || _kept="$_kept$_sl
+"
+   done < ./state
+   printf '%s' "$_kept" > ./state
+}
