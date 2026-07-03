@@ -1,0 +1,8 @@
+# probe-results: site-keyed records (task-D1 WIRE). Grammar:
+#   site <leafid> effect=<holds|absent|cant-tell> [rc=<n>]
+# NB the leaf-ids are shifted by ONE vs strawman24-all-converged-clean: `set -e` is leaf 0
+# (a pure builtin), so the three converged establishes are sites 1/2/3. All hold — but under
+# errexit each mutator's consumed TOP status blocks the elide anyway (the measured cost).
+site 1 effect=holds
+site 2 effect=holds
+site 3 effect=holds
