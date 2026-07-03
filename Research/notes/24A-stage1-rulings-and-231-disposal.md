@@ -94,6 +94,33 @@ claims at-most-these; unmatched verb emits nothing = no claim = wall. Human vibe
   consumes no vouches yet. Stage-2 disjointness lands as an ADDITIONAL conjunct on the
   existing license; Stage-3 vouch-plumbing tightens the same license later — monotone
   composition, no conflict, tracked so neither stage silently "completes" the other's law.
+- **rul24-divergence-is-the-game (human challenge, conductor-checked, CONCEDED + refined).**
+  The human challenged the conductor's danger-scoping answer as too positive-leaning: "the
+  'license-site diverges from elision-site' IS the whole game, and the whole danger, behind
+  233alikes such as this feature." Checked; the logic HOLDS, with one refinement: TWO
+  divergences compose. (i) **license-site ≠ elision-site** (all 233-alikes, vouch included):
+  the completeness-claim escapes the context that could falsify it — authored once against
+  the author's tool-version/platform/imagination, acting at unbounded later sites where
+  nobody present can evaluate it (the admin can't — not knowing the tool is WHY they use an
+  oracle — and the author isn't there). If claims could act only in their author's own books,
+  233 would be nearly toothless (wrong claims bite their authors; closed feedback loop).
+  (ii) **claim-subject ≠ blast-subject** (footprint-specific): the claim describes tool A's
+  writes; the blast lands on tool B's wrongly-elided line. The vouch has (i) only; the
+  footprint has (i)+(ii) — why it is the sharpest knife. The conductor's earlier co-location/
+  co-timing answer stays mechanically true WITHIN one plan (danger-sites ⊆ benefit-sites;
+  fires only when the wall runs) but answers where/when, not WHO-can-check — the epistemic
+  divergence was wrongly footnoted as "social asymmetry". Confirmation: every existing
+  defense maps onto the divergence (attribution = post-hoc re-tethering; opt-in = deliberate
+  license-site; CONCENTRATE = shrink what travels; horizon = warn the elision-site;
+  dangling-reference detection = the one mechanical elision-site check, existence-only).
+  **Design-seed (human, delighted):** the missing defense — the elision-site mechanically
+  validating the claim's CONTEXTUAL assumptions — is the long-wished version-tracking system
+  (MH2's content-hash gating: "the binary you're eliding around is the binary I described"),
+  now justified under the boxing-in-233 regime. NOT this spike. Counter-lean kept for
+  honesty: the divergence is also the entire VALUE engine (author-pays-once, amortized — the
+  library model); it cannot be removed, only tethered. Stage-2 consequence: attribution of
+  survived elisions (why-lens naming whose footprint licensed what) is promoted from
+  nice-to-have to the primary tether in the builder brief.
 
 ## §2. The 231 disposal (carried from the 23J repair-pass routing: map the pre-crisis sweep's clusters to survivor/dead-with-reason)
 
