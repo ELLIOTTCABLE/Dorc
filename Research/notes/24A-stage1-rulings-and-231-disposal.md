@@ -369,3 +369,38 @@ working step-zero is `git switch -C <worktree-branch> ai/spike3-r23` (both build
 independently found equivalents); future briefs say so. Conductor lean going forward
 (human-typed): mechanical suite-running/verification rides Opus errands; the conductor keeps
 only judgment moments (promotion diff-inspection, adjudication).
+
+**Stage 1c LANDED (2026-07-03, four commits cherry-picked; merged tree 135/135, 22 suites,
+all gates; family 8 cases, honest baseline elide-fraction 0.32):**
+- **R1 strip-fidelity fixed a REAL latent bug** — HEAD's strip replaced bare marks with a
+  `:` null command (the exact rc-clobber disaster 23H §9.4 forbids); now whole-statement
+  deletion, dash-grounded separator rules, mark-only compound bodies ⊤-reject at lift
+  (case-arms exempt — `x) ;;` is legal). The tilde ConvergedVouch grammar is REMOVED
+  (dead), `derive_predict` returns effects only.
+- **R3 kill-wall closed** — `build_plan_walled(…, kills, …)` (kill-node set threaded from
+  `classify_with_why_diags`; side-channel chosen over a `SkipClass::Kill` variant to spare
+  coverage's tripwires — reversible). Kill-unaware `build_plan` kept for hostsim/tests.
+  Pre-fix RED evidence recorded in the builder report. NOTE (latent, routed to Stage 2):
+  coverage's dashboard still builds kill-UNAWARE plans (would over-report elision on kill
+  books; no corpus case); the ~3-line parity fix rides the Stage-2 builder. NOTE: hostsim's
+  IN-MEMORY tests ride the kill-unaware entry (the subprocess differential rides the CLI,
+  kill-aware).
+- **R2 rc-soundness pins authored as FLOORS** (not xfails — never-X laws green at HEAD):
+  `guard23-inverted-vouch-never-backwards` + `guard23-refusepath-rc0-never-passes` — the
+  corpus's FIRST verdict-function-carrying fixtures (inert at HEAD, predict-only keying;
+  Stage-3 consumes them). Pin-set architecture note: NO fixture carries a bare
+  converged-vouch mark anymore, anywhere.
+- **R4 errexit honesty row**: `strawman24-errexit-defeats` = all-converged-clean + `set -e`,
+  elide-fraction 0.00 vs 1.00 — the 206 §2 cost, measured in the family permanently.
+- Strain (builder, confidence-marked): the AST discards statement separators, so the strip
+  scans raw source for separators/indent (dash-grounded; CRLF/heredoc-adjacent marks
+  theoretical edge). The kill/establish `SkipClass` asymmetry suggests a future `Kill`
+  variant — flagged, not restructured.
+
+**rul24-overtype (human-typed, 2026-07-03):** maximum thought on typesystem support;
+"making undesirable states unrepresentable" is massively valuable here, above other
+codebases; overtyping is NOT overengineering in this domain — it is one of the only tools
+available in a hostile correctness-domain. Type-contract design is the ONE sanctioned
+conductor-code domain (pure design instruction, no churn/trial-and-error) — conductor
+specifies type shapes in builder briefs; builders implement against them. (Amplifies
+IMPLEMENTATION.md's standing over-typing stance and assigns the duty.)
