@@ -522,7 +522,7 @@ For one, no amount of analysis will tell you whether this probe is safe to run
 during the non-mutative probing phase:
 
 ```sh
-mycmd.check() { mycmd --dry-run "$@" ;}
+mycmd.is_converged() { mycmd --dry-run "$@" ;}
 ```
 
 For this reason, oracles effectively *have* to vouch for invocations of their
