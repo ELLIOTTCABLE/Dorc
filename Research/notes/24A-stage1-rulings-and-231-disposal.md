@@ -230,6 +230,19 @@ e2e corpus: seeded/generated/outcome-shaped, not finite/authored/run-set-shaped.
 the same net is Stage-6's adequacy-measurement substrate (fact-tier license ⇒ red;
 vouch-tier ⇒ counted bite — keyed on the claim-tier algebra once Stage 3 lands it).
 
+## §1f. Stage 2c commissioned — the battle-oracle realism suite (human-typed, 2026-07-03)
+
+The suite contains nothing REAL (all small artificial isolated-truth e2es). Commissioned:
+one full, genuine, battle-esque oracle (≥150 lines, stdlib-tier; apt/dpkg or systemctl
+default candidates) exercising EVERY ORACLE_PROVIDES shape at quality, + a playbook that
+exercises it heavily/difficultly, + light-but-COOPERATING shim-oracles standing in for the
+rest of the stdlib. Task #10, after the chronology net (which then seed-sweeps it);
+parallel-eligible with Stage 3. Its yardstick rows become the family's most honest
+numbers; it is the natural whole-ledger exerciser. A sanitized census scout (sonnet,
+read-only, existence/location/size ONLY — no content crosses the quarantine boundary) is
+sweeping for prior sizable oracle work the human half-remembers; if found outside
+quarantine ⇒ evaluate reuse; inside ⇒ human lift-or-rewrite decision.
+
 ## §2. The 231 disposal (carried from the 23J repair-pass routing: map the pre-crisis sweep's clusters to survivor/dead-with-reason)
 
 Context: `notes/231` is the *pre-crisis* collapsed-gradient sweep — round 23 §1 work,
