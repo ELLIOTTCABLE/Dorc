@@ -85,11 +85,22 @@ Parallel to skip→{elide, guard}: the old blurry words decompose, and no term c
   a decision. NB: the human's `foo.predict()` sibling would be the FIRST sanctioned instance
   of the invariant's reserved carve-out ("an oracle-declared fact the human has explicitly
   sanctioned — none currently exist").
+- **apply-rc** — the exit status MINTED FROM a guard-verdict to drive the artifact's sh
+  connectives (`||`-fails-toward-run, the subshell machinery): sh's conditionals eat exit
+  codes, so this mint necessarily exists — the substrate demands it. SETTLED (human,
+  2026-07-02): it happens **once, in a controlled way** — exactly one design-sanctioned
+  mechanism, never ad-hoc rc-punning. OPEN (the round's question): who owns the mint —
+  oracle-contract discipline (`foo_is_converged`'s own rc IS the mint), an interposed shipped
+  helper, or true cross-compilation of oracle bodies (in visible tension with
+  never-engine-synthesized-sh). Distinct from predicted-rc's replacement-mint: two different
+  rc-emissions, two licenses, never conflated.
 - Bare "rc" is a banned word in design text (like bare "skip"): always qualify (tool-rc /
-  predicted-rc). Verdicts are never rc's. The tool-rc → verdict mapping happens in exactly ONE
-  authored place per oracle (today: the check body's path; post-round: perhaps
-  `foo_is_converged`'s body) — everywhere else their non-correlation is an invariant, to be
-  ENCODED as types/lints during the build (deferred from this design moment, owed).
+  predicted-rc / apply-rc). Verdicts are never rc's. There are exactly TWO blessed crossings
+  between the rc-world and the verdict-world, one per direction: tool-rc → verdict (authored,
+  in exactly ONE place per oracle — today the check body's path; post-round perhaps
+  `foo_is_converged`'s body) and verdict → apply-rc (minted once, per the bullet above).
+  Everywhere else their non-correlation is an invariant, to be ENCODED as types/lints during
+  the build (deferred from this design moment, owed).
 
 ## §3 Fences for the round (conductor, so the siblings don't rot into old mistakes)
 
