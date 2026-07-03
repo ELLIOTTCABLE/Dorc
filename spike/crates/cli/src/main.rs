@@ -55,7 +55,9 @@ use std::collections::BTreeMap;
 use std::io::{Read, Write};
 use std::process::ExitCode;
 
-use dorc_core::{Interner, Observable, OutClaim, Predicted, ProvArena, Rc, Severity, Verdict};
+use dorc_core::{
+    Interner, Observable, OutClaim, Predicted, ProvArena, Rc, Severity, Symbol, Verdict,
+};
 
 const USAGE: &str =
     "usage: dorc [probe|plan|apply] --book=<book.sh> [-o <oracle.sh>]... [--debug-argv]";
@@ -227,13 +229,10 @@ fn run() -> Result<(), String> {
     report_at(advisory, "classify", &classified.diags);
     let classes = classified.value;
 
-    // compile the read-only, SELF-REPORTING probe (site-keyed — `inv-site-keyed-results`).
-    // Each resolvable site invokes its kind's `oracle_probe_*` wrapper and emits `site
-    // <leafid> effect=… rc=…` on stdout when run. ALWAYS compiled (the unresolvable readout +
-    // the digest + the site→fact re-key all need it), but only PRINTED in probe/round-trip.
-    let probe = dorc_plan::compile_probe(&parsed.value, &cfg.value, &classes, |kind, selector| {
-        idx.resolve_probe(kind, selector).map(|p| p.body.clone())
-    });
+    // The read-only, SELF-REPORTING, site-keyed probe (R3 / 23D §1 — the check IS the oracle):
+    // each site ships its provider's stripped `<provider>__check` invoked with the site's argv.
+    let ship = |p, a: &[Symbol]| ship_check_body(&oracle_srcs, &checks, &interner, p, a);
+    let probe = dorc_plan::compile_probe(&parsed.value, &cfg.value, &value, &classes, ship);
 
     // `probe` mode stops here: emit the probe artifact and return. It reads no stdin (no
     // results exist yet — this is phase 1, what you ship to GET them), builds no plan, and so
@@ -351,6 +350,45 @@ fn run() -> Result<(), String> {
         )
     );
     Ok(())
+}
+
+/// R3 (23D §1 — the check IS the oracle): resolve the stripped `<provider>__check` funcdef
+/// a probe site ships, given its resolved (provider-word, argv-after-word0). Re-runs the
+/// SAME resolution [`dorc_analysis::effect`] used — the FIRST check, in oracle-file order,
+/// whose provider matches (through the shared hyphen↔underscore
+/// [`map_provider_name`](dorc_oracle::check::map_provider_name) convention) AND whose own
+/// argparse [`evaluate`](dorc_oracle::check::evaluate)s this argv concretely — then
+/// [`strip_check`](dorc_oracle::check::strip_check)s it. Matching the analysis's resolution
+/// is load-bearing: the shipped probe must check exactly the fact the analysis decided
+/// (a provider with two checks — `apt-get` as `package` and `pkgindex` — resolves per argv,
+/// `install …` ⇒ package, `update` ⇒ whichever resolves first). `None` ⇒ no check resolves
+/// ⇒ the site is un-shippable ⇒ un-elidable (`kFAIL-perform`).
+fn ship_check_body(
+    oracle_srcs: &[String],
+    checks: &[dorc_oracle::check::CheckSet],
+    interner: &Interner,
+    provider: Symbol,
+    argv: &[Symbol],
+) -> Option<String> {
+    use dorc_oracle::check::{Resolution, evaluate, map_provider_name, strip_check};
+    let want = map_provider_name(interner.resolve(provider));
+    let arg_texts: Vec<String> = argv
+        .iter()
+        .map(|s| interner.resolve(*s).to_owned())
+        .collect();
+    let arg_refs: Vec<&str> = arg_texts.iter().map(String::as_str).collect();
+    for (src, cs) in oracle_srcs.iter().zip(checks) {
+        for cp in cs.providers() {
+            if map_provider_name(interner.resolve(cp)) != want {
+                continue;
+            }
+            let Some(check) = cs.get(cp) else { continue };
+            if matches!(evaluate(check, &arg_refs), Resolution::Resolved(_)) {
+                return Some(strip_check(src, check, interner));
+            }
+        }
+    }
+    None
 }
 
 /// gate-5 / cm-2 readout: per command site, emit `argv <leafid> <disposition> <word|TOP
@@ -943,6 +981,8 @@ mod tests {
                 member: None,
                 fact,
                 site_kind,
+                provider: fact.kind.0,
+                argv: vec![],
                 sh: "{ :; }".to_string(),
             }],
             unresolvable: vec![],
@@ -1117,6 +1157,8 @@ mod tests {
                     site: LeafId(0),
                     member: None,
                     fact,
+                    provider: fact.kind.0,
+                    argv: vec![],
                     site_kind: k0,
                     sh: "{ :; }".to_string(),
                 },
@@ -1124,6 +1166,8 @@ mod tests {
                     site: LeafId(1),
                     member: None,
                     fact,
+                    provider: fact.kind.0,
+                    argv: vec![],
                     site_kind: k1,
                     sh: "{ :; }".to_string(),
                 },
@@ -1235,7 +1279,8 @@ mod tests {
             &mut arena,
         );
         let classes = classified.value;
-        let probe = dorc_plan::compile_probe(&parsed.value, &cfg.value, &classes, |_, _| None);
+        let probe =
+            dorc_plan::compile_probe(&parsed.value, &cfg.value, &value, &classes, |_, _| None);
         let plan = dorc_plan::build_plan(
             book,
             &parsed.value,

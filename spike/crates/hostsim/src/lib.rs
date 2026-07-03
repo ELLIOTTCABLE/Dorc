@@ -203,9 +203,38 @@ apt_get__check() {
    verb=$1; shift
    while [ "${1#-}" != "$1" ]; do shift; done
    pkg : package = "$1"
-   if [ "$2" = "" ]; then probe-pkg "$pkg"; fi
+   if [ "$2" = "" ]; then dpkg-query -W "$pkg" >/dev/null 2>&1 : package:"$pkg".installed ; fi
 }
 "#;
+
+    /// R3 test seam: resolve+strip the corpus check for a site's (provider, argv) — the same
+    /// resolution the cli's `ship_check_body` runs. `None` ⇒ un-shippable (un-oracled provider).
+    fn ship_corpus(
+        checks: &[dorc_oracle::check::CheckSet],
+        interner: &Interner,
+        provider: dorc_core::Symbol,
+        argv: &[dorc_core::Symbol],
+    ) -> Option<String> {
+        use dorc_oracle::check::{Resolution, evaluate, map_provider_name, strip_check};
+        let want = map_provider_name(interner.resolve(provider));
+        let arg_texts: Vec<String> = argv
+            .iter()
+            .map(|s| interner.resolve(*s).to_owned())
+            .collect();
+        let arg_refs: Vec<&str> = arg_texts.iter().map(String::as_str).collect();
+        for cs in checks {
+            for cp in cs.providers() {
+                if map_provider_name(interner.resolve(cp)) != want {
+                    continue;
+                }
+                let Some(check) = cs.get(cp) else { continue };
+                if matches!(evaluate(check, &arg_refs), Resolution::Resolved(_)) {
+                    return Some(strip_check(CORPUS_CHECK_SRC, check, interner));
+                }
+            }
+        }
+        None
+    }
 
     /// Run value-flow + the corpus checks + classify (the DST tests' shared pipeline).
     fn classify_value(
@@ -399,7 +428,7 @@ apt_get__check() {
         // checked it); the un-oracled reload always runs. Looping seeds fuzzes the
         // host states, reproducibly, no network.
         use dorc_core::ProviderId;
-        use dorc_oracle::{FactProbe, KindIndex, ValueClaim};
+        use dorc_oracle::{KindIndex, ValueClaim};
         use dorc_plan::{Disposition, build_plan, compile_probe};
 
         let src = "apt-get install -y nginx\napt-get install -y curl\nsystemctl reload nginx\n";
@@ -411,10 +440,6 @@ apt_get__check() {
             let install = i.intern("install");
             let mut idx = KindIndex::default();
             idx.add_effect(apt, install, package, installed, ValueClaim::Establish);
-            idx.add_probe(FactProbe {
-                kind: package,
-                body: "dpkg-query -W \"$1\"".into(),
-            });
 
             let cell = |i: &mut Interner, e: &str| FactKey {
                 kind: package,
@@ -427,12 +452,23 @@ apt_get__check() {
 
             let parsed = dorc_syntax::parse(src);
             let cfg = dorc_analysis::cfg::build(&parsed.value).value;
-            let classes = classify_value(&cfg, &parsed.value, &idx, &mut i);
+            let value = dorc_analysis::value::analyze(&cfg, &parsed.value, &mut i);
+            let checks = vec![dorc_oracle::check::lift_checks(&mut i, CORPUS_CHECK_SRC).value];
+            let classes = dorc_analysis::effect::classify(
+                &cfg,
+                &value,
+                &parsed.value,
+                &idx,
+                &checks,
+                &mut i,
+                &mut dorc_core::ProvArena::new(),
+            )
+            .value;
 
-            // (1) compile the SITE-keyed probe — the read-only checks to ship
-            // (`inv-site-keyed-results`, round-20 task-D1).
-            let probe = compile_probe(&parsed.value, &cfg, &classes, |k, sel| {
-                idx.resolve_probe(k, sel).map(|p| p.body.clone())
+            // (1) compile the SITE-keyed probe — R3: ship the provider's stripped check body
+            // invoked per-site with the site's argv (`inv-site-keyed-results`, round-20 task-D1).
+            let probe = compile_probe(&parsed.value, &cfg, &value, &classes, |provider, argv| {
+                ship_corpus(&checks, &i, provider, argv)
             });
             assert!(
                 probe.checks_fact(nginx) && probe.checks_fact(curl),
@@ -526,10 +562,22 @@ apt_get__check() {
         let src = "apt-get install -y nginx\n";
         let parsed = dorc_syntax::parse(src);
         let cfg = dorc_analysis::cfg::build(&parsed.value).value;
-        let classes = classify_value(&cfg, &parsed.value, &idx, &mut i);
+        let value = dorc_analysis::value::analyze(&cfg, &parsed.value, &mut i);
+        let classes = dorc_analysis::effect::classify(
+            &cfg,
+            &value,
+            &parsed.value,
+            &idx,
+            &[dorc_oracle::check::lift_checks(&mut i, CORPUS_CHECK_SRC).value],
+            &mut i,
+            &mut dorc_core::ProvArena::new(),
+        )
+        .value;
 
-        let probe = compile_probe(&parsed.value, &cfg, &classes, |k, sel| {
-            idx.resolve_probe(k, sel).map(|p| p.body.clone())
+        // R3: no shippable probe (the ship closure returns None — "the oracle declares no
+        // probe") ⇒ the EstablishAmbient site is unresolvable ⇒ not elided (kFAIL-perform).
+        let probe = compile_probe(&parsed.value, &cfg, &value, &classes, |_provider, _argv| {
+            None
         });
         assert!(
             probe.checks.is_empty(),

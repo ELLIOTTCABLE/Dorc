@@ -42,7 +42,7 @@ use std::collections::BTreeMap;
 use dorc_analysis::cfg::{Cfg, CfgNodeId};
 use dorc_analysis::effect::SkipClass;
 use dorc_analysis::value::ValueOf;
-use dorc_core::{Channel, Interner, Verdict};
+use dorc_core::{Channel, Interner, Symbol, Verdict};
 use dorc_plan::{Disposition, LeafId, LicenseVia};
 
 pub mod weights;
@@ -381,6 +381,40 @@ pub struct Inputs<'a> {
     pub weights: &'a weights::Weights,
 }
 
+/// R3 (23D §1 — the check IS the oracle): resolve the stripped `<provider>__check` funcdef
+/// a probe site ships, given its (provider-word, argv). Byte-mirror of the cli's helper —
+/// re-runs the analysis's own resolution (first check, oracle-file order, whose provider
+/// matches through [`map_provider_name`](dorc_oracle::check::map_provider_name) and whose
+/// argparse resolves this argv) and [`strip_check`](dorc_oracle::check::strip_check)s it.
+/// `None` ⇒ un-shippable ⇒ un-elidable (`kFAIL-perform`).
+fn ship_check_body(
+    oracle_srcs: &[&str],
+    checks: &[dorc_oracle::check::CheckSet],
+    interner: &Interner,
+    provider: Symbol,
+    argv: &[Symbol],
+) -> Option<String> {
+    use dorc_oracle::check::{Resolution, evaluate, map_provider_name, strip_check};
+    let want = map_provider_name(interner.resolve(provider));
+    let arg_texts: Vec<String> = argv
+        .iter()
+        .map(|s| interner.resolve(*s).to_owned())
+        .collect();
+    let arg_refs: Vec<&str> = arg_texts.iter().map(String::as_str).collect();
+    for (src, cs) in oracle_srcs.iter().zip(checks) {
+        for cp in cs.providers() {
+            if map_provider_name(interner.resolve(cp)) != want {
+                continue;
+            }
+            let Some(check) = cs.get(cp) else { continue };
+            if matches!(evaluate(check, &arg_refs), Resolution::Resolved(_)) {
+                return Some(strip_check(src, check, interner));
+            }
+        }
+    }
+    None
+}
+
 /// Build the coverage report by driving the SAME public pipeline the cli drives,
 /// then attributing each site's engine outputs to a [`Door`] / [`BlockReason`] /
 /// [`Rung`]. Pure: a deterministic function of `inputs` (the kernel it calls is
@@ -425,9 +459,13 @@ pub fn build_report(inputs: &Inputs<'_>) -> Report {
         .map(parse_probe_verdicts)
         .unwrap_or_default();
 
-    let probe = dorc_plan::compile_probe(&parsed.value, &cfg, &classes, |kind, selector| {
-        idx.resolve_probe(kind, selector).map(|p| p.body.clone())
-    });
+    // R3 (23D §1 — the check IS the oracle): byte-mirror of the cli's `compile_probe`
+    // call — the probe ships each provider's stripped `<provider>__check` funcdef invoked
+    // per-site with its argv (`ship_check_body` re-runs the analysis's own check resolution).
+    let probe =
+        dorc_plan::compile_probe(&parsed.value, &cfg, &value, &classes, |provider, argv| {
+            ship_check_body(inputs.oracles, &checks, &interner, provider, argv)
+        });
     let observe = observe_from_sites(&probe, &probe_verdicts);
     let plan = dorc_plan::build_plan(
         inputs.book,

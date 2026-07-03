@@ -86,6 +86,35 @@ apt_get__check() {
 }
 "#;
 
+/// R3 test seam: resolve+strip the corpus check for a site's (provider, argv) — the same
+/// resolution the cli's `ship_check_body` runs. `None` ⇒ un-shippable (un-oracled provider).
+fn ship_corpus(
+    checks: &[dorc_oracle::check::CheckSet],
+    interner: &Interner,
+    provider: dorc_core::Symbol,
+    argv: &[dorc_core::Symbol],
+) -> Option<String> {
+    use dorc_oracle::check::{Resolution, evaluate, map_provider_name, strip_check};
+    let want = map_provider_name(interner.resolve(provider));
+    let arg_texts: Vec<String> = argv
+        .iter()
+        .map(|s| interner.resolve(*s).to_owned())
+        .collect();
+    let arg_refs: Vec<&str> = arg_texts.iter().map(String::as_str).collect();
+    for cs in checks {
+        for cp in cs.providers() {
+            if map_provider_name(interner.resolve(cp)) != want {
+                continue;
+            }
+            let Some(check) = cs.get(cp) else { continue };
+            if matches!(evaluate(check, &arg_refs), Resolution::Resolved(_)) {
+                return Some(strip_check(CORPUS_CHECK_SRC, check, interner));
+            }
+        }
+    }
+    None
+}
+
 /// Run value-flow + the corpus checks + classify, returning the classified leaves.
 fn classify_value(
     cfg: &dorc_analysis::cfg::Cfg,
@@ -1364,9 +1393,20 @@ fn inline_call_emits_site_n_m_probe_records() {
     let src = "w() { apt-get install -y \"$1\"; }\nw nginx\nw curl\n";
     let parsed = dorc_syntax::parse(src);
     let cfg = dorc_analysis::cfg::build(&parsed.value).value;
-    let classes = classify_value(&cfg, &parsed.value, &idx, &mut i);
-    let probe = dorc_plan::compile_probe(&parsed.value, &cfg, &classes, |_kind, _sel| {
-        Some("{ dpkg-query -W \"$1\"; }".to_string())
+    let value = dorc_analysis::value::analyze(&cfg, &parsed.value, &mut i);
+    let checks = vec![dorc_oracle::check::lift_checks(&mut i, CORPUS_CHECK_SRC).value];
+    let classes = dorc_analysis::effect::classify(
+        &cfg,
+        &value,
+        &parsed.value,
+        &idx,
+        &checks,
+        &mut i,
+        &mut dorc_core::ProvArena::new(),
+    )
+    .value;
+    let probe = dorc_plan::compile_probe(&parsed.value, &cfg, &value, &classes, |p, a| {
+        ship_corpus(&checks, &i, p, a)
     });
     // Each check carries (site, member); collect the (site.0, member) pairs.
     let mut keys: Vec<(u32, Option<u32>)> =
@@ -1406,8 +1446,18 @@ fn inline_call_unprobeable_body_establish_is_unresolvable() {
     let src = "w() { apt-get install -y \"$1\"; }\nw nginx\n";
     let parsed = dorc_syntax::parse(src);
     let cfg = dorc_analysis::cfg::build(&parsed.value).value;
-    let classes = classify_value(&cfg, &parsed.value, &idx, &mut i);
-    let probe = dorc_plan::compile_probe(&parsed.value, &cfg, &classes, |_kind, _sel| None);
+    let value = dorc_analysis::value::analyze(&cfg, &parsed.value, &mut i);
+    let classes = dorc_analysis::effect::classify(
+        &cfg,
+        &value,
+        &parsed.value,
+        &idx,
+        &[dorc_oracle::check::lift_checks(&mut i, CORPUS_CHECK_SRC).value],
+        &mut i,
+        &mut dorc_core::ProvArena::new(),
+    )
+    .value;
+    let probe = dorc_plan::compile_probe(&parsed.value, &cfg, &value, &classes, |_p, _a| None);
     assert!(probe.checks.is_empty(), "no probe body ⇒ no checks");
     assert!(
         !probe.unresolvable.is_empty(),

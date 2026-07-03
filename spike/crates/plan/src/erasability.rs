@@ -269,11 +269,13 @@ fn canon_probe(probe: &ProbePlan) -> String {
             member,
             fact,
             site_kind,
+            provider,
+            argv,
             sh,
         } = c;
         let _ = writeln!(
             out,
-            "check site={} member={member:?} fact={} kind={} sh={sh:?}",
+            "check site={} member={member:?} fact={} kind={} provider={provider:?} argv={argv:?} sh={sh:?}",
             site.0,
             canon_fact(*fact),
             canon_site_kind(*site_kind),

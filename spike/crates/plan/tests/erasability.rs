@@ -60,6 +60,37 @@ use dorc_core::{
 use dorc_plan::erasability::{canonical_decision, decision_digest};
 use dorc_plan::{ProbePlan, build_plan, compile_probe};
 
+/// R3 test seam: resolve+strip the check a probe site ships, from `src` — the same resolution
+/// the cli's `ship_check_body` runs (first check whose provider matches + whose argparse
+/// resolves the argv). `None` ⇒ un-shippable.
+fn ship_from(
+    src: &str,
+    checks: &[dorc_oracle::check::CheckSet],
+    interner: &Interner,
+    provider: dorc_core::Symbol,
+    argv: &[dorc_core::Symbol],
+) -> Option<String> {
+    use dorc_oracle::check::{Resolution, evaluate, map_provider_name, strip_check};
+    let want = map_provider_name(interner.resolve(provider));
+    let arg_texts: Vec<String> = argv
+        .iter()
+        .map(|s| interner.resolve(*s).to_owned())
+        .collect();
+    let arg_refs: Vec<&str> = arg_texts.iter().map(String::as_str).collect();
+    for cs in checks {
+        for cp in cs.providers() {
+            if map_provider_name(interner.resolve(cp)) != want {
+                continue;
+            }
+            let Some(check) = cs.get(cp) else { continue };
+            if matches!(evaluate(check, &arg_refs), Resolution::Resolved(_)) {
+                return Some(strip_check(src, check, interner));
+            }
+        }
+    }
+    None
+}
+
 /// The corpus-shaped apt-get oracle (mirrors `e2e/cases/converged/package.oracle.sh`): the
 /// `oracle_effect` declarations (install ⇒ establish `package#installed`, purge ⇒ kill) are
 /// what make a command classify as an Establish (and thus eligible for Replace) — WITHOUT them
@@ -160,8 +191,8 @@ fn run_pipeline(book: &str, variation: ArenaMode) -> RunOutcome {
     );
     let classes = classified.value;
 
-    let probe = compile_probe(&parsed.value, &cfg, &classes, |kind, selector| {
-        idx.resolve_probe(kind, selector).map(|p| p.body.clone())
+    let probe = compile_probe(&parsed.value, &cfg, &value, &classes, |provider, argv| {
+        ship_from(ORACLE_SRC, &checks, &i, provider, argv)
     });
     // The host oracle: a fact is Converged iff in the fixed set; else Diverged. Identical for
     // both runs (the arena variation is the sole difference).
@@ -321,8 +352,8 @@ fn digest_is_receipt_invariant_across_runs() {
             &mut arena,
         )
         .value;
-        let probe = compile_probe(&parsed.value, &cfg, &classes, |k, s| {
-            idx.resolve_probe(k, s).map(|p| p.body.clone())
+        let probe = compile_probe(&parsed.value, &cfg, &value, &classes, |provider, argv| {
+            ship_from(ORACLE_SRC, &checks, i, provider, argv)
         });
         let observe = |f: FactKey| {
             if converged.contains(&f) {

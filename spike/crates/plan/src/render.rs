@@ -40,7 +40,7 @@
 //! word-quoting home, `20D` §6). Verified: no emitter hand-rolls a quote. A bypass
 //! would be a finding (task-R).
 
-use dorc_core::{EntityRef, Interner};
+use dorc_core::{Interner, Symbol};
 use dorc_syntax::sem;
 
 use crate::{LeafId, StandIn};
@@ -79,7 +79,7 @@ pub fn standin_sh(stand_in: StandIn) -> String {
 /// 202 §3). Assembly only — `compile_probe`/`ProbePlan::render_sh` decide *which* sites
 /// are resolvable and walk them; these functions emit the bytes for one decided piece.
 pub mod probe {
-    use super::{EntityRef, Interner, LeafId, sem};
+    use super::{Interner, LeafId, Symbol, sem};
 
     /// Format a record's site key: `N` for an ordinary single-fact site, `N.M` for member
     /// `M` of an in-loop Members fact-family (task-L2 item-4). The `.M` sub-key is the one
@@ -135,39 +135,36 @@ pub mod probe {
         format!("# site {key}: {label}\n")
     }
 
-    /// A POSIX function definition wrapping the kind's `oracle_probe_*` body
-    /// (`<fn_name>() <body>`), emitted once per `(kind, selector)` cell.
-    ///
-    /// GUARANTEE: dash-n-clean **iff `body` is a brace-group** (`{ …; }`) — the
-    /// sanctioned `oracle_probe_*` shape (205 §1 / st-2, `20B` §3), so `name() { …; }`
-    /// is a valid funcdef. The body ships verbatim (self-vouched: the kind's own
-    /// declared probe), never the placeholder check argparse. `fn_name` is a
-    /// [`check_fn_name`](crate::check_fn_name) — routed through the
-    /// hyphen↔underscore funcname map, so a hyphenated kind yields a valid POSIX name.
+    /// The oracle's stripped `<provider>__check` funcdef, emitted verbatim (R3 / 23D §1 —
+    /// the check IS the oracle, shipped strip-only). `funcdef` is the whole
+    /// [`strip_check`](dorc_oracle::check::strip_check) output (`name() { …; }`), already
+    /// `dash -n`-clean and byte-stable; this only appends the trailing newline. The render
+    /// re-emits it before an invocation whose provider's body differs (the multi-check
+    /// provider — [`ProbePlan::render_sh`](crate::ProbePlan::render_sh)).
     #[must_use]
-    pub fn wrapper_def(fn_name: &str, body: &str) -> String {
-        format!("{fn_name}() {body}\n")
+    pub fn wrapper_def(funcdef: &str) -> String {
+        format!("{funcdef}\n")
     }
 
-    /// The check invocation with the resolved entity F-QUOTE-bound as `$1` (or no
-    /// operand for a [`EntityRef::Singleton`]).
+    /// The check invocation with the site's argv F-QUOTE-bound (`<fn_name> 'install' '-y'
+    /// 'nginx'`) — R3: the check's own argparse resolves the entity from these positionals.
     ///
-    /// GUARANTEE (F-QUOTE, `notes/198`, `inv-kfail` both directions): the operand is
-    /// rendered by [`sem::single_quote`] — the LONE quoting decision in this module —
-    /// so it is exactly **one inert positional argument** in any sh. An un-quoted
-    /// operand could word-split (⇒ probe the wrong entity, `kFAIL-perform`) or re-parse
-    /// a metachar as a second command (`x; touch …` ⇒ `kFAIL-withhold` probe-mutation);
-    /// the single-quote wrapping forecloses both. A Singleton emits the bare fn name (no
-    /// operand exists). Pinned by `probe_render_quotes_operand_with_space_or_metachar`
-    /// and the `probe-operand-quoting` e2e case ("IN sh, FROM sh").
+    /// GUARANTEE (F-QUOTE, `notes/198`, `inv-kfail` both directions): each argv word is
+    /// rendered by [`sem::single_quote`] — the LONE quoting decision in this module — so it
+    /// is exactly **one inert positional argument** in any sh. An un-quoted word could
+    /// word-split (⇒ resolve the wrong entity, `kFAIL-perform`) or re-parse a metachar as a
+    /// second command (`x; touch …` ⇒ `kFAIL-withhold` probe-mutation); the single-quote
+    /// wrapping forecloses both. A verbless/nullary check emits the bare fn name (empty
+    /// argv). Pinned by `probe_render_quotes_operand_with_space_or_metachar` and the
+    /// `probe-operand-quoting` e2e case ("IN sh, FROM sh").
     #[must_use]
-    pub fn invocation(fn_name: &str, entity: EntityRef, interner: &Interner) -> String {
-        match entity {
-            EntityRef::Operand(tok) => {
-                format!("{fn_name} {}", sem::single_quote(interner.resolve(tok.0)))
-            }
-            EntityRef::Singleton => fn_name.to_string(),
+    pub fn invocation(fn_name: &str, argv: &[Symbol], interner: &Interner) -> String {
+        let mut out = fn_name.to_owned();
+        for word in argv {
+            out.push(' ');
+            out.push_str(&sem::single_quote(interner.resolve(*word)));
         }
+        out
     }
 
     /// The self-report scaffold appended after an `invocation`: capture the check's rc,
