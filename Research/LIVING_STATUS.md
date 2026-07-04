@@ -69,7 +69,18 @@ secret.** **`§5.1` guardrail FIRMED** (≤3 instances · cheapest-that-runs-it 
 human-reaper · always-teardown). Key **CONFIRMED WORKING** (full-account auth; file
 icacls'd user-only) — the earlier `token expired` was the **missing-`export` bug**: the file assigns
 `VULTR_API_KEY=…` without `export`, so agents MUST source via **`set -a; . ~/.temp/vultr.env; set +a`**
-(plain `.` doesn't reach the child `vultr-cli`). **Vultr agents UNBLOCKED.** Agents relay trouble via
+(plain `.` doesn't reach the child `vultr-cli`). **Vultr agents UNBLOCKED.**
+
+**SWEEP LAUNCHED (2026-07-04):** spend **AUTHORIZED** — standing: ≤3 cheapest `dorc-r25` boxes, <$10/day,
+**human = manual reaper** (next Vultr check ~late tonight; not watching minute-to-minute). **Oversight
+model:** the conductor owns ack + per-agent limits + periodic `vultr-cli` polling for runaways;
+subagents get the key but NOT ack. Live agents: **P1** (Vultr substrate — isolated worktree; provision/
+snapshot/restore/destroy + prove trap-teardown, `dorc-r25` tag) + **`~/System` scout** (read-only recon
+→ firms `255` windmill FLAGs from the human's real Ansible + scopes P6/zsh → `notes/256`). `~/System` =
+human's public system-repo (windmill Ansible + a complex zsh setup + a bit of Vultr mechanization P1
+cribs from), read-only reference for the sweep. **Baseline (pre-P1): 4 pre-existing non-`dorc-r25`
+instances on the account = OFF-LIMITS** — agents and any manual reap filter STRICTLY on the `dorc-r25`
+tag; 0 `dorc-r25` instances/snapshots at start. Agents relay trouble via
 `SendMessage`→conductor→human (the conductor holds the notify path); the `dorc-r25` tag covers a
 hard-died agent's orphan.
 
