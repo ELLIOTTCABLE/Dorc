@@ -29,8 +29,12 @@ list. Fable conducts the methodology; real-machine execution hands off to a narr
 **`notes/251`** = slurp-synthesis + every settled fork; **`plans/252`** = the drafted protocol +
 Track-A fan-out spec (players · interface contracts · build-DAG · pre-registered question set ·
 guardrails). Two-phase: Phase A (mechanical, LLM-driven, PARALLEL with r24) → Phase B (the human's
-single first-blooding). Sequence: charter → slurp → **252 drafted (NOW: human review)** → adversarial
-review → freeze §2 contracts → Track-A fan-out → Phase B.
+single first-blooding). op/Vultr connectivity PROVEN (op run → key → API 200; `252 §5.2`), and the **EXECUTION SUBSTRATE
+moves to macOS** (op sessions don't persist on Windows — no caching; macOS = signin-once + less MSYS
+friction + the human's normal zsh/dotfiles env). Sequence: charter → slurp → 252 (human-reviewed) →
+**NOW: clean commit + conductor-context-clear → resume EXECUTION on macOS via a fresh Opus from
+`252`** → (remaining planning) adversarial review (task #5) + freeze §2 contracts → Track-A fan-out →
+Phase B.
 
 > **⚠ sync-conflict artifact present:** `Research/LIVING_STATUS.sync-conflict-20260703-…PHNHRER.md`
 > (stale; human-owned cleanup).
