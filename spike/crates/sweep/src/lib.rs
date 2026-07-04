@@ -46,11 +46,15 @@ pub use scenario::{Honesty, Scenario, Seed, TopologyClass};
 /// lifted through the real `predict`/`touches`/`is_converged` lifts every seed. `predict()` derives
 /// the effect-map; `touches()` the at-most footprints; `is_converged()` is the VOUCH the elide-weld
 /// (24D §3) demands — without it a converged ambient `install` would no longer elide, and the whole
-/// net's elision coverage would vanish. `install`/`config`/`purge` touch `package:<operand>`;
-/// `refresh` establishes but has NO `touches()` arm ⇒ a footprint-less (silent, total-walling)
-/// mutator. `config` establishes a DIFFERENT selector (`#configured`) so a same-entity victim's
-/// `#installed` stays ambient — the entity-granular HIT. `is_converged()` vouches the establish
-/// verbs (install/config/refresh); a `purge` is a KILL (never elides), declined by `*) return 2`.
+/// net's elision coverage would vanish. `install`/`config`/`purge` touch `package:<operand>` via a
+/// STATIC (authored) `touches()`; `refresh` establishes but has NO `touches()` arm ⇒ a
+/// footprint-less (silent, total-walling) mutator. `config` establishes a DIFFERENT selector
+/// (`#configured`) so a same-entity victim's `#installed` stays ambient — the entity-granular HIT.
+/// **`place` (24E §6) establishes `package:<op>#installed` like `install`, but its `touches()` arm
+/// reaches a host tool (`apt-manifest`) ⇒ the static tracer ⊤s (`NonPrintfCommand`) ⇒ it ESCALATES
+/// to host-derivation: its footprint is DERIVED via [`dorc_hostsim::Host::derive`], not authored —
+/// the derived-footprint wall the lying-derived net drives.** `is_converged()` vouches the establish
+/// verbs (install/config/refresh/place); a `purge` is a KILL (never elides), declined by `*) return 2`.
 pub const ORACLE_SH: &str = r#"
 apt_get__predict() {
    while [ "${1#-}" != "$1" ]; do shift; done
@@ -63,6 +67,7 @@ apt_get__predict() {
          config)  dpkg-query -W "$pkg" >/dev/null 2>&1 : package:"$pkg".configured ;;
          refresh) dpkg-query -W "$pkg" >/dev/null 2>&1 : package:"$pkg".refreshed ;;
          purge)   dpkg-query -W "$pkg" >/dev/null 2>&1 : package:"$pkg".installed! ;;
+         place)   dpkg-query -W "$pkg" >/dev/null 2>&1 : package:"$pkg".installed ;;
       esac
    fi
 }
@@ -73,6 +78,7 @@ apt-get.touches() {
    while [ "${1#-}" != "$1" ]; do shift; done
    case $verb in
       install|config|purge) printf 'package:%s\n' "$1" ;;
+      place) apt-manifest "$1" ;;
    esac
 }
 
@@ -81,7 +87,7 @@ apt-get.is_converged() {
    verb=$1; shift
    while [ "${1#-}" != "$1" ]; do shift; done
    case $verb in
-      install|config|refresh) dpkg-query -W "$1" >/dev/null 2>&1 ;;
+      install|config|refresh|place) dpkg-query -W "$1" >/dev/null 2>&1 ;;
       *) return 2 ;;
    esac
 }

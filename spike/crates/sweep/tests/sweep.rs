@@ -125,7 +125,7 @@ fn trials_replay_bit_identically() {
 #[test]
 fn every_topology_class_and_both_behaviours_are_reached() {
     use TopologyClass::{
-        HitConverged, KillWall, MissConverged, MissDiverged, MultiWall, SilentWall,
+        DerivedWall, HitConverged, KillWall, MissConverged, MissDiverged, MultiWall, SilentWall,
     };
     let want = [
         MissConverged,
@@ -134,11 +134,17 @@ fn every_topology_class_and_both_behaviours_are_reached() {
         KillWall,
         SilentWall,
         MultiWall,
+        DerivedWall,
     ];
     let n = seed_count();
     let mut seen: BTreeSet<TopologyClass> = BTreeSet::new();
     let mut honest_elisions = 0u64;
     let mut lying_divergences = 0u64;
+    // The DERIVED-footprint soundness net (24E §6 / §11): a LYING derived footprint (⊂ true) that
+    // makes the victim wrongly survive ⇒ RED. Counted separately from `lying_divergences` because
+    // per `find-net-covers-what` (24C) the honest e2e fixture STRUCTURALLY cannot catch a
+    // survival-tier under-execute — ONLY a lying scenario can, and this pins it for the DERIVED lane.
+    let mut derived_lying_divergences = 0u64;
     let mut flag_distinguishes = 0u64;
     let mut first_all: Option<u64> = None;
 
@@ -150,6 +156,12 @@ fn every_topology_class_and_both_behaviours_are_reached() {
         }
         if matches!(t.honesty, Honesty::Lying { .. }) && t.on_diverged() {
             lying_divergences += 1;
+        }
+        if t.topology == DerivedWall
+            && matches!(t.honesty, Honesty::Lying { .. })
+            && t.on_diverged()
+        {
+            derived_lying_divergences += 1;
         }
         if t.plan_on_fp != t.plan_off_fp {
             flag_distinguishes += 1;
@@ -178,13 +190,21 @@ fn every_topology_class_and_both_behaviours_are_reached() {
          exercised, so its assertion is vacuous."
     );
     assert!(
+        derived_lying_divergences > 0,
+        "no LYING-DERIVED divergence in {n} seeds — a too-narrow DERIVED footprint (Host::derive \
+         ⊂ the wall's true CellDelta) never produced the wrong-survival RED. The derived-footprint \
+         soundness net (24E §6) is VACUOUS: without a lying-derived divergence the derived lane's \
+         attribution-under-lies assertion is never exercised (find-net-covers-what — the honest \
+         e2e fixture structurally cannot catch this)."
+    );
+    assert!(
         flag_distinguishes > 0,
         "--trust-footprints NEVER changed the plan in {n} seeds — the flag is inert, so the \
          survival tier is untested."
     );
     eprintln!(
-        "sweep coverage over {n} seeds: all 6 topology classes reached by seed {first_all:?}; \
+        "sweep coverage over {n} seeds: all 7 topology classes reached by seed {first_all:?}; \
          honest_elisions={honest_elisions} lying_divergences={lying_divergences} \
-         flag_distinguishes={flag_distinguishes}"
+         derived_lying_divergences={derived_lying_divergences} flag_distinguishes={flag_distinguishes}"
     );
 }

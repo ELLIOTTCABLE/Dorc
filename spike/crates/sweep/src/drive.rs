@@ -25,8 +25,11 @@ use dorc_analysis::value::{ValueFlow, ValueOf};
 use dorc_core::{FactKey, Interner, Observable, ProvArena, Symbol, Verdict};
 use dorc_hostsim::Host;
 use dorc_oracle::predict::PredictSet;
-use dorc_oracle::touches::{TouchesResolution, TouchesSet, evaluate_touches};
-use dorc_plan::{Disposition, EntityCoord, Footprint, Plan, TrustedFootprints};
+use dorc_oracle::touches::{TouchesResolution, TouchesSet, TouchesTop, evaluate_touches};
+use dorc_plan::{
+    DerivationShip, Disposition, EntityCoord, Footprint, Plan, TrustedFootprints,
+    compile_derivations,
+};
 
 use crate::ORACLE_SH;
 use crate::scenario::{DeclaredScenario, GroundTruth};
@@ -81,9 +84,22 @@ pub fn run_kernel(declared: &DeclaredScenario, s0: &Host, flag_on: bool, i: &mut
     };
 
     // The survival tier data (TC-1): lifted ONLY under the flag; `None` off ⇒ the total-wall
-    // baseline, and the footprints never exist.
+    // baseline, and the footprints never exist. Under the flag, the AUTHORED footprints (static
+    // touches) are merged with the host-DERIVED ones (24E §6 — escalated `place` walls; the sweep
+    // mirror of the cli's derived pipeline stage, sourcing the footprint from `Host::derive`).
     let survival = if flag_on {
-        Some(build_survival_footprints(&classes, &kills, &value, i))
+        let mut fps = build_survival_footprints(&classes, &kills, &value, i);
+        merge_derived_footprints(
+            &mut fps,
+            &parsed.value,
+            &cfg,
+            &value,
+            &classes,
+            &kills,
+            s0,
+            i,
+        );
+        Some(fps)
     } else {
         None
     };
@@ -227,6 +243,106 @@ fn build_survival_footprints(
         }
     }
     footprints
+}
+
+/// Merge the host-DERIVED footprints (24E §2/§6 — the sweep mirror of the cli's
+/// `merge_derived_footprints`): under the flag, an escalated wall-candidate's DECLARED footprint
+/// comes from the host's derivation-answer ([`Host::derive`]) — the sweep stand-in for shipping the
+/// `touches()` body + reading its stdout (NO sh execution here; the declared entity-set IS the
+/// answer). Rides the declared-vs-true split: a manifest ⊂ the wall's TRUE `CellDelta` is the LYING
+/// derived footprint that makes the victim wrongly survive (fork-s4-declaredtrue). Coherence-checked
+/// (own establish coord ⊆ footprint) exactly as the authored lane. The escalation DETECTION lifts +
+/// traces the real `touches()` (parity with the cli); only the footprint SOURCE is the host-answer.
+#[expect(
+    clippy::too_many_arguments,
+    reason = "mirrors the cli's derived-merge — threads the compiled context (ast/cfg/value/classes/kills) + the probe-time host + interner; each is a distinct pipeline output, not a bundle-able struct"
+)]
+fn merge_derived_footprints(
+    footprints: &mut TrustedFootprints,
+    ast: &dorc_syntax::ast::Ast,
+    cfg: &dorc_analysis::cfg::Cfg,
+    value: &ValueFlow,
+    classes: &[(CfgNodeId, SkipClass)],
+    kills: &BTreeSet<CfgNodeId>,
+    s0: &Host,
+    interner: &mut Interner,
+) {
+    let touches_sets: Vec<TouchesSet> = [ORACLE_SH]
+        .iter()
+        .map(|src| TouchesSet::lift(interner, src).value)
+        .collect();
+    let derivations = {
+        let derive = |provider: Symbol, argv: &[Symbol]| {
+            ship_touches_escalation(&touches_sets, interner, provider, argv)
+        };
+        compile_derivations(ast, cfg, value, classes, kills, derive)
+    };
+    for d in &derivations.derivations {
+        // The wall's own establish cell keys `Host::derive` (the declared manifest) AND is the
+        // coherence comparand. A kill's coordinate would ride the killcoord side-map (24E §7).
+        let Some(fact) = establish_fact_of(classes, d.node) else {
+            continue;
+        };
+        let coords: Vec<EntityCoord> = s0
+            .derive(fact)
+            .into_iter()
+            .map(|f| EntityCoord::new(f.kind, f.entity))
+            .collect();
+        let own = EntityCoord::new(fact.kind, fact.entity);
+        if !coords.contains(&own) {
+            continue; // coherence-refuse (own establish ⊄ footprint) ⇒ the site walls (fail-safe)
+        }
+        if let Some(fp) = Footprint::derived(d.provider, coords, "apt-get.touches()".to_owned()) {
+            footprints.insert(d.node, fp);
+        }
+    }
+}
+
+/// The escalation seam for the sweep's `compile_derivations` (mirror of the cli's
+/// `ship_touches_body`): `Some` iff a wall-candidate's `touches()` trace ⊤s on `NonPrintfCommand`
+/// (it reached the host tool `apt-manifest` — the `place` verb's arm). The sweep sources the
+/// footprint from [`Host::derive`], NOT the shipped body, so `sh` is unused (no derivation-probe
+/// render); the escalation SIGNAL is all `compile_derivations` needs.
+fn ship_touches_escalation(
+    touches_sets: &[TouchesSet],
+    interner: &Interner,
+    provider: Symbol,
+    argv: &[Symbol],
+) -> Option<DerivationShip> {
+    use dorc_oracle::predict::map_provider_name;
+    let want = map_provider_name(interner.resolve(provider));
+    let arg_texts: Vec<String> = argv
+        .iter()
+        .map(|s| interner.resolve(*s).to_owned())
+        .collect();
+    let arg_refs: Vec<&str> = arg_texts.iter().map(String::as_str).collect();
+    touches_sets.iter().find_map(|set| {
+        let p = set
+            .providers()
+            .find(|p| map_provider_name(interner.resolve(*p)) == want)?;
+        let touches = set.get(p)?;
+        match evaluate_touches(touches, &arg_refs) {
+            TouchesResolution::Top(TouchesTop::NonPrintfCommand) => Some(DerivationShip {
+                sh: String::new(),
+                call: "apt-get.touches()".to_owned(),
+            }),
+            TouchesResolution::Emitted(_) | TouchesResolution::Top(_) => None,
+        }
+    })
+}
+
+/// The establish fact a wall-candidate node establishes (the `Host::derive` key + coherence
+/// comparand for a derived footprint). `None` for a non-establish class.
+fn establish_fact_of(classes: &[(CfgNodeId, SkipClass)], node: CfgNodeId) -> Option<FactKey> {
+    classes.iter().find_map(|(n, c)| {
+        if *n != node {
+            return None;
+        }
+        match c {
+            SkipClass::EstablishAmbient(f) | SkipClass::EstablishWritten(f) => Some(*f),
+            _ => None,
+        }
+    })
 }
 
 /// Resolve one wall-candidate site's `touches()` footprint (mirror of the cli's

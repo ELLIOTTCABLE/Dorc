@@ -62,6 +62,13 @@ pub enum TopologyClass {
     /// ≥2 running walls precede the victim ⇒ a multi-crossing survival witness (or a demotion by
     /// any one of them). Exercises witness aggregation.
     MultiWall,
+    /// The primary wall is a `place` (24E §6) — its footprint is DERIVED at probe time via
+    /// [`dorc_hostsim::Host::derive`] (an escalating `touches()`), not authored statically. A MISS
+    /// against a converged victim ⇒ the victim SURVIVES past a payload-bound wall (the derived-
+    /// footprint golden hill). A LYING derived footprint here (⊂ the wall's true `CellDelta`)
+    /// under-declares ⇒ the victim wrongly survives ⇒ the end-state differential goes RED — the
+    /// automated soundness proof `find-net-covers-what` (24C) says only a lying scenario can catch.
+    DerivedWall,
 }
 
 /// Whether a scenario's ground truth matches its declared oracle. `Lying` records WHICH wall
@@ -164,6 +171,10 @@ enum WallKind {
     /// `apt-get refresh X` — establishes `package:X#refreshed` but has NO `touches()` arm ⇒ no
     /// footprint ⇒ a TOTAL wall (silence = wall).
     Silent,
+    /// `apt-get place X` (24E §6) — establishes `package:X#installed` like `Install`, but its
+    /// `touches()` arm ESCALATES (reaches `apt-manifest`), so its footprint is DERIVED via
+    /// [`Host::derive`], not authored. A MISS establish wall with a probe-time footprint.
+    Derived,
 }
 
 /// Build one fact-cell in the shared interner (the vocabulary fence — the SAME `KindId`/entity
@@ -223,6 +234,10 @@ fn wall_command(i: &mut Interner, entity: &str, kind: WallKind) -> (String, Cell
             format!("apt-get refresh {entity}"),
             CellDelta::new().establish(cell(i, entity, "refreshed")),
         ),
+        WallKind::Derived => (
+            format!("apt-get place {entity}"),
+            CellDelta::new().establish(cell(i, entity, INSTALLED)),
+        ),
     }
 }
 
@@ -250,11 +265,18 @@ pub fn generate(seed: Seed, i: &mut Interner) -> Scenario {
     let hit = rng.below(3) == 0;
     let multi = rng.below(3) == 0;
     let lying = rng.below(2) == 0;
+    // The DERIVED-footprint axis (24E §6): drawn unconditionally (one draw per axis, module doc),
+    // but realized only for a clean single-wall MISS (not a hit/multi) — a `place` wall whose
+    // footprint is host-DERIVED. This is the axis the lying-derived soundness net exercises.
+    let derived = rng.below(3) == 0 && !hit && !multi;
 
     // The wall kind: a HIT forces `config` (a different selector on the SAME entity, so the
-    // victim's `#installed` stays ambient and would-elide); a miss draws establish/kill/silent.
+    // victim's `#installed` stays ambient and would-elide); `derived` forces a `place` (an
+    // escalating establish, host-derived footprint); a plain miss draws establish/kill/silent.
     let wall_kind = if hit {
         WallKind::Config
+    } else if derived {
+        WallKind::Derived
     } else {
         match rng.below(3) {
             0 => WallKind::Install,
@@ -267,9 +289,14 @@ pub fn generate(seed: Seed, i: &mut Interner) -> Scenario {
     } else {
         distinct_entity(&mut rng, &[victim])
     };
-    // A HIT only demotes a would-elide (converged) victim; a diverged victim runs regardless, so
-    // pin converged for a clean HitConverged. Otherwise the victim's @S0 state is a coin flip.
-    let victim_converged = if hit { true } else { rng.below(2) == 0 };
+    // A HIT (and a DERIVED wall) only demotes/interferes-with a would-elide (converged) victim; a
+    // diverged victim runs regardless, so pin converged for a clean HitConverged / DerivedWall.
+    // Otherwise the victim's @S0 state is a coin flip.
+    let victim_converged = if hit || derived {
+        true
+    } else {
+        rng.below(2) == 0
+    };
 
     // Book order: [primary wall (leaf 0), (extra wall)?, victim (last)]. The victim is downstream
     // of every wall, so it crosses them; the primary wall is leaf 0, so a lie names leaf 0.
@@ -305,6 +332,8 @@ pub fn generate(seed: Seed, i: &mut Interner) -> Scenario {
         TopologyClass::KillWall
     } else if hit {
         TopologyClass::HitConverged
+    } else if derived {
+        TopologyClass::DerivedWall
     } else if victim_converged {
         TopologyClass::MissConverged
     } else {
@@ -322,7 +351,18 @@ pub fn generate(seed: Seed, i: &mut Interner) -> Scenario {
     if wall_kind == WallKind::Purge {
         holding.push(cell(i, wall_entity, INSTALLED));
     }
-    let s0 = Host::new(holding);
+    // A DERIVED wall's footprint comes from the host's derivation-answer (24E §6): DECLARE the
+    // wall's own coordinate as its derived footprint ({package:wall_entity}) — an HONEST manifest
+    // (⊇ its establish). The LIE, if any, lives in the TRUE `CellDelta` (the wall truly ALSO kills
+    // the victim, a cell this manifest never declares) ⇒ the victim wrongly survives ⇒ RED. The
+    // manifest is honest about what it LISTS; the undeclared clobber is the lie — exactly the
+    // authored lane's structure, only the footprint SOURCE moved to `Host::derive`.
+    let wall_cell = cell(i, wall_entity, INSTALLED);
+    let s0 = if derived {
+        Host::new(holding).with_manifest(wall_cell, [wall_cell])
+    } else {
+        Host::new(holding)
+    };
 
     let honesty = if lying {
         Honesty::Lying { liar_leaf: 0 }
