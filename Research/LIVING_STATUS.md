@@ -26,15 +26,18 @@ video-game-server; LLMs write the stdlib; human hand-writes 1–2 minimal oracle
 `target-felt-product` don't-let-it-slip), the refined constraints
 (`signal-reducibility`/`differential-spine`/`n1-honesty`/`llm-authoring-twist`), and the reading
 list. Fable conducts the methodology; real-machine execution hands off to a narrow-brief Opus.
-Sequence: charter done → absorb reading list → protocol skeleton → adversarial review → Opus
-execution handoff.
+**`notes/251`** = slurp-synthesis + every settled fork; **`plans/252`** = the drafted protocol +
+Track-A fan-out spec (players · interface contracts · build-DAG · pre-registered question set ·
+guardrails). Two-phase: Phase A (mechanical, LLM-driven, PARALLEL with r24) → Phase B (the human's
+single first-blooding). Sequence: charter → slurp → **252 drafted (NOW: human review)** → adversarial
+review → freeze §2 contracts → Track-A fan-out → Phase B.
 
 > **⚠ sync-conflict artifact present:** `Research/LIVING_STATUS.sync-conflict-20260703-…PHNHRER.md`
 > (stale; human-owned cleanup).
 
 ## Round-24 status (2026-07-04 — Stages 1–3 COMPLETE; Stage 4 next; detail in `notes/24A`–`24D`)
 
-**Stages 1, 2, 2b, 3 all built + merged + green** (shared tip `26001ef`; 145 e2e, all gates). The
+**Stages 1, 2, 2b, 3 all built + merged + green** (144 e2e, all gates). The
 two-halves doctrine is REAL end-to-end: the guard tier fires (`( check ) || cmd` past a wall) AND
 the elide-weld closed the vouchless-elide gap (a full skip now DEMANDS a `ByVouch` — no vouch ⇒
 run). The claim-tier trust algebra (the arc-win) was human-BLESSED + renamed
@@ -43,9 +46,11 @@ run). The claim-tier trust algebra (the arc-win) was human-BLESSED + renamed
 Part-A/Part-B landing evidence + the residue ledger; `24D §6` the blessed foundation + renames.**
 NEXT: **#6 Stage 4 (derived footprints)** — `ByObservation` (fact) tier + `dorc_plan::build_vouches`
 are the ready seams; then #7 Stage 5 (grounding — resid-aliasing lives here), #8 Stage 6
-(measure/conclude/extract — possibly a fresh conductor). In flight now: a narrow Opus retiring the
-dead `guard23-vouch-inert-pair` pin (premise overturned by the weld) for an honest
-`guard23-vouch-gates-elision` (standalone attributed commit; `24C`).
+(measure/conclude/extract). The dead `guard23-vouch-inert-pair` pin (premise overturned by the
+weld) was RETIRED for an honest `guard23-vouch-gates-elision` — the vouch is the sole difference
+(apt-vouched install elides, systemctl-unvouched enable runs; `24C`). **Stage 3 is FULLY COMPLETE;
+144 e2e green.** A fresh conductor picks up Stage 4 cleanly from this on-ramp (`24D §6` renames +
+`build_vouches`/`ByObservation` seams).
 
 **NOTE for the next conductor:** after any cherry-pick, force `cargo build --workspace` before
 trusting an `e2e/run.sh` — `cargo test` doesn't reliably rebuild the `dorc` bin the harness uses
