@@ -100,9 +100,24 @@ pub fn strip_verdict(
     strip_role(src, verdict, interner, mangled_suffix)
 }
 
-/// The shared STRIP-ONLY pass (R1c / 23D §1), parametrized by the target mangled suffix so both
-/// the probe lane (`__predict`) and the guard lane (`__is_converged`/`__is_diverged`) route
-/// through ONE audited implementation. See [`strip_predict`] for the full contract.
+/// Strip an authored **touches** funcdef (`<provider>.touches`) to runnable sh for shipping in
+/// the DERIVATION-PROBE lane (24E §2/§9 — a payload-bound footprint the tool emits itself). A
+/// touches body that reaches a host tool (`dpkg -L`) cannot be traced statically, so Stage 4
+/// ships it (strip-only) to run read-only on the host; its stdout coord-lines are the derived
+/// footprint. Identical to [`strip_predict`] but mangles the funcname to `__touches`
+/// (`apt-get.touches` → `apt_get__touches`), so the shipped def and the derivation invocation
+/// agree byte-for-byte. Everything else — annotation removal, bare-mark deletion, verbatim body
+/// bytes — is the strip's standing contract (strip-fidelity, 23H §9.4). Same self-vouch tier as
+/// `strip_predict`/`strip_verdict` (fork-4A: no new trust edge; authorship IS the vouch).
+#[must_use]
+pub fn strip_touches(src: &str, touches: &Predict, interner: &Interner) -> String {
+    strip_role(src, touches, interner, "__touches")
+}
+
+/// The shared STRIP-ONLY pass (R1c / 23D §1), parametrized by the target mangled suffix so the
+/// probe lane (`__predict`), the guard lane (`__is_converged`/`__is_diverged`), and the
+/// derivation lane (`__touches`, 24E §2) route through ONE audited implementation. See
+/// [`strip_predict`] for the full contract.
 fn strip_role(src: &str, check: &Predict, interner: &Interner, mangled_suffix: &str) -> String {
     let base = check.span.lo.0 as usize;
     let funcdef = src
@@ -467,6 +482,44 @@ apt-get.is_converged() {
         );
         assert!(
             !stripped.contains(".is_converged("),
+            "no period name remains: {stripped}"
+        );
+    }
+
+    /// A TOUCHES funcdef strips with the `__touches` funcname suffix (24E §2/§9): a payload-bound
+    /// body reaching `dpkg -L` ships to the derivation lane, so `apt-get.touches` mangles to
+    /// `apt_get__touches`, body bytes (incl. the host-tool call the static tracer would ⊤ on)
+    /// otherwise verbatim (strip-fidelity). Pins the derivation lane's strip alongside probe/guard.
+    #[test]
+    fn touches_body_strips_with_the_touches_funcname() {
+        use super::strip_touches;
+        use crate::touches::TouchesSet;
+        // A payload-bound body reaching a coordinate-emitting host tool (`apt-manifest`, a SIMPLE
+        // command — the dialect parser rejects the pipe/loop a raw `dpkg -L | sed` would need,
+        // surfaced 24E-build). The static tracer ⊤s on it (NonPrintfCommand) ⇒ escalate.
+        let authored = "\
+apt-get.touches() {
+   verb=$1; shift
+   case $verb in
+   install) apt-manifest \"$1\" ;;
+   esac
+}";
+        let mut i = Interner::default();
+        let set = TouchesSet::lift(&mut i, authored);
+        assert!(set.diags.is_empty(), "clean lift: {:?}", set.diags);
+        let provider = set.value.providers().next().expect("one provider");
+        let t = set.value.get(provider).expect("the touches funcdef");
+        let stripped = strip_touches(authored, t, &i);
+        assert!(
+            stripped.starts_with("apt_get__touches()"),
+            "funcname mangled to the touches suffix: {stripped}"
+        );
+        assert!(
+            stripped.contains("apt-manifest \"$1\""),
+            "the host-tool call survives verbatim (the static tracer would ⊤ on it): {stripped}"
+        );
+        assert!(
+            !stripped.contains(".touches("),
             "no period name remains: {stripped}"
         );
     }
