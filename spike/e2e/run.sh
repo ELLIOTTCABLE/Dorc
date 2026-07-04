@@ -616,18 +616,23 @@ argv_echo_check() {
 # The license filter (replace/omit ONLY — `run` is NOT a license) lives HERE, not in the caller,
 # so cf-3 can feed a `run` line and prove the judge ignores it.
 dual_rail_judge() {
-  _jbare=$1; _japply=$2; _jdisp=$3; _jshims=$4
+  _jbare=$1; _japply=$2; _jdisp=$3; _jshims=$4; _jguardcmds=$5
   _viol=""
-  # The LICENSE LEDGER: resolved argvs of replace/omit sites only. A `run` disposition never
-  # enters here (cf-3's invariant). TOP is kept (wildcard-matched below).
-  _jledger=$(printf '%s\n' "$_jdisp" | sed -nE 's/^argv [0-9]+ (replace|omit) (.+)$/\2/p')
+  # The LICENSE LEDGER: resolved argvs of replace/omit/GUARD sites (23A §5 widening — a guard
+  # licenses its OWN suppressed mutator, cf-6). A `run` disposition never enters here (cf-3's
+  # invariant). TOP is kept (wildcard-matched below).
+  _jledger=$(printf '%s\n' "$_jdisp" | sed -nE 's/^argv [0-9]+ (replace|omit|guard) (.+)$/\2/p')
   _oldifs=$IFS; IFS='
 '
-  # (i) apply ⊆ bare — the apply never runs anything NEW. (door-4-era amends this: an apply could
-  # synthesize a last-second re-probe with no bare counterpart; widen direction (i) then.)
+  # (i) apply ⊆ bare — the apply never runs anything NEW, EXCEPT a guard's own check-command (the
+  # guard's live check runs at apply, absent from the bare book — 23A §5). A `guardcmd <argv0>`
+  # ledger line allowlists exactly those argv0s; an UNRELATED apply-only line still screams (cf-5).
   for _al in $_japply; do
     [ -z "$_al" ] && continue
-    printf '%s\n' "$_jbare" | grep -qxF "$_al" || _viol="${_viol}apply-only (ran in apply, not in bare): $_al
+    printf '%s\n' "$_jbare" | grep -qxF "$_al" && continue    # in bare ⇒ not apply-only
+    _alcmd0=${_al%% *}
+    printf '%s\n' "$_jguardcmds" | grep -qxF "$_alcmd0" && continue   # a guard's own check-command
+    _viol="${_viol}apply-only (ran in apply, not in bare): $_al
 "
   done
   # (ii) every bare-only line attributable to a replace/omit ledger entry (TOP-wildcard).
@@ -675,8 +680,11 @@ dual_rail_check() {
   _case=$1; _dir=$2; _shims=$3
   shift 3
   _mocks=$(CDPATH= cd -- "${_dir}mocks" && pwd)
-  # RAW disposition ledger: every `argv …` line (the judge filters to replace/omit itself).
-  _disp=$("$dorc" --debug-argv --book="${_dir}book.sh" "$@" < "${_dir}probe-results.txt" 2>&1 >/dev/null | grep '^argv ' || true)
+  # RAW `--debug-argv` readout: the disposition ledger (`argv …`; the judge filters to
+  # replace/omit/guard) PLUS the guard check-command allowlist (`guardcmd <argv0>`, 23A §5).
+  _dbg=$("$dorc" --debug-argv --book="${_dir}book.sh" "$@" < "${_dir}probe-results.txt" 2>&1 >/dev/null)
+  _disp=$(printf '%s\n' "$_dbg" | grep '^argv ' || true)
+  _guardcmds=$(printf '%s\n' "$_dbg" | sed -nE 's/^guardcmd (.+)$/\1/p' || true)
   # rail-1: bare book (shared capture_run, file mode).
   _book=$(CDPATH= cd -- "$_dir" && pwd)/book.sh
   _bare=$(capture_run file "$_book" "$_mocks")
@@ -684,7 +692,7 @@ dual_rail_check() {
   _apply_art=$("$dorc" --book="${_dir}book.sh" "$@" < "${_dir}probe-results.txt" 2>/dev/null \
     | awk 'BEGIN{c=0} /^#!\/bin\/sh/{c++} c>=2{print}')
   _apply=$(capture_run stdin "$_apply_art" "$_mocks")
-  _viol=$(dual_rail_judge "$_bare" "$_apply" "$_disp" "$_shims")
+  _viol=$(dual_rail_judge "$_bare" "$_apply" "$_disp" "$_shims" "$_guardcmds")
   [ -z "$_viol" ] && return 0
   if [ "${XFAIL_ACTIVE:-}" != "1" ]; then
     echo "FAIL  $_case  [gate-6: apply/bare run-set delta not covered by the license ledger (cm-1 dual-rail)]"
@@ -704,27 +712,27 @@ dual_rail_selftest() {
   # cf-1: an apply-only line (apply ran something absent from bare) ⇒ must scream (direction (i):
   # the apply must never run anything the bare book didn't).
   _r=$(dual_rail_judge "instpkg install nginx" "instpkg install nginx
-systemctl restart sshd" "argv 1 run instpkg install nginx" "$_st_shims")
+systemctl restart sshd" "argv 1 run instpkg install nginx" "$_st_shims" "")
   case $_r in *apply-only*) ;; *) _fails="${_fails}cf-1 (apply-only line not caught)
 " ;; esac
   # cf-2: an unattributable bare-only line — bare ran a shimmed cmd that the apply elided, with NO
   # replace/omit license covering it ⇒ must scream (direction (ii): the under-execute disaster).
   _r=$(dual_rail_judge "instpkg install nginx
-systemctl restart sshd" "instpkg install nginx" "argv 1 run instpkg install nginx" "$_st_shims")
+systemctl restart sshd" "instpkg install nginx" "argv 1 run instpkg install nginx" "$_st_shims" "")
   case $_r in *unattributable*) ;; *) _fails="${_fails}cf-2 (unattributable bare-only not caught)
 " ;; esac
   # cf-3: the bare-only line IS covered by a ledger entry, but that entry's disposition is `run`
   # (NOT replace/omit) ⇒ must STILL scream. `run` is not a license — only replace/omit attribute.
   # This is the load-bearing confound: it proves the judge's replace/omit filter actually fires
   # (a judge that attributed via ANY disposition would wrongly pass this).
-  _r=$(dual_rail_judge "systemctl restart sshd" "" "argv 7 run systemctl restart sshd" "$_st_shims")
+  _r=$(dual_rail_judge "systemctl restart sshd" "" "argv 7 run systemctl restart sshd" "$_st_shims" "")
   case $_r in *unattributable*) ;; *) _fails="${_fails}cf-3 (a `run`-disposition entry wrongly attributed an elided line)
 " ;; esac
   # cf-PASS (negative control): a converged loop's TOP-wildcard `replace` ledger DOES license its
   # concrete bare members ⇒ must NOT scream (proves the wildcard isn't vacuously failing — and
   # that cf-1..3's screams are real discrimination, not a judge that rejects everything).
   _r=$(dual_rail_judge "instpkg install nginx
-instpkg install curl" "" "argv 0 replace instpkg install TOP" "$_st_shims")
+instpkg install curl" "" "argv 0 replace instpkg install TOP" "$_st_shims" "")
   case $_r in "") ;; *) _fails="${_fails}cf-PASS (TOP-wildcard failed to license a converged member: $_r)
 " ;; esac
   # cf-5 (guard-disposition forward-lock, 23C-fd5): once gate-6 is WIDENED to admit a `guard`
@@ -741,8 +749,18 @@ instpkg install curl" "" "argv 0 replace instpkg install TOP" "$_st_shims")
   # license semantics, so a non-scream assertion there would wrongly fire this FATAL now. Add
   # cf-6 when the judge learns to attribute a guard's own site.)
   _r=$(dual_rail_judge "instpkg install nginx" "instpkg install nginx
-systemctl restart sshd" "argv 2 guard instpkg install curl" "$_st_shims")
+systemctl restart sshd" "argv 2 guard instpkg install curl" "$_st_shims" "")
   case $_r in *apply-only*) ;; *) _fails="${_fails}cf-5 (a guard disposition wrongly licensed an unrelated apply-only line)
+" ;; esac
+  # cf-6 (the paired non-scream control cf-5 deferred until the judge learned guard semantics):
+  # a guard licensing its OWN suppressed mutator ⇒ must NOT scream. bare ran the mutator
+  # (`instpkg install nginx`); the apply's guard short-circuited it after running its check
+  # (`dpkg-query nginx`) — an apply-only line the `guardcmd dpkg-query` allowlist admits (direction
+  # i), and the guard ledger entry licenses the bare-only mutator (direction ii, 23A §5). BOTH
+  # widened directions must stay silent here. Together with cf-5 (an UNRELATED apply-only line
+  # STILL screams) this pins the widening as DISCRIMINATION, not a blanket whitelist.
+  _r=$(dual_rail_judge "instpkg install nginx" "dpkg-query nginx" "argv 2 guard instpkg install nginx" "$_st_shims" "dpkg-query")
+  case $_r in "") ;; *) _fails="${_fails}cf-6 (a guard's own suppressed mutator + check-command was wrongly screamed: $_r)
 " ;; esac
   if [ -n "$_fails" ]; then
     echo "FATAL  dual_rail_selftest FAILED — the cm-1 judge does not scream as required; aborting:" >&2
