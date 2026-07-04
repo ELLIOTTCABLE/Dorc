@@ -1,0 +1,5 @@
+#!/bin/sh
+# INERT probe shim for `dpkg-query -W <pkg>` (the package kind's probe) — this host has nginx
+# installed (rc 0 ⇒ holds), so site 0's convergence probe reports holds. Read-only; logs argv.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
