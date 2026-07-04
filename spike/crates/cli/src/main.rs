@@ -643,103 +643,13 @@ fn build_vouches(
     interner: &mut Interner,
     advisory: bool,
 ) -> dorc_plan::Vouches {
-    use dorc_analysis::effect::SkipClass;
-    use dorc_analysis::value::ValueOf;
-    use dorc_oracle::predict::{map_provider_name, strip_verdict};
-    use dorc_oracle::verdict::{VerdictResolution, VerdictSet, evaluate_verdict};
-
-    let verdict_sets: Vec<VerdictSet> = oracle_refs
-        .iter()
-        .map(|src| {
-            let lifted = VerdictSet::lift(interner, src);
-            // Surface lift diagnostics as-is (inv-top-reject): the tc-verdict-return softening is
-            // reverted (find-return-vouches, 24C) — return-is-decline + the in-dialect arity gate
-            // mean no corpus verdict body ⊤-rejects; one that does is genuinely out of dialect.
-            report_at(advisory, "verdict", &lifted.diags);
-            lifted.value
-        })
-        .collect();
-
-    let mut vouches = dorc_plan::Vouches::new();
-    for (node, class) in classes {
-        // A vouch is consumed only at an establish-bearing site; computing it for both
-        // EstablishAmbient (Part B's elide-weld) and EstablishWritten (Part A's guard) is
-        // future-proof and inert where unused (only the guard arm + `is_vouched` consult it).
-        let fact = match class {
-            SkipClass::EstablishAmbient(f) | SkipClass::EstablishWritten(f) => *f,
-            _ => continue,
-        };
-        // Resolve the site's argv → (provider, operands), all literal — a ⊤ word ⇒ no vouch.
-        let argv = value.argv_values(*node);
-        let Some((first, rest)) = argv.split_first() else {
-            continue;
-        };
-        let ValueOf::Literal(provider) = first else {
-            continue; // ⊤ command word
-        };
-        let mut op_texts = Vec::with_capacity(rest.len());
-        let mut has_top = false;
-        for w in rest {
-            match w {
-                ValueOf::Literal(s) => op_texts.push(interner.resolve(*s).to_owned()),
-                ValueOf::Top => {
-                    has_top = true;
-                    break; // a ⊤ operand ⇒ the argparse cannot resolve ⇒ no vouch (P-topargv)
-                }
-            }
-        }
-        if has_top {
-            continue;
-        }
-        let op_refs: Vec<&str> = op_texts.iter().map(String::as_str).collect();
-
-        // Find the provider's verdict funcdef (shared hyphen↔underscore convention, like the
-        // probe/footprint lifts) and trace it over the operands.
-        let want = map_provider_name(interner.resolve(*provider));
-        let found = verdict_sets.iter().zip(oracle_refs).find_map(|(set, src)| {
-            set.providers()
-                .find(|p| map_provider_name(interner.resolve(*p)) == want)
-                .and_then(|p| set.get(p))
-                .map(|(verdict, sense)| (*src, verdict, sense))
-        });
-        let Some((src, verdict, sense)) = found else {
-            continue;
-        };
-        // The reached-path license (rul-guard-license): ONLY a Vouched resolution mints. A Declined
-        // or ⊤ ⇒ no vouch ⇒ run — the witness's reached-path component is load-bearing exactly at
-        // hz-refusepath (a refuse path that returns 0 vacuously must never license a skip).
-        if !matches!(
-            evaluate_verdict(verdict, &op_refs),
-            VerdictResolution::Vouched
-        ) {
-            continue;
-        }
-
-        // The guard emitter's data. `fn_name` mirrors `strip_verdict`'s mangling so the shipped
-        // preamble def and the guard invocation agree byte-for-byte.
-        let fn_name = format!(
-            "{}{}",
-            dorc_oracle::to_funcname_segment(interner.resolve(verdict.provider)),
-            sense.mangled_suffix()
-        );
-        let preamble = strip_verdict(src, verdict, interner, sense.mangled_suffix());
-        let invocation = if op_refs.is_empty() {
-            fn_name.clone()
-        } else {
-            format!("{fn_name} {}", op_refs.join(" "))
-        };
-        let kind_label = interner.resolve(fact.kind.0).to_owned();
-        // The verdict body's own check-commands (gate-6 `guardcmd` attribution — 23A §5).
-        let check_cmds = dorc_oracle::verdict::check_commands(verdict);
-        let vouch = dorc_plan::VerdictVouch::new(
-            fn_name, preamble, invocation, sense, kind_label, check_cmds,
-        );
-        vouches.insert(
-            *node,
-            dorc_core::ByVouch::vouched(vouch, dorc_core::Rung::Both),
-        );
-    }
-    vouches
+    // The composition lives in `dorc_plan::build_vouches` (the ONE home — the sweep/coverage DSTs
+    // share it). This edge only ROUTES the lift diagnostics: surfaced AS-IS (inv-top-reject — the
+    // tc-verdict-return softening is reverted, find-return-vouches 24C), so a genuinely
+    // out-of-dialect verdict body fails gate-3's error-floor rather than degrading silently.
+    let lifted = dorc_plan::build_vouches(oracle_refs, classes, value, interner);
+    report_at(advisory, "verdict", &lifted.diags);
+    lifted.value
 }
 
 /// gate-5 / cm-2 readout: per command site, emit `argv <leafid> <disposition> <word|TOP
@@ -1774,6 +1684,8 @@ mod tests {
             &parsed.value,
             &cfg.value,
             &classes,
+            // All-Unknown ⇒ nothing elides regardless of any vouch; empty is honest here.
+            &dorc_plan::Vouches::new(),
             |_| Observable::verdict_only(Verdict::Unknown),
             &mut arena,
         );

@@ -15,3 +15,18 @@ apt_get__predict() {
       esac
    fi
 }
+
+# THE VOUCH (elide-weld, 24D §3): one apt-get provider serves BOTH package (install) and pkgindex
+# (update), so ONE verdict function covers both establish verbs (build_vouches keys by provider,
+# not by kind — a second `apt-get.is_converged` in pkgindex.oracle.sh would shadow this one).
+# Declines purge + unknown via `*) return 2`.
+apt-get.is_converged() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   case $verb in
+      install) dpkg-query -W "$1" >/dev/null 2>&1 ;;
+      update) test -n fresh ;;
+      *) return 2 ;;
+   esac
+}

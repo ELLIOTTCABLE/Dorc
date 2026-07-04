@@ -185,9 +185,36 @@ fn plan_for(src: &str, holds: &[(&str, &str)]) -> Plan {
         &parsed.value,
         &cfg,
         &classes,
+        &vouch_all(&classes),
         observe,
         &mut dorc_core::ProvArena::new(),
     )
+}
+
+/// Test convenience (elide-weld, 24D §3): vouch EVERY establish-bearing site so these matrix
+/// tests keep exercising elision MECHANICS. The vouch GATE is pinned elsewhere (plan's
+/// `no_license_for_ambient_without_vouch` + e2e + the FAITHFUL sweep/coverage verdict-lift).
+fn vouch_all(classes: &[(dorc_analysis::cfg::CfgNodeId, SkipClass)]) -> dorc_plan::Vouches {
+    let mut vouches = dorc_plan::Vouches::new();
+    for (node, class) in classes {
+        // Ambient-only: a vouched+converged EstablishWritten fires the guard tier, which the
+        // matrix does not exercise (elide-weld's concern is EstablishAmbient — 24D §3).
+        if matches!(class, SkipClass::EstablishAmbient(_)) {
+            let vouch = dorc_plan::VerdictVouch::new(
+                "apt_get__is_converged".to_string(),
+                "apt_get__is_converged() { dpkg-query -W \"$1\" >/dev/null 2>&1; }".to_string(),
+                "apt_get__is_converged".to_string(),
+                dorc_oracle::verdict::VerdictSense::Converged,
+                "package".to_string(),
+                vec!["dpkg-query".to_string()],
+            );
+            vouches.insert(
+                *node,
+                dorc_core::ByVouch::vouched(vouch, dorc_core::Rung::Both),
+            );
+        }
+    }
+    vouches
 }
 
 /// Is the leaf whose verbatim text contains `needle` **replaced** (elided to a value-
@@ -402,6 +429,7 @@ fn andor_left_operand_undeclared_rc_runs_kfail_perform() {
         &parsed.value,
         &cfg,
         &classes,
+        &vouch_all(&classes),
         observe,
         &mut dorc_core::ProvArena::new(),
     );
@@ -695,6 +723,7 @@ fn spec_set_e_pure_at_effect_layer_but_c3_status_blocks() {
         &parsed.value,
         &cfg,
         &classes,
+        &vouch_all(&classes),
         observe,
         &mut dorc_core::ProvArena::new(),
     );
@@ -838,6 +867,7 @@ fn plan_query_and_ast(
         &parsed.value,
         &cfg,
         &classes,
+        &vouch_all(&classes),
         observe,
         &mut dorc_core::ProvArena::new(),
     );
@@ -1121,6 +1151,7 @@ fn plan_and_ast(src: &str, holds: &[(&str, &str)]) -> (Plan, dorc_syntax::ast::A
         &parsed.value,
         &cfg,
         &classes,
+        &vouch_all(&classes),
         observe,
         &mut dorc_core::ProvArena::new(),
     );

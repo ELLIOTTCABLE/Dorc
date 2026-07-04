@@ -1,7 +1,9 @@
 # guard23-no-vouch-runs (rul-guard-license: "No vouch => run" — the flagship's CONTROL, a
 # PASSING floor that must never regress). Same shape as guard23-ternary-flagship, but the
 # package oracle carries NO converged-vouch. site 0 (nginx, converged, before the wall)
-# elides on probe-facts exactly as at HEAD; site 1 (hork) is the opaque wall; site 2
+# elided VOUCHLESSLY at HEAD — but Part B (the elide-weld, 24D §3) closes exactly that gap: a
+# full skip now DEMANDS a reached vouch, so with no converged-vouch site 0 RUNS too (both
+# elide-tier and guard-tier now agree "no vouch => run"). site 1 (hork) is the opaque wall; site 2
 # (curl, converged-past-wall) has NO vouch => NO witness => runs BARE, forever. If a build
 # ever mints a guard here — from the effect-map headline, from the probe verdict, from
 # anything but an explicit converged-vouch — this case goes red: that is the claim-noop

@@ -60,6 +60,38 @@ use dorc_core::{
 use dorc_plan::erasability::{canonical_decision, decision_digest};
 use dorc_plan::{ProbePlan, build_plan, compile_probe};
 
+/// Test convenience (elide-weld, 24D §3): vouch EVERY establish-bearing site so these erasability
+/// digests keep exercising the elision plane. The vouch GATE is pinned elsewhere (plan's
+/// `no_license_for_ambient_without_vouch` + e2e + the FAITHFUL sweep/coverage verdict-lift).
+fn vouch_all(
+    classes: &[(
+        dorc_analysis::cfg::CfgNodeId,
+        dorc_analysis::effect::SkipClass,
+    )],
+) -> dorc_plan::Vouches {
+    use dorc_analysis::effect::SkipClass;
+    let mut vouches = dorc_plan::Vouches::new();
+    for (node, class) in classes {
+        // Ambient-only: a vouched+converged EstablishWritten fires the guard tier, out of scope
+        // for the erasability digests (elide-weld's concern is EstablishAmbient — 24D §3).
+        if matches!(class, SkipClass::EstablishAmbient(_)) {
+            let vouch = dorc_plan::VerdictVouch::new(
+                "apt_get__is_converged".to_string(),
+                "apt_get__is_converged() { dpkg-query -W \"$1\" >/dev/null 2>&1; }".to_string(),
+                "apt_get__is_converged".to_string(),
+                dorc_oracle::verdict::VerdictSense::Converged,
+                "package".to_string(),
+                vec!["dpkg-query".to_string()],
+            );
+            vouches.insert(
+                *node,
+                dorc_core::ByVouch::vouched(vouch, dorc_core::Rung::Both),
+            );
+        }
+    }
+    vouches
+}
+
 /// R3 test seam: resolve+strip the check a probe site ships, from `src` — the same resolution
 /// the cli's `ship_predict_body` runs (first check whose provider matches + whose argparse
 /// resolves the argv). `None` ⇒ un-shippable.
@@ -209,7 +241,15 @@ fn run_pipeline(book: &str, variation: ArenaMode) -> RunOutcome {
             Observable::verdict_only(Verdict::Diverged)
         }
     };
-    let plan = build_plan(book, &parsed.value, &cfg, &classes, observe, &mut arena);
+    let plan = build_plan(
+        book,
+        &parsed.value,
+        &cfg,
+        &classes,
+        &vouch_all(&classes),
+        observe,
+        &mut arena,
+    );
 
     // Tally the dispositions so the canary can prove the elision plane was actually exercised
     // (the anti-masking floor: a fixture set that NEVER elides cannot test receipt-inertness of
@@ -373,7 +413,15 @@ fn digest_is_receipt_invariant_across_runs() {
                 Observable::verdict_only(Verdict::Diverged)
             }
         };
-        let plan = build_plan(book, &parsed.value, &cfg, &classes, observe, &mut arena);
+        let plan = build_plan(
+            book,
+            &parsed.value,
+            &cfg,
+            &classes,
+            &vouch_all(&classes),
+            observe,
+            &mut arena,
+        );
         decision_digest(&plan, &probe, book, &parsed.value, i, &[])
     };
 

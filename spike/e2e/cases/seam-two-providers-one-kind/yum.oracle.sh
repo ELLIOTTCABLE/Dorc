@@ -15,3 +15,14 @@ yum__predict() {
       esac
    fi
 }
+
+# THE VOUCH (elide-weld, 24D §3): vouches install (establish); declines remove + unknown.
+yum.is_converged() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   case $verb in
+      install) rpm -q "$1" >/dev/null 2>&1 ;;
+      *) return 2 ;;
+   esac
+}

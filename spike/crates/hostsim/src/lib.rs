@@ -314,6 +314,40 @@ apt_get__predict() {
 }
 "#;
 
+    /// Test convenience (elide-weld, 24D §3): vouch EVERY establish-bearing site so these DSTs keep
+    /// exercising elision MECHANICS (convergence × wall). The vouch GATE is pinned elsewhere (plan's
+    /// `no_license_for_ambient_without_vouch` + the FAITHFUL sweep/coverage verdict-lift + e2e); a
+    /// synthetic vouch (no oracle lift) keeps the DST focused, and its payload is inert (the elide
+    /// mint consumes the vouch as the TIER check, never reads its bytes).
+    fn vouch_all(
+        classes: &[(
+            dorc_analysis::cfg::CfgNodeId,
+            dorc_analysis::effect::SkipClass,
+        )],
+    ) -> dorc_plan::Vouches {
+        use dorc_analysis::effect::SkipClass;
+        let mut vouches = dorc_plan::Vouches::new();
+        for (node, class) in classes {
+            // Ambient-only: a vouched+converged EstablishWritten fires the guard tier, which these
+            // elision DSTs do not exercise (elide-weld's concern is EstablishAmbient — 24D §3).
+            if matches!(class, SkipClass::EstablishAmbient(_)) {
+                let vouch = dorc_plan::VerdictVouch::new(
+                    "apt_get__is_converged".to_string(),
+                    "apt_get__is_converged() { dpkg-query -W \"$1\" >/dev/null 2>&1; }".to_string(),
+                    "apt_get__is_converged".to_string(),
+                    dorc_oracle::verdict::VerdictSense::Converged,
+                    "package".to_string(),
+                    vec!["dpkg-query".to_string()],
+                );
+                vouches.insert(
+                    *node,
+                    dorc_core::ByVouch::vouched(vouch, dorc_core::Rung::Both),
+                );
+            }
+        }
+        vouches
+    }
+
     /// R3 test seam: resolve+strip the corpus check for a site's (provider, argv) — the same
     /// resolution the cli's `ship_predict_body` runs. `None` ⇒ un-shippable (un-oracled provider).
     fn ship_corpus(
@@ -527,6 +561,7 @@ apt_get__predict() {
                 &parsed.value,
                 &cfg,
                 &classes,
+                &vouch_all(&classes),
                 |f| host.observe(f),
                 &mut arena,
             );
@@ -653,6 +688,7 @@ apt_get__predict() {
                 &parsed.value,
                 &cfg,
                 &classes,
+                &vouch_all(&classes),
                 observe,
                 &mut dorc_core::ProvArena::new(),
             );
@@ -756,6 +792,8 @@ apt_get__predict() {
             &parsed.value,
             &cfg,
             &classes,
+            // The site is unprobeable ⇒ Unknown ⇒ runs regardless of any vouch; empty is honest.
+            &dorc_plan::Vouches::new(),
             observe,
             &mut dorc_core::ProvArena::new(),
         );

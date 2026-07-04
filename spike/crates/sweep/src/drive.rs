@@ -73,9 +73,10 @@ pub fn run_kernel(declared: &DeclaredScenario, s0: &Host, flag_on: bool, i: &mut
         let ship = |provider: Symbol, argv: &[Symbol]| {
             ship_predict_body(ORACLE_SH, &checks, i, provider, argv)
         };
-        // The sweep exercises the elision/survival soundness net, not the guard tier: no site is
-        // vouched (guard scenarios are a Stage-3 stretch, tc-flagged in the report), so no past-wall
-        // EstablishWritten site ships a probe here.
+        // The sweep exercises the elision/survival soundness net, not the GUARD tier: no
+        // EstablishWritten site ships a guard probe (`is_vouched: |_| false` — guard scenarios are a
+        // Stage-3 stretch, tc-flagged in the report). The ELIDE vouches (below) are separate — an
+        // ambient site always ships its probe, and the elide-weld demands its vouch.
         dorc_plan::compile_probe(&parsed.value, &cfg, &value, &classes, ship, |_| false)
     };
 
@@ -87,6 +88,13 @@ pub fn run_kernel(declared: &DeclaredScenario, s0: &Host, flag_on: bool, i: &mut
         None
     };
 
+    // The elide-weld (24D §3): a converged ambient site elides ONLY with a reached vouch. Thread
+    // them via the shared `dorc_plan::build_vouches` (the SAME composition the cli drives), or
+    // every `install` victim would run and the net's elision coverage would vanish. Always-on
+    // (independent of `flag_on`, which gates only the survival tier); the lift diags are dropped
+    // (the net asserts on behaviour, not stderr text).
+    let vouches = dorc_plan::build_vouches(&[ORACLE_SH], &classes, &value, i).value;
+
     dorc_plan::build_plan_walled(
         &declared.book_sh,
         &parsed.value,
@@ -94,7 +102,7 @@ pub fn run_kernel(declared: &DeclaredScenario, s0: &Host, flag_on: bool, i: &mut
         &classes,
         &kills,
         survival.as_ref(),
-        &dorc_plan::Vouches::new(),
+        &vouches,
         |f| {
             if probe.checks_fact(f) {
                 s0.observe(f)

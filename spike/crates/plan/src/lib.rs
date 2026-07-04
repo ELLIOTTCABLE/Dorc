@@ -40,7 +40,8 @@ use dorc_analysis::effect::{FactKey, InlineSite, SkipClass};
 use dorc_analysis::lattice::{May, Powerset};
 use dorc_analysis::value::{ValueFlow, ValueOf};
 use dorc_core::{
-    AstId, ByVouch, Channel, EntityRef, Grade, Interner, Observable, Predicted, Rc, Symbol, Verdict,
+    AstId, ByVouch, Carrier, Channel, EntityRef, Grade, Interner, Observable, Predicted, Rc, Rung,
+    Symbol, Verdict,
 };
 use dorc_oracle::verdict::VerdictSense;
 use dorc_syntax::ast::{Ast, NodeKind, RedirOp, RedirTarget};
@@ -307,10 +308,21 @@ impl ReplaceLicense {
     /// convergence-elision precondition above; a [`SkipClass::QueryResolvable`] takes
     /// the Query-guard path ([`prove_query_replaceable`](ReplaceLicense::prove_query_replaceable)).
     /// Any other class never licenses.
+    ///
+    /// **The elide-weld (24D §3 / rul24-vouch-is-verdict-authoring).** The full-skip (elide)
+    /// license now DEMANDS the reached `vouch` — the SAME [`ByVouch<VerdictVouch>`] the guard mint
+    /// consumes (TC-tier-2). It arrives as an `Option` (the caller's [`Vouches`] lookup); the
+    /// `EstablishAmbient` arm consumes it BY VALUE, and that consumption IS the tier check — a
+    /// [`core::claim::ByObservation`] or [`core::claim::BySilence`] cannot inhabit
+    /// `Option<ByVouch<_>>`, so a measurement alone can never license a mutation-skip
+    /// (proviso-read-erasure, `24A §1c`: the fact tier licenses read-reproduction, NEVER a
+    /// mutation-skip). **No vouch ⇒ `None` ⇒ run** — the safe direction (kFAIL-perform), closing
+    /// the HEAD vouchless-elide gap. The Query-guard arm IGNORES `vouch`: a read-only substitution
+    /// IS read-reproduction, licensed by the fact tier, never demanding a vouch.
     #[must_use]
     #[expect(
         clippy::needless_pass_by_value,
-        reason = "by-value verdict/consumed keeps this minting API a clean owned-args boundary; not widened speculatively (plan/CLAUDE.md)"
+        reason = "by-value verdict/consumed/vouch keeps this minting API a clean owned-args boundary; the vouch is CONSUMED as the tier check (24D §3), never needless"
     )]
     pub fn prove_replaceable<P: Bias>(
         class: &SkipClass,
@@ -318,9 +330,14 @@ impl ReplaceLicense {
         verdict: PhasedVerdict<P>,
         consumed: May<Powerset<Channel>>,
         status: Predicted<Rc>,
+        vouch: Option<ByVouch<VerdictVouch>>,
     ) -> Option<ReplaceLicense> {
         match class {
             SkipClass::EstablishAmbient(fact) => {
+                // The elide-weld (TC-tier-2): consume the reached vouch BY VALUE — no vouch ⇒ run.
+                // A `ByObservation`/`BySilence` cannot inhabit this `Option`, so a converged
+                // measurement alone no longer elides (the vouchless-elide gap, closed).
+                let _vouch: ByVouch<VerdictVouch> = vouch?;
                 if grade != Grade::Must {
                     return None;
                 }
@@ -877,6 +894,109 @@ impl GuardLicense {
 /// edge builds it ALWAYS-ON — guards are the un-flagged baseline (rul24-mode-gate; NOT
 /// `--trust-footprints`-gated, which governs only the survival tier).
 pub type Vouches = BTreeMap<CfgNodeId, ByVouch<VerdictVouch>>;
+
+/// Lift the per-site VOUCHES (24D §3 elide-weld / rul-guard-license / rul24-vouch-is-verdict-
+/// authoring) — the ONE home for the composition every driver shares (the cli, the sweep net, the
+/// coverage dashboard, the hostsim DST). For each establish-bearing site whose provider authored a
+/// verdict function (`<provider>.is_converged`/`.is_diverged`) that REACHES a vouching path over
+/// the site's constant-propagated argv (`evaluate_verdict` ⇒ `Vouched`), it builds one
+/// [`ByVouch<VerdictVouch>`] keyed by the site's [`CfgNodeId`]. A site ABSENT from the map has no
+/// reached vouch ⇒ it never elides (the elide-weld, [`ReplaceLicense::prove_replaceable`]) and
+/// never guards (no vouch ⇒ run) — the judgment tier the map carries is exactly what the mints
+/// DEMAND (TC-tier-2). A `return N` decline, a ⊤/non-literal argv, or no verdict function ⇒
+/// absence. Fail-soft ([`Carrier`]): the verdict-lift diagnostics ride out for the caller to
+/// surface (the cli's gate-3 error-floor; the DSTs drop them). `inv-referent-agnostic`: the kind
+/// label + operands are resolved for the invocation/attribution, never decoded (the 24A §1b fence).
+#[must_use]
+pub fn build_vouches(
+    oracle_srcs: &[&str],
+    classes: &[(CfgNodeId, SkipClass)],
+    value: &ValueFlow,
+    interner: &mut Interner,
+) -> Carrier<Vouches> {
+    use dorc_oracle::predict::{map_provider_name, strip_verdict};
+    use dorc_oracle::verdict::{VerdictResolution, VerdictSet, check_commands, evaluate_verdict};
+
+    let mut diags = Vec::new();
+    let verdict_sets: Vec<VerdictSet> = oracle_srcs
+        .iter()
+        .map(|src| {
+            let lifted = VerdictSet::lift(interner, src);
+            diags.extend(lifted.diags);
+            lifted.value
+        })
+        .collect();
+
+    let mut vouches = Vouches::new();
+    for (node, class) in classes {
+        // A vouch is consumed only at an establish-bearing site (elide: EstablishAmbient; guard:
+        // EstablishWritten). Computing both is future-proof and inert where unused.
+        let fact = match class {
+            SkipClass::EstablishAmbient(f) | SkipClass::EstablishWritten(f) => *f,
+            _ => continue,
+        };
+        // Resolve the site's argv → (provider, operands), all literal — a ⊤ word ⇒ no vouch.
+        let argv = value.argv_values(*node);
+        let Some((first, rest)) = argv.split_first() else {
+            continue;
+        };
+        let ValueOf::Literal(provider) = first else {
+            continue;
+        };
+        let mut op_texts = Vec::with_capacity(rest.len());
+        let mut has_top = false;
+        for w in rest {
+            match w {
+                ValueOf::Literal(s) => op_texts.push(interner.resolve(*s).to_owned()),
+                ValueOf::Top => {
+                    has_top = true;
+                    break;
+                }
+            }
+        }
+        if has_top {
+            continue;
+        }
+        let op_refs: Vec<&str> = op_texts.iter().map(String::as_str).collect();
+
+        // Find the provider's verdict funcdef (shared hyphen↔underscore convention) and trace it.
+        let want = map_provider_name(interner.resolve(*provider));
+        let found = verdict_sets.iter().zip(oracle_srcs).find_map(|(set, src)| {
+            set.providers()
+                .find(|p| map_provider_name(interner.resolve(*p)) == want)
+                .and_then(|p| set.get(p))
+                .map(|(verdict, sense)| (*src, verdict, sense))
+        });
+        let Some((src, verdict, sense)) = found else {
+            continue;
+        };
+        // The reached-path license (rul-guard-license): ONLY a Vouched resolution mints. A Declined
+        // (unhandled path / a `return N` — hz-refusepath) or ⊤ ⇒ no vouch ⇒ run.
+        if !matches!(
+            evaluate_verdict(verdict, &op_refs),
+            VerdictResolution::Vouched
+        ) {
+            continue;
+        }
+
+        let fn_name = format!(
+            "{}{}",
+            dorc_oracle::to_funcname_segment(interner.resolve(verdict.provider)),
+            sense.mangled_suffix()
+        );
+        let preamble = strip_verdict(src, verdict, interner, sense.mangled_suffix());
+        let invocation = if op_refs.is_empty() {
+            fn_name.clone()
+        } else {
+            format!("{fn_name} {}", op_refs.join(" "))
+        };
+        let kind_label = interner.resolve(fact.kind.0).to_owned();
+        let check_cmds = check_commands(verdict);
+        let vouch = VerdictVouch::new(fn_name, preamble, invocation, sense, kind_label, check_cmds);
+        vouches.insert(*node, ByVouch::vouched(vouch, Rung::Both));
+    }
+    Carrier::new(vouches, diags)
+}
 
 /// What the plan does with one leaf.
 #[derive(Debug, Clone)]
@@ -1471,12 +1591,17 @@ fn push_inline_predicts(
 /// `MustRun`) does NOT wall downstream. Callers that have the kill-node set (the cli, via
 /// [`dorc_analysis::effect::classify_with_why_diags`]) use [`build_plan_walled`] to close
 /// that gap (24A §3). Kept for the callers that do not thread kills (`hostsim`, tests).
+///
+/// Threads `vouches` (24D §3 elide-weld): a converged ambient site elides ONLY with a reached
+/// vouch, so this entry now takes the [`Vouches`] map too (build it with [`build_vouches`]). The
+/// survival tier is still off (`None`) — this entry stays kill-unaware AND flag-off.
 #[must_use]
 pub fn build_plan(
     src: &str,
     ast: &Ast,
     cfg: &Cfg,
     classes: &[(CfgNodeId, SkipClass)],
+    vouches: &Vouches,
     observe: impl Fn(FactKey) -> Observable,
     arena: &mut dorc_core::ProvArena,
 ) -> Plan {
@@ -1487,7 +1612,7 @@ pub fn build_plan(
         classes,
         &BTreeSet::new(),
         None,
-        &Vouches::new(),
+        vouches,
         observe,
         arena,
     )
@@ -1785,7 +1910,17 @@ fn disposition_for(
                 PhasedVerdict::<Probe>::new(observed.map_or(Verdict::Unknown, |o| o.effect));
             let consumed = May(cfg.consumed_observables(node).clone());
             let status = observed.map_or(Predicted::Top, |o| o.status);
-            match ReplaceLicense::prove_replaceable(class, Grade::Must, verdict, consumed, status) {
+            // The elide-weld (24D §3): thread the reached vouch from the `Vouches` map (Part A's
+            // `build_vouches` already populates ambient sites — no re-lift). An ambient site with
+            // no vouch runs; a Query site is never in the map (`None`) and its arm ignores it.
+            match ReplaceLicense::prove_replaceable(
+                class,
+                Grade::Must,
+                verdict,
+                consumed,
+                status,
+                vouch.cloned(),
+            ) {
                 Some(license) => {
                     // The value-preserving stand-in reproduces the predicted Status channel.
                     // An unpredicted status (`Predicted::Top`) falls back to `true` (rc 0) in
@@ -2888,6 +3023,39 @@ apt_get__predict() {
         May(Powerset::default())
     }
 
+    /// A throwaway reached vouch for the elide-weld tests (24D §3) — the SAME shape
+    /// [`Vouches`] carries. Its payload is inert here: the elide-weld consumes the vouch as the
+    /// TIER CHECK, never reads its bytes (contrast the guard mint, which ships them).
+    fn test_vouch() -> ByVouch<VerdictVouch> {
+        ByVouch::vouched(
+            VerdictVouch::new(
+                "apt_get__is_converged".to_string(),
+                "apt_get__is_converged() { dpkg-query -W \"$1\" >/dev/null 2>&1; }".to_string(),
+                "apt_get__is_converged install -y nginx".to_string(),
+                VerdictSense::Converged,
+                "package".to_string(),
+                vec!["dpkg-query".to_string()],
+            ),
+            Rung::Both,
+        )
+    }
+
+    /// Test convenience (elide-weld, 24D §3): vouch every AMBIENT establish site so the
+    /// plan-mechanics helpers keep exercising ELISION. Deliberately NOT `EstablishWritten` — a
+    /// vouched+converged written site fires the GUARD tier (`Disposition::Guard`), which these
+    /// elision/wall/fold tests do not expect (guards are pinned by the guard23 e2e + the guard
+    /// unit tests). The vouch GATE is pinned by [`no_license_for_ambient_without_vouch`] + e2e +
+    /// the FAITHFUL sweep/coverage lift; here a synthetic vouch (no oracle lift) keeps focus.
+    fn vouch_all(classes: &[(CfgNodeId, SkipClass)]) -> Vouches {
+        let mut vouches = Vouches::new();
+        for (node, class) in classes {
+            if matches!(class, SkipClass::EstablishAmbient(_)) {
+                vouches.insert(*node, test_vouch());
+            }
+        }
+        vouches
+    }
+
     // ---- the guard tier (24D §2): mint-policy + emitter shape (rul-ternary-verdict) ----
 
     #[test]
@@ -3108,6 +3276,7 @@ apt_get__predict() {
             PhasedVerdict::new(Verdict::Converged),
             quiet(),
             Predicted::Top,
+            Some(test_vouch()),
         )
         .expect("a converged, ambient, Must fact with no consumption mints a Replace license");
         let step = |leaf: u32, disposition: Disposition| Step {
@@ -3363,6 +3532,7 @@ apt_get__predict() {
             &parsed.value,
             &cfg,
             &classes,
+            &vouch_all(&classes),
             |_f| Observable::verdict_only(Verdict::Diverged),
             &mut dorc_core::ProvArena::new(),
         );
@@ -3396,12 +3566,37 @@ apt_get__predict() {
             PhasedVerdict::<Probe>::new(Verdict::Converged),
             quiet(),
             Predicted::Value(Rc(0)),
+            Some(test_vouch()),
         ) else {
             panic!("ambient + must + converged must license a skip");
         };
         assert_eq!(lic.fact(), f);
         assert!(lic.derivation().ambient);
         assert_eq!(lic.derivation().verdict, Verdict::Converged);
+    }
+
+    #[test]
+    fn no_license_for_ambient_without_vouch() {
+        // The elide-weld (24D §3 / rul24-vouch-is-verdict-authoring): a converged, ambient, Must
+        // fact with NO reached vouch does NOT elide — it runs (kFAIL-perform). This is the HEAD
+        // vouchless-elide gap, closed: the ONLY difference from
+        // `license_minted_for_ambient_must_converged` is `None` vs `Some(test_vouch())`, so a
+        // measurement alone can never license a mutation-skip (proviso-read-erasure). A
+        // `ByObservation`/`BySilence` cannot even be PASSED here (the tier is the compile-check);
+        // `None` is the run-it direction the same signature forces.
+        let f = nginx_fact();
+        assert!(
+            ReplaceLicense::prove_replaceable(
+                &SkipClass::EstablishAmbient(f),
+                Grade::Must,
+                PhasedVerdict::<Probe>::new(Verdict::Converged),
+                quiet(),
+                Predicted::Value(Rc(0)),
+                None,
+            )
+            .is_none(),
+            "a converged ambient Must fact WITHOUT a vouch must not elide (no vouch ⇒ run)"
+        );
     }
 
     #[test]
@@ -3422,6 +3617,7 @@ apt_get__predict() {
                     PhasedVerdict::<Probe>::new(Verdict::Converged),
                     consumed,
                     Predicted::Value(Rc(0)),
+                    Some(test_vouch()),
                 )
                 .is_none(),
                 "a consumed {obs:?} must forbid the stub even with a declared rc"
@@ -3446,6 +3642,7 @@ apt_get__predict() {
                 PhasedVerdict::<Probe>::new(Verdict::Converged),
                 consumed(),
                 Predicted::Top,
+                Some(test_vouch()),
             )
             .is_none(),
             "`&&`/`||`-consumed status + undeclared rc must block (kFAIL-perform floor)"
@@ -3459,6 +3656,7 @@ apt_get__predict() {
                     PhasedVerdict::<Probe>::new(Verdict::Converged),
                     consumed(),
                     Predicted::Value(rc),
+                    Some(test_vouch()),
                 )
                 .is_some(),
                 "`&&`/`||`-consumed status + declared rc {rc:?} licenses (value-preserving)"
@@ -3487,6 +3685,7 @@ apt_get__predict() {
                     PhasedVerdict::<Probe>::new(Verdict::Converged),
                     May(Powerset::singleton(Channel::StatusIterated)),
                     rc,
+                    Some(test_vouch()),
                 )
                 .is_none(),
                 "a loop condition's StatusIterated blocks unconditionally (per-iteration sequence), rc={rc:?}"
@@ -3506,6 +3705,7 @@ apt_get__predict() {
                     PhasedVerdict::<Probe>::new(v),
                     quiet(),
                     Predicted::Value(Rc(0)),
+                    Some(test_vouch()),
                 )
                 .is_none(),
                 "verdict {v:?} must NOT license a skip"
@@ -3524,6 +3724,7 @@ apt_get__predict() {
                 PhasedVerdict::<Probe>::new(Verdict::Converged),
                 quiet(),
                 Predicted::Value(Rc(0)),
+                Some(test_vouch()),
             )
             .is_none()
         );
@@ -3542,6 +3743,7 @@ apt_get__predict() {
                     PhasedVerdict::<Probe>::new(Verdict::Converged),
                     quiet(),
                     Predicted::Value(Rc(0)),
+                    Some(test_vouch()),
                 )
                 .is_none(),
                 "{class:?} must not license a skip"
@@ -3631,6 +3833,7 @@ apt_get__predict() {
             &parsed.value,
             &cfg,
             &classes,
+            &vouch_all(&classes),
             observe,
             &mut dorc_core::ProvArena::new(),
         );
@@ -3676,6 +3879,7 @@ apt_get__predict() {
             &parsed.value,
             &cfg,
             &classes,
+            &vouch_all(&classes),
             observe,
             &mut dorc_core::ProvArena::new(),
         );
@@ -3711,6 +3915,7 @@ apt_get__predict() {
             &parsed.value,
             &cfg,
             &classes,
+            &vouch_all(&classes),
             observe,
             &mut dorc_core::ProvArena::new(),
         );
@@ -4026,7 +4231,7 @@ apt_get__predict() {
             &classes,
             &kills,
             None,
-            &Vouches::new(),
+            &vouch_all(&classes),
             observe,
             &mut arena,
         );
@@ -4165,7 +4370,7 @@ apt_get__predict() {
             &classes,
             &BTreeSet::new(),
             footprints.as_ref(),
-            &Vouches::new(),
+            &vouch_all(&classes),
             observe,
             &mut arena,
         )
@@ -4255,7 +4460,7 @@ apt_get__predict() {
             &classes,
             &BTreeSet::new(),
             Some(&empty),
-            &Vouches::new(),
+            &vouch_all(&classes),
             observe,
             &mut arena,
         )

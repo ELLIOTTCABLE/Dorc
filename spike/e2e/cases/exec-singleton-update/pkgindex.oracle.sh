@@ -10,3 +10,12 @@ apt_get__predict() {
       update) idx : pkgindex; test -n fresh : pkgindex:.fresh ;;
    esac
 }
+
+# THE VOUCH (elide-weld, 24D §3): vouches update (singleton establish); declines unknown.
+apt-get.is_converged() {
+   verb=$1; shift
+   case $verb in
+      update) test -n fresh ;;
+      *) return 2 ;;
+   esac
+}

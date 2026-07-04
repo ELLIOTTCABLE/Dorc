@@ -549,6 +549,20 @@ fn oracle_text(k: &KindSpec) -> String {
         let _ = writeln!(s, "      esac");
         let _ = writeln!(s, "   fi");
         let _ = writeln!(s, "}}");
+        // THE VOUCH (elide-weld, 24D §3): a converged ambient site elides ONLY with a reached
+        // vouch. The verdict function reaches the same probe check on this verb (⇒ Vouched); any
+        // other verb / a second operand DECLINES (`return 2`, rul-rc-partition). An inverted
+        // (kill) verb never reaches an ambient site anyway, so vouching `k.verb` is inert there.
+        let _ = writeln!(s, "{}.is_converged() {{", k.provider);
+        let _ = writeln!(s, "   while [ \"${{1#-}}\" != \"$1\" ]; do shift; done");
+        let _ = writeln!(s, "   verb=$1; shift");
+        let _ = writeln!(s, "   while [ \"${{1#-}}\" != \"$1\" ]; do shift; done");
+        let _ = writeln!(s, "   if [ \"$2\" != \"\" ]; then return 2; fi");
+        let _ = writeln!(s, "   case $verb in");
+        let _ = writeln!(s, "      {}) {probe} \"$1\" ;;", k.verb);
+        let _ = writeln!(s, "      *) return 2 ;;");
+        let _ = writeln!(s, "   esac");
+        let _ = writeln!(s, "}}");
     } else {
         // Verbless (the `command -v X` query shape): the trailing mark keys the ε-verb.
         let _ = writeln!(s, "{}() {{", predict_fn_name(k.provider));
@@ -561,6 +575,13 @@ fn oracle_text(k: &KindSpec) -> String {
             k.kind,
             k.selector
         );
+        let _ = writeln!(s, "}}");
+        // THE VOUCH (elide-weld): a verbless single-operand call reaches the probe check ⇒
+        // Vouched; a second operand DECLINES (`return 2`).
+        let _ = writeln!(s, "{}.is_converged() {{", k.provider);
+        let _ = writeln!(s, "   while [ \"${{1#-}}\" != \"$1\" ]; do shift; done");
+        let _ = writeln!(s, "   if [ \"$2\" != \"\" ]; then return 2; fi");
+        let _ = writeln!(s, "   {probe} \"$1\"");
         let _ = writeln!(s, "}}");
     }
     s

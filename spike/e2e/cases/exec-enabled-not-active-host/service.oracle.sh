@@ -15,3 +15,13 @@ systemctl__predict() {
       disable) systemctl is-enabled -- "$svc" : service:"$svc".enabled! ;;
    esac
 }
+
+# THE VOUCH (elide-weld, 24D §3): vouches enable/start (establishes); declines disable + unknown.
+systemctl.is_converged() {
+   verb=$1; shift
+   case $verb in
+      enable) systemctl is-enabled -- "$1" >/dev/null 2>&1 ;;
+      start)  systemctl is-active  -- "$1" >/dev/null 2>&1 ;;
+      *) return 2 ;;
+   esac
+}

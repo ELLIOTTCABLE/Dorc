@@ -475,8 +475,11 @@ pub fn build_report(inputs: &Inputs<'_>) -> Report {
         |_| false,
     );
     let observe = observe_from_sites(&probe, &probe_verdicts);
-    // Kill-aware, survival-OFF (`None`), vouch-less: dashboard parity with the honest baseline only
-    // — the coverage crate carries no footprint/survival/guard plumbing (24A §3 parity fix).
+    // The elide-weld (24D §3): a converged ambient site elides ONLY with a reached vouch, so the
+    // dashboard must build them (the SAME `dorc_plan::build_vouches` the cli drives) or it would
+    // under-report elision vs the shipped tool. Lift diags are dropped (the dashboard is a readout,
+    // not gate-3). Kill-aware, survival-OFF (`None`): dashboard parity with the honest baseline.
+    let vouches = dorc_plan::build_vouches(inputs.oracles, &classes, &value, &mut interner).value;
     let plan = dorc_plan::build_plan_walled(
         inputs.book,
         &parsed.value,
@@ -484,7 +487,7 @@ pub fn build_report(inputs: &Inputs<'_>) -> Report {
         &classes,
         &kills,
         None,
-        &dorc_plan::Vouches::new(),
+        &vouches,
         observe,
         &mut arena,
     );
@@ -1198,6 +1201,16 @@ apt_get__predict() {
          purge) dpkg-query -W "$pkg" >/dev/null 2>&1 : package:"$pkg".installed! ;;
       esac
    fi
+}
+
+apt-get.is_converged() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   case $verb in
+      install) dpkg-query -W "$1" >/dev/null 2>&1 ;;
+      *) return 2 ;;
+   esac
 }
 "#;
 

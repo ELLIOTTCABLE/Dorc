@@ -43,11 +43,14 @@ pub use scenario::{Honesty, Scenario, Seed, TopologyClass};
 
 /// The ONE fixed oracle the whole sweep drives (a deliberate scoping, 24B §3 strain note): the
 /// interference lives in the book/host/ground-truth, not in oracle variety. A real package oracle,
-/// lifted through the real `predict`/`touches` lifts every seed. `predict()` derives the
-/// effect-map; `touches()` the at-most footprints. `install`/`config`/`purge` touch
-/// `package:<operand>`; `refresh` establishes but has NO `touches()` arm ⇒ a footprint-less
-/// (silent, total-walling) mutator. `config` establishes a DIFFERENT selector (`#configured`) so a
-/// same-entity victim's `#installed` stays ambient — the entity-granular HIT.
+/// lifted through the real `predict`/`touches`/`is_converged` lifts every seed. `predict()` derives
+/// the effect-map; `touches()` the at-most footprints; `is_converged()` is the VOUCH the elide-weld
+/// (24D §3) demands — without it a converged ambient `install` would no longer elide, and the whole
+/// net's elision coverage would vanish. `install`/`config`/`purge` touch `package:<operand>`;
+/// `refresh` establishes but has NO `touches()` arm ⇒ a footprint-less (silent, total-walling)
+/// mutator. `config` establishes a DIFFERENT selector (`#configured`) so a same-entity victim's
+/// `#installed` stays ambient — the entity-granular HIT. `is_converged()` vouches the establish
+/// verbs (install/config/refresh); a `purge` is a KILL (never elides), declined by `*) return 2`.
 pub const ORACLE_SH: &str = r#"
 apt_get__predict() {
    while [ "${1#-}" != "$1" ]; do shift; done
@@ -70,6 +73,16 @@ apt-get.touches() {
    while [ "${1#-}" != "$1" ]; do shift; done
    case $verb in
       install|config|purge) printf 'package:%s\n' "$1" ;;
+   esac
+}
+
+apt-get.is_converged() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   case $verb in
+      install|config|refresh) dpkg-query -W "$1" >/dev/null 2>&1 ;;
+      *) return 2 ;;
    esac
 }
 "#;

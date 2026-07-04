@@ -24,3 +24,14 @@ apt-get.touches() {                              # STRAWMAN footprint spelling (
       install|purge) printf 'package:%s\n' "$1" ;;
    esac
 }
+
+# THE VOUCH (elide-weld, 24D §3): vouches install (establish); declines purge + unknown (`*) return 2`).
+apt-get.is_converged() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   case $verb in
+      install) dpkg-query -W "$1" >/dev/null 2>&1 ;;
+      *) return 2 ;;
+   esac
+}
