@@ -18,12 +18,23 @@
 //! ⇒ no witness ⇒ run (kFAIL-perform). This is the reached-path component of rul-guard-license's
 //! witness, made the load-bearing check exactly where hz-refusepath bites.
 //!
-//! **Scope note (ru-26 churn-avoidance):** an explicit `return 2` decline (24A §1c's other
-//! sanctioned spelling) is NOT modeled — the dialect has no `return`, so a `return`-carrying body
-//! ⊤-rejects at lift, and the guard23 fixtures spell declines as unhandled paths. Adding
-//! `Stmt::Return` is a deliberate future dialect-grade (tc-verdict-return), not a silent gap: the
-//! unhandled-path decline is the safe subset (a declined path runs), and every reached-command
-//! test below pins it.
+//! # Declines: `return` and the inert builtins (find-return-vouches, 24C; the hz-refusepath fence)
+//!
+//! A reached `return N` is a DECLINE, never a vouch (24A §1c's sanctioned decline): `return`
+//! author-forces the function's rc PAST any check (rul-rc-partition: ≥2 confused, 1 complement,
+//! and even `return 0` is a vacuous unconditional "converged"), so it is never a check result —
+//! it ENDS the path declined. The inert fixed-rc builtins `false` (rc 1 = complement) / `:` /
+//! `true` (rc 0 VACUOUSLY) likewise run no check ⇒ never vouch. Before this
+//! ([`VerdictResolution`] modeled only "reached a command"), a `*) return 2 ;;` catch-all reached
+//! [`Tracer::run_command`] and wrongly VOUCHED — harmless in the guard tier (a declined path's
+//! `( check )` returns non-zero ⇒ `||` runs the original) but a wrong-ELISION once a vouch
+//! licenses full skip (Part B). This is a TRACER fix.
+//!
+//! **Scope note (ru-26 churn-avoidance):** `return` still parses as a plain command (the dialect
+//! has no `Stmt::Return`), caught HERE in the tracer, not at parse. A bare test-led shorthand
+//! `[ … ] || return N` remains out of dialect and ⊤-rejects at LIFT — a deliberate parser
+//! scope-cut, NOT closed by this fix (extending the parser is out of the #12 scope): a verdict
+//! function needing that arity-refuse spells it in-dialect as `if [ … ]; then return N; fi`.
 //!
 //! `inv-referent-agnostic`: the tracer never decodes the entity's text — it reuses the predict
 //! argparse primitives ([`resolve_word`]/[`eval_test`]/[`pattern_matches`]) to find the reached
@@ -122,8 +133,10 @@ impl VerdictSet {
 pub enum VerdictResolution {
     /// The argv reached a path that ran ≥1 authored check command — the VOUCH (a licensing path).
     Vouched,
-    /// The argv reached NO authored command (unhandled `case`, `if`-false with no `else`, empty
-    /// body) — a DECLINE (24A §1c "an unhandled path"): no witness forms ⇒ the site runs.
+    /// The argv reached NO authored check — an unhandled `case`, an `if`-false with no `else`, an
+    /// empty body, OR a reached DECLINE idiom (`return N` / `false` / `:` / `true`;
+    /// find-return-vouches, 24C). A DECLINE (24A §1c "an unhandled path"): no witness forms ⇒ the
+    /// site runs.
     Declined,
     /// Non-concrete argv / out-of-dialect-at-runtime — ⊤ (no witness; kFAIL-perform ⇒ run).
     Top(VerdictTop),
@@ -181,6 +194,10 @@ pub fn evaluate_verdict(verdict: &Predict, argv: &[&str]) -> VerdictResolution {
                 VerdictResolution::Declined
             }
         }
+        // A reached `return` declined the path outright (find-return-vouches, 24C): it exited the
+        // function with an author-forced rc that is never a check result, overriding any earlier
+        // reached check (a `return` past a check makes the path's rc vacuous ⇒ still a decline).
+        Flow::Declined => VerdictResolution::Declined,
         Flow::Top(reason) => VerdictResolution::Top(reason),
     }
 }
@@ -208,6 +225,10 @@ struct Tracer {
 
 enum Flow {
     Normal,
+    /// A reached `return` (find-return-vouches, 24C): the verdict function exited with an
+    /// author-forced rc that is never a check result ⇒ the path DECLINES. Propagates up like
+    /// [`Flow::Top`], ending the block/loop.
+    Declined,
     Top(VerdictTop),
 }
 
@@ -225,7 +246,8 @@ impl Tracer {
         for stmt in body {
             match self.run_stmt(stmt) {
                 Flow::Normal => {}
-                top @ Flow::Top(_) => return top,
+                // A `return` (Declined) or a degrade (Top) ends the block/loop, propagating up.
+                other => return other,
             }
         }
         Flow::Normal
@@ -289,7 +311,8 @@ impl Tracer {
             match eval_test(test, &self.positionals, &self.vars) {
                 Ok(true) => match self.run_block(body) {
                     Flow::Normal => {}
-                    top @ Flow::Top(_) => return top,
+                    // A `return` (Declined) or a degrade (Top) breaks the loop, propagating up.
+                    other => return other,
                 },
                 Ok(false) => return Flow::Normal,
                 Err(reason) => return Flow::Top(top_from_word(reason)),
@@ -312,27 +335,68 @@ impl Tracer {
         Flow::Normal
     }
 
-    /// A reached command IS the vouch: the author wrote a check for this path. Unlike the touches
-    /// emitter (which restricts to `printf`), ANY reached command counts here — the verdict body's
-    /// job is to run the oracle's own check, whatever it is. But its words must RESOLVE concretely
-    /// (the constprop half of the witness): a check whose operand does not resolve (`dpkg-query -W
-    /// "$1"` with `$1` past-end) is not a characterizable check ⇒ ⊤ (conservative; kFAIL-perform),
-    /// exactly the touches emitter's posture minus the printf restriction. Only once every word
-    /// resolves is the vouch recorded.
+    /// A reached authored CHECK is the vouch: the author wrote a real state-measurement for this
+    /// path. Its words must RESOLVE concretely (the constprop half of the witness): a check whose
+    /// operand does not resolve (`dpkg-query -W "$1"` with `$1` past-end) is not a characterizable
+    /// check ⇒ ⊤ (conservative; kFAIL-perform), exactly the touches emitter's posture minus the
+    /// printf restriction.
+    ///
+    /// But NOT every reached command is a check (find-return-vouches, 24C): a DECLINE idiom runs
+    /// no measurement, so it never vouches. `return` ([`Decline::Return`]) author-forces the rc
+    /// past any check ⇒ ENDS the path DECLINED; the inert fixed-rc builtins `false`/`:`/`true`
+    /// ([`Decline::Inert`]) run but record no vouch (the path continues). Only a resolved,
+    /// non-idiom command sets the vouch.
     fn run_command(&mut self, cmd: &Command) -> Flow {
         for w in &cmd.words {
             if let Err(reason) = self.resolve(w) {
                 return Flow::Top(top_from_word(reason));
             }
         }
-        self.reached_command = true;
-        Flow::Normal
+        match decline_idiom(cmd.words.first()) {
+            // `return` exits the function declined — never a check (rul-rc-partition: an
+            // author-forced rc, even `return 0`, is vacuous, not a measurement).
+            Some(Decline::Return) => Flow::Declined,
+            // `false`/`:`/`true` ran but measured nothing ⇒ no vouch; the path continues.
+            Some(Decline::Inert) => Flow::Normal,
+            // A real check ran on this path ⇒ the vouch signal (hz-refusepath: only here).
+            None => {
+                self.reached_command = true;
+                Flow::Normal
+            }
+        }
     }
 
     /// Resolve a word in strict context (`Unresolved` on a past-end positional) — the vouch's
     /// constprop half must resolve concretely, exactly as a predict annotation value must.
     fn resolve(&self, word: &Word) -> Result<String, TopReason> {
         resolve_word(word, &self.positionals, &self.vars, UnsetPolicy::Unresolved)
+    }
+}
+
+/// A reached command that is a DECLINE idiom, not an authored check (find-return-vouches, 24C /
+/// rul-rc-partition / the hz-refusepath fence). None of these MEASURES state, so none vouches.
+enum Decline {
+    /// `return …` — exits the function; the path DECLINES (author-forced rc, never a check
+    /// result — ≥2 confused, 1 complement, and even `return 0` is a vacuous "converged").
+    Return,
+    /// `false` (rc 1 = complement) / `:` / `true` (rc 0 VACUOUSLY — the hz-refusepath vacuous-pass
+    /// a guard must never read as check-passed) — an inert non-check; runs but does not vouch.
+    Inert,
+}
+
+/// Classify a reached command's argv[0]: is it a DECLINE idiom rather than an authored check?
+/// Only a LITERAL argv[0] matches (a `$cmd`-word command is opaque ⇒ not a named idiom, and
+/// resolves-or-⊤s upstream). `:`/`true` reproduce a fixed rc-0; treating them as vouches would be
+/// the vacuous-pass the fence exists to stop.
+fn decline_idiom(word: Option<&Word>) -> Option<Decline> {
+    let name = match word {
+        Some(Word::Literal(s) | Word::SingleQuotedLiteral(s)) => s.as_str(),
+        _ => return None,
+    };
+    match name {
+        "return" => Some(Decline::Return),
+        "false" | ":" | "true" => Some(Decline::Inert),
+        _ => None,
     }
 }
 
@@ -492,5 +556,77 @@ systemctl.is_diverged() {
         let (_p, sense) = set.value.get(provider).expect("the verdict funcdef");
         assert_eq!(sense, VerdictSense::Diverged);
         assert_eq!(sense.mangled_suffix(), "__is_diverged");
+    }
+
+    #[test]
+    fn catchall_return_declines_never_vouches() {
+        // find-return-vouches (24C): a `*) return 2 ;;` catch-all REACHED by an unhandled verb is
+        // a DECLINE (rul-rc-partition: return ≥2 = confused ⇒ run), NEVER a vouch. Before this fix
+        // it wrongly VOUCHED (a reached command was the vouch) — which, once a vouch licenses full
+        // skip (Part B), would ELIDE a mutation on a path the author declined. The `install` arm
+        // (a real check) still vouches; only the return-arm declines.
+        let src = "\
+apt-get.is_converged() {
+   verb=$1; shift
+   case $verb in
+   install) dpkg-query -W \"$1\" >/dev/null 2>&1 ;;
+   *) return 2 ;;
+   esac
+}";
+        assert_eq!(
+            trace(src, &["restart", "nginx"]),
+            VerdictResolution::Declined,
+            "the `*) return 2 ;;` catch-all DECLINES, never vouches"
+        );
+        assert_eq!(
+            trace(src, &["install", "nginx"]),
+            VerdictResolution::Vouched,
+            "the real `install` check still vouches"
+        );
+    }
+
+    #[test]
+    fn arity_gate_return_declines_multi_operand() {
+        // The in-dialect arity-refuse (the refusepath floor's form): `if [ "$2" != "" ]; then
+        // return 2; fi`. A multi-operand invocation hits the `return 2` ⇒ Declined; a single
+        // operand skips it and reaches the real check ⇒ Vouched. This is the shape a verdict
+        // function uses instead of the out-of-dialect `[ … ] || return N` shorthand.
+        let src = "\
+apt-get.is_converged() {
+   verb=$1; shift
+   if [ \"$2\" != \"\" ]; then return 2; fi
+   case $verb in
+   install) dpkg-query -W \"$1\" >/dev/null 2>&1 ;;
+   *) return 2 ;;
+   esac
+}";
+        assert_eq!(
+            trace(src, &["install", "nginx", "curl"]),
+            VerdictResolution::Declined,
+            "a second operand trips the arity gate's `return 2` ⇒ DECLINE"
+        );
+        assert_eq!(
+            trace(src, &["install", "nginx"]),
+            VerdictResolution::Vouched,
+            "a single operand clears the gate and reaches the real check"
+        );
+    }
+
+    #[test]
+    fn inert_fixed_rc_builtins_never_vouch() {
+        // `false` (rc 1 = complement) and `true` / `':'` (rc 0 VACUOUSLY — the hz-refusepath
+        // vacuous-pass) run no check ⇒ never a vouch. A guard/elide reading a vacuous rc-0 as
+        // "converged" is exactly the wrong-elision the fence forbids. (`:` is written quoted here
+        // because a bare `:` lexes as the dialect mark-marker, not a command.)
+        for inert in ["false", "true", "':'"] {
+            let src = format!(
+                "apt-get.is_converged() {{ verb=$1; shift; case $verb in restart) {inert} ;; esac }}"
+            );
+            assert_eq!(
+                trace(&src, &["restart", "nginx"]),
+                VerdictResolution::Declined,
+                "`{inert}` is an inert non-check ⇒ Declined, never a vouch"
+            );
+        }
     }
 }

@@ -623,10 +623,13 @@ fn resolve_touches_footprint(
 /// function, ⇒ absence from the map ⇒ the site never guards (no vouch ⇒ run — the judgment tier the
 /// map carries is exactly what [`dorc_plan::GuardLicense::mint`] DEMANDS, TC-tier-2).
 ///
-/// A verdict function that FAILS to lift (⊤-rejects — e.g. an unmodeled `return`, tc-verdict-return)
-/// is a best-effort ORACLE degradation, not a book error: it yields no vouch (the site runs,
-/// kFAIL-perform), and its lift diagnostics are DOWNGRADED to warnings so a dead-grammar verdict
-/// function never fails an otherwise-valid book's gate-3 error-floor.
+/// Verdict-lift diagnostics are surfaced AS-IS (inv-top-reject: under-modeling is a loud
+/// correctness boundary, never a silent degrade). The Part-A `tc-verdict-return` softening
+/// (⊤-reject → warning) is REVERTED (find-return-vouches, 24C): the tracer now models a reached
+/// `return N` as a DECLINE and the corpus arity-refuse is spelled in-dialect
+/// (`if [ … ]; then return N; fi`), so no corpus verdict body ⊤-rejects — one that still does is
+/// genuinely out of dialect and SHOULD fail loudly. A verdict function that fails to lift yields
+/// no vouch (the site runs, kFAIL-perform) regardless.
 ///
 /// `inv-referent-agnostic`: the kind label + operands are resolved for the invocation/attribution,
 /// never decoded for meaning; the vouch travels the site's own value-flow (the 24A §1b fence).
@@ -649,17 +652,10 @@ fn build_vouches(
         .iter()
         .map(|src| {
             let lifted = VerdictSet::lift(interner, src);
-            // A ⊤-rejecting verdict function is an oracle degradation, not a book error — soften to
-            // warning so it never fails gate-3 (tc-verdict-return; the site runs regardless).
-            let softened: Vec<dorc_core::Diagnostic> = lifted
-                .diags
-                .iter()
-                .map(|d| dorc_core::Diagnostic {
-                    severity: Severity::Warning,
-                    ..d.clone()
-                })
-                .collect();
-            report_at(advisory, "verdict", &softened);
+            // Surface lift diagnostics as-is (inv-top-reject): the tc-verdict-return softening is
+            // reverted (find-return-vouches, 24C) — return-is-decline + the in-dialect arity gate
+            // mean no corpus verdict body ⊤-rejects; one that does is genuinely out of dialect.
+            report_at(advisory, "verdict", &lifted.diags);
             lifted.value
         })
         .collect();
