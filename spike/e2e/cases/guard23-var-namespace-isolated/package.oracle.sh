@@ -1,17 +1,13 @@
-# minimal package oracle (apt/dpkg), lifted statically by dorc — the guard23-* fixture
-# variant: identical to the corpus-standard package oracle PLUS the strawman vouch below.
-# ---- STRAWMAN VOUCH SPELLING — NOT DESIGN (rul-guard-license: the vouch's concrete sh
-# ---- spelling is OPEN; this inert assignment is a swap-cheap stub, and pins built on it
-# ---- pin BEHAVIOUR, never this spelling). It stands in for the author's converged-vouch
-# ---- on the install path of the predict below: "when my check's install path reports
-# ---- converged, I judge re-running `apt-get install` at that site skippable; whatever
-# ---- it would still do is noise I know of, or residue I accept." A fallible, attributed
-# ---- judgment (claimed-tier) — never a fact; it licenses guards at THIS command's sites
-# ---- only and never enters the fact-plane (rul-guard-license).
-# command-keyed predict(): the oracle's OWN argparse → inline kind-annotation (the real
-# entity-resolution; task-W). Flag-strip (pre- and post-verb), bind the verb, annotate
-# the single operand as `package`; the `[ "$2" = "" ]` guard refuses a SECOND operand
-# (so `install nginx curl` resolves no probe ⇒ runs — no wrong single-entity elision).
+# minimal package oracle (apt/dpkg) — the guard23 VAR-CAPTURE fixture variant (23C-fd1). The
+# predict() is the corpus entity-resolver (its stripped body ships as the site's PROBE); the VOUCH
+# is the authored verdict function `apt-get.is_converged()` (rul24-vouch-is-verdict-authoring,
+# 24A §1c). This verdict body assigns `pkg` BARE (`pkg="$1"`) — the corpus idiom — which, shipped
+# verbatim (strip-only is law), would clobber the book's OWN `pkg` variable in the caller namespace
+# (POSIX functions share it). The engine's `( check ) || <orig>` SUBSHELL contains the assignment:
+# `pkg=curl` lives in the subshell only, the book's `pkg=vim` survives, and the final
+# `apt-get install -y "$pkg"` still installs VIM (the mechanism is engine's choice per human ruling
+# h3; the paren-subshell is one sanctioned mitigation).
+# [Re-authored by the Stage-3 Part-A builder: added the verdict function; conductor-flagged.]
 apt_get__predict() {
    while [ "${1#-}" != "$1" ]; do shift; done
    verb=$1; shift
@@ -23,4 +19,18 @@ apt_get__predict() {
          purge) dpkg-query -W "$pkg" >/dev/null 2>&1 : package:"$pkg".installed! ;;
       esac
    fi
+}
+
+# THE VOUCH (rul24-vouch-is-verdict-authoring): CONVERGED sense by name. The `pkg="$1"` assignment
+# is the bare capture the corpus idiom uses — shipped verbatim it clobbers the book's `pkg`
+# (23C-fd1), contained by the emitter's guard subshell. An unmodeled verb reaches no arm ⇒ Declined
+# ⇒ no vouch ⇒ run (hz-refusepath). The dialect has no `return`, so declines are unhandled paths.
+apt-get.is_converged() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   pkg="$1"
+   case $verb in
+      install) dpkg-query -W "$pkg" >/dev/null 2>&1 ;;
+   esac
 }

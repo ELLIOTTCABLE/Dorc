@@ -6,24 +6,37 @@
 # rc is the raw PROBE-command status (opaque to Dorc — the record is the out-of-band lane).
 
 # site 0: package:nginx#installed
-package_installed__check() { dpkg-query -W "$1" >/dev/null 2>&1; }
-package_installed__check 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'site 0 effect=%s rc=%s\n' "$_e" "$_rc"
-# site:1 skip-unresolvable
-# site 2: package:curl#installed
-package_installed__check 'curl'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'site 2 effect=%s rc=%s\n' "$_e" "$_rc"
-# site 3: package:vim#installed
-package_installed__check 'vim'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'site 3 effect=%s rc=%s\n' "$_e" "$_rc"
-#!/bin/sh
-# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
-# dorc guard preamble: the vouching oracle's own check body, shipped strip-only
-# (annotations removed, `name.check()` -> `name_check()`, nothing else changed --
-# rul-ternary-verdict: the same authored bytes the probe lane self-vouches).
-apt_get__check() {
+apt_get__predict() {
    while [ "${1#-}" != "$1" ]; do shift; done
    verb=$1; shift
    while [ "${1#-}" != "$1" ]; do shift; done
    pkg="$1"
-   if [ "$2" = "" ]; then dpkg-query -W "$pkg" >/dev/null 2>&1; fi
+   if [ "$2" = "" ]; then
+      case $verb in
+         install) dpkg-query -W "$pkg" >/dev/null 2>&1 ;;
+         purge) dpkg-query -W "$pkg" >/dev/null 2>&1 ;;
+      esac
+   fi
+}
+apt_get__predict 'install' '-y' 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'site 0 effect=%s rc=%s\n' "$_e" "$_rc"
+# site 2: package:curl#installed
+apt_get__predict 'install' '-y' 'curl'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'site 2 effect=%s rc=%s\n' "$_e" "$_rc"
+# site 3: package:vim#installed
+apt_get__predict 'install' '-y' 'vim'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'site 3 effect=%s rc=%s\n' "$_e" "$_rc"
+# site:1 skip-unresolvable
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+# dorc guard preamble: the vouching oracle's own verdict body, shipped strip-only
+# (annotations removed, `name.is_converged()` -> `name__is_converged()`, nothing else
+# changed -- rul-ternary-verdict: the authored bytes verbatim, no engine-synthesized sh).
+apt_get__is_converged() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   case $verb in
+      install) dpkg-query -W "$1" >/dev/null 2>&1 ;;
+   esac
 }
 
 # guard23-ternary-flagship (rul-ternary-verdict; the {elide, guard, run} verdict map on one
@@ -38,7 +51,7 @@ apt_get__check() {
 #           a GUARD (rul-guard-license): the oracle's own check body ships strip-only as a
 #           preamble function and the line becomes `check-invocation || original-bytes`;
 #           the original command's bytes survive verbatim (rul-ternary-verdict). At apply
-#           the check re-reads the live host (mock: curl installed, rc 0) ⇒ short-circuit
+#           the predict re-reads the live host (mock: curl installed, rc 0) ⇒ short-circuit
 #           ⇒ the mutator is skipped by LIVE re-check, never by the stale plan verdict.
 #   site 3  apt-get install vim — DIVERGED past the wall (probe: absent) ⇒ plain run, vouch
 #           or no vouch: the mint is converged-past-wall only (a guard at a predicted-change
@@ -48,5 +61,5 @@ apt_get__check() {
 # plans/233 §"The guard-license"; no probe-verdict ⇒ no witness ⇒ no guard).
 true   # dorc: elided [apt-get install -y nginx] (already converged / dead branch)
 hork wombat
-apt_get__check install -y curl || apt-get install -y curl   # dorc: guard [package converged-vouch; probe: holds]
+( apt_get__is_converged install -y curl ) || apt-get install -y curl   # dorc: guard [package converged-vouch; probe: holds]
 apt-get install -y vim
