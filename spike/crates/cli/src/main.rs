@@ -545,7 +545,7 @@ fn build_survival_footprints(
                 continue;
             }
         }
-        if let Some(footprint) = dorc_plan::Footprint::new(provider, coords) {
+        if let Some(footprint) = dorc_plan::Footprint::authored(provider, coords) {
             footprints.insert(*node, footprint);
         }
     }

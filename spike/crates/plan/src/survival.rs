@@ -73,28 +73,71 @@ impl EntityCoord {
     }
 }
 
+/// The provenance of a footprint's coordinates (24E §9): STATICALLY traced from an authored
+/// `touches()` (`Authored` — a fixed-footprint tool) vs read back from a host-run
+/// derivation-probe (`Derived` — a payload-bound tool whose `touches()` body reached a host
+/// query the static tracer could not resolve, so it shipped to the probe lane, ran read-only,
+/// and printed its own coordinates; 24E §2/§6). The disjointness/survival consumers are
+/// ORIGIN-AGNOSTIC — [`disjoint`]/[`wall_verdict`] never read this; a derived footprint
+/// intersects a backing identically to an authored one — so the tag rides along purely for the
+/// why-lens attribution ("footprint DERIVED at probe from `<call>`") and the fork-4B escalation
+/// disclosure (24E §4). Inertness is STRUCTURAL (the self-vouch is the authoring act, 24E §3/§9):
+/// this is emphatically NOT a witness that Dorc verified read-only-ness — it can't (never-vouch).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum FootprintOrigin {
+    /// Statically traced in-Rust by `evaluate_touches` (fixed-footprint tool, Stage 2).
+    Authored,
+    /// Read back from a host-run derivation-probe (payload-bound tool, Stage 4). Carries the
+    /// derivation call's display locus (the host tool the `touches()` body reached, e.g.
+    /// `dpkg -L`) for the why-lens + the fork-4B advisory; display-only (`inv-referent-agnostic`).
+    Derived { call: String },
+}
+
 /// A wall's **at-most footprint**: the set of coordinates a running mutator claims to touch
 /// (the write-set bound — 23M / `ORACLE_PROVIDES` `provides-behavior` sub-shape 3), plus the
-/// wall's provider (for attribution). Private set (TC-2): the ONLY way coordinates enter is
-/// [`Footprint::new`] from a lifted `touches()` emission — there is deliberately NO
-/// constructor taking establish-effects (the 233 silence-as-at-most sin must not compile).
+/// wall's provider (for attribution) and its [`FootprintOrigin`] (24E §9). Private set (TC-2):
+/// the ONLY way coordinates enter is [`Footprint::authored`]/[`Footprint::derived`] from a
+/// `touches()` emission (static or host-run) — there is deliberately NO constructor taking
+/// establish-effects (the 233 silence-as-at-most sin must not compile).
 #[derive(Debug, Clone)]
 pub struct Footprint {
     provider: Symbol,
     coords: Vec<EntityCoord>,
+    origin: FootprintOrigin,
 }
 
 impl Footprint {
-    /// Build a footprint from a wall's lifted coordinates. `None` when `coords` is EMPTY — an
-    /// empty emission is *no claim*, which is a WALL (silence = wall), never "touches nothing,
-    /// elide freely". So a footprint always carries ≥1 coordinate; its absence in
-    /// [`TrustedFootprints`] means the site walls.
+    /// Build an **authored** (statically-traced) footprint from a wall's lifted coordinates.
+    /// `None` when `coords` is EMPTY — an empty emission is *no claim*, which is a WALL
+    /// (silence = wall), never "touches nothing, elide freely". So a footprint always carries
+    /// ≥1 coordinate; its absence in [`TrustedFootprints`] means the site walls.
     #[must_use]
-    pub fn new(provider: Symbol, coords: Vec<EntityCoord>) -> Option<Self> {
+    pub fn authored(provider: Symbol, coords: Vec<EntityCoord>) -> Option<Self> {
+        Self::with_origin(provider, coords, FootprintOrigin::Authored)
+    }
+
+    /// Build a **derived** (host-run) footprint from the coordinates a derivation-probe printed
+    /// (24E §2/§6). Same emptiness law as [`authored`](Footprint::authored) (an empty derivation
+    /// is no claim ⇒ wall). `call` is the derivation call's display locus (the host tool reached),
+    /// carried for the why-lens/advisory only.
+    #[must_use]
+    pub fn derived(provider: Symbol, coords: Vec<EntityCoord>, call: String) -> Option<Self> {
+        Self::with_origin(provider, coords, FootprintOrigin::Derived { call })
+    }
+
+    fn with_origin(
+        provider: Symbol,
+        coords: Vec<EntityCoord>,
+        origin: FootprintOrigin,
+    ) -> Option<Self> {
         if coords.is_empty() {
             return None;
         }
-        Some(Self { provider, coords })
+        Some(Self {
+            provider,
+            coords,
+            origin,
+        })
     }
 
     /// The wall's provider (attribution: whose footprint licensed a crossing).
@@ -107,6 +150,12 @@ impl Footprint {
     #[must_use]
     pub fn coords(&self) -> &[EntityCoord] {
         &self.coords
+    }
+
+    /// The footprint's provenance (why-lens attribution; origin-agnostic for disjointness).
+    #[must_use]
+    pub fn origin(&self) -> &FootprintOrigin {
+        &self.origin
     }
 }
 
@@ -185,6 +234,7 @@ pub struct Crossing {
     wall_leaf: LeafId,
     provider: Symbol,
     footprint: Vec<EntityCoord>,
+    origin: FootprintOrigin,
     proof: DisjointnessProof,
 }
 
@@ -199,6 +249,13 @@ impl Crossing {
     #[must_use]
     pub fn provider(&self) -> Symbol {
         self.provider
+    }
+
+    /// The crossed footprint's provenance (24E §9): the why-lens says "footprint DERIVED at
+    /// probe from `<call>`" for a `Derived` crossing, plain attribution for `Authored`.
+    #[must_use]
+    pub fn origin(&self) -> &FootprintOrigin {
+        &self.origin
     }
 
     /// The wall's claimed coordinates (the footprint the crossing leaned on).
@@ -323,6 +380,7 @@ pub(crate) fn wall_verdict(
                 wall_leaf: wall.wall_leaf,
                 provider: wall.footprint.provider(),
                 footprint: wall.footprint.coords().to_vec(),
+                origin: wall.footprint.origin().clone(),
                 proof,
             }),
             None => return WallVerdict::Demoted, // the backing is poisoned ⇒ run for real
@@ -362,7 +420,7 @@ mod tests {
             KindId(i.intern("package")),
             EntityRef::Operand(OpaqueToken(i.intern("nginx"))),
         );
-        let fp = Footprint::new(i.intern("apt-get"), vec![wall_coord]).unwrap();
+        let fp = Footprint::authored(i.intern("apt-get"), vec![wall_coord]).unwrap();
         let backing = Backing {
             coord: EntityCoord::new(KindId(i.intern("pkgindex")), EntityRef::Singleton),
         };
@@ -379,7 +437,7 @@ mod tests {
         let mut i = dorc_core::Interner::default();
         let k = KindId(i.intern("package"));
         let e = EntityRef::Operand(OpaqueToken(i.intern("nginx")));
-        let fp = Footprint::new(i.intern("apt-get"), vec![EntityCoord::new(k, e)]).unwrap();
+        let fp = Footprint::authored(i.intern("apt-get"), vec![EntityCoord::new(k, e)]).unwrap();
         // backing on the SAME entity but a different selector (#configured vs the footprint's
         // entity-granular claim) ⇒ hit.
         let backing = Backing {
@@ -392,7 +450,7 @@ mod tests {
     fn empty_emission_is_no_footprint() {
         let mut i = dorc_core::Interner::default();
         assert!(
-            Footprint::new(i.intern("hork"), vec![]).is_none(),
+            Footprint::authored(i.intern("hork"), vec![]).is_none(),
             "an empty emission is no claim ⇒ no footprint ⇒ wall"
         );
     }
@@ -421,7 +479,7 @@ mod tests {
     fn disjoint_wall_survives_with_one_crossing() {
         let mut i = dorc_core::Interner::default();
         let wall_coord = EntityCoord::new(KindId(i.intern("pkgindex")), EntityRef::Singleton);
-        let fp = Footprint::new(i.intern("apt-get"), vec![wall_coord]).unwrap();
+        let fp = Footprint::authored(i.intern("apt-get"), vec![wall_coord]).unwrap();
         let f = fact(1, "nginx", "installed"); // kind k1 ≠ pkgindex ⇒ disjoint
         let walls = [AccumulatedWall {
             wall_leaf: LeafId(0),
@@ -441,7 +499,7 @@ mod tests {
         let mut i = dorc_core::Interner::default();
         let f = fact(1, "nginx", "installed");
         // A wall whose footprint IS the fact's coordinate ⇒ hit ⇒ demote.
-        let fp = Footprint::new(i.intern("apt-get"), vec![coord_of(f)]).unwrap();
+        let fp = Footprint::authored(i.intern("apt-get"), vec![coord_of(f)]).unwrap();
         let walls = [AccumulatedWall {
             wall_leaf: LeafId(3),
             footprint: fp,

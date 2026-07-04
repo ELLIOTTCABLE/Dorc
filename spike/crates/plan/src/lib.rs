@@ -55,7 +55,7 @@ pub mod render;
 
 pub mod survival;
 pub use survival::{
-    Backing, Crossing, DisjointnessProof, EntityCoord, Footprint, SurvivalWitness,
+    Backing, Crossing, DisjointnessProof, EntityCoord, Footprint, FootprintOrigin, SurvivalWitness,
     TrustedFootprints, disjoint,
 };
 
@@ -4348,7 +4348,7 @@ apt_get__predict() {
                     _ => continue,
                 };
                 let coord = EntityCoord::new(fact.kind, fact.entity);
-                if let Some(fp) = Footprint::new(provider, vec![coord]) {
+                if let Some(fp) = Footprint::authored(provider, vec![coord]) {
                     tf.insert(*node, fp);
                 }
             }

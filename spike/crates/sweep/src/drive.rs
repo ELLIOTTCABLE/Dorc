@@ -222,7 +222,7 @@ fn build_survival_footprints(
                 continue;
             }
         }
-        if let Some(footprint) = Footprint::new(provider, coords) {
+        if let Some(footprint) = Footprint::authored(provider, coords) {
             footprints.insert(*node, footprint);
         }
     }
