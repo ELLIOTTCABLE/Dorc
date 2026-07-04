@@ -118,26 +118,32 @@ hard-died agent's orphan.
 - **On-ramp:** THIS block → `252` (protocol + §7) → `254` (review + retrospect ledger) → `255` (dry-run
   + predictions). All committed (`90ee2e2`). Live task: #6 (execution handoff).
 
-## Round-24 status (2026-07-04 — Stages 1–3 COMPLETE; Stage 4 next; detail in `notes/24A`–`24D`)
+## Round-24 status (2026-07-04 late — Stages 1–4 COMPLETE; Stage 5 next; detail `notes/24A`–`24E` + `24C` §Stage-4)
 
-**Stages 1, 2, 2b, 3 all built + merged + green** (144 e2e, all gates). The
-two-halves doctrine is REAL end-to-end: the guard tier fires (`( check ) || cmd` past a wall) AND
-the elide-weld closed the vouchless-elide gap (a full skip now DEMANDS a `ByVouch` — no vouch ⇒
-run). The claim-tier trust algebra (the arc-win) was human-BLESSED + renamed
-`ByObservation`/`ByVouch`/`BySilence`; the yardstick held FLAT at 0.27 through the weld's
-50-fixture churn (no converged site was secretly skipping). **`notes/24C` carries the full
-Part-A/Part-B landing evidence + the residue ledger; `24D §6` the blessed foundation + renames.**
-NEXT: **#6 Stage 4 (derived footprints)** — `ByObservation` (fact) tier + `dorc_plan::build_vouches`
-are the ready seams; then #7 Stage 5 (grounding — resid-aliasing lives here), #8 Stage 6
-(measure/conclude/extract). The dead `guard23-vouch-inert-pair` pin (premise overturned by the
-weld) was RETIRED for an honest `guard23-vouch-gates-elision` — the vouch is the sole difference
-(apt-vouched install elides, systemctl-unvouched enable runs; `24C`). **Stage 3 is FULLY COMPLETE;
-144 e2e green.** A fresh conductor picks up Stage 4 cleanly from this on-ramp (`24D §6` renames +
-`build_vouches`/`ByObservation` seams).
+**Stage 4 (derived footprints) LANDED + merged** (this branch; **145 e2e, 25 suites, all gates —
+conductor-verified on a fresh build**). The golden-hill move now works for PAYLOAD-BOUND tools: a
+`touches()` body that reaches a host tool ESCALATES (ships strip-only into the probe lane, runs
+read-only, stdout → the footprint) — the frame rule through a *dynamic frame*. **Yardstick 0→1
+derived** (`strawman24-derived-survive`: a converged nginx install elides past a RUNNING oldpkg
+install, licensed by a probe-derived footprint from the natural `dpkg -L "$1" | sed 's|^|file:|'`
+idiom); **the sweep soundness net has teeth — `derived_lying_divergences=220`/3000 seeds** (too-narrow
+derivation → wrong survival → end-state RED, attributed). Spec = **`notes/24E`** (+§13 fork-resolutions,
+§14 pipes); landing evidence + residue = **`24C` §Stage-4** (new `resid-derive-coherence`, the
+kill-coherence e2e-net owed, `resid-derive-adequacy` → the r25 field-trial's primary target).
+**Posture-lift (human-directed, first of the round):** pipes now PARSE in the oracle dialect —
+parse-permissively/trace-conservatively (`24E §14`; the ⊤ moved to the trace layer; touches-pipe =
+the escalation trigger, predict-pipe = run). **NB for the r25 conductor: §14 ≠ u3** — §14 is
+ORACLE-dialect pipes; u3 asks whether a *book-side* stdout-consuming pipe-guard
+(`cmd | grep -q X || fallback`) lifts — a different parser (`dorc-syntax`), still un-checked.
+NEXT: **Stage 5 (grounding — resid-aliasing, the r25 gate's second half)**, then Stage 6
+(measure/conclude/extract). Loose: battle-oracle corpus (#5, feeds the r25 stdlib) · Lcg low-bit
+fix (#6) · the lying-KILL-footprint sweep scenario (owed, `24C`).
 
-**NOTE for the next conductor:** after any cherry-pick, force `cargo build --workspace` before
-trusting an `e2e/run.sh` — `cargo test` doesn't reliably rebuild the `dorc` bin the harness uses
-(a stale-binary 3-case false-fail bit this session).
+**Process notes (durable):** after any cherry-pick, force `cargo build --workspace` before trusting
+`e2e/run.sh` (stale-binary false-fails). Cross-session branch discipline: two conductors share this
+branch — GATE any ref-move on the expected tip IN THE COMMAND (`[ "$(git rev-parse …)" = <sha> ] &&`),
+not by eyeballing printed output (a check-then-act race orphaned an r25 commit this session;
+recovered by cherry-pick, nothing lost).
 
 ## Round-24 EARLIER (2026-07-03 — Stage 1 complete; the test-suite arc commissioned)
 
