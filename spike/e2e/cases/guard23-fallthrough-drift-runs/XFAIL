@@ -1,1 +1,0 @@
-guard tier unbuilt: drifted-since-plan guard must FALL THROUGH to the original mutator (check rc 1 => || right side runs; kFAIL-perform); HEAD ships no guard and no past-wall probe

@@ -1,1 +1,0 @@
-guard tier unbuilt (rul-ternary-verdict/rul-guard-license): converged-past-wall vouched site must GUARD (check-invocation || original bytes) and vouched sites past a wall must still ship probes; HEAD runs bare + skips the probes
