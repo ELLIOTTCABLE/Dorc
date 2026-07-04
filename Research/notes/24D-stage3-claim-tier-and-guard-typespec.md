@@ -139,6 +139,53 @@ machinery. No rung-selection spelling (§4). No artifact-byte changes beyond the
 (which is a NEW disposition, not a mutation of existing bytes). Do not relitigate the settled law.
 The battle-oracle suite (#10) is BLOCKED on this stage (it exercises guards) — leave it.
 
+## §6 — human review refinements (2026-07-04; foundation BLESSED, Part B greenlit)
+
+The claim-tier foundation survived a deep human review (six turns). Verdict: **shape correct
+— refine naming + docs, then build Part B.** The rulings, all binding on the Part-B pass:
+
+- **rul24-tier-names (rename; Part-B first commit).** The identity-nouns overclaim and fail
+  the blocked-agent test: an agent blocked *"expected `Judgment`, found `Fact`"* launders
+  Fact→Judgment to unblock — the exact soundness hole the boundary exists to stop. Rename to
+  **source-act** names (harder to fake-by-relabel; `Observed` would also collide with the
+  existing `Observable`): `Fact<P>` → **`ByObservation<P>`**, `Judgment<P>` → **`ByVouch<P>`**,
+  add **`BySilence<P>`**. Collapse the `Judgment`/`Vouched` double-naming (one claim-name; the
+  rung is an internal payload detail). Align minters/markers act/source-based throughout. Goal:
+  the vocabulary reads "I hold this BY observation / BY vouch / BY silence," and *"turn a
+  by-observation into a by-vouch"* reads as obviously-wrong at a blocked site.
+- **rul24-selfframing-correction (honesty-pass; reads are DECLARED, not derived — supersedes
+  the loose "self-framing = read-set" language everywhere I used it, incl. earlier in THIS
+  note and 24C).** My "backing = the probe's read-set, self-framed by construction" was
+  overstated. Correct model: reads are **declared at the cell level** by the oracle (the
+  check-mark names the cell the probe reports on), **symmetric to writes** (establish-marks /
+  `touches()`). Dorc does **not** compute a probe's file/syscall read-set — no static analysis
+  of opaque calls, and the eBPF/tracing layer is **linting-only**, never a runtime dependency.
+  "Backing" = the single cell the oracle *declares* its probe checks — a **declaration-scope**
+  (the fact is about that one cell, carries no completeness burden), NOT a computed read-set.
+  The completeness (233) claims live on the **wall's footprint** (at-most these cells) + the
+  **vouch's adequacy**. Cell-level soundness rests entirely on the namespace-owner correctly
+  partitioning state (= reverse-DNS-owner-as-aliasing-authority, human-confirmed; the
+  resid-aliasing cell). FIX the overstated language in `claim.rs` (SurvivalWitness doc) +
+  `survival.rs` (Backing doc) → declaration-scope wording.
+- **rul24-unmodeled-is-write.** The engine treats every *unmodeled* book command as
+  Opaque/potential-write (poison-wall) — correct + conservative. A command earns "read" ONLY
+  via analysis-tier (Dorc-generated / blessed pure builtin) or contract-tier (oracle declares
+  Query). No syntactic read-assumption. (Never a bug; recorded because an explainer implied
+  otherwise.)
+- **rul24-critical-type-docs (doc-placement).** Critical invariants live in the TYPE's own
+  doc-comment, INCLUDING a *when-blocked* line: "if this type blocks your build you likely
+  have the wrong claim — do NOT convert to satisfy the signature (that is the soundness hole
+  this boundary prevents); obtain the real vouch, or let the command run." Per-crate CLAUDE.md
+  NAMES its critical types + "read their docs before touching them." Subagent briefs carry only
+  the generic "start by reading this crate's critical types" — never a per-type sermon.
+
+**GREENLIT: Part B (the elide-weld).** One focused Opus, sequenced: (1) rename; (2) doc
+honesty-pass; (3) #12 return-vouches fix; (4) the elide-weld — `prove_replaceable`'s
+`EstablishAmbient` arm demands `ByVouch<VerdictVouch>` + the corpus churn (every converged
+oracle gains an `is_converged()`; regenerate-and-inspect goldens; **yardstick must return to
+~flat — a DROP is the vouchless-elide gap measured, a finding**); (5) per-crate CLAUDE.md
+critical-types.
+
 ## Confidence
 
 +SURE: the four welded pieces; TC-tier-1/2/3 as the compile-error family; the guard emitter shape
