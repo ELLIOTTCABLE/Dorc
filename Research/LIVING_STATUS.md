@@ -14,7 +14,44 @@
 
 ---
 
-## NOW (2026-07-03, late — round-24 Stage 1 COMPLETE; Stage 2 in flight; the test-suite arc commissioned)
+## NOW (2026-07-04 — round 25 OPEN: first real-machine field-trial methodology)
+
+**Round 25 = design the methodology for the first human-driven real-machine trial.** The human has
+never invoked the built CLI; all prior testing is LLM-on-LLM. Deliverable is a pre-registered,
+adversarially-reviewed *playbook* so the human's day-of-effort against a real machine yields
+*decisions*, not a "woo cool" dopamine hit. **Durable restart-charter:
+`plans/250-round25-field-trial-charter.md`** — The Goals, the grounding scenario (admin provisions a
+video-game-server; LLMs write the stdlib; human hand-writes 1–2 minimal oracles), targets
+(`target-adequacy` + `target-admin-loop` primary; `target-gap-log` priority-1-but-hardest;
+`target-felt-product` don't-let-it-slip), the refined constraints
+(`signal-reducibility`/`differential-spine`/`n1-honesty`/`llm-authoring-twist`), and the reading
+list. Fable conducts the methodology; real-machine execution hands off to a narrow-brief Opus.
+Sequence: charter done → absorb reading list → protocol skeleton → adversarial review → Opus
+execution handoff.
+
+> **⚠ sync-conflict artifact present:** `Research/LIVING_STATUS.sync-conflict-20260703-…PHNHRER.md`
+> (stale; human-owned cleanup).
+
+## Round-24 status (2026-07-04 — Stages 1–3 COMPLETE; Stage 4 next; detail in `notes/24A`–`24D`)
+
+**Stages 1, 2, 2b, 3 all built + merged + green** (shared tip `26001ef`; 145 e2e, all gates). The
+two-halves doctrine is REAL end-to-end: the guard tier fires (`( check ) || cmd` past a wall) AND
+the elide-weld closed the vouchless-elide gap (a full skip now DEMANDS a `ByVouch` — no vouch ⇒
+run). The claim-tier trust algebra (the arc-win) was human-BLESSED + renamed
+`ByObservation`/`ByVouch`/`BySilence`; the yardstick held FLAT at 0.27 through the weld's
+50-fixture churn (no converged site was secretly skipping). **`notes/24C` carries the full
+Part-A/Part-B landing evidence + the residue ledger; `24D §6` the blessed foundation + renames.**
+NEXT: **#6 Stage 4 (derived footprints)** — `ByObservation` (fact) tier + `dorc_plan::build_vouches`
+are the ready seams; then #7 Stage 5 (grounding — resid-aliasing lives here), #8 Stage 6
+(measure/conclude/extract — possibly a fresh conductor). In flight now: a narrow Opus retiring the
+dead `guard23-vouch-inert-pair` pin (premise overturned by the weld) for an honest
+`guard23-vouch-gates-elision` (standalone attributed commit; `24C`).
+
+**NOTE for the next conductor:** after any cherry-pick, force `cargo build --workspace` before
+trusting an `e2e/run.sh` — `cargo test` doesn't reliably rebuild the `dorc` bin the harness uses
+(a stale-binary 3-case false-fail bit this session).
+
+## Round-24 EARLIER (2026-07-03 — Stage 1 complete; the test-suite arc commissioned)
 
 **Stage 1 fully built, merged, green** (`ai/spike3-r23`; e2e **135/135**, 9 standing guard23
 xfails; family elide-fraction **0.32**, post-wall elisions = 0 — the charter's honest
@@ -65,16 +102,13 @@ net / `dorc-sweep`) · **Stage 3 FOUNDATION** (the claim-tier trust algebra `cor
 + verdict-fn lift + guard type-architecture — merged, all 4 unrepresentability props
 conductor-VERIFIED as compile-errors; the earmarked-reviewable decision, `24C`/`24D`).
 
-**⚑ TWO THINGS HELD FOR THE HUMAN (durable so they survive a context-collapse):**
-1. **Stage-3 Part B — the elide-weld** — held for the human's go/no-go on the claim-tier
-   FOUNDATION. It demands a `Judgment<VerdictVouch>` on `prove_replaceable` + churns EVERY
-   converged oracle fixture (re-golden) — the expensive-if-foundation-wrong change the
-   "type-architecture is reviewable" earmark gates. Un-hold on the human's nod to `24D` +
-   `claim.rs`. (Conductor verified it sound, but that is process-evidence, not proof —
-   never-vouch.)
-2. **resid-aliasing horizon-profession** — the survival tier's silent under-execute (`24C`)
-   is owed a horizon disclosure in the human's voice. And `ORACLE_PROVIDES.md` awaits its
-   first audit. And the license-ladder rung-split stays human-open (reserved, not built).
+**⚑ HELD FOR THE HUMAN (durable — survive a context-collapse):** (Stage-3 Part B is DONE — the
+foundation was blessed, the elide-weld landed 2026-07-04.) Parked design threads, none blocking:
+`aliasing-horizon-wording` (the survival tier's silent under-execute owed a horizon disclosure in
+the human's voice; reverse-DNS-namespace-owner is the confirmed bounded approach — Stage 5 closes
+the mechanism) · `rung-split` (the wary-author hatch — license the guard but not the skip; reserved,
+seam built) · `analyzer-taint-gate` (a consume-only-provable-inputs typesystem constraint, distinct
+from report-only provenance; human-tabled) · `ORACLE_PROVIDES.md` first audit.
 
 **Stage 3 Part A LANDED (guards FIRE):** the mint-wiring merged; **all 9 `guard23-*` XFAILs
 PROMOTED** (conductor-inspected the renders + authorized). Dorc now produces real

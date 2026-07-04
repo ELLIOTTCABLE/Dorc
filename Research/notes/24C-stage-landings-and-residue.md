@@ -209,3 +209,36 @@ unit-tests but no guard23 case fires it end-to-end (the one `is_diverged` fixtur
 (`tc-sweep-guard-scenarios`). Both want a case/scenario later. The strawman yardstick `guard=`
 stays 0 (strawman oracles have no verdict functions — Part B territory); guard firing is measured
 on the guard23 pin-set (`guard=1` each; flagship `sites=4 elide=1 guard=1 run=2`).
+
+## Stage 3 Part B — the elide-weld (LANDED 2026-07-04; the vouchless-elide gap CLOSED)
+
+Merged (`3fffb65`→`ff0cb4e`, cherry-picked; shared tip `26001ef`). **A full skip now DEMANDS a
+reached vouch** — `prove_replaceable`'s `EstablishAmbient` arm consumes an `Option<ByVouch<VerdictVouch>>`
+by value (the consumption IS the tier check; a `ByObservation`/`BySilence` can't inhabit it). No
+vouch ⇒ run (`kFAIL-perform`). Rode along in the same pass (24D §6): the **rename**
+(`Fact`→`ByObservation`, `Judgment`→`ByVouch`, add `BySilence`; `FactTier`→`ObservationTier`,
+`JudgmentTier`→`VouchTier`; `Vouched`→`VouchAndRung`; minters `measured`→`observed`,
+`authored`→`vouched`); the **self-framing doc honesty-fix** (survival.rs — the overstated language
+was ONLY there, not claim.rs); the **`return-vouches` fix** (#12 — `return N`/`false`/`:`/`true`
+now DECLINE, `tc-verdict-return` softening reverted); the **per-crate critical-types + when-blocked
+doc lines**. **50 oracle fixtures gained an `is_converged()`.** Conductor review: **yardstick came
+back FLAT at 0.27 (no drop) — the churn was complete, no converged site was secretly skipping**;
+`build_plan(empty vouches)` can no longer elide, so every DST harness (sweep/coverage/hostsim/plan
+tests) needed vouches threaded (`build_vouches` extracted to `dorc_plan` as the shared home — the
+Stage-4/5 seam). All 145 e2e + gates green on a FRESH build. (A 3-case "failure" in first
+verification was a STALE-BINARY artifact — `cargo test` hadn't rebuilt the `dorc` bin the e2e
+harness uses; a `cargo build` fixed it. Lesson for the next conductor: force a `cargo build
+--workspace` before trusting an e2e run after a cherry-pick.)
+
+**The dead pin (human-ruled retirement, standalone attributed commit — in flight).**
+`guard23-vouch-inert-pair` asserted the OLD law "a vouch never changes which sites elide," which the
+weld deliberately OVERTURNED; the builder had left it green only vacuously (both halves run).
+Per the human's ruling (*pins follow design, not implementation; an unpinning is its own attributed
+commit*), it is being retired and replaced by **`guard23-vouch-gates-elision`** — one honest case
+where the apt oracle is vouched (install elides) and the systemctl oracle is not (enable runs), the
+vouch being the whole difference (contrast `guard23-no-vouch-runs`, all-runs). A narrow Opus is
+executing the mechanical swap.
+
+**Stage 3 is now COMPLETE** (guards fire + elide-weld + the blessed claim-tier foundation). The
+two-halves doctrine is real end-to-end. Owed-durable for the next conductor: nothing from Part B
+except the dead-pin commit landing (in flight) and the parked human threads (below).
