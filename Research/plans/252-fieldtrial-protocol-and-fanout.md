@@ -325,12 +325,18 @@ round), the accepted deltas:
   anyway (088 A-WIN — a free number).
 
 **The one non-trivial addition (per the at-most-one lean): the paper dry-run of the trial book.**
-Before the day, do for the game-server book what USER_STORY did for the webhost — predicted plan-shape
-per stage + the perfect-oracle ceiling. Highest-leverage of the whole review: it supplies the *missing
-denominator* (a scrappy game-server book is analyzer-hostile *by design* — so the design predicts low
-numbers; without the ceiling, "3 elided" misreads as "tool weak"), AND the *pre-registered predictions*
-(the first bullet), turning the day into prediction-vs-observation — the strongest anti-woo instrument
-at n=1. One afternoon, zero machine time; real-shell-adjacent ⇒ an Opus deliverable, pre-Phase-A.
+**Target LOCKED (human, 2026-07-04): a single-box mini-homelab — an nginx reverse-proxy fronting
+Windmill (+ postgres) and Home Assistant.** (HA is on the human's todo-list and is itself blocked on
+Dorc — a genuine dogfood want, the strongest felt-product-validity multiplier; more services = more of
+the analyzer's composition machinery exercised.) Before the day, do for this book what USER_STORY did
+for the webhost — predicted plan-shape per stage + the perfect-oracle ceiling. Highest-leverage of the
+whole review: the *missing denominator* (the homelab mixes base-stdlib-oracle-able infra with genuine
+walls — docker, HA's installer — so the design predicts a specific ceiling; without it a low count
+misreads as "tool weak"), AND the *pre-registered predictions* (the first bullet), turning the day into
+prediction-vs-observation — the strongest anti-woo instrument at n=1. **Repeatability-first (the
+differential demands it):** pin versions; local/self-signed certs, never live Let's-Encrypt (network
+chaos breaks the diff); HA-Container not Supervised. Real-shell-adjacent ⇒ an Opus single-pass
+deliverable, pre-Phase-A.
 
 **Recorded-only / deferred to Phase-A (NOT this round; `notes/254` ledger):** the A/A-calibration +
 canary + `086`-sensitivity *build*; the probe-inertness differential arm (the sole test of the "plan

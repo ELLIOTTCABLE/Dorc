@@ -14,27 +14,49 @@
 
 ---
 
-## NOW (2026-07-04 — round 25 OPEN: first real-machine field-trial methodology)
+## NOW (2026-07-04 — round 25: protocol drafted + adversarially REVIEWED + hardened; the dry-run pass in flight)
 
-**Round 25 = design the methodology for the first human-driven real-machine trial.** The human has
-never invoked the built CLI; all prior testing is LLM-on-LLM. Deliverable is a pre-registered,
-adversarially-reviewed *playbook* so the human's day-of-effort against a real machine yields
-*decisions*, not a "woo cool" dopamine hit. **Durable restart-charter:
-`plans/250-round25-field-trial-charter.md`** — The Goals, the grounding scenario (admin provisions a
-video-game-server; LLMs write the stdlib; human hand-writes 1–2 minimal oracles), targets
-(`target-adequacy` + `target-admin-loop` primary; `target-gap-log` priority-1-but-hardest;
-`target-felt-product` don't-let-it-slip), the refined constraints
-(`signal-reducibility`/`differential-spine`/`n1-honesty`/`llm-authoring-twist`), and the reading
-list. Fable conducts the methodology; real-machine execution hands off to a narrow-brief Opus.
-**`notes/251`** = slurp-synthesis + every settled fork; **`plans/252`** = the drafted protocol +
-Track-A fan-out spec (players · interface contracts · build-DAG · pre-registered question set ·
-guardrails). Two-phase: Phase A (mechanical, LLM-driven, PARALLEL with r24) → Phase B (the human's
-single first-blooding). op/Vultr connectivity PROVEN (op run → key → API 200; `252 §5.2`), and the **EXECUTION SUBSTRATE
-moves to macOS** (op sessions don't persist on Windows — no caching; macOS = signin-once + less MSYS
-friction + the human's normal zsh/dotfiles env). Sequence: charter → slurp → 252 (human-reviewed) →
-**NOW: clean commit + conductor-context-clear → resume EXECUTION on macOS via a fresh Opus from
-`252`** → (remaining planning) adversarial review (task #5) + freeze §2 contracts → Track-A fan-out →
-Phase B.
+**Round 25 = the methodology for the first human-driven real-machine field trial of Dorc** (the human
+has never invoked the built CLI — first real contact). Deliverable: a pre-registered,
+adversarially-reviewed *playbook* so the human's day against a real machine yields *decisions*, not a
+"woo cool" hit. Fable conducts; real-machine EXECUTION hands to a narrow-brief Opus.
+
+**Durable artifacts (`ai/spike3-r23`):**
+- `plans/250` — charter (Goals, grounding scenario, targets: `target-adequacy`+`target-admin-loop`
+  primary, `target-gap-log` priority-1, `target-felt-product` don't-slip; refined constraints).
+- `notes/251` — slurp-synthesis + every settled fork (two-track structure, protect-first-contact,
+  Vultr substrate, value-locus/durability/HHHF/multi-host rulings + corrections).
+- `plans/252` — **THE protocol** + Track-A fan-out (players P1–P8, §2 contracts, §3 DAG, §4 questions,
+  §5/§5.1/§5.2 guardrails+op-run-findings, **§7 = adversarial-review revisions + the LOCKED ops-target**).
+- `notes/254` — crosscheck adjudication + **retrospective ledger** (F1–F11 + dispositions; re-read
+  F2/F3/F7 first if a Phase-A green later proves hollow). `quarantine/25xxx` = the crosscheck prompts.
+
+**State:** DRAFTED → adversarially cross-checked (two Fable passes; converged: *instrument-rich,
+decision-poor*) → hardened (`252 §7`: pre-register §4 as numbers; B4 gated on Stage-4/5 landing; B3
+asymmetric felt-signal; A1 planted=sensitivity-gate + disjoint stdlib; differential noise-governance /
+A-A calibration; gap-log forcing-functions; reinstate confound-conditions). Per the human's
+*at-most-one-non-trivial* lean, the one non-trivial fix = the **paper dry-run** below.
+
+**Ops-target LOCKED:** single-box mini-homelab — nginx reverse-proxy + Windmill(+postgres) +
+Home-Assistant(Container), self-signed certs. (HA genuinely blocked-on-Dorc = the dogfood-want; more
+services = more composition-exercise; corral network-chaos, don't eliminate. Rubric: many-parts>few; mostly bog-standard-oracle-able + a few walls (tractable-vendor→admin-loop,
+opaque-hork→residue); real-drift→adequacy; corral-chaos-not-control.)
+
+**IN FLIGHT (agent, background):** the dry-run pass → `notes/255-homelab.book.sh` (runbook) +
+`notes/255-homelab-dryrun.md` (per-stage predicted-plan ledger + perfect-oracle **CEILING** +
+decisions-log). Its numbers become §4's pre-registered predictions; the ceiling is the day's
+denominator. **When it returns:** sanity-check the load-bearing predictions (theory — hold loosely,
+don't relay), fill §4 thresholds from the ceiling.
+
+**Substrate + deferred conduct:** op sessions don't persist on Windows (no caching) → **EXECUTION
+substrate = macOS** (`§5.2`). **Re-conductoring to macOS is DEFERRED** (expensive) — planning continues
+HERE; the macOS handoff (fresh Opus from `252`) is for Phase-A/B execution. Vultr op-run/key path
+PROVEN; the resource-guardrail (`§5.1`) awaits its specifics-turn; **subagents can't push-notify** →
+credentialed work is conductor-owned or frontloaded.
+
+**Next:** dry-run returns → fill §4 predictions → freeze §2 contracts (AFTER review, per §7) → Track-A
+fan-out (Phase-A builds) → macOS re-conductor → Phase B (the human's single first-blooding). Live
+tasks: #6 (execution handoff), #7 (dry-run, in-flight).
 
 > **⚠ sync-conflict artifact present:** `Research/LIVING_STATUS.sync-conflict-20260703-…PHNHRER.md`
 > (stale; human-owned cleanup).
