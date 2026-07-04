@@ -14,7 +14,7 @@
 
 ---
 
-## NOW (2026-07-04 — round 25: protocol drafted + adversarially REVIEWED + hardened; the dry-run pass in flight)
+## NOW (2026-07-04 — round 25: protocol REVIEWED + hardened + dry-run DONE; rotating conductor, Stages-4-5 landing)
 
 **Round 25 = the methodology for the first human-driven real-machine field trial of Dorc** (the human
 has never invoked the built CLI — first real contact). Deliverable: a pre-registered,
@@ -66,9 +66,23 @@ HERE; the macOS handoff (fresh Opus from `252`) is for Phase-A/B execution. Vult
 PROVEN; the resource-guardrail (`§5.1`) awaits its specifics-turn; **subagents can't push-notify** →
 credentialed work is conductor-owned or frontloaded.
 
-**Next:** dry-run returns → fill §4 predictions → freeze §2 contracts (AFTER review, per §7) → Track-A
-fan-out (Phase-A builds) → macOS re-conductor → Phase B (the human's single first-blooding). Live
-tasks: #6 (execution handoff), #7 (dry-run, in-flight).
+**HANDOFF (fresh conductor, rotating 2026-07-04):**
+- **Stages 4–5 (derived footprints — the tier that buys the ATTENTION value-prop) LAND FIRST, before
+  Phase B** (human-confirmed; parallel r24 work, ~EOB). So the trial WILL test the full value-prop,
+  not attention-light (resolves the B4-gate; `255` takeaway 2). Confirm they're in before scheduling B.
+- **Parallelizable prep to spin up now** (all r24-independent, `252 §3`): Track-A leaves **P1**
+  (Vultr provision + guardrail — do the `§5.1` specifics turn first), **P2** (comprehensive observer),
+  **P3** (ssh-apply runner), **P6** (HHHF, zsh/dotfiles-shaped); **u3 in-repo de-risk** (does the built
+  spike lift a *stdout-consuming* pipe-guard `cmd | grep -q X || fallback`? `255` takeaway 1 — the
+  highest-value cheap check, NO VPS needed); fold `255 §5` pred-1..5 into `252 §4`; freeze `§2`
+  contracts.
+- **Then:** execution on **macOS** (op-caching works there; fresh Opus from `252`) → **Phase B** (the
+  human's single first-blooding).
+- **su-c note:** `255` dec-4's `su - postgres -c '…'` wall is standard Debian-postgres peer-auth
+  (real-ops-knowledge, NOT a corpus-crib/hallucination); the finding stands; the exact line's
+  runnability firms on-VPS (a `# FLAG`).
+- **On-ramp:** THIS block → `252` (protocol + §7) → `254` (review + retrospect ledger) → `255` (dry-run
+  + predictions). All committed (`90ee2e2`). Live task: #6 (execution handoff).
 
 ## Round-24 status (2026-07-04 — Stages 1–3 COMPLETE; Stage 4 next; detail in `notes/24A`–`24D`)
 
