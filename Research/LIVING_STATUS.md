@@ -81,7 +81,22 @@ human's public system-repo (windmill Ansible + a complex zsh setup + a bit of Vu
 cribs from), read-only reference for the sweep. **Isolation:** agents and any manual reap filter STRICTLY on the `dorc-r25` tag — never touch
 pre-existing untagged instances (the human's own infra). Baseline: **0 `dorc-r25`**
 instances/snapshots. Orphan-detection keys on `… | grep dorc-r25` (a raw line-count is unreliable — the
-text table's footer rows inflate it). Agents relay trouble via
+text table's footer rows inflate it).
+
+**P1 DONE (2026-07-04, conductor-verified clean — 0 dorc-r25, eurydice untouched):** disposable Vultr
+substrate `Research/trial/vultr/vultr.sh` (C-vps: provision/snapshot/restore/destroy + `destroy-all`
+reaper + `status` + always-teardown `run`). Proven live: provision→ssh-reachable→snapshot→destroy on
+one real Debian-12 box, 0 orphans, $0 left, guardrail-compliant. On worktree branch
+`worktree-agent-a0618edd45959e557` (based `427b36d`, **UNMERGED**, unpushed). **Flags:** (1) plan =
+`vc2-1c-1gb` (~$0.007/hr — cheapest *broadly-available IPv4*; the $0 / $2.50 / $3.50 tiers are
+free-limited / IPv6-only / one-region, each breaking the differential or SSH — sound). (2) **Windows
+ssh gotcha (real, will hit P3):** the human's `~/.ssh/config` `usekeychain` (macOS-only) breaks git-bash
+`ssh`; P1 dodged via `ssh-keyscan`, but **P3 must use a trial-local `ssh -F` config, not his global
+one** (Windows-substrate ↔ macOS-dotfiles friction; cf. the P6-zsh fork). (3) **SAFETY OWED:** P1
+(correctly) never pointed `destroy` at the real box — the tag-scoped-destroy guard `_assert_tagged`
+rests on construction + offline tests ⇒ **human must eyeball `_assert_tagged` before trusting
+`destroy-all` near his infra**; `restore` is untested-live. **Next (human-gated):** eyeball
+`_assert_tagged` → integrate vultr.sh onto `ai/` → resolve P3's ssh-config → dispatch P3 + P2 onto a box. Agents relay trouble via
 `SendMessage`→conductor→human (the conductor holds the notify path); the `dorc-r25` tag covers a
 hard-died agent's orphan.
 
