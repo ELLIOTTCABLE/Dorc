@@ -116,7 +116,11 @@ const MIGRATED_SLUGS: &[&str] = &[
 //   Warning; PENDING typed-spine migration (tc-footprint-diag — the diagnostic wants a
 //   registry-declared home like the predict-dialect codes, deferred with the guard-tier
 //   diagnostics it will share a render pass with).
-const LEGACY_ALLOW_LIST: &[&str] = &["footprint-incoherent"];
+// * `touches-escalated` (Stage 4 / 24E §4 fork-4B): the SPIKE-ONLY (ru-26) escalation advisory —
+//   a cli-edge Note surfacing that a payload-bound touches() shipped to host-derivation. Shares
+//   the deferred typed-spine migration (tc-footprint-diag); spike-instrumentation, not a
+//   permanent greenfield requirement.
+const LEGACY_ALLOW_LIST: &[&str] = &["footprint-incoherent", "touches-escalated"];
 
 /// The SPANLESS-MINT allow-list (arch-3-residual-2): EXACTLY the codes permitted to construct a
 /// diagnostic with no primary span, via [`dorc_core::diag::Diag::new_spanless_site`]. Every other
