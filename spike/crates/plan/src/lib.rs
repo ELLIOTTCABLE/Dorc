@@ -1271,6 +1271,160 @@ impl ProbePlan {
     }
 }
 
+/// A ship decision for one escalated derivation site (24E §2): the stripped `<provider>__touches`
+/// funcdef + the host tool the body reached (display locus). Returned by the cli's derive-closure,
+/// which owns the oracle sources + the `evaluate_touches` escalation check — so `plan` stays
+/// oracle-free (the same seam-shape as [`compile_probe`]'s `ship_body`).
+#[derive(Debug, Clone)]
+pub struct DerivationShip {
+    /// The stripped `<provider>__touches` funcdef (strip-only; `dorc_oracle::predict::strip_touches`).
+    pub sh: String,
+    /// The host tool the touches body reached (e.g. `dpkg -L`) — a display locus for the fork-4B
+    /// advisory + the `Derived` footprint origin (24E §9). `inv-referent-agnostic`: never decoded.
+    pub call: String,
+}
+
+/// One compiled derivation-probe query (24E §2/§5): an escalated wall-candidate site whose
+/// `touches()` body ships to the host to derive its footprint. Site-keyed
+/// (`inv-site-keyed-results`) — the `deriv <leafid> coord=…` records it emits key back to `site`,
+/// and `node` re-keys the derived footprint into [`TrustedFootprints`] (`CfgNodeId`-keyed) at
+/// readback.
+#[derive(Debug, Clone)]
+pub struct ProbeDerivation {
+    /// The stable command-site identity (the same [`LeafId`] the apply plan assigns).
+    pub site: LeafId,
+    /// The CFG node — re-keys the readback footprint into the `CfgNodeId`-keyed [`TrustedFootprints`].
+    pub node: CfgNodeId,
+    /// The book command word (argv[0]) whose `__touches` this ships.
+    pub provider: Symbol,
+    /// The site's argv after the command word (F-quoted at render).
+    pub argv: Vec<Symbol>,
+    /// The stripped `<provider>__touches` funcdef.
+    pub sh: String,
+    /// The host tool the body reached (display locus for the `Derived` origin + advisory).
+    pub call: String,
+}
+
+/// The compiled derivation-probe (24E §2 — the SECOND probe-shipping path, PARALLEL to
+/// [`ProbePlan`] per fork-s4-compile): the wall-candidate sites whose `touches()` escalated to
+/// host-derivation. It rides the SAME phase-1 artifact as the convergence probe; its stdout
+/// coordinate-records are read back and built into `Derived` [`Footprint`]s before the survival
+/// walk. Empty ⇒ nothing is appended to the probe artifact (goldens stay byte-identical).
+#[derive(Debug, Default)]
+pub struct DerivationPlan {
+    /// The escalated sites' derivation queries, in site-id order.
+    pub derivations: Vec<ProbeDerivation>,
+}
+
+/// The `<provider>__touches` derivation funcname (24E §2/§9), mangled IDENTICALLY to
+/// [`predict_fn_name`] so a site's shipped def (via `strip_touches`) and its invocation agree
+/// byte-for-byte. Referent-agnostic: passed to the host, never branched on.
+fn touches_fn_name(interner: &Interner, provider: Symbol) -> String {
+    format!(
+        "{}__touches",
+        dorc_oracle::to_funcname_segment(&dorc_oracle::predict::map_provider_name(
+            interner.resolve(provider)
+        )),
+    )
+}
+
+impl DerivationPlan {
+    /// Render the derivation-probe as read-only, self-reporting sh, APPENDED to the convergence
+    /// probe in the SAME phase-1 block (no shebang — the e2e shebang-split keeps it in phase-1).
+    /// Each provider's stripped `<provider>__touches` funcdef is emitted once (deduped, re-emitted
+    /// on a body change — sh's last-writer-wins, exactly as [`ProbePlan::render_sh`] does for the
+    /// multi-body provider), then invoked per SITE with the site's argv, its stdout coord-lines
+    /// re-keyed to `deriv <leafid> coord=…` records. Empty ⇒ `""` (nothing appended).
+    #[must_use]
+    pub fn render_sh(&self, interner: &Interner) -> String {
+        if self.derivations.is_empty() {
+            return String::new();
+        }
+        let mut out = String::from(render::deriv::header());
+        let mut defined: BTreeMap<String, &str> = BTreeMap::new();
+        for d in &self.derivations {
+            let fn_name = touches_fn_name(interner, d.provider);
+            out.push_str(&render::deriv::deriv_comment(
+                d.site,
+                interner.resolve(d.provider),
+                &d.call,
+            ));
+            if defined.insert(fn_name.clone(), d.sh.as_str()) != Some(d.sh.as_str()) {
+                out.push_str(&render::probe::wrapper_def(&d.sh));
+            }
+            let invocation = render::deriv::invocation(&fn_name, &d.argv, interner);
+            out.push_str(&render::deriv::record_scaffold(&invocation, d.site));
+        }
+        out
+    }
+}
+
+/// Compile the derivation-probe (24E §2 / fork-s4-compile — a PARALLEL builder to
+/// [`compile_probe`], deliberately NOT an extension: a different site-set [wall-candidates, not
+/// elision-candidates], a different body-source [`touches` not `predict`], a different readback
+/// [stdout coords not rc]). For each WALL-CANDIDATE site (an establish-bearing class or a kill —
+/// the same candidate set [`crate::build_plan_walled`]'s footprints cover), `derive_body` decides
+/// escalation + ships: it returns `Some(DerivationShip)` iff the site's `touches()` body ESCALATED
+/// (reached a host query the static `evaluate_touches` could not resolve — a `NonPrintfCommand` ⊤),
+/// else `None` (no touches, a statically-resolvable/non-escalating body, or a non-literal argv).
+/// The escalation decision + the strip live in the closure (the cli owns the oracle sources +
+/// `evaluate_touches`); `plan` stays oracle-free. Deterministic, non-mutating; the readback +
+/// footprint-build are the cli's ([`ProbeDerivation::site`] keys them).
+pub fn compile_derivations(
+    ast: &Ast,
+    cfg: &Cfg,
+    value: &ValueFlow,
+    classes: &[(CfgNodeId, SkipClass)],
+    kills: &BTreeSet<CfgNodeId>,
+    derive_body: impl Fn(Symbol, &[Symbol]) -> Option<DerivationShip>,
+) -> DerivationPlan {
+    let mut derivations = Vec::new();
+    for (site, node, class) in site_order(ast, cfg, classes) {
+        let is_wall_candidate = matches!(
+            class,
+            SkipClass::EstablishAmbient(_) | SkipClass::EstablishWritten(_)
+        ) || kills.contains(&node);
+        if !is_wall_candidate {
+            continue;
+        }
+        // R3-shape: split the resolved argv into (provider-word, operands); a ⊤ word ⇒ no
+        // concrete invocation ⇒ the site stays walled (kFAIL-safe). The closure then decides
+        // escalation (a `NonPrintfCommand` ⊤ from `evaluate_touches`) + ships the stripped body.
+        let argv = value.argv_values(node);
+        let Some((first, rest)) = argv.split_first() else {
+            continue;
+        };
+        let ValueOf::Literal(provider) = first else {
+            continue;
+        };
+        let mut operands = Vec::with_capacity(rest.len());
+        let mut concrete = true;
+        for w in rest {
+            if let ValueOf::Literal(s) = w {
+                operands.push(*s);
+            } else {
+                concrete = false;
+                break;
+            }
+        }
+        if !concrete {
+            continue;
+        }
+        let Some(ship) = derive_body(*provider, &operands) else {
+            continue;
+        };
+        derivations.push(ProbeDerivation {
+            site,
+            node,
+            provider: *provider,
+            argv: operands,
+            sh: ship.sh,
+            call: ship.call,
+        });
+    }
+    DerivationPlan { derivations }
+}
+
 /// The canonical per-site ordering shared by [`compile_probe`] and [`build_plan`]
 /// (`inv-site-keyed-results`, the load-bearing back-map): assign each classified
 /// command a stable [`LeafId`] by sorting on its source span, so the probe's site-ids
@@ -3349,6 +3503,69 @@ apt_get__predict() {
             probe.unresolvable,
             vec![LeafId(0)],
             "the un-probeable site is recorded: {probe:?}"
+        );
+    }
+
+    #[test]
+    fn compile_derivations_ships_escalated_wall_candidate_and_renders_deriv_scaffold() {
+        // 24E §2: a WALL-CANDIDATE site whose touches() ESCALATED (the closure returns a ship)
+        // becomes one ProbeDerivation; render_sh appends the stripped __touches def + a per-site
+        // `deriv N coord=` scaffold to the phase-1 probe (no second shebang). A non-escalating
+        // provider (the un-oracled systemctl, not even a wall candidate) yields no derivation.
+        let mut i = Interner::default();
+        let idx = package_index(&mut i);
+        let parsed = dorc_syntax::parse("apt-get install -y nginx\nsystemctl reload nginx\n");
+        let cfg = dorc_analysis::cfg::build(&parsed.value).value;
+        let value = dorc_analysis::value::analyze(&cfg, &parsed.value, &mut i);
+        let checks = vec![dorc_oracle::predict::lift_predicts(&mut i, CORPUS_PREDICT_SRC).value];
+        let (classes, _why, kills) = dorc_analysis::effect::classify_with_why_diags(
+            &cfg,
+            &value,
+            &parsed.value,
+            &idx,
+            &checks,
+            &mut i,
+            &mut dorc_core::ProvArena::new(),
+        );
+        let classes = classes.value;
+        let derivations = compile_derivations(
+            &parsed.value,
+            &cfg,
+            &value,
+            &classes,
+            &kills,
+            |provider, _argv| {
+                // Escalate ONLY apt-get (the payload-bound install); everything else declines.
+                (dorc_oracle::predict::map_provider_name(i.resolve(provider)) == "apt-get").then(
+                    || DerivationShip {
+                        sh: "apt_get__touches() { apt-manifest \"$1\"; }".to_string(),
+                        call: "apt-manifest".to_string(),
+                    },
+                )
+            },
+        );
+        assert_eq!(
+            derivations.derivations.len(),
+            1,
+            "only the apt-get install (an EstablishAmbient wall candidate) escalated"
+        );
+        assert_eq!(
+            derivations.derivations[0].site,
+            LeafId(0),
+            "the install is site 0"
+        );
+        let sh = derivations.render_sh(&i);
+        assert!(
+            sh.contains("apt_get__touches() { apt-manifest"),
+            "the stripped touches def ships verbatim: {sh}"
+        );
+        assert!(
+            sh.contains("| while IFS= read -r _c; do printf 'deriv 0 coord=%s"),
+            "the per-site deriv readback scaffold renders: {sh}"
+        );
+        assert!(
+            !sh.starts_with("#!/bin/sh"),
+            "no second shebang — the derivation-probe rides the SAME phase-1 block: {sh}"
         );
     }
 

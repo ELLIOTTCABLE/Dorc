@@ -205,6 +205,76 @@ pub mod probe {
 }
 
 // ===========================================================================
+// Derivation-probe emitters (`DerivationPlan::render_sh`; 24E §2/§5 — payload-bound footprints)
+// ===========================================================================
+
+/// Derivation-probe emitters: the read-only, self-reporting sh that DERIVES a payload-bound
+/// footprint the static `evaluate_touches` tracer could not resolve (24E §2 — the SECOND
+/// probe-shipping path). It rides in the SAME phase-1 artifact as the convergence probe (no
+/// second `#!/bin/sh` — the e2e shebang-split keeps it in phase-1): each escalated wall-candidate
+/// ships its stripped `<provider>__touches` body, and when run pipes its stdout coord-lines into
+/// per-site `deriv <leafid> coord=…` records (`inv-site-keyed-results`). Assembly only —
+/// [`DerivationPlan::render_sh`](crate::DerivationPlan::render_sh) decides which sites escalated
+/// and walks them; these emit the bytes for one decided piece.
+pub mod deriv {
+    use super::{Interner, LeafId, Symbol, sem};
+
+    /// The derivation-probe banner — comment-only (no shebang), documents the `deriv` record
+    /// grammar. GUARANTEE: pure `#`-comment lines ⇒ dash-n-clean; appended to the convergence
+    /// probe, so it never opens a second phase.
+    #[must_use]
+    pub const fn header() -> &'static str {
+        "# dorc derivation-probe (read-only, 24E §2): payload-bound footprints the static\n\
+         # tracer could not resolve. Each escalated wall-candidate ships its touches() body\n\
+         # strip-only; when run it prints its footprint coordinates, re-keyed per site:\n\
+         #   deriv <leafid> coord=<kind:entity>\n\
+         # (the SAME leaf-id the apply plan assigns — inv-site-keyed-results).\n\n"
+    }
+
+    /// A per-site derivation provenance comment (`# deriv <leafid>: <provider> (host-derivation
+    /// via <call>)`). GUARANTEE: one `#`-comment line ⇒ dash-n-clean. `provider`/`call` are
+    /// display-only (`inv-referent-agnostic`), riding in a comment, never re-parsed.
+    #[must_use]
+    pub fn deriv_comment(site: LeafId, provider: &str, call: &str) -> String {
+        format!(
+            "# deriv {}: {provider} (host-derivation via {call})\n",
+            site.0
+        )
+    }
+
+    /// The derivation invocation with the site's argv F-QUOTE-bound (`<fn_name> 'install'
+    /// 'nginx'`) — the SAME F-QUOTE guarantee as [`super::probe::invocation`] (`inv-kfail` both
+    /// directions: each word is exactly one inert positional via [`sem::single_quote`], so an
+    /// operand cannot word-split or re-parse a metachar into a second command).
+    #[must_use]
+    pub fn invocation(fn_name: &str, argv: &[Symbol], interner: &Interner) -> String {
+        let mut out = fn_name.to_owned();
+        for word in argv {
+            out.push(' ');
+            out.push_str(&sem::single_quote(interner.resolve(*word)));
+        }
+        out
+    }
+
+    /// The self-report scaffold: pipe the touches invocation's stdout (the coordinate lines the
+    /// body printed) through a per-line `printf`, re-keying each as a `deriv <leafid> coord=<line>`
+    /// record. `_c` is a probe-local name (unlikely to clash with a touches body).
+    ///
+    /// GUARANTEE: dash-n-clean — a pipeline into a `while read` loop, valid at script top level.
+    /// A body that prints NOTHING ⇒ no records ⇒ an empty derived footprint ⇒ the site walls
+    /// (silence = wall, 24E §4). An un-shimmed derivation command under `PATH=mocks-only` (the
+    /// fork-4A layer-3 mocks net) prints nothing ⇒ empty ⇒ wall — the safe direction
+    /// (`kFAIL-perform`), never a wrong-elision.
+    #[must_use]
+    pub fn record_scaffold(invocation: &str, site: LeafId) -> String {
+        format!(
+            "{invocation} | while IFS= read -r _c; do printf 'deriv {} coord=%s\\n' \"$_c\"; done\n",
+            site.0
+        )
+    }
+}
+
+// ===========================================================================
 // Apply-artifact emitters (`Plan::render_sh` flat + `Plan::render_apply` line)
 // ===========================================================================
 
