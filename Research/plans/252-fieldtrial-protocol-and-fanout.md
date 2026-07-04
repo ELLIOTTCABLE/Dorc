@@ -202,31 +202,38 @@ itself a B6 finding.)
 - **Vultr (P1):** the resource-guardrail — full sketch in **§5.1**; no paid resource created before it
   exists + a collated per-spin plan is human-acked.
 
-### §5.1 · The Vultr resource-guardrail (sketch — for human ack)
+### §5.1 · The Vultr resource-guardrail (firmed 2026-07-04 — human-set caps)
 
 The standing policy governing any Opus subagent that touches paid Vultr resources. Six parts:
 
 1. **Isolation.** Everything lives in a dedicated, tagged bucket — every instance / snapshot / firewall
    stamped `dorc-r25` (a Vultr tag + a naming prefix), so the whole trial is enumerable and
    bulk-destroyable in one call, and nothing an agent does can touch the human's other Vultr resources.
-2. **Spend-envelope.** (a) *size-cap:* agents may select only up to a small tier (game-server fidelity
-   needs ~1–2 GB RAM ⇒ a ~$6–12/mo / ~$0.02/hr plan; cap the allowed plan-ids). (b) *count-cap:* a
-   hard ceiling on concurrent `dorc-r25` instances (r25 single-host ⇒ 1 live box/run + snapshots;
-   ceiling ~2–3 as slack). (c) hourly billing + teardown ⇒ real spend is pennies-per-run; the ceiling
-   exists to stop "boxes left running overnight," not to budget per-run.
+2. **Spend-envelope (human-set 2026-07-04).** (a) *count-cap:* **≤ 3 concurrent `dorc-r25` instances**
+   (single-host trial ⇒ expect 1 live/run; 3 is pure slack). (b) *size-cap:* **cheapest tier that runs
+   the workload, never a large/expensive plan** — mechanical Track-A boxes (differential/observer) fit
+   the absolute smallest; the full 3-service homelab (windmill+postgres+HA-in-docker) wants ~2 GB, so
+   an agent may pick the cheapest ≥2 GB plan *only if* the smallest OOMs — all still < $0.03/hr. A box
+   OOMing is itself a finding to log, not a licence to size up freely. (c) *total-cap:* **< $10 for the
+   whole day** — trivially held (cheapest tiers bill fractions-of-a-cent/hr); the cap exists to catch a
+   box left running, not to budget per-run.
 3. **Teardown (load-bearing).** Every provision is paired with a teardown that fires ALWAYS — success
    or failure (trap/finally in the runner); a run cleans up after itself, handling the common case.
    Backstop against a *crashed*-agent leak: **the human is the manual reaper** — an automated
    long-lived reaper is OUT (this environment can't host a durable cron; the human's Windmill is
    shaky/maybe-dead) — via a one-shot `destroy-all-dorc-r25` + a self-set reminder (a leaked
    hourly-billed small box costs pennies until the nightly sweep). (Human, 2026-07-04.)
-4. **Key handling — `op run` (battle-tested; the human uses it regularly).** The Vultr API key rides
-   `op run` (1Password), never committed/echoed/logged. Operational guardrail on the agents: `op run`
-   returns a DENIAL if the GUI popup isn't accepted fast enough and the human has stepped away — so
-   agents MUST (i) treat a timed-out/denied `op run` as a **HARD STOP** (no key ⇒ create no resources;
-   never proceed as if it succeeded), and (ii) **NOTIFY the human on timeout** so he can re-auth.
-   Notification mechanism TBD — to be tested this session. Prefer a project-scoped sub-key over a
-   full-account key if Vultr offers one.
+4. **Key handling — expiration-bound key in an env-file (REVISED 2026-07-04; `op run` RETIRED here —
+   no op session-caching on Windows, `§5.2`).** The Vultr key lives in **`~/.temp/vultr.env`**
+   (`export VULTR_API_KEY=…`), OUTSIDE the Sync + repo trees, icacls'd to the user only (inheritance
+   stripped). Agents **`. ~/.temp/vultr.env`** then run `vultr-cli` (it reads `VULTR_API_KEY` from
+   env); the literal is **never inlined, echoed, printed (`env`/`set`/`printenv`), or logged** —
+   sourced-into-env only, so it never enters a command line, process arg, or transcript. No GUI popup,
+   no timeout (the §5.2 op-run-timeout machinery no longer applies). The key is **expiration-bound**
+   (human rotates on expiry/leak); an agent hitting an auth error (`token expired` / 401) treats it as
+   a **HARD STOP** — no key ⇒ create no resources — and relays up via `SendMessage "main"` (the
+   conductor holds the human-notify path, `§5.2`). **Mechanism proven 2026-07-04** (source→env→
+   vultr-cli→API round-trips cleanly); a non-expired key is the only missing piece.
 5. **Authorization gate.** No paid resource is created until (a) this guardrail is implemented AND
    (b) a collated per-spin plan (how many boxes, what size, expected spend, teardown proof) is
    human-acked. Once auto-teardown + reaper are proven, a *bounded standing* authorization is possible

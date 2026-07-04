@@ -60,11 +60,18 @@ marks hold; the 5-elide is +SURE, the +3 rides u3). **Three takeaways for the da
 Owed nicety: fold 255 §5's predictions into `252 §4` (cheap; they live durably in 255 regardless).
 The `# FLAG:` runnability specifics firm on the VPS (compose-fallback = pre-registered contingency).
 
-**Substrate + deferred conduct:** op sessions don't persist on Windows (no caching) → **EXECUTION
-substrate = macOS** (`§5.2`). **Re-conductoring to macOS is DEFERRED** (expensive) — planning continues
-HERE; the macOS handoff (fresh Opus from `252`) is for Phase-A/B execution. Vultr op-run/key path
-PROVEN; the resource-guardrail (`§5.1`) awaits its specifics-turn; **subagents can't push-notify** →
-credentialed work is conductor-owned or frontloaded.
+**Substrate + creds (REVERSED 2026-07-04 — NO platform switch):** stay on **Windows/git-bash** (human
+has too much in-flight to move; swallowing the friction). op-session-caching is broken on Windows, so
+**sidestep `op` entirely**: the expiration-bound Vultr key lives in a permissions-scoped file OUTSIDE
+the Sync + repo trees; agents `. keyfile` → `VULTR_API_KEY` in env → `vultr-cli` (that path is PROVEN,
+`§5.2`; only the op-injection changed). **Human places the key — conductor must NOT handle the raw
+secret.** **`§5.1` guardrail FIRMED** (≤3 instances · cheapest-that-runs-it · <$10/day · `dorc-r25` tag ·
+human-reaper · always-teardown). Key mechanism **PROVEN** (source→env→vultr-cli→API round-trips; file
+icacls'd user-only) but the **current key is EXPIRED** (`token expired`, 36-char valid-format) → **the
+sole remaining Vultr-agent blocker is a fresh key** (human regenerates + re-populates `~/.temp/vultr.env`
+same format). **Non-Vultr agents (P3 ssh-runner, P6 HHHF) are unblocked NOW.** Agents relay trouble via
+`SendMessage`→conductor→human (the conductor holds the notify path); the `dorc-r25` tag covers a
+hard-died agent's orphan.
 
 **HANDOFF (fresh conductor, rotating 2026-07-04):**
 - **Stages 4–5 (derived footprints — the tier that buys the ATTENTION value-prop) LAND FIRST, before
