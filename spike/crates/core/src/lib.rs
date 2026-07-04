@@ -170,7 +170,10 @@ pub mod unord;
 pub use unord::IterSuppressedMap;
 
 pub mod claim;
-pub use claim::{Claim, Fact, FactTier, Judgment, JudgmentTier, Rung, SilenceTier, Tier, Vouched};
+pub use claim::{
+    ByObservation, BySilence, ByVouch, Claim, ObservationTier, Rung, SilenceTier, Tier,
+    VouchAndRung, VouchTier,
+};
 
 /// `result × accumulated diagnostics` — the type every pipeline stage returns
 /// (research chord `dn-7` / `ch-carrier`). A writer-monad shape: `map` transforms

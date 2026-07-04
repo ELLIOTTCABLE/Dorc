@@ -40,8 +40,7 @@ use dorc_analysis::effect::{FactKey, InlineSite, SkipClass};
 use dorc_analysis::lattice::{May, Powerset};
 use dorc_analysis::value::{ValueFlow, ValueOf};
 use dorc_core::{
-    AstId, Channel, EntityRef, Grade, Interner, Judgment, Observable, Predicted, Rc, Symbol,
-    Verdict,
+    AstId, ByVouch, Channel, EntityRef, Grade, Interner, Observable, Predicted, Rc, Symbol, Verdict,
 };
 use dorc_oracle::verdict::VerdictSense;
 use dorc_syntax::ast::{Ast, NodeKind, RedirOp, RedirTarget};
@@ -678,8 +677,8 @@ impl StandIn {
 // The guard tier (rul-ternary-verdict / rul-guard-license / 24D §2 — the third verb)
 // ===========================================================================
 
-/// The judgment-plane **vouch descriptor** — the payload a [`Judgment<VerdictVouch>`] carries
-/// (`core::claim`, TC-tier-4's `Vouched<VerdictVouch>` inner). It is what the guard emitter needs
+/// The judgment-plane **vouch descriptor** — the payload a [`ByVouch<VerdictVouch>`] carries
+/// (`core::claim`, TC-tier-4's `VouchAndRung<VerdictVouch>` inner). It is what the guard emitter needs
 /// to ship the oracle's own verdict body strip-only and invoke it at position, plus the
 /// attribution label — and NOTHING that is a fact-plane value (TC-tier-3: a vouch informs a
 /// license, never becomes an ambient fact). Built by the cli edge from the lifted verdict function
@@ -817,7 +816,7 @@ impl GuardInsert {
 
 /// The witness authorising a **guard** — the third verb of rul-ternary-verdict's {elide, guard,
 /// run}. Mirrors [`ReplaceLicense`]'s private-fields / sole-mint pattern (TC-3-shaped): the ONLY
-/// way to obtain one is [`GuardLicense::mint`], which DEMANDS a [`Judgment<VerdictVouch>`] (the
+/// way to obtain one is [`GuardLicense::mint`], which DEMANDS a [`ByVouch<VerdictVouch>`] (the
 /// vouch; TC-tier-2) — no vouch ⇒ no `GuardLicense` ⇒ run (rul-guard-license). A plan emitter
 /// accepts a `GuardLicense`, never a `bool`, so a guard cannot be spelled without the judgment.
 ///
@@ -835,13 +834,13 @@ pub struct GuardLicense {
 impl GuardLicense {
     /// Mint a guard iff the plan-time probe [`Verdict`] is [`Verdict::Converged`] (jc-mint-policy
     /// m-a: converged-past-wall ONLY — a guard at a predicted-change site buys nothing, flagship
-    /// site 3). CONSUMES the [`Judgment<VerdictVouch>`] by value (TC-tier-2: a [`core::claim::Fact`]
+    /// site 3). CONSUMES the [`ByVouch<VerdictVouch>`] by value (TC-tier-2: a [`core::claim::ByObservation`]
     /// or a silence claim does not satisfy this signature). A diverged/unknown verdict ⇒ `None` ⇒
     /// the site runs (`inv-kfail`).
     #[must_use]
     pub fn mint(
         fact: FactKey,
-        vouch: Judgment<VerdictVouch>,
+        vouch: ByVouch<VerdictVouch>,
         probe_verdict: Verdict,
     ) -> Option<GuardLicense> {
         if probe_verdict != Verdict::Converged {
@@ -872,12 +871,12 @@ impl GuardLicense {
 /// The per-site **vouch map** the guard mint consumes (rul-guard-license / rul24-vouch-is-verdict
 /// -authoring, 24A §1c): each site whose provider authored a verdict function that REACHES a
 /// vouching path for the site's constant-propagated argv (`evaluate_verdict` ⇒ `Vouched`) gets one
-/// [`Judgment<VerdictVouch>`], keyed by its [`CfgNodeId`]. A site ABSENT from the map has no
+/// [`ByVouch<VerdictVouch>`], keyed by its [`CfgNodeId`]. A site ABSENT from the map has no
 /// reached vouch ⇒ it never guards (no vouch ⇒ run — the map's judgment tier is exactly what
 /// [`GuardLicense::mint`] DEMANDS, TC-tier-2; a fact or silence claim cannot populate it). The cli
 /// edge builds it ALWAYS-ON — guards are the un-flagged baseline (rul24-mode-gate; NOT
 /// `--trust-footprints`-gated, which governs only the survival tier).
-pub type Vouches = BTreeMap<CfgNodeId, Judgment<VerdictVouch>>;
+pub type Vouches = BTreeMap<CfgNodeId, ByVouch<VerdictVouch>>;
 
 /// What the plan does with one leaf.
 #[derive(Debug, Clone)]
@@ -1746,7 +1745,7 @@ fn disposition_for(
     class: &SkipClass,
     ast_id: AstId,
     observed: Option<Observable>,
-    vouch: Option<&Judgment<VerdictVouch>>,
+    vouch: Option<&ByVouch<VerdictVouch>>,
 ) -> Disposition {
     // (0) the in-loop render floor (task-L1, `209` brk-1): a leaf inside a loop body or
     // condition is MustRun — UNLESS it is the in-loop Members shape, which is routed to
@@ -2893,7 +2892,7 @@ apt_get__predict() {
 
     #[test]
     fn guard_mints_only_on_a_converged_probe_verdict() {
-        use dorc_core::{Judgment, Rung};
+        use dorc_core::{ByVouch, Rung};
         let vouch = || {
             VerdictVouch::new(
                 "apt_get__is_converged".to_string(),
@@ -2906,11 +2905,11 @@ apt_get__predict() {
         };
         // jc-mint-policy m-a: a diverged/unknown probe-verdict NEVER guards (a guard at a
         // predicted-change site buys nothing; `inv-kfail` → run). The mint DEMANDS a
-        // `Judgment<VerdictVouch>` (TC-tier-2) — a fact/silence claim would not typecheck here.
+        // `ByVouch<VerdictVouch>` (TC-tier-2) — a fact/silence claim would not typecheck here.
         assert!(
             GuardLicense::mint(
                 nginx_fact(),
-                Judgment::authored(vouch(), Rung::Both),
+                ByVouch::vouched(vouch(), Rung::Both),
                 Verdict::Diverged
             )
             .is_none(),
@@ -2919,7 +2918,7 @@ apt_get__predict() {
         assert!(
             GuardLicense::mint(
                 nginx_fact(),
-                Judgment::authored(vouch(), Rung::Both),
+                ByVouch::vouched(vouch(), Rung::Both),
                 Verdict::Unknown
             )
             .is_none(),
@@ -2927,7 +2926,7 @@ apt_get__predict() {
         );
         let license = GuardLicense::mint(
             nginx_fact(),
-            Judgment::authored(vouch(), Rung::Both),
+            ByVouch::vouched(vouch(), Rung::Both),
             Verdict::Converged,
         )
         .expect("a converged probe-verdict + vouch mints a guard");
@@ -2936,7 +2935,7 @@ apt_get__predict() {
 
     #[test]
     fn converged_guard_emitter_shape_obeys_the_two_never_clauses() {
-        use dorc_core::{Judgment, Rung};
+        use dorc_core::{ByVouch, Rung};
         let vouch = VerdictVouch::new(
             "apt_get__is_converged".to_string(),
             "apt_get__is_converged() { dpkg-query -W \"$1\" >/dev/null 2>&1; }".to_string(),
@@ -2947,7 +2946,7 @@ apt_get__predict() {
         );
         let license = GuardLicense::mint(
             nginx_fact(),
-            Judgment::authored(vouch, Rung::Both),
+            ByVouch::vouched(vouch, Rung::Both),
             Verdict::Converged,
         )
         .unwrap();
@@ -2975,7 +2974,7 @@ apt_get__predict() {
 
     #[test]
     fn diverged_sense_glue_is_the_lossless_rc_flip() {
-        use dorc_core::{Judgment, Rung};
+        use dorc_core::{ByVouch, Rung};
         // rul-rc-partition: `is_diverged` ships with the engine-emitted sense-flip
         // `( f_is_diverged args; [ $? -eq 1 ] ) || <original>` — restoring the converged skip sense.
         let vouch = VerdictVouch::new(
@@ -2988,7 +2987,7 @@ apt_get__predict() {
         );
         let license = GuardLicense::mint(
             nginx_fact(),
-            Judgment::authored(vouch, Rung::Both),
+            ByVouch::vouched(vouch, Rung::Both),
             Verdict::Converged,
         )
         .unwrap();
@@ -3003,7 +3002,7 @@ apt_get__predict() {
 
     #[test]
     fn guard_preamble_dedups_and_counts() {
-        use dorc_core::{Judgment, Rung};
+        use dorc_core::{ByVouch, Rung};
         let mk = |leaf: u32| {
             let vouch = VerdictVouch::new(
                 "apt_get__is_converged".to_string(),
@@ -3020,7 +3019,7 @@ apt_get__predict() {
                 disposition: Disposition::Guard(
                     GuardLicense::mint(
                         nginx_fact(),
-                        Judgment::authored(vouch, Rung::Both),
+                        ByVouch::vouched(vouch, Rung::Both),
                         Verdict::Converged,
                     )
                     .unwrap(),

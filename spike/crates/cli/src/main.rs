@@ -616,7 +616,7 @@ fn resolve_touches_footprint(
 /// tier, NOT this). For each establish-bearing site whose provider authored a verdict function
 /// (`<provider>.is_converged`/`.is_diverged`) that REACHES a vouching path over the site's resolved
 /// argv (`evaluate_verdict` ⇒ `Vouched`), build a [`dorc_plan::Vouches`] entry: a
-/// `Judgment<VerdictVouch>` carrying the guard emitter's data (the mangled funcname, the strip-only
+/// `ByVouch<VerdictVouch>` carrying the guard emitter's data (the mangled funcname, the strip-only
 /// preamble, the invocation, the declared sense, the fact's kind label), keyed by the site's
 /// `CfgNodeId`. A `Declined` (unhandled path — hz-refusepath: a refuse path that returns 0
 /// vacuously never vouches) or ⊤ (P-topargv: an unpropagatable argv) resolution, or no verdict
@@ -740,7 +740,7 @@ fn build_vouches(
         );
         vouches.insert(
             *node,
-            dorc_core::Judgment::authored(vouch, dorc_core::Rung::Both),
+            dorc_core::ByVouch::vouched(vouch, dorc_core::Rung::Both),
         );
     }
     vouches
