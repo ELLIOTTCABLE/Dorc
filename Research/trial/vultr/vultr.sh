@@ -69,6 +69,18 @@ _instance_json(){                                # echo the instance object, or 
    printf '%s' "$rec" | jq -c '(.instance // .) | select(.id != null)' 2>/dev/null || true
 }
 
+# C-vps spells this destroy(host); accept an id OR an IPv4. An IPv4 resolves only
+# among dorc-r25 boxes — a non-dorc-r25 IP resolves to nothing and falls through
+# as a bogus id (-> "not found" no-op), so it can never target the human's box.
+_resolve_id(){
+   case "$1" in
+      *[!0-9.]* | "") printf '%s' "$1"; return 0 ;;    # has non-[digit/dot] -> it's an id (UUID)
+   esac
+   local id; id="$(vc instance list -o json | _strip | jq -r --arg ip "$1" --arg t "$TAG" \
+      '.instances[]|select(.main_ip==$ip and (.tags|index($t)))|.id' | head -1)"
+   [ -n "$id" ] && printf '%s' "$id" || printf '%s' "$1"
+}
+
 # THE safety gate: refuse to act on anything not carrying our tag.
 _assert_tagged(){
    local obj="$1" id="$2"
@@ -154,7 +166,8 @@ cmd_provision(){
 
 cmd_snapshot(){
    _auth_check
-   local id="${1:?usage: snapshot <instance-id>}" obj desc rec sid
+   local id obj desc rec sid
+   id="$(_resolve_id "${1:?usage: snapshot <instance-id|ip>}")"
    obj="$(_instance_json "$id")"
    [ -n "$obj" ] || die "instance $id not found — nothing to snapshot"
    _assert_tagged "$obj" "$id"                   # only snapshot our own
@@ -200,7 +213,8 @@ cmd_restore(){
 
 cmd_destroy(){
    _auth_check
-   local id="${1:?usage: destroy <instance-id>}" obj
+   local id obj
+   id="$(_resolve_id "${1:?usage: destroy <instance-id|ip>}")"
    obj="$(_instance_json "$id")"
    if [ -z "$obj" ]; then log "instance $id not found — already gone"; return 0; fi
    _assert_tagged "$obj" "$id"                   # dies unless dorc-r25-tagged
@@ -270,9 +284,9 @@ case "${1:-}" in
       cat >&2 <<EOF
 dorc-r25 Vultr substrate (P1).  All resources tagged/prefixed '$TAG'.
   provision                 create cheapest Debian-12 box -> {id,ip,host} JSON
-  snapshot <instance-id>    snapshot a dorc-r25 box -> snapshot-id
+  snapshot <id|ip>          snapshot a dorc-r25 box -> snapshot-id
   restore  <snapshot-id>    new box from a dorc-r25 snapshot -> {id,ip,host}
-  destroy  <instance-id>    delete (REFUSES anything not dorc-r25-tagged)
+  destroy  <id|ip>          delete (REFUSES anything not dorc-r25-tagged)
   destroy-all               reap every dorc-r25 instance + snapshot
   status                    live instances + snapshots + rough spend
   run -- <cmd...>           provision, run cmd (DORC_IP/ID/HOST in env), ALWAYS destroy
