@@ -39,6 +39,18 @@ impl Ast {
         self.root
     }
 
+    /// The node count — the exclusive upper bound on any valid [`AstId`] (so `id.0 < ast.len()`
+    /// is the bounds check for an id that may not belong to this arena, e.g. a synthetic test id).
+    #[must_use]
+    pub fn len(&self) -> usize {
+        self.nodes.len()
+    }
+
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.nodes.is_empty()
+    }
+
     /// All nodes, paired with their ids (for whole-tree passes).
     pub fn iter(&self) -> impl Iterator<Item = (AstId, &Node)> {
         self.nodes

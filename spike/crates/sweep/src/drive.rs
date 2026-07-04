@@ -73,7 +73,10 @@ pub fn run_kernel(declared: &DeclaredScenario, s0: &Host, flag_on: bool, i: &mut
         let ship = |provider: Symbol, argv: &[Symbol]| {
             ship_predict_body(ORACLE_SH, &checks, i, provider, argv)
         };
-        dorc_plan::compile_probe(&parsed.value, &cfg, &value, &classes, ship)
+        // The sweep exercises the elision/survival soundness net, not the guard tier: no site is
+        // vouched (guard scenarios are a Stage-3 stretch, tc-flagged in the report), so no past-wall
+        // EstablishWritten site ships a probe here.
+        dorc_plan::compile_probe(&parsed.value, &cfg, &value, &classes, ship, |_| false)
     };
 
     // The survival tier data (TC-1): lifted ONLY under the flag; `None` off ⇒ the total-wall
@@ -91,6 +94,7 @@ pub fn run_kernel(declared: &DeclaredScenario, s0: &Host, flag_on: bool, i: &mut
         &classes,
         &kills,
         survival.as_ref(),
+        &dorc_plan::Vouches::new(),
         |f| {
             if probe.checks_fact(f) {
                 s0.observe(f)

@@ -251,10 +251,21 @@ fn run() -> Result<(), String> {
     report_at(advisory, "classify", &classified.diags);
     let classes = classified.value;
 
+    // The per-site guard VOUCHES (rul-guard-license / rul24-vouch-is-verdict-authoring, 24A §1c) —
+    // ALWAYS-ON (guards are the un-flagged baseline; rul24-mode-gate governs only the survival
+    // tier, NOT this). A vouched past-wall establish ships its read-only probe (the witness needs
+    // the verdict) and, converged, mints a `Disposition::Guard`.
+    let vouches = build_vouches(&oracle_refs, &classes, &value, &mut interner, advisory);
+
     // The read-only, SELF-REPORTING, site-keyed probe (R3 / 23D §1 — the check IS the oracle):
     // each site ships its provider's stripped `<provider>__predict` invoked with the site's argv.
+    // `is_vouched` closes strain-classify-coupling (24C): a vouched past-wall `EstablishWritten`
+    // site ships its probe here (at HEAD it would be `skip-unresolvable`).
     let ship = |p, a: &[Symbol]| ship_predict_body(&oracle_srcs, &checks, &interner, p, a);
-    let probe = dorc_plan::compile_probe(&parsed.value, &cfg.value, &value, &classes, ship);
+    let probe =
+        dorc_plan::compile_probe(&parsed.value, &cfg.value, &value, &classes, ship, |node| {
+            vouches.contains_key(&node)
+        });
 
     // `probe` mode stops here: emit the probe artifact and return. It reads no stdin (no
     // results exist yet — this is phase 1, what you ship to GET them), builds no plan, and so
@@ -313,6 +324,7 @@ fn run() -> Result<(), String> {
         &classes,
         &kills,
         survival.as_ref(),
+        &vouches,
         |f| {
             by_fact
                 .get(&f)
@@ -349,6 +361,10 @@ fn run() -> Result<(), String> {
         // a wrong footprint silently under-executes someone else's line, so the render surface
         // must always say whose footprint you trusted. Empty when unflagged (no survivals).
         emit_survival_attribution(&plan, &interner);
+        // Stage 3 (rul-guard-license / X-why): every GUARDED site names, on the same lane, the
+        // mechanism + its converged-vouch license + the vouching oracle (a render-REFUSED guard
+        // discloses the refusal instead). Empty when no site guards.
+        emit_guard_attribution(&plan, &parsed.value, &interner);
     }
 
     // gate-5 (cm-2 argv-echo differential): per-site resolved argv to stderr, behind the flag.
@@ -595,6 +611,141 @@ fn resolve_touches_footprint(
     Some((*provider, entity_coords))
 }
 
+/// Lift the per-site GUARD VOUCHES (rul-guard-license / rul24-vouch-is-verdict-authoring, 24A §1c).
+/// Called ALWAYS-ON — guards are the un-flagged baseline (rul24-mode-gate governs only the survival
+/// tier, NOT this). For each establish-bearing site whose provider authored a verdict function
+/// (`<provider>.is_converged`/`.is_diverged`) that REACHES a vouching path over the site's resolved
+/// argv (`evaluate_verdict` ⇒ `Vouched`), build a [`dorc_plan::Vouches`] entry: a
+/// `Judgment<VerdictVouch>` carrying the guard emitter's data (the mangled funcname, the strip-only
+/// preamble, the invocation, the declared sense, the fact's kind label), keyed by the site's
+/// `CfgNodeId`. A `Declined` (unhandled path — hz-refusepath: a refuse path that returns 0
+/// vacuously never vouches) or ⊤ (P-topargv: an unpropagatable argv) resolution, or no verdict
+/// function, ⇒ absence from the map ⇒ the site never guards (no vouch ⇒ run — the judgment tier the
+/// map carries is exactly what [`dorc_plan::GuardLicense::mint`] DEMANDS, TC-tier-2).
+///
+/// A verdict function that FAILS to lift (⊤-rejects — e.g. an unmodeled `return`, tc-verdict-return)
+/// is a best-effort ORACLE degradation, not a book error: it yields no vouch (the site runs,
+/// kFAIL-perform), and its lift diagnostics are DOWNGRADED to warnings so a dead-grammar verdict
+/// function never fails an otherwise-valid book's gate-3 error-floor.
+///
+/// `inv-referent-agnostic`: the kind label + operands are resolved for the invocation/attribution,
+/// never decoded for meaning; the vouch travels the site's own value-flow (the 24A §1b fence).
+fn build_vouches(
+    oracle_refs: &[&str],
+    classes: &[(
+        dorc_analysis::cfg::CfgNodeId,
+        dorc_analysis::effect::SkipClass,
+    )],
+    value: &dorc_analysis::value::ValueFlow,
+    interner: &mut Interner,
+    advisory: bool,
+) -> dorc_plan::Vouches {
+    use dorc_analysis::effect::SkipClass;
+    use dorc_analysis::value::ValueOf;
+    use dorc_oracle::predict::{map_provider_name, strip_verdict};
+    use dorc_oracle::verdict::{VerdictResolution, VerdictSet, evaluate_verdict};
+
+    let verdict_sets: Vec<VerdictSet> = oracle_refs
+        .iter()
+        .map(|src| {
+            let lifted = VerdictSet::lift(interner, src);
+            // A ⊤-rejecting verdict function is an oracle degradation, not a book error — soften to
+            // warning so it never fails gate-3 (tc-verdict-return; the site runs regardless).
+            let softened: Vec<dorc_core::Diagnostic> = lifted
+                .diags
+                .iter()
+                .map(|d| dorc_core::Diagnostic {
+                    severity: Severity::Warning,
+                    ..d.clone()
+                })
+                .collect();
+            report_at(advisory, "verdict", &softened);
+            lifted.value
+        })
+        .collect();
+
+    let mut vouches = dorc_plan::Vouches::new();
+    for (node, class) in classes {
+        // A vouch is consumed only at an establish-bearing site; computing it for both
+        // EstablishAmbient (Part B's elide-weld) and EstablishWritten (Part A's guard) is
+        // future-proof and inert where unused (only the guard arm + `is_vouched` consult it).
+        let fact = match class {
+            SkipClass::EstablishAmbient(f) | SkipClass::EstablishWritten(f) => *f,
+            _ => continue,
+        };
+        // Resolve the site's argv → (provider, operands), all literal — a ⊤ word ⇒ no vouch.
+        let argv = value.argv_values(*node);
+        let Some((first, rest)) = argv.split_first() else {
+            continue;
+        };
+        let ValueOf::Literal(provider) = first else {
+            continue; // ⊤ command word
+        };
+        let mut op_texts = Vec::with_capacity(rest.len());
+        let mut has_top = false;
+        for w in rest {
+            match w {
+                ValueOf::Literal(s) => op_texts.push(interner.resolve(*s).to_owned()),
+                ValueOf::Top => {
+                    has_top = true;
+                    break; // a ⊤ operand ⇒ the argparse cannot resolve ⇒ no vouch (P-topargv)
+                }
+            }
+        }
+        if has_top {
+            continue;
+        }
+        let op_refs: Vec<&str> = op_texts.iter().map(String::as_str).collect();
+
+        // Find the provider's verdict funcdef (shared hyphen↔underscore convention, like the
+        // probe/footprint lifts) and trace it over the operands.
+        let want = map_provider_name(interner.resolve(*provider));
+        let found = verdict_sets.iter().zip(oracle_refs).find_map(|(set, src)| {
+            set.providers()
+                .find(|p| map_provider_name(interner.resolve(*p)) == want)
+                .and_then(|p| set.get(p))
+                .map(|(verdict, sense)| (*src, verdict, sense))
+        });
+        let Some((src, verdict, sense)) = found else {
+            continue;
+        };
+        // The reached-path license (rul-guard-license): ONLY a Vouched resolution mints. A Declined
+        // or ⊤ ⇒ no vouch ⇒ run — the witness's reached-path component is load-bearing exactly at
+        // hz-refusepath (a refuse path that returns 0 vacuously must never license a skip).
+        if !matches!(
+            evaluate_verdict(verdict, &op_refs),
+            VerdictResolution::Vouched
+        ) {
+            continue;
+        }
+
+        // The guard emitter's data. `fn_name` mirrors `strip_verdict`'s mangling so the shipped
+        // preamble def and the guard invocation agree byte-for-byte.
+        let fn_name = format!(
+            "{}{}",
+            dorc_oracle::to_funcname_segment(interner.resolve(verdict.provider)),
+            sense.mangled_suffix()
+        );
+        let preamble = strip_verdict(src, verdict, interner, sense.mangled_suffix());
+        let invocation = if op_refs.is_empty() {
+            fn_name.clone()
+        } else {
+            format!("{fn_name} {}", op_refs.join(" "))
+        };
+        let kind_label = interner.resolve(fact.kind.0).to_owned();
+        // The verdict body's own check-commands (gate-6 `guardcmd` attribution — 23A §5).
+        let check_cmds = dorc_oracle::verdict::check_commands(verdict);
+        let vouch = dorc_plan::VerdictVouch::new(
+            fn_name, preamble, invocation, sense, kind_label, check_cmds,
+        );
+        vouches.insert(
+            *node,
+            dorc_core::Judgment::authored(vouch, dorc_core::Rung::Both),
+        );
+    }
+    vouches
+}
+
 /// gate-5 / cm-2 readout: per command site, emit `argv <leafid> <disposition> <word|TOP
 /// per word>` on stderr (a resolved literal verbatim, an unresolved word `TOP`). The
 /// leaf-ids are the plan's own ([`dorc_plan::Step::leaf`]) — the same span-sorted space the
@@ -642,6 +793,21 @@ fn emit_debug_argv(
             disposition_tag(&step.disposition),
             words.join(" ")
         );
+    }
+    // gate-6 `guardcmd` attribution (23A §5): one line per DISTINCT check-command a GUARDED site's
+    // verdict body runs (`guardcmd dpkg-query`). The widened dual-rail judge allowlists these as
+    // legitimate apply-only lines (the guard's live check runs at apply, absent from the bare
+    // book) — never an unrelated one (cf-5). Deterministic (`BTreeSet`, `inv-determinism`).
+    let mut guard_cmds: std::collections::BTreeSet<&str> = std::collections::BTreeSet::new();
+    for step in &plan.steps {
+        if let dorc_plan::Disposition::Guard(license) = &step.disposition {
+            for c in license.insert().check_cmds() {
+                guard_cmds.insert(c.as_str());
+            }
+        }
+    }
+    for c in &guard_cmds {
+        eprintln!("guardcmd {c}");
     }
 }
 
@@ -791,6 +957,47 @@ fn emit_survival_attribution(plan: &dorc_plan::Plan, interner: &Interner) {
             crossings.join(", "),
             render_coord(witness.backing(), interner),
         );
+    }
+}
+
+/// The GUARD why-lane (rul-guard-license / X-why): one `why:` line per guarded site, naming
+/// (i) the mechanism (`guard`), (ii) the license (a converged-`vouch`), (iii) the vouching oracle
+/// (the fact's kind) — the `guard23-why-attribution` conjoined pattern (`guard && vouch && <kind>`
+/// in ONE line). Attribution is the guard-license's whole enforcement story ("we can't prevent, so
+/// we attribute" — plans/233 §guard-license); rul-attention-honesty makes it load-bearing (a guard
+/// the user can't trace to its licensor is hidden risk). rec-1 WELD: stderr render surface only —
+/// the byte-floored artifact carries the inline `# dorc: guard …` comment; this is the disclosure.
+/// Never `error[`, so the gate-3 floor ignores it; the `why: ` prefix lets gate-7 pin it.
+fn emit_guard_attribution(
+    plan: &dorc_plan::Plan,
+    ast: &dorc_syntax::ast::Ast,
+    interner: &Interner,
+) {
+    // A render-REFUSED guard (heredoc / non-devnull output redirect) does NOT guard the site — the
+    // mutator runs verbatim. rul-attention-honesty: never claim a skip that did not happen; disclose
+    // the refusal (gate-7 `refus`) instead of the licensing line.
+    let refused = plan.guard_refused_asts(ast);
+    for step in &plan.steps {
+        let dorc_plan::Disposition::Guard(license) = &step.disposition else {
+            continue;
+        };
+        let kind = interner.resolve(license.fact().kind.0);
+        if refused.contains(&step.ast) {
+            eprintln!(
+                "why: site {} guard refused — the site's structurally-awkward form (a heredoc \
+                 body, or a non-`/dev/null` output redirect) would corrupt the artifact or suppress \
+                 an admin-spelled side-effect, so the original bytes RUN VERBATIM (kFAIL-perform), \
+                 the {kind} converged-vouch notwithstanding",
+                step.leaf.0,
+            );
+        } else {
+            eprintln!(
+                "why: site {} guard [{kind}] — licensed by a converged-vouch (the {kind} oracle's \
+                 authored is_converged); the original bytes survive and the check re-runs live at \
+                 apply (kFAIL-perform)",
+                step.leaf.0,
+            );
+        }
     }
 }
 
@@ -1558,8 +1765,14 @@ mod tests {
             &mut arena,
         );
         let classes = classified.value;
-        let probe =
-            dorc_plan::compile_probe(&parsed.value, &cfg.value, &value, &classes, |_, _| None);
+        let probe = dorc_plan::compile_probe(
+            &parsed.value,
+            &cfg.value,
+            &value,
+            &classes,
+            |_, _| None,
+            |_| false,
+        );
         let plan = dorc_plan::build_plan(
             book,
             &parsed.value,

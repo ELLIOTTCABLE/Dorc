@@ -342,6 +342,50 @@ fn top_from_word(reason: TopReason) -> VerdictTop {
     VerdictTop::NonConcreteWord(reason.as_str())
 }
 
+/// The distinct literal command names (argv[0]) a verdict body would RUN — a guard's own
+/// **check-commands** (23A §5). gate-6's widened dual-rail judge allowlists a guard's own
+/// check-command as a legitimate apply-only line (the guard's live check runs at apply but is
+/// absent from the bare book); the cli emits one `guardcmd <argv0>` ledger line per entry so the
+/// judge screams ONLY on UNRELATED apply-only lines (cf-5). A non-literal argv[0] (a dynamic
+/// command word) is skipped — it cannot be statically named for the allowlist. Deterministic
+/// first-seen order, deduped (`inv-determinism`). Recurses into every control-flow body so a check
+/// buried in a `case` arm (the corpus idiom) is found.
+#[must_use]
+pub fn check_commands(verdict: &Predict) -> Vec<String> {
+    let mut out = Vec::new();
+    collect_check_commands(&verdict.body, &mut out);
+    out
+}
+
+fn collect_check_commands(body: &[Stmt], out: &mut Vec<String>) {
+    for stmt in body {
+        match stmt {
+            Stmt::Command(cmd) => {
+                if let Some(Word::Literal(w)) = cmd.words.first()
+                    && !out.iter().any(|c| c == w)
+                {
+                    out.push(w.clone());
+                }
+            }
+            Stmt::Case { arms, .. } => {
+                for a in arms {
+                    collect_check_commands(&a.body, out);
+                }
+            }
+            Stmt::If {
+                then_body,
+                else_body,
+                ..
+            } => {
+                collect_check_commands(then_body, out);
+                collect_check_commands(else_body, out);
+            }
+            Stmt::While { body, .. } => collect_check_commands(body, out),
+            Stmt::Assign { .. } | Stmt::Shift { .. } | Stmt::Annotation(_) | Stmt::Mark(_) => {}
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -609,9 +609,15 @@ apt_get__predict() {
 
             // (1) compile the SITE-keyed probe — R3: ship the provider's stripped check body
             // invoked per-site with the site's argv (`inv-site-keyed-results`, round-20 task-D1).
-            let probe = compile_probe(&parsed.value, &cfg, &value, &classes, |provider, argv| {
-                ship_corpus(&checks, &i, provider, argv)
-            });
+            let probe = compile_probe(
+                &parsed.value,
+                &cfg,
+                &value,
+                &classes,
+                |provider, argv| ship_corpus(&checks, &i, provider, argv),
+                // hostsim exercises elision soundness, not guards — no vouched past-wall probes.
+                |_| false,
+            );
             assert!(
                 probe.checks_fact(nginx) && probe.checks_fact(curl),
                 "seed {seed}: both ambient installs are probed (package has a probe)"
@@ -720,9 +726,14 @@ apt_get__predict() {
 
         // R3: no shippable probe (the ship closure returns None — "the oracle declares no
         // probe") ⇒ the EstablishAmbient site is unresolvable ⇒ not elided (kFAIL-perform).
-        let probe = compile_probe(&parsed.value, &cfg, &value, &classes, |_provider, _argv| {
-            None
-        });
+        let probe = compile_probe(
+            &parsed.value,
+            &cfg,
+            &value,
+            &classes,
+            |_provider, _argv| None,
+            |_| false,
+        );
         assert!(
             probe.checks.is_empty(),
             "no declared probe ⇒ no resolvable site (the install is recorded unresolvable)"

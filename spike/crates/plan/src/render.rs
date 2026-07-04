@@ -244,6 +244,20 @@ pub mod apply {
         "#!/bin/sh\n# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).\n\n"
     }
 
+    /// The banner comment preceding the GUARD PREAMBLE defs (24D §2 / rul-ternary-verdict) —
+    /// emitted ONCE by [`Plan::render_apply`](crate::Plan::render_apply) when ≥1 site guards,
+    /// above the verdict-function defs the guarded lines invoke. Documents the strip-only sourcing
+    /// (the two never-clauses); an artifact comment (rec-1: comments are part of the byte floor).
+    ///
+    /// GUARANTEE: pure `#`-comment lines, dash-n-clean; empty-preamble ⇒ this is never emitted, so
+    /// a guard-free book stays byte-identical to HEAD.
+    #[must_use]
+    pub const fn guard_preamble_banner() -> &'static str {
+        "# dorc guard preamble: the vouching oracle's own verdict body, shipped strip-only\n\
+         # (annotations removed, `name.is_converged()` -> `name__is_converged()`, nothing else\n\
+         # changed -- rul-ternary-verdict: the authored bytes verbatim, no engine-synthesized sh).\n"
+    }
+
     /// The FLAT-render provenance block for a `Replace`d leaf (`# replace[id]: <sh>
     /// (→ <stand-in>)` + a why-line naming the fact).
     ///

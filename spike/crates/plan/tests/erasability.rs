@@ -192,9 +192,14 @@ fn run_pipeline(book: &str, variation: ArenaMode) -> RunOutcome {
     );
     let classes = classified.value;
 
-    let probe = compile_probe(&parsed.value, &cfg, &value, &classes, |provider, argv| {
-        ship_from(ORACLE_SRC, &checks, &i, provider, argv)
-    });
+    let probe = compile_probe(
+        &parsed.value,
+        &cfg,
+        &value,
+        &classes,
+        |provider, argv| ship_from(ORACLE_SRC, &checks, &i, provider, argv),
+        |_| false,
+    );
     // The host oracle: a fact is Converged iff in the fixed set; else Diverged. Identical for
     // both runs (the arena variation is the sole difference).
     let observe = |f: FactKey| -> Observable {
@@ -353,9 +358,14 @@ fn digest_is_receipt_invariant_across_runs() {
             &mut arena,
         )
         .value;
-        let probe = compile_probe(&parsed.value, &cfg, &value, &classes, |provider, argv| {
-            ship_from(ORACLE_SRC, &checks, i, provider, argv)
-        });
+        let probe = compile_probe(
+            &parsed.value,
+            &cfg,
+            &value,
+            &classes,
+            |provider, argv| ship_from(ORACLE_SRC, &checks, i, provider, argv),
+            |_| false,
+        );
         let observe = |f: FactKey| {
             if converged.contains(&f) {
                 Observable::verdict_only(Verdict::Converged)

@@ -464,13 +464,19 @@ pub fn build_report(inputs: &Inputs<'_>) -> Report {
     // R3 (23D §1 — the check IS the oracle): byte-mirror of the cli's `compile_probe`
     // call — the probe ships each provider's stripped `<provider>__predict` funcdef invoked
     // per-site with its argv (`ship_predict_body` re-runs the analysis's own check resolution).
-    let probe =
-        dorc_plan::compile_probe(&parsed.value, &cfg, &value, &classes, |provider, argv| {
-            ship_predict_body(inputs.oracles, &checks, &interner, provider, argv)
-        });
+    let probe = dorc_plan::compile_probe(
+        &parsed.value,
+        &cfg,
+        &value,
+        &classes,
+        |provider, argv| ship_predict_body(inputs.oracles, &checks, &interner, provider, argv),
+        // The dashboard carries no guard/vouch plumbing (Stage-3 minimal build-fix): no site is
+        // vouched, so no past-wall establish ships a probe here — dashboard parity is unaffected.
+        |_| false,
+    );
     let observe = observe_from_sites(&probe, &probe_verdicts);
-    // Kill-aware, survival-OFF (`None`): dashboard parity with the honest baseline only — the
-    // coverage crate carries no footprint/survival plumbing (24A §3 parity fix).
+    // Kill-aware, survival-OFF (`None`), vouch-less: dashboard parity with the honest baseline only
+    // — the coverage crate carries no footprint/survival/guard plumbing (24A §3 parity fix).
     let plan = dorc_plan::build_plan_walled(
         inputs.book,
         &parsed.value,
@@ -478,6 +484,7 @@ pub fn build_report(inputs: &Inputs<'_>) -> Report {
         &classes,
         &kills,
         None,
+        &dorc_plan::Vouches::new(),
         observe,
         &mut arena,
     );

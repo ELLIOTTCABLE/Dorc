@@ -1412,9 +1412,14 @@ fn inline_call_emits_site_n_m_probe_records() {
         &mut dorc_core::ProvArena::new(),
     )
     .value;
-    let probe = dorc_plan::compile_probe(&parsed.value, &cfg, &value, &classes, |p, a| {
-        ship_corpus(&checks, &i, p, a)
-    });
+    let probe = dorc_plan::compile_probe(
+        &parsed.value,
+        &cfg,
+        &value,
+        &classes,
+        |p, a| ship_corpus(&checks, &i, p, a),
+        |_| false,
+    );
     // Each check carries (site, member); collect the (site.0, member) pairs.
     let mut keys: Vec<(u32, Option<u32>)> =
         probe.checks.iter().map(|c| (c.site.0, c.member)).collect();
@@ -1464,7 +1469,14 @@ fn inline_call_unprobeable_body_establish_is_unresolvable() {
         &mut dorc_core::ProvArena::new(),
     )
     .value;
-    let probe = dorc_plan::compile_probe(&parsed.value, &cfg, &value, &classes, |_p, _a| None);
+    let probe = dorc_plan::compile_probe(
+        &parsed.value,
+        &cfg,
+        &value,
+        &classes,
+        |_p, _a| None,
+        |_| false,
+    );
     assert!(probe.checks.is_empty(), "no probe body ⇒ no checks");
     assert!(
         !probe.unresolvable.is_empty(),

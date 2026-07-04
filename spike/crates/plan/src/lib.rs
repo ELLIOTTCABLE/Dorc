@@ -44,7 +44,7 @@ use dorc_core::{
     Verdict,
 };
 use dorc_oracle::verdict::VerdictSense;
-use dorc_syntax::ast::{Ast, NodeKind};
+use dorc_syntax::ast::{Ast, NodeKind, RedirOp, RedirTarget};
 
 mod fold;
 pub use fold::{AbstractRc, FoldResult};
@@ -705,13 +705,20 @@ pub struct VerdictVouch {
     /// The fact's kind name (`package`) for the `# dorc: guard [<kind> converged-vouch; …]`
     /// attribution comment (cli-resolved; the render has no interner).
     kind_label: String,
+    /// The verdict body's own literal check-commands (`dpkg-query`) — gate-6 attribution ONLY
+    /// (`dorc_oracle::verdict::check_commands`). The cli emits a `guardcmd <argv0>` ledger line per
+    /// entry so the widened dual-rail judge allowlists the guard's live check as a legitimate
+    /// apply-only line. Display/attribution, NOT decision data: EXCLUDED from
+    /// [`GuardInsert::canonical`] (it derives from `preamble`, which the canon already covers).
+    check_cmds: Vec<String>,
 }
 
 impl VerdictVouch {
     /// Build a vouch descriptor from the cli-resolved verdict-function data (the sole constructor;
     /// the cli edge owns the lift + strip + argv-render). `fn_name`/`invocation` are the mangled
     /// name and the full invocation; `preamble` is the stripped body; `sense` the declared sense;
-    /// `kind_label` the fact's kind for attribution.
+    /// `kind_label` the fact's kind for attribution; `check_cmds` the verdict body's own command
+    /// names (gate-6 `guardcmd` attribution).
     #[must_use]
     pub fn new(
         fn_name: String,
@@ -719,6 +726,7 @@ impl VerdictVouch {
         invocation: String,
         sense: VerdictSense,
         kind_label: String,
+        check_cmds: Vec<String>,
     ) -> Self {
         Self {
             fn_name,
@@ -726,6 +734,7 @@ impl VerdictVouch {
             invocation,
             sense,
             kind_label,
+            check_cmds,
         }
     }
 }
@@ -753,6 +762,14 @@ impl GuardInsert {
     #[must_use]
     pub fn preamble(&self) -> &str {
         &self.vouch.preamble
+    }
+
+    /// The verdict body's own check-commands (gate-6 `guardcmd` attribution; 23A §5). The cli
+    /// emits one `guardcmd <argv0>` per entry so the dual-rail judge allowlists the guard's live
+    /// check as a legitimate apply-only line — never an unrelated one (cf-5).
+    #[must_use]
+    pub fn check_cmds(&self) -> &[String] {
+        &self.vouch.check_cmds
     }
 
     /// The erasability-IDENTITY canon (24D §2): the DECISION-relevant guard bytes (funcname,
@@ -851,6 +868,16 @@ impl GuardLicense {
         &self.insert
     }
 }
+
+/// The per-site **vouch map** the guard mint consumes (rul-guard-license / rul24-vouch-is-verdict
+/// -authoring, 24A §1c): each site whose provider authored a verdict function that REACHES a
+/// vouching path for the site's constant-propagated argv (`evaluate_verdict` ⇒ `Vouched`) gets one
+/// [`Judgment<VerdictVouch>`], keyed by its [`CfgNodeId`]. A site ABSENT from the map has no
+/// reached vouch ⇒ it never guards (no vouch ⇒ run — the map's judgment tier is exactly what
+/// [`GuardLicense::mint`] DEMANDS, TC-tier-2; a fact or silence claim cannot populate it). The cli
+/// edge builds it ALWAYS-ON — guards are the un-flagged baseline (rul24-mode-gate; NOT
+/// `--trust-footprints`-gated, which governs only the survival tier).
+pub type Vouches = BTreeMap<CfgNodeId, Judgment<VerdictVouch>>;
 
 /// What the plan does with one leaf.
 #[derive(Debug, Clone)]
@@ -1168,6 +1195,14 @@ fn site_order<'a>(
 /// Deterministic, non-mutating; the FORWARD half of the compiler (the apply is [`build_plan`]).
 /// An un-shippable site yields no check ⇒ it cannot be elided downstream
 /// (`can't-probe ⇒ can't-elide`, `kFAIL-perform`).
+///
+/// `is_vouched` closes strain-classify-coupling (24C): a **past-wall** site is
+/// [`SkipClass::EstablishWritten`] (an opaque upstream poisoned its resting probe), so at HEAD it
+/// ships NO probe — but a guard needs its probe-verdict (the witness's probe half; plan-prediction
+/// and apply-guard run the same check, 233 §guard-license). So a `EstablishWritten` site the cli
+/// reports VOUCHED (its provider authored a verdict function reaching a vouching path) DOES ship
+/// its read-only Establish probe. An unvouched `EstablishWritten` stays unresolvable (jc-probe-
+/// scope: whether unvouched walled sites ship hint-probes is deliberately OPEN).
 #[must_use]
 pub fn compile_probe(
     ast: &Ast,
@@ -1175,6 +1210,7 @@ pub fn compile_probe(
     value: &ValueFlow,
     classes: &[(CfgNodeId, SkipClass)],
     ship_body: impl Fn(Symbol, &[Symbol]) -> Option<String>,
+    is_vouched: impl Fn(CfgNodeId) -> bool,
 ) -> ProbePlan {
     let mut checks = Vec::new();
     let mut unresolvable = Vec::new();
@@ -1230,6 +1266,12 @@ pub fn compile_probe(
         // `kFAIL-perform`).
         let resolvable = match class {
             SkipClass::EstablishAmbient(fact) => Some((*fact, ProbeSiteKind::Establish)),
+            // strain-classify-coupling (24C): a vouched past-wall establish still probes (the
+            // guard witness needs the verdict). Establish-class ⇒ its record-rc is the probe
+            // command's, never fed to the fold (the firewall is unmoved).
+            SkipClass::EstablishWritten(fact) if is_vouched(node) => {
+                Some((*fact, ProbeSiteKind::Establish))
+            }
             SkipClass::QueryResolvable { fact, valid } => {
                 Some((*fact, ProbeSiteKind::Query { valid: *valid }))
             }
@@ -1446,6 +1488,7 @@ pub fn build_plan(
         classes,
         &BTreeSet::new(),
         None,
+        &Vouches::new(),
         observe,
         arena,
     )
@@ -1487,6 +1530,7 @@ pub fn build_plan_walled(
     classes: &[(CfgNodeId, SkipClass)],
     kills: &BTreeSet<CfgNodeId>,
     survival: Option<&TrustedFootprints>,
+    vouches: &Vouches,
     observe: impl Fn(FactKey) -> Observable,
     arena: &mut dorc_core::ProvArena,
 ) -> Plan {
@@ -1547,7 +1591,15 @@ pub fn build_plan_walled(
                     | SkipClass::InlineCall { .. }
                     | SkipClass::MustRun => None,
                 };
-                disposition_for(cfg, &fold, *node, class, ast_id, observed)
+                disposition_for(
+                    cfg,
+                    &fold,
+                    *node,
+                    class,
+                    ast_id,
+                    observed,
+                    vouches.get(node),
+                )
             }
         };
         // arch-1 witness (`vp-17`/`vp-18`): a licensed `Replace` records its FULL granted
@@ -1694,6 +1746,7 @@ fn disposition_for(
     class: &SkipClass,
     ast_id: AstId,
     observed: Option<Observable>,
+    vouch: Option<&Judgment<VerdictVouch>>,
 ) -> Disposition {
     // (0) the in-loop render floor (task-L1, `209` brk-1): a leaf inside a loop body or
     // condition is MustRun — UNLESS it is the in-loop Members shape, which is routed to
@@ -1758,6 +1811,24 @@ fn disposition_for(
                 None => Disposition::Run,
             }
         }
+        // The guard tier (rul-ternary-verdict's third verb — rul-guard-license). A past-a-wall
+        // `EstablishWritten` site (an opaque upstream poisoned its resting probe, so it can no
+        // longer ELIDE) with a REACHED vouch and a CONVERGED probe-verdict mints a `Guard`: the
+        // oracle's own verdict check re-decides LIVE at apply (`( check ) || <original>`), so the
+        // stale plan-time convergence is never trusted (X-drift). No vouch, or a diverged/unknown
+        // verdict, ⇒ run — a guard at a predicted-change site buys nothing (`inv-kfail`;
+        // `GuardLicense::mint` returns `None` off `Verdict::Converged`). Top-containment: a
+        // ⊤-successor site (`cmd &`) never guards, exactly as it never Replaces (P-background).
+        SkipClass::EstablishWritten(fact) if !has_top_successor(cfg, node) => match vouch {
+            Some(v) => {
+                let verdict = observed.map_or(Verdict::Unknown, |o| o.effect);
+                match GuardLicense::mint(*fact, v.clone(), verdict) {
+                    Some(license) => Disposition::Guard(license),
+                    None => Disposition::Run,
+                }
+            }
+            None => Disposition::Run,
+        },
         _ => Disposition::Run,
     }
 }
@@ -1987,11 +2058,15 @@ impl Plan {
     /// under one funcname (the probe's `apt-get`-as-package-and-pkgindex shape) is not modeled here
     /// (a verdict function has one body; tc-guard-preamble-reemit flags the re-emit case deferred).
     #[must_use]
-    pub fn guard_preamble(&self) -> String {
+    pub fn guard_preamble(&self, ast: &Ast) -> String {
         let mut defined: BTreeSet<&str> = BTreeSet::new();
         let mut out = String::new();
         for step in &self.steps {
+            // A render-REFUSED guard (heredoc/redirect) emits no invocation, so its preamble def
+            // would be dead — skip it, so a book whose only guard is refused stays byte-clean. The
+            // OOB-safe check tolerates a synthetic test Plan whose `AstId`s index no real node.
             if let Disposition::Guard(license) = &step.disposition
+                && !(ast.len() > step.ast.0 as usize && guard_render_refused(ast, step.ast))
                 && defined.insert(license.insert().fn_name())
             {
                 out.push_str(license.insert().preamble());
@@ -1999,6 +2074,22 @@ impl Plan {
             }
         }
         out
+    }
+
+    /// The `AstId`s of `Guard` steps whose render is REFUSED ([`guard_render_refused`] — a heredoc
+    /// or non-devnull output-redirect leaf): the guard degrades to run-verbatim. The cli guard
+    /// why-lane consults this so a refused guard does NOT claim it "guarded" the site
+    /// (rul-attention-honesty — the mutator actually RUNS); it discloses the refusal instead
+    /// (gate-7 `refus`). Deterministic (`BTreeSet`).
+    #[must_use]
+    pub fn guard_refused_asts(&self, ast: &Ast) -> BTreeSet<AstId> {
+        self.steps
+            .iter()
+            .filter(|s| {
+                matches!(s.disposition, Disposition::Guard(_)) && guard_render_refused(ast, s.ast)
+            })
+            .map(|s| s.ast)
+            .collect()
     }
 
     /// Render the apply as the ORIGINAL book with each elided leaf's **exact byte-span**
@@ -2037,7 +2128,23 @@ impl Plan {
     #[must_use]
     pub fn render_apply(&self, src: &str, ast: &Ast) -> String {
         let edits = self.collect_edits(src, ast);
-        emit_span_edits(src, &edits)
+        let artifact = emit_span_edits(src, &edits);
+        // The GUARD PREAMBLE (24D §2 / rul-ternary-verdict): the verdict-function defs the guarded
+        // lines invoke, emitted ONCE between the apply header and the book (the defs must precede
+        // their invocations — sh execs top-to-bottom, and the header is pure comments). Empty when
+        // no site guards ⇒ a guard-free book stays byte-identical to HEAD. `emit_span_edits` emits
+        // `apply_header()` as the artifact's verbatim prefix, so splicing after it lands the defs
+        // above the whole book.
+        let preamble = self.guard_preamble(ast);
+        if preamble.is_empty() {
+            return artifact;
+        }
+        let header = render::apply::apply_header();
+        format!(
+            "{header}{}{preamble}\n{}",
+            render::apply::guard_preamble_banner(),
+            &artifact[header.len()..],
+        )
     }
 
     /// The render-capability refusal diagnostics (arch-1 d-6): one `error` per leaf that the
@@ -2076,6 +2183,13 @@ impl Plan {
                 // stream, preserving `(code-slug, span, Error)` so the coverage span-bridge and
                 // the erasability identity plane are unchanged. The interner resolves no excerpt
                 // here (the payload carries only a site) but is threaded for the shared lowering.
+                // The verb is disposition-aware: a GUARD refusal says "guard" (X-heredoc's
+                // expected-diagnostics pins `guard`), a Replace/Omit refusal says "elide".
+                let verb = if matches!(step.disposition, Disposition::Guard(_)) {
+                    "guard"
+                } else {
+                    "elide"
+                };
                 let diag = Diag::new(
                     DiagCode::RenderHeredocRefused(RenderHeredocRefused {
                         site: SiteId::leaf(step.leaf),
@@ -2083,7 +2197,7 @@ impl Plan {
                     ast.node(step.ast).span,
                 )
                 .label(format!(
-                    "leaf-exact render refuses to elide a heredoc-bearing command (`{}`): its \
+                    "leaf-exact render refuses to {verb} a heredoc-bearing command (`{}`): its \
                      span covers the `<<` operator, not the body lines, so substituting it would \
                      strand the heredoc body — it runs verbatim",
                     command_text_oneline(&step.sh),
@@ -2117,28 +2231,41 @@ impl Plan {
         let mut edits: Vec<SpanEdit> = Vec::new();
         for step in &self.steps {
             let span = ast.node(step.ast).span;
-            // d-6: a leaf carrying a heredoc redirect refuses the edit (runs verbatim) —
-            // its span does not cover the body lines, so substituting it would strand them.
-            if leaf_has_heredoc(ast, step.ast) {
+            // d-6: a heredoc leaf refuses ANY neutralising edit (its span does not cover the body
+            // lines, so substituting would strand them). A GUARD ALSO refuses a non-devnull output
+            // redirect (`>>log`) — the guard's pass-direction would suppress the admin-spelled
+            // side-effect (23C-fd10). Both run VERBATIM (kFAIL-perform; disclosed by
+            // `render_refusal_diagnostics` + the cli guard why-lane).
+            let is_guard = matches!(step.disposition, Disposition::Guard(_));
+            if leaf_has_heredoc(ast, step.ast)
+                || (is_guard && leaf_has_blocking_output_redirect(ast, step.ast))
+            {
                 continue;
             }
-            let replacement: String = match &step.disposition {
-                Disposition::Replace(_, stand_in) => stand_in.sh(),
+            // `self_commented` = the replacement embeds its OWN disposition comment, so the
+            // shared elided-provenance comment must NOT be appended on top (a guard would else
+            // read `… # dorc: guard [...]   # dorc: elided [...]` — a double comment, and
+            // "elided" is a lie: a guard's original bytes SURVIVE in the `||`-right).
+            let (replacement, self_commented): (String, bool) = match &step.disposition {
+                Disposition::Replace(_, stand_in) => (stand_in.sh(), false),
                 Disposition::Omit { controller }
                     if is_neutralised(&by_ast, ast, *controller, 0) =>
                 {
                     // A neutralised-controller dead body: `:` (a pure structural placeholder
                     // — its status is unreachable, never observed).
-                    ":".to_string()
+                    (":".to_string(), false)
                 }
                 // A guard edits the span to `( check ) || <original>`, the original bytes embedded
                 // VERBATIM as the `||`-right (rul-ternary-verdict; the guard preamble def is
                 // prepended once by the cli via [`guard_preamble`](Plan::guard_preamble)). The
                 // heredoc case is already refused at the top of the loop (span cannot cover the
-                // body) — X-heredoc.
-                Disposition::Guard(license) => license
-                    .insert()
-                    .render_line(&command_text(src, ast, step.ast)),
+                // body) — X-heredoc. It carries its OWN `# dorc: guard …` comment ⇒ self-commented.
+                Disposition::Guard(license) => (
+                    license
+                        .insert()
+                        .render_line(&command_text(src, ast, step.ast)),
+                    true,
+                ),
                 // A kept-controller `Omit` (the runtime guard gates it) and a `Run` leaf are
                 // both verbatim — no edit.
                 Disposition::Omit { .. } | Disposition::Run => continue,
@@ -2148,6 +2275,7 @@ impl Plan {
                 hi: span.hi.0 as usize,
                 replacement,
                 original: command_text(src, ast, step.ast),
+                self_commented,
             });
         }
         normalise_edits(edits)
@@ -2163,6 +2291,10 @@ struct SpanEdit {
     hi: usize,
     replacement: String,
     original: String,
+    /// The `replacement` embeds its own disposition comment (a `Guard`'s `# dorc: guard …`), so
+    /// the shared elided-provenance comment is suppressed for this member (else a double comment,
+    /// and "elided" misdescribes a guard whose original bytes survive in the `||`-right).
+    self_commented: bool,
 }
 
 /// Enforce the edit-model invariants (arch-1 d-1) and return the surviving edits sorted by
@@ -2328,13 +2460,22 @@ fn emit_span_edits(src: &str, edits: &[SpanEdit]) -> String {
                 }
                 out.push_str(&spliced);
                 // d-3: append the provenance comment disclosing every member's replaced
-                // original, IFF the post-splice line end is comment-safe.
+                // original, IFF the post-splice line end is comment-safe. A SELF-COMMENTED member
+                // (a `Guard`, whose `render_line` carries its own `# dorc: guard …`) is excluded —
+                // it discloses itself, and it does not "elide" (its original bytes survive). If a
+                // group is entirely self-commented, no shared comment is appended.
                 if comment_safe(&spliced) {
                     // Source order (left-to-right) for the disclosure.
                     let mut es: Vec<&&SpanEdit> = group.members.iter().collect();
                     es.sort_by_key(|e| e.lo);
-                    let originals: Vec<String> = es.iter().map(|e| e.original.clone()).collect();
-                    out.push_str(&render::apply::provenance_comment(&originals));
+                    let originals: Vec<String> = es
+                        .iter()
+                        .filter(|e| !e.self_commented)
+                        .map(|e| e.original.clone())
+                        .collect();
+                    if !originals.is_empty() {
+                        out.push_str(&render::apply::provenance_comment(&originals));
+                    }
                 }
                 out.push('\n');
                 i = group.last_line + 1;
@@ -2451,11 +2592,54 @@ fn leaf_has_heredoc(ast: &Ast, leaf: AstId) -> bool {
         matches!(
             &ast.node(r).kind,
             NodeKind::Redir {
-                target: dorc_syntax::ast::RedirTarget::HereDoc { .. },
+                target: RedirTarget::HereDoc { .. },
                 ..
             }
         )
     })
+}
+
+/// Does a leaf carry a non-`/dev/null` OUTPUT redirect (`>f` / `>>f` to a file word)? A GUARD on
+/// such a leaf is a REFUSE-HOME (23C-fd10 / the redirect ruling h4): the guard's pass-direction
+/// (`( check ) || <orig >>log>` — the redirect binds the mutator) SUPPRESSES the admin-spelled
+/// side-effect on a converged pass (the append never happens), an effect corruption at the
+/// consumer. So the guard is refused and the line runs VERBATIM (kFAIL-perform — over-running is
+/// safe; suppressing a side-effect is not). GUARD-ONLY: a `Replace`/`Omit` refusal on redirects is
+/// the elide tier's separate concern (Part B), untouched here.
+///
+/// **Devnull-exemption DEFERRED (ru-26 churn-avoidance, tc-guard-redirect-devnull):** the ruling
+/// exempts `>/dev/null`, but resolving the target word to `/dev/null` needs the source/interner the
+/// refusal predicates deliberately do not thread. This round refuses ALL output-file redirects
+/// (Write/Append with a Word target) — strictly MORE conservative (a devnull guard runs verbatim
+/// instead of guarding), which is kFAIL-safe; no corpus case guards a devnull-redirect line, so the
+/// exemption is unobservable until one exists. Fd-dups (`>&2`) and input redirects (`<f`) never
+/// block (no output side-effect).
+fn leaf_has_blocking_output_redirect(ast: &Ast, leaf: AstId) -> bool {
+    let (NodeKind::Simple { redirs, .. }
+    | NodeKind::Subshell { redirs, .. }
+    | NodeKind::Group { redirs, .. }) = &ast.node(leaf).kind
+    else {
+        return false;
+    };
+    redirs.iter().any(|&r| {
+        matches!(
+            &ast.node(r).kind,
+            NodeKind::Redir {
+                op: RedirOp::Write | RedirOp::Append,
+                target: RedirTarget::Word(_),
+                ..
+            }
+        )
+    })
+}
+
+/// Is this leaf's GUARD render refused (run verbatim + disclosed)? A heredoc leaf (span can't cover
+/// the body) OR a non-devnull output-redirect leaf (guarding suppresses the side-effect). The ONE
+/// guard-refusal definition, kept in lockstep across [`Plan::collect_edits`] (drop the edit),
+/// [`Plan::render_refusal_diagnostics`] (disclose it), [`Plan::guard_refused_asts`] (the why-lens
+/// suppresses the "guarded" claim), and the cli's guard why-lane.
+fn guard_render_refused(ast: &Ast, leaf: AstId) -> bool {
+    leaf_has_heredoc(ast, leaf) || leaf_has_blocking_output_redirect(ast, leaf)
 }
 
 /// Is `node` neutralised (its rendered form reproduces its decision without running it)?
@@ -2717,6 +2901,7 @@ apt_get__predict() {
                 "apt_get__is_converged install -y curl".to_string(),
                 VerdictSense::Converged,
                 "package".to_string(),
+                vec!["dpkg-query".to_string()],
             )
         };
         // jc-mint-policy m-a: a diverged/unknown probe-verdict NEVER guards (a guard at a
@@ -2758,6 +2943,7 @@ apt_get__predict() {
             "apt_get__is_converged install -y curl".to_string(),
             VerdictSense::Converged,
             "package".to_string(),
+            vec!["dpkg-query".to_string()],
         );
         let license = GuardLicense::mint(
             nginx_fact(),
@@ -2798,6 +2984,7 @@ apt_get__predict() {
             "systemctl__is_diverged enable nginx".to_string(),
             VerdictSense::Diverged,
             "service".to_string(),
+            vec!["systemctl".to_string()],
         );
         let license = GuardLicense::mint(
             nginx_fact(),
@@ -2824,6 +3011,7 @@ apt_get__predict() {
                 "apt_get__is_converged install curl".to_string(),
                 VerdictSense::Converged,
                 "package".to_string(),
+                vec!["dpkg-query".to_string()],
             );
             Step {
                 leaf: LeafId(leaf),
@@ -2842,15 +3030,18 @@ apt_get__predict() {
         let plan = Plan {
             steps: vec![mk(0), mk(1)],
         };
+        // A throwaway (empty) Ast: the synthetic `AstId`s index no real node, and the OOB-safe
+        // check in `guard_preamble` treats an out-of-arena id as not-refused (so both guards emit).
+        let ast = dorc_syntax::parse("").value;
         // Two guards sharing one funcname ⇒ ONE preamble def (sh last-writer-wins; the invocation
         // sees its own def).
         assert_eq!(
-            plan.guard_preamble()
+            plan.guard_preamble(&ast)
                 .matches("apt_get__is_converged()")
                 .count(),
             1,
             "preamble deduped by funcname: {}",
-            plan.guard_preamble()
+            plan.guard_preamble(&ast)
         );
         // The exhaustive `disposition_counts` match now feeds the guard bucket (the summary's
         // guard column becomes real — DispositionCounts forced this wiring).
@@ -2888,13 +3079,20 @@ apt_get__predict() {
             &mut dorc_core::ProvArena::new(),
         )
         .value;
-        let probe = compile_probe(&parsed.value, &cfg, &value, &classes, |provider, argv| {
-            if probeable {
-                ship_corpus(&checks, &i, provider, argv)
-            } else {
-                None
-            }
-        });
+        let probe = compile_probe(
+            &parsed.value,
+            &cfg,
+            &value,
+            &classes,
+            |provider, argv| {
+                if probeable {
+                    ship_corpus(&checks, &i, provider, argv)
+                } else {
+                    None
+                }
+            },
+            |_| false,
+        );
         (probe, i)
     }
 
@@ -3153,9 +3351,14 @@ apt_get__predict() {
         )
         .value;
 
-        let probe = compile_probe(&parsed.value, &cfg, &value, &classes, |provider, argv| {
-            ship_corpus(&checks, &i, provider, argv)
-        });
+        let probe = compile_probe(
+            &parsed.value,
+            &cfg,
+            &value,
+            &classes,
+            |provider, argv| ship_corpus(&checks, &i, provider, argv),
+            |_| false,
+        );
         let plan = build_plan(
             src,
             &parsed.value,
@@ -3824,6 +4027,7 @@ apt_get__predict() {
             &classes,
             &kills,
             None,
+            &Vouches::new(),
             observe,
             &mut arena,
         );
@@ -3962,6 +4166,7 @@ apt_get__predict() {
             &classes,
             &BTreeSet::new(),
             footprints.as_ref(),
+            &Vouches::new(),
             observe,
             &mut arena,
         )
@@ -4051,6 +4256,7 @@ apt_get__predict() {
             &classes,
             &BTreeSet::new(),
             Some(&empty),
+            &Vouches::new(),
             observe,
             &mut arena,
         )
@@ -4482,12 +4688,14 @@ apt_get__predict() {
                 hi: a_hi,
                 replacement: "true".into(),
                 original: "apt-get install -y \"a\nb\"".into(),
+                self_commented: false,
             },
             SpanEdit {
                 lo: b_lo,
                 hi: b_hi,
                 replacement: "true".into(),
                 original: "apt-get install -y \"c\nd\"".into(),
+                self_commented: false,
             },
         ]);
         let groups = group_edits(src, &edits);
@@ -4519,12 +4727,14 @@ apt_get__predict() {
                 hi: a_hi,
                 replacement: "true".into(),
                 original: "apt-get install -y nginx".into(),
+                self_commented: false,
             },
             SpanEdit {
                 lo: b_lo,
                 hi: b_hi,
                 replacement: "true".into(),
                 original: "apt-get install -y curl".into(),
+                self_commented: false,
             },
         ]);
         let groups = group_edits(src, &edits);
