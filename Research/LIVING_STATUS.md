@@ -78,9 +78,10 @@ subagents get the key but NOT ack. Live agents: **P1** (Vultr substrate — isol
 snapshot/restore/destroy + prove trap-teardown, `dorc-r25` tag) + **`~/System` scout** (read-only recon
 → firms `255` windmill FLAGs from the human's real Ansible + scopes P6/zsh → `notes/256`). `~/System` =
 human's public system-repo (windmill Ansible + a complex zsh setup + a bit of Vultr mechanization P1
-cribs from), read-only reference for the sweep. **Baseline (pre-P1): 4 pre-existing non-`dorc-r25`
-instances on the account = OFF-LIMITS** — agents and any manual reap filter STRICTLY on the `dorc-r25`
-tag; 0 `dorc-r25` instances/snapshots at start. Agents relay trouble via
+cribs from), read-only reference for the sweep. **Isolation:** agents and any manual reap filter STRICTLY on the `dorc-r25` tag — never touch
+pre-existing untagged instances (the human's own infra). Baseline: **0 `dorc-r25`**
+instances/snapshots. Orphan-detection keys on `… | grep dorc-r25` (a raw line-count is unreliable — the
+text table's footer rows inflate it). Agents relay trouble via
 `SendMessage`→conductor→human (the conductor holds the notify path); the `dorc-r25` tag covers a
 hard-died agent's orphan.
 
