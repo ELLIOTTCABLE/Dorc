@@ -286,3 +286,53 @@ Conductor self-test (`op run` resolves the key — PRESENT, no leak) + an Opus s
 - The fleet-plan-view (P7) — built only if P8's loop proves insufficient, discovered live.
 - Whether A3's rehearsal needs the real stdlib (P5, r24-tail) or can run on a stub — ~SUSPECT a stub
   suffices to validate P6; confirm when P4 lands.
+
+## §7. Adversarial-review revisions (2026-07-04)
+
+Two Fable crosscheck passes (prompts `quarantine/25xxx`; full adjudication + retrospective ledger in
+`notes/254`) converged on one through-line: the protocol was **instrument-rich, decision-poor** — it
+built the measuring apparatus but under-specified the decisions and left its greens un-calibrated. Per
+the human's ruling (apply trivial sharpenings freely; **at most one non-trivial addition**; small
+round), the accepted deltas:
+
+**Trivial pre-registration sharpenings (now binding on Phase A):**
+- **Every §4 decision gets a number + an observation→action, set BEFORE the run** (numbers from the
+  dry-run below). Vibe-word forks ("high/near-zero/often") are post-hoc-gradeable = the woo-cool
+  adversary + a `signal-reducibility` violation.
+- **B3:** pre-commit the asymmetry — a negative felt-verdict ("theatre") COUNTS (088 A-VALUE); a
+  positive confirms NOTHING (`n1-honesty` + the METR gap). Else the escape-hatch runs backwards.
+- **B4:** gate the *yeet-full-elision* decision on **Stage-4/5 having landed**; unbuilt at `2e1fdc0`,
+  so a low frequency-number is an artifact of an under-built tier + thin stdlib and would falsely
+  confirm the 233-bias B4 exists to check. Until then B4 is evidence-gathering, not a fork.
+- **A1:** planted bugs are a **100%-sensitivity GATE**, never a "rate"; organic bites yield
+  existence-results only (n≈one-box). Plant with a *different* LLM lineage than P5's author. The
+  seeded-bad oracles are a **separate, labeled set, NEVER merged into the Phase-B stdlib** (an unlucky
+  merge hands the human a sabotaged stdlib on the one-shot day).
+- **Differential:** `∅` is fiction on a real box (fs-diff never empty; world-drift when mirrors refresh
+  between runs; probe/apply asymmetry). Add a **world-drift `C-verdict` category**; derive the
+  noise-exclusion list **dorc-INDEPENDENTLY via A/A runs** (bare-vs-bare from one snapshot — the
+  measured envelope IS the list), valid only while planted canaries still show through it. (Repairs the
+  self-greening P2's width-rule guards, relocated into the subtraction. The *build* is Phase-A; the
+  *approach* is fixed here.)
+- **Gap-log forcing-functions** replace the vague "prompts at seams": a per-agent gap-ledger in every
+  Track-A brief; a zsh friction-button (one keystroke → timestamped marker, at the instant); a
+  same-evening cued-recall debrief (replay the asciinema, narrate the *why* while memory's hot);
+  recorder redundancy (SPOF on a one-shot day).
+- **Reinstate the two confound conditions** 251 had and 252 dropped (hand-perfected-vs-LLM oracle;
+  scrappy-vs-careful book): `dorc why` *alone* can't separate executor-bug / too-careful-book /
+  engine-⊤ / unfamiliarity — the owed `+something-else`, confirmed.
+- **Freeze the §2 contracts AFTER this review** (before instruments build against them). Log wallclock
+  anyway (088 A-WIN — a free number).
+
+**The one non-trivial addition (per the at-most-one lean): the paper dry-run of the trial book.**
+Before the day, do for the game-server book what USER_STORY did for the webhost — predicted plan-shape
+per stage + the perfect-oracle ceiling. Highest-leverage of the whole review: it supplies the *missing
+denominator* (a scrappy game-server book is analyzer-hostile *by design* — so the design predicts low
+numbers; without the ceiling, "3 elided" misreads as "tool weak"), AND the *pre-registered predictions*
+(the first bullet), turning the day into prediction-vs-observation — the strongest anti-woo instrument
+at n=1. One afternoon, zero machine time; real-shell-adjacent ⇒ an Opus deliverable, pre-Phase-A.
+
+**Recorded-only / deferred to Phase-A (NOT this round; `notes/254` ledger):** the A/A-calibration +
+canary + `086`-sensitivity *build*; the probe-inertness differential arm (the sole test of the "plan
+doesn't mutate" weld against real tools); the full drift arm; the `do-4` hot-loop re-apply scenario.
+**Discarded as noise:** the "first-contact is already-spent, stop protecting it" reframe.
