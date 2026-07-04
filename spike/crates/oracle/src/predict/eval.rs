@@ -98,6 +98,12 @@ pub enum TopReason {
     UnresolvedAnnotationValue,
     /// The iteration budget was exhausted (a loop did not terminate within bound).
     BudgetExceeded,
+    /// The selected path reached a command PIPELINE (`cmd | cmd | …`, 24E §14) — ACCEPTED at parse
+    /// (it ships byte-exact, the kLANG mirror-invariant), but a pipeline never statically resolves
+    /// (the tracer cannot model its dataflow) ⇒ ⊤ ⇒ the site RUNS (the safe degrade,
+    /// `kFAIL-perform`). Parse-permissively; trace-conservatively. (A `touches()` pipeline instead
+    /// ESCALATES — see `touches::TouchesTop::NonPrintfCommand`.)
+    Pipeline,
 }
 
 impl TopReason {
@@ -113,6 +119,9 @@ impl TopReason {
                 "annotation value did not resolve to an argv element"
             }
             TopReason::BudgetExceeded => "iteration budget exceeded",
+            TopReason::Pipeline => {
+                "selected path reached a command pipeline (out of dialect ⇒ runs)"
+            }
         }
     }
 }
@@ -220,6 +229,13 @@ impl Evaluator {
             } => self.run_if(test, then_body, else_body),
             Stmt::Annotation(anno) => self.run_annotation(anno),
             Stmt::Command(cmd) => {
+                // 24E §14: a PIPELINE on the selected path is not a modeled probe (the tracer
+                // cannot resolve its dataflow) ⇒ ⊤ ⇒ the site can't-resolve ⇒ it RUNS (the safe
+                // degrade, `kFAIL-perform`). Parse-permissively (it lifted, ships byte-exact);
+                // trace-conservatively (⊤ here). Checked BEFORE recording a probe span.
+                if cmd.pipeline {
+                    return Flow::Top(TopReason::Pipeline);
+                }
                 // a probe body on the selected path: record its verbatim span (we run
                 // statically — the span ships into the probe artifact, C-1). A trailing
                 // effect mark (`cmd.mark`) is metadata for the lift/strip only; it does

@@ -692,6 +692,9 @@ impl Parser<'_> {
         let mut words = Vec::new();
         let mut end_span = start_span;
         let mut mark_observe: Option<bool> = None;
+        // 24E §14: once a `|` is seen, this list-item is a PIPELINE — everything to the
+        // list-item end folds into one span-covering, byte-exact-shipping Command the tracers ⊤ on.
+        let mut pipeline = false;
         let guard = self.toks.len().saturating_add(1);
         let mut steps = 0usize;
         loop {
@@ -721,16 +724,27 @@ impl Parser<'_> {
                 Some(Tok::Word { .. }) => CmdTok::Word,
                 Some(Tok::Redirect(_)) => CmdTok::Redirect,
                 Some(Tok::Error(msg)) => CmdTok::Error(msg.clone()),
-                // Any other metacharacter (`(`, `|`, brackets) inside a command is
-                // out of dialect (we do not model pipelines/subshells in probe
-                // bodies for this round).
+                // A pipe `|` (24E §14): ACCEPT it — the whole list-item is a pipeline that ships
+                // byte-exact and ⊤s at trace (parse-permissively / trace-conservatively).
+                Some(Tok::Pipe) => CmdTok::Pipe,
+                // Any OTHER metacharacter (`(`, subshells, brackets) inside a command is still out
+                // of dialect ⇒ ⊤-reject at parse (PIPES ONLY were lifted — a subshell has no
+                // strip-fidelity story yet). The bias stays hard here for genuinely-unmodeled syntax.
                 Some(_) => CmdTok::Other,
             };
             match class {
                 CmdTok::End => break,
                 CmdTok::MarkStart(observe) => {
-                    mark_observe = Some(observe);
-                    break;
+                    // Inside a pipeline, an (unquoted) `:` is just more opaque pipeline text — it
+                    // ships verbatim + ⊤s at trace, so it is NOT a dialect mark here (a pipeline
+                    // establishes/vouches nothing). Consume it and keep folding the pipeline.
+                    if pipeline {
+                        end_span = self.peek_span().unwrap_or(end_span);
+                        self.bump();
+                    } else {
+                        mark_observe = Some(observe);
+                        break;
+                    }
                 }
                 CmdTok::Word => {
                     end_span = self.peek_span().unwrap_or(end_span);
@@ -739,6 +753,14 @@ impl Parser<'_> {
                     }
                 }
                 CmdTok::Redirect => {
+                    end_span = self.peek_span().unwrap_or(end_span);
+                    self.bump();
+                }
+                // 24E §14: fold the `|` (and, via the loop, every downstream stage) into ONE
+                // span-covering Command. `words` keeps only the first stage's words (never
+                // interpreted — the tracers ⊤ on `pipeline`). Parse-permissively; trace-conservatively.
+                CmdTok::Pipe => {
+                    pipeline = true;
                     end_span = self.peek_span().unwrap_or(end_span);
                     self.bump();
                 }
@@ -752,13 +774,23 @@ impl Parser<'_> {
             return Err(self.fail_here("empty command"));
         }
         // The command span ends at its last real word/redirect (EXCLUDING the trailing
-        // mark), so the strip deletes exactly `[span.hi .. mark.span.hi]`.
+        // mark), so the strip deletes exactly `[span.hi .. mark.span.hi]`. A PIPELINE (24E §14)
+        // spans the whole `cmd | cmd | …` byte-exact and carries NO mark (it ⊤s at trace).
         let span = start_span.to(end_span);
-        let mark = match mark_observe {
-            Some(observe) => Some(self.parse_mark(observe, false)?),
-            None => None,
+        let mark = if pipeline {
+            None
+        } else {
+            match mark_observe {
+                Some(observe) => Some(self.parse_mark(observe, false)?),
+                None => None,
+            }
         };
-        Ok(Stmt::Command(Command { words, span, mark }))
+        Ok(Stmt::Command(Command {
+            words,
+            span,
+            mark,
+            pipeline,
+        }))
     }
 
     /// Parse a bare inline-dialect mark statement (`: TARGET` / `:? TARGET`): a POISON
@@ -969,6 +1001,11 @@ enum CmdTok {
     Word,
     /// A redirection chunk to fold into the verbatim span.
     Redirect,
+    /// A pipe `|` (24E §14): this "command" is a PIPELINE. Accepted (parse-permissively) — the
+    /// rest of the list-item folds into one span-covering Command flagged `pipeline`, which the
+    /// tracers ⊤ on (trace-conservatively). NOT hard-killed (the kLANG mirror-invariant: valid sh
+    /// degrades). Distinct from a case-arm pattern `|` (that is [`parse_case_arm`]'s own grammar).
+    Pipe,
     /// An out-of-dialect token (carries the lexer's message).
     Error(String),
     /// Any other unexpected metacharacter ⇒ out of dialect.

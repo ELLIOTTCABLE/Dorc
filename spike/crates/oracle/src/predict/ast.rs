@@ -202,6 +202,16 @@ pub struct Command {
     /// the probe body); consumed by the lift (effect-map derivation) and the strip
     /// (removal — the byte-region `[span.hi .. mark.span.hi]` is deleted).
     pub mark: Option<Mark>,
+    /// Whether this "command" is actually a **pipeline** (`cmd | cmd | …`) — 24E §14
+    /// (parse-permissively / trace-conservatively). The parser ACCEPTS a pipeline (the
+    /// [`kLANG`] mirror-invariant: valid sh must DEGRADE, never hard-kill) as one Command whose
+    /// [`span`](Command::span) covers the WHOLE pipeline, so the strip ships it BYTE-EXACT; the
+    /// ⊤-bias then lives on the TRACE layer, not the parse layer. A pipeline NEVER statically
+    /// resolves ([`inv-top-reject`] honored — it can't produce a wrong value/footprint): the
+    /// tracers ⊤ on it (a `touches()` pipeline ESCALATES to host-derivation, 24E §2; a `predict()`
+    /// pipeline can't-resolve ⇒ the site RUNS, the safe degrade). `words` holds only the FIRST
+    /// stage's words (never interpreted for a pipeline — the ⊤ fires first).
+    pub pipeline: bool,
 }
 
 /// A test inside `while`/`if`. The dialect admits exactly the shape the flag-strip

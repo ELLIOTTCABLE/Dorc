@@ -294,6 +294,15 @@ impl Emitter {
     /// footprint is untrusted — we cannot know what an unmodeled command in the footprint
     /// body would touch).
     fn run_command(&mut self, cmd: &Command) -> Flow {
+        // 24E §14: a PIPELINE (`cmd | cmd | …`) never statically resolves to a printf emission —
+        // its data flows through the pipe, not to stdout-as-coordinates — so it ⊤s REGARDLESS of
+        // the first stage (even `printf … | sed` is opaque). For a touches() body that ⊤ IS the
+        // escalation trigger (ship strip-only → run on host → read stdout): the SAME escalation
+        // class as a reached non-printf simple command (`dpkg -L "$1" | sed 's|^|file:|'` is the
+        // natural payload-bound idiom). Parse-permissively (it lifted); trace-conservatively (⊤ here).
+        if cmd.pipeline {
+            return Flow::Top(TouchesTop::NonPrintfCommand);
+        }
         let Some((verb, rest)) = cmd.words.split_first() else {
             return Flow::Top(TouchesTop::NonPrintfCommand); // empty command (defensive)
         };
@@ -489,6 +498,51 @@ hork.touches() {
         assert_eq!(
             trace(src, &["tune"]),
             TouchesResolution::Top(TouchesTop::NonPrintfCommand)
+        );
+    }
+
+    #[test]
+    fn pipeline_lifts_and_escalates_never_hard_killed() {
+        // 24E §14 (parse-permissively / trace-conservatively): the NATURAL payload-bound idiom
+        // `dpkg -L "$1" | sed 's|^|file:|'` LIFTS (no hard parse-kill — the kLANG mirror-invariant:
+        // valid sh degrades), and the tracer ⊤s on the pipeline as NonPrintfCommand (the escalation
+        // trigger — ship strip-only → run on host → read stdout). `trace` asserts the clean lift.
+        let src = "x.touches() { dpkg -L \"$1\" | sed 's|^|file:|' ; }";
+        assert_eq!(
+            trace(src, &["nginx"]),
+            TouchesResolution::Top(TouchesTop::NonPrintfCommand),
+            "a pipeline lifts + ⊤s ⇒ escalates (never a hard parse-kill)"
+        );
+    }
+
+    #[test]
+    fn printf_first_pipeline_still_escalates_not_modeled() {
+        // The load-bearing correctness case (24E §14): a pipeline whose FIRST stage IS `printf` must
+        // STILL ⊤ — its output flows through the pipe, NOT to stdout-as-coordinates — so it can never
+        // be wrongly modeled as a static emission. The `pipeline` flag ⊤s BEFORE the printf check.
+        let src = "x.touches() { printf 'k:%s\\n' \"$1\" | cat ; }";
+        assert_eq!(
+            trace(src, &["v"]),
+            TouchesResolution::Top(TouchesTop::NonPrintfCommand),
+            "a printf-FIRST pipeline is opaque ⇒ ⊤, not a modeled printf emission"
+        );
+    }
+
+    #[test]
+    fn multi_stage_pipeline_and_leading_printf_arm_escalate() {
+        // Adversarial parse shapes (24E §14): a 3-stage pipe lifts; and a case arm mixing a STATIC
+        // printf (emits a coord) THEN a pipeline still ⊤s (all-or-nothing TC-4 — the reached pipeline
+        // discards the whole static footprint ⇒ the site escalates, shipping the WHOLE body to derive).
+        assert_eq!(
+            trace("x.touches() { a \"$1\" | b | c ; }", &["v"]),
+            TouchesResolution::Top(TouchesTop::NonPrintfCommand),
+            "a multi-stage pipeline lifts + escalates"
+        );
+        let arm = "x.touches() { case $1 in v) printf 'package:%s\\n' \"$1\"; dpkg -L \"$1\" | sed 'x' ;; esac ; }";
+        assert_eq!(
+            trace(arm, &["v"]),
+            TouchesResolution::Top(TouchesTop::NonPrintfCommand),
+            "printf-then-pipeline in an arm escalates (the pipeline ⊤ discards the static emission)"
         );
     }
 

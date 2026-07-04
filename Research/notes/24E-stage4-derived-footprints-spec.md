@@ -255,3 +255,40 @@ five forks. All verified against code before adoption. These resolutions are BIN
   cross-kind expansion (`package:X` REACHES `service:X`) or cross-namespace co-reference is needed, that
   is Stage 5. Slogan: **"body computes and emits; engine interns and intersects, never bridges."**
   (Matches `23M`:219–247's cross-kind landmine.)
+
+## §14 — parse-permissively / trace-conservatively: pipes in the dialect (builder, 2026-07-04; round-25 field-trial de-deferral)
+
+The Stage-4 build surfaced `resid-derive-dialect`: the NATURAL payload-bound idiom — `dpkg -L "$pkg" |
+sed 's|^|file:|'` — did NOT lift, because the predict/touches dialect PARSER hard-rejected the pipe
+(`|` → "unexpected token in command"). So the derived-footprint mechanism as first built could only
+handle a body reaching a coordinate-emitting SIMPLE command (a bespoke `apt-manifest`), not one that
+post-processes a real tool's output — a gap between this note's `dpkg -L` framing and what shipped.
+
+**The principle (human-reaffirmed): the ⊤-bias belongs on the TRACE layer, not the PARSE layer.**
+Hard-rejecting a pipe at parse-time violates the `kLANG` mirror-invariant (valid sh must DEGRADE, never
+hard-kill — "anything not off-ramp-hostile can't be on-ramp-hostile"). The resolution:
+
+- **Parse-permissively.** The parser ACCEPTS a command pipeline (`cmd | cmd | …`) as ONE `Command`
+  whose `span` covers the WHOLE pipeline, flagged `pipeline: true`. Strip-fidelity: the pipeline ships
+  BYTE-EXACT (the strip edits only marks/annotations, and a pipeline carries none), so a body that
+  escalates runs verbatim on the host. `words` keeps only the first stage's words (never interpreted).
+  Scope: **PIPES ONLY** — a subshell/`(...)` / brace-group still ⊤-rejects at parse (no strip-fidelity
+  story yet); this is not a blanket parse-liberalization. (The `while read` demux is engine scaffolding
+  that already parsed.)
+- **Trace-conservatively.** The static tracer ⊤s on a reached pipeline, REGARDLESS of its first stage
+  (even `printf … | sed` is opaque — its output flows through the pipe, not to stdout-as-coordinates,
+  so it can never be mis-modeled as a static emission; the `pipeline` flag ⊤s BEFORE the printf check).
+  A `touches()` pipeline ⊤s as `NonPrintfCommand` → the ESCALATION trigger (ship strip-only → run on
+  host → read stdout). A `predict()` pipeline ⊤s as `TopReason::Pipeline` → can't-resolve → the site
+  RUNS (the safe degrade, `kFAIL-perform`).
+- **`inv-top-reject` is HONORED, not weakened.** A pipeline NEVER statically resolves to a value or a
+  footprint, so it can never PRODUCE a wrong one — the bias just moved to the semantic layer where
+  correctness lives. Under-modeling stays a loud boundary; it is a run/escalate, never a silent skip.
+
+Exercised end-to-end: `strawman24-derived-survive` now derives via `printf 'package:%s' "$1"; dpkg -L
+"$1" | sed 's|^|file:|'` (the leading printf emits the establish coordinate so the own-establish ⊆
+footprint coherence passes — a PURE file-level cross-kind derivation would fail that same-kind check;
+**`resid-derive-coherence`**, a new strain: the coherence comparand is package-kind, a `dpkg -L`
+footprint is file-kind, so the wall must re-emit its own package coordinate to stay coherent). Yardstick
+holds 0→1. Adversarial parser/tracer unit tests pin: a pipe lifts + escalates; a printf-FIRST pipe still
+escalates (not modeled); a multi-stage pipe lifts; a predict pipe ⊤s → runs.

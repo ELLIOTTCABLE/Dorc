@@ -483,6 +483,27 @@ bar__predict() {
 }
 
 #[test]
+fn pipeline_in_predict_body_lifts_and_tops_runs() {
+    // 24E §14 (parse-permissively / trace-conservatively): a predict body reaching a PIPELINE
+    // LIFTS (no hard parse-kill — `resolve` asserts the clean lift), but the tracer ⊤s on it
+    // (Pipeline) ⇒ can't-resolve ⇒ the site RUNS (the safe degrade, kFAIL-perform). The ⊤-bias
+    // lives on the TRACE layer, not the parse layer; a pipeline never statically resolves, so
+    // inv-top-reject is honored (it cannot produce a wrong probe).
+    let src = r#"
+tool__predict() {
+   pkg : package = "$1"
+   command -v "$pkg" | grep -q .
+}
+"#;
+    let res = resolve(src, "tool", &["nginx"]);
+    assert_eq!(
+        res,
+        Resolution::Top(TopReason::Pipeline),
+        "a predict pipeline ⊤s ⇒ runs (never a resolved/shipped probe)"
+    );
+}
+
+#[test]
 fn unbound_variable_in_annotation_is_top() {
     // The annotation value references a variable that was never assigned ⇒ the word
     // does not resolve concretely ⇒ Top. (`$missing` is not a positional and has no
