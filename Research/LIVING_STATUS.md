@@ -76,13 +76,30 @@ conductor-VERIFIED as compile-errors; the earmarked-reviewable decision, `24C`/`
    is owed a horizon disclosure in the human's voice. And `ORACLE_PROVIDES.md` awaits its
    first audit. And the license-ladder rung-split stays human-open (reserved, not built).
 
-**In flight:** **#5 Stage 3 Part A** (make guards FIRE — the mint-wiring; additive,
-foundation-validating; the 9 `guard23-*` XFAILs become PROMOTABLE, conductor-gated diffs).
-**Pipeline:** Stage 3 Part A → (Part B on human nod) → **#10 Stage 2c** (battle-oracle;
-blocked on Stage 3 for guards) ∥ **#6 Stage 4** (derived footprints — `FactTier` ready) →
-**#7 Stage 5** (grounding — where the claim-tier pays hardest; a bridge = `Judgment<Bridge>`
-into disjointness) → **#8 Stage 6** (measure adequacy-bite / conclude). Loose: **#11** (the
-Lcg fix, non-blocking).
+**Stage 3 Part A LANDED (guards FIRE):** the mint-wiring merged; **all 9 `guard23-*` XFAILs
+PROMOTED** (conductor-inspected the renders + authorized). Dorc now produces real
+`( oracle-check ) || command` guards on a real book past a real wall — **the guard half of the
+two-halves doctrine is REAL.** Two emitter bugs found+fixed end-to-end (double-comment; a
+redirect refuse-home that was suppressing a `>>log` side-effect). One latent soundness gap
+found → **#12 find-return-vouches** (the verdict-lift mis-reads a `*) return 2 ;;` decline as a
+vouch — runtime-safe in guards today, but bites Part B's elision, and it's the USER_STORY's own
+decline idiom; folded into the Part B brief).
+
+**CONDUCTOR HELD HERE — a deliberate checkpoint, not a stall.** After Stages 1/2/2b/3-foundation/
+3-Part-A (six builders, all merged green), the next moves each want the human or conductor
+design-work first, so this is the clean review point:
+- **Part B (elide-weld)** — held for the human's foundation go/no-go (corpus-wide churn).
+- **#6 Stage 4 (derived footprints)** — unblocked + foundation-light, BUT it ships `touches()`
+  into the PROBE lane (host-executed `dpkg -L`), a NEW execution surface that must preserve
+  probe-inertness (structural self-vouch, like predict bodies) — a real design point the
+  conductor should spec (rul24-overtype) or the human should eye before dispatch. NOT blind-
+  dispatchable.
+- **#10 Stage 2c (battle-oracle)** — blocked on Stage 3 (Part B) + #12.
+- **#7 Stage 5** (grounding — claim-tier pays hardest) → **#8 Stage 6** (adequacy-bite / conclude).
+- Loose: **#11** (Lcg fix), **#12** (return-vouches, rides Part B).
+
+Resume options on the human's return: nod the foundation → dispatch Part B (+#12); or direct
+Stage 4 after its probe-inertness spec; or redirect. Nothing is broken or blocked-on-a-fix.
 
 **Conduct addenda this session:** worktree-isolated agents base on ancient `main` — brief
 step-zero `git switch -C <branch> ai/spike3-r23` (`reset --hard` hook-blocked) + tip verify ·

@@ -167,3 +167,45 @@ hand-off is the corrected spec.
   + re-goldening — the expensive-if-the-foundation-is-wrong change. Held deliberately: it is the
   corpus-wide churn the "type-architecture is reviewable" earmark exists to gate. Un-hold on the
   human's nod to the foundation (24D + `claim.rs`).
+
+### Part A LANDED (2026-07-03): the guard tier FIRES — 9/9 guard23 promoted
+
+Merged (`86999d0`/`db7f0c8`/`acaeca3`): the mint-wiring — `Vouches` map (cli lifts verdict-sets
+per site, always-on = un-flagged baseline), `compile_probe` ships probes for vouched
+`EstablishWritten` sites (closes strain-classify-coupling), the guard mint
+(`EstablishWritten`+reached-vouch+converged ⇒ `Disposition::Guard`), the `( check ) || <original>`
+emitter + `guard_preamble`, the guard why-lane, gate-6 widened + `cf-6`. **All 9 `guard23-*` XFAILs
+PROMOTED** (conductor-inspected the renders: the ternary map is clean — pre-wall elide / opaque-wall
+run / past-wall-vouched-converged GUARD / past-wall-diverged run; the `( )` subshell isolates BOTH
+the var-namespace clobber AND the `set -u` crash; the redirect line stays bare RUN with its loud
+`expected-diagnostics: guard` refusal). 145/145 e2e, all gates. **The guard half of the two-halves
+doctrine is now REAL and demonstrated** — Dorc produces `( oracle-check ) || command` guards on a
+real book, past a real wall.
+
+**Two emitter shape-law bugs found + fixed end-to-end (the first live exercise of the emitter, +SURE):**
+(a) the span-edit provenance comment double-commented guards; (b) **the emitter refused only
+heredocs, not non-`/dev/null` output redirects — a guard would have SUPPRESSED a `>>log` file
+side-effect on a converged pass** (a real correctness bug, now a redirect refuse-home). This is
+exactly the "build to surface where it breaks" payoff.
+
+**find-return-vouches (LATENT SOUNDNESS GAP — conductor priority; touches USER_STORY).** The
+verdict-fn lift treats a path that "reaches a command" as a vouch, but a bare `*) return 2 ;;`
+parses AS a command, reaches `run_command`, and **wrongly VOUCHES** — where the author meant a
+DECLINE (rc ≥2 = confused ⇒ run, rul-rc-partition; the hz-refusepath fence). In the GUARD tier this
+is runtime-contained (a declined path's probe returns ≥2 = can't-tell ⇒ mint blocked; and even a
+spurious `( check )` returns non-zero ⇒ `||` falls through ⇒ command runs) — so no under-execute
+TODAY. **But it bites Part B**: once a vouch licenses ELISION (no runtime net), a decline-path
+wrongly read as a vouch could wrongly ELIDE. AND **`*) return 2 ;;` is the canonical decline idiom I
+put in USER_STORY stages 3/4** (human-vibed) — so the human-facing doc's decline idiom is exactly
+the one the lift mis-reads. Fix (settled-law, not a design-open): model `return N`/`false`/`:` as
+non-vouching declines in the verdict lift; this also SUBSUMES the builder's `tc-verdict-lift-warn`
+workaround (⊤-reject downgraded to warning so the `return 2` floors don't trip gate-3 — unneeded
+once return-is-decline is modeled). → task #12, folded into the Part B brief (Part B raises its
+stakes, so it must land there or before).
+
+**Coverage gaps (not defects, ~SUSPECT):** the declared-dual `is_diverged` sense-flip renders +
+unit-tests but no guard23 case fires it end-to-end (the one `is_diverged` fixture has an
+`EstablishAmbient`/`guard=0` site); the sweep mints no guard scenarios yet
+(`tc-sweep-guard-scenarios`). Both want a case/scenario later. The strawman yardstick `guard=`
+stays 0 (strawman oracles have no verdict functions — Part B territory); guard firing is measured
+on the guard23 pin-set (`guard=1` each; flagship `sites=4 elide=1 guard=1 run=2`).
