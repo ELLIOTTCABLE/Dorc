@@ -1,11 +1,12 @@
 # strawman24-derived-survive (24E Stage 4 — the DERIVED-footprint flagship; sibling to
 # strawman24-survive-simple, which uses an AUTHORED footprint). The apt oracle's touches() is now
-# PAYLOAD-BOUND: it reaches a host tool (apt-manifest) the static tracer cannot resolve, so the
-# footprint is DERIVED at probe time (24E §2) instead of authored statically.
+# PAYLOAD-BOUND: it derives its footprint via the NATURAL pipe idiom `dpkg -L "$1" | sed 's|^|file:|'`
+# (24E §14 — the parser ACCEPTS the pipe, the tracer ⊤s on it ⇒ escalate), so the footprint is
+# DERIVED at probe time (24E §2) instead of authored statically.
 #   site 0  apt-get install oldpkg — DIVERGED (absent) ⇒ RUNS. A running modeled mutator IS a
-#           wall — but its touches() ESCALATED (NonPrintfCommand ⊤ on apt-manifest), shipped to
-#           the probe lane, ran read-only, and its stdout derived the footprint
-#           {package:oldpkg, file:/etc/oldpkg.conf} (the mock apt-manifest emits it).
+#           wall — but its touches() ESCALATED (NonPrintfCommand ⊤ on the pipeline), shipped to
+#           the probe lane byte-exact, ran read-only, and its stdout derived the footprint
+#           {package:oldpkg, file:/etc/oldpkg.conf} (the printf package coord + `dpkg -L | sed` files).
 #   site 1  apt-get install nginx — CONVERGED (holds), PAST the running oldpkg wall. Its backing
 #           (package:nginx) is DISJOINT from the DERIVED footprint (package:oldpkg — same kind,
 #           different entity; and file:/etc/oldpkg.conf — a different kind) ⇒ under

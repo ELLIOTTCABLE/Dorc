@@ -1,10 +1,12 @@
 # minimal package oracle (apt/dpkg) — predict() + is_converged() + a PAYLOAD-BOUND touches()
 # (24E Stage 4). predict()/is_converged() are unchanged from strawman24-survive-simple; only the
-# touches() spelling differs: it reaches a HOST TOOL (apt-manifest) the static evaluate_touches
-# cannot resolve (a NonPrintfCommand ⊤) ⇒ it ESCALATES to host-derivation (24E §2/§4) instead of
-# emitting statically. The escalating command is a SIMPLE command (the dialect parser rejects the
-# pipe/loop a raw `dpkg -L | sed` would need — surfaced 24E-build; a real oracle would ship a
-# coordinate-emitting helper like this apt-manifest).
+# touches() spelling differs: it derives its footprint via the NATURAL payload-bound idiom
+# `dpkg -L "$1" | sed 's|^|file:|'` — a PIPE (24E §14). The parser ACCEPTS it (parse-permissively —
+# valid sh degrades, never hard-kills, the kLANG mirror-invariant); the static tracer ⊤s on the
+# pipeline (NonPrintfCommand) ⇒ it ESCALATES to host-derivation (24E §2/§4), shipping the whole
+# body byte-exact to run on the host. The leading `printf 'package:%s'` emits the wall's own
+# establish coordinate (so the coherence check own-establish ⊆ footprint passes — a pure file-level
+# cross-kind derivation would fail it; resid-derive-coherence).
 apt_get__predict() {
    while [ "${1#-}" != "$1" ]; do shift; done
    verb=$1; shift
@@ -17,12 +19,15 @@ apt_get__predict() {
    fi
 }
 
-apt-get.touches() {                              # PAYLOAD-BOUND footprint (24E §2): DERIVED, not authored
+apt-get.touches() {                              # PAYLOAD-BOUND footprint (24E §2/§14): DERIVED via a PIPE
    while [ "${1#-}" != "$1" ]; do shift; done
    verb=$1; shift
    while [ "${1#-}" != "$1" ]; do shift; done
    case $verb in
-      install|purge) apt-manifest "$1" ;;        # a host tool ⇒ NonPrintfCommand ⊤ ⇒ escalate
+   install|purge)
+      printf 'package:%s\n' "$1"                 # the wall's own establish coordinate (coherence)
+      dpkg -L "$1" | sed 's|^|file:|'            # the NATURAL idiom: a PIPE ⇒ NonPrintfCommand ⊤ ⇒ escalate
+      ;;
    esac
 }
 

@@ -1,0 +1,6 @@
+#!/bin/sh
+# INERT strawman mock — `dpkg -L <pkg>` ($1=-L, $2=pkg) lists the package's installed FILES.
+# HOST model: <pkg> lays down exactly /etc/<pkg>.conf. Read-only; logs for symmetry. The touches()
+# body pipes this into `sed 's|^|file:|'` to derive the file: coordinates (24E §14 pipe idiom).
+. "${0%/*}/.log"; _dorc_logged "$@"
+printf '/etc/%s.conf\n' "$2"
