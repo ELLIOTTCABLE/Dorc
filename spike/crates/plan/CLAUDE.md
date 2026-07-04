@@ -11,6 +11,19 @@ witness, `Disposition`/`Step`/`Plan` (the leaf-seam), `compile_probe`+`ProbePlan
 (forward half), `build_plan` (apply-2), and the two renders (`render_sh`,
 `render_apply`). It is `inv-superposition`'s real second phased caller (`F-FW3`).
 
+## Critical types — the tier-gated LICENSES (read their doc-comments before touching the mints)
+
+`ReplaceLicense` (elide) and `GuardLicense` (guard) are the sole-mint, private-field witnesses
+for the two irreversible verbs. Since Part B (the elide-weld, `24D §3`) BOTH mints DEMAND a
+`core::claim::ByVouch<VerdictVouch>` by value (`ReplaceLicense::prove_replaceable`'s
+`EstablishAmbient` arm consumes it as the tier-check; `GuardLicense::mint` the same) — a
+`ByObservation`/`BySilence` cannot satisfy either. **If a mint signature blocks your build you
+likely lack the real vouch: obtain it (author the `is_converged()`), or let the command run — NEVER
+fabricate/convert a claim to satisfy the type (that is the vouchless-elide hole the weld closes).**
+Read `core::claim`'s type docs (the tier algebra these consume) first. The vouch is built ONCE by
+`dorc_plan::build_vouches` (the cli/sweep/coverage/hostsim share it) and threaded via the `Vouches`
+map — it never enters the fact-plane (`TC-tier-3`; a vouch informs a license, never becomes a fact).
+
 ## What the keystone does to this crate (`ap-1`; do not pre-build past it)
 
 +SURE: the §3 entity-algebra re-key lands in `core`/`analysis` *first*, and it

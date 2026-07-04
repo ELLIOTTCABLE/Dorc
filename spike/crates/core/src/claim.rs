@@ -127,6 +127,11 @@ pub enum Rung {
 /// by-vouch is demanded, or vice versa (TC-tier-2). The payload is PRIVATE: the only ways in are
 /// the tier-specific minters, and the only ways out are the tier-specific accessors (a by-vouch
 /// claim has no fact-plane exit — TC-tier-3).
+///
+/// **When-blocked (rul24-critical-type-docs, `24D §6`):** if this type blocks your build — a mint
+/// wants a [`ByVouch`] and you hold a [`ByObservation`]/[`BySilence`] — you likely have the WRONG
+/// claim. Do NOT convert it to satisfy the signature (that laundering IS the soundness hole this
+/// boundary prevents); obtain the real vouch (author the verdict function), or let the command run.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Claim<T: Tier, P> {
     payload: P,
