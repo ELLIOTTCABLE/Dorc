@@ -238,16 +238,19 @@ fn run() -> Result<(), String> {
     // `Diag`s (`to_legacy` drops it). The arena is shared (the typed diags' causes resolve in it).
     // `kills` (R3 / 24A §3): the kill-bearing leaf set the wall predicate cannot read off the
     // `MustRun` SkipClass alone. Threaded to `build_plan_walled` so a running `apt-get purge`
-    // walls downstream, closing the kill gap fd10's establish-only wall left open.
-    let (classified, why_diags, kills) = dorc_analysis::effect::classify_with_why_diags(
-        &cfg.value,
-        &value,
-        &parsed.value,
-        &idx,
-        &checks,
-        &mut interner,
-        &mut arena,
-    );
+    // walls downstream, closing the kill gap fd10's establish-only wall left open. `kill_coords`
+    // (24E §7): each single-kill node's killed coordinate — the kill-wall coherence comparand
+    // (own-killed-coord ⊆ footprint), closing resid-kill-coherence.
+    let (classified, why_diags, kills, kill_coords) =
+        dorc_analysis::effect::classify_with_why_diags(
+            &cfg.value,
+            &value,
+            &parsed.value,
+            &idx,
+            &checks,
+            &mut interner,
+            &mut arena,
+        );
     report_at(advisory, "classify", &classified.diags);
     let classes = classified.value;
 
@@ -340,6 +343,7 @@ fn run() -> Result<(), String> {
             &oracle_refs,
             &classes,
             &kills,
+            &kill_coords,
             &value,
             &cfg.value,
             &parsed.value,
@@ -355,6 +359,7 @@ fn run() -> Result<(), String> {
             &derivations,
             &results,
             &classes,
+            &kill_coords,
             &mut interner,
             advisory,
         );
@@ -531,7 +536,7 @@ fn ship_predict_body(
 /// [`KindId`] a predict annotation minted — never a parallel string-typed universe (24A §1b).
 #[expect(
     clippy::too_many_arguments,
-    reason = "the cli-edge footprint lift threads the whole compiled context (oracles/classes/kills/value/cfg/ast/interner) + the advisory routing flag; each is a distinct pipeline output, not a bundle-able struct"
+    reason = "the cli-edge footprint lift threads the whole compiled context (oracles/classes/kills/kill-coords/value/cfg/ast/interner) + the advisory routing flag; each is a distinct pipeline output, not a bundle-able struct"
 )]
 fn build_survival_footprints(
     oracle_refs: &[&str],
@@ -540,6 +545,7 @@ fn build_survival_footprints(
         dorc_analysis::effect::SkipClass,
     )],
     kills: &std::collections::BTreeSet<dorc_analysis::cfg::CfgNodeId>,
+    kill_coords: &BTreeMap<dorc_analysis::cfg::CfgNodeId, dorc_core::FactKey>,
     value: &dorc_analysis::value::ValueFlow,
     cfg: &dorc_analysis::cfg::Cfg,
     ast: &dorc_syntax::ast::Ast,
@@ -559,8 +565,8 @@ fn build_survival_footprints(
     let mut footprints = dorc_plan::TrustedFootprints::new();
     let mut diags = Vec::new();
     for (node, class) in classes {
-        // A wall candidate: an establish-bearing class (carrying its own cell for the coherence
-        // check) or a kill (no single cell available ⇒ coherence skipped for kills).
+        // A wall candidate: an establish-bearing class OR a kill. Both now carry their OWN effect
+        // coordinate for the coherence check (24E §7: the kill's coord rides `kill_coords`).
         let establish = match class {
             SkipClass::EstablishAmbient(f) | SkipClass::EstablishWritten(f) => Some(*f),
             _ => None,
@@ -573,20 +579,21 @@ fn build_survival_footprints(
         else {
             continue; // no touches / non-literal argv / ⊤ / empty emission ⇒ no footprint ⇒ wall
         };
-        // Coherence (establish sites): the site's own establish coordinate must be inside its
-        // footprint (at-least ⊆ at-most). A violation is a loud contradiction ⇒ refuse ⇒ wall.
-        if let Some(fact) = establish {
-            let own = dorc_plan::EntityCoord::new(fact.kind, fact.entity);
-            if !coords.contains(&own) {
-                let span = ast.node(cfg.node(*node).ast).span;
-                diags.push(dorc_core::Diagnostic::warning(
-                    dorc_core::DiagCode("footprint-incoherent"),
-                    Some(span),
-                    "touches() footprint omits this command's own establish coordinate \
-                     (at-least ⊄ at-most) — footprint refused, the site walls",
-                ));
-                continue;
-            }
+        // Coherence (establish AND kill sites, 24E §7): the site's OWN effect coordinate — its
+        // establish, or its killed cell — must be ⊆ its footprint (at-least ⊆ at-most). A violation
+        // is a loud contradiction ⇒ refuse ⇒ wall. Closes resid-kill-coherence: a drifted kill
+        // `touches()` (too-narrow footprint omitting the really-killed entity) is now caught.
+        if let Some(own) = own_wall_coord(*node, classes, kill_coords)
+            && !coords.contains(&own)
+        {
+            let span = ast.node(cfg.node(*node).ast).span;
+            diags.push(dorc_core::Diagnostic::warning(
+                dorc_core::DiagCode("footprint-incoherent"),
+                Some(span),
+                "touches() footprint omits this command's own effect coordinate \
+                 (at-least ⊄ at-most) — footprint refused, the site walls",
+            ));
+            continue;
         }
         if let Some(footprint) = dorc_plan::Footprint::authored(provider, coords) {
             footprints.insert(*node, footprint);
@@ -720,6 +727,7 @@ fn merge_derived_footprints(
         dorc_analysis::cfg::CfgNodeId,
         dorc_analysis::effect::SkipClass,
     )],
+    kill_coords: &BTreeMap<dorc_analysis::cfg::CfgNodeId, dorc_core::FactKey>,
     interner: &mut Interner,
     advisory: bool,
 ) {
@@ -756,20 +764,19 @@ fn merge_derived_footprints(
             ));
             continue;
         }
-        // Coherence (establish sites): own establish coordinate ⊆ derived footprint. A kill-wall's
-        // coherence via the killcoord side-map is 24E §7 (threaded separately).
-        if let Some(fact) = establish_fact_of(classes, d.node) {
-            let own = dorc_plan::EntityCoord::new(fact.kind, fact.entity);
-            if !coords.contains(&own) {
-                diags.push(dorc_core::Diagnostic::warning(
-                    dorc_core::DiagCode("footprint-incoherent"),
-                    None,
-                    "derived touches() footprint omits this command's own establish coordinate \
-                     (at-least ⊄ at-most) — footprint refused, the site walls"
-                        .to_string(),
-                ));
-                continue;
-            }
+        // Coherence (establish AND kill sites, 24E §7): the site's OWN effect coordinate — its
+        // establish, or its killed cell (from `kill_coords`) — must be ⊆ its derived footprint.
+        if let Some(own) = own_wall_coord(d.node, classes, kill_coords)
+            && !coords.contains(&own)
+        {
+            diags.push(dorc_core::Diagnostic::warning(
+                dorc_core::DiagCode("footprint-incoherent"),
+                None,
+                "derived touches() footprint omits this command's own effect coordinate \
+                 (at-least ⊄ at-most) — footprint refused, the site walls"
+                    .to_string(),
+            ));
+            continue;
         }
         if let Some(fp) = dorc_plan::Footprint::derived(d.provider, coords, d.call.clone()) {
             footprints.insert(d.node, fp);
@@ -795,9 +802,8 @@ fn intern_coordinate(line: &str, interner: &mut Interner) -> Option<dorc_plan::E
     Some(dorc_plan::EntityCoord::new(kind, entity))
 }
 
-/// The establish fact a wall-candidate node establishes, if it is an establish class (the
-/// coherence comparand for a derived footprint). A kill's coordinate rides the killcoord side-map
-/// instead (24E §7).
+/// The establish fact a wall-candidate node establishes, if it is an establish class. A kill's
+/// coordinate rides the `kill_coords` side-map instead (24E §7).
 fn establish_fact_of(
     classes: &[(
         dorc_analysis::cfg::CfgNodeId,
@@ -815,6 +821,24 @@ fn establish_fact_of(
             _ => None,
         }
     })
+}
+
+/// The wall-candidate node's OWN effect coordinate — the coherence comparand (own ⊆ footprint,
+/// 24E §7): its establish coordinate (an establish class) OR its killed coordinate (a kill node,
+/// from `kill_coords`). `None` for a node with neither (nothing to check coherence against). This
+/// unifies the establish-wall check (Stage 2) with the kill-wall check (24E §7) for BOTH the
+/// authored and derived footprint lanes.
+fn own_wall_coord(
+    node: dorc_analysis::cfg::CfgNodeId,
+    classes: &[(
+        dorc_analysis::cfg::CfgNodeId,
+        dorc_analysis::effect::SkipClass,
+    )],
+    kill_coords: &BTreeMap<dorc_analysis::cfg::CfgNodeId, dorc_core::FactKey>,
+) -> Option<dorc_plan::EntityCoord> {
+    establish_fact_of(classes, node)
+        .or_else(|| kill_coords.get(&node).copied())
+        .map(|f| dorc_plan::EntityCoord::new(f.kind, f.entity))
 }
 
 /// Lift the per-site GUARD VOUCHES (rul-guard-license / rul24-vouch-is-verdict-authoring, 24A §1c).
@@ -1621,6 +1645,42 @@ mod tests {
             }],
             unresolvable: vec![],
         }
+    }
+
+    #[test]
+    fn own_wall_coord_selects_kill_coord_for_kill_establish_for_establish() {
+        // 24E §7 (resid-kill-coherence): the coherence comparand is the node's OWN effect
+        // coordinate — its killed cell (a kill node, from `kill_coords`) OR its establish cell (an
+        // establish class). `own_wall_coord` unifies both, extending the Stage-2 establish-wall
+        // check to kill-walls in BOTH the authored and derived footprint lanes.
+        use dorc_analysis::cfg::CfgNodeId;
+        use dorc_analysis::effect::SkipClass;
+        let mut i = Interner::default();
+        let killed = pkg(&mut i, "nginx"); // package:nginx#installed (a purge's killed cell)
+        let established = pkg(&mut i, "curl");
+        let kill_node = CfgNodeId(7);
+        let est_node = CfgNodeId(3);
+        let classes = vec![(est_node, SkipClass::EstablishAmbient(established))];
+        let mut kill_coords = BTreeMap::new();
+        kill_coords.insert(kill_node, killed);
+        assert_eq!(
+            own_wall_coord(kill_node, &classes, &kill_coords),
+            Some(dorc_plan::EntityCoord::new(killed.kind, killed.entity)),
+            "a kill node's comparand is its killed coordinate (24E §7 — the new close)"
+        );
+        assert_eq!(
+            own_wall_coord(est_node, &classes, &kill_coords),
+            Some(dorc_plan::EntityCoord::new(
+                established.kind,
+                established.entity
+            )),
+            "an establish node's comparand is its establish coordinate (Stage 2, unchanged)"
+        );
+        assert_eq!(
+            own_wall_coord(CfgNodeId(99), &classes, &kill_coords),
+            None,
+            "a node that is neither establish nor kill has no coherence comparand"
+        );
     }
 
     #[test]

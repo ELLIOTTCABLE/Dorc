@@ -35,7 +35,7 @@ use dorc_core::{
 };
 use dorc_oracle::predict::{self, PredictSet, ResolvedEntity};
 use dorc_oracle::{EffectCell, KindIndex, ValueClaim, empty_verb};
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 
 /// The dataflow fact-key the engine reaches over. **Re-exported from `core`**
 /// (`dec-seam-ownership`, `notes/193` §2): the structured entity-algebra is the
@@ -1023,9 +1023,9 @@ pub fn classify(
 #[must_use]
 #[expect(
     clippy::type_complexity,
-    reason = "the three parallel products (site classifications + typed why-lens diags + the R3 \
-              kill-node set) are the fn's whole output; a named struct for a two-call-site return \
-              (the cli + the plan test seam) buys nothing over the tuple"
+    reason = "the four parallel products (site classifications + typed why-lens diags + the R3 \
+              kill-node set + the killed-coordinate side-map, 24E §7) are the fn's whole output; a \
+              named struct for a two-call-site return (the cli + the plan test seam) buys nothing"
 )]
 pub fn classify_with_why_diags(
     cfg: &Cfg,
@@ -1039,6 +1039,7 @@ pub fn classify_with_why_diags(
     Carrier<Vec<(CfgNodeId, SkipClass)>>,
     Vec<Diag>,
     BTreeSet<CfgNodeId>,
+    BTreeMap<CfgNodeId, FactKey>,
 ) {
     let mut diags: Vec<Diagnostic> = Vec::new();
     // Precompute every node's member-family + effect cells, recording the deferred cmdsub-⊤
@@ -1126,6 +1127,13 @@ pub fn classify_with_why_diags(
     // predicate can't see it — this set carries it out to `build_plan_walled`. `Kills` is a
     // real mutator: a RUNNING kill must wall downstream, exactly like a modeled establish.
     let mut kills: BTreeSet<CfgNodeId> = BTreeSet::new();
+    // 24E §7 (resid-kill-coherence): the killed COORDINATE per single-kill DIRECT-LEAF node — the
+    // comparand the cli applies to kill-walls (own-killed-coord ⊆ footprint, the establish-wall
+    // coherence check extended to kills). A multi-kill node (none in the corpus) is left OUT (no
+    // single comparand) ⇒ it keeps the pre-24E behaviour (no kill-wall coherence), still safe: the
+    // check only ever REFUSES a drifted footprint, never licenses one. InlineCall kills likewise
+    // skip it (the kill lives in a spliced body site — no corpus case, cheap to defer).
+    let mut kill_coords: BTreeMap<CfgNodeId, FactKey> = BTreeMap::new();
     let bears_kill = |cs: &[CommandEffect]| cs.iter().any(|e| matches!(e, CommandEffect::Kills(_)));
     for (i, cells) in effects.iter().enumerate() {
         let id = CfgNodeId(i as u32);
@@ -1189,10 +1197,29 @@ pub fn classify_with_why_diags(
         }
         if bears_kill(cells) {
             kills.insert(id);
+            // The single-kill node's killed coordinate — the kill-wall coherence comparand (24E §7).
+            if let Some(f) = single_killed_coord(cells) {
+                kill_coords.insert(id, f);
+            }
         }
         out.push((id, classify_site(i)));
     }
-    (Carrier { value: out, diags }, why_diags, kills)
+    (Carrier { value: out, diags }, why_diags, kills, kill_coords)
+}
+
+/// The killed coordinate of a command's effects (24E §7): `Some(f)` IFF there is EXACTLY one `Kills`
+/// cell — the single-kill node, the corpus reality. A multi-kill node has no single comparand
+/// (`None` ⇒ no kill-wall coherence, still safe: the coherence check only REFUSES a drifted
+/// footprint, never licenses one).
+fn single_killed_coord(cells: &[CommandEffect]) -> Option<FactKey> {
+    let mut killed = cells.iter().filter_map(|e| match e {
+        CommandEffect::Kills(f) => Some(*f),
+        _ => None,
+    });
+    match (killed.next(), killed.next()) {
+        (Some(f), None) => Some(f),
+        _ => None,
+    }
 }
 
 #[cfg(test)]
@@ -1375,6 +1402,37 @@ command__predict() {
             !classes
                 .iter()
                 .any(|c| matches!(c, SkipClass::EstablishAmbient(_)))
+        );
+    }
+
+    #[test]
+    fn kill_coords_records_the_killed_coordinate_per_single_kill_node() {
+        // 24E §7 (resid-kill-coherence): `classify_with_why_diags` records each single-kill node's
+        // KILLED coordinate in the side-map — the comparand the cli's kill-wall coherence check uses
+        // (own-killed-coord ⊆ footprint, closing the gap kill-walls left open). `apt-get purge nginx`
+        // kills package:nginx#installed; its node maps to exactly that cell.
+        let (mut i, idx, s) = package_setup();
+        let parsed = dorc_syntax::parse("apt-get purge nginx\n");
+        let built = cfg::build(&parsed.value);
+        let value = analyze(&built.value, &parsed.value, &mut i);
+        let checks = vec![lift_predicts(&mut i, CORPUS_PREDICT_SRC).value];
+        let mut arena = dorc_core::ProvArena::new();
+        let (_classes, _why, kills, kill_coords) = classify_with_why_diags(
+            &built.value,
+            &value,
+            &parsed.value,
+            &idx,
+            &checks,
+            &mut i,
+            &mut arena,
+        );
+        assert_eq!(kills.len(), 1, "the purge is the sole kill node");
+        let node = *kills.iter().next().expect("one kill node");
+        let killed = pkg_installed(&mut i, &s, "nginx");
+        assert_eq!(
+            kill_coords.get(&node),
+            Some(&killed),
+            "the kill node maps to its killed coordinate package:nginx#installed"
         );
     }
 

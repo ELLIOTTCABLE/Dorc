@@ -58,7 +58,7 @@ pub fn run_kernel(declared: &DeclaredScenario, s0: &Host, flag_on: bool, i: &mut
         .collect();
 
     let mut arena = ProvArena::new();
-    let (classified, _why, kills) = dorc_analysis::effect::classify_with_why_diags(
+    let (classified, _why, kills, _kill_coords) = dorc_analysis::effect::classify_with_why_diags(
         &cfg,
         &value,
         &parsed.value,

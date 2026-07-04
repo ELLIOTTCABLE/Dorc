@@ -3518,7 +3518,7 @@ apt_get__predict() {
         let cfg = dorc_analysis::cfg::build(&parsed.value).value;
         let value = dorc_analysis::value::analyze(&cfg, &parsed.value, &mut i);
         let checks = vec![dorc_oracle::predict::lift_predicts(&mut i, CORPUS_PREDICT_SRC).value];
-        let (classes, _why, kills) = dorc_analysis::effect::classify_with_why_diags(
+        let (classes, _why, kills, _kill_coords) = dorc_analysis::effect::classify_with_why_diags(
             &cfg,
             &value,
             &parsed.value,
@@ -4421,15 +4421,16 @@ apt_get__predict() {
         let value = dorc_analysis::value::analyze(&cfg, &parsed.value, &mut i);
         let checks = vec![dorc_oracle::predict::lift_predicts(&mut i, CORPUS_PREDICT_SRC).value];
         let mut arena = dorc_core::ProvArena::new();
-        let (classified, _why, kills_found) = dorc_analysis::effect::classify_with_why_diags(
-            &cfg,
-            &value,
-            &parsed.value,
-            &idx,
-            &checks,
-            &mut i,
-            &mut arena,
-        );
+        let (classified, _why, kills_found, _kill_coords) =
+            dorc_analysis::effect::classify_with_why_diags(
+                &cfg,
+                &value,
+                &parsed.value,
+                &idx,
+                &checks,
+                &mut i,
+                &mut arena,
+            );
         let classes = classified.value;
         let kills = if walled { kills_found } else { BTreeSet::new() };
         let observe = |f: FactKey| {

@@ -443,15 +443,16 @@ pub fn build_report(inputs: &Inputs<'_>) -> Report {
     // Kill-AWARE classify (24A §3): mirrors the cli so the dashboard sees the same kill-wall the
     // honest baseline does (a kill-UNAWARE plan would over-report elision on a kill book). The
     // why-diags are cli-render-only; coverage discards them.
-    let (classified, _why_diags, kills) = dorc_analysis::effect::classify_with_why_diags(
-        &cfg,
-        &value,
-        &parsed.value,
-        &idx,
-        &checks,
-        &mut interner,
-        &mut arena,
-    );
+    let (classified, _why_diags, kills, _kill_coords) =
+        dorc_analysis::effect::classify_with_why_diags(
+            &cfg,
+            &value,
+            &parsed.value,
+            &idx,
+            &checks,
+            &mut interner,
+            &mut arena,
+        );
     let classes = classified.value;
 
     // c3 source: per-site Effect verdict (the dashboard reads the plan's own
