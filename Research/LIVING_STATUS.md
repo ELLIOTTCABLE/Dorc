@@ -42,11 +42,23 @@ Home-Assistant(Container), self-signed certs. (HA genuinely blocked-on-Dorc = th
 services = more composition-exercise; corral network-chaos, don't eliminate. Rubric: many-parts>few; mostly bog-standard-oracle-able + a few walls (tractable-vendor→admin-loop,
 opaque-hork→residue); real-drift→adequacy; corral-chaos-not-control.)
 
-**IN FLIGHT (agent, background):** the dry-run pass → `notes/255-homelab.book.sh` (runbook) +
-`notes/255-homelab-dryrun.md` (per-stage predicted-plan ledger + perfect-oracle **CEILING** +
-decisions-log). Its numbers become §4's pre-registered predictions; the ceiling is the day's
-denominator. **When it returns:** sanity-check the load-bearing predictions (theory — hold loosely,
-don't relay), fill §4 thresholds from the ceiling.
+**DRY-RUN DONE + committed** (research-firming deferred to the on-VPS validation, per human):
+`notes/255-homelab.book.sh` (runbook, ~21 sites) + `notes/255-homelab-dryrun.md` (per-stage ledgers +
+ceiling + decisions-log; **§5 pred-1..5 ARE the pre-registered §4 predictions** — F1/F5 satisfied).
+**Numbers:** Stage-B steady **5 elide / 7 guard / 9 run**; +hand-oracle **8** (modulo u3); ceiling
+**~14** (unreachable — footprint tier unbuilt); floor **~4 never-elide** (`su -c` postgres,
+docker/HA-internal, `systemctl reload`). Conductor sanity-check: **sound + honest** (its confidence-
+marks hold; the 5-elide is +SURE, the +3 rides u3). **Three takeaways for the day:**
+1. **u3 = the sharpest uncertainty** — does the built spike lift a *stdout-consuming* pipe-guard
+   (`cmd | grep -q X || fallback`)? If not, Stage-C == Stage-B (a finding). **Checkable IN-REPO NOW
+   (no VPS)** — worth de-risking pre-Phase-A.
+2. At the built tier **attention barely moves** (16→13 of 21 face the user) — the footprint tier
+   (Stages 4–5, *unbuilt*) is what buys the headline value-prop; walk in knowing, or "barely helped"
+   misreads as failure.
+3. Genuine finding: the idiomatic Debian postgres idiom `su - postgres -c '…'` is a permanent
+   opaque-wrapper wall.
+Owed nicety: fold 255 §5's predictions into `252 §4` (cheap; they live durably in 255 regardless).
+The `# FLAG:` runnability specifics firm on the VPS (compose-fallback = pre-registered contingency).
 
 **Substrate + deferred conduct:** op sessions don't persist on Windows (no caching) → **EXECUTION
 substrate = macOS** (`§5.2`). **Re-conductoring to macOS is DEFERRED** (expensive) — planning continues
@@ -57,9 +69,6 @@ credentialed work is conductor-owned or frontloaded.
 **Next:** dry-run returns → fill §4 predictions → freeze §2 contracts (AFTER review, per §7) → Track-A
 fan-out (Phase-A builds) → macOS re-conductor → Phase B (the human's single first-blooding). Live
 tasks: #6 (execution handoff), #7 (dry-run, in-flight).
-
-> **⚠ sync-conflict artifact present:** `Research/LIVING_STATUS.sync-conflict-20260703-…PHNHRER.md`
-> (stale; human-owned cleanup).
 
 ## Round-24 status (2026-07-04 — Stages 1–3 COMPLETE; Stage 4 next; detail in `notes/24A`–`24D`)
 
