@@ -28,7 +28,7 @@
     reason = "seeded round-19 code predates the take-3 lint gate; ratchet away during the rebuild"
 )]
 
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 
 use dorc_analysis::effect::FactKey;
 use dorc_core::{Observable, Phase, Verdict};
@@ -169,11 +169,20 @@ impl CellDelta {
 }
 
 /// A seeded, deterministic model of a target host: the set of facts that currently
-/// hold, plus the `kFAIL-withhold` monitor.
+/// hold, the `kFAIL-withhold` monitor, plus the DECLARED derivation manifests (24E §6).
 #[derive(Debug, Clone)]
 pub struct Host {
     facts: BTreeSet<FactKey>,
     violations: Vec<Violation>,
+    /// The DECLARED derived-footprint manifests (24E §6 / fork-s4-declaredtrue): per escalated
+    /// wall-site cell, the modeled entity-set its host-run `touches()` would emit — the SAME shape
+    /// discipline as [`verdict`](Host::verdict): DECLARED scenario data, deterministic, no ssh, and
+    /// emphatically NOT a `dpkg` simulation (the `hostsim/CLAUDE.md` fidelity-vs-coverage line — a
+    /// declared-data oracle, never a re-implemented tool). Entity-granular (selector ignored by the
+    /// plan's `disjoint`). This rides the sweep's declared-vs-true split: a manifest NARROWER than a
+    /// site's TRUE [`CellDelta`] is the LYING derived footprint (⊂ true) that under-declares what the
+    /// wall touches ⇒ a downstream fact wrongly survives ⇒ the end-state differential goes RED.
+    manifests: BTreeMap<FactKey, BTreeSet<FactKey>>,
 }
 
 impl Host {
@@ -184,7 +193,22 @@ impl Host {
         Host {
             facts: holding.into_iter().collect(),
             violations: Vec::new(),
+            manifests: BTreeMap::new(),
         }
+    }
+
+    /// Attach a DECLARED derivation manifest (24E §6): the modeled entity-set the host-run
+    /// `touches()` for `cell` would emit (the derived footprint). Consuming-builder shape so a
+    /// scenario spells a site's declared footprint inline. Honest ⇒ `coords` ⊇ the site's true
+    /// [`CellDelta`]; lying ⇒ `coords` ⊂ true (the too-narrow footprint the sweep net hunts).
+    #[must_use]
+    pub fn with_manifest(
+        mut self,
+        cell: FactKey,
+        coords: impl IntoIterator<Item = FactKey>,
+    ) -> Self {
+        self.manifests.insert(cell, coords.into_iter().collect());
+        self
     }
 
     /// A host whose initial state is a seeded random subset of `candidates` (each
@@ -201,6 +225,7 @@ impl Host {
         Host {
             facts,
             violations: Vec::new(),
+            manifests: BTreeMap::new(),
         }
     }
 
@@ -215,6 +240,17 @@ impl Host {
         } else {
             Verdict::Diverged
         }
+    }
+
+    /// The DECLARED derived footprint for a wall-site `cell` (24E §6) — the modeled entity-set its
+    /// host-run `touches()` emits, the derivation analogue of [`verdict`](Host::verdict).
+    /// Deterministic, scenario-driven, no ssh, no `dpkg` simulation (a declared-data oracle). An
+    /// unmodeled cell yields the EMPTY set: no declaration ⇒ an empty derived footprint ⇒ the site
+    /// walls (silence = wall — kFAIL-safe). Same declared-vs-true discipline as [`CellDelta`]: an
+    /// honest manifest ⊇ the site's true delta; a lying one ⊂ it (under-declares ⇒ wrong survival).
+    #[must_use]
+    pub fn derive(&self, cell: FactKey) -> BTreeSet<FactKey> {
+        self.manifests.get(&cell).cloned().unwrap_or_default()
     }
 
     /// The full read-only [`Observable`] for a fact — the concrete `observe` the plan
@@ -505,6 +541,49 @@ apt_get__predict() {
     }
 
     #[test]
+    fn derive_returns_declared_manifest_and_models_the_lying_footprint() {
+        // 24E §6: the derivation-answer is DECLARED scenario data (not a dpkg sim). An HONEST
+        // manifest ⊇ the site's TRUE effect ⇒ disjointness is sound; a LYING (too-narrow) manifest
+        // ⊂ true under-declares a truly-touched cell ⇒ that cell wrongly looks disjoint — the
+        // priced residue the declared-vs-true sweep net turns RED (fork-s4-declaredtrue).
+        let mut i = Interner::default();
+        let oldpkg = fk(&mut i, "package", "oldpkg");
+        let oldpkg_file = fk(&mut i, "file", "/etc/oldpkg.conf");
+        let victim = fk(&mut i, "package", "nginx");
+
+        // HONEST: the wall's true effect is {oldpkg, oldpkg_file}; its manifest DECLARES both ⊇ true.
+        let honest = Host::new([]).with_manifest(oldpkg, [oldpkg, oldpkg_file]);
+        let declared = honest.derive(oldpkg);
+        assert!(
+            declared.contains(&oldpkg) && declared.contains(&oldpkg_file),
+            "the declared manifest covers the wall's true footprint"
+        );
+        assert!(
+            !declared.contains(&victim),
+            "the victim is genuinely untouched ⇒ correctly disjoint ⇒ survives"
+        );
+
+        // LYING: the wall TRULY also touches the victim (CellDelta kills nginx) but its manifest
+        // OMITS it — the ⊂ true under-declaration that makes the victim wrongly survive.
+        let true_effect = CellDelta::new().kill(victim);
+        let lying = Host::new([]).with_manifest(oldpkg, [oldpkg]);
+        assert!(
+            !lying.derive(oldpkg).contains(&victim),
+            "the lying manifest under-declares the victim it truly kills..."
+        );
+        assert!(
+            true_effect.kills().any(|k| k == victim),
+            "...which the TRUE effect actually kills ⇒ wrong-survival (the sweep net's RED)"
+        );
+
+        // An unmodeled cell ⇒ empty ⇒ wall (silence = wall, kFAIL-safe).
+        assert!(
+            Host::new([]).derive(oldpkg).is_empty(),
+            "no manifest ⇒ empty derived footprint ⇒ the site walls"
+        );
+    }
+
+    #[test]
     fn query_is_inert_in_both_phases() {
         let mut i = Interner::default();
         let nginx = fk(&mut i, "package", "nginx");
@@ -671,8 +750,7 @@ apt_get__predict() {
             // `site <id> effect=…` records. Re-key to the fact-keyed observations
             // `build_plan` consumes (only the probe-answer plumbing re-keys; the
             // fact-store stays cell-keyed). An unprobed site/fact ⇒ Unknown ⇒ run.
-            let mut by_fact: std::collections::BTreeMap<FactKey, Observable> =
-                std::collections::BTreeMap::new();
+            let mut by_fact: BTreeMap<FactKey, Observable> = BTreeMap::new();
             for check in &probe.checks {
                 by_fact.insert(check.fact, host.observe(check.fact));
             }
