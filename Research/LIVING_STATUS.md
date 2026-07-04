@@ -66,10 +66,10 @@ has too much in-flight to move; swallowing the friction). op-session-caching is 
 the Sync + repo trees; agents `. keyfile` → `VULTR_API_KEY` in env → `vultr-cli` (that path is PROVEN,
 `§5.2`; only the op-injection changed). **Human places the key — conductor must NOT handle the raw
 secret.** **`§5.1` guardrail FIRMED** (≤3 instances · cheapest-that-runs-it · <$10/day · `dorc-r25` tag ·
-human-reaper · always-teardown). Key mechanism **PROVEN** (source→env→vultr-cli→API round-trips; file
-icacls'd user-only) but the **current key is EXPIRED** (`token expired`, 36-char valid-format) → **the
-sole remaining Vultr-agent blocker is a fresh key** (human regenerates + re-populates `~/.temp/vultr.env`
-same format). **Non-Vultr agents (P3 ssh-runner, P6 HHHF) are unblocked NOW.** Agents relay trouble via
+human-reaper · always-teardown). Key **CONFIRMED WORKING** (full-account auth; file
+icacls'd user-only) — the earlier `token expired` was the **missing-`export` bug**: the file assigns
+`VULTR_API_KEY=…` without `export`, so agents MUST source via **`set -a; . ~/.temp/vultr.env; set +a`**
+(plain `.` doesn't reach the child `vultr-cli`). **Vultr agents UNBLOCKED.** Agents relay trouble via
 `SendMessage`→conductor→human (the conductor holds the notify path); the `dorc-r25` tag covers a
 hard-died agent's orphan.
 

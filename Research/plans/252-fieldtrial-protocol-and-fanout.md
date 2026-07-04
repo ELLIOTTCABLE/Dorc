@@ -226,14 +226,17 @@ The standing policy governing any Opus subagent that touches paid Vultr resource
 4. **Key handling — expiration-bound key in an env-file (REVISED 2026-07-04; `op run` RETIRED here —
    no op session-caching on Windows, `§5.2`).** The Vultr key lives in **`~/.temp/vultr.env`**
    (`export VULTR_API_KEY=…`), OUTSIDE the Sync + repo trees, icacls'd to the user only (inheritance
-   stripped). Agents **`. ~/.temp/vultr.env`** then run `vultr-cli` (it reads `VULTR_API_KEY` from
+   stripped). Agents **`set -a; . ~/.temp/vultr.env; set +a`** (allexport — the file assigns `VULTR_API_KEY=…`
+   WITHOUT `export`, so a plain `.` sets only a shell var the child `vultr-cli` never sees) then run `vultr-cli` (it reads `VULTR_API_KEY` from
    env); the literal is **never inlined, echoed, printed (`env`/`set`/`printenv`), or logged** —
    sourced-into-env only, so it never enters a command line, process arg, or transcript. No GUI popup,
    no timeout (the §5.2 op-run-timeout machinery no longer applies). The key is **expiration-bound**
    (human rotates on expiry/leak); an agent hitting an auth error (`token expired` / 401) treats it as
    a **HARD STOP** — no key ⇒ create no resources — and relays up via `SendMessage "main"` (the
    conductor holds the human-notify path, `§5.2`). **Mechanism proven 2026-07-04** (source→env→
-   vultr-cli→API round-trips cleanly); a non-expired key is the only missing piece.
+   vultr-cli→API round-trips cleanly); the **key is CONFIRMED WORKING** (full-account auth); the earlier `token expired` was the
+   missing-`export` bug (plain `.` didn't reach the child), NOT an aged-out key — the file needs
+   `export` (or the `set -a` sourcing above).
 5. **Authorization gate.** No paid resource is created until (a) this guardrail is implemented AND
    (b) a collated per-spin plan (how many boxes, what size, expected spend, teardown proof) is
    human-acked. Once auto-teardown + reaper are proven, a *bounded standing* authorization is possible
