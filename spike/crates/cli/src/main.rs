@@ -267,12 +267,41 @@ fn run() -> Result<(), String> {
             vouches.contains_key(&node)
         });
 
+    // The DERIVATION-probe (24E §2 corr-§2 — the SECOND probe-shipping path, a NEW pipeline
+    // stage): under `--trust-footprints`, a wall-candidate whose `touches()` body ESCALATED (it
+    // reached a host query the static `evaluate_touches` could not resolve) ships that body into
+    // phase-1, runs read-only, and its stdout coord-lines are read back into a `Derived` footprint
+    // (merged below, pre-`build_plan_walled`). Lifted for the derivation lane here; the authored
+    // lane (`build_survival_footprints`) lifts its own — both pure + cheap, and a clean oracle
+    // reports no touches diag either way (fork-s4-compile: a parallel compiler, NOT a `compile_probe`
+    // extension — different site-set/body-source/readback, the convergence path left unperturbed).
+    let touches_paired: Vec<(&str, dorc_oracle::touches::TouchesSet)> = if args.trust_footprints {
+        oracle_refs
+            .iter()
+            .map(|src| {
+                (
+                    *src,
+                    dorc_oracle::touches::TouchesSet::lift(&mut interner, src).value,
+                )
+            })
+            .collect()
+    } else {
+        Vec::new()
+    };
+    let derivations = if args.trust_footprints {
+        let derive = |p, a: &[Symbol]| ship_touches_body(&touches_paired, &interner, p, a);
+        dorc_plan::compile_derivations(&parsed.value, &cfg.value, &value, &classes, &kills, derive)
+    } else {
+        dorc_plan::DerivationPlan::default()
+    };
+
     // `probe` mode stops here: emit the probe artifact and return. It reads no stdin (no
     // results exist yet — this is phase 1, what you ship to GET them), builds no plan, and so
     // emits no apply, no why-lens, no digest (there is no plan/identity-plane to hash —
     // tc-probe-no-digest, flagged). Stage diagnostics above already routed to stderr.
     if mode == Mode::Probe {
         print!("{}", probe.render_sh(&interner));
+        print!("{}", derivations.render_sh(&interner)); // 24E §2: rides the SAME phase-1 block
         std::io::stdout().flush().ok();
         return Ok(());
     }
@@ -282,6 +311,7 @@ fn run() -> Result<(), String> {
     // and `apply` emit ONLY the apply artifact (the probe is an internal compile there).
     if mode == Mode::RoundTrip {
         print!("{}", probe.render_sh(&interner));
+        print!("{}", derivations.render_sh(&interner)); // 24E §2: rides the SAME phase-1 block
         std::io::stdout().flush().ok();
     }
 
@@ -306,7 +336,7 @@ fn run() -> Result<(), String> {
     // The survival tier (Stage 2 / rul24-mode-gate, TC-1): footprints are lifted ONLY under
     // `--trust-footprints` — off ⇒ `None` ⇒ the honest Stage-1 total wall, the data never exists.
     let survival = args.trust_footprints.then(|| {
-        build_survival_footprints(
+        let mut fps = build_survival_footprints(
             &oracle_refs,
             &classes,
             &kills,
@@ -315,7 +345,20 @@ fn run() -> Result<(), String> {
             &parsed.value,
             &mut interner,
             advisory,
-        )
+        );
+        // 24E §2 corr-§2: merge the host-DERIVED footprints (read back from the phase-1
+        // derivation-probe's `deriv` coord-records) into the authored set, before the survival
+        // walk. An escalated site has NO authored footprint (its static trace ⊤'d), so the two
+        // sets are disjoint by construction — no collision.
+        merge_derived_footprints(
+            &mut fps,
+            &derivations,
+            &results,
+            &classes,
+            &mut interner,
+            advisory,
+        );
+        fps
     });
     let plan = dorc_plan::build_plan_walled(
         &book_src,
@@ -611,6 +654,169 @@ fn resolve_touches_footprint(
     Some((*provider, entity_coords))
 }
 
+/// The derivation-probe seam (24E §2/§3 — fork-4A: the SAME self-vouch tier as `predict`, no new
+/// trust edge): for a wall-candidate site's (provider-word, argv), find the provider's `touches()`
+/// funcdef and trace it statically. `Some(DerivationShip)` iff the trace ESCALATED — it ⊤'d
+/// specifically on a `NonPrintfCommand` (the body reached a host query the static tracer cannot
+/// resolve, e.g. `dpkg -L`), the sanctioned escalation trigger (fork-4B). The body then ships
+/// strip-only (`strip_touches`; `<provider>.touches` → `<provider>__touches`), the SAME strip
+/// discipline as the probe/guard lanes. `None` for: a statically-resolvable body (`Emitted` — the
+/// authored-footprint lane owns it), any OTHER ⊤ (degrade-to-wall, fork-4B — the site runs), an
+/// empty emission, or a provider with no touches funcdef. `inv-referent-agnostic`: the operands are
+/// resolved for the trace/invocation, never decoded.
+fn ship_touches_body(
+    touches_paired: &[(&str, dorc_oracle::touches::TouchesSet)],
+    interner: &Interner,
+    provider: Symbol,
+    argv: &[Symbol],
+) -> Option<dorc_plan::DerivationShip> {
+    use dorc_oracle::predict::{map_provider_name, strip_touches};
+    use dorc_oracle::touches::{TouchesResolution, TouchesTop, evaluate_touches};
+    let want = map_provider_name(interner.resolve(provider));
+    let arg_texts: Vec<String> = argv
+        .iter()
+        .map(|s| interner.resolve(*s).to_owned())
+        .collect();
+    let arg_refs: Vec<&str> = arg_texts.iter().map(String::as_str).collect();
+    touches_paired.iter().find_map(|(src, set)| {
+        let p = set
+            .providers()
+            .find(|p| map_provider_name(interner.resolve(*p)) == want)?;
+        let touches = set.get(p)?;
+        match evaluate_touches(touches, &arg_refs) {
+            // The EXPECTED escalation (24E §4): the body reached a host query ⇒ ship it.
+            TouchesResolution::Top(TouchesTop::NonPrintfCommand) => {
+                Some(dorc_plan::DerivationShip {
+                    sh: strip_touches(src, touches, interner),
+                    call: format!("{}.touches()", interner.resolve(p)),
+                })
+            }
+            // Static-resolvable, an OTHER ⊤ (degrade-to-wall), or empty ⇒ NOT a derivation.
+            TouchesResolution::Emitted(_) | TouchesResolution::Top(_) => None,
+        }
+    })
+}
+
+/// Read back the host-DERIVED footprints (24E §2 corr-§2) and merge them into the survival set.
+/// For each escalated [`dorc_plan::ProbeDerivation`], intern its readback `deriv` coordinate lines
+/// into the SHARED vocabulary (the 24A §1b fence — `package` here is the SAME [`dorc_core::KindId`]
+/// a predict annotation minted), build a `Derived` [`dorc_plan::Footprint`], run the coherence
+/// check (the site's own establish coordinate must be ⊆ its footprint — at-least ⊆ at-most; a drift
+/// refuses ⇒ wall), and insert it keyed by the site's node. An escalated site with NO readback
+/// records ⇒ empty ⇒ wall (silence = wall, kFAIL-safe).
+///
+/// ALL-OR-NOTHING (24E §4 / the static path's TC-4): a MALFORMED derived coordinate refuses the
+/// WHOLE footprint (the site walls) — never silently dropped, because a footprint is an *at-most*
+/// claim and dropping a coordinate NARROWS it (⇒ a downstream fact wrongly survives ⇒ under-execute).
+///
+/// SPIKE-ONLY (ru-26): the `touches-escalated` advisory below makes the static→dynamic boundary
+/// visible in the render/differential; it must NOT leak into greenfield as a permanent
+/// per-escalation requirement.
+fn merge_derived_footprints(
+    footprints: &mut dorc_plan::TrustedFootprints,
+    derivations: &dorc_plan::DerivationPlan,
+    results: &SiteResults,
+    classes: &[(
+        dorc_analysis::cfg::CfgNodeId,
+        dorc_analysis::effect::SkipClass,
+    )],
+    interner: &mut Interner,
+    advisory: bool,
+) {
+    let mut diags = Vec::new();
+    for d in &derivations.derivations {
+        diags.push(dorc_core::Diagnostic::note(
+            dorc_core::DiagCode("touches-escalated"),
+            None,
+            format!(
+                "site {}: touches() escalated to host-derivation ({})",
+                d.site.0, d.call
+            ),
+        ));
+        let Some(coord_strs) = results.derivations.get(&d.site) else {
+            continue; // no readback records ⇒ empty derived footprint ⇒ wall (kFAIL-safe)
+        };
+        let mut coords = Vec::with_capacity(coord_strs.len());
+        let mut malformed = false;
+        for line in coord_strs {
+            if let Some(c) = intern_coordinate(line, interner) {
+                coords.push(c);
+            } else {
+                malformed = true;
+                break;
+            }
+        }
+        if malformed {
+            diags.push(dorc_core::Diagnostic::warning(
+                dorc_core::DiagCode("footprint-incoherent"),
+                None,
+                "derived touches() emitted a malformed coordinate (not kind:entity) — footprint \
+                 refused, the site walls (an at-most claim cannot be partial)"
+                    .to_string(),
+            ));
+            continue;
+        }
+        // Coherence (establish sites): own establish coordinate ⊆ derived footprint. A kill-wall's
+        // coherence via the killcoord side-map is 24E §7 (threaded separately).
+        if let Some(fact) = establish_fact_of(classes, d.node) {
+            let own = dorc_plan::EntityCoord::new(fact.kind, fact.entity);
+            if !coords.contains(&own) {
+                diags.push(dorc_core::Diagnostic::warning(
+                    dorc_core::DiagCode("footprint-incoherent"),
+                    None,
+                    "derived touches() footprint omits this command's own establish coordinate \
+                     (at-least ⊄ at-most) — footprint refused, the site walls"
+                        .to_string(),
+                ));
+                continue;
+            }
+        }
+        if let Some(fp) = dorc_plan::Footprint::derived(d.provider, coords, d.call.clone()) {
+            footprints.insert(d.node, fp);
+        }
+    }
+    report_at(advisory, "derive", &diags);
+}
+
+/// Intern one readback `kind:entity` coordinate line into the shared vocabulary (24A §1b fence —
+/// split on the FIRST `:`; an empty entity is the kind's singleton). `None` on a malformed line
+/// (no `:` / empty kind) — the caller refuses the WHOLE footprint (all-or-nothing).
+fn intern_coordinate(line: &str, interner: &mut Interner) -> Option<dorc_plan::EntityCoord> {
+    let (kind, entity) = line.split_once(':')?;
+    if kind.is_empty() {
+        return None;
+    }
+    let kind = dorc_core::KindId(interner.intern(kind));
+    let entity = if entity.is_empty() {
+        dorc_core::EntityRef::Singleton
+    } else {
+        dorc_core::EntityRef::Operand(dorc_core::OpaqueToken(interner.intern(entity)))
+    };
+    Some(dorc_plan::EntityCoord::new(kind, entity))
+}
+
+/// The establish fact a wall-candidate node establishes, if it is an establish class (the
+/// coherence comparand for a derived footprint). A kill's coordinate rides the killcoord side-map
+/// instead (24E §7).
+fn establish_fact_of(
+    classes: &[(
+        dorc_analysis::cfg::CfgNodeId,
+        dorc_analysis::effect::SkipClass,
+    )],
+    node: dorc_analysis::cfg::CfgNodeId,
+) -> Option<dorc_core::FactKey> {
+    use dorc_analysis::effect::SkipClass;
+    classes.iter().find_map(|(n, c)| {
+        if *n != node {
+            return None;
+        }
+        match c {
+            SkipClass::EstablishAmbient(f) | SkipClass::EstablishWritten(f) => Some(*f),
+            _ => None,
+        }
+    })
+}
+
 /// Lift the per-site GUARD VOUCHES (rul-guard-license / rul24-vouch-is-verdict-authoring, 24A §1c).
 /// Called ALWAYS-ON — guards are the un-flagged baseline (rul24-mode-gate governs only the survival
 /// tier, NOT this). For each establish-bearing site whose provider authored a verdict function
@@ -850,8 +1056,16 @@ fn emit_survival_attribution(plan: &dorc_plan::Plan, interner: &Interner) {
                     .iter()
                     .map(|fc| render_coord(*fc, interner))
                     .collect();
+                // 24E §9: name a host-DERIVED footprint's provenance ("DERIVED at probe from
+                // <call>"); an authored (static) footprint carries no extra locus.
+                let origin = match c.origin() {
+                    dorc_plan::FootprintOrigin::Derived { call } => {
+                        format!("; DERIVED at probe from {call}")
+                    }
+                    dorc_plan::FootprintOrigin::Authored => String::new(),
+                };
                 format!(
-                    "wall site {} ({provider} touches {{{}}})",
+                    "wall site {} ({provider} touches {{{}}}{origin})",
                     c.wall_leaf().0,
                     coords.join(" ")
                 )
@@ -1167,6 +1381,12 @@ struct RecordKey {
 #[derive(Debug, Default)]
 struct SiteResults {
     records: BTreeMap<RecordKey, SiteRecord>,
+    /// The DERIVATION coord-blob lane (24E §5 / fork-s4-coordwire): per escalated wall-site, the
+    /// raw `kind:entity` coordinate lines its host-run `touches()` printed (`deriv <leafid>
+    /// coord=…`). Demuxed SEPARATELY from the `site` verdict records (a derivation-blob never
+    /// collides with a site's `effect=`/`rc=` record — `inv-site-keyed-results`). Read back into a
+    /// `Derived` [`dorc_plan::Footprint`] before the survival walk (24E §2 corr-§2).
+    derivations: BTreeMap<dorc_plan::LeafId, Vec<String>>,
 }
 
 /// One site's reported observation: the Effect-channel [`Verdict`], the raw probe-command
@@ -1213,8 +1433,30 @@ fn parse_results(input: &str, interner: &mut Interner) -> SiteResults {
             continue;
         }
         let mut it = line.split_whitespace();
-        if it.next() != Some("site") {
-            continue; // unrecognized line ⇒ drop (kFAIL-perform: no verdict ⇒ run)
+        match it.next() {
+            // 24E §5 (fork-s4-coordwire): `deriv <leafid> coord=<kind:entity>…` — accumulate an
+            // escalated wall-site's derived-footprint coordinates, demuxed by leaf-id in its OWN
+            // lane (never the `site` verdict records). A malformed leaf ⇒ drop (the site's derived
+            // footprint stays empty ⇒ wall, the kFAIL-safe direction).
+            Some("deriv") => {
+                if let Some(site) = it
+                    .next()
+                    .and_then(|t| t.parse::<u32>().ok())
+                    .map(dorc_plan::LeafId)
+                {
+                    for tok in it {
+                        if let Some(coord) = tok.strip_prefix("coord=") {
+                            out.derivations
+                                .entry(site)
+                                .or_default()
+                                .push(coord.to_owned());
+                        }
+                    }
+                }
+                continue;
+            }
+            Some("site") => {}
+            _ => continue, // unrecognized line ⇒ drop (kFAIL-perform: no verdict ⇒ run)
         }
         let Some(key) = it.next().and_then(parse_site_key) else {
             continue; // malformed site key ⇒ drop (⇒ Unknown ⇒ run)
