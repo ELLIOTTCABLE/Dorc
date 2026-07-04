@@ -18,10 +18,14 @@
 //!   READING the witness — type-enforcement and attribution-primacy are one object.
 //!
 //! SURVIVAL IS NOT ADEQUACY. This machinery proves a fact's plan-time convergence *outlasts*
-//! an interposed command's run (self-framing: a fact is only what its probe reads, so an
-//! interferer kills it only by touching that read-set — 23N §5). It says NOTHING about whether
-//! "converged" meant "re-running is a no-op" — that adequacy question (converged≠no-op) is the
-//! converged-vouch's, decided elsewhere and by the author, never here (23M).
+//! an interposed command's run: an interferer kills the fact only by touching the cell the
+//! fact's probe is DECLARED to check (rul24-selfframing-correction, 24D §6). Reads are declared
+//! at the cell level by the oracle — symmetric to writes (establish-marks / `touches()`) — NOT
+//! derived: Dorc never computes a probe's file/syscall read-set (no static analysis of opaque
+//! calls, and the eBPF/tracing layer is linting-only, never a runtime dependency). It says
+//! NOTHING about whether "converged" meant "re-running is a no-op" — that adequacy question
+//! (converged≠no-op) is the converged-vouch's, decided elsewhere and by the author, never here
+//! (23M).
 //!
 //! `inv-referent-agnostic`: a coordinate is an interned `(KindId, entity)` pair, compared as
 //! symbols, NEVER as text (24A §1b vocabulary fence).
@@ -106,11 +110,16 @@ impl Footprint {
     }
 }
 
-/// Where a downstream fact's truth lives — its **backing**. Degenerate at HEAD (23M / the
-/// Stage-2 brief): the union of the fact's probe's MARKED reads collapses to the fact's own
-/// `(kind, entity)` coordinate (a fact never claims more than its probe measures — self-framing).
-/// A DISTINCT type from [`Footprint`] (TC-2): the two never mix, and there is no path from
-/// an establish-effect to a `Footprint`, only to a `Backing`.
+/// Where a downstream fact's truth lives — its **backing**. A backing is the single cell the
+/// oracle DECLARES its probe checks (rul24-selfframing-correction, 24D §6): a DECLARATION-SCOPE,
+/// not a computed read-set. Dorc never derives a probe's file/syscall read-set (no static
+/// analysis of opaque calls; the eBPF/tracing layer is linting-only, never a runtime dependency),
+/// so the backing carries NO completeness burden — the 233 completeness claims live on the wall's
+/// [`Footprint`] (at-most these cells) + the vouch's adequacy. Cell-level soundness rests on the
+/// namespace-owner correctly partitioning state (the reverse-DNS-owner aliasing responsibility;
+/// resid-aliasing). It is the fact's own `(kind, entity)` coordinate (the one declared cell a
+/// fact is about). A DISTINCT type from [`Footprint`] (TC-2): the two never mix, and there is no
+/// path from an establish-effect to a `Footprint`, only to a `Backing`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Backing {
     coord: EntityCoord,
