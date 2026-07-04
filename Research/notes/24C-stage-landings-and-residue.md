@@ -242,3 +242,71 @@ executing the mechanical swap.
 **Stage 3 is now COMPLETE** (guards fire + elide-weld + the blessed claim-tier foundation). The
 two-halves doctrine is real end-to-end. Owed-durable for the next conductor: nothing from Part B
 except the dead-pin commit landing (in flight) and the parked human threads (below).
+
+## Stage 4 — derived footprints (LANDED 2026-07-04; elide past a payload-bound install)
+
+AI-authored (Opus conductor), appended per the accrete-per-stage discipline. Spec: `24E` (+ §13
+fork-resolutions, §14 pipes). Built by one Opus builder over three passes (recon → mechanism →
+remainders), conductor-verified at each landing (fresh build + full gates + e2e run by the
+conductor's own hand, per never-vouch — process-evidence, not proof).
+
+**The mechanism (all seven 24E pieces + three remainders):** `strip_touches` · the
+`Authored`/`Derived{call}` provenance tag on `Footprint` (origin-agnostic consumers) ·
+`compile_derivations` (the parallel derivation-probe builder — fork-s4-compile) · the NEW cli
+pipeline stage (corr-§2: compile → emit into phase-1 probe artifact → `deriv <leafid> coord=…`
+per-site readback lane → all-or-nothing intern → coherence → `Footprint::derived` → merge into
+`TrustedFootprints` before `build_plan_walled`) · `Host::derive` (the DECLARED derivation-answer;
+no dpkg-simulation) · the `strawman24-derived-survive` flagship · the sweep lying-derived net ·
+pipes-in-dialect (§14) · the kill-coherence close (§7).
+
+**The load-bearing numbers (conductor-verified on a fresh build):** yardstick **0→1 derived** —
+on `strawman24-derived-survive` flagged `sites=2 elide=1 run=1` (a converged `nginx` install
+ELIDES past the RUNNING diverged `oldpkg` install because its backing is disjoint from the
+footprint **derived at probe time** from the host-run `touches()` — the natural
+`dpkg -L "$1" | sed 's|^|file:|'` idiom); unflagged stays `elide=0 run=2` (byte-identical
+Stage-1). **The soundness net has teeth: `derived_lying_divergences=220`** over 3000 seeds (a
+too-narrow `Host::derive` manifest ⊂ true `CellDelta` → wrong survival → end-state RED, all
+caught + attributed; the fc-5 non-vacuity assertion holds). Final: 145/145 e2e, 25 suites
+0-failed, all four gates, on the rebased tip.
+
+**resid-derive-dialect (surfaced by the build, then CLOSED by §14 — the round's sharpest
+strain-payoff).** The natural payload-bound idiom `dpkg -L | sed` did NOT lift (the dialect
+⊤-rejected the pipe at parse), forcing a coord-emitting helper-tool shape. Closed by the
+parse-permissively/trace-conservatively move (24E §14): the parser ACCEPTS a pipeline as one
+span-covering `Command{pipeline}` shipping byte-exact (the kLANG mirror-invariant — valid sh
+degrades, never hard-kills; pipes ONLY, subshells still parse-reject); the tracers ⊤ on it
+(touches-pipe = the escalation trigger; predict-pipe = can't-resolve ⇒ run). The ⊤-bias moved to
+the semantic layer where correctness lives; `printf … | sed` correctly still escalates (the
+pipeline-⊤ fires before the printf model). This was the first deliberate lift of a spike-local
+"refuse the unexpected" posture (human-directed, approaching the r25 real-machine trial).
+
+### Stage-4 residue (accreted; none blocking)
+
+- **resid-derive-coherence (NEW, ~SUSPECT sharp for oracle-authors).** A PURE file-level
+  derivation (`dpkg -L | sed` alone) emits only `file:` coords — a different KIND than the wall's
+  own `package:` establish — so the own-establish ⊆ footprint coherence check REFUSES it
+  (fail-safe: walls). The touches() body must re-emit its own establish coordinate (the flagship
+  does, via a leading `printf 'package:%s'`). Honest-but-unergonomic; a Stage-5/6 DX question
+  (does every derived touches() carry this boilerplate, or does the engine contribute the site's
+  own establish coordinate itself?).
+- **strain-kill-coherence-no-net (owed).** The kill-wall coherence refuse (§7) has UNIT teeth
+  (side-map + comparand-selection pinned) but no automated end-to-end net: no fixture ships a
+  DRIFTED kill footprint, and the sweep ignores `kill_coords`. Closing wants a lying-kill-footprint
+  sweep scenario (the kill analogue of the lying-derived net) or a too-narrow-kill fixture.
+- **strain-derive-double-lift (minor).** The cli lifts `TouchesSet` twice under the flag (derivation
+  lane + authored lane) — deliberate, noted in-code; a future refactor lifts once.
+- **strain-derive-overship (minor, accepted).** `compile_derivations` ships a derivation-probe for
+  EVERY escalated wall-candidate incl. ones with nothing downstream — wasted probe-phase work,
+  fine per work-on-non-human-timescales.
+- **resid-derive-adequacy (structural, the field-trial's).** Whether `dpkg -L` on a real box lists
+  everything the install actually touches (maintainer-scripts, the cross-kind escape) is
+  un-spike-testable (`128` se-2) — the spike proved the MECHANISM; derivation-to-reality fidelity
+  is exactly the round-25 real-machine differential's primary target.
+- **resid-argparse-drift: dissolved for the DERIVED lane** (the tool emits its own footprint — no
+  second argparse), exactly as the Stage-2 handoff predicted; the authored lane keeps the
+  coherence check as its net.
+
+**The §8 boundary as built:** "body computes and emits; engine interns and intersects, never
+bridges" — a touches() body may emit cross-kind coords its own sh computes (the `file:` lines);
+any ENGINE-mediated kind-crossing (expansion bridges, co-reference, the resid-aliasing closure)
+remains Stage 5, none built.
