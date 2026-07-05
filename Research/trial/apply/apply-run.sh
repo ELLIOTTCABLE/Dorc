@@ -47,8 +47,8 @@ TIMEOUT_CMD=""
 if command -v timeout >/dev/null 2>&1; then TIMEOUT_CMD="timeout"
 elif command -v gtimeout >/dev/null 2>&1; then TIMEOUT_CMD="gtimeout"; fi
 
-# --- JSON string escaping (fallback when jq is absent) ---------------------
-_json_str(){ # escape one string arg into a JSON string literal (incl. quotes)
+# Hand-rolled JSON string literal — used only on the jq-absent fallback path.
+_json_str(){
    printf '%s' "$1" | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g' \
       | awk 'BEGIN{printf "\""} {if(NR>1)printf "\\n"; printf "%s",$0} END{printf "\""}'
 }
@@ -161,6 +161,7 @@ cmd_apply_run(){
       slug="$(printf '%s' "$HOST" | tr -c 'A-Za-z0-9._-' '_')"
       DIR="$(mktemp -d "$RUNS_ROOT/${stamp}-${slug}-XXXXXX")"
    fi
+   DIR="$(CDPATH= cd -- "$DIR" && pwd)"          # absolute path: a firm contract for P2/P4
    OUT="$DIR/stdout"; ERR="$DIR/stderr"
    cp "$PLAN_FILE" "$DIR/plan.sh"
    [ -n "$plan_tmp" ] && rm -f "$plan_tmp"
@@ -171,14 +172,14 @@ cmd_apply_run(){
       # pick a local interpreter: prefer dash (faithful POSIX), else sh.
       li="$LOCAL_SH"
       [ -z "$li" ] && { command -v dash >/dev/null 2>&1 && li="dash" || li="sh"; }
-      INTERP="$li (local)"
+      INTERP="$li (local)"; MODE=local
       log "apply-run LOCAL  interp=$li  plan=$PLAN_ORIG  dir=$DIR"
       _capture "$DIR/plan.sh" "$li" -s
       SSH_EXIT="$CAP_RC"; TRANSPORT_FAILED=false
    else
       [ -r "$SSH_CONFIG" ] || die "ssh config not found: $SSH_CONFIG"
       [ -r "$SSH_KEY" ]    || die "trial ssh key not found: $SSH_KEY (set SSH_KEY=<private key>)"
-      INTERP="$REMOTE_SH (ssh $HOST)"
+      INTERP="$REMOTE_SH (ssh $HOST)"; MODE=ssh
       log "apply-run SSH   host=$HOST  remote=$REMOTE_SH  cfg=$SSH_CONFIG  key=$SSH_KEY  dir=$DIR"
       _capture "$DIR/plan.sh" ssh -F "$SSH_CONFIG" -i "$SSH_KEY" -T "$HOST" "$REMOTE_SH" -s
       SSH_EXIT="$CAP_RC"
@@ -196,10 +197,10 @@ cmd_apply_run(){
       { [ "$CAP_RC" -eq 124 ] || [ "$CAP_RC" -eq 137 ]; } && TIMED_OUT=true
    fi
 
-   _compose_transcript "$([ "$LOCAL" -eq 1 ] && echo local || echo ssh)"
+   _compose_transcript "$MODE"
    printf '%s\n' "$CAP_RC" >"$DIR/rc"
    log "done  rc=$CAP_RC transport_failed=$TRANSPORT_FAILED timed_out=$TIMED_OUT  transcript=$DIR/transcript.txt"
-   _emit_summary "$([ "$LOCAL" -eq 1 ] && echo local || echo ssh)"
+   _emit_summary "$MODE"
 
    # Runner exit code mirrors the apply rc so a caller can `if apply-run ...`.
    exit "$CAP_RC"
