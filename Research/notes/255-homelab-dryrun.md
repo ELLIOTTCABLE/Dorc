@@ -341,10 +341,11 @@ not shorter — and the human LOCKED docker/HA precisely to exercise that floor.
 **Caveats — where reality may diverge from this read:**
 - **c-1** These dispositions are my reading of `USER_STORY` + the fixtures, not the tool. The whole
   point is prediction-vs-observation; expect misses, bank them as findings (`plans/250`).
-- **c-2** The book is **untested pre-VPS**. The `# FLAG:` lines (windmill binary path/port, HA tag,
-  the `docker run` non-idempotence, the `su` quoting) are the realism-risks; some may not run
-  first-try. Pending web-doc research reconciliation (versions/asset-names/env) — a follow-up pass on
-  this note and the book.
+- **c-2** The book is **untested pre-VPS**. The `# FLAG:` lines are the realism-risks; some may not run
+  first-try. Windmill's are now FIRMED (`255-firming`, §8): binary asset/version/port/env-vars
+  reconciled against first-party docs + the GitHub release API. Still-open realism-risks: the HA tag,
+  the `docker run` non-idempotence, the `su` quoting, and `docker.io`-vs-docker-ce — a later web-doc
+  pass on the non-windmill items.
 - **c-3** The base-stdlib coverage of coreutils (chmod/ln/install-d/rm) and the exact verbs the LLM
   stdlib vouches are assumptions (u1); they swing the guard/run split but **not** the elide count
   (pred-1 holds regardless).
