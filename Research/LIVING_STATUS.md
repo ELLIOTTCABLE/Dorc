@@ -41,7 +41,7 @@ A-A calibration; gap-log forcing-functions; reinstate confound-conditions). Per 
 SEPARATE units — **SWAPPED from Windmill 2026-07-04**: windmill-native is admin-invented/undocumented,
 and compose would hide the multi-service behind one opaque `docker compose up` [Dorc can't exercise it]
 + is redundant with HA's docker wall; OTel = genuine multi-service as separate native units Dorc SEES,
-documented installs, + the human's familiar ground. Re-point Opus in flight; keeps postgres/su-wall,
+documented installs, + the human's familiar ground. Re-point **DONE** (`a8af1b6`+`fc1595e`, cherry-picked to r25; 30 sites, 3 vendor walls; **needs a 2–4 GB VPS** now — HA+prometheus+grafana+otel+postgres — still <$10/day, consistent with P1's "cheapest-that-runs-it"); keeps postgres/su-wall,
 HA-docker stays the sole hork) +
 Home-Assistant(Container), self-signed certs. (HA genuinely blocked-on-Dorc = the dogfood-want; more
 services = more composition-exercise; corral network-chaos, don't eliminate. Rubric: many-parts>few; mostly bog-standard-oracle-able + a few walls (tractable-vendor→admin-loop,
@@ -50,9 +50,12 @@ opaque-hork→residue); real-drift→adequacy; corral-chaos-not-control.)
 **DRY-RUN DONE + committed** (research-firming deferred to the on-VPS validation, per human):
 `notes/255-homelab.book.sh` (runbook, ~21 sites) + `notes/255-homelab-dryrun.md` (per-stage ledgers +
 ceiling + decisions-log; **§5 pred-1..5 ARE the pre-registered §4 predictions** — F1/F5 satisfied).
-**Numbers:** Stage-B steady **5 elide / 7 guard / 9 run**; +hand-oracle **8** (modulo u3); ceiling
-**~14** (unreachable — footprint tier unbuilt); floor **~4 never-elide** (`su -c` postgres,
-docker/HA-internal, `systemctl reload`). Conductor sanity-check: **sound + honest** (its confidence-
+**Numbers (OTel, 30 sites — re-pointed from windmill 21):** Stage-B steady **5 elide** (same ambient
+floor); **+3 vendor-oracles → 15 elide** — the value-curve walks **3× (+10, vs windmill's +3)**; ceiling
+**~23/30 (~77%)** (unreachable — footprint tier unbuilt); floor **~4 run** (`su`×2, `nginx reload`,
+HA-internal). **u3 now gates ALL 3 oracles** (3× load-bearing); NEW **multi-wall-cascade** (a stale
+middle binary re-walls the later vendor by position, 15→9). All 3 installs **documented-native** ⇒
+won't eat the day (the tarball+version-guard form is now a deliberate Dorc-exercise choice). Conductor sanity-check: **sound + honest** (its confidence-
 marks hold; the 5-elide is +SURE, the +3 rides u3). **Three takeaways for the day:**
 1. **u3 = the sharpest uncertainty** — does the built spike lift a *stdout-consuming* pipe-guard
    (`cmd | grep -q X || fallback`)? If not, Stage-C == Stage-B (a finding). **Checkable IN-REPO NOW
