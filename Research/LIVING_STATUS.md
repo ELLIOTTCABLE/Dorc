@@ -14,6 +14,47 @@
 
 ---
 
+## ⏩ COMPRESSION-HANDOFF SNAPSHOT (2026-07-05) — read this first
+
+**Branch:** r25 lives on **`ai/spike3-r25`** (worktree `.claude/worktrees/spike3-r25`), forked from r23
+at `990d966`; **r24 continues on `ai/spike3-r23`**. LIVING_STATUS/252 fork with them. Conductor commits
+go to r25; isolated agents commit granularly on their own branches → conductor cherry-picks in.
+
+**Live agents (background):** **P2 observer** (`a3557…` — dorc-INDEPENDENT on-box snapshot+diff, wider
+than dorc's model, §7 noise-governance [A/A envelope, world-drift, planted canaries]; spins its own
+`dorc-r25` box; HARD-fenced out of `crates/`; catalogues dorc-side differential needs). **verify-errand**
+(`a114…` — in-repo `dorc plan` on the book: settle pred-1-errexit + the host-guard-wall MECHANIC;
+amends `255 §5`). Both report/cherry-pick back to conductor.
+
+**BUILT + on r25** (`Research/trial/`): **P1** Vultr substrate (`vultr/vultr.sh`, tag-scoped, proven),
+**P3** ssh-runner (`apply/`, the `usekeychain` `-F` fix + C-run flags), **P6** HHHF capture tooling
+(`hhhf/`, interactive paths await a human 5-min zsh smoke-test). **The OTel book is VALIDATED**
+(`notes/255-homelab.book.sh` + 5 sidecars — comes up clean rc0/96s, ~$0.007, 2 GB adequate; ops-val
+fixed grafana `--config`, prometheus `--web.route-prefix=/`, nginx subpath). Docs: `plans/252`
+(protocol §1–§9), `notes/254` (review ledger), `255` (book+dry-run), `256` (recon).
+
+**BLOCKED / owed (future conductor):**
+- **P5 oracle-stdlib — BLOCKED** on the oracle-contract churn (touches/reaches/cross-oracle post-wall
+  elision, r24-building). **No stdlib exists yet.** When written: brief carries the `252 §9` memo-2
+  quality-bar checklist + MUST cover the book's real command surface (`hostname`, test/`[`,
+  install/ln/chmod/rm — not "trust coreutils").
+- **P4 full differential — BLOCKED** on P2 landing + dorc-side `crates/` mutations (r24's; P2 catalogues).
+- **version-guard-lift (u3) — r24-OWNED** (pipe-guard doesn't-lift-at-HEAD, fix in flight, lands before r25).
+- **Fold `255 §5` predictions → `252 §4`** (owed; the verify-errand's amendment is the correction vehicle).
+- **Human-gated:** `_assert_tagged` eyeball (before bulk `destroy-all`); HHHF zsh smoke-test; the B2
+  hint-confound check (did r24 land the stage-3 hint? `252 §9` memo-4).
+
+**Cost/oversight:** standing auth ≤3 cheapest `dorc-r25` boxes, <$10/day, human-reaper. Baseline **0
+`dorc-r25`**; 1 pre-existing (**eurydice = OFF-LIMITS**, tag-filter). ops-val ~$0.007. Poll
+`vultr-cli … | grep dorc-r25` for orphans (watch P2's + the errand's boxes).
+
+**Findings (durable, `252 §8/§9`):** first-blood spine = felt-WORKING experience (`dorc why`-illuminates
++ admin-loop-reward + plan-trust), adequacy mechanized to the background differential; multi-wall-cascade
+→ `touches()` load-bearing (validated on drifted days); rc≠health (differential must check `is-active`);
+attribution/LLM-authorship watch-item; the host-guard-wall/hostname-coverage item (verify-errand).
+
+---
+
 ## NOW (2026-07-04 — round 25: protocol REVIEWED + hardened + dry-run DONE; rotating conductor, Stages-4-5 landing)
 
 **Round 25 = the methodology for the first human-driven real-machine field trial of Dorc** (the human

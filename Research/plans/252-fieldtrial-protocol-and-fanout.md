@@ -414,7 +414,10 @@ grain-of-salt, verify-not-trust. **Accepted:**
   may block *eliding* the bare `apt-get update` hl-1 ⇒ **pred-1 could be 4 not 5** (`strawman24-errexit-
   defeats`=0.00; the `dpkg -s ||` lines are `||`-left errexit-exempt, unaffected); (c) NEW risk — the
   host-guard `case "$(hostname)"` (un-oracled command in a substitution) may ⊤-poison the whole book ⇒
-  **Stage-B ~0 elide** IF the base stdlib lacks a `hostname` oracle. Errand settles both empirically +
+  **Stage-B ~0 elide** (an unmodeled `hostname` walls everything below line 22). NB no stdlib exists yet
+  (P5 unbuilt) — so the errand tests the *mechanic* (does an unmodeled `$(hostname)`-in-a-case-guard
+  wall downstream?); if it does, the fix is a coverage-REQUIREMENT for when P5's stdlib is written
+  (memo-2's book-command-surface point), not a claim about a current stdlib. Errand settles both empirically +
   amends `255 §5` (the owed fold-into-§4 becomes the correction vehicle; anti-woo — a known-wrong
   prediction pre-day contaminates the prediction-vs-observation instrument, 254 F1/F5). **NOT
   re-litigated: u3/pred-2** — the memo confirms it's r24's (pipe-guard XFAIL, doesn't-lift-at-HEAD),
