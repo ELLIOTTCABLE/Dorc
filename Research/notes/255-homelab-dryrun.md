@@ -406,13 +406,22 @@ Port consistency check: the unit sets `PORT=8000`; the vhost's `location /windmi
 `127.0.0.1:8000`; HA (host-net) binds `:8123`, proxied by `location /`. `DATABASE_URL` points at the
 role/db the `su`/psql block (hl-10,11) creates. These are the cross-service edges §1 relies on.
 
-## §8. Owed — reconciliation pending
+## §8. Owed — reconciliation status
 
-A parallel web-doc research pass (first-party nginx/postgres/windmill/HA/openssl docs) is owed to
-firm the `# FLAG:` lines in the book and this appendix: the Windmill release-asset name + whether the
-bare-binary path is real vs compose-only (dec-2), the default port + env-var names, the HA image tag,
-and the `docker.io`-vs-docker-ce call (dec-8). None of these move the **predictions** (§2/§3 are
-robust to the exact commands — they turn on the *shape*: base-oracle-able cluster, first wall,
-opaque-wrapper residue); they only firm the book's day-one runnability (c-2). If the bare-binary path
-proves unreal, dec-2's compose fallback applies and the windmill tier joins the residue — a
-pre-registered contingency, not a surprise.
+**Windmill — FIRMED (2026-07-04, `255-firming` pass; first-party docs + GitHub release API):** asset
+`windmill-amd64` is real (CE amd64, present in v1.747.0 release assets), so the book's curl runs; the
+bare-binary path exists as an artifact but upstream documents it NOWHERE (README/self_host =
+compose/helm/cloud only; first-party Q&A "run from binary… not recommended unless you know what you're
+doing") — dec-2's compose fallback is validated **by-absence-of-docs, not by a missing binary**. Env
+firmed against the README env table + backend source: `MODE=standalone` (the default; runs
+server+worker in one process; values standalone/worker/server/agent), `PORT=8000` (real env var,
+`DEFAULT_PORT=8000` in `backend/src/main.rs`), `DATABASE_URL` (required), and `BASE_URL` (real,
+Server-scope, default `http://localhost:8000`, "overriden by instance settings if any" — added to the
+unit so proxied public links/webhooks are correct). Run-user + the systemd unit itself: **NO upstream
+guidance** (windmill ships only docker/helm, documents no unit) — admin-invented, runs as root. WM_VER
+pinned to the real latest `1.747.0` (prior `1.470.2` was a 404).
+
+**Still owed (non-windmill; a later web-doc pass):** the HA image tag, and the `docker.io`-vs-docker-ce
+call (dec-8). None of these move the **predictions** (§2/§3 are robust to the exact commands — they
+turn on the *shape*: base-oracle-able cluster, first wall, opaque-wrapper residue); they only firm the
+book's day-one runnability (c-2).
