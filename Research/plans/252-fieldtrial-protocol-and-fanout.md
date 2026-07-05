@@ -275,7 +275,10 @@ Conductor self-test (`op run` resolves the key — PRESENT, no leak) + an Opus s
 - **op session does NOT persist on Windows (caching unavailable — confirmed LIVE):** `op signin`
   returns success but the very next process reports `account is not signed in`, so conductor-signin-once
   fails and every op secret-access re-pops the desktop dialog (untenable for an unattended fan-out — the
-  popup even steals input focus). **RESOLUTION: the EXECUTION controller moves to macOS** — UNIX has op
+  popup even steals input focus). **[SUPERSEDED 2026-07-04: substrate REVERSED to Windows/git-bash — human had too much in-flight to
+  migrate; `op` sidestepped entirely via the key-file-in-env (`~/.temp/vultr.env`, sourced
+  `set -a; . …; set +a`) — see §5.1 + LIVING_STATUS. The macOS resolution below is historical.]**
+  **RESOLUTION: the EXECUTION controller moves to macOS** — UNIX has op
   caching, so `op signin` persists across processes + into subagents (native no-churn, signin-once).
   Windows-specific; dissolves on macOS. Bonus: removes MSYS/CRLF friction, matches the `kWINLOCAL`
   nix-controller lean, and runs in the human's *normal* zsh/dotfiles env (valid HHHF signal, no
@@ -352,3 +355,96 @@ deliverable, pre-Phase-A.
 canary + `086`-sensitivity *build*; the probe-inertness differential arm (the sole test of the "plan
 doesn't mutate" weld against real tools); the full drift arm; the `do-4` hot-loop re-apply scenario.
 **Discarded as noise:** the "first-contact is already-spent, stop protecting it" reframe.
+
+## §8. First-blood emphasis + findings (2026-07-05)
+
+From the current-doc review (DESIGN/IMPLEMENTATION/USER_STORY) + the OTel re-point + two findings. Human-directed refinements to this live plan.
+
+**Emphasis reframe (human): the first-blood day's SPINE is the felt WORKING experience, not worst-case
+failure-hunting.** The docs spend most of their ink fencing the worst-case (the horizon / bought-
+unsoundness / un-attributable under-execution) because it's the hard part to *fence* — not because it's
+the common part. If the design is good, that corner is small; a one-shot day built to hunt it measures
+the tail and under-exercises the body. The day's spine is three felt moments in the *common* case:
+- **`dorc why` illuminating** — when a line elided or survived a wall and you ask `why`, does the answer
+  *land* ("ah — that's why"), honest and legible, or do you squint? (the core `target-felt-product`).
+- **admin-loop reward** — write the one small oracle, re-run `plan`, watch it *shrink* (the +N cascade);
+  does it feel like the effort paid?
+- **plan-preview trust** — does the elided plan feel like *relief*, or do you re-read the commented-out
+  lines anyway (DESIGN priority-3 trust-coupling)?
+Adequacy is NOT dropped — it's **mechanized**: the differential + drifted-day runs own adequacy-
+correctness silently underneath (fire only if something's wrong), which is what *frees* attention for
+the felt-experience. Weight: `target-felt-product` + `target-admin-loop` lead the day; `target-adequacy`
+is the background net.
+
+**Finding — `version-guard-lift`** (renamed from the incoherent "u3"): does the built spike lift a
+*stdout-consuming* version-check guard (`cmd --version | grep -q X || download`, decision flowing through
+stdout) vs only the bare-rc *presence* guard (`dpkg -s || install`) it provably handles? Load-bearing —
+all 3 OTel vendor oracles ride it; if it doesn't lift, the vendor-install admin-loop buys nothing.
+**STATUS (human, 2026-07-05): an r24 in-flight item** — the value-flow machinery is built + validated,
+the final tie-together is pending, scheduled to land BEFORE r25 fires. (An in-repo probe 2026-07-05
+confirmed the *current* build does NOT yet lift it — `grep`-on-stdin binds no entity, deciding leaf is
+⊤ — consistent with "machinery there, tie-together not done.") NOT an r25-settle item; confirm it lands
+(human syncing the r24 conductor).
+
+**Finding — multi-wall-cascade → `touches()` is load-bearing.** In the multi-service OTel book, one
+stale *middle* vendor (prometheus) re-walls its whole *tail* by CFG position alone — a converged grafana
+*past* a running prometheus can't elide — dropping elision ~15→9 on a drifted day. A real box is almost
+never fully-converged, so the all-green ceiling is the *rare* day; the typical day is "something mid-book
+drifted, tail collapsed." The **footprint tier (`touches()`, stage-5, r24-built)** is exactly the fix
+(disjoint footprint ⇒ grafana survives). So the trial's **drifted-day runs exercise `touches()`
+load-bearingly** — real validation the footprint tier isn't architecture-astronauting. Scoping: this
+validates **`touches()`** (the single-box half); **`reaches()`/`resolve()`** (stages 6-7) are
+FLEET-scoped by design (USER_STORY: "do not move a single book's numbers; value shows across the fleet /
+multiple authors") and a one-box/one-author trial structurally cannot exercise them — correctly
+un-tested here, justified by the collaboration story. (Presumes `version-guard-lift`.)
+
+**Watch-item (background, NOT a day-organizer): the attribution / LLM-authorship collision.**
+IMPLEMENTATION's horizon now states "errors we can't attribute are necessarily *our* fault," and the
+whole fault-model (concentrate-and-attribute-the-bite) rests on an *answerable human* behind each oracle.
+The trial's stdlib is LLM-authored — so a wrong LLM-oracle's silent under-execution attributes to an
+author who can't be paged. The `llm-authoring-twist` may quietly break the *attribution* half — which
+IMPLEMENTATION now calls the half that matters most. Notice if it bites; don't organize around it.
+
+## §9. Sibling-conductor drift-audit folds (2026-07-05)
+
+A sibling advisor session's corpus drift-audit (EPHEMERAL memo) routed findings; adjudicated
+grain-of-salt, verify-not-trust. **Accepted:**
+
+- **memo-1 → in-repo verify errand DISPATCHED** (no VPS, runs `dorc plan` on the book): (a) `set -eu`
+  may block *eliding* the bare `apt-get update` hl-1 ⇒ **pred-1 could be 4 not 5** (`strawman24-errexit-
+  defeats`=0.00; the `dpkg -s ||` lines are `||`-left errexit-exempt, unaffected); (c) NEW risk — the
+  host-guard `case "$(hostname)"` (un-oracled command in a substitution) may ⊤-poison the whole book ⇒
+  **Stage-B ~0 elide** (an unmodeled `hostname` walls everything below line 22). NB no stdlib exists yet
+  (P5 unbuilt) — so the errand tests the *mechanic* (does an unmodeled `$(hostname)`-in-a-case-guard
+  wall downstream?); if it does, the fix is a coverage-REQUIREMENT for when P5's stdlib is written
+  (memo-2's book-command-surface point), not a claim about a current stdlib. Errand settles both empirically +
+  amends `255 §5` (the owed fold-into-§4 becomes the correction vehicle; anti-woo — a known-wrong
+  prediction pre-day contaminates the prediction-vs-observation instrument, 254 F1/F5). **NOT
+  re-litigated: u3/pred-2** — the memo confirms it's r24's (pipe-guard XFAIL, doesn't-lift-at-HEAD),
+  consistent with §8's r24-owned status.
+- **memo-2 → the P5 brief carries an oracle quality-bar checklist** (grep-able slugs, when P5 fires):
+  17O regression classes (R2-SHADOW `command -v`≠no-shadow · R2-IDCACHE `getent group` not stale `id` ·
+  R2-ORTRUE never read a `||true`-masked rc · F-GETENT-HOSTS `getent hosts`=live-DNS-not-hermetic) ·
+  R2-MULTIOP arity-gate-or-decline (ungated multi-operand = priority-1 under-execute) · an-probe-shape
+  (no bare `cmd|grep -q` bodies — no-match rc ≡ tool-fail rc; capture the tool's own rc) · the 151-X4
+  live bug-classes (regex-live sanitiser: `10.0.0.1` matches `10X0X0X1`; option-passthrough making the
+  probe mutate = a kFAIL breach) · verdict-function negative contract (rul-rc-partition: no
+  `!`/`||true`/pipeline-tail status-collapse) · **coverage against the BOOK's actual surface**
+  (`hostname` [memo-1c], test/`[`, install/ln/chmod/rm — not "trust coreutils") · restate §7's
+  A1-seeded-set-disjoint + different-lineage + strawman-vocab. Rationale: 151's lesson — the contract
+  needs machine-enforcement, not author-discipline; an LLM author is worse.
+- **memo-3 CRLF gate ACCEPTED** (apply-path — P3 amend / P4 requirement): the book is Windows-authored
+  (SyncThing pair); a `\r` in the shebang is a kernel-level exec-fail no in-script guard catches
+  (F-CRLF). The apply path must verify shipped bytes are LF before the remote `dash` sees them,
+  recording any normalization (an-wire-transform).
+
+**Dropped (nack'd):**
+- **memo-3 provenance-scope-cut code-comment** (C-run flat `{transcript,rc}` vs 111's locator-DAG) —
+  marginal note on already-built throwaway tooling; not worth a touch.
+- **memo-1(b)/u3 as an r25 item** — it's r24's (above); not re-opened here.
+
+**Conditional (accepted, checked pre-Phase-B):**
+- **memo-4 → B2 confound-guard:** pre-register B2 so "the tool never pointed me anywhere" (a missing
+  first-wall hint) routes to **B6 (gap-log: unbuilt feature)**, NEVER to B2's "gradual-enhancement
+  thesis in trouble" fork — a missing *feature* must not grade the *thesis*. (Check pre-Phase-B whether
+  r24 landed the stage-3 hint line.)

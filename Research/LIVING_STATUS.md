@@ -14,6 +14,79 @@
 
 ---
 
+## ⏩ COMPRESSION-HANDOFF SNAPSHOT (2026-07-05) — read this first
+
+**Branch:** r25 lives on **`ai/spike3-r25`** (worktree `.claude/worktrees/spike3-r25`), forked from r23
+at `990d966`; **r24 continues on `ai/spike3-r23`**. LIVING_STATUS/252 fork with them. Conductor commits
+go to r25; isolated agents commit granularly on their own branches → conductor cherry-picks in.
+
+**Live agents (background):** **P2 observer** (`a3557…` — dorc-INDEPENDENT on-box snapshot+diff, wider
+than dorc's model, §7 noise-governance [A/A envelope, world-drift, planted canaries]; spins its own
+`dorc-r25` box; HARD-fenced out of `crates/`; catalogues dorc-side differential needs). **⚠ P2 HALTED mid-run by the
+harness security-net (flagged its box-spend as an unauthorized real-world transaction — the net is
+PER-SUBAGENT and can't see the conductor's standing spend-auth); its box was orphaned then
+conductor-REAPED (`3d34d700` destroyed, eurydice safe, key confirmed valid). **P2's harness is NOW
+PRESERVED ON r25** (pre-teardown salvage: `6f91fb1` = recon.sh + observe.sh, hermetic selftest 8/8 —
+MORE complete than "likely-incomplete" implied; `b1b677f` = its uncommitted mawk `sub`→`sst` fix,
+rescued off the halted worktree). The `a3557…` worktree may now be torn down (`worktree remove --force`
+— its dirty edit is already on r25). PROCESS-MODEL **DECIDED (a)** (human 2026-07-05): the CONDUCTOR owns the box LIFECYCLE — provision +
+destroy via plain `vultr-cli` API calls (authorized in-context, Fable-safe, **no orphans even if an
+agent halts mid-apply**); agents only ssh/apply/observe on a GIVEN box. Applies to P4/differential +
+all box-work. **OWED — DELEGATE to mini-subagents (do NOT conductor-fix, per human): (1) FINISH/extend
+P2's observer + do its on-box run under model (a) — start from r25 `Research/trial/observe/`, NOT the
+worktree; (2) fix the bugs below.** Bugs found: `vultr.sh`'s
+auth-recheck fails on a VALID key (re-sources without `set -a`?); `vultr-cli instance delete` needs the
+FULL UUID (short id → 400 invalid-resource-format).** **verify-errand `a114…` — DONE + cherry-picked
+(`c9b8f7c`, `255 §5.1`):** in-repo `dorc plan` on the book (base stdlib RECONSTRUCTED from vouched
+passing fixtures — NOT the real ~40-oracle bootstrap, which isn't an artifact yet; coreutils/service/ufw
+unmodeled, so their guard/run split isn't from this run — doesn't move the elide headline). **CONFIRMED,
++SURE:** the `case "$(hostname)"` host-guard (book L32) WALLS the whole book — `$(unmodeled-hostname)` is
+effect-bearing (`dq-cmdsub-inner-nonleaf`), a poison-wall → **Stage-B AS-WRITTEN = `elide=0, guard=4,
+run=53`** of 57 sites (zeroes the predicted 5; §2/§6 numbers describe the book with L32 REMOVED). No
+`hostname` oracle exists anywhere in the 145-case corpus (no read-value cmd — hostname/uname/whoami —
+modeled at all). pred-1 errexit mechanism CONFIRMED in isolation (bare mutator elide→run under `set -e`;
+`dpkg||install` guard survives) ⇒ **=4 absent the wall, but the wall dominates → observed 0.** bk-nit:
+book L31 "per pi-webhost" provenance is FALSE (the real `headline-pi-webhost` fixture has no
+`case "$(hostname)"`). P2 (`a3557…`) still reports/cherry-picks back to conductor.
+
+**BUILT + on r25** (`Research/trial/`): **P1** Vultr substrate (`vultr/vultr.sh`, tag-scoped, proven),
+**P3** ssh-runner (`apply/`, the `usekeychain` `-F` fix + C-run flags), **P6** HHHF capture tooling
+(`hhhf/`, interactive paths await a human 5-min zsh smoke-test). **The OTel book is VALIDATED**
+(`notes/255-homelab.book.sh` + 5 sidecars — comes up clean rc0/96s, ~$0.007, 2 GB adequate; ops-val
+fixed grafana `--config`, prometheus `--web.route-prefix=/`, nginx subpath). Docs: `plans/252`
+(protocol §1–§9), `notes/254` (review ledger), `255` (book+dry-run), `256` (recon).
+
+**BLOCKED / owed (future conductor):**
+- **P5 oracle-stdlib — BLOCKED** on the oracle-contract churn (touches/reaches/cross-oracle post-wall
+  elision, r24-building). **No stdlib exists yet.** When written: brief carries the `252 §9` memo-2
+  quality-bar checklist + MUST cover the book's real command surface (`hostname`, test/`[`,
+  install/ln/chmod/rm — not "trust coreutils").
+- **P4 full differential — BLOCKED** on P2 landing + dorc-side `crates/` mutations (r24's; P2 catalogues).
+- **version-guard-lift (u3) — r24-OWNED** (pipe-guard doesn't-lift-at-HEAD, fix in flight, lands before r25).
+- **Fold `255 §5` predictions → `252 §4/§8`** (STILL OWED; the verify-errand's amendment LANDED —
+  `255 §5.1`, `c9b8f7c` — and carries the corrected numbers: Stage-B as-written = **0-elide**, capped by
+  the host-guard wall; the `+10` value-curve + `~15/30` frontier are only reachable PAST L32. The fold
+  must carry: (i) hostname-coverage owed to P5 [no oracle exists corpus-wide]; (ii) day-remediation
+  options [drop L32 / author a `hostname` pure-read oracle / lift via the footprint tier, Stages 4-5].
+  Also a test-owner flag: `strawman24-errexit-defeats` can no longer isolate errexit cost — its oracles
+  carry no `is_converged` vouch, so it zeroes via the no-vouch floor, not errexit; clean isolation is the
+  `set -e`-injection in §5.1 vf-2.)
+- **Human-gated:** `_assert_tagged` eyeball (before bulk `destroy-all`); HHHF zsh smoke-test; the B2
+  hint-confound check (did r24 land the stage-3 hint? `252 §9` memo-4).
+
+**Cost/oversight:** standing auth ≤3 cheapest `dorc-r25` boxes, <$10/day, human-reaper. Baseline **0
+`dorc-r25`**; 1 pre-existing (**eurydice = OFF-LIMITS**, tag-filter). ops-val ~$0.007. Poll
+`vultr-cli … | grep dorc-r25` for orphans (watch P2's + the errand's boxes).
+
+**Findings (durable, `252 §8/§9`):** first-blood spine = felt-WORKING experience (`dorc why`-illuminates
++ admin-loop-reward + plan-trust), adequacy mechanized to the background differential; multi-wall-cascade
+→ `touches()` load-bearing (validated on drifted days); rc≠health (differential must check `is-active`);
+attribution/LLM-authorship watch-item; **host-guard-wall CONFIRMED** (verify-errand `255 §5.1`: `case
+"$(hostname)"` walls the book → Stage-B as-written 0-elide; `$(unmodeled-cmd)` substitution is the
+trigger, not `case` itself; `hostname` coverage owed to P5, no oracle exists corpus-wide).
+
+---
+
 ## NOW (2026-07-04 — round 25: protocol REVIEWED + hardened + dry-run DONE; rotating conductor, Stages-4-5 landing)
 
 **Round 25 = the methodology for the first human-driven real-machine field trial of Dorc** (the human
@@ -37,7 +110,12 @@ asymmetric felt-signal; A1 planted=sensitivity-gate + disjoint stdlib; different
 A-A calibration; gap-log forcing-functions; reinstate confound-conditions). Per the human's
 *at-most-one-non-trivial* lean, the one non-trivial fix = the **paper dry-run** below.
 
-**Ops-target LOCKED:** single-box mini-homelab — nginx reverse-proxy + Windmill(+postgres) +
+**Ops-target LOCKED:** single-box mini-homelab — nginx reverse-proxy + an **OTel stack** (otel-collector + prometheus + grafana-on-postgres, native
+SEPARATE units — **SWAPPED from Windmill 2026-07-04**: windmill-native is admin-invented/undocumented,
+and compose would hide the multi-service behind one opaque `docker compose up` [Dorc can't exercise it]
++ is redundant with HA's docker wall; OTel = genuine multi-service as separate native units Dorc SEES,
+documented installs, + the human's familiar ground. Re-point **DONE** (`a8af1b6`+`fc1595e`, cherry-picked to r25; 30 sites, 3 vendor walls; **needs a 2–4 GB VPS** now — HA+prometheus+grafana+otel+postgres — still <$10/day, consistent with P1's "cheapest-that-runs-it"); keeps postgres/su-wall,
+HA-docker stays the sole hork) +
 Home-Assistant(Container), self-signed certs. (HA genuinely blocked-on-Dorc = the dogfood-want; more
 services = more composition-exercise; corral network-chaos, don't eliminate. Rubric: many-parts>few; mostly bog-standard-oracle-able + a few walls (tractable-vendor→admin-loop,
 opaque-hork→residue); real-drift→adequacy; corral-chaos-not-control.)
@@ -45,9 +123,27 @@ opaque-hork→residue); real-drift→adequacy; corral-chaos-not-control.)
 **DRY-RUN DONE + committed** (research-firming deferred to the on-VPS validation, per human):
 `notes/255-homelab.book.sh` (runbook, ~21 sites) + `notes/255-homelab-dryrun.md` (per-stage ledgers +
 ceiling + decisions-log; **§5 pred-1..5 ARE the pre-registered §4 predictions** — F1/F5 satisfied).
-**Numbers:** Stage-B steady **5 elide / 7 guard / 9 run**; +hand-oracle **8** (modulo u3); ceiling
-**~14** (unreachable — footprint tier unbuilt); floor **~4 never-elide** (`su -c` postgres,
-docker/HA-internal, `systemctl reload`). Conductor sanity-check: **sound + honest** (its confidence-
+**Numbers (OTel, 30 sites — re-pointed from windmill 21):** Stage-B steady **5 elide** (same ambient
+floor); **+3 vendor-oracles → 15 elide** — the value-curve walks **3× (+10, vs windmill's +3)**; ceiling
+**~23/30 (~77%)** (unreachable — footprint tier unbuilt); floor **~4 run** (`su`×2, `nginx reload`,
+HA-internal). **u3 now gates ALL 3 oracles** (3× load-bearing); NEW **multi-wall-cascade** (a stale
+middle binary re-walls the later vendor by position, 15→9). All 3 installs **documented-native** ⇒
+won't eat the day (the tarball+version-guard form is now a deliberate Dorc-exercise choice).
+
+**OPS-VAL DONE (2026-07-05): the OTel book COMES UP** on a fresh Debian-12 box (rc=0 / 96s; all services
+active, HTTPS on self-signed, otel→prometheus data-path live, grafana-on-postgres [87 tables, not
+sqlite]). **Cost ~$0.007** (vc2-1c-2gb @ $0.0136/hr; **2 GB adequate** — ~910 MB used / ~1 GB free, no
+4 GB needed; 0 orphans conductor-verified). **3 fixes cherry-picked** (`fbef730`/`ddccee7`/`28da459`:
+grafana `--config`→`conf/defaults.ini` [tarball ships no grafana.ini; explicit-missing is fatal];
+prometheus `+--web.route-prefix=/` [external-url had 404'd remote-write]; nginx grafana-subpath
+prefix-preserve). **4 known day-risks left faithful:** docker-run non-idempotent (the intended
+poison-wall — good), HA-UI websockets-through-nginx, box-must-be-named-`homelab`/`hl-*` + cert-CN-only,
+`ufw allow` without `ufw enable`. **2 process findings (design-relevant):** (a) **book rc=0 does NOT
+prove services healthy** — `systemctl enable --now` returns 0 on a crash-loop (dead grafana rode along
+under rc=0) ⇒ the differential (P4) MUST check `is-active`, not just rc/fs; bears on how Dorc reads
+apply-success; (b) killing local ssh does NOT halt the remote apply (day-UX abort note). **P5 now
+UNBLOCKED** (book validated + firm). Throwaway ssh key left at `~/.ssh/dorc-r25{,.pub}` (inert; human
+deletes at will). Conductor sanity-check: **sound + honest** (its confidence-
 marks hold; the 5-elide is +SURE, the +3 rides u3). **Three takeaways for the day:**
 1. **u3 = the sharpest uncertainty** — does the built spike lift a *stdout-consuming* pipe-guard
    (`cmd | grep -q X || fallback`)? If not, Stage-C == Stage-B (a finding). **Checkable IN-REPO NOW
@@ -99,6 +195,23 @@ rests on construction + offline tests ⇒ **human must eyeball `_assert_tagged` 
 `_assert_tagged` → integrate vultr.sh onto `ai/` → resolve P3's ssh-config → dispatch P3 + P2 onto a box. Agents relay trouble via
 `SendMessage`→conductor→human (the conductor holds the notify path); the `dorc-r25` tag covers a
 hard-died agent's orphan.
+
+**BRANCH FORK + WAVE-2 (2026-07-04):** round-25 forked to its OWN branch **`ai/spike3-r25`** (worktree
+`.claude/worktrees/spike3-r25`); **r24 Stage-4/5 continues on `ai/spike3-r23`**. They share history to
+`990d966`, then diverge — **this LIVING_STATUS forks with them** (r24 status here goes stale; the live
+r24 view is on r23). Reason: r24+r25 sharing one branch churned LIVING_STATUS/root-docs repeatedly (the
+`990d966` Stage-4 commit swept the P1-done edit above — it landed, but the collision kept recurring).
+**P1 + `~/System` scout DONE** (P1 block above; `256`). **Wave-2 — all ISOLATED, committing granularly
+in their own worktree branches → cherry-pick onto `ai/spike3-r25` after base-verify when they land:**
+web-pass **DONE + cherry-picked to r25** (`255` FLAGs firmed: WM_VER→**1.747.0** [`1.470.2` was a fake
+404-tag], asset real, MODE/PORT/DATABASE_URL confirmed + **`BASE_URL` added** to the unit; **native-binary
+windmill = admin-invented territory** — upstream docs only docker/compose, so dec-2's compose-fallback
+is the documented escape; the `su-postgres` block auto-creates windmill's roles ⇒ book compatible),
+P3 (ssh-runner + the Windows
+`ssh -F` fix for the `usekeychain` gotcha; live-box integration deferred), P6 (HHHF capture tooling per
+`256`: preexec-JSONL spine + ZLE friction-button + asciinema-extractor). **Blocked-until:** P2 (live
+box + human's `_assert_tagged` eyeball), P4 (P3/P2 interfaces), P5 (rides r24 — Stage-4 now landed, so
+P5 unblocks soon). Poll `vultr-cli … | grep dorc-r25` for runaways (baseline 0; eurydice off-limits).
 
 **HANDOFF (fresh conductor, rotating 2026-07-04):**
 - **Stages 4–5 (derived footprints — the tier that buys the ATTENTION value-prop) LAND FIRST, before

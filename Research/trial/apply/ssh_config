@@ -1,0 +1,39 @@
+# dorc-r25 trial ssh config (P3) — plans/252 §1 (ssh-a-script floor) + §5.2.
+#
+# Used ONLY via `ssh -F <this-file>`. Passing -F makes ssh read THIS file as the
+# per-user config and ignore both ~/.ssh/config and the system config — which is
+# the whole point: the human's ~/.ssh/config carries `usekeychain` (a macOS-only
+# option). git-bash's OpenSSH rejects it ("Bad configuration option: usekeychain",
+# exit 255), so any default-config ssh from Windows dies before connecting. -F with
+# this file side-steps it without touching the human's config. (P1 found this live.)
+#
+# The private key is passed on the command line (`ssh -i <key>`), NOT hardcoded here,
+# so this file stays host-/key-agnostic and the runner can point it at any trial key.
+
+Host *
+   # Trial boxes are throwaway and may reuse IPs across provision/destroy cycles, so
+   # never persist or verify host keys — a stored key from a dead box would otherwise
+   # trip REMOTE HOST IDENTIFICATION CHANGED on the reused IP. /dev/null = store nothing;
+   # accept-new = take each (always-"new") key silently.
+   StrictHostKeyChecking accept-new
+   UserKnownHostsFile /dev/null
+
+   # Keep ssh's own chatter (the "Permanently added ... to known hosts" INFO line) out
+   # of the captured remote stderr. Genuine connection errors (ERROR/FATAL) still surface.
+   LogLevel ERROR
+
+   # Use ONLY the -i key the runner passes; never offer agent/default keys. Avoids
+   # too-many-authentication-failures and any ssh-agent/keychain coupling.
+   IdentitiesOnly yes
+
+   # P1 injects the trial pubkey for root via cloud-init; the trial logs in as root.
+   User root
+
+   # Fail fast on a dead/wrong box instead of hanging the harness; never prompt (the
+   # trial key is passphrase-less by construction, so a prompt would mean a real error).
+   ConnectTimeout 15
+   BatchMode yes
+
+   # Notice a mid-apply network drop within ~1 min rather than blocking indefinitely.
+   ServerAliveInterval 15
+   ServerAliveCountMax 4

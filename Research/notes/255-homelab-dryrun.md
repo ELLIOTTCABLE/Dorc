@@ -6,6 +6,11 @@
 > each oracle-coverage stage, plus the perfect-oracle **ceiling** (the missing denominator, so a
 > low real-day count reads as "hit the ceiling," not "tool weak").
 >
+> **RE-POINTED 2026-07-04:** the service tier swapped Windmill → a **lean OpenTelemetry stack**
+> (otel-collector + prometheus + grafana), same method + structure, three vendor walls instead of
+> one (why: `LIVING_STATUS`; §0/§4/§8 below). The elision *mechanics* are unchanged; the *numbers*
+> and the value-curve are re-derived for 30 tool-sites.
+>
 > **THIS IS THEORY.** Every disposition below is *me reading the design*, not the tool running.
 > Predictions are confidence-marked (`+SURE`/`~SUSPECT`/`-GUESS`/`--WONDER`); the book is
 > **untested pre-VPS**. Prediction-vs-observation on the day IS the anti-woo instrument (`plans/250`
@@ -18,9 +23,20 @@
 ## §0. The scenario and the single lens
 
 **Target (human-LOCKED 2026-07-04):** one fresh Debian-12 box — an **nginx reverse-proxy** over
-**self-signed TLS** fronting **Windmill** (native binary on a system **postgres**) and **Home
-Assistant** (Container). The human plays the lazy admin who wants the homelab working, not "fancy
-Dorc crap," and grudgingly hand-writes **one** minimal oracle (`plans/250` grounding scenario).
+**self-signed TLS** fronting a **lean OTel monitoring stack** — **otel-collector**
+(`otelcol-contrib`), **prometheus**, and **grafana** (native binary on a system **postgres**) — plus
+**Home Assistant** (Container). Each of the three OTel services is a **separate native systemd unit**
+brought up by a **version-guarded binary download**. The human plays the lazy admin who wants the
+homelab working, not "fancy Dorc crap," and grudgingly hand-writes minimal oracle(s) (`plans/250`
+grounding scenario).
+
+**Why the OTel stack replaced Windmill (2026-07-04):** windmill's *native* multi-unit install is
+admin-invented (upstream documents only docker/compose); docker-compose would hide the multi-service
+behind one opaque `docker compose up` Dorc can't exercise, and is redundant with HA's docker wall.
+The OTel stack gives genuine multi-service as **separate native units Dorc can see**, **documented**
+installs (§8: all three have first-party native paths, unlike windmill), and it is the human's
+familiar ground. Net effect on this dry-run: **three tractable vendor walls, not one** — so the
+Stage-C hand-oracle value-curve is walked three times (§2C).
 
 Every ops-choice below was made against **one rubric: does it maximally exercise Dorc?** (the
 composition machinery, the ambient-gate, the poison-walls, the guard tier, the converged-vouch, and
@@ -52,14 +68,15 @@ Two structural facts drive everything:
   run, so it too walls downstream). Everything below a wall can at best **guard**, never elide.
 - **An elided command casts no wall** (`USER_STORY` stage 3; claim-2 of `notes/238`). So the first
   wall's position caps elision; oracling that wall so it *elides* un-walls everything between it and
-  the next wall. This is the whole value-curve.
+  the next wall. This is the whole value-curve. **With three vendor walls in a row (§2), oracling
+  them un-walls three blocks in sequence — the curve, walked thrice.**
 
 **Adequacy / converged≠no-op** (the primary trial target, `plans/250` `target-adequacy`): a probe
 can say "converged" while running the command would still mutate (the `strawman24-adequacy-seed`
 fixture: `dpkg -s nginx` reports installed, but a pending upgrade means `apt-get install` would still
 act). This is the naked risk under *every* elision, calibrated-never-proven. The book seeds two live
-cases (the `[ -f cert ]` guard that never checks expiry; the version-guarded binary a `command -v`
-would wave through) — §2/§3.
+cases (the `[ -f cert ]` guard that never checks expiry; the version-guarded binaries a `command -v`
+would wave through — now **three** of them) — §2/§3.
 
 ## §0.2 What is actually BUILT (bounds what the day can reach)
 
@@ -74,192 +91,257 @@ built tier structurally caps.
 
 ## §1. The book and its cast
 
-Full book: `notes/255-homelab.book.sh` (~21 mutation-capable tool-sites + housekeeping). The cast,
-by how Dorc sees each command **at the base-stdlib stage** — the assumed ~40-oracle bootstrap stdlib
-(`plans/252` P5): apt/dpkg, `pkgindex` (apt-get update), systemctl (`service`), ufw (`firewall`),
-cp/`file`, coreutils (chmod/ln/install/rm), nginx (`nginx -t` is read-only):
+Full book: `notes/255-homelab.book.sh` (**~30 mutation-capable tool-sites** + housekeeping — up from
+21, because three services carry three downloads + three config/unit blocks). The cast, by how Dorc
+sees each command **at the base-stdlib stage** — the assumed ~40-oracle bootstrap stdlib (`plans/252`
+P5): apt/dpkg, `pkgindex` (apt-get update), systemctl (`service`), ufw (`firewall`), cp/`file`,
+coreutils (install/ln/rm), nginx (`nginx -t` is read-only):
 
 | kind | commands | Dorc's handle |
 |---|---|---|
-| **base-oracle-able** (elide/guard) | `apt-get update`, `dpkg -s x \|\| apt-get install x` (×4), `cp`, `chmod`, `install -d`, `ln -sf`, `systemctl enable --now`, `ufw allow`, `nginx -t` | famous; stdlib probes + vouches |
-| **the tractable vendor wall** (hand-oracle target) | `windmill --version \| grep -q … \|\| curl … -o …windmill` | unmodeled at base; a 6-line `windmill.is_converged()` oracles it (§2 stage C) |
+| **base-oracle-able** (elide/guard) | `apt-get update`, `dpkg -s x \|\| apt-get install x` (×4), `cp` (×5 configs+units), `install -d` (×3), `ln -sf`, `systemctl enable --now` (×3), `ufw allow` (×2), `nginx -t` | famous; stdlib probes + vouches |
+| **the THREE tractable vendor walls** (hand-oracle targets) | `otelcol-contrib --version \| grep -q … \|\| {curl…tar}`, `prometheus --version \| grep -q … \|\| {…}`, `grafana --version \| grep -q … \|\| {…}` | unmodeled at base; a 6-line `<svc>.is_converged()` oracles each (§2 stage C) |
 | **opaque poison-walls** (the honest residue / "horks") | `su - postgres -c "…"` (×2), `docker run … home-assistant`, `systemctl daemon-reload`, `systemctl reload nginx` | unmodeled command, or run-delta verb — never elide at the built stages |
 | **conditional / edge** | `[ -f cert ] \|\| openssl req …` (hand-guarded, adequacy trap), the `cat > vhost <<EOF` heredoc (heredoc-refusal edge), `rm -f default` (a KILL) | §2 notes each |
 
-Site IDs `hl-1..hl-21` (used in the ledgers) map top-to-bottom over the book's tool-sites.
+Site IDs `hl-1..hl-30` (used in the ledgers) map top-to-bottom over the book's tool-sites:
 
-The **composition** is deliberately rich (the exercise-Dorc lens, `plans/252` §7 "more services =
-more of the analyzer's composition machinery"): windmill reads the postgres DB that the `su`/psql
-block created; nginx proxies to the ports windmill (:8000) and HA (:8123) bind; `systemctl enable`
-depends on the `apt` installs and the `cp`'d unit; the firewall opens the port nginx listens on.
-These are exactly the cross-command shared-state edges the ambient-gate and walls are built to test.
+```
+hl-1  apt-get update                        hl-16 systemctl daemon-reload            [WALL]
+hl-2  dpkg nginx      || install            hl-17 su - postgres  (role grafana)      [WALL]
+hl-3  dpkg postgresql || install            hl-18 su - postgres  (db grafana)        [WALL]
+hl-4  dpkg docker.io  || install            hl-19 systemctl enable --now otelcol
+hl-5  dpkg openssl    || install            hl-20 systemctl enable --now prometheus
+hl-6  otel  download  (ver-guard)  [WALL 1] hl-21 systemctl enable --now grafana
+hl-7  install -d /etc/otelcol-contrib       hl-22 docker run homeassistant           [WALL]
+hl-8  cp otelcol-config.yaml                hl-23 install -d /etc/nginx/certs
+hl-9  cp otelcol-contrib.service            hl-24 [ -f cert ] || openssl req         (adequacy)
+hl-10 prom  download  (ver-guard)  [WALL 2] hl-25 if [ ! -f ]; cat > vhost <<EOF     (heredoc)
+hl-11 install -d /etc/prometheus …          hl-26 ln -sf … sites-enabled
+hl-12 cp prometheus.yml                      hl-27 rm -f … default                    (a KILL)
+hl-13 cp prometheus.service                  hl-28 nginx -t && systemctl reload nginx [WALL]
+hl-14 grafana download (ver-guard) [WALL 3]  hl-29 ufw allow 22/tcp
+hl-15 cp grafana.service                     hl-30 ufw allow 443/tcp
+```
+
+The **composition** is deliberately rich — richer than windmill's single-consumer graph (the
+exercise-Dorc lens, `plans/252` §7 "more services = more of the analyzer's composition machinery"):
+grafana reads the postgres DB the `su`/psql block created (hl-17,18 → hl-21 via `GF_DATABASE_*`);
+grafana queries prometheus as a datasource (:9090); prometheus receives remote-write from
+otel-collector; nginx proxies the ports grafana (:3000) and prometheus (:9090) bind; each
+`systemctl enable` depends on the `apt` installs and the `cp`'d unit for its service; the firewall
+opens the port nginx listens on. These are exactly the cross-command shared-state edges the
+ambient-gate and walls are built to test — now four services deep.
 
 ## §2. The per-stage predicted-plan ledger
 
-Counting the 21 tool-sites (housekeeping — `set -eu`, the `case` host-guard, `WM_VER=`,
-`echo` — always shows and is excluded from the tallies, as in `USER_STORY`'s ledger).
+Counting the 30 tool-sites (housekeeping — `set -eu`, the `case` host-guard, the three `*_VER=`
+assignments, `echo` — always shows and is excluded from the tallies, as in `USER_STORY`'s ledger).
 
 ### Stage A — bare (stdlib disabled): the floor
 
 Illustrative only (the stdlib ships with the tool; real day-one is Stage B). Nothing can be probed
 (probing requires an oracle's vouch that a check is read-only). The plan is the book, annotated.
 
-**`plan: 21 run, 0 guard, 0 elided`** — +SURE. The floor promise: *no worse than running the script
+**`plan: 30 run, 0 guard, 0 elided`** — +SURE. The floor promise: *no worse than running the script
 blind* (`DESIGN` "no worse than just running the script"). Gained: a plan surface. Lost: nothing.
 
 ### Stage B — base stdlib: elision fires above the first wall
 
 The stdlib gives the probe phase something to do. **Steady state** (converged re-run: packages
-installed, index fresh, config in place, certs present, windmill binary current):
+installed, index fresh, configs in place, certs present, all three binaries current):
 
-The elidable cluster is the ambient top — everything above the first wall (`hl-6`, windmill, which
-is unmodeled at this stage):
+The elidable cluster is the ambient top — everything above the first wall (`hl-6`, the otel
+download, which is unmodeled at this stage):
 
 ```sh
 apt-get update                                     # hl-1  elide: pkgindex fresh
-dpkg -s nginx      >/dev/null 2>&1 || apt-get install -y nginx        # hl-2  elide: guard holds, install dead
-dpkg -s postgresql >/dev/null 2>&1 || apt-get install -y postgresql   # hl-3  elide
-dpkg -s docker.io  >/dev/null 2>&1 || apt-get install -y docker.io    # hl-4  elide
-dpkg -s openssl    >/dev/null 2>&1 || apt-get install -y openssl      # hl-5  elide
-windmill --version … | grep -q "$WM_VER" || curl … -o …/windmill      # hl-6  RUN — unmodeled ⇒ FIRST WALL
+dpkg -s nginx      … || apt-get install -y nginx   # hl-2  elide: guard holds, install dead
+dpkg -s postgresql … || apt-get install …          # hl-3  elide
+dpkg -s docker.io  … || apt-get install …          # hl-4  elide
+dpkg -s openssl    … || apt-get install …          # hl-5  elide
+otelcol-contrib --version | grep -q "$OTEL_VER" || {curl…tar}   # hl-6  RUN — unmodeled ⇒ FIRST WALL
 ```
 
 Below `hl-6` every base-oracle-able site can at best **guard**; every unmodeled command **runs** and
-re-walls:
+re-walls. Crucially, the two *later* vendor downloads (`hl-10` prometheus, `hl-14` grafana) are
+*also* unmodeled at base ⇒ each is its own wall, so their config/unit blocks (`hl-11..13`,`hl-15`)
+guard rather than elide:
 
 | site | command | verdict | why | conf |
 |---|---|---|---|---|
 | hl-1 | `apt-get update` | **elide** | pkgindex converged, ambient | +SURE |
 | hl-2..5 | `dpkg -s x \|\| apt-get install x` | **elide** | hand-guard holds, install branch dead, ambient | +SURE |
-| hl-6 | `windmill --version… \|\| curl…` | **run** | windmill unmodeled ⇒ **first poison-wall** | +SURE |
-| hl-7 | `chmod 755 …/windmill` | guard | coreutils, converged, past hl-6 | ~SUSPECT (stdlib covers chmod?) |
-| hl-8 | `cp windmill.service …` | guard | file-content converged, past wall | ~SUSPECT |
-| hl-9 | `systemctl daemon-reload` | **run** | run-delta / unmodeled verb ⇒ wall | ~SUSPECT |
-| hl-10,11 | `su - postgres -c "…"` | **run** | `su` unmodeled ⇒ wall (payload opaque) | +SURE |
-| hl-12 | `systemctl enable --now windmill` | guard | service enabled+active, past wall | +SURE |
-| hl-13 | `docker run … home-assistant` | **run** | docker unmodeled ⇒ wall | +SURE |
-| hl-14 | `install -d -m 0700 …/certs` | guard | coreutils dir+mode, past wall | ~SUSPECT |
-| hl-15 | `[ -f cert ] \|\| openssl req…` | **run** | past a wall, the hand-guard re-checks live (`USER_STORY` st.5) | ~SUSPECT |
-| hl-16 | `if [ ! -f ]; cat > vhost <<EOF` | **run** | past wall **and** heredoc-refusal (span can't edit) | ~SUSPECT |
-| hl-17 | `ln -sf … sites-enabled` | guard | coreutils symlink, past wall | ~SUSPECT |
-| hl-18 | `rm -f …/default` | **run** | a KILL (declines vouch, like `purge`); ⇒ wall | -GUESS |
-| hl-19 | `nginx -t && systemctl reload nginx` | **run** | `reload` run-delta ⇒ wall (`nginx -t` is a read) | ~SUSPECT |
-| hl-20,21 | `ufw allow …/tcp` | guard | firewall converged, past wall | +SURE |
+| hl-6 | `otelcol-contrib --version… \|\| {curl…}` | **run** | otel unmodeled ⇒ **first poison-wall** | +SURE |
+| hl-7 | `install -d /etc/otelcol-contrib` | guard | coreutils dir, converged, past hl-6 | ~SUSPECT (stdlib covers install-d? u1) |
+| hl-8,9 | `cp otelcol-config.yaml / .service` | guard | file-content converged, past wall | ~SUSPECT |
+| hl-10 | `prometheus --version… \|\| {…}` | **run** | prometheus unmodeled ⇒ **2nd wall** | +SURE |
+| hl-11 | `install -d /etc/prometheus …` | guard | coreutils, past wall | ~SUSPECT (u1) |
+| hl-12,13 | `cp prometheus.yml / .service` | guard | file-content, past wall | ~SUSPECT |
+| hl-14 | `grafana --version… \|\| {…}` | **run** | grafana unmodeled ⇒ **3rd wall** | +SURE |
+| hl-15 | `cp grafana.service` | guard | file-content, past wall | ~SUSPECT |
+| hl-16 | `systemctl daemon-reload` | **run** | run-delta / unmodeled verb ⇒ wall | ~SUSPECT |
+| hl-17,18 | `su - postgres -c "…"` | **run** | `su` unmodeled ⇒ wall (payload opaque) | +SURE |
+| hl-19,20,21 | `systemctl enable --now <svc>` | guard | service enabled+active, past wall | +SURE |
+| hl-22 | `docker run … home-assistant` | **run** | docker unmodeled ⇒ wall | +SURE |
+| hl-23 | `install -d -m 0700 …/certs` | guard | coreutils dir+mode, past wall | ~SUSPECT (u1) |
+| hl-24 | `[ -f cert ] \|\| openssl req…` | **run** | past a wall, the hand-guard re-checks live (`USER_STORY` st.5) | ~SUSPECT |
+| hl-25 | `if [ ! -f ]; cat > vhost <<EOF` | **run** | past wall **and** heredoc-refusal (span can't edit) | ~SUSPECT |
+| hl-26 | `ln -sf … sites-enabled` | guard | coreutils symlink, past wall | ~SUSPECT |
+| hl-27 | `rm -f …/default` | **run** | a KILL (declines vouch, like `purge`); ⇒ wall | -GUESS |
+| hl-28 | `nginx -t && systemctl reload nginx` | **run** | `reload` run-delta ⇒ wall (`nginx -t` is a read) | ~SUSPECT |
+| hl-29,30 | `ufw allow …/tcp` | guard | firewall converged, past wall | +SURE |
 
-**`plan: ~9 run, ~7 guard, 5 elided`** (of 21). **The elision is 5/21 ≈ 24%** — concentrated in the
-ambient top; the book collapses to guards/runs after the first wall at `hl-6`. This *looks* weak —
-which is exactly why §3's ceiling exists. Confidence: the **5 elides are +SURE**; the guard/run split
-is ~SUSPECT and rides two unknowns: **(u1)** whether the LLM stdlib carries `is_converged` vouches for
-`chmod`/`install -d`/`ln` (if not, hl-7/14/17 flip guard→run, giving ~4 guard / ~12 run); **(u2)**
-whether `rm`/`daemon-reload`/`reload` wall as predicted (all ~SUSPECT/-GUESS).
+**`plan: ~11 run, ~14 guard, 5 elided`** (of 30). **The elision is 5/30 ≈ 17%** — concentrated in the
+ambient top; the book collapses to guards/runs after the first wall at `hl-6`. Note the elision
+*count* is the **same 5** as windmill's ambient cluster, but the *percentage drops* (24%→17%) because
+the three-service vendor tier adds ~10 sites, all below walls at base — so they **guard** (the guard
+count nearly doubles, 7→14), they do not elide. This *sharpens* the "walls cap elision" lesson, and
+it is exactly why §3's ceiling and §2C's three oracles exist. Confidence: the **5 elides are +SURE**;
+the guard/run split is ~SUSPECT and rides two unknowns: **(u1)** whether the LLM stdlib carries
+`is_converged` vouches for `install -d`/`ln`/`cp` (if not, hl-7/8/9/11/12/13/15/23/26 flip
+guard→run); **(u2)** whether `rm`/`daemon-reload`/`reload` wall as predicted.
 
-- Gained (steady): three mutation-capable commands (the two-plus `apt`/`dpkg` sites) provably not
-  run; the classic hand-written `dpkg -s` guard lifts exactly as `USER_STORY` promises.
-- Not gained: **attention** — 16 of 21 sites still face the user. Past `hl-6` there is no proof to be had.
+- Gained (steady): the whole ambient package cluster (five mutation-capable sites) provably not run;
+  the classic hand-written `dpkg -s` guards lift exactly as `USER_STORY` promises.
+- Not gained: **attention** — 25 of 30 sites still face the user. Past `hl-6` there is no proof to be
+  had, and the vendor tier makes the past-the-wall region *larger* than windmill's.
 
 **Drifted day** (representative: package index stale overnight — nothing else changed). `hl-1`
 `apt-get update` now **runs** (diverged) ⇒ it becomes an *even earlier* wall, above the `dpkg`
 cluster. `hl-2..5` degrade elide→**run-live** (their `dpkg -s` guards re-check past the `hl-1` wall,
-per `USER_STORY` stage 5). **`plan: ~14 run, ~7 guard, 0 elided`.** One stale index costs the book
+per `USER_STORY` stage 5). **`plan: ~16 run, ~14 guard, 0 elided`.** One stale index costs the book
 its entire shape — the `USER_STORY`-stage-5 lesson, and the exact pain the (unbuilt) footprint tier
 exists to buy back. +SURE on the mechanism.
 
-### Stage C — the two-minute oracle: `windmill.is_converged()`
+### Stage C — the two-minute oracle(s): three tractable walls, walked in sequence
 
 The hint machinery points at the first wall (`USER_STORY` stage 3: an oracle for the first wall
-un-walls downstream). The admin writes the minimal vouch (r24 dialect, mirroring
-`strawman24-*/package.oracle.sh`'s `apt-get.is_converged`):
+un-walls downstream). But there are now **three** version-guarded downloads in a row, each the *same*
+oracle-shape (r24 dialect, mirroring `strawman24-*/package.oracle.sh`'s `apt-get.is_converged`). The
+minimal vouch, written once per service:
 
 ```sh
-# minimal windmill oracle: vouch that the pinned binary being present-and-current is convergence,
-# so dorc can lift my version-guard, elide the re-download, and stop walling my systemd block.
-windmill.is_converged() {
+# minimal otel oracle (grafana/prometheus identical shape): vouch that the pinned binary being
+# present-and-current is convergence, so dorc can lift my version-guard, elide the re-download, and
+# stop walling the config/unit block below it.
+otelcol-contrib.is_converged() {
    case "$1" in
-   --version) windmill --version 2>/dev/null | grep -q "$WM_VER" ;;   # 0 = current ⇒ converged
-   *)         return 2 ;;                                             # decline everything else ⇒ run
+   --version) otelcol-contrib --version 2>/dev/null | grep -q "$OTEL_VER" ;;   # 0 = current ⇒ converged
+   *)         return 2 ;;                                                       # decline everything else ⇒ run
    esac
 }
 ```
 
-**Steady state** (binary current): `hl-6`'s version-guard now lifts; the `curl` folds dead; `hl-6`
-**elides**. Because `hl-6` was the first wall and its ambient (hl-1..5) all elide, `hl-6` elides
-fully (not merely guards) ⇒ **casts no wall** ⇒ un-walls the block between it and the next wall
-(`hl-9 daemon-reload`):
+Because each vendor download is the **first wall of its own block**, oracling it elides its own line
+**and** un-walls the config/unit sites between it and the next wall. The three oracles compound:
 
-```sh
-windmill --version … || curl … -o …/windmill      # hl-6  elide: fb wm.Binary current (was RUN)
-chmod 755 /usr/local/bin/windmill                  # hl-7  elide: un-walled (was guard)
-cp ./windmill.service /etc/systemd/system/…        # hl-8  elide: un-walled (was guard)
-systemctl daemon-reload                            # hl-9  run: run-delta ⇒ next wall (caps the un-wall)
+```
+oracle written        elides its own line   un-walls              running elide count
+── (Stage B)          —                     —                     5
++ otelcol             hl-6                  hl-7,8,9  (guard→elide)  9   (+4)
++ prometheus          hl-10                 hl-11,12,13              13  (+4)
++ grafana             hl-14                 hl-15                    15  (+2)
 ```
 
-**`plan: ~8 run, ~5 guard, 8 elided`** (of 21). The two-minute oracle bought **+3 elisions**: its own
-line (`hl-6`) **and** the two downstream facts it had been poisoning (`hl-7`, `hl-8`) — the
-`USER_STORY`-stage-3 "steepest part of the value-curve" moment, scaled to a homelab. Confidence: **the
-+1 (own line) is ~SUSPECT-toward-SURE**; **the +2 un-wall is ~SUSPECT** and rides the sharpest
-day-of unknown:
+**Steady state, all three oracled (`plan: ~8 run, ~7 guard, 15 elided` of 30):**
 
-> **⚠ key prediction to verify (u3, ~SUSPECT):** `hl-6`'s guard is `windmill --version | grep -q …`
-> — a **stdout-consuming pipe guard**, not a bare rc-guard like `dpkg -s x`. Whether the built spike
-> lifts a `cmd | grep -q X || fallback` (reproducing windmill's stdout as a probe-sourced value —
-> `inv-probe-sourced-values`, the `consumed-output` fixture family) vs only rc-gated guards is
-> genuinely uncertain from the design read. **If it does not lift, Stage C == Stage B (zero gain)**
-> — and *that* is a first-class gap-log finding (the admin then rewrites the guard rc-form, or the
-> oracle targets the `curl` line directly; the friction itself is `target-admin-loop` signal).
+```sh
+otelcol-contrib --version… || {curl…}   # hl-6  elide: otel current (was RUN)
+install -d /etc/otelcol-contrib          # hl-7  elide: un-walled (was guard)
+cp otelcol-config.yaml …                 # hl-8  elide
+cp otelcol-contrib.service …             # hl-9  elide
+prometheus --version… || {…}             # hl-10 elide: prometheus current (was RUN)
+install -d /etc/prometheus …             # hl-11 elide
+cp prometheus.yml / .service …           # hl-12,13 elide
+grafana --version… || {…}                # hl-14 elide: grafana current (was RUN)
+cp grafana.service …                     # hl-15 elide: un-walled
+systemctl daemon-reload                  # hl-16 run: run-delta ⇒ next wall (caps the un-wall)
+```
 
-**Drifted day (stale binary — the adequacy demo):** the binary is present but an **old version**.
-`windmill.is_converged --version` runs `windmill --version`, sees the mismatch ⇒ **diverged** ⇒
-`hl-6` `curl` **runs** (re-downloads) ⇒ re-walls ⇒ `hl-7`,`hl-8` fall back to guard. The plan honestly
-re-degrades (`plan: ~8 run, ~7 guard, 5 elided`). **The value that a bare `command -v windmill`
-guard could not give:** presence ≠ currency — a `command -v` would have **wrongly elided the stale
-binary** (converged≠no-op); the version oracle catches it. This is `target-adequacy` firing on a
-hand-authored oracle — a co-primary trial win. +SURE on the mechanism.
+The three two-minute oracles bought **+10 elisions** (5→15) — their own three lines plus the seven
+downstream config/unit facts they had been poisoning. This is the `USER_STORY`-stage-3 "steepest part
+of the value-curve" moment **scaled to a three-service homelab**: where windmill's single oracle
+bought +3 (5→8 of 21), the OTel stack's three oracles buy +10 (5→15 of 30). Confidence: **the +3
+own-lines are ~SUSPECT-toward-SURE**; **the +7 un-wall is ~SUSPECT** and rides the sharpest day-of
+unknown — now **3× as load-bearing** because it gates all three:
+
+> **⚠ key prediction to verify (u3, ~SUSPECT — now the pivotal day-of test):** each vendor guard is
+> `<svc> --version | grep -q …` — a **stdout-consuming pipe guard**, not a bare rc-guard like
+> `dpkg -s x`. Whether the built spike lifts a `cmd | grep -q X || fallback` (reproducing the
+> version stdout as a probe-sourced value — `inv-probe-sourced-values`, the `consumed-output`
+> fixture family) vs only rc-gated guards is genuinely uncertain from the design read. The three
+> downloads use the **same** LHS shape, so u3 gates all three uniformly: **if it lifts, +10; if it
+> does not, all three stay walls and Stage C == Stage B (5 elide, zero gain)** — and *that* is a
+> first-class gap-log finding (the admin then rewrites the guards rc-form, or the oracles target the
+> `curl` line directly; the friction itself is `target-admin-loop` signal). The RHS being a
+> brace-group (`{ curl…; tar…; }`) rather than a bare `curl` does not change the LHS-lift question.
+
+**Drifted day (stale MIDDLE binary — the multi-wall cascade windmill couldn't show):** all three
+oracled, but the **prometheus** binary is present-yet-**old**. `prometheus.is_converged --version`
+runs `prometheus --version`, sees the mismatch ⇒ **diverged** ⇒ `hl-10` `curl` **runs**
+(re-downloads) ⇒ **re-walls everything below it**. Consequences: `hl-11,12,13` fall back to guard —
+*and so do `hl-14,15`*: grafana is individually current, but it now sits **past the re-awoken
+`hl-10` wall**, so its oracle can only **guard** it, never elide. **`plan: ~9 run, ~12 guard, 9
+elided`** (down from 15). One stale binary in the *middle* of the vendor chain re-walls the *later*
+vendor by position alone — the ordering/wall-cascade lesson a single-vendor book (windmill) could
+not demonstrate. **The value a bare `command -v <svc>` guard could not give:** presence ≠ currency —
+a `command -v` would have **wrongly elided the stale binary** (converged≠no-op); the version oracle
+catches it. This is `target-adequacy` firing on a hand-authored oracle, now demonstrable on **any of
+three** services — a co-primary trial win. +SURE on the mechanism.
 
 ## §3. The perfect-oracle ceiling and the un-oracleable residue (the denominator)
 
 **If every command had a perfect oracle** (convergence vouch + a Stage-4/5 `touches()` footprint) and
 `--trust-footprints` were on and built — the maximum the *design* can reach on this book, steady
-state. **This is the denominator F5 demanded**: without it, a real-day 5–8 misreads as "tool weak"
+state. **This is the denominator F5 demanded**: without it, a real-day 5–15 misreads as "tool weak"
 instead of "hit the built ceiling."
 
 **What the footprint tier buys** (`USER_STORY` stage 5; `notes/238`): a running wall that declares its
 footprint no longer poisons downstream facts whose backing is **disjoint**. `apt-get update`'s
-footprint (`pkgindex`) is disjoint from the dpkg-db, config files, certs, unit state → the whole
-drifted-index collapse (Stage B drifted) is bought back. `daemon-reload`'s footprint (systemd
-unit-cache) is disjoint from everything downstream → it runs but stops walling. Entity-granular
-package footprints (`strawman24-survive-simple`) let a diverged `apt install oldpkg` not poison a
-converged `nginx`.
+footprint (`pkgindex`) is disjoint from the dpkg-db, config files, certs, the three binaries → the
+whole drifted-index collapse (Stage B drifted) is bought back. `daemon-reload`'s footprint (systemd
+unit-cache) is disjoint from everything downstream → it runs but stops walling. An idealized `su`
+footprint (the postgres DB) is disjoint from unit-state → the three `enable` sites survive it.
+Entity-granular package footprints (`strawman24-survive-simple`) let a diverged binary re-download
+not poison a converged sibling service.
 
 **What NEVER elides — the residue map** (the honest horks; the plan must show these with reasons, per
 `rul-attention-honesty`):
 
 | site | why it is permanent residue | class |
 |---|---|---|
-| `hl-10,11` `su - postgres -c "…"` | the mutation lives **inside `su`'s `-c` string** — opaque to the analyzer; no general oracle can see the `psql`/`createdb` within. Elidable only by a bespoke per-invocation wrapper-oracle (impractical, naked). | opaque-wrapper |
-| `hl-13` HA-internal state | `docker run` *can* vouch "container up at image X" (elides its own line at the ceiling) — but "container running" ≠ "HA configured/working": HA's real state is **inside the container**, un-probe-able from the host. A converged≠no-op that no host oracle closes. | un-probeable-substrate |
-| `hl-19` `systemctl reload nginx` | run-delta with **no host-observable convergence** (nginx exposes no "loaded-config == on-disk" hash) — runs every apply, or takes a weak vouch that is itself an adequacy risk. | run-delta |
-| `hl-13` docker's network footprint | even oracled, docker's footprint touches iptables/bridges → **intersects `ufw`'s backing** → keeps `hl-20,21` guarded (a real, correct non-elision even at the ceiling). | footprint-collision |
+| `hl-17,18` `su - postgres -c "…"` | the mutation lives **inside `su`'s `-c` string** — opaque to the analyzer; no general oracle can see the `psql`/`createdb` within. Elidable only by a bespoke per-invocation wrapper-oracle (impractical, naked). | opaque-wrapper |
+| `hl-22` HA-internal state | `docker run` *can* vouch "container up at image X" (elides its own line at the ceiling) — but "container running" ≠ "HA configured/working": HA's real state is **inside the container**, un-probe-able from the host. A converged≠no-op that no host oracle closes. | un-probeable-substrate |
+| `hl-28` `systemctl reload nginx` | run-delta with **no host-observable convergence** (nginx exposes no "loaded-config == on-disk" hash) — runs every apply, or takes a weak vouch that is itself an adequacy risk. | run-delta |
+| `hl-22` docker's network footprint | even oracled, docker's footprint touches iptables/bridges → **intersects `ufw`'s backing** → keeps `hl-29,30` guarded (a real, correct non-elision even at the ceiling). | footprint-collision |
+| `hl-25` heredoc vhost | the leaf's span covers `<<EOF`, not the body → **guards even at the ceiling** (a *render* limit no proof dissolves, `render21-heredoc-refusal`). | render-refusal |
 
-**Ceiling tally (steady, perfect oracles + footprints):** `hl-1..8, 12, 14, 15, 17, 18` elide, `hl-13`
-elides-own-line (adequacy-caveated), `hl-16` **guards even here** (heredoc-refusal is a *render* limit
-no proof dissolves), `hl-20,21` guard (docker-iptables collision), `hl-9,10,11,19` run. **≈ 14 elide /
-~3 guard / ~4 run (of 21) — a ~65–70% ceiling.** -GUESS on the exact split (footprint collisions and
-the heredoc are the fuzzy part); the *shape* is +SURE: a mid-teens ceiling with a hard floor of ~4
-opaque-wrapper / run-delta / un-probeable sites.
+**Ceiling tally (steady, perfect oracles + footprints):** `hl-1..15` elide (base cluster + all three
+vendor blocks), `hl-19,20,21` elide (enables survive the disjoint daemon-reload/su footprints),
+`hl-23,24,26,27` elide (certs dir, cert present w/ an idealized expiry-checking oracle, symlink, the
+`rm` KILL), `hl-22` elides-own-line (adequacy-caveated), `hl-25` **guards even here** (heredoc-refusal),
+`hl-29,30` guard (docker-iptables collision), `hl-16,17,18,28` run. **≈ 23 elide / ~3 guard / ~4 run
+(of 30) — a ~77% ceiling.** -GUESS on the exact split (footprint collisions and the heredoc are the
+fuzzy part); the *shape* is +SURE: a low-20s ceiling with a hard floor of ~4 opaque-wrapper /
+run-delta / un-probeable sites (the *same* residue classes as windmill — the swap grew the elidable
+top, not the floor).
 
-**The three denominators, side by side:**
+**The denominators, side by side (of 30):**
 
-| tier | elide (of 21) | reachable on the day? |
+| tier | elide | reachable on the day? |
 |---|---|---|
 | built spike, base stdlib (Stage B) | ~5 | **yes** |
-| built spike, + 1 hand-oracle (Stage C) | ~8 | **yes** (modulo u3) |
-| perfect-oracle **ceiling** (Stages 4–5) | ~14 | **NO — footprint tier unbuilt** |
+| built spike, + 1 hand-oracle (otel only) | ~9 | **yes** (modulo u3) |
+| built spike, + 3 hand-oracles (all vendors) | ~15 | **yes** (modulo u3) |
+| perfect-oracle **ceiling** (Stages 4–5) | ~23 | **NO — footprint tier unbuilt** |
 | permanent **floor** (never elides, any tier) | — (~4 sites always run) | — the honest residue |
 
-So: **a real-day count near 5–8 is the built-tier ceiling, not tool-weakness.** The 8→15 gap is
-precisely the unbuilt footprint tier + oracles for su/docker/cert. The ~4-site floor is the honest
-product statement (`USER_STORY` "the residue"): past the last wall, Dorc makes the book fast and safe,
-not shorter — and the human LOCKED docker/HA precisely to exercise that floor.
+So: **a real-day count near 5–15 is the built-tier ceiling, not tool-weakness.** The 15→23 gap is
+precisely the unbuilt footprint tier + oracles for su/docker/cert/reload. The ~4-site floor is the
+honest product statement (`USER_STORY` "the residue"): past the last wall, Dorc makes the book fast
+and safe, not shorter — and the human LOCKED docker/HA + the `su` block + nginx-reload precisely to
+exercise that floor.
 
 ## §4. Decisions-log (each ops-choice · alternatives · exercise-Dorc rationale)
 
@@ -267,42 +349,52 @@ not shorter — and the human LOCKED docker/HA precisely to exercise that floor.
   poison-wall / the permanent residue — it exercises the honest-residue floor (§3) and is repeatable
   (pinned image), and it is the human's genuine dogfood want (`plans/252` §7). *Alt:* Supervised is
   more apt/systemd-oracle-able but HA unsupports it on generic Debian and it is a heavier,
-  less-repeatable install. Container is the deliberate hork.
-- **dec-2 · Windmill as a native binary + systemd, NOT docker-compose.** Keeps windmill **out from
-  behind the docker wall** so it is the *tractable* hand-oracle target (the version-guarded download →
-  the human's one oracle, §2C) and its unit is service-oracle-able. *Alt (the blessed path):*
-  docker-compose would put windmill behind a second docker wall — the whole windmill tier becomes
-  opaque residue and the tractable hand-oracle vanishes. **FLAG (realism, ~SUSPECT):** the bare-binary
-  path is less-documented than compose; if it doesn't run on the day, fall back to compose and the
-  trial adapts (windmill joins the residue; postgres+nginx still exercise elision). Pending research
-  confirmation of the release-asset name + `DATABASE_URL` env + default port (:8000).
-- **dec-3 · PostgreSQL as a system service (apt), NOT a container.** (a) apt/systemctl-oracle-able ⇒
-  elision fires on install + service; (b) a **real drift-able DB** — the live `target-adequacy`
-  substrate the trial is built to probe; (c) shared by windmill ⇒ a rich cross-service edge. *Alt:*
-  postgres-in-docker (windmill's compose default) is opaque behind the docker wall with no host-probe
-  of the DB.
+  less-repeatable install. Container is the deliberate hork. **Unchanged by the OTel swap** — HA
+  remains the sole opaque service-hork.
+- **dec-2 · the three OTel services as native binaries + systemd, NOT their deb/apt or docker
+  paths.** Keeps each service **out from behind the docker wall** so its version-guarded download is a
+  *tractable* hand-oracle target (§2C) and its unit is service-oracle-able. Three downloads ⇒ **three
+  tractable walls**, not one — the whole point of the swap. *Alt (the smoother paths):* docker-compose
+  would put everything behind one opaque wall (windmill's problem); the **deb/apt** path would make
+  each service apt-oracle-able (it would *elide like a base package* and stop being a hand-oracle
+  wall). **FIRMED (255-firming, §8):** unlike windmill, all three native paths ARE documented — so the
+  tarball form is a *deliberate exercise-Dorc choice*, not a realism compromise; the deb/apt path is
+  the blessed fallback (and here it is a genuine first-class systemd path — see §8 — not compose-only
+  as windmill was). Per `notes/256`, on-box-native is itself a deliberate divergence from the human's
+  real (containerised) observability stack.
+- **dec-3 · PostgreSQL as a system service (apt), NOT a container; grafana as its consumer.** (a)
+  apt/systemctl-oracle-able ⇒ elision fires on install + service; (b) a **real drift-able DB** — the
+  live `target-adequacy` substrate the trial is built to probe; (c) shared by grafana (via
+  `GF_DATABASE_*`) ⇒ a rich cross-service edge. *Alt:* grafana defaults to an embedded sqlite (no
+  cross-service edge, nothing to probe) or postgres-in-docker (opaque behind the docker wall).
+  Grafana-on-external-postgres is a documented, supported config (§8). **Consumer swapped windmill →
+  grafana; the substrate + its exercise-Dorc role are unchanged.**
 - **dec-4 · postgres role/db via `su - postgres -c "…"`.** *Forced* by Debian peer-auth. **This is a
   genuine finding, not just a choice:** the idiomatic postgres-provisioning spelling is a poison-wall
   (`su` wraps an opaque `-c` payload the analyzer cannot see into) — honest residue *and* a realistic
   friction the day will surface. *Alt (pg_hba edits / running as a pg-authed user):* more setup, still
-  opaque. Kept to exercise the opaque-wrapper residue class (§3).
+  opaque. Kept to exercise the opaque-wrapper residue class (§3). **Unchanged (role `grafana`).**
 - **dec-5 · Self-signed certs via `openssl`, not Let's Encrypt.** *[human-locked, repeatability]* LE
   needs live ACME (network chaos breaks the differential, `plans/252` §7). openssl is unmodeled (a
   wall) but hand-guarded by `[ -f ]` — and that guard **never checks expiry**, making the cert the
   cleanest **converged≠no-op** demo (a present-but-expired cert wrongly "converges"). A strong
   secondary hand-oracle candidate (`openssl x509 -checkend`) if the day wants a second adequacy case.
-- **dec-6 · Version-checked download (`windmill --version | grep || curl`), not bare `curl` or
+- **dec-6 · Version-checked downloads (`<svc> --version | grep || {curl…}`), not bare `curl` or
   `command -v`.** Realistic (gh-runner uses a `[ -f config.sh ]` download guard; version-checking is
   the more-correct idiom) **and** it is the hand-oracle target: a `command -v` presence-guard is an
   un-shimmable builtin (non-mock-reproducible — the reason the headline fixtures switched to `dpkg -s`)
-  *and* misses version (an adequacy gap). **FLAG (u3):** whether Dorc lifts the stdout-consuming form
-  is the sharpest day-of unknown (§2C).
-- **dec-7 · Book order: packages → windmill-binary staged → postgres → windmill-up → HA → proxy →
-  firewall.** Positions the windmill download as the **first tractable wall** (above its own systemd
-  block) so the hand-oracle un-walls downstream (the value-curve demo). *Alt (strict backends-first,
-  postgres before windmill):* puts the `su` wall first ⇒ collapses the whole book below it at base
-  stage and kills the un-walling demo — noted as a **contrast variant the day could also run** (it is
-  even more wall-dominated; a useful second data-point on how order shapes the plan).
+  *and* misses version (an adequacy gap). **Now ×3.** *New note:* the fallback is a brace-group
+  (curl + tar-extract) because prometheus/grafana/otel ship tarballs, not a bare binary like windmill;
+  this does not change the guard's LHS or the u3 test. **FLAG (u3):** whether Dorc lifts the
+  stdout-consuming form is now the sharpest day-of unknown, gating all three (§2C).
+- **dec-7 · Book order: packages → otel → prometheus → grafana → daemon-reload → postgres →
+  bring-up → HA → proxy → firewall.** Positions the three vendor downloads as **consecutive tractable
+  walls**, each above its own config/unit block, so each hand-oracle un-walls its block (the
+  value-curve, walked thrice). *Alt (backends-first, postgres before the vendors):* puts the `su`
+  wall first ⇒ collapses the whole book below it at base stage and kills the un-walling demo — noted
+  as a **contrast variant the day could also run** (even more wall-dominated; a useful second
+  data-point on how order shapes the plan). Placing all three unit-`cp`s before a *single*
+  `daemon-reload` (hl-16) is both idiomatic and keeps the reload from splitting the vendor blocks.
 - **dec-8 · `docker.io` (Debian-native), not docker-ce (official repo).** Single apt install ⇒
   apt-oracle-able (elides). *Alt:* the official-repo route adds `curl | gpg --dearmor` + a repo file —
   more opaque walls, orthogonal to what we're exercising. FLAG: `docker.io` is older (20.10); fine for
@@ -311,99 +403,295 @@ not shorter — and the human LOCKED docker/HA precisely to exercise that floor.
   Dorc infers best from — the hand-guards *are* the oracle material it lifts (`USER_STORY`: "years of
   defensive habit turn out to have been oracle material") — and what the human will actually write.
   `set -eu` exercises the errexit-honesty path (a guard's `||`-left is errexit-exempt by design).
-- **dec-10 · A heredoc vhost write (`cat > … <<EOF`) + `cp`'d unit file.** The heredoc exercises the
-  **heredoc-refusal edge** (`render21-heredoc-refusal`: the leaf's span covers `<<EOF`, not the body,
-  so it refuses render-edit even when converged); the `cp` unit exercises the clean file-content
-  oracle. Both are realistic and hit different analyzer surfaces on purpose.
+- **dec-10 · A heredoc vhost write (`cat > … <<EOF`) + FIVE `cp`'d sidecar files.** The heredoc
+  exercises the **heredoc-refusal edge** (`render21-heredoc-refusal`); the five `cp`s (otel config +
+  otel unit + prometheus config + prometheus unit + grafana unit) exercise the clean file-content
+  oracle at scale — five downstream facts that a vendor oracle un-walls. Both realistic; they hit
+  different analyzer surfaces on purpose.
+- **dec-11 · Three separate services, not one app (the swap's core).** Multi-service = more
+  composition machinery (four services deep: grafana→postgres, grafana→prometheus, prometheus←otel,
+  nginx→grafana+prometheus+HA) **and** three tractable walls instead of one. Where windmill exercised
+  the value-curve once, the OTel stack exercises it three times and adds the **multi-wall cascade**
+  case (§2C drifted): a stale middle-vendor re-walls the later vendor by position. *Alt (one bigger
+  app, e.g. windmill):* fewer walls, no cascade, and — for windmill specifically — an admin-invented
+  native path (§8).
 
 ## §5. Pre-registered predictions and caveats (the anti-woo instrument)
 
 **Pre-registered (set BEFORE the day, per `plans/252` §7 F1 — vibe-words are post-hoc-gradeable):**
 
 - **pred-1:** Stage B steady elides **exactly the ambient package cluster hl-1..5 (5 sites)**;
-  everything from the first wall (hl-6) down is guard/run. +SURE.
-- **pred-2:** Stage C's one oracle moves the count **+3 (to 8)** — its own line plus hl-7,hl-8 —
-  *iff* the stdout-consuming guard lifts (u3). If it lifts, ✓; if not, Stage C == Stage B and **that
-  is the finding**, not a null result. ~SUSPECT.
-- **pred-3:** the day's built-tier elision lands in **[5, 9] of 21 (~24–43%)**; anything materially
-  higher means my wall-map is wrong (a finding — likely the stdlib vouches more coreutils than I
-  assumed, u1); materially lower means a vouch/lift I predicted didn't fire (a finding — check
-  `dorc why` per `plans/252` B2 confound-isolation).
-- **pred-4:** `su` (hl-10,11), `docker run` (hl-13), and `systemctl reload` (hl-19) **run at every
-  stage** and appear on every plan with a reason. If any *elides* on the built tier, my residue map is
-  wrong (a surprising, valuable finding). +SURE they run.
+  everything from the first wall (hl-6, otel) down is guard/run. +SURE.
+  - **→ IN-REPO GRADED 2026-07-05 (§5.1): WRONG as stated — observed `elide=0`.** The errexit
+    mechanism the sibling audit flagged is real (hl-1 bare `apt-get update` does NOT elide under
+    `set -eu`; hl-2..5 `dpkg||install` guards would → **4, not 5**), BUT a NEWLY-priced wall
+    dominates: the `case "$(hostname)"` host-guard (line 32) walls the whole book, so hl-2..5
+    **guard** instead of eliding. Real Stage-B steady = **0 elide**. See §5.1 vf-1/vf-2.
+- **pred-2:** each vendor oracle moves the count by its own downstream block — **otel +4** (hl-6 own
+  + hl-7,8,9), **prometheus +4** (hl-10 + hl-11,12,13), **grafana +2** (hl-14 + hl-15) — for **+10
+  total (to 15)** with all three written — *iff* the stdout-consuming guard lifts (u3). If it lifts,
+  ✓; if not, all three stay walls and Stage C == Stage B (5) and **that is the finding**, not a null
+  result. ~SUSPECT.
+- **pred-3:** the day's built-tier elision lands in **[5, 15] of 30 (~17–50%)** depending how many
+  vendor oracles the admin writes (0→5, one→9, three→15); anything materially higher than 15 means my
+  wall-map is wrong (a finding — likely the stdlib vouches more coreutils than I assumed, u1);
+  materially lower than the oracle-count predicts means a vouch/lift I predicted didn't fire (a
+  finding — check `dorc why` per `plans/252` B2 confound-isolation).
+- **pred-4:** `su` (hl-17,18), `docker run` (hl-22), `systemctl reload` (hl-28), and
+  `daemon-reload` (hl-16) **run at every built stage** and appear on every plan with a reason. If any
+  *elides* on the built tier, my residue map is wrong (a surprising, valuable finding). +SURE they run.
 - **pred-5:** the **ceiling is unreachable on the day** (footprint tier unbuilt); the drifted-index
   collapse (Stage B drifted → 0 elide) will reproduce and is **expected**, not a regression (`254` F4).
+- **pred-6 (new, multi-wall):** with all three vendors oracled, a stale binary in the **middle**
+  service (prometheus, hl-10) drops elision **15→~9** and forces the **later** service (grafana,
+  hl-14,15) elide→guard *purely by position* (past the re-awoken wall). If grafana still elides with
+  prometheus diverged, my wall-cascade model is wrong (a finding). ~SUSPECT.
 
 **Caveats — where reality may diverge from this read:**
 - **c-1** These dispositions are my reading of `USER_STORY` + the fixtures, not the tool. The whole
   point is prediction-vs-observation; expect misses, bank them as findings (`plans/250`).
-- **c-2** The book is **untested pre-VPS**. The `# FLAG:` lines (windmill binary path/port, HA tag,
-  the `docker run` non-idempotence, the `su` quoting) are the realism-risks; some may not run
-  first-try. Pending web-doc research reconciliation (versions/asset-names/env) — a follow-up pass on
-  this note and the book.
-- **c-3** The base-stdlib coverage of coreutils (chmod/ln/install-d/rm) and the exact verbs the LLM
-  stdlib vouches are assumptions (u1); they swing the guard/run split but **not** the elide count
-  (pred-1 holds regardless).
+- **c-2** The book is **untested pre-VPS**. The `# FLAG:` lines are the realism-risks; the OTel
+  services' asset names / versions / ports / config-paths are now FIRMED (`255-firming`, §8). Still-open
+  realism-risks: grafana's exact version-subcommand + tarball top-dir name, prometheus/grafana behind
+  an nginx sub-path, the HA tag, the `docker run` non-idempotence, the `su` quoting, and
+  `docker.io`-vs-docker-ce.
+- **c-3** The base-stdlib coverage of coreutils (install-d/ln/cp) and the exact verbs the LLM stdlib
+  vouches are assumptions (u1); they swing the guard/run split (larger here than in windmill because
+  the vendor tier adds many cp/install-d sites) but **not** the elide count (pred-1 holds regardless).
 - **c-4** u3 (stdout-consuming guard lift) is the single most load-bearing uncertainty for the Stage-C
-  value story; put it first on the day's `dorc why` checklist.
-- **c-5** "attention-lines saved" (the real value-prop, `DESIGN` priority 3) is barely moved on this
-  book at the built tier (16→13 of 21 face the user) — because the walls are real and early. That is
-  honest, and it is the case *for* the footprint tier, not against the tool. Read the day through §3.
+  value story — **now 3× as consequential** (it gates all three vendor oracles at once). Put it first
+  on the day's `dorc why` checklist.
+- **c-5** "attention-lines saved" (the real value-prop, `DESIGN` priority 3) is moved *more* on this
+  book than on windmill at Stage C (25→15 of 30 with all three oracled, vs windmill's 16→13 of 21) —
+  because there are three un-wallable blocks, not one. But past the last vendor wall (hl-16 down) the
+  residue is real and early; read the day through §3.
+
+## §5.1 IN-REPO VERIFICATION (2026-07-05 — built `dorc` on the book, NOT the VPS day)
+
+Per `plans/250` `human-woo-cool-adversary`, two load-bearing predictions were **graded early by
+running the built spike on the book** (no VPS): `dorc plan --book=255-homelab.book.sh -o <base-stdlib>
+< <converged-probe-results>` at `ai/spike3-r25` HEAD. Base stdlib = **vouched** oracles borrowed
+verbatim from current passing fixtures — `pkgindex` (`apt-get update`, `exec-singleton-update`),
+`package` (`apt-get install`, `strawman24-all-converged-clean`), `pkgstate` (`dpkg -s`,
+`strawman24-mixed-real`); each carries the round-24 `is_converged()` elide-weld vouch. NOT modeled
+(deliberately — base tier + corpus reality): the three vendor tools, `su`, `docker`, `openssl`,
+coreutils, `nginx`, `hostname`. **Caveat:** a faithful *reconstruction* of the base stdlib (the real
+~40-oracle bootstrap is not an artifact yet); coreutils/service/ufw sites went unmodeled, so their
+guard/run split is not from this run — but that does not move the elide headline.
+
+- **vf-1 (host-guard WALL — newly priced, and it DOMINATES; +SURE).** The `case "$(hostname)"`
+  host-guard (line 32) **walls the entire book**. `$(hostname)` is a command-substitution of the
+  **unmodeled** `hostname`, so the analyzer treats it as effect-bearing (`dq-cmdsub-inner-nonleaf`:
+  "runs whenever its enclosing line runs") — a poison-wall. Everything below can at best **guard**,
+  never elide. **Full-book run, converged steady state: `elide=0, guard=4, run=53` of 57 raw
+  leaf-sites** — the four hl-2..5 `dpkg -s X || apt-get install X` guards render as
+  `dpkg -s X … || ( apt_get__is_converged install … ) || apt-get install …  # dorc: guard`, NOT
+  elisions. **This zeroes the predicted Stage-B 5.** Isolation: `strawman24-mixed-real` elides
+  2/guards 0 → inject `case "$(hostname)"` → `elide=0, guard=4`; remove it → elision returns. The
+  trigger is the `$(unmodeled-cmd)` substitution *specifically* — a **literal** `case` subject does
+  NOT wall; `$(hostname)` in a `case`/`echo`/assignment all wall identically.
+  - **No `hostname` oracle exists** — not in the base tier, not anywhere in the 145-case corpus (no
+    read-value command — `hostname`/`uname`/`whoami` — is modeled anywhere; zero precedent to crib).
+  - **bk-nit (book provenance claim is FALSE):** line 31's "host-selection idiom, per pi-webhost" is
+    unsupported — the real `headline-pi-webhost` fixture has **no** `case "$(hostname)"` and no
+    `hostname` call at all (it opens `set -e` + a bare `apt-get update`). The idiom was never
+    exercised by a yardstick; it walls on first contact.
+
+- **vf-2 (pred-1 errexit mechanism — CONFIRMED in isolation; "4 not 5" is right ABSENT the wall;
+  +SURE).** Tested by injecting `set -e` into vouched fixtures that otherwise elide:
+  - a **bare** converged mutator does NOT elide under `set -e` (`all-converged-clean`: 3/3 elide →
+    **0/3** with `set -e`; `mixed-real`+`set -e`: bare `apt-get install curl` flips elide→run). So
+    **hl-1 `apt-get update` does not elide** under `set -eu` — its ⊤ status is errexit-consumed
+    (`inv-probe-sourced-values`; the `strawman24-errexit-defeats` mechanism).
+  - the **`dpkg -s X || apt-get install X` guard SURVIVES `set -e`** (`mixed-real`+`set -e`: the
+    dpkg-guard stays `true || :  # dorc: elided`). The `||`-left (`dpkg -s` read) has a reproducible
+    rc and is errexit-exempt. So **hl-2..5 are unaffected by errexit** — exactly the sibling audit's
+    claim. **⇒ pred-1 = 4 (hl-2..5), not 5, in the errexit-only world.** But vf-1 overrides it: the
+    host-guard wall turns those 4 elides into guards, so the *observed* Stage-B is **0**.
+  - **errexit-defeats fixture caveat (test-owner flag, not fixed here):** `strawman24-errexit-defeats`
+    can no longer isolate the errexit cost — its own package/service oracles carry **no**
+    `is_converged` vouch (grep: 0), so it zeroes elision via the no-vouch floor, not (only) errexit.
+    The `pi-webhost` yardstick is vouch-less too. The clean isolation is the `set -e`-injection above.
+
+**Net:** on the actual book, base stdlib, steady state, the built tier reaches **0 elide** — the
+host-guard wall caps it before errexit or the vendor walls matter. The §2/§6 Stage-B..C numbers below
+describe the book *with line 32 removed*; as written they are capped at 0. Remediation (pick on the
+day): drop the host-guard, author a `hostname` pure-read oracle (none exists — new authoring), or lift
+it via the footprint tier (Stages 4–5) so a declared `hostname` read stops walling downstream.
 
 ## §6. Summary ledger (`USER_STORY`-style)
 
 ```
-stage                              elide  guard  run   attention   reachable on the day?
-A  bare (stdlib disabled)            0      0     21     21         illustrative only
-B  base stdlib — steady              5      7      9     16         YES
-B  base stdlib — drifted (stale idx) 0      7     14     21         YES (expected collapse)
-C  + windmill oracle — steady        8      5      8     13         YES (modulo u3)
-C  + windmill oracle — drifted-bin   5      7      9     16         YES (adequacy catch)
-—  perfect-oracle CEILING           ~14    ~3     ~4     ~7         NO (footprint tier unbuilt)
+stage                                elide  guard  run   attention   reachable on the day?
+A  bare (stdlib disabled)              0      0     30     30         illustrative only
+B  base stdlib — steady               5     14     11     25         YES
+B  base stdlib — drifted (stale idx)  0     14     16     30         YES (expected collapse)
+C  + otel oracle only — steady        9     11     10     21         YES (modulo u3)
+C  + all 3 vendor oracles — steady   15      7      8     15         YES (modulo u3)
+C  + all 3 — drifted (stale middle)   9     12      9     21         YES (adequacy + cascade)
+—  perfect-oracle CEILING           ~23     ~3     ~4     ~7         NO (footprint tier unbuilt)
 —  permanent FLOOR (never elides)   —      —      ~4     —          the honest residue
+B  AS-WRITTEN (host-guard on L32)    0     ~4     ~26     30         IN-REPO OBSERVED 2026-07-05 (§5.1 vf-1)
 ```
 
-The shape to carry to the day: **the built tier tops out near Stage C (~8/21); the ceiling (~14/21)
-needs Stages 4–5; and ~4 sites (`su`×2, `docker`/HA-internal, `systemctl reload`) are the honest
-residue that never elides at any tier.** A number in the 5–8 band on the day is the design working as
-predicted at the built frontier — not the tool failing.
+> **§5.1 override (takeaway-2 / attention):** the table above assumes line 32's `case "$(hostname)"`
+> host-guard is removed. **As-written, the host-guard walls the whole book → Stage-B `elide=0`,
+> attention = 30/30** (in-repo verified; §5.1 vf-1). Every stage below is gated by that wall until it
+> is dropped, a `hostname` pure-read oracle is authored (none exists), or the footprint tier lands.
+> The `+10 value-curve` and the `~15/30` frontier are only reachable *past* the host-guard.
 
-## §7. Appendix — the sidecar config the book `cp`s
+The shape to carry to the day: **the built tier tops out near Stage C-all-three (~15/30); the ceiling
+(~23/30) needs Stages 4–5; and ~4 sites (`su`×2, `docker`/HA-internal, `systemctl reload`, with
+`daemon-reload` also always-running) are the honest residue that never elides at any tier.** A number
+in the 5–15 band on the day is the design working as predicted at the built frontier — not the tool
+failing. The swap's headline vs windmill: **the same 5-site ambient floor, but a value-curve walked
+three times (+10 not +3) and a new multi-wall-cascade case** — more of Dorc exercised for the human's
+first real trial.
 
-The book inlines the nginx vhost as a heredoc (hl-16) but `cp`s one external file
-(`./windmill.service`, hl-8). Its content, sitting beside the book on the day:
+## §7. Appendix — the sidecar configs the book `cp`s
 
+The book inlines the nginx vhost as a heredoc (hl-25) but `cp`s five external files. Their content,
+sitting beside the book on the day (all FIRMED against first-party docs per `255-firming`, §8):
+
+**`otelcol-config.yaml`** (hl-8) — OTLP in, remote-write to prometheus out, health_check extension:
+```yaml
+# FIRMED: OTLP receiver ports 4317 (gRPC) / 4318 (HTTP), health_check :13133 — opentelemetry.io.
+receivers:
+  otlp:
+    protocols:
+      grpc: { endpoint: 0.0.0.0:4317 }
+      http: { endpoint: 0.0.0.0:4318 }
+exporters:
+  prometheusremotewrite:
+    endpoint: http://127.0.0.1:9090/api/v1/write   # → prometheus (hl-10's service)
+extensions:
+  health_check: { endpoint: 0.0.0.0:13133 }
+service:
+  extensions: [health_check]
+  pipelines:
+    metrics: { receivers: [otlp], exporters: [prometheusremotewrite] }
+```
+
+**`otelcol-contrib.service`** (hl-9):
 ```ini
-# windmill.service  — FLAG: env-var names (MODE/PORT/DATABASE_URL), the run-user, and whether a
-# single binary serves both server+worker are pending first-party-doc confirmation (dec-2 realism).
+# FIRMED: config path /etc/otelcol-contrib/config.yaml + `--config` flag — opentelemetry.io.
+# The .deb would ship this unit first-class; we hand-write it for the tarball form (dec-2).
 [Unit]
-Description=Windmill (server+worker)
-After=network-online.target postgresql.service
-Wants=network-online.target postgresql.service
-
+Description=OpenTelemetry Collector (contrib)
+After=network-online.target
+Wants=network-online.target
 [Service]
-Environment=DATABASE_URL=postgres://windmill:changeme@127.0.0.1:5432/windmill
-Environment=MODE=standalone
-Environment=PORT=8000
-ExecStart=/usr/local/bin/windmill
+ExecStart=/usr/local/bin/otelcol-contrib --config=/etc/otelcol-contrib/config.yaml
 Restart=on-failure
-
 [Install]
 WantedBy=multi-user.target
 ```
 
-Port consistency check: the unit sets `PORT=8000`; the vhost's `location /windmill/` proxies to
-`127.0.0.1:8000`; HA (host-net) binds `:8123`, proxied by `location /`. `DATABASE_URL` points at the
-role/db the `su`/psql block (hl-10,11) creates. These are the cross-service edges §1 relies on.
+**`prometheus.yml`** (hl-12) — scrape self + the collector's own telemetry, accept remote-write:
+```yaml
+global: { scrape_interval: 15s }
+scrape_configs:
+  - job_name: prometheus
+    static_configs: [ { targets: ['127.0.0.1:9090'] } ]
+  - job_name: otel-collector
+    static_configs: [ { targets: ['127.0.0.1:8888'] } ]   # collector self-metrics (FIRMED :8888)
+```
 
-## §8. Owed — reconciliation pending
+**`prometheus.service`** (hl-13):
+```ini
+# FIRMED: web port :9090, `--config.file`, `--storage.tsdb.path` — prometheus.io. No upstream unit
+# ships (admin-invented). --web.enable-remote-write-receiver accepts the collector's push.
+[Unit]
+Description=Prometheus
+After=network-online.target
+Wants=network-online.target
+[Service]
+ExecStart=/usr/local/bin/prometheus \
+   --config.file=/etc/prometheus/prometheus.yml \
+   --storage.tsdb.path=/var/lib/prometheus \
+   --web.enable-remote-write-receiver \
+   --web.external-url=https://homelab.lan/prometheus/   # FLAG: behind-nginx-subpath routing (known friction)
+Restart=on-failure
+[Install]
+WantedBy=multi-user.target
+```
 
-A parallel web-doc research pass (first-party nginx/postgres/windmill/HA/openssl docs) is owed to
-firm the `# FLAG:` lines in the book and this appendix: the Windmill release-asset name + whether the
-bare-binary path is real vs compose-only (dec-2), the default port + env-var names, the HA image tag,
-and the `docker.io`-vs-docker-ce call (dec-8). None of these move the **predictions** (§2/§3 are
-robust to the exact commands — they turn on the *shape*: base-oracle-able cluster, first wall,
-opaque-wrapper residue); they only firm the book's day-one runnability (c-2). If the bare-binary path
-proves unreal, dec-2's compose fallback applies and the windmill tier joins the residue — a
-pre-registered contingency, not a surprise.
+**`grafana.service`** (hl-15) — on postgres, behind the /grafana/ sub-path:
+```ini
+# FIRMED: `grafana server` subcommand + --config + --homepath (grafana.com standalone-binary docs);
+# GF_<SECTION>_<KEY> env overrides + http_port default 3000 + serve_from_sub_path (configure-grafana).
+# FLAG: exact version subcommand; running as root (docs prefer a dedicated `grafana` user).
+[Unit]
+Description=Grafana
+After=network-online.target postgresql.service
+Wants=network-online.target postgresql.service
+[Service]
+Environment=GF_DATABASE_TYPE=postgres
+Environment=GF_DATABASE_HOST=127.0.0.1:5432
+Environment=GF_DATABASE_NAME=grafana
+Environment=GF_DATABASE_USER=grafana
+Environment=GF_DATABASE_PASSWORD=changeme
+Environment=GF_SERVER_ROOT_URL=https://homelab.lan/grafana/
+Environment=GF_SERVER_SERVE_FROM_SUB_PATH=true
+ExecStart=/usr/local/grafana/bin/grafana server \
+   --config=/usr/local/grafana/conf/grafana.ini --homepath=/usr/local/grafana
+Restart=on-failure
+[Install]
+WantedBy=multi-user.target
+```
+
+Port/edge consistency check: grafana serves :3000 (proxied at `/grafana/`); prometheus serves :9090
+(proxied at `/prometheus/`, and receives the collector's remote-write); the collector receives OTLP
+on 4317/4318 (internal — NOT proxied); HA (host-net) binds :8123 (proxied at `/`). Grafana's
+`GF_DATABASE_*` points at the role/db the `su`/psql block (hl-17,18) creates, and grafana queries
+prometheus as a datasource. These are the cross-service edges §1 relies on.
+
+## §8. Owed — reconciliation status
+
+**All three OTel services — FIRMED (2026-07-04, `255-firming` pass; first-party docs + GitHub release
+API):**
+
+- **otel-collector** — asset `otelcol-contrib_0.155.0_linux_amd64.tar.gz` real (contrib distro, GitHub
+  release `v0.155.0`); config `/etc/otelcol-contrib/config.yaml` + `--config` flag; OTLP ports
+  4317/4318, health_check 13133, self-metrics 8888. **native+systemd = FIRST-CLASS:** the `.deb` ships
+  `otelcol-contrib.service` + the config first-class; the tarball is also offered (we use it by choice).
+- **prometheus** — asset `prometheus-3.13.0.linux-amd64.tar.gz` real (GitHub release `v3.13.0`), holds
+  `prometheus`+`promtool`; web port :9090; `--config.file` + `--storage.tsdb.path` conventions
+  (`/etc/prometheus/prometheus.yml`, `/var/lib/prometheus`). **native = FIRST-PARTY-DOCUMENTED**
+  (pre-compiled binaries are the *headline* install method) **but NO upstream systemd unit** — the
+  unit is admin-invented (like windmill's, but the *binary* path here is blessed, unlike windmill's).
+- **grafana** — OSS standalone tarball `grafana-13.1.0.linux-amd64.tar.gz` from **dl.grafana.com** (the
+  GitHub release ships only build-numbered `.deb`s); binary `grafana server` under a homepath
+  (`/usr/local/grafana`); config `/etc/grafana/grafana.ini` (deb) or homepath `conf/grafana.ini`;
+  `GF_<SECTION>_<KEY>` env overrides (so `GF_DATABASE_TYPE=postgres`, etc.); http_port default 3000;
+  sub-path needs `root_url` + `serve_from_sub_path=true`. Grafana-on-external-postgres is a documented,
+  supported config. **native+systemd = FIRST-CLASS:** apt.grafana.com / the deb ship
+  `grafana-server.service` + `/etc/grafana`; the standalone-binary + hand-written unit is *also* fully
+  documented (grafana.com gives the exact unit file we mirror).
+
+**The recorded finding (native+systemd, first-class vs admin-invented — the whole realism case for the
+swap):** windmill documented its native path **nowhere** (README/self_host = compose/helm/cloud only;
+first-party Q&A "run from binary… not recommended"), so it was admin-invented. **The OTel stack
+upgrades the realism across the board:** all three have documented native install paths; two
+(otel-collector, grafana) even ship **first-class systemd units** via their packages; prometheus's
+pre-compiled-binary path is the *headline* first-party install. Using the tarball + version-guard form
+for all three is therefore a **deliberate exercise-Dorc choice** (to keep them tractable hand-oracle
+walls, dec-2), *not* a realism compromise — and the deb/apt path is a genuine first-class fallback (not
+compose-only, as windmill's was). Per `notes/256`, on-box-native remains a deliberate divergence from
+the human's real (containerised, managed-postgres) observability practice.
+
+**RAM / VPS-size note (per the human's "note if it needs the ~2 GB tier"):** grafana's own documented
+**Small** tier is 2 cores / **2–4 GB** (grafana process only, excludes data sources; min-rec 512 MB).
+Stack it with prometheus (TSDB, ~0.5–1 GB even at small scrape volume), the otel-collector (~100–200 MB),
+system postgres (~200–400 MB), the **HA container** (~0.5–1 GB), and nginx (negligible): the box wants
+**≥2 GB as a realistic floor, 4 GB comfortable** — HA + grafana + prometheus together are what push it.
+The "lean OTel stack" is leaner than a full observability platform, but it is **not a 512 MB box**; the
+~2 GB tier is the minimum and 4 GB is the recommended target for the trial VPS. ~SUSPECT on the exact
+figures (workload-dependent); +SURE on the "≥2 GB, not 512 MB" shape.
+
+**Still owed (day-one runnability only — NONE move the §2/§3 predictions, which turn on the *shape*:
+base-oracle-able cluster, three tractable vendor walls, opaque-wrapper residue):** grafana's exact
+version-subcommand (`grafana --version` vs `grafana server --version`) + tarball top-dir name; the
+prometheus/grafana behind-nginx-subpath routing (a known reverse-proxy friction); the HA image tag;
+`docker.io`-vs-docker-ce (dec-8); and the precise otel→prometheus wiring (remote-write receiver vs a
+scrape job — the appendix picks remote-write).

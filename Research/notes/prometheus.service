@@ -1,0 +1,17 @@
+# FIRMED: web port :9090, `--config.file`, `--storage.tsdb.path` — prometheus.io. No upstream unit
+# ships (admin-invented). --web.enable-remote-write-receiver accepts the collector's push.
+[Unit]
+Description=Prometheus
+After=network-online.target
+Wants=network-online.target
+[Service]
+# FLAG: --web.external-url puts prometheus behind the nginx /prometheus/ sub-path (known friction).
+ExecStart=/usr/local/bin/prometheus \
+   --config.file=/etc/prometheus/prometheus.yml \
+   --storage.tsdb.path=/var/lib/prometheus \
+   --web.enable-remote-write-receiver \
+   --web.route-prefix=/ \
+   --web.external-url=https://homelab.lan/prometheus/
+Restart=on-failure
+[Install]
+WantedBy=multi-user.target
