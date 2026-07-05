@@ -149,7 +149,13 @@ coordination-DST hooks / the 151 M3 marker-protocol knot — inputs only, decisi
 extraction adds (077's unhonored half: seccomp socket-observe backstop + batch-attribution
 recoverability — carry-or-explicitly-retire; 16Q-keystone bookkeeping: discharged-by + open
 residue) · an ANALYZER-NEEDS staleness sweep (annotate pre-ternary rows, e.g. an-tier-a-forms
-dead-by-weld; never silently drop).
+dead-by-weld; never silently drop — REASSIGNED: the human/sibling own the AN sweep, dropped
+from this queue). **pipe-guard FIX fork RESOLVED (human, 2026-07-05): per-command CONNECTED
+PROBES — full design record `notes/24J`** (per-line is DEAD — beautification-fragility /
+pseudo-argv / cross-tool vouch blast; the filter-blessing objection was a phantom — the engine
+measures rc, never interprets it; grep is ordinary stdlib purity-vouch material). The 24C
+§pipe-guard Stage-6 forks are thereby RESOLVED; Stage 6 no longer carries them. Build = task
+#19, post-polish, parallel with the migration; the pipe-guard XFAIL is the promotion tripwire.
 
 ## Round-24 EARLIER (2026-07-04 — Stages 1–5A; kind-owner design round)
 
