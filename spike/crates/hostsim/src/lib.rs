@@ -63,16 +63,20 @@ impl Lcg {
         self.0
     }
 
-    /// A coin flip true with probability `num / den` (deterministic given the seed).
+    /// A coin flip true with probability `num / den` (deterministic given the seed). Routes through
+    /// the HIGH-bit [`below`](Lcg::below), NOT a low-bit `next_u64() % den`: an odd-multiplier LCG's
+    /// low bits are periodic, so consecutive `% den` coins deterministically correlate — the
+    /// find-lcg-thinning bug (24C) that made [`Host::seeded`]'s ½-subset a patterned slice of the
+    /// 2^N state-space. Mirrors `differential.rs`'s `Rng::chance` (the 21D-triage fix).
     pub fn chance(&mut self, num: u32, den: u32) -> bool {
-        den != 0 && (self.next_u64() % u64::from(den)) < u64::from(num)
+        den != 0 && self.below(u64::from(den)) < u64::from(num)
     }
 
     /// A draw in `0..bound` (deterministic; `0` for `bound == 0`), taken from the HIGH bits via
     /// Lemire's multiply-high. This is load-bearing, NOT decorative: an odd-multiplier LCG's LOW
     /// bits are periodic (the low bit flips every step, the low `k` bits have period `2^k`), so a
-    /// naive `next_u64() % small` — and thus [`chance`](Lcg::chance) — makes consecutive small-modulus
-    /// draws deterministically correlate. The round-24 sweep draws EVERY axis through here so its
+    /// naive `next_u64() % small` makes consecutive small-modulus draws deterministically
+    /// correlate. The round-24 sweep draws EVERY axis through here so its
     /// independent coins are actually independent (a low-bit `% 2` made `lying` perfectly
     /// anti-correlate `victim_converged`, silently erasing a whole topology cell). The high 64 bits
     /// of the `u64 × bound` product are well-distributed for an LCG; bias is negligible for the
@@ -575,6 +579,40 @@ apt_get__predict() {
         let b = Host::seeded(42, &[nginx, curl]);
         assert_eq!(a.verdict(nginx), b.verdict(nginx), "same seed ⇒ same state");
         assert_eq!(a.verdict(curl), b.verdict(curl));
+    }
+
+    #[test]
+    fn seeded_coins_decorrelate_so_the_full_subset_lattice_is_reachable() {
+        // find-lcg-thinning regression pin (24C). `Host::seeded` draws one `chance(1,2)` coin per
+        // candidate. The old `% 2` read the LCG's LOW bit, which flips every step (odd multiplier +
+        // odd increment), so consecutive coins PERFECTLY alternated: for two candidates exactly one
+        // was ever included, and the {both}/{neither} corners of the 2^N subset-space were
+        // UNREACHABLE for every seed. Routing `chance` through the high-bit `below` decorrelates the
+        // coins, so all four membership cells occur across seeds. A regression to the low-bit draw
+        // makes {both} and {neither} vanish ⇒ this fails.
+        let mut i = Interner::default();
+        let a = fk(&mut i, "package", "nginx");
+        let b = fk(&mut i, "package", "curl");
+
+        let (mut both, mut neither, mut only_a, mut only_b) = (false, false, false, false);
+        for seed in 0..128u64 {
+            let host = Host::seeded(seed, &[a, b]);
+            match (
+                host.verdict(a) == Verdict::Converged,
+                host.verdict(b) == Verdict::Converged,
+            ) {
+                (true, true) => both = true,
+                (false, false) => neither = true,
+                (true, false) => only_a = true,
+                (false, true) => only_b = true,
+            }
+        }
+        assert!(
+            both && neither && only_a && only_b,
+            "seeded ½-subset coins are correlated — not all four membership cells reached over 128 \
+             seeds (both={both} neither={neither} only_a={only_a} only_b={only_b}); the low-bit \
+             `% 2` thinning regressed (find-lcg-thinning, 24C)"
+        );
     }
 
     #[test]
