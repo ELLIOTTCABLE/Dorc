@@ -4,9 +4,10 @@
 # `dpkg -L "$1" | sed 's|^|file:|'` — a PIPE (24E §14). The parser ACCEPTS it (parse-permissively —
 # valid sh degrades, never hard-kills, the kLANG mirror-invariant); the static tracer ⊤s on the
 # pipeline (NonPrintfCommand) ⇒ it ESCALATES to host-derivation (24E §2/§4), shipping the whole
-# body byte-exact to run on the host. The leading `printf 'package:%s'` emits the wall's own
-# establish coordinate (so the coherence check own-establish ⊆ footprint passes — a pure file-level
-# cross-kind derivation would fail it; resid-derive-coherence).
+# body byte-exact to run on the host. `dpkg -L "$1" | sed` ALONE is now a complete, coherent
+# footprint: the engine UNIONS the wall's own establish coordinate (package:$1) into the derived
+# footprint (24G §8), so the old boilerplate `printf 'package:%s'` — a decoy the (now-dropped)
+# derived-lane coherence check tested INSTEAD of the derivation — is gone.
 apt_get__predict() {
    while [ "${1#-}" != "$1" ]; do shift; done
    verb=$1; shift
@@ -25,8 +26,7 @@ apt-get.touches() {                              # PAYLOAD-BOUND footprint (24E 
    while [ "${1#-}" != "$1" ]; do shift; done
    case $verb in
    install|purge)
-      printf 'package:%s\n' "$1"                 # the wall's own establish coordinate (coherence)
-      dpkg -L "$1" | sed 's|^|file:|'            # the NATURAL idiom: a PIPE ⇒ NonPrintfCommand ⊤ ⇒ escalate
+      dpkg -L "$1" | sed 's|^|file:|'            # the NATURAL idiom ALONE: a PIPE ⇒ NonPrintfCommand ⊤ ⇒ escalate; engine unions package:$1 (24G §8)
       ;;
    esac
 }

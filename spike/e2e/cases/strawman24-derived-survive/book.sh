@@ -5,8 +5,9 @@
 # DERIVED at probe time (24E §2) instead of authored statically.
 #   site 0  apt-get install oldpkg — DIVERGED (absent) ⇒ RUNS. A running modeled mutator IS a
 #           wall — but its touches() ESCALATED (NonPrintfCommand ⊤ on the pipeline), shipped to
-#           the probe lane byte-exact, ran read-only, and its stdout derived the footprint
-#           {package:oldpkg, file:/etc/oldpkg.conf} (the printf package coord + `dpkg -L | sed` files).
+#           the probe lane byte-exact, ran read-only, and its stdout derived {file:/etc/oldpkg.conf}
+#           (`dpkg -L | sed` alone); the engine UNIONS the wall's own establish coord package:oldpkg
+#           (24G §8) ⇒ hit-surface {package:oldpkg, file:/etc/oldpkg.conf}.
 #   site 1  apt-get install nginx — CONVERGED (holds), PAST the running oldpkg wall. Its backing
 #           (package:nginx) is DISJOINT from the DERIVED footprint (package:oldpkg — same kind,
 #           different entity; and file:/etc/oldpkg.conf — a different kind) ⇒ under
