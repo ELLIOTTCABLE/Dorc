@@ -480,3 +480,114 @@ piped `cargo build | tail` masks the mise trust-error silently; briefs gain a st
 `mise trust`. (b) TWO of three wave-1 builders backgrounded the slow e2e then paused forever on
 a completion-notification that never re-wakes a stopped agent — briefs now say: run the final
 e2e in the FOREGROUND with a generous timeout, never backgrounded.
+
+## Wave-1 queue landings (2026-07-05 — firstwall-hint + degraduation batches 1–2)
+
+AI-authored (Fable conductor), appended per the accrete discipline. Two Opus builders, isolated
+worktrees; conductor-inspected diffs, tip-gated cherry-picks, merged tree verified by own hand at
+each landing (fresh build · fmt · clippy `-D warnings` · deny · typos · workspace suites · full
+e2e). Never-vouch: process-evidence, not proof. (The wave's third member — find-lcg-thinning —
+is ledgered in its own section above. All three builder worktrees audited post-landing: clean,
+zero unmerged-by-patch-id commits, zero stashes — nothing in-flight lost to the concurrent
+token-limit event that hit a sibling session.)
+
+### firstwall-hint (LANDED `339189a` — the USER_STORY stage-3 nag, real; answers r25 B2)
+
+ONE aggregated stderr hint (plan/round-trip lanes; suppressed on apply) for the FIRST unmodeled
+wall in book order: `hint: 'hork' (line 22) is unmodeled: it is the first wall — an oracle
+vouching its convergence would elide it when converged, and un-wall 1 downstream site` (plus
+`; N more unmodeled walls — dorc why` when applicable; M=0 drops the un-wall clause; NEVER fires
+for modeled/honest walls — those are not oracle-gaps). Source-line numbers round-trip through
+`dorc why book.sh:N` (rul24-lineno-identity), which carries the per-site reasoning detail;
+plain-English register per 24H ack-4; `hint:` severity never trips gate-3. CLI-edge only
+(+448/−10 in cli/main.rs incl. 11 in-memory pins per the 24B filing rule); ZERO golden/needle
+churn; 154/154 e2e byte-identical at its landing. Conductor eyeballed the live flagship render
+(aggregated unprobeable note + guard attribution + the hint + `plan-summary sites=4 elide=1
+omit=0 guard=1 run=2`).
+
+**find-classify-forecloses-refold (the design finding; +SURE, corpus-consistent):** the honest
+counterfactual ("re-fold the plan with the wall treated as elided") is STRUCTURALLY UNAVAILABLE
+for opaque walls — their poison lands at classify (⊤-reach ⇒ downstream `EstablishWritten`),
+not in the plan wall-walk, and past-wall unvouched sites never ship probes — so no plan-level
+re-fold can un-poison (the strain-classify-coupling shape, third appearance). M is therefore the
+sanctioned conservative window-count: `Disposition::Guard` sites strictly between the first
+opaque wall and the NEXT wall of any kind (opaque or honest; transparent steps pass through).
+Errs HIGH in one named shape (a guard whose EstablishWritten came from a same-cell in-script
+write above the wall) and LOW versus a full re-classify counterfactual (past-wall unvouched
+sites are uncountable — their probes never shipped). Both directions acceptable for an advisory
+that licenses nothing.
+
+Residue: **resid-hint-emission-unpinned-e2e** — gate-7 greps `why:` lines only, so the hint lane
+has no e2e needle; the 11 unit pins + the conductor's live render check carry it (accepted;
+cheap to revisit if the hint lane grows). Minor: the cli MIRRORS the plan crate's private
+`class_is_establish_bearing` (3-line predicate, doc-noted as a kept-in-step mirror) — export it
+if a third consumer appears.
+
+### e2e de-graduation, wave 1 = 24I batches 1–2 (LANDED `817a4f7`..`a899fff` — 154→126, −28)
+
+All 28 named REDUNDANTs deleted, 0 skipped, each twin EYEBALLED by the builder before deletion
+(the 24I discipline); `exec-shimmed-query-fold` KEPT; no Rust, no run.sh/yardstick.sh, no
+STAY-set, no `strawman24-*` touched. Conductor-verified on the stacked tree: **126/126 e2e
+(exactly 154−28), all four gates, 14 test suites, 0 xfail / 0 XPASS / 0 red.** The case→twin
+map (durable home — the builder report is ephemeral):
+
+- converged → plan::converged_ambient_install_is_replaced_rest_runs
+- diverged → plan::diverged_install_runs
+- consumed-output → om::spec_converged_stdout_piped_to_grep_must_run + cfg::consumed_nonlast_pipeline_stage
+- enclosing-group-redir → om::spec_converged_enclosing_group_redirect_must_run + cfg::consumed_enclosing_group_redirect_marks_inner_leaf
+- redir-as-effect → effect::blessed_pure_colon_with_write_redirect_invalidates_downstream_query (+ converged baseline)
+- background-amp-runs → syntax background-amp unsupported pin + cfg::unsupported_loop_becomes_top_node_with_diagnostic + om::spec_topcontext_background_leaf_must_run
+- guard-status-blocks-elision → om::f1_status_consumed_by_if_guard_blocks_replacement + cfg::consumed_negated_if_guard_marks_relaxable
+- andor-rc-undeclared-runs → cfg::consumed_oror_left_operand_marks_relaxable_status (byte-identical book) + om::andor_left_operand_undeclared_rc_runs_kfail_perform
+- y1-devnull-exempt → effect::devnull_redirect_does_not_invalidate_query (+ converged baseline)
+- y1-var-resolved-target-invalidates-query → effect::var_resolved_redirect_target_invalidates_query + effect::var_resolved_redirect_gens_concrete_cell_not_top
+- y1-redirect-write-invalidates-query → effect::write_redirect_invalidates_downstream_query + effect::append_redirect_also_invalidates_query
+- y1-top-target-poisons → effect::top_target_redirect_poisons_downstream_query + effect::top_target_redirect_discloses_not_silent + effect::opaque_upstream_poisons_ambientness
+- no-oracle → plan::compile_probe_no_probe_for_kind_makes_site_unresolvable (+ coverage::runs_unprobed_when_no_results)
+- toprejected → syntax::loop_shapes_outside_the_subset_stay_unsupported_loop (exact book) + cfg::unsupported_loop_becomes_top_node_with_diagnostic + cfg::unsupported_in_sequence_keeps_neighbours_live
+- while-read-file-rejects → syntax::construct_trailing_redirection_is_loud_top_reject + syntax::construct_trailing_redirection_salvages_the_construct
+- inline21-recursion-rejects → cfg::direct_recursion_refuses_with_cycle_diagnostic + effect::recursive_call_refuses_inline_and_poisons_the_body
+- inline21-redirect-body-refuses → cfg::body_write_redirect_to_real_file_refuses_but_devnull_is_exempt
+- inline21-overbudget-degrades → cfg::at_budget_body_inlines_over_budget_refuses
+- door3-or-true-elides → om::door3_oror_true_converged_mutator_is_replaced + coverage::dead_invariant_door3_or_true (exact book incl. set -e)
+- door3-or-true-diverged-runs → om::door3_oror_true_diverged_mutator_runs_effect_still_gates + coverage::dead_invariant_diverged_still_runs
+- door3-and-true-blocks → cfg::consumed_andand_true_keeps_relaxable_not_invariant + om::pins_converged_status_via_andand_runs_mutator_rc_top
+- exec-dollarq-blocks-elision → om::cmd_consuming_dollar_question_blocks_predecessor + cfg::consumed_dollar_question_marks_predecessor_c3
+- exec-query-guard-composition → om::query_guard_holds_omits_install_and_substitutes_guard + om::clean_query_guard_still_renders_dead_body_as_colon
+- exec-query-after-mutator-runs → om::query_guard_invalid_after_mutator_runs_for_real + effect::query_after_mutator_is_invalid
+- door1-guard-below-mutators-invalid → effect::query_after_mutator_is_invalid + om::query_guard_invalid_after_mutator_runs_for_real
+- fold-oror-guard-omits → om::query_guard_holds_omits_install_and_substitutes_guard (byte-identical book) + om::clean_query_guard_still_renders_dead_body_as_colon (pins the true-or-colon render)
+- exec-converged → plan::converged_ambient_install_is_replaced_rest_runs (book byte-identical to converged)
+- exec-diverged → plan::diverged_install_runs (byte-identical to diverged)
+
+Strains (builder's, conductor-adjudicated; accepted with these dispositions):
+- **st-1 — INHERITS INTO BATCH 3 AS A NAMED MUST-COVER:** door3-or-true-elides's leaf-exact
+  `true || true` render + its dash-n cleanliness is no longer identically pinned — dispositions
+  and attribution have twins, but the render STRING rides only the general span-render machinery
+  plus the `strawman24-pipe-guard-*` STAY case's richer `: | true || : | :` collapse, and
+  fold-oror-guard-omits's in-memory twin pins the `true || :` render text without dash-n.
+  Narrow residual blindness, accepted; batch 3's one-shot `dash -n` per rendered artifact (THE
+  24I ap-2 flag) must name this shape explicitly.
+- st-2: five twins are composed/provider-swapped (mechanism-equivalent; enumerated in the map) —
+  redir-as-effect, y1-devnull-exempt, y1-top-target-poisons (query-consumer vs
+  establish-consumer), door1-guard-below-mutators-invalid, guard-status-blocks-elision
+  (provider swaps).
+- st-3: the set-e + query-fold composition (old exec-query-guard-composition) is now IMPLICITLY
+  covered via the target-state-purity reduction (the same known Query rc relaxes the errexit
+  StatusRelaxable mark); no dedicated in-memory twin.
+- st-4 (positive): the coverage crate carries verbatim-book attribution twins for the door-3 and
+  verdict-baseline deletions — stronger backing than 24I's om/plan/an mapping claimed.
+- st-5: the DORC_EXIT=10 fast-fail-verbatim contract survives the ⊤-reject deletions via the
+  staying `top-eval` + `guard23-background-not-guarded` (verified BEFORE deleting).
+- st-6: 24I's accounting was slightly stale — the corpus was 154 not 152 (two pipe-guard cases
+  post-date the audit), and guard-status-blocks-elision + andor-rc-undeclared-runs exec under
+  mocks (not analysis-only). No twin decision changed.
+
+Rider SKIPPED, correctly (**resid-guard23-stale-comments**): the stale "XFAIL until the guard
+tier lands" book comments echo VERBATIM into 6 guard23 `expected.out` goldens (rec-1
+comment-flow), so the "comment-only" cleanup actually cascades into protected STAY-set goldens —
+owed to a future BLESS-and-inspect session, never a drive-by edit.
+
+Remaining 24I work: batches 3–5 (batch 3 = the DEGRADE tier + the new `render_corpus.rs` home +
+THE dash-n net + st-1's must-cover; batch 4 = guard23 no-mint floors → GuardLicense-absence
+asserts; batch 5 = survival-tier vs sweep, per-topology assertion-depth verification FIRST).
