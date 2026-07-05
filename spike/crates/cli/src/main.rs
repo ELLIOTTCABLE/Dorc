@@ -86,15 +86,19 @@ modes (an optional leading token; default is the probe-then-apply round-trip):
   (none)       the round-trip: probe then apply on stdout, full disclosure on stderr
 
 options:
-  --book <book.sh>      the book to analyze (required; --book=PATH or --book PATH)
+  <book.sh>...          the book(s) to analyze — a positional path (`dorc plan book.sh`) or
+                        --book=PATH / --book PATH; repeatable ⇒ concatenated as one unit
   -o, --oracle <o.sh>   an oracle file to load (repeatable; -o PATH, -oPATH, --oracle PATH)
+  --oracle-dir <dir>    load every *.oracle.sh in <dir> (repeatable; glob-sorted)
+  --results <file>      read the probe results from <file> (default: stdin)
   --trust-footprints    opt into the survival tier (default off)
   --debug-argv          echo the engine's per-site resolved argv to stderr
   -h, --help            print this help to stdout and exit 0
   --version             print the version to stdout and exit 0
 
 stdin:  probe results, one per line — `site <leafid> effect=<holds|absent|cant-tell> rc=<n>`
-stdout: the selected mode's artifact(s).  stderr: diagnostics / why-lens / decision-digest.
+        (unless --results <file>); stdout: the selected mode's artifact(s); stderr:
+        diagnostics / why-lens / decision-digest.
 
 exit codes:
   0    success — the analysis completed and the artifact was emitted
@@ -190,8 +194,16 @@ enum Mode {
 
 struct Args {
     mode: Mode,
-    book: String,
+    /// The book(s) to analyze — a positional (`dorc plan book.sh`, the day-one ergonomic) OR
+    /// `--book=PATH`, repeatable. Multiple books CONCATENATE into one analyzed unit (a book split
+    /// across files reads as one). At least one is required.
+    books: Vec<String>,
     oracles: Vec<String>,
+    /// `--oracle-dir DIR` (ack-6): load every `*.oracle.sh` in DIR (glob-sorted, deterministic),
+    /// repeatable — the explicit bulk form alongside `-o` for the spike.
+    oracle_dirs: Vec<String>,
+    /// `--results FILE` (flow pick): read the probe results from FILE instead of the default stdin.
+    results: Option<String>,
     /// `--debug-argv` (gate-5 / cm-2): emit the engine's per-site resolved argv to stderr,
     /// then proceed normally — a cli-edge readout the e2e argv-echo differential consumes.
     debug_argv: bool,
@@ -215,6 +227,10 @@ struct Args {
 /// `--book PATH`, `-o PATH` / `-oPATH` / `--oracle PATH` (repeatable), `--debug-argv`,
 /// `--trust-footprints`. The mode is positional-first ONLY (a bare word after flags is still an
 /// error) so the legacy `dorc --book=… < results` invocation parses unchanged.
+#[expect(
+    clippy::too_many_lines,
+    reason = "one linear arg surface: the help/version pre-scan, the mode + why-address token, then the flag/positional loop with did-you-mean; splitting it would scatter the ONE parse"
+)]
 fn parse_args() -> Result<Invocation, String> {
     let raw: Vec<String> = std::env::args().skip(1).collect();
     // ack-1 help-is-success: `--help`/`--version` are stdout-and-exit-0 requests, not usage
@@ -226,15 +242,17 @@ fn parse_args() -> Result<Invocation, String> {
         return Ok(Invocation::Version);
     }
 
-    let mut book: Option<String> = None;
+    let mut books: Vec<String> = Vec::new();
     let mut oracles = Vec::new();
+    let mut oracle_dirs = Vec::new();
+    let mut results: Option<String> = None;
     let mut debug_argv = false;
     let mut trust_footprints = false;
     let mut why_address: Option<String> = None;
     let mut it = raw.into_iter().peekable();
 
-    // A leading bare word (no `-` prefix) selects the mode; anything else ⇒ RoundTrip and
-    // the token is left for the flag loop (which rejects an unexpected bare word, as before).
+    // A leading bare word (no `-` prefix) selects the mode. A near-miss (`pln`, `aply`) is a
+    // did-you-mean, not a silent book (the recon's missing-suggestion hazard).
     let mode = match it.peek().map(String::as_str) {
         Some("probe") => {
             it.next();
@@ -258,34 +276,163 @@ fn parse_args() -> Result<Invocation, String> {
             }
             Mode::Why
         }
+        Some(w) if !w.starts_with('-') => {
+            // A leading bare word that is NOT a known mode: if it is a NEAR-MISS of one, suggest it
+            // (did-you-mean); otherwise it is a positional book (the round-trip default — the flag
+            // loop below picks it up).
+            if let Some(sugg) = nearest(w, &["probe", "plan", "apply", "why"]) {
+                return Err(format!(
+                    "unknown mode {w:?} — did you mean `{sugg}`? {USAGE}"
+                ));
+            }
+            Mode::RoundTrip
+        }
         _ => Mode::RoundTrip,
     };
 
     while let Some(arg) = it.next() {
         if let Some(p) = arg.strip_prefix("--book=") {
-            book = Some(p.to_string());
+            books.push(p.to_string());
         } else if arg == "--book" {
-            book = Some(it.next().ok_or("--book needs a path")?);
+            books.push(it.next().ok_or("--book needs a path")?);
         } else if arg == "-o" || arg == "--oracle" {
             oracles.push(it.next().ok_or("-o needs a path")?);
         } else if let Some(p) = arg.strip_prefix("-o").filter(|p| !p.is_empty()) {
             oracles.push(p.to_string());
+        } else if let Some(p) = arg.strip_prefix("--oracle-dir=") {
+            oracle_dirs.push(p.to_string());
+        } else if arg == "--oracle-dir" {
+            oracle_dirs.push(it.next().ok_or("--oracle-dir needs a directory")?);
+        } else if let Some(p) = arg.strip_prefix("--results=") {
+            results = Some(p.to_string());
+        } else if arg == "--results" {
+            results = Some(it.next().ok_or("--results needs a path")?);
         } else if arg == "--debug-argv" {
             debug_argv = true;
         } else if arg == "--trust-footprints" {
             trust_footprints = true;
+        } else if arg.starts_with('-') {
+            // An unrecognized FLAG: suggest the nearest known one (did-you-mean) rather than a bare
+            // "unexpected argument" (the recon's missing-suggestion hazard).
+            let known = [
+                "--book",
+                "--oracle",
+                "--oracle-dir",
+                "--results",
+                "--debug-argv",
+                "--trust-footprints",
+                "--help",
+                "--version",
+            ];
+            return match nearest(&arg, &known) {
+                Some(sugg) => Err(format!(
+                    "unknown flag {arg:?} — did you mean `{sugg}`? {USAGE}"
+                )),
+                None => Err(format!("unknown flag {arg:?}; {USAGE}")),
+            };
         } else {
-            return Err(format!("unexpected argument {arg:?}; {USAGE}"));
+            // A bare word (no `-`): a positional book (the day-one `dorc plan book.sh` ergonomic;
+            // repeatable ⇒ multi-book concatenation).
+            books.push(arg);
         }
+    }
+    if books.is_empty() {
+        return Err(format!(
+            "no book given (a positional path or --book=PATH); {USAGE}"
+        ));
     }
     Ok(Invocation::Analyze(Args {
         mode,
-        book: book.ok_or(USAGE)?,
+        books,
         oracles,
+        oracle_dirs,
+        results,
         debug_argv,
         trust_footprints,
         why_address,
     }))
+}
+
+/// A tiny did-you-mean: the nearest `candidate` to `word` within edit-distance 2 (a typo, not a
+/// wholly different word), or `None`. Case-sensitive; ASCII. Used for mode + flag suggestions.
+fn nearest<'a>(word: &str, candidates: &[&'a str]) -> Option<&'a str> {
+    candidates
+        .iter()
+        .map(|c| (levenshtein(word, c), *c))
+        .filter(|(d, _)| *d <= 2)
+        .min_by_key(|(d, _)| *d)
+        .map(|(_, c)| c)
+}
+
+/// Levenshtein edit-distance (the two-row DP), for [`nearest`]. Pure; small inputs (flag/mode
+/// names), so the allocation is irrelevant.
+#[expect(
+    clippy::indexing_slicing,
+    reason = "the two DP rows are sized `b_chars.len()+1`; `j` ranges `0..b_chars.len()`, so every `[j]`/`[j+1]` index is in-bounds by construction"
+)]
+fn levenshtein(a: &str, b: &str) -> usize {
+    let b_chars: Vec<char> = b.chars().collect();
+    let mut prev: Vec<usize> = (0..=b_chars.len()).collect();
+    let mut cur = vec![0usize; b_chars.len().saturating_add(1)];
+    for (i, ca) in a.chars().enumerate() {
+        cur[0] = i.saturating_add(1);
+        for (j, &cb) in b_chars.iter().enumerate() {
+            let cost = usize::from(ca != cb);
+            cur[j.saturating_add(1)] = (prev[j.saturating_add(1)].saturating_add(1))
+                .min(cur[j].saturating_add(1))
+                .min(prev[j].saturating_add(cost));
+        }
+        std::mem::swap(&mut prev, &mut cur);
+    }
+    prev[b_chars.len()]
+}
+
+/// A HUMANE file-read error (the recon flagged raw OS phrasing leaking to the user): name what
+/// we were reading and the path, and translate the common `io::ErrorKind`s to plain English
+/// (a missing/permission-denied file, the two an admin actually hits) rather than the platform's
+/// raw "The system cannot find the file specified. (os error 2)".
+fn humane_read_error(kind: &str, path: &str, err: &std::io::Error) -> String {
+    let why = match err.kind() {
+        std::io::ErrorKind::NotFound => "no such file".to_owned(),
+        std::io::ErrorKind::PermissionDenied => "permission denied".to_owned(),
+        _ => err.to_string(),
+    };
+    format!("cannot read {kind} `{path}`: {why}")
+}
+
+/// Read + CONCATENATE the book(s) into one analyzed unit (`\n`-joined so no two files' lines
+/// merge — multi-book concatenation-as-one-unit). Humane per-file errors.
+fn read_books(books: &[String]) -> Result<String, String> {
+    let mut out = String::new();
+    for (i, path) in books.iter().enumerate() {
+        if i > 0 {
+            out.push('\n');
+        }
+        out.push_str(
+            &std::fs::read_to_string(path).map_err(|e| humane_read_error("book", path, &e))?,
+        );
+    }
+    Ok(out)
+}
+
+/// Resolve the oracle PATHS (ack-6): the explicit `-o` list first, then every `*.oracle.sh` in
+/// each `--oracle-dir` (glob-sorted for determinism — the cli is the I/O edge, but the ORDER it
+/// hands the kernel must be stable). A directory that cannot be read is a humane error.
+fn resolve_oracle_paths(oracles: &[String], oracle_dirs: &[String]) -> Result<Vec<String>, String> {
+    let mut paths: Vec<String> = oracles.to_vec();
+    for dir in oracle_dirs {
+        let entries =
+            std::fs::read_dir(dir).map_err(|e| humane_read_error("oracle directory", dir, &e))?;
+        let mut found: Vec<String> = entries
+            .filter_map(Result::ok)
+            .map(|e| e.path())
+            .filter(|p| p.to_string_lossy().ends_with(".oracle.sh"))
+            .map(|p| p.to_string_lossy().into_owned())
+            .collect();
+        found.sort();
+        paths.extend(found);
+    }
+    Ok(paths)
 }
 
 #[expect(
@@ -306,11 +453,12 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
     // ---- the shared, pure pipeline (one call-shape for every mode — the thin-driver
     // mandate: no mode branches the kernel; only the stdout/stderr ROUTING below differs) ----
 
-    // Lift the oracle files into one shared kind-index.
-    let oracle_srcs: Vec<String> = args
-        .oracles
+    // Resolve the oracle PATHS: the explicit `-o` list, then every `*.oracle.sh` in each
+    // `--oracle-dir` (glob-sorted, deterministic — ack-6). Then read each (humane errors).
+    let oracle_paths = resolve_oracle_paths(&args.oracles, &args.oracle_dirs)?;
+    let oracle_srcs: Vec<String> = oracle_paths
         .iter()
-        .map(|p| std::fs::read_to_string(p).map_err(|e| format!("reading oracle {p}: {e}")))
+        .map(|p| std::fs::read_to_string(p).map_err(|e| humane_read_error("oracle", p, &e)))
         .collect::<Result<_, _>>()?;
     let oracle_refs: Vec<&str> = oracle_srcs.iter().map(String::as_str).collect();
     // The effect-map is derived from the inline check bodies (23D §1 — the check is the
@@ -327,7 +475,7 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
     // for the file:line:col frame (the check-dialect give-ups are the main oracle-side errors).
     let checks: Vec<dorc_oracle::predict::PredictSet> = oracle_refs
         .iter()
-        .zip(args.oracles.iter())
+        .zip(oracle_paths.iter())
         .map(|(src, path)| {
             let lifted = dorc_oracle::predict::lift_predicts(&mut interner, src);
             report_at(advisory, "check", Some((path.as_str(), src)), &lifted.diags);
@@ -335,12 +483,15 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
         })
         .collect();
 
-    // Parse + analyze the book (shared interner, so symbols match the oracles).
-    let book_src = std::fs::read_to_string(&args.book)
-        .map_err(|e| format!("reading book {}: {e}", args.book))?;
+    // Parse + analyze the book (shared interner, so symbols match the oracles). Multiple books
+    // CONCATENATE into one analyzed unit (`\n`-joined so no two files' lines merge). `book_name`
+    // is the display path (the first book) — for a single book (the norm) the frame's line numbers
+    // are exact source lines; a multi-book unit's line numbers are into the concatenation.
+    let book_src = read_books(&args.books)?;
+    let book_name = args.books.first().map_or("book.sh", String::as_str);
     // ack-8: the book-stage diags (parse/cfg/classify/probe/render) all span into `book_src`;
     // this pair feeds their file:line:col frames (rul24-lineno-identity — the SOURCE line space).
-    let book_source = Some((args.book.as_str(), book_src.as_str()));
+    let book_source = Some((book_name, book_src.as_str()));
     let parsed = dorc_syntax::parse(&book_src);
     report_at(advisory, "parse", book_source, &parsed.diags);
     let cfg = dorc_analysis::cfg::build(&parsed.value);
@@ -517,13 +668,19 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
         std::io::stdout().flush().ok();
     }
 
-    // read the (simulated) probe results from stdin — the site-keyed records the rendered
-    // probe would emit when run remotely (the round-trip's return channel).
-    let mut stdin_buf = String::new();
-    std::io::stdin()
-        .read_to_string(&mut stdin_buf)
-        .map_err(|e| format!("reading stdin: {e}"))?;
-    let results = parse_results(&stdin_buf, &mut interner);
+    // read the (simulated) probe results — the site-keyed records the rendered probe would emit
+    // when run remotely (the round-trip's return channel). From `--results FILE` when given, else
+    // the default stdin (the harness pipes them in).
+    let results_buf = if let Some(path) = &args.results {
+        std::fs::read_to_string(path).map_err(|e| humane_read_error("results", path, &e))?
+    } else {
+        let mut buf = String::new();
+        std::io::stdin()
+            .read_to_string(&mut buf)
+            .map_err(|e| format!("reading probe results from stdin: {e}"))?;
+        buf
+    };
+    let results = parse_results(&results_buf, &mut interner);
 
     // re-key the site-keyed records to the FactKey-keyed observations `build_plan`
     // consumes (its fold/elision machinery is fact-keyed; only this probe-answer
@@ -646,8 +803,7 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
         // moving the detail into `dorc why` is a sanctioned follow-on that churns the 13
         // expected-why needles + rewires gate-7, deferred to keep this pass green.)
         eprintln!(
-            "dorc: run `dorc why` for the per-site cause-chains, or `dorc why {}:N` to query a source line",
-            args.book
+            "dorc: run `dorc why` for the per-site cause-chains, or `dorc why {book_name}:N` to query a source line"
         );
     }
 
@@ -681,7 +837,7 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
             &arena,
             &parsed.value,
             &book_src,
-            &args.book,
+            book_name,
             &interner,
         );
         std::io::stdout().flush().ok();
@@ -2799,6 +2955,26 @@ mod tests {
             None,
             "content with a space ⇒ content match"
         );
+    }
+
+    /// The did-you-mean helper: a near-miss (edit-distance ≤ 2) suggests, a wholly-different word
+    /// does not (no misleading suggestion). Pins the mode + flag typo-suggestion behavior.
+    #[test]
+    fn nearest_suggests_within_edit_distance_two() {
+        let modes = ["probe", "plan", "apply", "why"];
+        assert_eq!(nearest("pln", &modes), Some("plan"), "one deletion");
+        assert_eq!(nearest("aply", &modes), Some("apply"), "one deletion");
+        assert_eq!(
+            nearest("wanted", &modes),
+            None,
+            "a wholly-different word ⇒ no suggestion"
+        );
+        let flags = ["--trust-footprints", "--debug-argv", "--book"];
+        assert_eq!(
+            nearest("--tust-footprints", &flags),
+            Some("--trust-footprints")
+        );
+        assert_eq!(nearest("--boook", &flags), Some("--book"), "one insertion");
     }
 
     /// cheap-7: the firehose-suppression classifier. Assignments and pure/no-target-state builtins
