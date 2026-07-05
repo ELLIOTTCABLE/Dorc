@@ -50,8 +50,18 @@ enumeration) lives in the recon agent's report; the load-bearing conclusions are
 - **ack-7 artifact comments: human ack-in-progress** — representative file handed over
   (`guard23-ternary-flagship/expected.out` primary; `strawman24-derived-survive/expected.out`
   for survival/derived flavor). No rewording until/unless the human returns edits.
-- **ack-8 full rustc caret-art: DEFERRED post-first-blood** (line:col + region-reorder +
-  excerpt is the accepted 80/20).
+- **ack-8 full rustc caret-art: PULLED IN-SCOPE (human reversal, 2026-07-05).** Rationale,
+  near-verbatim: it's a large ask but not a large *correctness* ask — "basically just Opus
+  time, low-risk" — and it shapes the feel of the tool: "we're an *analysis engine*, and the
+  warnings, reporting, feedback, gradual-enhancement, and attribution *are the entire game*"
+  (the IMPLEMENTATION rewrite's corral/attribute framing). All of those are sensitive to
+  span-precision — "I'm specifically talking about <this section> of a complicated pipe."
+  Build it even "vaguely half-assed and throwaway": wire + extend the built-but-unwired
+  `core::diag::render_cli` multi-span model to rustc-style frames — primary span with ASCII
+  `^^^` underline windows, LABELED secondary spans (the pipeline-STAGE case is the flagship:
+  a diagnostic about `a | b || c` points at the exact stage it means), cause+effect in one
+  frame, color as the severity/tier channel, ASCII art only. Throwaway-quality sanctioned;
+  span-precision is the point, polish is not.
 
 ## Also in the apply scope (the recon's cheap tier, pre-agreed, golden-safe)
 help-is-success(stdout,0) + rich usage · `--version` · did-you-mean on flags/modes · humane
