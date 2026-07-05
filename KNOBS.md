@@ -63,6 +63,12 @@ Poles: `kTYANNOT-inline ↔ kTYANNOT-eol-comment`
 **Owner:** user (DX/ergonomics vs off-ramp purity). **Lock-in:** med (the spelling threads the parser + every typed oracle; the off-ramp guarantee is high-lock).
 > Entangled with `kOOB` (the eol pole's cost) and `kLANG` (the inline pole's cost). Sources: `Research/plans/17N` top paragraph · `17O` F-OFFRAMP · `spike/CLAUDE.md` strip-fidelity.
 
+### `kCONTRACT-RUNGS`
+Poles: `kCONTRACT-RUNGS-single ↔ kCONTRACT-RUNGS-ladder`
+
+**Tension:** authoring a verdict-function is ONE act carrying the full license (rul24-vouch-is-verdict-authoring: write `is_converged()` and Dorc may guard AND elide on its yes — minimal ceremony, no new syllable, maximally sh-native) **vs** a separable license-ladder (ORACLE_PROVIDES provides-license: rung-0 display-only / rung-1 guard-in-position / rung-2 carried-elide) letting a wary engineer hand over *answers* while withholding *permission* — the engineer-side hatch, sibling of the admin's `kSURVIVAL-trusted` flag. Single risks over-licensing by authors who only meant to inform (there is no way to provide a verdict without licensing skips); the ladder is the least sh-native thing in the design (POSIX has no idiom for "blame me") and would have to be a loud first-class construct under the native-or-break-loudly law. Rung-selection must stay per-path or the monotonic-degradation story breaks.
+**Status:** open — the incumbent ruling behaves as `kCONTRACT-RUNGS-single`; ORACLE_PROVIDES's ladder taxonomy is the standing pressure to un-weld, and the field trial's adequacy-bite data is the first evidence either way. **Owner:** user (liability-surface taste). **Lock-in:** med (a later move churns every published oracle's implied license).
+
 ---
 
 ## The probe optimizer — *per-leaf economics of checking vs acting*
@@ -125,20 +131,26 @@ Standing fences while parked: the probe-TAPE is a write-only postmortem durable,
 
 ## Execution & modes
 
-### `kELISION`
-Poles: `kELISION-scoped ↔ kELISION-full`
+### `kELISION` — DEPRECATED → `kSCOPE` + `kSURVIVAL`
+Retired (human, 2026-07-05); header kept here, in reading order, for reference. One slug carried two jobs and drowned once "elision" firmed as the replacement-mechanism's name: its actual axis (what is in scope to be checked at all) is now **`kSCOPE`**, directly below; the trust-dial its disambiguation-footnote grew is now **`kSURVIVAL`**. Mechanism vocabulary: the Named-mechanisms block. Reading rule for the existing corpus: a `kELISION` citation means `kSCOPE`, unless the surrounding text says "replacement-elision" (→ **elide**) or "the survival tier" (→ `kSURVIVAL`).
 
-**Tension:** deliberately *not checking, right now*, state the user hasn't asked about — hot-loop speed inside a declared scope, staleness accepted outside it (`dorc bump`-style partial update) **vs** checking everything the book expresses — completeness, no drift (`dorc reconcile`-style full convergence). The knob is *what is in scope to check at all*; it never touches soundness inside that scope.
+### `kSCOPE`
+Poles: `kSCOPE-asked ↔ kSCOPE-whole-book`
 
-Naming caution — this slug predates the terminology-firming and its "elision" means the check-*scope* above, which is one of **four mechanisms with four distinct licenses**, never to be conflated: *scope-elision* (this knob: a user-mode choice of what gets checked); *replacement-elision* (the canonical sense elsewhere: observable-preserving replacement of a proven-converged command — licensed by probe-facts PLUS a reached converged-vouch, the elide-weld, under `kFAIL`, in every mode); *guard-insertion* (the ternary's middle verdict: an observable-preserving insertion of the oracle's own verdict-function ahead of the untouched command — licensed by an author's converged-vouch, a judgment-tier attributed claim, reproducing nothing); and *survival* (elision past a RUNNING wall — licensed by footprint × backing disjointness on top of the vouch, gated behind the admin's explicit flag, never a default). Contract and motivation: `Research/plans/233` (the update + guard-license sections), `plans/239`, `notes/24A` §1a/§1c.
-
+**Tension:** deliberately *not checking, right now*, state the user hasn't asked about — hot-loop speed inside the asked scope, staleness accepted (and disclosed) outside it (`dorc bump`-style partial update) **vs** checking everything the book expresses — completeness, no drift (`dorc reconcile`-style full convergence). The knob is *what is in scope to be checked at all*; it never touches soundness inside that scope. A line outside the asked scope is **descoped** (see Named mechanisms) — never "elided": nothing was proven about it.
 **Status:** mode (user picks via update/reconcile; changes checking *scope*, never *soundness*). **Owner:** user (runtime). **Lock-in:** low.
+
+### `kSURVIVAL`
+Poles: `kSURVIVAL-trusted ↔ kSURVIVAL-honest-walls`
+
+**Tension:** keep proven-converged elisions *past a command that really runs*, on the strength of authors' at-most footprint claims — attention preserved on drifted days, the whole stage-5–7 product (USER_STORY "the bought unsoundness") **vs** honest walls — a running un-footprinted command demotes everything downstream to guard/run, nothing ever rests on traveled human claims, and the check-tax plus the attention-lines come back. The trusted pole is the design's one *naked* trust: a wrong at-most claim silently under-executes *someone else's* line with no runtime net, which is why it takes a double opt-in (the author's clean claim AND the admin's explicit flag) and full per-elision attribution.
+**Status:** mode at the admin level (the explicit flag — never a default, short enough not to alias away, honestly "marketing at best, theatre at worst" and demanded anyway; rul24-mode-gate, `Research/notes/24A` §1a). The design-level posture it sits atop is `kHALVES` (welded); whether this outermost tier earns its keep at all is the field-trial's decomposed question, fires-often × bites-rarely vs the felt magic (`Research/plans/252` B4). **Owner:** user (the admin per-invocation; the author per-claim). **Lock-in:** low mechanically (a flag), med socially (published at-most claims accrete against whatever the gate promises).
 
 ### `kOBJECTIVE`
 Poles: `kOBJECTIVE-latency ↔ kOBJECTIVE-throughput`
 
 **Tension:** minimize time-to-first-action (deployer "server's on fire, NOW") **vs** maximize whole-fleet makespan (engineer's full reconcile) — different objective functions, hence different optimizer defaults.
-**Status:** open (derive from mode + a coarse urgency intent). **Owner:** user-intent. Coupled to `kELISION`. **Lock-in:** low.
+**Status:** open (derive from mode + a coarse urgency intent). **Owner:** user-intent. Coupled to `kSCOPE`. **Lock-in:** low.
 
 ### `kFIDELITY`
 Poles: `kFIDELITY-optimized ↔ kFIDELITY-faithful`
@@ -238,17 +250,30 @@ Poles: `kAGENTLESS-push ↔ kAGENTLESS-host-autonomy`
 **Tension:** central push authority — one operator node drives the fleet, no per-host daemon to own or secure (DESIGN "push, not pull"; the ergonomic + no-listening-daemon win) **vs** host autonomy — each host applies only what it fetches and verifies itself (CFEngine's "no one except root@localhost can force cfengine to do anything"), which *bounds blast-radius* but reintroduces a pull/agent surface.
 **Welded to `kAGENTLESS-push`** (ergonomic, per DESIGN) — named only to keep the *security cost* in view: push concentrates the crown-jewel in the operator workstation (fleet-wide SSH keys — SaltStack's listening-master RCE blast-radius is relocated, not removed), and real m→n→o bastion-hopping reintroduces multi-hop trust. Push is *ergonomic, not a security claim*. **Owner:** welded. **Lock-in:** high (architectural).
 
+### `kHALVES`
+Poles: `kHALVES-guard-half ↔ kHALVES-elide-half`
+
+**Tension:** the guard-half — runtime re-verification (`( check ) || cmd`), sound, zero naked trust, the book fast and safe *but not shorter*, attention unpaid **vs** the elide-half — lines removed from the plan on static proof modulo attributed human claims: the attention product Dorc exists for, unsound exactly where a claim is wrong. The split is driven by a technical cap more than by design taste: the frame problem makes sound past-wall elision impossible (`plans/233`, permanent), so every step past the guard-half's ceiling is *bought* with bounded, attributed unsoundness — the converged-vouch's adequacy gap (converged≠no-op) at the plain-elision tier; the at-most footprint trust at the survival tier.
+**Welded far toward `kHALVES-elide-half`** (human): the design deliberately admitted that bounded unsoundness to retrieve the extra elision — "removal by proof, or honesty about the lack of one" (USER_STORY, the bought-unsoundness section) — on kHALVES doctrine's terms (`plans/239` §1: full elision stays THE goal; the guard-half is sister and *permanent* fallback, owed equal design attention; no guard-half decision may silently discard an elide-half constraint). The one sanctioned re-opening is evidence, not argument: the field trial's fires-often × bites-rarely numbers (`plans/252` B4), deliberately mechanical as the check on re-litigation impulses in *both* directions. **Owner:** welded (human). **Lock-in:** high (the vouch/footprint machinery, the `kSURVIVAL` gate, and the published-oracle contract all assume the lean).
+
+### `kWARN`
+Poles: `kWARN-rich ↔ kWARN-precise-or-silent`
+
+**Tension:** emit every distinct root-cause detection the engine can make — warnings/hints/attribution as a primary product surface, the detection machinery kept alive and exercised **vs** the classical fatigue doctrine: a warning channel that cries wolf gets tuned out and dies (the SQL-Server plan-warnings lesson — "suboptimal warnings must be precise or silent"; `plans/111`).
+**Welded to `kWARN-rich`, scoped to the spike era** (human; rul24-warnings-tune-high, `Research/notes/24G` §8). Three grounds: (1) *mechanism-keepalive* — a seemingly-noisy warning keeps detection, spans, provenance-threading, and routing alive for later, better, more-critical warnings; muting/removing is always cheap while adding high-quality detection late is expensive (the detectable-moment is during construction, when the builder holds the analysis); (2) *LLM-feedback* — the spike is LLM-built, and warnings surfacing in agents' tool-output re-teach invariants at exactly the moment of relevance; (3) *warnings ARE the product* — the hint/attribution/why channel drives the entire gradual-enhancement curve, so both the training-corpus prior and the senior-engineer noise-distrust prior are miscalibrated here. Scope of the weld: DISTINCT root-cause detections only — correlated-cascade suppression stands unchanged (AGENTS fail-fast: only root-cause is reported); end-user attention-economy pressure routes to the late, cheap knobs (tiering, curation, muting), never to not-building the detection. **Owner:** welded (human). **Lock-in:** low — removal is always the cheap direction; that asymmetry *is* the rationale.
+
 ---
+
+## Named mechanisms — firm vocabulary, not knobs (licenses differ; never conflate)
+
+The five per-line outcomes that recur across planning, one name each. (AGENTS.md's terminology-firming is the human-voice source for elide/replace/guard; this table registers the set so nothing borrows a neighbor's name again.)
+
+- **descope** — a line outside the user's asked scope (`kSCOPE-asked`) is not checked at all this run; staleness accepted and disclosed. License: the user's mode choice. Claims nothing about the world.
+- **omit** — a branch proven *dead* by value-flow (a folded guard's untaken arm); it could not run. License: probe-sourced values through pure dataflow. (Engine-firm already; listed for completeness — the yardstick counts it separately from elision.)
+- **elide / replace** — an observable-preserving replacement of a proven-converged command (elide = the degenerate full-skip case, per AGENTS.md). License: probe-facts PLUS a reached converged-vouch (the elide-weld), under `kFAIL-perform`.
+- **guard** — the oracle's own verdict-function inserted ahead of the command's untouched bytes (`( check ) || original`); reproduces nothing; fails toward run. License: the converged-vouch (judgment-tier, attributed).
+- **survive** — an elision kept past a RUNNING wall. License: the vouch PLUS footprint × backing disjointness PLUS the admin's `kSURVIVAL-trusted` flag. The only naked-trust cell; fully attributed.
 
 ## Not a knob (a prioritization principle, parked here so it isn't mistaken for one)
 **`effort-allocation`** — engine-core vs oracle-long-tail vs analyses-on-top. *Not* an A-vs-B design tension; a resourcing call. Lean (user's): highest per-day marginal value is the **core extensible engine** + **analyses-on-top that promote correctness/UX/perf properties**, even though the oracle *corpus* has the larger total eventual reach (community-grown, long-tail). Bootstrap only the ~40-50 highest-frequency oracles (the field-trial stdlib is that slice; `Research/plans/252` P5); let the community grow the tail.
 
----
-
-## Proposed additions — reported for human ratification (this file is human-authoritative on naming; these are NOT yet knobs)
-
-### `kRUNG` *(proposed by the round-24 close audit — name/poles/existence all pending the human)*
-Poles (proposed): `kRUNG-one-act ↔ kRUNG-ladder`
-
-**Tension:** authoring a verdict-function is ONE act carrying the full license (rul24-vouch-is-verdict-authoring: write `is_converged()` and Dorc may guard AND elide on its yes — minimal ceremony, no new syllable, maximally sh-native) **vs** a separable license-ladder (ORACLE_PROVIDES provides-license: rung-0 display-only / rung-1 guard-in-position / rung-2 carried-elide) letting a wary engineer hand over *answers* while withholding *permission* — the engineer-side hatch, sibling of the admin's survival flag. One-act risks over-licensing by authors who only meant to inform; the ladder is the least sh-native thing in the design (POSIX has no idiom for "blame me") and would have to be a loud first-class construct under the native-or-break-loudly law. Rung-selection must stay per-path or the monotonic-degradation story breaks.
-**Status (proposed):** open — weld and ladder currently coexist as ruling-vs-taxonomy tension; the field trial's adequacy-bite data is the first evidence either way. **Owner:** user (liability-surface taste). **Lock-in:** med (a later un-weld churns every published oracle's implied license).
