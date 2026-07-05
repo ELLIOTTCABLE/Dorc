@@ -78,10 +78,12 @@ dorc — spec-mining static-analysis orchestrator (implementation spike)
 usage: dorc [<mode>] --book=<book.sh> [-o <oracle.sh>]... [options]
 
 modes (an optional leading token; default is the probe-then-apply round-trip):
-  probe    emit only the read-only probe artifact (phase 1) to stdout; reads no stdin
-  plan     preview the eliding apply on stdout, with the why-lens + diagnostics on stderr
-  apply    emit the byte-floored, receipt-free shippable apply artifact to stdout
-  (none)   the round-trip: probe then apply on stdout, full disclosure on stderr
+  probe        emit only the read-only probe artifact (phase 1) to stdout; reads no stdin
+  plan         preview the eliding apply on stdout, with the why-lens + diagnostics on stderr
+  apply        emit the byte-floored, receipt-free shippable apply artifact to stdout
+  why [<addr>] report (to stdout) WHY the run decided as it did — bare: the run's problems;
+               `book.sh:N`: the site on that source line; free text: matching commands
+  (none)       the round-trip: probe then apply on stdout, full disclosure on stderr
 
 options:
   --book <book.sh>      the book to analyze (required; --book=PATH or --book PATH)
@@ -177,6 +179,13 @@ enum Mode {
     /// No mode token: the legacy round-trip (probe THEN apply on stdout, full disclosure on
     /// stderr). The exact shape `e2e/run.sh` drives — preserved verbatim (tc-subcommand-shape).
     RoundTrip,
+    /// `dorc why [<address>] …`: the WHY-query surface (ack-2). NOT an artifact-producing
+    /// invocation — its report goes to STDOUT (help/version/why are their own non-analysis
+    /// invocations, per the fences). Runs the full pipeline (it reports on the CURRENT run's
+    /// dispositions, so it consumes stdin results like `plan`), then prints a source-line-keyed
+    /// report (rul24-lineno-identity) instead of an artifact: bare ⇒ the run's PROBLEMS; a
+    /// `book.sh:N` / content address ⇒ that site's cause-chain. Emits no artifact, no digest.
+    Why,
 }
 
 struct Args {
@@ -193,6 +202,10 @@ struct Args {
     /// best (the admin chose the danger), theatre at worst (everyone enables it) — demanded
     /// anyway as the non-vacuous CYA. When off, the footprints are never even lifted (TC-1).
     trust_footprints: bool,
+    /// The optional `dorc why <address>` positional (ack-2): `book.sh:N` (a source line-address —
+    /// rul24-lineno-identity), or free content to substring-match a command; `None` ⇒ the
+    /// unargumented default (report the CURRENT run's problems). Only meaningful for [`Mode::Why`].
+    why_address: Option<String>,
 }
 
 /// Minimal hand-rolled parsing (no `clap` dep yet): resolve the whole invocation. `-h`/`--help`
@@ -217,6 +230,7 @@ fn parse_args() -> Result<Invocation, String> {
     let mut oracles = Vec::new();
     let mut debug_argv = false;
     let mut trust_footprints = false;
+    let mut why_address: Option<String> = None;
     let mut it = raw.into_iter().peekable();
 
     // A leading bare word (no `-` prefix) selects the mode; anything else ⇒ RoundTrip and
@@ -233,6 +247,16 @@ fn parse_args() -> Result<Invocation, String> {
         Some("apply") => {
             it.next();
             Mode::Apply
+        }
+        Some("why") => {
+            it.next();
+            // ack-2: `why` takes an OPTIONAL address positional — the next token, IF it is not a
+            // flag (`book.sh:N` and content queries never start with `-`). Absent ⇒ the
+            // unargumented default (the run's problems).
+            if it.peek().is_some_and(|a| !a.starts_with('-')) {
+                why_address = it.next();
+            }
+            Mode::Why
         }
         _ => Mode::RoundTrip,
     };
@@ -260,6 +284,7 @@ fn parse_args() -> Result<Invocation, String> {
         oracles,
         debug_argv,
         trust_footprints,
+        why_address,
     }))
 }
 
@@ -598,7 +623,10 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
     // `.sh` artifact on stdout (the artifact stays receipt-free). The off-ramp `apply` mode
     // suppresses it (advisory); `plan` + round-trip emit it (ru-20 ui-3: "doubly-emit cited
     // sections + their warnings to the console").
-    if advisory {
+    // The `plan`/round-trip render surface keeps its per-line `why:` disclosures (the attribution
+    // lanes are load-bearing correctness disclosures gate-7 pins). `why` mode SKIPS them — its
+    // stdout report (below) is the detail surface, so a stderr echo would just double it.
+    if advisory && mode != Mode::Why {
         emit_why_lens(&why_diags, &arena, &book_src);
         // Stage 2 co-primary (rul24-divergence-is-the-game / TC-3): every SURVIVED elision names,
         // on this same why-lens lane, which running walls it crossed and whose footprint licensed
@@ -613,6 +641,14 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
         // mechanism + its converged-vouch license + the vouching oracle (a render-REFUSED guard
         // discloses the refusal instead). Empty when no site guards.
         emit_guard_attribution(&plan, &parsed.value, &interner);
+        // ack-2 aggregate POINTER: the `plan` preview points the reader at the focused query
+        // surface. (This pass keeps the per-line `why:` detail here too — gate-7 pins it; fully
+        // moving the detail into `dorc why` is a sanctioned follow-on that churns the 13
+        // expected-why needles + rewires gate-7, deferred to keep this pass green.)
+        eprintln!(
+            "dorc: run `dorc why` for the per-site cause-chains, or `dorc why {}:N` to query a source line",
+            args.book
+        );
     }
 
     // gate-5 (cm-2 argv-echo differential): per-site resolved argv to stderr, behind the flag.
@@ -631,6 +667,26 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
     // must never silently ship an artifact whose render had to refuse a licensed elision.
     let refusals = plan.render_refusal_diagnostics(&parsed.value, &interner);
     report("render", book_source, &refusals);
+
+    // ack-2 `dorc why`: NOT an artifact-producing invocation. Emit the source-line-keyed report to
+    // STDOUT (its own non-analysis output) and return — no artifact, no plan-summary, no digest.
+    // It runs the full pipeline above so it reports on the CURRENT run's real dispositions.
+    if mode == Mode::Why {
+        emit_why_report(
+            args.why_address.as_deref(),
+            &plan,
+            &probe,
+            &why_diags,
+            &refusals,
+            &arena,
+            &parsed.value,
+            &book_src,
+            &args.book,
+            &interner,
+        );
+        std::io::stdout().flush().ok();
+        return Ok(book_outcome);
+    }
 
     // rec-1 / ru-12 BYTE FLOOR: `plan` and `apply` emit BYTE-IDENTICAL apply bytes here — the
     // artifact is receipt-free in both; only the stderr disclosure above differed. The
@@ -1947,6 +2003,238 @@ fn emit_guard_attribution(
     }
 }
 
+/// One site's WHY-record ([`emit_why_report`]): its SOURCE line (rul24-lineno-identity), the
+/// one-line command, the disposition tag, the ASCII cause-chain, and whether it is a PROBLEM
+/// (the unargumented `dorc why` filter — a ⊤/unprobed run, a guard, or a render-refusal, never a
+/// clean elide/omit).
+struct WhySite {
+    line: usize,
+    command: String,
+    tag: &'static str,
+    reasons: Vec<String>,
+    is_problem: bool,
+}
+
+/// ack-2 `dorc why`: the source-line-keyed WHY report — the focused query surface (the `plan`
+/// preview points here). **rul24-lineno-identity** (a product invariant): the ONE line-number
+/// space is the SOURCE file's, so a `file:N` this report PRINTS is exactly the `book.sh:N` a query
+/// ACCEPTS — the mapping is 1:1 through [`dorc_core::diag::line_col`]. Three addressing forms:
+/// * `None` (unargumented) — the CURRENT run's PROBLEMS: every site that runs on a ⊤, runs
+///   unprobed, or carries a guard / render-refusal (never a clean elide/omit) — "can't be typing
+///   lines manually when you're already annoyed" (NO cross-run state; kSTATE stays parked).
+/// * a `book.sh:N` / bare `N` line-address — the site(s) on that source line.
+/// * free content — the site(s) whose command text contains it.
+///
+/// Each reported site prints a `file:line` header with its disposition tag and command, then an
+/// ASCII depth-indented cause-chain (the `└─` glyph), one root per site (rustc's nested notes).
+#[expect(
+    clippy::too_many_arguments,
+    reason = "the why-report threads the compiled context it reports on (plan/probe/why-diags/refusals/arena/ast/src/filename/interner); each is a distinct pipeline output, not a bundle-able struct"
+)]
+#[expect(
+    clippy::too_many_lines,
+    reason = "one linear per-disposition reason-derivation + the three addressing branches; splitting it would scatter the ONE report shape"
+)]
+fn emit_why_report(
+    address: Option<&str>,
+    plan: &dorc_plan::Plan,
+    probe: &dorc_plan::ProbePlan,
+    why_diags: &[dorc_core::diag::Diag],
+    refusals: &[dorc_core::Diagnostic],
+    arena: &ProvArena,
+    ast: &dorc_syntax::ast::Ast,
+    book_src: &str,
+    filename: &str,
+    interner: &Interner,
+) {
+    use dorc_plan::Disposition;
+    let mut sites: Vec<WhySite> = Vec::new();
+    for step in &plan.steps {
+        let span = ast.node(step.ast).span;
+        let (lo, hi) = (span.lo.0 as usize, span.hi.0 as usize);
+        let line = dorc_core::diag::line_col(book_src, lo).0;
+        let command = flatten_ws(book_src.get(lo..hi).unwrap_or("<source unavailable>"));
+        let refused = refusals
+            .iter()
+            .any(|d| d.span.is_some_and(|s| s.lo == span.lo && s.hi == span.hi));
+        let (tag, reasons, is_problem): (&'static str, Vec<String>, bool) = match &step.disposition
+        {
+            Disposition::Run => {
+                if let Some(reason) = top_run_reason(span, why_diags, arena, book_src) {
+                    ("run", vec![reason], true)
+                } else if probe.unresolvable.contains(&step.leaf)
+                    && !is_structurally_unprobeable(&command)
+                {
+                    (
+                        "run",
+                        vec![
+                            "runs unprobed — no read-only check could be shipped (kFAIL-perform: \
+                             when unsure, act)"
+                                .to_owned(),
+                        ],
+                        true,
+                    )
+                } else {
+                    (
+                        "run",
+                        vec![
+                            "runs — not elidable (a mutator with no converged probe, an inert \
+                             builtin, or a running wall blocks elision)"
+                                .to_owned(),
+                        ],
+                        false,
+                    )
+                }
+            }
+            Disposition::Replace(license, _) => {
+                let mut reasons = vec![format!(
+                    "elided — {} is converged (probe: holds)",
+                    dorc_plan::fact_label(interner, license.fact())
+                )];
+                if let Some(w) = &license.derivation().survival {
+                    reasons.push(format!(
+                        "survived past {} running wall(s) — backing {} proven disjoint (trusted \
+                         footprint)",
+                        w.crossings().len(),
+                        render_coord(w.backing(), interner),
+                    ));
+                }
+                if refused {
+                    reasons.push(
+                        "render REFUSED (heredoc): the leaf runs verbatim instead (kFAIL-perform)"
+                            .to_owned(),
+                    );
+                    ("elide", reasons, true)
+                } else {
+                    ("elide", reasons, false)
+                }
+            }
+            Disposition::Guard(license) => {
+                let kind = interner.resolve(license.fact().kind.0).to_owned();
+                if refused {
+                    (
+                        "guard",
+                        vec![format!(
+                            "guard REFUSED — the site's awkward form (heredoc / non-`/dev/null` \
+                             redirect) runs verbatim, the {kind} converged-vouch notwithstanding \
+                             (kFAIL-perform)"
+                        )],
+                        true,
+                    )
+                } else {
+                    (
+                        "guard",
+                        vec![format!(
+                            "guarded — licensed by a converged-vouch (the {kind} oracle's authored \
+                             is_converged); the original bytes survive and the check re-runs live \
+                             at apply"
+                        )],
+                        true,
+                    )
+                }
+            }
+            Disposition::Omit { .. } => (
+                "omit",
+                vec![
+                    "omitted — dead branch (a guard's known status proves it never runs)"
+                        .to_owned(),
+                ],
+                false,
+            ),
+        };
+        sites.push(WhySite {
+            line,
+            command,
+            tag,
+            reasons,
+            is_problem,
+        });
+    }
+
+    // The three addressing forms (rul24-lineno-identity: a line-address matches `s.line`, the
+    // SOURCE line every `WhySite` was keyed on).
+    let (heading, matched): (String, Vec<&WhySite>) = match address {
+        None => (
+            String::new(), // the problem-set heading is emitted below (it names a count)
+            sites.iter().filter(|s| s.is_problem).collect(),
+        ),
+        Some(addr) => match parse_line_address(addr) {
+            Some(n) => (
+                format!("dorc why {filename}:{n}:"),
+                sites.iter().filter(|s| s.line == n).collect(),
+            ),
+            None => (
+                format!("dorc why `{addr}`:"),
+                sites.iter().filter(|s| s.command.contains(addr)).collect(),
+            ),
+        },
+    };
+
+    if address.is_none() {
+        // The unargumented default: the run's PROBLEMS, with a count-bearing heading.
+        if matched.is_empty() {
+            println!(
+                "dorc why: no problems in the current run of {filename} — every site elided, ran \
+                 cleanly, or was omitted."
+            );
+            return;
+        }
+        println!(
+            "dorc why: {} problem(s) in the current run of {filename} (source-line order):\n",
+            matched.len()
+        );
+    } else if matched.is_empty() {
+        println!(
+            "{heading} no analyzed command matched (rul24-lineno-identity: a line-address is a SOURCE line)."
+        );
+        return;
+    } else {
+        println!("{heading}\n");
+    }
+    for s in matched {
+        print_why_site(s, filename);
+    }
+}
+
+/// Print one [`WhySite`]: the `file:line` header (with disposition tag + command) then the ASCII
+/// depth-indented cause-chain (`└─` per reason). rul24-lineno-identity: `line` is the SOURCE line.
+fn print_why_site(s: &WhySite, filename: &str) {
+    println!("{filename}:{}  [{}]  `{}`", s.line, s.tag, s.command);
+    for r in &s.reasons {
+        println!("  └─ {r}");
+    }
+    println!();
+}
+
+/// The ⊤-run cause for a Run site, if a `why_diags` disclosure covers it: the FIRST diag whose
+/// primary span starts inside this command's span (the cmdsub-⊤ origin sits at/within the
+/// command), rendered through the why-lens [`dorc_core::diag::why`] (the same cause-chain the
+/// `plan` render surfaces). `None` ⇒ no ⊤-cause (the caller falls to unprobed / not-elidable).
+fn top_run_reason(
+    span: dorc_core::Span,
+    why_diags: &[dorc_core::diag::Diag],
+    arena: &ProvArena,
+    book_src: &str,
+) -> Option<String> {
+    why_diags.iter().find_map(|d| {
+        let psp = d.primary.span()?;
+        (psp.lo.0 >= span.lo.0 && psp.lo.0 < span.hi.0)
+            .then(|| dorc_core::diag::why(d, arena, book_src).map(|e| e.reason))
+            .flatten()
+    })
+}
+
+/// Parse a `dorc why` address as a SOURCE line-number (rul24-lineno-identity): `book.sh:12` ⇒ 12,
+/// bare `12` ⇒ 12 (the tail after the last `:` when numeric); a non-numeric tail ⇒ `None` ⇒ the
+/// caller treats the address as free CONTENT to substring-match.
+fn parse_line_address(addr: &str) -> Option<usize> {
+    addr.rsplit(':')
+        .next()
+        .unwrap_or(addr)
+        .parse::<usize>()
+        .ok()
+}
+
 /// Render a [`dorc_plan::EntityCoord`] as `kind:entity` for the attribution surface (empty
 /// entity ⇒ `kind:`, the singleton form). DISPLAY only — resolving an interned symbol for
 /// provenance is explicitly permitted; the engine never DECODES it for meaning
@@ -2488,6 +2776,61 @@ mod tests {
     use super::*;
     use dorc_core::{EntityRef, FactKey, Interner, KindId, OpaqueToken, SelectorId};
     use dorc_plan::{LeafId, ProbePlan, ProbePredict, ProbeSiteKind};
+
+    /// ack-2 / rul24-lineno-identity: the `dorc why` address parser reads a SOURCE line-number from
+    /// `book.sh:N` or bare `N` (the tail after the last `:` when numeric), so a `file:N` the report
+    /// PRINTS round-trips to the `N` a query ACCEPTS. A non-numeric tail ⇒ `None` ⇒ content-match.
+    #[test]
+    fn why_address_parses_line_number_or_falls_to_content() {
+        assert_eq!(parse_line_address("book.sh:12"), Some(12), "path:N ⇒ N");
+        assert_eq!(parse_line_address("12"), Some(12), "bare N ⇒ N");
+        assert_eq!(
+            parse_line_address("/abs/path/book.sh:3"),
+            Some(3),
+            "abs path:N ⇒ N"
+        );
+        assert_eq!(
+            parse_line_address("apt-get"),
+            None,
+            "non-numeric ⇒ content match"
+        );
+        assert_eq!(
+            parse_line_address("make install"),
+            None,
+            "content with a space ⇒ content match"
+        );
+    }
+
+    /// cheap-7: the firehose-suppression classifier. Assignments and pure/no-target-state builtins
+    /// (the engine's own list) are structurally-unprobeable ⇒ suppressed; a real un-oracled command
+    /// is NOT ⇒ it survives into the aggregate disclosure / the `dorc why` problem set.
+    #[test]
+    fn structurally_unprobeable_suppresses_assignments_and_pure_builtins() {
+        assert!(
+            is_structurally_unprobeable("pkg=nginx"),
+            "a bare assignment"
+        );
+        assert!(is_structurally_unprobeable("set -eu"), "the `set` builtin");
+        assert!(is_structurally_unprobeable(": harmless"), "the `:` builtin");
+        assert!(
+            is_structurally_unprobeable("echo hello"),
+            "the `echo` builtin"
+        );
+        assert!(is_structurally_unprobeable("cd /tmp"), "the `cd` builtin");
+        assert!(
+            !is_structurally_unprobeable("make install"),
+            "a real un-oracled command is NOT inert"
+        );
+        assert!(
+            !is_structurally_unprobeable("apt-get install -y nginx"),
+            "a real mutator is NOT inert (it is a genuine unprobed run worth disclosing)"
+        );
+        // A word that merely CONTAINS `=` past a non-name char is not an assignment.
+        assert!(
+            !is_structurally_unprobeable("./configure --prefix=/usr"),
+            "a flag `=` is not an assignment"
+        );
+    }
 
     fn pkg(i: &mut Interner, e: &str) -> FactKey {
         FactKey {
