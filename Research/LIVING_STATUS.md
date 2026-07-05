@@ -118,7 +118,31 @@ hard-died agent's orphan.
 - **On-ramp:** THIS block → `252` (protocol + §7) → `254` (review + retrospect ledger) → `255` (dry-run
   + predictions). All committed (`90ee2e2`). Live task: #6 (execution handoff).
 
-## Round-24 status (2026-07-04 latest — Stages 1–5A COMPLETE; kind-owner design round SETTLED; Part B next)
+## Round-24 status (2026-07-05 — Stages 1–5 COMPLETE (A+B) + owncoord + pipe-guard pins; polish pass IN FLIGHT; then e2e-migration + #12 + Stage 6)
+
+**Since the entry below (all conductor-verified + merged, tip ≈`aa31081`+):** **Stage 5 Part B
+(`reaches()`) LANDED** — typed emission held both promises (kind from the LIFTED annotation, never
+host stdout — the arm-index demux; static arms trace/ship-nothing, dynamic escalate); cross-author
+composition REAL (hork's `package:nginx` expanded through the owner's `reaches()`, the downstream
+file-fact demotes where pre-B it wrongly survived); four lying-nets green (static 579 / derived 220
+/ alias 147 / reach 97; poison-attribution 95); `resid-kindfn-derived` = the one asymmetry (dynamic
+arms over DERIVED coords need a 2nd round-trip; deferred with resid-resolve-derived). **owncoord
+LANDED** (24G §8: engine unions own effect-coord into non-empty footprints; the derived boilerplate
+printf died; empty-emission = no-claim boundary unit-pinned). **pipe-guard pins LANDED** (24C
+§pipe-guard: the r25 trial-shape floor is SAFE; gap = the check-side pipe precisely; owed value =
+check-tax+attention only; two Stage-6 forks parked: flag-pipe-status-unit / flag-filter-blessing).
+**rul24-warnings-tune-high + rul24-boilerplate-cargocult** minted (24G §8). **Git housekeeping**
+(human-delegated): 70 worktrees + husks removed, 71 absorbed branches deleted, ~115GB freed;
+keep-uniques listed in the cleanup report; `ai/snapshot` = unknown provenance, untouched, human
+eyeball owed. **IN FLIGHT: the first-contact polish pass** (charter `24H` + all 8 human
+ack-rulings; caret-art IN-SCOPE; elision-render greenlit — original-bytes-commented where rc
+unconsumed; golden churn UNBLOCKED by human ruling, conductor still inspects at merge).
+**QUEUED:** e2e de-graduation (audit DONE — **`24I`** = the execution spec; ~100/152 movable,
+5 safest-first batches; THE flag: the in-memory tier must add a one-shot `dash -n` per artifact
+or it re-opens the ap-2 text-diff trap) → `touches()` typed-emission migration (#12, human-set
+LAST) → Stage 6 (measure/conclude/extract; carries the two pipe-guard forks + adequacy-bite).
+
+## Round-24 EARLIER (2026-07-04 — Stages 1–5A; kind-owner design round)
 
 **Stage 5 Part A (the aliasing closure) LANDED + merged** (**147 e2e, 25 suites, all gates —
 conductor-verified by own hand**). `resid-aliasing` is CLOSED for resolver-bearing kinds: the
