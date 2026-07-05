@@ -1927,6 +1927,57 @@ command__predict() {
         );
     }
 
+    #[test]
+    fn opaque_pipe_predecessor_invalidates_downstream_query() {
+        // THE pipe-guard gap (round-25 field-trial flagship `otelcol --version | grep -q V
+        // || curl … | tar xz`): rule-query-validity fires through a PIPE, not only across
+        // sequential lines. The check-pipeline's GOVERNING status is its LAST stage; the
+        // admin's own tool sits in the NON-last stage, whose stdout is consumed and whose
+        // opacity (un-oracled) reaches the last-stage Query as ⊤ ⇒ the Query is INVALID
+        // (valid: false) ⇒ its resting rc is withheld from the fold ⇒ the `||` never folds ⇒
+        // the whole line runs. `ufw allow 80/tcp` stands in for the opaque first stage
+        // (un-oracled here); `command -v nginx` for the last-stage Query (the corpus test
+        // index has no `grep` kind — the flagship's real last stage is `grep -q`, same
+        // mechanism). Contrast `opaque_upstream` is the SEQUENTIAL sibling above; this pins
+        // that the pipe predecessor is upstream too (cfg lowers a pipeline as a stage
+        // sequence, so the first stage reaches the last in reaching-defs).
+        let mut i = Interner::default();
+        let idx = package_and_query_index(&mut i);
+        let classes = classify_src("ufw allow 80/tcp | command -v nginx", &mut i, &idx);
+        let nginx = tool_present(&mut i, "nginx");
+        assert!(
+            classes.contains(&SkipClass::QueryResolvable {
+                fact: nginx,
+                valid: false
+            }),
+            "a last-stage Query with an OPAQUE pipe-predecessor is INVALID (⊤ reached it \
+             through the pipe — the pipe-guard block): {classes:?}"
+        );
+    }
+
+    #[test]
+    fn query_pipe_predecessor_keeps_downstream_query_valid() {
+        // The isolation control for the pipe-guard gap: the blocker is the first stage's
+        // OPACITY, not the pipe structure. A read-only Query pipe-predecessor gens nothing
+        // into Reach, so the last-stage Query stays pristine ⇒ valid: true (it WOULD fold).
+        // Mirrors `query_after_query_stays_valid_st3` but across a `|` instead of a newline.
+        // (Empirically the whole shape folds with a non-opaque first stage — a pure `true |
+        // grep -q X` or a modeled `dpkg -s x | grep -q y` both replace+omit; the flagship
+        // fails ONLY because `otelcol` is un-oracled.)
+        let mut i = Interner::default();
+        let idx = package_and_query_index(&mut i);
+        let classes = classify_src("command -v curl | command -v nginx", &mut i, &idx);
+        let nginx = tool_present(&mut i, "nginx");
+        assert!(
+            classes.contains(&SkipClass::QueryResolvable {
+                fact: nginx,
+                valid: true
+            }),
+            "a last-stage Query with a non-mutating Query pipe-predecessor stays VALID — the \
+             pipe alone does not invalidate; only opacity/mutation upstream does: {classes:?}"
+        );
+    }
+
     // --- y-1 (redirect-effects, `21F` imp-1): a write-redirect is a file-write WRITER ----
 
     /// `file:<path>#written` — the cell a write-redirect (`>`/`>>`) to `path` gens.
