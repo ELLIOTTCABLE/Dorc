@@ -663,7 +663,9 @@ Count what must all be true, together, before it can bite:
 5. The running wall was *described* — its author made a clean at-most claim. An opaque wall,
    a confused trace, a half-resolvable argparse: all collapse to a total wall, and everything
    behind it runs or guards. Structural partiality cannot reach this corner; only a *clean*
-   claim can be wrong here.
+   claim can be wrong here. (This is the oracle's version of
+   `--trust-footprints` - *both* players must *explicitly* buy-in to
+   unsoundness.)
 6. That clean claim was wrong in the one way no machine can see: complete-looking but
    semantically incomplete. A `touches()` omitting a cell the tool really disturbs; a
    `reaches()` missing an edge; a `resolve()` splitting one referent into two names. (The
@@ -674,12 +676,16 @@ Count what must all be true, together, before it can bite:
 8. And the unlucky overlap: this line's fact had to live exactly in the omitted spot — the
    wall really touched the cell the claim said it didn't.
 
-Then, and only then: a line that needed to run, didn't, silently. Even then, the bite has
-edges. It is *attributed* — the plan recorded whose claims licensed the survival, the
-`why`-lens names them, and the fix repairs every book downstream of that oracle at once. It
-is *short* — the next plan's probe measures reality, not memory; the broken fact reads
-diverged and the line comes back. And it is *narrow* — every other line in the book ran,
-guarded, or elided under its own separate license.
+Then, and only then: a line that needed to run, didn't, silently.
+
+**We've committed under-execution. Our cardinal sin.**
+
+Even then, the bite has edges. It is *attributed* — the plan recorded whose
+claims licensed the survival, the `why`-lens names them, and the fix repairs
+every book downstream of that oracle at once. It is *short* — the next plan's
+probe measures reality, not memory; the broken fact reads diverged and the line
+comes back. And it is *narrow* — every other line in the book ran, guarded, or
+elided under its own separate license.
 
 What the corner buys, and why it stays open rather than closed: attention on drifted days —
 the entire stage-5-through-7 product. Without it, any line that really runs is an honest
