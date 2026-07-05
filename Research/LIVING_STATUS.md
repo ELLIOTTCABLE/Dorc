@@ -26,8 +26,12 @@ than dorc's model, §7 noise-governance [A/A envelope, world-drift, planted cana
 harness security-net (flagged its box-spend as an unauthorized real-world transaction — the net is
 PER-SUBAGENT and can't see the conductor's standing spend-auth); its box was orphaned then
 conductor-REAPED (`3d34d700` destroyed, eurydice safe, key confirmed valid). Its harness is likely
-INCOMPLETE — salvage its commits. PROCESS-FIX: the CONDUCTOR provisions/destroys boxes going forward
-(subagent-spend trips the net → halt+orphan); agents work on a GIVEN box. Bugs found: `vultr.sh`'s
+INCOMPLETE — salvage its commits. PROCESS-MODEL **DECIDED (a)** (human 2026-07-05): the CONDUCTOR owns the box LIFECYCLE — provision +
+destroy via plain `vultr-cli` API calls (authorized in-context, Fable-safe, **no orphans even if an
+agent halts mid-apply**); agents only ssh/apply/observe on a GIVEN box. Applies to P4/differential +
+all box-work. **OWED — DELEGATE to mini-subagents (do NOT conductor-fix, per human): (1) salvage +
+finish P2's partial observer harness (`worktree-agent-a3557…` branch) under model (a); (2) fix the
+bugs below.** Bugs found: `vultr.sh`'s
 auth-recheck fails on a VALID key (re-sources without `set -a`?); `vultr-cli instance delete` needs the
 FULL UUID (short id → 400 invalid-resource-format).** **verify-errand**
 (`a114…` — in-repo `dorc plan` on the book: settle pred-1-errexit + the host-guard-wall MECHANIC;
