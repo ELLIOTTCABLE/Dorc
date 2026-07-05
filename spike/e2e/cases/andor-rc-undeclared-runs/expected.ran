@@ -1,2 +1,0 @@
-ran: useradd deploy
-ran: mkdir /srv/app
