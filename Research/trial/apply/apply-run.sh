@@ -127,6 +127,7 @@ cmd_apply_run(){
          --local|-L) LOCAL=1; shift ;;
          --out)      RUN_DIR="${2:?--out needs a DIR}"; shift 2 ;;
          --)         shift; break ;;
+         -)          break ;;                 # lone '-' = read plan from stdin (a positional)
          -*)         die "unknown flag: $1 (try: $SELF help)" ;;
          *)          break ;;
       esac
