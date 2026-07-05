@@ -323,3 +323,96 @@ choose, to *dictate* things - that is, explicitly exclude handling them, and
    irreconcilably*)
 
 (UNFINISHED, FILLME)
+
+
+Spelling, language-design, and the flavour we want
+--------------------------------------------------
+
+[DESIGN.md][] goes into some detail about a core Dorc tenet: staying
+"spelled-as-sh." It's worth elaborating on *why*, though. (You'll further note
+that, despite mentioning that several times, we've evolved a *very*
+not-spelled-as-sh typesystem.)
+
+A portion of spelled-as-sh is flavour; this project was borne out of my general
+annoyance at Ansible-YAML, and the observation that "nothing you do is going to
+stop ops'ers from writing a bunch of sh; it's as inevitable as JavaScript on the
+web." To me, it was *always*, observably, going to be "sh-plus-<something>", and
+it follows that the *simplest* thing is to make the plus-something ... nothing.
+Just make it all sh.
+
+(If you can't beat 'em, join 'em.)
+
+However, it runs deeper than that: there's a principaled approach here that
+draws *towards* sh, other than just "we're stuck with it."
+
+At the end of the day, most ops-tasks involve *doing things on servers*. An
+orchestrator, meanwhile, sits *between* the human and doing-things-on-servers.
+Worst of all, though, an orchestrator *like dorc* can, and follow this slowly
+... decide to *not* do-things-on-servers.
+
+(See the above: that's "under-execute". By my design, the Cardinal Sin.)
+
+To some extent, with the level of chaos and underspecified-unknowns involved in
+ops, we'll (we-as-in-Dorc) *never* be able to fully guarantee safety. (See
+'correctness' above.) We *tame* it, we bound it and corral it.
+
+In practice, what "corral" it *really* boils down to is two things:
+
+1. rearranging the danger (often *concentrating* the dangerous unknowns into
+   focused locations, where users have more leverage to deal with them), and
+2. *attributing* the danger (ensuring users know when, where, why, and
+   *because-of-whom* something went wrong.)
+
+Don't mistake the second one as CYA blame-game playing: the quickest resolution
+to a real-world problem *is* through attribution.
+
+You shift leverage into a place where someone *can* effectively fix it, and you
+ensure fixes to that class of problems get *routed to that empowered person. In
+Dorc, this usually looks like a deep provenance-web, and language-design that
+concentrates and surfaces uncertainty, putting all the uncertainty we possibly
+can *into some particular person's hands*.
+
+And here's where spelling-as-sh shines:
+
+**authorship.**
+
+If we never generate code, if we never transpile or collate or restrict, then
+there's always *a particular bit of actual-sh, written by a particular actual
+human*, that made a particular thing happen on a server. Someone is
+*answerable*; and with Dorc's help, we can try to ensure their *answer* is a
+quick "oops, I can fix this."
+
+(In many cases, that person is you, wearing your engineer-hat instead of your
+admin-hat; which is aligned-incentives with Dorc-as-gradual-enhancement-engine:
+issues and problems' warnings can *say* "this worked, but poorly; when you have
+time, <over here> is precisely where value-add is most leveraged to make your
+admin-life less painful.")
+
+
+### Be sh, or be *very*-not-sh, don't half-ass it
+
+That said, there's boundaries. The value of spelling-as-sh drops to near-zero
+when two things are *both* true:
+
+1. a thing cannot be idiomatic, cannot contribute to the off-ramp: it has *no*
+   value (not less; *none*) outside of the Dorc ecosystem;
+2. **and** that thing doesn't directly produce a single, concrete thing on a
+   server - it doesn't *run commands itself*. (It doesn't need point-to-point
+   "here's where's that shell-command came from" provenance.)
+
+In such cases, we try and stay eyes-open to the *downsides* of spelled-as-sh.
+
+Because here's the thing: sh *sucks*; it's a *terrible* programming-language.
+It's turing-complete, but pathological for real software-engineering.
+Stringly-typed, decades upon decades of accreated backwards-compatibility and
+cross-platform-*in*compatability, missing several decades' PLT- and
+industry-insight into programming-language design and ergonomics.
+
+So, trying to shoehorn-in "spelled-as-sh" when it has no benefit to us, or when
+sh *has* no spelling of a concept, is a fool's errand. Hence the other pole of
+our approach:
+
+Either spell it idiomatically, or don't spell it as sh *at all*.
+
+When we break with sh, we break with sh *hard*, and try to follow actual modern,
+quality language-design principals.
