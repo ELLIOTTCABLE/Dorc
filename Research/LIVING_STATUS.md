@@ -33,9 +33,18 @@ all box-work. **OWED — DELEGATE to mini-subagents (do NOT conductor-fix, per h
 finish P2's partial observer harness (`worktree-agent-a3557…` branch) under model (a); (2) fix the
 bugs below.** Bugs found: `vultr.sh`'s
 auth-recheck fails on a VALID key (re-sources without `set -a`?); `vultr-cli instance delete` needs the
-FULL UUID (short id → 400 invalid-resource-format).** **verify-errand**
-(`a114…` — in-repo `dorc plan` on the book: settle pred-1-errexit + the host-guard-wall MECHANIC;
-amends `255 §5`). Both report/cherry-pick back to conductor.
+FULL UUID (short id → 400 invalid-resource-format).** **verify-errand `a114…` — DONE + cherry-picked
+(`c9b8f7c`, `255 §5.1`):** in-repo `dorc plan` on the book (base stdlib RECONSTRUCTED from vouched
+passing fixtures — NOT the real ~40-oracle bootstrap, which isn't an artifact yet; coreutils/service/ufw
+unmodeled, so their guard/run split isn't from this run — doesn't move the elide headline). **CONFIRMED,
++SURE:** the `case "$(hostname)"` host-guard (book L32) WALLS the whole book — `$(unmodeled-hostname)` is
+effect-bearing (`dq-cmdsub-inner-nonleaf`), a poison-wall → **Stage-B AS-WRITTEN = `elide=0, guard=4,
+run=53`** of 57 sites (zeroes the predicted 5; §2/§6 numbers describe the book with L32 REMOVED). No
+`hostname` oracle exists anywhere in the 145-case corpus (no read-value cmd — hostname/uname/whoami —
+modeled at all). pred-1 errexit mechanism CONFIRMED in isolation (bare mutator elide→run under `set -e`;
+`dpkg||install` guard survives) ⇒ **=4 absent the wall, but the wall dominates → observed 0.** bk-nit:
+book L31 "per pi-webhost" provenance is FALSE (the real `headline-pi-webhost` fixture has no
+`case "$(hostname)"`). P2 (`a3557…`) still reports/cherry-picks back to conductor.
 
 **BUILT + on r25** (`Research/trial/`): **P1** Vultr substrate (`vultr/vultr.sh`, tag-scoped, proven),
 **P3** ssh-runner (`apply/`, the `usekeychain` `-F` fix + C-run flags), **P6** HHHF capture tooling
@@ -51,7 +60,14 @@ fixed grafana `--config`, prometheus `--web.route-prefix=/`, nginx subpath). Doc
   install/ln/chmod/rm — not "trust coreutils").
 - **P4 full differential — BLOCKED** on P2 landing + dorc-side `crates/` mutations (r24's; P2 catalogues).
 - **version-guard-lift (u3) — r24-OWNED** (pipe-guard doesn't-lift-at-HEAD, fix in flight, lands before r25).
-- **Fold `255 §5` predictions → `252 §4`** (owed; the verify-errand's amendment is the correction vehicle).
+- **Fold `255 §5` predictions → `252 §4/§8`** (STILL OWED; the verify-errand's amendment LANDED —
+  `255 §5.1`, `c9b8f7c` — and carries the corrected numbers: Stage-B as-written = **0-elide**, capped by
+  the host-guard wall; the `+10` value-curve + `~15/30` frontier are only reachable PAST L32. The fold
+  must carry: (i) hostname-coverage owed to P5 [no oracle exists corpus-wide]; (ii) day-remediation
+  options [drop L32 / author a `hostname` pure-read oracle / lift via the footprint tier, Stages 4-5].
+  Also a test-owner flag: `strawman24-errexit-defeats` can no longer isolate errexit cost — its oracles
+  carry no `is_converged` vouch, so it zeroes via the no-vouch floor, not errexit; clean isolation is the
+  `set -e`-injection in §5.1 vf-2.)
 - **Human-gated:** `_assert_tagged` eyeball (before bulk `destroy-all`); HHHF zsh smoke-test; the B2
   hint-confound check (did r24 land the stage-3 hint? `252 §9` memo-4).
 
@@ -62,7 +78,9 @@ fixed grafana `--config`, prometheus `--web.route-prefix=/`, nginx subpath). Doc
 **Findings (durable, `252 §8/§9`):** first-blood spine = felt-WORKING experience (`dorc why`-illuminates
 + admin-loop-reward + plan-trust), adequacy mechanized to the background differential; multi-wall-cascade
 → `touches()` load-bearing (validated on drifted days); rc≠health (differential must check `is-active`);
-attribution/LLM-authorship watch-item; the host-guard-wall/hostname-coverage item (verify-errand).
+attribution/LLM-authorship watch-item; **host-guard-wall CONFIRMED** (verify-errand `255 §5.1`: `case
+"$(hostname)"` walls the book → Stage-B as-written 0-elide; `$(unmodeled-cmd)` substitution is the
+trigger, not `case` itself; `hostname` coverage owed to P5, no oracle exists corpus-wide).
 
 ---
 
