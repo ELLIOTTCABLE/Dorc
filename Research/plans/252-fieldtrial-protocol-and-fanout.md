@@ -352,3 +352,52 @@ deliverable, pre-Phase-A.
 canary + `086`-sensitivity *build*; the probe-inertness differential arm (the sole test of the "plan
 doesn't mutate" weld against real tools); the full drift arm; the `do-4` hot-loop re-apply scenario.
 **Discarded as noise:** the "first-contact is already-spent, stop protecting it" reframe.
+
+## §8. First-blood emphasis + findings (2026-07-05)
+
+From the current-doc review (DESIGN/IMPLEMENTATION/USER_STORY) + the OTel re-point + two findings. Human-directed refinements to this live plan.
+
+**Emphasis reframe (human): the first-blood day's SPINE is the felt WORKING experience, not worst-case
+failure-hunting.** The docs spend most of their ink fencing the worst-case (the horizon / bought-
+unsoundness / un-attributable under-execution) because it's the hard part to *fence* — not because it's
+the common part. If the design is good, that corner is small; a one-shot day built to hunt it measures
+the tail and under-exercises the body. The day's spine is three felt moments in the *common* case:
+- **`dorc why` illuminating** — when a line elided or survived a wall and you ask `why`, does the answer
+  *land* ("ah — that's why"), honest and legible, or do you squint? (the core `target-felt-product`).
+- **admin-loop reward** — write the one small oracle, re-run `plan`, watch it *shrink* (the +N cascade);
+  does it feel like the effort paid?
+- **plan-preview trust** — does the elided plan feel like *relief*, or do you re-read the commented-out
+  lines anyway (DESIGN priority-3 trust-coupling)?
+Adequacy is NOT dropped — it's **mechanized**: the differential + drifted-day runs own adequacy-
+correctness silently underneath (fire only if something's wrong), which is what *frees* attention for
+the felt-experience. Weight: `target-felt-product` + `target-admin-loop` lead the day; `target-adequacy`
+is the background net.
+
+**Finding — `version-guard-lift`** (renamed from the incoherent "u3"): does the built spike lift a
+*stdout-consuming* version-check guard (`cmd --version | grep -q X || download`, decision flowing through
+stdout) vs only the bare-rc *presence* guard (`dpkg -s || install`) it provably handles? Load-bearing —
+all 3 OTel vendor oracles ride it; if it doesn't lift, the vendor-install admin-loop buys nothing.
+**STATUS (human, 2026-07-05): an r24 in-flight item** — the value-flow machinery is built + validated,
+the final tie-together is pending, scheduled to land BEFORE r25 fires. (An in-repo probe 2026-07-05
+confirmed the *current* build does NOT yet lift it — `grep`-on-stdin binds no entity, deciding leaf is
+⊤ — consistent with "machinery there, tie-together not done.") NOT an r25-settle item; confirm it lands
+(human syncing the r24 conductor).
+
+**Finding — multi-wall-cascade → `touches()` is load-bearing.** In the multi-service OTel book, one
+stale *middle* vendor (prometheus) re-walls its whole *tail* by CFG position alone — a converged grafana
+*past* a running prometheus can't elide — dropping elision ~15→9 on a drifted day. A real box is almost
+never fully-converged, so the all-green ceiling is the *rare* day; the typical day is "something mid-book
+drifted, tail collapsed." The **footprint tier (`touches()`, stage-5, r24-built)** is exactly the fix
+(disjoint footprint ⇒ grafana survives). So the trial's **drifted-day runs exercise `touches()`
+load-bearingly** — real validation the footprint tier isn't architecture-astronauting. Scoping: this
+validates **`touches()`** (the single-box half); **`reaches()`/`resolve()`** (stages 6-7) are
+FLEET-scoped by design (USER_STORY: "do not move a single book's numbers; value shows across the fleet /
+multiple authors") and a one-box/one-author trial structurally cannot exercise them — correctly
+un-tested here, justified by the collaboration story. (Presumes `version-guard-lift`.)
+
+**Watch-item (background, NOT a day-organizer): the attribution / LLM-authorship collision.**
+IMPLEMENTATION's horizon now states "errors we can't attribute are necessarily *our* fault," and the
+whole fault-model (concentrate-and-attribute-the-bite) rests on an *answerable human* behind each oracle.
+The trial's stdlib is LLM-authored — so a wrong LLM-oracle's silent under-execution attributes to an
+author who can't be paged. The `llm-authoring-twist` may quietly break the *attribution* half — which
+IMPLEMENTATION now calls the half that matters most. Notice if it bites; don't organize around it.
