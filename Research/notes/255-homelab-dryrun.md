@@ -272,10 +272,13 @@ not shorter — and the human LOCKED docker/HA precisely to exercise that floor.
   behind the docker wall** so it is the *tractable* hand-oracle target (the version-guarded download →
   the human's one oracle, §2C) and its unit is service-oracle-able. *Alt (the blessed path):*
   docker-compose would put windmill behind a second docker wall — the whole windmill tier becomes
-  opaque residue and the tractable hand-oracle vanishes. **FLAG (realism, ~SUSPECT):** the bare-binary
-  path is less-documented than compose; if it doesn't run on the day, fall back to compose and the
-  trial adapts (windmill joins the residue; postgres+nginx still exercise elision). Pending research
-  confirmation of the release-asset name + `DATABASE_URL` env + default port (:8000).
+  opaque residue and the tractable hand-oracle vanishes. **FIRMED (255-firming):** the bare binary IS
+  real (asset `windmill-amd64`, present in v1.747.0) so the curl runs — but upstream documents the
+  native path nowhere (README/self_host = compose/helm/cloud only; first-party Q&A "not recommended
+  unless you know what you're doing"), so dec-2 is validated by-absence-of-docs: if it misbehaves on
+  the day, fall back to compose and the trial adapts (windmill joins the residue; postgres+nginx still
+  exercise elision). Release-asset name + `DATABASE_URL` + default port (:8000) all confirmed, plus
+  `MODE=standalone`/`BASE_URL` (§7 appendix).
 - **dec-3 · PostgreSQL as a system service (apt), NOT a container.** (a) apt/systemctl-oracle-able ⇒
   elision fires on install + service; (b) a **real drift-able DB** — the live `target-adequacy`
   substrate the trial is built to probe; (c) shared by windmill ⇒ a rich cross-service edge. *Alt:*
