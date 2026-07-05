@@ -372,6 +372,7 @@ fn run() -> Result<(), String> {
         &classes,
         &kills,
         survival.as_ref(),
+        None, // 24F Stage 5: the resolver (canonicalization) lane — wired in a later stage
         &vouches,
         |f| {
             by_fact

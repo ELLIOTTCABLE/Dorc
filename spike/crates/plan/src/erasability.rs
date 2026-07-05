@@ -347,7 +347,10 @@ mod tests {
     fn digest_is_deterministic_and_stable_for_empty() {
         // The digest is a pure function of the canonical plane; an empty plan/probe/diags
         // hashes to a fixed value (drift-detection baseline). Two calls agree.
-        let plan = Plan { steps: vec![] };
+        let plan = Plan {
+            steps: vec![],
+            survival_report: crate::SurvivalReport::default(),
+        };
         let probe = ProbePlan::default();
         let ast = dorc_syntax::parse("").value;
         let interner = dorc_core::Interner::default();

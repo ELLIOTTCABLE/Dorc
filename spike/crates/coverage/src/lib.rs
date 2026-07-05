@@ -488,6 +488,7 @@ pub fn build_report(inputs: &Inputs<'_>) -> Report {
         &classes,
         &kills,
         None,
+        None,
         &vouches,
         observe,
         &mut arena,

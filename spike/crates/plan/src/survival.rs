@@ -30,7 +30,7 @@
 //! `inv-referent-agnostic`: a coordinate is an interned `(KindId, entity)` pair, compared as
 //! symbols, NEVER as text (24A §1b vocabulary fence).
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use dorc_analysis::cfg::CfgNodeId;
 use dorc_core::{EntityRef, FactKey, KindId, Symbol};
@@ -70,6 +70,163 @@ impl EntityCoord {
     #[must_use]
     pub fn entity(self) -> EntityRef {
         self.entity
+    }
+}
+
+/// A **canonical** entity-coordinate — the form [`disjoint`] compares (24F §6, the resid-aliasing
+/// closure). Minted ONLY by [`Resolutions::canonicalize`] (the engine's resolution step; the
+/// fields are private and no other constructor exists), so a raw interned [`EntityCoord`] CANNOT
+/// reach the intersection in a resolver-bearing kind by construction — the compile-error family
+/// (TC-style): the comparison consumes `CanonicalCoord`, never `EntityCoord`. For a resolver-LESS
+/// kind the mint is the IDENTITY (token = canon — the honest floor, per-kind gradual enhancement).
+///
+/// `inv-referent-agnostic` (24F reconciliation): the canonical entity is the owner's resolver
+/// OUTPUT interned into an opaque token — the ENGINE never decodes it for meaning; it ships the
+/// owner's resolver, interns its output, and compares canonical forms as SYMBOLS, never as text.
+/// The owner decodes; the engine plumbs.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub struct CanonicalCoord {
+    kind: KindId,
+    entity: EntityRef,
+}
+
+impl CanonicalCoord {
+    /// The kind (display/provenance only — `inv-referent-agnostic`).
+    #[must_use]
+    pub fn kind(self) -> KindId {
+        self.kind
+    }
+
+    /// The canonical entity (display/provenance only).
+    #[must_use]
+    pub fn entity(self) -> EntityRef {
+        self.entity
+    }
+}
+
+/// Why a coordinate degraded to MAY-ALIAS (24F §3a): a resolver-bearing kind whose resolver did
+/// not return a clean canonical form for this entity. A closed enum so a new degrade-reason breaks
+/// every exhaustive match (the compiler-as-checklist).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum MayAliasReason {
+    /// The kind's resolver produced no usable canonical form for this coordinate — a ⊤ / non-zero
+    /// rc / empty / malformed answer, a DANGLING reference (24F §4), OR a resolver-bearing
+    /// coordinate absent from the resolution map (the resolver never resolved it). The owner
+    /// declared "identity in this kind needs resolution", so an unresolved coordinate is suspect
+    /// BY THE OWNER'S OWN TESTIMONY ⇒ degrade toward run, NOT to token-equality (24F §3a — the
+    /// failure-direction is load-bearing: falling back to token-equality would trade safety for
+    /// value on exactly the coordinate the owner flagged as resolution-needing).
+    Unresolved,
+}
+
+/// The outcome of canonicalizing ONE coordinate through its kind's resolver (24F §6): a proven
+/// [`CanonicalCoord`], or a [`MayAlias`](Resolution::MayAlias) degrade carrying WHY. NEVER a bool
+/// (24F §6) — a may-alias flows to demote (fail toward run, §3a); a canonical flows to the
+/// disjointness comparison.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Resolution {
+    /// The coordinate canonicalized cleanly (or the kind is resolver-less ⇒ identity).
+    Canonical(CanonicalCoord),
+    /// The resolver could not canonicalize it (§3a) — the comparison degrades toward run.
+    MayAlias(MayAliasReason),
+}
+
+/// The owner-declared canonicalization map for one plan run (24F §3 — dynamic points-to). The
+/// kind-OWNER holds entity-identity (23M contribution-vs-identity: authority over the *nouns*), so
+/// a kind-owner ships a `<kind>.resolve()` (the identity role-sibling); this map is the readback of
+/// running those resolvers host-side per coordinate (built at the cli/sweep edge from the
+/// `resolv`-lane records, or in the DST from the modeled host). It is consumed BY REFERENCE in the
+/// survival walk to canonicalize BOTH footprint and backing coordinates BEFORE [`disjoint`].
+///
+/// **Per-kind gradual enhancement (24F §3):** a kind with NO resolver keeps today's token-equality
+/// (the status quo is the floor, not an error); resolver coverage buys aliasing-safety kind by
+/// kind — the you-get-what-you-put-in curve.
+///
+/// # When a mint blocks your build (rul24-critical-type-docs)
+///
+/// [`disjoint`]/[`wall_verdict`] DEMAND a `&Resolutions`. If a caller has no resolvers, pass
+/// [`Resolutions::none`] — the empty map: every kind resolver-less, every coordinate identity =
+/// token-equality (the honest floor). NEVER fabricate a canonical form to force two coordinates
+/// together or apart — the resolver's OUTPUT is the sole source of a canonical, exactly as an
+/// authored `touches()` is the sole source of a [`Footprint`] (the 233 discipline, applied to
+/// identity). An unresolved resolver-bearing coordinate is [`MayAlias`](Resolution::MayAlias) ⇒
+/// demote, never silently token-equal.
+#[derive(Debug, Clone, Default)]
+pub struct Resolutions {
+    /// Kinds whose owner shipped a resolver. A coordinate in such a kind ABSENT from `canon` is
+    /// MAY-ALIAS (§3a), never token-equal.
+    resolver_kinds: BTreeSet<KindId>,
+    /// Per resolved coordinate, its canonical entity (the resolver's readback output, interned).
+    canon: BTreeMap<EntityCoord, EntityRef>,
+    /// Coordinates the resolver flagged DANGLING (24F §4): a reference to a non-existent entity on
+    /// an enumerable kind (`dpkg-query -W` non-zero). Rides the may-alias degrade AND surfaces as a
+    /// loud diagnostic at the edge.
+    dangling: BTreeSet<EntityCoord>,
+}
+
+impl Resolutions {
+    /// The empty map — the honest floor (every kind resolver-less ⇒ token-equality). The
+    /// flag-off / no-resolver-oracle path, and the identity element for existing behaviour.
+    #[must_use]
+    pub fn none() -> Self {
+        Self::default()
+    }
+
+    /// Declare a kind resolver-bearing (its owner shipped a `<kind>.resolve()`) even if no
+    /// coordinate resolved — so a coordinate in it that produced NO readback degrades to may-alias
+    /// (§3a), not to token-equality.
+    pub fn add_resolver_kind(&mut self, kind: KindId) {
+        self.resolver_kinds.insert(kind);
+    }
+
+    /// Record a coordinate's resolved canonical entity (the resolver's host-run output, interned
+    /// into the shared vocabulary — the vocabulary fence). Marks the coordinate's kind
+    /// resolver-bearing.
+    pub fn record(&mut self, coord: EntityCoord, canonical: EntityRef) {
+        self.resolver_kinds.insert(coord.kind);
+        self.canon.insert(coord, canonical);
+    }
+
+    /// Flag a coordinate DANGLING (24F §4): the resolver's natural failure on an enumerable kind
+    /// (a reference to a non-existent entity). Rides the may-alias degrade (a dangling coordinate
+    /// canonicalizes to [`MayAlias`](Resolution::MayAlias)) and is surfaced as a loud diagnostic.
+    pub fn record_dangling(&mut self, coord: EntityCoord) {
+        self.resolver_kinds.insert(coord.kind);
+        self.dangling.insert(coord);
+    }
+
+    /// The dangling coordinates (24F §4 — the loud per-coordinate diagnostic the edge emits).
+    pub fn dangling(&self) -> impl Iterator<Item = EntityCoord> + '_ {
+        self.dangling.iter().copied()
+    }
+
+    /// Whether a kind is resolver-bearing (the why-lens names the resolver only for such kinds).
+    #[must_use]
+    pub fn has_resolver(&self, kind: KindId) -> bool {
+        self.resolver_kinds.contains(&kind)
+    }
+
+    /// Canonicalize one coordinate (24F §6 — the SOLE minter of [`CanonicalCoord`]). A
+    /// resolver-LESS kind ⇒ identity (token = canon, the honest floor). A resolver-bearing kind ⇒
+    /// the recorded canonical, or [`MayAlias`](Resolution::MayAlias) if absent/dangling (§3a — the
+    /// owner declared identity needs resolution, so unresolved is suspect ⇒ fail toward run).
+    #[must_use]
+    pub(crate) fn canonicalize(&self, coord: EntityCoord) -> Resolution {
+        if !self.resolver_kinds.contains(&coord.kind) {
+            return Resolution::Canonical(CanonicalCoord {
+                kind: coord.kind,
+                entity: coord.entity,
+            });
+        }
+        match self.canon.get(&coord) {
+            Some(canon) if !self.dangling.contains(&coord) => {
+                Resolution::Canonical(CanonicalCoord {
+                    kind: coord.kind,
+                    entity: *canon,
+                })
+            }
+            _ => Resolution::MayAlias(MayAliasReason::Unresolved),
+        }
     }
 }
 
@@ -211,19 +368,66 @@ impl DisjointnessProof {
     }
 }
 
-/// The one asymmetric intersection test (TC-2): does `footprint` leave `backing` untouched?
-/// `Some(proof)` iff NO coordinate in the footprint matches the backing (entity-granular —
-/// same `(kind, entity)` is a hit; a different entity or kind is disjoint). `None` iff a hit
-/// (the fact's backing is poisoned ⇒ the elision cannot survive). The argument ORDER is
-/// load-bearing and type-enforced: `disjoint(&Backing, &Footprint)` does not compile, so a
+/// The outcome of the asymmetric intersection test over CANONICAL coordinates (24F §6): the
+/// footprint leaves the backing [`Disjoint`](DisjointOutcome::Disjoint) (proven clear), a
+/// [`Hit`](DisjointOutcome::Hit) (a proven canonical collision — the same referent, possibly
+/// under two names), or [`MayAlias`](DisjointOutcome::MayAlias) (a same-kind pair the resolver
+/// could not canonicalize — cannot prove disjoint, §3a). Both `Hit` and `MayAlias` demote (fail
+/// toward run, `inv-kfail`); the distinction is attribution + the may-alias fire-rate instrument.
+#[derive(Debug, Clone, Copy)]
+pub enum DisjointOutcome {
+    /// No canonical footprint coordinate collides with the (canonical) backing — the elision may
+    /// survive this wall.
+    Disjoint(DisjointnessProof),
+    /// A footprint coordinate canonicalizes to the SAME referent as the backing (two names, one
+    /// thing) — the under-execute the closure catches ⇒ demote.
+    Hit,
+    /// A same-kind pair could not be canonicalized (resolver ⊤/dangling/absent, §3a) — disjointness
+    /// is unprovable ⇒ demote (toward run).
+    MayAlias(MayAliasReason),
+}
+
+/// The one asymmetric intersection test (TC-2 / 24F §3), over **canonical** coordinates: does
+/// `footprint` leave `backing` untouched once BOTH sides pass through the kind's resolver? Each
+/// footprint coordinate and the backing are canonicalized via `resolutions` (24F §6 — a raw
+/// [`EntityCoord`] cannot reach the comparison; only a [`CanonicalCoord`] does), then compared
+/// entity-granular. A DIFFERENT kind is disjoint outright (a resolver canonicalizes only WITHIN a
+/// kind, never across — kinds are the vocabulary fence, not resolvable). Within one kind: two
+/// canonical forms equal ⇒ [`Hit`](DisjointOutcome::Hit) (the `nginx`/`nginx-full` closure); a
+/// same-kind pair either side of which is [`MayAlias`](Resolution::MayAlias) ⇒
+/// [`MayAlias`](DisjointOutcome::MayAlias) (§3a — fail toward run). A resolver-LESS kind
+/// canonicalizes by identity, so this REDUCES to today's token-equality (the honest floor). The
+/// argument ORDER is type-enforced: `disjoint(&Backing, &Footprint, …)` does not compile, so a
 /// caller cannot silently swap "what was written" for "what is read".
 #[must_use]
-pub fn disjoint(footprint: &Footprint, backing: &Backing) -> Option<DisjointnessProof> {
-    // Entity-granular: compare (kind, entity), never the fact's selector.
-    let hit = footprint.coords.contains(&backing.coord);
-    (!hit).then_some(DisjointnessProof {
-        backing: backing.coord,
-    })
+pub fn disjoint(
+    footprint: &Footprint,
+    backing: &Backing,
+    resolutions: &Resolutions,
+) -> DisjointOutcome {
+    let backing_canon = resolutions.canonicalize(backing.coord);
+    let mut may_alias: Option<MayAliasReason> = None;
+    for fc in &footprint.coords {
+        // Different KIND ⇒ ground-disjoint (resolvers canonicalize entities WITHIN a kind, never
+        // across kinds) — no resolution consulted for this pair.
+        if fc.kind != backing.coord.kind {
+            continue;
+        }
+        match (resolutions.canonicalize(*fc), backing_canon) {
+            (Resolution::Canonical(a), Resolution::Canonical(b)) if a == b => {
+                return DisjointOutcome::Hit; // two names, one referent (or token-equal at the floor)
+            }
+            (Resolution::Canonical(_), Resolution::Canonical(_)) => {} // distinct canon ⇒ this pair clear
+            // One side unresolved in a resolver-bearing kind ⇒ can't prove THIS pair disjoint (§3a).
+            _ => may_alias = Some(MayAliasReason::Unresolved),
+        }
+    }
+    match may_alias {
+        Some(reason) => DisjointOutcome::MayAlias(reason),
+        None => DisjointOutcome::Disjoint(DisjointnessProof {
+            backing: backing.coord,
+        }),
+    }
 }
 
 /// One record of a downstream elision crossing one running wall (TC-3 attribution): which
@@ -236,6 +440,11 @@ pub struct Crossing {
     footprint: Vec<EntityCoord>,
     origin: FootprintOrigin,
     proof: DisjointnessProof,
+    /// The kind whose resolver canonicalized the compared coordinates, if the backing's kind is
+    /// resolver-bearing (24F §6 attribution: the why-lens says "…survives: disjoint AFTER
+    /// `<kind>.resolve()` canonicalization"). `None` for a resolver-less kind (plain token-equality
+    /// disjointness — no resolver to name).
+    via_resolver: Option<KindId>,
 }
 
 impl Crossing {
@@ -268,6 +477,15 @@ impl Crossing {
     #[must_use]
     pub fn proof(&self) -> DisjointnessProof {
         self.proof
+    }
+
+    /// The resolver that canonicalized this crossing's compared coordinates, if any (24F §6): the
+    /// why-lens names `<kind>.resolve()` for a resolver-bearing kind, and says plain token-equality
+    /// for `None`. Attribution-primacy — the aliasing closure is the sharpest claim in the design,
+    /// so a survival it licensed must always name which resolver's identity-judgment it trusted.
+    #[must_use]
+    pub fn via_resolver(&self) -> Option<KindId> {
+        self.via_resolver
     }
 }
 
@@ -356,8 +574,26 @@ pub(crate) enum WallVerdict {
     SurvivedClean,
     /// Crossed ≥1 running wall, every one disjoint — survives, with attribution.
     Survived(SurvivalWitness),
-    /// A total wall stands, or the backing hit some wall's footprint — demote to `Run`.
-    Demoted,
+    /// A total wall stands, the backing hit some wall's footprint, or a same-kind pair could not be
+    /// canonicalized (§3a) — demote to `Run` (`inv-kfail`). The [`DemoteReason`] drives the
+    /// may-alias fire-rate instrument (24F §3a — a swamped yardstick is a finding to surface).
+    Demoted(DemoteReason),
+}
+
+/// Why a converged mutator's `Replace` demoted to `Run` (24F §3a instrumentation). `MayAlias` is
+/// the one the yardstick counts: a resolver-gap demote (fail toward run), distinct from a proven
+/// collision (`Poisoned`) or a footprint-less upstream mutator (`TotalWall`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum DemoteReason {
+    /// A running footprint-less mutator upstream (silence = wall).
+    TotalWall,
+    /// A footprint coordinate canonicalized to the SAME referent as the backing (a proven alias /
+    /// token-equal hit).
+    Poisoned,
+    /// A same-kind pair could not be canonicalized (§3a — the resolver ⊤'d / dangled / was absent).
+    /// The may-alias fire-rate the yardstick instruments (the [`MayAliasReason`] rides the public
+    /// [`Resolution`]/[`DisjointOutcome`]; this discriminant is the demote counter).
+    MayAlias,
 }
 
 /// Decide a converged mutator's fate against the walls seen so far (the total survival
@@ -369,21 +605,33 @@ pub(crate) fn wall_verdict(
     total_wall: bool,
     walls: &[AccumulatedWall],
     backing: &Backing,
+    resolutions: &Resolutions,
 ) -> WallVerdict {
     if total_wall {
-        return WallVerdict::Demoted;
+        return WallVerdict::Demoted(DemoteReason::TotalWall);
     }
+    // The resolver (if any) that canonicalizes this backing's kind — named in every crossing's
+    // attribution (24F §6). Computed once: the backing's kind is fixed across the walls.
+    let via_resolver = resolutions
+        .has_resolver(backing.coord.kind)
+        .then_some(backing.coord.kind);
     let mut crossings = Vec::new();
     for wall in walls {
-        match disjoint(&wall.footprint, backing) {
-            Some(proof) => crossings.push(Crossing {
+        match disjoint(&wall.footprint, backing, resolutions) {
+            DisjointOutcome::Disjoint(proof) => crossings.push(Crossing {
                 wall_leaf: wall.wall_leaf,
                 provider: wall.footprint.provider(),
                 footprint: wall.footprint.coords().to_vec(),
                 origin: wall.footprint.origin().clone(),
                 proof,
+                via_resolver,
             }),
-            None => return WallVerdict::Demoted, // the backing is poisoned ⇒ run for real
+            // A proven canonical collision (the aliasing closure firing, or a plain token hit).
+            DisjointOutcome::Hit => return WallVerdict::Demoted(DemoteReason::Poisoned),
+            // The resolver could not canonicalize a same-kind pair ⇒ fail toward run (§3a).
+            DisjointOutcome::MayAlias(_reason) => {
+                return WallVerdict::Demoted(DemoteReason::MayAlias);
+            }
         }
     }
     if crossings.is_empty() {
@@ -425,7 +673,10 @@ mod tests {
             coord: EntityCoord::new(KindId(i.intern("pkgindex")), EntityRef::Singleton),
         };
         assert!(
-            disjoint(&fp, &backing).is_some(),
+            matches!(
+                disjoint(&fp, &backing, &Resolutions::none()),
+                DisjointOutcome::Disjoint(_)
+            ),
             "different kinds are disjoint"
         );
     }
@@ -443,7 +694,13 @@ mod tests {
         let backing = Backing {
             coord: EntityCoord::new(k, e),
         };
-        assert!(disjoint(&fp, &backing).is_none(), "same entity is a hit");
+        assert!(
+            matches!(
+                disjoint(&fp, &backing, &Resolutions::none()),
+                DisjointOutcome::Hit
+            ),
+            "same entity is a hit"
+        );
     }
 
     #[test]
@@ -458,9 +715,9 @@ mod tests {
     #[test]
     fn total_wall_demotes_even_when_disjoint() {
         let f = fact(1, "nginx", "installed");
-        let verdict = wall_verdict(true, &[], &Backing::of_fact(f));
+        let verdict = wall_verdict(true, &[], &Backing::of_fact(f), &Resolutions::none());
         assert!(
-            matches!(verdict, WallVerdict::Demoted),
+            matches!(verdict, WallVerdict::Demoted(DemoteReason::TotalWall)),
             "total wall demotes"
         );
     }
@@ -468,7 +725,7 @@ mod tests {
     #[test]
     fn no_walls_survives_clean() {
         let f = fact(1, "nginx", "installed");
-        let verdict = wall_verdict(false, &[], &Backing::of_fact(f));
+        let verdict = wall_verdict(false, &[], &Backing::of_fact(f), &Resolutions::none());
         assert!(
             matches!(verdict, WallVerdict::SurvivedClean),
             "no walls crossed ⇒ clean survival (no witness)"
@@ -485,10 +742,15 @@ mod tests {
             wall_leaf: LeafId(0),
             footprint: fp,
         }];
-        match wall_verdict(false, &walls, &Backing::of_fact(f)) {
+        match wall_verdict(false, &walls, &Backing::of_fact(f), &Resolutions::none()) {
             WallVerdict::Survived(w) => {
                 assert_eq!(w.crossings().len(), 1, "one crossing recorded");
                 assert_eq!(w.crossings()[0].wall_leaf(), LeafId(0));
+                assert_eq!(
+                    w.crossings()[0].via_resolver(),
+                    None,
+                    "a resolver-less crossing names no resolver (token-equality floor)"
+                );
             }
             other => panic!("expected Survived, got {other:?}"),
         }
@@ -506,10 +768,149 @@ mod tests {
         }];
         assert!(
             matches!(
-                wall_verdict(false, &walls, &Backing::of_fact(f)),
-                WallVerdict::Demoted
+                wall_verdict(false, &walls, &Backing::of_fact(f), &Resolutions::none()),
+                WallVerdict::Demoted(DemoteReason::Poisoned)
             ),
             "a footprint hitting the backing demotes even without a total wall"
+        );
+    }
+
+    // ── 24F Stage 5: the aliasing closure (owner-declared canonicalization) ──────────────────
+
+    fn mk_coord(i: &mut dorc_core::Interner, kind: &str, entity: &str) -> EntityCoord {
+        EntityCoord::new(
+            KindId(i.intern(kind)),
+            EntityRef::Operand(OpaqueToken(i.intern(entity))),
+        )
+    }
+
+    #[test]
+    fn resolver_canonicalizes_two_names_to_one_hit() {
+        // 24F §3 — the core closure: a wall footprint names `package:nginx`, a downstream fact's
+        // backing names `package:nginx-full`; token-equality would call them DISJOINT (wrong
+        // survival). A resolver that canonicalizes BOTH to `nginx` ⇒ they HIT ⇒ demote (the
+        // under-execute closes).
+        let mut i = dorc_core::Interner::default();
+        let pkg = KindId(i.intern("package"));
+        let canon = EntityRef::Operand(OpaqueToken(i.intern("nginx")));
+        let wall = mk_coord(&mut i, "package", "nginx");
+        let back = mk_coord(&mut i, "package", "nginx-full");
+        let fp = Footprint::authored(i.intern("apt-get"), vec![wall]).unwrap();
+
+        let mut res = Resolutions::none();
+        res.record(wall, canon);
+        res.record(back, canon);
+        assert!(res.has_resolver(pkg));
+        assert!(
+            matches!(
+                disjoint(&fp, &Backing { coord: back }, &res),
+                DisjointOutcome::Hit
+            ),
+            "two names for one referent HIT after canonicalization"
+        );
+    }
+
+    #[test]
+    fn resolverless_kind_stays_token_equality_floor() {
+        // 24F §3 — per-kind gradual enhancement: with NO resolver for `package`, `nginx` and
+        // `nginx-full` stay DISTINCT tokens ⇒ disjoint (the honest floor, unchanged from Stage 2).
+        let mut i = dorc_core::Interner::default();
+        let wall = mk_coord(&mut i, "package", "nginx");
+        let back = mk_coord(&mut i, "package", "nginx-full");
+        let fp = Footprint::authored(i.intern("apt-get"), vec![wall]).unwrap();
+        assert!(
+            matches!(
+                disjoint(&fp, &Backing { coord: back }, &Resolutions::none()),
+                DisjointOutcome::Disjoint(_)
+            ),
+            "a resolver-less kind keeps token-equality (distinct names disjoint)"
+        );
+    }
+
+    #[test]
+    fn unresolved_resolver_bearing_coord_is_may_alias_demote() {
+        // 24F §3a — the failure-direction: the kind IS resolver-bearing but the backing produced
+        // no canonical (⊤/dangling/absent). It degrades to MAY-ALIAS ⇒ demote (fail toward run),
+        // NOT to token-equality — the owner declared identity needs resolution, so unresolved is
+        // suspect.
+        let mut i = dorc_core::Interner::default();
+        let pkg = KindId(i.intern("package"));
+        let wall = mk_coord(&mut i, "package", "nginx");
+        let back = mk_coord(&mut i, "package", "nginx-full");
+        let fp = Footprint::authored(i.intern("apt-get"), vec![wall]).unwrap();
+
+        // package is resolver-bearing, the wall coord resolves, but the backing does NOT.
+        let mut res = Resolutions::none();
+        res.add_resolver_kind(pkg);
+        res.record(wall, EntityRef::Operand(OpaqueToken(i.intern("nginx"))));
+        assert!(
+            matches!(
+                disjoint(&fp, &Backing { coord: back }, &res),
+                DisjointOutcome::MayAlias(MayAliasReason::Unresolved)
+            ),
+            "an unresolved resolver-bearing backing degrades to may-alias (not token-equality)"
+        );
+        // …and through wall_verdict, that is a MayAlias demote (the fire-rate the yardstick counts).
+        let walls = [AccumulatedWall {
+            wall_leaf: LeafId(0),
+            footprint: fp,
+        }];
+        assert!(
+            matches!(
+                wall_verdict(false, &walls, &Backing { coord: back }, &res),
+                WallVerdict::Demoted(DemoteReason::MayAlias)
+            ),
+            "may-alias demotes toward run and is attributed as such"
+        );
+    }
+
+    #[test]
+    fn resolver_bearing_disjoint_survives_and_names_the_resolver() {
+        // 24F §6 attribution: two DISTINCT referents in a resolver-bearing kind survive, and the
+        // crossing NAMES the resolver (the why-lens says "disjoint AFTER <kind>.resolve()").
+        let mut i = dorc_core::Interner::default();
+        let pkg = KindId(i.intern("package"));
+        let wall = mk_coord(&mut i, "package", "nginx");
+        let back = mk_coord(&mut i, "package", "curl");
+        let fp = Footprint::authored(i.intern("apt-get"), vec![wall]).unwrap();
+
+        let mut res = Resolutions::none();
+        res.record(wall, EntityRef::Operand(OpaqueToken(i.intern("nginx")))); // distinct canons
+        res.record(back, EntityRef::Operand(OpaqueToken(i.intern("curl"))));
+        let walls = [AccumulatedWall {
+            wall_leaf: LeafId(2),
+            footprint: fp,
+        }];
+        match wall_verdict(false, &walls, &Backing { coord: back }, &res) {
+            WallVerdict::Survived(w) => {
+                assert_eq!(
+                    w.crossings()[0].via_resolver(),
+                    Some(pkg),
+                    "a resolver-bearing survival names the canonicalizing resolver kind"
+                );
+            }
+            other => panic!("expected Survived, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn different_kind_never_may_aliases_even_when_backing_unresolved() {
+        // The kind fence: a resolver-bearing backing that did NOT resolve is still DISJOINT from a
+        // DIFFERENT-kind footprint coord — a resolver canonicalizes only WITHIN a kind, so a
+        // cross-kind pair never needs resolution (no spurious may-alias demote).
+        let mut i = dorc_core::Interner::default();
+        let pkg = KindId(i.intern("package"));
+        let wall = mk_coord(&mut i, "file", "/etc/x"); // different kind
+        let back = mk_coord(&mut i, "package", "nginx-full"); // resolver-bearing, unresolved
+        let fp = Footprint::authored(i.intern("apt-get"), vec![wall]).unwrap();
+        let mut res = Resolutions::none();
+        res.add_resolver_kind(pkg);
+        assert!(
+            matches!(
+                disjoint(&fp, &Backing { coord: back }, &res),
+                DisjointOutcome::Disjoint(_)
+            ),
+            "a different-kind footprint coord is disjoint regardless of the backing's resolution"
         );
     }
 }

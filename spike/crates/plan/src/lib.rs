@@ -55,8 +55,9 @@ pub mod render;
 
 pub mod survival;
 pub use survival::{
-    Backing, Crossing, DisjointnessProof, EntityCoord, Footprint, FootprintOrigin, SurvivalWitness,
-    TrustedFootprints, disjoint,
+    Backing, CanonicalCoord, Crossing, DisjointOutcome, DisjointnessProof, EntityCoord, Footprint,
+    FootprintOrigin, MayAliasReason, Resolution, Resolutions, SurvivalWitness, TrustedFootprints,
+    disjoint,
 };
 
 // ===========================================================================
@@ -1047,11 +1048,35 @@ pub struct Step {
     pub disposition: Disposition,
 }
 
+/// The survival-tier instrumentation for one plan run (24F §3a — the may-alias fire-rate). The
+/// yardstick surfaces `may_alias_fires`: how many converged elisions demoted because a same-kind
+/// pair could NOT be canonicalized (the resolver ⊤'d / dangled / was absent). A SWAMPED count is a
+/// finding to REPORT (the resolver default is too weak / the resolver is broken), never a license
+/// to silently flip the may-alias default back to token-equality (§3a). EXEMPT from the decision
+/// digest — render-surface instrumentation, like the survival witness (the erasability canon reads
+/// only `steps`).
+#[derive(Debug, Clone, Default)]
+pub struct SurvivalReport {
+    may_alias_fires: u32,
+}
+
+impl SurvivalReport {
+    /// How often a converged elision demoted to run because a same-kind pair could not be
+    /// canonicalized (24F §3a). The yardstick reads this; a swamped value is a finding.
+    #[must_use]
+    pub fn may_alias_fires(&self) -> u32 {
+        self.may_alias_fires
+    }
+}
+
 /// A whole-book plan: an ordered list of leaf [`Step`]s (the leaf-seam — never a
-/// single opaque script). Render with [`render_sh`](Plan::render_sh).
+/// single opaque script). Render with [`render_sh`](Plan::render_sh). Carries the survival-tier
+/// [`SurvivalReport`] (24F §3a instrumentation — the may-alias fire-rate; digest-exempt).
 #[derive(Debug, Clone)]
 pub struct Plan {
     pub steps: Vec<Step>,
+    /// The survival-tier instrumentation (24F §3a). Empty on the flag-off / no-resolver path.
+    pub survival_report: SurvivalReport,
 }
 
 /// The per-disposition tally that backs the CLI plan-summary surface (plans/240 Stage-1
@@ -1766,6 +1791,7 @@ pub fn build_plan(
         classes,
         &BTreeSet::new(),
         None,
+        None,
         vouches,
         observe,
         arena,
@@ -1808,6 +1834,7 @@ pub fn build_plan_walled(
     classes: &[(CfgNodeId, SkipClass)],
     kills: &BTreeSet<CfgNodeId>,
     survival: Option<&TrustedFootprints>,
+    resolutions: Option<&Resolutions>,
     vouches: &Vouches,
     observe: impl Fn(FactKey) -> Observable,
     arena: &mut dorc_core::ProvArena,
@@ -1932,17 +1959,26 @@ pub fn build_plan_walled(
     // The plan-time WALL (silence=wall / `23Ib-fd10` / `23O` §2 settled law). A MODELED mutator
     // that will RUN at apply may touch anything it did not declare (the frame problem, `233`),
     // so silence licenses nothing. `survival` selects HOW a running mutator walls (TC-1):
+    let mut survival_report = SurvivalReport::default();
     match survival {
         // Flag-off (BASELINE, byte-identical to Stage-1): a running mutator is a TOTAL wall.
         None => wall_walk_total(&mut steps),
         // Flag-on (the golden hill): a running FOOTPRINTED mutator scopes its wall; a downstream
-        // converged `Replace` survives iff disjoint from every accumulated footprint (TC-3).
-        Some(footprints) => wall_walk_survival(&mut steps, footprints),
+        // converged `Replace` survives iff disjoint from every accumulated footprint (TC-3), with
+        // both sides canonicalized through the resolvers (24F §3 — `None` ⇒ the token-equality floor).
+        Some(footprints) => {
+            let empty = Resolutions::none();
+            survival_report =
+                wall_walk_survival(&mut steps, footprints, resolutions.unwrap_or(&empty));
+        }
     }
 
     // Drop the wall bookkeeping; the leaf ids are already assigned.
     let steps: Vec<Step> = steps.into_iter().map(|(step, _, _)| step).collect();
-    Plan { steps }
+    Plan {
+        steps,
+        survival_report,
+    }
 }
 
 /// The BASELINE wall walk (flag-off / Stage-1 / `23Ib-fd10`): walk once in execution order
@@ -1970,14 +2006,20 @@ fn wall_walk_total(steps: &mut [(Step, bool, CfgNodeId)]) {
 /// wall attaches the attribution witness (TC-3). A running mutator (whether it just demoted, or
 /// was never converged) then contributes: WITH a lifted footprint it scopes the wall (union its
 /// coordinates); WITHOUT one it totalises the wall. Demotion stays Replace→Run only (`inv-kfail`).
-fn wall_walk_survival(steps: &mut [(Step, bool, CfgNodeId)], footprints: &TrustedFootprints) {
+fn wall_walk_survival(
+    steps: &mut [(Step, bool, CfgNodeId)],
+    footprints: &TrustedFootprints,
+    resolutions: &Resolutions,
+) -> SurvivalReport {
+    let mut report = SurvivalReport::default();
     let mut total_wall = false;
     let mut accumulated: Vec<survival::AccumulatedWall> = Vec::new();
     for (step, is_mutator, node) in steps {
-        // 1. Survival test for a converged mutator's `Replace` against the walls so far.
+        // 1. Survival test for a converged mutator's `Replace` against the walls so far — both the
+        //    backing and each accumulated footprint canonicalized through the resolvers (24F §3).
         if *is_mutator && let Disposition::Replace(license, _) = &step.disposition {
             let backing = Backing::of_fact(license.fact());
-            match survival::wall_verdict(total_wall, &accumulated, &backing) {
+            match survival::wall_verdict(total_wall, &accumulated, &backing, resolutions) {
                 // Crossed no wall — an ordinary pre-wall elision; leave it exactly as the
                 // flag-off world would (no witness, `Replace` untouched).
                 survival::WallVerdict::SurvivedClean => {}
@@ -1991,8 +2033,15 @@ fn wall_walk_survival(steps: &mut [(Step, bool, CfgNodeId)], footprints: &Truste
                             Disposition::Replace(license.with_survival(witness), stand_in);
                     }
                 }
-                // A total wall stands, or the backing hit a footprint — demote (`inv-kfail`).
-                survival::WallVerdict::Demoted => step.disposition = Disposition::Run,
+                // A total wall stands, the backing hit a footprint, or a same-kind pair could not be
+                // canonicalized (§3a may-alias) — demote (`inv-kfail`, fail toward run). A may-alias
+                // demote is instrumented (24F §3a — the yardstick shows the fire-rate).
+                survival::WallVerdict::Demoted(reason) => {
+                    if reason == survival::DemoteReason::MayAlias {
+                        report.may_alias_fires = report.may_alias_fires.saturating_add(1);
+                    }
+                    step.disposition = Disposition::Run;
+                }
             }
         }
         // 2. Wall contribution: a RUNNING mutator walls — scoped if it has a footprint, total
@@ -2008,6 +2057,7 @@ fn wall_walk_survival(steps: &mut [(Step, bool, CfgNodeId)], footprints: &Truste
             }
         }
     }
+    report
 }
 
 /// The per-leaf disposition: the fold first (a provably-dead leaf is `Omit`ted), then
@@ -3350,6 +3400,7 @@ apt_get__predict() {
         };
         let plan = Plan {
             steps: vec![mk(0), mk(1)],
+            survival_report: SurvivalReport::default(),
         };
         // A throwaway (empty) Ast: the synthetic `AstId`s index no real node, and the OOB-safe
         // check in `guard_preamble` treats an out-of-arena id as not-refused (so both guards emit).
@@ -3451,6 +3502,7 @@ apt_get__predict() {
                 ),
                 step(3, Disposition::Run),
             ],
+            survival_report: SurvivalReport::default(),
         };
         let c = plan.disposition_counts();
         assert_eq!(c.sites, 4, "four leaves");
@@ -3467,7 +3519,11 @@ apt_get__predict() {
         // The empty plan tallies to all-zero (the yardstick's honest floor for a probe-only
         // or no-command book).
         assert_eq!(
-            Plan { steps: vec![] }.disposition_counts(),
+            Plan {
+                steps: vec![],
+                survival_report: SurvivalReport::default(),
+            }
+            .disposition_counts(),
             DispositionCounts::default()
         );
     }
@@ -4449,6 +4505,7 @@ apt_get__predict() {
             &classes,
             &kills,
             None,
+            None,
             &vouch_all(&classes),
             observe,
             &mut arena,
@@ -4588,6 +4645,7 @@ apt_get__predict() {
             &classes,
             &BTreeSet::new(),
             footprints.as_ref(),
+            None,
             &vouch_all(&classes),
             observe,
             &mut arena,
@@ -4678,6 +4736,7 @@ apt_get__predict() {
             &classes,
             &BTreeSet::new(),
             Some(&empty),
+            None,
             &vouch_all(&classes),
             observe,
             &mut arena,

@@ -118,6 +118,7 @@ pub fn run_kernel(declared: &DeclaredScenario, s0: &Host, flag_on: bool, i: &mut
         &classes,
         &kills,
         survival.as_ref(),
+        None, // 24F Stage 5: the resolver lane — wired in for the aliasing sweep axis
         &vouches,
         |f| {
             if probe.checks_fact(f) {
