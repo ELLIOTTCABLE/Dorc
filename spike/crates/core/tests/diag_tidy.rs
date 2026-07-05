@@ -127,12 +127,18 @@ const MIGRATED_SLUGS: &[&str] = &[
 // * `dangling-reference` (Stage 5 / 24F §4): a cli-edge Note — a coordinate the resolver flagged
 //   dangling (no such entity on an enumerable kind); rides the may-alias degrade. Same deferred
 //   migration.
+// * `reaches-conflict` / `reaches-provider-collision` (Stage 5 Part B / 24G §4): the reach-function
+//   confusability enforcement, kind-keyed exactly like the resolver's — two files declaring one kind's
+//   reaches() (Error, both refused), or a reaches keyed to a known provider name (Warning, likely
+//   mis-key). cli-edge; PENDING the same typed-spine migration (tc-footprint-diag).
 const LEGACY_ALLOW_LIST: &[&str] = &[
     "footprint-incoherent",
     "touches-escalated",
     "resolver-conflict",
     "resolver-provider-collision",
     "dangling-reference",
+    "reaches-conflict",
+    "reaches-provider-collision",
 ];
 
 /// The SPANLESS-MINT allow-list (arch-3-residual-2): EXACTLY the codes permitted to construct a

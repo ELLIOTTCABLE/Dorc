@@ -594,6 +594,32 @@ impl TrustedFootprints {
     pub(crate) fn get(&self, node: CfgNodeId) -> Option<&Footprint> {
         self.map.get(&node)
     }
+
+    /// 24G Part B — widen every footprint by `reaches()` EXPANSION, in place. For each footprint,
+    /// `expand(coord, origin)` returns the coords `<kind>.reaches()` drags from `coord` (+ the
+    /// reach-function KIND for attribution); the CALLER encodes the 24G §2/§3 policy through `origin`
+    /// — STATIC arms apply to ALL footprint coords (authored + derived), DYNAMIC arms to AUTHORED
+    /// coords only this pass (derived coords are known only post-results — the SAME deferral as
+    /// `resid-resolve-derived`, generalized here as `resid-kindfn-derived`). SINGLE-STEP (24G — no
+    /// fixpoint for the spike): only the BASE coords present before this call are expanded, never the
+    /// coords the expansion itself adds (snapshotted below). Runs AFTER the coherence check (widening
+    /// keeps `own-establish ⊆ footprint` true) and BEFORE the survival walk (so the wider footprint
+    /// flows through the EXISTING `disjoint`/canonicalization path — no new resolve/reach interplay).
+    pub fn expand_reaches(
+        &mut self,
+        mut expand: impl FnMut(EntityCoord, &FootprintOrigin) -> Vec<(EntityCoord, KindId)>,
+    ) {
+        for fp in self.map.values_mut() {
+            let origin = fp.origin().clone();
+            // Snapshot the base coords so the expansion is SINGLE-STEP (added coords are not re-expanded).
+            let base: Vec<EntityCoord> = fp.coords().to_vec();
+            for coord in base {
+                for (reached, via) in expand(coord, &origin) {
+                    fp.add_reached(reached, via);
+                }
+            }
+        }
+    }
 }
 
 /// One accumulated running wall during the survival walk: its leaf + footprint. Internal to

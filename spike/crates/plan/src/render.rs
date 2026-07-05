@@ -338,6 +338,70 @@ pub mod resolv {
 }
 
 // ===========================================================================
+// Reach-probe emitters (24G §4 — the reaches() EXPANSION lane, DYNAMIC arms)
+// ===========================================================================
+
+/// Reach-probe emitters: the read-only, self-reporting sh that runs a DYNAMIC `reaches()` arm for a
+/// footprint coordinate (24G §4 — the cross-author footprint-EXPANSION mechanism). Rides the SAME
+/// phase-1 artifact as the convergence + derivation + resolver probes (no shebang): per
+/// (reach-bearing coordinate, dynamic arm) it invokes the arm's per-arm wrapper with the ENTITY and,
+/// when run, prints each stdout line (a RAW ENTITY in the arm's annotated kind — typed emission)
+/// re-keyed by the coordinate AND the arm index (`reach <coord> arm=<index> entity=<line>`), so the
+/// controller joins arm→kind STATICALLY (the vocabulary fence — a host never mints a kind). Assembly
+/// only — the cli decides which coords/arms escalate and walks them; these emit one decided piece.
+pub mod reach {
+    use super::sem;
+
+    /// The reach-probe banner — comment-only (no shebang), documents the `reach` record grammar.
+    /// GUARANTEE: pure `#`-comment lines ⇒ dash-n-clean; appended to the earlier probes, never a
+    /// second phase.
+    #[must_use]
+    pub const fn header() -> &'static str {
+        "# dorc reach-probe (read-only, 24G §4): owner-declared reaches() expansion. Each dynamic\n\
+         # reaches() arm of a reach-bearing footprint coord runs with the ENTITY; when run it prints\n\
+         # the RAW ENTITIES it drags (its stdout lines), re-keyed by the coord AND the arm index:\n\
+         #   reach <kind:entity> arm=<n> entity=<reached>\n\
+         # The controller joins arm->kind statically (the kind is fixed at lift — never host-minted).\n\n"
+    }
+
+    /// A per-(coord, arm) provenance comment (`# reach <kind:entity> via <kind>.reaches() arm N`).
+    /// GUARANTEE: one `#`-comment line ⇒ dash-n-clean. `coord`/`kind` are display-only
+    /// (`inv-referent-agnostic`), riding in a comment, never re-parsed.
+    #[must_use]
+    pub fn reach_comment(coord: &str, kind: &str, arm_index: usize) -> String {
+        format!("# reach {coord} via {kind}.reaches() arm {arm_index}\n")
+    }
+
+    /// The per-arm wrapper funcdef, emitted verbatim (`<kind>__reaches_<n>() { <arm bytes> ; }` —
+    /// the arm command's byte-exact span-slice, mark-free by construction; re-emitted per arm-fn on a
+    /// body change, sh last-writer-wins). GUARANTEE: `funcdef` is `dash -n`-clean (author sh wrapped
+    /// in a function body) + byte-stable; this only appends a trailing newline.
+    #[must_use]
+    pub fn arm_def(funcdef: &str) -> String {
+        format!("{funcdef}\n")
+    }
+
+    /// The self-report scaffold: invoke `<arm_fn> '<entity>'` (the entity F-QUOTE-bound — the SAME
+    /// guarantee as [`super::probe::invocation`]: exactly one inert positional, no word-split/re-parse)
+    /// and pipe its stdout lines through a per-line `printf`, re-keying each as a `reach <coord>
+    /// arm=<index> entity=<line>` record. `_re` is a reach-local name (unlikely to clash).
+    ///
+    /// GUARANTEE: dash-n-clean — a pipeline into a `while read` loop, valid at script top level. An
+    /// arm that prints NOTHING ⇒ no records ⇒ no expansion for this coord (the footprint stays narrow
+    /// — the safe direction: a narrower footprint elides MORE, but that is the un-expanded floor, not
+    /// a wrong-elision beyond it; the wall still walls on its own coords). An UN-SHIMMED reach command
+    /// under `PATH=mocks-only` (the fork-4A layer-3 mocks net) 127s ⇒ prints nothing ⇒ no expansion —
+    /// never a wrong-reach (`kFAIL-perform`: an omitted reach only fails to WIDEN, the honest floor).
+    #[must_use]
+    pub fn record_scaffold(arm_fn: &str, entity: &str, coord: &str, arm_index: usize) -> String {
+        let q = sem::single_quote(entity);
+        format!(
+            "{arm_fn} {q} | while IFS= read -r _re; do printf 'reach {coord} arm={arm_index} entity=%s\\n' \"$_re\"; done\n"
+        )
+    }
+}
+
+// ===========================================================================
 // Apply-artifact emitters (`Plan::render_sh` flat + `Plan::render_apply` line)
 // ===========================================================================
 

@@ -326,6 +326,35 @@ fn run() -> Result<(), String> {
     };
     let resolvers = compile_resolvers(&resolver_coords, &kind_resolvers, &oracle_srcs, &interner);
 
+    // The REACH-probe (24G §4 — the reaches() EXPANSION lane, a FOURTH phase-1 shipping path). Lift
+    // the per-kind reach-functions + enforce confusability ALWAYS (kind-keyed like the resolver). The
+    // round-trip (dynamic-arm shipping) is flag-on: for each reach-bearing AUTHORED footprint coord,
+    // ship each DYNAMIC arm strip-clean, invoked with the entity; the `reach` readback expands the
+    // footprints (via `Footprint::add_reached`) before the survival walk. STATIC arms never ship.
+    let kind_reaches = build_kind_reaches(
+        &oracle_srcs,
+        &checks,
+        &touches_paired,
+        &mut interner,
+        advisory,
+    );
+    let reach_kinds: BTreeSet<Symbol> = kind_reaches.reach_kinds().collect();
+    let reaches_plan = if args.trust_footprints && !reach_kinds.is_empty() {
+        let touches_sets: Vec<_> = touches_paired.iter().map(|(_, s)| s.clone()).collect();
+        collect_reach_probes(
+            &classes,
+            &kills,
+            &value,
+            &touches_sets,
+            &kind_reaches,
+            &reach_kinds,
+            &oracle_srcs,
+            &mut interner,
+        )
+    } else {
+        dorc_plan::ReachPlan::default()
+    };
+
     // `probe` mode stops here: emit the probe artifact and return. It reads no stdin (no
     // results exist yet — this is phase 1, what you ship to GET them), builds no plan, and so
     // emits no apply, no why-lens, no digest (there is no plan/identity-plane to hash —
@@ -334,6 +363,7 @@ fn run() -> Result<(), String> {
         print!("{}", probe.render_sh(&interner));
         print!("{}", derivations.render_sh(&interner)); // 24E §2: rides the SAME phase-1 block
         print!("{}", resolvers.render_sh()); // 24F §3: rides the SAME phase-1 block
+        print!("{}", reaches_plan.render_sh()); // 24G §4: rides the SAME phase-1 block
         std::io::stdout().flush().ok();
         return Ok(());
     }
@@ -345,6 +375,7 @@ fn run() -> Result<(), String> {
         print!("{}", probe.render_sh(&interner));
         print!("{}", derivations.render_sh(&interner)); // 24E §2: rides the SAME phase-1 block
         print!("{}", resolvers.render_sh()); // 24F §3: rides the SAME phase-1 block
+        print!("{}", reaches_plan.render_sh()); // 24G §4: rides the SAME phase-1 block
         std::io::stdout().flush().ok();
     }
 
@@ -392,6 +423,17 @@ fn run() -> Result<(), String> {
             &kill_coords,
             &mut interner,
             advisory,
+        );
+        // 24G §4: EXPAND each reach-bearing footprint coord via reaches() — STATIC arms (cli-traced,
+        // all coords) + DYNAMIC arms (the `reach` readback, authored coords only). Widening is
+        // monotone-safe (`inv-kfail`); runs AFTER the authored/derived merge and BEFORE the walk, so
+        // the wider footprint flows the EXISTING disjoint/canonicalize path (no new interplay code).
+        expand_footprints_via_reaches(
+            &mut fps,
+            &kind_reaches,
+            &reach_kinds,
+            &results,
+            &mut interner,
         );
         fps
     });
@@ -449,6 +491,9 @@ fn run() -> Result<(), String> {
         // a wrong footprint silently under-executes someone else's line, so the render surface
         // must always say whose footprint you trusted. Empty when unflagged (no survivals).
         emit_survival_attribution(&plan, &interner);
+        // 24G Part B: every converged elision a reaches() expansion DEMOTED names the reach-function
+        // (the cross-author demote); empty when no reach expansion poisoned an elision.
+        emit_reach_poisonings(&plan, &interner);
         // Stage 3 (rul-guard-license / X-why): every GUARDED site names, on the same lane, the
         // mechanism + its converged-vouch license + the vouching oracle (a render-REFUSED guard
         // discloses the refusal instead). Empty when no site guards.
@@ -1141,6 +1186,267 @@ fn dangling_diagnostics(
         .collect()
 }
 
+/// The per-KIND reach-functions (24G §4): `<kind>.reaches()` funcdefs lifted per oracle file, with
+/// CONFUSABILITY enforcement — kind-keyed exactly like the resolvers ([`KindResolvers`], corr-kind-keying
+/// §10). The engine expands a footprint coord through the reach-function keyed by the coord's kind.
+struct KindReaches {
+    /// Per-file reach sets (indexed by `by_kind`).
+    sets: Vec<dorc_oracle::reaches::ReachesSet>,
+    /// The kept, non-conflicting `kind → file-index` map. A kind ABSENT here is reach-LESS (its
+    /// footprints never expand) — whether never declared, or REFUSED for a cross-file duplicate.
+    by_kind: BTreeMap<Symbol, usize>,
+}
+
+impl KindReaches {
+    /// The reach-bearing kinds (the engine expands every footprint coord of such a kind).
+    fn reach_kinds(&self) -> impl Iterator<Item = Symbol> + '_ {
+        self.by_kind.keys().copied()
+    }
+
+    /// The `(file-index, reaches funcdef)` for a kind, if it has a kept reach-function.
+    fn get(&self, kind: Symbol) -> Option<(usize, &dorc_oracle::predict::Predict)> {
+        let idx = *self.by_kind.get(&kind)?;
+        self.sets.get(idx)?.get(kind).map(|p| (idx, p))
+    }
+}
+
+/// Lift the per-kind reach-functions + ENFORCE confusability (24G §4, kind-keyed like the resolver —
+/// a LOUD diagnostic, never a silent dud). Two checks, mirroring [`build_kind_resolvers`]: (1)
+/// at-most-one-reaches-per-kind — two files declaring `<kind>.reaches()` for the SAME kind ⇒ REFUSE
+/// BOTH (the kind stays reach-less) + an error; (2) a reaches keyed to a name matching a known
+/// PROVIDER ⇒ a WARNING (the reaches is keyed by KIND, not command). `inv-referent-agnostic`: names
+/// compared as interned strings, never decoded.
+fn build_kind_reaches(
+    oracle_srcs: &[String],
+    checks: &[dorc_oracle::predict::PredictSet],
+    touches_paired: &[(&str, dorc_oracle::touches::TouchesSet)],
+    interner: &mut Interner,
+    advisory: bool,
+) -> KindReaches {
+    use dorc_oracle::predict::map_provider_name;
+    use dorc_oracle::reaches::ReachesSet;
+
+    let sets: Vec<ReachesSet> = oracle_srcs
+        .iter()
+        .map(|src| {
+            let lifted = ReachesSet::lift(interner, src);
+            report_at(advisory, "reaches", &lifted.diags);
+            lifted.value
+        })
+        .collect();
+
+    let mut per_kind: BTreeMap<Symbol, Vec<usize>> = BTreeMap::new();
+    for (idx, set) in sets.iter().enumerate() {
+        for kind in set.kinds() {
+            per_kind.entry(kind).or_default().push(idx);
+        }
+    }
+
+    let mut providers: BTreeSet<String> = BTreeSet::new();
+    for cs in checks {
+        for p in cs.providers() {
+            providers.insert(map_provider_name(interner.resolve(p)));
+        }
+    }
+    for (_, ts) in touches_paired {
+        for p in ts.providers() {
+            providers.insert(map_provider_name(interner.resolve(p)));
+        }
+    }
+
+    let mut diags = Vec::new();
+    let mut by_kind = BTreeMap::new();
+    for (kind, files) in per_kind {
+        let name = interner.resolve(kind).to_owned();
+        if files.len() > 1 {
+            diags.push(dorc_core::Diagnostic::error(
+                dorc_core::DiagCode("reaches-conflict"),
+                None,
+                format!(
+                    "kind '{name}' has {} reach-functions across oracle files — at-most-one-reaches-per-kind \
+                     (24G §4): BOTH refused, the kind's footprints do not expand (never first-wins-silently)",
+                    files.len()
+                ),
+            ));
+            continue;
+        }
+        if providers.contains(&name) {
+            diags.push(dorc_core::Diagnostic::warning(
+                dorc_core::DiagCode("reaches-provider-collision"),
+                None,
+                format!(
+                    "reach-function '{name}.reaches()' is keyed to a name matching a known COMMAND provider \
+                     — reaches is keyed by KIND, not command (24G §4); this expands a kind no coordinate \
+                     may use (a likely mis-key)"
+                ),
+            ));
+        }
+        if let Some(&idx) = files.first() {
+            by_kind.insert(kind, idx);
+        }
+    }
+    report_at(advisory, "reaches", &diags);
+    KindReaches { sets, by_kind }
+}
+
+/// Compile the reach-probe (24G §4): for each reach-bearing AUTHORED footprint coordinate, ship each
+/// DYNAMIC `reaches()` arm's per-arm wrapper (`<kind>__reaches_<n>() { <arm bytes> ; }` — the arm
+/// command's byte-exact span-slice, mark-free by construction) invoked with the entity; its stdout is
+/// the RAW ENTITIES it drags. STATIC arms never ship (traced at expansion). Deduped by (coord, arm).
+/// Dynamic arms apply to AUTHORED footprint coords only this pass (derived coords resolved only
+/// post-results — the `resid-kindfn-derived` deferral, 24G §3). `inv-referent-agnostic`: the entity
+/// text is resolved for the invocation, never decoded.
+#[expect(
+    clippy::too_many_arguments,
+    reason = "the reach-probe compile threads the compiled context (classes/kills/value/touches/reaches/reach-kinds/oracle-srcs/interner); each is a distinct pipeline output, not a bundle-able struct"
+)]
+fn collect_reach_probes(
+    classes: &[(
+        dorc_analysis::cfg::CfgNodeId,
+        dorc_analysis::effect::SkipClass,
+    )],
+    kills: &BTreeSet<dorc_analysis::cfg::CfgNodeId>,
+    value: &dorc_analysis::value::ValueFlow,
+    touches_sets: &[dorc_oracle::touches::TouchesSet],
+    reaches: &KindReaches,
+    reach_kinds: &BTreeSet<Symbol>,
+    oracle_srcs: &[String],
+    interner: &mut Interner,
+) -> dorc_plan::ReachPlan {
+    use dorc_analysis::effect::SkipClass;
+    use dorc_oracle::reaches::{ArmOutcome, evaluate_reaches};
+    let mut probes: BTreeMap<(String, usize), dorc_plan::ReachProbe> = BTreeMap::new();
+    for (node, class) in classes {
+        let is_wall_candidate = matches!(
+            class,
+            SkipClass::EstablishAmbient(_) | SkipClass::EstablishWritten(_)
+        ) || kills.contains(node);
+        if !is_wall_candidate {
+            continue;
+        }
+        let Some((_, fp_coords)) = resolve_touches_footprint(*node, value, touches_sets, interner)
+        else {
+            continue;
+        };
+        for coord in fp_coords {
+            let kind_sym = coord.kind().0;
+            if !reach_kinds.contains(&kind_sym) {
+                continue;
+            }
+            let Some((idx, reaches_fn)) = reaches.get(kind_sym) else {
+                continue;
+            };
+            let Some(src) = oracle_srcs.get(idx) else {
+                continue;
+            };
+            let entity_text = entity_text_of(coord, interner);
+            let coord_label = render_coord(coord, interner);
+            let kind_name = interner.resolve(kind_sym).to_owned();
+            let exp = evaluate_reaches(reaches_fn, &entity_text);
+            for arm in &exp.arms {
+                let ArmOutcome::Dynamic { cmd_span } = &arm.outcome else {
+                    continue; // a STATIC arm ships nothing (traced at expansion)
+                };
+                let bytes = src
+                    .get(cmd_span.lo.0 as usize..cmd_span.hi.0 as usize)
+                    .unwrap_or_default()
+                    .trim();
+                let arm_fn = format!(
+                    "{}__reaches_{}",
+                    dorc_oracle::to_funcname_segment(&kind_name),
+                    arm.index
+                );
+                let arm_sh = format!("{arm_fn}() {{ {bytes} ; }}");
+                probes
+                    .entry((coord_label.clone(), arm.index))
+                    .or_insert(dorc_plan::ReachProbe {
+                        coord_label: coord_label.clone(),
+                        kind_label: kind_name.clone(),
+                        arm_fn,
+                        arm_index: arm.index,
+                        entity_text: entity_text.clone(),
+                        arm_sh,
+                    });
+            }
+        }
+    }
+    dorc_plan::ReachPlan {
+        probes: probes.into_values().collect(),
+    }
+}
+
+/// Expand every reach-bearing footprint coordinate via its kind's `reaches()` (24G §4 — the
+/// compositional half; the cross-author widening). STATIC arms apply to ALL footprint coords
+/// (authored + derived), traced here at the cli (no host); DYNAMIC arms apply to AUTHORED coords only
+/// this pass (their entities come from the `reach` readback — derived coords are known only
+/// post-results, the `resid-kindfn-derived` deferral, 24G §3). Each expanded coord is unioned into
+/// the footprint via [`dorc_plan::Footprint::add_reached`] (attributed to the reach-function KIND),
+/// flowing through the EXISTING `disjoint`/canonicalization path. `inv-referent-agnostic`: the engine
+/// interns the annotated kind (fixed at LIFT — the vocabulary fence) + the raw entities, never
+/// decoding them. `inv-kfail`: widening only ever HITs MORE (demotes toward run), the safe direction.
+fn expand_footprints_via_reaches(
+    footprints: &mut dorc_plan::TrustedFootprints,
+    reaches: &KindReaches,
+    reach_kinds: &BTreeSet<Symbol>,
+    readback: &SiteResults,
+    interner: &mut Interner,
+) {
+    use dorc_oracle::reaches::{ArmOutcome, evaluate_reaches};
+    footprints.expand_reaches(|coord, origin| {
+        let kind_sym = coord.kind().0;
+        if !reach_kinds.contains(&kind_sym) {
+            return Vec::new();
+        }
+        let Some((_, reaches_fn)) = reaches.get(kind_sym) else {
+            return Vec::new();
+        };
+        let entity_text = entity_text_of(coord, interner);
+        let coord_label = render_coord(coord, interner);
+        let via = coord.kind();
+        let exp = evaluate_reaches(reaches_fn, &entity_text);
+        let mut out = Vec::new();
+        for arm in &exp.arms {
+            let arm_kind = dorc_core::KindId(interner.intern(&arm.kind));
+            let entities: Vec<String> = match &arm.outcome {
+                // STATIC arms apply to ALL footprint coords (24G §3) — the traced lines, no host.
+                ArmOutcome::Static(lines) => lines.clone(),
+                // DYNAMIC arms apply to AUTHORED coords only this pass (24G §3, resid-kindfn-derived).
+                ArmOutcome::Dynamic { .. } => {
+                    if matches!(origin, dorc_plan::FootprintOrigin::Authored) {
+                        readback
+                            .reaches
+                            .get(&(coord_label.clone(), arm.index))
+                            .cloned()
+                            .unwrap_or_default()
+                    } else {
+                        Vec::new()
+                    }
+                }
+            };
+            for e in entities {
+                if e.is_empty() {
+                    continue; // a blank reached entity is not a coordinate
+                }
+                let ec = dorc_plan::EntityCoord::new(
+                    arm_kind,
+                    dorc_core::EntityRef::Operand(dorc_core::OpaqueToken(interner.intern(&e))),
+                );
+                out.push((ec, via));
+            }
+        }
+        out
+    });
+}
+
+/// The entity text of a coordinate for a reach/resolver invocation (an operand's text, or the empty
+/// string for a Singleton). `inv-referent-agnostic`: resolved for the invocation, never decoded.
+fn entity_text_of(coord: dorc_plan::EntityCoord, interner: &Interner) -> String {
+    match coord.entity() {
+        dorc_core::EntityRef::Operand(tok) => interner.resolve(tok.0).to_owned(),
+        dorc_core::EntityRef::Singleton => String::new(),
+    }
+}
+
 /// Lift the per-site GUARD VOUCHES (rul-guard-license / rul24-vouch-is-verdict-authoring, 24A §1c).
 /// Called ALWAYS-ON — guards are the un-flagged baseline (rul24-mode-gate governs only the survival
 /// tier, NOT this). For each establish-bearing site whose provider authored a verdict function
@@ -1418,6 +1724,23 @@ fn emit_survival_attribution(plan: &dorc_plan::Plan, interner: &Interner) {
             step.leaf.0,
             crossings.join(", "),
             render_coord(witness.backing(), interner),
+        );
+    }
+}
+
+/// The REACH-POISON why-lane (24G Part B): one `why:` line per converged elision that DEMOTED to run
+/// because a `<kind>.reaches()` EXPANSION coordinate hit its backing — the cross-author demote the
+/// reach mechanism exists for. Mirrors the resolver-attribution shape (the sharpest claims name whose
+/// knowledge they trusted): here the demote names the reach-function whose widening caught the
+/// otherwise-wrongly-surviving elision. rec-1 WELD: stderr render surface only. Never `error[`, so the
+/// gate-3 floor ignores it; the `why: ` prefix lets the render surface pin it.
+fn emit_reach_poisonings(plan: &dorc_plan::Plan, interner: &Interner) {
+    for (leaf, kind) in plan.survival_report.reach_poisonings() {
+        eprintln!(
+            "why: site {} runs — poisoned via {}.reaches() (a reach-expanded coordinate hit its \
+             backing; the wall drags it cross-author)",
+            leaf.0,
+            interner.resolve(kind.0),
         );
     }
 }
@@ -1734,6 +2057,12 @@ struct SiteResults {
     /// verdict + derivation lanes (keyed by the coordinate, not a site — resolution is a pure function
     /// of the coordinate). Read into a [`dorc_plan::Resolutions`] before the survival walk.
     resolutions: BTreeMap<String, ResolvOutcome>,
+    /// The REACH expansion lane (24G §4): per `(coordinate label, arm index)`, the RAW ENTITY lines a
+    /// DYNAMIC `reaches()` arm printed host-side (`reach <coord> arm=<n> entity=…`). Demuxed SEPARATELY
+    /// (keyed by the coordinate + arm, a pure function of them). Read into the footprints (via
+    /// [`dorc_plan::Footprint::add_reached`]) before the survival walk. NB the arm index re-keys each
+    /// line back to the arm's LIFTED kind (the vocabulary fence — the kind is never host-minted).
+    reaches: BTreeMap<(String, usize), Vec<String>>,
 }
 
 /// One coordinate's resolver readback (24F §3): the canonical form its `<kind>.resolve()` printed, or
@@ -1827,6 +2156,32 @@ fn parse_results(input: &str, interner: &mut Interner) -> SiteResults {
                     };
                     if let Some(o) = outcome {
                         out.resolutions.insert(coord.to_owned(), o);
+                    }
+                }
+                continue;
+            }
+            // 24G §4: `reach <kind:entity> arm=<n> entity=<line>` — accumulate a DYNAMIC reaches()
+            // arm's emitted RAW ENTITY, demuxed by (coordinate, arm) in its OWN lane. A malformed
+            // line ⇒ drop (the coord's expansion stays narrower ⇒ the un-expanded floor, kFAIL-safe:
+            // an omitted reach only fails to WIDEN, never a wrong-reach). NB `entity=<line>` is the
+            // LAST token — a reached entity with an embedded space would truncate (the SAME
+            // single-token limitation as the `deriv`/`resolv` lanes; file paths rarely carry spaces).
+            Some("reach") => {
+                if let Some(coord) = it.next() {
+                    let mut arm: Option<usize> = None;
+                    let mut entity: Option<String> = None;
+                    for tok in it {
+                        if let Some(n) = tok.strip_prefix("arm=").and_then(|n| n.parse().ok()) {
+                            arm = Some(n);
+                        } else if let Some(e) = tok.strip_prefix("entity=") {
+                            entity = Some(e.to_owned());
+                        }
+                    }
+                    if let (Some(a), Some(e)) = (arm, entity) {
+                        out.reaches
+                            .entry((coord.to_owned(), a))
+                            .or_default()
+                            .push(e);
                     }
                 }
                 continue;

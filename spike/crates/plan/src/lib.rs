@@ -1415,6 +1415,73 @@ impl ResolverPlan {
     }
 }
 
+/// One compiled reach-probe query (24G §4 — a DYNAMIC `reaches()` arm shipped for a footprint coord):
+/// per (reach-bearing footprint coordinate, dynamic arm) the coord's entity is passed to the arm's
+/// stripped-clean per-arm wrapper, whose stdout lines are the RAW ENTITIES the arm emits — captured
+/// PER-ARM (`reach <coord> arm=<index> entity=<line>`) so the controller joins arm→kind statically
+/// (the arm index re-keys back to the arm's lifted kind). Interner-free (all fields pre-resolved; the
+/// entity text is F-quoted for the invocation, never decoded — `inv-referent-agnostic`).
+#[derive(Debug, Clone)]
+pub struct ReachProbe {
+    /// The source footprint coord's `kind:entity` label — the `reach` record key + display.
+    pub coord_label: String,
+    /// The reach-function KIND's display name (`package`) for the provenance comment.
+    pub kind_label: String,
+    /// The per-arm wrapper funcname (`package__reaches_1`) — the shipped def + invocation agree.
+    pub arm_fn: String,
+    /// The arm index (readback demux — `reach <coord> arm=<index>`; the controller maps it to kind).
+    pub arm_index: usize,
+    /// The coord's entity text passed to the arm invocation (F-quoted at render).
+    pub entity_text: String,
+    /// The per-arm wrapper funcdef (`<arm_fn>() { <arm-command bytes> ; }`) — the arm's command
+    /// span-slice (mark-free by construction) wrapped so `$1` binds the entity. Byte-exact author sh.
+    pub arm_sh: String,
+}
+
+/// The compiled reach-probe (24G §4 — the `reaches()` EXPANSION lane, PARALLEL to
+/// [`ProbePlan`]/[`DerivationPlan`]/[`ResolverPlan`]): the DYNAMIC reaches arms shipped for each
+/// reach-bearing AUTHORED footprint coordinate. Rides the SAME phase-1 artifact; its `reach` records
+/// are read back and unioned into the footprints (via `Footprint::add_reached`) BEFORE the survival
+/// walk. STATIC reaches arms never ship (traced at the cli). Empty ⇒ nothing appended (goldens stay
+/// byte-identical — a book with no reach-bearing wall is unchanged).
+#[derive(Debug, Default)]
+pub struct ReachPlan {
+    /// The reach-probe queries, in `(coord_label, arm_index)` order.
+    pub probes: Vec<ReachProbe>,
+}
+
+impl ReachPlan {
+    /// Render the reach-probe as read-only, self-reporting sh, APPENDED to the earlier probes in the
+    /// SAME phase-1 block (no shebang). Each per-arm wrapper is emitted once (deduped, re-emitted on a
+    /// body change — sh last-writer-wins), then invoked per COORDINATE with the entity; its stdout is
+    /// re-keyed per-line to a `reach <coord> arm=<index> entity=…` record. Empty ⇒ `""`. Interner-free.
+    #[must_use]
+    pub fn render_sh(&self) -> String {
+        if self.probes.is_empty() {
+            return String::new();
+        }
+        let mut out = String::from(render::reach::header());
+        let mut defined: BTreeMap<&str, &str> = BTreeMap::new();
+        for p in &self.probes {
+            out.push_str(&render::reach::reach_comment(
+                &p.coord_label,
+                &p.kind_label,
+                p.arm_index,
+            ));
+            if defined.insert(p.arm_fn.as_str(), p.arm_sh.as_str()) != Some(p.arm_sh.as_str()) {
+                out.push_str(&render::reach::arm_def(&p.arm_sh));
+            }
+            out.push_str(&render::reach::record_scaffold(
+                &p.arm_fn,
+                &p.entity_text,
+                &p.coord_label,
+                p.arm_index,
+            ));
+        }
+        out
+    }
+}
+
 /// The `<provider>__touches` derivation funcname (24E §2/§9), mangled IDENTICALLY to
 /// [`predict_fn_name`] so a site's shipped def (via `strip_touches`) and its invocation agree
 /// byte-for-byte. Referent-agnostic: passed to the host, never branched on.
