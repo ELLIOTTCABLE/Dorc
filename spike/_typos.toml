@@ -12,4 +12,10 @@ extend-ignore-re = [
    # "the two nevers" is round-23 ruling vocabulary (rul-ternary-verdict's pair of
    # never-clauses; spike/CLAUDE.md + notes/23A) — a plural noun, not a misspelt "never".
    "\\bnevers\\b",
+   # DELIBERATE near-miss fixtures of the CLI mode/flag fuzzy-matcher test (`nearest`, cli/main.rs):
+   # `aply`/`tust`/`boook` are the one-edit-away typos the suggester must resolve to
+   # apply/--trust-footprints/--book. Not misspellings to fix — the test asserts they ARE caught.
+   "\\baply\\b",
+   "\\btust\\b",
+   "\\bboook\\b",
 ]
