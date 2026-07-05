@@ -1,0 +1,8 @@
+#!/bin/sh
+# INERT mock: logs argv, prints a NON-matching version so `grep -q "0.155.0"` finds no match (rc 1)
+# ⇒ the `||` fires ⇒ curl|tar RUN (the fallback is not wrongly elided — the pipe walled). Mutates
+# nothing. (Diverged host, like strawman24-pipe-guard-floor — so the short-circuited fallback runs
+# in both the bare book and the un-elided apply, keeping gate-5's resolved-argv ⊆ bare-log honest.)
+. "${0%/*}/.log"; _dorc_logged "$@"
+printf 'otelcol version 0.99.0\n'
+exit 0

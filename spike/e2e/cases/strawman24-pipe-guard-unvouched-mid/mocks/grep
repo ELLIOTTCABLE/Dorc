@@ -1,0 +1,8 @@
+#!/bin/sh
+# INERT grep shim: logs argv, real literal substring match over stdin (exit 0 match / 1 no-match).
+. "${0%/*}/.log"; _dorc_logged "$@"
+pat=
+for a in "$@"; do case $a in -*) ;; *) pat=$a ;; esac; done
+found=1
+while IFS= read -r line; do case $line in *"$pat"*) found=0 ;; esac; done
+exit "$found"

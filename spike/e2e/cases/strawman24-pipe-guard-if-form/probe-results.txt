@@ -1,0 +1,4 @@
+# site 1 = the CONNECTED check-pipe `otelcol --version | grep -q "0.155.0"` (24J §2), keyed to its
+# governing (last) stage grep. Converged host ⇒ rc 0 (holds). The fold negates it for the `if !`
+# condition ⇒ the then-body (curl|tar) is dead. Sites 0/2/3 ship no record (subsumed / dead branch).
+site 1 effect=holds rc=0

@@ -1,0 +1,3 @@
+# The unvouched middle stage `cat` makes the pipe NON-connected (24J narrow-first): grep and
+# otelcol are ORPHAN stages (stdin-dependent, no independent fact) ⇒ they ship NO probe
+# (silence-is-wall). cat is Opaque. Every site is unresolvable ⇒ no records ⇒ nothing elides.

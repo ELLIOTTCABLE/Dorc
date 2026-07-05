@@ -1,0 +1,5 @@
+#!/bin/sh
+# INERT cat shim (the UNVOUCHED middle stage): logs argv, passes stdin->stdout verbatim. No oracle
+# models it, so it is Opaque ⇒ the pipe is NOT a connected check-pipe (24J narrow-first). Read-only.
+. "${0%/*}/.log"; _dorc_logged "$@"
+while IFS= read -r line; do printf '%s\n' "$line"; done
