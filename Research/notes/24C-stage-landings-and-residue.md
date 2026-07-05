@@ -353,3 +353,28 @@ Resolver-less kinds stay byte-identical token-equality (the per-kind gradual flo
 emission, naming, error-posture) settled in live human dialogue after this landing — `24G` is the
 thought-process record; `USER_STORY` stages 6–7 the surface story. The `touches()` stringly-
 emission migration is human-sequenced LAST (after `reaches()` proves the typed shape).
+
+## pipe-guard pins (LANDED 2026-07-05 — the r25 trial-shape question answered empirically)
+
+The sibling conductor's question — does the spike handle the idiomatic version-guard
+`otelcol --version | grep -q V || curl … | tar xz`? — answered with pins, not opinion
+(fixtures `strawman24-pipe-guard-*`; conductor-verified 152/152 on the merged tree).
+**The floor is SAFE** (GREEN pin: the exact 3-line trial book, no oracles — all 12 sites run,
+apply verbatim). **The gap is precisely the check-side pipe:** a single-command check lifts
+WHOLE today (GREEN contrast: `dpkg -s X || curl|tar` → run-set empty); a check-pipe with a
+modeled first stage folds; the fallback pipe omits as a dead branch. The XFAIL (two-sided,
+head-signature-guarded): the strongest authored oracle still can't lift the flagship — the `||`
+reads the un-oracled last stage (`grep -q`) and rule-query-validity withholds it (opaque
+first-stage through the pipe; classify unit-pins fix the through-pipe invalidation in both
+directions). **Trial-ceiling note:** on a converged host the bare book's own `||` already
+short-circuits the fallback ⇒ the owed value on this shape is check-tax + attention only.
+
+**Gap-anatomy (sized, for Stage 6):** (e-1) pipeline-as-one-status-unit — MEDIUM, but founders
+on *filter-blessing* (someone must own "grep -q's rc means match" as a claim; nobody wants to);
+(e-2) the provider-less fallback — a non-problem (dead-branch omit works; its wall-footprint is
+the existing hork story); (e-3) a LINE-level guard verdict — the first vouched tool in the
+AND-OR list owns the line's guard, argv assembled across stages — MEDIUM-to-LARGE, the
+plausible product answer. **Human forks parked for Stage 6:** `flag-pipe-status-unit`
+(per-command vs per-line oracle-speaks-for) · `flag-filter-blessing`. Harness rider:
+`head_ran_check` honors `RAN_ORDER=lax` (multiset equality; dropped/added lines stay RED —
+only benign concurrent-stage reordering forgiven).
