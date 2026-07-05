@@ -375,8 +375,13 @@ The book inlines the nginx vhost as a heredoc (hl-16) but `cp`s one external fil
 (`./windmill.service`, hl-8). Its content, sitting beside the book on the day:
 
 ```ini
-# windmill.service  — FLAG: env-var names (MODE/PORT/DATABASE_URL), the run-user, and whether a
-# single binary serves both server+worker are pending first-party-doc confirmation (dec-2 realism).
+# windmill.service  — FIRMED (255-firming, first-party): MODE/PORT/DATABASE_URL are real env vars
+# (README env table; backend DEFAULT_PORT=8000). MODE=standalone IS the default and runs server+worker
+# in ONE process (values: standalone/worker/server/agent). BASE_URL added below — real (Server-scope,
+# default http://localhost:8000, "overriden by instance settings if any"); set it so public links /
+# webhooks are correct behind the proxy. (NB: windmill under an nginx /subpath is a known friction; a
+# dedicated subdomain is smoother — orthogonal to this FLAG.) Run-user: NO upstream guidance — windmill
+# ships only docker/helm and documents no systemd unit at all; runs as root here (admin's call).
 [Unit]
 Description=Windmill (server+worker)
 After=network-online.target postgresql.service
@@ -386,6 +391,7 @@ Wants=network-online.target postgresql.service
 Environment=DATABASE_URL=postgres://windmill:changeme@127.0.0.1:5432/windmill
 Environment=MODE=standalone
 Environment=PORT=8000
+Environment=BASE_URL=https://homelab.lan/windmill
 ExecStart=/usr/local/bin/windmill
 Restart=on-failure
 
