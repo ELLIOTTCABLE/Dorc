@@ -58,7 +58,7 @@ use dorc_core::{
     EntityRef, FactKey, Interner, KindId, Observable, OpaqueToken, ProvArena, SelectorId, Verdict,
 };
 use dorc_plan::erasability::{canonical_decision, decision_digest};
-use dorc_plan::{ProbePlan, build_plan, compile_probe};
+use dorc_plan::{ConnectedPipes, ProbePlan, build_plan, compile_probe};
 
 /// Test convenience (elide-weld, 24D §3): vouch EVERY establish-bearing site so these erasability
 /// digests keep exercising the elision plane. The vouch GATE is pinned elsewhere (plan's
@@ -229,6 +229,7 @@ fn run_pipeline(book: &str, variation: ArenaMode) -> RunOutcome {
         &cfg,
         &value,
         &classes,
+        &ConnectedPipes::default(),
         |provider, argv| ship_from(ORACLE_SRC, &checks, &i, provider, argv),
         |_| false,
     );
@@ -403,6 +404,7 @@ fn digest_is_receipt_invariant_across_runs() {
             &cfg,
             &value,
             &classes,
+            &ConnectedPipes::default(),
             |provider, argv| ship_from(ORACLE_SRC, &checks, i, provider, argv),
             |_| false,
         );

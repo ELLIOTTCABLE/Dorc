@@ -462,6 +462,9 @@ pub fn build_report(inputs: &Inputs<'_>) -> Report {
         .map(parse_probe_verdicts)
         .unwrap_or_default();
 
+    // 24J §2 — the connected check-pipes (byte-mirror of the cli): empty for a book without a
+    // simple all-vouched-read-only pipeline, so dashboard parity is unaffected unless one is present.
+    let connected = dorc_plan::connected_check_pipes(inputs.book, &parsed.value, &cfg, &classes);
     // R3 (23D §1 — the check IS the oracle): byte-mirror of the cli's `compile_probe`
     // call — the probe ships each provider's stripped `<provider>__predict` funcdef invoked
     // per-site with its argv (`ship_predict_body` re-runs the analysis's own check resolution).
@@ -470,6 +473,7 @@ pub fn build_report(inputs: &Inputs<'_>) -> Report {
         &cfg,
         &value,
         &classes,
+        &connected,
         |provider, argv| ship_predict_body(inputs.oracles, &checks, &interner, provider, argv),
         // The dashboard carries no guard/vouch plumbing (Stage-3 minimal build-fix): no site is
         // vouched, so no past-wall establish ships a probe here — dashboard parity is unaffected.
@@ -490,6 +494,7 @@ pub fn build_report(inputs: &Inputs<'_>) -> Report {
         None,
         None,
         &vouches,
+        &connected,
         observe,
         &mut arena,
     );

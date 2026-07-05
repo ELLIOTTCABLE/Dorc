@@ -1981,6 +1981,61 @@ command__predict() {
         );
     }
 
+    #[test]
+    fn observe_singleton_pipe_predecessor_keeps_downstream_query_valid() {
+        // 24J §2 — the vouched-case mirror of `query_pipe_predecessor_keeps_downstream_query_valid`.
+        // The flagship's NON-last stage is a DESCRIBED read-only tool (`otelcol --version`, an Observe
+        // SINGLETON — no operand, unlike `command -v`'s operand-Observe). It must ALSO keep the
+        // last-stage Query valid through the pipe (an Observe gens nothing, singleton or operand),
+        // which is exactly what makes `otelcol --version | grep -q V` an all-vouched-read-only
+        // CONNECTED check-pipe. Self-contained dialect (no CORPUS churn); `command -v nginx` stands in
+        // for grep as the last-stage Query (the corpus test index has no `grep` kind — same mechanism
+        // as the flagship note). Contrast the Opaque-predecessor pin above (which INVALIDATES).
+        let mut i = Interner::default();
+        let dialect = "\
+otelcol__predict() {
+   case $1 in
+      --version) v : otelcol; otelcol --version >/dev/null 2>&1 :? otelcol:.v0155 ;;
+   esac
+}
+command__predict() {
+   case $1 in -v) shift ;; esac
+   tool : tool = \"$1\"
+   command -v -- \"$tool\" >/dev/null 2>&1 :? tool:\"$tool\".present
+}
+";
+        // LIFT the effect-map from the SAME dialect (as the cli does) so the index + the predict
+        // agree by construction — a hand-built cell whose verb/kind diverges from the predict's marks
+        // resolves to MustRun (the failure this authoring avoids).
+        let idx = dorc_oracle::lift(&mut i, &[dialect]).value;
+        let checks = vec![lift_predicts(&mut i, dialect).value];
+
+        let parsed = dorc_syntax::parse("otelcol --version | command -v nginx");
+        let built = cfg::build(&parsed.value);
+        let value = analyze(&built.value, &parsed.value, &mut i);
+        let mut arena = dorc_core::ProvArena::new();
+        let classes = classify(
+            &built.value,
+            &value,
+            &parsed.value,
+            &idx,
+            &checks,
+            &mut i,
+            &mut arena,
+        )
+        .value;
+        let nginx = tool_present(&mut i, "nginx");
+        assert!(
+            classes.iter().any(|(_, c)| c
+                == &SkipClass::QueryResolvable {
+                    fact: nginx,
+                    valid: true
+                }),
+            "a described read-only (Observe-singleton) pipe-predecessor keeps the downstream Query \
+             VALID — the 24J connected-pipe precondition: {classes:?}"
+        );
+    }
+
     // --- y-1 (redirect-effects, `21F` imp-1): a write-redirect is a file-write WRITER ----
 
     /// `file:<path>#written` — the cell a write-redirect (`>`/`>>`) to `path` gens.

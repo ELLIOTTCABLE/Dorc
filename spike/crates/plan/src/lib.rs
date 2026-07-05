@@ -1192,6 +1192,12 @@ pub struct ProbePredict {
     /// provider's body differs from the last emitted (sh's last-writer-wins + top-to-bottom
     /// exec makes each invocation see its own body).
     pub sh: String,
+    /// 24J §2 — the CONNECTED-probe body. `Some(body)` ⇒ this governing site ships a *connected*
+    /// probe: `body` is the RAW pipeline bytes (`otelcol --version | grep -q "0.155.0"`) run
+    /// verbatim by the record scaffold (no funcdef — "the host runs the real `A | F`"), its
+    /// governing rc captured. `None` ⇒ the ordinary single-command shape (`sh` funcdef + `argv`
+    /// invocation). The `fact`/`site_kind` re-key + the record grammar are unchanged either way.
+    pub connected: Option<String>,
 }
 
 /// A compiled probe: per-resolvable-site read-only checks whose answers drive the
@@ -1284,10 +1290,19 @@ impl ProbePlan {
                 &key,
                 &fact_label(interner, check.fact),
             ));
-            if defined.insert(fn_name.clone(), check.sh.as_str()) != Some(check.sh.as_str()) {
-                out.push_str(&render::probe::wrapper_def(&check.sh));
-            }
-            let invocation = render::probe::invocation(&fn_name, &check.argv, interner);
+            // 24J §2 — a CONNECTED governing stage runs the RAW pipeline bytes as the invocation
+            // (no funcdef: "the host runs the real `A | F`", the record scaffold captures the
+            // pipeline's governing rc). Every stage's read-only vouch is the license to run the
+            // real pipe. Otherwise the ordinary R3 shape: (re-)emit the stripped funcdef, then
+            // invoke it with the site's argv.
+            let invocation = if let Some(body) = &check.connected {
+                body.clone()
+            } else {
+                if defined.insert(fn_name.clone(), check.sh.as_str()) != Some(check.sh.as_str()) {
+                    out.push_str(&render::probe::wrapper_def(&check.sh));
+                }
+                render::probe::invocation(&fn_name, &check.argv, interner)
+            };
             out.push_str(&render::probe::record_scaffold(&invocation, &key));
         }
         // Un-resolvable sites are recorded as comments (never invoked): transparency
@@ -1618,6 +1633,136 @@ fn site_order<'a>(
         .collect()
 }
 
+/// The **connected check-pipes** recognised in a book (24J — the pipe-guard MEDIUM core).
+///
+/// A check-pipeline `A | F [| F…]` whose EVERY stage is a vouched read-only Query (`A`'s
+/// verb-arm via its own oracle, `F` via the stdlib grep oracle) is shipped as ONE *connected*
+/// probe: the host runs the real pipe and the governing (last) stage's rc reads back keyed to
+/// the governing site (24J §2). A lone `grep -q` has no independent fact (silence-is-wall), so
+/// ONLY the connected form probes; the raw pipeline bytes are what run (24J: "the host runs the
+/// real `A | F` … nothing needs reassembling" — a stage's `__predict` body cannot chain, e.g.
+/// `otelcol --version >/dev/null` would starve `grep`).
+///
+/// NARROW FIRST (24J §2): simple all-vouched `A | F [| F…]` chains only — every stage a bare
+/// `Simple` command with NO redirect, and every stage a [`SkipClass::QueryResolvable`]. Anything
+/// else (a redirection, nesting, an unvouched/mutating stage) is NOT recognised and ⊤s to the
+/// wall floor (today's behaviour — the negative control pins it).
+#[derive(Debug, Clone, Default)]
+pub struct ConnectedPipes {
+    /// governing (last-stage) [`CfgNodeId`] → the connected probe body: the RAW pipeline source
+    /// bytes (`otelcol --version | grep -q "0.155.0"`). The probe scaffold runs these verbatim and
+    /// captures the pipeline's governing rc (`inv-site-keyed-results`, keyed to the governing site).
+    governing: BTreeMap<CfgNodeId, String>,
+    /// non-last member [`CfgNodeId`] → its governing (last-stage) [`CfgNodeId`]. The member ships no
+    /// separate probe (subsumed into the connected unit); at apply it OMITS controlled by the
+    /// governing stage once that stage's connected verdict is converged (`build_plan_walled`).
+    members: BTreeMap<CfgNodeId, CfgNodeId>,
+    /// A Query stage of a pipeline that did NOT qualify as connected (a redirection, a nesting, an
+    /// unvouched/mutating stage — the negative control). Such a stage is stdin-dependent inside its
+    /// pipe (silence-is-wall — a lone `grep -q` has no independent fact), so it must NOT ship its
+    /// context-free `__predict` (which would read the wrong stdin); it is UNRESOLVABLE ⇒ runs
+    /// (`kFAIL-perform`). Only a CONNECTED governing stage ever probes a pipe-stage Query.
+    orphan_stages: BTreeSet<CfgNodeId>,
+}
+
+impl ConnectedPipes {
+    /// The connected probe body for a governing site, if `node` governs a connected check-pipe.
+    #[must_use]
+    pub fn governing_body(&self, node: CfgNodeId) -> Option<&str> {
+        self.governing.get(&node).map(String::as_str)
+    }
+
+    /// The governing (last-stage) node for a non-last member, if `node` is subsumed into a
+    /// connected check-pipe.
+    #[must_use]
+    pub fn member_governor(&self, node: CfgNodeId) -> Option<CfgNodeId> {
+        self.members.get(&node).copied()
+    }
+
+    /// Is `node` a Query stage of a NON-connected pipeline (silence-is-wall — never probes, runs)?
+    #[must_use]
+    pub fn is_orphan_stage(&self, node: CfgNodeId) -> bool {
+        self.orphan_stages.contains(&node)
+    }
+}
+
+/// Recognise the [`ConnectedPipes`] in a book (24J §2 — narrow-first). Pure + deterministic
+/// (ordered maps, a single AST walk); safe on ANY book — a book with no all-Query pipe yields
+/// an empty map (today's behaviour, the flag-off equivalent).
+///
+/// A pipeline qualifies iff: it has ≥2 stages, EVERY stage is a bare `Simple` command carrying
+/// NO redirect (24J narrow-first: a redirection ⊤s to the wall floor), AND every stage resolves
+/// to a [`SkipClass::QueryResolvable`] leaf (the read-only vouch — the grep stdlib + the check
+/// tool's own `:?` arm). The last stage governs; the earlier stages are subsumed members. The
+/// pipeline's `negated` bit is irrelevant here (the fold replays `!` over the captured rc).
+#[must_use]
+pub fn connected_check_pipes(
+    src: &str,
+    ast: &Ast,
+    cfg: &Cfg,
+    classes: &[(CfgNodeId, SkipClass)],
+) -> ConnectedPipes {
+    // AstId → (CfgNodeId, is-QueryResolvable). A simple-pipe stage is a single leaf, so the map is
+    // 1:1 for the shapes we recognise; a stage whose AstId is absent (opaque/mutator/nested) fails
+    // the all-Query gate below and the pipe is rejected (the safe direction).
+    let mut leaf_of: BTreeMap<AstId, (CfgNodeId, bool)> = BTreeMap::new();
+    for (node, class) in classes {
+        let is_query = matches!(class, SkipClass::QueryResolvable { .. });
+        leaf_of.insert(cfg.node(*node).ast, (*node, is_query));
+    }
+    let mut out = ConnectedPipes::default();
+    for (_pipe_id, node) in ast.iter() {
+        let NodeKind::Pipeline { stages, .. } = &node.kind else {
+            continue;
+        };
+        if stages.len() < 2 {
+            continue;
+        }
+        // Every stage must be a bare Simple with no redirect AND an all-Query leaf.
+        let stage_leaf = |stage: AstId| -> Option<CfgNodeId> {
+            let NodeKind::Simple { redirs, .. } = &ast.node(stage).kind else {
+                return None;
+            };
+            if !redirs.is_empty() {
+                return None;
+            }
+            leaf_of.get(&stage).and_then(|&(n, q)| q.then_some(n))
+        };
+        let Some(nodes): Option<Vec<CfgNodeId>> = stages.iter().map(|&s| stage_leaf(s)).collect()
+        else {
+            // REJECTED (a stage is not a clean no-redir Simple Query — the negative control): record
+            // every Query stage as an ORPHAN so it never ships a context-free probe. The whole pipe
+            // walls (silence-is-wall) — today's behaviour, now pinned against the connected path.
+            for &s in stages {
+                if let Some((n, true)) = leaf_of.get(&s).copied() {
+                    out.orphan_stages.insert(n);
+                }
+            }
+            continue;
+        };
+        // stages.len() >= 2 (checked above) and `nodes` mirrors it, so split_last/first/last are all
+        // present — the `else` is unreachable, kept only to avoid an `expect` (no panic path).
+        let (Some((governing, members)), Some(&first), Some(&last)) =
+            (nodes.split_last(), stages.first(), stages.last())
+        else {
+            continue;
+        };
+        // The connected body is the STAGES' source span (`otelcol --version | grep -q "0.155.0"`),
+        // NOT the pipeline node's — a `! A | F` (the if-form) has the `!` inside the Pipeline span,
+        // and running `! A | F` as the probe would report the NEGATED rc (a double-negation: the fold
+        // replays `!` over the captured rc via `Pipeline{negated}`). Slicing first-stage.lo ..
+        // last-stage.hi captures exactly the stages + their `|` separators, never the leading `!`.
+        let lo = ast.node(first).span.lo.0 as usize;
+        let hi = ast.node(last).span.hi.0 as usize;
+        let body = src.get(lo..hi).unwrap_or_default().to_string();
+        out.governing.insert(*governing, body);
+        for m in members {
+            out.members.insert(*m, *governing);
+        }
+    }
+    out
+}
+
 /// Compile the probe from the analysis result, keyed by command **site**
 /// (`inv-site-keyed-results`): each [`SkipClass::EstablishAmbient`] / resolvable-Query
 /// site becomes one [`ProbePredict`] shipping its provider's stripped `<provider>__predict`
@@ -1642,12 +1787,19 @@ fn site_order<'a>(
 /// reports VOUCHED (its provider authored a verdict function reaching a vouching path) DOES ship
 /// its read-only Establish probe. An unvouched `EstablishWritten` stays unresolvable (jc-probe-
 /// scope: whether unvouched walled sites ship hint-probes is deliberately OPEN).
+///
+/// `connected` ([`connected_check_pipes`], 24J §2) re-routes a recognised connected check-pipe: the
+/// GOVERNING (last) stage ships ONE *connected* probe (the raw pipeline bytes — "the host runs the
+/// real `A | F`"); every non-last MEMBER is SUBSUMED (ships no separate record — a lone `grep -q`
+/// has no independent fact, silence-is-wall). Off the connected path (`ConnectedPipes::default()`)
+/// this is byte-identical to before.
 #[must_use]
 pub fn compile_probe(
     ast: &Ast,
     cfg: &Cfg,
     value: &ValueFlow,
     classes: &[(CfgNodeId, SkipClass)],
+    connected: &ConnectedPipes,
     ship_body: impl Fn(Symbol, &[Symbol]) -> Option<String>,
     is_vouched: impl Fn(CfgNodeId) -> bool,
 ) -> ProbePlan {
@@ -1662,6 +1814,21 @@ pub fn compile_probe(
         // handled below; every other in-loop establish is single-fact and floored, so it
         // takes the ordinary resolvable path but is never elided (the floor in `plan`).
         if cfg.in_loop_body(node) && matches!(class, SkipClass::QueryResolvable { .. }) {
+            unresolvable.push(site);
+            continue;
+        }
+        // 24J §2 — a non-last stage of a connected check-pipe is SUBSUMED into the governing
+        // stage's connected probe: it ships NO separate record (a lone `grep -q` predecessor has
+        // no independent fact — silence-is-wall) and is NOT `unresolvable` either (the apply
+        // OMITS it, it does not run, so the dq-site-unresolvable "runs unprobed" note would lie).
+        if connected.member_governor(node).is_some() {
+            continue;
+        }
+        // 24J §2 — a Query stage of a NON-connected pipeline (an unvouched middle stage, a redirect —
+        // the negative control) is stdin-dependent with no independent fact: it must NOT ship its
+        // context-free `__predict` (wrong stdin). UNRESOLVABLE ⇒ it runs (silence-is-wall,
+        // `kFAIL-perform`); the whole pipe walls.
+        if connected.is_orphan_stage(node) {
             unresolvable.push(site);
             continue;
         }
@@ -1716,22 +1883,47 @@ pub fn compile_probe(
             }
             _ => None,
         };
-        match resolvable {
-            // R3: ship the provider's stripped `check()` invoked with the site's argv. A
-            // ⊤ command word or operand, or no check resolving this argv, ⇒ un-shippable
-            // (no concrete invocation ⇒ `can't-probe ⇒ can't-elide`, `kFAIL-perform`).
-            Some((fact, site_kind)) => match ship_for_argv(&value.argv_values(node), &ship_body) {
-                Some((provider, argv, sh)) => checks.push(ProbePredict {
+        let Some((fact, site_kind)) = resolvable else {
+            unresolvable.push(site);
+            continue;
+        };
+        // 24J §2 — a GOVERNING connected check-pipe stage ships the CONNECTED probe: the raw pipeline
+        // bytes run verbatim (no funcdef — a stage's `__predict` cannot chain), the pipeline's
+        // governing rc captured and keyed to this (last-stage) site. `fact`/`site_kind` (the Query
+        // firewall) re-key exactly as a lone Query would. A ⊤ command word cannot be a recognised
+        // connected stage (the recognition requires an all-Query pipe), but stay total: fall back to
+        // unresolvable.
+        if let Some(body) = connected.governing_body(node) {
+            if let Some(ValueOf::Literal(provider)) = value.argv_values(node).first() {
+                checks.push(ProbePredict {
                     site,
                     member: None,
                     fact,
                     site_kind,
-                    provider,
-                    argv,
-                    sh,
-                }),
-                None => unresolvable.push(site),
-            },
+                    provider: *provider,
+                    argv: Vec::new(),
+                    sh: String::new(),
+                    connected: Some(body.to_owned()),
+                });
+            } else {
+                unresolvable.push(site);
+            }
+            continue;
+        }
+        // R3: ship the provider's stripped `check()` invoked with the site's argv. A ⊤ command word or
+        // operand, or no check resolving this argv, ⇒ un-shippable (no concrete invocation ⇒
+        // `can't-probe ⇒ can't-elide`, `kFAIL-perform`).
+        match ship_for_argv(&value.argv_values(node), &ship_body) {
+            Some((provider, argv, sh)) => checks.push(ProbePredict {
+                site,
+                member: None,
+                fact,
+                site_kind,
+                provider,
+                argv,
+                sh,
+                connected: None,
+            }),
             None => unresolvable.push(site),
         }
     }
@@ -1810,6 +2002,7 @@ fn push_member_predicts(
             provider,
             argv: args,
             sh,
+            connected: None,
         });
     }
     checks.extend(staged);
@@ -1857,6 +2050,7 @@ fn push_inline_predicts(
                     provider,
                     argv: args,
                     sh,
+                    connected: None,
                 });
             }
             SkipClass::QueryResolvable { fact, valid } => {
@@ -1871,6 +2065,7 @@ fn push_inline_predicts(
                         provider,
                         argv: args,
                         sh,
+                        connected: None,
                     });
                 }
             }
@@ -1934,6 +2129,7 @@ pub fn build_plan(
         None,
         None,
         vouches,
+        &ConnectedPipes::default(),
         observe,
         arena,
     )
@@ -1977,6 +2173,7 @@ pub fn build_plan_walled(
     survival: Option<&TrustedFootprints>,
     resolutions: Option<&Resolutions>,
     vouches: &Vouches,
+    connected: &ConnectedPipes,
     observe: impl Fn(FactKey) -> Observable,
     arena: &mut dorc_core::ProvArena,
 ) -> Plan {
@@ -2018,34 +2215,57 @@ pub fn build_plan_walled(
     for (node, class) in classes {
         let ast_id = cfg.node(*node).ast;
         let sh = command_text(src, ast, ast_id);
+        // 24J §2 — a SUBSUMED non-last stage of a connected check-pipe: OMIT it (controlled by
+        // the governing last stage) once that governing stage's connected verdict is KNOWN — a
+        // known rc (converged OR diverged) lets the whole READ-ONLY pipe be substituted, saving
+        // the check-tax; the governing stage reproduces the rc, so the member's own status/stdout
+        // never escape the collapsed unit. An unknown/⊤ governing verdict, or a ⊤-successor member,
+        // ⇒ RUN (`kFAIL-perform`). The Omit render is gated on the governing stage neutralising
+        // (`is_neutralised` walks the pipe's leaves), so a governing stage that fails to Replace
+        // keeps this member verbatim too — the safe direction.
+        let mut disposition = if let Some(gov_node) = connected.member_governor(*node) {
+            let gov_ast = cfg.node(gov_node).ast;
+            let gov_known = leaf_fact
+                .get(&gov_ast)
+                .is_some_and(|f| matches!(observe(*f).status, Predicted::Value(_)));
+            if gov_known && !has_top_successor(cfg, *node) {
+                Disposition::Omit {
+                    controller: gov_ast,
+                }
+            } else {
+                Disposition::Run
+            }
+        }
         // An in-loop Members site and an inlined CALL each take their own all-or-nothing
         // license path (the PER-MEMBER / PER-BODY-SITE observations); every other class
         // takes the single-fact `disposition_for`.
-        let mut disposition = match class {
-            SkipClass::EstablishMembers {
-                members,
-                self_reached,
-            } => members_disposition(cfg, *node, members, *self_reached, &observe),
-            // arch-2 (`i-3`): the CALL aggregates its body sites' observations.
-            SkipClass::InlineCall { sites } => inline_disposition(cfg, *node, sites, &observe),
-            _ => {
-                let observed = match class {
-                    SkipClass::EstablishAmbient(f)
-                    | SkipClass::EstablishWritten(f)
-                    | SkipClass::QueryResolvable { fact: f, .. } => Some(observe(*f)),
-                    SkipClass::EstablishMembers { .. }
-                    | SkipClass::InlineCall { .. }
-                    | SkipClass::MustRun => None,
-                };
-                disposition_for(
-                    cfg,
-                    &fold,
-                    *node,
-                    class,
-                    ast_id,
-                    observed,
-                    vouches.get(node),
-                )
+        else {
+            match class {
+                SkipClass::EstablishMembers {
+                    members,
+                    self_reached,
+                } => members_disposition(cfg, *node, members, *self_reached, &observe),
+                // arch-2 (`i-3`): the CALL aggregates its body sites' observations.
+                SkipClass::InlineCall { sites } => inline_disposition(cfg, *node, sites, &observe),
+                _ => {
+                    let observed = match class {
+                        SkipClass::EstablishAmbient(f)
+                        | SkipClass::EstablishWritten(f)
+                        | SkipClass::QueryResolvable { fact: f, .. } => Some(observe(*f)),
+                        SkipClass::EstablishMembers { .. }
+                        | SkipClass::InlineCall { .. }
+                        | SkipClass::MustRun => None,
+                    };
+                    disposition_for(
+                        cfg,
+                        &fold,
+                        *node,
+                        class,
+                        ast_id,
+                        observed,
+                        vouches.get(node),
+                    )
+                }
             }
         };
         // arch-1 witness (`vp-17`/`vp-18`): a licensed `Replace` records its FULL granted
@@ -3673,6 +3893,7 @@ apt_get__predict() {
             &cfg,
             &value,
             &classes,
+            &ConnectedPipes::default(),
             |provider, argv| {
                 if probeable {
                     ship_corpus(&checks, &i, provider, argv)
@@ -4014,6 +4235,7 @@ apt_get__predict() {
             &cfg,
             &value,
             &classes,
+            &ConnectedPipes::default(),
             |provider, argv| ship_corpus(&checks, &i, provider, argv),
             |_| false,
         );
@@ -4724,6 +4946,7 @@ apt_get__predict() {
             None,
             None,
             &vouch_all(&classes),
+            &ConnectedPipes::default(),
             observe,
             &mut arena,
         );
@@ -4864,6 +5087,7 @@ apt_get__predict() {
             footprints.as_ref(),
             None,
             &vouch_all(&classes),
+            &ConnectedPipes::default(),
             observe,
             &mut arena,
         )
@@ -4955,6 +5179,7 @@ apt_get__predict() {
             Some(&empty),
             None,
             &vouch_all(&classes),
+            &ConnectedPipes::default(),
             observe,
             &mut arena,
         )
@@ -5488,6 +5713,163 @@ apt_get__predict() {
             2,
             "disjoint-line edits are NOT merged: {:#?}",
             groups.keys()
+        );
+    }
+
+    // ---- 24J §2: connected check-pipe recognition (`connected_check_pipes`) ----
+
+    /// The `CfgNodeId` of the leaf `Command` whose Simple's first word is `word`. The recognition
+    /// pins assert governing/member/orphan membership against these ids.
+    fn pipe_node(cfg: &Cfg, ast: &Ast, word: &str) -> CfgNodeId {
+        use dorc_syntax::ast::{NodeKind, WordPart};
+        for (id, cnode) in cfg.iter() {
+            if !matches!(cnode.kind, CfgNodeKind::Command) {
+                continue;
+            }
+            if let NodeKind::Simple { words, .. } = &ast.node(cnode.ast).kind
+                && let Some(&w) = words.first()
+                && let NodeKind::Word { parts } = &ast.node(w).kind
+                && matches!(parts.as_slice(), [WordPart::Literal(s)] if s == word)
+            {
+                return id;
+            }
+        }
+        panic!("no leaf command `{word}` in the cfg");
+    }
+
+    /// Parse `src`, build its cfg, and mark every leaf `Command` whose first word is in `queries` as
+    /// a `QueryResolvable` (the read-only vouch the recognition requires — the fact's identity is
+    /// irrelevant, the recognition keys on structure). A stage word NOT listed is absent from
+    /// `classes`, so the recognition sees it as non-Query (opaque/mutator). Returns (ast, cfg, classes).
+    fn pipe_fixture(src: &str, queries: &[&str]) -> (Ast, Cfg, Vec<(CfgNodeId, SkipClass)>) {
+        use dorc_syntax::ast::{NodeKind, WordPart};
+        let ast = dorc_syntax::parse(src).value;
+        let cfg = dorc_analysis::cfg::build(&ast).value;
+        let mut i = Interner::default();
+        let mut classes = Vec::new();
+        for (node, cnode) in cfg.iter() {
+            if !matches!(cnode.kind, CfgNodeKind::Command) {
+                continue;
+            }
+            let NodeKind::Simple { words, .. } = &ast.node(cnode.ast).kind else {
+                continue;
+            };
+            let Some(&w) = words.first() else { continue };
+            let NodeKind::Word { parts } = &ast.node(w).kind else {
+                continue;
+            };
+            let [WordPart::Literal(name)] = parts.as_slice() else {
+                continue;
+            };
+            if queries.contains(&name.as_str()) {
+                classes.push((
+                    node,
+                    SkipClass::QueryResolvable {
+                        fact: FactKey {
+                            kind: KindId(i.intern("grepmatch")),
+                            entity: EntityRef::Operand(OpaqueToken(i.intern(name))),
+                            selector: SelectorId(i.intern("matched")),
+                        },
+                        valid: true,
+                    },
+                ));
+            }
+        }
+        (ast, cfg, classes)
+    }
+
+    #[test]
+    fn connected_recognises_all_query_two_stage() {
+        // The flagship shape: `A | F` with BOTH stages vouched read-only Queries ⇒ a connected
+        // check-pipe. The LAST stage governs (ships the connected body = the raw pipe bytes); the
+        // first stage is a subsumed member keyed to the governor. No orphans.
+        let src = "otelcol --version | grep -q x || curl y\n";
+        let (ast, cfg, classes) = pipe_fixture(src, &["otelcol", "grep"]);
+        let c = connected_check_pipes(src, &ast, &cfg, &classes);
+        let gov = pipe_node(&cfg, &ast, "grep");
+        let a = pipe_node(&cfg, &ast, "otelcol");
+        assert_eq!(
+            c.governing_body(gov),
+            Some("otelcol --version | grep -q x"),
+            "the governing (last) stage ships the RAW pipe bytes (the stages' span, no `||`/`!`)"
+        );
+        assert_eq!(
+            c.member_governor(a),
+            Some(gov),
+            "the non-last stage is a member keyed to the governor"
+        );
+        assert!(
+            !c.is_orphan_stage(a) && !c.is_orphan_stage(gov),
+            "a connected pipe has no orphans"
+        );
+    }
+
+    #[test]
+    fn connected_recognises_three_stage() {
+        // `A | B | F` all-Query ⇒ two members (A, B) + the governor F.
+        let src = "a p | b q | grep -q x\n";
+        let (ast, cfg, classes) = pipe_fixture(src, &["a", "b", "grep"]);
+        let c = connected_check_pipes(src, &ast, &cfg, &classes);
+        let gov = pipe_node(&cfg, &ast, "grep");
+        assert_eq!(c.member_governor(pipe_node(&cfg, &ast, "a")), Some(gov));
+        assert_eq!(c.member_governor(pipe_node(&cfg, &ast, "b")), Some(gov));
+        assert_eq!(c.governing_body(gov), Some("a p | b q | grep -q x"));
+    }
+
+    #[test]
+    fn connected_rejects_unvouched_middle_stage_as_orphans() {
+        // The NEGATIVE CONTROL (silence-is-wall): an unvouched (non-Query) MIDDLE stage `cat`
+        // disqualifies the pipe (NARROW FIRST). The Query stages become ORPHANS — they ship no
+        // context-free probe and RUN; nothing is a governor/member.
+        let src = "otelcol --version | cat | grep -q x || curl y\n";
+        let (ast, cfg, classes) = pipe_fixture(src, &["otelcol", "grep"]); // `cat` is NOT a query
+        let c = connected_check_pipes(src, &ast, &cfg, &classes);
+        let a = pipe_node(&cfg, &ast, "otelcol");
+        let f = pipe_node(&cfg, &ast, "grep");
+        assert!(
+            c.is_orphan_stage(a) && c.is_orphan_stage(f),
+            "both Query stages are orphans"
+        );
+        assert!(
+            c.governing_body(f).is_none(),
+            "no governor — the pipe is not connected"
+        );
+        assert!(
+            c.member_governor(a).is_none(),
+            "no members — the pipe is not connected"
+        );
+    }
+
+    #[test]
+    fn connected_rejects_redirected_stage() {
+        // A redirection on a stage ⊤s the pipe to the wall floor (24J narrow-first): NOT connected,
+        // the Query stages are orphans. (`> /dev/null` on the first stage makes its Simple carry a
+        // redirect ⇒ `stage_leaf` refuses it.)
+        let src = "otelcol --version >/dev/null | grep -q x\n";
+        let (ast, cfg, classes) = pipe_fixture(src, &["otelcol", "grep"]);
+        let c = connected_check_pipes(src, &ast, &cfg, &classes);
+        assert!(
+            c.governing_body(pipe_node(&cfg, &ast, "grep")).is_none(),
+            "a redirect on any stage disqualifies the connected pipe"
+        );
+        assert!(
+            c.is_orphan_stage(pipe_node(&cfg, &ast, "grep")),
+            "the last-stage Query is an orphan"
+        );
+    }
+
+    #[test]
+    fn connected_ignores_non_pipeline() {
+        // A single command (no pipe) is never a connected check-pipe — nothing recorded.
+        let src = "grep -q x || curl y\n";
+        let (ast, cfg, classes) = pipe_fixture(src, &["grep"]);
+        let c = connected_check_pipes(src, &ast, &cfg, &classes);
+        let g = pipe_node(&cfg, &ast, "grep");
+        assert!(
+            c.governing_body(g).is_none()
+                && !c.is_orphan_stage(g)
+                && c.member_governor(g).is_none(),
+            "a lone command is neither governor, member, nor orphan"
         );
     }
 }

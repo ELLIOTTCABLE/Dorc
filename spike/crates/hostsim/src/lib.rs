@@ -877,6 +877,9 @@ apt_get__predict() {
                 &cfg,
                 &value,
                 &classes,
+                // hostsim's corpus has no all-Query pipeline ⇒ no connected check-pipe (24J §2);
+                // default keeps compile_probe consistent with the `build_plan` wrapper it uses below.
+                &dorc_plan::ConnectedPipes::default(),
                 |provider, argv| ship_corpus(&checks, &i, provider, argv),
                 // hostsim exercises elision soundness, not guards — no vouched past-wall probes.
                 |_| false,
@@ -994,6 +997,7 @@ apt_get__predict() {
             &cfg,
             &value,
             &classes,
+            &dorc_plan::ConnectedPipes::default(),
             |_provider, _argv| None,
             |_| false,
         );

@@ -1448,6 +1448,7 @@ fn inline_call_emits_site_n_m_probe_records() {
         &cfg,
         &value,
         &classes,
+        &dorc_plan::ConnectedPipes::default(),
         |p, a| ship_corpus(&checks, &i, p, a),
         |_| false,
     );
@@ -1505,6 +1506,7 @@ fn inline_call_unprobeable_body_establish_is_unresolvable() {
         &cfg,
         &value,
         &classes,
+        &dorc_plan::ConnectedPipes::default(),
         |_p, _a| None,
         |_| false,
     );

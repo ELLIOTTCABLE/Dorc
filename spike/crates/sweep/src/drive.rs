@@ -72,6 +72,11 @@ pub fn run_kernel(declared: &DeclaredScenario, s0: &Host, flag_on: bool, i: &mut
     // The probe: a site is elidable only if its fact is actually checked (can't-probe ⇒
     // can't-elide). `ship` reborrows the interner immutably; it is dropped when `compile_probe`
     // returns, before the footprint lift reborrows `i` mutably.
+    // 24J §2 — the connected check-pipes (byte-mirror of the cli): the sweep corpus has no
+    // all-Query pipeline, so this is empty and the net's behaviour is unchanged; computed here so
+    // the mirror stays faithful if a connected pipe ever enters the corpus.
+    let connected =
+        dorc_plan::connected_check_pipes(&declared.book_sh, &parsed.value, &cfg, &classes);
     let probe = {
         let ship = |provider: Symbol, argv: &[Symbol]| {
             ship_predict_body(ORACLE_SH, &checks, i, provider, argv)
@@ -80,7 +85,15 @@ pub fn run_kernel(declared: &DeclaredScenario, s0: &Host, flag_on: bool, i: &mut
         // EstablishWritten site ships a guard probe (`is_vouched: |_| false` — guard scenarios are a
         // Stage-3 stretch, tc-flagged in the report). The ELIDE vouches (below) are separate — an
         // ambient site always ships its probe, and the elide-weld demands its vouch.
-        dorc_plan::compile_probe(&parsed.value, &cfg, &value, &classes, ship, |_| false)
+        dorc_plan::compile_probe(
+            &parsed.value,
+            &cfg,
+            &value,
+            &classes,
+            &connected,
+            ship,
+            |_| false,
+        )
     };
 
     // The survival tier data (TC-1): lifted ONLY under the flag; `None` off ⇒ the total-wall
@@ -138,6 +151,7 @@ pub fn run_kernel(declared: &DeclaredScenario, s0: &Host, flag_on: bool, i: &mut
         survival.as_ref(),
         Some(&resolutions),
         &vouches,
+        &connected,
         |f| {
             if probe.checks_fact(f) {
                 s0.observe(f)

@@ -549,15 +549,28 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
     // the verdict) and, converged, mints a `Disposition::Guard`.
     let vouches = build_vouches(&oracle_refs, &classes, &value, &mut interner, advisory);
 
+    // The CONNECTED check-pipes (24J §2 — the pipe-guard MEDIUM core): a simple all-vouched-
+    // read-only pipeline `A | F [| F…]` ships as ONE connected probe keyed to its governing
+    // (last) stage; the non-last stages are subsumed. Empty for any book without such a pipe
+    // (today's behaviour). Threaded into BOTH the probe compiler (ship the connected body) and
+    // the plan builder (omit the subsumed members).
+    let connected =
+        dorc_plan::connected_check_pipes(&book_src, &parsed.value, &cfg.value, &classes);
+
     // The read-only, SELF-REPORTING, site-keyed probe (R3 / 23D §1 — the check IS the oracle):
     // each site ships its provider's stripped `<provider>__predict` invoked with the site's argv.
     // `is_vouched` closes strain-classify-coupling (24C): a vouched past-wall `EstablishWritten`
     // site ships its probe here (at HEAD it would be `skip-unresolvable`).
     let ship = |p, a: &[Symbol]| ship_predict_body(&oracle_srcs, &checks, &interner, p, a);
-    let probe =
-        dorc_plan::compile_probe(&parsed.value, &cfg.value, &value, &classes, ship, |node| {
-            vouches.contains_key(&node)
-        });
+    let probe = dorc_plan::compile_probe(
+        &parsed.value,
+        &cfg.value,
+        &value,
+        &classes,
+        &connected,
+        ship,
+        |node| vouches.contains_key(&node),
+    );
 
     // The DERIVATION-probe (24E §2 corr-§2 — the SECOND probe-shipping path, a NEW pipeline
     // stage): under `--trust-footprints`, a wall-candidate whose `touches()` body ESCALATED (it
@@ -751,6 +764,7 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
         survival.as_ref(),
         args.trust_footprints.then_some(&resolutions),
         &vouches,
+        &connected,
         |f| {
             by_fact
                 .get(&f)
@@ -3118,6 +3132,7 @@ mod tests {
                 provider: fact.kind.0,
                 argv: vec![],
                 sh: "{ :; }".to_string(),
+                connected: None,
             }],
             unresolvable: vec![],
         }
@@ -3331,6 +3346,7 @@ mod tests {
                     argv: vec![],
                     site_kind: k0,
                     sh: "{ :; }".to_string(),
+                    connected: None,
                 },
                 ProbePredict {
                     site: LeafId(1),
@@ -3340,6 +3356,7 @@ mod tests {
                     argv: vec![],
                     site_kind: k1,
                     sh: "{ :; }".to_string(),
+                    connected: None,
                 },
             ],
             unresolvable: vec![],
@@ -3454,6 +3471,7 @@ mod tests {
             &cfg.value,
             &value,
             &classes,
+            &dorc_plan::ConnectedPipes::default(),
             |_, _| None,
             |_| false,
         );
