@@ -1,0 +1,6 @@
+#!/bin/sh
+# INERT mock: logs argv, prints the CONVERGED version so the piped grep -q matches (rc 0) ⇒
+# the admin's own `||` short-circuits the install. Mutates nothing.
+. "${0%/*}/.log"; _dorc_logged "$@"
+printf 'otelcol version 0.155.0\n'
+exit 0

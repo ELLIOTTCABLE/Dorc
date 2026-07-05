@@ -1,0 +1,5 @@
+#!/bin/sh
+# INERT mock (fallback mutator stage): logs if it runs. On a CONVERGED host the bare book
+# short-circuits it; the OWED future elides it. Mutates nothing.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0

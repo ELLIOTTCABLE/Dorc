@@ -1,0 +1,2 @@
+# The otelcol oracle ships NO probe here: otelcol (non-last pipe stage) is skip-unresolvable
+# and grep (governing stage) is unmodeled ⇒ every site is unresolvable ⇒ no records.

@@ -1,0 +1,1 @@
+# no oracle ⇒ every site is skip-unresolvable ⇒ the probe ships no records and consumes none.

@@ -1,0 +1,5 @@
+#!/bin/sh
+# INERT shim — the fallback mutator's stage. OMITTED by the fold (dead branch); logs only if
+# it WRONGLY runs.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0

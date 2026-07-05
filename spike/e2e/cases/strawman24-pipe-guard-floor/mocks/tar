@@ -1,0 +1,4 @@
+#!/bin/sh
+# INERT mock (the fallback mutator's stages): logs its argv, mutates nothing.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
