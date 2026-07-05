@@ -100,6 +100,19 @@ rests on construction + offline tests ⇒ **human must eyeball `_assert_tagged` 
 `SendMessage`→conductor→human (the conductor holds the notify path); the `dorc-r25` tag covers a
 hard-died agent's orphan.
 
+**BRANCH FORK + WAVE-2 (2026-07-04):** round-25 forked to its OWN branch **`ai/spike3-r25`** (worktree
+`.claude/worktrees/spike3-r25`); **r24 Stage-4/5 continues on `ai/spike3-r23`**. They share history to
+`990d966`, then diverge — **this LIVING_STATUS forks with them** (r24 status here goes stale; the live
+r24 view is on r23). Reason: r24+r25 sharing one branch churned LIVING_STATUS/root-docs repeatedly (the
+`990d966` Stage-4 commit swept the P1-done edit above — it landed, but the collision kept recurring).
+**P1 + `~/System` scout DONE** (P1 block above; `256`). **Wave-2 — all ISOLATED, committing granularly
+in their own worktree branches → cherry-pick onto `ai/spike3-r25` after base-verify when they land:**
+web-pass (firm `255` windmill FLAGs: asset/`MODE`/`PORT`/`BASE_URL`), P3 (ssh-runner + the Windows
+`ssh -F` fix for the `usekeychain` gotcha; live-box integration deferred), P6 (HHHF capture tooling per
+`256`: preexec-JSONL spine + ZLE friction-button + asciinema-extractor). **Blocked-until:** P2 (live
+box + human's `_assert_tagged` eyeball), P4 (P3/P2 interfaces), P5 (rides r24 — Stage-4 now landed, so
+P5 unblocks soon). Poll `vultr-cli … | grep dorc-r25` for runaways (baseline 0; eurydice off-limits).
+
 **HANDOFF (fresh conductor, rotating 2026-07-04):**
 - **Stages 4–5 (derived footprints — the tier that buys the ATTENTION value-prop) LAND FIRST, before
   Phase B** (human-confirmed; parallel r24 work, ~EOB). So the trial WILL test the full value-prop,
