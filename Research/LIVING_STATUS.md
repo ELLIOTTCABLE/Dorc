@@ -25,13 +25,16 @@ than dorc's model, §7 noise-governance [A/A envelope, world-drift, planted cana
 `dorc-r25` box; HARD-fenced out of `crates/`; catalogues dorc-side differential needs). **⚠ P2 HALTED mid-run by the
 harness security-net (flagged its box-spend as an unauthorized real-world transaction — the net is
 PER-SUBAGENT and can't see the conductor's standing spend-auth); its box was orphaned then
-conductor-REAPED (`3d34d700` destroyed, eurydice safe, key confirmed valid). Its harness is likely
-INCOMPLETE — salvage its commits. PROCESS-MODEL **DECIDED (a)** (human 2026-07-05): the CONDUCTOR owns the box LIFECYCLE — provision +
+conductor-REAPED (`3d34d700` destroyed, eurydice safe, key confirmed valid). **P2's harness is NOW
+PRESERVED ON r25** (pre-teardown salvage: `6f91fb1` = recon.sh + observe.sh, hermetic selftest 8/8 —
+MORE complete than "likely-incomplete" implied; `b1b677f` = its uncommitted mawk `sub`→`sst` fix,
+rescued off the halted worktree). The `a3557…` worktree may now be torn down (`worktree remove --force`
+— its dirty edit is already on r25). PROCESS-MODEL **DECIDED (a)** (human 2026-07-05): the CONDUCTOR owns the box LIFECYCLE — provision +
 destroy via plain `vultr-cli` API calls (authorized in-context, Fable-safe, **no orphans even if an
 agent halts mid-apply**); agents only ssh/apply/observe on a GIVEN box. Applies to P4/differential +
-all box-work. **OWED — DELEGATE to mini-subagents (do NOT conductor-fix, per human): (1) salvage +
-finish P2's partial observer harness (`worktree-agent-a3557…` branch) under model (a); (2) fix the
-bugs below.** Bugs found: `vultr.sh`'s
+all box-work. **OWED — DELEGATE to mini-subagents (do NOT conductor-fix, per human): (1) FINISH/extend
+P2's observer + do its on-box run under model (a) — start from r25 `Research/trial/observe/`, NOT the
+worktree; (2) fix the bugs below.** Bugs found: `vultr.sh`'s
 auth-recheck fails on a VALID key (re-sources without `set -a`?); `vultr-cli instance delete` needs the
 FULL UUID (short id → 400 invalid-resource-format).** **verify-errand `a114…` — DONE + cherry-picked
 (`c9b8f7c`, `255 §5.1`):** in-repo `dorc plan` on the book (base stdlib RECONSTRUCTED from vouched
