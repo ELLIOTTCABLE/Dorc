@@ -1,0 +1,11 @@
+# FIRMED: config path /etc/otelcol-contrib/config.yaml + `--config` flag — opentelemetry.io.
+# The .deb would ship this unit first-class; we hand-write it for the tarball form (dec-2).
+[Unit]
+Description=OpenTelemetry Collector (contrib)
+After=network-online.target
+Wants=network-online.target
+[Service]
+ExecStart=/usr/local/bin/otelcol-contrib --config=/etc/otelcol-contrib/config.yaml
+Restart=on-failure
+[Install]
+WantedBy=multi-user.target
