@@ -141,6 +141,15 @@ unconsumed; golden churn UNBLOCKED by human ruling, conductor still inspects at 
 5 safest-first batches; THE flag: the in-memory tier must add a one-shot `dash -n` per artifact
 or it re-opens the ap-2 text-diff trap) → `touches()` typed-emission migration (#12, human-set
 LAST) → Stage 6 (measure/conclude/extract; carries the two pipe-guard forks + adequacy-bite).
+**Folded from the design-synthesis sibling's drift-audit memo (2026-07-05; accepted, no nack):**
+the first-wall hint (DECIDED, post-polish — the USER_STORY stage-3 nag with the un-wall-M
+counterfactual; serves r25 B2; decline-valve to the r25 conductor if not-small) · Stage-6 gains
+the 22H-reassessment INPUTS (the human's "reassess at r24 close": cruft-verdict / 24B §5 banked
+coordination-DST hooks / the 151 M3 marker-protocol knot — inputs only, decision human's) + two
+extraction adds (077's unhonored half: seccomp socket-observe backstop + batch-attribution
+recoverability — carry-or-explicitly-retire; 16Q-keystone bookkeeping: discharged-by + open
+residue) · an ANALYZER-NEEDS staleness sweep (annotate pre-ternary rows, e.g. an-tier-a-forms
+dead-by-weld; never silently drop).
 
 ## Round-24 EARLIER (2026-07-04 — Stages 1–5A; kind-owner design round)
 
