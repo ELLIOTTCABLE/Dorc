@@ -1672,25 +1672,27 @@ fn emit_debug_argv(
     }
 }
 
-/// q-2 (`dq-site-unresolvable`): one Note per probe-unresolvable site, naming its source
-/// command text. The cli-edge readout of [`dorc_plan::ProbePlan::unresolvable`] — a
-/// `skip-unresolvable` comment lands in the probe artifact, but nothing reaches stderr today
-/// (`219` q-1.f silent-3). Mirrors the `report()`/`emit_debug_argv` plumbing: the
-/// `unresolvable` [`LeafId`]s share the apply plan's span-sorted site space
-/// (`inv-site-keyed-results`), so each maps to a [`dorc_plan::Step`]'s `ast`, whose span
-/// resolves to the book's source text.
+/// q-2 (`dq-site-unresolvable`) + cheap-7 (the firehose fix): ONE aggregated Note for the
+/// probe-unresolvable sites that are worth disclosing — never the per-site stanza-per-site
+/// firehose the recon flagged (a 5,000-line book emitted 50,002 stderr lines). Two moves:
 ///
-/// A site with NO matching step is ASSERTED-UNREACHABLE then SKIPPED (no diagnostic emitted), not
-/// named by a bare id. None is expected — every unresolvable site is a runnable command leaf with a
-/// plan step (`unresolvable ⊆ plan.steps` by construction). NB (f-7, `224` §10): the legacy form
-/// could emit a bare-id/no-span Note here; the migration onto the mandatory-primary-span spine
-/// (`21Z` drop-B) replaced that with a skip rather than fabricate a span-less `SiteUnresolvable`.
-/// Per human ruling 22-q2 ("shouldn't something unreachable be an ASSERT?") the miss now fires a
-/// `debug_assert!(false, …)` — a miss is a Dorc-internal plan/probe divergence, not malformed input.
-/// This is the CLI EDGE (not the kernel, so `inv-no-throw` does not formally bind), but it
-/// deliberately does NOT release-panic: the reachability claim is OURS, not vouched-hard
-/// (never-vouch — so no `unreachable!()`), so release safe-degrades to the skip. The site still RUNS
-/// at apply (it is in `unresolvable`), so no disclosure-correctness is lost even if it somehow fired.
+/// 1. **SUPPRESS the structurally-unprobeable** ([`is_structurally_unprobeable`]): a bare
+///    assignment (`pkg=nginx`), `set -eu`, or a pure/no-target-state builtin (`:`/`echo`/`cd`/…,
+///    the ENGINE's own [`dorc_analysis::effect::is_target_state_pure_builtin`] list) has NO probe
+///    that could ever exist — "declare a read-only probe for `set -eu`" is actively wrong advice —
+///    so it earns NO disclosure at all.
+/// 2. **AGGREGATE the remainder** into ONE honest Note naming every real command (`make install`,
+///    an un-oracled `apt-get …`) and pointing at `dorc why` for the per-site detail. The frame
+///    points at the FIRST real site as a representative (a caret example), constant-size regardless
+///    of how many sites run unprobed. rul-attention-honesty is intact: the artifact still RUNS every
+///    one (this only collapses the stderr readout — no run is hidden).
+///
+/// Reuses the migrated `DiagCode::SiteUnresolvable` spine (the sanctioned emit for this slug —
+/// tidy-gate reachability unchanged). The `unresolvable` [`LeafId`]s share the apply plan's
+/// span-sorted site space (`inv-site-keyed-results`), so each maps to a [`dorc_plan::Step`]'s `ast`,
+/// whose span resolves to the book source. A site with no matching step is ASSERTED-UNREACHABLE
+/// (human ruling 22-q2: `unresolvable ⊆ plan.steps` by construction) then skipped — `debug_assert`
+/// loud in debug/DST, safe-degrade (skip) in release (never-vouch: the reachability claim is ours).
 fn unresolvable_diagnostics(
     probe: &dorc_plan::ProbePlan,
     plan: &dorc_plan::Plan,
@@ -1701,50 +1703,83 @@ fn unresolvable_diagnostics(
     use dorc_core::diag::{Diag, DiagCode, SiteId, SiteUnresolvable};
     let ast_of_leaf: BTreeMap<dorc_plan::LeafId, dorc_core::AstId> =
         plan.steps.iter().map(|s| (s.leaf, s.ast)).collect();
-    probe
-        .unresolvable
-        .iter()
-        .filter_map(|&leaf| {
-            // A site with no matching step cannot key a span. ASSERTED-UNREACHABLE (human ruling
-            // 22-q2): unresolvable ⊆ plan.steps by construction, so a miss is a Dorc-internal
-            // plan/probe inconsistency, never malformed book input. debug_assert (not a release
-            // panic): this reachability claim is OURS, not vouched-hard (never-vouch), and the same
-            // safe-degrade shape as the kernel site keeps a release miss skipping rather than
-            // aborting — loud in debug/test/DST, safe fallback (skip) in release.
-            let Some(&id) = ast_of_leaf.get(&leaf) else {
-                debug_assert!(
-                    false,
-                    "unresolvable site has no plan step — unresolvable ⊆ plan.steps by \
-                     construction (f-7); a hit means the probe/plan site spaces diverged"
-                );
-                return None;
-            };
-            let span = ast.node(id).span;
-            let text = book_src
-                .get(span.lo.0 as usize..span.hi.0 as usize)
-                .unwrap_or("<source unavailable>");
-            // The migrated `DiagCode::SiteUnresolvable` spine (`22B` §5 worked-1): the SiteId is
-            // first-class (a real plan LeafId here), the source command is a referent-agnostic
-            // OutClaim, and the suggestion carries a remediation class. Lowered to the legacy
-            // stream so `report()`/gate-3 are unchanged.
-            let diag = Diag::new(
-                DiagCode::SiteUnresolvable(SiteUnresolvable {
-                    site: SiteId::leaf(leaf),
-                    source_excerpt: OutClaim(interner.intern(text)),
-                }),
-                span,
-            )
-            .label("no read-only probe could be shipped for this site")
-            .note("the apply runs it unconditionally (kFAIL-perform)")
-            .suggest(dorc_core::diag::Suggestion {
-                message: "declare a read-only probe for this kind's selector in its oracle"
-                    .to_owned(),
-                applicability: dorc_core::diag::Applicability::MaybeIncorrect,
-                remediation: dorc_core::diag::RemediationClass::AuthorOracle,
-            });
-            Some(diag.to_legacy(interner))
-        })
-        .collect()
+
+    // The REAL (worth-disclosing) unresolvable sites, in the probe's site order.
+    let mut real: Vec<(dorc_plan::LeafId, dorc_core::Span, String)> = Vec::new();
+    for &leaf in &probe.unresolvable {
+        let Some(&id) = ast_of_leaf.get(&leaf) else {
+            debug_assert!(
+                false,
+                "unresolvable site has no plan step — unresolvable ⊆ plan.steps by \
+                 construction (f-7); a hit means the probe/plan site spaces diverged"
+            );
+            continue;
+        };
+        let span = ast.node(id).span;
+        let text = book_src
+            .get(span.lo.0 as usize..span.hi.0 as usize)
+            .unwrap_or("<source unavailable>");
+        if is_structurally_unprobeable(text) {
+            continue; // cheap-7: no probe could ever exist for an assignment / pure builtin
+        }
+        real.push((leaf, span, flatten_ws(text)));
+    }
+
+    let Some((first_leaf, first_span, _)) = real.first().cloned() else {
+        return Vec::new(); // nothing worth disclosing (only inert sites, or none)
+    };
+
+    // The aggregate: name every real command (backtick-wrapped), point at `dorc why`. The frame's
+    // caret lands on the first as a representative (its source_excerpt is that first command).
+    let names: Vec<String> = real.iter().map(|(_, _, t)| format!("`{t}`")).collect();
+    let plural = if real.len() == 1 { "" } else { "s" };
+    let label = format!(
+        "{} site{plural} run unprobed (no read-only check could be shipped): {} — \
+         run `dorc why` for the per-site detail (the apply runs each; kFAIL-perform)",
+        real.len(),
+        names.join(", "),
+    );
+    let first_text = book_src
+        .get(first_span.lo.0 as usize..first_span.hi.0 as usize)
+        .unwrap_or("<source unavailable>");
+    let diag = Diag::new(
+        DiagCode::SiteUnresolvable(SiteUnresolvable {
+            site: SiteId::leaf(first_leaf),
+            source_excerpt: OutClaim(interner.intern(first_text)),
+        }),
+        first_span,
+    )
+    .label(label);
+    vec![diag.to_legacy(interner)]
+}
+
+/// cheap-7: is this command source text a STRUCTURALLY-UNPROBEABLE site — one for which no
+/// read-only probe could ever be authored, so the firehose disclosure would be actively-wrong
+/// advice? Two shapes: a bare assignment (`NAME=value`, no command), and a pure/no-target-state
+/// builtin (the engine's OWN [`dorc_analysis::effect::is_target_state_pure_builtin`] list — never a
+/// parallel notion). Everything else (a real un-oracled command like `make install`) is a genuine
+/// "runs unprobed" the admin should see aggregated.
+fn is_structurally_unprobeable(cmd_text: &str) -> bool {
+    let first = cmd_text.split_whitespace().next().unwrap_or("");
+    // A bare assignment: `NAME=…` where NAME is a valid sh name (no command word to probe).
+    if let Some((name, _)) = first.split_once('=')
+        && !name.is_empty()
+        && name
+            .chars()
+            .next()
+            .is_some_and(|c| c.is_ascii_alphabetic() || c == '_')
+        && name.chars().all(|c| c.is_ascii_alphanumeric() || c == '_')
+    {
+        return true;
+    }
+    dorc_analysis::effect::is_target_state_pure_builtin(first)
+}
+
+/// Collapse interior whitespace runs (incl. newlines) to single spaces for a ONE-LINE disclosure
+/// of a possibly multi-line command — the aggregate Note stays one line per rul-attention-honesty's
+/// compactness (the artifact still carries the verbatim command).
+fn flatten_ws(text: &str) -> String {
+    text.split_whitespace().collect::<Vec<_>>().join(" ")
 }
 
 /// plans/240 Stage-1 yardstick: emit the plan-summary — a one-line, greppable, stable-grammar

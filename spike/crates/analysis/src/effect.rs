@@ -444,9 +444,12 @@ fn cell_effect(
 ///
 /// The classification assumes the word resolves to the BUILTIN — a book-defined
 /// same-named function shadows a regular builtin in dash, which `cfg` discloses
-/// per-funcdef (find-I, `cfg-builtin-shadowed`); `pub(crate)` so that disclosure
-/// shares this one list.
-pub(crate) fn is_target_state_pure_builtin(word: &str) -> bool {
+/// per-funcdef (find-I, `cfg-builtin-shadowed`); `pub` so that disclosure — AND the cli's
+/// firehose-suppression (cheap-7): a structurally-unprobeable pure-builtin/assignment site
+/// gets NO "declare a probe" advice, since none could ever exist — share this ONE list (never
+/// a parallel notion of "inert command").
+#[must_use]
+pub fn is_target_state_pure_builtin(word: &str) -> bool {
     matches!(
         word,
         "set"
