@@ -48,6 +48,12 @@ enum FnRole {
     /// complementary sense (0 = diverged; the engine applies rul-rc-partition's lossless
     /// sense-flip when shipping it in guard position).
     IsDiverged,
+    /// `<kind>.resolve` / `<kind>__resolve` — the identity CANONICALIZER (24F §3, the fourth
+    /// role-sibling / the resid-aliasing closure). Keyed by KIND, not the command word (contrast
+    /// the other three): the `<kind>` before the suffix interns as the SAME symbol the coordinate's
+    /// `KindId` wraps, so `package.resolve` is the `package` kind's resolver. Host-run per
+    /// coordinate; reuses the predict body dialect verbatim (its body just prints the canonical form).
+    Resolve,
 }
 
 impl FnRole {
@@ -58,6 +64,7 @@ impl FnRole {
             FnRole::Touches => ".touches",
             FnRole::IsConverged => ".is_converged",
             FnRole::IsDiverged => ".is_diverged",
+            FnRole::Resolve => ".resolve",
         }
     }
 
@@ -68,6 +75,7 @@ impl FnRole {
             FnRole::Touches => "__touches",
             FnRole::IsConverged => "__is_converged",
             FnRole::IsDiverged => "__is_diverged",
+            FnRole::Resolve => "__resolve",
         }
     }
 }
@@ -122,6 +130,17 @@ pub(crate) fn lift_verdicts_converged(interner: &mut Interner, src: &str) -> Car
 #[must_use]
 pub(crate) fn lift_verdicts_diverged(interner: &mut Interner, src: &str) -> Carrier<PredictSet> {
     lift_role(interner, src, FnRole::IsDiverged)
+}
+
+/// Lift every `<kind>.resolve` / `<kind>__resolve` funcdef in `src` (the identity canonicalizer —
+/// 24F §3, the resid-aliasing closure). Reuses the predict body dialect (one grammar; `FnRole`).
+/// Same fail-soft / deterministic contract as [`lift_predicts`]; only the scanned name-suffix
+/// differs. NB the lifted `provider` symbol is the KIND name (the resolver is kind-keyed) — the SAME
+/// interned symbol a coordinate's `KindId` wraps (the vocabulary fence). Host-run only; the guard
+/// emitter analogue is [`super::strip_resolve`].
+#[must_use]
+pub(crate) fn lift_resolvers(interner: &mut Interner, src: &str) -> Carrier<PredictSet> {
+    lift_role(interner, src, FnRole::Resolve)
 }
 
 /// Shared lift over a chosen [`FnRole`] — the one parse both siblings route through.

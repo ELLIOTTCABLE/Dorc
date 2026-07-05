@@ -67,6 +67,14 @@ pub mod touches;
 /// `predict` dialect.
 pub mod verdict;
 
+/// The identity **canonicalizer** lift (24F §3 — the resid-aliasing closure; the FOURTH
+/// role-sibling): the `<kind>.resolve()` role-sibling, keyed by KIND (not the command word). Lifted
+/// and shipped strip-only to the probe lane, it runs read-only per coordinate and prints the
+/// entity's canonical form; the engine canonicalizes both footprint and backing coordinates through
+/// it before `disjoint`, closing the two-names-one-referent under-execute. Reuses the `predict`
+/// dialect. Host-run only (no static evaluator — identity resolution needs the host).
+pub mod resolve;
+
 /// How a `(provider, verb)` reads/writes a fact's OPAQUE boolean — the lifted
 /// representation is [`ValueClaim`] (jc-polarity-vs-rc, FINAL — human 2026-07-02).
 /// The former `Polarity{Establish, Kill, Query}` is RETIRED: no create/destroy axis

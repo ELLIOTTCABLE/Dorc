@@ -51,7 +51,9 @@ pub use parser::lift_predicts;
 // for that sibling module — these are internal to the oracle crate, not public API.
 pub(crate) use ast::{CaseArm, Command, Test, Word};
 pub(crate) use eval::{eval_test, pattern_matches, resolve_word};
-pub(crate) use parser::{lift_touches, lift_verdicts_converged, lift_verdicts_diverged};
+pub(crate) use parser::{
+    lift_resolvers, lift_touches, lift_verdicts_converged, lift_verdicts_diverged,
+};
 
 /// Strip an authored check funcdef to runnable sh — the STRIP-ONLY pass (R1c / 23D §1).
 /// It rewrites a period-form name (`apt-get.predict`) to the mangled `<provider>__predict`
@@ -112,6 +114,22 @@ pub fn strip_verdict(
 #[must_use]
 pub fn strip_touches(src: &str, touches: &Predict, interner: &Interner) -> String {
     strip_role(src, touches, interner, "__touches")
+}
+
+/// Strip an authored **resolver** funcdef (`<kind>.resolve`) to runnable sh for the
+/// CANONICALIZATION probe lane (24F §3 — the identity role-sibling / the resid-aliasing closure). A
+/// resolver reaches a host tool (`dpkg-query -W`, `realpath`) to canonicalize an entity, so it
+/// cannot resolve statically; Stage 5 ships it strip-only to run read-only per coordinate, its
+/// stdout the canonical form. Identical to [`strip_predict`] but mangles the funcname to `__resolve`
+/// (`package.resolve` → `package__resolve`), so the shipped def and the resolver invocation agree
+/// byte-for-byte. NB `<kind>` is the KIND name here (the resolver is kind-keyed), and
+/// [`crate::to_funcname_segment`] maps it identically. Everything else — annotation removal,
+/// bare-mark deletion, verbatim body bytes — is the strip's standing contract (strip-fidelity, 23H
+/// §9.4). Same self-vouch tier as `strip_predict`/`strip_touches` (fork-4A: no new trust edge —
+/// authoring IS the vouch; the rc-127 mocks net is the live guarantee).
+#[must_use]
+pub fn strip_resolve(src: &str, resolver: &Predict, interner: &Interner) -> String {
+    strip_role(src, resolver, interner, "__resolve")
 }
 
 /// The shared STRIP-ONLY pass (R1c / 23D §1), parametrized by the target mangled suffix so the
@@ -520,6 +538,40 @@ apt-get.touches() {
         );
         assert!(
             !stripped.contains(".touches("),
+            "no period name remains: {stripped}"
+        );
+    }
+
+    /// A RESOLVER funcdef strips with the `__resolve` funcname suffix (24F §3): the shipped
+    /// canonicalization-probe def and its per-coordinate invocation must agree, so `package.resolve`
+    /// mangles to `package__resolve`, the host-tool body (which the static tracers would ⊤ on)
+    /// otherwise verbatim (strip-fidelity). Pins the canonicalization lane's strip alongside
+    /// probe/guard/derivation. NB the name segment IS the kind (`package`), kind-keyed not
+    /// command-keyed.
+    #[test]
+    fn resolver_body_strips_with_the_resolve_funcname() {
+        use super::strip_resolve;
+        use crate::resolve::ResolverSet;
+        let authored = "\
+package.resolve() {
+   dpkg-query -W -f '${Package}\\n' -- \"$1\" 2>/dev/null || printf '%s\\n' \"$1\"
+}";
+        let mut i = Interner::default();
+        let set = ResolverSet::lift(&mut i, authored);
+        assert!(set.diags.is_empty(), "clean lift: {:?}", set.diags);
+        let kind = set.value.kinds().next().expect("one resolver kind");
+        let r = set.value.get(kind).expect("the resolver funcdef");
+        let stripped = strip_resolve(authored, r, &i);
+        assert!(
+            stripped.starts_with("package__resolve()"),
+            "funcname mangled to the resolve suffix: {stripped}"
+        );
+        assert!(
+            stripped.contains("dpkg-query -W -f '${Package}\\n' -- \"$1\""),
+            "the host-tool body survives verbatim (the static tracers would ⊤ on it): {stripped}"
+        );
+        assert!(
+            !stripped.contains(".resolve("),
             "no period name remains: {stripped}"
         );
     }
