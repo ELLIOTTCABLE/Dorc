@@ -404,3 +404,44 @@ whole fault-model (concentrate-and-attribute-the-bite) rests on an *answerable h
 The trial's stdlib is LLM-authored — so a wrong LLM-oracle's silent under-execution attributes to an
 author who can't be paged. The `llm-authoring-twist` may quietly break the *attribution* half — which
 IMPLEMENTATION now calls the half that matters most. Notice if it bites; don't organize around it.
+
+## §9. Sibling-conductor drift-audit folds (2026-07-05)
+
+A sibling advisor session's corpus drift-audit (EPHEMERAL memo) routed findings; adjudicated
+grain-of-salt, verify-not-trust. **Accepted:**
+
+- **memo-1 → in-repo verify errand DISPATCHED** (no VPS, runs `dorc plan` on the book): (a) `set -eu`
+  may block *eliding* the bare `apt-get update` hl-1 ⇒ **pred-1 could be 4 not 5** (`strawman24-errexit-
+  defeats`=0.00; the `dpkg -s ||` lines are `||`-left errexit-exempt, unaffected); (c) NEW risk — the
+  host-guard `case "$(hostname)"` (un-oracled command in a substitution) may ⊤-poison the whole book ⇒
+  **Stage-B ~0 elide** IF the base stdlib lacks a `hostname` oracle. Errand settles both empirically +
+  amends `255 §5` (the owed fold-into-§4 becomes the correction vehicle; anti-woo — a known-wrong
+  prediction pre-day contaminates the prediction-vs-observation instrument, 254 F1/F5). **NOT
+  re-litigated: u3/pred-2** — the memo confirms it's r24's (pipe-guard XFAIL, doesn't-lift-at-HEAD),
+  consistent with §8's r24-owned status.
+- **memo-2 → the P5 brief carries an oracle quality-bar checklist** (grep-able slugs, when P5 fires):
+  17O regression classes (R2-SHADOW `command -v`≠no-shadow · R2-IDCACHE `getent group` not stale `id` ·
+  R2-ORTRUE never read a `||true`-masked rc · F-GETENT-HOSTS `getent hosts`=live-DNS-not-hermetic) ·
+  R2-MULTIOP arity-gate-or-decline (ungated multi-operand = priority-1 under-execute) · an-probe-shape
+  (no bare `cmd|grep -q` bodies — no-match rc ≡ tool-fail rc; capture the tool's own rc) · the 151-X4
+  live bug-classes (regex-live sanitiser: `10.0.0.1` matches `10X0X0X1`; option-passthrough making the
+  probe mutate = a kFAIL breach) · verdict-function negative contract (rul-rc-partition: no
+  `!`/`||true`/pipeline-tail status-collapse) · **coverage against the BOOK's actual surface**
+  (`hostname` [memo-1c], test/`[`, install/ln/chmod/rm — not "trust coreutils") · restate §7's
+  A1-seeded-set-disjoint + different-lineage + strawman-vocab. Rationale: 151's lesson — the contract
+  needs machine-enforcement, not author-discipline; an LLM author is worse.
+- **memo-3 CRLF gate ACCEPTED** (apply-path — P3 amend / P4 requirement): the book is Windows-authored
+  (SyncThing pair); a `\r` in the shebang is a kernel-level exec-fail no in-script guard catches
+  (F-CRLF). The apply path must verify shipped bytes are LF before the remote `dash` sees them,
+  recording any normalization (an-wire-transform).
+
+**Dropped (nack'd):**
+- **memo-3 provenance-scope-cut code-comment** (C-run flat `{transcript,rc}` vs 111's locator-DAG) —
+  marginal note on already-built throwaway tooling; not worth a touch.
+- **memo-1(b)/u3 as an r25 item** — it's r24's (above); not re-opened here.
+
+**Conditional (accepted, checked pre-Phase-B):**
+- **memo-4 → B2 confound-guard:** pre-register B2 so "the tool never pointed me anywhere" (a missing
+  first-wall hint) routes to **B6 (gap-log: unbuilt feature)**, NEVER to B2's "gradual-enhancement
+  thesis in trouble" fork — a missing *feature* must not grade the *thesis*. (Check pre-Phase-B whether
+  r24 landed the stage-3 hint line.)
