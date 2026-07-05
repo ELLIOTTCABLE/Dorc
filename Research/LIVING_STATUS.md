@@ -231,7 +231,7 @@ P5 unblocks soon). Poll `vultr-cli … | grep dorc-r25` for runaways (baseline 0
 - **On-ramp:** THIS block → `252` (protocol + §7) → `254` (review + retrospect ledger) → `255` (dry-run
   + predictions). All committed (`90ee2e2`). Live task: #6 (execution handoff).
 
-## Round-24 status (2026-07-05 late — POLISH LANDED+MERGED; pipefix = the LAST in-flight agent; CONDUCTOR ROTATION imminent)
+## Round-24 status (2026-07-05 late — POLISH LANDED+MERGED; ALL WORK MERGED + QUIET; PUSH-READY; CONDUCTOR ROTATION now)
 
 **ROTATION HANDOFF (read this first, then the block below for the day's landings):**
 - **Merged tip lineage `00664b1`+** = everything through the polish pass. Conductor-verified on
@@ -241,13 +241,7 @@ P5 unblocks soon). Poll `vultr-cli … | grep dorc-r25` for runaways (baseline 0
   Polish landing evidence + deferrals: **`24C` §First-contact-polish**. The CLI is now
   first-blood-shaped (exit-code family rc=10/rc=2, caret frames, `dorc why`, firehose
   aggregation, positional books, elision-render = original-bytes-commented).
-- **ONE agent still out: the pipefix builder** (task #19; the pipe-guard LIFT via connected
-  probes — design `24J`, carried inline in its brief). Deliberately based on the POLISH tip
-  `5d91fd2` (composes with the new CLI surfaces; pre-solves the merge conflict). On landing:
-  verify by own hand (fresh build + gates + FULL e2e run-to-completion), inspect the XFAIL
-  promotion diff line-by-line (promotion discipline — never bless-first), cherry-pick onto
-  `ai/spike3-r23`, re-verify merged. Expect ~153-154 e2e (152 + its new if-form +
-  negative-control cases, the promoted XFAIL now green).
+- **pipefix LANDED + MERGED (tip `cdca43b`+): the r25 trial-shape lifts** — the XFAIL promoted (154/154, zero xfails remain); evidence + Stage-6 residuals in `24C` §pipe-guard-LIFT. ZERO agents out. The r25 arc is MERGED into this branch (a true two-parent merge, `2d5176d`) — the tree is single-branch, quiet, and PUSH-READY.
 - **The queue for the next conductor (all specced, none dispatched):** #16 e2e de-graduation
   (spec `24I`; batches 1–4 dispatchable, batch 5 needs per-topology verification; THE flag: the
   in-memory tier adds a one-shot `dash -n` per artifact or it re-opens ap-2) · #17 first-wall

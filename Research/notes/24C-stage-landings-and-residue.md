@@ -408,3 +408,28 @@ flagship needs a cross-crate structured-diagnostic thread — the frame itself i
 plan-mode why-detail relocation (churns all 13 needles + gate-7); env-mirrors + oracle-dir
 hint + `may-alias=` doc-line; analysis-stage label jargon. Residue: none new — the pass is
 presentation-plane by construction (artifact bytes changed ONLY via the scoped elision-render).
+
+## pipe-guard LIFT (LANDED 2026-07-05 — the XFAIL promoted; 24J built)
+
+The `24J` connected-pipes design applied in full; the tripwire XFAIL is now GREEN (task #19 —
+154/154, zero xfails remain). **Mechanism:** connected read-only check-pipes ship as ONE probe —
+the raw book pipe runs *verbatim* on the host, forced not chosen: stage-predict chaining starves
+stdin (a per-stage value-substitution has nothing to pipe onward), so the whole pipe is the probe
+unit. The governing stage's rc folds the `||` via the existing `StatusRelaxable` path (no new
+consumption semantic); the non-governing members **Omit**. The trial-shape line lifts whole
+(`: | true || : | :`, run-set empty). Landed alongside: the **if-form beautification** case and the
+**unvouched-mid negative control** (silence-is-wall — an orphan/unvouched stage ships no probe).
+**Mechanism-3 needed ZERO classify code:** otelcol's `--version` arm is an `:?` Observe, and an
+Observe gens nothing — the existing validity pin already covers it. **No new SkipClass / license /
+tier** — a `ConnectedPipes` side-map only.
+
+**Residuals flagged for Stage 6:**
+- **non-quiet last stages** would leak stdout into the probe record — narrow-first, `-q`-class only
+  today.
+- **pure/builtin non-last stages don't connect** — a plausible widening, deferred.
+- **no sweep scenario** — unit-pins only, deliberate: the sweep's nets are load-bearing.
+- **the typos-allowlist commit fixed a PRE-EXISTING polish-base gap** (`aply`/`tust`/`boook`
+  fuzzy-matcher fixtures) — flag as a polish-pass oversight, confirmed benign.
+
+**Verified:** 154/154 e2e (freshly re-run by the close-out agent on the merged tip `cdca43b`) + all
+gates, conductor-protocol.
