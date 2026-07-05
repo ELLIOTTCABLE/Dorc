@@ -422,6 +422,11 @@ exercise that floor.
 
 - **pred-1:** Stage B steady elides **exactly the ambient package cluster hl-1..5 (5 sites)**;
   everything from the first wall (hl-6, otel) down is guard/run. +SURE.
+  - **→ IN-REPO GRADED 2026-07-05 (§5.1): WRONG as stated — observed `elide=0`.** The errexit
+    mechanism the sibling audit flagged is real (hl-1 bare `apt-get update` does NOT elide under
+    `set -eu`; hl-2..5 `dpkg||install` guards would → **4, not 5**), BUT a NEWLY-priced wall
+    dominates: the `case "$(hostname)"` host-guard (line 32) walls the whole book, so hl-2..5
+    **guard** instead of eliding. Real Stage-B steady = **0 elide**. See §5.1 vf-1/vf-2.
 - **pred-2:** each vendor oracle moves the count by its own downstream block — **otel +4** (hl-6 own
   + hl-7,8,9), **prometheus +4** (hl-10 + hl-11,12,13), **grafana +2** (hl-14 + hl-15) — for **+10
   total (to 15)** with all three written — *iff* the stdout-consuming guard lifts (u3). If it lifts,
@@ -461,6 +466,59 @@ exercise that floor.
   because there are three un-wallable blocks, not one. But past the last vendor wall (hl-16 down) the
   residue is real and early; read the day through §3.
 
+## §5.1 IN-REPO VERIFICATION (2026-07-05 — built `dorc` on the book, NOT the VPS day)
+
+Per `plans/250` `human-woo-cool-adversary`, two load-bearing predictions were **graded early by
+running the built spike on the book** (no VPS): `dorc plan --book=255-homelab.book.sh -o <base-stdlib>
+< <converged-probe-results>` at `ai/spike3-r25` HEAD. Base stdlib = **vouched** oracles borrowed
+verbatim from current passing fixtures — `pkgindex` (`apt-get update`, `exec-singleton-update`),
+`package` (`apt-get install`, `strawman24-all-converged-clean`), `pkgstate` (`dpkg -s`,
+`strawman24-mixed-real`); each carries the round-24 `is_converged()` elide-weld vouch. NOT modeled
+(deliberately — base tier + corpus reality): the three vendor tools, `su`, `docker`, `openssl`,
+coreutils, `nginx`, `hostname`. **Caveat:** a faithful *reconstruction* of the base stdlib (the real
+~40-oracle bootstrap is not an artifact yet); coreutils/service/ufw sites went unmodeled, so their
+guard/run split is not from this run — but that does not move the elide headline.
+
+- **vf-1 (host-guard WALL — newly priced, and it DOMINATES; +SURE).** The `case "$(hostname)"`
+  host-guard (line 32) **walls the entire book**. `$(hostname)` is a command-substitution of the
+  **unmodeled** `hostname`, so the analyzer treats it as effect-bearing (`dq-cmdsub-inner-nonleaf`:
+  "runs whenever its enclosing line runs") — a poison-wall. Everything below can at best **guard**,
+  never elide. **Full-book run, converged steady state: `elide=0, guard=4, run=53` of 57 raw
+  leaf-sites** — the four hl-2..5 `dpkg -s X || apt-get install X` guards render as
+  `dpkg -s X … || ( apt_get__is_converged install … ) || apt-get install …  # dorc: guard`, NOT
+  elisions. **This zeroes the predicted Stage-B 5.** Isolation: `strawman24-mixed-real` elides
+  2/guards 0 → inject `case "$(hostname)"` → `elide=0, guard=4`; remove it → elision returns. The
+  trigger is the `$(unmodeled-cmd)` substitution *specifically* — a **literal** `case` subject does
+  NOT wall; `$(hostname)` in a `case`/`echo`/assignment all wall identically.
+  - **No `hostname` oracle exists** — not in the base tier, not anywhere in the 145-case corpus (no
+    read-value command — `hostname`/`uname`/`whoami` — is modeled anywhere; zero precedent to crib).
+  - **bk-nit (book provenance claim is FALSE):** line 31's "host-selection idiom, per pi-webhost" is
+    unsupported — the real `headline-pi-webhost` fixture has **no** `case "$(hostname)"` and no
+    `hostname` call at all (it opens `set -e` + a bare `apt-get update`). The idiom was never
+    exercised by a yardstick; it walls on first contact.
+
+- **vf-2 (pred-1 errexit mechanism — CONFIRMED in isolation; "4 not 5" is right ABSENT the wall;
+  +SURE).** Tested by injecting `set -e` into vouched fixtures that otherwise elide:
+  - a **bare** converged mutator does NOT elide under `set -e` (`all-converged-clean`: 3/3 elide →
+    **0/3** with `set -e`; `mixed-real`+`set -e`: bare `apt-get install curl` flips elide→run). So
+    **hl-1 `apt-get update` does not elide** under `set -eu` — its ⊤ status is errexit-consumed
+    (`inv-probe-sourced-values`; the `strawman24-errexit-defeats` mechanism).
+  - the **`dpkg -s X || apt-get install X` guard SURVIVES `set -e`** (`mixed-real`+`set -e`: the
+    dpkg-guard stays `true || :  # dorc: elided`). The `||`-left (`dpkg -s` read) has a reproducible
+    rc and is errexit-exempt. So **hl-2..5 are unaffected by errexit** — exactly the sibling audit's
+    claim. **⇒ pred-1 = 4 (hl-2..5), not 5, in the errexit-only world.** But vf-1 overrides it: the
+    host-guard wall turns those 4 elides into guards, so the *observed* Stage-B is **0**.
+  - **errexit-defeats fixture caveat (test-owner flag, not fixed here):** `strawman24-errexit-defeats`
+    can no longer isolate the errexit cost — its own package/service oracles carry **no**
+    `is_converged` vouch (grep: 0), so it zeroes elision via the no-vouch floor, not (only) errexit.
+    The `pi-webhost` yardstick is vouch-less too. The clean isolation is the `set -e`-injection above.
+
+**Net:** on the actual book, base stdlib, steady state, the built tier reaches **0 elide** — the
+host-guard wall caps it before errexit or the vendor walls matter. The §2/§6 Stage-B..C numbers below
+describe the book *with line 32 removed*; as written they are capped at 0. Remediation (pick on the
+day): drop the host-guard, author a `hostname` pure-read oracle (none exists — new authoring), or lift
+it via the footprint tier (Stages 4–5) so a declared `hostname` read stops walling downstream.
+
 ## §6. Summary ledger (`USER_STORY`-style)
 
 ```
@@ -473,7 +531,14 @@ C  + all 3 vendor oracles — steady   15      7      8     15         YES (modu
 C  + all 3 — drifted (stale middle)   9     12      9     21         YES (adequacy + cascade)
 —  perfect-oracle CEILING           ~23     ~3     ~4     ~7         NO (footprint tier unbuilt)
 —  permanent FLOOR (never elides)   —      —      ~4     —          the honest residue
+B  AS-WRITTEN (host-guard on L32)    0     ~4     ~26     30         IN-REPO OBSERVED 2026-07-05 (§5.1 vf-1)
 ```
+
+> **§5.1 override (takeaway-2 / attention):** the table above assumes line 32's `case "$(hostname)"`
+> host-guard is removed. **As-written, the host-guard walls the whole book → Stage-B `elide=0`,
+> attention = 30/30** (in-repo verified; §5.1 vf-1). Every stage below is gated by that wall until it
+> is dropped, a `hostname` pure-read oracle is authored (none exists), or the footprint tier lands.
+> The `+10 value-curve` and the `~15/30` frontier are only reachable *past* the host-guard.
 
 The shape to carry to the day: **the built tier tops out near Stage C-all-three (~15/30); the ceiling
 (~23/30) needs Stages 4–5; and ~4 sites (`su`×2, `docker`/HA-internal, `systemctl reload`, with
