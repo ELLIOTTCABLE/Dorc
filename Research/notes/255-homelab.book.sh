@@ -24,7 +24,7 @@ case "$(hostname)" in
    *) echo "not the homelab box ($(hostname)); nothing to do"; exit 0 ;;
 esac
 
-WM_VER=1.470.2                       # FLAG: pin a real recent Windmill tag on the day
+WM_VER=1.747.0                       # FIRMED: real latest tag (2026-07-03); prior 1.470.2 404'd. bump on the day
 HASS_TAG=2024.12                     # FLAG: pin a real Home Assistant image tag
 
 # ── 1. base packages ─────────────────────────────────────────────────────────
