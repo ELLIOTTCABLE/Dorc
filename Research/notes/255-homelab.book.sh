@@ -136,7 +136,7 @@ server {
    server_name homelab.lan;
    ssl_certificate     /etc/nginx/certs/homelab.crt;
    ssl_certificate_key /etc/nginx/certs/homelab.key;
-   location /grafana/    { proxy_pass http://127.0.0.1:3000/; proxy_set_header Host $host; }
+   location /grafana/    { proxy_pass http://127.0.0.1:3000; proxy_set_header Host $host; proxy_set_header X-Forwarded-Proto $scheme; }
    location /prometheus/ { proxy_pass http://127.0.0.1:9090/; }
    location /            { proxy_pass http://127.0.0.1:8123/; proxy_set_header Host $host; }
 }
