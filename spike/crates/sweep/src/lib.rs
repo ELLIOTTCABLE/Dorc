@@ -91,6 +91,10 @@ apt-get.is_converged() {
       *) return 2 ;;
    esac
 }
+
+package.reaches() {
+   apt-rdepends "$1"    : package
+}
 "#;
 
 /// One survived elision's attribution, lifted from a flag-on plan (interner-free). The
@@ -142,6 +146,12 @@ pub struct TrialResult {
     pub s_apply_off: BTreeSet<String>,
     /// The survived-elision attributions from the flag-ON plan (attribution-under-lies input).
     pub survivals: Vec<Survival>,
+    /// 24G Part B — the `reaches()` poison attributions from the flag-ON plan: `(demoted leaf, reach
+    /// KIND name)` per converged elision a `reaches()`-EXPANDED coordinate demoted. An HONEST `ReachWall`
+    /// scenario populates this (the expansion HITs ⇒ the victim demotes, attributed "poisoned via
+    /// `<kind>.reaches()`"); the coverage net asserts it is non-vacuous, pinning the cross-author
+    /// demote fires AND names the reach-function.
+    pub reach_poisonings: Vec<(u32, String)>,
     /// A canonical fingerprint of the flag-ON plan's dispositions + attribution (determinism).
     pub plan_on_fp: String,
     /// A canonical fingerprint of the flag-OFF plan (determinism).
@@ -198,6 +208,7 @@ pub fn trial_for_seed(seed: Seed) -> TrialResult {
         s_apply_on: label_set(&s_apply_on, &i),
         s_apply_off: label_set(&s_apply_off, &i),
         survivals: survivals_of(&plan_on, &i),
+        reach_poisonings: reach_poisonings_of(&plan_on, &i),
         plan_on_fp: plan_fingerprint(&plan_on, &i),
         plan_off_fp: plan_fingerprint(&plan_off, &i),
     }
@@ -257,6 +268,16 @@ fn survivals_of(plan: &Plan, i: &Interner) -> Vec<Survival> {
         });
     }
     out
+}
+
+/// Extract the `reaches()` poison attributions from a plan (24G Part B): each `(demoted leaf, reach
+/// KIND name)` where a `reaches()`-EXPANDED coordinate demoted a converged elision. Interner-free (the
+/// kind is resolved to its name). An HONEST `ReachWall` scenario's flag-ON plan populates this.
+fn reach_poisonings_of(plan: &Plan, i: &Interner) -> Vec<(u32, String)> {
+    plan.survival_report
+        .reach_poisonings()
+        .map(|(leaf, kind)| (leaf.0, i.resolve(kind.0).to_owned()))
+        .collect()
 }
 
 /// A canonical, interner-free fingerprint of a plan — the determinism comparand (24B §5

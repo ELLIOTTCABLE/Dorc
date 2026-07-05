@@ -27,7 +27,7 @@ use dorc_hostsim::Host;
 use dorc_oracle::predict::PredictSet;
 use dorc_oracle::touches::{TouchesResolution, TouchesSet, TouchesTop, evaluate_touches};
 use dorc_plan::{
-    DerivationShip, Disposition, EntityCoord, Footprint, Plan, TrustedFootprints,
+    DerivationShip, Disposition, EntityCoord, Footprint, FootprintOrigin, Plan, TrustedFootprints,
     compile_derivations,
 };
 
@@ -99,6 +99,16 @@ pub fn run_kernel(declared: &DeclaredScenario, s0: &Host, flag_on: bool, i: &mut
             s0,
             i,
         );
+        // 24G Part B: EXPAND every reach-bearing footprint coord through the host's DECLARED reach
+        // answer (the sweep stand-in for shipping `package.reaches()` + reading its stdout — mirrors
+        // Host::derive/resolve). This rides the declared-vs-TRUE split for REACH: an HONEST answer
+        // includes the wall's true reach ⇒ HIT ⇒ demote ⇒ safe; a LYING one omits it ⇒ wrong survival
+        // ⇒ RED. Runs AFTER the authored/derived merge (widening is monotone-safe) and BEFORE the walk.
+        let reach_kinds: BTreeSet<Symbol> = dorc_oracle::reaches::ReachesSet::lift(i, ORACLE_SH)
+            .value
+            .kinds()
+            .collect();
+        expand_reaches(&mut fps, &reach_kinds, s0);
         Some(fps)
     } else {
         None
@@ -323,6 +333,25 @@ fn build_resolutions(s0: &Host) -> dorc_plan::Resolutions {
         resolutions.record(EntityCoord::new(kind, entity), canonical);
     }
     resolutions
+}
+
+/// Expand every AUTHORED footprint coord of a reach-bearing kind through the host's DECLARED reach
+/// answer (24G Part B — the sweep mirror of the cli's reach round-trip): `Host::reach` stands in for
+/// shipping `<kind>.reaches()`'s dynamic arm and reading its per-arm stdout (NO sh execution here; the
+/// declared coord-set IS the answer, exactly as `Host::derive`/`Host::resolve`). The sweep's
+/// `package.reaches()` is DYNAMIC-only, so — per 24G §3 — it expands AUTHORED coords only this pass
+/// (a derived footprint's coords are known only post-results; the `resid-kindfn-derived` deferral).
+/// The reach-function KIND (`coord.kind()`) rides each expanded coord for the demote attribution.
+fn expand_reaches(footprints: &mut TrustedFootprints, reach_kinds: &BTreeSet<Symbol>, s0: &Host) {
+    footprints.expand_reaches(|coord, origin| {
+        if !matches!(origin, FootprintOrigin::Authored) || !reach_kinds.contains(&coord.kind().0) {
+            return Vec::new();
+        }
+        s0.reach(coord.kind(), coord.entity())
+            .into_iter()
+            .map(|(k, e)| (EntityCoord::new(k, e), coord.kind()))
+            .collect()
+    });
 }
 
 /// The escalation seam for the sweep's `compile_derivations` (mirror of the cli's

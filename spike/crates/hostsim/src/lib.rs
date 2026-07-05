@@ -197,6 +197,17 @@ pub struct Host {
     /// [`resolutions`] entry degrades to may-alias (§3a); the sweep's alias scenarios always declare
     /// both names, so this set is populated implicitly by [`with_resolution`](Host::with_resolution).
     resolver_kinds: BTreeSet<KindId>,
+    /// The DECLARED reach answer (24G §4 — the cross-author footprint-EXPANSION mechanism): per
+    /// `(kind, entity)` coordinate, the set of `(kind, entity)` coordinates its `<kind>.reaches()`
+    /// DRAGS WITH IT (a package reaches its files / same-named unit). The SAME shape discipline as
+    /// [`manifests`]/[`resolutions`]: DECLARED scenario data, deterministic, no ssh, NOT a `dpkg -L`
+    /// simulation — a declared-data oracle standing in for shipping the `reaches()` dynamic-arm body and
+    /// reading its per-arm stdout. Rides the sweep's declared-vs-TRUE split for REACH (24G soundness
+    /// net): the generator invents a TRUE reach (the wall's `CellDelta` really touches a reached cell)
+    /// AND a declared reach answer; an HONEST answer INCLUDES the truly-reached coord (the expansion
+    /// HITs ⇒ the victim DEMOTES ⇒ safe); a LYING answer OMITS it (the expansion misses ⇒ the victim
+    /// wrongly survives ⇒ the end-state differential goes RED). Omission is THE sharp edge.
+    reaches: BTreeMap<(KindId, EntityRef), BTreeSet<(KindId, EntityRef)>>,
 }
 
 impl Host {
@@ -210,6 +221,7 @@ impl Host {
             manifests: BTreeMap::new(),
             resolutions: BTreeMap::new(),
             resolver_kinds: BTreeSet::new(),
+            reaches: BTreeMap::new(),
         }
     }
 
@@ -273,6 +285,37 @@ impl Host {
         self.resolutions.iter().map(|(&k, &v)| (k, v))
     }
 
+    /// Attach a DECLARED reach answer (24G §4): the `(kind, entity)` coordinate REACHES `reached`
+    /// (the coords its `<kind>.reaches()` drags with it) when the reach-function runs host-side.
+    /// Consuming-builder shape so a scenario spells its reach map inline. An HONEST answer INCLUDES
+    /// the wall's truly-reached coord (the expansion HITs ⇒ demote ⇒ safe); a LYING one OMITS it
+    /// (the expansion misses ⇒ the victim wrongly survives — the sweep net's RED).
+    #[must_use]
+    pub fn with_reach(
+        mut self,
+        kind: KindId,
+        entity: EntityRef,
+        reached: impl IntoIterator<Item = (KindId, EntityRef)>,
+    ) -> Self {
+        self.reaches
+            .insert((kind, entity), reached.into_iter().collect());
+        self
+    }
+
+    /// The DECLARED reach answer for a `(kind, entity)` coordinate (24G §4) — the reach analogue of
+    /// [`derive`](Host::derive)/[`resolve`](Host::resolve). Deterministic, scenario-driven, no ssh,
+    /// no `dpkg -L` simulation (a declared-data oracle). An unmodeled coordinate yields the EMPTY set
+    /// (no declaration ⇒ no expansion ⇒ the footprint is unchanged — the reach-less floor). Same
+    /// declared-vs-true discipline as [`derive`](Host::derive): an honest answer ⊇ the wall's true
+    /// reach; a lying one omits a truly-reached coord (⇒ the victim wrongly survives).
+    #[must_use]
+    pub fn reach(&self, kind: KindId, entity: EntityRef) -> BTreeSet<(KindId, EntityRef)> {
+        self.reaches
+            .get(&(kind, entity))
+            .cloned()
+            .unwrap_or_default()
+    }
+
     /// A host whose initial state is a seeded random subset of `candidates` (each
     /// included with probability ½). The DST scenario generator: looping over seeds
     /// fuzzes the analyzer/plan over many host states, reproducibly.
@@ -290,6 +333,7 @@ impl Host {
             manifests: BTreeMap::new(),
             resolutions: BTreeMap::new(),
             resolver_kinds: BTreeSet::new(),
+            reaches: BTreeMap::new(),
         }
     }
 

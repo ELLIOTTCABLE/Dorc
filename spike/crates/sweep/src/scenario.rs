@@ -78,6 +78,16 @@ pub enum TopologyClass {
     /// wrongly survives ⇒ the end-state differential goes RED, attributed. The lying-RESOLVER
     /// soundness net (24F §7.1), the identity analogue of the lying-footprint / lying-derived nets.
     AliasWall,
+    /// The wall's footprint (`package:base`) is EXPANDED by `package.reaches()` to drag `package:dep`
+    /// — the reach-function knowledge the wall's own `touches()` cannot spell (24G §4, the cross-author
+    /// point). The wall TRULY reaches the shared referent (its `CellDelta` kills the victim's
+    /// `package:dep#installed`), so WITHOUT expansion the `package:base` footprint is disjoint from the
+    /// victim's `package:dep` backing ⇒ the victim wrongly survives. The DECLARED reach answer bridges
+    /// them: HONEST (`!lying`) INCLUDES `package:dep` ⇒ the expanded footprint HITs ⇒ the victim
+    /// DEMOTES ⇒ safe (end-states match); LYING OMITS it ⇒ the victim wrongly survives ⇒ the end-state
+    /// differential goes RED, attributed to the reach-function. The lying-REACHES soundness net (24G),
+    /// where OMISSION is the sharp edge — the fourth lying net beside static / derived / alias.
+    ReachWall,
 }
 
 /// Whether a scenario's ground truth matches its declared oracle. `Lying` records WHICH wall
@@ -262,10 +272,15 @@ fn install_command(i: &mut Interner, entity: &str) -> (String, CellDelta) {
 /// already encodes the HIT (`Config`) and DERIVED (`Derived`) axes, so only `multi`/`alias`/
 /// `victim_converged` are needed besides it. The single per-scenario class the coverage
 /// sometimes-asserts key on (the axes are richer than nine cells; these are the distinct kernel paths).
+#[expect(
+    clippy::fn_params_excessive_bools,
+    reason = "each bool is an independent generator AXIS (multi/alias/reach/victim_converged) the headline priority-orders; a bundling enum would obscure the one-axis-per-coin structure the module doc + determinism rely on"
+)]
 fn topology_of(
     wall_kind: WallKind,
     multi: bool,
     alias: bool,
+    reach: bool,
     victim_converged: bool,
 ) -> TopologyClass {
     if wall_kind == WallKind::Silent {
@@ -280,6 +295,8 @@ fn topology_of(
         TopologyClass::DerivedWall
     } else if alias {
         TopologyClass::AliasWall
+    } else if reach {
+        TopologyClass::ReachWall
     } else if victim_converged {
         TopologyClass::MissConverged
     } else {
@@ -288,15 +305,21 @@ fn topology_of(
 }
 
 /// Build the seeded S0 host from the cells that `holding` at probe time, plus a DERIVED wall's
-/// declared manifest (24E §6) OR an ALIAS wall's declared `package` RESOLVER (24F §3/§7.1). The
-/// manifest/resolver honesty rides the `lying` coin — the DECLARED half of the declared-vs-true
-/// split; the TRUE clobber lives in the `CellDelta`. (`derived`/`alias` are mutually exclusive by
-/// the draw gating; at most one branch fires.)
+/// declared manifest (24E §6), an ALIAS wall's declared `package` RESOLVER (24F §3/§7.1), OR a REACH
+/// wall's declared `package` REACH-ANSWER (24G). The manifest/resolver/reach honesty rides the `lying`
+/// coin — the DECLARED half of the declared-vs-true split; the TRUE clobber lives in the `CellDelta`.
+/// (`derived`/`alias`/`reach` are mutually exclusive by the draw gating; at most one branch fires.)
+#[expect(
+    clippy::too_many_arguments,
+    clippy::fn_params_excessive_bools,
+    reason = "the scenario-host builder threads each independent axis (derived/alias/reach/lying) + the two entity names; each selects a distinct declared-answer branch, not a bundle-able struct"
+)]
 fn scenario_host(
     i: &mut Interner,
     holding: Vec<FactKey>,
     derived: bool,
     alias: bool,
+    reach: bool,
     lying: bool,
     wall_entity: &str,
     victim: &str,
@@ -318,6 +341,20 @@ fn scenario_host(
         Host::new(holding)
             .with_resolution(package, wall_ent, wall_ent)
             .with_resolution(package, victim_ent, victim_canonical)
+    } else if reach {
+        // The DECLARED reach answer (24G): touching `package:wall_entity` REACHES the victim's dep.
+        // HONEST (`!lying`) INCLUDES `package:dep` (⇒ the expanded footprint HITs the victim's backing
+        // ⇒ the victim DEMOTES ⇒ safe); LYING OMITS it (an EMPTY reach ⇒ the expansion misses ⇒ the
+        // victim wrongly survives ⇒ the wall's true kill of the dep bites ⇒ RED). Omission is the edge.
+        let package = KindId(i.intern(KIND));
+        let wall_ent = EntityRef::Operand(OpaqueToken(i.intern(wall_entity)));
+        let victim_ent = EntityRef::Operand(OpaqueToken(i.intern(victim)));
+        let reached: Vec<(KindId, EntityRef)> = if lying {
+            Vec::new()
+        } else {
+            vec![(package, victim_ent)]
+        };
+        Host::new(holding).with_reach(package, wall_ent, reached)
     } else {
         Host::new(holding)
     }
@@ -327,6 +364,10 @@ fn scenario_host(
 /// is one [`Lcg`] — `inv-determinism`, no forked PRNG). The draws pick the interference AXES; the
 /// template guarantees a real chronology (see the module docs).
 #[must_use]
+#[expect(
+    clippy::too_many_lines,
+    reason = "a linear per-seed scenario builder — draw the axes, then compute victim/wall/holding/host in one straight read; the five interference axes (hit/multi/derived/alias/reach) make it inherently long, and splitting it would scatter the one-place draw ORDER the determinism guard depends on"
+)]
 pub fn generate(seed: Seed, i: &mut Interner) -> Scenario {
     let mut rng = Lcg::new(seed.0);
 
@@ -349,11 +390,19 @@ pub fn generate(seed: Seed, i: &mut Interner) -> Scenario {
     // and the victim backs ANOTHER name of the SAME referent, bridged by a `package` resolver whose
     // honesty is the `lying` coin — the lying-RESOLVER soundness net.
     let alias = rng.below(3) == 0 && !hit && !multi && !derived;
+    // The REACH axis (24G): a clean single-wall scenario where the wall footprints `package:base` and
+    // the victim backs `package:dep` — a coord the wall's `touches()` cannot spell — bridged by
+    // `package.reaches()` whose DECLARED answer honesty is the `lying` coin (OMIT ⇒ under-execute).
+    // The lying-REACHES soundness net, mutually exclusive with the other special axes.
+    let reach = rng.below(3) == 0 && !hit && !multi && !derived && !alias;
 
     // The victim entity. For an alias scenario the victim wears the ALIAS name (`<base>-full`, a
-    // provides/virtual downstream name); otherwise it is the base pool entity.
+    // provides/virtual downstream name); for a reach scenario it is a distinct DEPENDENCY the wall
+    // reaches (a coord the wall's touches() never names); otherwise it is the base pool entity.
     let victim: String = if alias {
         format!("{base}-full")
+    } else if reach {
+        distinct_entity(&mut rng, &[base]).to_owned()
     } else {
         base.to_owned()
     };
@@ -365,7 +414,8 @@ pub fn generate(seed: Seed, i: &mut Interner) -> Scenario {
         WallKind::Config
     } else if derived {
         WallKind::Derived
-    } else if alias {
+    } else if alias || reach {
+        // Alias/reach live in the names + resolver/reach-answer, not the verb — a plain install wall.
         WallKind::Install
     } else {
         match rng.below(3) {
@@ -376,15 +426,16 @@ pub fn generate(seed: Seed, i: &mut Interner) -> Scenario {
     };
     let wall_entity: String = if hit {
         victim.clone()
-    } else if alias {
-        // The wall footprints the BASE name; the victim backs the ALIAS — two names, one referent.
+    } else if alias || reach {
+        // The wall footprints the BASE name; the victim backs the ALIAS (alias) or a reached DEP
+        // (reach) — bridged by the resolver / reach-answer respectively.
         base.to_owned()
     } else {
         distinct_entity(&mut rng, &[victim.as_str()]).to_owned()
     };
-    // A HIT / DERIVED / ALIAS wall only interferes-with a would-elide (converged) victim; a
+    // A HIT / DERIVED / ALIAS / REACH wall only interferes-with a would-elide (converged) victim; a
     // diverged victim runs regardless, so pin converged for a clean class. Otherwise a coin flip.
-    let victim_converged = if hit || derived || alias {
+    let victim_converged = if hit || derived || alias || reach {
         true
     } else {
         rng.below(2) == 0
@@ -396,9 +447,11 @@ pub fn generate(seed: Seed, i: &mut Interner) -> Scenario {
 
     let (wall_line, honest_wall_delta) = wall_command(i, &wall_entity, wall_kind);
     // The LIE (rul24-divergence-is-the-game): the wall truly ALSO kills the victim's `#installed` —
-    // the footprint's undeclared clobber (`lying`) OR the INTRINSIC aliasing hazard (`alias`: the two
-    // names ARE one referent, so touching it always disrupts the victim). The analyzer can't see it.
-    let wall_delta = if lying || alias {
+    // the footprint's undeclared clobber (`lying`), the INTRINSIC aliasing hazard (`alias`: the two
+    // names ARE one referent), OR the INTRINSIC reach hazard (`reach`: touching `package:base` really
+    // drags `package:dep`, so the true effect ALWAYS kills the dep — independent of whether the
+    // DECLARED reach ANSWER admits it). The analyzer can't see the true effect.
+    let wall_delta = if lying || alias || reach {
         honest_wall_delta.kill(cell(i, &victim, INSTALLED))
     } else {
         honest_wall_delta
@@ -414,7 +467,7 @@ pub fn generate(seed: Seed, i: &mut Interner) -> Scenario {
     let (victim_line, victim_delta) = install_command(i, &victim);
     commands.push((victim_line, Some(TrueEffect(victim_delta))));
 
-    let topology = topology_of(wall_kind, multi, alias, victim_converged);
+    let topology = topology_of(wall_kind, multi, alias, reach, victim_converged);
     // S0: the cells that hold at probe time. The victim holds iff converged. Every wall's own
     // establish cell is ABSENT so it RUNS; a purge's target is seeded present (realism).
     let mut holding = Vec::new();
@@ -424,7 +477,16 @@ pub fn generate(seed: Seed, i: &mut Interner) -> Scenario {
     if wall_kind == WallKind::Purge {
         holding.push(cell(i, &wall_entity, INSTALLED));
     }
-    let s0 = scenario_host(i, holding, derived, alias, lying, &wall_entity, &victim);
+    let s0 = scenario_host(
+        i,
+        holding,
+        derived,
+        alias,
+        reach,
+        lying,
+        &wall_entity,
+        &victim,
+    );
 
     let honesty = if lying {
         Honesty::Lying { liar_leaf: 0 }

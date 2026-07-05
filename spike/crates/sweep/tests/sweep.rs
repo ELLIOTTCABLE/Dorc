@@ -144,10 +144,14 @@ fn trials_replay_bit_identically() {
 /// means the net silently stopped exercising a kernel path — it must fail loud, never greenwash.
 /// COVERAGE (which *shapes* beyond the template) is the unsolved half; this is only reachability.
 #[test]
+#[expect(
+    clippy::too_many_lines,
+    reason = "one pass accumulates every coverage counter (9 classes + honest/lying/derived/alias/reach nets + the flag-distinguishes gate) then asserts each non-vacuous in place — splitting it would either re-sweep the seeds N times or hide the counters from the assertions that read them"
+)]
 fn every_topology_class_and_both_behaviours_are_reached() {
     use TopologyClass::{
         AliasWall, DerivedWall, HitConverged, KillWall, MissConverged, MissDiverged, MultiWall,
-        SilentWall,
+        ReachWall, SilentWall,
     };
     let want = [
         MissConverged,
@@ -158,6 +162,7 @@ fn every_topology_class_and_both_behaviours_are_reached() {
         MultiWall,
         DerivedWall,
         AliasWall,
+        ReachWall,
     ];
     let n = seed_count();
     let mut seen: BTreeSet<TopologyClass> = BTreeSet::new();
@@ -174,6 +179,16 @@ fn every_topology_class_and_both_behaviours_are_reached() {
     // execute — the honest e2e fixture structurally cannot (find-net-covers-what). Non-vacuity for
     // the identity closure's soundness proof.
     let mut alias_lying_divergences = 0u64;
+    // The lying-REACHES soundness net (24G): a ReachWall scenario whose LYING reach-answer OMITTED a
+    // truly-reached coord ⇒ the expansion missed ⇒ the victim wrongly survived ⇒ RED. Counted
+    // separately (like derived/alias) because ONLY a lying scenario can catch a survival-tier
+    // under-execute (find-net-covers-what). Omission is the sharp edge; non-vacuity is fc-5.
+    let mut reach_lying_divergences = 0u64;
+    // The cross-author DEMOTE the mechanism exists for: an HONEST ReachWall scenario whose reach
+    // expansion HIT the victim's backing ⇒ the victim DEMOTED, attributed "poisoned via
+    // package.reaches()". Counts the reach-ATTRIBUTED demotes (24G — the demote fires AND names the
+    // reach-function). A zero here means the honest expansion never demoted ⇒ the mechanism is inert.
+    let mut reach_poison_attributions = 0u64;
     let mut flag_distinguishes = 0u64;
     let mut first_all: Option<u64> = None;
 
@@ -195,6 +210,15 @@ fn every_topology_class_and_both_behaviours_are_reached() {
         if t.topology == AliasWall && matches!(t.honesty, Honesty::Lying { .. }) && t.on_diverged()
         {
             alias_lying_divergences += 1;
+        }
+        if t.topology == ReachWall && matches!(t.honesty, Honesty::Lying { .. }) && t.on_diverged()
+        {
+            reach_lying_divergences += 1;
+        }
+        // The honest cross-author demote: a ReachWall scenario whose reach expansion demoted the
+        // victim and attributed it to `package.reaches()`.
+        if t.topology == ReachWall && t.reach_poisonings.iter().any(|(_, kind)| kind == "package") {
+            reach_poison_attributions += 1;
         }
         if t.plan_on_fp != t.plan_off_fp {
             flag_distinguishes += 1;
@@ -238,14 +262,31 @@ fn every_topology_class_and_both_behaviours_are_reached() {
          lane's attribution-under-lies assertion is never exercised (find-net-covers-what — fc-5)."
     );
     assert!(
+        reach_lying_divergences > 0,
+        "no LYING-REACHES divergence in {n} seeds — a LYING reach-answer (Host::reach OMITTING a \
+         truly-reached coord) never produced the wrong-survival RED. The reaches() soundness net \
+         (24G) is VACUOUS: without a lying-reaches divergence the reach lane's attribution-under-lies \
+         assertion is never exercised (find-net-covers-what — omission is the sharp edge, fc-5)."
+    );
+    assert!(
+        reach_poison_attributions > 0,
+        "no HONEST reaches()-attributed demote in {n} seeds — a `package.reaches()` expansion never \
+         HIT a victim's backing to demote it (the cross-author demote the mechanism EXISTS for). The \
+         reach expansion is inert: every reach-bearing footprint stayed narrow, so the compositional \
+         half (24G §2/§3) is never exercised end-to-end."
+    );
+    assert!(
         flag_distinguishes > 0,
         "--trust-footprints NEVER changed the plan in {n} seeds — the flag is inert, so the \
          survival tier is untested."
     );
     eprintln!(
-        "sweep coverage over {n} seeds: all 8 topology classes reached by seed {first_all:?}; \
+        "sweep coverage over {n} seeds: all 9 topology classes reached by seed {first_all:?}; \
          honest_elisions={honest_elisions} lying_divergences={lying_divergences} \
          derived_lying_divergences={derived_lying_divergences} \
-         alias_lying_divergences={alias_lying_divergences} flag_distinguishes={flag_distinguishes}"
+         alias_lying_divergences={alias_lying_divergences} \
+         reach_lying_divergences={reach_lying_divergences} \
+         reach_poison_attributions={reach_poison_attributions} \
+         flag_distinguishes={flag_distinguishes}"
     );
 }
