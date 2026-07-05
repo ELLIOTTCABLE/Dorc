@@ -261,6 +261,15 @@ pub struct Footprint {
     provider: Symbol,
     coords: Vec<EntityCoord>,
     origin: FootprintOrigin,
+    /// 24G Part B — the `reaches()` EXPANSION attribution: for each coordinate ADDED by
+    /// `<kind>.reaches()` expansion ([`add_reached`](Footprint::add_reached)), the reach-function's
+    /// KIND (the kind whose owner spelled the reach). The reached coords are ALSO in `coords` (the
+    /// disjointness test is expansion-agnostic — a reached coord intersects a backing identically to
+    /// an authored one, and flows through the SAME canonicalization path); this map exists ONLY so a
+    /// DEMOTE caused by a reached coord attributes the reach-function ("…poisoned via
+    /// `<kind>.reaches()`"). Empty for an un-expanded footprint. Mirrors the resolver-attribution
+    /// shape ([`Crossing::via_resolver`]) — the sharpest claims name whose knowledge they trusted.
+    reached_via: BTreeMap<EntityCoord, KindId>,
 }
 
 impl Footprint {
@@ -294,7 +303,32 @@ impl Footprint {
             provider,
             coords,
             origin,
+            reached_via: BTreeMap::new(),
         })
+    }
+
+    /// 24G Part B — widen this footprint with a `reaches()`-expanded coordinate (FOOTPRINTS ONLY; a
+    /// backing NEVER expands). `via` is the reach-function's KIND (for the poison attribution). The
+    /// reached coord is unioned into `coords` (so it flows through the SAME `disjoint`/canonicalization
+    /// path — no new interplay code) and recorded in `reached_via` for the demote attribution. This is
+    /// the SAFE direction (`inv-kfail`, apply): expansion only ever WIDENS a footprint, so it HITs more
+    /// (demotes toward run), never elides more. A coord already present (an authored coord the reach
+    /// re-derives) hits on its OWN account — it is NOT re-attributed to the reach (the reach added
+    /// nothing there). Called at plan construction, BEFORE the wall walk, after the coherence check
+    /// already passed on the narrower footprint (widening keeps `own-establish ⊆ footprint` true).
+    pub fn add_reached(&mut self, coord: EntityCoord, via: KindId) {
+        if !self.coords.contains(&coord) {
+            self.coords.push(coord);
+            self.reached_via.insert(coord, via);
+        }
+    }
+
+    /// The reach-function KIND that expanded `coord` into this footprint, if any (24G Part B — the
+    /// demote attribution: a `Hit` on a reached coord names `<kind>.reaches()`). `None` for an
+    /// authored/derived coord.
+    #[must_use]
+    fn reach_of(&self, coord: EntityCoord) -> Option<KindId> {
+        self.reached_via.get(&coord).copied()
     }
 
     /// The wall's provider (attribution: whose footprint licensed a crossing).
@@ -380,8 +414,10 @@ pub enum DisjointOutcome {
     /// survive this wall.
     Disjoint(DisjointnessProof),
     /// A footprint coordinate canonicalizes to the SAME referent as the backing (two names, one
-    /// thing) — the under-execute the closure catches ⇒ demote.
-    Hit,
+    /// thing) — the under-execute the closure catches ⇒ demote. `via_reach` names the reach-function
+    /// KIND if the hitting coordinate was one a `<kind>.reaches()` EXPANSION added (24G Part B — the
+    /// demote attributes "…poisoned via `<kind>.reaches()`"); `None` for an authored/derived hit.
+    Hit { via_reach: Option<KindId> },
     /// A same-kind pair could not be canonicalized (resolver ⊤/dangling/absent, §3a) — disjointness
     /// is unprovable ⇒ demote (toward run).
     MayAlias(MayAliasReason),
@@ -415,7 +451,11 @@ pub fn disjoint(
         }
         match (resolutions.canonicalize(*fc), backing_canon) {
             (Resolution::Canonical(a), Resolution::Canonical(b)) if a == b => {
-                return DisjointOutcome::Hit; // two names, one referent (or token-equal at the floor)
+                // Two names, one referent (or token-equal at the floor). 24G Part B: if THIS footprint
+                // coord was added by a reaches() expansion, name the reach-function for the demote.
+                return DisjointOutcome::Hit {
+                    via_reach: footprint.reach_of(*fc),
+                };
             }
             (Resolution::Canonical(_), Resolution::Canonical(_)) => {} // distinct canon ⇒ this pair clear
             // One side unresolved in a resolver-bearing kind ⇒ can't prove THIS pair disjoint (§3a).
@@ -588,8 +628,10 @@ pub(crate) enum DemoteReason {
     /// A running footprint-less mutator upstream (silence = wall).
     TotalWall,
     /// A footprint coordinate canonicalized to the SAME referent as the backing (a proven alias /
-    /// token-equal hit).
-    Poisoned,
+    /// token-equal hit). `via_reach` names the reach-function KIND when the hitting coordinate was a
+    /// `<kind>.reaches()` EXPANSION (24G Part B — the demote attributes "…poisoned via
+    /// `<kind>.reaches()`"); `None` for an authored/derived hit.
+    Poisoned { via_reach: Option<KindId> },
     /// A same-kind pair could not be canonicalized (§3a — the resolver ⊤'d / dangled / was absent).
     /// The may-alias fire-rate the yardstick instruments (the [`MayAliasReason`] rides the public
     /// [`Resolution`]/[`DisjointOutcome`]; this discriminant is the demote counter).
@@ -626,8 +668,11 @@ pub(crate) fn wall_verdict(
                 proof,
                 via_resolver,
             }),
-            // A proven canonical collision (the aliasing closure firing, or a plain token hit).
-            DisjointOutcome::Hit => return WallVerdict::Demoted(DemoteReason::Poisoned),
+            // A proven canonical collision (the aliasing closure firing, a plain token hit, or a
+            // reaches()-expanded coordinate hitting — 24G Part B, attributed via `via_reach`).
+            DisjointOutcome::Hit { via_reach } => {
+                return WallVerdict::Demoted(DemoteReason::Poisoned { via_reach });
+            }
             // The resolver could not canonicalize a same-kind pair ⇒ fail toward run (§3a).
             DisjointOutcome::MayAlias(_reason) => {
                 return WallVerdict::Demoted(DemoteReason::MayAlias);
@@ -697,7 +742,7 @@ mod tests {
         assert!(
             matches!(
                 disjoint(&fp, &backing, &Resolutions::none()),
-                DisjointOutcome::Hit
+                DisjointOutcome::Hit { .. }
             ),
             "same entity is a hit"
         );
@@ -769,7 +814,7 @@ mod tests {
         assert!(
             matches!(
                 wall_verdict(false, &walls, &Backing::of_fact(f), &Resolutions::none()),
-                WallVerdict::Demoted(DemoteReason::Poisoned)
+                WallVerdict::Demoted(DemoteReason::Poisoned { via_reach: None })
             ),
             "a footprint hitting the backing demotes even without a total wall"
         );
@@ -804,7 +849,7 @@ mod tests {
         assert!(
             matches!(
                 disjoint(&fp, &Backing { coord: back }, &res),
-                DisjointOutcome::Hit
+                DisjointOutcome::Hit { .. }
             ),
             "two names for one referent HIT after canonicalization"
         );
@@ -912,5 +957,102 @@ mod tests {
             ),
             "a different-kind footprint coord is disjoint regardless of the backing's resolution"
         );
+    }
+
+    // ── 24G Part B: the reaches() footprint EXPANSION (add_reached + demote attribution) ─────────
+
+    #[test]
+    fn reached_coord_hits_and_attributes_the_reach_function() {
+        // 24G Part B — the cross-author demote: a wall footprints `package:nginx` (whoever emitted it
+        // knows nothing of what it drags); a `package.reaches()` EXPANSION adds `package:nginx-dep`.
+        // A downstream fact backing `package:nginx-dep` — token-DISJOINT from the authored
+        // `package:nginx`, so PRE-expansion it wrongly SURVIVES — now HITs the expanded coord ⇒ demote,
+        // attributed to the reach-function KIND (`package`).
+        let mut i = dorc_core::Interner::default();
+        let pkg = KindId(i.intern("package"));
+        let wall = mk_coord(&mut i, "package", "nginx");
+        let dep = mk_coord(&mut i, "package", "nginx-dep");
+        let mut fp = Footprint::authored(i.intern("hork"), vec![wall]).unwrap();
+        // Pre-expansion: disjoint (distinct entities) ⇒ the victim would wrongly survive.
+        assert!(matches!(
+            disjoint(&fp, &Backing { coord: dep }, &Resolutions::none()),
+            DisjointOutcome::Disjoint(_)
+        ));
+        // Expand: package.reaches() drags nginx → nginx-dep.
+        fp.add_reached(dep, pkg);
+        match disjoint(&fp, &Backing { coord: dep }, &Resolutions::none()) {
+            DisjointOutcome::Hit { via_reach } => assert_eq!(
+                via_reach,
+                Some(pkg),
+                "the reach-expanded hit names the reach-function kind"
+            ),
+            other => panic!("expected a reach Hit, got {other:?}"),
+        }
+        // …and through wall_verdict it is a Poisoned demote carrying the reach attribution.
+        let walls = [AccumulatedWall {
+            wall_leaf: LeafId(0),
+            footprint: fp,
+        }];
+        assert!(matches!(
+            wall_verdict(false, &walls, &Backing { coord: dep }, &Resolutions::none()),
+            WallVerdict::Demoted(DemoteReason::Poisoned { via_reach: Some(k) }) if k == pkg
+        ));
+    }
+
+    #[test]
+    fn reach_that_does_not_hit_leaves_the_survival_unchanged() {
+        // 24G Part B attribution rule: a crossing that survived only because expansion did NOT hit must
+        // NOT change. A footprint expanded with `package:other` (a reach that MISSES the victim
+        // `package:curl`) still SURVIVES, and names NO reach — the survival attribution is unchanged
+        // (reaches attributes DEMOTES only, never survivals).
+        let mut i = dorc_core::Interner::default();
+        let pkg = KindId(i.intern("package"));
+        let wall = mk_coord(&mut i, "package", "nginx");
+        let other = mk_coord(&mut i, "package", "other");
+        let mut fp = Footprint::authored(i.intern("hork"), vec![wall]).unwrap();
+        fp.add_reached(other, pkg);
+        let victim = mk_coord(&mut i, "package", "curl"); // hit by neither nginx nor other
+        let walls = [AccumulatedWall {
+            wall_leaf: LeafId(1),
+            footprint: fp,
+        }];
+        match wall_verdict(
+            false,
+            &walls,
+            &Backing { coord: victim },
+            &Resolutions::none(),
+        ) {
+            WallVerdict::Survived(w) => assert_eq!(
+                w.crossings()[0].via_resolver(),
+                None,
+                "a non-hitting reach expansion leaves the survival attribution unchanged"
+            ),
+            other => panic!("expected Survived, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn reach_re_deriving_an_authored_coord_does_not_re_attribute() {
+        // add_reached on a coord ALREADY present (an authored coord the reach re-derives) hits on its
+        // OWN account — it is NOT re-attributed to the reach (the reach added nothing there). So a
+        // Poisoned demote on the authored coord names `via_reach: None`, never the reach-function.
+        let mut i = dorc_core::Interner::default();
+        let pkg = KindId(i.intern("package"));
+        let wall = mk_coord(&mut i, "package", "nginx");
+        let mut fp = Footprint::authored(i.intern("apt-get"), vec![wall]).unwrap();
+        fp.add_reached(wall, pkg); // re-derives the authored coord
+        let walls = [AccumulatedWall {
+            wall_leaf: LeafId(0),
+            footprint: fp,
+        }];
+        assert!(matches!(
+            wall_verdict(
+                false,
+                &walls,
+                &Backing { coord: wall },
+                &Resolutions::none()
+            ),
+            WallVerdict::Demoted(DemoteReason::Poisoned { via_reach: None })
+        ));
     }
 }

@@ -40,8 +40,8 @@ use dorc_analysis::effect::{FactKey, InlineSite, SkipClass};
 use dorc_analysis::lattice::{May, Powerset};
 use dorc_analysis::value::{ValueFlow, ValueOf};
 use dorc_core::{
-    AstId, ByVouch, Carrier, Channel, EntityRef, Grade, Interner, Observable, Predicted, Rc, Rung,
-    Symbol, Verdict,
+    AstId, ByVouch, Carrier, Channel, EntityRef, Grade, Interner, KindId, Observable, Predicted,
+    Rc, Rung, Symbol, Verdict,
 };
 use dorc_oracle::verdict::VerdictSense;
 use dorc_syntax::ast::{Ast, NodeKind, RedirOp, RedirTarget};
@@ -1058,6 +1058,11 @@ pub struct Step {
 #[derive(Debug, Clone, Default)]
 pub struct SurvivalReport {
     may_alias_fires: u32,
+    /// 24G Part B — the `reaches()` poison attributions: each `(demoted leaf, reach-function KIND)` where
+    /// a converged elision demoted because a `<kind>.reaches()` EXPANSION coordinate HIT its backing
+    /// (the cross-author demote). The why-lens surfaces "site N: poisoned via `<kind>.reaches()`".
+    /// Empty when no reach expansion poisoned an elision.
+    reach_poisonings: Vec<(LeafId, KindId)>,
 }
 
 impl SurvivalReport {
@@ -1066,6 +1071,13 @@ impl SurvivalReport {
     #[must_use]
     pub fn may_alias_fires(&self) -> u32 {
         self.may_alias_fires
+    }
+
+    /// The `reaches()` poison attributions (24G Part B): `(demoted leaf, reach-function KIND)` per
+    /// converged elision a reach-expanded coordinate demoted. The cli's why-lens names the
+    /// reach-function for each ("…poisoned via `<kind>.reaches()`").
+    pub fn reach_poisonings(&self) -> impl Iterator<Item = (LeafId, KindId)> + '_ {
+        self.reach_poisonings.iter().copied()
     }
 }
 
@@ -2099,8 +2111,17 @@ fn wall_walk_survival(
                 // canonicalized (§3a may-alias) — demote (`inv-kfail`, fail toward run). A may-alias
                 // demote is instrumented (24F §3a — the yardstick shows the fire-rate).
                 survival::WallVerdict::Demoted(reason) => {
-                    if reason == survival::DemoteReason::MayAlias {
-                        report.may_alias_fires = report.may_alias_fires.saturating_add(1);
+                    match reason {
+                        survival::DemoteReason::MayAlias => {
+                            report.may_alias_fires = report.may_alias_fires.saturating_add(1);
+                        }
+                        // 24G Part B: a reach-expanded coordinate poisoned this elision — attribute
+                        // the reach-function KIND for the why-lens ("…poisoned via <kind>.reaches()").
+                        survival::DemoteReason::Poisoned {
+                            via_reach: Some(kind),
+                        } => report.reach_poisonings.push((step.leaf, kind)),
+                        survival::DemoteReason::TotalWall
+                        | survival::DemoteReason::Poisoned { via_reach: None } => {}
                     }
                     step.disposition = Disposition::Run;
                 }
