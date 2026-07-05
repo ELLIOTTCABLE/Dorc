@@ -1,0 +1,45 @@
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc — the record is the out-of-band lane).
+
+# site 0: fs:/etc/app.conf#written
+writeconf__predict() {
+   path="$1"
+   conf-exists "$path"
+}
+writeconf__predict '/etc/app.conf'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'site 0 effect=%s rc=%s\n' "$_e" "$_rc"
+# site 1: fs:/etc/app.conf.lnk#written
+writeconf__predict '/etc/app.conf.lnk'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'site 1 effect=%s rc=%s\n' "$_e" "$_rc"
+# dorc resolver-probe (read-only, 24F §3): owner-declared identity canonicalization. Each
+# resolver-bearing coordinate runs its kind's <kind>.resolve() with the entity; when run it
+# prints the canonical form (or a dangling marker), re-keyed by the coordinate:
+#   resolv <kind:entity> canon=<canonical>   |   resolv <kind:entity> dangling
+# The engine canonicalizes both footprint and backing coords through this before disjoint.
+
+# resolv fs:/etc/app.conf via fs.resolve()
+fs__resolve() {
+   realpath -m -- "$1"
+}
+_c=$(fs__resolve '/etc/app.conf' 2>/dev/null); _rr=$?; if [ "$_rr" -eq 0 ] && [ -n "$_c" ]; then printf 'resolv fs:/etc/app.conf canon=%s\n' "$_c"; else printf 'resolv fs:/etc/app.conf dangling\n'; fi
+# resolv fs:/etc/app.conf.lnk via fs.resolve()
+_c=$(fs__resolve '/etc/app.conf.lnk' 2>/dev/null); _rr=$?; if [ "$_rr" -eq 0 ] && [ -n "$_c" ]; then printf 'resolv fs:/etc/app.conf.lnk canon=%s\n' "$_c"; else printf 'resolv fs:/etc/app.conf.lnk dangling\n'; fi
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+# strawman24-alias-symlink (24F Stage 5 — the aliasing closure on the `fs` KIND, per-kind gradual
+# enhancement). Same closure as strawman24-alias-provides, a DIFFERENT kind: a file and a SYMLINK to
+# it are two names for one referent (`/etc/app.conf` vs `/etc/app.conf.lnk`). token-equality calls
+# `fs:/etc/app.conf` and `fs:/etc/app.conf.lnk` disjoint ⇒ the converged victim would wrongly survive.
+# The `fs` kind's owner ships `fs.resolve()` (~`realpath -m`): the engine canonicalizes both coords
+# through it before disjoint.
+#   site 0  writeconf /etc/app.conf      — DIVERGED (absent) ⇒ RUNS. The footprinted wall (fs:/etc/app.conf).
+#   site 1  writeconf /etc/app.conf.lnk  — CONVERGED (holds), PAST the running wall. Its backing
+#           (fs:/etc/app.conf.lnk) realpath-canonicalizes to `/etc/app.conf`; the wall footprint
+#           (fs:/etc/app.conf) canonicalizes to `/etc/app.conf` too ⇒ a canonical HIT ⇒ the closure
+#           correctly DEMOTES the victim to RUN. Under token-equality it would have elided (wrong-
+#           survival). Differential: expected.ran runs BOTH — the under-execute closed on a second kind.
+writeconf /etc/app.conf
+writeconf /etc/app.conf.lnk

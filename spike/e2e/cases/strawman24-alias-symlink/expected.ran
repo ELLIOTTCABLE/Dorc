@@ -1,0 +1,2 @@
+ran: writeconf /etc/app.conf
+ran: writeconf /etc/app.conf.lnk

@@ -1,0 +1,6 @@
+#!/bin/sh
+# INERT read-only convergence shim — `conf-exists <path>`. HOST: /etc/app.conf.lnk present
+# (rc 0 ⇒ converged ⇒ would-elide); /etc/app.conf absent (rc 1 ⇒ diverged ⇒ the wall RUNS).
+# Never a mutator; logs for symmetry.
+. "${0%/*}/.log"; _dorc_logged "$@"
+case ${1:-} in *.lnk) exit 0 ;; *) exit 1 ;; esac

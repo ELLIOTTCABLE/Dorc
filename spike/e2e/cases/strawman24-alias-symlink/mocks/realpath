@@ -1,0 +1,8 @@
+#!/bin/sh
+# INERT strawman mock — `realpath -m -- <path>` (the fs resolver). Read-only: a `.lnk` symlink
+# resolves to its TARGET's canonical path (both `/etc/app.conf` and `/etc/app.conf.lnk` ⇒
+# `/etc/app.conf`), so the closure sees them as one referent. The path is the last arg. Pure-sh
+# (no real realpath under PATH=mocks-only); logs for symmetry.
+. "${0%/*}/.log"; _dorc_logged "$@"
+for _p in "$@"; do :; done
+case $_p in *.lnk) printf '%s\n' "${_p%.lnk}" ;; *) printf '%s\n' "$_p" ;; esac
