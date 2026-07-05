@@ -521,4 +521,18 @@ pub mod apply {
             flat.join("; "),
         )
     }
+
+    /// The NO-BRACKET elided-provenance for the commented-original render form (the human's
+    /// round-24 lean): a top-level standalone converged/dead line renders as `# <original bytes>`,
+    /// so the disclosure needs no `[…]` echo of the original — it is already verbatim on the line.
+    /// Returns the bare `   # dorc: elided (…)` suffix (no newline) spliced onto the `# <original>`.
+    ///
+    /// GUARANTEE: dash-n-clean — the whole rendered line is `# <original>   # dorc: elided (…)`, one
+    /// comment running to end-of-line, so a `#`/quote/metachar in the original is inert (a comment
+    /// is never tokenised). The caller ([`Plan::collect_edits`]) restricts this to SINGLE-LINE
+    /// top-level Simple leaves, so the comment never strands a multi-line tail as live code.
+    #[must_use]
+    pub const fn commented_original_provenance() -> &'static str {
+        "   # dorc: elided (already converged / dead branch)"
+    }
 }

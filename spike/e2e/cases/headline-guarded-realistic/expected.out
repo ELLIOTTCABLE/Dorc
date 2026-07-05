@@ -94,7 +94,7 @@ set -e
 
 # A bare pre-flight Query: assert the base image already has ca-certificates. VALID
 # (nothing mutates above it) + holds ⇒ dorc value-substitutes it to its probed rc `true`.
-true   # dorc: elided [dpkg -s ca-certificates >/dev/null 2>&1] (already converged / dead branch)
+# dpkg -s ca-certificates >/dev/null 2>&1   # dorc: elided (already converged / dead branch)
 
 # Idempotent install via the || idiom. The guard reports absent here (nginx not yet
 # installed), so the install is LIVE and runs; the guard runs for real to gate it.

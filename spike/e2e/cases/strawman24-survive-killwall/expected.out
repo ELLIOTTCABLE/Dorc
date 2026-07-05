@@ -31,4 +31,4 @@ apt_get__predict 'install' '-y' 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=ho
 #           footprint package:oldpkg (different entity) ⇒ SURVIVES the running kill ⇒ ELIDES.
 #           Proves kills participate in the survival walk uniformly with establishes.
 apt-get purge -y oldpkg
-true   # dorc: elided [apt-get install -y nginx] (already converged / dead branch)
+# apt-get install -y nginx   # dorc: elided (already converged / dead branch)

@@ -2715,6 +2715,18 @@ impl Plan {
         // Per-AstId disposition, so an `Omit`'s controller resolves for the omit-safety gate.
         let by_ast: BTreeMap<AstId, &Disposition> =
             self.steps.iter().map(|s| (s.ast, &s.disposition)).collect();
+        // The TOP-LEVEL Simple statements (`Script.items` that are simple commands) — the
+        // provably-safe home of the commented-original elision render (below): a leaf here is
+        // NEVER a `&&`/`||`/if/loop/case operand (those nest under AndOr/If/… nodes, not directly
+        // under Script), so commenting it can neither empty a control arm nor kill following code.
+        let top_level_simple: BTreeSet<AstId> = match &ast.node(ast.root()).kind {
+            NodeKind::Script { items } => items
+                .iter()
+                .copied()
+                .filter(|&id| matches!(ast.node(id).kind, NodeKind::Simple { .. }))
+                .collect(),
+            _ => BTreeSet::new(),
+        };
 
         let mut edits: Vec<SpanEdit> = Vec::new();
         for step in &self.steps {
@@ -2730,40 +2742,62 @@ impl Plan {
             {
                 continue;
             }
+            let original = command_text(src, ast, step.ast);
             // `self_commented` = the replacement embeds its OWN disposition comment, so the
             // shared elided-provenance comment must NOT be appended on top (a guard would else
             // read `… # dorc: guard [...]   # dorc: elided [...]` — a double comment, and
-            // "elided" is a lie: a guard's original bytes SURVIVE in the `||`-right).
-            let (replacement, self_commented): (String, bool) = match &step.disposition {
-                Disposition::Replace(_, stand_in) => (stand_in.sh(), false),
-                Disposition::Omit { controller }
-                    if is_neutralised(&by_ast, ast, *controller, 0) =>
-                {
-                    // A neutralised-controller dead body: `:` (a pure structural placeholder
-                    // — its status is unreachable, never observed).
-                    (":".to_string(), false)
-                }
-                // A guard edits the span to `( check ) || <original>`, the original bytes embedded
-                // VERBATIM as the `||`-right (rul-ternary-verdict; the guard preamble def is
-                // prepended once by the cli via [`guard_preamble`](Plan::guard_preamble)). The
-                // heredoc case is already refused at the top of the loop (span cannot cover the
-                // body) — X-heredoc. It carries its OWN `# dorc: guard …` comment ⇒ self-commented.
-                Disposition::Guard(license) => (
-                    license
-                        .insert()
-                        .render_line(&command_text(src, ast, step.ast)),
-                    true,
-                ),
-                // A kept-controller `Omit` (the runtime guard gates it) and a `Run` leaf are
-                // both verbatim — no edit.
-                Disposition::Omit { .. } | Disposition::Run => continue,
-            };
+            // "elided" is a lie: a guard's original bytes SURVIVE in the `||`-right). `comment_out`
+            // = the elision render is the ORIGINAL BYTES commented-out (the human's round-24 lean),
+            // so the shared BRACKETED provenance is replaced by a no-bracket one (the original is
+            // already visible on the line).
+            let (replacement, self_commented, comment_out): (String, bool, bool) =
+                match &step.disposition {
+                    // The elided-render lean (human, round-24): a top-level standalone Simple whose
+                    // rc is UNCONSUMED (`StandIn::True` — a consumed-nonzero read is `False`/`Exit`,
+                    // excluded; errexit-rc-0 is abort-equivalent) renders as `# <original bytes>`,
+                    // not an opaque `true`. THREE safety conditions, all necessary: top-level Simple
+                    // (never a `&&`/if/loop/case operand ⇒ commenting can't empty a control arm);
+                    // ALONE on its line (a `#` reaching end-of-line can't kill a sibling — `cmd; for
+                    // …` / `cmd; systemctl …` are two top-level items on one line, so the FIRST keeps
+                    // its stand-in); and single-line span (a multi-line `#` would strand its tail as
+                    // live code). Otherwise the stand-in.
+                    Disposition::Replace(_, stand_in) => {
+                        if matches!(stand_in, StandIn::True)
+                            && top_level_simple.contains(&step.ast)
+                            && !original.contains('\n')
+                            && is_alone_on_line(src, span.lo.0 as usize, span.hi.0 as usize)
+                        {
+                            (format!("# {original}"), false, true)
+                        } else {
+                            (stand_in.sh(), false, false)
+                        }
+                    }
+                    Disposition::Omit { controller }
+                        if is_neutralised(&by_ast, ast, *controller, 0) =>
+                    {
+                        // A neutralised-controller dead body: `:` (a pure structural placeholder
+                        // — its status is unreachable, never observed).
+                        (":".to_string(), false, false)
+                    }
+                    // A guard edits the span to `( check ) || <original>`, the original bytes embedded
+                    // VERBATIM as the `||`-right (rul-ternary-verdict; the guard preamble def is
+                    // prepended once by the cli via [`guard_preamble`](Plan::guard_preamble)). The
+                    // heredoc case is already refused at the top of the loop (span cannot cover the
+                    // body) — X-heredoc. It carries its OWN `# dorc: guard …` comment ⇒ self-commented.
+                    Disposition::Guard(license) => {
+                        (license.insert().render_line(&original), true, false)
+                    }
+                    // A kept-controller `Omit` (the runtime guard gates it) and a `Run` leaf are
+                    // both verbatim — no edit.
+                    Disposition::Omit { .. } | Disposition::Run => continue,
+                };
             edits.push(SpanEdit {
                 lo: span.lo.0 as usize,
                 hi: span.hi.0 as usize,
                 replacement,
-                original: command_text(src, ast, step.ast),
+                original,
                 self_commented,
+                comment_out,
             });
         }
         normalise_edits(edits)
@@ -2783,6 +2817,11 @@ struct SpanEdit {
     /// the shared elided-provenance comment is suppressed for this member (else a double comment,
     /// and "elided" misdescribes a guard whose original bytes survive in the `||`-right).
     self_commented: bool,
+    /// The elision render is the ORIGINAL BYTES commented-out (`# <original>`, the human's round-24
+    /// lean) rather than an opaque `true` — so the line gets a NO-BRACKET `# dorc: elided (…)`
+    /// provenance (the original is already visible). Set only for a top-level standalone Simple
+    /// leaf (single-member group by construction — [`Plan::collect_edits`]).
+    comment_out: bool,
 }
 
 /// Enforce the edit-model invariants (arch-1 d-1) and return the surviving edits sorted by
@@ -2953,16 +2992,23 @@ fn emit_span_edits(src: &str, edits: &[SpanEdit]) -> String {
                 // it discloses itself, and it does not "elide" (its original bytes survive). If a
                 // group is entirely self-commented, no shared comment is appended.
                 if comment_safe(&spliced) {
-                    // Source order (left-to-right) for the disclosure.
-                    let mut es: Vec<&&SpanEdit> = group.members.iter().collect();
-                    es.sort_by_key(|e| e.lo);
-                    let originals: Vec<String> = es
-                        .iter()
-                        .filter(|e| !e.self_commented)
-                        .map(|e| e.original.clone())
-                        .collect();
-                    if !originals.is_empty() {
-                        out.push_str(&render::apply::provenance_comment(&originals));
+                    // A comment-out group (a top-level standalone Replace rendered as `# <original>`,
+                    // single-member by construction): the original is already on the line, so a
+                    // NO-BRACKET provenance. Otherwise the shared bracketed disclosure over every
+                    // non-self-commented member's original (source order, left-to-right).
+                    if group.members.iter().any(|e| e.comment_out) {
+                        out.push_str(render::apply::commented_original_provenance());
+                    } else {
+                        let mut es: Vec<&&SpanEdit> = group.members.iter().collect();
+                        es.sort_by_key(|e| e.lo);
+                        let originals: Vec<String> = es
+                            .iter()
+                            .filter(|e| !e.self_commented)
+                            .map(|e| e.original.clone())
+                            .collect();
+                        if !originals.is_empty() {
+                            out.push_str(&render::apply::provenance_comment(&originals));
+                        }
                     }
                 }
                 out.push('\n');
@@ -2978,6 +3024,27 @@ fn emit_span_edits(src: &str, edits: &[SpanEdit]) -> String {
         edits.len(),
     );
     out
+}
+
+/// Is `src[lo..hi]` (a command span) ALONE on its source line — nothing but whitespace before
+/// it and nothing but whitespace / a trailing `#`-comment after it? The load-bearing precondition
+/// for the commented-original elision render (the human's round-24 lean): only such a command can
+/// be safely rewritten to `# <original>`, because a `#` runs to end-of-line — so a sibling
+/// statement sharing the line (`apt-get …; systemctl …`, `cmd; for …`) would be silently killed.
+/// Leading code is checked because it must not be swallowed either (though a leading sibling is
+/// already excluded upstream — such a command is not a direct `Script.items` entry). Pure.
+fn is_alone_on_line(src: &str, lo: usize, hi: usize) -> bool {
+    let line_start = src
+        .get(..lo)
+        .and_then(|s| s.rfind('\n'))
+        .map_or(0, |i| i + 1);
+    let line_end = src
+        .get(hi..)
+        .and_then(|s| s.find('\n'))
+        .map_or(src.len(), |i| hi.saturating_add(i));
+    let leading = src.get(line_start..lo).unwrap_or("").trim();
+    let trailing = src.get(hi..line_end).unwrap_or("").trim();
+    leading.is_empty() && (trailing.is_empty() || trailing.starts_with('#'))
 }
 
 /// Is appending a ` # …` comment to this rendered line safe (d-3 SAFETY RULE; P1 fix 21E f-2)?
@@ -5286,6 +5353,49 @@ apt_get__predict() {
         );
     }
 
+    /// The load-bearing safety precondition of the commented-original elision render (human's
+    /// round-24 lean): `is_alone_on_line` must REFUSE any command sharing its line with a sibling
+    /// statement — else a `# <original>` rewrite (a `#` runs to end-of-line) silently kills the
+    /// sibling. This is exactly the `pre-loop-shared-for-line` / `exec-multileaf-line-mixed`
+    /// regression the whole-line check closes.
+    #[test]
+    fn is_alone_on_line_refuses_shared_lines() {
+        // Alone on its own line ⇒ safe.
+        let s = "apt-get install -y nginx\n";
+        assert!(
+            is_alone_on_line(s, 0, s.trim_end().len()),
+            "a whole-line command"
+        );
+        // A trailing comment after the command is fine (still the line's last live token).
+        let s2 = "apt-get install -y nginx  # note\n";
+        let hi = s2.find("  #").unwrap();
+        assert!(
+            is_alone_on_line(s2, 0, hi),
+            "a trailing comment does not disqualify"
+        );
+        // A SIBLING after `;` on the same line ⇒ REFUSE (commenting would kill it).
+        let s3 = "apt-get install -y nginx; systemctl reload nginx\n";
+        let hi3 = s3.find(';').unwrap();
+        assert!(
+            !is_alone_on_line(s3, 0, hi3),
+            "`; systemctl …` follows ⇒ not alone"
+        );
+        // A `for …` continuation after `;` ⇒ REFUSE (the pre-loop-shared-for-line shape).
+        let s4 = "apt-get install -y nginx; for x in a\ndo echo; done\n";
+        let hi4 = s4.find(';').unwrap();
+        assert!(
+            !is_alone_on_line(s4, 0, hi4),
+            "`; for …` follows ⇒ not alone"
+        );
+        // Leading code before the command on the line ⇒ REFUSE (would be swallowed).
+        let s5 = "foo; apt-get install -y nginx\n";
+        let lo5 = s5.find("apt-get").unwrap();
+        assert!(
+            !is_alone_on_line(s5, lo5, s5.trim_end().len()),
+            "leading `foo; ` on the line ⇒ not alone"
+        );
+    }
+
     #[test]
     fn comment_safe_refuses_open_quote_line() {
         // The f-2 wiring: `comment_safe` now refuses a line that ends inside an open quote,
@@ -5320,6 +5430,7 @@ apt_get__predict() {
                 replacement: "true".into(),
                 original: "apt-get install -y \"a\nb\"".into(),
                 self_commented: false,
+                comment_out: false,
             },
             SpanEdit {
                 lo: b_lo,
@@ -5327,6 +5438,7 @@ apt_get__predict() {
                 replacement: "true".into(),
                 original: "apt-get install -y \"c\nd\"".into(),
                 self_commented: false,
+                comment_out: false,
             },
         ]);
         let groups = group_edits(src, &edits);
@@ -5359,6 +5471,7 @@ apt_get__predict() {
                 replacement: "true".into(),
                 original: "apt-get install -y nginx".into(),
                 self_commented: false,
+                comment_out: false,
             },
             SpanEdit {
                 lo: b_lo,
@@ -5366,6 +5479,7 @@ apt_get__predict() {
                 replacement: "true".into(),
                 original: "apt-get install -y curl".into(),
                 self_commented: false,
+                comment_out: false,
             },
         ]);
         let groups = group_edits(src, &edits);

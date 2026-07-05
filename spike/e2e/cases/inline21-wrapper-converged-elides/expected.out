@@ -34,5 +34,5 @@ apt_get__predict 'install' '-y' 'curl'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=hol
 # write does NOT refuse the inline; a write to a real file would). This is the arch-2 payoff:
 # the wrapper idiom real books and oracle libraries use, which used to kill every elision below.
 apt_install() { apt-get install -y "$1" >/dev/null 2>&1; }
-true   # dorc: elided [apt_install nginx] (already converged / dead branch)
-true   # dorc: elided [apt_install curl] (already converged / dead branch)
+# apt_install nginx   # dorc: elided (already converged / dead branch)
+# apt_install curl   # dorc: elided (already converged / dead branch)

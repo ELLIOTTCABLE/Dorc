@@ -30,5 +30,5 @@ apt_get__predict 'install' '-y' 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=ho
 # so there is no convergence fact that could ever license eliding it — a tempting "it's
 # converged" can never wrongly elide an install whose target dorc cannot name.
 # The contrast: the FIRST install (nginx, fully resolved + converged) DOES elide to `true`.
-true   # dorc: elided [apt-get install -y nginx] (already converged / dead branch)
+# apt-get install -y nginx   # dorc: elided (already converged / dead branch)
 apt-get install -y "$UNSET_VAR"

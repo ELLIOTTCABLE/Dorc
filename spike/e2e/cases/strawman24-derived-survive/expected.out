@@ -61,4 +61,4 @@ apt_get__touches 'install' '-y' 'nginx' | while IFS= read -r _c; do printf 'deri
 #           names the licensor AND its DERIVED provenance (24E §9). Differential: expected.ran +
 #           the dual-rail judge pin the run-set; the elision is licensed by a probe-DERIVED footprint.
 apt-get install -y oldpkg
-true   # dorc: elided [apt-get install -y nginx] (already converged / dead branch)
+# apt-get install -y nginx   # dorc: elided (already converged / dead branch)

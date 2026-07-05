@@ -31,5 +31,5 @@ apt_get__predict 'install' '-y' 'curl'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=hol
 # The all-or-nothing CALL license is PER CALL: one diverged call running does not affect the
 # other converged call's elision. Run-set: `apt-get install -y curl` only.
 apt_install() { apt-get install -y "$1" >/dev/null 2>&1; }
-true   # dorc: elided [apt_install nginx] (already converged / dead branch)
+# apt_install nginx   # dorc: elided (already converged / dead branch)
 apt_install curl

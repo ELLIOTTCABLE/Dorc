@@ -40,4 +40,4 @@ apt_get__predict 'install' '-y' 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=ho
 # bare book upgrades while the elided apply does not, and the differential finally goes red.
 # Until then this case carries the adequacy semantics forward — GREEN, not xfail: the elision IS
 # what HEAD does, and measuring how often it bites is the round's sharpest empirical deliverable.
-true   # dorc: elided [apt-get install -y nginx] (already converged / dead branch)
+# apt-get install -y nginx   # dorc: elided (already converged / dead branch)

@@ -41,6 +41,6 @@ apt_get__predict 'install' '-y' 'curl'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=hol
 #           (runs). Proves the flag buys back only scoped walls; a silent mutator still totalises.
 apt-get install -y oldpkg
 apt-get install -y badpkg
-true   # dorc: elided [apt-get install -y nginx] (already converged / dead branch)
+# apt-get install -y nginx   # dorc: elided (already converged / dead branch)
 apt-get purge -y gonepkg
 apt-get install -y curl

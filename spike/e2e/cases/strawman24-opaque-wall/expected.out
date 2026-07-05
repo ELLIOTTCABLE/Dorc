@@ -32,6 +32,6 @@ apt_get__predict 'install' '-y' 'curl'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=hol
 #   site 2  apt-get install curl — converged, but PAST the opaque wall ⇒ unresolvable ⇒ RUNS.
 # The safe floor (a fully-unmodeled command poisons everything downstream) already works at
 # HEAD; contrast strawman24-modeled-wall, where a modeled-but-partial wall under-poisons.
-true   # dorc: elided [apt-get install -y nginx] (already converged / dead branch)
+# apt-get install -y nginx   # dorc: elided (already converged / dead branch)
 hork wombat
 apt-get install -y curl

@@ -38,4 +38,4 @@ apt_get__predict 'install' '-y' 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=ho
 #           (both run). Differential: exec_check + expected.ran pin the run-set; gate-6 attributes
 #           the elided install to its replace license (probe is mock-reproducible ⇒ NOT authored).
 apt-get install -y oldpkg
-true   # dorc: elided [apt-get install -y nginx] (already converged / dead branch)
+# apt-get install -y nginx   # dorc: elided (already converged / dead branch)

@@ -47,4 +47,4 @@ systemctl__predict 'enable' 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds;
 # claims"); the footprint-expansion bridge (touching package REACHES its service) is the Stage-5
 # non-blunt fix. Behaviour here: the other-kind fact SURVIVES — that is the point.
 apt-get install -y nginx
-true   # dorc: elided [systemctl enable nginx] (already converged / dead branch)
+# systemctl enable nginx   # dorc: elided (already converged / dead branch)

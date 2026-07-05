@@ -42,5 +42,5 @@ systemctl__predict 'enable' 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds;
 # shown inside one case. Contrast guard23-no-vouch-runs (no vouch ANYWHERE ⇒ every converged
 # site runs; the weld closed the old vouchless-elide gap). This floor reds if a build elides the
 # un-vouched systemctl site, or runs the vouched apt site.
-true   # dorc: elided [apt-get install -y nginx] (already converged / dead branch)
+# apt-get install -y nginx   # dorc: elided (already converged / dead branch)
 systemctl enable nginx

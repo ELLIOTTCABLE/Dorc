@@ -33,6 +33,6 @@ apt_get__predict 'install' '-y' 'curl'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=hol
 #   site 2  apt-get install curl — converged, but past the wall ⇒ runs.
 # Same bytes, worse oracle COVERAGE ⇒ fewer elisions (1, vs 3 for all-converged-clean). The
 # yardstick turns the cost of a coverage gap into a number.
-true   # dorc: elided [apt-get install -y nginx] (already converged / dead branch)
+# apt-get install -y nginx   # dorc: elided (already converged / dead branch)
 systemctl enable nginx
 apt-get install -y curl

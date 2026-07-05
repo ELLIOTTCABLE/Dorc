@@ -34,4 +34,4 @@ apt_get__predict 'install' '-y' 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=ho
 #   site 1  apt-get install nginx — CONVERGED (present in the DB), backing package:nginx disjoint
 #           from the kill's footprint package:oldpkg ⇒ SURVIVES the running kill ⇒ ELIDES.
 apt-get purge -y oldpkg
-true   # dorc: elided [apt-get install -y nginx] (already converged / dead branch)
+# apt-get install -y nginx   # dorc: elided (already converged / dead branch)

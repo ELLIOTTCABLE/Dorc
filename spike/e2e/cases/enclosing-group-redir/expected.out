@@ -24,5 +24,5 @@ apt_get__predict 'install' '-y' 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=ho
 #!/bin/sh
 # dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
 
-true   # dorc: elided [apt-get install -y vim] (already converged / dead branch)
+# apt-get install -y vim   # dorc: elided (already converged / dead branch)
 { apt-get install -y nginx; } > /var/log/provision.log

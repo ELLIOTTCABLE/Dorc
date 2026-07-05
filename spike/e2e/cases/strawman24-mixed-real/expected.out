@@ -50,7 +50,7 @@ apt_get__predict 'install' '-y' 'vim'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=hold
 # NB: no `set -e` — errexit forces converged MUTATORS to run (206 §2 cost), which would mask the
 # curl elision; that interaction is its own axis (see the yardstick strain ledger).
 true || :   # dorc: elided [dpkg -s nginx >/dev/null 2>&1; apt-get install -y nginx] (already converged / dead branch)
-true   # dorc: elided [apt-get install -y curl] (already converged / dead branch)
+# apt-get install -y curl   # dorc: elided (already converged / dead branch)
 apt-get install -y oldpkg
 hork wombat
 apt-get install -y vim

@@ -40,6 +40,6 @@ apt_get__predict 'install' '-y' 'curl'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=hol
 # and NO wall anywhere ⇒ MAXIMAL elision: all three sites elide, the apply run-set is empty,
 # and the differential proves it safe (every bare-book line is license-attributed to a Replace).
 # This is the ceiling the pre-wall elide tier reaches WITHOUT the golden-hill past-wall machinery.
-true   # dorc: elided [apt-get install -y nginx] (already converged / dead branch)
-true   # dorc: elided [systemctl enable nginx] (already converged / dead branch)
-true   # dorc: elided [apt-get install -y curl] (already converged / dead branch)
+# apt-get install -y nginx   # dorc: elided (already converged / dead branch)
+# systemctl enable nginx   # dorc: elided (already converged / dead branch)
+# apt-get install -y curl   # dorc: elided (already converged / dead branch)

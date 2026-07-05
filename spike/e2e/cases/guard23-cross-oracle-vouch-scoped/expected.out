@@ -38,6 +38,6 @@ apt_get__predict 'install' '-y' 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=ho
 # off A's vouch — this floor reds if it does (an extra `systemctl is-enabled` check appears, or
 # the enable is suppressed). rundelta pins verb-scope within ONE oracle; no-vouch-runs pins the
 # zero-vouch case; this pins the CROSS-oracle scope the other two leave open.
-true   # dorc: elided [apt-get install -y nginx] (already converged / dead branch)
+# apt-get install -y nginx   # dorc: elided (already converged / dead branch)
 hork wombat
 systemctl enable foo

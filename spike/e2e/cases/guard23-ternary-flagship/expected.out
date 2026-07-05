@@ -59,7 +59,7 @@ apt_get__is_converged() {
 # The probe half additionally pins the sibling the witness needs: a VOUCHED site past the
 # wall still ships its read-only probe (plan-prediction and apply-guard are the same code,
 # plans/233 §"The guard-license"; no probe-verdict ⇒ no witness ⇒ no guard).
-true   # dorc: elided [apt-get install -y nginx] (already converged / dead branch)
+# apt-get install -y nginx   # dorc: elided (already converged / dead branch)
 hork wombat
 ( apt_get__is_converged install -y curl ) || apt-get install -y curl   # dorc: guard [package converged-vouch; probe: holds]
 apt-get install -y vim
