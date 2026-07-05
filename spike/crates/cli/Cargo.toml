@@ -19,5 +19,13 @@ dorc-analysis = { path = "../analysis", version = "0.0.0" }
 dorc-oracle = { path = "../oracle", version = "0.0.0" }
 dorc-plan = { path = "../plan", version = "0.0.0" }
 
+# ack-5 (deps are fine OUTSIDE the DST kernel — "boring UI crap is exactly where dependencies
+# buy the most"): the CLI EDGE ONLY. anstream/anstyle give stderr severity color with correct
+# Windows VT handling + isatty auto-detection + NO_COLOR — plain-when-piped is load-bearing for
+# golden-safety (the e2e harness captures stderr to a file ⇒ non-tty ⇒ color auto-stripped). The
+# KERNEL crates stay dependency-clean (inv-determinism unmoved). Exact-pinned (wildcards=deny).
+anstream = "=0.6.18"
+anstyle = "=1.0.10"
+
 [lints]
 workspace = true

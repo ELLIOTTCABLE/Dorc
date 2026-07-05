@@ -2904,25 +2904,56 @@ fn advisory_filter(advisory: bool, diags: &[dorc_core::Diagnostic]) -> Vec<dorc_
 /// the number they type back as `:N`). None of the frame lines start with `<stage>: error[`, so
 /// they stay inert to gate-3. Any folded ` = note:` continuations (a lowered `Diag`'s body) print
 /// AFTER the region, so the caret frame lands rustc-style right beneath the title. I/O-edge only.
+///
+/// ack-5 color: the SEVERITY WORD is the severity/tier channel — red error / yellow warning / cyan
+/// note — written through `anstream::stderr()`, an [`anstream::AutoStream`] that AUTO-STRIPS the
+/// ANSI on a non-tty and honors `NO_COLOR` (+ enables Windows VT on a real console). Plain-when-
+/// piped is load-bearing: the e2e harness captures stderr to a FILE ⇒ non-tty ⇒ the color vanishes,
+/// so the gate-3/gate-7 needle-matching (and every golden) is byte-identical to the un-colored form.
 fn report(stage: &str, source: Option<(&str, &str)>, diags: &[dorc_core::Diagnostic]) {
+    use std::io::Write as _;
+    let mut w = anstream::stderr();
     for d in diags {
-        let sev = match d.severity {
-            Severity::Error => "error",
-            Severity::Warning => "warning",
-            Severity::Note => "note",
-        };
+        let (word, style) = severity_style(d.severity);
         // Split the message so the region frame lands right after the TITLE line, before any
         // folded ` = note:`/` = help:` continuations a lowered `Diag` carries in its message.
         let (title, folded) = match d.message.split_once('\n') {
             Some((t, rest)) => (t, Some(rest)),
             None => (d.message.as_str(), None),
         };
-        eprint!("{stage}: {sev}[{}]: {title}", d.code.0);
-        eprint!("{}", dorc_core::diag::render_legacy_region(d, source));
-        match folded {
-            Some(rest) => eprintln!("\n{rest}"),
-            None => eprintln!(),
-        }
+        // The severity word carries the ANSI (stripped when piped); the `[code]` + region + notes
+        // are plain. `{style}` opens the style, `{style:#}` resets it (anstyle's Display shape).
+        let _ = write!(w, "{stage}: {style}{word}{style:#}[{}]: {title}", d.code.0);
+        let _ = write!(w, "{}", dorc_core::diag::render_legacy_region(d, source));
+        let _ = match folded {
+            Some(rest) => writeln!(w, "\n{rest}"),
+            None => writeln!(w),
+        };
+    }
+    let _ = w.flush();
+}
+
+/// The (severity word, [`anstyle::Style`]) for a diagnostic (ack-5 — color as the severity/tier
+/// channel): red error, yellow warning, cyan note. The style is rendered to ANSI only on a tty
+/// (the [`anstream::AutoStream`] in [`report`] strips it otherwise), so the word text is what the
+/// e2e needle-matching sees.
+fn severity_style(severity: Severity) -> (&'static str, anstyle::Style) {
+    use anstyle::AnsiColor;
+    match severity {
+        Severity::Error => (
+            "error",
+            anstyle::Style::new()
+                .fg_color(Some(AnsiColor::Red.into()))
+                .bold(),
+        ),
+        Severity::Warning => (
+            "warning",
+            anstyle::Style::new().fg_color(Some(AnsiColor::Yellow.into())),
+        ),
+        Severity::Note => (
+            "note",
+            anstyle::Style::new().fg_color(Some(AnsiColor::Cyan.into())),
+        ),
     }
 }
 
