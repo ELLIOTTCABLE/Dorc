@@ -121,9 +121,9 @@ src_svc(){
    systemctl list-units --type=service --all --plain --no-legend --no-pager 2>/dev/null \
    | awk -v E="$enf" '
         BEGIN{ while((getline line < E)>0){ split(line,a,"\t"); en[a[1]]=a[2] } }
-        { unit=$1; load=$2; active=$3; sub=$4;
+        { unit=$1; load=$2; active=$3; sst=$4;    # NOT `sub` — reserved awk fn (mawk rejects)
           e=(unit in en ? en[unit] : "?");
-          print "svc\t" unit "\tload=" load " active=" active " sub=" sub " enabled=" e }'
+          print "svc\t" unit "\tload=" load " active=" active " sub=" sst " enabled=" e }'
    rm -f "$enf" 2>/dev/null
    # top-level health rollup — one crash-loop flips this to `degraded` (cheap wide net)
    rec svc "@system-state" "value=$(systemctl is-system-running 2>/dev/null)"
