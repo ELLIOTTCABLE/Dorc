@@ -344,27 +344,31 @@ In practice, what "corral" it *really* boils down to is two things:
 
 1. rearranging the danger (often *concentrating* the dangerous unknowns into
    focused locations, where users have more leverage to deal with them), and
-2. *attributing* the danger (ensuring users know when, where, why, and
-   *because-of-whom* something went wrong.)
+2. *attributing* the danger to an opt-in (ensuring users know when, where, why,
+   and *because-of-whom* something went wrong; and ensuring that's not the
+   default, mindless path - attribution-to-fixer requires consent-to-fix.)
 
 Don't mistake the second one as CYA blame-game playing: the quickest resolution
 to a real-world problem *is* through attribution.
 
 You shift leverage into a place where someone *can* effectively fix it, and you
-ensure fixes to that class of problems get *routed to that empowered person. In
+ensure fixes to that class of problems get *routed to that empowered person*. In
 Dorc, this usually looks like a deep provenance-web, and language-design that
 concentrates and surfaces uncertainty, putting all the uncertainty we possibly
 can *into some particular person's hands*.
 
-And here's where spelling-as-sh shines:
+And that's where spelling-as-sh shines:
 
 **authorship.**
 
-If we never generate code, if we never transpile or collate or restrict, then
-there's always *a particular bit of actual-sh, written by a particular actual
-human*, that made a particular thing happen on a server. Someone is
-*answerable*; and with Dorc's help, we can try to ensure their *answer* is a
-quick "oops, I can fix this."
+If we avoid generating code, if we hard-avoid transpilation, collation, or
+restriction, then there's always *a particular bit of actual-sh, written by a
+particular actual human*, that made a particular thing happen on a server.
+Someone is *answerable*; and with Dorc's help, we can try to ensure their
+*answer* is a quick "oops, I can fix this." Having the user write plain sh,
+*means we *get* to just *move it into place*, and run it, and make decisions
+*based on it - but there's always "an original command" that existed,
+*as-human-written, before we took any action.
 
 (In many cases, that person is you, wearing your engineer-hat instead of your
 admin-hat; which is aligned-incentives with Dorc-as-gradual-enhancement-engine:
@@ -476,6 +480,12 @@ our horizon:
    that blast-radius is low; infectious/spreading risk is worse than localized
    risk.
 
+All of these stay live and in-play, though; everything in ops is a tradeoff, and
+there are places where we judge that to extract *enough* value, it is worth it
+to bend these rules. (Most notably, as described above, collaborative
+full-elision *provably requires* nonlocality; and that particular 'hot corner'
+is the source of much of these design-theorems.)
+
 
 ### The shared-horizon of fault
 
@@ -485,7 +495,7 @@ We *want* to encourage you to design high-quality oracles and share them; it's
 hard work, it's work that's often goes under-done and under-maintained and
 under-shared in the ops space. But that is, simultaneously, brushing
 perilously-close to harm-0 above (Dorc creating risk that didn't exist before)
-*and* harm-1 (Dorc spreading risk to others.)
+*and* harm-2 (Dorc spreading risk to others.)
 
 Further, introducing a collaborative space introduces *communication failures*:
 oracle-author-A doesn't know oracle-author-B, and *certaintly* doesn't know all
@@ -538,3 +548,9 @@ This means we, Dorc, not individual oracles, need to manage that horizon: we
 need to decide, dictate, and advise oracle-authors on *where the horizon lies* -
 the outer boundaries of their contract-to-the-admin are a part of their
 contract-to-us.
+
+That said, 'hoziron' is always a *minimum*: it's the
+shared-basis-of-attention-discard; it's what we, Dorc and our
+(trained-by-documentation-and-lint) oracle-writers *promise* the admin they can
+stop worrying about. Oracle authors, and Dorc, can of course always go
+above-and-beyond to produce *extra* safety.
