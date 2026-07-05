@@ -1,3 +1,0 @@
-# probe-results: site 1 is the install (package:nginx#installed); holds ⇒ converged. door-3
-# is `||`-only, so `&& true` does not unlock — the install runs (StatusRelaxable + ⊤).
-site 1 effect=holds
