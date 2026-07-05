@@ -1,0 +1,73 @@
+> QUARANTINED RAW LANE MATERIAL - 24K cross-model language-design crosscheck (2026-07-05).
+> NOT adjudicated findings. The adjudicated verdict is Research/notes/24Kc-language-crosscheck-adjudication.md.
+> RAW final report: Codex/GPT-5.5 (OpenAI, foreign lineage), ADVERSARIAL stance lane. Un-adjudicated.
+> Archived verbatim from the session scratchpad post-compaction, at the human's direction.
+> Do not cite as authority; do not read during future crosscheck skill-ups (contaminates pre-registration).
+
+**1. PRE-REGISTERED LESSONS**
+
+No lessons were added after corpus exposure. Verbatim gate list:
+
+1. A shell-adjacent language must state which surface is “plain shell accepted unchanged,” which surface is “new dialect,” and which constructs are intentionally rejected; a user program must not be silently reinterpreted as metadata merely because it happens to follow an analyzable idiom. This is falsified by any load-bearing feature whose recognition boundary is implicit, undocumented, or likely to collide with ordinary shell style.
+
+2. Annotation-like information must have a migration bargain: either it is erased/inert with respect to the underlying program, or it is visibly opt-in and versioned. This is falsified by spellings that change command behavior, exit contracts, stdout/stderr, or user-facing artifacts while being presented as gradual/optional information.
+
+3. The notation must preserve closeness of mapping for its declared users. If the admin thinks in ordinary shell tasks and the oracle author thinks in reusable correctness contracts, the spelling should make that role distinction obvious at the point of use. This is falsified by role markers, magic names, or argument conventions that require remembering tool-internal ontology rather than reading the script as shell.
+
+4. Avoid hidden dependencies and distant authority. A local line of shell should not acquire meaning from far-away generated code, naming conventions, or implicit strip/rewrite phases unless the dependency is inspectable and mechanically stable. This is falsified by semantics that require cross-file/name-family knowledge to predict what a command means.
+
+5. Exit status and streams are already dense shell channels; new language meaning placed there must be narrow, documented, and robust under composition with existing shell idioms (`if`, `!`, `set -e`, pipelines, command substitution). This is falsified by meanings that ordinary shell control flow can accidentally erase, invert, or consume.
+
+6. Generated code placed in user artifacts is part of the language surface. It must be readable, stable enough for review, and clearly separated from user-authored code. This is falsified by machine output that users are expected to learn from, edit around, diff, or trust while also being treated as an internal implementation detail.
+
+7. Compatibility is a policy plus a corpus, not a vibe. Before first external libraries, the language needs a named compatibility boundary, a version/deprecation story, and regression fixtures that represent real user code. This is falsified by “we can respell it later” claims attached to spellings already used across showcase, fixtures, or standing rulings.
+
+8. Prefer a small orthogonal set of spellings over local convenience aliases. Shell-adjacent languages pay heavily for every extra special form because users already carry shell, POSIX, tool-specific flags, and deployment conventions. This is falsified by multiple spellings for the same semantic axis, or by one spelling carrying unrelated meanings.
+
+9. A gradual system must support partial adoption without forcing authors to fully model the world up front. Missing information should have explicit conservative defaults, and richer information should compose monotonically. This is falsified by fixtures where useful library authoring requires all-or-nothing role families, sentinel commands, or paired metadata that fails nonlocally when incomplete.
+
+10. Strawman syntax is not harmless once it appears in docs, fixtures, generated output, and tests. Treat such spellings as compatibility candidates unless there is a concrete replacement protocol and evidence that no first user will depend on them. This is falsified by any “temporary” syntax that is already load-bearing in end-to-end docs or corpus examples.
+
+Phase-1 source frame used: Cognitive Dimensions / notation usability, TypeScript and PEP 484’s erasable optional-typing bargain, Go/Swift compatibility discipline, Oil’s split between compatible shell and new shell, fish’s explicit design laws, and designer regret/postmortem sources. Load-bearing prior-art claims: usability work evaluates notation with dimensions like viscosity/hidden dependencies; TypeScript/PEP 484 make type metadata optional/erasable or explicitly tool-directed; Go/Swift treat compatibility as a maintained policy/corpus; shell successors that extend shell make compatibility boundaries explicit.
+
+**2. FINDINGS**
+
+23-fd1. **The “append the oracle to the book” path breaks the promised plain-shell off-ramp.** Severity high · confidence high · lessons 1,2,7,10.  
+Evidence: README promises “pure, idiomatic POSIX-sh” and gradual enhancement at `README.md:4-8`; DESIGN promises trivial off-ramp via `dash -s <myscript.dorc.sh` and “all just executable shell-script” at `DESIGN.md:75-81`; USER_STORY explicitly says oracles and runbooks can share a file at `USER_STORY.md:231-233`, then shows `foobar.is_converged()` and inline typed bind syntax at `USER_STORY.md:235-246`. The project’s own round-17 crosscheck says the inline/dotted spelling is not inert: `dash` aborts, `bash` corrupts, dotted names fail `dash -n`, and the stripper becomes correctness-critical at `Research/plans/17N-named-kinds-discipline-and-cooperation.md:35-42`; the runnable hazard file repeats this at `Research/notes/17x-strawmen/adversarial/r17-crosscheck-runnable.straw.sh:29-34`. Current KNOBS accepts de-facto inline typed dialect and pays the cost by stripping at `KNOBS.md:58-64`.  
+Kill attempt: The best defense is KNOBS’ containment: annotations live only in oracle bodies, books stay verbatim-runnable. That defense fails for the showcased adoption path where the oracle is appended to the book’s own file. A POSIX shell parses function definitions before deciding whether they are “oracle only”; the shared file is no longer the off-ramp artifact unless Dorc strips it first. This survives “strawman” because dotted role functions and inline annotations are already standing law/de-facto built, not just render decoration.
+
+23-fd2. **`is_converged()` is named like an answer but currently acts as an elision license.** Severity high · confidence high · lessons 2,3,7,10.  
+Evidence: USER_STORY says “the function’s name is the license” and authoring the verdict function licenses Dorc to act on yes at `USER_STORY.md:248-259`. ORACLE_PROVIDES explicitly distinguishes “answer” from “permission” at `ORACLE_PROVIDES.md:151-162`, then defines a separate license ladder at `ORACLE_PROVIDES.md:167-184`, but says the current ruling welds convergence authoring to rungs 1+2 at `ORACLE_PROVIDES.md:209-217`. KNOBS says the incumbent behaves as single-rung and later change would churn every published oracle’s implied license at `KNOBS.md:66-70`. spike/CLAUDE confirms authoring `<provider>.is_converged()` is the vouching act at `spike/CLAUDE.md:203-215`.  
+Kill attempt: The corpus knows this is dangerous and has a better taxonomy. That reduces novelty, not severity. The current shipped/onboarding spelling still teaches the first oracle author that an answer function is a blame/permission speech-act. This is exactly the optional-typing migration rake: a “descriptive” annotation is not inert.
+
+23-fd3. **The rc-partition/inverted-sense design is too easy to spell backwards in real shell.** Severity medium · confidence high · lesson 5.  
+Evidence: rc partition is fixed: 0 named sense, 1 complement, ≥2 confused at `spike/CLAUDE.md:246-250`; `is_diverged` requires engine-emitted sense-flip glue at `spike/CLAUDE.md:251-255`. The dedicated fixture says naive `( apt_get__is_diverged args ) || purge` would skip purge exactly when needed at `spike/e2e/cases/guard23-inverted-vouch-never-backwards/package.oracle.sh:20-28`. The same ruling warns authors not to collapse statuses with `!`, `|| true`, or pipeline tails at `spike/CLAUDE.md:253-255`; older runnable hazards show `|| true` makes a lifted guard always report holds at `Research/notes/17x-strawmen/adversarial/r17-crosscheck-runnable.straw.sh:19-21`.  
+Kill attempt: They have tests for the inverted case and acknowledge the rule. That prevents calling it an implementation bug. It remains a language-surface ergonomic hazard: shell’s core boolean channel is overloaded with Dorc verdict meaning, and the safe form depends on remembering whether the function name is positive or negative.
+
+23-fd4. **The flagship strict-mode style currently fights the value proposition.** Severity medium · confidence high · lessons 1,5.  
+Evidence: USER_STORY’s base book opens with `set -eu` at `USER_STORY.md:17-29` and later claims ordinary shell habits do not defeat binding at `USER_STORY.md:260-263`. The e2e fixture `strawman24-errexit-defeats` says adding `set -e` makes every mutator status consumed, blocks elision, collapses elide fraction toward 0, and that the USER_STORY flagship depends on the recovery program maturing at `spike/e2e/cases/strawman24-errexit-defeats/book.sh:1-12`.  
+Kill attempt: This may be “analyzer not mature yet,” not final language design. But it is not a random implementation gap: it follows from shell status as an observable and from `set -e` being a common idiom the showcase itself uses. Management should not be sold “plain shell habits compose” until this is either solved or documented as a real compatibility boundary.
+
+23-fd5. **Strip-only helper naming creates a reserved namespace without a hygiene story.** Severity medium · confidence high · lessons 4,6,7.  
+Evidence: guard code strips `name.predict()` to `name_predict()`, nothing else changed, at `spike/CLAUDE.md:175-180`. The collision fixture says a user-defined `apt_get__predict` collides with the guard-tier shipped name; shell function redefinition is last-writer-wins; collision-dodging rename is unspellable under strip-only; lawful verdicts are refuse-and-run at `spike/e2e/cases/guard23-reingest-collision-verbatim/book.sh:11-17`.  
+Kill attempt: The fallback is safe: refuse and run. That means this is not a correctness kill. It is still a language compatibility issue: a helper namespace is being reserved by convention after the fact, and ordinary user functions can silently destroy optimization until the analyzer notices.
+
+23-fd6. **The same trailing `:` mark has role-dependent semantics, making local shell harder to read.** Severity medium · confidence medium · lessons 3,4,8.  
+Evidence: `predict()` uses trailing marks to establish facts, e.g. `dpkg-query ... : package:"$pkg".installed` at `spike/e2e/cases/converged/package.oracle.sh:10-15`; `reaches()` uses trailing marks to type emitted stdout, e.g. `dpkg -L "$1" : file` at `spike/e2e/cases/strawman24-reach-crossauthor/crossauthor.oracle.sh:25-31`. Round 24 explicitly names this as a cost: “per-ROLE mark semantics” and pipelines needing a mark-carrying carve-out at `Research/notes/24G-kind-owner-family-design-round.md:93-98`.  
+Kill attempt: This is an intentional “house pattern,” and 24G says to document it loudly. That keeps it from being a surprise bug. But it is still a context-sensitive dialect rule: the meaning of the same visual marker depends on which magic role-family encloses it.
+
+23-fd7. **There is not yet a compatibility/version story, but the corpus already has compatibility candidates.** Severity high · confidence medium · lesson 7,10.  
+Evidence: ORACLE_PROVIDES says the eventual contract is not assembled yet and every entry still owes settled spelling, enforcement home, and degradation story; “no entry has paid all three” at `ORACLE_PROVIDES.md:238-243`. USER_STORY says stages 5-7 spellings are strawman-tier and expected to churn at `USER_STORY.md:726-731`. But KNOBS says inline dialect is stamped/implemented at `KNOBS.md:61-64`, role/license names are welded by ruling at `spike/CLAUDE.md:203-215`, and fixtures already carry `is_converged`, `touches`, `resolve`, and `reaches` examples, e.g. `spike/e2e/cases/strawman24-reach-crossauthor/crossauthor.oracle.sh:15-43`.  
+Kill attempt: Prototype churn is legitimate before users. The finding survives because the prompt says first real library/user is imminent, and the corpus itself distinguishes “strawman spelling” from “settled function-name-as-contract.” A compatibility policy must precede that onboarding, not follow it.
+
+**3. CLEARED**
+
+23-clr1. **The survival-tier unsoundness is not hidden.** USER_STORY gives it an explicit admin flag, names the naked trust, itemizes the bite conditions, and says the only silent under-execute corner is footprint/reach/resolve incompleteness at `USER_STORY.md:473-481` and `USER_STORY.md:642-681`. This is good language/product hygiene.
+
+23-clr2. **Silence generally degrades safely.** ORACLE_PROVIDES repeatedly says absent decoders/readings/verdicts fall to opaque/run floors at `ORACLE_PROVIDES.md:45-46`, `ORACLE_PROVIDES.md:91-92`, and `ORACLE_PROVIDES.md:164-165`. That matches the gradual-adoption lesson.
+
+23-clr3. **The render/artifact split is better than my initial suspicion.** spike/CLAUDE distinguishes shipped/off-ramp artifact from plan-render surface and says disclosure overlays belong to render, not embedded artifact comments, at `spike/CLAUDE.md:144-151`. So I am not claiming generated explanatory comments necessarily pollute user artifacts.
+
+23-clr4. **`reaches()` naming is a genuine design win.** 24G explicitly says completeness-shaped claims need names that bias authors toward including causal reach, and rejected `manifest()` for being too file-list-shaped at `Research/notes/24G-kind-owner-family-design-round.md:111-126`. That is the right kind of language-design reasoning.
+
+23-clr5. **The project has noticed many of its sharp edges.** The strongest criticisms above are not “they never saw it”; they are “the corpus shows they accepted or postponed it.” That matters: management should distinguish known, priced unsoundness from unsettled language surface that will become permanent once a real library depends on it.
