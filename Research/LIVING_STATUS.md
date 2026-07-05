@@ -22,7 +22,14 @@ go to r25; isolated agents commit granularly on their own branches → conductor
 
 **Live agents (background):** **P2 observer** (`a3557…` — dorc-INDEPENDENT on-box snapshot+diff, wider
 than dorc's model, §7 noise-governance [A/A envelope, world-drift, planted canaries]; spins its own
-`dorc-r25` box; HARD-fenced out of `crates/`; catalogues dorc-side differential needs). **verify-errand**
+`dorc-r25` box; HARD-fenced out of `crates/`; catalogues dorc-side differential needs). **⚠ P2 HALTED mid-run by the
+harness security-net (flagged its box-spend as an unauthorized real-world transaction — the net is
+PER-SUBAGENT and can't see the conductor's standing spend-auth); its box was orphaned then
+conductor-REAPED (`3d34d700` destroyed, eurydice safe, key confirmed valid). Its harness is likely
+INCOMPLETE — salvage its commits. PROCESS-FIX: the CONDUCTOR provisions/destroys boxes going forward
+(subagent-spend trips the net → halt+orphan); agents work on a GIVEN box. Bugs found: `vultr.sh`'s
+auth-recheck fails on a VALID key (re-sources without `set -a`?); `vultr-cli instance delete` needs the
+FULL UUID (short id → 400 invalid-resource-format).** **verify-errand**
 (`a114…` — in-repo `dorc plan` on the book: settle pred-1-errexit + the host-guard-wall MECHANIC;
 amends `255 §5`). Both report/cherry-pick back to conductor.
 
