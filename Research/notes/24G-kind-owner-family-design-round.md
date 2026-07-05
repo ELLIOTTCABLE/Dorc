@@ -181,3 +181,23 @@ retains its full ergonomics cost. The own-coordinate printf was precisely the se
 (never bit when superfluous, near-universally required). Applies forward to the smell-layer's
 design (a mostly-spurious smell decays the same way: ignored, valueless, still noisy) and
 retroactively validates §5's means-nothing-not-refusal posture.
+
+**rul24-warnings-tune-high (human, same date — SCOPES the razor; supersedes the smell-layer
+sentence above where they pull apart).** The cargo-cult razor governs INPUT-side author
+ceremony (required idioms, boilerplate). For OUTPUT-side warnings/diagnostics/hints, the
+default INVERTS during the spike: **tune high.** Three grounds (human's, near-verbatim):
+(1) *mechanism-keepalive* — a seemingly-noisy warning keeps the internal machinery alive
+(detection, spans, provenance-threading, routing) for later, better, more-critical warnings;
+removing/silencing/muting/filtering is always cheap, while adding high-quality detection late
+is expensive (the detectable-moment is during construction, when the builder holds the
+analysis). (2) *LLM-feedback* — the spike is LLM-built, and warnings surfacing in agents'
+tool-output re-teach invariants at exactly the moment of relevance (the same mechanism that
+makes repeated context effective). (3) *warnings ARE the product* — Dorc's hint/attribution/
+why channel is a primary surface (the USER_STORY nag-loop drives the entire enhancement
+curve), so the training-corpus and senior-engineer distrust-of-noise priors are both
+miscalibrated for this product ("we're both poisoned here"), and fighting that tune is the
+correct default. Reconciliation with the standing warning-fatigue rule (AGENTS.md fail-fast:
+only root-cause reported): tune-high applies to DISTINCT root-cause detections;
+correlated-cascade suppression stands unchanged. End-user attention-economy pressure routes
+to tiering/curation/muting — the late, cheap knobs — never to not-building the detection.
+Binding on builder briefs forward.
