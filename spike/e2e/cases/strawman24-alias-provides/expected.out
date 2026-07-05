@@ -1,0 +1,53 @@
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc — the record is the out-of-band lane).
+
+# site 0: package:nginx#installed
+apt_get__predict() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   pkg="$1"
+   if [ "$2" = "" ]; then
+      case $verb in
+         install) dpkg-query -W "$pkg" >/dev/null 2>&1 ;;
+      esac
+   fi
+}
+apt_get__predict 'install' 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'site 0 effect=%s rc=%s\n' "$_e" "$_rc"
+# site 1: package:nginx-full#installed
+apt_get__predict 'install' 'nginx-full'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'site 1 effect=%s rc=%s\n' "$_e" "$_rc"
+# dorc resolver-probe (read-only, 24F §3): owner-declared identity canonicalization. Each
+# resolver-bearing coordinate runs its kind's <kind>.resolve() with the entity; when run it
+# prints the canonical form (or a dangling marker), re-keyed by the coordinate:
+#   resolv <kind:entity> canon=<canonical>   |   resolv <kind:entity> dangling
+# The engine canonicalizes both footprint and backing coords through this before disjoint.
+
+# resolv package:nginx via package.resolve()
+package__resolve() {
+   dpkg-query -W -f '${Package}\n' -- "$1" 2>/dev/null || printf '%s\n' "$1"
+}
+_c=$(package__resolve 'nginx' 2>/dev/null); _rr=$?; if [ "$_rr" -eq 0 ] && [ -n "$_c" ]; then printf 'resolv package:nginx canon=%s\n' "$_c"; else printf 'resolv package:nginx dangling\n'; fi
+# resolv package:nginx-full via package.resolve()
+_c=$(package__resolve 'nginx-full' 2>/dev/null); _rr=$?; if [ "$_rr" -eq 0 ] && [ -n "$_c" ]; then printf 'resolv package:nginx-full canon=%s\n' "$_c"; else printf 'resolv package:nginx-full dangling\n'; fi
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+# strawman24-alias-provides (24F Stage 5 — the aliasing-closure flagship). The wall and the victim
+# name ONE referent by TWO names — a provides/virtual alias (`nginx` vs `nginx-full`). token-equality
+# calls `package:nginx` and `package:nginx-full` DISJOINT, so without the closure the converged victim
+# would WRONGLY SURVIVE the running wall (a silent under-execute — the one cell that fails UNSAFE, 24F
+# §1). The `package` kind's owner ships a `package.resolve()` (dpkg-query provides-resolution): the
+# engine canonicalizes BOTH the footprint coord and the backing coord through it before `disjoint`.
+#   site 0  apt-get install nginx       — DIVERGED (absent) ⇒ RUNS. The footprinted wall (package:nginx).
+#   site 1  apt-get install nginx-full  — CONVERGED (holds), PAST the running wall. Its backing
+#           (package:nginx-full) canonicalizes to `nginx`; the wall footprint (package:nginx)
+#           canonicalizes to `nginx` too ⇒ a canonical HIT ⇒ the closure correctly DEMOTES the victim
+#           to RUN (it re-installs the shared referent the wall disrupted). Under token-equality it
+#           would have elided (wrong-survival). The differential: expected.ran runs BOTH; the closure
+#           closed the under-execute. may-alias=0 (a proven HIT, not a resolver gap).
+apt-get install nginx
+apt-get install nginx-full

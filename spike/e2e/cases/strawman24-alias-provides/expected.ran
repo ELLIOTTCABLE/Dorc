@@ -1,0 +1,2 @@
+ran: apt-get install nginx
+ran: apt-get install nginx-full

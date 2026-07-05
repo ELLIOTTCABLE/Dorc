@@ -1,0 +1,14 @@
+#!/bin/sh
+# INERT probe shim — dpkg-query serves TWO read-only uses in this fixture:
+#   (1) RESOLVER `dpkg-query -W -f '${Package}\n' -- <pkg>` (the `-f` form): print the CANONICAL
+#       package. HOST model: `nginx-full` is a provides-alias of `nginx`, so BOTH canonicalize to
+#       `nginx` ⇒ the closure sees the alias.
+#   (2) CONVERGENCE `dpkg-query -W <pkg>` (no `-f`): exit rc. HOST: nginx NOT installed
+#       (rc 1 ⇒ diverged ⇒ the wall RUNS); nginx-full installed (rc 0 ⇒ converged ⇒ would-elide).
+# Read-only (a query, never a mutator); logs its argv for symmetry. Pure-sh (no real dpkg-query
+# under PATH=mocks-only).
+. "${0%/*}/.log"; _dorc_logged "$@"
+case " $* " in
+  *" -f "*) printf 'nginx\n' ;;
+  *) case " $* " in *" nginx-full "*) exit 0 ;; *) exit 1 ;; esac ;;
+esac
