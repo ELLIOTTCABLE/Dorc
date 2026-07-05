@@ -433,3 +433,50 @@ tier** — a `ConnectedPipes` side-map only.
 
 **Verified:** 154/154 e2e (freshly re-run by the close-out agent on the merged tip `cdca43b`) + all
 gates, conductor-protocol.
+
+## find-lcg-thinning CLOSED (LANDED 2026-07-05 — the §Stage-2b owed fix; wave-1 of the post-rotation queue)
+
+AI-authored (Fable conductor), appended per the accrete discipline. One Opus builder, isolated
+worktree; conductor-inspected the diff line-by-line, cherry-picked to `ai/spike3-r23` as
+`e3f67a5`, and verified the merged tree by own hand (fresh build · fmt · clippy `-D warnings` ·
+deny · typos · 25 suites 0-failed · **154/154 e2e**). Process-evidence, not proof (never-vouch).
+
+**The fix (root cause, not call-site):** `Lcg::chance` now draws via the high-bit Lemire
+`below()` instead of `next_u64() % den` — one line + doc-honesty edits, `hostsim/src/lib.rs`
+only. Rationale verified: `chance` has exactly ONE live caller today (`Host::seeded`), but
+`hostsim/CLAUDE.md` directs the future probe-flakiness fault-axis at `Lcg::chance`, so the
+primitive had to be fixed or the bug would be re-inherited. Mirrors `differential.rs`'s own
+already-correct `Rng::chance` (the 21D-triage fix); `differential.rs` itself untouched (frozen),
+its isolation re-verified in code, not assumed from 24C.
+
+**The concretization (sharper than the original finding):** with an odd multiplier + odd
+increment the LCG's low bit STRICTLY ALTERNATES, so for a two-candidate `Host::seeded` every
+seed produced exactly-one-of-two — the {both-converged} and {neither-converged} membership
+cells were UNREACHABLE at every seed, and the in-crate DST loops' curl-elision-fires branch
+(requires both converged) was structurally never exercised in-memory until this fix. Now
+exercised and green. New flavour-A pin
+`seeded_coins_decorrelate_so_the_full_subset_lattice_is_reachable` (128 seeds, asserts all four
+membership cells reachable; a regression to the low-bit draw vanishes {both}/{neither} ⇒ red).
+
+**No prize finding:** the un-thinned space exposed no latent engine bug — full workspace green
+(624 tests / 25 suites), e2e untouched as predicted (in-memory-only change).
+
+**Sweep provably unaffected (the brief's counters-will-shift expectation was wrong):**
+`dorc-sweep` draws every axis via `below()` directly and builds S0 via `Host::new`, never
+`Host::seeded` — counters byte-identical pre/post (3000 seeds: lying=641 / derived=220 /
+alias=147 / reach=97; depth run SWEEP_SEEDS=100000 all-green, every non-vacuity gate nonzero,
+all 9 topology classes reached by seed 69).
+
+**resid-24C-counter-drift (flagged, not repaired):** HEAD's general lying-net counter is **641**
+per 3000 seeds while this ledger's Stage-5A entry says 579 — ALREADY divergent before the lcg
+fix. The other three counters match exactly. ~SUSPECT the general counter shifted when later
+landings (reach/owncoord/pipe-guard) extended the generator and the 579 was never re-measured;
+the documented per-3000-seed numbers herein are LANDING-TIME snapshots, not stable invariants —
+read them that way. (The non-vacuity assertions, not the absolute counts, are the load-bearing
+thing.)
+
+**Process notes (bind future briefs):** (a) fresh worktrees have an UNTRUSTED `mise.toml` — a
+piped `cargo build | tail` masks the mise trust-error silently; briefs gain a step-0.5
+`mise trust`. (b) TWO of three wave-1 builders backgrounded the slow e2e then paused forever on
+a completion-notification that never re-wakes a stopped agent — briefs now say: run the final
+e2e in the FOREGROUND with a generous timeout, never backgrounded.
