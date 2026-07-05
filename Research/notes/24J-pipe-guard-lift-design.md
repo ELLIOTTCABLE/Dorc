@@ -1,6 +1,6 @@
 # 24J — the pipe-guard lift: fork resolved (connected probes; per-line is dead)
 
-AI-authored (Opus conductor), 2026-07-05, round 24. The design record for the pipe-guard FIX —
+AI-authored (Fable conductor), 2026-07-05, round 24. The design record for the pipe-guard FIX —
 the build that lifts `A | F || M` (`otelcol --version | grep -q "0.155.0" || curl … | tar xz`),
 the r25 trial-book shape the r25 arc is explicitly fenced off of (r24 owns the fix). The PINS
 and gap-anatomy are `24C` §pipe-guard (fixtures `strawman24-pipe-guard-*`; the XFAIL
