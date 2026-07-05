@@ -291,38 +291,22 @@ hork.is_converged() { hork --check "$@" ;}
 
 This *doesn't* buy you all of Dorc's functionality, but it buys the most of it,
 with the least effort; now (again, speaking in a vaccuum, because all of this is
-modulo *other* state-actors and CFG participants), as long as `hork --dry-run`
+modulo *other* state-actors and CFG participants), as long as `hork --check`
 passes, Dorc can safely make assumptions about `apt-get` speaking to
 `systemctl`. Abstract-interpretation is unpoisoned, and the richer machinery can
 run for those other commands; the poison-wall is lifted.
 
 However, for *better* behaviour, to *fully* lift the poison-wall in all cases
 (i.e. enable Dorc to elide *later* commands, even when probing surfaces that
-hork is diverged), you must ....
+hork is diverged), a lot more buy-in, from a lot more parties, becomes
+necessary. (The bet here is that that's *relatively few* parties - the
+gradual-enhancement curve might near a cliff at the very far end, but
+correspondingly-few tools need cliff-sized oracles; and we can try to ship
+high-quality examples that cover many important bases in the stdlib.)
 
-FILLME
+FIXME: write in detail about collaboration, consensus, etc - the
+       elision-past-wall story
 
-
-By-contract and by-dictate
---------------------------
-
-Besides ~computer science and hard engineering~, there's really only a small
-spectrum of ways we can *make* something true. We can "contract" it
-(we'll-do-if-you-do), or we can "dictate" it ("we-*stop*-if-you-don't".)
-
-We generally want to steer hard towards *contract* over dictate; that's a more
-precise meaning of 'best-effort.' We play defensively against exactly the errors
-we ask you not to make.
-
-However, there's some cases where we're either *forced*, or very very rarely
-choose, to *dictate* things - that is, explicitly exclude handling them, and
-*fail-fast*, in your face, abandoning our best-effort stance. For example:
-
- - clear, immediate errors in *Dorc-created* language features and idioms (i.e.
-   static typing errors when there *are* declared types, and they *disagree
-   irreconcilably*)
-
-(UNFINISHED, FILLME)
 
 
 Spelling, language-design, and the flavour we want
@@ -416,3 +400,141 @@ Either spell it idiomatically, or don't spell it as sh *at all*.
 
 When we break with sh, we break with sh *hard*, and try to follow actual modern,
 quality language-design principals.
+
+
+By-contract and by-dictate
+--------------------------
+
+Besides ~computer science and hard engineering~, there's really only a small
+spectrum of ways we can *make* something true. We can "contract" it
+(we'll-do-if-you-do), or we can "dictate" it ("we-*stop*-if-you-don't".)
+
+We generally want to steer hard towards *contract* over dictate; that's a more
+precise meaning of 'best-effort.' We play defensively against exactly the errors
+we ask you not to make.
+
+However, there's some cases where we're either *forced*, or very very rarely
+choose, to *dictate* things - that is, explicitly exclude handling them, and
+*fail-fast*, in your face, abandoning our best-effort stance. For example:
+
+ - clear, immediate errors in *Dorc-created* language features and idioms (i.e.
+   static typing errors when there *are* declared types, and they *disagree
+   irreconcilably*)
+ - when we *can* protect you from yourself, and we know something *provably, for
+   sure*
+
+Many modern languages are aggressive about types and correctness; they
+fail-fast. I personally consider that the *right path*, for the most part: it
+leads to tight software-development loops, and produces better software with
+less pain. However, it requires a totalistic knowledge of the world that Dorc
+explicitly refuses to attempt. Further, it requires *buy-in* that Dorc refuses
+to ask for. Dorc will live *alongside* other things it can't control; it might
+not even be the *major* player in your ops story. You might move partially onto
+it; you might use it for a small bounded task, it might need to coexist with a
+different style or pattern, or correspondinly, it might need to accept a day-one
+buy-in with an ocean of unreviewed, un-migrated 'legacy' scripting.
+
+Finally, the kinds of correctness that *matter* in this problem-space are only
+going to be ~10% amenable to anything Dorc can ever do, at all - the majority of
+pain you'll be feeling during ops-work is inescapable, and cannot be
+papered-over even by Dorc having *perfect* knowledge about the scripts you're
+handing it. Our best possible value-add isn't to be that tier of perfect, when
+the buy-in costs to you *attaining* that value are catastrophically high.
+
+
+### Contracts, boundaries, horizons
+
+Thus, as mentioned above, in many places, Dorc's core job is to "shuffle risk
+around." We take your incomplete work and failures, we accept them, and we try
+to concentrate and attribute the bite.
+
+Often, that bite is felt as 'contract':
+
+1. "If you, person-wearing-hat-A, does thing X; then Dorc will ensure Y."
+2. meanwhile "Dorc promises you, person-wearing-hat-B, Y will hold true; *as
+   long as person-A-did-X."
+
+As mentioned above, the value-add here is heavily dependant on *attribution*:
+knowing *why* Y did not hold, and critically, *what your next step is* to get
+back to work.
+
+"Contract" is, however, a documentation/marketing topic, at the end of the day:
+it's DX. Our *engine design* is primarily about carefully deciding where that
+contract lies, and which bits of risk it pushes to where; which corresponding
+work it will ask of which player, and what the consequences will be.
+
+These are generally the priorities when designing our contract, our edges, and
+our horizon:
+
+0. "do no harm"; this one's obvious, but Dorc not *introducing* risk that didn't
+   exist *before* is, of course, literal-bug territory, not design-territory.
+1. keep harms *attributable*: one of the worst mistakes we can make is to open
+   the door to *risk that is nobody's fault*. Risk-that-is-nobody's-fault, is
+   risk-that-nobody-can-*repair*. (This bites hard in "collaboration", above.)
+2. keep harms *local*: pursuant to gradual-enhancement, it's important to
+   maximally ensure that your mistakes cost *you*, as often as possible; and
+   that blast-radius is low; infectious/spreading risk is worse than localized
+   risk.
+
+
+### The shared-horizon of fault
+
+There's a natural asymmetry to fault in this space: 'engineer-hat' is almost
+always carrying a larger blast-radius, from Dorc's perspective, than admin-hat.
+We *want* to encourage you to design high-quality oracles and share them; it's
+hard work, it's work that's often goes under-done and under-maintained and
+under-shared in the ops space. But that is, simultaneously, brushing
+perilously-close to harm-0 above (Dorc creating risk that didn't exist before)
+*and* harm-1 (Dorc spreading risk to others.)
+
+Further, introducing a collaborative space introduces *communication failures*:
+oracle-author-A doesn't know oracle-author-B, and *certaintly* doesn't know all
+of the admins X, Y, and Z who are going to be using their work. Inversely, admin
+X is, realistically, not going to deeply read any documentation or communication
+from the majority of oracles they use: they're task-focused, they need `foobar`
+to stop blocking their deployes, they're going to install a `foobar` oracle and
+move on with their firefighting.
+
+For all these reasons combined, there's a truism to our by-contract,
+attributed-failures story that we can't work around:
+
+Errors that we *can't* attribute, are necessarily *our fault*.
+
+This isn't in the "our responsibility to fix or prevent" meaning of fault, to be
+clear. As elaborated above, it's *impossible* for us to even *know* about
+most/many of the things that may, by the above logic, be our fault.
+
+Hence, the 'horizon' - in a way, the inverse of the 'contract.' The contract is
+the small, bounded surface between Dorc-and-engineer (and in particular, the
+*exclaves* of the horizon; the places where we can *attributedly* transport risk
+between engineer and admin.) Instead of "here's what we-Dorc need from
+you-author, to keep the promises we make to yourself / to others", the horizon
+is "here's what we *decline* to promise, ever, forever."
+
+That is, the horizon is what we sell to admins: our product is inherently an
+*attention* product; "we promise you you don't need to worry about <x>, within
+bounds <y>."
+
+Part of <y> is the oracle-contract; so the very first part of the
+horizon is inherently "oracle-authors doing things wrong." (We promise
+gradual-enhancement, not *repair* - if you do nothing, we can recover; our
+defaults are safe. If you take action, but take it *wrong*, and break the
+contract, then we break our promises to the admin.)
+
+Another part is the general messiness of the ops-universe. (The canonical example
+here is a pathological `apt` "maintainer-script" that uninstalls an unrelated
+package: Dorc can't know about that, the admin fighting a fire in real-time
+can't know that, the person writing the `apt` oracle can't possibly know that.
+Most importantly of all, from this document's perspective, Dorc cannot hope to
+*attribute* that, without live instrumentation running on every host, watching
+every fact's backing-truths in real-time.)
+
+And here's the key observation: *our* horizon has to *subsume the
+oracle-author's horizon*. This flows from one of the very first paragraph in
+this section: in a realistic world, the admin is *not reading* the deep,
+detailed risk-assesment documentation for every oracle they use.
+
+This means we, Dorc, not individual oracles, need to manage that horizon: we
+need to decide, dictate, and advise oracle-authors on *where the horizon lies* -
+the outer boundaries of their contract-to-the-admin are a part of their
+contract-to-us.
