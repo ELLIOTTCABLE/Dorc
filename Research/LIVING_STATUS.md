@@ -55,7 +55,22 @@ floor); **+3 vendor-oracles → 15 elide** — the value-curve walks **3× (+10,
 **~23/30 (~77%)** (unreachable — footprint tier unbuilt); floor **~4 run** (`su`×2, `nginx reload`,
 HA-internal). **u3 now gates ALL 3 oracles** (3× load-bearing); NEW **multi-wall-cascade** (a stale
 middle binary re-walls the later vendor by position, 15→9). All 3 installs **documented-native** ⇒
-won't eat the day (the tarball+version-guard form is now a deliberate Dorc-exercise choice). Conductor sanity-check: **sound + honest** (its confidence-
+won't eat the day (the tarball+version-guard form is now a deliberate Dorc-exercise choice).
+
+**OPS-VAL DONE (2026-07-05): the OTel book COMES UP** on a fresh Debian-12 box (rc=0 / 96s; all services
+active, HTTPS on self-signed, otel→prometheus data-path live, grafana-on-postgres [87 tables, not
+sqlite]). **Cost ~$0.007** (vc2-1c-2gb @ $0.0136/hr; **2 GB adequate** — ~910 MB used / ~1 GB free, no
+4 GB needed; 0 orphans conductor-verified). **3 fixes cherry-picked** (`fbef730`/`ddccee7`/`28da459`:
+grafana `--config`→`conf/defaults.ini` [tarball ships no grafana.ini; explicit-missing is fatal];
+prometheus `+--web.route-prefix=/` [external-url had 404'd remote-write]; nginx grafana-subpath
+prefix-preserve). **4 known day-risks left faithful:** docker-run non-idempotent (the intended
+poison-wall — good), HA-UI websockets-through-nginx, box-must-be-named-`homelab`/`hl-*` + cert-CN-only,
+`ufw allow` without `ufw enable`. **2 process findings (design-relevant):** (a) **book rc=0 does NOT
+prove services healthy** — `systemctl enable --now` returns 0 on a crash-loop (dead grafana rode along
+under rc=0) ⇒ the differential (P4) MUST check `is-active`, not just rc/fs; bears on how Dorc reads
+apply-success; (b) killing local ssh does NOT halt the remote apply (day-UX abort note). **P5 now
+UNBLOCKED** (book validated + firm). Throwaway ssh key left at `~/.ssh/dorc-r25{,.pub}` (inert; human
+deletes at will). Conductor sanity-check: **sound + honest** (its confidence-
 marks hold; the 5-elide is +SURE, the +3 rides u3). **Three takeaways for the day:**
 1. **u3 = the sharpest uncertainty** — does the built spike lift a *stdout-consuming* pipe-guard
    (`cmd | grep -q X || fallback`)? If not, Stage-C == Stage-B (a finding). **Checkable IN-REPO NOW
