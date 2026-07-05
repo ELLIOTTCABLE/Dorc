@@ -56,7 +56,7 @@
     reason = "cli is the I/O edge: probe/apply to stdout, diagnostics to stderr; the kernel stays print-free"
 )]
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::io::{Read, Write};
 use std::process::ExitCode;
 
@@ -298,6 +298,34 @@ fn run() -> Result<(), String> {
         dorc_plan::DerivationPlan::default()
     };
 
+    // The RESOLVER-probe (24F §3 — the identity CANONICALIZATION lane, a THIRD phase-1 shipping path).
+    // Lift the per-kind resolvers + enforce confusability ALWAYS (an oracle-authoring correctness
+    // check, flag-independent). The round-trip (coord enumeration + probe compile) is flag-on: for
+    // each resolver-bearing coordinate (footprint + backing sides) ship `<kind>.resolve()` to
+    // canonicalize its entity; the `resolv` readback builds the `Resolutions` merged pre-survival-walk.
+    let kind_resolvers = build_kind_resolvers(
+        &oracle_srcs,
+        &checks,
+        &touches_paired,
+        &mut interner,
+        advisory,
+    );
+    let resolver_kinds: BTreeSet<Symbol> = kind_resolvers.resolver_kinds().collect();
+    let resolver_coords = if args.trust_footprints && !resolver_kinds.is_empty() {
+        let touches_sets: Vec<_> = touches_paired.iter().map(|(_, s)| s.clone()).collect();
+        collect_resolver_coords(
+            &classes,
+            &kills,
+            &value,
+            &touches_sets,
+            &resolver_kinds,
+            &mut interner,
+        )
+    } else {
+        BTreeSet::new()
+    };
+    let resolvers = compile_resolvers(&resolver_coords, &kind_resolvers, &oracle_srcs, &interner);
+
     // `probe` mode stops here: emit the probe artifact and return. It reads no stdin (no
     // results exist yet — this is phase 1, what you ship to GET them), builds no plan, and so
     // emits no apply, no why-lens, no digest (there is no plan/identity-plane to hash —
@@ -305,6 +333,7 @@ fn run() -> Result<(), String> {
     if mode == Mode::Probe {
         print!("{}", probe.render_sh(&interner));
         print!("{}", derivations.render_sh(&interner)); // 24E §2: rides the SAME phase-1 block
+        print!("{}", resolvers.render_sh()); // 24F §3: rides the SAME phase-1 block
         std::io::stdout().flush().ok();
         return Ok(());
     }
@@ -315,6 +344,7 @@ fn run() -> Result<(), String> {
     if mode == Mode::RoundTrip {
         print!("{}", probe.render_sh(&interner));
         print!("{}", derivations.render_sh(&interner)); // 24E §2: rides the SAME phase-1 block
+        print!("{}", resolvers.render_sh()); // 24F §3: rides the SAME phase-1 block
         std::io::stdout().flush().ok();
     }
 
@@ -365,6 +395,15 @@ fn run() -> Result<(), String> {
         );
         fps
     });
+    // 24F §3: build the identity-canonicalization map from the `resolv` readback (both footprint and
+    // backing coords canonicalized in the survival walk). Flag-off / no-resolver ⇒ empty ⇒ the
+    // token-equality floor (identical to today). §4: each DANGLING coordinate is a loud diagnostic.
+    let resolutions = build_resolutions(&resolver_coords, &resolver_kinds, &results, &mut interner);
+    report_at(
+        advisory,
+        "resolve",
+        &dangling_diagnostics(&resolutions, &interner),
+    );
     let plan = dorc_plan::build_plan_walled(
         &book_src,
         &parsed.value,
@@ -372,7 +411,7 @@ fn run() -> Result<(), String> {
         &classes,
         &kills,
         survival.as_ref(),
-        None, // 24F Stage 5: the resolver (canonicalization) lane — wired in a later stage
+        args.trust_footprints.then_some(&resolutions),
         &vouches,
         |f| {
             by_fact
@@ -545,7 +584,7 @@ fn build_survival_footprints(
         dorc_analysis::cfg::CfgNodeId,
         dorc_analysis::effect::SkipClass,
     )],
-    kills: &std::collections::BTreeSet<dorc_analysis::cfg::CfgNodeId>,
+    kills: &BTreeSet<dorc_analysis::cfg::CfgNodeId>,
     kill_coords: &BTreeMap<dorc_analysis::cfg::CfgNodeId, dorc_core::FactKey>,
     value: &dorc_analysis::value::ValueFlow,
     cfg: &dorc_analysis::cfg::Cfg,
@@ -842,6 +881,266 @@ fn own_wall_coord(
         .map(|f| dorc_plan::EntityCoord::new(f.kind, f.entity))
 }
 
+/// The per-KIND resolvers (24F §3, corr-kind-keying §10): `<kind>.resolve()` funcdefs lifted per
+/// oracle file, combined with CONFUSABILITY enforcement. Resolvers are a SECOND family keyed by KIND
+/// (the kind-owner holds the nouns — 23M contribution-vs-identity), NOT per-command role-siblings;
+/// the engine looks one up by a coordinate's kind symbol, never its provider.
+struct KindResolvers {
+    /// Per-file resolver sets (indexed by `by_kind`).
+    sets: Vec<dorc_oracle::resolve::ResolverSet>,
+    /// The kept, non-conflicting `kind → file-index` map. A kind ABSENT here is resolver-LESS (the
+    /// token-equality floor) — whether never declared, or REFUSED for a cross-file duplicate.
+    by_kind: BTreeMap<Symbol, usize>,
+}
+
+impl KindResolvers {
+    /// The resolver-bearing kinds (the engine marks each; a coordinate of such a kind that fails to
+    /// resolve degrades to may-alias, §3a).
+    fn resolver_kinds(&self) -> impl Iterator<Item = Symbol> + '_ {
+        self.by_kind.keys().copied()
+    }
+
+    /// The `(file-index, resolver funcdef)` for a kind, if it has a kept resolver.
+    fn get(&self, kind: Symbol) -> Option<(usize, &dorc_oracle::predict::Predict)> {
+        let idx = *self.by_kind.get(&kind)?;
+        self.sets.get(idx)?.get(kind).map(|p| (idx, p))
+    }
+}
+
+/// Lift the per-kind resolvers + ENFORCE confusability (24F §3 / corr-kind-keying §10 — a LOUD
+/// diagnostic, never a silent dud). Two checks: (1) at-most-one-resolver-per-kind — two files
+/// declaring `<kind>.resolve()` for the SAME kind ⇒ REFUSE BOTH (the kind stays resolver-less) + an
+/// error; (2) a resolver keyed to a name matching a known PROVIDER (a lifted predict/touches
+/// command) ⇒ a WARNING (the exact mis-keying the brief itself made — `apt-get.resolve()` would mint
+/// identity for a "kind" no coordinate uses). `inv-referent-agnostic`: names compared as interned
+/// symbols/strings, never decoded.
+fn build_kind_resolvers(
+    oracle_srcs: &[String],
+    checks: &[dorc_oracle::predict::PredictSet],
+    touches_paired: &[(&str, dorc_oracle::touches::TouchesSet)],
+    interner: &mut Interner,
+    advisory: bool,
+) -> KindResolvers {
+    use dorc_oracle::predict::map_provider_name;
+    use dorc_oracle::resolve::ResolverSet;
+
+    let sets: Vec<ResolverSet> = oracle_srcs
+        .iter()
+        .map(|src| {
+            let lifted = ResolverSet::lift(interner, src);
+            report_at(advisory, "resolve", &lifted.diags);
+            lifted.value
+        })
+        .collect();
+
+    // Every (kind, file-index) declaration, grouped by kind (the same kind in ≥2 files is a conflict).
+    let mut per_kind: BTreeMap<Symbol, Vec<usize>> = BTreeMap::new();
+    for (idx, set) in sets.iter().enumerate() {
+        for kind in set.kinds() {
+            per_kind.entry(kind).or_default().push(idx);
+        }
+    }
+
+    // The known PROVIDER names (predict + touches command words, `_`→`-` normalized) — a resolver
+    // keyed to one is the mis-keying we warn on.
+    let mut providers: BTreeSet<String> = BTreeSet::new();
+    for cs in checks {
+        for p in cs.providers() {
+            providers.insert(map_provider_name(interner.resolve(p)));
+        }
+    }
+    for (_, ts) in touches_paired {
+        for p in ts.providers() {
+            providers.insert(map_provider_name(interner.resolve(p)));
+        }
+    }
+
+    let mut diags = Vec::new();
+    let mut by_kind = BTreeMap::new();
+    for (kind, files) in per_kind {
+        let name = interner.resolve(kind).to_owned();
+        if files.len() > 1 {
+            diags.push(dorc_core::Diagnostic::error(
+                dorc_core::DiagCode("resolver-conflict"),
+                None,
+                format!(
+                    "kind '{name}' has {} resolvers across oracle files — at-most-one-resolver-per-kind \
+                     (24F §3): BOTH refused, the kind keeps token-equality (never first-wins-silently)",
+                    files.len()
+                ),
+            ));
+            continue; // refuse both ⇒ resolver-less
+        }
+        if providers.contains(&name) {
+            diags.push(dorc_core::Diagnostic::warning(
+                dorc_core::DiagCode("resolver-provider-collision"),
+                None,
+                format!(
+                    "resolver '{name}.resolve()' is keyed to a name matching a known COMMAND provider \
+                     — resolvers are keyed by KIND, not command (corr-kind-keying §10); this mints \
+                     identity for a kind no coordinate may use (a likely mis-key)"
+                ),
+            ));
+            // Kept (it may legitimately match a kind of the same name); the warning surfaces the risk.
+        }
+        if let Some(&idx) = files.first() {
+            by_kind.insert(kind, idx);
+        }
+    }
+    report_at(advisory, "resolve", &diags);
+    KindResolvers { sets, by_kind }
+}
+
+/// Collect the coordinates that need canonicalization (24F §3): every establish/query BACKING coord
+/// and every wall-candidate FOOTPRINT coord whose KIND is resolver-bearing. Deduplicated (resolution
+/// is a pure function of `(kind, entity)`) and deterministic (`BTreeSet`). Derived-footprint coords
+/// (escalated walls, resolved only post-results) are NOT covered — a resolver+derived combination is
+/// a second round-trip, deferred (noted `resid-resolve-derived`).
+fn collect_resolver_coords(
+    classes: &[(
+        dorc_analysis::cfg::CfgNodeId,
+        dorc_analysis::effect::SkipClass,
+    )],
+    kills: &BTreeSet<dorc_analysis::cfg::CfgNodeId>,
+    value: &dorc_analysis::value::ValueFlow,
+    touches_sets: &[dorc_oracle::touches::TouchesSet],
+    resolver_kinds: &BTreeSet<Symbol>,
+    interner: &mut Interner,
+) -> BTreeSet<dorc_plan::EntityCoord> {
+    use dorc_analysis::effect::SkipClass;
+    let mut coords = BTreeSet::new();
+    let consider = |coord: dorc_plan::EntityCoord, coords: &mut BTreeSet<_>| {
+        if resolver_kinds.contains(&coord.kind().0) {
+            coords.insert(coord);
+        }
+    };
+    for (node, class) in classes {
+        // Backing coords: the cell each establish/query site is about.
+        if let SkipClass::EstablishAmbient(f)
+        | SkipClass::EstablishWritten(f)
+        | SkipClass::QueryResolvable { fact: f, .. } = class
+        {
+            consider(dorc_plan::EntityCoord::new(f.kind, f.entity), &mut coords);
+        }
+        // Footprint coords: a wall-candidate's touches() emissions.
+        let is_wall_candidate = matches!(
+            class,
+            SkipClass::EstablishAmbient(_) | SkipClass::EstablishWritten(_)
+        ) || kills.contains(node);
+        if is_wall_candidate
+            && let Some((_, fp_coords)) =
+                resolve_touches_footprint(*node, value, touches_sets, interner)
+        {
+            for c in fp_coords {
+                consider(c, &mut coords);
+            }
+        }
+    }
+    coords
+}
+
+/// Compile the resolver-probe (24F §3): for each resolver-bearing coordinate, ship its kind's
+/// stripped `<kind>__resolve` funcdef + a per-coordinate invocation with the entity. Deterministic
+/// (coords arrive `BTreeSet`-ordered). A coord whose kind's resolver cannot be resolved/stripped is
+/// dropped (defensive — the kind is in `resolver_kinds` by construction, so this is unreachable, but
+/// dropping degrades it to may-alias at readback, the safe direction).
+fn compile_resolvers(
+    coords: &BTreeSet<dorc_plan::EntityCoord>,
+    kind_resolvers: &KindResolvers,
+    oracle_srcs: &[String],
+    interner: &Interner,
+) -> dorc_plan::ResolverPlan {
+    use dorc_oracle::predict::strip_resolve;
+    let mut probes = Vec::new();
+    for coord in coords {
+        let kind_sym = coord.kind().0;
+        let Some((idx, resolver)) = kind_resolvers.get(kind_sym) else {
+            continue;
+        };
+        let Some(src) = oracle_srcs.get(idx) else {
+            continue;
+        };
+        let entity_text = match coord.entity() {
+            dorc_core::EntityRef::Operand(tok) => interner.resolve(tok.0).to_owned(),
+            dorc_core::EntityRef::Singleton => String::new(),
+        };
+        probes.push(dorc_plan::ResolverProbe {
+            coord_label: render_coord(*coord, interner),
+            kind_label: interner.resolve(kind_sym).to_owned(),
+            kind_fn: format!(
+                "{}__resolve",
+                dorc_oracle::to_funcname_segment(interner.resolve(kind_sym))
+            ),
+            entity_text,
+            sh: strip_resolve(src, resolver, interner),
+        });
+    }
+    dorc_plan::ResolverPlan { probes }
+}
+
+/// Build the [`dorc_plan::Resolutions`] map (24F §3) from the resolver-probe readback: mark every
+/// resolver-bearing kind, record each `canon`, and flag each `dangling`. A resolver-bearing coord
+/// with NO readback record degrades to may-alias at canonicalization (§3a — the safe direction).
+/// Interning the canonical form through the SHARED interner keeps it in the one vocabulary (the
+/// fence); the engine compares canonical tokens as symbols, never decoding (`inv-referent-agnostic`).
+fn build_resolutions(
+    coords: &BTreeSet<dorc_plan::EntityCoord>,
+    resolver_kinds: &BTreeSet<Symbol>,
+    readback: &SiteResults,
+    interner: &mut Interner,
+) -> dorc_plan::Resolutions {
+    let mut resolutions = dorc_plan::Resolutions::none();
+    for kind in resolver_kinds {
+        resolutions.add_resolver_kind(dorc_core::KindId(*kind));
+    }
+    for coord in coords {
+        let label = render_coord(*coord, interner);
+        match readback.resolutions.get(&label) {
+            Some(ResolvOutcome::Canonical(canon_text)) => {
+                let entity = if canon_text.is_empty() {
+                    dorc_core::EntityRef::Singleton
+                } else {
+                    dorc_core::EntityRef::Operand(dorc_core::OpaqueToken(
+                        interner.intern(canon_text),
+                    ))
+                };
+                resolutions.record(*coord, entity);
+            }
+            // Dangling OR no record ⇒ leave unrecorded ⇒ may-alias at canonicalization (§3a). A
+            // dangling is additionally flagged for the loud diagnostic (§4).
+            Some(ResolvOutcome::Dangling) => resolutions.record_dangling(*coord),
+            None => {}
+        }
+    }
+    resolutions
+}
+
+/// The DANGLING-reference diagnostics (24F §4): one loud per-coordinate note for each coordinate the
+/// resolver flagged dangling (a reference to a non-existent entity on an enumerable kind — the
+/// resolver's natural `dpkg-query -W` non-zero). Turns the third-party-typo case from silent
+/// value-loss into a pointed hint; the coordinate ALSO rides the may-alias degrade (§3a). ADVISORY —
+/// the apply runs the affected site either way (fail toward run), so no correctness rides on this
+/// readout; it is the render surface (rec-1). `inv-referent-agnostic`: the coord label is display.
+fn dangling_diagnostics(
+    resolutions: &dorc_plan::Resolutions,
+    interner: &Interner,
+) -> Vec<dorc_core::Diagnostic> {
+    resolutions
+        .dangling()
+        .map(|coord| {
+            dorc_core::Diagnostic::note(
+                dorc_core::DiagCode("dangling-reference"),
+                None,
+                format!(
+                    "coordinate {} resolved DANGLING — the kind's resolver reports no such entity \
+                     (a likely typo / stale name); it degrades to may-alias (the site runs)",
+                    render_coord(coord, interner)
+                ),
+            )
+        })
+        .collect()
+}
+
 /// Lift the per-site GUARD VOUCHES (rul-guard-license / rul24-vouch-is-verdict-authoring, 24A §1c).
 /// Called ALWAYS-ON — guards are the un-flagged baseline (rul24-mode-gate governs only the survival
 /// tier, NOT this). For each establish-bearing site whose provider authored a verdict function
@@ -935,7 +1234,7 @@ fn emit_debug_argv(
     // verdict body runs (`guardcmd dpkg-query`). The widened dual-rail judge allowlists these as
     // legitimate apply-only lines (the guard's live check runs at apply, absent from the bare
     // book) — never an unrelated one (cf-5). Deterministic (`BTreeSet`, `inv-determinism`).
-    let mut guard_cmds: std::collections::BTreeSet<&str> = std::collections::BTreeSet::new();
+    let mut guard_cmds: BTreeSet<&str> = BTreeSet::new();
     for step in &plan.steps {
         if let dorc_plan::Disposition::Guard(license) = &step.disposition {
             for c in license.insert().check_cmds() {
@@ -1032,9 +1331,18 @@ fn unresolvable_diagnostics(
 /// Plan value alone (`inv-determinism`).
 fn emit_plan_summary(plan: &dorc_plan::Plan) {
     let counts = plan.disposition_counts();
+    // 24F §3a: the may-alias fire-rate — converged elisions demoted because a same-kind pair could
+    // not be canonicalized (the resolver ⊤'d / dangled / was absent). Surfaced so a SWAMPED count is
+    // a finding to REPORT (the resolver is too weak/broken), never a license to silently flip the
+    // may-alias default. 0 when no resolver-bearing kind participates (the token-equality floor).
     eprintln!(
-        "dorc: plan-summary sites={} elide={} omit={} guard={} run={}",
-        counts.sites, counts.elide, counts.omit, counts.guard, counts.run
+        "dorc: plan-summary sites={} elide={} omit={} guard={} run={} may-alias={}",
+        counts.sites,
+        counts.elide,
+        counts.omit,
+        counts.guard,
+        counts.run,
+        plan.survival_report.may_alias_fires(),
     );
 }
 
@@ -1089,8 +1397,17 @@ fn emit_survival_attribution(plan: &dorc_plan::Plan, interner: &Interner) {
                     }
                     dorc_plan::FootprintOrigin::Authored => String::new(),
                 };
+                // 24F §6: name the resolver that canonicalized this crossing's coords ("disjoint
+                // AFTER <kind>.resolve()"). The aliasing closure is the sharpest claim in the design,
+                // so a survival it licensed must always name whose identity-judgment it trusted.
+                let via = c.via_resolver().map_or_else(String::new, |k| {
+                    format!(
+                        "; disjoint AFTER {}.resolve() canonicalization",
+                        interner.resolve(k.0)
+                    )
+                });
                 format!(
-                    "wall site {} ({provider} touches {{{}}}{origin})",
+                    "wall site {} ({provider} touches {{{}}}{origin}{via})",
                     c.wall_leaf().0,
                     coords.join(" ")
                 )
@@ -1412,6 +1729,22 @@ struct SiteResults {
     /// collides with a site's `effect=`/`rc=` record — `inv-site-keyed-results`). Read back into a
     /// `Derived` [`dorc_plan::Footprint`] before the survival walk (24E §2 corr-§2).
     derivations: BTreeMap<dorc_plan::LeafId, Vec<String>>,
+    /// The RESOLVER canonicalization lane (24F §3): per `kind:entity` coordinate label, the readback
+    /// of running its `<kind>.resolve()` host-side — a [`ResolvOutcome`]. Demuxed SEPARATELY from the
+    /// verdict + derivation lanes (keyed by the coordinate, not a site — resolution is a pure function
+    /// of the coordinate). Read into a [`dorc_plan::Resolutions`] before the survival walk.
+    resolutions: BTreeMap<String, ResolvOutcome>,
+}
+
+/// One coordinate's resolver readback (24F §3): the canonical form its `<kind>.resolve()` printed, or
+/// [`Dangling`](ResolvOutcome::Dangling) — the resolver's natural failure on an enumerable kind (§4,
+/// a reference to a non-existent entity), which rides the may-alias degrade + a loud diagnostic.
+#[derive(Debug, Clone)]
+enum ResolvOutcome {
+    /// The resolver printed a canonical form (interned into the shared vocabulary at readback).
+    Canonical(String),
+    /// The resolver failed (non-zero rc / empty stdout) — a dangling reference (§4) ⇒ may-alias.
+    Dangling,
 }
 
 /// One site's reported observation: the Effect-channel [`Verdict`], the raw probe-command
@@ -1476,6 +1809,24 @@ fn parse_results(input: &str, interner: &mut Interner) -> SiteResults {
                                 .or_default()
                                 .push(coord.to_owned());
                         }
+                    }
+                }
+                continue;
+            }
+            // 24F §3: `resolv <kind:entity> canon=<canonical>` | `resolv <kind:entity> dangling` —
+            // the resolver readback, demuxed by the COORDINATE label in its OWN lane. A malformed
+            // line ⇒ drop (the coord stays unrecorded ⇒ may-alias, the kFAIL-safe direction).
+            Some("resolv") => {
+                if let Some(coord) = it.next() {
+                    let outcome = match it.next() {
+                        Some("dangling") => Some(ResolvOutcome::Dangling),
+                        Some(tok) => tok
+                            .strip_prefix("canon=")
+                            .map(|c| ResolvOutcome::Canonical(c.to_owned())),
+                        None => None,
+                    };
+                    if let Some(o) = outcome {
+                        out.resolutions.insert(coord.to_owned(), o);
                     }
                 }
                 continue;
@@ -1614,6 +1965,51 @@ mod tests {
             entity: EntityRef::Operand(OpaqueToken(i.intern(e))),
             selector: SelectorId(i.intern("installed")),
         }
+    }
+
+    /// 24F §3 / corr-kind-keying §10: the resolver confusability enforcement. A clean single
+    /// `<kind>.resolve()` is resolver-bearing; two files declaring ONE kind's resolver REFUSE both
+    /// (the kind keeps token-equality — never first-wins-silently); a resolver keyed to a known
+    /// PROVIDER name is KEPT but flagged (the mis-key). Behaviour-pinned (the diagnostics themselves
+    /// are verified end-to-end via the cli binary).
+    #[test]
+    fn resolver_confusability_conflict_refuses_both_collision_keeps() {
+        let mut i = Interner::default();
+        // A provider "apt-get" exists (a lifted touches provider) — a resolver keyed to it collides.
+        let touches_src = "apt-get.touches() { printf 'package:%s\\n' \"$1\"; }";
+        let touches_paired = vec![(
+            touches_src,
+            dorc_oracle::touches::TouchesSet::lift(&mut i, touches_src).value,
+        )];
+        let checks: Vec<dorc_oracle::predict::PredictSet> = vec![];
+
+        // A clean single package.resolve() ⇒ resolver-bearing.
+        let clean = vec!["package.resolve() { printf '%s\\n' \"$1\"; }".to_string()];
+        let kr = build_kind_resolvers(&clean, &checks, &touches_paired, &mut i, false);
+        assert!(
+            kr.resolver_kinds().any(|k| i.resolve(k) == "package"),
+            "a clean package.resolve() is resolver-bearing"
+        );
+
+        // Two files, both package.resolve() ⇒ BOTH refused (no resolver kind).
+        let dup = vec![
+            "package.resolve() { printf '%s\\n' \"$1\"; }".to_string(),
+            "package.resolve() { printf '%s\\n' \"$1\"; }".to_string(),
+        ];
+        let kr_dup = build_kind_resolvers(&dup, &checks, &touches_paired, &mut i, false);
+        assert_eq!(
+            kr_dup.resolver_kinds().count(),
+            0,
+            "a duplicate resolver for one kind refuses BOTH (token-equality floor)"
+        );
+
+        // A resolver keyed to the known provider "apt-get" ⇒ KEPT (warned, not a silent dud).
+        let collide = vec!["apt-get.resolve() { printf '%s\\n' \"$1\"; }".to_string()];
+        let kr_col = build_kind_resolvers(&collide, &checks, &touches_paired, &mut i, false);
+        assert!(
+            kr_col.resolver_kinds().any(|k| i.resolve(k) == "apt-get"),
+            "a provider-named resolver is kept (the collision is a warning, not a refusal)"
+        );
     }
 
     fn tool(i: &mut Interner, e: &str) -> FactKey {

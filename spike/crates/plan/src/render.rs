@@ -275,6 +275,69 @@ pub mod deriv {
 }
 
 // ===========================================================================
+// Resolver-probe emitters (24F §3 — the identity CANONICALIZATION lane)
+// ===========================================================================
+
+/// Resolver-probe emitters: the read-only, self-reporting sh that CANONICALIZES a coordinate via its
+/// kind's `<kind>.resolve()` (24F §3 — the resid-aliasing closure). Rides the SAME phase-1 artifact
+/// as the convergence + derivation probes (no shebang): per resolver-bearing coordinate it invokes
+/// the stripped `<kind>__resolve` body with the ENTITY and, when run, prints the canonical form
+/// re-keyed by the coordinate (`resolv <kind:entity> canon=…`), or a `dangling` marker when the
+/// resolver fails on an enumerable kind (§4). Assembly only — the cli decides which coordinates need
+/// resolution and walks them; these emit the bytes for one decided piece.
+pub mod resolv {
+    use super::sem;
+
+    /// The resolver-probe banner — comment-only (no shebang), documents the `resolv` record grammar.
+    /// GUARANTEE: pure `#`-comment lines ⇒ dash-n-clean; appended to the earlier probes, so it never
+    /// opens a second phase.
+    #[must_use]
+    pub const fn header() -> &'static str {
+        "# dorc resolver-probe (read-only, 24F §3): owner-declared identity canonicalization. Each\n\
+         # resolver-bearing coordinate runs its kind's <kind>.resolve() with the entity; when run it\n\
+         # prints the canonical form (or a dangling marker), re-keyed by the coordinate:\n\
+         #   resolv <kind:entity> canon=<canonical>   |   resolv <kind:entity> dangling\n\
+         # The engine canonicalizes both footprint and backing coords through this before disjoint.\n\n"
+    }
+
+    /// A per-coordinate provenance comment (`# resolv <kind:entity> via <kind>.resolve()`).
+    /// GUARANTEE: one `#`-comment line ⇒ dash-n-clean. `coord`/`kind` are display-only
+    /// (`inv-referent-agnostic`), riding in a comment, never re-parsed.
+    #[must_use]
+    pub fn resolv_comment(coord: &str, kind: &str) -> String {
+        format!("# resolv {coord} via {kind}.resolve()\n")
+    }
+
+    /// The stripped `<kind>__resolve` funcdef, emitted verbatim (strip-only; re-emitted per kind on a
+    /// body change, sh last-writer-wins). GUARANTEE: `funcdef` is `dash -n`-clean + byte-stable; this
+    /// only appends a trailing newline.
+    #[must_use]
+    pub fn kind_def(funcdef: &str) -> String {
+        format!("{funcdef}\n")
+    }
+
+    /// The self-report scaffold: invoke `<kind_fn> '<entity>'` (the entity F-QUOTE-bound — the SAME
+    /// guarantee as [`super::probe::invocation`]: exactly one inert positional, no word-split/re-parse),
+    /// capture its rc + stdout, and print the `resolv <coord> canon=…` record — or `resolv <coord>
+    /// dangling` when the resolver rc is non-zero or its stdout empty (24F §4 — the enumerable kind's
+    /// natural failure IS the dangling detection).
+    ///
+    /// GUARANTEE: dash-n-clean — a `$(...)`-capture + `if` + `printf` command sequence valid at script
+    /// top level. `_c`/`_rr` are resolver-local names. An UN-SHIMMED resolver under `PATH=mocks-only`
+    /// (the mocks net) 127s ⇒ empty stdout ⇒ `dangling` ⇒ the coord degrades to may-alias (§3a) — the
+    /// safe direction (`kFAIL-perform`: fail toward run), never a wrong canonical.
+    #[must_use]
+    pub fn record_scaffold(kind_fn: &str, entity: &str, coord: &str) -> String {
+        let q = sem::single_quote(entity);
+        format!(
+            "_c=$({kind_fn} {q} 2>/dev/null); _rr=$?; \
+             if [ \"$_rr\" -eq 0 ] && [ -n \"$_c\" ]; then printf 'resolv {coord} canon=%s\\n' \"$_c\"; \
+             else printf 'resolv {coord} dangling\\n'; fi\n"
+        )
+    }
+}
+
+// ===========================================================================
 // Apply-artifact emitters (`Plan::render_sh` flat + `Plan::render_apply` line)
 // ===========================================================================
 

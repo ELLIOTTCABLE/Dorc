@@ -120,7 +120,20 @@ const MIGRATED_SLUGS: &[&str] = &[
 //   a cli-edge Note surfacing that a payload-bound touches() shipped to host-derivation. Shares
 //   the deferred typed-spine migration (tc-footprint-diag); spike-instrumentation, not a
 //   permanent greenfield requirement.
-const LEGACY_ALLOW_LIST: &[&str] = &["footprint-incoherent", "touches-escalated"];
+// * `resolver-conflict` / `resolver-provider-collision` (Stage 5 / 24F §3 corr-kind-keying §10):
+//   the confusability enforcement — two files declaring one kind's resolver (Error, both refused),
+//   or a resolver keyed to a known provider name (Warning, likely mis-key). cli-edge; PENDING the
+//   same typed-spine migration (tc-footprint-diag).
+// * `dangling-reference` (Stage 5 / 24F §4): a cli-edge Note — a coordinate the resolver flagged
+//   dangling (no such entity on an enumerable kind); rides the may-alias degrade. Same deferred
+//   migration.
+const LEGACY_ALLOW_LIST: &[&str] = &[
+    "footprint-incoherent",
+    "touches-escalated",
+    "resolver-conflict",
+    "resolver-provider-collision",
+    "dangling-reference",
+];
 
 /// The SPANLESS-MINT allow-list (arch-3-residual-2): EXACTLY the codes permitted to construct a
 /// diagnostic with no primary span, via [`dorc_core::diag::Diag::new_spanless_site`]. Every other

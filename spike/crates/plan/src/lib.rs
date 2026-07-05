@@ -1341,6 +1341,68 @@ pub struct DerivationPlan {
     pub derivations: Vec<ProbeDerivation>,
 }
 
+/// One compiled resolver-probe query (24F §3 — the identity CANONICALIZATION lane): a
+/// resolver-bearing coordinate whose `<kind>.resolve()` ships to the host to canonicalize its entity.
+/// Keyed by the COORDINATE (not a site — resolution is a pure function of `(kind, entity)`; the same
+/// coordinate at many sites resolves once). All fields are pre-resolved Strings so the render is
+/// interner-free (the cli owns the interner + oracle sources; `inv-referent-agnostic` — the entity
+/// text is F-quoted for the invocation, never decoded).
+#[derive(Debug, Clone)]
+pub struct ResolverProbe {
+    /// The coordinate's `kind:entity` label — the `resolv` record key + display (cli-resolved).
+    pub coord_label: String,
+    /// The kind's display name (`package`) for the provenance comment.
+    pub kind_label: String,
+    /// The mangled resolver funcname (`package__resolve`) — the shipped def + the invocation agree.
+    pub kind_fn: String,
+    /// The entity text passed to the resolver invocation (F-quoted at render).
+    pub entity_text: String,
+    /// The stripped `<kind>__resolve` funcdef (strip-only; `dorc_oracle::predict::strip_resolve`).
+    pub sh: String,
+}
+
+/// The compiled resolver-probe (24F §3 — the identity CANONICALIZATION lane, PARALLEL to
+/// [`ProbePlan`]/[`DerivationPlan`]): the resolver-bearing coordinates whose `<kind>.resolve()` runs
+/// host-side to canonicalize their entities. Rides the SAME phase-1 artifact; its `resolv` records
+/// are read back into a [`Resolutions`] map consumed BEFORE the survival walk (both footprint and
+/// backing coords canonicalized). Empty ⇒ nothing appended (goldens stay byte-identical).
+#[derive(Debug, Default)]
+pub struct ResolverPlan {
+    /// The resolver-probe queries, deduplicated by coordinate, in `coord_label` order.
+    pub probes: Vec<ResolverProbe>,
+}
+
+impl ResolverPlan {
+    /// Render the resolver-probe as read-only, self-reporting sh, APPENDED to the earlier probes in
+    /// the SAME phase-1 block (no shebang). Each kind's stripped `<kind>__resolve` funcdef is emitted
+    /// once (deduped, re-emitted on a body change — sh last-writer-wins), then invoked per COORDINATE
+    /// with the entity; its stdout is re-keyed to a `resolv <coord> canon=…` record (or `dangling`,
+    /// §4). Empty ⇒ `""` (nothing appended). Interner-free (all fields pre-resolved).
+    #[must_use]
+    pub fn render_sh(&self) -> String {
+        if self.probes.is_empty() {
+            return String::new();
+        }
+        let mut out = String::from(render::resolv::header());
+        let mut defined: BTreeMap<&str, &str> = BTreeMap::new();
+        for p in &self.probes {
+            out.push_str(&render::resolv::resolv_comment(
+                &p.coord_label,
+                &p.kind_label,
+            ));
+            if defined.insert(p.kind_fn.as_str(), p.sh.as_str()) != Some(p.sh.as_str()) {
+                out.push_str(&render::resolv::kind_def(&p.sh));
+            }
+            out.push_str(&render::resolv::record_scaffold(
+                &p.kind_fn,
+                &p.entity_text,
+                &p.coord_label,
+            ));
+        }
+        out
+    }
+}
+
 /// The `<provider>__touches` derivation funcname (24E §2/§9), mangled IDENTICALLY to
 /// [`predict_fn_name`] so a site's shipped def (via `strip_touches`) and its invocation agree
 /// byte-for-byte. Referent-agnostic: passed to the host, never branched on.
