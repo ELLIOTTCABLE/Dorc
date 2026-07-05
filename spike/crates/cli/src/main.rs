@@ -1947,7 +1947,7 @@ fn unresolvable_diagnostics(
     let plural = if real.len() == 1 { "" } else { "s" };
     let label = format!(
         "{} site{plural} run unprobed (no read-only check could be shipped): {} — \
-         run `dorc why` for the per-site detail (the apply runs each; kFAIL-perform)",
+         run `dorc why` for the per-site detail (the apply runs each anyway, to stay safe)",
         real.len(),
         names.join(", "),
     );
@@ -2144,15 +2144,15 @@ fn emit_guard_attribution(
             eprintln!(
                 "why: site {} guard refused — the site's structurally-awkward form (a heredoc \
                  body, or a non-`/dev/null` output redirect) would corrupt the artifact or suppress \
-                 an admin-spelled side-effect, so the original bytes RUN VERBATIM (kFAIL-perform), \
-                 the {kind} converged-vouch notwithstanding",
+                 an admin-spelled side-effect, so the original bytes RUN VERBATIM (to stay safe), \
+                 the {kind} oracle's vouch that it is already satisfied notwithstanding",
                 step.leaf.0,
             );
         } else {
             eprintln!(
-                "why: site {} guard [{kind}] — licensed by a converged-vouch (the {kind} oracle's \
-                 authored is_converged); the original bytes survive and the check re-runs live at \
-                 apply (kFAIL-perform)",
+                "why: site {} guard [{kind}] — licensed by the {kind} oracle's vouch that it is \
+                 already satisfied; the original bytes survive and the check re-runs live at apply \
+                 (to stay safe)",
                 step.leaf.0,
             );
         }
@@ -2224,8 +2224,8 @@ fn emit_why_report(
                     (
                         "run",
                         vec![
-                            "runs unprobed — no read-only check could be shipped (kFAIL-perform: \
-                             when unsure, act)"
+                            "runs unprobed — no read-only check could be shipped (unsure ⇒ dorc \
+                             runs it, to stay safe)"
                                 .to_owned(),
                         ],
                         true,
@@ -2257,7 +2257,7 @@ fn emit_why_report(
                 }
                 if refused {
                     reasons.push(
-                        "render REFUSED (heredoc): the leaf runs verbatim instead (kFAIL-perform)"
+                        "render REFUSED (heredoc): the line runs verbatim instead, to stay safe"
                             .to_owned(),
                     );
                     ("elide", reasons, true)
@@ -2272,8 +2272,8 @@ fn emit_why_report(
                         "guard",
                         vec![format!(
                             "guard REFUSED — the site's awkward form (heredoc / non-`/dev/null` \
-                             redirect) runs verbatim, the {kind} converged-vouch notwithstanding \
-                             (kFAIL-perform)"
+                             redirect) runs verbatim (to stay safe), the {kind} oracle's vouch that \
+                             it is already satisfied notwithstanding"
                         )],
                         true,
                     )
@@ -2281,9 +2281,8 @@ fn emit_why_report(
                     (
                         "guard",
                         vec![format!(
-                            "guarded — licensed by a converged-vouch (the {kind} oracle's authored \
-                             is_converged); the original bytes survive and the check re-runs live \
-                             at apply"
+                            "guarded — the {kind} oracle vouches it is already satisfied, so the \
+                             original bytes survive and the oracle's check re-runs live at apply"
                         )],
                         true,
                     )

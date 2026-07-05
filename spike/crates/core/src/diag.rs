@@ -1037,10 +1037,14 @@ pub fn why(diag: &Diag, arena: &crate::ProvArena, src: &str) -> Option<Explanati
         None => "(no source site)".to_owned(),
     };
     let remediation = remediation_for(&diag.code);
+    // ack-4 (vocabulary): plain unambiguous English on this user-facing line — "couldn't be
+    // resolved" / "to stay safe" instead of the "⊤"/"kFAIL-perform" jargon (which stays in
+    // code/comments/corpus). The `ran because … command-substitution` opener + the remediation
+    // hint's `[…]` tag are UNCHANGED (the `expected-why` needles substring-match them).
     let reason = format!(
-        "ran because {} is a command-substitution `$(…)` or runtime-dynamic value — its identity \
-         is unknowable (⊤ originated at {where_top}); the apply runs it (kFAIL-perform: when \
-         unsure, act). {}",
+        "ran because {} is a command-substitution `$(…)` or runtime-dynamic value — its value \
+         couldn't be resolved (first seen at {where_top}); so dorc runs it, to stay safe (when \
+         unsure, run). {}",
         payload.position.describe(),
         remediation_hint(remediation),
     );
@@ -1677,13 +1681,13 @@ mod tests {
             exp.reason
         );
         assert!(
-            exp.reason.contains("⊤ originated at"),
+            exp.reason.contains("first seen at"),
             "names the cause-site (the receipt the why-lens READS): {}",
             exp.reason
         );
         assert!(
-            exp.reason.contains("kFAIL-perform"),
-            "the why-lens explains the RUN, never licenses a skip: {}",
+            exp.reason.contains("to stay safe"),
+            "the why-lens explains the RUN in plain English (ack-4), never licenses a skip: {}",
             exp.reason
         );
         assert!(
