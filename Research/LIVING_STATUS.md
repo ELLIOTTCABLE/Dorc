@@ -37,7 +37,12 @@ asymmetric felt-signal; A1 planted=sensitivity-gate + disjoint stdlib; different
 A-A calibration; gap-log forcing-functions; reinstate confound-conditions). Per the human's
 *at-most-one-non-trivial* lean, the one non-trivial fix = the **paper dry-run** below.
 
-**Ops-target LOCKED:** single-box mini-homelab — nginx reverse-proxy + Windmill(+postgres) +
+**Ops-target LOCKED:** single-box mini-homelab — nginx reverse-proxy + an **OTel stack** (otel-collector + prometheus + grafana-on-postgres, native
+SEPARATE units — **SWAPPED from Windmill 2026-07-04**: windmill-native is admin-invented/undocumented,
+and compose would hide the multi-service behind one opaque `docker compose up` [Dorc can't exercise it]
++ is redundant with HA's docker wall; OTel = genuine multi-service as separate native units Dorc SEES,
+documented installs, + the human's familiar ground. Re-point Opus in flight; keeps postgres/su-wall,
+HA-docker stays the sole hork) +
 Home-Assistant(Container), self-signed certs. (HA genuinely blocked-on-Dorc = the dogfood-want; more
 services = more composition-exercise; corral network-chaos, don't eliminate. Rubric: many-parts>few; mostly bog-standard-oracle-able + a few walls (tractable-vendor→admin-loop,
 opaque-hork→residue); real-drift→adequacy; corral-chaos-not-control.)
