@@ -389,9 +389,12 @@ What each addition buys — and refuses:
 Stage 5 — the footprint: facts surviving a wall that stays
 ----------------------------------------------------------
 
-> (FIXME: everything in this stage is strawman-tier, design-in-progress — the round-24
-> build. The *mechanism* below is settled direction; the *spelling* is a mock to be vibed
-> at, not adopted.)
+> (FIXME, updated 2026-07-04: the *mechanism* below is now BUILT — the round-24 spike
+> carries authored footprints, probe-time derivation for payload-bound tools, and the
+> differential nets behind them. The *spelling* remains strawman. One change already known
+> to be owed: `touches()` bodies below emit stringly-typed `kind:entity` lines — the
+> kind-half is due to migrate to stage 7's annotation-typed emission, and the in-band
+> prefix (with its `| sed 's|^|kind:|'` dressing) should not be imitated.)
 
 Everything so far elides around walls by *removing* them (stage 3: a converged wall is an
 elided wall, and an elided command casts no wall) or verifies *behind* them (stage 2:
@@ -430,6 +433,8 @@ The spelling being mocked here: a third role-sibling, next to `predict()` and
 oracle grows one; so does foobar's, one line in the author's stage-4 file:
 
 ```sh
+# FIXME: the `kind:entity` line-format here is stringly-typed; migrating to the stage-7
+# annotation-typed emission (kind as a trailing mark, lines as raw entities).
 apt-get.touches() {                          # base library (STRAWMAN spelling)
    while [ "${1#-}" != "$1" ]; do shift; done
    verb="$1"; shift
@@ -526,6 +531,102 @@ bought with exactly that trust, and with nothing else.
 - Not gained: `hork`, ever; and nothing below it.
 
 
+> (Stages 6 and 7 are the rarefied end of the curve: kind-OWNER features. Fewer than one
+> author in ten will ever write one — they exist for the handful of people who own a
+> vocabulary (the apt oracle's maintainer; whoever ships the fs stdlib) — but each one
+> written pays out across every book and every oracle that names that kind. Narrow base,
+> high community effect. Mechanisms landing in the round-24/25 builds; spellings strawman.)
+
+
+Stage 6 — the kind-owner: two names, one thing
+----------------------------------------------
+
+The footprint machinery compares coordinates by *name*, and names lie. On a real Debian
+host, `nginx` and `nginx-full` can be one package under two names (provides); two paths can
+be one file through a symlink. Watch it fail:
+
+```sh
+apt-get install -y nginx        # runs — a wall; its footprint says package:nginx
+...
+dpkg -s nginx-full >/dev/null 2>&1 || apt-get install -y nginx-full
+```
+
+The second line's fact is backed by `package:nginx-full`; the wall's footprint says
+`package:nginx`; different strings ⇒ "disjoint" ⇒ the line elides *past a wall that really
+touched its referent*. Every other gap in this machinery fails toward running too much;
+this one under-executes, silently. It is the one place a name must be more than a string.
+
+The fix is one function, written by the kind's owner — the party who holds what "the same
+entity" means for that vocabulary:
+
+```sh
+package.resolve() {                          # the package kind's owner (STRAWMAN spelling)
+   dpkg-query -W -f '${Package}\n' -- "$1" 2>/dev/null || printf '%s\n' "$1"
+}
+```
+
+- Keyed by the KIND, not by a command — identity belongs to the noun-space. One resolver
+  per kind; a second declaration is refused, loudly.
+- The engine canonicalizes BOTH sides of every intersection through it — footprints and
+  backings — so two names for one referent now collide (the line above correctly runs),
+  while genuinely-different entities stay disjoint (the value survives).
+- A name the resolver can't answer for is treated as may-collide ⇒ that site runs. A kind
+  with no resolver keeps plain name-comparison — today's floor, nothing revoked.
+- The sharp edge, honestly: a resolver that wrongly MERGES two entities only over-verifies;
+  one that wrongly SPLITS one referent re-opens the silent skip. Same knife-tier as the
+  footprint, and every survival it licensed cites it by name.
+
+- Spent: a handful of lines, once, by the one author who owns the kind.
+- Gained: every book, every oracle, every footprint naming that kind stops being fooled by
+  aliases — including ones written by people who never heard of the resolver.
+
+
+Stage 7 — reach: what touching an entity drags with it
+------------------------------------------------------
+
+> (FIXME: the freshest design — the round-24 part-B build, mechanism settled in dialogue;
+> the spelling below is the strawman under construction.)
+
+One gap is left, and it is not the owner's — it is everyone else's. A colleague's oracle
+for some package-fiddling tool honestly declares:
+
+```sh
+hork.touches() { ... tune) printf 'package:%s\n' "$1" ;; ... }
+```
+
+They mean "I touch the nginx package" — the whole thing, files included. But coordinates
+compare within kinds: `package:nginx` does not cover `file:/etc/nginx/nginx.conf`, so a
+downstream file-fact happily survives hork's wall. And the colleague *cannot* fix it —
+which files a package owns is apt's knowledge, not theirs. So the owner says it once, for
+everyone:
+
+```sh
+package.reaches() {                          # the package kind's owner (STRAWMAN spelling)
+   printf '%s\n' "$1"       : service        # a package may enable its same-named unit
+   dpkg -L "$1"             : file           # and reaches exactly the files it installed
+}
+```
+
+- Declared once by the owner; applied by the engine to EVERY footprint coordinate of that
+  kind, whoever emitted it. The colleague's `package:nginx` now covers nginx's files
+  without the colleague learning anything.
+- Footprints only. A fact's backing stays the one cell its probe checks; reach only ever
+  *widens* a claim — the safe direction. Claiming too much walls too much; it never skips.
+- One body serves both maturities: the `service` line is static (read at plan time, ships
+  nothing); the `dpkg -L` line is a host question (runs read-only at probe time). The day
+  a static line needs to become a question, it changes in place — same function, same file.
+- The KIND rides the trailing annotation; the output lines are raw entities. The vocabulary
+  is fixed when the oracle is read — a host can never mint a new kind at runtime — and raw
+  tool output needs no `| sed` dressing.
+- An emitting line with no annotation contributes nothing — a nudge in the plan's hints,
+  never an error. The hard failures in this whole family remain what they have always
+  been: syntax, and declarations that genuinely contradict each other.
+
+- Spent: a line or two per kind, once, by its owner.
+- Gained: composition — the moment two authors' work meets in one book, their claims cover
+  what they *meant*, not just what they typed.
+
+
 The residue, and the honest product statement
 ---------------------------------------------
 
@@ -549,12 +650,19 @@ stage    ran   verified   elided   attention-lines   spent
 3        1     1          5        4                 2 minutes of sh
 4        1     1          5        4                 an hour, for everyone else's benefit
 5        1     1          5        4                 a touches() arm per verb (pays out on drifted days, not here)
+6        1     1          5        4                 a resolve() per owned kind (pays out where names collide)
+7        1     1          5        4                 a reaches() per owned kind (pays out in other people's books)
 ```
+
+(Stages 6–7 deliberately do not move this book's numbers: their value shows where names
+alias and where different authors' oracles meet — the fleet, not the single book.)
 
 ----
 
-STATUS: the propagation frontier (stage 5) is the round-24 build — its mechanism
-(footprint × backing × disjointness) is settled direction, its spelling is strawman-tier,
-and nothing in stages 0–4 depends on its outcome. Stages 0–4 describe design the
-implementation spike is actively catching up to; stage 5 describes design being *learned by
-building*. Expect its render and spelling to churn before anything else here does.
+STATUS: stages 5–7 are the round-24/25 build frontier — the mechanisms (footprint × backing
+× disjointness; probe-time derivation; owner canonicalization) are built or building, the
+spellings are strawman-tier, and nothing in stages 0–4 depends on their outcome. Stage 7's
+annotation-typed emission is the settled direction stage 5's stringly `kind:entity` format
+migrates TO (the FIXME at stage 5). Expect these stages' renders and spellings to churn
+before anything else here does. The design-round record behind stages 6–7 is
+`Research/notes/24G`.
