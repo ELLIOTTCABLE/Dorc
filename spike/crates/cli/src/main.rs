@@ -291,18 +291,21 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
     // The effect-map is derived from the inline check bodies (23D §1 — the check is the
     // oracle); the probe lane (R3) ships the same stripped check bodies per-site.
     let lifted = dorc_oracle::lift(&mut interner, &oracle_refs);
-    report_at(advisory, "oracle", &lifted.diags);
+    report_at(advisory, "oracle", None, &lifted.diags);
     let idx = lifted.value;
 
     // Lift each oracle's `<provider>__predict` functions into a per-file PredictSet (the
     // real entity-resolution mechanism — the engine threads the book's value-flow
     // through these, never parsing argv itself). Shared interner, so provider symbols
     // match the book's command words (204 seam #2).
+    // ack-8: the per-file `check` diags span into THIS oracle's source, so zip the path back in
+    // for the file:line:col frame (the check-dialect give-ups are the main oracle-side errors).
     let checks: Vec<dorc_oracle::predict::PredictSet> = oracle_refs
         .iter()
-        .map(|src| {
+        .zip(args.oracles.iter())
+        .map(|(src, path)| {
             let lifted = dorc_oracle::predict::lift_predicts(&mut interner, src);
-            report_at(advisory, "check", &lifted.diags);
+            report_at(advisory, "check", Some((path.as_str(), src)), &lifted.diags);
             lifted.value
         })
         .collect();
@@ -310,10 +313,13 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
     // Parse + analyze the book (shared interner, so symbols match the oracles).
     let book_src = std::fs::read_to_string(&args.book)
         .map_err(|e| format!("reading book {}: {e}", args.book))?;
+    // ack-8: the book-stage diags (parse/cfg/classify/probe/render) all span into `book_src`;
+    // this pair feeds their file:line:col frames (rul24-lineno-identity — the SOURCE line space).
+    let book_source = Some((args.book.as_str(), book_src.as_str()));
     let parsed = dorc_syntax::parse(&book_src);
-    report_at(advisory, "parse", &parsed.diags);
+    report_at(advisory, "parse", book_source, &parsed.diags);
     let cfg = dorc_analysis::cfg::build(&parsed.value);
-    report_at(advisory, "cfg", &cfg.diags);
+    report_at(advisory, "cfg", book_source, &cfg.diags);
     // ack-1 exit-code family: a book carrying a parse/CFG ⊤-reject (`inv-top-reject`) — a
     // syntax-unsupported/malformed construct, or its downstream CFG ⊤-node — leaves the analysis
     // built on partial understanding. The artifact still ships byte-identically (the stdout
@@ -358,7 +364,7 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
             &mut interner,
             &mut arena,
         );
-    report_at(advisory, "classify", &classified.diags);
+    report_at(advisory, "classify", book_source, &classified.diags);
     let classes = classified.value;
 
     // The per-site guard VOUCHES (rul-guard-license / rul24-vouch-is-verdict-authoring, 24A §1c) —
@@ -551,6 +557,7 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
     report_at(
         advisory,
         "resolve",
+        None, // dangling-reference notes are spanless (no book/oracle location)
         &dangling_diagnostics(&resolutions, &interner),
     );
     let plan = dorc_plan::build_plan_walled(
@@ -580,6 +587,7 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
     report_at(
         advisory,
         "probe",
+        book_source, // the unresolvable-site notes span into the book (file:line:col frame)
         &unresolvable_diagnostics(&probe, &plan, &parsed.value, &book_src, &mut interner),
     );
 
@@ -622,7 +630,7 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
     // are ERROR-severity, so they cross the floor in EVERY mode (incl. `apply`): the off-ramp
     // must never silently ship an artifact whose render had to refuse a licensed elision.
     let refusals = plan.render_refusal_diagnostics(&parsed.value, &interner);
-    report("render", &refusals);
+    report("render", book_source, &refusals);
 
     // rec-1 / ru-12 BYTE FLOOR: `plan` and `apply` emit BYTE-IDENTICAL apply bytes here — the
     // artifact is receipt-free in both; only the stderr disclosure above differed. The
@@ -749,7 +757,7 @@ fn build_survival_footprints(
         .iter()
         .map(|src| {
             let lifted = dorc_oracle::touches::TouchesSet::lift(interner, src);
-            report_at(advisory, "touches", &lifted.diags);
+            report_at(advisory, "touches", None, &lifted.diags);
             lifted.value
         })
         .collect();
@@ -799,7 +807,7 @@ fn build_survival_footprints(
             footprints.insert(*node, footprint);
         }
     }
-    report_at(advisory, "footprint", &diags);
+    report_at(advisory, "footprint", None, &diags);
     footprints
 }
 
@@ -978,7 +986,7 @@ fn merge_derived_footprints(
             footprints.insert(d.node, fp);
         }
     }
-    report_at(advisory, "derive", &diags);
+    report_at(advisory, "derive", None, &diags);
 }
 
 /// Intern one readback `kind:entity` coordinate line into the shared vocabulary (24A §1b fence —
@@ -1084,7 +1092,7 @@ fn build_kind_resolvers(
         .iter()
         .map(|src| {
             let lifted = ResolverSet::lift(interner, src);
-            report_at(advisory, "resolve", &lifted.diags);
+            report_at(advisory, "resolve", None, &lifted.diags);
             lifted.value
         })
         .collect();
@@ -1143,7 +1151,7 @@ fn build_kind_resolvers(
             by_kind.insert(kind, idx);
         }
     }
-    report_at(advisory, "resolve", &diags);
+    report_at(advisory, "resolve", None, &diags);
     KindResolvers { sets, by_kind }
 }
 
@@ -1341,7 +1349,7 @@ fn build_kind_reaches(
         .iter()
         .map(|src| {
             let lifted = ReachesSet::lift(interner, src);
-            report_at(advisory, "reaches", &lifted.diags);
+            report_at(advisory, "reaches", None, &lifted.diags);
             lifted.value
         })
         .collect();
@@ -1396,7 +1404,7 @@ fn build_kind_reaches(
             by_kind.insert(kind, idx);
         }
     }
-    report_at(advisory, "reaches", &diags);
+    report_at(advisory, "reaches", None, &diags);
     KindReaches { sets, by_kind }
 }
 
@@ -1595,7 +1603,7 @@ fn build_vouches(
     // tc-verdict-return softening is reverted, find-return-vouches 24C), so a genuinely
     // out-of-dialect verdict body fails gate-3's error-floor rather than degrading silently.
     let lifted = dorc_plan::build_vouches(oracle_refs, classes, value, interner);
-    report_at(advisory, "verdict", &lifted.diags);
+    report_at(advisory, "verdict", None, &lifted.diags);
     lifted.value
 }
 
@@ -2378,8 +2386,13 @@ fn effect_word_to_verdict(word: &str) -> Verdict {
 /// receipt-free WITHOUT going blind. The filter is factored PURE (the printing is the I/O
 /// edge) so the lone per-severity routing decision rec-1 forces here is unit-testable, the
 /// same pure/driver split as [`why_lens_lines`]/[`emit_why_lens`].
-fn report_at(advisory: bool, stage: &str, diags: &[dorc_core::Diagnostic]) {
-    report(stage, &advisory_filter(advisory, diags));
+fn report_at(
+    advisory: bool,
+    stage: &str,
+    source: Option<(&str, &str)>,
+    diags: &[dorc_core::Diagnostic],
+) {
+    report(stage, source, &advisory_filter(advisory, diags));
 }
 
 /// The advisory severity-filter (rec-1 / tc-apply-receipt-floor), factored pure for
@@ -2402,26 +2415,35 @@ fn advisory_filter(advisory: bool, diags: &[dorc_core::Diagnostic]) -> Vec<dorc_
 
 /// Print a stage's diagnostics to stderr (keeping stdout = probe + apply).
 ///
-/// Format `<stage>: <severity>[<code>]: <message>`, then a ` --> <lo>:<hi>` region line when the
-/// diagnostic carries a span (the round-22 drop-A fix: the span was previously DROPPED at this
-/// one user surface — `21Z` drop-A — so a structured diagnostic's location never reached the
-/// user; now it does). The severity word is load-bearing: the e2e gate-3 floor (20B §2) keys on
-/// the `error[` shape (an Error fails a case unless declared in `expected-diagnostics`; warnings
-/// stay free-form), and the region line never starts with `<stage>: error[`, so it is inert to
-/// gate-3. The byte-coordinate form (no source excerpt) is the multi-stage-safe minimum: `report`
-/// receives only the diagnostics, not the per-stage source (oracle vs book), so it renders the
-/// span coordinates; the source-resolved narrative is [`dorc_core::diag::render_cli`]'s job.
-/// I/O-edge formatting only.
-fn report(stage: &str, diags: &[dorc_core::Diagnostic]) {
+/// The TITLE line is `<stage>: <severity>[<code>]: <message-first-line>` — its shape is
+/// load-bearing: the e2e gate-3 floor (20B §2) keys on `^<stage>: error[` (an Error fails a case
+/// unless declared in `expected-diagnostics`; warnings stay free-form). Below it, ack-8 (round-24):
+/// the rustc-style REGION FRAME — `--> file:line:col`, the source line in a gutter, and a `^^^`
+/// caret ([`dorc_core::diag::render_legacy_region`]) — replaces the old raw byte-offset `-->
+/// <lo>:<hi>`, WHEN a `source` (`(filename, text)`) is threaded for this stage; a stage whose diags
+/// span an ambiguous/combined source (or are spanless) keeps the byte-offset / no-region fallback.
+/// The frame's `N |` gutter is the SOURCE line (rul24-lineno-identity: the number the user reads is
+/// the number they type back as `:N`). None of the frame lines start with `<stage>: error[`, so
+/// they stay inert to gate-3. Any folded ` = note:` continuations (a lowered `Diag`'s body) print
+/// AFTER the region, so the caret frame lands rustc-style right beneath the title. I/O-edge only.
+fn report(stage: &str, source: Option<(&str, &str)>, diags: &[dorc_core::Diagnostic]) {
     for d in diags {
         let sev = match d.severity {
             Severity::Error => "error",
             Severity::Warning => "warning",
             Severity::Note => "note",
         };
-        eprintln!("{stage}: {sev}[{}]: {}", d.code.0, d.message);
-        if let Some(span) = d.span {
-            eprintln!("  --> {}:{}", span.lo.0, span.hi.0);
+        // Split the message so the region frame lands right after the TITLE line, before any
+        // folded ` = note:`/` = help:` continuations a lowered `Diag` carries in its message.
+        let (title, folded) = match d.message.split_once('\n') {
+            Some((t, rest)) => (t, Some(rest)),
+            None => (d.message.as_str(), None),
+        };
+        eprint!("{stage}: {sev}[{}]: {title}", d.code.0);
+        eprint!("{}", dorc_core::diag::render_legacy_region(d, source));
+        match folded {
+            Some(rest) => eprintln!("\n{rest}"),
+            None => eprintln!(),
         }
     }
 }

@@ -839,22 +839,24 @@ impl Diag {
 
 /// The CLI narrative render (`22B` `render-1`, the render-plane half of rec-1 two-surfaces).
 /// Elm's four-part narrative (`crib-6`) over rustc's data (`crib-1`): title (severity+code) /
-/// region (primary span) / problem (the label) / hints (notes then helps, and the suggestion as
-/// a remediation-classed help). The simple no-caret-art form (`22B` `render-1` ~SUSPECT: a
-/// simpler first cut satisfies every STRUCTURAL requirement; the caret window is a render-quality
-/// refinement, ungated per `crib-7`). `src` resolves a span to source text; `interner` resolves
-/// the [`OutClaim`] excerpt.
+/// region (the primary span as a rustc-style caret frame) / problem (the label) / hints (notes
+/// then helps, and the suggestion as a remediation-classed help). ack-8 (round-24): the region is
+/// now the full [`frame_region`] caret art — `--> file:line:col`, the source line in a gutter, and
+/// a `^^^` underline — with each LABELED secondary span rendered as its own `---` caret frame, so
+/// a cause and its effect land in ONE frame (228). `src`/`filename` resolve a span to a framed
+/// source excerpt (rul24-lineno-identity: the gutter line number is the SOURCE line); `interner`
+/// resolves the [`OutClaim`] excerpt.
 ///
 /// This is `render_cli` — EVERYTHING (the render plane): title, region, prose, helps, the
 /// suggestion. The artifact-bound projection is [`render_artifact_comment`], which admits only
 /// fact-plane fields. Returns the full multi-line narrative as a standalone `String`.
 ///
-/// (The cli's `report()` does NOT call this directly — it lowers via [`Diag::to_legacy`] into the
-/// existing `<stage>: <sev>[<code>]: <message>` + ` --> <span>` plumbing, so the title/region are
-/// produced there. This function is the standalone render for a future direct surface and the
-/// shape the unit tests pin.)
+/// (The cli's `report()` renders the LEGACY-lowered stream via [`render_legacy_region`] — sharing
+/// [`frame_region`], so a legacy diagnostic gets the same primary caret frame. This structured
+/// path is what carries the MULTI-span model — the labeled secondary carets a lowered `Diag`
+/// cannot express — and is the shape the unit tests pin.)
 #[must_use]
-pub fn render_cli(diag: &Diag, src: &str, interner: &crate::Interner) -> String {
+pub fn render_cli(diag: &Diag, src: &str, filename: &str, interner: &crate::Interner) -> String {
     use std::fmt::Write;
     let spec = registry(&diag.code);
     let mut out = String::new();
@@ -867,21 +869,24 @@ pub fn render_cli(diag: &Diag, src: &str, interner: &crate::Interner) -> String 
         diag.code.slug(),
         diag.primary.label.as_deref().unwrap_or("")
     );
-    // region: the primary span as `<lo>:<hi> \`source\`` (the simple no-caret form). drop-A fix:
-    // the span is rendered, never dropped. The spanless second-class case (arch-3-residual-2)
-    // omits the region line entirely — there is no location to point at (matches the legacy
-    // `span: None` sites, whose cli `report()` likewise emits no `-->` line).
+    // region: the primary span as a rustc-style caret frame (ack-8). The primary label already
+    // rode the title (Elm's "problem"), so the underline carries no duplicate label. The spanless
+    // second-class case (arch-3-residual-2) omits the region entirely — no location to point at.
     if let Some(primary) = diag.primary.span() {
-        let _ = write!(out, "\n  --> {}", render_span(primary, src));
+        out.push_str(&frame_region(primary, src, filename, None, true));
     }
-    // secondary labeled spans (cause-then-effect in one window — 228); secondaries always carry a
-    // real span (`Diag::secondary` takes a `Span`), so this never elides.
+    // secondary labeled spans — each its OWN `---` caret frame carrying its label (cause-then-
+    // effect in one frame, 228: the flagship being pipeline-stage precision — a diagnostic about
+    // `a | b || c` underlines the exact stage it means). Secondaries always carry a real span.
     for sec in &diag.secondary {
         if let Some(span) = sec.span() {
-            let _ = write!(out, "\n  --> {}", render_span(span, src));
-            if let Some(l) = &sec.label {
-                let _ = write!(out, "  {l}");
-            }
+            out.push_str(&frame_region(
+                span,
+                src,
+                filename,
+                sec.label.as_deref(),
+                false,
+            ));
         }
     }
     out.push_str(&render_body(diag, interner));
@@ -1195,6 +1200,98 @@ fn render_span(span: Span, src: &str) -> String {
     }
 }
 
+/// The 1-based `(line, column)` of a byte offset in `src` — the ack-8 `file:line:col` regions'
+/// coordinate primitive, feeding **rul24-lineno-identity**: the ONE line-number space is the
+/// SOURCE file's, so every printed `N |` gutter and every accepted `book.sh:N` address resolve
+/// through this same function. A byte past the end clamps to the source end. Columns count BYTES
+/// within the line (1-based) — a shell script is overwhelmingly ASCII, so byte-columns align the
+/// fixed-width caret art; a multi-byte line mis-aligns the caret cosmetically only (never the
+/// line number, which is the load-bearing identity). Pure; never panics (`inv-no-throw`).
+/// (Saturating arithmetic throughout — the offsets are source-file-bounded, so it never wraps,
+/// and clippy's `arithmetic_side_effects` floor stays satisfied without a bespoke `#[expect]`.)
+#[must_use]
+pub fn line_col(src: &str, byte: usize) -> (usize, usize) {
+    let clamped = byte.min(src.len());
+    let mut line = 1usize;
+    let mut line_start = 0usize;
+    for (i, b) in src.bytes().enumerate().take(clamped) {
+        if b == b'\n' {
+            line = line.saturating_add(1);
+            line_start = i.saturating_add(1);
+        }
+    }
+    (line, clamped.saturating_sub(line_start).saturating_add(1))
+}
+
+/// A rustc-style caret region for ONE span (ack-8, the diagnostics frame): the `--> file:line:col`
+/// locator, the source line in a `N | …` gutter, and an underline (`^` primary / `-` secondary)
+/// beneath the span with an optional label. This is the shared primitive both the legacy-diag
+/// render (the cli's `report()`) and [`render_cli`]'s multi-span model call, so the frame shape
+/// stays identical whether a diagnostic carries one span or several (cause+effect in one frame).
+///
+/// Feeds **rul24-lineno-identity**: the `N` gutter IS the SOURCE line (via [`line_col`]), so a
+/// number the user reads here is the number they type back as `:N`. ASCII only (color is a
+/// severity/tier channel layered at the I/O edge, never in these bytes). A multi-line span
+/// underlines to the END of its first line (half-assed by design — span-precision is the point,
+/// polish is not). Each returned line is newline-prefixed so it appends cleanly after a title.
+/// `inv-referent-agnostic`: the source line is shown for orientation, never decoded.
+#[must_use]
+pub fn frame_region(
+    span: Span,
+    src: &str,
+    filename: &str,
+    label: Option<&str>,
+    primary: bool,
+) -> String {
+    use std::fmt::Write;
+    let lo = span.lo.0 as usize;
+    let hi = span.hi.0 as usize;
+    let (line, col) = line_col(src, lo);
+    let (hi_line, hi_col) = line_col(src, hi);
+    let line_text = src.lines().nth(line.saturating_sub(1)).unwrap_or("");
+    let gutter = " ".repeat(line.to_string().len());
+    // The underline: `col-1` leading spaces, then the caret run across this line's slice of the
+    // span. A span ending on a later line underlines to end-of-line (the multi-line half-ass).
+    let start = col.saturating_sub(1);
+    let end = if hi_line == line {
+        hi_col.saturating_sub(1)
+    } else {
+        line_text.len()
+    };
+    let run = end.saturating_sub(start).max(1);
+    let marker = if primary { '^' } else { '-' };
+    let underline: String = core::iter::repeat_n(marker, run).collect();
+    let mut out = String::new();
+    let _ = write!(out, "\n  --> {filename}:{line}:{col}");
+    let _ = write!(out, "\n{gutter} |");
+    let _ = write!(out, "\n{line} | {line_text}");
+    let _ = write!(out, "\n{gutter} | {}{underline}", " ".repeat(start));
+    if let Some(l) = label {
+        let _ = write!(out, " {l}");
+    }
+    out
+}
+
+/// The region frame for a LEGACY [`crate::Diagnostic`] (the cli `report()` path): the
+/// [`frame_region`] block for its primary span against `source` (`(filename, text)`), or the
+/// byte-offset fallback `  --> <lo>:<hi>` when no source is available (an ambiguous/combined
+/// stage), or the empty string when the diagnostic is spanless. Keyed off the legacy fields
+/// (a lowered `Diag` carries no secondaries), so it renders exactly one primary caret — the
+/// multi-span extension lives in [`render_cli`] on the structured [`Diag`]. The cli builds the
+/// TITLE (`<stage>: <sev>[<code>]: <msg>`, the gate-3 floor's shape); this is only the region
+/// below it.
+#[must_use]
+pub fn render_legacy_region(diag: &crate::Diagnostic, source: Option<(&str, &str)>) -> String {
+    match (diag.span, source) {
+        (Some(span), Some((filename, src))) => frame_region(span, src, filename, None, true),
+        // No source to resolve line:col against ⇒ the byte-offset fallback (drop-A: the span
+        // still reaches the user, just without the framed excerpt).
+        (Some(span), None) => format!("\n  --> {}:{}", span.lo.0, span.hi.0),
+        // Spanless (arch-3-residual-2): no location to point at, as the legacy `span: None` sites.
+        (None, _) => String::new(),
+    }
+}
+
 // The `diag::legacy` submodule has been deleted by the B4 sweep — all three former
 // legacy survivors (`dq-cmdsub-inner-nonleaf`, `dq-redir-target-top`,
 // `dq-depth-2-positional-unthreaded`) are now first-class variants of [`DiagCode`] above.
@@ -1258,7 +1355,7 @@ mod tests {
         assert_eq!(legacy.severity, Severity::Warning, "registry severity");
         assert_eq!(legacy.code.0, "cfg-errexit-unknown", "stable slug");
         // render_cli must not panic on the spanless case (inv-no-throw) and must omit the region.
-        let cli = render_cli(&d, "irrelevant source", &i);
+        let cli = render_cli(&d, "irrelevant source", "book.sh", &i);
         assert!(!cli.contains("-->"), "no region line when spanless: {cli}");
         assert!(cli.starts_with("warning["), "title still renders: {cli}");
     }
@@ -1353,7 +1450,7 @@ mod tests {
             "a disclosure contributes no fact-plane artifact comment"
         );
         // The CLI render carries the label (drop-A: the span + label reach the user).
-        let cli = render_cli(&note, "echo TAIL", &i);
+        let cli = render_cli(&note, "echo TAIL", "book.sh", &i);
         assert!(cli.contains("this `$(…)` is unresolvable"), "{cli}");
         assert!(cli.starts_with("note["), "title is severity-keyed: {cli}");
         // An Error refusal: a fact-plane comment naming the site, no prose.
@@ -1419,10 +1516,111 @@ mod tests {
         assert_eq!(d.secondary.len(), 1);
         assert_eq!(d.children.len(), 1);
         assert!(d.suggestion.is_some());
-        let cli = render_cli(&d, "01234_56789poisoned_", &Interner::default());
+        let cli = render_cli(&d, "01234_56789poisoned_", "book.sh", &Interner::default());
         // the secondary label and the remediation tag both render.
         assert!(cli.contains("cannot be elided"), "{cli}");
         assert!(cli.contains("[author-oracle]"), "{cli}");
+    }
+
+    /// ack-8 `line_col`: the SOURCE-file line-number space (rul24-lineno-identity). 1-based line
+    /// and byte-column; a byte past end clamps to the last line; the first byte of a line is col 1.
+    #[test]
+    fn line_col_is_source_truth_one_based() {
+        let src = "aa\nbbb\nc";
+        assert_eq!(line_col(src, 0), (1, 1), "first byte ⇒ 1:1");
+        assert_eq!(line_col(src, 1), (1, 2));
+        assert_eq!(
+            line_col(src, 3),
+            (2, 1),
+            "first byte after the newline ⇒ line 2, col 1"
+        );
+        assert_eq!(
+            line_col(src, 7),
+            (3, 1),
+            "the 'c' line (byte 6 is line 2's trailing newline)"
+        );
+        assert_eq!(
+            line_col(src, 999),
+            (3, 2),
+            "past-end clamps to the last line"
+        );
+    }
+
+    /// ack-8 the caret frame: `frame_region` underlines the exact span on its source line, in a
+    /// gutter whose number IS the SOURCE line (rul24-lineno-identity). Primary uses `^`, and the
+    /// span's start column places the underline. Pins the flagship shape (a diagnostic points at
+    /// the exact bytes it means).
+    #[test]
+    fn frame_region_underlines_the_span_on_its_source_line() {
+        let src = "set -eu\napt-get install $(date)\n";
+        // `$(date)` on line 2 (after "apt-get install "); a 7-byte span.
+        let lo = u32::try_from(src.find("$(date)").unwrap()).unwrap();
+        let hi = lo + u32::try_from("$(date)".len()).unwrap();
+        let frame = frame_region(
+            Span::new(BytePos(lo), BytePos(hi)),
+            src,
+            "book.sh",
+            None,
+            true,
+        );
+        assert!(
+            frame.contains("--> book.sh:2:17"),
+            "file:line:col locator: {frame}"
+        );
+        assert!(
+            frame.contains("2 | apt-get install $(date)"),
+            "the source line in a gutter: {frame}"
+        );
+        assert!(
+            frame.contains("^^^^^^^"),
+            "a 7-caret underline under `$(date)`: {frame}"
+        );
+    }
+
+    /// ack-8 the MULTI-span model (228, the built-but-unwired `render_cli` machinery now realized):
+    /// a diagnostic with a PRIMARY caret and a LABELED SECONDARY caret renders BOTH in one frame —
+    /// cause+effect together. The primary underlines with `^`, the secondary with `-` and carries
+    /// its label (the flagship being pipeline-stage precision: `a | b || c` underlining the exact
+    /// opaque stage). This pins that the secondary caret + its label reach the render.
+    #[test]
+    fn render_cli_renders_primary_and_labeled_secondary_carets() {
+        let src = "run_stage_a | grep -q x || install\n";
+        let a_lo = 0u32;
+        let a_hi = u32::try_from("run_stage_a".len()).unwrap();
+        let stage_lo = u32::try_from(src.find("grep -q x").unwrap()).unwrap();
+        let stage_hi = stage_lo + u32::try_from("grep -q x".len()).unwrap();
+        let d = Diag::new(
+            DiagCode::CmdsubOperandTop(CmdsubOperandTop {
+                site: site(0),
+                position: OperandPosition::CommandWord,
+                cause: None,
+            }),
+            Span::new(BytePos(a_lo), BytePos(a_hi)),
+        )
+        .label("the pipeline runs (never elided)")
+        .secondary(
+            Span::new(BytePos(stage_lo), BytePos(stage_hi)),
+            "this stage is the opaque one",
+        );
+        let cli = render_cli(&d, src, "book.sh", &Interner::default());
+        assert!(
+            cli.contains("^^^^^^^^^^^"),
+            "primary `^` caret under `run_stage_a`: {cli}"
+        );
+        assert!(
+            cli.contains("---------"),
+            "secondary `-` caret under the opaque stage: {cli}"
+        );
+        assert!(
+            cli.contains("this stage is the opaque one"),
+            "the secondary label reaches the frame: {cli}"
+        );
+        // Both spans are on line 1 ⇒ both locators name line 1 (one SOURCE line-number space).
+        assert_eq!(
+            cli.matches("book.sh:1:").count(),
+            2,
+            "both carets locate on line 1: {cli}"
+        );
     }
 
     /// `OperandPosition::describe` matches the legacy prose the migrated emit site produced (so
