@@ -275,7 +275,10 @@ Conductor self-test (`op run` resolves the key — PRESENT, no leak) + an Opus s
 - **op session does NOT persist on Windows (caching unavailable — confirmed LIVE):** `op signin`
   returns success but the very next process reports `account is not signed in`, so conductor-signin-once
   fails and every op secret-access re-pops the desktop dialog (untenable for an unattended fan-out — the
-  popup even steals input focus). **RESOLUTION: the EXECUTION controller moves to macOS** — UNIX has op
+  popup even steals input focus). **[SUPERSEDED 2026-07-04: substrate REVERSED to Windows/git-bash — human had too much in-flight to
+  migrate; `op` sidestepped entirely via the key-file-in-env (`~/.temp/vultr.env`, sourced
+  `set -a; . …; set +a`) — see §5.1 + LIVING_STATUS. The macOS resolution below is historical.]**
+  **RESOLUTION: the EXECUTION controller moves to macOS** — UNIX has op
   caching, so `op signin` persists across processes + into subagents (native no-churn, signin-once).
   Windows-specific; dissolves on macOS. Bonus: removes MSYS/CRLF friction, matches the `kWINLOCAL`
   nix-controller lean, and runs in the human's *normal* zsh/dotfiles env (valid HHHF signal, no
