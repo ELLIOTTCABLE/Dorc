@@ -151,3 +151,33 @@ error-posture ruling (human-typed). ~SUSPECT: the per-arm capture cost stays mod
 may-alias default (§3a of `24F`) still awaits fire-rate data. -GUESS: how far the
 name-as-contract principle generalizes beyond this family (it should gate future
 sibling-names regardless).
+
+## §8 — the own-coordinate question: RESOLVED-ADOPT (2026-07-04, human; reservations noted)
+
+§7's open item closed after a full interrogation (chat, this date). The design: the engine
+UNIONS a wall-site's own effect-coordinate(s) — its establish cell, and its killed cell via
+the kill-coords side-map — into the site's lifted footprint, **only when the author's own
+emission is non-empty** (empty = no claim-act = wall; the engine never manufactures a claim
+from silence — the anti-233 boundary). The AUTHORED lane keeps the coherence check as a
+**pre-union canary** (cross-lane contradiction ⇒ refuse ⇒ wall, unchanged — it has real teeth
+there); the DERIVED lane drops the own-membership requirement — the boilerplate
+`printf 'package:%s' "$1"` dies, and deservedly: it was a separate trivial expression the
+check validated *instead of* the derivation (the check was testing the decoy). Union coords
+carry their own provenance (why-lens: own-effect, engine-supplied). Failure directions, swept:
+a union coord only ever adds hit-surface (demotes; cannot license a survival); under
+effect-lane error, union over-poisons (safe) where status-quo refuses (safer-but-costlier) —
+union ≥ status quo in every swept cell. The load-bearing assumption — **effect-entails-touch**
+(declaring "I establish X" while claiming "I don't touch X" is a contradiction in the
+claim-language, not a choosable position) — survived interrogation; the two nearest honest
+wants are selector-granularity (alt6 territory, orthogonal, unforeclosed) and same-cell
+downstream facts (already `EstablishWritten` before the survival walk runs).
+
+**rul24-boilerplate-cargocult (human rule-of-thumb, minted in the same exchange — a
+surface-design/lint razor, keep it):** boilerplate required ~90% of the time that *actively
+bites and must be removed* the other ~10% is acceptable when safety-critical — safety trumps
+ergonomics. Boilerplate required ~70% of the time that does *not* noticeably and quickly harm
+in its superfluous cases is the danger zone: it cargo-cults to 100%, produces no signal, and
+retains its full ergonomics cost. The own-coordinate printf was precisely the second kind
+(never bit when superfluous, near-universally required). Applies forward to the smell-layer's
+design (a mostly-spurious smell decays the same way: ignored, valueless, still noisy) and
+retroactively validates §5's means-nothing-not-refusal posture.
