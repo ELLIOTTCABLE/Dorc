@@ -26,6 +26,12 @@
 #   EXIT_RC=<n>            — assert the APPLY artifact exits exactly <n> (default 0); for a
 #                            faithful nonzero-exit artifact (`set -e; guard && {dead}` exits
 #                            1). Governs the apply exec only; bless never creates it.
+#   DORC_EXIT=<n>         — assert the dorc PROCESS exits exactly <n> (default 0) — distinct
+#                            from EXIT_RC (the artifact's exec rc). ack-1 exit-code family: a
+#                            parse-error / unmodeled-book case fast-fails with 10 while still
+#                            emitting its artifact, so the crash-guard tolerates the declared
+#                            code and runs the ordinary gates. At most one marker; bless never
+#                            creates it (a hand-derived assertion, not blessable output).
 #   DUAL_RAIL=inlined      — exclude the case from gate-6 (cm-1 dual-rail): a function-inlined/
 #                            wrapper-pun case whose `--debug-argv` ledger is the call-site
 #                            surface argv, not the inlined-body argv the bare run logs
@@ -1000,18 +1006,40 @@ for dir in "$here"/cases/*/; do
     continue
   fi
 
+  # DORC_EXIT=<n> marker (ack-1 exit-code family; the value-in-filename idiom, like EXIT_RC=<n>
+  # but for the dorc PROCESS itself, not the rendered apply artifact's exec): the expected exit
+  # status of the dorc invocation (default 0). A parse-error / unmodeled-book case fast-fails
+  # with the dorc-semantic parse-error code (10) while STILL emitting its (partial) artifact
+  # byte-identically (the stdout fence) — so the crash-guard must tolerate that DECLARED code
+  # and proceed to the ordinary gates + content diff, not treat it as a dead engine. Refuse >1
+  # marker loudly (an ambiguous expected-exit is a fixture error).
+  _dorc_exit=0
+  _dorc_exit_count=0
+  for _m in "${dir}"DORC_EXIT=*; do
+    [ -e "$_m" ] || continue
+    _dorc_exit_count=$((_dorc_exit_count + 1))
+    _dorc_exit=${_m##*DORC_EXIT=}
+  done
+  if [ "$_dorc_exit_count" -gt 1 ]; then
+    echo "FAIL  $name  [DORC_EXIT: multiple markers — exactly one expected process-exit is permitted]"
+    fails=$((fails + 1))
+    continue
+  fi
+
   # dorc's stdout is the artifact (probe + apply); its stderr is the diagnostic stream
   # (gate-3 asserts it — below). Capture BOTH (stderr to a temp file, no longer
   # discarded). dorc's exit status is captured (NOT piped away): a crashed/empty engine
   # must hard-fail every case BEFORE the xfail lens and BEFORE bless — empty artifacts
   # are `dash -n`-clean and a BLESS run would otherwise silently bless 43 empty goldens
-  # (round-20 harness-crosscheck find-3, demonstrated with a crash-stub).
+  # (round-20 harness-crosscheck find-3, demonstrated with a crash-stub). The rc is checked
+  # against the case's DECLARED DORC_EXIT (default 0): a WRONG code (incl. a 0 when nonzero
+  # was declared — the fast-fail stopped firing) fails just like a nonzero-when-0-expected.
   dorc_rc=0
   err_file=$(mktemp)
   raw=$("$dorc" --book="${dir}book.sh" "$@" < "${dir}probe-results.txt" 2>"$err_file") || dorc_rc=$?
   got=$(printf '%s\n' "$raw" | sed 's/\r$//')
-  if [ "$dorc_rc" -ne 0 ] || [ -z "$got" ]; then
-    echo "FAIL  $name  [dorc exited rc=$dorc_rc / produced no output — a dead engine is never green]"
+  if [ "$dorc_rc" -ne "$_dorc_exit" ] || [ -z "$got" ]; then
+    echo "FAIL  $name  [dorc exited rc=$dorc_rc (expected $_dorc_exit) / produced no output — a dead engine, or a wrong exit-code contract, is never green]"
     rm -f "$err_file"
     fails=$((fails + 1))
     continue

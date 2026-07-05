@@ -64,15 +64,95 @@ use dorc_core::{
     Interner, Observable, OutClaim, Predicted, ProvArena, Rc, Severity, Symbol, Verdict,
 };
 
+/// The one-line usage synopsis, embedded in argument-error messages. The full
+/// mode/flag/exit-code reference is [`HELP`] (printed by `--help` to stdout, exit 0).
 const USAGE: &str =
     "usage: dorc [probe|plan|apply] --book=<book.sh> [-o <oracle.sh>]... [--debug-argv]";
 
+/// The long help (ack-1 + the cheap help-is-success item): `--help`/`-h` prints this to
+/// STDOUT and exits 0 (a help request is a success, not a usage error). Documents the
+/// mode/flag surface AND the exit-code family the harness crash-guard mirrors.
+const HELP: &str = "\
+dorc — spec-mining static-analysis orchestrator (implementation spike)
+
+usage: dorc [<mode>] --book=<book.sh> [-o <oracle.sh>]... [options]
+
+modes (an optional leading token; default is the probe-then-apply round-trip):
+  probe    emit only the read-only probe artifact (phase 1) to stdout; reads no stdin
+  plan     preview the eliding apply on stdout, with the why-lens + diagnostics on stderr
+  apply    emit the byte-floored, receipt-free shippable apply artifact to stdout
+  (none)   the round-trip: probe then apply on stdout, full disclosure on stderr
+
+options:
+  --book <book.sh>      the book to analyze (required; --book=PATH or --book PATH)
+  -o, --oracle <o.sh>   an oracle file to load (repeatable; -o PATH, -oPATH, --oracle PATH)
+  --trust-footprints    opt into the survival tier (default off)
+  --debug-argv          echo the engine's per-site resolved argv to stderr
+  -h, --help            print this help to stdout and exit 0
+  --version             print the version to stdout and exit 0
+
+stdin:  probe results, one per line — `site <leafid> effect=<holds|absent|cant-tell> rc=<n>`
+stdout: the selected mode's artifact(s).  stderr: diagnostics / why-lens / decision-digest.
+
+exit codes:
+  0    success — the analysis completed and the artifact was emitted
+  2    usage error — a bad/unknown argument, a missing --book, or an unreadable file
+  10   parse error — the book carries a construct dorc cannot model (a syntax-level
+       ⊤-reject / CFG ⊤-node); the artifact still ships byte-identically, but the exit
+       signals partial understanding so a `dorc … && deploy` chain stops. First of the
+       reserved 10..19 dorc-semantic fast-fail range (vacuous/obvious, dorc-specific).
+";
+
+/// A usage/argument error, or an unreadable input file (the classic getopt convention).
+const EXIT_USAGE: u8 = 2;
+/// A parse-error / unmodeled book (`inv-top-reject`): the book carries a construct dorc
+/// cannot model. The artifact still ships, but the exit signals partial understanding
+/// (ack-1). First of the reserved 10..=19 dorc-semantic fast-fail range.
+const EXIT_BOOK_UNMODELED: u8 = 10;
+
+/// What the arg-parse resolved to: an analysis run, or a help/version request (both of which
+/// are successes printed to stdout, ack-1 help-is-success — never a usage error).
+enum Invocation {
+    /// A normal analysis run with the parsed [`Args`].
+    Analyze(Args),
+    /// `-h`/`--help`: print [`HELP`] to stdout, exit 0.
+    Help,
+    /// `--version`: print the version to stdout, exit 0.
+    Version,
+}
+
+/// The outcome of a completed analysis run — the process exit code (ack-1). `Complete` is the
+/// ordinary success; `BookUnmodeled` still emitted the artifact but the book carried an
+/// `inv-top-reject` construct, so the process fast-fails with [`EXIT_BOOK_UNMODELED`].
+enum RunOutcome {
+    /// The analysis completed cleanly ⇒ exit 0.
+    Complete,
+    /// The book carried a parse/CFG ⊤-reject ⇒ the artifact shipped, but exit [`EXIT_BOOK_UNMODELED`].
+    BookUnmodeled,
+}
+
 fn main() -> ExitCode {
-    match run() {
-        Ok(()) => ExitCode::SUCCESS,
+    match parse_args() {
+        Ok(Invocation::Help) => {
+            print!("{HELP}");
+            std::io::stdout().flush().ok();
+            ExitCode::SUCCESS
+        }
+        Ok(Invocation::Version) => {
+            println!("dorc {}", env!("CARGO_PKG_VERSION"));
+            ExitCode::SUCCESS
+        }
+        Ok(Invocation::Analyze(args)) => match run(&args) {
+            Ok(RunOutcome::Complete) => ExitCode::SUCCESS,
+            Ok(RunOutcome::BookUnmodeled) => ExitCode::from(EXIT_BOOK_UNMODELED),
+            Err(msg) => {
+                eprintln!("dorc: {msg}");
+                ExitCode::from(EXIT_USAGE)
+            }
+        },
         Err(msg) => {
             eprintln!("dorc: {msg}");
-            ExitCode::FAILURE
+            ExitCode::from(EXIT_USAGE)
         }
     }
 }
@@ -115,17 +195,29 @@ struct Args {
     trust_footprints: bool,
 }
 
-/// Minimal hand-rolled parsing (no `clap` dep): an OPTIONAL leading mode token
-/// (`probe`/`plan`/`apply`; absent ⇒ [`Mode::RoundTrip`]), then `--book=PATH` / `--book
-/// PATH`, `-o PATH` / `-oPATH` / `--oracle PATH` (repeatable), and `--debug-argv` (gate-5
-/// readout). The mode is positional-first ONLY (a bare word after flags is still an
+/// Minimal hand-rolled parsing (no `clap` dep yet): resolve the whole invocation. `-h`/`--help`
+/// and `--version` win unconditionally (a pre-scan — ack-1 help-is-success, so a help request
+/// beats a malformed flag) and return the stdout-and-exit-0 variants. Otherwise: an OPTIONAL
+/// leading mode token (`probe`/`plan`/`apply`; absent ⇒ [`Mode::RoundTrip`]), then `--book=PATH` /
+/// `--book PATH`, `-o PATH` / `-oPATH` / `--oracle PATH` (repeatable), `--debug-argv`,
+/// `--trust-footprints`. The mode is positional-first ONLY (a bare word after flags is still an
 /// error) so the legacy `dorc --book=… < results` invocation parses unchanged.
-fn parse_args() -> Result<Args, String> {
+fn parse_args() -> Result<Invocation, String> {
+    let raw: Vec<String> = std::env::args().skip(1).collect();
+    // ack-1 help-is-success: `--help`/`--version` are stdout-and-exit-0 requests, not usage
+    // errors, and they win even alongside a malformed flag (the conventional precedence).
+    if raw.iter().any(|a| a == "-h" || a == "--help") {
+        return Ok(Invocation::Help);
+    }
+    if raw.iter().any(|a| a == "--version") {
+        return Ok(Invocation::Version);
+    }
+
     let mut book: Option<String> = None;
     let mut oracles = Vec::new();
     let mut debug_argv = false;
     let mut trust_footprints = false;
-    let mut it = std::env::args().skip(1).peekable();
+    let mut it = raw.into_iter().peekable();
 
     // A leading bare word (no `-` prefix) selects the mode; anything else ⇒ RoundTrip and
     // the token is left for the flag loop (which rejects an unexpected bare word, as before).
@@ -158,27 +250,24 @@ fn parse_args() -> Result<Args, String> {
             debug_argv = true;
         } else if arg == "--trust-footprints" {
             trust_footprints = true;
-        } else if arg == "-h" || arg == "--help" {
-            return Err(USAGE.to_string());
         } else {
             return Err(format!("unexpected argument {arg:?}; {USAGE}"));
         }
     }
-    Ok(Args {
+    Ok(Invocation::Analyze(Args {
         mode,
         book: book.ok_or(USAGE)?,
         oracles,
         debug_argv,
         trust_footprints,
-    })
+    }))
 }
 
 #[expect(
     clippy::too_many_lines,
     reason = "the top-level pipeline driver: lift → analyze → probe → plan → render, one linear sequence with mode-routing; splitting it into sub-drivers would scatter the ONE call-shape the thin-driver mandate keeps here"
 )]
-fn run() -> Result<(), String> {
-    let args = parse_args()?;
+fn run(args: &Args) -> Result<RunOutcome, String> {
     let mut interner = Interner::default();
     let mode = args.mode;
     // rec-1 advisory routing: `plan` and the legacy round-trip overlay the FULL advisory plane
@@ -225,6 +314,24 @@ fn run() -> Result<(), String> {
     report_at(advisory, "parse", &parsed.diags);
     let cfg = dorc_analysis::cfg::build(&parsed.value);
     report_at(advisory, "cfg", &cfg.diags);
+    // ack-1 exit-code family: a book carrying a parse/CFG ⊤-reject (`inv-top-reject`) — a
+    // syntax-unsupported/malformed construct, or its downstream CFG ⊤-node — leaves the analysis
+    // built on partial understanding. The artifact still ships byte-identically (the stdout
+    // fence), but the process fast-fails with EXIT_BOOK_UNMODELED so a `dorc … && deploy` chain
+    // STOPS. Keyed on Error-severity from the parse OR cfg stage (the only Error codes there are
+    // syntax-{unsupported,malformed} and cfg-top-node — the "book cannot be modeled" set); a
+    // render-refusal / oracle-lift Error is kFAIL-safe and does NOT fast-fail (the artifact is
+    // valid). Computed here (before the `probe` early-return) so every mode signals it.
+    let book_unmodeled = parsed
+        .diags
+        .iter()
+        .chain(cfg.diags.iter())
+        .any(|d| d.severity == Severity::Error);
+    let book_outcome = if book_unmodeled {
+        RunOutcome::BookUnmodeled
+    } else {
+        RunOutcome::Complete
+    };
     // Book-side value-flow: resolve each command-site's argv (constant/variable
     // propagation) — the input entity-resolution consumes (19H §1 / 202 §1).
     let value = dorc_analysis::value::analyze(&cfg.value, &parsed.value, &mut interner);
@@ -365,7 +472,7 @@ fn run() -> Result<(), String> {
         print!("{}", resolvers.render_sh()); // 24F §3: rides the SAME phase-1 block
         print!("{}", reaches_plan.render_sh()); // 24G §4: rides the SAME phase-1 block
         std::io::stdout().flush().ok();
-        return Ok(());
+        return Ok(book_outcome);
     }
 
     // The round-trip emits the probe FIRST (phase 1 on stdout), then the apply (phase 2)
@@ -534,7 +641,7 @@ fn run() -> Result<(), String> {
         classified.diags,
         refusals,
     );
-    Ok(())
+    Ok(book_outcome)
 }
 
 /// arch-1 decision-digest (`mechanism-decision-digest`, `22A` concl-3): a one-line hash of the
