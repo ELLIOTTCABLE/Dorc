@@ -14,6 +14,8 @@ here; if it discovers that two slugs are the same tension, report that similarly
 
 However, this is not *design*; don't mis-read content in here as advisory or
 direction-setting. Prose is descriptive/identifying, not prescriptive/opining.
+It is also a quickref, not a changelog: entries describe the *current* state of
+each tension; history lives in the cited `Research/` docs.
 
 ## How to read an entry
 The `### kSLUG` in the header is canonical; re-use that term every time you recognize it.
@@ -39,7 +41,7 @@ First, `kSLUG-pole-a ↔ kSLUG-pole-b`: The axis and its two ends, each named to
 ### `kBURDEN`
 Poles: `kBURDEN-we-infer ↔ kBURDEN-user-declares`
 
-**Tension:** minimal user buy-in / invisibility / "magic" (DESIGN priorities 2 & 4) **vs** precision & soundness from explicit specification (priority 1). The deployer↔engineer audience gradient is this knob set per-human: a deployer sits towards `kBURDEN-we-infer`, an engineer who writes an oracle moves that one command towards `kBURDEN-user-declares`.
+**Tension:** minimal user buy-in / invisibility / "magic" (DESIGN priorities 2 & 4) **vs** precision & soundness from explicit specification (priority 1). The deployer↔engineer audience gradient is this knob set per-human: a deployer sits towards `kBURDEN-we-infer`, an engineer who writes an oracle moves that one command towards `kBURDEN-user-declares`. The gradient's authored surface is the two optional function-families (per-TOOL `predict`/`is_converged`/`touches`; per-KIND `resolve`/`reaches`), each silence degrading to a named floor, ratified monotonic — every added member buys value, none removes prior value (rul24-threefunc-monotonic; `Research/notes/24A` §1b, `24G` §2) — and the deployer end stays free (the admin's own hand-written guard is first-class lifted material).
 **Status:** open.
 **Owner:** corpus (how-inferable real ops shell is) + user (designing the gradient).
 **Lock-in:** med — the gradient must have no cliff (settled principle 5), so the *shape* matters early.
@@ -48,17 +50,18 @@ Poles: `kBURDEN-we-infer ↔ kBURDEN-user-declares`
 Poles: `kOOB-in-band ↔ kOOB-sidecar`
 
 **Tension:** dogfooding / human-visibility / no-cliff / trivial off-ramp (everything is shell you read and run) **vs** engine expressiveness for what shell genuinely cannot carry (effect-class, provenance/leaf-id, cost-class, memo-key+freshness).
-**Status:** directional — lean `kOOB-in-band`; minimize the sidecar. **Owner:** user (the value) + corpus (`Q-INFER` sizes the irreducible floor). **Lock-in:** med.
+**Status:** directional — lean `kOOB-in-band`; minimize the sidecar. In practice all authored knowledge rides sh function-bodies + inline binds + trailing marks (strip-only; effects derive from the bodies), while the sanctioned OOB *metadata* lanes (the `UNK`/refusal report; the probe-readback lanes) carry no configuration. **Owner:** user (the value) + corpus (`Q-INFER` sizes the irreducible floor). **Lock-in:** med.
 Entangled with `kBURDEN` (that's *how much* is specified; this is *what form*).
-> *Clarification (human, 2026-06-03):* this knob's redline is **user-configuration form**, not metadata transport — out-of-band *metadata* (provenance/leaf-id, effect/cost-class, memo-key, network-transport framing) is fine; what is verboten (at least for now) is sidecar *configuration* — no YAML, no frontmatter, no pragma, no comment-parsing — all config is spelled in `sh` / library-code.
+> *Redline (human):* the redline is **user-configuration form**, not metadata transport — out-of-band *metadata* (provenance/leaf-id, effect/cost-class, memo-key, network-transport framing) is fine; what is verboten (at least for now) is sidecar *configuration* — no YAML, no frontmatter, no pragma, no comment-parsing — all config is spelled in `sh` / library-code.
 False friend of `kCOMMS` (Execution & modes): the same in-band/out-of-band axis but for Dorc's own transport, which carries no config redline.
 
 ### `kTYANNOT`
 Poles: `kTYANNOT-inline ↔ kTYANNOT-eol-comment`
 
-**Tension:** *iff* Dorc ends up needing a non-sh-native **type-annotation** at all (itself unsettled — `dq-kOOB`; see `Research/plans/17N` top paragraph), how is it spelled in the script? `kTYANNOT-inline` annotates a type directly on a command argument — ergonomic, intuitive, significant-meaning-in-place (DX-forward) **vs** `kTYANNOT-eol-comment` carries it on an end-of-line `# …` comment (shellcheck-style; verbose, forces pulling typed values out of argument-position). The forcing tension is the **off-ramp**: sh has no inline-comment form, so an inline annotation is *not inert* under stock `dash`/`bash` — it aborts (`local: :: bad variable name`) or silently corrupts (verified, `Research/plans/17O` F-OFFRAMP) — breaking `kLANG`'s "absolutely trivial" off-ramp and demanding a correctness-critical strip/transpile pass; an eol comment is inert under any shell (off-ramp-free) but **re-opens `kOOB`'s `no-comment-parsing` redline**. So *both poles sacrifice a "spelled in sh" principle* — inline sacrifices the off-ramp (`kLANG`), eol-comment sacrifices no-comment-config (`kOOB`); the knob is *which*.
-**Status:** open, **gated by a prior open question** (`dq-kOOB`: whether a type-system exists at all). **Owner:** user (DX/ergonomics vs off-ramp purity). **Lock-in:** med (the spelling threads the parser + every typed oracle; the off-ramp guarantee is high-lock).
-> Entangled with `kOOB` (the eol-comment pole's cost) and `kLANG` (the inline pole's cost). Source: `Research/plans/17N` top paragraph + `Research/plans/17O` F-OFFRAMP. *(Added 2026-06-08 with human auth; the synthesis docs reference this slug, they do not redefine it.)*
+**Tension:** how a non-sh-native **type-annotation** is spelled in the script. `kTYANNOT-inline` annotates directly on a command argument — ergonomic, intuitive, significant-meaning-in-place — but is *not inert* under stock shells (aborts or silently corrupts; verified, `Research/plans/17O` F-OFFRAMP), so it demands a correctness-critical strip pass, taxing `kLANG`'s "absolutely trivial" off-ramp. `kTYANNOT-eol-comment` carries it on an end-of-line `# …` comment — inert under any shell (off-ramp-free) but a breach of `kOOB`'s no-comment-parsing redline, and it forces typed values out of argument-position. *Both poles sacrifice a "spelled in sh" principle*; the knob is *which*.
+**Status:** directional — **de-facto `kTYANNOT-inline`; the formal weld is human-reserved.** The upstream gate (`dq-kOOB`: whether a type-surface exists at all) resolved by construction: the inline dialect (period-named functions, inline binds, trailing marks) is stamped and implemented, with the off-ramp cost paid by the strip pass (strip-fidelity: bare marks delete whole-statement; `name.predict()` → `name_predict()`; the author's last substantive command stays the last status-affecting statement). Two containments cheapen the trade against the round-17 pricing: annotations live only in *oracle bodies* — books stay verbatim-runnable, and oracles already require the mechanical rename for their dotted names — and the eol pole was never actually clean (the `kOOB` breach). Residual `dq-kOOB` scope: the annotation's final concrete syllable, kind collision/evolution semantics, bootstrap-kind curation (TODO-ADDTL).
+**Owner:** user (DX/ergonomics vs off-ramp purity). **Lock-in:** med (the spelling threads the parser + every typed oracle; the off-ramp guarantee is high-lock).
+> Entangled with `kOOB` (the eol pole's cost) and `kLANG` (the inline pole's cost). Sources: `Research/plans/17N` top paragraph · `17O` F-OFFRAMP · `spike/CLAUDE.md` strip-fidelity.
 
 ---
 
@@ -67,7 +70,7 @@ Poles: `kTYANNOT-inline ↔ kTYANNOT-eol-comment`
 ### `kPROBING`
 Poles: `kPROBING-probe-first ↔ kPROBING-just-run`
 
-**Tension:** avoid expensive/dangerous redundant *work* (check before acting) **vs** avoid redundant *checking* overhead (for a cheap idempotent op like `mkdir -p`, the probe's stat can cost more than just doing it). The apply-cost×check-depth banding (VALUE / JUST-RUN / HARD) lives on this axis.
+**Tension:** avoid expensive/dangerous redundant *work* (check before acting) **vs** avoid redundant *checking* overhead (for a cheap idempotent op like `mkdir -p`, the probe's stat can cost more than just doing it). The apply-cost×check-depth banding (VALUE / JUST-RUN / HARD) lives on this axis — and the guard tier added a third consumer, the **check-tax**: a guarded site pays its oracle-check on every apply, forever, so an expensive check must either earn its vouch or just-run (`Research/plans/233`).
 **Status:** open — half decided-now, half runtime-dynamic. The per-leaf call is hard to tune and probably dynamic: this is where Dorc starts to resemble a query-planner and eventually wants Executor Smarts. The part *we* set is the meta-knob — **when** to graduate into Executor Smarts. **Owner:** corpus (sizes the bands) + runtime. **Lock-in:** low, but the decision-point must exist in the planner.
 
 ### `kFLATTEN`
@@ -114,6 +117,10 @@ Poles: `kSTATE-persist ↔ kSTATE-recompute`
 **Tension:** persisted state — a verdict cache, cross-host memoization, any central record — buys speed and reuse **vs** stateless recompute from the one known ground truth (host reality; on-disk code) buys correctness and dodges staleness/contention.
 **Status:** open, **and genuinely unsettled.** Prior rounds treated central state as a near-killer (Terraform contention / stale / secrets-in-state); the build-systems prior-art offers the stateless counter-model (rust-analyzer: no persisted cache, recompute from on-disk truth). Neither has been interrogated; resolution may end up `mode` (floated to the user via config or inference). **Owner:** user + corpus (`Q-HOMOGENEITY` sizes the reuse upside). **Lock-in:** high to *reserve* (the verdict shape / content-key), low to *use*.
 
+**Critical note:** (human): if this is ever unparked, it is *critical* that is unparked *alongside some hostile-host security work*. The moment we store state from one host and affect the other with it, we're a security vector.
+
+Standing fences while parked: the probe-TAPE is a write-only postmortem durable, never this knob's reuse-cache — nothing re-ingests receipts across runs (rec-5, welded; `spike/CLAUDE.md`); and the wall-clock-keyed verdict classes (package-index freshness, cert expiry) are the first hermeticity test-cases any content-key design must survive — they are inherently volatile-keyed and break naive keying first.
+
 ---
 
 ## Execution & modes
@@ -123,7 +130,7 @@ Poles: `kELISION-scoped ↔ kELISION-full`
 
 **Tension:** deliberately *not checking, right now*, state the user hasn't asked about — hot-loop speed inside a declared scope, staleness accepted outside it (`dorc bump`-style partial update) **vs** checking everything the book expresses — completeness, no drift (`dorc reconcile`-style full convergence). The knob is *what is in scope to check at all*; it never touches soundness inside that scope.
 
-Naming caution — this slug predates the terminology-firming and its "elision" means the check-*scope* above, which is one of **three mechanisms with three distinct licenses**, never to be conflated: *scope-elision* (this knob: a user-mode choice of what gets checked); *replacement-elision* (the canonical sense elsewhere: observable-preserving replacement of a proven-converged command — licensed only by probe-facts, under `kFAIL`, in every mode); and *guard-insertion* (the round-23 ternary's middle verdict: an observable-preserving insertion of the oracle's own verdict-function ahead of the untouched command — licensed by an author's converged-vouch, a judgment-tier attributed claim, reproducing nothing). Contract and motivation: `Research/plans/233` (the update + guard-license sections) and `Research/plans/239`.
+Naming caution — this slug predates the terminology-firming and its "elision" means the check-*scope* above, which is one of **four mechanisms with four distinct licenses**, never to be conflated: *scope-elision* (this knob: a user-mode choice of what gets checked); *replacement-elision* (the canonical sense elsewhere: observable-preserving replacement of a proven-converged command — licensed by probe-facts PLUS a reached converged-vouch, the elide-weld, under `kFAIL`, in every mode); *guard-insertion* (the ternary's middle verdict: an observable-preserving insertion of the oracle's own verdict-function ahead of the untouched command — licensed by an author's converged-vouch, a judgment-tier attributed claim, reproducing nothing); and *survival* (elision past a RUNNING wall — licensed by footprint × backing disjointness on top of the vouch, gated behind the admin's explicit flag, never a default). Contract and motivation: `Research/plans/233` (the update + guard-license sections), `plans/239`, `notes/24A` §1a/§1c.
 
 **Status:** mode (user picks via update/reconcile; changes checking *scope*, never *soundness*). **Owner:** user (runtime). **Lock-in:** low.
 
@@ -136,15 +143,14 @@ Poles: `kOBJECTIVE-latency ↔ kOBJECTIVE-throughput`
 ### `kFIDELITY`
 Poles: `kFIDELITY-optimized ↔ kFIDELITY-faithful`
 
-**Tension:** performance (the minimized, batched, opaque production probe) **vs** debuggability / attribution (`--faithful`: one-leaf-one-exec, 1:1 source mapping — the seam the realtime-output requirement *and* the future tracer both need).
+**Tension:** performance (the minimized, batched, opaque production probe) **vs** debuggability / attribution (`--faithful`: one-leaf-one-exec, 1:1 source mapping — the seam the realtime-output requirement *and* the future tracer both need). The "provenance-preserving" obligation is heavier than a 1:1 source map: the faithful seam must preserve an N-tier, per-host-forking, host-qualified multi-locator derivation DAG (loc-host / loc-user-src / loc-probe / loc-surface; `Research/plans/111`).
 **Status:** open — both ship (`kFIDELITY-optimized` default, `kFIDELITY-faithful` reserved). **Owner:** dominant-strategy. **Lock-in:** high — the leaf-execution seam must be wrappable + provenance-preserving from day 1.
-> *Round-11 (error/provenance prior-art, 2026-06-03):* the "provenance-preserving" clause is heavier than a 1:1 source map — the faithful seam must preserve an N-tier, per-host-forking, host-qualified multi-locator derivation DAG (loc-host / loc-user-src / loc-probe / loc-surface); see `notes/110` (+ forthcoming `plans/` synthesis).
 
 ### `kCOMMS`
 Poles: `kCOMMS-executor-OOB ↔ kCOMMS-transpilation-inband`
 
-The form of Dorc's own controller↔host metadata: a bootstrapped probe-executor reporting out-of-band (Ansible-python-style), or transpiled markers in-band in a real-shell stream. A false friend of `kOOB` (same in-band/out-of-band axis, but Dorc's implementation I/O, not user-written config); open, and either pole rides the one `kFIDELITY` session seam.
-> *Round-14 (transport prior-art, 2026-06-04):* the two poles conflate two *orthogonal* axes — in-band↔OOB and executor↔pure-sh. The directional lean is the **executorless-OOB** quadrant the poles omit: tool I/O full-fidelity on native SSH channels; Dorc-signalling out-of-band, split by size/urgency — short gating verdicts (`(verdict, content-key, freshness)`) on a shared atomic fast-lane, large diagnostics in per-leaf files demuxed by filename. The executor pole is re-pinned to {no-writable-fs, hard backpressure}, *not* concurrency/attribution (pure-sh covers those). Security is structural (signalling never shares a lane with freeform). Residual: writable-fs on stripped/Windows targets. See `plans/142`.
+The form of Dorc's own controller↔host metadata: a bootstrapped probe-executor reporting out-of-band (Ansible-python-style), or transpiled markers in-band in a real-shell stream. A false friend of `kOOB` (same in-band/out-of-band axis, but Dorc's implementation I/O, not user-written config); either pole rides the one `kFIDELITY` session seam.
+**Status:** open, directional. The two poles conflate two *orthogonal* axes — in-band↔OOB and executor↔pure-sh — and the lean is the **executorless-OOB** quadrant the poles omit: tool I/O full-fidelity on native SSH channels; Dorc-signalling out-of-band, split by size/urgency (short gating verdicts on a shared atomic fast-lane; large diagnostics in per-leaf files demuxed by filename); the executor pole re-pinned to {no-writable-fs, hard backpressure}, *not* concurrency/attribution; security structural (signalling never shares a lane with freeform). Residual: writable-fs on stripped/Windows targets. Full resolution: `Research/plans/142`. What *forces* the decision (this knob + the marker-protocol/backpressure/async-vs-statemachine cluster) is the live-plan/reactivity work (`plans/22H`) — live ∧ concurrent is what demands an executor; single-shot whole-script shipping (the spike/trial floor) commits nothing.
 
 ### `kSCHEDULE`
 Poles: `kSCHEDULE-wide ↔ kSCHEDULE-ordered`
@@ -172,10 +178,9 @@ A pseudo-knob is not an orthogonal dimension we can *choose* a position on, like
 Poles: `kSILO-full-parity ↔ kSILO-different-limitations`
 
 **Tension:** where correctness-code (guards, checks, convergence predicates) accumulates over time, between its two possible homes. Under `kSILO-full-parity`, correctness-code is analyzed/lifted/rewarded identically wherever it lives — book or oracle — so admins keep writing guards in their books, books stay defensively rich, and the standalone off-ramp stays strong (the book still self-guards when run without Dorc). Under `kSILO-different-limitations`, the oracle-contract dialect is more analyzable than arbitrary book-sh (the kind-annotation, the constrained argparse, declared cardinality exist only there), so every capability gated behind it is a pull to migrate correctness out of books into oracle-libraries: books lean out, the world's published shell gets less defensive, and the book-alone off-ramp degrades to "runs, but re-runs blind."
-**Status:** pseudo — not directly settable; the position is an *output* of `kBURDEN` (who declares), `kTYANNOT`/`kOOB` (where annotation may live at all), `kLANG` (the off-ramp weld), the analyzer's per-file complexity dial (one machinery for books and oracles, thresholds may differ — 19H §1.3), and — the biggest near-term shover — which half of the probe model the UX visibly *rewards*: oracle-fact elision (Half A: in-book guards redundant ⇒ silo-pull) vs guard-subsumption (Half B: the admin's own guard is what buys them speed ⇒ anti-silo).
+**Status:** pseudo — not directly settable; the position is an *output* of `kBURDEN` (who declares), `kTYANNOT`/`kOOB` (where annotation may live at all), `kLANG` (the off-ramp weld), the analyzer's per-file complexity dial (one machinery for books and oracles, thresholds may differ — 19H §1.3), and — the biggest shover — which half of the probe model the UX visibly *rewards*: oracle-fact elision (Half A: in-book guards redundant ⇒ silo-pull) vs guard-subsumption (Half B: the admin's own guard is what buys them speed ⇒ anti-silo). The machine-inserted guard tier is the strongest live pull toward `kSILO-different-limitations` (admins' incentive to hand-write guards drops when the machine writes them — independently flagged by all three of its design-review crosscheck agents); both directions are now real in-build, so user habit is the thing to watch.
 **Owner:** emergent (analyzer decidability) + user (which gradient we *want*, expressed through the constituent knobs). **Lock-in:** low as a mechanism (it has none of its own); high as a watch-item — by the time the gradient shows up in user habit, the constituent decisions that caused it are baked.
-> Mitigations, so the gradient isn't over-feared: an admin's guard and an oracle's check are usually not duplicates (deployment-specific intent vs tool-state truth; the genuinely-siloable overlap is the narrow middle cohort), and in-book guards retain selfish value under any oracle regime (safe bare re-runs after partial failure, defense against engine misprediction, the unreliable-oracle cell) — surfaceable as a lint-nudge. Origin: the 2026-06-09 conversation (the human's "users will silo their correctness-code into the oracles … degrades the offramp-quality" concern); 19H §1.1/§1.3; 196 §2 (Half-B). *(Added 2026-06-09 by direct human instruction; human-named poles.)*
-> *Round-23 shove (2026-07-02, conductor with human GO — `Research/notes/237` rec-5):* the ternary guard tier has Dorc itself machine-inserting check-then-act guards into apply artifacts — a strong new pull toward `kSILO-different-limitations` (admins' incentive to hand-write in-book guards drops when the machine writes them), independently flagged by all three 236 crosscheck agents. Standing mitigation: the no-double-guard rule — an admin's hand-written guard is honored and never duplicated (their guard *is* the mechanism, machine-recognized).
+> Mitigations, so the gradient isn't over-feared: an admin's guard and an oracle's check are usually not duplicates (deployment-specific intent vs tool-state truth; the genuinely-siloable overlap is the narrow middle cohort); in-book guards retain selfish value under any oracle regime (safe bare re-runs after partial failure, defense against engine misprediction, the unreliable-oracle cell) — surfaceable as a lint-nudge; the machine never duplicates an admin's hand-written guard (the no-double-guard rule — their guard *is* the mechanism, machine-recognized, pinned); and the Half-B reward is demonstrated (the admin's own `dpkg -s … || install` lifts and elides). Origin: the human's silo concern, human-named poles; 19H §1.1/§1.3 · 196 §2 · `notes/237` rec-5.
 
 ## Platform reach — *how far do we bend for odd hosts/targets?*
 
@@ -188,7 +193,8 @@ Poles: `kTPLATFORMS-mainstream ↔ kTPLATFORMS-wide`
 ### `kWINLOCAL`
 Poles: `kWINLOCAL-nix-only-controller ↔ kWINLOCAL-windows-supported`
 
-**Tension:** *nix-only orchestrator host (every push-tool analog does this — Ansible/Salt forbid a Windows controller; fork/local-exec UNIX-isms stay free) **vs** a native-Windows controller for the Windows-daily-driver homelabber. **Status:** directional, mild-lean `kWINLOCAL-nix-only-controller` (WSL is the prior-art escape hatch; the analyzer is platform-free text, so low lock-in). **Owner:** user. **Lock-in:** low.
+**Tension:** *nix-only orchestrator host (every push-tool analog does this — Ansible/Salt forbid a Windows controller; fork/local-exec UNIX-isms stay free) **vs** a native-Windows controller for the Windows-daily-driver homelabber.
+**Status:** directional, mild-lean `kWINLOCAL-nix-only-controller` (WSL is the prior-art escape hatch; the analyzer is platform-free text, so low lock-in) — and the field evidence to date is uniformly friction-ward for a Windows controller: no `op` session-caching across processes, git-bash `ssh` breaking on foreign ssh-configs, CRLF-on-ship hazards for locally-authored books, no ControlMaster in Win32-OpenSSH (`Research/plans/139` §4). **Owner:** user. **Lock-in:** low.
 
 ---
 
@@ -235,4 +241,14 @@ Poles: `kAGENTLESS-push ↔ kAGENTLESS-host-autonomy`
 ---
 
 ## Not a knob (a prioritization principle, parked here so it isn't mistaken for one)
-**`effort-allocation`** — engine-core vs oracle-long-tail vs analyses-on-top. *Not* an A-vs-B design tension; a resourcing call. Lean (user's): highest per-day marginal value is the **core extensible engine** + **analyses-on-top that promote correctness/UX/perf properties**, even though the oracle *corpus* has the larger total eventual reach (community-grown, long-tail). Bootstrap only the ~40-50 highest-frequency oracles; let the community grow the tail.
+**`effort-allocation`** — engine-core vs oracle-long-tail vs analyses-on-top. *Not* an A-vs-B design tension; a resourcing call. Lean (user's): highest per-day marginal value is the **core extensible engine** + **analyses-on-top that promote correctness/UX/perf properties**, even though the oracle *corpus* has the larger total eventual reach (community-grown, long-tail). Bootstrap only the ~40-50 highest-frequency oracles (the field-trial stdlib is that slice; `Research/plans/252` P5); let the community grow the tail.
+
+---
+
+## Proposed additions — reported for human ratification (this file is human-authoritative on naming; these are NOT yet knobs)
+
+### `kRUNG` *(proposed by the round-24 close audit — name/poles/existence all pending the human)*
+Poles (proposed): `kRUNG-one-act ↔ kRUNG-ladder`
+
+**Tension:** authoring a verdict-function is ONE act carrying the full license (rul24-vouch-is-verdict-authoring: write `is_converged()` and Dorc may guard AND elide on its yes — minimal ceremony, no new syllable, maximally sh-native) **vs** a separable license-ladder (ORACLE_PROVIDES provides-license: rung-0 display-only / rung-1 guard-in-position / rung-2 carried-elide) letting a wary engineer hand over *answers* while withholding *permission* — the engineer-side hatch, sibling of the admin's survival flag. One-act risks over-licensing by authors who only meant to inform; the ladder is the least sh-native thing in the design (POSIX has no idiom for "blame me") and would have to be a loud first-class construct under the native-or-break-loudly law. Rung-selection must stay per-path or the monotonic-degradation story breaks.
+**Status (proposed):** open — weld and ladder currently coexist as ruling-vs-taxonomy tension; the field trial's adequacy-bite data is the first evidence either way. **Owner:** user (liability-surface taste). **Lock-in:** med (a later un-weld churns every published oracle's implied license).
