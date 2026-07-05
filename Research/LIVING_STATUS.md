@@ -231,7 +231,56 @@ P5 unblocks soon). Poll `vultr-cli … | grep dorc-r25` for runaways (baseline 0
 - **On-ramp:** THIS block → `252` (protocol + §7) → `254` (review + retrospect ledger) → `255` (dry-run
   + predictions). All committed (`90ee2e2`). Live task: #6 (execution handoff).
 
-## Round-24 status (2026-07-05 late — POLISH LANDED+MERGED; ALL WORK MERGED + QUIET; PUSH-READY; CONDUCTOR ROTATION now)
+## Round-24 status (2026-07-05 later still — WAVE-1 QUEUE LANDINGS; conductor STOPPED at human direction)
+
+**Wave-1 of the rotation queue LANDED + merged** (fresh conductor, full r23+r24 corpus re-read;
+each landing conductor-verified by own hand: fresh build · 4 gates · suites · full e2e; task-slug
+discipline now in effect — word-slugs `upcoming-*`, never bare numbers):
+- **upcoming-lcg-fix DONE** (`e3f67a5`; ledger `24C §find-lcg-thinning`): `Lcg::chance` root-cause
+  fix through the high-bit `below()`; the {both}/{neither} membership cells were provably
+  UNREACHABLE pre-fix (low bit strictly alternates), so the in-memory DST loops' curl-elision
+  branch had never actually been exercised; sweep provably untouched (draws via `below` directly);
+  no latent bug surfaced by the un-thinned space; NEW `resid-24C-counter-drift` — 24C's per-3000
+  sweep counters are landing-time SNAPSHOTS (general lying-counter had drifted 579→641 pre-fix).
+- **upcoming-firstwall-hint DONE** (`339189a`; ledger `24C §Wave-1`): the USER_STORY stage-3 nag
+  live (ONE aggregated stderr hint, first unmodeled wall, un-wall-M counterfactual; `dorc why`
+  carries detail; zero golden churn; conductor eyeballed the flagship render). **Answers r25 B2's
+  hint-confound: the hint EXISTS as of 2026-07-05.** Design finding
+  `find-classify-forecloses-refold`: opaque-wall poison lands at classify, so the honest
+  counterfactual re-fold is structurally unavailable — M is the conservative window-count.
+- **upcoming-degraduation batches 1–2 DONE** (`817a4f7`..`a899fff`; ledger `24C §Wave-1`):
+  **154→126 e2e**, −28 twin-verified REDUNDANTs, 0 skipped; case→twin map durably homed in 24C.
+  **Batches 3–5 REMAIN** (batch 3 carries THE dash-n/ap-2 flag + st-1's named must-cover
+  [`true || true` render shape]; batch 5 needs per-topology assertion-depth verification first).
+  `resid-guard23-stale-comments`: the stale XFAIL comments echo into 6 guard23 goldens — a future
+  BLESS-and-inspect session, never a drive-by.
+
+**Conductor STOPPED here per human directive** ("stop after making the returned work durable").
+NOT dispatched: **upcoming-touches-migration** (NEXT — the human-set LAST churn pass, now
+genuinely unblocked; spec context = 24G §4 typed emission + §8 owncoord + USER_STORY stage-5
+FIXME) → upcoming-stage6-conclude (charter carries the 22H-reassessment inputs + 077/16Q
+extraction adds + the pipe-guard residuals + the errexit-isolation test-owner flag from the r25
+snapshot) → upcoming-battle-oracles; upcoming-r25-prep stays human-gated.
+
+**Mid-wave sibling event (token-limit victim, self-rescued):** a SIBLING session landed
+`7eccd32` (24K lane archive, fully quarantined — stays unread) + `95d0c5d`
+(**`notes/24Kc` language-crosscheck adjudication** — its headline: rule the dq-kOOB/kTYANNOT
+authored-surface weld BEFORE P5, three-pole decision-package + four small r24 fixes; next
+conductor reads 24Kc, this conductor only pointered it). Both Research-only, spike/ untouched.
+An uncommitted human-side `TODO.md` edit (+8 lines) sits in the working tree — HUMAN-OWNED,
+deliberately not committed/reverted by the conductor. Post-landing audit: all three wave-1
+builder worktrees clean (zero unmerged-by-patch-id, zero stashes) — nothing in-flight was lost.
+
+**Process hardenings (bind future briefs; also in 24C):** step-0.5 `mise trust` in fresh
+worktrees (piped builds silently mask the trust-error) · final e2e FOREGROUND-only with generous
+timeout (two of three wave-1 builders stalled forever pausing on backgrounded-e2e completion
+notifications that never re-wake a stopped agent) · e2e wall-clock 15–20min under sibling
+process contention, ~5min uncontended · the `agent-abb8b160…` rust-analyzer diagnostics were a
+PHANTOM (directory non-existent; editor staleness). Housekeeping candidates: the three absorbed
+wave-1 `agent-*` worktrees (lcg/firstwall/degraduation) — human eyeball before removal, per
+precedent.
+
+## Round-24 status EARLIER (2026-07-05 late — POLISH LANDED+MERGED; ALL WORK MERGED + QUIET; PUSH-READY; CONDUCTOR ROTATION now)
 
 **ROTATION HANDOFF (read this first, then the block below for the day's landings):**
 - **Merged tip lineage `00664b1`+** = everything through the polish pass. Conductor-verified on
