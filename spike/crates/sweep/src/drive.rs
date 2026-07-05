@@ -111,6 +111,14 @@ pub fn run_kernel(declared: &DeclaredScenario, s0: &Host, flag_on: bool, i: &mut
     // (the net asserts on behaviour, not stderr text).
     let vouches = dorc_plan::build_vouches(&[ORACLE_SH], &classes, &value, i).value;
 
+    // The identity-CANONICALIZATION map (24F §3/§7.1): built from the modeled host's DECLARED
+    // resolver answers (`Host::resolve` — the sweep stand-in for shipping `package.resolve()` +
+    // reading its per-coordinate stdout, mirroring how the derived footprint sources from
+    // `Host::derive`). An HONEST resolver maps two aliased names to one canonical (the closure
+    // DEMOTES the victim ⇒ safe); a LYING one keeps them apart (the victim wrongly survives ⇒ RED).
+    // Consumed only in the survival walk (flag-on); flag-off ignores it (total-wall baseline).
+    let resolutions = build_resolutions(s0);
+
     dorc_plan::build_plan_walled(
         &declared.book_sh,
         &parsed.value,
@@ -118,7 +126,7 @@ pub fn run_kernel(declared: &DeclaredScenario, s0: &Host, flag_on: bool, i: &mut
         &classes,
         &kills,
         survival.as_ref(),
-        None, // 24F Stage 5: the resolver lane — wired in for the aliasing sweep axis
+        Some(&resolutions),
         &vouches,
         |f| {
             if probe.checks_fact(f) {
@@ -297,6 +305,24 @@ fn merge_derived_footprints(
             footprints.insert(d.node, fp);
         }
     }
+}
+
+/// Build the identity-canonicalization map (24F §3/§7.1 — the sweep mirror of the cli's resolver
+/// readback): copy the modeled host's DECLARED resolver-bearing kinds + per-coordinate canonicals
+/// into a [`dorc_plan::Resolutions`]. This is the sweep stand-in for shipping `<kind>.resolve()` and
+/// reading its per-coordinate stdout — NO sh execution here; the host's declared answer IS the
+/// resolution (exactly as `Host::derive` stands in for the derived-footprint readback). Rides the
+/// declared-vs-TRUE split for IDENTITY: an HONEST answer merges two aliased names to one canonical;
+/// a LYING answer keeps them apart (the victim wrongly survives ⇒ the end-state differential RED).
+fn build_resolutions(s0: &Host) -> dorc_plan::Resolutions {
+    let mut resolutions = dorc_plan::Resolutions::none();
+    for kind in s0.resolver_kinds() {
+        resolutions.add_resolver_kind(kind);
+    }
+    for ((kind, entity), canonical) in s0.resolutions() {
+        resolutions.record(EntityCoord::new(kind, entity), canonical);
+    }
+    resolutions
 }
 
 /// The escalation seam for the sweep's `compile_derivations` (mirror of the cli's

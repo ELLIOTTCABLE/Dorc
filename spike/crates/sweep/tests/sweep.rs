@@ -87,6 +87,27 @@ fn end_state_equality_and_attribution_under_lies() {
                          survivals={:?}",
                         t.topology, t.victim_label, t.survivals,
                     );
+                    // 24F §6 — the identity closure is the SHARPEST claim, so a lying-RESOLVER
+                    // under-execute must ALSO name the resolver (the why-lens: "disjoint AFTER
+                    // package.resolve() canonicalization"). Pin it for the aliasing lane: the
+                    // victim's survival crossing carries `resolver = Some("package")`.
+                    if t.topology == TopologyClass::AliasWall {
+                        let names_resolver = t.survivals.iter().any(|sv| {
+                            sv.elided_label == t.victim_label
+                                && sv
+                                    .crossed_walls
+                                    .iter()
+                                    .any(|w| w.resolver.as_deref() == Some("package"))
+                        });
+                        assert!(
+                            names_resolver,
+                            "seed {s} [AliasWall]: a lying-resolver divergence whose survival \
+                             witness does NOT name the canonicalizing resolver (24F §6 \
+                             attribution) — the sharpest claim in the design is unattributed.\n  \
+                             survivals={:?}",
+                            t.survivals,
+                        );
+                    }
                 }
             }
         }
@@ -125,7 +146,8 @@ fn trials_replay_bit_identically() {
 #[test]
 fn every_topology_class_and_both_behaviours_are_reached() {
     use TopologyClass::{
-        DerivedWall, HitConverged, KillWall, MissConverged, MissDiverged, MultiWall, SilentWall,
+        AliasWall, DerivedWall, HitConverged, KillWall, MissConverged, MissDiverged, MultiWall,
+        SilentWall,
     };
     let want = [
         MissConverged,
@@ -135,6 +157,7 @@ fn every_topology_class_and_both_behaviours_are_reached() {
         SilentWall,
         MultiWall,
         DerivedWall,
+        AliasWall,
     ];
     let n = seed_count();
     let mut seen: BTreeSet<TopologyClass> = BTreeSet::new();
@@ -145,6 +168,12 @@ fn every_topology_class_and_both_behaviours_are_reached() {
     // per `find-net-covers-what` (24C) the honest e2e fixture STRUCTURALLY cannot catch a
     // survival-tier under-execute — ONLY a lying scenario can, and this pins it for the DERIVED lane.
     let mut derived_lying_divergences = 0u64;
+    // The lying-RESOLVER soundness net (24F §7.1): an alias scenario whose LYING resolver kept two
+    // names of one referent apart ⇒ the victim wrongly survived ⇒ RED. Counted separately (like
+    // derived_lying_divergences) because ONLY a lying scenario can catch a survival-tier under-
+    // execute — the honest e2e fixture structurally cannot (find-net-covers-what). Non-vacuity for
+    // the identity closure's soundness proof.
+    let mut alias_lying_divergences = 0u64;
     let mut flag_distinguishes = 0u64;
     let mut first_all: Option<u64> = None;
 
@@ -162,6 +191,10 @@ fn every_topology_class_and_both_behaviours_are_reached() {
             && t.on_diverged()
         {
             derived_lying_divergences += 1;
+        }
+        if t.topology == AliasWall && matches!(t.honesty, Honesty::Lying { .. }) && t.on_diverged()
+        {
+            alias_lying_divergences += 1;
         }
         if t.plan_on_fp != t.plan_off_fp {
             flag_distinguishes += 1;
@@ -198,13 +231,21 @@ fn every_topology_class_and_both_behaviours_are_reached() {
          e2e fixture structurally cannot catch this)."
     );
     assert!(
+        alias_lying_divergences > 0,
+        "no LYING-RESOLVER divergence in {n} seeds — a LYING resolver (Host::resolve keeping two \
+         names of one referent apart) never produced the wrong-survival RED. The aliasing closure's \
+         soundness net (24F §7.1) is VACUOUS: without a lying-resolver divergence the identity \
+         lane's attribution-under-lies assertion is never exercised (find-net-covers-what — fc-5)."
+    );
+    assert!(
         flag_distinguishes > 0,
         "--trust-footprints NEVER changed the plan in {n} seeds — the flag is inert, so the \
          survival tier is untested."
     );
     eprintln!(
-        "sweep coverage over {n} seeds: all 7 topology classes reached by seed {first_all:?}; \
+        "sweep coverage over {n} seeds: all 8 topology classes reached by seed {first_all:?}; \
          honest_elisions={honest_elisions} lying_divergences={lying_divergences} \
-         derived_lying_divergences={derived_lying_divergences} flag_distinguishes={flag_distinguishes}"
+         derived_lying_divergences={derived_lying_divergences} \
+         alias_lying_divergences={alias_lying_divergences} flag_distinguishes={flag_distinguishes}"
     );
 }

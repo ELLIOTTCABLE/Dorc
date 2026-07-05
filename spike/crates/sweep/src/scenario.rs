@@ -69,6 +69,15 @@ pub enum TopologyClass {
     /// under-declares ⇒ the victim wrongly survives ⇒ the end-state differential goes RED — the
     /// automated soundness proof `find-net-covers-what` (24C) says only a lying scenario can catch.
     DerivedWall,
+    /// The wall's footprint name and the victim's backing name are TWO NAMES for ONE referent
+    /// (`nginx` / `nginx-full`; 24F §3 the resid-aliasing closure). The wall TRULY touches the shared
+    /// referent (its `CellDelta` kills the victim's cell — the intrinsic aliasing hazard), so
+    /// token-equality would wrongly call them disjoint ⇒ the victim wrongly survives. A `package`
+    /// RESOLVER bridges the names: HONEST (the `!lying` coin) canonicalizes both to one ⇒ the closure
+    /// HITs ⇒ the victim DEMOTES ⇒ safe (end-states match); LYING keeps them apart ⇒ the victim
+    /// wrongly survives ⇒ the end-state differential goes RED, attributed. The lying-RESOLVER
+    /// soundness net (24F §7.1), the identity analogue of the lying-footprint / lying-derived nets.
+    AliasWall,
 }
 
 /// Whether a scenario's ground truth matches its declared oracle. `Lying` records WHICH wall
@@ -249,6 +258,71 @@ fn install_command(i: &mut Interner, entity: &str) -> (String, CellDelta) {
     )
 }
 
+/// The topology headline (priority: silence and multi-wall dominate the wall's own verb). `wall_kind`
+/// already encodes the HIT (`Config`) and DERIVED (`Derived`) axes, so only `multi`/`alias`/
+/// `victim_converged` are needed besides it. The single per-scenario class the coverage
+/// sometimes-asserts key on (the axes are richer than nine cells; these are the distinct kernel paths).
+fn topology_of(
+    wall_kind: WallKind,
+    multi: bool,
+    alias: bool,
+    victim_converged: bool,
+) -> TopologyClass {
+    if wall_kind == WallKind::Silent {
+        TopologyClass::SilentWall
+    } else if multi {
+        TopologyClass::MultiWall
+    } else if wall_kind == WallKind::Purge {
+        TopologyClass::KillWall
+    } else if wall_kind == WallKind::Config {
+        TopologyClass::HitConverged
+    } else if wall_kind == WallKind::Derived {
+        TopologyClass::DerivedWall
+    } else if alias {
+        TopologyClass::AliasWall
+    } else if victim_converged {
+        TopologyClass::MissConverged
+    } else {
+        TopologyClass::MissDiverged
+    }
+}
+
+/// Build the seeded S0 host from the cells that `holding` at probe time, plus a DERIVED wall's
+/// declared manifest (24E §6) OR an ALIAS wall's declared `package` RESOLVER (24F §3/§7.1). The
+/// manifest/resolver honesty rides the `lying` coin — the DECLARED half of the declared-vs-true
+/// split; the TRUE clobber lives in the `CellDelta`. (`derived`/`alias` are mutually exclusive by
+/// the draw gating; at most one branch fires.)
+fn scenario_host(
+    i: &mut Interner,
+    holding: Vec<FactKey>,
+    derived: bool,
+    alias: bool,
+    lying: bool,
+    wall_entity: &str,
+    victim: &str,
+) -> Host {
+    if derived {
+        // An HONEST manifest ⊇ the wall's establish ({package:wall_entity}); the LIE, if any, is the
+        // undeclared clobber in the TRUE `CellDelta` (24E §6 — the footprint SOURCE is `Host::derive`).
+        let wall_cell = cell(i, wall_entity, INSTALLED);
+        Host::new(holding).with_manifest(wall_cell, [wall_cell])
+    } else if alias {
+        // The `package` resolver (24F §3/§7.1). The wall name and the victim's ALIAS name are two
+        // names for one referent. HONEST (`!lying`): both canonicalize to the wall's (base) entity ⇒
+        // the closure HITs ⇒ the victim DEMOTES ⇒ safe. LYING: the alias resolves to ITSELF ⇒ kept
+        // apart ⇒ the victim wrongly survives ⇒ RED (the wall's true kill of the victim bites).
+        let package = KindId(i.intern(KIND));
+        let wall_ent = EntityRef::Operand(OpaqueToken(i.intern(wall_entity)));
+        let victim_ent = EntityRef::Operand(OpaqueToken(i.intern(victim)));
+        let victim_canonical = if lying { victim_ent } else { wall_ent };
+        Host::new(holding)
+            .with_resolution(package, wall_ent, wall_ent)
+            .with_resolution(package, victim_ent, victim_canonical)
+    } else {
+        Host::new(holding)
+    }
+}
+
 /// Generate the scenario for `seed` (24B §1-C / §3). Deterministic in the seed (the sole entropy
 /// is one [`Lcg`] — `inv-determinism`, no forked PRNG). The draws pick the interference AXES; the
 /// template guarantees a real chronology (see the module docs).
@@ -259,24 +333,40 @@ pub fn generate(seed: Seed, i: &mut Interner) -> Scenario {
     // Every axis is drawn through `below` (the HIGH-bit draw), NOT `chance`: the LCG's low bits
     // are periodic, so low-bit coins would correlate (see [`Lcg::below`]). One draw per axis keeps
     // them independent.
-    let victim = distinct_entity(&mut rng, &[]);
+    let base = distinct_entity(&mut rng, &[]);
     // A HIT (wall footprint touches the victim's entity) is deliberately rarer than a miss — a
     // realistic book seldom re-touches the same entity — but frequent enough for coverage.
     let hit = rng.below(3) == 0;
     let multi = rng.below(3) == 0;
+    // The `lying` coin does double duty: for a footprint/derived scenario it is the FOOTPRINT lie;
+    // for an alias scenario it is the RESOLVER lie (honest merges the names, lying keeps them apart).
     let lying = rng.below(2) == 0;
     // The DERIVED-footprint axis (24E §6): drawn unconditionally (one draw per axis, module doc),
     // but realized only for a clean single-wall MISS (not a hit/multi) — a `place` wall whose
     // footprint is host-DERIVED. This is the axis the lying-derived soundness net exercises.
     let derived = rng.below(3) == 0 && !hit && !multi;
+    // The ALIASING axis (24F §7.1): a clean single-wall scenario where the wall footprints one name
+    // and the victim backs ANOTHER name of the SAME referent, bridged by a `package` resolver whose
+    // honesty is the `lying` coin — the lying-RESOLVER soundness net.
+    let alias = rng.below(3) == 0 && !hit && !multi && !derived;
 
-    // The wall kind: a HIT forces `config` (a different selector on the SAME entity, so the
-    // victim's `#installed` stays ambient and would-elide); `derived` forces a `place` (an
-    // escalating establish, host-derived footprint); a plain miss draws establish/kill/silent.
+    // The victim entity. For an alias scenario the victim wears the ALIAS name (`<base>-full`, a
+    // provides/virtual downstream name); otherwise it is the base pool entity.
+    let victim: String = if alias {
+        format!("{base}-full")
+    } else {
+        base.to_owned()
+    };
+
+    // The wall kind: HIT ⇒ `config` (a different selector on the SAME entity, so the victim's
+    // `#installed` stays ambient); `derived` ⇒ `place` (host-derived footprint); `alias` ⇒ plain
+    // `install` (the aliasing lives in the names + resolver, not the verb); else establish/kill/silent.
     let wall_kind = if hit {
         WallKind::Config
     } else if derived {
         WallKind::Derived
+    } else if alias {
+        WallKind::Install
     } else {
         match rng.below(3) {
             0 => WallKind::Install,
@@ -284,15 +374,17 @@ pub fn generate(seed: Seed, i: &mut Interner) -> Scenario {
             _ => WallKind::Silent,
         }
     };
-    let wall_entity = if hit {
-        victim
+    let wall_entity: String = if hit {
+        victim.clone()
+    } else if alias {
+        // The wall footprints the BASE name; the victim backs the ALIAS — two names, one referent.
+        base.to_owned()
     } else {
-        distinct_entity(&mut rng, &[victim])
+        distinct_entity(&mut rng, &[victim.as_str()]).to_owned()
     };
-    // A HIT (and a DERIVED wall) only demotes/interferes-with a would-elide (converged) victim; a
-    // diverged victim runs regardless, so pin converged for a clean HitConverged / DerivedWall.
-    // Otherwise the victim's @S0 state is a coin flip.
-    let victim_converged = if hit || derived {
+    // A HIT / DERIVED / ALIAS wall only interferes-with a would-elide (converged) victim; a
+    // diverged victim runs regardless, so pin converged for a clean class. Otherwise a coin flip.
+    let victim_converged = if hit || derived || alias {
         true
     } else {
         rng.below(2) == 0
@@ -302,67 +394,37 @@ pub fn generate(seed: Seed, i: &mut Interner) -> Scenario {
     // of every wall, so it crosses them; the primary wall is leaf 0, so a lie names leaf 0.
     let mut commands: Vec<(String, Option<TrueEffect>)> = Vec::new();
 
-    let (wall_line, honest_wall_delta) = wall_command(i, wall_entity, wall_kind);
-    // The LIE (rul24-divergence-is-the-game): the primary wall truly ALSO kills the victim's
-    // `#installed` — a cell its `touches()` never declares. Added independently of the oracle, so
-    // the analyzer cannot see it; it only bites when the victim survives + elides (miss +
-    // converged + flag-on), producing the priced under-execute the attribution assertion pins.
-    let wall_delta = if lying {
-        honest_wall_delta.kill(cell(i, victim, INSTALLED))
+    let (wall_line, honest_wall_delta) = wall_command(i, &wall_entity, wall_kind);
+    // The LIE (rul24-divergence-is-the-game): the wall truly ALSO kills the victim's `#installed` —
+    // the footprint's undeclared clobber (`lying`) OR the INTRINSIC aliasing hazard (`alias`: the two
+    // names ARE one referent, so touching it always disrupts the victim). The analyzer can't see it.
+    let wall_delta = if lying || alias {
+        honest_wall_delta.kill(cell(i, &victim, INSTALLED))
     } else {
         honest_wall_delta
     };
     commands.push((wall_line, Some(TrueEffect(wall_delta))));
 
     if multi {
-        let extra = distinct_entity(&mut rng, &[victim, wall_entity]);
+        let extra = distinct_entity(&mut rng, &[victim.as_str(), wall_entity.as_str()]);
         let (line, delta) = install_command(i, extra);
         commands.push((line, Some(TrueEffect(delta))));
     }
 
-    let (victim_line, victim_delta) = install_command(i, victim);
+    let (victim_line, victim_delta) = install_command(i, &victim);
     commands.push((victim_line, Some(TrueEffect(victim_delta))));
 
-    // The topology headline (priority: silence and multi-wall dominate the wall's own verb).
-    let topology = if wall_kind == WallKind::Silent {
-        TopologyClass::SilentWall
-    } else if multi {
-        TopologyClass::MultiWall
-    } else if wall_kind == WallKind::Purge {
-        TopologyClass::KillWall
-    } else if hit {
-        TopologyClass::HitConverged
-    } else if derived {
-        TopologyClass::DerivedWall
-    } else if victim_converged {
-        TopologyClass::MissConverged
-    } else {
-        TopologyClass::MissDiverged
-    };
-
+    let topology = topology_of(wall_kind, multi, alias, victim_converged);
     // S0: the cells that hold at probe time. The victim holds iff converged. Every wall's own
-    // establish cell is ABSENT so the wall RUNS (a converged wall would elide and cast no
-    // shadow); a purge is `MustRun` regardless, and we seed its target present (something to
-    // purge — realism, not load-bearing).
+    // establish cell is ABSENT so it RUNS; a purge's target is seeded present (realism).
     let mut holding = Vec::new();
     if victim_converged {
-        holding.push(cell(i, victim, INSTALLED));
+        holding.push(cell(i, &victim, INSTALLED));
     }
     if wall_kind == WallKind::Purge {
-        holding.push(cell(i, wall_entity, INSTALLED));
+        holding.push(cell(i, &wall_entity, INSTALLED));
     }
-    // A DERIVED wall's footprint comes from the host's derivation-answer (24E §6): DECLARE the
-    // wall's own coordinate as its derived footprint ({package:wall_entity}) — an HONEST manifest
-    // (⊇ its establish). The LIE, if any, lives in the TRUE `CellDelta` (the wall truly ALSO kills
-    // the victim, a cell this manifest never declares) ⇒ the victim wrongly survives ⇒ RED. The
-    // manifest is honest about what it LISTS; the undeclared clobber is the lie — exactly the
-    // authored lane's structure, only the footprint SOURCE moved to `Host::derive`.
-    let wall_cell = cell(i, wall_entity, INSTALLED);
-    let s0 = if derived {
-        Host::new(holding).with_manifest(wall_cell, [wall_cell])
-    } else {
-        Host::new(holding)
-    };
+    let s0 = scenario_host(i, holding, derived, alias, lying, &wall_entity, &victim);
 
     let honesty = if lying {
         Honesty::Lying { liar_leaf: 0 }
@@ -382,7 +444,7 @@ pub fn generate(seed: Seed, i: &mut Interner) -> Scenario {
             .join("\n"),
     );
 
-    let victim_cell = cell(i, victim, INSTALLED);
+    let victim_cell = cell(i, &victim, INSTALLED);
     let victim_fact_label = label(i, victim_cell);
 
     Scenario {

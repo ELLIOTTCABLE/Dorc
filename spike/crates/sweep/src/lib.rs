@@ -114,6 +114,11 @@ pub struct CrossedWall {
     pub wall_leaf: u32,
     /// The licensor provider (`apt-get`).
     pub provider: String,
+    /// The resolver kind that canonicalized this crossing's compared coordinates, if the backing's
+    /// kind is resolver-bearing (24F §6 attribution — the why-lens names `<kind>.resolve()`). `None`
+    /// for a token-equality (resolver-less) crossing. The lying-RESOLVER net asserts an alias
+    /// survival names its resolver here.
+    pub resolver: Option<String>,
 }
 
 /// A fully self-contained, interner-free trial result — everything resolved to strings/enums, so
@@ -246,6 +251,7 @@ fn survivals_of(plan: &Plan, i: &Interner) -> Vec<Survival> {
                 .map(|c| CrossedWall {
                     wall_leaf: c.wall_leaf().0,
                     provider: i.resolve(c.provider()).to_owned(),
+                    resolver: c.via_resolver().map(|k| i.resolve(k.0).to_owned()),
                 })
                 .collect(),
         });
@@ -283,7 +289,12 @@ fn plan_fingerprint(plan: &Plan, i: &Interner) -> String {
                             .map(|c| {
                                 let fps: Vec<String> =
                                     c.footprint().iter().map(|co| coord_label(*co, i)).collect();
-                                format!("@{}[{}]", c.wall_leaf().0, fps.join(","))
+                                // 24F §6: the resolver attribution rides the fingerprint, so a
+                                // nondeterministic canonicalization would perturb the determinism guard.
+                                let via = c
+                                    .via_resolver()
+                                    .map_or_else(String::new, |k| format!("~{}", i.resolve(k.0)));
+                                format!("@{}[{}]{via}", c.wall_leaf().0, fps.join(","))
                             })
                             .collect();
                         format!("survived{}", crossings.join(""))

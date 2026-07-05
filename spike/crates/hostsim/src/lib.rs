@@ -31,7 +31,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use dorc_analysis::effect::FactKey;
-use dorc_core::{Observable, Phase, Verdict};
+use dorc_core::{EntityRef, KindId, Observable, Phase, Verdict};
 
 pub mod differential;
 
@@ -183,6 +183,20 @@ pub struct Host {
     /// site's TRUE [`CellDelta`] is the LYING derived footprint (⊂ true) that under-declares what the
     /// wall touches ⇒ a downstream fact wrongly survives ⇒ the end-state differential goes RED.
     manifests: BTreeMap<FactKey, BTreeSet<FactKey>>,
+    /// The DECLARED identity-resolver answers (24F §3 — the resid-aliasing closure): per
+    /// `(kind, entity)` coordinate, the CANONICAL entity its `<kind>.resolve()` prints host-side.
+    /// The SAME shape discipline as [`manifests`]/[`verdict`](Host::verdict): DECLARED scenario data,
+    /// deterministic, no ssh, NOT a `dpkg-query -W` simulation — a declared-data oracle. This rides
+    /// the sweep's declared-vs-TRUE split for IDENTITY (24F §7.1): the generator invents a TRUE
+    /// identity (two names → one referent, carried in the `CellDelta`) AND a declared resolver
+    /// answer; an HONEST resolver maps both names to one canonical (the aliasing closure DEMOTES the
+    /// victim ⇒ safe); a LYING resolver keeps them apart (returns each name's own canonical) ⇒ the
+    /// victim wrongly survives ⇒ the end-state differential goes RED.
+    resolutions: BTreeMap<(KindId, EntityRef), EntityRef>,
+    /// Kinds whose owner shipped a resolver (24F §3). A coordinate in such a kind with NO
+    /// [`resolutions`] entry degrades to may-alias (§3a); the sweep's alias scenarios always declare
+    /// both names, so this set is populated implicitly by [`with_resolution`](Host::with_resolution).
+    resolver_kinds: BTreeSet<KindId>,
 }
 
 impl Host {
@@ -194,6 +208,8 @@ impl Host {
             facts: holding.into_iter().collect(),
             violations: Vec::new(),
             manifests: BTreeMap::new(),
+            resolutions: BTreeMap::new(),
+            resolver_kinds: BTreeSet::new(),
         }
     }
 
@@ -211,6 +227,52 @@ impl Host {
         self
     }
 
+    /// Attach a DECLARED identity-resolver answer (24F §3): the `(kind, entity)` coordinate
+    /// canonicalizes to `canonical` when `<kind>.resolve()` runs host-side. Consuming-builder shape
+    /// so a scenario spells its alias/identity map inline. Marks `kind` resolver-bearing. An HONEST
+    /// resolver maps two aliased names to ONE `canonical` (the closure demotes ⇒ safe); a LYING one
+    /// maps each name to itself (kept apart ⇒ the victim wrongly survives — the sweep net's RED).
+    #[must_use]
+    pub fn with_resolution(
+        mut self,
+        kind: KindId,
+        entity: EntityRef,
+        canonical: EntityRef,
+    ) -> Self {
+        self.resolver_kinds.insert(kind);
+        self.resolutions.insert((kind, entity), canonical);
+        self
+    }
+
+    /// Declare a kind resolver-bearing without a specific coordinate (24F §3a): a coordinate in it
+    /// with no [`with_resolution`](Host::with_resolution) entry degrades to may-alias. (The sweep's
+    /// alias scenarios declare both names, so this is a completeness hook, not currently exercised.)
+    #[must_use]
+    pub fn with_resolver_kind(mut self, kind: KindId) -> Self {
+        self.resolver_kinds.insert(kind);
+        self
+    }
+
+    /// The DECLARED canonical form of a `(kind, entity)` coordinate (24F §3) — the resolver analogue
+    /// of [`verdict`](Host::verdict)/[`derive`](Host::derive). Deterministic, scenario-driven, no
+    /// ssh, NOT a `dpkg-query` simulation. `None` ⇒ the resolver produced nothing for it (a
+    /// resolver-bearing kind's unresolved coordinate ⇒ may-alias, §3a).
+    #[must_use]
+    pub fn resolve(&self, kind: KindId, entity: EntityRef) -> Option<EntityRef> {
+        self.resolutions.get(&(kind, entity)).copied()
+    }
+
+    /// The resolver-bearing kinds (24F §3 — the caller marks each in its `Resolutions`).
+    pub fn resolver_kinds(&self) -> impl Iterator<Item = KindId> + '_ {
+        self.resolver_kinds.iter().copied()
+    }
+
+    /// The declared `(kind, entity) → canonical` resolutions (24F §3 — the caller records each into
+    /// its `Resolutions`). Deterministic order (`inv-determinism`).
+    pub fn resolutions(&self) -> impl Iterator<Item = ((KindId, EntityRef), EntityRef)> + '_ {
+        self.resolutions.iter().map(|(&k, &v)| (k, v))
+    }
+
     /// A host whose initial state is a seeded random subset of `candidates` (each
     /// included with probability ½). The DST scenario generator: looping over seeds
     /// fuzzes the analyzer/plan over many host states, reproducibly.
@@ -226,6 +288,8 @@ impl Host {
             facts,
             violations: Vec::new(),
             manifests: BTreeMap::new(),
+            resolutions: BTreeMap::new(),
+            resolver_kinds: BTreeSet::new(),
         }
     }
 
@@ -580,6 +644,47 @@ apt_get__predict() {
         assert!(
             Host::new([]).derive(oldpkg).is_empty(),
             "no manifest ⇒ empty derived footprint ⇒ the site walls"
+        );
+    }
+
+    #[test]
+    fn resolve_models_honest_merge_and_lying_split() {
+        // 24F §3/§7.1: the declared identity-resolver answer. HONEST maps two aliased names
+        // (nginx / nginx-full) to ONE canonical (the closure will HIT ⇒ demote ⇒ safe); LYING maps
+        // each to itself (kept apart ⇒ the victim wrongly survives ⇒ the sweep's RED). A declared-
+        // data oracle (no dpkg-query sim), same discipline as `verdict`/`derive`.
+        let mut i = Interner::default();
+        let package = KindId(i.intern("package"));
+        let nginx = EntityRef::Operand(OpaqueToken(i.intern("nginx")));
+        let nginx_full = EntityRef::Operand(OpaqueToken(i.intern("nginx-full")));
+
+        let honest = Host::new([])
+            .with_resolution(package, nginx, nginx)
+            .with_resolution(package, nginx_full, nginx); // both → nginx (merge)
+        assert_eq!(honest.resolve(package, nginx), Some(nginx));
+        assert_eq!(
+            honest.resolve(package, nginx_full),
+            Some(nginx),
+            "an honest resolver merges the alias to the canonical"
+        );
+        assert!(honest.resolver_kinds().any(|k| k == package));
+
+        let lying = Host::new([])
+            .with_resolution(package, nginx, nginx)
+            .with_resolution(package, nginx_full, nginx_full); // kept apart
+        assert_eq!(
+            lying.resolve(package, nginx_full),
+            Some(nginx_full),
+            "a lying resolver keeps the alias apart (identity — the under-execute reopens)"
+        );
+
+        // An unmodeled coordinate ⇒ None (a resolver-bearing kind's unresolved coord ⇒ may-alias).
+        assert!(
+            Host::new([])
+                .with_resolver_kind(package)
+                .resolve(package, nginx)
+                .is_none(),
+            "a declared resolver-bearing kind with no entry ⇒ None (may-alias, §3a)"
         );
     }
 
