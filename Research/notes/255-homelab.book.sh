@@ -38,8 +38,10 @@ dpkg -s openssl    >/dev/null 2>&1 || apt-get install -y openssl
 # ── 2. windmill server binary (pinned) — the vendor tool, version-guarded download ──
 # the version check is my hand-guard; a stale binary must NOT pass (a bare `command -v`
 # would). This is the line I'll grudgingly write a 6-line oracle for (stage C).
-# FLAG: confirm the release asset name + that the bare-binary path is real (docs push
-# docker-compose); if not, fall back to compose (windmill then joins HA behind docker).
+# FIRMED: asset `windmill-amd64` is real (CE amd64, present in v1.747.0 release assets) — this curl
+# works. But upstream documents the native path NOWHERE (README/self_host = compose/helm/cloud only;
+# first-party Q&A: "run from binary... not recommended unless you know what you're doing"). dec-2
+# validated by-absence → native+systemd is admin-invented; compose is the blessed fallback.
 windmill --version 2>/dev/null | grep -q "$WM_VER" \
    || curl -fsSL "https://github.com/windmill-labs/windmill/releases/download/v${WM_VER}/windmill-amd64" \
         -o /usr/local/bin/windmill
