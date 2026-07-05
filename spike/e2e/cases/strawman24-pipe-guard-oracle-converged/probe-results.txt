@@ -1,2 +1,6 @@
-# The otelcol oracle ships NO probe here: otelcol (non-last pipe stage) is skip-unresolvable
-# and grep (governing stage) is unmodeled ⇒ every site is unresolvable ⇒ no records.
+# site 1 = the CONNECTED check-pipe `otelcol --version | grep -q "0.155.0"` (24J §2), keyed to its
+# governing (last) stage grep. The host ran the real pipe: otelcol IS 0.155.0 ⇒ grep matched ⇒ rc 0
+# ⇒ the pipe is CONVERGED (holds). Its fold-usable Query rc (rule-query-validity passes — the vouched
+# read-only otelcol predecessor gens nothing) folds the `||`: the fallback `curl|tar` is DEAD.
+# Sites 0 (otelcol, subsumed non-last stage) / 2 (curl) / 3 (tar) ship no record.
+site 1 effect=holds rc=0

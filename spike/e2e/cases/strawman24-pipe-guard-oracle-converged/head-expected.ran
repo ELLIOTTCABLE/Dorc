@@ -1,2 +1,0 @@
-ran: grep -q 0.155.0
-ran: otelcol --version
