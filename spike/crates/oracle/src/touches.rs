@@ -359,7 +359,12 @@ fn top_from_word(reason: crate::predict::TopReason) -> TouchesTop {
 /// without an arg, a leftover arg — no format-cycling) ⇒ ⊤. Returns the emitted output
 /// split into LINES (the trailing newline's empty tail dropped); each line is one
 /// coordinate.
-fn printf_lines(format: &str, args: &[String]) -> Result<Vec<String>, TouchesTop> {
+///
+/// `pub(crate)`: reused by the reaches STATIC-arm tracer ([`crate::reaches`]) — a static reaches arm
+/// is an annotated `printf` whose output lines are RAW ENTITIES (24G §4), so it needs the same
+/// line-splitting the touches tracer uses (only the downstream interpretation differs: touches
+/// parses each line as `kind:entity`, reaches takes it as a bare entity in the annotated kind).
+pub(crate) fn printf_lines(format: &str, args: &[String]) -> Result<Vec<String>, TouchesTop> {
     let mut out = String::new();
     let mut arg_idx = 0usize;
     let mut chars = format.chars();

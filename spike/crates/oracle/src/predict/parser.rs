@@ -54,6 +54,17 @@ enum FnRole {
     /// `KindId` wraps, so `package.resolve` is the `package` kind's resolver. Host-run per
     /// coordinate; reuses the predict body dialect verbatim (its body just prints the canonical form).
     Resolve,
+    /// `<kind>.reaches` / `<kind>__reaches` — the REACH function (24G §4, the fifth role-sibling; the
+    /// cross-author footprint-expansion mechanism). Keyed by KIND like [`Resolve`](FnRole::Resolve)
+    /// (the kind-owner holds the nouns): `package.reaches` is the `package` kind's reach-function,
+    /// invoked with an ENTITY. Its body is a sequence of EMITTING arms — each an emitting command
+    /// carrying a TRAILING KIND ANNOTATION (`printf '%s\n' "$1" : service`); the command's stdout
+    /// lines are RAW ENTITIES in the annotated kind (typed emission, 24G §4). Static arms (traceable
+    /// printf) resolve at plan time; dynamic arms (a host command / pipeline) escalate to the probe.
+    /// The one carve-out from the shared dialect: a pipeline in a reaches body MAY carry a trailing
+    /// mark (24G §4 — the mark TYPES the emission; contrast 24E §14's pipelines-carry-no-mark, right
+    /// for probe/verdict bodies where a trailing mark is meaningless).
+    Reaches,
 }
 
 impl FnRole {
@@ -65,6 +76,7 @@ impl FnRole {
             FnRole::IsConverged => ".is_converged",
             FnRole::IsDiverged => ".is_diverged",
             FnRole::Resolve => ".resolve",
+            FnRole::Reaches => ".reaches",
         }
     }
 
@@ -76,6 +88,7 @@ impl FnRole {
             FnRole::IsConverged => "__is_converged",
             FnRole::IsDiverged => "__is_diverged",
             FnRole::Resolve => "__resolve",
+            FnRole::Reaches => "__reaches",
         }
     }
 }
@@ -141,6 +154,19 @@ pub(crate) fn lift_verdicts_diverged(interner: &mut Interner, src: &str) -> Carr
 #[must_use]
 pub(crate) fn lift_resolvers(interner: &mut Interner, src: &str) -> Carrier<PredictSet> {
     lift_role(interner, src, FnRole::Resolve)
+}
+
+/// Lift every `<kind>.reaches` / `<kind>__reaches` funcdef in `src` (the REACH function — 24G §4,
+/// the cross-author footprint-expansion mechanism). Reuses the predict body dialect (one grammar;
+/// `FnRole`), with the pipelines-may-carry-a-mark carve-out ([`FnRole::Reaches`], applied in
+/// [`Parser::parse_command`]). Same fail-soft / deterministic contract as [`lift_predicts`]; only
+/// the scanned name-suffix + the pipeline-mark carve-out differ. NB the lifted `provider` symbol is
+/// the KIND name (reaches is kind-keyed like [`lift_resolvers`]) — the SAME interned symbol a
+/// coordinate's `KindId` wraps (the vocabulary fence). The consumer ([`crate::reaches`]) walks these
+/// bodies arm-by-arm; the dynamic-arm guard emitter ships the arm body strip-only.
+#[must_use]
+pub(crate) fn lift_reaches(interner: &mut Interner, src: &str) -> Carrier<PredictSet> {
+    lift_role(interner, src, FnRole::Reaches)
 }
 
 /// Shared lift over a chosen [`FnRole`] — the one parse both siblings route through.
@@ -754,10 +780,17 @@ impl Parser<'_> {
             match class {
                 CmdTok::End => break,
                 CmdTok::MarkStart(observe) => {
-                    // Inside a pipeline, an (unquoted) `:` is just more opaque pipeline text — it
-                    // ships verbatim + ⊤s at trace, so it is NOT a dialect mark here (a pipeline
-                    // establishes/vouches nothing). Consume it and keep folding the pipeline.
-                    if pipeline {
+                    // Inside a pipeline, an (unquoted) `:` is normally opaque pipeline text — it
+                    // ships verbatim + ⊤s at trace, so it is NOT a dialect mark (a pipeline
+                    // establishes/vouches nothing): consume it and keep folding (24E §14).
+                    // CARVE-OUT (24G §4): in a REACHES body the trailing mark TYPES the emission, so
+                    // a pipeline MAY carry one — a `:` marker BREAKS the pipeline and becomes the
+                    // trailing mark, exactly as for a simple command. (A space-flanked `:` is a
+                    // dialect marker everywhere in the dialect — the same convention a non-pipeline
+                    // command already obeys — so this stays consistent, not a new ambiguity. A `:`
+                    // INSIDE a quoted pipeline arg — `sed 's|x|file:|'` — lexes single-quoted ⇒
+                    // `CmdTok::Word`, never a marker, so it stays untouched.)
+                    if pipeline && self.role != FnRole::Reaches {
                         end_span = self.peek_span().unwrap_or(end_span);
                         self.bump();
                     } else {
@@ -794,15 +827,17 @@ impl Parser<'_> {
         }
         // The command span ends at its last real word/redirect (EXCLUDING the trailing
         // mark), so the strip deletes exactly `[span.hi .. mark.span.hi]`. A PIPELINE (24E §14)
-        // spans the whole `cmd | cmd | …` byte-exact and carries NO mark (it ⊤s at trace).
+        // spans the whole `cmd | cmd | …` byte-exact; it carries NO mark EXCEPT in a reaches body
+        // (24G §4 carve-out — there the trailing mark types the emission and IS parsed).
         let span = start_span.to(end_span);
-        let mark = if pipeline {
-            None
-        } else {
+        let carries_mark = !pipeline || self.role == FnRole::Reaches;
+        let mark = if carries_mark {
             match mark_observe {
                 Some(observe) => Some(self.parse_mark(observe, false)?),
                 None => None,
             }
+        } else {
+            None
         };
         Ok(Stmt::Command(Command {
             words,
@@ -1658,6 +1693,83 @@ mod dialect_tests {
             out.diags.is_empty(),
             "a mark-only case-arm must lift clean (empty arms are legal): {:?}",
             out.diags
+        );
+    }
+
+    /// The sole body command of a lifted reaches funcdef (the pipeline-mark carve-out tests inspect
+    /// its `pipeline`/`mark` directly).
+    fn reaches_command(src: &str) -> super::Command {
+        let mut i = Interner::default();
+        let out = super::lift_reaches(&mut i, src);
+        assert!(out.diags.is_empty(), "clean lift: {:?}", out.diags);
+        let kind = out.value.providers().next().expect("one reaches kind");
+        let body = out
+            .value
+            .get(kind)
+            .expect("the reaches funcdef")
+            .body
+            .clone();
+        match body.into_iter().next() {
+            Some(Stmt::Command(c)) => c,
+            other => panic!("expected a single command, got {other:?}"),
+        }
+    }
+
+    /// 24G §4 CARVE-OUT: a reaches-body PIPELINE carries its trailing mark (the mark types the
+    /// emission) — unlike every other role, where a pipeline carries none (24E §14). Adversarial:
+    /// the mark rides AFTER a MULTI-STAGE pipe.
+    #[test]
+    fn reaches_pipeline_carries_trailing_mark_after_multi_stage_pipe() {
+        let c = reaches_command("package.reaches() { dpkg -L \"$1\" | grep x | sed y : file ; }");
+        assert!(c.pipeline, "a multi-stage pipe is a pipeline");
+        let m = c
+            .mark
+            .expect("the reaches pipeline carries its trailing mark (the carve-out)");
+        assert_eq!(m.kind, MarkKind::Establish);
+        assert_eq!(
+            m.target.kind, "file",
+            "the mark kind is the trailing annotation"
+        );
+    }
+
+    /// A `:` INSIDE a quoted pipeline arg (`'s|x|file:|'`) is NOT a mark — a single-quoted token
+    /// lexes as one opaque word, so the `file:` inside it stays UNTOUCHED and the mark is the
+    /// TRAILING `: file` alone (adversarial: mark-like text inside quoted pipeline args).
+    #[test]
+    fn reaches_pipeline_quoted_colon_inside_arg_is_not_a_mark() {
+        let c = reaches_command("package.reaches() { dpkg -L \"$1\" | sed 's|x|file:|' : file ; }");
+        assert!(c.pipeline);
+        let m = c
+            .mark
+            .expect("the TRAILING `: file` is the mark (the quoted `file:` is not)");
+        assert_eq!(
+            m.target.kind, "file",
+            "the mark kind is the trailing annotation, never the quoted inner colon"
+        );
+    }
+
+    /// The carve-out is REACHES-ONLY: in a PREDICT body the same `pipe … : foo` shape carries NO
+    /// mark — the `:` is folded as opaque pipeline text (24E §14 pipelines-carry-no-mark), so the
+    /// carve-out cannot leak into probe/verdict bodies where a trailing mark is meaningless.
+    #[test]
+    fn predict_pipeline_folds_the_colon_no_mark_carveout_is_reaches_only() {
+        let mut i = Interner::default();
+        let out = lift_predicts(
+            &mut i,
+            "apt-get.predict() { dpkg -L \"$1\" | grep x : foo ; }",
+        );
+        assert!(out.diags.is_empty(), "clean lift: {:?}", out.diags);
+        let r = out
+            .value
+            .get(i.intern("apt-get"))
+            .expect("the predict funcdef");
+        let Some(Stmt::Command(c)) = r.body.first() else {
+            panic!("expected a command: {:?}", r.body)
+        };
+        assert!(c.pipeline);
+        assert!(
+            c.mark.is_none(),
+            "a predict pipeline carries no mark (the `: foo` is folded pipeline text — carve-out is reaches-only)"
         );
     }
 }

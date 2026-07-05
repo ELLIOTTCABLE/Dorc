@@ -52,7 +52,7 @@ pub use parser::lift_predicts;
 pub(crate) use ast::{CaseArm, Command, Test, Word};
 pub(crate) use eval::{eval_test, pattern_matches, resolve_word};
 pub(crate) use parser::{
-    lift_resolvers, lift_touches, lift_verdicts_converged, lift_verdicts_diverged,
+    lift_reaches, lift_resolvers, lift_touches, lift_verdicts_converged, lift_verdicts_diverged,
 };
 
 /// Strip an authored check funcdef to runnable sh — the STRIP-ONLY pass (R1c / 23D §1).
@@ -130,6 +130,23 @@ pub fn strip_touches(src: &str, touches: &Predict, interner: &Interner) -> Strin
 #[must_use]
 pub fn strip_resolve(src: &str, resolver: &Predict, interner: &Interner) -> String {
     strip_role(src, resolver, interner, "__resolve")
+}
+
+/// Strip an authored **reaches** funcdef (`<kind>.reaches`) to runnable sh for shipping a DYNAMIC
+/// arm into the REACH probe lane (24G §4 — the cross-author footprint-expansion mechanism). A
+/// dynamic reaches arm reaches a host tool (`dpkg -L`) whose stdout lines are the reached entities;
+/// it cannot resolve statically, so its body ships strip-only to run read-only per coordinate.
+/// Identical to [`strip_predict`] but mangles the funcname to `__reaches` (`package.reaches` →
+/// `package__reaches`), so the shipped def and the reach invocation agree byte-for-byte. NB `<kind>`
+/// is the KIND name here (reaches is kind-keyed, like the resolver), and [`crate::to_funcname_segment`]
+/// maps it identically. The typed-emission trailing marks (`… : service`) are annotation-LINEs the
+/// strip DELETES whole (strip-fidelity, 23H §9.4) — the reached kind was already interned at LIFT
+/// (24G §4 vocabulary fence), so the shipped body needs only the raw emitting command. Same
+/// self-vouch tier as `strip_predict`/`strip_resolve` (24G inv-kfail: reach bodies are probe-lane
+/// read-only — `kFAIL-withhold`; authoring IS the vouch; the rc-127 mocks net is the live guarantee).
+#[must_use]
+pub fn strip_reaches(src: &str, reaches: &Predict, interner: &Interner) -> String {
+    strip_role(src, reaches, interner, "__reaches")
 }
 
 /// The shared STRIP-ONLY pass (R1c / 23D §1), parametrized by the target mangled suffix so the
@@ -572,6 +589,44 @@ package.resolve() {
         );
         assert!(
             !stripped.contains(".resolve("),
+            "no period name remains: {stripped}"
+        );
+    }
+
+    /// A REACHES funcdef strips with the `__reaches` funcname suffix (24G §4): the typed-emission
+    /// trailing marks (`: service` / `: file`) are annotation-LINEs the strip DELETES WHOLE
+    /// (strip-fidelity, 23H §9.4 — the reached kind was already interned at LIFT, the vocabulary
+    /// fence), leaving the raw emitting commands verbatim as plain runnable sh. Pins that the
+    /// typed-emission grammar strips clean (`package.reaches` → `package__reaches`, no mark residue).
+    #[test]
+    fn reaches_body_strips_with_the_reaches_funcname() {
+        use super::strip_reaches;
+        use crate::reaches::ReachesSet;
+        let authored = "\
+package.reaches() {
+   printf '%s\\n' \"$1\"    : service
+   dpkg -L \"$1\"           : file
+}";
+        let mut i = Interner::default();
+        let set = ReachesSet::lift(&mut i, authored);
+        assert!(set.diags.is_empty(), "clean lift: {:?}", set.diags);
+        let kind = set.value.kinds().next().expect("one reaches kind");
+        let r = set.value.get(kind).expect("the reaches funcdef");
+        let stripped = strip_reaches(authored, r, &i);
+        assert!(
+            stripped.starts_with("package__reaches()"),
+            "funcname mangled to the reaches suffix: {stripped}"
+        );
+        assert!(
+            stripped.contains("printf '%s\\n' \"$1\"") && stripped.contains("dpkg -L \"$1\""),
+            "the raw emitting commands survive verbatim: {stripped}"
+        );
+        assert!(
+            !stripped.contains(": service") && !stripped.contains(": file"),
+            "the typed-emission marks are deleted whole (no annotation residue): {stripped}"
+        );
+        assert!(
+            !stripped.contains(".reaches("),
             "no period name remains: {stripped}"
         );
     }

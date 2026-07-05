@@ -75,6 +75,15 @@ pub mod verdict;
 /// dialect. Host-run only (no static evaluator — identity resolution needs the host).
 pub mod resolve;
 
+/// The REACH function lift (24G §4 — the cross-author footprint-EXPANSION mechanism; the FIFTH
+/// role-sibling): the `<kind>.reaches()` role-sibling, keyed by KIND (like [`resolve`]). Invoked with
+/// an ENTITY, its emitting arms declare — per kind, via a TRAILING ANNOTATION that types the emission
+/// (24G §4) — what touching that entity DRAGS WITH IT (a package reaches its files + same-named unit).
+/// The engine expands every footprint coordinate of a reach-bearing kind through it, whoever emitted
+/// it (the cross-author point). Static arms trace at plan time; dynamic arms escalate to the probe.
+/// Reuses the `predict` dialect (with the pipelines-may-carry-a-mark carve-out).
+pub mod reaches;
+
 /// How a `(provider, verb)` reads/writes a fact's OPAQUE boolean — the lifted
 /// representation is [`ValueClaim`] (jc-polarity-vs-rc, FINAL — human 2026-07-02).
 /// The former `Polarity{Establish, Kill, Query}` is RETIRED: no create/destroy axis
