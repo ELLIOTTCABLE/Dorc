@@ -196,8 +196,14 @@ EOF
 # heeds a drift while case_ok=0: a drift with case_ok=1 is the designed behaviour landing (⇒
 # XPASS), a drift with case_ok=0 is a disaster-shaped change hiding as an ordinary xfail. The
 # marker keeps the `ran: ` prefix (author-consistent with expected.ran); capture_run strips it,
-# so strip the marker side too before comparing. Ordered compare (the pinned cases are all
-# sequential — no pipes — so book order is deterministic; no RAN_ORDER=lax case carries one).
+# so strip the marker side too before comparing. Ordered compare by default; a case carrying
+# RAN_ORDER=lax (concurrent pipeline stages log nondeterministically — tc-pipe-ran-order) gets
+# the same order-INsensitive compare exec_check gives its expected.ran: both sides sorted, so
+# the pin asserts the run-set as a MULTISET. The two-sided pin's purpose survives lax intact —
+# a disaster-shaped drift changes WHICH commands ran (a wrongly-elided wall drops a line, a
+# wrongly-run mutator adds one), which changes the multiset and still goes RED; only benign
+# stage reordering within one apply is forgiven. (First lax consumer:
+# strawman24-pipe-guard-oracle-converged, whose check-pipe stages race.)
 head_ran_check() {
   _case=$1; _dir=$2; _apply=$3
   [ -f "${_dir}head-expected.ran" ] || return 0     # opt-in marker
@@ -205,6 +211,10 @@ head_ran_check() {
   _hmocks=$(CDPATH= cd -- "${_dir}mocks" && pwd)
   _hgot=$(capture_run stdin "$_apply" "$_hmocks")
   _hwant=$(sed 's/^ran: //' "${_dir}head-expected.ran" 2>/dev/null || true)
+  if [ -f "${_dir}RAN_ORDER=lax" ]; then
+    _hgot=$(printf '%s\n' "$_hgot" | LC_ALL=C sort)
+    _hwant=$(printf '%s\n' "$_hwant" | LC_ALL=C sort)
+  fi
   [ "$_hgot" = "$_hwant" ] && return 0
   return 1
 }
