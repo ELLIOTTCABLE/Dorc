@@ -1,0 +1,20 @@
+# FIRMED: `grafana server` subcommand + --config + --homepath (grafana.com standalone-binary docs);
+# GF_<SECTION>_<KEY> env overrides + http_port default 3000 + serve_from_sub_path (configure-grafana).
+# FLAG: exact version subcommand; running as root (docs prefer a dedicated `grafana` user).
+[Unit]
+Description=Grafana
+After=network-online.target postgresql.service
+Wants=network-online.target postgresql.service
+[Service]
+Environment=GF_DATABASE_TYPE=postgres
+Environment=GF_DATABASE_HOST=127.0.0.1:5432
+Environment=GF_DATABASE_NAME=grafana
+Environment=GF_DATABASE_USER=grafana
+Environment=GF_DATABASE_PASSWORD=changeme
+Environment=GF_SERVER_ROOT_URL=https://homelab.lan/grafana/
+Environment=GF_SERVER_SERVE_FROM_SUB_PATH=true
+ExecStart=/usr/local/grafana/bin/grafana server \
+   --config=/usr/local/grafana/conf/defaults.ini --homepath=/usr/local/grafana
+Restart=on-failure
+[Install]
+WantedBy=multi-user.target
