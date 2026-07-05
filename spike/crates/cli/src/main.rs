@@ -787,6 +787,21 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
         &unresolvable_diagnostics(&probe, &plan, &parsed.value, &book_src, &mut interner),
     );
 
+    // upcoming-firstwall-hint (USER_STORY stage 3): the FIRST poison wall formed by an UNMODELED
+    // command, plus the counterfactual count of downstream sites an oracle for it would un-wall.
+    // Computed once (cheap, pure over the built plan) and consumed by BOTH the advisory `hint:` nag
+    // (below) and the `dorc why` detail (`emit_why_report`). `None` ⇒ no unmodeled wall ⇒ no hint
+    // (a modeled-but-diverged wall is an honest wall, never this hint's subject).
+    let first_wall = first_wall_hint(&collect_wall_steps(
+        &plan,
+        &probe,
+        &classes,
+        &cfg.value,
+        &kills,
+        &parsed.value,
+        &book_src,
+    ));
+
     // stage-3 (the why-lens, `22D` §1): the FIRST receipt-READER made user-visible. For each
     // forced-run (never-elided) command whose ⊤ has a wired cause, surface — on the RENDER surface
     // (stderr), at the decision point — "why did this run?", cause-derived + remediation-classed.
@@ -812,6 +827,13 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
         // mechanism + its converged-vouch license + the vouching oracle (a render-REFUSED guard
         // discloses the refusal instead). Empty when no site guards.
         emit_guard_attribution(&plan, &parsed.value, &interner);
+        // upcoming-firstwall-hint (USER_STORY stage 3): the forward NAG — ONE aggregated line for
+        // the FIRST unmodeled wall, naming the count an oracle for it would un-wall. `hint: ` prefix
+        // (never `error[`), so the gate-3 stderr floor ignores it. rul24-warnings-tune-high: the
+        // nag-loop drives the entire enhancement curve — this hint IS the product, not noise.
+        if let Some(fw) = &first_wall {
+            eprintln!("hint: {}", fw.body());
+        }
         // ack-2 aggregate POINTER: the `plan` preview points the reader at the focused query
         // surface. (This pass keeps the per-line `why:` detail here too — gate-7 pins it; fully
         // moving the detail into `dorc why` is a sanctioned follow-on that churns the 13
@@ -846,6 +868,7 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
             args.why_address.as_deref(),
             &plan,
             &probe,
+            first_wall.as_ref(),
             &why_diags,
             &refusals,
             &arena,
@@ -2173,6 +2196,228 @@ fn emit_guard_attribution(
     }
 }
 
+/// upcoming-firstwall-hint (`USER_STORY` stage 3): the role a plan step plays in the poison-wall
+/// walk, reduced for the first-wall hint. The wall the hint TARGETS is specifically an UNMODELED
+/// (opaque) running command — the class an oracle could describe; a modeled-but-diverged wall is
+/// honest and never the hint's subject ("the hint's whole point is 'an oracle would help HERE'").
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum WallRole {
+    /// A running UNMODELED (opaque) command — the poison wall. Its run ⊤-poisons every downstream
+    /// fact in `classify` (⇒ `EstablishWritten` ⇒ guard-or-run), so no downstream elision survives
+    /// it. Detected at the cli edge as a probe-UNRESOLVABLE real command — the same
+    /// `probe.unresolvable` ∩ not-[`is_structurally_unprobeable`] set the firehose already discloses.
+    Opaque,
+    /// A running MODELED mutator (a diverged establish) or a kill — an HONEST wall. It BOUNDS the
+    /// un-wall count (a downstream guard past it is walled by IT, not by the opaque wall), but is
+    /// never the hint's subject: it is already described by an oracle.
+    Honest,
+    /// A converged-but-walled GUARDED site — it would upgrade guard→elide if the wall above it
+    /// lifted ("an elided command casts no wall"). The un-wall count tallies exactly these, in the
+    /// first opaque wall's own window.
+    Guard,
+    /// Transparent to the walk — an elision, an omit, or an inert running builtin: neither a wall
+    /// nor an improvable guard.
+    Transparent,
+}
+
+/// One plan step reduced to (leaf, source line, command word, wall role) for [`first_wall_hint`].
+/// `line` is the SOURCE line (rul24-lineno-identity); `word` is the command's first word — the
+/// `'hork'` the hint names.
+struct WallStep {
+    leaf: dorc_plan::LeafId,
+    line: usize,
+    word: String,
+    role: WallRole,
+}
+
+/// The first-wall hint payload (upcoming-firstwall-hint / `USER_STORY` stage 3): the FIRST opaque
+/// wall in book order and the counterfactual un-wall count.
+struct FirstWallHint {
+    /// The wall site's leaf — the `dorc why` detail attaches to exactly this site.
+    leaf: dorc_plan::LeafId,
+    /// The wall's SOURCE line (rul24-lineno-identity: queryable as `dorc why book.sh:line`).
+    line: usize,
+    /// The wall command's first word (`'hork'`).
+    word: String,
+    /// `M` — the un-wall count: the number of converged-but-walled GUARD sites strictly between
+    /// this wall and the next wall (opaque or honest). These are the sites that would upgrade
+    /// guard→elide if this wall's command were modeled-and-converged ("an elided command casts no
+    /// wall").
+    ///
+    /// CONSERVATIVE APPROXIMATION (flagged — the honest counterfactual is NOT a plan-level re-fold):
+    /// an opaque wall's poison is applied in `classify` (⊤-reach ⇒ downstream `EstablishWritten`),
+    /// NOT in the plan wall-walk, so "re-fold the plan with this wall treated as non-walling" cannot
+    /// un-poison — the honest count needs a re-CLASSIFY with the command's effect forced Pure. This
+    /// tally instead counts the walled guards in the wall's own window. It is EXACT in the common
+    /// case and OVER-counts only when a downstream guard is `EstablishWritten` from a same-cell
+    /// in-script write rather than from this wall (the `install X; hork; install X` shape), where
+    /// lifting this wall alone would not recover it. Erring high on an advisory nag is acceptable.
+    unwall: usize,
+    /// Other opaque walls after the first — the trailing "N more unmodeled walls" pointer count.
+    more_walls: usize,
+}
+
+impl FirstWallHint {
+    /// The hint body (no `hint: ` prefix — the caller adds it, matching the `why:`/`dorc:` lanes).
+    /// `USER_STORY` stage-3 register; plain English (24H ack-4 — no ⊤, no jargon; "unmodeled" is
+    /// established vocabulary).
+    fn body(&self) -> String {
+        let unwall_clause = if self.unwall == 0 {
+            String::new()
+        } else {
+            let sites = if self.unwall == 1 { "site" } else { "sites" };
+            format!(", and un-wall {} downstream {sites}", self.unwall)
+        };
+        let more_clause = if self.more_walls == 0 {
+            String::new()
+        } else {
+            let walls = if self.more_walls == 1 {
+                "wall"
+            } else {
+                "walls"
+            };
+            format!("; {} more unmodeled {walls} — dorc why", self.more_walls)
+        };
+        format!(
+            "'{}' (line {}) is unmodeled: it is the first wall — an oracle vouching its \
+             convergence would elide it when converged{unwall_clause}{more_clause}",
+            self.word, self.line
+        )
+    }
+
+    /// The `dorc why` detail line for the wall's own site (the reasoning behind the plan-mode nag).
+    fn why_detail(&self) -> String {
+        if self.unwall == 0 {
+            "first wall (book order) — an oracle vouching its convergence would elide it when \
+             converged"
+                .to_owned()
+        } else {
+            let sites = if self.unwall == 1 { "site" } else { "sites" };
+            format!(
+                "first wall (book order) — an oracle vouching its convergence would elide it and \
+                 un-wall {} downstream {sites}",
+                self.unwall
+            )
+        }
+    }
+}
+
+/// upcoming-firstwall-hint: the PURE first-wall computation. Find the first [`WallRole::Opaque`]
+/// step in book order; tally the [`WallRole::Guard`] steps between it and the next wall (opaque or
+/// honest) as the un-wall count; count the remaining opaque walls for the trailing pointer.
+/// `None` ⇒ no opaque wall ⇒ no hint. Pure + total (`inv-determinism`); unit-tested over
+/// hand-built scenarios.
+fn first_wall_hint(steps: &[WallStep]) -> Option<FirstWallHint> {
+    let w1 = steps.iter().position(|s| s.role == WallRole::Opaque)?;
+    let wall = steps.get(w1)?;
+    let after = steps.get(w1.saturating_add(1)..).unwrap_or(&[]);
+    let mut unwall: usize = 0;
+    for s in after {
+        match s.role {
+            WallRole::Guard => unwall = unwall.saturating_add(1),
+            WallRole::Opaque | WallRole::Honest => break,
+            WallRole::Transparent => {}
+        }
+    }
+    let more_walls = after.iter().filter(|s| s.role == WallRole::Opaque).count();
+    Some(FirstWallHint {
+        leaf: wall.leaf,
+        line: wall.line,
+        word: wall.word.clone(),
+        unwall,
+        more_walls,
+    })
+}
+
+/// Reduce each plan step to its [`WallStep`] (role + source line + command word) — the input
+/// [`first_wall_hint`] consumes. The role classification is the load-bearing bit:
+/// * a `Guard` disposition ⇒ [`WallRole::Guard`];
+/// * a `Run` that is a KILL (`kills`) or a modeled establish ([`is_establish_bearing`]) ⇒
+///   [`WallRole::Honest`] (a running mutator — it bounds the count);
+/// * a `Run` that is probe-UNRESOLVABLE and a real command (not [`is_structurally_unprobeable`]) ⇒
+///   [`WallRole::Opaque`] (the unmodeled poison wall — the same set the firehose discloses);
+/// * everything else (elide / omit / inert builtin run) ⇒ [`WallRole::Transparent`].
+///
+/// The kill check PRECEDES the opaque check so a modeled kill is never mistaken for an unmodeled
+/// wall. `by_ast` maps a step's `AstId` back to its `(CfgNodeId, SkipClass)` (steps ⊆ classified
+/// leaves by construction; an unexpected miss degrades to `Transparent`, the safe non-claim).
+fn collect_wall_steps(
+    plan: &dorc_plan::Plan,
+    probe: &dorc_plan::ProbePlan,
+    classes: &[(
+        dorc_analysis::cfg::CfgNodeId,
+        dorc_analysis::effect::SkipClass,
+    )],
+    cfg: &dorc_analysis::cfg::Cfg,
+    kills: &BTreeSet<dorc_analysis::cfg::CfgNodeId>,
+    ast: &dorc_syntax::ast::Ast,
+    book_src: &str,
+) -> Vec<WallStep> {
+    let by_ast: BTreeMap<
+        dorc_core::AstId,
+        (
+            dorc_analysis::cfg::CfgNodeId,
+            &dorc_analysis::effect::SkipClass,
+        ),
+    > = classes
+        .iter()
+        .map(|(node, class)| (cfg.node(*node).ast, (*node, class)))
+        .collect();
+    plan.steps
+        .iter()
+        .map(|step| {
+            let span = ast.node(step.ast).span;
+            let (lo, hi) = (span.lo.0 as usize, span.hi.0 as usize);
+            let line = dorc_core::diag::line_col(book_src, lo).0;
+            let text = book_src.get(lo..hi).unwrap_or("");
+            let word = text.split_whitespace().next().unwrap_or("").to_owned();
+            let role = match &step.disposition {
+                dorc_plan::Disposition::Guard(_) => WallRole::Guard,
+                dorc_plan::Disposition::Replace(..) | dorc_plan::Disposition::Omit { .. } => {
+                    WallRole::Transparent
+                }
+                dorc_plan::Disposition::Run => {
+                    let cls = by_ast.get(&step.ast);
+                    if cls.is_some_and(|(node, _)| kills.contains(node)) {
+                        WallRole::Honest
+                    } else if probe.unresolvable.contains(&step.leaf)
+                        && !is_structurally_unprobeable(text)
+                    {
+                        WallRole::Opaque
+                    } else if cls.is_some_and(|(_, class)| is_establish_bearing(class)) {
+                        WallRole::Honest
+                    } else {
+                        WallRole::Transparent
+                    }
+                }
+            };
+            WallStep {
+                leaf: step.leaf,
+                line,
+                word,
+                role,
+            }
+        })
+        .collect()
+}
+
+/// Mirror of the plan crate's private `class_is_establish_bearing` (a running establish is a
+/// mutator wall). Re-derived here rather than exported: a small, stable predicate, and the cli edge
+/// already reaches into `SkipClass` variants for other readouts. Kept in step by the shared slug.
+fn is_establish_bearing(class: &dorc_analysis::effect::SkipClass) -> bool {
+    use dorc_analysis::effect::SkipClass as Sc;
+    match class {
+        Sc::EstablishAmbient(_) | Sc::EstablishWritten(_) | Sc::EstablishMembers { .. } => true,
+        Sc::InlineCall { sites } => sites.iter().any(|s| {
+            matches!(
+                s.class,
+                Sc::EstablishAmbient(_) | Sc::EstablishWritten(_) | Sc::EstablishMembers { .. }
+            )
+        }),
+        Sc::QueryResolvable { .. } | Sc::MustRun => false,
+    }
+}
+
 /// One site's WHY-record ([`emit_why_report`]): its SOURCE line (rul24-lineno-identity), the
 /// one-line command, the disposition tag, the ASCII cause-chain, and whether it is a PROBLEM
 /// (the unargumented `dorc why` filter — a ⊤/unprobed run, a guard, or a render-refusal, never a
@@ -2199,7 +2444,7 @@ struct WhySite {
 /// ASCII depth-indented cause-chain (the `└─` glyph), one root per site (rustc's nested notes).
 #[expect(
     clippy::too_many_arguments,
-    reason = "the why-report threads the compiled context it reports on (plan/probe/why-diags/refusals/arena/ast/src/filename/interner); each is a distinct pipeline output, not a bundle-able struct"
+    reason = "the why-report threads the compiled context it reports on (plan/probe/first-wall/why-diags/refusals/arena/ast/src/filename/interner); each is a distinct pipeline output, not a bundle-able struct"
 )]
 #[expect(
     clippy::too_many_lines,
@@ -2209,6 +2454,7 @@ fn emit_why_report(
     address: Option<&str>,
     plan: &dorc_plan::Plan,
     probe: &dorc_plan::ProbePlan,
+    first_wall: Option<&FirstWallHint>,
     why_diags: &[dorc_core::diag::Diag],
     refusals: &[dorc_core::Diagnostic],
     arena: &ProvArena,
@@ -2235,15 +2481,17 @@ fn emit_why_report(
                 } else if probe.unresolvable.contains(&step.leaf)
                     && !is_structurally_unprobeable(&command)
                 {
-                    (
-                        "run",
-                        vec![
-                            "runs unprobed — no read-only check could be shipped (unsure ⇒ dorc \
-                             runs it, to stay safe)"
-                                .to_owned(),
-                        ],
-                        true,
-                    )
+                    let mut reasons = vec![
+                        "runs unprobed — no read-only check could be shipped (unsure ⇒ dorc \
+                         runs it, to stay safe)"
+                            .to_owned(),
+                    ];
+                    // upcoming-firstwall-hint: the FIRST unmodeled wall carries the forward
+                    // reasoning here — the `dorc why` detail behind the plan-mode `hint:` nag.
+                    if let Some(fw) = first_wall.filter(|fw| fw.leaf == step.leaf) {
+                        reasons.push(fw.why_detail());
+                    }
+                    ("run", reasons, true)
                 } else {
                     (
                         "run",
@@ -3537,6 +3785,196 @@ mod tests {
             kept[0].severity,
             Severity::Error,
             "the surviving diagnostic is the Error (the never-hide floor): {kept:?}"
+        );
+    }
+}
+
+#[cfg(test)]
+mod first_wall_tests {
+    //! upcoming-firstwall-hint (`USER_STORY` stage 3): the pure `first_wall_hint` M-computation and
+    //! its wording. Each `WallStep` scenario mirrors a real book shape — the role classification
+    //! (opaque = probe-unresolvable real command; honest = running modeled mutator; guard =
+    //! converged-but-walled) is exercised end-to-end on `guard23-ternary-flagship` (M=1) and
+    //! `strawman24-opaque-wall` (M=0) by the e2e corpus; here we pin the algorithm over the roles.
+    use super::{FirstWallHint, WallRole, WallStep, first_wall_hint};
+
+    fn ws(leaf: u32, line: usize, word: &str, role: WallRole) -> WallStep {
+        WallStep {
+            leaf: dorc_plan::LeafId(leaf),
+            line,
+            word: word.to_owned(),
+            role,
+        }
+    }
+
+    /// The flagship shape (guard23-ternary-flagship): nginx elides, `hork` is the opaque wall,
+    /// curl guards past it, vim runs diverged (an honest wall). Lifting `hork` un-walls exactly
+    /// curl ⇒ M=1, no further unmodeled walls.
+    #[test]
+    fn opaque_wall_with_downstream_guard_yields_m1() {
+        let steps = [
+            ws(0, 20, "apt-get", WallRole::Transparent),
+            ws(1, 21, "hork", WallRole::Opaque),
+            ws(2, 22, "apt-get", WallRole::Guard),
+            ws(3, 23, "apt-get", WallRole::Honest),
+        ];
+        let fw = first_wall_hint(&steps).expect("an opaque wall fires the hint");
+        assert_eq!(fw.line, 21);
+        assert_eq!(fw.word, "hork");
+        assert_eq!(fw.unwall, 1);
+        assert_eq!(fw.more_walls, 0);
+    }
+
+    /// No opaque wall (every command modeled) ⇒ no hint — the mission's no-unmodeled-wall negative.
+    #[test]
+    fn no_opaque_wall_yields_none() {
+        let steps = [
+            ws(0, 1, "apt-get", WallRole::Transparent),
+            ws(1, 2, "apt-get", WallRole::Guard),
+            ws(2, 3, "apt-get", WallRole::Honest),
+        ];
+        assert!(first_wall_hint(&steps).is_none());
+    }
+
+    /// A modeled-but-diverged wall (Honest) with NO opaque wall ⇒ no hint. The mission's explicit
+    /// "NOT fire for modeled-but-diverged walls" — those are honest walls, not oracle-gaps.
+    #[test]
+    fn honest_wall_only_yields_none() {
+        let steps = [
+            ws(0, 1, "apt-get", WallRole::Honest),
+            ws(1, 2, "systemctl", WallRole::Guard),
+        ];
+        assert!(first_wall_hint(&steps).is_none());
+    }
+
+    #[test]
+    fn empty_book_yields_none() {
+        assert!(first_wall_hint(&[]).is_none());
+    }
+
+    /// Two converged-but-walled guards before the next wall ⇒ M=2 (both upgrade guard→elide).
+    #[test]
+    fn two_guards_before_next_wall_yields_m2() {
+        let steps = [
+            ws(0, 1, "hork", WallRole::Opaque),
+            ws(1, 2, "systemctl", WallRole::Guard),
+            ws(2, 3, "ufw", WallRole::Guard),
+            ws(3, 4, "apt-get", WallRole::Honest),
+        ];
+        let fw = first_wall_hint(&steps).unwrap();
+        assert_eq!(fw.unwall, 2);
+        assert_eq!(fw.more_walls, 0);
+    }
+
+    /// An honest wall BOUNDS the count: a guard past it is walled by IT, not by the opaque wall, so
+    /// lifting the opaque wall would not recover it. Only the guard in the opaque wall's own window
+    /// counts ⇒ M=1.
+    #[test]
+    fn honest_wall_bounds_the_count() {
+        let steps = [
+            ws(0, 1, "hork", WallRole::Opaque),
+            ws(1, 2, "systemctl", WallRole::Guard),
+            ws(2, 3, "apt-get", WallRole::Honest),
+            ws(3, 4, "ufw", WallRole::Guard),
+        ];
+        let fw = first_wall_hint(&steps).unwrap();
+        assert_eq!(
+            fw.unwall, 1,
+            "the guard past the honest wall is not this wall's to un-wall"
+        );
+    }
+
+    /// The two-opaque-wall shape (`USER_STORY` foobar + hork): a second opaque wall both BOUNDS the
+    /// first's window (ufw past `hork` is not foobar's to un-wall) and adds a trailing pointer.
+    #[test]
+    fn second_opaque_wall_bounds_and_is_counted() {
+        let steps = [
+            ws(0, 8, "foobar", WallRole::Opaque),
+            ws(1, 9, "systemctl", WallRole::Guard),
+            ws(2, 10, "hork", WallRole::Opaque),
+            ws(3, 11, "ufw", WallRole::Guard),
+        ];
+        let fw = first_wall_hint(&steps).unwrap();
+        assert_eq!(fw.word, "foobar");
+        assert_eq!(fw.unwall, 1);
+        assert_eq!(fw.more_walls, 1);
+    }
+
+    /// An opaque wall with nothing improvable downstream ⇒ M=0 (still fires — you can elide it).
+    #[test]
+    fn opaque_wall_with_no_downstream_yields_m0() {
+        let steps = [
+            ws(0, 1, "apt-get", WallRole::Transparent),
+            ws(1, 2, "hork", WallRole::Opaque),
+        ];
+        let fw = first_wall_hint(&steps).unwrap();
+        assert_eq!(fw.unwall, 0);
+        assert_eq!(fw.more_walls, 0);
+    }
+
+    /// A transparent step (inert builtin run / omit) between the wall and a guard does NOT bound the
+    /// count — only a wall (opaque or honest) stops it.
+    #[test]
+    fn transparent_step_does_not_bound() {
+        let steps = [
+            ws(0, 1, "hork", WallRole::Opaque),
+            ws(1, 2, "echo", WallRole::Transparent),
+            ws(2, 3, "systemctl", WallRole::Guard),
+            ws(3, 4, "apt-get", WallRole::Honest),
+        ];
+        assert_eq!(first_wall_hint(&steps).unwrap().unwall, 1);
+    }
+
+    fn hint(unwall: usize, more_walls: usize) -> FirstWallHint {
+        FirstWallHint {
+            leaf: dorc_plan::LeafId(1),
+            line: 8,
+            word: "foobar".to_owned(),
+            unwall,
+            more_walls,
+        }
+    }
+
+    #[test]
+    fn body_wording_matches_the_user_story_register() {
+        // M=1, no further walls — the USER_STORY stage-3 sharpened form.
+        assert_eq!(
+            hint(1, 0).body(),
+            "'foobar' (line 8) is unmodeled: it is the first wall — an oracle vouching its \
+             convergence would elide it when converged, and un-wall 1 downstream site"
+        );
+        // M=2 ⇒ "sites"; a further wall ⇒ the trailing pointer.
+        assert_eq!(
+            hint(2, 1).body(),
+            "'foobar' (line 8) is unmodeled: it is the first wall — an oracle vouching its \
+             convergence would elide it when converged, and un-wall 2 downstream sites; 1 more \
+             unmodeled wall — dorc why"
+        );
+        // M=0 ⇒ the un-wall clause is dropped (never "un-wall 0").
+        assert_eq!(
+            hint(0, 0).body(),
+            "'foobar' (line 8) is unmodeled: it is the first wall — an oracle vouching its \
+             convergence would elide it when converged"
+        );
+        // more_walls plural.
+        assert!(
+            hint(0, 2)
+                .body()
+                .ends_with("; 2 more unmodeled walls — dorc why")
+        );
+    }
+
+    #[test]
+    fn why_detail_carries_the_unwall_count() {
+        assert_eq!(
+            hint(1, 0).why_detail(),
+            "first wall (book order) — an oracle vouching its convergence would elide it and \
+             un-wall 1 downstream site"
+        );
+        assert_eq!(
+            hint(0, 0).why_detail(),
+            "first wall (book order) — an oracle vouching its convergence would elide it when \
+             converged"
         );
     }
 }
