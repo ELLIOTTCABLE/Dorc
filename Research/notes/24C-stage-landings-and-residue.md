@@ -378,3 +378,33 @@ plausible product answer. **Human forks parked for Stage 6:** `flag-pipe-status-
 (per-command vs per-line oracle-speaks-for) · `flag-filter-blessing`. Harness rider:
 `head_ran_check` honors `RAN_ORDER=lax` (multiset equality; dropped/added lines stay RED —
 only benign concurrent-stage reordering forgiven).
+> **[SUPERSEDED next day — both forks RESOLVED, `24J`:** per-command CONNECTED PROBES chosen;
+> per-line is DEAD (beautification-fragility/pseudo-argv/vouch-blast); filter-blessing was a
+> PHANTOM (the engine measures rc, never interprets it — grep is ordinary stdlib purity-vouch
+> material). Build = the pipefix pass; the XFAIL is the tripwire.]
+
+## First-contact polish pass (LANDED 2026-07-05; merged tip `00664b1` lineage)
+
+The `24H` charter applied in full minus enumerated deferrals (one Opus, 8 commits, 54 files;
+conductor-verified: fresh build · clippy `-D warnings` · 25 suites · **152/152 e2e on the
+polish tip by the conductor's own run**; merged-tree e2e re-verified post-merge). Landed:
+**exit-code family** (⊤-reject fast-fails rc=10, artifact still ships; usage rc=2;
+`--help`/`--version` stdout+0; the `DORC_EXIT=<n>` marker teaches run.sh's crash-guard) ·
+**rustc-style diagnostic frames** (file:line:col + gutter + ASCII carets; `render_cli`
+multi-span wired; byte-offsets dead) · **firehose fix** (structurally-unprobeable sites
+suppressed; the rest aggregate to ONE line + a `dorc why` pointer) · **`dorc why`** (source-
+line-keyed; unargumented = current-run problems; `rul24-lineno-identity` verified round-trip)
+· **CLI ergonomics** (positional books — the day-one bug, multi-book concat, `--oracle-dir`,
+`--results`, did-you-mean, humane file-errors) · **jargon pass** (⊤-class → plain English on
+user-facing surfaces) · **anstream/anstyle adopted, exact-pinned, cli-edge only** (kernel
+dep-free; plain-when-piped verified — no ANSI in captured stderr) · **the elision-render**
+(human-leaned, greenlit mid-flight): elided lines render as ORIGINAL-BYTES-commented
+(`# apt-get install -y nginx   # dorc: elided (…)`) — scoped provably-safe (top-level,
+alone-on-line, single-line, StandIn::True only; two regressions caught in development drove
+the `is_alone_on_line` guard); 41 goldens re-blessed, all diffs = the single format change.
+**clap DEFERRED deliberately** (the hand-rolled surface now covers the need; a swap = pure
+rework risk). **Deferred, enumerated:** production multi-span secondaries (the pipeline-stage
+flagship needs a cross-crate structured-diagnostic thread — the frame itself is delivered);
+plan-mode why-detail relocation (churns all 13 needles + gate-7); env-mirrors + oracle-dir
+hint + `may-alias=` doc-line; analysis-stage label jargon. Residue: none new — the pass is
+presentation-plane by construction (artifact bytes changed ONLY via the scoped elision-render).

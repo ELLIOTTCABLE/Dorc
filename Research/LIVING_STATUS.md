@@ -118,7 +118,45 @@ hard-died agent's orphan.
 - **On-ramp:** THIS block → `252` (protocol + §7) → `254` (review + retrospect ledger) → `255` (dry-run
   + predictions). All committed (`90ee2e2`). Live task: #6 (execution handoff).
 
-## Round-24 status (2026-07-05 — Stages 1–5 COMPLETE (A+B) + owncoord + pipe-guard pins; polish pass IN FLIGHT; then e2e-migration + #12 + Stage 6)
+## Round-24 status (2026-07-05 late — POLISH LANDED+MERGED; pipefix = the LAST in-flight agent; CONDUCTOR ROTATION imminent)
+
+**ROTATION HANDOFF (read this first, then the block below for the day's landings):**
+- **Merged tip lineage `00664b1`+** = everything through the polish pass. Conductor-verified on
+  the merged tree: fresh build · clippy `-D warnings` · 25 suites 0-failed; the merged-tree full
+  e2e re-run was in flight at handoff-write (the identical-spike-content polish tip ran
+  **152/152** under the conductor's own hand — treat a differing merged tally as a STOP signal).
+  Polish landing evidence + deferrals: **`24C` §First-contact-polish**. The CLI is now
+  first-blood-shaped (exit-code family rc=10/rc=2, caret frames, `dorc why`, firehose
+  aggregation, positional books, elision-render = original-bytes-commented).
+- **ONE agent still out: the pipefix builder** (task #19; the pipe-guard LIFT via connected
+  probes — design `24J`, carried inline in its brief). Deliberately based on the POLISH tip
+  `5d91fd2` (composes with the new CLI surfaces; pre-solves the merge conflict). On landing:
+  verify by own hand (fresh build + gates + FULL e2e run-to-completion), inspect the XFAIL
+  promotion diff line-by-line (promotion discipline — never bless-first), cherry-pick onto
+  `ai/spike3-r23`, re-verify merged. Expect ~153-154 e2e (152 + its new if-form +
+  negative-control cases, the promoted XFAIL now green).
+- **The queue for the next conductor (all specced, none dispatched):** #16 e2e de-graduation
+  (spec `24I`; batches 1–4 dispatchable, batch 5 needs per-topology verification; THE flag: the
+  in-memory tier adds a one-shot `dash -n` per artifact or it re-opens ap-2) · #17 first-wall
+  hint (DECIDED, small, `24H`-adjacent; decline-valve to r25 if not-small) · #12 touches()
+  typed-emission migration (human-set LAST of the churn passes) · #4 Stage 6
+  (measure/adequacy-bite/conclude/extract; charter now carries the 22H-reassessment inputs +
+  077/16Q extraction adds; the two pipe-guard forks are RESOLVED by `24J` — dropped from its
+  charter) · #5 battle-oracle corpus (feeds the r25 stdlib) · #6 Lcg fix · #7 r25-prep
+  (human-gated). Golden churn is UNBLOCKED by human ruling (noted→teach→re-bless; conductor
+  still inspects diffs at merge).
+- **KNOBS was RESTRUCTURED by the sibling conductor** (kELISION→kSCOPE+kSURVIVAL tombstone,
+  kHALVES+kWARN welded, kCONTRACT-RUNGS ratified, dated round-markers) — RE-READ KNOBS before
+  any design work; some corpus docs cite the old slugs.
+- **Process hardenings (bind successors):** every gated git command asserts the ATTACHED BRANCH
+  (`git rev-parse --abbrev-ref HEAD`), not just the ref position (a stray agent step-zero
+  switched the shared checkout and two conductors' commits interleaved on a mislabeled branch —
+  repaired, nothing lost, but the gate-gap was real); builder step-zeros carry a `pwd`-verify
+  line (the fence-in-prose failed three times); builders NEVER run the full e2e mid-work
+  (conductor's job; it strands them) but ONE foreground run-to-completion at the end is fine;
+  force `cargo build --workspace` before trusting any e2e (stale-binary false-fails).
+
+## The day's landings (2026-07-05 — Stages 1–5 + owncoord + pipe-guard pins; detail below + `24C`)
 
 **Since the entry below (all conductor-verified + merged, tip ≈`aa31081`+):** **Stage 5 Part B
 (`reaches()`) LANDED** — typed emission held both promises (kind from the LIFTED annotation, never
