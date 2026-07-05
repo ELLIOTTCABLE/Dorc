@@ -159,3 +159,40 @@ build-to-learn); the co-reference seed survives scope pressure. -GUESS: the §3a
 default for resolver-⊤ (measure the fire-rate; a swamped yardstick is a finding to surface, not
 silently flip). OPEN (human, eventually, non-blocking): the aliasing-horizon WORDING (theirs,
 post-mechanism); the co-reference contract proper (post-trial).
+
+## §10 — human-caught corrections (2026-07-04, post-dispatch; BINDING; supersede §2/§3 where they conflict)
+
+**corr-§2-collapse-is-half-wrong (the human's catch).** §2's "Stage 5 builds NO new bridge
+mechanism" holds ONLY for the own-oracle case (a tool's touches() emitting cross-kind coords for
+its OWN sites — legitimately Stage-4 machinery, and over-emission stays monotone-safe). It is
+WRONG for the cross-author case, which is what makes the bridge a bridge: `23M` designed the
+expansion bridge as an **owner-spelled, types-to-types translation function** (`manifest() {
+dpkg -L "$1" ;}`), declared ONCE per kind and **engine-applied to every footprint coordinate of
+that kind, whoever emitted it**; `ORACLE_PROVIDES` reserves it as a *vocabulary-relation*. The
+load-bearing case body-emission cannot cover: a third-party oracle honestly emits
+`package:nginx` in its touches() — the package's file-manifest is APT'S knowledge, not theirs —
+so without engine-applied expansion, that footprint under-covers and a downstream `file:` fact
+wrongly survives (the 233 CONCENTRATE-move demands the reach-knowledge live once, with the
+owner). No LIVE unsoundness at HEAD (no cross-author package-coordinate emitters in the corpus),
+but the mechanism gap is real. **Disposition: Stage-5 Part B** (engine-applied expansion,
+footprints-only — backings stay self-framed narrow; single-step expansion, no fixpoint, for the
+spike; its own lying-manifest sweep axis — omission is the sharp edge, same tier as footprints).
+Part A (aliasing, in flight) is unaffected.
+
+**corr-kind-keying (conductor self-catch while walking the UI).** §3's strawman
+`apt-get.resolve()` is MIS-KEYED. The identity/reach functions are not role-siblings of the
+COMMAND-oracle trio — they are a second family keyed by the KIND (23M contribution-vs-identity:
+the owner holds the nouns): `package.resolve()`, `package.manifest()`, invoked with an ENTITY,
+not an argv. A command-keyed resolver would mint identity for a "kind" no coordinate uses and
+the closure would silently never fire. Enforce: at-most-one-resolver-per-kind; a conflict, or a
+resolver keyed to a known PROVIDER name, is a LOUD diagnostic (make the confusion a warning,
+never a silent dud). The authored surface is thus two families: the per-tool trio
+(predict/is_converged/touches — every oracle author) and the per-kind pair (resolve/manifest —
+kind-owners only, stdlib-concentrated); all five optional, each silence degrading to the
+existing floor (the monotonic contract).
+
+**corr-alt6-disposition.** `236b`-alt6 (property invalidation-bases — the extender declares what
+kills its contributed property, in the kind's core vocabulary; default = killed-by-any-entity-
+touch) is VALUE-tier and stays deferred: entity-granular poisoning already carries its safety
+case; alt6 buys selector-granular survival precision the current entity-granular machinery
+cannot host yet. Ledgered, not built.
