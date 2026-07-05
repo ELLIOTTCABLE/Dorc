@@ -248,16 +248,19 @@ fn build_survival_footprints(
         else {
             continue; // no touches / non-literal argv / ⊤ / empty emission ⇒ no footprint ⇒ wall
         };
-        // Coherence (establish sites only): the site's own establish coordinate must be inside its
-        // footprint (at-least ⊆ at-most); a violation refuses the footprint ⇒ the site walls. (The
-        // cli additionally renders a `footprint-incoherent` span-diag here; the net just walls.)
-        if let Some(fact) = establish {
-            let own = EntityCoord::new(fact.kind, fact.entity);
-            if !coords.contains(&own) {
-                continue;
-            }
+        // Coherence CANARY (authored lane, establish sites only, PRE-union — 24G §8): the site's own
+        // establish coordinate must be ⊆ its RAW footprint (at-least ⊆ at-most); a violation refuses
+        // ⇒ the site walls. (The cli additionally renders a `footprint-incoherent` span-diag; the net
+        // just walls.) A kill-wall has no single establish cell ⇒ own None ⇒ no canary, no union here.
+        let own = establish.map(|f| EntityCoord::new(f.kind, f.entity));
+        if let Some(own_coord) = own
+            && !coords.contains(&own_coord)
+        {
+            continue;
         }
-        if let Some(footprint) = Footprint::authored(provider, coords) {
+        // 24G §8: UNION the own effect coordinate (engine-supplied) into the footprint — a no-op on
+        // the hit-surface here (the canary proved own ∈ coords), mirroring the cli's union.
+        if let Some(footprint) = Footprint::authored(provider, coords).map(|fp| fp.with_own(own)) {
             footprints.insert(*node, footprint);
         }
     }
@@ -269,9 +272,10 @@ fn build_survival_footprints(
 /// comes from the host's derivation-answer ([`Host::derive`]) — the sweep stand-in for shipping the
 /// `touches()` body + reading its stdout (NO sh execution here; the declared entity-set IS the
 /// answer). Rides the declared-vs-true split: a manifest ⊂ the wall's TRUE `CellDelta` is the LYING
-/// derived footprint that makes the victim wrongly survive (fork-s4-declaredtrue). Coherence-checked
-/// (own establish coord ⊆ footprint) exactly as the authored lane. The escalation DETECTION lifts +
-/// traces the real `touches()` (parity with the cli); only the footprint SOURCE is the host-answer.
+/// derived footprint that makes the victim wrongly survive (fork-s4-declaredtrue). The own establish
+/// coordinate is unioned in (24G §8 — the derived lane no longer REQUIRES own-membership), mirroring
+/// the cli. The escalation DETECTION lifts + traces the real `touches()` (parity with the cli); only
+/// the footprint SOURCE is the host-answer.
 #[expect(
     clippy::too_many_arguments,
     reason = "mirrors the cli's derived-merge — threads the compiled context (ast/cfg/value/classes/kills) + the probe-time host + interner; each is a distinct pipeline output, not a bundle-able struct"
@@ -298,7 +302,8 @@ fn merge_derived_footprints(
     };
     for d in &derivations.derivations {
         // The wall's own establish cell keys `Host::derive` (the declared manifest) AND is the
-        // coherence comparand. A kill's coordinate would ride the killcoord side-map (24E §7).
+        // own-effect coordinate the engine unions in. A kill's coordinate would ride the killcoord
+        // side-map (24E §7) — the sweep exercises establish walls only (no kill net).
         let Some(fact) = establish_fact_of(classes, d.node) else {
             continue;
         };
@@ -307,11 +312,13 @@ fn merge_derived_footprints(
             .into_iter()
             .map(|f| EntityCoord::new(f.kind, f.entity))
             .collect();
+        // 24G §8: the DERIVED lane DROPS the own-membership requirement; UNION the site's own
+        // establish coordinate (engine-supplied) into the footprint instead. An empty derive still
+        // walls (`derived` returns None on empty coords ⇒ `with_own` cannot resurrect it; anti-233).
         let own = EntityCoord::new(fact.kind, fact.entity);
-        if !coords.contains(&own) {
-            continue; // coherence-refuse (own establish ⊄ footprint) ⇒ the site walls (fail-safe)
-        }
-        if let Some(fp) = Footprint::derived(d.provider, coords, "apt-get.touches()".to_owned()) {
+        if let Some(fp) = Footprint::derived(d.provider, coords, "apt-get.touches()".to_owned())
+            .map(|fp| fp.with_own(Some(own)))
+        {
             footprints.insert(d.node, fp);
         }
     }

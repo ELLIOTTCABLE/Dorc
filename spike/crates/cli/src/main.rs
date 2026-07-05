@@ -664,12 +664,14 @@ fn build_survival_footprints(
         else {
             continue; // no touches / non-literal argv / ⊤ / empty emission ⇒ no footprint ⇒ wall
         };
-        // Coherence (establish AND kill sites, 24E §7): the site's OWN effect coordinate — its
-        // establish, or its killed cell — must be ⊆ its footprint (at-least ⊆ at-most). A violation
-        // is a loud contradiction ⇒ refuse ⇒ wall. Closes resid-kill-coherence: a drifted kill
-        // `touches()` (too-narrow footprint omitting the really-killed entity) is now caught.
-        if let Some(own) = own_wall_coord(*node, classes, kill_coords)
-            && !coords.contains(&own)
+        let own = own_wall_coord(*node, classes, kill_coords);
+        // Coherence CANARY (authored lane only, PRE-union — 24G §8 / 24E §7): the site's OWN effect
+        // coordinate (its establish, or its killed cell) must be ⊆ the author's RAW `touches()`
+        // emission (at-least ⊆ at-most). A violation is a cross-lane contradiction — the author's
+        // touches() disagrees with their own establish/kill — ⇒ refuse ⇒ wall. Real teeth here, and
+        // UNCHANGED. Closes resid-kill-coherence (a drifted kill footprint omitting the killed cell).
+        if let Some(own_coord) = own
+            && !coords.contains(&own_coord)
         {
             let span = ast.node(cfg.node(*node).ast).span;
             diags.push(dorc_core::Diagnostic::warning(
@@ -680,7 +682,13 @@ fn build_survival_footprints(
             ));
             continue;
         }
-        if let Some(footprint) = dorc_plan::Footprint::authored(provider, coords) {
+        // 24G §8: UNION the site's own effect coordinate (engine-supplied provenance) into the
+        // footprint. A no-op on the hit-surface HERE (the canary just proved own ∈ coords), but it
+        // records own for the why-lens and keeps the two lanes uniform. Empty emission ⇒ None from
+        // `authored` ⇒ `with_own` cannot resurrect it (anti-233).
+        if let Some(footprint) =
+            dorc_plan::Footprint::authored(provider, coords).map(|fp| fp.with_own(own))
+        {
             footprints.insert(*node, footprint);
         }
     }
@@ -792,9 +800,10 @@ fn ship_touches_body(
 /// Read back the host-DERIVED footprints (24E §2 corr-§2) and merge them into the survival set.
 /// For each escalated [`dorc_plan::ProbeDerivation`], intern its readback `deriv` coordinate lines
 /// into the SHARED vocabulary (the 24A §1b fence — `package` here is the SAME [`dorc_core::KindId`]
-/// a predict annotation minted), build a `Derived` [`dorc_plan::Footprint`], run the coherence
-/// check (the site's own establish coordinate must be ⊆ its footprint — at-least ⊆ at-most; a drift
-/// refuses ⇒ wall), and insert it keyed by the site's node. An escalated site with NO readback
+/// a predict annotation minted), build a `Derived` [`dorc_plan::Footprint`], and UNION the site's own
+/// effect coordinate into it (24G §8 — the derived lane no longer REQUIRES own-membership; the
+/// boilerplate `printf 'kind:%s' "$1"` that used to supply it was a decoy the coherence check tested
+/// instead of the derivation). Insert keyed by the site's node. An escalated site with NO readback
 /// records ⇒ empty ⇒ wall (silence = wall, kFAIL-safe).
 ///
 /// ALL-OR-NOTHING (24E §4 / the static path's TC-4): a MALFORMED derived coordinate refuses the
@@ -849,21 +858,16 @@ fn merge_derived_footprints(
             ));
             continue;
         }
-        // Coherence (establish AND kill sites, 24E §7): the site's OWN effect coordinate — its
-        // establish, or its killed cell (from `kill_coords`) — must be ⊆ its derived footprint.
-        if let Some(own) = own_wall_coord(d.node, classes, kill_coords)
-            && !coords.contains(&own)
+        // 24G §8: the DERIVED lane DROPS the own-membership requirement — the boilerplate
+        // `printf 'kind:%s' "$1"` that satisfied it was a DECOY the check tested INSTEAD of the
+        // derivation. UNION the site's own effect coordinate (its establish, or its killed cell from
+        // `kill_coords`) into the footprint instead — engine-supplied provenance. An empty emission
+        // still walls: `derived` returns None on empty coords ⇒ `with_own` cannot resurrect it (the
+        // anti-233 boundary — the engine never manufactures a claim from silence).
+        let own = own_wall_coord(d.node, classes, kill_coords);
+        if let Some(fp) = dorc_plan::Footprint::derived(d.provider, coords, d.call.clone())
+            .map(|fp| fp.with_own(own))
         {
-            diags.push(dorc_core::Diagnostic::warning(
-                dorc_core::DiagCode("footprint-incoherent"),
-                None,
-                "derived touches() footprint omits this command's own effect coordinate \
-                 (at-least ⊄ at-most) — footprint refused, the site walls"
-                    .to_string(),
-            ));
-            continue;
-        }
-        if let Some(fp) = dorc_plan::Footprint::derived(d.provider, coords, d.call.clone()) {
             footprints.insert(d.node, fp);
         }
     }
@@ -1712,8 +1716,15 @@ fn emit_survival_attribution(plan: &dorc_plan::Plan, interner: &Interner) {
                         interner.resolve(k.0)
                     )
                 });
+                // 24G §8: name the engine-supplied OWN-effect coordinate distinctly — present only
+                // when the union WIDENED the footprint (the derived lane; the authored lane's canary
+                // folds own into the `touches()` claim, so it is not repeated). Provenance: the site's
+                // declared effect, NOT the author's claim.
+                let own = c.own().map_or_else(String::new, |o| {
+                    format!("; own-effect {}", render_coord(o, interner))
+                });
                 format!(
-                    "wall site {} ({provider} touches {{{}}}{origin}{via})",
+                    "wall site {} ({provider} touches {{{}}}{own}{origin}{via})",
                     c.wall_leaf().0,
                     coords.join(" ")
                 )

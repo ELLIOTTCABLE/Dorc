@@ -260,6 +260,16 @@ pub enum FootprintOrigin {
 pub struct Footprint {
     provider: Symbol,
     coords: Vec<EntityCoord>,
+    /// 24G §8 — the wall-site's OWN effect coordinate, engine-supplied (the establish cell for an
+    /// establish-class site, the killed cell for a kill), unioned into the hit-surface. Kept DISTINCT
+    /// from `coords` (the author's/derivation's `touches()` claim) so the why-lens can attribute it as
+    /// own-effect rather than an authored claim, per §8's provenance requirement. It only ever ADDS
+    /// hit-surface (`inv-kfail`, apply): [`hit_surface`](Footprint::hit_surface) folds it in for
+    /// [`disjoint`], deduped against `coords`. `None` when the site had no own coordinate to union.
+    /// SPIKE SCOPE (ru-26): a single [`Option`] models today's single-operand establishes/kills; a
+    /// multi-operand `EstablishMembers` site would need a SET here (one own cell per member) — deferred,
+    /// see the members-gap note in the round's report.
+    own: Option<EntityCoord>,
     origin: FootprintOrigin,
     /// 24G Part B — the `reaches()` EXPANSION attribution: for each coordinate ADDED by
     /// `<kind>.reaches()` expansion ([`add_reached`](Footprint::add_reached)), the reach-function's
@@ -302,6 +312,7 @@ impl Footprint {
         Some(Self {
             provider,
             coords,
+            own: None,
             origin,
             reached_via: BTreeMap::new(),
         })
@@ -341,6 +352,40 @@ impl Footprint {
     #[must_use]
     pub fn coords(&self) -> &[EntityCoord] {
         &self.coords
+    }
+
+    /// 24G §8 — attach the wall-site's engine-supplied OWN effect coordinate (its establish cell, or
+    /// its killed cell), unioned into the hit-surface. Builder-style, chained AFTER
+    /// [`authored`](Footprint::authored)/[`derived`](Footprint::derived) so the emptiness law stays on
+    /// `coords` ALONE: an empty emission is already `None` before this runs, so `with_own` can never
+    /// resurrect a footprint from silence — union machinery present, empty emission ⇒ still no footprint
+    /// (the anti-233 boundary). `None` is a no-op (the site had no own coordinate).
+    #[must_use]
+    pub fn with_own(mut self, own: Option<EntityCoord>) -> Self {
+        self.own = own;
+        self
+    }
+
+    /// The full at-most HIT-SURFACE [`disjoint`] tests (24G §8): `coords` (the author's/derivation's
+    /// `touches()` claim) unioned with the engine-supplied own-effect coordinate. `own` is yielded only
+    /// when NOT already in `coords` — the authored lane's pre-union canary guarantees own ∈ coords ⇒ a
+    /// no-op there; the derived lane dropped that requirement ⇒ own genuinely widens. Ordered (coords,
+    /// then the novel own) for `inv-determinism`. Union coords are ordinary hit-surface: they
+    /// canonicalize and intersect identically to an authored coord, and only ever ADD surface, never
+    /// remove (`inv-kfail`, apply — the union can demote a survival, never license one).
+    fn hit_surface(&self) -> impl Iterator<Item = EntityCoord> + '_ {
+        self.coords
+            .iter()
+            .copied()
+            .chain(self.own.filter(|o| !self.coords.contains(o)))
+    }
+
+    /// The engine-supplied own-effect coordinate WHEN it widened the footprint (∉ `coords`) — the
+    /// why-lens surfaces this distinctly as own-effect (24G §8 provenance). `None` in the authored lane
+    /// (its canary guarantees own ∈ coords, so own is redundant with an authored claim there) and when
+    /// no own coordinate was unioned.
+    fn own_if_novel(&self) -> Option<EntityCoord> {
+        self.own.filter(|o| !self.coords.contains(o))
     }
 
     /// The footprint's provenance (why-lens attribution; origin-agnostic for disjointness).
@@ -443,18 +488,21 @@ pub fn disjoint(
 ) -> DisjointOutcome {
     let backing_canon = resolutions.canonicalize(backing.coord);
     let mut may_alias: Option<MayAliasReason> = None;
-    for fc in &footprint.coords {
+    // The hit-surface (24G §8): the author's/derivation's coords unioned with the engine-supplied
+    // own-effect coordinate. Union coords are ordinary hit-surface here — they canonicalize and
+    // intersect exactly like an authored coord (and carry no reach attribution).
+    for fc in footprint.hit_surface() {
         // Different KIND ⇒ ground-disjoint (resolvers canonicalize entities WITHIN a kind, never
         // across kinds) — no resolution consulted for this pair.
         if fc.kind != backing.coord.kind {
             continue;
         }
-        match (resolutions.canonicalize(*fc), backing_canon) {
+        match (resolutions.canonicalize(fc), backing_canon) {
             (Resolution::Canonical(a), Resolution::Canonical(b)) if a == b => {
                 // Two names, one referent (or token-equal at the floor). 24G Part B: if THIS footprint
                 // coord was added by a reaches() expansion, name the reach-function for the demote.
                 return DisjointOutcome::Hit {
-                    via_reach: footprint.reach_of(*fc),
+                    via_reach: footprint.reach_of(fc),
                 };
             }
             (Resolution::Canonical(_), Resolution::Canonical(_)) => {} // distinct canon ⇒ this pair clear
@@ -478,6 +526,12 @@ pub struct Crossing {
     wall_leaf: LeafId,
     provider: Symbol,
     footprint: Vec<EntityCoord>,
+    /// 24G §8 — the wall's engine-supplied own-effect coordinate, present ONLY when it WIDENED the
+    /// footprint (∉ the authored `footprint` coords above): the why-lens names it distinctly as
+    /// own-effect (engine-supplied, the site's declared effect — not the author's `touches()` claim).
+    /// `None` for the authored lane (its canary makes own ∈ coords ⇒ no distinct own-effect note) and
+    /// when no own coordinate was unioned.
+    own: Option<EntityCoord>,
     origin: FootprintOrigin,
     proof: DisjointnessProof,
     /// The kind whose resolver canonicalized the compared coordinates, if the backing's kind is
@@ -511,6 +565,14 @@ impl Crossing {
     #[must_use]
     pub fn footprint(&self) -> &[EntityCoord] {
         &self.footprint
+    }
+
+    /// The wall's engine-supplied own-effect coordinate WHEN it widened the footprint (24G §8): the
+    /// why-lens renders "own-effect `<coord>`" distinctly from the author's `touches()` claim. `None`
+    /// in the authored lane (own ∈ coords) and when no own coordinate was unioned.
+    #[must_use]
+    pub fn own(&self) -> Option<EntityCoord> {
+        self.own
     }
 
     /// The disjointness proof this crossing rests on.
@@ -690,6 +752,10 @@ pub(crate) fn wall_verdict(
                 wall_leaf: wall.wall_leaf,
                 provider: wall.footprint.provider(),
                 footprint: wall.footprint.coords().to_vec(),
+                // 24G §8: surface the engine-supplied own-effect coordinate to the why-lens ONLY when
+                // it widened the footprint (the derived lane's union); the authored lane's canary
+                // makes own ∈ coords ⇒ None (no redundant own-effect note).
+                own: wall.footprint.own_if_novel(),
                 origin: wall.footprint.origin().clone(),
                 proof,
                 via_resolver,
@@ -780,6 +846,79 @@ mod tests {
         assert!(
             Footprint::authored(i.intern("hork"), vec![]).is_none(),
             "an empty emission is no claim ⇒ no footprint ⇒ wall"
+        );
+    }
+
+    #[test]
+    fn empty_emission_stays_no_footprint_even_with_own_union() {
+        // 24G §8 anti-233 boundary: the own-coord union NEVER manufactures a footprint from an empty
+        // emission. `with_own` is chained after the emptiness law, so an absent/empty emission is
+        // already `None` and the union machinery cannot resurrect it — union present, empty ⇒ wall.
+        let mut i = dorc_core::Interner::default();
+        let own = EntityCoord::new(
+            KindId(i.intern("package")),
+            EntityRef::Operand(OpaqueToken(i.intern("nginx"))),
+        );
+        assert!(
+            Footprint::authored(i.intern("hork"), vec![])
+                .map(|fp| fp.with_own(Some(own)))
+                .is_none(),
+            "authored: empty emission + union machinery present ⇒ still no footprint (anti-233)"
+        );
+        assert!(
+            Footprint::derived(i.intern("hork"), vec![], "hork.touches()".to_owned())
+                .map(|fp| fp.with_own(Some(own)))
+                .is_none(),
+            "derived: empty emission + union machinery present ⇒ still no footprint (anti-233)"
+        );
+    }
+
+    #[test]
+    fn own_coord_union_widens_hit_surface() {
+        // 24G §8: the DERIVED lane drops own-membership; the engine unions the site's own effect
+        // coordinate into the hit-surface. A backing equal to the OWN coord — ABSENT from the
+        // touches() emission — now HITs via the union (it would be Disjoint without it). This is the
+        // `inv-kfail` safety the union adds: it only ever ADDS hit-surface (demotes), closing the
+        // same-cell survival the boilerplate-decoy check used to (mis-)guard.
+        let mut i = dorc_core::Interner::default();
+        let file_kind = KindId(i.intern("file"));
+        let file_coord = EntityCoord::new(
+            file_kind,
+            EntityRef::Operand(OpaqueToken(i.intern("/etc/x.conf"))),
+        );
+        let own = EntityCoord::new(
+            KindId(i.intern("package")),
+            EntityRef::Operand(OpaqueToken(i.intern("oldpkg"))),
+        );
+        // Derived footprint: coords = {file:/etc/x.conf} (dpkg -L | sed alone), own = package:oldpkg.
+        let fp = Footprint::derived(
+            i.intern("apt-get"),
+            vec![file_coord],
+            "apt-get.touches()".to_owned(),
+        )
+        .unwrap()
+        .with_own(Some(own));
+        let backing = Backing { coord: own };
+        assert!(
+            matches!(
+                disjoint(&fp, &backing, &Resolutions::none()),
+                DisjointOutcome::Hit { via_reach: None }
+            ),
+            "the unioned own coord HITs a same-cell backing (ordinary hit-surface, no reach attribution)"
+        );
+        // Control: without the union, the file-only footprint is disjoint from the package backing.
+        let fp_no_own = Footprint::derived(
+            i.intern("apt-get"),
+            vec![file_coord],
+            "apt-get.touches()".to_owned(),
+        )
+        .unwrap();
+        assert!(
+            matches!(
+                disjoint(&fp_no_own, &backing, &Resolutions::none()),
+                DisjointOutcome::Disjoint(_)
+            ),
+            "without the own-coord union the same-cell backing would WRONGLY survive"
         );
     }
 
