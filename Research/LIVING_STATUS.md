@@ -118,10 +118,32 @@ hard-died agent's orphan.
 - **On-ramp:** THIS block → `252` (protocol + §7) → `254` (review + retrospect ledger) → `255` (dry-run
   + predictions). All committed (`90ee2e2`). Live task: #6 (execution handoff).
 
-## Round-24 status (2026-07-04 late — Stages 1–4 COMPLETE; Stage 5 next; detail `notes/24A`–`24E` + `24C` §Stage-4)
+## Round-24 status (2026-07-04 latest — Stages 1–5A COMPLETE; kind-owner design round SETTLED; Part B next)
 
-**Stage 4 (derived footprints) LANDED + merged** (this branch; **145 e2e, 25 suites, all gates —
-conductor-verified on a fresh build**). The golden-hill move now works for PAYLOAD-BOUND tools: a
+**Stage 5 Part A (the aliasing closure) LANDED + merged** (**147 e2e, 25 suites, all gates —
+conductor-verified by own hand**). `resid-aliasing` is CLOSED for resolver-bearing kinds: the
+kind-owner ships `package.resolve()` (KIND-keyed, host-run, fork-4A rails); the engine
+canonicalizes BOTH sides before `disjoint`; can't-resolve ⇒ may-alias ⇒ run (`may-alias=N`
+instrumented); resolver-less kinds keep the token-equality floor byte-identical. **The three
+lying-nets coexist green: static 579 / derived 220 / alias 147** (per 3000 seeds, all attributed).
+Flagship `strawman24-alias-provides`: a converged `nginx-full` victim past a running `nginx` wall
+canonically HITS and DEMOTES where token-equality wrongly elided. Evidence + residue: **`24C`
+§Stage-5A** (resid-resolve-derived · resolv-lane parity gap · strain-coreference-crosskind = the
+post-trial co-reference design seed).
+
+**The kind-owner family design round SETTLED (live human dialogue, five volleys):** the record is
+**`notes/24G`**; the surface story is **USER_STORY stages 6–7** (human-directed update; rarefied
+<10%-of-authors, high community-effect framing). The rulings: two families (per-TOOL trio /
+per-KIND pair) · ONE function per question (the graduation test killed the edge/valuation split) ·
+**typed emission** (kind = trailing annotation, entities = raw stdout; vocabulary closes at lift;
+the `| sed` wart dies) · error-posture = un-annotated emission MEANS NOTHING (smell, never refusal;
+hard errors stay syntax + genuine static conflicts) · **`reaches()` not `manifest()`**
+(name-as-contract; omission-bias). Sequencing (human-set): **Part B (`reaches()`) next** →
+`touches()` stringly-emission migration **LAST** (FIXME rides USER_STORY stage 5) → Stage 6.
+
+## Round-24 EARLIER same-day (Stage 4 — derived footprints; detail `24C` §Stage-4)
+
+**Stage 4 LANDED + merged** (145 e2e at the time). The golden-hill move works for PAYLOAD-BOUND tools: a
 `touches()` body that reaches a host tool ESCALATES (ships strip-only into the probe lane, runs
 read-only, stdout → the footprint) — the frame rule through a *dynamic frame*. **Yardstick 0→1
 derived** (`strawman24-derived-survive`: a converged nginx install elides past a RUNNING oldpkg

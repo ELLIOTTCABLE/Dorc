@@ -310,3 +310,46 @@ pipeline-⊤ fires before the printf model). This was the first deliberate lift 
 bridges" — a touches() body may emit cross-kind coords its own sh computes (the `file:` lines);
 any ENGINE-mediated kind-crossing (expansion bridges, co-reference, the resid-aliasing closure)
 remains Stage 5, none built.
+
+## Stage 5 Part A — the aliasing closure (LANDED 2026-07-04 late; resid-aliasing CLOSED for resolver-bearing kinds)
+
+AI-authored (Opus conductor), accreted per-stage. Spec `24F` (+§10); built by one Opus in an
+isolated worktree; conductor-verified on the merged tip by own hand (fresh build · clippy
+`-D warnings` · 25 suites 0-failed · **147/147 e2e** · flagship inspected line-by-line).
+Process-evidence, not proof (never-vouch).
+
+**What landed (6 commits, cherry-picked to `2f8946c`):** the type-shapes (`CanonicalCoord`
+private-mint / `Resolution{Canonical, MayAlias}` / `disjoint` re-signed over canonical coords — a
+raw coord cannot reach the intersection in a resolver-bearing kind); the `resolve()` sibling
+(**KIND-keyed** per §10 — `package.resolve()`, `FnRole::Resolve`, host-run strip-only on the
+fork-4A rails, no static evaluator); the cli round-trip (`resolv` readback lane mirroring `deriv`;
+§10 confusability — duplicate-kind = refuse-both ERROR, provider-collision = WARNING; the
+`dangling-reference` diagnostic; `may-alias=N` on plan-summary; why-lens names the resolver); the
+**lying-resolver DST net** (`AliasWall` topology; **`alias_lying_divergences=147`/3000 seeds**,
+non-vacuous, resolver-attributed — the three lying-nets now coexist green: static 579 / derived
+220 / alias 147); two fixtures (`strawman24-alias-provides` — a converged `nginx-full` victim
+past a running `nginx` wall canonically HITS and DEMOTES where token-equality wrongly survived,
+differential runs BOTH; `strawman24-alias-symlink` — the fs kind via a realpath-shaped resolver).
+Resolver-less kinds stay byte-identical token-equality (the per-kind gradual floor).
+
+### Stage-5A residue (accreted)
+
+- **resid-resolve-derived (owed, narrow).** The round-trip resolves AUTHORED footprint + backing
+  coords (phase-1-available); DERIVED-footprint coords (escalated walls, known only post-results)
+  are NOT resolved — resolver+derived on one wall needs a second round-trip or resolution folded
+  into the derivation readback. Noted in `collect_resolver_coords`; defer until a fixture needs both.
+- **resolv-lane parity gap (minor).** gate-1 checks `site`-record parity, not `resolv` (mirrors
+  the `deriv` lane's gap); fixture self-consistency is authored + conductor-inspected, not gated.
+- **strain-coreference-crosskind (DESIGN INTEL — the §5 seed strained honestly, first-to-give as
+  planned).** Two structural blockers for the post-trial co-reference contract: `disjoint`'s
+  kind-fence short-circuits cross-kind pairs BEFORE canonicalization, and `CanonicalCoord` fixes
+  the kind (a within-kind entity remap; cannot carry a target kind). Co-reference needs the fence
+  moved after canonicalization + a kind-carrying canonical — a mechanism extension, correctly out
+  of Part A's scope. Recorded, not built.
+- **may-alias (§3a) instrumented:** `plan-summary may-alias=N`; fire-rate accrues toward the
+  -GUESS default's confirm-or-flip.
+
+**Design-round pointer:** the kind-owner-family design (unified reach-function `reaches()`, typed
+emission, naming, error-posture) settled in live human dialogue after this landing — `24G` is the
+thought-process record; `USER_STORY` stages 6–7 the surface story. The `touches()` stringly-
+emission migration is human-sequenced LAST (after `reaches()` proves the typed shape).
