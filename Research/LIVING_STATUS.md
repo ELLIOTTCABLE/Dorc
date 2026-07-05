@@ -107,7 +107,11 @@ r24 view is on r23). Reason: r24+r25 sharing one branch churned LIVING_STATUS/ro
 `990d966` Stage-4 commit swept the P1-done edit above — it landed, but the collision kept recurring).
 **P1 + `~/System` scout DONE** (P1 block above; `256`). **Wave-2 — all ISOLATED, committing granularly
 in their own worktree branches → cherry-pick onto `ai/spike3-r25` after base-verify when they land:**
-web-pass (firm `255` windmill FLAGs: asset/`MODE`/`PORT`/`BASE_URL`), P3 (ssh-runner + the Windows
+web-pass **DONE + cherry-picked to r25** (`255` FLAGs firmed: WM_VER→**1.747.0** [`1.470.2` was a fake
+404-tag], asset real, MODE/PORT/DATABASE_URL confirmed + **`BASE_URL` added** to the unit; **native-binary
+windmill = admin-invented territory** — upstream docs only docker/compose, so dec-2's compose-fallback
+is the documented escape; the `su-postgres` block auto-creates windmill's roles ⇒ book compatible),
+P3 (ssh-runner + the Windows
 `ssh -F` fix for the `usekeychain` gotcha; live-box integration deferred), P6 (HHHF capture tooling per
 `256`: preexec-JSONL spine + ZLE friction-button + asciinema-extractor). **Blocked-until:** P2 (live
 box + human's `_assert_tagged` eyeball), P4 (P3/P2 interfaces), P5 (rides r24 — Stage-4 now landed, so
