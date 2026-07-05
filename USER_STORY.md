@@ -638,6 +638,64 @@ and safe, but not shorter.* The plan's honesty about that — nothing hidden, ev
 line carrying its reason, every reason naming its wall — is itself the feature. A tool that
 commented out `ufw allow 443/tcp` on vibes would be worse than no tool.
 
+
+The bought unsoundness: one corner, fully fenced
+------------------------------------------------
+
+Everything in this story is honest in one of two cheap ways. Either Dorc *declines* to
+promise — a wall, a guard, a line that stays in the plan — or a claim bites the person who
+made it: stage 3's vouch, when wrong, endangers its own author's own tool's line, and that
+price was stated where it was bought. Cheap honesty runs out in exactly one place, and it is
+kept open on purpose: the survival tier (stages 5–7), where Dorc removes a line from the plan
+on the strength of *other people's* at-most claims, with no runtime net underneath. This
+section is that corner painted in full — a tool that buys unsoundness owes you the receipt.
+
+Count what must all be true, together, before it can bite:
+
+1. The admin typed `--trust-footprints`. Otherwise this tier does not exist — the claims are
+   never even lifted.
+2. The line's own author vouched it (`is_converged()`, reached, answering yes). No vouch, no
+   elision — the line runs.
+3. The probe genuinely measured the line's fact converged, minutes ago. Diverged or
+   can't-tell, the line runs.
+4. Something mutative really ran upstream, between that measurement and this line. (No
+   running wall ⇒ an ordinary stage-3 elision; nothing here is being trusted at all.)
+5. The running wall was *described* — its author made a clean at-most claim. An opaque wall,
+   a confused trace, a half-resolvable argparse: all collapse to a total wall, and everything
+   behind it runs or guards. Structural partiality cannot reach this corner; only a *clean*
+   claim can be wrong here.
+6. That clean claim was wrong in the one way no machine can see: complete-looking but
+   semantically incomplete. A `touches()` omitting a cell the tool really disturbs; a
+   `reaches()` missing an edge; a `resolve()` splitting one referent into two names. (The
+   frame problem — permanent, not an implementation gap.)
+7. The canaries missed it. The coherence cross-check catches claims that contradict their own
+   oracle's other statements, and the engine supplies the site's own coordinate outright —
+   what remains is precisely the undetectable class.
+8. And the unlucky overlap: this line's fact had to live exactly in the omitted spot — the
+   wall really touched the cell the claim said it didn't.
+
+Then, and only then: a line that needed to run, didn't, silently. Even then, the bite has
+edges. It is *attributed* — the plan recorded whose claims licensed the survival, the
+`why`-lens names them, and the fix repairs every book downstream of that oracle at once. It
+is *short* — the next plan's probe measures reality, not memory; the broken fact reads
+diverged and the line comes back. And it is *narrow* — every other line in the book ran,
+guarded, or elided under its own separate license.
+
+What the corner buys, and why it stays open rather than closed: attention on drifted days —
+the entire stage-5-through-7 product. Without it, any line that really runs is an honest
+wall, and one stale package index costs the whole tail of the book its shape, every drifted
+morning, forever (stage 5's opening render). And every mechanism that could "close" the
+corner re-spends the currency it exists to save: a runtime re-check under a survived elision
+is just a guard — the line returns to the plan, the attention returns to you; a disclosed
+contingency costs more attention than the plain line it wraps. The nakedness is not a gap
+awaiting a cleverer release. It is the purchase price of the only thing that was ever for
+sale in these stages: *removal by proof, or honesty about the lack of one* — and the proof
+here is only ever as good as named, attributable people's claims about their own tools.
+
+Said once, plainly, to the admin: past `--trust-footprints`, you are trusting named authors'
+at-most claims. Everywhere else in Dorc, you were only ever trusting measurements, and your
+own eyes.
+
 The final ledger, steady state on the same book (counting the seven tool-sites; the two
 housekeeping lines always show, and attention-lines counts everything still facing the
 user):
