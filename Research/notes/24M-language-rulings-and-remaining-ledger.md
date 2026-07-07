@@ -86,6 +86,43 @@ and ecosystem growth is acknowledged and banked.
   grounding-bridges) — kind-unification is co-reference at kind granularity. Post-trial
   design work; explicitly not this spike.
 
+### rul24M-rungs-default (HUMAN-TYPED, 2026-07-07 — closes open24M-rungs-default)
+
+> **An unmarked verdict-function reads as full-license — guard and elide at its own sites —
+> permanently. Any future rung machinery arrives as opt-down spellings on the withholding
+> side; it never re-reads unmarked functions.**
+
+Rationale (human's, near-verbatim): in gradual-enhancement, "making the command not run when
+it's fine" is by far the default case; the gradient runs YOLO → careful-but-costs-me, so **no
+annotation = maximum value, minimum-defensive is the correct pin**. Distinguish this sharply
+from *things Dorc does for you*: Dorc's own inferences about the WORLD stay maximally
+defensive (silence=wall, ⊤⇒run — all unchanged). This is an inference about what the *author
+is saying*, and it enables Dorc to do *as much as you may want*, in a non-broken way — not
+broken behavior (the under-execute class).
+
+**rul24M-do-the-most-short-of-broken (general rule-of-thumb, HUMAN-minted in the same
+ruling):** *"We do 'the most' for you that we CAN do, short of cases where doing more may
+introduce genuinely BROKEN behaviour that nobody in their sane mind would want. 'Most people
+want, but not everybody' ⇒ not broken; 'nobody would want' ⇒ broken."*
+
+*Conductor check (invited; verdict: the choice is sound, one scoping fence recorded so the
+rule-of-thumb is never over-cited):* the rule governs reading an author's OWN speech-acts
+about their OWN tool's sites — authorship is the opt-in, and the wrong-vouch exposure stays
+own-line, priced, attributed. It does NOT extend to cross-author trust-transport: the
+survival tier stays double-gated (rul24-mode-gate untouched) precisely because there the
+claim-subject ≠ blast-subject and the bite is "nobody would want"-shaped. Checked against the
+welds: no collision — an unmarked *function* is an authored act, not the silence that
+licenses nothing (absence of the function remains the wall); the elide still demands
+probe-measured convergence + ambience + reproducible observables regardless. Coherence: this
+ruling and rul24M-typeless-floor point the same direction (shave the ceremony between a new
+user and value); welding the opposite would have contradicted the floor — the human's own
+counterthesis, agreed.
+
+Consequences: **P5's license story is unblocked** — stdlib verdict-functions are authored
+under a permanent, stable reading that no future ladder can re-read; kCONTRACT-RUNGS
+(single-vs-ladder) stays open for trial evidence *with its default now pinned*; KNOBS
+kCONTRACT-RUNGS owes a dated marker (conductor-owed, §4).
+
 ## §2. The governance stance (human-asked "ack?" — ACKED, and recorded)
 
 **There is no minting.** First use of a kind name is its creation. "Ownership" is not a thing
@@ -106,18 +143,13 @@ Likewise the advisor's duplicate-mint warning is **DROPPED** (no mint-event exis
 same-kind-across-files is the contribution model working). Surviving mechanical checks, total:
 the <2-dots warning (rul24M-reverse-dns-kinds) + the within-unit duplicate-resolver refusal.
 
-## §3. OPEN — awaiting the human (the two-line remainder; not settled by silence)
+## §3. OPEN — awaiting the human (ONE line remains; not settled by silence)
 
-- **open24M-rungs-default** (gates P5): the one-sentence default-reading weld proposed in the
-  walkthrough — *"an unmarked verdict-function reads as full-license, permanently; any future
-  rung machinery is opt-DOWN via new spelling, never a re-reading of unmarked functions."*
-  kCONTRACT-RUNGS itself (single vs ladder) stays open for trial evidence; only this default
-  freeze is pre-stdlib-urgent (it is what keeps the ladder graftable without ever re-reading
-  published oracles).
 - **open24M-ack-poison-marks** (gates the respell, small): ACK and POISON bare-marks are law
   (strip-fidelity) with zero corpus occurrences — prune from the grammar, or deliberately
   exercise in the stdlib; decide at the respell so untested grammar doesn't ship into the
   stdlib era.
+- ~~open24M-rungs-default~~ — **CLOSED 2026-07-07 → rul24M-rungs-default (§1).**
 
 ## §4. Conductor-owed riders (no human ruling needed; one line each)
 
@@ -169,10 +201,10 @@ the <2-dots warning (rul24M-reverse-dns-kinds) + the within-unit duplicate-resol
 ## §5. Queue effects (for the resequenced r24 queue, LIVING_STATUS)
 
 - The **kind-rule is now RULED** (was absent from the P5-blocker list — restored here): P5
-  blockers read: respell + version-marker + **open24M-rungs-default** + the dq-kOOB stamp
-  (24L's pending-stamp is substantially discharged by rul24M-typeless-floor +
-  rul24M-version-comment + the location-gating supersession; the formal stamp line is the
-  human's).
+  blockers read: respell + version-marker + ~~rungs ruling~~ **(CLOSED —
+  rul24M-rungs-default)** + the dq-kOOB stamp (24L's pending-stamp is substantially
+  discharged by rul24M-typeless-floor + rul24M-version-comment + the location-gating
+  supersession; the formal stamp line is the human's).
 - The **respell pass** now folds, in one churn: dot-death → bare `__dorcism` names
   (rul24M-bare-dorcism-names) · the version-comment (rul24M-version-comment) · kind re-key to
   `sm.dorc.*` (rul24M-reverse-dns-kinds) · touches() typed-emission migration (already folded)
