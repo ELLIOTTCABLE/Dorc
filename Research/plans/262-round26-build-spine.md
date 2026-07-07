@@ -22,13 +22,39 @@ un-asked; `plans/261` §9 keeps the precise wording for whenever the punt is lif
 ## §1. The central invariant — spine-inv-order-free
 
 > **No scheduling, interleaving, arrival-order, width, or placement choice may change the
-> CONTENT of any record, fact, plan-verdict, plan, or artifact — only its timing.**
+> FINAL, FOLD-COMPLETE content of any record, fact, plan-verdict, or plan — only its timing.**
 
 This is the load-bearing sentence of the whole round. Everything the two plans defer
 (LPT-vs-anything, cost tiers, width defaults, speculation policy, pools, caches, serial/canary
 admission) is deferrable *because* this invariant makes every such policy observationally
 invisible: swap the policy, byte-identical plans fall out, only the wall-clock moves. The
 moment anything reads *meaning* from order, the bolt-on-later license dies silently.
+
+Scope corrections (26A amend-262§1-invariant — three independent lanes each caught an
+over-claim in the prior wording):
+- **Final content only.** Intermediate live-render states legitimately tighten/loosen as
+  arrivals fold (`260` s3-3); the invariant binds what the fold CONVERGES to, not each frame
+  on the way there.
+- **Per fixed compiled artifact.** Width is a *compile-time* input: changing K legitimately
+  changes artifact BYTES (lane structure, wave barriers). The invariant quantifies over
+  runtime variation (interleaving, jitter, arrival order) of ONE compiled artifact — and,
+  separately, over the *plan* produced from any width's records (same facts in ⇒ same plan
+  out, any K).
+- **The deadline caveat, as a monotone weakening.** Timeouts/deadlines are timing choices
+  that DO change content (a killed probe mints Unknown). Sanctioned direction only: timing
+  policy may move content exclusively *toward run* — for any two timing outcomes A, B of the
+  same run, if B saw fewer records then plan_B's run-set ⊇ plan_A's (and, per §2, an
+  incomplete deriv family widens WALLS, never licenses). The §5 rig asserts this on
+  deadline-crossing seeds.
+
+Defaults table (26A, one place — the flag/product split said plainly):
+
+| knob | this round's flag default | product target |
+|---|---|---|
+| `--probe-width` K | **1** (until the P4 flip package + one-time re-bless) | 4 |
+
+Consequence, stated honestly: `261`'s latency win SHIPS DORMANT this round — the machinery
+lands, the default doesn't move without the P4 evidence package.
 
 What already guarantees it (existing law, now consumed as spine):
 - the fold's same-cell merge is commutative + idempotent (`22H` §3) — accumulation order is
@@ -59,43 +85,97 @@ order-keyed goldens, or any tie-break that consults arrival sequence instead of 
 
 ## §2. The records-lane contract — `dorc-records/1` (one spec, all consumers)
 
+> **REWRITTEN 2026-07-07 per `notes/26A` stop-1** (four-lane convergence; the fable lane's
+> kill-shot). The prior draft's universal safety argument — "record loss folds toward run" —
+> is INVERTED for the deriv lane: footprints are *at-most* claims, so losing deriv records
+> SHRINKS the claim, which licenses MORE survivals past running walls (`kSURVIVAL`,
+> under-execution — the cardinal sin) with no runtime net. Every change below serves two
+> obligations the prior draft lacked: make loss/tearing *detectable at the byte tier*, and
+> make any detected incompleteness in an at-most family fold to ⊤/wall-total — never to a
+> smaller (more-licensing) claim.
+
 The complete wire spec both tracks build against (supersedes the split across `260` §4 and
 `261` §5/§6; rationale and tradeoff records stay in those docs — `260` dec-26-wire-v1,
 `261` dec-261-ms-field).
 
 ```
-dorc-records/1 nonce=<nonce> host=<hostid> book=<sha256-of-book-bytes> sites=<N>
-<nonce> site 0 <inner record grammar, unchanged, owned by the existing emitter/parser>
-<nonce> deriv 0 coord=<kind:entity>
+dorc-records/1 nonce=<nonce> attempt=<k> host=<hostid> book=<sha256-of-book-bytes> sites=<N> %%
+<nonce> site 0 <inner record grammar, unchanged, owned by the existing emitter/parser> %%
+<nonce> deriv 0 coord=<raw coordinate bytes, whitespace included, runs to the token> %%
+<nonce> deriv-end 0 n=<K> %%
 ...
-dorc-records-end/1 nonce=<nonce> seen=<K>
+dorc-records-end/1 nonce=<nonce> %%
 ```
+
+(`%%` is a placeholder spelling for the terminal token; builder picks the concrete bytes —
+requirements: fixed, never produced by the inner grammar, cheap to append in one printf.)
 
 - **Framing:** header line first; end-sentinel last, emitted **after the artifact's final
   `wait`** — the drain NEVER keys on EOF (`notes/141` g5, the fd-inheritance hazard). Every
   record line carries the run-nonce prefix; the nonce is minted at the controller edge
   (DI'd — never ambient RNG in kernel code).
+- **Per-record terminal token (26A stop-1):** EVERY line — header, records, sentinel — ends
+  with the terminal token at EOL. A line without it is TORN ⇒ reject (count + warn); a line
+  with bytes after it is GLUED ⇒ reject the whole read unit. This is the tear-detector that
+  PIPE_BUF alone cannot be: coordinate content is unbounded tool output, so >PIPE_BUF lines
+  are possible and atomicity is unenforceable for them — without the token, a torn record's
+  leading fragment parses as a *valid* record carrying a prefix-truncated coordinate ⇒ wrong
+  disjointness ⇒ wrong survival. Atomicity (one record = ONE `printf`, `notes/141` g2)
+  remains the producer rule and keeps small records tear-free in practice; the token is the
+  *guarantee*, atomicity is the optimization.
+- **Coordinate fields parse last-to-token (26A stop-1):** `coord=` (and any future
+  free-content field) is the LAST key on its line; its value runs from `coord=` to the
+  terminal token, whitespace included. (The incumbent parser whitespace-truncates
+  space-bearing coordinates *today* — a live bug at pin; the fix lands with S1.) A torn
+  coordinate necessarily loses the token and rejects; a prefix-truncated coordinate can never
+  parse as valid.
+- **Variable-count families close with an end-record (26A stop-1):** deriv (and any future
+  multi-record-per-site family) has no inherent completion marker, so a mid-family cut is
+  otherwise undetectable. Each site's family closes with `deriv-end <leafid> n=<K>`.
+  Consumer rule: missing end-record, or `n` ≠ received count for that leafid ⇒ that site's
+  footprint is INCOMPLETE ⇒ fold ⊤ (wall-total for that site). Never keep a partial at-most
+  claim — the engine's "received sites keep their facts" floor covers only *total* absence,
+  not partial presence.
 - **Integrity keys:** `book=` binds the stream to the exact analyzed book bytes (mismatch ⇒
   refuse fold — discharges the r22 `tc-probe-no-digest`/`tc-probe-results-roundtrip` items);
   `host=` must equal the session's expected HostId (mis-plumbed streams refuse — the
-  partition law's wire tripwire); `sites=` declares the expected census so truncation is a
-  *computable range*, not a guess.
-- **Truncation semantics (consumer rule):** absent sentinel, or `seen < sites` ⇒ received
-  sites keep their facts; the un-received site set folds Unknown ⇒ run, and the render marks
-  the boundary (`plans/128` fc-2 at the probe lane).
-- **Line atomicity (producer rule):** one record = ONE `printf` = one line, well under
-  `PIPE_BUF` (≥512 bytes POSIX-atomic on pipes — `notes/141` g2). This is what lets
-  concurrent within-host lanes and any future channel-mux share the lane without tearing.
-  Stated in the artifact header comment; it is load-bearing, not style.
+  partition law's wire tripwire); `sites=` declares the census of sites *in THIS artifact*
+  (26A amend-smalls wording) so fact-lane truncation is a *computable range*, not a guess;
+  `attempt=` is per-attempt (26A amend-retry-hygiene): a probe retry re-mints, the prior
+  attempt's records are discarded WHOLESALE, and a zombie writer's late records are
+  un-foldable by their stale nonce/attempt.
+- **Truncation semantics split by lane (26A stop-1 — the safety directions differ):**
+  - *fact lane* (`site` records): received sites keep their facts; the un-received site set
+    folds Unknown ⇒ run, render marks the boundary (`plans/128` fc-2). Loss folds toward run —
+    safe.
+  - *deriv lane*: per-family completeness required as above; a truncated/unterminated family ⇒
+    wall-total for its site. Loss folds toward WALL, because here "less claim" = "more
+    license".
+- **Duplicate records merge by meet (26A stop-1):** an identical duplicate is idempotent
+  (fine — `merge_observable` already is); CONFLICTING records for one leafid meet to
+  can't-tell/⊤ (⇒ run / wall-total). Never first-wins, never last-wins — the §1 tie-break law,
+  now spelled at the parser instead of policed by review.
+- **Sentinel carries no count (26A stop-1):** `seen=` is DROPPED — a shared counter is
+  unimplementable by concurrent pure-sh subshells. The census is controller-side: header
+  `sites=` + per-leafid accounting + family end-records replace it entirely.
 - **Additive-keys policy (versioning discipline, declared while the surface is one round
   old — the `24Kc` cluster-compat lesson):** parsers of `dorc-records/1` MUST ignore unknown
-  `key=val` pairs on any line. New fields (e.g. `261`'s `ms=`) are additive within /1;
-  a /2 bump is reserved for structural changes (framing, keying, semantics of existing keys).
+  `key=val` pairs on any line (unknown keys BEFORE the final free-content field only — the
+  last-to-token rule wins for `coord=`). New fields (e.g. `261`'s `ms=`) are additive within
+  /1; a /2 bump is reserved for structural changes (framing, keying, semantics of existing
+  keys).
 - **Alien/late lines:** per pin-late-and-alien-records (§1) — discard, count, one aggregated
   warning per host.
 - The **inner** `site N effect=… rc=…` / `deriv N coord=…` grammar is deliberately NOT owned
   here — it belongs to the existing emitter/parser pair and is expected to move with the
-  entity re-key (`cli/CLAUDE.md` ap-1); the framing is agnostic to it by design.
+  entity re-key (`cli/CLAUDE.md` ap-1) — but the framing now constrains its edges: terminal
+  token on every line, free-content fields last-to-token.
+- **Test tier (26A stop-1 — the granularity fix):** no test tier in the prior draft operated
+  at the byte granularity where any of this lives. The sim driver feeds BYTES through the
+  PRODUCTION deframer — never pre-parsed records; the fault vocabulary (§5) gains
+  torn-line / glued-line / oversize-line mutations; and one named acceptance pin lands with
+  S1: **pin-partial-deriv-demotes-to-wall** — cut a deriv family mid-stream, assert the
+  site folds wall-total, never a shrunken footprint.
 
 ---
 
@@ -156,6 +236,13 @@ implementation is exercised under the §5 rig by construction.
 - **The guard:** rerun any seed ⇒ bit-identical command trace + final plans (`24B`
   C-determinism-guard; `260` acc-seed-bit-identical). Proven at S0 by deliberately breaking
   it once (inject an order-observable HashMap iteration; watch red; remove).
+- **The byte tier (26A stop-1):** the sim driver feeds raw BYTES through the production
+  deframer; fault vocabulary includes torn-line, glued-line, oversize-line, mid-family-cut
+  mutations (§2 test-tier rule). Faults injected above the deframer test the fold; faults
+  injected below it test detection — both tiers exist.
+- **Deadline-crossing seeds (26A amend-262§1-invariant):** seeds that straddle a timeout
+  boundary assert the monotone-weakening direction (§1): the fewer-records outcome's run-set
+  is a superset, and no deriv family ever shrinks.
 - **an-sometimes-assert** on every injected fault path (`plans/128` fc-5; hostsim
   discipline) — reachability half only; coverage humility inherited.
 - **The jitter e2e family:** width>1 probe artifacts under several jitter seeds ⇒ identical
@@ -175,11 +262,15 @@ the stage's pins green).
   no consumer at-or-before its producer's wave; deterministic; faithful ⇒ book order — from
   `261` §7); the determinism guard proven. *(Absorbs `260` stage-26-0 and `261` P0.)*
 - **S1 — the records contract + the emission locus.** §2 implemented end-to-end: framing
-  emission + parser (refusals: book/host mismatch; truncation range; alien/late discipline);
-  the §3 locus with subshell isolation + waves behind the width flag (default 1); gate-1
-  harness answer (width=1) + the jitter family at width 4; pin-fold-permutation +
-  pin-terminal-determinism landed as tests. *(Absorbs `260` stage-26-2's wire half and
-  `261` P1.)*
+  emission + parser (refusals: book/host mismatch; torn/glued lines; truncation range;
+  alien/late discipline; duplicate merge-by-meet), terminal token on every line,
+  coordinate-last-to-token (fixing the incumbent whitespace-truncation bug), deriv family
+  end-records + the partial-family ⇒ wall-total fold, per-attempt keying; the §3 locus with
+  subshell isolation + waves behind the width flag (default 1); gate-1 harness answer
+  (width=1) + the jitter family at width 4; pins landed as tests: pin-fold-permutation ·
+  pin-terminal-determinism · **pin-partial-deriv-demotes-to-wall** + the byte-tier fault
+  mutations (§5). *(Absorbs `260` stage-26-2's wire half and `261` P1. The §2 rewrite is
+  26A's stop-1 — S1 may not start against the pre-rewrite spec.)*
 
 **After S1 the tracks decouple:** `260` stages 26-1/26-2(transport half)/26-3/26-4/26-5
 (fleet kernel semantics, ssh drivers, apply fan-out, verify, measurement) and `261` P2/P3/P4

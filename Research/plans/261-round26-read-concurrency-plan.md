@@ -140,10 +140,19 @@ scheduler's own obligation is only: never *create* an ordering hazard the axiom 
 - **h1 · value edges** — task B consumes a value task A produces. Today: none ship (the
   antichain finding, §1); the classes that will mint them: probe-readback resolving book
   values (the `$(hostname)`-case, once a read-value oracle exists), reach-probe second
-  round-trips, any future predict-body chaining. RULE: h1 edges are explicit topological
-  edges in the schedule graph; a consumer runs in a later wave than its producer, OR the
-  pair compiles into one connected unit (the 24J move) when they share a host-local pipe.
-  These are the ONLY true edges.
+  round-trips, any future predict-body chaining. RULE (rewritten per 26A amend-h1-mechanism —
+  the prior "consumer runs in a later wave" was mechanism-free, a genuine composition error
+  three lanes caught: probe values return to the CONTROLLER; a later wave in the same
+  shipped artifact has no channel by which to consume them): h1 edges are explicit in the
+  schedule graph and resolve by exactly one of two mechanisms — (a) **in-artifact
+  connected-unit composition** (the `24J` shape generalized: the producer's value is captured
+  host-locally inside ONE compiled unit that contains its consumer), or (b) **controller-fold
+  consumption** (the value returns as a record and is consumed controller-side at fold, never
+  by another shipped probe). **Waves exist for width/pacing only** — never as a value-passing
+  mechanism; no wave boundary carries an h1 edge. Enforcement is built at S0/P0 as a real
+  compile step: the h1-edge extraction pass, with a zero-edges-on-today's-corpus pin plus one
+  synthetic injected edge proving the compiler→schedule wiring — antichain-by-proof, not by
+  accident. These are the ONLY true edges.
 - **h2 · control-relevance** — probe results decide which sites are *live*, hence which
   probes were *worth running*. NOT a soundness edge (running a dead arm's read is safe,
   merely wasted) — a **cost** edge. Three positions: (i) **speculate** (the incumbent: ship
@@ -178,8 +187,11 @@ than *true by accident* as h1-minting features land.
 
 **Shape: waves × width.** The schedule graph topo-sorts into antichain layers (today: one).
 Within a layer, tasks are binned into K lanes; the artifact runs each wave as K concurrent
-subshell chains and `wait`s the wave before the next (h1 layers are wave boundaries by
-construction). Width K: default **4**, flag-settable (`--probe-width` / `DORC_PROBE_WIDTH`),
+subshell chains and `wait`s the wave before the next. (Per 26A amend-h1-mechanism: waves are
+a width/pacing device ONLY — h1 edges never resolve across a wave boundary; they resolve by
+connected-unit composition or controller-fold, §2 h1 as amended. An earlier draft claimed
+h1 layers as wave boundaries; that was mechanism-free and is retracted.) Width K: default
+**4**, flag-settable (`--probe-width` / `DORC_PROBE_WIDTH`),
 `--faithful` forces 1 + book order. K stays modest by design: the target is a production host
 (osquery lesson — the reader must not degrade the read), fork-cost is trivial at K=4..16, and
 the Graham anomaly warns against treating width as monotone (`plans/076` §4).
@@ -195,8 +207,9 @@ each other in one lane or straggling one-per-wave at the end. The pool upgrade i
 §11, gated on measured convoy pain, not built now (§9 dec-261-wave-vs-pool).
 
 **Placement algorithm (v1, deliberately boring):** within a wave, sort tasks by descending
-cost estimate (§4), assign round-robin-greedy to the K lanes (greedy-LPT). Deterministic:
-ties break by leafid. The whole scheduler is a pure function
+cost estimate (§4), assign each to the currently **least-loaded lane** (greedy-LPT — the
+wording fix per 26A amend-smalls: round-robin is NOT LPT and forfeits the 4/3 bound).
+Deterministic: ties break by leafid. The whole scheduler is a pure function
 `schedule(tasks, edges, K, cost) → waves/lanes` — trivially unit/property-testable (§7) and
 living outside the emission code (§10).
 
@@ -244,12 +257,15 @@ width=1 byte-identical default, and `--faithful` = width 1 + book order — is t
 **`plans/262` §2 (lane rules) + §3 (the emission locus)**. Kept here, the two 261-specific
 riders:
 
-- **Per-task timeout (class-gated, best-effort):** `timeout <n> …` wrapped around
-  daemon-class/network-class tasks only, IF the artifact's own `command -v timeout`
-  feature-test passes (GNU/busybox common, not POSIX); degrade silently to untimed — the
-  whole-artifact timeout (260 §3 s3-6) remains the backstop; a timed-out task's record is
-  `effect=cant-tell` with its real rc (the existing ≥2 ⇒ can't-tell fold — no new semantics,
-  and `kFAIL` holds: killed-read ⇒ unknown ⇒ run).
+- **Per-task timeout (ALL classes, best-effort; class-gating dropped per 26A
+  amend-timeouts — the dead-NFS `stat` is the classic hang and lives in the cheapest
+  class):** `timeout <n> …` wrapped around every probe-task, IF the artifact's own
+  `command -v timeout` feature-test passes (GNU/busybox common, not POSIX); class may still
+  set the *duration*. Degrade silently to untimed — the whole-artifact timeout (260 §3 s3-6)
+  remains the backstop, and the loss shape without `timeout` is documented there (one wedged
+  task holds its wave); a timed-out task's record is `effect=cant-tell` with its real rc
+  (the existing ≥2 ⇒ can't-tell fold — no new semantics, and `kFAIL` holds: killed-read ⇒
+  unknown ⇒ run).
 - **Niceness:** not applied by default; `--probe-nice` opt-in (`nice` IS POSIX) for
   admins probing tender hosts. (Deliberately not default: probes are short; K is small.)
 
@@ -258,7 +274,9 @@ riders:
 ## §6. Wire / fold / fleet compatibility (nothing in 260 moves)
 
 - The lane rules that make parallel emission safe — leafid-keyed order-free records,
-  sentinel-after-final-wait, `seen=` counting records not order, and the additive-keys
+  sentinel-after-final-wait, controller-side census by leafid accounting (`seen=` was
+  DROPPED by the 26A stop-1 rewrite — a shared counter is unimplementable by concurrent
+  pure-sh subshells), per-record terminal tokens, family end-records, and the additive-keys
   versioning policy that makes `ms=` a within-/1 addition — are the spine: `plans/262` §1–§2.
   Parallel emission changes arrival ORDER, never content (spine-inv-order-free).
 - **Fleet interaction:** per-host makespan drops ~K-fold; fleet plan latency = max over
@@ -311,8 +329,12 @@ width=1 default guarantees through P3).
   discard rules per `262` §1/§5. Gate: jitter family green across seeds; all existing
   goldens untouched.
 - **P2 — cost-aware placement.** The t1 static classifier (pure fn over parsed bodies) +
-  LPT within waves + class-gated per-task `timeout` + `--probe-nice`. Gate: classifier unit
-  pins (each class exemplar); schedule remains deterministic; jitter family still green.
+  LPT within waves + per-task `timeout` (all classes, §5 as amended) + `--probe-nice` +
+  **h3-lite** (26A amend-smalls): the class doubles as a coarse resource-key —
+  daemon-class tasks get concurrency ~1 per wave (never co-scheduled against the same
+  wedge-prone daemon), the cheap slice of §2 h3 without building the full key plumbing.
+  Gate: classifier unit pins (each class exemplar); schedule remains deterministic; jitter
+  family still green.
 - **P3 — telemetry.** `ms=` on records (grammar policy sentence lands with it) + slowest-
   probes surface + the timing-cache slot design WRITTEN (one page, in-doc §11 pointer) —
   no persistence code. Gate: additive-key round-trip pin (old parser ignores ms=).

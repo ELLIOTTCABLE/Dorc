@@ -92,8 +92,14 @@ Read before writing any code. Each item is binding; citations are the authority.
 - **law-transport-shape.** The `plans/142` resolution is the target shape: per-host session
   channels for tool I/O at full fidelity; Dorc-signalling out-of-band of tool channels, split
   short-gating vs large-diagnostic; signalling never shares a lane with freeform (security is
-  structural, not escaping — `notes/140` f-sec). §4 states how v1 instantiates this narrowly
-  and what is explicitly a reserved growth shape.
+  structural, not escaping — `notes/140` f-sec). **Honesty re-label (26A amend-wire-honesty,
+  both adversarial foreign lanes):** v1 does NOT instantiate this — v1 is the *sanctioned
+  degraded-start instance* of 142's architecture table, in which records share the probe
+  artifact's stdout with any freeform leakage; at v1 the security property is therefore
+  **parser rejection** (nonce/framing discipline, `262` §2), not structural separation. The
+  structural property arrives with the 142 migration steps: (1) records move off stdout to a
+  dedicated channel/FIFO, (2) per-leaf diagnostic files, (3) the reserved drain channel. §4
+  states the v1 shape and why; nothing in v1 forecloses the migration.
 - **law-perf-redlines.** Never fork-per-host as the architecture (`plans/072` footgun-1 —
   async/non-blocking edge); pace connection-opens under the target's `MaxStartups` (default
   10:30:60 — over-fanning gets silent drops, footgun-3); analysis plane and execution plane
@@ -166,6 +172,15 @@ Two new crates + additive extensions. Names follow the existing flat convention.
   of `Host`; the elision-soundness net is not touched).
 - **`sweep`** — unchanged this round; optional fleet scenarios noted in §11.
 
+**What "the 22H engine" means here (26A amend-22H-register — a part-misread CRITICAL whose
+kernel was real):** the `22H` concurrent per-host engine does NOT exist as code — this round
+BUILDS it. What is consumed from 22H is its *analysis*: the static-half's host-independence
+(purity) and the fold's merge commutativity/idempotence — the latter re-verified in code at
+the fact tier by the 26A fable lane, and BOTH re-verified as a stage-26-0 task before
+anything leans on them. 22H's own sizing warning ("likely UNDER-scoped") carries into this
+plan's estimates: stages 0–1 are budgeted as the deep-thought half partly because the engine
+they realize has never been realized before.
+
 Type seeds (builder refines; keep them in `fleet`, NOT in `core` — §10):
 `HostId` (the ssh destination string, verbatim — an alias resolved by the user's ssh config is
 first-class; Dorc never parses it), `RunNonce` (edge-minted, DI'd — never from an ambient RNG
@@ -207,25 +222,55 @@ NOT this round's to answer (`22H` §1; flag any pressure on it to the human).
 |---|---|---|
 | unreachable-preprobe | connect/auth fails before probe ships | host's plan = the book **as-written** (zero elisions, every site run), loudly marked `host unreachable — plan is the unprobed book`; fleet continues; exit-code taints (§6) |
 | probe-timeout / wedged | probe exceeds wall-clock or stream stalls | kill session; treat as unreachable-preprobe (facts partial ⇒ discard to ⊤ for un-sentineled sites per §4; a partial-record host is *probed-partial*: received sites keep facts, missing sites are Unknown ⇒ run) |
-| probe-truncation | records end without the §4 sentinel | as above: sites with received records keep them; the un-received range is Unknown ⇒ run; render marks the boundary (`plans/128` fc-2 at the probe lane) |
+| probe-truncation | records end without the §4 sentinel | as above: sites with received records keep them; the un-received range is Unknown ⇒ run; EXCEPT deriv families, which demote to wall-total unless complete (26A stop-1; `262` §2); render marks the boundary (`plans/128` fc-2 at the probe lane) |
 | forged/garbage records | nonce-mismatch or unparseable lines | ignore + count + warn (attention-honesty: one aggregated note per host); never fail the whole run on a hostile line (`notes/140` f-sec: freeform cannot reach the control lane; here the control lane *rejects* non-conforming bytes) |
-| apply-transport-loss | ssh dies mid-apply (rc 255 + transport-error heuristics, cf. the r25 P3 runner) | host → UnknownAfterLoss; NO auto-retry (law-no-double-apply); report offers the re-probe recovery ("state unknown on <host>; re-probe to localize — the probe is the retry-file") |
-| apply-nonzero | artifact exits ≠ 0, transport clean | host FailedApply{rc}; captured streams referenced; other hosts unaffected (batch unrelated errors — AGENTS fail-fast) |
+| apply-transport-loss | completion sentinel ABSENT from the apply session's stream (see below) | host → UnknownAfterLoss; NO auto-retry (law-no-double-apply); report offers the re-probe recovery ("state unknown on <host>; re-probe to localize — the probe is the retry-file") |
+| apply-nonzero | sentinel present, carried `$?` ≠ 0 | host FailedApply{rc}; captured streams referenced; other hosts unaffected (batch unrelated errors — AGENTS fail-fast) |
+| operator-abort / controller-death | SIGINT / controller crash mid-fleet (26A amend-abort-row) | SIGINT: sever in-flight sessions ⇒ each such host → UnknownAfterLoss; the shutdown path still prints the bad-news-first summary. Remote-side truth stated plainly: without a pty the remote artifact does NOT reliably die with the channel (it runs until SIGPIPE-on-write or completion) — which is exactly why the cell is Unknown, not Failed. Controller death: recovery of *state* is re-probe (derived, `plans/072`); recovery of *awareness* is operator memory — nothing is persisted (`kSTATE` parked), and the docs say so honestly |
 | host-vanishes-mid-fleet | some hosts fine, others any-of-above | fleet completes all independent work; summary orders bad news first |
 
-**s3-5. Pacing (the decision loop's v1 policy).** Two caps, both fleet-kernel decisions so
-they are DST-testable: `open-cap` — concurrent not-yet-authenticated connection opens (default
-8, below sshd's `MaxStartups` 10-start throttle; on transport-refused, exponential backoff +
-retry bounded ×2 — probe-phase only); `width-cap` — concurrent active sessions (`-j`, default
-`min(hosts, 16)`). The policy hook: the kernel asks one pure function `admit(phase, state) →
-Vec<HostId>` for who proceeds; v1 implements width/open caps there; serial/canary later
-replaces only that function (`kSCHEDULE` seam honored).
+**The severed-apply classifier (26A stop-2 — the prior rc-255 ∧ stderr-heuristic conjunction
+was a law breach: a sever whose stderr misses a 10-pattern English grep classified
+FailedApply — assumed-failed-AND-complete — where law-fail-direction requires Unknown; the
+operator won't re-probe a host they believe merely errored).** Adopted mechanism: a
+**wrapper-level completion sentinel** — the remote *command line* (not the artifact; its
+bytes stay floored per law-artifact-floor) runs the artifact then prints an end-marker
+carrying `$?`. Marker present ⇒ a genuine remote exit, classify by the carried rc; marker
+absent ⇒ UnknownAfterLoss, REGARDLESS of ssh's rc or stderr content. The stderr heuristic
+table demotes to *diagnosis* (what probably severed it), never classification. This also
+subsumes the EOF-without-exit-status gap. Lands before stage-26-3.
 
-**s3-6. Timeouts (all injected, never ambient).** connect ≈15s (ssh `ConnectTimeout`);
-probe wall-clock default 120s/host (whole-artifact; per-batch later — `plans/142` flag-1);
-apply wall-clock default 0 (unlimited) with `--apply-timeout` opt-in (an apply is the user's
-real work; killing it mints Unknown — the flag's doc says so); keepalive `ServerAliveInterval
-15 / CountMax 4` (≈1min detection of a dead peer mid-apply, per the r25 config).
+**s3-5. Pacing (the decision loop's v1 policy; reshaped per 26A amend-pacing — the global
+open-cap was wrong-shaped: `MaxStartups` binds at each *target sshd*, so a global cap
+neither protects a single hot target nor needs to throttle unrelated ones).** Two caps,
+both fleet-kernel decisions so they are DST-testable: **per-target open pacing** —
+concurrent not-yet-authenticated opens *per target endpoint* (default 4, comfortably under
+sshd's `MaxStartups` 10-start throttle; on transport-refused, exponential backoff + retry
+bounded ×2 — probe-phase only); **global width-cap** — concurrent active sessions, a
+*controller*-resource bound (`-j`, default `min(hosts, 16)`). One named residual global
+open-cap: the **bastion-transit case** — N hosts behind one ProxyJump share that bastion's
+sshd, so opens through a common first hop are paced as one target (v1 detection is
+best-effort: same ProxyJump value; imperfect aliasing is an accepted gap, documented). The
+policy hook: the kernel asks one pure function `admit(phase, state) → Vec<HostId>` for who
+proceeds; v1 implements these caps there; serial/canary later replaces only that function
+(`kSCHEDULE` seam honored).
+
+**s3-6. Timeouts (all injected, never ambient; amended per 26A amend-timeouts).** connect
+≈15s (ssh `ConnectTimeout`); probe wall-clock default 120s/host (whole-artifact; per-batch
+later — `plans/142` flag-1); apply wall-clock default 0 (unlimited) with `--apply-timeout`
+opt-in (an apply is the user's real work; killing it mints Unknown — the flag's doc says
+so); keepalive `ServerAliveInterval 15 / CountMax 4` (≈1min detection of a dead peer
+mid-apply, per the r25 config). Within the probe artifact:
+- **per-task `timeout` wraps ALL probe-task classes** where the binary feature-tests present
+  (26A dropped `261`'s class-gating — the dead-NFS `stat` is the classic hang, and it lives
+  in the cheapest class); degrade silently to untimed where absent, and the docs state the
+  loss shape plainly: *without `timeout`, one wedged task holds its whole wave, and only the
+  whole-artifact timeout ends it — costing every not-yet-run site on that host*.
+- **sentinel-on-artifact-timeout:** the artifact `trap`s termination and emits the end
+  sentinel on the way out, so a wall-clock kill yields a clean *probed-partial* stream
+  (received facts keep, missing sites Unknown ⇒ run, incomplete deriv families ⇒ wall-total
+  per `262` §2) instead of losing all later waves to an unterminated stream. Partial-keep
+  semantics are exactly the `262` §2 lane rules — nothing bespoke here.
 
 **s3-7. Aggregate outcome.** Fleet outcome = worst-cell ordering: any UnknownAfterLoss >
 FailedApply > Unreachable > clean. §6 maps this to exit codes. The per-host detail is the
@@ -255,12 +300,20 @@ with the emission mechanics at `262` §3. This section keeps only the 260-specif
 the v1 shape rationale above, and the apply lane below. The 260-specific consumer rules
 remain binding as stated in `262`: book-hash mismatch refuses fold (discharging the r22
 `tc-probe-no-digest`/`tc-probe-results-roundtrip` items), `host=` mismatch refuses
-(the partition law's wire tripwire), truncation folds the un-received range Unknown (§3 s3-4).
+(the partition law's wire tripwire), and truncation folds BY LANE (26A stop-1): fact-lane
+un-received range ⇒ Unknown ⇒ run (§3 s3-4); an incomplete deriv family ⇒ wall-total for its
+site — at-most claims never shrink (`262` §2).
 
 **Apply lane (v1).** No records. The apply artifact ships byte-floored (law-artifact-floor);
 observables = exit status + captured stdout/stderr + the existing `DORC_EXIT=<n>` crash-guard
-marker convention. State-truth after an apply is NOT its rc (`plans/252` §8 finding: rc=0 does
+marker convention — plus the wrapper-level completion sentinel on the command line (§3,
+26A stop-2). State-truth after an apply is NOT its rc (`plans/252` §8 finding: rc=0 does
 not prove services healthy) — it is the §6 `--verify` re-probe.
+
+**`DORC_REPORT` remote story, v1 (26A amend-smalls):** the UNK/refusal report lane has no
+remote file home at v1 (no remote scratch dir is assumed — dec-26-wire-v1); it rides
+**stderr capture**, per host, named as such in the render. The per-leaf-file home arrives
+with the 142 migration.
 
 ---
 
@@ -285,15 +338,33 @@ not prove services healthy) — it is the §6 `--verify` re-probe.
   refused under BatchMode ⇒ clean loud failure telling the user to connect once manually or
   pass the flag); `--accept-new` opt-in sets `StrictHostKeyChecking accept-new`. The trial's
   `UserKnownHostsFile /dev/null` is NEVER a product behavior (law-security-floor / PM-5).
-- **rc discipline:** ssh exit 255 = transport-layer failure (plus a stderr heuristic table for
-  diagnosis, cribbed from the P3 runner's `_transport_error`); anything else is the remote
-  artifact's own exit status, passed through opaque (the engine never interprets — 23K). The
-  collision (a plan genuinely exiting 255) is documented; transport_failed is derived from 255
-  ∧ stderr-heuristic, not 255 alone.
+- **rc discipline (rewritten per 26A stop-2):** classification keys on the wrapper-level
+  completion sentinel (§3), NOT on rc heuristics. Sentinel present ⇒ the carried `$?` is the
+  remote artifact's genuine exit status, passed through opaque (the engine never interprets —
+  23K); sentinel absent ⇒ transport sever ⇒ Unknown, regardless of ssh's own rc (255 or
+  otherwise). The P3 runner's `_transport_error` stderr table survives as a *diagnosis*
+  annotation only. This dissolves the old 255-collision problem (a plan genuinely exiting 255
+  now classifies correctly, because the sentinel carries it).
+- **Host identity (26A stop-3 — previously assumed, unverified; DNS round-robin or DHCP
+  churn could hand probe-facts from box X to an apply on box Y, which the TOCTOU fence does
+  NOT cover — that fence is same-host drift):** (1) **host-key continuity** — the apply
+  session refuses if the host key fingerprint differs from the probe session's (the cheap
+  bijection witness ssh already gives us); (2) **verbatim host-list dedupe** — the same
+  destination string twice in one invocation is refused (rc=2); (3) **artifact-filename
+  collision refuse** — two distinct HostIds rendering to one per-host artifact filename is a
+  refusal, not a silent overwrite; (4) **alias collision** (two different strings resolving
+  to one box) is named in the docs as an operator hazard — Dorc never parses ssh configs, so
+  it cannot detect this; the plan honestly says so. Lands before stage-26-3.
 - **CRLF gate (an-wire-transform; `plans/139` §5):** before shipping ANY artifact, assert its
   bytes are LF-only. On violation: **refuse loudly at plan time** with the one-line fix
   (`dos2unix`/gitattributes) — never silently rewrite user bytes (never-lie beats convenience;
-  §9 dec-26-crlf). Detection is free (the parser already saw the bytes).
+  §9 dec-26-crlf). Detection is free at plan time (the parser already saw the bytes) — AND
+  the gate re-runs on the SHIPPED bytes at apply time (26A amend-smalls): apply consumes
+  per-host plan files the user may have edited on any OS; the parser never saw those bytes.
+- **Privilege assumption, stated (26A amend-smalls):** probes and applies run as whatever
+  user the ssh destination resolves to — Dorc does no privilege escalation and assumes
+  none; a probe that needs root reads simply can't-tells as a non-root user (⇒ run). The r25
+  trial happened to run as root; that was the trial's property, not the product's.
 - **Fleet-frame stripping:** any remote bytes echoed into the controller's own TTY rendering
   (progress lines, error excerpts) pass through the existing control-char discipline
   (law-security-floor E5); full raw streams go to per-host capture FILES, not the shared TTY.
@@ -337,7 +408,12 @@ dropped; freeform capture may be truncated with an explicit `[truncated at N byt
   per-host `sites= elide= guard= run=`). Live-ness at v1 = per-host granularity: each host's
   summary prints as that host's fold completes (arrival order), which is the honest concurrent
   UX without a TUI. Plans are not dumped to stdout for N>1 (attention-honesty at fleet scale:
-  files + summaries + `dorc why`).
+  files + summaries + `dorc why`). At-scale attention (26A amend-smalls, noted not designed):
+  the eventual answer is **aggregation by plan-hash** — hosts whose plans are byte-identical
+  render as one group ("14 hosts: this plan; 2 hosts: diverge") — deferred to the TUI/live
+  round (26A held-fleet-render-scale). And said honestly once: at v1, **consent is N files**
+  — the plan→read→apply contract means an N-host apply asks the operator to stand behind N
+  artifacts; the summaries make that tractable, they do not make it smaller.
 - **`dorc apply`** — fleet form ships each host its own artifact concurrently (width-capped)
   and reports per-host outcome + aggregate. Consent flow unchanged from the existing
   single-host contract (plan → user reads → apply); apply consumes the emitted per-host
@@ -393,11 +469,13 @@ axis-platform — no netem, no real sockets, all-OS, hot-loop).
   converges the host's state honestly.
 - **acc-unreachable-never-converged** — an unreachable host's plan contains zero elisions and
   zero guards; every site runs; the render carries the unreachable marker (`plans/076` §3a).
-- **acc-forged-verdict-contained** — a host forging Converged-for-everything elides only its
-  OWN plan (contained blast radius), and only within what `kFAIL-perform` licenses; no other
-  host's plan changes (the `plans/102` host-as-adversary cell, made a pin).
-- **acc-pacing-cap** — with 50 sim hosts and open-cap 8, the command trace never exceeds 8
-  concurrent opens; a seeded transport-refused burst triggers backoff, and the run still
+- **acc-forged-verdict-contained** — a host forging Converged-for-everything affects only its
+  OWN plan; no other host's plan changes (the `plans/102` host-as-adversary cell, made a
+  pin). (Wording trimmed per 26A amend-smalls to what the pin actually asserts — containment;
+  the old "within what `kFAIL-perform` licenses" clause claimed more than this test checks.)
+- **acc-pacing-cap** — with 50 sim hosts across a few sim targets, the command trace never
+  exceeds the per-target open pacing at any endpoint (nor the global width-cap overall; §3
+  s3-5 as amended); a seeded transport-refused burst triggers backoff, and the run still
   completes (no starvation).
 - **acc-seed-bit-identical** — rerun any seed: the full command trace + final plans are
   bit-identical (the `24B` determinism guard; any divergence = a real bug — an ordering leak).
@@ -406,10 +484,16 @@ axis-platform — no netem, no real sockets, all-OS, hot-loop).
 
 **e2e (small, hermetic-first):** one new case family exercising the full CLI fleet path over
 the **local-subprocess driver** (3 "hosts" = 3 local dash processes fed distinct fixture
-oracle-results — real artifacts, real framing, real parse-back); one gated non-hermetic smoke
-(`ssh localhost`, skipped unless `DORC_E2E_SSH=1`) for the ssh argv/config path. The in-memory
-tier carries the logic (the `24I` de-graduation doctrine — do NOT balloon e2e); the e2e adds
-the one-shot `dash -n` gate on every emitted per-host artifact as usual (ap-2).
+oracle-results — real artifacts, real framing, real parse-back); fleet-case goldens get a
+`RAN_ORDER=lax` analogue (26A amend-smalls: per-host completion order is legitimately
+nondeterministic at this tier — compare per-host outputs order-insensitively, exactly the
+gate-1 lesson). The DST-boundary tier is fattened per 26A amend-smalls: the gated
+non-hermetic smoke (skipped unless `DORC_E2E_SSH=1`) runs against a REAL sshd and covers
+what no sim can vouch for — actual `MaxStartups` throttle behavior under a burst, and a
+sever-mid-line kill (yank the connection mid-record; assert torn-line rejection + partial
+semantics land as `262` §2 says). The in-memory tier carries the logic (the `24I`
+de-graduation doctrine — do NOT balloon e2e); the e2e adds the one-shot `dash -n` gate on
+every emitted per-host artifact as usual (ap-2).
 
 ---
 
@@ -424,8 +508,13 @@ tripwire firing) · the stage's own named acceptance pins green.
   compiles; seeded logical clock + interleaver harness; the three policy-port signatures
   (`262` §4) with trivial v1 implementations; the determinism guard (rerun-seed →
   bit-identical trace) proven by deliberately breaking it once (inject a HashMap-ordered
-  iteration; watch it fail; remove). Deliverable: acc-seed-bit-identical green on a trivial
-  2-host no-fault scenario.
+  iteration; watch it fail; remove); the 26A amend-22H-register re-verification (static-half
+  host-independence + merge commutativity/idempotence, in code, at the fact tier) — the two
+  properties everything in §3 leans on. Also at this stage per 26A amend-h1-mechanism: the
+  h1-edge extraction pass lands as a REAL compile step (see `261` §2 h1 as amended) — zero
+  edges on today's corpus as a pin, plus one synthetic injected edge proving the
+  compiler→schedule wiring; antichain-by-proof, not by accident. Deliverable:
+  acc-seed-bit-identical green on a trivial 2-host no-fault scenario.
 - **stage-26-1 — in-memory fleet plan.** N hostsim hosts through the sim driver: per-host
   accumulators, arrival fold, per-host plan emission (library-level). Acceptance:
   acc-terminal-determinism, acc-per-host-partition, acc-interleave-invariance,
@@ -436,10 +525,13 @@ tripwire firing) · the stage's own named acceptance pins green.
   local-subprocess drivers; `-H`/`--hosts` + per-host artifacts + fleet summary + rc 11;
   pacing caps; CRLF gate. Acceptance: acc-truncation-unknown-range, acc-unreachable-never-
   converged, acc-pacing-cap, the hermetic e2e family, and the single-host byte-stability fence.
-- **stage-26-3 — apply fan-out + failure taxonomy.** Concurrent apply shipping, per-host
-  capture (file-backed), transport-loss → UnknownAfterLoss, rc 12, aggregate ordering,
-  `DORC_EXIT` extension. Acceptance: acc-retry-is-reprobe, acc-forged-verdict-contained, the
-  apply e2e case.
+- **stage-26-3 — apply fan-out + failure taxonomy.** PREREQUISITES (26A stop-2 + stop-3):
+  the wrapper-level completion sentinel (§3/§5 severed-apply classifier) and the
+  host-identity measures (§5) are in the spec above and MUST land within this stage — no
+  apply fan-out ships classifying severs by rc-heuristics or without host-key continuity.
+  Concurrent apply shipping, per-host capture (file-backed), sentinel-absent →
+  UnknownAfterLoss, rc 12, aggregate ordering, `DORC_EXIT` extension. Acceptance:
+  acc-retry-is-reprobe, acc-forged-verdict-contained, the apply e2e case.
 - **stage-26-4 — the read-back + polish.** `--verify` re-probe convergence report; `dorc why
   --host`; unreached-first render ordering; transport-error diagnosis table. Acceptance: a
   verify e2e case (diverged site survives a mocked apply ⇒ verify reports it).
@@ -471,12 +563,17 @@ kWINLOCAL stand as registered). These are the plan-level calls beneath them:
   user's ssh config/agent/ProxyJump all just work, zero crypto deps. Costs: no ControlMaster on
   Windows controllers (accepted: 2–3 handshakes/host, dominated by remote work per `plans/076`);
   subprocess-pipe plumbing.
-- **dec-26-wire-v1** — records ride the probe artifact's framed stdout (§4) instead of the full
-  142 remote-FIFO/per-leaf-file layout. Buys: zero new remote-fs assumptions, smallest
-  correct thing, grammar survives the later move. Costs: within-host record-liveness deferred
-  (fleet-liveness is per-host at v1); freeform leakage from sloppy oracle bodies shares the
-  channel (mitigated: nonce-framing + count-and-warn). The 142 layout remains the growth shape;
-  nothing here forecloses it.
+- **dec-26-wire-v1 (re-labeled per 26A amend-wire-honesty)** — records ride the probe
+  artifact's framed stdout (§4) instead of the full 142 remote-FIFO/per-leaf-file layout.
+  Honest framing: this is the **sanctioned degraded-start instance** of 142's architecture
+  table, and it CHANGES the security property from structural separation to **parser
+  rejection** (freeform leakage shares the channel; the nonce/framing discipline of `262` §2
+  is what stands between sloppy bytes and the fold). Buys: zero new remote-fs assumptions,
+  smallest correct thing, grammar survives the later move. Costs: within-host record-liveness
+  deferred (fleet-liveness is per-host at v1); the weaker security property, accepted at v1
+  scale. Migration steps to the 142 layout, named: records off stdout to a dedicated
+  channel/FIFO → per-leaf diagnostic files → the reserved drain channel. Nothing here
+  forecloses them.
 - **dec-26-liveness-tier** — v1 "live plan" = per-HOST arrival granularity (plans print as
   hosts complete), not per-record streaming. Honest reading of `DESIGN`'s realtime aspiration
   at v1 host-counts; the fast-lane drain upgrade is additive later. (The 22H §2 engine is
@@ -504,7 +601,11 @@ kWINLOCAL stand as registered). These are the plan-level calls beneath them:
   contract additively.
 - **dec-26-probe-retry** — transient transport failure during probe = bounded auto-retry (×2,
   backoff) because probes are read-only by contract; apply NEVER auto-retries. (The asymmetry
-  is the kFAIL phase-keying spelled at the transport.)
+  is the kFAIL phase-keying spelled at the transport.) Retry hygiene (26A
+  amend-retry-hygiene): each attempt carries its own `attempt=` key (`262` §2); a retry
+  discards the prior attempt's records WHOLESALE before folding the new attempt's — no
+  cross-attempt merging; and a zombie writer from the killed attempt cannot pollute the fold,
+  its late records being un-foldable by their stale attempt key.
 
 ---
 
