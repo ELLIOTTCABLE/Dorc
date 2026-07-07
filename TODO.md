@@ -6,6 +6,14 @@
 - [ ] prior-art on linking oracles' binaries-to-be-invoked to *hash*, spelled-in-sh (`if [ "$(shasum thebin)" = "abcdef..." ]; then ...`)
 - [x] (DEFERRED) skim shell-script corpii to validate design
 - [ ] came up in R23, but i've seen hints before: difference between two potential things an oracle-author *could* be intending to claim: "I'm converged in live state" (this is in the state I wanted it to be in, modulo unknown/irrelevant-to-me noisy changes; and I wish to elide the mutator) vs. "this is a no-op in live state" (this command is *fully* state-precise as of probing; it will literally do nothing when run)
+- [x] 24K lang-fallout: dialect-version-marker *now*, before the stdlib. I think probably how mise does it? or potentially rust? I want something hyper-defensive against cargo-culting, I've seen languages get locked into their ineffective "but but but I said this was TEMPORARY!!!" claims before ...
+- [x] 24K lang-fallout: I need to rubber-duck two-formats. I *really*, really, deeply hate EOL-comment-annotations like `shellcheck-ignore` or whatever; that's not a programming language, that's a fucking fungal growth on your code, a nightmare to maintain, a nightmare to beautify. but also, a whole host of agents came back with basically the same advice, and it's fairly convincing - "unforced abandonment of the offramp." idk. torn.
+  - considering an absolutely-absurd two-dialects stance (work as comments *or* inline), but that's probably a ton of work for very little benefit, esp. if I don't set the EOL-comments as the default ... whichever would be the default, should probably just be the only one
+  - alternatively, can a bare subset of the oracle-language be blessed? *can* you currently write a meaningful oracle with zero type annotations? I'm not even sure anymore
+- [.] 24K lang-fallout: not the top item from the adjudicator, but probably *my* biggest jump-scare: one pointed out that everybody-except-typescript went the *comments*-adjacent route for their post-hoc gradually-typed language implementation, and for one good reason: **they often didn't have Microsoft-scale resources**, and writing a good LSP/shellformat/linter are very much Microsoft-scale issues. guess who definitely also doesn't have Microsoft-scale resources ...
+  - but I hate EOL comments so unbelievably much that I might actually swallow this risk, idk.
+  - arguably it's cheaper for us, largely because the ecosystem there isn't already rich-and-we're-abandoning it. shellcheck is a wonderful project, but it's fighting uphill, and definitely not as foundational/indispensible as other linters; ditto shformat. and I don't think there even *is* an sh LSP ...
+- [ ] 24K lang-fallout: `dorc strip` *now*, don't make the promise and then fail to keep it. the offramp needs continuous code-maintenance and attedance-to, not just lip-service, I buy that, okay.
 
 ## Spike-3
 

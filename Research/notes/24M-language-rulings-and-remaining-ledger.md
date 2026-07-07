@@ -149,6 +149,9 @@ the <2-dots warning (rul24M-reverse-dns-kinds) + the within-unit duplicate-resol
   (strip-fidelity) with zero corpus occurrences — prune from the grammar, or deliberately
   exercise in the stdlib; decide at the respell so untested grammar doesn't ship into the
   stdlib era.
+
+> human ruling: yes, kill off ack/poison; historical, and redundant now.
+
 - ~~open24M-rungs-default~~ — **CLOSED 2026-07-07 → rul24M-rungs-default (§1).**
 
 ## §4. Conductor-owed riders (no human ruling needed; one line each)
