@@ -7,6 +7,11 @@ Branch: `ai/spike3-r26`, forked from `ai/spike3-r23` @ `75de2ac`; substantive la
 work continues on r23 in parallel, and §10 is the merge-disjointness contract that keeps this
 branch cleanly re-mergeable over it.
 
+Companions: `plans/261` (the within-host read-concurrency half) and **`plans/262` (the
+extracted build-spine — the records-lane contract, emission locus, order-independence
+invariant, policy ports, and determinism rig shared by both tracks; 262's S0/S1 build FIRST,
+then this plan's stages proceed)**.
+
 Authority: this plan *composes* settled law — it re-decides nothing already welded. Where it
 makes new calls they are enumerated in §9 (`dec-26-*`) for human ratification; defaults are
 chosen so a builder can proceed without blocking on them. Written to be executable by a
@@ -242,34 +247,15 @@ contradicts it, and the record grammar is designed to survive the move unchanged
 dec-26-wire-v1 records the tradeoff; `plans/142` front-C writable-fs residual is thereby also
 deferred — v1 needs no remote scratch dir for the probe lane.)
 
-**Framing grammar (versioned from day 1 — the `24Kc` cluster-compat lesson applied to the one
-NEW machine-shaped surface this round mints):**
-
-```
-dorc-records/1 nonce=<nonce> host=<hostid> book=<sha256-of-book-bytes> sites=<N>
-<nonce> site 0 <existing record grammar, unchanged>
-<nonce> site 3 <...>
-...
-dorc-records-end/1 nonce=<nonce> seen=<K>
-```
-
-- Header first; end-sentinel last (**never EOF-detect** — the bats fd-inheritance hazard,
-  `notes/141` g5: a backgrounded child holding the pipe must not wedge the drain).
-- Every record line is nonce-prefixed; the nonce is minted at the edge per run (DI'd). Lines
-  without the nonce prefix = freeform leakage from a sloppy oracle body: logged, counted,
-  warned once per host, ignored (never parsed as control — `notes/140` f-sec by construction).
-- `book=` binds results to the exact book bytes analyzed — a stale/mismatched stream refuses
-  fold (this discharges the r22 `tc-probe-no-digest`/`tc-probe-results-roundtrip` items folded
-  into `22H` §6). `host=` must equal the session's expected HostId (mis-plumbed streams refuse
-  rather than cross-pollute — the partition law's wire-level tripwire).
-- Truncation semantics: absent end-sentinel, or `seen < sites`, ⇒ the un-received site set is
-  Unknown for this host (§3 s3-4). The header's `sites=` is what makes the *range* computable.
-- The inner `site N …` record grammar is untouched (owned by the existing emitter/parser —
-  `cli` parse_results; note its planned entity-re-key churn, `cli/CLAUDE.md` ap-1: the framing
-  wrapper is deliberately agnostic to the inner grammar so both can move independently).
-- Emission: the framing lines are emitted by the probe artifact itself (compiler adds the
-  header/sentinel `printf`s and the per-line nonce prefix at compile time). MUST remain plain
-  POSIX-sh emission — no new runtime dependency on the host.
+**Framing grammar → extracted to the build-spine (`plans/262` §2).** The complete
+`dorc-records/1` spec — framing lines, nonce/book/host integrity keys, truncation-range
+semantics, line-atomicity, alien/late-record discipline, and the additive-keys versioning
+policy (the `24Kc` cluster-compat lesson) — lives in `262` §2 as one spec for all consumers,
+with the emission mechanics at `262` §3. This section keeps only the 260-specific halves:
+the v1 shape rationale above, and the apply lane below. The 260-specific consumer rules
+remain binding as stated in `262`: book-hash mismatch refuses fold (discharging the r22
+`tc-probe-no-digest`/`tc-probe-results-roundtrip` items), `host=` mismatch refuses
+(the partition law's wire tripwire), truncation folds the un-received range Unknown (§3 s3-4).
 
 **Apply lane (v1).** No records. The apply artifact ships byte-floored (law-artifact-floor);
 observables = exit status + captured stdout/stderr + the existing `DORC_EXIT=<n>` crash-guard
@@ -433,18 +419,21 @@ Gates for every stage: fresh `cargo build --workspace` · clippy `-D warnings` �
 existing e2e byte-stable (untouched cases MUST NOT churn — that is the merge-disjointness
 tripwire firing) · the stage's own named acceptance pins green.
 
-- **stage-26-0 — skeleton + determinism rig.** `fleet` + `transport` crates exist (workspace
-  members added); event/command vocabulary compiles; seeded logical clock + interleaver
-  harness; the determinism guard (rerun-seed → bit-identical trace) proven by deliberately
-  breaking it once (inject a HashMap-ordered iteration; watch it fail; remove). Deliverable:
-  acc-seed-bit-identical green on a trivial 2-host no-fault scenario.
+- **stage-26-0 — skeleton + determinism rig. [= `plans/262` S0, shared with 261's P0.]**
+  `fleet` + `transport` crates exist (workspace members added); event/command vocabulary
+  compiles; seeded logical clock + interleaver harness; the three policy-port signatures
+  (`262` §4) with trivial v1 implementations; the determinism guard (rerun-seed →
+  bit-identical trace) proven by deliberately breaking it once (inject a HashMap-ordered
+  iteration; watch it fail; remove). Deliverable: acc-seed-bit-identical green on a trivial
+  2-host no-fault scenario.
 - **stage-26-1 — in-memory fleet plan.** N hostsim hosts through the sim driver: per-host
   accumulators, arrival fold, per-host plan emission (library-level). Acceptance:
   acc-terminal-determinism, acc-per-host-partition, acc-interleave-invariance,
   acc-monotone-tightening. No CLI yet.
-- **stage-26-2 — wire v1 + CLI plan fan-out.** Probe-artifact framing emission (compiler-side:
-  header/sentinel/nonce-prefix printfs) + framing parser + book-hash refusal; the ssh-subprocess
-  AND local-subprocess drivers; `-H`/`--hosts` + per-host artifacts + fleet summary + rc 11;
+- **stage-26-2 — wire v1 + CLI plan fan-out. [wire half = `plans/262` S1, shared.]** The
+  records contract + emission locus land per `262` S1 (framing emission + parser + refusals +
+  the flag-gated locus); THIS stage adds the 260-specific rest: the ssh-subprocess AND
+  local-subprocess drivers; `-H`/`--hosts` + per-host artifacts + fleet summary + rc 11;
   pacing caps; CRLF gate. Acceptance: acc-truncation-unknown-range, acc-unreachable-never-
   converged, acc-pacing-cap, the hermetic e2e family, and the single-host byte-stability fence.
 - **stage-26-3 — apply fan-out + failure taxonomy.** Concurrent apply shipping, per-host
@@ -521,7 +510,10 @@ kWINLOCAL stand as registered). These are the plan-level calls beneath them:
 
 ## §10. Merge-disjointness contract (the tight-timeline insurance)
 
-r26 will be merged back over in-flight language-surface changes on r23. The contract:
+r26 will be merged back over in-flight language-surface changes on r23. Shared rules
+(new-pure-modules, the single emission locus, additive parser changes, golden posture) are
+`plans/262` §7 — including the handoff note for the r24 implementor sibling. The
+260-specific contract:
 
 **r26-owned (new files only, conflict-free by construction):** `spike/crates/fleet/**`,
 `spike/crates/transport/**`, new e2e case dirs (`fleet26-*`), `Research/plans/260*` +

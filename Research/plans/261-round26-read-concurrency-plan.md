@@ -16,6 +16,18 @@ on the runbook CFG) and splittable — only things that don't depend on other th
 parallelize. And leave a designed slot for someday-ordering-by-perf-feedback, so notoriously
 long tasks don't get sorted into the same reader-lane serially.
 
+**Rulings received (human, 2026-07-07) + the spine extraction:**
+- **The organizing principle:** bake in early the *ability* to re-order for perf; defer the
+  tuning of *how*. Made structural in **`plans/262`** (the extracted build-spine shared with
+  260): the order-independence invariant + the policy ports are the ability; everything in
+  this doc's §3–§4 is the deferred how. The one guard the deferral rests on: ordering policy
+  stays bolt-on-able only while `262` §1's spine-inv-order-free holds — police it.
+- **Cross-run re-ingest: DEFER, full stop** — what-reorders-things can change later and must
+  stay invisible to the user, so it bolts onto `262` port-cost later. dec-261-timing-cache
+  below is thereby RESOLVED-DEFERRED; the rec-5/kSTATE fence question stays parked un-asked.
+- **Golden posture:** r24's language work will churn goldens massively anyway; these plans
+  are being passed to the r24 implementor sibling for extractables (`262` §7 handoff note).
+
 ---
 
 ## §0. Why this is load-bearing, in numbers
@@ -223,23 +235,15 @@ the same scheduler consumes — the model doesn't change, the graph does.
 
 ---
 
-## §5. The artifact transform (POSIX mechanics; all probe-lane)
+## §5. The artifact transform (what's 261-specific; the mechanics live in the spine)
 
-Applied at emission, gated behind the width flag (width=1 emits today's bytes — §10):
+The transform itself — per-task subshell isolation (which dissolves §2 h4, the shared-scratch
+race verified in the incumbent), wave barriers with the sentinel after the final `wait`,
+single-printf record atomicity, the escaped-grandchild discard rule, the width flag with its
+width=1 byte-identical default, and `--faithful` = width 1 + book order — is the build-spine:
+**`plans/262` §2 (lane rules) + §3 (the emission locus)**. Kept here, the two 261-specific
+riders:
 
-- **Per-task subshell isolation:** each task becomes `( <invocation>; _rc=$?; …; printf
-  '<record>\n' ) &` — private scratch (`h4` dissolved), private cwd/umask/set-flags; oracle
-  function defs stay top-level (defined-before-all-use, unchanged; they are pure text).
-- **Wave barriers:** tasks of wave i launched with `&`, then bare `wait` (all-jobs — POSIX)
-  before wave i+1. The end-sentinel (260 §4) prints after the FINAL wait — never
-  EOF-detection (`notes/141` g5).
-- **Record atomicity:** one record = ONE `printf` = one line, well under `PIPE_BUF` (≥512
-  POSIX-atomic for pipe writes — `notes/141` g2), so concurrent lanes interleave whole
-  records, never torn bytes. The deriv `while read` loops emit line-per-printf already;
-  unchanged. This rule gets stated in the artifact header comment (it is now load-bearing).
-- **Escaped-grandchild rule:** a sloppy oracle body that daemonizes a child holding stdout
-  can emit records after the sentinel; the controller discards + warns (nonce makes them
-  attributable) — additive parser rule in 260's framing.
 - **Per-task timeout (class-gated, best-effort):** `timeout <n> …` wrapped around
   daemon-class/network-class tasks only, IF the artifact's own `command -v timeout`
   feature-test passes (GNU/busybox common, not POSIX); degrade silently to untimed — the
@@ -248,29 +252,23 @@ Applied at emission, gated behind the width flag (width=1 emits today's bytes �
   and `kFAIL` holds: killed-read ⇒ unknown ⇒ run).
 - **Niceness:** not applied by default; `--probe-nice` opt-in (`nice` IS POSIX) for
   admins probing tender hosts. (Deliberately not default: probes are short; K is small.)
-- **`--faithful`:** width 1 + book order + (as today) one task per batch — byte-comparable,
-  debuggable, the attribution-clean mode (`plans/142`).
 
 ---
 
 ## §6. Wire / fold / fleet compatibility (nothing in 260 moves)
 
-- Records were **already order-free** on the consuming side (leafid-keyed; commutative
-  merge — law-determinism-acceptance's foundation). Parallel emission changes arrival
-  ORDER, never content. The 260 framing survives untouched: header first, sentinel after
-  final wait, `seen=` counts records not order.
-- **Grammar policy stated now (the `24Kc` cluster-compat lesson, applied):**
-  `dorc-records/1` parsers MUST ignore unknown `key=val` pairs on record lines — that is what
-  makes `ms=` (and future keys) additive within /1 rather than a version bump. One sentence
-  in the parser + the artifact header; cheap now, porcelain-grade later.
+- The lane rules that make parallel emission safe — leafid-keyed order-free records,
+  sentinel-after-final-wait, `seen=` counting records not order, and the additive-keys
+  versioning policy that makes `ms=` a within-/1 addition — are the spine: `plans/262` §1–§2.
+  Parallel emission changes arrival ORDER, never content (spine-inv-order-free).
 - **Fleet interaction:** per-host makespan drops ~K-fold; fleet plan latency = max over
   hosts; the 260 pacing/width caps (connection-level) are orthogonal to K (process-level,
   on-host). No fleet-kernel change.
-- **Harness (gate-1 parity):** the harness executes probe artifacts and byte-compares
-  records. Two conforming options; builder picks ONE and applies uniformly: run harness
-  artifacts at width=1 (the flag exists anyway), or sort-both-sides before parity compare.
-  Lean: **width=1 in e2e** (byte-faithful goldens stay meaningful), with ONE dedicated
-  jitter-case family exercising width>1 (§7).
+- **Harness (gate-1 parity):** resolved in the spine (`262` §1 pin-no-order-keyed-consumers):
+  harness probe executions run at width=1; ONE dedicated jitter-case family exercises
+  width>1 (`262` §5). The discovery stands recorded here: gate-1 byte-compares probe records
+  against authored `probe-results.txt`, i.e. it was the codebase's one order-sensitive
+  records consumer.
 
 ---
 
@@ -280,16 +278,12 @@ Applied at emission, gated behind the width flag (width=1 emits today's bytes �
   task-graphs (sites × classes × injected h1 edges × atomic units); assert the scheduler
   never places a consumer at-or-before its producer's wave, never splits an atomic unit,
   emits every task exactly once, is deterministic (same input ⇒ same schedule), and
-  `--faithful` reproduces book order exactly. Lives with the pure scheduler fn.
-- **Fold permutation property (strengthens an existing pin):** for generated record sets,
-  `fold(any permutation) ≡ fold(book order)` — the consuming-side half of the commutation
-  axiom, asserted where it is relied on.
-- **Runtime jitter e2e (one small family):** the e2e mocks gain an optional seeded
-  per-invocation sleep (`DORC_MOCK_JITTER_SEED` in the mock shims — the mock dir is already
-  per-case); run a width-4 probe artifact under several seeds; assert the record SET and the
-  resulting plan are identical across seeds (order-insensitivity made executable). Plus the
-  standing `dash -n` gate (ap-2) on the parallel artifact shape — subshell-`&`-wait is
-  POSIX-clean, the gate proves it stays so.
+  `--faithful` reproduces book order exactly. Lives with the pure scheduler fn. (Lands at
+  spine S0 with the port; stated here because it is the theory's executable half.)
+- **Fold permutation + runtime jitter:** spine pins/rig — `plans/262` §1
+  (pin-fold-permutation) and §5 (the jitter family + `DORC_MOCK_JITTER_SEED`); both are
+  shared with 260's needs and land at spine S1. The standing `dash -n` gate (ap-2) covers
+  the parallel artifact shape — subshell-`&`-wait is POSIX-clean, the gate proves it stays so.
 - **Determinism fence:** compile-side, same book+oracles+width ⇒ byte-identical artifact
   (the schedule is deterministic; only runtime interleaving varies). Golden-diffable as ever.
 - **The makespan yardstick (stage P4):** a generated strawman family ("the thousand-reads
@@ -308,13 +302,14 @@ Applied at emission, gated behind the width flag (width=1 emits today's bytes �
 Gates per stage: as 260 §8 (fresh build · clippy · suites · e2e byte-stable — which the
 width=1 default guarantees through P3).
 
-- **P0 — the contract + the scheduler.** §2's contract stated in the plan/emission docs; the
-  pure `schedule()` fn + grouping-soundness property tests; task-class enumeration typed.
-  No artifact change. Gate: properties green; zero behavioral diff.
-- **P1 — the parallel artifact, flag-gated.** Subshell isolation + wave emission behind
-  `--probe-width` (default 1 ⇒ goldens byte-stable); sentinel-after-wait; harness answer
-  (width=1 in e2e) + the jitter-case family at width 4; escaped-grandchild discard rule in
-  the parser. Gate: jitter family green across seeds; all existing goldens untouched.
+- **P0 — the contract + the scheduler. [ABSORBED into `plans/262` S0.]** §2's contract
+  stated in the plan/emission docs; the pure `schedule()` fn (= `262` port-schedule, constant
+  cost) + grouping-soundness property tests; task-class enumeration typed. No artifact
+  change. Gate: properties green; zero behavioral diff.
+- **P1 — the parallel artifact, flag-gated. [ABSORBED into `plans/262` S1.]** Subshell
+  isolation + wave emission at the `262` §3 locus; harness answer + jitter family + parser
+  discard rules per `262` §1/§5. Gate: jitter family green across seeds; all existing
+  goldens untouched.
 - **P2 — cost-aware placement.** The t1 static classifier (pure fn over parsed bodies) +
   LPT within waves + class-gated per-task `timeout` + `--probe-nice`. Gate: classifier unit
   pins (each class exemplar); schedule remains deterministic; jitter family still green.
@@ -338,22 +333,25 @@ width=1 default guarantees through P3).
 - **dec-261-speculation-default** — keep the incumbent speculate-across-branches; relevance
   waste is bounded and parallel; maintain-cfg only if P4 shows dead-arm cost dominating;
   staged relevance round-trips rejected permanently (network dominates — `plans/076`).
-- **dec-261-golden-stability** — emission width defaults 1 on this branch (byte-identical
-  artifacts; the 260 §10 e2e fence holds verbatim); the width-default flip is a deliberate
-  post-merge decision package WITH its one-time golden re-bless (churn-freely ruling applies,
-  conductor inspects).
-- **dec-261-timing-cache (the fence flag — human ruling REQUIRED before any build):**
-  cross-run advisory timing reuse touches rec-5 (welded write-only tape / no re-ingest) and
-  parked kSTATE (hostile-host note). This round ships measurement + the slot design only.
-  The eventual ruling question, stated precisely: *does rec-5's no-re-ingest intent cover an
-  advisory-only, license-nothing timing profile, or was it scoped to verdict/fact reuse?*
-  Either answer is buildable; nobody walks through the fence silently.
+- **dec-261-golden-stability — context updated (human, 2026-07-07):** r24's language work
+  churns goldens massively anyway, so byte-stability-vs-the-sibling is no longer the primary
+  motive. The width=1 default is RETAINED regardless — as harness-determinism insurance, the
+  `--faithful` floor, and the P4 A/B lever (`262` §3 golden posture); the width-default flip
+  stays a deliberate later decision package with its one-time re-bless.
+- **dec-261-timing-cache — RESOLVED: DEFER (human, 2026-07-07).** Cross-run re-ingest is
+  punted entirely: *what* re-orders things can change later, must stay invisible to the
+  user, and therefore bolts onto `262` port-cost once core concurrency exists — enabled by
+  spine-inv-order-free. This round ships the `ms=` measurement lane (write-only telemetry,
+  rec-5-clean) and nothing else. PARKED for whenever the punt lifts, verbatim: *does rec-5's
+  no-re-ingest intent cover an advisory-only, license-nothing timing profile, or was it
+  scoped to verdict/fact reuse?* (touches welded rec-5 + parked kSTATE with its hostile-host
+  note; nobody walks through the fence silently).
 - **dec-261-per-task-timeout** — feature-tested best-effort `timeout` on daemon/network
   classes; degrade untimed; whole-artifact timeout remains the guarantee. (Rejected: a pure-sh
   per-task watchdog — background-sleep-and-kill plumbing costs more correctness than it buys.)
-- **dec-261-ms-field + additive-keys policy** — `ms=` lands as an additive key; the
-  parsers-ignore-unknown-keys rule is declared as part of `dorc-records/1` NOW (the
-  channel-stability lesson applied while the surface is one round old).
+- **dec-261-ms-field** — `ms=` lands as an additive key at P3 (write-only telemetry; the
+  data exists whenever the re-ingest punt lifts). The additive-keys policy itself is spine
+  law now (`262` §2).
 - **dec-261-mint-kconc** — propose registering `kCONC` as a real knob (poles ≈
   `kCONC-linear ↔ kCONC-wide`, status directional-wide-bounded, owner corpus+user, this doc
   as the design record) — KNOBS is human-authored, so this is a proposal, not an edit.
@@ -366,12 +364,9 @@ width=1 default guarantees through P3).
 
 ## §10. Merge-disjointness (amends 260 §10)
 
-New kernel-adjacent touchpoint, bounded: the probe-artifact **emission site** gains the
-wave/subshell shape behind the width flag. Everything cognitive lives OUTSIDE the existing
-code: the scheduler + classifier are NEW pure modules (new files; consumed by the emission
-call-site in one bounded edit, exactly like 260's framing printfs — the two edits should land
-as one locus). Width=1 default ⇒ all existing goldens byte-stable ⇒ the sibling's
-language-surface work rebases past this branch without churn. The records parser change
+The emission-site touchpoint and its flag-gating are now spine law (`plans/262` §3: one
+bounded locus shared with 260's framing; cognition outside in pure modules; shared merge
+rules + the r24 handoff note at `262` §7). 261-specific residue only: The records parser change
 (ignore-unknown-keys + late-record discard) is additive. No `syntax`/`oracle` semantic paths
 touched; no new authored spelling exists (dec-261-classifier-over-annotation); `core`
 untouched.
