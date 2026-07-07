@@ -231,7 +231,70 @@ P5 unblocks soon). Poll `vultr-cli … | grep dorc-r25` for runaways (baseline 0
 - **On-ramp:** THIS block → `252` (protocol + §7) → `254` (review + retrospect ledger) → `255` (dry-run
   + predictions). All committed (`90ee2e2`). Live task: #6 (execution handoff).
 
-## Round-24 status (2026-07-05 later still — WAVE-1 QUEUE LANDINGS; conductor STOPPED at human direction)
+## Round-24 status (2026-07-07 — REDIRECT: the 24K/24L language-cleanup arc + the commissioned r26 resequence the queue; synthesis only, nothing dispatched)
+
+**Two sibling arcs landed and REDIRECT the r24 queue** (this block = the wave-1 conductor's
+synthesis, written at human direction; no new note IDs minted — a sibling conductor is active
+in round 24):
+
+- **The language-cleanup arc (`24Kc` adjudication → `24L` proposal + the human's typed TODO
+  items).** Human-confirmed CERTAIN for this round, pre-stdlib: the **dialect-version marker**
+  ("hyper-defensive against cargo-culting") and the **auto-cell / typeless floor** (24L §2–§7:
+  entity-free per-provider singleton, PRIVATE — four unrepresentability fences; gating
+  verification errand first: confirm a mark-free verdict-fn is inert at HEAD). Also certain:
+  **"a couple minor syntax changes that will churn ALL e2e/goldens"** — the dot-dies →
+  reserved-prefix rename (24L flat-one-spelling, `dorc_<munged-cmd>__<role>()`-shaped; exact
+  ceremony human-reserved, 24L §9) — plus `dorc strip` as first-class tooling NOW (human TODO:
+  "don't make the promise and then fail to keep it"). LESS-SOLD (human, do not plan heavily):
+  the book-location-gating of typed constructs (24L flat-one-language). Package siblings
+  pole-independent: loud-friend law · erasure-invariant doc language (human-voice queue) ·
+  the 24Kc small fixes (return-decline-inert / nounset fixture idioms / munge-reservation
+  lint / on-ramp arity honesty) · firstwall-hint grows scaffold-emission (24L
+  flat-hint-curriculum — extends `339189a`).
+- **Round 26 COMMISSIONED (time-constrained; may table parts of r25): multi-host +
+  concurrency.** Branch `ai/spike3-r26` (forked @ `75de2ac`): `plans/260` (fleet sans-io
+  kernel + ssh-subprocess transport + framed `dorc-records/1` wire + coordination-DST +
+  stage ladder 26-0..5 + `dec-26-*` ledger) and `plans/261` (within-host read-parallelism:
+  probe-task dependence contract [the antichain-by-construction finding], waves×width LPT
+  scheduler, 074 cost tiers, `ms=` telemetry, cross-run timing-cache FENCED on rec-5/kSTATE
+  ruling; P0–P4 track). **Merge-disjointness contract** (260 §10 + 261 §10): r26 owns new
+  crates/files only, width/emission flag-gated so existing goldens stay byte-stable; r26
+  rebases onto r23 per stage; **r23-side language work must WATCH the consumed-API surface**
+  (`classify`/`build_plan`/render entries + `parse_results`) — signature changes are
+  flag-to-r26, never fork. The 22H-reassessment inputs Stage 6 carried are now largely
+  ANSWERED by r26's existence (22H is being productized there, on the spike, own branch).
+
+**The RESEQUENCED r24 queue (supersedes the 07-05 ordering below; dependency-ordered):**
+1. **Cheap now, parallel-safe:** the 24L gating verification errand (mark-free verdict-fn
+   inert at HEAD?) · the 24Kc small fixes · the munge-reservation lint.
+2. **THE RESPELL PASS (one corpus-churn, not several):** the reserved-prefix rename (once the
+   human picks the ceremony) + the dialect-version marker + **upcoming-touches-migration
+   FOLDED IN** (same files, same goldens, same bless-inspection — churning the oracle corpus
+   twice is waste; the human suspected this fold) + loud-friend law + `dorc strip`
+   first-class. ONE bless-and-inspect session at the end.
+3. **The typeless floor** (auto-cell + four fences + eligibility plumbing; 24L §7 test
+   obligations) — after or carefully alongside the respell (both touch classify).
+4. **24I batches 3–5 RESEQUENCED AFTER the respell** — batch 3 authors ~50 string-asserting
+   in-memory twins (render_corpus.rs); authored pre-rename they churn twice. Batch 5's
+   per-topology verification errand can run anytime (read-only).
+5. **upcoming-stage6-conclude:** measure/maximize half AFTER the respell+floor (measuring the
+   dying surface is waste); extract half gains 24Kc/24L inputs (share-a-file death →
+   USER_STORY stage-3/4 rewrite is HUMAN-owned doc queue; the 22H inputs re-point at r26).
+6. **upcoming-battle-oracles (P5) — blockers now:** the respell + version-marker +
+   **kCONTRACT-RUNGS resolve-or-reaffirm** (24Kc verdict: before the stdlib) + the dq-kOOB
+   weld formal ruling (the human's 24L direction — inline-stays / erasure-semantics identity —
+   is the effective lean; 24L is marked pending-stamp). A stdlib written pre-respell is
+   instant legacy.
+7. **upcoming-r25-prep:** human-gated AND now r26-shadowed (time constraint may table parts;
+   human's call, not the conductor's).
+
+**Human-reserved forks gating the above:** the exact semaphore ceremony (gates the respell) ·
+kCONTRACT-RUNGS (gates P5) · the dq-kOOB/kTYANNOT formal stamp (24L pending) ·
+book-location-gating (less-sold) · dec-261-timing-cache (rec-5/kSTATE fence — r26's, ruling
+required before any cross-run persistence) · the `dec-26-*` ledger ratifications (defaults
+live).
+
+## Round-24 status EARLIER (2026-07-05 later still — WAVE-1 QUEUE LANDINGS; conductor STOPPED at human direction)
 
 **Wave-1 of the rotation queue LANDED + merged** (fresh conductor, full r23+r24 corpus re-read;
 each landing conductor-verified by own hand: fresh build · 4 gates · suites · full e2e; task-slug
