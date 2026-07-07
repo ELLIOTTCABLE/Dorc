@@ -15,6 +15,8 @@ into its packet in place of the reading-list.
 
 1. neutralised
 
+> You are a *READ-ONLY* reviewer of this material.
+>
 > In-tree is a three-document implementation plan for taking a shell-script static-analysis
 > orchestrator multi-host: `Research/plans/260` (fleet engine + ssh transport), `261`
 > (within-host read-parallelism and its ordering theory), `262` (the shared build-spine —
@@ -25,9 +27,14 @@ into its packet in place of the reading-list.
 > narrowings and deferrals store up pain a working system later makes unfixable, and what
 > it costs that it underweights. Where it genuinely holds up, say so plainly rather than
 > inventing a gap.
+>
+> Security concerns are *explicitly* out-of-scope for this round; your focus is primarily
+> correctness, and as a distant second, performance.
 
 2. adversarial
 
+> You need to help me kill this plan, with a (READ-ONLY) deep analysis of their work.
+>
 > An AI agent produced, in a day, the in-tree three-document plan for taking a colleague's
 > single-host tool multi-host — transport, fleet orchestration, a wire protocol, within-host
 > parallelism, failure semantics, a testing story — by stitching together the team's own
@@ -41,9 +48,17 @@ into its packet in place of the reading-list.
 > day one, and the hard-won fleet-tool lessons that were sitting there free and went
 > untaken. Where an attack genuinely doesn't land — or the plan stumbled onto the right
 > call — say so instead of forcing it.
+>
+> A hired human is coming in for the security-round; but they've nobody more
+> experienced to hand-off the other concerns. My primary concern, by far, is
+> *correctness*; with catastrophic-perf stuff a distant second; stay focused thus.
 
-### Shared reading-list (append to both, ahead of the plans)
+### Shared reading-list (prepend to both, *ahead* of the plans)
 
+> If you run into any immediate technical errors (you can't find files, you get
+> harness denials for reading files, or so-on), stop *immediately* and report so
+> they can be fixed. Do not attempt to work around.
+>
 > Before the plan package, ground yourself in Dorc's goals and constraints (*understand*,
 > don't *buy-in*). You are in a checked-out worktree of the repo; everything is readable
 > in place. The package under review is as of commit `FILLME-pin-at-dispatch` on branch
@@ -52,11 +67,11 @@ into its packet in place of the reading-list.
 > - `README.md`, `DESIGN.md`, `IMPLEMENTATION.md` — what Dorc is; the best-effort thesis;
 >   the two-phase probe/apply model the plans build on. Human-written, highest authority
 >   on *intended* truth.
-> - `AGENTS.md` decodes the team's jargon; `KNOBS.md` is the design-tension registry. The
->   plans *compose* several standing welds and human-parked fences (`kCOMMS`, `kAGENTLESS`,
->   `kFAIL`, `kSCHEDULE`, `kSTATE`, apply-linear-per-host, per-host plan independence) —
->   judge whether the composition is faithful and complete, not whether the welds should
->   exist.
+> - `USER_STORY.md` lays out the intended use-case. `AGENTS.md` decodes the
+>   team's jargon (DOES NOT APPLY TO YOU); `KNOBS.md` is the design-tension
+>   registry. The plans *compose* several standing welds and human-parked fences
+>   (`kCOMMS`, `kAGENTLESS`, `kFAIL`, `kSCHEDULE`, `kSTATE`,
+>   apply-linear-per-host, per-host plan independence.)
 > - `spike/CLAUDE.md` — the standing rulings the plans must not breach.
 > - The substrate the plans claim to compose, chase as needed: `Research/plans/142` +
 >   `notes/140`/`141` (transport), `plans/22H` (the concurrent per-host engine seed),
@@ -72,4 +87,5 @@ into its packet in place of the reading-list.
 >
 > Read-only throughout: do not write, commit, switch branches, or mutate anything shared;
 > work alone. Deliver everything in one final report: findings (each with severity, your
-> confidence, and exact file:line citations) and the suspicions you checked and withdrew.
+> confidence, and exact file:line citations where relevant) and the suspicions
+> you checked and withdrew.
