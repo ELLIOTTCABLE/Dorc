@@ -14,7 +14,102 @@
 
 ---
 
-## ⏩ COMPRESSION-HANDOFF SNAPSHOT (2026-07-05) — read this first
+## R24 ONBOARDING (2026-07-07 — the single current r24 view; supersedes all prior r24 blocks)
+
+**Read-first on arrival:** the root docs AT HEAD (the human updated them ~2026-07-06/07 —
+horizon material landed, among others; no summary here or in any note is current; KNOBS was
+restructured this round — `kSCOPE`/`kSURVIVAL` replace `kELISION`) → `spike/CLAUDE.md` (all
+rulings blocks) → `notes/23O` (settled law + history) → `plans/240` (the charter, as
+REDIRECTED below) → THIS block → `notes/24C` (the landing/residue ledger — accretes per
+landing) → per-task: `24I` (e2e slimming spec) · `24Kc`+`24L` (the language arc) ·
+`260`/`261` (r26, branch `ai/spike3-r26`).
+
+**Where the build stands** (all merged on `ai/spike3-r23`, conductor-verified; e2e 126/126,
+zero xfails): the `240` ladder's Stages 1–5 are LANDED — honest baseline + silence=wall · the
+survival machine (footprint × backing × disjointness, behind `--trust-footprints`) · the guard
+tier + claim-tier algebra + elide-weld (a full skip DEMANDS a reached vouch) · derived
+footprints (host-run `touches()`; pipes-in-dialect) · `resolve()`/`reaches()` + owncoord —
+plus the first-contact polish (exit-code family, caret frames, `dorc why`, positional books),
+the pipe-guard lift (the r25 trial-shape lifts), and wave-1 (`e3f67a5` Lcg entropy root-fix ·
+`339189a` the first-wall hint with the un-wall-M counterfactual, answering r25 B2 · the e2e
+suite slimmed 154→126 by twin-verified deletion). Four lying-nets green in the sweep.
+Per-landing evidence + residue: `24C`.
+
+**THE REDIRECT (binding):** the 24K crosscheck → `24L` language cleanup lands THIS round,
+before any stdlib cloud. Human-certain: the **dialect-version marker** · the **typeless
+floor / auto-cell** (`24L` §2–§7) · the **reserved-prefix rename** (the dot dies; churns
+every oracle fixture + golden) · **`dorc strip` as first-class tooling**. Less-sold (do NOT
+over-plan): book location-gating of typed constructs. Separately, **r26 (multi-host +
+read-concurrency) is commissioned and time-constrained** (`260`/`261`; may table parts of
+r25). Its merge-disjointness contract binds r23-side work: existing goldens stay byte-stable
+(r26 flag-gates its emission changes); any r23 change to `classify`/`build_plan`/render
+entry-points/`parse_results` signatures is FLAG-to-r26, never fork.
+
+**The queue (dependency-ordered; human-acked 2026-07-07):**
+1. **DISPATCH NOW (acked, gate-free):** (a) the `24L` gating verification errand — confirm a
+   mark-free verdict-function is inert at HEAD (sizes the floor build); (b)
+   fix-return-decline-inert (`24Kc`: explicit `return 0/1` bodies currently parse as
+   all-declines ⇒ a silently inert oracle — lift them as verdicts or diagnose loudly); (c)
+   the munge-reservation lint (`*__role` namespace + hyphen-collision detection); (d) the
+   `24I` batch-5 audit (read-only: per-topology assertion-depth of the survival-tier e2e
+   cases against the sweep's `TopologyClass`es — unblocks their eventual migration).
+2. **THE RESPELL PASS** — one corpus churn, ONE bless-and-inspect session; gated only on the
+   human's ceremony pick (language arc): the prefix rename + the version marker +
+   `touches()` typed-emission migration (FOLDED, acked) + the loud-friend law + `dorc strip`
+   + fix-nounset-fixture-idioms (the `${2-}` sweep — FOLDED, acked) + the guard23
+   stale-XFAIL-comment cleanup (FOLDED, acked; those strings echo into 6 goldens, so they
+   ride the same bless — `resid-guard23-stale-comments`, `24C`).
+3. **The typeless floor** (auto-cell + the four `24L` §7 fences + eligibility plumbing +
+   tests), after or carefully alongside the respell — both touch classify. Conductor
+   recommendation (human: "recommendations welcome but meh"): the fence-implementing builder
+   also RECONSIDERS the parked `analyzer-taint-gate` (consume-only-provable-inputs) — same
+   claim-tier layer, zero extra onboarding; reconsider ≠ build.
+4. **e2e slimming remainder (`24I` batches 3–4), AFTER the respell:** batch 3 authors ~50
+   string-asserting in-memory twins (`render_corpus.rs` + THE one-shot-`dash -n`-per-artifact
+   net + the st-1 `true || true` must-cover, `24C` §Wave-1) — authored pre-rename they churn
+   twice; batch 4 converts the guard23 no-mint floors to GuardLicense-absence structural
+   asserts.
+5. **Stage-6 SPLIT (acked):** the **extract/conclude half stays live** — inputs: the 24Kc
+   clusters + `24L` casualties, 077's unhonored half (seccomp socket-observe backstop +
+   batch-attribution recoverability — carry-or-explicitly-retire), 16Q-keystone bookkeeping,
+   the pipe-guard residuals (`24C`), and the may-alias fire-rate question (`24F` §3a — a
+   future human ruling once data exists). The **measure/maximize half is TABLED** (human:
+   tractable parts first; re-open once the respell + floor settle the surface it would
+   measure).
+6. **P5 / battle-oracles:** BLOCKED on the respell + version marker + the `kCONTRACT-RUNGS`
+   ruling + the dq-kOOB stamp (all language-arc). Standing coverage note: the typeless floor
+   serves mutator-verdict oracles only — read-value commands (`hostname`, the r25 host-guard
+   wall) still need the Query/predict lane, and P5 must cover them.
+7. **r25-prep:** human-gated, and r26-shadowed (the time constraint may table parts —
+   human's call).
+
+**Settled by the human 2026-07-07 (do not re-ask):** the respell fold + the
+batch-3-after-respell resequencing · nounset + guard23-comment folds · the first-wall hint's
+missing e2e needle ACCEPTED as-is (residue stays in `24C`; revisit only via `24L`'s
+scaffold-emission work) · the dotfiles acceptance-day TABLED · spike-3 health = fine, no
+death-criteria concern (the one watch-item, passively-baking-decisions, is the human's own
+eye) · horizon wording DONE by the human in the root docs · the redirect-report skipped.
+
+**Conduct fences (standing; bind any successor):** never edit
+README/DESIGN/IMPLEMENTATION/USER_STORY/KNOBS/TODO/AGENTS/root-CLAUDE (human-only) · HARD
+QUARANTINE on `quarantine-DO-NOT-READ/` + `Research/corpora/` · a sibling design-agent is
+ACTIVE in r24 `.md`-space — do not mint new note/plan IDs without checking the tree;
+coordinate through this file · word-slugs in full words · silence ≠ ack (only what the human
+TYPED counts) · crosscheck adjudication under maximum skepticism; adversarial framing =
+exclusions-not-inclusions · never use AskUserQuestion (ask in prose); dump the numbered task
+list on changes · Fable conducts, Opus codes; the sonnet no-subagent clamp propagates one
+tier down · code-modifying agents → isolated worktrees: step-zero `git switch -C
+<worktree-branch> ai/spike3-r23` + tip-hash verify + `pwd` verify, step-0.5 `mise trust` ·
+builders: granular `(AI …)` commits, never push, the four gates before every commit, final
+e2e FOREGROUND-only with a generous timeout (a backgrounded e2e's completion-notification
+never re-wakes a stopped agent), force `cargo build --workspace` before trusting any e2e,
+BLESS is exclusive/sole-agent + diff-inspected · conductor: tip-gate every ref-move IN THE
+COMMAND (sibling commits land mid-flight); verify every merge by own hand (never-vouch) ·
+the deferred-work ledger lives in `23O` §5.
+
+---
+
+## ⏩ r25 COMPRESSION-HANDOFF SNAPSHOT (2026-07-05 — HISTORICAL; the r25 arc's state at its fork+merge-back. The live on-ramp is the R24 ONBOARDING above)
 
 **Branch:** r25 lives on **`ai/spike3-r25`** (worktree `.claude/worktrees/spike3-r25`), forked from r23
 at `990d966`; **r24 continues on `ai/spike3-r23`**. LIVING_STATUS/252 fork with them. Conductor commits
@@ -230,402 +325,6 @@ P5 unblocks soon). Poll `vultr-cli … | grep dorc-r25` for runaways (baseline 0
   runnability firms on-VPS (a `# FLAG`).
 - **On-ramp:** THIS block → `252` (protocol + §7) → `254` (review + retrospect ledger) → `255` (dry-run
   + predictions). All committed (`90ee2e2`). Live task: #6 (execution handoff).
-
-## Round-24 status (2026-07-07 — REDIRECT: the 24K/24L language-cleanup arc + the commissioned r26 resequence the queue; synthesis only, nothing dispatched)
-
-**Two sibling arcs landed and REDIRECT the r24 queue** (this block = the wave-1 conductor's
-synthesis, written at human direction; no new note IDs minted — a sibling conductor is active
-in round 24):
-
-- **The language-cleanup arc (`24Kc` adjudication → `24L` proposal + the human's typed TODO
-  items).** Human-confirmed CERTAIN for this round, pre-stdlib: the **dialect-version marker**
-  ("hyper-defensive against cargo-culting") and the **auto-cell / typeless floor** (24L §2–§7:
-  entity-free per-provider singleton, PRIVATE — four unrepresentability fences; gating
-  verification errand first: confirm a mark-free verdict-fn is inert at HEAD). Also certain:
-  **"a couple minor syntax changes that will churn ALL e2e/goldens"** — the dot-dies →
-  reserved-prefix rename (24L flat-one-spelling, `dorc_<munged-cmd>__<role>()`-shaped; exact
-  ceremony human-reserved, 24L §9) — plus `dorc strip` as first-class tooling NOW (human TODO:
-  "don't make the promise and then fail to keep it"). LESS-SOLD (human, do not plan heavily):
-  the book-location-gating of typed constructs (24L flat-one-language). Package siblings
-  pole-independent: loud-friend law · erasure-invariant doc language (human-voice queue) ·
-  the 24Kc small fixes (return-decline-inert / nounset fixture idioms / munge-reservation
-  lint / on-ramp arity honesty) · firstwall-hint grows scaffold-emission (24L
-  flat-hint-curriculum — extends `339189a`).
-- **Round 26 COMMISSIONED (time-constrained; may table parts of r25): multi-host +
-  concurrency.** Branch `ai/spike3-r26` (forked @ `75de2ac`): `plans/260` (fleet sans-io
-  kernel + ssh-subprocess transport + framed `dorc-records/1` wire + coordination-DST +
-  stage ladder 26-0..5 + `dec-26-*` ledger) and `plans/261` (within-host read-parallelism:
-  probe-task dependence contract [the antichain-by-construction finding], waves×width LPT
-  scheduler, 074 cost tiers, `ms=` telemetry, cross-run timing-cache FENCED on rec-5/kSTATE
-  ruling; P0–P4 track). **Merge-disjointness contract** (260 §10 + 261 §10): r26 owns new
-  crates/files only, width/emission flag-gated so existing goldens stay byte-stable; r26
-  rebases onto r23 per stage; **r23-side language work must WATCH the consumed-API surface**
-  (`classify`/`build_plan`/render entries + `parse_results`) — signature changes are
-  flag-to-r26, never fork. The 22H-reassessment inputs Stage 6 carried are now largely
-  ANSWERED by r26's existence (22H is being productized there, on the spike, own branch).
-
-**The RESEQUENCED r24 queue (supersedes the 07-05 ordering below; dependency-ordered):**
-1. **Cheap now, parallel-safe:** the 24L gating verification errand (mark-free verdict-fn
-   inert at HEAD?) · the 24Kc small fixes · the munge-reservation lint.
-2. **THE RESPELL PASS (one corpus-churn, not several):** the reserved-prefix rename (once the
-   human picks the ceremony) + the dialect-version marker + **upcoming-touches-migration
-   FOLDED IN** (same files, same goldens, same bless-inspection — churning the oracle corpus
-   twice is waste; the human suspected this fold) + loud-friend law + `dorc strip`
-   first-class. ONE bless-and-inspect session at the end.
-3. **The typeless floor** (auto-cell + four fences + eligibility plumbing; 24L §7 test
-   obligations) — after or carefully alongside the respell (both touch classify).
-4. **24I batches 3–5 RESEQUENCED AFTER the respell** — batch 3 authors ~50 string-asserting
-   in-memory twins (render_corpus.rs); authored pre-rename they churn twice. Batch 5's
-   per-topology verification errand can run anytime (read-only).
-5. **upcoming-stage6-conclude:** measure/maximize half AFTER the respell+floor (measuring the
-   dying surface is waste); extract half gains 24Kc/24L inputs (share-a-file death →
-   USER_STORY stage-3/4 rewrite is HUMAN-owned doc queue; the 22H inputs re-point at r26).
-6. **upcoming-battle-oracles (P5) — blockers now:** the respell + version-marker +
-   **kCONTRACT-RUNGS resolve-or-reaffirm** (24Kc verdict: before the stdlib) + the dq-kOOB
-   weld formal ruling (the human's 24L direction — inline-stays / erasure-semantics identity —
-   is the effective lean; 24L is marked pending-stamp). A stdlib written pre-respell is
-   instant legacy.
-7. **upcoming-r25-prep:** human-gated AND now r26-shadowed (time constraint may table parts;
-   human's call, not the conductor's).
-
-**Human-reserved forks gating the above:** the exact semaphore ceremony (gates the respell) ·
-kCONTRACT-RUNGS (gates P5) · the dq-kOOB/kTYANNOT formal stamp (24L pending) ·
-book-location-gating (less-sold) · dec-261-timing-cache (rec-5/kSTATE fence — r26's, ruling
-required before any cross-run persistence) · the `dec-26-*` ledger ratifications (defaults
-live).
-
-## Round-24 status EARLIER (2026-07-05 later still — WAVE-1 QUEUE LANDINGS; conductor STOPPED at human direction)
-
-**Wave-1 of the rotation queue LANDED + merged** (fresh conductor, full r23+r24 corpus re-read;
-each landing conductor-verified by own hand: fresh build · 4 gates · suites · full e2e; task-slug
-discipline now in effect — word-slugs `upcoming-*`, never bare numbers):
-- **upcoming-lcg-fix DONE** (`e3f67a5`; ledger `24C §find-lcg-thinning`): `Lcg::chance` root-cause
-  fix through the high-bit `below()`; the {both}/{neither} membership cells were provably
-  UNREACHABLE pre-fix (low bit strictly alternates), so the in-memory DST loops' curl-elision
-  branch had never actually been exercised; sweep provably untouched (draws via `below` directly);
-  no latent bug surfaced by the un-thinned space; NEW `resid-24C-counter-drift` — 24C's per-3000
-  sweep counters are landing-time SNAPSHOTS (general lying-counter had drifted 579→641 pre-fix).
-- **upcoming-firstwall-hint DONE** (`339189a`; ledger `24C §Wave-1`): the USER_STORY stage-3 nag
-  live (ONE aggregated stderr hint, first unmodeled wall, un-wall-M counterfactual; `dorc why`
-  carries detail; zero golden churn; conductor eyeballed the flagship render). **Answers r25 B2's
-  hint-confound: the hint EXISTS as of 2026-07-05.** Design finding
-  `find-classify-forecloses-refold`: opaque-wall poison lands at classify, so the honest
-  counterfactual re-fold is structurally unavailable — M is the conservative window-count.
-- **upcoming-degraduation batches 1–2 DONE** (`817a4f7`..`a899fff`; ledger `24C §Wave-1`):
-  **154→126 e2e**, −28 twin-verified REDUNDANTs, 0 skipped; case→twin map durably homed in 24C.
-  **Batches 3–5 REMAIN** (batch 3 carries THE dash-n/ap-2 flag + st-1's named must-cover
-  [`true || true` render shape]; batch 5 needs per-topology assertion-depth verification first).
-  `resid-guard23-stale-comments`: the stale XFAIL comments echo into 6 guard23 goldens — a future
-  BLESS-and-inspect session, never a drive-by.
-
-**Conductor STOPPED here per human directive** ("stop after making the returned work durable").
-NOT dispatched: **upcoming-touches-migration** (NEXT — the human-set LAST churn pass, now
-genuinely unblocked; spec context = 24G §4 typed emission + §8 owncoord + USER_STORY stage-5
-FIXME) → upcoming-stage6-conclude (charter carries the 22H-reassessment inputs + 077/16Q
-extraction adds + the pipe-guard residuals + the errexit-isolation test-owner flag from the r25
-snapshot) → upcoming-battle-oracles; upcoming-r25-prep stays human-gated.
-
-**Mid-wave sibling event (token-limit victim, self-rescued):** a SIBLING session landed
-`7eccd32` (24K lane archive, fully quarantined — stays unread) + `95d0c5d`
-(**`notes/24Kc` language-crosscheck adjudication** — its headline: rule the dq-kOOB/kTYANNOT
-authored-surface weld BEFORE P5, three-pole decision-package + four small r24 fixes; next
-conductor reads 24Kc, this conductor only pointered it). Both Research-only, spike/ untouched.
-An uncommitted human-side `TODO.md` edit (+8 lines) sits in the working tree — HUMAN-OWNED,
-deliberately not committed/reverted by the conductor. Post-landing audit: all three wave-1
-builder worktrees clean (zero unmerged-by-patch-id, zero stashes) — nothing in-flight was lost.
-
-**Process hardenings (bind future briefs; also in 24C):** step-0.5 `mise trust` in fresh
-worktrees (piped builds silently mask the trust-error) · final e2e FOREGROUND-only with generous
-timeout (two of three wave-1 builders stalled forever pausing on backgrounded-e2e completion
-notifications that never re-wake a stopped agent) · e2e wall-clock 15–20min under sibling
-process contention, ~5min uncontended · the `agent-abb8b160…` rust-analyzer diagnostics were a
-PHANTOM (directory non-existent; editor staleness). Housekeeping candidates: the three absorbed
-wave-1 `agent-*` worktrees (lcg/firstwall/degraduation) — human eyeball before removal, per
-precedent.
-
-## Round-24 status EARLIER (2026-07-05 late — POLISH LANDED+MERGED; ALL WORK MERGED + QUIET; PUSH-READY; CONDUCTOR ROTATION now)
-
-**ROTATION HANDOFF (read this first, then the block below for the day's landings):**
-- **Merged tip lineage `00664b1`+** = everything through the polish pass. Conductor-verified on
-  the merged tree: fresh build · clippy `-D warnings` · 25 suites 0-failed; the merged-tree full
-  e2e re-run was in flight at handoff-write (the identical-spike-content polish tip ran
-  **152/152** under the conductor's own hand — treat a differing merged tally as a STOP signal).
-  Polish landing evidence + deferrals: **`24C` §First-contact-polish**. The CLI is now
-  first-blood-shaped (exit-code family rc=10/rc=2, caret frames, `dorc why`, firehose
-  aggregation, positional books, elision-render = original-bytes-commented).
-- **pipefix LANDED + MERGED (tip `cdca43b`+): the r25 trial-shape lifts** — the XFAIL promoted (154/154, zero xfails remain); evidence + Stage-6 residuals in `24C` §pipe-guard-LIFT. ZERO agents out. The r25 arc is MERGED into this branch (a true two-parent merge, `2d5176d`) — the tree is single-branch, quiet, and PUSH-READY.
-- **The queue for the next conductor (all specced, none dispatched):** #16 e2e de-graduation
-  (spec `24I`; batches 1–4 dispatchable, batch 5 needs per-topology verification; THE flag: the
-  in-memory tier adds a one-shot `dash -n` per artifact or it re-opens ap-2) · #17 first-wall
-  hint (DECIDED, small, `24H`-adjacent; decline-valve to r25 if not-small) · #12 touches()
-  typed-emission migration (human-set LAST of the churn passes) · #4 Stage 6
-  (measure/adequacy-bite/conclude/extract; charter now carries the 22H-reassessment inputs +
-  077/16Q extraction adds; the two pipe-guard forks are RESOLVED by `24J` — dropped from its
-  charter) · #5 battle-oracle corpus (feeds the r25 stdlib) · #6 Lcg fix · #7 r25-prep
-  (human-gated). Golden churn is UNBLOCKED by human ruling (noted→teach→re-bless; conductor
-  still inspects diffs at merge).
-- **KNOBS was RESTRUCTURED by the sibling conductor** (kELISION→kSCOPE+kSURVIVAL tombstone,
-  kHALVES+kWARN welded, kCONTRACT-RUNGS ratified, dated round-markers) — RE-READ KNOBS before
-  any design work; some corpus docs cite the old slugs.
-- **Process hardenings (bind successors):** every gated git command asserts the ATTACHED BRANCH
-  (`git rev-parse --abbrev-ref HEAD`), not just the ref position (a stray agent step-zero
-  switched the shared checkout and two conductors' commits interleaved on a mislabeled branch —
-  repaired, nothing lost, but the gate-gap was real); builder step-zeros carry a `pwd`-verify
-  line (the fence-in-prose failed three times); builders NEVER run the full e2e mid-work
-  (conductor's job; it strands them) but ONE foreground run-to-completion at the end is fine;
-  force `cargo build --workspace` before trusting any e2e (stale-binary false-fails).
-
-## The day's landings (2026-07-05 — Stages 1–5 + owncoord + pipe-guard pins; detail below + `24C`)
-
-**Since the entry below (all conductor-verified + merged, tip ≈`aa31081`+):** **Stage 5 Part B
-(`reaches()`) LANDED** — typed emission held both promises (kind from the LIFTED annotation, never
-host stdout — the arm-index demux; static arms trace/ship-nothing, dynamic escalate); cross-author
-composition REAL (hork's `package:nginx` expanded through the owner's `reaches()`, the downstream
-file-fact demotes where pre-B it wrongly survived); four lying-nets green (static 579 / derived 220
-/ alias 147 / reach 97; poison-attribution 95); `resid-kindfn-derived` = the one asymmetry (dynamic
-arms over DERIVED coords need a 2nd round-trip; deferred with resid-resolve-derived). **owncoord
-LANDED** (24G §8: engine unions own effect-coord into non-empty footprints; the derived boilerplate
-printf died; empty-emission = no-claim boundary unit-pinned). **pipe-guard pins LANDED** (24C
-§pipe-guard: the r25 trial-shape floor is SAFE; gap = the check-side pipe precisely; owed value =
-check-tax+attention only; two Stage-6 forks parked: flag-pipe-status-unit / flag-filter-blessing).
-**rul24-warnings-tune-high + rul24-boilerplate-cargocult** minted (24G §8). **Git housekeeping**
-(human-delegated): 70 worktrees + husks removed, 71 absorbed branches deleted, ~115GB freed;
-keep-uniques listed in the cleanup report; `ai/snapshot` = unknown provenance, untouched, human
-eyeball owed. **IN FLIGHT: the first-contact polish pass** (charter `24H` + all 8 human
-ack-rulings; caret-art IN-SCOPE; elision-render greenlit — original-bytes-commented where rc
-unconsumed; golden churn UNBLOCKED by human ruling, conductor still inspects at merge).
-**QUEUED:** e2e de-graduation (audit DONE — **`24I`** = the execution spec; ~100/152 movable,
-5 safest-first batches; THE flag: the in-memory tier must add a one-shot `dash -n` per artifact
-or it re-opens the ap-2 text-diff trap) → `touches()` typed-emission migration (#12, human-set
-LAST) → Stage 6 (measure/conclude/extract; carries the two pipe-guard forks + adequacy-bite).
-**Folded from the design-synthesis sibling's drift-audit memo (2026-07-05; accepted, no nack):**
-the first-wall hint (DECIDED, post-polish — the USER_STORY stage-3 nag with the un-wall-M
-counterfactual; serves r25 B2; decline-valve to the r25 conductor if not-small) · Stage-6 gains
-the 22H-reassessment INPUTS (the human's "reassess at r24 close": cruft-verdict / 24B §5 banked
-coordination-DST hooks / the 151 M3 marker-protocol knot — inputs only, decision human's) + two
-extraction adds (077's unhonored half: seccomp socket-observe backstop + batch-attribution
-recoverability — carry-or-explicitly-retire; 16Q-keystone bookkeeping: discharged-by + open
-residue) · an ANALYZER-NEEDS staleness sweep (annotate pre-ternary rows, e.g. an-tier-a-forms
-dead-by-weld; never silently drop — REASSIGNED: the human/sibling own the AN sweep, dropped
-from this queue). **pipe-guard FIX fork RESOLVED (human, 2026-07-05): per-command CONNECTED
-PROBES — full design record `notes/24J`** (per-line is DEAD — beautification-fragility /
-pseudo-argv / cross-tool vouch blast; the filter-blessing objection was a phantom — the engine
-measures rc, never interprets it; grep is ordinary stdlib purity-vouch material). The 24C
-§pipe-guard Stage-6 forks are thereby RESOLVED; Stage 6 no longer carries them. Build = task
-#19, post-polish, parallel with the migration; the pipe-guard XFAIL is the promotion tripwire.
-
-## Round-24 EARLIER (2026-07-04 — Stages 1–5A; kind-owner design round)
-
-**Stage 5 Part A (the aliasing closure) LANDED + merged** (**147 e2e, 25 suites, all gates —
-conductor-verified by own hand**). `resid-aliasing` is CLOSED for resolver-bearing kinds: the
-kind-owner ships `package.resolve()` (KIND-keyed, host-run, fork-4A rails); the engine
-canonicalizes BOTH sides before `disjoint`; can't-resolve ⇒ may-alias ⇒ run (`may-alias=N`
-instrumented); resolver-less kinds keep the token-equality floor byte-identical. **The three
-lying-nets coexist green: static 579 / derived 220 / alias 147** (per 3000 seeds, all attributed).
-Flagship `strawman24-alias-provides`: a converged `nginx-full` victim past a running `nginx` wall
-canonically HITS and DEMOTES where token-equality wrongly elided. Evidence + residue: **`24C`
-§Stage-5A** (resid-resolve-derived · resolv-lane parity gap · strain-coreference-crosskind = the
-post-trial co-reference design seed).
-
-**The kind-owner family design round SETTLED (live human dialogue, five volleys):** the record is
-**`notes/24G`**; the surface story is **USER_STORY stages 6–7** (human-directed update; rarefied
-<10%-of-authors, high community-effect framing). The rulings: two families (per-TOOL trio /
-per-KIND pair) · ONE function per question (the graduation test killed the edge/valuation split) ·
-**typed emission** (kind = trailing annotation, entities = raw stdout; vocabulary closes at lift;
-the `| sed` wart dies) · error-posture = un-annotated emission MEANS NOTHING (smell, never refusal;
-hard errors stay syntax + genuine static conflicts) · **`reaches()` not `manifest()`**
-(name-as-contract; omission-bias). Sequencing (human-set): **Part B (`reaches()`) next** →
-`touches()` stringly-emission migration **LAST** (FIXME rides USER_STORY stage 5) → Stage 6.
-
-## Round-24 EARLIER same-day (Stage 4 — derived footprints; detail `24C` §Stage-4)
-
-**Stage 4 LANDED + merged** (145 e2e at the time). The golden-hill move works for PAYLOAD-BOUND tools: a
-`touches()` body that reaches a host tool ESCALATES (ships strip-only into the probe lane, runs
-read-only, stdout → the footprint) — the frame rule through a *dynamic frame*. **Yardstick 0→1
-derived** (`strawman24-derived-survive`: a converged nginx install elides past a RUNNING oldpkg
-install, licensed by a probe-derived footprint from the natural `dpkg -L "$1" | sed 's|^|file:|'`
-idiom); **the sweep soundness net has teeth — `derived_lying_divergences=220`/3000 seeds** (too-narrow
-derivation → wrong survival → end-state RED, attributed). Spec = **`notes/24E`** (+§13 fork-resolutions,
-§14 pipes); landing evidence + residue = **`24C` §Stage-4** (new `resid-derive-coherence`, the
-kill-coherence e2e-net owed, `resid-derive-adequacy` → the r25 field-trial's primary target).
-**Posture-lift (human-directed, first of the round):** pipes now PARSE in the oracle dialect —
-parse-permissively/trace-conservatively (`24E §14`; the ⊤ moved to the trace layer; touches-pipe =
-the escalation trigger, predict-pipe = run). **NB for the r25 conductor: §14 ≠ u3** — §14 is
-ORACLE-dialect pipes; u3 asks whether a *book-side* stdout-consuming pipe-guard
-(`cmd | grep -q X || fallback`) lifts — a different parser (`dorc-syntax`), still un-checked.
-NEXT: **Stage 5 (grounding — resid-aliasing, the r25 gate's second half)**, then Stage 6
-(measure/conclude/extract). Loose: battle-oracle corpus (#5, feeds the r25 stdlib) · Lcg low-bit
-fix (#6) · the lying-KILL-footprint sweep scenario (owed, `24C`).
-
-**Process notes (durable):** after any cherry-pick, force `cargo build --workspace` before trusting
-`e2e/run.sh` (stale-binary false-fails). Cross-session branch discipline: two conductors share this
-branch — GATE any ref-move on the expected tip IN THE COMMAND (`[ "$(git rev-parse …)" = <sha> ] &&`),
-not by eyeballing printed output (a check-then-act race orphaned an r25 commit this session;
-recovered by cherry-pick, nothing lost).
-
-## Round-24 EARLIER (2026-07-03 — Stage 1 complete; the test-suite arc commissioned)
-
-**Stage 1 fully built, merged, green** (`ai/spike3-r23`; e2e **135/135**, 9 standing guard23
-xfails; family elide-fraction **0.32**, post-wall elisions = 0 — the charter's honest
-baseline, mechanically true). The three sub-stages: 1a yardstick (CLI `dorc: plan-summary`
-stderr line + `strawman24-*` family + `sh e2e/yardstick.sh`); 1b fd10/silence=wall (plan-time
-wall walk in `build_plan_walled`; running modeled mutators wall downstream, elided cast no
-shadow); 1c riders (strip-fidelity — fixed a REAL latent rc-clobber bug; kill-wall; the first
-verdict-function-carrying floors; errexit-honesty row). Full evidence: **`notes/24A` §3**.
-
-**The round's durable homes (rotation discipline — 24A is CLOSED as the early-rulings ledger;
-new chunks get fresh notes):**
-- **`notes/24A`** — Stage-1 rulings + evidence + the 231 disposal. The typed rulings:
-  rul24-wall-placement · rul24-threefunc-monotonic (the `touches()` 3rd role-sibling;
-  supersedes the two-contract sentence) · **rul24-mode-gate** (survival tier FLAG-GATED
-  `--trust-footprints`, never default; marketing-at-best/theatre-at-worst) ·
-  rul24-divergence-is-the-game (license-site≠elision-site + claim-subject≠blast-subject;
-  attribution co-primary for Stage 2; MH2 version-gate = the missing tether, seeded
-  not-this-spike) · **rul24-vouch-is-verdict-authoring** (§1c — the tilde is DEAD; authoring
-  `is_converged()`/`is_diverged()` IS the vouch; provisos: read-erasure, family-open,
-  marks-survive) · **rul24-overtype + the ARC-WIN** (the claim-tier trust algebra:
-  `Claim<Tier,Payload>` Fact/Judgment/Silence; license-mints DEMAND tiers in signatures;
-  births Stage 3, pays hardest Stage 5; "uncheckable invariants ride WITH the types").
-- **`notes/24B`** — the TESTING ARCHITECTURE: three flavours (kernel-unit / real-path corpus
-  / the new in-memory sweep); battle-oracle corpus = STANDALONE fixtures, not e2e case-dirs;
-  the sweep is a NEW composition-root crate (hostsim stays the model). §5 reconciles against
-  the round-12 DST conclusion (`plans/128`): the net is elision-soundness DST at the
-  fact-verdict seam (NOT round-12 coordination-DST — that's round-25/22H); the determinism
-  guard is mandatory; approach-#3/cross-platform-by-purity; coverage humility.
-- **`notes/24C`** — STAGE LANDINGS + RESIDUE ledger (accretes per stage). Stage 2 (golden
-  hill lit 0→1) + its residue (resid-aliasing = the Stage-5 under-execute cell that MUST be
-  professed at the horizon; kill-coherence; argparse-drift contained). Stage 2b (the sweep
-  has teeth — 3 planted bugs caught) + two findings: **find-lcg-thinning** (Host::seeded's
-  low-bit coin correlates → existing DST tests under-explored; cheap fix owed, task #11) and
-  **find-net-covers-what** (survival-tier coverage rests entirely on the lying-attribution
-  net — honest survival is provably sound, so the lying scenarios are load-bearing).
-- **`notes/24D`** — the STAGE-3 TYPE-ARCHITECTURE SPEC (conductor-authored, rul24-overtype):
-  the claim-tier trust algebra `Claim<Tier,_>` (Fact/Judgment/Silence; 4 unrepresentability
-  props: one-way demotion, mints-demand-tiers, no-judgment→fact-plane, the OPEN rung reserve)
-  + the guard tier + the elide-weld + verdict-fn lift. **The round's most foundational
-  type-decision — the reviewable one.**
-- **`ORACLE_PROVIDES.md`** (NEW root doc, pending human audit) — the ledger of information
-  shapes an oracle hands Dorc (provides-decoding/vocabulary/reading/binding/behavior/
-  convergence/license/margins); the license-LADDER (rung-0 display / rung-1 guard / rung-2
-  elide) is OPEN — the wary-engineer hatch, sibling of the admin's mode-gate flag.
-
-**Landed since the Stage-1 refresh:** Stage 2 (frame-rule machine) · Stage 2b (the chronology
-net / `dorc-sweep`) · **Stage 3 FOUNDATION** (the claim-tier trust algebra `core/src/claim.rs`
-+ verdict-fn lift + guard type-architecture — merged, all 4 unrepresentability props
-conductor-VERIFIED as compile-errors; the earmarked-reviewable decision, `24C`/`24D`).
-
-**⚑ HELD FOR THE HUMAN (durable — survive a context-collapse):** (Stage-3 Part B is DONE — the
-foundation was blessed, the elide-weld landed 2026-07-04.) Parked design threads, none blocking:
-`aliasing-horizon-wording` (the survival tier's silent under-execute owed a horizon disclosure in
-the human's voice; reverse-DNS-namespace-owner is the confirmed bounded approach — Stage 5 closes
-the mechanism) · `rung-split` (the wary-author hatch — license the guard but not the skip; reserved,
-seam built) · `analyzer-taint-gate` (a consume-only-provable-inputs typesystem constraint, distinct
-from report-only provenance; human-tabled) · `ORACLE_PROVIDES.md` first audit.
-
-**Stage 3 Part A LANDED (guards FIRE):** the mint-wiring merged; **all 9 `guard23-*` XFAILs
-PROMOTED** (conductor-inspected the renders + authorized). Dorc now produces real
-`( oracle-check ) || command` guards on a real book past a real wall — **the guard half of the
-two-halves doctrine is REAL.** Two emitter bugs found+fixed end-to-end (double-comment; a
-redirect refuse-home that was suppressing a `>>log` side-effect). One latent soundness gap
-found → **#12 find-return-vouches** (the verdict-lift mis-reads a `*) return 2 ;;` decline as a
-vouch — runtime-safe in guards today, but bites Part B's elision, and it's the USER_STORY's own
-decline idiom; folded into the Part B brief).
-
-**CONDUCTOR HELD HERE — a deliberate checkpoint, not a stall.** After Stages 1/2/2b/3-foundation/
-3-Part-A (six builders, all merged green), the next moves each want the human or conductor
-design-work first, so this is the clean review point:
-- **Part B (elide-weld)** — held for the human's foundation go/no-go (corpus-wide churn).
-- **#6 Stage 4 (derived footprints)** — unblocked + foundation-light, BUT it ships `touches()`
-  into the PROBE lane (host-executed `dpkg -L`), a NEW execution surface that must preserve
-  probe-inertness (structural self-vouch, like predict bodies) — a real design point the
-  conductor should spec (rul24-overtype) or the human should eye before dispatch. NOT blind-
-  dispatchable.
-- **#10 Stage 2c (battle-oracle)** — blocked on Stage 3 (Part B) + #12.
-- **#7 Stage 5** (grounding — claim-tier pays hardest) → **#8 Stage 6** (adequacy-bite / conclude).
-- Loose: **#11** (Lcg fix), **#12** (return-vouches, rides Part B).
-
-Resume options on the human's return: nod the foundation → dispatch Part B (+#12); or direct
-Stage 4 after its probe-inertness spec; or redirect. Nothing is broken or blocked-on-a-fix.
-
-**Conduct addenda this session:** worktree-isolated agents base on ancient `main` — brief
-step-zero `git switch -C <branch> ai/spike3-r23` (`reset --hard` hook-blocked) + tip verify ·
-Fable conducts / Opus codes (type-contract design is the ONE conductor-code carve-out;
-mechanical verification rides Opus) · research grounds in-corpus first (the round-12 DST round
-is authoritative + current; no fresh Kagi) · new test coverage is in-memory/Rust/
-performant-by-design, NOT more e2e case-dirs.
-
-## Earlier today (2026-07-03 — round 23 CLOSED; round 24 charter + Stage 1)
-
-**Round 23 is closed.** Its complete, durable, single-narrative history is **`notes/23O`** (the
-closeout — read it first). The crisis (233 = the frame problem, permanent) resolved to the
-**ternary verdict {elide, guard, run}** with the **converged-vouch** license and **silence = wall**;
-the interface was settled (**role-split** `predict`/`is_converged`/`is_diverged` + **rc-partition**
-0/1/≥2 + strip-fidelity); the spike was **realigned** to the design (marker fiction retired, 123/9/0/0
-green); the guard tier was **pinned** (24 `guard23-*` cases); and the elide-half design reached a
-**permanent floor** (`23M`/`23N`): the mechanism is the **separation-logic frame rule through a
-dynamic frame** = **lazy code motion for shell**, and its one live risk is the converged-vouch's
-**adequacy** (converged≠no-op), calibrated-never-proven. All settled law lives in `23O` §2 +
-`spike/CLAUDE.md`'s rulings blocks. Do not relitigate it.
-
-**Round 24 = "head off 233 by building something and seeing what happens"** — the plan is
-**`plans/240`**. The theory is exhausted at its floor; the work is now empirical. Build the
-**elide machine** (the golden hill — the attention product Dorc exists for) FIRST, on hand-authored
-**strawman** books, because in the spike the **DST exec-differential is the correctness net** (run
-the elided plan under mocks, diff the bare book; a wrong elision goes red). The guard is the
-*production* net — deferrable. The yardstick, CLI-runnable at every stage: **elision frequency on
-a strawman family, differential-verified.**
-
-The six-stage ladder (full detail in `plans/240`; golden hill lights up at Stage 2):
-1. **yardstick + honest baseline** — build the elision-count-plus-differential mode; land the
-   `fd10` fix so *silence = wall* actually holds (the "dangerous middle" is still live at HEAD).
-   Baseline: post-wall elisions = 0.
-2. **the frame-rule machine — first line vanishes past a wall.** authored footprint + backing +
-   disjointness + `elide-when-disjoint-else-run` (no guard; differential is the net). Yardstick 0→N.
-3. **the guard tier** (the 9 `guard23-*` xfails) — the production net; a side-quest off the golden
-   hill's critical path, slotted here per the human's ordering.
-4. **derived footprints** (`dpkg -L`) — elide past payload-bound tools.
-5. **grounding + collaboration** — coordinate-kinds, bridges, the `scan_cve` story; synonym =
-   dynamic-points-to-or-wall.
-6. **maximize + measure + conclude** — the ~80% question on strawmen; extract conclusions to the
-   human docs; then the spike can die.
-
-**Build on Opus** (mechanical-ish; reserve cheap-Fable for breadth + the round-25 reactivity
-design). The spike is freshly realigned — build now, before it drifts.
-
-**Live task state (reconciled at round-23 close):**
-- DONE: #7 pins · #14 spike reconciliation · #17 interface rulings · #18 rename · #19 golden-hill
-  design (floor reached → `23M`/`23N`/`23O`) · #20 closeout · #21 `plans/240`.
-- CARRIES INTO ROUND 24: **#15** — the repair pass; its `fd10`/silence=wall fix IS Stage 1, the
-  strip-fidelity implementation (ruled: bare marks deleted whole) rides along, plus the small pins
-  + the 231 disposal paragraph. **#16** — the human's root-doc queue (line-fixes + adopt the `23N`
-  vocabulary + the "lazy code motion for shell" README line).
-- TABLED: **#11** — the placement-spectrum / barrier round = the *performance* product; parked to
-  round-25+ (by the consent-wall it offers the attention goal nothing; `23O` §4).
-
-**Deferred-work ledger** (durable now in `23O` §5 — 22H reactivity is round-25 and wants Fable
-ASAP; provenance-DAG is reorderable and may ride this spike; MH2 versioning; the language +
-`unsafe` hatch; kSTATE; DX tooling; `.diff`; the deferred surfaces incl. lane-privilege).
-
-**Conduct fences (standing; bind any successor):** word-slugs in full words, explain prior-art
-inline (the human is often on mobile); silence ≠ ack (only what he TYPED counts); **HARD
-QUARANTINE on corpus/H2SaLS** (the `quarantine-DO-NOT-READ/` dir + `Research/corpora/` stay
-unread; strawman measurement only, never the corpus); crosscheck adjudication under maximum
-skepticism (convergence = signal; a corpus doc's *existence* is never authority — reverse-
-sycophancy is a live failure mode); adversarial framing = exclusions-not-inclusions; Fable
-dispatch = ask-first, goals-not-instructions (Opus gets full enumeration); code-modifying agents
-→ isolated worktrees with a baseline-check + explicit-pathspec commits; never edit
-README/DESIGN/IMPLEMENTATION/TODO/AGENTS/root-CLAUDE (human-only); notes are append-only EXCEPT
-this file; **never use the AskUserQuestion tool** (his vi-mode breaks it — ask in prose); dump
-the full numbered TaskList when it changes or when he's remote; the method is now
-**build → measure the yardstick → let the evidence pick the next stage.**
-
-**On-ramp order for a fresh round-24 conductor:** root docs (`README`/`DESIGN`/`IMPLEMENTATION`) →
-`spike/CLAUDE.md` → **`notes/23O`** (the closeout — everything that happened + the settled law) →
-**`plans/240`** (the round-24 plan) → THIS FILE → then, as the build needs them: `23M`/`23N` (the
-elide mechanism's landmines + vocabulary), `23A`+`23G` + `spike/e2e/run.sh` (the guard-tier spec),
-`23H` (the spike's reconciliation record + the strip-fidelity residue for #15).
-
----
 
 ## Yesterday-scale (round 23, 2026-06-15 → 2026-07-03 — compressed; full record `notes/23O`)
 
