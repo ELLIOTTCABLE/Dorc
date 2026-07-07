@@ -22,11 +22,13 @@ the conductor may firm the exact grammar, the SHAPE is ruled.
   — sanctioned as a **closed set of ONE**. It is not a precedent: eol-comment annotations
   remain rejected (human, 24L dialogue); any second comment-parse is a fresh human ruling.
   KNOBS `kOOB` owes this dated marker.
-- *Conductor-derived interpretation (with rul24M-bare-dorcism-names, jointly):* the marker
-  gates **syntax** (binds, marks, any non-POSIX construct), not **name-semantics** —
-  `__dorcism`-named functions are POSIX-legal and are recognized in unmarked files too. This
-  is required by rul24M-typeless-floor (the floor must work in a marker-free pure-POSIX book).
-  Flag if wrong.
+- *Interpretation CONFIRMED (HUMAN-TYPED, 2026-07-07):* the marker gates **syntax** (binds,
+  marks, any non-POSIX construct), not **name-semantics** — `__dorcism`-named functions are
+  POSIX-legal and are recognized in unmarked files too (required by rul24M-typeless-floor).
+  The human's sharpening, eyes-open: **the names are not lang-versioned and structurally
+  cannot be** — name-recognition is a permanent, unversionable compat surface; if retroactive
+  changes to it are ever needed, they will have to be contended with directly (no version
+  escape exists). Ruled the right path regardless.
 
 ### rul24M-typeless-floor (stated as a design-RULE, not an implementation)
 The typeless-oracle floor is **IN** (the anonymous/auto-minted cell), restated as law:
@@ -131,6 +133,14 @@ the <2-dots warning (rul24M-reverse-dns-kinds) + the within-unit duplicate-resol
   rul24M-reverse-dns-kinds; names per rul24M-bare-dorcism-names.
 - KNOBS: the kOOB closed-set-of-one marker (§1); kTYANNOT's containment sentence rewrites
   (marker-gated, not location-gated).
+
+## §4b. Verification addenda (owed)
+
+- **name-length errand DISPATCHED (2026-07-07, human-directed):** does POSIX.1-2024 impose a
+  function-name length limit, and what are the empirical ceilings under dash/bash/zsh (+
+  whatever else WSL carries)? Defensive check that long reverse-DNS-derived names
+  (`com_longcorp_platform_ServiceUnit__is_converged`-shaped, to ~300 chars) fit reliably in
+  every shell we care about. Results append here when the errand returns.
 
 ## §5. Queue effects (for the resequenced r24 queue, LIVING_STATUS)
 

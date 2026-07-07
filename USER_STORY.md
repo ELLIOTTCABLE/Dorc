@@ -237,8 +237,8 @@ foobar.is_converged() {
    verb="$1"; shift
    case "$verb" in
    sync-certs)
-      dest : fb.Certs = "$1"
-      foobar status --certs-current -- "$dest"   : fb.Certs:"$dest".synced
+      dest : org.foob.Certs = "$1"
+      foobar status --certs-current -- "$dest"   : org.foob.Certs:"$dest".synced
       ;;
    *) return 2 ;;
    esac
@@ -257,11 +257,11 @@ Nine lines, one verb, one probe — and the function's *name* is the license. In
   and guard to the function that answered, by name; when the answer is wrong, there is a
   person to be wrong. (Spelling settled 2026-07-03 — authoring the verdict-function IS the
   vouching act; no separate vouch syllable exists.)
-- `dest : fb.Certs = "$1"` binds the operand as the entity, in a kind this author just
+- `dest : org.foob.Certs = "$1"` binds the operand as the entity, in a kind this author just
   minted. Nobody approves kind names; there is no registry. It only has to agree with
   itself. (At the call-site that operand was `"$CERTS"` — the analyzer resolves plain
   variable-flow to the constant before binding; ordinary shell habits don't defeat it.)
-- The trailing `: fb.Certs:"$dest".synced` says: this probe's exit code *establishes*
+- The trailing `: org.foob.Certs:"$dest".synced` says: this probe's exit code *establishes*
   that property. The engine never interprets what "synced" means — it is an opaque value
   bound to the author's probe.
 - `*) return 2` is the native *decline*. The exit-status partition is fixed and blessed:
@@ -281,7 +281,7 @@ $ dorc plan --verbose webhost.sh web1.example.net
  6  # dpkg -s nginx >/dev/null 2>&1 \
  6  #    || apt-get install -y nginx                   # converged: your guard holds (dpkg -s rc 0)
  7  # cp ./nginx.conf /etc/nginx/nginx.conf            # converged: content match
- 8  # foobar sync-certs "$CERTS"                       # converged: fb.Certs:/etc/nginx/certs.synced
+ 8  # foobar sync-certs "$CERTS"                       # converged: org.foob.Certs:/etc/nginx/certs.synced
  9  # systemctl enable --now nginx                     # converged: service enabled+active
 10  hork tune --profile web >>/var/log/hork.log 2>&1   # runs: unmodeled ('hork')
 11  ( ufw_check allow 443/tcp ) \
@@ -311,7 +311,7 @@ $ dorc plan --verbose webhost.sh web1.example.net
  6  # dpkg -s nginx >/dev/null 2>&1 \
  6  #    || apt-get install -y nginx                   # converged: your guard holds (dpkg -s rc 0)
  7  # cp ./nginx.conf /etc/nginx/nginx.conf            # converged: content match
- 8  foobar sync-certs "$CERTS"                         # runs: diverged (fb.Certs not synced)
+ 8  foobar sync-certs "$CERTS"                         # runs: diverged (org.foob.Certs not synced)
  9  ( systemctl_check enable --now nginx ) \
  9     || systemctl enable --now nginx                 # verify: converged, but past 'foobar' (line 8)
 10  hork tune --profile web >>/var/log/hork.log 2>&1   # runs: unmodeled ('hork')
@@ -349,9 +349,9 @@ foobar.is_converged() {
    verb="$1"; shift
    case "$verb" in
    sync-certs|renew)
-      dest : fb.Certs = "$1"
+      dest : org.foob.Certs = "$1"
       [ "$2" = "" ] || { printf 'UNK multi-operand foobar\n' >>"$DORC_REPORT"; return 2; }
-      foobar status --certs-current -- "$dest"   : fb.Certs:"$dest".synced
+      foobar status --certs-current -- "$dest"   : org.foob.Certs:"$dest".synced
       ;;
    purge-certs) return 2 ;;
    *) printf 'UNK unmodeled foobar verb: %s\n' "$verb" >>"$DORC_REPORT"; return 2 ;;
@@ -446,7 +446,7 @@ apt-get.touches() {                          # base library (STRAWMAN spelling)
 foobar.touches() {                           # appended by foobar's author (STRAWMAN spelling)
    verb="$1"; shift
    case "$verb" in
-   sync-certs|renew) printf 'fb.Certs:%s\n' "$1" ;;
+   sync-certs|renew) printf 'org.foob.Certs:%s\n' "$1" ;;
    esac
 }
 ```
@@ -456,7 +456,7 @@ siblings), the body *emits the entity-coordinates this verb mutates, one per lin
 emitting anything at all for a matched verb, the author claims **at most these** ("whatever
 else this touches is residue I answer for"). An unmatched verb emits nothing: no claim, no
 license, the wall stands — silence stays safe. Stripped, it is a plain function any shell
-can run; `foobar_touches sync-certs /srv/certs` printing `fb.Certs:/srv/certs` is
+can run; `foobar_touches sync-certs /srv/certs` printing `org.foob.Certs:/srv/certs` is
 documentation that executes.
 
 The engine's move is then mechanical, and old as compilers: every probed fact already knows
@@ -504,7 +504,7 @@ The book keeps its steady-state shape on a drifted day. `update`'s footprint is 
 index; the install's guard reads the dpkg database, the `cp`'s fact lives in a config file's
 content, foobar's in its certs, the service's in unit state — all disjoint, all survive. And
 the honest cells stay honest: on a *foobar*-drifted day, `systemctl` now stays elided too
-(`fb.Certs` doesn't intersect service state) — but a hypothetical line below foobar whose
+(`org.foob.Certs` doesn't intersect service state) — but a hypothetical line below foobar whose
 fact *lives in those same certs* would correctly stay guarded, footprint or no. `hork` has
 no author, so it has no footprint, and no amount of machinery changes line 10 or 11 —
 silence is a wall, forever.
