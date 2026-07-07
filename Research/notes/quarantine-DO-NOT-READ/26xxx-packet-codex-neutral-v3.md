@@ -16,12 +16,12 @@ Known-benign, PRE-CLEARED (explicitly not stop conditions):
   `Research/plans/262-round26-build-spine.md` (all present).
 - an isolated transient file-read ACL error on one concurrent read, where an immediate
   retry of the same path succeeds, is a known sandbox blip -- retry once before treating
+  it as a stop condition.
 - your OWN command mistakes (a mistyped glob, a wrong flag, a PowerShell-style wildcard
   handed to a tool that does not expand it) are NOT stop conditions -- fix your command
   and continue; correcting your own typo is not a workaround. The stop rule covers
   environment failures (permission denials, files that should exist but do not), not
   your own command syntax.
-  it as a stop condition.
 
 Before the plan package, ground yourself in Dorc's goals and constraints (*understand*,
 don't *buy-in*). You are in a checked-out worktree of the repo; everything is readable
