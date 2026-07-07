@@ -138,7 +138,54 @@ kFAIL phase-keying at transport; additive-keys; never-assume-converged taxonomy;
 ssh-subprocess call; the acceptance-pin set incl. heeding 22H §4's vacuity warning) — noted;
 matches the package's own claimed strengths (weigh accordingly: same-corpus flattery risk).
 
-## Cross-lane convergence tally (2/5 lanes)
+## codex-adversarial (v2 run, complete; 51 cmds clean) — distilled + dispositions
+
+fd1 HIGH in-band regression "property changed from structural separation to parser
+rejection; cites the OOB law as if preserved": ACCEPT — converges with ds-adv F2 (now both
+adversarial lanes, two lineages). Codex's phrasing IS the fix: dec-26-wire-v1 re-labeled as
+the sanctioned 142-fallback instance; law-transport-shape's "v1 instantiates this narrowly"
+softened to name the property change explicitly; migration steps enumerated. Design stands
+for v1 scale; the CLAIM was dishonest as written.
+
+fd2 HIGH "h1-by-later-wave is mechanism-free — values return to the CONTROLLER; a later
+wave in the same shipped artifact cannot consume them": ACCEPT — THE sharpest finding of
+the exercise, a real composition error in 261 §2. Verified by inspection: probe-readback
+values land controller-side via records; wave ordering gives an on-host consumer nothing.
+h1 edges have exactly TWO real resolutions: (a) in-artifact composition — the connected-unit
+pattern generalized (producer's value captured host-locally, fed to the consumer inside one
+compiled unit, 24J's shape); (b) controller-fold consumption (readback resolves plan-side
+relevance/values; never feeds another on-host probe's argv in the same shipment). The
+"consumer runs in a later wave" option is DELETED as a mechanism; waves exist for
+width/pacing only. Rewrite 261 §2 h1 + §3 accordingly; the h1-edge extraction pass (2-lane
+amendment below) detects edges to COMPILE-INTO-UNITS, not to wave-order.
+
+fd3 MED truncation contract under-specified (multiple record families site/deriv/resolv/
+reach + N.M sub-keys; counting records ≠ counting sites; the acceptance pin can go green
+without proving its claim): ACCEPT — converges with ds-n fd1, upgrading it from wording-fix
+to a real §2 redesign: census lives controller-side (the compiler's site table); a site is
+received iff its terminal `site N` record arrived; supplementary families (deriv/resolv/
+reach) are individually-optional degradation, not Unknown-triggers; `seen=` semantics
+redefined or dropped; the pin restated against the census model. The one MEDIUM
+design-level fix (everything else is doc/wording).
+
+fd4 MED spine-inv-order-free lists "artifact" among protected content while width changes
+artifact bytes; K=4 (261) vs width=1 (262 golden posture) defaults disagree: ACCEPT —
+drafting incoherence, mine. Fix: invariant restated as "for a fixed compiled artifact,
+runtime interleaving changes nothing; across width settings, record-SET and final plan are
+identical while artifact bytes legitimately differ"; one defaults table (flag default 1
+until the P4 flip package; product target 4).
+
+fd5 MED h3 contention postponed past the widening it ships with (same daemon/dpkg/DNS
+herded at width>1): ACCEPT-PARTIAL — pull h3-lite into P2: once the classifier exists,
+use class-as-resource-key (daemon-class concurrency capped ~1 per wave); full resource-key
+plumbing stays deferred; note the bounded exposure at K=4 honestly.
+
+Withdrawals (sans-io kernel, per-host independence, no-apply-retry, ForwardAgent-default):
+all correctly held. NB codex verified the incumbent parser's missing-site⇒Unknown fail-safe
+at cli/main.rs:2989 unprompted — the verify-the-incumbent behavior emerged without the
+carve-in.
+
+## Cross-lane convergence tally (3/5 lanes complete: ds-n, ds-adv, codex-adv)
 
 - h1-edge proof pass built-now (ds-adv F4 + ds-n fd3): 2 lanes, both stances — STRONGEST.
 - Wire section weak zone (ds-adv F2 + ds-n fd1/fd8): overlapping cluster, different angles.
@@ -150,3 +197,11 @@ matches the package's own claimed strengths (weigh accordingly: same-corpus flat
 Codex v2 ×2 + fable-adversarial reports; then the five-lane synthesis (fable-neutral held
 unless human go). Verify-before-crediting still owed on: ssh Match-block precedence claim
 (F7); merge_observable commutativity against current code (F1 disposition's re-verify).
+
+## Lane-state update
+
+codex-neutral is DEAD: the v3/final retry failed at turn start on OpenAI quota exhaustion
+("Quota exceeded", exit 1, zero output) — plausibly self-inflicted (three prior half-runs,
+the last ~471k input tokens). Recoverable only by human action (codex login / billing
+top-up). Synthesis proceeds on four lanes (ds-n, ds-adv, codex-adv, fable-adv) unless the
+human revives it; the codex stance-coverage is then adversarial-only, same as fable.
