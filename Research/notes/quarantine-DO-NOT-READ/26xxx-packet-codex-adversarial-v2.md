@@ -2,10 +2,21 @@ If you run into any immediate technical errors (you can't find files, you get
 harness denials for reading files, or so-on), stop *immediately* and report so
 they can be fixed. Do not attempt to work around.
 
-Known-benign, PRE-CLEARED (explicitly not a stop condition): git commands in this
-sandbox may print "warning: unable to access 'C:\Usersc/.config/git/ignore': Permission
-denied" on stderr -- the sandbox blocks HOME-relative git config while git itself succeeds
-(exit 0). Treat that specific warning as noise and continue.
+Known-benign, PRE-CLEARED (explicitly not stop conditions):
+- git commands in this sandbox may print "warning: unable to access
+  'C:\Users\ec/.config/git/ignore': Permission denied" on stderr -- the sandbox blocks
+  HOME-relative git config while git itself succeeds (exit 0). Noise; continue.
+- the worktree HEAD may sit a commit or two AHEAD of the pin `361a57f` -- the later
+  commits touch only quarantined dispatch machinery (which you must not read), never the
+  reviewed documents. If you wish to verify: `git diff 361a57f -- Research/plans/` is
+  empty. Proceed on that basis.
+- shorthand like `Research/plans/260` denotes the full filenames:
+  `Research/plans/260-round26-multihost-plan.md`,
+  `Research/plans/261-round26-read-concurrency-plan.md`,
+  `Research/plans/262-round26-build-spine.md` (all present).
+- an isolated transient file-read ACL error on one concurrent read, where an immediate
+  retry of the same path succeeds, is a known sandbox blip -- retry once before treating
+  it as a stop condition.
 
 Before the plan package, ground yourself in Dorc's goals and constraints (*understand*,
 don't *buy-in*). You are in a checked-out worktree of the repo; everything is readable
