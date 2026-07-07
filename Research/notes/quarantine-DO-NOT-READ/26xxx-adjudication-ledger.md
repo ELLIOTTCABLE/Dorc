@@ -205,3 +205,108 @@ codex-neutral is DEAD: the v3/final retry failed at turn start on OpenAI quota e
 the last ~471k input tokens). Recoverable only by human action (codex login / billing
 top-up). Synthesis proceeds on four lanes (ds-n, ds-adv, codex-adv, fable-adv) unless the
 human revives it; the codex stance-coverage is then adversarial-only, same as fable.
+
+## fable-adversarial — distilled + dispositions (the code-verified lane; 305k tok, 42 tools)
+
+Verified pin-equivalence itself; chased every cited substrate doc; verified load-bearing
+claims against spike code + goldens. Could not kill the package as a whole; concentrated
+its attack on the records-lane wire spec. Kill-attempt discipline extensive (13 withdrawn
+attacks, each argued).
+
+T1-deriv-loss-inverts-safety (HIGH, +SURE mechanism): THE kill-shot of the exercise.
+262 §2's universal safety argument ("record loss folds toward run") is INVERTED for the
+deriv lane: footprints are AT-MOST claims — losing deriv records SHRINKS the claim ⇒ MORE
+survivals past walls ⇒ under-execution, in the --trust-footprints tier that has no runtime
+net. Compounded: (a) deriv is a variable-count multi-record family with NO completion
+marker — the site census cannot detect a mid-family cut; "received sites keep facts" keeps
+the partial footprint (code floor safe only for TOTAL absence, main.rs:2992); (b) PIPE_BUF
+atomicity is unenforceable for deriv content (coords = unbounded tool output; a torn
+record's leading fragment carries the nonce and parses as a VALID record with a
+prefix-truncated coordinate ⇒ disjoint-compare ⇒ wrong survival; no per-record integrity
+in the grammar); (c) the incumbent parser whitespace-truncates coords TODAY (space-bearing
+paths, main.rs:3000-3006) — reach's "widening-only" safety argument does not transfer to
+deriv. AND no test tier sees any of it (pins are site-granularity; jitter mocks are short).
+ACCEPT FULLY — my §2 was per-lane-semantics-blind; this supersedes/absorbs the ds-n
+fd1 + codex-adv fd3 truncation-census cluster. Fixes (all cheap, pre-S1): per-record
+terminal token (parser rejects unterminated); per-task end-record for variable-count
+families with partial-family ⇒ ⊤/wall-total floor; coord field = last-to-EOL or
+length-prefixed (space fix); byte-level fault injection through the PRODUCTION deframer.
+
+T1-host-identity-bijection (MED-HIGH): HostId→physical-host 1:1-and-stable across
+probe→apply is assumed, unstated, unverified. ACCEPT: host-key continuity pin (apply
+refuses a different fingerprint than the probe's), verbatim host-list dedupe,
+artifact-filename collision refuse; name alias-collision as operator hazard.
+
+T1-severed-apply-misclassified (MED-HIGH, +SURE): the rc-255 ∧ stderr-heuristic
+CONJUNCTION classifies an unmatched sever as FailedApply = assumed-failed-and-complete =
+law-fail-direction breach in the dangerous direction (operator won't re-probe). The P3
+runner was safer (bare 255 ⇒ transport-failed). ACCEPT with their fix: a WRAPPER-level
+apply completion sentinel (remote command line = `sh -s; printf end-marker $?` — artifact
+bytes untouched on stdin): marker present ⇒ genuine remote exit; absent ⇒ UnknownAfterLoss
+regardless of rc/stderr; the heuristic demotes to diagnosis. Subsumes ds-n fd5 (EOF-no-rc).
+
+T2 accepts: duplicate-record-last-write-wins (parser insert() violates my own §1 police
+line TODAY; one-line merge-on-duplicate fix + property generator MUST emit conflicting
+duplicates) · retry-stream-hygiene (per-attempt nonce/discard-prior; zombie-writer late
+records) · order-free-invariant-overclaimed (wall-clock deadline makes content
+schedule-dependent near the boundary; RESTATE as monotone-toward-run: plan_B run-set ⊇
+plan_A; rig asserts monotone form on deadline-crossing seeds — third independent §1
+correction, absorb with ds-adv F3 + codex-adv fd4 in one rewrite) ·
+width-default-contradiction (reconcile; say the latency win ships DORMANT this round) ·
+seen-field-unimplementable (concurrent subshells can't share a counter in pure sh — DROP
+seen=; census+leafid accounting + per-family end-records carry it) · operator-abort row
+(SIGINT/controller-crash/laptop-sleep semantics; does-the-remote-die-with-the-channel;
+"awareness recovery rests on operator memory" honesty) · dst-feeds-BYTES pin (sim driver
+feeds the production deframer, not post-parse events) · stat-class-hangs (dead-NFS D-state;
+fold into time-ALL-classes) · CRLF gate re-runs on SHIPPED bytes (user-edited plans — real
+spec hole) · fleet-e2e golden nondeterminism (RAN_ORDER=lax analogue) · render
+aggregation-by-plan-hash + consent-is-N-files honesty (scale note) · privilege assumption
+stated · DORC_REPORT v1 transport = stderr-capture, named.
+
+Withdrawn-set residuals worth keeping: acc-forged-verdict-contained's "only within what
+kFAIL-perform licenses" clause is decorative (fix pin wording); MaxStartups global-cap
+rationale fuzzy but mechanism safe — keep for the bastion-transit case, add the per-target
+framing (converges with ds-n fd4); future stdout-value readback will want 142's per-leaf
+files sooner than implied (honest note; grammar /2 reservation makes it a bump not rewrite).
+
+Their net recommendation, adopted: do NOT build S1 from 262 §2 as written — the wire spec
+needs per-record integrity + per-family completion + duplicate-merge + byte-level fault
+injection (a day of spec work, not a redesign); fix severed-apply classification + state
+host-identity assumptions before stage-26-3; the rest is buildable as specced with the
+document reconciliations.
+
+## FINAL convergence tally (4 lanes complete; codex-neutral dead; fable-neutral held)
+
+1. RECORDS-LANE WIRE SPEC (the verdict's center): fable-adv T1-deriv-loss (kill-shot) +
+   codex-adv fd3 + ds-n fd1/fd8 + ds-adv F2's security half — FOUR lanes, every stance,
+   all three lineages. 262 §2 is the package's one genuinely-broken section: per-lane
+   loss-semantics-blind, integrity-free grammar, unimplementable seen=, untestable at the
+   byte tier as specced.
+2. h1-EDGE MECHANISM: codex-adv fd2 (later-wave is mechanism-free — composition error) +
+   ds-adv F4 + ds-n fd3 (build the detection pass day-one) — three lanes. Rewrite 261 §2
+   h1 (two real mechanisms: in-artifact connected-unit composition; controller-fold
+   consumption) + the edge-extraction pass with synthetic-edge wiring test.
+3. APPLY-LOSS CLASSIFICATION + RECOVERY HONESTY: fable-adv severed-apply + ds-adv F6 +
+   ds-n fd5/fd10 — three lanes. Completion sentinel; recovery-reads-state-not-history
+   paragraph; single-host re-probe wording.
+4. 262 §1 INVARIANT REWRITE: ds-adv F3 + codex-adv fd4 + fable-adv deadline-monotonicity —
+   three independent corrections, one rewrite (final-content scope; fixed-artifact scope;
+   monotone-toward-run under timing policy; defaults table).
+5. In-band wire HONESTY relabel: ds-adv F2 + codex-adv fd1 (property changed from
+   structural separation to parser rejection — say it) — both adversarial foreign lanes.
+6. Singles accepted: per-task-timeout-all-classes + partial-keep semantics (ds-n fd2 +
+   fable stat-class); open-cap per-target reframe (ds-n fd4 + fable withdrawn-residual);
+   LPT wording (ds-n fd6); host-identity cluster (fable only — code-adjacent, accepted);
+   duplicate-merge (fable only, code-verified); 22H register/under-scoped-warning honesty
+   (ds-adv F1 kernel); DST-boundary-tier fattening (ds-adv F5 partial).
+7. REJECTED across lanes: ds-adv F3-as-stated (intermediate-vs-final conflation), F9
+   (same-binary-both-ends), F10 (deriv-probes "don't exist" — factually wrong at pin),
+   ds-n fd2's zero-results sub-claim, codex Match-block precedence claim (~SUSPECT wrong,
+   verify if ever load-bearing).
+
+Cleared core (multi-lane): sans-io kernel · per-host partition made unrepresentable ·
+kFAIL phase-keying at transport (probe-retry/apply-never) · re-probe-as-recovery ·
+unreachable-never-converged · ssh-subprocess with reserved russh seam · trial-scar
+rejection (known-hosts/-F) · merge-disjointness contract concreteness · standing-rulings
+compliance (incl. rec-5/kSTATE fence handling, called "a model of fence-respecting
+deferral" by the hostile lane).
