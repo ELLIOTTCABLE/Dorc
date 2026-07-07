@@ -193,7 +193,9 @@ decision more permissive toward skipping, beyond what an authored, priced act li
   every tier: adequacy/converged≠no-op bites the author's own line) + the probe's
   per-site measurement + ambience (above) + reproducible observables. The vouch never
   enters the fact-plane (welded), unchanged.
-- **Survival.** Excluded both directions by the privacy rule. The constructed near-miss
+- **Survival.** The single tier where cell *comparisons* themselves carry permission
+  (§6's license law) — which is exactly why auto-coordinates are excluded from it, both
+  directions, by the privacy rule. The constructed near-miss
   that makes the rule mandatory rather than decorative: stdlib apt runs diverged with an
   honest authored footprint (`package:nginx` + reaches-expanded files); a converged
   typeless `nginxctl` site downstream has naive auto-backing `cmd:nginxctl` — a different
@@ -253,16 +255,37 @@ Worked cases (kept for the implementing conductor's pins):
 ## §6. License vs address — why the elision gradient does not run backwards
 
 (The human's direct question, 2026-07-07; kept here because the implementing conductor
-can hit the same confusion.)
+can hit the same confusion. AMENDED same date after a human-prompted soundness walk: the
+original opened with the slogan "cells never license, verdicts license" — true in this
+section's scope, false as a general engine law. The scoped form follows; do not teach
+the slogan.)
 
-**Cells never license. Verdicts license.** The per-path elision gradient never came from
-types: the license is the verdict function's *reached-path* answer under the site's
-constant-propagated argv (rul-guard-license's "reached"; the 24A §1b vocabulary fence),
-plus the rc partition. The argparse is therefore not meaningless at the typeless floor —
-license-scoping is its first job and is type-independent: a path answering 0 licenses; a
-path answering `return 2` or left unhandled declines and runs. The auto-cell only moves
-the *site* from unaddressable (⊤ ⇒ classify refuses everything) to addressed (⇒ the
-verdict machinery may consult the author's per-path answers at all).
+**The license law, scoped precisely.** Permission is *granted* only by authored
+judgments and by measurements, three-membered: the **vouch** (authoring the
+verdict-function) licenses acting on its own converged answer at its own sites; probe-
+provenance **values** license read-reproduction — and thereby dead-branch omission
+through ordinary sh control-flow (the fold lane, which omits mutators with no vouch
+anywhere; licensed by proviso-read-erasure's reads-only rule, the mutator's non-execution
+being a consequence of sh semantics, not a licensed skip); and, in the flagged survival
+tier ONLY, authored **cell comparisons** — footprint ∩ backing disjointness — carry
+permission across a running wall. Everywhere below that tier, cell reasoning is
+demote-only: it adjudicates whether a measurement is still a valid witness (staleness,
+walls, query-validity), and every possible cell mistake at the base tier errs toward
+run — the wall is cell-blind for anything that runs, and the not-run theorem covers
+everything that doesn't. That survival is the one place cells DO license is not
+incidental: cell-granted permission is precisely the bought unsoundness, which is why
+that tier is double-gated and why the floor's privacy rule (fence-no-disjoint) must bar
+auto-coordinates from the comparison at the type level rather than by convention.
+
+**This section's question — per-path gradualness — under that law:** the per-path
+elision gradient never came from types. The path-license is the verdict function's
+*reached-path* answer under the site's constant-propagated argv (rul-guard-license's
+"reached"; the 24A §1b vocabulary fence), plus the rc partition. The argparse is
+therefore not meaningless at the typeless floor — license-scoping is its first job and
+is type-independent: a path answering 0 licenses; a path answering `return 2` or left
+unhandled declines and runs. The auto-cell only moves the *site* from unaddressable
+(⊤ ⇒ classify refuses everything) to addressed (⇒ the verdict machinery may consult the
+author's per-path answers at all).
 
 Typing adds **address precision, not license precision**, and runs forward:
 - binds split the singleton into per-entity cells ⇒ *more* elision on multi-site books;
@@ -313,8 +336,17 @@ travel — which is itself a pin: assert nothing auto-derived reaches a survival
 at most one or two e2e rows (a typeless-floor yardstick case; the improvised
 `v : otelcol` boilerplate retired in whatever fixture migrates first).
 
-Gating verification errand (run before building): confirm a mark-free verdict-function
-fixture is inert at HEAD (no guard, no elide, still walls) — the §2 status claim.
+Gating verification errand (run before building): (a) confirm a mark-free
+verdict-function fixture is inert at HEAD (no guard, no elide, still walls) — the §2
+status claim; (b) confirm the scoping of rule-query-validity below a RUNNING mutator —
+total vs same-cell. The §6 base-tier direction-law ("every cell mistake errs toward
+run") has one unverified edge in the fold lane: if query invalidation below a running
+mutator is same-cell-scoped rather than total, a missed cell-sameness there is a
+*permissive* miss (a stale query value wrongly folding a mutator branch dead). ~SUSPECT
+it is conservative/total, per the `door1-guard-below-mutators-invalid` /
+`query_after_mutator_is_invalid` pin names — verify in code. This edge does not touch
+the floor itself (typeless oracles never enter the fold lane) but is load-bearing for
+the stated law.
 
 ## §8. Costs, exposures, casualties (the honest ledger)
 
