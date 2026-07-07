@@ -134,13 +134,37 @@ the <2-dots warning (rul24M-reverse-dns-kinds) + the within-unit duplicate-resol
 - KNOBS: the kOOB closed-set-of-one marker (§1); kTYANNOT's containment sentence rewrites
   (marker-gated, not location-gated).
 
-## §4b. Verification addenda (owed)
+## §4b. Verification addenda
 
-- **name-length errand DISPATCHED (2026-07-07, human-directed):** does POSIX.1-2024 impose a
-  function-name length limit, and what are the empirical ceilings under dash/bash/zsh (+
-  whatever else WSL carries)? Defensive check that long reverse-DNS-derived names
-  (`com_longcorp_platform_ServiceUnit__is_converged`-shaped, to ~300 chars) fit reliably in
-  every shell we care about. Results append here when the errand returns.
+- **name-length errand DONE (2026-07-07, human-directed; Opus, Kagi + WSL empirics).
+  Verdict: +SURE zero realistic risk** — reverse-DNS-derived function names to ~300 chars are
+  safe by enormous margin everywhere.
+  - *Spec:* POSIX.1-2024 imposes **no length limit** on shell NAMEs or function names — XBD
+    §3.216 "Name" is character-class + no-leading-digit only; XCU §2.9.5 says fname is a NAME,
+    nothing more; wording byte-identical to Issue 7. The plausible-sounding limits don't apply:
+    {ARG_MAX} is exec()/environment-scoped (def/call never execs); {LINE_MAX} scopes to
+    text-processing utilities, not `sh` script parsing (and its 2048 floor is ~7× our worst
+    case anyway); {NAME_MAX} is filenames. No FUNC_NAME_MAX-style constant exists.
+    (pubs.opengroup.org/onlinepubs/9799919799/ — basedefs V1_chap03, utilities V3_chap02,
+    limits.h.)
+  - *Empirics (WSL2 Ubuntu 24.04 + git-bash msys2):* dash 0.5.12 · bash 5.2.21 (+ --posix) ·
+    zsh 5.9 · busybox ash 1.36.1 · msys2 bash 5.3.9 — ALL pass define+invoke at 64/256/1024/
+    4096/65536 chars, a **1,000,000-char name**, and a real script file whose first physical
+    line is ~1MB; silent truncation explicitly falsified at every length (N−1-prefix probe
+    fails to resolve); the 214-char `__is_converged` munged-kind shape executes everywhere.
+    No ceiling found in any shell. Not measured (absent from image, no-install constraint):
+    ksh93/mksh/yash — ~SUSPECT identical; cheap spot-check if ksh support ever matters.
+  - **ca-munge-charclass (the actionable catch — respell-brief line, P5-brief line):** the
+    real failure dimension is **character validity, not length**. The reverse-DNS→NAME munger
+    MUST handle: (a) **leading-digit first labels** — `3com.example.Foo` munges to an INVALID
+    name (leading digit); (b) **DNS hyphens** in labels (`my-corp.example.com`) — not NAME
+    chars, need transliteration; (c) IDN/UTF-8 labels — ASCII-fold or refuse. These bite at
+    any length and are where a naive munger actually breaks.
+  - *ca-strict-set:* bash/zsh accept extra chars in fnames as extensions; dash/busybox hold
+    the strict letters/digits/underscore set — stay strict for cross-shell safety.
+  - *ca-export-f (distinct, not our use-case):* `export -f` serializes functions into the
+    environment where ARG_MAX/MAX_ARG_STRLEN do apply at the next exec — an exec/environment
+    limit, never a naming limit; plain define-and-call (the oracle contract) never crosses it.
 
 ## §5. Queue effects (for the resequenced r24 queue, LIVING_STATUS)
 
