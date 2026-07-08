@@ -21,7 +21,7 @@ horizon material landed, among others; no summary here or in any note is current
 restructured this round — `kSCOPE`/`kSURVIVAL` replace `kELISION`) → `spike/CLAUDE.md` (all
 rulings blocks) → `notes/23O` (settled law + history) → `plans/240` (the charter, as
 REDIRECTED below) → THIS block → `notes/24C` (the landing/residue ledger — accretes per
-landing) → per-task: `24I` (e2e slimming spec) · `24Kc`+`24L` (the language arc) ·
+landing) → per-task: `24I` (e2e slimming spec) · `24Kc`+`24L`+`24M` (the language arc) ·
 `260`/`261` (r26, branch `ai/spike3-r26`).
 
 **Where the build stands** (all merged on `ai/spike3-r23`, conductor-verified; e2e 126/126,
