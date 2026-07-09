@@ -36,10 +36,18 @@ suite slimmed 154→126 by twin-verified deletion). Four lying-nets green in the
 Per-landing evidence + residue: `24C`.
 
 **THE REDIRECT (binding):** the 24K crosscheck → `24L` language cleanup lands THIS round,
-before any stdlib cloud. Human-certain: the **dialect-version marker** · the **typeless
-floor / auto-cell** (`24L` §2–§7) · the **reserved-prefix rename** (the dot dies; churns
-every oracle fixture + golden) · **`dorc strip` as first-class tooling**. Less-sold (do NOT
-over-plan): book location-gating of typed constructs. Separately, **r26 (multi-host +
+before any stdlib cloud. The language remaining-ledger is CLOSED by the human's 2026-07-07
+typed rulings (**`24M` — read whole; zero open lines**): the **version marker is a comment**
+(`# dorc-lang/v1`-shaped; SHAPE ruled, conductor firms grammar; gates SYNTAX per-file, never
+name-recognition — names are a permanent unversionable compat surface, eyes-open) · the
+**typeless floor is LAW** (rul24M-typeless-floor; `24L` §2–§7 stays the mechanism spec;
+24L's location-gating half SUPERSEDED — share-a-file lives, marker-gated) · the rename is to
+**bare `munged_cmd__role()` names — the dot dies AND no prefix** (rul24M-bare-dorcism-names;
+coincidental-capture residue priced + accepted) · **kinds mandatory reverse-DNS, ≥2 dots;
+stdlib re-keys `sm.dorc.*`** (rul24M-reverse-dns-kinds) · **unmarked verdict-function =
+full-license, permanently; future rungs arrive opt-DOWN only** (rul24M-rungs-default) ·
+**ACK/POISON bare-marks killed** (open24M-ack-poison closed: prune from grammar) ·
+**`dorc strip` first-class** · governance = no-minting, social enforcement (`24M` §2). Separately, **r26 (multi-host +
 read-concurrency) is commissioned and time-constrained** (`260`/`261`; may table parts of
 r25). Its merge-disjointness contract binds r23-side work: existing goldens stay byte-stable
 (r26 flag-gates its emission changes); any r23 change to `classify`/`build_plan`/render
@@ -53,12 +61,16 @@ entry-points/`parse_results` signatures is FLAG-to-r26, never fork.
    the munge-reservation lint (`*__role` namespace + hyphen-collision detection); (d) the
    `24I` batch-5 audit (read-only: per-topology assertion-depth of the survival-tier e2e
    cases against the sweep's `TopologyClass`es — unblocks their eventual migration).
-2. **THE RESPELL PASS** — one corpus churn, ONE bless-and-inspect session; gated only on the
-   human's ceremony pick (language arc): the prefix rename + the version marker +
+2. **THE RESPELL PASS — UNGATED** (the ceremony gate was the language rulings; `24M` closed
+   them; final fold per `24M` §5): the bare `__role` rename (NOT a prefix) + the
+   version-comment marker + kind re-key to `sm.dorc.*` + ACK/POISON grammar removal +
    `touches()` typed-emission migration (FOLDED, acked) + the loud-friend law + `dorc strip`
    + fix-nounset-fixture-idioms (the `${2-}` sweep — FOLDED, acked) + the guard23
    stale-XFAIL-comment cleanup (FOLDED, acked; those strings echo into 6 goldens, so they
-   ride the same bless — `resid-guard23-stale-comments`, `24C`).
+   ride the same bless — `resid-guard23-stale-comments`, `24C`). Brief MUST carry:
+   **ca-munge-charclass** (`24M` §4b — leading-digit DNS labels, hyphens, IDN; the munger's
+   real failure mode is charclass, never length) · the `/1`-polysemy eyes-open commit
+   sentence · the `# dorc:` trailer-comments-UNSTABLE declaration (`24M` §4).
 3. **The typeless floor** (auto-cell + the four `24L` §7 fences + eligibility plumbing +
    tests), after or carefully alongside the respell — both touch classify. Conductor
    recommendation (human: "recommendations welcome but meh"): the fence-implementing builder
@@ -76,15 +88,27 @@ entry-points/`parse_results` signatures is FLAG-to-r26, never fork.
    future human ruling once data exists). The **measure/maximize half is TABLED** (human:
    tractable parts first; re-open once the respell + floor settle the surface it would
    measure).
-6. **P5 / battle-oracles:** BLOCKED on the respell + version marker + the `kCONTRACT-RUNGS`
-   ruling + the dq-kOOB stamp (all language-arc). Standing coverage note: the typeless floor
+6. **P5 / battle-oracles:** BLOCKED on the respell + version marker ONLY — the
+   `kCONTRACT-RUNGS` default is RULED (rul24M-rungs-default: stdlib verdict-functions author
+   under a permanent full-license reading no future ladder re-reads) and dq-kOOB is
+   substantially discharged by `24M` (the formal stamp line stays the human's;
+   non-blocking). P5-brief additions banked: `24M` §4 + §4b ca-munge-charclass. Standing
+   coverage note: the typeless floor
    serves mutator-verdict oracles only — read-value commands (`hostname`, the r25 host-guard
    wall) still need the Query/predict lane, and P5 must cover them.
 7. **r25-prep:** human-gated, and r26-shadowed (the time constraint may table parts —
    human's call).
 
-**Settled by the human 2026-07-07 (do not re-ask):** the respell fold + the
-batch-3-after-respell resequencing · nounset + guard23-comment folds · the first-wall hint's
+**Conductor-owed riders** (`24M` §4, fence-checked): the KNOBS dated markers (kOOB
+closed-set-of-one; kTYANNOT containment → marker-gated) collide with the KNOBS-human-only
+fence — DRAFT the marker text and hand it to the human; never self-apply. The USER_STORY/doc
+queue (stage-3 → typeless-floor exemplar; `fb.Certs` two-dot rewrite; share-a-file retold
+marker-gated) is likewise human-owned (`24M` §5).
+
+**Settled by the human 2026-07-07 (do not re-ask):** the FULL language remaining-ledger =
+`24M` §1–§2 (version-comment · typeless-floor law · bare `__role` names · reverse-DNS kinds
+· rungs default full-license · no-minting governance · ack/poison kill) · the respell fold +
+the batch-3-after-respell resequencing · nounset + guard23-comment folds · the first-wall hint's
 missing e2e needle ACCEPTED as-is (residue stays in `24C`; revisit only via `24L`'s
 scaffold-emission work) · the dotfiles acceptance-day TABLED · spike-3 health = fine, no
 death-criteria concern (the one watch-item, passively-baking-decisions, is the human's own
