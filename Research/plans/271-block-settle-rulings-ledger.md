@@ -43,7 +43,50 @@ rulings that shape it, not its body.
 
 ## Rulings
 
-*(none yet — entries accrete below as tasks are worked; format per entry:)*
+### rul-axis-vocabulary-v1  (task 4; 2026-07-10; typed)
+`24S` §3a/§7-A1 ratified as posed: v1 coordinate axes {user, fs-view} + reserved-never
+{host}; ρ components {env-vars per-variable, positionals, cwd}; vocabulary engine-owned,
+dialect-versioned; users never mint axes; expressibility-clause decline for wrappers that
+exceed it. Rider (the human's typed shape): **fs-view is soft-deferred** — explicitly
+named-and-shamed as "a hard enough problem that it could take its own entire round to get
+right"; the spike does NOT attempt to get it Correct. Re-entry condition: fs-view comes
+back in scope only if *specifically* needed to exercise r27 work (a Dorc language
+feature); failing that, the spike-minimum is a Very Simple Fs Stub — effectively
+{user, fs-straw}. The `24S` §3b honest ladder stays reserved-not-built, unchanged.
+Consumers: the entity-algebra design note (context-qualifier seam only), wrapper-peel/
+wrapper-sudo briefs, stdlib kind declarations.
+
+### rul-rc-partition-stands  (task 10a; 2026-07-10; drafted-awaiting-ack)
+TODO.md:23 ("systemd's 255-as-exit-fail? should we replace our >=2 to match?") answered:
+**keep `rul-rc-partition` unchanged** (0 = named sense holds / 1 = complement / ≥2 =
+confused-runs; spike/CLAUDE.md). systemd's `ExecCondition` ternary (0 proceed / 1–254
+skip-cleanly / 255 fail; `24R:repurp-finding89`) is cited as convergent-evolution
+*validation* of the ternary check-contract shape, not adopted: its layout puts every
+machinery-mintable status (126/127, 128+n, timeout 124/125) inside the verdict-bearing
+complement region, which is exactly what our flat ≥2 sink exists to prevent — and any
+sense-flipped family member (the mechanical-inversion glue in rul-rc-partition; future
+name-extensions like is_noop) would turn a machinery-minted status into a licensed SKIP
+under that layout. Riders: (r1) the ≥2 region stays semantically FLAT forever — no
+status inside it may acquire distinct verdict meaning; decline-vs-crash distinctions
+live in the report/diagnostic lanes (runner MAY narrate well-known tool-rc's in why-lane
+diagnostics); (r2) exterior coherence is a delegation-body concern — ordinary
+`case $? in` remap arms; stdlib quality-bar line: delegating to a tool with a documented
+non-test-shaped exit vocabulary (LSB status, terraform -detailed-exitcode) requires an
+explicit remap arm (lintable); (r3) Dorc-as-tool outward contracts (`dorc plan
+--exit-code`, dorc-run) are separate per-surface decisions, unbound by this partition.
+
+### rul-effect-check-home-typeless-floor  (task 10b; 2026-07-10; drafted-awaiting-ack)
+The owed static effect-check of verdict-function bodies (TODO.md:43; `24R` §0a
+"machine-assist the contract") homes as a **typeless-floor brief rider**
+(`270:block-rebuild`), not wrapper-peel: same seam (verdict-bearing providers threaded
+into classify as data — the licensing chokepoint), lands BEFORE block-context widens the
+shipped-probe surface (probe-outside + whole-ρ replication), and keeps the
+referendum-carrying wrapper-peel brief lean. Failure disposition (lean): a body that
+fails the effect-check does not lift at all — no probe AND no guard, one bar — with a
+dq diagnostic naming the offending line. The `plans/077` runtime observe backstop stays
+reserved, unaffected.
+
+*(entry format for future additions:)*
 
 <!--
 ### rul-<full-word-slug>  (task N; YYYY-MM-DD; typed | drafted-awaiting-ack)
