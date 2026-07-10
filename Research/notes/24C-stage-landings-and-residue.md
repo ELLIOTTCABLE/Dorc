@@ -694,3 +694,19 @@ above (combined run).
   kind-identity/annotation space (marker-gated, stripped), where reverse-DNS structure IS the
   identity. Priced residue: munge non-injectivity (`-`/`.`/`_` → `_`) is refused loudly by the
   landed collision lint when co-loaded; cross-unit ambiguity stays the accepted governance cell.
+
+## fd-headline-oneliner-gap (conductor-found 2026-07-09, during the specimen/one-liner design dialogue)
+
+The FOUNDING oracle example (DESIGN.md "Inference limitations": `mycmd.is_converged() { mycmd
+--dry-run "$@" ;}`) does not license anything at HEAD, for two stacked reasons: (1) the known
+typeless-floor gap (verdict-only oracle = inert; queued, item 3); (2) previously unflagged —
+`"$@"` is an UNMODELED expansion in the oracle tracer (`crates/oracle/src/predict/eval.rs`
+`resolve_word`: no AllPositionals variant → `Word::Unmodeled` → ⊤ → no vouch). +SURE from code
+read. Every corpus fixture uses `$1`-after-shifts precisely because `$@` doesn't trace — the
+corpus quietly designed away from the headline example. Fix shape (design-sound, no soundness
+cost): model QUOTED `"$@"` only (one word per current positional; shift-tracking already
+maintains the positional list, so it is fully concrete under the site-argv invocation contract);
+bare `$@`/`$*`/`"$*"` stay ⊤ (IFS/splitting ambiguity — inv-top-reject bias). Runtime needs
+nothing (the stripped body runs in real sh where `"$@"` is native; the gap is static-license
+only). Owed: fold into the typeless-floor brief (item 3) + pin the founding one-liner as a
+first-class e2e case there, so it can never silently regress again.
