@@ -20,6 +20,7 @@
 - [ ] quarantined: cannot pursue w/ Fable, pending an Opus-only-round ... but I need to reason through secrets-management in general, both down the dotfiles-route *and* the ops-route.
 - [ ] also owed: local-exec as an explicitly-supported mode; zero tests for this right now.
 - [ ] "embedded-transparency" hygiene: need to encode somewhere all the design-rules that keep dorc as a happy-sibling / happy-child; know when to keep stdout quiet, why-log to a file when correct, and so on.
+- [ ] systemd's 255-as-exit-fail? should we replace our >=2 to match?
 
 ## Spike-3
 

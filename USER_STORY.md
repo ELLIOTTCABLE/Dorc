@@ -730,6 +730,9 @@ orchestration goal. That said, they're positions where Dorc can cheaply add
 value with the same infrastructure we're building, and thus worth keeping a
 sideeye on.
 
+> IMPORTANT: This section is less-settled-design than the above; consider it
+> prospective, not prescriptive. A "stretch goal" if you will.
+
 
 ## Dotfiles / local-system management
 
@@ -738,11 +741,6 @@ chair, and — per DESIGN's not-the-only-tool principle — a beloved tool proba
 the dotfiles themselves. Both stories below are deliberately *cooperation* stories (the
 happy-child and happy-parent postures, respectively); neither asks anyone to leave the tool
 they love.
-
-> (Direction-setting strawmen throughout: the no-host local apply, the `dorc-run` runner,
-> and the delegation stdlib are minted here, not built. These sections are written in the
-> post-respell spelling — bare `tool__role()` names — where the older stages above predate
-> that rename.)
 
 ### Idempotence for `chezmoi` scripts
 
@@ -776,15 +774,15 @@ brew install ripgrep fd jq shellcheck
 ...
 ```
 
-`dorc-run` (STRAWMAN name; the *analyzed* sibling of the strip-and-exec `dorc-sh` —
-deliberately a different token, so `dorc-sh` can stay dumb forever): probe, elide the
-converged lines, guard what cannot elide, run the rest — headlessly. Being a good guest is
-most of the design:
+`dorc-run` (the *analyzed* sibling of the strip-and-exec `dorc-sh` —
+deliberately a different token, so `dorc-sh` can stay dumb forever): probe,
+elide the converged lines, guard what cannot elide, run the rest — headlessly.
+Being a good guest is most of the design:
 
 - stdout/stderr and the exit code pass through byte-for-byte — chezmoi sees exactly the
   script it ran, so its fail-fast, keep-going, and run-state bookkeeping all keep working;
 - nothing is printed at it (no TTY, nobody watching): the plan lands in the why-log, and
-  `dorc why --last` (STRAWMAN) answers "what did that apply actually do, and why";
+  `dorc why --last` answers "what did that apply actually do, and why";
 - no second state database appears. Dorc remembers nothing; it re-measures.
 
 And the rationing retires. Renamed to plain `run_`, the script becomes the reconcile loop
@@ -838,12 +836,13 @@ $ dorc plan machine.sh
 plan: 1 run, 0 verify, 4 elided
 ```
 
-No host argument: the target is the machine you are sitting at (STRAWMAN: the local, no-SSH
-apply). Almost nothing here is new machinery. Lines 4–6 are the admin's own hand-written
-guards — including Homebrew's *first-party documented* scripting idiom on line 6 — and they
-lift exactly like the `dpkg -s` guard in stage 1, once the base library vouches those reads
-probe-safe. The one new thing is line 7, a beloved-tool line with no hand guard: the beloveds
-ship their own read-only convergence verbs, so their stdlib oracles are near-pure delegation —
+No host argument: the target is the machine you are sitting at. Almost nothing
+here is new machinery. Lines 4–6 are the admin's own hand-written guards —
+including Homebrew's *first-party documented* scripting idiom on line 6 — and
+they lift exactly like the `dpkg -s` guard in stage 1, once the base library
+vouches those reads probe-safe. The one new thing is line 7, a beloved-tool line
+with no hand guard: the beloveds ship their own read-only convergence verbs, so
+their stdlib oracles are near-pure delegation —
 
 ```sh
 chezmoi__is_converged() {
@@ -871,3 +870,133 @@ stale — the next plan re-measures the world as it actually is.
   machine over at those lines and trusts their own verbs. Dorc adds value between the
   beloveds, not within them. (The two postures compose: the previous story sits inside the
   scripts chezmoi runs, this book sits above chezmoi itself.)
+
+
+## Cooperation with existing ops ecosystems
+
+The cast is professional now, and the frame from the dotfiles stories inverts: these teams
+already have tools they trust and doctrines they chose. Dorc's positions here are the seams
+those doctrines *concede* — and both stories below deliberately say out loud what Dorc
+refuses to promise in them.
+
+> (The design-round record behind these is `Research/plans/24R`; its §0
+> impossibility-ledger governs every claim made here.)
+
+### Mutable residue on a principaled, declarative ops team
+
+This team did everything right. Terraform plans gate PRs; images are baked, not patched;
+the Kubernetes estate reconciles itself from git. Doctrine: cattle, not pets; no SSH. And
+yet — as the immutable canon itself concedes — baking the cattle *reduces* what config
+management must own; it never reaches zero. The residue here: one bastion, two on-prem
+edge boxes at a customer site, and the node-bootstrap script baked into the AMI. None of
+them gets rebuilt on Tuesdays. Today they are managed by guilt: a `bastion.sh` somebody
+SSHes over quarterly, with terminal history as the audit trail — because the moment you
+need to change something *now* on a running host, the doctrine's tools are, by design,
+not there.
+
+The move: Dorc adopts the residue, and *only* the residue. Same script, now a book:
+
+```
+$ dorc plan bastion.sh bastion.prod
+ 1  #!/bin/sh
+ 2  set -eu
+ 3  # apt-get update                                   # converged: package index fresh
+ 4  # dpkg -s wireguard >/dev/null 2>&1 \
+ 4  #    || apt-get install -y wireguard               # converged: your guard holds (rc 0)
+ 5  corp-agent enroll --renew                          # runs: unmodeled ('corp-agent')
+ 6  ( ufw_check limit 22/tcp ) \
+ 6     || ufw limit 22/tcp                             # verify: converged, but past 'corp-agent' (line 5)
+plan: 1 run, 1 verify, 2 elided
+```
+
+Three things transfer from the culture they already have, and one question gets an honest
+answer.
+
+- The review instinct transfers whole: the plan *is* a script, so the reviewed artifact is
+  what applies — their Terraform-plan-in-the-PR habit, satisfied with no new machinery.
+  (Stated plainly: probed facts can drift between review and apply; the guards are the
+  mitigation, and a long-stale plan deserves a fresh one.)
+- The vendor agent stays honest residue: `corp-agent` is unmodeled, so it runs, walls, and
+  the `ufw` line behind it verifies instead of eliding — forever, until someone who knows
+  that tool vouches for it. Nothing is hidden to make the pets look tidy.
+- Nothing is contested: the Terraform and Kubernetes estates are untouched, and Dorc
+  brings no state file to sit beside theirs — there is nothing of ours to lock, strand, or
+  go stale. The position is the residue, permanently. That is the point.
+
+The question: "can we cron this as drift monitoring?" The honest answer: yes, and it sees
+*inside* the host where `terraform plan` and drift scanners see only the cloud API — and a
+scheduled plan is a scheduled probe pass: real reads, on real, fragile pets, unattended.
+That is the exact shape of the nightly dry-run cron that once broke production at a Chef
+customer, and read-only ≠ non-blocking ≠ side-effect-free. So it ships with a
+`-detailed-exitcode`-style contract (`dorc plan --exit-code`, STRAWMAN: 0 converged /
+2 diverged / 1 error) *and* with timeouts, probe cost-classes, and an opt-out list for the
+boxes too fragile to interrogate on a schedule. Anyone selling an unconditionally safe
+scheduled dry-run is selling the claim Chef retracted.
+
+- Spent: adopting one runbook. No agent, no state backend, no new estate.
+- Gained: the pets get the same reviewed-change culture as the cattle; in-host drift
+  visibility nothing else in the stack has; the emergency-mutation path becomes plan-gated
+  instead of guilt-gated.
+- Not gained, ever: the declarative estates. Happy siblinghood means the boundary holds
+  from our side too.
+
+### Gradual-enhancement transition from legacy Ansible
+
+Six years of playbooks. The modules are fine — a good module already does, internally,
+exactly what a Dorc guard does (check, then converge, fused at act-time), and nothing in
+this story improves on one. But every real estate accretes shell tasks, and theirs itch
+exactly where the linter says:
+
+```yaml
+- name: install node_exporter
+  ansible.builtin.script: files/install-exporter.sh
+  args: { creates: /usr/local/bin/node_exporter }
+
+- name: retune ingest pipeline
+  ansible.builtin.shell: sysctl -w net.core.rmem_max="$(cat /etc/ingest/rmem)" && systemctl restart ingest
+  changed_when: false        # a standing lie, to keep the play quiet
+```
+
+Shell tasks report `changed` unless hand-annotated. Under `--check` they are either
+skipped outright or judged by the annotation alone — the file test — never by observing
+the task itself; and that `creates:` points at a path the script stopped creating two
+refactors ago, so the apply *and* the check-run both trust a stale claim. The annotations
+are hand-written convergence claims — maintained by hand, verified by nobody. The
+transition is three rungs, and none of them is a rewrite:
+
+**Rung 1 — zero migration.** `files/install-exporter.sh` gets a `dorc-run` shebang (the
+runner from the dotfiles stories above). Ansible transfers the file and executes it
+directly, so its flow is untouched: same task, same exit-code contract, same fail-fast.
+The *interior* of the script now converges per-line and leaves a why-log; the `creates:`
+stays, harmless and newly redundant.
+
+**Rung 2 — the annotations map.** When a task does migrate into a book, nothing is learned
+twice: `creates: /usr/local/bin/node_exporter` *is* `[ -e /usr/local/bin/node_exporter ] ||`
+— the same guard, now lifted and probe-checked instead of trusted-and-stale. And
+`changed_when` becomes nothing at all: the plan measures what changed rather than being
+told. Six years of annotation discipline turns out to have been oracle-authoring practice
+all along — the stage-1 continuity bet, replayed in ops.
+
+**Rung 3 — what stays Ansible, stays.** The book's line for the module-heavy remainder is
+`ansible-playbook site.yml --tags certs`, and its oracle teaches by *declining*:
+
+```sh
+ansible_playbook__is_converged() { return 2 ;}   # --check is not a convergence verb
+```
+
+A play's check-mode answer is only as honest as its least check-aware task — and shell
+tasks are skipped outright ("report nothing and do nothing," per Ansible's own docs) — so
+there is no trustworthy whole-play yes to delegate to; the honest answer is can't-say, and
+the line runs, in the plan, on every apply, forever. Some incumbents simply do not offer a
+check verb worth vouching for; a declined vouch is a line that runs, shown to your face,
+rather than a simulation of confidence.
+
+Off-ramp at every rung: playbooks stay playbooks, scripts stay scripts; strip Dorc and
+every artifact is exactly the standard thing it was before.
+
+- Spent: rung 1, a shebang per script file; rung 2, per-task and only when a task earns
+  migration; rung 3, a one-line refusal.
+- Gained: convergence, drift-healing, and a real answer to "what did that task actually
+  do" in exactly the tasks Ansible's own check-mode is blind to.
+- Not gained: module interiors; and no forecast for the `ansible-playbook` line, ever —
+  which is the correct amount of forecast for a verb nobody trusts.

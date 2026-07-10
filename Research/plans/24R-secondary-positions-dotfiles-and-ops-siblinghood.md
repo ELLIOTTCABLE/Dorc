@@ -224,11 +224,34 @@ immutable-facts contract and execute-time `_if` callables — an incumbent hand-
 the guard discipline our analyzer derives [A-pyinfra-deploy-process-2026]
 (`repurp-finding69`).
 
+> **ack-ansible-architecture (annotated 2026-07-10, same session — human challenge #2,
+> upheld):** the architectural relationship to Ansible must be stated before the gaps
+> below, or they read as overblown. The guard tier — check-then-converge, fused
+> in-sequence at act-time — is architecturally IDENTICAL to what a good Ansible module
+> does internally (and Puppet/Chef resources before it); it is the shared *sound* design,
+> with no staleness gap, and Dorc does not improve on a good module at its own game. The
+> oracle library is the module-library problem re-run (DESIGN component-4 already concedes
+> this). What is genuinely not spelling: the compile step and its products — the phase
+> split with a plan ARTIFACT and consent; the elide tier (Ansible's apply never gets
+> shorter: every task ships and self-checks on every run — the founding 45-minute pain);
+> whole-book static claims (walls, dead branches, survival) a runtime-interpreted task
+> list structurally cannot make. And the honesty coupling: the SIMILARITY is where the
+> soundness lives; every difference is bought from the disclosed trust budget (§0a).
+> Where oracles are thin or walls dominate, Dorc degrades to Ansible-in-sh — the
+> spelling-advantage-only regime, and the realistic early-adoption regime. Formulation of
+> record: **Dorc is Ansible's architecture wherever that architecture is sound, plus a
+> compiler wherever it isn't — and the compiler's products are bought, with receipts.**
+> Check-mode scope note, source-verified (ansible script.py action plugin): shell/script
+> tasks under `--check` are skipped outright OR judged by the `creates:`/`removes:`
+> annotation alone — never by observing the task; module-covered content in check mode is
+> decent, and §2b's gap-checkmode claims are SHELL-SCOPED only.
+
 ### §2b — the three market gaps (stated under §0a discipline)
 
-- **gap-checkmode**: the tri-modal incumbent dry-run breakage (§0a's comparative claim).
-  What Dorc sells here is the *bookkeeping* — refusal+guards+attribution — never
-  "a dry-run you can trust" unqualified.
+- **gap-checkmode**: the tri-modal incumbent dry-run breakage (§0a's comparative claim),
+  SHELL-SCOPED per ack-ansible-architecture above. What Dorc sells here is the
+  *bookkeeping* — refusal+guards+attribution — never "a dry-run you can trust"
+  unqualified.
 - **gap-inhost-drift**: terraform-plan/driftctl drift detection compares cloud-API state vs
   tf-state; nothing sees inside the host (`repurp-finding86`). A scheduled `dorc plan`
   with a `-detailed-exitcode`-shaped rc [A-terraform-plan-cli-2026] fills an empty slot —
