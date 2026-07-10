@@ -66,6 +66,15 @@ and carries the license-contamination map.
   (adjudication + retrospective ledger) + `notes/255-*` (book + dry-run + predictions).
 - **Multi-host & read-concurrency** — `plans/262` (build spine) + `plans/260`/`261`,
   adjudicated `notes/26A` (round 26, branch `ai/spike3-r26`).
+- **Wrapper contexts (sudo/su/env) & the context algebra** — `plans/24S` (proposal-tier;
+  impossibility ledger §0; adjudication list §7).
+- **Payload decomposition (`sh -c` strings, heredoc books, the render ladder)** —
+  `plans/24T` (proposal-tier; composes with 24S).
+- **Dotfiles / ops-siblinghood / why-run honesty** — `plans/24R` (secondary positions;
+  the §0a why-run ledger governs every dry-run claim).
+- **Where did round-24's unfinished work go?** — `notes/24U` (close-out + reshuffle map)
+  → `plans/270` (the round-27 charter; block arc + adjudication ledger + the naming
+  discipline binding all briefs).
 
 ## Per-round map
 
@@ -126,20 +135,26 @@ and carries the license-contamination map.
   log — **honor the end-annotation**) → crosschecks `notes/234`–`237` → ceiling `notes/238`
   → `plans/239` (SIGNED closure) · guard pin-set `notes/23A` · rulings ledger `plans/23D` ·
   `notes/23O` (settled law + the round's full history).
-- **r24 the build round** (current; branch `ai/spike3-r23`) — the `plans/240` ladder Stages
-  1–5 LANDED (honest walls · survival machine · guard tier + claim algebra · derived
-  footprints · resolve/reaches). → `notes/24C` (landing/residue ledger — accretes per
-  landing) · stage specs `notes/24A`/`24D`/`24E`/`24F` · `notes/24G` (kind-owner family) ·
-  the language arc `notes/24Kc` → `plans/24L` → **`notes/24M` (binding rulings)** ·
-  `notes/24I` (e2e slimming) · `notes/24J` (pipe-guard lift).
+- **r24 the build round** (CLOSED 2026-07-10 by reshuffle → `notes/24U`; branch
+  `ai/spike3-r23`) — the `plans/240` ladder Stages 1–5 LANDED (honest walls · survival
+  machine · guard tier + claim algebra · derived footprints · resolve/reaches). →
+  `notes/24C` (landing/residue ledger — accretes per landing) · stage specs
+  `notes/24A`/`24D`/`24E`/`24F` · `notes/24G` (kind-owner family) · the language arc
+  `notes/24Kc` → `plans/24L` → **`notes/24M` (binding rulings)** · `notes/24I` (e2e
+  slimming) · `notes/24J` (pipe-guard lift) · `notes/24P`/`24Q` (respell specimens +
+  shebang digest) · `notes/24O` (stage-6 dispositions) · the late design keystones
+  `plans/24R`/`24S`/`24T` · **`notes/24U` (close-out + where every owed item moved)**.
 - **r25 field-trial methodology** (branch `ai/spike3-r25`) — the human's first real contact,
   pre-registered so the day yields decisions. → `plans/250` (charter) · `plans/252` (THE
   protocol + fan-out) · `notes/254` (adjudication + retrospective ledger) · `notes/255-*`
   (validated book + dry-run + predictions) · `notes/256` (system recon).
-- **r26 multi-host + read-concurrency** (branch `ai/spike3-r26`; commissioned, time-boxed)
+- **r26 multi-host + read-concurrency** (branch `ai/spike3-r26`; TABLED — plans +
+  adjudication only, zero build commits; resumes post-field-trial per `plans/270` §5)
   — → `plans/262` (build spine) · `plans/260` (multi-host) · `plans/261` (read-concurrency)
-  · `notes/26A` (crosscheck adjudication). Its merge-disjointness contract binds r23-side
-  work (see LIVING_STATUS).
+  · `notes/26A` (crosscheck adjudication).
+- **r27 the consolidation round** (current; branch `ai/spike3-r23`) — rest-of-round-24 +
+  the wrapper/payload work, authored-once discipline. → **`plans/270` (charter: block
+  arc · adjudication ledger · naming discipline)**; predecessor accounting `notes/24U`.
 
 ## Vendor/ (full-history clones)
 
