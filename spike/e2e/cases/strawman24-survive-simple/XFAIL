@@ -1,0 +1,2 @@
+respell spec-by-example (Research/notes/24P §8-§9): fixture carries the v0.1 respell (bare __role names, sm.dorc.* kinds, typed emission, marker, dorc-sh shebang) ahead of the engine; goldens are STALE-OLD
+IMPLEMENTOR: landing the respell yields a golden DIFF, not XPASS. Flow: delete this file, BLESS on a verified binary, conductor inspects against 24P §4's predicted delta classes (never bless-first).
