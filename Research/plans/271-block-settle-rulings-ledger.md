@@ -18,10 +18,11 @@ rulings that shape it, not its body.
 
 ## Session task map (mirrors the conductor task list)
 
-1. adj-entity-algebra, spelling half — the authored entity/selector mark grammar
-   (gates block-rebuild; needs typed ack). IN PROGRESS — one ack outstanding.
+1. adj-entity-algebra, spelling half — the authored entity/selector mark grammar.
+   CLOSED 2026-07-10: all six sub-rulings typed or dictated (see "The entity-algebra
+   spelling direction" below); mechanical close-out rides task 12.
 2. adj-entity-algebra, seams half — the two `24S:A7` reservations (context-qualifier
-   slot; kind-owner per-axis room). DEFERRED to a fresh turn.
+   slot; kind-owner per-axis room). DEFERRED to a fresh turn; re-explain from scratch.
 3. adj-trichotomy-spelling (né `24S:A3`) — kind-owner per-axis context topology;
    the deliberate kOOB-redline reading.
 4. adj-axis-vocabulary (né `24S:A1`) — ratify v1 = {user, fs-view} + ρ,
@@ -40,6 +41,9 @@ rulings that shape it, not its body.
     probe-bodies-proved-non-mutable effect-check's home. CLOSED.
 11. adj-payload-pins pre-read (né `24T:P-A1`/`P-A2`) — optional tail; formally owed at
     block-context implementation-planning.
+12. 1-series close-out — amend the `24P` specimens (hash introducer; brace-alternation
+    if firmed) + author the entity-algebra design note. BLOCKED on task 2 (the note
+    must carry the seam reservations).
 
 ## Rulings
 
