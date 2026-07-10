@@ -16,14 +16,17 @@
 
 ## R24 ONBOARDING (2026-07-09 — the single current r24 view; supersedes all prior r24 blocks)
 
-**⚠ REWIND NOTE (2026-07-09, read FIRST):** six UNCOMMITTED specimen edits sit in the main
-working tree (`git status`; paths + full spec in **`notes/24P`** §1) — the conductor-authored
-respell specimens, the human's in-file review/ack artifact. e2e FAILS those five cases at HEAD
-by design. Do NOT commit them as-is (they land via the respell builder), do NOT discard
-without consulting 24P (they regenerate from 24P §2 if lost). The human's parting instruction
-(typed 2026-07-09): "rewind-and-dispatch" — the respell is the next dispatch; CONFIRM the 24P
-§5 micro-decision ack (d1–d9) in the dispatch exchange first, since it was signalled but
-never individually typed (silence ≠ ack).
+**⚠ REWIND NOTE (updated 2026-07-10 late, read FIRST):** the respell specimens are NORMALIZED
+and COMMITTED at tip — spec: **`notes/24P`** §1–§4 + §8 (riders: comment-budget, shebang) +
+**§9/§9b** (the dorc-sh adjudication + execution record; evidence base `notes/24Q`). Review
+state: d1–d7 + d9 ACKED + in-file LGTM (human-typed 2026-07-10); **d8 one-word confirm still
+owed** (explained in-chat + §9's decision-no-polyglot context; silence ≠ ack). Suite at tip:
+**all 126 pass** — 4 specimen cases declared XFAIL (stale-old goldens by design; implementor
+flow in the XFAIL files + 24P §9b), pipe-guard-oracle-converged is a LIVE specimen (golden
+re-key blessed, inspected), `dorc_flags_selftest` retargeted to survive-multiwall. NEXT: human
+REWINDS the conductor → the respell implementor dispatches from the durable record
+(brief-assembly = queue item 2 below + 24P §2/§3/§5/§7/§8/§9 + the 24C deferral entries +
+standing fences).
 
 **Read-first on arrival:** the root docs AT HEAD (human-updated ~2026-07-06/07; KNOBS was
 restructured this round — `kSCOPE`/`kSURVIVAL` replace `kELISION`) → `spike/CLAUDE.md` (all
@@ -108,6 +111,15 @@ entry-points/`parse_results` signatures is FLAG-to-r26, never fork.
    step-zero, step-one root-docs, tip-gate) — single Opus builder, isolated worktree,
    granular commits, ONE bless at the end, conductor inspects the golden diff case-by-case
    at merge (predicted delta classes: 24P §4).
+   **AMENDED 2026-07-10 (24P §8):** d1–d7 + d9 ACKED + specimens LGTM (d8 probable, confirm
+   owed). TWO new brief riders: **rider-comment-budget** (rip-don't-update; keep-test +
+   delete-defaults + hard budget ≤20% of merge-base comment bytes across `e2e/cases/**/*.sh`,
+   counting command in 24P §8, baseline ~192k bytes ⇒ ≤~38.4k; STANDING fence for all future
+   briefs, not respell-only) and **rider-shebang** (dialect-carrying fixtures gain a line-1
+   shebang onto a spike-minimal Dorc strip-and-exec tool; marker slides to line 2; never
+   required/parsed/constrained by the engine; spelling firms from the shebang research
+   adjudication → 24P §9). Specimens NORMALIZE then COMMIT pre-dispatch as failing spec
+   (supersedes the rewind-era do-not-commit line); conductor rewind precedes the dispatch.
 3. **The typeless floor** (auto-cell + the four `24L` §7 fences + eligibility plumbing +
    tests), after the respell — both touch classify. The build brief starts from the wave-1a
    touch-point map (`24C` §24L-gating-errand): the verdict-unaware-kernel seam (thread
@@ -189,9 +201,12 @@ eye) · horizon wording DONE by the human in the root docs · the redirect-repor
 **Conduct fences (standing; bind any successor):** never edit
 README/DESIGN/IMPLEMENTATION/USER_STORY/TODO/AGENTS/root-CLAUDE (human-only) · **KNOBS
 carve-out (human-ruled 2026-07-09): LLM-authored/human-reviewed — the conductor MAY edit it
-directly, but leaves the edits UNCOMMITTED for the human's ack before any commit** (three
-such edits pending as of the rewind: the kOOB closed-set-of-one marker, the kTYANNOT
-containment re-cut, the kCONTRACT-RUNGS default-pin) · HARD
+directly, but leaves the edits UNCOMMITTED for the human's ack before any commit** (the three
+rewind-era pending edits — kOOB closed-set-of-one, kTYANNOT containment re-cut,
+kCONTRACT-RUNGS default-pin — LANDED via the human's own commit `3e76518`, 2026-07-09) ·
+**builder briefs touching tests/fixtures carry the rip-don't-update comment posture + a hard
+numeric comment budget with its counting command** (human fb 2026-07-10; first instance +
+keep-test spec: 24P §8) · HARD
 QUARANTINE on `quarantine-DO-NOT-READ/` + `Research/corpora/` · a sibling design-agent is
 ACTIVE in r24 `.md`-space — do not mint new note/plan IDs without checking the tree;
 coordinate through this file · word-slugs in full words · silence ≠ ack (only what the human

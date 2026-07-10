@@ -164,3 +164,146 @@ Two rulings landed after §1–§6 were written; the builder's checklist (§2) e
   whose verdict could idiomatically be a `tool --check "$@"`-style passthrough; report the
   list. (The founding-one-liner PIN itself rides the floor build, not this churn —
   fd-headline-oneliner-gap, `24C`: quoted-`"$@"` is unmodeled in the tracer until then.)
+
+## §8 — Review outcome + two riders + process supersession (2026-07-10)
+
+**Ack state (human-typed 2026-07-10):** d1–d7 + d9 ACKED; the six modified specimen files
+reviewed in-file, LGTM. d8 explained (the improvised empty-entity singleton bind IS the
+hand-spelled auto-cell; `24L` §2 cites this very fixture as the floor's strain evidence, and
+`24L`'s test obligations already schedule its retirement with the floor build — keep-faithful =
+one churn per surface, and the floor gets a real before/after exemplar) — probable-ack,
+one-word confirm pending.
+
+**rider-comment-budget (human-directed; STANDING for all future builder briefs, not
+respell-only).** Fixture/test churn must RIP comments, not update them: a comment that had to
+be updated to survive the change is presumptively deletable, unless the file's specific
+subject-matter IS the changed thing. The respell brief carries:
+- *comment-keep-test* — a comment line survives only by passing one of: **keep-purpose** (the
+  fixture's single what-this-case-pins header, ≤2 lines); **keep-subject** (explains the exact
+  behavior THIS fixture exercises — test: if the sentence fits equally well in another fixture,
+  it is ambient design-lore and fails); **keep-hazard** (warns that an innocent-looking edit
+  breaks the pin non-obviously, in the fixture that pins that semantics); **keep-machine**
+  (shebang + the `# dorc-lang/v0.1` marker — budget-exempt, never deleted; verified 2026-07-10:
+  run.sh parses NO fixture-source comments — its `# dorc: guard` parsing reads rendered-artifact
+  lines, and `expected-diagnostics` is a separate file).
+- *comment-delete-defaults* (no justification needed): ruling-slug/note citations + dates;
+  authorship/history trails; restating-the-code; cross-fixture references; reviewer-addressed
+  correctness justifications; anything updated-to-survive (unless keep-subject). Comment
+  knowledge homed nowhere in `Research/` is FLAGGED in the builder report, never kept inline.
+- *comment-hard-budget* (mechanical; run + paste numbers before ending turn; non-negotiable):
+  `awk '/^[[:space:]]*#/ && !/^#!/ && !/^# dorc-lang\//{c+=length($0)+1} END{print c}' cases/*/*.sh`
+  must report ≤20% of the merge-base measure. Baseline measured 2026-07-10: 2,213 comment
+  lines / ~192,009 bytes across the 126 cases' `.sh` files ⇒ target ≈ ≤38.4k bytes. Anti-gaming:
+  converting whole-line comments to EOL comments is prohibited. Anti-Opus clamp (verbatim-class):
+  "you will feel each comment is deadly-necessary; delete borderline comments anyway — the
+  conductor re-adds at review, the cheap direction."
+- The §1 specimens' own comment verbosity is NON-NORMATIVE (conductor-authored citation-trail
+  style, exactly the delete-defaults class); the normalization pass below rips them first.
+
+**rider-shebang (human-directed 2026-07-10).** Dialect-carrying fixture files (the ones
+genuinely invalid-as-sh) gain a LINE-1 shebang onto a Dorc-provided strip-and-exec tool —
+defensiveness for something already true. Plain-sh books get none (nothing to rescue).
+Constraints (human-typed): no part of the shebang is required, parsed, or constrained by the
+engine — quietly idiomatic only; the language-version does NOT ride the shebang (the
+`# dorc-lang/v0.1` comment stays the gate). Consequence, amending d1: where a shebang exists
+the marker slides to line 2 (grammar already accepts first-10; corpus convention becomes
+"marker immediately after the shebang where one exists, else line 1"). Spike-minimal tool
+implementation + one smoke e2e ride the churn. The exact SPELLING (single-token
+`/usr/bin/env <tool>` vs `env -S` forms; tool name) firms from the shebang prior-art research
+adjudication — recorded in §9 when it lands, alongside the one open fork: whether `dorc strip`
+off-ramp OUTPUT rewrites a dorc-pointing shebang to a plain shell (off-ramp-serving, but
+arguably the shebang-parsing the human prefers to avoid).
+
+**Process supersession (amends §6, human-typed 2026-07-10):** after the research adjudication,
+the CONDUCTOR normalizes the specimens in-tree (comment-rip to model the budget + shebang
+stamp + any adjudication-driven spelling fixes), then COMMITS them as deliberately-failing
+example-tests for the implementor (supersedes §6's "deliberately UNCOMMITTED"; FLAG-to-r26:
+the r23 tip carries declared-failing spec cases until the respell lands; raw-red vs
+harness-XFAIL mechanics = conductor's call at execution). Durability pass (this note +
+LIVING_STATUS) precedes a conductor REWIND; the implementor dispatches post-rewind from the
+durable record.
+
+## §9 — The shebang adjudication + the normalization record (2026-07-10, conductor)
+
+Evidence base: **`24Q`** (the prior-art digest; graded sources, taxonomy, gotcha inventory).
+Decisions rest only on multi-source-convergent claims (the one-arg rule; env -S's holes;
+interpreter-must-be-binary off-Linux); the digest's ~SUSPECT cells are deliberately not
+load-bearing. These are conductor judgments under the human's stated constraints (nothing
+required/parsed/constrained; quietly idiomatic; spelling delegated) — nack freely.
+
+- **decision-shebang-spelling:** the corpus stamp is the single-token form
+  **`#!/usr/bin/env dorc-sh`**. One interpreter + one argument = inside every kernel's
+  delivery model (one-arg Linux/BSD, first-arg-only SVR4 lineage, splitting macOS all agree
+  when there is only one token); no `env -S` dependency; ~30 bytes against the 127-byte floor.
+  The marker sits on line 2 directly beneath it (§8's d1 amendment).
+- **decision-shebang-iff-marker:** a fixture gains the shebang iff it carries the
+  `# dorc-lang/v0.1` marker — one rule, one dialect-presence signal, two lines. Plain-sh books
+  are untouched (whatever shebang they already have stands; none is added).
+- **decision-dorc-sh-semantics (spike-minimal; spec-note tier beyond it):** `dorc-sh` =
+  strip-if-marked (identity on plain sh), then `exec sh -c "$stripped_text" "$script_path"
+  "$@"` — `$0` and `"$@"` fidelity preserved without a temp file (POSIX `sh -c cmd_string
+  cmd_name args…` assigns `$0` from cmd_name). ARG_MAX bounds the -c string for pathological
+  script sizes — disclosed, ru-26-style, fine for fixtures. Spike ships it as a second thin
+  bin target riding the same churn as `dorc strip`, plus ONE smoke e2e (exec a marked oracle
+  file via dorc-sh under the mocks discipline).
+- **decision-executor-bandwidth (spec-note; the spike ships only the zero-arg form):**
+  `dorc-sh [executor-cmd…] -- script [args…]`; with no `--`, argv[1] is the script and the
+  executor defaults to `sh`. The executor-bearing form inherently requires `env -S` (multi-token
+  shebang) and inherits `24Q` §3's portability matrix — documented, never required. The `--`
+  convention is the guix-shell prior-art shape and removes the where-does-the-script-start
+  ambiguity without inspecting the filesystem.
+- **decision-strip-leaves-shebang (the §8 fork, resolved):** `dorc strip` NEVER touches the
+  shebang; NOTHING in dorc parses or recognizes shebang content, period (the engine doesn't
+  read it; dorc-sh itself doesn't either — a `#!` line is an ordinary comment to sh). This
+  keeps the human's no-parsed/no-constrained constraint absolute and the kOOB comment-parse
+  set closed at ONE (the marker). Off-ramp arithmetic: a stripped artifact is plain sh and
+  ALWAYS runnable via `sh file` regardless of its shebang; direct `./file` on a dorc-less box
+  fails loudly at env-lookup — honest, and repaired by editing one line by hand. (The digest's
+  gotcha-9 caveat — some shells misattribute that ENOENT to the script name — noted, accepted.)
+- **decision-no-polyglot:** the tclsh/perl re-exec family (`24Q` §4 taxonomy-polyglot) is the
+  only graceful-degradation shape, but it costs 3 lines of executable ceremony per file and —
+  disqualifying — a top-level `exec` statement inside oracle files that the analyzer would have
+  to specially tolerate: a new parsed/constrained surface, the exact thing ruled out. Not the
+  corpus idiom; recorded as a pattern an AUTHOR may hand-roll (it composes fine; dorc never
+  needs to know).
+- **naming:** `dorc-sh` is STRAWMAN-tier (a rename is a sed; low lock-in).
+
+**Normalization applied (same date, this working tree):** the six specimens gained the
+line-1 shebang + the §8 comment-rip (each now carries ≤4 comment lines beyond shebang+marker:
+the purpose header plus keep-subject/keep-hazard lines only — the citation-trail headers are
+gone; comment knowledge all pre-exists in this note, `24C`, and `24M`). FOUR cases carry
+one-sided **`XFAIL`** files (harness idiom; suite stays green-with-declared-xfails for the r26
+sibling). IMPLEMENTOR NOTE, load-bearing: those cases' goldens are STALE-OLD, not
+desired-future — landing the respell produces a golden-DIFF, not XPASS; the flow is
+delete-XFAIL → BLESS on a verified binary → conductor inspects the diff against §4's predicted
+delta classes (never bless-first).
+
+**§9b — execution record (2026-07-10; what landing the normalization taught):**
+- **fd-dotted-kinds-parse-at-HEAD (deflates §3's first flag; builder intel).** The pipe-guard
+  specimen pair is LIVE at HEAD: dotted kind tokens in bind position (`pat : sm.dorc.GrepMatch
+  = "$1"`), in `:?` observe marks, and in rendered fact-labels all lift TODAY — the case plans
+  `sites=4 elide=1 omit=3` with zero mark diagnostics, and the artifact renders the re-keyed
+  label. §3's "the mark parser's kind-token charset must be extended" over-predicted for these
+  shapes; what the builder still owes §3 is the UNQUOTED-dotted-entity ambiguity corner
+  (⊤-reject posture) and per-shape verification elsewhere.
+- **Specimen states diverge accordingly:** `strawman24-pipe-guard-oracle-converged` carries NO
+  XFAIL — its only delta was the §4-class-1 fact-label re-key in `expected.out`, blessed NOW,
+  conductor-inspected (exactly one line: `grepmatch:` → `sm.dorc.GrepMatch:`). The other four
+  (flagship, survive-simple, alias-provides, reach-static-service) genuinely fail at HEAD —
+  stale-old goldens plus, for the survival/reach pair, behavior (typed-emission `touches()` /
+  re-keyed owner lookup not yet lifted); per-case decomposition is the builder's.
+- **Harness facts surfaced (bind the implementor's final BLESS):** (a) XFAIL is
+  golden-text-BLIND by design (structural gates only) — a case whose only failure is stale
+  golden TEXT registers XPASS, which counts as red; that is why pipe-guard could not stay
+  XFAIL. (b) A fresh BLESS rewrites ~11 unrelated cases' `expected.ran` goldens with
+  bless-artifacts: empty-file→single-newline normalization, plus benign lax-order
+  interleaving re-captures on two `RAN_ORDER=lax`-family cases (pipe-guard-floor,
+  pipe-guard-unvouched-mid). These were REVERTED this round to honor r26's byte-stable-goldens
+  contract; the implementor's bless will regenerate them and must inspect-and-revert (or
+  consciously accept + record) the same set.
+- **Harness edit:** `dorc_flags_selftest`'s anchor retargeted `strawman24-survive-simple` →
+  `strawman24-survive-multiwall` (the old anchor is now an unparseable-at-HEAD specimen, which
+  zeroed both selftest counts and FATALed the whole suite; multiwall verified 0→1 under the
+  flag). Note in-code at the selftest.
+- **Suite state at commit: all 126 pass** (121 live + 4 declared xfail + pipe-guard live),
+  fresh `cargo build --workspace` + full foreground e2e, conductor's own hand.
