@@ -14,6 +14,9 @@
   - but I hate EOL comments so unbelievably much that I might actually swallow this risk, idk.
   - arguably it's cheaper for us, largely because the ecosystem there isn't already rich-and-we're-abandoning it. shellcheck is a wonderful project, but it's fighting uphill, and definitely not as foundational/indispensible as other linters; ditto shformat. and I don't think there even *is* an sh LSP ...
 - [ ] 24K lang-fallout: `dorc strip` *now*, don't make the promise and then fail to keep it. the offramp needs continuous code-maintenance and attedance-to, not just lip-service, I buy that, okay.
+- [ ] dotfiles research: bash/zsh rule the space; I don't really want to swallow parsing-support for bashisms/zshisms. Maybe make it an *explicit split* - *only* support dorc-lang in dorc-lang-POSIX-sh files; *only* try to support bash/zsh in dorc-lang-less runbooks?
+  - this narrows kWHICHSH: kWHICHSH, by my thoughts, is primarily a drive twoards *sharing*: besides making parsing simpler and staying broadly compatible no matter what shell somebody uses (offramp-maintaining for *both* zsh and bash users), it's a good-practice-encouraging and helps drive oracle *sharing* with other users. this doesn't really apply for runbooks, though; so I'm tempted to carveout runbooks from kWHICHSH entirely. (repurp-finding16/38.)
+- [ ] repurp-finding5/18 resurface privilege; we *really* need to figure out the plan for `sudo`/`sh -c`/`source` flavoured content, because "unsupported" just isn't good enough.
 
 ## Spike-3
 

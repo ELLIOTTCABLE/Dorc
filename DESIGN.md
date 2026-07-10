@@ -484,6 +484,19 @@ throughlines in the various moving parts:
    user-goals as backstops against the unavoidable downsides thereof, e.g. `dorc
    reconcile x.sh` to say "pursue correctness, fully apply everything."
 
+ - not the only toy, not the only tool. By its very nature, Dorc doesn't *need*
+   knowledge of the whole world; simultaneously, it's designed for the niche
+   where best-effort and partially-incomplete work yields the most value. In a
+   lot of systems, though, that won't be because the *whole system* is partial,
+   incomplete, or poorly-specified - Dorc will often, by construction, end up
+   "out at the fringes" of a holistic system, *living besides other tools that
+   do some component better than Dorc does.* That means the ideal version of
+   Dorc doesn't *fight* your dotfiles-repo or favourite package-manager's
+   opinionated behaviours or the fact that 80% of your system is deeply
+   specified with Ansible or Terraform, but instead tries to *add value when
+   added alongside those*, yielding to the tools that serve their/your purposes
+   better than Dorc does where relevant.
+
 
 Contract & DX
 -------------
