@@ -65,7 +65,13 @@ entry-points/`parse_results` signatures is FLAG-to-r26, never fork.
    `24C`); (d) 24I batch-5 audit → `notes/24N` (SUBSUMED 3 · TWIN 6 · DEGRADE-to-diag 1 ·
    KEEP-e2e 4; load-bearing: the sweep is package-kind-only + oracle-fixed, so cross-kind /
    opaque / incoherent cases are sweep-INEXPRESSIBLE — subsumption = generator extension).
-2. **THE RESPELL PASS — UNGATED, amended by the 2026-07-09 rulings (`24C` §r24-in-chat)**: the
+2. **THE RESPELL PASS — SPECIMEN-GATED (2026-07-09): five fixtures respelled by the conductor
+   sit as UNCOMMITTED working-tree edits** (human in-file review; regenerable from
+   **`notes/24P`** if lost — 24P §1 lists the paths, §2–§3 the builder checklist + grammar
+   flags, §5 the micro-decisions d1–d9 awaiting ack, §4 the predicted golden-delta classes;
+   punycode = spec-note only, spike minimal, human-typed). e2e FAILS for those five cases at
+   HEAD by design until acked/reverted. Dispatch on human ack of 24P §5. Content per the
+   2026-07-09 rulings (`24C` §r24-in-chat): the
    bare `__role` rename (NOT a prefix) + **rul24-totalistic-munge** (the dotted funcdef form
    DIES entirely — period parse-arm + tests + strip's funcname-rename + the backward un-munge;
    keying flips to forward-munge lookup, spec sentence written, multi-word case disclosed) +
