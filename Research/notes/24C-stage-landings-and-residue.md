@@ -591,3 +591,17 @@ owed to a future BLESS-and-inspect session, never a drive-by edit.
 Remaining 24I work: batches 3–5 (batch 3 = the DEGRADE tier + the new `render_corpus.rs` home +
 THE dash-n net + st-1's must-cover; batch 4 = guard23 no-mint floors → GuardLicense-absence
 asserts; batch 5 = survival-tier vs sweep, per-topology assertion-depth verification FIRST).
+
+## 24L gating-verification errand (DONE 2026-07-09 — read-only; r24 queue item 1a; sizes the typeless-floor build)
+
+Empirical, at `c0b3e3d` (throwaway fixtures; no code changes). Three answers + the floor build's touch-point map, verbatim-graded from the errand report:
+
+- **+SURE — mark-free verdict-function = recognized-but-inert.** A markless `foobar.is_converged()` parses + lifts cleanly (predict-dialect grammar needs no marks; `evaluate_verdict` would return Vouched) but produces ZERO downstream effect: no probe site ships (`site:0 skip-unresolvable`), no guard, no elide, site stays "unmodeled / first wall" (hint byte-identical to the no-oracle-at-all state). The 24L §2 gating claim is now +SURE at exact-code level; the spec does not shrink.
+- **+SURE — the bare `__` name shape ALREADY WORKS at HEAD**, parse and vouch-path both (`spike/crates/oracle/src/predict/parser.rs:332-344` accepts either suffix; typeless-dot vs typeless-bare gave byte-identical decision-digests; a bare-named `apt_get__is_converged()` beside a marked predict licenses a real elide). De-risks the respell rename.
+- **The single gate** dead-ending a mark-free provider: vouches are only built for establish-bearing SkipClasses, and those derive exclusively from predict/touches MARKS — never from verdict existence. Chain: `derive_predict` (`oracle/src/predict/derive.rs:78`, markless body emits no cell) → `command_effect` returns Opaque (`analysis/src/effect.rs:290-311`) → `classify_site`'s `_ => MustRun` arm (`effect.rs:1109-1123`) → `build_vouches` skips non-Establish sites (`plan/src/lib.rs:933-938`).
+
+**Floor-build touch-points (for the queue-item-3 brief):**
+1. Mint the auto-cell in classify (`effect.rs:1097-1124` + `command_effect`). **Architectural catch (+SURE, load-bearing):** `classify_with_why_diags` receives checks+kind-index but NO verdict information — the kernel is verdict-unaware by design (inv-determinism: no oracle lift inside the kernel), so the cli edge must thread the verdict-bearing-provider set INTO the kernel *as data*. A real new seam, not a one-line arm.
+2. Vouch plumbing rides UNCHANGED once the auto-cell classifies EstablishAmbient (`build_vouches` keys off `fact.kind`; elide-weld + guard mint consume via existing arms) — confirms 24L §7 "existing arms, no new license type".
+3. fence-no-disjoint: `plan/src/survival.rs` (~`:228` MayAliasReason::Unresolved fallback) must read an auto-coordinate as MayAlias, never a distinct canonical — both footprint AND backing sides.
+4. **~SUSPECT-underspecified in 24L §7 (flag for the brief):** probe-emission is a FOURTH touch-point — the elide-weld demands probe-measured convergence, and a markless body ships no probe today; per 24L §2 the shipped probe is the stripped verdict body itself, so classify's synthetic establish-cell must also mark the site probeable (cli `compile_probe` wiring).
