@@ -273,6 +273,16 @@ R1 is what redeems the heredoc specimen's value-cap: an embedded twenty-line boo
 under R0 is wall-adjacent; under R1 its converged lines comment out individually,
 inside the body, exactly like book lines.
 
+> *(Annotation 2026-07-10, post-close — R1 scope EXTENDED by human direction,
+> conductor-acked with one carve: R1 firms as "the verbatim body is a separate book" —
+> per-line disposition INSIDE verbatim payload bodies, INCLUDING guard-insertion at
+> UNWRAPPED carriers, since 24S §6d's in-sequence/same-stream argument licenses an
+> in-body guard identically to a top-level one, and it dissolves §4b's
+> conjunction-ergonomics cost for heredoc books. The carve: in-body guard-insertion
+> under an ELEVATED wrapper (`sudo sh <<'EOF'`) is Dorc-authored code in the elevated
+> lane = the 23J cell, parked — wrapped bodies get elision-edits only until then. R0
+> stays the v1 floor. Record: turn08 opaques8-ack4-r1-reach.)*
+
 ---
 
 ## §5 — The resolution ladder, the cliffs, and the two ruled-in basic forms
@@ -369,6 +379,11 @@ found for `$()`.
 - **P-A1 — pin4 whole-line-unit**: discussed at length (the explainer + heredoc nit +
   render ladder), NOT yet typed-acked. Ratify R0-as-v1 with R1 as the principled
   follow-on and the R2 decision below. (Conductor rec: ratify.)
+  *(Annotated 2026-07-10 post-close: the SHAPE is now settled by the human's typed
+  takeaway + conductor ack — R0 as the v1 floor, R1-as-separate-book (incl. in-body
+  guards at unwrapped carriers) as the reached-for follow-on, the 23J carve for
+  elevated wrappers. Formal pin-ratification remains with the keeper at
+  implementation-planning; see the §4c annotation + turn08 opaques8-ack4-r1-reach.)*
 - **P-A2 — the R2 weld**: refuse-forever vs refuse-for-v1. The human's
   "permanent-weld hovering" intuition targets R2 specifically once the ladder splits
   the cost (welding all rendering would be relitigated by the heredoc-book cell).
