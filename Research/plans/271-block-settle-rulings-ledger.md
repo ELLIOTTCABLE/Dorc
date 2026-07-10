@@ -135,8 +135,8 @@ stays NO-LIFT~~ — **SUPERSEDED 2026-07-10 (human soft-hold: "every command in 
 must also have an oracle" is chicken-and-egg AND gradual-enhancement hostile) by
 `rul-unprovable-rides-the-vouch` below.**
 
-### rul-unprovable-rides-the-vouch  (task 10b; 2026-07-10; drafted-awaiting-ack —
-replaces the superseded no-lift residual)
+### rul-unprovable-rides-the-vouch  (task 10b; 2026-07-10; TYPED — "Okay, acked.
+Durable" — replaces the superseded no-lift residual)
 The **unprovable** region of a verdict-function body (a foreign command with no loaded
 effect-knowledge; a ⊤-valued redirect target) **ships on the authored vouch, exactly as
 today** — probe AND guard, no lift-refusal, no error. Grounds: the oracle lane's
@@ -156,7 +156,18 @@ to watch-machinery-raises-disclaim-burden is "Dorc verifies what it can and tell
 which parts rest on your word," never warranty language; (r3) the filter-tool cohort
 (jq/awk/sed/cut in check pipelines) is the expected common unprovable case — the
 stdlib's existing read-blessing species (the stage-1 "vouched probe-safe reads") covers
-it opportunistically, but is never a precondition for an oracle to lift.
+it opportunistically, but is never a precondition for an oracle to lift;
+(r4) **vouch-scope-is-the-body-never-the-tool** (the human's sharpening, typed same
+date, né "temporary-other-vouches(???)"): the body-vouch is a claim about a REGION OF
+SH — "everything I typed inside this contracted non-mutative block" — never a claim
+about the command families it happens to invoke. It therefore mints NO command-family
+fact: an unmodeled command carried in one oracle's body stays ⊤ everywhere else — in
+books it remains a full poison-wall (unmodeled-drives-to-⊤ law unchanged), and it gains
+nothing in any other oracle's body. Non-transitivity is automatic rather than ruled,
+because no fact about the tool was ever asserted to transit. Exactly one vouch reaches
+OUT of its file: a tool's own oracle reaching that tool's book-sites — and it reaches
+precisely because it IS a claim about the command family, argv-keyed. Two claim-species,
+two scopes; they never convert into each other.
 
 *(entry format for future additions:)*
 
