@@ -722,5 +722,152 @@ before anything else here does. The design-round record behind stages 6–7 is
 `Research/notes/24G`.
 
 
-The dotfiles enjoyer
+Other usage-patterns
 ====================
+
+These are secondary to the primary (read: hard, and therefore worth-focusing-on)
+orchestration goal. That said, they're positions where Dorc can cheaply add
+value with the same infrastructure we're building, and thus worth keeping a
+sideeye on.
+
+
+## Dotfiles / local-system management
+
+Same machinery, different room: the "fleet" is one laptop, the admin and the host share a
+chair, and — per DESIGN's not-the-only-tool principle — a beloved tool probably already owns
+the dotfiles themselves. Both stories below are deliberately *cooperation* stories (the
+happy-child and happy-parent postures, respectively); neither asks anyone to leave the tool
+they love.
+
+> (Direction-setting strawmen throughout: the no-host local apply, the `dorc-run` runner,
+> and the delegation stdlib are minted here, not built. These sections are written in the
+> post-respell spelling — bare `tool__role()` names — where the older stages above predate
+> that rename.)
+
+### Idempotence for `chezmoi` scripts
+
+chezmoi owns this user's dotfiles, and owns them well; Dorc's ambition here is one script.
+chezmoi's escape hatch for everything-that-isn't-file-contents is its run-scripts, and its
+own docs draw the boundary plainly: scripts break the declarative model, should be used
+sparingly, and *should be idempotent* — with no machinery offered toward either. So the
+canonical package script rations itself by content-hash instead:
+
+```sh
+#!/bin/sh
+# .chezmoiscripts/run_onchange_install-packages.sh
+brew install ripgrep fd jq shellcheck
+brew install --cask kitty
+defaults write com.apple.dock autohide -bool true
+killall Dock
+```
+
+`run_onchange_` means: re-run when this *text* changes. Two structural smells. Drift is
+invisible — uninstall `ripgrep` and it stays gone forever, because the text didn't change.
+And when the text does change (one cask added), *every* line re-runs: five brew no-op
+crawls and a Dock restart, to install one package.
+
+The move is one line — the shebang — and zero chezmoi configuration, because chezmoi execs
+scripts directly and the shebang is honored:
+
+```sh
+#!/usr/bin/env dorc-run
+# .chezmoiscripts/run_install-packages.sh    (renamed to plain run_: every apply)
+brew install ripgrep fd jq shellcheck
+...
+```
+
+`dorc-run` (STRAWMAN name; the *analyzed* sibling of the strip-and-exec `dorc-sh` —
+deliberately a different token, so `dorc-sh` can stay dumb forever): probe, elide the
+converged lines, guard what cannot elide, run the rest — headlessly. Being a good guest is
+most of the design:
+
+- stdout/stderr and the exit code pass through byte-for-byte — chezmoi sees exactly the
+  script it ran, so its fail-fast, keep-going, and run-state bookkeeping all keep working;
+- nothing is printed at it (no TTY, nobody watching): the plan lands in the why-log, and
+  `dorc why --last` (STRAWMAN) answers "what did that apply actually do, and why";
+- no second state database appears. Dorc remembers nothing; it re-measures.
+
+And the rationing retires. Renamed to plain `run_`, the script becomes the reconcile loop
+chezmoi couldn't offer: drift heals (`ripgrep` comes back), additions install alone (every
+other line elides), and the mandated-but-unassisted idempotence is machinery now instead of
+author-discipline.
+
+- Spent: one shebang line per script. No config, no migration, no new format.
+- Gained: the `run_once_`/`run_onchange_` hash-rationing retires; host drift heals on every
+  apply; "what did that script just do" has an answer.
+- Off-ramp: intact twice over — the file strips to plain sh, and on a Dorc-less box it still
+  runs bare (`sh script.sh`), exactly as before.
+- Not gained: `sudo` lines still wall (honestly); and nothing here helps with chezmoi's own
+  half of the world — that is the next story's direction.
+
+### Pre-git single-binary wrapper for mechanizing git dotfiles / Brewfiles / etc
+
+The inverse posture: Dorc above, beloveds below. Every real setup is a stack — a dotfiles
+repo, a Brewfile, some `defaults` — and the glue *between* those tools is nobody's product:
+a README of steps, or a bootstrap script with ordering anxieties. That glue is a book:
+
+```sh
+#!/bin/sh
+# machine.sh — the glue layer, spelled as what you'd type anyway
+set -eu
+xcode-select -p >/dev/null 2>&1 || xcode-select --install
+command -v brew >/dev/null 2>&1 || /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+brew bundle check --file="$HOME/Brewfile" || brew bundle install --file="$HOME/Brewfile"
+chezmoi apply
+defaults write com.apple.dock autohide -bool true
+```
+
+Day zero, on a naked laptop, this file needs nothing but `sh` — not git (line 4 is where
+git comes from, via the CLT), not Homebrew, not Dorc itself. `curl … | sh` and walk away:
+the off-ramp is the on-ramp, and the book predates its tool. Dorc arrives as one static
+binary whenever it arrives, and every later morning:
+
+```
+$ dorc plan machine.sh
+ 1  #!/bin/sh
+ 2  # machine.sh — the glue layer, spelled as what you'd type anyway
+ 3  set -eu
+ 4  # xcode-select -p >/dev/null 2>&1 \
+ 4  #    || xcode-select --install                     # converged: your guard holds (rc 0)
+ 5  # command -v brew >/dev/null 2>&1 \
+ 5  #    || /bin/bash -c "$(curl -fsSL …)"             # converged: your guard holds (rc 0)
+ 6  # brew bundle check --file="$HOME/Brewfile" \
+ 6  #    || brew bundle install --file="$HOME/Brewfile" # converged: your guard holds (rc 0)
+ 7  # chezmoi apply                                    # converged: chezmoi verify (rc 0)
+ 8  defaults write com.apple.dock autohide -bool true  # runs: unmodeled ('defaults')
+plan: 1 run, 0 verify, 4 elided
+```
+
+No host argument: the target is the machine you are sitting at (STRAWMAN: the local, no-SSH
+apply). Almost nothing here is new machinery. Lines 4–6 are the admin's own hand-written
+guards — including Homebrew's *first-party documented* scripting idiom on line 6 — and they
+lift exactly like the `dpkg -s` guard in stage 1, once the base library vouches those reads
+probe-safe. The one new thing is line 7, a beloved-tool line with no hand guard: the beloveds
+ship their own read-only convergence verbs, so their stdlib oracles are near-pure delegation —
+
+```sh
+chezmoi__is_converged() {
+   case "$1" in
+   apply)  chezmoi verify ;;
+   update) return 2 ;;
+   *)      return 2 ;;
+   esac
+}
+```
+
+— with the judgment still the author's, exactly as at stage 4: `verify` answers for `apply`
+(local truth), but the author *declines* `update`, whose convergence lives partly at the
+remote (a pull elided on stale local knowledge would under-execute). Delegation is a shape,
+not a free lunch. And the happy-sibling posture falls out of statelessness: chezmoi
+rewriting half of `$HOME` between runs costs Dorc nothing, because there is nothing to go
+stale — the next plan re-measures the world as it actually is.
+
+- Spent: the bootstrap script they already had, minus its ordering anxieties; a stdlib of
+  delegation one-liners somebody publishes once.
+- Gained, day zero: naked-laptop bootstrap with `sh` as the only dependency.
+- Gained, every later morning: the stack's glue layer — formerly apply-and-hope in every
+  direction — gets a drift report and a minimal re-apply.
+- Not gained: insight *inside* `chezmoi apply` or `brew bundle` — the happy parent hands the
+  machine over at those lines and trusts their own verbs. Dorc adds value between the
+  beloveds, not within them. (The two postures compose: the previous story sits inside the
+  scripts chezmoi runs, this book sits above chezmoi itself.)
