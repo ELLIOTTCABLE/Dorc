@@ -90,12 +90,21 @@ explicit remap arm (lintable); (r3) Dorc-as-tool outward contracts (`dorc plan
 The owed static effect-check of verdict-function bodies (TODO.md:43; `24R` §0a
 "machine-assist the contract") homes as a **typeless-floor brief rider**
 (`270:block-rebuild`), not wrapper-peel: same seam (verdict-bearing providers threaded
-into classify as data — the licensing chokepoint), lands BEFORE block-context widens the
-shipped-probe surface (probe-outside + whole-ρ replication), and keeps the
-referendum-carrying wrapper-peel brief lean. Failure disposition (lean): a body that
-fails the effect-check does not lift at all — no probe AND no guard, one bar — with a
-dq diagnostic naming the offending line. The `plans/077` runtime observe backstop stays
-reserved, unaffected.
+into classify as data — the licensing chokepoint; the effect-check is one more predicate
+at that gate), lands BEFORE block-context widens the shipped-probe surface
+(probe-outside + whole-ρ replication + per-inner payload checks), and keeps the
+referendum-carrying wrapper-peel brief lean. Trust framing (three layers): this static
+check catches the shell-visible accident class ONLY (stray writes/redirects/mutators in
+the body — the paranoid-author bug class); the tool-invocation interior stays vouch-tier
+forever (frame problem — the oracle self-vouch is not eliminable); the `plans/077`
+runtime observe backstop stays reserved as the someday third layer, unaffected. Failure
+disposition (lean): ONE BAR — a body that fails the proof does not lift at all, no probe
+AND no guard (a mutating guard is Dorc-shipped mutation the bare book never had —
+harm-0), with a dq diagnostic naming the offending body line. Rider details: the
+sanctioned OOB write lanes (`$DORC_REPORT`-class breadcrumbs) must be carved out as
+non-mutative-for-this-purpose or every stage-4 refusal idiom fails the check; ⊤-valued
+redirect targets fail safe (under-approximate); the rider brief verifies against `24C`'s
+actual classify/effect shape rather than assuming it.
 
 *(entry format for future additions:)*
 
