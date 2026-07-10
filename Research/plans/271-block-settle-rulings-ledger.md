@@ -21,8 +21,8 @@ rulings that shape it, not its body.
 1. adj-entity-algebra, spelling half — the authored entity/selector mark grammar.
    CLOSED 2026-07-10: all six sub-rulings typed or dictated (see "The entity-algebra
    spelling direction" below); mechanical close-out rides task 12.
-2. adj-entity-algebra, seams half — the two `24S:A7` reservations (context-qualifier
-   slot; kind-owner per-axis room). DEFERRED to a fresh turn; re-explain from scratch.
+2. adj-entity-algebra, seams half — the two `24S:A7` reservations. CLOSED 2026-07-10
+   (three typed acks + the "family" minting; see the seam rulings below).
 3. adj-trichotomy-spelling (né `24S:A3`) — kind-owner per-axis context topology;
    the deliberate kOOB-redline reading.
 4. adj-axis-vocabulary (né `24S:A1`) — ratify v1 = {user, fs-view} + ρ,
@@ -42,8 +42,8 @@ rulings that shape it, not its body.
 11. adj-payload-pins pre-read (né `24T:P-A1`/`P-A2`) — optional tail; formally owed at
     block-context implementation-planning.
 12. 1-series close-out — amend the `24P` specimens (hash introducer; brace-alternation
-    if firmed) + author the entity-algebra design note. BLOCKED on task 2 (the note
-    must carry the seam reservations).
+    if firmed) + author the entity-algebra design note. UNBLOCKED (task 2 closed);
+    ready to fire; this ledger carries everything the note needs.
 
 ## Rulings
 
@@ -285,6 +285,44 @@ the **flat three-place `(kind, entity, selector)`**.
   - **Consumers:** the entity-algebra design note; entity-algebra-rebuild
     (`selector_covers` implements this rule); stdlib quality-bar (behaviour-menu +
     remap/dialect teaching).
+  - **Amendment (typed 2026-07-10, task 2):** the ruling's "source" is **the family**
+    (`rul-family` below) — name-derived, NEVER file-derived. `dialect(family, kind)`.
+    File/directory structure stays semantically opaque; the safety story's phrase
+    "single-source responsibility" reads "single-TARGET description" (a family is a
+    coherence unit, not an authorship unit; attribution stays line-level).
+
+### The entity-algebra seams  (task 2; 2026-07-10; all typed)
+
+- **rul-family (minted and retained; the human's definition, sharpened).** A *family*
+  is the set of non-overlapping/non-contradicting, not-guaranteed-same-author,
+  within-compilation-unit `__role` functions that describe-to-Dorc one
+  **description-target** — currently one of two species: a COMMAND (the munged
+  tool-segment; all `systemctl__*`) or a KIND (all `sm_dorc_Package__*`). Membership
+  is by name-construction only — never by file, never by author (`24F` §10's
+  "two families" wording, promoted to defined status). The per-species role vocabulary
+  is engine-owned, closed-at-a-version, totalistic (pending task 3's additions), and
+  extends BY NEW NAME ONLY, never by re-reading an existing member
+  (`24C:rul-ditch-is-diverged`'s extension law). Each member optional,
+  analyzed-if-present, silence = floor. Families are coherence units (the
+  conflict/collision refusals police overlap), not authorship units.
+- **rul-seam-context-slot-and-relational-chokepoint (né decision-context-qualifier-
+  segment, reframed under the human's fs-view challenge).** The coordinate
+  representation grows a context slot (default ambient) — at representation tier a
+  space-tag and a qualifier field are the SAME datum, so the qualifier-segment vs
+  spaces-with-bridges fork dissolves there. The genuine fork (function-shaped vs
+  relation-shaped cross-context identification) defers INTO the comparison: ALL
+  coordinate comparison sits behind one whole-coordinate choke-point that MAY answer
+  relationally — **per-axis pointwise decomposition is never baked into the API**
+  (pointwise is the user-axis special case; fs-view's enumerated-bridge and
+  may-alias-floor rungs plug into the same seam later). On record: spaces-with-bridges
+  does NOT fully handle fs-view either — mount-state-minted within-context aliasing is
+  invisible to any per-boundary machinery and the map-reads are privilege-gated
+  (`24S` §3b); DETECT-and-DEGRADE stands regardless of this seam's shape.
+- **rul-seam-kind-owner-registry-room.** One engine-internal, extensible per-target
+  registry: the at-most-one-per-(family × role) rule generalized to clause families
+  not yet minted, loud on conflict. ZERO file semantics — no blessed files, no
+  co-location; the homogeneous-compilation-unit posture (strong lean, not welded) is
+  affirmed untouched; the only per-ingest-unit fact remains the dialect marker.
 
 ## Direction & open threads
 
