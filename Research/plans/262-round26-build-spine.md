@@ -7,6 +7,17 @@ document IS that spine. 260 and 261 keep the shape/reasoning/tradeoffs/gotchas o
 and now reference this doc for the shared substrate. **Build order: this doc's S0/S1 first;
 the two tracks decouple after S1.**
 
+> **⚠ ROUND TABLED / PARTIALLY IMPORTED (2026-07-10, r24 close-out):** r26's build never
+> started; this spine remains its spec. THREE pieces were pulled forward into round 27
+> (`plans/270`): (1) the §2 records contract's single-host minimum =
+> `270:wire-records-v1-import` (block-rebuild) — framing, terminal token,
+> coordinate-last-to-token (incl. the incumbent whitespace-truncation fix), deriv
+> end-records ⇒ partial-family wall-total, attempt keying, merge-by-meet, additive-keys;
+> waves/width/ports stay r26; (2) the §7 handoff's gate-1 order-insensitive compare, riding
+> the corpus-respell's golden churn; (3) the additive-keys discipline for machine-shaped
+> surfaces round-27 mints (first consumer: the read-value record field). At resumption, S1's
+> scope = §2/§3 minus what landed under (1).
+
 **The organizing ruling (human, 2026-07-07):** bake in early the *ability* to re-order reads
 for performance; defer everything about *how* to re-order (tuning, cost models, feedback,
 caches). Endorsed, with the one guard that makes the deferral safe (§1): ordering policy is

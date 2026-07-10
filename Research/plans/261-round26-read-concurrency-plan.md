@@ -16,6 +16,12 @@ on the runbook CFG) and splittable — only things that don't depend on other th
 parallelize. And leave a designed slot for someday-ordering-by-perf-feedback, so notoriously
 long tasks don't get sorted into the same reader-lane serially.
 
+> **⚠ ROUND TABLED (2026-07-10 — see the `260` annotation; resumption per `plans/270` §5):**
+> nothing here was built. One §2 note gained a live consumer early: the h1-edge analysis's
+> "$(hostname) probe-readback" case is now the `270:read-value-slice` (block-context), whose
+> record shape is authored `262`-§2-compatible so this plan's fold-consumption mechanism
+> inherits it unchanged at resumption.
+
 **Rulings received (human, 2026-07-07) + the spine extraction:**
 - **The organizing principle:** bake in early the *ability* to re-order for perf; defer the
   tuning of *how*. Made structural in **`plans/262`** (the extracted build-spine shared with

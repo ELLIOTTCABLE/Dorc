@@ -12,6 +12,14 @@ extracted build-spine — the records-lane contract, emission locus, order-indep
 invariant, policy ports, and determinism rig shared by both tracks; 262's S0/S1 build FIRST,
 then this plan's stages proceed)**.
 
+> **⚠ ROUND TABLED (2026-07-10, r24 close-out — `notes/24U` §6):** zero build commits ever
+> landed on `ai/spike3-r26` (verified at close); this plan + `26A`'s amendments remain the
+> spec. Resumption: post-field-trial, per `plans/270` §5, by rebasing onto the then-current
+> lineage — with the S1 wire half SHRUNK by whatever `270:wire-records-v1-import` (the `262`
+> §2 single-host minimum) already landed in `270:block-rebuild`. The §10 merge-disjointness
+> contract is DORMANT until resumption (no sibling is building; round-27's golden churn needs
+> no r26 flagging).
+
 Authority: this plan *composes* settled law — it re-decides nothing already welded. Where it
 makes new calls they are enumerated in §9 (`dec-26-*`) for human ratification; defaults are
 chosen so a builder can proceed without blocking on them. Written to be executable by a
