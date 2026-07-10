@@ -16,6 +16,18 @@
 > the graduation LADDER and the typeless FLOOR — and pointers the siblings (§9), which
 > are separate work items.
 
+> **⚠ SUPERSESSION ANNOTATION (2026-07-10, r24 close-out; ruling record `24M` §1, casualty
+> ledger `24O` §2):** the human's typed rulings landed OVER this proposal. Three components
+> died or reversed — **location-gating is DEAD** (typed constructs are NOT illegal in books;
+> the per-file `# dorc-lang/v0.1` version-comment is the gate — `24M:rul-typeless-floor` +
+> `24M:rul-version-comment`); **"share-a-file dies" is REVERSED** (share-a-file lives,
+> marker-gated); **the `dorc_` name-prefix is DEAD** (bare `munged_cmd__role()` names —
+> `24M:rul-bare-dorcism-names`). The load-bearing mechanism SPEC — §2–§7's auto-cell, four
+> privacy fences, entity-free floor, monotonicity audit — SURVIVES as the build spec, plus
+> the `24C` §24L-gating-errand touch-point map (the verdict-unaware-kernel seam; the
+> probe-emission fourth touch-point §7 under-specifies). Build home: `270:block-rebuild`,
+> the typeless-floor stage. Read §2–§7 as live, §1's gating mechanics as history.
+
 ## §0. Summary
 
 One language, location-gated: books admit only valid POSIX; oracle files admit the same

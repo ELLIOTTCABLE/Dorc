@@ -4,6 +4,13 @@
 historical record `notes/23O` (read that first for *why* we are here). Plans-tier: keep scanned
 for currency; annotate, don't rewrite, when superseded.
 
+> **⚠ ROUND CLOSED (2026-07-10, by reshuffle — full accounting `notes/24U`):** ladder Stages
+> 1–5 LANDED (evidence `24C`); Stage 6 SPLIT — the extract/conclude half is DONE (`24O`), the
+> measure/maximize half moved to `270:block-stdlib` as `270:yardstick-measurement`. The
+> charter's sharpest deliverable (the converged≠no-op adequacy bite-rate) was NOT answered
+> in-round — it re-homed to the field-trial differential (`252` A1), itself tabled; `24U` §2
+> carries the honesty note. Successor arc: `plans/270`.
+
 ---
 
 ## Why this round is a build, not a design round
