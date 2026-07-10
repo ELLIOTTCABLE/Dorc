@@ -497,6 +497,21 @@ throughlines in the various moving parts:
    added alongside those*, yielding to the tools that serve their/your purposes
    better than Dorc does where relevant.
 
+   For each 'beloved tool', there's effectively three postures worth keeping an
+   eye on:
+
+   1. "happy parent": Dorc-wraps-`$BELOVED`; i.e. can Dorc still provide
+      additional value when one line of a Dorc runbook is handing the machine
+      over to `$BELOVED`, which causes complex, hard-to-oracle, multi-stage
+      orchestration and ownership of state?)
+   2. "happy child": `$BELOVED`-wraps-Dorc; can Dorc provide additional value
+      when slotted into an orchestration/management system to *add* idempotence
+      to some raw-script control-surface of that tool?
+   3. and "happy sibling": can Dorc provide additional value when it's run
+      alongside large management tools, *without* being perturbed by the changes
+      that tool makes *nor* producing additional perturbation to that tool that
+      plain-unmanaged-POSIX-sh wouldn't cause?
+
 
 Contract & DX
 -------------

@@ -17,6 +17,9 @@
 - [ ] dotfiles research: bash/zsh rule the space; I don't really want to swallow parsing-support for bashisms/zshisms. Maybe make it an *explicit split* - *only* support dorc-lang in dorc-lang-POSIX-sh files; *only* try to support bash/zsh in dorc-lang-less runbooks?
   - this narrows kWHICHSH: kWHICHSH, by my thoughts, is primarily a drive twoards *sharing*: besides making parsing simpler and staying broadly compatible no matter what shell somebody uses (offramp-maintaining for *both* zsh and bash users), it's a good-practice-encouraging and helps drive oracle *sharing* with other users. this doesn't really apply for runbooks, though; so I'm tempted to carveout runbooks from kWHICHSH entirely. (repurp-finding16/38.)
 - [ ] repurp-finding5/18 resurface privilege; we *really* need to figure out the plan for `sudo`/`sh -c`/`source` flavoured content, because "unsupported" just isn't good enough.
+- [ ] quarantined: cannot pursue w/ Fable, pending an Opus-only-round ... but I need to reason through secrets-management in general, both down the dotfiles-route *and* the ops-route.
+- [ ] also owed: local-exec as an explicitly-supported mode; zero tests for this right now.
+- [ ] "embedded-transparency" hygiene: need to encode somewhere all the design-rules that keep dorc as a happy-sibling / happy-child; know when to keep stdout quiet, why-log to a file when correct, and so on.
 
 ## Spike-3
 
