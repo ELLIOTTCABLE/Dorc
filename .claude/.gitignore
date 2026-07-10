@@ -1,4 +1,4 @@
-research/
+research/*/sources/
 worktrees/
 
 settings.local.json
