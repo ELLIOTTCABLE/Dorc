@@ -88,10 +88,20 @@ entry-points/`parse_results` signatures is FLAG-to-r26, never fork.
    sentence (now `v0.x`-flavoured) · the `# dorc:` trailer-comments-UNSTABLE declaration ·
    FLAG-to-r26: `dorc-records/v0.1` form-consistency (their surface, never churned from r23).
 3. **The typeless floor** (auto-cell + the four `24L` §7 fences + eligibility plumbing +
-   tests), after or carefully alongside the respell — both touch classify. The build brief
-   starts from the wave-1a touch-point map (`24C` §24L-gating-errand): the
-   verdict-unaware-kernel seam (thread verdict-bearing providers into classify AS DATA, per
-   inv-determinism) + the probe-emission fourth touch-point 24L §7 underspecifies. Conductor
+   tests), after the respell — both touch classify. The build brief starts from the wave-1a
+   touch-point map (`24C` §24L-gating-errand): the verdict-unaware-kernel seam (thread
+   verdict-bearing providers into classify AS DATA, per inv-determinism) + the probe-emission
+   fourth touch-point 24L §7 underspecifies. **FOLDED (human-acked 2026-07-09,
+   fd-headline-oneliner-gap `24C`):** model QUOTED `"$@"` in the oracle tracer (one word per
+   current positional, fully concrete under the site-argv contract; bare `$@`/`$*`/`"$*"`
+   stay ⊤) + **PIN the founding one-liner** (`somecmd__is_converged() { somecmd --check
+   "$@" ;}`, verdict-only + auto-cell + `"$@"`) as a first-class e2e case, in post-respell
+   spelling — the structural defense against re-drifting away from the headline example.
+   Ordering audited (human + conductor concur): NO exercised case converts to the one-liner
+   shape (the corpus models degraded tools; dispatch IS the pinned behavior; `enablesvc` is
+   already dispatch-free), so the `"$@"` work does NOT precede the respell — one churn.
+   Respell-brief rider: the builder FLAGS (never converts) any one-liner-candidate fixture it
+   passes. Conductor
    recommendation (human: "recommendations welcome but meh"): the fence-implementing builder
    also RECONSIDERS the parked `analyzer-taint-gate` (consume-only-provable-inputs) — same
    claim-tier layer, zero extra onboarding; reconsider ≠ build.
@@ -126,7 +136,11 @@ entry-points/`parse_results` signatures is FLAG-to-r26, never fork.
    `kCONTRACT-RUNGS` default is RULED (rul24M-rungs-default: stdlib verdict-functions author
    under a permanent full-license reading no future ladder re-reads) and dq-kOOB is
    substantially discharged by `24M` (the formal stamp line stays the human's;
-   non-blocking). P5-brief additions banked: `24M` §4 + §4b ca-munge-charclass. Standing
+   non-blocking). P5-brief additions banked: `24M` §4 + §4b ca-munge-charclass + the
+   BOTH-SHAPES teaching (human-acked 2026-07-09): one-liner delegation (`tool --check "$@"`)
+   is the PREFERRED verdict form for tools with a genuine read-only dry-run; dispatch-and-
+   decline is the synthesized-check form for degraded tools — the stdlib must exhibit both
+   and never teach ceremony as quality. Standing
    coverage note: the typeless floor
    serves mutator-verdict oracles only — read-value commands (`hostname`, the r25 host-guard
    wall) still need the Query/predict lane, and P5 must cover them.
