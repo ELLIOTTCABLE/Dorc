@@ -318,6 +318,22 @@ the **flat three-place `(kind, entity, selector)`**.
   registry room) — deferred to a fresh turn**; re-explain from scratch, slower. Note
   for that re-explainer: `rul-axis-vocabulary-v1`'s fs-view soft-deferral shrinks the
   qualifier to effectively {user, fs-straw}.
+- **two-observation-planes (vocabulary for the task-7 sitting; human-checked
+  2026-07-10):** distinguish WORLD-PLANE observation (a coordinate statement —
+  `kind:entity#selector` — unknowable to a referent-agnostic engine, hence
+  must-be-annotated: the Establish/Observe marks' job) from VALUE-PLANE observation
+  (bytes through the program's own dataflow — captures, pipes, AND the rc channel —
+  structurally visible in the AST, no annotation needed for the edge to exist;
+  oracle-knowledge adds only permission = read-blessing and shape = value-bounds).
+  The rc channel already has both planes (structural flow + mark-given world-meaning);
+  stdout has flow only (`OutClaim` reserved, unproduced). Task-7 restated: does
+  captured stdout get a world-plane identity, and from where? The planes must meet at
+  CHRONOLOGY (a captured probe-time value's survival past a wall is a
+  where-does-its-truth-live question — `$(hostname)` vs `$(cat /etc/flag)` are
+  structurally identical captures with opposite answers; safe floor = interposed wall
+  demotes capture-consumers). Candidate to evaluate skeptically at task 7, NOT
+  pre-decided: the producing read-blessing carries Observe coordinates and the
+  captured value INHERITS its backing from them — one mechanism, both channels.
 - **Owed at 1-series close:** the `notes/24P` specimen amendment pass (hash introducer
   at minimum; brace-alternation if its grammar firms); then the entity-algebra design
   note itself.
