@@ -70,8 +70,7 @@ ever carry a verdict — hence the only statuses that can ever produce a skip (e
 guard-pass / any non-run) — in any current or future decision table. ≥2 is
 meaningless/error/warn/anything-else, is NEVER inverted under any future design, and
 can never license anything: a ≥2 answer always falls through to run, un-verdicted.
-*(Polarity as restated by the conductor — the human's text read "never produce runs";
-one-word confirm of the restatement pending.)* systemd's `ExecCondition` ternary (0 proceed / 1–254
+systemd's `ExecCondition` ternary (0 proceed / 1–254
 skip-cleanly / 255 fail; `24R:repurp-finding89`) is cited as convergent-evolution
 *validation* of the ternary check-contract shape, not adopted: its layout puts every
 machinery-mintable status (126/127, 128+n, timeout 124/125) inside the verdict-bearing
