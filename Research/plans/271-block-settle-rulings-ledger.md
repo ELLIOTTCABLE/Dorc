@@ -279,6 +279,39 @@ a rewind — so the next context can resume mid-thought.)*
   lack). Forward-implication flagged: this precedent (annotation-lift over minted
   declaration) directly pressures `270:adj-trichotomy-spelling`'s recorded
   minted-syntax lean — carry into task 3.
+  **Draft-2b (2026-07-10, same session — the human ordered a kill-attempt on draft-2
+  ("suspect you folded to my pushback too easily"); the attempt found a real crack and
+  forced a repair):** the crack — under any-loaded minting, a SECOND probing dialect on
+  one kind (hork's own probe marks `#running` for a cell stdlib measures as `#active`)
+  re-mints the synonym-survival hole the gate exists to close; the mitigation trilemma
+  is genuine: warn-tier lint doesn't close a survival hole / hard-degrade-on-divergence
+  breaks the monotonic contract (loading a third-party oracle would strip stdlib's
+  precision) / owner-scoping requires ownership machinery the project deliberately
+  lacks (draft-1's declaration was secretly an OWNERSHIP ANCHOR, not just a token-set).
+  The repair that dissolves the trilemma — **backing-dialect-scoped comparison**: no
+  global per-kind universe exists; dialect(source, kind) = the selector tokens that
+  source's probe-marks measure; a claim spares a backing iff claim-token ∈
+  dialect(BACKING's minting source, kind) ∧ ≠ backing-token; everything else collides.
+  Walked cells: stdlib-only value case spares ✓; claim-typo collides ✓; probe-typo
+  collides ✓; cross-dialect synonym (backing `#running`(hork) vs claim `#active`)
+  collides ✓ — hole closed; monotone ✓ (a new source never alters comparisons against
+  other sources' backings); claims can never self-license (probes mint only for their
+  own facts; claim-side noise only ever collides = safe); who-mints DISSOLVED
+  (minting is inherently per-source). Complexity honesty: authored surface stays zero,
+  but engine-side cost relocates upward (per-(kind × source) dialect sets; backing
+  provenance threaded into comparison; -GUESS cheap given the ProvId arena).
+  **Honest corners where draft-1 (declaration) remains strictly stronger:**
+  (1) claim-only / write-only cells — a declared-but-unprobeable cell (`#logbuffer`)
+  can partition claims under draft-1 but is ⊤ under any measurement-lift; narrowed by
+  the escape that unprobeable disturbances usually spell as OTHER entities/kinds
+  (`sm.dorc.File:/var/log/…`), and by write-the-cheap-probe; residue disclosed.
+  (2) the ownership anchor itself (if the project ever wants one, a declaration is
+  where it would have lived). Attribution under draft-2b ≈ draft-1 (single-source
+  responsibility; author-level rather than always line-level for incoherent mark-pairs;
+  claim-omission stays the footprint omission-class, unchanged from draft-1).
+  Task-3 caveat sharpened: the annotation-lift precedent may NOT generalize to the
+  per-axis trichotomy — there may be no natural measurement line for "user-invariant"
+  to annotate; do not let this episode pre-decide task 3 in either direction.
 - **Task-2 (the two `24S:A7` seam reservations: context-qualifier segment;
   kind-owner registry room) — DEFERRED to fresh turns** (human, 2026-07-10: did not
   land on first pass; re-explain from scratch, slower, when picked back up). Note for
