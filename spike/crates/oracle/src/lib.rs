@@ -84,6 +84,12 @@ pub mod resolve;
 /// Reuses the `predict` dialect (with the pipelines-may-carry-a-mark carve-out).
 pub mod reaches;
 
+/// The munge-reservation lint (24Kc `fix-munge-reservation`; 24M `ca-munge-charclass`): the
+/// reserved `<munged>__<role>` sh-function namespace's charclass refusal, non-injective-munge
+/// collision refusal, and book-squat disclosure. A standing mitigation for the coincidental
+/// capture rul24M-bare-dorcism-names prices as accepted-not-prevented.
+pub mod reserved;
+
 /// How a `(provider, verb)` reads/writes a fact's OPAQUE boolean — the lifted
 /// representation is [`ValueClaim`] (jc-polarity-vs-rc, FINAL — human 2026-07-02).
 /// The former `Polarity{Establish, Kill, Query}` is RETIRED: no create/destroy axis

@@ -131,6 +131,14 @@ const MIGRATED_SLUGS: &[&str] = &[
 //   confusability enforcement, kind-keyed exactly like the resolver's — two files declaring one kind's
 //   reaches() (Error, both refused), or a reaches keyed to a known provider name (Warning, likely
 //   mis-key). cli-edge; PENDING the same typed-spine migration (tc-footprint-diag).
+// * `munge-name-invalid` / `munge-name-collision` / `reserved-namespace-squat` (the
+//   munge-reservation lint, 24Kc fix-munge-reservation / 24M ca-munge-charclass, oracle/reserved.rs):
+//   the charclass refusal (an emitted `<munged>__<role>` funcname that is not a legal sh NAME —
+//   leading digit / dot / non-ASCII), the non-injective-munge collision refusal (two distinct
+//   source names → one NAME, refuse-and-run), and the book-squat disclosure (a book funcdef
+//   coincidentally named `*__<role>`). cli-edge; the first two are Error (refuse), the squat is a
+//   Warning. PENDING the same typed-spine migration as the other collision-family codes
+//   (tc-footprint-diag — the reservation lint shares the confusability-diagnostic render pass).
 const LEGACY_ALLOW_LIST: &[&str] = &[
     "footprint-incoherent",
     "touches-escalated",
@@ -139,6 +147,9 @@ const LEGACY_ALLOW_LIST: &[&str] = &[
     "dangling-reference",
     "reaches-conflict",
     "reaches-provider-collision",
+    "munge-name-invalid",
+    "munge-name-collision",
+    "reserved-namespace-squat",
 ];
 
 /// The SPANLESS-MINT allow-list (arch-3-residual-2): EXACTLY the codes permitted to construct a
