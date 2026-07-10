@@ -90,13 +90,17 @@ entry-points/`parse_results` signatures is FLAG-to-r26, never fork.
    net + the st-1 `true || true` must-cover, `24C` §Wave-1) — authored pre-rename they churn
    twice; batch 4 converts the guard23 no-mint floors to GuardLicense-absence structural
    asserts.
-5. **Stage-6 SPLIT (acked):** the **extract/conclude half stays live** — inputs: the 24Kc
-   clusters + `24L` casualties, 077's unhonored half (seccomp socket-observe backstop +
-   batch-attribution recoverability — carry-or-explicitly-retire), 16Q-keystone bookkeeping,
-   the pipe-guard residuals (`24C`), and the may-alias fire-rate question (`24F` §3a — a
-   future human ruling once data exists). The **measure/maximize half is TABLED** (human:
-   tractable parts first; re-open once the respell + floor settle the surface it would
-   measure).
+5. **Stage-6 SPLIT (acked):** the **extract/conclude half is DONE 2026-07-09** →
+   **`notes/24O`** (`8cc5daf`; 25 dispositions: CARRY 17 · RETIRE 6 · SATISFIED 4 · DEFER 2,
+   each exclusion-checked; no 077 constraint retired). THREE human-flags pending, raised in
+   chat 2026-07-09: (i) the 16Q §4 DESIGN.md "Inference limitations" continuation is owed —
+   `(UNFINISHED)` at HEAD, settled material now abundant (human-authored; nobody drafts it);
+   (ii) the may-alias `24F` §3a default awaits the `may-alias=N` sensitivity number (tabled
+   measure-half) + the r25 real-resolver fire-rate — never silently flipped; (iii) flat
+   entity-algebra was resolved BY CONSTRUCTION, not conscious weld — ~SUSPECT wants an
+   explicit human confirm-pin (high re-key lock-in). The **measure/maximize half stays
+   TABLED** (human: tractable parts first; re-open once the respell + floor settle the
+   surface it would measure).
 6. **P5 / battle-oracles:** BLOCKED on the respell + version marker ONLY — the
    `kCONTRACT-RUNGS` default is RULED (rul24M-rungs-default: stdlib verdict-functions author
    under a permanent full-license reading no future ladder re-reads) and dq-kOOB is
