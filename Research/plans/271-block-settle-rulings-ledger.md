@@ -56,10 +56,22 @@ feature); failing that, the spike-minimum is a Very Simple Fs Stub — effective
 Consumers: the entity-algebra design note (context-qualifier seam only), wrapper-peel/
 wrapper-sudo briefs, stdlib kind declarations.
 
-### rul-rc-partition-stands  (task 10a; 2026-07-10; drafted-awaiting-ack)
+### rul-rc-partition-stands  (task 10a; 2026-07-10; TYPED — "your analysis of the rc
+seems correct. I buy your arguments"; riders r1–r3 bundle-acked therein)
 TODO.md:23 ("systemd's 255-as-exit-fail? should we replace our >=2 to match?") answered:
 **keep `rul-rc-partition` unchanged** (0 = named sense holds / 1 = complement / ≥2 =
-confused-runs; spike/CLAUDE.md). systemd's `ExecCondition` ternary (0 proceed / 1–254
+confused-runs; spike/CLAUDE.md).
+
+**rul-zero-one-inversion-pair** (the human's sharpening, typed same date; his coinage
+"ruling-0/1-inversion-pair", slug-normalized): the verdict-bearing statuses are exactly
+{0, 1}, an inversion-pair — a positive-sense member licenses on 0, a sense-flipped
+member licenses on 1 via the mechanical flip. These two are the ONLY statuses that can
+ever carry a verdict — hence the only statuses that can ever produce a skip (elide /
+guard-pass / any non-run) — in any current or future decision table. ≥2 is
+meaningless/error/warn/anything-else, is NEVER inverted under any future design, and
+can never license anything: a ≥2 answer always falls through to run, un-verdicted.
+*(Polarity as restated by the conductor — the human's text read "never produce runs";
+one-word confirm of the restatement pending.)* systemd's `ExecCondition` ternary (0 proceed / 1–254
 skip-cleanly / 255 fail; `24R:repurp-finding89`) is cited as convergent-evolution
 *validation* of the ternary check-contract shape, not adopted: its layout puts every
 machinery-mintable status (126/127, 128+n, timeout 124/125) inside the verdict-bearing
