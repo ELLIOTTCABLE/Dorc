@@ -312,6 +312,45 @@ a rewind — so the next context can resume mid-thought.)*
   Task-3 caveat sharpened: the annotation-lift precedent may NOT generalize to the
   per-axis trichotomy — there may be no natural measurement line for "user-invariant"
   to annotate; do not let this episode pre-decide task 3 in either direction.
+  **The 233-cve_clean walk (2026-07-10, human-directed — the classic subscription
+  example run through draft-2b):** findings, all recorded as draft-refinements:
+  (i) OBSERVE marks (`:?`) mint dialect exactly like verdict-probe marks — both are
+  measurement-annotations on runnable reads; claims/touches never mint (unchanged).
+  (ii) The `233` §4 hard-1 objection ("apt's author couldn't know somebody would write
+  a cve-checker") DISSOLVES under backing-dialect scoping: foreign claims are judged in
+  the SUBSCRIBER's dialect, so the enumerate-the-future burden relocates from the
+  kind's incumbent authors (impossible) to the property's extender (the one party who
+  knows their cell's invalidation semantics). (iii) `24F` §10 alternative-6 DISSOLVES
+  into draft-2b: its default (killed-by-any-entity-touch) = the collide-default,
+  strictly strengthened to killed-by-any-foreign-claim; the extender's
+  invalidation-basis declaration = the complement of their minted dialect — the
+  declaration became annotation. (iv) The draft-1/global-vocabulary counterfactual is
+  BROKEN on this example, twice: third-party property-extension chokes on the
+  ownership bottleneck, and once admitted, in-vocabulary sparing silently BREAKS the
+  subscription (apt's `#installed` claim spares the stale `#cve_clean` verdict past a
+  package upgrade — under-execution-flavored) unless alt6 bases are declared on top.
+  (v) **ghost-ack-mark, named**: "acknowledge a cell without touching or measuring
+  it" — recurs as 233's deleted ACK `~`, alt6's basis-list, draft-1's vocabulary, and
+  now the subscriber's spare-opt-in (opting OUT of a kill requires minting a token one
+  has no natural read for) plus the channel-publisher's noise mirror (a cve-db-refresh
+  claiming `#cve_clean` over-kills foreign probers' unrelated facts). Position: stays
+  UNBUILT; absence fails safe (over-kill / check-tax, never wrongness; kPROBING
+  banding governs expensive re-scans); earns its dislocation only on field evidence.
+
+### rul-kind-or-selector-is-a-behaviour-choice  (task 1; 2026-07-10; typed)
+The choice between minting a new KIND versus a SELECTOR on an existing kind is a
+user-facing behaviour selection, not an ontological one — "the point of having both
+types of thingie IS to have differing behaviour for them" (human, verbatim). Any
+design/API surface Dorc provides is "functions to call — tools to use and abuse";
+authors pick based on the behaviour they want, provided constraints and behaviours are
+well-documented. The menu under draft-2b: kind = ISOLATION (cross-kind disjoint by
+construction, reaches()-bridged only; claims spare everyone; no coupling, no
+vocabulary, claim-only usable — the logbuffer/cache/scratch tool); selector =
+COUPLING (same-entity collide-by-default; subscription to the entity's kill-traffic
+in both directions — the cve_clean tool). Consequence: the draft-1-advantage
+"claim-only cells" RETRACTS to the ghost-ack-mark sliver (see the open thread); the
+docs/teaching obligation (behaviour-menu documentation) rides the stdlib
+quality-bar checklist.
 - **Task-2 (the two `24S:A7` seam reservations: context-qualifier segment;
   kind-owner registry room) — DEFERRED to fresh turns** (human, 2026-07-10: did not
   land on first pass; re-explain from scratch, slower, when picked back up). Note for
