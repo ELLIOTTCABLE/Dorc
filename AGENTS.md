@@ -2,9 +2,9 @@
 
 Follow this pattern to get bootstrapped on the codebase and design, *no matter what your task is*. You *must* understand the project before you can work on it effectively.
 
-1. README, DESIGN, IMPLEMENTATION, and TODO are human-written; KNOBS and ANALYZER-NEEDS are LLM-generated but relatively authoritative.
-  - re-read them first if they are not in-context (important context in those is *not* duplicated into this AGENTS.md, intentionally);
-  - do not edit them, under any circumstances - suggest edits to the user if you see clear incorrectness; and
+1. README, DESIGN, IMPLEMENTATION, and TODO are human-written; USER_STORY, KNOBS, ANALYZER-NEEDS, and TODO-ADDTL are LLM-generated but reviewed/maintained and relatively authoritative.
+  - ALWAYS read them first if they are not in-context (important context in those is *not* duplicated into this AGENTS.md, intentionally);
+  - do not edit the first four, under any circumstances - suggest edits to the user if you see clear incorrectness; and
   - trust them over the ocean of unreviewed, LLM-generated planning-slop in the Research/ folder
 
 2. The Research/ is deep, but noisy; you need to approach it context-carefully:
