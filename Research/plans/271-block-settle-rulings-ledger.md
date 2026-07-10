@@ -389,6 +389,35 @@ the **flat three-place `(kind, entity, selector)`**.
   the FOURTH pointer so the eventual unifier finds it. Meta, conceded: the prior
   lean's extend-by-new-name invocation was compat-register; pre-ship the law is
   design-hygiene (one question per name), hardening into compat at stdlib-ship ·
+  **microtypesystem-challenge findings** (human challenge, same date: "is this a
+  half-assed higher-kinded typesystem — another poorly-derived microtypesystem stage?";
+  conductor findings, awaiting ack): the formal object named — cells are a
+  CONTEXT-INDEXED FAMILY; D's derivation is a DEPENDENCY/NON-INTERFERENCE analysis
+  (DCC lineage; the blessed who-am-I set = the primitive labeling every such analysis
+  requires; AGENTS' own "tainting"); and the complete object is the chokepoint as ONE
+  THREE-VALUED RELATION `compare(cellA,cellB) ∈ {same(coord), disjoint, unknown}` with
+  every authored surface a GENERATOR feeding it. Hits conceded: (h1, serious) the
+  trichotomy's `sensitive` CONFLATES per-value keying (re-indexing, license-free) with
+  a separation license (survival-feeding, knife-tier) — and D would derive separation
+  from ADDRESS INEQUALITY, the naive-string sin `24S` §3b branded wrong for fs-view
+  (paths alias on the user axis too); identification-by-non-interference is
+  sound-shaped, separation-by-difference is NOT; (h2) granularity was fixed by
+  accident (git-config broke candidate A; D's case-arms happened to be per-selector) —
+  relation-first derivation would have forced per-cell grain on day one; (h3) the
+  four-token enumeration is defensible ONLY via the relation view (= the possible
+  uniform answers to the two consumer queries), unverified until now. Where the
+  accusation fails: generator-incompleteness is VALUE-LOSS ONLY by the safe-bottom
+  default (unknown ⇒ run/collide/wall) — an evolving generator set is survivable by
+  design; the bite classes stay incorrectness (knife, attributed) and contradiction
+  (refuse-both). Fix proposed: the entity-algebra design note (task 12) gains a
+  ONE-PAGE formal section (kVERIFY-calibrate tier — spec, not proof): the relation +
+  consumer map, the generator registry (each surface × verdicts-it-may-generate ×
+  license tier), and the forced v1 decomposition of candidate D — **derive invariance
+  and per-value keying; NEVER derive separation** (disjointness across context-values
+  arrives only as a declared/owned act with dialect-grade care, later; cost = only the
+  within-kind cross-context disjointness dividend, modest — cross-kind stays free,
+  line-8-class sites stay guarded via imp-1 regardless). The formal section doubles as
+  the `24S:A5` design-once interface (bridges = the same-via-map generator class) ·
   **q-map-defers-with-fs-view**: sensitive-with-map's canonical home is the fs-view
   axis, so the fs-view map rides the soft-deferral — and under candidate D the
   user-axis "map" is subsumed (the traced address family); v1 authored surface =
