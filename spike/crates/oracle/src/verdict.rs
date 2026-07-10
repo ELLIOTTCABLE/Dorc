@@ -18,23 +18,40 @@
 //! ⇒ no witness ⇒ run (kFAIL-perform). This is the reached-path component of rul-guard-license's
 //! witness, made the load-bearing check exactly where hz-refusepath bites.
 //!
-//! # Declines: `return` and the inert builtins (find-return-vouches, 24C; the hz-refusepath fence)
+//! # `return N`: an explicit verdict, read by the declared sense (fix-return-decline-inert, 24Kc F2
+//! / 24M; the hz-refusepath fence)
 //!
-//! A reached `return N` is a DECLINE, never a vouch (24A §1c's sanctioned decline): `return`
-//! author-forces the function's rc PAST any check (rul-rc-partition: ≥2 confused, 1 complement,
-//! and even `return 0` is a vacuous unconditional "converged"), so it is never a check result —
-//! it ENDS the path declined. The inert fixed-rc builtins `false` (rc 1 = complement) / `:` /
-//! `true` (rc 0 VACUOUSLY) likewise run no check ⇒ never vouch. Before this
-//! ([`VerdictResolution`] modeled only "reached a command"), a `*) return 2 ;;` catch-all reached
-//! [`Tracer::run_command`] and wrongly VOUCHED — harmless in the guard tier (a declined path's
-//! `( check )` returns non-zero ⇒ `||` runs the original) but a wrong-ELISION once a vouch
-//! licenses full skip (Part B). This is a TRACER fix.
+//! A reached `return N` with a LITERAL code is the author's explicit verdict, read against the
+//! function's declared [`VerdictSense`] per rul-rc-partition — the same universal partition
+//! `USER_STORY` teaches (0 = the named sense holds; 1 = its complement; ≥2 = can't-say). The
+//! converged code (`0` under [`VerdictSense::Converged`], `1` under [`VerdictSense::Diverged`])
+//! VOUCHES; the complement or a ≥2 confused code DECLINES ⇒ the site runs. This closes
+//! fix-return-decline-inert: an author who writes their verdict in the explicit-return style
+//! taught by the partition (`case $1 in synced) return 0 ;; *) return 1 ;; esac`) is HONORED
+//! (rul24M-rungs-default: an authored verdict-function reads as full-license, honor the author's
+//! plain intent), not silently inert (loud-friend law). The apply glue needs nothing new: the
+//! shipped guard re-runs the whole stripped body live and the `return N` bytes flow through the
+//! same sense-flip glue as a live check's tool-rc (rul-rc-partition) — every sense×code cell
+//! resolves correctly at apply.
+//!
+//! This REFINES find-return-vouches (24C), which blanket-declined every reached `return N` to fix
+//! a `*) return 2 ;;` catch-all wrongly vouching. That case is UNCHANGED: `return 2` is ≥2 =
+//! confused ⇒ still a decline. What changes is only the explicit `return 0`/`return 1` verdict —
+//! previously silently inert, now lifted. The IMPLICIT vacuous-rc-0 paths the fence guards
+//! (an unmatched `case`, an `if`-false with no `else`, an empty body) reach NO command and NO
+//! `return`, stay [`VerdictResolution::Declined`], and never vouch — the distinction is exactly
+//! authored-speech-act (explicit `return`) vs sh-fall-through (silence), rul24M-rungs-default's own
+//! line. The inert fixed-rc builtins `false`/`:`/`true` ([`Decline::Inert`]) run no check and carry
+//! no authored code ⇒ never vouch.
+//!
+//! A NON-literal `return` (`return $?`, a bare `return`, a non-integer arg) cannot be read to a
+//! code ⇒ [`VerdictResolution::Declined`] (conservative: no vouch ⇒ run, kFAIL-perform).
 //!
 //! **Scope note (ru-26 churn-avoidance):** `return` still parses as a plain command (the dialect
 //! has no `Stmt::Return`), caught HERE in the tracer, not at parse. A bare test-led shorthand
 //! `[ … ] || return N` remains out of dialect and ⊤-rejects at LIFT — a deliberate parser
-//! scope-cut, NOT closed by this fix (extending the parser is out of the #12 scope): a verdict
-//! function needing that arity-refuse spells it in-dialect as `if [ … ]; then return N; fi`.
+//! scope-cut, NOT closed by this fix (extending the parser is out of scope): a verdict function
+//! needing that arity-refuse spells it in-dialect as `if [ … ]; then return N; fi`.
 //!
 //! `inv-referent-agnostic`: the tracer never decodes the entity's text — it reuses the predict
 //! argparse primitives ([`resolve_word`]/[`eval_test`]/[`pattern_matches`]) to find the reached
@@ -42,7 +59,7 @@
 
 use std::collections::BTreeMap;
 
-use dorc_core::{Carrier, Interner, Symbol};
+use dorc_core::{Carrier, Interner, Rc, Symbol};
 use dorc_syntax::sem::UnsetPolicy;
 
 use crate::predict::{
@@ -133,9 +150,10 @@ impl VerdictSet {
 pub enum VerdictResolution {
     /// The argv reached a path that ran ≥1 authored check command — the VOUCH (a licensing path).
     Vouched,
-    /// The argv reached NO authored check — an unhandled `case`, an `if`-false with no `else`, an
-    /// empty body, OR a reached DECLINE idiom (`return N` / `false` / `:` / `true`;
-    /// find-return-vouches, 24C). A DECLINE (24A §1c "an unhandled path"): no witness forms ⇒ the
+    /// The argv reached no license: an unhandled `case`, an `if`-false with no `else`, an empty
+    /// body, an inert builtin (`false`/`:`/`true`), OR an explicit `return` whose code is NOT the
+    /// converged sense — the complement / a ≥2 confused code / an unreadable code
+    /// (fix-return-decline-inert). A DECLINE (24A §1c "an unhandled path"): no witness forms ⇒ the
     /// site runs.
     Declined,
     /// Non-concrete argv / out-of-dialect-at-runtime — ⊤ (no witness; kFAIL-perform ⇒ run).
@@ -169,12 +187,18 @@ impl VerdictTop {
 
 /// Trace `verdict` over `argv` — the full, concrete, verbatim argument list of the book's command
 /// (NOT including the command word itself; the same contract as [`crate::predict::evaluate`] and
-/// [`crate::touches::evaluate_touches`]). Returns a [`VerdictResolution`].
+/// [`crate::touches::evaluate_touches`]). `sense` is the function's declared [`VerdictSense`],
+/// needed to read an explicit `return N` verdict against rul-rc-partition (fix-return-decline-inert;
+/// see the module docs). Returns a [`VerdictResolution`].
 ///
 /// Pure + total (`inv-determinism`/`inv-no-throw`): no clock/RNG/IO, ordered collections only,
 /// every path returns a resolution (the budget bounds loops).
 #[must_use]
-pub fn evaluate_verdict(verdict: &Predict, argv: &[&str]) -> VerdictResolution {
+pub fn evaluate_verdict(
+    verdict: &Predict,
+    sense: VerdictSense,
+    argv: &[&str],
+) -> VerdictResolution {
     if argv.is_empty() {
         return VerdictResolution::Top(VerdictTop::EmptyArgv);
     }
@@ -194,11 +218,31 @@ pub fn evaluate_verdict(verdict: &Predict, argv: &[&str]) -> VerdictResolution {
                 VerdictResolution::Declined
             }
         }
-        // A reached `return` declined the path outright (find-return-vouches, 24C): it exited the
-        // function with an author-forced rc that is never a check result, overriding any earlier
-        // reached check (a `return` past a check makes the path's rc vacuous ⇒ still a decline).
+        // An explicit `return N` is the author's verdict, read against the declared sense
+        // (fix-return-decline-inert): the converged code vouches, the complement / ≥2 confused
+        // declines. It overrides any earlier reached check (`return` forces the function's rc).
+        Flow::Returned(code) => classify_return(code, sense),
+        // A `return` we cannot read to a code (bare/`$?`/non-integer) ⇒ no vouch ⇒ run.
         Flow::Declined => VerdictResolution::Declined,
         Flow::Top(reason) => VerdictResolution::Top(reason),
+    }
+}
+
+/// Read an explicit `return N` code against the function's declared [`VerdictSense`], per
+/// rul-rc-partition (the universal partition `USER_STORY` teaches: 0 = the named sense holds,
+/// 1 = its complement, ≥2 = confused). Only the CONVERGED code vouches; everything else declines
+/// (the complement is a definite diverged ⇒ run; ≥2 is can't-say ⇒ run). The vouch is
+/// sense-relative: `return 0` vouches under [`VerdictSense::Converged`], `return 1` under
+/// [`VerdictSense::Diverged`] (fix-return-decline-inert, 24Kc F2 / 24M).
+fn classify_return(code: Rc, sense: VerdictSense) -> VerdictResolution {
+    let converged_code = match sense {
+        VerdictSense::Converged => 0,
+        VerdictSense::Diverged => 1,
+    };
+    if code.0 == converged_code {
+        VerdictResolution::Vouched
+    } else {
+        VerdictResolution::Declined
     }
 }
 
@@ -225,9 +269,12 @@ struct Tracer {
 
 enum Flow {
     Normal,
-    /// A reached `return` (find-return-vouches, 24C): the verdict function exited with an
-    /// author-forced rc that is never a check result ⇒ the path DECLINES. Propagates up like
-    /// [`Flow::Top`], ending the block/loop.
+    /// A reached `return N` with a LITERAL code (fix-return-decline-inert): the author's explicit
+    /// verdict, read against the declared sense in [`evaluate_verdict`] via [`classify_return`].
+    /// Exits the function, overriding any earlier reached check. Propagates up like [`Flow::Top`].
+    Returned(Rc),
+    /// A reached `return` we cannot read to a code (bare / `$?` / non-integer arg): the path
+    /// DECLINES ⇒ no vouch ⇒ run (conservative, kFAIL-perform). Propagates up, ending the block.
     Declined,
     Top(VerdictTop),
 }
@@ -341,11 +388,11 @@ impl Tracer {
     /// check ⇒ ⊤ (conservative; kFAIL-perform), exactly the touches emitter's posture minus the
     /// printf restriction.
     ///
-    /// But NOT every reached command is a check (find-return-vouches, 24C): a DECLINE idiom runs
-    /// no measurement, so it never vouches. `return` ([`Decline::Return`]) author-forces the rc
-    /// past any check ⇒ ENDS the path DECLINED; the inert fixed-rc builtins `false`/`:`/`true`
-    /// ([`Decline::Inert`]) run but record no vouch (the path continues). Only a resolved,
-    /// non-idiom command sets the vouch.
+    /// But NOT every reached command is a check: `return N` is the author's explicit VERDICT, not
+    /// a measurement (fix-return-decline-inert) — [`run_return`](Self::run_return) exits the path
+    /// with its code for [`evaluate_verdict`] to read against the sense. The inert fixed-rc builtins
+    /// `false`/`:`/`true` ([`Decline::Inert`]) run but record no vouch (the path continues). Only a
+    /// resolved, non-idiom command sets the vouch.
     fn run_command(&mut self, cmd: &Command) -> Flow {
         for w in &cmd.words {
             if let Err(reason) = self.resolve(w) {
@@ -353,9 +400,8 @@ impl Tracer {
             }
         }
         match decline_idiom(cmd.words.first()) {
-            // `return` exits the function declined — never a check (rul-rc-partition: an
-            // author-forced rc, even `return 0`, is vacuous, not a measurement).
-            Some(Decline::Return) => Flow::Declined,
+            // `return N` exits the function with the author's explicit verdict code (sense-read).
+            Some(Decline::Return) => self.run_return(cmd),
             // `false`/`:`/`true` ran but measured nothing ⇒ no vouch; the path continues.
             Some(Decline::Inert) => Flow::Normal,
             // A real check ran on this path ⇒ the vouch signal (hz-refusepath: only here).
@@ -366,6 +412,24 @@ impl Tracer {
         }
     }
 
+    /// Read a reached `return`'s code (fix-return-decline-inert). A LITERAL non-negative integer
+    /// arg (resolved through constprop, so `n=0; return $n` is read too) surfaces as
+    /// [`Flow::Returned`] for the sense-read in [`evaluate_verdict`]; a bare `return`, `return $?`,
+    /// or a non-integer arg cannot be read to a code ⇒ [`Flow::Declined`] (conservative: run). The
+    /// words already resolved in [`run_command`], so re-resolving the arg here never ⊤s.
+    fn run_return(&mut self, cmd: &Command) -> Flow {
+        match cmd.words.get(1) {
+            Some(arg) => match self.resolve(arg) {
+                Ok(s) => match s.parse::<i32>() {
+                    Ok(code) => Flow::Returned(Rc(code)),
+                    Err(_) => Flow::Declined,
+                },
+                Err(_) => Flow::Declined,
+            },
+            None => Flow::Declined,
+        }
+    }
+
     /// Resolve a word in strict context (`Unresolved` on a past-end positional) — the vouch's
     /// constprop half must resolve concretely, exactly as a predict annotation value must.
     fn resolve(&self, word: &Word) -> Result<String, TopReason> {
@@ -373,11 +437,13 @@ impl Tracer {
     }
 }
 
-/// A reached command that is a DECLINE idiom, not an authored check (find-return-vouches, 24C /
-/// rul-rc-partition / the hz-refusepath fence). None of these MEASURES state, so none vouches.
+/// A reached command that is not an authored state-CHECK (rul-rc-partition / the hz-refusepath
+/// fence). Neither MEASURES state; the distinction from a check drives whether a vouch can form.
 enum Decline {
-    /// `return …` — exits the function; the path DECLINES (author-forced rc, never a check
-    /// result — ≥2 confused, 1 complement, and even `return 0` is a vacuous "converged").
+    /// `return N` — exits the function with the author's explicit verdict code, read against the
+    /// declared sense in [`evaluate_verdict`] (fix-return-decline-inert): the converged code
+    /// vouches, the complement / ≥2 confused declines. NOT a state-measurement — the author states
+    /// the verdict outright rather than deriving it from a check's tool-rc.
     Return,
     /// `false` (rc 1 = complement) / `:` / `true` (rc 0 VACUOUSLY — the hz-refusepath vacuous-pass
     /// a guard must never read as check-passed) — an inert non-check; runs but does not vouch.
@@ -455,14 +521,15 @@ mod tests {
     use super::*;
     use dorc_core::Interner;
 
-    /// Lift the sole verdict funcdef from `src` and trace it over `argv`.
+    /// Lift the sole verdict funcdef from `src` and trace it over `argv`, reading the explicit
+    /// return (if any) against the funcdef's own declared sense.
     fn trace(src: &str, argv: &[&str]) -> VerdictResolution {
         let mut i = Interner::default();
         let set = VerdictSet::lift(&mut i, src);
         assert!(set.diags.is_empty(), "clean lift: {:?}", set.diags);
         let provider = set.value.providers().next().expect("one verdict funcdef");
-        let (verdict, _sense) = set.value.get(provider).expect("the verdict funcdef");
-        evaluate_verdict(verdict, argv)
+        let (verdict, sense) = set.value.get(provider).expect("the verdict funcdef");
+        evaluate_verdict(verdict, sense, argv)
     }
 
     // Mirrors the real apt argparse: flag-strip before and after the verb, bind the verb, and
@@ -628,5 +695,99 @@ apt-get.is_converged() {
                 "`{inert}` is an inert non-check ⇒ Declined, never a vouch"
             );
         }
+    }
+
+    #[test]
+    fn explicit_return_zero_vouches_in_converged_sense() {
+        // fix-return-decline-inert (24Kc F2 / 24M): the explicit-return style USER_STORY's
+        // exit-status partition teaches (0 = the named sense holds). `synced) return 0` is the
+        // author's converged verdict ⇒ Vouched; `*) return 1` is the complement (diverged) ⇒
+        // Declined (run). Before the fix, EVERY reached return declined ⇒ the oracle was silently
+        // inert (the loud-friend violation this fix closes).
+        let src = "\
+foo.is_converged() {
+   case $1 in
+   synced) return 0 ;;
+   *) return 1 ;;
+   esac
+}";
+        assert_eq!(
+            trace(src, &["synced"]),
+            VerdictResolution::Vouched,
+            "`return 0` under is_converged is the author's converged verdict ⇒ Vouched"
+        );
+        assert_eq!(
+            trace(src, &["stale"]),
+            VerdictResolution::Declined,
+            "`return 1` is the complement (diverged) ⇒ Declined ⇒ run"
+        );
+    }
+
+    #[test]
+    fn explicit_return_reads_against_diverged_sense() {
+        // The vouch is sense-relative (classify_return): under is_diverged the converged code is 1,
+        // so `return 1` VOUCHES and `return 0` (the named diverged sense) DECLINES — the mirror of
+        // the converged case. This is why evaluate_verdict must take the declared sense.
+        let src = "\
+foo.is_diverged() {
+   case $1 in
+   drifted) return 0 ;;
+   *) return 1 ;;
+   esac
+}";
+        assert_eq!(
+            trace(src, &["drifted"]),
+            VerdictResolution::Declined,
+            "`return 0` = diverged (the named sense) ⇒ not converged ⇒ Declined ⇒ run"
+        );
+        assert_eq!(
+            trace(src, &["steady"]),
+            VerdictResolution::Vouched,
+            "`return 1` = complement = converged ⇒ Vouched"
+        );
+    }
+
+    #[test]
+    fn unconditional_explicit_return_vouches_but_implicit_fallthrough_declines() {
+        // rul24M-rungs-default: an AUTHORED verdict-function reads as full-license, so an explicit
+        // `return 0` is a speech-act ⇒ Vouched even unconditionally. The hz-refusepath fence bites
+        // only IMPLICIT vacuous rc-0 (an unmatched `case` reaching no command and no `return`),
+        // which stays Declined. The line the fix draws is authored-speech-act vs sh-silence.
+        let explicit = "\
+foo.is_converged() {
+   return 0
+}";
+        assert_eq!(
+            trace(explicit, &["anything"]),
+            VerdictResolution::Vouched,
+            "an explicit unconditional `return 0` is the author's speech-act ⇒ Vouched"
+        );
+
+        let implicit = "\
+foo.is_converged() {
+   case $1 in
+   handled) return 0 ;;
+   esac
+}";
+        assert_eq!(
+            trace(implicit, &["unhandled"]),
+            VerdictResolution::Declined,
+            "an unmatched `case` reaches no command and no `return` ⇒ implicit fall-through ⇒ Declined"
+        );
+        assert_eq!(
+            trace(implicit, &["handled"]),
+            VerdictResolution::Vouched,
+            "the matched arm reaches the explicit `return 0` ⇒ Vouched"
+        );
+    }
+
+    #[test]
+    fn explicit_return_two_still_declines_both_senses() {
+        // Regression pin for find-return-vouches (24C), preserved by the refinement: a ≥2 code is
+        // CONFUSED ⇒ run, in either sense. This is the corpus's sole return idiom (`*) return 2`).
+        let conv = "foo.is_converged() { case $1 in x) return 2 ;; esac }";
+        let div = "foo.is_diverged() { case $1 in x) return 2 ;; esac }";
+        assert_eq!(trace(conv, &["x"]), VerdictResolution::Declined);
+        assert_eq!(trace(div, &["x"]), VerdictResolution::Declined);
     }
 }

@@ -972,9 +972,10 @@ pub fn build_vouches(
             continue;
         };
         // The reached-path license (rul-guard-license): ONLY a Vouched resolution mints. A Declined
-        // (unhandled path / a `return N` — hz-refusepath) or ⊤ ⇒ no vouch ⇒ run.
+        // (unhandled path / an inert builtin / a non-converged `return` — hz-refusepath) or ⊤ ⇒ no
+        // vouch ⇒ run. The `sense` reads an explicit `return N` verdict (fix-return-decline-inert).
         if !matches!(
-            evaluate_verdict(verdict, &op_refs),
+            evaluate_verdict(verdict, sense, &op_refs),
             VerdictResolution::Vouched
         ) {
             continue;
