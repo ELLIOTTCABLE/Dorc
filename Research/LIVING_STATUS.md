@@ -28,6 +28,19 @@ REWINDS the conductor → the respell implementor dispatches from the durable re
 (brief-assembly = queue item 2 below + 24P §2/§3/§5/§7/§8/§9 + the 24C deferral entries +
 standing fences).
 
+**⚠ NEW DESIGN INPUTS (2026-07-10 late, research session — for the close-out conductor):**
+the wrapper/bounce-command research round (`.claude/research/opaque-string-analysis-ceiling/`,
+turns 01–08, on `main`) CLOSED its research phase → two proposal-tier durables:
+**`plans/24S`** (context algebra — provisionally acked for spike experimentation) +
+**`plans/24T`** (payload decomposition — synthesis of the banked payload frame; whole-line
+unit + render ladder + the basic-forms exploration ruling). Firming into an implementation
+plan is deferred to the pre-implementation conductor; sequencing deliberately
+human-unspecified. TIME-SENSITIVE relays: 24S §7-A7 (queue-3b entity-algebra rebuild should
+reserve the context-qualifier + per-kind-per-axis seams) and 24T §7-P-A5 (the
+fragment-preserving ValueOf reshape, 219 tc-fork ii, is now load-bearing for payloads —
+same churn surfaces as respell/floor/3b). Round-2 of that research arc (privilege
+prior-art collation) stays HARD-DEFERRED pending a typed human ack.
+
 **Read-first on arrival:** the root docs AT HEAD (human-updated ~2026-07-06/07; KNOBS was
 restructured this round — `kSCOPE`/`kSURVIVAL` replace `kELISION`) → `spike/CLAUDE.md` (all
 rulings blocks — NOTE rul-role-split's two-sense surface is superseded on one point by
