@@ -65,18 +65,22 @@ entry-points/`parse_results` signatures is FLAG-to-r26, never fork.
    `24C`); (d) 24I batch-5 audit → `notes/24N` (SUBSUMED 3 · TWIN 6 · DEGRADE-to-diag 1 ·
    KEEP-e2e 4; load-bearing: the sweep is package-kind-only + oracle-fixed, so cross-kind /
    opaque / incoherent cases are sweep-INEXPRESSIBLE — subsumption = generator extension).
-2. **THE RESPELL PASS — UNGATED** (the ceremony gate was the language rulings; `24M` closed
-   them; final fold per `24M` §5): the bare `__role` rename (NOT a prefix) + the
-   version-comment marker + kind re-key to `sm.dorc.*` + ACK/POISON grammar removal +
-   `touches()` typed-emission migration (FOLDED, acked) + the loud-friend law + `dorc strip`
-   + fix-nounset-fixture-idioms (the `${2-}` sweep — FOLDED, acked) + the guard23
-   stale-XFAIL-comment cleanup (FOLDED, acked; those strings echo into 6 goldens, so they
-   ride the same bless — `resid-guard23-stale-comments`, `24C`). Brief MUST carry:
-   **ca-munge-charclass** (`24M` §4b — leading-digit DNS labels, hyphens, IDN; the munger's
-   real failure mode is charclass, never length) · the wave-1 deferrals resp-munge-policy
-   (transliteration policy for dotted kinds — the respell OWNS it) + resp-collision-ship-refusal
-   (`24C`) · the `/1`-polysemy eyes-open commit sentence · the `# dorc:`
-   trailer-comments-UNSTABLE declaration (`24M` §4).
+2. **THE RESPELL PASS — UNGATED, amended by the 2026-07-09 rulings (`24C` §r24-in-chat)**: the
+   bare `__role` rename (NOT a prefix) + **rul24-totalistic-munge** (the dotted funcdef form
+   DIES entirely — period parse-arm + tests + strip's funcname-rename + the backward un-munge;
+   keying flips to forward-munge lookup, spec sentence written, multi-word case disclosed) +
+   the **`# dorc-lang/v0.1`** marker STAMPED onto the corpus in this same churn
+   (rul24-marker-v0.1 + rul24-marker-in-churn) + kind re-key to `sm.dorc.*` + ACK/POISON
+   grammar removal + `touches()` typed-emission migration + the loud-friend law + `dorc
+   strip` (shrinks to bind/mark erasure — names are already sh-legal) +
+   fix-nounset-fixture-idioms (the `${2-}` sweep) + the guard23 stale-XFAIL-comment cleanup
+   (echoes into 6 goldens — `resid-guard23-stale-comments`, `24C`). Brief MUST carry: the
+   TOTAL munge (`-`→`_` · `.`→`_` · leading-digit result gets `_` prefix ·
+   **rul24-idn-punycode**: IDN input accepted, punycoded to A-labels then transliterated;
+   identity canonical form = A-label; no refusal path over legal DNS) · ca-munge-charclass
+   (`24M` §4b) · resp-collision-ship-refusal (`24C`) · the `/1`-polysemy eyes-open commit
+   sentence (now `v0.x`-flavoured) · the `# dorc:` trailer-comments-UNSTABLE declaration ·
+   FLAG-to-r26: `dorc-records/v0.1` form-consistency (their surface, never churned from r23).
 3. **The typeless floor** (auto-cell + the four `24L` §7 fences + eligibility plumbing +
    tests), after or carefully alongside the respell — both touch classify. The build brief
    starts from the wave-1a touch-point map (`24C` §24L-gating-errand): the
@@ -85,6 +89,15 @@ entry-points/`parse_results` signatures is FLAG-to-r26, never fork.
    recommendation (human: "recommendations welcome but meh"): the fence-implementing builder
    also RECONSIDERS the parked `analyzer-taint-gate` (consume-only-provable-inputs) — same
    claim-tier layer, zero extra onboarding; reconsider ≠ build.
+3b. **The SELECTOR-GRANULARITY REBUILD (rul24-selector-pre-stdlib, human 2026-07-09 — MUST
+   land before P5):** sub-entity/selector granularity de-deferred by fiat ("sure-enough it
+   will be valuable"; supersedes `24O` item-17's post-trial parking and resolves item-16's
+   flat-pin flag the other way — flat is the pre-rebuild INTERIM, not a weld). Shape: a
+   design-spec note first (the structured entity algebra — 17N's recursive-struct vs bounded
+   selectors, `24F` §10 alt6 as seed; the re-key blast-radius is transfer functions ×
+   footprint intersection × resolve()/CanonicalCoord × probe keying), then the rebuild;
+   sequenced AFTER the respell + floor (serial classify/fact-domain churn, no compound merge
+   pain). The canonical motivating case: `systemctl enable --now` — `#enabled` vs `#active`.
 4. **e2e slimming remainder (`24I` batches 3–4), AFTER the respell:** batch 3 authors ~50
    string-asserting in-memory twins (`render_corpus.rs` + THE one-shot-`dash -n`-per-artifact
    net + the st-1 `true || true` must-cover, `24C` §Wave-1) — authored pre-rename they churn
@@ -96,12 +109,14 @@ entry-points/`parse_results` signatures is FLAG-to-r26, never fork.
    chat 2026-07-09: (i) the 16Q §4 DESIGN.md "Inference limitations" continuation is owed —
    `(UNFINISHED)` at HEAD, settled material now abundant (human-authored; nobody drafts it);
    (ii) the may-alias `24F` §3a default awaits the `may-alias=N` sensitivity number (tabled
-   measure-half) + the r25 real-resolver fire-rate — never silently flipped; (iii) flat
-   entity-algebra was resolved BY CONSTRUCTION, not conscious weld — ~SUSPECT wants an
-   explicit human confirm-pin (high re-key lock-in). The **measure/maximize half stays
+   measure-half) + the r25 real-resolver fire-rate — never silently flipped; (iii)
+   ~~flat-pin~~ RESOLVED 2026-07-09 the OTHER way: rul24-selector-pre-stdlib (queue 3b) —
+   flat is interim, the selector rebuild lands before P5. The **measure/maximize half stays
    TABLED** (human: tractable parts first; re-open once the respell + floor settle the
    surface it would measure).
-6. **P5 / battle-oracles:** BLOCKED on the respell + version marker ONLY — the
+6. **P5 / battle-oracles:** BLOCKED on the respell + version marker **+ the selector
+   rebuild (3b — rul24-selector-pre-stdlib: the stdlib is authored ONCE, against the final
+   entity algebra)** — the
    `kCONTRACT-RUNGS` default is RULED (rul24M-rungs-default: stdlib verdict-functions author
    under a permanent full-license reading no future ladder re-reads) and dq-kOOB is
    substantially discharged by `24M` (the formal stamp line stays the human's;
