@@ -1,6 +1,3 @@
-USER_STORY: the gradual-enhancement walkthrough
-===============================================
-
 > Document tier: AI-written, heavily user-audited (same class as KNOBS.md — every word
 > human-reviewed before it counts; trumps the Research/ planning-ocean; changes rarely.)
 >
@@ -9,6 +6,9 @@ USER_STORY: the gradual-enhancement walkthrough
 > order, as plain sh; elided lines are present-but-commented-out; anything that will execute is
 > never hidden; every surviving line carries its reason. ("rul-attention-honesty",
 > `spike/CLAUDE.md`.)
+
+The gradual-enhancement walkthrough
+===================================
 
 The cast: one person, wearing both hats — the *admin* (writing the runbook, wants the server
 fixed) and, eventually, the *engineer* (writing an oracle, wants their tool described well).
@@ -41,8 +41,7 @@ the occasional *drifted* day. Watch three currencies: what the run MUTATES, what
 (wall-clock), and what it demands of the user's ATTENTION.
 
 
-Stage 0 — a thought-experiment: Dorc with its standard library disabled
-------------------------------------------------------------------------
+### Stage 0 — a thought-experiment: Dorc with its standard library disabled
 
 ```
 $ apt-get install dorc
@@ -83,8 +82,7 @@ few seconds of analysis. That asymmetry — you get out what you put in — is t
 - Lost: nothing. The off-ramp is intact: the book is still just a script.
 
 
-Stage 1 — the base library: the famous half
--------------------------------------------
+### Stage 1 — the base library: the famous half
 
 Dorc ships with a small base library of oracles for the boring famous things — the
 `sm.dorc.*` bootstrap vocabulary (FIXME: intentionally-invalid TLD, so strawman names cannot
@@ -142,8 +140,7 @@ anything. And with no oracles at all for the bottom four, they simply run.
   Dorc.
 
 
-Stage 2 — more coverage, below a wall: guards appear
-----------------------------------------------------
+### Stage 2 — more coverage, below a wall: guards appear
 
 The plan has been nagging, politely, with attribution and counts:
 
@@ -218,8 +215,7 @@ shorter. Only proof does that, and past an opaque command there is no proof to b
   wall-formers.
 
 
-Stage 3 — two minutes of engineering: the minimal foobar oracle
----------------------------------------------------------------
+### Stage 3 — two minutes of engineering: the minimal foobar oracle
 
 The hint has sharpened (it knows the topology now):
 
@@ -336,8 +332,7 @@ no verdict, no guard, no elision; the site runs. Everything fails toward run.
 - Not gained: anything about `hork`. Walls fall one tool at a time, each by its own author.
 
 
-Stage 4 — the battle-ready oracle: breadth, honesty, publication
-----------------------------------------------------------------
+### Stage 4 — the battle-ready oracle: breadth, honesty, publication
 
 Weeks later, with time to spare, the engineer hat comes back on — not to improve this book's
 steady-state plan (it is already two lines; there is nothing left to buy here), but to make
@@ -386,8 +381,7 @@ What each addition buys — and refuses:
 - Explicitly not gained, and never will be by this route: `hork`.
 
 
-Stage 5 — the footprint: facts surviving a wall that stays
-----------------------------------------------------------
+### Stage 5 — the footprint: facts surviving a wall that stays
 
 > (FIXME, updated 2026-07-04: the *mechanism* below is now BUILT — the round-24 spike
 > carries authored footprints, probe-time derivation for payload-bound tools, and the
@@ -538,8 +532,7 @@ bought with exactly that trust, and with nothing else.
 > high community effect. Mechanisms landing in the round-24/25 builds; spellings strawman.)
 
 
-Stage 6 — the kind-owner: two names, one thing
-----------------------------------------------
+### Stage 6 — the kind-owner: two names, one thing
 
 The footprint machinery compares coordinates by *name*, and names lie. On a real Debian
 host, `nginx` and `nginx-full` can be one package under two names (provides); two paths can
@@ -581,8 +574,7 @@ package.resolve() {                          # the package kind's owner (STRAWMA
   aliases — including ones written by people who never heard of the resolver.
 
 
-Stage 7 — reach: what touching an entity drags with it
-------------------------------------------------------
+### Stage 7 — reach: what touching an entity drags with it
 
 > (FIXME: the freshest design — the round-24 part-B build, mechanism settled in dialogue;
 > the spelling below is the strawman under construction.)
@@ -627,8 +619,7 @@ package.reaches() {                          # the package kind's owner (STRAWMA
   what they *meant*, not just what they typed.
 
 
-The residue, and the honest product statement
----------------------------------------------
+### The residue, and the honest product statement
 
 `hork` never gets an oracle. The vendor won't document it; nobody sane will vouch for it.
 So line 10 runs on every apply until the end of time, and the `ufw` line behind it verifies
@@ -639,8 +630,7 @@ line carrying its reason, every reason naming its wall — is itself the feature
 commented out `ufw allow 443/tcp` on vibes would be worse than no tool.
 
 
-The bought unsoundness: one corner, fully fenced
-------------------------------------------------
+## The bought unsoundness: one corner, fully fenced
 
 Everything in this story is honest in one of two cheap ways. Either Dorc *declines* to
 promise — a wall, a guard, a line that stays in the plan — or a claim bites the person who
@@ -730,3 +720,7 @@ annotation-typed emission is the settled direction stage 5's stringly `kind:enti
 migrates TO (the FIXME at stage 5). Expect these stages' renders and spellings to churn
 before anything else here does. The design-round record behind stages 6–7 is
 `Research/notes/24G`.
+
+
+The dotfiles enjoyer
+====================
