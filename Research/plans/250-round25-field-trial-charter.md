@@ -5,6 +5,13 @@
 > conductor-synthesis, confidence-marked. **Durable restart-point:** a fresh conductor can resume the
 > round from this file alone. Does NOT edit root docs (human-only). `LIVING_STATUS` carries the pointer.
 
+> **⚠ ROUND TABLED (2026-07-10, r24 close-out — `notes/24U` §6):** the trial never fired; it
+> waits on the round-27 consolidation (`plans/270`) — the stdlib gates it hard, and the book's
+> two permanent walls (`su - postgres -c`; the `$(hostname)` host-guard) are exactly what
+> `270:block-context` builds, so the revived trial measures MORE product than this charter
+> assumed. Revival conditions + owed-on-revival items: `270` §5. The methodology herein stands
+> unchanged.
+
 ## What round 25 is
 
 Round 24 built the elide machine on synthetic strawmen. Round 25 is the **first time a human drives

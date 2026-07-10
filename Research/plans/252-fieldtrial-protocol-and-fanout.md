@@ -6,6 +6,15 @@
 > the primary content: they gate BOTH the adversarial review (task #5) and the parallel Opus fan-out.
 > Confidence-marked. Trust the root docs + `250`/`251` where they conflict.
 
+> **⚠ ROUND TABLED (2026-07-10, r24 close-out — `notes/24U` §6; revival per `plans/270` §5):**
+> the protocol stands unchanged; only the schedule moved. Translation for the revival
+> conductor: every "rides-r24" dependency now reads "rides round-27" — the stdlib
+> (`270:stdlib-authoring`, né P5) lands in `270:block-stdlib`; §7's B4 gate ("Stage-4/5 having
+> landed") is SATISFIED (`24C` Stages 4/5); the wrapper/payload/read-value machinery
+> (`270:block-context`) newly un-walls the book's `su -c` and `$(hostname)` lines, so re-check
+> `255 §5`'s predicted numbers against the revived tier before Phase B (the owed
+> fold-255§5-into-§4 remains the correction vehicle).
+
 ## §0. The shape
 
 Two phases (`251`: protect-first-contact + the phase-A-serves-phase-B razor):
@@ -384,7 +393,8 @@ all 3 OTel vendor oracles ride it; if it doesn't lift, the vendor-install admin-
 the final tie-together is pending, scheduled to land BEFORE r25 fires. (An in-repo probe 2026-07-05
 confirmed the *current* build does NOT yet lift it — `grep`-on-stdin binds no entity, deciding leaf is
 ⊤ — consistent with "machinery there, tie-together not done.") NOT an r25-settle item; confirm it lands
-(human syncing the r24 conductor).
+(human syncing the r24 conductor). *(Annotation 2026-07-10: LANDED — the `24J` connected-pipes lift;
+the tripwire XFAIL promoted GREEN; evidence `24C` §pipe-guard-LIFT.)*
 
 **Finding — multi-wall-cascade → `touches()` is load-bearing.** In the multi-service OTel book, one
 stale *middle* vendor (prometheus) re-walls its whole *tail* by CFG position alone — a converged grafana
@@ -447,4 +457,5 @@ grain-of-salt, verify-not-trust. **Accepted:**
 - **memo-4 → B2 confound-guard:** pre-register B2 so "the tool never pointed me anywhere" (a missing
   first-wall hint) routes to **B6 (gap-log: unbuilt feature)**, NEVER to B2's "gradual-enhancement
   thesis in trouble" fork — a missing *feature* must not grade the *thesis*. (Check pre-Phase-B whether
-  r24 landed the stage-3 hint line.)
+  r24 landed the stage-3 hint line. *Annotation 2026-07-10: LANDED — the first-wall hint with the
+  un-wall-M counterfactual, `339189a`; evidence `24C` §firstwall-hint.*)
