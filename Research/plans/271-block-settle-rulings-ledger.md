@@ -130,10 +130,33 @@ is ACCEPTED for consistency — justification on record: the flip discloses a st
 violation (the book was always mutating in the probe lane), not a regression. The two
 provenance classes stay SEPARATED in diagnostics/docs (the human's gut, typed):
 structural proofs are permanent and near-warrantable; oracle-sourced proofs name the
-proving oracle in the dq and are never marketed as coverage. Residual class
-(conductor-drafted, awaiting-ack): **unprovable** (foreign un-oracled command in the
-body; ⊤-valued redirect target) stays NO-LIFT + dq, warning-tier, NOT fail-fast — a
-value-decline, not a contradiction.
+proving oracle in the dq and are never marketed as coverage. ~~Residual class: unprovable
+stays NO-LIFT~~ — **SUPERSEDED 2026-07-10 (human soft-hold: "every command in an oracle
+must also have an oracle" is chicken-and-egg AND gradual-enhancement hostile) by
+`rul-unprovable-rides-the-vouch` below.**
+
+### rul-unprovable-rides-the-vouch  (task 10b; 2026-07-10; drafted-awaiting-ack —
+replaces the superseded no-lift residual)
+The **unprovable** region of a verdict-function body (a foreign command with no loaded
+effect-knowledge; a ⊤-valued redirect target) **ships on the authored vouch, exactly as
+today** — probe AND guard, no lift-refusal, no error. Grounds: the oracle lane's
+probe-license was always the VOUCH, not proof (DESIGN: "vouched-safe-to-run … either by
+the author, or by provable Dorc-provenance" — two license sources; the under-approximate
+"better to ship no probe at all" mandate governs the Dorc-provenance path, i.e. lifting
+admins' in-book guards, which stays proof-gated and is NOT loosened by this ruling). The
+effect-check is therefore **falsification-first, never a completeness gate** (`24R` §0a
+says machine-ASSIST): it fail-fasts on proven contradiction
+(`rul-proven-mutation-fails-fast`), it may positively report fully-verified bodies, and
+third-party silence never revokes a first-party license. Riders: (r1) each unprovable
+command earns a hint-tier note (author-facing lint surface primarily, kWARN-rich):
+"outside machine verification; your vouch carries it" — with the standard
+enhancement-pointer shape (a read-blessing for that tool would verify the region);
+(r2) verified-vs-vouch-carried is a REPORTABLE distinction per body — the honest answer
+to watch-machinery-raises-disclaim-burden is "Dorc verifies what it can and tells you
+which parts rest on your word," never warranty language; (r3) the filter-tool cohort
+(jq/awk/sed/cut in check pipelines) is the expected common unprovable case — the
+stdlib's existing read-blessing species (the stage-1 "vouched probe-safe reads") covers
+it opportunistically, but is never a precondition for an oracle to lift.
 
 *(entry format for future additions:)*
 
