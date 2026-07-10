@@ -16,16 +16,16 @@ Sibling deliverable: the **entity-algebra design note** (the `24C:rul-selector-p
 obligation, tasks 1–2 below) is its own document when authored; this ledger carries the
 rulings that shape it, not its body.
 
-## Session task map (mirrors the conductor task list, 2026-07-10)
+## Session task map (mirrors the conductor task list)
 
 1. adj-entity-algebra, spelling half — the authored entity/selector mark grammar
-   (gates block-rebuild; needs typed ack).
+   (gates block-rebuild; needs typed ack). IN PROGRESS — one ack outstanding.
 2. adj-entity-algebra, seams half — the two `24S:A7` reservations (context-qualifier
-   slot; kind-owner per-axis room).
+   slot; kind-owner per-axis room). DEFERRED to a fresh turn.
 3. adj-trichotomy-spelling (né `24S:A3`) — kind-owner per-axis context topology;
    the deliberate kOOB-redline reading.
 4. adj-axis-vocabulary (né `24S:A1`) — ratify v1 = {user, fs-view} + ρ,
-   versioned-closed, engine-owned.
+   versioned-closed, engine-owned. CLOSED.
 5. wrapper context-function spelling — strawman the `24S` §2b surface
    (peel/axes/ρ-transform/self-vouch) in actual sh.
 6. carrier declaration spelling — `24T` pin1 (which-arg-is-code, stdin shapes,
@@ -37,7 +37,7 @@ rulings that shape it, not its body.
 9. adj-stopping-point (né `24T:P-A6`) — typed ratification of the derivable analyzer
    ceiling (const-resolvability × no-escalation × no-cross-host).
 10. adj-small-homes — systemd rc=255 vs the ≥2 partition; the
-    probe-bodies-proved-non-mutable effect-check's home.
+    probe-bodies-proved-non-mutable effect-check's home. CLOSED.
 11. adj-payload-pins pre-read (né `24T:P-A1`/`P-A2`) — optional tail; formally owed at
     block-context implementation-planning.
 
@@ -169,69 +169,118 @@ OUT of its file: a tool's own oracle reaching that tool's book-sites — and it 
 precisely because it IS a claim about the command family, argv-keyed. Two claim-species,
 two scopes; they never convert into each other.
 
-### rul-coordinate-shape-flat-three-place  (task 1; 2026-07-10; typed)
-The coordinate promoted into the intersection plane (footprints × backings ×
-disjointness) is the **flat three-place `(kind, entity, selector)`** — the shape
-`FactKey` already has; `Backing`'s deliberate selector-drop retires in the
-entity-algebra-rebuild. The `plans/17N` §4 recursive/JSON-adjacent-struct lean is
-DECLINED as coordinate shape — its recursion motivators (cross-kind handles, aliased
-names) were since absorbed by owner-declared *mechanisms between* flat coordinates
-(`resolve()` canonicalization; `reaches()`/`manifest()` expansion), so the coordinate
-stays a name. Human riders (typed): he is amenable-not-evangelized — unsold that NO
-structural-utility corner remains; the position holds because later expansion is
-"language-design easy" **as long as the bare form continues to backwards-compatibly
-mean "true"/"occupied"** (the 17N present-key-is-true default, preserved as law:
-selector-less = whole-entity/occupied, forever). Conductor hedge riding the ruling:
-`SelectorId` stays opaque/interned and every selector comparison lives behind ONE
-choke-point function (`selector_covers`-shaped), so any future structure lands in one
-function, not a re-key. Consumers: entity-algebra design note, entity-algebra-rebuild,
-corpus-respell.
+### The entity-algebra spelling direction  (task 1; 2026-07-10; consolidated — each
+sub-entry marked typed or awaiting-ack)
 
-### rul-selector-introducer-hash  (task 1; 2026-07-10; typed, PERMANENT)
-The selector introducer is **`#`**, replacing tip's `.` everywhere a selector is
-spelled: `sm.dorc.Service:"$svc"#enabled`; `:? sm.dorc.GrepMatch:"$pat"#matched`.
-Human rationale (typed): matches the HTML-anchor / commit-ID vibe of "narrow down to
-this specific thing." Rider (typed): `#` still compounds with several entity
-constructs, so **quoting must stay supported** — the quoted-entity form remains the
-supported spelling where charsets collide (exactly as was already true under period).
-Churn: rides the corpus-respell with everything else (mark grammar + observe marks +
-render/why-lens fact-label strings + records); the `notes/24P` specimens get a
-conductor-side amendment pass at 1-series close (the anticipated block-settle move);
-`24P` d4's unquoted-dotted-entity ⊤-reject corner gets re-derived under `#` in the
-design note. New root-doc staleness accrues to the punted root-doc pass: USER_STORY's
-`.synced`/`.matched` forms.
+The coordinate, everywhere it appears (facts, backings, footprints, disjointness), is
+the **flat three-place `(kind, entity, selector)`**.
 
-### rul-emission-selector-on-mark  (task 1; 2026-07-10; typed ack + direction)
-`touches()`/`reaches()` claim a cell by the selector riding the **trailing mark**
-alongside the kind — `printf '%s\n' "$1"  : sm.dorc.Service#active` — applying to
-every line that statement emits; emission lines stay raw entities (no output
-dressing); a selector-less mark = whole entity (today's exact meaning, the floor).
-Direction (human strawman, same date, grammar NOT yet ruled): multi-cell claims need
-a **list-y shape** to avoid seven-line touches bodies for complex structures — leading
-strawman is shell-obvious alternation-braces, `: sm.dorc.Service#{enabled,active}`.
-Grammar detail owed to the entity-algebra design note.
+- **rul-coordinate-shape-flat-three-place (typed).** Flat ratified; `plans/17N` §4's
+  recursive-struct lean declined as coordinate shape — its motivators (cross-kind
+  handles, aliased names) live in the owner-declared function mechanisms *between* flat
+  coordinates (`resolve()`, `reaches()`/`manifest()`), so the coordinate stays a name.
+  Riders: later structural expansion must remain language-design-easy, and the bare
+  selector-less form permanently means "true / occupied / whole-entity". Engine hedge:
+  `SelectorId` stays opaque/interned; every selector comparison lives behind ONE
+  choke-point function (`selector_covers`-shaped), so future structure lands in one
+  function, never a re-key.
+- **rul-selector-introducer-hash (typed, PERMANENT).** `#` introduces a selector:
+  `sm.dorc.Service:"$svc"#enabled` (the HTML-anchor / commit-ID "narrow to this
+  specific thing" vibe). Quoting stays supported where charsets collide, exactly as
+  under the old `.`. Rides the corpus-respell churn (marks, `:?` observes, render/
+  why-lens fact-labels, records); `notes/24P` specimens amended conductor-side at
+  1-series close; USER_STORY's `.synced`/`.matched` staleness accrues to the punted
+  root-doc pass.
+- **rul-emission-selector-on-mark (typed).** `touches()`/`reaches()` claim a cell via
+  the selector riding the trailing mark on the emitting statement —
+  `printf '%s\n' "$1"  : sm.dorc.Service#active` — applying to every line that
+  statement emits; emission lines stay raw entities (no output dressing); a
+  selector-less mark = whole entity (the floor). Multi-cell claims get a list shape:
+  brace alternation `: sm.dorc.Service#{enabled,active}` (direction; exact grammar in
+  the design note).
+- **rul-binds-entity-only-provisional (typed, SOFT — ~GUESS both sides).** Binds name
+  entities, never cells; facts about cells attach via marks on probing/emitting
+  commands. Door open on counterexample; nobody worried.
+- **rul-kind-or-selector-is-a-behaviour-choice (typed).** Minting a KIND vs a SELECTOR
+  is a user-facing behaviour selection, not ontology — "the point of having both types
+  of thingie IS to have differing behaviour for them." The menu: **kind = isolation**
+  (cross-kind disjoint by construction, `reaches()`-bridged only; claims spare everyone;
+  no coupling; claim-only usable — logs, caches, scratch state); **selector = coupling**
+  (same-entity collide-by-default; subscription to the entity's kill-traffic in both
+  directions). The behaviour-menu teaching rides the stdlib quality-bar checklist.
+- **rul-selector-disjointness-dialect-scoped (drafted-AWAITING-ACK — the one un-typed
+  piece of this direction).** The rule for when token-inequality may be read as
+  cell-disjointness (the survival license — the one lane where string-noise fails
+  toward under-execution rather than toward run):
+  - **Minting.** A selector token enters the system only as an annotation on a runnable
+    measurement line — verdict-probe marks and `:?` observe marks both mint;
+    claims/touches never mint. No dislocated declarations exist anywhere: a kind's
+    cell-structure is the projection of what loaded oracles measure. (The stage-5
+    principle, one level up: a fact's backing IS what its probe reads; a kind's
+    vocabulary IS what its probes measure.)
+  - **`dialect(source, kind)`** = the selector tokens that source's measurement-marks
+    carry for that kind. No global per-kind vocabulary exists.
+  - **Comparison.** For same-entity coordinates: a claim SPARES a backing iff
+    claim-token ∈ dialect(the backing's minting source, kind) AND claim-token ≠
+    backing-token. Everything else COLLIDES — selector-less claims, unminted tokens,
+    and cross-dialect tokens are all ⊤-selector (collide with every cell of the
+    entity). Entity-level disjointness across different entities/kinds is unchanged.
+  - **Properties**, each load-bearing: empty world ⇒ byte-identical to entity-granular
+    HEAD · noise fails safe on BOTH sides (claim typos/synonyms collide; a probe-side
+    typo makes the honest claim-token out-of-dialect ⇒ collide) · monotone (a newly
+    loaded source never alters comparisons against other sources' backings) · no
+    self-licensing (claims cannot mint; probes govern only their own facts' sparing) ·
+    **subscription semantics are native** (a cell hung on a shared kind is
+    auto-subscribed to the entity's kill-traffic — a foreign claim can never spare your
+    backing unless your own file mints its token; a source's dialect IS its
+    kill-surface control, each minted token a kill opted out of; this dissolves `233`
+    hard-1 — the enumerate-the-future burden relocates from the kind's incumbent
+    authors, who cannot know, to the property's extender, who can — and dissolves
+    `24F` §10 alternative-6 — its default is the collide-default, and the
+    invalidation-basis declaration is exactly the complement of the minted dialect) ·
+    attributable (every dialect member cites its minting measurement line; the
+    unknown-token hint renders the backing source's measured cells with those lines) ·
+    DST-clean (dialects are a pure function of loaded oracle text).
+  - **Worked minimum:**
 
-### rul-binds-entity-only-provisional  (task 1; 2026-07-10; typed, SOFT — ~GUESS-shaped
-on both sides)
-Binds name **entities, never cells**: `pkg : sm.dorc.Package = "$1"` binds identity;
-facts about cells attach via marks on probing/emitting commands. Neither party is
-confident beyond ~GUESS; the door stays open if a bind-to-a-cell counterexample ever
-arrives; nobody is worried. (Rationale on record: letting binds carry selectors blurs
-identity — `resolve()`'s domain — with state — the probe's domain; the 17N Seam
-warning.)
+    ```sh
+    # dorc-lang/v0.1 — a kind's dialect is minted by its measurement lines:
+    systemctl__is_converged() {
+       case "${1-}" in
+       enable) systemctl is-enabled --quiet -- "${2-}"   : sm.dorc.Service:"$2"#enabled ;;
+       start)  systemctl is-active  --quiet -- "${2-}"   : sm.dorc.Service:"$2"#active  ;;
+       *) return 2 ;;
+       esac
+    }
+    # dialect(this source, sm.dorc.Service) = {enabled, active}; so its restart claim —
+    systemctl__touches() {
+       verb="${1-}"; shift
+       case "$verb" in restart) printf '%s\n' "$1"   : sm.dorc.Service#active ;; esac
+    }
+    # — spares an #enabled-backed fact (in-dialect, unequal). A foreign dialect only
+    # ever collides; hanging a cell on a shared kind is subscribing to its kill-traffic:
+    scan_cve__predict() { cve-tool --check -- "${1-}"   :? sm.dorc.Package:"$1"#cve_clean ;}
+    ```
 
-*(entry format for future additions:)*
-
-<!--
-### rul-<full-word-slug>  (task N; YYYY-MM-DD; typed | drafted-awaiting-ack)
-One-paragraph ruling. Surviving strawman sh inline where spelling-relevant.
-Supersedes / amends: <docID:slug refs>. Consumers: <which block/brief this binds>.
--->
+  - **Fences / residues, named:** **ghost-ack-mark** — "acknowledge a cell without
+    touching or measuring it" (the spare-opt-in for expensive-probe subscribers; the
+    channel-publisher noise mirror, e.g. a cve-db-refresh whose `#cve_clean` claims
+    over-kill foreign probers' unrelated facts) — stays UNBUILT; its absence fails safe
+    (over-kill / check-tax, never wrongness; `kPROBING` banding governs expensive
+    re-scans); reconsider only on field evidence · same-token-divergent-meaning is not
+    addressed here by design (adjudicability-list tier, `270:adj-adjudicability-list`) ·
+    physically-overlapping cells within one source's dialect are inherent to narrowing,
+    differential-discharge-testable (mutate via the claiming verb, watch the sibling
+    probe flip) · engine cost: per-(kind × source) dialect sets + backing provenance
+    threaded into the comparison (-GUESS cheap given the ProvId arena); authored
+    surface: zero new · this precedent does NOT auto-generalize to task 3's trichotomy
+    (there may be no measurement line for "user-invariant" to ride; adjudicate task 3
+    on its own merits).
+  - **Consumers:** the entity-algebra design note; entity-algebra-rebuild
+    (`selector_covers` implements this rule); stdlib quality-bar (behaviour-menu +
+    remap/dialect teaching).
 
 ## Direction & open threads
-
-*(non-ruling steers, rejected alternatives worth remembering, and threads cut short by
-a rewind — so the next context can resume mid-thought.)*
 
 - **watch-machinery-raises-disclaim-burden** (human observation, 2026-07-10, task 10b —
   "not a nack"): the effect-check "leans perilously close to promising non-mutation";
@@ -244,117 +293,9 @@ a rewind — so the next context can resume mid-thought.)*
 - Conversational-strawman discipline (conductor note-to-self): function names in
   strawmen use the bare munged `tool__role` form per `24M` (`foobar__is_converged`),
   not single-underscore.
-- **decision-selector-vocabulary-gating — OPEN, awaiting ruling (task 1's last open
-  item); proposal REVISED 2026-07-10 after the human's annotation-not-declaration
-  challenge.** History, compressed: draft-1 was a kind-owner *declared* selector
-  vocabulary (a behaviour-dislocated declaration — would have been the project's FIRST;
-  the human flagged the kOOB/Ansible-death direction and asked for a
-  spelled-in-natural-sh lift instead; his gentle suspicion "annotation-not-declaration"
-  confirmed). Draft-2, the live drafted-awaiting-ack mechanism,
-  **measured-selector-universe** (slug candidate `rul-vocabulary-is-what-probes-measure`):
-  the natural sh construct carrying cell-names is the **per-facet status read** the
-  world's tools already ship (`systemctl is-enabled` vs `is-active`; `dpkg -s` vs
-  `dpkg -V`; `git diff --quiet` vs `--cached --quiet`) — the selector token is an
-  ANNOTATION on the measuring line (existing probe-mark grammar, `#` per
-  `rul-selector-introducer-hash`, zero new surface); the kind's cell-universe is
-  PROJECTED as the set of selector tokens annotating loaded runnable measurements of
-  that kind (the stage-5 principle one level up: a fact's backing IS what its probe
-  reads ⇒ a kind's vocabulary IS what its probes measure). Gate rule: selector
-  DISJOINTNESS (the survival license) concluded only between measured tokens; an
-  unmeasured token = ⊤-selector (collides with every cell of its entity), either side —
-  the both-sides symmetry now falls out by construction (claims can only narrow against
-  the measurement side's actual dialect). Empty universe ⇒ byte-identical to today.
-  Each universe member cites its minting measurement line (more attributable than a
-  declaration). Dissolves draft-1 costs: new-declaration-family, owner-bottleneck,
-  bootstrap-authoring-tax. Honest residues: multi-dialect synonym hole (two probe
-  authors, one kind, two tokens for one cell — warn-tier divergence lint now;
-  co-reference-unification later); same-token-divergent-meaning (unchanged,
-  adjudicability-list tier); physically-overlapping cells (inherent to narrowing;
-  differential-discharge-testable — mutate via claiming verb, watch the sibling probe
-  flip); universe is a pure function of loaded oracle text (DST-clean); loading an
-  oracle can upgrade a ⊤ claim to a narrowing one (monotone-value direction, disclose).
-  Open sub-question: WHO mints — any loaded probe-mark (conductor lean, ~SUSPECT:
-  maximally gradual, no ownership machinery, divergence-lint covered) vs
-  owner-co-located marks only (tighter; reintroduces ownership dependency most v1 kinds
-  lack). Forward-implication flagged: this precedent (annotation-lift over minted
-  declaration) directly pressures `270:adj-trichotomy-spelling`'s recorded
-  minted-syntax lean — carry into task 3.
-  **Draft-2b (2026-07-10, same session — the human ordered a kill-attempt on draft-2
-  ("suspect you folded to my pushback too easily"); the attempt found a real crack and
-  forced a repair):** the crack — under any-loaded minting, a SECOND probing dialect on
-  one kind (hork's own probe marks `#running` for a cell stdlib measures as `#active`)
-  re-mints the synonym-survival hole the gate exists to close; the mitigation trilemma
-  is genuine: warn-tier lint doesn't close a survival hole / hard-degrade-on-divergence
-  breaks the monotonic contract (loading a third-party oracle would strip stdlib's
-  precision) / owner-scoping requires ownership machinery the project deliberately
-  lacks (draft-1's declaration was secretly an OWNERSHIP ANCHOR, not just a token-set).
-  The repair that dissolves the trilemma — **backing-dialect-scoped comparison**: no
-  global per-kind universe exists; dialect(source, kind) = the selector tokens that
-  source's probe-marks measure; a claim spares a backing iff claim-token ∈
-  dialect(BACKING's minting source, kind) ∧ ≠ backing-token; everything else collides.
-  Walked cells: stdlib-only value case spares ✓; claim-typo collides ✓; probe-typo
-  collides ✓; cross-dialect synonym (backing `#running`(hork) vs claim `#active`)
-  collides ✓ — hole closed; monotone ✓ (a new source never alters comparisons against
-  other sources' backings); claims can never self-license (probes mint only for their
-  own facts; claim-side noise only ever collides = safe); who-mints DISSOLVED
-  (minting is inherently per-source). Complexity honesty: authored surface stays zero,
-  but engine-side cost relocates upward (per-(kind × source) dialect sets; backing
-  provenance threaded into comparison; -GUESS cheap given the ProvId arena).
-  **Honest corners where draft-1 (declaration) remains strictly stronger:**
-  (1) claim-only / write-only cells — a declared-but-unprobeable cell (`#logbuffer`)
-  can partition claims under draft-1 but is ⊤ under any measurement-lift; narrowed by
-  the escape that unprobeable disturbances usually spell as OTHER entities/kinds
-  (`sm.dorc.File:/var/log/…`), and by write-the-cheap-probe; residue disclosed.
-  (2) the ownership anchor itself (if the project ever wants one, a declaration is
-  where it would have lived). Attribution under draft-2b ≈ draft-1 (single-source
-  responsibility; author-level rather than always line-level for incoherent mark-pairs;
-  claim-omission stays the footprint omission-class, unchanged from draft-1).
-  Task-3 caveat sharpened: the annotation-lift precedent may NOT generalize to the
-  per-axis trichotomy — there may be no natural measurement line for "user-invariant"
-  to annotate; do not let this episode pre-decide task 3 in either direction.
-  **The 233-cve_clean walk (2026-07-10, human-directed — the classic subscription
-  example run through draft-2b):** findings, all recorded as draft-refinements:
-  (i) OBSERVE marks (`:?`) mint dialect exactly like verdict-probe marks — both are
-  measurement-annotations on runnable reads; claims/touches never mint (unchanged).
-  (ii) The `233` §4 hard-1 objection ("apt's author couldn't know somebody would write
-  a cve-checker") DISSOLVES under backing-dialect scoping: foreign claims are judged in
-  the SUBSCRIBER's dialect, so the enumerate-the-future burden relocates from the
-  kind's incumbent authors (impossible) to the property's extender (the one party who
-  knows their cell's invalidation semantics). (iii) `24F` §10 alternative-6 DISSOLVES
-  into draft-2b: its default (killed-by-any-entity-touch) = the collide-default,
-  strictly strengthened to killed-by-any-foreign-claim; the extender's
-  invalidation-basis declaration = the complement of their minted dialect — the
-  declaration became annotation. (iv) The draft-1/global-vocabulary counterfactual is
-  BROKEN on this example, twice: third-party property-extension chokes on the
-  ownership bottleneck, and once admitted, in-vocabulary sparing silently BREAKS the
-  subscription (apt's `#installed` claim spares the stale `#cve_clean` verdict past a
-  package upgrade — under-execution-flavored) unless alt6 bases are declared on top.
-  (v) **ghost-ack-mark, named**: "acknowledge a cell without touching or measuring
-  it" — recurs as 233's deleted ACK `~`, alt6's basis-list, draft-1's vocabulary, and
-  now the subscriber's spare-opt-in (opting OUT of a kill requires minting a token one
-  has no natural read for) plus the channel-publisher's noise mirror (a cve-db-refresh
-  claiming `#cve_clean` over-kills foreign probers' unrelated facts). Position: stays
-  UNBUILT; absence fails safe (over-kill / check-tax, never wrongness; kPROBING
-  banding governs expensive re-scans); earns its dislocation only on field evidence.
-
-### rul-kind-or-selector-is-a-behaviour-choice  (task 1; 2026-07-10; typed)
-The choice between minting a new KIND versus a SELECTOR on an existing kind is a
-user-facing behaviour selection, not an ontological one — "the point of having both
-types of thingie IS to have differing behaviour for them" (human, verbatim). Any
-design/API surface Dorc provides is "functions to call — tools to use and abuse";
-authors pick based on the behaviour they want, provided constraints and behaviours are
-well-documented. The menu under draft-2b: kind = ISOLATION (cross-kind disjoint by
-construction, reaches()-bridged only; claims spare everyone; no coupling, no
-vocabulary, claim-only usable — the logbuffer/cache/scratch tool); selector =
-COUPLING (same-entity collide-by-default; subscription to the entity's kill-traffic
-in both directions — the cve_clean tool). Consequence: the draft-1-advantage
-"claim-only cells" RETRACTS to the ghost-ack-mark sliver (see the open thread); the
-docs/teaching obligation (behaviour-menu documentation) rides the stdlib
-quality-bar checklist.
-- **Task-2 (the two `24S:A7` seam reservations: context-qualifier segment;
-  kind-owner registry room) — DEFERRED to fresh turns** (human, 2026-07-10: did not
-  land on first pass; re-explain from scratch, slower, when picked back up). Note for
-  that re-explainer: `271:rul-axis-vocabulary-v1`'s fs-view soft-deferral shrinks the
+- **Task-2 (the two `24S:A7` seam reservations: context-qualifier segment; kind-owner
+  registry room) — deferred to a fresh turn**; re-explain from scratch, slower. Note
+  for that re-explainer: `rul-axis-vocabulary-v1`'s fs-view soft-deferral shrinks the
   qualifier to effectively {user, fs-straw}.
 - **Owed at 1-series close:** the `notes/24P` specimen amendment pass (hash introducer
   at minimum; brace-alternation if its grammar firms); then the entity-algebra design
