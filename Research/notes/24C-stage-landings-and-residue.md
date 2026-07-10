@@ -710,3 +710,56 @@ bare `$@`/`$*`/`"$*"` stay ⊤ (IFS/splitting ambiguity — inv-top-reject bias)
 nothing (the stripped body runs in real sh where `"$@"` is native; the gap is static-license
 only). Owed: fold into the typeless-floor brief (item 3) + pin the founding one-liner as a
 first-class e2e case there, so it can never silently regress again.
+
+## rul24-ditch-is-diverged (HUMAN-TYPED 2026-07-09 — hard-ditch, rides the respell churn)
+
+**The ruling:** `is_diverged` is REMOVED from the dialect — hard, not soft, now. History: born a
+punned spelling, rewritten as a second sense-word during the typeless-floor work; genuinely
+useful in theory, but no safe spelling reaches its purpose. Its dual glue skips on tool-rc
+EXACTLY 1 (the world's default generic-failure code), and the negative-direction tools it
+exists for (repurposed dry-runs, "remove --check" standing in for a missing positive mode) are
+the class LEAST likely to hold a disciplined 1/0/≥2 partition — so careful authors reach for
+manual exit-code-testing anyway, defeating the shorthand. A shorthand its careful users won't
+trust has negative value. **This supersedes the two-sense surface of rul-role-split (23L) on
+that one point** — the role family is now predict / is_converged / touches / resolve / reaches.
+
+**Why hard-and-now (conductor analysis, human-acked):** role NAMES are the permanent
+unversionable compat surface (rul24M-version-comment, eyes-open) — removal post-P5 means
+contending with published oracles; removal now, pre-stdlib, inside the one churn, is free, and
+RE-adding a name later is the cheap/additive direction. And the verdict-lift (fix-return-
+decline-inert, LANDED 2026-07-09) made the manual ternary first-class plain sh — a clean
+inverted tool spells `foo --changed "$@"; case $? in 1) return 0 ;; 0) return 1 ;; *) return 2
+;; esac` (full 0/1/≥2 fidelity, every code-meaning written explicitly), or the lazy fail-safe
+`foo --changed "$@"; [ $? -eq 1 ]` (tool errors → not-converged → run). Nothing expressible is
+lost; the honest residual cost is a sliver of plan-prose fidelity in the bracket spelling
+("diverged" displayed where "can't tell" was truth) — display-tier only, never
+execution-affecting, recoverable via the explicit-return style.
+
+**Removal inventory (respell-brief lines):** `__is_diverged` out of the reserved-suffix set +
+the lift + the squat/collision lint's RESERVED_ROLE_SUFFIXES; the engine-emitted dual
+sense-flip glue (`[ $? -eq 1 ]`) deletes; wave1-b's `VerdictSense` parameter collapses (delete,
+don't keep-for-maybe — re-adding is the cheap direction); exactly ONE e2e case exercises the
+sense (`guard23-inverted-vouch-never-backwards`) and CONVERTS to pinning that explicit-return
+manual inversion never licenses backwards — the spelling authors will now actually write; doc
+mentions ride the stale-comment sweep.
+
+## The rc-passthrough taxonomy (conductor reasoning record, 2026-07-09 — human on-the-fence
+## question "are we re-multiplexing rc?"; resolution: stay where we are; then the ditch above)
+
+Kept because it settles a recurring worry. The r20 disentangling (rc-opaque, OOB verdict lane)
+governs DORC'S channels; r23 deliberately created ONE authored crossing — the verdict body —
+where tool-rc becomes license, and the one-liner passthrough is the minimal instance of that
+sanctioned crossing (adapter = identity), not a new multiplex. The load-bearing decomposition:
+in the converged sense, the partition's EXECUTION semantics is one bit (rc 0 = skip-eligible;
+`||` glue and the elide's converged-demand both see only zero/nonzero); the 1-vs-≥2 grain is
+plan-DISPLAY only. Passthrough failure taxonomy: rc-0-means-converged tools = safe every
+direction (all errors → run); inverted tools = author writes the explicit inversion (above);
+rc-carries-nothing tools (the `apt-get -s` "simulation ran fine" class) = the signal is in
+stdout, unfixable by ANY partition/annotation design, spelled natively as the pipe idiom
+(`foo --check "$@" | grep -q 'Nothing to do'` — fail-safe: tool death → no match → run). The
+one execution-affecting sharp cell was is_diverged's exact-rc-1 skip — now ditched (above),
+which also kills the proposed diverged-passthrough lint-nudge unborn. Neither of the feared
+poles ("compress tool rc" = over-modeling ceremony; "non-sh licensure spelling" = the ruled-out
+rung ladder) is needed. **P4/r25 differential must-cover banked:** the lying-check cell — an
+is_converged passthrough over a tool whose rc 0 means simulated-fine-not-converged — is the
+canonical wild-type lying check the differential must catch (extends `252 §9` memo-2).
