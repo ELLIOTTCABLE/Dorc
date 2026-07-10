@@ -483,6 +483,18 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
         })
         .collect();
 
+    // The munge-reservation lint (24Kc fix-munge-reservation / 24M ca-munge-charclass): refuse an
+    // emitted `<munged>__<role>` funcname that is not a legal sh NAME (charclass) or that two
+    // distinct source names collide onto (non-injective munge), over the whole oracle unit. No
+    // threaded source (the `oracle`-stage precedent — a cross-file collision has no single file to
+    // frame into); the corpus is clean, so these Error-severity lints never fire in-corpus.
+    report_at(
+        advisory,
+        "reserved",
+        None,
+        &dorc_oracle::reserved::lint_oracle_reserved_names(&mut interner, &oracle_refs),
+    );
+
     // Parse + analyze the book (shared interner, so symbols match the oracles). Multiple books
     // CONCATENATE into one analyzed unit (`\n`-joined so no two files' lines merge). `book_name`
     // is the display path (the first book) — for a single book (the norm) the frame's line numbers
@@ -494,6 +506,17 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
     let book_source = Some((book_name, book_src.as_str()));
     let parsed = dorc_syntax::parse(&book_src);
     report_at(advisory, "parse", book_source, &parsed.diags);
+    // The munge-reservation squat lint (24M rul24M-bare-dorcism-names): a book funcdef
+    // coincidentally named `<x>__<role>` squats the reserved emitted namespace — surfaced LOUDLY
+    // as a Warning (the loud-friend law; rul24-warnings-tune-high). The live corpus instance is
+    // guard23-reingest-collision-verbatim's `apt_get__predict` book function. Warning-severity, so
+    // it never fails a case (gate-3 keys on `error[`).
+    report_at(
+        advisory,
+        "reserved",
+        book_source,
+        &dorc_oracle::reserved::lint_book_reserved_names(&parsed.value),
+    );
     let cfg = dorc_analysis::cfg::build(&parsed.value);
     report_at(advisory, "cfg", book_source, &cfg.diags);
     // ack-1 exit-code family: a book carrying a parse/CFG ⊤-reject (`inv-top-reject`) — a
