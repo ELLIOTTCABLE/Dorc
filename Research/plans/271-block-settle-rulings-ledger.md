@@ -245,19 +245,40 @@ a rewind — so the next context can resume mid-thought.)*
   strawmen use the bare munged `tool__role` form per `24M` (`foobar__is_converged`),
   not single-underscore.
 - **decision-selector-vocabulary-gating — OPEN, awaiting ruling (task 1's last open
-  item).** Human mildly unsold after the first pass; a slow enumerative re-walk (costs
-  frontloaded; narrowing/widening framing elaborated) was delivered 2026-07-10. The
-  drafted-awaiting-ack mechanism, recorded so a rewind doesn't lose the substance:
-  selector-granular DISJOINTNESS may be concluded only between tokens inside the
-  kind-owner's declared selector vocabulary; an out-of-vocabulary selector token
-  compares as ⊤-selector (collides with every cell of its entity) **on either side** —
-  footprint AND backing (a correction to the first-pass one-sided framing: a
-  backing-side typo also manufactures false survival). With zero declarations the rule
-  degenerates to today's entity-granular behavior — the gate is the standard
-  owner-licensed monotone opt-in (like `resolve()`/`reaches()`), not a restriction
-  bolted onto freedom. Split offered: (a) the engine comparison rule (rebuild-timed) vs
-  (b) the declaration syntax (rides `270:adj-trichotomy-spelling`'s kind-owner
-  surface).
+  item); proposal REVISED 2026-07-10 after the human's annotation-not-declaration
+  challenge.** History, compressed: draft-1 was a kind-owner *declared* selector
+  vocabulary (a behaviour-dislocated declaration — would have been the project's FIRST;
+  the human flagged the kOOB/Ansible-death direction and asked for a
+  spelled-in-natural-sh lift instead; his gentle suspicion "annotation-not-declaration"
+  confirmed). Draft-2, the live drafted-awaiting-ack mechanism,
+  **measured-selector-universe** (slug candidate `rul-vocabulary-is-what-probes-measure`):
+  the natural sh construct carrying cell-names is the **per-facet status read** the
+  world's tools already ship (`systemctl is-enabled` vs `is-active`; `dpkg -s` vs
+  `dpkg -V`; `git diff --quiet` vs `--cached --quiet`) — the selector token is an
+  ANNOTATION on the measuring line (existing probe-mark grammar, `#` per
+  `rul-selector-introducer-hash`, zero new surface); the kind's cell-universe is
+  PROJECTED as the set of selector tokens annotating loaded runnable measurements of
+  that kind (the stage-5 principle one level up: a fact's backing IS what its probe
+  reads ⇒ a kind's vocabulary IS what its probes measure). Gate rule: selector
+  DISJOINTNESS (the survival license) concluded only between measured tokens; an
+  unmeasured token = ⊤-selector (collides with every cell of its entity), either side —
+  the both-sides symmetry now falls out by construction (claims can only narrow against
+  the measurement side's actual dialect). Empty universe ⇒ byte-identical to today.
+  Each universe member cites its minting measurement line (more attributable than a
+  declaration). Dissolves draft-1 costs: new-declaration-family, owner-bottleneck,
+  bootstrap-authoring-tax. Honest residues: multi-dialect synonym hole (two probe
+  authors, one kind, two tokens for one cell — warn-tier divergence lint now;
+  co-reference-unification later); same-token-divergent-meaning (unchanged,
+  adjudicability-list tier); physically-overlapping cells (inherent to narrowing;
+  differential-discharge-testable — mutate via claiming verb, watch the sibling probe
+  flip); universe is a pure function of loaded oracle text (DST-clean); loading an
+  oracle can upgrade a ⊤ claim to a narrowing one (monotone-value direction, disclose).
+  Open sub-question: WHO mints — any loaded probe-mark (conductor lean, ~SUSPECT:
+  maximally gradual, no ownership machinery, divergence-lint covered) vs
+  owner-co-located marks only (tighter; reintroduces ownership dependency most v1 kinds
+  lack). Forward-implication flagged: this precedent (annotation-lift over minted
+  declaration) directly pressures `270:adj-trichotomy-spelling`'s recorded
+  minted-syntax lean — carry into task 3.
 - **Task-2 (the two `24S:A7` seam reservations: context-qualifier segment;
   kind-owner registry room) — DEFERRED to fresh turns** (human, 2026-07-10: did not
   land on first pass; re-explain from scratch, slower, when picked back up). Note for
