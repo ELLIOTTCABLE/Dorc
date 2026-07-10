@@ -658,3 +658,39 @@ above (combined run).
   the probe/guard emitter is a deeper emit-path change, follow-on after the respell.
 - Multi-file collision diagnostics frame as byte-offsets (no threaded source — the oracle-stage
   precedent, ru-26-noted inline); single-file charclass + book-squat get real file:line:col.
+
+## r24 in-chat HUMAN RULINGS (2026-07-09 — typed; durable stamp, conductor-transcribed; details firm in the respell brief + the selector design note)
+
+- **rul24-selector-pre-stdlib:** sub-entity/selector granularity (the alt6 / `dq-entity-algebra`
+  structured-entity work, `24F` §10, `24O` items 16/17) is DE-DEFERRED by fiat: "sure-enough it
+  will be valuable" — the rebuild MUST slot before the strawman-stdlib builder pile (P5), so the
+  ~40 oracles are authored once, against the final entity algebra. SUPERSEDES 24O's
+  "DEFERRED → post-trial" disposition (item 17) and resolves the flat-pin flag (item 16) the
+  other way: flat is NOT pinned; it is the pre-rebuild interim. Conductor concurrence: the r25
+  book's own `systemctl enable --now` (enabled vs active) is the canonical selector case — the
+  trial would have demanded it anyway; authoring the stdlib flat then re-keying was the real
+  waste. Cost accepted: the r25 critical path lengthens by the rebuild (r25 is human-gated +
+  r26-shadowed regardless).
+- **rul24-idn-punycode:** the munge is permissive on INPUT, strict on OUTPUT — international
+  authors may write IDN reverse-DNS kind names (nobody buys a new domain to make valid claims);
+  actual non-ASCII never reaches NAME-space: IDN labels are PUNYCODED (IDNA A-label, `xn--…`)
+  then transliterated. This totalizes the munge fully: no refusal path over legal DNS input.
+  Conductor rider (in-brief): kind-IDENTITY canonical form = the A-label form (U-label input
+  accepted, canonicalized on read; display may un-punycode) — two spellings of one IDN label
+  must be ONE kind.
+- **rul24-marker-in-churn:** the corpus churn stamps the `# dorc-lang/v0.1` marker onto every
+  dialect-carrying fixture NOW, in the same respell/bless session — one churn, not two.
+- **rul24-marker-v0.1** (prior message, same date): the marker spelling is `# dorc-lang/v0.1` —
+  explicit split (major.minor) selector for compat bandwidth; exact-match line within the first
+  10 physical lines. The wire/records lane adopts the same form for consistency, but
+  `dorc-records/*` is r26's surface → FLAG-to-r26 under the merge-disjointness contract, never
+  churned from r23.
+- **rul24-totalistic-munge** (prior message, same date; human suspicion + conductor analysis,
+  human-directed): the munge is TOTAL and the authored function-name surface is ONLY munged
+  POSIX NAMEs. The period/dotted funcdef form DIES entirely (parse arm + tests +
+  `dorc strip`'s funcname-rename half + the backward `_`→`-` un-munge); keying flips to
+  FORWARD-munge lookup (an oracle `apt_get__predict` serves every book word munging to
+  `apt_get` — a written spec sentence, multi-word case disclosed in-plan). Dots survive ONLY in
+  kind-identity/annotation space (marker-gated, stripped), where reverse-DNS structure IS the
+  identity. Priced residue: munge non-injectivity (`-`/`.`/`_` → `_`) is refused loudly by the
+  landed collision lint when co-loaded; cross-unit ambiguity stays the accepted governance cell.
