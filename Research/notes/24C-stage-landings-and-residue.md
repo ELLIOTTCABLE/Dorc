@@ -605,3 +605,56 @@ Empirical, at `c0b3e3d` (throwaway fixtures; no code changes). Three answers + t
 2. Vouch plumbing rides UNCHANGED once the auto-cell classifies EstablishAmbient (`build_vouches` keys off `fact.kind`; elide-weld + guard mint consume via existing arms) — confirms 24L §7 "existing arms, no new license type".
 3. fence-no-disjoint: `plan/src/survival.rs` (~`:228` MayAliasReason::Unresolved fallback) must read an auto-coordinate as MayAlias, never a distinct canonical — both footprint AND backing sides.
 4. **~SUSPECT-underspecified in 24L §7 (flag for the brief):** probe-emission is a FOURTH touch-point — the elide-weld demands probe-measured convergence, and a markless body ships no probe today; per 24L §2 the shipped probe is the stripped verdict body itself, so classify's synthetic establish-cell must also mark the site probeable (cli `compile_probe` wiring).
+
+## fix-return-decline-inert (LANDED 2026-07-09, `2d7061c` — r24 queue item 1b; the silent-inert oracle closed)
+
+An explicit `return N` with a literal code in a verdict-function body now lifts as the author's
+verdict, read against the declared VerdictSense per rul-rc-partition (converged code — `0` under
+`is_converged`, `1` under `is_diverged` — VOUCHES; complement / ≥2 / unreadable DECLINE ⇒ run).
+Previously find-return-vouches blanket-declined every reached `return`, making the explicit-return
+authoring style USER_STORY itself teaches silently inert (loud-friend violation, 24Kc F2). The
+rul24M-rungs-default line is preserved exactly: implicit vacuous rc-0 (unmatched case, if-false
+no-else, empty body) reaches no `return`, stays Declined; only authored returns lift. `return 2`
+regression (the original find-return-vouches motivation) unchanged — corpus uses `return 2`
+exclusively (89×), zero golden churn, no bless. 14 verdict unit tests (5 new); e2e 126/126.
+`evaluate_verdict` gained a `sense` param (sole non-test caller `plan::build_vouches` had it in
+hand). Conductor-verified: diff read line-by-line; combined build+test+e2e re-run green post-merge.
+
+**Residue (conductor-found at review, small):**
+- resid-return-arity: `run_return` reads `words.get(1)` and ignores extra args, so a malformed
+  `return 0 junk` (a runtime arity-error in dash, rc≠0) statically VOUCHES — wrong direction,
+  though own-line-authored and corpus-absent. One-line fix (words.len()>2 ⇒ Declined) + a test;
+  fold into any next verdict-path errand.
+- resid-guardcmd-return (agent-flagged, pre-existing): `check_commands()` collects `return` as a
+  "check-command" for purely-explicit-return verdicts ⇒ gate-6 emits a harmless spurious
+  `guardcmd return` allowlist entry (same class as `false`/`:`/`true`). Cleanup if ever wanted.
+- Scope note (agent, +SURE): the 24Kc literal example `if probe; then return 0; …` uses a bare
+  command as the `if` condition — out-of-dialect, ⊤-rejects loudly at lift (already
+  loud-friend-compliant). The fix covers the forms that parse: case-dispatched, `[ ]`-guarded,
+  and unconditional returns. No silent-inert path remains for parseable explicit returns.
+
+## munge-reservation lint (LANDED 2026-07-09, `5eb9569`+`d6c66c0` — r24 queue item 1c; all three checks live)
+
+New `crates/oracle/src/reserved.rs` (+cli wiring, advisory stderr, existing legacy Diagnostic
+channel — the collision-family precedent; three slugs on the diag_tidy allow-list, PENDING the
+same tc-footprint-diag typed-spine migration): (1) `munge-name-invalid` (Error) — charclass
+refusal via `validate_sh_name()` (POSIX NAME `[A-Za-z_][A-Za-z0-9_]*`, ca-strict-set), the
+24M §4b munge-safety primitive, catches leading-digit providers (`7z`) and un-transliterated
+reverse-DNS dots TODAY; (2) `munge-name-collision` (Error) — two distinct source names munging to
+one NAME (`apt-get`/`apt_get`, the 24Kc non-injectivity) refuse BOTH, never silently merged
+(reingest-collision-floor-aligned); (3) `reserved-namespace-squat` (Warning) — a book funcdef
+coincidentally named `*__<role>`, the rul24M-bare-dorcism-names priced-residue mitigation, live
+corpus instance guard23-reingest-collision-verbatim's `apt_get__predict` (warning reinforces that
+case's pin; gate-3 keys on `error[` only, artifact untouched). 9 unit tests incl. a mechanical
+suffix↔FnRole pairing tie. Zero golden churn, no bless; e2e 126/126. Conductor-verified same as
+above (combined run).
+
+**Deferred-to-respell (the lint agent's precise list — fold into the respell brief):**
+- resp-munge-policy: `to_funcname_segment` maps only `-`→`_` at HEAD. The respell OWNS the policy
+  choice for dotted `sm.dorc.*` kinds: transliterate-and-accept (dot→`_`, per-label leading-digit
+  repair) vs refuse; `validate_sh_name` already gates the emit boundary either way, and the
+  collision lint catches any non-injectivity the transliteration introduces.
+- resp-collision-ship-refusal: the Error is DETECTION; mechanically dropping colliding defs from
+  the probe/guard emitter is a deeper emit-path change, follow-on after the respell.
+- Multi-file collision diagnostics frame as byte-offsets (no threaded source — the oracle-stage
+  precedent, ru-26-noted inline); single-file charclass + book-squat get real file:line:col.
