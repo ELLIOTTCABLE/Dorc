@@ -169,6 +169,57 @@ OUT of its file: a tool's own oracle reaching that tool's book-sites — and it 
 precisely because it IS a claim about the command family, argv-keyed. Two claim-species,
 two scopes; they never convert into each other.
 
+### rul-coordinate-shape-flat-three-place  (task 1; 2026-07-10; typed)
+The coordinate promoted into the intersection plane (footprints × backings ×
+disjointness) is the **flat three-place `(kind, entity, selector)`** — the shape
+`FactKey` already has; `Backing`'s deliberate selector-drop retires in the
+entity-algebra-rebuild. The `plans/17N` §4 recursive/JSON-adjacent-struct lean is
+DECLINED as coordinate shape — its recursion motivators (cross-kind handles, aliased
+names) were since absorbed by owner-declared *mechanisms between* flat coordinates
+(`resolve()` canonicalization; `reaches()`/`manifest()` expansion), so the coordinate
+stays a name. Human riders (typed): he is amenable-not-evangelized — unsold that NO
+structural-utility corner remains; the position holds because later expansion is
+"language-design easy" **as long as the bare form continues to backwards-compatibly
+mean "true"/"occupied"** (the 17N present-key-is-true default, preserved as law:
+selector-less = whole-entity/occupied, forever). Conductor hedge riding the ruling:
+`SelectorId` stays opaque/interned and every selector comparison lives behind ONE
+choke-point function (`selector_covers`-shaped), so any future structure lands in one
+function, not a re-key. Consumers: entity-algebra design note, entity-algebra-rebuild,
+corpus-respell.
+
+### rul-selector-introducer-hash  (task 1; 2026-07-10; typed, PERMANENT)
+The selector introducer is **`#`**, replacing tip's `.` everywhere a selector is
+spelled: `sm.dorc.Service:"$svc"#enabled`; `:? sm.dorc.GrepMatch:"$pat"#matched`.
+Human rationale (typed): matches the HTML-anchor / commit-ID vibe of "narrow down to
+this specific thing." Rider (typed): `#` still compounds with several entity
+constructs, so **quoting must stay supported** — the quoted-entity form remains the
+supported spelling where charsets collide (exactly as was already true under period).
+Churn: rides the corpus-respell with everything else (mark grammar + observe marks +
+render/why-lens fact-label strings + records); the `notes/24P` specimens get a
+conductor-side amendment pass at 1-series close (the anticipated block-settle move);
+`24P` d4's unquoted-dotted-entity ⊤-reject corner gets re-derived under `#` in the
+design note. New root-doc staleness accrues to the punted root-doc pass: USER_STORY's
+`.synced`/`.matched` forms.
+
+### rul-emission-selector-on-mark  (task 1; 2026-07-10; typed ack + direction)
+`touches()`/`reaches()` claim a cell by the selector riding the **trailing mark**
+alongside the kind — `printf '%s\n' "$1"  : sm.dorc.Service#active` — applying to
+every line that statement emits; emission lines stay raw entities (no output
+dressing); a selector-less mark = whole entity (today's exact meaning, the floor).
+Direction (human strawman, same date, grammar NOT yet ruled): multi-cell claims need
+a **list-y shape** to avoid seven-line touches bodies for complex structures — leading
+strawman is shell-obvious alternation-braces, `: sm.dorc.Service#{enabled,active}`.
+Grammar detail owed to the entity-algebra design note.
+
+### rul-binds-entity-only-provisional  (task 1; 2026-07-10; typed, SOFT — ~GUESS-shaped
+on both sides)
+Binds name **entities, never cells**: `pkg : sm.dorc.Package = "$1"` binds identity;
+facts about cells attach via marks on probing/emitting commands. Neither party is
+confident beyond ~GUESS; the door stays open if a bind-to-a-cell counterexample ever
+arrives; nobody is worried. (Rationale on record: letting binds carry selectors blurs
+identity — `resolve()`'s domain — with state — the probe's domain; the 17N Seam
+warning.)
+
 *(entry format for future additions:)*
 
 <!--
@@ -193,3 +244,25 @@ a rewind — so the next context can resume mid-thought.)*
 - Conversational-strawman discipline (conductor note-to-self): function names in
   strawmen use the bare munged `tool__role` form per `24M` (`foobar__is_converged`),
   not single-underscore.
+- **decision-selector-vocabulary-gating — OPEN, awaiting ruling (task 1's last open
+  item).** Human mildly unsold after the first pass; a slow enumerative re-walk (costs
+  frontloaded; narrowing/widening framing elaborated) was delivered 2026-07-10. The
+  drafted-awaiting-ack mechanism, recorded so a rewind doesn't lose the substance:
+  selector-granular DISJOINTNESS may be concluded only between tokens inside the
+  kind-owner's declared selector vocabulary; an out-of-vocabulary selector token
+  compares as ⊤-selector (collides with every cell of its entity) **on either side** —
+  footprint AND backing (a correction to the first-pass one-sided framing: a
+  backing-side typo also manufactures false survival). With zero declarations the rule
+  degenerates to today's entity-granular behavior — the gate is the standard
+  owner-licensed monotone opt-in (like `resolve()`/`reaches()`), not a restriction
+  bolted onto freedom. Split offered: (a) the engine comparison rule (rebuild-timed) vs
+  (b) the declaration syntax (rides `270:adj-trichotomy-spelling`'s kind-owner
+  surface).
+- **Task-2 (the two `24S:A7` seam reservations: context-qualifier segment;
+  kind-owner registry room) — DEFERRED to fresh turns** (human, 2026-07-10: did not
+  land on first pass; re-explain from scratch, slower, when picked back up). Note for
+  that re-explainer: `271:rul-axis-vocabulary-v1`'s fs-view soft-deferral shrinks the
+  qualifier to effectively {user, fs-straw}.
+- **Owed at 1-series close:** the `notes/24P` specimen amendment pass (hash introducer
+  at minimum; brace-alternation if its grammar firms); then the entity-algebra design
+  note itself.
