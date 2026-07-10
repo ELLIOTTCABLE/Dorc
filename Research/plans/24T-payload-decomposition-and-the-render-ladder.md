@@ -391,10 +391,13 @@ found for `$()`.
 - **P-A3 — the basic-forms exploration charter** (RULED, recorded here): the
   implementation-planner explores basic-hole-form + basic-set-form and owns the punt
   decision (opaques8-ruling1).
-- **P-A4 — the carrier quality bar** (fork6; EXPLANATION STILL OWED to the human):
-  extend 24S §7-A6's wrapper checklist with carrier items — which-arg-is-code arity
-  gates; the parse-and-resolve cross-check; the L7 reconstruction differential; the
-  dorcism-in-payload lint.
+- **P-A4 — the carrier quality bar** (fork6; ~~EXPLANATION STILL OWED to the human~~
+  *soft-ACKED 2026-07-10 — turn08 opaques8-ack5-quality-bar, with the human's rider
+  correction: in-body guards do NOT obsolete the outside-conjunction in general; it stays
+  the mechanism for wrapped bodies (the 23J carve), non-verbatim payloads, and anywhere R1
+  edits are unlicensed*): extend 24S §7-A6's wrapper checklist with carrier items —
+  which-arg-is-code arity gates; the parse-and-resolve cross-check; the L7 reconstruction
+  differential; the dorcism-in-payload lint.
 - **P-A5 — the reshape relay** (fork4): the fragment-preserving ValueOf reshape
   (219 tc-fork ii) is now load-bearing (first required consumer = payloads); it
   touches value.rs + every consumer while other work churns the same surfaces.
@@ -436,4 +439,13 @@ source interior, mvdan-sh/oils — defer-explore1/2/3, quarantine-gated).
 
 ---
 
-*Corrections log (annotate in place per plan-tier convention):* —
+*Corrections log (annotate in place per plan-tier convention):*
+
+- 2026-07-10 (r24 close-out; `plans/270`): **P-A5's sequencing is RESOLVED** — the
+  value-recipe-reshape (né tc-fork ii) slots into `270:block-rebuild`, in the same
+  fact-domain churn window as the entity-algebra rebuild (one merge-pain instead of two);
+  **P-A6 is SCHEDULED** as `270:adj-stopping-point` on the block-settle design-pass agenda
+  (the union-of-standing-boundaries candidate still awaits a TYPED ratification); **P-A4
+  soft-acked** (annotated in place above); P-A1/P-A2 remain with the block-context
+  implementation-planner as `270:adj-payload-pins`. The §8 sketch's ρ-dependency is honored
+  by the block ordering (payload-v1 follows the wrapper stages).

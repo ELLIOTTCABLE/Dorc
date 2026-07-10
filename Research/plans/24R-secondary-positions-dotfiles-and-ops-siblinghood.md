@@ -311,10 +311,15 @@ the guard discipline our analyzer derives [A-pyinfra-deploy-process-2026]
 
 - flag-dorc-sh-seam: pin in the respell brief that `dorc-sh` stays strip-and-exec forever;
   the analyzed runner is a different token (one sentence, time-sensitive; raised in-chat).
+  *(Annotation 2026-07-10: DISCHARGED — `24P` §8 rider-shebang + §9's
+  decision-shebang-spelling/decision-dorc-sh-semantics pin exactly this; nothing in dorc
+  parses shebang content, the comment-parse set stays closed at one.)*
 - flag-kwhichsh-scope: the bash/zsh artifact evidence (§0b) bears on kWHICHSH's *scope*;
   human-owned, deliberately not argued here.
 - flag-sudo-weight: both halves independently promote wrapper-opacity to the #1 capability
   gap; the reserved seam (23J/17N §7) is where the eventual design lands.
+  *(Annotation 2026-07-10: the design now EXISTS — `plans/24S` (context algebra) +
+  `plans/24T` (payload decomposition); build scheduled as `270:block-context`.)*
 - flag-secrets: quarantined; the market pressure is recorded (§0b) for whenever that round
   runs.
 - flag-embedded-transparency: R2/R3 deserve a named home as design rules (cheap now,
@@ -329,6 +334,7 @@ Durable base: `.claude/research/other-purposes-and-cheap-wins/` — `turn01`/`tu
 (dotfiles + cooperation rounds), `turn03` (ops round + the WRCH corrections block),
 `sources.json` + `sources/` (30 graded archived sources; bracketed slugs in this document
 resolve there). The worked user-stories live in USER_STORY "Other usage-patterns"
-(dotfiles pair landed 2026-07-10, pending human audit; the ops heading remains TBD and is
-fillable from §2). Findings are cited sparsely above by design; the turn notes carry the
+(dotfiles pair landed 2026-07-10, pending human audit; the ops pair — mutable-residue +
+Ansible-transition — landed same day per §2, also pending human audit; *the "remains TBD"
+here is superseded*). Findings are cited sparsely above by design; the turn notes carry the
 full 91-finding record with per-finding certainty markers.

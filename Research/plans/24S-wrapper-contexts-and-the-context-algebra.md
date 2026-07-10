@@ -647,4 +647,16 @@ per-iteration loop verdicts (atomic-command axiom); locks (r26-adjacent).
 
 ---
 
-*Corrections log (annotate in place per plan-tier convention):* —
+*Corrections log (annotate in place per plan-tier convention):*
+
+- 2026-07-10 (r24 close-out; `plans/270`): the §7 adjudication list is now SCHEDULED — A1/A2/A3
+  sit on the `270:block-settle` design-pass agenda (A2 unified with the human's
+  `--trust-footprints` outcome-rename as `270:adj-survival-flag-outcome`; A3+A1 as
+  `270:adj-trichotomy-spelling`/`270:adj-axis-vocabulary`); **A7 is DISCHARGED-into-plan** —
+  the entity-algebra design note (`270:block-settle`) carries the two seam reservations as a
+  stated obligation; A6 + the `24T:P-A4` carrier items ride the standing quality-bar checklist
+  (P-A4 soft-acked 2026-07-10). §8's "sequencing vs the r24 queue" resolves to: W1–W2 =
+  `270:block-context`, after `270:block-rebuild` (which now also carries the
+  `262`-§2-minimum wire import); W3–W4 float behind the A2/A3 rulings. The stdlib-blocker
+  ruling (human, same date): stdlib-authoring waits on W1–W2 — the §2c no-wrapper-awareness
+  referendum must survive build contact before the ~40 oracles are authored.
