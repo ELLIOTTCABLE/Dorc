@@ -14,15 +14,27 @@
 
 ---
 
-## R24 ONBOARDING (2026-07-07 — the single current r24 view; supersedes all prior r24 blocks)
+## R24 ONBOARDING (2026-07-09 — the single current r24 view; supersedes all prior r24 blocks)
 
-**Read-first on arrival:** the root docs AT HEAD (the human updated them ~2026-07-06/07 —
-horizon material landed, among others; no summary here or in any note is current; KNOBS was
+**⚠ REWIND NOTE (2026-07-09, read FIRST):** six UNCOMMITTED specimen edits sit in the main
+working tree (`git status`; paths + full spec in **`notes/24P`** §1) — the conductor-authored
+respell specimens, the human's in-file review/ack artifact. e2e FAILS those five cases at HEAD
+by design. Do NOT commit them as-is (they land via the respell builder), do NOT discard
+without consulting 24P (they regenerate from 24P §2 if lost). The human's parting instruction
+(typed 2026-07-09): "rewind-and-dispatch" — the respell is the next dispatch; CONFIRM the 24P
+§5 micro-decision ack (d1–d9) in the dispatch exchange first, since it was signalled but
+never individually typed (silence ≠ ack).
+
+**Read-first on arrival:** the root docs AT HEAD (human-updated ~2026-07-06/07; KNOBS was
 restructured this round — `kSCOPE`/`kSURVIVAL` replace `kELISION`) → `spike/CLAUDE.md` (all
-rulings blocks) → `notes/23O` (settled law + history) → `plans/240` (the charter, as
-REDIRECTED below) → THIS block → `notes/24C` (the landing/residue ledger — accretes per
-landing) → per-task: `24I` (e2e slimming spec) · `24Kc`+`24L`+`24M` (the language arc) ·
-`260`/`261` (r26, branch `ai/spike3-r26`).
+rulings blocks — NOTE rul-role-split's two-sense surface is superseded on one point by
+rul24-ditch-is-diverged, `24C`) → `notes/23O` (settled law + history) → `plans/240` (the
+charter, as REDIRECTED below) → THIS block → **`notes/24C` INCLUDING its full 2026-07-09
+accreted tail** (wave-1 landings · §r24-in-chat rulings · fd-headline-oneliner-gap ·
+rul24-ditch-is-diverged + the rc-passthrough taxonomy) → **`notes/24P`** (the respell
+spec-by-example + §7 addendum) → per-task: `24Kc`+`24L`+`24M` (the language arc) · `24O`
+(stage-6 dispositions) · `24N` (e2e batch-5 migration map) · `24I` (e2e slimming spec) ·
+`260`/`261`/`262` (r26, branch `ai/spike3-r26`).
 
 **Where the build stands** (all merged on `ai/spike3-r23`, conductor-verified; e2e 126/126,
 zero xfails): the `240` ladder's Stages 1–5 are LANDED — honest baseline + silence=wall · the
@@ -86,7 +98,16 @@ entry-points/`parse_results` signatures is FLAG-to-r26, never fork.
    identity canonical form = A-label; no refusal path over legal DNS) · ca-munge-charclass
    (`24M` §4b) · resp-collision-ship-refusal (`24C`) · the `/1`-polysemy eyes-open commit
    sentence (now `v0.x`-flavoured) · the `# dorc:` trailer-comments-UNSTABLE declaration ·
-   FLAG-to-r26: `dorc-records/v0.1` form-consistency (their surface, never churned from r23).
+   FLAG-to-r26: `dorc-records/v0.1` form-consistency (their surface, never churned from r23)
+   · **rul24-ditch-is-diverged rides this churn** (hard removal: suffix out of reserved set +
+   lift + lint table; dual glue + `VerdictSense` delete; `guard23-inverted-vouch-never-
+   backwards` converts to the explicit-return manual-inversion pin; role family = predict /
+   is_converged / touches / resolve / reaches) · the one-liner-candidate FLAG rider (24P §7).
+   **BRIEF-ASSEMBLY (dispatch-ready):** this item + 24P §2/§3/§5/§7 + the 24C
+   deferral/ruling entries + the standing dispatch preamble (fences below: safety block,
+   step-zero, step-one root-docs, tip-gate) — single Opus builder, isolated worktree,
+   granular commits, ONE bless at the end, conductor inspects the golden diff case-by-case
+   at merge (predicted delta classes: 24P §4).
 3. **The typeless floor** (auto-cell + the four `24L` §7 fences + eligibility plumbing +
    tests), after the respell — both touch classify. The build brief starts from the wave-1a
    touch-point map (`24C` §24L-gating-errand): the verdict-unaware-kernel seam (thread
@@ -145,7 +166,10 @@ entry-points/`parse_results` signatures is FLAG-to-r26, never fork.
    serves mutator-verdict oracles only — read-value commands (`hostname`, the r25 host-guard
    wall) still need the Query/predict lane, and P5 must cover them.
 7. **r25-prep:** human-gated, and r26-shadowed (the time constraint may table parts —
-   human's call).
+   human's call). Banked for the P4 differential brief: the lying-check must-cover — an
+   `is_converged` passthrough over a tool whose rc 0 means simulated-fine-not-converged is
+   the canonical wild-type lying check (`24C` §rc-passthrough-taxonomy; extends `252 §9`
+   memo-2).
 
 **Conductor-owed riders** (`24M` §4, fence-checked): the KNOBS dated markers (kOOB
 closed-set-of-one; kTYANNOT containment → marker-gated) collide with the KNOBS-human-only
