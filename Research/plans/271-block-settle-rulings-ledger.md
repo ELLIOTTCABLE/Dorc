@@ -208,8 +208,9 @@ the **flat three-place `(kind, entity, selector)`**.
   no coupling; claim-only usable — logs, caches, scratch state); **selector = coupling**
   (same-entity collide-by-default; subscription to the entity's kill-traffic in both
   directions). The behaviour-menu teaching rides the stdlib quality-bar checklist.
-- **rul-selector-disjointness-dialect-scoped (drafted-AWAITING-ACK — the one un-typed
-  piece of this direction).** The rule for when token-inequality may be read as
+- **rul-selector-disjointness-dialect-scoped (TYPED 2026-07-10 — dictated "as ruled
+  for now, and see where the spike goes with it"; spike-provisional, revisit on build
+  contact).** The rule for when token-inequality may be read as
   cell-disjointness (the survival license — the one lane where string-noise fails
   toward under-execution rather than toward run):
   - **Minting.** A selector token enters the system only as an annotation on a runnable
@@ -244,7 +245,8 @@ the **flat three-place `(kind, entity, selector)`**.
   - **Worked minimum:**
 
     ```sh
-    # dorc-lang/v0.1 — a kind's dialect is minted by its measurement lines:
+    # dorc-lang/v0.1
+    # a kind's dialect is minted by its measurement lines:
     systemctl__is_converged() {
        case "${1-}" in
        enable) systemctl is-enabled --quiet -- "${2-}"   : sm.dorc.Service:"$2"#enabled ;;
@@ -292,7 +294,26 @@ the **flat three-place `(kind, entity, selector)`**.
   contract-supporting machinery lands.
 - Conversational-strawman discipline (conductor note-to-self): function names in
   strawmen use the bare munged `tool__role` form per `24M` (`foobar__is_converged`),
-  not single-underscore.
+  not single-underscore; the `# dorc-lang/v0.1` marker line is exact-match and stands
+  ALONE — never append prose to it.
+- **observe-backing-widening (drafted-awaiting-ack; from the `:?`/ACK exploration,
+  2026-07-10):** an Observe (`:?`) mark inside a verdict-function body should WIDEN
+  that fact's backing to include the observed coordinate — the stage-5 principle taken
+  literally (a backing IS what its probe reads; a disclosed read is part of the
+  read-set). Tip's `Backing` is single-coordinate by construction, so this needs
+  backing-SETS — an entity-algebra-rebuild seam to reserve. Safe direction (only ever
+  widens the kill-surface); patches the disclosed-read corner of the overlapping-cells
+  residue; and makes acknowledge-by-observing coherent (a standalone observe-only
+  site mints its token into the source's dialect without coupling any verdict-fact's
+  backing).
+- **ack-stays-dead (conductor opinion on record; from the same exploration):** the ACK
+  `~` and POISON bare-marks stay dead through the respell as staged (`24P` §2) — they
+  are zombie no-ops at tip (parsed, licenses-nothing, since `23D` §5 killed
+  negative-enumeration; zero corpus occurrences). The ghost-ack job (orthogonality
+  opt-out for expensive-probe subscribers) is partially covered by
+  acknowledge-by-observing where a natural read exists; any future revival should be a
+  rider on a measurement line, never a bare dislocated mark, and only on field
+  evidence.
 - **Task-2 (the two `24S:A7` seam reservations: context-qualifier segment; kind-owner
   registry room) — deferred to a fresh turn**; re-explain from scratch, slower. Note
   for that re-explainer: `rul-axis-vocabulary-v1`'s fs-view soft-deferral shrinks the
