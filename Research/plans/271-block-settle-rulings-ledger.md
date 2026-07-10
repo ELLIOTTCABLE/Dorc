@@ -86,25 +86,54 @@ non-test-shaped exit vocabulary (LSB status, terraform -detailed-exitcode) requi
 explicit remap arm (lintable); (r3) Dorc-as-tool outward contracts (`dorc plan
 --exit-code`, dorc-run) are separate per-surface decisions, unbound by this partition.
 
-### rul-effect-check-home-typeless-floor  (task 10b; 2026-07-10; drafted-awaiting-ack)
+### rul-effect-check-home-typeless-floor  (task 10b; 2026-07-10; TYPED — "I ack your
+10b arguments; let's roll it into the typeless-floor")
 The owed static effect-check of verdict-function bodies (TODO.md:43; `24R` §0a
 "machine-assist the contract") homes as a **typeless-floor brief rider**
 (`270:block-rebuild`), not wrapper-peel: same seam (verdict-bearing providers threaded
 into classify as data — the licensing chokepoint; the effect-check is one more predicate
 at that gate), lands BEFORE block-context widens the shipped-probe surface
 (probe-outside + whole-ρ replication + per-inner payload checks), and keeps the
-referendum-carrying wrapper-peel brief lean. Trust framing (three layers): this static
-check catches the shell-visible accident class ONLY (stray writes/redirects/mutators in
-the body — the paranoid-author bug class); the tool-invocation interior stays vouch-tier
-forever (frame problem — the oracle self-vouch is not eliminable); the `plans/077`
-runtime observe backstop stays reserved as the someday third layer, unaffected. Failure
-disposition (lean): ONE BAR — a body that fails the proof does not lift at all, no probe
-AND no guard (a mutating guard is Dorc-shipped mutation the bare book never had —
-harm-0), with a dq diagnostic naming the offending body line. Rider details: the
-sanctioned OOB write lanes (`$DORC_REPORT`-class breadcrumbs) must be carved out as
-non-mutative-for-this-purpose or every stage-4 refusal idiom fails the check; ⊤-valued
-redirect targets fail safe (under-approximate); the rider brief verifies against `24C`'s
-actual classify/effect shape rather than assuming it.
+referendum-carrying wrapper-peel brief lean. **Sizing rider (typed): low stakes — build
+only if it falls out nearly-free at that seam; punt-empowered, zero guilt** ("not worth
+the brainspace" beyond that; DX defaults out-of-scope for the spike). Trust framing
+(three layers): the static check catches the shell-visible accident class ONLY (stray
+writes/redirects/mutators in the body — the paranoid-author bug class); the
+tool-invocation interior stays vouch-tier forever (frame problem — the oracle self-vouch
+is not eliminable); the `plans/077` runtime observe backstop stays reserved as the
+someday third layer, unaffected. Rider details: the sanctioned OOB write lanes
+(`$DORC_REPORT`-class breadcrumbs) carve out as non-mutative-for-this-purpose or every
+stage-4 refusal idiom fails the check; tmpfiles NOT blessed in v1; the rider brief
+verifies against `24C`'s actual classify/effect shape rather than assuming it.
+
+### rul-no-mutating-guards  (task 10b; 2026-07-10; TYPED, emphatic)
+One bar, permanently: a verdict-function body that fails the non-mutation proof lifts
+NOWHERE — not as a probe and **not as an apply-time guard**. The human, verbatim: "We
+*do not* insert *mutation* that we just proved to be mutation, out-of-order, in
+not-user-spelling, into apply bodies. Extremely nope." (The harm-0 argument: apply-phase
+mutation is the user's own lines; a guard is Dorc-inserted code, and a mutating guard is
+mutation Dorc authored into the apply that the bare book never had.) Kills the two-bar
+option ("good enough to guard but not to probe") forever.
+
+### rul-proven-mutation-fails-fast  (task 10b; 2026-07-10; TYPED, gentle-lean →
+consistency)
+Disposition table for the effect-check, superseding the earlier draft's uniform
+no-lift: **proven-mutates ⇒ genuine fail-fast** (plan-time, before network, loud —
+dictate-tier), *whatever the provability source* — structural (shell-level: a real-path
+write-redirect; permanent, corpus-independent) or oracle-sourced (a loaded oracle
+declares a body command mutative; corpus-RELATIVE). Conductor-framing within the
+ruling: this mints no third hard-error category — a function whose __role name declares
+read-only-answering and whose body provably mutates is an instance of the standing
+"declarations that genuinely contradict each other" category. The corpus-flip edge
+(a previously-green book hard-errors when a newly-loaded oracle proves a latent breach)
+is ACCEPTED for consistency — justification on record: the flip discloses a standing
+violation (the book was always mutating in the probe lane), not a regression. The two
+provenance classes stay SEPARATED in diagnostics/docs (the human's gut, typed):
+structural proofs are permanent and near-warrantable; oracle-sourced proofs name the
+proving oracle in the dq and are never marketed as coverage. Residual class
+(conductor-drafted, awaiting-ack): **unprovable** (foreign un-oracled command in the
+body; ⊤-valued redirect target) stays NO-LIFT + dq, warning-tier, NOT fail-fast — a
+value-decline, not a contradiction.
 
 *(entry format for future additions:)*
 
@@ -118,3 +147,15 @@ Supersedes / amends: <docID:slug refs>. Consumers: <which block/brief this binds
 
 *(non-ruling steers, rejected alternatives worth remembering, and threads cut short by
 a rewind — so the next context can resume mid-thought.)*
+
+- **watch-machinery-raises-disclaim-burden** (human observation, 2026-07-10, task 10b —
+  "not a nack"): the effect-check "leans perilously close to promising non-mutation";
+  every layer of machinery *supporting* the user here raises the documentation/education
+  bar for disclaiming that the machinery isn't *enough*. Standing education posture:
+  warranty only the structural class; frame everything else as lint-against-accidents;
+  the authored vouch remains THE contract. Same shape as the `--trust-footprints`
+  "marketing at best, theatre at worst" honesty note — watch it wherever new
+  contract-supporting machinery lands.
+- Conversational-strawman discipline (conductor note-to-self): function names in
+  strawmen use the bare munged `tool__role` form per `24M` (`foobar__is_converged`),
+  not single-underscore.
