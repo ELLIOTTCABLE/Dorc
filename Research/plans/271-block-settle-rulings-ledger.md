@@ -361,6 +361,34 @@ the **flat three-place `(kind, entity, selector)`**.
   two-mechanisms-for-one-act, the `24S:A5` shape). Set-asides from the idiom sweep,
   recorded: `id -u` root-guards = privilege-requirement not state-topology (imp-1
   cell); tool `-u` flags = company-it-keeps inference, rejected tier ·
+  **collapse-analysis for candidate-address-derived-topology** (human challenge, same
+  date: "extend-by-new-name isn't live yet — does this collapse with previous work?";
+  conductor findings, awaiting ack): (i) NOT `reaches()` — the rhyme is a
+  single-file-store coincidence (cron's store = its own reach; dpkg splits them:
+  `dpkg -L` payload/causal-edges vs `/var/lib/dpkg` fact-store — disjoint emission
+  sets, disjoint consumers); merge-into-one-member-with-per-arm-marks considered and
+  declined (two contract texts in one body; name-as-contract loses its force exactly
+  at adjudication time); (ii) YES downward — D's implementation is a pure consumer of
+  scheduled block-rebuild machinery: un-collapsed address recipes = the
+  value-recipe-reshape; re-evaluation/dependence-analysis under a context's ρ = the
+  reserved relational chokepoint (`rul-seam-context-slot-and-relational-chokepoint`);
+  storage = the reserved backing-SETS seam. New authored surface, ZERO new engine
+  lanes; (iii) NOT upward into the measurement-line lane — per-probe read-set
+  disclosure as the invariance carrier would require exhaustive open-world enumeration
+  (the opaques7-finding20 objection-class: checks transitively read nsswitch/libc/…);
+  observe-disclosures stay the safe optional widener per observe-backing-widening; the
+  kind-level store question is FILES-section-small, the per-probe read-set question is
+  not; (iv) BORDER FENCE REQUIRED — `cron:alice ↔ file:/var/spool/…/alice` is a
+  cross-kind identification, and the corpus already holds three pointers at ONE parked
+  mechanism (`24M:rul-kind-unify-owed` · `24C:strain-coreference-crosskind` ·
+  `24S:A5` "design it once"). Proposed fence: v1 consumes D's address recipes
+  EXCLUSIVELY for the per-axis dependence bit — never address-vs-coordinate
+  identification, never address-granular disjointness (shared-store kinds would
+  over-merge: every Package cell shares `/var/lib/dpkg`); when co-reference unparks,
+  D's member is its authored INPUT (one surface, staged consumers). D registered as
+  the FOURTH pointer so the eventual unifier finds it. Meta, conceded: the prior
+  lean's extend-by-new-name invocation was compat-register; pre-ship the law is
+  design-hygiene (one question per name), hardening into compat at stdlib-ship ·
   **q-map-defers-with-fs-view**: sensitive-with-map's canonical home is the fs-view
   axis, so the fs-view map rides the soft-deferral — and under candidate D the
   user-axis "map" is subsumed (the traced address family); v1 authored surface =
