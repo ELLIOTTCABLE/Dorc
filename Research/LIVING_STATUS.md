@@ -54,13 +54,17 @@ r25). Its merge-disjointness contract binds r23-side work: existing goldens stay
 entry-points/`parse_results` signatures is FLAG-to-r26, never fork.
 
 **The queue (dependency-ordered; human-acked 2026-07-07):**
-1. **DISPATCH NOW (acked, gate-free):** (a) the `24L` gating verification errand — confirm a
-   mark-free verdict-function is inert at HEAD (sizes the floor build); (b)
-   fix-return-decline-inert (`24Kc`: explicit `return 0/1` bodies currently parse as
-   all-declines ⇒ a silently inert oracle — lift them as verdicts or diagnose loudly); (c)
-   the munge-reservation lint (`*__role` namespace + hyphen-collision detection); (d) the
-   `24I` batch-5 audit (read-only: per-topology assertion-depth of the survival-tier e2e
-   cases against the sweep's `TopologyClass`es — unblocks their eventual migration).
+1. **WAVE-1 — DONE 2026-07-09** (all four merged to `ai/spike3-r23` tip `d6c66c0`+ledgers;
+   conductor-verified: diffs hand-read, combined build+test+e2e green, 126/126, zero golden
+   churn): (a) 24L gating verification → mark-free verdict INERT confirmed, bare `__` names
+   ALREADY LIVE at HEAD, floor touch-point map incl. the verdict-unaware-kernel seam + the
+   probe-emission fourth touch-point (`24C` §24L-gating-errand); (b) fix-return-decline-inert
+   → explicit `return 0/1` lifts as a sense-read verdict (`2d7061c`; residue
+   resid-return-arity, `24C`); (c) munge-reservation lint → charclass + collision + squat live
+   (`5eb9569`+`d6c66c0`; respell deferrals resp-munge-policy + resp-collision-ship-refusal,
+   `24C`); (d) 24I batch-5 audit → `notes/24N` (SUBSUMED 3 · TWIN 6 · DEGRADE-to-diag 1 ·
+   KEEP-e2e 4; load-bearing: the sweep is package-kind-only + oracle-fixed, so cross-kind /
+   opaque / incoherent cases are sweep-INEXPRESSIBLE — subsumption = generator extension).
 2. **THE RESPELL PASS — UNGATED** (the ceremony gate was the language rulings; `24M` closed
    them; final fold per `24M` §5): the bare `__role` rename (NOT a prefix) + the
    version-comment marker + kind re-key to `sm.dorc.*` + ACK/POISON grammar removal +
@@ -69,10 +73,15 @@ entry-points/`parse_results` signatures is FLAG-to-r26, never fork.
    stale-XFAIL-comment cleanup (FOLDED, acked; those strings echo into 6 goldens, so they
    ride the same bless — `resid-guard23-stale-comments`, `24C`). Brief MUST carry:
    **ca-munge-charclass** (`24M` §4b — leading-digit DNS labels, hyphens, IDN; the munger's
-   real failure mode is charclass, never length) · the `/1`-polysemy eyes-open commit
-   sentence · the `# dorc:` trailer-comments-UNSTABLE declaration (`24M` §4).
+   real failure mode is charclass, never length) · the wave-1 deferrals resp-munge-policy
+   (transliteration policy for dotted kinds — the respell OWNS it) + resp-collision-ship-refusal
+   (`24C`) · the `/1`-polysemy eyes-open commit sentence · the `# dorc:`
+   trailer-comments-UNSTABLE declaration (`24M` §4).
 3. **The typeless floor** (auto-cell + the four `24L` §7 fences + eligibility plumbing +
-   tests), after or carefully alongside the respell — both touch classify. Conductor
+   tests), after or carefully alongside the respell — both touch classify. The build brief
+   starts from the wave-1a touch-point map (`24C` §24L-gating-errand): the
+   verdict-unaware-kernel seam (thread verdict-bearing providers into classify AS DATA, per
+   inv-determinism) + the probe-emission fourth touch-point 24L §7 underspecifies. Conductor
    recommendation (human: "recommendations welcome but meh"): the fence-implementing builder
    also RECONSIDERS the parked `analyzer-taint-gate` (consume-only-provable-inputs) — same
    claim-tier layer, zero extra onboarding; reconsider ≠ build.
