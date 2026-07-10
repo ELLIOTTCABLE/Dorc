@@ -123,7 +123,10 @@ TYPED counts) · crosscheck adjudication under maximum skepticism; adversarial f
 exclusions-not-inclusions · never use AskUserQuestion (ask in prose); dump the numbered task
 list on changes · Fable conducts, Opus codes; the sonnet no-subagent clamp propagates one
 tier down · code-modifying agents → isolated worktrees: step-zero `git switch -C
-<worktree-branch> ai/spike3-r23` + tip-hash verify + `pwd` verify, step-0.5 `mise trust` ·
+<worktree-branch> ai/spike3-r23` + tip-hash verify + `pwd` verify, step-0.5 `mise trust`,
+step-ONE an EXPLICIT root-docs read (README → DESIGN → IMPLEMENTATION → USER_STORY → KNOBS +
+AGENTS) before any task-specific material — agents do not follow AGENTS.md's reading-guide
+unprompted (human fb 2026-07-09) ·
 builders: granular `(AI …)` commits, never push, the four gates before every commit, final
 e2e FOREGROUND-only with a generous timeout (a backgrounded e2e's completion-notification
 never re-wakes a stopped agent), force `cargo build --workspace` before trusting any e2e,
