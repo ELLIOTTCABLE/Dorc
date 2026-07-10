@@ -418,6 +418,47 @@ the **flat three-place `(kind, entity, selector)`**.
   within-kind cross-context disjointness dividend, modest — cross-kind stays free,
   line-8-class sites stay guarded via imp-1 regardless). The formal section doubles as
   the `24S:A5` design-once interface (bridges = the same-via-map generator class) ·
+  **strawmen-survival-round** (human-directed, 2026-07-10: five non-trivial
+  real-world examples worked through both surviving shapes, in-tree at
+  `notes/27x-strawmen-topology/` — systemd user-units · git-config scopes ·
+  postgres peer-auth · homebrew prefix · docker rootless; conductor findings,
+  awaiting ack): **f-narrowed-knife** — under the co-reference fence, INVARIANT
+  addresses may be approximate (consumed only for dependence shape); the
+  exhaustiveness knife narrows to "never forget an axis-DEPENDENT store"
+  (systemd `#active`'s `/run` stand-in is fine) · **f-kinds-are-topology-units** —
+  mixed-topology tools resolve by argv-driven kind-binding (Service/UserService
+  split); both shapes need the split, D makes each half derivable/lintable, A
+  asserts blind; extends the behaviour-menu · **f-address-entities-dissolve** (the
+  biggest) — address-shaped entities + ρ absorb most apparent sensitivity
+  (git-config needs ZERO kind topology; the `sudo git config --global` footgun
+  keys correctly for free); topology machinery is needed ONLY for logical-entity
+  kinds; the bootstrap file kind's grounding is ENGINE-SUPPLIED (authored identity
+  `lives_at` = cargocult); new behaviour-menu line: logical entities buy cross-tool
+  collaboration at the price of owned topology, address entities are
+  collaboration-poor but topology-free; a lint writes itself ·
+  **f-referent-vs-access** — postgres: invariance is TRUE at referent tier; access
+  gating is per-PROBE, enforced by rc-reality (license ≠ ability); imp-1
+  composition graceful; shapes tie; cross-kind wall-bounding needs no topology at
+  all · **f-dynamic-arms-need-capture-claims** — homebrew: a captured address root
+  (`$(brew --prefix)`) is statically unclassifiable, so D's dynamic arms are
+  CONSUMERS of task-7's read-blessing vocabulary, which therefore needs an
+  AXIS-INDEPENDENCE value-bound dimension (task 7 has a second customer — couple
+  the sittings); meanwhile Shape A scores its one clean win (cheap assertion where
+  D waits on unbuilt machinery) · **f-carve-validated** — docker: the PLAIN
+  system-daemon host is a live counterexample where derived separation would
+  silently under-execute (alice and root genuinely share one daemon; a probed
+  fact "surviving" root's `docker system prune` would be wrong in the default
+  install) — never-derive-separation upgraded precaution → demonstrated-necessary;
+  A is inexpressible for docker while D's conservative projection ≥ A's best
+  honest token; the per-host topology refinement is banked, chronology-priced,
+  deferred alongside task-7's planes-meet-at-chronology cell ·
+  **terminology proposal** — split `sensitive`'s conflation in the design note:
+  `keyed` (derived, safe re-indexing) vs `partitioned` (declared-only separation,
+  knife) · **net assessment**: the relation+generators formulation SURVIVED (no
+  example needed a new verdict class; every wrinkle landed as generator-scope or
+  consumer plumbing); D-primary strengthened overall but shown DEPENDENT on
+  task-7 vocabulary for dynamic arms; A's fallback role confirmed narrow-but-real
+  (capture-rooted/unaddressable kinds wanting a cheap assertion) ·
   **q-map-defers-with-fs-view**: sensitive-with-map's canonical home is the fs-view
   axis, so the fs-view map rides the soft-deferral — and under candidate D the
   user-axis "map" is subsumed (the traced address family); v1 authored surface =
