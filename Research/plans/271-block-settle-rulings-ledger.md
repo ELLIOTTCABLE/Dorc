@@ -326,6 +326,29 @@ the **flat three-place `(kind, entity, selector)`**.
 
 ## Direction & open threads
 
+- **task-3+task-5 sitting OPENED (2026-07-10; explainer delivered in-chat; every lean
+  below is conductor-drafted, NOTHING acked):** the question slugs posed —
+  **q-trichotomy-seat**: minted free-standing clause vs sh-bodied per-KIND role-function
+  vs measurement-line marks, for the static {invariant, sensitive} classification
+  (conductor lean = minted clause; echo-risk flagged, since it matches both `24S` §2d's
+  recorded lean and the human's own prior lean) · **q-clause-grammar**: if minted, the
+  statement shape (bare-mark statement reusing the `:` introducer vs a new keyword) and
+  its registry seat (= `rul-seam-kind-owner-registry-room`'s anticipated clause
+  families) · **q-map-defers-with-fs-view**: sensitive-with-map's canonical home is the
+  fs-view axis, so the map member rides the fs-view soft-deferral; v1 trichotomy =
+  {invariant, sensitive, silence} × {user} only · **q-wrapper-member-count**: one
+  context member vs two members split along `24S` §1's own ρ-vs-axes seam (lean = two;
+  partial-decline composability — su's ρ declines while its peel+user-axis still pays —
+  plus the peel cross-check falling out free from dual argparse) ·
+  **q-rho-closure-spelling**: the ρ-transform member spelled as an EXECUTABLE
+  env-closure (`env -i TERM="$TERM" … "$@"`) — statically traced for the per-variable
+  map, shippable as `24S` §6b's whole-ρ replication builder, real off-ramp value;
+  engine reads closure bodies against a small blessed-idiom contract ·
+  **q-identity-spelling**: the one real grammar hole — a POSITIVE per-axis
+  "moves-nothing" spelling, since per-axis silence must stay ⊤ (opaques7-finding2) ·
+  self-effects: no new spelling proposed (wrapper's own `touches()` + the standing
+  oracle-vouches-for-itself rule).
+
 - **watch-machinery-raises-disclaim-burden** (human observation, 2026-07-10, task 10b —
   "not a nack"): the effect-check "leans perilously close to promising non-mutation";
   every layer of machinery *supporting* the user here raises the documentation/education
