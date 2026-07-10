@@ -875,7 +875,9 @@ apt-get install -y curl'
 # mismatch: run the flagship WITH and WITHOUT `--trust-footprints` and assert the elision count
 # DIFFERS (flagged elides past the wall, plain does not). If they match, the flag is inert ⇒ abort.
 dorc_flags_selftest() {
-  _c="$here/cases/strawman24-survive-simple"
+  # Anchor retargeted survive-simple → survive-multiwall (2026-07-10): survive-simple became a
+  # respell XFAIL specimen (24P §9) the engine can't parse yet, zeroing both counts ⇒ FATAL.
+  _c="$here/cases/strawman24-survive-multiwall"
   [ -d "$_c" ] || return 0   # the flagship anchors the self-test; skip if the corpus lacks it
   _fl=$("$dorc" --book="$_c/book.sh" -o "$_c/package.oracle.sh" --trust-footprints \
     < "$_c/probe-results.txt" 2>&1 >/dev/null | grep -oE 'elide=[0-9]+' || true)
