@@ -307,3 +307,16 @@ delta classes (never bless-first).
   flag). Note in-code at the selftest.
 - **Suite state at commit: all 126 pass** (121 live + 4 declared xfail + pipe-guard live),
   fresh `cargo build --workspace` + full foreground e2e, conductor's own hand.
+
+## §10 — Dispatch gating changed at r24 close (2026-07-10; supersedes "dispatch on rewind")
+
+Round 24 closed by reshuffle (`notes/24U`); the respell is now the FIRST stage of
+`270:block-rebuild` and **waits on `270:block-settle`** — specifically the entity-algebra
+design note's authored-spelling ack (`270:adj-entity-algebra`), because the structured
+entity/selector algebra may move the mark grammar this churn rewrites into, and the fixture
+sweep must happen exactly once. If the algebra moves mark spelling, the CONDUCTOR amends
+these six specimens in-tree first (spec-by-example stays the review vehicle; never re-churn
+hundreds of files to communicate a spelling change) and §4's predicted delta classes update
+with them. Ack states at close: d1–d9 ALL acked (d8 typed 2026-07-10). One brief addition
+from the r26 extractables (`262` §7, scheduled via `270`): gate-1's record-compare goes
+order-insensitive in this same golden churn. Everything else in §2/§3/§5/§7/§8/§9 stands.
