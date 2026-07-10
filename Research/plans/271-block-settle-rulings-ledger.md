@@ -328,15 +328,43 @@ the **flat three-place `(kind, entity, selector)`**.
 
 - **task-3+task-5 sitting OPENED (2026-07-10; explainer delivered in-chat; every lean
   below is conductor-drafted, NOTHING acked):** the question slugs posed —
-  **q-trichotomy-seat**: minted free-standing clause vs sh-bodied per-KIND role-function
-  vs measurement-line marks, for the static {invariant, sensitive} classification
-  (conductor lean = minted clause; echo-risk flagged, since it matches both `24S` §2d's
-  recorded lean and the human's own prior lean) · **q-clause-grammar**: if minted, the
-  statement shape (bare-mark statement reusing the `:` introducer vs a new keyword) and
-  its registry seat (= `rul-seam-kind-owner-registry-room`'s anticipated clause
-  families) · **q-map-defers-with-fs-view**: sensitive-with-map's canonical home is the
-  fs-view axis, so the map member rides the fs-view soft-deferral; v1 trichotomy =
-  {invariant, sensitive, silence} × {user} only · **q-wrapper-member-count**: one
+  **q-trichotomy-seat**: ~~minted free-standing clause vs sh-bodied per-KIND
+  role-function vs measurement-line marks~~ — SUPERSEDED same date by the human's
+  greatest-hits replay ("what do people write in sh that expresses I-change-per-user?"),
+  which minted **candidate-address-derived-topology**: a NEW per-KIND family member
+  (extend-by-new-name, `reaches()`-rhyming but never a re-read; name deliberately
+  unchosen, must bias completeness per `24G` §6) whose body spells WHERE THE KIND'S
+  STATE LIVES in ordinary sh — `sm_dorc_Cron__lives_at() { printf
+  '/var/spool/cron/crontabs/%s\n' "$(id -un)" : file ;}` (STRAWMAN) — with the
+  trichotomy DERIVED by dependence-analysis of the traced body under ρ: no
+  user-axis-owned input ⇒ invariant (identity bridge + probe-outside license) ·
+  user-derived address ⇒ sensitive WITH per-value keying free (the address family IS
+  the user-axis map) · untraceable ⇒ ⊤ ⇒ silence-floor (degrades to NO-license, fixing
+  candidate-B's fuzzy-license lane). The wild idiom it lifts: user-as-address-parameter
+  (`$HOME`, `~`, `$USER`-in-path, XDG); man-page FILES sections are the pre-existing
+  documentation twin. Dissolves the kOOB tension (no new syntax; q-clause-grammar DIES
+  if D wins) · passes the graduation test natively (static printf arms + dynamic
+  host-question arms, dynamic-frame precedent) · real off-ramp value · selector-granular
+  mixed topology (git-config `#system` invariant / `#global` sensitive — candidate A's
+  flat token cannot express this). Strains, named: non-file-addressable state
+  (`sm.dorc.Service#active` = pid-1 memory; mostly recoverable — `#enabled` = wants/
+  symlinks, sysctl = /proc/sys — ~SUSPECT near-total coverage, -GUESS residue small);
+  invariance-license rests on an EXHAUSTIVENESS contract ("state lives here and ONLY
+  here" — the touches() at-most knife, same tier, no new trust category); one
+  engine-derived link enters the attribution chain (task 8 must re-read its
+  adjudicability condition against derived-not-declared); engine cost = traced surface
+  + dependence analysis + blessed who-am-I capture vocabulary (`$USER`/`$LOGNAME`/
+  `$HOME`/`$(id -un)`/`$(whoami)` → the user-axis value), landing on block-context's
+  ρ-tracing + the reserved backing-SETS seam. Conductor lean REVISED: D primary
+  (~SUSPECT — twenty minutes old, un-contacted by the engine's classify/backing shape);
+  A demoted to named fallback for unaddressable kinds only-if-field-forced (resist:
+  two-mechanisms-for-one-act, the `24S:A5` shape). Set-asides from the idiom sweep,
+  recorded: `id -u` root-guards = privilege-requirement not state-topology (imp-1
+  cell); tool `-u` flags = company-it-keeps inference, rejected tier ·
+  **q-map-defers-with-fs-view**: sensitive-with-map's canonical home is the fs-view
+  axis, so the fs-view map rides the soft-deferral — and under candidate D the
+  user-axis "map" is subsumed (the traced address family); v1 authored surface =
+  addresses on the user axis only · **q-wrapper-member-count**: one
   context member vs two members split along `24S` §1's own ρ-vs-axes seam (lean = two;
   partial-decline composability — su's ρ declines while its peel+user-axis still pays —
   plus the peel cross-check falling out free from dual argparse) ·
