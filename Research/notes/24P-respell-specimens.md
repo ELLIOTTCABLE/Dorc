@@ -148,3 +148,19 @@ old spelling; the dotted-kind marks and re-keyed labels don't round-trip yet) �
 review artifact, not breakage. Respell dispatch is gated on the human's ack of §5 + the in-file
 review; on ack, the builder brief = §2 checklist + §3 flags + the wave-1 deferral list
 (`24C` resp-munge-policy / resp-collision-ship-refusal) + LIVING_STATUS queue item 2's fold-list.
+
+## §7 — Post-ruling addendum (2026-07-09, after the specimen files were authored)
+
+Two rulings landed after §1–§6 were written; the builder's checklist (§2) extends:
+
+- **rul24-ditch-is-diverged (`24C`):** `is_diverged` is REMOVED, hard, in this same churn —
+  out of the reserved-suffix set + the lift + the reservation lint's suffix table; the dual
+  sense-flip glue and the `VerdictSense` parameter delete; the one exercising case
+  (`guard23-inverted-vouch-never-backwards`) converts to pinning explicit-return manual
+  inversion (`case $? in 1) return 0 ;; 0) return 1 ;; *) return 2 ;; esac` style) never
+  licensing backwards. The role family is now predict / is_converged / touches / resolve /
+  reaches. None of the §1 specimens used the diverged sense; they stand unmodified.
+- **The one-liner-candidate rider:** while sweeping fixtures, FLAG (never convert) any oracle
+  whose verdict could idiomatically be a `tool --check "$@"`-style passthrough; report the
+  list. (The founding-one-liner PIN itself rides the floor build, not this churn —
+  fd-headline-oneliner-gap, `24C`: quoted-`"$@"` is unmodeled in the tracer until then.)
