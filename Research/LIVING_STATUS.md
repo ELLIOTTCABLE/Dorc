@@ -187,7 +187,11 @@ death-criteria concern (the one watch-item, passively-baking-decisions, is the h
 eye) · horizon wording DONE by the human in the root docs · the redirect-report skipped.
 
 **Conduct fences (standing; bind any successor):** never edit
-README/DESIGN/IMPLEMENTATION/USER_STORY/KNOBS/TODO/AGENTS/root-CLAUDE (human-only) · HARD
+README/DESIGN/IMPLEMENTATION/USER_STORY/TODO/AGENTS/root-CLAUDE (human-only) · **KNOBS
+carve-out (human-ruled 2026-07-09): LLM-authored/human-reviewed — the conductor MAY edit it
+directly, but leaves the edits UNCOMMITTED for the human's ack before any commit** (three
+such edits pending as of the rewind: the kOOB closed-set-of-one marker, the kTYANNOT
+containment re-cut, the kCONTRACT-RUNGS default-pin) · HARD
 QUARANTINE on `quarantine-DO-NOT-READ/` + `Research/corpora/` · a sibling design-agent is
 ACTIVE in r24 `.md`-space — do not mint new note/plan IDs without checking the tree;
 coordinate through this file · word-slugs in full words · silence ≠ ack (only what the human
