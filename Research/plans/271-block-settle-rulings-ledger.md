@@ -458,20 +458,25 @@ acked by directing the minting), only the repair-direction ratification waits.
 - **Ninth round (2026-07-11) — dual-peel breakdown, rename menus, and the
   unified-story warts register (chat carries the full prose; this is the
   durable skeleton):**
-  - **dual-peel disposition (drafted-awaiting-ack, answering the human's
-    "independent mechanisms" suspicion):** the two argparses ARE independent
-    as claims (different consumers, separately attributed) — but the peel
-    BOUNDARY is a shared derived fact with one downstream consumer chain:
-    inner-oracle dispatch needs exactly ONE tail head per site; two
-    boundaries = two different inner commands for one site = incoherent
-    composition, so genuine independence is untenable at that consumer.
-    Detection is mechanical where both members answer a shape (trace both,
-    compare boundary indices). Proposed disposition: NO new mechanism — a
-    disagreement is the standing declarations-that-genuinely-contradict
-    category (refuse both members for that shape ⇒ site walls, loud dq);
-    where only one member answers (su), its boundary governs alone. The
-    "cross-check dividend" framing is retired (it is a coherence
-    requirement, not a bonus).
+  - **dual-peel disposition (SETTLED by mutual clarification, 2026-07-11 —
+    human ack + two corrections of the conductor):** the members' argparse
+    STRUCTURES are fully independent (each entry-point may
+    accept/license/reject/handle any argument-set differently; no matching
+    machinery required) — the human's point, confirmed. `return 2` from one
+    member and "I peel at operand four" from the other are COHERENT together
+    (declining merely adds no license) — confirmed. The one coherence
+    requirement is on the DERIVED BOUNDARY: given both members answer the
+    same book-invocation with a tail-position `"$@"`, they must
+    abstract-interpret to the SAME tail position (one site cannot have its
+    peeled command start at both the third and the fourth operand —
+    inner-oracle dispatch consumes exactly one tail head). Disposition
+    CORRECTED per the human's house-style nit: boundary disagreement is
+    GENUINE STATIC INCOHERENCE — provable, clearly, forever, from
+    statically-available context — so it takes the **immediate loud
+    fail-fast error** (dictate-tier, pre-network; the
+    rul-proven-mutation-fails-fast posture), NOT the conductor's erroneous
+    demote-to-wall-and-run. Fail-fast applies up until first network-transit;
+    best-effort begins only where static analysis is exhausted.
   - **Emission-member rename menu (the parked "context" nit, dug into):**
     conductor lean = **`cmd__wraps_only()`** — foregrounds WRAPPERHOOD
     (which also fixes wart-axes-member-dual-load below: the member carrying
@@ -489,8 +494,14 @@ acked by directing the minting), only the repair-direction ratification waits.
     (identity-plane) → **vantage** offered ("the tail's vantage";
     vantage-qualified coordinates; vantage axes {user, netns, fs-straw});
     "standpoint" longer, "seat" collides with systemd-logind seats. ρ keeps
-    the symbol formally, "the tail's environment" in prose. "Probe stand-in"
-    formalized for the shipped predict-form. "Peel" and "wrapper" keep.
+    the symbol formally, "the tail's environment" in prose. ~~"Probe
+    stand-in" formalized~~ — CONCEDED (human, 2026-07-11): post-merge,
+    "probe stand-in" is a synonym for predict()-as-shipped, a lane-position
+    not a concept; the term is dropped, the vocabulary shrinks. "Peel" and
+    "wrapper" keep. "Moves" flagged by the human as repeatedly-confusing
+    even design-internally (nothing moves; it is engine dataflow-speak) —
+    retire in favor of difference/change language, see the tenth-round
+    naming rework.
   - **Warts register (the unified-story honest list):**
     wart-raw-ship-debt (task #14, law-check pending) ·
     wart-dual-peel (disposition above, awaiting ack) ·
@@ -513,6 +524,47 @@ acked by directing the minting), only the repair-direction ratification waits.
     world = marks) · line-level attribution with harm monotone in authored
     claims. Every task-5 outcome re-derives from these; no piece of the
     wrapper surface remains that the laws don't generate.
+
+- **Tenth round (2026-07-11) — the emission member re-derived from the
+  author's chair (the human: "wraps_only isn't landing; 'moves' keeps
+  confusing me; what's the only-claim?"):**
+  - **The author-conception (the deliverable):** the member says *"when my
+    command runs its guest, the guest lives in the world my command was
+    called in — EXCEPT for the differences I list here."* Three clauses in
+    one body: (1) the argparse + final `"$@"` = where my flags end and the
+    guest begins; (2) each emission = one listed difference, as
+    (value-in-output, dimension-in-mark) — "the guest's user is root";
+    (3) the totality clause, which is what `only` quantifies: *of the
+    identity-affecting dimensions this dialect version knows (user,
+    fs-straw[, netns]), my guest differs from ambient in exactly the ones I
+    list; unlisted = same.* The NEGATIVE space is the payload — unlisted
+    dimensions are positively-unchanged, which is what licenses ambient
+    measurements to speak for the guest's world (the crown-jewel transport).
+    NOT claimed: env-vars (predict's ρ), output, own side-effects
+    (`cmd__disturbs()`), and never separation-between-values (the `272` §4
+    carve — keying only).
+  - **Why the old words failed:** "moves" is engine dataflow-speak (a point
+    moving along an axis) — nothing moves; the wrapper *starts its guest
+    somewhere else*. Bare "wraps" under-describes the payload (the
+    exceptions list) and invites "wraps WHAT?"; and it cannot go
+    `only`-less — the negative space is load-bearing, so the ratified
+    only-rule DEMANDS the quantifier — while "wraps_only" misparses as
+    "only wraps" (the leading-only hazard rul-at-most-family-names already
+    named).
+  - **Menu v2 (read-aloud-tested against sudo/su/nice/netns/chroot):**
+    conductor lean = **`cmd__wraps_changing_only()`** — "sudo wraps,
+    changing only user[=root]" · "nice wraps, changing nothing" (empty
+    emission) · "ip-netns-exec wraps, changing only netns" · "chroot wraps,
+    changing only fs-view". "Change" takes the dimension as a natural
+    object where "runs as/in/under" needed per-dimension prepositions.
+    Alternatives: `cmd__same_world_except()` (sameness-first; totality via
+    except-semantics; mints "world") · `cmd__tail_differs_only_by()`
+    (differences-first; drops the wrapping verb) · bare `cmd__wraps()`
+    (the human's floated instinct; fails the only-rule as above — listed
+    for completeness, not offered). Chain-sentence under the lean: *a
+    command disturbs cells; a wrapper wraps its guest, changing only the
+    dimensions it names; a kind's state is stored only in the substrates
+    its owner declared.*
 
 - **task-3 arc — CLOSED 2026-07-11; the comprehensive design durable is
   `notes/272`** (minted at the human's direction: "large enough to deserve a separate
