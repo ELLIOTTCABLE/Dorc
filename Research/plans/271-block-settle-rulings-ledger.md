@@ -566,6 +566,69 @@ acked by directing the minting), only the repair-direction ratification waits.
     dimensions it names; a kind's state is stored only in the substrates
     its owner declared.*
 
+- **Eleventh round (2026-07-11) — the human's enumerate-everything move:
+  kill the negative space entirely (conductor: ADOPT, strongly):**
+  - **The move (his, typed):** "dimensions" ratified-by-taste as the concept
+    word (the Minecraft intuition: changing a dimension swaps a whole world
+    of un-enumerated associated state — tool-defaults, paths,
+    unintrospectable internals). And: since the dimension set is genuinely
+    small (engine-owned, versioned, 2–3 entries) AND the author cohort is
+    small (battle-tested oracle-builders — "commands with probe-time
+    guests"), **make the author enumerate every dimension explicitly;
+    choose silence-semantics by elision danger, not convenience.** Silence
+    returns to ⊤.
+  - **Why adopt — three arguments, razor-conversion first:** (1) under
+    only-semantics this member's knife was an OMISSION failure — "no line
+    SAYS the false thing" — which the human's own registered razor
+    (razor-attributable-line, `24S` §4d) classifies as razor-FAILING;
+    explicit enumeration converts every wrongness into a POSITIVE
+    mis-assertion on a pointable line — the member's whole failure class
+    moves from razor-failing to razor-passing. (2) Family re-homing: the
+    member leaves the survey-total `only`-class (stored_only_in's, tolerated
+    there because stores are an OPEN set) and joins the arm-incremental
+    disturbs-class — gradual-enhancement-native, and the version problem
+    DISSOLVES: a v0.2 dimension (netns) is just a missing line in old
+    members ⇒ that dimension ⊤ ⇒ walls scoped by the carried-by table to
+    the kinds that dimension carries (net-kernel substrates), no
+    version-scoped-totality semantics needed at all. (3) Full circle: this
+    RESTORES `24S`'s original posture (opaques7-finding2: per-axis silence =
+    unknown-move, totality value-incentivized never assumed) — the
+    conductor's only-member dissolution (q-identity-dissolves-under-only)
+    was the deviation — while filling `24S`'s one genuine grammar hole (no
+    positive moves-nothing spelling) with the same-line below.
+  - **The mechanism (one-pass total emission, shape settled;
+    drafted-awaiting-stamp):** body = argparse (per-shape `return 2`
+    declines unchanged) · ONE answer-line per dimension the dialect knows —
+    a value-emitting line marked with the dimension = *changed, to this*
+    (`printf '%s\n' "$target"   : user`); a colon-no-op line marked with
+    the dimension = *unchanged* (`:   : user` — sh's nothing-command,
+    marked: "nothing happens to user"; strips to a harmless bare `:`) ·
+    a MISSING dimension-line = ⊤, walls, hint-tier nudge (kWARN-rich;
+    frontloaded degradation, not lint-rescue) · terminal `"$@"` = the peel
+    boundary, unchanged. Alternative same-spelling recorded not leaned: a
+    minted unchanged-token in the mark (`: user unchanged`).
+  - **Token-collision flag:** dimension marks (`: user`, `: fs`) and
+    substrate marks (`: fs`, `: net-kernel`) would share the token `fs`
+    with different meanings in different members; keep the dimension named
+    `fs-view` (or rename one side) — rides the queued joint kOOB
+    deliberate-reading (wart-two-mark-vocabularies).
+  - **The name that follows:** the `only` DIES with the negative space
+    (only = complete-by-contract; this member is now arm-incremental, and
+    the family law says such members carry no only). The human's floated
+    bare **`cmd__wraps()`** becomes law-compatible and is the conductor
+    lean — "sudo wraps: user becomes root; fs, nothing; guest runs here";
+    the body answers "wraps what?" (the `"$@"` and the dimension-lines ARE
+    the payload). Alternatives: `cmd__hosts()` (warmer, same shape) ·
+    `cmd__guest_dimensions()` (noun-form). Concept renames riding:
+    **dimensions** (né axes — his taste, typed) · **guest** offered (né
+    "tail" on the authored surface — "tail" is argv-position engine-speak,
+    same disease as "moves") · **vantage WITHDRAWN** (unneeded once
+    "dimensions" carries the concept; vocabulary shrinks again) · "moves"
+    retired (tenth round).
+  - **Chain-sentence, current draft:** *a command disturbs cells; a wrapper
+    wraps its guest, answering every dimension; a kind's state is stored
+    only in the substrates its owner declared.*
+
 - **task-3 arc — CLOSED 2026-07-11; the comprehensive design durable is
   `notes/272`** (minted at the human's direction: "large enough to deserve a separate
   document"; this ledger keeps rulings plus this pointer). The arc in one line: the
