@@ -777,6 +777,60 @@ vs folding INTO `cmd__predict()` (the nit-predict-merge disposition, task-5 thre
     whether the changed-detection fold is v1-block-context or
     reserve-with-the-ladder.
 
+  **Fifth round — wrapper-own-output hunt + the referential-equality correction
+  (human devil's-advocate, 2026-07-11):**
+  - **The hunt (challenge: idiomatic guard-consumed WRAPPER-stdout):**
+    UNINHABITED, and the ecosystem actively selects against it — docker keeps
+    pull-noise on stderr and emits ids on stdout only when detached (no
+    tail-stream to pollute); `script` ships `-q` because its banners pollute;
+    `chronic` exists to REMOVE wrapper-visible output. Near-misses, classified:
+    handle-emission (`docker run -d` container-id · `systemd-run` unit-name ·
+    `sbatch` job-id) is wrapper-own-output consumed by CAPTURE feeding later
+    lines — value-⊤ handle-shaped, the task-7 lane, not convergence-guards;
+    ssh banners polluting remote-check unions are the archetype, fenced
+    (`24S:imp-5`); stderr noise is suppressed/ignored, never guarded on.
+    VERDICT: the human's saving statement holds empirically — wrapped commands
+    need output-prediction (changed-detection, tail position); idiomatic
+    wrappers' own output-function is PASSTHROUGH (free in the stand-in body:
+    bare `"$@"`), with decoration/suppression (banner/chronic-class) rare and
+    expressible in the same body when real. Round-4's forcing-function for
+    widening the wrapper member into output DIES.
+  - **rul-probe-form-substitution (drafted-awaiting-ack; his correction,
+    accepted in full):** "probes never escalate" is an INVARIANT, not an engine
+    name-rule — the engine may not know what sudo IS (referential equality), so
+    round-4's de-wrap-and-ship (engine strips the wrapper by name) is RETIRED
+    as referentially dirty. The uniform mechanism: **a probed compound ships
+    with EVERY participant replaced by its probe-form** — read-only-blessed
+    commands verbatim; modeled commands as their oracle's model-body;
+    un-oracled ⇒ nothing ships ⇒ can't-say ⇒ run. A wrapper's probe-form is an
+    AUTHORED stand-in that no-ops its OWN observables and privilege while
+    reproducing its evaluation-transform for the transformee (`env -i … "$@"` —
+    the rul-simulate-env-user-authored body, now not traced-then-replicated but
+    ITSELF the shipped participant in wrapper position; `24S` §6b's
+    engine-built whole-ρ closure is SUBSUMED by the authored stand-in —
+    amendment-grade, wants the human's ack). Composition is structural: sudo's
+    stand-in transforms the env under which a2enmod's predict evaluates (his
+    "transform other probes' predicted-observables"); banner's transforms
+    predicted output by decoration. Nuances: substitution covers the
+    VALUE/OBSERVABLE plane only — keying and probe-outside licensing still ride
+    the axes member + the `272` derivation, neither subsumes the other; imp-1
+    becomes EMERGENT — enforced by the oracle-lane read-only contract + the
+    task-10b effect-check (a stand-in body invoking real sudo = the
+    proven-escalation fail-fast class), never by name-knowledge; stand-in
+    fidelity on measured channels is differential-harness territory (our CI,
+    per rul-net-quality-u-curve, never the product's rescue). Supplant chain,
+    owned: verbatim-ship (round 3, wrong for escalators) → de-wrap-and-ship
+    (round 4, referentially dirty) → probe-form substitution (round 5,
+    uniform).
+  - **Fork effect (honest tally):** item one rescues the separation story
+    (the wrapper member may stay output-free pure staging; cohorts empirically
+    disjoint again); item two mildly favors the merge (the substitution rule
+    reads cleanest as "every command's stand-in is its predict"); the
+    operational asymmetries (f3/f4) stay dissolved in both directions. Net:
+    genuinely taste-adjudicable; conductor lean DOWNGRADED to weakly-held
+    merge-for-uniformity; both spellings are fully compatible with
+    probe-form substitution.
+
 - **watch-machinery-raises-disclaim-burden** (human observation, 2026-07-10, task 10b —
   "not a nack"): the effect-check "leans perilously close to promising non-mutation";
   every layer of machinery *supporting* the user here raises the documentation/education
