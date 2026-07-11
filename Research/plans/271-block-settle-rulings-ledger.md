@@ -409,6 +409,17 @@ all future documentation (human directive) · the entity-algebra design note ·
 delivered in-chat 2026-07-11, low urgency); wrapper-member names (task 5, owed the
 same read-aloud + only-rule treatment).
 
+### rul-simulate-env-user-authored  (task 5; 2026-07-11; TYPED direction — "I
+extremely-strongly-prefer 'user writes' to 'engine generates' for the
+'probe-env-closure', that's a fucking fantastic idea"; ratification explicitly
+CONTINGENT on the same-turn nit investigations, "suspiciously pretty")
+The ρ-transform surface is a USER-AUTHORED executable env-closure — never an
+engine-generated replication recipe. Name direction (his): **`cmd__simulate_env()`** —
+simulation-framing frontloads the never-perfect-fidelity limitation in the title and
+rhymes with `cmd__predict()`; conductor grammatical variant `cmd__simulates_env()`
+offered (third-person, matching `cmd__disturbs()`). NOT yet settled: separate member
+vs folding INTO `cmd__predict()` (the nit-predict-merge disposition, task-5 thread).
+
 ## Direction & open threads
 
 - **task-3 arc — CLOSED 2026-07-11; the comprehensive design durable is
@@ -505,6 +516,81 @@ same read-aloud + only-rule treatment).
   Consumers: `270:block-context` wrapper-peel/wrapper-sudo briefs; task-6 shares
   the argparse/which-arg-is-code seam (fence held — su's carrier half stays
   task-6's).
+
+  **Nit round (human, 2026-07-11 — five nits on the "suspiciously pretty" closure;
+  dispositions banked same date):**
+  - **nit-peel-coverage** ("why MUST shift-then-`"$@"` be enough — by-construction,
+    not by-corpus?"): disposition = family-definition argument. Define the peeling
+    wrapper BY execution model: parses an own-argv prefix, then execs the REMAINDER
+    verbatim (same bytes, same order, nothing added/removed/substituted), once,
+    locally. Under that definition tail-as-contiguous-suffix is forced, and
+    shift-then-terminal-`"$@"` is POSIX sh's exact denotation of "argv suffix" — the
+    spelling space and the family boundary coincide. The three real escapes each map
+    to an already-designed OTHER family: tail-as-STRING (`sh -c`, `su -c`, `sg`,
+    ssh) = carriers (task 6) · substituted/repeated/runtime argv (`find -exec {} ;`,
+    `xargs`) = runtime-data (`24T:imp-P3`) · argv-TRANSFORMERS (inject/reorder;
+    real specimen: GNU `env -S` split-string) = out-of-family, per-shape decline.
+    Safety asymmetry: an inexpressible shape is UNSPELLABLE ⇒ author declines ⇒
+    HEAD wall — by-corpus evidence prices only VALUE-loss, never soundness. Engine
+    contract line: exactly one `"$@"`, terminal, in the tail slot (bare or after
+    blessed env-prefix idioms); interior or argument-position `"$@"` ⇒ not a peel.
+    Named theoretical residue: a verbatim-suffix-exec wrapper with trailing
+    own-operands (terminator-style) — ~extinct under POSIX guideline-9/getopt
+    stop-at-first-operand convention; if one appears, it declines (safe).
+  - **nit-decline-shape** ("is multiple functions the best way to decline
+    license?"): reframe — the decline MECHANISM is the family's one existing
+    mechanism, unchanged: per-shape rc ≥2, with member-absence as its degenerate
+    decline-all closure. The member split is NOT a decline mechanism; it is
+    claim-CHANNEL separation, so a decline can be channel-scoped. Alternatives
+    explored and declined: rc-based half-decline (one scalar cannot decline half —
+    and emissions-then-return-2 gives positional semantics, breaking the flat ≥2
+    sink) · sentinel bodies (bare `"$@"` = no-ρ-claim vs `env … "$@"` = claim:
+    silent-cute, loud-friend violation, and identity-ρ then needs a third
+    spelling) · arm-marks (already declined, `272` §10, two-contract-texts).
+    Sharpener: the su stress-test generalizes INTO sudo's own shape-space —
+    `sudo -i` installs login-env (ρ-unclaimable, exactly su's cell) while the
+    user-axis stays answerable; so per-(member × shape) decline is required by the
+    flagship wrapper alone, and any single-function shape must mint a SECOND,
+    novel, channel-scoped decline mechanism.
+  - **nit-argparse-clones** (corpus-wide 3–4 clones per oracle-set): watch-item
+    minted **watch-argparse-clone-pain** — measure during block-stdlib authoring;
+    not a killer for this design alone unless it kills several (his framing).
+    Relief valve inside spell-as-sh: plain sh helper functions shared across
+    members (interprocedural tracing is already in the welded must-handle set);
+    macros would be new be-very-not-sh surface, priced only on cross-design
+    evidence of helper insufficiency.
+  - **nit-predict-merge** (his ack/nack invitation: fold `cmd__simulate_env()`
+    into `cmd__predict()`?): GROUNDING CORRECTION first — `__predict` is heavily
+    INHABITED at tip (fixture families `apt_get__predict`/`dpkg__predict`; engine
+    `PredictSet` lift; the differential harness keys on it; guard shapes insert it
+    as the check-text, shipped strip-only per `spike/CLAUDE.md`), so predict is
+    NOT a display-only lane in the build — it is vouch-tier, trust-bearing
+    measurement text already. Consequences: (a) his no-new-license intuition
+    ~SUSPECT HOLDS — a wrong ρ-claim is the same failure class as a wrong check
+    body (wrong-CONVERGED, attributed to its lines); the ρ-map extraction mints
+    no new license CATEGORY, and the axes/world-plane claims stay in the emission
+    member regardless; (b) the savings are role-vocabulary economy, NOT an
+    argparse (the context member and its argparse survive any merge — axes cannot
+    ride the value-plane body); (c) residual costs, the real contest: a
+    shape-gated DUAL contract on one name (command-position `"$@"` silently
+    selects which contract the author signed — against the name-as-contract
+    legibility the `only`-rule institutionalized); the extension-law precedent
+    (rul-family: extend-by-new-name, never re-read — vacuously satisfied today,
+    zero existing predict bodies have command-position `"$@"`, but
+    contract-growth-on-an-existing-name is the law's spirit; HIS law, his call);
+    and the transitive-delegation corner (`doas__predict() { sudo "$@" ;}` —
+    composition TRACEABLE, but SHIPPING it would escalate; the two consumers
+    diverge exactly on delegation bodies — own care needed, or out-of-v1).
+    Adopted under EITHER branch: the structural-detection insight — wrapper-ness
+    is DETECTED (command-position `"$@"` in a simulation body), never declared by
+    member-kind. Conductor lean, weakly held: separate name
+    (`cmd__simulate_env()`), formally defined as predict's simulation-lane
+    SIBLING (same body discipline, same tier), so a future field-evidence merge
+    is a rename, not a redesign.
+  - **nit-context-name** (his; PARKED by him for a bite-sized future turn):
+    "context" is too generic — an engine-internal surfaced as authored
+    vocabulary; the emission-member rename is owed alongside the full member-name
+    menus.
 
 - **watch-machinery-raises-disclaim-burden** (human observation, 2026-07-10, task 10b —
   "not a nack"): the effect-check "leans perilously close to promising non-mutation";
