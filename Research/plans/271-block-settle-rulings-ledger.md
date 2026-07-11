@@ -681,6 +681,19 @@ acked by directing the minting), only the repair-direction ratification waits.
     killed above. Mechanism (eleventh round) is name-independent and
     unchanged.
 
+- **Thirteenth round (2026-07-11, brief) — five guest-shares variants spun
+  at the human's request; taste call his, pending.** Banked while spinning,
+  the **two-directions observation**: the sameness claim is BIDIRECTIONAL —
+  outside-measurements-trusted-inside (the elision license) AND
+  inside-disturbances-land-outside (the guest's `cmd__disturbs()` emissions
+  key into the shared cells' kill-traffic); a good name should survive both
+  readings. Menu: `cmd__guest_shares()` · `cmd__guest_shares_your()` ·
+  `cmd__guest_inherits()` (unix-native fork/exec word but reads as at-birth
+  COPY, under-selling live-referent identity — the accuracy discriminator) ·
+  `cmd__lends_to_guest()` · `cmd__exposes_to_guest()` (one-directional,
+  danger-forward). Conductor rank: shares_your > shares > lends > exposes >
+  inherits.
+
 - **task-3 arc — CLOSED 2026-07-11; the comprehensive design durable is
   `notes/272`** (minted at the human's direction: "large enough to deserve a separate
   document"; this ledger keeps rulings plus this pointer). The arc in one line: the
