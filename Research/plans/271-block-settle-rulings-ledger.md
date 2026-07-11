@@ -342,7 +342,65 @@ role name. The human: saying `cmd__touches()` and `kind__lives_in()` by default 
 have significantly helped without any naming change." Binds this ledger, the design
 note, briefs, and doc prose forward.
 
+### rul-networking-unpunt  (task 3/5 sitting; 2026-07-11; TYPED — amends
+`rul-axis-vocabulary-v1`)
+Containers make networking/network-naming core 2026 single-host ops; the human's
+internal network-punt (spike + security + complexity) is lifted for the AXIS tier:
+**netns re-enters the axis roadmap explicitly, sequenced AHEAD of full fs-view**
+("way more pressing than the full complexity of bind-mounts/overlayfs").
+Single-host-single-universe still governs spike3 analysis (the bare-metal host stays
+inviolate). Conductor calibration riders (in-chat, un-nacked): the netns axis is
+naming/scoping ONLY — no network access, `24S:imp-5` no-cross-host untouched; it is
+mechanically cheap (`ip netns exec NAME` yields argv-named axis values exactly like
+`sudo -u USER`; the net-kernel substrate has no aliasing ladder — no symlink/bind/
+copy-up analog; cross-namespace state is disjoint-by-construction); it serves the
+ip/nft/sysctl tool class, while docker-MANAGED networking stays behind the endpoint
+substrate, opaque beyond the socket. Consumers: the substrate carried-by table
+(net-kernel rows), `270:block-context` sequencing, the entity-algebra design note's
+context-slot examples.
+
+### rul-lint-never-drives-design  (2026-07-11; TYPED, standing — human-voiced;
+durable home beyond this ledger is the human's call, spike/CLAUDE- or KNOBS-adjacent)
+Lints are never a rescue from a bad design and are never discussed during design:
+either re-design, or absorb the limitation as a core, frontloaded, README-class
+breakage/constraint. Lints are built at the END of design, from that frontloaded
+list, to make documented limitations sting less — never built early so the breakage
+can be omitted from the README. Compliance note: the conductor's prior lint-flavored
+design arguments in this sitting (binding-smell lint as adjudicability support; the
+file-entity nudge; "a lint writes itself") are STRUCK as design justifications;
+candidate D's case was re-audited and stands without them (native spelling; off-ramp;
+pointable post-hoc attribution; differential testability as stdlib-CI verification;
+substrate future-proofing).
+
+### rul-net-quality-u-curve  (2026-07-11; TYPED, standing — human-voiced; same
+placement note)
+For a product designer, catch-net quality is U-shaped: perfect mechanical nets
+(bad-states-unrepresentable) and honest documentation are both good; the dip between
+them — linting / provably-imperfect best-effort mechanical nets — is a design
+footgun. Documentation as a goalpost is SUPERIOR to imperfect mechanical nets: it
+forces design-by-principle and honest communication. Supersedes the conductor's
+"documentation-tier = weakest net" framing (retracted); the at-spool decline-clause
+is re-graded from weak-apology to the design-tier artifact, with the differential
+harness positioned as our own stdlib-CI verification, not the product's rescue.
+
 ## Direction & open threads
+
+- **only-naming trio HELD pending ratification** (2026-07-11; the human's proposal
+  with one conductor adjustment; do-not-record-yet honored for the names themselves):
+  `cmd__disturbs()` (NO `only` — the human's own reservation rule fires: the contract
+  is at-most PER MATCHED INVOCATION-SHAPE, gradual across shapes, per USER_STORY
+  stage 5; a tool-scoped-sounding `only` would over-claim and deter incremental verb
+  coverage) · `kind__disturbance_reaches_only()` (trailing `only` — the human's
+  `only_reaches` misparses as "merely reaches"; earns the marker: authoring = a
+  totalistic survey of the kind's entailments, widest blast radius, other people's
+  books) · `kind__state_stored_only_in()` (earns it MOST: its key consumer reads the
+  emission's NEGATIVE SPACE — invariance is a universally-quantified absence, so a
+  partial answer is not partially-trustworthy but meaningless; and its transport
+  license may land vouch-tier per the unruled task 8, i.e. potentially un-flagged).
+  General rule proposed alongside: `only` in a role name = totalistic-survey-before-
+  authoring; absent = arm-incremental. Also held: substrate-generalization ratification
+  (locator+substrate pairs · carried-by table · emission-set non-interference ·
+  endpoint opacity as frontloaded contract text) and the `state_stored…` subject-prefix.
 
 - **task-3+task-5 sitting OPENED (2026-07-10; explainer delivered in-chat; every lean
   below is conductor-drafted, NOTHING acked):** the question slugs posed —
