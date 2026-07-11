@@ -23,12 +23,16 @@ rulings that shape it, not its body.
    spelling direction" below); mechanical close-out rides task 12.
 2. adj-entity-algebra, seams half — the two `24S:A7` reservations. CLOSED 2026-07-10
    (three typed acks + the "family" minting; see the seam rulings below).
-3. adj-trichotomy-spelling (né `24S:A3`) — kind-owner per-axis context topology;
-   the deliberate kOOB-redline reading.
+3. adj-trichotomy-spelling (né `24S:A3`) — CLOSED 2026-07-11: dissolved into the
+   address-derived-topology design; comprehensive durable = **`notes/272`** (naming
+   typed; component statuses in its §12 table); this ledger keeps only the rulings.
 4. adj-axis-vocabulary (né `24S:A1`) — ratify v1 = {user, fs-view} + ρ,
-   versioned-closed, engine-owned. CLOSED.
+   versioned-closed, engine-owned. CLOSED. (Amended 2026-07-11 by
+   rul-networking-unpunt: netns ahead of full fs-view.)
 5. wrapper context-function spelling — strawman the `24S` §2b surface
-   (peel/axes/ρ-transform/self-vouch) in actual sh.
+   (peel/axes/ρ-transform/self-vouch) in actual sh. OPEN — surviving questions in
+   the sitting thread below, plus new residuals (member names owe the read-aloud +
+   only-rule treatment; `ip netns exec` joins the family).
 6. carrier declaration spelling — `24T` pin1 (which-arg-is-code, stdin shapes,
    argv-binding, carrier context record).
 7. adj-capture-claim (né `219` fork-capture-claim-type) — probe-captured stdout:
@@ -334,6 +338,8 @@ corpus-respell churn window. Other family names NOT settled: `is_converged` keep
 (typed, earlier); `predict`/`resolve`/`reaches` proposals delivered, unruled; the
 store-member name DEFERRED pending the substrate-mark contract ruling (name follows
 contract — see thread below). The naming-proposal menu itself is in-chat, 2026-07-11.
+~~Partially superseded same date~~ — the reaches/store deferrals resolved by
+**rul-at-most-family-names** below.
 
 ### rul-class-prefixed-role-names  (same exchange; 2026-07-11; TYPED)
 In all generic discussion and documentation, role-functions are written WITH their
@@ -383,208 +389,68 @@ forces design-by-principle and honest communication. Supersedes the conductor's
 is re-graded from weak-apology to the design-tier artifact, with the differential
 harness positioned as our own stdlib-CI verification, not the product's rescue.
 
+### rul-at-most-family-names  (task 3/5 sitting; 2026-07-11; TYPED — "I like the
+naming. Let's bake that moving forward")
+The at-most claim family's names, ratified: **`cmd__disturbs()`** (né touches; NO
+`only` — the contract is at-most per MATCHED INVOCATION-SHAPE, gradual across shapes
+per USER_STORY stage 5, so the human's reservation rule excludes the marker) ·
+**`kind__disturbance_reaches_only()`** (né reaches; trailing `only` — leading
+`only_reaches` misparses as "merely reaches") · **`kind__state_stored_only_in()`**
+(the task-3 member; earns `only` most — its key consumer reads the emission's
+negative space, so a partial answer is meaningless, not partially-trustworthy). The
+general rule rides with it: **`only` in a role name = complete-by-contract,
+totalistic-survey-before-authoring; its absence = arm-incremental,
+gradual-enhancement-friendly.** The chain teaching-sentence: a command DISTURBS
+cells; that DISTURBANCE REACHES ONLY what the kind-owner enumerated; a kind's STATE
+is STORED ONLY IN the substrates its owner declared. Consumers: the corpus-respell
+brief (`270:block-rebuild` — NEW RIDER: these renames ride the same churn window) ·
+all future documentation (human directive) · the entity-algebra design note ·
+`notes/272` (uses them throughout). Unruled remainder: `predict`/`resolve` (menus
+delivered in-chat 2026-07-11, low urgency); wrapper-member names (task 5, owed the
+same read-aloud + only-rule treatment).
+
 ## Direction & open threads
 
-- **only-naming trio HELD pending ratification** (2026-07-11; the human's proposal
-  with one conductor adjustment; do-not-record-yet honored for the names themselves):
-  `cmd__disturbs()` (NO `only` — the human's own reservation rule fires: the contract
-  is at-most PER MATCHED INVOCATION-SHAPE, gradual across shapes, per USER_STORY
-  stage 5; a tool-scoped-sounding `only` would over-claim and deter incremental verb
-  coverage) · `kind__disturbance_reaches_only()` (trailing `only` — the human's
-  `only_reaches` misparses as "merely reaches"; earns the marker: authoring = a
-  totalistic survey of the kind's entailments, widest blast radius, other people's
-  books) · `kind__state_stored_only_in()` (earns it MOST: its key consumer reads the
-  emission's NEGATIVE SPACE — invariance is a universally-quantified absence, so a
-  partial answer is not partially-trustworthy but meaningless; and its transport
-  license may land vouch-tier per the unruled task 8, i.e. potentially un-flagged).
-  General rule proposed alongside: `only` in a role name = totalistic-survey-before-
-  authoring; absent = arm-incremental. Also held: substrate-generalization ratification
-  (locator+substrate pairs · carried-by table · emission-set non-interference ·
-  endpoint opacity as frontloaded contract text) and the `state_stored…` subject-prefix.
+- **task-3 arc — CLOSED 2026-07-11; the comprehensive design durable is
+  `notes/272`** (minted at the human's direction: "large enough to deserve a separate
+  document"; this ledger keeps rulings plus this pointer). The arc in one line: the
+  trichotomy question dissolved into **address-derived topology** — the ratified
+  `kind__state_stored_only_in()` member (locator + substrate-mark emissions;
+  derivation = the engine-owned carried-by table + emission-set non-interference over
+  the blessed who-am-I labeling; the never-derive-separation carve, docker-validated;
+  the addresses-are-not-coordinates fence, registered as the FOURTH pointer at the
+  parked co-reference mechanism; the differential harness as the derivation's
+  load-bearing other half). The full attack-round record — the greatest-hits mint,
+  the collapse-analysis, the microtypesystem/relation+generators framing, the
+  five-strawmen survival round (in-tree: `notes/27x-strawmen-topology/`), the
+  too-small attack and its substrate repair — lives in `272` §§0–11, with
+  per-component ratification status in `272` §12 (only the NAMES are typed; the
+  carve, fence, substrate marks, and relation-spine each still want an explicit ack).
+  Residuals routed: task-7 gains a second customer (the axis-independence
+  value-bound for dynamic locator arms); task-8 re-reads its adjudicability
+  condition against derived-not-declared; task-12 imports the one-page formal spec,
+  the fence, the substrate-slot reservation, and the keyed/partitioned vocabulary
+  decision; task-13 carries the containers lens; the corpus-respell brief gains the
+  rename rider (rul-at-most-family-names).
 
-- **task-3+task-5 sitting OPENED (2026-07-10; explainer delivered in-chat; every lean
-  below is conductor-drafted, NOTHING acked):** the question slugs posed —
-  **q-trichotomy-seat**: ~~minted free-standing clause vs sh-bodied per-KIND
-  role-function vs measurement-line marks~~ — SUPERSEDED same date by the human's
-  greatest-hits replay ("what do people write in sh that expresses I-change-per-user?"),
-  which minted **candidate-address-derived-topology**: a NEW per-KIND family member
-  (extend-by-new-name, `reaches()`-rhyming but never a re-read; name deliberately
-  unchosen, must bias completeness per `24G` §6) whose body spells WHERE THE KIND'S
-  STATE LIVES in ordinary sh — `sm_dorc_Cron__lives_at() { printf
-  '/var/spool/cron/crontabs/%s\n' "$(id -un)" : file ;}` (STRAWMAN) — with the
-  trichotomy DERIVED by dependence-analysis of the traced body under ρ: no
-  user-axis-owned input ⇒ invariant (identity bridge + probe-outside license) ·
-  user-derived address ⇒ sensitive WITH per-value keying free (the address family IS
-  the user-axis map) · untraceable ⇒ ⊤ ⇒ silence-floor (degrades to NO-license, fixing
-  candidate-B's fuzzy-license lane). The wild idiom it lifts: user-as-address-parameter
-  (`$HOME`, `~`, `$USER`-in-path, XDG); man-page FILES sections are the pre-existing
-  documentation twin. Dissolves the kOOB tension (no new syntax; q-clause-grammar DIES
-  if D wins) · passes the graduation test natively (static printf arms + dynamic
-  host-question arms, dynamic-frame precedent) · real off-ramp value · selector-granular
-  mixed topology (git-config `#system` invariant / `#global` sensitive — candidate A's
-  flat token cannot express this). Strains, named: non-file-addressable state
-  (`sm.dorc.Service#active` = pid-1 memory; mostly recoverable — `#enabled` = wants/
-  symlinks, sysctl = /proc/sys — ~SUSPECT near-total coverage, -GUESS residue small);
-  invariance-license rests on an EXHAUSTIVENESS contract ("state lives here and ONLY
-  here" — the touches() at-most knife, same tier, no new trust category); one
-  engine-derived link enters the attribution chain (task 8 must re-read its
-  adjudicability condition against derived-not-declared); engine cost = traced surface
-  + dependence analysis + blessed who-am-I capture vocabulary (`$USER`/`$LOGNAME`/
-  `$HOME`/`$(id -un)`/`$(whoami)` → the user-axis value), landing on block-context's
-  ρ-tracing + the reserved backing-SETS seam. Conductor lean REVISED: D primary
-  (~SUSPECT — twenty minutes old, un-contacted by the engine's classify/backing shape);
-  A demoted to named fallback for unaddressable kinds only-if-field-forced (resist:
-  two-mechanisms-for-one-act, the `24S:A5` shape). Set-asides from the idiom sweep,
-  recorded: `id -u` root-guards = privilege-requirement not state-topology (imp-1
-  cell); tool `-u` flags = company-it-keeps inference, rejected tier ·
-  **collapse-analysis for candidate-address-derived-topology** (human challenge, same
-  date: "extend-by-new-name isn't live yet — does this collapse with previous work?";
-  conductor findings, awaiting ack): (i) NOT `reaches()` — the rhyme is a
-  single-file-store coincidence (cron's store = its own reach; dpkg splits them:
-  `dpkg -L` payload/causal-edges vs `/var/lib/dpkg` fact-store — disjoint emission
-  sets, disjoint consumers); merge-into-one-member-with-per-arm-marks considered and
-  declined (two contract texts in one body; name-as-contract loses its force exactly
-  at adjudication time); (ii) YES downward — D's implementation is a pure consumer of
-  scheduled block-rebuild machinery: un-collapsed address recipes = the
-  value-recipe-reshape; re-evaluation/dependence-analysis under a context's ρ = the
-  reserved relational chokepoint (`rul-seam-context-slot-and-relational-chokepoint`);
-  storage = the reserved backing-SETS seam. New authored surface, ZERO new engine
-  lanes; (iii) NOT upward into the measurement-line lane — per-probe read-set
-  disclosure as the invariance carrier would require exhaustive open-world enumeration
-  (the opaques7-finding20 objection-class: checks transitively read nsswitch/libc/…);
-  observe-disclosures stay the safe optional widener per observe-backing-widening; the
-  kind-level store question is FILES-section-small, the per-probe read-set question is
-  not; (iv) BORDER FENCE REQUIRED — `cron:alice ↔ file:/var/spool/…/alice` is a
-  cross-kind identification, and the corpus already holds three pointers at ONE parked
-  mechanism (`24M:rul-kind-unify-owed` · `24C:strain-coreference-crosskind` ·
-  `24S:A5` "design it once"). Proposed fence: v1 consumes D's address recipes
-  EXCLUSIVELY for the per-axis dependence bit — never address-vs-coordinate
-  identification, never address-granular disjointness (shared-store kinds would
-  over-merge: every Package cell shares `/var/lib/dpkg`); when co-reference unparks,
-  D's member is its authored INPUT (one surface, staged consumers). D registered as
-  the FOURTH pointer so the eventual unifier finds it. Meta, conceded: the prior
-  lean's extend-by-new-name invocation was compat-register; pre-ship the law is
-  design-hygiene (one question per name), hardening into compat at stdlib-ship ·
-  **microtypesystem-challenge findings** (human challenge, same date: "is this a
-  half-assed higher-kinded typesystem — another poorly-derived microtypesystem stage?";
-  conductor findings, awaiting ack): the formal object named — cells are a
-  CONTEXT-INDEXED FAMILY; D's derivation is a DEPENDENCY/NON-INTERFERENCE analysis
-  (DCC lineage; the blessed who-am-I set = the primitive labeling every such analysis
-  requires; AGENTS' own "tainting"); and the complete object is the chokepoint as ONE
-  THREE-VALUED RELATION `compare(cellA,cellB) ∈ {same(coord), disjoint, unknown}` with
-  every authored surface a GENERATOR feeding it. Hits conceded: (h1, serious) the
-  trichotomy's `sensitive` CONFLATES per-value keying (re-indexing, license-free) with
-  a separation license (survival-feeding, knife-tier) — and D would derive separation
-  from ADDRESS INEQUALITY, the naive-string sin `24S` §3b branded wrong for fs-view
-  (paths alias on the user axis too); identification-by-non-interference is
-  sound-shaped, separation-by-difference is NOT; (h2) granularity was fixed by
-  accident (git-config broke candidate A; D's case-arms happened to be per-selector) —
-  relation-first derivation would have forced per-cell grain on day one; (h3) the
-  four-token enumeration is defensible ONLY via the relation view (= the possible
-  uniform answers to the two consumer queries), unverified until now. Where the
-  accusation fails: generator-incompleteness is VALUE-LOSS ONLY by the safe-bottom
-  default (unknown ⇒ run/collide/wall) — an evolving generator set is survivable by
-  design; the bite classes stay incorrectness (knife, attributed) and contradiction
-  (refuse-both). Fix proposed: the entity-algebra design note (task 12) gains a
-  ONE-PAGE formal section (kVERIFY-calibrate tier — spec, not proof): the relation +
-  consumer map, the generator registry (each surface × verdicts-it-may-generate ×
-  license tier), and the forced v1 decomposition of candidate D — **derive invariance
-  and per-value keying; NEVER derive separation** (disjointness across context-values
-  arrives only as a declared/owned act with dialect-grade care, later; cost = only the
-  within-kind cross-context disjointness dividend, modest — cross-kind stays free,
-  line-8-class sites stay guarded via imp-1 regardless). The formal section doubles as
-  the `24S:A5` design-once interface (bridges = the same-via-map generator class) ·
-  **strawmen-survival-round** (human-directed, 2026-07-10: five non-trivial
-  real-world examples worked through both surviving shapes, in-tree at
-  `notes/27x-strawmen-topology/` — systemd user-units · git-config scopes ·
-  postgres peer-auth · homebrew prefix · docker rootless; conductor findings,
-  awaiting ack): **f-narrowed-knife** — under the co-reference fence, INVARIANT
-  addresses may be approximate (consumed only for dependence shape); the
-  exhaustiveness knife narrows to "never forget an axis-DEPENDENT store"
-  (systemd `#active`'s `/run` stand-in is fine) · **f-kinds-are-topology-units** —
-  mixed-topology tools resolve by argv-driven kind-binding (Service/UserService
-  split); both shapes need the split, D makes each half derivable/lintable, A
-  asserts blind; extends the behaviour-menu · **f-address-entities-dissolve** (the
-  biggest) — address-shaped entities + ρ absorb most apparent sensitivity
-  (git-config needs ZERO kind topology; the `sudo git config --global` footgun
-  keys correctly for free); topology machinery is needed ONLY for logical-entity
-  kinds; the bootstrap file kind's grounding is ENGINE-SUPPLIED (authored identity
-  `lives_at` = cargocult); new behaviour-menu line: logical entities buy cross-tool
-  collaboration at the price of owned topology, address entities are
-  collaboration-poor but topology-free; a lint writes itself ·
-  **f-referent-vs-access** — postgres: invariance is TRUE at referent tier; access
-  gating is per-PROBE, enforced by rc-reality (license ≠ ability); imp-1
-  composition graceful; shapes tie; cross-kind wall-bounding needs no topology at
-  all · **f-dynamic-arms-need-capture-claims** — homebrew: a captured address root
-  (`$(brew --prefix)`) is statically unclassifiable, so D's dynamic arms are
-  CONSUMERS of task-7's read-blessing vocabulary, which therefore needs an
-  AXIS-INDEPENDENCE value-bound dimension (task 7 has a second customer — couple
-  the sittings); meanwhile Shape A scores its one clean win (cheap assertion where
-  D waits on unbuilt machinery) · **f-carve-validated** — docker: the PLAIN
-  system-daemon host is a live counterexample where derived separation would
-  silently under-execute (alice and root genuinely share one daemon; a probed
-  fact "surviving" root's `docker system prune` would be wrong in the default
-  install) — never-derive-separation upgraded precaution → demonstrated-necessary;
-  A is inexpressible for docker while D's conservative projection ≥ A's best
-  honest token; the per-host topology refinement is banked, chronology-priced,
-  deferred alongside task-7's planes-meet-at-chronology cell ·
-  **terminology proposal** — split `sensitive`'s conflation in the design note:
-  `keyed` (derived, safe re-indexing) vs `partitioned` (declared-only separation,
-  knife) · **net assessment**: the relation+generators formulation SURVIVED (no
-  example needed a new verdict class; every wrinkle landed as generator-scope or
-  consumer plumbing); D-primary strengthened overall but shown DEPENDENT on
-  task-7 vocabulary for dynamic arms; A's fallback role confirmed narrow-but-real
-  (capture-rooted/unaddressable kinds wanting a cheap assertion) ·
-  **too-small-attack findings** (human challenge 2026-07-11: "we only mine it for
-  whether-it-mentions-a-user-dir — vapid naming, scalpel-thin target; does it handle
-  fs-view? dig into your own git-config fears"; conductor findings, awaiting ack):
-  the discomfort made precise — a RICH artifact (addresses) consumed through a ONE-BIT
-  v1 projection is contract-slop (authors can't see which sloppiness is the knife).
-  (s1) **fs-view: fails as-proposed** — fs-relativity is implicit in every path
-  (nothing to mine) and kernel-backed paths invert (`/proc/sys/...` looks
-  chroot-sensitive, is host-invariant modulo netns). Repair =
-  **substrate-typed emissions**: each address line carries an engine-owned closed mark
-  (`: fs` default / `: kernel` / extensible); per-axis derivation = f(substrate,
-  text) — fs-substrate ⇒ reinterpreted-under-fs-move (safe default), kernel ⇒ positive
-  invariance claim (license, attributed). NEW annotation vocabulary ⇒ own
-  mini-adjudication (kOOB-adjacent, axis-vocabulary-shaped). v1 move: RESERVE the mark
-  slot in the emission grammar, defer consumption with fs-view. Also cures the
-  vapid-naming complaint under the growth path (location becomes genuinely consumed).
-  (s2) **git-config fears dug**: the chezmoi-rewrites-gitconfig collision case
-  SURVIVES with zero new machinery (both bind the file kind; the dialect ruling's
-  selector-less-claim-collides kills the keyed fact correctly); real strains = file-kind
-  canonicalization (realpath-shaped `kind__resolve()`, a standing problem, fs-ladder
-  lowest rung leaking early) + manufactured logical-vs-address cross-vocabulary
-  aliasing = traffic across the PARKED co-reference hole (fence holds; the IOU accrues
-  interest; D's addresses remain that mechanism's future input). (s3) **the human's
-  scalpel-thin instinct draws blood** — ownership-multiplexed shared stores: the `at`
-  spool (one dir, per-user job ownership, `atq` shows invoker's jobs) has an HONEST
-  address with no who-am-I ⇒ derives invariant ⇒ under-executes off a truthful body.
-  "Path has user in it" is NOT sufficient. Nets, descending: the differential harness
-  (mutate-as-A/probe-as-B, `24S:A4`) catches the class mechanically — PROMOTED from
-  adjudicability-nicety to the derivation's load-bearing other half (D = conjecture
-  generator + differential checker, never proof); a decline-clause for
-  view-multiplexed tools (documentation-tier); class-size -GUESS small (most wild
-  multiplexing textualizes: /run/user/$UID, tmux-$UID, /var/mail/$USER; kernel
-  keyrings are unaddressable ⇒ already floor). Net verdict: the surface WAS too
-  small, but every failure lands as growth ON the same member (marks, differential,
-  clause) — no second topology mechanism needed; store-member NAME deferred until the
-  substrate-mark contract is ruled ·
-  **q-map-defers-with-fs-view**: sensitive-with-map's canonical home is the fs-view
-  axis, so the fs-view map rides the soft-deferral — and under candidate D the
-  user-axis "map" is subsumed (the traced address family); v1 authored surface =
-  addresses on the user axis only · **q-wrapper-member-count**: one
-  context member vs two members split along `24S` §1's own ρ-vs-axes seam (lean = two;
-  partial-decline composability — su's ρ declines while its peel+user-axis still pays —
-  plus the peel cross-check falling out free from dual argparse) ·
-  **q-rho-closure-spelling**: the ρ-transform member spelled as an EXECUTABLE
-  env-closure (`env -i TERM="$TERM" … "$@"`) — statically traced for the per-variable
-  map, shippable as `24S` §6b's whole-ρ replication builder, real off-ramp value;
-  engine reads closure bodies against a small blessed-idiom contract ·
-  **q-identity-spelling**: the one real grammar hole — a POSITIVE per-axis
-  "moves-nothing" spelling, since per-axis silence must stay ⊤ (opaques7-finding2) ·
-  self-effects: no new spelling proposed (wrapper's own `touches()` + the standing
-  oracle-vouches-for-itself rule).
+- **task-5 (wrapper context-function spelling) — OPEN. Surviving questions from the
+  sitting's opening explainer, un-adjudicated:** **q-wrapper-member-count** — one
+  context member vs two split along `24S` §1's own ρ-vs-axes seam (conductor lean =
+  two: partial-decline composability — su's ρ declines while its peel + user-axis
+  still pays — plus the peel cross-check falling out free from dual argparse) ·
+  **q-rho-closure-spelling** — the ρ-transform member as an EXECUTABLE env-closure
+  (`env -i TERM="$TERM" … "$@"`): statically traced for the per-variable map, shipped
+  as `24S` §6b's whole-ρ replication builder, real off-ramp value; the engine reads
+  closure bodies against a small blessed-idiom contract · **q-identity-spelling** —
+  the one real grammar hole: a POSITIVE per-axis "moves-nothing" spelling, since
+  per-axis silence must stay ⊤ (opaques7-finding2) · self-effects: no new spelling
+  (the wrapper's own `cmd__disturbs()` arm + the standing oracle-vouches-for-itself
+  rule). **New residuals minted since the sitting opened:** the wrapper member NAMES
+  owe the same read-aloud + only-rule treatment as the at-most family (`__moves` is
+  the deprecated spatial-vague verb class; open question whether the ρ-member earns
+  `only` — its `env -i` form is total-by-construction) · `ip netns exec NAME` joins
+  the wrapper family per rul-networking-unpunt (argv-named axis value, the
+  `sudo -u USER` analog).
 
 - **watch-machinery-raises-disclaim-burden** (human observation, 2026-07-10, task 10b —
   "not a nack"): the effect-check "leans perilously close to promising non-mutation";
@@ -616,10 +482,6 @@ harness positioned as our own stdlib-CI verification, not the product's rescue.
   acknowledge-by-observing where a natural read exists; any future revival should be a
   rider on a measurement line, never a bare dislocated mark, and only on field
   evidence.
-- **Task-2 (the two `24S:A7` seam reservations: context-qualifier segment; kind-owner
-  registry room) — deferred to a fresh turn**; re-explain from scratch, slower. Note
-  for that re-explainer: `rul-axis-vocabulary-v1`'s fs-view soft-deferral shrinks the
-  qualifier to effectively {user, fs-straw}.
 - **two-observation-planes (vocabulary for the task-7 sitting; human-checked
   2026-07-10):** distinguish WORLD-PLANE observation (a coordinate statement —
   `kind:entity#selector` — unknowable to a referent-agnostic engine, hence

@@ -34,6 +34,15 @@ authored-spelling ack so the fixture sweep happens exactly once (`270` §2 recor
 rationale — this supersedes the old "respell is dispatch-ready, fire on d8" posture;
 d8 itself was typed-acked 2026-07-10, so the specimen gate is clear).
 
+**Block-settle IN PROGRESS (2026-07-10/11, rubber-duck sittings):** rulings accrete in
+**`plans/271`** (the ledger — its task map says what's closed vs open); the
+address-derived-topology design (the task-3/adj-trichotomy outcome; naming TYPED) is
+durable at **`notes/272`**; worked strawmen at `notes/27x-strawmen-topology/`. The
+corpus-respell brief gains a rename rider (`271:rul-at-most-family-names`:
+touches→`cmd__disturbs` · reaches→`kind__disturbance_reaches_only` · the new
+`kind__state_stored_only_in` member). Netns is un-punted ahead of full fs-view
+(`271:rul-networking-unpunt`).
+
 **⚠ NAMING DISCIPLINE (human-ruled 2026-07-10, HIGH priority, binds every brief):**
 hyphenated full-word slugs; outside-document references as `docID:slug`
 (round-ID dedupes into the prefix — `24C:rul-selector-pre-stdlib`); subscript old
