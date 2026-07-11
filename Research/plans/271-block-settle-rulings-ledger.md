@@ -455,6 +455,65 @@ acked by directing the minting), only the repair-direction ratification waits.
 
 ## Direction & open threads
 
+- **Ninth round (2026-07-11) — dual-peel breakdown, rename menus, and the
+  unified-story warts register (chat carries the full prose; this is the
+  durable skeleton):**
+  - **dual-peel disposition (drafted-awaiting-ack, answering the human's
+    "independent mechanisms" suspicion):** the two argparses ARE independent
+    as claims (different consumers, separately attributed) — but the peel
+    BOUNDARY is a shared derived fact with one downstream consumer chain:
+    inner-oracle dispatch needs exactly ONE tail head per site; two
+    boundaries = two different inner commands for one site = incoherent
+    composition, so genuine independence is untenable at that consumer.
+    Detection is mechanical where both members answer a shape (trace both,
+    compare boundary indices). Proposed disposition: NO new mechanism — a
+    disagreement is the standing declarations-that-genuinely-contradict
+    category (refuse both members for that shape ⇒ site walls, loud dq);
+    where only one member answers (su), its boundary governs alone. The
+    "cross-check dividend" framing is retired (it is a coherence
+    requirement, not a bonus).
+  - **Emission-member rename menu (the parked "context" nit, dug into):**
+    conductor lean = **`cmd__wraps_only()`** — foregrounds WRAPPERHOOD
+    (which also fixes wart-axes-member-dual-load below: the member carrying
+    su's peel is named for wrapping, not for axes); read-aloud: "sudo wraps —
+    moving only: user→root"; empty-emission read: "nice wraps — moving
+    nothing"; the terminal `"$@"` is natural in a member named for the
+    wrapping act; only-rule = the axis enumeration is version-scoped-total.
+    Alternatives offered: `cmd__wraps_moving_only()` (most explicit; longer;
+    "moving" in qualified position) · `cmd__tail_runs_as_only()` (best
+    English for user, breaks for netns) · `cmd__reseats_only()` (coined).
+    Chain-sentence extension if wraps wins: *a command DISTURBS cells; a
+    wrapper WRAPS its tail, moving only the axes it names; a kind's state is
+    STORED ONLY IN its declared substrates.*
+  - **Concept renames (gentle, low-priority per the human):** "context"
+    (identity-plane) → **vantage** offered ("the tail's vantage";
+    vantage-qualified coordinates; vantage axes {user, netns, fs-straw});
+    "standpoint" longer, "seat" collides with systemd-logind seats. ρ keeps
+    the symbol formally, "the tail's environment" in prose. "Probe stand-in"
+    formalized for the shipped predict-form. "Peel" and "wrapper" keep.
+  - **Warts register (the unified-story honest list):**
+    wart-raw-ship-debt (task #14, law-check pending) ·
+    wart-dual-peel (disposition above, awaiting ack) ·
+    wart-axes-member-dual-load (identity claims + peel boundary share a
+    member; FIXABLE BY NAMING, see wraps) ·
+    wart-identity-wrappers-pay-two-members (nice/plab: empty-emission
+    wraps member + bare-`"$@"` predict; the passes-through shorthand bundle
+    stays unruled) · wart-two-mark-vocabularies (axis marks + substrate
+    marks, both engine-owned closed sets, one deliberate kOOB reading
+    queued, `272` §11) · wart-env-closure-stress-test (loop-shaped export
+    body; blessed-idiom set incl. the getent query-arm unsettled; rides
+    block-context implementation-planning) · wart-23J-park (guards under
+    wrappers; the guard-eligibility deferred cell) · wart-eyes-open-tail
+    (full behavioral models inhabitable; conditional-claim form is the safe
+    shape; watch-item).
+  - **Coherence verdict (conductor):** the surface is derivable from five
+    generating laws — bodies-are-the-only-vouch · name-is-contract +
+    only-rule · per-(member × shape) silence = floor, nothing un-oracled
+    ships or licenses · two planes two carriages (value = runnable sh,
+    world = marks) · line-level attribution with harm monotone in authored
+    claims. Every task-5 outcome re-derives from these; no piece of the
+    wrapper surface remains that the laws don't generate.
+
 - **task-3 arc — CLOSED 2026-07-11; the comprehensive design durable is
   `notes/272`** (minted at the human's direction: "large enough to deserve a separate
   document"; this ledger keeps rulings plus this pointer). The arc in one line: the
