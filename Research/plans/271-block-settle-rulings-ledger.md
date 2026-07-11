@@ -705,6 +705,78 @@ vs folding INTO `cmd__predict()` (the nit-predict-merge disposition, task-5 thre
     identity and wall-survival chronology are `adj-capture-claim` questions
     (joins the dynamic-locator arms and the axis-independence value-bound).
 
+  **Fourth round — the specimen challenge and the prediction devolution (human,
+  2026-07-11; "not ruling quite yet"; conductor lean FLIPS this round):**
+  - **Retraction (conductor):** "static prediction of mutative-command stdout is
+    ⊤-ish past trivial" conflated two caps. The true cap is STATE-knowability
+    (imp-1 credential gates, network, cross-host — prediction can never
+    manufacture unknowable state); the COMPUTATION over knowable state is
+    routinely modelable. Sharpening: **guards select for predictability** — an
+    admin writes `| grep -q X ||` only when X is a convergence SIGNAL, and
+    convergence signals are near-definitionally functions of probe-readable
+    state. The guard-affecting cell is systematically the predictable cell; his
+    push stands.
+  - **The specimen family (challenge met — all-three {peel, pipe, guard},
+    idiomatic): the changed-detection idiom** — mutative-idempotent tools
+    reporting did-anything-change via stdout, grepped, guarding a downstream
+    disturbance: `sudo a2enmod ssl | grep -q 'already enabled' || sudo systemctl
+    restart apache2` (centerpiece; world-readable state) · `sudo certbot renew |
+    grep -q 'No renewals' || sudo systemctl reload nginx` (expiry-readable) ·
+    `rsync -ai SRC DST | grep -q . && reload` (local). This family is Ansible's
+    `changed_when` spelled in native sh (the `24R` changed-report thread's
+    kin); folding it elides RESTARTS/RELOADS — the highest-attention-value
+    elisions in ops. rc-only oracles cannot fold it: the dataflow runs through
+    BYTES (is_converged's verdict cannot reach the admin's grep without an
+    output-to-state claim).
+  - **Boundary + CORRECTION to round-3's supplant:** prediction never rescues
+    credential-gated reads (`sudo iptables -S | grep`, root crontab — imp-1 cap
+    unchanged, guard forever). And round-3's read-through blessing
+    (ship-union-VERBATIM) is WRONG for escalating wrappers — probes never run
+    sudo; the sudo-wrapped read-only cell needs **de-wrap-and-ship** instead:
+    peel + probe-outside (invariant kind) + whole-ρ closure + the `24J`
+    pipe-guard lift, shipping the PEELED pipeline closed under ρ. Verbatim-ship
+    remains correct only for non-escalating wrappers.
+  - **The replace-mechanism reframe (the buried lede, named):** output-predicting
+    oracles INHABIT the non-degenerate **replace** tier of the named mechanisms
+    (KNOBS: "elide/replace — an observable-preserving replacement; elide = the
+    degenerate full-skip case") — named since AGENTS.md, never inhabited. The
+    guard-fold is literally: substitute the mutative head with its read-only
+    predictor inside the admin's own pipeline.
+  - **The devolution, audited (each prior objection killed by a specific
+    finding):** economics were always a wash (f1) · "wrapper-predict is vacant"
+    died at nit-predict-output · f3 (guard-render hazard) DISSOLVES under
+    compositional licensing — a `"$@"`-bearing body is guard-eligible iff its
+    own contribution is contract-read-only ∧ its instantiated tail is
+    read-only-blessed: an ordinary per-site license check, not a body-shape
+    classifier · f4 (dual-contract) DISSOLVES because the contract is no longer
+    dual — ONE uniform contract ("the best read-only sh model of your command";
+    capabilities mined structurally: marks→facts, env-idioms→ρ, conditional
+    printf→output-claims, command-position `"$@"`→wrapperhood-tautologically).
+    **Conductor lean FLIPS to the merge**: `cmd__predict()` is the one modeling
+    member; `cmd__simulate()` dies as a member name. SURVIVES SEPARATE: the
+    axes/emission member (world-plane coordinate claims are not prediction; it
+    keeps its own terminal `"$@"` — su's only peel — so dual-peel cross-check
+    or conflict-policy is a residual). "Handle sudo" decomposes into
+    predictor-support (peel/ρ/output mined from predict bodies) + the axes
+    member + probe-lane mechanics.
+  - **Eyes-open (his lede, banked):** positing stdout-prediction opens the
+    long-tail of FULL BEHAVIORAL MODELS ("rewrite the damn command in POSIX sh")
+    — not pushed, but now inhabitable. Safety shape for the tail: the
+    **conditional-claim form** — "when state S (probe-read), output matches L;
+    else decline" — is the naturally-partial, fails-to-run spelling (the
+    a2enmod strawman's `return 2` diverged-branch); totalistic byte-prediction
+    is the flattering dangerous form (version-skew/drift, MH2-adjacent;
+    unmatched shapes must ⇒ ⊤ ⇒ run). Fidelity residuals: locale/ordering noise
+    in predicted streams; the output-composition-ladder fences stand.
+  - **task-7, again:** Predicted and OutClaim are one value-plane species; the
+    guard-fold runs admin pipes against predicted byte-streams — the
+    capture-claim ruling now sits under this whole feature.
+  - **Residuals for the ruling:** predict-absorbs naming (formal) · dual-`"$@"`
+    policy (axes member + predict both peel) · blessed-idiom mining along the
+    path-to-`"$@"` in general bodies · guard-eligibility license phrasing ·
+    whether the changed-detection fold is v1-block-context or
+    reserve-with-the-ladder.
+
 - **watch-machinery-raises-disclaim-burden** (human observation, 2026-07-10, task 10b —
   "not a nack"): the effect-check "leans perilously close to promising non-mutation";
   every layer of machinery *supporting* the user here raises the documentation/education
