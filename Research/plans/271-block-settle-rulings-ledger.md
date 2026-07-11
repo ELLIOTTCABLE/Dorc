@@ -920,7 +920,66 @@ vs folding INTO `cmd__predict()` (the nit-predict-merge disposition, task-5 thre
     probe-emission touch-point already in the typeless-floor's four);
     ratification owes `24J` a supersession annotation (plan-tier
     annotate-in-place) and the fixture oracles the stream-faithful rewrite
-    in the same churn window.
+    in the same churn window. **Corrections MINTED 2026-07-11 (human: "don't
+    let discovered debt get buried"):** `24J` header correction · `24C`
+    §pipe-guard debt-confirmed annotation · LIVING_STATUS debt-flag with a
+    read-before-touching-probe-emission directive.
+
+  **Eighth round — the licensure audit (the task-5 closing question: does the
+  merge LOSE expressivity-granularity, especially w.r.t. correctness?):**
+  - **Verdict: no loss found** — audited species-by-species against the split
+    design; three riders and one deferred cell, all named below. The
+    elide/guard license (`cmd__is_converged()`) is untouched by the merge in
+    both designs. Peel-without-ρ (su; `sudo -i`) is inexpressible in EITHER
+    design's modeling body (a bare `"$@"` claims identity-ρ) and routes
+    through the surviving axes member identically. Per-shape decline
+    (`return 2` arms) is identical. The engine's dual-argparse peel
+    cross-check survives (axes member + predict both parse).
+  - **The multi-rc dissolution (the flock worry):** a hybrid tool wanting
+    BOTH a measurement-rc (its lock-free fact) and a passthrough-rc (its
+    tail's) needs no second member — the mark grammar already captures
+    PER-LINE rc (a marked measurement line binds its own statement's rc),
+    while the body's terminal rc carries the passthrough. One body, both
+    meanings, already-standing machinery.
+  - **rider-per-channel-decline (REFINES round-7):** an author-written
+    redirect-to-null inside a body is the per-channel DECLINE spelling —
+    that channel reads ⊤ for any consumer ⇒ wall. Round-7's "redirects move
+    out of bodies" narrows to: arms that SHOULD be faithful get un-declined
+    (the otelcol pipe repair); the decline spelling itself is legal and
+    load-bearing. Engine-side discards at the invocation site remain a
+    distinct act (unconsumed-channel tidiness; consumption knowledge is
+    engine-side). Together with delegation (= faithful all-channel claim),
+    printf (= asserted output claim), explicit return (= rc claim), and
+    `return 2` (= whole-shape decline), the merged body has a complete,
+    natively-spelled per-channel claim/decline vocabulary — inv-one-
+    observable's "per-channel values or a loud can't-predict," spelled.
+  - **rider-line-level-attribution:** the `24S` §4a chain's L1 link must
+    cite the LINE within the merged body (argparse lines = peel; env-idiom
+    line = ρ; printf lines = output; marked lines = facts) — function-level
+    citation was the split's freebie; razor-attributable-line demands
+    line-level anyway, so this is a build obligation, not a design cost.
+  - **rider-optdowns-additive:** the wary-engineer withholding surface
+    (answer-without-compositional-license) exists in NEITHER design today;
+    it inherits rul24M-rungs-default's pattern — unmarked member = full
+    license permanently; any future rung machinery arrives as additive
+    opt-down spellings. The merge forecloses none of them (kCONTRACT-RUNGS
+    unmoved).
+  - **Deferred cell (other-phase):** guard-eligibility of `"$@"`-bearing
+    predict bodies in the APPLY lane = per-instantiation read-only
+    licensing (own contribution contract-read-only ∧ instantiated tail
+    read-only-covered) — currently moot behind the 23J park (no
+    Dorc-authored checks under wrappers); rules needed the day 23J unparks.
+  - **Two-by-four residue:** reverse-propagation = the attribution rider
+    (above) · other-phase = the 23J deferred cell · other-user = admin
+    untouched; the uniform contract is the lazy-author win · other-
+    reliability = lying-species sweep axes (lying-peel/lying-ρ/lying-output)
+    stay line-anchored and species-distinguishable; species-level quarantine
+    machinery is equally-future in both designs.
+  - **What a closing ruling needs to TYPE:** (s1) predict-absorbs stamp
+    (the merge itself) · (s2) rul-only-oracle-bytes-ship ratification ·
+    (s3) the dual-peel policy (cross-check dividend vs conflict rule) ·
+    (s4) the emission-member rename (né "context", parked nit) · (s5) the
+    three riders above acknowledged as build obligations.
 
 - **watch-machinery-raises-disclaim-burden** (human observation, 2026-07-10, task 10b —
   "not a nack"): the effect-check "leans perilously close to promising non-mutation";
