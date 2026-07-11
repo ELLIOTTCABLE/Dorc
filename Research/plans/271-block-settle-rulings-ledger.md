@@ -30,9 +30,15 @@ rulings that shape it, not its body.
    versioned-closed, engine-owned. CLOSED. (Amended 2026-07-11 by
    rul-networking-unpunt: netns ahead of full fs-view.)
 5. wrapper context-function spelling — strawman the `24S` §2b surface
-   (peel/axes/ρ-transform/self-vouch) in actual sh. OPEN — surviving questions in
-   the sitting thread below, plus new residuals (member names owe the read-aloud +
-   only-rule treatment; `ip netns exec` joins the family).
+   (peel/axes/ρ-transform/self-vouch) in actual sh. **CLOSED 2026-07-11** across
+   thirteen recorded rounds: rul-predict-absorbs-wrapper-modeling (the merge; typed) ·
+   rul-lend-map (the dimension member's name + semantics; typed) · the
+   enumerate-every-dimension mechanism (eleventh round) · dual-peel settled
+   (static-incoherence fail-fasts) · the safety-inversion correction · concept
+   vocabulary (dimensions/guest; "moves"/"tail" retired from authored-surface prose).
+   Spilled residue with homes: task 14 (raw-ship law-check) · block-context briefs
+   (env closure stress-test, blessed idioms, getent query-arm) · the joint kOOB
+   mark-vocabulary reading (`272` §11 rider + fs-view/fs token collision).
 6. carrier declaration spelling — `24T` pin1 (which-arg-is-code, stdin shapes,
    argv-binding, carrier context record).
 7. adj-capture-claim (né `219` fork-capture-claim-type) — probe-captured stdout:
@@ -693,6 +699,53 @@ acked by directing the minting), only the repair-direction ratification waits.
   `cmd__lends_to_guest()` · `cmd__exposes_to_guest()` (one-directional,
   danger-forward). Conductor rank: shares_your > shares > lends > exposes >
   inherits.
+
+### rul-lend-map  (task 5; 2026-07-11; TYPED — "Let's stamp it, if you have
+no objection" + conductor's recorded no-objection; task-5 CLOSING ruling)
+The wrapper's dimension member is **`cmd__lend_map()`** — a function from the
+site's argv to fixed strings, one entry per dimension. His rationale, recorded:
+"lend" raises functional-programmers' hackles usefully (I can infect my
+descendant; my descendant can touch my stuff — very Rust-y; survives the
+two-directions test), and lands in unlikely-to-have-corpus-competitors
+territory, so it can afford to be short. Semantics: an **empty result for a
+PRESENT key = full lend** (the guest borrows the caller's world on that
+dimension wholesale — spelled as the colon-line, `:   : user`); **contents =
+mapped lend** (the guest's dimension is the caller's, through the map —
+spelled as the value-emission, `printf '%s\n' "$target"   : user`); a
+**MISSING key stays ⊤** (unknown; walls; hint-tier nudge) — the conductor
+records this reading EXPLICITLY, since the alternate reading
+(absent-key = full lend) would reinstate the negative space the human's own
+eleventh-round move killed; the enumerate-every-dimension law stands
+unchanged. Terminal `"$@"` (the peel boundary) is retained in the body —
+elided from his one-line description, not contradicted by it. No `only` in
+the name (arm-incremental member, per the eleventh round). Chain-sentence,
+updated: *a command disturbs cells; a wrapper lends its caller's world to
+its guest, dimension by dimension; a kind's state is stored only in the
+substrates its owner declared.* Concept vocabulary riding: **dimensions**
+(typed-liked), **guest** (unobjected, docs-tier), visit/stay retained as
+teaching prose.
+
+**Safety-correction, conceded-and-precised (his pushback: "they're ALL
+dangerous; the safety-positions of no-overlap and some/full-overlap INVERT
+depending on the phase"):** CORRECT, and the twelfth-round claim ("the danger
+concentrates in the sameness half"; "mapped-lend is nearly-safe re-keying")
+is retracted as imprecise. Precise restatement: every entry-type feeds
+TRANSPORT and is dangerous-when-wrong in the same direction (a wrong full
+lend transports across a boundary that exists; a wrong mapped lend transports
+to the wrong target's world; a partially-overlapping map is the fs-view cell,
+already deferred as the Hard problem). The phase-inversion is real:
+no-overlap-believed is the SAFE belief for transport/elision (keyed-apart ⇒
+no transport ⇒ runs) and the DANGEROUS belief for kill-traffic/survival
+(wrongly-separated cells let a disturbed fact survive); overlap-believed
+inverts both. This inversion is exactly WHY the `272` §1 comparison relation
+is TERNARY — same licenses transport only, provably-disjoint licenses
+sparing only, unknown is safe for BOTH consumers — and why the
+never-derive-separation carve exists (keying feeds the transport-blocking
+direction and never the sparing direction). The DESIGN always encoded the
+inversion; the conductor's prose didn't. What survives of the twelfth round:
+the full-lend line is the entry most likely to be wrong-by-thoughtlessness
+(cargo-cult default; wrong with no value present to review), which is a
+statement about error-likelihood, never about unique mechanism-danger.
 
 - **task-3 arc — CLOSED 2026-07-11; the comprehensive design durable is
   `notes/272`** (minted at the human's direction: "large enough to deserve a separate
