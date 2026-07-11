@@ -53,7 +53,10 @@ labels once ("né P5"); progressive de-naming-debt, judgment-bound. Full text:
 `notes/23O` (settled law + history) → **`notes/24U`** (the round-24 close-out + the
 reshuffle map) → **`plans/270`** (the charter — blocks, adjudications, fences) →
 `notes/24C` INCLUDING its full accreted tail (build evidence + residue) → `notes/24P`
-(the respell spec-by-example; §8/§9 riders + bless flow) → per-task: `plans/24S`/`24T`
+(the respell spec-by-example; §8/§9 riders + bless flow) → **the block-settle results:
+`plans/271` (rulings ledger) · `notes/272` (address-derived topology) · `notes/273`
+(the wrapper surface: predict merge + `cmd__lend_map()` — partially supersedes `24S`
+§2b/§6b; read 273 §0 before trusting any 24S mechanism)** → per-task: `plans/24S`/`24T`
 (the wrapper/payload keystones — proposal-tier, prime adversarial-analysis targets) ·
 `notes/24M` (language rulings) · `plans/262` §2 (the wire contract block-rebuild
 partially imports) · `notes/219` (the capture lane behind adj-capture-claim) ·
