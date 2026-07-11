@@ -629,6 +629,58 @@ acked by directing the minting), only the repair-direction ratification waits.
     wraps its guest, answering every dimension; a kind's state is stored
     only in the substrates its owner declared.*
 
+- **Twelfth round (2026-07-11) — name-the-license (the human: "give me names
+  that spell the special contract; what is the dangerous license?"):**
+  - **Record correction:** "license to escape" appears nowhere in this
+    sitting's record; the recorded terms are **probe-outside license**,
+    **identity bridge**, and **transport** (`24S` §6a: one declaration, both
+    uses) — "escape" is likely echoing "probes never escalate."
+  - **The license anatomy, per line-type (the answer to what-is-dangerous):**
+    the UNCHANGED line (`:   : fs-view`) is THE signature — it extends
+    outside-measurement validity into the guest's world for kinds whose
+    stores hang on that dimension and would otherwise partition ("what is
+    true out here is true in there"); a false unchanged-line wrongly
+    transports ⇒ under-executes other tools' lines. The CHANGED line is
+    nearly-safe re-keying (license-free re-indexing per `272` §3; its
+    wrongness mis-names cells). The peel licenses dispatch. So the danger
+    concentrates in the SAMENESS half — and every prior name-menu
+    (wraps-changing / differs / visit) named the CHANGED half, the safe one.
+    Names should foreground sharing/sameness.
+  - **wart-quiet-danger-line (new, honest):** the mechanism's most dangerous
+    line is spelled as a no-op (`:` + mark) — iconicity inverts loud-friend.
+    Unfixable at the line (sh's "same" IS nothing-happens); mitigations: the
+    line is at least PRESENT and pointable (the eleventh round's whole
+    point), and the member NAME can carry the danger, bracketing every line.
+  - **"environment" KILLED for this member** (relieving the human's
+    division-maintenance worry the sharp way): the wrapper family contains
+    the literal `env` command, whose domain is exactly the OTHER thing —
+    `env__establish_environment()` would be maximally confusing. Let
+    "environment" keep meaning sh-environment (ρ) forever, matching both
+    user intuition and the env tool; this member's concept keeps the
+    worlds/dimensions vocabulary.
+  - **Per-process correction to the visit-intuition (strengthens it):**
+    these wrappers are not mutate-then-undo — they are EXEC-SCOPED
+    attribute-setting: the child is BORN differently-situated; the caller's
+    world is never altered and the world-change dies with the process. That
+    is WHY a read-only oracle can answer honestly (there is no mutation to
+    simulate — only a differently-situated birth to describe); genuine
+    global side-effects (sudo's auth-timestamp) are exactly the
+    `cmd__disturbs()` lane. Boundedness is per-process scoping, not
+    do-and-undo.
+  - **Menu v3 (license-spelling):** conductor lean = **`cmd__guest_shares()`**
+    — the name spells the dangerous signature; colon-lines read as the
+    affirmative ("sudo's guest shares fs-view; user — no, root's"), putting
+    the danger in the name since the line can't carry it
+    (wart-quiet-danger-line mitigation) · **`cmd__guests_visit()`** (his) —
+    the best TEACHING word (boundedness; per-process visit; and the
+    visit/stay pair reads beautifully: "visits user=root, stays in
+    fs-view") but names the phenomenon rather than the license, and
+    emphasizes the changed/safer half — offered as DOCS vocabulary
+    regardless of the member name · `cmd__same_world()` — the sameness
+    affidavit, plainer sibling of shares · `cmd__establish_environment()` —
+    killed above. Mechanism (eleventh round) is name-independent and
+    unchanged.
+
 - **task-3 arc — CLOSED 2026-07-11; the comprehensive design durable is
   `notes/272`** (minted at the human's direction: "large enough to deserve a separate
   document"; this ledger keeps rulings plus this pointer). The arc in one line: the
