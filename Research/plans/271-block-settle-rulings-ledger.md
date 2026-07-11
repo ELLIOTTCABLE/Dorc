@@ -592,6 +592,59 @@ vs folding INTO `cmd__predict()` (the nit-predict-merge disposition, task-5 thre
     vocabulary; the emission-member rename is owed alongside the full member-name
     menus.
 
+  **Second nit round + the user-perspective A/B run (2026-07-11):**
+  - **assumption-tail-suffix** (TYPED: "let's adopt the assumption for now, at
+    least for the spike"; his safety-nit: counterexamples could easily appear
+    later). Reliance registry, per his ask: the by-construction coverage argument,
+    the engine's terminal-`"$@"` contract line, and peel-boundary detection ALL
+    rely on tail-as-suffix. Counterexample consequence: a VALUE redesign (the
+    member would need a tail-slice spelling — `set --` rebuild or an explicit
+    slice emission), never a correctness cliff — inexpressible ⇒ decline ⇒ wall
+    holds regardless of the assumption's fate.
+  - **Correction (TYPED, supersedes the nit-argparse-clones relief valve):**
+    shared sh helpers CANNOT contain the licensure-bearing argparse —
+    claim-shows-up-IN-THIS-BODY is by design ("what licensure do we trace into
+    foreign procedures?" + cargo-cult pressure). Helpers may carry only
+    licence-free subfunctionality. watch-argparse-clone-pain stands un-relieved
+    for the meaty argparse.
+  - **Spike-era-redesign calibration (TYPED):** rul-family's extension-law (and
+    kin) do not constrain design-phase redesign — "everything is up for redesign,
+    especially now," pre-stdlib-mint. Struck from the merge-cons accordingly.
+  - **User-perspective A/B findings** (full prose in-chat same date; conclusions):
+    (f1) member-count and argparse economics between separate-members (A) and
+    merged-into-predict (B) are a WASH — verified via the plab rung-1 probe: B
+    still needs the axes/emission member (world-plane cannot ride the value-plane
+    body), so both designs cost an axis-moving wrapper two members and identity
+    wrappers two argparses. (f2) BOTH-designs finding: `24S` §5 rung-1's "stdlib
+    lights up" implicitly bundled an identity-ρ claim into the old one-function
+    surface; ANY member split unbundles it — an identity wrapper must spell
+    identity-ρ explicitly (a trivial closure) or its tail stays ρ-⊤ under the
+    env-coherence discipline (checks unshippable). Optional ergonomic repair
+    offered, unruled: an identity-shorthand bundle member
+    (`cmd__passes_through()`-class = peel + no-axes + identity-ρ in one act);
+    two-mechanisms-for-one-act risk flagged. (f3) sharpest pro-A finding: under B
+    the wrapper-detector (command-position `"$@"`) becomes CORRECTNESS-critical at
+    render — naive command-word-keyed guard construction at a `sudo apt-get` site
+    would insert `( sudo__predict -u alice apt-get install x ) || …`, whose
+    baked-argv call RUNS THE TAIL inside an apply-lane guard: the
+    rul-no-mutating-guards nope-zone. Mitigation = a conservative render-gate
+    (any command-position `"$@"` or unrecognized construct ⇒ never
+    guard-eligible), which then silently strips hybrid bodies' guard-eligibility.
+    Under A the same protection is a name-keyed member-registry check (guard
+    machinery consumes verdict-family members only). (f4) pro-A, his stated
+    context: the stdlib is about to be LLM-mass-authored — a shape-gated dual
+    contract on one name is a global invariant agents fumble, and `"$@"`-ending
+    stdlib bodies invite cross-template cargo-cult bleed into tool predicts
+    (consequence under the conservative gate: their guards silently vanish).
+    (f5) pro-B, granted: taxonomy-lightness (one teaching sentence, "model your
+    command"; wrapper-ness detected not chosen), hybrid tools (flock-class:
+    state + staging) get one honest mixed body, role-vocabulary economy.
+    (f6) blessed-idiom gap found either way: `sudo -u TARGET` HOME-retargeting
+    needs a read-only query arm (getent-class) in the closure idiom set —
+    extension TBD. Conductor lean after the run: **A — separate
+    `cmd__simulate_env()`, formally predict's simulation-lane sibling** —
+    upgraded weakly→moderately held; adjudication his.
+
 - **watch-machinery-raises-disclaim-burden** (human observation, 2026-07-10, task 10b —
   "not a nack"): the effect-check "leans perilously close to promising non-mutation";
   every layer of machinery *supporting* the user here raises the documentation/education
