@@ -831,6 +831,44 @@ vs folding INTO `cmd__predict()` (the nit-predict-merge disposition, task-5 thre
     merge-for-uniformity; both spellings are fully compatible with
     probe-form substitution.
 
+  **Sixth round — the what-ships audit (human strawman-claim: "every
+  command-position token in a shipped probe is an oracle-function-name";
+  verified against tip artifacts, 2026-07-11):**
+  - **Verdict: half-true at tip, and the split is PRINCIPLED.** Evidence:
+    the single-command lift ships the oracle function invoked with the site's
+    argv (`strawman24-pipe-guard-single-lifts` probe artifact:
+    `dpkg__predict '-s' 'otelcol'` at top level, real `dpkg` only inside the
+    oracle-authored body) — his claim TRUE there. But the `24J` connected
+    pipe-probe ships the admin's REAL pipeline verbatim
+    (`strawman24-pipe-guard-oracle-converged` probe artifact:
+    `otelcol --version | grep -q "0.155.0"` — real binaries in command
+    position), each stage LICENSED by an oracle (otelcol's observe arm; the
+    stdlib grep oracle's purity vouch; `24J`'s "filter-blessing a phantom"
+    meant no new blessing TYPE, not no-oracle-needed) — his claim FALSE there
+    as stated.
+  - **The spirit-claim is confirmed universal:** nothing un-oracled ever
+    ships; every command-position token carries an oracle license. The
+    conductor's "read-only-blessed command" phrase is RETIRED as a category
+    error — the read-blessing is an oracle vouch-species (a member/arm), not
+    an oracle-free class of commands.
+  - **rul-shipped-form-per-channel (drafted-awaiting-ack; the principled rule
+    the split reveals):** the CONSUMED CHANNEL determines the shipped form.
+    rc-consumed positions may ship the oracle's model-function (only the
+    status is read; a model can stand in). BYTE-consumed positions — pipe
+    interiors feeding a downstream stage, capture sites — must ship REAL
+    bytes under a purity/read license, because the inter-stage stream must be
+    authentic; a model function would substitute predicted bytes for real
+    ones. Corollary 1: the task-7 capture lane ships the real command BY
+    NECESSITY (measurement wants real bytes) — not weeds, the same rule.
+    Corollary 2: round-4's output-predicting oracles are exactly the license
+    to relax this — a model whose OUTPUT is claimed may stand in at a
+    byte-consumed position (the a2enmod guard-fold = model-substitution into
+    a byte-consuming pipe, legal only because the model claims the bytes).
+    Corollary 3: probe-form substitution (round 5) refines to per-participant
+    AND per-channel — a participant may be model-substituted iff every
+    channel the compound consumes from it is model-covered; at tip that is
+    rc-only, hence verbatim pipe interiors.
+
 - **watch-machinery-raises-disclaim-burden** (human observation, 2026-07-10, task 10b —
   "not a nack"): the effect-check "leans perilously close to promising non-mutation";
   every layer of machinery *supporting* the user here raises the documentation/education
