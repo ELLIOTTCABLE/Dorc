@@ -419,6 +419,39 @@ simulation-framing frontloads the never-perfect-fidelity limitation in the title
 rhymes with `cmd__predict()`; conductor grammatical variant `cmd__simulates_env()`
 offered (third-person, matching `cmd__disturbs()`). NOT yet settled: separate member
 vs folding INTO `cmd__predict()` (the nit-predict-merge disposition, task-5 thread).
+**→ RESOLVED by rul-predict-absorbs-wrapper-modeling below (2026-07-11): the
+member-name `simulate_env`/`simulate` DIES; the authored body and its contract
+survive whole, as the wrapper-shaped `cmd__predict()`.**
+
+### rul-predict-absorbs-wrapper-modeling  (task 5; 2026-07-11; TYPED — "Merge
+acked. merge-riders: acked")
+ONE modeling member: **`cmd__predict()`** — "the best read-only sh model of your
+command." Wrapper-ness is DETECTED, never declared by member-kind: a body whose
+command-position `"$@"` runs its argument-slot is a peeling wrapper by tautology
+(a wrapper IS a command whose behavior-model contains its argument-slot in command
+position); the argparse path to that `"$@"` is the peel, the env-idioms along it
+are the ρ-claims, conditional printf lines are output-claims, marked lines are
+facts. No separate simulate member exists. The axes/emission member SURVIVES
+separately (world-plane coordinate claims are not prediction; it is su's only
+authorable member). **The three merge-riders are ACKED as build obligations
+(typed, same message):** per-channel-decline vocabulary (delegation = faithful
+claim · printf = asserted output · explicit return = rc claim · redirect-to-null
+= per-channel decline ⇒ ⊤ · `return 2` = whole-shape decline) · line-level
+attribution (the `24S` §4a chain's first link cites the LINE within the body) ·
+opt-downs-additive (rul24M-rungs-default pattern; kCONTRACT-RUNGS unmoved).
+Consumers: `270:block-context` wrapper stages (reframed as predictor-support +
+the axes member); task-6 carriers (working frame: a carrier is most naturally
+predict-with-a-code-operand); the stdlib wrapper-oracle briefs.
+
+### rul-only-oracle-bytes-ship — ratification DEFERRED (2026-07-11; TYPED:
+"continuing to defer on the repair; I'm strongly suspicious it's debt, but I
+want to triple-check that hard law in a new session")
+The repair stays DRAFTED, not ruled. The human wants the underlying hard law
+itself (the round-20 structural-vouch ruling + the round-23 strip-predict
+correction chain) re-derived in a fresh session before ratifying — not trusted
+from this sitting's reading. Minted as top-level conductor task #14; the
+`24J`/`24C`/LIVING_STATUS corrections stand as debt-CONFIRMATION (that part he
+acked by directing the minting), only the repair-direction ratification waits.
 
 ## Direction & open threads
 

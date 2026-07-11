@@ -74,7 +74,10 @@ strip-predict correction, and inv-one-observable). Corrections minted in place
 (`24J` header · `24C` §pipe-guard); repair drafted `271:rul-only-oracle-bytes-ship`
 (compose predict invocations; stream-faithful delegation bodies), candidate home =
 `270:block-rebuild`'s probe-emission touch-point. Any block-rebuild conductor MUST
-read the `24J` correction before touching probe emission.
+read the `24J` correction before touching probe emission. **Ratification DEFERRED
+by the human (2026-07-11): the underlying structural-vouch hard law gets a
+fresh-session triple-check first (conductor task #14) — do not treat the repair
+as ruled.**
 
 **Branch map:** `ai/spike3-r23` = the live lineage (r24 history + round-27 forward).
 `ai/spike3-r25` = field-trial tooling (P1/P3/P6 + the salvaged observer harness;
