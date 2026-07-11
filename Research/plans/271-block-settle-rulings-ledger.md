@@ -433,24 +433,78 @@ same read-aloud + only-rule treatment).
   decision; task-13 carries the containers lens; the corpus-respell brief gains the
   rename rider (rul-at-most-family-names).
 
-- **task-5 (wrapper context-function spelling) — OPEN. Surviving questions from the
-  sitting's opening explainer, un-adjudicated:** **q-wrapper-member-count** — one
-  context member vs two split along `24S` §1's own ρ-vs-axes seam (conductor lean =
-  two: partial-decline composability — su's ρ declines while its peel + user-axis
-  still pays — plus the peel cross-check falling out free from dual argparse) ·
-  **q-rho-closure-spelling** — the ρ-transform member as an EXECUTABLE env-closure
-  (`env -i TERM="$TERM" … "$@"`): statically traced for the per-variable map, shipped
-  as `24S` §6b's whole-ρ replication builder, real off-ramp value; the engine reads
-  closure bodies against a small blessed-idiom contract · **q-identity-spelling** —
-  the one real grammar hole: a POSITIVE per-axis "moves-nothing" spelling, since
-  per-axis silence must stay ⊤ (opaques7-finding2) · self-effects: no new spelling
-  (the wrapper's own `cmd__disturbs()` arm + the standing oracle-vouches-for-itself
-  rule). **New residuals minted since the sitting opened:** the wrapper member NAMES
-  owe the same read-aloud + only-rule treatment as the at-most family (`__moves` is
-  the deprecated spatial-vague verb class; open question whether the ρ-member earns
-  `only` — its `env -i` form is total-by-construction) · `ip netns exec NAME` joins
-  the wrapper family per rul-networking-unpunt (argv-named axis value, the
-  `sudo -u USER` analog).
+- **task-5 (wrapper context-function spelling) — OPEN; sitting re-opened 2026-07-11
+  with a fresh full explainer (chat); analysis banked here so no rewind loses it.**
+  The four jobs from `24S` §2b, re-based onto the address-derived-topology world
+  (`notes/272`): peel (where the tail begins) · axis declaration WITH VALUES (feeds
+  `272`'s keying + invariance transport; values are ρ-resolved argv — an unresolvable
+  `sudo -u "$DBUSER"` yields a ⊤ axis-value, identifies-with-nothing, preserved) ·
+  the ρ-transform (per-variable env map + cwd; consumed BOTH by oracle-body tracing
+  under ρ and as the `24S` §6b whole-ρ replication vehicle) · self-effects (SETTLED:
+  no new spelling — the wrapper's own `cmd__disturbs()` arm + the standing
+  oracle-vouches-for-itself rule). Decision slugs, superseding the earlier
+  q-wrapper-member-count framing:
+  - **q-wrapper-shape-menu** — three candidate shapes: **shape-single-function**
+    (one body: argparse + axis-marks riding the exec line + env-closure exec of
+    `"$@"`) · **shape-context-plus-environment** (member one = the context member:
+    argparse + `only`-quantified axis emissions + terminal `"$@"` as the explicit
+    peel boundary; member two = optional executable ρ-closure) ·
+    **shape-peel-gateway-trio** (peel, axes, ρ as three members; the axes member
+    loses its natural boundary-carrier and needs an invented convention). **The su
+    stress-test is the discriminator:** `su - USER` has an honest user-axis move but
+    a statically-unclaimable ρ (login files are host state) — any shape that fuses
+    the peel WITH the ρ-closure (including shape-single-function) forces su's author
+    to either fake an identity-ρ (a bare `"$@"` exec line — a FALSE claim) or
+    decline entirely (losing the keying + guard-lift value the axis move honestly
+    buys). Conductor lean, ~SUSPECT: **shape-context-plus-environment**.
+  - **q-identity-dissolves-under-only** — the "positive moves-nothing spelling"
+    hole dissolves if the context member is `only`-named (complete-by-contract over
+    the versioned axis vocabulary): rc-0 with an empty emission set = positively
+    moves-nothing (nice's whole oracle); rc ≥2 = shape-decline (⊤, no peel).
+    Totality is dialect-version-scoped: a v0.1-authored member is total over v0.1
+    axes and ⊤ over later-minted axes (the marker carries it) — the wrapper-side
+    analog of `272`'s new-rows-consume-existing-declarations future-proofing.
+    Residual small cell: emission-member rc=1 semantics unassigned
+    (rul-zero-one-inversion-pair governs verdict members only).
+  - **q-rho-closure-spelling** (carried, refined) — an EXECUTABLE env-closure,
+    traced against a small blessed idiom set {`env -i` scrub-base · `VAR="$VAR"`
+    survivor pass-through · `VAR=literal` · `VAR="$parsed"` · terminal `"$@"`; cwd
+    idiom TBD}; the SAME authored body is the static per-variable claim AND the
+    shipped replication wrapper (no translation gap between what was traced and what
+    runs). Unblessed/untraceable body ⇒ that ρ is ⊤ AND the closure is unshippable ⇒
+    wrapped-site checks can't-say ⇒ guard/run. README-class contract line (framed
+    per rul-lint-never-drives-design, as contract not lint): closure bodies never
+    escalate — `sudo` is not a blessed idiom; `24S:imp-1` structurally preserved.
+    No `only` on this member: an executable transform is total-by-construction,
+    there is no negative space to quantify. **env is the ρ-spelling's own
+    stress-test** (its ρ-delta arrives in its ARGV, so its closure is
+    self-referential/loop-shaped — parse `VAR=x` operands and export them — where
+    sudo's is a static idiom-line); work it as a specimen before ruling.
+  - **q-axes-emission-grammar** — axis VALUE in raw output, axis NAME as the
+    trailing mark (`printf '%s\n' "$target"   : user`), matching `272`'s
+    locator-output + substrate-mark shape and rul-emission-selector-on-mark's
+    raw-output/typed-mark law. Note: axis marks are a SECOND engine-owned closed
+    mark vocabulary beside the substrate marks — both ride the same someday
+    deliberate-kOOB-reading (`272` §11's substrate-vocabulary mini-adjudication);
+    not smuggled.
+  - **wrapper member NAMES** (human-owned; menus delivered in-chat 2026-07-11):
+    the context member carries `only`; the ρ member does not; `__moves` stays
+    deprecated (spatial-vague).
+  **Correction banked:** `24S` §2a stage-D's "disjointness dividend" (`cron(root)`
+  ⊥ everything, a running root-crontab line un-walling the rest) is DEAD at v1
+  under `272` §4 never-derive-separation — keying is license-free re-indexing;
+  survival-grade separation would need the declared partitioned tier, which does
+  not exist at v1. The wrapper surface must not silently resurrect it. What
+  axes-only still buys (the su cell, ~SUSPECT on the exact engine path): correct
+  keying (the crontab footgun uncommittable), invariant-kind transport +
+  probe-outside for constant-locator kinds, and the admin's own in-book guard
+  lifting through the boundary (the guard runs ambient, needing no ρ-replication);
+  what it cannot buy: shipped-check replication (ρ ⊤ ⇒ closure unbuildable) and
+  env-parameterized oracle-body tracing. `ip netns exec NAME` joins the family per
+  rul-networking-unpunt (argv-named axis value, the `sudo -u USER` analog).
+  Consumers: `270:block-context` wrapper-peel/wrapper-sudo briefs; task-6 shares
+  the argparse/which-arg-is-code seam (fence held — su's carrier half stays
+  task-6's).
 
 - **watch-machinery-raises-disclaim-burden** (human observation, 2026-07-10, task 10b —
   "not a nack"): the effect-check "leans perilously close to promising non-mutation";
