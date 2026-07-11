@@ -7,6 +7,23 @@ and gap-anatomy are `24C` §pipe-guard (fixtures `strawman24-pipe-guard-*`; the 
 `strawman24-pipe-guard-oracle-converged` is the promotion tripwire). Human-resolved fork,
 recorded so the build is dispatchable from empty context.
 
+> **[CORRECTION — 2026-07-11, block-settle task-5 audit; full record `plans/271` seventh
+> round.]** This note's shipped-form choice — "the host runs the real `A | F`", raw book
+> bytes licensed by shape-match against oracle arms — is CONFIRMED STANDING-LAW DEBT: it
+> contradicts the round-20 structural-vouch ruling (probe-inertness comes only from a
+> command inside its own oracle's body; no engine-side matching makes a probe safe), the
+> round-23 correction (the probe ships the stripped predict invoked per-site with the
+> site's argv), and inv-one-observable (predict models per-channel — the rc-shaped arm
+> bodies this note routed around should instead have been made stream-faithful). The
+> CONNECTED shape, per-command licensing, and the phantom-dissolution of a separate
+> filter-blessing TYPE all stand; only the shipped FORM is superseded. Repair drafted
+> (`271:rul-only-oracle-bytes-ship`, awaiting typed ratification): compose predict
+> invocations — `otelcol__predict '--version' | grep__predict '-q' '0.155.0'` — with
+> delegation bodies producing the authentic stream by execution; author redirect-to-null
+> = per-channel decline ⇒ ⊤; the engine discards unconsumed channels at the invocation
+> site. "Nothing needs reassembling" bought this debt; the mechanism section below stands
+> as history.
+
 ## The question
 
 The `||` consumes ONE value: the check-pipeline's exit status (grep's — last stage). If the

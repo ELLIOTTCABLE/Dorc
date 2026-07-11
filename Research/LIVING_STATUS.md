@@ -67,6 +67,15 @@ LANDED + polish + pipe lift + wave-1 (evidence: `24C`). The respell specimens ar
 COMMITTED at tip; `dorc_flags_selftest` anchors survive-multiwall. Working tree carries
 only the human's own TODO.md edit — leave it.
 
+**⚠ DEBT FLAG (2026-07-11, block-settle task-5 audit):** the landed `24J`
+connected-probe mechanism ships RAW book bytes at probe time — confirmed
+standing-law debt (contradicts the structural-vouch ruling, the round-23
+strip-predict correction, and inv-one-observable). Corrections minted in place
+(`24J` header · `24C` §pipe-guard); repair drafted `271:rul-only-oracle-bytes-ship`
+(compose predict invocations; stream-faithful delegation bodies), candidate home =
+`270:block-rebuild`'s probe-emission touch-point. Any block-rebuild conductor MUST
+read the `24J` correction before touching probe emission.
+
 **Branch map:** `ai/spike3-r23` = the live lineage (r24 history + round-27 forward).
 `ai/spike3-r25` = field-trial tooling (P1/P3/P6 + the salvaged observer harness;
 dormant; owed-on-revival items banked in `24U` §6 / `270` §5; any Vultr work re-reads

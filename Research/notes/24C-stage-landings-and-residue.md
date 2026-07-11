@@ -383,6 +383,21 @@ only benign concurrent-stage reordering forgiven).
 > PHANTOM (the engine measures rc, never interprets it — grep is ordinary stdlib purity-vouch
 > material). Build = the pipefix pass; the XFAIL is the tripwire.]
 
+> **[DEBT CONFIRMED — 2026-07-11, block-settle task-5 audit; full record `plans/271`
+> seventh round.]** The landed connected-probe mechanism ships the admin's RAW pipeline
+> bytes, licensed by engine-side shape-matching against oracle arms — human-audited and
+> confirmed as standing-law debt: it contradicts the round-20 structural-vouch ruling
+> (probe-inertness only from a command inside its own oracle's body), the round-23
+> correction (the probe ships the stripped predict invoked with the site's argv), and
+> inv-one-observable (predict models per-channel; Stdout is a channel). It also sidesteps
+> the dq-reflexive-probe-inertness net (which polices lifted BODIES only) and launders
+> model-fidelity gaps (a book's `grep -vq` raw-ships while the arm models only `-q`).
+> Repair drafted, awaiting typed ratification: `271:rul-only-oracle-bytes-ship` —
+> connected probes compose predict INVOCATIONS; bodies stream-faithful by delegation;
+> author redirect = per-channel decline ⇒ ⊤; engine discards unconsumed channels at the
+> invocation site. Repair home candidate: `270:block-rebuild`'s probe-emission
+> touch-point.]
+
 ## First-contact polish pass (LANDED 2026-07-05; merged tip `00664b1` lineage)
 
 The `24H` charter applied in full minus enumerated deferrals (one Opus, 8 commits, 54 files;
