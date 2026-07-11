@@ -975,11 +975,16 @@ vs folding INTO `cmd__predict()` (the nit-predict-merge disposition, task-5 thre
     reliability = lying-species sweep axes (lying-peel/lying-ρ/lying-output)
     stay line-anchored and species-distinguishable; species-level quarantine
     machinery is equally-future in both designs.
-  - **What a closing ruling needs to TYPE:** (s1) predict-absorbs stamp
-    (the merge itself) · (s2) rul-only-oracle-bytes-ship ratification ·
-    (s3) the dual-peel policy (cross-check dividend vs conflict rule) ·
-    (s4) the emission-member rename (né "context", parked nit) · (s5) the
-    three riders above acknowledged as build obligations.
+  - **What a closing ruling needs to TYPE** (full-word stamp names):
+    **stamp-predict-absorbs-wrapper-modeling** (the merge itself; wrapper-ness
+    detected by command-position `"$@"`, no separate simulate member) ·
+    **stamp-only-oracle-bytes-ship** (ratify the round-7 repair) ·
+    **stamp-dual-peel-policy** (cross-check dividend vs conflict rule; may
+    defer to block-context implementation-planning) ·
+    **stamp-emission-member-rename** (né "context"; the human's own parked
+    bite-sized turn) · **stamp-merge-riders-acknowledged** (per-channel-decline
+    vocabulary · line-level attribution · opt-downs-additive, acked as build
+    obligations — may fold into the first stamp).
 
 - **watch-machinery-raises-disclaim-burden** (human observation, 2026-07-10, task 10b —
   "not a nack"): the effect-check "leans perilously close to promising non-mutation";
