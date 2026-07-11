@@ -324,6 +324,24 @@ the **flat three-place `(kind, entity, selector)`**.
   co-location; the homogeneous-compilation-unit posture (strong lean, not welded) is
   affirmed untouched; the only per-ingest-unit fact remains the dialect marker.
 
+## Rulings (task-3/task-5 sitting, continued)
+
+### rul-touches-becomes-disturbs  (task 3/5 sitting; 2026-07-11; TYPED — "'touches ->
+disturbs' is a winner")
+The per-TOOL mutation-claim role renames `touches()` → **`disturbs()`** (liability
+register: recruits paranoid completeness, the omission-dangerous direction). Rides the
+corpus-respell churn window. Other family names NOT settled: `is_converged` keep
+(typed, earlier); `predict`/`resolve`/`reaches` proposals delivered, unruled; the
+store-member name DEFERRED pending the substrate-mark contract ruling (name follows
+contract — see thread below). The naming-proposal menu itself is in-chat, 2026-07-11.
+
+### rul-class-prefixed-role-names  (same exchange; 2026-07-11; TYPED)
+In all generic discussion and documentation, role-functions are written WITH their
+keying class: `cmd__disturbs()`, `kind__reaches()`, `kind__stores()` — never the bare
+role name. The human: saying `cmd__touches()` and `kind__lives_in()` by default "would
+have significantly helped without any naming change." Binds this ledger, the design
+note, briefs, and doc prose forward.
+
 ## Direction & open threads
 
 - **task-3+task-5 sitting OPENED (2026-07-10; explainer delivered in-chat; every lean
@@ -459,6 +477,41 @@ the **flat three-place `(kind, entity, selector)`**.
   consumer plumbing); D-primary strengthened overall but shown DEPENDENT on
   task-7 vocabulary for dynamic arms; A's fallback role confirmed narrow-but-real
   (capture-rooted/unaddressable kinds wanting a cheap assertion) ·
+  **too-small-attack findings** (human challenge 2026-07-11: "we only mine it for
+  whether-it-mentions-a-user-dir — vapid naming, scalpel-thin target; does it handle
+  fs-view? dig into your own git-config fears"; conductor findings, awaiting ack):
+  the discomfort made precise — a RICH artifact (addresses) consumed through a ONE-BIT
+  v1 projection is contract-slop (authors can't see which sloppiness is the knife).
+  (s1) **fs-view: fails as-proposed** — fs-relativity is implicit in every path
+  (nothing to mine) and kernel-backed paths invert (`/proc/sys/...` looks
+  chroot-sensitive, is host-invariant modulo netns). Repair =
+  **substrate-typed emissions**: each address line carries an engine-owned closed mark
+  (`: fs` default / `: kernel` / extensible); per-axis derivation = f(substrate,
+  text) — fs-substrate ⇒ reinterpreted-under-fs-move (safe default), kernel ⇒ positive
+  invariance claim (license, attributed). NEW annotation vocabulary ⇒ own
+  mini-adjudication (kOOB-adjacent, axis-vocabulary-shaped). v1 move: RESERVE the mark
+  slot in the emission grammar, defer consumption with fs-view. Also cures the
+  vapid-naming complaint under the growth path (location becomes genuinely consumed).
+  (s2) **git-config fears dug**: the chezmoi-rewrites-gitconfig collision case
+  SURVIVES with zero new machinery (both bind the file kind; the dialect ruling's
+  selector-less-claim-collides kills the keyed fact correctly); real strains = file-kind
+  canonicalization (realpath-shaped `kind__resolve()`, a standing problem, fs-ladder
+  lowest rung leaking early) + manufactured logical-vs-address cross-vocabulary
+  aliasing = traffic across the PARKED co-reference hole (fence holds; the IOU accrues
+  interest; D's addresses remain that mechanism's future input). (s3) **the human's
+  scalpel-thin instinct draws blood** — ownership-multiplexed shared stores: the `at`
+  spool (one dir, per-user job ownership, `atq` shows invoker's jobs) has an HONEST
+  address with no who-am-I ⇒ derives invariant ⇒ under-executes off a truthful body.
+  "Path has user in it" is NOT sufficient. Nets, descending: the differential harness
+  (mutate-as-A/probe-as-B, `24S:A4`) catches the class mechanically — PROMOTED from
+  adjudicability-nicety to the derivation's load-bearing other half (D = conjecture
+  generator + differential checker, never proof); a decline-clause for
+  view-multiplexed tools (documentation-tier); class-size -GUESS small (most wild
+  multiplexing textualizes: /run/user/$UID, tmux-$UID, /var/mail/$USER; kernel
+  keyrings are unaddressable ⇒ already floor). Net verdict: the surface WAS too
+  small, but every failure lands as growth ON the same member (marks, differential,
+  clause) — no second topology mechanism needed; store-member NAME deferred until the
+  substrate-mark contract is ruled ·
   **q-map-defers-with-fs-view**: sensitive-with-map's canonical home is the fs-view
   axis, so the fs-view map rides the soft-deferral — and under candidate D the
   user-axis "map" is subsumed (the traced address family); v1 authored surface =
