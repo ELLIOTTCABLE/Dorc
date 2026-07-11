@@ -869,6 +869,59 @@ vs folding INTO `cmd__predict()` (the nit-predict-merge disposition, task-5 thre
     channel the compound consumes from it is model-covered; at tip that is
     rc-only, hence verbatim pipe interiors.
 
+  **Seventh round — the verbatim-ship challenge UPHELD (human, 2026-07-11):
+  the `24J` raw-ship is standing-law debt, not principle:**
+  - **Fact confirmed, then checked against law.** Connected pipe-probes ship
+    book bytes verbatim (round-6 artifact) even though both stages' oracles
+    exist with predict arms (`grep.oracle.sh` / `otelcol.oracle.sh` in the
+    same fixture dir). THREE standing authorities contradict the mechanism:
+    the round-20 ruling ("probe-inertness comes ONLY from structural vouching
+    — a command inside its own oracle's `predict()`; no analysis-confidence
+    threshold ever makes a probe 'safe'"); the round-23 correction ("the
+    probe ships `strip_predict(<provider>.predict)` invoked per-site with the
+    site's argv"); and inv-one-observable ("the oracle `predict()` PREDICTS
+    per-channel values" — Stdout is a channel). The `24J` raw-ship transports
+    a license from an oracle's observe-arm onto NON-oracle bytes via
+    engine-side shape-matching — a second license-transport mechanism outside
+    the structural carve-out — and it sidesteps the
+    dq-reflexive-probe-inertness net, which polices lifted BODIES only.
+    Deliberate in `24J` ("the host runs the real A | F… nothing needs
+    reassembling"), so chosen-debt rather than accident — but debt against
+    standing law regardless. The human's principle, upheld and candidate for
+    the rulings canon: *the only spelling of a vouch is a body; a second
+    vouch-species that lets commands SKIP your body is silly*
+    (rul24-vouch-is-verdict-authoring, extended to the read/probe domain).
+  - **RETRACTION (conductor):** round-6's rul-shipped-form-per-channel as
+    drafted (rc-consumed ⇒ model / byte-consumed ⇒ verbatim, two shipped
+    species) was the debt rationalized into principle. Surviving kernel:
+    per-channel COVERAGE — a stand-in must cover every channel the compound
+    consumes from it.
+  - **rul-only-oracle-bytes-ship (drafted-awaiting-ack; the repair):** probe
+    artifacts contain ONLY oracle-authored bytes plus blessed-pure engine
+    scaffolding. Predict bodies are stream-faithful per-channel models —
+    defensive redirects move OUT of bodies (otelcol's `>/dev/null 2>&1` was
+    rc-site tidiness baked into the model, breaking its Stdout channel); the
+    ENGINE discards unconsumed channels at the invocation site, where
+    consumption is known. Connected probes compose predict invocations —
+    `otelcol__predict '--version' | grep__predict '-q' '0.155.0'` — real
+    streams via delegation bodies, authentic by execution rather than by
+    raw text. A consumed channel the body doesn't cover ⇒ decline ⇒ wall.
+    Bonus honesty: raw-ship LAUNDERED model-fidelity gaps (a book's
+    `grep -vq PAT` raw-ships fine while the oracle models only `-q`;
+    function-ship surfaces the gap as an arity-gate decline — the honest
+    floor). Consequences: the "read-blessing" species dissolves into
+    ordinary stream-faithful delegation arms (grep's fixture body is already
+    one); the capture lane ships the delegation member uniformly (the
+    human's earlier suspicion vindicated); round-5 substitution's verbatim
+    clause DIES — every participant ships as its oracle stand-in, no
+    exceptions, un-oracled ⇒ can't-say; the vouch-closure net regains total
+    coverage since only bodies ever ship.
+  - **Debt ticket:** repair home candidate = `270:block-rebuild` (the
+    probe-emission touch-point already in the typeless-floor's four);
+    ratification owes `24J` a supersession annotation (plan-tier
+    annotate-in-place) and the fixture oracles the stream-faithful rewrite
+    in the same churn window.
+
 - **watch-machinery-raises-disclaim-burden** (human observation, 2026-07-10, task 10b —
   "not a nack"): the effect-check "leans perilously close to promising non-mutation";
   every layer of machinery *supporting* the user here raises the documentation/education
