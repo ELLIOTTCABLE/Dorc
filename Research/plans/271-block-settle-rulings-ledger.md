@@ -645,6 +645,66 @@ vs folding INTO `cmd__predict()` (the nit-predict-merge disposition, task-5 thre
     `cmd__simulate_env()`, formally predict's simulation-lane sibling** —
     upgraded weakly→moderately held; adjudication his.
 
+  **Third round — the output-prediction nit and the decorating-wrapper
+  theoretical (human, 2026-07-11; "not ruling quite yet"):**
+  - **nit-predict-output (human-caught, CONFIRMED):** `cmd__predict()` is designed
+    to predict OUTPUT, not just rc — unimplemented-at-HEAD (the engine reserves
+    `Predicted`/`Observable`/`OutClaim`; the elide-weld's license text — "all
+    possible observables (rc, stdout/fds, effects) not-depended-upon or
+    vouched-for-by-oracle" — is output-prediction's consumer). The conductor's
+    prior "measure and mark" doc-voice described only the HEAD-implemented
+    subset; the A/B run's "wrapper predict is vacant" claim is DEAD as stated.
+  - **The decorating-wrapper theoretical** (his strawman: a wrapper emitting
+    textual wrapping around the tail's output; the admin's book-guard parses the
+    UNION). Three asks decomposed: peel (this design, unchanged) · the wrapper's
+    OUTPUT-MODEL (naturally expressible in the SAME executable body — decoration
+    idioms around the tail-slot) · transitive tail-output (the existing
+    predict/capture lane; engine-side value-plane splice of the tail's
+    predicted-or-captured output into the wrapper's model, under the shared
+    recursion bound — mirror-symmetric to payload decomposition: carriers
+    decompose code going IN, this composes output coming OUT).
+  - **Defusing verdict (conductor; three cells):** (cell-read-only) the live-value
+    case — union-guard over a read-only tail — needs NO output prediction:
+    transitive READ-THROUGH BLESSING (tail read-only-blessed + wrapper vouched
+    output-transparent + self-effects nil ⇒ ship the admin's union-pipeline
+    VERBATIM as its own probe; ordinary guard-subsumption through the boundary).
+    Such tools are NOT DOA under refusal. (cell-mutative) a union-guard over a
+    MUTATIVE tail is unprobeable regardless (running it mutates), and static
+    stdout-prediction of mutative tools is ⊤-ish — the wrapper is not the
+    bottleneck; DOA-independent. (cell-display) plan-time "would output X"
+    rendering: license-thin, deferrable. Therefore: ACCEPT the conception at
+    design tier, reserve the seam, build none of it in v1.
+  - **output-composition-ladder (minted, reserve-not-build):** concatenation-
+    shaped models (prologue/epilogue around the tail-slot; sequential same-fd ⇒
+    deterministic) ⊑ per-line stream-transforms (`tail | ts`-class; automata-
+    adjacent, the `24T` §5b fence-hover) ⊑ stderr/stdout interleaving (never).
+    Blessed-set growth implied by rung 1: output idioms (printf of
+    statics/parsed values) around the tail-slot + the rc-preservation idiom
+    (`rc=$?; …; return "$rc"`); the exactly-one-command-position-`"$@"` line
+    replaces terminal-`"$@"` (reliance registry updated).
+  - **A/B impact, honest inventory:** arguments killed — "simulate_env is a pure
+    env-combinator, wrapper cohort never writes predict" (the semantic wall
+    between the members erodes: both cohorts' members are now best-read-only-
+    models-of-my-command, differing by MODE — measurement-model that SUBSTITUTES
+    for running vs re-staging-model that RUNS its tail-slot). Arguments
+    surviving: f3 (guard-render hazard — name-gating vs shape-classifier) and
+    f4 (dual-contract legibility / LLM cargo-cult surface) are operational, not
+    semantic, and still favor name-separation. Under un-evolved A the decorating
+    wrapper would need its argparse+tail-slot skeleton duplicated across TWO
+    members — untenable; so A EVOLVES: **`cmd__simulate_env()` widens and renames
+    to `cmd__simulate()`** — the whole-run model: ρ-idioms + output-decoration +
+    rc, around the tail-slot. Widening is strictly additive (su still
+    absent-member; plab's `{ shift; "$@" ;}` already models passthrough-output;
+    sudo's body unchanged). Conductor lean updated: **A-evolved
+    (`cmd__simulate()`) vs B now differ ONLY in whether the two modeling-modes
+    share one name** — lean stays name-separation on f3/f4 grounds, moderately
+    held; the semantic case for B is conceded to be real and strengthened by
+    this round.
+  - **task-7 coupling grows a third customer:** the composed-union value (the
+    spliced wrapper-output prediction) is a capture-lane object — its world-plane
+    identity and wall-survival chronology are `adj-capture-claim` questions
+    (joins the dynamic-locator arms and the axis-independence value-bound).
+
 - **watch-machinery-raises-disclaim-burden** (human observation, 2026-07-10, task 10b —
   "not a nack"): the effect-check "leans perilously close to promising non-mutation";
   every layer of machinery *supporting* the user here raises the documentation/education
