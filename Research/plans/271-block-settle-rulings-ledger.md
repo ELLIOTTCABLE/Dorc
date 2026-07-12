@@ -1061,6 +1061,19 @@ below, plus the who-am-I derivation route (a value with NO probe-time execution
 at all — resolved from the context record via lend-map/ρ claims; no staleness
 axis by construction).
 
+### rul-orthogonality-counterexample-test  (task-7 sitting; 2026-07-12; TYPED
+in-chat — method doctrine, general beyond this sitting)
+The refined failure condition: lines that mean three UNRELATED (or worse,
+mutually-opposing) things are lines people get wrong — a design failure; multiple
+RELATED meanings on one line are not a failure of people or design. The test for
+"unrelated": **write an oracle that will want to push two of the meanings in two
+different directions** — if genuinely orthogonal, the chaotic world of ops will
+exercise it (somebody, somewhere, needs "A && !B" on one line, and a single mark
+fails them). No inhabitable counter-example ⇒ the meanings are inherently linked
+and the multiple-meanings objection COLLAPSES, at least until the example turns
+up. (Run immediately against the `:?` three-jobs objection — result recorded in
+thread-backing-three-regimes addendum below.)
+
 ### rul-composed-bytes-defer-and-floor  (task-7 sitting; 2026-07-12; TYPED —
 "Ack on all" on the conductor's four-part closing shape)
 Four parts, one ruling:
@@ -1176,6 +1189,29 @@ prose when the human takes the doctrine into root docs (his edit, unclaimed).
   site runs). Meta-flag, on record: the candidate has absorbed every objection
   raised so far; earmarked for the adversarial crosscheck
   (exclusions-not-inclusions) riding the entity-algebra note.
+  **Addendum (2026-07-12, same sitting):** (nit-iff-conceded) the conductor's
+  "same answer iff same state" was a textual logic error — only the ⇐ direction
+  is claimed or needed (same state ⇒ same value); the false ⇒ direction is
+  unused, and its falseness ALIGNS with the design (a keyed backing
+  fails-to-license sameness; it never proves difference —
+  never-derive-separation's flavor at the value tier). (confirmation-monotone)
+  the human's suspicion confirmed with the precise boundary: text-observables
+  ride the SAME claim-side logic as rc-observables (license, backing,
+  chronology, transport, attribution — channel-uniform, all prior logic holds);
+  the channels differ only CONSUMER-side (bytes enter value-flow /
+  string-semantics / naming / artifacts — each already fenced or floored).
+  (test-run-two-jobs) the orthogonality test run against the `:?` mark's three
+  jobs: a counter-example EXISTS for fact-backing vs value-backing — the
+  decorated-output oracle (rc depends on a state-read; stdout depends on
+  state-read ∪ clock-read) needs "clock backs the VALUE && clock does not back
+  the FACT" — but it splits the mark's CONSUMERS, not the mark: the resolution
+  is per-CHANNEL backing DERIVATION through the fragment/recipe dataflow
+  (which reads feed which observable), with the mark asserting exactly one
+  thing ("this read reads X"). One meaning, derived consumers; no opposing-mark
+  grammar needed. NEW consumer minted for rider-value-recipe-reshape-capture-
+  seams: per-channel backing derivation requires the fragment-preserving
+  recipes. The dialect-minting/disclosure fusion: counter-example attempted,
+  not inhabitable ⇒ collapses for now per the test.
 
 - **rider-value-recipe-reshape-capture-seams (hand-carried 2026-07-12 from a
   sibling-conductor's standing-work review; obligation on the block-rebuild
