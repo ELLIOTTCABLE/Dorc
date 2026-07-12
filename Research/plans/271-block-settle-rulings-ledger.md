@@ -36,8 +36,11 @@ while this ledger carries the rulings and the arc-pointers, never the design bod
    in its §12); this ledger keeps only the rulings + the arc-pointer below.
 6. eval'er declaration spelling (né carrier; renamed by rul-evaler-vocabulary) —
    `24T` pin1 (which-arg-is-code, stdin shapes, argv-binding, the child-shell context
-   record). IN PROGRESS 2026-07-11: merge-vs-structure-member analysis drafted,
-   awaiting ack (rul-evaler-merge-no-structure-member).
+   record). ARC REPORTED 2026-07-12: comprehensive durable = **`notes/274`** (the
+   `272`/`273` precedent; per-component statuses in its §12); this ledger keeps the
+   rulings. Formal close awaits the human's stamp on the synthesis + the standing
+   drafted acks (merge; env-claim inversion) + his eye on the §2 mechanism-native/
+   content-claimed refinement minted during strawmanning.
 7. adj-capture-claim (né `219` fork-capture-claim-type) — probe-captured stdout:
    OutClaim-observation vs new claim-type.
 8. adj-survival-flag-outcome (né `24S:A2` + the `--trust-footprints` rename) — the
