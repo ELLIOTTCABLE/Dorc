@@ -136,6 +136,11 @@ Outcomes, per (kind[, selector] × axis):
   headline; the admin's own `dpkg -s … || sudo apt-get install` guard lifts through
   the boundary) AND the probe-outside license (same referent ⇒ the outside read is
   legitimate). One declaration, both uses (`24S` §6a preserved).
+  **(AMENDED 2026-07-12, the task-8 sitting — `271:rul-invariance-speech-act`: the
+  transport/probe-outside licenses now issue from the kind-owner's EXPLICIT
+  invariance line in this member's emission (`277` §4e's colon-line), never from the
+  derivation's negative space; the derivation re-roles to CONTRADICTION-CHECKER plus
+  keying/conjecture/hints. The keyed and ⊤ outcomes below are unchanged.)**
 - **keyed** (dependence present): cells are NAMED per axis-value — `cron@alice` and
   `cron@root` are different cells, the naming falling out of evaluating the authored
   locator under each context's ρ. Keying is a re-indexing, license-free; the
@@ -300,10 +305,18 @@ stay the safe widener (`271` observe-backing-widening thread).
 - **task-7 (adj-capture-claim):** dynamic locator arms need an AXIS-INDEPENDENCE
   value-bound in the read-blessing vocabulary (`brew --prefix` output is
   user-invariant) — task 7 has a second customer; couple the sittings.
+  **(RESOLVED 2026-07-12: `275` §6 — the value-bound is DERIVED via backing
+  invariance; no authored vocabulary member exists or is needed; "read-blessing"
+  itself retired as a category error.)**
 - **task-8 (adj-survival-flag-outcome):** its adjudicability condition must be
   re-read against a DERIVED (not declared) clause; note this member's transport
   license is the one whose tier is unruled — if vouch-tier wins, it is the only
   at-most member whose wrongness bites un-flagged.
+  **(RESOLVED 2026-07-12: `271:rul-flag-is-razor-residue` — the flag gates the
+  open-world at-most residue only; this member's transport license re-homed to the
+  typed invariance line (vouch-tier, razor-passing) by
+  `271:rul-invariance-speech-act`; adjudicability routing recorded at the task-8
+  close.)**
 - **task-12 (entity-algebra design note):** imports §1's one-page formal spec, the
   §5 fence, the substrate-mark slot reservation, and the keyed/partitioned
   vocabulary decision.
@@ -339,3 +352,4 @@ stay the safe widener (`271` observe-backing-widening thread).
 | keyed/partitioned terminology | proposed; unruled |
 | engine-supplied file-kind grounding; behaviour-menu addition | conductor-proposed |
 | differential-as-other-half; DST lying-address axis | conductor-proposed (verification posture) |
+| invariance speech-act (transport = the typed line; derivation = contradiction-checker) | TYPED 2026-07-12 (`271:rul-invariance-speech-act`; amends §3) |
