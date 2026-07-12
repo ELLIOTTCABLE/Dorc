@@ -109,7 +109,8 @@ through any engine opinion about the token `sh`.
 ## §4 — Strawmen (brief; the full walked set is in the 2026-07-12 dialogue)
 
 ```sh
-# dorc-lang/v0.1 — the stdlib sh carrier-oracle (the workhorse)
+# dorc-lang/v0.1
+# the stdlib sh carrier-oracle (the workhorse)
 sh__predict() {
    while :; do case "${1-}" in
       -c) code="${2-}"; shift 2
