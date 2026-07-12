@@ -174,16 +174,26 @@ delta-deliberate-koob-reading)*
     KIND                            sm.dorc.PkgIndex              (singleton/whole kind)
 
 - `#` introduces the selector — typed PERMANENT (`271:rul-selector-introducer-hash`).
-- The `#` must be ATTACHED (no whitespace on either side): a whitespace-preceded `#`
-  opens an sh comment in a real shell, and the dialect never gives one byte-sequence
-  two readings. Mid-word `#` is not a comment-opener in any care-set shell — the
-  spelling rides safely through stock parsers.
+- The `#` must be ATTACHED — ACKED HARD (typed 2026-07-12): whitespace is not mucked
+  with in sh, and the dialect never fights shell-comments — a `#` becomes
+  selector-introducer only when a valid coordinate character immediately PRECEDES
+  it. Mid-word `#` is not a comment-opener in any care-set shell — the spelling
+  rides safely through stock parsers.
 - The old property-suffix `.prop` (`…"$pat".matched`, USER_STORY's `.synced`) is DEAD
   in the same churn: `.` no longer introduces anything in coordinate position — dots
   belong to kind names (reverse-DNS) and to entity content only. Rendered fact-labels
   re-key identically: `sm.dorc.Package:nginx.installed` →
   `sm.dorc.Package:nginx#installed` (a new predicted-delta class for the re-bless,
   §7b).
+- **The negation suffix `!`** (standing grammar, carried forward unchanged): a
+  trailing `!` after the full coordinate marks the fact's complement sense
+  (`sm.dorc.Package:"$pkg"#installed!`, the flagship's remove-arm mark). It is a
+  mark-level suffix FOLLOWING the coordinate — never part of the selector token, so
+  §4b's selector charset is unaffected. (Surfaced by the specimen amendment pass.)
+- **The empty-entity transitional form**: an entity-less coordinate with a selector
+  spells `KIND:#sel` (`io.opentelemetry.Collector:#v0155`) — the faithful conversion
+  of the improvised empty-entity singleton bind, which the typeless floor already
+  retires on schedule (`24P` d8; `24L` §2). Transitional, not durable grammar.
 - Consequence, relaxing the unquoted-dotted-entity ⊤-reject micro-decision (né
   `24P` d4): the ambiguity DISSOLVES —
   with no `.prop` production, `sm.dorc.File:/etc/nginx.conf` parses unambiguously
@@ -191,17 +201,29 @@ delta-deliberate-koob-reading)*
   quoting remains supported and remains the style the corpus teaches for
   variable-bearing entities.
 
-### §4b — Position charsets (proposed; takes up the KNOBS `kTYANNOT` deferral)
+### §4b — Position charsets (RULED direction 2026-07-12: POSIX-in-spirit —
+`271:rul-posix-in-spirit-defaults`; takes up the KNOBS `kTYANNOT` deferral)
 
-- Kind: DNS labels joined by `.` (≥2 dots); labels case-preserved; the munge into
-  NAMEs is the landed ASCII path (`24M:ca-munge-charclass` risks stand).
-- Entity, unquoted: any run of non-whitespace excluding `:`, `#`, quote characters,
-  and `}`; anything else — including literal `#` — takes the quoted form
-  (`"..."`, with `"$var"` interpolation as today).
-- Selector token: `[a-z0-9_]+` — lowercase, digits, underscore (matches every
-  minted exemplar: `enabled`, `active`, `installed`, `matched`, `cve_clean`). No
-  quoted selectors at v1; no dots, no hyphens (reserve both). A mark failing the
-  charset is a loud parse diagnostic, never a silent ⊤.
+The human's ruling, revising the conductor's invented sets: re-use POSIX rules
+wherever a charset or lexical rule must be minted — find the POSIX rule, simplify it
+for our purposes, match it in spirit. Conservative for the spike; possibly revisited
+after. Applied:
+
+- Kind: DNS labels joined by `.` (≥2 dots) — the one deliberately non-POSIX
+  identifier space (reverse-DNS IS the identity, `24M:rul24M-reverse-dns-kinds`);
+  the munge into NAMEs is the landed ASCII path (`24M:ca-munge-charclass` risks
+  stand).
+- Selector token: a POSIX *name*, in spirit — letter or underscore first, then
+  letters/digits/underscores. Covers every minted exemplar (`enabled`, `active`,
+  `installed`, `matched`, `cve_clean`, `v0155`). No quoted selectors at v1. The
+  negation suffix `!` sits OUTSIDE the token, after the coordinate (§4a). A mark
+  failing the charset is a loud parse diagnostic, never a silent ⊤.
+- Entity, unquoted: any run of non-whitespace excluding the grammar's own
+  metacharacters (`:`, `#`, quotes, `}`); anything else takes the quoted form.
+- Quoting, here and in every future grammar-minted quoted position: POSIX quoting
+  simplified as far as possible while staying true in spirit — double quotes with
+  `"$var"` interpolation, single quotes literal; the exact simplification is
+  spelled at parser-build time under the same standing ruling.
 
 ### §4c — Multi-cell marks: brace alternation
 
@@ -250,17 +272,21 @@ configuration; the runnable bodies remain the configuration. The human's deliber
 reading of that claim is delta-deliberate-koob-reading — a reading of the `kOOB`
 redline, not a new mechanism.
 
-### §4e — The axis-invariance line (the `271:rul-invariance-speech-act` spelling)
+### §4e — The axis-invariance line (the `271:rul-invariance-speech-act` spelling;
+token form RULED 2026-07-12, the human's lean conductor-adopted)
 
     sm_dorc_Package__state_stored_only_in() {
        printf '/var/lib/dpkg\n'                  : fs
-       :                                         : user-invariant
+       :                                         : invariant:user
     }
 
-- Token grammar: `<axis>-invariant`, axis drawn from the ingredient-borne subset of
-  the ratified axis vocabulary (v1: exactly `user-invariant`).
+- Token grammar: `invariant:<axis>` — one colon-line per invariance-STATE, leaving
+  room to brace-alternate later (`invariant:{user,netns}`, composing with §4c's
+  precedent). Axis drawn from the ingredient-borne subset of the ratified axis
+  vocabulary (v1: exactly `invariant:user`). (Supersedes the conductor's
+  `user-invariant` first draft; human self-graded bikeshed-tier, form delegated.)
 - Carried on a colon-line (`:` — sh's nothing-command; strips to a harmless no-op;
-  the lend-map precedent). One line per claimed axis.
+  the lend-map precedent).
 - Scope: WHOLE-member. Invariance is a claim about the total emission's negative
   space (`272` §2's `only`-contract) — per-line invariance buys nothing (one keyed
   store keys the kind) and invites incoherent mixes.
@@ -399,25 +425,27 @@ reaches the human.
 
 ## §8 — The delta ledger (what the human rules on; everything else is assembled)
 
-- **delta-coordinate-grammar** — §4a/§4b: the attached-`#` rule; `.prop` death +
-  fact-label re-key; the position charsets; retirement of the
-  unquoted-dotted-entity ⊤-reject (né `24P` d4).
-- **delta-brace-alternation** — §4c: the exact `#{a,b}` grammar; its scope carve
-  (claim-emissions only; measurement marks stay single-cell).
-- **delta-invariance-line-spelling** — §4e: token spelling `user-invariant`;
-  colon-line carriage; whole-member scope.
-- **delta-deliberate-koob-reading** — §4d's closing claim: the ONE deliberate kOOB
-  reading over the four annotation surfaces (dimension · substrate · invariance ·
-  `dorc:` prefix). This is the explicit human reading `270` §3 reserved.
+- **delta-coordinate-grammar** — ACKED HARD 2026-07-12 (attached-`#` with
+  demanded-preceding-character; charsets REVISED to POSIX-in-spirit,
+  `271:rul-posix-in-spirit-defaults`; `.prop` death, `!` placement, empty-entity
+  transitional form, d4 retirement all ride the ack).
+- **delta-brace-alternation** — ACKED 2026-07-12 (the `#{a,b}` grammar; scope carve:
+  claim-emissions only, measurement marks stay single-cell).
+- **delta-invariance-line-spelling** — RULED 2026-07-12: the human's
+  per-invariance-state form `invariant:<axis>` adopted (§4e); brace-room reserved.
+- **delta-deliberate-koob-reading** — ACKED 2026-07-12 ("agreed at the kOOB
+  carve-outs"; his reflection banked in `271`).
 - **delta-keyed-partitioned-vocabulary** — §6: ratify keyed/partitioned; retire
-  "sensitive".
+  "sensitive". PENDING: explanation paragraph requested and delivered in-chat
+  2026-07-12; awaiting the typed word.
 - **delta-topology-ack-bundle** — the `272` §12 wanted-acks, riding here as
   promised: the member's existence (blanket) · substrate-typed emissions +
   carried-by table (reserve-slot v1) · emission-set non-interference as
   contradiction-checker (as re-roled by task 8) · never-derive-separation ·
   addresses-are-not-coordinates · the §2 formal spine · engine-supplied file-kind
   grounding · the behaviour-menu addition · the differential-as-other-half
-  verification posture.
+  verification posture. PENDING: unpacked row-by-row in-chat 2026-07-12 at the
+  human's request; awaiting the typed word.
 - **delta-value-prediction-ratifications** — the `275` items riding here as
   promised: three regimes by backing-class · backing-inheritance/per-channel
   backing sets · the cross-context transport chain (`275` §6).
@@ -436,9 +464,9 @@ reaches the human.
 | selector-dialect algebra + family amendment | TYPED, spike-provisional |
 | context slot ≡ qualifier; relational chokepoint; registry room | TYPED (`271` task 2) |
 | store member name/existence; invariance speech-act; carried-by re-role | TYPED (tasks 3/8) |
-| formal spine (§2) | conductor-proposed → delta-topology-ack-bundle |
-| exact grammar: charsets, brace alternation, invariance token | conductor-proposed → delta-coordinate-grammar / delta-brace-alternation / delta-invariance-line-spelling |
-| the deliberate kOOB reading | queued → delta-deliberate-koob-reading |
+| formal spine (§2) | conductor-proposed → delta-topology-ack-bundle (unpacked in-chat; pending) |
+| exact grammar: attached-`#`, charsets, brace alternation, invariance token | ACKED/RULED 2026-07-12 (POSIX-in-spirit charsets per `271:rul-posix-in-spirit-defaults`; `#{a,b}`; `invariant:<axis>`) |
+| the deliberate kOOB reading | ACKED 2026-07-12 |
 | keyed/partitioned vocabulary | proposed → delta-keyed-partitioned-vocabulary |
 | `272` §12 + `275` riding ratifications | → delta-topology-ack-bundle / delta-value-prediction-ratifications |
 | command-word thread | CLOSED (`271:rul-trailing-marks-stand`) |

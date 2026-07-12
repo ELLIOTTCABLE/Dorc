@@ -34,5 +34,5 @@ sm_dorc_Package__resolve() {
 
 sm_dorc_Package__state_stored_only_in() {
    printf '/var/lib/dpkg\n'                  : fs
-   :                                         : user-invariant
+   :                                         : invariant:user
 }
