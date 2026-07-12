@@ -655,6 +655,62 @@ opinion: NOT a first transform — payload-v1 (R0) ships per-inner checks under 
 and needs NO eval'er invocation text at all; the bare lane comes nearly free once
 decomposition + read-vouch chains exist; the transform tier waits on task-14's law.
 
+### direction-observable-transforms-gradient  (task 6; 2026-07-12; the human's
+viewpoint, typed; conductor-extended; DRAFTED — the two preceding gentle-acks are
+understanding-acks, NOT agreement, per his own framing)
+The human's framing, near-verbatim: probe-phase design has always been
+transforms-all-the-way-down, quietly ignorable because the set was small, fixed, and
+its NECESSITY was never in question — design attention always fell through to
+LICENSING ("how do we safely transform at all, given referential blindness" →
+authorship: a human said so; we point). The eval'er work is the first time a MENU of
+transforms exists, some possibly unnecessary to our goals — and the first time
+transform-COUNT threatens explainability-to-the-human. The oracle-author's head-state
+has so far collapsed to ONE rule — write-probes-read-only, ironclad, do-not-fuck-it-up
+— which papered over every trick (reordering, batching, the specific machine
+environment) by keeping us mostly-unobservable-while-doing-so. The new transforms are
+OBSERVABLE, which adds two layers: (1) documentation/honesty/surprise — the
+set-of-transforms must be TEACHABLE and understandable to authors whose bodies pass
+through it, where previously there was only The One; (2) — more important — **a
+gradient of trust to the licensure**: our transform choices can manufacture
+author-failures ("they replace sh with eval?! I know how sh works; I didn't expect
+eval's extremely-niche subtleties") that are nominally attributed to the author but
+sit in "attribution-but-actually-it-was-kinda-our-fault" space.
+
+Conductor extensions, drafted for the human's consideration:
+- **candidate-probe-body-contract:** the teachable artifact is an author-facing
+  PROBE-BODY EXECUTION CONTRACT — the small, stable set of guarantees a body may
+  assume (a real POSIX sh; stated env rules; may-be-batched/parallelized/reordered;
+  read-only required) — and the transform-admission criterion becomes
+  CONTRACT-PRESERVATION: a transform is admissible iff bodies passing through it are
+  observationally-equivalent-within-the-contract; otherwise fix it, bound it, or
+  reject it. Verification: a transform-equivalence differential (run the body bare vs
+  through the transform; compare) — the `24T:L7` pattern generalized; our stdlib-CI
+  net, with documentation the goalpost (rul-net-quality-u-curve compliant). Honest
+  pushback retained: The One rule was never truly alone — batching/parallel/tempdir
+  assumptions could already bite an author — the contract was LATENT and we were
+  lucky; what is new is the magnitude of the deltas, hence write-it-down.
+- **candidate-law-fair-attribution (a razor rider):** the horizon doctrine
+  (IMPLEMENTATION: errors we can't attribute are necessarily our fault) gains a
+  corollary — errors UNFAIRLY attributed are also ours, and worse, because they wear
+  the author's name. Fairness test for admitting a transform: could a competent
+  author who read only the contract-page have avoided this failure?
+  razor-attributable-line asks whether a line can be pointed at; this asks whether
+  pointing is JUST. Registration (KNOBS-adjacent / spike-CLAUDE-adjacent) is the
+  human's call, per the rul-lint-never-drives-design precedent.
+- **menu re-rank under the gradient (conductor):** the lens RANKS the transform menu
+  differently than the engineering lens did — evidence it does real work: bare stays
+  top (real everything); MATERIALIZE rises to second (real sh, real exec, real env —
+  deltas ≈ one PATH entry and argv0 trivia); scatter-HOIST's deltas are at least
+  license-SHAPED (each visible in the why-chain); SUBSHELL-EVAL-LOWERING falls from
+  cutest to WORST — it is precisely the nit's scenario (unexported leak-in, `$$`,
+  option inheritance, evaluator identity: niche sh-vs-eval subtleties no author
+  should owe knowledge of).
+- **v1 upshot:** per-inner checks are contract-INVISIBLE — each ships as an ordinary
+  Dorc-constructed invocation, the same species every existing probe already is — so
+  payload-v1 introduces ZERO new observable transforms; and the transform menu
+  acquires a SECOND gate, teachability/contract-preservation, alongside task-14's
+  license gate.
+
 ## Direction & open threads
 
 - **thread-env-cannot-exec-functions (flagged during task 6, 2026-07-11; PRE-EXISTING
