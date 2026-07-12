@@ -9,12 +9,12 @@ apt_get__predict() {
    pkg : sm.dorc.Package = "$1"
    if [ "${2-}" = "" ]; then
       case $verb in
-         install) dpkg-query -W "$pkg" >/dev/null 2>&1 : sm.dorc.Package:"$pkg".installed ;;
+         install) dpkg-query -W "$pkg" >/dev/null 2>&1 : sm.dorc.Package:"$pkg"#installed ;;
       esac
    fi
 }
 
-apt_get__touches() {
+apt_get__disturbs() {
    while [ "${1#-}" != "$1" ]; do shift; done
    verb=$1; shift
    while [ "${1#-}" != "$1" ]; do shift; done
@@ -30,4 +30,9 @@ apt_get__is_converged() {
 
 sm_dorc_Package__resolve() {
    dpkg-query -W -f '${Package}\n' -- "$1" 2>/dev/null || printf '%s\n' "$1"
+}
+
+sm_dorc_Package__state_stored_only_in() {
+   printf '/var/lib/dpkg\n'                  : fs
+   :                                         : user-invariant
 }
