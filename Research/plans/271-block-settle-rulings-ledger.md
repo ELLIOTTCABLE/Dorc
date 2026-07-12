@@ -1039,6 +1039,31 @@ pope-sin/not-sin boundary.
 
 ## Direction & open threads
 
+- **rider-value-recipe-reshape-capture-seams (hand-carried 2026-07-12 from a
+  sibling-conductor's standing-work review; obligation on the block-rebuild
+  value-recipe-reshape brief):** the reshape brief must NAME AND RESERVE (not
+  build) the two seams the capture lane's deeper slices will need:
+  (seam-pipeline-order) the **post-probe value re-bind** — the value plane
+  currently runs strictly BEFORE the probe; folding a captured literal back in
+  requires either a second value-flow pass or a fold-time substitution channel
+  (`219` q-3.e/q-4.b: the back-edge is the deepest architectural cost in the
+  capture design and easy to bake wrong); (seam-literal-provenance) **provenance
+  of probe-sourced literals** — a value-plane-visible distinction between
+  source-literal and probe-captured bytes (`219` q-4.c; inv-probe-sourced-values
+  enforcement); the cause-tagged reshape should leave the provenance slot open
+  even if v1 routes provenance through the site-keyed record lane. Substance
+  deliberately inlined here — the originating list is auto-rewritten and off
+  every reading path; task-7's ruling further specifies what the provenance
+  must carry.
+- **rider-entity-algebra-uniqueness-seam (same handoff; obligation on the
+  task-12 entity-algebra design note):** reserve the **uniqueness-bit** seam in
+  the coordinate/comparison representation — no strong update exists today
+  (`Kill` accumulates; the bit is absent) and the standing 231 fence rules
+  "probably unique" may only DEMOTE, never license — so the note reserves
+  representation room for a future uniqueness bit WITHOUT building strong-update,
+  alongside the `24S:A7` context-qualifier seam and the observe-backing-widening
+  backing-SETS seam already queued there.
+
 - **thread-task-7-sitting-steers (2026-07-12; the human's mid-read turn-two
   responses, all TYPED in-chat):** (steer-stability-gradient) "stability" is a
   GRADIENT deserving first-class treatment — a design round or a typesystem
