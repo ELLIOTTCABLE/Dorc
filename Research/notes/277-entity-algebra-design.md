@@ -281,21 +281,20 @@ selector in bind position at v1 — facts about cells attach via marks on
 probing/emitting commands. Strip erases the bind to plain assignment semantics as
 landed.
 
-### §4g — The command-word thread (open; delta-command-word-disposition)
+### §4g — The command-word thread (RESOLVED 2026-07-12; né delta-command-word-disposition)
 
 `271:rul-dorc-prefix-head-synthesis` banked the human's lean toward revisiting old
 syntax toward command-word spellings (127-loud beats tail-position corruption) and
-parked it at this sitting. Held open pending the human's answer to
-question-command-word-dorcisms (posed in-chat, 2026-07-12); the analysis on record: trailing marks on real commands corrupt silently under
-`sh file` (marks become argv — the printf-emission case actually mis-emits), while
-the corruption surface is narrowed by the `#!/usr/bin/env dorc-sh` shebang
-(loud-fails direct execution on dorc-less boxes), the marker gate, and `dorc strip`;
-the colon-line marks are already command-shaped and inert; `#`-selector and the mark
-grammar are typed; the spike is the kTYANNOT livability experiment. Disposition
-recorded here when ruled: either (a) trailing marks stand for the spike and
-command-word respelling is the named vN+1 candidate (syntax is marker-gated —
-`276:rul-verdicts-never-stable` — so legally revisitable), or (b) a narrower/other
-shape the human directs.
+parked it at this sitting. RESOLVED by `271:rul-trailing-marks-stand` (typed):
+trailing marks stand for the spike; the command-word idea retires as a passing
+thought, not a roadmap candidate. The analysis that settled it, kept on record:
+trailing marks on real commands corrupt silently under `sh file` (marks become
+argv — the printf-emission case actually mis-emits), but the corruption surface is
+narrowed by the `#!/usr/bin/env dorc-sh` shebang (loud-fails direct execution on
+dorc-less boxes), the marker gate, and `dorc strip`; the colon-line marks are
+already command-shaped and inert; `#`-selector and the mark grammar are typed; the
+spike is the kTYANNOT livability experiment. Syntax remains marker-gated
+(`276:rul-verdicts-never-stable`), so nothing is foreclosed.
 
 ## §5 — Seams reserved (representation room; build nothing)
 
@@ -422,7 +421,8 @@ reaches the human.
 - **delta-value-prediction-ratifications** — the `275` items riding here as
   promised: three regimes by backing-class · backing-inheritance/per-channel
   backing sets · the cross-context transport chain (`275` §6).
-- **delta-command-word-disposition** — §4g; question-command-word-dorcisms.
+- **delta-command-word-disposition** — RESOLVED 2026-07-12
+  (`271:rul-trailing-marks-stand`); recorded in §4g; nothing left for the pass.
 - **delta-specimen-amendments** — the §7a edits, reviewed in-code (the `24P` §8
   precedent: ack the design in the files).
 
@@ -441,6 +441,6 @@ reaches the human.
 | the deliberate kOOB reading | queued → delta-deliberate-koob-reading |
 | keyed/partitioned vocabulary | proposed → delta-keyed-partitioned-vocabulary |
 | `272` §12 + `275` riding ratifications | → delta-topology-ack-bundle / delta-value-prediction-ratifications |
-| command-word thread | OPEN → delta-command-word-disposition |
+| command-word thread | CLOSED (`271:rul-trailing-marks-stand`) |
 | specimen amendments | staged → delta-specimen-amendments (in-code) |
 | seams (§5) | reserve-only; carried into rebuild + reshape briefs |
