@@ -1020,6 +1020,23 @@ security-boundary doctrine (`plans/102`). Mid-session evaluator swap: the shim
 FREEZES the session's choice at establishment — later PATH mutation on the host
 cannot move a running session (deterministic); a deleted pinned binary 127s → runs.
 
+### rul-sin-ordering  (task-7 sitting; 2026-07-12; TYPED in-chat — the razor's
+severity scale, sharpening candidate-law-fair-attribution into an ordered ladder)
+Worst first: (1) **pope-sin** — MIS-attributed error: Dorc names a human and a
+fix-here; they comply, and Dorc was wrong — it-wouldn't-have-failed-that-way-if-
+Dorc-hadn't-X. (2) **cardinal-sin** — UNattributed error: Dorc-did-it, flat and
+simple — including chosen designs that convert a Truth About The World into some
+human's problem that didn't exist before they installed Dorc
+(traveled-wrong-elision where everybody made the correct local choice is the class
+in a nutshell; 233-class). (3) **mild-sin** — attributed error we could have made
+easier on everyone and failed to: insufficient warnings, value left on the table,
+wasted time/energy. (4) **not-sin** — our genuine best was delivered and a HUMAN
+failed against it (author saw the warnings and did not listen; author never read
+the described tool's manpage). Consumers: every fold/elision failure-mode analysis
+from task 7 onward slots its modes into this scale; fair-attribution's
+could-a-competent-contract-reader-have-avoided-it test governs the
+pope-sin/not-sin boundary.
+
 ## Direction & open threads
 
 - **thread-delegation-head (task 6, 2026-07-12; OPEN — the human's confirm-or-deny
