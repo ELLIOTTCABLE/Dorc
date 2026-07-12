@@ -1037,7 +1037,50 @@ from task 7 onward slots its modes into this scale; fair-attribution's
 could-a-competent-contract-reader-have-avoided-it test governs the
 pope-sin/not-sin boundary.
 
+### rul-measurement-is-authorship  (task-7 sitting; 2026-07-12; TYPED in-chat —
+doctrine; CLAUDE.md sibling-registration next to the 'skip'-hides-complexity
+warning CLAIMED BY THE HUMAN, queued, his edit)
+The engine's only knowledge of the world is (1) the CFG and (2) API-endpoint
+observables of AUTHORED oracle-functions (`cmd__is_converged()` rc,
+`cmd__predict()` rc, `cmd__predict()` stdout, …). "Measurement" as a category
+distinct from authorship is borderline misleading: probes structurally cannot
+measure anything except the output of authored bodies — measurement IS
+authorship; "we teach authors how to measure, and then vouchsafe those
+measurements to us." (Same vibe: we never know tool-rcs, we know PREDICT-rcs —
+constructed outputs of a-variety-of-tools'-rcs filtered through author skill.)
+Companion typed context (the dimensionality hard-ack, same message): `predict`
+was NAMED because stdout-oracles were visibly coming — rc-"prediction" alone was
+too narrow to deserve the word; realizing that modeled textual output is
+wildly-unreliable/art-not-science forced the global realization that ALL
+observables are prediction-in-fact, rc included, just less-obviously-hard.
+Consequence recorded: the conductor's three-provenance system-taxonomy
+(probe-measured / author-predicted / analytic) is RETRACTED at system level —
+the correct registry is the claim-chain (which authored surface, which line,
+which idiom); the surviving residue is thread-delegation-vs-composed-bytes
+below, plus the who-am-I derivation route (a value with NO probe-time execution
+at all — resolved from the context record via lend-map/ρ claims; no staleness
+axis by construction).
+
 ## Direction & open threads
+
+- **thread-delegation-vs-composed-bytes (task-7 sitting; 2026-07-12; the
+  surviving fork after rul-measurement-is-authorship; conductor-framed, open):**
+  within ONE predict body, the ruled per-channel vocabulary already
+  distinguishes the delegation idiom (the tool itself speaks at probe time,
+  through the author's routing — wrongness-class: STALENESS-ONLY; the probe-time
+  bytes cannot be wrong-at-birth) from the printf idiom (author-composed
+  assertion of what a tool would say, parameterized by probe-read state —
+  wrongness-class: WRONG-AT-BIRTH, art-not-science, version-skew-exposed;
+  attributed to the printf line, razor-passing). The open fork: which
+  fold-consumers may the validity-algorithm let each idiom feed — uniform
+  treatment (both are attributed knives, done), or tiered (composed-bytes folds
+  get louder why-lens marking / stricter gates / exclusion from
+  artifact-entering folds)? The postponed-render coupling: inv-probe-sourced-
+  values' phrase "probe-provenance" was worded in the rc world and is AMBIGUOUS
+  here — probe-EXECUTED (printf output qualifies) vs world-SPOKEN (delegation
+  only); the invariant's wording must not decide this silently when render
+  work resumes. This is the first concrete instance of the human's
+  does-the-validity-algorithm-depend-on-claim-type question.
 
 - **rider-value-recipe-reshape-capture-seams (hand-carried 2026-07-12 from a
   sibling-conductor's standing-work review; obligation on the block-rebuild
