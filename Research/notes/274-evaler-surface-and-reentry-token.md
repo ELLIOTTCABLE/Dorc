@@ -284,7 +284,8 @@ via this surface, the capture via task 7.
 ## §12 — Final-pass findings (2026-07-12; the human's ordered corpus-standards pass:
 four-by-two, gradual-enhancement walk, sibling slotting — full record in-chat)
 
-- **finding-scope-clarification (the §1 table was book-ambiguous; REAL catch):** the
+- **finding-scope-clarification (the §1 table was book-ambiguous; REAL catch;
+  disposition human-ACKED 2026-07-12 at task-6 close):** the
   three-spelling semantics are an ORACLE-BODY surface. In BOOKS, a bare `sh -c` site
   rides the stdlib sh-oracle's vouch and decomposes classically (the ShellCheck-taught
   idioms keep their full value; the admin story is untouched). In ORACLE BODIES, a
@@ -293,7 +294,8 @@ four-by-two, gradual-enhancement walk, sibling slotting — full record in-chat)
   to sh, plus hint-descent. No conflict existed once site-vs-body-line was stated;
   the §1 table should be read with this scope note.
 - **finding-row-three-in-verdict-bodies (the four-by-two other-phase catch; a cliff
-  relocated):** guard-building inserts STRIPPED verdict-function bodies into the
+  relocated; disposition human-ACKED 2026-07-12 at task-6 close — guard-building
+  declines is the ruled shape):** guard-building inserts STRIPPED verdict-function bodies into the
   APPLY artifact — and strip leaves typed `dorc-sh` untouched (documented-dangle),
   so a row-3 token inside an `is_converged` body would surface as a broken guard in
   the ADMIN's plan (wrong person hurt; plan-is-a-script promise broken). Disposition
@@ -305,7 +307,8 @@ four-by-two, gradual-enhancement walk, sibling slotting — full record in-chat)
   only in the scope-WIDENING direction (more selected, more checked). Rider on the
   invited-rooms typing: hint-lane edges may widen scope, never narrow it, and never
   license.
-- **finding-env-ownership-confirmed (the subagent sweep, adjudicated):** bare-`env`
+- **finding-env-ownership-confirmed (the subagent sweep, adjudicated; the six riders
+  human-ACKED 2026-07-12 at task-6 close — they bind as build obligations):** bare-`env`
   ownership SURVIVES with six riders: (r1) the recognized claim-grammar is SYNTACTIC
   and enumerated — bare `env`, assignments, `-i`; static command-word required;
   everything else (path-qualified `/usr/bin/env`, `-u` for now, `-S`/`-C`/`-P`/
@@ -353,19 +356,24 @@ four-by-two, gradual-enhancement walk, sibling slotting — full record in-chat)
 
 ## §13 — Status table
 
+**Arc CLOSED 2026-07-12** (`271` task map item 6): the blanket ack (typed same date;
+covering merge + synthesis + §2 split + strip wording) plus the two close acks
+(env riders; the two final-pass dispositions) discharge every awaiting-ack row below.
+
 | component | status |
 |---|---|
 | eval'er vocabulary (né carrier) | TYPED (`271:rul-evaler-vocabulary`) |
-| merge: no structure member | DRAFTED-awaiting-ack (decider was the human's; audit conductor's) |
-| env-claim inversion (idiom ladder) | DRAFTED-awaiting-ack (human's proposal, conductor-endorsed; gap re-scored) |
+| merge: no structure member | TYPED (blanket ack 2026-07-12, as refined by the self-attack round) |
+| env-claim inversion (idiom ladder) | TYPED (2026-07-12: blanket ack + the env-riders close-ack; §12 riders r1–r6 bind) |
 | eval killed as spelling | TYPED |
 | fixed-set floor direction | TYPED (refined to one own-token by the synthesis) |
-| the `dorc:sh` synthesis (three spellings) | human-strawmanned; shaping TYPED (four dispositions); formal stamp owed at task-6 close |
-| descend-don't-license | shape settled in the synthesis; invited-rooms TYPESYSTEM tier TYPED as direction |
+| the `dorc:sh` synthesis (three spellings) | TYPED (blanket ack; four shaping dispositions; formal stamp recorded at task-6 close 2026-07-12) |
+| descend-don't-license | settled in the synthesis; invited-rooms TYPESYSTEM tier TYPED as direction |
 | row-3 documented-dangle | TYPED |
 | no-nested-annotation | TYPED |
-| strip = prefix-erasure + shebang rewrite only | follows from typed row-3 ruling; totalistic-munge carve wording owed formal ratification |
+| strip = prefix-erasure + shebang rewrite only | TYPED (the blanket ack covers the strip wording; the rul24-totalistic-munge carve = shebang-runner rewrite only, no in-body name-rewriting) |
 | pin-transform + shim + session-establishment + run-id naming + smoke-test | conductor design, DST-walked; unbuilt |
-| mechanism-native vs content-claimed ρ-split (§2) | NEW at minting; conductor; wants the human's eye |
-| probe-shipping split; hoist-doubt; transitive-by-row-3 | direction-tier; task-14-coupled |
-| observable-transforms gradient · fair-attribution · probe-body contract | human-voiced / human-endorsed; registration routed (root docs = his) |
+| mechanism-native vs content-claimed ρ-split (§2) | TYPED (blanket ack 2026-07-12) |
+| probe-shipping split; hoist-doubt; transitive-by-row-3 | direction-tier; task-14-coupled — NOT closed by the arc close |
+| observable-transforms gradient · fair-attribution · probe-body contract | human-voiced / human-endorsed; registration routed (root docs = his) — outlives the arc |
+| finding-scope-clarification · finding-row-three dispositions | TYPED (close acks 2026-07-12) |

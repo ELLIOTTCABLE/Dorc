@@ -52,8 +52,16 @@ while this ledger carries the rulings and the arc-pointers, never the design bod
    finding-row-three-in-verdict-bodies (an admin-facing cliff, relocated to the
    engineer via guard-building-declines) and finding-scope-clarification (the
    three-spelling table is an oracle-body surface; books ride the stdlib sh-oracle
-   unchanged). Remaining for close: the human's read of the env riders + the two
-   final-pass dispositions.
+   unchanged). **CLOSED 2026-07-12 — the two owed acks TYPED ("ack both"):
+   (ack-env-riders) the env research read; the six riders of `274` §12
+   finding-env-ownership-confirmed bind as build obligations; the blanket-ack
+   carve-out lifts, so rul-env-claim-inversion is now fully typed;
+   (ack-final-pass-dispositions) both final-pass dispositions accepted —
+   finding-scope-clarification (oracle-body surface; books unchanged) and
+   finding-row-three-in-verdict-bodies (guard-building declines row-3-bearing
+   bodies; guard→run + hint naming the engineer's line). With these, the
+   `274` §13 "formal stamp owed at task-6 close" row discharges: the dorc:sh
+   synthesis stamp rests on the blanket ack, formalized at this close.**
 7. adj-capture-claim (né `219` fork-capture-claim-type) — probe-captured stdout:
    OutClaim-observation vs new claim-type.
 8. adj-survival-flag-outcome (né `24S:A2` + the `--trust-footprints` rename) — the
@@ -515,8 +523,9 @@ side swaps in the demonstrably-present running shell — was killed BY ITS AUTHO
 same message (probe-apply divergence); any future scheme in this space must pass
 probe-apply fidelity first.
 
-### rul-evaler-merge-no-structure-member  (task 6; 2026-07-11; DRAFTED-AWAITING-ACK —
-the human's decider, the conductor's audit)
+### rul-evaler-merge-no-structure-member  (task 6; 2026-07-11; TYPED 2026-07-12 via
+the blanket ack, as refined by the self-attack round — the human's decider, the
+conductor's audit)
 The human's settling decider (typed, with a stated lean to env-unknown-idiom): a
 separate structure-member is justified only if the two members' argparses would
 genuinely DIVERGE in control-flow ("entire branches filled out in one licensure may be
@@ -570,8 +579,10 @@ equally). (5) The bounded-downside backstop: even a genuinely-forked future tool
 costs the merge only body-ergonomics, never expressiveness or soundness — forked
 trees spell as sibling arms in one body.
 
-### rul-env-claim-inversion  (task 6; 2026-07-11; DRAFTED-AWAITING-ACK — the human's
-counter-proposal, conductor-endorsed and sharpened)
+### rul-env-claim-inversion  (task 6; 2026-07-11; TYPED 2026-07-12 — the non-env
+half via the blanket ack; the env-idiom half acked at task-6 close after the env
+research read, with the `274` §12 finding-env-ownership-confirmed riders r1–r6
+binding — the human's counter-proposal, conductor-endorsed and sharpened)
 The ρ-claim reading of a predict body INVERTS from the earlier draft: **bare
 command-position delegation claims NOTHING about ρ** (env-⊤: unshippable closure,
 no env value-flow believed through the body), and the passthrough claim is spelled
@@ -899,9 +910,10 @@ route to the strip surface at close.
   open for further keywords; parser work + dialect-version gating). Shared by both:
   the strip/probe target asymmetry above; the shebang rewrite.
 
-### rul-dorc-prefix-head-synthesis  (task 6; 2026-07-12; DRAFTED — human-strawmanned
-as the sum of option-own-token + option-marked-sh; conductor-graded against the
-review rubric; LEADING candidate, awaiting the human's shaping)
+### rul-dorc-prefix-head-synthesis  (task 6; 2026-07-12; TYPED same date — covered
+by the blanket ack, shaped by the four typed sub-question dispositions, formal
+stamp recorded at task-6 close; human-strawmanned as the sum of option-own-token +
+option-marked-sh; conductor-graded against the review rubric)
 Three spellings, one design: **bare `sh`** = escape — analysis DESCENDS but
 descent is hint-lane ONLY (test-pinnable invariant: descent discoveries never cross
 into licensing absent the mark; no elision/probe/rearrangement licensed past an
