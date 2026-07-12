@@ -44,12 +44,12 @@ own document when authored; its needed material is carried in full below.
    durable = **`notes/275`**. Rulings: rul-sin-ordering ·
    rul-measurement-is-authorship · rul-orthogonality-counterexample-test ·
    rul-composed-bytes-defer-and-floor · rul-value-prediction-species (all below).
-8. adj-survival-flag-outcome (né `24S:A2` + the `--trust-footprints` rename) — IN
-   PROGRESS (the live Fable sitting, opened 2026-07-12 post-triage). The central
-   trust ruling: flag gates the OUTCOME; outcome-centric name. Couplings
-   accrued: re-read adjudicability against DERIVED-not-declared topology (`272`
-   §11); the `273` §4 safety-inversion is its sharpening; the invited-rooms-values
-   rule (`275` §4) — hint-lane values never feed survival.
+8. adj-survival-flag-outcome (né `24S:A2` + the `--trust-footprints` rename) —
+   CLOSED 2026-07-12: rul-no-claim-type-gating · rul-invariance-speech-act ·
+   rul-flag-is-razor-residue · rul-flag-named-risk-faultless-skips (all typed).
+   All three accrued couplings discharged (steady-state carve closes
+   vouch-by-construction; fences acked; adjudicability re-read routed to
+   `270:adj-adjudicability-list`).
 9. adj-stopping-point (né `24T:P-A6`) — typed ratification of the derivable analyzer
    ceiling (const-resolvability × no-escalation × no-cross-host). `274` §12 noted
    the reentry strengthens the candidate. Triaged CHEAP
@@ -650,20 +650,24 @@ insertion — the ban protects design-layer reasoning from that failure mode.
 renders) and is sanctioned there. (Consistent with AGENTS.md's own parenthetical
 "although I sometimes do in human-facing docs"; that root doc stays human-owned.)
 
-### thread-survival-flag-rename  (2026-07-12; human proposal on the table)
-The human's naming doctrine, typed: the RAZOR belongs in the flag's name — it is
-not merely a Dorc-internal tool but the product being sold; the user must
-themselves buy in to attribution-having-value, to the tier that matters being
-what-comes-next rather than whether-you-failed. Proposal: **`--risk-unfixable-
-skips`** — you are ALWAYS risking skips (vouch-tier wrong-elision is real,
-rarely design-discussed because little short of the Great Wall of Lint helps);
-the opt-in is risking skips you cannot fix by yelling at somebody in particular.
-Human self-flagged the gloss as not-quite-literally-true; conductor opinion
-delivered in-chat (gloss worthy; two literal gaps owed to the help-text receipt
-— state self-heals next plan; cause is investigable, only the POINTER is lost —
-plus the literalist alternative `--risk-unanswerable-skips`, negating
-IMPLEMENTATION.md's "someone is answerable" promise verbatim). Awaiting the
-human's pick; the rename ruling mints then.
+### rul-flag-named-risk-faultless-skips  (2026-07-12; TYPED — "let's stamp that
+one"; task 8 CLOSED with this stamp)
+The survival flag is **`--risk-faultless-skips`**. Rationale (human): the razor
+belongs in the name — it is the product being sold, and this spelling conveys
+the razor's SOURCE: union-sets of nobody-having-a-single-fault composing into a
+skip with no single human fault. Rejected en route: `--risk-unfixable-skips`
+(human's own, retracted — gloss overstated), `--risky-skips` (teaches nothing),
+`--risk-unattributable-skips` (long, misspellable). Help-text receipt owes one
+disambiguation: faultless = "when it bites, no single human was at fault" —
+never "this skip is harmless"; state self-heals on the next plan, diagnosis is
+the admin's. Riding the close: task8-standing-fences-restated ACKED (hint-lane
+values never feed survival · keying never feeds survival ·
+never-derive-separation untouched — the flag permits acting on separation
+claims, never manufactures them · per-invocation, never a default);
+task8-adjudicability-routing conductor-routed to `270:adj-adjudicability-list`
+(lint/differential targets retargeted to the authored inputs incl. the
+invariance lines; deadline unchanged at kinds-go-community) — human annotation:
+~meh'd, not internalized, no decision was owed; revisit only if it bites.
 
 ### thread-cargo-cult-cohort-size  (2026-07-12; human-voiced story + the
 coextension test, conductor-answered)
