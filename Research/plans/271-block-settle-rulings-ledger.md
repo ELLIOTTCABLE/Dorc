@@ -925,8 +925,26 @@ route to the strip surface at close.
   **→ RESOLVED-IN-DRAFT 2026-07-12 by rul-dorc-sh-reentry-token** (the human's own
   three-paragraph assembly: conditional ack whose load-bearing premise the
   pin-transform enforces by construction, plus the dual-keyword split; candidates
-  (a)+(d) merged, candidate (b) dead, candidate (c) satisfied in its
-  command-shaped form).
+  (a)+(d) merged, ~~candidate (b) dead~~, candidate (c) satisfied in its
+  command-shaped form). **Correction at the full-review pass (same date):
+  candidate (b) — mark-decorated real-`sh` head — was killed too hastily and is
+  RESURRECTED as a live bundle** (it converges with fork-3's loud-annotation shape
+  in mark-position rather than head-position). Review findings, banked:
+  (finding-dangling-class-is-minted) the transitive dangling-token class EXISTS
+  ONLY under an own-token spelling — under a marked-real-`sh` spelling, payload
+  strings contain only world-names with world-semantics, nothing dorc-ish can
+  dangle, `24T:imp-P6` purity is total, and the transitive question DISSOLVES
+  rather than needing a fence or a shim; (finding-construct-forecloses-shim) a
+  minted command-position construct (fork-3 head-form) is not PATH-resolvable, so
+  it FORECLOSES the shim and with it any transitive support — choosing it and
+  ruling transitive-in-scope are incompatible; the transitive scope-ruling
+  therefore nearly decides the lexeme fork mechanically;
+  (finding-mark-strip-purity) the marked-`sh` bundle needs NO
+  rul24-totalistic-munge carve — strip stays pure erasure (mark erases; real `sh`
+  head remains; run-blind holds) — while its ship-lane pinning becomes a
+  MARK-LICENSED head-substitution inside authored sh (the author's mark is the
+  opt-in; a bigger task-14 item than binding an own-token, but licensed, not
+  silent).
 
 - **thread-env-cannot-exec-functions (flagged during task 6, 2026-07-11; PRE-EXISTING
   landmine, not new debt):** `env` execs binaries via PATH — it cannot invoke a shell
