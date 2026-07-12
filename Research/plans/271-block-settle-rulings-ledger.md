@@ -795,15 +795,43 @@ route to the strip surface at close.
 
 **The spelling fork (the human's options 1/2/3, 2026-07-12; he is on the fence
 1-vs-2/3 and finds 2-vs-3 amenable to different investigations; conductor leans):**
-- fork-ship-shim (1: really ship a `dorc-sh` PATH-member to hosts) — **FIRMLY
-  DISFAVORED (conductor):** it degenerates on inspection. A host-side shim either
-  re-resolves `sh` at use-time (forfeiting the exact pinning the transform-nit
-  exists to provide) or is generated per-session with the resolved path baked in
-  (= the ship-time transform with extra steps, plus host footprint against the
-  agentless ethos, plus a missing/stale-shim failure mode, plus the writable-fs
-  residual). The engine knows the binding at ship-time; a host file adds
-  indirection and no information. (dorc-sh-the-binary continues to exist
-  controller-side regardless; the question was only whether HOSTS need it: no.)
+- fork-ship-shim (1: really ship a `dorc-sh` PATH-member to hosts) — ~~FIRMLY
+  DISFAVORED~~ **CONDITIONALIZED (human catch, 2026-07-12): the disfavor-verdict
+  held only under an unstated fence — "…because we don't support the TRANSITIVE
+  case."** The missed class: `dorc-sh` occurrences the ship-transform cannot reach
+  because they are not analyzer-visible reentry-heads — (i) string-interior
+  nestings (`dorc-sh -c 'bash -c "dorc-sh -c …"'` — the inner token is bytes inside
+  an opaque/foreign payload; transform and strip BOTH never rewrite string
+  interiors, by law); (ii) operand-position/combinator cases (`xargs dorc-sh -c …`,
+  `find -exec dorc-sh …` — the token is a combinator's operand, not a head; the
+  idiomatic sub-class, the one that genuinely bites). A real PATH-member serves the
+  whole class by the only mechanism Unix has that composes through arbitrary
+  indirection: name-resolution at exec-time. "A core, boring, functional, real
+  UNIX-object with all the precise expected behaviour of one" (the human — noting
+  he is NOT arguing for it, only that the analysis missed it). Corrected variant
+  space: **transform-only + explicit fence** (transitive class unsupported-by-law;
+  `24T:imp-P6`'s dorcism-in-payload lint is already the string-interior fence's
+  enforcement arm; the combinator sub-case has a cheap taught repair — respell to
+  head position, e.g. a `while read` loop); **shim-only, per-run** (temp shim +
+  PATH-prepend scoped to the probe's dynamic extent: ONE mechanism for every
+  occurrence-class; zero text-transform, shrinking the task-14 surface; pinning
+  relocates from text-substitution into the controlled probe PATH; also dissolves
+  the env-cannot-exec-functions landmine for the reentry primitive specifically,
+  since a file IS execable by env-headed closures; costs — authored PATH-scrubbing
+  closures must weave the shim-dir, writable-fs residual, DST/fs seam, per-run
+  cleanup; no meaning outside the probe's extent, matching abandon-dorc honesty);
+  **belt-and-suspenders** (transform heads + shim for the rest). Conductor lean,
+  hedged: fence-for-v1 (transform-only), shim-only-per-run as the strongest
+  challenger IF the human rules the transitive class in-scope. THE SCOPE RULING IS
+  HIS: support-transitive vs fence-transitive.
+  **The offramp half (his forgotten argument #2, reconstructed):** strip shares the
+  EXACT same reachability boundary — analyzer reach. Syntax-position `dorc-sh`
+  rewrites to `sh`; string-interior occurrences survive strip un-rewritten and 127
+  on a dorc-less box, so run-blind-post-uninstall FAILS for precisely the
+  transitive class. No strip-side repair exists that doesn't violate
+  never-rewrite-string-interiors; the honest offramp answer is the same fence
+  (imp-P6's authoring-time lint), meaning ONE fence covers both lanes — the
+  ship-transform's limit and strip's limit are the same limit.
 - fork-sh-shaped-keyword (2) vs fork-loud-annotation (3) — **conductor leans 3,
   moderately (~60/40). Decisive observation:** marked oracle files are ALREADY
   non-runnable unstripped under stock shells (kTYANNOT-inline is verified
