@@ -541,7 +541,7 @@ member). Backing-inheritance + three-regimes + transport-chain: direction-tier a
 (hedged), formal ratification rides the entity-algebra note + its adversarial
 crosscheck. Routed consumers: `275` §11.
 
-## Rulings & threads (task-8 sitting — IN PROGRESS 2026-07-12)
+## Rulings & threads (task-8 sitting — CLOSED 2026-07-12)
 
 ### rul-no-claim-type-gating  (2026-07-12; TYPED — "hard ack on the 'not flagging
 by claim type'"; the NEGATIVE half only)
@@ -550,9 +550,11 @@ derivations, lend-entries, value-predictions...) — claim-type gating mis-carve
 risk because danger is consumer-relative (the `273` §4 safety-inversion), the
 species-list grows every round, and the admin's consent object is a risk-class, not
 a mechanism. The POSITIVE half — precisely which outcome(s) the flag gates, and
-whether ONE flag suffices — is the live thread below; not yet ruled.
+whether ONE flag suffices — was ruled later in the sitting:
+rul-flag-is-razor-residue.
 
-### thread-surprise-anatomy-of-the-bite  (2026-07-12; human-voiced, in-flight)
+### thread-surprise-anatomy-of-the-bite  (2026-07-12; human-voiced; subsumed at
+close — rul-flag-is-razor-residue makes the coherence a corollary)
 The flagged class is flagged not only for bite-severity but for
 bite-UNFAMILIARITY: ops-people have no folk-vocabulary for "a stranger's incomplete
 at-most claim un-ran a line I never guarded," while "I checked as alice and mutated
