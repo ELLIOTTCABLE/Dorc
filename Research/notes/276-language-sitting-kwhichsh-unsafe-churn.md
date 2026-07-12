@@ -252,7 +252,13 @@ unscheduled, cheap at any time.
 
 ## Still open in this sitting's carve
 
-- **trap** — human-DEFERRED 2026-07-12 (wallclock/token budget; graded tractable, attack later). (fold-in; genuinely undesigned — `plans/064`:13's one-liner is the entire corpus
+- **trap** — v1 disposition gentle-ACKED (typed 2026-07-12, the task-12 checkpoint
+  sweep: "unmodeled trap is probably fine for now ... it annoys me but there's too
+  much else to do"): t2 stands — trap is recognized-but-unmodeled, registration
+  walls loudly with a named hint; t1 (the pin-what-tip-does fixture-errand) rides
+  block-rebuild as a conductor-tier rider; deeper modeling stays a language-round
+  item. (Original entry: human-DEFERRED same date; fold-in; genuinely undesigned —
+  `plans/064`:13's one-liner is the entire corpus
   treatment; `set -e` earned round 20V, trap never did). Proposed close (conductor, cheap):
   (t1) fixture-errand — pin what tip actually does on a trap-registering book
   (silently-ordinary-command would be a soundness bug; wall is fine); (t2) v1 disposition —
