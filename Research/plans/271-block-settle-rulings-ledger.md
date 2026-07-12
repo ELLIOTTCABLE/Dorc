@@ -44,32 +44,51 @@ own document when authored; its needed material is carried in full below.
    durable = **`notes/275`**. Rulings: rul-sin-ordering ·
    rul-measurement-is-authorship · rul-orthogonality-counterexample-test ·
    rul-composed-bytes-defer-and-floor · rul-value-prediction-species (all below).
-8. adj-survival-flag-outcome (né `24S:A2` + the `--trust-footprints` rename) — the
-   central trust ruling: flag gates the OUTCOME; outcome-centric name. Couplings
+8. adj-survival-flag-outcome (né `24S:A2` + the `--trust-footprints` rename) — IN
+   PROGRESS (the live Fable sitting, opened 2026-07-12 post-triage). The central
+   trust ruling: flag gates the OUTCOME; outcome-centric name. Couplings
    accrued: re-read adjudicability against DERIVED-not-declared topology (`272`
    §11); the `273` §4 safety-inversion is its sharpening; the invited-rooms-values
    rule (`275` §4) — hint-lane values never feed survival.
 9. adj-stopping-point (né `24T:P-A6`) — typed ratification of the derivable analyzer
    ceiling (const-resolvability × no-escalation × no-cross-host). `274` §12 noted
-   the reentry strengthens the candidate.
+   the reentry strengthens the candidate. Triaged CHEAP
+   (thread-fable-window-triage): the ratification sentence is drafted, awaiting one
+   typed ack — "the announced analyzer ceiling is derivable as the composition of
+   three standing lines: const-resolvability × no-escalation × no-cross-host; past
+   it, refusal/wall, never best-effort."
 10. adj-small-homes — CLOSED (rc-partition stands + inversion-pair; effect-check
     homes as a typeless-floor rider).
-11. adj-payload-pins pre-read (né `24T:P-A1`/`P-A2`) — optional tail; formally owed
-    at block-context implementation-planning.
+11. adj-payload-pins pre-read (né `24T:P-A1`/`P-A2`) — STRUCK from block-settle
+    (thread-fable-window-triage): always formally owed at block-context
+    implementation-planning, which keeps sole ownership.
 12. 1-series close-out — amend the `24P` specimens (hash introducer;
     brace-alternation if firmed) + author the entity-algebra design note. UNBLOCKED.
     Imports: the spelling direction + seams below · `272` §1 formal spine, §4 carve,
     §5 fence, substrate-mark slot, keyed/partitioned vocabulary · the
     observe-backing-widening backing-SETS seam · the `dorc:` prefix-mark grammar
     position (`274` §10) · the uniqueness-bit rider (below) · `275`'s
-    backing-inheritance candidate for formal ratification.
-13. containers-lens re-skim (optional; rides the entity-algebra crosscheck).
+    backing-inheritance candidate for formal ratification. Rider
+    (thread-fable-window-triage): the `27L` superset-boundary statement folds into
+    this same authoring batch, draft-and-delta mode — conductor drafts by assembling
+    the typed rulings; the human rules only on flagged deltas.
+13. containers-lens re-skim — STRUCK as a standalone task
+    (thread-fable-window-triage): demoted to one line in the entity-algebra
+    crosscheck packet brief.
 14. triple-check the structural-vouch hard law in a fresh session; then adjudicate
     the deferred rul-only-oracle-bytes-ship (the `24J` raw-ship repair). Gates
-    `273` §6 probe-form composition and `274` §5's transform lane.
+    `273` §6 probe-form composition and `274` §5's transform lane. DEFERRED past
+    the Fable window (thread-fable-window-triage): execution shape = clean-context
+    subagents re-derive the law (root docs + `23O` settled law; never shown the
+    drafted repair; exclusions-not-inclusions framing) + a short human
+    adjudication — Opus-conductable. Gates block-context lanes only; block-rebuild
+    never waits on it. The 2026-07-12 conductor self-flagged as CONTAMINATED for
+    the fresh-check role (had ingested the debt-confirmed framing).
 15. semantics-proliferation stance (minted mid-task-6): whose interpretation of a
     tool's language/flags does an author answer for — eval'er heads the intense
-    case (settled by ownership, `274`), GNU-vs-BSD grep the everyday one.
+    case (settled by ownership, `274`), GNU-vs-BSD grep the everyday one. PARKED
+    (thread-fable-window-triage): no gate rides on it; re-enters at stdlib
+    quality-bar authoring, where it first bites.
 
 ## Rulings
 
@@ -524,6 +543,30 @@ crosscheck. Routed consumers: `275` §11.
 
 ## Direction & open threads
 
+- **thread-fable-window-triage (human-directed, typed 2026-07-12: "make your
+  adjudication durable in the 271 root-list"):** the token-budget triage of the
+  remaining block-settle list, made under a closing Fable window with an
+  adversarial-analysis budget held in reserve. Fable bucket (human-in-loop, further
+  turns): task 8 (the live sitting) and task 12 in draft-and-delta mode (the `27L`
+  superset-boundary statement folded into the same authoring batch; the
+  entity-algebra crosscheck is the natural home of the reserved adversarial pass).
+  Everything else graded cheap or owned-elsewhere — statuses annotated per-task in
+  the map above (9 cheap-ack · 11 struck · 13 struck · 14 deferred-to-Opus ·
+  15 parked). The `27L` awaiting-ack items (trap disposition;
+  direction-drift-report-tier; the `--exit-code` wording rider) stay
+  leave-as-drafted: nothing builds on them now, and each already names its future
+  owner. NB the triage *grading* is human-directed; substantive ratifications
+  inside it (e.g. the task-9 sentence) still require their own typed acks —
+  nothing in this thread closes a ruling by itself.
+- **thread-invariants-dictionary (the human's own, tabled in-flight 2026-07-12):**
+  `_tmp-invariants_dictionary.md`, untracked at the worktree root — the human's
+  unbanked vocabulary/invariants pass, dropped mid-conversation with a predecessor
+  conductor; HANDS OFF (no banking, no ingestion) until the human's own pass.
+  Pointer kept here only so a worktree accident can't silently lose it: it carries
+  edge-floor-vs-changed-detection (a genuine coupling
+  rul-composed-bytes-defer-and-floor's consumer list does not yet name),
+  edge-merged-streams (the interleaving fence wants checking at capture-time, not
+  only at pipe-modeling), and a provenance/grade word-split proposal.
 - **rider-value-recipe-reshape-capture-seams (hand-carried 2026-07-12 from a
   sibling-conductor's standing-work review; obligation on the block-rebuild
   value-recipe-reshape brief):** the reshape brief must NAME AND RESERVE (not
