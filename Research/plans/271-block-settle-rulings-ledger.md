@@ -723,6 +723,64 @@ Conductor extensions, drafted for the human's consideration:
   acquires a SECOND gate, teachability/contract-preservation, alongside task-14's
   license gate.
 
+### rul-dorc-sh-reentry-token  (task 6; 2026-07-12; DRAFTED-AWAITING-ACK — assembled
+from the human's three-paragraph proposal: the conditional ack, the pin-transform
+nit, and the dual-keyword strawman; conductor-endorsed after his requested
+independent analysis; supersedes the transform-blessed-`sh` variant)
+The reentry primitive is a SINGLE engine-owned token: **`dorc-sh`** (the existing
+strip-and-exec runner's name; invocation grammar = POSIX sh's own: `-c` + operands,
+`-s` + stdin, file, bare-stdin). The blessed-head LIST dies —
+rul-evaler-floor-fixed-set refines to its logical floor, a one-element set containing
+only a name WE own (fulfilling the human's the-options-fall-out-of-the-problem
+prediction). Components:
+- **Authored surface:** eval'er predict bodies delegate `dorc-sh -c "$code" "$@"`
+  (the actual-command SHAPE of rul-evaler-delegation-actual-command preserved, head
+  swapped). Real-shell heads (`sh`, `dash`, `bash`, `fish`) become ORDINARY FOREIGN
+  TOOLS — no engine opinion about any of them; `24S:imp-2` no-defaults fully
+  restored. Their stdlib oracles delegate-with-vouch:
+  `sh__predict() { …; dorc-sh -c "$code" "$@" ;}` IS the stdlib author's calibration
+  vouch ("host sh evaluating this payload ≈ dorc-sh") — dash's oracle carries the
+  strongest vouch (dorc-sh is dash-calibrated), sh's nearly as strong, bash's hedged
+  (`24T` pin3 posture), csh/fish declined. The shell-identity gradient thus lives in
+  the STDLIB, per-tool, authored and attributable — where kBURDEN wants opinions —
+  never in the engine.
+- **Escape semantics, free:** an author who means "the host's actual sh, run blind,
+  I abandon dorc here" types `sh` — ordinary foreignness. Who-bleeds: the site walls
+  (value-loss, never wrongness); in an oracle body a foreign `sh -c` delegation is an
+  unprovable region riding the author's vouch (rul-unprovable-rides-the-vouch) — the
+  probe still works, the payload goes unanalyzed, hint-tier nudge. Fails soft
+  everywhere.
+- **The no-keyword alternative, analyzed and DISFAVORED** (the human's requested
+  failure-mode/licensure/who-bleeds analysis): bare-`sh`-as-analyzable-by-default
+  makes wrong-semantics reachable by OMISSION — an author who meant host-sh gets
+  dorc-parse without knowing; quiet drift; razor-failing. The dual-keyword makes the
+  same wrongness require typing the wrong token — a positive, pointable act.
+- **Ship-time binding transform (the human's pin-nit, conductor ACK with riders):**
+  at probe-ship the engine substitutes `dorc-sh` with the session's resolved
+  evaluator, explicit path. Riders: (r1) pin-source = the launch resolution,
+  composed with candidate-evaluator-handshake — no universal explicit path exists
+  (POSIX guarantees no location; NixOS retains /bin/sh, Android uses
+  /system/bin/sh); resolve once, pin everywhere; (r2) scoping is trivial BY
+  CONSTRUCTION — the token is ours, zero real-world collisions; binding a dorcism is
+  strip-family machinery, not substitution inside authored sh (which is why this
+  supersedes the transform-blessed-`sh` variant); (r3) documented in
+  candidate-probe-body-contract: "`dorc-sh` in your body denotes the probe
+  evaluator; we bind it — environment-clearing properties are the offer,
+  foreign-host PATH-reasoning is explicitly NOT your responsibility"; (r4) rides
+  task-14's umbrella as its own small item. The transform makes the load-bearing
+  identity premise (inner token = outer executor) TRUE BY CONSTRUCTION rather than
+  usually-true — which is what discharges the human's conditional ack.
+- **Costs, frontloaded:** (c1) off-ramp — strip rewrites no names, so stripped
+  eval'er-modeling oracle files retain `dorc-sh` and need it present: the
+  strip-runner is already a product artifact, but dorc-LESS boxes need a shim
+  (3-line POSIX script or a doc-line `dorc-sh → sh` sed); small file-class — only
+  eval'er-modeling oracles — priced, not fatal. (c2) a NEW dorcism species
+  (command-name-shaped) — legal under `24T:imp-P6` (a BODY-dorcism, not a
+  payload-dorcism) but owed the deliberate kOOB glance, queued alongside the
+  `272` §11 reading. (c3) the two-token teaching line — one sentence each, and the
+  distinction IS the quantifier-audit's epistemic split (the author types the thing
+  they can know), fair-attribution-aligned.
+
 ## Direction & open threads
 
 - **thread-delegation-head (task 6, 2026-07-12; OPEN — the human's confirm-or-deny
@@ -789,6 +847,11 @@ Conductor extensions, drafted for the human's consideration:
   differentially calibrated — the one evaluator-semantic they CAN fully know).
   Pairing note: candidates (a)+(d) compose — the author types what they can know;
   the handshake verifies what nobody can.
+  **→ RESOLVED-IN-DRAFT 2026-07-12 by rul-dorc-sh-reentry-token** (the human's own
+  three-paragraph assembly: conditional ack whose load-bearing premise the
+  pin-transform enforces by construction, plus the dual-keyword split; candidates
+  (a)+(d) merged, candidate (b) dead, candidate (c) satisfied in its
+  command-shaped form).
 
 - **thread-env-cannot-exec-functions (flagged during task 6, 2026-07-11; PRE-EXISTING
   landmine, not new debt):** `env` execs binaries via PATH — it cannot invoke a shell
