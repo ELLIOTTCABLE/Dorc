@@ -50,13 +50,10 @@ own document when authored; its needed material is carried in full below.
    All three accrued couplings discharged (steady-state carve closes
    vouch-by-construction; fences acked; adjudicability re-read routed to
    `270:adj-adjudicability-list`).
-9. adj-stopping-point (né `24T:P-A6`) — typed ratification of the derivable analyzer
-   ceiling (const-resolvability × no-escalation × no-cross-host). `274` §12 noted
-   the reentry strengthens the candidate. Triaged CHEAP
-   (thread-fable-window-triage): the ratification sentence is drafted, awaiting one
-   typed ack — "the announced analyzer ceiling is derivable as the composition of
-   three standing lines: const-resolvability × no-escalation × no-cross-host; past
-   it, refusal/wall, never best-effort."
+9. adj-stopping-point (né `24T:P-A6`) — CLOSED 2026-07-12 as deliberately UNPINNED
+   (rul-stopping-point-unpinned below): no announced composed ceiling; the three
+   constituent fences stand individually; the drafted composition sentence stays on
+   record (this item's git history) as the future pin-candidate.
 10. adj-small-homes — CLOSED (rc-partition stands + inversion-pair; effect-check
     homes as a typeless-floor rider).
 11. adj-payload-pins pre-read (né `24T:P-A1`/`P-A2`) — STRUCK from block-settle
@@ -436,7 +433,8 @@ session-establishment materialization; run-id naming; smoke-test → one
 shimless-degrade decision; failure lattice drains to the ≥2 sink).
 thread-command-word-dorcisms (banked light): the human leans toward REVISITING old
 syntax toward command-word spellings (127-loud beats tail-position corruption);
-parks at the entity-algebra grammar sitting.
+parks at the entity-algebra grammar sitting. (RESOLVED 2026-07-12 →
+rul-trailing-marks-stand.)
 
 ### direction-evaler-probe-shipping-split  (2026-07-12; direction-tier;
 task-14-coupled)
@@ -692,6 +690,30 @@ recorded had the ceremony-price been refused: honest-walls-for-worlds (no
 cross-context transport at v1 — kills the `24S` §2 sudo headline), since
 soften-razor and dilute-flag were both human-vetoed.
 
+## Rulings (task-9 + task-12 dispositions, 2026-07-12)
+
+### rul-stopping-point-unpinned  (task 9; 2026-07-12; TYPED — "neither ack/nack
+analyzer ceiling, leaving it unpinned … I want to keep the door open for further
+diving into complex analysis territory, I just don't want to actively drive there,
+yet … don't waste tokens")
+The analyzer ceiling stays deliberately UNPINNED: no ratified, announced, composed
+boundary exists. The three constituent fences each stand on their own rulings
+(const-resolvability, `24T:imp-P1`/`imp-P2` · no-escalation, `24S:imp-1` ·
+no-cross-host, `24S:imp-5`); consumers — refusal wording, block-context
+implementation-planning — cite the constituents, never a composed announcement. The
+conductor was invited to argue for pinning and found no build-blocking consumer.
+`274` §12's the-reentry-strengthens-the-candidate note stands, dormant.
+
+### rul-trailing-marks-stand  (task 12; 2026-07-12; TYPED — "trailing marks
+accepted; that pushback was all I needed, let's not burn tokens relitigating a
+temporary codebase … command-word-as-annotation was just a passing idea in the
+first place")
+thread-command-word-dorcisms CLOSES: the trailing-mark grammar stands for the
+spike; the command-word-respell idea retires as a passing thought, not a roadmap
+candidate. The 127-loud-vs-tail-corruption analysis stays on record (`277` §4g);
+syntax remains marker-gated (`276:rul-verdicts-never-stable`), so nothing is
+foreclosed. Resolves `277:delta-command-word-disposition`.
+
 ## Direction & open threads
 
 - **thread-fable-window-triage (human-directed, typed 2026-07-12: "make your
@@ -718,7 +740,10 @@ soften-razor and dilute-flag were both human-vetoed.
   edge-floor-vs-changed-detection (a genuine coupling
   rul-composed-bytes-defer-and-floor's consumer list does not yet name),
   edge-merged-streams (the interleaving fence wants checking at capture-time, not
-  only at pipe-modeling), and a provenance/grade word-split proposal.
+  only at pipe-modeling), and a provenance/grade word-split proposal. (2026-07-12,
+  post-cleanup annotation: the file was REMOVED in the human's worktree-litter
+  sweep — verdict-or-accident unconfirmed; the sitting conductor holds the full
+  text in-context and can regenerate it on request; none of it has been banked.)
 - **rider-value-recipe-reshape-capture-seams (hand-carried 2026-07-12 from a
   sibling-conductor's standing-work review; obligation on the block-rebuild
   value-recipe-reshape brief):** the reshape brief must NAME AND RESERVE (not
