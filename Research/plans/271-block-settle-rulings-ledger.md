@@ -69,9 +69,12 @@ own document when authored; its needed material is carried in full below.
     observe-backing-widening backing-SETS seam · the `dorc:` prefix-mark grammar
     position (`274` §10) · the uniqueness-bit rider (below) · `275`'s
     backing-inheritance candidate for formal ratification. Rider
-    (thread-fable-window-triage): the `27L` superset-boundary statement folds into
-    this same authoring batch, draft-and-delta mode — conductor drafts by assembling
-    the typed rulings; the human rules only on flagged deltas.
+    (thread-fable-window-triage; annotated post-weld 2026-07-12): the superset-boundary
+    statement (né `27L`; the sitting note renumbered to `276`) has since CLOSED IN
+    SHAPE via `276`'s kWHICHSH floor weld — the residual folded into this batch is
+    scribe-work: the one-page dorc-lang v0.1 reference (floor + authored additions +
+    stability ledger). Draft-and-delta mode governs the whole batch — conductor drafts
+    by assembling the typed rulings; the human rules only on flagged deltas.
 13. containers-lens re-skim — STRUCK as a standalone task
     (thread-fable-window-triage): demoted to one line in the entity-algebra
     crosscheck packet brief.
@@ -555,45 +558,28 @@ rul-flag-is-razor-residue.
 
 ### thread-surprise-anatomy-of-the-bite  (2026-07-12; human-voiced; subsumed at
 close — rul-flag-is-razor-residue makes the coherence a corollary)
-The flagged class is flagged not only for bite-severity but for
-bite-UNFAMILIARITY: ops-people have no folk-vocabulary for "a stranger's incomplete
-at-most claim un-ran a line I never guarded," while "I checked as alice and mutated
-as root" (the sudo-pip shape) is an everyday self-blame ritual. The human's
-coherence test, three questions: (1) is that surprise-differential story true;
-(2) does the sudo-pip shape generalize to an ops-wide class, and what is its
-general description; (3) is that class the SAME class that escapes the flag by
-construction under the steady-state carve? All three cohere ⇒ license to ship the
-single-flag design; incoherence ⇒ a SECOND flag question opens (human suspicion,
-un-ruled: under no circumstances the *same* flag). Conductor's answers are on
-record in-chat (2026-07-12, awaiting the human's reading): story-true with a
-sharpening (the surprise splits between bite-moment and diagnosis; hand-guarded
-vs bare-line sub-cases differ); generalizes as the **wrong-world-check class**
-(state keyed by an unnoticed dimension — user / netns / fs-view / ρ — checked in
-one world, acted on in another; closed-world-enumerable, mechanically-falsifiable,
-folk-diagnosable); same-class verdict carrying two honest residuals (the bare-line
-initial-surprise is the whole vouch tier's inheritance, not new to this carve; and
-the `24S:razor-attributable-line` tension — the escape-class knife is an OMISSION —
-survives only under a typed refinement: falsifiable closed-world omissions may ride
-the vouch tier, unfalsifiable open-world omissions pay the flag). Conductor
-recommendation on record: no second flag at all (consent-boilerplate dilution;
-the class's real mitigations are the differential CI + folk-legible why-chains).
+The flagged class is flagged for bite-UNFAMILIARITY, not just severity — no
+folk-vocabulary exists for "a stranger's incomplete at-most claim un-ran a line I
+never guarded," while the sudo-pip shape is an everyday self-blame ritual. The
+human's three-question coherence test (surprise-differential true? · sudo-pip
+generalizes to what ops-wide class? · the same class that escapes the flag under
+the steady-state carve?) — conductor-answered: true-with-a-sharpening; generalizes
+as the **wrong-world-check class** (state keyed by an unnoticed dimension — user /
+netns / fs-view / ρ — checked in one world, acted on in another;
+closed-world-enumerable, folk-diagnosable); same-class. Coherence held ⇒ the
+single-flag design shipped; the second-flag contingency (human suspicion, un-ruled:
+never the *same* flag) stayed moot. Full worked answers: git history.
 
 ### thread-nvm-not-sudo-examples  (2026-07-12; human-typed direction, standing)
-De-privilege the example diet: the wrong-world-check class is not about privilege
-or users — `nvm`/`mise` replicate it with no user and no root ("I should have
-`nvm exec -- cmd` and forgot I installed under nvm" ≈ the sudo-pip shape exactly),
-and mise is live in this very repo (models observed cargo-culting absolute-path
-binaries instead of `mise exec`). Use version-manager worlds alongside/ahead of
-sudo in strawmen, briefs, and design prose. Conductor finding attached
-(finding-rho-worlds-already-razor-clean, awaiting reading): pure-ρ worlds need NO
-transport member at all — an nvm wrapper oracle is predict-with-ρ-transform +
-all-dimensions-full-lend; kind locators resolve to version-parameterized addresses,
-cells key apart through ordinary value-plane resolution; every failure mode there
-is already a positive mis-assertion on a typed line (env-idiom rungs). The
-shim-author question ("what is nvm's equivalent of sudo's transport?") answers:
-there isn't one and none is needed — which localizes the razor-hole to exactly ONE
-place: AXIS-invariance licensed from the negative space of a
-`kind__state_stored_only_in()` emission.
+De-privilege the example diet: the wrong-world-check class is not about privilege —
+`nvm`/`mise` replicate it with no user and no root ("forgot I installed under nvm" ≈
+the sudo-pip shape exactly; mise is live in this very repo). Use version-manager
+worlds alongside/ahead of sudo in strawmen, briefs, and design prose. Attached
+finding (finding-rho-worlds-already-razor-clean): pure-ρ worlds need NO transport
+member — predict-with-ρ-transform + full lend covers them, and every failure mode
+there is already a positive mis-assertion on a typed line — which localized the
+razor-hole to exactly ONE place (invariance licensed from a store-member's negative
+space), the hole rul-invariance-speech-act then closed. Full walk: git history.
 
 ### struck-falsifiability-license-leg  (2026-07-12; human-enforced per
 `271:rul-lint-never-drives-design` + `271:rul-net-quality-u-curve`)
@@ -673,61 +659,38 @@ invariance lines; deadline unchanged at kinds-go-community) — human annotation
 
 ### thread-cargo-cult-cohort-size  (2026-07-12; human-voiced story + the
 coextension test, conductor-answered)
-The story: at LARGE cohort sizes cargo-culting loses human precision (17-of-17
-typed it ⇒ nobody thinks); at SMALL sizes it gains precision (1-of-2 typed it ⇒
-investigate). The human's test: is the speech-act's enumerated space exactly the
-set resting on state-stored-only-in? Conductor answer (delivered in-chat):
-YES, coextensive — the license moves for exactly the set that previously rested
-on the emission's negative space; the typing cohort is the invariance-claiming
-strict subset of state-stored-only-in authors; the token vocabulary is the
-ingredient-borne subset of the ratified axis vocabulary (v1 = {user}, one
-token); substrate-borne transport (engine carried-by rows) never rested on the
-member and is untouched. Verdict: bug-fix tier — tasks 5/6 razor-converted their
-surfaces (lend-map, env-claims) and task-3's member was drafted pre-pattern; of
-course they should match. The visible kind-mix (keyed kinds lack the line,
-shared kinds carry it) puts authors in the small-cohort investigate regime; the
-contradiction-checker kills thoughtless copies at load. Token-collision grammar
-detail (axis tokens now appearing in a third position) routed to task-12's ONE
-deliberate kOOB reading (`273` §8).
+Cargo-cult risk inverts with cohort size (17-of-17 typed it ⇒ nobody thinks;
+1-of-2 ⇒ investigate). The human's coextension test — is the speech-act's
+enumerated space exactly the set that rested on state-stored-only-in's negative
+space? — conductor-answered YES (typing cohort = the invariance-claiming subset
+of kind-owners; token vocabulary = the ingredient-borne subset of the axis
+vocabulary, v1 = {user}; substrate-borne carried-by rows untouched); verdict
+bug-fix-tier — tasks 5/6 had already razor-converted their surfaces, task-3's
+member was simply drafted pre-pattern. The visible kind-mix keeps authors in the
+small-cohort investigate regime; the contradiction-checker kills thoughtless
+copies at load. Token-collision grammar detail (axis tokens in a third position)
+routed to task-12's ONE deliberate kOOB reading (`273` §8).
 
 ### thread-razor-unsoftened-worked  (2026-07-12; the sitting's crux — RESOLVED
-by the two rulings above; analysis retained for the record)
-The human's two wants: (want-razor-unsoftened) omission-failures never ride
-vouch-tier — every failure singly attributable to a line that SAYS the false
+by the two rulings above; compressed post-close, full worked analysis in git
+history)
+The human's two wants — (want-razor-unsoftened) omission-failures never ride
+vouch-tier: every failure singly attributable to a line that SAYS the false
 thing; (want-no-cargo-cult-flag) no boilerplate consent-flag on everyday
-cross-world value. Human 99%-sure irreconcilable; asked for the hard truth.
-Conductor's worked conclusion: the wants ARE irreconcilable under the current
-`272` §3 derivation-as-transport-license — which is CONDUCTOR-PROPOSED, never
-typed (`272` §12; `272` §11 flagged "this member's transport license is the one
-whose tier is unruled") — because r2-derived invariance reads a knife-tier license
-out of the NEGATIVE space of an authored emission, i.e. silence-as-license,
-violating USER_STORY's founding "silence licenses nothing." Escape candidate
-(the 1%): **candidate-invariance-speech-act** — transport across an
-ingredient-borne axis requires the kind-owner's explicit positive line (strawman:
-a colon-line `:  : user-invariant` in the store-member emission); the r2
-derivation re-roles from license-generator to CONTRADICTION-CHECKER (typed
-invariance vs who-am-I ingredients in the same body = the standing
-declarations-genuinely-contradict fail-fast) plus keying/conjecture; engine-owned
-carried-by rows (substrate-borne invariance, e.g. fs-not-carried-by-netns) stay
-engine-warranted structural tier, never author-owed. Precedents anchoring the
-move: `271:rul-lend-map`'s razor-conversion (the human's own typed
-enumerate-every-dimension law — silence = ⊤, every claim a pointable line) and
-`274`'s rul-env-claim-inversion ("every believable claim is a typed pointable
-line (the razor argument)") — this applies the design's established move to the
-one member that missed it. Honestly priced: bite-RATE unchanged (the forgetful
-owner types the line as confidently as they'd omit the store); what changes is
-attribution (fair fix-here pointer; pope-sin eliminated), sin-classification
-(cardinal → vouch-class), and admin-consent semantics. Cost: one ceremony line
-per (kind × ingredient-borne axis), kind-owner cohort only; amends a
-conductor-proposed piece of `272`, not a typed ruling. Unifying principle
-drafted, **principle-flag-is-razor-residue**: claims own what lines can say; the
-flag owns what no line can say — admin-consent is required exactly where
-line-attribution is impossible in principle (open-world at-most negatives = the
-survival tier), and everywhere else liability lands on a typed authored line.
-This IS the candidate positive half of `270:adj-survival-flag-outcome`. Fallback
-if the ceremony-price is refused: honest-walls-for-worlds (no cross-context
-transport license at v1 — walls; the `24S` §2 sudo headline and the stdlib
-sudo-precondition die), since soften-razor and dilute-flag are both human-vetoed.
+cross-world value — were human-graded 99%-sure irreconcilable, and WERE
+irreconcilable under `272` §3's conductor-proposed derivation-as-transport-license
+(a knife-tier license read from the NEGATIVE space of an authored emission —
+silence-as-license, violating the founding "silence licenses nothing"). The 1%
+escape ruled: candidate-invariance-speech-act (the kind-owner's explicit positive
+line; the r2 derivation re-roled to contradiction-checker; substrate-borne
+carried-by rows stay engine-warranted), priced honestly — bite-rate unchanged;
+buys attribution, cardinal→vouch sin-conversion, and consent semantics. Precedents
+anchoring the move: rul-lend-map's enumerate-every-dimension law and
+rul-env-claim-inversion's razor argument — the established move applied to the one
+member that missed it. Unifying principle → rul-flag-is-razor-residue. Fallback
+recorded had the ceremony-price been refused: honest-walls-for-worlds (no
+cross-context transport at v1 — kills the `24S` §2 sudo headline), since
+soften-razor and dilute-flag were both human-vetoed.
 
 ## Direction & open threads
 
@@ -735,15 +698,16 @@ sudo-precondition die), since soften-razor and dilute-flag are both human-vetoed
   adjudication durable in the 271 root-list"):** the token-budget triage of the
   remaining block-settle list, made under a closing Fable window with an
   adversarial-analysis budget held in reserve. Fable bucket (human-in-loop, further
-  turns): task 8 (the live sitting) and task 12 in draft-and-delta mode (the `27L`
-  superset-boundary statement folded into the same authoring batch; the
+  turns): task 8 (since closed) and task 12 in draft-and-delta mode (the
+  superset-boundary statement folded into the same authoring batch — since
+  closed-in-shape by `276`'s floor weld, leaving the reference-page assembly; the
   entity-algebra crosscheck is the natural home of the reserved adversarial pass).
   Everything else graded cheap or owned-elsewhere — statuses annotated per-task in
   the map above (9 cheap-ack · 11 struck · 13 struck · 14 deferred-to-Opus ·
-  15 parked). The `27L` awaiting-ack items (trap disposition;
-  direction-drift-report-tier; the `--exit-code` wording rider) stay
-  leave-as-drafted: nothing builds on them now, and each already names its future
-  owner. NB the triage *grading* is human-directed; substantive ratifications
+  15 parked). The language-sitting residue is annotated in place in `276` (trap
+  human-DEFERRED; direction-drift-report-tier explicitly neither-acked-nor-nacked;
+  the `--exit-code` wording rider graduated to acked-in-passing during the pipefail
+  thread). NB the triage *grading* is human-directed; substantive ratifications
   inside it (e.g. the task-9 sentence) still require their own typed acks —
   nothing in this thread closes a ruling by itself.
 - **thread-invariants-dictionary (the human's own, tabled in-flight 2026-07-12):**
