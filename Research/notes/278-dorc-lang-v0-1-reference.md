@@ -55,7 +55,7 @@ good portable shell*, which is what I wanted it to turn out as all along"
 | **ksh93** | **OUT** — no `local` at all (`typeset` scopes only in `function f{}`); ksh93-membership and the `local` keystone are one decision. |
 | **zsh** | **IN via discipline** — macOS login shell, can't drop; quote-as-law covers the word-split inversion; honest residual = NOMATCH glob-abort ⇒ one quality-bar line: avoid bare globs in oracle bodies. |
 | **mksh** | **free-rider** — has `local`; not targeted; revisit only if an Android target surfaces. |
-| **posh / yash** | **CI differential-test targets, not members.** |
+| **posh / yash** | **CI differential-test targets, not members** (care-set membership = whose daily-driven shells we serve; posh's spec/enforcement-binary role in the floor weld is a separate, compatible question). |
 
 ### Dialect rulings (`276:rul-base-dialect-ruling-list`)
 
@@ -93,7 +93,7 @@ good portable shell*, which is what I wanted it to turn out as all along"
 Everything below is dorc-lang text *above* the portable-sh floor; all of it is what strip
 (§3) erases or rewrites to reach the floor.
 
-### The `# dorc-lang/v0.1` marker — TYPED (`24M:rul24M-version-comment`; `KNOBS:kOOB` sanctioned exception)
+### The `# dorc-lang/v0.1` marker — TYPED (`24M:rul24M-version-comment` shape; `24C:rul24-marker-v0.1` exact spelling, human-typed; `KNOBS:kOOB` sanctioned exception)
 Exact-match, stands alone, within the first ~10 lines. **Gates syntax only** — binds,
 marks, any non-POSIX construct — and never `__role` name-recognition, which is recognized
 in unmarked files too and is a permanent, unversionable surface (`24M:rul24M-version-comment`).
@@ -238,7 +238,8 @@ Named consequences (both "bank both, we'll roll with them"):
 ## §6 — Where the grammar is unsettled (owned by the entity-algebra note)
 
 Not invented or guessed here. Each defers to **the entity-algebra design note
-(`notes/277`, forthcoming — `271` task 12)**:
+(`notes/277`, authored 2026-07-12 — its §4 carries the exact-grammar proposals,
+awaiting the human's delta pass)**:
 
 - **entity / selector charsets** (per-position) — `277`.
 - **brace-alternation multi-cell marks** (`: sm.dorc.Service#{enabled,active}`, direction
