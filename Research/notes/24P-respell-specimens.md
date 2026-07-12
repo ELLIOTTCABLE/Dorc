@@ -320,3 +320,45 @@ hundreds of files to communicate a spelling change) and §4's predicted delta cl
 with them. Ack states at close: d1–d9 ALL acked (d8 typed 2026-07-10). One brief addition
 from the r26 extractables (`262` §7, scheduled via `270`): gate-1's record-compare goes
 order-insensitive in this same golden churn. Everything else in §2/§3/§5/§7/§8/§9 stands.
+
+## §11 — the task-12 amendment pass (2026-07-12, conductor-directed; `277` §7a)
+
+The entity-algebra design note (`277`) moved the mark grammar this churn rewrites into, so — per
+`270:adj-entity-algebra` and the §8 spec-by-example precedent (ack the design in the files) — the
+six specimens were amended in-tree a SECOND time before the corpus respell fires. All edits are in
+`spike/e2e/cases/`, oracle `.sh` sources only; goldens (`expected.*`) and books (`book.sh`) were
+NOT touched (goldens stay stale-old by design — the implementor blesses).
+
+- **selector-introducer respell** (`271:rul-selector-introducer-hash`): every coordinate's old
+  property-suffix `.prop` becomes an ATTACHED `#prop` in trailing marks —
+  `…Package:"$pkg".installed` → `…"$pkg"#installed` (and `.installed!`→`#installed!`),
+  `…Service:"$1".enabled` → `…"$1"#enabled`, `…GrepMatch:"$pat".matched` → `…"$pat"#matched`,
+  `…Package:"$pkg".tuned` → `…"$pkg"#tuned`, and the empty-entity
+  `io.opentelemetry.Collector:.v0155` → `…:#v0155`. Nine marks across the five oracle files.
+  Kind-name dots (`sm.dorc.…`), bare-kind emission marks (`: sm.dorc.Package`), and binds
+  (`pkg : sm.dorc.Package = "$1"`) are untouched. Predicted-delta consequence: §4's class-1
+  (fact-label re-keys, the bulk of the diff) now ALSO carries the corpus-wide selector re-key
+  `sm.dorc.Package:nginx.installed` → `sm.dorc.Package:nginx#installed` wherever a label renders
+  (`277` §4a / §7b) — one more re-key riding the same golden churn.
+- **role renames** (two exemplars, exhibited): `apt_get__touches` → `apt_get__disturbs`
+  (`271:rul-touches-becomes-disturbs`) in survive-simple and alias-provides;
+  `sm_dorc_Package__reaches` → `sm_dorc_Package__disturbance_reaches_only`
+  (`271:rul-at-most-family-names`) in reach-static-service. The other `__touches` occurrences in
+  reach-static-service (`hork__touches`, `enablesvc__touches`) are deliberately NOT renamed here —
+  the amendment migrates only the two exemplar names; the corpus-wide `touches`→`disturbs` sweep is
+  the respell builder's (`strawman24-derived-survive`'s golden still carries `apt_get__touches`,
+  outside this specimen scope).
+- **new-member exhibit** (`277` §4e): `strawman24-alias-provides` gains
+  `sm_dorc_Package__state_stored_only_in()` with one `: fs` substrate emission and the
+  `: user-invariant` colon-line. Status: conductor-PROPOSED grammar, awaiting the human's
+  `delta-invariance-line-spelling` ack (`277` §8); exhibited in-code so the ack rides the file.
+- **pipe-guard re-XFAIL**: `strawman24-pipe-guard-oracle-converged` re-gains the one-sided `XFAIL`
+  file. §9b's un-XFAIL rationale — its only delta was a golden-text fact-label re-key, so it stayed
+  live — no longer holds: the `#matched` selector UN-parses at HEAD, a structural failure the XFAIL
+  absorbs (a golden-text-only diff would XPASS; this does not). The suite is now
+  green-with-FIVE-declared-xfails (the four standing + pipe-guard); verified via a fresh
+  `cargo build --workspace` + full foreground e2e, all 126 pass, no XPASS, no live regression.
+
+Implementor flow is unchanged from §9: land the respell, delete the XFAILs, BLESS on a verified
+binary, inspect the diff against §4's predicted delta classes (now including the selector re-key) —
+never bless-first.
