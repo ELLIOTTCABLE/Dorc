@@ -770,16 +770,63 @@ prediction). Components:
   task-14's umbrella as its own small item. The transform makes the load-bearing
   identity premise (inner token = outer executor) TRUE BY CONSTRUCTION rather than
   usually-true — which is what discharges the human's conditional ack.
-- **Costs, frontloaded:** (c1) off-ramp — strip rewrites no names, so stripped
-  eval'er-modeling oracle files retain `dorc-sh` and need it present: the
-  strip-runner is already a product artifact, but dorc-LESS boxes need a shim
-  (3-line POSIX script or a doc-line `dorc-sh → sh` sed); small file-class — only
-  eval'er-modeling oracles — priced, not fatal. (c2) a NEW dorcism species
+- **Costs, frontloaded:** (c1) ~~off-ramp — strip rewrites no names, so stripped
+  eval'er-modeling oracle files retain `dorc-sh` and need a shim~~ — **SUPERSEDED
+  same date by the human's strip-pushback** (below). (c2) a NEW dorcism species
   (command-name-shaped) — legal under `24T:imp-P6` (a BODY-dorcism, not a
   payload-dorcism) but owed the deliberate kOOB glance, queued alongside the
   `272` §11 reading. (c3) the two-token teaching line — one sentence each, and the
   distinction IS the quantifier-audit's epistemic split (the author types the thing
   they can know), fair-attribution-aligned.
+
+**Strip-pushback amendment (human, 2026-07-12; typed):** strip SHOULD rewrite this
+name — in bodies AND in shebangs: "post-strip, the script should run blind
+post-dorc-uninstall; that's what the name implies, it's what it should provide."
+This carves the standing strip-purity law — **amendment-candidate to
+rul24-totalistic-munge, needs the human's explicit ratification as that law's
+owner:** the erasure-purity rationale protects USER-authored text; Dorc's own
+RESERVED tokens (the shebang runners; the reentry token) are rewritable-by-strip
+without touching that rationale; user names, never. Target asymmetry, documented as
+deliberate: strip-target = bare `sh` (portable LCD — correct for
+run-blind-post-uninstall); probe-target = the session-resolved explicit path (the
+pin-transform); each is "the evaluating shell" in its own context. Shebang-rewrite
+mechanics are a strip-contract item WIDER than task 6 (dorc-run shebangs too) —
+route to the strip surface at close.
+
+**The spelling fork (the human's options 1/2/3, 2026-07-12; he is on the fence
+1-vs-2/3 and finds 2-vs-3 amenable to different investigations; conductor leans):**
+- fork-ship-shim (1: really ship a `dorc-sh` PATH-member to hosts) — **FIRMLY
+  DISFAVORED (conductor):** it degenerates on inspection. A host-side shim either
+  re-resolves `sh` at use-time (forfeiting the exact pinning the transform-nit
+  exists to provide) or is generated per-session with the resolved path baked in
+  (= the ship-time transform with extra steps, plus host footprint against the
+  agentless ethos, plus a missing/stale-shim failure mode, plus the writable-fs
+  residual). The engine knows the binding at ship-time; a host file adds
+  indirection and no information. (dorc-sh-the-binary continues to exist
+  controller-side regardless; the question was only whether HOSTS need it: no.)
+- fork-sh-shaped-keyword (2) vs fork-loud-annotation (3) — **conductor leans 3,
+  moderately (~60/40). Decisive observation:** marked oracle files are ALREADY
+  non-runnable unstripped under stock shells (kTYANNOT-inline is verified
+  non-inert — trailing marks pass as stray arguments and silently corrupt), so
+  option-2's headline virtue (reads/runs as real sh) is ILLUSORY exactly in the
+  files where the token lives, while its vice (looks-real-but-isn't; the mechanism's
+  most consequential token spelled as an ordinary command — the
+  wart-quiet-danger-line pattern again) is fully real. Option 3 is honest at
+  read-time, costs nothing extra at author-time (the authoring loop is already
+  dorc-mediated), satisfies be-very-not-sh-loud for a thing strip must transform
+  anyway, and strips to IDENTICAL output. Option 3's true price is a LANGUAGE
+  EVENT: the dialect's first COMMAND-POSITION non-sh construct — first keyword,
+  precedent-setting, dialect-version-gated — deserving explicit acknowledgment
+  before minting. Shape guidance if 3 wins: keep head+argv invocation shape so
+  peel/positional-binding/detection read unchanged; lexeme deliberately unminted
+  (no syllable proposed).
+- The fork's question-sets, confirming the human's intuition that they differ:
+  fork-2 opens KEYWORD-SEMANTICS questions (shadowing/collision rules; a
+  user-defined `dorc_sh` function; local-run UX; the "rhyming, not literal"
+  doc-frame between in-body keyword and in-shebang binary). fork-3 opens GRAMMAR
+  questions (lexeme choice; the command-position precedent — does the door stay
+  open for further keywords; parser work + dialect-version gating). Shared by both:
+  the strip/probe target asymmetry above; the shebang rewrite.
 
 ## Direction & open threads
 
