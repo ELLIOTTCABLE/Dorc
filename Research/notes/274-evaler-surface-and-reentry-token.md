@@ -5,7 +5,7 @@ the human's direction as the comprehensive durable of the task-6 arc (eval'er
 declaration spelling, né `24T` pin1 "licensed-code-carriers") — the `notes/272`/`273`
 precedent: the arc was extensive redesign, large enough for its own document.
 Note-tier, kept-current through block-settle. Authority: root docs and the `plans/271`
-rulings ledger outrank this; ratification is MIXED and marked per-section — §12 is the
+rulings ledger outrank this; ratification is MIXED and marked per-section — §13 is the
 status table, read it before citing anything as settled. Companions: `plans/271` (the
 rulings; its task-6 entries summarize and point here) · `notes/273` (the wrapper
 surface this composes with; carriers were its named open coupling) · `plans/24T` (the
@@ -281,7 +281,77 @@ gates §5's transform lane and the only-oracle-bytes law · the field-trial book
 walls (`su - postgres -c`; the hostname guard) are now both in-design — the su line
 via this surface, the capture via task 7.
 
-## §12 — Status table
+## §12 — Final-pass findings (2026-07-12; the human's ordered corpus-standards pass:
+four-by-two, gradual-enhancement walk, sibling slotting — full record in-chat)
+
+- **finding-scope-clarification (the §1 table was book-ambiguous; REAL catch):** the
+  three-spelling semantics are an ORACLE-BODY surface. In BOOKS, a bare `sh -c` site
+  rides the stdlib sh-oracle's vouch and decomposes classically (the ShellCheck-taught
+  idioms keep their full value; the admin story is untouched). In ORACLE BODIES, a
+  bare `sh -c` line is not a site at all — it is a foreign command in a vouched body,
+  and the "escape" semantics are exactly `271:rul-unprovable-rides-the-vouch` applied
+  to sh, plus hint-descent. No conflict existed once site-vs-body-line was stated;
+  the §1 table should be read with this scope note.
+- **finding-row-three-in-verdict-bodies (the four-by-two other-phase catch; a cliff
+  relocated):** guard-building inserts STRIPPED verdict-function bodies into the
+  APPLY artifact — and strip leaves typed `dorc-sh` untouched (documented-dangle),
+  so a row-3 token inside an `is_converged` body would surface as a broken guard in
+  the ADMIN's plan (wrong person hurt; plan-is-a-script promise broken). Disposition
+  (conductor lean): guard-building DECLINES bodies containing row-3 tokens — the
+  site degrades guard→run with a hint naming the engineer's line; row-3 is taught as
+  probe-member-only in the quality bar. The hurt relocates to its owner.
+- **finding-descent-edges-widen-only (the reverse-propagation catch):** `dorc bump`'s
+  dependency walk may consume descent-derived edges from UNMARKED payloads — safe
+  only in the scope-WIDENING direction (more selected, more checked). Rider on the
+  invited-rooms typing: hint-lane edges may widen scope, never narrow it, and never
+  license.
+- **finding-env-ownership-confirmed (the subagent sweep, adjudicated):** bare-`env`
+  ownership SURVIVES with six riders: (r1) the recognized claim-grammar is SYNTACTIC
+  and enumerated — bare `env`, assignments, `-i`; static command-word required;
+  everything else (path-qualified `/usr/bin/env`, `-u` for now, `-S`/`-C`/`-P`/
+  signal flags, dynamic heads `env "$cmd"`) is UNRECOGNIZED ⇒ claims-nothing ⇒ safe
+  + hint; (r2) `env -` is `-i` in every implementation (POSIX-unspecified) — never
+  read as passthrough; (r3) darwin strips `DYLD_*`/`LD_*` at every protected-binary
+  exec (the platform, not env — and /bin/sh itself is protected, so EVERY dorc lane
+  on macOS is stripped anyway): those classes join the engine's per-target
+  volatile-class knowledge (kVOLATILES-adjacent), excluded from passthrough belief;
+  (r4) env-minted rc 125/126/127 all land in the flat ≥2 sink — the rc-partition is
+  accidentally robust, nothing to do; (r5) busybox PREFER_APPLETS resolves applets
+  ahead of PATH — a which-binary variance filed to the semantics-proliferation
+  stance (task 15); (r6) corpus quiet: command-position bare `env` is
+  rare-to-vanishing, has no community-recognized name, and its one real intent
+  (builtin/alias bypass) makes claims that are TRUE under our reading — intents
+  coincide in truth-value; no collision. The `dorc:env` fallback is NOT needed; the
+  weird-little-one-offs set stays one-off (the human's residue-because-we-ran-
+  every-sibling-to-the-bone principle, banked).
+- **finding-strict-argparse-routed:** the predict-must-`-*)-return-2` discipline
+  (load-bearing for the merge's grammar-determinism defense) lifts to the
+  oracle-authoring quality-bar checklist AND is frontloaded as a documented
+  constraint for the eventual warning-implementor brief (lint built at the end,
+  from this list, per rul-lint-never-drives-design).
+- **Sibling slotting (all sane):** capture lane unperturbed (four customers stand) ·
+  entity-algebra: only the prefix-mark position joins the grammar surface (task 12)
+  · corpus-respell: no fixture impact (spellings don't exist in the corpus yet) ·
+  wire-import: the session-preamble (handshake+shim+smoke) composes with the `262`
+  §2 single-host framing · multi-host: per-host sessions each carry the pins ·
+  field trial: the su line is now fully in-design; the trial should exercise the
+  claim ladder · kSILO: admins' own `sh -c` guards still lift (Half-B alive via the
+  sh-oracle + the proof-gated bare lane) · kLANG: payloads stay dorc-sh, no second
+  input language · the stopping point: the reentry adds no ceiling beyond
+  const-resolvability × no-escalation × no-cross-host (strengthens the derivable-
+  boundary candidate) · kOOB: THREE surfaces now queued for the ONE deliberate
+  reading (dimension marks · substrate marks · the `dorc:` prefix).
+- **Gradual-enhancement cliff map (whom each hurts):** rung 0→1 admin-free (stdlib
+  install buys payload decomposition; pin3 parse-walls graceful) · the steepest
+  authored rung is the eval'er-author's three-spelling + claim-ladder learning —
+  deliberately concentrated on the small sophisticated cohort (kBURDEN-correct) ·
+  the row2/row3 one-glyph trap and the bare-body-⊤ surprise are author-cliffs
+  mitigated by the did-you-mean and add-your-claim hints · shimless targets lose
+  marked-reentry value per-session, honestly, relative to value they never had ·
+  the one admin-facing cliff found (row-3-in-verdict-bodies) is relocated by
+  finding-row-three above.
+
+## §13 — Status table
 
 | component | status |
 |---|---|

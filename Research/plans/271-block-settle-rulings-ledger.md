@@ -37,10 +37,23 @@ while this ledger carries the rulings and the arc-pointers, never the design bod
 6. eval'er declaration spelling (né carrier; renamed by rul-evaler-vocabulary) —
    `24T` pin1 (which-arg-is-code, stdin shapes, argv-binding, the child-shell context
    record). ARC REPORTED 2026-07-12: comprehensive durable = **`notes/274`** (the
-   `272`/`273` precedent; per-component statuses in its §12); this ledger keeps the
-   rulings. Formal close awaits the human's stamp on the synthesis + the standing
-   drafted acks (merge; env-claim inversion) + his eye on the §2 mechanism-native/
-   content-claimed refinement minted during strawmanning.
+   `272`/`273` precedent; per-component statuses in its §13). **BLANKET ACK (typed,
+   2026-07-12, sent mid-subagent-turn): "ack all of the above … I think we've reached
+   good design" — covering the merge (as refined by the self-attack round), the
+   synthesis, the §2 mechanism-native/content-claimed split, and the strip wording;
+   EXPLICITLY CARVED OUT: the env-idiom half of rul-env-claim-inversion, pending the
+   env research he had not yet seen.** The env verdict (conductor-adjudicated from
+   the subagent sweep): ownership CONFIRMED with six riders — `274` §12
+   finding-env-ownership-confirmed; the `dorc:env` fallback unneeded. The human's
+   residue-principle banked verbatim there ("the one-off set is full of
+   weird-little-one-offs exactly because … we ran every other sibling down to the
+   bone"). Final corpus-standards pass DONE (his order: four-by-two +
+   gradual-enhancement walk + sibling slotting) — findings in `274` §12, notably
+   finding-row-three-in-verdict-bodies (an admin-facing cliff, relocated to the
+   engineer via guard-building-declines) and finding-scope-clarification (the
+   three-spelling table is an oracle-body surface; books ride the stdlib sh-oracle
+   unchanged). Remaining for close: the human's read of the env riders + the two
+   final-pass dispositions.
 7. adj-capture-claim (né `219` fork-capture-claim-type) — probe-captured stdout:
    OutClaim-observation vs new claim-type.
 8. adj-survival-flag-outcome (né `24S:A2` + the `--trust-footprints` rename) — the
