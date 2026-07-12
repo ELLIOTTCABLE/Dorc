@@ -576,6 +576,73 @@ the vouch tier, unfalsifiable open-world omissions pay the flag). Conductor
 recommendation on record: no second flag at all (consent-boilerplate dilution;
 the class's real mitigations are the differential CI + folk-legible why-chains).
 
+### thread-nvm-not-sudo-examples  (2026-07-12; human-typed direction, standing)
+De-privilege the example diet: the wrong-world-check class is not about privilege
+or users — `nvm`/`mise` replicate it with no user and no root ("I should have
+`nvm exec -- cmd` and forgot I installed under nvm" ≈ the sudo-pip shape exactly),
+and mise is live in this very repo (models observed cargo-culting absolute-path
+binaries instead of `mise exec`). Use version-manager worlds alongside/ahead of
+sudo in strawmen, briefs, and design prose. Conductor finding attached
+(finding-rho-worlds-already-razor-clean, awaiting reading): pure-ρ worlds need NO
+transport member at all — an nvm wrapper oracle is predict-with-ρ-transform +
+all-dimensions-full-lend; kind locators resolve to version-parameterized addresses,
+cells key apart through ordinary value-plane resolution; every failure mode there
+is already a positive mis-assertion on a typed line (env-idiom rungs). The
+shim-author question ("what is nvm's equivalent of sudo's transport?") answers:
+there isn't one and none is needed — which localizes the razor-hole to exactly ONE
+place: AXIS-invariance licensed from the negative space of a
+`kind__state_stored_only_in()` emission.
+
+### struck-falsifiability-license-leg  (2026-07-12; human-enforced per
+`271:rul-lint-never-drives-design` + `271:rul-net-quality-u-curve`)
+The conductor's refinement-falsifiable-omissions-ride-vouch (previous turn) is
+WITHDRAWN: it licensed vouch-tier by appeal to a mechanical best-effort net (the
+mutate-as-A/probe-as-B differential) — design-by-lint, the dip of the u-curve.
+Precedent followed: the task-3 sitting's struck lint arguments. The differential
+survives as later amelioration + stdlib-CI verification posture (`272` §9), never
+as a design-time license argument. The coherence verdict re-audited minus that leg:
+survives on own-domain-vs-open-world + folk-familiarity (vibes ruled legitimate
+design input short of proof-tier, human-typed) + pre-Dorc-analog existence.
+
+### thread-razor-unsoftened-worked  (2026-07-12; the sitting's crux — conductor
+analysis on record, awaiting adjudication)
+The human's two wants: (want-razor-unsoftened) omission-failures never ride
+vouch-tier — every failure singly attributable to a line that SAYS the false
+thing; (want-no-cargo-cult-flag) no boilerplate consent-flag on everyday
+cross-world value. Human 99%-sure irreconcilable; asked for the hard truth.
+Conductor's worked conclusion: the wants ARE irreconcilable under the current
+`272` §3 derivation-as-transport-license — which is CONDUCTOR-PROPOSED, never
+typed (`272` §12; `272` §11 flagged "this member's transport license is the one
+whose tier is unruled") — because r2-derived invariance reads a knife-tier license
+out of the NEGATIVE space of an authored emission, i.e. silence-as-license,
+violating USER_STORY's founding "silence licenses nothing." Escape candidate
+(the 1%): **candidate-invariance-speech-act** — transport across an
+ingredient-borne axis requires the kind-owner's explicit positive line (strawman:
+a colon-line `:  : user-invariant` in the store-member emission); the r2
+derivation re-roles from license-generator to CONTRADICTION-CHECKER (typed
+invariance vs who-am-I ingredients in the same body = the standing
+declarations-genuinely-contradict fail-fast) plus keying/conjecture; engine-owned
+carried-by rows (substrate-borne invariance, e.g. fs-not-carried-by-netns) stay
+engine-warranted structural tier, never author-owed. Precedents anchoring the
+move: `271:rul-lend-map`'s razor-conversion (the human's own typed
+enumerate-every-dimension law — silence = ⊤, every claim a pointable line) and
+`274`'s rul-env-claim-inversion ("every believable claim is a typed pointable
+line (the razor argument)") — this applies the design's established move to the
+one member that missed it. Honestly priced: bite-RATE unchanged (the forgetful
+owner types the line as confidently as they'd omit the store); what changes is
+attribution (fair fix-here pointer; pope-sin eliminated), sin-classification
+(cardinal → vouch-class), and admin-consent semantics. Cost: one ceremony line
+per (kind × ingredient-borne axis), kind-owner cohort only; amends a
+conductor-proposed piece of `272`, not a typed ruling. Unifying principle
+drafted, **principle-flag-is-razor-residue**: claims own what lines can say; the
+flag owns what no line can say — admin-consent is required exactly where
+line-attribution is impossible in principle (open-world at-most negatives = the
+survival tier), and everywhere else liability lands on a typed authored line.
+This IS the candidate positive half of `270:adj-survival-flag-outcome`. Fallback
+if the ceremony-price is refused: honest-walls-for-worlds (no cross-context
+transport license at v1 — walls; the `24S` §2 sudo headline and the stdlib
+sudo-precondition die), since soften-razor and dilute-flag are both human-vetoed.
+
 ## Direction & open threads
 
 - **thread-fable-window-triage (human-directed, typed 2026-07-12: "make your
