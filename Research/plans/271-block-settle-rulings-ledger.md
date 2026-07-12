@@ -583,6 +583,56 @@ Costs, priced: identity wrappers owe one syllable (`env "$@"`) or lose env value
 cost trivial. Guest-less `env "$@"` executes as `env` (prints environ) — argparse
 declines guest-less shapes anyway.
 
+### rul-evaler-delegation-actual-command  (task 6; 2026-07-12; DRAFTED-AWAITING-ACK)
+The authored delegation spelling in an eval'er's predict body is an ACTUAL COMMAND —
+`sh -c "$code" "$@"` (generic `sh` over pinned `dash`: it matches what the site itself
+does, so the host-shell-identity question is the book's own, inherited faithfully) —
+never `eval`. Grounds: (1) child-context fidelity — the command form's real execution
+exhibits exactly the fresh-shell record the claim needs (fresh options `24T:L1`,
+export-only env `24T:L2`, `$0`/`$@` binding `24T:L3`); `eval` executes
+transparent-context (same shell, effects escape, no positional binding) and would
+therefore claim ALL of that falsely — body-IS-the-claim breaks on every axis at once;
+(2) positional binding is expressible only in the command form; (3) token-collision —
+real in-book `eval` is a future modeling target whose semantics ARE transparent-context
+(`24T` §5c's cousin); one token cannot carry two different context records; (4) off-ramp
+containment — a stripped body runs the code in a child rather than leaking effects into
+the caller's shell; (5) detection honesty — blessed-head recognition of a real
+invocation, vs assigning counterfeit semantics to a builtin. For `eval`, recorded
+honestly: needs no blessed-head grounding, dodges the binary-name choice entirely,
+and is iconic ("this evaluates code"). Outweighed. NOTE: `eval` may legitimately
+reappear as ENGINE-LOWERING vocabulary (candidate-subshell-eval-lowering, threads
+below) — the authored-truth vocabulary and the shipped-form vocabulary are different
+languages with different masters.
+
+### direction-evaler-probe-shipping-split  (task 6; 2026-07-12; conductor opinion,
+argued in-chat; awaiting the human's shaping)
+Scoped to the probe lane (the apply lane is settled forever — `24S:imp-7` verbatim user
+bytes — so "one of our first transforms" can only ever mean probe artifacts). The pin
+the human's suspicion needed: **the exec boundary is where substitution dies** — a real
+`sh -c` child sees no shell functions and no unexported scaffolding, so engine
+substitution cannot reach past a bare-shipped eval'er invocation; bare-ship and
+model-participation are mutually exclusive PER-SITE. The resulting two-lane split
+mirrors the license split the design already has: **bare lane, proof-gated** — a
+payload proven whole-read-only (every effect-bearing inner read-vouched) ships as the
+REAL line, byte-for-byte, under the standing guard-lift precedent (USER_STORY stage 1:
+the shipped probe IS the author's own sh); env-closures compose from OUTSIDE it (env is
+the one thing that crosses exec); probe-matches-APPLY fidelity; attribution intact;
+zero transform machinery. **Transform lane, task-14-gated** — any model-participation
+(a mutative-but-predictable inner; an uncovered consumed channel) forbids bare-ship
+(kFAIL-withhold) and the exec boundary then forces one of: HOIST (per-inner probe
+invocations at top level, no child shell at all — the child-context is ρ-bookkeeping
+the closure reproduces); MATERIALIZE (the PATH command-files candidate; writable-fs
+residual); RECONSTRUCT (probe-lane payload re-serialization — NOT barred by the R2
+weld, which covers apply artifacts only, but carrying the same quoting-fidelity knives,
+so `24T:L7`'s differential is the net); or subshell-eval lowering (threads below).
+Named tension, **fidelity-fork**: substituting a pinned evaluator at probe time makes
+the probe validate the ANALYZER's parse; shipping the real head makes the probe measure
+the APPLY's world (the host's own sh evaluating the same bytes) — a gap between the two
+is the standing kLANG differential-harness story, not new machinery. Sequencing
+opinion: NOT a first transform — payload-v1 (R0) ships per-inner checks under closures
+and needs NO eval'er invocation text at all; the bare lane comes nearly free once
+decomposition + read-vouch chains exist; the transform tier waits on task-14's law.
+
 ## Direction & open threads
 
 - **thread-env-cannot-exec-functions (flagged during task 6, 2026-07-11; PRE-EXISTING
@@ -609,6 +659,17 @@ declines guest-less shapes anyway.
   fresh-session law-check ratifies. Alternative shapes (subshell + export-loop
   emulation of the closure around a function CALL, no disk) converge on the same
   task-14 adjudication.
+  **candidate-subshell-eval-lowering (conductor, 2026-07-12):** the engine's shipped
+  stand-in for a child shell could be a fork-no-exec form —
+  `( set +e; set -- args…; <env manipulation>; eval "$lowered" )` — functions stay
+  visible (predicts callable), dissolving the VISIBILITY half of both this landmine
+  and the env-exec problem with zero disk; options/positionals/env emulated in-shell;
+  effects contained by the subshell. It does NOT dissolve text-reconstruction: when
+  inner heads are substituted, `$lowered` is rewritten payload text, so the transform
+  lane's license still governs. Deltas from a real child (unexported-var leak-in vs
+  `24T:L2`; `$$`; evaluator identity = the probe shell) are asserted-semantics-ledger
+  material. Engine LOWERING vocabulary only, never authored spelling
+  (rul-evaler-delegation-actual-command keeps `eval` out of authored bodies).
 
 - **thread-semantics-proliferation (minted as task 15; human-raised mid-task-6,
   explicitly raised-not-answered):** the admin has selected Dorc AND a shell (identity
