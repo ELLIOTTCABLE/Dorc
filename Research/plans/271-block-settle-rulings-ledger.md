@@ -34,8 +34,10 @@ while this ledger carries the rulings and the arc-pointers, never the design bod
 5. wrapper context-function spelling (né `24S` §2b) — CLOSED 2026-07-11: the
    surface redesigned wholesale; comprehensive durable = **`notes/273`** (statuses
    in its §12); this ledger keeps only the rulings + the arc-pointer below.
-6. carrier declaration spelling — `24T` pin1 (which-arg-is-code, stdin shapes,
-   argv-binding, carrier context record).
+6. eval'er declaration spelling (né carrier; renamed by rul-evaler-vocabulary) —
+   `24T` pin1 (which-arg-is-code, stdin shapes, argv-binding, the child-shell context
+   record). IN PROGRESS 2026-07-11: merge-vs-structure-member analysis drafted,
+   awaiting ack (rul-evaler-merge-no-structure-member).
 7. adj-capture-claim (né `219` fork-capture-claim-type) — probe-captured stdout:
    OutClaim-observation vs new claim-type.
 8. adj-survival-flag-outcome (né `24S:A2` + the `--trust-footprints` rename) — the
@@ -49,6 +51,12 @@ while this ledger carries the rulings and the arc-pointers, never the design bod
 12. 1-series close-out — amend the `24P` specimens (hash introducer; brace-alternation
     if firmed) + author the entity-algebra design note. UNBLOCKED (task 2 closed);
     ready to fire; this ledger carries everything the note needs.
+13. containers-lens re-skim (optional; riding the entity-algebra crosscheck).
+14. triple-check the structural-vouch hard law in a fresh session; then adjudicate the
+    deferred rul-only-oracle-bytes-ship (the `24J` raw-ship repair).
+15. semantics-proliferation stance (minted mid-task-6): whose interpretation of a
+    tool's language/flags does an author answer for — eval'er heads the intense case,
+    GNU-vs-BSD grep the everyday one.
 
 ## Rulings
 
@@ -468,7 +476,70 @@ kill-traffic/survival consumer, and vice versa — the inversion the ternary
 `compare()` relation and the never-derive-separation carve exist to encode. Full
 design, strawmen, rationale: `notes/273` §3–§4.
 
+### rul-evaler-vocabulary  (task 6; 2026-07-11; TYPED — "'Carriers' is a very weird
+word… Let's stick to eval'ers")
+The code-evaluating-head family is named **eval'er** (né carrier, `24T` pin1's
+"licensed-code-carriers"; slug-form `evaler`). "Carrier" retires from prose going
+forward; corpus citations get the né-subscript treatment progressively, no bulk edit.
+Naming dividend recorded under the merge ruling below: if the merge holds, the family
+mints NO new member name at all.
+
+### rul-evaler-floor-fixed-set  (task 6; 2026-07-11; TYPED direction — "I wouldn't
+mind a baked-in list of blessed-eval-alikes")
+Symbol-grounding hackles are LOW here, unlike kinds: an engine-owned, dialect-versioned
+blessed eval'er head-set is acceptable as the grounding floor for the reentry
+primitive. The human's framing (typed): the set is effectively FIXED by the product's
+own nature — we are the *dash* orchestrator; a foreign-shell head (`bash -c`) means the
+runtime evaluates a language we cannot parse, and growing warts-replicated per-shell
+parsers is a permanent no. The blessed set therefore FALLS OUT of the
+semantics-proliferation problem (task 15), not from an awareness/habit/taste-driven
+bless list. Rider, banked so it isn't re-derived: the human's own opposite-direction
+strawman — allow NO real shell names; the user types `dorc` (or `eval`) and the host
+side swaps in the demonstrably-present running shell — was killed BY ITS AUTHOR in the
+same message (probe-apply divergence); any future scheme in this space must pass
+probe-apply fidelity first.
+
+### rul-evaler-merge-no-structure-member  (task 6; 2026-07-11; DRAFTED-AWAITING-ACK —
+the human's decider, the conductor's audit)
+The human's settling decider (typed, with a stated lean to env-unknown-idiom): a
+separate structure-member is justified only if the two members' argparses would
+genuinely DIVERGE in control-flow ("entire branches filled out in one licensure may be
+a flat refusal in another"); if they are basically-always duplicated code, avoid the
+duplication and add some sort of annotation. Conductor's cohort audit (in-chat,
+2026-07-11): across the plausible v1 eval'er cohort — sh/dash (the floor itself),
+bash/busybox-sh (authored delegation), su/runuser (the straddle), fish/csh
+(both-members-refuse), composed sites like `sudo sh -c` / `find -exec sh -c`
+(divergence across TOOLS, never within one) — NO member pair diverges structurally;
+every difference confines to the TERMINAL ACTION of individual branches, and always on
+exactly the ρ dimension (su's login branch: env unclaimable, structure knowable).
+Drafted ruling: **no structure member; eval'er-ness rides `cmd__predict()` detection**
+(delegation into the blessed reentry primitive), and the su-class divergence is spelled
+as a **partial ρ-decline annotation on the delegation line** —
+`dash -c "$code" "$@"   : env-unclaimed` (token bikeshed-tier) — a third engine-owned
+closed mark vocabulary (dimension marks `: user`/`: fs-view`; substrate marks `: fs`/
+`: net-kernel`; now ρ-status marks), with the ONE deliberate kOOB reading queued in
+`272` §11 covering all three at once. Consequences per consumer: value-plane tracing ⇒
+payload env-references go ⊤ (argv-literal payloads analyze whole — the field-trial
+`su - postgres -c` line lands); probe-form shipping (task-14-gated) ⇒ closure
+unbuildable ⇒ participant unshippable ⇒ can't-say ⇒ run. Wart, priced: translation-gap
+— the marked line, executed as written, passes ambient env; the mark says
+don't-believe-that; unavoidable, because sh has NO runnable spelling of "under an
+environment I cannot name" — that impossibility is exactly why it must be a mark.
+Consistency note: the predict×lend_map dual-peel duplication stands unaffected
+(different answer-TYPES; the refined principle: never mint a member whose body would be
+a branch-terminal-only clone of a sibling's — express branch-terminal differences as
+in-body claim vocabulary instead).
+
 ## Direction & open threads
+
+- **thread-semantics-proliferation (minted as task 15; human-raised mid-task-6,
+  explicitly raised-not-answered):** the admin has selected Dorc AND a shell (identity
+  unknown to us, presumed dorc-sh-compatible-enough by the fact Dorc runs at all); does
+  the oracle-author get to select DIFFERENTLY? Most intense at eval'er heads (whose
+  payload-dialect do we honor?); the everyday form is portability footguns (GNU vs BSD
+  grep flag semantics). Wants a general stance "besides just eval." The eval'er-local
+  fragment is already directed (rul-evaler-floor-fixed-set); the general stance is
+  task 15's.
 
 - **task-3 arc — CLOSED 2026-07-11; the comprehensive design durable is
   `notes/272`** (minted at the human's direction: "large enough to deserve a separate
