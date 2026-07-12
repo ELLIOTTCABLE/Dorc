@@ -1061,6 +1061,45 @@ below, plus the who-am-I derivation route (a value with NO probe-time execution
 at all — resolved from the context record via lend-map/ρ claims; no staleness
 axis by construction).
 
+### rul-composed-bytes-defer-and-floor  (task-7 sitting; 2026-07-12; TYPED —
+"Ack on all" on the conductor's four-part closing shape)
+Four parts, one ruling:
+- **defer-the-gate, indefinitely:** whether the validity-algorithm ever gates on
+  the delegation-vs-composed line-idiom is DEFERRED — no gate machinery is
+  built, AND no warning-only-forever weld is minted. Field evidence (does
+  composed-bytes wrongness actually fire?) is the decider; the line-idiom data
+  is tracked regardless (line-level attribution), so a later gate is one
+  predicate at the licensing chokepoint, late-addable.
+- **warnings struck from the fork:** maximal line-idiom data into the global
+  warnings/why function, unquestioned, ideal — never part of the gate question.
+- **the reversible interim floor (scaffolding, NOT a verdict on composed
+  bytes):** the two standing ambiguous wordings are PINNED to the world-spoken
+  reading until the deferred question is ruled — inv-probe-sourced-values'
+  "probe-provenance" and `273` §6's "captures REAL bytes / byte-consumption
+  demands real execution" both read as delegation-produced (the world spoke
+  through the author's routing), NOT merely probe-executed (an authored printf's
+  stdout does not qualify) — for knife-tier consumers (capture-folds; any future
+  artifact-entering fold). Rationale: loosening later is monotone value-add;
+  tightening later is verdict-churn against published oracles. Cost today ≈
+  zero (the read-value-slice flagships are all delegation-shaped). Any builder
+  touching the capture wire carries this floor; the render-unpark fence stands.
+- **doctrine registered — oracles-may-lie / judgments-not-facts:** the system
+  never possessed a truth/lie axis (rul-measurement-is-authorship); it has
+  coherence, calibration, and attribution. An idiom-gate could not remove the
+  deliberate-helpful-lie capability, only drive it into uglier spellings — one
+  more reason the idiom stays warnings-epistemics, never licensing. The
+  vouch-tier's one-line definition: users trusting each other to know what each
+  other WANT — an oracle's product is a JUDGMENT ("you don't need to run the
+  slow thing"), not a fact; the deliberate lie is the stdlib's founding
+  transaction, not a corruption (the docker pid-file read answering the
+  daemon's question = an authored cross-substrate judgment across the `272`
+  endpoint-opacity fence). Phrasing stays the human's to refine; the ack covers
+  the registration.
+Consumers: the block-context read-value-slice/capture-wire briefs (the floor) ·
+the render-unpark fence · task-14's re-read of `273` §6 wording · the stdlib
+quality-bar (delegation-vs-composition as teaching, never gate) · DESIGN-tier
+prose when the human takes the doctrine into root docs (his edit, unclaimed).
+
 ## Direction & open threads
 
 - **thread-delegation-vs-composed-bytes (task-7 sitting; 2026-07-12; the
@@ -1101,9 +1140,8 @@ axis by construction).
   tentatively declines to remove. Converse recorded: visible-probable-lies
   left unflagged brush mild-sin (owned by the warnings lane).
   (f) Conductor deferral-analysis delivered in-chat same date — defer-is-valid
-  + the reversible-floor-and-fence proposal (pin the two ambiguous wordings to
-  the world-spoken reading as interim scaffolding, explicitly not a verdict);
-  awaiting his shaping.
+  + the reversible-floor-and-fence proposal. **→ RESOLVED same date by
+  rul-composed-bytes-defer-and-floor (typed "Ack on all"); see the ruling.**
 
 - **rider-value-recipe-reshape-capture-seams (hand-carried 2026-07-12 from a
   sibling-conductor's standing-work review; obligation on the block-rebuild
