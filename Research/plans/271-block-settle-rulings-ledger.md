@@ -583,7 +583,11 @@ Costs, priced: identity wrappers owe one syllable (`env "$@"`) or lose env value
 cost trivial. Guest-less `env "$@"` executes as `env` (prints environ) — argparse
 declines guest-less shapes anyway.
 
-### rul-evaler-delegation-actual-command  (task 6; 2026-07-12; DRAFTED-AWAITING-ACK)
+### rul-evaler-delegation-actual-command  (task 6; 2026-07-12; STATUS SPLIT
+2026-07-12: the eval-EXCLUSION half is TYPED — "You've killed eval, fairly" — while
+the default-head half (`sh` over `dash`) is REOPENED by the human: unsold, with a
+confirm-or-deny challenge and an outside-the-box directive; see
+thread-delegation-head under Direction & open threads)
 The authored delegation spelling in an eval'er's predict body is an ACTUAL COMMAND —
 `sh -c "$code" "$@"` (generic `sh` over pinned `dash`: it matches what the site itself
 does, so the host-shell-identity question is the book's own, inherited faithfully) —
@@ -697,6 +701,14 @@ Conductor extensions, drafted for the human's consideration:
   razor-attributable-line asks whether a line can be pointed at; this asks whether
   pointing is JUST. Registration (KNOBS-adjacent / spike-CLAUDE-adjacent) is the
   human's call, per the rul-lint-never-drives-design precedent.
+  **HUMAN-TYPED endorsement, 2026-07-12** ("absolutely fantastic fall-out … a
+  critical catch"): registration CLAIMED BY THE HUMAN for the root docs
+  (CLAUDE/DESIGN — his voice, his edit; queued, not yet written). His typed
+  sharpenings, recorded: it settles a long-held inkling about the level of focus
+  owed to oracle-authors and the oracle-lifting behaviour; the standing "DX is the
+  product" upgrades to **"DX is the CORRECTNESS product"** — stricter; caveat — this
+  does not trump rul-lint-never-drives-design ("linting doesn't save a
+  correctness-poor design"), but it shifts the field.
 - **menu re-rank under the gradient (conductor):** the lens RANKS the transform menu
   differently than the engineering lens did — evidence it does real work: bare stays
   top (real everything); MATERIALIZE rises to second (real sh, real exec, real env —
@@ -712,6 +724,43 @@ Conductor extensions, drafted for the human's consideration:
   license gate.
 
 ## Direction & open threads
+
+- **thread-delegation-head (task 6, 2026-07-12; OPEN — the human's confirm-or-deny
+  challenge + outside-the-box directive; he leans possibly non-spelled-as-sh here,
+  viscerally away from the buried complexity):** CONFIRMED as posed: every nameable
+  head (`sh`/`dash`/`bash`/ksh) carries host-bound semantics, and none of them has a
+  semantic the analyzer fully reproduces. Sharpening: exactly ONE fully-reproducible
+  semantic exists — dorc-sh, ours — and it is the one with no native host evaluator;
+  further, the authored token never selected ANALYSIS semantics anyway (`24T` pin2
+  fixes payload-analysis at dorc-sh regardless) — the token selects only the
+  probe-time runtime evaluator of a shipped stand-in, plus the reader's impression.
+  Refresher headlines (hedged, delivered in-chat; sourced research pass on request):
+  sshd evaluates command-strings via the target user's LOGIN shell (`$SHELL -c`),
+  never a fixed `/bin/sh`, so every shipped probe already transits an
+  uncontrolled-shell hop before any `sh` of ours runs; `sh` itself is per-platform
+  (Debian/Ubuntu→dash; RHEL/Fedora/Arch→bash-in-sh-mode; Alpine/embedded→busybox ash;
+  macOS→bash-3.2-in-sh-mode with dash present and a selectable /var/select/sh; the
+  BSDs→ash-descendants and OpenBSD's ksh); `dash` is ABSENT by default on the
+  RHEL-family, Alpine, and the BSDs — a `dash -c` authored spelling names a missing
+  binary on large host classes, dead as a default. Drafted conclusion: "our promises
+  quietly change per-host" is ALREADY the baseline for every byte of shipped
+  probe-sh; the delegation head adds no new uncertainty CLASS — it is merely the
+  first place the standing uncertainty becomes AUTHOR-facing, which is exactly what
+  candidate-probe-body-contract exists to absorb. Candidate better-options:
+  (a) dialect-named delegation — `dorc-sh -c "$code" "$@"`, riding the EXISTING
+  strip-and-exec `dorc-sh` token (USER_STORY: the dumb sibling of dorc-run): a real
+  command on Dorc-ful hosts; off-ramp needs a shim or a doc-line elsewhere;
+  (b) plain `sh -c` + a dialect MARK — strip-clean; evaluator-identity explicitly
+  engine-owned; the author's claim shrinks to dialect-conformance of the code;
+  (c) a fully minted non-sh construct (the human's lean) — needs a strip story,
+  since strip is pure erasure and rewrites no names;
+  (d) candidate-evaluator-handshake — verify instead of choose: a tiny known-answer
+  test battery against the host's `sh` at session start (kVERIFY-calibrate applied
+  at runtime), turning unknown-sh into verified-enough-sh for whatever head ships.
+  **KEY UNLOCK, flagged:** the probe-apply-divergence kill of the human's earlier
+  dorc-token strawman DOES NOT APPLY inside oracle predict bodies — they have no
+  apply-lane presence (`24S:imp-7`) — so that strawman is potentially resurrectable
+  exactly here, scoped to oracle bodies only.
 
 - **thread-env-cannot-exec-functions (flagged during task 6, 2026-07-11; PRE-EXISTING
   landmine, not new debt):** `env` execs binaries via PATH — it cannot invoke a shell
