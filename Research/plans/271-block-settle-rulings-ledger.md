@@ -717,6 +717,36 @@ candidate. The 127-loud-vs-tail-corruption analysis stays on record (`277` §4g)
 syntax remains marker-gated (`276:rul-verdicts-never-stable`), so nothing is
 foreclosed. Resolves `277:delta-command-word-disposition`.
 
+### rul-posix-in-spirit-defaults  (task 12; 2026-07-12; TYPED — "find the POSIX
+rule, simplify it for our purposes, and match it in spirit"; "safe default for any
+conductor-assumptions")
+For grammar minutiae the dialect must mint — identifier charsets, quotation forms,
+and similar lexical rules — the default is REUSE-POSIX-SIMPLIFIED: locate the
+corresponding POSIX rule, simplify it for Dorc's purposes, match it in spirit.
+Rationale (human): we are a shell-extension; even the illegal bits should *feel*
+shell-y, including the constrained identifier space. Conservative-for-the-spike;
+may be revisited post-spike. Registered as a STANDING conductor-assumption default
+beyond this sitting. First applications: `277` §4b (selector token = POSIX name in
+spirit; entity quoting = POSIX quoting simplified).
+
+### The task-12 delta acks  (2026-07-12; typed in-chat; recorded at fixpoint)
+delta-coordinate-grammar ACKED HARD (attached-`#`: "we *demand* preceding valid
+character"; charsets revised to rul-posix-in-spirit-defaults) ·
+delta-brace-alternation ACKED · delta-invariance-line-spelling RULED: the human's
+per-invariance-STATE form — token `invariant:<axis>`, brace-room reserved
+(`invariant:{user,fs-view}` someday); self-graded bikeshed, form
+conductor-adopted; `277` §4e + the specimen exhibit respelled ·
+delta-deliberate-koob-reading ACKED (human color, banked: "I think I wrote kOOB
+too harshly, because it keeps being thrown back at me ... or maybe that's doing
+its job, *stopping* me from slowly evolving Dorc into YAML/Ansible") ·
+delta-keyed-partitioned-vocabulary + delta-topology-ack-bundle: explanation
+paragraphs requested and delivered in-chat; awaiting the typed word · trap-v1
+disposition gentle-ACKED ("unmodeled trap is probably fine for now"; `276`
+annotated: recognized-but-unmodeled walls loudly; the pin-tip-behavior
+fixture-errand rides block-rebuild conductor-tier) · still riding the human's own
+crosscheck: delta-value-prediction-ratifications · in-code:
+delta-specimen-amendments.
+
 ## Direction & open threads
 
 - **thread-fable-window-triage (human-directed, typed 2026-07-12: "make your
