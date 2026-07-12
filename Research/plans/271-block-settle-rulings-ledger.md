@@ -604,8 +604,64 @@ as a design-time license argument. The coherence verdict re-audited minus that l
 survives on own-domain-vs-open-world + folk-familiarity (vibes ruled legitimate
 design input short of proof-tier, human-typed) + pre-Dorc-analog existence.
 
-### thread-razor-unsoftened-worked  (2026-07-12; the sitting's crux — conductor
-analysis on record, awaiting adjudication)
+### rul-invariance-speech-act  (2026-07-12; TYPED — "I approve;
+bite-rate-monotonic acked and all")
+The candidate-invariance-speech-act amendment is RULED: transport across an
+ingredient-borne axis requires the kind-owner's explicit positive line inside
+`kind__state_stored_only_in()` (mark-token spelling = task-12 grammar; strawman
+`:   : user-invariant`); the `272` §3 r2 derivation re-roles from
+license-generator to CONTRADICTION-CHECKER (typed invariance vs who-am-I
+ingredients in one body = declarations-genuinely-contradict fail-fast) plus
+keying/conjecture/hints; engine-owned carried-by rows (substrate-borne
+invariance) stay engine-warranted structural tier, never author-owed. Honest
+pricing ACKED IN THE RULING: bite-rate-monotonic — the amendment does not reduce
+fire frequency; it buys attribution, sin-class conversion (cardinal → vouch), and
+consent semantics. Razor purpose, human-voiced verbatim: "Attributability is
+still a standing win... That's what the razor is for; it doesn't remove errors,
+it's how we corral them." Supersedes `272` §3's derivation-as-license
+(conductor-proposed layer only; the member, marks, keying, carve, fence stand).
+Consequence: the steady-state carve (task8-steady-state-carve) CLOSES vouch-tier
+BY CONSTRUCTION — every escape-class wrongness is now a positive mis-assertion
+on a typed line.
+
+### rul-flag-is-razor-residue  (2026-07-12; TYPED — the positive half of
+`270:adj-survival-flag-outcome`)
+**Claims own what lines can say; the flag owns what no line can say.** The
+admin-consent flag gates exactly the outcome whose wrongness cannot, even in
+principle, be pinned to a line that says the false thing — the open-world
+at-most residue (completeness of a disturbs-claim about a running mutator; the
+frame problem's unsayable "and nothing else") — i.e. the survive tier, and
+anything future that shares that anatomy. Everything line-sayable rides the
+vouch economy un-flagged. Subsumes rul-no-claim-type-gating; makes the
+surprise-anatomy coherence a corollary (folk-familiar failures are the sayable
+ones). Rider, human-observed (pattern-BANKED, deliberately not minted as law,
+n=1): the survival flag is DOUBLE-ENDED — a speech-act from the admin (the flag)
+AND from the oracle-author (the clean at-most claim; USER_STORY receipt
+condition 5) — and future flags of similar shape are expected to remain
+two-party; the invariance near-miss dodged needing that rule by the house-law
+alternative above.
+
+### thread-cargo-cult-cohort-size  (2026-07-12; human-voiced story + the
+coextension test, conductor-answered)
+The story: at LARGE cohort sizes cargo-culting loses human precision (17-of-17
+typed it ⇒ nobody thinks); at SMALL sizes it gains precision (1-of-2 typed it ⇒
+investigate). The human's test: is the speech-act's enumerated space exactly the
+set resting on state-stored-only-in? Conductor answer (delivered in-chat):
+YES, coextensive — the license moves for exactly the set that previously rested
+on the emission's negative space; the typing cohort is the invariance-claiming
+strict subset of state-stored-only-in authors; the token vocabulary is the
+ingredient-borne subset of the ratified axis vocabulary (v1 = {user}, one
+token); substrate-borne transport (engine carried-by rows) never rested on the
+member and is untouched. Verdict: bug-fix tier — tasks 5/6 razor-converted their
+surfaces (lend-map, env-claims) and task-3's member was drafted pre-pattern; of
+course they should match. The visible kind-mix (keyed kinds lack the line,
+shared kinds carry it) puts authors in the small-cohort investigate regime; the
+contradiction-checker kills thoughtless copies at load. Token-collision grammar
+detail (axis tokens now appearing in a third position) routed to task-12's ONE
+deliberate kOOB reading (`273` §8).
+
+### thread-razor-unsoftened-worked  (2026-07-12; the sitting's crux — RESOLVED
+by the two rulings above; analysis retained for the record)
 The human's two wants: (want-razor-unsoftened) omission-failures never ride
 vouch-tier — every failure singly attributable to a line that SAYS the false
 thing; (want-no-cargo-cult-flag) no boilerplate consent-flag on everyday
