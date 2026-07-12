@@ -641,6 +641,30 @@ condition 5) — and future flags of similar shape are expected to remain
 two-party; the invariance near-miss dodged needing that rule by the house-law
 alternative above.
 
+### rul-skip-ban-is-llm-facing  (2026-07-12; TYPED — scope clarification of the
+AGENTS.md terminology-firming)
+The anti-'skip' ruling exists because LLMs repeatedly misread Dorc as an
+rc/convergence-only project when the hard parts are observables / REPLACEMENT /
+insertion — the ban protects design-layer reasoning from that failure mode.
+'Skip' is a perfectly natural term for the HUMAN-facing surface (CLI flags, docs,
+renders) and is sanctioned there. (Consistent with AGENTS.md's own parenthetical
+"although I sometimes do in human-facing docs"; that root doc stays human-owned.)
+
+### thread-survival-flag-rename  (2026-07-12; human proposal on the table)
+The human's naming doctrine, typed: the RAZOR belongs in the flag's name — it is
+not merely a Dorc-internal tool but the product being sold; the user must
+themselves buy in to attribution-having-value, to the tier that matters being
+what-comes-next rather than whether-you-failed. Proposal: **`--risk-unfixable-
+skips`** — you are ALWAYS risking skips (vouch-tier wrong-elision is real,
+rarely design-discussed because little short of the Great Wall of Lint helps);
+the opt-in is risking skips you cannot fix by yelling at somebody in particular.
+Human self-flagged the gloss as not-quite-literally-true; conductor opinion
+delivered in-chat (gloss worthy; two literal gaps owed to the help-text receipt
+— state self-heals next plan; cause is investigable, only the POINTER is lost —
+plus the literalist alternative `--risk-unanswerable-skips`, negating
+IMPLEMENTATION.md's "someone is answerable" promise verbatim). Awaiting the
+human's pick; the rename ruling mints then.
+
 ### thread-cargo-cult-cohort-size  (2026-07-12; human-voiced story + the
 coextension test, conductor-answered)
 The story: at LARGE cohort sizes cargo-culting loses human precision (17-of-17
