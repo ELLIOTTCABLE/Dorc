@@ -856,6 +856,50 @@ route to the strip surface at close.
   open for further keywords; parser work + dialect-version gating). Shared by both:
   the strip/probe target asymmetry above; the shebang rewrite.
 
+### rul-dorc-prefix-head-synthesis  (task 6; 2026-07-12; DRAFTED — human-strawmanned
+as the sum of option-own-token + option-marked-sh; conductor-graded against the
+review rubric; LEADING candidate, awaiting the human's shaping)
+Three spellings, one design: **bare `sh`** = escape — analysis DESCENDS but
+descent is hint-lane ONLY (test-pinnable invariant: descent discoveries never cross
+into licensing absent the mark; no elision/probe/rearrangement licensed past an
+unmarked head — so even a wrong parse of an unmarked payload cannot under-execute;
+the no-keyword option's omission-failure is structurally impossible).
+**`dorc:sh`** = the mark, prefix-position on the real head: full analysis license;
+probe-ship rewrites the prefix-form to `dorc-sh`, resolved by a host-constructed
+per-run shim on PATH; strip = PREFIX-ERASURE to bare `sh` (morally mark-erasure —
+the rul24-totalistic-munge carve shrinks to ~nothing; run-blind holds).
+**`dorc-sh` typed directly** = the runtime object as a blessed spelling for
+multi-nest/by-construction cases: buys the pinned execution environment, NOT
+analysis; composes transitively through combinators by ordinary PATH resolution —
+so rule-transitive-scope COLLAPSES into "row 3 exists: yes/no" (supported by
+explicit opt-in; neither accidental, foreclosed, nor unavailable).
+Mechanical bonus (conductor): `dorc:sh` is grammar-valid sh (colon is an ordinary
+word character) but world-invalid — under a stock shell it fails LOUD (127, naming
+the token), strictly better than trailing marks' silent corruption.
+Rubric grades: fidelity ✓ · epistemic labeling ✓ (best of field: ownership + family
+in one compound) · razor ✓✓ (descend-don't-license) · teachability ✓- (three rows,
+one sentence each; ⚠ rows 2/3 differ by one glyph AND by analysis-license — needs a
+dedicated did-you-mean hint or a row-3 rename) · no-defaults ✓- (hint-descent needs
+the invariant above) · off-ramp ✓- (row-3 dangle: loud-127, opt-in, documented;
+strip policy for its syntax-position occurrences open) · pinning ✓ (marked vs bare
+lines run different evaluators BY DESIGN; document) · task-14 ✓ (prefix-rewrite =
+dorcism-binding; shim = scaffolding) · agentless/DST ⚠ (shim residuals inherited:
+writable-fs, PATH-weaving through authored scrubs, fs seam, cleanup; dividend —
+env-headed closures can exec a file, so the env-exec landmine stays dissolved) ·
+grammar ✓- (a word, not a keyword; but a NEW dorcism position — prefix-on-head —
+owed the kOOB deliberate reading, and the `dorc:*` generalization door must be
+scoped-or-shut AT MINTING) · escape ✓.
+Verdict vs the review bundles: dominates own-token-quiet (louder, no ambient
+dangling class) and own-token-loud (word not keyword; transitive supported not
+foreclosed); vs marked-sh a favorable trade (gives up zero-shim purity +
+total-dissolution; buys head-position labeling + pinned multi-nest) — marked-sh
+wins only if transitive would have been FENCED anyway. Conductor distribution:
+~60 this / ~25 marked-sh / ~15 rest.
+Minted sub-questions: prefix generalization scope · row-3 strip treatment ·
+the descent-never-licenses invariant (law-tier, test-pinnable) · string-interior
+`dorc:sh` stays loud-127 (recommend NO colon-named shim file — colon filenames die
+on Windows-adjacent targets).
+
 ## Direction & open threads
 
 - **thread-delegation-head (task 6, 2026-07-12; OPEN — the human's confirm-or-deny
