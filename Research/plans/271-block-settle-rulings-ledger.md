@@ -616,12 +616,34 @@ mirrors the license split the design already has: **bare lane, proof-gated** —
 payload proven whole-read-only (every effect-bearing inner read-vouched) ships as the
 REAL line, byte-for-byte, under the standing guard-lift precedent (USER_STORY stage 1:
 the shipped probe IS the author's own sh); env-closures compose from OUTSIDE it (env is
-the one thing that crosses exec); probe-matches-APPLY fidelity; attribution intact;
-zero transform machinery. **Transform lane, task-14-gated** — any model-participation
+the one thing that crosses exec); attribution intact. ~~probe-matches-APPLY fidelity;
+zero transform machinery~~ — **CORRECTED by human nits, 2026-07-12:** (nit-transform-
+everywhere) "zero transform" was misleading — the bare lane still rides engine
+transforms (env-control around AND inside probe-bodies including embedded sub-bodies;
+closure assembly; the lifting/parallelizing itself); the honest axis is WHOSE SEMANTIC
+BYTES ship and HOW MUCH recontexting they suffer, never transform-presence.
+(nit-probe-perturbs) "measures the apply's world" overstated a subtle topic — a probe
+ALWAYS perturbs the in-sh world it measures (lifted, parallelized, reassembled;
+mutable state excepted by contract, in-sh state not); what bare-ship buys is narrower
+and still real: the payload INTERIOR is evaluated by the same evaluator over the same
+bytes as apply will use — one fewer divergence CLASS (evaluator-identity), not an
+unperturbed measurement. **Transform lane, task-14-gated** — any model-participation
 (a mutative-but-predictable inner; an uncovered consumed channel) forbids bare-ship
 (kFAIL-withhold) and the exec boundary then forces one of: HOIST (per-inner probe
 invocations at top level, no child shell at all — the child-context is ρ-bookkeeping
-the closure reproduces); MATERIALIZE (the PATH command-files candidate; writable-fs
+the closure reproduces) — **DOUBTED (human nit, 2026-07-12; needs a deep round):**
+recreating the apply-time environment of a wrapped/respelled command outside its real
+executor is "ambitious" — the same survivability sideeye as no-privilege-escalation.
+Conductor defense on record: hoist was never wholesale environment-recreation — each
+hoisted fact travels only under its own licenses (claimed ρ; kind-invariance
+probe-outside; missing license ⇒ guard/run) — but the stacked-claims cost is conceded:
+a hoisted verdict rests on traveled claims where an in-context evaluation rests on
+being-there. The human's counter-shape, banked: prefer BLOCK-INTEGRITY forms — hoist
+within the block, then hoist the block WHOLE under its executor; or if split, every
+travelled line stays under the same actual runtime executor environment — i.e. the
+bare/materialize/lower family. Implied menu reordering: block-integrity shapes first;
+scatter-hoist last, per-fact-only, license-gated. UNSETTLED — flagged to the
+block-context deep round; MATERIALIZE (the PATH command-files candidate; writable-fs
 residual); RECONSTRUCT (probe-lane payload re-serialization — NOT barred by the R2
 weld, which covers apply artifacts only, but carrying the same quoting-fidelity knives,
 so `24T:L7`'s differential is the net); or subshell-eval lowering (threads below).
