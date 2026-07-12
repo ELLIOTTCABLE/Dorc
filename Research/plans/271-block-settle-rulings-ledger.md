@@ -1212,6 +1212,13 @@ prose when the human takes the doctrine into root docs (his edit, unclaimed).
   seams: per-channel backing derivation requires the fragment-preserving
   recipes. The dialect-minting/disclosure fusion: counter-example attempted,
   not inhabitable ⇒ collapses for now per the test.
+  **Approval (TYPED, 2026-07-12): "acked on all, I approve of your results" —
+  with the stated hedge "I will admit to barely understanding, but I am
+  satisfied to see you work through the kill-shots that have killed or refined
+  similar designs in our corpus." Status per the hedge: direction-tier ack for
+  the three-regimes shape, the per-channel derivation refinement, and the
+  test-run results; formal per-component ratification deliberately rides the
+  entity-algebra design note + its adversarial crosscheck.**
 
 - **rider-value-recipe-reshape-capture-seams (hand-carried 2026-07-12 from a
   sibling-conductor's standing-work review; obligation on the block-rebuild
