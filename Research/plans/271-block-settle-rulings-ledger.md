@@ -1039,6 +1039,33 @@ pope-sin/not-sin boundary.
 
 ## Direction & open threads
 
+- **thread-task-7-sitting-steers (2026-07-12; the human's mid-read turn-two
+  responses, all TYPED in-chat):** (steer-stability-gradient) "stability" is a
+  GRADIENT deserving first-class treatment — a design round or a typesystem
+  direction, unsure which; TOCTOU stays spike-WONTFIX, but capture-volatility lies
+  ON that WONTFIX'd axis, so the owed question is *where the WONTFIX-line sits on
+  the axis*, not whether the axis exists. (steer-lean-new-claim-type) gentle lean,
+  explicitly unprincipled/skill-up-phase: closer to new-claim-type — with the
+  operational sharpening that captures must be tracked distinctly AT MINIMUM for
+  better warnings about those regions, so the real adjudication is "do we allow
+  the validity-algorithm to DEPEND on claim-type," not "do we have a claim-type"
+  (possibly-vacuous, his own flag). (steer-cell-naming-wording) the "host bytes
+  enter cell-naming" observation must be deconstructed WITHOUT the cells
+  abstraction — cells are engine-internal; the phrasing consumes the abstraction
+  to obscure a truth; unfold to the raw-sh admin-viewable story (how is the
+  problem spelled Dorc-less, what does a sane admin assume, what dataflow
+  expectations follow) before drawing conclusions. Conductor's unfold delivered
+  in-chat same date (co-valuation; question-freezing vs answer-freezing;
+  freeze-at-binding); awaiting his read. (steer-string-semantics-postponed)
+  postponed to later in the round; his intuition: "sidestep it, don't fight it
+  head-on"; acked-gnarly. (steer-render-postponed) render-into-artifact: no
+  effort until a foundation exists; a legitimate possible finding is
+  refuse-forever ("run away"). (steer-travel-rejected) unbounded-travel REJECTED
+  as an rc-vs-stdout novelty: rc travels identically (`var=$?`;
+  echo-an-rc-to-a-file-and-parse-it-back); conductor concedes — travel-distance
+  is a property of value-plane CAPTURE generally, not of the stdout channel;
+  the concession strengthens the one-value-plane-species reading.
+
 - **thread-delegation-head (task 6, 2026-07-12; OPEN — the human's confirm-or-deny
   challenge + outside-the-box directive; he leans possibly non-spelled-as-sh here,
   viscerally away from the buried complexity):** CONFIRMED as posed: every nameable
