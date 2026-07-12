@@ -18,8 +18,9 @@ Arc durables (the `272` precedent — extensive redesigns get their own document
 ledger keeps rulings + pointers): **`notes/272`** (address-derived topology, task 3) ·
 **`notes/273`** (the wrapper surface, task 5) · **`notes/274`** (the eval'er surface +
 reentry token, task 6) · **`notes/275`** (value-predictions / the capture lane,
-task 7). The **entity-algebra design note** (tasks 1–2's obligation, task 12) is its
-own document when authored; its needed material is carried in full below.
+task 7) · **`notes/276`** (the parallel language sitting; the kWHICHSH floor weld) ·
+**`notes/277`** (the entity-algebra design note, task 12 — carries the delta
+ledger) · **`notes/278`** (the dorc-lang v0.1 reference, DRAFT tier).
 
 ## Session task map (mirrors the conductor task list)
 
@@ -517,7 +518,9 @@ the deliberate-helpful-lie capability, only uglify it; the vouch-tier's one-line
 definition: users trusting each other to know what each other WANT; an oracle's
 product is a JUDGMENT — the deliberate lie is the stdlib's founding transaction).
 Consumers: capture-wire briefs (the floor) · the render-unpark fence · task-14's
-re-read of `273` §6 wording · stdlib quality-bar (teaching, never gate).
+re-read of `273` §6 wording · stdlib quality-bar (teaching, never gate) · the
+changed-detection unpark (rider-floor-vs-changed-detection-coupling, Direction &
+open threads below).
 
 ### rul-value-prediction-species  (task-7 close; 2026-07-12; TYPED — "full ack,
 durable as appropriate", with the human's naming and the clock carve-down)
@@ -732,18 +735,28 @@ foreclosed. Resolves `277:delta-command-word-disposition`.
   thread). NB the triage *grading* is human-directed; substantive ratifications
   inside it (e.g. the task-9 sentence) still require their own typed acks —
   nothing in this thread closes a ruling by itself.
-- **thread-invariants-dictionary (the human's own, tabled in-flight 2026-07-12):**
-  `_tmp-invariants_dictionary.md`, untracked at the worktree root — the human's
-  unbanked vocabulary/invariants pass, dropped mid-conversation with a predecessor
-  conductor; HANDS OFF (no banking, no ingestion) until the human's own pass.
-  Pointer kept here only so a worktree accident can't silently lose it: it carries
-  edge-floor-vs-changed-detection (a genuine coupling
-  rul-composed-bytes-defer-and-floor's consumer list does not yet name),
-  edge-merged-streams (the interleaving fence wants checking at capture-time, not
-  only at pipe-modeling), and a provenance/grade word-split proposal. (2026-07-12,
-  post-cleanup annotation: the file was REMOVED in the human's worktree-litter
-  sweep — verdict-or-accident unconfirmed; the sitting conductor holds the full
-  text in-context and can regenerate it on request; none of it has been banked.)
+- **thread-invariants-dictionary (CLOSED-by-removal 2026-07-12):** the human's
+  unbanked vocabulary/invariants draft (`_tmp-invariants_dictionary.md`, untracked)
+  was removed in his worktree-litter sweep; under the same-date free-for-conductors
+  direction, the conductor banked its two actionable findings below and dropped the
+  rest (the full text survives only in the 2026-07-12 session context; regenerable
+  on request). Also noted, unbanked: a proposal to split the two senses of
+  "provenance" (the `plans/111` attribution-DAG sense vs the value-grade lattice
+  `275` uses the word for) — vocabulary-tier; revisit if the collision bites.
+- **rider-floor-vs-changed-detection-coupling (conductor-observed, nack-freely):**
+  `rul-composed-bytes-defer-and-floor`'s reversible floor excludes composed-grade
+  values from knife-tier folds, while the changed-detection fold (`273` §7 — the
+  composed grade's chief value-prop) consumes composed bytes through the admin's
+  own grep to gate a downstream elide. At v1 nothing collides (the scope call is
+  unmade); whoever unparks changed-detection must either route it as replace-tier
+  (vouch-tier) machinery or explicitly ride the deferred composed-gate ruling —
+  the floor as worded would otherwise silently delete that product.
+- **rider-merged-streams-capture-fence (conductor-observed, nack-freely):**
+  `v=$(cmd 2>&1)` stores interleaved stderr+stdout. Delegation-produced captures
+  are fine (real execution really interleaves — world-spoken); any composed or
+  model-substituted participant hits the output-composition-ladder's
+  interleaving-never fence (`273` §7) — so the fence must be checked at the
+  CAPTURE, not only at pipe-modeling. Block-context implementation-planning rider.
 - **rider-value-recipe-reshape-capture-seams (hand-carried 2026-07-12 from a
   sibling-conductor's standing-work review; obligation on the block-rebuild
   value-recipe-reshape brief):** the reshape brief must NAME AND RESERVE (not
