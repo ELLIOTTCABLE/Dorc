@@ -541,6 +541,41 @@ member). Backing-inheritance + three-regimes + transport-chain: direction-tier a
 (hedged), formal ratification rides the entity-algebra note + its adversarial
 crosscheck. Routed consumers: `275` §11.
 
+## Rulings & threads (task-8 sitting — IN PROGRESS 2026-07-12)
+
+### rul-no-claim-type-gating  (2026-07-12; TYPED — "hard ack on the 'not flagging
+by claim type'"; the NEGATIVE half only)
+The trust flag is never keyed to claim-TYPES (disturbs-claims, invariance
+derivations, lend-entries, value-predictions...) — claim-type gating mis-carves the
+risk because danger is consumer-relative (the `273` §4 safety-inversion), the
+species-list grows every round, and the admin's consent object is a risk-class, not
+a mechanism. The POSITIVE half — precisely which outcome(s) the flag gates, and
+whether ONE flag suffices — is the live thread below; not yet ruled.
+
+### thread-surprise-anatomy-of-the-bite  (2026-07-12; human-voiced, in-flight)
+The flagged class is flagged not only for bite-severity but for
+bite-UNFAMILIARITY: ops-people have no folk-vocabulary for "a stranger's incomplete
+at-most claim un-ran a line I never guarded," while "I checked as alice and mutated
+as root" (the sudo-pip shape) is an everyday self-blame ritual. The human's
+coherence test, three questions: (1) is that surprise-differential story true;
+(2) does the sudo-pip shape generalize to an ops-wide class, and what is its
+general description; (3) is that class the SAME class that escapes the flag by
+construction under the steady-state carve? All three cohere ⇒ license to ship the
+single-flag design; incoherence ⇒ a SECOND flag question opens (human suspicion,
+un-ruled: under no circumstances the *same* flag). Conductor's answers are on
+record in-chat (2026-07-12, awaiting the human's reading): story-true with a
+sharpening (the surprise splits between bite-moment and diagnosis; hand-guarded
+vs bare-line sub-cases differ); generalizes as the **wrong-world-check class**
+(state keyed by an unnoticed dimension — user / netns / fs-view / ρ — checked in
+one world, acted on in another; closed-world-enumerable, mechanically-falsifiable,
+folk-diagnosable); same-class verdict carrying two honest residuals (the bare-line
+initial-surprise is the whole vouch tier's inheritance, not new to this carve; and
+the `24S:razor-attributable-line` tension — the escape-class knife is an OMISSION —
+survives only under a typed refinement: falsifiable closed-world omissions may ride
+the vouch tier, unfalsifiable open-world omissions pay the flag). Conductor
+recommendation on record: no second flag at all (consent-boilerplate dilution;
+the class's real mitigations are the differential CI + folk-legible why-chains).
+
 ## Direction & open threads
 
 - **thread-fable-window-triage (human-directed, typed 2026-07-12: "make your
