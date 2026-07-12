@@ -1143,6 +1143,40 @@ prose when the human takes the doctrine into root docs (his edit, unclaimed).
   + the reversible-floor-and-fence proposal. **→ RESOLVED same date by
   rul-composed-bytes-defer-and-floor (typed "Ack on all"); see the ruling.**
 
+- **thread-backing-three-regimes (task-7 sitting; 2026-07-12; the human's nit +
+  two challenges, TYPED; conductor concessions folded in):**
+  (nit-window-terminology) modulo TOCTOU-WONTFIX, the patrolled window is
+  "apply-script-start → apply-time binding-line" — a closed world of VISIBLE
+  script-mutators; the probe→apply-start segment stays the standing accepted
+  residual; use care in all future phrasing.
+  (candidate-clock-self-disturbing, his) instability is just an at-every-site
+  mutator: a never-settled kind/substrate (`sm.dorc.Clock`-shaped) whose cells
+  compare never-provably-undisturbed buys correctness of `date` and every
+  caller of `date` inside the EXISTING ternary relation — REFUTES the
+  conductor's "volatility is orthogonal" hole (conceded: modeling the clock as
+  undisturbed-by-walls was the error; model it as always-self-disturbing);
+  potentially dissolves t7-remaining-stability into backing-CURATION — "where
+  is the WONTFIX-line on the stability axis" becomes "which kinds/substrates
+  carry the never-settled bit." Residues: binary coarseness (day-granular
+  `date +%F` refuses alongside `date +%s`; safe floor, bands only on field
+  evidence) · who mints the bit (engine-owned substrate row vs kind-owner
+  declaration) → design-note vocabulary.
+  (concession-who-am-i-not-separate; his "that sounds wrong," conceded) the
+  who-am-I reads are the REGISTER-BACKED regime of the one inheritance rule,
+  not a separate route: `id -un`'s backing is a context register (the
+  lend-mapped user value) that the ANALYZER itself holds, so analytic
+  resolution (no shipping) and no-staleness (region-constant, the guest is
+  born-differently-situated and never mutated) are CONSEQUENCES of the
+  backing-class, not special-casing; `272` r2's blessed who-am-I list = the
+  engine-known set of register-backed reads.
+  **Emerging unified shape:** ONE rule — captured bytes inherit the coordinate
+  of what the read reads — times three regimes by backing-class: register
+  (analytic, free) / ordinary world-cell (probe-measured, walls-patrolled,
+  invariance ⇒ cross-context transport) / never-settled cell (never folds,
+  site runs). Meta-flag, on record: the candidate has absorbed every objection
+  raised so far; earmarked for the adversarial crosscheck
+  (exclusions-not-inclusions) riding the entity-algebra note.
+
 - **rider-value-recipe-reshape-capture-seams (hand-carried 2026-07-12 from a
   sibling-conductor's standing-work review; obligation on the block-rebuild
   value-recipe-reshape brief):** the reshape brief must NAME AND RESERVE (not
