@@ -1081,6 +1081,29 @@ axis by construction).
   only); the invariant's wording must not decide this silently when render
   work resumes. This is the first concrete instance of the human's
   does-the-validity-algorithm-depend-on-claim-type question.
+  **Addendum (2026-07-12, the human's why-decide-now turn, TYPED):**
+  (a) the warnings-half is STRUCK from the fork — maximal-data into the global
+  warnings/why function is unquestioned, ideal; the fork is gates-only.
+  (b) His challenge: is full deferral valid — neither building gate-machinery
+  nor welding warning-only-forever — and if not, what forcing-functions demand
+  ruling early? (c) His gentle lean: stdout models are a MUST-ask despite being
+  "almost certainly a losing one" — grep-ables without trustworthy (or fast)
+  idempotence are the project's FOUNDING category (the five-second
+  docker-monster question a microsecond pid-file `cat` could answer; wanting to
+  bank/share the check-script-that-mints-lying-output). (d) The trust
+  observation: oracle-trust isn't correctness-trust (unattainable; "versions
+  change" outlives even fallibility) — it is users trusting each other to know
+  what each other WANT. (e) Tentative phrasing, explicitly trying-on/not-married:
+  "oracles need to be able to lie, because in the chaotic world of ops,
+  sometimes somebody will WANT them to lie" — a behaviour-line at
+  could-have-lied vs could-not-have-lied would forbid consciously making a
+  delegation-oracle lie helpfully (massage/wrap/change output), a capability he
+  tentatively declines to remove. Converse recorded: visible-probable-lies
+  left unflagged brush mild-sin (owned by the warnings lane).
+  (f) Conductor deferral-analysis delivered in-chat same date — defer-is-valid
+  + the reversible-floor-and-fence proposal (pin the two ambiguous wordings to
+  the world-spoken reading as interim scaffolding, explicitly not a verdict);
+  awaiting his shaping.
 
 - **rider-value-recipe-reshape-capture-seams (hand-carried 2026-07-12 from a
   sibling-conductor's standing-work review; obligation on the block-rebuild
