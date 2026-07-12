@@ -215,13 +215,26 @@ the gate idiom passes).
 Rider ledger (small, none spec-shaped): lint-tier emit-nevers (posh can't catch them) ·
 pipefail semantics live ABOVE the floor by construction (analyzer model + handshake +
 envelope carve — the sentence defines floor *text*, not the semantics ceiling) · zsh-paste
-discipline items sit outside any binary (quality-bar) · **version pins PENDING** — errand
-dispatched 2026-07-12; decision principle given: dash = the newest official release still
-LACKING pipefail (expected 0.5.11.x), so the pair *agrees* on rejecting the bare form
-rather than leaning on the disagreement clause; posh = current-Debian-stable (expected
-0.14.x); empirical battery (local-assign form, gate idiom, PE rejections, `$'…'`
-non-expansion, errexit doors) against real binaries from each project's official host;
-results fold here on landing (`.claude/research/kwhichsh-gcd/turn02-*`).
+discipline items sit outside any binary (quality-bar) · **version pins RULED (conductor, 2026-07-12, under
+delegated authority — "decide for us"): `posh 0.14.1` ∩ `dash 0.5.12`.** Real-binary
+empirics (turn02 report, committed `cd777a5`: dash built from the official source
+tarballs, posh extracted from official Debian `.deb`s, no installs; all 12 battery checks
+landed exactly as expected on all four candidate binaries — the local-assign keystone
+passes posh; the PE/`[[`/`function` rejections all hold; the gate idiom is errexit-safe on
+both). Two corrections the empirics forced: **pipefail enters dash at 0.5.13, not 0.5.12**
+(proved by `options.h` diff + built-binary behavior; falsifies the turn01 care-set note,
+and Debian's patched 0.5.12 carries no backport) ⇒ newest-lacking = 0.5.12; and
+current-Debian-stable posh = **0.14.1** (0.14.5 is testing-only). Pleasing coherence: the
+floor pin (0.5.12, the last pre-pipefail dash) and DESIGN's executor lean (dash ≥ 0.5.13,
+the first with pipefail) sit exactly astride the pipefail notch — "pipefail lives above
+the floor" made literal in version numbers. dash-pin-tension, recorded for free veto:
+0.5.11.5 is battery-identical on all 12 checks, so dropping older costs nothing if
+"older is gently better" should outrank "newest-lacking"; 0.5.12 chosen as
+principle-faithful, with the side-benefit that it matches the bookworm-era system dash
+most widely deployed. **fence-rejection-rc** (turn02 observation, promoted to a fence):
+the spec sentence's "parses and runs identically" is scoped to ACCEPTED constructs —
+dash exits 2 where posh exits 1 on *rejected* ones, so no dialect rule may ever depend on
+the exit code or error text of a rejected construct.
 
 **The weld:** kWHICHSH → **welded to `kWHICHSH-minimum-lcd`** as this executable
 two-binary floor (human, typed 2026-07-12: "annotate kWHICHSH as fully welded. It's a
@@ -239,7 +252,6 @@ unscheduled, cheap at any time.
 
 ## Still open in this sitting's carve
 
-- **Version pins** for the floor sentence — errand out; fold on landing.
 - **trap** — human-DEFERRED 2026-07-12 (wallclock/token budget; graded tractable, attack later). (fold-in; genuinely undesigned — `plans/064`:13's one-liner is the entire corpus
   treatment; `set -e` earned round 20V, trap never did). Proposed close (conductor, cheap):
   (t1) fixture-errand — pin what tip actually does on a trap-registering book
@@ -260,4 +272,4 @@ item-1 (this note is that sitting's durable record) · `plans/271` (the adjacent
 block-settle ledger; carve respected) · `notes/24O` item-7 (churn — discharged at design
 tier here) · `notes/23O` §5 language item (`unsafe` hatch discharged; superset statement
 closed-in-shape via the floor weld) · `.claude/research/kwhichsh-gcd/` (turn01 GCD report,
-`c1bf0f1`; turn02 version pins, pending).
+`c1bf0f1`; turn02 version pins + battery matrix + SHA256s, `cd777a5`).
