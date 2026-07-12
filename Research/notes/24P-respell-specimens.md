@@ -252,7 +252,12 @@ required/parsed/constrained; quietly idiomatic; spelling delegated) — nack fre
   shebang) and inherits `24Q` §3's portability matrix — documented, never required. The `--`
   convention is the guix-shell prior-art shape and removes the where-does-the-script-start
   ambiguity without inspecting the filesystem.
-- **decision-strip-leaves-shebang (the §8 fork, resolved):** `dorc strip` NEVER touches the
+- **decision-strip-leaves-shebang (the §8 fork, resolved):** *(SUPERSEDED IN HALF,
+  2026-07-12: the task-6 close's human-acked strip wording — `274` §13 "strip =
+  prefix-erasure + shebang rewrite only"; `271:rul-dorc-prefix-head-synthesis` —
+  reinstates a shebang-RUNNER rewrite in strip OUTPUT, so stripped artifacts are fully
+  dorc-free. The other half stands: the ENGINE never parses or recognizes shebang
+  content at analysis time, and `dorc-sh` itself never reads it.)* `dorc strip` NEVER touches the
   shebang; NOTHING in dorc parses or recognizes shebang content, period (the engine doesn't
   read it; dorc-sh itself doesn't either — a `#!` line is an ordinary comment to sh). This
   keeps the human's no-parsed/no-constrained constraint absolute and the kOOB comment-parse
