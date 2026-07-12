@@ -514,23 +514,72 @@ every difference confines to the TERMINAL ACTION of individual branches, and alw
 exactly the ρ dimension (su's login branch: env unclaimable, structure knowable).
 Drafted ruling: **no structure member; eval'er-ness rides `cmd__predict()` detection**
 (delegation into the blessed reentry primitive), and the su-class divergence is spelled
-as a **partial ρ-decline annotation on the delegation line** —
-`dash -c "$code" "$@"   : env-unclaimed` (token bikeshed-tier) — a third engine-owned
-closed mark vocabulary (dimension marks `: user`/`: fs-view`; substrate marks `: fs`/
-`: net-kernel`; now ρ-status marks), with the ONE deliberate kOOB reading queued in
-`272` §11 covering all three at once. Consequences per consumer: value-plane tracing ⇒
+as ~~a **partial ρ-decline annotation on the delegation line** —
+`dash -c "$code" "$@"   : env-unclaimed` — a third engine-owned closed mark
+vocabulary~~ — **SUPERSEDED same date by rul-env-claim-inversion below (the human's
+counter-proposal): no mark, no third vocabulary; the distinction rides the env-idiom
+grammar itself.** Consequences per consumer stand as stated: value-plane tracing ⇒
 payload env-references go ⊤ (argv-literal payloads analyze whole — the field-trial
 `su - postgres -c` line lands); probe-form shipping (task-14-gated) ⇒ closure
-unbuildable ⇒ participant unshippable ⇒ can't-say ⇒ run. Wart, priced: translation-gap
-— the marked line, executed as written, passes ambient env; the mark says
-don't-believe-that; unavoidable, because sh has NO runnable spelling of "under an
-environment I cannot name" — that impossibility is exactly why it must be a mark.
+unbuildable ⇒ participant unshippable ⇒ can't-say ⇒ run.
 Consistency note: the predict×lend_map dual-peel duplication stands unaffected
 (different answer-TYPES; the refined principle: never mint a member whose body would be
 a branch-terminal-only clone of a sibling's — express branch-terminal differences as
 in-body claim vocabulary instead).
 
+### rul-env-claim-inversion  (task 6; 2026-07-11; DRAFTED-AWAITING-ACK — the human's
+counter-proposal, conductor-endorsed and sharpened)
+The ρ-claim reading of a predict body INVERTS from the earlier draft: **bare
+command-position delegation claims NOTHING about ρ** (env-⊤: unshippable closure,
+no env value-flow believed through the body), and the passthrough claim is spelled
+POSITIVELY as **`env "$@"`** (the human's "vaguely plausible made-up-spelling for
+'copy my env as it is'" — in fact a real idiom: no-op-adjacent, forces PATH-lookup,
+reads as "hand off to the environment as-is"). The full per-rung claim grammar, every
+rung a runnable sh idiom:
+  - bare `"$@"` (or `dash -c "$code" "$@"`) — ρ-claim: NOTHING (⊤). The su login
+    branch is spelled as exactly what a naive author writes.
+  - `VAR=x "$@"` — per-variable claim: VAR known, rest ⊤ (deliberately under-claims
+    the real passthrough; per-variable per `24S` §2b).
+  - `env VAR=x "$@"` — full passthrough with named overrides.
+  - `env "$@"` — full passthrough, unmodified.
+  - `env -i VAR=x … "$@"` — exactly-these (the scrub-base, unchanged from `273` §2).
+Sharpening (conductor; wants the human's eye): bare means **claims-nothing (⊤)**,
+NEVER "claims-isolation" — a positive not-shared fact would be derived separation
+(the `272` §4 never-derive-separation carve reaches here; both readings coincide for
+tracing and shipping anyway, so the safe one costs nothing today).
+Why this beats the mark, recorded: (1) UNIFORMITY — it is the ρ-side twin of
+rul-lend-map's enumerate-every-dimension law (absence-means-full-lend was rejected
+there; the earlier bare-means-passthrough draft quietly reinstated it on the ρ side —
+the inversion removes the inconsistency); silence=floor everywhere. (2) No new mark
+vocabulary; the engine-owned closed sets stay two; the queued kOOB reading shrinks.
+(3) NO translation-gap: under-claiming is not lying — the executed bytes never
+contradict the reading, the reading just believes less than the bytes do (the
+analyzer's normal under-approximation posture). (4) Cargo-cult razor alignment: the
+`env` syllable is never silently-superfluous — it IS the claim; and a shell-literate
+reviewer who "cleans up" the redundant-looking `env` NARROWS the claim (passthrough→⊤)
+— cleanup-vandalism fails safe. Lane framing (the human's probe-vs-apply question,
+answered): a predict body's env-spelling has exactly ONE executing consumer — the
+probe-lane closure; it never exists in the apply artifact (`24S:imp-7`), so the
+runnable-fidelity bar is probe-stand-in-tier — but the lanes do NOT lower the stakes
+of the CLAIM: a wrong env-claim reaches apply decisions through analysis (wrong
+value-flow → wrong-CONVERGED → wrong elision), same knife-tier as a wrong check body.
+Costs, priced: identity wrappers owe one syllable (`env "$@"`) or lose env value-flow
+— `273` §8's bare-`"$@"`-predict line needs a superseding annotation on ack; stdlib
+cost trivial. Guest-less `env "$@"` executes as `env` (prints environ) — argparse
+declines guest-less shapes anyway.
+
 ## Direction & open threads
+
+- **thread-env-cannot-exec-functions (flagged during task 6, 2026-07-11; PRE-EXISTING
+  landmine, not new debt):** `env` execs binaries via PATH — it cannot invoke a shell
+  FUNCTION. Probe-form composition (`273` §6, task-14-gated) substitutes participants
+  with `__predict` FUNCTIONS, so any env-headed closure body (`env -i … "$@"` — already
+  present in the ACKED `273` §2 sudo strawman, independent of the claim-inversion)
+  cannot literally exec a function-substituted guest. The shipped form needs a
+  reconciliation (engine-composed closure text; prefix-assignment forms — noting POSIX
+  leaves prefix-assign-on-function persistence murky, dash/bash diverge). Route: task
+  14 + block-context implementation-planning. Discovered while auditing
+  rul-env-claim-inversion; applies to the pre-inversion draft equally.
 
 - **thread-semantics-proliferation (minted as task 15; human-raised mid-task-6,
   explicitly raised-not-answered):** the admin has selected Dorc AND a shell (identity
