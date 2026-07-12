@@ -1,4 +1,4 @@
-# 27L — the language-item sitting: kWHICHSH scope · the `unsafe` hatch · the churn policy
+# 276 — the language-item sitting: kWHICHSH scope · the `unsafe` hatch · the churn policy
 
 AI-scribed (design-rubber-duck sitting, 2026-07-12), human-adjudicated. The durable record of
 the TODO-ADDTL item-1 sitting ("the Dorc language proper" — human-selected as the
@@ -106,7 +106,7 @@ Banked names (typed: "bank both, we'll roll with them"):
 ## Still open in this sitting's carve
 
 - **THE superset-boundary statement** — the primary question; deliberately last.
-- **trap** (fold-in; genuinely undesigned — `plans/064`:13's one-liner is the entire corpus
+- **trap** — human-DEFERRED 2026-07-12 (wallclock/token budget; graded tractable, attack later). (fold-in; genuinely undesigned — `plans/064`:13's one-liner is the entire corpus
   treatment; `set -e` earned round 20V, trap never did). Proposed close (conductor, cheap):
   (t1) fixture-errand — pin what tip actually does on a trap-registering book
   (silently-ordinary-command would be a soundness bug; wall is fine); (t2) v1 disposition —
@@ -115,7 +115,7 @@ Banked names (typed: "bank both, we'll roll with them"):
   language-round item. Softener, unverified: elision's StandIn rc-reproduction means
   trap-ERR firing behavior is ~preserved under elision, so the deep interaction is narrower
   than it first looks.
-- **Awaiting-ack ledger:** direction-drift-report-tier · the `--exit-code` wording rider.
+- **Awaiting-ack ledger:** direction-drift-report-tier (human-DEFERRED 2026-07-12, explicitly neither ack nor nack — value/effort unsure) · the `--exit-code` wording rider.
   (The KNOBS entry itself was human-edited in place — counts as acked.)
 
 ## Pointers
