@@ -529,6 +529,33 @@ Consistency note: the predict×lend_map dual-peel duplication stands unaffected
 (different answer-TYPES; the refined principle: never mint a member whose body would be
 a branch-terminal-only clone of a sibling's — express branch-terminal differences as
 in-body claim vocabulary instead).
+**Self-attack round (2026-07-12, at the human's order; full record in-chat):** the
+audit's "no walk ever forks structurally" survives but DOWNGRADED from descriptive to
+descriptive-GIVEN-DISCIPLINE, and re-founded: (1) the strong form is
+**grammar-determinism** — an honest argparse mirrors the TOOL's one grammar; purpose
+cannot fork the token-partition, only per-branch actions; the one constructible fork
+(lenient-structure vs strict-predict on unknown flags, e.g. `bash -O extglob -c`) is
+excluded NORMATIVELY by the standing strict-argparse quality bar (`24T:P-A4` /
+R2-MULTIOP cousin), so the claim leans on that discipline being enforced. (2) Blood
+drawn: the su `-s SHELL` cell — structure-side wants VALUE-branching on the parsed
+operand (`/bin/sh` carry, `/bin/csh` decline), which under the human's original
+fork-criterion reads as a filled-branch-vs-flat-refusal fork; the audit's
+"terminal-action" framing was doing unacknowledged work. Conclusion survives because
+merged bodies express value-branches as ordinary sibling arms — the criterion that
+matters is WALK-sharing, not tree-identity. (3) The clean law the audit gestured at:
+**split members by ANSWER-TYPE, never by claim-strength or purpose** —
+structure-identification is a sub-product of the model (merged); lend_map's
+dimension-map is a different answer-type (separate) — retroactively dissolving the
+dual-peel tension. (4) Residual cells found, none breaking the merge:
+deferred-execution eval'ers (`at`/`batch` — served by the disturbs lane, not
+structure; deferred disturbance is the daemon-start problem, already kind-tier);
+multiplexer heads (`busybox` — size-asymmetric but subset-compatible, actively
+pro-merge: a split would clone the 50-arm dispatch for 2 arms); non-terminating
+tools (`watch` — no read-only model exists; corpus-irrelevant for books);
+foreign-language eval'ers (`perl -e` — fenced by `24T` pin2/imp-P1 for both members
+equally). (5) The bounded-downside backstop: even a genuinely-forked future tool
+costs the merge only body-ergonomics, never expressiveness or soundness — forked
+trees spell as sibling arms in one body.
 
 ### rul-env-claim-inversion  (task 6; 2026-07-11; DRAFTED-AWAITING-ACK — the human's
 counter-proposal, conductor-endorsed and sharpened)
