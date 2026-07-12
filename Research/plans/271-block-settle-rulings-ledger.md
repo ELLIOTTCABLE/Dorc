@@ -900,6 +900,71 @@ the descent-never-licenses invariant (law-tier, test-pinnable) · string-interio
 `dorc:sh` stays loud-127 (recommend NO colon-named shim file — colon filenames die
 on Windows-adjacent targets).
 
+**Sub-question dispositions (human, 2026-07-12 — the shaping pass):**
+- **rider-invited-rooms-typing (TYPED direction; implementation-time detail):** the
+  descent-never-licenses invariant deserves MORE than a test-pin — typesystem
+  enforcement, incorrectness-inexpressible: explicit type-differentiation between
+  analysis "walking where we're drawing conclusions" (invited rooms) and "walking in
+  promising-only-to-hint mode" (uninvited rooms), with licensure constructible ONLY
+  from invited-room analysis. The house make-bad-states-unrepresentable style
+  applied to the license plane. Discussion owed at implementation-time; the
+  direction is typed now.
+- **rul-row-three-documented-dangle (TYPED):** strip does NOT touch typed `dorc-sh`
+  — documented-dangle, ruled. Grounds (his): now that the analyzable intent is
+  writable differently (`dorc:sh`), typing the runtime object is the author's
+  explicit buy-in (maybe they want the exit for ONE file, not all; we can't know);
+  **half-strip is worse than no-strip** — `dorc:sh` saves us from half-assing a
+  strip-from-some-contexts-we-can-find; and the paradigm is uniform across
+  invokers: bash, perl, or sh invoking `dorc-sh` all behave identically ("you
+  invoked a thing you uninstalled, not our problem, maybe you intended that").
+  Consequence: the rul24-totalistic-munge carve shrinks to prefix-erasure
+  (mark-erasure class) + the shebang-runner rewrite; no in-body name-rewriting
+  exists anywhere.
+- **rul-no-nested-annotation (TYPED):** explicitly NO nested `dorc:sh` — it is
+  ANNOTATION SYNTAX, not in-semantic meaning, and annotation-syntax is not allowed
+  in opaque body-blobs: fast-fail, notice-during-analysis, parse-failure-tier
+  warn/error. (Supersedes the conductor's stays-loud-127 recommendation wherever
+  analysis can see the blob — descent-for-hints reads payloads, so the dq fires at
+  plan time; the runtime-127 residual remains only for truly-⊤, unreadable blobs.)
+- **thread-command-word-dorcisms (human random-thought, banked light per his
+  don't-overencode):** OPPOSITE lean on the generalization door — almost leaning
+  toward REVISITING OLD SYNTAX: "entire dorcism parses as a command word, always
+  results in 127" is far safer than trailing marks' tail-position failure (random
+  positional argument to an unknown command, unknown consequences). The punted
+  unstripped-under-bare-shell accident-danger might be rescued by command-word
+  spellings. Gated on whether existing concepts spell beautifully in
+  valid-command-name characters. No action; a door deliberately left ajar for the
+  entity-algebra grammar sitting.
+
+**The DST story (conductor, 2026-07-12; delivered in-chat in full — the compressed
+record; pre-minting deliverable for the shim ⚠):** (1) determinism by construction —
+shipped probe text is HOST-INDEPENDENT (the prefix-rewrite targets the fixed NAME
+`dorc-sh`, a pure compile-time function in the clean kernel; all host-variance is
+confined to the shim file's content = f(handshake result)); goldens of shipped
+artifacts stay host-agnostic — a testing DIVIDEND over the dead
+substitute-resolved-path variant, which would have made shipped bytes vary per-host.
+(2) every host interaction rides the ONE existing transport seam (handshake query ·
+atomic shim write, write-then-rename · smoke-test · probe execs · cleanup), each a
+mockable/fuzzable event; the in-memory simulator models the shim as a
+registered-command-in-simulated-PATH keyed to the materialization event; real-dash
+fixtures materialize it actually; the differential bridges (kVERIFY-calibrate).
+(3) no new ordering class — the shim materializes ONCE, in session-establishment,
+before any probe ships (happens-before by the session protocol, not by luck);
+temp-dir naming is RUN-ID-DERIVED, never mktemp-random (no new randomness
+dependency; leftover dirs from crashed runs are inert by fresh naming).
+(4) failure lattice all-fails-safe: write-fail / noexec-tmp / quota / shim-vanishes
+/ author-scrubbed PATH → 126/127 → the ≥2 sink → can't-say → run; the
+session-preamble SMOKE-TEST (`dorc-sh -c 'true'`-shaped) converts scattered
+per-probe failures into ONE session-level shimless-degrade decision — marked-reentry
+probes pre-degrade to can't-say without shipping, one detection point, one hint.
+(5) sweep axes minted: shim-vanishes-mid-session · noexec host · torn-write
+(rejected by rename-atomicity) · PATH-scrub-loses-prepend (fails safe, hintable) ·
+stale-dir inertness · the materialization-before-probes invariant (test-pinned).
+Hostile-host shim-tampering is named and out-of-scope per the standing
+security-boundary doctrine (`plans/102`). Mid-session evaluator swap: the shim
+FREEZES the session's choice at establishment — later PATH mutation on the host
+cannot move a running session (deterministic); a deleted pinned binary 127s → runs.
+
 ## Direction & open threads
 
 - **thread-delegation-head (task 6, 2026-07-12; OPEN — the human's confirm-or-deny
