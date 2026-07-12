@@ -761,6 +761,34 @@ Conductor extensions, drafted for the human's consideration:
   dorc-token strawman DOES NOT APPLY inside oracle predict bodies — they have no
   apply-lane presence (`24S:imp-7`) — so that strawman is potentially resurrectable
   exactly here, scoped to oracle bodies only.
+  **quantifier-audit (2026-07-12; the human's works-for-all → works-for-one-unknown
+  challenge, audited at his explicit find-the-logic-errors request):**
+  conclusion-DIRECTION survives; the mechanism is corrected. Three errors found:
+  (err-quantifier-location) the ∀→∃ elimination happens at DEPLOYMENT, for every
+  line equally — oracle code never executes universally; LCD authorship discharges
+  the universal over the deployment domain by intersection-discipline, and the
+  ∃-witness is bound by the admin's platform before any token evaluates; `sh -c`
+  re-names the ALREADY-BOUND witness (the body and its child draw from the same host
+  resolution, modulo PATH edges) rather than binding a new one. One genuinely new
+  dependence conceded: PATH-resolution of the name — availability-class, loud-fails
+  (rc 127 ⇒ ≥2 ⇒ run), and it interacts with our own scrub-closures (PATH must
+  survive the scrub; the `273` §2 survivor idiom). (err-visibility-not-
+  quantification) typed-vs-silently-subjected is a VISIBILITY asymmetry, not a
+  quantificational one; the real hazard is the human's own observable-transforms
+  gradient — the token invites a mental model the platform will betray;
+  fair-attribution class, contract-page-absorbable. (err-false-complement)
+  dash-absence and sh-variance are not X% / (100−X)% complements: availability
+  failure is loud and fails-safe; semantic drift is quiet but, for LCD-disciplined
+  code, confined to the calibrated fringe the ENTIRE shipped product already stands
+  on — the complement-rhetoric makes a coin-flip of a calibrated intersection. What
+  SURVIVES the audit: the su-class case (a head-token differing from the modeled
+  tool's real evaluator is a genuine authored vouch — legitimate, per-tool, wanted);
+  and the psychological core, which lands on candidate-dialect-named-delegation for
+  a CORRECTED reason: `sh` mis-labels the author's epistemic situation (host-sh is
+  the thing they can never know); `dorc-sh` labels it exactly (documented, versioned,
+  differentially calibrated — the one evaluator-semantic they CAN fully know).
+  Pairing note: candidates (a)+(d) compose — the author types what they can know;
+  the handshake verifies what nobody can.
 
 - **thread-env-cannot-exec-functions (flagged during task 6, 2026-07-11; PRE-EXISTING
   landmine, not new debt):** `env` execs binaries via PATH — it cannot invoke a shell
