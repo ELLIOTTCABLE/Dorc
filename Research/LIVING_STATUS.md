@@ -24,24 +24,36 @@ block-rebuild (one conductor, the whole reimplementation block) → block-contex
 (wrapper/payload/read-value) → block-stdlib (stdlib-authoring + yardstick-measurement)
 → field-trial revival → multi-host resumption.
 
-**⚠ IMMEDIATE next activity (human-acked 2026-07-10): the `270:block-settle`
-design-pass**, human-in-the-loop — the entity-algebra design note (reserving the
-`24S:A7` seams) + the adjudication agenda (`270` §3: adj-entity-algebra ·
-adj-capture-claim · adj-trichotomy-spelling/adj-axis-vocabulary ·
-adj-survival-flag-outcome · adj-small-homes · adj-stopping-point). NO builders dispatch
-before block-settle closes: the corpus-respell deliberately WAITS on the entity-algebra
-authored-spelling ack so the fixture sweep happens exactly once (`270` §2 records the
-rationale — this supersedes the old "respell is dispatch-ready, fire on d8" posture;
-d8 itself was typed-acked 2026-07-10, so the specimen gate is clear).
+**⚠ IMMEDIATE next activity (2026-07-12): the block-settle CHECKPOINT.** Block-settle
+is COMPLETE except three human acts: (1) the two remaining `277` §8 delta acks
+(delta-keyed-partitioned-vocabulary · delta-topology-ack-bundle — explanation
+paragraphs delivered in-chat 2026-07-12, awaiting the typed word); (2) the human's
+own adversarial-crosscheck of the whole 270-era pile (HUMAN-OWNED, deliberately run
+from a clean context — his crosscheck practice has drifted from the skill file, he
+runs it his way; delta-value-prediction-ratifications deliberately rides it per
+`275`'s own ratification clause); (3) the in-code read of the amended specimens
+(delta-specimen-amendments). After those: **block-rebuild dispatches — builders are
+the next action** (dispatch package below). The grammar gate itself
+(`270:adj-entity-algebra` authored-spelling) is substantially ACKED 2026-07-12:
+attached-`#` HARD · POSIX-in-spirit charsets (`271:rul-posix-in-spirit-defaults`, a
+STANDING conductor-default) · brace-alternation · the `invariant:<axis>` token.
 
-**Block-settle IN PROGRESS (2026-07-10/11, rubber-duck sittings):** rulings accrete in
-**`plans/271`** (the ledger — its task map says what's closed vs open); the
-address-derived-topology design (the task-3/adj-trichotomy outcome; naming TYPED) is
-durable at **`notes/272`**; worked strawmen at `notes/27x-strawmen-topology/`. The
-corpus-respell brief gains a rename rider (`271:rul-at-most-family-names`:
-touches→`cmd__disturbs` · reaches→`kind__disturbance_reaches_only` · the new
-`kind__state_stored_only_in` member). Netns is un-punted ahead of full fs-view
-(`271:rul-networking-unpunt`).
+**Block-settle COMPLETE-except-checkpoint (2026-07-12):** all 15 task-map items
+dispositioned (`plans/271` task map: 1–8 + 10 closed · 9 closed-UNPINNED · 12's
+authoring batch complete · 11/13 struck · 14 deferred-to-Opus post-Fable, gating
+block-context lanes only, NEVER block-rebuild · 15 parked to stdlib quality-bar).
+New durables: **`notes/277`** (the entity-algebra design note — THE spec for
+entity-algebra-rebuild and the mark grammar for corpus-respell; its §8 is the delta
+ledger) · **`notes/278`** (dorc-lang v0.1 one-page reference, DRAFT,
+conductor-reviewed) · `notes/276` closed its carve (kWHICHSH WELDED to minimum-lcd
+as the posh∩dash executable floor, KNOBS annotated + human-committed; `unsafe` =
+bare-sh; verdicts-never-stable; trap gentle-acked recognized-but-unmodeled). The six
+`24P` specimens are amended to the `277` grammar (hash-selector;
+`disturbs`/`disturbance_reaches_only` renames; the `state_stored_only_in` +
+`invariant:user` exhibit; pipe-guard re-XFAIL'd; `24P` §11 records it). The
+corpus-respell rename rider stands (`271:rul-at-most-family-names`); netns stays
+un-punted ahead of fs-view (`271:rul-networking-unpunt`); worked strawmen at
+`notes/27x-strawmen-topology/`.
 
 **⚠ NAMING DISCIPLINE (human-ruled 2026-07-10, HIGH priority, binds every brief):**
 hyphenated full-word slugs; outside-document references as `docID:slug`
@@ -56,19 +68,38 @@ reshuffle map) → **`plans/270`** (the charter — blocks, adjudications, fence
 (the respell spec-by-example; §8/§9 riders + bless flow) → **the block-settle results:
 `plans/271` (rulings ledger) · `notes/272` (address-derived topology) · `notes/273`
 (the wrapper surface: predict merge + `cmd__lend_map()` — partially supersedes `24S`
-§2b/§6b; read 273 §0 before trusting any 24S mechanism)** → per-task: `plans/24S`/`24T`
+§2b/§6b; read 273 §0 before trusting any 24S mechanism) · `notes/274` (eval'er +
+reentry token) · `notes/275` (value-predictions) · `notes/276` (the language sitting
++ kWHICHSH weld) · `notes/277` (the entity-algebra design note + its §8 delta
+ledger) · `notes/278` (the dorc-lang v0.1 reference, DRAFT)** → per-task: `plans/24S`/`24T`
 (the wrapper/payload keystones — proposal-tier, prime adversarial-analysis targets) ·
 `notes/24M` (language rulings) · `plans/262` §2 (the wire contract block-rebuild
 partially imports) · `notes/219` (the capture lane behind adj-capture-claim) ·
 `plans/24R` (secondary positions; the why-run impossibility ledger).
 
-**Where the build stands (tip of `ai/spike3-r23`, conductor-verified 2026-07-10):**
-e2e **all 126 pass** — 121 live + 4 declared-XFAIL respell specimens (stale-old goldens
-BY DESIGN, the staged failing spec; implementor flow in `24P` §9b) +
-pipe-guard-oracle-converged live with its re-keyed golden. The `240` ladder Stages 1–5
-LANDED + polish + pipe lift + wave-1 (evidence: `24C`). The respell specimens are
-COMMITTED at tip; `dorc_flags_selftest` anchors survive-multiwall. Working tree carries
-only the human's own TODO.md edit — leave it.
+**Where the build stands (tip `9373188`, conductor-verified 2026-07-12):** e2e
+**all 126 pass** — 121 live + FIVE declared-XFAIL respell specimens (stale-old
+goldens BY DESIGN; pipe-guard re-joined the XFAIL set when `#matched` un-parsed at
+HEAD; implementor flow unchanged, `24P` §9b: delete-XFAIL → BLESS on a verified
+binary → conductor inspects against `24P` §4-as-amended-by-§11). The `240` ladder
+Stages 1–5 LANDED + polish + pipe lift + wave-1 (evidence: `24C`).
+`dorc_flags_selftest` anchors survive-multiwall. Working tree carries only the
+human's own uncommitted trim to `notes/278` §1 — leave it.
+
+**Block-rebuild dispatch package (the block conductor assembles its briefs from):**
+corpus-respell = `24P` §2+§3 (as amended by §11; the dissolved unquoted-dotted-entity
+corner drops per `277` §4a) + §5 d1–d9 + §7–§9 riders + the `277` §4 grammar + the
+rename rider (`271:rul-touches-becomes-disturbs` · `271:rul-at-most-family-names`) +
+the marker stamp (`24C:rul24-marker-in-churn`) + the `24C` deferral entries + the
+order-insensitive record-compare rider (`262` §7) · bless-checkpoint-one ·
+typeless-floor (+ the effect-check rider,
+`271:rul-effect-check-home-typeless-floor`) · entity-algebra-rebuild per `277`
+§§1–3 + seams §5 + fences §6 · value-recipe-reshape
+(+ `271:rider-value-recipe-reshape-capture-seams` + backing-SETS + the OutClaim
+rename) · wire-records-v1-import (`262` §2 minimum) · e2e-degraduation ·
+bless-checkpoint-two. Standing fences per `270` §2 ride every brief;
+`271:rul-posix-in-spirit-defaults` is a standing conductor-default for grammar
+minutiae.
 
 **⚠ DEBT FLAG (2026-07-11, block-settle task-5 audit):** the landed `24J`
 connected-probe mechanism ships RAW book bytes at probe time — confirmed
