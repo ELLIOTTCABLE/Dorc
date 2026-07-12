@@ -552,9 +552,24 @@ rul-lend-map's enumerate-every-dimension law (absence-means-full-lend was reject
 there; the earlier bare-means-passthrough draft quietly reinstated it on the ρ side —
 the inversion removes the inconsistency); silence=floor everywhere. (2) No new mark
 vocabulary; the engine-owned closed sets stay two; the queued kOOB reading shrinks.
-(3) NO translation-gap: under-claiming is not lying — the executed bytes never
-contradict the reading, the reading just believes less than the bytes do (the
-analyzer's normal under-approximation posture). (4) Cargo-cult razor alignment: the
+(3) ~~NO translation-gap~~ — **RE-SCORED same date under the human's challenge** (the
+in-chat walk-through): the gap is REDISTRIBUTED AND DEMOTED, not eliminated.
+Contradiction-tier: neither scheme ever had one — both readings are sound WEAKENINGS
+of the bytes' behavior, and the conductor's original pricing of the mark overstated
+this axis too. Reader-divergence-tier: BOTH schemes carry one — the mark concentrated
+a nastier annotation-cancels-code flavor on rare lines; the inversion spreads a milder
+analyzer-believes-less-than-code flavor across every bare body (which is the
+analyzer's universal posture toward all sh), and mints one genuinely new cost:
+`env "$@"` MEANS more to the analyzer than it does at runtime — annotation-by-idiom,
+the product's founding move (the admin's own `dpkg -s … ||` guard is precisely a real
+idiom whose presence carries analyzer meaning), where the mark was
+annotation-by-annotation, the thing the kOOB redline exists to ration. The
+LOAD-BEARING win is therefore the omission-direction/razor argument, sharpened: under
+bare-means-passthrough, an ignorant author's naive body mints a positive,
+possibly-false claim SPELLED BY AN ABSENCE — no line says the false thing;
+razor-failing; the exact omission-shape rul-lend-map's enumerate-law killed — while
+under the inversion, ignorance mints ⊤ and every believable claim is a typed,
+pointable line. (4) Cargo-cult razor alignment: the
 `env` syllable is never silently-superfluous — it IS the claim; and a shell-literate
 reviewer who "cleans up" the redundant-looking `env` NARROWS the claim (passthrough→⊤)
 — cleanup-vandalism fails safe. Lane framing (the human's probe-vs-apply question,
@@ -580,6 +595,20 @@ declines guest-less shapes anyway.
   leaves prefix-assign-on-function persistence murky, dash/bash diverge). Route: task
   14 + block-context implementation-planning. Discovered while auditing
   rul-env-claim-inversion; applies to the pre-inversion draft equally.
+  **Candidate on record (human, 2026-07-11; self-described "kinda messy maybe"):**
+  materialize participating `__predict` functions to disk as command-files at
+  probe-ship time + prepend a probe-directory PATH element to the shipped compound.
+  Pros: exec-uniformity — env-headed closures just work; functions become real
+  commands. Cons, named: inherits the kCOMMS writable-fs residual (stripped/Windows
+  targets, `plans/142`); PATH must be woven through EVERY closure rung, including
+  authored `env -i … PATH=…` scrub-bodies (engine-rewritten PATH text brushes the
+  task-14 question directly); fs-writes ride the DST transport seam; cleanup
+  obligations on the host. Possible needle-thread, recorded: PATH-materialization is
+  SCAFFOLDING-not-semantics — the semantic content stays authored oracle bytes; the
+  engine contributes only plumbing — which may satisfy whatever task-14's
+  fresh-session law-check ratifies. Alternative shapes (subshell + export-loop
+  emulation of the closure around a function CALL, no disk) converge on the same
+  task-14 adjudication.
 
 - **thread-semantics-proliferation (minted as task 15; human-raised mid-task-6,
   explicitly raised-not-answered):** the admin has selected Dorc AND a shell (identity
