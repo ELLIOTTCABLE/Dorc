@@ -5,7 +5,7 @@
 # hand-spelled auto-cell the typeless floor (24L §2) retires; kept faithful until it lands.
 otelcol__predict() {
    case $1 in
-      --version) v : io.opentelemetry.Collector; otelcol --version >/dev/null 2>&1 :? io.opentelemetry.Collector:.v0155 ;;
+      --version) v : io.opentelemetry.Collector; otelcol --version >/dev/null 2>&1 :? io.opentelemetry.Collector:#v0155 ;;
    esac
 }
 otelcol__is_converged() {
