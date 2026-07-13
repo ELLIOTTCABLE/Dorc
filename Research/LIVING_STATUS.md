@@ -24,19 +24,20 @@ block-rebuild (one conductor, the whole reimplementation block) → block-contex
 (wrapper/payload/read-value) → block-stdlib (stdlib-authoring + yardstick-measurement)
 → field-trial revival → multi-host resumption.
 
-**⚠ IMMEDIATE next activity (2026-07-12): the block-settle CHECKPOINT.** Block-settle
-is COMPLETE except three human acts: (1) the two remaining `277` §8 delta acks
-(delta-keyed-partitioned-vocabulary · delta-topology-ack-bundle — explanation
-paragraphs delivered in-chat 2026-07-12, awaiting the typed word); (2) the human's
-own adversarial-crosscheck of the whole 270-era pile (HUMAN-OWNED, deliberately run
-from a clean context — his crosscheck practice has drifted from the skill file, he
-runs it his way; delta-value-prediction-ratifications deliberately rides it per
-`275`'s own ratification clause); (3) the in-code read of the amended specimens
-(delta-specimen-amendments). After those: **block-rebuild dispatches — builders are
-the next action** (dispatch package below). The grammar gate itself
-(`270:adj-entity-algebra` authored-spelling) is substantially ACKED 2026-07-12:
-attached-`#` HARD · POSIX-in-spirit charsets (`271:rul-posix-in-spirit-defaults`, a
-STANDING conductor-default) · brace-alternation · the `invariant:<axis>` token.
+**⚠ IMMEDIATE next activity (2026-07-12, end-of-sitting): the human's OWN
+adversarial-crosscheck of the whole 270-era pile** — HUMAN-OWNED, deliberately run
+from a clean context (his crosscheck practice has drifted from the skill file; he
+runs it his way; do NOT pre-key the reviewers — `277`'s crosscheck-framing section
+was removed at his direction and must not be re-supplied). Riding that pass:
+the `275` ratifications (three-regimes · backing-inheritance · transport chain)
+plus everything `271`'s closing-sweep entry grades conductor-proposed/yolo'd.
+**Block-settle is otherwise CLOSED** (task 12 closed 2026-07-12; the full delta
+pass is typed — the grammar gate `270:adj-entity-algebra` is discharged: attached
+`#` · the `:` / `:!` / `:?` sigil family · POSIX-in-spirit charsets
+(`271:rul-posix-in-spirit-defaults`, a STANDING conductor-default) ·
+brace-alternation · `invariant:<axis>`). After the crosscheck:
+**block-rebuild dispatches — builders are the next action** (dispatch package
+below).
 
 **Block-settle COMPLETE-except-checkpoint (2026-07-12):** all 15 task-map items
 dispositioned (`plans/271` task map: 1–8 + 10 closed · 9 closed-UNPINNED · 12's
