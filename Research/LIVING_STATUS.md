@@ -41,6 +41,13 @@ block-rebuild (`279f:ask-promote-task-14`). Block-settle remains CLOSED as recor
 `:` / `:!` / `:?` sigil family · POSIX-in-spirit charsets · brace-alternation ·
 `invariant:<axis>`).
 
+**Transport descent (2026-07-13, Fable rubber-duck): durable at `notes/27A`.** The
+`279f` §3 transport question got a full design descent; the problem is **OPEN** — banked
+walls + a refuted-do-not-revive list + the one outstanding fork (the user-axis
+consumption polarity; §3). `279f:ask-transport-disposition` and `ask-flag-boundary-recut`
+should now be answered THROUGH `27A`; block-context planning must consume it. fs/netns
+default-walls are human-acked as real-world truth; nothing in `27A` §3 is acked.
+
 **Block-settle COMPLETE-except-checkpoint (2026-07-12):** all 15 task-map items
 dispositioned (`plans/271` task map: 1–8 + 10 closed · 9 closed-UNPINNED · 12's
 authoring batch complete · 11/13 struck · 14 deferred-to-Opus post-Fable, gating
