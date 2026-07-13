@@ -24,20 +24,22 @@ block-rebuild (one conductor, the whole reimplementation block) → block-contex
 (wrapper/payload/read-value) → block-stdlib (stdlib-authoring + yardstick-measurement)
 → field-trial revival → multi-host resumption.
 
-**⚠ IMMEDIATE next activity (2026-07-12, end-of-sitting): the human's OWN
-adversarial-crosscheck of the whole 270-era pile** — HUMAN-OWNED, deliberately run
-from a clean context (his crosscheck practice has drifted from the skill file; he
-runs it his way; do NOT pre-key the reviewers — `277`'s crosscheck-framing section
-was removed at his direction and must not be re-supplied). Riding that pass:
-the `275` ratifications (three-regimes · backing-inheritance · transport chain)
-plus everything `271`'s closing-sweep entry grades conductor-proposed/yolo'd.
-**Block-settle is otherwise CLOSED** (task 12 closed 2026-07-12; the full delta
-pass is typed — the grammar gate `270:adj-entity-algebra` is discharged: attached
-`#` · the `:` / `:!` / `:?` sigil family · POSIX-in-spirit charsets
-(`271:rul-posix-in-spirit-defaults`, a STANDING conductor-default) ·
-brace-alternation · `invariant:<axis>`). After the crosscheck:
-**block-rebuild dispatches — builders are the next action** (dispatch package
-below).
+**⚠ IMMEDIATE next activity (2026-07-13, post-crosscheck): the `279f` ask-list,
+then block-rebuild dispatch.** The 270-era adversarial crosscheck RAN (four lanes —
+Fable-adversarial + Sol-neutral + DeepSeek-neutral/adversarial; reports on branch
+`ai/spike3-r23-crosscheck-reports` @ `5ce1757`; the sol-adversarial lane failed to
+produce) and was adjudicated at **`notes/279f`** (Fable adjudicator, max-skepticism;
+read its §1 first). Verdict: **no kill; dispatch block-rebuild after the `279f` §6
+ask-list acks.** Key outcomes: the `275` ratifications (three-regimes ·
+backing-inheritance · transport chain) are **REFUSED as posed** — the
+backing-completeness gap (279b-fd1/279a-A2) routes to block-context
+implementation-planning; `277` §3/§5/§6 and `275` §6 carry in-place spec
+amendments (each annotated, awaiting ack — `279f` §4); the `279f` §5 brief riders
+JOIN the dispatch package below; task-14 is proposed promoted to run DURING
+block-rebuild (`279f:ask-promote-task-14`). Block-settle remains CLOSED as recorded 2026-07-12
+(grammar gate `270:adj-entity-algebra` discharged: attached `#` · the
+`:` / `:!` / `:?` sigil family · POSIX-in-spirit charsets · brace-alternation ·
+`invariant:<axis>`).
 
 **Block-settle COMPLETE-except-checkpoint (2026-07-12):** all 15 task-map items
 dispositioned (`plans/271` task map: 1–8 + 10 closed · 9 closed-UNPINNED · 12's
