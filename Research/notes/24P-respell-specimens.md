@@ -336,7 +336,9 @@ NOT touched (goldens stay stale-old by design — the implementor blesses).
 
 - **selector-introducer respell** (`271:rul-selector-introducer-hash`): every coordinate's old
   property-suffix `.prop` becomes an ATTACHED `#prop` in trailing marks —
-  `…Package:"$pkg".installed` → `…"$pkg"#installed` (and `.installed!`→`#installed!`),
+  `…Package:"$pkg".installed` → `…"$pkg"#installed` (and the old `.installed!` complement
+  became the inverted-sense SIGIL in the same pass: `:! …"$pkg"#installed` — polarity moved
+  off the coordinate onto the mark, `277` §4a; sigil family `:` / `:!` / `:?`),
   `…Service:"$1".enabled` → `…"$1"#enabled`, `…GrepMatch:"$pat".matched` → `…"$pat"#matched`,
   `…Package:"$pkg".tuned` → `…"$pkg"#tuned`, and the empty-entity
   `io.opentelemetry.Collector:.v0155` → `…:#v0155`. Nine marks across the five oracle files.
@@ -355,8 +357,7 @@ NOT touched (goldens stay stale-old by design — the implementor blesses).
   outside this specimen scope).
 - **new-member exhibit** (`277` §4e): `strawman24-alias-provides` gains
   `sm_dorc_Package__state_stored_only_in()` with one `: fs` substrate emission and the
-  `: user-invariant` colon-line. Status: conductor-PROPOSED grammar, awaiting the human's
-  `delta-invariance-line-spelling` ack (`277` §8); exhibited in-code so the ack rides the file.
+  `invariant:user` colon-line (`277` §4e; token form settled at the 2026-07-12 delta pass).
 - **pipe-guard re-XFAIL**: `strawman24-pipe-guard-oracle-converged` re-gains the one-sided `XFAIL`
   file. §9b's un-XFAIL rationale — its only delta was a golden-text fact-label re-key, so it stayed
   live — no longer holds: the `#matched` selector UN-parses at HEAD, a structural failure the XFAIL
