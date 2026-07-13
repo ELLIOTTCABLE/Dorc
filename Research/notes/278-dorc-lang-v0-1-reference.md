@@ -28,13 +28,7 @@ sentence, executable — quoted verbatim from `276:rul-spec-two-binary-floor` (t
 delegated authority "decide for us"; empirics `kwhichsh-gcd/turn02`): **`posh 0.14.1` ∩
 `dash 0.5.12`.** posh 0.14.1 = the shell in current Debian stable (Trixie), `/bin/sh`-policy
 shell across three releases. dash 0.5.12 = the newest official release that still *lacks*
-`set -o pipefail` (pipefail enters dash at **0.5.13**, not 0.5.12 — corrected by real-binary
-diff of `options.h` + built-binary behavior). *Pipefail-notch coherence:* the floor pin
-(0.5.12, last pre-pipefail dash) and DESIGN's executor lean (dash ≥ 0.5.13, first with
-pipefail) sit exactly astride the pipefail notch — "pipefail lives above the floor" made
-literal in version numbers. `dash-pin-tension` (recorded, free veto): 0.5.11.5 is
-battery-identical on all 12 checks, so the conductor may ratify down to it at zero dialect
-cost if "gently older" should outrank "newest-lacking."
+`set -o pipefail`.
 
 **`fence-rejection-rc`** (`276:rul-spec-two-binary-floor`, promoted from `kwhichsh-gcd/turn02`):
 the sentence's "parses and runs identically" is scoped to **accepted** constructs only —
