@@ -60,8 +60,13 @@ ledger) · **`notes/278`** (the dorc-lang v0.1 reference, DRAFT tier).
 11. adj-payload-pins pre-read (né `24T:P-A1`/`P-A2`) — STRUCK from block-settle
     (thread-fable-window-triage): always formally owed at block-context
     implementation-planning, which keeps sole ownership.
-12. 1-series close-out — amend the `24P` specimens (hash introducer;
-    brace-alternation if firmed) + author the entity-algebra design note. UNBLOCKED.
+12. 1-series close-out — CLOSED 2026-07-12: `277` authored + delta-passed (final
+    sweep below) · `278` assembled + reviewed · specimens amended twice (grammar +
+    the closing-sweep respells) · `272` annotated · residue = the human's
+    clear-context adversarial pass over the 270-era pile (the `275` ratifications
+    ride it), then block-rebuild dispatch. Original scope, for the record: amend
+    the `24P` specimens (hash introducer; brace-alternation if firmed) + author
+    the entity-algebra design note.
     Imports: the spelling direction + seams below · `272` §1 formal spine, §4 carve,
     §5 fence, substrate-mark slot, keyed/partitioned vocabulary · the
     observe-backing-widening backing-SETS seam · the `dorc:` prefix-mark grammar
@@ -739,13 +744,40 @@ conductor-adopted; `277` §4e + the specimen exhibit respelled ·
 delta-deliberate-koob-reading ACKED (human color, banked: "I think I wrote kOOB
 too harshly, because it keeps being thrown back at me ... or maybe that's doing
 its job, *stopping* me from slowly evolving Dorc into YAML/Ansible") ·
-delta-keyed-partitioned-vocabulary + delta-topology-ack-bundle: explanation
-paragraphs requested and delivered in-chat; awaiting the typed word · trap-v1
-disposition gentle-ACKED ("unmodeled trap is probably fine for now"; `276`
+trap-v1 disposition gentle-ACKED ("unmodeled trap is probably fine for now"; `276`
 annotated: recognized-but-unmodeled walls loudly; the pin-tip-behavior
 fixture-errand rides block-rebuild conductor-tier) · still riding the human's own
-crosscheck: delta-value-prediction-ratifications · in-code:
-delta-specimen-amendments.
+crosscheck: delta-value-prediction-ratifications.
+
+**The closing sweep (typed 2026-07-12; task 12 CLOSED on it):**
+delta-keyed-partitioned-vocabulary ACKED ("partitioned" hard; "keyed" big-shrug
+tolerated — no terminology churn while slugs and core spelling churn together) ·
+delta-topology-ack-bundle ACKED with per-row grading: member-existence
+minted-and-move-on (low-lockin: vanishingly-few authors) · substrate marks +
+carried-by SOFT ("a little lost in this corner"; do not overencode — narrow it in
+as we build) · contradiction-checker acked, graded lint-tier-plus
+(fail-fast-and-loud allowed, low-potatoes) · never-derive-separation acked
+spike-tier-because-foundational (concern banked: "gently concerned about the value
+being thrown out the window") · addresses-fence: co-reference parking acked, the
+locators-never-file-coords half soft · formal spine: the ternary/safety-inversion
+acked; the REST (generator registry, the one-page spec) un-acked-but-yolo'd, on
+the table for his adversarial pass · file-kind grounding gently acked on the
+conductor's clarification (engine-native bootstrap grounding — NOT a general
+implemented-in-core door; capability stays language-side-first) · behaviour-menu
+acked · verification-posture row unaddressed ⇒ rides the yolo. Review-reading
+edits applied to `277` in the same sweep: default-context name UNMINTED (his
+~SUSPECT `<hostname>`-root banked; nothing pre-designs r26 naming) ·
+cell/coordinate/selector/context vocabulary block added ("cell" kept, defined as
+the DENOTED referent — names ≠ referents is what resolve exists for) · "measure"
+swept to marks/predictions per rul-measurement-is-authorship · **polarity moved to
+the mark sigil: the family is `:` / `:!` / `:?`** (his suggestion, adopted; the
+trailing-`!` coordinate suffix died; specimens respelled) · entity charset
+narrowed to portable-filename-set + `/` (narrow-start, his direction:
+never define by excluding metacharacters) · the crosscheck-framing section
+REMOVED from `277` (his direction: reviewers must not be pre-keyed; not
+redistributed) · `277` de-annotated (rules stated plainly; the ceremony lives
+here). Handoff state: the human's next act is a clear-context adversarial review
+of the whole 270-era pile; block-rebuild dispatches after it.
 
 ## Direction & open threads
 
