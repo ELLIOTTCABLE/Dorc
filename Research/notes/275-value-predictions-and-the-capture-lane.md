@@ -139,6 +139,16 @@ consumers — binding-site disposition needs its own care in block-context plann
 
 ## §6 — Cross-context transport (the probe-outside chain for values)
 
+> (STATUS 2026-07-13, per `279f` §3: **NOT RATIFIED — refused as posed at the
+> crosscheck adjudication.** Premise 1 consumes the backing as a completeness claim
+> the `:?` mark does not make (279b-fd1/279a-A2: a backing carries no completeness
+> burden, `24D`); a body honestly marking one read while its output depends on an
+> unmarked input transports a wrong value with no wrong line anywhere. The
+> disposition — v1-defer / an authored completeness speech-act / effect-closed
+> bodies only — is owed at block-context implementation-planning. Register-backed
+> transport stands, analytic. Step 4 amended per `279f:fix-275-license-source`;
+> the rest of the section is preserved as the proposal under adjudication.)
+
 Fact-side refresher: probe-outside license = permission to treat an outside (alice)
 measurement as being ABOUT the inside (root) object = same-object-whoever-asks =
 derived user-invariance (`272`). The value-side chain, four steps:
@@ -149,7 +159,13 @@ derived user-invariance (`272`). The value-side chain, four steps:
    backing fails-to-license sameness, never proves difference;
    never-derive-separation's flavour at the value tier.)
 3. "Same state whoever asks" on the user axis = user-invariance of the backing cell.
-4. Invariance is already derived (`state_stored_only_in` × carried-by × r2).
+4. Invariance is established per `272` §3 AS AMENDED by
+   `271:rul-invariance-speech-act`: the kind-owner's typed `invariant:<axis>` line
+   (vouch-tier) plus engine-warranted carried-by rows; the r2 derivation
+   contradiction-checks and never licenses. *(Amended 2026-07-13 — the prior
+   wording, "invariance is already derived (state_stored_only_in × carried-by ×
+   r2)", predated the task-8 re-role and read as derivation-licensed transport;
+   279a-A1/Codex-fd4.)*
 
 ∴ **a value transports across the user boundary exactly when its backing does.**
 This DISCHARGES `272` §11's expected "axis-independence value-bound in the

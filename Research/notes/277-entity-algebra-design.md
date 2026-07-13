@@ -165,16 +165,29 @@ Restated from `271:rul-selector-disjointness-dialect-scoped` as build-spec:
   marks carry for that kind. Family per `271:rul-family` — name-derived, never
   file-derived, never author-derived. No global per-kind vocabulary exists.
 - **Comparison** (inside `selector_covers`): same-entity, a claim SPARES a backing
-  iff claim-token ∈ dialect(the backing's minting family, kind) AND claim-token ≠
-  backing-token. Everything else COLLIDES — selector-less claims, unminted tokens,
-  cross-dialect tokens are all ⊤-selector. Cross-entity/kind disjointness unchanged.
+  iff BOTH sides carry minted selectors AND claim-token ∈ dialect(the backing's
+  minting family, kind) AND claim-token ≠ backing-token. Everything else COLLIDES —
+  a selector-less coordinate on EITHER side (a ⊤ claim spares nothing; a
+  whole-entity backing is spared by nothing), unminted tokens, cross-dialect
+  tokens are all ⊤-selector. Cross-entity/kind disjointness unchanged.
+  *(AMENDED 2026-07-13 per `279f:fix-spare-top-backing`, awaiting ack — the prior
+  wording special-cased only claim-side ⊤, leaving a whole-entity backing sparable
+  by any dialect-member claim: an under-execution path, 279a-A5.)*
 - **Engine cost:** per-(kind × family) dialect sets + backing provenance (minting
   family) carried into the comparison.
-- Properties (pin as tests): empty world ⇒ byte-identical to entity-granular HEAD ·
-  noise fails safe on BOTH sides · monotone under oracle-loading · no self-licensing
-  · subscription semantics native (a cell hung on a shared kind auto-subscribes to
-  the entity's kill-traffic; a family's dialect IS its kill-surface control) ·
-  attributable (every dialect member cites its minting line) · DST-clean.
+- Properties (pin as tests; REWORDED 2026-07-13 per `279f:fix-dialect-properties`,
+  awaiting ack — the prior absolutes were falsifiable as written, 279a-F6/279b-fd2):
+  empty world ⇒ byte-identical to entity-granular HEAD · cross-family monotone (a
+  newly loaded family never alters comparisons against OTHER families' backings) ·
+  within-family dialect growth MAY flip collide→spare against that family's OWN
+  backings — that is the family's declared kill-surface control, consumed only under
+  the survival flag · noise-safety scoped: an unmatched token spares nothing, but a
+  carelessly-minted real-word token is live vocabulary (see §6 divergent-meaning) ·
+  no self-licensing · subscription semantics native (a cell hung on a shared kind
+  auto-subscribes to the entity's kill-traffic) · attributable at the sparing
+  verdict (claim line + backing line + the dialect member's minting line; the
+  disjointness proposition itself is asserted by no single line — which is why
+  sparing lives behind the flag) · DST-clean.
 - Fences riding the ruling: ghost-ack-mark stays UNBUILT · same-token-divergent-
   meaning is adjudicability-list tier · physically-overlapping cells within one
   dialect are inherent to narrowing, differential-testable · this precedent does NOT
@@ -358,7 +371,12 @@ spike is the kTYANNOT livability experiment. Syntax remains marker-gated
   through recipe dataflow (`275` §2); an observe mark inside a verdict body WIDENS
   the enclosing fact's backing (`271` observe-backing-widening — safe direction,
   kill-surface only grows). First consumer of the fragment-preserving recipes; rides
-  the value-recipe-reshape.
+  the value-recipe-reshape. Set-lifting law (added 2026-07-13 per
+  `279f:fix-set-lifting`, awaiting ack): consumers quantify UNIVERSALLY — sparing
+  over a backing-set requires EVERY footprint×backing pair provably-disjoint (any
+  unknown member ⇒ collide); transport over a backing-set requires every member to
+  transport. An accidental existential in either consumer is an under-execution
+  path (279b-fd5).
 - **The re-bind seams** (`219` q-3.e/q-4.b/q-4.c, carried by
   `271:rider-value-recipe-reshape-capture-seams`; restated because the fact-domain
   re-key is the cheapest moment they will ever have): (seam-pipeline-order) the value
@@ -389,6 +407,12 @@ spike is the kTYANNOT livability experiment. Syntax remains marker-gated
   `sm.dorc.File` facts.
 - **silence never identifies; ⊤ identifies with nothing** (including itself) — `24S`
   §8 / `273` §9, unchanged.
+- **same-token-divergent-meaning is a frontloaded limitation** (added 2026-07-13 per
+  `279f:fence-divergent-meaning`, awaiting ack): a claim-token is interpreted in the
+  BACKING family's dialect, so two families spelling the same token for different
+  cells can spare each other's backings under the flag. README-class constraint per
+  `271:rul-net-quality-u-curve` (documented and differential-tested, never
+  lint-rescued); previously parked as adjudicability-tier only (279b-fd2/279a-A6).
 - **keying never feeds survival · hint-lane values never feed survival · the flag
   permits acting on separation claims, never manufactures them · per-invocation,
   never a default** — task-8's restated fence bundle, acked at its close.
