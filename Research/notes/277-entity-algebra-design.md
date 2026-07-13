@@ -3,10 +3,10 @@
 AI-authored (Fable conductor, 2026-07-12) — the task-12 design note owed by
 `24C:rul24-selector-pre-stdlib` and gating `270:block-rebuild` dispatch
 (`270:adj-entity-algebra`). This note ASSEMBLES the typed rulings of the block-settle
-sittings into one buildable spec, and PROPOSES the residual grammar — the
-authored-spelling half that needs the human's ack before the corpus-respell fires.
-Draft-and-delta: every item needing a human ruling carries a named **delta slug**,
-gathered in §8; everything else is assembled from typed rulings and cites its source. Authority:
+sittings into one buildable spec, plus the residual exact grammar — settled through
+the 2026-07-12 delta pass (the ack record lives in `plans/271`'s task-12 entries;
+this document states rules plainly and keeps the ceremony there). Per-item
+disposition: §8. Authority:
 root docs and `plans/271` outrank this; on conflict, the cited ruling wins. Companions:
 `notes/272` (kind-side topology) · `notes/273` (wrapper surface) · `notes/274`
 (eval'er/reentry) · `notes/275` (value-predictions) · `plans/24S` (proposal-tier
@@ -35,9 +35,25 @@ The two seam reservations owed to `plans/270` §2 (né `24S:A7`) — the
 *(status: typed — `271`'s "entity-algebra spelling direction" + "entity-algebra
 seams"; representation obligations conductor-derived from them)*
 
+Vocabulary, used precisely throughout:
+
+- **coordinate** — the NAME: the flat triple `(kind, entity, selector)`, plus the
+  context slot. Syntax; a way of writing an address.
+- **selector** — the third position: names a sub-entity aspect; the same token may
+  recur across coordinates (`#enabled` on many services).
+- **cell** — the state location a coordinate DENOTES: the referent. Two coordinates
+  may name ONE cell — that is aliasing, and `kind__resolve()`/canonicalization exist
+  precisely because names ≠ referents. Where this note says compare/spare/collide,
+  the objects are cells, reached through their coordinates.
+- **context** — the world-qualifier in the slot: the same computed name in two
+  contexts may denote two cells (keying) or one (invariance-bridged).
+
 The coordinate, everywhere it appears (facts, backings, footprints, disjointness,
 probe keying), is the **flat three-place `(kind, entity, selector)`**, carried in a
-representation that also holds a **context slot** (default: ambient).
+representation that also holds a **context slot**. The slot's default value is the
+host-default world — its NAME is deliberately unminted here (~SUSPECT it ends up
+host-qualified, `<hostname>`-root-ish, when the multi-host round lands; nothing in
+this note pre-designs that naming).
 
 - Kind: a reverse-DNS dotted name (`24M:rul24M-reverse-dns-kinds` — mandatory, ≥2
   dots; stdlib `sm.dorc.TypeName`; munges into NAMEs for kind-keyed members).
@@ -50,7 +66,8 @@ representation that also holds a **context slot** (default: ambient).
   cell of the entity).
 - Context slot: at representation tier a space-tag and a qualifier field are the SAME
   datum (`271:rul-seam-context-slot-and-relational-chokepoint`) — the fork dissolves;
-  default ambient; populated by the wrapper machinery (`273`).
+  default = the host-default world (§1 top); populated by the wrapper machinery
+  (`273`).
 
 `plans/17N` §4's recursive-struct lean was DECLINED as coordinate shape
 (`271:rul-coordinate-shape-flat-three-place`); its motivators are honored flat:
@@ -60,7 +77,8 @@ representation that also holds a **context slot** (default: ambient).
   unmet `#enabled`) — is two CELLS: `sm.dorc.Service:"$svc"#enabled` and
   `…#active`. Distinct facts, distinct backings, distinct kill-traffic.
 - Present-key-is-true / absent ≠ asserted-false (the carry-vs-compare split) is the
-  fact plane's native semantics: a cell nobody measured is not a fact that is false;
+  fact plane's native semantics: a cell nobody has predicted-against is not a fact
+  that is false;
   a selector-less claim collides conservatively rather than asserting depth.
 - Match-only-the-depth-you-need is the dialect comparison (§3): claims narrower than
   the backing spare; claims at unknown depth collide.
@@ -103,7 +121,7 @@ One comparison, everywhere:
 
 | verdict | consumers | notes |
 |---|---|---|
-| same | transport (a fact measured in one context licenses action about the other); the probe-outside license | never survival |
+| same | transport (a fact established in one context licenses action about the other); the probe-outside license | never survival |
 | provably-disjoint | survival sparing (kill-traffic misses the backing) | consumed ONLY inside the flag-gated survive tier (`271:rul-flag-is-razor-residue`; the flag permits acting on separation claims, never manufactures them) |
 | unknown | the safe bottom: no transport, collide, walls, run | safe for BOTH consumers — why the relation is ternary (`273` §4: believed-no-overlap and believed-overlap are each dangerous to one consumer; only unknown is safe for both) |
 
@@ -113,7 +131,7 @@ mints licenses at the chokepoint, humans only mint claims):
 | generator | authored surface | verdicts it may generate | tier |
 |---|---|---|---|
 | token-equality + entity canonicalization | `kind__resolve()` | same (within kind, within context) | vouch (kind-owner) |
-| selector-dialect comparison (§3) | measurement marks mint; claim marks consume | provably-disjoint (same entity, cross-cell) | vouch; consumed under the survival flag |
+| selector-dialect comparison (§3) | verdict/observe marks mint; claim marks consume | provably-disjoint (same entity, cross-cell) | vouch; consumed under the survival flag |
 | axis-invariance line | `kind__state_stored_only_in()` + the explicit invariance mark (`271:rul-invariance-speech-act`) | same across a context boundary (per axis) | vouch (kind-owner's typed line) |
 | carried-by rows | engine-owned table (`272` §3 r1) | invariance for substrate-borne axes | structural (engine-warranted) |
 | lend entries | `cmd__lend_map()` | boundary identity (full lend) / re-keying (mapped lend) | vouch (wrapper author's line) |
@@ -138,11 +156,13 @@ spike goes with it"; the family amendment typed same date)*
 Restated from `271:rul-selector-disjointness-dialect-scoped` as build-spec:
 
 - **Minting.** A selector token enters existence only as an annotation on a runnable
-  measurement line — verdict-probe marks (`:`) and observe marks (`:?`) both mint;
+  marked line — verdict marks (`:`/`:!`) and observe marks (`:?`) both mint;
   claim/disturbs emissions never mint. No dislocated declarations: a kind's
-  cell-structure is the projection of what loaded oracles measure.
-- **dialect(family, kind)** = the selector tokens that FAMILY's measurement-marks
-  carry for that kind. Family per `271:rul-family` — name-derived, never
+  cell-structure is the projection of the marks loaded oracles carry. (Wording note,
+  per `271:rul-measurement-is-authorship`: this note avoids "measure" — Dorc holds
+  predictions and claims from authored bodies, never raw measurements.)
+- **dialect(family, kind)** = the selector tokens that FAMILY's verdict/observe
+  marks carry for that kind. Family per `271:rul-family` — name-derived, never
   file-derived, never author-derived. No global per-kind vocabulary exists.
 - **Comparison** (inside `selector_covers`): same-entity, a claim SPARES a backing
   iff claim-token ∈ dialect(the backing's minting family, kind) AND claim-token ≠
@@ -162,10 +182,8 @@ Restated from `271:rul-selector-disjointness-dialect-scoped` as build-spec:
 
 ## §4 — The grammar (the authored-spelling half; the ack target)
 
-*(status: §4a assembles typed rulings; §4b/§4c/§4e are conductor-proposed exact
-grammar — delta-coordinate-grammar / delta-brace-alternation /
-delta-invariance-line-spelling; §4d closes on the deliberate kOOB reading —
-delta-deliberate-koob-reading)*
+*(settled at the 2026-07-12 delta pass; the ack record is `plans/271`'s task-12
+entries)*
 
 ### §4a — The coordinate literal
 
@@ -174,22 +192,21 @@ delta-deliberate-koob-reading)*
     KIND                            sm.dorc.PkgIndex              (singleton/whole kind)
 
 - `#` introduces the selector — typed PERMANENT (`271:rul-selector-introducer-hash`).
-- The `#` must be ATTACHED — ACKED HARD (typed 2026-07-12): whitespace is not mucked
-  with in sh, and the dialect never fights shell-comments — a `#` becomes
-  selector-introducer only when a valid coordinate character immediately PRECEDES
-  it. Mid-word `#` is not a comment-opener in any care-set shell — the spelling
-  rides safely through stock parsers.
+- The `#` must be ATTACHED: whitespace is not mucked with in sh, and the dialect
+  never fights shell-comments — a `#` becomes selector-introducer only when a valid
+  coordinate character immediately PRECEDES it. Mid-word `#` is not a comment-opener
+  in any care-set shell — the spelling rides safely through stock parsers.
 - The old property-suffix `.prop` (`…"$pat".matched`, USER_STORY's `.synced`) is DEAD
   in the same churn: `.` no longer introduces anything in coordinate position — dots
   belong to kind names (reverse-DNS) and to entity content only. Rendered fact-labels
   re-key identically: `sm.dorc.Package:nginx.installed` →
   `sm.dorc.Package:nginx#installed` (a new predicted-delta class for the re-bless,
   §7b).
-- **The negation suffix `!`** (standing grammar, carried forward unchanged): a
-  trailing `!` after the full coordinate marks the fact's complement sense
-  (`sm.dorc.Package:"$pkg"#installed!`, the flagship's remove-arm mark). It is a
-  mark-level suffix FOLLOWING the coordinate — never part of the selector token, so
-  §4b's selector charset is unaffected. (Surfaced by the specimen amendment pass.)
+- **Polarity lives on the mark sigil, never on the coordinate.** The sigil family:
+  `:` (verdict, named sense) · `:!` (verdict, complement sense — the flagship's
+  remove arm: `:! sm.dorc.Package:"$pkg"#installed`) · `:?` (observe). This
+  supersedes the older trailing-`!` coordinate suffix (respelled in the specimens);
+  coordinates stay pure names.
 - **The empty-entity transitional form**: an entity-less coordinate with a selector
   spells `KIND:#sel` (`io.opentelemetry.Collector:#v0155`) — the faithful conversion
   of the improvised empty-entity singleton bind, which the typeless floor already
@@ -201,13 +218,11 @@ delta-deliberate-koob-reading)*
   quoting remains supported and remains the style the corpus teaches for
   variable-bearing entities.
 
-### §4b — Position charsets (RULED direction 2026-07-12: POSIX-in-spirit —
-`271:rul-posix-in-spirit-defaults`; takes up the KNOBS `kTYANNOT` deferral)
+### §4b — Position charsets (POSIX-in-spirit: `271:rul-posix-in-spirit-defaults`;
+takes up the KNOBS `kTYANNOT` deferral)
 
-The human's ruling, revising the conductor's invented sets: re-use POSIX rules
-wherever a charset or lexical rule must be minted — find the POSIX rule, simplify it
-for our purposes, match it in spirit. Conservative for the spike; possibly revisited
-after. Applied:
+Charsets and lexical minutiae re-use POSIX rules, simplified for our purposes and
+matched in spirit; conservative for the spike. Applied:
 
 - Kind: DNS labels joined by `.` (≥2 dots) — the one deliberately non-POSIX
   identifier space (reverse-DNS IS the identity, `24M:rul24M-reverse-dns-kinds`);
@@ -215,11 +230,14 @@ after. Applied:
   stand).
 - Selector token: a POSIX *name*, in spirit — letter or underscore first, then
   letters/digits/underscores. Covers every minted exemplar (`enabled`, `active`,
-  `installed`, `matched`, `cve_clean`, `v0155`). No quoted selectors at v1. The
-  negation suffix `!` sits OUTSIDE the token, after the coordinate (§4a). A mark
-  failing the charset is a loud parse diagnostic, never a silent ⊤.
-- Entity, unquoted: any run of non-whitespace excluding the grammar's own
-  metacharacters (`:`, `#`, quotes, `}`); anything else takes the quoted form.
+  `installed`, `matched`, `cve_clean`, `v0155`). No quoted selectors at v1.
+  Coordinates carry no polarity; the sigil does (§4a). A mark failing the charset
+  is a loud parse diagnostic, never a silent ⊤.
+- Entity, unquoted: the POSIX portable-filename character set plus the path
+  separator — letters, digits, `.`, `_`, `-`, `/` (covers paths, package names,
+  unit names). Anything else takes the quoted form. Deliberately narrow-start:
+  expanding later is cheap; characters once granted can never be clawed back for
+  future grammar.
 - Quoting, here and in every future grammar-minted quoted position: POSIX quoting
   simplified as far as possible while staying true in spirit — double quotes with
   `"$var"` interpolation, single quotes literal; the exact simplification is
@@ -231,18 +249,19 @@ after. Applied:
 
 - Grammar: `#{tok,tok[,tok…]}` — no internal whitespace; ≥2 tokens; each obeying the
   selector charset; expands to one claim per token.
-- **Scope: claim-emission marks only** (disturbs/reaches/store lines). Measurement
-  marks (`:` verdict, `:?` observe) stay SINGLE-cell: a measurement line asserts
-  exactly one thing (`275` §2's mark-asserts-one-thing; the orthogonality doctrine) —
-  a two-cell verdict is two probe lines. This also keeps minting per-line
-  attributable: every dialect token cites one measurement line.
+- **Scope: claim-emission marks only** (disturbs/reaches/store lines). Verdict and
+  observe marks stay SINGLE-cell: a marked runnable line asserts exactly one thing
+  (`275` §2; the orthogonality doctrine) — a two-cell verdict is two probe lines.
+  This also keeps minting per-line attributable: every dialect token cites one
+  marked line.
 
 ### §4d — Mark positions, and the role-scoped vocabularies
 
 The dialect has exactly three mark positions:
 
-1. **Trailing verdict mark** `   : <coordinate>` — on a measurement line in a
-   verdict-bearing member; binds the statement's rc to the fact; mints.
+1. **Trailing verdict marks** `   : <coordinate>` and `   :! <coordinate>` (named /
+   complement sense) — on a runnable line in a verdict-bearing member; bind the
+   statement's rc to the fact; mint.
 2. **Trailing observe mark** `   :? <coordinate>` — read-disclosure; mints; widens
    the enclosing fact's backing (§5 backing-SETS).
 3. **Trailing token mark** `   : <token>` — a NON-coordinate mark whose closed
@@ -268,12 +287,10 @@ Together these four surfaces — dimension tokens, substrate tokens, the invaria
 token, the `dorc:` prefix — are the queued **ONE deliberate kOOB reading**
 (`274` §12; `273` §8; task-8's routing): all are strip-erased annotation on runnable
 sh, i.e. metadata riding the sanctioned trailing-mark lane, not sidecar
-configuration; the runnable bodies remain the configuration. The human's deliberate
-reading of that claim is delta-deliberate-koob-reading — a reading of the `kOOB`
-redline, not a new mechanism.
+configuration; the runnable bodies remain the configuration. That reading of the
+`kOOB` redline is settled (the 2026-07-12 delta pass); it is not a new mechanism.
 
-### §4e — The axis-invariance line (the `271:rul-invariance-speech-act` spelling;
-token form RULED 2026-07-12, the human's lean conductor-adopted)
+### §4e — The axis-invariance line (`271:rul-invariance-speech-act`)
 
     sm_dorc_Package__state_stored_only_in() {
        printf '/var/lib/dpkg\n'                  : fs
@@ -283,8 +300,7 @@ token form RULED 2026-07-12, the human's lean conductor-adopted)
 - Token grammar: `invariant:<axis>` — one colon-line per invariance-STATE, leaving
   room to brace-alternate later (`invariant:{user,netns}`, composing with §4c's
   precedent). Axis drawn from the ingredient-borne subset of the ratified axis
-  vocabulary (v1: exactly `invariant:user`). (Supersedes the conductor's
-  `user-invariant` first draft; human self-graded bikeshed-tier, form delegated.)
+  vocabulary (v1: exactly `invariant:user`).
 - Carried on a colon-line (`:` — sh's nothing-command; strips to a harmless no-op;
   the lend-map precedent).
 - Scope: WHOLE-member. Invariance is a claim about the total emission's negative
@@ -376,8 +392,15 @@ spike is the kTYANNOT livability experiment. Syntax remains marker-gated
 - **keying never feeds survival · hint-lane values never feed survival · the flag
   permits acting on separation claims, never manufactures them · per-invocation,
   never a default** — task-8's restated fence bundle, acked at its close.
-- **Measurement mints; claims never mint** (§3) — and the mark asserts exactly one
-  thing; per-channel/multi-consequence readings are DERIVATIONS (`275` §2).
+- **Marked runnable lines mint (verdict/observe); claims never mint** (§3) — and a
+  mark asserts exactly one thing; per-channel/multi-consequence readings are
+  DERIVATIONS (`275` §2).
+- **The bootstrap file kind's grounding is engine-native**: no kind-owner authors an
+  sh identity/grounding function for files — that function would be pure ceremony
+  (at v1, file identity is interned token-equality; any future symlink-aware
+  canonicalization would also be engine-native, gated by the fs-view work). A
+  deliberate bootstrap exception, not a precedent: capability stays
+  language-side-first everywhere else (the wrapper/eval'er machinery is the model).
 - **Cross-kind same does not exist** at v1 (no generator; the fence + the parked
   mechanism).
 - **Empty world ⇒ byte-identical to HEAD** — the whole algebra is invisible until
@@ -413,46 +436,22 @@ fences pinned as tests; `24P` §3's residual flags (unquoted-dotted-entity corne
 DISSOLVED per §4a — drop it from the brief; forward-munge keying; marker-gating
 scope; stale comments) re-checked against this grammar.
 
-### §7c — The adversarial crosscheck (the reserved pass; runs on this note)
+## §8 — Disposition (post-delta-pass, 2026-07-12; the ack record lives in
+`plans/271`'s task-12 entries)
 
-Clean-context skeptic agents + at least one outside-lineage reviewer; framing
-exclusions-not-inclusions (welded knobs and typed rulings are out of scope for
-relitigation; everything conductor-proposed is fair game); the `275` §10 too-pretty
-earmark rides (the backing-inheritance chain absorbed every objection raised —
-exactly the shape that deserves hostile eyes); the containers-lens re-skim rides as
-one line (né task 13). Findings adjudicated under maximum skepticism before any
-reaches the human.
+Settled and applied in place: the coordinate grammar (§4a/§4b, incl. the
+POSIX-in-spirit charsets and the `:` / `:!` / `:?` sigil family) · brace
+alternation (§4c) · the `invariant:<axis>` line (§4e) · the role-scoped mark
+vocabularies and the kOOB reading (§4d) · keyed/partitioned (§6 — "partitioned"
+hard-acked, "keyed" tolerated-unloved; no churn) · the command-word disposition
+(§4g) · the topology bundle (§§2/4d/6 — mixed hard/soft/spike-tier acks, graded
+per-row in `271`; the formal spine's generator registry and the verification
+posture remain conductor-proposed, deliberately left on the table for the human's
+adversarial pass) · the specimens (in-tree, committed).
 
-## §8 — The delta ledger (what the human rules on; everything else is assembled)
-
-- **delta-coordinate-grammar** — ACKED HARD 2026-07-12 (attached-`#` with
-  demanded-preceding-character; charsets REVISED to POSIX-in-spirit,
-  `271:rul-posix-in-spirit-defaults`; `.prop` death, `!` placement, empty-entity
-  transitional form, d4 retirement all ride the ack).
-- **delta-brace-alternation** — ACKED 2026-07-12 (the `#{a,b}` grammar; scope carve:
-  claim-emissions only, measurement marks stay single-cell).
-- **delta-invariance-line-spelling** — RULED 2026-07-12: the human's
-  per-invariance-state form `invariant:<axis>` adopted (§4e); brace-room reserved.
-- **delta-deliberate-koob-reading** — ACKED 2026-07-12 ("agreed at the kOOB
-  carve-outs"; his reflection banked in `271`).
-- **delta-keyed-partitioned-vocabulary** — §6: ratify keyed/partitioned; retire
-  "sensitive". PENDING: explanation paragraph requested and delivered in-chat
-  2026-07-12; awaiting the typed word.
-- **delta-topology-ack-bundle** — the `272` §12 wanted-acks, riding here as
-  promised: the member's existence (blanket) · substrate-typed emissions +
-  carried-by table (reserve-slot v1) · emission-set non-interference as
-  contradiction-checker (as re-roled by task 8) · never-derive-separation ·
-  addresses-are-not-coordinates · the §2 formal spine · engine-supplied file-kind
-  grounding · the behaviour-menu addition · the differential-as-other-half
-  verification posture. PENDING: unpacked row-by-row in-chat 2026-07-12 at the
-  human's request; awaiting the typed word.
-- **delta-value-prediction-ratifications** — the `275` items riding here as
-  promised: three regimes by backing-class · backing-inheritance/per-channel
-  backing sets · the cross-context transport chain (`275` §6).
-- **delta-command-word-disposition** — RESOLVED 2026-07-12
-  (`271:rul-trailing-marks-stand`); recorded in §4g; nothing left for the pass.
-- **delta-specimen-amendments** — the §7a edits, reviewed in-code (the `24P` §8
-  precedent: ack the design in the files).
+Riding the human's adversarial pass, by design: the `275` ratifications (three
+regimes · backing-inheritance/per-channel backing sets · the cross-context
+transport chain) and everything conductor-proposed above.
 
 ## §9 — Status table
 
@@ -464,11 +463,12 @@ reaches the human.
 | selector-dialect algebra + family amendment | TYPED, spike-provisional |
 | context slot ≡ qualifier; relational chokepoint; registry room | TYPED (`271` task 2) |
 | store member name/existence; invariance speech-act; carried-by re-role | TYPED (tasks 3/8) |
-| formal spine (§2) | conductor-proposed → delta-topology-ack-bundle (unpacked in-chat; pending) |
-| exact grammar: attached-`#`, charsets, brace alternation, invariance token | ACKED/RULED 2026-07-12 (POSIX-in-spirit charsets per `271:rul-posix-in-spirit-defaults`; `#{a,b}`; `invariant:<axis>`) |
-| the deliberate kOOB reading | ACKED 2026-07-12 |
-| keyed/partitioned vocabulary | proposed → delta-keyed-partitioned-vocabulary |
-| `272` §12 + `275` riding ratifications | → delta-topology-ack-bundle / delta-value-prediction-ratifications |
-| command-word thread | CLOSED (`271:rul-trailing-marks-stand`) |
-| specimen amendments | staged → delta-specimen-amendments (in-code) |
+| formal spine (§2): the ternary relation + safety inversion | acked; the generator registry stays conductor-proposed, on the table for the adversarial pass |
+| exact grammar: attached-`#`, sigil family `:`/`:!`/`:?`, charsets, brace alternation, invariance token | settled (POSIX-in-spirit per `271:rul-posix-in-spirit-defaults`; `#{a,b}`; `invariant:<axis>`) |
+| the deliberate kOOB reading | settled |
+| keyed/partitioned vocabulary | settled ("partitioned" hard; "keyed" tolerated) |
+| topology bundle rows | acked, graded per-row (`271` task-12 entries; substrate marks soft/narrow-as-built; spine-registry + verification posture conductor-proposed) |
+| `275` ratifications (regimes · backing-inheritance · transport) | riding the human's adversarial pass |
+| command-word thread | closed (`271:rul-trailing-marks-stand`) |
+| specimen amendments | in-tree, committed |
 | seams (§5) | reserve-only; carried into rebuild + reshape briefs |

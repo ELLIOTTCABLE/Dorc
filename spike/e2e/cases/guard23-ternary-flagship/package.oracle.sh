@@ -10,7 +10,7 @@ apt_get__predict() {
    if [ "${2-}" = "" ]; then
       case $verb in
          install) dpkg-query -W "$pkg" >/dev/null 2>&1 : sm.dorc.Package:"$pkg"#installed ;;
-         purge) dpkg-query -W "$pkg" >/dev/null 2>&1 : sm.dorc.Package:"$pkg"#installed! ;;
+         purge) dpkg-query -W "$pkg" >/dev/null 2>&1 :! sm.dorc.Package:"$pkg"#installed ;;
       esac
    fi
 }
