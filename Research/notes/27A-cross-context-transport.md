@@ -43,6 +43,66 @@ own defect, not a priced user trade. The failure shape is the cardinal sin
   (a cache under `~`, an identity lookup). Frame problem, **permanent**. No analysis,
   mark, or cleverness ever sees it.
 
+### The hole firing end-to-end (two full walks, one compressed)
+
+**Walk 1 — user axis, tool-internal state (the knife cell).** The book line:
+
+```sh
+sudo pipx install poddle          # root's pipx tree: /root/.local
+```
+
+The oracle — babby-minimal, honest, sh-clean (STRAWMAN spelling):
+
+```sh
+pipx__is_converged() {
+   verb="$1"; shift
+   case "$verb" in
+   install) pipx list --short 2>/dev/null | grep -q "^$1 " ;;
+   *) return 2 ;;
+   esac
+}
+```
+
+The walk: (1) the probe runs the check as alice; `pipx list` consults pipx's per-user
+tree — *inside the binary*; `$HOME` never appears in the oracle's text — and reads
+`/home/alice/.local/pipx`. (2) Alice happens to have poddle (she uses it for dev):
+rc 0, converged. (3) The site's world is root's tree, `/root/.local`, where poddle is
+absent. (4) The line elides; root never gets poddle. Under-execution — and **no line
+anywhere is wrong**: the book is idiomatic, the oracle honestly delegates, pipx behaved
+as documented. Un-attributable ⇒ ours.
+
+**Walk 2 — fs-view axis, chroot provisioning (near-100% fire rate).** The book:
+
+```sh
+mount /dev/sdb2 /mnt/target
+chroot /mnt/target apt-get install -y openssh-server
+```
+
+The oracle: the *stdlib* dpkg/apt oracle — battle-tested, correct:
+
+```sh
+apt_get__is_converged() {
+   # ...
+   install) dpkg -s "$1" >/dev/null 2>&1 ;;
+}
+```
+
+The walk: (1) the probe runs `dpkg -s openssh-server` in the host context, reading the
+HOST's `/var/lib/dpkg/status`. (2) The host has sshd — you are SSH'd into it — so:
+converged. (3) The site's world is `/mnt/target`'s database, where it is absent. (4) The
+line elides; the image ships without sshd. Note the viciousness: the host nearly always
+already has the packages being installed into a target, so this fires almost *every*
+time — and the failing oracle is the best-quality oracle in the ecosystem, measuring
+perfectly, in the wrong world.
+
+**Walk 3 — netns, compressed.** `ip netns exec blue sysctl -w net.ipv4.ip_forward=1`;
+the sysctl oracle compares `sysctl -n net.ipv4.ip_forward` output — read in the DEFAULT
+namespace, where forwarding is already on. `ip_forward` is per-namespace kernel state:
+converged outside, diverged in `blue`, wrongly elided. (Keep this specimen: the same
+sysctl kind is fs-INVARIANT — a chroot does not change kernel state — yet netns-VARIANT.
+One kind, two axes, opposite answers: transport polarity cannot be global or per-kind;
+it is per-axis.)
+
 **The impossible bar:** asking authors to assert "my check reads nothing else" is a
 negative about a world they cannot see — a 233-tier impossible bar. Both per-read authored
 completeness speech-acts and wholesale deferral were ruled non-options (deferral just
@@ -92,25 +152,46 @@ first; product-B; then flags; lints/teaching last.
   "flagless attention under chroot/netns doesn't exist." The only future re-opening is
   kind-tier `invariant:<axis>` (grammar already present in `277`), exceptional by nature
   (kernel-state kinds, e.g. sysctl, are genuinely fs-invariant).
+  *Non-bite:* under the wall, Walk 2's line renders honest —
+  `chroot /mnt/target apt-get install -y openssh-server   # runs: fact cannot cross the fs boundary`
+  — it runs, the image gets sshd. Nothing crossed, nothing lied.
 - **wall-conjunction-composition:** mixed wrappers (`sudo chroot … cmd`) cross several
   axes; transport requires EVERY crossed axis to consume; any walling axis walls.
+  *Non-bite:* `sudo chroot /mnt/target apt-get install -y curl` — even with a user-axis
+  license in hand, the fs axis walls, so the line stays honest.
 - **wall-measurement-reach (cell-unmeasurable):** claims license the *interpretation* of
   measurements, never access. State readable only inside a context yields no verdict from
   outside; no vouch, mark, or flag short of escalated probing changes that. HARD-ACKED,
   ceded, tautological. The per-line cell taxonomy under any wrapper, flagless:
   measurable+licensed → elide · measurable+unlicensed → guard · unmeasurable → guard
   forever · unmodeled → run, wall.
+  *Non-bite:* `sudo ufw allow 443/tcp` — the probe, as alice, runs `ufw status` and gets
+  `ERROR: You need to be root` → can't-say → the line guards. The missing read cannot be
+  conjured by any claim — so it can never be *wrongly* elided either.
 - **wall-verdict-locality:** verdict-facts are consumed at their own tool's sites; and a
   wrongly-elided line leaves downstream decisions *consistent* — they conditioned on
   "won't run" and it indeed didn't run, so the harm is confined to the line's own missing
   convergence; nothing propagates. This theorem is what the outcome-centric flag-razor
   (local bite → vouch-tier flagless; non-local → flag) cuts with.
+  *Non-bite:*
+
+  ```sh
+  sudo pipx install poddle       # Walk 1's wrong elision
+  sudo apt-get install -y jq     # own fact, own license — its elision stands, correctly
+  ```
+
+  The skipped line ran nothing and disturbed nothing; the neighbor's license is
+  untouched. The harm stays inside line 1.
 - **wall-statement-located-on-its-subject** (human-prompted audit principle): a claim that
   licenses behaviour must live ON the artifact whose behaviour it licenses. Application:
   kind-located `invariant:` may not license *measurement*-transport — it under-claims
   (store-invariance ≠ answer-invariance) and over-reaches (a kind-owner would be vouching
   foreign measuring bodies they've never seen). Kind declarations keep their
   store-topology jobs.
+  *Non-bite (the contrast):* `invariant:user` on `sm.dorc.pkg` keeps doing its store job;
+  what it can never answer for is a foreign measuring body backing on that kind —
+  `pkgpeek__is_converged() { test -f "$HOME/.pkgpeek/cache/$1" ;}` — because the claim
+  isn't ON the thing misbehaving. A license located on the measuring body has no such gap.
 - **wall-agnosticism-homes:** all world-knowledge in the context machinery is authored.
   Wrapper-oracles declare their axis-transforms (an unmodeled wrapper is never peeled —
   opaque line, wall, fail-safe); kind-owners declare per-axis store properties; the only
@@ -118,17 +199,46 @@ first; product-B; then flags; lints/teaching last.
   only the *closed axis vocabulary* and the polarity table; axis-minting is
   engine-release-tier. (Human first reaction: engine-internal variance around a small,
   essential, highly-abstracted class is reasonable — direction, not ack.)
+  *Non-bite:* `doas pkg_add nginx` with no doas oracle — never recognized as a wrapper at
+  all; the whole line is opaque, runs, walls. Unauthored recognition cannot misfire
+  because it does not exist.
 - **wall-empirical-rc:** permission-denied and other rc≥2 outcomes are can't-say → the
   site runs or guards. Unprivileged probes of privileged state usually fail LOUDLY; the
   tools' own permission errors are a free fail-safe. (Asker-identity can *block* an
   answer; the dangerous cell is only where it *bends* one.)
+  *Non-bite (the plumbing idiom):*
+
+  ```sh
+  wireguard__is_converged() {
+     out=$(wg show wg0 2>&1) || return 2   # as alice: "Operation not permitted" → can't-say
+     # ...
+  }
+  ```
+
+  The tool's own refusal becomes the safe verdict; the site guards.
 - **wall-values-same-context:** the value plane keeps the stricter floor — captures do not
   cross contexts flagless regardless of the fact-side outcome. `275` §6 remains refused;
   the attention product is fact-verdicts.
+  *Non-bite:*
+
+  ```sh
+  CHAN=$(foobar channel)            # world-read, measured as alice
+  case "$CHAN" in beta) … ;; esac   # may fold — same-context consumer
+  sudo foobar switch "$CHAN"        # no fold licensed inside the sudo region
+  ```
 - **wall-kind-store-protect-downward:** where a kind DOES declare per-asker stores, the
   engine auto-declines cross-context consumption for facts backed on it — overriding a
   naive oracle's silence. Protection flows *downward* from the rare tier to the many;
   only-removes, never licenses.
+  *Non-bite — the one line that defuses Walk 1 (STRAWMAN spelling):*
+
+  ```sh
+  pipx__state_stored_only_in() { printf '%s/.local/pipx\n' "$HOME" ;}   # kind-owner, once
+  ```
+
+  The engine sees a per-asker store, auto-declines cross-user consumption, and
+  `sudo pipx install poddle` guards instead of wrongly eliding — the naive oracle's
+  silence overridden from above.
 
 ### Product B (the floor)
 
@@ -139,6 +249,15 @@ first; product-B; then flags; lints/teaching last.
   guard-cascade above: product B for the whole tail. Marginal-risk note: oracle sh now
   executes as root in the apply lane (a lane already running the book's own root
   mutations).
+  *Non-bite (the render):*
+
+  ```sh
+  ( sudo -u postgres psql_check -c '…' ) \
+     || sudo -u postgres psql -c 'CREATE DATABASE app'
+  ```
+
+  The check rides the book's own sudo, in-sequence, at apply; nothing probed, nothing
+  escalated, no TOCTOU beyond the line's own position.
 
 ### Product C (opt-in fences; none default; none a solution)
 
@@ -148,6 +267,9 @@ first; product-B; then flags; lints/teaching last.
   cargo-cult rot — that failure mode belongs to risk-*accepting* flags. The human's
   preferred step of the whole dialogue: "a wall that *grows* against the bad-ness."
   Direction-liked; not design-acked.
+  *Shape:* `dorc plan --strict-contexts book.sh web1` (STRAWMAN name) — every wrapped
+  site without a context-license renders as a guard; greenfield teams type it from day
+  one, and the ecosystem ratchets.
 - **fence-escalating-probes:** the someday full-strength flag — probes genuinely entering
   contexts. Banked taxonomy for the later dedicated pass (human-directed): the three
   wrappers pose three different probe-inside problems — fs-view = an *addressing* problem
@@ -155,6 +277,8 @@ first; product-B; then flags; lints/teaching last.
   ladder), netns = an *isolation* problem (entry needed; privilege instrumental), sudo =
   an *authority* problem (entering IS acquiring; the context is the privilege) — which is
   why sudo alone is security-tier and the sudo=chroot=netns gloss melts exactly there.
+  *Shape:* `dorc plan --escalating-probes …` — §2's ufw read becomes possible at all;
+  authority-tier consent, never a default.
 - **fence-deferred-verification (the "DLC"):** the hoisted apply-start in-context
   re-verification wave — a milder cousin of escalating-probes ("accept a plan that may
   immediately confess"). REJECTED as a flagless-tier solution (human: probing-at-apply is
@@ -166,6 +290,9 @@ first; product-B; then flags; lints/teaching last.
   reproduces the vetoed plan; breaking the loop needs human action or kSTATE-fenced
   memory), permanent check-tax, and wrapper-reconstruction fidelity (rides task-14 /
   `273` §6).
+  *Shape:* ack the plan → within seconds, before any mutation:
+  `assumption broken: line 3 ('poddle' answers differently as root); nothing applied;
+  replan` — the confession must fire immediately after ack, or the tier is a lie.
 - **fence-survival-flag-scope:** `kSURVIVAL-trusted` keeps its exact current meaning
   (traveled at-most claims under running walls). Do not overload it with vouch-scope
   trust — mixing trust-species in one flag starts ambient-flag rot from the other end.
@@ -177,9 +304,13 @@ first; product-B; then flags; lints/teaching last.
   analysis-time, only-removes. Human grading: borderline inconsequential — build it, it
   solves nothing. Fail-direction warning: under any permissive default it fails OPEN (a
   missed token spelling widens the knife, not the wall).
+  *Non-bite:* `test -f "$HOME/.foobar/synced"` — the doorway is in visible text; the
+  fact auto-keys to its context and wrapped sites guard, no trust consumed.
 - **lint-differential-two-user-CI:** stdlib quality-bar MUST — run owned oracles' checks
   as two users and compare answers. The mechanical first-line defense on what would be the
   most-stamped trust path; empties the naive cell exactly where adoption concentrates.
+  *Non-bite:* the harness runs `pipx__is_converged install poddle` as two different
+  users and compares — Walk 1's oracle is flagged before publication ever happens.
 - **teach-honest-read-idiom:** a per-asker tool's check should read the state where it
   lives (`test -f "$HOME/.foobar/synced" || return 2`) — the visible `$HOME` keys it
   automatically. The decline-spelling is ordinary defensive sh, not vocabulary:
@@ -192,6 +323,7 @@ first; product-B; then flags; lints/teaching last.
 - **teach-smell-sudo-per-user-tool:** wrapping a per-asker tool in `sudo` is frequently a
   book bug in its own right (about to write root's copy); the hint has value independent
   of transport.
+  *Shape:* `hint: 'sudo pipx …' wraps a per-user tool — this manages root's copy; intended?`
 - **docs-gradual-typing-frame:** oracle-as-declaration-file; "sound modulo the
   declarations you feed it." Human: fence-sitting — usable in docs, buys little for the
   authoring-time education that actually matters.
