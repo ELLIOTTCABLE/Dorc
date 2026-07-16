@@ -10,6 +10,16 @@ this dialogue pre-chews the block-context decision) and carries the substance
 sketched in the post-crosscheck conversational summary (that shape was demoted mid-dialogue
 — see §5).
 
+> **[SUPERSEDED-IN-PART — 2026-07-16, `27C` (context-entry probing), human-ruled.]**
+> This note remains the wall inventory FOR THE TRANSPORT LANE, which survives only as a
+> demoted, flag-tier fallback (`27C` §5). The primary lane is now measurement in the
+> site's own context under the escalation dial × tolerance vouch (`27C` §§2–4): the §1
+> "standing invariant" premise was re-scoped (never human-welded; see
+> `27C:rule-reuse-never-acquire`), the §3 user-axis fork is MOOT in the default cell
+> (re-posed flag-tier in fallback cells only), and fence-escalating-probes graduated
+> from someday-flag to the designed default lane. Read `27C` first; read this for the
+> transport-lane law it still carries.
+
 Product-tier vocabulary used throughout (the human's, minted this dialogue): **product A**
 = actual elision (the attention product; the golden hill); **product B** = guards (fast
 and safe, never shorter); **product C** = flag-gated risk acceptance; **product D** =
@@ -19,7 +29,9 @@ claims").
 
 ## §1 — The problem, stated fully (NOT SOLVED)
 
-Probes execute in the SSH user's context and never escalate (standing invariant). Real
+Probes execute in the SSH user's context and never escalate (standing invariant —
+**[27C, 2026-07-16: provenance-audited as proposal-tier, never human-welded; re-scoped
+to reuse-never-acquire]**). Real
 books wrap most mutating lines in context-changers: `sudo`/`su` (the user axis),
 `chroot`/mount-tricks (fs-view), `ip netns exec` (netns), `env` (ρ). Every plan decision
 about a wrapped line therefore consumes measurements taken in a *different context* than
@@ -132,7 +144,9 @@ considered — the cardinal sin, unless massaged; see §3); *corner-flagged-broa
 reading gated behind the existing survival-class flag: sound and minimal, not unflagged).
 
 **Status: OPEN.** The outstanding typed decision is the user-axis polarity (§3).
-Everything else in this note is fencing.
+Everything else in this note is fencing. **[27C, 2026-07-16: CLOSED — the polarity
+decision dissolved rather than being taken; measurement-in-context (the `27C` design)
+answers the default cell, and the fallback cells inherit corner-flagged-broad.]**
 
 ## §2 — Banked walls (fence-tier; none is a design fork)
 
@@ -270,7 +284,9 @@ first; product-B; then flags; lints/teaching last.
   *Shape:* `dorc plan --strict-contexts book.sh web1` (STRAWMAN name) — every wrapped
   site without a context-license renders as a guard; greenfield teams type it from day
   one, and the ecosystem ratchets.
-- **fence-escalating-probes:** the someday full-strength flag — probes genuinely entering
+- **fence-escalating-probes:** **[27C, 2026-07-16: graduated — this is now the PRIMARY
+  lane, designed at `27C` §§2–4 as reuse-never-acquire under the ternary dial; the
+  taxonomy below seeded it and stands]** the someday full-strength flag — probes genuinely entering
   contexts. Banked taxonomy for the later dedicated pass (human-directed): the three
   wrappers pose three different probe-inside problems — fs-view = an *addressing* problem
   (same substrate, different names; sometimes zero-privilege from outside; the `24S`

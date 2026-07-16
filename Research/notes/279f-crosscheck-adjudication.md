@@ -87,7 +87,11 @@ must resolve the completeness gap by explicit choice among: (a) v1-defer cross-c
 transport entirely (honest-walls-for-worlds, the fallback `271` already recorded); (b) an
 authored completeness speech-act (an `only`-flavored read-disclosure — kills the
 authored-surface-empty headline; new ceremony); (c) restrict transport to bodies whose
-read-set the effect-analysis can fully close (narrow but free of new vocabulary). None of
+read-set the effect-analysis can fully close (narrow but free of new vocabulary).
+**[ANSWERED — 2026-07-16, `27C`, human-ruled: by the option none of a/b/c stated —
+(d) measure in the site's own context (reuse-never-acquire, escalation dial ×
+tolerance vouch); transport demotes to a flag-tier fallback lane. The refusal of the
+`275` ratifications stands.]** None of
 this touches block-rebuild: the rebuild builds coordinates, chokepoints, dialect sets,
 seams, and fences — no transport license is minted by anything in its build list.
 
@@ -148,12 +152,15 @@ seams, and fences — no transport license is minted by anything in its build li
 - **ask-transport-disposition:** the disposition of §3 — refuse the `275`
   ratifications as posed; route the completeness-gap decision (a/b/c) to
   block-context implementation-planning. This is the only ask that touches design
-  substance.
+  substance. **[DISCHARGED 2026-07-16 via `27A`→`27C`: option (d),
+  measure-in-context; see the §3 annotation.]**
 - **ask-flag-boundary-recut:** queue a fresh-session re-examination of `rul-flag-is-razor-residue`
   before wrapper-sudo (W2) dispatches: 279a-F1 and 279e-#1 jointly show pinnability
   under-determines the flag boundary; candidate re-cut = the outcome-centric framing of
   TODO.md:21 (non-local under-execution with no runtime net), which is where the flag
-  name already points. Not a rebuild gate.
+  name already points. Not a rebuild gate. **[SUBSTANTIALLY DISCHARGED 2026-07-16:
+  `27C`'s escalation dial is the recut — outcome-centric, both-sides consent
+  (dial × vouch); residual flag questions live in `27C` §5's fenced fallback lane.]**
 - **ask-pipefail-emit-never:** bare `set -o pipefail` joins the emit-never class
   (analyzer accepts and models it; stdlib/quality-bar require the gate idiom) —
   preserves "strip output is floor-legal" without a strip transform. One-line

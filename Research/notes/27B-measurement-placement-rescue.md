@@ -6,6 +6,19 @@ docs and human-TYPED rulings outrank this; **nothing herein is acked — the ask
 §7 and starts empty.** Product vocabulary per `27A` (products A/B/C/D). Certainty markers
 throughout per house style.
 
+> **[SUPERSEDED AS DESIGN — 2026-07-16, same-day dialogue → `27C` (context-entry
+> probing).]** The refutation HELD (the human inverted the default); the design sketch
+> herein was then corrected in dialogue and `27C` is the resulting spec. Corrections to
+> not re-inherit from this note: transport is DEMOTED, NOT DEAD (§0's "dies as a
+> mechanism" overclaimed; fallback cells and invariant kinds keep a flag-tier transport
+> lane); the demotion-vs-elevation safety ordering (§2/§3) was WITHDRAWN (no computable
+> privilege order — root-squash NFS, peer-auth; `27C:rule-no-privilege-order`); the
+> authority model is the human's four cells + ternary dial, with the oracle-side
+> tolerance vouch REQUIRED at the default dial (`27C` §§2–3); "the site's own wrapper
+> bytes" phrasing is wrong — only oracle-authored bytes ship (wrapper-oracle entry
+> forms; `27C:rule-only-oracle-bytes-enter`). The §7 asks are discharged through `27C`.
+> Historical argument only below this line.
+
 ## §0 — Verdict in one paragraph
 
 `27A` is a sound negative result about the wrong lane. Its walls, its license-gap

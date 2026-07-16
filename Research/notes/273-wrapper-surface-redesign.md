@@ -241,7 +241,11 @@ fresh session before the repair is ruled (task #14). Raw-ship also laundered
 model-fidelity gaps (a book's `grep -vq` raw-ships while the arm models only `-q`;
 function-ship surfaces the gap as an honest arity-gate decline). Transitive
 delegation (`doas__predict() { sudo "$@" ;}`) stays its own corner: traceable
-composition, never shippable (escalation) — own care or out-of-v1.
+composition, never shippable (escalation) — own care or out-of-v1. **[27C,
+2026-07-16: still true for TOOL-oracle bodies; context entry now has exactly one
+licensed seat — the wrapper-oracle's authored entry form, shipped under the escalation
+dial × tolerance vouch (`27C` §4). imp-1's emergent-enforcement framing here is
+superseded by the explicit reuse-never-acquire rule.]**
 
 ## §7 — Output prediction and the replace tier (direction; unstamped)
 

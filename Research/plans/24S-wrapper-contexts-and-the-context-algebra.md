@@ -39,6 +39,14 @@ this ledger, the ledger wins):
   (an-privilege-fact; kFAIL-withhold). Consequence: state readable only *inside* a
   context (peer-auth-gated reads, root-only files) is plan-time unknowable, forever;
   such sites cap at run-with-guard, honestly (§4, opaques6-finding2).
+  **[RE-SCOPED — 2026-07-16, `notes/27C`, human-ruled: the defensible core is
+  reuse-NEVER-ACQUIRE — the probe lane may re-use authority the connection already
+  holds to execute tolerance-vouched oracle bodies in the site's denoted context,
+  under the ternary escalation dial (`27C` §2). "Never acquires" stands (no prompts,
+  no credentials; acquisition is a separate opt-in cell). The "plan-time unknowable,
+  forever" consequence now applies only where the dial/vouch/entry bar is unmet.
+  kFAIL-withhold (mutation) was never about privilege; the conflation is the corrected
+  error.]**
 - imp-2 **HEAD behavior is the floor, and silence never peels.** An un-oracled wrapper
   head does not peel — `plab CMD` (the round's durable strawman for a user's in-house
   wrapper) behaves byte-identically to HEAD: runs, walls. No engine default identifies
@@ -164,7 +172,10 @@ What they see, by stage of stdlib coverage (compressed from the round's walkthro
   normally. Line 8 (root's crontab) is correctly keyed to `cron(root)`, is honestly
   UNPROBEABLE from outside (imp-1; the sensitivity itself is what says alice's
   `crontab -l` doesn't read root's cell), stays in the plan with the admin's own guard
-  as the apply-time protection, with the reason printed. AND the disjointness dividend:
+  as the apply-time protection, with the reason printed. **[27C, 2026-07-16: under the
+  re-scoped imp-1, line 8 becomes an ordinary measured site when dial×vouch×entry
+  align — the entered check reads root's crontab; "unprobeable" now describes only the
+  unmet-bar cells.]** AND the disjointness dividend:
   a drifted day where line 8 really runs no longer walls anything else (`cron(root)` ⊥
   everything).
 - The `-u` variant (`sudo -u postgres psql …`): axes carry VALUES; cells key to
