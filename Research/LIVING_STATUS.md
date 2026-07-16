@@ -41,12 +41,28 @@ block-rebuild (`279f:ask-promote-task-14`). Block-settle remains CLOSED as recor
 `:` / `:!` / `:?` sigil family · POSIX-in-spirit charsets · brace-alternation ·
 `invariant:<axis>`).
 
-**Transport descent (2026-07-13, Fable rubber-duck): durable at `notes/27A`.** The
-`279f` §3 transport question got a full design descent; the problem is **OPEN** — banked
-walls + a refuted-do-not-revive list + the one outstanding fork (the user-axis
-consumption polarity; §3). `279f:ask-transport-disposition` and `ask-flag-boundary-recut`
-should now be answered THROUGH `27A`; block-context planning must consume it. fs/netns
-default-walls are human-acked as real-world truth; nothing in `27A` §3 is acked.
+**⚠ Transport RESOLVED (2026-07-16, human-directed outside review → dialogue →
+`notes/27C`, THE spec).** The 27A dead-end was refuted (`notes/27B`, historical) and the
+human ruled the resulting design: **context-entry probing** — wrapped sites are answered
+by measurement in the site's denoted context, reuse-never-acquire, under a ternary
+escalation dial (default: shifts licensed only for tolerance-vouched oracles) × the
+per-function `tolerates:<axis>` bare-mark vouch (STRAWMAN spelling) × wrapper-oracle
+entry forms (only oracle bytes ever ship). Transport is DEMOTED to a flag-tier fallback
+lane, not dead. `279f:ask-transport-disposition` is DISCHARGED (option (d);
+annotated in place); `ask-flag-boundary-recut` substantially discharged (the dial is
+the recut). Block-context implementation-planning consumes `27C` whole; task-14
+unchanged (now also gates entry-form composition); the human's typed rulings are
+enumerated in `27C` §10 (incl. `27C:law-perfect-overlap`, which wants promotion to the
+standing-rulings surface — human act). Annotated this pass: `27A` (superseded-in-part),
+`27B` (superseded as design), `24S` imp-1 + Stage-D, `273` §6, ANALYZER-NEEDS
+an-privilege-fact. KNOBS candidates reported-not-minted in `27C` §11. The human grades
+this as the last big design blocker before implementation.
+
+**Transport descent (2026-07-13, Fable rubber-duck): durable at `notes/27A`.**
+Historical: the `279f` §3 question's full descent — banked walls + refuted-list + the
+user-axis fork, all now re-read through `27C` (the walls remain law for the demoted
+transport lane; the fork dissolved). fs/netns default-walls stay human-acked as
+real-world truth *for that lane*.
 
 **Block-settle COMPLETE-except-checkpoint (2026-07-12):** all 15 task-map items
 dispositioned (`plans/271` task map: 1–8 + 10 closed · 9 closed-UNPINNED · 12's
