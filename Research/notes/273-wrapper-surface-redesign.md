@@ -214,7 +214,7 @@ forever, from static context ⇒ **immediate loud fail-fast error** (dictate-tie
 pre-network; the rul-proven-mutation-fails-fast posture). Fail-fast governs until
 first network-transit; best-effort begins where static analysis is exhausted.
 
-## §6 — Probe-form composition (DRAFTED; ratification gated on task #14)
+## §6 — Probe-form composition (RATIFIED 2026-07-16 — `271:rul-only-oracle-bytes-ship`; formerly gated on task #14, DISSOLVED)
 
 `271:rul-only-oracle-bytes-ship`, drafted: **a probed compound ships with every
 participant replaced by its oracle's predict** — modeled commands as their bodies
@@ -346,6 +346,8 @@ domain is the OTHER thing; "environment" belongs to ρ forever).
 - **task-8 (survival-flag):** re-read its adjudicability condition against
   derived-not-declared topology; the §4 inversion is its sharpening.
 - **task-14:** gates §6; the `24J`/`24C`/LIVING_STATUS corrections stand regardless.
+  **[DISSOLVED 2026-07-16 — §6 ratified by typed ack; ruling record + build riders
+  at `271:rul-only-oracle-bytes-ship`.]**
 - **block-context briefs:** the env-closure stress-test + blessed idiom set + getent
   query-arm; the `24S` §8 W1–W2 staging re-reads against this surface (wrapper-peel
   stage = lend_map + detection machinery; wrapper-sudo stage = predict closure +
@@ -363,7 +365,7 @@ domain is the OTHER thing; "environment" belongs to ρ forever).
 | user-authored closure (never engine-generated) | TYPED direction (`271:rul-simulate-env-user-authored`; member name superseded into predict) |
 | dual-peel: independence + boundary-equality + fail-fast on disagreement | settled in-dialogue (human ack + his fail-fast correction) |
 | safety-inversion precision (all entries dangerous; ternary relation encodes it) | human-surfaced, conductor-conceded; recorded |
-| probe-form composition / only-oracle-bytes-ship | DRAFTED; ratification = task #14 |
+| probe-form composition / only-oracle-bytes-ship | RATIFIED 2026-07-16 (`271:rul-only-oracle-bytes-ship`; task-14 dissolved) |
 | output-prediction + replace-tier + changed-detection fold | direction; scope call (v1 vs ladder-reserve) unmade |
 | blessed closure-idiom set; env stress-test; getent arm | unsettled; block-context implementation-planning |
 | assumption-tail-suffix | spike-adopted (typed), reliance registry recorded |

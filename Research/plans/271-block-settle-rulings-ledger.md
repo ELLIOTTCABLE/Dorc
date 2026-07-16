@@ -360,6 +360,34 @@ The repair stays DRAFTED (task #14 owns the fresh-session re-derivation of the
 structural-vouch hard law first). The `24J`/`24C`/LIVING_STATUS debt-confirmations
 stand. Full draft: `notes/273` §6.
 
+**[RATIFIED 2026-07-16 — explicit human-typed ack ("That's the design I understood
+and want"), closing the deferral above. The human clarified "triple-check" never
+meant an adversarial clean-room pass; task #14 is DISSOLVED, replaced by a fresh
+in-context re-derivation delivered in-chat and acked. Ruling content, compactly
+(AI-recorded from the acked derivation):**
+
+- **The law re-affirmed:** the oracle author's argparse is the type-checker of the
+  vouch. Book argv acquires a probe-execution license only by passing THROUGH the
+  author's own arms (declines included); engine shape-matching over book bytes is
+  an unchecked cast and may never mint the license. Raw-ship's danger is that it
+  pattern-matches to the apply-lane byte-fidelity VIRTUE — kFAIL is phase-keyed
+  with opposite safe directions — so the violation is seductive and re-makeable:
+  hence hard-law status plus a test pin, never builder memory.
+- **rul-argv-flows-bytes-do-not:** the admin's argv flows into the shipped probe as
+  the predict's arguments; the admin's bytes never ship. (This reading also
+  substantially answers `27C:open-in-book-guard-value`: stage-1 guard-lifting ships
+  `dpkg__predict '-s' 'nginx'`, never the book's line.)
+- **The repair as drafted stands ruled** (`273` §6: composed predicts,
+  `a__predict -f -f | b__predict` — the human's stated original design). Build
+  riders binding the block-rebuild probe-emission touch-point: per-channel
+  coverage (substitute a participant iff every channel the compound consumes from
+  it is covered; rc-only bodies never stand upstream of a byte-consumer) ·
+  stream-fidelity of substituted bodies on consumed channels (delegation arms by
+  construction; printf-claim arms must match) · capture-ships-real-bytes is the
+  same rule, not an exception.
+- Consequences: `279f:ask-promote-task-14` is MOOT; `273` §6 annotated ratified;
+  `27C` §9's "one human checkpoint" line is superseded.]
+
 ### rul-lend-map  (task 5; 2026-07-11; TYPED — task-5 closing ruling)
 The wrapper's dimension member is **`cmd__lend_map()`**: a function from the site's
 argv to fixed strings, one entry per dimension — empty result for a PRESENT key =

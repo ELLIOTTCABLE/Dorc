@@ -168,7 +168,10 @@ seams, and fences — no transport license is minted by anything in its build li
 - **ask-promote-task-14:** run task-14 (the fresh-session structural-vouch
   re-derivation, Opus-conductable) DURING block-rebuild, so its ruling exists before
   block-context implementation-planning. (279d-F1: W2 and the transform lane genuinely
-  wait on it.)
+  wait on it.) **[MOOT 2026-07-16: task-14 DISSOLVED — the human clarified
+  "triple-check" never meant a clean-room pass; the law + composed-predict repair
+  RATIFIED by explicit typed ack after an in-context re-derivation.
+  `271:rul-only-oracle-bytes-ship` carries the ruling + riders.]**
 - **ask-thin-reality-checkpoint (optional, human-taste):** a thin reality-contact
   checkpoint after block-rebuild — the dotfiles/dogfood book or a stages-1–4
   mini-trial on a real host, wrappers accepted as honest walls — before

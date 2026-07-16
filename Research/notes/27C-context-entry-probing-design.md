@@ -419,7 +419,10 @@ block-context briefs:
 
 Open corners, named: `27C:open-in-book-guard-value` (how hand-written in-book guards
 yield probe value under only-oracle-bytes — danced around repeatedly, still unsettled;
-the defensive cell-no-shift reading of §2 applies meanwhile);
+the defensive cell-no-shift reading of §2 applies meanwhile) **[2026-07-16:
+substantially answered at ratification — argv-flows-bytes-do-not: the guard's
+condition lifts as the oracle's predict invoked with the book's argv;
+`271:rul-only-oracle-bytes-ship`]**;
 `27C:open-cell-granted-acquire-ux` (deferred mechanism); the §5 fallback-lane license
 design (fenced, unbuilt); netns entry-form details (root-only, `ip netns exec` /
 `nsenter` — wrapper-oracle author's problem, same seat).

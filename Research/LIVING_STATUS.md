@@ -35,8 +35,12 @@ backing-inheritance · transport chain) are **REFUSED as posed** — the
 backing-completeness gap (279b-fd1/279a-A2) routes to block-context
 implementation-planning; `277` §3/§5/§6 and `275` §6 carry in-place spec
 amendments (each annotated, awaiting ack — `279f` §4); the `279f` §5 brief riders
-JOIN the dispatch package below; task-14 is proposed promoted to run DURING
-block-rebuild (`279f:ask-promote-task-14`). Block-settle remains CLOSED as recorded 2026-07-12
+JOIN the dispatch package below; task-14 is DISSOLVED (2026-07-16:
+`rul-only-oracle-bytes-ship` RATIFIED by explicit typed ack — law + composed-predict
+repair + build riders; durable record `271`; `279f:ask-promote-task-14` moot).
+**Remaining dispatch-gating human acts, exactly two:** `279f:ask-amendment-acks` ·
+`279f:ask-pipefail-emit-never` (one typed word each; everything else in the §6
+ask-list is discharged, moot, or non-blocking). Block-settle remains CLOSED as recorded 2026-07-12
 (grammar gate `270:adj-entity-algebra` discharged: attached `#` · the
 `:` / `:!` / `:?` sigil family · POSIX-in-spirit charsets · brace-alternation ·
 `invariant:<axis>`).
@@ -51,7 +55,8 @@ entry forms (only oracle bytes ever ship). Transport is DEMOTED to a flag-tier f
 lane, not dead. `279f:ask-transport-disposition` is DISCHARGED (option (d);
 annotated in place); `ask-flag-boundary-recut` substantially discharged (the dial is
 the recut). Block-context implementation-planning consumes `27C` whole; task-14
-unchanged (now also gates entry-form composition); the human's typed rulings are
+since DISSOLVED (2026-07-16 ratification; entry-form composition rides the
+`271:rul-only-oracle-bytes-ship` riders); the human's typed rulings are
 enumerated in `27C` §10 (incl. `27C:law-perfect-overlap`, which wants promotion to the
 standing-rulings surface — human act). Annotated this pass: `27A` (superseded-in-part),
 `27B` (superseded as design), `24S` imp-1 + Stage-D, `273` §6, ANALYZER-NEEDS
@@ -137,7 +142,13 @@ strip-predict correction, and inv-one-observable). Corrections minted in place
 read the `24J` correction before touching probe emission. **Ratification DEFERRED
 by the human (2026-07-11): the underlying structural-vouch hard law gets a
 fresh-session triple-check first (conductor task #14) — do not treat the repair
-as ruled.**
+as ruled.** **[RESOLVED 2026-07-16: RATIFIED — explicit typed ack after a fresh
+in-context re-derivation (the human: "triple-check" was never meant adversarial;
+`a__predict -f -f | b__predict` was always the intended design). Task-14
+DISSOLVED. The repair IS ruled; ruling record + build riders (per-channel
+coverage · stream-fidelity · capture-real-bytes · argv-flows-bytes-do-not) at
+`271:rul-only-oracle-bytes-ship`. The MUST-read of the `24J` correction before
+touching probe emission stands.]**
 
 **Branch map:** `ai/spike3-r23` = the live lineage (r24 history + round-27 forward).
 `ai/spike3-r25` = field-trial tooling (P1/P3/P6 + the salvaged observer harness;
