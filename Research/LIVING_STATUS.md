@@ -45,23 +45,25 @@ ask-list is discharged, moot, or non-blocking). Block-settle remains CLOSED as r
 `:` / `:!` / `:?` sigil family · POSIX-in-spirit charsets · brace-alternation ·
 `invariant:<axis>`).
 
-**⚠ Transport RESOLVED (2026-07-16, human-directed outside review → dialogue →
-`notes/27C`, THE spec).** The 27A dead-end was refuted (`notes/27B`, historical) and the
-human ruled the resulting design: **context-entry probing** — wrapped sites are answered
-by measurement in the site's denoted context, reuse-never-acquire, under a ternary
-escalation dial (default: shifts licensed only for tolerance-vouched oracles) × the
-per-function `tolerates:<axis>` bare-mark vouch (STRAWMAN spelling) × wrapper-oracle
-entry forms (only oracle bytes ever ship). Transport is DEMOTED to a flag-tier fallback
-lane, not dead. `279f:ask-transport-disposition` is DISCHARGED (option (d);
-annotated in place); `ask-flag-boundary-recut` substantially discharged (the dial is
-the recut). Block-context implementation-planning consumes `27C` whole; task-14
-since DISSOLVED (2026-07-16 ratification; entry-form composition rides the
-`271:rul-only-oracle-bytes-ship` riders); the human's typed rulings are
-enumerated in `27C` §10 (incl. `27C:law-perfect-overlap`, which wants promotion to the
-standing-rulings surface — human act). Annotated this pass: `27A` (superseded-in-part),
+**⚠ Transport RESOLVED (2026-07-16; **`plans/27C`** is THE kept-current spec —
+rewritten same-day to plan-tier after the flag/invariance rulings were synthesized
+in).** The 27A dead-end was refuted (`notes/27B`, historical) and the human ruled
+**context-entry probing**: wrapped sites answered by measurement in the site's denoted
+context — reuse-never-acquire, ternary escalation dial (default: shifts only for
+tolerance-vouched oracle functions), per-function `tolerates:` bare-mark vouch,
+wrapper-oracle entry forms, only-oracle-bytes (RATIFIED; argv-flows-bytes-do-not).
+Cross-dimension consumption WITHOUT entry survives as the fallback lane: engine-
+warranted carried-by rows (structural, unflagged) or the kind-owner's typed invariance
+line × `--risk-faultless-skips` (the ONE existing trust flag, absorbing this form by
+outcome-class per `271:rul-flag-is-razor-residue`; no third flag exists). Silence
+walls; nothing travels absent the flag. `279f:ask-transport-disposition` DISCHARGED
+(measure-in-place); `ask-flag-boundary-recut` discharged (the dial + the razor are the
+recut). Block-context consumes `plans/27C` whole; its §10 separates ruled from
+STRAWMAN; `27C:law-perfect-overlap` wants promotion to the standing-rulings surface
+(human act). Trail annotated: `27A` (superseded-in-part; §5 kind-entry corrected),
 `27B` (superseded as design), `24S` imp-1 + Stage-D, `273` §6, ANALYZER-NEEDS
-an-privilege-fact. KNOBS candidates reported-not-minted in `27C` §11. The human grades
-this as the last big design blocker before implementation.
+an-privilege-fact. KNOBS candidates reported-not-minted (`27C` §9/§10). The human
+grades this the last big design blocker before implementation.
 
 **Transport descent (2026-07-13, Fable rubber-duck): durable at `notes/27A`.**
 Historical: the `279f` §3 question's full descent — banked walls + refuted-list + the

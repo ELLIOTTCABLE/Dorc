@@ -425,7 +425,14 @@ same-context-only consumption already is).
   (poison default; degenerate fair-chance; nobody's-fault cell).
 - **Kind-located invariance as a flagless measurement-license**: kinds are shared by
   design ⇒ non-local blast ⇒ flag-tier by the razor; also mis-located
-  (wall-statement-located-on-its-subject).
+  (wall-statement-located-on-its-subject). **[CORRECTED 2026-07-16, `plans/27C` §4:
+  the CONCLUSION stands (flagless composed transport stays refused) but both reasons
+  were wrong — the razor (`271:rul-flag-is-razor-residue`) is sayability-centric, not
+  locality-centric, and the kind-owner's invariance line is a sayable, attributable
+  claim (`271:rul-invariance-speech-act`, typed the day before this note, which this
+  entry re-litigated unflagged). What forces the flag is the OTHER joint riding the
+  composition: the measuring body's unsayable read-completeness (`279f` §3) —
+  faultless anatomy ⇒ `--risk-faultless-skips`.]**
 - **Recipe-closure as a solution** (the conversational summary's transport-closure core):
   closure scopes which values are candidates; it never touches tool-internal reads.
   Surface-shrinking, hygiene-tier.
