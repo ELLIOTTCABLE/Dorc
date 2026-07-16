@@ -38,8 +38,9 @@ amendments (each annotated, awaiting ack — `279f` §4); the `279f` §5 brief r
 JOIN the dispatch package below; task-14 is DISSOLVED (2026-07-16:
 `rul-only-oracle-bytes-ship` RATIFIED by explicit typed ack — law + composed-predict
 repair + build riders; durable record `271`; `279f:ask-promote-task-14` moot).
-**Remaining dispatch-gating human acts, exactly two:** `279f:ask-amendment-acks` ·
-`279f:ask-pipefail-emit-never` (one typed word each; everything else in the §6
+**Remaining dispatch-gating human act, exactly one:** `279f:ask-amendment-acks`
+(`279f:ask-pipefail-emit-never` ACKED 2026-07-16 with four typed clauses →
+`276:rul-pipefail-emit-never`, `278` annotated; everything else in the §6
 ask-list is discharged, moot, or non-blocking). Block-settle remains CLOSED as recorded 2026-07-12
 (grammar gate `270:adj-entity-algebra` discharged: attached `#` · the
 `:` / `:!` / `:?` sigil family · POSIX-in-spirit charsets · brace-alternation ·

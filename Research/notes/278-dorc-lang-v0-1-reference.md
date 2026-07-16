@@ -79,6 +79,10 @@ good portable shell*, which is what I wanted it to turn out as all along"
   `(set -o pipefail 2>/dev/null) && set -o pipefail` — floor-safe bytes, errexit-safe (left
   of `&&` is `set -e`-exempt); on ancient shells it degrades to the consumer's ambient
   laxness (the no-worse-than-bare floor).
+- **-emit-never** (typed 2026-07-16, post-crosscheck): the bare form joins the emit-never
+  class — durable/paste-facing surfaces carry the gate idiom; nondurable Dorc-emitted code
+  (post-handshake wire-bytes) uses it bare; authored idiom accepted, never
+  modified/normalized (`276:rul-pipefail-emit-never`).
 
 ---
 
@@ -190,6 +194,11 @@ is a typed pointable line):
 parsing and running identically under `posh 0.14.1` and `dash 0.5.12` IS F-OFFRAMP as a
 command (`276:rul-spec-two-binary-floor`).
 
+(Scope note, 2026-07-16: floor-legality of stripped output is guaranteed for *lint-clean*
+text — bare `set -o pipefail` is accepted-and-modeled but fails the floor by design, and
+strip never rewrites it; the floor test is the conformance gate.
+`276:rul-pipefail-emit-never`.)
+
 ---
 
 ## §4 — The stability ledger (`276:rul-verdicts-never-stable`, typed emphatic)
@@ -216,7 +225,9 @@ Named consequences (both "bank both, we'll roll with them"):
 
 - **The banned bash-family constructs** (verbatim, `276:rul-base-dialect-ruling-list`):
   `${x/…}` `${x^^}` `${x:off:len}` `[[ ]]` `==` `<<<` `&>` `|&`.
-- **emit-nevers**: `test -a` / `-o` — accept-run / emit-never (`276:rul-base-dialect-ruling-list`).
+- **emit-nevers**: `test -a` / `-o` — accept-run / emit-never (`276:rul-base-dialect-ruling-list`);
+  bare `set -o pipefail` — accept-and-model / emit-never on durable surfaces, lint-hinted
+  toward the gate idiom (`276:rul-pipefail-emit-never`, typed 2026-07-16).
 - **`$'…'`** — OUT-for-now (`276:rul-base-dialect-ruling-list`).
 - **`function f{}`** — rejected; `f()` only (`276:rul-base-dialect-ruling-list`).
 - **`echo` with flags/escapes** — never; printf-doctrine (`276:rul-base-dialect-ruling-list`).

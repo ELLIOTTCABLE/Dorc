@@ -164,7 +164,11 @@ seams, and fences — no transport license is minted by anything in its build li
 - **ask-pipefail-emit-never:** bare `set -o pipefail` joins the emit-never class
   (analyzer accepts and models it; stdlib/quality-bar require the gate idiom) —
   preserves "strip output is floor-legal" without a strip transform. One-line
-  annotations to `276`/`278` on ack.
+  annotations to `276`/`278` on ack. **[ACKED 2026-07-16, typed, with four clarifying
+  clauses (handshake-presupposition · lint-hint · the nondurable-emission carve —
+  ephemeral post-handshake wire-bytes emit bare, no idiom · accept-don't-modify the
+  authored idiom); ruling minted at `276:rul-pipefail-emit-never`; `278` §1/§3/§5
+  annotated. One dispatch gate remains: ask-amendment-acks.]**
 - **ask-promote-task-14:** run task-14 (the fresh-session structural-vouch
   re-derivation, Opus-conductable) DURING block-rebuild, so its ruling exists before
   block-context implementation-planning. (279d-F1: W2 and the transform lane genuinely

@@ -189,6 +189,27 @@ isn't 'give up on pipefail'" — resolved without surrender by splitting lanes)
   ack-in-passing ("we're basically in accordance on all of this"): the flag's contract
   gates **divergence-of-world**, never plan shape.
 
+**rul-pipefail-emit-never** (typed ack 2026-07-16 — closes `279f:ask-pipefail-emit-never`;
+source finding 279b-fd4 as narrowed by `279f` §2): bare `set -o pipefail` joins the
+emit-never class (the `test -a`/`-o` pattern: accepted and modeled in input, never written
+by us into durable text). The ack's four typed clauses:
+- **handshake-presupposition** — the probe lane presupposes and TESTS pipefail upfront
+  (the -guard-handshake lane above), so the gate idiom is never load-bearing inside a
+  shipped body; the idiom cannot "accidentally break probes."
+- **lint-hint** — bare `set -o pipefail` missing its gate is a general authorship
+  quality hint (quality-bar tier), steering to the -strip-idiom spelling.
+- **nondurable-emission carve** — Dorc-generated *nondurable* code (ephemeral wire-bytes
+  to a handshake-verified host) emits WITHOUT the idiom: no purpose, availability is
+  tested upfront and fail-fast. Emit-never binds the durable/paste-facing surfaces
+  (stdlib text; any rendered sh meant for human reuse).
+- **accept-don't-modify** — user code carrying the idiom is accepted and never
+  modified/normalized: it is exactly what the lints encourage (the analyzer already reads
+  it as a conditional pipefail-active fact, per -strip-idiom).
+Human grading, verbatim: "it's all theatre, but reasonable I think, to make hold our
+promises." Off-ramp consequence: "strip output is floor-legal" holds for lint-clean text
+with NO strip transform (strip stays pure erasure); the floor test remains the conformance
+gate that catches an author who insists on the bare form.
+
 ### rul-spec-two-binary-floor  (typed 2026-07-12 — "It's a solid floor, and I like it";
 kWHICHSH **WELDED** on it)
 No language spec is written, mid-spike or ever for this tier. The specification is one
