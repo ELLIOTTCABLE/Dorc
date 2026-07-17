@@ -147,6 +147,19 @@ pub fn strip_reaches(src: &str, reaches: &Predict, interner: &Interner) -> Strin
     strip_role(src, reaches, interner, "__disturbance_reaches_only")
 }
 
+/// Strip a wrapper's **entry-form** funcdef (`<provider>__enter`) to runnable sh for shipping the
+/// ENTRY-COMPOSED probe (`27C` §3 / lane-integration `27N` — the ONE licensed seat for real context
+/// entry). The entry body (`sudo -n "$@"`) wraps the inner oracle's stripped body invoked with the
+/// site's peeled argv; the whole composition ships strip-only (`271:rul-only-oracle-bytes-ship`).
+/// Mangles the funcname to `__enter` (its own hardcoded suffix — the role vocabulary is closed and
+/// extends by new name only, `24C:rul24-ditch-is-diverged` precedent). Same strip-fidelity contract
+/// and self-vouch tier as the siblings (authoring the entry form IS the traversal vouch,
+/// `27C:rul-entry-denoted-siting-vouch`).
+#[must_use]
+pub fn strip_enter(src: &str, enter: &Predict, interner: &Interner) -> String {
+    strip_role(src, enter, interner, "__enter")
+}
+
 /// The shared STRIP-ONLY pass (R1c / 23D §1), parametrized by the target mangled suffix so the
 /// probe lane (`__predict`), the guard lane (`__is_converged`), and the derivation lane
 /// (`__disturbs`, 24E §2) route through ONE audited implementation. See [`strip_predict`] for the

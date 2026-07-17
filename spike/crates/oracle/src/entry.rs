@@ -709,6 +709,111 @@ pub fn compose_chain(chain: &[ChainLink]) -> ComposedContext {
 }
 
 // ===========================================================================
+// Book-side chain peeling (lane-integration `27N`): turn a wrapped BOOK site's argv into
+// (inner command, composed context, chain) — the seam the classify/probe/plan pipeline consumes.
+// ===========================================================================
+
+/// A loaded wrapper's models, keyed by book command word in a [`WrapperIndex`] (`27N`). Built at the
+/// cli edge from the oracle sources (the wrapper's peeling `__predict`, its `__lend_map`, its
+/// `__enter`). The book pipeline consults this to recognize a wrapped site and peel it.
+#[derive(Debug, Clone)]
+pub struct WrapperModel {
+    /// The peeling `__predict` (its argparse counts the flags consumed before the guest — the inner
+    /// command's start; [`crate::wrapper::peel_consumed`]).
+    pub predict: Predict,
+    /// The ρ-claim read off the predict's peel command ([`crate::wrapper::detect_peel`]).
+    pub rho: RhoClaim,
+    /// The derived per-dimension lend (`derive_lend_map`; all-⊤ when no `__lend_map` ⇒ the site
+    /// walls, `271:rul-lend-map`).
+    pub lend: LendMap,
+    /// The `__lend_map` predict, for per-site mapped-value resolution
+    /// ([`crate::wrapper::resolve_lend_values`]). `None` ⇒ no mapped values (every mapped dimension
+    /// is ⊤).
+    pub lend_map: Option<Predict>,
+    /// The `__enter` form, if authored (the ONE licensed seat for real context entry, `27C` §3).
+    /// `None` ⇒ the wrapper's contexts are never entered ([`EntryDegrade::NoEntryForm`]).
+    pub enter: Option<EntryForm>,
+    /// The wrapper's provider symbol (display / dedup keying).
+    pub provider: Symbol,
+}
+
+/// The loaded wrappers, keyed by the book command word (`sudo`, `chroot`, `nice`). The cli builds
+/// it; [`peel_book_chain`] consults it.
+pub type WrapperIndex = BTreeMap<String, WrapperModel>;
+
+/// One peeled link's identity for the entry-composed probe + the authority disclosure (`27N`).
+#[derive(Debug, Clone)]
+pub struct ChainLinkId {
+    /// The wrapper's provider symbol.
+    pub provider: Symbol,
+    /// The wrapper's entry form, if authored (drives the entry-composed shipping + degrade).
+    pub entry: Option<EntryForm>,
+}
+
+/// A wrapped book site peeled into its inner command + composed context (`27C` §3 / `27N`). The
+/// `analysis` classify uses `inner_argv` to resolve the fact and re-keys it into `composed`'s
+/// [`Context`]; the probe/plan lanes use `links` (outermost-first entry forms) to ship the
+/// entry-composed check and to trace the consent decision.
+#[derive(Debug, Clone)]
+pub struct PeeledChain {
+    /// The inner (non-wrapper) command's full argv (its command word FIRST) — what `command_effect`
+    /// resolves against the inner oracle.
+    pub inner_argv: Vec<String>,
+    /// The composed inner context (the per-dimension fold + ρ; [`compose_chain`]).
+    pub composed: ComposedContext,
+    /// The peel chain, outermost-first (`sudo chroot …` ⇒ `[sudo, chroot]`).
+    pub links: Vec<ChainLinkId>,
+}
+
+/// Peel a wrapped BOOK site's fully-resolved argv into its inner command + composed context (`27C`
+/// §3 / `27N`). `book_argv` is the site's whole argv (command word first), every element a resolved
+/// literal. Returns `None` when the site is NOT wrapped (`book_argv[0]` is no loaded wrapper — the
+/// ordinary path) OR when a wrapper cannot peel this argv (the safe wall: the site stays opaque,
+/// unchanged law — `silence-licenses-nothing`). Iteratively peels wrapper after wrapper (a chain
+/// `sudo chroot CMD`), composing each link's shift, until the head is a non-wrapper. Budget-bounded.
+#[must_use]
+pub fn peel_book_chain(book_argv: &[&str], wrappers: &WrapperIndex) -> Option<PeeledChain> {
+    if !wrappers.contains_key(*book_argv.first()?) {
+        return None; // not a wrapped site — the ordinary classify path
+    }
+    let mut links = Vec::new();
+    let mut chain_links = Vec::new();
+    let mut cur: Vec<String> = book_argv.iter().map(|s| (*s).to_owned()).collect();
+    let mut budget = 32usize;
+    loop {
+        budget = budget.checked_sub(1)?; // runaway chain ⇒ wall (the safe direction)
+        let Some(model) = wrappers.get(cur.first()?) else {
+            break; // the inner (non-wrapper) command
+        };
+        let after: Vec<&str> = cur[1..].iter().map(String::as_str).collect();
+        let consumed = crate::wrapper::peel_consumed(&model.predict, &after)?;
+        let lend_values = model
+            .lend_map
+            .as_ref()
+            .map(|lm| crate::wrapper::resolve_lend_values(lm, &after))
+            .unwrap_or_default();
+        chain_links.push(ChainLink::from_lend_map(
+            &model.lend,
+            model.rho.clone(),
+            |dim| lend_values.get(&dim).cloned().flatten(),
+        ));
+        links.push(ChainLinkId {
+            provider: model.provider,
+            entry: model.enter.clone(),
+        });
+        cur = cur.get(1 + consumed..)?.to_vec();
+        if cur.is_empty() {
+            return None; // a wrapper with no guest ⇒ wall
+        }
+    }
+    Some(PeeledChain {
+        inner_argv: cur,
+        composed: compose_chain(&chain_links),
+        links,
+    })
+}
+
+// ===========================================================================
 // The two-axis consent decision (`27C` §1) + the degrade ladder (`27C` §3/§5)
 // ===========================================================================
 
@@ -948,7 +1053,7 @@ pub fn hint_heavy_context_no_vouch(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::predict::lift_verdicts_converged;
+    use crate::predict::{lift_predicts, lift_verdicts_converged};
 
     fn one_enter(src: &str) -> (Interner, Predict) {
         let mut i = Interner::default();
@@ -1494,5 +1599,82 @@ mod tests {
             hint.contains(":   : tolerates:user"),
             "suggests the colon-line form"
         );
+    }
+
+    // ── book-side chain peeling (lane-integration `27N`) ─────────────────────────
+
+    /// Build a one-wrapper [`WrapperIndex`] for `sudo` from its three members, sharing one interner.
+    fn babby_sudo_index() -> (Interner, WrapperIndex) {
+        let mut i = Interner::default();
+        let predict_set = lift_predicts(
+            &mut i,
+            "sudo__predict() { while [ \"${1#-}\" != \"$1\" ]; do \
+             case \"$1\" in -u) shift 2 ;; *) shift ;; esac; done; env -i HOME=/root \"$@\" ; }",
+        );
+        let lm_set = crate::wrapper::lift_lend_map_set(
+            &mut i,
+            "sudo__lend_map() { target=root; while [ \"${1#-}\" != \"$1\" ]; do \
+             case \"$1\" in -u) target=\"$2\"; shift 2 ;; *) shift ;; esac; done; \
+             printf '%s\\n' \"$target\" : user\n:   : fs-view\n:   : netns\n\"$@\" ; }",
+        );
+        let enter_set = lift_entry_set(&mut i, "sudo__enter() { sudo -n \"$@\" ;}");
+        let p = predict_set.value.providers().next().unwrap();
+        let predict = predict_set.value.get(p).unwrap().clone();
+        let lend_map = lm_set.value.get(p).unwrap().clone();
+        let enter = enter_set
+            .value
+            .get(p)
+            .map(|e| detect_entry_form(e).unwrap());
+        let (lend, _) = crate::wrapper::derive_lend_map(&lend_map);
+        let rho = crate::wrapper::detect_peel(&predict).unwrap().rho;
+        let mut idx = WrapperIndex::new();
+        idx.insert(
+            "sudo".to_owned(),
+            WrapperModel {
+                predict,
+                rho,
+                lend,
+                lend_map: Some(lend_map),
+                enter,
+                provider: p,
+            },
+        );
+        (i, idx)
+    }
+
+    #[test]
+    fn babby_sudo_peels_to_the_root_user_context() {
+        // `sudo pipx install poddle` peels to the inner `pipx install poddle`, in a context that
+        // shifts USER to root (mapped), fs-view + netns FULL (the enumerate-every-dimension lend).
+        // So the chain CROSSES exactly `user` (the gate the entry decision keys on) and walls
+        // nothing — the babby-sudo story's context (`27C` §8).
+        let (mut i, idx) = babby_sudo_index();
+        let chain =
+            peel_book_chain(&["sudo", "pipx", "install", "poddle"], &idx).expect("a wrapped site");
+        assert_eq!(chain.inner_argv, vec!["pipx", "install", "poddle"]);
+        assert_eq!(chain.composed.crossed(), vec![Dimension::User]);
+        assert!(chain.composed.walls().is_empty(), "no walled dimension");
+        assert_eq!(
+            chain.composed.shift(Dimension::User),
+            Shift::Mapped("root".to_owned())
+        );
+        // The context is Wrapped (a user shift) — distinct from an unwrapped site's HostDefault.
+        assert!(matches!(
+            chain.composed.to_context(&mut i),
+            Context::Wrapped(_)
+        ));
+        assert_eq!(chain.links.len(), 1, "one wrapper in the chain");
+        assert!(
+            chain.links[0].entry.is_some(),
+            "sudo authored an entry form"
+        );
+    }
+
+    #[test]
+    fn unwrapped_site_does_not_peel() {
+        // `pipx install httpie` — its head is no loaded wrapper ⇒ `None` (the ordinary path). The
+        // babby story's second site probes bare in the ambient context.
+        let (_i, idx) = babby_sudo_index();
+        assert!(peel_book_chain(&["pipx", "install", "httpie"], &idx).is_none());
     }
 }
