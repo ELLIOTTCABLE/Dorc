@@ -156,7 +156,7 @@ outcome.
 
 ### To execute, or not to execute?
 
-For every mutative command in a playbook from a user, there's three possible
+For every mutative command in a playbook from a user, there's four possible
 outcomes:
 
 1. "under-execute": to mistakenly elide a command that *was* necessary to
