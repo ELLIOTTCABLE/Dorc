@@ -190,7 +190,9 @@ Restated from `271:rul-selector-disjointness-dialect-scoped` as build-spec:
   disjointness proposition itself is asserted by no single line — which is why
   sparing lives behind the flag) · DST-clean.
 - Fences riding the ruling: ghost-ack-mark stays UNBUILT · same-token-divergent-
-  meaning is adjudicability-list tier · physically-overlapping cells within one
+  meaning is adjudicability-list tier *(superseded 2026-07-16 → README-class; the
+  §6 fence per `279f:fence-divergent-meaning`, acked)* · physically-overlapping
+  cells within one
   dialect are inherent to narrowing, differential-testable · this precedent does NOT
   auto-generalize to context topology (context went DERIVED instead — `272`).
 
@@ -427,11 +429,35 @@ spike is the kTYANNOT livability experiment. Syntax remains marker-gated
 - **silence never identifies; ⊤ identifies with nothing** (including itself) — `24S`
   §8 / `273` §9, unchanged.
 - **same-token-divergent-meaning is a frontloaded limitation** (added 2026-07-13 per
-  `279f:fence-divergent-meaning`, awaiting ack): a claim-token is interpreted in the
+  `279f:fence-divergent-meaning`): a claim-token is interpreted in the
   BACKING family's dialect, so two families spelling the same token for different
   cells can spare each other's backings under the flag. README-class constraint per
   `271:rul-net-quality-u-curve` (documented and differential-tested, never
   lint-rescued); previously parked as adjudicability-tier only (279b-fd2/279a-A6).
+  *(ACKED, typed, 2026-07-16 — 3/5 of `279f:ask-amendment-acks` — with the
+  attribution-class clause banked. Rationale of record, human-typed: the ecosystem
+  is deliberately a coheres-only-by-chance-and-effort, dynamically-discovered,
+  multi-author space — kind-coherence is explicitly best-effort, and
+  failures-of-kind-coherence are a KNOWN hole. Reverse-DNS kinds
+  (`24M:rul24M-reverse-dns-kinds`) are the ATTRIBUTION-CLASS: don't mint from
+  scratch inside `com.widget` unless you own widget.com at some registrar; search
+  first, read the namespace owner's docs on their types, respect those. Dorc is
+  FORCED into registry-less comingling — no login, no owner-language, no
+  mechanical way to distinguish the real `com.elliott` author from an interloper
+  minting `com.elliott.Widget` — but no-mechanical-owner ≠ names-are-wild-west:
+  "use your own names, and re-use others as they dictate you use them; doing
+  otherwise is violating the oracle contract → Dorc breaks" (the standing
+  you-break-contract ⇒ promises-void class). Hedge preserved: this records the
+  human's understanding of the defense, not a certification of its adequacy —
+  adequacy evidence stays at the differential/field-trial tier. Engine-side bound
+  restated for the record: dialects grow ONLY by authored marks parsed at
+  oracle-read (§4b–§4d; emission lines carry raw entity bytes, kind#selector
+  rides the mark) — a host can never mint a selector at runtime, so fd2's
+  n(n−1)/2 pairwise surface is authored, reviewable text. fd2's stronger remedy
+  (default unequal-to-unknown pending a partition speech-act; one accountable
+  owner per family) stays DECLINED; any future positive partition spelling
+  arrives additive, on the withholding side, never as a re-read of minted
+  marks.)*
 - **keying never feeds survival · hint-lane values never feed survival · the flag
   permits acting on separation claims, never manufactures them · per-invocation,
   never a default** — task-8's restated fence bundle, acked at its close.
