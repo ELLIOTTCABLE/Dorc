@@ -547,6 +547,11 @@ adversarial pass) · the specimens (in-tree, committed).
 Riding the human's adversarial pass, by design: the `275` ratifications (three
 regimes · backing-inheritance/per-channel backing sets · the cross-context
 transport chain) and everything conductor-proposed above.
+<!-- /* superceded 2026-07-17 (27Xf): the `275` transport ratifications were REFUSED
+(279f §3), not still-pending — the adversarial pass happened. Cross-context answering is
+re-answered by plans/27C (measure-in-context; transport demoted to the flag-tier fallback
+lane). The unflagged structural carried-by row (§2 generator table) is scoped to
+substrate-borne axes only and is the open design question — 27Xf Tier-1. */ -->
 
 ## §9 — Status table
 
@@ -563,7 +568,7 @@ transport chain) and everything conductor-proposed above.
 | the deliberate kOOB reading | settled |
 | keyed/partitioned vocabulary | settled ("partitioned" hard; "keyed" tolerated) |
 | topology bundle rows | acked, graded per-row (`271` task-12 entries; substrate marks soft/narrow-as-built; spine-registry + verification posture conductor-proposed) |
-| `275` ratifications (regimes · backing-inheritance · transport) | riding the human's adversarial pass |
+| `275` ratifications (regimes · backing-inheritance · transport) | riding the human's adversarial pass <!-- /* superceded: transport ratification REFUSED (279f §3); re-answered by plans/27C. */ --> |
 | command-word thread | closed (`271:rul-trailing-marks-stand`) |
 | specimen amendments | in-tree, committed |
 | seams (§5) | reserve-only; carried into rebuild + reshape briefs |
