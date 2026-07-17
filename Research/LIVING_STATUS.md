@@ -78,14 +78,15 @@ records in `notes/277` + `275` §6; task-14 ratification at
 `271:rul-only-oracle-bytes-ship`). Non-blocking human leftovers: the root-doc
 queue · the `.claude/worktrees` SyncThing exclusion repair (`27D` environment
 incident: PHNHRER live-syncs agent worktrees — a mid-edit corruption risk) ·
-**the `27C` fork** (2026-07-17): the root working dir holds UNCOMMITTED `27C`
-edits (siting vouch + fold-entry coherence + sudo siting spellings) and a `27Xf`
-RESOLVED annotation; meanwhile the lineage's `27C` copy carries ruled §1/§3
-corrections (`b189217` two-axis · `04cce54` ownership-split) main lacks, and main's
-`c7efc27` composition-algebra text the lineage lacks. Merge is human-reserved —
-asked: commit the root edits + merge main into `ai/spike3-r27`; the conductor then
-rewrites `27C` unified (plans are ahistorical, per main-AGENTS.md's new
-plans/notes maintenance block).
+**the `27C` fork — RECONCILED at `cd11f8b`** (2026-07-17): the human merged
+main@`c7efc27` leaving conflicts; conductor resolved `27C` to the union — main's
+final composition algebra + siting vouch + §9/§10 additions, PLUS the lineage's
+`27C:rul-two-axis-escalation-consent` §1 block and
+`27C:rul-probe-mutation-ownership-split` §3 weld (both now registered in §10's
+RULED ledger; the interim composition block dropped as superseded). Residue,
+human-owed: one more `git merge main` to absorb `38a123b` — it brings the `27Xf`
+siting RESOLVED annotation (clean) and a `27C` conflict that resolves to OURS
+(the lineage copy is a verified superset of `38a123b`'s).
 
 **Block-settle CLOSED (2026-07-12):** all 15 task-map items dispositioned —
 **`plans/271`** carries the rulings + the task map; the arc durables: `notes/272`
