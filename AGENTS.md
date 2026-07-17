@@ -8,7 +8,7 @@ Follow this pattern to get bootstrapped on the codebase and design, *no matter w
   - trust them over the ocean of unreviewed, LLM-generated planning-slop in the Research/ folder
 
 2. The Research/ is deep, but noisy; you need to approach it context-carefully:
-  A. `Research/README.md` is the only onboarding-"always-read", and should provide significant 'how to read the planning-docs' information; `000-source-manifest.md` also exists, but is probably mildly out-of-date, and focused on research-sources more than implementation details.
+  A. `Research/README.md` is the only onboarding-"always-read", and should provide significant 'how to read the planning-docs' information. `Research/LIVING_STATUS.md` provides actively-updated, dense, current-status on in-flight work (and should never be referenced, as it's constantly rewritten/ripped apart.)
 
     > Depending on your task, if a human is in-the-loop while you're onboarding, you might stop after reading the Research/README, and consult the human or your prompt for directions on how to proceed. There may be a set of *specific* `plans/` documents relating to your task.
 
@@ -16,6 +16,16 @@ Follow this pattern to get bootstrapped on the codebase and design, *no matter w
   C. the per-turn  `notes/` are the noisiest/lowest-value, only dive into them when something leads you there, not prospectively; and amongst them, prioritize later turns (i.e. when digging into "spike 09x,", choose the higest "x" first.)
 
 (If you're a top-level conductor, or review-agent, skilling-up on significant context is usually worthwhile, subject to the specific instructions in your prompt of course - you may be told not to. If you're a subagent focused on implementation, a more focused read of the specifically-relevant documents is usually sufficient.)
+
+### Doc/plan maintenance
+
+All of the following should recieve frequent edits whenever work progresses:
+
+- `LIVING_STATUS.md` should always be kept up-to-date, it's nearly *always* valid to update it when your work pregresses. (It's occasionally managed by sibling conductors in one worktree, so be mildly defensive about concurrent edits.)
+- `ANALYZER-NEEDS.md` and similar LLM-authored report-table siblings should be kept current; they're an authoritative place to record cross-cutting information
+- the `CLAUDE.md` files under `spike/` are all conductor-LLM-managed; they are the correct place to site implementation-specific information that must make its way to implementing agents. (These should generally be updated as the last step, when a design has *firmed*; they're a place for firm implementation specifics and fully-ruled *invariants* that apply to code, not for general design-language.)
+  - use judgement in deciding between the crate-specific / topic-focused `CLAUDE.md`s, vs. the spike-root `spike/CLAUDE.md`, for a given invariant;
+  - repetition in the `CLAUDE.md`s is valid, but only for genuinely deeply-critical invariants, esp. ones that agents have gotten wrong before
 
 ## Critical engineering reminders
 - this codebase depends heavily on deterministic systems-testing, DST, for correctness. you *must* analyze all changes for hermeticity; and all non-hermetic (non-pure) actions *must* be DI'd so as to be mockable for DST.

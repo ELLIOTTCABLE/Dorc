@@ -25,9 +25,16 @@ A wrapped site (`sudo pipx install poddle` · `chroot /mnt/target apt-get instal
    succeeding. Every failure lands on can't-say → guard/run.
 2. **Cross-dimension consumption without entry** (the fallback lane, for cells entry
    cannot serve): an unshifted measurement answers a wrapped site only via
-   (a) an engine-warranted carried-by row (structural, unflagged), or
-   (b) the kind-owner's typed invariance line × the admin's `--risk-faultless-skips`.
-   Silence walls. Absent the flag, nothing travels, ever.
+   (a) **pure-predicate carry** (unflagged; substrate axes only) — a fact travels iff
+   its marked backing kinds carry their owner's `invariant:<axis>` line (A) AND the
+   engine proves the verdict body *read-set-closed*: everything influencing the verdict
+   traces to the site's argv or a marked read, with no unmarked external input (B). The
+   engine closes the "and nothing else" itself, so there is no human at-most claim and
+   no flag; or
+   (b) for ingredient (identity) axes, the kind-owner's typed invariance line × the
+   admin's `--risk-faultless-skips`.
+   Silence walls. A fact travels unflagged only where the engine has closed it (a);
+   everything else walls.
 3. **Guard at apply** (in-context, same license as 1), then **run** — with conditional
    tails containing the guard-cascade, so one wrapped wall no longer costs the book's
    tail its shape.
@@ -37,7 +44,8 @@ Two admin flags exist in this territory, and only two:
 - the **escalation dial** (ternary; gates oracle-code blast-radius; §1), and
 - **`--risk-faultless-skips`** (existing; `271:rul-flag-named-risk-faultless-skips`;
   gates every outcome resting on what no line can say — the survive tier, and the
-  fallback lane's completeness residue). Never keyed to claim-types
+  fallback lane's *ingredient-axis* residue (substrate axes are engine-closed via
+  pure-predicate carry, unflagged; §4(a))). Never keyed to claim-types
   (`271:rul-no-claim-type-gating`); never a default; per-invocation.
 
 Security story in one sentence: the probe lane never acquires authority — it re-uses
@@ -224,10 +232,41 @@ For cells entry cannot serve (`--no-probe-escalation`, the non-root residue, unv
 functions, unenterable dimensions), an *unshifted* measurement may answer a wrapped
 site only through these:
 
-- **Engine-warranted carried-by rows** (structural tier, unflagged, never author-owed;
-  `271:rul-invariance-speech-act`): substrate-borne invariance the engine itself
-  warrants — kernel state is not filesystem state, so a sysctl fact crosses a fs-view
-  boundary on engine warrant, like arithmetic. Nothing human, nothing unsayable.
+- **Pure-predicate carry across a substrate axis** (unflagged; the opted mechanism,
+  human-opted 2026-07-17; `27C:mech-pure-predicate-carry`). A fact measured in the
+  ambient context travels across a substrate boundary (fs-view, netns) — *unflagged* —
+  iff BOTH hold:
+  - **(A) authored axis-invariance:** every *marked* backing kind of the fact carries
+    its owner's `invariant:<axis>` line (`277` §4e — the same surface (b) uses,
+    generalized to substrate axes). Authored, attributable: a wrong line is the
+    kind-owner's pointable error (vouch-species), never the flag's naked at-most.
+  - **(B) engine-verified read-set closure:** the engine proves, by conservative
+    sh-taint over the verdict body, that everything influencing the verdict rc (data
+    AND control-flow — branch conditions included) traces to either the site's argv
+    (flowing as argv through the author's argparse, `271:rul-argv-flows-bytes-do-not`)
+    or a marked-observe read — with *no unmarked external input* anywhere. The engine
+    reads the author's *marks* and the *sh structure*, never a tool's semantics
+    (`inv-referent-agnostic` holds): an unmarked command-substitution, an untracked env
+    read, an opaque call, a clock/RNG touch each DISQUALIFY. Default-disqualify on any
+    construct not on the audited pure-construct safe-list; the pass fails safe (a
+    missed-safe body loses its elision, never carries a hidden read).
+
+  (B) *closes* the completeness residue `279f` §3 refused to hand the flag: it removes
+  the open-world "and nothing else" by structure rather than accepting it, so the carry
+  is unflagged-sound *modulo the analyzer's conservative pass and the kind-owner's line*
+  — the same trust tier as the guard-lift and dead-branch-omit, both already unflagged
+  (the flag is for HUMAN at-most claims; this residue is engine-closed, not accepted).
+  It lifts a shape authors already write — the hermetic, argument-driven predicate
+  (`[ "$(sysctl -n "$1")" = "$2" ]`: expected value in argv, live value from the
+  invariant substrate) — and correctly walls the shape that hides an ambient read
+  (`want=$(cat "/etc/policy/$1"); [ "$(sysctl -n "$1")" = "$want" ]`), because that
+  body genuinely depends on the shifted filesystem. **Scope: substrate axes only.** The
+  user/identity dimension is EXCLUDED — a user-shift changes *access* to the very reads
+  the body performs (a structurally-closed body can still flip its answer under EACCES),
+  so (B) does not certify it; user rides (b) or the primary enter-context lane.
+  **netns caveat:** `net.*` sysctls are per-netns, so the substrate/kind model must
+  carry that distinction — an owner must not, and the model should not let them, claim
+  `invariant:netns` for network kernel state; fs-view has no analogue.
 - **The kind-owner's invariance line × `--risk-faultless-skips`**: for ingredient-borne
   dimensions, consumption-across requires the kind-owner's *explicit positive*
   mark-line inside `kind__state_stored_only_in()` (settled grammar; STRAWMAN token
@@ -354,10 +393,20 @@ for block-context briefs:
   mocks.
 - lints: the §6 set; the stdlib bar gains the two-user differential CI (+ tracer
   read-set diffing where the container allows).
+- **read-set closure pass (§4(a)-(B); the spike's load-bearing validation):** the
+  conservative sh-taint that decides read-set closure over a verdict body —
+  default-disqualify, an audited pure-construct safe-list, taint over data AND
+  control-flow. Build it in the spike and prove it in practice before any
+  battle-hardening. DST battery: a closed body (`[ "$(sysctl -n "$1")" = "$2" ]`)
+  carries across fs-view · a straddler (unmarked `$(cat …)`) walls · a marked read of a
+  non-invariant kind walls · env / opaque-call / process-subst / clock inputs each
+  disqualify · a branch condition that reads a varying store disqualifies · `net.*` not
+  carried across netns · the empty-oracle world is byte-identical (no closure attempted).
 
 Open corners: `27C:open-cell-granted-acquire-ux` (acquisition mechanism, deferred) ·
-the §4 fallback lane is fenced direction, deliberately not fully designed (build on
-field pressure; honest-walls-for-worlds recorded as the v1-defer option) · netns
+the §4(a) pure-predicate carry is the opted substrate-fallback mechanism (`27Xf`
+Tier-1), its closure pass the spike's to build-and-prove; honest-walls-for-worlds
+remains the degradation if the pass is not yet built · netns
 entry-form details (root-only; `ip netns exec`/`nsenter`; the wrapper-author's seat) ·
 conditional tails' render fold (human product ruling, later) ·
 `27C:law-perfect-overlap` wants promotion into the standing-rulings surface (human
@@ -374,7 +423,13 @@ lint-feeders only; `27C:law-perfect-overlap` (ditto) · one trust flag, outcome-
 `271:rul-no-claim-type-gating` · kind invariance is an explicit speech-act; derivation
 keys/contradiction-checks, never licenses: `271:rul-invariance-speech-act` ·
 only-oracle-bytes, argv-flows-bytes-do-not: `271:rul-only-oracle-bytes-ship`
-(RATIFIED) · non-root columns best-effort (2026-07-16).
+(RATIFIED) · non-root columns best-effort (2026-07-16) · **pure-predicate carry** is
+the opted substrate-fallback mechanism (human-opted 2026-07-17;
+`27C:mech-pure-predicate-carry`, `27Xf` Tier-1): unflagged carry gated on authored
+axis-invariance (A) + engine-verified read-set closure (B); substrate axes only, user
+excluded; the old engine-warranted-unflagged carried-by row is RETIRED (it rested on
+tool-semantics the engine may not hold). The conservative-closure pass is the spike's
+obligation to discharge and prove in practice — a correctness surface, not a nicety.
 
 STRAWMAN (swappable stubs; conductor's): every spelling and member/flag name —
 `tolerates:`, `__enter`, the dial names, the `user-invariant` token's placement
