@@ -638,3 +638,19 @@ into the shipped FactKey and the records lane · read back context-qualified
 verdicts · elide/guard per the consent trace. This IS the "real sudo
 mechanism" of block-stdlib's precondition (`270` §2); the `27C` §8 babby-sudo
 e2e story is its acceptance.
+
+## Mid-run rider (2026-07-17 — lane-integration; handed off from the human's design session)
+
+- **rider-strike-is-diverged-dual-residue** (source:
+  `27Xf:cr-is-diverged-lives-in-steering-and-ANALYZER-NEEDS`, code half;
+  conductor-verified against `d2ce3e2`, routed to the running builder):
+  `is_diverged`/`VerdictSense` comment+API residue in exactly the lane's files —
+  `strip_verdict`'s fossil `mangled_suffix` parameter de-parameterized to match
+  its hardcoding siblings (two callers + test; the orphaned `VERDICT_SUFFIX`
+  const resolved honestly); dual-presenting doc-comments ripped
+  (`oracle/lib.rs:64` · `predict.rs:90/95/156` · `verdict.rs:3/25/27` ·
+  `cli/main.rs:2254` · `plan/lib.rs:~901` + conductor-found
+  `predict/derive.rs:78` · `predict/parser.rs:37`); the `__enter` strip fn must
+  NOT copy the parameterized shape (roles extend by new name only). Acceptance:
+  `is_diverged` greps to reserved.rs ONLY (the standing negative pin + its
+  retirement docs; pin stays, never re-added); zero surviving `VerdictSense`.
