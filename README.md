@@ -4,11 +4,10 @@ Dorc, my "dash orchestrator"
 [Lazy code motion][] (PRE/DCE) for ops scripts.
 
 
-
 What dis
 --------
 
-A specification-mining (think TypeScript type-narrowing guards
+A specification-mining (think TypeScript type-narrowing guards)
 static-analysis-based orchestrator/system-automation-tool, where instructions
 and config can be spelled in idiomatic, POSIX sh. Designed for
 gradual-enhancement and best-effort defensiveness; the tool you use when you
@@ -35,6 +34,55 @@ and time.
 > (This project is my exploration of the feasibility of replacing Ansible with,
 > well, shell-script (because fuck YAML); while trying to best-effort retain
 > some of the soundness and performance gains of the Big Boy orchestrators.)
+
+
+### Example
+
+(See a detailed walkthrough of this example in [USER_STORY.md].)
+
+```sh
+#!/bin/sh
+# dorc-lang/v0.1
+set -eu
+
+CERTS=/etc/nginx/certs
+
+apt-get update
+dpkg -s nginx >/dev/null 2>&1 || apt-get install -y nginx
+cp ./nginx.conf /etc/nginx/nginx.conf
+foobar sync-certs "$CERTS"
+systemctl enable --now nginx
+hork tune --profile web >>/var/log/hork.log 2>&1
+ufw allow 443/tcp
+
+foobar__is_converged() {
+   verb="$1"; shift
+   case "$verb" in
+   sync-certs)
+      dest : org.foob.Certs = "$1"
+      [ "$2" = "" ] || return 2
+      foobar status --certs-current -- "$dest"  : org.foob.Certs:"$dest"#synced
+      ;;
+   *) return 2 ;;
+   esac
+}
+```
+
+```console
+$ dorc plan --verbose webhost.sh web1.example.net
+ 3  set -eu
+ 5  CERTS=/etc/nginx/certs
+ 7  # apt-get update                                   # converged: package index fresh
+ 8  # dpkg -s nginx >/dev/null 2>&1 \
+ 8  #    || apt-get install -y nginx                   # converged: your guard holds ('dpkg': rc 0)
+ 9  # cp ./nginx.conf /etc/nginx/nginx.conf            # converged: content match
+10  # foobar sync-certs "$CERTS"                       # converged: org.foob.Certs:/etc/nginx/certs#synced
+11  # systemctl enable --now nginx                     # converged: service enabled+active
+12  hork tune --profile web >>/var/log/hork.log 2>&1   # runs: unmodeled ('hork')
+13  ( ufw_check allow 443/tcp ) \
+13     || ufw allow 443/tcp                            # verify: converged, but past 'hork' (line 12)
+plan: 1 to run, 1 to verify (5 skipped)
+```
 
 
 Rationale
