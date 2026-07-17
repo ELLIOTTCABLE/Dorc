@@ -699,3 +699,152 @@ fn twin_exec_opaque_neighbour_poisons() {
         "the walled install runs verbatim (not commented/elided):\n{rendered}"
     );
 }
+
+// ===========================================================================
+// INLINE-SPLICE twins (`24I` batch-3, arch-2). A same-file eligible call SPLICES the callee body at
+// the call site (seam-interproc); the CALL leaf is the render unit (`inv-leaf-seam`). The
+// all-or-nothing CALL license: the call elides iff its spliced body establish holds; any diverged
+// member, an in-loop back-edge self-establish, or a running-wall above it keeps the call verbatim.
+// ===========================================================================
+
+#[test]
+fn twin_exec_detached_fn_splice() {
+    // né exec-detached-fn: a same-file `prov() { apt-get install -y nginx; }` splices at the bare
+    // `prov` call. Diverged pole (the retired case's pin): body absent ⇒ the CALL runs verbatim.
+    // Converged pole (added, so the splice is NON-vacuous): body converged ⇒ the CALL elides — proof
+    // the body establish actually spliced through to the call's license.
+    let (diverged, dplan) = render_for("prov() { apt-get install -y nginx; }\nprov\n", &[]);
+    assert!(
+        !is_replaced(&dplan, "prov"),
+        "diverged body ⇒ the call runs"
+    );
+    assert!(
+        diverged.contains("prov() { apt-get install -y nginx; }") && diverged.contains("\nprov"),
+        "the funcdef and the running call render verbatim:\n{diverged}"
+    );
+    let (converged, cplan) = render_for(
+        "prov() { apt-get install -y nginx; }\nprov\n",
+        &[("package", "nginx")],
+    );
+    assert!(
+        is_replaced(&cplan, "prov"),
+        "converged spliced body ⇒ the CALL elides (all-or-nothing license): {:?}",
+        cplan
+            .steps
+            .iter()
+            .map(|s| (&s.sh, &s.disposition))
+            .collect::<Vec<_>>()
+    );
+    assert!(
+        converged.contains("# prov"),
+        "the elided call renders as a whole-line comment:\n{converged}"
+    );
+}
+
+#[test]
+fn twin_inline21_wrapper_converged_elides() {
+    // né inline21-wrapper-converged-elides: a `$1`-parameterized wrapper `apt_install() { apt-get
+    // install -y "$1" >/dev/null 2>&1; }` called twice; BOTH entities (nginx, curl) converged ⇒ each
+    // call's spliced body establish holds ⇒ each CALL elides (per-call, independent).
+    let (rendered, plan) = render_for(
+        "apt_install() { apt-get install -y \"$1\" >/dev/null 2>&1; }\napt_install nginx\napt_install curl\n",
+        &[("package", "nginx"), ("package", "curl")],
+    );
+    assert!(
+        is_replaced(&plan, "apt_install nginx"),
+        "the nginx call elides"
+    );
+    assert!(
+        is_replaced(&plan, "apt_install curl"),
+        "the curl call elides"
+    );
+    assert!(
+        rendered.contains("apt_install() { apt-get install -y \"$1\" >/dev/null 2>&1; }"),
+        "the wrapper funcdef survives verbatim:\n{rendered}"
+    );
+    assert!(
+        rendered.contains("# apt_install nginx") && rendered.contains("# apt_install curl"),
+        "both calls elide as whole-line comments:\n{rendered}"
+    );
+}
+
+#[test]
+fn twin_inline21_wrapper_diverged_runs() {
+    // né inline21-wrapper-diverged-runs: the diverged pole — nginx converged (call 0 elides), curl
+    // DIVERGED (call 1 runs whole). Calls are INDEPENDENT (the all-or-nothing license is per call).
+    let (rendered, plan) = render_for(
+        "apt_install() { apt-get install -y \"$1\" >/dev/null 2>&1; }\napt_install nginx\napt_install curl\n",
+        &[("package", "nginx")],
+    );
+    assert!(
+        is_replaced(&plan, "apt_install nginx"),
+        "the converged nginx call elides"
+    );
+    assert!(
+        !is_replaced(&plan, "apt_install curl"),
+        "the diverged curl call runs (independent per-call license): {:?}",
+        plan.steps
+            .iter()
+            .map(|s| (&s.sh, &s.disposition))
+            .collect::<Vec<_>>()
+    );
+    assert!(
+        rendered.contains("# apt_install nginx"),
+        "the nginx call elides:\n{rendered}"
+    );
+    assert!(
+        rendered.contains("\napt_install curl"),
+        "the curl call runs verbatim:\n{rendered}"
+    );
+}
+
+#[test]
+fn twin_inline21_errexit_call_composes() {
+    // né inline21-errexit-call-composes: `set -e` + both calls converged. The bare call (`apt_install
+    // nginx`) has its ⊤ body-status errexit-consumed ⇒ RUNS; the `|| true` call would elide on status
+    // (door-3) but is WALLED by the running nginx call above it (silence=wall) ⇒ it RUNS too. Both run.
+    let (rendered, plan) = render_for(
+        "set -e\napt_install() { apt-get install -y \"$1\" >/dev/null 2>&1; }\napt_install nginx\napt_install curl || true\n",
+        &[("package", "nginx"), ("package", "curl")],
+    );
+    assert!(
+        !is_replaced(&plan, "apt_install nginx"),
+        "the bare call runs (errexit-consumed ⊤ body status): {:?}",
+        plan.steps
+            .iter()
+            .map(|s| (&s.sh, &s.disposition))
+            .collect::<Vec<_>>()
+    );
+    assert!(
+        !is_replaced(&plan, "apt_install curl"),
+        "the `|| true` call is walled by the running nginx call above (silence=wall) ⇒ runs"
+    );
+    assert!(
+        rendered.contains("apt_install nginx") && rendered.contains("apt_install curl || true"),
+        "both calls render verbatim:\n{rendered}"
+    );
+}
+
+#[test]
+fn twin_inline21_in_loop_call_floored() {
+    // né inline21-in-loop-call-floored: an inlined call INSIDE a loop is floored (task-L1 in-loop
+    // floor + the 20M §5 self-establish-via-back-edge ⇒ the body reads EstablishWritten). Converged
+    // host — the call STILL runs verbatim (the floor, not divergence, is why; a stronger pin than the
+    // retired empty-host case).
+    let (rendered, plan) = render_for(
+        "w() { apt-get install -y \"$1\" >/dev/null 2>&1; }\nfor pkg in nginx; do w \"$pkg\"; done\n",
+        &[("package", "nginx")],
+    );
+    assert!(
+        !is_replaced(&plan, "w \"$pkg\""),
+        "the in-loop call is floored ⇒ runs even converged: {:?}",
+        plan.steps
+            .iter()
+            .map(|s| (&s.sh, &s.disposition))
+            .collect::<Vec<_>>()
+    );
+    assert!(
+        rendered.contains("for pkg in nginx; do w \"$pkg\"; done"),
+        "the whole loop renders verbatim:\n{rendered}"
+    );
+}
