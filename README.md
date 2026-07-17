@@ -1,22 +1,40 @@
 Dorc, my "dash orchestrator"
 ============================
 
-A specification-mining (think TypeScript type-narrowing guards, or OCaml/HM
-type-inference) static-analysis-based orchestrator/system-automation-tool, where
-instructions and config can be spelled in pure, idiomatic POSIX-sh. Designed for
+[Lazy code motion][] (PRE/DCE) for ops scripts.
+
+
+
+What dis
+--------
+
+A specification-mining (think TypeScript type-narrowing guards
+static-analysis-based orchestrator/system-automation-tool, where instructions
+and config can be spelled in idiomatic, POSIX sh. Designed for
 gradual-enhancement and best-effort defensiveness; the tool you use when you
 *want to be lazy*.
 
 Describe a system in shell; apply that description by running the shell.
 (Dotfiles, networks, developer-environments; whatever description you want. If
-it's idempotent, but you're lazy, you probably want Dorc for it.)
+it's idempotent, but you're lazy, you probably want Dorc for it.) If that sounds
+like what shell-script already is, well, that's the point: Do what shell already
+does well, without perturbing your expectations.
 
-A tool that promises "best effort", not correctness; but also doesn't require
-from *you* correctness, and accepts *your* "best effort."
+Given:
 
-(This project is my exploration of the feasibility of replacing Ansible with,
-well, shell-script (because fuck YAML); while trying to best-effort retain some
-of the soundness and performance gains of the Big Boy orchestrators.)
+ - that script ('runbook'), alongside
+ - a library of also-POSIX-sh, read-only tool-descriptors - "oracles" that Dorc
+   can abstract-interpret (locally) and ship/execute to interrogate state
+   (remotely),
+
+... then Dorc can intelligently *probe* a machine, and *elide* (fully) or
+*guard* (partially/performantly) portions of that runbook according to the
+actual, live system-state - saving you attention, the risks of non-idempotence,
+and time.
+
+> (This project is my exploration of the feasibility of replacing Ansible with,
+> well, shell-script (because fuck YAML); while trying to best-effort retain
+> some of the soundness and performance gains of the Big Boy orchestrators.)
 
 
 Rationale
@@ -84,4 +102,5 @@ There's many things we're trying very hard *not* to be:
 
 (Further elaborated in [./DESIGN.md](DESIGN.md).)
 
+   [Lazy code motion]: <https://www.cs.cornell.edu/courses/cs6120/2019fa/blog/lazy-code-motion/> "Ryan Doenges. CS 6120: Lazy Code Motion"
    [soundiness]: <http://soundiness.org/documents/InDefenseOfUnsoundness.pdf> "Livshits et al. (2015). 'In Defense of Soundiness: A Manifesto'. Communications of the ACM. 58. 44-46. 10.1145/2644805."

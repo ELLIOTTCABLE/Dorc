@@ -183,7 +183,8 @@ Our approach is double-ended.
     - when up-to-date - we're not going to be long-term arbiters of
       centrally-claimed-remote-state; but we *may* short-term-persist probe- and
       partial-application-results to reduce immediate work on subsequent
-      re-runs.
+      re-runs. (PARKED: spike is explicitly stateless between runs, see
+      [KNOBS.md]:kSTATE.)
 
 Importantly, all of this must be optimized for that 'embarrassingly shallow'
 case in an 'embarrassingly parallel' fashion. We effectuate this plan in two
@@ -200,12 +201,11 @@ it. (Thanks, Terraform, gonna steal ur best idea.)
    for planning purposes. This allows us to learn correctness-affecting facts
    about each machine, that we can use to tune the deployment/application phase.
 
-   Importantly, Dorc only contracts to the oracles *two* flavours of simple
-   information (simple in theory, not in practice; that's *why* it's important
-   that it's minimal): sh-spelled command-facts ("produce the RC this command
-   would produce", "decide if this command can be skipped"), or structured
-   collaboration/access facts ("mark all the paths this command would observe
-   modifications-to".)
+   (The 'oracles' are contracted-out-to for a variety of information, of several
+   tiers of increasing complexity and power; but at each state, 'you get out
+   what you put in.' A simple oracle can license simple skipping of your own
+   command when it's converged, all the way up to a powerful,
+   typesystem-annotated description of how `sudo` affects other commands.)
 
    For these purposes, the probe-analysis must *under*-approximate - that is,
    it's better to not ship a probe at all (losing opportunity to skip costly
@@ -213,7 +213,7 @@ it. (Thanks, Terraform, gonna steal ur best idea.)
    to look at this: an optimizing compiler with an unusual idea of 'correct'; or
    a query-planner.)
 
-   (Since we're going to present a *plan* to the user, though, we won't have the
+   Since we're going to present a *plan* to the user, though, we won't have the
    apply-phase 'convergence floor' for the probe-phase; it's relatively
    performance-forward, as the user is sitting there, waiting on a coherent plan
    (i.e. for all the probes to finish and return), before they can hit 'submit'
@@ -329,12 +329,10 @@ The goals here break down cleanly into a few moving parts:
    I'm comfortable with very-weird edge-cases (or, y'know, any and all
    bashisms/zshisms) failing to parse. There are angles to the future shape of
    this that I *do not* want constrained by 'oh, this conflicts with the
-   edge-case parsing of a particular dash implementation-detail.' (Someday, this
-   language may involve further features and elaborations that make it a strict
-   superset of POSIX-sh; but not yet.)
+   edge-case parsing of a particular dash implementation-detail.'
 
-   (This is the second-most-critical part; rising to "most critical" when
-   calibrated against how locked-in any decision becomes.)
+   (This is the second-most-critical part in the immediate term; rising to "most
+   critical" when calibrated against how locked-in any decision becomes.)
 
 2. An *analyzer*: the core value-prop, here, past what things like [FILLME][]
    and [FILLME][] and [Mitogen][] and the like can provide when used with plain
@@ -548,6 +546,12 @@ violated), but:
    target) ... for which we hope to eventually provide tooling (containerized
    TDD, eBPF, more static-analysis, runtime warns, etc)
 
+   (Note, here, that the highest-quality oracles unlocking the most
+   functionality must be total over some *shared-world* knowledge, to interact
+   well with other oracles' claims; not over *the behaviours of the command*.
+   All behaviour is always argparse-walked; and oracles can *always* disclaim
+   some/most invocation-forms as NYI/unpredictable.)
+
 Our contract with the oracles is what makes our product, more than anything
 else. Encouraging and ensuring the maximal-quality of oracle; and gentle
 handling of *less*-high-quality-oracles, is what differentiates.
@@ -566,7 +570,7 @@ For one, no amount of analysis will tell you whether this probe is safe to run
 during the non-mutative probing phase:
 
 ```sh
-mycmd.is_converged() { mycmd --dry-run "$@" ;}
+mycmd__is_converged() { mycmd --dry-run "$@" ;}
 ```
 
 For this reason, oracles effectively *have* to vouch for invocations of their
@@ -615,9 +619,52 @@ type-declaration, effectively. (Without that direction, even *with* our relative
 may be gained by categorizing/enriching `wombat` - "this looks like a guard,
 maybe write an oracle for it." That's, IMO, not good enough.)
 
-Thus, Dorc evolves into a typed-sh dialect, under protest:
+Thus, Dorc evolves into a typed-sh dialect, under protest.
 
-(UNFINISHED)
+### Type-system
+To thread all of these constraints and goals, Dorc has some ways to communicate
+with oracle-authors beyond plain sh-analysis.
+
+First off, and most crucially, Dorc, and oracles, need to collaborate over
+*shared, global state*: two commands' oracle-authors need to be able to
+*communicate that they read or write the same information about the machine.
+
+Strawman-spelling, implemented in the current spike:
+
+```sh
+# dorc-lang/v0.1
+systemctl__is_converged() {
+   case "${1-}" in
+   enable) systemctl is-enabled --quiet -- "${2-}" : sm.dorc.Service:"$2"#enabled ;;
+   start)  systemctl is-active  --quiet -- "${2-}" : sm.dorc.Service:"$2"#active  ;;
+   esac
+}
+```
+
+There's an ocean of buried complexity here (see [IMPLEMENTATION.md]), but at its
+core, it's a communication problem: there's things Dorc *can't* read from the
+plain-sh spellings; and third-party, non-authoritative authors must be enabled
+to describe and document tools they did not write on a best-effort basis. Dorc
+then must *take* those authored claims and synthesize them into knowledge about
+the system, and crucially, performance/attention-conserving skips and guards
+over the set of commands in your runbook.
+
+Importantly, though, this is all designed to not contradict the off-ramp:
+
+1. It's a strict superset of POSIX sh (see below);
+2. with everything that *can* be spelled-in-sh, explicitly required-in-sh
+   (there's never a "spelling" of a concept duplicated between functional,
+   behaviour-implementing shell commands *and* a Dorc annotation)
+3. that still functions perfectly well as a well-written, *defensive* bundle of
+   shell-script helpers, reusable in your sh/bash/zsh corpus, after you use ...
+4. `dorc-strip`, provided as a simple gsub-style clean of any/all non-POSIX Dorc
+   annotations.
+
+Wherever we *do* reach for non-sh annotations, we try to:
+
+- ensure we're communicating a concept that *cannot* be meaningfully conveyed
+  in plain-shell-script (something Dorc-specific, or higher-kinded), and
+- then write it *loudly* non-sh (i.e. practice good language-design, lol.)
 
 
 "POSIX" sh
@@ -658,15 +705,15 @@ The target-language we're aping/imitating is subject to a few constraints:
    sufficiently-similarly implement?", and turns fidelity/correctness into a
    moving target.
 
-This, too, is unsettled; but my strong lean is towards a very mild superset of
-POSIX; or maybe a slight subset of POSIX2024. If we can target a *specific
-minimum version* of a *specific piece of shipped software* (i.e. `dash`
->=0.5.13), that has two massive benefits:
+At least for now, this lands basically on POSIX2024 / Dash / Debian's `posh`
+(modulo some specific `pipefail` semantics) as the common-subset we target
+maximal support of.
 
- - we can *ship* that version as an *executor* in some circumstances; and
+ - we are considering *shipping* one of those as an *executor* in some
+   circumstances; and
  - even if we end up not doing that, 'testing that we do what we promised to'
-   becomes 'testing that `dash` and our evaluator preform identically', a much
-   easier testing/development target.
+   becomes 'testing that `dash`, `posh`, and our evaluator preform identically',
+   a much easier testing/development target.
 
 
 Prior art

@@ -274,7 +274,8 @@ reporting about `hork`'s actual first-order footprint will further improve
 behaviour to the point where it can avoid poisoning *even when unconverged*.
 
 
-### Inter-oracle collaboration, global state, and the golden hill
+Collaboration
+-------------
 
 The above is somewhat mollified if one writes a basic oracle for `hork`. A
 simple truth: if `hork` never runs, `hork` *cannot* poison something unexpected
@@ -283,10 +284,10 @@ the danger is to *make `hork` not run*.
 
 The simplest route to that is to write the most-minimal oracle that helps Dorc
 fully-elide `hork` itself, in isolation: a convergence-test thereof, plus the
-author's blessing to act on it (FIXME: spelling/details unsettled):
+author's blessing to act on it:
 
 ```sh
-hork.is_converged() { hork --check "$@" ;}
+hork__is_converged() { hork --check "$@" ;}
 ```
 
 This *doesn't* buy you all of Dorc's functionality, but it buys the most of it,
@@ -296,6 +297,23 @@ passes, Dorc can safely make assumptions about `apt-get` speaking to
 `systemctl`. Abstract-interpretation is unpoisoned, and the richer machinery can
 run for those other commands; the poison-wall is lifted.
 
+> Of course, not all tools are so easy to describe. Luckily, this is all subject
+> to control-flow analysis. A much more *realistic* minimal oracle, for a
+> command that doesn't provide a magical, ops-friendly "give me any invocation
+> whatsoever that my command possibly has and non-mutatively tell me whether it
+> would do anything" flag, would involve some argparse machinery. Any flags or
+> subcommands that you haven't modeled, should simply be *refused* (strawman:
+> `return 2` or higher.)
+>
+> ```sh
+> hork__is_converged() {
+>    if [ "${1-}" = "flib" ]; then
+>       hork --check "$@"
+>    else return 2
+>    fi
+> }
+> ```
+
 However, for *better* behaviour, to *fully* lift the poison-wall in all cases
 (i.e. enable Dorc to elide *later* commands, even when probing surfaces that
 hork is diverged), a lot more buy-in, from a lot more parties, becomes
@@ -304,9 +322,101 @@ gradual-enhancement curve might near a cliff at the very far end, but
 correspondingly-few tools need cliff-sized oracles; and we can try to ship
 high-quality examples that cover many important bases in the stdlib.)
 
-FIXME: write in detail about collaboration, consensus, etc - the
-       elision-past-wall story
+This is where we start to get into the questions around the frame-problem raised
+in [DESIGN.md]. How can multiple, mutually-unaware parties, collaborate and
+communicate about global state on *someone else's* computer, in the future, *in
+a way that most-completely protects that future user from our undesired
+failure-mode, under-execution?*
 
+
+### The refined ladder of sins
+
+That immediately brings us to a refinement of that ladder from above: there's
+something *worse* than simple under-execution, than a wrong-skip - and that's
+under-execution due to a transited claim *that we can't attribute*. Dorc
+operates in a flawed world, and ops will always be full of chaos and mess;
+worse, Dorc inherently operates on top of claims made by third-party-non-authors
+of tools. But at the very least, Dorc can *keep track of* how it knows what it
+knows, and *help you with specific instructions to remedy it* when something
+goes wrong.
+
+Hence, our elaborated priority-order for failure-modes:
+
+1. (the worst possible) *mis*-attributed, incorrect elision: if your runbook
+   skips a critical command, `dorc why` makes a claim about the cause thereof,
+   and *that claim leads you down the wrong path towards remedying that.*
+2. *un*-attributed, incorrect elision: when a critical command was skipped, and
+   it shouldn't have been, but Dorc cannot tell you specifically why (and
+   therefore how to fix it.)
+3. incorrect elision, attributed correctly: a command was missed, but Dorc can
+   tell you precisely what to do about it.
+
+
+### Survival: Travelling claims, faultless elision, and user-consent
+
+In particular, it turns out that soundly avoiding #2 in 100% of cases is
+effectively impossible, if Dorc wants to effect any traveled-claim elision *at
+all*.
+
+What if the above runbook instead looked like this:
+
+```sh
+apt-get install -y nginx      # well-known tool w/ a battle-tested oracle
+hork tune-packages            # now Dorc has a simple, convergence-only oracle for this
+# ... 97 more lines ...
+systemctl enable --now nginx  # well-known tool w/ a battle-tested oracle
+```
+
+Under our default constraints, argued-for throughout these documents, *98
+commnds cannot be skipped*, if `hork` reports unconverged.
+
+For churn-heavy commands, that show up early-on in runbooks, this is
+catastrophic to Dorc's value-proposition. (We have a fallback 'guard' behaviour
+that may yield performance benefits; but critically, it cannot yield *attention*
+benefits: once we've showed the user a plan with the guarded commands included,
+that scarce resource of user-attention is *spent*, and cannot be recovered. From
+a certain point of view, the full-elision, user-attention-preserving behaviour
+*is* the product.)
+
+Solving this requires what we call a 'skip-survival': fully skipping a later
+command, *even though an earlier, mutative command actually ran.* In the above
+example, this is achieving a knowledge-of-the-world state where `hork` can
+*actually run*, and yet `systemctl` can still be completely omitted from the
+plan.
+
+Unfortunately, this is impossible to achieve *soundly* - within our earlier
+constraints of full, attributed-to-a-causative-source-code-line proof for every
+elision.
+
+Thus, we provide two modes, and ask user consent to reach for the greater value,
+when it carries higher risk.
+
+1. By default, we *risk no unattributed elision*: if a feature would require we
+   leave a hole where some conjunction of circumstances could lead to
+   unattributed, incorrect elision ("nobody did something locally incorrect; but
+   the net effect of several people's choices was incorrect elision for the
+   end-user"), then that feature ships disabled.
+
+2. then, for risk-tolerant admins, we provide an opt-in `--risk-faultless-skips`
+   flag that enables such features.
+
+To be clear, we're still defensive against these - as of this writing, the
+survival-licensing featureset only results in the described cardinal sin in
+particular scenarios, and they're carefully boxed in; but I still consider it a
+failure-mode that's owed explicit consent from the admin. People's risk-profiles
+will vary.
+
+Part of that boxing is to *double-end* the consent: specific authorship actions
+*in the oracles* are also necessary to license an elision that *could*, under
+*some combinations of circumstances, end up traveled and unattributable.
+
+
+### Kinds, reach, disjointness, UNFINISHED - SEE USER_STORY
+
+Thus a division: in our model, claims own what *a particular line* can say about
+the world, and the flag ownes what *no* particular line has said (i.e. where
+Dorc synthesizes knowledge from *multiple*, mutually-unaware claims that may in
+fact contradict) ...
 
 
 Spelling, language-design, and the flavour we want
