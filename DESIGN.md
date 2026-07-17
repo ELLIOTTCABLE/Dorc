@@ -657,8 +657,8 @@ Importantly, though, this is all designed to not contradict the off-ramp:
    behaviour-implementing shell commands *and* a Dorc annotation)
 3. that still functions perfectly well as a well-written, *defensive* bundle of
    shell-script helpers, reusable in your sh/bash/zsh corpus, after you use ...
-4. `dorc-strip`, provided as a simple gsub-style clean of any/all non-POSIX Dorc
-   annotations.
+4. `dorc-strip`, provided as focused, simple, `ubi`-friendly standalone-binary
+   cleaner to remove any/all non-POSIX Dorc annotations.
 
 Wherever we *do* reach for non-sh annotations, we try to:
 
@@ -672,7 +672,7 @@ Wherever we *do* reach for non-sh annotations, we try to:
 I mildly-intentionally conflate the phrase 'POSIX sh' with 'Dash' and, well,
 Dorc; but there's actually a narrow spectrum here.
 
-There's two poles:
+For code shared between users (i.e. 'oracles'), there's two poles:
  - the *minimum* subset of the common shells users might be already using and
    familiar with (i.e., the *smallest* superset of the genuine POSIX standard), or
  - the *maximum* subset of the common shell features (i.e. the *largest*
@@ -707,13 +707,22 @@ The target-language we're aping/imitating is subject to a few constraints:
 
 At least for now, this lands basically on POSIX2024 / Dash / Debian's `posh`
 (modulo some specific `pipefail` semantics) as the common-subset we target
-maximal support of.
+maximal support of, within oracle/`dorc-lang` code.
 
  - we are considering *shipping* one of those as an *executor* in some
    circumstances; and
  - even if we end up not doing that, 'testing that we do what we promised to'
    becomes 'testing that `dash`, `posh`, and our evaluator preform identically',
    a much easier testing/development target.
+
+For *runbooks*, the design is more fluid: I aspire(?) to at least partially
+support zsh/bashisms, to some extent. I'm unsure how far I'll be able to take
+that; but for code that *isn't* shared between users, the POSIX-sh weld becomes
+less critical, and more open to interpretation. This leads to a broad language
+division, and capability gradient: `dorc-lang` files, POSIX-superset, intended
+for stripping, later-reuse, and cross-shell sharing; vs. book-code, as
+unconstrained as we can afford to make it, trying very hard to let you come into
+Dorc with your existing work, with the minimal effort.
 
 
 Prior art

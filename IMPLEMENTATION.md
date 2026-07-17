@@ -416,7 +416,8 @@ Part of that boxing is to *double-end* the consent: specific authorship actions
 Thus a division: in our model, claims own what *a particular line* can say about
 the world, and the flag ownes what *no* particular line has said (i.e. where
 Dorc synthesizes knowledge from *multiple*, mutually-unaware claims that may in
-fact contradict) ...
+fact synthesize an incorrect fact about the universe that no actual human meant
+to claim) ...
 
 
 Spelling, language-design, and the flavour we want
