@@ -182,6 +182,50 @@ sudo__enter() {                # argv = the site's peeled sudo argv with the com
   {entry × dial × vouch} ⇒ the site takes §4/§5 for that boundary. Transitive
   delegation inside tool-oracle bodies (`doas__predict() { sudo "$@" ;}`) stays
   unshippable.
+  - **The composition algebra** (per `27Xf:cr-nested-wrapper-composition-rider-dropped`
+    — the `279f` §5 rider this plan dropped, restated as build-spec; ruled cells
+    human-typed 2026-07-17; supersedes the interim block on the impl branch): lend/ρ
+    composition across a peel chain is the POINTWISE fold, outermost-first, per
+    dimension, each link's `lend_map` evaluated against that link's own peeled argv.
+    - Identity element = full lend (`compose(x, full) = x`): a chain of all-full links
+      (`nice`, ρ-only wrappers) denotes ambient.
+    - **⊤ propagates** (`27C:rul-top-absorbs-absolute-maps`, HUMAN-ACKED 2026-07-17):
+      a MISSING key at ANY link ⇒ ⊤ for that dimension for the whole chain — one
+      silent link walls the dimension, never inherits a neighbor's lend, and there is
+      NO overwrite-rescue through an inner ABSOLUTE map (an inner `sudo -u root` under
+      an unknown middle stays ⊤: whether the inner link even succeeds, and how its
+      argv resolved, both depend on the unknown middle). Skip-the-middle reasoning may
+      hold in raw static sh-analysis; it never holds in machine-state logic (human's
+      framing, verbatim intent).
+    - **Mapped-lend composition is dimension-owned, engine-internal**
+      (`27C:rul-dimension-owned-compose-ops`, HUMAN-ACKED 2026-07-17): each dimension
+      fixes ONCE, in the engine — never on the authored surface — both its compose op
+      and the FRAME of the emitted value in the `lend_map` contract. user: absolute
+      overwrite (`sudo -u alice` denotes alice whoever the caller was). fs-view:
+      caller-relative (chroot-in-chroot composes by path — `chroot /t` inside
+      `chroot /mnt` denotes `/mnt/t`; relative-to-⊤ is ⊤). A wrapper author emits a
+      single-step string per `273` §3 and never reasons about nesting;
+      `inv-referent-agnostic` holds (the engine applies the dimension's op to opaque
+      values — the value's meaning was asserted by the wrapper oracle, its frame by
+      the dimension contract, never inferred from the tool).
+    - **Cross-link ρ-threading**: each inner link's argv is ρ-resolved under the ρ
+      composed so far (`env DBUSER=postgres sudo -u "$DBUSER"` resolves through the
+      outer link's claimed ρ); an unresolvable value stays the ⊤-value
+      (identifies-with-nothing, `273` §3). The fold is pointwise in that dimensions
+      never mix — EXCEPT ρ, which threads through every link's argv-resolution by
+      construction.
+    - Canonical context key = the folded per-dimension normal form, never the chain's
+      syntax — order-sensitive exactly where the folds genuinely differ
+      (`sudo -u postgres nice cmd` and `nice sudo -u postgres cmd` share one key;
+      `env A=1 sudo cmd` and `sudo env A=1 cmd` do not — sudo scrubs). Batching and
+      fact-keying both consume this key.
+    - **Fold-entry coherence** (conductor-PROPOSED, unruled): the lend-fold's denoted
+      context and the composed entry form must agree about the context the check
+      lands in; disagreement = static incoherence ⇒ plan-time fail-fast (the
+      dual-peel coherence pattern, third instance).
+    - DST pins: the nested permutations above · chroot-in-chroot path composition ·
+      ⊤-in-the-middle poisons through an inner full lend AND an inner absolute map ·
+      unresolvable `sudo -u "$VAR"` ⇒ ⊤-value key, walls.
 - Degrade ladder, every direction safe: entry refused (`sudo -n` failure), impossible
   (chroot target unmounted), missing dependencies inside the view (rc 127), or an
   in-context decline (rc≥2) ⇒ can't-say ⇒ guard/run. Identity-demanding checks
@@ -396,10 +440,16 @@ axis-invariance (A) + engine-verified read-set closure (B); substrate axes only,
 excluded; the old engine-warranted-unflagged carried-by row is RETIRED (it rested on
 tool-semantics the engine may not hold). The conservative-closure pass is the spike's
 obligation to discharge and prove in practice — a correctness surface, not a nicety.
+· the §3 composition-algebra ruled cells (2026-07-17):
+`27C:rul-top-absorbs-absolute-maps` (⊤ propagates uniformly; no overwrite-rescue —
+machine-state logic never skips the middle) · `27C:rul-dimension-owned-compose-ops`
+(compose ops + value-frames are engine-internal, fixed once per dimension; the
+authored surface is unchanged single-step `lend_map` emission).
 
 STRAWMAN (swappable stubs; conductor's): every spelling and member/flag name —
 `tolerates:`, `__enter`, the dial names, the `user-invariant` token's placement
 details · the lifted-guards-gated-too reading of `--no-probe-escalation` ·
-conditional-tail mechanics and the generation-probe revival · the seams
+conditional-tail mechanics and the generation-probe revival · the fold-entry
+coherence fail-fast (§3, conductor-proposed) · the seams
 (`fs-read-arms`, `containment-jackets`, `no-root-targets-subdial`) · the trial
 prediction.
