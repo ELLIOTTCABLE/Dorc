@@ -408,7 +408,7 @@ will vary.
 
 Part of that boxing is to *double-end* the consent: specific authorship actions
 *in the oracles* are also necessary to license an elision that *could*, under
-*some combinations of circumstances, end up traveled and unattributable.
+some combinations of circumstances, end up traveled and unattributable.
 
 
 ### Kinds, reach, disjointness, UNFINISHED - SEE USER_STORY

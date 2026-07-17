@@ -627,7 +627,7 @@ with oracle-authors beyond plain sh-analysis.
 
 First off, and most crucially, Dorc, and oracles, need to collaborate over
 *shared, global state*: two commands' oracle-authors need to be able to
-*communicate that they read or write the same information about the machine.
+communicate that they read or write the same information about the machine.
 
 Strawman-spelling, implemented in the current spike:
 
