@@ -34,7 +34,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use dorc_core::{Capability, Context, ContextKey, EscalationDial, Interner, Symbol};
 
 use crate::predict::{Predict, PredictSet, Stmt, Word};
-use crate::wrapper::{Dimension, LendEntry, LendMap};
+use crate::wrapper::{Dimension, LendEntry, LendMap, RhoClaim};
 
 // ===========================================================================
 // The entry form (`27C` §3 — the `cmd__enter()` member)
@@ -362,31 +362,154 @@ pub enum Shift {
 }
 
 impl Shift {
-    /// The composition MEET (`27C` §3 pointwise fold): `Full` is the identity, `Top` is absorbing,
-    /// and two `Mapped` values compose only if they AGREE (a disagreement is a genuine two-world
-    /// conflict ⇒ `Top`, the safe wall). Order-independent as a LATTICE value; the composed CONTEXT
-    /// KEY carries the order separately (below), so `sudo chroot` ≠ `chroot sudo`.
+    /// A canonical tag for this shift in the folded NORMAL-FORM key (`27C` §3 ruling 4). Referent-
+    /// agnostic identity string — compared for equality, never decoded.
     #[must_use]
-    fn meet(self, other: Shift) -> Shift {
-        match (self, other) {
-            (Shift::Top, _) | (_, Shift::Top) => Shift::Top,
-            (Shift::Full, x) | (x, Shift::Full) => x,
-            (Shift::Mapped(a), Shift::Mapped(b)) if a == b => Shift::Mapped(a),
-            (Shift::Mapped(_), Shift::Mapped(_)) => Shift::Top,
+    fn tag(&self) -> String {
+        match self {
+            Shift::Full => "F".to_owned(),
+            Shift::Top => "T".to_owned(),
+            Shift::Mapped(v) => format!("M:{v}"),
         }
     }
 }
 
-/// One link (one wrapper) in a peel chain, resolved for a site (`27C` §3): the wrapper provider and
-/// its per-dimension shift. The composition folds a chain of these outermost-first (entry order =
-/// book order).
+/// The engine-internal compose OP a dimension fixes ONCE (`27C:rul-dimension-owned-compose-ops`,
+/// HUMAN-ACKED) — NEVER on the authored surface. Wrapper authors emit single-step strings (`273`
+/// §3) and never reason about nesting; the engine applies the dimension's op to opaque values
+/// (`inv-referent-agnostic` holds).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum DimOp {
+    /// ABSOLUTE overwrite: a map denotes its value regardless of the caller (`sudo -u alice` = alice
+    /// whoever called; a netns name is absolute). The inner (last-entered) map wins. user · netns.
+    AbsoluteOverwrite,
+    /// CALLER-RELATIVE: a map composes with the caller's value by path (chroot-in-chroot:
+    /// `chroot /t` inside `chroot /mnt` = `/mnt/t`; relative-to-⊤ is ⊤). fs-view.
+    CallerRelative,
+}
+
+/// The compose op each dimension OWNS (`27C:rul-dimension-owned-compose-ops`). Fixed once, engine-
+/// internal: user/netns are absolute (a uid/nsname denotes an absolute target); fs-view is
+/// caller-relative (paths nest under the caller's root).
+#[must_use]
+fn dimension_op(dim: Dimension) -> DimOp {
+    match dim {
+        Dimension::User | Dimension::Netns => DimOp::AbsoluteOverwrite,
+        Dimension::FsView => DimOp::CallerRelative,
+    }
+}
+
+/// Fold one more (inner) link's shift into the accumulated shift for a dimension (`27C` §3): apply
+/// the dimension's owned op, with ⊤ STICKY (`27C:rul-top-absorbs-absolute-maps`, HUMAN-ACKED — NO
+/// overwrite-rescue through an inner absolute map: once ⊤, stays ⊤; a link's own ⊤ absorbs). `Full`
+/// is the identity (pass-through). Folds outermost→innermost.
+#[must_use]
+fn compose_shift(acc: Shift, link: Shift, op: DimOp) -> Shift {
+    match (acc, link) {
+        // ⊤ STICKY both ways: a ⊤ accumulator (an unknown outer/middle link) OR the link's own ⊤
+        // ⇒ ⊤ chain-wide. An inner absolute map does NOT rescue a ⊤ middle (`rul-top-absorbs-
+        // absolute-maps`: whether the inner even executes, and how its argv resolved, depend on the
+        // unknown middle — skip-the-middle holds in raw sh-analysis, NEVER in machine-state logic).
+        (Shift::Top, _) | (_, Shift::Top) => Shift::Top,
+        // A Full link borrows the caller's value on this dimension — pass-through (the identity).
+        (acc, Shift::Full) => acc,
+        // A mapped link over a Full accumulator: the map takes effect (absolute, or relative-to-root).
+        (Shift::Full, Shift::Mapped(v)) => Shift::Mapped(v),
+        // Both mapped: the dimension's owned op composes them.
+        (Shift::Mapped(base), Shift::Mapped(v)) => match op {
+            DimOp::AbsoluteOverwrite => Shift::Mapped(v), // inner wins; caller-independent
+            DimOp::CallerRelative => Shift::Mapped(join_path(&base, &v)), // paths nest
+        },
+    }
+}
+
+/// Compose two fs-view paths (caller-relative, `27C:rul-dimension-owned-compose-ops`): `base` then
+/// `rel` ⇒ `base/rel` (`chroot /t` inside `chroot /mnt` = `/mnt/t`). A leading `/` on `rel` still
+/// nests — chroot is always relative to the CURRENT root (`/etc` inside `chroot /mnt` is `/mnt/etc`).
+/// Referent-agnostic string surgery over opaque path values.
+#[must_use]
+fn join_path(base: &str, rel: &str) -> String {
+    format!(
+        "{}/{}",
+        base.trim_end_matches('/'),
+        rel.trim_start_matches('/')
+    )
+}
+
+/// The ρ accumulator for the normal-form key (`27C` §3 ruling 3/4 — ρ threads through every link).
+/// A bare-`"$@"` link ([`RhoClaim::Nothing`]) is the IDENTITY (a `nice`-style pass-through — it
+/// perturbs no world, so nice-permutations share ONE key, ruling 4). An `env`-syllable claim
+/// contributes: `FullAmbient`/`PerVariable` ADD overrides on top; `ExactlyThese` SCRUBS the base
+/// (so `env A=1 sudo` ≠ `sudo env A=1` — sudo scrubs A away).
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+struct RhoAccum {
+    /// `Some(vars)` once a scrub (`env -i`/`ExactlyThese`) reset the base to exactly those vars;
+    /// `None` = the ambient-passthrough base (identity).
+    scrubbed: Option<BTreeSet<String>>,
+    /// Overrides added SINCE the last scrub (`env VAR=v`/`VAR=v "$@"`).
+    overrides: BTreeSet<String>,
+}
+
+impl RhoAccum {
+    /// Fold one more (inner) link's ρ-claim (`27C` §3 ruling 3). `Nothing` is identity.
+    fn fold(mut self, rho: &RhoClaim) -> Self {
+        match rho {
+            RhoClaim::Nothing => self, // identity (nice); claims no env transform for the KEY
+            RhoClaim::FullAmbient { overrides } => {
+                self.overrides.extend(overrides.iter().cloned());
+                self
+            }
+            RhoClaim::ExactlyThese { vars } => {
+                // A scrub discards the accumulated ambient/overrides and resets to exactly `vars`.
+                self.scrubbed = Some(vars.iter().cloned().collect());
+                self.overrides.clear();
+                self
+            }
+            RhoClaim::PerVariable { vars } => {
+                // Per-variable claim (`VAR=x "$@"`): add the vars (symbol-id tags, referent-agnostic).
+                self.overrides
+                    .extend(vars.iter().map(|s| format!("#{}", s.as_u32())));
+                self
+            }
+        }
+    }
+
+    /// The canonical ρ tag for the key — EMPTY when identity (no scrub, no overrides), so a pure
+    /// `nice`/`env "$@"` chain contributes nothing (ruling 4).
+    fn tag(&self) -> String {
+        let scrub = self.scrubbed.as_ref().map_or(String::new(), |vars| {
+            format!(
+                "scrub:{}",
+                vars.iter().cloned().collect::<Vec<_>>().join(",")
+            )
+        });
+        let ovr = if self.overrides.is_empty() {
+            String::new()
+        } else {
+            format!(
+                "ovr:{}",
+                self.overrides.iter().cloned().collect::<Vec<_>>().join(",")
+            )
+        };
+        [scrub, ovr]
+            .into_iter()
+            .filter(|s| !s.is_empty())
+            .collect::<Vec<_>>()
+            .join(";")
+    }
+}
+
+/// One link (one wrapper) in a peel chain, resolved for a site (`27C` §3): its per-dimension shift
+/// plus its ρ-claim. The composition folds a chain outermost-first (entry order = book order). The
+/// provider is NOT a key component — the key is the folded NORMAL FORM (ruling 4), so an identity
+/// wrapper (`nice`) folds away regardless of its provider.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ChainLink {
-    /// The wrapper provider (`sudo`, `chroot`) — interned; used only as an order-sensitive KEY
-    /// component (referent-agnostic).
-    pub provider: Symbol,
     /// This wrapper's shift per dimension (an absent dimension ⇒ [`Shift::Top`] via [`Self::shift`]).
     pub shifts: BTreeMap<Dimension, Shift>,
+    /// This wrapper's ρ-claim (read off its predict env-head; `271:rul-env-claim-inversion`). Threads
+    /// through the fold into the normal-form key (ruling 3/4).
+    pub rho: RhoClaim,
 }
 
 impl ChainLink {
@@ -397,13 +520,15 @@ impl ChainLink {
         self.shifts.get(&dim).cloned().unwrap_or(Shift::Top)
     }
 
-    /// Build a link from a wrapper's [`LendMap`] and a per-dimension mapped-value resolver. `Full`
-    /// and `Top` come straight from the lend map; a `Mapped` dimension calls `resolve(dim)` for its
-    /// value (`None` ⇒ [`Shift::Top`], the safe wall for an unresolved mapped target).
+    /// Build a link from a wrapper's [`LendMap`] + ρ-claim and a per-dimension mapped-value resolver.
+    /// `Full`/`Top` come straight from the lend map; a `Mapped` dimension calls `resolve(dim)` for
+    /// its value (`None` ⇒ [`Shift::Top`], the safe wall for an unresolved mapped target — e.g. an
+    /// unresolvable `sudo -u "$VAR"` under an unknown ρ). The mapped value is expected ρ-RESOLVED by
+    /// the caller under the ρ composed so far (`27C` §3 ruling 3 cross-link ρ-threading).
     #[must_use]
     pub fn from_lend_map(
-        provider: Symbol,
         lend: &LendMap,
+        rho: RhoClaim,
         mut resolve: impl FnMut(Dimension) -> Option<String>,
     ) -> Self {
         let mut shifts = BTreeMap::new();
@@ -415,24 +540,22 @@ impl ChainLink {
             };
             shifts.insert(dim, shift);
         }
-        Self { provider, shifts }
+        Self { shifts, rho }
     }
 }
 
-/// The composed inner context of a peel chain (`27C` §3): the per-dimension MEET plus the order-
-/// sensitive canonical identity. Built by [`compose_chain`].
+/// The composed inner context of a peel chain (`27C` §3): the folded per-dimension NORMAL FORM plus
+/// its canonical key. Built by [`compose_chain`].
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ComposedContext {
-    /// The composed shift per dimension (the pointwise meet across the chain).
+    /// The composed shift per dimension (the per-dimension owned-op fold).
     per_dimension: BTreeMap<Dimension, Shift>,
-    /// The order-sensitive canonical string (the chain's providers + shifts in BOOK order). Two
-    /// chains that shift the same dimensions in a DIFFERENT order produce DIFFERENT canonicals ⇒
-    /// different [`ContextKey`]s (the nested-permutation pin).
-    canonical: String,
+    /// The composed ρ tag (empty when identity).
+    rho_tag: String,
 }
 
 impl ComposedContext {
-    /// The composed shift for `dim` (the meet). An absent dimension is [`Shift::Top`].
+    /// The composed shift for `dim`. An absent dimension is [`Shift::Top`].
     #[must_use]
     pub fn shift(&self, dim: Dimension) -> Shift {
         self.per_dimension.get(&dim).cloned().unwrap_or(Shift::Top)
@@ -458,64 +581,65 @@ impl ComposedContext {
             .collect()
     }
 
+    /// The folded NORMAL-FORM canonical string (`27C` §3 ruling 4): the per-dimension composed
+    /// values + the composed ρ tag — NEVER the chain's syntax. Order-sensitive EXACTLY where the
+    /// folds genuinely differ (nice-permutations share it; a scrub-reorder does not). Used to key
+    /// the fact plane AND to batch entered segments (both consume this ONE key).
+    #[must_use]
+    pub fn canonical(&self) -> String {
+        let dims = Dimension::ALL
+            .into_iter()
+            .map(|d| format!("{}={}", d.as_token(), self.shift(d).tag()))
+            .collect::<Vec<_>>()
+            .join(";");
+        if self.rho_tag.is_empty() {
+            dims
+        } else {
+            format!("{dims}|rho:{}", self.rho_tag)
+        }
+    }
+
     /// The [`Context`] this composition denotes (`27C` §3 / the `27L` `FactKey` seam). An identity
-    /// chain (every dimension `Full`, nothing shifted) is [`Context::HostDefault`] — the inner sits
-    /// in the caller's world, so its facts key exactly as an unwrapped site's (rung-0). Any shift or
-    /// wall mints [`Context::Wrapped`] keyed by the interned canonical (order-sensitive).
+    /// chain (every dimension `Full`, ρ identity) is [`Context::HostDefault`] — the inner sits in the
+    /// caller's world, so its facts key exactly as an unwrapped site's (rung-0). Any shift, wall, or
+    /// ρ-transform mints [`Context::Wrapped`] keyed by the interned NORMAL-FORM canonical.
     #[must_use]
     pub fn to_context(&self, interner: &mut Interner) -> Context {
-        let all_full = Dimension::ALL
-            .into_iter()
-            .all(|d| matches!(self.shift(d), Shift::Full));
-        if all_full {
+        let identity = self.rho_tag.is_empty()
+            && Dimension::ALL
+                .into_iter()
+                .all(|d| matches!(self.shift(d), Shift::Full));
+        if identity {
             Context::HostDefault
         } else {
-            Context::Wrapped(ContextKey(interner.intern(&self.canonical)))
+            Context::Wrapped(ContextKey(interner.intern(&self.canonical())))
         }
     }
 }
 
-/// Compose a peel chain into its inner [`ComposedContext`] (`27C` §3, as amended 2026-07-17): the
-/// POINTWISE fold, outermost-first, per dimension — identity = full lend; ⊤ PROPAGATES (one silent
-/// link walls the dimension chain-wide, never inherits a neighbor's lend); the inner context's key
-/// is the composed per-dimension result, ORDER-SENSITIVE (entry order = book order of the chain).
-/// `chain` is outermost-first (`sudo chroot CMD` ⇒ `[sudo, chroot]`).
+/// Compose a peel chain into its inner [`ComposedContext`] (`27C` §3, HUMAN-ACKED rulings
+/// 2026-07-17): the pointwise fold, outermost→innermost, per dimension via the dimension's OWNED op
+/// (`rul-dimension-owned-compose-ops` — user/netns absolute, fs-view path-relative), with ⊤ STICKY
+/// (`rul-top-absorbs-absolute-maps` — no rescue). ρ threads through into the normal-form key
+/// (ruling 3/4). `chain` is outermost-first (`sudo chroot CMD` ⇒ `[sudo, chroot]`). The key is the
+/// folded NORMAL FORM, so nice-permutations collapse and only genuine fold differences key apart.
 #[must_use]
 pub fn compose_chain(chain: &[ChainLink]) -> ComposedContext {
     let mut per_dimension = BTreeMap::new();
     for dim in Dimension::ALL {
-        // Fold the meet from the identity (Full) across the chain, in order.
-        let composed = chain
-            .iter()
-            .fold(Shift::Full, |acc, link| acc.meet(link.shift(dim)));
+        let op = dimension_op(dim);
+        let composed = chain.iter().fold(Shift::Full, |acc, link| {
+            compose_shift(acc, link.shift(dim), op)
+        });
         per_dimension.insert(dim, composed);
     }
-    // The canonical is BOOK-ORDER over the chain: `provider-id{dim=shift;…}` per link, `|`-joined.
-    // Order-sensitive by construction (the provider sequence and each link's shift are positional).
-    let canonical = chain
+    let rho_tag = chain
         .iter()
-        .map(|link| {
-            let shifts = Dimension::ALL
-                .into_iter()
-                .map(|d| format!("{}={}", d.as_token(), shift_tag(&link.shift(d))))
-                .collect::<Vec<_>>()
-                .join(";");
-            format!("p{}{{{}}}", link.provider.as_u32(), shifts)
-        })
-        .collect::<Vec<_>>()
-        .join("|");
+        .fold(RhoAccum::default(), |acc, link| acc.fold(&link.rho))
+        .tag();
     ComposedContext {
         per_dimension,
-        canonical,
-    }
-}
-
-/// A canonical tag for one shift in the context key (referent-agnostic identity string).
-fn shift_tag(s: &Shift) -> String {
-    match s {
-        Shift::Full => "F".to_owned(),
-        Shift::Top => "T".to_owned(),
-        Shift::Mapped(v) => format!("M:{v}"),
+        rho_tag,
     }
 }
 
@@ -875,79 +999,82 @@ mod tests {
         assert!(vouch.is_empty(), "an unknown token vouches nothing");
     }
 
-    // ── the composition algebra ──────────────────────────────────────────────────
-    fn link(provider: u32, shifts: &[(Dimension, Shift)]) -> ChainLink {
-        ChainLink {
-            provider: sym(provider),
-            shifts: shifts.iter().cloned().collect(),
-        }
+    // ── the composition algebra (HUMAN-ACKED rulings 2026-07-17) ──────────────────
+    /// A test link — unspecified dimensions default to `Full` (a wrapper only touches the dimensions
+    /// its `lend_map` maps; the rest are borrowed), ρ defaults to `Nothing` (identity).
+    fn link(shifts: &[(Dimension, Shift)]) -> ChainLink {
+        link_rho(shifts, RhoClaim::Nothing)
     }
-    fn sym(n: u32) -> Symbol {
-        // A deterministic symbol via a throwaway interner keyed on the number.
-        let mut i = Interner::default();
-        // intern n placeholder strings so the nth symbol has id n-ish; simplest: intern the number.
-        for k in 0..=n {
-            i.intern(&format!("provider{k}"));
+    fn link_rho(shifts: &[(Dimension, Shift)], rho: RhoClaim) -> ChainLink {
+        let mut m: BTreeMap<Dimension, Shift> = Dimension::ALL
+            .into_iter()
+            .map(|d| (d, Shift::Full))
+            .collect();
+        for (d, s) in shifts {
+            m.insert(*d, s.clone());
         }
-        i.intern(&format!("provider{n}"))
+        ChainLink { shifts: m, rho }
     }
 
     #[test]
-    fn top_propagates_across_the_chain() {
-        // `27C` §3: a MISSING key at ANY link ⇒ ⊤ for that dimension chain-wide (⊤ propagates).
-        let chain = [
-            link(
-                0,
-                &[
-                    (Dimension::User, Shift::Mapped("root".into())),
-                    (Dimension::FsView, Shift::Full),
-                    (Dimension::Netns, Shift::Full),
-                ],
-            ),
-            link(
-                1,
-                &[
-                    (Dimension::User, Shift::Full),
-                    (Dimension::FsView, Shift::Top),
-                    (Dimension::Netns, Shift::Full),
-                ],
-            ),
-        ];
-        let c = compose_chain(&chain);
+    fn top_propagates_no_rescue_through_full_or_absolute() {
+        // ruling 1 (`rul-top-absorbs-absolute-maps`): a ⊤ MIDDLE link poisons the dimension chain-
+        // wide — no rescue, whether the inner link is a FULL lend OR an ABSOLUTE map.
+        // user via an inner ABSOLUTE map (bob) under a ⊤ middle:
+        let via_absolute = compose_chain(&[
+            link(&[(Dimension::User, Shift::Mapped("root".into()))]),
+            link(&[(Dimension::User, Shift::Top)]),
+            link(&[(Dimension::User, Shift::Mapped("bob".into()))]),
+        ]);
         assert_eq!(
-            c.shift(Dimension::User),
-            Shift::Mapped("root".into()),
-            "user shifts (mapped ∘ full)"
-        );
-        assert_eq!(
-            c.shift(Dimension::FsView),
+            via_absolute.shift(Dimension::User),
             Shift::Top,
-            "one ⊤ link walls fs-view chain-wide"
+            "an inner absolute map NEVER rescues a ⊤ middle"
         );
-        assert_eq!(c.walls(), vec![Dimension::FsView]);
+        // fs-view via an inner FULL lend under a ⊤ middle:
+        let via_full = compose_chain(&[
+            link(&[(Dimension::FsView, Shift::Mapped("/a".into()))]),
+            link(&[(Dimension::FsView, Shift::Top)]),
+            link(&[(Dimension::FsView, Shift::Full)]),
+        ]);
+        assert_eq!(
+            via_full.shift(Dimension::FsView),
+            Shift::Top,
+            "an inner full lend NEVER rescues a ⊤ middle"
+        );
     }
+
     #[test]
-    fn full_lend_is_the_composition_identity() {
-        let chain = [
-            link(
-                0,
-                &[
-                    (Dimension::User, Shift::Full),
-                    (Dimension::FsView, Shift::Full),
-                    (Dimension::Netns, Shift::Full),
-                ],
-            ),
-            link(
-                1,
-                &[
-                    (Dimension::User, Shift::Full),
-                    (Dimension::FsView, Shift::Full),
-                    (Dimension::Netns, Shift::Full),
-                ],
-            ),
-        ];
+    fn user_is_absolute_overwrite_inner_wins() {
+        // ruling 2 (`rul-dimension-owned-compose-ops`): user = absolute overwrite. `sudo -u root …
+        // sudo -u bob` ⇒ bob (inner wins, caller-independent), NOT a ⊤ conflict.
+        let c = compose_chain(&[
+            link(&[(Dimension::User, Shift::Mapped("root".into()))]),
+            link(&[(Dimension::User, Shift::Mapped("bob".into()))]),
+        ]);
+        assert_eq!(c.shift(Dimension::User), Shift::Mapped("bob".into()));
+    }
+
+    #[test]
+    fn fsview_is_caller_relative_paths_nest() {
+        // ruling 2/6: fs-view = caller-relative. `chroot /mnt` then `chroot /t` ⇒ `/mnt/t`; reversed
+        // ⇒ `/t/mnt` (path nesting is order-sensitive — the genuine fold difference of ruling 4).
+        let mnt = link(&[(Dimension::FsView, Shift::Mapped("/mnt".into()))]);
+        let t = link(&[(Dimension::FsView, Shift::Mapped("/t".into()))]);
+        assert_eq!(
+            compose_chain(&[mnt.clone(), t.clone()]).shift(Dimension::FsView),
+            Shift::Mapped("/mnt/t".into())
+        );
+        assert_eq!(
+            compose_chain(&[t, mnt]).shift(Dimension::FsView),
+            Shift::Mapped("/t/mnt".into())
+        );
+    }
+
+    #[test]
+    fn identity_chain_is_host_default() {
         let mut i = Interner::default();
-        let c = compose_chain(&chain);
+        let c = compose_chain(&[link(&[]), link(&[])]); // all Full, ρ Nothing
         assert!(c.crossed().is_empty(), "an all-full chain shifts nothing");
         assert_eq!(
             c.to_context(&mut i),
@@ -955,83 +1082,90 @@ mod tests {
             "identity chain ⇒ HostDefault (rung-0)"
         );
     }
+
     #[test]
-    fn nested_permutation_pins_distinct_context_keys() {
-        // `27C` §3 nested-permutation pin: `sudo chroot` vs `chroot sudo` compose to DIFFERENT
-        // context keys where the dimensions differ (order-sensitive). sudo shifts user, chroot shifts
-        // fs-view; reversing the chain reverses the canonical string ⇒ distinct keys.
-        let sudo = link(
-            0,
-            &[
-                (Dimension::User, Shift::Mapped("root".into())),
-                (Dimension::FsView, Shift::Full),
-                (Dimension::Netns, Shift::Full),
-            ],
-        );
-        let chroot = link(
-            1,
-            &[
-                (Dimension::User, Shift::Full),
-                (Dimension::FsView, Shift::Mapped("/mnt".into())),
-                (Dimension::Netns, Shift::Full),
-            ],
-        );
+    fn nice_permutation_shares_key_but_scrub_reorder_differs() {
+        // ruling 4 (canonical = folded NORMAL FORM, order-sensitive ONLY where folds differ):
         let mut i = Interner::default();
-        let sudo_chroot = compose_chain(&[sudo.clone(), chroot.clone()]).to_context(&mut i);
-        let chroot_sudo = compose_chain(&[chroot, sudo]).to_context(&mut i);
-        assert_ne!(
-            sudo_chroot, chroot_sudo,
-            "order-sensitive: sudo∘chroot ≠ chroot∘sudo"
+        let sudo = link(&[(Dimension::User, Shift::Mapped("postgres".into()))]);
+        let nice = link(&[]); // identity wrapper
+        // `sudo -u postgres nice` and `nice sudo -u postgres` fold to the SAME normal form (nice
+        // perturbs nothing) ⇒ ONE key.
+        let a = compose_chain(&[sudo.clone(), nice.clone()]).to_context(&mut i);
+        let b = compose_chain(&[nice, sudo]).to_context(&mut i);
+        assert_eq!(a, b, "nice-permutation shares ONE key (ruling 4)");
+        // `env A=1 sudo` vs `sudo env A=1` DIFFER — sudo SCRUBS A away, so the composed ρ differs.
+        let env_a = link_rho(
+            &[],
+            RhoClaim::FullAmbient {
+                overrides: vec!["A".into()],
+            },
         );
-        // Both are Wrapped (both shift two dimensions).
-        assert!(matches!(sudo_chroot, Context::Wrapped(_)));
+        let sudo_scrub = link_rho(
+            &[(Dimension::User, Shift::Mapped("root".into()))],
+            RhoClaim::ExactlyThese {
+                vars: vec!["TERM".into(), "HOME".into()],
+            },
+        );
+        let env_then_sudo = compose_chain(&[env_a.clone(), sudo_scrub.clone()]).to_context(&mut i);
+        let sudo_then_env = compose_chain(&[sudo_scrub, env_a]).to_context(&mut i);
+        assert_ne!(
+            env_then_sudo, sudo_then_env,
+            "sudo scrubs ⇒ `env A=1 sudo` ≠ `sudo env A=1` (ruling 4)"
+        );
     }
+
+    #[test]
+    fn different_dimensions_are_order_independent() {
+        // ruling 4 corollary: `sudo chroot` and `chroot sudo` shift DIFFERENT dimensions (user vs
+        // fs-view), so they fold to the SAME normal form ⇒ ONE key (order matters only within a
+        // dimension's fold, never across independent dimensions).
+        let mut i = Interner::default();
+        let sudo = link(&[(Dimension::User, Shift::Mapped("root".into()))]);
+        let chroot = link(&[(Dimension::FsView, Shift::Mapped("/mnt".into()))]);
+        let a = compose_chain(&[sudo.clone(), chroot.clone()]).to_context(&mut i);
+        let b = compose_chain(&[chroot, sudo]).to_context(&mut i);
+        assert_eq!(a, b, "independent dimensions ⇒ order-independent key");
+    }
+
     #[test]
     fn same_chain_same_context_key() {
-        // Two `sudo`-wrapped sites (different inner command) share ONE context — the key is a
-        // function of the WRAPPER chain, not the inner. So a re-measurement self-heals to the same
-        // fact slot.
-        let sudo = link(
-            0,
-            &[
-                (Dimension::User, Shift::Mapped("root".into())),
-                (Dimension::FsView, Shift::Full),
-                (Dimension::Netns, Shift::Full),
-            ],
-        );
+        // Two `sudo`-wrapped sites (different inner command) share ONE context — the key is the
+        // folded WRAPPER-chain normal form, not the inner. A re-measurement self-heals to one slot.
+        let sudo = link(&[(Dimension::User, Shift::Mapped("root".into()))]);
         let mut i = Interner::default();
         let a = compose_chain(std::slice::from_ref(&sudo)).to_context(&mut i);
         let b = compose_chain(&[sudo]).to_context(&mut i);
         assert_eq!(a, b, "same wrapper chain ⇒ same context key");
     }
+
     #[test]
-    fn disagreeing_mapped_values_wall() {
-        // Two links mapping the SAME dimension to DIFFERENT targets is a genuine two-world conflict ⇒
-        // ⊤ (the safe wall, never a false same-world merge).
-        let chain = [
-            link(
-                0,
-                &[
-                    (Dimension::User, Shift::Mapped("root".into())),
-                    (Dimension::FsView, Shift::Full),
-                    (Dimension::Netns, Shift::Full),
-                ],
-            ),
-            link(
-                1,
-                &[
-                    (Dimension::User, Shift::Mapped("bob".into())),
-                    (Dimension::FsView, Shift::Full),
-                    (Dimension::Netns, Shift::Full),
-                ],
-            ),
-        ];
-        let c = compose_chain(&chain);
-        assert_eq!(
-            c.shift(Dimension::User),
-            Shift::Top,
-            "disagreeing mapped targets ⇒ ⊤ wall"
+    fn unresolvable_mapped_user_walls() {
+        // ruling 6: an unresolvable `sudo -u "$VAR"` ⇒ ⊤-value ⇒ walls. `from_lend_map` maps a
+        // `Mapped` dimension whose resolver returns `None` to `Shift::Top`.
+        use crate::wrapper::{derive_lend_map, lift_lend_map_set};
+        let mut i = Interner::default();
+        let set = lift_lend_map_set(
+            &mut i,
+            "sudo__lend_map() { printf '%s\\n' root : user; :   : fs-view; :   : netns; \"$@\"; }",
         );
+        let p = set.value.providers().next().unwrap();
+        let lm = set.value.get(p).unwrap().clone();
+        let (map, _d) = derive_lend_map(&lm);
+        // The resolver could not resolve the mapped user target (`sudo -u "$VAR"`, $VAR unknown).
+        let link = ChainLink::from_lend_map(&map, RhoClaim::Nothing, |_dim| None);
+        assert_eq!(
+            link.shift(Dimension::User),
+            Shift::Top,
+            "unresolved mapped user ⇒ ⊤ (walls)"
+        );
+        assert_eq!(
+            link.shift(Dimension::FsView),
+            Shift::Full,
+            "full colon-line ⇒ Full"
+        );
+        let c = compose_chain(&[link]);
+        assert!(c.walls().contains(&Dimension::User));
     }
 
     // ── the two-axis consent decision ────────────────────────────────────────────
