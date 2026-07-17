@@ -543,3 +543,23 @@ dispatches now.
   is STRUCK (referent-agnostic violation + a phantom user-instruction);
   kFAIL's KNOBS prose is untouched — this ruling allocates responsibility
   within the weld, it does not move the weld.
+
+## Mid-run redirect (2026-07-17 — lane-context-entry, from the human's in-flight 27C revision)
+
+The human's root working-dir carries an uncommitted `27C` §3 revision that
+SUPERSEDES the conductor's interim composition-algebra block. Redirect issued
+to the running builder with the ruled cells inline:
+`27C:rul-top-absorbs-absolute-maps` (⊤ propagates uniformly; NO
+overwrite-rescue through inner absolute maps — machine-state logic never
+skips the middle) · `27C:rul-dimension-owned-compose-ops` (compose ops +
+value frames engine-internal, per-dimension: user=absolute overwrite,
+fs-view=caller-relative path composition; authored surface stays single-step)
+· cross-link ρ-threading (the one dimension that threads through every link's
+argv-resolution) · canonical context key = the folded per-dimension NORMAL
+FORM, never chain syntax (nice-position chains share a key; env-vs-sudo order
+does not) · fold-entry coherence stays conductor-proposed/strawman · the DST
+pin list. Full text arrives with the human's commit; this entry is the
+pointer, not the content. Also noted from the same root read: the fallback
+lane's settle commit (`c55ffbe`) RETIRES the old engine-warranted carried-by
+row explicitly and names the conservative-closure pass "the spike's
+obligation to discharge and prove in practice."
