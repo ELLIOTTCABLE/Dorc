@@ -5,22 +5,22 @@
 # effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
 # rc is the raw PROBE-command status (opaque to Dorc — the record is the out-of-band lane).
 
-# site 1: pkgstate:ca-certificates#installed
+# site 1: sm.dorc.PkgState:ca-certificates#installed
 dpkg__predict() {
    case $1 in -s) shift ;; esac
    pkg="$1"
    dpkg -s -- "$pkg" >/dev/null 2>&1
 }
 dpkg__predict '-s' 'ca-certificates'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'site 1 effect=%s rc=%s\n' "$_e" "$_rc"
-# site 2: pkgstate:nginx#installed
+# site 2: sm.dorc.PkgState:nginx#installed
 dpkg__predict '-s' 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'site 2 effect=%s rc=%s\n' "$_e" "$_rc"
-# site 3: package:nginx#installed
+# site 3: sm.dorc.Package:nginx#installed
 apt_get__predict() {
    while [ "${1#-}" != "$1" ]; do shift; done
    verb=$1; shift
    while [ "${1#-}" != "$1" ]; do shift; done
    pkg="$1"
-   if [ "$2" = "" ]; then
+   if [ "${2-}" = "" ]; then
       case $verb in
          install) dpkg-query -W "$pkg" >/dev/null 2>&1 ;;
          purge) dpkg-query -W "$pkg" >/dev/null 2>&1 ;;
@@ -28,7 +28,7 @@ apt_get__predict() {
    fi
 }
 apt_get__predict 'install' '-y' 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'site 3 effect=%s rc=%s\n' "$_e" "$_rc"
-# site 4: pkgindex#fresh
+# site 4: sm.dorc.PkgIndex#fresh
 apt_get__predict() {
    verb=$1; shift
    case $verb in
@@ -36,13 +36,13 @@ apt_get__predict() {
    esac
 }
 apt_get__predict 'update'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'site 4 effect=%s rc=%s\n' "$_e" "$_rc"
-# site 5: package:curl#installed
+# site 5: sm.dorc.Package:curl#installed
 apt_get__predict() {
    while [ "${1#-}" != "$1" ]; do shift; done
    verb=$1; shift
    while [ "${1#-}" != "$1" ]; do shift; done
    pkg="$1"
-   if [ "$2" = "" ]; then
+   if [ "${2-}" = "" ]; then
       case $verb in
          install) dpkg-query -W "$pkg" >/dev/null 2>&1 ;;
          purge) dpkg-query -W "$pkg" >/dev/null 2>&1 ;;
@@ -50,9 +50,9 @@ apt_get__predict() {
    fi
 }
 apt_get__predict 'install' '-y' 'curl'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'site 5 effect=%s rc=%s\n' "$_e" "$_rc"
-# site 6: package:htop#installed
+# site 6: sm.dorc.Package:htop#installed
 apt_get__predict 'install' '-y' 'htop'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'site 6 effect=%s rc=%s\n' "$_e" "$_rc"
-# site 7: service:nginx#enabled
+# site 7: sm.dorc.Service:nginx#enabled
 systemctl__predict() {
    verb=$1; shift
    svc="$1"
@@ -63,13 +63,13 @@ systemctl__predict() {
    esac
 }
 systemctl__predict 'enable' 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'site 7 effect=%s rc=%s\n' "$_e" "$_rc"
-# site 8: service:nginx#active
+# site 8: sm.dorc.Service:nginx#active
 systemctl__predict 'start' 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'site 8 effect=%s rc=%s\n' "$_e" "$_rc"
-# site 9: pkgstate:vim#installed
+# site 9: sm.dorc.PkgState:vim#installed
 dpkg__predict '-s' 'vim'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'site 9 effect=%s rc=%s\n' "$_e" "$_rc"
-# site 10: package:vim#installed
+# site 10: sm.dorc.Package:vim#installed
 apt_get__predict 'install' '-y' 'vim'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'site 10 effect=%s rc=%s\n' "$_e" "$_rc"
-# site 11: firewall:80/tcp#allowed
+# site 11: sm.dorc.Firewall:80/tcp#allowed
 ufw__predict() {
    verb=$1; shift
    rule="$1"
@@ -85,19 +85,10 @@ ufw__predict 'allow' '80/tcp'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif 
 
 #!/bin/sh
 # pi-webhost provision — a scrappy real book (the lazy admin lets dorc do idempotency).
-# A Query-guard stack, a Singleton establish, converged+diverged installs, distinct-
-# selector service mutators, a guard BELOW the mutators, and a ufw rule. The run-set diff
-# proves which commands run vs which dorc neutralised (20B §2 group-J). `dpkg -s` is the
-# read-only status query the pkgstate oracle declares `query` (an EXTERNAL command, unlike
-# the un-shimmable `command -v` builtin — so its probe is mock-reproducible: gate-1 ENFORCES).
 set -e
 
-# A bare pre-flight Query: assert the base image already has ca-certificates. VALID
-# (nothing mutates above it) + holds ⇒ dorc value-substitutes it to its probed rc `true`.
 # dpkg -s ca-certificates >/dev/null 2>&1   # dorc: elided (already converged / dead branch)
 
-# Idempotent install via the || idiom. The guard reports absent here (nginx not yet
-# installed), so the install is LIVE and runs; the guard runs for real to gate it.
 false || apt-get install -y nginx   # dorc: elided [dpkg -s nginx >/dev/null 2>&1] (already converged / dead branch)
 
 apt-get update
@@ -107,7 +98,6 @@ apt-get install -y htop
 systemctl enable nginx
 systemctl start nginx
 
-# A guard BELOW the mutators: writes have reached it ⇒ INVALID Query ⇒ it runs for real.
 dpkg -s vim >/dev/null 2>&1 || apt-get install -y vim
 
 ufw allow 80/tcp

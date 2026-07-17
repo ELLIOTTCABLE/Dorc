@@ -5,13 +5,13 @@
 # effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
 # rc is the raw PROBE-command status (opaque to Dorc — the record is the out-of-band lane).
 
-# site 1: package:nginx#installed
+# site 1: sm.dorc.Package:nginx#installed
 apt_get__predict() {
    while [ "${1#-}" != "$1" ]; do shift; done
    verb=$1; shift
    while [ "${1#-}" != "$1" ]; do shift; done
    pkg="$1"
-   if [ "$2" = "" ]; then
+   if [ "${2-}" = "" ]; then
       case $verb in
          install) dpkg-query -W "$pkg" >/dev/null 2>&1 ;;
          purge) dpkg-query -W "$pkg" >/dev/null 2>&1 ;;
@@ -25,8 +25,8 @@ apt_get__predict 'install' '-y' 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=ho
 # dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
 
 # dorc guard preamble: the vouching oracle's own verdict body, shipped strip-only
-# (annotations removed, `name.is_converged()` -> `name__is_converged()`, nothing else
-# changed -- rul-ternary-verdict: the authored bytes verbatim, no engine-synthesized sh).
+# (dialect annotations removed, nothing else changed -- rul-ternary-verdict: the
+# authored bytes verbatim, no engine-synthesized sh).
 apt_get__is_converged() {
    while [ "${1#-}" != "$1" ]; do shift; done
    verb=$1; shift
@@ -37,16 +37,6 @@ apt_get__is_converged() {
 }
 
 # guard23-mutator-fails-book-continues (rul-divergence-proceed: the engine adds no second-
-# guess layer above guards; XFAIL until the guard tier lands). Drift case where the guard
-# falls through AND the real mutator then FAILS (apt-get mock exits 1). This book has no
-# errexit, so bare sh would carry on past the failure — and the guarded artifact must be
-# byte-faithful to that: check fails -> mutator runs -> mutator fails -> the book CONTINUES
-# (marker runs; artifact exits 0, the last command's rc). No engine wrapper may swallow,
-# retry, abort-on, or "helpfully" report-and-stop the mutator's failure in-line: failure
-# surfacing is the oracle's/report's job on its own channels, and divergence handling is
-# proceed-and-flag. (The errexit-book variant of this pin is deliberately NOT authored:
-# whether errexit-implicit consumption blocks guarding at all is DEFERRED by human ruling,
-# 2026-07-02 — see Research/notes/23A.)
 hork wombat
-( apt_get__is_converged install -y nginx ) || apt-get install -y nginx   # dorc: guard [package converged-vouch; probe: holds]
+( apt_get__is_converged install -y nginx ) || apt-get install -y nginx   # dorc: guard [sm.dorc.Package converged-vouch; probe: holds]
 marker done

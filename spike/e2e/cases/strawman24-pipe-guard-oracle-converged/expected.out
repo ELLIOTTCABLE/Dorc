@@ -13,24 +13,4 @@ otelcol --version | grep -q "0.155.0"; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=hold
 # dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
 
 # strawman24-pipe-guard-oracle-converged (the OWED VALUE of the round-25 pipe-guard, now DELIVERED —
-# 24J §2, promoted from XFAIL). The field-trial flagship line + a described tool (otelcol's author
-# writes predict() + is_converged(), the full role-split). HOST: converged — otelcol IS 0.155.0, so
-# the version-check matches and the admin's own `||` short-circuits the install.
-#
-# HOW IT LIFTS (24J — the connected probe): `otelcol --version | grep -q "0.155.0"` is a CONNECTED
-# check-pipe — EVERY stage is a vouched read-only Query (otelcol via its own oracle's `--version`
-# OBSERVE arm; grep via the stdlib grep oracle). So it ships as ONE connected probe keyed to the
-# GOVERNING (last) stage grep: the host runs the real `A | F` and reads back its rc (the engine never
-# interprets grep's rc meaning — no filter-semantics; rc is opaque). rule-query-validity passes (the
-# vouched read-only otelcol predecessor gens nothing ⇒ grep stays a valid Query), so the known rc 0
-# folds the `||`: the fallback `curl|tar` dies as a dead branch (existing StatusRelaxable fold), grep
-# value-substitutes to `true` (existing query-guard substitution), and otelcol — the subsumed non-last
-# stage — omits controlled by grep. The whole line collapses to `: | true || : | :`: run-set EMPTY,
-# saving the check-tax + attention (USER_STORY Stage 1). expected.ran encodes that (empty).
-#
-# CONTRAST the siblings: strawman24-pipe-guard-single-lifts (a SINGLE-command check lifts today),
-# strawman24-pipe-guard-floor (no oracle ⇒ SAFE floor, all 12 sites run verbatim), and
-# strawman24-pipe-guard-unvouched-mid (an unvouched MIDDLE stage ⇒ NOT connected ⇒ walls/runs —
-# silence-is-wall preserved). RAN_ORDER=lax (pipe stages log concurrently). ru-26 churn-note: stderr
-# is not modeled by this harness.
 : | true || : | :   # dorc: elided [otelcol --version; grep -q "0.155.0"; curl -sL https://example.com/otelcol.tar.gz; tar xz] (already converged / dead branch)

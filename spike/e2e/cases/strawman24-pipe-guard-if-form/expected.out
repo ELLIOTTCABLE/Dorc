@@ -5,7 +5,7 @@
 # effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
 # rc is the raw PROBE-command status (opaque to Dorc — the record is the out-of-band lane).
 
-# site 1: grepmatch:0.155.0#matched
+# site 1: sm.dorc.GrepMatch:0.155.0#matched
 otelcol --version | grep -q "0.155.0"; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'site 1 effect=%s rc=%s\n' "$_e" "$_rc"
 # site:2 skip-unresolvable
 # site:3 skip-unresolvable
@@ -13,12 +13,4 @@ otelcol --version | grep -q "0.155.0"; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=hold
 # dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
 
 # strawman24-pipe-guard-if-form (24J beautification-robustness). The SAME connected check-pipe as
-# strawman24-pipe-guard-oracle-converged, but in the `if ! A | F; then M; fi` form a beautifier would
-# rewrite the `A | F || M` guard into. It must lift IDENTICALLY: the connected probe keys the
-# governing (last) stage grep and captures the RAW pipe rc (NOT the `!`-negated rc — the connected
-# body is the stages' span, and the fold replays `!` over the captured rc via Pipeline{negated}). On
-# a converged host the pipe is rc 0 ⇒ `! 0` = false ⇒ the then-body (curl|tar) is DEAD, otelcol omits
-# (subsumed), grep substitutes to `true`. Run-set EMPTY (expected.ran). Proves the pipe-guard rides
-# the EXISTING StatusRelaxable-on-if-guards path (24J: "Beautification-proof by construction").
-# RAN_ORDER=lax (pipe stages log concurrently). ru-26 churn-note: stderr not modeled here.
 if ! : | true; then : | :; fi   # dorc: elided [otelcol --version; grep -q "0.155.0"; curl -sL https://example.com/otelcol.tar.gz; tar xz] (already converged / dead branch)

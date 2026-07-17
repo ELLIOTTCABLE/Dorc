@@ -5,7 +5,7 @@
 # effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
 # rc is the raw PROBE-command status (opaque to Dorc — the record is the out-of-band lane).
 
-# site 0: pkgstate:otelcol#installed
+# site 0: sm.dorc.PkgState:otelcol#installed
 dpkg__predict() {
    case $1 in -s) shift ;; esac
    pkg="$1"
@@ -18,16 +18,4 @@ dpkg__predict '-s' 'otelcol'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [
 # dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
 
 # strawman24-pipe-guard-single-lifts (the CONTRAST to strawman24-pipe-guard-floor / the
-# XFAIL sibling): the SAME fallback pipeline (`curl … | tar xz`), but the CHECK side is a
-# SINGLE modeled Query instead of a `<tool> --version | grep -q` pipeline. It LIFTS: the
-# converged query folds the `||`, the dead fallback pipeline OMITS whole (both curl and tar),
-# and the query value-substitutes to `true` → the run-set is EMPTY. This isolates the
-# round-25 pipe-guard gap to the CHECK-side pipe: a fallback pipeline is fine to omit (a dead
-# branch omits stage-by-stage), and a single-command check folds exactly as USER_STORY
-# Stage 1's hand-written guard does. Swap this check for `otelcol --version | grep -q` (same
-# fallback) and nothing lifts — the whole line runs (sibling XFAIL + classify pins).
-# `dpkg -s otelcol` stands in for the single-command check: an installed-check, not a
-# version-check, but the STRUCTURAL point is the absence of a check-side pipe, not the
-# semantic. HOST: otelcol installed ⇒ dpkg -s exits 0 ⇒ the `||` fallback is dead.
-# ru-26 churn-note: stderr is not modeled by this harness.
 true || : | :   # dorc: elided [dpkg -s otelcol >/dev/null 2>&1; curl -sL https://example.com/otelcol.tar.gz; tar xz] (already converged / dead branch)
