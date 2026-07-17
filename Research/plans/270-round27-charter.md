@@ -9,6 +9,18 @@ it first for what-happened-and-why), `notes/24C` (residue ledger), `plans/24S`/`
 partially imports). Authority: root docs and human-typed rulings outrank this;
 `spike/CLAUDE.md` rulings bind every builder.
 
+> **⚠ CHARTER STATUS (2026-07-16):** this charter froze at its 2026-07-10 creation
+> while its opens resolved. `block-settle` is CLOSED (last sittings 2026-07-12;
+> `plans/271` is the rulings ledger); every §3 design-pass adjudication is
+> dispositioned — per-item brackets below. The §2 block-context wrapper and
+> read-value paragraphs predate the wrapper-surface redesign (`notes/273`: the
+> `24S` §2b four-job context-function dissolved into `cmd__predict()` +
+> `cmd__lend_map()`) and context-entry probing (`plans/27C` — THE current
+> wrapper/context-transport spec); readers take those first. Task-14 (minted after
+> this charter) was DISSOLVED 2026-07-16 and `271:rul-only-oracle-bytes-ship`
+> RATIFIED. The live block-rebuild dispatch gate is now `279f:ask-amendment-acks`
+> (`notes/279f` §6). §2 block-rebuild's BUILD ORDER itself stands unchanged.
+
 ## §0 — Mission
 
 Consolidate every in-flight reimplementation/respell obligation into ONE
@@ -132,6 +144,12 @@ rider-comment-budget (`24P` §8) · foreground final e2e · BLESS exclusivity ·
 The `24S`/`24T` machinery, staged per their own §8s; implementation-planning for this
 block ratifies the payload pins (§3 adj-payload-pins) first.
 
+**[SUPERSEDED IN SURFACE — 2026-07-16, `notes/273` + `plans/27C`: the wrapper stages
+below predate the wrapper-surface redesign (the `24S` §2b four-job context-function
+is DEAD — `cmd__predict()` + `cmd__lend_map()`; `271:rul-predict-absorbs-wrapper-modeling`,
+`271:rul-lend-map`) and context-entry probing (`plans/27C`). Staging intent stands;
+surfaces per the new specs (`273` §11 re-reads the W1–W2 staging against them).]**
+
 - **wrapper-peel stage** (né `24S` W1): the context-function role surface (peel + axes
   + ρ-transform + self-vouch/self-footprint) · context regions generalizing the
   `notes/219` q-1.c subst-scope machinery · wrapper/inner node split · identity
@@ -142,7 +160,12 @@ block ratifies the payload pins (§3 adj-payload-pins) first.
   value headline (the `24S` §2 walkthrough book elides). **The referendum watch-item**:
   if build contact ever forces a wrapper-aware arm into a TOOL oracle, stop and
   re-audit the kBURDEN story (`24S` §2c) — this is a stop-the-block finding, not a
-  workaround site.
+  workaround site. **[SUPERSEDED — 2026-07-16: whole-ρ replication died into the
+  authored predict body (`notes/273` §0/§6; RATIFIED as composed predicts,
+  `271:rul-only-oracle-bytes-ship`); probe-outside-via-invariance is re-cut as
+  `plans/27C`'s lanes — measurement in the site's denoted context first, the
+  invariance-line × `--risk-faultless-skips` fallback second (`27C` §0/§4,
+  `271:rul-invariance-speech-act`). The referendum watch-item stands (`273` §11).]**
 - **payload-v1** (né `24T` R0): carrier role surface (sh/bash/dash + su's `-c`;
   which-arg-is-code, stdin shapes, argv-binding) · nested parse at analysis time ·
   whole-line fold (elide / guard-conjunction / run) · derived-text locators ·
@@ -159,10 +182,14 @@ block ratifies the payload pins (§3 adj-payload-pins) first.
   probe, captured single-line stdout folds back as a probe-provenance literal;
   multi-line/binary refuses ⇒ site stays ⊤ ⇒ runs. Gated on adj-capture-claim (§3).
   Authored 262-§2-compatible so the multi-host resumption inherits the record shape
-  rather than re-framing it.
+  rather than re-framing it. **[GATE CLOSED — 2026-07-16, `271` task 7: adj-capture-claim
+  ruled 2026-07-12; durable = `notes/275` (the value-prediction species). Capture ships
+  REAL bytes — byte-consumption demands real execution (`271:rul-only-oracle-bytes-ship`
+  rider); world-cell values measure in-context where entered (`plans/27C` §4).]**
 - Wrapper stages W3–W4 (sensitive kinds; `env` per-variable refinement) FLOAT behind
   adj-survival-flag-outcome and adj-trichotomy-spelling — in-round tail if the
-  adjudications land early, else post-trial.
+  adjudications land early, else post-trial. **[Both gates CLOSED — 2026-07-16
+  annotation; `271` tasks 8 and 3, see the §3 brackets below.]**
 
 ### block-stdlib — stdlib-authoring + yardstick-measurement
 
@@ -189,44 +216,69 @@ block ratifies the payload pins (§3 adj-payload-pins) first.
 ## §3 — The adjudication ledger (each line: what, gate, status)
 
 Design-pass items (block-settle agenda; human-acked 2026-07-10 as the immediate next
-activity after this charter lands):
+activity after this charter lands): **[block-settle CLOSED — 2026-07-16 annotation;
+last sittings 2026-07-12; each item's disposition bracketed in place below.
+`plans/271` is the ledger.]**
 
 - **adj-entity-algebra** — the design note + the human's ack of its authored spelling.
-  Gates block-rebuild dispatch.
+  Gates block-rebuild dispatch. **[CLOSED — 2026-07-16, `271` tasks 1/2/12: both
+  halves ruled 2026-07-10, close-out 2026-07-12; durable = `notes/277`.]**
 - **adj-capture-claim** (né `notes/219` fork-capture-claim-type) — is a probe-captured
   stdout an ordinary probe-observation (the reserved `OutClaim` channel finally
   producing) or a NEW claim-type with its own provenance rules? Argued both ways in
   `219` q-5. Gates the read-value-slice; on the field-trial's critical path.
+  **[CLOSED — 2026-07-16, `271` task 7 (2026-07-12): the fork dissolved into the
+  value-prediction species (`271:rul-value-prediction-species`); durable =
+  `notes/275`.]**
 - **adj-trichotomy-spelling** (né `24S:A3`) + **adj-axis-vocabulary** (né `24S:A1`) —
   the kind-owner context-declaration spelling is a genuine kOOB-redline reading
   (`24S`'s lean is newly-minted machine-read syntax, justified via DESIGN's
   be-very-not-sh test — but "all config is spelled in sh" deserves a deliberate human
   reading); plus ratifying the versioned-closed engine-owned axis vocabulary
   (v1 = {user, fs-view} + ρ). Gates stdlib context declarations and W3+.
+  **[CLOSED — 2026-07-16: the trichotomy DISSOLVED into address-derived topology
+  (`271` task 3, 2026-07-11; durable = `notes/272`); the axis vocabulary ratified as
+  `271:rul-axis-vocabulary-v1` (fs-view soft-deferred), amended by
+  `271:rul-networking-unpunt` (netns ahead of full fs-view).]**
 - **adj-survival-flag-outcome** (né `24S:A2`, UNIFIED with the human's TODO
   `--trust-footprints` outcome-rename) — one ruling: the trust flag gates the
   OUTCOME (survival past a running mutation on traveled claims) rather than the
   claim-type, and gets an outcome-centric name (what the admin actually acks:
   unattributable under-execution risk). THE central trust ruling; gates W3, not
-  W1–W2.
+  W1–W2. **[CLOSED — 2026-07-16, `271` task 8 (2026-07-12):
+  `271:rul-flag-is-razor-residue` (claims own what lines can say; the flag owns what
+  no line can say) + `271:rul-flag-named-risk-faultless-skips`
+  (`--risk-faultless-skips`).]**
 - **adj-small-homes** — the two unhomed TODO items: systemd's 255-as-exit-fail vs our
   ≥2 convention (cheap ruling); the probe-bodies-proved-non-mutable effect-check
   (`24R` §0a marks it owed; proposed home = a typeless-floor or wrapper-peel brief
-  rider).
+  rider). **[CLOSED — 2026-07-16, `271` task 10 (2026-07-10): the rc partition stands
+  unchanged (`271:rul-rc-partition-stands` + rul-zero-one-inversion-pair; systemd's
+  ternary = convergent-evolution validation, not adopted); the effect-check homes as
+  a typeless-floor brief rider (`271:rul-effect-check-home-typeless-floor`;
+  build-only-if-nearly-free).]**
 - **adj-stopping-point** (né `24T:P-A6`) — the announced analyzer ceiling. The old
   "one and only punt: eval" weld is fully unwelded by necessity; the candidate on
   record (gentle-ack only, NOT settled by silence): the boundary is DERIVABLE as the
   composition of three standing lines — const-resolvability (`24T:imp-P1/P2`) ×
   no-escalation (`24S:imp-1`) × no-cross-host (`24S:imp-5`). Fold into the
-  design-pass for a typed ratification.
+  design-pass for a typed ratification. **[CLOSED — 2026-07-16,
+  `271:rul-stopping-point-unpinned` (typed 2026-07-12): deliberately UNPINNED — no
+  ratified composed boundary; the three constituent fences stand individually;
+  consumers cite the constituents, never a composed announcement.]**
 
 Later gates (not block-settle):
 
 - **adj-payload-pins** (né `24T:P-A1` formal ratification + `24T:P-A2` the R2 weld:
   refuse-forever vs refuse-for-v1) — at block-context implementation-planning.
+  **[Its block-settle pre-read was STRUCK — 2026-07-16, `271` task 11: always
+  formally owed at block-context implementation-planning, which keeps sole
+  ownership.]**
 - **adj-adjudicability-list** (né `24S:A4`) — the machine-read topology clauses +
   binding-smell lints + differential discharge; must land before kinds go
-  community-shared; not block-gating.
+  community-shared; not block-gating. **[ROUTING — 2026-07-16, `271` task-8 close:
+  the lint/differential targets were retargeted to the authored inputs (incl. the
+  invariance lines). NOT closed; deadline unchanged at kinds-go-community.]**
 - Post-trial / human-keyed: co-reference unification (né `24S:A5`, joins
   `24M:rul-kind-unify-owed` + `24C:strain-coreference-crosskind`); the razor
   registration (né `24S:A8`, KNOBS-adjacent, human-owned); kCONC minting
