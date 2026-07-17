@@ -38,7 +38,7 @@ and time.
 
 ### Example
 
-(See a detailed walkthrough of this example in [USER_STORY.md].)
+(See a detailed walkthrough of this example in [USER_STORY.md](USER_STORY.md).)
 
 ```sh
 #!/bin/sh
