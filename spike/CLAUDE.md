@@ -444,26 +444,30 @@ prompt you write:
   corresponding POSIX rule, simplify it for our purposes, match it in spirit.
   Conservative for the spike; characters once granted can never be clawed back.
 
-## Where the build stands (dated 2026-07-16 — the one drift-expected section; `Research/LIVING_STATUS.md` is the live view)
+## Where the build stands (dated 2026-07-17 — the one drift-expected section; `Research/LIVING_STATUS.md` is the live view)
 
-- LANDED: the round-24 ladder Stages 1–5 (honest walls · survival machine · guard
-  tier + claim algebra · derived footprints · resolve/reaches) + the pipe lift +
-  wave-1 polish. Evidence + residue ledger: `notes/24C`.
-- SETTLED since: block-settle CLOSED (`plans/271` = the rulings ledger;
-  `277`/`273`/`274`/`275`/`276`/`278` = the specs) · wrapper/context transport =
-  context-entry probing (`plans/27C`) · the 270-era crosscheck adjudicated
-  (`notes/279f`).
-- IMMINENT: `270:block-rebuild` — corpus-respell → typeless-floor →
-  entity-algebra-rebuild → value-recipe-reshape → wire-records-v1-import →
-  e2e-degraduation, with two conductor-inspected bless-checkpoints.
-- HEAD spelling debt (the respell owns the sweep — do not "fix" piecemeal):
-  `.prop` selectors → `#prop`; `touches`/`reaches` → `disturbs` /
-  `disturbance_reaches_only`. Five respell specimens are declared-XFAIL at HEAD BY
-  DESIGN (`24P` §11; stale-old goldens): implementor flow is land-respell →
-  delete XFAILs → BLESS on a verified binary → conductor inspects. Never
-  bless-first.
-- HEAD law debt (never imitate): the `24J` raw-ship — see
-  rul-only-oracle-bytes-ship above.
+- LANDED: the round-24 ladder Stages 1–5 + `270:block-rebuild` COMPLETE (eight
+  dispatches, both bless checkpoints stamped; ledger `notes/27D`, landing notes
+  `27E`–`27I`): the dorc-lang v0.1 corpus respell (`#`-selectors, sigil family,
+  disturbs-family names, markers+shebangs) · the typeless floor (auto-cell;
+  verdict-provider kernel seam; marker-gate at the cli edge; totalistic
+  forward-munge) · composed-predict probe emission (the `24J` raw-ship debt
+  REPAIRED — rul-only-oracle-bytes-ship is machine-pinned) · the `277` entity
+  algebra (chokepoints in `core::coord`; `Relation::Overlaps`; dialect sets;
+  context slot reserved) · cause-tagged fragment recipes + `ValueGrade` +
+  backing-SETS with observe-widening producing · `dorc-records/1` framing
+  (production deframer; strict path; `@@dorc@@` terminal token) · e2e
+  de-graduated 154→76 with the `render_corpus.rs` twin tier + the mandatory
+  dash-n net · whole-file `dorc strip` (parser-backed; erases the marker) +
+  `dorc-sh` thin bin.
+- The five old XFAIL specimens are RESOLVED (respell landed); no XFAILs at HEAD.
+- The `24J` raw-ship law-debt is CLEARED — the invariant block above remains
+  binding law; the "HEAD DEBT" annotation inside rul-only-oracle-bytes-ship is
+  historical.
+- NEXT: `270:block-context` (implementation-planning first; consumes
+  `plans/27C` whole + the `27D` forward seam-list; payload rulings
+  `27D:rul-payload-pins-near-weld` + `27D:rul-synthesized-payload-render-stays-
+  unwelded` govern payload-v1), then `270:block-stdlib`.
 
 ## Build / test / run
 

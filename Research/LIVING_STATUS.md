@@ -25,13 +25,20 @@ block-settle CLOSED (`plans/271` = the rulings ledger + task map); wrapper/conte
 transport RESOLVED (`plans/27C`); the 270-era adversarial crosscheck adjudicated, no
 kill (`notes/279f` — read its §1 first).
 
-**⚠ Next activity — block-rebuild IS IN FLIGHT (dispatched 2026-07-17, Fable
-conductor, session r27-impl; human-acked scope: push through a complete stdlib).**
-Landings ledger = **`notes/27D`** (the `24C` role for r27; accretes per stage).
-Stage-1 corpus-respell LANDED + bless-checkpoint-one STAMPED same day — the corpus
-is dorc-lang v0.1 end-to-end; see `27D` for dispositions + the handoff riders
-stages 2/3/6 own. The live lineage is now **`ai/spike3-r27`** (human-granted
-conductor-owned; stage branches `ai/r27-*` fold in by fast-forward).
+**⚠ Next activity — block-context implementation-planning.** `270:block-rebuild`
+is **CLOSED** (2026-07-17, one session: eight dispatches landed + both bless
+checkpoints stamped; ledger = **`notes/27D`** including its BLOCK CLOSE section
+with the forward seam-list; builder landing notes `27E`–`27I`). The corpus is
+dorc-lang v0.1 end-to-end; the typeless floor licenses; probes ship composed
+predicts only (the `24J` debt repaired); the entity algebra + backing-SETS +
+value recipes are re-keyed per `277`/`275`; `dorc-records/1` framing landed
+(r26's S1 shrinks accordingly); e2e de-graduated 154→76 with the in-memory
+twin tier + mandatory dash-n net. Human rulings received mid-block (banked in
+`27D`): payload pins near-weld + conservative-proceed authorized ·
+synthesized-payload-render (né R2) stays just-barely-unwelded ·
+strip-not-gsub-tier + strip-erases-marker. The live lineage is
+**`ai/spike3-r27`** (human-granted conductor-owned; stage branches `ai/r27-*`
+fold in by fast-forward).
 Human rulings 2026-07-17 riding this arc: no thin-reality-checkpoint (r25
 first-blooding waits on the stdlib) · autonomous crosscheck = Sol-only via an
 Opus manager (no DeepSeek unattended, no antigravity, no Fable) · Sonnet workers
