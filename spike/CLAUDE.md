@@ -112,6 +112,15 @@ prompt you write:
   oracle's own authored body, shipped strip-only. Two nevers: never
   engine-synthesized sh (no author ⇒ no self-vouch, no attribution, and a second
   source of convergence-truth); never declared/claimed output in guard position.
+- **rul-probe-mutation-ownership-split** (WELDED, human-typed 2026-07-17;
+  `27C` §3 carries the full text) — the probe-never-mutates law allocates by
+  OWNERSHIP: authored/oracle code (stdlib included) sits under the loud
+  frontloaded no-mutation contract (the uncontrolled ocean; an entry-form's
+  self-effects are the AUTHOR's vouched residue, attributed to their line);
+  ENGINE-generated constructs are OWNED — no hard line, judgment/UX tier,
+  careful-and-necessary against the flag-derived user-story. Never justify
+  either tier by "state the user cares about" (struck: referent-agnostic +
+  phantom user-instruction).
 - **rul-no-mutating-guards** — a verdict-function body that fails the non-mutation
   proof lifts NOWHERE: not as a probe and not as an apply-time guard. We do not
   insert proven mutation, out-of-order, in not-user-spelling, into apply bodies.

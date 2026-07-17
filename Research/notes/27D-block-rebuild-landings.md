@@ -525,3 +525,21 @@ lane becomes its own follow-on lane (**lane-fallback-carry**, after
 read-value-slice — the read-set-closure proof is real machinery sharing bones
 with the punted effect-check); lane-context-entry stays primary-entry-only and
 dispatches now.
+
+## Ruling addendum (2026-07-17, human-typed — the probe-mutation ownership weld)
+
+- **27C:rul-probe-mutation-ownership-split** (WELDED; applied to `27C` §3 +
+  spike/CLAUDE.md; discharges `27Xf:cr-entry-self-effects-carve-is-AI-asserted`;
+  the running lane-context-entry builder notified — excision-isolation lifted):
+  the probe-never-mutates law allocates by OWNERSHIP. Authored/oracle code
+  (stdlib included) = the uncontrolled ocean ⇒ the loud frontloaded contract
+  stands; an entry-form's self-effects (sudo auth-log line, timestamp refresh)
+  are the AUTHOR's vouched residue, claimed by the authoring speech-act,
+  attributed to their line — if the community someday rejects probe log-lines,
+  the at-fault party is a human author, orthogonal to Dorc. Engine-generated
+  constructs = OWNED ⇒ no hard line; judgment/UX tier, careful-and-necessary
+  against the flag-derived user-story (whom-we're-writing-for is a function of
+  the active flags). The conductor's "no state you care about changes" framing
+  is STRUCK (referent-agnostic violation + a phantom user-instruction);
+  kFAIL's KNOBS prose is untouched — this ruling allocates responsibility
+  within the weld, it does not move the weld.

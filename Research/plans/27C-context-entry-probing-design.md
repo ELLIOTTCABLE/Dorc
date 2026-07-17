@@ -197,6 +197,23 @@ sudo__enter() {                # argv = the site's peeled sudo argv with the com
   answers for entry self-effects in the read lane (sudo: an auth-log line, a timestamp
   refresh — modeled, elide-alongside). A wrapper whose entry cost is a real mutation
   authors no entry form ⇒ its contexts are never entered.
+  **WELDED (`27C:rul-probe-mutation-ownership-split`, HUMAN-TYPED 2026-07-17 —
+  discharges `27Xf:cr-entry-self-effects-carve-is-AI-asserted`; the carve's
+  rationale corrected in the same ruling):** the probe-mutation law allocates by
+  OWNERSHIP, not by effect-class. (1) AUTHORED code — every oracle, stdlib
+  included — sits under the loud, hard, frontloaded no-mutation contract because
+  it is the uncontrolled ocean ("modulo insane-oracles-might-exist"; the
+  horizon/disownership tier): an entry-form's self-effects are the AUTHOR's
+  vouched residue, claimed by the human speech-act of authoring the form,
+  attributed to their line. Sudo's auth-log line lives HERE — not in any engine
+  carve-out. (2) ENGINE-generated commands and constructs are OWNED: free to
+  mutate except that they shouldn't — no hard line, "merely" good software
+  design/UX, judged carefully-and-necessarily against the flag-derived
+  user-story (whom-we're-writing-for changes with the flags in play). The
+  unreliability dimension — cannot-claim-because-do-not-know — evaporates for
+  owned acts, and with it the need for frontloaded hard claims. NEVER justify
+  either tier via "state the user cares about" (struck: referent-agnostic
+  violation + an unwritten user instruction).
 - An unmodeled wrapper never peels ⇒ opaque line, wall (unchanged law). Unauthored
   entry cannot misfire because it does not exist.
 - Chains compose recursively (`sudo chroot /t CMD` ⇒ sudo-entry(chroot-entry(inner))),
