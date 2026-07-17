@@ -52,7 +52,7 @@ pub use parser::lift_predicts;
 pub(crate) use ast::{CaseArm, Command, Test, Word};
 pub(crate) use eval::{eval_test, pattern_matches, resolve_word};
 pub(crate) use parser::{
-    lift_reaches, lift_resolvers, lift_touches, lift_verdicts_converged, lift_verdicts_diverged,
+    lift_reaches, lift_resolvers, lift_state_stored_only_in, lift_touches, lift_verdicts_converged,
 };
 
 /// Strip an authored check funcdef to runnable sh — the STRIP-ONLY pass (R1c / 23D §1).
@@ -113,7 +113,7 @@ pub fn strip_verdict(
 /// `strip_predict`/`strip_verdict` (fork-4A: no new trust edge; authorship IS the vouch).
 #[must_use]
 pub fn strip_touches(src: &str, touches: &Predict, interner: &Interner) -> String {
-    strip_role(src, touches, interner, "__touches")
+    strip_role(src, touches, interner, "__disturbs")
 }
 
 /// Strip an authored **resolver** funcdef (`<kind>.resolve`) to runnable sh for the
@@ -146,7 +146,7 @@ pub fn strip_resolve(src: &str, resolver: &Predict, interner: &Interner) -> Stri
 /// read-only — `kFAIL-withhold`; authoring IS the vouch; the rc-127 mocks net is the live guarantee).
 #[must_use]
 pub fn strip_reaches(src: &str, reaches: &Predict, interner: &Interner) -> String {
-    strip_role(src, reaches, interner, "__reaches")
+    strip_role(src, reaches, interner, "__disturbance_reaches_only")
 }
 
 /// The shared STRIP-ONLY pass (R1c / 23D §1), parametrized by the target mangled suffix so the
@@ -232,22 +232,6 @@ fn collect_strip_edits(
                     edits.push((lo, hi, String::new()));
                 }
             }
-            // bare mark → DELETE THE WHOLE STATEMENT (23H §9.4): a bare mark is an
-            // annotation-LINE, not a POSIX `:` command. A stripped-in `:` would clobber the
-            // preceding command's tool-rc to 0 (an always-skip guard). Consume the mark's
-            // own-line indentation + one trailing separator so the deletion leaves runnable
-            // sh (`A; ; B` and a dangling `:` are both wrong); a `;;`/block-end is NOT
-            // consumed (a case-arm's `A; ;;` is valid). A mark-only non-case-arm body is
-            // ⊤-rejected at lift, so the last substantive command is always preserved here.
-            Stmt::Mark(m) => {
-                let del_lo = leading_ws_start(src, m.span.lo.0 as usize, base);
-                let del_hi = trailing_sep_end(src, m.span.hi.0 as usize);
-                edits.push((
-                    del_lo.saturating_sub(base),
-                    del_hi.saturating_sub(base),
-                    String::new(),
-                ));
-            }
             Stmt::Case { arms, .. } => {
                 for a in arms {
                     collect_strip_edits(&a.body, src, base, edits);
@@ -264,43 +248,6 @@ fn collect_strip_edits(
             Stmt::While { body, .. } => collect_strip_edits(body, src, base, edits),
             Stmt::Assign { .. } | Stmt::Shift { .. } => {}
         }
-    }
-}
-
-/// Scan backward from `from` over horizontal whitespace (space/tab) only, stopping at a
-/// newline, a non-whitespace byte, or `floor` (the funcdef start). Returns the absolute
-/// offset of a bare-mark statement's own-line indentation start — deleting from here removes
-/// the mark's leading whitespace with it (clean output) without crossing into the previous
-/// line (whose separator must survive as the statement boundary).
-fn leading_ws_start(src: &str, from: usize, floor: usize) -> usize {
-    let bytes = src.as_bytes();
-    let mut i = from;
-    while i > floor {
-        let Some(prev) = i.checked_sub(1) else { break };
-        if !matches!(bytes.get(prev), Some(b' ' | b'\t')) {
-            break;
-        }
-        i = prev;
-    }
-    i
-}
-
-/// Scan forward from `from` over horizontal whitespace, then consume ONE statement separator
-/// — a single `;` (never `;;`, the case-arm terminator) or a newline. Returns the absolute
-/// offset past the consumed separator, or `from` unchanged when the next token is a
-/// `;;`/block-end (there the mark's OWN preceding separator already terminates the previous
-/// statement — a case-arm's `A; ;;` is valid sh). Consuming the trailing separator is what
-/// keeps a mid-body mark removal from leaving `A; ; B` (a syntax error).
-fn trailing_sep_end(src: &str, from: usize) -> usize {
-    let bytes = src.as_bytes();
-    let mut i = from;
-    while matches!(bytes.get(i), Some(b' ' | b'\t')) {
-        i = i.saturating_add(1);
-    }
-    match bytes.get(i) {
-        Some(b'\n') => i.saturating_add(1),
-        Some(b';') if bytes.get(i.saturating_add(1)) != Some(&b';') => i.saturating_add(1),
-        _ => from,
     }
 }
 
@@ -405,7 +352,7 @@ mod strip_tests {
     #[test]
     fn flagship_body_strips_to_the_golden_preamble() {
         let authored = "\
-apt-get.predict() {
+apt_get__predict() {
    while [ \"${1#-}\" != \"$1\" ]; do shift; done
    verb=$1; shift
    while [ \"${1#-}\" != \"$1\" ]; do shift; done
@@ -427,7 +374,7 @@ apt_get__predict() {
     /// probe command that ships is the bare `dpkg-query …`.
     #[test]
     fn trailing_mark_is_removed_leaving_the_bare_command() {
-        let authored = "apt-get.predict() { pkg : package = \"$1\"; dpkg-query -W \"$pkg\" : package:\"$pkg\".installed; }";
+        let authored = "apt_get__predict() { pkg : package = \"$1\"; dpkg-query -W \"$pkg\" : package:\"$pkg\"#installed; }";
         let stripped = strip_one(authored);
         assert!(
             stripped.contains("dpkg-query -W \"$pkg\";")
@@ -444,44 +391,10 @@ apt_get__predict() {
         );
     }
 
-    /// A TRAILING bare mark is deleted WHOLE (23H §9.4 strip-fidelity), never left as a `:`
-    /// null command — so the author's last substantive command (`dpkg-query`) stays the last
-    /// exit-status-affecting statement. A stripped-in trailing `:` would clobber that rc to 0
-    /// (an always-skip guard). Byte-exact: the mark line and its trailing `;` are gone.
-    /// (Canonical bare-mark example is the surviving three-level ACK `: kind:entity.prop~`;
-    /// the two-level converged-vouch mark is retired — rul24-vouch-is-verdict-authoring.)
-    #[test]
-    fn trailing_bare_mark_is_deleted_whole_not_a_null_command() {
-        let authored = "apt-get.predict() { pkg : package = \"$1\"; dpkg-query -W \"$pkg\"; : package:\"$pkg\".held~; }";
-        let expected = "apt_get__predict() { pkg=\"$1\"; dpkg-query -W \"$pkg\"; }";
-        assert_eq!(strip_one(authored), expected);
-    }
-
-    /// A MID-BODY bare mark is deleted whole, following statements intact, with NO leftover
-    /// `; ;` (a syntax error) — the mid-body deletion consumes one trailing separator.
-    #[test]
-    fn mid_body_bare_mark_is_deleted_leaving_following_statements() {
-        let authored = "apt-get.predict() { pkg : package = \"$1\"; : package:\"$pkg\".held~; dpkg-query -W \"$pkg\"; }";
-        let expected = "apt_get__predict() { pkg=\"$1\"; dpkg-query -W \"$pkg\"; }";
-        assert_eq!(strip_one(authored), expected);
-    }
-
-    /// A bare mark as the SOLE statement of a CASE ARM strips to a legal EMPTY arm
-    /// (`enable) ;;` is valid sh — a case-arm may be empty; the `;;` terminator is not
-    /// consumed). Contrast a mark-only if/function body, which ⊤-rejects at lift.
-    #[test]
-    fn mark_only_case_arm_strips_to_empty_arm() {
-        let authored = "systemctl.predict() { verb=$1; shift; case $verb in enable) : service:nginx.enabled~ ;; esac; }";
-        let expected = "systemctl__predict() { verb=$1; shift; case $verb in enable) ;; esac; }";
-        assert_eq!(strip_one(authored), expected);
-    }
-
-    /// Idempotence / no-regression (R1c): a MARK-FREE body strips byte-identically to today —
-    /// the bare-mark change touches only `Stmt::Mark`, so a body with no bare marks is
-    /// unchanged (and re-stripping is byte-stable).
+    /// Idempotence / no-regression (R1c): a body strips byte-stably (re-stripping is a fixpoint).
     #[test]
     fn mark_free_body_strips_unchanged_and_stably() {
-        let authored = "apt-get.predict() { pkg : package = \"$1\"; dpkg-query -W \"$pkg\" : package:\"$pkg\".installed; }";
+        let authored = "apt_get__predict() { pkg : package = \"$1\"; dpkg-query -W \"$pkg\" : package:\"$pkg\"#installed; }";
         let expected = "apt_get__predict() { pkg=\"$1\"; dpkg-query -W \"$pkg\"; }";
         assert_eq!(strip_one(authored), expected);
         assert_eq!(strip_one(authored), strip_one(authored));
@@ -495,7 +408,7 @@ apt_get__predict() {
     fn verdict_body_strips_with_the_verdict_funcname() {
         use super::{lift_verdicts_converged, strip_verdict};
         let authored = "\
-apt-get.is_converged() {
+apt_get__is_converged() {
    verb=$1; shift
    case $verb in
    install) dpkg-query -W \"$1\" >/dev/null 2>&1 ;;
@@ -533,7 +446,7 @@ apt-get.is_converged() {
         // command — the dialect parser rejects the pipe/loop a raw `dpkg -L | sed` would need,
         // surfaced 24E-build). The static tracer ⊤s on it (NonPrintfCommand) ⇒ escalate.
         let authored = "\
-apt-get.touches() {
+apt_get__disturbs() {
    verb=$1; shift
    case $verb in
    install) apt-manifest \"$1\" ;;
@@ -546,16 +459,12 @@ apt-get.touches() {
         let t = set.value.get(provider).expect("the touches funcdef");
         let stripped = strip_touches(authored, t, &i);
         assert!(
-            stripped.starts_with("apt_get__touches()"),
-            "funcname mangled to the touches suffix: {stripped}"
+            stripped.starts_with("apt_get__disturbs()"),
+            "funcname mangled to the disturbs suffix: {stripped}"
         );
         assert!(
             stripped.contains("apt-manifest \"$1\""),
             "the host-tool call survives verbatim (the static tracer would ⊤ on it): {stripped}"
-        );
-        assert!(
-            !stripped.contains(".touches("),
-            "no period name remains: {stripped}"
         );
     }
 
@@ -570,7 +479,7 @@ apt-get.touches() {
         use super::strip_resolve;
         use crate::resolve::ResolverSet;
         let authored = "\
-package.resolve() {
+package__resolve() {
    dpkg-query -W -f '${Package}\\n' -- \"$1\" 2>/dev/null || printf '%s\\n' \"$1\"
 }";
         let mut i = Interner::default();
@@ -603,7 +512,7 @@ package.resolve() {
         use super::strip_reaches;
         use crate::reaches::ReachesSet;
         let authored = "\
-package.reaches() {
+package__disturbance_reaches_only() {
    printf '%s\\n' \"$1\"    : service
    dpkg -L \"$1\"           : file
 }";
@@ -614,8 +523,8 @@ package.reaches() {
         let r = set.value.get(kind).expect("the reaches funcdef");
         let stripped = strip_reaches(authored, r, &i);
         assert!(
-            stripped.starts_with("package__reaches()"),
-            "funcname mangled to the reaches suffix: {stripped}"
+            stripped.starts_with("package__disturbance_reaches_only()"),
+            "funcname mangled to the disturbance_reaches_only suffix: {stripped}"
         );
         assert!(
             stripped.contains("printf '%s\\n' \"$1\"") && stripped.contains("dpkg -L \"$1\""),
@@ -625,16 +534,12 @@ package.reaches() {
             !stripped.contains(": service") && !stripped.contains(": file"),
             "the typed-emission marks are deleted whole (no annotation residue): {stripped}"
         );
-        assert!(
-            !stripped.contains(".reaches("),
-            "no period name remains: {stripped}"
-        );
     }
 
     /// Byte-stability (R1c): strip is a deterministic function of its input.
     #[test]
     fn strip_is_byte_stable() {
-        let authored = "systemctl.predict() { verb=$1; shift; svc : service = \"$1\"; case $verb in enable) systemctl is-enabled -- \"$svc\" : service:\"$svc\".enabled ;; esac; }";
+        let authored = "systemctl__predict() { verb=$1; shift; svc : service = \"$1\"; case $verb in enable) systemctl is-enabled -- \"$svc\" : service:\"$svc\"#enabled ;; esac; }";
         assert_eq!(strip_one(authored), strip_one(authored));
         let stripped = strip_one(authored);
         assert!(stripped.starts_with("systemctl__predict()"));

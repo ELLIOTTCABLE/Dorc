@@ -452,15 +452,15 @@ mod tests {
     /// annotation, `[ "$2" = "" ]` multi-operand refusal). These DST tests model only
     /// `apt-get install` on `package`; `systemctl reload` has no check ⇒ Opaque ⇒ runs.
     /// Lifted with the test's interner so provider symbols match the book.
-    const CORPUS_PREDICT_SRC: &str = r#"
+    const CORPUS_PREDICT_SRC: &str = r##"
 apt_get__predict() {
    while [ "${1#-}" != "$1" ]; do shift; done
    verb=$1; shift
    while [ "${1#-}" != "$1" ]; do shift; done
    pkg : package = "$1"
-   if [ "$2" = "" ]; then dpkg-query -W "$pkg" >/dev/null 2>&1 : package:"$pkg".installed ; fi
+   if [ "$2" = "" ]; then dpkg-query -W "$pkg" >/dev/null 2>&1 : package:"$pkg"#installed ; fi
 }
-"#;
+"##;
 
     /// Test convenience (elide-weld, 24D §3): vouch EVERY establish-bearing site so these DSTs keep
     /// exercising elision MECHANICS (convergence × wall). The vouch GATE is pinned elsewhere (plan's
@@ -483,7 +483,6 @@ apt_get__predict() {
                     "apt_get__is_converged".to_string(),
                     "apt_get__is_converged() { dpkg-query -W \"$1\" >/dev/null 2>&1; }".to_string(),
                     "apt_get__is_converged".to_string(),
-                    dorc_oracle::verdict::VerdictSense::Converged,
                     "package".to_string(),
                     vec!["dpkg-query".to_string()],
                 );

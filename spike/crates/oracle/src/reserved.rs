@@ -37,18 +37,19 @@ use std::collections::BTreeMap;
 
 use crate::predict::PredictSet;
 
-/// The reserved role-suffixes of the emitted `<munged>__<role>` function namespace — the six
-/// role-siblings (rul-role-split / 24F/24G): the probe body, the at-most footprint, the two
-/// verdict senses, the identity canonicalizer, and the reach-expander. KEEP IN SYNC with the
-/// parser's per-role suffix pairing ([`crate::predict`]'s `FnRole::mangled_suffix`); the
-/// [`suffixes_match_lifted_roles`](tests) test ties the two mechanically.
+/// The reserved role-suffixes of the emitted `<munge>__<role>` function namespace — the six
+/// role members (`277` §4d; rul24-ditch-is-diverged removed `is_diverged`): the probe body, the
+/// at-most footprint (`disturbs`, né touches), the converged-verdict, the identity canonicalizer,
+/// the reach-expander (`disturbance_reaches_only`, né reaches), and the substrate/invariance member
+/// (`state_stored_only_in`). KEEP IN SYNC with the parser's per-role suffix ([`crate::predict`]'s
+/// `FnRole::mangled_suffix`); the [`suffixes_match_lifted_roles`](tests) test ties the two.
 pub const RESERVED_ROLE_SUFFIXES: &[&str] = &[
     "__predict",
-    "__touches",
+    "__disturbs",
     "__is_converged",
-    "__is_diverged",
     "__resolve",
-    "__reaches",
+    "__disturbance_reaches_only",
+    "__state_stored_only_in",
 ];
 
 /// Why a munged name is not a legal POSIX NAME (`XBD §3.216`: a NAME is `[A-Za-z_][A-Za-z0-9_]*`
@@ -149,7 +150,7 @@ fn emitted_names(interner: &mut Interner, src: &str) -> Vec<EmittedName> {
             crate::predict::lift_predicts(interner, src).value,
         ),
         (
-            "__touches",
+            "__disturbs",
             crate::predict::lift_touches(interner, src).value,
         ),
         (
@@ -157,16 +158,16 @@ fn emitted_names(interner: &mut Interner, src: &str) -> Vec<EmittedName> {
             crate::predict::lift_verdicts_converged(interner, src).value,
         ),
         (
-            "__is_diverged",
-            crate::predict::lift_verdicts_diverged(interner, src).value,
-        ),
-        (
             "__resolve",
             crate::predict::lift_resolvers(interner, src).value,
         ),
         (
-            "__reaches",
+            "__disturbance_reaches_only",
             crate::predict::lift_reaches(interner, src).value,
+        ),
+        (
+            "__state_stored_only_in",
+            crate::predict::lift_state_stored_only_in(interner, src).value,
         ),
     ];
     let mut out = Vec::new();
@@ -327,48 +328,44 @@ mod tests {
         assert_eq!(validate_sh_name(""), Err(NameProblem::Empty));
     }
 
-    /// A leading-digit provider funcdef lifts fine (its body is in-dialect) but its emitted
-    /// funcname is refused by the charclass check — the gap the lift itself does not catch (the
-    /// lift keys on the suffix, never the emitted NAME's validity).
+    /// A non-ASCII provider funcdef lifts fine (its body is in-dialect) but its emitted funcname
+    /// is refused by the charclass check — the surviving refusal path (the munge transliterates
+    /// `.`/`-` and repairs leading digits, but leaves non-ASCII for `validate_sh_name` to refuse;
+    /// rul24-idn-punycode punycoding is a spec-note, not implemented — `24P` §0).
     #[test]
-    fn charclass_refuses_leading_digit_provider() {
+    fn charclass_refuses_non_ascii_provider() {
         let mut i = Interner::default();
-        let src = "7z.predict() { pkg : archive = \"$1\"; 7z l -- \"$pkg\"; }";
+        let src = "\u{4e2d}pkg__predict() { pkg : archive = \"$1\"; foo l -- \"$pkg\"; }";
         let diags = lint_oracle_reserved_names(&mut i, &[src]);
         assert!(
-            diags
-                .iter()
-                .any(|d| d.code.0 == "munge-name-invalid" && d.message.contains("7z__predict")),
-            "the emitted `7z__predict` is refused as an invalid NAME: {diags:?}"
+            diags.iter().any(|d| d.code.0 == "munge-name-invalid"),
+            "a non-ASCII provider funcname is refused as an invalid NAME: {diags:?}"
         );
     }
 
-    /// A reverse-DNS resolver funcdef authored TODAY (before the respell transliterates dots) is
-    /// refused: `sm.dorc.Package.resolve` → `sm.dorc.Package__resolve`, dots intact ⇒ invalid.
-    /// This is the `ca-munge-charclass` DNS case, checkable at HEAD via a resolver name.
+    /// A leading-digit provider is now REPAIRED (resp-munge-policy: `7z` → `_7z`), not refused —
+    /// the transliterate-and-accept direction the specimens exhibit. So it emits a CLEAN funcname
+    /// with no `munge-name-invalid` diagnostic.
     #[test]
-    fn charclass_refuses_dotted_reverse_dns_resolver() {
+    fn leading_digit_provider_is_repaired_not_refused() {
         let mut i = Interner::default();
-        let src = "sm.dorc.Package.resolve() { dpkg-query -W -- \"$1\"; }";
+        let src = "7z__predict() { pkg : archive = \"$1\"; foo l -- \"$pkg\"; }";
         let diags = lint_oracle_reserved_names(&mut i, &[src]);
         assert!(
-            diags.iter().any(|d| d.code.0 == "munge-name-invalid"
-                && d.message.contains("sm.dorc.Package__resolve")),
-            "a dotted reverse-DNS resolver is refused until the munger transliterates: {diags:?}"
+            !diags.iter().any(|d| d.code.0 == "munge-name-invalid"),
+            "a leading-digit provider repairs to `_7z__predict`, no refusal: {diags:?}"
         );
     }
 
-    /// Two distinct provider spellings that munge to one funcname (`apt-get` via a period-form,
-    /// `apt_get` via a period-form with a literal underscore) collide — both refused, never merged.
-    /// The non-injective hyphen-munge 24Kc flagged as "recorded nowhere".
+    /// Two distinct source names that munge to one funcname collide — both refused, never merged.
+    /// `apt.get__predict` (source `apt.get`, dot→`_`) and `apt_get__predict` (source `apt-get`,
+    /// `-`→`_`) both emit `apt_get__predict` — the non-injective munge the collision lint catches.
     #[test]
-    fn collision_refuses_hyphen_munge_non_injectivity() {
+    fn collision_refuses_munge_non_injectivity() {
         let mut i = Interner::default();
-        // Two SEPARATE oracle files, one provider each — distinct source names `apt-get`/`apt_get`
-        // that both emit `apt_get__predict`.
-        let hyphen = "apt-get.predict() { pkg : package = \"$1\"; dpkg-query -W \"$pkg\"; }";
-        let under = "apt_get.predict() { pkg : package = \"$1\"; dpkg-query -W \"$pkg\"; }";
-        let diags = lint_oracle_reserved_names(&mut i, &[hyphen, under]);
+        let dotted = "apt.get__predict() { pkg : package = \"$1\"; dpkg-query -W \"$pkg\"; }";
+        let under = "apt_get__predict() { pkg : package = \"$1\"; dpkg-query -W \"$pkg\"; }";
+        let diags = lint_oracle_reserved_names(&mut i, &[dotted, under]);
         let hits: Vec<_> = diags
             .iter()
             .filter(|d| d.code.0 == "munge-name-collision")
@@ -389,8 +386,8 @@ mod tests {
     #[test]
     fn same_provider_two_files_is_not_a_collision() {
         let mut i = Interner::default();
-        let a = "apt-get.predict() { pkg : package = \"$1\"; dpkg-query -W \"$pkg\"; }";
-        let b = "apt-get.touches() { printf 'package:%s\\n' \"$1\"; }";
+        let a = "apt_get__predict() { pkg : package = \"$1\"; dpkg-query -W \"$pkg\"; }";
+        let b = "apt_get__disturbs() { printf '%s\\n' \"$1\" : package; }";
         let diags = lint_oracle_reserved_names(&mut i, &[a, b]);
         assert!(
             !diags.iter().any(|d| d.code.0 == "munge-name-collision"),

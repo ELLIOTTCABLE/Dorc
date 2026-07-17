@@ -64,81 +64,44 @@ use dorc_syntax::sem::UnsetPolicy;
 
 use crate::predict::{
     CaseArm, Command, Predict, PredictSet, Stmt, Test, TopReason, Word, eval_test,
-    lift_verdicts_converged, lift_verdicts_diverged, pattern_matches, resolve_word,
+    lift_verdicts_converged, pattern_matches, resolve_word,
 };
 
-/// Which sense a provider's verdict function was authored in (rul-role-split: "sense DECLARED BY
-/// NAME"). The guard emitter maps this to the `||`-glue: [`Converged`](VerdictSense::Converged) is
-/// the direct glue `( f_is_converged … ) || <orig>`; [`Diverged`](VerdictSense::Diverged) is the
-/// lossless sense-flip `( f_is_diverged …; [ $? -eq 1 ] ) || <orig>` (rul-rc-partition).
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum VerdictSense {
-    /// `is_converged`: 0 = converged (skip-licensable), 1 = diverged, ≥2 = confused (run).
-    Converged,
-    /// `is_diverged`: 0 = diverged, 1 = converged (skip-licensable), ≥2 = confused (run).
-    Diverged,
-}
+/// The mangled funcname suffix a verdict body strips to (`crate::predict::strip_verdict`). Only
+/// the converged sense exists (rul24-ditch-is-diverged: `is_diverged` is retired; the inverted
+/// sense is spelled with explicit-return `case $?` manual inversion inside an `is_converged`).
+pub const VERDICT_SUFFIX: &str = "__is_converged";
 
-impl VerdictSense {
-    /// The mangled funcname suffix this sense strips to (`crate::predict::strip_verdict`).
-    #[must_use]
-    pub fn mangled_suffix(self) -> &'static str {
-        match self {
-            VerdictSense::Converged => "__is_converged",
-            VerdictSense::Diverged => "__is_diverged",
-        }
-    }
-}
-
-/// The set of verdict funcdefs lifted from one oracle file — the two senses kept apart (a provider
-/// declares ONE sense by name; if a file declares both for a provider, [`get`](VerdictSet::get)
-/// prefers converged deterministically). Reuses the predict dialect AST ([`Predict`]); only the
-/// scanned name-suffix and the collected outcome differ.
+/// The set of `<provider>__is_converged` verdict funcdefs lifted from one oracle file. Reuses the
+/// predict dialect AST ([`Predict`]); only the scanned name-suffix and the collected outcome differ.
 #[derive(Debug, Clone, Default)]
 pub struct VerdictSet {
     converged: PredictSet,
-    diverged: PredictSet,
 }
 
 impl VerdictSet {
-    /// Lift every `<provider>.is_converged` / `.is_diverged` funcdef in `src`. Fail-soft
-    /// (`inv-no-throw`) and deterministic (`inv-determinism`) — the same contract as
-    /// [`crate::predict::lift_predicts`], routed through the shared role-parametrized parser.
+    /// Lift every `<provider>__is_converged` funcdef in `src`. Fail-soft (`inv-no-throw`) and
+    /// deterministic (`inv-determinism`) — the same contract as [`crate::predict::lift_predicts`],
+    /// routed through the shared role-parametrized parser.
     #[must_use]
     pub fn lift(interner: &mut Interner, src: &str) -> Carrier<Self> {
-        let conv = lift_verdicts_converged(interner, src);
-        let div = lift_verdicts_diverged(interner, src);
-        // Concatenate both lifts' diagnostics; the value is the paired sets.
-        conv.and_then(|converged| {
-            div.map(|diverged| Self {
-                converged,
-                diverged,
-            })
-        })
+        lift_verdicts_converged(interner, src).map(|converged| Self { converged })
     }
 
-    /// The verdict funcdef for a provider + its declared [`VerdictSense`], if the file authored
-    /// one. Prefers `is_converged` when both exist (deterministic; a provider authoring both is a
-    /// fixture oddity, not a designed shape — rul-role-split declares ONE sense).
+    /// The verdict funcdef for a provider, if the file authored one.
     #[must_use]
-    pub fn get(&self, provider: Symbol) -> Option<(&Predict, VerdictSense)> {
-        if let Some(p) = self.converged.get(provider) {
-            return Some((p, VerdictSense::Converged));
-        }
-        self.diverged
-            .get(provider)
-            .map(|p| (p, VerdictSense::Diverged))
+    pub fn get(&self, provider: Symbol) -> Option<&Predict> {
+        self.converged.get(provider)
     }
 
-    /// Providers with a lifted verdict funcdef, in deterministic order (converged then diverged;
-    /// duplicates possible if a provider authored both — the caller dedups via [`get`](Self::get)).
+    /// Providers with a lifted verdict funcdef, in deterministic order.
     pub fn providers(&self) -> impl Iterator<Item = Symbol> + '_ {
-        self.converged.providers().chain(self.diverged.providers())
+        self.converged.providers()
     }
 
     #[must_use]
     pub fn is_empty(&self) -> bool {
-        self.converged.is_empty() && self.diverged.is_empty()
+        self.converged.is_empty()
     }
 }
 
@@ -187,18 +150,12 @@ impl VerdictTop {
 
 /// Trace `verdict` over `argv` — the full, concrete, verbatim argument list of the book's command
 /// (NOT including the command word itself; the same contract as [`crate::predict::evaluate`] and
-/// [`crate::touches::evaluate_touches`]). `sense` is the function's declared [`VerdictSense`],
-/// needed to read an explicit `return N` verdict against rul-rc-partition (fix-return-decline-inert;
-/// see the module docs). Returns a [`VerdictResolution`].
+/// [`crate::touches::evaluate_touches`]). Returns a [`VerdictResolution`].
 ///
 /// Pure + total (`inv-determinism`/`inv-no-throw`): no clock/RNG/IO, ordered collections only,
 /// every path returns a resolution (the budget bounds loops).
 #[must_use]
-pub fn evaluate_verdict(
-    verdict: &Predict,
-    sense: VerdictSense,
-    argv: &[&str],
-) -> VerdictResolution {
+pub fn evaluate_verdict(verdict: &Predict, argv: &[&str]) -> VerdictResolution {
     if argv.is_empty() {
         return VerdictResolution::Top(VerdictTop::EmptyArgv);
     }
@@ -218,28 +175,22 @@ pub fn evaluate_verdict(
                 VerdictResolution::Declined
             }
         }
-        // An explicit `return N` is the author's verdict, read against the declared sense
-        // (fix-return-decline-inert): the converged code vouches, the complement / ≥2 confused
-        // declines. It overrides any earlier reached check (`return` forces the function's rc).
-        Flow::Returned(code) => classify_return(code, sense),
+        // An explicit `return N` is the author's verdict (fix-return-decline-inert): `return 0`
+        // vouches (the converged sense), the complement / ≥2 confused declines. It overrides any
+        // earlier reached check (`return` forces the function's rc).
+        Flow::Returned(code) => classify_return(code),
         // A `return` we cannot read to a code (bare/`$?`/non-integer) ⇒ no vouch ⇒ run.
         Flow::Declined => VerdictResolution::Declined,
         Flow::Top(reason) => VerdictResolution::Top(reason),
     }
 }
 
-/// Read an explicit `return N` code against the function's declared [`VerdictSense`], per
-/// rul-rc-partition (the universal partition `USER_STORY` teaches: 0 = the named sense holds,
-/// 1 = its complement, ≥2 = confused). Only the CONVERGED code vouches; everything else declines
-/// (the complement is a definite diverged ⇒ run; ≥2 is can't-say ⇒ run). The vouch is
-/// sense-relative: `return 0` vouches under [`VerdictSense::Converged`], `return 1` under
-/// [`VerdictSense::Diverged`] (fix-return-decline-inert, 24Kc F2 / 24M).
-fn classify_return(code: Rc, sense: VerdictSense) -> VerdictResolution {
-    let converged_code = match sense {
-        VerdictSense::Converged => 0,
-        VerdictSense::Diverged => 1,
-    };
-    if code.0 == converged_code {
+/// Read an explicit `return N` code, per rul-rc-partition (0 = converged holds, 1 = its
+/// complement, ≥2 = confused). Only `return 0` vouches; everything else declines. The inverted
+/// sense (né `is_diverged`) is now spelled with explicit-return `case $?` manual inversion, which
+/// reaches a `return 0` on the converged path — so this single-code partition covers it.
+fn classify_return(code: Rc) -> VerdictResolution {
+    if code.0 == 0 {
         VerdictResolution::Vouched
     } else {
         VerdictResolution::Declined
@@ -337,7 +288,6 @@ impl Tracer {
                 }
                 Flow::Normal
             }
-            Stmt::Mark(_) => Flow::Normal,
         }
     }
 
@@ -511,7 +461,7 @@ fn collect_check_commands(body: &[Stmt], out: &mut Vec<String>) {
                 collect_check_commands(else_body, out);
             }
             Stmt::While { body, .. } => collect_check_commands(body, out),
-            Stmt::Assign { .. } | Stmt::Shift { .. } | Stmt::Annotation(_) | Stmt::Mark(_) => {}
+            Stmt::Assign { .. } | Stmt::Shift { .. } | Stmt::Annotation(_) => {}
         }
     }
 }
@@ -521,21 +471,20 @@ mod tests {
     use super::*;
     use dorc_core::Interner;
 
-    /// Lift the sole verdict funcdef from `src` and trace it over `argv`, reading the explicit
-    /// return (if any) against the funcdef's own declared sense.
+    /// Lift the sole verdict funcdef from `src` and trace it over `argv`.
     fn trace(src: &str, argv: &[&str]) -> VerdictResolution {
         let mut i = Interner::default();
         let set = VerdictSet::lift(&mut i, src);
         assert!(set.diags.is_empty(), "clean lift: {:?}", set.diags);
         let provider = set.value.providers().next().expect("one verdict funcdef");
-        let (verdict, sense) = set.value.get(provider).expect("the verdict funcdef");
-        evaluate_verdict(verdict, sense, argv)
+        let verdict = set.value.get(provider).expect("the verdict funcdef");
+        evaluate_verdict(verdict, argv)
     }
 
     // Mirrors the real apt argparse: flag-strip before and after the verb, bind the verb, and
     // check the operand — the guard23 flagship's `is_converged` shape.
     const APT: &str = "\
-apt-get.is_converged() {
+apt_get__is_converged() {
    while [ \"${1#-}\" != \"$1\" ]; do shift; done
    verb=$1; shift
    while [ \"${1#-}\" != \"$1\" ]; do shift; done
@@ -589,7 +538,7 @@ apt-get.is_converged() {
         // SECOND operand ⇒ the `if` is false, no `else`, no command runs ⇒ Declined (not a
         // vacuous rc-0 vouch — the hz-refusepath fence).
         let src = "\
-apt-get.is_converged() {
+apt_get__is_converged() {
    while [ \"${1#-}\" != \"$1\" ]; do shift; done
    verb=$1; shift
    while [ \"${1#-}\" != \"$1\" ]; do shift; done
@@ -608,24 +557,6 @@ apt-get.is_converged() {
     }
 
     #[test]
-    fn diverged_sense_lifts_and_carries_its_sense() {
-        let src = "\
-systemctl.is_diverged() {
-   verb=$1; shift
-   case $verb in
-   enable) ! systemctl is-enabled -- \"$1\" >/dev/null 2>&1 ;;
-   esac
-}";
-        let mut i = Interner::default();
-        let set = VerdictSet::lift(&mut i, src);
-        assert!(set.diags.is_empty(), "clean lift: {:?}", set.diags);
-        let provider = set.value.providers().next().expect("one verdict funcdef");
-        let (_p, sense) = set.value.get(provider).expect("the verdict funcdef");
-        assert_eq!(sense, VerdictSense::Diverged);
-        assert_eq!(sense.mangled_suffix(), "__is_diverged");
-    }
-
-    #[test]
     fn catchall_return_declines_never_vouches() {
         // find-return-vouches (24C): a `*) return 2 ;;` catch-all REACHED by an unhandled verb is
         // a DECLINE (rul-rc-partition: return ≥2 = confused ⇒ run), NEVER a vouch. Before this fix
@@ -633,7 +564,7 @@ systemctl.is_diverged() {
         // skip (Part B), would ELIDE a mutation on a path the author declined. The `install` arm
         // (a real check) still vouches; only the return-arm declines.
         let src = "\
-apt-get.is_converged() {
+apt_get__is_converged() {
    verb=$1; shift
    case $verb in
    install) dpkg-query -W \"$1\" >/dev/null 2>&1 ;;
@@ -659,7 +590,7 @@ apt-get.is_converged() {
         // operand skips it and reaches the real check ⇒ Vouched. This is the shape a verdict
         // function uses instead of the out-of-dialect `[ … ] || return N` shorthand.
         let src = "\
-apt-get.is_converged() {
+apt_get__is_converged() {
    verb=$1; shift
    if [ \"$2\" != \"\" ]; then return 2; fi
    case $verb in
@@ -687,7 +618,7 @@ apt-get.is_converged() {
         // because a bare `:` lexes as the dialect mark-marker, not a command.)
         for inert in ["false", "true", "':'"] {
             let src = format!(
-                "apt-get.is_converged() {{ verb=$1; shift; case $verb in restart) {inert} ;; esac }}"
+                "apt_get__is_converged() {{ verb=$1; shift; case $verb in restart) {inert} ;; esac }}"
             );
             assert_eq!(
                 trace(&src, &["restart", "nginx"]),
@@ -705,7 +636,7 @@ apt-get.is_converged() {
         // Declined (run). Before the fix, EVERY reached return declined ⇒ the oracle was silently
         // inert (the loud-friend violation this fix closes).
         let src = "\
-foo.is_converged() {
+foo__is_converged() {
    case $1 in
    synced) return 0 ;;
    *) return 1 ;;
@@ -724,37 +655,13 @@ foo.is_converged() {
     }
 
     #[test]
-    fn explicit_return_reads_against_diverged_sense() {
-        // The vouch is sense-relative (classify_return): under is_diverged the converged code is 1,
-        // so `return 1` VOUCHES and `return 0` (the named diverged sense) DECLINES — the mirror of
-        // the converged case. This is why evaluate_verdict must take the declared sense.
-        let src = "\
-foo.is_diverged() {
-   case $1 in
-   drifted) return 0 ;;
-   *) return 1 ;;
-   esac
-}";
-        assert_eq!(
-            trace(src, &["drifted"]),
-            VerdictResolution::Declined,
-            "`return 0` = diverged (the named sense) ⇒ not converged ⇒ Declined ⇒ run"
-        );
-        assert_eq!(
-            trace(src, &["steady"]),
-            VerdictResolution::Vouched,
-            "`return 1` = complement = converged ⇒ Vouched"
-        );
-    }
-
-    #[test]
     fn unconditional_explicit_return_vouches_but_implicit_fallthrough_declines() {
         // rul24M-rungs-default: an AUTHORED verdict-function reads as full-license, so an explicit
         // `return 0` is a speech-act ⇒ Vouched even unconditionally. The hz-refusepath fence bites
         // only IMPLICIT vacuous rc-0 (an unmatched `case` reaching no command and no `return`),
         // which stays Declined. The line the fix draws is authored-speech-act vs sh-silence.
         let explicit = "\
-foo.is_converged() {
+foo__is_converged() {
    return 0
 }";
         assert_eq!(
@@ -764,7 +671,7 @@ foo.is_converged() {
         );
 
         let implicit = "\
-foo.is_converged() {
+foo__is_converged() {
    case $1 in
    handled) return 0 ;;
    esac
@@ -782,12 +689,10 @@ foo.is_converged() {
     }
 
     #[test]
-    fn explicit_return_two_still_declines_both_senses() {
+    fn explicit_return_two_still_declines() {
         // Regression pin for find-return-vouches (24C), preserved by the refinement: a ≥2 code is
-        // CONFUSED ⇒ run, in either sense. This is the corpus's sole return idiom (`*) return 2`).
-        let conv = "foo.is_converged() { case $1 in x) return 2 ;; esac }";
-        let div = "foo.is_diverged() { case $1 in x) return 2 ;; esac }";
+        // CONFUSED ⇒ run. This is the corpus's sole return idiom (`*) return 2`).
+        let conv = "foo__is_converged() { case $1 in x) return 2 ;; esac }";
         assert_eq!(trace(conv, &["x"]), VerdictResolution::Declined);
-        assert_eq!(trace(div, &["x"]), VerdictResolution::Declined);
     }
 }

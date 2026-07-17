@@ -3,7 +3,7 @@
 //! ENTITY whose EMITTING ARMS declare, per kind, what touching that entity DRAGS WITH IT —
 //!
 //! ```sh
-//! package.reaches() {
+//! package__disturbance_reaches_only() {
 //!    printf '%s\n' "$1"    : service     # STATIC arm — traced at plan time, ships nothing
 //!    dpkg -L "$1"          : file        # DYNAMIC arm — escalates, runs read-only at probe
 //! }
@@ -211,7 +211,6 @@ impl Walk {
                     self.vars.insert(a.name, v);
                 }
             }
-            Stmt::Mark(_) => {}
         }
     }
 
@@ -290,7 +289,7 @@ mod tests {
     #[test]
     fn reaches_lifts_keyed_by_kind() {
         let mut i = Interner::default();
-        let src = "package.reaches() { printf '%s\\n' \"$1\" : service; }";
+        let src = "package__disturbance_reaches_only() { printf '%s\\n' \"$1\" : service; }";
         let set = ReachesSet::lift(&mut i, src);
         assert!(set.diags.is_empty(), "clean lift: {:?}", set.diags);
         let kind = i.intern("package");
@@ -306,7 +305,7 @@ mod tests {
     #[test]
     fn static_and_dynamic_arms_classify_and_type() {
         let src = "\
-package.reaches() {
+package__disturbance_reaches_only() {
    printf '%s\\n' \"$1\"    : service
    dpkg -L \"$1\"           : file
 }";
@@ -339,7 +338,7 @@ package.reaches() {
     fn unannotated_arm_is_a_smell_not_a_refusal() {
         // The lift itself is CLEAN (no diagnostic — silence is never punished); the smell is a
         // per-arm advisory the expansion surfaces.
-        let src = "package.reaches() { dpkg -L \"$1\"; }";
+        let src = "package__disturbance_reaches_only() { dpkg -L \"$1\"; }";
         let e = expand(src, "nginx");
         assert!(e.arms.is_empty(), "no typed arm ⇒ contributes nothing");
         assert_eq!(e.smells.len(), 1, "the un-annotated emitting arm smells");
@@ -349,7 +348,7 @@ package.reaches() {
     /// trace-conservatively). The mark types the emission; the pipeline ships byte-exact.
     #[test]
     fn pipeline_arm_carries_mark_and_escalates() {
-        let src = "package.reaches() { dpkg -L \"$1\" | grep '\\.service$' : service; }";
+        let src = "package__disturbance_reaches_only() { dpkg -L \"$1\" | grep '\\.service$' : service; }";
         let e = expand(src, "nginx");
         assert!(
             e.smells.is_empty(),
@@ -368,7 +367,7 @@ package.reaches() {
     /// A static printf may emit SEVERAL entity lines (one arm, many entities — all in the arm's kind).
     #[test]
     fn static_arm_may_emit_multiple_entities() {
-        let src = "svc.reaches() { printf '%s\\n%s\\n' \"$1\" \"$1\" : unit; }";
+        let src = "svc__disturbance_reaches_only() { printf '%s\\n%s\\n' \"$1\" \"$1\" : unit; }";
         let e = expand(src, "nginx");
         assert_eq!(e.arms.len(), 1);
         assert_eq!(
@@ -384,7 +383,7 @@ package.reaches() {
         let mut i = Interner::default();
         let set = ReachesSet::lift(
             &mut i,
-            "apt-get.touches() { printf 'package:%s\\n' \"$1\"; }",
+            "apt_get__disturbs() { printf 'package:%s\\n' \"$1\"; }",
         );
         assert!(set.diags.is_empty());
         assert!(

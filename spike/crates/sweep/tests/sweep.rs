@@ -89,7 +89,7 @@ fn end_state_equality_and_attribution_under_lies() {
                     );
                     // 24F §6 — the identity closure is the SHARPEST claim, so a lying-RESOLVER
                     // under-execute must ALSO name the resolver (the why-lens: "disjoint AFTER
-                    // package.resolve() canonicalization"). Pin it for the aliasing lane: the
+                    // package__resolve() canonicalization"). Pin it for the aliasing lane: the
                     // victim's survival crossing carries `resolver = Some("package")`.
                     if t.topology == TopologyClass::AliasWall {
                         let names_resolver = t.survivals.iter().any(|sv| {
@@ -186,7 +186,7 @@ fn every_topology_class_and_both_behaviours_are_reached() {
     let mut reach_lying_divergences = 0u64;
     // The cross-author DEMOTE the mechanism exists for: an HONEST ReachWall scenario whose reach
     // expansion HIT the victim's backing ⇒ the victim DEMOTED, attributed "poisoned via
-    // package.reaches()". Counts the reach-ATTRIBUTED demotes (24G — the demote fires AND names the
+    // package__disturbance_reaches_only()". Counts the reach-ATTRIBUTED demotes (24G — the demote fires AND names the
     // reach-function). A zero here means the honest expansion never demoted ⇒ the mechanism is inert.
     let mut reach_poison_attributions = 0u64;
     let mut flag_distinguishes = 0u64;
@@ -216,7 +216,7 @@ fn every_topology_class_and_both_behaviours_are_reached() {
             reach_lying_divergences += 1;
         }
         // The honest cross-author demote: a ReachWall scenario whose reach expansion demoted the
-        // victim and attributed it to `package.reaches()`.
+        // victim and attributed it to `package__disturbance_reaches_only()`.
         if t.topology == ReachWall && t.reach_poisonings.iter().any(|(_, kind)| kind == "package") {
             reach_poison_attributions += 1;
         }
@@ -270,7 +270,7 @@ fn every_topology_class_and_both_behaviours_are_reached() {
     );
     assert!(
         reach_poison_attributions > 0,
-        "no HONEST reaches()-attributed demote in {n} seeds — a `package.reaches()` expansion never \
+        "no HONEST reaches()-attributed demote in {n} seeds — a `package__disturbance_reaches_only()` expansion never \
          HIT a victim's backing to demote it (the cross-author demote the mechanism EXISTS for). The \
          reach expansion is inert: every reach-bearing footprint stayed narrow, so the compositional \
          half (24G §2/§3) is never exercised end-to-end."

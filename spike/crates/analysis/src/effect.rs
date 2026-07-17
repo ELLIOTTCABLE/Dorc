@@ -1995,13 +1995,13 @@ command__predict() {
         let dialect = "\
 otelcol__predict() {
    case $1 in
-      --version) v : otelcol; otelcol --version >/dev/null 2>&1 :? otelcol:.v0155 ;;
+      --version) v : otelcol; otelcol --version >/dev/null 2>&1 :? otelcol:#v0155 ;;
    esac
 }
 command__predict() {
    case $1 in -v) shift ;; esac
    tool : tool = \"$1\"
-   command -v -- \"$tool\" >/dev/null 2>&1 :? tool:\"$tool\".present
+   command -v -- \"$tool\" >/dev/null 2>&1 :? tool:\"$tool\"#present
 }
 ";
         // LIFT the effect-map from the SAME dialect (as the cli does) so the index + the predict

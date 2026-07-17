@@ -16,80 +16,66 @@ use super::{VERB_BINDING, lift_failure, map_provider_name};
 use dorc_core::{Carrier, Interner, Span, Symbol};
 use dorc_syntax::sem;
 
-/// The legacy provider-name suffix marking a command-keyed check (`apt_get__predict`);
-/// the provider before it maps `_` → `-` ([`map_provider_name`]).
+/// The provider-name suffix marking a command-keyed check (`apt_get__predict`); the
+/// provider before it maps `_` → `-` ([`map_provider_name`]).
 const PREDICT_SUFFIX: &str = "__predict";
 
-/// The period-form predict suffix (233 / 23D §1: the opt-in oracle semaphore
-/// `<provider>.predict()`). The provider before it is the LITERAL command word (it may
-/// carry `-`, e.g. `apt-get.predict`), so no `_`→`-` mapping is applied. The strip (R1c)
-/// rewrites `<provider>.predict` to the legacy `<mangled>__predict` form the engine keys on
-/// (jc-strip-funcname: 23D/R1a write it `name_predict`, but the engine's `PREDICT_SUFFIX`
-/// and the flagship golden use `__predict`; the `__predict` convention is authoritative).
-const PERIOD_PREDICT_SUFFIX: &str = ".predict";
-
-/// Which role-sibling funcdef this parse scans for (rul-role-split / rul24-threefunc-monotonic,
-/// 24A §1b). The dialect GRAMMAR is identical across siblings — only the name-suffix pair
-/// differs — so one parser lifts both, selected by [`FnRole`]. `touches()` (the at-most
-/// footprint sub-shape, `ORACLE_PROVIDES` `provides-behavior`) reuses `predict()`'s body dialect
-/// verbatim; its bodies just `printf` entity-coordinates where a predict body annotates + probes.
+/// Which role-sibling funcdef this parse scans for (rul-role-split; `277` §4d role menu).
+/// The dialect GRAMMAR is identical across siblings — only the name-suffix differs — so one
+/// parser lifts them all, selected by [`FnRole`]. Only the BARE munged `<base>__<role>` form
+/// is recognized: the period `X.role()` form is DEAD (rul24-totalistic-munge — dots survive
+/// only in kind-identity space, never in funcdef names).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum FnRole {
-    /// `<provider>.predict` / `<provider>__predict` — the entity-resolver / probe body.
+    /// `<provider>__predict` — the entity-resolver / probe body.
     Predict,
-    /// `<provider>.touches` / `<provider>__touches` — the at-most footprint emitter (24A §1b).
-    Touches,
-    /// `<provider>.is_converged` / `<provider>__is_converged` — the guard-verdict function
-    /// (rul-role-split; sense declared by name — 0-in-the-named-sense = converged). Its authoring
-    /// IS the vouch (rul24-vouch-is-verdict-authoring, 24A §1c); its body reuses the predict body
-    /// dialect verbatim (argparse + check commands), so one parser lifts it (`FnRole`).
+    /// `<provider>__disturbs` (né touches) — the at-most footprint emitter
+    /// (`271:rul-touches-becomes-disturbs`).
+    Disturbs,
+    /// `<provider>__is_converged` — the guard-verdict function (rul-role-split; sense declared
+    /// by name — 0-in-the-named-sense = converged). Its authoring IS the vouch
+    /// (rul24-vouch-is-verdict-authoring). `is_diverged` is RETIRED (rul24-ditch-is-diverged):
+    /// the inverted sense is spelled with explicit-return `case $?` manual inversion.
     IsConverged,
-    /// `<provider>.is_diverged` / `<provider>__is_diverged` — the guard-verdict function in the
-    /// complementary sense (0 = diverged; the engine applies rul-rc-partition's lossless
-    /// sense-flip when shipping it in guard position).
-    IsDiverged,
-    /// `<kind>.resolve` / `<kind>__resolve` — the identity CANONICALIZER (24F §3, the fourth
-    /// role-sibling / the resid-aliasing closure). Keyed by KIND, not the command word (contrast
-    /// the other three): the `<kind>` before the suffix interns as the SAME symbol the coordinate's
-    /// `KindId` wraps, so `package.resolve` is the `package` kind's resolver. Host-run per
-    /// coordinate; reuses the predict body dialect verbatim (its body just prints the canonical form).
+    /// `<munge(kind)>__resolve` — the identity CANONICALIZER (24F §3, the resid-aliasing
+    /// closure). KIND-keyed (contrast the command-keyed trio): the `<munge(kind)>` before the
+    /// suffix is the kind's forward-munge (`flag-forward-munge-keying`). Host-run per coordinate.
     Resolve,
-    /// `<kind>.reaches` / `<kind>__reaches` — the REACH function (24G §4, the fifth role-sibling; the
-    /// cross-author footprint-expansion mechanism). Keyed by KIND like [`Resolve`](FnRole::Resolve)
-    /// (the kind-owner holds the nouns): `package.reaches` is the `package` kind's reach-function,
-    /// invoked with an ENTITY. Its body is a sequence of EMITTING arms — each an emitting command
-    /// carrying a TRAILING KIND ANNOTATION (`printf '%s\n' "$1" : service`); the command's stdout
-    /// lines are RAW ENTITIES in the annotated kind (typed emission, 24G §4). Static arms (traceable
-    /// printf) resolve at plan time; dynamic arms (a host command / pipeline) escalate to the probe.
-    /// The one carve-out from the shared dialect: a pipeline in a reaches body MAY carry a trailing
-    /// mark (24G §4 — the mark TYPES the emission; contrast 24E §14's pipelines-carry-no-mark, right
-    /// for probe/verdict bodies where a trailing mark is meaningless).
-    Reaches,
+    /// `<munge(kind)>__disturbance_reaches_only` (né reaches) — the reach/footprint-EXPANSION
+    /// function (`271:rul-at-most-family-names`). KIND-keyed like [`Resolve`](FnRole::Resolve).
+    /// Its body is emitting arms, each carrying a TRAILING KIND mark that types the emission
+    /// (`printf '%s\n' "$1" : sm.dorc.Service`). The one carve-out from the shared dialect: a
+    /// pipeline in this body MAY carry a trailing mark (24G §4).
+    DisturbanceReachesOnly,
+    /// `<munge(kind)>__state_stored_only_in` — the substrate/invariance member (`277` §4e).
+    /// KIND-keyed. Its body carries substrate token marks (`… : fs`) on emission lines plus the
+    /// `invariant:<axis>` colon-line. Recognized-but-INERT at this stage: parsed + reservation-
+    /// linted, never semantically consumed (topology/keying is a later stage).
+    StateStoredOnlyIn,
 }
 
 impl FnRole {
-    /// The period-form suffix (provider is the literal command word).
-    const fn period_suffix(self) -> &'static str {
-        match self {
-            FnRole::Predict => PERIOD_PREDICT_SUFFIX,
-            FnRole::Touches => ".touches",
-            FnRole::IsConverged => ".is_converged",
-            FnRole::IsDiverged => ".is_diverged",
-            FnRole::Resolve => ".resolve",
-            FnRole::Reaches => ".reaches",
-        }
-    }
-
-    /// The mangled suffix (provider recovered via `_`→`-`).
+    /// The bare munged suffix. Only form recognized (the period form is dead).
     const fn mangled_suffix(self) -> &'static str {
         match self {
             FnRole::Predict => PREDICT_SUFFIX,
-            FnRole::Touches => "__touches",
+            FnRole::Disturbs => "__disturbs",
             FnRole::IsConverged => "__is_converged",
-            FnRole::IsDiverged => "__is_diverged",
             FnRole::Resolve => "__resolve",
-            FnRole::Reaches => "__reaches",
+            FnRole::DisturbanceReachesOnly => "__disturbance_reaches_only",
+            FnRole::StateStoredOnlyIn => "__state_stored_only_in",
         }
+    }
+
+    /// Kind-keyed roles carry the kind-owner's nouns; their funcdef base name is the kind's
+    /// forward-munge (`flag-forward-munge-keying`), keyed AS-IS (no `_`→`-` recovery). The
+    /// command-keyed trio (`predict`/`disturbs`/`is_converged`) recovers the command word via
+    /// [`map_provider_name`].
+    const fn is_kind_keyed(self) -> bool {
+        matches!(
+            self,
+            FnRole::Resolve | FnRole::DisturbanceReachesOnly | FnRole::StateStoredOnlyIn
+        )
     }
 }
 
@@ -113,16 +99,13 @@ pub fn lift_predicts(interner: &mut Interner, src: &str) -> Carrier<PredictSet> 
     lift_role(interner, src, FnRole::Predict)
 }
 
-/// Lift every `<provider>__touches` / `<provider>.touches` function in `src` into a
-/// [`PredictSet`] (the touches funcdefs reuse the predict body dialect — 24A §1b). Same
-/// fail-soft / deterministic contract as [`lift_predicts`]; only the scanned name-suffix
-/// differs. The at-most footprint LIFT (`crate::touches`) walks these bodies to collect the
-/// entity-coordinates each verb emits. NB: `touches()` is never SHIPPED (no strip) — Stage 2
-/// lifts it statically only (probe-time derivation is Stage 4), so no `strip_predict` analogue
-/// exists.
+/// Lift every `<provider>__disturbs` (né touches) function in `src` into a [`PredictSet`]
+/// (the disturbs funcdefs reuse the predict body dialect). Same fail-soft / deterministic
+/// contract as [`lift_predicts`]; only the scanned name-suffix differs. The at-most footprint
+/// LIFT (`crate::touches`) walks these bodies to collect the entity-coordinates each verb emits.
 #[must_use]
 pub(crate) fn lift_touches(interner: &mut Interner, src: &str) -> Carrier<PredictSet> {
-    lift_role(interner, src, FnRole::Touches)
+    lift_role(interner, src, FnRole::Disturbs)
 }
 
 /// Lift every `<provider>.is_converged` / `<provider>__is_converged` funcdef in `src` (the
@@ -136,37 +119,32 @@ pub(crate) fn lift_verdicts_converged(interner: &mut Interner, src: &str) -> Car
     lift_role(interner, src, FnRole::IsConverged)
 }
 
-/// Lift every `<provider>.is_diverged` / `<provider>__is_diverged` funcdef in `src` (the
-/// guard-verdict function, diverged sense). As [`lift_verdicts_converged`]; the sense difference
-/// is carried by the caller ([`crate::verdict::VerdictSense`]) and applied as rul-rc-partition's
-/// lossless sense-flip only when the body is shipped in guard position.
-#[must_use]
-pub(crate) fn lift_verdicts_diverged(interner: &mut Interner, src: &str) -> Carrier<PredictSet> {
-    lift_role(interner, src, FnRole::IsDiverged)
-}
-
-/// Lift every `<kind>.resolve` / `<kind>__resolve` funcdef in `src` (the identity canonicalizer —
-/// 24F §3, the resid-aliasing closure). Reuses the predict body dialect (one grammar; `FnRole`).
-/// Same fail-soft / deterministic contract as [`lift_predicts`]; only the scanned name-suffix
-/// differs. NB the lifted `provider` symbol is the KIND name (the resolver is kind-keyed) — the SAME
-/// interned symbol a coordinate's `KindId` wraps (the vocabulary fence). Host-run only; the guard
-/// emitter analogue is [`super::strip_resolve`].
+/// Lift every `<munge(kind)>__resolve` funcdef in `src` (the identity canonicalizer — 24F §3,
+/// the resid-aliasing closure). Reuses the predict body dialect. Same fail-soft / deterministic
+/// contract as [`lift_predicts`]; only the scanned name-suffix differs. KIND-keyed: the lifted
+/// symbol is the kind's forward-munge (`flag-forward-munge-keying`), which the lookup side matches
+/// by munging the coordinate's kind identically. Host-run only; emitter is [`super::strip_resolve`].
 #[must_use]
 pub(crate) fn lift_resolvers(interner: &mut Interner, src: &str) -> Carrier<PredictSet> {
     lift_role(interner, src, FnRole::Resolve)
 }
 
-/// Lift every `<kind>.reaches` / `<kind>__reaches` funcdef in `src` (the REACH function — 24G §4,
-/// the cross-author footprint-expansion mechanism). Reuses the predict body dialect (one grammar;
-/// `FnRole`), with the pipelines-may-carry-a-mark carve-out ([`FnRole::Reaches`], applied in
-/// [`Parser::parse_command`]). Same fail-soft / deterministic contract as [`lift_predicts`]; only
-/// the scanned name-suffix + the pipeline-mark carve-out differ. NB the lifted `provider` symbol is
-/// the KIND name (reaches is kind-keyed like [`lift_resolvers`]) — the SAME interned symbol a
-/// coordinate's `KindId` wraps (the vocabulary fence). The consumer ([`crate::reaches`]) walks these
-/// bodies arm-by-arm; the dynamic-arm guard emitter ships the arm body strip-only.
+/// Lift every `<munge(kind)>__disturbance_reaches_only` (né reaches) funcdef in `src` (the
+/// reach/footprint-expansion function — 24G §4). Reuses the predict body dialect, with the
+/// pipelines-may-carry-a-mark carve-out ([`FnRole::DisturbanceReachesOnly`], applied in
+/// [`Parser::parse_command`]). KIND-keyed (forward-munge). The consumer ([`crate::reaches`])
+/// walks these bodies arm-by-arm; the dynamic-arm guard emitter ships the arm body strip-only.
 #[must_use]
 pub(crate) fn lift_reaches(interner: &mut Interner, src: &str) -> Carrier<PredictSet> {
-    lift_role(interner, src, FnRole::Reaches)
+    lift_role(interner, src, FnRole::DisturbanceReachesOnly)
+}
+
+/// Lift every `<munge(kind)>__state_stored_only_in` funcdef in `src` (the substrate/invariance
+/// member — `277` §4e). Reuses the predict body dialect. KIND-keyed (forward-munge). Recognized-
+/// but-INERT at this stage: lifted for the reservation lint, never semantically consumed.
+#[must_use]
+pub(crate) fn lift_state_stored_only_in(interner: &mut Interner, src: &str) -> Carrier<PredictSet> {
+    lift_role(interner, src, FnRole::StateStoredOnlyIn)
 }
 
 /// Shared lift over a chosen [`FnRole`] — the one parse both siblings route through.
@@ -308,10 +286,12 @@ impl Parser<'_> {
         }
     }
 
-    /// If the cursor is at a check-function header — the period form `<provider>.predict (`
-    /// (233 / 23D §1) or the legacy `<provider>__predict (` — return the provider symbol +
-    /// the name span. Does not consume. The period form's provider is the literal command
-    /// word (may hold `-`); the legacy form's maps `_` → `-` ([`map_provider_name`]).
+    /// If the cursor is at a role-funcdef header `<base>__<role> (`, return the keyed symbol
+    /// plus the name span. Does not consume. Only the bare munged form is recognized (the period
+    /// `X.role()` form is dead — rul24-totalistic-munge). For a COMMAND-keyed role the base
+    /// maps `_` → `-` to recover the command word ([`map_provider_name`]); for a KIND-keyed
+    /// role the base is kept AS-IS (the kind's forward-munge — `flag-forward-munge-keying`).
+    /// The role is [`FnRole`]-selected, so siblings coexist in one file without cross-contam.
     fn at_predict_funcdef(&mut self) -> Option<PredictHeader> {
         let Some(Tok::Word {
             lexeme,
@@ -323,24 +303,14 @@ impl Parser<'_> {
         if *single_quoted {
             return None;
         }
-        // Prefer the period form (the opt-in oracle semaphore); fall back to the legacy
-        // mangled form. `apt-get.predict` ⇒ provider `apt-get` (literal); `apt_get__predict`
-        // ⇒ provider `apt-get` (via `_`→`-`). Both recover the same command word. The suffix
-        // pair is role-selected ([`FnRole`]): a `lift_touches` parse matches `.touches`/
-        // `__touches` here and ignores predict funcdefs (and vice versa), so the two siblings
-        // coexist in one oracle file without cross-contamination.
-        let provider_name = if let Some(p) = lexeme.strip_suffix(self.role.period_suffix()) {
-            if p.is_empty() {
-                return None;
-            }
-            p.to_owned()
-        } else if let Some(p) = lexeme.strip_suffix(self.role.mangled_suffix()) {
-            if p.is_empty() {
-                return None;
-            }
-            map_provider_name(p)
-        } else {
+        let base = lexeme.strip_suffix(self.role.mangled_suffix())?;
+        if base.is_empty() {
             return None;
+        }
+        let provider_name = if self.role.is_kind_keyed() {
+            base.to_owned()
+        } else {
+            map_provider_name(base)
         };
         // Must be followed by `(` `)` for a function definition.
         if !matches!(
@@ -421,35 +391,14 @@ impl Parser<'_> {
             match self.peek() {
                 None => return Err(true_with(self, end)), // ran off the end unterminated
                 Some(tok) if end.matches(tok) => {
-                    // Capture the terminator span (for a possible mark-only ⊤-reject) BEFORE
-                    // consuming it; `mark_only` reads only the owned `stmts` + Copy `end`, so
-                    // it holds no borrow across the `bump`/`fail` below.
-                    let term_span = self.peek_span().unwrap_or(ZERO_SPAN);
                     let term = end.term_of(tok);
                     self.last_term = Some(term);
-                    let mark_only = !matches!(end, BlockEnd::CaseArmEnd)
-                        && !stmts.is_empty()
-                        && stmts.iter().all(|s| matches!(s, Stmt::Mark(_)));
                     // A case arm's terminating `esac` (the last arm omits `;;`) is
                     // left for the enclosing `parse_case` loop to consume; every
                     // other terminator is consumed here.
                     if !(matches!(end, BlockEnd::CaseArmEnd) && term == BlockTerm::Keyword("esac"))
                     {
                         self.bump();
-                    }
-                    // R1c mark-only-compound-body ⊤-reject (23H §9.4): a non-case-arm compound
-                    // body of ONLY bare marks strips to an EMPTY block — invalid sh (`f() { }` /
-                    // `if …; then fi` are syntax errors). It has no substantive command for the
-                    // strip to keep as the last exit-status statement, so it reads as an authoring
-                    // error ⇒ ⊤-reject loudly (inv-top-reject), never silent repair. A case-arm
-                    // may legally strip to empty (`install) ;;`), so it is exempt (above).
-                    if mark_only {
-                        self.fail(
-                            term_span,
-                            "compound body contains only inline-dialect marks — it strips to an \
-                             empty block (invalid sh); a probe body needs a substantive command",
-                        );
-                        return Err(true);
                     }
                     return Ok(stmts);
                 }
@@ -630,14 +579,10 @@ impl Parser<'_> {
         let first_sq = *single_quoted;
         let start_span = self.peek_span().unwrap_or(ZERO_SPAN);
 
-        // Bare inline-dialect mark in statement position (233 §1–§4, R1b): a leading
-        // standalone `:` / `:?` marker word (`: kind` POISON, `: kind:entity.prop~` ACK;
-        // a two-level `: provider:verb~` is a retired reject — rul24-vouch-is-verdict-
-        // authoring). The dialect uses a leading marker ONLY for a mark (probe bodies
-        // never begin with `:`), so this is unambiguous.
-        if let Some(observe) = (!first_sq).then(|| mark_marker(&first)).flatten() {
-            return self.parse_bare_mark(observe, start_span);
-        }
+        // Bare statement-position marks are retired (`277` §4a — no ACK/POISON). A leading
+        // `:` is now the sh no-op COMMAND (the `state_stored_only_in` colon-line, `277`
+        // §4e); it falls through to `parse_command`, which recognizes a leading `:` as the
+        // colon builtin and its ` : <token>` tail as the trailing mark.
 
         // `name=value` assignment: an unquoted word of the form IDENT=REST (a bare
         // `name=` is degenerate; its value is the empty literal).
@@ -736,7 +681,7 @@ impl Parser<'_> {
     fn parse_command(&mut self, start_span: Span) -> Result<Stmt, bool> {
         let mut words = Vec::new();
         let mut end_span = start_span;
-        let mut mark_observe: Option<bool> = None;
+        let mut mark_sigil: Option<MarkSigil> = None;
         // 24E §14: once a `|` is seen, this list-item is a PIPELINE — everything to the
         // list-item end folds into one span-covering, byte-exact-shipping Command the tracers ⊤ on.
         let mut pipeline = false;
@@ -751,16 +696,16 @@ impl Parser<'_> {
             let class = match self.peek() {
                 None | Some(Tok::Newline | Tok::Semi | Tok::DSemi | Tok::RBrace) => CmdTok::End,
                 // An unquoted word: a block-ending keyword (`done`/`fi`/…) ends the command
-                // without being consumed; a standalone `:`/`:?` marker begins a TRAILING
-                // effect mark (233 ESTABLISH/OBSERVE); anything else is a command word.
+                // without being consumed; a standalone `:`/`:!`/`:?` marker begins a
+                // TRAILING mark (`277` §4a); anything else is a command word.
                 Some(Tok::Word {
                     lexeme,
                     single_quoted: false,
                 }) => {
                     if is_block_keyword(lexeme) {
                         CmdTok::End
-                    } else if let Some(observe) = mark_marker(lexeme) {
-                        CmdTok::MarkStart(observe)
+                    } else if let Some(sigil) = mark_marker(lexeme) {
+                        CmdTok::MarkStart(sigil)
                     } else {
                         CmdTok::Word
                     }
@@ -779,22 +724,31 @@ impl Parser<'_> {
             };
             match class {
                 CmdTok::End => break,
-                CmdTok::MarkStart(observe) => {
+                CmdTok::MarkStart(sigil) => {
+                    // A leading `:` (words still empty) is the sh no-op COMMAND, not a mark
+                    // introducer (the `state_stored_only_in` colon-line, `277` §4e): consume
+                    // it as the command word so its own ` : <token>` tail parses as the mark.
+                    // Only the plain `:` sigil colon-commands; a leading `:!`/`:?` is a mark
+                    // with no command ⇒ falls through to the empty-command reject below.
+                    if words.is_empty() && sigil == MarkSigil::Verdict {
+                        end_span = self.peek_span().unwrap_or(end_span);
+                        if let Some((lexeme, single_quoted, _)) = self.take_word() {
+                            words.push(parse_word_lexeme(&lexeme, single_quoted, self.interner));
+                        }
+                    }
                     // Inside a pipeline, an (unquoted) `:` is normally opaque pipeline text — it
                     // ships verbatim + ⊤s at trace, so it is NOT a dialect mark (a pipeline
                     // establishes/vouches nothing): consume it and keep folding (24E §14).
-                    // CARVE-OUT (24G §4): in a REACHES body the trailing mark TYPES the emission, so
+                    // CARVE-OUT (24G §4): in a reaches body the trailing mark TYPES the emission, so
                     // a pipeline MAY carry one — a `:` marker BREAKS the pipeline and becomes the
-                    // trailing mark, exactly as for a simple command. (A space-flanked `:` is a
-                    // dialect marker everywhere in the dialect — the same convention a non-pipeline
-                    // command already obeys — so this stays consistent, not a new ambiguity. A `:`
-                    // INSIDE a quoted pipeline arg — `sed 's|x|file:|'` — lexes single-quoted ⇒
-                    // `CmdTok::Word`, never a marker, so it stays untouched.)
-                    if pipeline && self.role != FnRole::Reaches {
+                    // trailing mark, exactly as for a simple command. (A `:` INSIDE a quoted
+                    // pipeline arg — `sed 's|x|file:|'` — lexes single-quoted ⇒ `CmdTok::Word`,
+                    // never a marker, so it stays untouched.)
+                    else if pipeline && self.role != FnRole::DisturbanceReachesOnly {
                         end_span = self.peek_span().unwrap_or(end_span);
                         self.bump();
                     } else {
-                        mark_observe = Some(observe);
+                        mark_sigil = Some(sigil);
                         break;
                     }
                 }
@@ -830,10 +784,10 @@ impl Parser<'_> {
         // spans the whole `cmd | cmd | …` byte-exact; it carries NO mark EXCEPT in a reaches body
         // (24G §4 carve-out — there the trailing mark types the emission and IS parsed).
         let span = start_span.to(end_span);
-        let carries_mark = !pipeline || self.role == FnRole::Reaches;
+        let carries_mark = !pipeline || self.role == FnRole::DisturbanceReachesOnly;
         let mark = if carries_mark {
-            match mark_observe {
-                Some(observe) => Some(self.parse_mark(observe, false)?),
+            match mark_sigil {
+                Some(sigil) => Some(self.parse_mark(sigil)?),
                 None => None,
             }
         } else {
@@ -847,26 +801,18 @@ impl Parser<'_> {
         }))
     }
 
-    /// Parse a bare inline-dialect mark statement (`: TARGET` / `:? TARGET`): a POISON
-    /// no-op mention or an ACK vouch (233 §1–§4; the two-level converged-vouch is retired
-    /// and rejects — rul24-vouch-is-verdict-authoring). The caller verified the first token
-    /// is a `:`/`:?` marker; `observe` is true for `:?`.
-    fn parse_bare_mark(&mut self, observe: bool, _start_span: Span) -> Result<Stmt, bool> {
-        Ok(Stmt::Mark(self.parse_mark(observe, true)?))
-    }
-
-    /// Parse a dialect mark starting at the `:`/`:?` marker token: consume the marker,
-    /// the target word, and an optional `= value` tail; split the target and classify by
-    /// (`observe`, `bare`, suffix). `bare` ⇒ a statement-position mark (POISON/ACK/vouch);
-    /// `!bare` ⇒ a trailing mark on a command (ESTABLISH/OBSERVE). Malformed ⇒ ⊤-reject
-    /// (the parser's standing bias — never guess).
-    fn parse_mark(&mut self, observe: bool, bare: bool) -> Result<Mark, bool> {
+    /// Parse a dialect mark starting at the `:`/`:!`/`:?` marker token: consume the
+    /// marker, the target word, and an optional `= value` tail; split the target and
+    /// classify by [`MarkSigil`] (`277` §4a). All marks are TRAILING now (bare
+    /// statement-position ACK/POISON marks are retired). Malformed ⇒ ⊤-reject (the
+    /// parser's standing bias — never guess).
+    fn parse_mark(&mut self, sigil: MarkSigil) -> Result<Mark, bool> {
         let marker_span = self.peek_span().unwrap_or(ZERO_SPAN);
-        self.bump(); // the `:` / `:?` marker word
+        self.bump(); // the `:` / `:!` / `:?` marker word
         let Some((lexeme, _sq, target_span)) = self.take_word() else {
-            return Err(self.fail_here("dialect mark requires a `kind:entity.prop` target"));
+            return Err(self.fail_here("dialect mark requires a `kind:entity#selector` target"));
         };
-        // Optional `= value` tail (233 §1: an ESTABLISH explicit-value assignment).
+        // Optional `= value` tail (a verdict-mark explicit-value assignment).
         let mut end_span = target_span;
         let value = if matches!(self.peek(), Some(Tok::Word { lexeme, .. }) if lexeme == "=") {
             self.bump(); // `=`
@@ -881,15 +827,11 @@ impl Parser<'_> {
 
         let Some(parsed) = split_mark_target(&lexeme) else {
             return Err(
-                self.fail_here("malformed dialect mark target (expected `kind:entity.prop`)")
+                self.fail_here("malformed dialect mark target (expected `kind:entity#selector`)")
             );
         };
-        let kind = match classify_mark(observe, bare, &parsed) {
-            Ok(k) => k,
-            Err(reason) => return Err(self.fail_here(reason)),
-        };
         Ok(Mark {
-            kind,
+            kind: classify_mark(sigil),
             target: MarkTarget {
                 kind: parsed.kind,
                 entity: parsed.entity,
@@ -1048,9 +990,10 @@ struct PredictHeader {
 enum CmdTok {
     /// A statement terminator / block keyword — ends the command (not consumed).
     End,
-    /// A standalone `:`/`:?` marker begins a trailing effect mark — ends the command
-    /// (not consumed); the bool is the observe flag (`:?` ⇒ true).
-    MarkStart(bool),
+    /// A standalone `:`/`:!`/`:?` marker begins a trailing mark — ends the command (not
+    /// consumed), carrying the [`MarkSigil`]. (A leading `:` is instead consumed as the
+    /// colon-command word; see [`Parser::parse_command`].)
+    MarkStart(MarkSigil),
     /// A plain word to add to the command.
     Word,
     /// A redirection chunk to fold into the verbatim span.
@@ -1212,14 +1155,26 @@ fn parse_word_lexeme(lexeme: &str, single_quoted: bool, interner: &mut Interner)
     Word::Literal(lexeme.to_owned())
 }
 
-/// Is `lexeme` a standalone inline-dialect mark marker? `:` ⇒ `Some(false)` (ESTABLISH /
-/// POISON / ACK / vouch), `:?` ⇒ `Some(true)` (OBSERVE), anything else ⇒ `None`. The
-/// space-flanked marker lexes as its own word (the target `kind:entity.prop` is a
-/// separate, adjacent word).
-fn mark_marker(lexeme: &str) -> Option<bool> {
+/// The mark sigil family (`277` §4a): `:` verdict named sense, `:!` verdict complement
+/// sense, `:?` observe. Polarity rides the sigil, never a coordinate suffix.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum MarkSigil {
+    /// `:` — verdict, named sense (also the bare-kind emission / substrate token mark).
+    Verdict,
+    /// `:!` — verdict, complement sense.
+    Inverted,
+    /// `:?` — observe (read-only depends-upon).
+    Observe,
+}
+
+/// Is `lexeme` a standalone inline-dialect mark marker? Recognizes the `277` §4a sigil
+/// family (`:` / `:!` / `:?`); anything else ⇒ `None`. The space-flanked marker lexes as
+/// its own word (the target `kind:entity#selector` is a separate, adjacent word).
+fn mark_marker(lexeme: &str) -> Option<MarkSigil> {
     match lexeme {
-        ":" => Some(false),
-        ":?" => Some(true),
+        ":" => Some(MarkSigil::Verdict),
+        ":!" => Some(MarkSigil::Inverted),
+        ":?" => Some(MarkSigil::Observe),
         _ => None,
     }
 }
@@ -1230,113 +1185,49 @@ struct ParsedTarget {
     kind: String,
     entity: Option<String>,
     prop: Option<String>,
-    /// A trailing `~` (vouch/ack) or `!` (invert), if present.
-    suffix: Option<char>,
 }
 
-/// Split a mark target lexeme `kind[:entity[.prop]][~|!]` into its opaque fragments
-/// (R1b, "parse mediocre"): strip a single trailing `~`/`!`; split the body on the FIRST
-/// `:` (kind ⟂ rest) and the rest on the LAST `.` (entity ⟂ prop). `None` if empty or
-/// kind-less (⊤-reject upstream). Kind fragments keep any inner `.` (reverse-DNS stays
-/// intact); no fragment is interpreted.
+/// Split a mark target lexeme `kind[:entity[#selector]]` into its opaque fragments
+/// (`277` §4a): split the body on the FIRST `:` (kind ⟂ rest) and the rest on the FIRST
+/// `#` (entity ⟂ selector). `None` if empty or kind-less (⊤-reject upstream). The kind
+/// fragment keeps its reverse-DNS dots; `.` no longer introduces anything in coordinate
+/// position (the `.prop` production is dead — `277` §4a). An empty entity before the `#`
+/// is the empty-entity transitional form `kind:#sel` (`entity = Some("")`, a real value,
+/// not absence — `inv-referent-agnostic`: empty ≠ None). No fragment is interpreted.
 fn split_mark_target(lexeme: &str) -> Option<ParsedTarget> {
     if lexeme.is_empty() {
         return None;
     }
-    let (body, suffix) = if let Some(b) = lexeme.strip_suffix('~') {
-        (b, Some('~'))
-    } else if let Some(b) = lexeme.strip_suffix('!') {
-        (b, Some('!'))
-    } else {
-        (lexeme, None)
-    };
-    if body.is_empty() {
-        return None;
-    }
-    let (kind, rest) = match body.split_once(':') {
+    let (kind, rest) = match lexeme.split_once(':') {
         Some((k, r)) => (k.to_owned(), Some(r)),
-        None => (body.to_owned(), None),
+        None => (lexeme.to_owned(), None),
     };
     if kind.is_empty() {
         return None;
     }
     let (entity, prop) = match rest {
         None | Some("") => (None, None),
-        Some(r) => match r.rsplit_once('.') {
-            // `kind:.prop` — the Singleton empty-entity slot (jc-singleton-mark, human
-            // 2026-07-02): the colon introduces a DELIBERATELY empty entity (the-one),
-            // and the prop follows the dot. `entity = Some("")` is a real entity value,
-            // not absence (`inv-referent-agnostic`: empty ≠ None) — so a Singleton cell
-            // keys distinctly from a kind-only mark, and mixed empty+named entities on one
-            // kind are simply two cells. A colon-LESS `kind.prop` stays a whole reverse-DNS
-            // kind (handled below, the `None` split arm), so `.prop` never accidents in.
-            Some(("", p)) if !p.is_empty() => (Some(String::new()), Some(p.to_owned())),
-            Some((e, p)) if !p.is_empty() && !e.is_empty() => {
-                (Some(e.to_owned()), Some(p.to_owned()))
-            }
+        // The entity/selector split is on the FIRST `#` (the attached selector-introducer,
+        // `277` §4a). No `#` ⇒ a whole-entity coordinate (the emission-mark and bare-entity
+        // shapes). A leading `#` ⇒ the empty-entity form `kind:#sel`.
+        Some(r) => match r.split_once('#') {
+            Some((e, s)) if !s.is_empty() => (Some(e.to_owned()), Some(s.to_owned())),
+            // `kind:entity#` (empty selector) is malformed — treat the whole rest as the
+            // entity (the selector is dropped; the differential gate catches a mis-spell).
             _ => (Some(r.to_owned()), None),
         },
     };
-    Some(ParsedTarget {
-        kind,
-        entity,
-        prop,
-        suffix,
-    })
+    Some(ParsedTarget { kind, entity, prop })
 }
 
-/// Classify a parsed mark into a [`MarkKind`] from (`observe`, `bare`, suffix, entity?,
-/// prop?). Malformed combinations ⊤-reject (`Err(reason)`) — the parser's standing bias
-/// (never guess). `bare` ⇒ statement-position (POISON/ACK); `!bare` ⇒ a trailing command
-/// mark (ESTABLISH/OBSERVE). A three-level `kind:entity.prop~` ⇒ ACK; a two-level
-/// `provider:verb~` (the retired converged-vouch strawman) ⇒ loud reject
-/// (rul24-vouch-is-verdict-authoring, 24A §1c).
-fn classify_mark(
-    observe: bool,
-    bare: bool,
-    target: &ParsedTarget,
-) -> Result<MarkKind, &'static str> {
-    if observe {
-        // `:?` OBSERVE (233 depends-upon). A `~`/`!` suffix on it is malformed.
-        return if target.suffix.is_some() {
-            Err("`:?` observe mark takes no `~`/`!` suffix")
-        } else {
-            Ok(MarkKind::Observe)
-        };
-    }
-    match target.suffix {
-        Some('!') => {
-            if bare {
-                Err("`!` (invert) is a trailing ESTABLISH suffix, not a bare mark")
-            } else {
-                Ok(MarkKind::EstablishInverted)
-            }
-        }
-        Some('~') => {
-            if !bare {
-                Err("`~` (vouch/ack) is a bare statement mark, not a trailing command mark")
-            } else if target.prop.is_some() {
-                Ok(MarkKind::Ack)
-            } else if target.entity.is_some() {
-                // A two-level `provider:verb~` was the CONVERGED-VOUCH strawman — RETIRED
-                // (rul24-vouch-is-verdict-authoring, 24A §1c): a converged-vouch is now
-                // authored as an `is_converged()`/`is_diverged()` verdict function, not a
-                // tilde mark. Reject loudly (dead grammar), never a silent mis-read as ACK.
-                Err(
-                    "two-level `provider:verb~` vouch marks are retired — author a converged-vouch as an `is_converged()`/`is_diverged()` verdict function (rul24-vouch-is-verdict-authoring)",
-                )
-            } else {
-                Ok(MarkKind::Ack)
-            }
-        }
-        Some(_) => Err("unrecognized mark suffix"),
-        None => {
-            if bare {
-                Ok(MarkKind::Poison)
-            } else {
-                Ok(MarkKind::Establish)
-            }
-        }
+/// Classify a parsed mark into a [`MarkKind`] from its [`MarkSigil`] (`277` §4a). All
+/// marks trail a command; bare statement-position ACK/POISON marks are retired (deleted
+/// from the grammar). The sigil alone decides polarity — the coordinate carries none.
+fn classify_mark(sigil: MarkSigil) -> MarkKind {
+    match sigil {
+        MarkSigil::Verdict => MarkKind::Establish,
+        MarkSigil::Inverted => MarkKind::EstablishInverted,
+        MarkSigil::Observe => MarkKind::Observe,
     }
 }
 
@@ -1363,12 +1254,10 @@ fn is_block_keyword(s: &str) -> bool {
 fn is_statement_terminator_word(s: &str) -> bool {
     is_block_keyword(s)
 }
-
 #[cfg(test)]
 mod dialect_tests {
-    //! R1a/R1b: the period-form funcdef + the 233 inline-mark dialect. These tests
-    //! reach the internal AST (Marks aren't re-exported), so they live here rather than
-    //! in `tests/predict.rs`. Every ambiguity ⊤-rejects (`inv-top-reject` bias); a lift
+    //! The `277` §4 inline-mark dialect. These tests reach the internal AST (Marks aren't
+    //! re-exported), so they live here. Every ambiguity ⊤-rejects (`inv-top-reject` bias); a lift
     //! failure is a diagnostic, never a panic (`inv-no-throw`).
     use super::{Interner, Mark, MarkKind, Stmt, lift_predicts};
 
@@ -1426,60 +1315,42 @@ mod dialect_tests {
     }
 
     #[test]
-    fn period_form_funcdef_recovers_the_hyphenated_provider() {
-        // `apt-get.predict()` (the 23D §1 opt-in semaphore) resolves to provider `apt-get`
-        // — the literal command word, no `_`→`-` mapping (that is the legacy form's rule).
+    fn only_the_bare_munged_funcdef_form_lifts() {
+        // The period `X.predict()` form is DEAD (rul24-totalistic-munge). Only the bare
+        // `<base>__predict` munged form is recognized; `apt_get__predict` keys on `apt-get`
+        // (command-keyed, `_`→`-`).
         let mut i = Interner::default();
         let out = lift_predicts(
             &mut i,
-            "apt-get.predict() { pkg : package = \"$1\"; dpkg-query -W \"$pkg\"; }",
+            "apt_get__predict() { pkg : sm.dorc.Package = \"$1\"; dpkg-query -W \"$pkg\"; }",
         );
         assert!(out.diags.is_empty(), "clean lift: {:?}", out.diags);
-        let apt = i.intern("apt-get");
         assert!(
-            out.value.get(apt).is_some(),
-            "the period form keys the check on `apt-get`"
+            out.value.get(i.intern("apt-get")).is_some(),
+            "the bare form keys the check on `apt-get`"
         );
     }
 
     #[test]
-    fn period_and_legacy_forms_agree_on_provider() {
-        // `systemctl.predict` and `systemctl__predict` name the SAME provider (no hyphen, so
-        // the two spellings coincide) — the strip's job is to turn the former into the
-        // latter, so they must lift identically.
-        let mut i = Interner::default();
-        let period = lift_predicts(
-            &mut i,
-            "systemctl.predict() { svc : service = \"$1\"; systemctl is-active -- \"$svc\"; }",
-        );
-        let legacy = lift_predicts(
-            &mut i,
-            "systemctl__predict() { svc : service = \"$1\"; systemctl is-active -- \"$svc\"; }",
-        );
-        let sc = i.intern("systemctl");
-        assert!(period.value.get(sc).is_some() && legacy.value.get(sc).is_some());
-    }
-
-    #[test]
-    fn trailing_establish_mark_splits_kind_and_selector() {
-        // `dpkg-query … : package:"$pkg".installed` — a trailing ESTABLISH. kind/selector
-        // are split opaquely; the entity fragment (`$pkg`) is carried but not decoded.
+    fn trailing_verdict_mark_splits_kind_entity_selector() {
+        // `dpkg-query … : sm.dorc.Package:"$pkg"#installed` — a trailing verdict mark. kind keeps
+        // its reverse-DNS dots; entity/selector split on the attached `#` (`277` §4a).
         let body = body_of(
-            "apt-get.predict() { pkg : package = \"$1\"; dpkg-query -W \"$pkg\" : package:\"$pkg\".installed; }",
+            "apt_get__predict() { pkg : sm.dorc.Package = \"$1\"; dpkg-query -W \"$pkg\" : sm.dorc.Package:\"$pkg\"#installed; }",
         );
         let m = first_command_mark(&body).expect("a trailing mark");
         assert_eq!(m.kind, MarkKind::Establish);
-        assert_eq!(m.target.kind, "package");
-        assert_eq!(m.target.prop.as_deref(), Some("installed"));
+        assert_eq!(m.target.kind, "sm.dorc.Package");
         assert_eq!(m.target.entity.as_deref(), Some("$pkg"));
+        assert_eq!(m.target.prop.as_deref(), Some("installed"));
     }
 
     #[test]
-    fn trailing_bang_is_establish_inverted() {
-        // `… : package:"$pkg".installed!` — the `!` pun (233 §1): the verb makes the fact
-        // NOT hold ⇒ the lift reads Kill polarity.
+    fn inverted_sigil_is_establish_inverted() {
+        // `… :! sm.dorc.Package:"$pkg"#installed` — polarity rides the `:!` sigil now, never a
+        // coordinate suffix (`277` §4a). The coordinate is a pure name.
         let body = body_of(
-            "apt-get.predict() { pkg : package = \"$1\"; dpkg-query -W \"$pkg\" : package:\"$pkg\".installed!; }",
+            "apt_get__predict() { pkg : sm.dorc.Package = \"$1\"; dpkg-query -W \"$pkg\" :! sm.dorc.Package:\"$pkg\"#installed; }",
         );
         let m = first_command_mark(&body).expect("a trailing mark");
         assert_eq!(m.kind, MarkKind::EstablishInverted);
@@ -1487,136 +1358,87 @@ mod dialect_tests {
     }
 
     #[test]
-    fn trailing_query_marker_is_observe() {
-        // `command -v … :? tool:"$tool".present` — OBSERVE (read-only depends-upon).
+    fn observe_sigil_is_observe() {
+        // `… :? sm.dorc.GrepMatch:"$pat"#matched` — the observe mark (read-only depends-upon).
         let body = body_of(
-            "command.predict() { tool : tool = \"$1\"; command -v -- \"$tool\" :? tool:\"$tool\".present; }",
+            "grep__predict() { pat : sm.dorc.GrepMatch = \"$1\"; grep -q -- \"$pat\" :? sm.dorc.GrepMatch:\"$pat\"#matched; }",
         );
         let m = first_command_mark(&body).expect("a trailing mark");
         assert_eq!(m.kind, MarkKind::Observe);
-        assert_eq!(m.target.kind, "tool");
-        assert_eq!(m.target.prop.as_deref(), Some("present"));
+        assert_eq!(m.target.kind, "sm.dorc.GrepMatch");
+        assert_eq!(m.target.prop.as_deref(), Some("matched"));
     }
 
     #[test]
-    fn singleton_mark_has_an_explicit_empty_entity() {
-        // `… : pkgindex:.fresh` — the Singleton empty-entity slot (jc-singleton-mark, human
-        // 2026-07-02). The colon terminates the kind, the prop follows the dot, and the
-        // entity between them is DELIBERATELY empty (`Some("")`, the-one) — not `None`
-        // (absent). 23H flagged the pre-fix parse as accidental (it read `.fresh` as the
-        // entity, dropping the selector); this pins the deliberate reading.
+    fn empty_entity_form_carries_an_explicit_empty_entity() {
+        // `… :? io.opentelemetry.Collector:#v0155` — the empty-entity transitional form `kind:#sel`
+        // (`277` §4a): the entity slot is a DELIBERATE empty string (the-one), never `None`.
         let body = body_of(
-            "apt-get.predict() { verb=$1; shift; idx : pkgindex; test -n fresh : pkgindex:.fresh; }",
+            "otelcol__predict() { case $1 in --version) otelcol --version >/dev/null 2>&1 :? io.opentelemetry.Collector:#v0155 ;; esac }",
         );
-        let m = first_command_mark(&body).expect("a trailing Singleton mark");
-        assert_eq!(m.kind, MarkKind::Establish);
-        assert_eq!(m.target.kind, "pkgindex");
+        let m = first_command_mark(&body).expect("an empty-entity observe mark");
+        assert_eq!(m.kind, MarkKind::Observe);
+        assert_eq!(m.target.kind, "io.opentelemetry.Collector");
         assert_eq!(
             m.target.entity.as_deref(),
             Some(""),
-            "the entity slot is an EXPLICIT empty string (the-one), never None"
+            "the entity slot is an EXPLICIT empty string, never None"
         );
-        assert_eq!(m.target.prop.as_deref(), Some("fresh"));
+        assert_eq!(m.target.prop.as_deref(), Some("v0155"));
     }
 
     #[test]
-    fn singleton_mark_survives_an_fd_dup_redirect() {
-        // The empty-entity parse must hold AFTER an fd-dup redirect (`2>&1`) — the exact
-        // shape the R1 lexer gap (jc-lexer-redirect-mark) fixed. A greedy redirect target
-        // must not swallow the `:` marker, and the split must still land the empty entity.
-        let body = body_of(
-            "apt-get.predict() { verb=$1; shift; idx : pkgindex; test -n fresh >/dev/null 2>&1 : pkgindex:.fresh; }",
-        );
-        let m = first_command_mark(&body).expect("a trailing Singleton mark after 2>&1");
+    fn bare_kind_emission_mark_has_no_entity_or_selector() {
+        // `printf '%s\n' "$1" : sm.dorc.Package` — the disturbs()/reaches() emission shape: the
+        // kind rides the trailing mark, no entity, no selector.
+        let body = body_of("apt_get__predict() { printf '%s\\n' \"$1\" : sm.dorc.Package; }");
+        let m = first_command_mark(&body).expect("a bare-kind emission mark");
         assert_eq!(m.kind, MarkKind::Establish);
-        assert_eq!(m.target.kind, "pkgindex");
-        assert_eq!(m.target.entity.as_deref(), Some(""));
-        assert_eq!(m.target.prop.as_deref(), Some("fresh"));
-    }
-
-    #[test]
-    fn singleton_near_miss_typos_do_not_yield_the_selector() {
-        // The empty-slot spelling is the ONLY way to key a Singleton selector: both
-        // near-miss typos read differently (and so drop the selector ⇒ the differential
-        // gate catches a mis-spelled effect, "fails loudly"). `kind.prop` (no colon) is a
-        // whole reverse-DNS kind; `kind:prop` (colon, no dot) reads prop as the entity.
-        let colon_less = body_of(
-            "apt-get.predict() { verb=$1; shift; idx : pkgindex; test -n fresh : pkgindex.fresh; }",
-        );
-        let m = first_command_mark(&colon_less).expect("a trailing mark");
-        assert_eq!(
-            m.target.kind, "pkgindex.fresh",
-            "no colon ⇒ whole reverse-DNS kind"
-        );
+        assert_eq!(m.target.kind, "sm.dorc.Package");
         assert_eq!(m.target.entity, None);
-        assert_eq!(
-            m.target.prop, None,
-            "no selector without the empty-entity colon"
-        );
-
-        let dot_less = body_of(
-            "apt-get.predict() { verb=$1; shift; idx : pkgindex; test -n fresh : pkgindex:fresh; }",
-        );
-        let m = first_command_mark(&dot_less).expect("a trailing mark");
-        assert_eq!(m.target.kind, "pkgindex");
-        assert_eq!(
-            m.target.entity.as_deref(),
-            Some("fresh"),
-            "no dot ⇒ prop reads as entity"
-        );
-        assert_eq!(m.target.prop, None, "no selector without the `.`");
+        assert_eq!(m.target.prop, None);
     }
 
     #[test]
-    fn bare_poison_mention_parses() {
-        // `: fs.Path` — a bare no-op POISON mention; kind-only (the `.` stays in the
-        // opaque kind), no entity/prop.
-        let body = body_of(
-            "apt-get.predict() { pkg : package = \"$1\"; dpkg-query -W \"$pkg\"; : fs.Path; }",
-        );
-        let Some(Stmt::Mark(m)) = body.iter().find(|s| matches!(s, Stmt::Mark(_))) else {
-            panic!("expected a bare Mark statement: {body:?}");
+    fn colon_line_is_a_command_carrying_a_trailing_token_mark() {
+        // The `state_stored_only_in` colon-line shape (`277` §4e): a leading `:` is the sh no-op
+        // COMMAND (not a mark introducer), and its ` : <token>` tail is the trailing mark. A
+        // substrate `: fs` and the `: invariant:user` axis line both parse this way, inert.
+        let body =
+            body_of("dpkg__predict() { printf '/var/lib/dpkg\\n' : fs; : : invariant:user; }");
+        // First stmt: `printf … : fs`.
+        let Some(Stmt::Command(first)) = body.first() else {
+            panic!("expected a command: {body:?}");
         };
-        assert_eq!(m.kind, MarkKind::Poison);
-        assert_eq!(m.target.kind, "fs.Path");
-        assert_eq!(m.target.entity, None);
-    }
-
-    #[test]
-    fn bare_three_level_tilde_is_ack() {
-        // `: package:"$pkg".held~` — a three-level considered-untouched ACK.
-        let body = body_of(
-            "apt-get.predict() { pkg : package = \"$1\"; dpkg-query -W \"$pkg\"; : package:\"$pkg\".held~; }",
-        );
-        let Some(Stmt::Mark(m)) = body.iter().find(|s| matches!(s, Stmt::Mark(_))) else {
-            panic!("expected a bare Mark statement: {body:?}");
+        let m = first.mark.as_ref().expect("the `: fs` substrate mark");
+        assert_eq!(m.target.kind, "fs");
+        // Second stmt: the colon-command `:` carrying `: invariant:user`.
+        let Some(Stmt::Command(second)) = body.get(1) else {
+            panic!("expected a colon-command: {body:?}");
         };
-        assert_eq!(m.kind, MarkKind::Ack, "three-level ~ ⇒ ACK");
-        assert_eq!(m.target.prop.as_deref(), Some("held"));
+        let m2 = second.mark.as_ref().expect("the invariant colon-line mark");
+        assert_eq!(m2.target.kind, "invariant");
+        assert_eq!(m2.target.entity.as_deref(), Some("user"));
     }
 
     #[test]
-    fn bare_two_level_tilde_vouch_is_rejected() {
-        // `: apt-get:install~` — the two-level `provider:verb~` converged-vouch strawman is
-        // RETIRED (rul24-vouch-is-verdict-authoring, 24A §1c): vouching is now authoring an
-        // `is_converged()`/`is_diverged()` verdict function. So it ⊤-rejects loudly (dead
-        // grammar), never a silent mis-read as ACK. (Three-level `~` stays ACK; see above.)
-        let mut i = Interner::default();
-        let out = lift_predicts(
-            &mut i,
-            "apt-get.predict() { pkg : package = \"$1\"; dpkg-query -W \"$pkg\"; : apt-get:install~; }",
-        );
-        assert!(
-            !out.diags.is_empty(),
-            "a two-level `provider:verb~` vouch mark must ⊤-reject with a diagnostic"
-        );
+    fn dotted_entity_parses_unambiguously_now() {
+        // With the `.prop` production dead (`277` §4a), an unquoted dotted entity parses cleanly —
+        // the ⊤-reject corner is DISSOLVED. `sm.dorc.File:/etc/nginx.conf` ⇒ kind before the `:`,
+        // everything after is the entity (no `#`, so no selector).
+        let body =
+            body_of("writeconf__predict() { conf-exists \"$1\" : sm.dorc.File:/etc/nginx.conf; }");
+        let m = first_command_mark(&body).expect("a trailing mark");
+        assert_eq!(m.target.kind, "sm.dorc.File");
+        assert_eq!(m.target.entity.as_deref(), Some("/etc/nginx.conf"));
+        assert_eq!(m.target.prop, None);
     }
 
     #[test]
-    fn establish_with_explicit_value_parses() {
-        // `… : service:"$svc".active = false` — the 233 §1 explicit-value ESTABLISH.
+    fn verdict_mark_with_explicit_value_parses() {
+        // `… : sm.dorc.Service:"$svc"#active = false` — the explicit-value tail on a verdict mark.
         let body = body_of(
-            "systemctl.predict() { svc : service = \"$1\"; systemctl is-active -- \"$svc\" : service:\"$svc\".active = false; }",
+            "systemctl__predict() { svc : sm.dorc.Service = \"$1\"; systemctl is-active -- \"$svc\" : sm.dorc.Service:\"$svc\"#active = false; }",
         );
         let m = first_command_mark(&body).expect("a trailing mark");
         assert_eq!(m.kind, MarkKind::Establish);
@@ -1625,9 +1447,11 @@ mod dialect_tests {
 
     #[test]
     fn identity_annotation_still_parses_unchanged() {
-        // The existing identity annotation `pkg : package = "$1"` (bare kind, no inner `:`)
-        // must NOT be mis-read as a trailing mark — it stays an Annotation.
-        let body = body_of("apt-get.predict() { pkg : package = \"$1\"; dpkg-query -W \"$pkg\"; }");
+        // The identity annotation `pkg : sm.dorc.Package = "$1"` (bare kind, no inner `:`) stays an
+        // Annotation, not mis-read as a trailing mark.
+        let body = body_of(
+            "apt_get__predict() { pkg : sm.dorc.Package = \"$1\"; dpkg-query -W \"$pkg\"; }",
+        );
         assert!(
             body.iter().any(|s| matches!(s, Stmt::Annotation(_))),
             "the identity annotation survives: {body:?}"
@@ -1635,65 +1459,14 @@ mod dialect_tests {
     }
 
     #[test]
-    fn malformed_bang_on_bare_mark_rejects() {
-        // `!` is a trailing-ESTABLISH suffix; on a bare statement mark it is malformed and
-        // ⊤-rejects loudly (a diagnostic, never a silent mis-read).
-        let mut i = Interner::default();
-        let out = lift_predicts(
-            &mut i,
-            "apt-get.predict() { pkg : package = \"$1\"; : package:\"$pkg\".installed!; }",
-        );
-        assert!(
-            !out.diags.is_empty(),
-            "a bare `!` mark must ⊤-reject with a diagnostic"
-        );
-    }
-
-    #[test]
-    fn tilde_on_trailing_command_mark_rejects() {
-        // `~` (vouch/ack) is a bare statement mark; trailing a command it is malformed.
-        let mut i = Interner::default();
-        let out = lift_predicts(
-            &mut i,
-            "apt-get.predict() { pkg : package = \"$1\"; dpkg-query -W \"$pkg\" : package:\"$pkg\".installed~; }",
-        );
-        assert!(
-            !out.diags.is_empty(),
-            "a trailing `~` mark must ⊤-reject with a diagnostic"
-        );
-    }
-
-    #[test]
-    fn mark_only_if_body_rejects() {
-        // R1c (23H §9.4): a non-case-arm compound body (here an `if`-then) of ONLY bare marks
-        // would strip to an empty block (`if …; then fi` is a syntax error), so it ⊤-rejects
-        // at lift — a probe body needs a substantive command. The disaster it forecloses: a
-        // silent repair leaving `:`/empty that mis-behaves in guard position downstream.
-        let mut i = Interner::default();
-        let out = lift_predicts(
-            &mut i,
-            "apt-get.predict() { pkg : package = \"$1\"; if [ \"$2\" = \"\" ]; then : package:\"$pkg\".held~; fi; }",
-        );
-        assert!(
-            !out.diags.is_empty(),
-            "a mark-only if-body must ⊤-reject with a diagnostic"
-        );
-    }
-
-    #[test]
-    fn mark_only_case_arm_lifts_clean() {
-        // The CONTRAST to the if-body reject: a case-arm may legally strip to an empty arm
-        // (`enable) ;;`), so a mark-only case-arm lifts WITHOUT a diagnostic.
-        let mut i = Interner::default();
-        let out = lift_predicts(
-            &mut i,
-            "systemctl.predict() { verb=$1; shift; case $verb in enable) : service:nginx.enabled~ ;; esac; }",
-        );
-        assert!(
-            out.diags.is_empty(),
-            "a mark-only case-arm must lift clean (empty arms are legal): {:?}",
-            out.diags
-        );
+    fn mark_without_selector_is_whole_entity() {
+        // `sm.dorc.Package:"$pkg"` (no `#`) ⇒ a whole-entity coordinate: entity present, selector
+        // absent. The near-miss the differential gate would catch if a selector were intended.
+        let body = body_of("apt_get__predict() { dpkg-query -W \"$1\" : sm.dorc.Package:\"$1\"; }");
+        let m = first_command_mark(&body).expect("a trailing mark");
+        assert_eq!(m.target.kind, "sm.dorc.Package");
+        assert_eq!(m.target.entity.as_deref(), Some("$1"));
+        assert_eq!(m.target.prop, None, "no `#` ⇒ no selector");
     }
 
     /// The sole body command of a lifted reaches funcdef (the pipeline-mark carve-out tests inspect
@@ -1720,43 +1493,40 @@ mod dialect_tests {
     /// the mark rides AFTER a MULTI-STAGE pipe.
     #[test]
     fn reaches_pipeline_carries_trailing_mark_after_multi_stage_pipe() {
-        let c = reaches_command("package.reaches() { dpkg -L \"$1\" | grep x | sed y : file ; }");
+        let c = reaches_command(
+            "sm_dorc_Package__disturbance_reaches_only() { dpkg -L \"$1\" | grep x | sed y : sm.dorc.File ; }",
+        );
         assert!(c.pipeline, "a multi-stage pipe is a pipeline");
         let m = c
             .mark
             .expect("the reaches pipeline carries its trailing mark (the carve-out)");
         assert_eq!(m.kind, MarkKind::Establish);
-        assert_eq!(
-            m.target.kind, "file",
-            "the mark kind is the trailing annotation"
-        );
+        assert_eq!(m.target.kind, "sm.dorc.File");
     }
 
     /// A `:` INSIDE a quoted pipeline arg (`'s|x|file:|'`) is NOT a mark — a single-quoted token
-    /// lexes as one opaque word, so the `file:` inside it stays UNTOUCHED and the mark is the
-    /// TRAILING `: file` alone (adversarial: mark-like text inside quoted pipeline args).
+    /// lexes as one opaque word, so the inner `:` stays UNTOUCHED and the mark is the TRAILING one.
     #[test]
     fn reaches_pipeline_quoted_colon_inside_arg_is_not_a_mark() {
-        let c = reaches_command("package.reaches() { dpkg -L \"$1\" | sed 's|x|file:|' : file ; }");
+        let c = reaches_command(
+            "sm_dorc_Package__disturbance_reaches_only() { dpkg -L \"$1\" | sed 's|x|file:|' : sm.dorc.File ; }",
+        );
         assert!(c.pipeline);
         let m = c
             .mark
-            .expect("the TRAILING `: file` is the mark (the quoted `file:` is not)");
-        assert_eq!(
-            m.target.kind, "file",
-            "the mark kind is the trailing annotation, never the quoted inner colon"
-        );
+            .expect("the TRAILING mark (the quoted inner colon is not)");
+        assert_eq!(m.target.kind, "sm.dorc.File");
     }
 
     /// The carve-out is REACHES-ONLY: in a PREDICT body the same `pipe … : foo` shape carries NO
-    /// mark — the `:` is folded as opaque pipeline text (24E §14 pipelines-carry-no-mark), so the
-    /// carve-out cannot leak into probe/verdict bodies where a trailing mark is meaningless.
+    /// mark — the `:` folds as opaque pipeline text (24E §14), so the carve-out cannot leak into
+    /// probe/verdict bodies where a trailing mark is meaningless.
     #[test]
     fn predict_pipeline_folds_the_colon_no_mark_carveout_is_reaches_only() {
         let mut i = Interner::default();
         let out = lift_predicts(
             &mut i,
-            "apt-get.predict() { dpkg -L \"$1\" | grep x : foo ; }",
+            "apt_get__predict() { dpkg -L \"$1\" | grep x : foo ; }",
         );
         assert!(out.diags.is_empty(), "clean lift: {:?}", out.diags);
         let r = out
@@ -1769,7 +1539,7 @@ mod dialect_tests {
         assert!(c.pipeline);
         assert!(
             c.mark.is_none(),
-            "a predict pipeline carries no mark (the `: foo` is folded pipeline text — carve-out is reaches-only)"
+            "a predict pipeline carries no mark (the `: foo` is folded pipeline text)"
         );
     }
 }

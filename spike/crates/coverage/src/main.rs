@@ -524,7 +524,7 @@ mod tests {
         build_report(&inputs)
     }
 
-    const PKG_ORACLE: &str = r#"
+    const PKG_ORACLE: &str = r##"
 apt_get__predict() {
    while [ "${1#-}" != "$1" ]; do shift; done
    verb=$1; shift
@@ -532,12 +532,12 @@ apt_get__predict() {
    pkg : package = "$1"
    if [ "$2" = "" ]; then
       case $verb in
-         install) dpkg-query -W "$pkg" >/dev/null 2>&1 : package:"$pkg".installed ;;
-         purge) dpkg-query -W "$pkg" >/dev/null 2>&1 : package:"$pkg".installed! ;;
+         install) dpkg-query -W "$pkg" >/dev/null 2>&1 : package:"$pkg"#installed ;;
+         purge) dpkg-query -W "$pkg" >/dev/null 2>&1 :! package:"$pkg"#installed ;;
       esac
    fi
 }
-"#;
+"##;
 
     #[test]
     fn tsv_has_all_stable_columns_and_is_deterministic() {

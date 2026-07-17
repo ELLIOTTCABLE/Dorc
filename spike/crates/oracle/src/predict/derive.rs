@@ -4,7 +4,7 @@
 //! touches which `(kind, selector)` is READ OFF the check body's own control
 //! flow: the `case $verb` arms name the verbs, the inline identity annotation
 //! (`pkg : package = "$1"`) names the kind, and the trailing effect mark on the
-//! reached probe command (`… : package:"$pkg".installed`) names the selector and the
+//! reached probe command (`… : package:"$pkg"#installed`) names the selector and the
 //! rc convention. Nothing new is authored — the author writes idiomatic sh and Dorc
 //! narrows it (`AGENTS.md`: annotation-by-narrowing, never a config surface).
 //!
@@ -144,10 +144,8 @@ fn walk(body: &[Stmt], mut ctx: Ctx, effects: &mut Vec<DerivedEffect>) {
                 walk(else_body, ctx.clone(), effects);
             }
             Stmt::While { body, .. } => walk(body, ctx.clone(), effects),
-            // A bare mark (ACK/POISON) is a derivation no-op (23D §5); the converged-vouch is
-            // no longer a mark (rul24-vouch-is-verdict-authoring, 24A §1c). Assign/Shift key
-            // no cell either.
-            Stmt::Mark(_) | Stmt::Assign { .. } | Stmt::Shift { .. } => {}
+            // Assign/Shift key no cell.
+            Stmt::Assign { .. } | Stmt::Shift { .. } => {}
         }
     }
 }
@@ -160,8 +158,6 @@ fn push_effect(ctx: &Ctx, kind: MarkKind, target: &MarkTarget, effects: &mut Vec
         MarkKind::Establish => ValueClaim::Establish,
         MarkKind::EstablishInverted => ValueClaim::EstablishInverted,
         MarkKind::Observe => ValueClaim::Observe,
-        // ACK / POISON never trail a probe command as an effect.
-        MarkKind::Ack | MarkKind::Poison => return,
     };
     let (Some(kind_str), Some(selector)) = (ctx.kind.clone(), target.prop.clone()) else {
         return;
@@ -232,15 +228,15 @@ mod tests {
     #[test]
     fn package_apt_get_derives_installed_cells() {
         let dialect = "\
-apt-get.predict() {
+apt_get__predict() {
    while [ \"${1#-}\" != \"$1\" ]; do shift; done
    verb=$1; shift
    while [ \"${1#-}\" != \"$1\" ]; do shift; done
    pkg : package = \"$1\"
    if [ \"$2\" = \"\" ]; then
       case $verb in
-         install|reinstall) dpkg-query -W \"$pkg\" >/dev/null 2>&1 : package:\"$pkg\".installed ;;
-         purge|remove) dpkg-query -W \"$pkg\" >/dev/null 2>&1 : package:\"$pkg\".installed! ;;
+         install|reinstall) dpkg-query -W \"$pkg\" >/dev/null 2>&1 : package:\"$pkg\"#installed ;;
+         purge|remove) dpkg-query -W \"$pkg\" >/dev/null 2>&1 :! package:\"$pkg\"#installed ;;
       esac
    fi
 }";
@@ -261,13 +257,13 @@ apt-get.predict() {
         // The multi-selector service shape: enable→#enabled, start→#active (both
         // establish), disable→#enabled INVERTED (the `!` mark).
         let dialect = "\
-systemctl.predict() {
+systemctl__predict() {
    verb=$1; shift
    svc : service = \"$1\"
    case $verb in
-      enable)  systemctl is-enabled -- \"$svc\" : service:\"$svc\".enabled ;;
-      start)   systemctl is-active -- \"$svc\" : service:\"$svc\".active ;;
-      disable) systemctl is-enabled -- \"$svc\" : service:\"$svc\".enabled! ;;
+      enable)  systemctl is-enabled -- \"$svc\" : service:\"$svc\"#enabled ;;
+      start)   systemctl is-active -- \"$svc\" : service:\"$svc\"#active ;;
+      disable) systemctl is-enabled -- \"$svc\" :! service:\"$svc\"#enabled ;;
    esac
 }";
         assert_eq!(
@@ -285,36 +281,14 @@ systemctl.predict() {
         // The verbless read-only guard: `command -v` is an OBSERVE of tool:#present on the
         // ε-verb (the `:?` mark).
         let dialect = "\
-command.predict() {
+command__predict() {
    case $1 in -v) shift ;; esac
    tool : tool = \"$1\"
-   command -v -- \"$tool\" >/dev/null 2>&1 :? tool:\"$tool\".present
+   command -v -- \"$tool\" >/dev/null 2>&1 :? tool:\"$tool\"#present
 }";
         assert_eq!(
             derived_set(dialect, "command"),
             expect(&[("", "tool", "present", "observe")]),
-        );
-    }
-
-    #[test]
-    fn bare_marks_derive_no_cell() {
-        // Bare marks (ACK/POISON) are derivation no-ops (23D §5): only a trailing
-        // ESTABLISH/OBSERVE keys a cell. The two-level converged-vouch mark is retired
-        // entirely (rul24-vouch-is-verdict-authoring, 24A §1c) — `derive_predict` has no
-        // vouch output at all now. A three-level ACK on the install arm therefore adds
-        // NOTHING beyond that arm's own ESTABLISH cell.
-        let dialect = "\
-apt-get.predict() {
-   verb=$1; shift
-   pkg : package = \"$1\"
-   case $verb in
-      install) dpkg-query -W \"$pkg\" : package:\"$pkg\".installed; : package:\"$pkg\".held~ ;;
-   esac
-}";
-        assert_eq!(
-            derived_set(dialect, "apt-get"),
-            expect(&[("install", "package", "installed", "establish")]),
-            "the bare ACK adds no cell; only the trailing ESTABLISH keys one"
         );
     }
 
@@ -324,12 +298,12 @@ apt-get.predict() {
         // entity-resolution / fall-through only). Pins that the walk never invents a
         // literal-`*` verb.
         let dialect = "\
-apt-get.predict() {
+apt_get__predict() {
    verb=$1; shift
    pkg : package = \"$1\"
    case $verb in
-      install) dpkg-query -W \"$pkg\" : package:\"$pkg\".installed ;;
-      *) dpkg-query -W \"$pkg\" : package:\"$pkg\".installed ;;
+      install) dpkg-query -W \"$pkg\" : package:\"$pkg\"#installed ;;
+      *) dpkg-query -W \"$pkg\" : package:\"$pkg\"#installed ;;
    esac
 }";
         let set = derived_set(dialect, "apt-get");

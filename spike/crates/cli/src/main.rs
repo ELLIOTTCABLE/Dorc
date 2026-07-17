@@ -1357,8 +1357,8 @@ fn build_kind_resolvers(
     interner: &mut Interner,
     advisory: bool,
 ) -> KindResolvers {
-    use dorc_oracle::predict::map_provider_name;
     use dorc_oracle::resolve::ResolverSet;
+    use dorc_oracle::to_funcname_segment;
 
     let sets: Vec<ResolverSet> = oracle_srcs
         .iter()
@@ -1377,17 +1377,19 @@ fn build_kind_resolvers(
         }
     }
 
-    // The known PROVIDER names (predict + touches command words, `_`→`-` normalized) — a resolver
-    // keyed to one is the mis-keying we warn on.
+    // The known PROVIDER names, FORWARD-MUNGED into NAME space (`flag-forward-munge-keying`: a
+    // kind-keyed resolver interns its base by the kind's forward-munge, so the collision compares in
+    // the same NAME space the funcdefs live in) — a resolver whose kind munges to a provider's is the
+    // mis-keying we warn on.
     let mut providers: BTreeSet<String> = BTreeSet::new();
     for cs in checks {
         for p in cs.providers() {
-            providers.insert(map_provider_name(interner.resolve(p)));
+            providers.insert(to_funcname_segment(interner.resolve(p)));
         }
     }
     for (_, ts) in touches_paired {
         for p in ts.providers() {
-            providers.insert(map_provider_name(interner.resolve(p)));
+            providers.insert(to_funcname_segment(interner.resolve(p)));
         }
     }
 
@@ -3339,26 +3341,27 @@ mod tests {
     #[test]
     fn resolver_confusability_conflict_refuses_both_collision_keeps() {
         let mut i = Interner::default();
-        // A provider "apt-get" exists (a lifted touches provider) — a resolver keyed to it collides.
-        let touches_src = "apt-get.touches() { printf 'package:%s\\n' \"$1\"; }";
+        // A provider "apt-get" exists (a lifted disturbs provider) — a resolver whose kind munges to
+        // it collides (in NAME space, `flag-forward-munge-keying`).
+        let touches_src = "apt_get__disturbs() { printf 'package:%s\\n' \"$1\"; }";
         let touches_paired = vec![(
             touches_src,
             dorc_oracle::touches::TouchesSet::lift(&mut i, touches_src).value,
         )];
         let checks: Vec<dorc_oracle::predict::PredictSet> = vec![];
 
-        // A clean single package.resolve() ⇒ resolver-bearing.
-        let clean = vec!["package.resolve() { printf '%s\\n' \"$1\"; }".to_string()];
+        // A clean single package resolver ⇒ resolver-bearing (kind-keyed by the munged base).
+        let clean = vec!["package__resolve() { printf '%s\\n' \"$1\"; }".to_string()];
         let kr = build_kind_resolvers(&clean, &checks, &touches_paired, &mut i, false);
         assert!(
             kr.resolver_kinds().any(|k| i.resolve(k) == "package"),
-            "a clean package.resolve() is resolver-bearing"
+            "a clean package resolver is resolver-bearing"
         );
 
-        // Two files, both package.resolve() ⇒ BOTH refused (no resolver kind).
+        // Two files, both package resolvers ⇒ BOTH refused (no resolver kind).
         let dup = vec![
-            "package.resolve() { printf '%s\\n' \"$1\"; }".to_string(),
-            "package.resolve() { printf '%s\\n' \"$1\"; }".to_string(),
+            "package__resolve() { printf '%s\\n' \"$1\"; }".to_string(),
+            "package__resolve() { printf '%s\\n' \"$1\"; }".to_string(),
         ];
         let kr_dup = build_kind_resolvers(&dup, &checks, &touches_paired, &mut i, false);
         assert_eq!(
@@ -3367,11 +3370,12 @@ mod tests {
             "a duplicate resolver for one kind refuses BOTH (token-equality floor)"
         );
 
-        // A resolver keyed to the known provider "apt-get" ⇒ KEPT (warned, not a silent dud).
-        let collide = vec!["apt-get.resolve() { printf '%s\\n' \"$1\"; }".to_string()];
+        // A resolver whose kind munges to the known provider "apt-get" (base `apt_get`) ⇒ KEPT
+        // (warned, not a silent dud) — the collision is now detected in NAME space.
+        let collide = vec!["apt_get__resolve() { printf '%s\\n' \"$1\"; }".to_string()];
         let kr_col = build_kind_resolvers(&collide, &checks, &touches_paired, &mut i, false);
         assert!(
-            kr_col.resolver_kinds().any(|k| i.resolve(k) == "apt-get"),
+            kr_col.resolver_kinds().any(|k| i.resolve(k) == "apt_get"),
             "a provider-named resolver is kept (the collision is a warning, not a refusal)"
         );
     }

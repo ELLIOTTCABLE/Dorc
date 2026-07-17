@@ -43,7 +43,7 @@ use dorc_core::{
     AstId, ByVouch, Carrier, Channel, EntityRef, Grade, Interner, KindId, Observable, Predicted,
     Rc, Rung, Symbol, Verdict,
 };
-use dorc_oracle::verdict::VerdictSense;
+use dorc_oracle::verdict::VERDICT_SUFFIX;
 use dorc_syntax::ast::{Ast, NodeKind, RedirOp, RedirTarget};
 
 mod fold;
@@ -715,10 +715,6 @@ pub struct VerdictVouch {
     /// The full check invocation the guard runs at position (`apt_get__is_converged install -y
     /// curl`) — the cli builds it (funcname + the site's resolved argv). Ships as the `||`-LEFT.
     invocation: String,
-    /// Which sense the author declared (rul-role-split): selects the `||`-glue — direct for
-    /// [`VerdictSense::Converged`], rul-rc-partition's lossless sense-flip for
-    /// [`VerdictSense::Diverged`].
-    sense: VerdictSense,
     /// The fact's kind name (`package`) for the `# dorc: guard [<kind> converged-vouch; …]`
     /// attribution comment (cli-resolved; the render has no interner).
     kind_label: String,
@@ -733,15 +729,13 @@ pub struct VerdictVouch {
 impl VerdictVouch {
     /// Build a vouch descriptor from the cli-resolved verdict-function data (the sole constructor;
     /// the cli edge owns the lift + strip + argv-render). `fn_name`/`invocation` are the mangled
-    /// name and the full invocation; `preamble` is the stripped body; `sense` the declared sense;
-    /// `kind_label` the fact's kind for attribution; `check_cmds` the verdict body's own command
-    /// names (gate-6 `guardcmd` attribution).
+    /// name and the full invocation; `preamble` is the stripped body; `kind_label` the fact's kind
+    /// for attribution; `check_cmds` the verdict body's own command names (gate-6 attribution).
     #[must_use]
     pub fn new(
         fn_name: String,
         preamble: String,
         invocation: String,
-        sense: VerdictSense,
         kind_label: String,
         check_cmds: Vec<String>,
     ) -> Self {
@@ -749,7 +743,6 @@ impl VerdictVouch {
             fn_name,
             preamble,
             invocation,
-            sense,
             kind_label,
             check_cmds,
         }
@@ -797,8 +790,8 @@ impl GuardInsert {
     /// no receipt to strip here; this canon is the whole guard.
     pub(crate) fn canonical(&self) -> String {
         format!(
-            "fn={} inv={} sense={:?} preamble={}",
-            self.vouch.fn_name, self.vouch.invocation, self.vouch.sense, self.vouch.preamble
+            "fn={} inv={} preamble={}",
+            self.vouch.fn_name, self.vouch.invocation, self.vouch.preamble
         )
     }
 
@@ -814,16 +807,13 @@ impl GuardInsert {
 
     /// Render the guarded line: `( <check-invocation> ) || <original>   # dorc: guard [<kind>
     /// converged-vouch; probe: <word>]` (24D §2 / rul-ternary-verdict). The original bytes survive
-    /// VERBATIM as the `||`-right (no code path removes them — the two never-clauses). The
-    /// [`VerdictSense::Diverged`] glue is rul-rc-partition's lossless sense-flip
-    /// `( f_is_diverged args; [ $? -eq 1 ] ) || <original>`, restoring the converged sense so the
-    /// same `||`-skip semantics hold. `original` is the site's verbatim command bytes.
+    /// VERBATIM as the `||`-right (no code path removes them — the two never-clauses). The glue is
+    /// always the direct `( f_is_converged args ) || <original>` (rul24-ditch-is-diverged retired
+    /// the `is_diverged` sense-flip; the inverted sense is now spelled with explicit-return manual
+    /// inversion inside `is_converged`). `original` is the site's verbatim command bytes.
     #[must_use]
     fn render_line(&self, original: &str) -> String {
-        let check = match self.vouch.sense {
-            VerdictSense::Converged => format!("( {} )", self.vouch.invocation),
-            VerdictSense::Diverged => format!("( {}; [ $? -eq 1 ] )", self.vouch.invocation),
-        };
+        let check = format!("( {} )", self.vouch.invocation);
         format!(
             "{check} || {original}   # dorc: guard [{} converged-vouch; probe: {}]",
             self.vouch.kind_label,
@@ -966,27 +956,26 @@ pub fn build_vouches(
             set.providers()
                 .find(|p| map_provider_name(interner.resolve(*p)) == want)
                 .and_then(|p| set.get(p))
-                .map(|(verdict, sense)| (*src, verdict, sense))
+                .map(|verdict| (*src, verdict))
         });
-        let Some((src, verdict, sense)) = found else {
+        let Some((src, verdict)) = found else {
             continue;
         };
         // The reached-path license (rul-guard-license): ONLY a Vouched resolution mints. A Declined
         // (unhandled path / an inert builtin / a non-converged `return` — hz-refusepath) or ⊤ ⇒ no
-        // vouch ⇒ run. The `sense` reads an explicit `return N` verdict (fix-return-decline-inert).
+        // vouch ⇒ run.
         if !matches!(
-            evaluate_verdict(verdict, sense, &op_refs),
+            evaluate_verdict(verdict, &op_refs),
             VerdictResolution::Vouched
         ) {
             continue;
         }
 
         let fn_name = format!(
-            "{}{}",
+            "{}{VERDICT_SUFFIX}",
             dorc_oracle::to_funcname_segment(interner.resolve(verdict.provider)),
-            sense.mangled_suffix()
         );
-        let preamble = strip_verdict(src, verdict, interner, sense.mangled_suffix());
+        let preamble = strip_verdict(src, verdict, interner, VERDICT_SUFFIX);
         let invocation = if op_refs.is_empty() {
             fn_name.clone()
         } else {
@@ -994,7 +983,7 @@ pub fn build_vouches(
         };
         let kind_label = interner.resolve(fact.kind.0).to_owned();
         let check_cmds = check_commands(verdict);
-        let vouch = VerdictVouch::new(fn_name, preamble, invocation, sense, kind_label, check_cmds);
+        let vouch = VerdictVouch::new(fn_name, preamble, invocation, kind_label, check_cmds);
         vouches.insert(*node, ByVouch::vouched(vouch, Rung::Both));
     }
     Carrier::new(vouches, diags)
@@ -3602,19 +3591,19 @@ mod tests {
     /// `package` with a `[ "$2" = "" ]` multi-operand refusal). Annotation kinds match
     /// the effect-map's, so the kind-agreement rule never fires. Lifted with the test's
     /// interner so provider symbols match the book's command words (204 seam #2).
-    const CORPUS_PREDICT_SRC: &str = r#"
+    const CORPUS_PREDICT_SRC: &str = r##"
 apt_get__predict() {
    while [ "${1#-}" != "$1" ]; do shift; done
    verb=$1; shift
    case $verb in
-      update) idx : package-index; test -n fresh : package-index:.fresh ;;
+      update) idx : package-index; test -n fresh : package-index:#fresh ;;
       *)
          while [ "${1#-}" != "$1" ]; do shift; done
          pkg : package = "$1"
-         if [ "$2" = "" ]; then dpkg-query -W "$pkg" >/dev/null 2>&1 : package:"$pkg".installed ; fi ;;
+         if [ "$2" = "" ]; then dpkg-query -W "$pkg" >/dev/null 2>&1 : package:"$pkg"#installed ; fi ;;
    esac
 }
-"#;
+"##;
 
     /// R3 test seam: resolve+strip the corpus `apt_get__predict` for a site's (provider, argv),
     /// the same resolution the cli's `ship_predict_body` runs — the FIRST check whose provider
@@ -3674,7 +3663,6 @@ apt_get__predict() {
                 "apt_get__is_converged".to_string(),
                 "apt_get__is_converged() { dpkg-query -W \"$1\" >/dev/null 2>&1; }".to_string(),
                 "apt_get__is_converged install -y nginx".to_string(),
-                VerdictSense::Converged,
                 "package".to_string(),
                 vec!["dpkg-query".to_string()],
             ),
@@ -3708,7 +3696,6 @@ apt_get__predict() {
                 "apt_get__is_converged".to_string(),
                 "apt_get__is_converged() { dpkg-query -W \"$1\" >/dev/null 2>&1; }".to_string(),
                 "apt_get__is_converged install -y curl".to_string(),
-                VerdictSense::Converged,
                 "package".to_string(),
                 vec!["dpkg-query".to_string()],
             )
@@ -3750,7 +3737,6 @@ apt_get__predict() {
             "apt_get__is_converged".to_string(),
             "apt_get__is_converged() { dpkg-query -W \"$1\" >/dev/null 2>&1; }".to_string(),
             "apt_get__is_converged install -y curl".to_string(),
-            VerdictSense::Converged,
             "package".to_string(),
             vec!["dpkg-query".to_string()],
         );
@@ -3783,34 +3769,6 @@ apt_get__predict() {
     }
 
     #[test]
-    fn diverged_sense_glue_is_the_lossless_rc_flip() {
-        use dorc_core::{ByVouch, Rung};
-        // rul-rc-partition: `is_diverged` ships with the engine-emitted sense-flip
-        // `( f_is_diverged args; [ $? -eq 1 ] ) || <original>` — restoring the converged skip sense.
-        let vouch = VerdictVouch::new(
-            "systemctl__is_diverged".to_string(),
-            "systemctl__is_diverged() { ! systemctl is-enabled -- \"$1\"; }".to_string(),
-            "systemctl__is_diverged enable nginx".to_string(),
-            VerdictSense::Diverged,
-            "service".to_string(),
-            vec!["systemctl".to_string()],
-        );
-        let license = GuardLicense::mint(
-            nginx_fact(),
-            ByVouch::vouched(vouch, Rung::Both),
-            Verdict::Converged,
-        )
-        .unwrap();
-        let line = license.insert().render_line("systemctl enable nginx");
-        assert!(
-            line.starts_with(
-                "( systemctl__is_diverged enable nginx; [ $? -eq 1 ] ) || systemctl enable nginx"
-            ),
-            "diverged lossless sense-flip glue: {line}"
-        );
-    }
-
-    #[test]
     fn guard_preamble_dedups_and_counts() {
         use dorc_core::{ByVouch, Rung};
         let mk = |leaf: u32| {
@@ -3818,7 +3776,6 @@ apt_get__predict() {
                 "apt_get__is_converged".to_string(),
                 "apt_get__is_converged() { dpkg-query -W \"$1\" >/dev/null 2>&1; }".to_string(),
                 "apt_get__is_converged install curl".to_string(),
-                VerdictSense::Converged,
                 "package".to_string(),
                 vec!["dpkg-query".to_string()],
             );

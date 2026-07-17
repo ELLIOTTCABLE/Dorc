@@ -79,7 +79,6 @@ fn vouch_all(
                 "apt_get__is_converged".to_string(),
                 "apt_get__is_converged() { dpkg-query -W \"$1\" >/dev/null 2>&1; }".to_string(),
                 "apt_get__is_converged".to_string(),
-                dorc_oracle::verdict::VerdictSense::Converged,
                 "package".to_string(),
                 vec!["dpkg-query".to_string()],
             );
@@ -130,7 +129,7 @@ fn ship_from(
 /// elision plane (the anti-masking lesson: a fixture that elides nothing cannot test
 /// receipt-inertness OF a decision). The `apt_get__predict` argparse is the entity-resolver and
 /// the shipped probe. Lifted with the test interner so provider symbols match the book's words.
-const ORACLE_SRC: &str = r#"
+const ORACLE_SRC: &str = r##"
 apt_get__predict() {
    while [ "${1#-}" != "$1" ]; do shift; done
    verb=$1; shift
@@ -138,12 +137,12 @@ apt_get__predict() {
    pkg : package = "$1"
    if [ "$2" = "" ]; then
       case $verb in
-         install) dpkg-query -W "$pkg" >/dev/null 2>&1 : package:"$pkg".installed ;;
-         purge) dpkg-query -W "$pkg" >/dev/null 2>&1 : package:"$pkg".installed! ;;
+         install) dpkg-query -W "$pkg" >/dev/null 2>&1 : package:"$pkg"#installed ;;
+         purge) dpkg-query -W "$pkg" >/dev/null 2>&1 :! package:"$pkg"#installed ;;
       esac
    fi
 }
-"#;
+"##;
 
 /// The fixture books — each targets ≥1 hunt-list leak vector (see the module header). Chosen to
 /// exercise the receipts plane where a leak COULD bite: ⊤-causes, control-flow joins, loops

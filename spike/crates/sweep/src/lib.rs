@@ -55,7 +55,7 @@ pub use scenario::{Honesty, Scenario, Seed, TopologyClass};
 /// to host-derivation: its footprint is DERIVED via [`dorc_hostsim::Host::derive`], not authored —
 /// the derived-footprint wall the lying-derived net drives.** `is_converged()` vouches the establish
 /// verbs (install/config/refresh/place); a `purge` is a KILL (never elides), declined by `*) return 2`.
-pub const ORACLE_SH: &str = r#"
+pub const ORACLE_SH: &str = r##"
 apt_get__predict() {
    while [ "${1#-}" != "$1" ]; do shift; done
    verb=$1; shift
@@ -63,16 +63,16 @@ apt_get__predict() {
    pkg : package = "$1"
    if [ "$2" = "" ]; then
       case $verb in
-         install) dpkg-query -W "$pkg" >/dev/null 2>&1 : package:"$pkg".installed ;;
-         config)  dpkg-query -W "$pkg" >/dev/null 2>&1 : package:"$pkg".configured ;;
+         install) dpkg-query -W "$pkg" >/dev/null 2>&1 : package:"$pkg"#installed ;;
+         config)  dpkg-query -W "$pkg" >/dev/null 2>&1 : package:"$pkg"#configured ;;
          refresh) dpkg-query -W "$pkg" >/dev/null 2>&1 : package:"$pkg".refreshed ;;
-         purge)   dpkg-query -W "$pkg" >/dev/null 2>&1 : package:"$pkg".installed! ;;
-         place)   dpkg-query -W "$pkg" >/dev/null 2>&1 : package:"$pkg".installed ;;
+         purge)   dpkg-query -W "$pkg" >/dev/null 2>&1 :! package:"$pkg"#installed ;;
+         place)   dpkg-query -W "$pkg" >/dev/null 2>&1 : package:"$pkg"#installed ;;
       esac
    fi
 }
 
-apt-get.touches() {
+apt_get__disturbs() {
    while [ "${1#-}" != "$1" ]; do shift; done
    verb=$1; shift
    while [ "${1#-}" != "$1" ]; do shift; done
@@ -82,7 +82,7 @@ apt-get.touches() {
    esac
 }
 
-apt-get.is_converged() {
+apt_get__is_converged() {
    while [ "${1#-}" != "$1" ]; do shift; done
    verb=$1; shift
    while [ "${1#-}" != "$1" ]; do shift; done
@@ -92,10 +92,10 @@ apt-get.is_converged() {
    esac
 }
 
-package.reaches() {
+package__disturbance_reaches_only() {
    apt-rdepends "$1"    : package
 }
-"#;
+"##;
 
 /// One survived elision's attribution, lifted from a flag-on plan (interner-free). The
 /// attribution-under-lies assertion checks that a diverging lying scenario has a survival whose

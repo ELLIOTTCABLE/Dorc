@@ -78,7 +78,7 @@ pub enum TopologyClass {
     /// wrongly survives ⇒ the end-state differential goes RED, attributed. The lying-RESOLVER
     /// soundness net (24F §7.1), the identity analogue of the lying-footprint / lying-derived nets.
     AliasWall,
-    /// The wall's footprint (`package:base`) is EXPANDED by `package.reaches()` to drag `package:dep`
+    /// The wall's footprint (`package:base`) is EXPANDED by `package__disturbance_reaches_only()` to drag `package:dep`
     /// — the reach-function knowledge the wall's own `touches()` cannot spell (24G §4, the cross-author
     /// point). The wall TRULY reaches the shared referent (its `CellDelta` kills the victim's
     /// `package:dep#installed`), so WITHOUT expansion the `package:base` footprint is disjoint from the
@@ -392,7 +392,7 @@ pub fn generate(seed: Seed, i: &mut Interner) -> Scenario {
     let alias = rng.below(3) == 0 && !hit && !multi && !derived;
     // The REACH axis (24G): a clean single-wall scenario where the wall footprints `package:base` and
     // the victim backs `package:dep` — a coord the wall's `touches()` cannot spell — bridged by
-    // `package.reaches()` whose DECLARED answer honesty is the `lying` coin (OMIT ⇒ under-execute).
+    // `package__disturbance_reaches_only()` whose DECLARED answer honesty is the `lying` coin (OMIT ⇒ under-execute).
     // The lying-REACHES soundness net, mutually exclusive with the other special axes.
     let reach = rng.below(3) == 0 && !hit && !multi && !derived && !alias;
 

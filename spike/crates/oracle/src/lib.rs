@@ -10,8 +10,8 @@
 //!    verb=$1; shift
 //!    pkg : package = "$1"                                    # the kind annotation
 //!    case $verb in
-//!       install) dpkg-query -W "$pkg" : package:"$pkg".installed ;;   # establish
-//!       purge)   dpkg-query -W "$pkg" : package:"$pkg".installed! ;;  # inverted
+//!       install) dpkg-query -W "$pkg" : package:"$pkg"#installed ;;   # establish
+//!       purge)   dpkg-query -W "$pkg" : package:"$pkg"#installed! ;;  # inverted
 //!    esac
 //! }
 //! ```
@@ -199,17 +199,25 @@ pub fn empty_verb(interner: &mut Interner) -> Symbol {
     interner.intern("")
 }
 
-/// Map an interned kind/selector name to its **function-name segment** form: `-` → `_`
-/// (`package-index` ⇒ `package_index`). The inverse direction of
-/// [`predict::map_provider_name`] (`_` → `-`), and the shared home of the
-/// hyphen↔underscore convention on the *emit*/match side (the shipped `<provider>__predict`
-/// wrapper name routes through here, so both sides agree).
+/// The forward-munge: map a command word or reverse-DNS kind to its sh-NAME function-name
+/// segment (resp-munge-policy / `flag-forward-munge-keying`). `-` → `_` and `.` → `_`
+/// (`apt-get` ⇒ `apt_get`; `sm.dorc.Package` ⇒ `sm_dorc_Package`), and a leading-digit
+/// RESULT gains a `_` prefix (`7z` ⇒ `_7z`; `24P` §2). The shared home of the munge on both
+/// the *emit* side (the shipped `<munge>__<role>` funcname) and the *lookup* side: a kind-keyed
+/// role is authored `<munge(kind)>__resolve` and keyed by that base name AS-IS, so the engine
+/// munges a coordinate's kind through THIS function to find its owner (the two agree by
+/// construction). ASCII path only; non-ASCII (IDN) input is left for `validate_sh_name` to refuse
+/// (rul24-idn-punycode punycoding is a spec-note, not implemented — `24P` §0).
 ///
-/// **Lossy** in the same way `map_provider_name` is: a literal `_` in the name is
-/// indistinguishable from a hyphen after the round-trip.
+/// **Lossy** (non-injective): `-`, `.`, and a literal `_` all collapse to `_`. The
+/// `munge-name-collision` reservation lint catches any non-injectivity that co-loads.
 #[must_use]
 pub fn to_funcname_segment(name: &str) -> String {
-    name.replace('-', "_")
+    let munged = name.replace(['-', '.'], "_");
+    match munged.chars().next() {
+        Some(c) if c.is_ascii_digit() => format!("_{munged}"),
+        _ => munged,
+    }
 }
 
 /// Lift a set of oracle sh sources into the kind index, interning kind/provider/verb
@@ -387,10 +395,10 @@ mod tests {
     fn multiple_sources_accumulate_deterministically() {
         // dn-1's whole point: many oracle files contribute to one index, in argument
         // order, with no cross-file interference. Two providers, same kind (the Seam).
-        let a = "apt-get.predict() { verb=$1; shift; pkg : package = \"$1\"; \
-                 case $verb in install) dpkg-query -W \"$pkg\" : package:\"$pkg\".installed ;; esac; }";
-        let b = "yum.predict() { verb=$1; shift; pkg : package = \"$1\"; \
-                 case $verb in install) rpm -q \"$pkg\" : package:\"$pkg\".installed ;; esac; }";
+        let a = "apt_get__predict() { verb=$1; shift; pkg : package = \"$1\"; \
+                 case $verb in install) dpkg-query -W \"$pkg\" : package:\"$pkg\"#installed ;; esac; }";
+        let b = "yum__predict() { verb=$1; shift; pkg : package = \"$1\"; \
+                 case $verb in install) rpm -q \"$pkg\" : package:\"$pkg\"#installed ;; esac; }";
         let mut i = Interner::default();
         let out = lift(&mut i, &[a, b]);
         let package = KindId(i.intern("package"));
@@ -409,8 +417,8 @@ mod tests {
     fn verbless_predict_keys_the_epsilon_verb() {
         // A verbless check (`command -v`) derives its effect on the ε-verb — the key the
         // wiring uses for a check that binds no verb (202 §2 / task-W §4).
-        let src = "command.predict() { case $1 in -v) shift ;; esac; tool : tool = \"$1\"; \
-                   command -v -- \"$tool\" >/dev/null 2>&1 :? tool:\"$tool\".present; }";
+        let src = "command__predict() { case $1 in -v) shift ;; esac; tool : tool = \"$1\"; \
+                   command -v -- \"$tool\" >/dev/null 2>&1 :? tool:\"$tool\"#present; }";
         let mut i = Interner::default();
         let out = lift(&mut i, &[src]);
         assert!(!out.value.is_empty(), "the verbless guard lifts a cell");

@@ -113,7 +113,7 @@ pub fn run_kernel(declared: &DeclaredScenario, s0: &Host, flag_on: bool, i: &mut
             i,
         );
         // 24G Part B: EXPAND every reach-bearing footprint coord through the host's DECLARED reach
-        // answer (the sweep stand-in for shipping `package.reaches()` + reading its stdout — mirrors
+        // answer (the sweep stand-in for shipping `package__disturbance_reaches_only()` + reading its stdout — mirrors
         // Host::derive/resolve). This rides the declared-vs-TRUE split for REACH: an HONEST answer
         // includes the wall's true reach ⇒ HIT ⇒ demote ⇒ safe; a LYING one omits it ⇒ wrong survival
         // ⇒ RED. Runs AFTER the authored/derived merge (widening is monotone-safe) and BEFORE the walk.
@@ -135,7 +135,7 @@ pub fn run_kernel(declared: &DeclaredScenario, s0: &Host, flag_on: bool, i: &mut
     let vouches = dorc_plan::build_vouches(&[ORACLE_SH], &classes, &value, i).value;
 
     // The identity-CANONICALIZATION map (24F §3/§7.1): built from the modeled host's DECLARED
-    // resolver answers (`Host::resolve` — the sweep stand-in for shipping `package.resolve()` +
+    // resolver answers (`Host::resolve` — the sweep stand-in for shipping `package__resolve()` +
     // reading its per-coordinate stdout, mirroring how the derived footprint sources from
     // `Host::derive`). An HONEST resolver maps two aliased names to one canonical (the closure
     // DEMOTES the victim ⇒ safe); a LYING one keeps them apart (the victim wrongly survives ⇒ RED).
@@ -330,7 +330,7 @@ fn merge_derived_footprints(
         // establish coordinate (engine-supplied) into the footprint instead. An empty derive still
         // walls (`derived` returns None on empty coords ⇒ `with_own` cannot resurrect it; anti-233).
         let own = EntityCoord::new(fact.kind, fact.entity);
-        if let Some(fp) = Footprint::derived(d.provider, coords, "apt-get.touches()".to_owned())
+        if let Some(fp) = Footprint::derived(d.provider, coords, "apt_get__disturbs()".to_owned())
             .map(|fp| fp.with_own(Some(own)))
         {
             footprints.insert(d.node, fp);
@@ -360,7 +360,7 @@ fn build_resolutions(s0: &Host) -> dorc_plan::Resolutions {
 /// answer (24G Part B — the sweep mirror of the cli's reach round-trip): `Host::reach` stands in for
 /// shipping `<kind>.reaches()`'s dynamic arm and reading its per-arm stdout (NO sh execution here; the
 /// declared coord-set IS the answer, exactly as `Host::derive`/`Host::resolve`). The sweep's
-/// `package.reaches()` is DYNAMIC-only, so — per 24G §3 — it expands AUTHORED coords only this pass
+/// `package__disturbance_reaches_only()` is DYNAMIC-only, so — per 24G §3 — it expands AUTHORED coords only this pass
 /// (a derived footprint's coords are known only post-results; the `resid-kindfn-derived` deferral).
 /// The reach-function KIND (`coord.kind()`) rides each expanded coord for the demote attribution.
 fn expand_reaches(footprints: &mut TrustedFootprints, reach_kinds: &BTreeSet<Symbol>, s0: &Host) {
@@ -401,7 +401,7 @@ fn ship_touches_escalation(
         match evaluate_touches(touches, &arg_refs) {
             TouchesResolution::Top(TouchesTop::NonPrintfCommand) => Some(DerivationShip {
                 sh: String::new(),
-                call: "apt-get.touches()".to_owned(),
+                call: "apt_get__disturbs()".to_owned(),
             }),
             TouchesResolution::Emitted(_) | TouchesResolution::Top(_) => None,
         }

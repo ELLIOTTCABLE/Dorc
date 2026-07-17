@@ -451,8 +451,8 @@ pub mod apply {
     #[must_use]
     pub const fn guard_preamble_banner() -> &'static str {
         "# dorc guard preamble: the vouching oracle's own verdict body, shipped strip-only\n\
-         # (annotations removed, `name.is_converged()` -> `name__is_converged()`, nothing else\n\
-         # changed -- rul-ternary-verdict: the authored bytes verbatim, no engine-synthesized sh).\n"
+         # (dialect annotations removed, nothing else changed -- rul-ternary-verdict: the\n\
+         # authored bytes verbatim, no engine-synthesized sh).\n"
     }
 
     /// The FLAT-render provenance block for a `Replace`d leaf (`# replace[id]: <sh>

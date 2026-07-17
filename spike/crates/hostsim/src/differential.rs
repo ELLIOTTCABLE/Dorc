@@ -540,7 +540,7 @@ fn oracle_text(k: &KindSpec) -> String {
         let _ = writeln!(s, "      case $verb in");
         let _ = writeln!(
             s,
-            "         {}) {probe} \"$e\" {} {}:\"$e\".{} ;;",
+            "         {}) {probe} \"$e\" {} {}:\"$e\"#{} ;;",
             k.verb,
             k.polarity.mark_marker(),
             k.kind,
@@ -553,7 +553,7 @@ fn oracle_text(k: &KindSpec) -> String {
         // vouch. The verdict function reaches the same probe check on this verb (⇒ Vouched); any
         // other verb / a second operand DECLINES (`return 2`, rul-rc-partition). An inverted
         // (kill) verb never reaches an ambient site anyway, so vouching `k.verb` is inert there.
-        let _ = writeln!(s, "{}.is_converged() {{", k.provider);
+        let _ = writeln!(s, "{}__is_converged() {{", k.provider.replace('-', "_"));
         let _ = writeln!(s, "   while [ \"${{1#-}}\" != \"$1\" ]; do shift; done");
         let _ = writeln!(s, "   verb=$1; shift");
         let _ = writeln!(s, "   while [ \"${{1#-}}\" != \"$1\" ]; do shift; done");
@@ -570,7 +570,7 @@ fn oracle_text(k: &KindSpec) -> String {
         let _ = writeln!(s, "   e : {} = \"$1\"", k.kind);
         let _ = writeln!(
             s,
-            "   if [ \"$2\" = \"\" ]; then {probe} \"$e\" {} {}:\"$e\".{}; fi",
+            "   if [ \"$2\" = \"\" ]; then {probe} \"$e\" {} {}:\"$e\"#{}; fi",
             k.polarity.mark_marker(),
             k.kind,
             k.selector
@@ -578,7 +578,7 @@ fn oracle_text(k: &KindSpec) -> String {
         let _ = writeln!(s, "}}");
         // THE VOUCH (elide-weld): a verbless single-operand call reaches the probe check ⇒
         // Vouched; a second operand DECLINES (`return 2`).
-        let _ = writeln!(s, "{}.is_converged() {{", k.provider);
+        let _ = writeln!(s, "{}__is_converged() {{", k.provider.replace('-', "_"));
         let _ = writeln!(s, "   while [ \"${{1#-}}\" != \"$1\" ]; do shift; done");
         let _ = writeln!(s, "   if [ \"$2\" != \"\" ]; then return 2; fi");
         let _ = writeln!(s, "   {probe} \"$1\"");

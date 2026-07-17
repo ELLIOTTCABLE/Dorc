@@ -10,7 +10,7 @@
 //! `predict()`/`touches()`/`is_converged()` are keyed by the COMMAND word (`apt-get`); a resolver is
 //! keyed by the KIND (23M contribution-vs-identity: the kind-OWNER holds entity-identity — authority
 //! over the *nouns*). So `<kind>.resolve` interns its name as the SAME [`Symbol`] the coordinate's
-//! `KindId` wraps (the vocabulary fence — one interned universe): `package.resolve()` ⇒ the `package`
+//! `KindId` wraps (the vocabulary fence — one interned universe): `package__resolve()` ⇒ the `package`
 //! kind's resolver. The engine looks up a resolver by a coordinate's kind symbol, never its provider.
 //!
 //! # Host-run ONLY — no static evaluator (24F §3, fork-4A rails)
@@ -74,7 +74,7 @@ mod tests {
     fn resolver_lifts_keyed_by_kind() {
         let mut i = Interner::default();
         let src = "\
-package.resolve() {
+package__resolve() {
    dpkg-query -W -f '${Package}\\n' -- \"$1\" 2>/dev/null || printf '%s\\n' \"$1\"
 }";
         let set = ResolverSet::lift(&mut i, src);
@@ -93,7 +93,7 @@ package.resolve() {
     #[test]
     fn realpath_style_resolver_lifts() {
         let mut i = Interner::default();
-        let src = "fs.resolve() { realpath -m -- \"$1\"; }";
+        let src = "fs__resolve() { realpath -m -- \"$1\"; }";
         let set = ResolverSet::lift(&mut i, src);
         assert!(set.diags.is_empty(), "clean lift: {:?}", set.diags);
         assert!(
@@ -107,7 +107,7 @@ package.resolve() {
     #[test]
     fn no_resolver_is_empty_set() {
         let mut i = Interner::default();
-        let src = "apt-get.touches() { printf 'package:%s\\n' \"$1\"; }";
+        let src = "apt_get__disturbs() { printf 'package:%s\\n' \"$1\"; }";
         let set = ResolverSet::lift(&mut i, src);
         assert!(set.diags.is_empty());
         assert!(

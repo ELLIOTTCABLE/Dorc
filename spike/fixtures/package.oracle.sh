@@ -17,8 +17,8 @@ apt_get__predict() {
    pkg : package = "$1"
    if [ "$2" = "" ]; then
       case $verb in
-         install|reinstall) dpkg-query -W -f='${Status}' "$pkg" >/dev/null 2>&1 : package:"$pkg".installed ;;
-         purge|remove) dpkg-query -W -f='${Status}' "$pkg" >/dev/null 2>&1 : package:"$pkg".installed! ;;
+         install|reinstall) dpkg-query -W -f='${Status}' "$pkg" >/dev/null 2>&1 : package:"$pkg"#installed ;;
+         purge|remove) dpkg-query -W -f='${Status}' "$pkg" >/dev/null 2>&1 :! package:"$pkg"#installed ;;
       esac
    fi
 }
@@ -29,5 +29,5 @@ apt_get__predict() {
 dpkg__predict() {
    case $1 in -i) shift ;; esac
    pkg : package = "$1"
-   dpkg-query -W -f='${Status}' "$pkg" >/dev/null 2>&1 : package:"$pkg".installed
+   dpkg-query -W -f='${Status}' "$pkg" >/dev/null 2>&1 : package:"$pkg"#installed
 }

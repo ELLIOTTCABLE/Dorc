@@ -243,10 +243,6 @@ impl Evaluator {
                 self.probe_body.push(cmd.span);
                 Flow::Normal
             }
-            // A bare inline-dialect mark (POISON/ACK/converged-vouch) is a no-op for
-            // entity-resolution — it establishes/observes/vouches nothing at eval time
-            // (the lift reads it statically; the strip removes it). Fall through.
-            Stmt::Mark(_) => Flow::Normal,
         }
     }
 

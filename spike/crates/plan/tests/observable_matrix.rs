@@ -204,7 +204,6 @@ fn vouch_all(classes: &[(dorc_analysis::cfg::CfgNodeId, SkipClass)]) -> dorc_pla
                 "apt_get__is_converged".to_string(),
                 "apt_get__is_converged() { dpkg-query -W \"$1\" >/dev/null 2>&1; }".to_string(),
                 "apt_get__is_converged".to_string(),
-                dorc_oracle::verdict::VerdictSense::Converged,
                 "package".to_string(),
                 vec!["dpkg-query".to_string()],
             );
@@ -481,7 +480,7 @@ fn door3_oror_true_converged_mutator_is_replaced() {
 fn door3_oror_true_diverged_mutator_runs_effect_still_gates() {
     // door-3 clears ONLY the Status channel; the Effect channel still gates. A DIVERGED
     // `cmd || true` must RUN — the StatusInvariant mark unblocks Status, but
-    // `prove_replaceable`'s convergence check (`verdict.resolve() != Replaceable`) refuses a
+    // `prove_replaceable`'s convergence check (`verdict__resolve() != Replaceable`) refuses a
     // non-converged effect. This pins that door-3 is NOT an elision-license relaxation.
     // HOST: nginx NOT installed (diverged).
     let plan = plan_for("apt-get install -y nginx || true\n", &[]);

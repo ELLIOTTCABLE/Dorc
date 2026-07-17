@@ -245,7 +245,6 @@ impl Emitter {
                 }
                 Flow::Normal
             }
-            Stmt::Mark(_) => Flow::Normal,
         }
     }
 
@@ -327,10 +326,28 @@ impl Emitter {
         }
         match printf_lines(&format, &args) {
             Ok(lines) => {
-                for line in lines {
-                    match parse_coordinate(&line) {
-                        Some(coord) => self.coords.push(coord),
-                        None => return Flow::Top(TouchesTop::MalformedCoordinate),
+                // Typed emission (`277` §4d / 24P §2): the kind rides the trailing MARK and each
+                // printf line is a RAW ENTITY in that kind (`printf '%s\n' "$1" : sm.dorc.Package`).
+                // The legacy stringly form (a printf with NO mark, `printf 'kind:%s\n'`) parses each
+                // line as `kind:entity` — kept only for the DYNAMIC host-readback path, which the
+                // static tracer never reaches (a pipeline/non-printf ⊤s and escalates above).
+                match &cmd.mark {
+                    Some(mark) => {
+                        let kind = mark.target.kind.clone();
+                        for line in lines {
+                            self.coords.push(EmittedCoord {
+                                kind: kind.clone(),
+                                entity: Some(line),
+                            });
+                        }
+                    }
+                    None => {
+                        for line in lines {
+                            match parse_coordinate(&line) {
+                                Some(coord) => self.coords.push(coord),
+                                None => return Flow::Top(TouchesTop::MalformedCoordinate),
+                            }
+                        }
                     }
                 }
                 Flow::Normal
@@ -436,7 +453,7 @@ mod tests {
     // Mirrors the real apt argparse: flag-strip BEFORE and AFTER the verb (so `install -y
     // nginx` resolves the operand `nginx`, not the flag `-y`).
     const APT: &str = "\
-apt-get.touches() {
+apt_get__disturbs() {
    while [ \"${1#-}\" != \"$1\" ]; do shift; done
    verb=$1; shift
    while [ \"${1#-}\" != \"$1\" ]; do shift; done
@@ -492,7 +509,7 @@ apt-get.touches() {
     #[test]
     fn non_printf_command_tops() {
         let src = "\
-hork.touches() {
+hork__disturbs() {
    verb=$1
    case $verb in
    tune) rm -rf / ;;
@@ -512,7 +529,7 @@ hork.touches() {
         // `dpkg -L "$1" | sed 's|^|file:|'` LIFTS (no hard parse-kill — the kLANG mirror-invariant:
         // valid sh degrades), and the tracer ⊤s on the pipeline as NonPrintfCommand (the escalation
         // trigger — ship strip-only → run on host → read stdout). `trace` asserts the clean lift.
-        let src = "x.touches() { dpkg -L \"$1\" | sed 's|^|file:|' ; }";
+        let src = "x__disturbs() { dpkg -L \"$1\" | sed 's|^|file:|' ; }";
         assert_eq!(
             trace(src, &["nginx"]),
             TouchesResolution::Top(TouchesTop::NonPrintfCommand),
@@ -525,7 +542,7 @@ hork.touches() {
         // The load-bearing correctness case (24E §14): a pipeline whose FIRST stage IS `printf` must
         // STILL ⊤ — its output flows through the pipe, NOT to stdout-as-coordinates — so it can never
         // be wrongly modeled as a static emission. The `pipeline` flag ⊤s BEFORE the printf check.
-        let src = "x.touches() { printf 'k:%s\\n' \"$1\" | cat ; }";
+        let src = "x__disturbs() { printf 'k:%s\\n' \"$1\" | cat ; }";
         assert_eq!(
             trace(src, &["v"]),
             TouchesResolution::Top(TouchesTop::NonPrintfCommand),
@@ -539,11 +556,11 @@ hork.touches() {
         // printf (emits a coord) THEN a pipeline still ⊤s (all-or-nothing TC-4 — the reached pipeline
         // discards the whole static footprint ⇒ the site escalates, shipping the WHOLE body to derive).
         assert_eq!(
-            trace("x.touches() { a \"$1\" | b | c ; }", &["v"]),
+            trace("x__disturbs() { a \"$1\" | b | c ; }", &["v"]),
             TouchesResolution::Top(TouchesTop::NonPrintfCommand),
             "a multi-stage pipeline lifts + escalates"
         );
-        let arm = "x.touches() { case $1 in v) printf 'package:%s\\n' \"$1\"; dpkg -L \"$1\" | sed 'x' ;; esac ; }";
+        let arm = "x__disturbs() { case $1 in v) printf 'package:%s\\n' \"$1\"; dpkg -L \"$1\" | sed 'x' ;; esac ; }";
         assert_eq!(
             trace(arm, &["v"]),
             TouchesResolution::Top(TouchesTop::NonPrintfCommand),
@@ -553,7 +570,7 @@ hork.touches() {
 
     #[test]
     fn unmodeled_directive_tops() {
-        let src = "x.touches() { printf 'k:%d\\n' 5 ; }";
+        let src = "x__disturbs() { printf 'k:%d\\n' 5 ; }";
         assert_eq!(
             trace(src, &["anything"]),
             TouchesResolution::Top(TouchesTop::UnmodeledFormat)
@@ -563,7 +580,7 @@ hork.touches() {
     #[test]
     fn multi_coordinate_one_printf() {
         // One printf may emit several lines — each a coordinate.
-        let src = "x.touches() { printf 'a:one\\nb:two\\n' ; }";
+        let src = "x__disturbs() { printf 'a:one\\nb:two\\n' ; }";
         assert_eq!(
             trace(src, &["v"]),
             TouchesResolution::Emitted(vec![
@@ -582,7 +599,7 @@ hork.touches() {
     #[test]
     fn entity_may_hold_dots_and_colons() {
         // Split on the FIRST `:` only — a kind like `kernel.Sysctl` and a dotted entity survive.
-        let src = "x.touches() { printf 'kernel.Sysctl:net.ipv4.ip_forward\\n' ; }";
+        let src = "x__disturbs() { printf 'kernel.Sysctl:net.ipv4.ip_forward\\n' ; }";
         assert_eq!(
             trace(src, &["v"]),
             TouchesResolution::Emitted(vec![EmittedCoord {
@@ -594,7 +611,7 @@ hork.touches() {
 
     #[test]
     fn malformed_coordinate_without_colon_tops() {
-        let src = "x.touches() { printf 'nocolon\\n' ; }";
+        let src = "x__disturbs() { printf 'nocolon\\n' ; }";
         assert_eq!(
             trace(src, &["v"]),
             TouchesResolution::Top(TouchesTop::MalformedCoordinate)

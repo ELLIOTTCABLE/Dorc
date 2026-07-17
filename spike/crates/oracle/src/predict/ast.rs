@@ -85,70 +85,63 @@ pub enum Stmt {
     /// A plain command (a read-only probe body, e.g. `dpkg-query -W "$pkg"`). Its
     /// VERBATIM SOURCE TEXT is preserved span-exactly ([`Command::span`]) for
     /// shipping into a probe artifact later. May carry a trailing effect [`Mark`]
-    /// (233 ESTABLISH/OBSERVE — `Command::mark`).
+    /// (`277` §4a/§4d — a verdict `:`/`:!` or observe `:?` mark). The substrate/
+    /// invariance colon-lines of `state_stored_only_in` (`277` §4e) are ALSO plain
+    /// commands: the sh no-op `:` carrying a trailing `: <token>` mark.
     Command(Command),
-    /// A bare inline-dialect mark in statement position (233 §1–§4, R1b): a POISON
-    /// no-op mention (`: kind`) or an ACK vouch (`: kind:entity.prop~`). (The two-level
-    /// `: provider:verb~` converged-vouch strawman is retired — a loud reject now;
-    /// rul24-vouch-is-verdict-authoring, 24A §1c.) Distinguished from a trailing
-    /// [`Command::mark`] by having no command in front of the `:` marker. Never
-    /// evaluated (a no-op for entity-resolution); consumed by the lift + strip.
-    Mark(Mark),
 }
 
-/// A parsed inline-dialect mark (233 §1–§4, R1b): an effect / mention annotation,
-/// either trailing a command (ESTABLISH/OBSERVE) or standing alone (ACK/POISON).
-/// Every fragment is an OPAQUE syntactic string
-/// (`inv-referent-agnostic`): the parser splits `kind:entity.prop` structurally and
-/// NEVER decodes what the tokens mean. Carries a [`span`](Mark::span) covering the
-/// marker plus target (for the surgical strip, R1c).
+/// A parsed inline-dialect mark (`277` §4a/§4d): an effect / observe / emission
+/// annotation trailing a command. Every fragment is an OPAQUE syntactic string
+/// (`inv-referent-agnostic`): the parser splits `kind:entity#selector` structurally
+/// and NEVER decodes what the tokens mean. Carries a [`span`](Mark::span) covering
+/// the marker plus target (for the surgical strip, R1c).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Mark {
-    /// Which dialect mark this is.
+    /// Which dialect mark this is (selected by the sigil `:` / `:!` / `:?`).
     pub kind: MarkKind,
-    /// The `kind:entity.prop` coordinate (any level may be absent).
+    /// The `kind:entity#selector` coordinate (entity/selector may be absent).
     pub target: MarkTarget,
-    /// The mark span, from the `:`/`:?` marker token through the end of the target
-    /// (including any `~`/`!` suffix). The strip deletes/rewrites exactly this region.
+    /// The mark span, from the `:`/`:!`/`:?` marker token through the end of the
+    /// target. The strip deletes exactly this region.
     pub span: Span,
 }
 
-/// The dialect mark discriminant (233 §1–§4 / R1b). ESTABLISH/OBSERVE trail a
-/// command; ACK/POISON/converged-vouch stand alone.
+/// The dialect mark discriminant, selected by the sigil family (`277` §4a). All marks
+/// trail a command; the bare statement-position ACK/POISON marks are RETIRED (deleted
+/// from the grammar in the corpus respell — zero occurrences).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MarkKind {
-    /// `cmd … : kind:entity.prop` — the command's rc establishes the property
-    /// (→ `ValueClaim::Establish` in the derivation).
+    /// `cmd … : kind:entity#selector` — the verdict mark, named sense: the command's
+    /// rc establishes the property (→ `ValueClaim::Establish`). ALSO the bare-kind
+    /// emission mark on a `disturbs()`/`reaches()` line (`… : sm.dorc.Package`) and
+    /// the substrate/invariance token mark on a `state_stored_only_in()` line
+    /// (`… : fs`, `… : invariant:user`) — those carry no selector and key no cell.
     Establish,
-    /// `cmd … : kind:entity.prop!` — ESTABLISH with the rc sense inverted; the verb
-    /// makes the fact NOT hold (→ `ValueClaim::EstablishInverted`; 233 §1's `!` pun).
+    /// `cmd … :! kind:entity#selector` — the verdict mark, complement sense: the verb
+    /// makes the fact NOT hold (→ `ValueClaim::EstablishInverted`). Polarity rides the
+    /// `:!` sigil now, never a coordinate suffix (`277` §4a).
     EstablishInverted,
-    /// `cmd … :? kind:entity.prop` — depends-upon / read-only observe
-    /// (→ `ValueClaim::Observe` in the derivation; 233 OBSERVE).
+    /// `cmd … :? kind:entity#selector` — the observe mark: read-only depends-upon
+    /// (→ `ValueClaim::Observe`).
     Observe,
-    /// `: kind:entity.prop~` — a considered-untouched vouch (233 ACK). A no-op under
-    /// the dead m×n negative-enumeration (23D §5): parsed and carried, licenses
-    /// nothing. Three-level (`kind:entity.prop`); a two-level `provider:verb~` is NOT an
-    /// ACK — it is now a loud reject (the retired converged-vouch strawman;
-    /// rul24-vouch-is-verdict-authoring, 24A §1c).
-    Ack,
-    /// bare `: kind` / `: kind:entity` / `: kind:entity.prop` — a no-op mention
-    /// (233 POISON). Its cells are what the lift may poison (a mention with no `~`).
-    Poison,
 }
 
-/// The `kind:entity.prop` coordinate of a [`Mark`], split syntactically and left
-/// OPAQUE (`inv-referent-agnostic` — never decoded). Any level may be absent (a
-/// kind-only POISON `: fs.Path`).
+/// The `kind:entity#selector` coordinate of a [`Mark`], split syntactically and left
+/// OPAQUE (`inv-referent-agnostic` — never decoded). Entity/selector may be absent (a
+/// kind-only emission mark `: sm.dorc.Package`; a substrate token `: fs`).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MarkTarget {
-    /// The kind fragment (everything before the first `:`). Opaque.
+    /// The kind fragment (everything before the first `:`). Opaque; keeps its
+    /// reverse-DNS dots (`sm.dorc.Package`).
     pub kind: String,
-    /// The entity fragment (between the first `:` and the last `.`), if present.
+    /// The entity fragment (between the first `:` and the `#`), if present. An
+    /// explicit empty string is the empty-entity form `kind:#sel` (`277` §4a).
     pub entity: Option<String>,
-    /// The property/selector fragment (after the last `.`), if present. Opaque.
+    /// The selector fragment (after the `#`), if present. Opaque. (Field named `prop`
+    /// for continuity; it is the `#selector` third coordinate position now.)
     pub prop: Option<String>,
-    /// The optional `= value` tail on an ESTABLISH (233 §1: an explicit value).
+    /// The optional `= value` tail on a verdict mark (an explicit value).
     pub value: Option<Word>,
 }
 

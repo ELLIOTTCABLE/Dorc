@@ -866,7 +866,7 @@ mod tests {
             "authored: empty emission + union machinery present ⇒ still no footprint (anti-233)"
         );
         assert!(
-            Footprint::derived(i.intern("hork"), vec![], "hork.touches()".to_owned())
+            Footprint::derived(i.intern("hork"), vec![], "hork__disturbs()".to_owned())
                 .map(|fp| fp.with_own(Some(own)))
                 .is_none(),
             "derived: empty emission + union machinery present ⇒ still no footprint (anti-233)"
@@ -894,7 +894,7 @@ mod tests {
         let fp = Footprint::derived(
             i.intern("apt-get"),
             vec![file_coord],
-            "apt-get.touches()".to_owned(),
+            "apt_get__disturbs()".to_owned(),
         )
         .unwrap()
         .with_own(Some(own));
@@ -910,7 +910,7 @@ mod tests {
         let fp_no_own = Footprint::derived(
             i.intern("apt-get"),
             vec![file_coord],
-            "apt-get.touches()".to_owned(),
+            "apt_get__disturbs()".to_owned(),
         )
         .unwrap();
         assert!(
@@ -1129,7 +1129,7 @@ mod tests {
     #[test]
     fn reached_coord_hits_and_attributes_the_reach_function() {
         // 24G Part B — the cross-author demote: a wall footprints `package:nginx` (whoever emitted it
-        // knows nothing of what it drags); a `package.reaches()` EXPANSION adds `package:nginx-dep`.
+        // knows nothing of what it drags); a `package__disturbance_reaches_only()` EXPANSION adds `package:nginx-dep`.
         // A downstream fact backing `package:nginx-dep` — token-DISJOINT from the authored
         // `package:nginx`, so PRE-expansion it wrongly SURVIVES — now HITs the expanded coord ⇒ demote,
         // attributed to the reach-function KIND (`package`).
@@ -1143,7 +1143,7 @@ mod tests {
             disjoint(&fp, &Backing { coord: dep }, &Resolutions::none()),
             DisjointOutcome::Disjoint(_)
         ));
-        // Expand: package.reaches() drags nginx → nginx-dep.
+        // Expand: package__disturbance_reaches_only() drags nginx → nginx-dep.
         fp.add_reached(dep, pkg);
         match disjoint(&fp, &Backing { coord: dep }, &Resolutions::none()) {
             DisjointOutcome::Hit { via_reach } => assert_eq!(
