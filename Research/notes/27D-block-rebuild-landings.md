@@ -401,3 +401,10 @@ worktree mid-edit — device PHNHRER is live-syncing `.claude/worktrees/`, which
 standing exclusion intent says it must not. Inert this time (untracked, not
 compiled); a real mid-edit corruption risk for future parallel agent work.
 Cleanup + `.stignore` repair are human-owned.
+
+## Ruling addendum (2026-07-17, human-typed)
+
+- **rul-strip-erases-marker** (HUMAN-TYPED: "Strip it… very low priority"):
+  supersedes disposition-strip-keeps-marker — `dorc strip` erases the
+  `# dorc-lang/v0.1` marker line; a stripped file is no longer dialect text.
+  Routed as errand E5 to the running stage-6b builder (mid-run addendum).
