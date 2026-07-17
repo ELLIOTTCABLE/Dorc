@@ -178,6 +178,19 @@ const LEGACY_ALLOW_LIST: &[&str] = &[
     // migration as the other cli-edge lint codes (tc-footprint-diag).
     "lend-map-unknown-dimension",
     "wrapper-peel-incoherent",
+    // `27C` lane-context-entry (270:block-context): the entry/dial/vouch diagnostics.
+    // `wrapper-entry-incoherent` (Error, cli) — a wrapper's __enter and __lend_map disagree on argv
+    // flow (27C:rul-fold-entry-coherence-failfast, declarations-genuinely-contradict fail-fast).
+    // `tolerates-unknown-dimension` (Warning, oracle/entry.rs lift_tolerance) — an unknown dimension
+    // token on a `: tolerates:` vouch. `escalation-policy` (Note, cli) — the authority-disclosure
+    // consent-legibility line. `tolerates-over-identity-dependence` (Warning) + `heavy-context-no-
+    // tolerance` (Note) — the §6 corroboration lints (recognize-never-license). cli/oracle-edge;
+    // PENDING the same typed-spine migration as the other cli-edge lint codes (tc-footprint-diag).
+    "wrapper-entry-incoherent",
+    "tolerates-unknown-dimension",
+    "escalation-policy",
+    "tolerates-over-identity-dependence",
+    "heavy-context-no-tolerance",
 ];
 
 /// The SPANLESS-MINT allow-list (arch-3-residual-2): EXACTLY the codes permitted to construct a

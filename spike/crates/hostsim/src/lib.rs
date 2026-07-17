@@ -1042,11 +1042,8 @@ apt_get__predict() {
             idx.add_effect(apt, install, package, installed, ValueClaim::Establish);
 
             let cell = |i: &mut Interner, e: &str| {
-                FactKey::cell(
-                    package,
-                    EntityRef::Operand(OpaqueToken(i.intern(e))),
-                    installed,
-                )
+                let ent = EntityRef::Operand(OpaqueToken(i.intern(e)));
+                FactKey::cell(package, ent, installed)
             };
             let nginx = cell(&mut i, "nginx");
             let curl = cell(&mut i, "curl");
@@ -1118,11 +1115,8 @@ apt_get__predict() {
             idx.add_effect(apt, install, package, installed, ValueClaim::Establish);
 
             let cell = |i: &mut Interner, e: &str| {
-                FactKey::cell(
-                    package,
-                    EntityRef::Operand(OpaqueToken(i.intern(e))),
-                    installed,
-                )
+                let ent = EntityRef::Operand(OpaqueToken(i.intern(e)));
+                FactKey::cell(package, ent, installed)
             };
             let nginx = cell(&mut i, "nginx");
             let curl = cell(&mut i, "curl");

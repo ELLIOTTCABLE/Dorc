@@ -241,6 +241,14 @@ struct Args {
     /// rul24-lineno-identity), or free content to substring-match a command; `None` ⇒ the
     /// unargumented default (report the CURRENT run's problems). Only meaningful for [`Mode::Why`].
     why_address: Option<String>,
+    /// The escalation dial (`27C` §1 axis 2 — the ternary admin surface): `--no-probe-escalation` /
+    /// `--probe-escalation` (default) / `--escalate-any-probe`. Gates whether oracle code may
+    /// context-shift under a wrapped site (`27C:rul-two-axis-escalation-consent`).
+    dial: dorc_core::EscalationDial,
+    /// The connection's mechanical capability (`27C` §1 axis 1) — a HOST FACT the cli edge would
+    /// probe in reality (`hostsim`-injected in DST). `--probe-capability=root|nopasswd|degraded`
+    /// stands in for that probe in the spike; defaults to `root`. The probe NEVER self-acquires.
+    capability: dorc_core::Capability,
 }
 
 /// Minimal hand-rolled parsing (no `clap` dep yet): resolve the whole invocation. `-h`/`--help`
@@ -285,6 +293,8 @@ fn parse_args() -> Result<Invocation, String> {
     let mut debug_argv = false;
     let mut trust_footprints = false;
     let mut why_address: Option<String> = None;
+    let mut dial = dorc_core::EscalationDial::VouchedOnly;
+    let mut capability = dorc_core::Capability::Root;
     let mut it = raw.into_iter().peekable();
 
     // A leading bare word (no `-` prefix) selects the mode. A near-miss (`pln`, `aply`) is a
@@ -347,6 +357,23 @@ fn parse_args() -> Result<Invocation, String> {
             debug_argv = true;
         } else if arg == "--trust-footprints" {
             trust_footprints = true;
+        } else if arg == "--no-probe-escalation" {
+            dial = dorc_core::EscalationDial::NoEscalation;
+        } else if arg == "--probe-escalation" {
+            dial = dorc_core::EscalationDial::VouchedOnly;
+        } else if arg == "--escalate-any-probe" {
+            dial = dorc_core::EscalationDial::AnyProbe;
+        } else if let Some(c) = arg.strip_prefix("--probe-capability=") {
+            capability = match c {
+                "root" => dorc_core::Capability::Root,
+                "nopasswd" => dorc_core::Capability::NonRootNopasswd,
+                "degraded" => dorc_core::Capability::Degraded,
+                other => {
+                    return Err(format!(
+                        "unknown --probe-capability {other:?} (expected root|nopasswd|degraded); {USAGE}"
+                    ));
+                }
+            };
         } else if arg.starts_with('-') {
             // An unrecognized FLAG: suggest the nearest known one (did-you-mean) rather than a bare
             // "unexpected argument" (the recon's missing-suggestion hazard).
@@ -357,6 +384,10 @@ fn parse_args() -> Result<Invocation, String> {
                 "--results",
                 "--debug-argv",
                 "--trust-footprints",
+                "--no-probe-escalation",
+                "--probe-escalation",
+                "--escalate-any-probe",
+                "--probe-capability",
                 "--help",
                 "--version",
             ];
@@ -386,6 +417,8 @@ fn parse_args() -> Result<Invocation, String> {
         debug_argv,
         trust_footprints,
         why_address,
+        dial,
+        capability,
     }))
 }
 
@@ -556,6 +589,17 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
     // exit. This lane runs the check at oracle-load over canonical probe argvs; the per-site check
     // over real book argvs is `lane-context-entry`'s refinement (`273` §5).
     let wrapper_incoherent = check_wrapper_peel_coherence(advisory, &mut interner, &oracle_refs);
+
+    // The escalation-POLICY disclosure (`27C:render-authority-disclosure`): one advisory line naming
+    // the escalation posture (the dial × the connection capability) and the entry-capable wrappers
+    // loaded. Consent legibility — the admin sees, once, what authority the probe re-uses.
+    emit_escalation_policy(
+        advisory,
+        &mut interner,
+        &oracle_refs,
+        args.dial,
+        args.capability,
+    );
 
     // The munge-reservation lint (24Kc fix-munge-reservation / 24M ca-munge-charclass): refuse an
     // emitted `<munged>__<role>` funcname that is not a legal sh NAME (charclass) or that two
@@ -3650,6 +3694,7 @@ fn check_wrapper_peel_coherence(
     interner: &mut Interner,
     oracle_refs: &[&str],
 ) -> bool {
+    use dorc_oracle::entry::{check_entry_coherence, lift_entry_set};
     use dorc_oracle::predict::{Predict, lift_predicts};
     use dorc_oracle::wrapper::{check_peel_coherence, detect_peel, lift_lend_map_set};
 
@@ -3657,10 +3702,11 @@ fn check_wrapper_peel_coherence(
     // operand. A coherent pair agrees on ALL; an incoherent pair disagrees on ≥1.
     const CANON: [&[&str]; 3] = [&["g"], &["-a", "g"], &["-a", "-b", "g", "x"]];
 
-    // Gather each provider's peeling predict + lend_map across the unit (a wrapper's members share
-    // a file, but match unit-wide for robustness). Keyed by the provider `Symbol`; first wins.
+    // Gather each provider's peeling predict + lend_map + entry form across the unit (a wrapper's
+    // members share a file, but match unit-wide for robustness). Keyed by provider `Symbol`; first wins.
     let mut predicts: BTreeMap<Symbol, Predict> = BTreeMap::new();
     let mut lend_maps: BTreeMap<Symbol, Predict> = BTreeMap::new();
+    let mut entries: BTreeMap<Symbol, Predict> = BTreeMap::new();
     for src in oracle_refs {
         let ps = lift_predicts(interner, src).value;
         for p in ps.providers() {
@@ -3676,9 +3722,40 @@ fn check_wrapper_peel_coherence(
                 lend_maps.entry(p).or_insert_with(|| c.clone());
             }
         }
+        let es = lift_entry_set(interner, src).value;
+        for p in es.providers() {
+            if let Some(c) = es.get(p) {
+                entries.entry(p).or_insert_with(|| c.clone());
+            }
+        }
     }
 
     let mut diags = Vec::new();
+    // Fold-entry coherence (`27C:rul-fold-entry-coherence-failfast`): where a wrapper authors BOTH a
+    // `lend_map` and an `__enter` form, their argv flow must agree by STATIC sh-structure (an
+    // argparsing entry must consume the same leading args the fold did). Disagreement is the
+    // declarations-genuinely-contradict category ⇒ the SAME pre-network fail-fast.
+    for (provider, lend) in &lend_maps {
+        let Some(enter) = entries.get(provider) else {
+            continue;
+        };
+        if let Some(inc) = check_entry_coherence(enter, lend) {
+            diags.push(dorc_core::Diagnostic::error(
+                dorc_core::DiagCode("wrapper-entry-incoherent"),
+                Some(enter.name_span),
+                format!(
+                    "wrapper `{}`: __enter and __lend_map disagree on argv flow (entry consumes {} \
+                     leading arg(s), the lend-fold consumes {}) — static incoherence \
+                     (27C:rul-fold-entry-coherence-failfast, declarations-genuinely-contradict). \
+                     The entry form drops/transforms args the fold relied on; make the entry pass \
+                     the fold's guest verbatim.",
+                    interner.resolve(*provider),
+                    inc.entry_shifts,
+                    inc.lend_shifts,
+                ),
+            ));
+        }
+    }
     for (provider, predict) in &predicts {
         let Some(lend) = lend_maps.get(provider) else {
             continue;
@@ -3707,6 +3784,85 @@ fn check_wrapper_peel_coherence(
     let incoherent = !diags.is_empty();
     report_at(advisory, "wrapper", None, &diags);
     incoherent
+}
+
+/// Emit the escalation-POLICY disclosure (`27C:render-authority-disclosure` — the consent-legibility
+/// line). Names the escalation posture the dial + capability set, and the entry-capable wrappers
+/// loaded (a wrapper authoring BOTH a peeling `__predict` and an `__enter` form). One `Note` to
+/// stderr (advisory), never a gate.
+///
+/// SCOPE (honest for the spike): this is the POLICY in effect, not a per-book-SITE "will enter"
+/// tally — the book-side entry-composed probe emission (which would count sites per entered context)
+/// is the deferred integration (`27K` §9 / this lane's report). The dial × capability × the loaded
+/// entry forms are all real; what is missing is the per-site consumption in the probe pipeline.
+fn emit_escalation_policy(
+    advisory: bool,
+    interner: &mut Interner,
+    oracle_refs: &[&str],
+    dial: dorc_core::EscalationDial,
+    capability: dorc_core::Capability,
+) {
+    use dorc_oracle::entry::{detect_entry_form, lift_entry_set};
+    use dorc_oracle::predict::lift_predicts;
+
+    // Entry-capable wrappers: a provider authoring an `__enter` form (whose predict also peels).
+    let mut heads: BTreeMap<Symbol, String> = BTreeMap::new();
+    for src in oracle_refs {
+        let peels: BTreeSet<Symbol> = {
+            let ps = lift_predicts(interner, src).value;
+            ps.providers()
+                .filter(|p| ps.get(*p).is_some_and(detect_peel_present))
+                .collect()
+        };
+        let es = lift_entry_set(interner, src).value;
+        for p in es.providers() {
+            if peels.contains(&p)
+                && let Some(form) = es.get(p).and_then(detect_entry_form)
+            {
+                heads.entry(p).or_insert_with(|| form.head.join(" "));
+            }
+        }
+    }
+    if heads.is_empty() {
+        return; // no entry-capable wrapper loaded ⇒ no escalation is possible ⇒ nothing to disclose
+    }
+    let head_list = heads.values().cloned().collect::<Vec<_>>().join(", ");
+    let cap = match capability {
+        dorc_core::Capability::Root => "root",
+        dorc_core::Capability::NonRootNopasswd => "non-root (NOPASSWD)",
+        dorc_core::Capability::Degraded => "degraded",
+    };
+    let msg = match dial {
+        dorc_core::EscalationDial::NoEscalation => format!(
+            "escalation policy: NO oracle code will context-shift (--no-probe-escalation); \
+             wrapped sites run/guard. Entry-capable wrappers loaded: {head_list}."
+        ),
+        dorc_core::EscalationDial::VouchedOnly => format!(
+            "escalation policy: probe re-uses connection authority ({cap}) for \
+             `tolerates:`-vouched functions only (default); entry forms: {head_list}. \
+             Forbid with --no-probe-escalation; widen with --escalate-any-probe."
+        ),
+        dorc_core::EscalationDial::AnyProbe => format!(
+            "escalation policy: probe re-uses connection authority ({cap}) for ALL oracles \
+             (--escalate-any-probe overrides absent author consent); entry forms: {head_list}."
+        ),
+    };
+    report_at(
+        advisory,
+        "escalation",
+        None,
+        &[dorc_core::Diagnostic::note(
+            dorc_core::DiagCode("escalation-policy"),
+            None,
+            msg,
+        )],
+    );
+}
+
+/// Whether a predict body peels (a wrapper) — the `detect_peel`-present predicate, factored so the
+/// entry-policy scan reuses it (`inv-referent-agnostic`: structural, never decodes the command).
+fn detect_peel_present(p: &dorc_oracle::predict::Predict) -> bool {
+    dorc_oracle::wrapper::detect_peel(p).is_some()
 }
 
 fn report_at(

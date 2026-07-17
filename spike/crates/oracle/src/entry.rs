@@ -140,6 +140,71 @@ pub fn lift_entry_set(interner: &mut Interner, src: &str) -> dorc_core::Carrier<
     crate::predict::lift_enters(interner, src)
 }
 
+/// A fold-entry coherence failure (`27C:rul-fold-entry-coherence-failfast`, HUMAN-ACKED 2026-07-17):
+/// the entry form's argparse (leading argv it consumes before the guest) DISAGREES with the paired
+/// `lend_map`'s. The declarations-genuinely-contradict category (dual-peel pattern, third instance)
+/// ⇒ plan-time fail-fast, pre-network. STATIC sh-structure ONLY.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct EntryIncoherence {
+    /// Leading argv tokens the entry form consumes (top-level `shift`s) before its guest `"$@"`.
+    pub entry_shifts: usize,
+    /// Leading argv tokens the `lend_map`'s fold consumes before its guest.
+    pub lend_shifts: usize,
+}
+
+/// Fold-entry coherence (`27C:rul-fold-entry-coherence-failfast`, HUMAN-ACKED): does the entry form
+/// agree with the lend-fold on the ARGV FLOW, by STATIC sh-structure alone? The scope is EXACTLY
+/// sh-structure (`inv-referent-agnostic`): whether an entry invocation actually EFFECTS the declared
+/// shifts is TOOL-SEMANTICS the engine never holds — that is the traversal vouch (a wrong one is an
+/// attributed authored error, `hole-bad-oracle-blast`), NEVER statically detected or fail-fasted.
+///
+/// The ONE static trigger this implements soundly: an ARGPARSING entry form (one that `shift`s
+/// leading args) must consume the SAME leading args the lend-fold did — else it drops/transforms
+/// args the fold relied on. A TRIVIAL RE-PASS entry (`sudo -n "$@"`, zero shifts) delegates ALL
+/// parsing to the real tool and is coherent by construction (never false-failed). Bodies with
+/// intervening control-flow (a flag-strip `while`) are conservatively SKIPPED (`None`) — the finer
+/// loop-shaped coherence is not covered here (a narrow-scope disclosure, `ru-26`). The coarse
+/// no-entry-member case is NOT this rule — it walls per §4/§5 ([`EntryDegrade::NoEntryForm`]).
+#[must_use]
+pub fn check_entry_coherence(enter: &Predict, lend_map: &Predict) -> Option<EntryIncoherence> {
+    let entry_shifts = leading_shifts_before_guest(&enter.body)?;
+    let lend_shifts = leading_shifts_before_guest(&lend_map.body)?;
+    // A trivial re-pass entry (0 shifts) delegates to the real tool ⇒ coherent regardless of the
+    // fold. An argparsing entry must match the fold's consumption.
+    (entry_shifts > 0 && entry_shifts != lend_shifts).then_some(EntryIncoherence {
+        entry_shifts,
+        lend_shifts,
+    })
+}
+
+/// Count the top-level `shift`s a body consumes before the first command whose LAST word is the
+/// guest `"$@"` (any terminal guest — command-position bare, `env … "$@"`, or an entry `head … "$@"`).
+/// `None` if intervening control-flow (`while`/`case`/`if`) is hit before the guest (conservatively
+/// un-comparable) or no guest is found. The simple, sound tail-consumption for the fixture-tier
+/// forms; a flag-strip `while` yields `None` (skip).
+fn leading_shifts_before_guest(body: &[Stmt]) -> Option<usize> {
+    let mut consumed: usize = 0;
+    for stmt in body {
+        match stmt {
+            Stmt::Shift { count } => {
+                consumed = consumed.saturating_add(count.unwrap_or(1) as usize);
+            }
+            Stmt::Command(c)
+                if !c.pipeline && matches!(c.words.last(), Some(Word::PositionalArgs)) =>
+            {
+                return Some(consumed);
+            }
+            // Assigns, annotations, and non-guest COMMANDS (a `printf` mapped-lend line, a colon-line
+            // mark) consume NO positionals — skip them, counting only `shift`s.
+            Stmt::Assign { .. } | Stmt::Annotation(_) | Stmt::Command(_) => {}
+            // Control-flow before the guest (a flag-strip `while`, a `case`) may consume argv
+            // unpredictably ⇒ un-comparable ⇒ conservatively skip the whole check (`None`).
+            Stmt::While { .. } | Stmt::Case { .. } | Stmt::If { .. } => return None,
+        }
+    }
+    None
+}
+
 // ===========================================================================
 // The tolerance vouch (`27C` §2 — the oracle surface)
 // ===========================================================================
@@ -901,6 +966,14 @@ mod tests {
         let v = set.value.get(p).expect("the verdict").clone();
         (i, v)
     }
+    fn one_lend_map(src: &str) -> (Interner, Predict) {
+        let mut i = Interner::default();
+        let set = crate::wrapper::lift_lend_map_set(&mut i, src);
+        assert!(set.diags.is_empty(), "clean lend_map lift: {:?}", set.diags);
+        let p = set.value.providers().next().expect("one provider");
+        let lm = set.value.get(p).expect("the lend_map").clone();
+        (i, lm)
+    }
 
     // ── entry-form detection ────────────────────────────────────────────────────
     #[test]
@@ -931,6 +1004,51 @@ mod tests {
         assert_eq!(
             form.head,
             vec!["chroot".to_owned(), "/mnt/target".to_owned()]
+        );
+    }
+
+    // ── fold-entry coherence (27C:rul-fold-entry-coherence-failfast, narrow static) ──
+    #[test]
+    fn trivial_repass_entry_is_coherent_by_delegation() {
+        // `sudo -n "$@"` (0 shifts) delegates ALL parsing to the real tool ⇒ coherent regardless of
+        // the sudo lend_map (whose flag-strip `while` yields `None` anyway — conservatively skipped).
+        let (_i, e) = one_enter("sudo__enter() { sudo -n \"$@\" ;}");
+        let (_il, lm) = one_lend_map(
+            "sudo__lend_map() { while [ \"${1#-}\" != \"$1\" ]; do shift; done; printf '%s\\n' root : user; \"$@\"; }",
+        );
+        assert_eq!(
+            check_entry_coherence(&e, &lm),
+            None,
+            "a trivial re-pass entry never fail-fasts (delegates to the real tool)"
+        );
+    }
+    #[test]
+    fn argparsing_entry_matching_lend_fold_is_coherent() {
+        // chroot: the entry shifts the dir (1) and the lend_map shifts the dir (1) ⇒ agree ⇒ coherent.
+        let (_i, e) = one_enter("chroot__enter() { dir=$1; shift; chroot \"$dir\" \"$@\" ;}");
+        let (_il, lm) =
+            one_lend_map("chroot__lend_map() { printf '%s\\n' \"$1\" : fs-view; shift; \"$@\" ;}");
+        assert_eq!(
+            check_entry_coherence(&e, &lm),
+            None,
+            "matching shift-counts cohere"
+        );
+    }
+    #[test]
+    fn argparsing_entry_dropping_an_arg_fails_fast() {
+        // A malformed entry that shifts MORE than the lend-fold consumed drops an arg the fold relied
+        // on ⇒ argv-flow divergence ⇒ fail-fast (declarations-genuinely-contradict).
+        let (_i, e) =
+            one_enter("chroot__enter() { a=$1; shift; b=$1; shift; chroot \"$a\" \"$@\" ;}");
+        let (_il, lm) =
+            one_lend_map("chroot__lend_map() { printf '%s\\n' \"$1\" : fs-view; shift; \"$@\" ;}");
+        assert_eq!(
+            check_entry_coherence(&e, &lm),
+            Some(EntryIncoherence {
+                entry_shifts: 2,
+                lend_shifts: 1
+            }),
+            "entry drops an arg the fold consumed ⇒ static incoherence"
         );
     }
 
