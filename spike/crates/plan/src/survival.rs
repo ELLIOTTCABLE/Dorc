@@ -33,7 +33,10 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use dorc_analysis::cfg::CfgNodeId;
-use dorc_core::{EntityRef, FactKey, KindId, Symbol};
+use dorc_core::{
+    Coord, Dialect, EntityRef, EntityResolution, FactKey, KindId, ProviderId, Relation, SelectorId,
+    Symbol, compare,
+};
 
 use crate::LeafId;
 
@@ -300,6 +303,14 @@ pub struct Footprint {
     /// `<kind>.reaches()`"). Empty for an un-expanded footprint. Mirrors the resolver-attribution
     /// shape ([`Crossing::via_resolver`]) — the sharpest claims name whose knowledge they trusted.
     reached_via: BTreeMap<EntityCoord, KindId>,
+    /// `277` §3 — the disturbs-emission SELECTOR per footprint coordinate. Absent (the corpus
+    /// default) ⇒ a whole-entity ⊤ footprint, poisoning every cell (`selector_covers` collides).
+    /// Present ⇒ a selector-bearing disturbs mark (`: sm.dorc.Service#active`) that can SPARE a
+    /// sibling cell under the dialect. A side-table (not a field on `EntityCoord`) so the
+    /// entity-granular render/canonicalization/reach machinery stays untouched
+    /// (`empty-world-byte-identical`). SPIKE SCOPE: an entity emitted twice with differing
+    /// selectors keeps the last — no corpus body does this.
+    selectors: BTreeMap<EntityCoord, SelectorId>,
 }
 
 impl Footprint {
@@ -335,7 +346,21 @@ impl Footprint {
             own: None,
             origin,
             reached_via: BTreeMap::new(),
+            selectors: BTreeMap::new(),
         })
+    }
+
+    /// Record the disturbs-emission selector for one footprint coordinate (`277` §3). Called by the
+    /// wiring when an emission carried a `#selector` mark; absent coords stay whole-entity ⊤.
+    pub fn set_selector(&mut self, coord: EntityCoord, selector: SelectorId) {
+        self.selectors.insert(coord, selector);
+    }
+
+    /// The disturbs-emission selector for a footprint coordinate, or `None` (whole-entity ⊤). The
+    /// `claim` side of [`selector_covers`](dorc_core::selector_covers).
+    #[must_use]
+    fn selector_of(&self, coord: EntityCoord) -> Option<SelectorId> {
+        self.selectors.get(&coord).copied()
     }
 
     /// 24G Part B — widen this footprint with a `reaches()`-expanded coordinate (FOOTPRINTS ONLY; a
@@ -428,12 +453,19 @@ impl Footprint {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Backing {
     coord: EntityCoord,
+    /// `277` §3 — the fact's SELECTOR cell, carried into the survival comparison so a selector-
+    /// bearing disturbs claim can spare a SIBLING cell of the same entity under the dialect. The
+    /// entity-granular `coord` above still drives canonicalization + attribution render
+    /// (`empty-world-byte-identical`); the selector rides alongside for `selector_covers` only. A
+    /// fact always carries a concrete selector, so this is `Some`.
+    selector: Option<SelectorId>,
 }
 
 impl Backing {
-    /// The backing of a fact: its own coordinate, selector dropped (entity-granular). This is
-    /// the ONLY construction — a backing is always "where THIS fact's truth lives", never a
-    /// wider claim.
+    /// The backing of a fact: its `(kind, entity)` coordinate (entity-granular for
+    /// canonicalization/render) plus the fact's selector (`277` §3 — carried for the dialect
+    /// comparison). This is the ONLY construction — a backing is always "where THIS fact's truth
+    /// lives", never a wider claim.
     #[must_use]
     pub fn of_fact(fact: FactKey) -> Self {
         Self {
@@ -441,6 +473,7 @@ impl Backing {
                 kind: fact.kind,
                 entity: fact.entity,
             },
+            selector: Some(fact.selector),
         }
     }
 
@@ -505,13 +538,13 @@ pub fn disjoint(
     footprint: &Footprint,
     backing: &Backing,
     resolutions: &Resolutions,
+    dialect: &Dialect,
 ) -> DisjointOutcome {
     // fence-no-disjoint (`24L` §7 / §6): an auto-cell coordinate NEVER proves disjoint — it reads
-    // as may-touch on BOTH sides (mirror `Resolution::MayAlias`). Checked BEFORE the kind
-    // comparison, which would otherwise clear an auto backing against every authored footprint
-    // (their kinds differ, so the different-kind `continue` below skips them ⇒ Disjoint — the §4
-    // near-miss: distinctness-as-license). A typeless oracle has no `touches()` so it never GRANTS
-    // survival (no footprint); this bars it from RECEIVING survival too (`277` §6
+    // as may-touch on BOTH sides. Checked BEFORE `compare`, whose kind-fence would otherwise clear
+    // an auto backing against every authored footprint (their kinds differ ⇒ ProvablyDisjoint — the
+    // §4 near-miss: distinctness-as-license). A typeless oracle has no `touches()` so it never
+    // GRANTS survival (no footprint); this bars it from RECEIVING survival too (`277` §6
     // never-derive-separation — distinctness demoted to incomparability wherever it could license).
     if resolutions.is_auto(backing.coord.kind)
         || footprint
@@ -520,28 +553,44 @@ pub fn disjoint(
     {
         return DisjointOutcome::MayAlias(MayAliasReason::Unresolved);
     }
-    let backing_canon = resolutions.canonicalize(backing.coord);
+    // The backing's minting family (`277` §3 backing provenance): the SOLE family that minted the
+    // fact's selector for its kind, recovered from the dialect. `None` (ambiguous / absent /
+    // fence-divergent-meaning) ⇒ the empty dialect ⇒ no sparing ⇒ the safe collide floor.
+    let backing_family: Option<ProviderId> = backing
+        .selector
+        .and_then(|s| dialect.sole_family(backing.coord.kind, s));
+    let backing_coord = Coord::new(backing.coord.kind, backing.coord.entity, backing.selector);
+    let backing_canon = resolution_to_entity(resolutions.canonicalize(backing.coord));
     let mut may_alias: Option<MayAliasReason> = None;
     // The hit-surface (24G §8): the author's/derivation's coords unioned with the engine-supplied
-    // own-effect coordinate. Union coords are ordinary hit-surface here — they canonicalize and
-    // intersect exactly like an authored coord (and carry no reach attribution).
+    // own-effect coordinate. Each coordinate PAIR goes through the ONE whole-coordinate chokepoint
+    // (`277` §2 `compare`) — the kind-fence, entity-canonicalization, and selector-dialect all live
+    // there; this crate never compares axes inline (`inv-referent-agnostic`).
     for fc in footprint.hit_surface() {
-        // Different KIND ⇒ ground-disjoint (resolvers canonicalize entities WITHIN a kind, never
-        // across kinds) — no resolution consulted for this pair.
-        if fc.kind != backing.coord.kind {
-            continue;
-        }
-        match (resolutions.canonicalize(fc), backing_canon) {
-            (Resolution::Canonical(a), Resolution::Canonical(b)) if a == b => {
-                // Two names, one referent (or token-equal at the floor). 24G Part B: if THIS footprint
-                // coord was added by a reaches() expansion, name the reach-function for the demote.
+        let claim = Coord::new(fc.kind, fc.entity, footprint.selector_of(fc));
+        let claim_canon = resolution_to_entity(resolutions.canonicalize(fc));
+        match compare(
+            claim,
+            backing_coord,
+            claim_canon,
+            backing_canon,
+            dialect,
+            backing_family,
+        ) {
+            // Provably disjoint: a different kind, a different entity within one kind, or the
+            // dialect spared the cell (`277` §3 selector-granular sparing) — this pair is clear.
+            Relation::ProvablyDisjoint => {}
+            // Proven overlap (same kind + canonical entity, the selector collides): the aliasing
+            // closure firing, a plain token hit, a ⊤ footprint over a cell, or a reaches()-expanded
+            // coord (24G Part B — attributed via `via_reach`).
+            Relation::Same => {
                 return DisjointOutcome::Hit {
                     via_reach: footprint.reach_of(fc),
                 };
             }
-            (Resolution::Canonical(_), Resolution::Canonical(_)) => {} // distinct canon ⇒ this pair clear
-            // One side unresolved in a resolver-bearing kind ⇒ can't prove THIS pair disjoint (§3a).
-            _ => may_alias = Some(MayAliasReason::Unresolved),
+            // A resolver gap (24F §3a) — can't prove THIS pair disjoint ⇒ fail toward run. Recorded
+            // and the loop continues, so a later proven Hit still takes precedence over may-alias.
+            Relation::Unknown => may_alias = Some(MayAliasReason::Unresolved),
         }
     }
     match may_alias {
@@ -549,6 +598,16 @@ pub fn disjoint(
         None => DisjointOutcome::Disjoint(DisjointnessProof {
             backing: backing.coord,
         }),
+    }
+}
+
+/// Adapt the resolve generator's [`Resolution`] to the [`EntityResolution`] the `277` §2 chokepoint
+/// consumes: a clean canonical form yields its entity (selectors do NOT canonicalize at v1, so the
+/// kind rides on the [`Coord`]); a may-alias degrade is unresolvable ⇒ [`Relation::Unknown`].
+fn resolution_to_entity(r: Resolution) -> EntityResolution {
+    match r {
+        Resolution::Canonical(cc) => EntityResolution::Canonical(cc.entity()),
+        Resolution::MayAlias(_) => EntityResolution::Unresolvable,
     }
 }
 
@@ -770,6 +829,7 @@ pub(crate) fn wall_verdict(
     walls: &[AccumulatedWall],
     backing: &Backing,
     resolutions: &Resolutions,
+    dialect: &Dialect,
 ) -> WallVerdict {
     if total_wall {
         return WallVerdict::Demoted(DemoteReason::TotalWall);
@@ -781,7 +841,7 @@ pub(crate) fn wall_verdict(
         .then_some(backing.coord.kind);
     let mut crossings = Vec::new();
     for wall in walls {
-        match disjoint(&wall.footprint, backing, resolutions) {
+        match disjoint(&wall.footprint, backing, resolutions, dialect) {
             DisjointOutcome::Disjoint(proof) => crossings.push(Crossing {
                 wall_leaf: wall.wall_leaf,
                 provider: wall.footprint.provider(),
@@ -842,10 +902,11 @@ mod tests {
         let fp = Footprint::authored(i.intern("apt-get"), vec![wall_coord]).unwrap();
         let backing = Backing {
             coord: EntityCoord::new(KindId(i.intern("pkgindex")), EntityRef::Singleton),
+            selector: None,
         };
         assert!(
             matches!(
-                disjoint(&fp, &backing, &Resolutions::none()),
+                disjoint(&fp, &backing, &Resolutions::none(), &Dialect::empty()),
                 DisjointOutcome::Disjoint(_)
             ),
             "different kinds are disjoint"
@@ -864,10 +925,11 @@ mod tests {
         // entity-granular claim) ⇒ hit.
         let backing = Backing {
             coord: EntityCoord::new(k, e),
+            selector: None,
         };
         assert!(
             matches!(
-                disjoint(&fp, &backing, &Resolutions::none()),
+                disjoint(&fp, &backing, &Resolutions::none(), &Dialect::empty()),
                 DisjointOutcome::Hit { .. }
             ),
             "same entity is a hit"
@@ -932,10 +994,13 @@ mod tests {
         )
         .unwrap()
         .with_own(Some(own));
-        let backing = Backing { coord: own };
+        let backing = Backing {
+            coord: own,
+            selector: None,
+        };
         assert!(
             matches!(
-                disjoint(&fp, &backing, &Resolutions::none()),
+                disjoint(&fp, &backing, &Resolutions::none(), &Dialect::empty()),
                 DisjointOutcome::Hit { via_reach: None }
             ),
             "the unioned own coord HITs a same-cell backing (ordinary hit-surface, no reach attribution)"
@@ -949,7 +1014,12 @@ mod tests {
         .unwrap();
         assert!(
             matches!(
-                disjoint(&fp_no_own, &backing, &Resolutions::none()),
+                disjoint(
+                    &fp_no_own,
+                    &backing,
+                    &Resolutions::none(),
+                    &Dialect::empty()
+                ),
                 DisjointOutcome::Disjoint(_)
             ),
             "without the own-coord union the same-cell backing would WRONGLY survive"
@@ -959,7 +1029,13 @@ mod tests {
     #[test]
     fn total_wall_demotes_even_when_disjoint() {
         let f = fact(1, "nginx", "installed");
-        let verdict = wall_verdict(true, &[], &Backing::of_fact(f), &Resolutions::none());
+        let verdict = wall_verdict(
+            true,
+            &[],
+            &Backing::of_fact(f),
+            &Resolutions::none(),
+            &Dialect::empty(),
+        );
         assert!(
             matches!(verdict, WallVerdict::Demoted(DemoteReason::TotalWall)),
             "total wall demotes"
@@ -969,7 +1045,13 @@ mod tests {
     #[test]
     fn no_walls_survives_clean() {
         let f = fact(1, "nginx", "installed");
-        let verdict = wall_verdict(false, &[], &Backing::of_fact(f), &Resolutions::none());
+        let verdict = wall_verdict(
+            false,
+            &[],
+            &Backing::of_fact(f),
+            &Resolutions::none(),
+            &Dialect::empty(),
+        );
         assert!(
             matches!(verdict, WallVerdict::SurvivedClean),
             "no walls crossed ⇒ clean survival (no witness)"
@@ -986,7 +1068,13 @@ mod tests {
             wall_leaf: LeafId(0),
             footprint: fp,
         }];
-        match wall_verdict(false, &walls, &Backing::of_fact(f), &Resolutions::none()) {
+        match wall_verdict(
+            false,
+            &walls,
+            &Backing::of_fact(f),
+            &Resolutions::none(),
+            &Dialect::empty(),
+        ) {
             WallVerdict::Survived(w) => {
                 assert_eq!(w.crossings().len(), 1, "one crossing recorded");
                 assert_eq!(w.crossings()[0].wall_leaf(), LeafId(0));
@@ -1022,7 +1110,13 @@ mod tests {
         // Without the fence, the distinct-string auto backing WRONGLY survives — the near-miss.
         assert!(
             matches!(
-                wall_verdict(false, &walls, &Backing::of_fact(auto), &res),
+                wall_verdict(
+                    false,
+                    &walls,
+                    &Backing::of_fact(auto),
+                    &res,
+                    &Dialect::empty()
+                ),
                 WallVerdict::Survived(_)
             ),
             "the near-miss: a distinct-kind auto backing survives naively (what the fence closes)"
@@ -1030,7 +1124,13 @@ mod tests {
         res.add_auto_kind(auto.kind);
         assert!(
             matches!(
-                wall_verdict(false, &walls, &Backing::of_fact(auto), &res),
+                wall_verdict(
+                    false,
+                    &walls,
+                    &Backing::of_fact(auto),
+                    &res,
+                    &Dialect::empty()
+                ),
                 WallVerdict::Demoted(DemoteReason::MayAlias)
             ),
             "fence-no-disjoint: a registered auto backing MAY-ALIASES ⇒ demote, never survives a wall"
@@ -1049,7 +1149,13 @@ mod tests {
         }];
         assert!(
             matches!(
-                wall_verdict(false, &walls, &Backing::of_fact(f), &Resolutions::none()),
+                wall_verdict(
+                    false,
+                    &walls,
+                    &Backing::of_fact(f),
+                    &Resolutions::none(),
+                    &Dialect::empty()
+                ),
                 WallVerdict::Demoted(DemoteReason::Poisoned { via_reach: None })
             ),
             "a footprint hitting the backing demotes even without a total wall"
@@ -1084,7 +1190,15 @@ mod tests {
         assert!(res.has_resolver(pkg));
         assert!(
             matches!(
-                disjoint(&fp, &Backing { coord: back }, &res),
+                disjoint(
+                    &fp,
+                    &Backing {
+                        coord: back,
+                        selector: None
+                    },
+                    &res,
+                    &Dialect::empty()
+                ),
                 DisjointOutcome::Hit { .. }
             ),
             "two names for one referent HIT after canonicalization"
@@ -1101,7 +1215,15 @@ mod tests {
         let fp = Footprint::authored(i.intern("apt-get"), vec![wall]).unwrap();
         assert!(
             matches!(
-                disjoint(&fp, &Backing { coord: back }, &Resolutions::none()),
+                disjoint(
+                    &fp,
+                    &Backing {
+                        coord: back,
+                        selector: None
+                    },
+                    &Resolutions::none(),
+                    &Dialect::empty()
+                ),
                 DisjointOutcome::Disjoint(_)
             ),
             "a resolver-less kind keeps token-equality (distinct names disjoint)"
@@ -1126,7 +1248,15 @@ mod tests {
         res.record(wall, EntityRef::Operand(OpaqueToken(i.intern("nginx"))));
         assert!(
             matches!(
-                disjoint(&fp, &Backing { coord: back }, &res),
+                disjoint(
+                    &fp,
+                    &Backing {
+                        coord: back,
+                        selector: None
+                    },
+                    &res,
+                    &Dialect::empty()
+                ),
                 DisjointOutcome::MayAlias(MayAliasReason::Unresolved)
             ),
             "an unresolved resolver-bearing backing degrades to may-alias (not token-equality)"
@@ -1138,7 +1268,16 @@ mod tests {
         }];
         assert!(
             matches!(
-                wall_verdict(false, &walls, &Backing { coord: back }, &res),
+                wall_verdict(
+                    false,
+                    &walls,
+                    &Backing {
+                        coord: back,
+                        selector: None
+                    },
+                    &res,
+                    &Dialect::empty()
+                ),
                 WallVerdict::Demoted(DemoteReason::MayAlias)
             ),
             "may-alias demotes toward run and is attributed as such"
@@ -1162,7 +1301,16 @@ mod tests {
             wall_leaf: LeafId(2),
             footprint: fp,
         }];
-        match wall_verdict(false, &walls, &Backing { coord: back }, &res) {
+        match wall_verdict(
+            false,
+            &walls,
+            &Backing {
+                coord: back,
+                selector: None,
+            },
+            &res,
+            &Dialect::empty(),
+        ) {
             WallVerdict::Survived(w) => {
                 assert_eq!(
                     w.crossings()[0].via_resolver(),
@@ -1188,7 +1336,15 @@ mod tests {
         res.add_resolver_kind(pkg);
         assert!(
             matches!(
-                disjoint(&fp, &Backing { coord: back }, &res),
+                disjoint(
+                    &fp,
+                    &Backing {
+                        coord: back,
+                        selector: None
+                    },
+                    &res,
+                    &Dialect::empty()
+                ),
                 DisjointOutcome::Disjoint(_)
             ),
             "a different-kind footprint coord is disjoint regardless of the backing's resolution"
@@ -1211,12 +1367,28 @@ mod tests {
         let mut fp = Footprint::authored(i.intern("hork"), vec![wall]).unwrap();
         // Pre-expansion: disjoint (distinct entities) ⇒ the victim would wrongly survive.
         assert!(matches!(
-            disjoint(&fp, &Backing { coord: dep }, &Resolutions::none()),
+            disjoint(
+                &fp,
+                &Backing {
+                    coord: dep,
+                    selector: None
+                },
+                &Resolutions::none(),
+                &Dialect::empty()
+            ),
             DisjointOutcome::Disjoint(_)
         ));
         // Expand: package__disturbance_reaches_only() drags nginx → nginx-dep.
         fp.add_reached(dep, pkg);
-        match disjoint(&fp, &Backing { coord: dep }, &Resolutions::none()) {
+        match disjoint(
+            &fp,
+            &Backing {
+                coord: dep,
+                selector: None,
+            },
+            &Resolutions::none(),
+            &Dialect::empty(),
+        ) {
             DisjointOutcome::Hit { via_reach } => assert_eq!(
                 via_reach,
                 Some(pkg),
@@ -1230,7 +1402,7 @@ mod tests {
             footprint: fp,
         }];
         assert!(matches!(
-            wall_verdict(false, &walls, &Backing { coord: dep }, &Resolutions::none()),
+            wall_verdict(false, &walls, &Backing { coord: dep, selector: None }, &Resolutions::none(), &Dialect::empty()),
             WallVerdict::Demoted(DemoteReason::Poisoned { via_reach: Some(k) }) if k == pkg
         ));
     }
@@ -1255,8 +1427,12 @@ mod tests {
         match wall_verdict(
             false,
             &walls,
-            &Backing { coord: victim },
+            &Backing {
+                coord: victim,
+                selector: None,
+            },
             &Resolutions::none(),
+            &Dialect::empty(),
         ) {
             WallVerdict::Survived(w) => assert_eq!(
                 w.crossings()[0].via_resolver(),
@@ -1285,8 +1461,12 @@ mod tests {
             wall_verdict(
                 false,
                 &walls,
-                &Backing { coord: wall },
-                &Resolutions::none()
+                &Backing {
+                    coord: wall,
+                    selector: None,
+                },
+                &Resolutions::none(),
+                &Dialect::empty(),
             ),
             WallVerdict::Demoted(DemoteReason::Poisoned { via_reach: None })
         ));

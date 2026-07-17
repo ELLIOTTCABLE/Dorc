@@ -163,6 +163,7 @@ pub fn run_kernel(declared: &DeclaredScenario, s0: &Host, flag_on: bool, i: &mut
         &kills,
         survival.as_ref(),
         Some(&resolutions),
+        &dorc_oracle::build_dialect(&idx),
         &vouches,
         &connected,
         |f| {

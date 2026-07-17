@@ -81,6 +81,12 @@ pub struct EmittedCoord {
     /// The entity fragment (everything after the first `:`), or `None` for a singleton
     /// (empty entity). Opaque. May itself contain `:` / `.` (`kernel.Sysctl:net.ipv4.ip_forward`).
     pub entity: Option<String>,
+    /// The emission's selector cell (`277` §3 / `rul-emission-selector-on-mark`), or `None` for a
+    /// whole-entity emission (the corpus default — `: sm.dorc.Package` mints no selector, so the
+    /// footprint is ⊤/whole-entity, poisoning every cell). Carried into the survival comparison so
+    /// a selector-bearing disturbs mark (`: sm.dorc.Service#active`) can SPARE a sibling cell under
+    /// the dialect. Opaque; interned by the wiring. Legacy stringly emissions carry `None`.
+    pub selector: Option<String>,
 }
 
 /// The result of tracing a `touches()` body over a concrete argv (`inv-superposition`: a
@@ -334,10 +340,14 @@ impl Emitter {
                 match &cmd.mark {
                     Some(mark) => {
                         let kind = mark.target.kind.clone();
+                        // `277` §3: the selector rides the trailing mark (`: sm.dorc.Service#active`);
+                        // a mark with no `#` mints a whole-entity ⊤ footprint (`selector: None`).
+                        let selector = mark.target.prop.clone();
                         for line in lines {
                             self.coords.push(EmittedCoord {
                                 kind: kind.clone(),
                                 entity: Some(line),
+                                selector: selector.clone(),
                             });
                         }
                     }
@@ -432,6 +442,8 @@ fn parse_coordinate(line: &str) -> Option<EmittedCoord> {
     Some(EmittedCoord {
         kind: kind.to_owned(),
         entity: (!entity.is_empty()).then(|| entity.to_owned()),
+        // The legacy stringly `kind:entity` form (dynamic host-readback) mints no selector.
+        selector: None,
     })
 }
 
@@ -473,6 +485,7 @@ apt_get__disturbs() {
             TouchesResolution::Emitted(vec![EmittedCoord {
                 kind: "pkgindex".to_owned(),
                 entity: None,
+                selector: None,
             }])
         );
     }
@@ -487,6 +500,7 @@ apt_get__disturbs() {
             TouchesResolution::Emitted(vec![EmittedCoord {
                 kind: "package".to_owned(),
                 entity: Some("nginx".to_owned()),
+                selector: None,
             }])
         );
     }
@@ -587,10 +601,12 @@ hork__disturbs() {
                 EmittedCoord {
                     kind: "a".to_owned(),
                     entity: Some("one".to_owned()),
+                    selector: None,
                 },
                 EmittedCoord {
                     kind: "b".to_owned(),
                     entity: Some("two".to_owned()),
+                    selector: None,
                 },
             ])
         );
@@ -605,6 +621,7 @@ hork__disturbs() {
             TouchesResolution::Emitted(vec![EmittedCoord {
                 kind: "kernel.Sysctl".to_owned(),
                 entity: Some("net.ipv4.ip_forward".to_owned()),
+                selector: None,
             }])
         );
     }

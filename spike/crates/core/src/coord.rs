@@ -82,11 +82,12 @@ impl Coord {
         }
     }
 
-    /// A footprint (disturbs-emission) coordinate: `(kind, entity)` plus the emission's selector
-    /// (`None` for a whole-entity emission — `rul-emission-selector-on-mark`) and the default
-    /// context.
+    /// A coordinate from its axes, at the default context: `(kind, entity)` plus a selector cell
+    /// (`None` for the whole-entity / ⊤ form — `rul-emission-selector-on-mark`). Used for footprint
+    /// (disturbs-emission) coordinates and for re-viewing an entity-granular backing with its
+    /// selector.
     #[must_use]
-    pub fn footprint(kind: KindId, entity: EntityRef, selector: Option<SelectorId>) -> Self {
+    pub fn new(kind: KindId, entity: EntityRef, selector: Option<SelectorId>) -> Self {
         Self {
             kind,
             entity,
@@ -408,7 +409,7 @@ mod tests {
     // ── compare: the whole-coordinate ternary chokepoint ────────────────────────────────────
 
     fn coord(kind: KindId, entity: EntityRef, selector: Option<SelectorId>) -> Coord {
-        Coord::footprint(kind, entity, selector)
+        Coord::new(kind, entity, selector)
     }
 
     #[test]

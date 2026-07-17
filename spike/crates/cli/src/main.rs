@@ -855,6 +855,7 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
         &kills,
         survival.as_ref(),
         args.trust_footprints.then_some(&resolutions),
+        &dorc_oracle::build_dialect(&idx),
         &vouches,
         &connected,
         |f| {
@@ -1190,11 +1191,13 @@ fn build_survival_footprints(
         if establish.is_none() && !kills.contains(node) {
             continue; // not a wall candidate (a pure builtin, a Query, an opaque)
         }
-        let Some((provider, coords)) =
+        let Some((provider, coords_with_selectors)) =
             resolve_touches_footprint(*node, value, &touches_sets, interner)
         else {
             continue; // no touches / non-literal argv / ⊤ / empty emission ⇒ no footprint ⇒ wall
         };
+        let coords: Vec<dorc_plan::EntityCoord> =
+            coords_with_selectors.iter().map(|(c, _)| *c).collect();
         let own = own_wall_coord(*node, classes, kill_coords);
         // Coherence CANARY (authored lane only, PRE-union — 24G §8 / 24E §7): the site's OWN effect
         // coordinate (its establish, or its killed cell) must be ⊆ the author's RAW `touches()`
@@ -1217,9 +1220,17 @@ fn build_survival_footprints(
         // footprint. A no-op on the hit-surface HERE (the canary just proved own ∈ coords), but it
         // records own for the why-lens and keeps the two lanes uniform. Empty emission ⇒ None from
         // `authored` ⇒ `with_own` cannot resurrect it (anti-233).
-        if let Some(footprint) =
+        if let Some(mut footprint) =
             dorc_plan::Footprint::authored(provider, coords).map(|fp| fp.with_own(own))
         {
+            // `277` §3: record each emission's `#selector` so a selector-bearing disturbs mark can
+            // SPARE a sibling cell under the dialect. Whole-entity emissions (the corpus default,
+            // `None`) record nothing ⇒ ⊤ ⇒ collide (empty-world-byte-identical).
+            for (coord, selector) in coords_with_selectors {
+                if let Some(sel) = selector {
+                    footprint.set_selector(coord, sel);
+                }
+            }
             footprints.insert(*node, footprint);
         }
     }
@@ -1232,12 +1243,17 @@ fn build_survival_footprints(
 /// touches funcdef (through the shared hyphen↔underscore convention, like the probe), trace it,
 /// and intern the emitted coordinates. `None` ⇒ any of: non-literal argv, no matching
 /// `touches()`, a ⊤ trace, or an EMPTY emission (no claim = wall).
+/// One footprint coordinate plus its disturbs-emission selector (`277` §3): the entity-granular
+/// [`dorc_plan::EntityCoord`] that drives canonicalization/render, and the `#selector` cell the
+/// dialect consults (`None` ⇒ whole-entity ⊤).
+type FootprintCoord = (dorc_plan::EntityCoord, Option<dorc_core::SelectorId>);
+
 fn resolve_touches_footprint(
     node: dorc_analysis::cfg::CfgNodeId,
     value: &dorc_analysis::value::ValueFlow,
     touches_sets: &[dorc_oracle::touches::TouchesSet],
     interner: &mut Interner,
-) -> Option<(Symbol, Vec<dorc_plan::EntityCoord>)> {
+) -> Option<(Symbol, Vec<FootprintCoord>)> {
     use dorc_analysis::value::ValueOf;
     use dorc_oracle::predict::map_provider_name;
     use dorc_oracle::touches::{TouchesResolution, evaluate_touches};
@@ -1268,7 +1284,8 @@ fn resolve_touches_footprint(
             })
     })?;
 
-    // Intern each opaque `kind:entity` fragment into the shared vocabulary (the fence).
+    // Intern each opaque `kind:entity#selector` fragment into the shared vocabulary (the fence).
+    // The selector rides alongside the entity-granular coord (`277` §3): absent ⇒ whole-entity ⊤.
     let entity_coords = coords
         .iter()
         .map(|c| {
@@ -1279,7 +1296,11 @@ fn resolve_touches_footprint(
                 }
                 None => dorc_core::EntityRef::Singleton,
             };
-            dorc_plan::EntityCoord::new(kind, entity)
+            let selector = c
+                .selector
+                .as_deref()
+                .map(|s| dorc_core::SelectorId(interner.intern(s)));
+            (dorc_plan::EntityCoord::new(kind, entity), selector)
         })
         .collect();
     Some((*provider, entity_coords))
@@ -1641,7 +1662,7 @@ fn collect_resolver_coords(
             && let Some((_, fp_coords)) =
                 resolve_touches_footprint(*node, value, touches_sets, interner)
         {
-            for c in fp_coords {
+            for (c, _selector) in fp_coords {
                 consider(c, &mut coords);
             }
         }
@@ -1679,7 +1700,7 @@ fn collect_coord_kinds(
             && let Some((_, fp_coords)) =
                 resolve_touches_footprint(*node, value, touches_sets, interner)
         {
-            for c in fp_coords {
+            for (c, _selector) in fp_coords {
                 kinds.insert(c.kind().0);
             }
         }
@@ -1935,7 +1956,7 @@ fn collect_reach_probes(
         else {
             continue;
         };
-        for coord in fp_coords {
+        for (coord, _selector) in fp_coords {
             let kind_sym = coord.kind().0;
             if !reach_kinds.contains(&kind_sym) {
                 continue;

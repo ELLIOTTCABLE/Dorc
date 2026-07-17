@@ -546,6 +546,9 @@ pub fn build_report(inputs: &Inputs<'_>) -> Report {
         &kills,
         None,
         None,
+        // Survival is OFF here (dashboard parity with the honest baseline), so the dialect is never
+        // consulted — the empty dialect is the correct, byte-identical value.
+        &dorc_core::Dialect::empty(),
         &vouches,
         &connected,
         observe,

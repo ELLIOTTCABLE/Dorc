@@ -40,8 +40,8 @@ use dorc_analysis::effect::{FactKey, InlineSite, SkipClass};
 use dorc_analysis::lattice::{May, Powerset};
 use dorc_analysis::value::{ValueFlow, ValueOf};
 use dorc_core::{
-    AstId, ByVouch, Carrier, Channel, EntityRef, Grade, Interner, KindId, Observable, Predicted,
-    Rc, Rung, Symbol, Verdict,
+    AstId, ByVouch, Carrier, Channel, Dialect, EntityRef, Grade, Interner, KindId, Observable,
+    Predicted, Rc, Rung, Symbol, Verdict,
 };
 use dorc_oracle::verdict::VERDICT_SUFFIX;
 use dorc_syntax::ast::{Ast, NodeKind, RedirOp, RedirTarget};
@@ -2333,6 +2333,7 @@ pub fn build_plan(
         &BTreeSet::new(),
         None,
         None,
+        &Dialect::empty(),
         vouches,
         &ConnectedPipes::default(),
         observe,
@@ -2377,6 +2378,7 @@ pub fn build_plan_walled(
     kills: &BTreeSet<CfgNodeId>,
     survival: Option<&TrustedFootprints>,
     resolutions: Option<&Resolutions>,
+    dialect: &Dialect,
     vouches: &Vouches,
     connected: &ConnectedPipes,
     observe: impl Fn(FactKey) -> Observable,
@@ -2534,8 +2536,8 @@ pub fn build_plan_walled(
         // both sides canonicalized through the resolvers (24F §3 — `None` ⇒ the token-equality floor).
         Some(footprints) => {
             let empty = Resolutions::none();
-            survival_report =
-                wall_walk_survival(&mut steps, footprints, resolutions.unwrap_or(&empty));
+            let res = resolutions.unwrap_or(&empty);
+            survival_report = wall_walk_survival(&mut steps, footprints, res, dialect);
         }
     }
 
@@ -2576,6 +2578,7 @@ fn wall_walk_survival(
     steps: &mut [(Step, bool, CfgNodeId)],
     footprints: &TrustedFootprints,
     resolutions: &Resolutions,
+    dialect: &Dialect,
 ) -> SurvivalReport {
     let mut report = SurvivalReport::default();
     let mut total_wall = false;
@@ -2585,7 +2588,7 @@ fn wall_walk_survival(
         //    backing and each accumulated footprint canonicalized through the resolvers (24F §3).
         if *is_mutator && let Disposition::Replace(license, _) = &step.disposition {
             let backing = Backing::of_fact(license.fact());
-            match survival::wall_verdict(total_wall, &accumulated, &backing, resolutions) {
+            match survival::wall_verdict(total_wall, &accumulated, &backing, resolutions, dialect) {
                 // Crossed no wall — an ordinary pre-wall elision; leave it exactly as the
                 // flag-off world would (no witness, `Replace` untouched).
                 survival::WallVerdict::SurvivedClean => {}
@@ -5129,6 +5132,7 @@ apt_get__predict() {
             &kills,
             None,
             None,
+            &Dialect::empty(),
             &vouch_all(&classes),
             &ConnectedPipes::default(),
             observe,
@@ -5271,6 +5275,7 @@ apt_get__predict() {
             &BTreeSet::new(),
             footprints.as_ref(),
             None,
+            &Dialect::empty(),
             &vouch_all(&classes),
             &ConnectedPipes::default(),
             observe,
@@ -5364,6 +5369,7 @@ apt_get__predict() {
             &BTreeSet::new(),
             Some(&empty),
             None,
+            &Dialect::empty(),
             &vouch_all(&classes),
             &ConnectedPipes::default(),
             observe,

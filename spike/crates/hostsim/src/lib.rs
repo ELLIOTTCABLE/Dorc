@@ -1292,6 +1292,7 @@ grep__predict() {
                     &BTreeSet::new(),
                     None,
                     None,
+                    &dorc_core::Dialect::empty(),
                     &dorc_plan::Vouches::new(),
                     &connected,
                     observe,

@@ -267,6 +267,23 @@ pub fn lift(interner: &mut Interner, oracle_sources: &[&str]) -> Carrier<KindInd
     out
 }
 
+/// Build the selector [`Dialect`](dorc_core::Dialect) (`277` §3) from a lifted [`KindIndex`]: for
+/// each `(provider, verb)` effect cell, MINT `(family = provider, cell.kind, cell.selector)`. The
+/// index holds exactly the verdict/observe-mark cells (`derive_predict` reads `:`/`:!`/`:?` marks)
+/// — disturbs/claim emissions never enter it, so this is the exact minting set (`sparing-algebra`:
+/// only verdict/observe marks mint). Family = the command provider (`271:rul-family`, name-derived).
+/// The survival comparison consults `dialect(backing's family, kind)` to spare a sibling cell.
+#[must_use]
+pub fn build_dialect(index: &KindIndex) -> dorc_core::Dialect {
+    let mut dialect = dorc_core::Dialect::empty();
+    for ((provider, _verb), cells) in &index.effects {
+        for cell in cells {
+            dialect.mint(*provider, cell.kind, cell.selector);
+        }
+    }
+    dialect
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
