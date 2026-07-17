@@ -25,43 +25,56 @@ block-settle CLOSED (`plans/271` = the rulings ledger + task map); wrapper/conte
 transport RESOLVED (`plans/27C`); the 270-era adversarial crosscheck adjudicated, no
 kill (`notes/279f` — read its §1 first).
 
-**⚠ Next activity — block-context implementation-planning.** `270:block-rebuild`
-is **CLOSED** (2026-07-17, one session: eight dispatches landed + both bless
-checkpoints stamped; ledger = **`notes/27D`** including its BLOCK CLOSE section
-with the forward seam-list; builder landing notes `27E`–`27I`). The corpus is
+**⚠ Next activity — dispatch the block-context book-side integration lane
+(the self-sufficient brief is `27D`'s lane-context-entry Continuation paragraph).**
+`270:block-rebuild` is **CLOSED** (2026-07-17, one session: eight dispatches
+landed + both bless checkpoints stamped; ledger = **`notes/27D`** including its
+BLOCK CLOSE section + forward seam-list; builder notes `27E`–`27I`). The corpus is
 dorc-lang v0.1 end-to-end; the typeless floor licenses; probes ship composed
-predicts only (the `24J` debt repaired); the entity algebra + backing-SETS +
-value recipes are re-keyed per `277`/`275`; `dorc-records/1` framing landed
-(r26's S1 shrinks accordingly); e2e de-graduated 154→76 with the in-memory
-twin tier + mandatory dash-n net. Human rulings received mid-block (banked in
-`27D`): payload pins near-weld + conservative-proceed authorized ·
-synthesized-payload-render (né R2) stays just-barely-unwelded ·
-strip-not-gsub-tier + strip-erases-marker. The live lineage is
-**`ai/spike3-r27`** (human-granted conductor-owned; stage branches `ai/r27-*`
-fold in by fast-forward).
-Human rulings 2026-07-17 riding this arc: no thin-reality-checkpoint (r25
-first-blooding waits on the stdlib) · autonomous crosscheck = Sol-only via an
-Opus manager (no DeepSeek unattended, no antigravity, no Fable) · Sonnet workers
-sized 2–3-per-corpus-sweep. `279f:ask-amendment-acks` CLOSED 2026-07-16 (all five
-acked; per-amendment records annotated in `notes/277` + `275` §6; roll-up in
-`279f` §6; task-14 dissolution + ratification at `271:rul-only-oracle-bytes-ship`).
-Non-blocking human leftovers, whenever wanted: the root-doc queue, the
-`27C:law-perfect-overlap` promotion, and the `.claude/worktrees` SyncThing
-exclusion repair (`27D`'s environment incident: PHNHRER is live-syncing agent
-worktrees).
+predicts only (the `24J` debt repaired); the entity algebra + backing-SETS + value
+recipes are re-keyed per `277`/`275`; `dorc-records/1` framing landed; e2e
+de-graduated 154→76 with the in-memory twin tier + mandatory dash-n net.
 
-**Transport RESOLVED (2026-07-16):** **`plans/27C`** is THE kept-current spec —
-context-entry probing (a wrapped site is answered by measurement in its *denoted*
-context; reuse-never-acquire; the ternary escalation dial × the per-function
-`tolerates:` vouch; fallback lane without entry = engine-warranted carried-by rows or
-the kind-owner's invariance line × `--risk-faultless-skips`). The `275` §6 transport
-chain stays NOT-RATIFIED (refused as posed, `279f` §3; the answer is
-measure-in-context, never a completeness claim). Trail annotated: `27A`
-(superseded-in-part — still the transport-lane wall inventory) · `27B` (superseded as
-design) · `24S` imp-1 + Stage-D · `273` §6 · ANALYZER-NEEDS an-privilege-fact.
-Block-context consumes `27C` whole; its §10 separates ruled from STRAWMAN. One pending
-human act: `27C:law-perfect-overlap` wants promotion to the standing-rulings surface.
-The human grades this the last big design blocker before implementation.
+**`270:block-context` is IN FLIGHT — three lanes landed, all models-first, all
+rung-0 byte-stable, folded into the lineage:** **wrapper-peel** (`27K` — peel
+detection + `cmd__lend_map` + the ρ-claim ladder + the positional model) ·
+**payload-v1** (`27L` — the `dorc:sh` trio + the invited-rooms compile-time
+license split + payload decomposition; the synthesized-payload-render door left
+structurally-reopenable per `27D:rul-synthesized-payload-render-stays-unwelded`) ·
+the **wrapper/context lane** (entry-form + chain-composition + the admin
+control-surface + facts-born-in-context `FactKey.context` keying, at model+CLI
+tier). NEXT: the **book-side integration** — the cross-pipeline wiring that makes a
+wrapped book site elide end-to-end (peel wrapped book sites in classify/value;
+emit the composed probe via the per-run shim; thread `context` into the shipped
+`FactKey` + records lane; read back the context-qualified verdict). It is a
+**block-stdlib precondition** (`270` §2). Then, in order: **read-value-slice** (the
+capture fold on the landed wire + recipe machinery) · **lane-fallback-carry**
+(`27C` §0.2 — the engine-proved read-set-closure pass). Then **block-stdlib**: ~40
+bootstrap oracles against the finally-stable surface + yardstick-measurement, at
+whose close the r25 first-blooding revives. The live lineage is
+**`ai/spike3-r27`** (human-granted conductor-owned; lane branches `ai/r27-*` fold
+by fast-forward; a builder that dispatched before a lineage-advance rebases in its
+own worktree first, then ff-folds — check behind-count before every fold).
+
+**Wrapper/context design — SETTLED and mostly BUILT; `plans/27C` is THE
+kept-current spec** (a wrapped site is answered by measurement in its *denoted*
+context; the fallback cross-context carry was re-cut 2026-07-17 to the
+engine-proved read-set-closure pass — the old unflagged carried-by row RETIRED,
+`c55ffbe`). Mid-build human rulings, all banked in `27D` and applied to `27C`:
+`27C:rul-two-axis-escalation-consent` · `27C:rul-probe-mutation-ownership-split`
+(WELD) · `27C:rul-dimension-owned-compose-ops` · `27C:rul-top-absorbs-absolute-maps`
+· `27C:rul-fold-entry-coherence-failfast`. `275` §6's transport chain stays
+NOT-RATIFIED (superseded by measure-in-context). `27C` §10 separates ruled from
+STRAWMAN. Non-blocking pending human act: `27C:law-perfect-overlap` promotion.
+
+Process rulings 2026-07-17 riding this arc (banked `27D`): no thin-reality-checkpoint
+(r25 first-blooding waits on the stdlib) · autonomous crosscheck = Sol-only via an
+Opus manager (no DeepSeek unattended, no antigravity, no Fable) · Sonnet workers
+sized 2–3-per-corpus-sweep. `279f:ask-amendment-acks` CLOSED (all five acked;
+records in `notes/277` + `275` §6; task-14 ratification at
+`271:rul-only-oracle-bytes-ship`). Non-blocking human leftovers: the root-doc
+queue · the `.claude/worktrees` SyncThing exclusion repair (`27D` environment
+incident: PHNHRER live-syncs agent worktrees — a mid-edit corruption risk).
 
 **Block-settle CLOSED (2026-07-12):** all 15 task-map items dispositioned —
 **`plans/271`** carries the rulings + the task map; the arc durables: `notes/272`

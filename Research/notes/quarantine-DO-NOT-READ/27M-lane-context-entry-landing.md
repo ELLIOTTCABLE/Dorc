@@ -209,7 +209,12 @@ disclosed via `emit_escalation_policy`.
 - The fold-entry coherence covers the linear shift-count case; flag-strip `while`-loop forms skip
   conservatively (a narrow-scope disclosure).
 
-## 10. e2e tally (report-ask #7, verbatim — pending the foreground run in the fold checkpoint)
+## 10. e2e tally (report-ask #7 — CONFIRMED at handback)
+
+Verbatim, from the builder's final foreground run: `all 84 e2e round-trips passed
+(ap-2 dash -n + apply/probe exec gates, redirect sandbox, ordered run-set, stderr
+floor, argv-echo differential, dual-rail license judge, why-lens emission)`. 82
+pre-existing cases BYTE-STABLE; 857 unit tests, 0 fail; fmt/clippy/deny/typos clean.
 
 Two new cases (corpus idiom, inert mocks under `PATH=mocks-only`):
 

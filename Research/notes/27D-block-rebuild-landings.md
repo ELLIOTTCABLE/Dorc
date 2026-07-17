@@ -580,8 +580,9 @@ proposed-tier).
 
 ## lane-context-entry (block-context lane 2) — LANDED 2026-07-17 (checkpoint PASSED)
 
-Commits (rebased) topped by the `27M`-note commit on `ai/r27-context-entry`,
-ff-folded. Landing note: **`notes/27M`** (its §9 = the deferred integration).
+Commits (rebased) topped by the landing-note commit on `ai/r27-context-entry`,
+ff-folded. Continuation-critical detail is inlined in the **Continuation**
+paragraph below — no separate landing-note read is needed to proceed.
 Landed at model+CLI tier, rung-0 byte-stable (82 untouched; 84/84; 857 unit):
 `FactKey.context` (Copy-preserving; no-collision + no-transport pinned;
 cross-context compare = Unknown) · `EntryForm`/`FnRole::Enter` (structural
@@ -597,6 +598,30 @@ scope (static argparse-consumption only; DORC_EXIT=11) · §6 mined-idiom lints
 `VAR=x "$@"` ρ rung (27K gap closed). Both mid-run redirects acknowledged
 with rework-vs-conformant accounting (composition meet REWORKED; ⊤-stickiness
 conformant; coherence built fresh narrow).
+
+**Continuation (self-sufficient; inlined for a clean-context reboot — the phase
+proceeds from this paragraph alone).** This lane landed at the MODEL + CLI-surface
+tier and folded into the lineage: the engine models (a new `context` field on
+`FactKey` — `Copy`-preserving, with no-collision and no-cross-context-transport
+both pinned; the wrapper entry-form + chain-composition machinery per the ruled
+per-dimension algebra; the admin control-surface with its full decision table;
+the degrade ladder; the in-context guard shape; fold-entry coherence at the
+ruled narrow static scope) are all built and green, rung-0 byte-stable. NOT
+built — the ONE deferred piece and the block's next dispatch (a fresh builder
+lane, per the established models-first pattern): the cross-pipeline **book-side
+integration** that makes a wrapped book site actually elide end-to-end — peel
+wrapped book sites in classify/value, emit the composed probe through the
+per-run PATH shim (the `274` §5 dissolution of the reentry-token seam), thread
+the composed `context` into the shipped `FactKey` + the records lane, and read
+back the context-qualified verdict. This integration is a **block-stdlib
+precondition** (`270` §2). Remaining block-context lanes after it, in order:
+**read-value-slice** (the capture fold on the landed wire + recipe machinery)
+and **lane-fallback-carry** (the conservative cross-context carry, `27C` §0.2 —
+the engine-proved read-set-closure pass, which shares bones with the punted
+effect-check). Then **block-stdlib**: the ~40 bootstrap oracles authored against
+the finally-stable surface, plus yardstick-measurement (the may-alias
+sensitivity number). Carried limitation: `tc-rho-nothing-as-key-identity`
+(hint-tier; rides the deferred value-flow work).
 
 **Dispositions:** tc-entry-reentry-token → the per-run shim (`274` §5) is the
 recorded dissolution; owned by the INTEGRATION lane (below) ·
