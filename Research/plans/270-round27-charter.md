@@ -315,6 +315,10 @@ axiom).
   resumes after the field trial by rebasing onto the then-current lineage; its S1
   scope shrinks by whatever wire-records-v1-import already landed; `260`/`261`/`262`
   + `26A`'s stop-2/stop-3 amendments remain its spec.
+- *(Annotation 2026-07-16, banked here when LIVING_STATUS compressed:)*
+  **dotfiles-acceptance-day** (a round-24 settled-list one-liner, 2026-07-07) stays
+  TABLED — no block owns it; revives at human discretion (design record for the
+  dotfiles positions: `plans/24R`).
 
 ## §6 — Conduct notes for this round's conductors
 
