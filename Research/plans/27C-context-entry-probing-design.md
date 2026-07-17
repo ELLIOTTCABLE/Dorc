@@ -53,11 +53,33 @@ context-shifting in BOTH lanes (ruled). Book bytes at apply are untouched in eve
 position (the book escalating itself is not Dorc's act). ρ-only wrappers (`env`,
 `nice`) shift no identity or view and sit outside the dial.
 
-The authority rule (`27C:rule-reuse-never-acquire`, ruled): the probe lane exercises
-only authority the *connection* already holds — a root connection performs user-shifts,
-`chroot`, and netns entry with zero new credentials; a non-root connection performs
-none of them. No prompting, no credential handling, no password lanes in the probe
-path. There is **no privilege ordering** (`27C:rule-no-privilege-order`, ruled):
+**`27C:rul-two-axis-escalation-consent` (HUMAN-TYPED 2026-07-17; supersedes this
+section's earlier conflation — the drafting artifact `27Xf:cr-27C-1-authority-
+predicate-contradicts-rule` flagged):** two completely independent axes, never
+collapsed into each other:
+
+1. **Mechanical capability** — can the probe-bootstrap acquire the privilege to
+   do its setup at all (protected channels, perms), or is it in DEGRADED
+   user-only mode, bounded by the ssh-connection user? The test is capability,
+   never identity: a connection performs exactly the shifts it can mechanically
+   effect (root: all of user/chroot/netns; non-root: whatever non-interactive
+   forms already succeed, `sudo -n`-class NOPASSWD included; bare non-root:
+   degraded mode). HOW capability arises is open infrastructure — the
+   connection's own authority today; user-provided creds, a sudoers
+   management-user, or user-dictated/acked negotiation flows as later
+   implementation details (the deferred `27C:open-cell-granted-acquire-ux` cell
+   stands). The probe never SELF-acquires: no mid-run prompting, no credential
+   handling that the user did not explicitly establish and ack in advance.
+2. **Consent to apply that capability to ORACLE CODE** — given
+   mechanical-yes, has the admin consented to pointing escalation machinery at
+   fallible human-authored oracles? "Escalation" = ANY permission/access-
+   changing machinery — `sudo`-upgrade and `su -`-sidegrade inclusive.
+   **Defaults to YES** for the spike, via the double-ended ack (the author's
+   per-function amenability mark × the admin default); `--no-probe-escalation`
+   is the explicit OPT-OUT for admins who want to bound the bad-oracle
+   blast-radius.
+
+There is **no privilege ordering** (`27C:rule-no-privilege-order`, ruled):
 "demotion" is not a safety category (peer-auth grants postgres what root-qua-root is
 refused; NFS root-squash makes root read *less*; lateral shifts route through the
 superuser mechanically) — the only implementable predicate is *can the connection do it

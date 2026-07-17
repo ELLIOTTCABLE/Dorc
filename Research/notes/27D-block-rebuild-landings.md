@@ -462,3 +462,27 @@ structural carried-by ruling (recommendation on record: keying-only at v1) ·
 the `27C` §1 authority predicate-vs-rule sentence. Lane-payload-v1 is NOT
 gated and dispatches next; its brief carries the negative is_diverged
 acceptance pin (neither reserved nor recognized) as a rider.
+
+## Ruling addendum (2026-07-17, human-typed — the authority axes)
+
+- **27C:rul-two-axis-escalation-consent** (HUMAN-TYPED, applied to `27C` §1 in
+  place): mechanical-capability and oracle-escalation-consent are ORTHOGONAL
+  axes. Axis 1 = can the probe-bootstrap mechanically acquire its setup
+  privileges (capability test, never identity; NOPASSWD non-root counts;
+  acquisition mechanisms are open user-established infrastructure; the probe
+  never self-acquires mid-run). Axis 2 = admin consent to apply escalation to
+  fallible oracle code ("escalation" = any permission/access-changing
+  machinery, sudo-upgrade and su-sidegrade inclusive) — DEFAULTS TO YES via
+  the double-ended ack; `--no-probe-escalation` is the opt-out. The old
+  "a non-root connection performs none of them" sentence was a drafting
+  artifact, corrected. Discharges `27Xf:cr-27C-1-authority-predicate-
+  contradicts-rule`; lane-context-entry's gate-2 CLEARED.
+- **27Xf Tier-1 status**: `27Xf:cr-structural-carried-by-transports-a-
+  measurement` is UNDER RE-ADJUDICATION in the human's separate design session
+  ("there's unsoundness in the report" — treat `27Xf` §3 Tier-1 as
+  under-review, act on nothing from it until the human's adjudication lands).
+  Consequence: the `27C` §4 fallback lane is CARVED OUT of lane-context-entry's
+  scope entirely (primary entry lane + dial + vouch + guards only; no fallback
+  lane, no carried-by transport, no invariance-line consumption built this
+  lane) — lane-context-entry is therefore UNGATED and dispatches after
+  lane-payload-v1 folds.
