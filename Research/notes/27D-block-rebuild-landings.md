@@ -486,3 +486,42 @@ acceptance pin (neither reserved nor recognized) as a rider.
   lane, no carried-by transport, no invariance-line consumption built this
   lane) — lane-context-entry is therefore UNGATED and dispatches after
   lane-payload-v1 folds.
+
+## lane-payload-v1 (block-context lane 3, dispatched ahead) — LANDED 2026-07-17 (checkpoint PASSED)
+
+Commits (rebased) topped by the `27L` landing-note commit on `ai/r27-payload-v1`,
+ff-folded. Landing note: **`notes/27L`**. Models-only, zero new trust, rung-0
+byte-stable (80 untouched, +2 honest-wall cases; 82/82). Landed: the `dorc:sh`
+three-spelling recognition + row-3 strip pin · invited-rooms type split
+(`core::room`, sealed; `into_license_input()` exists only on Invited; the `279f`
+§5 compile-failure pin is a real compile_fail doctest) · eval'er reentry
+detection · payload decomposition with the accept frontier at
+const_literal_text (interpolation ⇒ REFUSE-⊤ with cause; site-local degrade) ·
+whole-line fold {elide, guard-conjunction, run} · the per-run shim model ·
+negative is_diverged pin. The synthesized-payload-render door honored
+STRUCTURALLY (no payload bytes re-serialized; un-refusal = one additive
+LineFold variant) per `27D:rul-synthesized-payload-render-stays-unwelded`.
+
+**Dispositions:** tc-room-tag-on-fact-vs-factkey → joins the fact-keying seam
+family (context slot + room tag), OWNED by lane-context-entry's FactKey
+decision · tc-book-bare-sh-room-source → wiring-correctness note for whoever
+makes payload facts real (the room sources from detect_evaler's head, never
+the book head); rides the reentry-execution follow-on · `24T` §6 L1/L2/L4/L5/L7
+differential obligations TRANSFERRED (need reentry execution; probe-shipping
+follow-on) · the two build-surfaced facts (predict-dialect while-argparse gap;
+dorc-sh Windows-unmockable) recorded as fixture constraints.
+
+## The Tier-1 adjudication is IN (2026-07-17, human's session, arrived by merge)
+
+`27C` §0's fallback lane is REWRITTEN at the source: sub-lane (a) =
+**pure-predicate carry** — unflagged, substrate axes only, requiring BOTH the
+kind-owner's `invariant:<axis>` line AND an engine-proved READ-SET-CLOSED
+verdict body (everything influencing the verdict traces to site argv or a
+marked read; the engine closes the "and nothing else", so no human at-most
+claim remains ⇒ no flag). Sub-lane (b) = ingredient/identity axes stay behind
+`--risk-faultless-skips`. Supersedes the old engine-warranted carried-by row
+AND this ledger's interim keying-only carve-out. Lane replan: the fallback
+lane becomes its own follow-on lane (**lane-fallback-carry**, after
+read-value-slice — the read-set-closure proof is real machinery sharing bones
+with the punted effect-check); lane-context-entry stays primary-entry-only and
+dispatches now.
