@@ -384,6 +384,9 @@ the stated law.
 Forks this document deliberately does not close:
 - **The exact semaphore ceremony** (`dorc_` vs `dorc__` prefix; role separator `__` per
   the human's convention nit) — human picks; nothing downstream depends on it.
+  **[CLOSED — 2026-07-16, `24M:rul24M-bare-dorcism-names` (typed 2026-07-07): bare
+  munged POSIX NAMEs, NO prefix at all; `__` role separator stands — the same ruling
+  the top banner records as killing the `dorc_` prefix.]**
 - **Registration-call variant** — a `dorc_provides`-style explicit registration was the
   runner-up semaphore; noted because it is the natural sh-native home for
   `kCONTRACT-RUNGS` rung-selection and the dialect-version stamp if the ladder pole is
