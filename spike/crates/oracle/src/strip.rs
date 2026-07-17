@@ -16,6 +16,10 @@
 //!   last exit-status-affecting statement.
 //! * the line-1 `dorc-sh` shebang RUNNER → `sh` (a narrow, parse-informed line-1 rewrite, so the
 //!   off-ramp artifact is fully dorc-free and runs under stock sh — `274` §13).
+//! * the `# dorc-lang/v0.1` dialect marker line → deleted whole (human ruling 2026-07-17,
+//!   `27D:disposition-strip-keeps-marker` RULED STRIP-IT): a stripped artifact is no longer dialect
+//!   text and must not claim to be. This also makes the strip converge on a marker-FREE artifact, so
+//!   a second pass early-returns (idempotence via the marker gate, not via a dialect-free re-walk).
 //!
 //! NO in-body name rewriting (a role funcname is already valid sh — it stays byte-for-byte); a
 //! `dorc-sh`-typed row-three line is untouched (it is a runtime object, not an annotation).
@@ -30,7 +34,7 @@
 
 use dorc_core::{Carrier, Interner, Span};
 
-use crate::marker::has_marker;
+use crate::marker::{MARKER, MARKER_WINDOW, has_marker};
 use crate::predict::{
     Command, Predict, Stmt, Word, lift_predicts, lift_reaches, lift_resolvers,
     lift_state_stored_only_in, lift_touches, lift_verdicts_converged,
@@ -75,6 +79,9 @@ pub fn strip_file(interner: &mut Interner, src: &str) -> Carrier<String> {
         collect_file_strip_edits(&p.body, src, &mut edits);
     }
     if let Some(edit) = shebang_runner_edit(src) {
+        edits.push(edit);
+    }
+    if let Some(edit) = marker_line_edit(src) {
         edits.push(edit);
     }
 
@@ -242,6 +249,23 @@ fn basename(path: &str) -> &str {
     path.rsplit('/').next().unwrap_or(path)
 }
 
+/// The `# dorc-lang/v0.1` dialect marker line edit: the FIRST marker line within the same
+/// `MARKER_WINDOW` [`has_marker`] honors is deleted whole (through its trailing newline). Human
+/// ruling 2026-07-17 (`27D:disposition-strip-keeps-marker` → STRIP IT): a stripped off-ramp artifact
+/// is no longer dialect text. `None` when unmarked (`strip_file` already gated, so a marked file
+/// always yields `Some`). The marker sits near the top (line 1–2), disjoint from every funcdef-body
+/// edit and from the shebang edit `(0, line1_end)` — the marker line starts past that newline.
+fn marker_line_edit(src: &str) -> Option<(usize, usize, String)> {
+    let mut offset = 0usize;
+    for line in src.split_inclusive('\n').take(MARKER_WINDOW) {
+        if line.trim_end() == MARKER {
+            return Some((offset, offset.saturating_add(line.len()), String::new()));
+        }
+        offset = offset.saturating_add(line.len());
+    }
+    None
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -302,11 +326,11 @@ sm_dorc_Package__state_stored_only_in() {\n\
             out.contains("printf '/var/lib/dpkg\\n'\n"),
             "the emission command survives, its `: fs` mark gone:\n{out}"
         );
-        // The `# dorc-lang/v0.1` marker comment is NOT among strip-is-pure-erasure's listed
-        // erasures (it is valid POSIX and harmless); it stays. Documented decision.
+        // The `# dorc-lang/v0.1` marker line IS erased (human ruling 2026-07-17,
+        // `27D:disposition-strip-keeps-marker` → STRIP IT): a stripped artifact is not dialect text.
         assert!(
-            out.contains("# dorc-lang/v0.1"),
-            "the marker comment is not erased:\n{out}"
+            !out.contains("# dorc-lang/v0.1"),
+            "the marker line is erased:\n{out}"
         );
     }
 
@@ -345,10 +369,10 @@ sm_dorc_Package__state_stored_only_in() {\n\
 
     #[test]
     fn strip_is_idempotent() {
-        // strip(strip(x)) == strip(x): the once-stripped artifact is marker-bearing but dialect-free,
-        // so a second pass finds nothing to erase (and re-runs the identity shebang rewrite as a
-        // no-op — line 1 is already `env sh`, not `env dorc-sh`).
+        // strip(strip(x)) == strip(x): the once-stripped artifact is now marker-FREE (the marker line
+        // is erased), so the second pass hits the marker gate's early return and is byte-identity.
         let once = strip(MARKED);
+        assert!(!once.contains("# dorc-lang/v0.1"), "once-stripped is marker-free");
         assert_eq!(strip(&once), once, "strip is idempotent");
     }
 
