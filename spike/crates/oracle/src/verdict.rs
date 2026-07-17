@@ -57,15 +57,36 @@
 //! argparse primitives ([`resolve_word`]/[`eval_test`]/[`pattern_matches`]) to find the reached
 //! path, then asks only "did an authored command run there", never what the command *means*.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
-use dorc_core::{Carrier, Interner, Rc, Symbol};
+use dorc_core::{Carrier, Interner, ProviderId, Rc, Symbol};
 use dorc_syntax::sem::UnsetPolicy;
 
 use crate::predict::{
     CaseArm, Command, Predict, PredictSet, Stmt, Test, TopReason, Word, eval_test,
-    lift_verdicts_converged, pattern_matches, resolve_word,
+    lift_verdicts_converged, map_provider_name, pattern_matches, resolve_word,
 };
+
+/// The set of providers bearing a `<provider>__is_converged` verdict function, keyed the way
+/// `dorc_analysis::effect::command_effect` keys a book command word ([`map_provider_name`] then
+/// intern). The typeless-floor seam (`24L` §7): the analyzer kernel is **verdict-unaware by
+/// design** (`inv-determinism` — no oracle lift inside the kernel), so a driver computes this set
+/// from the oracle sources and threads it INTO `classify` as DATA — the auto-cell mint reads it to
+/// decide, at a would-be-Opaque site, whether the provider earned the synthetic establish-cell.
+/// Diags are DROPPED here (the verdict lift is re-run in `dorc_plan::build_vouches`, which surfaces
+/// them once for gate-3); this is a pure membership query.
+#[must_use]
+pub fn verdict_providers(interner: &mut Interner, srcs: &[&str]) -> BTreeSet<ProviderId> {
+    let mut set = BTreeSet::new();
+    for src in srcs {
+        let providers: Vec<Symbol> = VerdictSet::lift(interner, src).value.providers().collect();
+        for p in providers {
+            let mapped = map_provider_name(interner.resolve(p));
+            set.insert(ProviderId(interner.intern(&mapped)));
+        }
+    }
+    set
+}
 
 /// The mangled funcname suffix a verdict body strips to (`crate::predict::strip_verdict`). Only
 /// the converged sense exists (rul24-ditch-is-diverged: `is_diverged` is retired; the inverted
@@ -368,6 +389,13 @@ impl Tracer {
     /// or a non-integer arg cannot be read to a code ⇒ [`Flow::Declined`] (conservative: run). The
     /// words already resolved in [`run_command`], so re-resolving the arg here never ⊤s.
     fn run_return(&mut self, cmd: &Command) -> Flow {
+        // A malformed `return 0 junk` (≥2 args) is a runtime arity error in dash (rc≠0), so it is
+        // NOT the author's converged verdict — DECLINE it (run), never read `words[1]` and ignore
+        // the rest (resid-return-arity, `24C`: reading `get(1)` alone silently VOUCHED the wrong
+        // direction). Exactly one arg is the readable-verdict shape.
+        if cmd.words.len() > 2 {
+            return Flow::Declined;
+        }
         match cmd.words.get(1) {
             Some(arg) => match self.resolve(arg) {
                 Ok(s) => match s.parse::<i32>() {
@@ -580,6 +608,37 @@ apt_get__is_converged() {
             trace(src, &["install", "nginx"]),
             VerdictResolution::Vouched,
             "the real `install` check still vouches"
+        );
+    }
+
+    #[test]
+    fn resid_return_arity_extra_args_declines() {
+        // resid-return-arity (`24C`): `return 0 junk` is a runtime arity error in dash (rc≠0), so it
+        // is NOT the author's converged verdict — DECLINE (run). Reading `words[1]` alone and
+        // ignoring the rest silently VOUCHED the wrong direction (own-line-authored, corpus-absent).
+        let clean = "\
+apt_get__is_converged() {
+   case $1 in
+   synced) return 0 ;;
+   *) return 2 ;;
+   esac
+}";
+        assert_eq!(
+            trace(clean, &["synced"]),
+            VerdictResolution::Vouched,
+            "a clean single-arg `return 0` still vouches"
+        );
+        let junk = "\
+apt_get__is_converged() {
+   case $1 in
+   synced) return 0 junk ;;
+   *) return 2 ;;
+   esac
+}";
+        assert_eq!(
+            trace(junk, &["synced"]),
+            VerdictResolution::Declined,
+            "`return 0 junk` (≥2 args ⇒ dash arity error) DECLINES, never vouches"
         );
     }
 

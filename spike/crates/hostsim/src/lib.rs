@@ -537,7 +537,17 @@ apt_get__predict() {
         let value = dorc_analysis::value::analyze(cfg, ast, i);
         let checks = vec![dorc_oracle::predict::lift_predicts(i, CORPUS_PREDICT_SRC).value];
         let mut arena = dorc_core::ProvArena::new();
-        dorc_analysis::effect::classify(cfg, &value, ast, idx, &checks, i, &mut arena).value
+        dorc_analysis::effect::classify(
+            cfg,
+            &value,
+            ast,
+            idx,
+            &checks,
+            &BTreeSet::new(),
+            i,
+            &mut arena,
+        )
+        .value
     }
 
     /// `kind:entity#installed` — the re-keyed cell (`notes/193`). These host-model
@@ -902,6 +912,7 @@ apt_get__predict() {
                 &parsed.value,
                 &idx,
                 &checks,
+                &BTreeSet::new(),
                 &mut i,
                 &mut dorc_core::ProvArena::new(),
             )
@@ -918,6 +929,7 @@ apt_get__predict() {
                 // default keeps compile_probe consistent with the `build_plan` wrapper it uses below.
                 &dorc_plan::ConnectedPipes::default(),
                 |provider, argv| ship_corpus(&checks, &i, provider, argv),
+                |_, _, _| None,
                 // hostsim exercises elision soundness, not guards — no vouched past-wall probes.
                 |_| false,
             );
@@ -1022,6 +1034,7 @@ apt_get__predict() {
             &parsed.value,
             &idx,
             &[dorc_oracle::predict::lift_predicts(&mut i, CORPUS_PREDICT_SRC).value],
+            &BTreeSet::new(),
             &mut i,
             &mut dorc_core::ProvArena::new(),
         )
@@ -1036,6 +1049,7 @@ apt_get__predict() {
             &classes,
             &dorc_plan::ConnectedPipes::default(),
             |_provider, _argv| None,
+            |_, _, _| None,
             |_| false,
         );
         assert!(

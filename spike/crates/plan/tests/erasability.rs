@@ -218,6 +218,7 @@ fn run_pipeline(book: &str, variation: ArenaMode) -> RunOutcome {
         &parsed.value,
         &idx,
         &checks,
+        &std::collections::BTreeSet::new(),
         &mut i,
         &mut arena,
     );
@@ -230,6 +231,7 @@ fn run_pipeline(book: &str, variation: ArenaMode) -> RunOutcome {
         &classes,
         &ConnectedPipes::default(),
         |provider, argv| ship_from(ORACLE_SRC, &checks, &i, provider, argv),
+        |_, _, _| None,
         |_| false,
     );
     // The host oracle: a fact is Converged iff in the fixed set; else Diverged. Identical for
@@ -394,6 +396,7 @@ fn digest_is_receipt_invariant_across_runs() {
             &parsed.value,
             &idx,
             &checks,
+            &std::collections::BTreeSet::new(),
             i,
             &mut arena,
         )
@@ -405,6 +408,7 @@ fn digest_is_receipt_invariant_across_runs() {
             &classes,
             &ConnectedPipes::default(),
             |provider, argv| ship_from(ORACLE_SRC, &checks, i, provider, argv),
+            |_, _, _| None,
             |_| false,
         );
         let observe = |f: FactKey| {

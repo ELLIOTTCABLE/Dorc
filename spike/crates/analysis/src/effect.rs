@@ -211,9 +211,39 @@ fn finalize_cmdsub_tops(
 /// `inv-superposition`: the cells are phase-/orientation-agnostic facts; this
 /// classifies, it decides nothing. Diagnostics (kind-disagreement) accumulate in
 /// `diags`.
+/// The typeless-floor decision at a concrete-argv site that declared no marked effect
+/// (`24L` §2/§3): a provider bearing a verdict function gets the synthetic **auto-cell**
+/// (`dorc_core::auto_fact` — a private per-provider singleton establish), so its own-line
+/// elision/guard tier lights up; every other provider degrades to `Opaque` (`inv-top-reject`,
+/// the honest floor). Reached ONLY after the argv is confirmed fully concrete — a ⊤ command
+/// word or operand returned `Opaque` earlier (never an auto-cell over a non-per-site-resolvable
+/// argv). The auto-kind is keyed by the MAPPED provider name so `apt-get`/`apt_get` share one
+/// cell (the same normalization `build_vouches` and the probe funcname use).
+fn auto_or_opaque(
+    verdict_providers: &BTreeSet<ProviderId>,
+    provider: ProviderId,
+    interner: &mut Interner,
+) -> Vec<CommandEffect> {
+    if verdict_providers.contains(&provider) {
+        let pname = interner.resolve(provider.0).to_owned();
+        vec![CommandEffect::Establishes(dorc_core::auto_fact(
+            interner, &pname,
+        ))]
+    } else {
+        vec![CommandEffect::Opaque]
+    }
+}
+
+#[expect(
+    clippy::too_many_arguments,
+    reason = "the typeless-floor seam (`24L` §7) threads the verdict-provider set alongside the \
+              existing effect-map/checks/argv/interner/diag inputs; each is a distinct kernel \
+              input, not a bundle-able struct"
+)]
 pub fn command_effect(
     idx: &KindIndex,
     checks: &[PredictSet],
+    verdict_providers: &BTreeSet<ProviderId>,
     argv: &[ValueOf],
     interner: &mut Interner,
     diags: &mut Vec<Diagnostic>,
@@ -289,9 +319,11 @@ pub fn command_effect(
         });
     let Some(resolved) = resolved else {
         // No check resolved this site (no check for the provider, or every candidate
-        // degraded to ⊤). ⊤ ⇒ Opaque (`inv-top-reject`). We do NOT fall back to a
-        // verb-by-position lookup — that was the deleted engine-side argparse sin.
-        return vec![CommandEffect::Opaque];
+        // degraded to ⊤). ⊤ ⇒ Opaque (`inv-top-reject`) — UNLESS the provider bears a
+        // verdict function, in which case the typeless-floor auto-cell mints (`24L` §2:
+        // a markless verdict-only oracle, the founding-one-liner shape). We do NOT fall
+        // back to a verb-by-position lookup — that was the deleted engine-side argparse sin.
+        return auto_or_opaque(verdict_providers, provider, interner);
     };
 
     // The verb key: the check's derived verb, or the ε-verb when the check binds none
@@ -304,10 +336,12 @@ pub fn command_effect(
     let cells = idx.effect_of(provider, verb_key);
     if cells.is_empty() {
         // The check resolved an identity, but no oracle declared an effect for this
-        // (provider, verb). Not this analysis's concern ⇒ ⊤ (runs). A read-only guard
-        // whose check declares an Observe (`:?`) mark lands as `Queries` below;
-        // only an un-declared guard falls through to Opaque here (task-D2, 202 §2).
-        return vec![CommandEffect::Opaque];
+        // (provider, verb). ⊤ (runs) — UNLESS the provider bears a verdict function, in
+        // which case the typeless-floor auto-cell mints (`24L` §2: a predict with no
+        // marked effect is the same inert-at-HEAD shape as a markless verdict-only body).
+        // A read-only guard whose check declares an Observe (`:?`) mark lands as `Queries`
+        // below; only an un-declared guard falls through here (task-D2, 202 §2).
+        return auto_or_opaque(verdict_providers, provider, interner);
     }
 
     // The cell's kind comes from the annotation (the declared identity, 204 §6); the
@@ -363,6 +397,12 @@ fn member_family(
     }
     let members = value.member_argv(id)?;
     let mut family = Vec::with_capacity(members.len());
+    // A loop member NEVER forms a typeless-floor auto-cell: the in-loop floor runs every
+    // member regardless (`disposition_for`), so an auto-cell member would only ship wasted
+    // per-member verdict probes. An empty verdict-provider set keeps `command_effect` on the
+    // Opaque floor for members; a verdict-only site in a loop falls to the single-cell path
+    // (its per-iteration ⊤ operand keeps it Opaque ⇒ MustRun ⇒ Run — the safe direction).
+    let no_auto_in_members: BTreeSet<ProviderId> = BTreeSet::new();
     for argv in members {
         // Each member is a concrete-or-⊤ argv; resolve it through the oracle check. All-or-nothing:
         // ANY non-single-establish member kills the whole family. `site: None` is a LIVE dedup
@@ -374,7 +414,18 @@ fn member_family(
         // ⊤ is disclosed, never mis-elided.) `site: None` records NO cmdsub-top disclosure, so a
         // discarded local collector is honest here (nothing is ever pushed to it).
         let mut suppressed = Vec::new();
-        match command_effect(idx, checks, argv, interner, diags, &mut suppressed, None).as_slice() {
+        match command_effect(
+            idx,
+            checks,
+            &no_auto_in_members,
+            argv,
+            interner,
+            diags,
+            &mut suppressed,
+            None,
+        )
+        .as_slice()
+        {
             [CommandEffect::Establishes(fact)] => family.push(*fact),
             _ => return None,
         }
@@ -793,6 +844,7 @@ fn node_effects(
     ast: &dorc_syntax::ast::Ast,
     idx: &KindIndex,
     checks: &[PredictSet],
+    verdict_providers: &BTreeSet<ProviderId>,
     interner: &mut Interner,
     diags: &mut Vec<Diagnostic>,
     cmdsub_tops: &mut Vec<CmdsubTop>,
@@ -819,7 +871,16 @@ fn node_effects(
     match cfg.node(id).kind {
         CfgNodeKind::Command => {
             let argv = value.argv_values(id);
-            command_effect(idx, checks, &argv, interner, diags, cmdsub_tops, Some(site))
+            command_effect(
+                idx,
+                checks,
+                verdict_providers,
+                &argv,
+                interner,
+                diags,
+                cmdsub_tops,
+                Some(site),
+            )
         }
         // An unmodeled construct may mutate anything ⇒ ⊤.
         CfgNodeKind::Top => vec![CommandEffect::Opaque],
@@ -919,9 +980,11 @@ fn mint_top_causes(
 /// [`mint_top_causes`]. Deterministic; never panics (`inv-no-throw`).
 #[expect(
     clippy::type_complexity,
+    clippy::too_many_arguments,
     reason = "the three precomputed parallel-by-node products (member families, effect cells, \
               deferred cmdsub-⊤ records) are returned as one tuple so classify stays under the \
-              line cap; naming a struct for a single-call-site internal helper buys nothing"
+              line cap; naming a struct for a single-call-site internal helper buys nothing. The \
+              verdict-provider set (`24L` §7 seam) is one more distinct kernel input"
 )]
 fn resolve_node_effects(
     cfg: &Cfg,
@@ -929,6 +992,7 @@ fn resolve_node_effects(
     ast: &dorc_syntax::ast::Ast,
     idx: &KindIndex,
     checks: &[PredictSet],
+    verdict_providers: &BTreeSet<ProviderId>,
     interner: &mut Interner,
     diags: &mut Vec<Diagnostic>,
 ) -> (
@@ -961,6 +1025,7 @@ fn resolve_node_effects(
                 ast,
                 idx,
                 checks,
+                verdict_providers,
                 interner,
                 diags,
                 &mut cmdsub_tops,
@@ -993,16 +1058,33 @@ fn resolve_node_effects(
 /// This is the thin wrapper over [`classify_with_why_diags`] for the 13 callers that do not
 /// consume the typed why-lens diags (the cli's stage-3 disclosure is the one that does).
 #[must_use]
+#[expect(
+    clippy::too_many_arguments,
+    reason = "the typeless-floor seam (`24L` §7) threads the verdict-provider set through the \
+              classify entry points as DATA (the kernel stays verdict-unaware); one more distinct \
+              input, not a bundle"
+)]
 pub fn classify(
     cfg: &Cfg,
     value: &ValueFlow,
     ast: &dorc_syntax::ast::Ast,
     idx: &KindIndex,
     checks: &[PredictSet],
+    verdict_providers: &BTreeSet<ProviderId>,
     interner: &mut Interner,
     arena: &mut dorc_core::ProvArena,
 ) -> Carrier<Vec<(CfgNodeId, SkipClass)>> {
-    classify_with_why_diags(cfg, value, ast, idx, checks, interner, arena).0
+    classify_with_why_diags(
+        cfg,
+        value,
+        ast,
+        idx,
+        checks,
+        verdict_providers,
+        interner,
+        arena,
+    )
+    .0
 }
 
 /// [`classify`] PLUS the TYPED cause-bearing cmdsub-⊤ disclosures for the why-lens (`22D`
@@ -1026,9 +1108,13 @@ pub fn classify(
 #[must_use]
 #[expect(
     clippy::type_complexity,
+    clippy::too_many_arguments,
+    clippy::too_many_lines,
     reason = "the four parallel products (site classifications + typed why-lens diags + the R3 \
               kill-node set + the killed-coordinate side-map, 24E §7) are the fn's whole output; a \
-              named struct for a two-call-site return (the cli + the plan test seam) buys nothing"
+              named struct for a two-call-site return (the cli + the plan test seam) buys nothing. \
+              The verdict-provider set (`24L` §7 seam) is one more input, and its threaded call \
+              pushes the body just over the line cap — the classify core is irreducibly long"
 )]
 pub fn classify_with_why_diags(
     cfg: &Cfg,
@@ -1036,6 +1122,7 @@ pub fn classify_with_why_diags(
     ast: &dorc_syntax::ast::Ast,
     idx: &KindIndex,
     checks: &[PredictSet],
+    verdict_providers: &BTreeSet<ProviderId>,
     interner: &mut Interner,
     arena: &mut dorc_core::ProvArena,
 ) -> (
@@ -1047,8 +1134,16 @@ pub fn classify_with_why_diags(
     let mut diags: Vec<Diagnostic> = Vec::new();
     // Precompute every node's member-family + effect cells, recording the deferred cmdsub-⊤
     // disclosures (stage-1). Extracted so this fn stays under the line cap.
-    let (member_families, effects, cmdsub_tops) =
-        resolve_node_effects(cfg, value, ast, idx, checks, interner, &mut diags);
+    let (member_families, effects, cmdsub_tops) = resolve_node_effects(
+        cfg,
+        value,
+        ast,
+        idx,
+        checks,
+        verdict_providers,
+        interner,
+        &mut diags,
+    );
 
     // arch-1 `Top(cause)`: mint a give-up origin per Opaque-bearing node (+ a fallback),
     // keyed on source spans, so the ⊤-poison cascade is attributable. The cause is EXEMPT
@@ -1342,6 +1437,7 @@ command__predict() {
             &parsed.value,
             idx,
             &checks,
+            &BTreeSet::new(),
             interner,
             &mut arena,
         )
@@ -1365,6 +1461,7 @@ command__predict() {
             &parsed.value,
             idx,
             &checks,
+            &BTreeSet::new(),
             interner,
             &mut arena,
         )
@@ -1426,6 +1523,7 @@ command__predict() {
             &parsed.value,
             &idx,
             &checks,
+            &BTreeSet::new(),
             &mut i,
             &mut arena,
         );
@@ -1679,6 +1777,7 @@ command__predict() {
             command_effect(
                 idx,
                 &checks,
+                &BTreeSet::new(),
                 &value.argv_values(node),
                 i,
                 &mut diags,
@@ -1742,6 +1841,60 @@ command__predict() {
             eff("apt-get autoclean", &mut i, &idx),
             vec![CommandEffect::Opaque],
             "unknown verb ⇒ ⊤"
+        );
+    }
+
+    #[test]
+    fn typeless_floor_auto_cell_mints_only_for_verdict_bearing_providers() {
+        // `24L` §2/§7: a would-be-Opaque site (here `foobar` — absent from the checks, so no check
+        // resolves) mints the private per-provider auto-cell IFF the provider bears a verdict
+        // function. The verdict-provider set enters as DATA (the cli seam); the kernel never lifts
+        // it. Empty set ⇒ the honest Opaque floor (byte-identical to no-oracle).
+        let mut i = Interner::default();
+        let parsed = dorc_syntax::parse("foobar sync\n");
+        let built = cfg::build(&parsed.value);
+        let value = analyze(&built.value, &parsed.value, &mut i);
+        let idx = KindIndex::default();
+        let checks: Vec<PredictSet> = Vec::new();
+        let node = built
+            .value
+            .iter()
+            .find(|(_, n)| n.kind == CfgNodeKind::Command)
+            .map(|(id, _)| id)
+            .expect("the `foobar sync` command node");
+        let argv = value.argv_values(node);
+        let mut diags = Vec::new();
+        let mut tops = Vec::new();
+        assert_eq!(
+            command_effect(
+                &idx,
+                &checks,
+                &BTreeSet::new(),
+                &argv,
+                &mut i,
+                &mut diags,
+                &mut tops,
+                None
+            ),
+            vec![CommandEffect::Opaque],
+            "no verdict function ⇒ the honest floor (Opaque ⇒ run)"
+        );
+        let foobar = ProviderId(i.intern(&predict::map_provider_name("foobar")));
+        let verdict_providers: BTreeSet<ProviderId> = std::iter::once(foobar).collect();
+        let expect = dorc_core::auto_fact(&mut i, "foobar");
+        assert_eq!(
+            command_effect(
+                &idx,
+                &checks,
+                &verdict_providers,
+                &argv,
+                &mut i,
+                &mut diags,
+                &mut tops,
+                None
+            ),
+            vec![CommandEffect::Establishes(expect)],
+            "a verdict-bearing provider mints the per-provider auto-cell (§2)"
         );
     }
 
@@ -2020,6 +2173,7 @@ command__predict() {
             &parsed.value,
             &idx,
             &checks,
+            &BTreeSet::new(),
             &mut i,
             &mut arena,
         )
@@ -2571,6 +2725,7 @@ command__predict() {
             &parsed.value,
             &idx,
             &checks,
+            &BTreeSet::new(),
             &mut i,
             &mut diags,
         );
@@ -2723,6 +2878,7 @@ apt_get__predict() {
             &parsed.value,
             &idx,
             &checks,
+            &BTreeSet::new(),
             &mut i,
             &mut arena,
         )

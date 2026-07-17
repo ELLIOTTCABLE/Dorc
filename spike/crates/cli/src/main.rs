@@ -483,6 +483,19 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
         })
         .collect();
 
+    // The typeless-floor verdict-provider set (`24L` §7 — THE kernel seam): the analyzer kernel is
+    // verdict-unaware by design (`inv-determinism`), so the cli edge lifts which providers bear an
+    // `is_converged` verdict function and threads that set INTO `classify` as DATA. The auto-cell
+    // mint reads it to light up a markless verdict-only oracle's guard/elide tier (`24L` §2).
+    let verdict_providers = dorc_oracle::verdict::verdict_providers(&mut interner, &oracle_refs);
+    // Pre-lift each file's verdict funcdefs so the (immutable-interner) probe ship-closure can
+    // strip the auto-cell's verdict body without a mutating re-lift (`24L` §2 probe emission). Diags
+    // drop here — `build_vouches` re-lifts and surfaces them once for gate-3.
+    let verdict_sets: Vec<dorc_oracle::verdict::VerdictSet> = oracle_refs
+        .iter()
+        .map(|src| dorc_oracle::verdict::VerdictSet::lift(&mut interner, src).value)
+        .collect();
+
     // The munge-reservation lint (24Kc fix-munge-reservation / 24M ca-munge-charclass): refuse an
     // emitted `<munged>__<role>` funcname that is not a legal sh NAME (charclass) or that two
     // distinct source names collide onto (non-injective munge), over the whole oracle unit. No
@@ -560,6 +573,7 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
             &parsed.value,
             &idx,
             &checks,
+            &verdict_providers,
             &mut interner,
             &mut arena,
         );
@@ -585,6 +599,16 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
     // `is_vouched` closes strain-classify-coupling (24C): a vouched past-wall `EstablishWritten`
     // site ships its probe here (at HEAD it would be `skip-unresolvable`).
     let ship = |p, a: &[Symbol]| ship_predict_body(&oracle_srcs, &checks, &interner, p, a);
+    // `24L` §2 — the typeless-floor auto-cell ships its stripped VERDICT body (the probe IS the
+    // verdict). `Some` ONLY for an auto-cell fact (keyed on the reserved auto-kind), so `compile_probe`
+    // reads a `Some` as the auto-cell signal. rul-only-oracle-bytes-ship: the shipped bytes are the
+    // oracle's OWN authored `is_converged` funcdef, strip-only; the admin's argv flows as arguments.
+    let ship_auto = |fact: dorc_core::FactKey, p: Symbol, _a: &[Symbol]| -> Option<String> {
+        if !dorc_core::is_auto_kind(&interner, fact.kind) {
+            return None;
+        }
+        ship_verdict_body(&oracle_srcs, &verdict_sets, &interner, p)
+    };
     let probe = dorc_plan::compile_probe(
         &parsed.value,
         &cfg.value,
@@ -592,6 +616,7 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
         &classes,
         &connected,
         ship,
+        ship_auto,
         |node| vouches.contains_key(&node),
     );
 
@@ -780,7 +805,17 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
     // 24F §3: build the identity-canonicalization map from the `resolv` readback (both footprint and
     // backing coords canonicalized in the survival walk). Flag-off / no-resolver ⇒ empty ⇒ the
     // token-equality floor (identical to today). §4: each DANGLING coordinate is a loud diagnostic.
-    let resolutions = build_resolutions(&resolver_coords, &resolver_kinds, &results, &mut interner);
+    let mut resolutions =
+        build_resolutions(&resolver_coords, &resolver_kinds, &results, &mut interner);
+    // fence-no-disjoint (`24L` §7): register every verdict-provider's auto-cell kind so the survival
+    // tier reads an auto coordinate as may-touch (`survival::disjoint`). The plan is interner-free,
+    // so this resolution happens here (the edge holds the interner) and rides the Resolutions the
+    // walk already threads. Re-interning `dorc-auto:<provider>` returns the KindId classify minted.
+    for provider in &verdict_providers {
+        let name = interner.resolve(provider.0).to_owned();
+        let kind = dorc_core::auto_fact(&mut interner, &name).kind;
+        resolutions.add_auto_kind(kind);
+    }
     report_at(
         advisory,
         "resolve",
@@ -998,6 +1033,34 @@ fn ship_predict_body(
             if matches!(evaluate(check, &arg_refs), Resolution::Resolved(_)) {
                 return Some(strip_predict(src, check, interner));
             }
+        }
+    }
+    None
+}
+
+/// `24L` §2 — resolve the stripped `<provider>__is_converged` verdict funcdef a typeless-floor
+/// auto-cell probe ships. Mirrors [`ship_predict_body`] over the pre-lifted [`VerdictSet`]s but
+/// keys on the verdict lane and needs no argv (the strip is argv-independent; the invocation adds
+/// the site argv at render, so the host runs `<provider>__is_converged <argv>` and its rc maps to
+/// the Effect verdict through the record scaffold's rc-partition). `None` ⇒ the provider authored
+/// no verdict funcdef (should not happen for an auto-cell — its mint gated on exactly this — so a
+/// `None` here safely folds the site to unresolvable ⇒ run).
+fn ship_verdict_body(
+    oracle_srcs: &[String],
+    verdict_sets: &[dorc_oracle::verdict::VerdictSet],
+    interner: &Interner,
+    provider: Symbol,
+) -> Option<String> {
+    use dorc_oracle::predict::{map_provider_name, strip_verdict};
+    use dorc_oracle::verdict::VERDICT_SUFFIX;
+    let want = map_provider_name(interner.resolve(provider));
+    for (src, set) in oracle_srcs.iter().zip(verdict_sets) {
+        for vp in set.providers() {
+            if map_provider_name(interner.resolve(vp)) != want {
+                continue;
+            }
+            let Some(verdict) = set.get(vp) else { continue };
+            return Some(strip_verdict(src, verdict, interner, VERDICT_SUFFIX));
         }
     }
     None
@@ -3506,6 +3569,7 @@ mod tests {
                 argv: vec![],
                 sh: "{ :; }".to_string(),
                 connected: None,
+                verdict: false,
             }],
             unresolvable: vec![],
         }
@@ -3720,6 +3784,7 @@ mod tests {
                     site_kind: k0,
                     sh: "{ :; }".to_string(),
                     connected: None,
+                    verdict: false,
                 },
                 ProbePredict {
                     site: LeafId(1),
@@ -3730,6 +3795,7 @@ mod tests {
                     site_kind: k1,
                     sh: "{ :; }".to_string(),
                     connected: None,
+                    verdict: false,
                 },
             ],
             unresolvable: vec![],
@@ -3835,6 +3901,7 @@ mod tests {
             &parsed.value,
             &idx,
             &[],
+            &BTreeSet::new(),
             &mut interner,
             &mut arena,
         );
@@ -3846,6 +3913,7 @@ mod tests {
             &classes,
             &dorc_plan::ConnectedPipes::default(),
             |_, _| None,
+            |_, _, _| None,
             |_| false,
         );
         let plan = dorc_plan::build_plan(

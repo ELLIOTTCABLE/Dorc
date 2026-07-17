@@ -1188,6 +1188,13 @@ pub struct ProbePredict {
     /// governing rc captured. `None` ⇒ the ordinary single-command shape (`sh` funcdef + `argv`
     /// invocation). The `fact`/`site_kind` re-key + the record grammar are unchanged either way.
     pub connected: Option<String>,
+    /// `24L` §2 — the typeless-floor auto-cell probe. `true` ⇒ `sh` is the stripped VERDICT body
+    /// (`<provider>__is_converged`, not `__predict`), invoked with the site argv; its rc maps to
+    /// the Effect verdict through the SAME record-scaffold rc-partition (0=holds, 1=absent,
+    /// else=cant-tell — exactly the verdict rc-partition). The probe IS the verdict for a markless
+    /// oracle. `false` ⇒ the ordinary `__predict` shape. Steers only [`ProbePlan::render_sh`]'s
+    /// funcname choice; the record grammar and site-keying are identical.
+    pub verdict: bool,
 }
 
 /// A compiled probe: per-resolvable-site read-only checks whose answers drive the
@@ -1224,6 +1231,21 @@ fn predict_fn_name(interner: &Interner, provider: Symbol) -> String {
         dorc_oracle::to_funcname_segment(&dorc_oracle::predict::map_provider_name(
             interner.resolve(provider)
         )),
+    )
+}
+
+/// The verdict funcname a typeless-floor auto-cell probe defines + invokes (`24L` §2):
+/// `<provider>__is_converged`, mangled through the SAME hyphen↔underscore convention as
+/// [`predict_fn_name`] so it agrees byte-for-byte with the name
+/// [`dorc_oracle::predict::strip_verdict`] gives the shipped funcdef (and with the guard emitter's
+/// invocation, `build_vouches`). Referent-agnostic: passed to the host, never branched on.
+fn verdict_fn_name(interner: &Interner, provider: Symbol) -> String {
+    format!(
+        "{}{}",
+        dorc_oracle::to_funcname_segment(&dorc_oracle::predict::map_provider_name(
+            interner.resolve(provider)
+        )),
+        VERDICT_SUFFIX,
     )
 }
 
@@ -1272,7 +1294,14 @@ impl ProbePlan {
         // routes through `render::probe` (task-R); this loop owns the re-emit bookkeeping.
         let mut defined: BTreeMap<String, &str> = BTreeMap::new();
         for check in &self.checks {
-            let fn_name = predict_fn_name(interner, check.provider);
+            // `24L` §2 — an auto-cell probe defines+invokes `<provider>__is_converged` (the shipped
+            // verdict body), not `<provider>__predict`. The record scaffold + rc-partition are
+            // identical; only the funcname (dedup key + invocation) differs.
+            let fn_name = if check.verdict {
+                verdict_fn_name(interner, check.provider)
+            } else {
+                predict_fn_name(interner, check.provider)
+            };
             // The record's site key: `N` for a single-fact site, `N.M` for member M of an
             // in-loop Members family (item-4).
             let key = render::probe::site_key(check.site, check.member);
@@ -1784,6 +1813,14 @@ pub fn connected_check_pipes(
 /// has no independent fact, silence-is-wall). Off the connected path (`ConnectedPipes::default()`)
 /// this is byte-identical to before.
 #[must_use]
+#[expect(
+    clippy::too_many_arguments,
+    clippy::too_many_lines,
+    reason = "the probe compiler threads the whole compiled context (ast/cfg/value/classes/connected) \
+              plus THREE ship seams — the predict body, the `24L` §2 auto-cell verdict body, and the \
+              vouch predicate; each is a distinct caller-supplied input. The auto-cell ship arm pushes \
+              the body just over the line cap; the per-class dispatch is irreducibly flat"
+)]
 pub fn compile_probe(
     ast: &Ast,
     cfg: &Cfg,
@@ -1791,6 +1828,7 @@ pub fn compile_probe(
     classes: &[(CfgNodeId, SkipClass)],
     connected: &ConnectedPipes,
     ship_body: impl Fn(Symbol, &[Symbol]) -> Option<String>,
+    ship_auto: impl Fn(FactKey, Symbol, &[Symbol]) -> Option<String>,
     is_vouched: impl Fn(CfgNodeId) -> bool,
 ) -> ProbePlan {
     let mut checks = Vec::new();
@@ -1894,10 +1932,38 @@ pub fn compile_probe(
                     argv: Vec::new(),
                     sh: String::new(),
                     connected: Some(body.to_owned()),
+                    verdict: false,
                 });
             } else {
                 unresolvable.push(site);
             }
+            continue;
+        }
+        // `24L` §2 — the typeless-floor auto-cell: the shipped probe is the STRIPPED VERDICT BODY
+        // itself (a markless oracle has no `predict`), invoked with the site argv; its rc maps to
+        // the Effect verdict through the record scaffold's existing rc-partition (0=holds, 1=absent,
+        // else=cant-tell — the verdict rc-partition). `ship_auto` returns `Some` ONLY for an
+        // auto-cell fact (the edge closure keys on the reserved auto-kind), so a `Some` here IS the
+        // auto-cell signal. Establish-class only (a Query is never an auto-cell). GATED on the
+        // vouch: the verdict IS the probe, so a DECLINED verdict (a refuse path — `return 2`, the
+        // R2-MULTIOP arity gate) has nothing to measure and must not ship a record; the site runs
+        // (`guard23-refusepath-rc0-never-passes`: a declined verdict never licenses, and never probes).
+        if matches!(site_kind, ProbeSiteKind::Establish)
+            && is_vouched(node)
+            && let Some((provider, argv, sh)) =
+                ship_auto_for_argv(&value.argv_values(node), fact, &ship_auto)
+        {
+            checks.push(ProbePredict {
+                site,
+                member: None,
+                fact,
+                site_kind,
+                provider,
+                argv,
+                sh,
+                connected: None,
+                verdict: true,
+            });
             continue;
         }
         // R3: ship the provider's stripped `check()` invoked with the site's argv. A ⊤ command word or
@@ -1913,6 +1979,7 @@ pub fn compile_probe(
                 argv,
                 sh,
                 connected: None,
+                verdict: false,
             }),
             None => unresolvable.push(site),
         }
@@ -1931,6 +1998,30 @@ pub fn compile_probe(
 /// (`kFAIL-perform`). `ship_body` maps (provider-word, args) to the stripped funcdef; it
 /// is the caller's seam onto the oracle sources + check-set, so `plan` needs no oracle
 /// lift of its own. A provider whose check does not resolve this argv also yields `None`.
+/// `24L` §2 — resolve the (provider, argv, stripped VERDICT body) an auto-cell site ships. Mirrors
+/// [`ship_for_argv`] but hands the resolved `fact` to `ship_auto`, which returns the stripped
+/// `<provider>__is_converged` body ONLY when `fact` is an auto-cell (the edge closure keys on the
+/// reserved auto-kind). A ⊤ command word or operand ⇒ no concrete invocation ⇒ `None` (unshippable).
+fn ship_auto_for_argv(
+    argv: &[ValueOf],
+    fact: FactKey,
+    ship_auto: &impl Fn(FactKey, Symbol, &[Symbol]) -> Option<String>,
+) -> Option<(Symbol, Vec<Symbol>, String)> {
+    let (first, rest) = argv.split_first()?;
+    let &ValueOf::Literal(provider) = first else {
+        return None;
+    };
+    let mut operands = Vec::with_capacity(rest.len());
+    for w in rest {
+        let &ValueOf::Literal(s) = w else {
+            return None;
+        };
+        operands.push(s);
+    }
+    let sh = ship_auto(fact, provider, &operands)?;
+    Some((provider, operands, sh))
+}
+
 fn ship_for_argv(
     argv: &[ValueOf],
     ship_body: &impl Fn(Symbol, &[Symbol]) -> Option<String>,
@@ -1993,6 +2084,7 @@ fn push_member_predicts(
             argv: args,
             sh,
             connected: None,
+            verdict: false,
         });
     }
     checks.extend(staged);
@@ -2041,6 +2133,7 @@ fn push_inline_predicts(
                     argv: args,
                     sh,
                     connected: None,
+                    verdict: false,
                 });
             }
             SkipClass::QueryResolvable { fact, valid } => {
@@ -2056,6 +2149,7 @@ fn push_inline_predicts(
                         argv: args,
                         sh,
                         connected: None,
+                        verdict: false,
                     });
                 }
             }
@@ -3842,6 +3936,7 @@ apt_get__predict() {
             &parsed.value,
             &idx,
             &checks,
+            &BTreeSet::new(),
             &mut i,
             &mut dorc_core::ProvArena::new(),
         )
@@ -3859,6 +3954,7 @@ apt_get__predict() {
                     None
                 }
             },
+            |_, _, _| None,
             |_| false,
         );
         (probe, i)
@@ -3976,6 +4072,7 @@ apt_get__predict() {
             &parsed.value,
             &idx,
             &checks,
+            &BTreeSet::new(),
             &mut i,
             &mut dorc_core::ProvArena::new(),
         );
@@ -4183,6 +4280,7 @@ apt_get__predict() {
             &parsed.value,
             &idx,
             &checks,
+            &BTreeSet::new(),
             &mut i,
             &mut dorc_core::ProvArena::new(),
         )
@@ -4195,6 +4293,7 @@ apt_get__predict() {
             &classes,
             &ConnectedPipes::default(),
             |provider, argv| ship_corpus(&checks, &i, provider, argv),
+            |_, _, _| None,
             |_| false,
         );
         let plan = build_plan(
@@ -4484,6 +4583,7 @@ apt_get__predict() {
             &parsed.value,
             &idx,
             &checks,
+            &BTreeSet::new(),
             &mut i,
             &mut dorc_core::ProvArena::new(),
         )
@@ -4529,6 +4629,7 @@ apt_get__predict() {
             &parsed.value,
             &idx,
             &checks,
+            &BTreeSet::new(),
             &mut i,
             &mut dorc_core::ProvArena::new(),
         )
@@ -4575,6 +4676,7 @@ apt_get__predict() {
             &parsed.value,
             &idx,
             &checks,
+            &BTreeSet::new(),
             &mut i,
             &mut dorc_core::ProvArena::new(),
         )
@@ -4727,6 +4829,7 @@ apt_get__predict() {
                 &parsed.value,
                 &idx,
                 &checks,
+                &BTreeSet::new(),
                 &mut i,
                 &mut dorc_core::ProvArena::new(),
             )
@@ -4881,6 +4984,7 @@ apt_get__predict() {
                 &parsed.value,
                 &idx,
                 &checks,
+                &BTreeSet::new(),
                 &mut i,
                 &mut arena,
             );
@@ -5008,6 +5112,7 @@ apt_get__predict() {
             &parsed.value,
             &idx,
             &checks,
+            &BTreeSet::new(),
             &mut i,
             &mut arena,
         )
@@ -5114,6 +5219,7 @@ apt_get__predict() {
             &parsed.value,
             &idx,
             &checks,
+            &BTreeSet::new(),
             &mut i,
             &mut arena,
         )
@@ -5465,6 +5571,7 @@ apt_get__predict() {
             &parsed.value,
             &idx,
             &checks,
+            &BTreeSet::new(),
             &mut i,
             &mut dorc_core::ProvArena::new(),
         )

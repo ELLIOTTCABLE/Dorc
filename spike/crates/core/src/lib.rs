@@ -550,6 +550,48 @@ pub struct FactKey {
     pub selector: SelectorId,
 }
 
+/// The reserved-namespace prefix for the **typeless-floor auto-cell** (`24L` §2/§7). A
+/// verdict-bearing provider with no marked effect gets a synthetic establish-cell keyed at
+/// `<AUTO_KIND_PREFIX><provider>`, so its own-line elision/guard tier lights up (the whole
+/// point of the floor) without an authored coordinate. The `:` is what makes the namespace
+/// **unnameable** (`fence-unnameable`): an authored kind is DNS-labels-before-the-first-colon
+/// (`277` §4b), so it can never contain a `:` — no oracle can mint into or reference this
+/// namespace. `inv-referent-agnostic`: the engine never decodes this text for meaning; the
+/// prefix is an engine-reserved sentinel, checked only by [`is_auto_kind`].
+pub const AUTO_KIND_PREFIX: &str = "dorc-auto:";
+
+/// The auto-cell's fixed selector (`24L` §2 "property: opaque/auto"). One reserved token; the
+/// cell is a per-provider singleton, so the selector never discriminates — it exists only to
+/// fill the flat coordinate's third slot and render (`dorc-auto:foobar#converged`).
+pub const AUTO_SELECTOR: &str = "converged";
+
+/// Mint the typeless-floor **auto-cell** for `provider` (`24L` §2/§3 — THE floor coordinate).
+/// The SOLE constructor: kind = the reserved per-provider namespace (`fence-unnameable`),
+/// entity = [`EntityRef::Singleton`] ALWAYS (`fence-no-entity` — a typeless oracle has no bind,
+/// so no operand is ever promoted to a referent; §3's caught referential-abstraction break),
+/// selector = the fixed [`AUTO_SELECTOR`]. All of one command's sites share this one cell (the
+/// singleton coarseness §3 prices; more same-cell staleness ⇒ more forced runs, never fewer).
+#[must_use]
+pub fn auto_fact(interner: &mut Interner, provider: &str) -> FactKey {
+    let kind = KindId(interner.intern(&format!("{AUTO_KIND_PREFIX}{provider}")));
+    FactKey {
+        kind,
+        entity: EntityRef::Singleton,
+        selector: SelectorId(interner.intern(AUTO_SELECTOR)),
+    }
+}
+
+/// Is `kind` an auto-cell kind (`24L` §7 `fence-unnameable`)? The load-bearing predicate for the
+/// two privacy fences the engine enforces structurally: the probe lane ships the VERDICT body
+/// for these (not a `predict`, `compile_probe`), and the survival tier reads an auto-coordinate
+/// as may-touch, never a distinct canonical (`fence-no-disjoint`, `survival::disjoint`). A prefix
+/// check is sound because no authored kind can carry the `:` (`277` §4b) — this is a namespace
+/// membership test, not a decode of oracle meaning (`inv-referent-agnostic` is unbroken).
+#[must_use]
+pub fn is_auto_kind(interner: &Interner, kind: KindId) -> bool {
+    interner.resolve(kind.0).starts_with(AUTO_KIND_PREFIX)
+}
+
 // ===========================================================================
 // Tests
 // ===========================================================================
@@ -580,6 +622,37 @@ mod tests {
         }
         assert_eq!(a.intern("one"), b.intern("one"));
         assert_eq!(a.intern("three"), b.intern("three"));
+    }
+
+    #[test]
+    fn auto_cell_is_per_provider_singleton_and_unnameable() {
+        // `24L` §2/§3/§7: the auto-cell is a per-provider singleton (entity-free), and its kind
+        // lives in a namespace no authored kind can reach (`fence-unnameable` — an authored kind is
+        // DNS-labels-before-a-colon, so it can never carry the `:` the prefix embeds).
+        let mut i = Interner::default();
+        let foobar = auto_fact(&mut i, "foobar");
+        let mycmd = auto_fact(&mut i, "mycmd");
+        assert_eq!(
+            foobar.entity,
+            EntityRef::Singleton,
+            "auto-cell is entity-free (fence-no-entity)"
+        );
+        assert_ne!(
+            foobar.kind, mycmd.kind,
+            "distinct providers ⇒ distinct auto-kinds"
+        );
+        assert_eq!(
+            auto_fact(&mut i, "foobar").kind,
+            foobar.kind,
+            "same provider ⇒ the one shared singleton cell (§3 coarseness)"
+        );
+        assert!(is_auto_kind(&i, foobar.kind), "an auto-kind is recognised");
+        // An authored reverse-DNS kind is NEVER mistaken for auto (the prefix carries a `:`).
+        let authored = KindId(i.intern("com.debian.apt.Package"));
+        assert!(
+            !is_auto_kind(&i, authored),
+            "an authored kind is never auto (fence-unnameable)"
+        );
     }
 
     #[test]

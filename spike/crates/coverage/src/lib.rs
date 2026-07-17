@@ -435,6 +435,9 @@ pub fn build_report(inputs: &Inputs<'_>) -> Report {
         .iter()
         .map(|src| dorc_oracle::predict::lift_predicts(&mut interner, src).value)
         .collect();
+    // Typeless-floor verdict-provider set (`24L` §7 — mirror the cli seam so the dashboard sees
+    // the same auto-cell elisions the honest baseline does).
+    let verdict_providers = dorc_oracle::verdict::verdict_providers(&mut interner, inputs.oracles);
 
     let parsed = dorc_syntax::parse(inputs.book);
     let cfg = dorc_analysis::cfg::build(&parsed.value).value;
@@ -450,6 +453,7 @@ pub fn build_report(inputs: &Inputs<'_>) -> Report {
             &parsed.value,
             &idx,
             &checks,
+            &verdict_providers,
             &mut interner,
             &mut arena,
         );
@@ -475,6 +479,10 @@ pub fn build_report(inputs: &Inputs<'_>) -> Report {
         &classes,
         &connected,
         |provider, argv| ship_predict_body(inputs.oracles, &checks, &interner, provider, argv),
+        // The dashboard does not exercise the typeless-floor auto-cell probe (`24L` §2): its
+        // corpora carry marked effects, so no auto-cell mints; a real ship-verdict closure would be
+        // dead code here. The dedicated e2e + plan unit tests cover the floor.
+        |_, _, _| None,
         // The dashboard carries no guard/vouch plumbing (Stage-3 minimal build-fix): no site is
         // vouched, so no past-wall establish ships a probe here — dashboard parity is unaffected.
         |_| false,

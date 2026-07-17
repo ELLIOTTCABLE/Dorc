@@ -162,6 +162,12 @@ pub struct Resolutions {
     /// an enumerable kind (`dpkg-query -W` non-zero). Rides the may-alias degrade AND surfaces as a
     /// loud diagnostic at the edge.
     dangling: BTreeSet<EntityCoord>,
+    /// Typeless-floor auto-cell kinds present in the plan (`24L` §7 `fence-no-disjoint`). The plan
+    /// is interner-free, so the edge (which HAS the interner) resolves which kinds are auto and
+    /// deposits them here; [`disjoint`] reads an auto coordinate as may-touch, never a distinct
+    /// canonical. Threaded via `Resolutions` (already carried into the survival walk) rather than a
+    /// new parameter down `build_plan_walled → wall_walk_survival → wall_verdict → disjoint`.
+    auto_kinds: BTreeSet<KindId>,
 }
 
 impl Resolutions {
@@ -177,6 +183,20 @@ impl Resolutions {
     /// (§3a), not to token-equality.
     pub fn add_resolver_kind(&mut self, kind: KindId) {
         self.resolver_kinds.insert(kind);
+    }
+
+    /// Register a typeless-floor auto-cell kind (`24L` §7 `fence-no-disjoint`). The edge calls this
+    /// for every auto-kind present in the plan so [`disjoint`] can bar it from proving disjoint.
+    pub fn add_auto_kind(&mut self, kind: KindId) {
+        self.auto_kinds.insert(kind);
+    }
+
+    /// Is `kind` a registered auto-cell kind (`24L` §7)? Used by [`disjoint`] to force may-alias on
+    /// an auto coordinate (either side), so a private per-provider singleton never manufactures the
+    /// separation that would let it survive a wall (`277` §6 never-derive-separation).
+    #[must_use]
+    pub(crate) fn is_auto(&self, kind: KindId) -> bool {
+        self.auto_kinds.contains(&kind)
     }
 
     /// Record a coordinate's resolved canonical entity (the resolver's host-run output, interned
@@ -486,6 +506,20 @@ pub fn disjoint(
     backing: &Backing,
     resolutions: &Resolutions,
 ) -> DisjointOutcome {
+    // fence-no-disjoint (`24L` §7 / §6): an auto-cell coordinate NEVER proves disjoint — it reads
+    // as may-touch on BOTH sides (mirror `Resolution::MayAlias`). Checked BEFORE the kind
+    // comparison, which would otherwise clear an auto backing against every authored footprint
+    // (their kinds differ, so the different-kind `continue` below skips them ⇒ Disjoint — the §4
+    // near-miss: distinctness-as-license). A typeless oracle has no `touches()` so it never GRANTS
+    // survival (no footprint); this bars it from RECEIVING survival too (`277` §6
+    // never-derive-separation — distinctness demoted to incomparability wherever it could license).
+    if resolutions.is_auto(backing.coord.kind)
+        || footprint
+            .hit_surface()
+            .any(|fc| resolutions.is_auto(fc.kind))
+    {
+        return DisjointOutcome::MayAlias(MayAliasReason::Unresolved);
+    }
     let backing_canon = resolutions.canonicalize(backing.coord);
     let mut may_alias: Option<MayAliasReason> = None;
     // The hit-surface (24G §8): the author's/derivation's coords unioned with the engine-supplied
@@ -964,6 +998,43 @@ mod tests {
             }
             other => panic!("expected Survived, got {other:?}"),
         }
+    }
+
+    #[test]
+    fn fence_no_disjoint_auto_backing_never_survives() {
+        // `24L` §7 fence-no-disjoint / §4 near-miss: a typeless auto-cell backing carries a kind
+        // DISTINCT from every authored footprint, so `disjoint`'s different-kind `continue` would
+        // clear it (Disjoint ⇒ wrongly survive — distinctness-as-license). Registering the auto-kind
+        // forces MayAlias ⇒ DEMOTE: the private per-provider singleton never manufactures the
+        // separation that licenses survival (`277` §6 never-derive-separation).
+        let mut i = dorc_core::Interner::default();
+        let auto = dorc_core::auto_fact(&mut i, "nginxctl"); // kind dorc-auto:nginxctl
+        let wall_coord = EntityCoord::new(
+            KindId(i.intern("com.debian.apt.Package")),
+            EntityRef::Operand(OpaqueToken(i.intern("nginx"))),
+        );
+        let fp = Footprint::authored(i.intern("apt-get"), vec![wall_coord]).unwrap();
+        let walls = [AccumulatedWall {
+            wall_leaf: LeafId(0),
+            footprint: fp,
+        }];
+        let mut res = Resolutions::none();
+        // Without the fence, the distinct-string auto backing WRONGLY survives — the near-miss.
+        assert!(
+            matches!(
+                wall_verdict(false, &walls, &Backing::of_fact(auto), &res),
+                WallVerdict::Survived(_)
+            ),
+            "the near-miss: a distinct-kind auto backing survives naively (what the fence closes)"
+        );
+        res.add_auto_kind(auto.kind);
+        assert!(
+            matches!(
+                wall_verdict(false, &walls, &Backing::of_fact(auto), &res),
+                WallVerdict::Demoted(DemoteReason::MayAlias)
+            ),
+            "fence-no-disjoint: a registered auto backing MAY-ALIASES ⇒ demote, never survives a wall"
+        );
     }
 
     #[test]

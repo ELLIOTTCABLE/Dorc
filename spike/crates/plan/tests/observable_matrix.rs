@@ -125,7 +125,17 @@ fn classify_value(
     let value = dorc_analysis::value::analyze(cfg, ast, i);
     let checks = vec![dorc_oracle::predict::lift_predicts(i, CORPUS_PREDICT_SRC).value];
     let mut arena = dorc_core::ProvArena::new();
-    dorc_analysis::effect::classify(cfg, &value, ast, idx, &checks, i, &mut arena).value
+    dorc_analysis::effect::classify(
+        cfg,
+        &value,
+        ast,
+        idx,
+        &checks,
+        &std::collections::BTreeSet::new(),
+        i,
+        &mut arena,
+    )
+    .value
 }
 
 /// The package oracle: `apt-get install ⇒ establishes package`, `apt-get purge ⇒
@@ -825,6 +835,7 @@ fn plan_query_and_ast(
         &parsed.value,
         &idx,
         &checks,
+        &std::collections::BTreeSet::new(),
         &mut i,
         &mut arena,
     )
@@ -1438,6 +1449,7 @@ fn inline_call_emits_site_n_m_probe_records() {
         &parsed.value,
         &idx,
         &checks,
+        &std::collections::BTreeSet::new(),
         &mut i,
         &mut dorc_core::ProvArena::new(),
     )
@@ -1449,6 +1461,7 @@ fn inline_call_emits_site_n_m_probe_records() {
         &classes,
         &dorc_plan::ConnectedPipes::default(),
         |p, a| ship_corpus(&checks, &i, p, a),
+        |_, _, _| None,
         |_| false,
     );
     // Each check carries (site, member); collect the (site.0, member) pairs.
@@ -1496,6 +1509,7 @@ fn inline_call_unprobeable_body_establish_is_unresolvable() {
         &parsed.value,
         &idx,
         &[dorc_oracle::predict::lift_predicts(&mut i, CORPUS_PREDICT_SRC).value],
+        &std::collections::BTreeSet::new(),
         &mut i,
         &mut dorc_core::ProvArena::new(),
     )
@@ -1507,6 +1521,7 @@ fn inline_call_unprobeable_body_establish_is_unresolvable() {
         &classes,
         &dorc_plan::ConnectedPipes::default(),
         |_p, _a| None,
+        |_, _, _| None,
         |_| false,
     );
     assert!(probe.checks.is_empty(), "no probe body ⇒ no checks");

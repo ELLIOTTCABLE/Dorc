@@ -56,6 +56,9 @@ pub fn run_kernel(declared: &DeclaredScenario, s0: &Host, flag_on: bool, i: &mut
         .iter()
         .map(|src| dorc_oracle::predict::lift_predicts(i, src).value)
         .collect();
+    // Typeless-floor verdict-provider set (`24L` §7 — mirror the cli seam so the differential net
+    // exercises any auto-cell the corpus oracle mints).
+    let verdict_providers = dorc_oracle::verdict::verdict_providers(i, &oracle_refs);
 
     let mut arena = ProvArena::new();
     let (classified, _why, kills, _kill_coords) = dorc_analysis::effect::classify_with_why_diags(
@@ -64,6 +67,7 @@ pub fn run_kernel(declared: &DeclaredScenario, s0: &Host, flag_on: bool, i: &mut
         &parsed.value,
         &idx,
         &checks,
+        &verdict_providers,
         i,
         &mut arena,
     );
@@ -92,6 +96,10 @@ pub fn run_kernel(declared: &DeclaredScenario, s0: &Host, flag_on: bool, i: &mut
             &classes,
             &connected,
             ship,
+            // The sweep corpus carries marked effects, so no typeless-floor auto-cell mints — the
+            // verdict-ship closure is inert here (a future typeless-oracle sweep scenario, `24L` §7,
+            // would supply a real one keyed on the auto-kind).
+            |_, _, _| None,
             |_| false,
         )
     };
