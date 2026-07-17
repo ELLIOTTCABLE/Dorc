@@ -10,10 +10,12 @@
 //!   Answers the SURVIVAL question: does a disturbance carrying `claim` reach (collide with) a
 //!   fact cell `backing`? The dialect algebra (`277` §3) lives entirely inside it.
 //! * [`compare`] — the ONE whole-coordinate chokepoint (`277` §2). Answers the ternary relation
-//!   `{ same | provably-disjoint | unknown }` with the consumer map welded: *same* → transport
-//!   only, *provably-disjoint* → survival sparing only (flag-gated), *unknown* → the safe bottom
-//!   for both. It MAY answer relationally — per-axis pointwise decomposition is never baked into
-//!   the API (`271:rul-seam-context-slot-and-relational-chokepoint`).
+//!   `{ overlaps | provably-disjoint | unknown }` with the consumer map welded: *provably-disjoint*
+//!   → survival sparing only (flag-gated), *overlaps* → survival collide, *unknown* → the safe
+//!   bottom for both. Transport-grade sameness is NEVER the [`Relation::Overlaps`] variant — it is
+//!   `selector_identifies`-gated at the transport consumer (block-context). It MAY answer
+//!   relationally — per-axis pointwise decomposition is never baked into the API
+//!   (`271:rul-seam-context-slot-and-relational-chokepoint`).
 //!
 //! # What lives here vs. `plan::survival`
 //!
@@ -120,15 +122,19 @@ pub enum EntityResolution {
 /// — no binary default is safe for both.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Relation {
-    /// The two coordinates name the SAME or OVERLAPPING cell — not provably cell-separable.
+    /// The two coordinates are NOT provably cell-separable — they name overlapping cells (the
+    /// same cell, a ⊤/whole-entity coordinate over a cell, or two unminted-selector siblings the
+    /// dialect could not spare). The overlap-honest name (`27D`
+    /// disposition-relation-same-misnomer): this variant is the survival-COLLIDE reading, NOT a
+    /// cell-identity assertion — the misnomer `Same` invited exactly that misread.
     ///
-    /// Feeds TRANSPORT only (a fact established in one context licenses action about the other);
-    /// NEVER survival. In the survival consumer this reads as COLLIDE (the wall's disturbance
-    /// reaches the backing). NB a ⊤/whole-entity coordinate OVERLAPS a cell without being
-    /// *identical* to it (`top-identifies-with-nothing`): a transport consumer must additionally
-    /// require concrete-selector identity via [`selector_identifies`] — `Same` here asserts
-    /// not-separable, not same-referent.
-    Same,
+    /// Feeds survival as COLLIDE (the wall's disturbance reaches the backing). It does NOT license
+    /// transport: transport-grade sameness is `selector_identifies`-gated (`top-identifies-with-
+    /// nothing`: a ⊤/whole-entity coordinate OVERLAPS a cell without being *identical* to it, and
+    /// two distinct unminted tokens overlap without identifying), and is NEVER this variant. A
+    /// transport consumer at block-context re-checks concrete-selector identity through
+    /// [`selector_identifies`]; `Overlaps` alone asserts not-separable, never same-referent.
+    Overlaps,
     /// The two coordinates are PROVABLY disjoint — a different kind (the movable kind-fence), a
     /// different entity within one kind, or a dialect-spared selector (`277` §3). Feeds survival
     /// SPARING only, consumed under the flag (`rul-flag-is-razor-residue`); NEVER transport.
@@ -239,7 +245,7 @@ pub fn selector_covers(
 /// name the SAME cell for IDENTITY (transport)? `true` iff both are the same concrete token. A ⊤
 /// coordinate (`None`) identifies with NOTHING, including itself — it overlaps without being
 /// identical, so it never transports. Built now, consumed by the transport consumer at
-/// block-context (`277` §2 consumer map); `compare`'s [`Relation::Same`] is the survival-collide
+/// block-context (`277` §2 consumer map); `compare`'s [`Relation::Overlaps`] is the survival-collide
 /// reading and does NOT assert identity (a transport consumer re-checks through this).
 #[must_use]
 pub fn selector_identifies(a: Option<SelectorId>, b: Option<SelectorId>) -> bool {
@@ -297,7 +303,7 @@ pub fn compare(
     // minting family's dialect (`277` §3).
     let tokens = dialect.tokens(backing_family, backing.kind);
     if selector_covers(claim.selector, backing.selector, tokens) {
-        Relation::Same
+        Relation::Overlaps
     } else {
         Relation::ProvablyDisjoint
     }
@@ -485,13 +491,13 @@ mod tests {
 
     #[test]
     fn compare_same_entity_no_dialect_is_same_collide() {
-        // empty-world-byte-identical: same (kind, canon entity), no dialect ⇒ Same (collide),
+        // empty-world-byte-identical: same (kind, canon entity), no dialect ⇒ Overlaps (collide),
         // whatever the selectors — the entity-granular floor.
         let mut i = Interner::default();
         let k = KindId(i.intern("com.a.K"));
         let e = EntityRef::Operand(OpaqueToken(i.intern("x")));
         let s = sel(&mut i, "installed");
-        // ⊤ footprint vs concrete backing (the survive-fixture shape) ⇒ Same (Poisoned).
+        // ⊤ footprint vs concrete backing (the survive-fixture shape) ⇒ Overlaps (Poisoned).
         assert_eq!(
             compare(
                 coord(k, e, None),
@@ -501,7 +507,7 @@ mod tests {
                 &Dialect::empty(),
                 None,
             ),
-            Relation::Same
+            Relation::Overlaps
         );
     }
 
@@ -538,7 +544,7 @@ mod tests {
                 &d,
                 Some(family),
             ),
-            Relation::Same
+            Relation::Overlaps
         );
     }
 
@@ -580,7 +586,7 @@ mod tests {
                 &d,
                 Some(otherctl),
             ),
-            Relation::Same
+            Relation::Overlaps
         );
     }
 
@@ -604,7 +610,7 @@ mod tests {
                 &d,
                 None, // no recovered family
             ),
-            Relation::Same
+            Relation::Overlaps
         );
     }
 
@@ -638,7 +644,7 @@ mod tests {
     fn compare_cross_kind_has_no_same_generator() {
         // `277` §6 top-identifies-with-nothing: NO generator produces cross-kind *same* (the
         // co-reference mechanism is parked behind the movable kind-fence). A cross-kind pair is
-        // ProvablyDisjoint, NEVER Same — even with identical entities and selectors.
+        // ProvablyDisjoint, NEVER Overlaps — even with identical entities and selectors.
         let mut i = Interner::default();
         let ka = KindId(i.intern("com.a.K"));
         let kb = KindId(i.intern("com.b.K"));
@@ -654,7 +660,7 @@ mod tests {
         );
         assert_ne!(
             r,
-            Relation::Same,
+            Relation::Overlaps,
             "cross-kind never identifies (no generator)"
         );
         assert_eq!(r, Relation::ProvablyDisjoint, "the movable kind-fence");
@@ -666,7 +672,7 @@ mod tests {
         // becomes ProvablyDisjoint — keying/address-inequality is not referent-inequality. The ONLY
         // sources of ProvablyDisjoint are a different kind (ground truth), a distinct canonical
         // entity (the resolve generator), or a dialect selector-spare (authored marks). An
-        // unresolvable pair is Unknown, and an unminted-selector same-entity pair is Same (collide)
+        // unresolvable pair is Unknown, and an unminted-selector same-entity pair is Overlaps (collide)
         // — neither manufactures separation.
         let mut i = Interner::default();
         let k = KindId(i.intern("com.a.K"));
@@ -685,7 +691,7 @@ mod tests {
             ),
             Relation::Unknown
         );
-        // Unminted selectors on a same canonical entity ⇒ Same (collide), never disjoint.
+        // Unminted selectors on a same canonical entity ⇒ Overlaps (collide), never disjoint.
         assert_eq!(
             compare(
                 coord(k, e, Some(ghost)),
@@ -695,7 +701,7 @@ mod tests {
                 &Dialect::empty(),
                 None,
             ),
-            Relation::Same
+            Relation::Overlaps
         );
     }
 
@@ -765,8 +771,8 @@ mod tests {
             "order-independent: reversed still collides"
         );
         assert!(
-            !set_spares(&[Relation::ProvablyDisjoint, Relation::Same]),
-            "a Same (overlap) member also collides the set"
+            !set_spares(&[Relation::ProvablyDisjoint, Relation::Overlaps]),
+            "an Overlaps member also collides the set"
         );
         assert!(
             set_spares(&[Relation::ProvablyDisjoint, Relation::ProvablyDisjoint]),

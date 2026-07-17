@@ -583,7 +583,7 @@ pub fn disjoint(
             // Proven overlap (same kind + canonical entity, the selector collides): the aliasing
             // closure firing, a plain token hit, a ⊤ footprint over a cell, or a reaches()-expanded
             // coord (24G Part B — attributed via `via_reach`).
-            Relation::Same => {
+            Relation::Overlaps => {
                 return DisjointOutcome::Hit {
                     via_reach: footprint.reach_of(fc),
                 };
@@ -1538,28 +1538,47 @@ mod tests {
         //  - mapped-lend × keyed kind: keying/lend re-indexes ⇒ blocks transport, NEVER
         //    ProvablyDisjoint (`never-derive-separation` — keying never feeds survival). Verdict:
         //    Unknown ⇒ safe for both consumers.
-        //  - full-lend × invariant kind: an invariance line yields *same* across a context boundary
-        //    ⇒ feeds TRANSPORT only, never survival sparing. Verdict: Same.
+        //  - full-lend × invariant kind: an invariance line yields transport across a context
+        //    boundary ⇒ feeds TRANSPORT only, never survival sparing. `compare`'s verdict is
+        //    Overlaps (survival-COLLIDE); transport is a SEPARATE decision the block-context
+        //    consumer makes via `selector_identifies` on the concrete selectors — NEVER the
+        //    Overlaps variant (`27D` disposition-relation-same-misnomer, tc-same-is-overlap-not-
+        //    identity). The old `Same` name conflated these two; the rename splits them.
         // The consumer map (the single source of truth these route through at block-context):
         let survival_spares = |r: Relation| matches!(r, Relation::ProvablyDisjoint);
-        let transport_licensed = |r: Relation| matches!(r, Relation::Same);
+        // Transport is NOT a function of `Relation`: it is `selector_identifies`-gated. No
+        // `Relation` variant licenses it by itself.
+        let transport_licensed_by_relation = |_r: Relation| false;
         // mapped-lend / keying ⇒ Unknown: blocks transport AND collides survival.
         assert!(
             !survival_spares(Relation::Unknown),
             "keying/mapped-lend never feeds survival sparing"
         );
         assert!(
-            !transport_licensed(Relation::Unknown),
+            !transport_licensed_by_relation(Relation::Unknown),
             "keying/mapped-lend blocks transport too (the safe bottom)"
         );
-        // full-lend / invariance ⇒ Same: feeds transport, never survival.
+        // Overlaps: survival collides, and it does NOT license transport by itself.
         assert!(
-            transport_licensed(Relation::Same),
-            "a full-lend/invariance *same* licenses transport"
+            !transport_licensed_by_relation(Relation::Overlaps),
+            "Overlaps is the survival-collide reading, never a transport license (misnomer fixed)"
         );
         assert!(
-            !survival_spares(Relation::Same),
-            "a *same* never feeds survival sparing (only provably-disjoint spares)"
+            !survival_spares(Relation::Overlaps),
+            "an Overlaps never feeds survival sparing (only provably-disjoint spares)"
+        );
+        // Transport for a full-lend/invariance case is gated on concrete-selector identity. Two
+        // equal concrete tokens identify (transport-eligible); a ⊤ selector identifies with
+        // nothing (`top-identifies-with-nothing`).
+        let mut i = dorc_core::Interner::default();
+        let sel = SelectorId(i.intern("enabled"));
+        assert!(
+            dorc_core::coord::selector_identifies(Some(sel), Some(sel)),
+            "two equal concrete selectors identify (transport-eligible at block-context)"
+        );
+        assert!(
+            !dorc_core::coord::selector_identifies(None, None),
+            "a ⊤ selector identifies with nothing — never transports"
         );
     }
 }
