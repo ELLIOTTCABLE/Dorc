@@ -169,7 +169,8 @@ seams, and fences — no transport license is minted by anything in its build li
   (dial × vouch); residual flag questions live in `27C` §5's fenced fallback lane.]**
 - **ask-pipefail-emit-never:** bare `set -o pipefail` joins the emit-never class
   (analyzer accepts and models it; stdlib/quality-bar require the gate idiom) —
-  preserves "strip output is floor-legal" without a strip transform. One-line
+  preserves "strip output is floor-legal" *[for lint-clean text — the `276` qualifier;
+  27Xa doc-sync, 2026-07-17]* without a strip transform. One-line
   annotations to `276`/`278` on ack. **[ACKED 2026-07-16, typed, with four clarifying
   clauses (handshake-presupposition · lint-hint · the nondurable-emission carve —
   ephemeral post-handshake wire-bytes emit bare, no idiom · accept-don't-modify the

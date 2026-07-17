@@ -134,7 +134,9 @@ what the human TYPED counts; keep an ack-ledger) · crosscheck adjudication unde
 maximum skepticism; adversarial framing = exclusions-not-inclusions · never
 AskUserQuestion (ask in prose); dump the numbered task list on changes · Fable
 conducts, Opus codes · conductor: tip-gate every ref-move IN THE COMMAND; verify
-merges by own hand (never-vouch) · the deferred-work ledger lives in `23O` §5; residue
+merges by own hand (never-vouch) · a promised fresh-session/clean-room/triple-check
+re-derivation gets a slugged ledger entry whose closure names who ran it, from what
+context (`27Xf` §4 hygiene) · the deferred-work ledger lives in `23O` §5; residue
 lives in `24C`.
 
 ---
