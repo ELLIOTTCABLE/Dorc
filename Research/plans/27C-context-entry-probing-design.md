@@ -174,6 +174,18 @@ sudo__enter() {                # argv = the site's peeled sudo argv with the com
   {entry × dial × vouch} ⇒ the site takes §4/§5 for that boundary. Transitive
   delegation inside tool-oracle bodies (`doas__predict() { sudo "$@" ;}`) stays
   unshippable.
+  - **The composition algebra** (added 2026-07-17 per 27Xf
+    cr-nested-wrapper-composition-rider-dropped — the `279f` §5 rider this plan
+    dropped, restated as build-spec): lend/ρ composition across a peel chain is
+    the POINTWISE fold, outermost-first, per dimension — identity element = full
+    lend; a mapped lend composes by substitution into the accumulated value; a
+    MISSING key at ANY link ⇒ ⊤ for that dimension for the whole chain (⊤
+    PROPAGATES; one silent link walls the dimension, never
+    inherits a neighbor's lend). The inner context's canonical key is the
+    composed per-dimension result, order-sensitive (entry order = book order of
+    the chain). Pin with nested-permutation tests (`sudo chroot` vs
+    `chroot sudo` compose to DIFFERENT context keys where the dimensions
+    differ).
 - Degrade ladder, every direction safe: entry refused (`sudo -n` failure), impossible
   (chroot target unmounted), missing dependencies inside the view (rc 127), or an
   in-context decline (rc≥2) ⇒ can't-say ⇒ guard/run. Identity-demanding checks

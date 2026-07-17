@@ -434,3 +434,31 @@ effect-check re-homing (punted, seam built) · tc-stage-ship-triplication
 cleanup · batch-5 + E3 tails (optional, unowned) · rul-payload-pins-near-weld +
 rul-synthesized-payload-render-stays-unwelded (human-typed, governing
 payload-v1) · the book-acceptance carve now in human voice (main DESIGN.md).
+
+## lane-wrapper-peel (block-context lane 1) — LANDED 2026-07-17 (checkpoint PASSED)
+
+Commits (rebased across the merge of main) topped by `e26b448` on
+`ai/r27-wrapper-peel`, ff-folded into `ai/spike3-r27`. Landing note:
+**`notes/27K`**. Landed MODELS-only, zero new trust: the positional model
+(`Word::PositionalArgs`; quoted-`"$@"` faithful, bare forms Unmodeled; both
+founding pins green) · `oracle::wrapper` (`detect_peel` command-position
+tautology; the `RhoClaim` ladder with the `274` §12 riders; the closed
+`Dimension` set; `cmd__lend_map` lift under the enumerate-every-dimension law;
+`InnerContext` population design) · dual-peel coherence plan-time fail-fast.
+Rung-0: 76 pre-existing e2e cases BYTE-STABLE; 80/80 total. The REFERENDUM did
+not fire. Disclosed gap: the bare prefix-assignment ρ rung (`VAR=x "$@"`) is
+unmodeled (parser splits it script-scoped) — rides lane-context-entry.
+
+**Post-27Xf conductor repairs applied same-day:** `277` §2 consumer-map
+transport-row annotation + §5 non-emptiness side-invariants
+(inv-backing-set-non-empty · inv-top-never-empty-set, ratifying stage-4b's
+in-build shape); `27C` §3 gains the pointwise lend/ρ composition algebra
+(⊤ propagates; nested-permutation pins). The human struck `is_diverged` from
+steering + ANALYZER-NEEDS and handled the hazard quarantine (27Xn ignored by
+their ruling); main merged into the lineage at `c19a4f5` by their hand.
+
+**Still gating lane-context-entry (human-owed, asked):** the 27Xf Tier-1
+structural carried-by ruling (recommendation on record: keying-only at v1) ·
+the `27C` §1 authority predicate-vs-rule sentence. Lane-payload-v1 is NOT
+gated and dispatches next; its brief carries the negative is_diverged
+acceptance pin (neither reserved nor recognized) as a rider.
