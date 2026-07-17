@@ -241,7 +241,7 @@ apt_get__predict() {
    fi
 }";
         assert_eq!(
-            derived_set(dialect, "apt-get"),
+            derived_set(dialect, "apt_get"),
             expect(&[
                 ("install", "package", "installed", "establish"),
                 ("reinstall", "package", "installed", "establish"),
@@ -306,7 +306,7 @@ apt_get__predict() {
       *) dpkg-query -W \"$pkg\" : package:\"$pkg\"#installed ;;
    esac
 }";
-        let set = derived_set(dialect, "apt-get");
+        let set = derived_set(dialect, "apt_get");
         assert_eq!(
             set.len(),
             1,

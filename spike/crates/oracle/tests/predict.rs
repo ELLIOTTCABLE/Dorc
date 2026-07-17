@@ -141,7 +141,7 @@ fn apt_get_book_order_install_y_nginx_binds_the_flag_strain_1() {
     // "assert exactly what its code does, not what apt-get really does" governs: we
     // pin the faithful result. This is a genuine 19H §2.1 defect, not an evaluator
     // bug — flagged for the wiring task.
-    let res = resolve(APT_GET, "apt-get", &["install", "-y", "nginx"]);
+    let res = resolve(APT_GET, "apt_get", &["install", "-y", "nginx"]);
     let r = resolved(&res);
     assert_eq!(r.kind, "com.debian.apt.Package");
     assert_eq!(
@@ -160,7 +160,7 @@ fn apt_get_flag_first_y_install_nginx_binds_nginx() {
     // ⇒ loop runs, `*) shift`), stops at `install`; `verb=install`, `shift`,
     // `$1=nginx`. entity=nginx — matching 19H's stated expectation. This is the
     // canonical "flag-strip then verb then operand" path the dialect is built for.
-    let res = resolve(APT_GET, "apt-get", &["-y", "install", "nginx"]);
+    let res = resolve(APT_GET, "apt_get", &["-y", "install", "nginx"]);
     let r = resolved(&res);
     assert_eq!(r.kind, "com.debian.apt.Package");
     assert_eq!(r.entity, operand("nginx"));
@@ -175,7 +175,7 @@ fn apt_get_pre_verb_flag_with_argument_shift_2() {
     // its argument `exp`. Next iteration: `$1=install`, `${1#-}` == `install` ⇒ loop
     // exits. `verb=install`, `shift`, `$1=nginx`. Same resolution as the simple case,
     // proving the `shift 2` path consumes the flag-argument exactly as written.
-    let res = resolve(APT_GET, "apt-get", &["-t", "exp", "install", "nginx"]);
+    let res = resolve(APT_GET, "apt_get", &["-t", "exp", "install", "nginx"]);
     let r = resolved(&res);
     assert_eq!(r.entity, operand("nginx"));
     assert_eq!(r.verb.as_deref(), Some("install"));
@@ -187,7 +187,7 @@ fn apt_get_multiple_leading_flags() {
     // `[-y, -q, purge, tree]`: two single-char flags, each hitting the `*) shift`
     // arm (neither is `-t`/`-o`), then `purge` ends the loop. verb=purge, entity=tree.
     // Asserts the loop iterates correctly more than once on the default arm.
-    let res = resolve(APT_GET, "apt-get", &["-y", "-q", "purge", "tree"]);
+    let res = resolve(APT_GET, "apt_get", &["-y", "-q", "purge", "tree"]);
     let r = resolved(&res);
     assert_eq!(r.entity, operand("tree"));
     assert_eq!(r.verb.as_deref(), Some("purge"));
@@ -198,7 +198,7 @@ fn apt_get_no_leading_flags() {
     // `[install, nginx]`: `${1#-}` == `install` == `$1` immediately ⇒ the while body
     // never runs. verb=install, shift, $1=nginx. The flag-strip loop's zero-iteration
     // path.
-    let res = resolve(APT_GET, "apt-get", &["install", "nginx"]);
+    let res = resolve(APT_GET, "apt_get", &["install", "nginx"]);
     let r = resolved(&res);
     assert_eq!(r.entity, operand("nginx"));
     assert_eq!(r.verb.as_deref(), Some("install"));
@@ -210,7 +210,7 @@ fn apt_get_book_order_install_long_yes_binds_the_flag_strain_1() {
     // post-verb: `verb=install`, `shift` ⇒ `$1=--yes` ⇒ entity=`--yes`. Same strain-1
     // shape as the `-y` case — pinned because the prompt named this argv explicitly.
     // (Assert what the code does, not what apt-get does.)
-    let res = resolve(APT_GET, "apt-get", &["install", "--yes", "nginx"]);
+    let res = resolve(APT_GET, "apt_get", &["install", "--yes", "nginx"]);
     let r = resolved(&res);
     assert_eq!(
         r.entity,
@@ -228,7 +228,7 @@ fn apt_get_long_flag_double_dash_is_stripped_as_written() {
     // it. (apt-get's real long-option `=value` grammar is NOT modeled by this check;
     // the transcribed body strips it as a plain leading-dash token.) Then `install`
     // ends the loop. entity=nginx, verb=install.
-    let res = resolve(APT_GET, "apt-get", &["--yes", "install", "nginx"]);
+    let res = resolve(APT_GET, "apt_get", &["--yes", "install", "nginx"]);
     let r = resolved(&res);
     assert_eq!(r.entity, operand("nginx"));
     assert_eq!(r.verb.as_deref(), Some("install"));
@@ -309,7 +309,7 @@ apt_get__predict() {
    esac
 }
 ";
-    let res = resolve(src, "apt-get", &["update"]);
+    let res = resolve(src, "apt_get", &["update"]);
     let r = resolved(&res);
     assert_eq!(r.kind, "pkgindex");
     assert_eq!(
@@ -415,7 +415,7 @@ dnf__predict() {
 
     let apt = lifted
         .value
-        .get(interner.intern("apt-get"))
+        .get(interner.intern("apt_get"))
         .expect("apt-get check lifted");
     let apt_res = evaluate(apt, &["install", "nginx"]);
     let r_apt = resolved(&apt_res);
@@ -448,7 +448,7 @@ fn empty_argv_is_top() {
     // No command for the argparse to consume ⇒ EmptyArgv. (The engine receives full
     // verbatim args sans the command word; an empty arg list is a real possibility,
     // e.g. a bare `apt-get` with no operands, and must not resolve.)
-    let res = resolve(APT_GET, "apt-get", &[]);
+    let res = resolve(APT_GET, "apt_get", &[]);
     assert_eq!(res, Resolution::Top(TopReason::EmptyArgv));
 }
 
@@ -879,19 +879,32 @@ fn lift_is_deterministic() {
 // =============================================================================
 
 #[test]
-fn provider_name_underscore_maps_to_hyphen() {
-    // `apt_get__predict` ⇒ provider `apt-get` (underscore→hyphen). This is the chosen
-    // rule (flagged tc-*); pin it so a future change is visible. A single-segment
-    // name (`command__predict` ⇒ `command`) has no underscore to map.
+fn forward_munge_keys_the_funcdef_segment_and_serves_literal_underscore() {
+    // `24C:rul24-totalistic-munge`: command-keyed roles key on the funcdef SEGMENT via the FORWARD
+    // munge (`apt_get`), not the deleted backward `_`→`-` un-munge (`apt-get`). A book command with
+    // a literal `_` (`my_tool`) munges to the identical segment and finds its oracle — the
+    // regression the backward scheme silently lost.
     let mut interner = Interner::default();
-    let lifted = lift_predicts(&mut interner, APT_GET);
+    let apt = lift_predicts(&mut interner, APT_GET);
     assert!(
-        lifted.value.get(interner.intern("apt-get")).is_some(),
-        "apt_get__predict must key on provider `apt-get`"
+        apt.value.get(interner.intern("apt_get")).is_some(),
+        "apt_get__predict keys on the funcdef segment `apt_get` (forward-munge)"
     );
     assert!(
-        lifted.value.get(interner.intern("apt_get")).is_none(),
-        "the underscore form must NOT be the key"
+        apt.value.get(interner.intern("apt-get")).is_none(),
+        "the backward `apt-get` form is NOT the key (the un-munge path is deleted)"
+    );
+
+    let src = "my_tool__predict() { pkg : package = \"$1\"; dpkg-query -W \"$pkg\"; }";
+    let mytool = lift_predicts(&mut interner, src);
+    let seg = dorc_oracle::to_funcname_segment("my_tool");
+    assert_eq!(
+        seg, "my_tool",
+        "a literal `_` book word munges to the identical segment"
+    );
+    assert!(
+        mytool.value.get(interner.intern(&seg)).is_some(),
+        "`my_tool` finds `my_tool__predict` (the totalistic-munge regression)"
     );
 }
 

@@ -1387,7 +1387,7 @@ command__predict() {
         let package_index = KindId(interner.intern("package-index"));
         let installed = SelectorId(interner.intern("installed"));
         let fresh = SelectorId(interner.intern("fresh"));
-        let apt = ProviderId(interner.intern("apt-get"));
+        let apt = ProviderId(interner.intern("apt_get"));
         let install = interner.intern("install");
         let purge = interner.intern("purge");
         let update = interner.intern("update");
@@ -1958,7 +1958,7 @@ command__predict() {
         let package_index = KindId(i.intern("package-index"));
         let installed = SelectorId(i.intern("installed"));
         let fresh = SelectorId(i.intern("fresh"));
-        let apt = ProviderId(i.intern("apt-get"));
+        let apt = ProviderId(i.intern("apt_get"));
         let install = i.intern("install");
         let purge = i.intern("purge");
         let update = i.intern("update");
@@ -2862,7 +2862,7 @@ apt_get__predict() {
 ";
         let widget = KindId(i.intern("widget"));
         let installed = SelectorId(i.intern("installed"));
-        let apt = ProviderId(i.intern("apt-get"));
+        let apt = ProviderId(i.intern("apt_get"));
         let install = i.intern("install");
         let mut idx = KindIndex::default();
         idx.add_effect(apt, install, widget, installed, ValueClaim::Establish);

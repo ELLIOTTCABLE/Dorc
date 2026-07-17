@@ -12,7 +12,7 @@ use super::ast::{
     Test, TestOp, Word,
 };
 use super::lexer::{Tok, Token, lex};
-use super::{VERB_BINDING, lift_failure, map_provider_name};
+use super::{VERB_BINDING, lift_failure};
 use dorc_core::{Carrier, Interner, Span, Symbol};
 use dorc_syntax::sem;
 
@@ -65,17 +65,6 @@ impl FnRole {
             FnRole::DisturbanceReachesOnly => "__disturbance_reaches_only",
             FnRole::StateStoredOnlyIn => "__state_stored_only_in",
         }
-    }
-
-    /// Kind-keyed roles carry the kind-owner's nouns; their funcdef base name is the kind's
-    /// forward-munge (`flag-forward-munge-keying`), keyed AS-IS (no `_`→`-` recovery). The
-    /// command-keyed trio (`predict`/`disturbs`/`is_converged`) recovers the command word via
-    /// [`map_provider_name`].
-    const fn is_kind_keyed(self) -> bool {
-        matches!(
-            self,
-            FnRole::Resolve | FnRole::DisturbanceReachesOnly | FnRole::StateStoredOnlyIn
-        )
     }
 }
 
@@ -307,11 +296,13 @@ impl Parser<'_> {
         if base.is_empty() {
             return None;
         }
-        let provider_name = if self.role.is_kind_keyed() {
-            base.to_owned()
-        } else {
-            map_provider_name(base)
-        };
+        // Store the RAW funcdef base segment (`apt_get`, `sm_dorc_Package`) for BOTH species
+        // (`24C:rul24-totalistic-munge`): the FORWARD munge lives at the lookup sites
+        // (`map_provider_name` → `to_funcname_segment`), and the collision lint needs the raw
+        // source name to detect two distinct sources munging to one segment. The old command-keyed
+        // backward un-munge (`_`→`-`) is deleted — it lost a literal-`_` book word and collapsed
+        // the source distinction.
+        let provider_name = base.to_owned();
         // Must be followed by `(` `)` for a function definition.
         if !matches!(
             self.toks.get(self.pos.saturating_add(1)).map(|t| &t.kind),
@@ -1337,7 +1328,7 @@ mod dialect_tests {
         );
         assert!(out.diags.is_empty(), "clean lift: {:?}", out.diags);
         assert!(
-            out.value.get(i.intern("apt-get")).is_some(),
+            out.value.get(i.intern("apt_get")).is_some(),
             "the bare form keys the check on `apt-get`"
         );
     }
@@ -1565,7 +1556,7 @@ mod dialect_tests {
         assert!(out.diags.is_empty(), "clean lift: {:?}", out.diags);
         let r = out
             .value
-            .get(i.intern("apt-get"))
+            .get(i.intern("apt_get"))
             .expect("the predict funcdef");
         let Some(Stmt::Command(c)) = r.body.first() else {
             panic!("expected a command: {:?}", r.body)

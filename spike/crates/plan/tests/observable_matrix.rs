@@ -146,7 +146,7 @@ fn classify_value(
 fn package_index(i: &mut Interner) -> KindIndex {
     let package = KindId(i.intern("package"));
     let installed = SelectorId(i.intern("installed"));
-    let apt = ProviderId(i.intern("apt-get"));
+    let apt = ProviderId(i.intern("apt_get"));
     let install = i.intern("install");
     let purge = i.intern("purge");
     let mut idx = KindIndex::default();

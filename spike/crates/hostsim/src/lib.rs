@@ -813,7 +813,7 @@ apt_get__predict() {
             let mut i = Interner::default();
             let package = KindId(i.intern("package"));
             let installed = SelectorId(i.intern("installed"));
-            let apt = ProviderId(i.intern("apt-get"));
+            let apt = ProviderId(i.intern("apt_get"));
             let install = i.intern("install");
             let mut idx = KindIndex::default();
             idx.add_effect(apt, install, package, installed, ValueClaim::Establish);
@@ -887,7 +887,7 @@ apt_get__predict() {
             let mut i = Interner::default();
             let package = KindId(i.intern("package"));
             let installed = SelectorId(i.intern("installed"));
-            let apt = ProviderId(i.intern("apt-get"));
+            let apt = ProviderId(i.intern("apt_get"));
             let install = i.intern("install");
             let mut idx = KindIndex::default();
             idx.add_effect(apt, install, package, installed, ValueClaim::Establish);
@@ -1012,7 +1012,7 @@ apt_get__predict() {
         let mut i = Interner::default();
         let package = KindId(i.intern("package"));
         let installed = SelectorId(i.intern("installed"));
-        let apt = ProviderId(i.intern("apt-get"));
+        let apt = ProviderId(i.intern("apt_get"));
         let install = i.intern("install");
         let mut idx = KindIndex::default();
         idx.add_effect(apt, install, package, installed, ValueClaim::Establish); // one effect cell

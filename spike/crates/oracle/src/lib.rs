@@ -90,6 +90,10 @@ pub mod reaches;
 /// capture rul24M-bare-dorcism-names prices as accepted-not-prevented.
 pub mod reserved;
 
+/// The `# dorc-lang/v0.1` marker gate (`marker-gates-syntax-only`): dialect constructs (binds,
+/// trailing marks) in an UNMARKED file are a loud error; bare `__role` floor bodies work markerless.
+pub mod marker;
+
 /// How a `(provider, verb)` reads/writes a fact's OPAQUE boolean — the lifted
 /// representation is [`ValueClaim`] (jc-polarity-vs-rc, FINAL — human 2026-07-02).
 /// The former `Polarity{Establish, Kill, Query}` is RETIRED: no create/destroy axis
@@ -287,7 +291,7 @@ mod tests {
         // Pins the hand-built index API the consumer relies on (independent of lift).
         let mut interner = Interner::default();
         let package = KindId(interner.intern("package"));
-        let apt = ProviderId(interner.intern("apt-get"));
+        let apt = ProviderId(interner.intern("apt_get"));
         let install = interner.intern("install");
         let installed = SelectorId(interner.intern("installed"));
 
@@ -312,7 +316,7 @@ mod tests {
         // us-effectmap (note 205 §3): a second effect on the same (provider, verb,
         // selector) cell reports a conflict and is dropped; the first survives.
         let mut i = Interner::default();
-        let apt = ProviderId(i.intern("apt-get"));
+        let apt = ProviderId(i.intern("apt_get"));
         let install = i.intern("install");
         let package = KindId(i.intern("package"));
         let installed = SelectorId(i.intern("installed"));
@@ -334,7 +338,7 @@ mod tests {
             .is_some()
         );
         assert_eq!(
-            effect(&idx, &mut i, "apt-get", "install"),
+            effect(&idx, &mut i, "apt_get", "install"),
             Some((package, installed, ValueClaim::Establish)),
             "first-writer-wins"
         );
@@ -371,11 +375,11 @@ mod tests {
         let installed = SelectorId(i.intern("installed"));
 
         assert_eq!(
-            effect(&out.value, &mut i, "apt-get", "install"),
+            effect(&out.value, &mut i, "apt_get", "install"),
             Some((package, installed, ValueClaim::Establish))
         );
         assert_eq!(
-            effect(&out.value, &mut i, "apt-get", "purge"),
+            effect(&out.value, &mut i, "apt_get", "purge"),
             Some((package, installed, ValueClaim::EstablishInverted))
         );
         // `dpkg` is verbless (its check strips the `-i` flag), so its effect keys on the
@@ -404,7 +408,7 @@ mod tests {
         let package = KindId(i.intern("package"));
         let installed = SelectorId(i.intern("installed"));
         assert_eq!(
-            effect(&out.value, &mut i, "apt-get", "install"),
+            effect(&out.value, &mut i, "apt_get", "install"),
             Some((package, installed, ValueClaim::Establish))
         );
         assert_eq!(

@@ -4084,8 +4084,9 @@ apt_get__predict() {
             &classes,
             &kills,
             |provider, _argv| {
-                // Escalate ONLY apt-get (the payload-bound install); everything else declines.
-                (dorc_oracle::predict::map_provider_name(i.resolve(provider)) == "apt-get").then(
+                // Escalate ONLY apt-get (the payload-bound install); everything else declines. The
+                // forward munge keys the book word `apt-get` on the segment `apt_get`.
+                (dorc_oracle::predict::map_provider_name(i.resolve(provider)) == "apt_get").then(
                     || DerivationShip {
                         sh: "apt_get__touches() { apt-manifest \"$1\"; }".to_string(),
                         call: "apt-manifest".to_string(),
@@ -4554,7 +4555,7 @@ apt_get__predict() {
         let package_index = KindId(i.intern("package-index"));
         let installed = SelectorId(i.intern("installed"));
         let fresh = SelectorId(i.intern("fresh"));
-        let apt = ProviderId(i.intern("apt-get"));
+        let apt = ProviderId(i.intern("apt_get"));
         let install = i.intern("install");
         let update = i.intern("update");
         let mut idx = KindIndex::default();
@@ -4963,7 +4964,7 @@ apt_get__predict() {
         let mut idx = package_index(&mut i);
         let package = KindId(i.intern("package"));
         let installed = SelectorId(i.intern("installed"));
-        let apt = ProviderId(i.intern("apt-get"));
+        let apt = ProviderId(i.intern("apt_get"));
         let purge = i.intern("purge");
         idx.add_effect(
             apt,

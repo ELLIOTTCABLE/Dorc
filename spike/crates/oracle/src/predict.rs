@@ -251,19 +251,22 @@ fn collect_strip_edits(
     }
 }
 
-/// Map a check function's provider-name fragment to the command word: `_` → `-`
-/// (`apt_get` ⇒ `apt-get`). The **single** home of the underscore↔hyphen convention
-/// (204 §3, the `tc-*`-flagged provider-name rule): the dialect parser keys a
-/// [`PredictSet`] by the mapped name, AND the engine's wiring (`analysis::effect`)
-/// re-derives the provider symbol from a book's command word through this same
-/// function, so the book's command-word interning, `KindIndex`'s `ProviderId`
-/// interning, and the `PredictSet` key all agree (204 §6 seam #2). Exported so the
-/// mapping is never duplicated; a future provider-name escape lands here alone.
+/// Canonicalize a command word (or a funcdef provider fragment) to its **funcname segment** —
+/// the FORWARD munge (`rul24-totalistic-munge`): `-`/`.` → `_`, leading-digit repaired. THE single
+/// home of the command-word↔key convention (204 §6 seam #2): the parser keys a [`PredictSet`] and
+/// the [`KindIndex`](crate::KindIndex) by this form, AND `analysis::effect` derives a book command
+/// word's provider through the same function, so the book word, the effect-map key, and the funcname
+/// all agree. An oracle named `<seg>__role` therefore serves every book word munging to `<seg>`
+/// (a literal `_` book word `my_tool` finds `my_tool__is_converged`; a dotted `my.tool` finds
+/// `my_tool__role`); two distinct co-loaded source names munging to one segment are the landed
+/// `munge-name-collision` refusal.
 ///
-/// **Lossy** (a literal `_` in a command name cannot be expressed); flagged `tc-*`.
+/// Was the LOSSY backward un-munge (`_` → `-`) — deleted per `24C:rul24-totalistic-munge` so
+/// command-keyed lookup matches the kind-keyed forward-munge (`rekey_to_raw_kinds`). Delegates to
+/// [`crate::to_funcname_segment`] (the one munge); kept as the named seam so a future escape lands here.
 #[must_use]
 pub fn map_provider_name(raw: &str) -> String {
-    raw.replace('_', "-")
+    crate::to_funcname_segment(raw)
 }
 
 // B4 sweep: check codes migrated onto Diag spine.

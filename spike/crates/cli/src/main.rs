@@ -508,6 +508,18 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
         &dorc_oracle::reserved::lint_oracle_reserved_names(&mut interner, &oracle_refs),
     );
 
+    // The marker gate (marker-gates-syntax-only): a dialect construct (bind/mark) in an UNMARKED
+    // oracle is a loud error naming the missing `# dorc-lang/v0.1`. The corpus is marker-stamped
+    // corpus-wide, so this is silent there; the bare `__role` floor lifts markerless regardless.
+    for (src, path) in oracle_refs.iter().zip(oracle_paths.iter()) {
+        report_at(
+            advisory,
+            "marker",
+            Some((path.as_str(), src)),
+            &dorc_oracle::marker::check_dialect_marker(&mut interner, src),
+        );
+    }
+
     // Parse + analyze the book (shared interner, so symbols match the oracles). Multiple books
     // CONCATENATE into one analyzed unit (`\n`-joined so no two files' lines merge). `book_name`
     // is the display path (the first book) — for a single book (the norm) the frame's line numbers
@@ -519,6 +531,15 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
     let book_source = Some((book_name, book_src.as_str()));
     let parsed = dorc_syntax::parse(&book_src);
     report_at(advisory, "parse", book_source, &parsed.diags);
+    // The marker gate also covers a BOOK that HOSTS oracle functions (share-a-file): an unmarked
+    // book carrying a bind/mark errors, while a stripped off-ramp artifact (dialect erased) stays
+    // marker-free and only warns on the reserved-name squat below (guard23-reingest-collision).
+    report_at(
+        advisory,
+        "marker",
+        book_source,
+        &dorc_oracle::marker::check_dialect_marker(&mut interner, &book_src),
+    );
     // The munge-reservation squat lint (24M rul24M-bare-dorcism-names): a book funcdef
     // coincidentally named `<x>__<role>` squats the reserved emitted namespace — surfaced LOUDLY
     // as a Warning (the loud-friend law; rul24-warnings-tune-high). The live corpus instance is
@@ -1246,8 +1267,11 @@ fn ship_touches_body(
             // The EXPECTED escalation (24E §4): the body reached a host query ⇒ ship it.
             TouchesResolution::Top(TouchesTop::NonPrintfCommand) => {
                 Some(dorc_plan::DerivationShip {
+                    // Display the BOOK command word (`apt-get`), not the munged funcdef segment
+                    // (`apt_get`, the forward-munge key) — the why-lens reads better with the word
+                    // the admin wrote (`24C:rul24-totalistic-munge` keeps the segment internal).
+                    call: format!("{}.touches()", interner.resolve(provider)),
                     sh: strip_touches(src, touches, interner),
-                    call: format!("{}.touches()", interner.resolve(p)),
                 })
             }
             // Static-resolvable, an OTHER ⊤ (degrade-to-wall), or empty ⇒ NOT a derivation.

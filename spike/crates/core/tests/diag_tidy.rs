@@ -139,6 +139,10 @@ const MIGRATED_SLUGS: &[&str] = &[
 //   coincidentally named `*__<role>`). cli-edge; the first two are Error (refuse), the squat is a
 //   Warning. PENDING the same typed-spine migration as the other collision-family codes
 //   (tc-footprint-diag — the reservation lint shares the confusability-diagnostic render pass).
+// * `missing-dialect-marker` (the marker gate, marker-gates-syntax-only / 24M rul24M-version-comment,
+//   oracle/marker.rs): a dialect construct (bind/mark) in an UNMARKED oracle/book — Error (a loud
+//   file-level refusal naming the missing `# dorc-lang/v0.1`). cli-edge; PENDING the same typed-spine
+//   migration as the other cli-edge lint codes (tc-footprint-diag).
 const LEGACY_ALLOW_LIST: &[&str] = &[
     "footprint-incoherent",
     "touches-escalated",
@@ -150,6 +154,7 @@ const LEGACY_ALLOW_LIST: &[&str] = &[
     "munge-name-invalid",
     "munge-name-collision",
     "reserved-namespace-squat",
+    "missing-dialect-marker",
 ];
 
 /// The SPANLESS-MINT allow-list (arch-3-residual-2): EXACTLY the codes permitted to construct a
