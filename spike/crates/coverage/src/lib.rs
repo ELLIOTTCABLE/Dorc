@@ -484,7 +484,7 @@ pub fn build_report(inputs: &Inputs<'_>) -> Report {
     // Kill-AWARE classify (24A §3): mirrors the cli so the dashboard sees the same kill-wall the
     // honest baseline does (a kill-UNAWARE plan would over-report elision on a kill book). The
     // why-diags are cli-render-only; coverage discards them.
-    let (classified, _why_diags, kills, _kill_coords) =
+    let (classified, _why_diags, kills, _kill_coords, _fact_backings) =
         dorc_analysis::effect::classify_with_why_diags(
             &cfg,
             &value,
@@ -546,9 +546,10 @@ pub fn build_report(inputs: &Inputs<'_>) -> Report {
         &kills,
         None,
         None,
-        // Survival is OFF here (dashboard parity with the honest baseline), so the dialect is never
-        // consulted — the empty dialect is the correct, byte-identical value.
+        // Survival is OFF here (dashboard parity with the honest baseline), so the dialect and the
+        // `277` §5 backing map are never consulted — the empty values are correct, byte-identical.
         &dorc_core::Dialect::empty(),
+        &BTreeMap::new(),
         &vouches,
         &connected,
         observe,

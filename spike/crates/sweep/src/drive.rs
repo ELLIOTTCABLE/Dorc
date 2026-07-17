@@ -61,16 +61,17 @@ pub fn run_kernel(declared: &DeclaredScenario, s0: &Host, flag_on: bool, i: &mut
     let verdict_providers = dorc_oracle::verdict::verdict_providers(i, &oracle_refs);
 
     let mut arena = ProvArena::new();
-    let (classified, _why, kills, _kill_coords) = dorc_analysis::effect::classify_with_why_diags(
-        &cfg,
-        &value,
-        &parsed.value,
-        &idx,
-        &checks,
-        &verdict_providers,
-        i,
-        &mut arena,
-    );
+    let (classified, _why, kills, _kill_coords, fact_backings) =
+        dorc_analysis::effect::classify_with_why_diags(
+            &cfg,
+            &value,
+            &parsed.value,
+            &idx,
+            &checks,
+            &verdict_providers,
+            i,
+            &mut arena,
+        );
     let classes = classified.value;
 
     // The probe: a site is elidable only if its fact is actually checked (can't-probe ⇒
@@ -164,6 +165,7 @@ pub fn run_kernel(declared: &DeclaredScenario, s0: &Host, flag_on: bool, i: &mut
         survival.as_ref(),
         Some(&resolutions),
         &dorc_oracle::build_dialect(&idx),
+        &fact_backings,
         &vouches,
         &connected,
         |f| {

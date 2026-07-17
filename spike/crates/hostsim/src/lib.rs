@@ -1293,6 +1293,8 @@ grep__predict() {
                     None,
                     None,
                     &dorc_core::Dialect::empty(),
+                    // Survival off (`None`) ⇒ the `277` §5 backing map is never consulted.
+                    &BTreeMap::new(),
                     &dorc_plan::Vouches::new(),
                     &connected,
                     observe,

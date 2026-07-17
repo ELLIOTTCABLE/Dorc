@@ -587,7 +587,10 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
     // walls downstream, closing the kill gap fd10's establish-only wall left open. `kill_coords`
     // (24E §7): each single-kill node's killed coordinate — the kill-wall coherence comparand
     // (own-killed-coord ⊆ footprint), closing resid-kill-coherence.
-    let (classified, why_diags, kills, kill_coords) =
+    // `fact_backings` (`277` §5 backing-SETS): each establish fact's survival-backing provenance
+    // — its minting family + observe-backing-widening selectors — threaded to `build_plan_walled`
+    // so the survival tier builds each fact's backing SET (a widened backing GROWS kill-surface).
+    let (classified, why_diags, kills, kill_coords, fact_backings) =
         dorc_analysis::effect::classify_with_why_diags(
             &cfg.value,
             &value,
@@ -856,6 +859,7 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
         survival.as_ref(),
         args.trust_footprints.then_some(&resolutions),
         &dorc_oracle::build_dialect(&idx),
+        &fact_backings,
         &vouches,
         &connected,
         |f| {

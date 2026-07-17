@@ -40,8 +40,8 @@ use dorc_analysis::effect::{FactKey, InlineSite, SkipClass};
 use dorc_analysis::lattice::{May, Powerset};
 use dorc_analysis::value::{ValueFlow, ValueOf};
 use dorc_core::{
-    AstId, ByVouch, Carrier, Channel, Dialect, EntityRef, Grade, Interner, KindId, Observable,
-    Predicted, Rc, Rung, Symbol, Verdict,
+    AstId, ByVouch, Carrier, Channel, Dialect, EntityRef, FactBacking, Grade, Interner, KindId,
+    Observable, Predicted, Rc, Rung, Symbol, Verdict,
 };
 use dorc_oracle::verdict::VERDICT_SUFFIX;
 use dorc_syntax::ast::{Ast, NodeKind, RedirOp, RedirTarget};
@@ -2334,6 +2334,9 @@ pub fn build_plan(
         None,
         None,
         &Dialect::empty(),
+        // Survival is off (`None`) here, so the backing map is never consulted — the empty map is
+        // the honest floor for this kill-unaware / flag-off entry.
+        &BTreeMap::new(),
         vouches,
         &ConnectedPipes::default(),
         observe,
@@ -2368,7 +2371,7 @@ pub fn build_plan(
 #[must_use]
 #[expect(
     clippy::too_many_arguments,
-    reason = "the kernel entry threads the whole compiled context (src/ast/cfg/classes/kills/survival/observe/arena); each is a distinct input, not a bundle-able struct — widening it once here is clearer than a params object that hides the seams"
+    reason = "the kernel entry threads the whole compiled context (src/ast/cfg/classes/kills/survival/fact-backings/observe/arena); each is a distinct input, not a bundle-able struct — widening it once here is clearer than a params object that hides the seams"
 )]
 pub fn build_plan_walled(
     src: &str,
@@ -2379,6 +2382,7 @@ pub fn build_plan_walled(
     survival: Option<&TrustedFootprints>,
     resolutions: Option<&Resolutions>,
     dialect: &Dialect,
+    fact_backings: &BTreeMap<FactKey, FactBacking>,
     vouches: &Vouches,
     connected: &ConnectedPipes,
     observe: impl Fn(FactKey) -> Observable,
@@ -2532,12 +2536,10 @@ pub fn build_plan_walled(
         // Flag-off (BASELINE, byte-identical to Stage-1): a running mutator is a TOTAL wall.
         None => wall_walk_total(&mut steps),
         // Flag-on (the golden hill): a running FOOTPRINTED mutator scopes its wall; a downstream
-        // converged `Replace` survives iff disjoint from every accumulated footprint (TC-3), with
-        // both sides canonicalized through the resolvers (24F §3 — `None` ⇒ the token-equality floor).
+        // converged `Replace` survives iff its backing SET is disjoint from every footprint (TC-3).
         Some(footprints) => {
-            let empty = Resolutions::none();
-            let res = resolutions.unwrap_or(&empty);
-            survival_report = wall_walk_survival(&mut steps, footprints, res, dialect);
+            survival_report =
+                wall_walk_survival(&mut steps, footprints, resolutions, dialect, fact_backings);
         }
     }
 
@@ -2577,9 +2579,13 @@ fn wall_walk_total(steps: &mut [(Step, bool, CfgNodeId)]) {
 fn wall_walk_survival(
     steps: &mut [(Step, bool, CfgNodeId)],
     footprints: &TrustedFootprints,
-    resolutions: &Resolutions,
+    resolutions: Option<&Resolutions>,
     dialect: &Dialect,
+    fact_backings: &BTreeMap<FactKey, FactBacking>,
 ) -> SurvivalReport {
+    // `None` resolvers ⇒ the token-equality floor (24F §3): the empty map, every kind resolver-less.
+    let empty = Resolutions::none();
+    let resolutions = resolutions.unwrap_or(&empty);
     let mut report = SurvivalReport::default();
     let mut total_wall = false;
     let mut accumulated: Vec<survival::AccumulatedWall> = Vec::new();
@@ -2587,7 +2593,15 @@ fn wall_walk_survival(
         // 1. Survival test for a converged mutator's `Replace` against the walls so far — both the
         //    backing and each accumulated footprint canonicalized through the resolvers (24F §3).
         if *is_mutator && let Disposition::Replace(license, _) = &step.disposition {
-            let backing = Backing::of_fact(license.fact());
+            // `277` §5 backing-SETS: build the fact's backing SET — its own cell plus the
+            // observe-backing-widening siblings, carrying the THREADED minting family. A map-MISS
+            // (a file-write / auto-cell / Members fact, or a caller with no threaded map) falls to
+            // the singleton `Backing::of_fact` (the reverse-lookup floor — today's behavior).
+            let fact = license.fact();
+            let backing = match fact_backings.get(&fact) {
+                Some(fb) => Backing::widened(fact, fb.family, fb.observed.clone()),
+                None => Backing::of_fact(fact),
+            };
             match survival::wall_verdict(total_wall, &accumulated, &backing, resolutions, dialect) {
                 // Crossed no wall — an ordinary pre-wall elision; leave it exactly as the
                 // flag-off world would (no witness, `Replace` untouched).
@@ -4190,16 +4204,17 @@ apt_get__predict() {
         let cfg = dorc_analysis::cfg::build(&parsed.value).value;
         let value = dorc_analysis::value::analyze(&cfg, &parsed.value, &mut i);
         let checks = vec![dorc_oracle::predict::lift_predicts(&mut i, CORPUS_PREDICT_SRC).value];
-        let (classes, _why, kills, _kill_coords) = dorc_analysis::effect::classify_with_why_diags(
-            &cfg,
-            &value,
-            &parsed.value,
-            &idx,
-            &checks,
-            &BTreeSet::new(),
-            &mut i,
-            &mut dorc_core::ProvArena::new(),
-        );
+        let (classes, _why, kills, _kill_coords, _fact_backings) =
+            dorc_analysis::effect::classify_with_why_diags(
+                &cfg,
+                &value,
+                &parsed.value,
+                &idx,
+                &checks,
+                &BTreeSet::new(),
+                &mut i,
+                &mut dorc_core::ProvArena::new(),
+            );
         let classes = classes.value;
         let derivations = compile_derivations(
             &parsed.value,
@@ -5102,7 +5117,7 @@ apt_get__predict() {
         let value = dorc_analysis::value::analyze(&cfg, &parsed.value, &mut i);
         let checks = vec![dorc_oracle::predict::lift_predicts(&mut i, CORPUS_PREDICT_SRC).value];
         let mut arena = dorc_core::ProvArena::new();
-        let (classified, _why, kills_found, _kill_coords) =
+        let (classified, _why, kills_found, _kill_coords, _fact_backings) =
             dorc_analysis::effect::classify_with_why_diags(
                 &cfg,
                 &value,
@@ -5133,6 +5148,7 @@ apt_get__predict() {
             None,
             None,
             &Dialect::empty(),
+            &BTreeMap::new(),
             &vouch_all(&classes),
             &ConnectedPipes::default(),
             observe,
@@ -5276,6 +5292,7 @@ apt_get__predict() {
             footprints.as_ref(),
             None,
             &Dialect::empty(),
+            &BTreeMap::new(),
             &vouch_all(&classes),
             &ConnectedPipes::default(),
             observe,
@@ -5370,6 +5387,7 @@ apt_get__predict() {
             Some(&empty),
             None,
             &Dialect::empty(),
+            &BTreeMap::new(),
             &vouch_all(&classes),
             &ConnectedPipes::default(),
             observe,

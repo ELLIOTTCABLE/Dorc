@@ -450,22 +450,35 @@ impl Footprint {
 /// resid-aliasing). It is the fact's own `(kind, entity)` coordinate (the one declared cell a
 /// fact is about). A DISTINCT type from [`Footprint`] (TC-2): the two never mix, and there is no
 /// path from an establish-effect to a `Footprint`, only to a `Backing`.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone)]
 pub struct Backing {
     coord: EntityCoord,
-    /// `277` §3 — the fact's SELECTOR cell, carried into the survival comparison so a selector-
-    /// bearing disturbs claim can spare a SIBLING cell of the same entity under the dialect. The
-    /// entity-granular `coord` above still drives canonicalization + attribution render
-    /// (`empty-world-byte-identical`); the selector rides alongside for `selector_covers` only. A
-    /// fact always carries a concrete selector, so this is `Some`.
+    /// `277` §3 — the fact's OWN SELECTOR cell, carried into the survival comparison so a
+    /// selector-bearing disturbs claim can spare a SIBLING cell of the same entity under the
+    /// dialect. The entity-granular `coord` above still drives canonicalization + attribution
+    /// render (`empty-world-byte-identical`); the selector rides alongside for `selector_covers`
+    /// only. A fact always carries a concrete selector, so this is `Some`.
     selector: Option<SelectorId>,
+    /// `277` §3 backing provenance — the fact's MINTING FAMILY, threaded from the lift (the
+    /// establishing `(provider, verb)`'s provider; `27D` disposition-backing-family-recovery).
+    /// `None` ⇒ RECOVER via the `sole_family` reverse-lookup (the map-miss floor: a file-write /
+    /// auto-cell / Members fact, and every direct-`of_fact` test — today's behavior). When
+    /// threaded `Some`, it is AUTHORITATIVE (exact, past the divergent-meaning ambiguity that
+    /// falls the reverse-lookup to `None`). All members share it (one provider's verdict AND
+    /// observe marks mint the whole set).
+    family: Option<ProviderId>,
+    /// `277` §5 observe-backing-widening — the SIBLING selectors that widen this fact's backing:
+    /// the `:?` observe cells that co-occurred with the verdict in the establishing predict body.
+    /// Each is a member `(coord.kind, coord.entity, selector)`. Empty for the whole corpus (every
+    /// corpus observe is standalone). Widening only GROWS kill-surface (`inv-kfail`, apply): a
+    /// wall disturbing an observed sibling now collides where the bare fact would have spared.
+    widen: BTreeSet<SelectorId>,
 }
 
 impl Backing {
-    /// The backing of a fact: its `(kind, entity)` coordinate (entity-granular for
-    /// canonicalization/render) plus the fact's selector (`277` §3 — carried for the dialect
-    /// comparison). This is the ONLY construction — a backing is always "where THIS fact's truth
-    /// lives", never a wider claim.
+    /// The singleton backing of a fact (the map-MISS floor): its `(kind, entity)` coordinate plus
+    /// the fact's own selector, NO widening, family `None` ⇒ recover via `sole_family` (today's
+    /// behavior — a file-write / auto-cell / Members fact, and every direct test construction).
     #[must_use]
     pub fn of_fact(fact: FactKey) -> Self {
         Self {
@@ -474,22 +487,55 @@ impl Backing {
                 entity: fact.entity,
             },
             selector: Some(fact.selector),
+            family: None,
+            widen: BTreeSet::new(),
         }
     }
 
-    /// The backed coordinate (attribution render).
+    /// The `277` §5 WIDENED backing of an establish fact (the map-HIT path): the fact's own cell
+    /// plus each observe-backing-widening sibling, carrying the THREADED minting family. `family`
+    /// is authoritative (exact; `None` only on a cross-provider establish collision, the safe
+    /// floor). `observed` are the widening sibling selectors (empty for the corpus).
     #[must_use]
-    pub fn coord(self) -> EntityCoord {
+    pub fn widened(
+        fact: FactKey,
+        family: Option<ProviderId>,
+        observed: BTreeSet<SelectorId>,
+    ) -> Self {
+        Self {
+            coord: EntityCoord {
+                kind: fact.kind,
+                entity: fact.entity,
+            },
+            selector: Some(fact.selector),
+            family,
+            widen: observed,
+        }
+    }
+
+    /// The backing's member SELECTORS (`277` §5): the fact's own cell first, then each
+    /// observe-widened sibling (deterministic — `widen` is a `BTreeSet`). The universal meet
+    /// ([`disjoint`]) quantifies over these.
+    fn member_selectors(&self) -> impl Iterator<Item = Option<SelectorId>> + '_ {
+        std::iter::once(self.selector).chain(self.widen.iter().map(|s| Some(*s)))
+    }
+
+    /// The backed coordinate (attribution render — the fact's own `(kind, entity)` anchor).
+    #[must_use]
+    pub fn coord(&self) -> EntityCoord {
         self.coord
     }
 }
 
-/// A witness that a [`Footprint`] does not touch a [`Backing`]'s coordinate — minted ONLY by
-/// [`disjoint`] (private field, no other constructor, TC-3). Its existence is the proof; it
-/// records the coordinate it cleared (for provenance).
+/// A witness that a [`Footprint`] does not touch ANY member of a [`Backing`]'s coordinate SET
+/// (`277` §5 — the universal meet) — minted ONLY by [`disjoint`] (private field, no other
+/// constructor, TC-3). Its existence is the proof; it records the backing's own coordinate + its
+/// threaded minting FAMILY (`277` §3 backing provenance) so a survival's attribution can cite the
+/// family of the members it cleared (`27D` disposition-backing-family-recovery).
 #[derive(Debug, Clone, Copy)]
 pub struct DisjointnessProof {
     backing: EntityCoord,
+    family: Option<ProviderId>,
 }
 
 impl DisjointnessProof {
@@ -497,6 +543,14 @@ impl DisjointnessProof {
     #[must_use]
     pub fn backing(self) -> EntityCoord {
         self.backing
+    }
+
+    /// The backing's threaded minting family (`277` §3), if known — the family whose dialect
+    /// governed the sparing (`None` when recovered via the reverse-lookup floor). Attribution
+    /// render only (`inv-referent-agnostic`).
+    #[must_use]
+    pub fn family(self) -> Option<ProviderId> {
+        self.family
     }
 }
 
@@ -546,6 +600,8 @@ pub fn disjoint(
     // §4 near-miss: distinctness-as-license). A typeless oracle has no `touches()` so it never
     // GRANTS survival (no footprint); this bars it from RECEIVING survival too (`277` §6
     // never-derive-separation — distinctness demoted to incomparability wherever it could license).
+    // MEMBER-WISE (`277` §5): every member shares `backing.coord.kind` (widening adds sibling
+    // selectors, never a new kind/entity), so the one check covers the whole set.
     if resolutions.is_auto(backing.coord.kind)
         || footprint
             .hit_surface()
@@ -553,50 +609,64 @@ pub fn disjoint(
     {
         return DisjointOutcome::MayAlias(MayAliasReason::Unresolved);
     }
-    // The backing's minting family (`277` §3 backing provenance): the SOLE family that minted the
-    // fact's selector for its kind, recovered from the dialect. `None` (ambiguous / absent /
-    // fence-divergent-meaning) ⇒ the empty dialect ⇒ no sparing ⇒ the safe collide floor.
-    let backing_family: Option<ProviderId> = backing
-        .selector
-        .and_then(|s| dialect.sole_family(backing.coord.kind, s));
-    let backing_coord = Coord::new(backing.coord.kind, backing.coord.entity, backing.selector);
     let backing_canon = resolution_to_entity(resolutions.canonicalize(backing.coord));
     let mut may_alias: Option<MayAliasReason> = None;
-    // The hit-surface (24G §8): the author's/derivation's coords unioned with the engine-supplied
-    // own-effect coordinate. Each coordinate PAIR goes through the ONE whole-coordinate chokepoint
-    // (`277` §2 `compare`) — the kind-fence, entity-canonicalization, and selector-dialect all live
-    // there; this crate never compares axes inline (`inv-referent-agnostic`).
-    for fc in footprint.hit_surface() {
-        let claim = Coord::new(fc.kind, fc.entity, footprint.selector_of(fc));
-        let claim_canon = resolution_to_entity(resolutions.canonicalize(fc));
-        match compare(
-            claim,
-            backing_coord,
-            claim_canon,
-            backing_canon,
-            dialect,
-            backing_family,
-        ) {
-            // Provably disjoint: a different kind, a different entity within one kind, or the
-            // dialect spared the cell (`277` §3 selector-granular sparing) — this pair is clear.
-            Relation::ProvablyDisjoint => {}
-            // Proven overlap (same kind + canonical entity, the selector collides): the aliasing
-            // closure firing, a plain token hit, a ⊤ footprint over a cell, or a reaches()-expanded
-            // coord (24G Part B — attributed via `via_reach`).
-            Relation::Overlaps => {
-                return DisjointOutcome::Hit {
-                    via_reach: footprint.reach_of(fc),
-                };
+    // `277` §5 set-lifting UNIVERSAL MEET: spared iff EVERY (footprint coord × backing MEMBER)
+    // pair is provably-disjoint. The member set = the fact's own cell + each observe-widened
+    // sibling (`member_selectors`). Any member Overlaps ⇒ Hit (collide); any Unknown ⇒ may_alias
+    // (the safe bottom). ORDER-INDEPENDENT (pin-set-meet-order-independence): a pure fold over
+    // member×footprint verdicts, no member's outcome re-enters as another's input
+    // (pin-no-outcome-as-generator).
+    for msel in backing.member_selectors() {
+        // The member's minting family (`277` §3 backing provenance): the THREADED family
+        // (exact — past `fence-divergent-meaning`), or `None` ⇒ recover via the `sole_family`
+        // reverse-lookup keyed by THIS member's selector (the map-miss floor — today's behavior).
+        let member_family: Option<ProviderId> = backing
+            .family
+            .or_else(|| msel.and_then(|s| dialect.sole_family(backing.coord.kind, s)));
+        let member_coord = Coord::new(backing.coord.kind, backing.coord.entity, msel);
+        // The hit-surface (24G §8): the author's/derivation's coords unioned with the engine-
+        // supplied own-effect coordinate. Each coordinate PAIR goes through the ONE whole-
+        // coordinate chokepoint (`277` §2 `compare`) — the kind-fence, entity-canonicalization,
+        // and selector-dialect all live there; this crate never compares axes inline
+        // (`inv-referent-agnostic`). The backing member canonicalizes on its entity (shared with
+        // the fact), so `backing_canon` is reused (selectors do NOT canonicalize at v1).
+        for fc in footprint.hit_surface() {
+            let claim = Coord::new(fc.kind, fc.entity, footprint.selector_of(fc));
+            let claim_canon = resolution_to_entity(resolutions.canonicalize(fc));
+            match compare(
+                claim,
+                member_coord,
+                claim_canon,
+                backing_canon,
+                dialect,
+                member_family,
+            ) {
+                // Provably disjoint: a different kind, a different entity within one kind, or the
+                // dialect spared the cell (`277` §3 selector-granular sparing) — this pair is clear.
+                Relation::ProvablyDisjoint => {}
+                // Proven overlap (same kind + canonical entity, the selector collides): the
+                // aliasing closure firing, a plain token hit, a ⊤ footprint over a cell, or a
+                // reaches()-expanded coord (24G Part B — attributed via `via_reach`). ANY member
+                // overlapping collides the whole SET (universal meet), so we return immediately.
+                Relation::Overlaps => {
+                    return DisjointOutcome::Hit {
+                        via_reach: footprint.reach_of(fc),
+                    };
+                }
+                // A resolver gap (24F §3a) — can't prove THIS pair disjoint ⇒ fail toward run.
+                // Recorded and the walk continues, so a later proven Hit still takes precedence
+                // over may-alias, and ANY unknown member collides the set (pin-set-meet-order-
+                // independence).
+                Relation::Unknown => may_alias = Some(MayAliasReason::Unresolved),
             }
-            // A resolver gap (24F §3a) — can't prove THIS pair disjoint ⇒ fail toward run. Recorded
-            // and the loop continues, so a later proven Hit still takes precedence over may-alias.
-            Relation::Unknown => may_alias = Some(MayAliasReason::Unresolved),
         }
     }
     match may_alias {
         Some(reason) => DisjointOutcome::MayAlias(reason),
         None => DisjointOutcome::Disjoint(DisjointnessProof {
             backing: backing.coord,
+            family: backing.family,
         }),
     }
 }
@@ -890,6 +960,18 @@ mod tests {
         EntityCoord::new(fact.kind, fact.entity)
     }
 
+    /// Build a raw entity-granular backing for a test: the coord + selector, no widening, family
+    /// recovered via `sole_family` (the map-miss floor). The pre-`277`-§5 `Backing { coord,
+    /// selector }` shorthand, updated for the SET representation.
+    fn backing_of(coord: EntityCoord, selector: Option<SelectorId>) -> Backing {
+        Backing {
+            coord,
+            selector,
+            family: None,
+            widen: BTreeSet::new(),
+        }
+    }
+
     #[test]
     fn disjoint_when_kinds_differ() {
         // Wall touches package:nginx; downstream fact lives in pkgindex:. Different kinds ⇒
@@ -900,10 +982,10 @@ mod tests {
             EntityRef::Operand(OpaqueToken(i.intern("nginx"))),
         );
         let fp = Footprint::authored(i.intern("apt-get"), vec![wall_coord]).unwrap();
-        let backing = Backing {
-            coord: EntityCoord::new(KindId(i.intern("pkgindex")), EntityRef::Singleton),
-            selector: None,
-        };
+        let backing = backing_of(
+            EntityCoord::new(KindId(i.intern("pkgindex")), EntityRef::Singleton),
+            None,
+        );
         assert!(
             matches!(
                 disjoint(&fp, &backing, &Resolutions::none(), &Dialect::empty()),
@@ -923,10 +1005,7 @@ mod tests {
         let fp = Footprint::authored(i.intern("apt-get"), vec![EntityCoord::new(k, e)]).unwrap();
         // backing on the SAME entity but a different selector (#configured vs the footprint's
         // entity-granular claim) ⇒ hit.
-        let backing = Backing {
-            coord: EntityCoord::new(k, e),
-            selector: None,
-        };
+        let backing = backing_of(EntityCoord::new(k, e), None);
         assert!(
             matches!(
                 disjoint(&fp, &backing, &Resolutions::none(), &Dialect::empty()),
@@ -994,10 +1073,7 @@ mod tests {
         )
         .unwrap()
         .with_own(Some(own));
-        let backing = Backing {
-            coord: own,
-            selector: None,
-        };
+        let backing = backing_of(own, None);
         assert!(
             matches!(
                 disjoint(&fp, &backing, &Resolutions::none(), &Dialect::empty()),
@@ -1190,15 +1266,7 @@ mod tests {
         assert!(res.has_resolver(pkg));
         assert!(
             matches!(
-                disjoint(
-                    &fp,
-                    &Backing {
-                        coord: back,
-                        selector: None
-                    },
-                    &res,
-                    &Dialect::empty()
-                ),
+                disjoint(&fp, &backing_of(back, None), &res, &Dialect::empty()),
                 DisjointOutcome::Hit { .. }
             ),
             "two names for one referent HIT after canonicalization"
@@ -1217,10 +1285,7 @@ mod tests {
             matches!(
                 disjoint(
                     &fp,
-                    &Backing {
-                        coord: back,
-                        selector: None
-                    },
+                    &backing_of(back, None),
                     &Resolutions::none(),
                     &Dialect::empty()
                 ),
@@ -1248,15 +1313,7 @@ mod tests {
         res.record(wall, EntityRef::Operand(OpaqueToken(i.intern("nginx"))));
         assert!(
             matches!(
-                disjoint(
-                    &fp,
-                    &Backing {
-                        coord: back,
-                        selector: None
-                    },
-                    &res,
-                    &Dialect::empty()
-                ),
+                disjoint(&fp, &backing_of(back, None), &res, &Dialect::empty()),
                 DisjointOutcome::MayAlias(MayAliasReason::Unresolved)
             ),
             "an unresolved resolver-bearing backing degrades to may-alias (not token-equality)"
@@ -1271,10 +1328,7 @@ mod tests {
                 wall_verdict(
                     false,
                     &walls,
-                    &Backing {
-                        coord: back,
-                        selector: None
-                    },
+                    &backing_of(back, None),
                     &res,
                     &Dialect::empty()
                 ),
@@ -1304,10 +1358,7 @@ mod tests {
         match wall_verdict(
             false,
             &walls,
-            &Backing {
-                coord: back,
-                selector: None,
-            },
+            &backing_of(back, None),
             &res,
             &Dialect::empty(),
         ) {
@@ -1336,15 +1387,7 @@ mod tests {
         res.add_resolver_kind(pkg);
         assert!(
             matches!(
-                disjoint(
-                    &fp,
-                    &Backing {
-                        coord: back,
-                        selector: None
-                    },
-                    &res,
-                    &Dialect::empty()
-                ),
+                disjoint(&fp, &backing_of(back, None), &res, &Dialect::empty()),
                 DisjointOutcome::Disjoint(_)
             ),
             "a different-kind footprint coord is disjoint regardless of the backing's resolution"
@@ -1369,10 +1412,7 @@ mod tests {
         assert!(matches!(
             disjoint(
                 &fp,
-                &Backing {
-                    coord: dep,
-                    selector: None
-                },
+                &backing_of(dep, None),
                 &Resolutions::none(),
                 &Dialect::empty()
             ),
@@ -1382,10 +1422,7 @@ mod tests {
         fp.add_reached(dep, pkg);
         match disjoint(
             &fp,
-            &Backing {
-                coord: dep,
-                selector: None,
-            },
+            &backing_of(dep, None),
             &Resolutions::none(),
             &Dialect::empty(),
         ) {
@@ -1402,7 +1439,7 @@ mod tests {
             footprint: fp,
         }];
         assert!(matches!(
-            wall_verdict(false, &walls, &Backing { coord: dep, selector: None }, &Resolutions::none(), &Dialect::empty()),
+            wall_verdict(false, &walls, &backing_of(dep, None), &Resolutions::none(), &Dialect::empty()),
             WallVerdict::Demoted(DemoteReason::Poisoned { via_reach: Some(k) }) if k == pkg
         ));
     }
@@ -1427,10 +1464,7 @@ mod tests {
         match wall_verdict(
             false,
             &walls,
-            &Backing {
-                coord: victim,
-                selector: None,
-            },
+            &backing_of(victim, None),
             &Resolutions::none(),
             &Dialect::empty(),
         ) {
@@ -1461,10 +1495,7 @@ mod tests {
             wall_verdict(
                 false,
                 &walls,
-                &Backing {
-                    coord: wall,
-                    selector: None,
-                },
+                &backing_of(wall, None),
                 &Resolutions::none(),
                 &Dialect::empty(),
             ),
@@ -1493,10 +1524,7 @@ mod tests {
         let mut fp = Footprint::authored(i.intern("systemctl"), vec![coord]).unwrap();
         fp.set_selector(coord, active);
         // Backing: the downstream converged fact `sm.dorc.Service:nginx#enabled`.
-        let backing = Backing {
-            coord,
-            selector: Some(enabled),
-        };
+        let backing = backing_of(coord, Some(enabled));
         // Dialect: systemctl mints {enabled, active} for sm.dorc.Service (its verdict marks).
         let mut d = Dialect::empty();
         d.mint(family, kind, enabled);
@@ -1517,16 +1545,154 @@ mod tests {
             "empty dialect ⇒ entity-granular collide"
         );
         // A ⊤ (whole-entity) backing collides even under the dialect (279f:fix-spare-top-backing).
-        let top_backing = Backing {
-            coord,
-            selector: None,
-        };
+        let top_backing = backing_of(coord, None);
         assert!(
             matches!(
                 disjoint(&fp, &top_backing, &Resolutions::none(), &d),
                 DisjointOutcome::Hit { .. }
             ),
             "a ⊤ backing collides even under the dialect (fix-spare-top-backing)"
+        );
+    }
+
+    // ── `277` §5 backing-SETS — observe-widening + the universal meet (REAL sets) ─────────────
+
+    /// The `277` §5 shared setup: kind `sm.dorc.Service`, entity `nginx`, family `systemctl`
+    /// minting {enabled, active}, a footprint whose disturbs mark carries `#active`.
+    fn service_widening_setup() -> (
+        dorc_core::Interner,
+        FactKey,
+        ProviderId,
+        SelectorId,
+        Footprint,
+        Dialect,
+    ) {
+        let mut i = dorc_core::Interner::default();
+        let kind = KindId(i.intern("sm.dorc.Service"));
+        let family = ProviderId(i.intern("systemctl"));
+        let nginx = EntityRef::Operand(OpaqueToken(i.intern("nginx")));
+        let enabled = SelectorId(i.intern("enabled"));
+        let active = SelectorId(i.intern("active"));
+        let coord = EntityCoord::new(kind, nginx);
+        // `systemctl reload nginx` disturbs `sm.dorc.Service:nginx#active`.
+        let mut fp = Footprint::authored(i.intern("systemctl"), vec![coord]).unwrap();
+        fp.set_selector(coord, active);
+        let mut d = Dialect::empty();
+        d.mint(family, kind, enabled);
+        d.mint(family, kind, active);
+        let fact = FactKey {
+            kind,
+            entity: nginx,
+            selector: enabled,
+        };
+        (i, fact, family, active, fp, d)
+    }
+
+    #[test]
+    fn observe_widened_backing_collides_where_the_bare_fact_would_spare() {
+        // `277` §5 observe-backing-widening + universal meet: a `#enabled` fact whose verdict body
+        // OBSERVED `#active` carries `#active` as a backing MEMBER. A `#active` disturbs SPARES the
+        // bare `#enabled` cell (sibling under the dialect) — but COLLIDES the WIDENED backing (the
+        // `#active` member is hit) ⇒ demote. Widening GROWS kill-surface; the universal meet
+        // collides the set on ANY member hit (`pin-set-meet-order-independence`).
+        let (_i, fact, family, active, fp, d) = service_widening_setup();
+        // Bare fact (no widening): the `#active` disturbs spares the `#enabled` sibling ⇒ survives.
+        let bare = Backing::widened(fact, Some(family), BTreeSet::new());
+        assert!(
+            matches!(
+                disjoint(&fp, &bare, &Resolutions::none(), &d),
+                DisjointOutcome::Disjoint(_)
+            ),
+            "the bare #enabled fact spares the #active disturbs (sibling cell)"
+        );
+        // Widened by the observed `#active`: the `#active` member is HIT ⇒ the SET collides.
+        let observed: BTreeSet<SelectorId> = std::iter::once(active).collect();
+        let widened = Backing::widened(fact, Some(family), observed);
+        assert!(
+            matches!(
+                disjoint(&fp, &widened, &Resolutions::none(), &d),
+                DisjointOutcome::Hit { .. }
+            ),
+            "the observe-widened #active member collides ⇒ the universal meet demotes"
+        );
+    }
+
+    #[test]
+    fn widened_backing_survives_when_every_member_is_disjoint() {
+        // The universal meet's SPARE arm: a backing whose OWN cell AND every observe-widened
+        // sibling are all provably-disjoint from the footprint survives. Here the fact is
+        // `#enabled`, widened by `#reloaded`; the footprint disturbs `#active` — distinct from
+        // BOTH members under the dialect ⇒ all pairs provably-disjoint ⇒ the SET spares.
+        let (mut i, fact, family, _active, fp, mut d) = service_widening_setup();
+        let reloaded = SelectorId(i.intern("reloaded"));
+        d.mint(family, fact.kind, reloaded); // widen-member selector, minted by the same family
+        let observed: BTreeSet<SelectorId> = std::iter::once(reloaded).collect();
+        let widened = Backing::widened(fact, Some(family), observed);
+        assert!(
+            matches!(
+                disjoint(&fp, &widened, &Resolutions::none(), &d),
+                DisjointOutcome::Disjoint(_)
+            ),
+            "every member (#enabled, #reloaded) disjoint from #active ⇒ the set spares"
+        );
+    }
+
+    #[test]
+    fn threaded_family_spares_where_the_reverse_lookup_would_collide() {
+        // `277` §3 backing provenance (`27D` disposition-backing-family-recovery): the THREADED
+        // minting family is AUTHORITATIVE past `fence-divergent-meaning`. Two families both mint
+        // {enabled, active} for the kind, so `sole_family` is ambiguous ⇒ `None` ⇒ the map-miss
+        // reverse-lookup floor COLLIDES. The threaded `Some(systemctl)` uses systemctl's dialect
+        // ⇒ the `#active` disturbs SPARES the `#enabled` fact. This is the exact behavior the
+        // reverse-lookup could not give — the divergent-meaning improvement, member-wise.
+        let (mut i, fact, systemctl, _active, fp, mut d) = service_widening_setup();
+        let otherctl = ProviderId(i.intern("otherctl"));
+        d.mint(otherctl, fact.kind, fact.selector); // second family mints #enabled too
+        d.mint(otherctl, fact.kind, SelectorId(i.intern("active"))); // …and #active ⇒ ambiguous
+        // Map-miss `of_fact` (family None ⇒ recover via sole_family, now ambiguous ⇒ None ⇒ collide).
+        let recovered = Backing::of_fact(fact);
+        assert!(
+            matches!(
+                disjoint(&fp, &recovered, &Resolutions::none(), &d),
+                DisjointOutcome::Hit { .. }
+            ),
+            "ambiguous sole_family (two minters) ⇒ the reverse-lookup floor collides"
+        );
+        // Threaded `Some(systemctl)` ⇒ authoritative ⇒ spares under systemctl's dialect.
+        let threaded = Backing::widened(fact, Some(systemctl), BTreeSet::new());
+        assert!(
+            matches!(
+                disjoint(&fp, &threaded, &Resolutions::none(), &d),
+                DisjointOutcome::Disjoint(_)
+            ),
+            "the threaded minting family is authoritative ⇒ spares past divergent-meaning"
+        );
+    }
+
+    #[test]
+    fn widened_backing_with_an_auto_member_kind_may_aliases_member_wise() {
+        // `24L` §7 fence-no-disjoint, member-wise (`277` §5): the auto-cell fence bars an auto-kind
+        // backing from proving disjoint. Every member shares the fact's kind, so an auto fact
+        // (widened or not) MAY-ALIASES against any footprint — never survives. Pins that widening
+        // does not smuggle an auto backing past the fence.
+        let mut i = dorc_core::Interner::default();
+        let auto = dorc_core::auto_fact(&mut i, "nginxctl");
+        let wall = EntityCoord::new(
+            KindId(i.intern("com.debian.apt.Package")),
+            EntityRef::Operand(OpaqueToken(i.intern("nginx"))),
+        );
+        let fp = Footprint::authored(i.intern("apt-get"), vec![wall]).unwrap();
+        let observed: BTreeSet<SelectorId> =
+            std::iter::once(SelectorId(i.intern("extra"))).collect();
+        let widened = Backing::widened(auto, None, observed);
+        let mut res = Resolutions::none();
+        res.add_auto_kind(auto.kind);
+        assert!(
+            matches!(
+                disjoint(&fp, &widened, &res, &Dialect::empty()),
+                DisjointOutcome::MayAlias(_)
+            ),
+            "an auto-kind widened backing may-aliases member-wise (never survives)"
         );
     }
 
