@@ -57,7 +57,7 @@ this ledger, the ledger wins):
   (an-privilege-fact; kFAIL-withhold). Consequence: state readable only *inside* a
   context (peer-auth-gated reads, root-only files) is plan-time unknowable, forever;
   such sites cap at run-with-guard, honestly (§4, opaques6-finding2).
-  **[RE-SCOPED — 2026-07-16, `notes/27C`, human-ruled: the defensible core is
+  **[RE-SCOPED — 2026-07-16, `plans/27C`, human-ruled: the defensible core is
   reuse-NEVER-ACQUIRE — the probe lane may re-use authority the connection already
   holds to execute tolerance-vouched oracle bodies in the site's denoted context,
   under the ternary escalation dial (`27C` §2). "Never acquires" stands (no prompts,
