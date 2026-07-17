@@ -153,6 +153,13 @@ consumers — binding-site disposition needs its own care in block-context plann
 > bodies only — is owed at block-context implementation-planning. Register-backed
 > transport stands, analytic. Step 4 amended per `279f:fix-275-license-source`;
 > the rest of the section is preserved as the proposal under adjudication.)
+>
+> (ACKED SOFT, typed 2026-07-16 — the 5/5 close of `279f:ask-amendment-acks`. The
+> human's grading, verbatim: "Acked, softly... I trust my past self; this all reads
+> to me as noise." The ack confirms transcription-fidelity of the step-4 rewrite and
+> this refusal record, and retires the task-7 direction-tier hedge (§12 row). The
+> substance was already ruled elsewhere: `24D:rul24-selfframing-correction` ·
+> `271:rul-invariance-speech-act` · `plans/27C`.)
 
 <!-- /* superseded 2026-07-16 (plans/27C, human-ruled): the disposition menu above is
 CLOSED — answered by an option none of a/b/c stated: (d) context-entry probing (measure

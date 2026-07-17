@@ -25,14 +25,15 @@ block-settle CLOSED (`plans/271` = the rulings ledger + task map); wrapper/conte
 transport RESOLVED (`plans/27C`); the 270-era adversarial crosscheck adjudicated, no
 kill (`notes/279f` — read its §1 first).
 
-**⚠ Next activity — exactly one dispatch-gating human act:** `279f:ask-amendment-acks`
-(the five §4 in-place spec amendments close one typed ack at a time; the live authority
-on which are closed = the amendment annotations inside `notes/277` + `275` §6, and
-`279f` §6 itself — partially acked as of 2026-07-16; never trust a count written here).
-Everything else in the `279f` §6 ask-list is discharged, moot, or non-blocking — the
-trail is recorded as inline brackets in §6 itself; the task-14 dissolution + the full
-ratification record live at `271:rul-only-oracle-bytes-ship`. Then dispatch
-block-rebuild (package below).
+**⚠ Next activity — dispatch block-rebuild (package below); ZERO dispatch-gating
+human acts remain.** `279f:ask-amendment-acks` CLOSED 2026-07-16 (all five acked, one
+typed word each — the per-amendment records live as annotations inside `notes/277` +
+`275` §6; the roll-up in `279f` §6). Everything else in the `279f` §6 ask-list is
+discharged, moot, or non-blocking — the trail is recorded as inline brackets in §6
+itself; the task-14 dissolution + the full ratification record live at
+`271:rul-only-oracle-bytes-ship`. Non-blocking human leftovers, whenever wanted:
+the optional thin-reality-checkpoint decision (`279f` §6), the root-doc queue, the
+`27C:law-perfect-overlap` promotion.
 
 **Transport RESOLVED (2026-07-16):** **`plans/27C`** is THE kept-current spec —
 context-entry probing (a wrapped site is answered by measurement in its *denoted*

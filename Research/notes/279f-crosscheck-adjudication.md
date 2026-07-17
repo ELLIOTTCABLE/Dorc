@@ -148,7 +148,13 @@ seams, and fences — no transport license is minted by anything in its build li
 ## §6 — Ask-list (typed acks wanted; nothing here closes by silence)
 
 - **ask-amendment-acks:** ack (or revert — each is one commit) the §4 in-place
-  amendments.
+  amendments. **[CLOSED 2026-07-16: all five acked, one typed word each —
+  1/5 fix-spare-top-backing · 2/5 fix-set-lifting (w/ fixpoint-soundness clause +
+  two rebuild pins) · 3/5 fence-divergent-meaning (w/ the attribution-class clause,
+  same-day refined to owner-adjudication) · 4/5 fix-dialect-properties (SOFT) ·
+  5/5 fix-275-license-source (SOFT; `275` §6 also gained supersession comments
+  pinning the refused premise to `24D:rul24-selfframing-correction` and the
+  disposition to `plans/27C`). No dispatch gate remains.]**
 - **ask-transport-disposition:** the disposition of §3 — refuse the `275`
   ratifications as posed; route the completeness-gap decision (a/b/c) to
   block-context implementation-planning. This is the only ask that touches design
