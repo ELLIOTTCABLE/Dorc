@@ -156,6 +156,17 @@ const LEGACY_ALLOW_LIST: &[&str] = &[
     "reserved-namespace-squat",
     "missing-dialect-marker",
     "mark-brace-verdict-single-cell",
+    // `262` §2 wire-records-v1-import (270:block-rebuild): the framing deframer's fault +
+    // integrity diagnostics + the at-most deriv-family completeness refusal.
+    "records-glued-line",
+    "records-header-missing",
+    "records-integrity-refused",
+    "records-sentinel-nonce",
+    "records-fact-truncated",
+    "records-torn-line",
+    "records-alien-line",
+    "records-late-line",
+    "deriv-family-incomplete",
 ];
 
 /// The SPANLESS-MINT allow-list (arch-3-residual-2): EXACTLY the codes permitted to construct a

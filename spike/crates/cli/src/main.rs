@@ -746,11 +746,18 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
     // results exist yet — this is phase 1, what you ship to GET them), builds no plan, and so
     // emits no apply, no why-lens, no digest (there is no plan/identity-plane to hash —
     // tc-probe-no-digest, flagged). Stage diagnostics above already routed to stderr.
+    // `262` §2 framing: the run's records-lane keys, minted at THIS controller edge (the DI
+    // seam — `inv-determinism`, no ambient RNG in the kernel). The nonce/host/attempt are the
+    // spike fixed defaults (deterministic goldens; a real fleet mints per-attempt/per-host);
+    // `book=` binds the stream to the exact analyzed book bytes. The end-sentinel follows the
+    // final record lane (`records::sentinel_line`); the drain keys on it, never on EOF.
+    let framing = dorc_plan::records::Framing::spike(book_digest(&book_src));
     if mode == Mode::Probe {
-        print!("{}", probe.render_sh(&interner));
-        print!("{}", derivations.render_sh(&interner)); // 24E §2: rides the SAME phase-1 block
-        print!("{}", resolvers.render_sh()); // 24F §3: rides the SAME phase-1 block
-        print!("{}", reaches_plan.render_sh()); // 24G §4: rides the SAME phase-1 block
+        print!("{}", probe.render_sh(&framing, &interner));
+        print!("{}", derivations.render_sh(&framing.nonce, &interner)); // 24E §2: SAME phase-1 block
+        print!("{}", resolvers.render_sh(&framing.nonce)); // 24F §3: SAME phase-1 block
+        print!("{}", reaches_plan.render_sh(&framing.nonce)); // 24G §4: SAME phase-1 block
+        print!("{}", dorc_plan::records::sentinel_line(&framing.nonce));
         std::io::stdout().flush().ok();
         return Ok(book_outcome);
     }
@@ -759,10 +766,11 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
     // after stdin EOF — the e2e harness splits the two on the `#!/bin/sh` shebang. `plan`
     // and `apply` emit ONLY the apply artifact (the probe is an internal compile there).
     if mode == Mode::RoundTrip {
-        print!("{}", probe.render_sh(&interner));
-        print!("{}", derivations.render_sh(&interner)); // 24E §2: rides the SAME phase-1 block
-        print!("{}", resolvers.render_sh()); // 24F §3: rides the SAME phase-1 block
-        print!("{}", reaches_plan.render_sh()); // 24G §4: rides the SAME phase-1 block
+        print!("{}", probe.render_sh(&framing, &interner));
+        print!("{}", derivations.render_sh(&framing.nonce, &interner)); // 24E §2: SAME phase-1 block
+        print!("{}", resolvers.render_sh(&framing.nonce)); // 24F §3: SAME phase-1 block
+        print!("{}", reaches_plan.render_sh(&framing.nonce)); // 24G §4: SAME phase-1 block
+        print!("{}", dorc_plan::records::sentinel_line(&framing.nonce));
         std::io::stdout().flush().ok();
     }
 
@@ -778,7 +786,13 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
             .map_err(|e| format!("reading probe results from stdin: {e}"))?;
         buf
     };
-    let results = parse_results(&results_buf, &mut interner);
+    // `262` §2: deframe FIRST (the production deframer — integrity keys, torn/glued/alien/late,
+    // terminal-token strip), then inner-parse the clean records. A refused read unit (book/host/
+    // attempt/nonce mismatch or a glued line) yields NO records ⇒ every site folds Unknown ⇒ run
+    // (kFAIL-perform). The deframer tolerates the authored (unframed) fixtures via its legacy path.
+    let deframed = dorc_plan::records::deframe(&results_buf, &framing.expect());
+    report_at(advisory, "records", None, &deframed.diagnostics);
+    let results = parse_results(&deframed.records, deframed.framed, &mut interner);
 
     // re-key the site-keyed records to the FactKey-keyed observations `build_plan`
     // consumes (its fold/elision machinery is fact-keyed; only this probe-answer
@@ -1397,6 +1411,35 @@ fn merge_derived_footprints(
         let Some(coord_strs) = results.derivations.get(&d.site) else {
             continue; // no readback records ⇒ empty derived footprint ⇒ wall (kFAIL-safe)
         };
+        // `262` §2 / `26A` stop-1 — THE at-most family completeness gate. A deriv footprint is
+        // an AT-MOST claim, so a mid-family cut SHRINKS it (⇒ more survivals — the
+        // under-execution cardinal sin). The family MUST close with `deriv-end n=<K>` whose K
+        // equals the received coord count; a missing end-record or a count mismatch ⇒ the
+        // family is INCOMPLETE ⇒ refuse the footprint ⇒ the site walls TOTAL (never keep a
+        // partial at-most family). This is the SAME wall-total path as the malformed-coord
+        // refusal below.
+        match results.derivation_ends.get(&d.site) {
+            // Legacy (unframed) fixtures carry no `deriv-end`; they are trusted-complete, so the
+            // gate is framed-only (the framed round-trip + DST enforce the real contract).
+            _ if !results.framed => {}
+            Some(&k) if k as usize == coord_strs.len() => {}
+            reason => {
+                diags.push(dorc_core::Diagnostic::warning(
+                    dorc_core::DiagCode("deriv-family-incomplete"),
+                    None,
+                    format!(
+                        "site {}: derived footprint family incomplete ({}) — footprint refused, \
+                         the site walls total (an at-most claim cannot be partial)",
+                        d.site.0,
+                        match reason {
+                            Some(&k) => format!("declared n={k}, received {}", coord_strs.len()),
+                            None => "no deriv-end close-record".to_string(),
+                        }
+                    ),
+                ));
+                continue;
+            }
+        }
         let mut coords = Vec::with_capacity(coord_strs.len());
         let mut malformed = false;
         for line in coord_strs {
@@ -3102,11 +3145,17 @@ fn facts_from_sites(
             member: check.member,
         });
         let effect = record.map_or(Verdict::Unknown, |r| r.verdict);
-        // The firewall: only a VALID Query site's rc is fold-usable as Status.
+        // The firewall: only a VALID Query site's rc is fold-usable as Status — and only when
+        // the record is not a duplicate-meet CONFLICT (`262` §2: a conflicting rc is can't-tell,
+        // so it must not substitute into the control-flow fold).
         let status = match check.site_kind {
-            ProbeSiteKind::Query { valid: true } => {
-                record.map_or(Predicted::Top, |r| Predicted::Value(r.rc))
-            }
+            ProbeSiteKind::Query { valid: true } => record.map_or(Predicted::Top, |r| {
+                if r.conflicted {
+                    Predicted::Top
+                } else {
+                    Predicted::Value(r.rc)
+                }
+            }),
             // Establish site (check's rc, not the mutator's) OR an invalid Query
             // (stale resting rc) ⇒ withhold the rc, status stays ⊤.
             ProbeSiteKind::Establish | ProbeSiteKind::Query { valid: false } => Predicted::Top,
@@ -3189,6 +3238,13 @@ struct SiteResults {
     /// collides with a site's `effect=`/`rc=` record — `inv-site-keyed-results`). Read back into a
     /// `Derived` [`dorc_plan::Footprint`] before the survival walk (24E §2 corr-§2).
     derivations: BTreeMap<dorc_plan::LeafId, Vec<String>>,
+    /// The DERIV FAMILY end-records (`262` §2 / `26A` stop-1): per escalated wall-site, the `n=<K>`
+    /// declared by its `deriv-end <leafid> n=<K>` close-record. THE SAFETY INVERSION: a deriv
+    /// footprint is an AT-MOST claim, so a mid-family cut SHRINKS it (⇒ more survivals — the
+    /// under-execution direction). The consumer ([`merge_derived_footprints`]) refuses a family
+    /// whose received coord count ≠ this `K` (or that has no end-record) ⇒ wall-total. Absent key
+    /// ⇒ the family never closed ⇒ refused.
+    derivation_ends: BTreeMap<dorc_plan::LeafId, u32>,
     /// The RESOLVER canonicalization lane (24F §3): per `kind:entity` coordinate label, the readback
     /// of running its `<kind>.resolve()` host-side — a [`ResolvOutcome`]. Demuxed SEPARATELY from the
     /// verdict + derivation lanes (keyed by the coordinate, not a site — resolution is a pure function
@@ -3200,6 +3256,10 @@ struct SiteResults {
     /// [`dorc_plan::Footprint::add_reached`]) before the survival walk. NB the arm index re-keys each
     /// line back to the arm's LIFTED kind (the vocabulary fence — the kind is never host-minted).
     reaches: BTreeMap<(String, usize), Vec<String>>,
+    /// Was the source stream FRAMED (`262` §2)? Gates the at-most deriv-family completeness
+    /// check ([`merge_derived_footprints`]) — only a framed stream carries `deriv-end`
+    /// close-records; the legacy authored fixtures are trusted-complete.
+    framed: bool,
 }
 
 /// One coordinate's resolver readback (24F §3): the canonical form its `<kind>.resolve()` printed, or
@@ -3224,6 +3284,12 @@ struct SiteRecord {
     rc: Rc,
     stdout: Predicted<OutBytes>,
     stderr: Predicted<OutBytes>,
+    /// A DUPLICATE-MEET marker (`262` §2 / `26A` stop-1): set when two records for one
+    /// (site, member) key DISAGREED and were met toward ⊤. The §1 tie-break law forbids
+    /// first-wins/last-wins; a conflict is can't-tell. `verdict` is already `Unknown` when
+    /// this is set (effect ⇒ run); this ALSO withholds the fold-usable Query rc
+    /// ([`facts_from_sites`]) so a conflicting rc cannot substitute into the control-flow fold.
+    conflicted: bool,
 }
 
 /// The rc a `128 + SIGPIPE` early-exit race lands on (`sigpipe-flap-class`, `279f` §5):
@@ -3251,6 +3317,22 @@ fn emit_sigpipe_race_notes(results: &SiteResults) {
     }
 }
 
+/// A deterministic content digest binding the records stream to the exact analyzed book bytes
+/// (`262` §2 `book=`; discharges `tc-probe-no-digest`). SPIKE NOTE (`churn-avoidance-disclosure`):
+/// the spec says sha256; the kernel stays dependency-clean (`inv-determinism` — no `sha2`/`rand`
+/// dep), so this is a hand-rolled FNV-1a-64 rendered hex. Mismatch-detection semantics are
+/// identical (any book-byte change flips the digest); cryptographic strength is not — there is no
+/// adversary-forged-book in the spike model. The real tool substitutes sha256 here, unchanged
+/// callers. Computed at the I/O edge (`io-at-edges-only`), never in the kernel.
+fn book_digest(book_src: &str) -> String {
+    let mut h: u64 = 0xcbf2_9ce4_8422_2325; // FNV-1a offset basis
+    for b in book_src.as_bytes() {
+        h ^= u64::from(*b);
+        h = h.wrapping_mul(0x0000_0100_0000_01b3); // FNV prime
+    }
+    format!("{h:016x}")
+}
+
 /// Parse stdin probe-results into the site-keyed [`SiteResults`]
 /// (`inv-site-keyed-results`). One line form; blank lines and `#` comments are ignored
 /// (so the probe's own `# site …` provenance echo can be piped back), and any
@@ -3274,116 +3356,175 @@ fn emit_sigpipe_race_notes(results: &SiteResults) {
 ///
 /// (The transitional `declared-rc <leafid> rc=N` lane — the 19I §2 rc-injection
 /// mechanism — is DEAD as of task-D2: a Query site's own `rc=` carries the fold rc now.)
-fn parse_results(input: &str, interner: &mut Interner) -> SiteResults {
-    let mut out = SiteResults::default();
-    for line in input.lines() {
-        let line = line.trim();
-        if line.is_empty() || line.starts_with('#') {
-            continue;
-        }
-        let mut it = line.split_whitespace();
-        match it.next() {
-            // 24E §5 (fork-s4-coordwire): `deriv <leafid> coord=<kind:entity>…` — accumulate an
-            // escalated wall-site's derived-footprint coordinates, demuxed by leaf-id in its OWN
-            // lane (never the `site` verdict records). A malformed leaf ⇒ drop (the site's derived
-            // footprint stays empty ⇒ wall, the kFAIL-safe direction).
-            Some("deriv") => {
-                if let Some(site) = it
-                    .next()
-                    .and_then(|t| t.parse::<u32>().ok())
-                    .map(dorc_plan::LeafId)
+fn parse_results(records: &[String], framed: bool, interner: &mut Interner) -> SiteResults {
+    let mut out = SiteResults {
+        framed,
+        ..SiteResults::default()
+    };
+    for line in records {
+        let line = line.as_str();
+        let Some((tag, rest)) = line.split_once(' ') else {
+            continue; // a bare tag with no body ⇒ drop (⇒ Unknown ⇒ run)
+        };
+        match tag {
+            // 24E §5: `deriv <leafid> coord=<coord>` — `coord=` is the FREE-CONTENT field
+            // (`262` §2 last-to-token): after deframing it runs to end-of-line, whitespace
+            // included (the incumbent whitespace-truncation bug is FIXED here). A malformed
+            // leaf ⇒ drop (empty derived footprint ⇒ wall, kFAIL-safe).
+            "deriv" => {
+                if let Some((site, coord)) = split_key(rest, "coord=")
+                    && let Some(site) = parse_leaf(site)
                 {
+                    out.derivations
+                        .entry(site)
+                        .or_default()
+                        .push(coord.to_owned());
+                }
+            }
+            // `262` §2 / `26A` stop-1: `deriv-end <leafid> n=<K>` — the at-most family close.
+            // Records the declared count; the consumer refuses a family whose received count
+            // ≠ K (or that never closed) ⇒ wall-total (never a shrunken at-most footprint).
+            "deriv-end" => {
+                let mut it = rest.split_whitespace();
+                if let Some(site) = it.next().and_then(parse_leaf) {
                     for tok in it {
-                        if let Some(coord) = tok.strip_prefix("coord=") {
-                            out.derivations
-                                .entry(site)
-                                .or_default()
-                                .push(coord.to_owned());
+                        if let Some(n) = tok.strip_prefix("n=").and_then(|n| n.parse::<u32>().ok())
+                        {
+                            out.derivation_ends.insert(site, n);
                         }
                     }
                 }
-                continue;
             }
-            // 24F §3: `resolv <kind:entity> canon=<canonical>` | `resolv <kind:entity> dangling` —
-            // the resolver readback, demuxed by the COORDINATE label in its OWN lane. A malformed
-            // line ⇒ drop (the coord stays unrecorded ⇒ may-alias, the kFAIL-safe direction).
-            Some("resolv") => {
-                if let Some(coord) = it.next() {
-                    let outcome = match it.next() {
-                        Some("dangling") => Some(ResolvOutcome::Dangling),
-                        Some(tok) => tok
-                            .strip_prefix("canon=")
-                            .map(|c| ResolvOutcome::Canonical(c.to_owned())),
-                        None => None,
+            // 24F §3: `resolv <coord> canon=<canonical>` | `resolv <coord> dangling`. `canon=`
+            // is the FREE-CONTENT field (last-to-token) so a space-bearing canonical survives.
+            "resolv" => {
+                if let Some((coord, tail)) = rest.split_once(' ') {
+                    let outcome = if tail == "dangling" {
+                        Some(ResolvOutcome::Dangling)
+                    } else {
+                        tail.strip_prefix("canon=")
+                            .map(|c| ResolvOutcome::Canonical(c.to_owned()))
                     };
                     if let Some(o) = outcome {
                         out.resolutions.insert(coord.to_owned(), o);
                     }
                 }
-                continue;
             }
-            // 24G §4: `reach <kind:entity> arm=<n> entity=<line>` — accumulate a DYNAMIC reaches()
-            // arm's emitted RAW ENTITY, demuxed by (coordinate, arm) in its OWN lane. A malformed
-            // line ⇒ drop (the coord's expansion stays narrower ⇒ the un-expanded floor, kFAIL-safe:
-            // an omitted reach only fails to WIDEN, never a wrong-reach). NB `entity=<line>` is the
-            // LAST token — a reached entity with an embedded space would truncate (the SAME
-            // single-token limitation as the `deriv`/`resolv` lanes; file paths rarely carry spaces).
-            Some("reach") => {
-                if let Some(coord) = it.next() {
+            // 24G §4: `reach <coord> arm=<n> entity=<line>` — `entity=` is the FREE-CONTENT
+            // field (last-to-token): a reached entity with embedded spaces now survives (the
+            // single-token truncation is fixed — `279f` rider generalization).
+            "reach" => {
+                if let Some((head, entity)) = split_key(rest, "entity=") {
+                    let mut coord: Option<&str> = None;
                     let mut arm: Option<usize> = None;
-                    let mut entity: Option<String> = None;
-                    for tok in it {
-                        if let Some(n) = tok.strip_prefix("arm=").and_then(|n| n.parse().ok()) {
+                    for (i, tok) in head.split_whitespace().enumerate() {
+                        if i == 0 {
+                            coord = Some(tok);
+                        } else if let Some(n) =
+                            tok.strip_prefix("arm=").and_then(|n| n.parse().ok())
+                        {
                             arm = Some(n);
-                        } else if let Some(e) = tok.strip_prefix("entity=") {
-                            entity = Some(e.to_owned());
                         }
                     }
-                    if let (Some(a), Some(e)) = (arm, entity) {
+                    if let (Some(c), Some(a)) = (coord, arm) {
                         out.reaches
-                            .entry((coord.to_owned(), a))
+                            .entry((c.to_owned(), a))
                             .or_default()
-                            .push(e);
+                            .push(entity.to_owned());
                     }
                 }
-                continue;
             }
-            Some("site") => {}
-            _ => continue, // unrecognized line ⇒ drop (kFAIL-perform: no verdict ⇒ run)
+            "site" => parse_site_record(rest, &mut out, interner),
+            _ => {} // unrecognized inner tag ⇒ drop (kFAIL-perform: no verdict ⇒ run)
         }
-        let Some(key) = it.next().and_then(parse_site_key) else {
-            continue; // malformed site key ⇒ drop (⇒ Unknown ⇒ run)
-        };
-        // The remaining tokens carry `effect=<word>`, `rc=<n>`, and the reserved
-        // `stdout=`/`stderr=` in any order. A missing/garbled `effect` ⇒ Unknown (the safe
-        // direction); a missing/garbled `rc` ⇒ 0 (carried, but irrelevant unless the
-        // firewall admits it for a valid Query). Absent out-claims stay `Predicted::Top`.
-        let mut verdict = Verdict::Unknown;
-        let mut rc = Rc(0);
-        let mut stdout = Predicted::Top;
-        let mut stderr = Predicted::Top;
-        for tok in it {
-            if let Some(w) = tok.strip_prefix("effect=") {
-                verdict = effect_word_to_verdict(w);
-            } else if let Some(n) = tok.strip_prefix("rc=").and_then(|n| n.parse::<i32>().ok()) {
-                rc = Rc(n);
-            } else if let Some(t) = tok.strip_prefix("stdout=") {
-                stdout = Predicted::Value(OutBytes(interner.intern(t)));
-            } else if let Some(t) = tok.strip_prefix("stderr=") {
-                stderr = Predicted::Value(OutBytes(interner.intern(t)));
-            }
-        }
-        out.records.insert(
-            key,
-            SiteRecord {
-                verdict,
-                rc,
-                stdout,
-                stderr,
-            },
-        );
     }
     out
+}
+
+/// Parse `u32` leaf-id.
+fn parse_leaf(tok: &str) -> Option<dorc_plan::LeafId> {
+    tok.parse::<u32>().ok().map(dorc_plan::LeafId)
+}
+
+/// Split a record body at a FREE-CONTENT `key=` into `(head, value)` where `value` runs to
+/// end-of-line (whitespace included — `262` §2 last-to-token). The key must be preceded by a
+/// space (or begin the body). Returns `None` when the key is absent.
+fn split_key<'a>(body: &'a str, key: &str) -> Option<(&'a str, &'a str)> {
+    if let Some(v) = body.strip_prefix(key) {
+        return Some(("", v));
+    }
+    let pat = format!(" {key}");
+    let at = body.find(&pat)?;
+    Some((&body[..at], &body[at..][pat.len()..]))
+}
+
+/// Parse one `site <leafid> effect=<word> rc=<n> [stdout=<free-content>]` record (`262` §2).
+/// `stdout=` is the FREE-CONTENT field (last-to-token) — the read-value lane's future carrier
+/// (`279f` rider): it runs to end-of-line so embedded spaces survive byte-exactly. `stderr=`
+/// stays single-token (stderr handling is out of spike scope — churn-avoidance-disclosure).
+/// Unknown keys BEFORE the free-content field are ignored (additive-keys, `24Kc`). A duplicate
+/// (site, member) record MERGES BY MEET, never last-wins (`262` §1 tie-break law).
+fn parse_site_record(rest: &str, out: &mut SiteResults, interner: &mut Interner) {
+    // `stdout=` is the trailing free-content field; everything from it runs to EOL.
+    let (head, stdout) = match split_key(rest, "stdout=") {
+        Some((h, v)) => (h, Predicted::Value(OutBytes(interner.intern(v)))),
+        None => (rest, Predicted::Top),
+    };
+    let mut it = head.split_whitespace();
+    let Some(key) = it.next().and_then(parse_site_key) else {
+        return; // malformed site key ⇒ drop (⇒ Unknown ⇒ run)
+    };
+    let mut verdict = Verdict::Unknown;
+    let mut rc = Rc(0);
+    let mut stderr = Predicted::Top;
+    for tok in it {
+        if let Some(w) = tok.strip_prefix("effect=") {
+            verdict = effect_word_to_verdict(w);
+        } else if let Some(n) = tok.strip_prefix("rc=").and_then(|n| n.parse::<i32>().ok()) {
+            rc = Rc(n);
+        } else if let Some(t) = tok.strip_prefix("stderr=") {
+            stderr = Predicted::Value(OutBytes(interner.intern(t)));
+        }
+    }
+    let rec = SiteRecord {
+        verdict,
+        rc,
+        stdout,
+        stderr,
+        conflicted: false,
+    };
+    out.records
+        .entry(key)
+        .and_modify(|prior| *prior = meet_record(*prior, rec))
+        .or_insert(rec);
+}
+
+/// Meet two records reported for one (site, member) key (`262` §2 duplicate-by-meet / §1
+/// tie-break law). Identical ⇒ idempotent (unchanged). ANY disagreement ⇒ can't-tell: verdict
+/// ⊤ (⇒ run), out-claims ⊤, and `conflicted` set so the fold-usable Query rc is withheld
+/// ([`facts_from_sites`]). NEVER first-wins/last-wins; commutative + idempotent, so arrival
+/// order cannot change the fold (`262` §1 pin-fold-permutation).
+fn meet_record(a: SiteRecord, b: SiteRecord) -> SiteRecord {
+    let rc_conflict = a.rc != b.rc;
+    SiteRecord {
+        verdict: if a.verdict == b.verdict {
+            a.verdict
+        } else {
+            Verdict::Unknown
+        },
+        rc: a.rc,
+        stdout: if a.stdout == b.stdout {
+            a.stdout
+        } else {
+            Predicted::Top
+        },
+        stderr: if a.stderr == b.stderr {
+            a.stderr
+        } else {
+            Predicted::Top
+        },
+        conflicted: a.conflicted || b.conflicted || rc_conflict || a.verdict != b.verdict,
+    }
 }
 
 /// Parse a record's site key token (task-L2 item-4): `N` ⇒ `RecordKey { site: N, member:
@@ -3520,6 +3661,15 @@ mod tests {
     use super::*;
     use dorc_core::{EntityRef, FactKey, Interner, KindId, OpaqueToken, SelectorId};
     use dorc_plan::{LeafId, ProbePlan, ProbePredict, ProbeSiteKind};
+
+    /// Route an unframed record string through the PRODUCTION deframer (legacy path) into the
+    /// inner parser — the exact pipeline the round-trip uses. Unframed input exercises the
+    /// legacy passthrough; the framed contract is pinned separately (deframe unit tests + DST).
+    fn parse_str(input: &str, interner: &mut Interner) -> SiteResults {
+        let expect = dorc_plan::records::Framing::spike(String::new()).expect();
+        let d = dorc_plan::records::deframe(input, &expect);
+        parse_results(&d.records, d.framed, interner)
+    }
 
     /// ack-2 / rul24-lineno-identity: the `dorc why` address parser reads a SOURCE line-number from
     /// `book.sh:N` or bare `N` (the tail after the last `:` when numeric), so a `file:N` the report
@@ -3748,7 +3898,7 @@ mod tests {
         // The record maps holds/absent/cant-tell to the Effect verdict and carries the
         // raw rc on the wire (whether it is fold-usable is the firewall's call).
         let mut i = Interner::default();
-        let r = parse_results(
+        let r = parse_str(
             "site 0 effect=holds rc=0\nsite 1 effect=absent rc=1\nsite 2 effect=cant-tell rc=2\n",
             &mut i,
         );
@@ -3774,7 +3924,7 @@ mod tests {
         // garbage-stdin behavior at the unit layer (`kFAIL-perform`). The dead
         // `declared-rc` lane is now just an unrecognized line ⇒ dropped.
         let mut i = Interner::default();
-        let r = parse_results(
+        let r = parse_str(
             "this is not a record\nsite notanumber effect=holds\n\
              site 0 garbled-no-effect\ndeclared-rc 0 rc=0\n# a comment\n",
             &mut i,
@@ -3799,7 +3949,7 @@ mod tests {
         // unconditional, never reading the claim). Anti-masking: this asserts the SHAPE
         // exists end-to-end, NOT that a check predicts a value (nothing does this round).
         let mut i = Interner::default();
-        let r = parse_results("site 0 effect=holds rc=0\n", &mut i);
+        let r = parse_str("site 0 effect=holds rc=0\n", &mut i);
         let rec = r.records.get(&rk(0)).expect("site 0");
         assert_eq!(
             rec.stdout,
@@ -3812,15 +3962,21 @@ mod tests {
             "absent stderr= ⇒ ⊤ (the live default)"
         );
         // Reserved keys parse-and-store (a future stdout-producing probe is value-plumbing).
-        let r = parse_results(
-            "site 0 effect=holds rc=0 stdout=hello stderr=warn\n",
+        // `262` §2 last-to-token: `stdout=` is the TRAILING free-content field (the read-value
+        // lane's carrier — `279f` rider), so `stderr=` (single-token, out of spike scope) must
+        // PRECEDE it; and `stdout=`'s value runs to end-of-line so embedded spaces survive.
+        let r = parse_str(
+            "site 0 effect=holds rc=0 stderr=warn stdout=hello there world\n",
             &mut i,
         );
         let rec = r.records.get(&rk(0)).expect("site 0");
-        assert!(
-            matches!(rec.stdout, Predicted::Value(OutBytes(_))),
-            "a reserved stdout= is stored as a value claim: {:?}",
-            rec.stdout
+        assert_eq!(
+            match rec.stdout {
+                Predicted::Value(OutBytes(s)) => i.resolve(s),
+                Predicted::Top => "<top>",
+            },
+            "hello there world",
+            "stdout= is last-to-token: embedded spaces survive byte-exactly (279f pin)"
         );
         assert!(
             matches!(rec.stderr, Predicted::Value(OutBytes(_))),
@@ -3841,7 +3997,7 @@ mod tests {
         let mut i = Interner::default();
         let fact = pkg(&mut i, "nginx");
         let probe = probe1(fact, ProbeSiteKind::Establish);
-        let results = parse_results("site 0 effect=holds rc=0\n", &mut i);
+        let results = parse_str("site 0 effect=holds rc=0\n", &mut i);
         let obs = facts_from_sites(&probe, &results)
             .get(&fact)
             .copied()
@@ -3862,7 +4018,7 @@ mod tests {
         let mut i = Interner::default();
         let fact = tool(&mut i, "nginx");
         let probe = probe1(fact, ProbeSiteKind::Query { valid: true });
-        let results = parse_results("site 0 effect=holds rc=0\n", &mut i);
+        let results = parse_str("site 0 effect=holds rc=0\n", &mut i);
         let obs = facts_from_sites(&probe, &results)
             .get(&fact)
             .copied()
@@ -3873,7 +4029,7 @@ mod tests {
             "a valid Query guard's own rc supplies the fold Status"
         );
         // A non-zero guard rc (nginx absent) carries through identically (Exit(n) path).
-        let results = parse_results("site 0 effect=absent rc=1\n", &mut i);
+        let results = parse_str("site 0 effect=absent rc=1\n", &mut i);
         let obs = facts_from_sites(&probe, &results)
             .get(&fact)
             .copied()
@@ -3891,7 +4047,7 @@ mod tests {
         let mut i = Interner::default();
         let fact = tool(&mut i, "nginx");
         let probe = probe1(fact, ProbeSiteKind::Query { valid: false });
-        let results = parse_results("site 0 effect=holds rc=0\n", &mut i);
+        let results = parse_str("site 0 effect=holds rc=0\n", &mut i);
         let obs = facts_from_sites(&probe, &results)
             .get(&fact)
             .copied()
@@ -3945,7 +4101,7 @@ mod tests {
         let mut i = Interner::default();
         let fact = pkg(&mut i, "nginx");
         let probe = probe2(fact, ProbeSiteKind::Establish, ProbeSiteKind::Establish);
-        let results = parse_results(
+        let results = parse_str(
             "site 0 effect=holds rc=0\nsite 1 effect=absent rc=1\n",
             &mut i,
         );
@@ -3968,7 +4124,7 @@ mod tests {
         let mut i = Interner::default();
         let fact = pkg(&mut i, "nginx");
         let probe = probe2(fact, ProbeSiteKind::Establish, ProbeSiteKind::Establish);
-        let results = parse_results(
+        let results = parse_str(
             "site 0 effect=holds rc=0\nsite 1 effect=holds rc=0\n",
             &mut i,
         );
@@ -3996,7 +4152,7 @@ mod tests {
             ProbeSiteKind::Query { valid: true },
             ProbeSiteKind::Query { valid: true },
         );
-        let results = parse_results(
+        let results = parse_str(
             "site 0 effect=holds rc=0\nsite 1 effect=holds rc=1\n",
             &mut i,
         );

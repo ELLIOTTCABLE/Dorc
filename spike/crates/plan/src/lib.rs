@@ -51,6 +51,8 @@ pub use fold::{AbstractRc, FoldResult};
 
 pub mod erasability;
 
+pub mod records;
+
 pub mod render;
 
 pub mod survival;
@@ -1284,8 +1286,14 @@ impl ProbePlan {
     /// `$?` immediately after the check, maps it to the three-outcome word, and prints the
     /// record.
     #[must_use]
-    pub fn render_sh(&self, interner: &Interner) -> String {
+    pub fn render_sh(&self, framing: &records::Framing, interner: &Interner) -> String {
         let mut out = String::from(render::probe::header());
+        // `262` §2 framing header — the artifact's FIRST OUTPUT line. `sites=` is the
+        // fact-lane census (the resolvable site-record count), so a truncated fact lane is a
+        // computable range at the deframer (`26A` amend-smalls). The end-sentinel is emitted
+        // by the round-trip driver AFTER every record lane (`records::sentinel_line`).
+        out.push_str(&records::header_line(framing, self.checks.len()));
+        let nonce = &framing.nonce;
         // R3 (23D §1 — the check IS the oracle): emit each provider's stripped
         // `<provider>__predict` funcdef, then invoke it per SITE with the site's full argv +
         // the self-report wrapper. The funcdef is deduped per funcname but RE-EMITTED
@@ -1334,7 +1342,7 @@ impl ProbePlan {
                 }
                 render::probe::invocation(&fn_name, &check.argv, interner)
             };
-            out.push_str(&render::probe::record_scaffold(&invocation, &key));
+            out.push_str(&render::probe::record_scaffold(&invocation, &key, nonce));
         }
         // Un-resolvable sites are recorded as comments (never invoked): transparency
         // for the human reading the artifact and the D3 argv-echo differential.
@@ -1437,7 +1445,7 @@ impl ResolverPlan {
     /// with the entity; its stdout is re-keyed to a `resolv <coord> canon=…` record (or `dangling`,
     /// §4). Empty ⇒ `""` (nothing appended). Interner-free (all fields pre-resolved).
     #[must_use]
-    pub fn render_sh(&self) -> String {
+    pub fn render_sh(&self, nonce: &records::Nonce) -> String {
         if self.probes.is_empty() {
             return String::new();
         }
@@ -1455,6 +1463,7 @@ impl ResolverPlan {
                 &p.kind_fn,
                 &p.entity_text,
                 &p.coord_label,
+                nonce,
             ));
         }
         out
@@ -1502,7 +1511,7 @@ impl ReachPlan {
     /// body change — sh last-writer-wins), then invoked per COORDINATE with the entity; its stdout is
     /// re-keyed per-line to a `reach <coord> arm=<index> entity=…` record. Empty ⇒ `""`. Interner-free.
     #[must_use]
-    pub fn render_sh(&self) -> String {
+    pub fn render_sh(&self, nonce: &records::Nonce) -> String {
         if self.probes.is_empty() {
             return String::new();
         }
@@ -1522,6 +1531,7 @@ impl ReachPlan {
                 &p.entity_text,
                 &p.coord_label,
                 p.arm_index,
+                nonce,
             ));
         }
         out
@@ -1548,7 +1558,7 @@ impl DerivationPlan {
     /// multi-body provider), then invoked per SITE with the site's argv, its stdout coord-lines
     /// re-keyed to `deriv <leafid> coord=…` records. Empty ⇒ `""` (nothing appended).
     #[must_use]
-    pub fn render_sh(&self, interner: &Interner) -> String {
+    pub fn render_sh(&self, nonce: &records::Nonce, interner: &Interner) -> String {
         if self.derivations.is_empty() {
             return String::new();
         }
@@ -1565,7 +1575,7 @@ impl DerivationPlan {
                 out.push_str(&render::probe::wrapper_def(&d.sh));
             }
             let invocation = render::deriv::invocation(&fn_name, &d.argv, interner);
-            out.push_str(&render::deriv::record_scaffold(&invocation, d.site));
+            out.push_str(&render::deriv::record_scaffold(&invocation, d.site, nonce));
         }
         out
     }
@@ -4243,14 +4253,18 @@ apt_get__predict() {
             LeafId(0),
             "the install is site 0"
         );
-        let sh = derivations.render_sh(&i);
+        let sh = derivations.render_sh(&records::Nonce::spike_default(), &i);
         assert!(
             sh.contains("apt_get__touches() { apt-manifest"),
             "the stripped touches def ships verbatim: {sh}"
         );
         assert!(
-            sh.contains("| while IFS= read -r _c; do printf 'deriv 0 coord=%s"),
-            "the per-site deriv readback scaffold renders: {sh}"
+            sh.contains("| { _n=0; while IFS= read -r _c; do printf 'dorc deriv 0 coord=%s"),
+            "the per-site deriv readback scaffold renders (framed, counting subshell): {sh}"
+        );
+        assert!(
+            sh.contains("printf 'dorc deriv-end 0 n=%s @@dorc@@\\n' \"$_n\"; }"),
+            "the at-most family closes with a `deriv-end` count record (262 §2 / 26A stop-1): {sh}"
         );
         assert!(
             !sh.starts_with("#!/bin/sh"),
@@ -4277,9 +4291,9 @@ apt_get__predict() {
             vec![LeafId(1)],
             "site 1 is a DISTINCT site, recorded unresolvable (same-cell Written), not collapsed"
         );
-        let rendered = probe.render_sh(&i);
+        let rendered = probe.render_sh(&records::Framing::spike(String::new()), &i);
         assert!(
-            rendered.contains("printf 'site 0 effect="),
+            rendered.contains("printf 'dorc site 0 effect="),
             "site 0 record:\n{rendered}"
         );
         assert!(
@@ -4301,13 +4315,13 @@ apt_get__predict() {
             probe.checks[0].fact, probe.checks[1].fact,
             "distinct cells (nginx vs curl)"
         );
-        let rendered = probe.render_sh(&i);
+        let rendered = probe.render_sh(&records::Framing::spike(String::new()), &i);
         assert!(
-            rendered.contains("printf 'site 0 effect="),
+            rendered.contains("printf 'dorc site 0 effect="),
             "site 0 record:\n{rendered}"
         );
         assert!(
-            rendered.contains("printf 'site 1 effect="),
+            rendered.contains("printf 'dorc site 1 effect="),
             "site 1 record:\n{rendered}"
         );
     }
@@ -4325,7 +4339,7 @@ apt_get__predict() {
             "apt-get install -y nginx\napt-get install -y curl\napt-get update\n",
             true,
         );
-        let rendered = probe.render_sh(&i);
+        let rendered = probe.render_sh(&records::Framing::spike(String::new()), &i);
 
         // Full argv bound + single-quoted per word (F-QUOTE): the check argparses the entity.
         assert!(
@@ -4350,7 +4364,7 @@ apt_get__predict() {
         );
         // Self-reporting: a site-keyed record printf per resolvable site (3 of them).
         assert_eq!(
-            rendered.matches("printf 'site ").count(),
+            rendered.matches("printf 'dorc site ").count(),
             3,
             "one record per resolvable site:\n{rendered}"
         );
@@ -4376,7 +4390,7 @@ apt_get__predict() {
         // Spaced operand via a flowed assignment. R3: the whole argv is F-quoted per word,
         // so the spaced operand renders as exactly one arg (`'my pkg'`).
         let (probe, i) = probe_for_src("PKG='my pkg'\napt-get install -y \"$PKG\"\n", true);
-        let rendered = probe.render_sh(&i);
+        let rendered = probe.render_sh(&records::Framing::spike(String::new()), &i);
         assert!(
             rendered.contains("apt_get__predict 'install' '-y' 'my pkg'"),
             "spaced operand single-quoted to one arg:\n{rendered}"
@@ -4387,7 +4401,7 @@ apt_get__predict() {
             "PKG='x; touch /tmp/PWNED'\napt-get install -y \"$PKG\"\n",
             true,
         );
-        let rendered = probe.render_sh(&i);
+        let rendered = probe.render_sh(&records::Framing::spike(String::new()), &i);
         assert!(
             rendered.contains("apt_get__predict 'install' '-y' 'x; touch /tmp/PWNED'"),
             "metachar operand single-quoted ⇒ the `;` cannot split:\n{rendered}"
@@ -6221,7 +6235,7 @@ apt_get__predict() {
             }],
             unresolvable: Vec::new(),
         };
-        let rendered = plan.render_sh(&i);
+        let rendered = plan.render_sh(&records::Framing::spike(String::new()), &i);
         assert!(
             rendered.contains("otelcol__predict '--version' | grep__predict '-q' '0.155.0'"),
             "the composed predict invocation ships (oracle bytes, admin argv as arguments): {rendered}"

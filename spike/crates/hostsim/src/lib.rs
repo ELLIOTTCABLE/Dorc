@@ -980,7 +980,7 @@ apt_get__predict() {
                 "seed {seed}: both ambient installs are probed (package has a probe)"
             );
             // …and the probe renders as a read-only, self-reporting shell-script.
-            let probe_sh = probe.render_sh(&i);
+            let probe_sh = probe.render_sh(&dorc_plan::records::Framing::spike(String::new()), &i);
             assert!(
                 probe_sh.contains("dpkg-query") && probe_sh.contains("read-only"),
                 "seed {seed}: probe renders the verbatim read-only check"

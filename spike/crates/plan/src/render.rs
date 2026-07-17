@@ -80,6 +80,7 @@ pub fn standin_sh(stand_in: StandIn) -> String {
 /// are resolvable and walk them; these functions emit the bytes for one decided piece.
 pub mod probe {
     use super::{Interner, LeafId, Symbol, sem};
+    use crate::records::{self, Nonce};
 
     /// Format a record's site key: `N` for an ordinary single-fact site, `N.M` for member
     /// `M` of an in-loop Members fact-family (task-L2 item-4). The `.M` sub-key is the one
@@ -194,13 +195,17 @@ pub mod probe {
     /// (`276:rul-verdicts-never-stable` / plan-as-API), so a benign SIGPIPE race can never move
     /// a process exit code. Until that surface exists, this doc IS the contract.
     #[must_use]
-    pub fn record_scaffold(invocation: &str, key: &str) -> String {
+    pub fn record_scaffold(invocation: &str, key: &str, nonce: &Nonce) -> String {
+        // `262` §2 framing: the emitted record line is `{nonce} site {key} effect=… rc=…
+        // {token}` — the bare-nonce prefix (drain-keying) + the terminal token (tear-detect),
+        // both printf-format literals; the `%s` args are unchanged.
+        let framed = records::frame(nonce, &format!("site {key} effect=%s rc=%s"));
         format!(
             "{invocation}; _rc=$?; \
              if [ \"$_rc\" -eq 0 ]; then _e=holds; \
              elif [ \"$_rc\" -eq 1 ]; then _e=absent; \
              else _e=cant-tell; fi; \
-             printf 'site {key} effect=%s rc=%s\\n' \"$_e\" \"$_rc\"\n"
+             printf '{framed}\\n' \"$_e\" \"$_rc\"\n"
         )
     }
 
@@ -231,6 +236,7 @@ pub mod probe {
 /// and walks them; these emit the bytes for one decided piece.
 pub mod deriv {
     use super::{Interner, LeafId, Symbol, sem};
+    use crate::records::{self, Nonce};
 
     /// The derivation-probe banner — comment-only (no shebang), documents the `deriv` record
     /// grammar. GUARANTEE: pure `#`-comment lines ⇒ dash-n-clean; appended to the convergence
@@ -273,16 +279,27 @@ pub mod deriv {
     /// body printed) through a per-line `printf`, re-keying each as a `deriv <leafid> coord=<line>`
     /// record. `_c` is a probe-local name (unlikely to clash with a touches body).
     ///
-    /// GUARANTEE: dash-n-clean — a pipeline into a `while read` loop, valid at script top level.
-    /// A body that prints NOTHING ⇒ no records ⇒ an empty derived footprint ⇒ the site walls
-    /// (silence = wall, 24E §4). An un-shimmed derivation command under `PATH=mocks-only` (the
-    /// fork-4A layer-3 mocks net) prints nothing ⇒ empty ⇒ wall — the safe direction
+    /// GUARANTEE: dash-n-clean — a pipeline into a `{ … }` group, valid at script top level.
+    /// A body that prints NOTHING ⇒ no coord records ⇒ an empty derived footprint ⇒ the site
+    /// walls (silence = wall, 24E §4). An un-shimmed derivation command under `PATH=mocks-only`
+    /// (the fork-4A layer-3 mocks net) prints nothing ⇒ empty ⇒ wall — the safe direction
     /// (`kFAIL-perform`), never a wrong-elision.
+    ///
+    /// `262` §2 / `26A` stop-1 — THE at-most family close: deriv is a variable-count family
+    /// with no inherent completion marker, so a mid-family cut is otherwise undetectable and
+    /// would SHRINK the at-most footprint (⇒ MORE survivals — the under-execution direction).
+    /// Each family closes with `deriv-end {site} n=<K>` where K is the count emitted; the
+    /// consumer refuses a family whose received count ≠ K (or that has no end-record) ⇒
+    /// wall-total. The count `_n` is scoped INSIDE the pipe's `{ … }` subshell — a bare
+    /// `while` on the RHS of a pipe runs in a subshell whose variable increments never reach
+    /// the parent (POSIX), so the end-record is emitted from within the SAME group.
     #[must_use]
-    pub fn record_scaffold(invocation: &str, site: LeafId) -> String {
+    pub fn record_scaffold(invocation: &str, site: LeafId, nonce: &Nonce) -> String {
+        let coord = records::frame(nonce, &format!("deriv {} coord=%s", site.0));
+        let end = records::frame(nonce, &format!("deriv-end {} n=%s", site.0));
         format!(
-            "{invocation} | while IFS= read -r _c; do printf 'deriv {} coord=%s\\n' \"$_c\"; done\n",
-            site.0
+            "{invocation} | {{ _n=0; while IFS= read -r _c; do printf '{coord}\\n' \"$_c\"; \
+             _n=$((_n+1)); done; printf '{end}\\n' \"$_n\"; }}\n"
         )
     }
 }
@@ -300,6 +317,7 @@ pub mod deriv {
 /// resolution and walks them; these emit the bytes for one decided piece.
 pub mod resolv {
     use super::sem;
+    use crate::records::{self, Nonce};
 
     /// The resolver-probe banner — comment-only (no shebang), documents the `resolv` record grammar.
     /// GUARANTEE: pure `#`-comment lines ⇒ dash-n-clean; appended to the earlier probes, so it never
@@ -340,12 +358,16 @@ pub mod resolv {
     /// (the mocks net) 127s ⇒ empty stdout ⇒ `dangling` ⇒ the coord degrades to may-alias (§3a) — the
     /// safe direction (`kFAIL-perform`: fail toward run), never a wrong canonical.
     #[must_use]
-    pub fn record_scaffold(kind_fn: &str, entity: &str, coord: &str) -> String {
+    pub fn record_scaffold(kind_fn: &str, entity: &str, coord: &str, nonce: &Nonce) -> String {
         let q = sem::single_quote(entity);
+        // `262` §2 framing: nonce prefix + terminal token on both arms; `canon=` is the
+        // free-content field (last-to-token) so a canonical form with spaces survives.
+        let canon = records::frame(nonce, &format!("resolv {coord} canon=%s"));
+        let dangling = records::frame(nonce, &format!("resolv {coord} dangling"));
         format!(
             "_c=$({kind_fn} {q} 2>/dev/null); _rr=$?; \
-             if [ \"$_rr\" -eq 0 ] && [ -n \"$_c\" ]; then printf 'resolv {coord} canon=%s\\n' \"$_c\"; \
-             else printf 'resolv {coord} dangling\\n'; fi\n"
+             if [ \"$_rr\" -eq 0 ] && [ -n \"$_c\" ]; then printf '{canon}\\n' \"$_c\"; \
+             else printf '{dangling}\\n'; fi\n"
         )
     }
 }
@@ -364,6 +386,7 @@ pub mod resolv {
 /// only — the cli decides which coords/arms escalate and walks them; these emit one decided piece.
 pub mod reach {
     use super::sem;
+    use crate::records::{self, Nonce};
 
     /// The reach-probe banner — comment-only (no shebang), documents the `reach` record grammar.
     /// GUARANTEE: pure `#`-comment lines ⇒ dash-n-clean; appended to the earlier probes, never a
@@ -406,11 +429,19 @@ pub mod reach {
     /// under `PATH=mocks-only` (the fork-4A layer-3 mocks net) 127s ⇒ prints nothing ⇒ no expansion —
     /// never a wrong-reach (`kFAIL-perform`: an omitted reach only fails to WIDEN, the honest floor).
     #[must_use]
-    pub fn record_scaffold(arm_fn: &str, entity: &str, coord: &str, arm_index: usize) -> String {
+    pub fn record_scaffold(
+        arm_fn: &str,
+        entity: &str,
+        coord: &str,
+        arm_index: usize,
+        nonce: &Nonce,
+    ) -> String {
         let q = sem::single_quote(entity);
-        format!(
-            "{arm_fn} {q} | while IFS= read -r _re; do printf 'reach {coord} arm={arm_index} entity=%s\\n' \"$_re\"; done\n"
-        )
+        // `262` §2 framing: nonce prefix + terminal token; `entity=` is the free-content field
+        // (last-to-token) so a reached entity with spaces survives (the old single-token
+        // truncation is fixed — `279f` rider generalization).
+        let rec = records::frame(nonce, &format!("reach {coord} arm={arm_index} entity=%s"));
+        format!("{arm_fn} {q} | while IFS= read -r _re; do printf '{rec}\\n' \"$_re\"; done\n")
     }
 }
 

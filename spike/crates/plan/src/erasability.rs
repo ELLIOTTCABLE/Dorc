@@ -119,7 +119,9 @@ pub fn canonical_decision(
     //     subsume much of (1)/(2) but are compared directly: a render bug that left the
     //     structured plane intact would still be caught.
     out.push_str("== render.probe ==\n");
-    out.push_str(&probe.render_sh(interner));
+    // A canonical differential form: the framing is fixed (spike default) so two renders of
+    // the same probe compare byte-identically; the digest is irrelevant to the comparison.
+    out.push_str(&probe.render_sh(&crate::records::Framing::spike(String::new()), interner));
     out.push_str("\n== render.apply ==\n");
     out.push_str(&plan.render_apply(src, ast));
     // (4) Error-class diagnostics by (code, site, severity) — sorted for order-independence.
