@@ -817,9 +817,9 @@ impl GuardInsert {
     /// Render the guarded line: `( <check-invocation> ) || <original>   # dorc: guard [<kind>
     /// converged-vouch; probe: <word>]` (24D §2 / rul-ternary-verdict). The original bytes survive
     /// VERBATIM as the `||`-right (no code path removes them — the two never-clauses). The glue is
-    /// always the direct `( f_is_converged args ) || <original>` (rul24-ditch-is-diverged retired
-    /// the `is_diverged` sense-flip; the inverted sense is now spelled with explicit-return manual
-    /// inversion inside `is_converged`). `original` is the site's verbatim command bytes.
+    /// always the direct `( f_is_converged args ) || <original>` (`24C:rul24-ditch-is-diverged`: the
+    /// sole verdict role is `is_converged`; the inverted sense is now spelled with explicit-return
+    /// manual inversion inside it). `original` is the site's verbatim command bytes.
     #[must_use]
     fn render_line(&self, original: &str) -> String {
         let check = format!("( {} )", self.vouch.invocation);
@@ -898,7 +898,7 @@ pub type Vouches = BTreeMap<CfgNodeId, ByVouch<VerdictVouch>>;
 /// Lift the per-site VOUCHES (24D §3 elide-weld / rul-guard-license / rul24-vouch-is-verdict-
 /// authoring) — the ONE home for the composition every driver shares (the cli, the sweep net, the
 /// coverage dashboard, the hostsim DST). For each establish-bearing site whose provider authored a
-/// verdict function (`<provider>.is_converged`/`.is_diverged`) that REACHES a vouching path over
+/// verdict function (`<provider>.is_converged`) that REACHES a vouching path over
 /// the site's constant-propagated argv (`evaluate_verdict` ⇒ `Vouched`), it builds one
 /// [`ByVouch<VerdictVouch>`] keyed by the site's [`CfgNodeId`]. A site ABSENT from the map has no
 /// reached vouch ⇒ it never elides (the elide-weld, [`ReplaceLicense::prove_replaceable`]) and
@@ -984,7 +984,7 @@ pub fn build_vouches(
             "{}{VERDICT_SUFFIX}",
             dorc_oracle::to_funcname_segment(interner.resolve(verdict.provider)),
         );
-        let preamble = strip_verdict(src, verdict, interner, VERDICT_SUFFIX);
+        let preamble = strip_verdict(src, verdict, interner);
         let invocation = if op_refs.is_empty() {
             fn_name.clone()
         } else {

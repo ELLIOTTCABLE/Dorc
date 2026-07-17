@@ -74,8 +74,8 @@ pub struct DerivedEffect {
 /// mark emits one [`DerivedEffect`]; bare marks (ACK/POISON) emit nothing. Deterministic
 /// and total (`inv-no-throw`: no panics — a shape the walk cannot characterize simply
 /// emits nothing, the safe direction). NB the converged-vouch is no longer a mark
-/// (rul24-vouch-is-verdict-authoring, 24A §1c): it is an authored `is_converged()`/
-/// `is_diverged()` verdict function, unread by this derivation.
+/// (rul24-vouch-is-verdict-authoring, 24A §1c): it is an authored `is_converged()`
+/// verdict function, unread by this derivation.
 /// A brace-alternation `#{a,b}` on a VERDICT/OBSERVE mark is inert (`277` §4c single-cell law) —
 /// a loud diagnostic, not a silent drop (`27D` disposition-brace-verdict-silent, 24Kc F2 the
 /// silent-inert authored-construct class; `inv-top-reject`).

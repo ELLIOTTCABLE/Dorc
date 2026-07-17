@@ -1262,7 +1262,6 @@ fn ship_verdict_body(
     provider: Symbol,
 ) -> Option<String> {
     use dorc_oracle::predict::{map_provider_name, strip_verdict};
-    use dorc_oracle::verdict::VERDICT_SUFFIX;
     let want = map_provider_name(interner.resolve(provider));
     for (src, set) in oracle_srcs.iter().zip(verdict_sets) {
         for vp in set.providers() {
@@ -1270,7 +1269,7 @@ fn ship_verdict_body(
                 continue;
             }
             let Some(verdict) = set.get(vp) else { continue };
-            return Some(strip_verdict(src, verdict, interner, VERDICT_SUFFIX));
+            return Some(strip_verdict(src, verdict, interner));
         }
     }
     None
@@ -2251,7 +2250,7 @@ fn entity_text_of(coord: dorc_plan::EntityCoord, interner: &Interner) -> String 
 /// Lift the per-site GUARD VOUCHES (rul-guard-license / rul24-vouch-is-verdict-authoring, 24A §1c).
 /// Called ALWAYS-ON — guards are the un-flagged baseline (rul24-mode-gate governs only the survival
 /// tier, NOT this). For each establish-bearing site whose provider authored a verdict function
-/// (`<provider>.is_converged`/`.is_diverged`) that REACHES a vouching path over the site's resolved
+/// (`<provider>.is_converged`) that REACHES a vouching path over the site's resolved
 /// argv (`evaluate_verdict` ⇒ `Vouched`), build a [`dorc_plan::Vouches`] entry: a
 /// `ByVouch<VerdictVouch>` carrying the guard emitter's data (the mangled funcname, the strip-only
 /// preamble, the invocation, the declared sense, the fact's kind label), keyed by the site's

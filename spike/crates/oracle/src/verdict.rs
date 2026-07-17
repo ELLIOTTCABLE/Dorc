@@ -1,6 +1,6 @@
 //! `verdict` — the guard-verdict function lift (rul-role-split / rul24-vouch-is-verdict-authoring,
-//! 24A §1c / 24D §3). The STATIC half of the vouch: authoring an `<provider>.is_converged()` /
-//! `.is_diverged()` verdict function IS the vouching act, and this module decides — for a site's
+//! 24A §1c / 24D §3). The STATIC half of the vouch: authoring an `<provider>.is_converged()`
+//! verdict function IS the vouching act, and this module decides — for a site's
 //! constant-propagated argv — whether the verdict function reaches a **vouching path** (the
 //! license) or a **declining path** (24A §1c: "an unhandled path" / a path that ran no authored
 //! check). The APPLY half is the shipped guard: [`crate::predict::strip_verdict`] emits the same
@@ -22,10 +22,9 @@
 //! / 24M; the hz-refusepath fence)
 //!
 //! A reached `return N` with a LITERAL code is the author's explicit verdict, read against the
-//! function's declared [`VerdictSense`] per rul-rc-partition — the same universal partition
-//! `USER_STORY` teaches (0 = the named sense holds; 1 = its complement; ≥2 = can't-say). The
-//! converged code (`0` under [`VerdictSense::Converged`], `1` under [`VerdictSense::Diverged`])
-//! VOUCHES; the complement or a ≥2 confused code DECLINES ⇒ the site runs. This closes
+//! sole `is_converged` sense per rul-rc-partition — the same universal partition `USER_STORY`
+//! teaches (0 = the named sense holds; 1 = its complement; ≥2 = can't-say). The converged code
+//! (`0`) VOUCHES; the complement (`1`) or a ≥2 confused code DECLINES ⇒ the site runs. This closes
 //! fix-return-decline-inert: an author who writes their verdict in the explicit-return style
 //! taught by the partition (`case $1 in synced) return 0 ;; *) return 1 ;; esac`) is HONORED
 //! (rul24M-rungs-default: an authored verdict-function reads as full-license, honor the author's
@@ -88,9 +87,10 @@ pub fn verdict_providers(interner: &mut Interner, srcs: &[&str]) -> BTreeSet<Pro
     set
 }
 
-/// The mangled funcname suffix a verdict body strips to (`crate::predict::strip_verdict`). Only
-/// the converged sense exists (rul24-ditch-is-diverged: `is_diverged` is retired; the inverted
-/// sense is spelled with explicit-return `case $?` manual inversion inside an `is_converged`).
+/// The mangled funcname suffix a verdict body strips to (`crate::predict::strip_verdict`) and the
+/// name [`predict_fn_name`](../../dorc_plan)-side emitters build. `is_converged` is the sole verdict
+/// role (`24C:rul24-ditch-is-diverged`); the inverted sense is spelled with explicit-return `case $?`
+/// manual inversion inside an `is_converged`.
 pub const VERDICT_SUFFIX: &str = "__is_converged";
 
 /// The set of `<provider>__is_converged` verdict funcdefs lifted from one oracle file. Reuses the
@@ -208,8 +208,8 @@ pub fn evaluate_verdict(verdict: &Predict, argv: &[&str]) -> VerdictResolution {
 
 /// Read an explicit `return N` code, per rul-rc-partition (0 = converged holds, 1 = its
 /// complement, ≥2 = confused). Only `return 0` vouches; everything else declines. The inverted
-/// sense (né `is_diverged`) is now spelled with explicit-return `case $?` manual inversion, which
-/// reaches a `return 0` on the converged path — so this single-code partition covers it.
+/// sense is now spelled with explicit-return `case $?` manual inversion, which reaches a
+/// `return 0` on the converged path — so this single-code partition covers it.
 fn classify_return(code: Rc) -> VerdictResolution {
     if code.0 == 0 {
         VerdictResolution::Vouched

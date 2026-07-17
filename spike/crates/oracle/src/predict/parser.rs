@@ -34,8 +34,7 @@ enum FnRole {
     Disturbs,
     /// `<provider>__is_converged` — the guard-verdict function (rul-role-split; sense declared
     /// by name — 0-in-the-named-sense = converged). Its authoring IS the vouch
-    /// (rul24-vouch-is-verdict-authoring). `is_diverged` is RETIRED (rul24-ditch-is-diverged):
-    /// the inverted sense is spelled with explicit-return `case $?` manual inversion.
+    /// (rul24-vouch-is-verdict-authoring). The sole verdict role (`24C:rul24-ditch-is-diverged`).
     IsConverged,
     /// `<munge(kind)>__resolve` — the identity CANONICALIZER (24F §3, the resid-aliasing
     /// closure). KIND-keyed (contrast the command-keyed trio): the `<munge(kind)>` before the
