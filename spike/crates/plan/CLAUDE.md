@@ -1,141 +1,100 @@
 # spike/crates/plan — CLAUDE.md
 
-Elision/replacement, the probe→apply compiler, and render. Read `spike/CLAUDE.md`
-(invariants) and `Research/plans/191-spike2-keystone-charter.md` (charter). Trust
-the root `DESIGN.md` (the plan/apply UX) + `IMPLEMENTATION.md` ("To execute, or
-not to execute?" — the priority order: never under-execute > avoid over-execute >
-avoid unnecessary-execute) over `Research/`.
+Role: elision/replacement, the probe→apply compiler, and render — the crate where
+irreversible verdicts are MINTED. Owns `PhasedVerdict`/`Bias`, the license
+witnesses, `Disposition`/`Step`/`Plan`, `compile_probe`/`ProbePlan`, `build_plan`,
+and the renders. Read `spike/CLAUDE.md` first; root `DESIGN.md` (plan/apply UX)
+and `IMPLEMENTATION.md` ("To execute, or not to execute?") outrank `Research/`.
+Registry discipline: one rule per bullet, slugged; append to the matching section.
 
-This crate owns: `PhasedVerdict`/`Bias` (the `Unknown`-fold), the `ReplaceLicense`
-witness, `Disposition`/`Step`/`Plan` (the leaf-seam), `compile_probe`+`ProbePlan`
-(forward half), `build_plan` (apply-2), and the two renders (`render_sh`,
-`render_apply`). It is `inv-superposition`'s real second phased caller (`F-FW3`).
+## Law — the license mints (the sole minting sites for the two irreversible verbs)
 
-## Critical types — the tier-gated LICENSES (read their doc-comments before touching the mints)
+- **sole-mint-witnesses** — `ReplaceLicense` (elide) and `GuardLicense` (guard)
+  are private-field, sole-mint witnesses; BOTH demand a
+  `core::claim::ByVouch<VerdictVouch>` **by value**. If a mint signature blocks
+  your build, you likely lack the real vouch: obtain it (author the
+  `is_converged()`) or let the command run — NEVER fabricate or convert a claim
+  to satisfy the type. That conversion is the vouchless-elide hole the weld
+  closes.
+- **vouch-built-once** — vouches are built once (`build_vouches`) and threaded
+  via the `Vouches` map; a vouch informs a license and never enters the
+  fact-plane.
+- **elision-predicate** — elide leaf L iff `probe(L.fact) = Converged ∧ ambient ∧
+  Must ∧ no-consumed-unvouched-observable ∧ ¬⊤-contained`. ⊤-containment is a
+  SEPARATE guard in `build_plan` — it guards a different failure (unmodeled
+  execution context, not a stale fact); keep it separate.
+- **cant-probe-cant-elide** — a kind with an effect but no shippable check is
+  absent from the probe, so the apply runs it (`kFAIL-perform`). A missing or
+  unknown verdict always folds to run.
+- **no-rc0-vouch-exists** — "converged ⇒ rc 0" was bought false three times; a
+  mutator's rc is ⊤. Never resurrect an establishes-contract rc-0 vouch.
+- **consumed-channel-blocking** — consumed `Stdout`/`Stderr` arrive un-collapsed
+  and can only BLOCK (`inv-must-may`); consumed Status follows the trichotomy
+  (`StatusRelaxable` substitutes an exact known rc, ⊤ blocks; `StatusInvariant`
+  never blocks, still recorded, mark-union — any other blocking mark wins;
+  `StatusIterated` blocks unconditionally).
 
-`ReplaceLicense` (elide) and `GuardLicense` (guard) are the sole-mint, private-field witnesses
-for the two irreversible verbs. Since Part B (the elide-weld, `24D §3`) BOTH mints DEMAND a
-`core::claim::ByVouch<VerdictVouch>` by value (`ReplaceLicense::prove_replaceable`'s
-`EstablishAmbient` arm consumes it as the tier-check; `GuardLicense::mint` the same) — a
-`ByObservation`/`BySilence` cannot satisfy either. **If a mint signature blocks your build you
-likely lack the real vouch: obtain it (author the `is_converged()`), or let the command run — NEVER
-fabricate/convert a claim to satisfy the type (that is the vouchless-elide hole the weld closes).**
-Read `core::claim`'s type docs (the tier algebra these consume) first. The vouch is built ONCE by
-`dorc_plan::build_vouches` (the cli/sweep/coverage/hostsim share it) and threaded via the `Vouches`
-map — it never enters the fact-plane (`TC-tier-3`; a vouch informs a license, never becomes a fact).
+## Law — guards
 
-## What the keystone does to this crate (`ap-1`; do not pre-build past it)
+- **guard-shape** — `( <verdict-fn> <site argv> ) || <original bytes>`; the
+  original bytes always survive verbatim; failure lands on run. Declared-dual
+  glue is the engine's mechanical sense-flip
+  (`( f args; [ $? -eq 1 ] ) || <bytes>`) — lossless inversion.
+- **guards-mint-no-values** — a GuardInsert carries no StandIn, no Predicted, no
+  Observable: on pass, the check's live rc is the line's rc; on fall-through the
+  original runs genuinely. Licensed by the vouch, never by value-provenance.
+- **never-synthesized-never-mutating** — never engine-synthesized sh; never
+  declared/claimed output in guard position; a body that provably mutates lifts
+  nowhere (`271:rul-no-mutating-guards`).
+- **check-tax-awareness** — a guarded site pays its check on every apply,
+  forever (`KNOBS:kPROBING`): an expensive check must earn its vouch or
+  just-run. Planner economics, never a license question.
 
-+SURE: the §3 entity-algebra re-key lands in `core`/`analysis` *first*, and it
-re-keys `FactKey`/`SkipClass`/`Polarity` out from under everything here.
-`ReplaceLicense::prove_replaceable` destructures `SkipClass::EstablishAmbient(fact)`
-and the elision predicate is *per-fact*; when a fact becomes a per-entity selector
-(`package-index#fresh` vs `package:nginx#installed`, the poison-wall fix) the
-predicate must resolve per-selector, not per-kind. ~SUSPECT the witness shape
-survives the re-key (it keys on a `FactKey` + grade + verdict, all of which the
-re-key only *refines*); the consumption gate is orthogonal to it. Don't widen the
-witness API speculatively — let the re-key push the change.
+## Law — the survival tier (the design's ONE naked-trust cell)
 
-## The elision predicate stays the sole minting site (`inv-must-may`, `inv-superposition`)
+- **survive-license** — an elision kept past a RUNNING wall requires: the vouch
+  + footprint×backing provably-disjoint (through the core chokepoints only) +
+  the admin's `--risk-faultless-skips` (per-invocation, never a default).
+  Keying and hint-lane values NEVER feed it; the flag permits acting on
+  separation claims, never manufactures them.
+- **universal-meet-here** — sparing over backing-SETS quantifies universally:
+  any unknown member ⇒ collide, at every iteration, order-independent.
+- **attribution-rendered** — every survival renders its full attribution chain
+  (whose claim licensed it, line-level first link); the why-lens names them.
+- **empty-world-byte-identical** — no oracles loaded ⇒ output byte-identical;
+  rung-0 pin in every brief touching this crate.
 
-`ReplaceLicense` is the only place an elision is minted (`16P T6` witness; `T13`
-the predicate). Keep it honest as the fact-domain gains structure — elide leaf L iff:
+## Law — render
 
-  `probe(L.fact)=Converged ∧ ambient ∧ Must ∧ no-consumed-unvouched-observable ∧ ¬⊤-contained`
+- **ap-2-runnable** — `render_apply` must emit runnable, `sh -n`-clean POSIX;
+  acceptance executes or `-n`-checks the artifact, never text-diffs alone (the
+  historical trap: a non-runnable empty `then`-clause shipped green, twice).
+- **attention-honesty-here** — the render is the whole book, original order; a
+  may-execute line is never hidden (at most dimmed). Span-exact substitution
+  (the leaf's byte-span is the edit unit); a leaf the span render cannot safely
+  edit (heredoc-carrying) REFUSES its license at render time, loudly.
+- **display-only-resolution** — resolving interned tokens to text here is for
+  display/provenance only; never branch on the resolved text.
 
-The first four conjuncts live in `prove_replaceable`; ⊤-containment is a *separate*
-guard in `build_plan` (`has_top_successor`, 16G hole-5) — keep it separate, it
-guards a different failure (unmodeled execution context, not a stale fact). The
-`can't-probe ⇒ can't-elide` link (`an-elision-predicate`): a kind with an effect but
-no declared probe is absent from `compile_probe`'s output ⇒ the apply runs it
-(`kFAIL-perform`). Consumed `Stdout`/`Stderr` arrive as the engine's un-collapsed
-`May<Powerset<Observable>>` and per `inv-must-may` can only *block* (16F §3 / 16J).
-Status consumption (19A C-3 honored; channel-set re-keyed by arch-1 — note 214,
-`StatusRenderFloor` deleted): `StatusRelaxable` — `&&`/`||` operands, errexit-region
-commands, `$?`-readers' predecessors, AND `if`/`elif` guards — a probe-sourced/declared
-rc substitutes exactly, a ⊤ rc blocks (the arch-1 guard-elision class rides this: a
-known-rc Query guard substitutes in-situ, span-exact). `StatusInvariant` — the bare
-`|| true` left operand (door-3, `20V` §4 / note 213): consumed-in-form, dead-in-fact
-(both continuations rejoin with identical observables), never blocks even at ⊤;
-mark-union still applies, so any OTHER blocking mark on the same site wins.
-`StatusIterated` — a `while`/`until` condition: a per-iteration consumed sequence no
-single rc reproduces; blocks unconditionally. Under
-fork-mutator-rc a mutator's rc is always ⊤, so BARE converged mutators under `set -e`
-run (the 206 §2 headline cost; door-3 and the remaining 20V doors are the recovery
-program). There is NO establishes-contract rc-0 vouch — that
-was the refuted assumption ("converged ⇒ rc 0", bought false three times).
+## Direction
 
-## `ap-2` — executable acceptance is non-negotiable (`an-render-runnable` / `an-render-executability-check`)
+- **re-key** — the elision predicate goes per-selector/per-cell at the
+  entity-algebra-rebuild; ALL coordinate/selector comparison through core's
+  chokepoints, never inline.
+- **conditional-tails** (`27C` §5, block-context) — a guarded wall sets a flag
+  iff its fallback body actually executed; tail lines conditioned on it keep
+  their probe-time elision along the didn't-act branch. Render stays under the
+  attention law (any fold is a future human product ruling).
+- **wire-records** — probe results move to the `262` §2 records lane at
+  block-rebuild (partial deriv-family ⇒ wall-total; additive keys).
 
-`render_apply` must emit runnable / `sh -n`-clean POSIX. Spike-1 shipped
-`if true; then # …; fi` green — a syntax error (`then`-clause whose only body is a
-comment; `fi` where a command-list is required) — because the e2e *string-diffed*
-the artifact. The harness (in `cli`) must **execute or `sh -n`-check** the rendered
-artifact, never golden-diff its text.
+## Determinism + precision tests
 
-~SUSPECT the current line-granular `render_apply` (comment a line iff a `Replace`
-leaf is on it and no `Run` leaf is) still has this trap latent: comment out the lone
-body of an `if`/`while`/`case` arm and you reproduce the empty-clause syntax error
-the line-comment approach was supposed to dodge. The flat `render_sh` sidesteps it by
-dropping guards entirely (it shows dispositions, not a runnable rewrite — a known
-first-cut limitation, `16P T14`). An `sh -n` gate on `render_apply` is exactly what
-surfaces this; if it fires, that *is* the deliverable (note it), not a thing to
-silently paper over with a `:` no-op filler unless that's the honest fix.
-
-## `seam-prov` (a leading goal) — provenance / the why-tree, hand-built (`an-locator-dag`)
-
-`Derivation` is the hand-built audit trail the plan UI greys-out as the "why". The
-target model (`111` dac-A, the `re-eval-trigger`'s strongest later case) is a
-PROV-shaped derivation-DAG `[B-prov-primer-2013]` of located-nodes + typed-edges:
-**N-tier and per-host-forking**, a *variable-length list* of typed loci
-(`loc-host`/`loc-user-src`/`loc-probe`/…), never pre-flattened — composition
-collapses to the *coarsest* tier `[B-mozilla-sourcemap-2024]`. Today's `Derivation`
-is the degenerate one-tier case. The leading-goal deliverable is *where the hand-built
-DAG strains as taint + the locator-DAG grow* (the `re-eval-trigger` evidence), not a
-green checkmark — Datalog gives why-trees ~free, the worklist must hand-build them.
-Resolving interned tokens to text here is for display/provenance only
-(`inv-referent-agnostic`); never branch on the resolved text.
-
-## `ch-scope` — instantiate the backward / apply-3 / `dorc bump` skeleton
-
-The whole `May`/`Must`/`Backward`/`BoundedLattice` tower exists but **no backward or
-must-analysis is instantiated** (`16P T4`, `16Q q1-backward`). `build_plan` is apply-2
-(forward-only). apply-3 (`dorc bump`, targeted desired-set) is **apply-2 + a backward
-relevance-reduction** — `apply-3 ⊃ apply-2` (`an-apply-3`/`an-backward-slice`, `16P
-T13`): a strict superset of effort, not a separate path. This crate is the second real
-phased caller, so it is the load-test of "engine emits, caller collapses" (`F-FW3`,
-`17O`) — until now one caller stood in as phase-agnostic, a one-caller fiction. If the
-`May`/`Must` superposition survives a real backward caller it earns the locks
-retroactively; if it breaks, the locks were premature (`16Q q1-backward`). Scope floor
-only — no host mutation over time, no TOCTOU, no executor.
-
-## `R2-CHANGEDELTA` → a `q1-precision` acceptance test (`17O`)
-
-"Do B because A changed" (config-write → reload-iff-changed): the author's `changed=1`
-flag is a **consumed observable the elision discipline must preserve, never
-synthesize**. Eliding the config-write *removes its `changed=1` side-effect* — a real
-`q1-interproc` hazard. Concrete test: track the `changed` variable across `cp →
-reload`; Dorc must never elide a delta-gated effect via a *state*-probe nor synthesize
-the cross-kind `file:`→`service:` edge. The un-probeable change-gated effect class is a
-`TODO.md`-into-`DESIGN` item, **not spike scope** — encode the precision test, don't
-add an effect-map dimension.
-
-## Determinism
-
-`inv-determinism`: `build_plan`/`compile_probe` are pure functions of their inputs;
-the host verdict is *injected* (`verdict_of: impl Fn(FactKey) -> Verdict`; the real
-host / `hostsim` is a later seam). Never reach for clock/RNG/fs/net here, directly or
-transitively. Output order is observable (the rendered plan) → sort by span, key on
-`BTreeSet`/sorted vecs, never iterate a `HashMap`.
-
-## Tension RESOLVED (round-21, arch-1 — note 214; kept for history)
-
-`an-render-modes` posed line-granular faithfulness vs leaf-exact provenance as a
-possible genuine tension. arch-1's span-edit render IS the faithful control-flow
-rewrite the --WONDER hypothesised: a Replace splices the leaf's exact byte-span
-in-situ (the stand-in for Replaces, a `:` for dead Omits — arms never empty), the
-`LeafId → AstId` back-map is byte-exact rather than line-blurred, and the artifact
-stays runnable/`sh -n`-clean (gate ap-2). Render-fidelity and leaf-exact provenance
-were NOT in tension; the line was simply the wrong substitution unit. The carve-out
-family (`inline_arm_subst`/`inline_scaffold_subst`/`commented_line` + the
-`classify_lines` walk) and the `StatusRenderFloor` channel retired with it.
+- **verdict-injected** — `build_plan`/`compile_probe` are pure; the host verdict
+  is injected (`verdict_of`); output order is span-sorted, ordered collections
+  only.
+- **R2-CHANGEDELTA** — "do B because A changed": the author's `changed=1` flag
+  is a consumed observable the discipline must PRESERVE, never synthesize.
+  Never elide a delta-gated effect via a *state*-probe; never synthesize the
+  cross-kind `file:`→`service:` edge. Encode the precision test; don't add
+  effect-map dimensions.
