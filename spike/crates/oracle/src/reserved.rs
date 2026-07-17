@@ -436,6 +436,44 @@ apt_get__predict install -y nginx || apt-get install -y nginx
         assert!(lint_book_reserved_names(&ast).is_empty());
     }
 
+    /// The deleted `is_diverged` role name is neither RESERVED nor RECOGNIZED — permanent-surface
+    /// hygiene (`24C:rul24-ditch-is-diverged` hard-deleted it; `27Xf` Tier-2 residue; the
+    /// lane-payload-v1 rider per `27D`). Role names are a permanent, unversionable compat surface
+    /// (`271`), so a resurrection of `__is_diverged` anywhere — the reserved suffix list, the
+    /// squat-lint's recognized shapes, or the role lift — is a silent re-introduction of the retired
+    /// sense-flip. This pins all three surfaces at once:
+    ///
+    /// 1. `__is_diverged` is absent from [`RESERVED_ROLE_SUFFIXES`] (the closed six).
+    /// 2. A BOOK funcdef `foo__is_diverged` is NOT surfaced as a namespace-squat (it squats no
+    ///    reserved role — it is an ordinary opaque book function).
+    /// 3. An oracle funcdef `foo__is_diverged` lifts to NO role-suffixed emitted name (the role does
+    ///    not exist; `emitted_names` runs the six real role lifts and none claims it).
+    #[test]
+    fn is_diverged_is_neither_reserved_nor_recognized() {
+        assert!(
+            !RESERVED_ROLE_SUFFIXES.contains(&"__is_diverged"),
+            "`__is_diverged` is a RETIRED role name (hard-deleted, `24C:rul24-ditch-is-diverged`) — \
+             it must never re-enter the reserved suffix set"
+        );
+
+        // (2) a book `foo__is_diverged` is an ordinary opaque function, not a squat.
+        let book = "foo__is_diverged() { : ; }\nfoo__is_diverged install\n";
+        let ast = dorc_syntax::parse(book).value;
+        assert!(
+            lint_book_reserved_names(&ast).is_empty(),
+            "`foo__is_diverged` squats no reserved role — the retired suffix recognizes nothing"
+        );
+
+        // (3) an oracle `foo__is_diverged` lifts to no role-suffixed emitted name.
+        let mut i = Interner::default();
+        let names = emitted_names(&mut i, "foo__is_diverged() { dpkg-query -W \"$1\"; }");
+        let emitted: Vec<&str> = names.iter().map(|e| e.funcname.as_str()).collect();
+        assert!(
+            emitted.iter().all(|f| !f.ends_with("__is_diverged")),
+            "no role lift recognizes the `__is_diverged` suffix: {emitted:?}"
+        );
+    }
+
     /// The reserved-suffix list agrees with what the parser's role lifts actually recognize: for
     /// each suffix, an oracle authored with the matching mangled name lifts to exactly one emitted
     /// funcname carrying that suffix. Ties [`RESERVED_ROLE_SUFFIXES`] to the parser's `FnRole`
