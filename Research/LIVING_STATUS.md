@@ -25,15 +25,23 @@ block-settle CLOSED (`plans/271` = the rulings ledger + task map); wrapper/conte
 transport RESOLVED (`plans/27C`); the 270-era adversarial crosscheck adjudicated, no
 kill (`notes/279f` — read its §1 first).
 
-**⚠ Next activity — dispatch block-rebuild (package below); ZERO dispatch-gating
-human acts remain.** `279f:ask-amendment-acks` CLOSED 2026-07-16 (all five acked, one
-typed word each — the per-amendment records live as annotations inside `notes/277` +
-`275` §6; the roll-up in `279f` §6). Everything else in the `279f` §6 ask-list is
-discharged, moot, or non-blocking — the trail is recorded as inline brackets in §6
-itself; the task-14 dissolution + the full ratification record live at
-`271:rul-only-oracle-bytes-ship`. Non-blocking human leftovers, whenever wanted:
-the optional thin-reality-checkpoint decision (`279f` §6), the root-doc queue, the
-`27C:law-perfect-overlap` promotion.
+**⚠ Next activity — block-rebuild IS IN FLIGHT (dispatched 2026-07-17, Fable
+conductor, session r27-impl; human-acked scope: push through a complete stdlib).**
+Landings ledger = **`notes/27D`** (the `24C` role for r27; accretes per stage).
+Stage-1 corpus-respell LANDED + bless-checkpoint-one STAMPED same day — the corpus
+is dorc-lang v0.1 end-to-end; see `27D` for dispositions + the handoff riders
+stages 2/3/6 own. The live lineage is now **`ai/spike3-r27`** (human-granted
+conductor-owned; stage branches `ai/r27-*` fold in by fast-forward).
+Human rulings 2026-07-17 riding this arc: no thin-reality-checkpoint (r25
+first-blooding waits on the stdlib) · autonomous crosscheck = Sol-only via an
+Opus manager (no DeepSeek unattended, no antigravity, no Fable) · Sonnet workers
+sized 2–3-per-corpus-sweep. `279f:ask-amendment-acks` CLOSED 2026-07-16 (all five
+acked; per-amendment records annotated in `notes/277` + `275` §6; roll-up in
+`279f` §6; task-14 dissolution + ratification at `271:rul-only-oracle-bytes-ship`).
+Non-blocking human leftovers, whenever wanted: the root-doc queue, the
+`27C:law-perfect-overlap` promotion, and the `.claude/worktrees` SyncThing
+exclusion repair (`27D`'s environment incident: PHNHRER is live-syncing agent
+worktrees).
 
 **Transport RESOLVED (2026-07-16):** **`plans/27C`** is THE kept-current spec —
 context-entry probing (a wrapped site is answered by measurement in its *denoted*
