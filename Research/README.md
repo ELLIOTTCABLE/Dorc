@@ -59,15 +59,20 @@ and carries the license-contamination map.
   doctrine) → `notes/23O` (settled law + history). The elide-ceiling: `notes/238`.
 - **The language dialect: names, marker, kinds, the typeless floor** — **`notes/24M`
   (binding human rulings, 2026-07-07)** over `plans/24L` (mechanism spec) over `notes/24Kc`
-  (the crosscheck that forced it).
+  (the crosscheck that forced it); the executable floor + the pipefail lanes `notes/276`
+  (the kWHICHSH two-binary weld; the `unsafe` hatch) · the mark grammar `notes/277` §4 ·
+  the one-page reference `notes/278` (DRAFT — assembles, never rules).
 - **What's actually BUILT, and its residue** — `notes/24C` (the per-landing ledger) +
   `LIVING_STATUS.md`; spike-1 history in `plans/16P`/`16Q`.
 - **The first real-machine field trial** — `plans/252` (THE protocol) + `notes/254`
   (adjudication + retrospective ledger) + `notes/255-*` (book + dry-run + predictions).
 - **Multi-host & read-concurrency** — `plans/262` (build spine) + `plans/260`/`261`,
   adjudicated `notes/26A` (round 26, branch `ai/spike3-r26`).
-- **Wrapper contexts (sudo/su/env) & the context algebra** — `plans/24S` (proposal-tier;
-  impossibility ledger §0; adjudication list §7).
+- **Wrapper contexts (sudo/su/env): context-entry probing, the escalation dial, the
+  tolerance vouch** — **`plans/27C` (THE current spec: measurement in the site's denoted
+  context; reuse-never-acquire; the fallback consumption lane)** over `notes/273` (the
+  wrapper surface redesign — predict absorbs wrapper modeling; dissolved `24S` §2b/§6b)
+  over `plans/24S` (proposal-tier; its §0 impossibility ledger stands).
 - **Payload decomposition (`sh -c` strings, heredoc books, the render ladder)** —
   `plans/24T` (proposal-tier; composes with 24S).
 - **Dotfiles / ops-siblinghood / why-run honesty** — `plans/24R` (secondary positions;
@@ -75,6 +80,18 @@ and carries the license-contamination map.
 - **Where did round-24's unfinished work go?** — `notes/24U` (close-out + reshuffle map)
   → `plans/270` (the round-27 charter; block arc + adjudication ledger + the naming
   discipline binding all briefs).
+- **The entity algebra (coordinate · selector dialect · comparison chokepoint · the mark
+  grammar)** — **`notes/277` (THE spec)** over `plans/271` (the block-settle rulings
+  ledger + task map whose typed acks it assembles).
+- **Kind-side topology & never-derive-separation** — `notes/272` (address-derived
+  topology; `kind__state_stored_only_in()`; §12 is its ratification-status table).
+- **Value-predictions & the capture lane** — `notes/275` (its §6 carries a NOT-RATIFIED
+  banner — honor it); origin analysis `notes/219` (round-21 vintage; concepts carry,
+  cites stale).
+- **Eval'ers & the `dorc:sh` reentry trio** — `notes/274` (reentry token ·
+  descend-don't-license · the probe-shipping split).
+- **Did round-27's design survive adversarial review?** — `notes/279f` (the crosscheck
+  adjudication: verdicts, spec amendments, brief riders, ask-list, dismissals).
 
 ## Per-round map
 
@@ -155,6 +172,16 @@ and carries the license-contamination map.
 - **r27 the consolidation round** (current; branch `ai/spike3-r23`) — rest-of-round-24 +
   the wrapper/payload work, authored-once discipline. → **`plans/270` (charter: block
   arc · adjudication ledger · naming discipline)**; predecessor accounting `notes/24U`.
+  Block-settle CLOSED 2026-07-12 → **`plans/271` (rulings ledger + task map)** + the arc
+  durables `notes/272` (address-derived topology) · `273` (the wrapper surface:
+  predict-merge + `cmd__lend_map()`) · `274` (eval'er + reentry token) · `275`
+  (value-predictions; §6 carries a NOT-RATIFIED banner) · `276` (the language sitting;
+  the kWHICHSH floor weld) · `277` (THE entity-algebra/mark-grammar spec) · `278`
+  (dorc-lang v0.1 reference, DRAFT). The 270-era adversarial crosscheck, adjudicated →
+  `notes/279f`. Wrapper/context transport resolved by context-entry probing →
+  **`plans/27C`** (trail: `notes/27A` superseded-in-part · `notes/27B`
+  superseded-as-design). Spike steering law (`spike/CLAUDE.md` + the seven crate
+  `CLAUDE.md`s) rewritten current-truth 2026-07-16.
 
 ## Vendor/ (full-history clones)
 
