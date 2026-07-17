@@ -414,6 +414,12 @@ pub(crate) fn resolve_word(
             Some(val) => Ok(sem::strip_prefix_literal(val, prefix).to_owned()),
             None => unset_positional(policy),
         },
+        // `${N-default}` — the `-` explicitly requests the default when unset, so it
+        // resolves independent of `policy` (never `Unresolved`): `$N` if present, else
+        // the literal default (the `${2-}` nounset idiom, `24P` §2).
+        Word::PositionalDefault { n, default } => {
+            Ok(positional(*n).map_or_else(|| default.clone(), str::to_owned))
+        }
         Word::Var(sym) => vars
             .get(sym)
             .cloned()

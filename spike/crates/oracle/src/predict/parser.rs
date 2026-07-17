@@ -1130,6 +1130,17 @@ fn parse_word_lexeme(lexeme: &str, single_quoted: bool, interner: &mut Interner)
         if sem::is_name(inner) {
             return Word::Var(interner.intern(inner));
         }
+        // `${N-DEFAULT}` / `${N:-DEFAULT}` — a positional with a default when unset (the
+        // `${2-}` nounset idiom, `24P` §2). The `${N#…}` prefix-strip forms are handled
+        // above, so any remaining `-`/`:-` split whose head is an integer is this form.
+        if let Some((num, default)) = inner.split_once(":-").or_else(|| inner.split_once('-'))
+            && let Ok(n) = num.parse::<u32>()
+        {
+            return Word::PositionalDefault {
+                n,
+                default: default.to_owned(),
+            };
+        }
         // Any other `${…}` parameter expansion is not modeled ⇒ `Unmodeled`, which
         // fails to resolve in EVERY position (annotation value AND `[ ]` test) ⇒ the
         // check degrades to Top — the safe direction. (NOT `Literal`: a literal would
@@ -1443,6 +1454,29 @@ mod dialect_tests {
         let m = first_command_mark(&body).expect("a trailing mark");
         assert_eq!(m.kind, MarkKind::Establish);
         assert!(m.target.value.is_some(), "the `= value` tail is captured");
+    }
+
+    #[test]
+    fn positional_default_nounset_idiom_parses() {
+        // `${2-}` (the nounset idiom, `24P` §2) parses as PositionalDefault, NOT Unmodeled — so
+        // `[ "${2-}" = "" ]` resolves the operand-count guard (the site would be un-probeable if it
+        // degraded to ⊤). Adversarial: a non-empty default and the `:-` spelling both parse.
+        use super::{Word, parse_word_lexeme};
+        let mut i = Interner::default();
+        assert_eq!(
+            parse_word_lexeme("${2-}", false, &mut i),
+            Word::PositionalDefault {
+                n: 2,
+                default: String::new()
+            }
+        );
+        assert_eq!(
+            parse_word_lexeme("${1:-def}", false, &mut i),
+            Word::PositionalDefault {
+                n: 1,
+                default: "def".to_owned()
+            }
+        );
     }
 
     #[test]

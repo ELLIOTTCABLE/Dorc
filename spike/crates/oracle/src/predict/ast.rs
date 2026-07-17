@@ -265,6 +265,13 @@ pub enum Word {
     /// (shortest match; sh `${var#pat}`). Only the literal-prefix form the
     /// flag-strip idiom uses is admitted (`${1#-}`).
     PositionalStripPrefix { n: u32, prefix: String },
+    /// `${N-DEFAULT}` / `${N:-DEFAULT}` — positional `N` with a DEFAULT when unset
+    /// (the `${2-}` nounset idiom, `24P` §2: `[ "${2-}" = "" ]` asks "is there a
+    /// second operand" without tripping `set -u`). Resolves to `$N` if present, else
+    /// `default` — independent of the caller's [`UnsetPolicy`] (the `-` explicitly
+    /// requests the default). We do not distinguish unset-vs-empty (`-` vs `:-`): the
+    /// corpus only ever asks the is-there-an-operand question, where they coincide.
+    PositionalDefault { n: u32, default: String },
     /// `$name` / `"$name"` — a variable reference (`$verb`, `$pkg`, `$svc`). Resolved
     /// against the binding environment; unbound ⇒ Top.
     Var(Symbol),
