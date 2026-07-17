@@ -1,3 +1,5 @@
+#!/usr/bin/env dorc-sh
+# dorc-lang/v0.1
 # service oracle (systemd) — the cross-oracle-scoping fixture's UNVOUCHED oracle B (23C-fd9).
 # Models `enable` (establishes service:<unit>#enabled) but carries NO converged-vouch line, so
 # even converged and past a wall its sites never mint a guard (rul-guard-license: no vouch ⇒
@@ -8,8 +10,8 @@
 # vouch. There is deliberately no converged-vouch here.
 systemctl__predict() {
    verb=$1; shift
-   svc : service = "$1"
+   svc : sm.dorc.Service = "$1"
    case $verb in
-      enable)  systemctl is-enabled -- "$svc" : service:"$svc".enabled ;;
+      enable)  systemctl is-enabled -- "$svc" : sm.dorc.Service:"$svc"#enabled ;;
    esac
 }

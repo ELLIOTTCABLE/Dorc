@@ -1,3 +1,5 @@
+#!/usr/bin/env dorc-sh
+# dorc-lang/v0.1
 # strawman24-reach-crossauthor (24G Stage 5 Part B — the reaches() cross-author flagship). An
 # UNRELATED tool `hork` fiddles the nginx package: its touches() honestly emits `package:nginx` — it
 # knows NOTHING of files. A downstream `installfile` (a DIFFERENT author's file tool) converges a
@@ -12,33 +14,33 @@
 
 # hork — the unrelated package-fiddler (predict establishes a package cell, touches emits package:X).
 # No is_converged ⇒ hork never elides ⇒ it is a RUNNING wall (footprint package:nginx).
-hork.predict() {
+hork__predict() {
    verb=$1; shift
-   pkg : package = "$1"
-   case $verb in tune) dpkg-query -W "$pkg" >/dev/null 2>&1 : package:"$pkg".tuned ;; esac
+   pkg : sm.dorc.Package = "$1"
+   case $verb in tune) dpkg-query -W "$pkg" >/dev/null 2>&1 : sm.dorc.Package:"$pkg"#tuned ;; esac
 }
-hork.touches() {
+hork__disturbs() {
    verb=$1; shift
-   case $verb in tune) printf 'package:%s\n' "$1" ;; esac
+   case $verb in tune) printf '%s\n' "$1" : sm.dorc.Package ;; esac
 }
 
 # THE REACH FUNCTION (24G §4): the package kind's OWNER declares what touching a package DRAGS. A
 # DYNAMIC arm (`dpkg -L` — the static tracer ⊤s, so it escalates: ships strip-only, runs read-only at
-# probe, its stdout the reached files). The KIND rides the trailing annotation (`: file`); the stdout
+# probe, its stdout the reached files). The KIND rides the trailing annotation (`: sm.dorc.File`); the stdout
 # lines are RAW ENTITIES (no `kind:` prefix). One capture unit per arm.
-package.reaches() {
-   dpkg -L "$1"    : file
+sm_dorc_Package__disturbance_reaches_only() {
+   dpkg -L "$1"    : sm.dorc.File
 }
 
 # installfile — a DIFFERENT author's file tool. Converges a file-fact; vouches it (is_converged).
 # It knows NOTHING of packages; only package.reaches() bridges package:nginx -> its files.
-installfile.predict() {
-   f : file = "$1"
-   stat -- "$1" >/dev/null 2>&1 : file:"$1".present
+installfile__predict() {
+   f : sm.dorc.File = "$1"
+   stat -- "$1" >/dev/null 2>&1 : sm.dorc.File:"$1"#present
 }
-installfile.is_converged() {
+installfile__is_converged() {
    stat -- "$1" >/dev/null 2>&1
 }
-installfile.touches() {
-   printf 'file:%s\n' "$1"
+installfile__disturbs() {
+   printf '%s\n' "$1" : sm.dorc.File
 }

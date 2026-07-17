@@ -1,5 +1,7 @@
+#!/usr/bin/env dorc-sh
+# dorc-lang/v0.1
 # package oracle (apt/dpkg) — the guard23 REFUSE-PATH-RC0 fixture (23J conv-rc-soundness
-# facet (ii) / hz-refusepath). The predict()'s `[ "$2" = "" ]` arity gate is the corpus refuse
+# facet (ii) / hz-refusepath). The predict()'s `[ "${2-}" = "" ]` arity gate is the corpus refuse
 # idiom: on a MULTI-operand invocation the `if` is false and the whole predict RETURNS 0 — the
 # rc-0-on-refuse hazard. The VOUCH is the authored verdict function `apt-get.is_converged()`
 # below (rul24-vouch-is-verdict-authoring, 24A §1c), lifted + traced by Part B (it declines the
@@ -10,10 +12,10 @@ apt_get__predict() {
    while [ "${1#-}" != "$1" ]; do shift; done
    verb=$1; shift
    while [ "${1#-}" != "$1" ]; do shift; done
-   pkg : package = "$1"
-   if [ "$2" = "" ]; then
+   pkg : sm.dorc.Package = "$1"
+   if [ "${2-}" = "" ]; then
       case $verb in
-         install) dpkg-query -W "$pkg" >/dev/null 2>&1 : package:"$pkg".installed ;;
+         install) dpkg-query -W "$pkg" >/dev/null 2>&1 : sm.dorc.Package:"$pkg"#installed ;;
       esac
    fi
 }
@@ -28,7 +30,7 @@ apt_get__predict() {
 # reached `return N` as a DECLINE (find-return-vouches), so a multi-operand invocation declines
 # cleanly. For THIS floor's multi-operand book the site is MustRun anyway (the predict refuses),
 # so no guard/elide is ever minted — the floor holds twice over.
-apt-get.is_converged() {
+apt_get__is_converged() {
    while [ "${1#-}" != "$1" ]; do shift; done
    verb=$1; shift
    while [ "${1#-}" != "$1" ]; do shift; done

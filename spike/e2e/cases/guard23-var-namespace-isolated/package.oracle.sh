@@ -1,3 +1,5 @@
+#!/usr/bin/env dorc-sh
+# dorc-lang/v0.1
 # minimal package oracle (apt/dpkg) — the guard23 VAR-CAPTURE fixture variant (23C-fd1). The
 # predict() is the corpus entity-resolver (its stripped body ships as the site's PROBE); the VOUCH
 # is the authored verdict function `apt-get.is_converged()` (rul24-vouch-is-verdict-authoring,
@@ -12,11 +14,11 @@ apt_get__predict() {
    while [ "${1#-}" != "$1" ]; do shift; done
    verb=$1; shift
    while [ "${1#-}" != "$1" ]; do shift; done
-   pkg : package = "$1"
-   if [ "$2" = "" ]; then
+   pkg : sm.dorc.Package = "$1"
+   if [ "${2-}" = "" ]; then
       case $verb in
-         install) dpkg-query -W "$pkg" >/dev/null 2>&1 : package:"$pkg".installed ;;
-         purge) dpkg-query -W "$pkg" >/dev/null 2>&1 : package:"$pkg".installed! ;;
+         install) dpkg-query -W "$pkg" >/dev/null 2>&1 : sm.dorc.Package:"$pkg"#installed ;;
+         purge) dpkg-query -W "$pkg" >/dev/null 2>&1 :! sm.dorc.Package:"$pkg"#installed ;;
       esac
    fi
 }
@@ -25,7 +27,7 @@ apt_get__predict() {
 # is the bare capture the corpus idiom uses — shipped verbatim it clobbers the book's `pkg`
 # (23C-fd1), contained by the emitter's guard subshell. An unmodeled verb reaches no arm ⇒ Declined
 # ⇒ no vouch ⇒ run (hz-refusepath). The dialect has no `return`, so declines are unhandled paths.
-apt-get.is_converged() {
+apt_get__is_converged() {
    while [ "${1#-}" != "$1" ]; do shift; done
    verb=$1; shift
    while [ "${1#-}" != "$1" ]; do shift; done

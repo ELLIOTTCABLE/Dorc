@@ -1,3 +1,5 @@
+#!/usr/bin/env dorc-sh
+# dorc-lang/v0.1
 # package-status QUERY oracle (the DESIGN `dpkg -s nginx || apt-get install` idiom).
 # `dpkg -s <pkg>` READS whether a package's status is installed — a read-only QUERY of
 # pkgstate:<pkg>#installed, mutating nothing (task-D2: `query` polarity). Unlike the
@@ -8,6 +10,6 @@
 # single operand as `pkgstate`; the probe re-runs `dpkg -s` against the bound entity.
 dpkg__predict() {
    case $1 in -s) shift ;; esac
-   pkg : pkgstate = "$1"
-   dpkg -s -- "$pkg" >/dev/null 2>&1 :? pkgstate:"$pkg".installed
+   pkg : sm.dorc.PkgState = "$1"
+   dpkg -s -- "$pkg" >/dev/null 2>&1 :? sm.dorc.PkgState:"$pkg"#installed
 }

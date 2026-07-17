@@ -1,3 +1,5 @@
+#!/usr/bin/env dorc-sh
+# dorc-lang/v0.1
 # stdlib grep oracle (24J §1 — the pipe-guard MEDIUM core). grep IS stdlib material
 # (USER_STORY stage 1, "coreutils and friends"); its oracle vouches what EVERY oracle vouches
 # and NOTHING more: read-only-ness + Query-class. The engine NEVER interprets grep's rc meaning
@@ -8,6 +10,6 @@
 # vouched pipe-predecessor of it stays a valid Query (rule-query-validity — Query gens nothing).
 grep__predict() {
    while [ "${1#-}" != "$1" ]; do shift; done
-   pat : grepmatch = "$1"
-   grep -q -- "$pat" :? grepmatch:"$pat".matched
+   pat : sm.dorc.GrepMatch = "$1"
+   grep -q -- "$pat" :? sm.dorc.GrepMatch:"$pat"#matched
 }

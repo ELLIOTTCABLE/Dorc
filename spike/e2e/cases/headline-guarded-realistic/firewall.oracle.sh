@@ -1,3 +1,5 @@
+#!/usr/bin/env dorc-sh
+# dorc-lang/v0.1
 # firewall oracle (ufw). `ufw allow <rule>` establishes firewall:<rule>#allowed.
 # Probe parses `ufw status` (needs root; an unprivileged probe must read UNKNOWN, not
 # absent — q-probe-privilege, not handled in this scrappy fixture). Rule-equivalence
@@ -6,9 +8,9 @@
 # as `firewall` (exact-string only; rule-equivalence is unsound in sh, 15x HOLE).
 ufw__predict() {
    verb=$1; shift
-   rule : firewall = "$1"
+   rule : sm.dorc.Firewall = "$1"
    case $verb in
-      allow) ufw status "$rule" >/dev/null 2>&1 : firewall:"$rule".allowed ;;
-      deny) ufw status "$rule" >/dev/null 2>&1 : firewall:"$rule".allowed! ;;
+      allow) ufw status "$rule" >/dev/null 2>&1 : sm.dorc.Firewall:"$rule".allowed ;;
+      deny) ufw status "$rule" >/dev/null 2>&1 : sm.dorc.Firewall:"$rule".allowed! ;;
    esac
 }
