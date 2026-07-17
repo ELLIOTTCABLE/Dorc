@@ -1471,4 +1471,95 @@ mod tests {
             WallVerdict::Demoted(DemoteReason::Poisoned { via_reach: None })
         ));
     }
+
+    // ── `277` §3 — the selector-dialect sparing, end-to-end through survival ──────────────────
+
+    #[test]
+    fn dialect_selector_bearing_disturbs_spares_sibling_cell() {
+        // `277` §3 end-to-end (the disturbs × dialect-selector DST case, `279f` §5): a footprint
+        // whose disturbs mark carries `#active` SPARES a downstream `#enabled` backing of the SAME
+        // entity — sibling cells in one dialect. The backing's minting family is RECOVERED from the
+        // dialect (`sole_family`); the claim's `#active` ∈ dialect(that family, kind) ⇒ the wall's
+        // kill-traffic misses the fact. Empty dialect ⇒ collide (the entity-granular floor). ONE
+        // interner throughout (the fact's symbols must match the dialect's).
+        let mut i = dorc_core::Interner::default();
+        let kind = KindId(i.intern("sm.dorc.Service"));
+        let family = ProviderId(i.intern("systemctl"));
+        let nginx = EntityRef::Operand(OpaqueToken(i.intern("nginx")));
+        let enabled = SelectorId(i.intern("enabled"));
+        let active = SelectorId(i.intern("active"));
+        let coord = EntityCoord::new(kind, nginx);
+        // Footprint: `systemctl restart nginx` disturbs `sm.dorc.Service:nginx#active`.
+        let mut fp = Footprint::authored(i.intern("systemctl"), vec![coord]).unwrap();
+        fp.set_selector(coord, active);
+        // Backing: the downstream converged fact `sm.dorc.Service:nginx#enabled`.
+        let backing = Backing {
+            coord,
+            selector: Some(enabled),
+        };
+        // Dialect: systemctl mints {enabled, active} for sm.dorc.Service (its verdict marks).
+        let mut d = Dialect::empty();
+        d.mint(family, kind, enabled);
+        d.mint(family, kind, active);
+        assert!(
+            matches!(
+                disjoint(&fp, &backing, &Resolutions::none(), &d),
+                DisjointOutcome::Disjoint(_)
+            ),
+            "a #active disturbs mark spares a #enabled sibling-cell backing under the dialect"
+        );
+        // Empty dialect ⇒ no minted tokens ⇒ collide (empty-world-byte-identical floor).
+        assert!(
+            matches!(
+                disjoint(&fp, &backing, &Resolutions::none(), &Dialect::empty()),
+                DisjointOutcome::Hit { .. }
+            ),
+            "empty dialect ⇒ entity-granular collide"
+        );
+        // A ⊤ (whole-entity) backing collides even under the dialect (279f:fix-spare-top-backing).
+        let top_backing = Backing {
+            coord,
+            selector: None,
+        };
+        assert!(
+            matches!(
+                disjoint(&fp, &top_backing, &Resolutions::none(), &d),
+                DisjointOutcome::Hit { .. }
+            ),
+            "a ⊤ backing collides even under the dialect (fix-spare-top-backing)"
+        );
+    }
+
+    #[test]
+    fn synthetic_cross_generator_consumer_map_holds() {
+        // `279f` §5 cross-generator DST cases — SYNTHETIC (the lend + invariance generators arrive
+        // at block-context; this pins the REGISTRY SHAPE the consumer map welds — `277` §2). Two
+        // cases modeled by their verdict, since the generators do not yet exist in code:
+        //  - mapped-lend × keyed kind: keying/lend re-indexes ⇒ blocks transport, NEVER
+        //    ProvablyDisjoint (`never-derive-separation` — keying never feeds survival). Verdict:
+        //    Unknown ⇒ safe for both consumers.
+        //  - full-lend × invariant kind: an invariance line yields *same* across a context boundary
+        //    ⇒ feeds TRANSPORT only, never survival sparing. Verdict: Same.
+        // The consumer map (the single source of truth these route through at block-context):
+        let survival_spares = |r: Relation| matches!(r, Relation::ProvablyDisjoint);
+        let transport_licensed = |r: Relation| matches!(r, Relation::Same);
+        // mapped-lend / keying ⇒ Unknown: blocks transport AND collides survival.
+        assert!(
+            !survival_spares(Relation::Unknown),
+            "keying/mapped-lend never feeds survival sparing"
+        );
+        assert!(
+            !transport_licensed(Relation::Unknown),
+            "keying/mapped-lend blocks transport too (the safe bottom)"
+        );
+        // full-lend / invariance ⇒ Same: feeds transport, never survival.
+        assert!(
+            transport_licensed(Relation::Same),
+            "a full-lend/invariance *same* licenses transport"
+        );
+        assert!(
+            !survival_spares(Relation::Same),
+            "a *same* never feeds survival sparing (only provably-disjoint spares)"
+        );
+    }
 }

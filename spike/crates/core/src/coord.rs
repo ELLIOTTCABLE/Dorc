@@ -631,4 +631,146 @@ mod tests {
             "two families minting the same token ⇒ ambiguous ⇒ safe floor None (fence-divergent-meaning)"
         );
     }
+
+    // ── §6 fences pinned at the chokepoint ──────────────────────────────────────────────────
+
+    #[test]
+    fn compare_cross_kind_has_no_same_generator() {
+        // `277` §6 top-identifies-with-nothing: NO generator produces cross-kind *same* (the
+        // co-reference mechanism is parked behind the movable kind-fence). A cross-kind pair is
+        // ProvablyDisjoint, NEVER Same — even with identical entities and selectors.
+        let mut i = Interner::default();
+        let ka = KindId(i.intern("com.a.K"));
+        let kb = KindId(i.intern("com.b.K"));
+        let e = EntityRef::Operand(OpaqueToken(i.intern("x")));
+        let s = sel(&mut i, "installed");
+        let r = compare(
+            coord(ka, e, Some(s)),
+            coord(kb, e, Some(s)),
+            EntityResolution::Canonical(e),
+            EntityResolution::Canonical(e),
+            &Dialect::empty(),
+            None,
+        );
+        assert_ne!(
+            r,
+            Relation::Same,
+            "cross-kind never identifies (no generator)"
+        );
+        assert_eq!(r, Relation::ProvablyDisjoint, "the movable kind-fence");
+    }
+
+    #[test]
+    fn compare_never_derives_separation_from_unknown() {
+        // `277` §6 never-derive-separation: an UNKNOWN (a resolver gap, an unminted selector) never
+        // becomes ProvablyDisjoint — keying/address-inequality is not referent-inequality. The ONLY
+        // sources of ProvablyDisjoint are a different kind (ground truth), a distinct canonical
+        // entity (the resolve generator), or a dialect selector-spare (authored marks). An
+        // unresolvable pair is Unknown, and an unminted-selector same-entity pair is Same (collide)
+        // — neither manufactures separation.
+        let mut i = Interner::default();
+        let k = KindId(i.intern("com.a.K"));
+        let e = EntityRef::Operand(OpaqueToken(i.intern("x")));
+        let ghost = sel(&mut i, "ghost"); // never minted
+        let other = sel(&mut i, "other");
+        // Unresolvable ⇒ Unknown, never ProvablyDisjoint.
+        assert_eq!(
+            compare(
+                coord(k, e, Some(ghost)),
+                coord(k, e, Some(other)),
+                EntityResolution::Unresolvable,
+                EntityResolution::Canonical(e),
+                &Dialect::empty(),
+                None,
+            ),
+            Relation::Unknown
+        );
+        // Unminted selectors on a same canonical entity ⇒ Same (collide), never disjoint.
+        assert_eq!(
+            compare(
+                coord(k, e, Some(ghost)),
+                coord(k, e, Some(other)),
+                EntityResolution::Canonical(e),
+                EntityResolution::Canonical(e),
+                &Dialect::empty(),
+                None,
+            ),
+            Relation::Same
+        );
+    }
+
+    #[test]
+    fn compare_same_token_divergent_meaning_spares_across_families() {
+        // fence-divergent-meaning (`277` §6, differential-tested per `271:rul-net-quality-u-curve`):
+        // a claim-token is interpreted in the BACKING family's dialect, so two families spelling the
+        // SAME tokens for their own cells will each spare the other's sibling-cell backing under the
+        // flag. THIS IS THE PRICED FOOTGUN — documented, never lint-rescued. Both `widgetctl` and
+        // `evilctl` mint {clean, dirty} for kind K; a `#dirty` claim spares a `#clean` backing of
+        // EITHER family.
+        let mut i = Interner::default();
+        let k = KindId(i.intern("com.widget.K"));
+        let widget = ProviderId(i.intern("widgetctl"));
+        let evil = ProviderId(i.intern("evilctl"));
+        let e = EntityRef::Operand(OpaqueToken(i.intern("w1")));
+        let clean = sel(&mut i, "clean");
+        let dirty = sel(&mut i, "dirty");
+        let mut d = dialect_of(&mut i, widget, k, &["clean", "dirty"]);
+        d.mint(evil, k, clean);
+        d.mint(evil, k, dirty);
+        let spare = |family| {
+            compare(
+                coord(k, e, Some(dirty)),
+                coord(k, e, Some(clean)),
+                EntityResolution::Canonical(e),
+                EntityResolution::Canonical(e),
+                &d,
+                Some(family),
+            )
+        };
+        assert_eq!(
+            spare(widget),
+            Relation::ProvablyDisjoint,
+            "widget's own backing spared"
+        );
+        assert_eq!(
+            spare(evil),
+            Relation::ProvablyDisjoint,
+            "evil's backing ALSO spared by the same token — the divergent-meaning footgun"
+        );
+    }
+
+    #[test]
+    fn universal_meet_any_unknown_member_collides_order_independent() {
+        // `277` §5 set-lifting (pin-set-meet-order-independence + pin-no-outcome-as-generator).
+        // Backing-SETS are a RESERVED seam (singletons at v1), so this pins the LAW with a SYNTHETIC
+        // set — the universal meet the value-recipe-reshape will implement. A set SPARES iff EVERY
+        // member is ProvablyDisjoint; any non-disjoint member ⇒ collide, whatever the resolution
+        // order. `set_spares` is a PURE fold over member verdicts — no member's outcome re-enters as
+        // another's input (pin-no-outcome-as-generator).
+        fn set_spares(members: &[Relation]) -> bool {
+            members
+                .iter()
+                .all(|r| matches!(r, Relation::ProvablyDisjoint))
+        }
+        let with_unknown = [
+            Relation::ProvablyDisjoint,
+            Relation::Unknown,
+            Relation::ProvablyDisjoint,
+        ];
+        let mut reversed = with_unknown;
+        reversed.reverse();
+        assert!(!set_spares(&with_unknown), "any Unknown member ⇒ collide");
+        assert!(
+            !set_spares(&reversed),
+            "order-independent: reversed still collides"
+        );
+        assert!(
+            !set_spares(&[Relation::ProvablyDisjoint, Relation::Same]),
+            "a Same (overlap) member also collides the set"
+        );
+        assert!(
+            set_spares(&[Relation::ProvablyDisjoint, Relation::ProvablyDisjoint]),
+            "all-disjoint ⇒ the set spares"
+        );
+    }
 }
