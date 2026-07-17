@@ -241,6 +241,22 @@ explicit guest-insensitivity requirement; sudo (and policy-matching wrappers) mu
 it or not qualify as a default entry form. Records a contract requirement for whoever builds
 entry forms; not a design-frame break.
 
+> **RESOLVED 2026-07-17 (human-reworked in-session):** rationale stated at `27C` §2
+> (`27C:rationale-vouch-vs-completeness-gate`) + a §7 pointer on `hole-bad-oracle-blast`
+> — keyed to failure-mode + sayability + tier, NOT to CI-falsifiability (the human
+> struck lint/CI-grade verification as a design-load-bearing ground per
+> `271:rul-net-quality-u-curve`; it survives only as the trailing safety-net mention).
+> Two asks SURFACED during the rework, pending human disposition:
+> `27Xf:ask-babby-template-carries-live-vouch` — `27C` §2's babby template pre-typing
+> `: tolerates:user` is in tension with "the strong property, typed knowingly"
+> (cargo-cult hazard: a copied vouch on a root-mutating body is a false vouch authored
+> by nobody; candidate fix: hint-supplies-it, template-doesn't); and
+> `27Xf:ask-backing-gradient-inversion-watch-item` — under-marked verdict bodies get
+> narrower backings and thus MORE (unsound) survival, so diligent observe-marking costs
+> its author elisions: an anti-GE incentive inversion at the flag's residue, wanting a
+> named watch-item near that text (eventual repair-shape: engine-derived read-sets via
+> the §4(a) closure bones).
+
 **cr-tolerance-vouch-rationale-unstated** (27Xd finding-1 + 27Xe F2; both *withdrew* the
 "contradiction" framing) — **CREDITED as a rationale gap only.** The tolerance vouch is a
 completeness-shaped negative-universal shipping on the default dial; both lanes, on

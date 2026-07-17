@@ -114,6 +114,41 @@ context — that is the point of measuring in place); answer-invariance (§4's s
 stronger territory); anything about other functions; any change to what verdicts
 license at the tool's sites.
 
+Why this completeness-shaped claim rides the *default* dial when its input-side
+sibling — backing-completeness, "this body's *answer* depends on nothing beyond the
+cells I marked" — was refused one (`27C:rationale-vouch-vs-completeness-gate`): the
+gate keys on failure-mode and *sayability*, never on a claim's logical shape.
+
+- **Failure-mode.** A false vouch fails as a probe-time mutation — grave (the
+  no-gradient contract), but an attributed *event* (three named consents), bounded to
+  the author's own body, adding zero under-execution risk (§7
+  `hole-bad-oracle-blast`). A false input-completeness claim in consumption position
+  fails as a silent wrong elision of *someone else's* line, with no observable at the
+  claim site — the cardinal-sin outcome-class the flag owns
+  (`271:rul-flag-is-razor-residue` · `271:rul-sin-ordering`).
+- **Sayability.** The vouch is an empty-set claim — "writes under shift: none" — one
+  self-contained mark per function whose truth is a property of the body alone; and it
+  is not a new trust species but the founding one (an oracle vouches for its own
+  body's probe-inertness by existence — DESIGN) parameterized by world.
+  Input-completeness is enumerate-and-close: per-read marks *plus* an "and nothing
+  else" rider whose truth is relational to the whole annotation ledger, silently
+  invalidated by any edit that adds an unmarked read — line-noise at exactly the
+  density the mark grammar fights. "The flag owns what no line can say" is this
+  distinction, applied.
+- **Tier.** Entry-by-default routes the mass `sudo` case away from cross-context
+  consumption entirely, so the completeness-adjacent fallback lane serves a small
+  consumer population and can afford the engine-proved gate (§4(a)). The survival
+  tier — which nearly every user enables, consulted by every downstream
+  elision-candidate on any day something runs — is exactly where an authored
+  enumerate-everything law could not hang; its residue went to the flag instead. And
+  the backing-side authoring gradient runs *against* completeness (extra
+  observe-marks only ever widen collision surface, costing their author elisions), so
+  no incentive converges there; an engine-derived read-set — sharing bones with the
+  §4(a) closure pass — is the eventual repair-shape, not an authored law.
+
+(Safety net, not decider: the §9 two-user differential CI and tracer diffing catch
+false vouches in practice; nothing above rests on them.)
+
 Spelling and siting (STRAWMAN): a bare-mark statement in the settled sigil family,
 inside the function body, reachability-scoped like every in-body act (place it in a
 `case` arm to vouch per-verb); strips whole-statement; per-dimension via
@@ -393,7 +428,8 @@ wrapper-blindness) · netns not utterable (engine/wrapper/kind tier only).
   where the host offers them free (`27C:seam-containment-jackets` — never
   load-bearing). The default path adds ZERO new under-execution risk; every
   under-execution risk in this plan lives behind `--risk-faultless-skips` or in the
-  pre-existing converged≠no-op adequacy gap (`233`).
+  pre-existing converged≠no-op adequacy gap (`233`). (Why this claim-shape is
+  default-acceptable at all: §2, `27C:rationale-vouch-vs-completeness-gate`.)
 
 ## §8 — Worked stories (renders illustrative; spellings STRAWMAN)
 
