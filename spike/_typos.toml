@@ -18,4 +18,10 @@ extend-ignore-re = [
    "\\baply\\b",
    "\\btust\\b",
    "\\bboook\\b",
+   # `NAMEs` = the plural of the POSIX term NAME (bare munged POSIX NAMEs); typos
+   # tokenizes the uppercase-then-`s` as `NAM`+`Es` and mis-flags `NAM`->`NAME`.
+   "\\bNAMEs\\b",
+   # "unparseable" — the -eable spelling, used across the CLAUDE.mds; typos disputes
+   # it for "unparsable" but both are accepted English.
+   "\\bunparseable\\b",
 ]
