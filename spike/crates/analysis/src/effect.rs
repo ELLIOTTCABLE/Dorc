@@ -117,6 +117,10 @@ pub struct CmdsubTop {
     site: DiagSite,
     /// Which argv position is the `$(…)`/dynamic value (command word or 1-based operand).
     position: OperandPosition,
+    /// The value-plane [`TopCause`] category (`219` q-2 — the cause-named ⊤): names WHY the word
+    /// went ⊤ (a `$(…)` subst vs an unresolvable positional vs a dynamic var …), so the disclosure
+    /// is specific. Exempt-plane (display only; distinct from the attribution `ProvId` cause).
+    top_cause: dorc_core::TopCause,
 }
 
 /// RECORD a `DiagCode::CmdsubOperandTop` disclosure for post-mint finalization (`22B` §5
@@ -142,11 +146,16 @@ fn emit_cmdsub_operand_top(
     cmdsub_tops: &mut Vec<CmdsubTop>,
     site: Option<DiagSite>,
     position: OperandPosition,
+    top_cause: dorc_core::TopCause,
 ) {
     let Some(site) = site else {
         return; // member-family path: a ⊤ member IS reached here and SUPPRESSED (dedup) — disclosed once at the single-cell fallback; see fn doc f-3b
     };
-    cmdsub_tops.push(CmdsubTop { site, position });
+    cmdsub_tops.push(CmdsubTop {
+        site,
+        position,
+        top_cause,
+    });
 }
 
 /// Finalize the deferred [`CmdsubTop`] records into typed [`Diag`]s, NOW carrying the real
@@ -187,9 +196,9 @@ fn finalize_cmdsub_tops(
                 top.site.span,
             )
             .label(format!(
-                "command forced to run (never elided): {} is a command-substitution `$(…)` or \
-                 runtime-dynamic value ⇒ its identity is unresolved (⊤)",
-                top.position.describe()
+                "command forced to run (never elided): {} is {} ⇒ its identity is unresolved (⊤)",
+                top.position.describe(),
+                top.top_cause.describe()
             ))
         })
         .collect()
@@ -260,9 +269,12 @@ pub fn command_effect(
     // silent (q-2 / find-3 no-silent-phantoms): disclose it through the migrated
     // `DiagCode::CmdsubOperandTop` spine (`22B` §5 worked-3). RECORDED here, finalized with
     // its arch-1 ⊤-cause post-mint (stage-1; see [`finalize_cmdsub_tops`]).
-    let ValueOf::Literal(provider_sym) = word0 else {
-        emit_cmdsub_operand_top(cmdsub_tops, site, OperandPosition::CommandWord);
-        return vec![CommandEffect::Opaque];
+    let provider_sym = match word0 {
+        ValueOf::Literal(s) => s,
+        ValueOf::Top(cause) => {
+            emit_cmdsub_operand_top(cmdsub_tops, site, OperandPosition::CommandWord, cause);
+            return vec![CommandEffect::Opaque];
+        }
     };
     let provider_str = interner.resolve(provider_sym).to_owned();
     // Target-state-pure shell builtins (shell-env/stdout/control only, never an
@@ -291,11 +303,11 @@ pub fn command_effect(
             // 1-based operand index excluding the command word — the migrated
             // `DiagCode::CmdsubOperandTop` spine, `22B` §5 worked-3). RECORDED; finalized
             // with its arch-1 ⊤-cause post-mint (stage-1; see [`finalize_cmdsub_tops`]).
-            ValueOf::Top(_) => {
+            ValueOf::Top(cause) => {
                 let position = OperandPosition::Operand(
                     u32::try_from(i.saturating_add(1)).unwrap_or(u32::MAX),
                 );
-                emit_cmdsub_operand_top(cmdsub_tops, site, position);
+                emit_cmdsub_operand_top(cmdsub_tops, site, position, *cause);
                 return vec![CommandEffect::Opaque];
             }
         }

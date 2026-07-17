@@ -410,6 +410,26 @@ pub enum TopCause {
     WalledRead,
 }
 
+impl TopCause {
+    /// A short human phrase naming the cause, for the hint/why-lane diagnostics (`219` q-2 — the
+    /// cause-named ⊤). Exempt-plane display only (`inv-referent-agnostic` — no decision branches on
+    /// it); the disclosure text stays stable across runs.
+    #[must_use]
+    pub fn describe(self) -> &'static str {
+        match self {
+            Self::UnmodeledExpansion => {
+                "a command-substitution `$(…)` / arithmetic / operator-form expansion"
+            }
+            Self::UnresolvablePositional => "an unresolvable positional parameter (`$@`/`$*`/`$N`)",
+            Self::DynamicParameter => "a dynamic special parameter (`$?`/`$$`/`$!`/…)",
+            Self::DynamicValue => "a runtime-dynamic variable value (unset or branch-conflicted)",
+            Self::SplitOrGlob => "an unquoted field-split / glob / tilde expansion",
+            Self::NonConvergent => "a non-convergent value-flow result",
+            Self::WalledRead => "a read walled by an unmodeled context",
+        }
+    }
+}
+
 /// The provenance grade of a value-prediction (`275` §2 · `271:rul-value-prediction-species`): a
 /// taint-style **weakest-fragment** grade over a value's recipe. DERIVED, never declared — the
 /// authored surface for value-predictions is THE EMPTY SET (`value-predictions`); this is a
