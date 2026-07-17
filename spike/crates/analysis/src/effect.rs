@@ -31,8 +31,8 @@ use dorc_core::diag::{
     OperandPosition, RedirTargetTop, SiteId,
 };
 use dorc_core::{
-    Carrier, Diagnostic, EntityRef, FactBacking, Interner, KindId, LeafId, OpaqueToken, ProviderId,
-    SelectorId, Span,
+    Carrier, Context, Diagnostic, EntityRef, FactBacking, Interner, KindId, LeafId, OpaqueToken,
+    ProviderId, SelectorId, Span,
 };
 use dorc_oracle::predict::{self, PredictSet, ResolvedEntity};
 use dorc_oracle::{EffectCell, KindIndex, ValueClaim, empty_verb};
@@ -1023,6 +1023,71 @@ fn mint_top_causes(
     (top_causes, fallback_cause)
 }
 
+/// A wrapped BOOK site peeled into its inner command + composed context (lane-integration `27N`;
+/// `27C` §3 "the fact is born in the site's context"). Precomputed at the cli edge
+/// (`dorc_oracle::entry::peel_book_chain`) — a pure DATA input threaded into [`classify_with_why_diags`]
+/// (the classify kernel stays wrapper-unaware; it just resolves `inner_argv` against the inner oracle
+/// and re-keys the fact into `context`). The entry DECISION (dial × capability × vouch) is the phased
+/// cli/plan collapse — NOT here (`inv-superposition`: the kernel emits a phase-agnostic in-context
+/// fact). tc-flag (`27N`): the FactKey-widening for wrapped sites is done via this precomputed map,
+/// NOT via wrapper-recursion inside `command_effect` — the "should peel move into `command_effect`
+/// per `thread-the-flat-coordinate`" question is flagged UP, not settled here.
+#[derive(Debug, Clone)]
+pub struct PeeledSite {
+    /// The inner (non-wrapper) command's full argv (command word first), resolved literals.
+    pub inner_argv: Vec<ValueOf>,
+    /// The composed inner context the wrapper chain denotes — the fact is re-keyed into it.
+    pub context: Context,
+}
+
+/// Resolve a wrapped site's INNER command effect and re-key its facts into the composed context
+/// (`27N`). Runs `command_effect` on `site.inner_argv` (the inner oracle resolves it — the wrapper
+/// is peeled away) into a LOCAL backing map, then re-keys every fact-bearing effect and backing into
+/// `site.context`: two same-cell facts in different contexts stay DISTINCT (`inv-site-keyed-results`,
+/// now context-qualified) and never transport (`compare` answers `Unknown` across the gap).
+#[expect(
+    clippy::too_many_arguments,
+    reason = "mirrors node_effects: per-node effect resolution threads the whole compiled context (id/site/cfg/ast/idx/checks/verdict-providers/interner/diags/cmdsub-tops/backings); each a distinct input, not a bundle"
+)]
+fn peeled_node_effects(
+    id: CfgNodeId,
+    site: &PeeledSite,
+    cfg: &Cfg,
+    ast: &dorc_syntax::ast::Ast,
+    idx: &KindIndex,
+    checks: &[PredictSet],
+    verdict_providers: &BTreeSet<ProviderId>,
+    interner: &mut Interner,
+    diags: &mut Vec<Diagnostic>,
+    cmdsub_tops: &mut Vec<CmdsubTop>,
+    backings: &mut BTreeMap<FactKey, FactBacking>,
+) -> Vec<CommandEffect> {
+    let diag_site = DiagSite::of(ast.node(cfg.node(id).ast).span, id);
+    let mut local: BTreeMap<FactKey, FactBacking> = BTreeMap::new();
+    let raw = command_effect(
+        idx,
+        checks,
+        verdict_providers,
+        &site.inner_argv,
+        interner,
+        diags,
+        cmdsub_tops,
+        Some(diag_site),
+        &mut local,
+    );
+    for (fact, backing) in local {
+        backings.insert(fact.in_context(site.context), backing);
+    }
+    raw.into_iter()
+        .map(|e| match e {
+            CommandEffect::Establishes(f) => CommandEffect::Establishes(f.in_context(site.context)),
+            CommandEffect::Kills(f) => CommandEffect::Kills(f.in_context(site.context)),
+            CommandEffect::Queries(f) => CommandEffect::Queries(f.in_context(site.context)),
+            other => other,
+        })
+        .collect()
+}
+
 /// Precompute, per CFG node, its in-loop Members family (task-L2 item-2) and its effect cells,
 /// collecting the deferred cmdsub-⊤ disclosures (stage-1) along the way. Extracted from
 /// [`classify`]'s body to keep it under the line cap; reads only `&` inputs plus `&mut interner`
@@ -1048,6 +1113,7 @@ fn resolve_node_effects(
     idx: &KindIndex,
     checks: &[PredictSet],
     verdict_providers: &BTreeSet<ProviderId>,
+    peeled: &BTreeMap<CfgNodeId, PeeledSite>,
     interner: &mut Interner,
     diags: &mut Vec<Diagnostic>,
 ) -> (
@@ -1076,8 +1142,26 @@ fn resolve_node_effects(
     let mut backings: BTreeMap<FactKey, FactBacking> = BTreeMap::new();
     let effects: Vec<Vec<CommandEffect>> = (0..n)
         .map(|i| {
+            let id = CfgNodeId(i as u32);
+            // A wrapped BOOK site (`27N`): resolve the INNER command + re-key in-context. The
+            // wrapper word itself would wall opaquely (unchanged law) — the peel replaces that.
+            if let Some(site) = peeled.get(&id) {
+                return peeled_node_effects(
+                    id,
+                    site,
+                    cfg,
+                    ast,
+                    idx,
+                    checks,
+                    verdict_providers,
+                    interner,
+                    diags,
+                    &mut cmdsub_tops,
+                    &mut backings,
+                );
+            }
             node_effects(
-                CfgNodeId(i as u32),
+                id,
                 member_families[i].as_ref(),
                 cfg,
                 value,
@@ -1141,6 +1225,7 @@ pub fn classify(
         idx,
         checks,
         verdict_providers,
+        &BTreeMap::new(),
         interner,
         arena,
     )
@@ -1193,6 +1278,7 @@ pub fn classify_with_why_diags(
     idx: &KindIndex,
     checks: &[PredictSet],
     verdict_providers: &BTreeSet<ProviderId>,
+    peeled: &BTreeMap<CfgNodeId, PeeledSite>,
     interner: &mut Interner,
     arena: &mut dorc_core::ProvArena,
 ) -> (
@@ -1205,7 +1291,8 @@ pub fn classify_with_why_diags(
     let mut diags: Vec<Diagnostic> = Vec::new();
     // Precompute every node's member-family + effect cells, recording the deferred cmdsub-⊤
     // disclosures (stage-1) and the `277` §5 survival-backing provenance. Extracted so this fn
-    // stays under the line cap.
+    // stays under the line cap. `27N`: a wrapped BOOK site (`peeled`) resolves its INNER command
+    // and re-keys the fact into the composed context.
     let (member_families, effects, cmdsub_tops, backings) = resolve_node_effects(
         cfg,
         value,
@@ -1213,6 +1300,7 @@ pub fn classify_with_why_diags(
         idx,
         checks,
         verdict_providers,
+        peeled,
         interner,
         &mut diags,
     );
@@ -1497,7 +1585,7 @@ command__predict() {
             kind: s.package,
             entity: EntityRef::Operand(OpaqueToken(i.intern(entity))),
             selector: s.installed,
-            context: dorc_core::Context::HostDefault,
+            context: Context::HostDefault,
         }
     }
 
@@ -1603,6 +1691,7 @@ command__predict() {
             &idx,
             &checks,
             &BTreeSet::new(),
+            &BTreeMap::new(),
             &mut i,
             &mut arena,
         );
@@ -1718,13 +1807,13 @@ command__predict() {
             kind: service,
             entity: EntityRef::Operand(OpaqueToken(i.intern("nginx"))),
             selector: enabled,
-            context: dorc_core::Context::HostDefault,
+            context: Context::HostDefault,
         };
         let active_cell = FactKey {
             kind: service,
             entity: EntityRef::Operand(OpaqueToken(i.intern("nginx"))),
             selector: active,
-            context: dorc_core::Context::HostDefault,
+            context: Context::HostDefault,
         };
         assert!(
             classes.contains(&SkipClass::EstablishAmbient(enabled_cell)),
@@ -1923,7 +2012,7 @@ command__predict() {
             kind: s.package_index,
             entity: EntityRef::Singleton,
             selector: s.fresh,
-            context: dorc_core::Context::HostDefault,
+            context: Context::HostDefault,
         });
         assert_eq!(
             eff("apt-get update", &mut i, &idx),
@@ -2073,7 +2162,7 @@ command__predict() {
             kind: KindId(i.intern("tool")),
             entity: EntityRef::Operand(OpaqueToken(i.intern(entity))),
             selector: SelectorId(i.intern("present")),
-            context: dorc_core::Context::HostDefault,
+            context: Context::HostDefault,
         }
     }
 
@@ -2326,7 +2415,7 @@ command__predict() {
             kind: KindId(i.intern("file")),
             entity: EntityRef::Operand(OpaqueToken(i.intern(path))),
             selector: SelectorId(i.intern("written")),
-            context: dorc_core::Context::HostDefault,
+            context: Context::HostDefault,
         }
     }
 
@@ -2645,7 +2734,7 @@ command__predict() {
             kind: KindId(i.intern("package")),
             entity: EntityRef::Operand(OpaqueToken(i.intern(entity))),
             selector: SelectorId(i.intern("installed")),
-            context: dorc_core::Context::HostDefault,
+            context: Context::HostDefault,
         }
     }
 
@@ -2856,6 +2945,7 @@ command__predict() {
             &idx,
             &checks,
             &BTreeSet::new(),
+            &BTreeMap::new(),
             &mut i,
             &mut diags,
         );

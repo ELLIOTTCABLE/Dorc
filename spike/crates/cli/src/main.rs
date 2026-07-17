@@ -699,6 +699,11 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
     // `fact_backings` (`277` §5 backing-SETS): each establish fact's survival-backing provenance
     // — its minting family + observe-backing-widening selectors — threaded to `build_plan_walled`
     // so the survival tier builds each fact's backing SET (a widened backing GROWS kill-surface).
+    // `27N` — peel wrapped BOOK sites into (inner command, composed context). Empty for a
+    // wrapper-free run ⇒ classify is byte-identical (`empty-world-byte-identical`). The real map is
+    // built below once the wrapper oracles are indexed (populated later this run).
+    let peeled_sites: BTreeMap<dorc_analysis::cfg::CfgNodeId, dorc_analysis::effect::PeeledSite> =
+        BTreeMap::new();
     let (classified, why_diags, kills, kill_coords, fact_backings) =
         dorc_analysis::effect::classify_with_why_diags(
             &cfg.value,
@@ -707,6 +712,7 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
             &idx,
             &checks,
             &verdict_providers,
+            &peeled_sites,
             &mut interner,
             &mut arena,
         );

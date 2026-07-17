@@ -4230,6 +4230,7 @@ apt_get__predict() {
                 &idx,
                 &checks,
                 &BTreeSet::new(),
+                &BTreeMap::new(),
                 &mut i,
                 &mut dorc_core::ProvArena::new(),
             );
@@ -5148,6 +5149,7 @@ apt_get__predict() {
                 &idx,
                 &checks,
                 &BTreeSet::new(),
+                &BTreeMap::new(),
                 &mut i,
                 &mut arena,
             );

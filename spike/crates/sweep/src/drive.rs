@@ -69,6 +69,7 @@ pub fn run_kernel(declared: &DeclaredScenario, s0: &Host, flag_on: bool, i: &mut
             &idx,
             &checks,
             &verdict_providers,
+            &std::collections::BTreeMap::new(),
             i,
             &mut arena,
         );

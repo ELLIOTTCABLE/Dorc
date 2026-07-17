@@ -492,6 +492,7 @@ pub fn build_report(inputs: &Inputs<'_>) -> Report {
             &idx,
             &checks,
             &verdict_providers,
+            &BTreeMap::new(),
             &mut interner,
             &mut arena,
         );
