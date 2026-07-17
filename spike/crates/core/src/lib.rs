@@ -181,6 +181,9 @@ pub use coord::{
     selector_identifies,
 };
 
+pub mod room;
+pub use room::{HintOnly, Invited, Room, RoomFact, RoomTag};
+
 /// `result × accumulated diagnostics` — the type every pipeline stage returns
 /// (research chord `dn-7` / `ch-carrier`). A writer-monad shape: `map` transforms
 /// the value, `and_then` sequences a stage while concatenating its diagnostics.
