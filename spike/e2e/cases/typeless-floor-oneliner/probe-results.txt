@@ -1,0 +1,3 @@
+# site 0 = the founding one-liner (24L §2 floor auto-cell dorc-auto:mycmd): its markerless
+# `mycmd --dry-run "$@"` ran on the host ⇒ rc 0 ⇒ CONVERGED (holds) ⇒ the site elides.
+site 0 effect=holds rc=0

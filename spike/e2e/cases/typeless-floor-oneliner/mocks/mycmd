@@ -1,0 +1,6 @@
+#!/bin/sh
+# INERT mock: the verdict runs `mycmd --dry-run apply-config /etc/mycmd.conf` in the probe;
+# respond rc 0 (converged, nothing to do). The book's mutating `apply-config` (no --dry-run) is
+# never invoked (the site elides). Mutates nothing.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0

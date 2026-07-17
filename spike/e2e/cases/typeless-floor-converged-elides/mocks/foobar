@@ -1,0 +1,6 @@
+#!/bin/sh
+# INERT mock: the markerless verdict body runs `foobar status --certs-current -- <dir>` in the
+# probe (and the guard's live re-check); respond rc 0 (converged). The book's `sync-certs`
+# mutation is never invoked (site 0 elides; site 2's guard passes ⇒ skipped). Mutates nothing.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
