@@ -160,6 +160,8 @@ const LEGACY_ALLOW_LIST: &[&str] = &[
     // integrity diagnostics + the at-most deriv-family completeness refusal.
     "records-glued-line",
     "records-header-missing",
+    // `27D` E4 (disposition-legacy-deframe-tolerance): the strict-path headerless refusal.
+    "records-headerless-refused",
     "records-integrity-refused",
     "records-sentinel-nonce",
     "records-fact-truncated",
