@@ -76,11 +76,16 @@ pub fn run_kernel(declared: &DeclaredScenario, s0: &Host, flag_on: bool, i: &mut
     // The probe: a site is elidable only if its fact is actually checked (can't-probe ⇒
     // can't-elide). `ship` reborrows the interner immutably; it is dropped when `compile_probe`
     // returns, before the footprint lift reborrows `i` mutably.
-    // 24J §2 — the connected check-pipes (byte-mirror of the cli): the sweep corpus has no
-    // all-Query pipeline, so this is empty and the net's behaviour is unchanged; computed here so
+    // `24J` §2 (repaired) — the connected check-pipes (byte-mirror of the cli): the sweep corpus has
+    // no all-Query pipeline, so this is empty and the net's behaviour is unchanged; computed here so
     // the mirror stays faithful if a connected pipe ever enters the corpus.
-    let connected =
-        dorc_plan::connected_check_pipes(&declared.book_sh, &parsed.value, &cfg, &classes);
+    let connected = dorc_plan::connected_check_pipes(
+        &parsed.value,
+        &cfg,
+        &value,
+        &classes,
+        |p, a: &[Symbol]| ship_predict_stage(ORACLE_SH, &checks, i, p, a),
+    );
     let probe = {
         let ship = |provider: Symbol, argv: &[Symbol]| {
             ship_predict_body(ORACLE_SH, &checks, i, provider, argv)
@@ -234,6 +239,44 @@ fn ship_predict_body(
             let Some(check) = cs.get(cp) else { continue };
             if matches!(evaluate(check, &arg_refs), Resolution::Resolved(_)) {
                 return Some(strip_predict(oracle_src, check, interner));
+            }
+        }
+    }
+    None
+}
+
+/// Mirror of the cli's `ship_predict_stage` (`271:rul-only-oracle-bytes-ship` rider 1): a connected
+/// pipe stage's stripped predict PLUS whether its selected arm produces REAL stdout bytes. The sweep
+/// corpus carries no all-Query pipeline, so this is never actually called — present so the mirror
+/// stays faithful if a connected pipe ever enters the corpus.
+fn ship_predict_stage(
+    oracle_src: &str,
+    checks: &[PredictSet],
+    interner: &Interner,
+    provider: Symbol,
+    argv: &[Symbol],
+) -> Option<dorc_plan::StageShip> {
+    use dorc_oracle::predict::{
+        Resolution, StageStdout, evaluate, map_provider_name, predict_stage_stdout, strip_predict,
+    };
+    let want = map_provider_name(interner.resolve(provider));
+    let arg_texts: Vec<String> = argv
+        .iter()
+        .map(|s| interner.resolve(*s).to_owned())
+        .collect();
+    let arg_refs: Vec<&str> = arg_texts.iter().map(String::as_str).collect();
+    for cs in checks {
+        for cp in cs.providers() {
+            if map_provider_name(interner.resolve(cp)) != want {
+                continue;
+            }
+            let Some(check) = cs.get(cp) else { continue };
+            if matches!(evaluate(check, &arg_refs), Resolution::Resolved(_)) {
+                return Some(dorc_plan::StageShip {
+                    sh: strip_predict(oracle_src, check, interner),
+                    produces_real_stdout: predict_stage_stdout(check, &arg_refs)
+                        == StageStdout::RealBytes,
+                });
             }
         }
     }

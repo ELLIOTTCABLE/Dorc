@@ -607,13 +607,17 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
     // the verdict) and, converged, mints a `Disposition::Guard`.
     let vouches = build_vouches(&oracle_refs, &classes, &value, &mut interner, advisory);
 
-    // The CONNECTED check-pipes (24J §2 — the pipe-guard MEDIUM core): a simple all-vouched-
-    // read-only pipeline `A | F [| F…]` ships as ONE connected probe keyed to its governing
-    // (last) stage; the non-last stages are subsumed. Empty for any book without such a pipe
-    // (today's behaviour). Threaded into BOTH the probe compiler (ship the connected body) and
-    // the plan builder (omit the subsumed members).
+    // The CONNECTED check-pipes (`24J` §2, repaired — `271:rul-only-oracle-bytes-ship`): a simple
+    // all-vouched-read-only pipeline `A | F [| F…]` ships as ONE composed probe keyed to its
+    // governing (last) stage — each stage replaced by its oracle's stripped predict; the non-last
+    // stages are subsumed. `connected_check_pipes` is the DECIDER: it resolves each stage + applies
+    // the per-channel coverage rule (rider 1 — a non-last stage must produce REAL stdout), refusing
+    // any compound whose stage can't be model-substituted (⇒ its stages run). Empty for a book with
+    // no such pipe. Threaded into BOTH the probe compiler (ship the composed body) and the plan
+    // builder (omit the subsumed members).
+    let ship_stage = |p, a: &[Symbol]| ship_predict_stage(&oracle_srcs, &checks, &interner, p, a);
     let connected =
-        dorc_plan::connected_check_pipes(&book_src, &parsed.value, &cfg.value, &classes);
+        dorc_plan::connected_check_pipes(&parsed.value, &cfg.value, &value, &classes, ship_stage);
 
     // The read-only, SELF-REPORTING, site-keyed probe (R3 / 23D §1 — the check IS the oracle):
     // each site ships its provider's stripped `<provider>__predict` invoked with the site's argv.
@@ -1053,6 +1057,46 @@ fn ship_predict_body(
             let Some(check) = cs.get(cp) else { continue };
             if matches!(evaluate(check, &arg_refs), Resolution::Resolved(_)) {
                 return Some(strip_predict(src, check, interner));
+            }
+        }
+    }
+    None
+}
+
+/// Resolve a connected pipe STAGE's stripped `<provider>__predict` body PLUS its STDOUT coverage
+/// (`271:rul-only-oracle-bytes-ship` rider 1 — the composed-probe repair). Mirrors
+/// [`ship_predict_body`]'s check-resolution, then asks
+/// [`predict_stage_stdout`](dorc_oracle::predict::predict_stage_stdout) whether the arm this argv
+/// selects produces REAL (delegation-produced) stdout bytes — the coverage a downstream byte-consumer
+/// requires. `None` ⇒ no check resolves ⇒ the stage is un-shippable ⇒ the compound refuses (⇒ runs).
+fn ship_predict_stage(
+    oracle_srcs: &[String],
+    checks: &[dorc_oracle::predict::PredictSet],
+    interner: &Interner,
+    provider: Symbol,
+    argv: &[Symbol],
+) -> Option<dorc_plan::StageShip> {
+    use dorc_oracle::predict::{
+        Resolution, StageStdout, evaluate, map_provider_name, predict_stage_stdout, strip_predict,
+    };
+    let want = map_provider_name(interner.resolve(provider));
+    let arg_texts: Vec<String> = argv
+        .iter()
+        .map(|s| interner.resolve(*s).to_owned())
+        .collect();
+    let arg_refs: Vec<&str> = arg_texts.iter().map(String::as_str).collect();
+    for (src, cs) in oracle_srcs.iter().zip(checks) {
+        for cp in cs.providers() {
+            if map_provider_name(interner.resolve(cp)) != want {
+                continue;
+            }
+            let Some(check) = cs.get(cp) else { continue };
+            if matches!(evaluate(check, &arg_refs), Resolution::Resolved(_)) {
+                return Some(dorc_plan::StageShip {
+                    sh: strip_predict(src, check, interner),
+                    produces_real_stdout: predict_stage_stdout(check, &arg_refs)
+                        == StageStdout::RealBytes,
+                });
             }
         }
     }

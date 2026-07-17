@@ -17,10 +17,34 @@
 //! module bakes no phase. Anything non-concrete ⇒ [`Resolution::Top`] with a reason
 //! string (`inv-kfail`, both directions: nothing ships, nothing elides).
 
-use super::ast::{Annotation, Pattern, Predict, Stmt, Test, TestOp, Word};
+use super::ast::{Annotation, Command, Pattern, Predict, Stmt, Test, TestOp, Word};
 use dorc_core::{Span, Symbol};
 use dorc_syntax::sem::{self, UnsetPolicy};
 use std::collections::BTreeMap;
+
+/// How a predict arm covers its STDOUT channel, in the `273` §2 per-channel vocabulary
+/// (`271:rul-only-oracle-bytes-ship` rider 1) — the coverage the composed-probe compiler
+/// consumes to decide whether a pipe stage may be model-substituted. Only a NON-LAST stage's
+/// stdout is consumed (piped into the next stage), so this gates exactly those.
+///
+/// The knife-tier floor (`271:rul-composed-bytes-defer-and-floor`): a byte-consumer downstream
+/// needs REAL (world-spoken / delegation-produced) bytes, so only [`RealBytes`](StageStdout::RealBytes)
+/// satisfies it — [`Asserted`](StageStdout::Asserted) (a `printf` claim) does NOT, and
+/// [`Declined`](StageStdout::Declined) plainly does not. The compiler refuses the whole compound
+/// unless every non-last stage is `RealBytes` (can't-say ⇒ run — always safe).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum StageStdout {
+    /// A DELEGATION arm running the real read-only command with stdout on the pipe: faithful
+    /// real bytes (§2 "delegation = faithful all-channel claim"). The only knife-tier-safe form.
+    RealBytes,
+    /// A `printf`-ASSERTED stdout (§2 "printf = asserted output claim"): covers the channel but
+    /// with declared, not world-spoken, bytes — rider 3 (capture-ships-real-bytes) refuses it for
+    /// a knife-tier byte-consumer. Distinguished from `Declined` for provenance / stage-4 use.
+    Asserted,
+    /// STDOUT declined: voided by a redirect (§2 "redirect-to-null = per-channel decline"), or the
+    /// selected path reached no producing command (⊤ / whole-shape decline / `return 2`).
+    Declined,
+}
 
 /// The result of evaluating a [`Predict`] over a concrete argv.
 ///
@@ -141,20 +165,28 @@ pub fn evaluate(check: &Predict, argv: &[&str]) -> Resolution {
     if argv.is_empty() {
         return Resolution::Top(TopReason::EmptyArgv);
     }
-    let budget = argv.len().saturating_mul(4).saturating_add(BUDGET_CONSTANT);
-    let mut ev = Evaluator {
-        positionals: argv.iter().map(|s| (*s).to_owned()).collect(),
-        vars: BTreeMap::new(),
-        verb_sym: check.verb_sym,
-        verb: None,
-        probe_body: Vec::new(),
-        annotation: None,
-        budget,
-        steps: 0,
-    };
+    let mut ev = Evaluator::over(check, argv);
     match ev.run_block(&check.body) {
         Flow::Normal => ev.finish(),
         Flow::Top(reason) => Resolution::Top(reason),
+    }
+}
+
+/// The STDOUT coverage a predict arm produces for a concrete `argv` ([`StageStdout`]) — the
+/// composed-probe coverage decision (`271:rul-only-oracle-bytes-ship` rider 1). Traces the
+/// SAME argparse [`evaluate`] does (one shared [`Evaluator::over`]), then reports the coverage
+/// of the last producing command on the selected path. A path that degrades to ⊤ (unresolved,
+/// budget, a pipeline arm, `return 2`) or reaches no command ⇒ [`StageStdout::Declined`] — the
+/// whole-shape decline. Pure/total (`inv-determinism`/`inv-no-throw`).
+#[must_use]
+pub fn predict_stage_stdout(check: &Predict, argv: &[&str]) -> StageStdout {
+    if argv.is_empty() {
+        return StageStdout::Declined;
+    }
+    let mut ev = Evaluator::over(check, argv);
+    match ev.run_block(&check.body) {
+        Flow::Normal => ev.last_stdout.unwrap_or(StageStdout::Declined),
+        Flow::Top(_) => StageStdout::Declined,
     }
 }
 
@@ -178,6 +210,10 @@ struct Evaluator {
     probe_body: Vec<Span>,
     /// The first inline annotation reached, resolved to (kind, entity).
     annotation: Option<(String, ResolvedEntity)>,
+    /// The STDOUT coverage of the LAST producing command reached on the selected path
+    /// ([`StageStdout`]) — the composed-probe coverage rule reads it to gate a non-last pipe
+    /// stage. `None` until a command is reached (⇒ [`StageStdout::Declined`], no producer).
+    last_stdout: Option<StageStdout>,
     budget: usize,
     steps: usize,
 }
@@ -193,6 +229,23 @@ enum Flow {
 }
 
 impl Evaluator {
+    /// Build a fresh evaluator over a concrete `argv` (the shared constructor for [`evaluate`]
+    /// and [`predict_stage_stdout`], so both trace the SAME argparse). Caller has already ruled
+    /// out an empty argv.
+    fn over(check: &Predict, argv: &[&str]) -> Self {
+        Evaluator {
+            positionals: argv.iter().map(|s| (*s).to_owned()).collect(),
+            vars: BTreeMap::new(),
+            verb_sym: check.verb_sym,
+            verb: None,
+            probe_body: Vec::new(),
+            annotation: None,
+            last_stdout: None,
+            budget: argv.len().saturating_mul(4).saturating_add(BUDGET_CONSTANT),
+            steps: 0,
+        }
+    }
+
     /// Charge one step against the budget; `Err` ⇒ budget exhausted.
     fn tick(&mut self) -> Result<(), TopReason> {
         self.steps = self.steps.saturating_add(1);
@@ -241,6 +294,9 @@ impl Evaluator {
                 // effect mark (`cmd.mark`) is metadata for the lift/strip only; it does
                 // not change what the probe command DOES, so evaluation ignores it.
                 self.probe_body.push(cmd.span);
+                // §2 per-channel STDOUT coverage (composed-probe rule): the last producing
+                // command reached IS the arm's stdout, so a later command overwrites this.
+                self.last_stdout = Some(stage_stdout_of(cmd));
                 Flow::Normal
             }
         }
@@ -365,6 +421,24 @@ impl Evaluator {
     }
 }
 
+/// The STDOUT coverage a single reached [`Command`] produces (`273` §2 vocabulary,
+/// `271:rul-only-oracle-bytes-ship` rider 1). A `>/dev/null`-class stdout redirect DECLINES the
+/// channel; a `printf` head is an ASSERTED (declared, not world-spoken) claim — knife-tier-refused
+/// (rider 3); anything else is a DELEGATION producing REAL bytes. (A pipeline arm never reaches
+/// here — it ⊤s first, `TopReason::Pipeline`.) `inv-referent-agnostic`: keys on the command's own
+/// structure — the head word `printf`, the redirect fd — never on what an operand MEANS.
+fn stage_stdout_of(cmd: &Command) -> StageStdout {
+    if cmd.stdout_void {
+        return StageStdout::Declined;
+    }
+    match cmd.words.first() {
+        Some(Word::Literal(w) | Word::SingleQuotedLiteral(w)) if w == "printf" => {
+            StageStdout::Asserted
+        }
+        _ => StageStdout::RealBytes,
+    }
+}
+
 /// Does a [`Pattern`] match the scrutinee value? Literal ⇒ exact equality; wildcard
 /// ⇒ always. (No globbing — the parser already rejected non-trivial globs.)
 ///
@@ -457,5 +531,88 @@ fn unset_positional(policy: UnsetPolicy) -> Result<String, TopReason> {
     match policy {
         UnsetPolicy::ExpandEmpty => Ok(String::new()),
         UnsetPolicy::Unresolved => Err(TopReason::NonConcreteWord("positional past end of argv")),
+    }
+}
+
+#[cfg(test)]
+mod stage_stdout_tests {
+    //! The composed-probe per-channel STDOUT coverage rule (`273` §2 vocabulary,
+    //! `271:rul-only-oracle-bytes-ship` rider 1): a NON-LAST pipe stage may be model-substituted
+    //! only if its predict arm produces REAL bytes on stdout. These pin the classification the plan
+    //! crate's `connected_check_pipes` gates on — the exact reason the landed `24J` raw-ship debt
+    //! (an `>/dev/null`-redirected otelcol predict) refuses to compose. Process-evidence, not proof.
+    use super::{StageStdout, predict_stage_stdout};
+    use crate::predict::lift_predicts;
+    use dorc_core::Interner;
+
+    fn stdout_of(src: &str, provider: &str, argv: &[&str]) -> StageStdout {
+        let mut i = Interner::default();
+        let out = lift_predicts(&mut i, src);
+        assert!(out.diags.is_empty(), "clean lift: {:?}", out.diags);
+        let p = i.intern(provider);
+        let check = out.value.get(p).expect("a check for the provider");
+        predict_stage_stdout(check, argv)
+    }
+
+    #[test]
+    fn delegation_arm_produces_real_bytes() {
+        // The A6-converted otelcol shape: a bare delegation to the real read-only command, stdout on
+        // the pipe ⇒ REAL bytes. This is the ONLY form a non-last pipe stage may take (rider 1).
+        let src = "otelcol__predict() { case $1 in --version) otelcol --version ;; esac }";
+        assert_eq!(
+            stdout_of(src, "otelcol", &["--version"]),
+            StageStdout::RealBytes,
+            "a delegation arm with stdout on the pipe covers the byte-consumer downstream"
+        );
+    }
+
+    #[test]
+    fn stdout_redirect_to_null_declines() {
+        // The LANDED `24J` raw-ship debt's exact shape: `otelcol --version >/dev/null 2>&1` VOIDS
+        // stdout (§2 redirect-to-null decline). A non-last stage like this starves the downstream
+        // `grep` ⇒ the compound must NOT ship (can't-say ⇒ run). This is why A6 had to CONVERT it.
+        let src = "otelcol__predict() { case $1 in --version) otelcol --version >/dev/null 2>&1 ;; esac }";
+        assert_eq!(
+            stdout_of(src, "otelcol", &["--version"]),
+            StageStdout::Declined,
+            "a `>/dev/null` stdout redirect declines the channel the next stage consumes"
+        );
+    }
+
+    #[test]
+    fn stderr_only_redirect_keeps_stdout_on_the_pipe() {
+        // `2>&1` / `2>/dev/null` redirect STDERR, never fd 1 — stdout still reaches the pipe. The
+        // fd-discrimination is load-bearing: a stderr redirect must not be mistaken for a decline.
+        let src = "grep__predict() { grep -q -- \"$1\" 2>/dev/null ;}";
+        assert_eq!(
+            stdout_of(src, "grep", &["x"]),
+            StageStdout::RealBytes,
+            "a `2>/dev/null` redirect leaves stdout on the pipe (only fd 2 is voided)"
+        );
+    }
+
+    #[test]
+    fn printf_arm_is_asserted_not_real() {
+        // A `printf` head is an ASSERTED output claim (§2), NOT world-spoken bytes — rider 3
+        // (capture-ships-real-bytes) refuses it for a knife-tier byte-consumer. Distinguished from a
+        // decline for provenance; the plan gate treats both as "not RealBytes" ⇒ refuse.
+        let src = "faux__predict() { printf '%s\\n' \"$1\" ;}";
+        assert_eq!(
+            stdout_of(src, "faux", &["x"]),
+            StageStdout::Asserted,
+            "a printf-headed arm asserts stdout — not the real bytes a knife-tier consumer needs"
+        );
+    }
+
+    #[test]
+    fn unmatched_arm_declines_whole_shape() {
+        // A verb the argparse selects no arm for reaches NO producing command ⇒ whole-shape decline
+        // (⊤). The compound refuses (never a guess about an unmodeled shape).
+        let src = "otelcol__predict() { case $1 in --version) otelcol --version ;; esac }";
+        assert_eq!(
+            stdout_of(src, "otelcol", &["--unknown-verb"]),
+            StageStdout::Declined,
+            "an argv the arms do not select reaches no producer ⇒ declined"
+        );
     }
 }

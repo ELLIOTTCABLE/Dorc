@@ -676,6 +676,9 @@ impl Parser<'_> {
         // 24E §14: once a `|` is seen, this list-item is a PIPELINE — everything to the
         // list-item end folds into one span-covering, byte-exact-shipping Command the tracers ⊤ on.
         let mut pipeline = false;
+        // §2 stdout DECLINE (`271:rul-only-oracle-bytes-ship` rider 1): whether a redirect voids
+        // fd 1. Consumed only by the composed-probe coverage rule; the strip ships the verbatim span.
+        let mut stdout_void = false;
         let guard = self.toks.len().saturating_add(1);
         let mut steps = 0usize;
         loop {
@@ -703,7 +706,7 @@ impl Parser<'_> {
                 }
                 // A single-quoted word is always a plain command word (`':'` is a literal).
                 Some(Tok::Word { .. }) => CmdTok::Word,
-                Some(Tok::Redirect(_)) => CmdTok::Redirect,
+                Some(Tok::Redirect(t)) => CmdTok::Redirect(t.clone()),
                 Some(Tok::Error(msg)) => CmdTok::Error(msg.clone()),
                 // A pipe `|` (24E §14): ACCEPT it — the whole list-item is a pipeline that ships
                 // byte-exact and ⊤s at trace (parse-permissively / trace-conservatively).
@@ -749,7 +752,8 @@ impl Parser<'_> {
                         words.push(parse_word_lexeme(&lexeme, single_quoted, self.interner));
                     }
                 }
-                CmdTok::Redirect => {
+                CmdTok::Redirect(text) => {
+                    stdout_void = stdout_void || redirect_voids_stdout(&text);
                     end_span = self.peek_span().unwrap_or(end_span);
                     self.bump();
                 }
@@ -789,6 +793,7 @@ impl Parser<'_> {
             span,
             mark,
             pipeline,
+            stdout_void,
         }))
     }
 
@@ -987,8 +992,10 @@ enum CmdTok {
     MarkStart(MarkSigil),
     /// A plain word to add to the command.
     Word,
-    /// A redirection chunk to fold into the verbatim span.
-    Redirect,
+    /// A redirection chunk to fold into the verbatim span (carrying its verbatim text so
+    /// [`Parser::parse_command`] can decide whether it voids fd 1 — the §2 stdout DECLINE
+    /// used by the composed-probe coverage rule, `271:rul-only-oracle-bytes-ship`).
+    Redirect(String),
     /// A pipe `|` (24E §14): this "command" is a PIPELINE. Accepted (parse-permissively) — the
     /// rest of the list-item folds into one span-covering Command flagged `pipeline`, which the
     /// tracers ⊤ on (trace-conservatively). NOT hard-killed (the kLANG mirror-invariant: valid sh
@@ -1256,6 +1263,57 @@ fn is_block_keyword(s: &str) -> bool {
 fn is_statement_terminator_word(s: &str) -> bool {
     is_block_keyword(s)
 }
+
+/// Does a redirect chunk send fd 1 (stdout) away from where it would otherwise flow?
+/// The §2 per-channel STDOUT DECLINE (`271:rul-only-oracle-bytes-ship` rider 1), used by the
+/// composed-probe coverage rule: an upstream pipe stage that voids stdout starves the byte
+/// consumer downstream, so the compound cannot ship (can't-say ⇒ run — the safe direction).
+///
+/// The chunk verbatim ([`Tok::Redirect`]) is `[fd-digits][>|<|>>|<<][&fd][target]`. Only an
+/// OUTPUT redirect (`>`/`>>`) on fd 1 voids stdout: `>/dev/null`, `>file`, `>&2`, `1>…` all
+/// take fd 1 off the pipe; a stderr redirect (`2>&1`, `2>/dev/null`) or any input redirect
+/// (`<…`) leaves stdout on the pipe (`false`). A default (digit-less) `>` targets fd 1.
+/// Bias-to-void on a malformed/unparsed fd (the refuse-direction is safe here).
+fn redirect_voids_stdout(text: &str) -> bool {
+    let bytes = text.as_bytes();
+    let digits_end = bytes.iter().take_while(|b| b.is_ascii_digit()).count();
+    // An output redirect on this fd; input redirects (`<`) never touch stdout.
+    if bytes.get(digits_end) != Some(&b'>') {
+        return false;
+    }
+    // No explicit fd ⇒ `>` defaults to fd 1; an explicit fd voids stdout only if it IS 1.
+    digits_end == 0 || text.get(..digits_end) == Some("1")
+}
+
+#[cfg(test)]
+mod redirect_tests {
+    //! The fd discrimination in [`super::redirect_voids_stdout`] — load-bearing for the composed-probe
+    //! coverage rule (`271:rul-only-oracle-bytes-ship` rider 1): only an OUTPUT redirect on fd 1 takes
+    //! stdout off the pipe. A stderr redirect misread as a stdout decline would refuse valid compounds
+    //! (safe but lossy); a stdout redirect missed would ship a starved compound (unsafe). Both matter.
+    use super::redirect_voids_stdout;
+
+    #[test]
+    fn fd1_output_redirects_void_stdout() {
+        for chunk in [">/dev/null", ">out", ">>out", ">&2", "1>/dev/null", "1>&2"] {
+            assert!(
+                redirect_voids_stdout(chunk),
+                "`{chunk}` sends fd 1 off the pipe ⇒ voids stdout"
+            );
+        }
+    }
+
+    #[test]
+    fn stderr_and_input_redirects_leave_stdout_on_the_pipe() {
+        for chunk in ["2>&1", "2>/dev/null", "2>>log", "</dev/null", "0<in"] {
+            assert!(
+                !redirect_voids_stdout(chunk),
+                "`{chunk}` does not touch fd 1 ⇒ stdout stays on the pipe"
+            );
+        }
+    }
+}
+
 #[cfg(test)]
 mod dialect_tests {
     //! The `277` §4 inline-mark dialect. These tests reach the internal AST (Marks aren't

@@ -42,7 +42,9 @@ mod parser;
 
 pub use ast::{Mark, MarkKind, MarkTarget, Predict, PredictSet, Stmt};
 pub use derive::{DerivedEffect, ValueClaim, derive_predict};
-pub use eval::{Resolution, Resolved, ResolvedEntity, TopReason, evaluate};
+pub use eval::{
+    Resolution, Resolved, ResolvedEntity, StageStdout, TopReason, evaluate, predict_stage_stdout,
+};
 pub use parser::lift_predicts;
 
 // The touches-footprint lift (`crate::touches`, 24A §1b) reuses the predict dialect: the

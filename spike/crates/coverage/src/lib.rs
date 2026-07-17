@@ -415,6 +415,44 @@ fn ship_predict_body(
     None
 }
 
+/// Byte-mirror of the cli's `ship_predict_stage` (`271:rul-only-oracle-bytes-ship` rider 1): a
+/// connected pipe stage's stripped predict PLUS whether its selected arm produces REAL stdout
+/// bytes (the coverage a downstream byte-consumer requires). The dashboard corpus carries no
+/// all-Query pipeline, so this is never actually called — present so the mirror stays faithful.
+fn ship_predict_stage(
+    oracle_srcs: &[&str],
+    checks: &[dorc_oracle::predict::PredictSet],
+    interner: &Interner,
+    provider: Symbol,
+    argv: &[Symbol],
+) -> Option<dorc_plan::StageShip> {
+    use dorc_oracle::predict::{
+        Resolution, StageStdout, evaluate, map_provider_name, predict_stage_stdout, strip_predict,
+    };
+    let want = map_provider_name(interner.resolve(provider));
+    let arg_texts: Vec<String> = argv
+        .iter()
+        .map(|s| interner.resolve(*s).to_owned())
+        .collect();
+    let arg_refs: Vec<&str> = arg_texts.iter().map(String::as_str).collect();
+    for (src, cs) in oracle_srcs.iter().zip(checks) {
+        for cp in cs.providers() {
+            if map_provider_name(interner.resolve(cp)) != want {
+                continue;
+            }
+            let Some(check) = cs.get(cp) else { continue };
+            if matches!(evaluate(check, &arg_refs), Resolution::Resolved(_)) {
+                return Some(dorc_plan::StageShip {
+                    sh: strip_predict(src, check, interner),
+                    produces_real_stdout: predict_stage_stdout(check, &arg_refs)
+                        == StageStdout::RealBytes,
+                });
+            }
+        }
+    }
+    None
+}
+
 /// Build the coverage report by driving the SAME public pipeline the cli drives,
 /// then attributing each site's engine outputs to a [`Door`] / [`BlockReason`] /
 /// [`Rung`]. Pure: a deterministic function of `inputs` (the kernel it calls is
@@ -466,9 +504,16 @@ pub fn build_report(inputs: &Inputs<'_>) -> Report {
         .map(parse_probe_verdicts)
         .unwrap_or_default();
 
-    // 24J §2 — the connected check-pipes (byte-mirror of the cli): empty for a book without a
-    // simple all-vouched-read-only pipeline, so dashboard parity is unaffected unless one is present.
-    let connected = dorc_plan::connected_check_pipes(inputs.book, &parsed.value, &cfg, &classes);
+    // `24J` §2 (repaired) — the connected check-pipes (byte-mirror of the cli): empty for a book
+    // without a shippable all-vouched-read-only pipeline, so dashboard parity is unaffected unless
+    // one is present. `connected_check_pipes` is now the DECIDER (resolve + coverage-gate each stage).
+    let connected = dorc_plan::connected_check_pipes(
+        &parsed.value,
+        &cfg,
+        &value,
+        &classes,
+        |p, a: &[Symbol]| ship_predict_stage(inputs.oracles, &checks, &interner, p, a),
+    );
     // R3 (23D §1 — the check IS the oracle): byte-mirror of the cli's `compile_probe`
     // call — the probe ships each provider's stripped `<provider>__predict` funcdef invoked
     // per-site with its argv (`ship_predict_body` re-runs the analysis's own check resolution).

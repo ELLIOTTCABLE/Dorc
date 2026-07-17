@@ -205,6 +205,16 @@ pub struct Command {
     /// pipeline can't-resolve ⇒ the site RUNS, the safe degrade). `words` holds only the FIRST
     /// stage's words (never interpreted for a pipeline — the ⊤ fires first).
     pub pipeline: bool,
+    /// Whether a redirect on this command sends fd 1 (stdout) away from where it would
+    /// otherwise flow (`>/dev/null`, `>&2`, `1>file`) — the §2 per-channel STDOUT DECLINE
+    /// (`271:rul-only-oracle-bytes-ship` rider 1). Load-bearing ONLY for the composed-probe
+    /// coverage rule ([`super::predict_stage_stdout`]): a NON-LAST pipe stage whose predict
+    /// voids stdout declines the very channel the downstream stage consumes, so the compound
+    /// cannot ship (can't-say ⇒ run). A stderr-only redirect (`2>&1`, `2>/dev/null`) leaves
+    /// this `false` — stdout still reaches the pipe. Computed at parse from the
+    /// [`super::lexer::Tok::Redirect`] chunks; irrelevant to the strip (which ships the
+    /// verbatim span, redirect included).
+    pub stdout_void: bool,
 }
 
 /// A test inside `while`/`if`. The dialect admits exactly the shape the flag-strip

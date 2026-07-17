@@ -1182,12 +1182,14 @@ pub struct ProbePredict {
     /// provider's body differs from the last emitted (sh's last-writer-wins + top-to-bottom
     /// exec makes each invocation see its own body).
     pub sh: String,
-    /// 24J §2 — the CONNECTED-probe body. `Some(body)` ⇒ this governing site ships a *connected*
-    /// probe: `body` is the RAW pipeline bytes (`otelcol --version | grep -q "0.155.0"`) run
-    /// verbatim by the record scaffold (no funcdef — "the host runs the real `A | F`"), its
-    /// governing rc captured. `None` ⇒ the ordinary single-command shape (`sh` funcdef + `argv`
-    /// invocation). The `fact`/`site_kind` re-key + the record grammar are unchanged either way.
-    pub connected: Option<String>,
+    /// `24J` §2 (repaired, `271:rul-only-oracle-bytes-ship`) — the CONNECTED-probe body.
+    /// `Some(composed)` ⇒ this governing site ships a *connected* probe whose stages are each
+    /// replaced by their oracle's stripped predict, piped
+    /// (`otelcol__predict '--version' | grep__predict '-q' '0.155.0'`), its governing rc captured
+    /// by the record scaffold — ONLY oracle-authored bytes ship (never the raw book pipeline).
+    /// `None` ⇒ the ordinary single-command shape (`sh` funcdef + `argv` invocation). The
+    /// `fact`/`site_kind` re-key + the record grammar are unchanged either way.
+    pub connected: Option<ComposedProbe>,
     /// `24L` §2 — the typeless-floor auto-cell probe. `true` ⇒ `sh` is the stripped VERDICT body
     /// (`<provider>__is_converged`, not `__predict`), invoked with the site argv; its rc maps to
     /// the Effect verdict through the SAME record-scaffold rc-partition (0=holds, 1=absent,
@@ -1309,13 +1311,23 @@ impl ProbePlan {
                 &key,
                 &fact_label(interner, check.fact),
             ));
-            // 24J §2 — a CONNECTED governing stage runs the RAW pipeline bytes as the invocation
-            // (no funcdef: "the host runs the real `A | F`", the record scaffold captures the
-            // pipeline's governing rc). Every stage's read-only vouch is the license to run the
-            // real pipe. Otherwise the ordinary R3 shape: (re-)emit the stripped funcdef, then
-            // invoke it with the site's argv.
-            let invocation = if let Some(body) = &check.connected {
-                body.clone()
+            // `24J` §2 (repaired, `271:rul-only-oracle-bytes-ship`) — a CONNECTED governing stage
+            // ships the COMPOSED predicts: each stage's stripped `<provider>__predict` funcdef
+            // (dedup-emitted like the ordinary path) piped, `stage0__predict a | stage1__predict b`.
+            // ONLY oracle-authored bytes ship — never the raw book pipeline. Otherwise the ordinary
+            // R3 shape: (re-)emit the stripped funcdef, then invoke it with the site's argv.
+            let invocation = if let Some(composed) = &check.connected {
+                let mut invs = Vec::with_capacity(composed.stages.len());
+                for stage in &composed.stages {
+                    let stage_fn = predict_fn_name(interner, stage.provider);
+                    if defined.insert(stage_fn.clone(), stage.sh.as_str())
+                        != Some(stage.sh.as_str())
+                    {
+                        out.push_str(&render::probe::wrapper_def(&stage.sh));
+                    }
+                    invs.push(render::probe::invocation(&stage_fn, &stage.argv, interner));
+                }
+                invs.join(" | ")
             } else {
                 if defined.insert(fn_name.clone(), check.sh.as_str()) != Some(check.sh.as_str()) {
                     out.push_str(&render::probe::wrapper_def(&check.sh));
@@ -1668,58 +1680,116 @@ fn site_order<'a>(
 /// wall floor (today's behaviour — the negative control pins it).
 #[derive(Debug, Clone, Default)]
 pub struct ConnectedPipes {
-    /// governing (last-stage) [`CfgNodeId`] → the connected probe body: the RAW pipeline source
-    /// bytes (`otelcol --version | grep -q "0.155.0"`). The probe scaffold runs these verbatim and
-    /// captures the pipeline's governing rc (`inv-site-keyed-results`, keyed to the governing site).
-    governing: BTreeMap<CfgNodeId, String>,
+    /// governing (last-stage) [`CfgNodeId`] → the COMPOSED probe: each stage substituted by its
+    /// oracle's stripped `<provider>__predict` invoked with the stage's own argv
+    /// (`271:rul-only-oracle-bytes-ship`; `24J`-repair). The probe scaffold pipes the composed
+    /// predicts and captures the governing rc (`inv-site-keyed-results`, keyed to the governing
+    /// site). ONLY compounds that PASS the coverage rule (every non-last stage produces real
+    /// stdout — [`StageShip::produces_real_stdout`]) land here; a compound that fails is demoted
+    /// wholesale to [`orphan_stages`](ConnectedPipes::orphan_stages) (can't-say ⇒ run).
+    governing: BTreeMap<CfgNodeId, ComposedProbe>,
     /// non-last member [`CfgNodeId`] → its governing (last-stage) [`CfgNodeId`]. The member ships no
     /// separate probe (subsumed into the connected unit); at apply it OMITS controlled by the
     /// governing stage once that stage's connected verdict is converged (`build_plan_walled`).
     members: BTreeMap<CfgNodeId, CfgNodeId>,
-    /// A Query stage of a pipeline that did NOT qualify as connected (a redirection, a nesting, an
-    /// unvouched/mutating stage — the negative control). Such a stage is stdin-dependent inside its
-    /// pipe (silence-is-wall — a lone `grep -q` has no independent fact), so it must NOT ship its
+    /// A Query stage of a pipeline that did NOT qualify as connected — a redirection, a nesting, an
+    /// unvouched/mutating stage (the negative control), OR a recognized-but-COVERAGE-FAILING
+    /// compound (a stage whose predict does not resolve, or a non-last stage that declines stdout,
+    /// `271:rul-only-oracle-bytes-ship` rider 1). Such a stage is stdin-dependent inside its pipe
+    /// (silence-is-wall — a lone `grep -q` has no independent fact), so it must NOT ship its
     /// context-free `__predict` (which would read the wrong stdin); it is UNRESOLVABLE ⇒ runs
-    /// (`kFAIL-perform`). Only a CONNECTED governing stage ever probes a pipe-stage Query.
+    /// (`kFAIL-perform`). Only a CONNECTED governing stage that shipped ever probes a pipe-stage.
     orphan_stages: BTreeSet<CfgNodeId>,
 }
 
+/// The composed probe for one connected check-pipe (`271:rul-only-oracle-bytes-ship`; the `24J`
+/// raw-ship repair): the ordered pipe stages, each replaced by its oracle's stripped predict. The
+/// render pipes each stage's `<provider>__predict <argv>` — ONLY oracle-authored bytes ship; the
+/// admin's book bytes NEVER do (they flow in as the predicts' arguments through each author's
+/// argparse — `271:rul-argv-flows-bytes-do-not`).
+#[derive(Debug, Clone)]
+pub struct ComposedProbe {
+    /// The pipe stages in order (governing stage last). Rendered as
+    /// `stage0__predict a b | stage1__predict c | …` then the record scaffold.
+    pub stages: Vec<ComposedStage>,
+}
+
+/// One stage of a [`ComposedProbe`]: the provider whose stripped predict stands in, that stage's
+/// resolved argv (F-quoted at render, `inv-kfail`), and the stripped `<provider>__predict` funcdef
+/// (emitted once, dedup by funcname). Mirrors the ordinary [`ProbePredict`] `provider`/`argv`/`sh`
+/// fields — a stage IS an ordinary shipped predict, just piped into its successor.
+#[derive(Debug, Clone)]
+pub struct ComposedStage {
+    /// The stage's command word (`otelcol`, `grep`) — keys [`predict_fn_name`] at render.
+    pub provider: Symbol,
+    /// The stage's argv after the command word, each a resolved literal.
+    pub argv: Vec<Symbol>,
+    /// The stripped `<provider>__predict` funcdef for this stage (strip-only — the check IS the
+    /// oracle). Re-emitted only when its funcname's body changes (the render's dedup).
+    pub sh: String,
+}
+
+/// What a stage-ship closure returns for one pipe stage (`271:rul-only-oracle-bytes-ship` rider 1):
+/// the stripped `<provider>__predict` body PLUS its STDOUT coverage — whether the arm this argv
+/// selects produces REAL bytes on the pipe. A non-last stage is model-substitutable iff
+/// [`produces_real_stdout`](StageShip::produces_real_stdout); the coverage decision itself lives
+/// in the oracle crate (`dorc_oracle::predict::predict_stage_stdout`), collapsed here to the
+/// byte-consumer gate (`StageStdout::RealBytes`).
+#[derive(Debug, Clone)]
+pub struct StageShip {
+    /// The stripped `<provider>__predict` funcdef (strip-only).
+    pub sh: String,
+    /// Whether this stage's predict arm produces REAL (delegation-produced, `271:rul-composed-bytes-
+    /// defer-and-floor`) bytes on stdout — the coverage a downstream byte-consumer requires. A
+    /// `printf`-asserted or `>/dev/null`-declined arm is `false` ⇒ refuses the compound if non-last.
+    pub produces_real_stdout: bool,
+}
+
 impl ConnectedPipes {
-    /// The connected probe body for a governing site, if `node` governs a connected check-pipe.
+    /// The composed probe for a governing site, if `node` governs a SHIPPABLE connected check-pipe.
     #[must_use]
-    pub fn governing_body(&self, node: CfgNodeId) -> Option<&str> {
-        self.governing.get(&node).map(String::as_str)
+    pub fn governing_composed(&self, node: CfgNodeId) -> Option<&ComposedProbe> {
+        self.governing.get(&node)
     }
 
     /// The governing (last-stage) node for a non-last member, if `node` is subsumed into a
-    /// connected check-pipe.
+    /// shippable connected check-pipe.
     #[must_use]
     pub fn member_governor(&self, node: CfgNodeId) -> Option<CfgNodeId> {
         self.members.get(&node).copied()
     }
 
-    /// Is `node` a Query stage of a NON-connected pipeline (silence-is-wall — never probes, runs)?
+    /// Is `node` a stage of a pipeline that did NOT ship a connected probe (silence-is-wall — never
+    /// probes, runs)? True for a non-recognized pipe's Query stages AND for every stage of a
+    /// coverage-failing compound.
     #[must_use]
     pub fn is_orphan_stage(&self, node: CfgNodeId) -> bool {
         self.orphan_stages.contains(&node)
     }
 }
 
-/// Recognise the [`ConnectedPipes`] in a book (24J §2 — narrow-first). Pure + deterministic
-/// (ordered maps, a single AST walk); safe on ANY book — a book with no all-Query pipe yields
-/// an empty map (today's behaviour, the flag-off equivalent).
+/// Decide the [`ConnectedPipes`] of a book (`24J` §2 — the composed-predict repair,
+/// `271:rul-only-oracle-bytes-ship`). Pure + deterministic (ordered maps, a single AST walk);
+/// safe on ANY book — a book with no shippable all-Query pipe yields an empty map (the flag-off
+/// equivalent).
 ///
-/// A pipeline qualifies iff: it has ≥2 stages, EVERY stage is a bare `Simple` command carrying
-/// NO redirect (24J narrow-first: a redirection ⊤s to the wall floor), AND every stage resolves
-/// to a [`SkipClass::QueryResolvable`] leaf (the read-only vouch — the grep stdlib + the check
-/// tool's own `:?` arm). The last stage governs; the earlier stages are subsumed members. The
-/// pipeline's `negated` bit is irrelevant here (the fold replays `!` over the captured rc).
+/// A pipeline SHIPS as a composed probe iff: it has ≥2 stages, EVERY stage is a bare `Simple`
+/// command with NO redirect (`24J` narrow-first) resolving to a [`SkipClass::QueryResolvable`]
+/// leaf (the read-only vouch — the grep stdlib + the check tool's own `:?` arm), AND every stage's
+/// predict RESOLVES its argv (`ship_stage` returns `Some`), AND every NON-LAST stage produces REAL
+/// stdout bytes (the per-channel coverage rule, rider 1 — the byte the downstream stage consumes
+/// must be world-spoken, not a `printf`-assert or a `>/dev/null`-decline). Each stage is then
+/// replaced by its stripped `<provider>__predict <argv>`; ONLY oracle-authored bytes ship. Any
+/// failure REFUSES the whole compound — every stage becomes an orphan ⇒ runs (can't-say ⇒ run,
+/// always safe; no partial or mixed raw/composed emission). The pipeline's `negated` bit is
+/// irrelevant here (the fold replays `!` over the captured rc).
 #[must_use]
 pub fn connected_check_pipes(
-    src: &str,
     ast: &Ast,
     cfg: &Cfg,
+    value: &ValueFlow,
     classes: &[(CfgNodeId, SkipClass)],
+    ship_stage: impl Fn(Symbol, &[Symbol]) -> Option<StageShip>,
 ) -> ConnectedPipes {
     // AstId → (CfgNodeId, is-QueryResolvable). A simple-pipe stage is a single leaf, so the map is
     // 1:1 for the shapes we recognise; a stage whose AstId is absent (opaque/mutator/nested) fails
@@ -1737,6 +1807,16 @@ pub fn connected_check_pipes(
         if stages.len() < 2 {
             continue;
         }
+        // Demote every Query stage of this pipe to an ORPHAN (runs) — the safe default this loop
+        // OVERRIDES only for a fully-shippable compound. A rejected/refused pipe leaves the demotion
+        // in place; a shippable one re-keys its stages into `governing`/`members` below.
+        let demote_to_orphans = |out: &mut ConnectedPipes| {
+            for &s in stages {
+                if let Some((n, true)) = leaf_of.get(&s).copied() {
+                    out.orphan_stages.insert(n);
+                }
+            }
+        };
         // Every stage must be a bare Simple with no redirect AND an all-Query leaf.
         let stage_leaf = |stage: AstId| -> Option<CfgNodeId> {
             let NodeKind::Simple { redirs, .. } = &ast.node(stage).kind else {
@@ -1749,37 +1829,77 @@ pub fn connected_check_pipes(
         };
         let Some(nodes): Option<Vec<CfgNodeId>> = stages.iter().map(|&s| stage_leaf(s)).collect()
         else {
-            // REJECTED (a stage is not a clean no-redir Simple Query — the negative control): record
-            // every Query stage as an ORPHAN so it never ships a context-free probe. The whole pipe
-            // walls (silence-is-wall) — today's behaviour, now pinned against the connected path.
-            for &s in stages {
-                if let Some((n, true)) = leaf_of.get(&s).copied() {
-                    out.orphan_stages.insert(n);
-                }
+            // REJECTED (a stage is not a clean no-redir Simple Query — the negative control): the
+            // whole pipe walls (silence-is-wall), stages recorded as orphans.
+            demote_to_orphans(&mut out);
+            continue;
+        };
+        // Resolve each stage to a composed predict + its stdout coverage. Any stage that fails to
+        // resolve (⊤ argv, un-oracled provider) refuses the whole compound; a non-last stage that
+        // does not produce REAL stdout (rider 1: `printf`-assert / `>/dev/null`-decline / rc-only)
+        // refuses it too — its declined channel is exactly what the next stage consumes.
+        let last_idx = nodes.len().saturating_sub(1);
+        let mut composed = Vec::with_capacity(nodes.len());
+        let mut refused = false;
+        for (idx, &stage_node) in nodes.iter().enumerate() {
+            let Some((provider, argv, ship)) =
+                ship_stage_for_argv(&value.argv_values(stage_node), &ship_stage)
+            else {
+                refused = true;
+                break;
+            };
+            // rider 1 (per-channel coverage): a NON-LAST stage's stdout is consumed downstream, so
+            // it MUST produce real bytes; the LAST (governing) stage's stdout is not piped onward
+            // (only its rc is consumed), so it is exempt from the stdout gate.
+            if idx != last_idx && !ship.produces_real_stdout {
+                refused = true;
+                break;
             }
+            composed.push(ComposedStage {
+                provider,
+                argv,
+                sh: ship.sh,
+            });
+        }
+        // stages.len() >= 2 (checked above) mirrors into `nodes`, so split_last is present — the
+        // `else` is unreachable, kept only to avoid an `expect` (no panic path).
+        let Some((&governing, members)) = nodes.split_last() else {
+            demote_to_orphans(&mut out);
             continue;
         };
-        // stages.len() >= 2 (checked above) and `nodes` mirrors it, so split_last/first/last are all
-        // present — the `else` is unreachable, kept only to avoid an `expect` (no panic path).
-        let (Some((governing, members)), Some(&first), Some(&last)) =
-            (nodes.split_last(), stages.first(), stages.last())
-        else {
+        if refused {
+            demote_to_orphans(&mut out);
             continue;
-        };
-        // The connected body is the STAGES' source span (`otelcol --version | grep -q "0.155.0"`),
-        // NOT the pipeline node's — a `! A | F` (the if-form) has the `!` inside the Pipeline span,
-        // and running `! A | F` as the probe would report the NEGATED rc (a double-negation: the fold
-        // replays `!` over the captured rc via `Pipeline{negated}`). Slicing first-stage.lo ..
-        // last-stage.hi captures exactly the stages + their `|` separators, never the leading `!`.
-        let lo = ast.node(first).span.lo.0 as usize;
-        let hi = ast.node(last).span.hi.0 as usize;
-        let body = src.get(lo..hi).unwrap_or_default().to_string();
-        out.governing.insert(*governing, body);
-        for m in members {
-            out.members.insert(*m, *governing);
+        }
+        out.governing
+            .insert(governing, ComposedProbe { stages: composed });
+        for &m in members {
+            out.members.insert(m, governing);
         }
     }
     out
+}
+
+/// Resolve one pipe stage's provider + argv-after-word0 + [`StageShip`] from its resolved argv
+/// ([`ValueFlow::argv_values`]) — the composed-probe analogue of [`ship_for_argv`]. A ⊤ command
+/// word or operand ⇒ no concrete stage ⇒ `None` (refuses the compound, `kFAIL-perform`).
+fn ship_stage_for_argv(
+    argv: &[ValueOf],
+    ship_stage: &impl Fn(Symbol, &[Symbol]) -> Option<StageShip>,
+) -> Option<(Symbol, Vec<Symbol>, StageShip)> {
+    let (first, rest) = argv.split_first()?;
+    let &ValueOf::Literal(provider) = first else {
+        return None;
+    };
+    let mut operands = Vec::with_capacity(rest.len());
+    for w in rest {
+        let &ValueOf::Literal(s) = w else {
+            return None;
+        };
+        operands.push(s);
+    }
+    let ship = ship_stage(provider, &operands)?;
+    Some((provider, operands, ship))
 }
 
 /// Compile the probe from the analysis result, keyed by command **site**
@@ -1915,13 +2035,14 @@ pub fn compile_probe(
             unresolvable.push(site);
             continue;
         };
-        // 24J §2 — a GOVERNING connected check-pipe stage ships the CONNECTED probe: the raw pipeline
-        // bytes run verbatim (no funcdef — a stage's `__predict` cannot chain), the pipeline's
-        // governing rc captured and keyed to this (last-stage) site. `fact`/`site_kind` (the Query
-        // firewall) re-key exactly as a lone Query would. A ⊤ command word cannot be a recognised
-        // connected stage (the recognition requires an all-Query pipe), but stay total: fall back to
-        // unresolvable.
-        if let Some(body) = connected.governing_body(node) {
+        // `24J` §2 (repaired) — a GOVERNING connected check-pipe stage ships the COMPOSED probe:
+        // each stage's stripped `<provider>__predict` piped (`271:rul-only-oracle-bytes-ship`); the
+        // pipeline's governing rc is captured and keyed to this (last-stage) site. `fact`/`site_kind`
+        // (the Query firewall) re-key exactly as a lone Query would. `connected_check_pipes` already
+        // resolved + coverage-gated every stage, so a `Some` here is fully shippable (a refused
+        // compound demoted its stages to orphans ⇒ they take the `is_orphan_stage` path above). The
+        // governing site's own provider keys the record's dedup slot; the stages carry the bodies.
+        if let Some(composed) = connected.governing_composed(node) {
             if let Some(ValueOf::Literal(provider)) = value.argv_values(node).first() {
                 checks.push(ProbePredict {
                     site,
@@ -1931,7 +2052,7 @@ pub fn compile_probe(
                     provider: *provider,
                     argv: Vec::new(),
                     sh: String::new(),
-                    connected: Some(body.to_owned()),
+                    connected: Some(composed.clone()),
                     verdict: false,
                 });
             } else {
@@ -5803,15 +5924,20 @@ apt_get__predict() {
         panic!("no leaf command `{word}` in the cfg");
     }
 
-    /// Parse `src`, build its cfg, and mark every leaf `Command` whose first word is in `queries` as
-    /// a `QueryResolvable` (the read-only vouch the recognition requires — the fact's identity is
-    /// irrelevant, the recognition keys on structure). A stage word NOT listed is absent from
-    /// `classes`, so the recognition sees it as non-Query (opaque/mutator). Returns (ast, cfg, classes).
-    fn pipe_fixture(src: &str, queries: &[&str]) -> (Ast, Cfg, Vec<(CfgNodeId, SkipClass)>) {
+    /// Parse `src`, build its cfg + value-flow, and mark every leaf `Command` whose first word is in
+    /// `queries` as a `QueryResolvable` (the read-only vouch the recognition requires — the fact's
+    /// identity is irrelevant, the recognition keys on structure). A stage word NOT listed is absent
+    /// from `classes`, so the decider sees it as non-Query (opaque/mutator). Returns the interner too
+    /// (the value-flow interned the argv the decider resolves, and the ship closures resolve providers).
+    fn pipe_fixture(
+        src: &str,
+        queries: &[&str],
+    ) -> (Ast, Cfg, ValueFlow, Vec<(CfgNodeId, SkipClass)>, Interner) {
         use dorc_syntax::ast::{NodeKind, WordPart};
         let ast = dorc_syntax::parse(src).value;
         let cfg = dorc_analysis::cfg::build(&ast).value;
         let mut i = Interner::default();
+        let value = dorc_analysis::value::analyze(&cfg, &ast, &mut i);
         let mut classes = Vec::new();
         for (node, cnode) in cfg.iter() {
             if !matches!(cnode.kind, CfgNodeKind::Command) {
@@ -5841,23 +5967,45 @@ apt_get__predict() {
                 ));
             }
         }
-        (ast, cfg, classes)
+        (ast, cfg, value, classes, i)
+    }
+
+    /// A stub stage-ship: every stage resolves to a trivial delegation body producing REAL stdout
+    /// (the coverage a downstream byte-consumer requires). The recognition tests key on membership,
+    /// not the shipped bytes, so a constant stub suffices.
+    #[expect(
+        clippy::unnecessary_wraps,
+        reason = "must match the `ship_stage: Fn(..) -> Option<StageShip>` closure signature"
+    )]
+    fn ship_all_real(_p: Symbol, _a: &[Symbol]) -> Option<StageShip> {
+        Some(StageShip {
+            sh: "stub__predict() { :; }".to_owned(),
+            produces_real_stdout: true,
+        })
     }
 
     #[test]
     fn connected_recognises_all_query_two_stage() {
-        // The flagship shape: `A | F` with BOTH stages vouched read-only Queries ⇒ a connected
-        // check-pipe. The LAST stage governs (ships the connected body = the raw pipe bytes); the
-        // first stage is a subsumed member keyed to the governor. No orphans.
+        // The flagship shape: `A | F` with BOTH stages vouched read-only Queries + resolving predicts
+        // ⇒ a COMPOSED probe (`271:rul-only-oracle-bytes-ship`). The LAST stage governs (carries the
+        // composed body); the first stage is a subsumed member keyed to the governor. No orphans.
         let src = "otelcol --version | grep -q x || curl y\n";
-        let (ast, cfg, classes) = pipe_fixture(src, &["otelcol", "grep"]);
-        let c = connected_check_pipes(src, &ast, &cfg, &classes);
+        let (ast, cfg, value, classes, i) = pipe_fixture(src, &["otelcol", "grep"]);
+        let c = connected_check_pipes(&ast, &cfg, &value, &classes, ship_all_real);
         let gov = pipe_node(&cfg, &ast, "grep");
         let a = pipe_node(&cfg, &ast, "otelcol");
+        let composed = c
+            .governing_composed(gov)
+            .expect("the governing (last) stage carries the composed probe");
+        let providers: Vec<&str> = composed
+            .stages
+            .iter()
+            .map(|s| i.resolve(s.provider))
+            .collect();
         assert_eq!(
-            c.governing_body(gov),
-            Some("otelcol --version | grep -q x"),
-            "the governing (last) stage ships the RAW pipe bytes (the stages' span, no `||`/`!`)"
+            providers,
+            vec!["otelcol", "grep"],
+            "the composed probe carries each stage's provider in pipe order (governing last)"
         );
         assert_eq!(
             c.member_governor(a),
@@ -5866,20 +6014,83 @@ apt_get__predict() {
         );
         assert!(
             !c.is_orphan_stage(a) && !c.is_orphan_stage(gov),
-            "a connected pipe has no orphans"
+            "a shippable connected pipe has no orphans"
         );
     }
 
     #[test]
     fn connected_recognises_three_stage() {
-        // `A | B | F` all-Query ⇒ two members (A, B) + the governor F.
+        // `A | B | F` all-Query + resolving ⇒ two members (A, B) + the governor F.
         let src = "a p | b q | grep -q x\n";
-        let (ast, cfg, classes) = pipe_fixture(src, &["a", "b", "grep"]);
-        let c = connected_check_pipes(src, &ast, &cfg, &classes);
+        let (ast, cfg, value, classes, i) = pipe_fixture(src, &["a", "b", "grep"]);
+        let c = connected_check_pipes(&ast, &cfg, &value, &classes, ship_all_real);
         let gov = pipe_node(&cfg, &ast, "grep");
         assert_eq!(c.member_governor(pipe_node(&cfg, &ast, "a")), Some(gov));
         assert_eq!(c.member_governor(pipe_node(&cfg, &ast, "b")), Some(gov));
-        assert_eq!(c.governing_body(gov), Some("a p | b q | grep -q x"));
+        let composed = c
+            .governing_composed(gov)
+            .expect("shippable three-stage pipe");
+        let providers: Vec<&str> = composed
+            .stages
+            .iter()
+            .map(|s| i.resolve(s.provider))
+            .collect();
+        assert_eq!(providers, vec!["a", "b", "grep"]);
+    }
+
+    #[test]
+    fn connected_refuses_non_last_stage_without_real_stdout() {
+        // rider 1 (per-channel coverage, `271:rul-only-oracle-bytes-ship`): a NON-LAST stage whose
+        // predict does NOT produce real stdout (a `printf`-assert or a `>/dev/null`-decline — the arm
+        // declines the very channel `grep` consumes) REFUSES the whole compound. Every stage becomes
+        // an orphan ⇒ runs (can't-say ⇒ run — no partial/mixed emission). The STRUCTURAL pin that the
+        // coverage rule bites: the FIRST stage `otelcol` declines stdout, so nothing ships.
+        let src = "otelcol --version | grep -q x || curl y\n";
+        let (ast, cfg, value, classes, i) = pipe_fixture(src, &["otelcol", "grep"]);
+        let ship = |p: Symbol, _a: &[Symbol]| {
+            Some(StageShip {
+                sh: "stub__predict() { :; }".to_owned(),
+                // otelcol declines stdout (rc-only / redirect-void); grep is fine — but grep is LAST.
+                produces_real_stdout: i.resolve(p) != "otelcol",
+            })
+        };
+        let c = connected_check_pipes(&ast, &cfg, &value, &classes, ship);
+        let a = pipe_node(&cfg, &ast, "otelcol");
+        let f = pipe_node(&cfg, &ast, "grep");
+        assert!(
+            c.governing_composed(f).is_none(),
+            "an uncovered non-last stage refuses the whole compound (no composed probe ships)"
+        );
+        assert!(
+            c.is_orphan_stage(a) && c.is_orphan_stage(f),
+            "both stages become orphans ⇒ the pipe runs (can't-say ⇒ run)"
+        );
+        assert!(
+            c.member_governor(a).is_none(),
+            "no subsumed members on refusal"
+        );
+    }
+
+    #[test]
+    fn connected_refuses_when_a_stage_predict_does_not_resolve() {
+        // A stage whose predict does not resolve (`ship_stage` ⇒ `None` — un-oracled, ⊤ argv) refuses
+        // the compound: only oracle-authored bytes may ship, so a stage we cannot model-substitute
+        // sinks the whole pipe to run. Here `grep` (the governor) has no shippable predict.
+        let src = "otelcol --version | grep -q x\n";
+        let (ast, cfg, value, classes, i) = pipe_fixture(src, &["otelcol", "grep"]);
+        let ship = |p: Symbol, _a: &[Symbol]| {
+            (i.resolve(p) != "grep").then(|| StageShip {
+                sh: "stub__predict() { :; }".to_owned(),
+                produces_real_stdout: true,
+            })
+        };
+        let c = connected_check_pipes(&ast, &cfg, &value, &classes, ship);
+        assert!(
+            c.governing_composed(pipe_node(&cfg, &ast, "grep"))
+                .is_none()
+                && c.is_orphan_stage(pipe_node(&cfg, &ast, "otelcol")),
+            "an unshippable stage refuses the compound; all stages run"
+        );
     }
 
     #[test]
@@ -5888,8 +6099,8 @@ apt_get__predict() {
         // disqualifies the pipe (NARROW FIRST). The Query stages become ORPHANS — they ship no
         // context-free probe and RUN; nothing is a governor/member.
         let src = "otelcol --version | cat | grep -q x || curl y\n";
-        let (ast, cfg, classes) = pipe_fixture(src, &["otelcol", "grep"]); // `cat` is NOT a query
-        let c = connected_check_pipes(src, &ast, &cfg, &classes);
+        let (ast, cfg, value, classes, _i) = pipe_fixture(src, &["otelcol", "grep"]); // `cat` NOT a query
+        let c = connected_check_pipes(&ast, &cfg, &value, &classes, ship_all_real);
         let a = pipe_node(&cfg, &ast, "otelcol");
         let f = pipe_node(&cfg, &ast, "grep");
         assert!(
@@ -5897,7 +6108,7 @@ apt_get__predict() {
             "both Query stages are orphans"
         );
         assert!(
-            c.governing_body(f).is_none(),
+            c.governing_composed(f).is_none(),
             "no governor — the pipe is not connected"
         );
         assert!(
@@ -5912,10 +6123,11 @@ apt_get__predict() {
         // the Query stages are orphans. (`> /dev/null` on the first stage makes its Simple carry a
         // redirect ⇒ `stage_leaf` refuses it.)
         let src = "otelcol --version >/dev/null | grep -q x\n";
-        let (ast, cfg, classes) = pipe_fixture(src, &["otelcol", "grep"]);
-        let c = connected_check_pipes(src, &ast, &cfg, &classes);
+        let (ast, cfg, value, classes, _i) = pipe_fixture(src, &["otelcol", "grep"]);
+        let c = connected_check_pipes(&ast, &cfg, &value, &classes, ship_all_real);
         assert!(
-            c.governing_body(pipe_node(&cfg, &ast, "grep")).is_none(),
+            c.governing_composed(pipe_node(&cfg, &ast, "grep"))
+                .is_none(),
             "a redirect on any stage disqualifies the connected pipe"
         );
         assert!(
@@ -5928,14 +6140,73 @@ apt_get__predict() {
     fn connected_ignores_non_pipeline() {
         // A single command (no pipe) is never a connected check-pipe — nothing recorded.
         let src = "grep -q x || curl y\n";
-        let (ast, cfg, classes) = pipe_fixture(src, &["grep"]);
-        let c = connected_check_pipes(src, &ast, &cfg, &classes);
+        let (ast, cfg, value, classes, _i) = pipe_fixture(src, &["grep"]);
+        let c = connected_check_pipes(&ast, &cfg, &value, &classes, ship_all_real);
         let g = pipe_node(&cfg, &ast, "grep");
         assert!(
-            c.governing_body(g).is_none()
+            c.governing_composed(g).is_none()
                 && !c.is_orphan_stage(g)
                 && c.member_governor(g).is_none(),
             "a lone command is neither governor, member, nor orphan"
+        );
+    }
+
+    #[test]
+    fn composed_probe_renders_predicts_never_raw_book_bytes() {
+        // The STRUCTURAL no-book-bytes pin (`271:rul-only-oracle-bytes-ship`, the cardinal probe-lane
+        // law): a shipped connected probe carries ONLY oracle-authored bytes. Render a ComposedProbe
+        // built from two stripped predicts and assert the artifact ships the COMPOSED invocation
+        // (`otelcol__predict '--version' | grep__predict '-q' '0.155.0'`) and contains NO distinctive
+        // RAW book spelling. The raw book pipe would ship `--version | grep -q` (bare `grep`, book
+        // spacing); the composed form never does — this test FAILS if raw-shipping ever returns.
+        let mut i = Interner::default();
+        let fact = FactKey {
+            kind: KindId(i.intern("grepmatch")),
+            entity: EntityRef::Operand(OpaqueToken(i.intern("x"))),
+            selector: SelectorId(i.intern("matched")),
+        };
+        let otelcol = i.intern("otelcol");
+        let grep = i.intern("grep");
+        let version = i.intern("--version");
+        let dashq = i.intern("-q");
+        let pat = i.intern("0.155.0");
+        let plan = ProbePlan {
+            checks: vec![ProbePredict {
+                site: LeafId(1),
+                member: None,
+                fact,
+                site_kind: ProbeSiteKind::Query { valid: true },
+                provider: grep,
+                argv: Vec::new(),
+                sh: String::new(),
+                connected: Some(ComposedProbe {
+                    stages: vec![
+                        ComposedStage {
+                            provider: otelcol,
+                            argv: vec![version],
+                            sh: "otelcol__predict() { case $1 in --version) otelcol --version ;; esac; }".to_owned(),
+                        },
+                        ComposedStage {
+                            provider: grep,
+                            argv: vec![dashq, pat],
+                            sh: "grep__predict() { pat=\"$1\"; grep -q -- \"$pat\"; }".to_owned(),
+                        },
+                    ],
+                }),
+                verdict: false,
+            }],
+            unresolvable: Vec::new(),
+        };
+        let rendered = plan.render_sh(&i);
+        assert!(
+            rendered.contains("otelcol__predict '--version' | grep__predict '-q' '0.155.0'"),
+            "the composed predict invocation ships (oracle bytes, admin argv as arguments): {rendered}"
+        );
+        // The distinctive RAW book spelling `--version | grep -q` (bare grep, book spacing) must NOT
+        // appear anywhere — its presence is the raw-ship debt returning (book bytes in the probe).
+        assert!(
+            !rendered.contains("--version | grep -q"),
+            "NO raw book pipeline bytes may appear in a shipped connected probe: {rendered}"
         );
     }
 }
