@@ -14,111 +14,70 @@
 
 ---
 
-## R27 ONBOARDING (2026-07-10 — the single current view; supersedes the r24 onboarding, whose content now lives durably in `notes/24U` + `plans/270`)
+## R27 ONBOARDING (refreshed 2026-07-16 — the single current view)
 
-**The state in one paragraph:** round 24 is CLOSED by reshuffle (`notes/24U` — the
-abandonment accounting; read it before anything else here). The field trial (né r25) and
-multi-host (né r26) are TABLED with revival conditions (`270` §5). The live arc is
-**round 27, the consolidation round** (`plans/270`): block-settle (design-pass) →
-block-rebuild (one conductor, the whole reimplementation block) → block-context
-(wrapper/payload/read-value) → block-stdlib (stdlib-authoring + yardstick-measurement)
-→ field-trial revival → multi-host resumption.
+**The state in one paragraph:** round 24 CLOSED by reshuffle (`notes/24U` §1; the
+reshuffle map is its §4); the field trial (né r25) and multi-host (né r26) are TABLED
+with revival conditions (`270` §5). The live arc is **round 27, the consolidation
+round** — mission + block order at `plans/270` §0: block-settle → block-rebuild →
+block-context → block-stdlib → field-trial revival → multi-host resumption. NOW:
+block-settle CLOSED (`plans/271` = the rulings ledger + task map); wrapper/context
+transport RESOLVED (`plans/27C`); the 270-era adversarial crosscheck adjudicated, no
+kill (`notes/279f` — read its §1 first).
 
-**⚠ IMMEDIATE next activity (2026-07-13, post-crosscheck): the `279f` ask-list,
-then block-rebuild dispatch.** The 270-era adversarial crosscheck RAN (four lanes —
-Fable-adversarial + Sol-neutral + DeepSeek-neutral/adversarial; reports on branch
-`ai/spike3-r23-crosscheck-reports` @ `5ce1757`; the sol-adversarial lane failed to
-produce) and was adjudicated at **`notes/279f`** (Fable adjudicator, max-skepticism;
-read its §1 first). Verdict: **no kill; dispatch block-rebuild after the `279f` §6
-ask-list acks.** Key outcomes: the `275` ratifications (three-regimes ·
-backing-inheritance · transport chain) are **REFUSED as posed** — the
-backing-completeness gap (279b-fd1/279a-A2) routes to block-context
-implementation-planning; `277` §3/§5/§6 and `275` §6 carry in-place spec
-amendments (each annotated, awaiting ack — `279f` §4); the `279f` §5 brief riders
-JOIN the dispatch package below; task-14 is DISSOLVED (2026-07-16:
-`rul-only-oracle-bytes-ship` RATIFIED by explicit typed ack — law + composed-predict
-repair + build riders; durable record `271`; `279f:ask-promote-task-14` moot).
-**Remaining dispatch-gating human act, exactly one:** `279f:ask-amendment-acks`
-(`279f:ask-pipefail-emit-never` ACKED 2026-07-16 with four typed clauses →
-`276:rul-pipefail-emit-never`, `278` annotated; everything else in the §6
-ask-list is discharged, moot, or non-blocking). Block-settle remains CLOSED as recorded 2026-07-12
-(grammar gate `270:adj-entity-algebra` discharged: attached `#` · the
-`:` / `:!` / `:?` sigil family · POSIX-in-spirit charsets · brace-alternation ·
-`invariant:<axis>`).
+**⚠ Next activity — exactly one dispatch-gating human act:** `279f:ask-amendment-acks`
+(the five §4 in-place spec amendments close one typed ack at a time; the live authority
+on which are closed = the amendment annotations inside `notes/277` + `275` §6, and
+`279f` §6 itself — partially acked as of 2026-07-16; never trust a count written here).
+Everything else in the `279f` §6 ask-list is discharged, moot, or non-blocking — the
+trail is recorded as inline brackets in §6 itself; the task-14 dissolution + the full
+ratification record live at `271:rul-only-oracle-bytes-ship`. Then dispatch
+block-rebuild (package below).
 
-**⚠ Transport RESOLVED (2026-07-16; **`plans/27C`** is THE kept-current spec —
-rewritten same-day to plan-tier after the flag/invariance rulings were synthesized
-in).** The 27A dead-end was refuted (`notes/27B`, historical) and the human ruled
-**context-entry probing**: wrapped sites answered by measurement in the site's denoted
-context — reuse-never-acquire, ternary escalation dial (default: shifts only for
-tolerance-vouched oracle functions), per-function `tolerates:` bare-mark vouch,
-wrapper-oracle entry forms, only-oracle-bytes (RATIFIED; argv-flows-bytes-do-not).
-Cross-dimension consumption WITHOUT entry survives as the fallback lane: engine-
-warranted carried-by rows (structural, unflagged) or the kind-owner's typed invariance
-line × `--risk-faultless-skips` (the ONE existing trust flag, absorbing this form by
-outcome-class per `271:rul-flag-is-razor-residue`; no third flag exists). Silence
-walls; nothing travels absent the flag. `279f:ask-transport-disposition` DISCHARGED
-(measure-in-place); `ask-flag-boundary-recut` discharged (the dial + the razor are the
-recut). Block-context consumes `plans/27C` whole; its §10 separates ruled from
-STRAWMAN; `27C:law-perfect-overlap` wants promotion to the standing-rulings surface
-(human act). Trail annotated: `27A` (superseded-in-part; §5 kind-entry corrected),
-`27B` (superseded as design), `24S` imp-1 + Stage-D, `273` §6, ANALYZER-NEEDS
-an-privilege-fact. KNOBS candidates reported-not-minted (`27C` §9/§10). The human
-grades this the last big design blocker before implementation.
+**Transport RESOLVED (2026-07-16):** **`plans/27C`** is THE kept-current spec —
+context-entry probing (a wrapped site is answered by measurement in its *denoted*
+context; reuse-never-acquire; the ternary escalation dial × the per-function
+`tolerates:` vouch; fallback lane without entry = engine-warranted carried-by rows or
+the kind-owner's invariance line × `--risk-faultless-skips`). The `275` §6 transport
+chain stays NOT-RATIFIED (refused as posed, `279f` §3; the answer is
+measure-in-context, never a completeness claim). Trail annotated: `27A`
+(superseded-in-part — still the transport-lane wall inventory) · `27B` (superseded as
+design) · `24S` imp-1 + Stage-D · `273` §6 · ANALYZER-NEEDS an-privilege-fact.
+Block-context consumes `27C` whole; its §10 separates ruled from STRAWMAN. One pending
+human act: `27C:law-perfect-overlap` wants promotion to the standing-rulings surface.
+The human grades this the last big design blocker before implementation.
 
-**Transport descent (2026-07-13, Fable rubber-duck): durable at `notes/27A`.**
-Historical: the `279f` §3 question's full descent — banked walls + refuted-list + the
-user-axis fork, all now re-read through `27C` (the walls remain law for the demoted
-transport lane; the fork dissolved). fs/netns default-walls stay human-acked as
-real-world truth *for that lane*.
+**Block-settle CLOSED (2026-07-12):** all 15 task-map items dispositioned —
+**`plans/271`** carries the rulings + the task map; the arc durables: `notes/272`
+(address-derived topology) · `273` (the wrapper surface) · `274` (eval'er + reentry
+token) · `275` (value-predictions) · `276` (the language sitting; the kWHICHSH weld) ·
+`277` (the entity algebra + mark grammar; §8 delta ledger) · `278` (dorc-lang v0.1
+reference, DRAFT). Two standing riders gate future work: the corpus-respell rename
+rider (`271:rul-at-most-family-names` · `271:rul-touches-becomes-disturbs`) and
+netns-ahead-of-fs-view (`271:rul-networking-unpunt`).
 
-**Block-settle COMPLETE-except-checkpoint (2026-07-12):** all 15 task-map items
-dispositioned (`plans/271` task map: 1–8 + 10 closed · 9 closed-UNPINNED · 12's
-authoring batch complete · 11/13 struck · 14 deferred-to-Opus post-Fable, gating
-block-context lanes only, NEVER block-rebuild · 15 parked to stdlib quality-bar).
-New durables: **`notes/277`** (the entity-algebra design note — THE spec for
-entity-algebra-rebuild and the mark grammar for corpus-respell; its §8 is the delta
-ledger) · **`notes/278`** (dorc-lang v0.1 one-page reference, DRAFT,
-conductor-reviewed) · `notes/276` closed its carve (kWHICHSH WELDED to minimum-lcd
-as the posh∩dash executable floor, KNOBS annotated + human-committed; `unsafe` =
-bare-sh; verdicts-never-stable; trap gentle-acked recognized-but-unmodeled). The six
-`24P` specimens are amended to the `277` grammar (hash-selector;
-`disturbs`/`disturbance_reaches_only` renames; the `state_stored_only_in` +
-`invariant:user` exhibit; pipe-guard re-XFAIL'd; `24P` §11 records it). The
-corpus-respell rename rider stands (`271:rul-at-most-family-names`); netns stays
-un-punted ahead of fs-view (`271:rul-networking-unpunt`); worked strawmen at
-`notes/27x-strawmen-topology/`.
+**⚠ NAMING DISCIPLINE (human-ruled, HIGH priority, binds every brief):** hyphenated
+full-word slugs; outside-document references as `docID:slug`; subscript old labels once
+("né P5"). Full text `270` §1 — propagate verbatim into subagent briefs.
 
-**⚠ NAMING DISCIPLINE (human-ruled 2026-07-10, HIGH priority, binds every brief):**
-hyphenated full-word slugs; outside-document references as `docID:slug`
-(round-ID dedupes into the prefix — `24C:rul-selector-pre-stdlib`); subscript old
-labels once ("né P5"); progressive de-naming-debt, judgment-bound. Full text:
-`270` §1. Propagate verbatim into subagent briefs.
+**Read-first on arrival:** root docs AT HEAD → `spike/CLAUDE.md` (rewritten 2026-07-16
+— current-truth steering law; all rulings blocks) → `notes/23O` (settled law +
+history) → **`notes/24U`** (the round-24 close-out + the reshuffle map) →
+**`plans/270`** (the charter — blocks, adjudications, fences) → `notes/24C` INCLUDING
+its full accreted tail (build evidence + residue) → `notes/24P` (the respell
+spec-by-example; §8/§9 riders + bless flow) → **the block-settle results: `plans/271` ·
+`notes/272`–`278`** (list above) → **`plans/27C`** (THE transport spec) → per-task:
+`plans/24S`/`24T` (proposal-tier keystones — read `273` §0 before trusting any `24S`
+mechanism) · `notes/24M` (language rulings) · `plans/262` §2 (the wire contract
+block-rebuild partially imports) · `notes/219` (the capture lane behind
+adj-capture-claim) · `plans/24R` (secondary positions; the why-run impossibility
+ledger).
 
-**Read-first on arrival:** root docs AT HEAD → `spike/CLAUDE.md` (all rulings blocks) →
-`notes/23O` (settled law + history) → **`notes/24U`** (the round-24 close-out + the
-reshuffle map) → **`plans/270`** (the charter — blocks, adjudications, fences) →
-`notes/24C` INCLUDING its full accreted tail (build evidence + residue) → `notes/24P`
-(the respell spec-by-example; §8/§9 riders + bless flow) → **the block-settle results:
-`plans/271` (rulings ledger) · `notes/272` (address-derived topology) · `notes/273`
-(the wrapper surface: predict merge + `cmd__lend_map()` — partially supersedes `24S`
-§2b/§6b; read 273 §0 before trusting any 24S mechanism) · `notes/274` (eval'er +
-reentry token) · `notes/275` (value-predictions) · `notes/276` (the language sitting
-+ kWHICHSH weld) · `notes/277` (the entity-algebra design note + its §8 delta
-ledger) · `notes/278` (the dorc-lang v0.1 reference, DRAFT)** → per-task: `plans/24S`/`24T`
-(the wrapper/payload keystones — proposal-tier, prime adversarial-analysis targets) ·
-`notes/24M` (language rulings) · `plans/262` §2 (the wire contract block-rebuild
-partially imports) · `notes/219` (the capture lane behind adj-capture-claim) ·
-`plans/24R` (secondary positions; the why-run impossibility ledger).
-
-**Where the build stands (tip `9373188`, conductor-verified 2026-07-12):** e2e
-**all 126 pass** — 121 live + FIVE declared-XFAIL respell specimens (stale-old
-goldens BY DESIGN; pipe-guard re-joined the XFAIL set when `#matched` un-parsed at
-HEAD; implementor flow unchanged, `24P` §9b: delete-XFAIL → BLESS on a verified
-binary → conductor inspects against `24P` §4-as-amended-by-§11). The `240` ladder
-Stages 1–5 LANDED + polish + pipe lift + wave-1 (evidence: `24C`).
-`dorc_flags_selftest` anchors survive-multiwall. Working tree carries only the
-human's own uncommitted trim to `notes/278` §1 — leave it.
+**Where the build stands:** tip-state facts live in git (`git log ai/spike3-r23`) and
+the e2e suite. Standing BY DESIGN: five declared-XFAIL respell specimens (stale-old
+goldens; `24P` §11); implementor flow — land the respell → delete the XFAILs → BLESS on
+a verified binary → conductor inspects the diff (never bless-first). The `240` ladder
+Stages 1–5 + polish + pipe lift + wave-1 are LANDED (evidence: `24C`).
 
 **Block-rebuild dispatch package (the block conductor assembles its briefs from):**
 corpus-respell = `24P` §2+§3 (as amended by §11; the dissolved unquoted-dotted-entity
@@ -126,80 +85,54 @@ corner drops per `277` §4a) + §5 d1–d9 + §7–§9 riders + the `277` §4 gr
 rename rider (`271:rul-touches-becomes-disturbs` · `271:rul-at-most-family-names`) +
 the marker stamp (`24C:rul24-marker-in-churn`) + the `24C` deferral entries + the
 order-insensitive record-compare rider (`262` §7) · bless-checkpoint-one ·
-typeless-floor (+ the effect-check rider,
-`271:rul-effect-check-home-typeless-floor`) · entity-algebra-rebuild per `277`
-§§1–3 + seams §5 + fences §6 · value-recipe-reshape
+typeless-floor (+ the effect-check rider, `271:rul-effect-check-home-typeless-floor`) ·
+entity-algebra-rebuild per `277` §§1–3 + seams §5 + fences §6 · value-recipe-reshape
 (+ `271:rider-value-recipe-reshape-capture-seams` + backing-SETS + the OutClaim
 rename) · wire-records-v1-import (`262` §2 minimum) · e2e-degraduation ·
-bless-checkpoint-two. Standing fences per `270` §2 ride every brief;
+bless-checkpoint-two. The `279f` §5 brief riders JOINED the package (per-lane pins:
+entity-algebra DST cases · wire-record byte-fidelity · the value-recipe foreclosure
+walk · read-value gates · the SIGPIPE-flap class · the typeless-floor compile-pin ·
+stdlib quality-bar adds). Standing fences per `270` §2 ride every brief;
 `271:rul-posix-in-spirit-defaults` is a standing conductor-default for grammar
 minutiae.
 
-**⚠ DEBT FLAG (2026-07-11, block-settle task-5 audit):** the landed `24J`
-connected-probe mechanism ships RAW book bytes at probe time — confirmed
-standing-law debt (contradicts the structural-vouch ruling, the round-23
-strip-predict correction, and inv-one-observable). Corrections minted in place
-(`24J` header · `24C` §pipe-guard); repair drafted `271:rul-only-oracle-bytes-ship`
-(compose predict invocations; stream-faithful delegation bodies), candidate home =
-`270:block-rebuild`'s probe-emission touch-point. Any block-rebuild conductor MUST
-read the `24J` correction before touching probe emission. **Ratification DEFERRED
-by the human (2026-07-11): the underlying structural-vouch hard law gets a
-fresh-session triple-check first (conductor task #14) — do not treat the repair
-as ruled.** **[RESOLVED 2026-07-16: RATIFIED — explicit typed ack after a fresh
-in-context re-derivation (the human: "triple-check" was never meant adversarial;
-`a__predict -f -f | b__predict` was always the intended design). Task-14
-DISSOLVED. The repair IS ruled; ruling record + build riders (per-channel
-coverage · stream-fidelity · capture-real-bytes · argv-flows-bytes-do-not) at
-`271:rul-only-oracle-bytes-ship`. The MUST-read of the `24J` correction before
-touching probe emission stands.]**
+**Probe-emission law debt (the `24J` raw-ship):** RESOLVED as law — RATIFIED 2026-07-16
+(`271:rul-only-oracle-bytes-ship`: composed predicts + build riders; task-14
+DISSOLVED); the repair lands at block-rebuild's probe-emission touch-point. Any
+block-rebuild conductor MUST read the `24J` header correction before touching probe
+emission. Forward-annotations on `24J`/`24C` ride a parallel supersession pass — cite
+`271` as the authority regardless.
 
-**Branch map:** `ai/spike3-r23` = the live lineage (r24 history + round-27 forward).
-`ai/spike3-r25` = field-trial tooling (P1/P3/P6 + the salvaged observer harness;
-dormant; owed-on-revival items banked in `24U` §6 / `270` §5; any Vultr work re-reads
-`252` §5.1's guardrails first — tag-scoped destroy only). `ai/spike3-r26` = plans-only
-(ZERO build commits, verified at close; resumes post-trial by rebase; its
-merge-disjointness contract is dormant until then — round-27 golden churn needs no
-r26 flagging, but the `262` §7 extractables ride block-rebuild).
+**Corpus hygiene (2026-07-16):** spike steering docs rewritten current-truth
+(`spike/CLAUDE.md` + the seven crate `CLAUDE.md`s); supersession annotations landing on
+`270`/`24S`/`24T`/`24R`/`24L`/`24J`/`24C` via a parallel pass; `Research/README.md` +
+this file refreshed (branches `ai/spike3-r23-corpus-refresh` + siblings).
 
-**Conduct fences (standing; bind any successor):** never edit
-README/DESIGN/IMPLEMENTATION/USER_STORY/TODO/AGENTS/root-CLAUDE (human-only) · KNOBS
-carve-out: conductor MAY edit, leaves edits UNCOMMITTED for human ack · the §1 naming
-discipline (`270` §1) · builder briefs touching tests/fixtures carry
-rider-comment-budget (`24P` §8: rip-don't-update + the hard byte budget + counting
-command) · HARD QUARANTINE on `quarantine-DO-NOT-READ/` + `Research/corpora/` · check
-the tree before minting note/plan IDs · word-slugs in full words · silence ≠ ack (only
+**Branch map:** `ai/spike3-r23` = the live lineage (r24 history + round-27 forward) ·
+`ai/spike3-r25` = field-trial tooling, dormant (owed-on-revival banked `24U` §6 / `270`
+§5; any Vultr work re-reads `252` §5.1's guardrails first) · `ai/spike3-r26` =
+plans-only, zero build commits; resumes post-trial by rebase (`270` §5; the `262` §7
+extractables ride block-rebuild).
+
+**Conduct fences (standing; bind any successor):** the repo-durable conduct law now
+lives in `spike/CLAUDE.md` (verified 2026-07-16 — Boundaries: the human-doc no-edit
+list, the KNOBS edit-uncommitted carve-out, the quarantine, note-ID minting;
+Spawning-subagents: worktree step-zero/0.5/one + the sonnet no-subagent clamp + the
+comment-budget rider; Build/test/run: the four gates, foreground e2e, BLESS-exclusive)
+— read it there, don't re-derive it here. Fences living only here: silence ≠ ack (only
 what the human TYPED counts; keep an ack-ledger) · crosscheck adjudication under
 maximum skepticism; adversarial framing = exclusions-not-inclusions · never
 AskUserQuestion (ask in prose); dump the numbered task list on changes · Fable
-conducts, Opus codes; sonnet no-subagent clamp propagates one tier down ·
-code-modifying agents → isolated worktrees: step-zero `git switch -C <worktree-branch>
-ai/spike3-r23` + tip-hash verify + `pwd` verify, step-0.5 `mise trust`, step-ONE an
-EXPLICIT root-docs read before task material · builders: granular `(AI …)` commits,
-never push, four gates before every commit, final e2e FOREGROUND with generous timeout,
-force `cargo build --workspace` before trusting e2e, BLESS exclusive + diff-inspected ·
-conductor: tip-gate every ref-move IN THE COMMAND; verify merges by own hand
-(never-vouch) · the deferred-work ledger lives in `23O` §5; residue lives in `24C`.
+conducts, Opus codes · conductor: tip-gate every ref-move IN THE COMMAND; verify
+merges by own hand (never-vouch) · the deferred-work ledger lives in `23O` §5; residue
+lives in `24C`.
 
 ---
 
 ## Round 24 (2026-07-03 → 2026-07-10 — CLOSED; full accounting `notes/24U`)
 
-The empirical build round that landed the elide-past-a-running-wall machine (ladder
-Stages 1–5 + guard tier + derived footprints + aliasing closure, `24C`), was
-intercepted by the language arc (`24M` rulings; respell staged as spec-by-example,
-`24P`), and closed when the late design keystones (`24R`/`24S`/`24T` + the r26 wire
-adjudication) reshaped the remaining work into `plans/270`. Everything not completed
-moved — the reshuffle map is `24U` §4. Still-live one-liners from the 2026-07-07
-settled-list not homed elsewhere: the dotfiles acceptance-day stays TABLED; the
-first-wall hint's missing e2e needle stays ACCEPTED-as-residue (`24C`).
-
-## Round 25 (field trial — TABLED; revival = `270` §5)
-
-Protocol + guardrails + pre-registered questions stand unchanged (`252`; adjudication
-`254`; validated book + dry-run `255`). Trial tooling lives on `ai/spike3-r25`.
-Owed-on-revival banked in `24U` §6. The trial strengthens under round-27: its two
-permanent walls (`su - postgres -c`, the `$(hostname)` host-guard) become in-scope
-machinery (`270:block-context`).
+One residue with no durable home yet (kept under the header law): the dotfiles
+acceptance-day, from the 2026-07-07 settled-list, stays TABLED.
 
 ## Ancient (pre-round-24)
 
