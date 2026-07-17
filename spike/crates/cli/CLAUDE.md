@@ -1,46 +1,64 @@
 # spike/crates/cli — CLAUDE.md
 
-The round-trip: book + oracles → read-only probe → results → eliding apply. Read `spike/CLAUDE.md` and `Research/plans/191-spike2-keystone-charter.md`.
+Role: the round-trip driver (book + oracles → read-only probe → results → eliding
+apply) and the e2e acceptance harness's contract. The ONE place determinism is
+relaxed — real I/O at the edges only. Read `spike/CLAUDE.md` first. Registry
+discipline: one rule per bullet, slugged; append to the matching section.
 
-This is the one place determinism is relaxed (real I/O); `inv-determinism` exempts the `cli` edge *only*. Keep the I/O in `run()`/`main` and the pipeline (`parse → cfg::build → effect::classify → plan::{compile_probe, build_plan}`) a total `Carrier<T>` function of its inputs — don't let a clock/RNG/env-read leak inward to "help". Diagnostics go to stderr (`report`); stdout stays exactly probe-then-apply, or the e2e capture (and any real downstream pipe) breaks.
+## Law
 
-## The ap-2 acceptance harness — current state (round-20)
+- **io-at-edges-only** — keep I/O in `run()`/`main`; the pipeline
+  (`parse → cfg → classify → compile_probe/build_plan`) stays a total
+  `Carrier<T>` function of its inputs; never let a clock/RNG/env-read leak
+  inward "to help".
+- **stdout-contract** — stdout is EXACTLY probe-then-apply (split on shebangs);
+  diagnostics go to stderr only — anything else breaks the e2e capture and any
+  real downstream pipe.
+- **probe-ships-oracle-bytes-only** — the compiled probe is synthesized
+  scaffolding + oracle bodies, never book contents (it never inherits the
+  book's `trap`s). ⚠ HEAD DEBT: the landed `24J` pipe-lift raw-ships book
+  bytes — standing-law debt; read `24J`'s header correction and
+  `271:rul-only-oracle-bytes-ship` (+ its build riders) before touching probe
+  emission. Never imitate the landed shape.
+- **results-fold-to-run** — a missing or unparseable fact folds to
+  `Verdict::Unknown` ⇒ run (`kFAIL-perform`); keep that default, it is
+  load-bearing. Never silently drop a selector on parse and widen a verdict to
+  the whole entity — that is a wrong-elision under apply's fail-direction.
+- **speculate-and-intercept** — the probe model resolves probe-gated branches by
+  running the read-only check for real (oracles intercept; not Ansible
+  check-mode blindness).
 
-The harness lives at `spike/e2e/run.sh` (sh-mechanized, not a Rust/cargo harness — `16P
-T16`) and carries, per case: a **`dash -n` gate on BOTH rendered artifacts** (probe and
-apply — the load-bearing `ap-2` runnability gate; the historical trap was a text-only
-golden-diff that shipped a non-runnable empty `then`-clause green, twice); an
-**exec-under-mocks gate** for cases with a `mocks/` dir (the rendered apply runs under
-`PATH=mocks-only` inert shims; the sorted run-set is asserted against `expected.ran`,
-which must EXIST for a mocks case — missing ⇒ loud fail, never empty-want); a
-**crash/empty guard** (dorc's exit status is captured un-piped; rc≠0 or empty output
-hard-fails the case before the xfail lens and before bless — a dead engine is never
-green and never blesses); the **content golden-diff** as a secondary check (catches
-wrong-elision *content*, to which `-n` is blind); and the **XFAIL/XPASS** pin
-machinery (an XFAIL case asserts the safe behavior of a known defect; a surprise pass
-is a loud XPASS-to-promote). The cli's contract with all of this: stdout is EXACTLY
-probe-then-apply (split on `#!/bin/sh` shebangs), diagnostics to stderr only.
+## The acceptance harness (`spike/e2e/run.sh`; sh-mechanized; this contract is law)
 
-Build: from `spike/`, `mise exec -- cargo build -p dorc-cli`, then `sh e2e/run.sh`
-(auto-locates `target/{debug,release}/dorc[.exe]`, or take `DORC=…`). `BLESS=1`
-regenerates goldens; the runnability + crash gates run before bless, but bless still
-cannot prove an elision RIGHT — review blessed diffs by eye, and never bless while any
-engine behavior is in doubt.
+- **per-case gates** — `dash -n` on BOTH rendered artifacts (the load-bearing
+  runnability gate; the historical trap was a text-only golden diff shipping a
+  non-runnable empty `then`-clause green, twice) · exec-under-mocks for cases
+  with a `mocks/` dir (sorted run-set asserted against `expected.ran`, which
+  MUST exist — missing ⇒ loud fail, never empty-want) · crash/empty guard
+  (dorc rc≠0 or empty output hard-fails before the xfail lens and before
+  bless) · the content golden-diff as a secondary check (catches wrong-elision
+  CONTENT, to which `-n` is blind) · XFAIL/XPASS pin machinery (XFAIL is
+  golden-text-BLIND by design — structural gates only; a surprise pass is a
+  loud XPASS-to-promote).
+- **bless-never-first** — `BLESS=1` regenerates goldens; gates run before bless,
+  but bless cannot prove an elision RIGHT: fresh verified binary,
+  orchestrator-only, diff inspected case-by-case (BLESS exclusivity —
+  `spike/CLAUDE.md`).
+- **count-drifts** — the case-count drifts; count the dirs, never trust a
+  literal.
 
-## The probe-projection edge — the second phased caller (`F-FW3`)
+## Direction
 
-The probe today emits the oracle body with `$1` **unbound** — illustrative, no per-entity binding, and there is no separate *probe* plan-builder yet (`16P T16`/`T11`, `q1-probe-projection`). When that gets built, `cli` is where it surfaces: the probe-plan-builder is the **only** place `inv-superposition` ever gets a real *second* phased caller (`17O F-FW3`) — until now `build_plan` (apply) has stood in alone as if phase-agnostic. Building a real `Phase::Probe` caller here is the load-test of "engine emits, caller collapses": if `May`/`Must` superposition survives two real phased callers it earns its locks; if it breaks, they were premature (`inv-superposition`, `inv-kfail` — probe withholds on ⊤, apply performs on ⊤, never traded).
-
-The probe model `cli` drives is **speculate-and-intercept** (`17O R2-PROBEGATE`), not Ansible check-mode: oracles intercept (an `id__predict` ships and replaces `id`), and a probe-gated branch is resolved by *running the read-only probe for real*. The probe is compiled from oracle bodies + minimal CFG fragments, **never the book's contents** — so it never inherits the book's ambient `trap`s. (`hostsim` answers it; `cli` just compiles + ships + reads back.)
-
-## The stdin re-key gotcha (entity-algebra)
-
-`parse_results` keys verdicts by a flat `kind:entity` string (`fact_label`), and a missing fact folds to `Verdict::Unknown ⇒ run` (`kFAIL-perform` — keep that default, it's load-bearing). The keystone re-key (`an-entity-shape`, `ap-1`) makes verdicts **per-selector** (`package:nginx#installed` vs `#version`), not one bit per kind/entity — so this stdin format and `fact_label` move *with* the re-key. ~SUSPECT the line grammar will need a selector field; don't quietly drop a selector on parse and silently widen a verdict to the whole entity (that's a wrong-elision under apply's `kFAIL`).
-
-## Scope boundary (don't build toward these)
-
-The real apply-executor over time, transport/`kCOMMS` (`plans/142`), and multi-host fan-in are **out of spike scope** (`ch-scope`, charter §6). `cli` *compiles* a probe and an apply and runs neither; the host's answers arrive on stdin (a stand-in for running the probe remotely). The only executor extension in scope is the thin backward / `dorc bump` apply-3 skeleton (`ch-scope`, `an-apply-3`) — and that mostly lands in `plan`; `cli` just needs a flag/path to drive it. Keep the binary a thin driver: arg-parse, file-read, call the kernel, print. Resist absorbing pipeline logic.
-
-## Tension to surface, not resolve
-
-`ap-2`-runnability (`sh -n`) and the existing **text golden-diff** are in mild tension, and which is canonical isn't obviously settled. `sh -n` proves the artifact *parses* but not that it elided the *right* lines (a `render_apply` that comments out *everything* is `sh -n`-clean and useless); the text golden catches wrong-elision content but is structurally blind to non-runnable output (the `ap-2` defect). --WONDER whether the honest harness needs *both* — a runnability gate (catches `ap-2`) plus a content assertion that isn't a brittle full-text diff (e.g. assert specific leaves are/aren't commented, or execute the apply against a fixture and check observable effects per `an-render-executability-check`). Flagging rather than picking: the charter mandates the runnability gate (`ap-2`), but silently deleting the content check to get there would re-open the wrong-elision blind spot from the other side.
+- **wire-records** — the ad-hoc stdin results format is replaced by the `262`
+  §2 records lane at block-rebuild: framing header/sentinel · per-record
+  terminal token · coordinate fields last-to-token · partial deriv-family ⇒
+  wall-total · value stdout carries arbitrary single-line bytes (embedded
+  spaces survive round-trip — `279f` rider).
+- **probe-projection-second-caller** — the probe plan-builder is the only real
+  SECOND phased caller of `inv-superposition` (the load-test of "engine emits,
+  caller collapses"): build it as a genuine `Phase::Probe` caller; never bake a
+  posture into the kernel to make it easier.
+- **scope-boundary** — the real apply-executor, transport (`KNOBS:kCOMMS`), and
+  multi-host fan-in stay out of spike scope. Keep the binary a thin driver:
+  arg-parse, file-read, call the kernel, print. Resist absorbing pipeline
+  logic.
