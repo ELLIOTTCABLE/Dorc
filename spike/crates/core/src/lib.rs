@@ -175,6 +175,12 @@ pub use claim::{
     VouchAndRung, VouchTier,
 };
 
+pub mod coord;
+pub use coord::{
+    Context, Coord, Dialect, EntityResolution, Relation, compare, selector_covers,
+    selector_identifies,
+};
+
 /// `result × accumulated diagnostics` — the type every pipeline stage returns
 /// (research chord `dn-7` / `ch-carrier`). A writer-monad shape: `map` transforms
 /// the value, `and_then` sequences a stage while concatenating its diagnostics.
