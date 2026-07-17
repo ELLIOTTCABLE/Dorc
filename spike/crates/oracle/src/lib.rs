@@ -249,7 +249,11 @@ pub fn lift(interner: &mut Interner, oracle_sources: &[&str]) -> Carrier<KindInd
             let Some(c) = checks.get(provider) else {
                 continue;
             };
-            let effects = predict::derive_predict(c);
+            let (effects, diags) = predict::derive_predict(c);
+            // A derive-side diagnostic (a brace-alternation on a verdict/observe mark, `277` §4c)
+            // is surfaced here — the effect-map lift IS reported (cli `report_at`); this is NOT a
+            // check-lift/parse diag (those come from the separate `lift_predicts` pass).
+            out.diags.extend(diags);
             for e in effects {
                 let verb = match e.verb {
                     Some(v) => interner.intern(&v),

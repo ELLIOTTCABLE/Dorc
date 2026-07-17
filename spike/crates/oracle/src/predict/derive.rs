@@ -22,6 +22,8 @@
 //! arms, its annotation shape, its mark punctuation) — never the meaning of a kind /
 //! entity / selector string. Those stay opaque coordination handles.
 
+use dorc_core::{DiagCode, Diagnostic, Span};
+
 use super::ast::{MarkKind, MarkTarget, Pattern, Predict, Stmt, Word};
 
 /// How a reached claim maps the probe command's rc onto the property's OPAQUE boolean
@@ -74,16 +76,22 @@ pub struct DerivedEffect {
 /// emits nothing, the safe direction). NB the converged-vouch is no longer a mark
 /// (rul24-vouch-is-verdict-authoring, 24A §1c): it is an authored `is_converged()`/
 /// `is_diverged()` verdict function, unread by this derivation.
+/// A brace-alternation `#{a,b}` on a VERDICT/OBSERVE mark is inert (`277` §4c single-cell law) —
+/// a loud diagnostic, not a silent drop (`27D` disposition-brace-verdict-silent, 24Kc F2 the
+/// silent-inert authored-construct class; `inv-top-reject`).
+const BRACE_VERDICT_INERT: DiagCode = DiagCode("mark-brace-verdict-single-cell");
+
 #[must_use]
-pub fn derive_predict(check: &Predict) -> Vec<DerivedEffect> {
+pub fn derive_predict(check: &Predict) -> (Vec<DerivedEffect>, Vec<Diagnostic>) {
     let mut effects = Vec::new();
+    let mut diags = Vec::new();
     let ctx = Ctx {
         verb: None,
         kind: None,
         verb_sym: check.verb_sym,
     };
-    walk(&check.body, ctx, &mut effects);
-    effects
+    walk(&check.body, ctx, &mut effects, &mut diags);
+    (effects, diags)
 }
 
 /// The path-local accumulation context. Passed BY VALUE into every recursion, so a
@@ -101,7 +109,12 @@ struct Ctx {
     verb_sym: dorc_core::Symbol,
 }
 
-fn walk(body: &[Stmt], mut ctx: Ctx, effects: &mut Vec<DerivedEffect>) {
+fn walk(
+    body: &[Stmt],
+    mut ctx: Ctx,
+    effects: &mut Vec<DerivedEffect>,
+    diags: &mut Vec<Diagnostic>,
+) {
     for stmt in body {
         match stmt {
             // An inline annotation names the kind for everything reached after it on
@@ -111,7 +124,7 @@ fn walk(body: &[Stmt], mut ctx: Ctx, effects: &mut Vec<DerivedEffect>) {
             // A probe command carrying a trailing effect mark emits one cell.
             Stmt::Command(c) => {
                 if let Some(mark) = &c.mark {
-                    push_effect(&ctx, mark.kind, &mark.target, effects);
+                    push_effect(&ctx, mark.kind, &mark.target, mark.span, effects, diags);
                 }
             }
             // `case $verb`: recurse per literal-pattern arm, binding the verb. A `case`
@@ -127,11 +140,11 @@ fn walk(body: &[Stmt], mut ctx: Ctx, effects: &mut Vec<DerivedEffect>) {
                             if let Pattern::Literal(v) = pat {
                                 let mut arm_ctx = ctx.clone();
                                 arm_ctx.verb = Some(v.clone());
-                                walk(&arm.body, arm_ctx, effects);
+                                walk(&arm.body, arm_ctx, effects, diags);
                             }
                         }
                     } else {
-                        walk(&arm.body, ctx.clone(), effects);
+                        walk(&arm.body, ctx.clone(), effects, diags);
                     }
                 }
             }
@@ -140,10 +153,10 @@ fn walk(body: &[Stmt], mut ctx: Ctx, effects: &mut Vec<DerivedEffect>) {
                 else_body,
                 ..
             } => {
-                walk(then_body, ctx.clone(), effects);
-                walk(else_body, ctx.clone(), effects);
+                walk(then_body, ctx.clone(), effects, diags);
+                walk(else_body, ctx.clone(), effects, diags);
             }
-            Stmt::While { body, .. } => walk(body, ctx.clone(), effects),
+            Stmt::While { body, .. } => walk(body, ctx.clone(), effects, diags),
             // Assign/Shift key no cell.
             Stmt::Assign { .. } | Stmt::Shift { .. } => {}
         }
@@ -153,7 +166,14 @@ fn walk(body: &[Stmt], mut ctx: Ctx, effects: &mut Vec<DerivedEffect>) {
 /// Emit an effect from a trailing mark, if it is an ESTABLISH/OBSERVE with a resolvable
 /// kind + selector. A mark without a `.prop` (a kind-only POISON) or on a path with no
 /// annotation-kind yet emits nothing (nothing to key — the safe direction).
-fn push_effect(ctx: &Ctx, kind: MarkKind, target: &MarkTarget, effects: &mut Vec<DerivedEffect>) {
+fn push_effect(
+    ctx: &Ctx,
+    kind: MarkKind,
+    target: &MarkTarget,
+    span: Span,
+    effects: &mut Vec<DerivedEffect>,
+    diags: &mut Vec<Diagnostic>,
+) {
     let claim = match kind {
         MarkKind::Establish => ValueClaim::Establish,
         MarkKind::EstablishInverted => ValueClaim::EstablishInverted,
@@ -163,11 +183,19 @@ fn push_effect(ctx: &Ctx, kind: MarkKind, target: &MarkTarget, effects: &mut Vec
         return;
     };
     // `277` §4c single-cell law: a verdict/observe mark asserts EXACTLY ONE cell, so a brace-
-    // alternation `#{a,b}` is claim-emission-only and mints NO cell here (the safe direction — the
-    // arm declines ⇒ run). The parser accepts the brace SHAPE role-agnostically (`:` serves both
-    // verdict and disturbs); this is the role-aware rejection. rider-brace-alternation-unexpanded:
-    // the LOUD diagnostic form is deferred (derive_predict is total/diagnostic-free by design).
+    // alternation `#{a,b}` is claim-emission-only and mints NO cell here. This derivation walks
+    // ONLY verdict/observe (`:`/`:!`/`:?`) function bodies, so any brace here IS on a single-cell
+    // mark — a role-aware rejection the parser (which accepts the brace SHAPE role-agnostically,
+    // `:` serving both verdict and disturbs) cannot make. LOUD, not a silent inert drop (`27D`
+    // disposition-brace-verdict-silent, 24Kc F2; `inv-top-reject`).
     if crate::predict::brace_tokens(&selector).is_some() {
+        diags.push(Diagnostic::warning(
+            BRACE_VERDICT_INERT,
+            Some(span),
+            "verdict and observe marks are single-cell; brace alternation `#{a,b}` is \
+             claim-emission-only (`277` §4c) — this mark mints NO cell and the site will run. \
+             Split it into one marked probe line per cell.",
+        ));
         return;
     }
     effects.push(DerivedEffect {
@@ -211,7 +239,7 @@ mod tests {
         assert!(cs.diags.is_empty(), "dialect lifts clean: {:?}", cs.diags);
         let sym = i.intern(provider);
         let check = cs.value.get(sym).expect("a check for the provider");
-        let effects = derive_predict(check);
+        let (effects, _diags) = derive_predict(check);
         effects
             .into_iter()
             .map(|e| {
@@ -282,6 +310,34 @@ systemctl__predict() {
                 ("disable", "service", "enabled", "inverted"),
             ]),
         );
+    }
+
+    #[test]
+    fn brace_alternation_on_verdict_mark_is_loud_not_silent() {
+        // `277` §4c: a brace-alternation `#{a,b}` on a verdict/observe mark is single-cell-illegal
+        // — it mints NO cell (safe: the arm declines ⇒ run) but LOUDLY, not silently (`27D`
+        // disposition-brace-verdict-silent, 24Kc F2 the silent-inert authored-construct class). An
+        // author who wrote a two-cell verdict must hear it is inert, not discover a mystery run.
+        let dialect = "\
+systemctl__predict() {
+   verb=$1; shift
+   svc : service = \"$1\"
+   case $verb in
+      enable) systemctl is-enabled -- \"$svc\" : service:\"$svc\"#{enabled,active} ;;
+   esac
+}";
+        let mut i = Interner::default();
+        let cs = lift_predicts(&mut i, dialect);
+        let sym = i.intern("systemctl");
+        let check = cs.value.get(sym).expect("a check for systemctl");
+        let (effects, diags) = derive_predict(check);
+        assert!(
+            effects.is_empty(),
+            "a brace-alternation verdict mints NO cell (single-cell law): {effects:?}"
+        );
+        assert_eq!(diags.len(), 1, "exactly one loud diagnostic: {diags:?}");
+        assert_eq!(diags[0].code, BRACE_VERDICT_INERT);
+        assert_eq!(diags[0].severity, dorc_core::Severity::Warning);
     }
 
     #[test]
