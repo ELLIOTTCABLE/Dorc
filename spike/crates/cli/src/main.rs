@@ -3831,6 +3831,79 @@ mod tests {
         }
     }
 
+    /// pin-partial-deriv-demotes-to-wall (`262` §2 / `26A` stop-1 — THE safety inversion): a
+    /// deriv family is an AT-MOST claim; a mid-stream cut (byte tier) SHRINKS it, which would
+    /// license MORE survivals (the under-execution cardinal sin). So an incomplete family MUST
+    /// fold WALL-TOTAL (no footprint), never a shrunken footprint. Driven through the PRODUCTION
+    /// deframer: a framed deriv stream is cut, deframed, parsed, and merged — asserting the
+    /// site's footprint is refused (walls) on any cut, and present only when complete.
+    #[test]
+    fn pin_partial_deriv_family_demotes_to_wall_total() {
+        use dorc_analysis::cfg::CfgNodeId;
+        use dorc_plan::records::{DEFAULT_NONCE, TERMINAL_TOKEN};
+
+        // A framed deriv stream for site 5: `n` coord records + an OPTIONAL `deriv-end N n=<end>`.
+        let framed = |coords: usize, end: Option<usize>| -> String {
+            let coord_recs = (0..coords)
+                .map(|c| format!("{DEFAULT_NONCE} deriv 5 coord=package:pkg{c} {TERMINAL_TOKEN}\n"))
+                .collect::<Vec<_>>()
+                .concat();
+            let end_rec = end.map_or(String::new(), |n| {
+                format!("{DEFAULT_NONCE} deriv-end 5 n={n} {TERMINAL_TOKEN}\n")
+            });
+            format!(
+                "dorc-records/1 nonce={DEFAULT_NONCE} attempt=1 host=localhost book=bk sites=0 {TERMINAL_TOKEN}\n\
+                 {coord_recs}{end_rec}dorc-records-end/1 nonce={DEFAULT_NONCE} {TERMINAL_TOKEN}\n"
+            )
+        };
+
+        let merged_contains = |stream: &str, i: &mut Interner| -> bool {
+            let d = dorc_plan::records::deframe(
+                stream,
+                &dorc_plan::records::Framing::spike("bk".to_owned()).expect(),
+            );
+            let results = parse_results(&d.records, d.framed, i);
+            let derivations = dorc_plan::DerivationPlan {
+                derivations: vec![dorc_plan::ProbeDerivation {
+                    site: LeafId(5),
+                    node: CfgNodeId(5),
+                    provider: i.intern("apt-get"),
+                    argv: vec![],
+                    sh: "apt_get__touches() { :; }".to_string(),
+                    call: "apt-manifest".to_string(),
+                }],
+            };
+            let mut fps = dorc_plan::TrustedFootprints::new();
+            merge_derived_footprints(
+                &mut fps,
+                &derivations,
+                &results,
+                &[],
+                &BTreeMap::new(),
+                i,
+                false,
+            );
+            fps.contains(CfgNodeId(5))
+        };
+
+        let mut i = Interner::default();
+        // COMPLETE (2 coords, deriv-end n=2) ⇒ footprint lifted (the site can spare).
+        assert!(
+            merged_contains(&framed(2, Some(2)), &mut i),
+            "a complete family lifts its footprint"
+        );
+        // CUT: coord dropped mid-stream (only 1 coord, but the family declared n=2) ⇒ WALL.
+        assert!(
+            !merged_contains(&framed(1, Some(2)), &mut i),
+            "count mismatch ⇒ wall-total, never a shrunken footprint"
+        );
+        // CUT: the deriv-end close-record itself lost ⇒ the family never closed ⇒ WALL.
+        assert!(
+            !merged_contains(&framed(2, None), &mut i),
+            "no deriv-end ⇒ wall-total"
+        );
+    }
+
     /// A no-member record key (the common single-fact site, `site N`).
     fn rk(n: u32) -> RecordKey {
         RecordKey {
@@ -4137,6 +4210,133 @@ mod tests {
             Verdict::Converged,
             "agreeing same-cell records keep the agreed verdict (no spurious ⊤)"
         );
+    }
+
+    /// Build + deframe a FRAMED stream (the framed regime) for a set of inner records, then
+    /// inner-parse — the exact production round-trip a real remote host drives.
+    fn parse_framed(sites: usize, inners: &[&str], i: &mut Interner) -> SiteResults {
+        use dorc_plan::records::{DEFAULT_NONCE, TERMINAL_TOKEN};
+        let framing = dorc_plan::records::Framing::spike("bk".to_owned());
+        let recs = inners
+            .iter()
+            .map(|inner| format!("{DEFAULT_NONCE} {inner} {TERMINAL_TOKEN}\n"))
+            .collect::<Vec<_>>()
+            .concat();
+        let s = format!(
+            "dorc-records/1 nonce={DEFAULT_NONCE} attempt=1 host=localhost book=bk sites={sites} {TERMINAL_TOKEN}\n\
+             {recs}dorc-records-end/1 nonce={DEFAULT_NONCE} {TERMINAL_TOKEN}\n"
+        );
+        let d = dorc_plan::records::deframe(&s, &framing.expect());
+        assert!(
+            !d.refused,
+            "the framed round-trip is not refused: {:?}",
+            d.diagnostics
+        );
+        parse_results(&d.records, d.framed, i)
+    }
+
+    #[test]
+    fn pin_duplicate_records_merge_by_meet_never_last_wins() {
+        // `262` §2 / §1 tie-break law: two records for ONE (site, member) key merge by MEET,
+        // never last-wins. Conflicting ⇒ ⊤ (run); identical ⇒ idempotent. Arrival order is
+        // never consulted — the disagreement result is the same in either order.
+        let mut i = Interner::default();
+        let fwd = parse_str(
+            "site 0 effect=holds rc=0\nsite 0 effect=absent rc=1\n",
+            &mut i,
+        );
+        let rev = parse_str(
+            "site 0 effect=absent rc=1\nsite 0 effect=holds rc=0\n",
+            &mut i,
+        );
+        let ra = fwd.records.get(&rk(0)).copied().expect("site 0");
+        let rb = rev.records.get(&rk(0)).copied().expect("site 0");
+        assert_eq!(
+            ra.verdict,
+            Verdict::Unknown,
+            "conflict ⇒ ⊤ (run), never last-wins"
+        );
+        assert!(
+            ra.conflicted,
+            "a conflicting duplicate is marked (withholds the fold rc)"
+        );
+        assert_eq!(
+            (ra.verdict, ra.conflicted),
+            (rb.verdict, rb.conflicted),
+            "the meet is order-independent (no arrival-sequence tie-break)"
+        );
+        // Idempotent: two IDENTICAL records ⇒ unchanged (not spuriously conflicted).
+        let dup = parse_str(
+            "site 0 effect=holds rc=0\nsite 0 effect=holds rc=0\n",
+            &mut i,
+        );
+        let r = dup.records.get(&rk(0)).copied().expect("site 0");
+        assert!(
+            !r.conflicted && r.verdict == Verdict::Converged,
+            "identical dup is idempotent"
+        );
+    }
+
+    #[test]
+    fn pin_fold_permutation_records_are_leafid_keyed_order_free() {
+        // `262` §1 pin-fold-permutation: fold(any permutation of records) ≡ fold(book order).
+        // Records are leafid-keyed + self-describing (no positional meaning), so two
+        // distinct-cell records fed in either order fold to the identical by_fact map.
+        let mut i = Interner::default();
+        let nginx = pkg(&mut i, "nginx");
+        let curl = pkg(&mut i, "curl");
+        let probe = probe_two_facts(nginx, curl);
+        let book = parse_str(
+            "site 0 effect=holds rc=0\nsite 1 effect=absent rc=1\n",
+            &mut i,
+        );
+        let rev = parse_str(
+            "site 1 effect=absent rc=1\nsite 0 effect=holds rc=0\n",
+            &mut i,
+        );
+        assert_eq!(
+            facts_from_sites(&probe, &book),
+            facts_from_sites(&probe, &rev),
+            "record arrival order never changes the fold (leafid-keyed)"
+        );
+    }
+
+    #[test]
+    fn pin_terminal_determinism_framed_folds_like_unframed() {
+        // `262` §1 pin-terminal-determinism: the FRAMED serial stream folds to the same facts
+        // as the unframed equivalent (byte-identical modulo framing lines). Deframing +
+        // inner-parsing a framed stream ≡ legacy-parsing the same inner records.
+        let mut i = Interner::default();
+        let nginx = pkg(&mut i, "nginx");
+        let curl = pkg(&mut i, "curl");
+        let probe = probe_two_facts(nginx, curl);
+        let inners = ["site 0 effect=holds rc=0", "site 1 effect=absent rc=1"];
+        let unframed = parse_str(&format!("{}\n{}\n", inners[0], inners[1]), &mut i);
+        let framed = parse_framed(2, &inners, &mut i);
+        assert_eq!(
+            facts_from_sites(&probe, &unframed),
+            facts_from_sites(&probe, &framed),
+            "the framing lines are fold-invisible — the plan is unchanged"
+        );
+    }
+
+    /// A two-check probe over two DISTINCT cells (both valid Query, sites 0 and 1).
+    fn probe_two_facts(f0: FactKey, f1: FactKey) -> ProbePlan {
+        let mk = |site: u32, fact: FactKey| ProbePredict {
+            site: LeafId(site),
+            member: None,
+            fact,
+            provider: fact.kind.0,
+            argv: vec![],
+            site_kind: ProbeSiteKind::Query { valid: true },
+            sh: "{ :; }".to_string(),
+            connected: None,
+            verdict: false,
+        };
+        ProbePlan {
+            checks: vec![mk(0, f0), mk(1, f1)],
+            unresolvable: vec![],
+        }
     }
 
     #[test]

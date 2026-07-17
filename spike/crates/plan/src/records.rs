@@ -425,3 +425,235 @@ fn aggregate(out: &mut Deframed, code: DiagCode, count: usize, what: &str) {
         ));
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// The default expectation the emitter's spike framing produces (nonce `dorc`, host
+    /// `localhost`, attempt 1, book `bk`).
+    fn expect() -> Expect {
+        Framing::spike("bk".to_owned()).expect()
+    }
+
+    /// One framed record line (`{nonce} {inner} {token}`).
+    fn rec(inner: &str) -> String {
+        format!("{DEFAULT_NONCE} {inner} {TERMINAL_TOKEN}")
+    }
+
+    /// A well-formed header line for a stream declaring `sites` fact records.
+    fn header(sites: usize) -> String {
+        header_line(&Framing::spike("bk".to_owned()), sites)
+            .trim_end()
+            .trim_start_matches("printf '")
+            .trim_end_matches("\\n'")
+            .to_owned()
+    }
+
+    /// The well-formed end-sentinel line (with a trailing newline).
+    fn sentinel() -> String {
+        format!("{SENTINEL_TAG} nonce={DEFAULT_NONCE} {TERMINAL_TOKEN}\n")
+    }
+
+    /// Assemble a framed stream from a header + record inners + sentinel.
+    fn stream(sites: usize, inners: &[&str]) -> String {
+        let recs = inners
+            .iter()
+            .map(|i| format!("{}\n", rec(i)))
+            .collect::<Vec<_>>()
+            .concat();
+        format!("{}\n{recs}{}", header(sites), sentinel())
+    }
+
+    #[test]
+    fn legacy_unframed_passes_through_dropping_comments_and_blanks() {
+        // No terminal token anywhere ⇒ the legacy regime: non-blank, non-# lines pass to the
+        // inner parser verbatim (the ~128 authored fixtures ride this unchanged).
+        let d = deframe(
+            "# a comment\nsite 0 effect=holds rc=0\n\nsite 1 effect=absent rc=1\n",
+            &expect(),
+        );
+        assert!(!d.framed && !d.refused);
+        assert_eq!(
+            d.records,
+            vec!["site 0 effect=holds rc=0", "site 1 effect=absent rc=1"]
+        );
+    }
+
+    #[test]
+    fn framed_strips_nonce_prefix_and_terminal_token() {
+        let d = deframe(&stream(1, &["site 0 effect=holds rc=0"]), &expect());
+        assert!(d.framed && !d.refused, "diags: {:?}", d.diagnostics);
+        assert_eq!(d.records, vec!["site 0 effect=holds rc=0"]);
+    }
+
+    #[test]
+    fn coord_free_content_keeps_embedded_spaces_to_the_token() {
+        // `262` §2 last-to-token: the deframer strips exactly ` {token}`, so a coordinate with
+        // embedded spaces survives byte-exactly — the incumbent whitespace-truncation fix, and
+        // the `279f` stdout-rider generalization. (The inner parser then reads to end-of-line.)
+        let d = deframe(
+            &stream(0, &["deriv 0 coord=/etc/a file/with spaces"]),
+            &expect(),
+        );
+        assert_eq!(d.records, vec!["deriv 0 coord=/etc/a file/with spaces"]);
+    }
+
+    #[test]
+    fn torn_line_no_token_counted_never_folded() {
+        // A nonce-prefixed line missing the terminal token is a torn fragment (a lost
+        // terminating write): dropped + counted, never folded (`26A` stop-1).
+        let s = format!(
+            "{}\n{DEFAULT_NONCE} site 0 effect=holds rc=0\n{}", // middle line has no token ⇒ torn
+            header(1),
+            sentinel()
+        );
+        let d = deframe(&s, &expect());
+        assert!(d.records.is_empty(), "the torn fragment never folds");
+        assert!(
+            d.diagnostics
+                .iter()
+                .any(|x| x.code.0 == "records-torn-line"),
+            "torn is counted + warned"
+        );
+    }
+
+    #[test]
+    fn glued_line_bytes_after_token_refuses_read_unit() {
+        // Two atomic writes merged on one line (`…{token}…{token}`) ⇒ bytes after the first
+        // token ⇒ reject the WHOLE read unit (`262` §2), the safe direction.
+        let s = format!(
+            "{}\n{DEFAULT_NONCE} site 0 effect=holds rc=0 {TERMINAL_TOKEN}{DEFAULT_NONCE} site 1 effect=absent rc=1 {TERMINAL_TOKEN}\n{}",
+            header(1),
+            sentinel()
+        );
+        let d = deframe(&s, &expect());
+        assert!(d.refused, "a glued read unit is refused");
+        assert!(
+            d.diagnostics
+                .iter()
+                .any(|x| x.code.0 == "records-glued-line")
+        );
+    }
+
+    #[test]
+    fn alien_non_nonce_line_counted() {
+        let alien = format!("garbage leakage {TERMINAL_TOKEN}\n{SENTINEL_TAG}");
+        let d = deframe(
+            &stream(1, &["site 0 effect=holds rc=0"]).replace(SENTINEL_TAG, &alien),
+            &expect(),
+        );
+        assert!(
+            d.diagnostics
+                .iter()
+                .any(|x| x.code.0 == "records-alien-line"),
+            "a non-nonce framed line is alien: {:?}",
+            d.diagnostics
+        );
+        assert_eq!(d.records, vec!["site 0 effect=holds rc=0"]);
+    }
+
+    #[test]
+    fn late_record_after_sentinel_discarded() {
+        let mut s = stream(1, &["site 0 effect=holds rc=0"]);
+        s.push_str(&rec("site 1 effect=absent rc=1")); // AFTER the sentinel ⇒ late
+        s.push('\n');
+        let d = deframe(&s, &expect());
+        assert_eq!(
+            d.records,
+            vec!["site 0 effect=holds rc=0"],
+            "late is dropped"
+        );
+        assert!(
+            d.diagnostics
+                .iter()
+                .any(|x| x.code.0 == "records-late-line")
+        );
+    }
+
+    #[test]
+    fn integrity_mismatch_refuses_each_key() {
+        // book / host / attempt / nonce mismatch each refuses the whole read unit.
+        for (bad_key, bad_val) in [
+            ("book", "WRONG"),
+            ("host", "otherhost"),
+            ("attempt", "2"),
+            ("nonce", "stale"),
+        ] {
+            let hdr = header(1).replace(
+                &format!("{bad_key}="),
+                &format!("{bad_key}={bad_val}~"), // corrupt just this key's value
+            );
+            let s = format!(
+                "{hdr}\n{}\n{SENTINEL_TAG} nonce={DEFAULT_NONCE} {TERMINAL_TOKEN}\n",
+                rec("site 0 effect=holds rc=0")
+            );
+            let d = deframe(&s, &expect());
+            assert!(d.refused, "{bad_key} mismatch must refuse the fold");
+        }
+    }
+
+    #[test]
+    fn missing_header_refuses_even_with_records() {
+        // A framed stream (has tokens) but no `dorc-records/1` header (torn/absent) ⇒ refuse.
+        let s = format!(
+            "{}\n{SENTINEL_TAG} nonce={DEFAULT_NONCE} {TERMINAL_TOKEN}\n",
+            rec("site 0 effect=holds rc=0")
+        );
+        let d = deframe(&s, &expect());
+        assert!(d.refused);
+        assert!(
+            d.diagnostics
+                .iter()
+                .any(|x| x.code.0 == "records-header-missing")
+        );
+    }
+
+    #[test]
+    fn additive_unknown_keys_ignored_in_header_and_record() {
+        // `24Kc` additive-keys: an unknown `ms=…`/`future=…` key is ignored, never a refusal.
+        // The extra header key rides BEFORE the terminal token (a real emitter would append it
+        // as a normal field).
+        let hdr = header(1).replace(TERMINAL_TOKEN, &format!("ms=42 {TERMINAL_TOKEN}"));
+        let s = format!(
+            "{hdr}\n{}\n{SENTINEL_TAG} nonce={DEFAULT_NONCE} {TERMINAL_TOKEN}\n",
+            rec("site 0 future=x effect=holds rc=0")
+        );
+        let d = deframe(&s, &expect());
+        assert!(!d.refused, "unknown keys are additive, not fatal");
+        assert_eq!(d.records, vec!["site 0 future=x effect=holds rc=0"]);
+    }
+
+    #[test]
+    fn sites_truncation_is_a_computable_range_note_not_refusal() {
+        // Declared sites=3 but only 1 site record ⇒ a NOTE (the 2 unseen fold Unknown ⇒ run),
+        // never a refusal (`26A` amend-smalls).
+        let d = deframe(&stream(3, &["site 0 effect=holds rc=0"]), &expect());
+        assert!(!d.refused);
+        assert!(
+            d.diagnostics
+                .iter()
+                .any(|x| x.code.0 == "records-fact-truncated"),
+            "truncation is a computable range: {:?}",
+            d.diagnostics
+        );
+    }
+
+    #[test]
+    fn wrong_nonce_prefix_record_is_alien_zombie_writer() {
+        // A record carrying a DIFFERENT nonce prefix (a stale-attempt / zombie writer leak) is
+        // un-foldable ⇒ alien, never folded under this attempt's key (`26A` amend-retry-hygiene).
+        let s = format!(
+            "{}\nzombie site 0 effect=holds rc=0 {TERMINAL_TOKEN}\n{}",
+            header(1),
+            sentinel()
+        );
+        let d = deframe(&s, &expect());
+        assert!(d.records.is_empty(), "a stale-nonce record never folds");
+        assert!(
+            d.diagnostics
+                .iter()
+                .any(|x| x.code.0 == "records-alien-line")
+        );
+    }
+}

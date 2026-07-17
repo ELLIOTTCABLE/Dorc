@@ -820,6 +820,14 @@ impl TrustedFootprints {
         self.map.get(&node)
     }
 
+    /// Was a trustworthy footprint lifted for this wall-site? A miss ⇒ the site walls TOTAL
+    /// (`262` §2 / `26A` stop-1). Read-only observability for the partial-deriv-demotes-to-wall
+    /// soundness pin (the at-most family completeness gate refuses ⇒ absence ⇒ wall).
+    #[must_use]
+    pub fn contains(&self, node: CfgNodeId) -> bool {
+        self.map.contains_key(&node)
+    }
+
     /// 24G Part B — widen every footprint by `reaches()` EXPANSION, in place. For each footprint,
     /// `expand(coord, origin)` returns the coords `<kind>.reaches()` drags from `coord` (+ the
     /// reach-function KIND for attribution); the CALLER encodes the 24G §2/§3 policy through `origin`
