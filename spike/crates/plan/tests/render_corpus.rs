@@ -92,13 +92,19 @@ fn classify_with(
     .value
 }
 
-/// Vouch EVERY establish-bearing site so these render twins exercise the elision MECHANICS (the
-/// vouch GATE is pinned elsewhere — plan units + e2e). Ambient-only (an EstablishWritten would fire
-/// the guard tier, out of this tier's render scope).
-fn vouch_all(classes: &[(dorc_analysis::cfg::CfgNodeId, SkipClass)]) -> dorc_plan::Vouches {
+/// Vouch every establish-bearing site so these render twins exercise the elision/guard MECHANICS (the
+/// vouch GATE is pinned elsewhere — plan units + e2e). `incl_written` also vouches `EstablishWritten`
+/// (past-a-poison-wall) sites, which fires the GUARD tier (`render_guard_for` only); the default
+/// ambient-only path keeps a poisoned unvouched install running (`twin_exec_opaque_neighbour_poisons`).
+fn vouch_all(
+    classes: &[(dorc_analysis::cfg::CfgNodeId, SkipClass)],
+    incl_written: bool,
+) -> dorc_plan::Vouches {
     let mut vouches = dorc_plan::Vouches::new();
     for (node, class) in classes {
-        if matches!(class, SkipClass::EstablishAmbient(_)) {
+        let vouchable = matches!(class, SkipClass::EstablishAmbient(_))
+            || (incl_written && matches!(class, SkipClass::EstablishWritten(_)));
+        if vouchable {
             let vouch = dorc_plan::VerdictVouch::new(
                 "apt_get__is_converged".to_string(),
                 "apt_get__is_converged() { dpkg-query -W \"$1\" >/dev/null 2>&1; }".to_string(),
@@ -132,7 +138,7 @@ fn render_for(src: &str, holds: &[(&str, &str)]) -> (String, Plan) {
             selector: installed,
         })
         .collect();
-    render_core(src, &[CORPUS_PREDICT_SRC], &idx, held, &mut i)
+    render_core(src, &[CORPUS_PREDICT_SRC], &idx, held, false, &mut i)
 }
 
 /// The shared pipeline (`render_for`'s package-oracle specialization, the service/seam/singleton
@@ -145,6 +151,7 @@ fn render_core(
     predict_srcs: &[&str],
     idx: &KindIndex,
     held: Vec<FactKey>,
+    vouch_written: bool,
     i: &mut Interner,
 ) -> (String, Plan) {
     let parsed = dorc_syntax::parse(src);
@@ -162,7 +169,7 @@ fn render_core(
         &parsed.value,
         &cfg,
         &classes,
-        &vouch_all(&classes),
+        &vouch_all(&classes, vouch_written),
         observe,
         &mut dorc_core::ProvArena::new(),
     );
@@ -257,6 +264,7 @@ fn render_service_for(src: &str, holds: &[(&str, &str, &str)]) -> (String, Plan)
         &[CORPUS_PREDICT_SRC, SERVICE_PREDICT_SRC],
         &idx,
         held,
+        false,
         &mut i,
     )
 }
@@ -304,6 +312,7 @@ fn render_seam_for(src: &str, holds: &[&str]) -> (String, Plan) {
         &[CORPUS_PREDICT_SRC, YUM_PREDICT_SRC],
         &idx,
         held,
+        false,
         &mut i,
     )
 }
@@ -337,7 +346,7 @@ fn render_singleton_for(src: &str, holds_fresh: bool) -> (String, Plan) {
     } else {
         Vec::new()
     };
-    render_core(src, &[PKGINDEX_PREDICT_SRC], &idx, held, &mut i)
+    render_core(src, &[PKGINDEX_PREDICT_SRC], &idx, held, false, &mut i)
 }
 
 /// The read-only `dpkg -s <pkg>` package-status QUERY oracle (the DESIGN door-1 `dpkg -s || install`
@@ -437,13 +446,32 @@ fn render_query_for(
         &parsed.value,
         &cfg,
         &classes,
-        &vouch_all(&classes),
+        &vouch_all(&classes, false),
         observe,
         &mut dorc_core::ProvArena::new(),
     );
     let rendered = plan.render_apply(src, &parsed.value);
     assert_runnable(&rendered);
     (rendered, plan)
+}
+
+/// Render harness for the GUARD tier (`guard23-why-attribution`): a vouched install PAST a poison
+/// wall. Vouches `EstablishWritten` too (`incl_written`), so a converged past-wall install mints a
+/// `Guard` (the oracle's verdict body re-decides LIVE at apply). `holds` are `(entity)` package cells.
+fn render_guard_for(src: &str, holds: &[&str]) -> (String, Plan) {
+    let mut i = Interner::default();
+    let idx = package_index(&mut i);
+    let installed = SelectorId(i.intern("installed"));
+    let package = KindId(i.intern("package"));
+    let held: Vec<FactKey> = holds
+        .iter()
+        .map(|e| FactKey {
+            kind: package,
+            entity: EntityRef::Operand(OpaqueToken(i.intern(e))),
+            selector: installed,
+        })
+        .collect();
+    render_core(src, &[CORPUS_PREDICT_SRC], &idx, held, true, &mut i)
 }
 
 /// Is the leaf whose verbatim text contains `needle` **replaced** (elided to a stand-in)?
@@ -458,6 +486,13 @@ fn is_omitted(plan: &Plan, needle: &str) -> bool {
     plan.steps
         .iter()
         .any(|s| s.sh.contains(needle) && matches!(s.disposition, Disposition::Omit { .. }))
+}
+
+/// Is the leaf containing `needle` **guarded** (the oracle's verdict re-decides live at apply)?
+fn is_guarded(plan: &Plan, needle: &str) -> bool {
+    plan.steps
+        .iter()
+        .any(|s| s.sh.contains(needle) && matches!(s.disposition, Disposition::Guard(_)))
 }
 
 // ===========================================================================
@@ -1504,5 +1539,49 @@ fn twin_render21_while_guard_floored() {
             && rendered.contains("echo checking")
             && rendered.contains("done"),
         "the whole loop renders verbatim:\n{rendered}"
+    );
+}
+
+// ===========================================================================
+// GUARD-TIER twin (`24I` batch-3; `render_guard_for`, the written-vouch harness). A vouched install
+// PAST a poison wall cannot ELIDE (its resting probe is poisoned), so it GUARDS: the oracle's own
+// verdict body re-decides live at apply (`( check ) || <original>`), carrying the why-attribution.
+// ===========================================================================
+
+#[test]
+fn twin_guard23_why_attribution() {
+    // né guard23-why-attribution (the disclosure floor: every guard decision is ATTRIBUTED): an
+    // un-oracled `hork` walls the vouched `apt-get install`. Converged host + the vouch ⇒ a GUARD (not
+    // elide): the oracle's verdict body re-decides LIVE at apply, carrying the why-attribution, with
+    // the vouch body shipped as the preamble. This twin pins the full POISON-WALL→GUARD pipeline +
+    // attribution + preamble; the exact check-invocation ARGV (`( f install -y nginx )`) is a harness
+    // simplification here (the generic `vouch_all` invocation carries no site argv — the real cli's
+    // `build_vouches` threads it; that render-line shape is unit-pinned by
+    // converged_guard_emitter_shape_obeys_the_two_never_clauses).
+    let (rendered, plan) = render_guard_for("hork wombat\napt-get install -y nginx\n", &["nginx"]);
+    assert!(
+        is_guarded(&plan, "install -y nginx"),
+        "the walled-but-vouched converged install GUARDS (not elide/run): {:?}",
+        plan.steps
+            .iter()
+            .map(|s| (&s.sh, &s.disposition))
+            .collect::<Vec<_>>()
+    );
+    assert!(
+        rendered.contains("hork wombat"),
+        "the opaque wall runs verbatim:\n{rendered}"
+    );
+    assert!(
+        rendered.contains("( apt_get__is_converged")
+            && rendered.contains(") || apt-get install -y nginx"),
+        "the guard shape `( <check> ) || <original verbatim>` — original bytes survive:\n{rendered}"
+    );
+    assert!(
+        rendered.contains("# dorc: guard [package converged-vouch; probe: holds]"),
+        "the guard carries its why-attribution (kind, vouch-source, probe verdict):\n{rendered}"
+    );
+    assert!(
+        rendered.contains("apt_get__is_converged() {"),
+        "the vouch body ships as the guard preamble (rul-ternary-verdict: authored bytes verbatim):\n{rendered}"
     );
 }
