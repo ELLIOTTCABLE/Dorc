@@ -83,6 +83,56 @@ bless masked it), the flagship golden, the nounset golden.
   strawman24-alias-symlink (writeconf), five service.oracle.sh copies
   (systemctl is-enabled delegation), strawman24-reach-static-service (enablesvc).
 
+## stage-2: typeless-floor — LANDED 2026-07-17 (conductor checkpoint PASSED)
+
+Commits `296643a..ea77549` on `ai/r27-typeless-floor`, fast-forwarded into
+`ai/spike3-r27`. Builder: Opus solo. Full landing record: **`notes/27E`** (the
+builder's note — auto-cell mechanism, kernel seam shape, tc-flags, deferrals).
+645 unit / 128 e2e green; ZERO existing-golden churn (two new exemplar cases
+only). Conductor spot-checks: `auto_or_opaque` mint conditions (concrete argv
+only, no-check-resolved only, mapped-provider keyed) and the
+`survival::disjoint` auto-kind may-touch fence — both per-spec, slug-cited.
+
+**Checkpoint dispositions (conductor-adjudicated):**
+
+- disposition-marker-gate-home — tc-marker-gate-home CONFIRMED as built: the
+  dedicated cli-edge pass is the right home (kernel/lift purity; the gate fires
+  at the user boundary; the ~100 unmarked-dialect unit tests exercise lift
+  MECHANICS, which is test-scope, not product-scope). The lift-level+stamp
+  alternative is retired.
+- disposition-set-e-floor-limitation — tc-set-e-blocks-auto-elide ACCEPTED as a
+  principled product limitation (inv-probe-sourced-values: the markless floor
+  cannot fabricate the book command's rc, so under `set -e` only the guard tier
+  is reachable; marked verdicts declare converged-rc and elide). RECORD FOR THE
+  STDLIB TEACHING DOCS: "the bare floor under `set -eu` buys guards, not
+  elisions — the first mark buys the elide back."
+- disposition-positional-literal-model — the founding one-liner licenses because
+  the lexer routes `$@` to `Word::Literal("$@")` — a WRONG MODEL whose outcomes
+  are caught by rc-authority (the shipped body is authored bytes; the probe's
+  real rc is the verdict; wrong-concrete static reads decline⇒run). Accepted for
+  now, NOT blessed as design: rider-positional-modeling-hardening assigned to
+  stage value-recipe-reshape (route bare `$@`/`$*`/`"$*"` to ⊤ per
+  inv-top-reject; model quoted `"$@"` as concrete positionals per
+  `24C:fd-headline-oneliner-gap`; the e2e pin must stay green across the change).
+- disposition-effect-check-punt — ACCEPTED (the typed sizing rider licensed
+  exactly this: not nearly-free ⇒ punt, zero guilt). The seam now exists;
+  re-homing decision deferred to conductor discretion post-block.
+- disposition-invited-rooms-pass-forward — ACCEPTED; the compile-failure pin
+  obligation travels to whichever stage first mints a hint-lane/license-lane
+  type split (likely block-context's descend-don't-license types).
+
+**Handoff (owner assigned):**
+
+- rider-raw-ship-repair-with-otelcol → stage-2b (dedicated dispatch, next): the
+  `24J` raw-ship repair (`271:rul-only-oracle-bytes-ship` + three riders) plus
+  the COUPLED A6 otelcol-boilerplate retirement; build surface per `27E`
+  (`connected_check_pipes` + `compile_probe` connected path + `render_sh`).
+  Also carries the `279f` §5 connected-probe riders: SIGPIPE-flap as a named
+  nondeterminism class (why-lane note on rc-141 sink landings; hostsim race
+  injection; any future `--exit-code` computes from divergence-of-world, never
+  raw sink-landings).
+- rider-positional-modeling-hardening → stage value-recipe-reshape (above).
+
 **Environment incident (surfaced to human 2026-07-17):** a SyncThing conflict file
 (`effect.sync-conflict-…-PHNHRER.rs`) appeared INSIDE the stage-1 builder's agent
 worktree mid-edit — device PHNHRER is live-syncing `.claude/worktrees/`, which the
