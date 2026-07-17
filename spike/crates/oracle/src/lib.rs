@@ -99,6 +99,14 @@ pub mod wrapper;
 /// `analysis`/`plan` yet, so the eval'er-free corpus stays byte-stable.
 pub mod evaler;
 
+/// Payload decomposition (`24T` §4/§5 · `274` · `27J` §2.3): the accept/refuse basic-forms table
+/// (`classify_payload_form` — single-quoted/const literal accepted, interpolated refused to ⊤), the
+/// nested parse of an accepted literal as book-code (site-local degrade on unparseable /
+/// nested-annotation), and the whole-line fold (`fold_line` — elide iff every leaf elides, else
+/// guard-conjunction, else run). MODELS only; the per-leaf disposition is supplied (plan-wiring is
+/// the follow-on) and no payload bytes are re-serialized (the synthesized-render door stays open).
+pub mod payload;
+
 /// The munge-reservation lint (24Kc `fix-munge-reservation`; 24M `ca-munge-charclass`): the
 /// reserved `<munged>__<role>` sh-function namespace's charclass refusal, non-injective-munge
 /// collision refusal, and book-squat disclosure. A standing mitigation for the coincidental
