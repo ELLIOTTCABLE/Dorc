@@ -27,6 +27,11 @@ All of the following should recieve frequent edits whenever work progresses:
   - use judgement in deciding between the crate-specific / topic-focused `CLAUDE.md`s, vs. the spike-root `spike/CLAUDE.md`, for a given invariant;
   - repetition in the `CLAUDE.md`s is valid, but only for genuinely deeply-critical invariants, esp. ones that agents have gotten wrong before
 
+For genuinely critical design-direction-changes, when such happen, recall the above and update plans/notes as necessary:
+
+  - `notes/` documents are generally historical (except the single most-recently-minted one that you're actively working in); and only the most critical incorrectnesses get notated (adjacent, with a `<!-- /* superceded by ...`-style note) so a later trawling LLM doesn't get misled
+  - `plans/` documents are *ahistorical* and if incorrect, should simply be rewritten to become correct. (history is in git if necessary, don't fill them up with churn-noise.)
+
 ## Critical engineering reminders
 - this codebase depends heavily on deterministic systems-testing, DST, for correctness. you *must* analyze all changes for hermeticity; and all non-hermetic (non-pure) actions *must* be DI'd so as to be mockable for DST.
   - specifically, *always* access the clock, network, disk, or randomness *through the correct DI primitives*. they must stay fuzzable.
