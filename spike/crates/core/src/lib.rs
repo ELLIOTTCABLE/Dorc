@@ -351,19 +351,24 @@ pub enum Verdict {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Rc(pub i32);
 
-/// A predicted **output claim** for the `Stdout`/`Stderr` channels (`inv-one-observable`,
-/// `19F` §3 tuple completion): the captured text a substitution would have to reproduce.
+/// The **byte-content** of the `Stdout`/`Stderr` channels (`inv-one-observable`, `19F` §3 tuple
+/// completion): the captured text a substitution would have to reproduce. Named for what it IS —
+/// channel CONTENT, not a claim: "claim" is the derived-license tier (`is_converged` CLAIMS
+/// convergence), and these bytes carry no license, so the former `OutClaim` name clashed tier-wise
+/// (`275` care-outclaim-rename; `271:rul-value-prediction-species` — captured bytes are a
+/// value-PREDICTION, whose provenance/backing are DERIVED, never a claim carried on the content).
 /// An interned [`Symbol`] (the cheapest deterministic `Copy` representation — keeps
 /// [`Observable`] `Copy`, and the interner is order-of-interning so it never leaks
 /// nondeterminism, `inv-determinism`). The engine NEVER decodes it (`inv-referent-agnostic`):
-/// a substitution compares/reproduces the claim, the analyzer does not branch on its text.
+/// a substitution compares/reproduces the content, the analyzer does not branch on its text.
 ///
-/// NOTHING produces a non-⊤ `OutClaim` this round (the existing consumed-stdout/stderr gate
-/// stays the unconditional block it is — a consumed channel with a ⊤ prediction blocks,
-/// today's rule). The newtype exists so a future stdout-producing probe is a value-plumbing
-/// change, not a representation change (the `19F` failure was exactly representation drift).
+/// NOTHING produces a non-⊤ `OutBytes` in the kernel this round (the existing consumed-stdout/
+/// stderr gate stays the unconditional block it is — a consumed channel with a ⊤ prediction
+/// blocks, today's rule). The newtype exists so a future stdout-producing probe is a
+/// value-plumbing change, not a representation change (the `19F` failure was exactly
+/// representation drift).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct OutClaim(pub Symbol);
+pub struct OutBytes(pub Symbol);
 
 /// A predicted value for one observable channel (`inv-one-observable`): a concrete
 /// value, or a loud out-of-band ⊤ "can't-predict". A `Top` on a *consumed* channel
@@ -473,14 +478,14 @@ pub struct Observable {
     /// `while`/`until` condition blocks regardless (the per-iteration sequence no single rc
     /// reproduces).
     pub status: Predicted<Rc>,
-    /// `Stdout` channel: the predicted fd-1 [`OutClaim`] a substitution must reproduce.
+    /// `Stdout` channel: the predicted fd-1 [`OutBytes`] a substitution must reproduce.
     /// ALWAYS `Predicted::Top` this round (`19F` §3 shape completion — nothing produces a
     /// value yet): a *consumed* `Stdout` with a ⊤ prediction blocks the license
     /// unconditionally, which is exactly today's rule (`consumption_ok`, 16F §3), now
     /// expressed through the tuple rather than a side-channel.
-    pub stdout: Predicted<OutClaim>,
-    /// `Stderr` channel: the predicted fd-2 [`OutClaim`] — as [`stdout`](Self::stdout).
-    pub stderr: Predicted<OutClaim>,
+    pub stdout: Predicted<OutBytes>,
+    /// `Stderr` channel: the predicted fd-2 [`OutBytes`] — as [`stdout`](Self::stdout).
+    pub stderr: Predicted<OutBytes>,
 }
 
 impl Observable {

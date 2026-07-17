@@ -61,7 +61,7 @@ use std::io::{Read, Write};
 use std::process::ExitCode;
 
 use dorc_core::{
-    Interner, Observable, OutClaim, Predicted, ProvArena, Rc, Severity, Symbol, Verdict,
+    Interner, Observable, OutBytes, Predicted, ProvArena, Rc, Severity, Symbol, Verdict,
 };
 
 /// The one-line usage synopsis, embedded in argument-error messages. The full
@@ -2261,7 +2261,7 @@ fn unresolvable_diagnostics(
     let diag = Diag::new(
         DiagCode::SiteUnresolvable(SiteUnresolvable {
             site: SiteId::leaf(first_leaf),
-            source_excerpt: OutClaim(interner.intern(first_text)),
+            source_excerpt: OutBytes(interner.intern(first_text)),
         }),
         first_span,
     )
@@ -3210,7 +3210,7 @@ enum ResolvOutcome {
 }
 
 /// One site's reported observation: the Effect-channel [`Verdict`], the raw probe-command
-/// exit status, and the RESERVED `Stdout`/`Stderr` [`OutClaim`]s (`19F` §3 tuple shape).
+/// exit status, and the RESERVED `Stdout`/`Stderr` [`OutBytes`]s (`19F` §3 tuple shape).
 /// The out-claims are parsed-and-stored but produce NOTHING this round — the probe never
 /// emits `stdout=`/`stderr=`, so they arrive `Predicted::Top` in practice; the slots exist
 /// so a future stdout-producing probe is a value-plumbing change, not a grammar change.
@@ -3218,8 +3218,8 @@ enum ResolvOutcome {
 struct SiteRecord {
     verdict: Verdict,
     rc: Rc,
-    stdout: Predicted<OutClaim>,
-    stderr: Predicted<OutClaim>,
+    stdout: Predicted<OutBytes>,
+    stderr: Predicted<OutBytes>,
 }
 
 /// The rc a `128 + SIGPIPE` early-exit race lands on (`sigpipe-flap-class`, `279f` §5):
@@ -3262,7 +3262,7 @@ fn emit_sigpipe_race_notes(results: &SiteResults) {
 ///   carriage but is irrelevant unless the firewall admits it.
 ///
 /// `stdout=`/`stderr=` are RESERVED (`19F` §3 tuple shape): the parser accepts-and-stores
-/// them (interning the text into a [`OutClaim`] on the record) but NOTHING produces them —
+/// them (interning the text into a [`OutBytes`] on the record) but NOTHING produces them —
 /// the rendered probe emits no such keys, and the consumed-stdout/stderr gate stays the
 /// unconditional block it is regardless. Reserving them means a future stdout-producing
 /// probe is a value-plumbing change, not a grammar change. The interner is threaded for
@@ -3364,9 +3364,9 @@ fn parse_results(input: &str, interner: &mut Interner) -> SiteResults {
             } else if let Some(n) = tok.strip_prefix("rc=").and_then(|n| n.parse::<i32>().ok()) {
                 rc = Rc(n);
             } else if let Some(t) = tok.strip_prefix("stdout=") {
-                stdout = Predicted::Value(OutClaim(interner.intern(t)));
+                stdout = Predicted::Value(OutBytes(interner.intern(t)));
             } else if let Some(t) = tok.strip_prefix("stderr=") {
-                stderr = Predicted::Value(OutClaim(interner.intern(t)));
+                stderr = Predicted::Value(OutBytes(interner.intern(t)));
             }
         }
         out.records.insert(
@@ -3790,7 +3790,7 @@ mod tests {
         // parser accepts-and-stores them into the record's tuple, but they produce no
         // behavior change. Pin BOTH halves: (1) absent ⇒ the slots are `Predicted::Top`
         // (the default, the only state the probe actually emits today); (2) present ⇒
-        // they intern into a `Predicted::Value(OutClaim)` and ride the tuple, while the
+        // they intern into a `Predicted::Value(OutBytes)` and ride the tuple, while the
         // firewall + consumption gate are untouched (the consumed-stdout/stderr block is
         // unconditional, never reading the claim). Anti-masking: this asserts the SHAPE
         // exists end-to-end, NOT that a check predicts a value (nothing does this round).
@@ -3814,12 +3814,12 @@ mod tests {
         );
         let rec = r.records.get(&rk(0)).expect("site 0");
         assert!(
-            matches!(rec.stdout, Predicted::Value(OutClaim(_))),
+            matches!(rec.stdout, Predicted::Value(OutBytes(_))),
             "a reserved stdout= is stored as a value claim: {:?}",
             rec.stdout
         );
         assert!(
-            matches!(rec.stderr, Predicted::Value(OutClaim(_))),
+            matches!(rec.stderr, Predicted::Value(OutBytes(_))),
             "a reserved stderr= is stored as a value claim: {:?}",
             rec.stderr
         );

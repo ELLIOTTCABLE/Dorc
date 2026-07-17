@@ -865,7 +865,7 @@ impl<'a> Builder<'a> {
                  body's positional is ⊤ — it runs as an ordinary unmodeled command \
                  (depth-2 positional threading is out of the modeled subset)"
             ));
-            // The payload carries no OutClaim (no interner resolution needed); a fresh
+            // The payload carries no OutBytes (no interner resolution needed); a fresh
             // default interner is sufficient for the to_legacy bridge.
             self.diags
                 .push(diag.to_legacy(&dorc_core::Interner::default()));

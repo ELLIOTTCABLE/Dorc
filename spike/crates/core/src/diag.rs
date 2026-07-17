@@ -25,12 +25,12 @@
 //! * `inv-determinism` — ordered collections only (`Vec`, never a hashed map iterated to
 //!   output); [`registry`] is a pure `match`.
 //! * `inv-no-unsafe` — stock `#[derive]`s only; no macros, no proc-macros.
-//! * `inv-referent-agnostic` — a payload's text excerpt is an [`OutClaim`] (an interned
+//! * `inv-referent-agnostic` — a payload's text excerpt is an [`OutBytes`] (an interned
 //!   handle), never decoded for meaning; the [`ProvId`] cause is opaque and non-`Display`.
 //! * `inv-site-keyed-results` — [`SiteId`] preserves command-site keying (promoted from the
 //!   cli's `RecordKey`).
 
-use crate::{LeafId, OutClaim, ProvId, Severity, Span};
+use crate::{LeafId, OutBytes, ProvId, Severity, Span};
 
 // ===========================================================================
 // The catalog enum (exhaustive spine) + typed per-variant payloads (type-sketch-1)
@@ -186,7 +186,7 @@ pub struct CmdsubOperandTop {
 /// Payload of [`DiagCode::SiteUnresolvable`]: the probe-unresolvable site and the
 /// referent-agnostic source excerpt naming it. The typed payload replaces the legacy
 /// constructor's bare `&str` leaf/source pair (`22B` `worked-1`): the [`SiteId`] is first-class
-/// and the excerpt is an [`OutClaim`] (an interned handle), never a fumble-able `&str`.
+/// and the excerpt is an [`OutBytes`] (an interned handle), never a fumble-able `&str`.
 ///
 /// NB (conductor re-inventory): `22B` `type-sketch-1` sketched a `probe: ProbeSiteRef` field,
 /// but at HEAD the cli's `ProbePlan::unresolvable` is a bare `Vec<LeafId>` — there is no
@@ -199,7 +199,7 @@ pub struct SiteUnresolvable {
     pub site: SiteId,
     /// The site's source command text, referent-agnostic (`inv-referent-agnostic`): rendered
     /// for display, never decoded to infer meaning.
-    pub source_excerpt: OutClaim,
+    pub source_excerpt: OutBytes,
 }
 
 /// Payload of [`DiagCode::RenderHeredocRefused`]: the heredoc-bearing site the leaf-exact render
@@ -845,7 +845,7 @@ impl Diag {
 /// a `^^^` underline — with each LABELED secondary span rendered as its own `---` caret frame, so
 /// a cause and its effect land in ONE frame (228). `src`/`filename` resolve a span to a framed
 /// source excerpt (rul24-lineno-identity: the gutter line number is the SOURCE line); `interner`
-/// resolves the [`OutClaim`] excerpt.
+/// resolves the [`OutBytes`] excerpt.
 ///
 /// This is `render_cli` — EVERYTHING (the render plane): title, region, prose, helps, the
 /// suggestion. The artifact-bound projection is [`render_artifact_comment`], which admits only
@@ -902,7 +902,7 @@ fn render_body(diag: &Diag, interner: &crate::Interner) -> String {
     use std::fmt::Write;
     let mut out = String::new();
     // referent-agnostic excerpt: a SiteUnresolvable carries the source command text as an
-    // OutClaim; surface it (resolved for display only — inv-referent-agnostic). First so the
+    // OutBytes; surface it (resolved for display only — inv-referent-agnostic). First so the
     // legacy message keeps naming the source command (the cli test pins `make install`).
     if let DiagCode::SiteUnresolvable(p) = &diag.code {
         let _ = write!(
@@ -1371,7 +1371,7 @@ mod tests {
         let note = Diag::new(
             DiagCode::SiteUnresolvable(SiteUnresolvable {
                 site: site(0),
-                source_excerpt: OutClaim(Interner::default().intern("x")),
+                source_excerpt: OutBytes(Interner::default().intern("x")),
             }),
             span(0, 1),
         );
@@ -1391,7 +1391,7 @@ mod tests {
         assert_eq!(registry(&refused).floor, Floor::WarnOrDeny);
         let unresolvable = DiagCode::SiteUnresolvable(SiteUnresolvable {
             site: site(0),
-            source_excerpt: OutClaim(Interner::default().intern("x")),
+            source_excerpt: OutBytes(Interner::default().intern("x")),
         });
         assert_eq!(registry(&unresolvable).floor, Floor::None);
     }
@@ -1415,7 +1415,7 @@ mod tests {
             }),
             DiagCode::SiteUnresolvable(SiteUnresolvable {
                 site: site(0),
-                source_excerpt: OutClaim(Interner::default().intern("x")),
+                source_excerpt: OutBytes(Interner::default().intern("x")),
             }),
         ] {
             assert_eq!(
@@ -1485,7 +1485,7 @@ mod tests {
                     leaf: LeafId(4),
                     member: Some(2),
                 },
-                source_excerpt: OutClaim(Interner::default().intern("make install")),
+                source_excerpt: OutBytes(Interner::default().intern("make install")),
             }),
             span(0, 12),
         );
@@ -1709,7 +1709,7 @@ mod tests {
         let unresolvable = Diag::new(
             DiagCode::SiteUnresolvable(SiteUnresolvable {
                 site: site(0),
-                source_excerpt: OutClaim(Interner::default().intern("make install")),
+                source_excerpt: OutBytes(Interner::default().intern("make install")),
             }),
             span(0, 12),
         );
