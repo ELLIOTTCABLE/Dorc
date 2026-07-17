@@ -372,7 +372,10 @@ sm_dorc_Package__state_stored_only_in() {\n\
         // strip(strip(x)) == strip(x): the once-stripped artifact is now marker-FREE (the marker line
         // is erased), so the second pass hits the marker gate's early return and is byte-identity.
         let once = strip(MARKED);
-        assert!(!once.contains("# dorc-lang/v0.1"), "once-stripped is marker-free");
+        assert!(
+            !once.contains("# dorc-lang/v0.1"),
+            "once-stripped is marker-free"
+        );
         assert_eq!(strip(&once), once, "strip is idempotent");
     }
 
