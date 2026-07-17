@@ -359,6 +359,42 @@ ports).
 - `TrustedFootprints::contains` pub promotion (read-only, for the soundness
   pin) — accepted.
 
+## stage-6: e2e-degraduation, first slice — LANDED 2026-07-17 (checkpoint PASSED; stage-6b continuation minted)
+
+Commits `13a8e51..29d0202` on `ai/r27-e2e-degraduation`, folded into
+`ai/spike3-r27` (second behind-count-1 fold; the strip-correction ledger
+commit recovered by cherry-pick at `6adf472` — conductor now separates the
+count-check from the fold command). Builder: Opus (honest partial delivery —
+front-loaded the errands + the load-bearing net, deferred the bulk migration
+unstarted rather than half-landing). Landed: **E1** dorc-sh + whole-file
+`dorc strip` (parser-backed erasure per correction-strip-not-gsub-tier,
+acknowledged in-run; bare-mark whole-statement deletion pinned; smoke e2e) ·
+**E2** trap-at-tip walls-loudly pin (in-memory home; discharges the `271`
+task-12 conductor errand) · **E4** strict-deframe production path
+(`LegacyPolicy` at the cli edge; `DORC_ALLOW_LEGACY_RESULTS` harness escape) ·
+the `render_corpus.rs` twin tier with the MANDATORY dash-n net wired into the
+harness itself + proof-it-fires test + the `24C:st-1` must-cover · an 11-case
+migration slice (13 twins; kill-then-install ≡ exec-same-cell-kill collapsed,
+twin STRENGTHENED to a converged-host pin). e2e 128 → 117, deletions-only
+churn, no bless needed; 27 suites green.
+
+**Checkpoint dispositions:**
+
+- disposition-strip-keeps-marker — ACCEPTED as landed, human-veto invited: the
+  `# dorc-lang/v0.1` marker survives stripping. Consistent with main-DESIGN's
+  own wording ("remove any/all NON-POSIX Dorc annotations" — the marker is a
+  valid POSIX comment) and harmless on re-ingest (marker-gates-syntax-only; a
+  stripped file has no dialect constructs). The opposite call (strip it — the
+  file is no longer dialect text) is defensible; one-word human ruling welcome,
+  low stakes, reversible.
+- disposition-dorc-sh-spawn-not-exec — ACCEPTED (Windows-portable spawn-and-
+  wait; disclosed; true exec is a real-executor-era nicety).
+- disposition-partial-delivery — ACCEPTED; the remainder (batch-3's ~40
+  remaining cases incl. all ~SUSPECT rows, batch-4 guard23 conversions,
+  optional batch-5 + E3) is pattern-established mechanical work ⇒ minted as
+  **stage-6b**, dispatched immediately (Opus lead + clamped Sonnets per the
+  established twin pattern).
+
 **Environment incident (surfaced to human 2026-07-17):** a SyncThing conflict file
 (`effect.sync-conflict-…-PHNHRER.rs`) appeared INSIDE the stage-1 builder's agent
 worktree mid-edit — device PHNHRER is live-syncing `.claude/worktrees/`, which the
