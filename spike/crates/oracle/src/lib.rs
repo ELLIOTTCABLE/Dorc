@@ -92,6 +92,13 @@ pub mod reaches;
 /// nothing here is consumed by `analysis`/`plan` yet, so the wrapper-free corpus stays byte-stable.
 pub mod wrapper;
 
+/// The eval'er surface (`274` · `271:rul-evaler-merge-no-structure-member`): reentry DETECTION
+/// inside `<provider>__predict` (a body that delegates to the `dorc:sh`/`dorc-sh` reentry primitive
+/// IS an eval'er — no separate structure member), the payload shape (which-arg-is-code / stdin /
+/// file), and the reentry ρ-claim. MODELS only — mints no license; nothing here is consumed by
+/// `analysis`/`plan` yet, so the eval'er-free corpus stays byte-stable.
+pub mod evaler;
+
 /// The munge-reservation lint (24Kc `fix-munge-reservation`; 24M `ca-munge-charclass`): the
 /// reserved `<munged>__<role>` sh-function namespace's charclass refusal, non-injective-munge
 /// collision refusal, and book-squat disclosure. A standing mitigation for the coincidental
