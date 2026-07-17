@@ -248,6 +248,37 @@ six `219` capture-chain steps representation-open.
   backing-family-reverse-lookup) roll into stage-4b + the block-context
   planning seam list.
 
+## stage-4b: effect-plane backing-SETS — LANDED 2026-07-17 (checkpoint PASSED)
+
+Commits `e4c6da9..cecaa13` on `ai/r27-backing-sets`, fast-forwarded into
+`ai/spike3-r27`. Builder: Opus solo. Landing note: **`notes/27I`**. Landed:
+`FactBacking` (family + observed-selector set) threaded classify→plan;
+`Backing`→SET with `widened`/`of_fact`; observe-backing-widening PRODUCING
+(per-(provider,verb) linkage: co-occurring `:?` selectors widen the arm's
+verdict facts; standalone observes stay Queries); survival universal-meet on
+real sets (both `27G` pins re-pinned non-synthetically; fence-no-disjoint
+member-wise); minting-family threading authoritative (reverse-lookup demoted
+to the inert map-miss floor). 691 unit / 128 e2e; ZERO golden churn — dormancy
+robust, not coincidental (verbless corpus observes; ⊤ corpus disturbs).
+
+**Checkpoint dispositions:**
+
+- disposition-widen-not-also-queries — ACCEPTED (an oracle-internal read;
+  the mark asserts one thing, consumers derive — `275` §2; keeping the
+  Queries cell would regress the establish to MustRun).
+- disposition-arm-wide-widening — ACCEPTED (kill-surface only grows).
+- disposition-minting-line-deferral — ACCEPTED as corpus-inert TODAY, but
+  NAMED PRECONDITION: attribution-at-sparing-verdict requires the minting
+  LINE (source span) once sparing can actually fire — MUST land before
+  block-stdlib mints selector-bearing disturbs claims. Owner: block-context
+  planning's seam list (or an early stdlib-block errand).
+- limitation-backing-sets-same-kind-only — NAMED vs the `275` §2 design: the
+  derive model forces every (provider,verb) cell to one (kind,entity), so
+  backing sets today hold sibling SELECTORS only — the cross-kind backing
+  member (the decorated-output clock∪state case) is unrepresentable until the
+  derive model widens. Not corpus-observable; block-context's
+  read-value-slice / per-channel backing work owns the widening.
+
 **Environment incident (surfaced to human 2026-07-17):** a SyncThing conflict file
 (`effect.sync-conflict-…-PHNHRER.rs`) appeared INSIDE the stage-1 builder's agent
 worktree mid-edit — device PHNHRER is live-syncing `.claude/worktrees/`, which the
