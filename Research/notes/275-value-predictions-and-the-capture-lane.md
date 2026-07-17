@@ -113,6 +113,11 @@ consumer plus the pipeline-order and literal-provenance seams.
   finding-descent-edges-widen-only to values by construction).
 - **cross-context transport**: by backing invariance, derived (§6) — no authored
   vocabulary member exists or is needed.
+  <!-- /* superseded: doubly stale — §6 is refused as posed (its banner), and
+  invariance is never DERIVED: it is the kind-owner's typed invariant:<axis> line +
+  engine-warranted carried-by rows (271:rul-invariance-speech-act); composed
+  cross-context consumption rides only under --risk-faultless-skips
+  (plans/27C §4). */ -->
 
 ## §5 — Chronology
 
@@ -149,12 +154,27 @@ consumers — binding-site disposition needs its own care in block-context plann
 > transport stands, analytic. Step 4 amended per `279f:fix-275-license-source`;
 > the rest of the section is preserved as the proposal under adjudication.)
 
+<!-- /* superseded 2026-07-16 (plans/27C, human-ruled): the disposition menu above is
+CLOSED — answered by an option none of a/b/c stated: (d) context-entry probing (measure
+in the site's own denoted context; reuse-never-acquire; escalation dial × tolerance
+vouch). Transport is DEMOTED to a flag-tier fallback lane (plans/27C §4), riding only
+under --risk-faultless-skips per 271:rul-flag-is-razor-residue. The refusal of this
+section's ratification STANDS. */ -->
+
 Fact-side refresher: probe-outside license = permission to treat an outside (alice)
 measurement as being ABOUT the inside (root) object = same-object-whoever-asks =
 derived user-invariance (`272`). The value-side chain, four steps:
 
 1. The value is a pure function of the state its backing names
    (rul-measurement-is-authorship + honesty of the mark).
+   <!-- /* superseded 2026-07-13/16: this premise is the credited headline crosscheck
+   finding (279b-fd1/279a-A2) AND violates a typed ruling that PRE-DATES this note —
+   24D:rul24-selfframing-correction (2026-07-04): a backing is a declaration-scope
+   carrying NO completeness burden, never a computed read-set; completeness-shaped
+   claims live only on at-most footprints + vouch adequacy (flag territory). The
+   271:rul-measurement-is-authorship cite supplies no completeness either — it makes
+   observables PREDICTIONS (the opposite direction). Do not rebuild from this
+   sentence; the live design is plans/27C (context-entry probing). */ -->
 2. Same state ⇒ same value. (⇐ only — the converse is false and UNUSED: a keyed
    backing fails-to-license sameness, never proves difference;
    never-derive-separation's flavour at the value tier.)
@@ -204,6 +224,8 @@ fences exist).
   single-line; its gating adjudication (this arc) is now delivered.
 - **dynamic locator arms** (`272` §11): served by §6; the second-customer coupling
   closes.
+  <!-- /* superseded: suspended with §6's refusal — this customer re-opens into
+  block-context implementation-planning, which consumes plans/27C whole. */ -->
 - **predicted-output values** (`273` §7/§11): "Predicted and OutClaim are one
   value-plane species" CONFIRMED — output-predictions are the author-composed grade;
   the changed-detection fold's scope call remains unmade (not this arc's).
@@ -266,3 +288,7 @@ against derived-not-declared topology) · the render-unpark fence (world-spoken 
 | never-settled/clock | HARD-DEFERRED (don't-even-mention tier; shelf entry only) |
 | authored-surface-empty | consequence-tier, verified against the task-1–6 grammar |
 | stdin-code carriage | routed to block-context planning; unwalked |
+
+<!-- /* superseded 2026-07-16: the "cross-context transport chain" row above is stale —
+refused as posed at the 279f adjudication (this file's §6 banner); the direction-tier
+hedge no longer stands queued for ratification; plans/27C governs that territory. */ -->
