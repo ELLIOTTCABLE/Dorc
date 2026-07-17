@@ -801,7 +801,7 @@ pub fn peel_book_chain(book_argv: &[&str], wrappers: &WrapperIndex) -> Option<Pe
             provider: model.provider,
             entry: model.enter.clone(),
         });
-        cur = cur.get(1 + consumed..)?.to_vec();
+        cur = cur.get(consumed.saturating_add(1)..)?.to_vec();
         if cur.is_empty() {
             return None; // a wrapper with no guest ⇒ wall
         }
