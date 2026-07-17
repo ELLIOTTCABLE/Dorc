@@ -340,15 +340,26 @@ impl Emitter {
                 match &cmd.mark {
                     Some(mark) => {
                         let kind = mark.target.kind.clone();
-                        // `277` §3: the selector rides the trailing mark (`: sm.dorc.Service#active`);
-                        // a mark with no `#` mints a whole-entity ⊤ footprint (`selector: None`).
-                        let selector = mark.target.prop.clone();
+                        // `277` §3/§4c: the selector rides the trailing mark. A plain `#sel` is one
+                        // whole-entity footprint per line; a brace-alternation `#{a,b}` EXPANDS to
+                        // one coordinate per token (claim-emission marks only — `277` §4c); no `#`
+                        // mints a whole-entity ⊤ footprint. Disturbs is a claim-emission role, so the
+                        // expansion is licensed here (verdict/observe reject it in `derive_predict`).
+                        let selectors: Vec<Option<String>> = match &mark.target.prop {
+                            Some(p) => match crate::predict::brace_tokens(p) {
+                                Some(tokens) => tokens.into_iter().map(Some).collect(),
+                                None => vec![Some(p.clone())],
+                            },
+                            None => vec![None],
+                        };
                         for line in lines {
-                            self.coords.push(EmittedCoord {
-                                kind: kind.clone(),
-                                entity: Some(line),
-                                selector: selector.clone(),
-                            });
+                            for selector in &selectors {
+                                self.coords.push(EmittedCoord {
+                                    kind: kind.clone(),
+                                    entity: Some(line.clone()),
+                                    selector: selector.clone(),
+                                });
+                            }
                         }
                     }
                     None => {
@@ -487,6 +498,43 @@ apt_get__disturbs() {
                 entity: None,
                 selector: None,
             }])
+        );
+    }
+
+    #[test]
+    fn emission_selector_rides_the_mark() {
+        // `277` §3 / rul-emission-selector-on-mark: a disturbs emission `KIND#SELECTOR` carries the
+        // selector on every emitted coordinate (entity from the printf line, selector from the mark).
+        let src = "x__disturbs() { printf '%s\\n' \"$1\" : sm.dorc.Service#active ; }";
+        assert_eq!(
+            trace(src, &["nginx"]),
+            TouchesResolution::Emitted(vec![EmittedCoord {
+                kind: "sm.dorc.Service".to_owned(),
+                entity: Some("nginx".to_owned()),
+                selector: Some("active".to_owned()),
+            }])
+        );
+    }
+
+    #[test]
+    fn brace_alternation_disturbs_expands_to_one_coord_per_token() {
+        // `277` §4c: a claim-emission (disturbs) brace-alternation `#{enabled,active}` expands to one
+        // coordinate per token, each on the emitted entity.
+        let src = "x__disturbs() { printf '%s\\n' \"$1\" : sm.dorc.Service#{enabled,active} ; }";
+        assert_eq!(
+            trace(src, &["nginx"]),
+            TouchesResolution::Emitted(vec![
+                EmittedCoord {
+                    kind: "sm.dorc.Service".to_owned(),
+                    entity: Some("nginx".to_owned()),
+                    selector: Some("enabled".to_owned()),
+                },
+                EmittedCoord {
+                    kind: "sm.dorc.Service".to_owned(),
+                    entity: Some("nginx".to_owned()),
+                    selector: Some("active".to_owned()),
+                },
+            ])
         );
     }
 

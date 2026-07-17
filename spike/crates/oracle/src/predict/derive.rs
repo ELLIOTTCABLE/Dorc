@@ -162,6 +162,14 @@ fn push_effect(ctx: &Ctx, kind: MarkKind, target: &MarkTarget, effects: &mut Vec
     let (Some(kind_str), Some(selector)) = (ctx.kind.clone(), target.prop.clone()) else {
         return;
     };
+    // `277` §4c single-cell law: a verdict/observe mark asserts EXACTLY ONE cell, so a brace-
+    // alternation `#{a,b}` is claim-emission-only and mints NO cell here (the safe direction — the
+    // arm declines ⇒ run). The parser accepts the brace SHAPE role-agnostically (`:` serves both
+    // verdict and disturbs); this is the role-aware rejection. rider-brace-alternation-unexpanded:
+    // the LOUD diagnostic form is deferred (derive_predict is total/diagnostic-free by design).
+    if crate::predict::brace_tokens(&selector).is_some() {
+        return;
+    }
     effects.push(DerivedEffect {
         verb: ctx.verb.clone(),
         kind: kind_str,

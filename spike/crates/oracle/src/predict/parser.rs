@@ -826,6 +826,17 @@ impl Parser<'_> {
                 self.fail_here("malformed dialect mark target (expected `kind:entity#selector`)")
             );
         };
+        // rider-selector-charset-unenforced (`277` §4b): a selector is a POSIX name in spirit (or a
+        // brace-alternation `#{a,b}`, `277` §4c). A violating selector is a LOUD ⊤-reject, never a
+        // silent ⊤ (`inv-top-reject` — bias every ambiguity toward reject-with-diagnostic).
+        if let Some(prop) = &parsed.prop
+            && !is_valid_selector(prop)
+        {
+            return Err(self.fail_here(
+                "selector must be a POSIX name (letter/underscore, then letters/digits/underscores) \
+                 or a brace-alternation `#{a,b}`",
+            ));
+        }
         Ok(Mark {
             kind: classify_mark(sigil),
             target: MarkTarget {
@@ -1207,26 +1218,74 @@ fn split_mark_target(lexeme: &str) -> Option<ParsedTarget> {
     if lexeme.is_empty() {
         return None;
     }
-    let (kind, rest) = match lexeme.split_once(':') {
-        Some((k, r)) => (k.to_owned(), Some(r)),
-        None => (lexeme.to_owned(), None),
+    let Some((kind, rest)) = lexeme.split_once(':') else {
+        // No `:` — the emission form `KIND#SELECTOR` (the selector rides the mark; the entity comes
+        // from the printf line — `rul-emission-selector-on-mark`) or a bare `KIND` (`277` §4a). The
+        // selector splits off the FIRST `#`; the kind keeps its reverse-DNS dots (no `#` is a valid
+        // kind char). Entity is `None` (no entity in the mark).
+        return match lexeme.split_once('#') {
+            Some((kind, sel)) if !kind.is_empty() && !sel.is_empty() => Some(ParsedTarget {
+                kind: kind.to_owned(),
+                entity: None,
+                prop: Some(sel.to_owned()),
+            }),
+            // `KIND#` (empty selector) or `#…` (empty kind) — no clean split ⇒ bare kind (a trailing
+            // `#` stays in the kind, caught by the kind-charset differential; the corpus never does
+            // this).
+            _ => Some(ParsedTarget {
+                kind: lexeme.to_owned(),
+                entity: None,
+                prop: None,
+            }),
+        };
     };
     if kind.is_empty() {
         return None;
     }
     let (entity, prop) = match rest {
-        None | Some("") => (None, None),
+        "" => (None, None),
         // The entity/selector split is on the FIRST `#` (the attached selector-introducer,
-        // `277` §4a). No `#` ⇒ a whole-entity coordinate (the emission-mark and bare-entity
-        // shapes). A leading `#` ⇒ the empty-entity form `kind:#sel`.
-        Some(r) => match r.split_once('#') {
+        // `277` §4a). No `#` ⇒ a whole-entity coordinate. A leading `#` ⇒ the empty-entity form
+        // `kind:#sel`.
+        r => match r.split_once('#') {
             Some((e, s)) if !s.is_empty() => (Some(e.to_owned()), Some(s.to_owned())),
             // `kind:entity#` (empty selector) is malformed — treat the whole rest as the
             // entity (the selector is dropped; the differential gate catches a mis-spell).
             _ => (Some(r.to_owned()), None),
         },
     };
-    Some(ParsedTarget { kind, entity, prop })
+    Some(ParsedTarget {
+        kind: kind.to_owned(),
+        entity,
+        prop,
+    })
+}
+
+/// Is `sel` a valid selector (`277` §4b/§4c): a POSIX name (letter/underscore first, then
+/// letters/digits/underscores), or a brace-alternation `{tok,tok[,…]}` where every token is a
+/// POSIX name (`rider-selector-charset-unenforced`). The role-scoping of brace-alternation
+/// (claim-emission marks only; verdict/observe stay single-cell — `277` §4c) is enforced by the
+/// consumers (`derive_predict`), not here: the parser is role-agnostic (`:` serves both verdict and
+/// disturbs marks), so it accepts the brace SHAPE and leaves the single-cell rejection to the
+/// role-aware lift.
+fn is_valid_selector(sel: &str) -> bool {
+    sem::is_name(sel) || is_brace_alternation(sel)
+}
+
+/// Is `sel` a well-formed brace-alternation `{tok,tok[,…]}` (`277` §4c)?
+fn is_brace_alternation(sel: &str) -> bool {
+    brace_tokens(sel).is_some()
+}
+
+/// The tokens of a brace-alternation selector `{tok,tok[,…]}` (`277` §4c): `Some` iff braces, ≥2
+/// comma-separated POSIX-name tokens, no internal whitespace; `None` for a plain selector. Opaque
+/// (never decoded). Shared with the touches lift (the claim-emission expansion) and the predict
+/// derive (the verdict/observe single-cell rejection).
+pub(crate) fn brace_tokens(sel: &str) -> Option<Vec<String>> {
+    let inner = sel.strip_prefix('{')?.strip_suffix('}')?;
+    let tokens: Vec<&str> = inner.split(',').collect();
+    (tokens.len() >= 2 && tokens.iter().all(|t| sem::is_name(t)))
+        .then(|| tokens.into_iter().map(str::to_owned).collect())
 }
 
 /// Classify a parsed mark into a [`MarkKind`] from its [`MarkSigil`] (`277` §4a). All
@@ -1445,6 +1504,33 @@ mod dialect_tests {
             "the entity slot is an EXPLICIT empty string, never None"
         );
         assert_eq!(m.target.prop.as_deref(), Some("v0155"));
+    }
+
+    #[test]
+    fn non_name_selector_is_a_loud_reject() {
+        // rider-selector-charset-unenforced (`277` §4b): a selector that is not a POSIX name (nor a
+        // brace-alternation) is a LOUD ⊤-reject diagnostic, never a silent ⊤.
+        let mut i = Interner::default();
+        let out = lift_predicts(
+            &mut i,
+            "x__predict() { case $1 in a) foo : sm.dorc.K:e#bad-sel ;; esac }",
+        );
+        assert!(
+            !out.diags.is_empty(),
+            "a non-name selector must be diagnosed, not silently accepted as opaque"
+        );
+    }
+
+    #[test]
+    fn brace_alternation_selector_parses_as_a_valid_selector() {
+        // `277` §4c: the brace-alternation SHAPE is a valid selector (the role-scoping to
+        // claim-emission marks is enforced downstream). Here the mark's selector holds the raw
+        // `{enabled,active}` (the touches lift expands it; verdict/observe reject it in derive).
+        let body = body_of(
+            "x__predict() { case $1 in a) foo : sm.dorc.Service:nginx#{enabled,active} ;; esac }",
+        );
+        let m = first_command_mark(&body).expect("a brace-alternation mark parses");
+        assert_eq!(m.target.prop.as_deref(), Some("{enabled,active}"));
     }
 
     #[test]
