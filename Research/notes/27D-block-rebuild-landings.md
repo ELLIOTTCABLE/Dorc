@@ -563,3 +563,17 @@ pointer, not the content. Also noted from the same root read: the fallback
 lane's settle commit (`c55ffbe`) RETIRES the old engine-warranted carried-by
 row explicitly and names the conservative-closure pass "the spike's
 obligation to discharge and prove in practice."
+
+## Mid-run redirect #2 (2026-07-17 — fold-entry coherence RULED, narrowed)
+
+From the human's next in-flight `27C` revision (the composition algebra itself
+landed on main at `c7efc27`; this rides uncommitted on top):
+**`27C:rul-fold-entry-coherence-failfast`** (HUMAN-ACKED, scope-narrowed) —
+fail-fast fires ONLY on static sh-structure disagreement between `lend_map`
+and the entry form (peel-position divergence; argv-flow divergence). Whether
+entry actually EFFECTS the declared shifts is tool-semantics = traversal-vouch
+territory (attributed authored error when wrong; hole-bad-oracle-blast
+species), never statically detected. Coarse case stays member-existence;
+runtime corroboration is lint-tier only per the §6 utterability ladder.
+Builder redirected mid-run (supersedes redirect #1's point 5, which had it
+proposed-tier).
