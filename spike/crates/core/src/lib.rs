@@ -666,6 +666,36 @@ pub struct FactKey {
     pub selector: SelectorId,
 }
 
+/// The survival-backing provenance of an ESTABLISH fact (`277` §5 backing-SETS): the minting
+/// FAMILY of the fact (threaded from the lift — the `(provider, verb)` that classified the site),
+/// plus the observe-backing-widening SELECTORS (`277` §5 observe-backing-widening / `271`). Built
+/// by `analysis::effect` where the fact and its `(provider, verb)` are both in scope, and consumed
+/// by `plan::survival` to build the fact's [`Backing`](../../dorc_plan) SET.
+///
+/// # Why threaded, not reverse-looked-up (`27D` disposition-backing-family-recovery)
+///
+/// Stage-3 recovered a backing's minting family via a dialect reverse-lookup (`sole_family(kind,
+/// selector)`), which falls to `None` (the safe collide floor) when TWO families mint the same
+/// `(kind, selector)` — `fence-divergent-meaning`. Threading the TRUE establishing family from the
+/// lift is exact: the family the site's `(provider, verb)` names. Both members and the fact's own
+/// coordinate carry it (all minted by ONE provider's predict body — its verdict AND observe marks).
+///
+/// # `family: Option` — the collision floor
+///
+/// `None` when TWO sites establish the SAME fact via DIFFERENT providers (a collision merged toward
+/// the safe floor: `None` ⇒ the empty dialect ⇒ no sparing ⇒ collide, exactly as the reverse-lookup
+/// would answer an ambiguous `(kind, selector)`). One establishing provider ⇒ `Some(that provider)`.
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub struct FactBacking {
+    /// The fact's minting family (the establishing `(provider, verb)`'s provider), or `None` on a
+    /// cross-provider establish collision (the safe floor — no sparing).
+    pub family: Option<ProviderId>,
+    /// The observe-backing-widening sibling SELECTORS (`277` §5): the `:?` observe cells that
+    /// co-occurred with the verdict in the establishing predict body. Each widens the fact's
+    /// backing with a sibling cell `(fact.kind, fact.entity, selector)` — kill-surface only grows.
+    pub observed: std::collections::BTreeSet<SelectorId>,
+}
+
 /// The reserved-namespace prefix for the **typeless-floor auto-cell** (`24L` §2/§7). A
 /// verdict-bearing provider with no marked effect gets a synthetic establish-cell keyed at
 /// `<AUTO_KIND_PREFIX><provider>`, so its own-line elision/guard tier lights up (the whole

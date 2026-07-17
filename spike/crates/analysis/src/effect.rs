@@ -31,7 +31,8 @@ use dorc_core::diag::{
     OperandPosition, RedirTargetTop, SiteId,
 };
 use dorc_core::{
-    Carrier, Diagnostic, EntityRef, Interner, KindId, LeafId, OpaqueToken, ProviderId, Span,
+    Carrier, Diagnostic, EntityRef, FactBacking, Interner, KindId, LeafId, OpaqueToken, ProviderId,
+    SelectorId, Span,
 };
 use dorc_oracle::predict::{self, PredictSet, ResolvedEntity};
 use dorc_oracle::{EffectCell, KindIndex, ValueClaim, empty_verb};
@@ -258,6 +259,7 @@ pub fn command_effect(
     diags: &mut Vec<Diagnostic>,
     cmdsub_tops: &mut Vec<CmdsubTop>,
     site: Option<DiagSite>,
+    backings: &mut BTreeMap<FactKey, FactBacking>,
 ) -> Vec<CommandEffect> {
     // A bare assignment-only command (`pkg=nginx`) has an empty argv ⇒ no
     // system-state effect (value::analyze yields `[]` for words.is_empty()).
@@ -368,7 +370,7 @@ pub fn command_effect(
     // `EffectCell` is `Copy` and `cells` borrows `idx` (disjoint from `&mut interner`),
     // so iterate by copy — `cell_effect` takes `&mut interner` for the kind-agreement
     // diagnostic without conflicting with the `idx` borrow.
-    cells
+    let effects: Vec<CommandEffect> = cells
         .iter()
         .copied()
         .map(|cell| {
@@ -381,7 +383,42 @@ pub fn command_effect(
                 diags,
             )
         })
-        .collect()
+        .collect();
+    // `277` §5 backing-SETS: thread each ESTABLISH fact's survival-backing provenance — its
+    // minting FAMILY (this site's `provider`, exact — not the `sole_family` reverse-lookup;
+    // `27D` disposition-backing-family-recovery) plus the observe-backing-widening SELECTORS
+    // (`idx.widening_of` — the `:?` observes that co-occurred with the verdict in this verb's
+    // predict body; empty for the whole corpus). Only real oracle establishes are threaded; an
+    // auto-cell / file-write / Members fact is absent here ⇒ `plan` falls back to the singleton
+    // `Backing::of_fact` (today's reverse-lookup behavior — the safe floor).
+    let observed = idx.widening_of(provider, verb_key);
+    for e in &effects {
+        if let CommandEffect::Establishes(fact) = e {
+            record_backing(backings, *fact, provider, observed);
+        }
+    }
+    effects
+}
+
+/// Merge a fact's threaded survival-backing (`277` §5). A COLLISION — the SAME fact established
+/// at two sites by DIFFERENT providers — folds the family toward the safe floor `None` (no
+/// sparing, exactly as `sole_family` answers an ambiguous `(kind, selector)`); the observed
+/// widening selectors UNION (kill-surface only grows — `inv-kfail`, apply). Same-provider re-mint
+/// is idempotent. Deterministic (`BTreeMap`/`BTreeSet`).
+fn record_backing(
+    backings: &mut BTreeMap<FactKey, FactBacking>,
+    fact: FactKey,
+    provider: ProviderId,
+    observed: &BTreeSet<SelectorId>,
+) {
+    let entry = backings.entry(fact).or_insert_with(|| FactBacking {
+        family: Some(provider),
+        observed: BTreeSet::new(),
+    });
+    if entry.family != Some(provider) {
+        entry.family = None; // cross-provider collision ⇒ safe floor (no sparing)
+    }
+    entry.observed.extend(observed.iter().copied());
 }
 
 /// Resolve an in-loop Members site to its establish-cell FAMILY (task-L2 item-2), or
@@ -426,6 +463,10 @@ fn member_family(
         // ⊤ is disclosed, never mis-elided.) `site: None` records NO cmdsub-top disclosure, so a
         // discarded local collector is honest here (nothing is ever pushed to it).
         let mut suppressed = Vec::new();
+        // A Members site is render-floored (every member RUNS), so its facts fall through to
+        // `plan`'s singleton `Backing::of_fact` fallback — no threaded widening is needed here.
+        // A throwaway map keeps the resolution local (`277` §5: member-widening is deferred, safe).
+        let mut member_backings = BTreeMap::new();
         match command_effect(
             idx,
             checks,
@@ -435,6 +476,7 @@ fn member_family(
             diags,
             &mut suppressed,
             None,
+            &mut member_backings,
         )
         .as_slice()
         {
@@ -547,7 +589,7 @@ fn file_write_cell(path: dorc_core::Symbol, interner: &mut Interner) -> FactKey 
     FactKey {
         kind: KindId(interner.intern("file")),
         entity: EntityRef::Operand(OpaqueToken(path)),
-        selector: dorc_core::SelectorId(interner.intern("written")),
+        selector: SelectorId(interner.intern("written")),
     }
 }
 
@@ -860,6 +902,7 @@ fn node_effects(
     interner: &mut Interner,
     diags: &mut Vec<Diagnostic>,
     cmdsub_tops: &mut Vec<CmdsubTop>,
+    backings: &mut BTreeMap<FactKey, FactBacking>,
 ) -> Vec<CommandEffect> {
     if let Some(family) = member_family {
         return family
@@ -892,6 +935,7 @@ fn node_effects(
                 diags,
                 cmdsub_tops,
                 Some(site),
+                backings,
             )
         }
         // An unmodeled construct may mutate anything ⇒ ⊤.
@@ -1011,6 +1055,7 @@ fn resolve_node_effects(
     Vec<Option<Vec<FactKey>>>,
     Vec<Vec<CommandEffect>>,
     Vec<CmdsubTop>,
+    BTreeMap<FactKey, FactBacking>,
 ) {
     let n = cfg.node_count();
     let member_families: Vec<Option<Vec<FactKey>>> = (0..n)
@@ -1027,6 +1072,9 @@ fn resolve_node_effects(
         })
         .collect();
     let mut cmdsub_tops: Vec<CmdsubTop> = Vec::new();
+    // `277` §5 backing-SETS: the fact → survival-backing-provenance map, threaded from the
+    // establishing `command_effect` (minting family + observe-widening selectors).
+    let mut backings: BTreeMap<FactKey, FactBacking> = BTreeMap::new();
     let effects: Vec<Vec<CommandEffect>> = (0..n)
         .map(|i| {
             node_effects(
@@ -1041,10 +1089,11 @@ fn resolve_node_effects(
                 interner,
                 diags,
                 &mut cmdsub_tops,
+                &mut backings,
             )
         })
         .collect();
-    (member_families, effects, cmdsub_tops)
+    (member_families, effects, cmdsub_tops, backings)
 }
 
 /// Classify every `Command` node for the skip decision: resolve each command's
@@ -1099,15 +1148,24 @@ pub fn classify(
     .0
 }
 
+/// [`classify_with_why_diags`]'s survival-backing product accessor (`277` §5): the fact →
+/// [`FactBacking`] map (minting family + observe-widening selectors) the cli threads into
+/// [`dorc_plan::build_plan_walled`]. Named here only for the doc-link; the map is the 5th tuple
+/// element (see the fn's return type).
+#[doc(hidden)]
+pub type BackingMap = BTreeMap<FactKey, FactBacking>;
+
 /// [`classify`] PLUS the TYPED cause-bearing cmdsub-⊤ disclosures for the why-lens (`22D`
 /// stage-3). The legacy [`Carrier`]'s `diags` already carries these LOWERED (cause-dropped, for
 /// `report`/gate-3); this ALSO returns them TYPED so the cli's why-lens render can read the
 /// `cause` off them (`to_legacy` drops it — [`dorc_core::diag::why`] needs the typed value).
 ///
-/// Returns `(Carrier<dispositions+legacy-diags>, typed-why-lens-diags, kill-node-set)`. The
-/// typed diags are a subset-by-construction of the lowered ones (the same `CmdsubOperandTop`s,
-/// before lowering) — no second pass, no divergence. EXEMPT (ru-11): the typed diags' `cause`
-/// informs the render only, never a decision.
+/// Returns `(Carrier<dispositions+legacy-diags>, typed-why-lens-diags, kill-node-set,
+/// kill-coords, backing-map)`. The typed diags are a subset-by-construction of the lowered ones
+/// (the same `CmdsubOperandTop`s, before lowering) — no second pass, no divergence. EXEMPT
+/// (ru-11): the typed diags' `cause` informs the render only, never a decision. The **backing-map**
+/// (`277` §5) is fact → [`FactBacking`] (minting family + observe-widening selectors), threaded to
+/// [`dorc_plan::build_plan_walled`] so the survival tier builds each fact's backing SET.
 ///
 /// The **kill-node set** (R3 / 24A §3 — the kill gap) is the set of leaf [`CfgNodeId`]s whose
 /// [`CommandEffect`] is a `Kills` (`apt-get purge`; `EstablishInverted` ⇒ `Kills` ⇒ classifies
@@ -1122,11 +1180,12 @@ pub fn classify(
     clippy::type_complexity,
     clippy::too_many_arguments,
     clippy::too_many_lines,
-    reason = "the four parallel products (site classifications + typed why-lens diags + the R3 \
-              kill-node set + the killed-coordinate side-map, 24E §7) are the fn's whole output; a \
-              named struct for a two-call-site return (the cli + the plan test seam) buys nothing. \
-              The verdict-provider set (`24L` §7 seam) is one more input, and its threaded call \
-              pushes the body just over the line cap — the classify core is irreducibly long"
+    reason = "the five parallel products (site classifications + typed why-lens diags + the R3 \
+              kill-node set + the killed-coordinate side-map, 24E §7 + the `277` §5 backing-map) \
+              are the fn's whole output; a named struct for a two-call-site return (the cli + the \
+              plan test seam) buys nothing. The verdict-provider set (`24L` §7 seam) is one more \
+              input, and its threaded call pushes the body just over the line cap — the classify \
+              core is irreducibly long"
 )]
 pub fn classify_with_why_diags(
     cfg: &Cfg,
@@ -1142,11 +1201,13 @@ pub fn classify_with_why_diags(
     Vec<Diag>,
     BTreeSet<CfgNodeId>,
     BTreeMap<CfgNodeId, FactKey>,
+    BTreeMap<FactKey, FactBacking>,
 ) {
     let mut diags: Vec<Diagnostic> = Vec::new();
     // Precompute every node's member-family + effect cells, recording the deferred cmdsub-⊤
-    // disclosures (stage-1). Extracted so this fn stays under the line cap.
-    let (member_families, effects, cmdsub_tops) = resolve_node_effects(
+    // disclosures (stage-1) and the `277` §5 survival-backing provenance. Extracted so this fn
+    // stays under the line cap.
+    let (member_families, effects, cmdsub_tops, backings) = resolve_node_effects(
         cfg,
         value,
         ast,
@@ -1314,7 +1375,13 @@ pub fn classify_with_why_diags(
         }
         out.push((id, classify_site(i)));
     }
-    (Carrier { value: out, diags }, why_diags, kills, kill_coords)
+    (
+        Carrier { value: out, diags },
+        why_diags,
+        kills,
+        kill_coords,
+        backings,
+    )
 }
 
 /// The killed coordinate of a command's effects (24E §7): `Some(f)` IFF there is EXACTLY one `Kills`
@@ -1529,7 +1596,7 @@ command__predict() {
         let value = analyze(&built.value, &parsed.value, &mut i);
         let checks = vec![lift_predicts(&mut i, CORPUS_PREDICT_SRC).value];
         let mut arena = dorc_core::ProvArena::new();
-        let (_classes, _why, kills, kill_coords) = classify_with_why_diags(
+        let (_classes, _why, kills, kill_coords, _backings) = classify_with_why_diags(
             &built.value,
             &value,
             &parsed.value,
@@ -1786,6 +1853,7 @@ command__predict() {
             };
             let mut diags = Vec::new();
             let mut cmdsub_tops = Vec::new();
+            let mut backings = BTreeMap::new();
             command_effect(
                 idx,
                 &checks,
@@ -1795,6 +1863,7 @@ command__predict() {
                 &mut diags,
                 &mut cmdsub_tops,
                 None,
+                &mut backings,
             )
         }
         let (mut i, idx, s) = package_setup();
@@ -1877,6 +1946,7 @@ command__predict() {
         let argv = value.argv_values(node);
         let mut diags = Vec::new();
         let mut tops = Vec::new();
+        let mut backings = BTreeMap::new();
         assert_eq!(
             command_effect(
                 &idx,
@@ -1886,7 +1956,8 @@ command__predict() {
                 &mut i,
                 &mut diags,
                 &mut tops,
-                None
+                None,
+                &mut backings
             ),
             vec![CommandEffect::Opaque],
             "no verdict function ⇒ the honest floor (Opaque ⇒ run)"
@@ -1903,7 +1974,8 @@ command__predict() {
                 &mut i,
                 &mut diags,
                 &mut tops,
-                None
+                None,
+                &mut backings
             ),
             vec![CommandEffect::Establishes(expect)],
             "a verdict-bearing provider mints the per-provider auto-cell (§2)"
@@ -2731,7 +2803,7 @@ command__predict() {
         let mut diags: Vec<Diagnostic> = Vec::new();
         // The same precompute classify runs (member families + effects + the deferred cmdsub-⊤
         // records), then the same post-mint finalize — so this exercises the real wiring.
-        let (_families, effects, cmdsub_tops) = resolve_node_effects(
+        let (_families, effects, cmdsub_tops, _backings) = resolve_node_effects(
             &built.value,
             &value,
             &parsed.value,
