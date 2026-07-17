@@ -226,40 +226,47 @@ hint: 'foobar' (line 8) is unmodeled: it is the first wall - an oracle vouching 
 
 Annoyed, our admin puts on the engineer hat for exactly the length of a coffee. `foobar`
 already has a status query (most tools do). They append to the book's own file — oracles and
-runbooks can share a file:
+runbooks can share a file, once it carries the dialect marker (`# dorc-lang/v0.1`, near the
+top; an unmarked file always stays plain sh, and features requiring non-sh constructs
+require the marker):
 
 ```sh
-foobar.is_converged() {
+foobar__is_converged() {
    verb="$1"; shift
    case "$verb" in
    sync-certs)
       dest : org.foob.Certs = "$1"
-      foobar status --certs-current -- "$dest"   : org.foob.Certs:"$dest".synced
+      [ "$2" = "" ] || return 2
+      foobar status --certs-current -- "$dest"    : org.foob.Certs:"$dest"#synced
       ;;
    *) return 2 ;;
    esac
 }
 ```
 
-Nine lines, one verb, one probe — and the function's *name* is the license. In order:
+11 lines, one verb, one probe, one gate — and the function's *name* is the license. In order:
 
-- `foobar.is_converged()` declares "this body answers, for `foobar` invocations, the
-  question in its name." The period-name is the opt-in semaphore; *stripped*, it is a plain
-  `foobar_is_converged()` any shell can run. And the name is a *contract*: by writing a
+- `foobar__is_converged()` declares "this body answers, for `foobar` invocations, the
+  question in its name." The `__role` name is the opt-in semaphore — and it is already a
+  plain POSIX function-name any shell can run (strip erases binds and marks only; it never
+  rewrites a name). And the name is a *contract*: by writing a
   function that answers "is it converged," the author licenses Dorc to act on its yes — so
   its yes must mean "re-running this is noise I accept," not merely "some state holds." (A
   dpkg-'installed' package with an upgrade pending is exactly the gap: whether that counts
   as a yes is the author's judgment, and only theirs.) The plan attributes every elision
   and guard to the function that answered, by name; when the answer is wrong, there is a
-  person to be wrong. (Spelling settled 2026-07-03 — authoring the verdict-function IS the
-  vouching act; no separate vouch syllable exists.)
+  person to be wrong.
 - `dest : org.foob.Certs = "$1"` binds the operand as the entity, in a kind this author just
   minted. Nobody approves kind names; there is no registry. It only has to agree with
   itself. (At the call-site that operand was `"$CERTS"` — the analyzer resolves plain
   variable-flow to the constant before binding; ordinary shell habits don't defeat it.)
-- The trailing `: org.foob.Certs:"$dest".synced` says: this probe's exit code *establishes*
-  that property. The engine never interprets what "synced" means — it is an opaque value
-  bound to the author's probe.
+- `[ "$2" = "" ] || return 2` is the arity gate: a two-operand invocation (`foobar
+  sync-certs A B`) declines instead of quietly probing only the first operand — without
+  it, a half-converged host would under-execute the second one.
+- The trailing `: org.foob.Certs:"$dest"#synced` says: this probe's exit code *establishes*
+  that cell (`#` introduces the selector — which aspect of the entity this line measures).
+  The engine never interprets what "synced" means — it is an opaque token bound to the
+  author's probe.
 - `*) return 2` is the native *decline*. The exit-status partition is fixed and blessed:
   0 = the named sense holds; 1 = its complement; anything ≥2 = "can't say," and can't-say
   always runs. Paths the author won't answer for simply answer 2 — declining is ordinary
@@ -277,7 +284,7 @@ $ dorc plan --verbose webhost.sh web1.example.net
  6  # dpkg -s nginx >/dev/null 2>&1 \
  6  #    || apt-get install -y nginx                   # converged: your guard holds (dpkg -s rc 0)
  7  # cp ./nginx.conf /etc/nginx/nginx.conf            # converged: content match
- 8  # foobar sync-certs "$CERTS"                       # converged: org.foob.Certs:/etc/nginx/certs.synced
+ 8  # foobar sync-certs "$CERTS"                       # converged: org.foob.Certs:/etc/nginx/certs#synced
  9  # systemctl enable --now nginx                     # converged: service enabled+active
 10  hork tune --profile web >>/var/log/hork.log 2>&1   # runs: unmodeled ('hork')
 11  ( ufw_check allow 443/tcp ) \
@@ -324,7 +331,7 @@ proceed-and-flag, never a mid-apply question") is not.
 And a plan-time can't-tell — probe timeout, weird rc — is not quietly rounded to converged:
 no verdict, no guard, no elision; the site runs. Everything fails toward run.
 
-- Spent: ~15 minutes skimming docs, nine lines of sh, zero new languages, zero config formats.
+- Spent: ~15 minutes skimming docs, 11 lines of sh, zero new languages, zero config formats.
 - Gained, steady state: seven tool-sites of attention down to two; foobar's re-sync mutation
   avoided.
 - Gained, structurally: the certs state is now *described* — future books that touch it
@@ -340,13 +347,13 @@ the oracle *worth publishing*: correct for colleagues' books, other verbs, other
 argv shapes. The enriched oracle:
 
 ```sh
-foobar.is_converged() {
+foobar__is_converged() {
    verb="$1"; shift
    case "$verb" in
    sync-certs|renew)
       dest : org.foob.Certs = "$1"
       [ "$2" = "" ] || { printf 'UNK multi-operand foobar\n' >>"$DORC_REPORT"; return 2; }
-      foobar status --certs-current -- "$dest"   : org.foob.Certs:"$dest".synced
+      foobar status --certs-current -- "$dest"   : org.foob.Certs:"$dest"#synced
       ;;
    purge-certs) return 2 ;;
    *) printf 'UNK unmodeled foobar verb: %s\n' "$verb" >>"$DORC_REPORT"; return 2 ;;
@@ -363,10 +370,10 @@ What each addition buys — and refuses:
   and the author knows it. Can't-say, so purge sites always run. The engine did not decide
   that; the person who knows the tool did, by declining to answer. (If they ever want the
   purge-side *fact* measured anyway — for the plan's display, not as a license — that
-  belongs in the describing sibling, `foobar.predict()`: the lane that states what is true
+  belongs in the describing sibling, `foobar__predict()`: the lane that states what is true
   and predicts what would happen, and never licenses skipping a mutation.)
-- The arity gate: a two-operand invocation hits the loud `UNK` refusal instead of a probe
-  that quietly checked only the first operand — and a refusal is just an answer-2 with a
+- The arity gate grows a breadcrumb: a two-operand invocation now hits the loud `UNK`
+  refusal instead of stage 3's silent decline — and a refusal is just an answer-2 with a
   breadcrumb: the report goes out-of-band, the site runs, the plan carries the reason.
 - The `*` arm: an unknown verb claims nothing, answers nothing, licenses nothing — a
   colleague's `foobar frobnicate` is exactly as safe as it was with no oracle at all, plus a
@@ -383,12 +390,13 @@ What each addition buys — and refuses:
 
 ### Stage 5 — the footprint: facts surviving a wall that stays
 
-> (FIXME, updated 2026-07-04: the *mechanism* below is now BUILT — the round-24 spike
-> carries authored footprints, probe-time derivation for payload-bound tools, and the
-> differential nets behind them. The *spelling* remains strawman. One change already known
-> to be owed: `touches()` bodies below emit stringly-typed `kind:entity` lines — the
-> kind-half is due to migrate to stage 7's annotation-typed emission, and the in-band
-> prefix (with its `| sed 's|^|kind:|'` dressing) should not be imitated.)
+> (FIXME, updated 2026-07-16: the *mechanism* below is BUILT — the round-24 spike carries
+> authored footprints, probe-time derivation for payload-bound tools, and the differential
+> nets behind them — and the spelling now shows the block-settle RULED layer: `touches()`
+> is renamed `disturbs()` (`271:rul-touches-becomes-disturbs` — the name recruits paranoid
+> completeness), emission lines are raw entities with the kind riding the trailing mark
+> (`271:rul-emission-selector-on-mark`), and `.prop` became `#prop` (`277` §4a). Fine
+> detail stays strawman-tier; the corpus-wide respell lands at `270:block-rebuild`.)
 
 Everything so far elides around walls by *removing* them (stage 3: a converged wall is an
 elided wall, and an elided command casts no wall) or verifies *behind* them (stage 2:
@@ -423,35 +431,35 @@ service state. Everyone except Dorc — because knowing that is a claim about wh
 binary touches, and silence licenses nothing. Somebody who knows the tool has to say it.
 
 The spelling being mocked here: a third role-sibling, next to `predict()` and
-`is_converged()`, that *answers the touch question as runnable sh*. The base library's apt
-oracle grows one; so does foobar's, one line in the author's stage-4 file:
+`is_converged()` — `disturbs()` — that *answers the disturbance question as runnable sh*.
+The base library's apt oracle grows one; so does foobar's, one line in the author's
+stage-4 file:
 
 ```sh
-# FIXME: the `kind:entity` line-format here is stringly-typed; migrating to the stage-7
-# annotation-typed emission (kind as a trailing mark, lines as raw entities).
-apt-get.touches() {                          # base library (STRAWMAN spelling)
+apt_get__disturbs() {                        # base library (STRAWMAN body)
    while [ "${1#-}" != "$1" ]; do shift; done
    verb="$1"; shift
    case "$verb" in
-   update) printf 'pkgindex:\n' ;;
+   update) :   : sm.dorc.PkgIndex ;;         # whole-kind claim: the kind rides the mark
    esac
 }
 
-foobar.touches() {                           # appended by foobar's author (STRAWMAN spelling)
+foobar__disturbs() {                         # appended by foobar's author (STRAWMAN body)
    verb="$1"; shift
    case "$verb" in
-   sync-certs|renew) printf 'org.foob.Certs:%s\n' "$1" ;;
+   sync-certs|renew) printf '%s\n' "$1"   : org.foob.Certs ;;
    esac
 }
 ```
 
 Read it the way the analyzer does. Invoked with a site's argv (same contract as its
-siblings), the body *emits the entity-coordinates this verb mutates, one per line* — and by
-emitting anything at all for a matched verb, the author claims **at most these** ("whatever
-else this touches is residue I answer for"). An unmatched verb emits nothing: no claim, no
-license, the wall stands — silence stays safe. Stripped, it is a plain function any shell
-can run; `foobar_touches sync-certs /srv/certs` printing `org.foob.Certs:/srv/certs` is
-documentation that executes.
+siblings), the body *emits the entities this verb disturbs, one per line*, the kind (and
+someday a `#selector`) riding the trailing mark — and by emitting anything at all for a
+matched verb, the author claims **at most these** ("whatever else this disturbs is residue
+I answer for"). An unmatched verb emits nothing: no claim, no license, the wall stands —
+silence stays safe. Stripped, it is a plain function any shell can run;
+`foobar__disturbs sync-certs /srv/certs` printing `/srv/certs` is documentation that
+executes.
 
 The engine's move is then mechanical, and old as compilers: every probed fact already knows
 *where its own truth lives* — nothing new to author, a fact's backing simply *is* what its
@@ -461,13 +469,13 @@ against each downstream fact's backing. Empty intersection ⇒ the fact provably
 wall ⇒ its elision stands *even though the wall runs*. Non-empty, or no footprint ⇒ exactly
 the stage-2 world: guard or run. (This is the separation-logic frame rule wearing work
 clothes; the emitted-at-probe-time variant — stage-4 tools like `apt-get install`, whose
-real file-payload only the host knows, answer by *asking the tool* inside `touches()` — is
+real file-payload only the host knows, answer by *asking the tool* inside `disturbs()` — is
 what the literature calls a dynamic frame.)
 
 One more thing before the payoff, because it is deliberate and permanent: none of this is
 on by default. Surviving a wall means trusting authors' at-most claims with no runtime net,
-so the whole tier sits behind an explicit flag — spelled out here as `--trust-footprints`
-(STRAWMAN name). Without it, the plan above is what you get: honest walls, guards, runs.
+so the whole tier sits behind an explicit flag — `--risk-faultless-skips`. Without it, the
+plan above is what you get: honest walls, guards, runs.
 And an honesty note that must outlive every future edit of this document: this opt-in is
 marketing at best (you chose the danger; it isn't a Dorc bug when an author's claim is
 wrong) and theatre at worst (it is desirable enough that nearly everyone will turn it on and
@@ -477,7 +485,7 @@ consequences, even when everyone types it.
 The same stale-index morning, with footprints shipped and the trust typed:
 
 ```
-$ dorc plan --verbose --trust-footprints webhost.sh web1.example.net
+$ dorc plan --verbose --risk-faultless-skips webhost.sh web1.example.net
  1  #!/bin/sh
  2  # webhost.sh - bring up the static site
  3  set -eu
@@ -493,6 +501,23 @@ $ dorc plan --verbose --trust-footprints webhost.sh web1.example.net
 11     || ufw allow 443/tcp                            # verify: converged, but past 'hork' (line 10)
 plan: 2 run, 1 verify, 5 elided
 ```
+
+Now's a good time to start showing what the *default* output will look like, to the average
+user:
+
+```
+$ dorc plan --risk-faultless-skips webhost.sh web1.example.net
+ 3  set -eu
+ 4  CERTS=/etc/nginx/certs
+ 5  apt-get update                                     # runs: diverged (index stale)
+10  hork tune --profile web >>/var/log/hork.log 2>&1   # runs: unmodeled ('hork')
+11  ( ufw_check allow 443/tcp ) \
+11     || ufw allow 443/tcp                            # verify: converged, but past 'hork' (line 10)
+plan: 2 run, 1 verify, 5 elided
+```
+
+(This is the "attention product." The core goal, realized: remove all the lines 'you don't
+need to worry about'.)
 
 The book keeps its steady-state shape on a drifted day. `update`'s footprint is the package
 index; the install's guard reads the dpkg database, the `cp`'s fact lives in a config file's
@@ -515,7 +540,7 @@ author's own attended substrate, attributed by name in every elision it licenses
 "past here, you are trusting authors' at-most claims." Attention saved on drifted days is
 bought with exactly that trust, and with nothing else.
 
-- Spent: one `touches()` arm per verb an author is willing to answer for; one typed flag
+- Spent: one `disturbs()` arm per verb an author is willing to answer for; one typed flag
   per invocation from the admin who owns the consequences.
 - Gained, drifted days: the book stops collapsing below the first thing that really runs;
   early-book churn (index refreshes, log rotations, cache warms) stops taxing every line
@@ -529,7 +554,7 @@ bought with exactly that trust, and with nothing else.
 > author in ten will ever write one — they exist for the handful of people who own a
 > vocabulary (the apt oracle's maintainer; whoever ships the fs stdlib) — but each one
 > written pays out across every book and every oracle that names that kind. Narrow base,
-> high community effect. Mechanisms landing in the round-24/25 builds; spellings strawman.)
+> high community effect.)
 
 
 ### Stage 6 — the kind-owner: two names, one thing
@@ -539,13 +564,13 @@ host, `nginx` and `nginx-full` can be one package under two names (provides); tw
 be one file through a symlink. Watch it fail:
 
 ```sh
-apt-get install -y nginx        # runs — a wall; its footprint says package:nginx
+apt-get install -y nginx        # runs — a wall; its footprint says sm.dorc.Package:nginx
 ...
 dpkg -s nginx-full >/dev/null 2>&1 || apt-get install -y nginx-full
 ```
 
-The second line's fact is backed by `package:nginx-full`; the wall's footprint says
-`package:nginx`; different strings ⇒ "disjoint" ⇒ the line elides *past a wall that really
+The second line's fact is backed by `sm.dorc.Package:nginx-full`; the wall's footprint says
+`sm.dorc.Package:nginx`; different strings ⇒ "disjoint" ⇒ the line elides *past a wall that really
 touched its referent*. Every other gap in this machinery fails toward running too much;
 this one under-executes, silently. It is the one place a name must be more than a string.
 
@@ -553,7 +578,7 @@ The fix is one function, written by the kind's owner — the party who holds wha
 entity" means for that vocabulary:
 
 ```sh
-package.resolve() {                          # the package kind's owner (STRAWMAN spelling)
+sm_dorc_Package__resolve() {                 # the package kind's owner (STRAWMAN body)
    dpkg-query -W -f '${Package}\n' -- "$1" 2>/dev/null || printf '%s\n' "$1"
 }
 ```
@@ -576,31 +601,33 @@ package.resolve() {                          # the package kind's owner (STRAWMA
 
 ### Stage 7 — reach: what touching an entity drags with it
 
-> (FIXME: the freshest design — the round-24 part-B build, mechanism settled in dialogue;
-> the spelling below is the strawman under construction.)
+> (FIXME, updated 2026-07-16: mechanism LANDED in the round-24 build; the member name and
+> mark grammar are RULED (`271:rul-at-most-family-names` — `only` in a role name =
+> complete-by-contract, totalistic-survey-before-authoring; `277` §4d); the body below
+> stays strawman-tier in fine detail.)
 
 One gap is left, and it is not the owner's — it is everyone else's. A colleague's oracle
 for some package-fiddling tool honestly declares:
 
 ```sh
-hork.touches() { ... tune) printf 'package:%s\n' "$1" ;; ... }
+hork__disturbs() { ... tune) printf '%s\n' "$1"   : sm.dorc.Package ;; ... }
 ```
 
 They mean "I touch the nginx package" — the whole thing, files included. But coordinates
-compare within kinds: `package:nginx` does not cover `file:/etc/nginx/nginx.conf`, so a
+compare within kinds: `sm.dorc.Package:nginx` does not cover `sm.dorc.File:/etc/nginx/nginx.conf`, so a
 downstream file-fact happily survives hork's wall. And the colleague *cannot* fix it —
 which files a package owns is apt's knowledge, not theirs. So the owner says it once, for
 everyone:
 
 ```sh
-package.reaches() {                          # the package kind's owner (STRAWMAN spelling)
-   printf '%s\n' "$1"       : service        # a package may enable its same-named unit
-   dpkg -L "$1"             : file           # and reaches exactly the files it installed
+sm_dorc_Package__disturbance_reaches_only() {   # the package kind's owner (STRAWMAN body)
+   printf '%s\n' "$1"       : sm.dorc.Service   # a package may enable its same-named unit
+   dpkg -L "$1"             : sm.dorc.File      # and reaches exactly the files it installed
 }
 ```
 
 - Declared once by the owner; applied by the engine to EVERY footprint coordinate of that
-  kind, whoever emitted it. The colleague's `package:nginx` now covers nginx's files
+  kind, whoever emitted it. The colleague's `sm.dorc.Package:nginx` now covers nginx's files
   without the colleague learning anything.
 - Footprints only. A fact's backing stays the one cell its probe checks; reach only ever
   *widens* a claim — the safe direction. Claiming too much walls too much; it never skips.
@@ -642,8 +669,8 @@ section is that corner painted in full — a tool that buys unsoundness owes you
 
 Count what must all be true, together, before it can bite:
 
-1. The admin typed `--trust-footprints`. Otherwise this tier does not exist — the claims are
-   never even lifted.
+1. The admin typed `--risk-faultless-skips`. Otherwise this tier does not exist — the claims
+   are never even lifted.
 2. The line's own author vouched it (`is_converged()`, reached, answering yes). No vouch, no
    elision — the line runs.
 3. The probe genuinely measured the line's fact converged, minutes ago. Diverged or
@@ -653,13 +680,13 @@ Count what must all be true, together, before it can bite:
 5. The running wall was *described* — its author made a clean at-most claim. An opaque wall,
    a confused trace, a half-resolvable argparse: all collapse to a total wall, and everything
    behind it runs or guards. Structural partiality cannot reach this corner; only a *clean*
-   claim can be wrong here. (This is the oracle's version of
-   `--trust-footprints` - *both* players must *explicitly* buy-in to
+   claim can be wrong here. (This is the oracle's side of
+   `--risk-faultless-skips` - *both* players must *explicitly* buy-in to
    unsoundness.)
 6. That clean claim was wrong in the one way no machine can see: complete-looking but
-   semantically incomplete. A `touches()` omitting a cell the tool really disturbs; a
-   `reaches()` missing an edge; a `resolve()` splitting one referent into two names. (The
-   frame problem — permanent, not an implementation gap.)
+   semantically incomplete. A `disturbs()` omitting a cell the tool really disturbs; a
+   `disturbance_reaches_only()` missing an edge; a `resolve()` splitting one referent into
+   two names. (The frame problem — permanent, not an implementation gap.)
 7. The canaries missed it. The coherence cross-check catches claims that contradict their own
    oracle's other statements, and the engine supplies the site's own coordinate outright —
    what remains is precisely the undetectable class.
@@ -688,9 +715,9 @@ awaiting a cleverer release. It is the purchase price of the only thing that was
 sale in these stages: *removal by proof, or honesty about the lack of one* — and the proof
 here is only ever as good as named, attributable people's claims about their own tools.
 
-Said once, plainly, to the admin: past `--trust-footprints`, you are trusting named authors'
-at-most claims. Everywhere else in Dorc, you were only ever trusting measurements, and your
-own eyes.
+Said once, plainly, to the admin: "past `--risk-faultless-skips`, you are trusting named
+authors' at-most claims." Everywhere else in Dorc, you were only ever trusting their
+*measurements*, and your own eyes.
 
 The final ledger, steady state on the same book (counting the seven tool-sites; the two
 housekeeping lines always show, and attention-lines counts everything still facing the
@@ -703,9 +730,9 @@ stage    ran   verified   elided   attention-lines   spent
 2        2     2          3        6                 a library install
 3        1     1          5        4                 2 minutes of sh
 4        1     1          5        4                 an hour, for everyone else's benefit
-5        1     1          5        4                 a touches() arm per verb (pays out on drifted days, not here)
+5        1     1          5        4                 a disturbs() arm per verb (pays out on drifted days, not here)
 6        1     1          5        4                 a resolve() per owned kind (pays out where names collide)
-7        1     1          5        4                 a reaches() per owned kind (pays out in other people's books)
+7        1     1          5        4                 a disturbance_reaches_only() per owned kind (pays out in other people's books)
 ```
 
 (Stages 6–7 deliberately do not move this book's numbers: their value shows where names
@@ -713,13 +740,16 @@ alias and where different authors' oracles meet — the fleet, not the single bo
 
 ----
 
-STATUS: stages 5–7 are the round-24/25 build frontier — the mechanisms (footprint × backing
-× disjointness; probe-time derivation; owner canonicalization) are built or building, the
-spellings are strawman-tier, and nothing in stages 0–4 depends on their outcome. Stage 7's
-annotation-typed emission is the settled direction stage 5's stringly `kind:entity` format
-migrates TO (the FIXME at stage 5). Expect these stages' renders and spellings to churn
-before anything else here does. The design-round record behind stages 6–7 is
-`Research/notes/24G`.
+STATUS (refreshed 2026-07-16): stages 5–7's mechanisms LANDED in the round-24 build
+(evidence ledger `Research/notes/24C`); the spellings above now show the block-settle RULED
+layer — bare munged `__role` names (`24M`), the `disturbs` family
+(`271:rul-at-most-family-names`), the `#selector` mark grammar (`277` §4), the flag's ruled
+name (`271:rul-flag-named-risk-faultless-skips`) — with fine detail still strawman-tier;
+the corpus-wide respell lands at `270:block-rebuild`. Nothing in stages 0–4 depends on
+5–7's outcome. Design-round records: `Research/notes/24G` (the kind-owner family);
+`plans/271` + `notes/277` (the ruled layer). Wrapped/contexted sites (sudo, chroot, netns)
+are deliberately absent from this walkthrough — their settled design is context-entry
+probing, `plans/27C`.
 
 
 Other usage-patterns
