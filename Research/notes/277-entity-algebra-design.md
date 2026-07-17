@@ -170,9 +170,10 @@ Restated from `271:rul-selector-disjointness-dialect-scoped` as build-spec:
   a selector-less coordinate on EITHER side (a ⊤ claim spares nothing; a
   whole-entity backing is spared by nothing), unminted tokens, cross-dialect
   tokens are all ⊤-selector. Cross-entity/kind disjointness unchanged.
-  *(AMENDED 2026-07-13 per `279f:fix-spare-top-backing`, awaiting ack — the prior
-  wording special-cased only claim-side ⊤, leaving a whole-entity backing sparable
-  by any dialect-member claim: an under-execution path, 279a-A5.)*
+  *(AMENDED 2026-07-13 per `279f:fix-spare-top-backing` — the prior wording
+  special-cased only claim-side ⊤, leaving a whole-entity backing sparable
+  by any dialect-member claim: an under-execution path, 279a-A5. ACKED, typed,
+  2026-07-16; the first of the `279f:ask-amendment-acks` five to close.)*
 - **Engine cost:** per-(kind × family) dialect sets + backing provenance (minting
   family) carried into the comparison.
 - Properties (pin as tests; REWORDED 2026-07-13 per `279f:fix-dialect-properties`,
