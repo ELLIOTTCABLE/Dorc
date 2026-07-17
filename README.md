@@ -62,7 +62,7 @@ foobar__is_converged() {
    case "$verb" in
    sync-certs)
       dest : org.foob.Certs = "$1"
-      [ "$2" = "" ] || return 2
+      [ "${2-}" = "" ] || return 2
       foobar status --certs-current -- "$dest"  : org.foob.Certs:"$dest"#synced
       ;;
    *) return 2 ;;
