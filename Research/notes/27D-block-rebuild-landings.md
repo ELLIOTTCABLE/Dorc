@@ -166,6 +166,50 @@ probe artifact (composed form verbatim, delegation-produced bytes).
 - tc-stage-ship-triplication — inherited debt (mirrors ship_predict_body);
   cleanup candidate for e2e-degraduation or block-context planning, not urgent.
 
+## stage-3: entity-algebra-rebuild — LANDED 2026-07-17 (checkpoint PASSED)
+
+Commits `c519d52..a94d96f` on `ai/r27-entity-algebra`, fast-forwarded into
+`ai/spike3-r27`. Builder: Opus solo. Landing note: **`notes/27G`**. The `277`
+re-key landed: both chokepoints in `core::coord` (`selector_covers` +
+ternary `compare` + `selector_identifies`), the context slot
+(`Context::HostDefault`, unminted), the amended sparing algebra with the
+`279f` regression pins, per-(family × kind) dialect sets with safe-floor
+provenance recovery (`sole_family`; ambiguous ⇒ None ⇒ collide), survival
+routed through `compare`, emission `KIND#SELECTOR` lifted end-to-end
+(a latent `split_mark_target` gap fixed), charset loud-reject + brace
+expansion. 679 unit (+43 pins) / 128 e2e; ZERO golden churn (the re-key is
+dormant until an oracle authors a selector-bearing disturbs mark —
+empty-world-byte-identical holding by construction).
+
+**Checkpoint dispositions:**
+
+- disposition-context-slot-home — tc-context-slot-on-coord-not-factkey
+  ACCEPTED for v1 (nothing populates the slot; fact-plane keying untouched).
+  NAMED SEAM ⇒ block-context planning: when contexts become real, fact keying
+  (FactKey and its 47-site map) must be revisited — two same-cell facts in
+  different contexts must not collide in the fact plane.
+- disposition-relation-same-misnomer — tc-same-is-overlap-not-identity: the
+  routing is CORRECT today (`Same`→Poisoned for sparing; transport-direction
+  gated on `selector_identifies`; no transport consumer exists), but the
+  variant name is a trap. RIDER to stage-4: rename `Relation::Same` to an
+  overlap-honest name; the consumer-map doc-comment states transport-same is
+  `selector_identifies`-gated, never the overlap variant.
+- disposition-brace-verdict-silent — tc-brace-verdict-silent-skip REJECTED
+  as-landed: a verdict/observe brace minting nothing SILENTLY is the
+  silent-inert authored-construct class (24Kc F2). RIDER to stage-4: loud
+  diagnostic + test.
+- disposition-backing-family-recovery — tc-backing-family-via-dialect-
+  reverse-lookup ACCEPTED as interim (ambiguity falls to the safe floor,
+  pinned); the value-recipe-reshape's per-channel backing derivation should
+  thread the minting line/family properly rather than inherit the reverse
+  lookup.
+- disposition-resolutions-in-plan — ACCEPTED (core = pure comparison, plan =
+  license machinery; the CanonicalCoord MINT's continuity is what the ruling
+  protects, and it survived). Crate-CLAUDE.md wording alignment rides the
+  next steering-doc refresh.
+- rider-internal-rust-naming-debt — still open (builder deferred as
+  high-churn cosmetic); reassigned to stage-6 as an optional tail item.
+
 **Environment incident (surfaced to human 2026-07-17):** a SyncThing conflict file
 (`effect.sync-conflict-…-PHNHRER.rs`) appeared INSIDE the stage-1 builder's agent
 worktree mid-edit — device PHNHRER is live-syncing `.claude/worktrees/`, which the
