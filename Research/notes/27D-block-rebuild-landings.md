@@ -279,6 +279,28 @@ robust, not coincidental (verbless corpus observes; ⊤ corpus disturbs).
   derive model widens. Not corpus-observable; block-context's
   read-value-slice / per-channel backing work owns the widening.
 
+## Human rulings received mid-block (2026-07-17, typed in-session)
+
+- **rul-payload-pins-near-weld** (HUMAN-TYPED 2026-07-17): the human reviewed
+  `270:adj-payload-pins` thoroughly; nothing new worth noting; grading verbatim:
+  "very close to weld, but not quite." Consequence: block-context proceeds on
+  the `24T` pins as reviewed; the formal packet is still assembled at
+  block-context implementation-planning for the record, but the
+  conservative-proceed posture is authorized — the payload-v1 lane does not
+  stall on the human's presence.
+- **rul-synthesized-payload-render-stays-unwelded** (né "R2"; HUMAN-TYPED
+  2026-07-17; slug conductor-minted per `270` §1 — the mechanism: rendering
+  `sh -c "$SOMECONSTANT"` via value-propagation into an engine-synthesized
+  payload string): the refuse-forever-vs-refuse-for-v1 fork is ruled
+  **deliberately just-barely-unwelded** — refused at v1, never welded shut.
+  Rationale verbatim: undecidable right now — "an *ocean* of downsides to
+  doing it, but a completely unknown-size-of-upside"; "we won't know if we
+  need it until we discover that we need it." Build consequences: payload-v1
+  refuses synthesized-payload-render; NO machinery, lint, or representation
+  choice may foreclose a future un-refusal (the door-open obligation is
+  load-bearing for the payload-v1 brief); the re-entry trigger is discovered
+  need, not a scheduled revisit.
+
 **Environment incident (surfaced to human 2026-07-17):** a SyncThing conflict file
 (`effect.sync-conflict-…-PHNHRER.rs`) appeared INSIDE the stage-1 builder's agent
 worktree mid-edit — device PHNHRER is live-syncing `.claude/worktrees/`, which the
