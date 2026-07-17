@@ -6,7 +6,20 @@
 # rc is the raw PROBE-command status (opaque to Dorc — the record is the out-of-band lane).
 
 # site 1: sm.dorc.GrepMatch:0.155.0#matched
-otelcol --version | grep -q "0.155.0"; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'site 1 effect=%s rc=%s\n' "$_e" "$_rc"
+otelcol__predict() {
+   case $1 in
+      --version)
+         collector="otelcol"
+         otelcol --version
+         ;;
+   esac
+}
+grep__predict() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   pat="$1"
+   grep -q -- "$pat"
+}
+otelcol__predict '--version' | grep__predict '-q' '0.155.0'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'site 1 effect=%s rc=%s\n' "$_e" "$_rc"
 # site:2 skip-unresolvable
 # site:3 skip-unresolvable
 #!/bin/sh
