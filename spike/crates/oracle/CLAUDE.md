@@ -1,129 +1,109 @@
 # spike/crates/oracle — CLAUDE.md
 
-Lifts an oracle's sh **statically** (never sources or runs it) into the *kind-index*: the 3-place relation
-`(kind, provider, verb) → effect` (`an-kind-index`) plus a read-only `FactProbe` per kind (`an-fact-probe`).
-Read `spike/CLAUDE.md` (invariants) and `Research/plans/191-spike2-keystone-charter.md` (the charter) first.
-This crate is the home of the `kTYANNOT-inline` experiment (`ch-shape-anno`) and the stdlib-oracle quality bar.
+Role: lifts an oracle's sh **statically** (never sources or runs it) into the
+engine's index; home of the authored-surface contract and the stdlib-oracle
+quality bar. Read `spike/CLAUDE.md` first — its license & trust cluster IS this
+crate's law; specs: `notes/277` (coordinate/grammar) · `notes/273` (wrappers) ·
+`notes/274` (eval'ers) · `notes/278` (the one-page dialect reference). Registry
+discipline: one rule per bullet, slugged; append to the matching section.
 
-## What this crate is — and its place in the keystone
+## Law — the lift
 
-The fact-centric pivot is settled and built (`16P` DP-1 / T7): an oracle declares a **named kind**, a
-**read-only fact-probe** (three-outcome: holds / absent / can't-tell — `an-probe-shape`), and an **effect-map**
-`(provider, verb) → (kind, polarity)` (`an-effect-polarity`). A book's bare `apt-get install -y nginx`
-resolves through the effect-map to a fact; the kind name is the *only* cross-oracle anchor (apt's `package` ≡
-yum's `package`), never decoded for meaning (`inv-referent-agnostic`, `an-named-kind`). Never probe by
-dry-running the mutator — `an-fact-centric` (the command-centric strawman `mycmd.predict(){ mycmd --dry-run; }`
-made the named-kind index decorative in the elision path; `16P` DP-1).
+- **static-lift-only** — never execute oracle code; never model a tool by
+  dry-running the mutator (`an-fact-centric`: the command-centric
+  `--dry-run`-as-probe strawman is dead, permanently).
+- **declarations-only-files** — a top-level mutator or unmodeled construct in an
+  oracle file is a loud ⊤-reject; a malformed lift is a `Diagnostic`, never a
+  panic; an absent effect-entry is ⊤ ⇒ run, never a silent wrong-elision.
+- **argparse-is-the-vouch-typechecker** — the oracle author's own argparse is the
+  sole entity-resolver (identity-declared-never-inferred) and the type-checker of
+  the vouch: book argv acquires a probe-execution license only by passing THROUGH
+  the author's arms, declines included (`271:rul-only-oracle-bytes-ship` ·
+  rul-argv-flows-bytes-do-not). Engine shape-matching over book bytes is an
+  unchecked cast — it never mints.
+- **rc-partition-here** — 0 = named sense; 1 = complement; ≥2 = flat sink, runs,
+  never inverted, never licenses. Never collapse statuses out of a
+  verdict-function; a tool with a non-test exit vocabulary needs an explicit
+  `case $? in` remap arm in the delegation body.
+- **effect-check-falsification-first** — proven-mutation ⇒ fails fast and lifts
+  NOWHERE (not probe, not guard — `271:rul-no-mutating-guards`); the unprovable
+  region rides the authored vouch; the check is never a completeness gate.
+  vouch-scope-is-the-body-never-the-tool: a body-vouch mints no command-family
+  fact.
+- **tolerates-vouch** (`27C` §2) — per-function, per-dimension; asserts "this
+  body's effects are read-only BY DESIGN, not by privilege-starvation"; gates
+  context-shifted execution under the escalation dial (both-sides consent).
+  Wrapper entry forms are the ONE licensed seat for real context entry; predict
+  closure bodies never escalate (real `sudo` is never a blessed closure idiom).
 
-+SURE, traced in `src/lib.rs`: today this crate is the **skeleton of `17N` Part-I with none of its
-type-discipline**. `Polarity{Establish, Kill}` is a *binary bit*, `FactProbe` is a flat verbatim body, the
-index keys a flat `(kind, provider, verb)`. The charter's keystone is to re-key this: `Polarity` becomes a
-**typestate transition** on a kind's ≥enum state-model (`inc-7` — "the effect-map ≡ a typestate
-transition-table"), and the kind grows a structured, per-selector entity-algebra (`an-entity-shape`,
-`an-per-entity-selector`). `ap-1` is explicit: **build that re-key before more type-machinery** — it
-invalidates everything downstream keyed on the flat pair, and is *the spike*. The poison-wall demonstrator
-(`apt-get update` poisoning `apt-get install nginx` to non-elidable) is killed only by structured cells:
-`update` establishes `package-index#fresh`, `install` establishes `package:nginx#installed` — different cells,
-no poison (`16Q §1`, charter §3).
+## The authored surface — worked minimum (the one syntax anchor; semantics live in `spike/CLAUDE.md`)
 
-## Spike-2 work in this crate
+```sh
+# dorc-lang/v0.1
+systemctl__is_converged() {
+   case "${1-}" in
+   enable) systemctl is-enabled --quiet -- "${2-}"   : sm.dorc.Service:"$2"#enabled ;;
+   start)  systemctl is-active  --quiet -- "${2-}"   : sm.dorc.Service:"$2"#active  ;;
+   *) return 2 ;;
+   esac
+}
+```
 
-- **The `kTYANNOT-inline` experiment (`ch-shape-anno`).** Lift an oracle's declaration of a kind, its ≥enum
-  states, and its kind-typed fields. The charter rules the *inline TS/Flow-style* annotation strawman for this
-  spike (`local w : com.frobber.Wombat{defrocked,frocked} = "$1"`; `17N` top paragraph). **Known debt, accept
-  it:** this is *not* a behavioral no-op and **breaks the off-ramp weld** (`17O` F-OFFRAMP, verified live: stock
-  `dash` aborts `local: :: bad variable name`; `bash` silently leaves `w` empty rc 0; dotted name fails
-  `dash -n`). Do **not** build the correctness-critical strip/transpile pass (`ch-shape-anno`). The parser is a
-  disposable test front-end — massage inputs past it; arbitrary shell-input is a non-goal.
-- **The recursive kind-typed entity-algebra (`ch-entity-algebra`, `an-entity-shape`).** A kind's fields are
-  typed by the named-kind namespace *itself* — a `service`'s field can be typed `file` or `user` (Wombat-style
-  handle-to-kind, *reusing* types established elsewhere, not a bespoke value-type system). Shape lean (`17N §4`):
-  present-key = `true`, `!`-pun for false, values = direct types / kind-handles / nested structs, **absent ≠
-  asserted-false** (the carry-vs-compare split, C6). This is `ch-priority` #5 — **the first thing allowed to
-  give** when the going gets hard; simplify its shape before abandoning the keystone, but `an-finite-domain`
-  (depth-bound the recursion — `seam-finite`) stays a floor or the solver hangs.
-- **`an-strong-weak-update` / `an-entity-uniqueness` hand-off.** The structured key is precisely what lets a
-  transition overwrite `#active` without touching `#enabled`. Strong (overwrite) vs weak (accumulate) is gated
-  by uniqueness; the *identity* half (which cell) is welded-undecidable (SF-1) — **declared, never inferred**;
-  the probe confirms a cell's *state*, not its identity (`17N` F3 / fw-1).
-- **`an-cross-oracle-coherence` is a contract, not enforced** (`inc-9`). Two oracles grounding one kind must
-  *agree* on what its name/states MEAN (the Seam). Dorc can't enforce it (never rejects plain sh) ⇒ best-effort
-  CI lint, never a checked property. The handle is a **lifted datum** (reverse-DNS string, `175` C2), never a
-  function name — a 1-place sh function-name cannot carry the 3-place relation (it clobbers; `an-oob-config-redline`
-  X3 / F4).
+- **marker-and-names** — the `# dorc-lang/v0.1` marker gates syntax only; `__role`
+  NAME-recognition is permanent and works in unmarked files; names are bare
+  munged POSIX NAMEs (dots are dead); families are name-derived, never
+  file/author-derived (`271:rul-family`).
+- **minting-law** — verdict (`:`/`:!`) and observe (`:?`) marks on runnable lines
+  MINT selector tokens; claim/disturbs emissions never mint; a mark asserts
+  exactly ONE thing; brace-alternation `#{a,b}` is claim-emission marks only.
 
-## The stdlib-oracle quality bar — `17O` regression class (NOT engine holes)
+## The stdlib quality bar — regression classes, NOT engine holes
 
-"Blessing" is **not a separate magic mechanism — it is a stdlib oracle shipped day-1** (human disposition,
-`17O`). So *ship good ones*: these are kept as regression tests against "good, battle-tested sh," not as gaps in
-the engine. `fixtures/package.oracle.sh` is the model (captures the tool's own rc; `case` over `${Status}`, not
-a pipe-into-grep) — but note it does **not** yet do the executable-file check below, so it is not a finished
-exemplar of R2-SHADOW.
+These pin "good, battle-tested sh" against ways it silently lies to a lifter. The
+engine cannot check meaning (`inv-referent-agnostic`); the floor is authored
+honesty + stdlib CI.
 
-- **`R2-SHADOW`** — `command -v X` must confirm X resolves to an executable *file*, not a function/alias/builtin.
-  Verified live: `docker(){ :; }; command -v docker` → rc 0, no binary — and Dorc's *own* function-helper /
-  sourced-oracle idiom is exactly what shadows it. Fails **unsafe** (reports installed ⇒ elide the install ⇒
+- **R2-SHADOW** — `command -v X` must confirm X resolves to an executable FILE:
+  functions/aliases/builtins shadow it, and Dorc's own sourced-oracle idiom is
+  exactly such a shadower. Fails unsafe (reports installed ⇒ elides the install ⇒
   priority-1 under-execute).
-- **`R2-IDCACHE`** — group membership via `getent group … | <field 4>`, never `id -nG` (`id` reads a
-  stale resolver cache — nscd/sssd; member-removed-but-cache-warm ⇒ wrong elision, on the `17N §8` flagship
-  example). Also forbid same-session re-probe of a mutated cell (TOCTOU).
-- **`R2-ORTRUE`** — the lifter must **refuse to treat an errexit-masked rc as a probe verdict**. `svc_up(){
-  systemctl is-active --quiet "$1" || true; }` always reports holds (rc forced to 0 — verified). The admin wrote
-  `|| true` for apply-time errexit-survival; the lift-as-probe contract assumes rc means something. A lifted
-  guard's rc is a verdict only if the analyzer can prove it isn't masked (`|| true` / `|| :` / `; true`).
-- **Per-database hermeticity (`F-GETENT-HOSTS`).** `getent passwd`/`group` are file-backed (fine); `getent
-  hosts`/`ahosts` route through nsswitch → live DNS = non-hermetic, a buried network side-channel behind a
-  "read-only" probe. **Read-only ≠ hermetic** — disqualifies it from licensing an elision (`kVOLATILES`).
-- **The ≥enum floor (`F-BLESSED`).** Blessing is *not* "free read-off-the-command": an honest `service` probe is
-  **two** commands (`is-enabled` *and* `is-active` — discharging `enable --now` needs both), and some kinds
-  (group-membership) have no single clean blessed probe. Below the floor ⇒ over-correlation ⇒ under-execute.
-  **Now enforced structurally (task-P/find-1):** a probe is declared per `(kind, selector)`
-  (`oracle_probe_<kind>_<selector>`); a multi-selector kind shipping only the kind-default `oracle_probe_<kind>`
-  is UN-PROBEABLE (its sites run). So `service` MUST ship `oracle_probe_service_enabled` (is-enabled) AND
-  `oracle_probe_service_active` (is-active) to elide either — a single is-active body can no longer silently
-  discharge `#enabled` (`KindIndex::resolve_probe`).
-  - **[CORRECTION — round-23 phase-0.5, 2026-07-02, per `23D §1`, human-directed]** `oracle_probe_*`
-    is RETIRED by the reconciled design: the predict() IS the oracle, and the stripped `predict()` body is
-    the shipped probe (in both lanes). The per-selector distinction this floor enforces is reproduced
-    by the predict body's per-verb arms (`systemctl.check`'s `enable` arm runs is-enabled, `start` runs
-    is-active). NOTE the residual (`jc-fblessed`, `23E §3`): the STRUCTURAL `resolve_probe` floor
-    evaporates under check-as-oracle (the engine cannot verify `is-enabled` "means" `#enabled` —
-    `inv-referent-agnostic`), consistent with `23D §1.2` ("constrained in what we ASSUME, not what
-    they contain") but a real posture shift. Original text stands as history; R2/R3 code is
-    designed-and-deferred (`23E §2`; the former coverage-crate blocker is RESOLVED
-    2026-07-02 — spike/CLAUDE.md's corrected round-20 bullet carries the
-    atomic-session shape).
-- **`R2-MULTIOP` — the single-operand guard.** A check binding one operand (`pkg : package = "$1"`) MUST gate its
-  probe on there being NO second operand: `if [ "$2" = "" ]; then probe "$pkg"; fi`. WITHOUT it, a multi-target
-  command (`apt-get install nginx curl`) resolves to entity=`nginx` ALONE and ships a probe for nginx only — so
-  a host with nginx-but-not-curl elides the whole install and **never installs curl** (a priority-1 under-execute;
-  20I §3 / 208 strain-W3, pinned in `tests/predict.rs::naive_oracle_without_operand_guard_drops_trailing_operands_known_hazard`).
-  The engine cannot supply this (it parses nothing — `inv-referent-agnostic`); the guard is the oracle's job, and
-  the `[ "$2" = "" ]` form degrades the multi-operand argv to ⊤ ⇒ run (the safe direction).
+- **R2-IDCACHE** — group membership via `getent group`, never `id -nG` (`id`
+  reads a stale resolver cache: member-removed-but-cache-warm ⇒ wrong elision).
+  No same-session re-probe of a cell the run already mutated.
+- **R2-ORTRUE** — refuse an errexit-masked rc as a probe verdict:
+  `… || true` forces rc 0 and always reports holds. A lifted guard's rc is a
+  verdict only if the analyzer can prove it unmasked.
+- **F-GETENT-HOSTS** — per-database hermeticity: `getent passwd`/`group` are
+  file-backed (fine); `hosts`/`ahosts` route through nsswitch → live DNS —
+  read-only ≠ hermetic, disqualified from licensing (`KNOBS:kVOLATILES`).
+- **R2-MULTIOP** — a body binding ONE operand must gate on there being no second
+  (`[ "$2" = "" ] || return 2`): otherwise `install nginx curl` resolves to
+  nginx alone, and a host with nginx-but-not-curl elides the whole install and
+  never installs curl (priority-1 under-execute). The gate degrades multi-operand
+  argv to ⊤ ⇒ run — the safe direction. The engine cannot supply this; it parses
+  nothing.
+- **F-BLESSED** — "blessing" is a stdlib oracle shipped day-1, not a separate
+  mechanism. An honest `service` verdict is TWO probes (`is-enabled` AND
+  `is-active` — discharging `enable --now` needs both), spelled as per-verb arms
+  in the verdict body; below that floor ⇒ over-correlation ⇒ under-execute.
+- **quality-bar-accretions** — quote-as-law · printf-doctrine (never `echo` with
+  flags/escapes) · no bare globs in oracle bodies (zsh NOMATCH abort) · prefer
+  full-read forms over early-exit `-q` where the producer minds SIGPIPE
+  (sigpipe-flap-class) · before authoring `kind__state_stored_only_in()`: the
+  store-survey audit ("have you audited every store this kind's tools reach,
+  from every context?" — `only` = complete-by-contract) · emit-never spellings
+  (`test -a`/`-o`; bare `set -o pipefail` — durable text carries the self-gating
+  idiom).
 
-## Honor (cite the slug when you rely on one)
+## Direction
 
-- `inv-referent-agnostic` (W4) — the kind name is the cross-oracle anchor; never decode an `OpaqueToken`'s text.
-- `inv-no-throw` (dn-7) — a malformed lift → a `Diagnostic`, never a panic; the consumer treats an **absent
-  effect as ⊤ ⇒ run**, never a silent wrong-elision. (Already the posture in `lift`: non-literal anchor /
-  missing probe / top-level mutator / malformed effect all fail-soft.)
-- `inv-superposition` — this crate emits phase-/orientation-agnostic facts (`Polarity`/the future typestate
-  transition); it must **never** bake a phase or fold `May`/`Must`. Collapse happens in the phased *caller*
-  (`prove_replaceable` etc.), not here.
-- `inv-must-may` — a `Grade::May` (mined/distributional) never authorizes elision; only `Must` (idiom-implied or
-  oracle-declared) does. Co-reference of a shared token is at most a may-grade *hint*, never a link (`17N` F3).
-- `inv-top-reject` — an oracle file is declarations only; a top-level mutator or unmodeled construct is
-  ⊤-rejected loudly (`NON_DECL_CONSTRUCT` / `TOP_LEVEL_MUTATOR` in `lift_one`).
-
-## A tension to surface, not resolve
-
-`ch-shape-anno` (inline annotation) and `inv-no-throw`/the off-ramp weld pull against each other in *this*
-crate. The lifter must stay total and fail-soft on malformed input (`inv-no-throw`); but the inline annotation
-form is *itself* malformed sh under stock shells (`17O` F-OFFRAMP), so the parser-massaging that lets it through
-(`ch-shape-anno`) is exactly the thing that erases the "is this even well-formed?" signal a fail-soft lifter
-would otherwise surface. ~SUSPECT this collides with `F-REJECT`'s trust-spectrum: once a user writes an
-annotation they are Doing A Dorc-Specific Thing, so the lifter *may* reject on ill-formedness (and ~SUSPECT on
-typing-conflicts) — but that reject-power lives behind a `kTYANNOT` knob that is **unsettled at the design level**
-(inline-ergonomic-but-off-ramp-hostile ↔ eol-comment-clean-but-DX-vomit). For the spike: bake the inline shape,
-push it, and **record where the lift's malformed-input handling and the annotation-massaging fight** — that
-friction is `notes/19x` deliverable, not a thing to design away here (`ch-wrong`).
+- **respell-owns-the-churn** — HEAD fixtures still carry `.prop` selectors and
+  `touches`/`reaches` names; the corpus-respell sweep owns the conversion
+  (`#prop` · `disturbs` · `disturbance_reaches_only`). Never fix piecemeal.
+- **polarity-to-transitions** — the lifted effect is a binary bit at HEAD;
+  becomes a typestate transition at the entity-algebra-rebuild (this crate owns
+  the lift shape; `analysis` owns the transfer).
+- **ktyannot-status** — inline annotation is de-facto and IMPLEMENTED
+  (`KNOBS:kTYANNOT`; the formal weld is human-reserved). The spike IS the
+  livability experiment: record friction in numbered notes; don't relitigate the
+  spelling.
