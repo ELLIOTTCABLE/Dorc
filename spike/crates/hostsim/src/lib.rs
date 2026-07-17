@@ -318,11 +318,21 @@ pub struct Host {
     /// Seeded + precomputed by [`with_sigpipe_race`](Host::with_sigpipe_race) so it is bit-for-bit
     /// reproducible and goldens cannot flap. Empty on every ordinary host (no behaviour change).
     sigpipe_raced: BTreeSet<FactKey>,
+    /// The connection's mechanical [`Capability`] (`27C` §1(1) axis 1 — CAN the connection effect a
+    /// shift, with zero new credentials). A host FACT the probe never self-acquires: injected here
+    /// in DST (`with_capability`), the cli edge in reality. The consent decision
+    /// (`dorc_oracle::entry::decide_entry`) reads it to gate context entry. Defaults to
+    /// [`Capability::Root`] (the spike posture); a degraded/NOPASSWD host is a distinct cell to fuzz.
+    capability: dorc_core::Capability,
 }
 
 impl Host {
     /// A host whose initial state is exactly `holding` (no PRNG — the state is
-    /// given, not generated).
+    /// given, not generated). Context-qualified injection (`27C` §3 / `plans/27C` §9): a fact
+    /// keyed [`dorc_core::Context::Wrapped`] models "in THIS wrapper-denoted world, the cell holds"
+    /// — it is a DISTINCT [`FactKey`] from the ambient cell, so [`verdict`](Host::verdict) answers
+    /// the two independently (a wrapped measurement never aliases the ambient one). No new
+    /// mechanism: the context rides the fact, so `Host::new([cell.in_context(ctx)])` just works.
     #[must_use]
     pub fn new(holding: impl IntoIterator<Item = FactKey>) -> Self {
         Host {
@@ -333,7 +343,25 @@ impl Host {
             resolver_kinds: BTreeSet::new(),
             reaches: BTreeMap::new(),
             sigpipe_raced: BTreeSet::new(),
+            capability: dorc_core::Capability::Root,
         }
+    }
+
+    /// Inject the connection's mechanical [`Capability`] (`27C` §1(1) — the capability-cell
+    /// injection: root / NOPASSWD-non-root / degraded). Consuming-builder shape so a scenario spells
+    /// its capability inline. The probe NEVER self-acquires (`27C` §1): this is a declared host fact,
+    /// exactly the `verdict`/`manifest`/`resolve` declared-data discipline.
+    #[must_use]
+    pub fn with_capability(mut self, capability: dorc_core::Capability) -> Self {
+        self.capability = capability;
+        self
+    }
+
+    /// The connection's declared mechanical [`Capability`] (`27C` §1(1)) — read by the consent
+    /// decision at the cli edge. `Root` unless [`with_capability`](Host::with_capability) set otherwise.
+    #[must_use]
+    pub fn capability(&self) -> dorc_core::Capability {
+        self.capability
     }
 
     /// Attach a DECLARED derivation manifest (24E §6): the modeled entity-set the host-run
@@ -446,6 +474,7 @@ impl Host {
             resolver_kinds: BTreeSet::new(),
             reaches: BTreeMap::new(),
             sigpipe_raced: BTreeSet::new(),
+            capability: dorc_core::Capability::Root,
         }
     }
 
@@ -587,6 +616,59 @@ impl Host {
 mod tests {
     use super::*;
     use dorc_core::{EntityRef, Interner, KindId, OpaqueToken, SelectorId};
+
+    #[test]
+    fn context_qualified_verdict_injection_answers_worlds_independently() {
+        // `27C` §3 / `plans/27C` §9 — context-qualified verdict injection: a fact keyed in a
+        // wrapper-denoted world (`Context::Wrapped`) is a DISTINCT `FactKey`, so the host answers it
+        // INDEPENDENTLY of the ambient cell. Model the babby-sudo story: the ROOT tree has poddle
+        // installed, the ambient (caller's) tree does NOT. The wrapped measurement converges; the
+        // ambient one diverges — nothing traveled between the two worlds.
+        let mut i = Interner::default();
+        let cell = FactKey::cell(
+            KindId(i.intern("pipx.Package")),
+            EntityRef::Operand(OpaqueToken(i.intern("poddle"))),
+            SelectorId(i.intern("installed")),
+        );
+        let root_ctx = dorc_core::Context::Wrapped(dorc_core::ContextKey(i.intern("user=root")));
+        let in_root = cell.in_context(root_ctx);
+        // The host holds ONLY the root-context fact (poddle is in root's tree, not the caller's).
+        let host = Host::new([in_root]);
+        assert_eq!(
+            host.verdict(in_root),
+            Verdict::Converged,
+            "poddle IS installed in root's world"
+        );
+        assert_eq!(
+            host.verdict(cell),
+            Verdict::Diverged,
+            "poddle is NOT installed in the ambient world — no transport across the context gap"
+        );
+    }
+
+    #[test]
+    fn capability_cell_injection_defaults_root() {
+        // `27C` §1(1) — the capability-cell injection (root / NOPASSWD / degraded). Default = root;
+        // a scenario injects a degraded/NOPASSWD host to fuzz the consent cells.
+        use dorc_core::Capability;
+        assert_eq!(
+            Host::new([]).capability(),
+            Capability::Root,
+            "spike default"
+        );
+        assert_eq!(
+            Host::new([])
+                .with_capability(Capability::Degraded)
+                .capability(),
+            Capability::Degraded
+        );
+        assert_eq!(
+            Host::new([])
+                .with_capability(Capability::NonRootNopasswd)
+                .capability(),
+            Capability::NonRootNopasswd
+        );
+    }
 
     /// Corpus-shaped apt-get check (flag-strip → verb → single-operand `package`
     /// annotation, `[ "$2" = "" ]` multi-operand refusal). These DST tests model only

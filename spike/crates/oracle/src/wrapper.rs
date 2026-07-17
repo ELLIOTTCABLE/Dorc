@@ -90,6 +90,25 @@ pub enum RhoClaim {
     /// scrubbed base). `env -` reads as `-i` (r2). `vars` are the `VAR` names (values are runtime
     /// argv, resolved next lane).
     ExactlyThese { vars: Vec<String> },
+    /// `VAR=x "$@"` — the bare PREFIX-ASSIGNMENT rung (`271:rul-env-claim-inversion` "per-variable
+    /// claim, rest ⊤"; the `27K` disclosed gap, modeled here). The named vars are positively claimed;
+    /// everything else about the environment is ⊤ (UNCLAIMED — distinct from `env "$@"`, whose `env`
+    /// syllable claims the full ambient passthrough). `vars` are the `VAR` names.
+    ///
+    /// # Churn-avoidance disclosure (`ru-26`; the `27K` gap)
+    ///
+    /// The predict parser splits a leading `VAR=x` into a SCRIPT-scoped [`Stmt::Assign`], NOT a
+    /// command-scoped prefix, so `VAR=x "$@"` parses as `[Assign, Command(bare "$@")]` — the same
+    /// shape as a genuine two-statement `V=$1; "$@"`. We recognize the rung only in the UNAMBIGUOUS
+    /// top-level case (a body whose statements before the bare-`"$@"` peel are ALL assignments — no
+    /// argparse `shift`/`case`), where the assigns can only be env-prefix overrides. A body that also
+    /// argparses (`verb=$1; shift; "$@"`) stays [`Nothing`](RhoClaim::Nothing) (the safe floor — the
+    /// assigns are argparse, not env claims). The precise prefix-vs-statement distinction needs a
+    /// parser fold (deferred by `27K` for founding-pin churn risk); this models the clean idiom.
+    ///
+    /// `vars` are the interned assign NAMEs (referent-agnostic identities; the value-flow lane that
+    /// consumes ρ resolves them for display — this module holds no interner).
+    PerVariable { vars: Vec<Symbol> },
 }
 
 /// The head that puts a peel's guest (`"$@"`) in executing position — the ONLY two modeled
@@ -122,7 +141,38 @@ pub struct Peel {
 #[must_use]
 pub fn detect_peel(check: &Predict) -> Option<Peel> {
     let cmd = first_peel_command(&check.body)?;
+    // The `VAR=x "$@"` prefix-assignment rung (`27K` gap): a bare-`"$@"` peel whose top-level body is
+    // ALL assignments before the peel is a per-variable env claim (unambiguous — no argparse). Any
+    // other body keeps the head-derived ρ (bare ⇒ Nothing).
+    if matches!(peel_head(cmd), Some(PeelHead::Bare))
+        && let Some(vars) = top_level_prefix_assignment_vars(&check.body)
+    {
+        return Some(Peel {
+            rho: RhoClaim::PerVariable { vars },
+        });
+    }
     Some(Peel { rho: rho_of(cmd) })
+}
+
+/// The `VAR=x "$@"` prefix-assignment ρ recognizer (`27K` gap): `Some(vars)` iff `body`'s top level
+/// is a run of [`Stmt::Assign`] immediately followed by a bare-`"$@"` [`Stmt::Command`], with NOTHING
+/// else before the peel (no `shift`/`case`/`if` argparse — those would make the assigns argparse
+/// bindings, not env overrides). Returns the assigned NAME symbols. `None` for anything ambiguous
+/// (or no leading assigns) — the safe floor.
+fn top_level_prefix_assignment_vars(body: &[Stmt]) -> Option<Vec<Symbol>> {
+    let mut vars = Vec::new();
+    for stmt in body {
+        match stmt {
+            Stmt::Assign { name, .. } => vars.push(*name),
+            Stmt::Command(c) if matches!(peel_head(c), Some(PeelHead::Bare)) => {
+                // Reached the bare peel with only assigns before it ⇒ per-variable claim (if any).
+                return (!vars.is_empty()).then_some(vars);
+            }
+            // Any non-assign, non-bare-peel statement ⇒ ambiguous / argparse ⇒ not this rung.
+            _ => return None,
+        }
+    }
+    None
 }
 
 /// The first reachable command whose guest (`"$@"`) is in executing position, walking control flow
@@ -676,6 +726,34 @@ mod tests {
             Some(Peel {
                 rho: RhoClaim::Nothing
             })
+        );
+    }
+
+    #[test]
+    fn prefix_assignment_is_per_variable_rho() {
+        // `VAR=x "$@"` — the bare prefix-assignment rung (`27K` gap). Parses as `[Assign, bare "$@"]`;
+        // recognized as a per-variable claim (rest ⊤), distinct from `env "$@"` (full ambient).
+        let (_i, check) = one_predict("w__predict() { LC_ALL=C \"$@\"; }");
+        let Some(Peel {
+            rho: RhoClaim::PerVariable { vars },
+        }) = detect_peel(&check)
+        else {
+            panic!("VAR=x \"$@\" is a per-variable ρ claim");
+        };
+        assert_eq!(vars.len(), 1, "one prefix var (LC_ALL)");
+    }
+
+    #[test]
+    fn argparse_before_bare_peel_stays_nothing() {
+        // `verb=$1; shift; "$@"` — the assigns are ARGPARSE, not env overrides; the `shift` makes it
+        // unambiguous ⇒ the bare peel claims NOTHING (the safe floor, not a false per-variable claim).
+        let (_i, check) = one_predict("w__predict() { verb=$1; shift; \"$@\"; }");
+        assert_eq!(
+            detect_peel(&check),
+            Some(Peel {
+                rho: RhoClaim::Nothing
+            }),
+            "argparse before a bare peel ⇒ Nothing, never a false env claim"
         );
     }
 
