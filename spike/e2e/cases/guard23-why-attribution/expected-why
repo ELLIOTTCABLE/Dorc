@@ -1,1 +1,1 @@
-guard && vouch && package
+guard && vouch && sm.dorc.Package

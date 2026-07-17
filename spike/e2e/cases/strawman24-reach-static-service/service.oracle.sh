@@ -6,7 +6,7 @@ hork__predict() {
    pkg : sm.dorc.Package = "$1"
    case $verb in tune) dpkg-query -W "$pkg" >/dev/null 2>&1 : sm.dorc.Package:"$pkg"#tuned ;; esac
 }
-hork__touches() {
+hork__disturbs() {
    verb=$1; shift
    case $verb in tune) printf '%s\n' "$1" : sm.dorc.Package ;; esac
 }
@@ -22,6 +22,6 @@ enablesvc__predict() {
 enablesvc__is_converged() {
    systemctl is-enabled -- "$1" >/dev/null 2>&1
 }
-enablesvc__touches() {
+enablesvc__disturbs() {
    printf '%s\n' "$1" : sm.dorc.Service
 }

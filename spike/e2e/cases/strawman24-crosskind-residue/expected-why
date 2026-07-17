@@ -1,1 +1,1 @@
-site 1 survives+elides && wall site 0 (apt-get touches {package:nginx}) && backing service:nginx disjoint
+site 1 survives+elides && wall site 0 (apt-get touches {sm.dorc.Package:nginx}) && backing sm.dorc.Service:nginx disjoint

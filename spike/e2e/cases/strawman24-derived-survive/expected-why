@@ -1,1 +1,1 @@
-site 1 survives+elides && wall site 0 && package:oldpkg && DERIVED at probe && backing package:nginx disjoint
+site 1 survives+elides && wall site 0 && sm.dorc.Package:oldpkg && DERIVED at probe && backing sm.dorc.Package:nginx disjoint

@@ -1,1 +1,1 @@
-site 1 survives+elides && wall site 0 && apt-get touches {package:oldpkg} && backing package:nginx disjoint
+site 1 survives+elides && wall site 0 && apt-get touches {sm.dorc.Package:oldpkg} && backing sm.dorc.Package:nginx disjoint
