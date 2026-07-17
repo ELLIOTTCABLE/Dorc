@@ -100,13 +100,14 @@ minutiae.
 (`271:rul-only-oracle-bytes-ship`: composed predicts + build riders; task-14
 DISSOLVED); the repair lands at block-rebuild's probe-emission touch-point. Any
 block-rebuild conductor MUST read the `24J` header correction before touching probe
-emission. Forward-annotations on `24J`/`24C` ride a parallel supersession pass — cite
-`271` as the authority regardless.
+emission. Forward-annotations on `24J`/`24C` are landed (the supersession pass, below);
+`271` is the authority regardless.
 
 **Corpus hygiene (2026-07-16):** spike steering docs rewritten current-truth
-(`spike/CLAUDE.md` + the seven crate `CLAUDE.md`s); supersession annotations landing on
-`270`/`24S`/`24T`/`24R`/`24L`/`24J`/`24C` via a parallel pass; `Research/README.md` +
-this file refreshed (branches `ai/spike3-r23-corpus-refresh` + siblings).
+(`spike/CLAUDE.md` + the seven crate `CLAUDE.md`s); supersession annotations landed on
+`270`/`24S`/`24T`/`24R`/`24L`/`271`/`24J`/`24C`; `Research/README.md` + this file
+refreshed (branches `ai/spike3-r23-corpus-refresh` + `ai/spike3-r23-map-status`,
+pending fold into the lineage).
 
 **Branch map:** `ai/spike3-r23` = the live lineage (r24 history + round-27 forward) ·
 `ai/spike3-r25` = field-trial tooling, dormant (owed-on-revival banked `24U` §6 / `270`
@@ -131,8 +132,8 @@ lives in `24C`.
 
 ## Round 24 (2026-07-03 → 2026-07-10 — CLOSED; full accounting `notes/24U`)
 
-One residue with no durable home yet (kept under the header law): the dotfiles
-acceptance-day, from the 2026-07-07 settled-list, stays TABLED.
+Residue: the dotfiles-acceptance-day (2026-07-07 settled-list) stays TABLED — banked
+at `270` §5 (2026-07-16).
 
 ## Ancient (pre-round-24)
 
