@@ -208,10 +208,26 @@ prompt you write:
   functions (both-sides consent: author's per-function per-dimension mark × admin's
   dial). Wrapper entry forms are the ONE licensed seat for real context entry;
   predict closure bodies never escalate. Every failure (entry refused, impossible,
-  rc 127, in-context decline) lands can't-say ⇒ guard/run. Without entry, a fact
-  crosses a dimension boundary only via an engine-warranted carried-by row
-  (structural) or the kind-owner's typed `invariant:<axis>` line × the flag. Silence
-  walls.
+  rc 127, in-context decline) lands can't-say ⇒ guard/run. Without entry, a
+  substrate-axis fact crosses a boundary only via **pure-predicate carry**
+  (unflagged; see next bullet); an ingredient (identity) axis crosses only via the
+  kind-owner's typed `invariant:<axis>` line × the flag. Silence walls.
+- **pure-predicate-carry** (`plans/27C` §4(a); `notes/27Xf` Tier-1; human-opted
+  2026-07-17) — the ONLY unflagged cross-substrate-boundary carry, and the RETIREMENT
+  of the old "engine-warranted carried-by row" (it leaned on tool-semantics the engine
+  may not hold). A substrate-axis fact travels unflagged iff (A) every marked backing
+  kind carries its owner's `invariant:<axis>` line AND (B) the engine proves the
+  verdict body READ-SET-CLOSED — everything influencing the verdict rc (data AND
+  control-flow) traces to the site's argv or a marked read, with no unmarked external
+  input. Referent-agnostic: the closure reads MARKS + sh-structure, never tool
+  semantics (`inv-referent-agnostic`). The closure pass is DEFAULT-DISQUALIFY (any
+  construct off the audited pure-construct safe-list disqualifies) and fails safe
+  (missed-safe loses an elision, never carries a hidden read). Substrate axes ONLY —
+  user/identity is excluded, because a shift there changes ACCESS to the body's own
+  reads (EACCES flips the answer of a structurally-closed body). netns: `net.*` is
+  per-netns, so the model must forbid `invariant:netns` on network kernel state. The
+  pass is a correctness surface the spike must build and prove; empty-oracle world
+  stays byte-identical (no closure attempted).
 - **value-predictions** (`275` · `271:rul-value-prediction-species`) — every
   byte-shaped belief beyond program text (captured stdout, stored rcs, composed
   outputs, register-resolved values) is a value-prediction; its provenance and

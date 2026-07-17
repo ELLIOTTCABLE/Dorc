@@ -58,6 +58,20 @@ lanes caught. "Compression is faithful" holds for what it sampled, is not a clea
 
 ### Tier 1 — the fallback lane re-opens the completeness gap (block-context; NOT block-rebuild)
 
+> **RESOLVED 2026-07-17 (human-opted): `27C:mech-pure-predicate-carry`.** The finding
+> below stands as diagnosed; the fix is neither flag-gating (moving-under-the-flag is a
+> failure-mode) nor abandonment. The old unflagged engine-warranted carried-by row is
+> RETIRED (it rested on tool-semantics the engine may not hold). Substrate-axis facts now
+> travel unflagged iff (A) their marked backing kinds carry the owner's `invariant:<axis>`
+> line AND (B) the engine proves the verdict body read-set-closed (everything influencing
+> the verdict rc traces to argv or a marked read; no unmarked external input) — closing the
+> open-world residue by structure rather than accepting it under the flag. Referent-agnostic
+> (marks + sh-taint, never tool-semantics; it lifts the hermetic argument-driven predicate
+> shape authors already write); substrate axes only (user excluded — access-flip); netns
+> needs the namespaced-`net.*` model. The conservative closure pass is the spike's to build
+> and prove in practice. Spec: `27C` §0/§4(a)/§9/§10; steering `spike/CLAUDE.md`
+> pure-predicate-carry; need `ANALYZER-NEEDS` an-read-set-closure.
+
 **cr-structural-carried-by-transports-a-measurement** (27Xb finding-structural-transport-
 repeats-completeness-gap, CRITICAL/0.98) — **CREDITED, verified, highest.** `27C` §4's
 first fallback bullet — the *engine-warranted carried-by row*, explicitly **unflagged** —
@@ -271,15 +285,18 @@ the other was refused). Minor; do not let it drive churn.
    §8 claimed and re-verified here: nothing credited mints or depends on a transport
    license; the build builds coordinates, chokepoints, dialect sets, seams, fences. The
    Tier-1 finding lives in block-context. Proceed.
-2. **Fold before block-context** (the real design decision, human-owned): resolve
-   cr-structural-carried-by-transports-a-measurement + its §0 contradiction — flag-gate the
-   structural carried-by row, restrict it to keying, or take honest-walls-for-worlds. This
-   is the "critical finding + repair in a later arc" the human predicted; it does not gate
-   the current build.
+2. **Tier-1 RESOLVED 2026-07-17 (human-opted): `27C:mech-pure-predicate-carry`** — the
+   unflagged engine-warranted carried-by row is retired; substrate-axis facts carry
+   unflagged only under authored `invariant:<axis>` (A) + engine-verified read-set closure
+   (B), closing the completeness residue by structure rather than under the flag. Landed:
+   `27C` §0/§4(a)/§9/§10, `spike/CLAUDE.md` pure-predicate-carry, `ANALYZER-NEEDS`
+   an-read-set-closure. Build-and-prove the conservative closure pass is the spike's
+   load-bearing task. Does not gate block-rebuild.
 3. **Cheap text repairs, do soon** (feed rebuild agents / THE spec): strike `is_diverged`
-   from `spike/CLAUDE.md` ×2 + `ANALYZER-NEEDS:336` + negative pin (Tier-2, highest); the
-   `277` transport-row annotations; the `27C` §1 authority sentence; the `277` §5 + steering
-   non-emptiness invariant; the nested-wrapper composition rule into `27C` §3.
+   from `spike/CLAUDE.md` ×2 + `ANALYZER-NEEDS:336` + negative pin (Tier-2, highest —
+   *the human completed the is_diverged docs cleanup 2026-07-17*); the `277` transport-row
+   annotations (DONE — §8/§9 markers); the `27C` §1 authority sentence; the `277` §5 +
+   steering non-emptiness invariant; the nested-wrapper composition rule into `27C` §3.
 4. **Root-doc queue (human):** the flag-contract widening (re-scope the mis-scoped `279f`
    queue item); the entry-self-effects carve wants an explicit human ruling.
 5. **Housekeeping at fold-in:** rename the deepseek-adversarial lane's stray
