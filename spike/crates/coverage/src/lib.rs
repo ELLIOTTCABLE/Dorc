@@ -1178,7 +1178,7 @@ fn argv_oneline(words: &[ValueOf], interner: &Interner) -> String {
         .iter()
         .map(|w| match w {
             ValueOf::Literal(sym) => interner.resolve(*sym).to_string(),
-            ValueOf::Top => "TOP".to_string(),
+            ValueOf::Top(_) => "TOP".to_string(),
         })
         .collect::<Vec<_>>()
         .join(" ")
@@ -1210,7 +1210,7 @@ fn members_oneline(members: &[Vec<ValueOf>], interner: &Interner) -> Option<Stri
         .filter_map(|m| m.last())
         .map(|w| match w {
             ValueOf::Literal(sym) => interner.resolve(*sym).to_string(),
-            ValueOf::Top => "TOP".to_string(),
+            ValueOf::Top(_) => "TOP".to_string(),
         })
         .collect();
     Some(format!("{prefix} {{{}}}", alts.join("|")))

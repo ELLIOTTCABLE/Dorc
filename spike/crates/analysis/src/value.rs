@@ -38,7 +38,7 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
-use dorc_core::{AstId, Interner, Symbol};
+use dorc_core::{AstId, Interner, Symbol, TopCause, ValueGrade};
 use dorc_syntax::ast::{Ast, NodeKind, RedirOp, RedirTarget, WordPart};
 use dorc_syntax::sem::{self, FragClass};
 
@@ -59,8 +59,11 @@ pub enum ValueOf {
     /// A statically-known argument value (interned).
     Literal(Symbol),
     /// `⊤`: runtime-dynamic, unmodeled, or lost to quoting/splitting ⇒ the consumer must
-    /// treat the argument as unknown (`kFAIL`: run, do not elide on it).
-    Top,
+    /// treat the argument as unknown (`kFAIL`: run, do not elide on it). Carries its
+    /// [`TopCause`] (`270:block-rebuild` — "every ⊤ names its CAUSE"; the `219` q-2 cause-named
+    /// diagnostics). Consumers pattern-match `Top(_)` — the cause is diagnostic/why-lane content,
+    /// never a branch on which ⊤ (`inv-top-reject`: all ⊤ run, whatever the cause).
+    Top(TopCause),
 }
 
 /// The queryable result of the value-flow analysis: per command-site argv values.
@@ -112,6 +115,18 @@ pub struct ValueFlow {
     /// `>> "$logfile"` following `logfile`), so it composes with constant propagation. `BTreeMap`
     /// for `inv-determinism`.
     redir_target: BTreeMap<CfgNodeId, ValueOf>,
+    /// Per `Command` node: the provenance [`ValueGrade`] of each SOURCE word (command word first,
+    /// then args, in source order — one grade per source word, NOT per split-field), derived
+    /// weakest-fragment over the word's recipe (`275` §2 · [`provenance_of_recipe`]). The
+    /// value-prediction species' first derived field (`271:rul-value-prediction-species`): DERIVED,
+    /// never declared. This is the `read-value-slice` seam block-context consumes directly —
+    /// `seam-literal-provenance` — to tell a probe-captured value (a value-prediction) from a
+    /// source literal (program text), which `argv` (a bare [`ValueOf`]) cannot. At THIS stage every
+    /// non-⊤ word grades [`ValueGrade::ProgramText`] (nothing beyond program text exists in the
+    /// value plane yet — captures are ⊤, the value plane runs before the probe); the fold is ready
+    /// for richer grades when a capture/register fragment lands. NOTHING consumes it yet
+    /// (`270:block-rebuild`: represent + derive, do not consume). `BTreeMap` for `inv-determinism`.
+    argv_word_grades: BTreeMap<CfgNodeId, Vec<ValueGrade>>,
     converged: bool,
 }
 
@@ -165,6 +180,17 @@ impl ValueFlow {
         self.redir_target.get(&node).copied()
     }
 
+    /// The provenance [`ValueGrade`] of each SOURCE word of a command-site (command word first,
+    /// then args, in source order — one grade per source word, NOT per split-field), or an empty
+    /// slice for a non-`Command` node / a bare assignment. The value-prediction species' derived
+    /// provenance field (`275` §2 · `271:rul-value-prediction-species`) — the `read-value-slice`
+    /// consumer's input at block-context. See [`argv_word_grades`](Self::argv_word_grades) (the
+    /// field). At this stage every non-⊤ word is [`ValueGrade::ProgramText`].
+    #[must_use]
+    pub fn argv_word_grades(&self, node: CfgNodeId) -> &[ValueGrade] {
+        self.argv_word_grades.get(&node).map_or(&[], Vec::as_slice)
+    }
+
     /// Did the underlying worklist reach a fixed point? `false` ⇒ all queries are all-`⊤`
     /// (the non-convergence fold, `16P` DP-9).
     #[must_use]
@@ -182,11 +208,11 @@ type ValueEnv = MapL<String, Flat<String>>;
 /// outer binding lands. Monotone (a concrete binding never changes) ⇒ the fixed count suffices.
 const MAX_INLINE_PASSES: usize = 3;
 
-/// An abstract word value mid-analysis: known literal text, or `⊤`.
+/// An abstract word value mid-analysis: known literal text, or `⊤` with its [`TopCause`].
 #[derive(Debug, Clone, PartialEq, Eq)]
 enum Abstract {
     Lit(String),
-    Top,
+    Top(TopCause),
 }
 
 /// Read a variable's abstract value, treating **absent as `⊤`** (`19H`: unset-is-⊤;
@@ -195,7 +221,9 @@ enum Abstract {
 fn lookup(env: &ValueEnv, var: &str) -> Abstract {
     match env.get(&var.to_owned()) {
         Flat::Elem(s) => Abstract::Lit(s),
-        Flat::Bottom | Flat::Top => Abstract::Top,
+        // Unset (absent-as-⊤ / ⊥) or branch-conflicted (lattice ⊤): a runtime-dynamic value.
+        // The lattice does not thread a cause, so a var-⊤ is uniformly `DynamicValue`.
+        Flat::Bottom | Flat::Top => Abstract::Top(TopCause::DynamicValue),
     }
 }
 
@@ -241,11 +269,18 @@ pub fn analyze(cfg: &Cfg, ast: &Ast, interner: &mut Interner) -> ValueFlow {
     // does; the effect classifier gens a per-path `file` cell from a resolved target.
     let redir_target = prep.redir_pass(&solution.states, solution.converged, interner);
 
+    // The value-prediction species' provenance field (`275` §2 · value-recipe-reshape): the
+    // weakest-fragment grade of each command-site source word, derived from its recipe. A pure
+    // structural pass off the AST — grade is a property of the recipe shape, not the resolved
+    // value, so it needs no lattice state (`inv-determinism`, no consumer at this stage).
+    let argv_word_grades = prep.provenance_pass(&solution.states, solution.converged);
+
     ValueFlow {
         argv,
         member_argv,
         positional_argv,
         redir_target,
+        argv_word_grades,
         converged: solution.converged,
     }
 }
@@ -256,7 +291,7 @@ fn intern_argv(words: Vec<Abstract>, interner: &mut Interner) -> Vec<ValueOf> {
         .into_iter()
         .map(|w| match w {
             Abstract::Lit(s) => ValueOf::Literal(interner.intern(&s)),
-            Abstract::Top => ValueOf::Top,
+            Abstract::Top(cause) => ValueOf::Top(cause),
         })
         .collect()
 }
@@ -286,23 +321,33 @@ struct Prep<'a> {
     ifs_pristine: bool,
 }
 
-/// A flattened recipe for one word's value: the ordered fragments to concatenate. Any
-/// fragment the analysis cannot turn into a literal makes the whole word `⊤` (`19H`: a word
-/// containing a `⊤`-var or an unmodeled expansion is `⊤`).
+/// A flattened, **fragment-preserving** recipe for one word's value (`270:block-rebuild`
+/// value-recipe-reshape): the ordered fragments to concatenate. A ⊤ fragment ([`Frag::Top`])
+/// makes the whole word `⊤` (`19H`: a word containing a `⊤`-var or an unmodeled expansion is
+/// `⊤`) — but the surrounding fragments are RETAINED, so the provenance grade
+/// ([`provenance_of_recipe`], `275` §2 weakest-fragment) and the per-channel backing
+/// ([`backing_of_recipe`]) are computable from which reads/literals/compositions produced which
+/// parts. The pre-reshape `Recipe::Top` collapse (which erased the fragments and the cause) is
+/// gone.
 #[derive(Debug, Clone)]
 enum Recipe {
-    /// Unconditionally `⊤` (held an unmodeled/dynamic part, an unquoted positional/special,
-    /// or an unquoted command-substitution/arithmetic): no point tracking fragments.
-    Top,
-    /// Concatenate these fragments left-to-right; if any resolves to `⊤`, the word is `⊤`.
-    /// If a [`Frag::SplitVar`] is present the word may field-split (`209` brk-3) — see
-    /// [`resolve_recipe_fields`].
+    /// Not a word node (defensive) — a bare ⊤ carrying its cause, with no fragments to preserve.
+    /// A real word is always [`Parts`](Recipe::Parts) (possibly `[Frag::Top(cause)]`).
+    Opaque(TopCause),
+    /// Concatenate these fragments left-to-right; if any is (or resolves to) `⊤`, the word is
+    /// `⊤` with that fragment's cause. If a [`Frag::SplitVar`] is present the word may
+    /// field-split (`209` brk-3) — see [`resolve_recipe_fields`].
     Parts(Vec<Frag>),
 }
 
 /// One fragment of a [`Recipe`].
 #[derive(Debug, Clone)]
 enum Frag {
+    /// A `⊤` fragment (`270:block-rebuild` fragment-preservation): this part forced the word `⊤`,
+    /// naming its [`TopCause`]. The neighbouring fragments are retained so a MIXED word records
+    /// which fragment collapsed it (`275` §2). Its provenance grade is `⊤` (the weakest); it
+    /// contributes no backing.
+    Top(TopCause),
     /// Literal text (verbatim; contributes to a single field, never a split boundary).
     Lit(String),
     /// A *quoted* plain-variable reference (`"$x"`), resolved against the per-point state.
@@ -375,7 +420,9 @@ impl<'a> Prep<'a> {
                     // which we cannot reproduce ⇒ ⊤ (fix-1). A source-literal glob does NOT
                     // expand on an assignment RHS (`x=*.txt` stores `*.txt`), so it is kept
                     // concrete here — the glob hazard fires only at the unquoted USE site.
-                    Some(v) if word_assign_rhs_hazard(ast, *v) => Recipe::Top,
+                    Some(v) if word_assign_rhs_hazard(ast, *v) => {
+                        Recipe::Opaque(TopCause::UnmodeledExpansion)
+                    }
                     Some(v) => recipe_of_word(ast, *v),
                 };
                 list.push((name.clone(), recipe));
@@ -467,7 +514,7 @@ impl<'a> Prep<'a> {
         let mut acc = Flat::Bottom;
         for &w in words {
             let resolved = if word_expansion_hazard(self.ast, w) {
-                Abstract::Top
+                Abstract::Top(TopCause::SplitOrGlob)
             } else {
                 resolve_recipe(&recipe_of_word(self.ast, w), incoming)
             };
@@ -616,10 +663,10 @@ impl<'a> Prep<'a> {
             return Vec::new();
         };
         if !converged {
-            return vec![Abstract::Top; words.len()];
+            return vec![Abstract::Top(TopCause::NonConvergent); words.len()];
         }
         let Some(incoming) = states.get(id.index()) else {
-            return vec![Abstract::Top; words.len()];
+            return vec![Abstract::Top(TopCause::NonConvergent); words.len()];
         };
         self.resolve_site_words(words, incoming)
     }
@@ -636,11 +683,64 @@ impl<'a> Prep<'a> {
                 // is the direct-literal channel (`cmd *.deb`); a glob arriving through an
                 // unquoted variable's VALUE is the split path's `field_is_modelable` concern.
                 if word_expansion_hazard(self.ast, w) {
-                    return vec![Abstract::Top];
+                    return vec![Abstract::Top(TopCause::SplitOrGlob)];
                 }
                 resolve_recipe_fields(&recipe_of_word(self.ast, w), env, self.ifs_pristine)
             })
             .collect()
+    }
+
+    /// Derive the provenance [`ValueGrade`] of every command-site SOURCE word (`275` §2
+    /// weakest-fragment · the value-recipe-reshape). A word whose value resolves to `⊤` (an
+    /// unmodeled expansion, an unresolvable positional, an unset/dynamic var, a glob/tilde hazard)
+    /// grades `⊤`; a concrete word grades the weakest-fragment of its recipe
+    /// ([`provenance_of_recipe`] — `ProgramText` at this stage). Env-aware because a `Frag::Var`
+    /// grades by its RESOLVED value — an unset var is `⊤`, not program text. Under a non-converged
+    /// solve every word folds to `⊤` (`16P` DP-9, matching [`site_argv`]). One grade per SOURCE
+    /// word (never per split-field), keyed by `Command` node.
+    fn provenance_pass(
+        &self,
+        states: &[ValueEnv],
+        converged: bool,
+    ) -> BTreeMap<CfgNodeId, Vec<ValueGrade>> {
+        let mut out = BTreeMap::new();
+        for (id, node) in self.cfg.iter() {
+            if node.kind != CfgNodeKind::Command {
+                continue;
+            }
+            let NodeKind::Simple { words, .. } = &self.ast.node(node.ast).kind else {
+                continue;
+            };
+            let grades = match states.get(id.index()) {
+                Some(incoming) if converged => words
+                    .iter()
+                    .map(|&w| self.word_grade(w, incoming))
+                    .collect(),
+                _ => vec![ValueGrade::Top; words.len()],
+            };
+            out.insert(id, grades);
+        }
+        out
+    }
+
+    /// The provenance grade of one source word (`275` §2): `⊤` if its value resolves to any `⊤`
+    /// field, else the weakest-fragment grade of its recipe. The value's `⊤`-ness (which the recipe
+    /// alone cannot see — an unset `Frag::Var` resolves `⊤`) is authoritative for the `⊤` grade; the
+    /// recipe supplies the sub-`⊤` grade (`ProgramText` now; register / world-spoken / author-
+    /// composed once a capture/register fragment lands — block-context `seam-pipeline-order`).
+    fn word_grade(&self, word: AstId, env: &ValueEnv) -> ValueGrade {
+        if word_expansion_hazard(self.ast, word) {
+            return ValueGrade::Top;
+        }
+        let recipe = recipe_of_word(self.ast, word);
+        let any_top = resolve_recipe_fields(&recipe, env, self.ifs_pristine)
+            .iter()
+            .any(|a| matches!(a, Abstract::Top(_)));
+        if any_top {
+            ValueGrade::Top
+        } else {
+            provenance_of_recipe(&recipe)
+        }
     }
 
     /// Compute the per-member argvs for every in-loop **Members** site (task-L2 item-1/2,
@@ -738,7 +838,7 @@ impl<'a> Prep<'a> {
             for field in resolve_recipe_fields(&recipe, incoming, self.ifs_pristine) {
                 match field {
                     Abstract::Lit(s) => members.push(s),
-                    Abstract::Top => return None,
+                    Abstract::Top(_) => return None,
                 }
             }
         }
@@ -855,13 +955,13 @@ impl<'a> Prep<'a> {
             // an unquoted glob / word-leading tilde expands against the live fs / `$HOME`
             // ⇒ ⊤ (we cannot reproduce it — the Opaque-poison path).
             let resolved = if word_expansion_hazard(self.ast, *w) {
-                Abstract::Top
+                Abstract::Top(TopCause::SplitOrGlob)
             } else {
                 resolve_recipe(&recipe_of_word(self.ast, *w), incoming)
             };
             let value = match resolved {
                 Abstract::Lit(s) => ValueOf::Literal(interner.intern(&s)),
-                Abstract::Top => ValueOf::Top,
+                Abstract::Top(cause) => ValueOf::Top(cause),
             };
             out.insert(id, value);
         }
@@ -964,7 +1064,7 @@ impl<'a> Prep<'a> {
             .iter()
             .flat_map(|&w| {
                 if word_expansion_hazard(self.ast, w) {
-                    return vec![Abstract::Top];
+                    return vec![Abstract::Top(TopCause::SplitOrGlob)];
                 }
                 resolve_recipe_fields_pos(
                     &recipe_of_word_with_positionals(self.ast, w, positionals),
@@ -1147,7 +1247,10 @@ fn apply_assigns(list: &[(String, Recipe)], env: &mut ValueEnv) {
 fn flat_of(v: &Abstract) -> Flat<String> {
     match v {
         Abstract::Lit(s) => Flat::Elem(s.clone()),
-        Abstract::Top => Flat::Top,
+        // The lattice `Flat::Top` carries no cause (a var read back as ⊤ is uniformly
+        // `DynamicValue` at `lookup`) — the cause lives on the recipe/word resolution, not in
+        // the per-variable lattice value.
+        Abstract::Top(_) => Flat::Top,
     }
 }
 
@@ -1163,22 +1266,25 @@ fn flat_of(v: &Abstract) -> Flat<String> {
 /// `b=$a` ⇒ ⊤). Only [`site_argv`] (via [`resolve_recipe_fields`]) splits.
 fn resolve_recipe(recipe: &Recipe, env: &ValueEnv) -> Abstract {
     let parts = match recipe {
-        Recipe::Top => return Abstract::Top,
+        Recipe::Opaque(cause) => return Abstract::Top(*cause),
         Recipe::Parts(p) => p,
     };
     let mut buf = String::new();
     for frag in parts {
         match frag {
+            Frag::Top(cause) => return Abstract::Top(*cause),
             Frag::Lit(s) => buf.push_str(s),
             Frag::Var(v) => match lookup(env, v) {
                 Abstract::Lit(s) => buf.push_str(&s),
-                Abstract::Top => return Abstract::Top, // ⊤ or absent-as-⊤ var ⇒ whole word ⊤
+                top @ Abstract::Top(_) => return top, // ⊤ or absent-as-⊤ var ⇒ whole word ⊤
             },
             // An unquoted var outside argv position is ⊤ here (no split applied — see doc).
             // The positional [`Frag`] variants are only built by the inline-pass's
             // positional-aware path ([`resolve_recipe_pos`]); a non-inline recipe never holds
             // them, so this arm is defensively ⊤ (never exercised).
-            Frag::SplitVar(_) | Frag::PosLit(_) | Frag::PosSplit(_) => return Abstract::Top,
+            Frag::SplitVar(_) | Frag::PosLit(_) | Frag::PosSplit(_) => {
+                return Abstract::Top(TopCause::SplitOrGlob);
+            }
         }
     }
     Abstract::Lit(buf)
@@ -1206,7 +1312,7 @@ enum OwnedField {
 
 fn resolve_recipe_fields(recipe: &Recipe, env: &ValueEnv, ifs_pristine: bool) -> Vec<Abstract> {
     let parts = match recipe {
-        Recipe::Top => return vec![Abstract::Top],
+        Recipe::Opaque(cause) => return vec![Abstract::Top(*cause)],
         Recipe::Parts(p) => p,
     };
     // No unquoted split fragment ⇒ this word's arity is statically one; resolve it exactly
@@ -1216,7 +1322,7 @@ fn resolve_recipe_fields(recipe: &Recipe, env: &ValueEnv, ifs_pristine: bool) ->
     }
     // A split-bearing word under a non-pristine IFS is unmodelable ⇒ one ⊤ slot.
     if !ifs_pristine {
-        return vec![Abstract::Top];
+        return vec![Abstract::Top(TopCause::SplitOrGlob)];
     }
     // Resolve each fragment to OWNED text tagged splittable-or-not. Any ⊤/absent value ⇒
     // the whole word is one ⊤ slot (we cannot split an unknown value). The owned buffer
@@ -1224,15 +1330,18 @@ fn resolve_recipe_fields(recipe: &Recipe, env: &ValueEnv, ifs_pristine: bool) ->
     let mut owned = Vec::with_capacity(parts.len());
     for frag in parts {
         let resolved = match frag {
+            Frag::Top(cause) => return vec![Abstract::Top(*cause)],
             Frag::Lit(s) => OwnedField::Literal(s.clone()),
             Frag::Var(v) | Frag::SplitVar(v) => match lookup(env, v) {
                 Abstract::Lit(s) if matches!(frag, Frag::SplitVar(_)) => OwnedField::Split(s),
                 Abstract::Lit(s) => OwnedField::Literal(s),
-                Abstract::Top => return vec![Abstract::Top],
+                top @ Abstract::Top(_) => return vec![top],
             },
             // Positional frags never reach this non-inline path (see [`resolve_recipe`]);
             // defensively ⊤.
-            Frag::PosLit(_) | Frag::PosSplit(_) => return vec![Abstract::Top],
+            Frag::PosLit(_) | Frag::PosSplit(_) => {
+                return vec![Abstract::Top(TopCause::SplitOrGlob)];
+            }
         };
         owned.push(resolved);
     }
@@ -1247,28 +1356,66 @@ fn resolve_recipe_fields(recipe: &Recipe, env: &ValueEnv, ifs_pristine: bool) ->
     // (pathname expansion against the remote fs ⇒ unmodelable ⇒ ⊤).
     match sem::split_fields_join(&fields) {
         Some(fs) => fs.into_iter().map(Abstract::Lit).collect(),
-        None => vec![Abstract::Top],
+        None => vec![Abstract::Top(TopCause::SplitOrGlob)],
     }
 }
 
-/// Flatten an AST word into a [`Recipe`] via the shared quoting-class rules
-/// ([`sem::classify_frag`]): a quoted plain variable is a trackable [`Frag::Var`]; a literal
-/// is a [`Frag::Lit`]; an *unquoted* plain variable is a [`Frag::SplitVar`] (it may
-/// field-split, `209` brk-3); and any other ⊤-class fragment (a quoted positional/special/
-/// subst — `FragClass::OpaqueValue` — or an unquoted positional/special/subst/arithmetic)
-/// collapses the whole word to [`Recipe::Top`]. The arity/value-preservation split that was
-/// hand-rolled here lives once in `sem`; the field-split refinement of the unquoted-var case
-/// is applied here (it needs the resolved *value*, which `sem`'s quoting-classifier cannot
-/// hold).
+/// Flatten an AST word into a **fragment-preserving** [`Recipe`] via the shared quoting-class
+/// rules ([`sem::classify_frag`]): a quoted plain variable is a trackable [`Frag::Var`]; a literal
+/// is a [`Frag::Lit`]; an *unquoted* plain variable is a [`Frag::SplitVar`] (it may field-split,
+/// `209` brk-3); and any other ⊤-class fragment (a quoted positional/special/subst —
+/// `FragClass::OpaqueValue` — or an unquoted positional/special/subst/arithmetic) becomes a
+/// [`Frag::Top`] carrying its [`TopCause`] (`270:block-rebuild` — the fragments are RETAINED, no
+/// whole-word collapse). The arity/value-preservation split that was hand-rolled here lives once
+/// in `sem`; the field-split refinement of the unquoted-var case is applied here (it needs the
+/// resolved *value*, which `sem`'s quoting-classifier cannot hold).
 fn recipe_of_word(ast: &Ast, word: AstId) -> Recipe {
     let NodeKind::Word { parts } = &ast.node(word).kind else {
-        return Recipe::Top;
+        return Recipe::Opaque(TopCause::DynamicValue);
     };
     let mut frags = Vec::new();
-    if collect_frags(parts, /* quoted = */ false, &mut frags) {
-        Recipe::Parts(frags)
-    } else {
-        Recipe::Top
+    collect_frags(parts, /* quoted = */ false, &mut frags);
+    Recipe::Parts(frags)
+}
+
+/// The provenance [`ValueGrade`] of a value's recipe (`275` §2 · `271:rul-value-prediction-species`):
+/// the WEAKEST-fragment meet ([`ValueGrade::weakest`]) over the recipe's fragments. DERIVED, never
+/// declared — the value-prediction species' first derived field. A ⊤ fragment ([`Frag::Top`])
+/// grades `⊤`; every current non-⊤ fragment is program text ([`ValueGrade::ProgramText`], the
+/// identity of the meet), so a value at this stage grades `ProgramText` unless a ⊤ interposes.
+///
+/// The value-prediction grades (register / world-spoken / author-composed) attach when a fragment
+/// carries a probe-captured / register-resolved value — which arrives at block-context
+/// (`seam-pipeline-order`: the value plane runs strictly BEFORE the probe, so a captured literal
+/// folds back only via a second value-flow pass or a fold-time channel; `seam-literal-provenance`:
+/// the fragment then carries the source-literal-vs-probe-captured distinction). The weakest-meet
+/// fold already consumes those grades — the derivation is complete; only the producers are owed.
+/// REPRESENT + DERIVE, do NOT consume (`270:block-rebuild`): nothing branches on this grade at this
+/// stage; the composed gate stays deferred (`271:rul-composed-bytes-defer-and-floor`).
+fn provenance_of_recipe(recipe: &Recipe) -> ValueGrade {
+    match recipe {
+        Recipe::Opaque(_) => ValueGrade::Top,
+        Recipe::Parts(parts) => parts
+            .iter()
+            .map(frag_grade)
+            .fold(ValueGrade::ProgramText, ValueGrade::weakest),
+    }
+}
+
+/// The provenance grade of one fragment (`275` §2). A ⊤ fragment grades `⊤`; every other current
+/// fragment is program text — a source literal, a source-derived var, or a call-bound positional
+/// (all program-text at this stage). The reserved value-prediction grades (register / world-spoken
+/// / author-composed) attach here when a capture/register fragment lands (block-context):
+/// `seam-literal-provenance` is exactly a fragment learning it is probe-captured, not a source
+/// literal. A `Var`/`SplitVar` is graded `ProgramText` here because at this stage every book var
+/// is source-assigned; a var bound to a value-prediction (a captured `$(…)` folded back) grades by
+/// that binding's own recipe once the re-bind lands — the fold rides through then.
+fn frag_grade(frag: &Frag) -> ValueGrade {
+    match frag {
+        Frag::Top(_) => ValueGrade::Top,
+        Frag::Lit(_) | Frag::Var(_) | Frag::SplitVar(_) | Frag::PosLit(_) | Frag::PosSplit(_) => {
+            ValueGrade::ProgramText
+        }
     }
 }
 
@@ -1278,14 +1425,11 @@ fn recipe_of_word(ast: &Ast, word: AstId) -> Recipe {
 /// a [`Frag::Var`] resolved against the site's env; an unmodeled expansion still ⊤s the word).
 fn recipe_of_word_with_positionals(ast: &Ast, word: AstId, positionals: &Positionals) -> Recipe {
     let NodeKind::Word { parts } = &ast.node(word).kind else {
-        return Recipe::Top;
+        return Recipe::Opaque(TopCause::DynamicValue);
     };
     let mut frags = Vec::new();
-    if collect_frags_pos(parts, /* quoted = */ false, positionals, &mut frags) {
-        Recipe::Parts(frags)
-    } else {
-        Recipe::Top
-    }
+    collect_frags_pos(parts, /* quoted = */ false, positionals, &mut frags);
+    Recipe::Parts(frags)
 }
 
 /// arch-2 (`i-2`): like [`collect_frags`] but resolving a positional/`$#` reference from the
@@ -1298,7 +1442,7 @@ fn collect_frags_pos(
     quoted: bool,
     positionals: &Positionals,
     out: &mut Vec<Frag>,
-) -> bool {
+) {
     for part in parts {
         // A positional/`$#` is a `WordPart::Param`; intercept it before the generic classifier.
         if let WordPart::Param { name } = part {
@@ -1313,14 +1457,17 @@ fn collect_frags_pos(
                     continue;
                 }
                 // `$#` is the one special parameter the splice binds (a known literal count);
-                // every OTHER special (`$@`/`$*`/`$?`/…) is out of slice / ⊤ ⇒ collapse. (`$@`/
-                // `$*` already ⊤-refuse the whole inline at eligibility, so they cannot reach
-                // here for an inlined body — defensive ⊤.)
+                // every OTHER special (`$@`/`$*`/`$?`/…) is out of slice / ⊤ (fragment-preserving:
+                // a `Frag::Top` naming its cause). (`$@`/`$*` already ⊤-refuse the whole inline at
+                // eligibility, so they cannot reach here for an inlined body — defensive ⊤.)
                 sem::ParamClass::Special if name == "#" => {
                     out.push(Frag::Lit(positionals.count.to_string()));
                     continue;
                 }
-                sem::ParamClass::Special => return false,
+                sem::ParamClass::Special => {
+                    out.push(Frag::Top(top_cause_of_part(part)));
+                    continue;
+                }
                 // A plain `$name` falls through to the generic classifier (a body-local var).
                 sem::ParamClass::Name => {}
             }
@@ -1331,17 +1478,16 @@ fn collect_frags_pos(
                 Some(FragClass::Var(name)) => out.push(Frag::Var(name.to_owned())),
                 Some(FragClass::SplitRisk) => match split_var_name(part) {
                     Some(name) => out.push(Frag::SplitVar(name.to_owned())),
-                    None => return false,
+                    None => out.push(Frag::Top(top_cause_of_part(part))),
                 },
-                Some(FragClass::OpaqueValue) | None => return false,
+                Some(FragClass::OpaqueValue) | None => {
+                    out.push(Frag::Top(top_cause_of_part(part)));
+                }
             }
             continue;
         };
-        if !collect_frags_pos(inner, true, positionals, out) {
-            return false;
-        }
+        collect_frags_pos(inner, true, positionals, out);
     }
-    true
 }
 
 /// arch-2 (`i-2`): build the positional overlay from a call's resolved argv. `$1`..`$N` map to
@@ -1355,7 +1501,7 @@ fn positional_overlay(call_argv: &[ValueOf], interner: &Interner) -> Positionals
         .iter()
         .map(|v| match v {
             ValueOf::Literal(s) => Some(interner.resolve(*s).to_owned()),
-            ValueOf::Top => None,
+            ValueOf::Top(_) => None,
         })
         .collect();
     Positionals {
@@ -1370,7 +1516,7 @@ fn positional_overlay(call_argv: &[ValueOf], interner: &Interner) -> Positionals
 /// non-positional fragments behave identically to [`resolve_recipe_fields`].
 fn resolve_recipe_fields_pos(recipe: &Recipe, env: &ValueEnv, ifs_pristine: bool) -> Vec<Abstract> {
     let parts = match recipe {
-        Recipe::Top => return vec![Abstract::Top],
+        Recipe::Opaque(cause) => return vec![Abstract::Top(*cause)],
         Recipe::Parts(p) => p,
     };
     // No splitting fragment (var or positional, unquoted) ⇒ arity is statically one.
@@ -1381,22 +1527,25 @@ fn resolve_recipe_fields_pos(recipe: &Recipe, env: &ValueEnv, ifs_pristine: bool
         return vec![resolve_recipe_pos(recipe, env)];
     }
     if !ifs_pristine {
-        return vec![Abstract::Top];
+        return vec![Abstract::Top(TopCause::SplitOrGlob)];
     }
     let mut owned = Vec::with_capacity(parts.len());
     for frag in parts {
         let resolved = match frag {
+            Frag::Top(cause) => return vec![Abstract::Top(*cause)],
             Frag::Lit(s) | Frag::PosLit(Some(s)) => OwnedField::Literal(s.clone()),
             Frag::PosSplit(Some(s)) => OwnedField::Split(s.clone()),
             Frag::Var(v) => match lookup(env, v) {
                 Abstract::Lit(s) => OwnedField::Literal(s),
-                Abstract::Top => return vec![Abstract::Top],
+                top @ Abstract::Top(_) => return vec![top],
             },
             Frag::SplitVar(v) => match lookup(env, v) {
                 Abstract::Lit(s) => OwnedField::Split(s),
-                Abstract::Top => return vec![Abstract::Top],
+                top @ Abstract::Top(_) => return vec![top],
             },
-            Frag::PosLit(None) | Frag::PosSplit(None) => return vec![Abstract::Top],
+            Frag::PosLit(None) | Frag::PosSplit(None) => {
+                return vec![Abstract::Top(TopCause::UnresolvablePositional)];
+            }
         };
         owned.push(resolved);
     }
@@ -1409,7 +1558,7 @@ fn resolve_recipe_fields_pos(recipe: &Recipe, env: &ValueEnv, ifs_pristine: bool
         .collect();
     match sem::split_fields_join(&fields) {
         Some(fs) => fs.into_iter().map(Abstract::Lit).collect(),
-        None => vec![Abstract::Top],
+        None => vec![Abstract::Top(TopCause::SplitOrGlob)],
     }
 }
 
@@ -1419,20 +1568,27 @@ fn resolve_recipe_fields_pos(recipe: &Recipe, env: &ValueEnv, ifs_pristine: bool
 /// posture [`resolve_recipe`] takes for an unquoted [`Frag::SplitVar`] in a non-argv context).
 fn resolve_recipe_pos(recipe: &Recipe, env: &ValueEnv) -> Abstract {
     let parts = match recipe {
-        Recipe::Top => return Abstract::Top,
+        Recipe::Opaque(cause) => return Abstract::Top(*cause),
         Recipe::Parts(p) => p,
     };
     let mut buf = String::new();
     for frag in parts {
         match frag {
+            Frag::Top(cause) => return Abstract::Top(*cause),
             Frag::Lit(s) | Frag::PosLit(Some(s)) => buf.push_str(s),
             Frag::Var(v) => match lookup(env, v) {
                 Abstract::Lit(s) => buf.push_str(&s),
-                Abstract::Top => return Abstract::Top,
+                top @ Abstract::Top(_) => return top,
             },
-            // An unquoted split (var or positional) outside argv position, or a ⊤ positional,
-            // degrades the whole word to ⊤ (the non-argv posture, mirroring [`resolve_recipe`]).
-            Frag::SplitVar(_) | Frag::PosLit(None) | Frag::PosSplit(_) => return Abstract::Top,
+            // A ⊤ positional (past-end / ⊤ operand) names its cause.
+            Frag::PosLit(None) | Frag::PosSplit(None) => {
+                return Abstract::Top(TopCause::UnresolvablePositional);
+            }
+            // An unquoted split (var or bound positional) outside argv position degrades the whole
+            // word to ⊤ (the non-argv posture, mirroring [`resolve_recipe`]).
+            Frag::SplitVar(_) | Frag::PosSplit(Some(_)) => {
+                return Abstract::Top(TopCause::SplitOrGlob);
+            }
         }
     }
     Abstract::Lit(buf)
@@ -1467,7 +1623,7 @@ fn parts_reference_positional(parts: &[WordPart]) -> bool {
 /// [`Frag::SplitVar`] (resolve-then-split) instead of collapsing the word — but an unquoted
 /// positional/special/command-subst/arithmetic still collapses (its value is not a known
 /// literal, so there is nothing to split).
-fn collect_frags(parts: &[WordPart], quoted: bool, out: &mut Vec<Frag>) -> bool {
+fn collect_frags(parts: &[WordPart], quoted: bool, out: &mut Vec<Frag>) {
     for part in parts {
         // Non-DoubleQuoted parts classify directly; a DoubleQuoted recurses at quoted=true.
         let WordPart::DoubleQuoted(inner) = part else {
@@ -1477,22 +1633,41 @@ fn collect_frags(parts: &[WordPart], quoted: bool, out: &mut Vec<Frag>) -> bool 
                 // An unquoted expansion (`SplitRisk`): a plain `$name` is split-modelable
                 // (resolve its literal, then field-split); anything else (an unquoted
                 // positional/special, or a command-subst/arithmetic/operator-form) has no
-                // known literal value ⇒ collapse the word.
+                // known literal value ⇒ a ⊤ fragment naming its cause (fragment-preserving).
                 Some(FragClass::SplitRisk) => match split_var_name(part) {
                     Some(name) => out.push(Frag::SplitVar(name.to_owned())),
-                    None => return false,
+                    None => out.push(Frag::Top(top_cause_of_part(part))),
                 },
                 // A quoted positional/special/subst (`OpaqueValue`) is arity-safe but ⊤.
                 // `None` is only `DoubleQuoted` (handled above); defensive ⊤ otherwise.
-                Some(FragClass::OpaqueValue) | None => return false,
+                Some(FragClass::OpaqueValue) | None => {
+                    out.push(Frag::Top(top_cause_of_part(part)));
+                }
             }
             continue;
         };
-        if !collect_frags(inner, true, out) {
-            return false;
-        }
+        collect_frags(inner, true, out);
     }
-    true
+}
+
+/// The [`TopCause`] a ⊤-class word-part carries (`270:block-rebuild` — "every ⊤ names its
+/// CAUSE"). Called only on parts that resolve to ⊤ (a subst/arithmetic/operator-form, or a
+/// positional/special parameter). A plain `$name` never reaches here (it is `Var`/`SplitVar`).
+fn top_cause_of_part(part: &WordPart) -> TopCause {
+    match part {
+        WordPart::Param { name } => match name.as_str() {
+            // The positional-family specials: `$@`/`$*` (arg vector), `$#` (count), and any `$N`.
+            "@" | "*" | "#" => TopCause::UnresolvablePositional,
+            _ if !name.is_empty() && name.bytes().all(|b| b.is_ascii_digit()) => {
+                TopCause::UnresolvablePositional
+            }
+            // The non-positional specials: `$?`/`$$`/`$!`/`$-`/`$0` — dynamic parameters.
+            _ => TopCause::DynamicParameter,
+        },
+        // A subst/arithmetic/operator-form is an unmodeled expansion; a literal/quoted part is
+        // never ⊤-class here, so it falls through defensively to the same cause.
+        _ => TopCause::UnmodeledExpansion,
+    }
 }
 
 /// The unquoted word-expansion hazards a word triggers at a *command/`for`-list expansion*
@@ -1618,8 +1793,23 @@ mod tests {
     fn word_of(v: ValueOf, interner: &Interner) -> Word {
         match v {
             ValueOf::Literal(s) => Word::Lit(interner.resolve(s).to_owned()),
-            ValueOf::Top => Word::Top,
+            // The test-side `Word::Top` collapses all causes — these argv tests pin literal-vs-⊤
+            // arity/value, not the cause (the cause is diagnostic content, tested separately).
+            ValueOf::Top(_) => Word::Top,
         }
+    }
+
+    /// The per-source-word provenance [`ValueGrade`]s of the FIRST `Command` whose command-word
+    /// literal is `cmd` (`275` §2 value-recipe-reshape — the value-prediction species' derived
+    /// provenance field). Every value in the corpus derives from parsed sh (no hand-injection).
+    fn grades_of(src: &str, cmd: &str) -> Vec<ValueGrade> {
+        let parsed = dorc_syntax::parse(src);
+        let cfg = build(&parsed.value).value;
+        let mut interner = Interner::default();
+        let flow = analyze(&cfg, &parsed.value, &mut interner);
+        let node = command_node(&cfg, &parsed.value, cmd)
+            .unwrap_or_else(|| panic!("no command `{cmd}` in {src:?}"));
+        flow.argv_word_grades(node).to_vec()
     }
 
     /// The per-member argvs (task-L2 item-1/2) of the FIRST in-loop `Command` whose
@@ -2886,6 +3076,64 @@ mod tests {
             vec![lit("apt-get"), lit("install"), lit("-y"), Word::Top],
             "an intermediate `p=$1` does NOT propagate the positional (p is ⊤) — the safe \
              degrade, not the bound value"
+        );
+    }
+
+    // ---- value-recipe-reshape: provenance derivation (`275` §2 weakest-fragment) ----
+
+    #[test]
+    fn provenance_pure_literals_grade_program_text() {
+        // A wholly source-literal command: every word is program text, NOT a value-prediction
+        // (`275` §1 — "byte-shaped beliefs BEYOND program text"). The weakest-fragment meet over
+        // all-`ProgramText` fragments is `ProgramText`.
+        use ValueGrade::ProgramText;
+        assert_eq!(
+            grades_of("apt-get install -y nginx\n", "apt-get"),
+            vec![ProgramText, ProgramText, ProgramText, ProgramText],
+        );
+    }
+
+    #[test]
+    fn provenance_cmdsub_operand_grades_top() {
+        // A `$(…)` operand is a ⊤ fragment ⇒ that word grades `⊤` (weakest-fragment), while its
+        // literal neighbours stay `ProgramText` (per-word independence — `202` §1). This is the
+        // seam-literal-provenance value: `argv` alone cannot tell the ⊤ word from a literal once
+        // block-context folds a captured value back, but the grade can.
+        use ValueGrade::{ProgramText, Top};
+        assert_eq!(
+            grades_of("apt-get install -y \"$(detect_pkg)\"\n", "apt-get"),
+            vec![ProgramText, ProgramText, ProgramText, Top],
+        );
+    }
+
+    #[test]
+    fn provenance_positional_and_dynamic_var_grade_top() {
+        // A bare `$@` (unresolvable-positional) and an unset/⊤ var both grade `⊤` — the value is
+        // beyond static reach, so it is not program text. Pins that non-literal ⊤ words are
+        // regraded, whatever the cause.
+        use ValueGrade::{ProgramText, Top};
+        assert_eq!(
+            grades_of("cmd \"$@\"\n", "cmd"),
+            vec![ProgramText, Top],
+            "an unresolvable positional grades ⊤"
+        );
+        assert_eq!(
+            grades_of("cmd \"$undef\"\n", "cmd"),
+            vec![ProgramText, Top],
+            "an unset/dynamic var grades ⊤"
+        );
+    }
+
+    #[test]
+    fn provenance_mixed_word_is_weakest_fragment() {
+        // A word concatenating a source literal and a ⊤ fragment (`pre$(x)`) grades by its WEAKEST
+        // fragment (`⊤`) — the taint join of `275` §2, the whole reason the recipe is
+        // fragment-preserving. If the reshape collapsed the recipe, this word could not be graded
+        // distinctly from a pure literal.
+        use ValueGrade::{ProgramText, Top};
+        assert_eq!(
+            grades_of("cmd \"pre$(x)post\"\n", "cmd"),
+            vec![ProgramText, Top],
         );
     }
 }

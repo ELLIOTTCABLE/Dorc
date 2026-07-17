@@ -939,7 +939,7 @@ pub fn build_vouches(
         for w in rest {
             match w {
                 ValueOf::Literal(s) => op_texts.push(interner.resolve(*s).to_owned()),
-                ValueOf::Top => {
+                ValueOf::Top(_) => {
                     has_top = true;
                     break;
                 }

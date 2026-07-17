@@ -2161,7 +2161,7 @@ fn emit_debug_argv(
             .into_iter()
             .map(|w| match w {
                 ValueOf::Literal(sym) => interner.resolve(sym).to_string(),
-                ValueOf::Top => "TOP".to_string(),
+                ValueOf::Top(_) => "TOP".to_string(),
             })
             .collect();
         eprintln!(

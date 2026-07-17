@@ -370,6 +370,91 @@ pub struct Rc(pub i32);
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct OutBytes(pub Symbol);
 
+/// Why a value resolved to `⊤` — the cause-named diagnostics of `219` q-2 become real error-lane
+/// content (`270:block-rebuild` value-recipe-reshape: "every ⊤ names its CAUSE"). A ⊤ is a
+/// correctness boundary (`inv-top-reject`), never a silent best-effort; naming its cause lets the
+/// hint/why-lane say WHAT a `$(…)`/positional/dynamic value blocked. Held on [the value plane's
+/// `ValueOf::Top`](../../dorc_analysis/value/enum.ValueOf.html) and carried per-fragment on the
+/// recipe (so a mixed word records which fragment forced the ⊤).
+///
+/// `Copy` + no payload — a cause is a coarse category, not a span (the span is the node's). Two ⊤s
+/// with different causes are UNEQUAL; no consumer relies on `⊤ == ⊤` across causes (`ValueOf` is
+/// pattern-matched `Top(_)`, never compared for cross-cause equality — see the value-plane
+/// consumers).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TopCause {
+    /// An unmodeled expansion collapsed the word: a `$(…)` command-substitution, `$(( ))`
+    /// arithmetic, or a `${x:-y}`/`${#x}` operator form (`219` q-1.b — the formerly-silent ⊤
+    /// path). The `$()` capture lane un-⊤s the subst case at block-context; until then it walls.
+    UnmodeledExpansion,
+    /// A positional/special parameter with no static binding: bare `$@`/`$*`/`"$*"`, an unbound
+    /// `$N`, or a `$N` past the call's operands / bound to a ⊤ operand
+    /// (`rider-positional-modeling-hardening`; `24C:fd-headline-oneliner-gap`).
+    UnresolvablePositional,
+    /// A non-positional special parameter read as a value: `$?`/`$$`/`$!`/`$-`. Dynamic state,
+    /// never statically fixed. (An `rv=$?` STORED into the dataflow is a value-prediction — the
+    /// `care-site-vs-stored` boundary; a bare `$?` word here is just ⊤.)
+    DynamicParameter,
+    /// A tracked variable that resolved to `⊤` at a use site — unset (`unset`-is-⊤), or the
+    /// lattice join of two disagreeing branches. The value is runtime-dynamic.
+    DynamicValue,
+    /// An unquoted expansion that field-splits or globs unmodelably: a split under a non-pristine
+    /// `IFS`, or a glob char in a resulting field (`209` brk-3 / `20O`).
+    SplitOrGlob,
+    /// The value-flow worklist did not converge ⇒ the whole result folds to ⊤ (`16P` DP-9): a
+    /// capped solve is an under-approximation we must not trust (`inv-probe-sourced-values`).
+    NonConvergent,
+    /// A read walled by an unmodeled/unvouched context — a captured value whose producing read is
+    /// ⊤ (`silence-licenses-nothing`). RESERVED: no producer at this stage (captures are ⊤; the
+    /// value plane runs before the probe — `seam-pipeline-order`), named now so the slot exists.
+    WalledRead,
+}
+
+/// The provenance grade of a value-prediction (`275` §2 · `271:rul-value-prediction-species`): a
+/// taint-style **weakest-fragment** grade over a value's recipe. DERIVED, never declared — the
+/// authored surface for value-predictions is THE EMPTY SET (`value-predictions`); this is a
+/// shape-division the engine computes, never a claim an author writes.
+///
+/// The four value-prediction grades (`275` §2) plus [`ProgramText`](ValueGrade::ProgramText) (a
+/// value that is NOT a prediction — pure program text, the seam-literal-provenance distinction).
+/// The order below is weakest→strongest; [`weakest`](ValueGrade::weakest) is the meet the
+/// derivation folds over fragments ("a value concatenated from a delegation read and a composed
+/// decoration grades as composed" — `275` §2). NOTHING consumes the grade at this stage
+/// (`270:block-rebuild`: represent + derive, do NOT consume — no validity table); the composed
+/// gate stays DEFERRED (`271:rul-composed-bytes-defer-and-floor` — represent the grade, gate
+/// nothing).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub enum ValueGrade {
+    /// `⊤`: unknown provenance — a ⊤ fragment interposes. The weakest.
+    Top,
+    /// **author-composed**: printf-produced — the author asserted it (a composed
+    /// output-prediction). Weaker than world-spoken (the delegation actually ran); the composed
+    /// gate is DEFERRED (`rul-composed-bytes-defer-and-floor`).
+    AuthorComposed,
+    /// **world-spoken**: delegation-produced — the tool itself spoke at probe time (a captured
+    /// `$(getent …)`). The knife-tier "real bytes" (`rul-composed-bytes-defer-and-floor`'s
+    /// world-spoken floor).
+    WorldSpoken,
+    /// **register**: the analyzer's own context register — a lend-mapped user value / who-am-I,
+    /// certain-by-construction, resolved analytically with no staleness (`275` §3 register regime).
+    Register,
+    /// NOT a value-prediction: pure program text (a source literal, or a value derived only from
+    /// source text). The strongest — it never weakens a concatenation. A value graded
+    /// `ProgramText` is program text, not a prediction; the four grades above are the
+    /// value-prediction species (`275` §1 — "byte-shaped beliefs BEYOND program text").
+    ProgramText,
+}
+
+impl ValueGrade {
+    /// The **weakest-fragment** meet (`275` §2): the taint join a value's recipe folds over its
+    /// fragments — the minimum grade, since a value is only as trustworthy as its weakest part.
+    /// `ProgramText` is the identity (never weakens); `Top` is the absorbing bottom.
+    #[must_use]
+    pub fn weakest(self, other: Self) -> Self {
+        self.min(other)
+    }
+}
+
 /// A predicted value for one observable channel (`inv-one-observable`): a concrete
 /// value, or a loud out-of-band ⊤ "can't-predict". A `Top` on a *consumed* channel
 /// forces the consuming leaf to run (`inv-kfail`/`kFAIL-perform`): the check could not
@@ -610,6 +695,23 @@ pub fn is_auto_kind(interner: &Interner, kind: KindId) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn value_grade_weakest_is_the_taint_meet() {
+        use ValueGrade::{AuthorComposed, ProgramText, Register, Top, WorldSpoken};
+        // The `275` §2 example: a value from a delegation read (world-spoken) concatenated with a
+        // composed decoration (author-composed) grades as composed (the weaker).
+        assert_eq!(WorldSpoken.weakest(AuthorComposed), AuthorComposed);
+        // ⊤ is the absorbing bottom; ProgramText is the identity (never weakens a concatenation).
+        assert_eq!(Top.weakest(Register), Top);
+        assert_eq!(ProgramText.weakest(WorldSpoken), WorldSpoken);
+        assert_eq!(ProgramText.weakest(ProgramText), ProgramText);
+        // The full weakest→strongest order (a value is only as trustworthy as its weakest part).
+        assert!(Top < AuthorComposed);
+        assert!(AuthorComposed < WorldSpoken);
+        assert!(WorldSpoken < Register);
+        assert!(Register < ProgramText);
+    }
 
     #[test]
     fn interner_dedups_and_roundtrips() {

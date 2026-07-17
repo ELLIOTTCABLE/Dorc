@@ -291,7 +291,7 @@ pub fn command_effect(
             // 1-based operand index excluding the command word — the migrated
             // `DiagCode::CmdsubOperandTop` spine, `22B` §5 worked-3). RECORDED; finalized
             // with its arch-1 ⊤-cause post-mint (stage-1; see [`finalize_cmdsub_tops`]).
-            ValueOf::Top => {
+            ValueOf::Top(_) => {
                 let position = OperandPosition::Operand(
                     u32::try_from(i.saturating_add(1)).unwrap_or(u32::MAX),
                 );
@@ -546,7 +546,7 @@ fn render_argv(argv: &[ValueOf], interner: &Interner) -> String {
     argv.iter()
         .map(|w| match w {
             ValueOf::Literal(s) => interner.resolve(*s).to_owned(),
-            ValueOf::Top => "⟨⊤⟩".to_owned(),
+            ValueOf::Top(_) => "⟨⊤⟩".to_owned(),
         })
         .collect::<Vec<_>>()
         .join(" ")
@@ -895,7 +895,7 @@ fn node_effects(
             Some(ValueOf::Literal(path)) => {
                 vec![CommandEffect::Establishes(file_write_cell(path, interner))]
             }
-            Some(ValueOf::Top) => {
+            Some(ValueOf::Top(_)) => {
                 // Migrated onto the Diag spine (B4 sweep): the site carries a real span (s-2
                 // widening) and a CFG-node-space SiteId (pre-plan; same precedent as
                 // CmdsubOperandTop — flagged `tc-cmdsub-siteid`).
