@@ -176,8 +176,8 @@ Restated from `271:rul-selector-disjointness-dialect-scoped` as build-spec:
   2026-07-16; the first of the `279f:ask-amendment-acks` five to close.)*
 - **Engine cost:** per-(kind × family) dialect sets + backing provenance (minting
   family) carried into the comparison.
-- Properties (pin as tests; REWORDED 2026-07-13 per `279f:fix-dialect-properties`,
-  awaiting ack — the prior absolutes were falsifiable as written, 279a-F6/279b-fd2):
+- Properties (pin as tests; REWORDED 2026-07-13 per `279f:fix-dialect-properties` —
+  the prior absolutes were falsifiable as written, 279a-F6/279b-fd2):
   empty world ⇒ byte-identical to entity-granular HEAD · cross-family monotone (a
   newly loaded family never alters comparisons against OTHER families' backings) ·
   within-family dialect growth MAY flip collide→spare against that family's OWN
@@ -189,6 +189,21 @@ Restated from `271:rul-selector-disjointness-dialect-scoped` as build-spec:
   verdict (claim line + backing line + the dialect member's minting line; the
   disjointness proposition itself is asserted by no single line — which is why
   sparing lives behind the flag) · DST-clean.
+  *(ACKED SOFT, typed, 2026-07-16 — 4/5 of `279f:ask-amendment-acks`. The human's
+  grading, verbatim: "ack all 4, relatively softly. some of this is drifting close
+  to spike territory - I need to *play* with some of this to be sure." The four
+  accepted deltas, named for the record: delta-monotonicity-split (absolute
+  monotonicity un-promised; cross-family monotone is what the rebuild pins) ·
+  delta-kill-surface-blessing (within-family collide→spare flips are declared
+  semantics — a family's vocabulary sets its own facts' survival granularity,
+  flag-gated; the un-proposed observe-marks-don't-mint dial was surfaced eyes-open,
+  not taken) · delta-attribution-downgrade (three-line-attributed sparing verdicts;
+  the disjointness proposition has no asserter; recorded as the
+  `271:rul-flag-is-razor-residue`-consistent reason the consumer is flagged) ·
+  delta-subscription-trim (the kill-surface-control phrase moved from the
+  subscription clause to the flip clause, where its price is attached). The
+  softness rides §3's standing spike-provisional grading — these harden or churn
+  on spike contact, not by further prose.)*
 - Fences riding the ruling: ghost-ack-mark stays UNBUILT · same-token-divergent-
   meaning is adjudicability-list tier *(superseded 2026-07-16 → README-class; the
   §6 fence per `279f:fence-divergent-meaning`, acked)* · physically-overlapping
@@ -458,6 +473,17 @@ spike is the kTYANNOT livability experiment. Syntax remains marker-gated
   owner per family) stays DECLINED; any future positive partition spelling
   arrives additive, on the withholding side, never as a re-read of minted
   marks.)*
+  *(Refined, human-typed 2026-07-16 during the 4/5 sitting: the ownership clause
+  above is slightly too strong — "minting into a namespace = claiming ownership"
+  overstates. Collaboration inside someone's namespace WILL happen; the tooling
+  is there, and nothing can prevent it. The correct contract is
+  OWNER-ADJUDICATION: once an oracle has been out in the world a while, its
+  namespace is a backwards-compatibility concern that only its owner can manage.
+  Dorc — a binary, in a loaded universe of oracles — can never see which marks
+  are authoritative, nor (modulo later versioning features; MH2) which are
+  ROTTED. We owe the owner a ROUTE to adjudicate; the rest is tools-later plus
+  human interpersonal communication and documentation — no other way around it.
+  No mechanism change; the adequacy hedge above stands.)*
 - **keying never feeds survival · hint-lane values never feed survival · the flag
   permits acting on separation claims, never manufactures them · per-invocation,
   never a default** — task-8's restated fence bundle, acked at its close.
