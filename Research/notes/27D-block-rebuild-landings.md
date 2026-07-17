@@ -210,6 +210,44 @@ empty-world-byte-identical holding by construction).
 - rider-internal-rust-naming-debt — still open (builder deferred as
   high-churn cosmetic); reassigned to stage-6 as an optional tail item.
 
+## stage-4: value-recipe-reshape — LANDED 2026-07-17 (checkpoint PASSED)
+
+Commits `fd8225e..9fe885c` on `ai/r27-value-recipe`, fast-forwarded into
+`ai/spike3-r27`. Builder: Opus solo. Landing note: **`notes/27H`** (the
+foreclosure walk + residue). Landed: cause-tagged fragment-preserving
+ValueOf/Recipe (`TopCause`; every ⊤ names its why); the `ValueGrade` lattice
+(⊤ < AuthorComposed < WorldSpoken < Register < ProgramText — ProgramText the
+non-prediction top, delivering seam-literal-provenance as representation);
+weakest-fragment provenance derivation (`argv_word_grades`); `OutClaim` →
+`OutBytes`; `Relation::Same` → `Overlaps` (+ consumer-map doc); brace-on-
+verdict loud reject; q-2 cause-named cmdsub-⊤ disclosure; value-plane
+positional hardening (`$@`/`$*`/`"$@"`/`"$*"` → Top(UnresolvablePositional) in
+book flow). ZERO golden churn; 128/128 e2e unblessed. Foreclosure walk: all
+six `219` capture-chain steps representation-open.
+
+**Checkpoint dispositions:**
+
+- disposition-positional-split — ACCEPTED. The oracle-predict-parser side
+  stays the wrong-Literal model (rc-authority-caught): doing it right needs a
+  position-aware `Word::PositionalArgs` across both evaluators, and the
+  parser cannot even represent quoted-vs-bare today. ASSIGNED to
+  block-context's wrapper-peel lane — command-position `"$@"` modeling IS
+  peel detection (`273`), the natural rebuild site. `27H`
+  finding-positional-oracle-side-couples-founding-pin is the analysis of
+  record; the founding-one-liner e2e pin guards the transition.
+- disposition-effect-plane-deferral — ACCEPTED AS CAUTION, not as a drop:
+  observe-backing-widening PRODUCTION + `Backing`→SET + survival
+  universal-meet migration + minting-family threading is minted as
+  **stage-4b**, a dedicated dispatch INSIDE block-rebuild (the naked-trust
+  survival cell deserves a fresh-context builder, and the churn belongs in
+  bless-checkpoint-two's window, not block-context). Non-dormant: the corpus
+  carries `:?` marks, so widening may demote survivals — each demotion is
+  correctness-improving and must be individually named for checkpoint
+  inspection.
+- Carried tc-flags (context-slot/factkey · resolutions-in-plan ·
+  backing-family-reverse-lookup) roll into stage-4b + the block-context
+  planning seam list.
+
 **Environment incident (surfaced to human 2026-07-17):** a SyncThing conflict file
 (`effect.sync-conflict-…-PHNHRER.rs`) appeared INSIDE the stage-1 builder's agent
 worktree mid-edit — device PHNHRER is live-syncing `.claude/worktrees/`, which the
