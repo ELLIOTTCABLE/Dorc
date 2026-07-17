@@ -169,6 +169,15 @@ const LEGACY_ALLOW_LIST: &[&str] = &[
     "records-alien-line",
     "records-late-line",
     "deriv-family-incomplete",
+    // `273` lane-wrapper-peel (270:block-context): the wrapper model's two lift/load diagnostics.
+    // `lend-map-unknown-dimension` (Warning, oracle/wrapper.rs derive_lend_map) — a mark token on a
+    // `__lend_map` line that is not a known dimension (the engine-owned closed vocabulary); the line
+    // mints no lend. `wrapper-peel-incoherent` (Error, cli check_wrapper_peel_coherence) — a
+    // wrapper's __predict and __lend_map peel to different tail positions (273 §5,
+    // declarations-genuinely-contradict fail-fast). cli/oracle-edge; PENDING the same typed-spine
+    // migration as the other cli-edge lint codes (tc-footprint-diag).
+    "lend-map-unknown-dimension",
+    "wrapper-peel-incoherent",
 ];
 
 /// The SPANLESS-MINT allow-list (arch-3-residual-2): EXACTLY the codes permitted to construct a
