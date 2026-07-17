@@ -628,10 +628,18 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
     // check, flag-independent). The round-trip (coord enumeration + probe compile) is flag-on: for
     // each resolver-bearing coordinate (footprint + backing sides) ship `<kind>.resolve()` to
     // canonicalize its entity; the `resolv` readback builds the `Resolutions` merged pre-survival-walk.
+    // The RAW coordinate kinds — used to re-key the munged kind-keyed resolver/reaches maps
+    // (`flag-forward-munge-keying`: funcdefs are named by the kind's forward-munge, coords carry the
+    // raw dotted kind, so the two are bridged here once).
+    let coord_kinds = {
+        let touches_sets: Vec<_> = touches_paired.iter().map(|(_, s)| s.clone()).collect();
+        collect_coord_kinds(&classes, &kills, &value, &touches_sets, &mut interner)
+    };
     let kind_resolvers = build_kind_resolvers(
         &oracle_srcs,
         &checks,
         &touches_paired,
+        &coord_kinds,
         &mut interner,
         advisory,
     );
@@ -660,6 +668,7 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
         &oracle_srcs,
         &checks,
         &touches_paired,
+        &coord_kinds,
         &mut interner,
         advisory,
     );
@@ -1324,22 +1333,26 @@ fn own_wall_coord(
 struct KindResolvers {
     /// Per-file resolver sets (indexed by `by_kind`).
     sets: Vec<dorc_oracle::resolve::ResolverSet>,
-    /// The kept, non-conflicting `kind → file-index` map. A kind ABSENT here is resolver-LESS (the
-    /// token-equality floor) — whether never declared, or REFUSED for a cross-file duplicate.
-    by_kind: BTreeMap<Symbol, usize>,
+    /// The kept, non-conflicting map from a RAW coordinate kind to `(file-index, munged-base
+    /// symbol)`. Kind-keyed funcdefs are NAMED by the kind's forward-munge (`sm_dorc_Package__resolve`),
+    /// so the inner [`ResolverSet`] is keyed by the munged base; this map re-keys to the RAW kind a
+    /// coordinate carries (`flag-forward-munge-keying`), so a lookup by `coord.kind()` finds the
+    /// funcdef named by that kind's munge. A kind ABSENT here is resolver-LESS (the token-equality
+    /// floor) — never declared, or REFUSED for a cross-file duplicate.
+    by_kind: BTreeMap<Symbol, (usize, Symbol)>,
 }
 
 impl KindResolvers {
-    /// The resolver-bearing kinds (the engine marks each; a coordinate of such a kind that fails to
-    /// resolve degrades to may-alias, §3a).
+    /// The resolver-bearing RAW kinds (the engine marks each; a coordinate of such a kind that fails
+    /// to resolve degrades to may-alias, §3a).
     fn resolver_kinds(&self) -> impl Iterator<Item = Symbol> + '_ {
         self.by_kind.keys().copied()
     }
 
-    /// The `(file-index, resolver funcdef)` for a kind, if it has a kept resolver.
+    /// The `(file-index, resolver funcdef)` for a RAW coordinate kind, if it has a kept resolver.
     fn get(&self, kind: Symbol) -> Option<(usize, &dorc_oracle::predict::Predict)> {
-        let idx = *self.by_kind.get(&kind)?;
-        self.sets.get(idx)?.get(kind).map(|p| (idx, p))
+        let (idx, base) = *self.by_kind.get(&kind)?;
+        self.sets.get(idx)?.get(base).map(|p| (idx, p))
     }
 }
 
@@ -1354,6 +1367,7 @@ fn build_kind_resolvers(
     oracle_srcs: &[String],
     checks: &[dorc_oracle::predict::PredictSet],
     touches_paired: &[(&str, dorc_oracle::touches::TouchesSet)],
+    coord_kinds: &BTreeSet<Symbol>,
     interner: &mut Interner,
     advisory: bool,
 ) -> KindResolvers {
@@ -1394,7 +1408,7 @@ fn build_kind_resolvers(
     }
 
     let mut diags = Vec::new();
-    let mut by_kind = BTreeMap::new();
+    let mut base_to_idx: BTreeMap<Symbol, usize> = BTreeMap::new();
     for (kind, files) in per_kind {
         let name = interner.resolve(kind).to_owned();
         if files.len() > 1 {
@@ -1422,11 +1436,31 @@ fn build_kind_resolvers(
             // Kept (it may legitimately match a kind of the same name); the warning surfaces the risk.
         }
         if let Some(&idx) = files.first() {
-            by_kind.insert(kind, idx);
+            base_to_idx.insert(kind, idx);
         }
     }
     report_at(advisory, "resolve", None, &diags);
+    let by_kind = rekey_to_raw_kinds(&base_to_idx, coord_kinds, interner);
     KindResolvers { sets, by_kind }
+}
+
+/// Re-key a kind-keyed `munged-base → file-index` map to the RAW coordinate kinds
+/// (`flag-forward-munge-keying`). A raw coord kind K maps to `(idx, munged-base)` iff its
+/// forward-munge is a kept base. Shared by [`build_kind_resolvers`] and [`build_kind_reaches`].
+fn rekey_to_raw_kinds(
+    base_to_idx: &BTreeMap<Symbol, usize>,
+    coord_kinds: &BTreeSet<Symbol>,
+    interner: &mut Interner,
+) -> BTreeMap<Symbol, (usize, Symbol)> {
+    let mut by_kind = BTreeMap::new();
+    for &raw in coord_kinds {
+        let munged_text = dorc_oracle::to_funcname_segment(interner.resolve(raw));
+        let base = interner.intern(&munged_text);
+        if let Some(&idx) = base_to_idx.get(&base) {
+            by_kind.insert(raw, (idx, base));
+        }
+    }
+    by_kind
 }
 
 /// Collect the coordinates that need canonicalization (24F §3): every establish/query BACKING coord
@@ -1475,6 +1509,44 @@ fn collect_resolver_coords(
         }
     }
     coords
+}
+
+/// Collect the RAW coordinate kinds present in this analysis — every establish/query BACKING kind
+/// plus every wall-candidate FOOTPRINT kind. Used to re-key the munged kind-keyed resolver/reaches
+/// maps to the raw kinds coordinates carry (`flag-forward-munge-keying`; [`rekey_to_raw_kinds`]).
+fn collect_coord_kinds(
+    classes: &[(
+        dorc_analysis::cfg::CfgNodeId,
+        dorc_analysis::effect::SkipClass,
+    )],
+    kills: &BTreeSet<dorc_analysis::cfg::CfgNodeId>,
+    value: &dorc_analysis::value::ValueFlow,
+    touches_sets: &[dorc_oracle::touches::TouchesSet],
+    interner: &mut Interner,
+) -> BTreeSet<Symbol> {
+    use dorc_analysis::effect::SkipClass;
+    let mut kinds = BTreeSet::new();
+    for (node, class) in classes {
+        if let SkipClass::EstablishAmbient(f)
+        | SkipClass::EstablishWritten(f)
+        | SkipClass::QueryResolvable { fact: f, .. } = class
+        {
+            kinds.insert(f.kind.0);
+        }
+        let is_wall_candidate = matches!(
+            class,
+            SkipClass::EstablishAmbient(_) | SkipClass::EstablishWritten(_)
+        ) || kills.contains(node);
+        if is_wall_candidate
+            && let Some((_, fp_coords)) =
+                resolve_touches_footprint(*node, value, touches_sets, interner)
+        {
+            for c in fp_coords {
+                kinds.insert(c.kind().0);
+            }
+        }
+    }
+    kinds
 }
 
 /// Compile the resolver-probe (24F §3): for each resolver-bearing coordinate, ship its kind's
@@ -1585,21 +1657,23 @@ fn dangling_diagnostics(
 struct KindReaches {
     /// Per-file reach sets (indexed by `by_kind`).
     sets: Vec<dorc_oracle::reaches::ReachesSet>,
-    /// The kept, non-conflicting `kind → file-index` map. A kind ABSENT here is reach-LESS (its
-    /// footprints never expand) — whether never declared, or REFUSED for a cross-file duplicate.
-    by_kind: BTreeMap<Symbol, usize>,
+    /// The kept, non-conflicting map from a RAW coordinate kind to `(file-index, munged-base symbol)`
+    /// — re-keyed from the funcdef's munged base to the raw kind coords carry
+    /// (`flag-forward-munge-keying`; see [`KindResolvers::by_kind`]). A kind ABSENT here is reach-LESS
+    /// (its footprints never expand) — never declared, or REFUSED for a cross-file duplicate.
+    by_kind: BTreeMap<Symbol, (usize, Symbol)>,
 }
 
 impl KindReaches {
-    /// The reach-bearing kinds (the engine expands every footprint coord of such a kind).
+    /// The reach-bearing RAW kinds (the engine expands every footprint coord of such a kind).
     fn reach_kinds(&self) -> impl Iterator<Item = Symbol> + '_ {
         self.by_kind.keys().copied()
     }
 
-    /// The `(file-index, reaches funcdef)` for a kind, if it has a kept reach-function.
+    /// The `(file-index, reaches funcdef)` for a RAW coordinate kind, if it has a kept reach-function.
     fn get(&self, kind: Symbol) -> Option<(usize, &dorc_oracle::predict::Predict)> {
-        let idx = *self.by_kind.get(&kind)?;
-        self.sets.get(idx)?.get(kind).map(|p| (idx, p))
+        let (idx, base) = *self.by_kind.get(&kind)?;
+        self.sets.get(idx)?.get(base).map(|p| (idx, p))
     }
 }
 
@@ -1613,11 +1687,12 @@ fn build_kind_reaches(
     oracle_srcs: &[String],
     checks: &[dorc_oracle::predict::PredictSet],
     touches_paired: &[(&str, dorc_oracle::touches::TouchesSet)],
+    coord_kinds: &BTreeSet<Symbol>,
     interner: &mut Interner,
     advisory: bool,
 ) -> KindReaches {
-    use dorc_oracle::predict::map_provider_name;
     use dorc_oracle::reaches::ReachesSet;
+    use dorc_oracle::to_funcname_segment;
 
     let sets: Vec<ReachesSet> = oracle_srcs
         .iter()
@@ -1638,17 +1713,17 @@ fn build_kind_reaches(
     let mut providers: BTreeSet<String> = BTreeSet::new();
     for cs in checks {
         for p in cs.providers() {
-            providers.insert(map_provider_name(interner.resolve(p)));
+            providers.insert(to_funcname_segment(interner.resolve(p)));
         }
     }
     for (_, ts) in touches_paired {
         for p in ts.providers() {
-            providers.insert(map_provider_name(interner.resolve(p)));
+            providers.insert(to_funcname_segment(interner.resolve(p)));
         }
     }
 
     let mut diags = Vec::new();
-    let mut by_kind = BTreeMap::new();
+    let mut base_to_idx: BTreeMap<Symbol, usize> = BTreeMap::new();
     for (kind, files) in per_kind {
         let name = interner.resolve(kind).to_owned();
         if files.len() > 1 {
@@ -1675,10 +1750,11 @@ fn build_kind_reaches(
             ));
         }
         if let Some(&idx) = files.first() {
-            by_kind.insert(kind, idx);
+            base_to_idx.insert(kind, idx);
         }
     }
     report_at(advisory, "reaches", None, &diags);
+    let by_kind = rekey_to_raw_kinds(&base_to_idx, coord_kinds, interner);
     KindReaches { sets, by_kind }
 }
 
@@ -3350,9 +3426,22 @@ mod tests {
         )];
         let checks: Vec<dorc_oracle::predict::PredictSet> = vec![];
 
+        // The RAW coordinate kinds present — a resolver is "bearing" only if a coord of its kind
+        // exists (flag-forward-munge-keying: the map is re-keyed from the munged base to raw kinds).
+        let coord_kinds: BTreeSet<Symbol> = [i.intern("package"), i.intern("apt_get")]
+            .into_iter()
+            .collect();
+
         // A clean single package resolver ⇒ resolver-bearing (kind-keyed by the munged base).
         let clean = vec!["package__resolve() { printf '%s\\n' \"$1\"; }".to_string()];
-        let kr = build_kind_resolvers(&clean, &checks, &touches_paired, &mut i, false);
+        let kr = build_kind_resolvers(
+            &clean,
+            &checks,
+            &touches_paired,
+            &coord_kinds,
+            &mut i,
+            false,
+        );
         assert!(
             kr.resolver_kinds().any(|k| i.resolve(k) == "package"),
             "a clean package resolver is resolver-bearing"
@@ -3363,7 +3452,8 @@ mod tests {
             "package__resolve() { printf '%s\\n' \"$1\"; }".to_string(),
             "package__resolve() { printf '%s\\n' \"$1\"; }".to_string(),
         ];
-        let kr_dup = build_kind_resolvers(&dup, &checks, &touches_paired, &mut i, false);
+        let kr_dup =
+            build_kind_resolvers(&dup, &checks, &touches_paired, &coord_kinds, &mut i, false);
         assert_eq!(
             kr_dup.resolver_kinds().count(),
             0,
@@ -3371,9 +3461,17 @@ mod tests {
         );
 
         // A resolver whose kind munges to the known provider "apt-get" (base `apt_get`) ⇒ KEPT
-        // (warned, not a silent dud) — the collision is now detected in NAME space.
+        // (warned, not a silent dud) — the collision is now detected in NAME space, and a raw
+        // `apt_get` coord kind re-keys it as bearing.
         let collide = vec!["apt_get__resolve() { printf '%s\\n' \"$1\"; }".to_string()];
-        let kr_col = build_kind_resolvers(&collide, &checks, &touches_paired, &mut i, false);
+        let kr_col = build_kind_resolvers(
+            &collide,
+            &checks,
+            &touches_paired,
+            &coord_kinds,
+            &mut i,
+            false,
+        );
         assert!(
             kr_col.resolver_kinds().any(|k| i.resolve(k) == "apt_get"),
             "a provider-named resolver is kept (the collision is a warning, not a refusal)"
