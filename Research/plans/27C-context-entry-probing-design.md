@@ -78,6 +78,7 @@ collapsed into each other:
    implementation details (the deferred `27C:open-cell-granted-acquire-ux` cell
    stands). The probe never SELF-acquires: no mid-run prompting, no credential
    handling that the user did not explicitly establish and ack in advance.
+   (This axis is `27C:rule-reuse-never-acquire` in its refined form.)
 2. **Consent to apply that capability to ORACLE CODE** — given
    mechanical-yes, has the admin consented to pointing escalation machinery at
    fallible human-authored oracles? "Escalation" = ANY permission/access-
@@ -214,6 +215,21 @@ sudo__enter() {                # argv = the site's peeled sudo argv with the com
   owned acts, and with it the need for frontloaded hard claims. NEVER justify
   either tier via "state the user cares about" (struck: referent-agnostic
   violation + an unwritten user instruction).
+- **Siting is part of the vouch** (`27C:rul-entry-denoted-siting-vouch`, ruled
+  2026-07-17): authoring an entry form also vouches that entering via it lands the
+  guest in the site's *denoted* context. Policy-matching wrappers (sudo, doas) route
+  on the full command line including the guest, so the entry invocation (probe in
+  guest position) may match a different rule — different runas/CWD/CHROOT — than the
+  site's own bytes would; measured-in-the-wrong-world verdicts are the cardinal-sin
+  shape entering through the primary lane. Where the author cannot verify correct
+  siting — by structural insensitivity (chroot/env/mise fix context from their own
+  argv, satisfying the clause for free), by interrogating the tool (`sudo -n -l`
+  -class policy reads, self-vouched ordinary body-code), or by a standalone
+  same-head tripwire invocation — the form declines: unverifiable ⇒ rc≥2 ⇒ can't-say
+  ⇒ guard/run. Entry-form bodies stay ordinary pre-entry sh ending in `"$@"` verbatim
+  in command position; the not-in-command-position variant (an authored in-guest
+  preamble wrapping `"$@"`) is PUNTED — complex policy falls to the correct floor,
+  the value picked up later if warranted.
 - An unmodeled wrapper never peels ⇒ opaque line, wall (unchanged law). Unauthored
   entry cannot misfire because it does not exist.
 - Chains compose recursively (`sudo chroot /t CMD` ⇒ sudo-entry(chroot-entry(inner))),
@@ -221,18 +237,61 @@ sudo__enter() {                # argv = the site's peeled sudo argv with the com
   {entry × dial × vouch} ⇒ the site takes §4/§5 for that boundary. Transitive
   delegation inside tool-oracle bodies (`doas__predict() { sudo "$@" ;}`) stays
   unshippable.
-  - **The composition algebra** (added 2026-07-17 per 27Xf
-    cr-nested-wrapper-composition-rider-dropped — the `279f` §5 rider this plan
-    dropped, restated as build-spec): lend/ρ composition across a peel chain is
-    the POINTWISE fold, outermost-first, per dimension — identity element = full
-    lend; a mapped lend composes by substitution into the accumulated value; a
-    MISSING key at ANY link ⇒ ⊤ for that dimension for the whole chain (⊤
-    PROPAGATES; one silent link walls the dimension, never
-    inherits a neighbor's lend). The inner context's canonical key is the
-    composed per-dimension result, order-sensitive (entry order = book order of
-    the chain). Pin with nested-permutation tests (`sudo chroot` vs
-    `chroot sudo` compose to DIFFERENT context keys where the dimensions
-    differ).
+  - **The composition algebra** (per `27Xf:cr-nested-wrapper-composition-rider-dropped`
+    — the `279f` §5 rider this plan dropped, restated as build-spec; ruled cells
+    human-typed 2026-07-17; supersedes the interim block on the impl branch): lend/ρ
+    composition across a peel chain is the POINTWISE fold, outermost-first, per
+    dimension, each link's `lend_map` evaluated against that link's own peeled argv.
+    - Identity element = full lend (`compose(x, full) = x`): a chain of all-full links
+      (`nice`, ρ-only wrappers) denotes ambient.
+    - **⊤ propagates** (`27C:rul-top-absorbs-absolute-maps`, HUMAN-ACKED 2026-07-17):
+      a MISSING key at ANY link ⇒ ⊤ for that dimension for the whole chain — one
+      silent link walls the dimension, never inherits a neighbor's lend, and there is
+      NO overwrite-rescue through an inner ABSOLUTE map (an inner `sudo -u root` under
+      an unknown middle stays ⊤: whether the inner link even succeeds, and how its
+      argv resolved, both depend on the unknown middle). Skip-the-middle reasoning may
+      hold in raw static sh-analysis; it never holds in machine-state logic (human's
+      framing, verbatim intent).
+    - **Mapped-lend composition is dimension-owned, engine-internal**
+      (`27C:rul-dimension-owned-compose-ops`, HUMAN-ACKED 2026-07-17): each dimension
+      fixes ONCE, in the engine — never on the authored surface — both its compose op
+      and the FRAME of the emitted value in the `lend_map` contract. user: absolute
+      overwrite (`sudo -u alice` denotes alice whoever the caller was). fs-view:
+      caller-relative (chroot-in-chroot composes by path — `chroot /t` inside
+      `chroot /mnt` denotes `/mnt/t`; relative-to-⊤ is ⊤). A wrapper author emits a
+      single-step string per `273` §3 and never reasons about nesting;
+      `inv-referent-agnostic` holds (the engine applies the dimension's op to opaque
+      values — the value's meaning was asserted by the wrapper oracle, its frame by
+      the dimension contract, never inferred from the tool).
+    - **Cross-link ρ-threading**: each inner link's argv is ρ-resolved under the ρ
+      composed so far (`env DBUSER=postgres sudo -u "$DBUSER"` resolves through the
+      outer link's claimed ρ); an unresolvable value stays the ⊤-value
+      (identifies-with-nothing, `273` §3). The fold is pointwise in that dimensions
+      never mix — EXCEPT ρ, which threads through every link's argv-resolution by
+      construction.
+    - Canonical context key = the folded per-dimension normal form, never the chain's
+      syntax — order-sensitive exactly where the folds genuinely differ
+      (`sudo -u postgres nice cmd` and `nice sudo -u postgres cmd` share one key;
+      `env A=1 sudo cmd` and `sudo env A=1 cmd` do not — sudo scrubs). Batching and
+      fact-keying both consume this key.
+    - **Fold-entry coherence** (`27C:rul-fold-entry-coherence-failfast`, HUMAN-ACKED
+      2026-07-17, scope-narrowed in the acking dialogue): where `lend_map` and the
+      entry form STATICALLY disagree — peel-position divergence (the two members'
+      `"$@"` reach different tail positions) or argv-flow divergence (the entry body
+      visibly drops/transforms args the fold consumed) — plan-time fail-fast, the
+      declarations-genuinely-contradict category (dual-peel pattern, third instance).
+      The check's reach is exactly sh-structure: whether an entry invocation actually
+      EFFECTS the declared dimension-shifts is tool-semantics the engine never holds
+      (`inv-referent-agnostic`) — that claim is part of the traversal vouch
+      (authoring-is-vouching; wrong ⇒ attributed authored error, the
+      `hole-bad-oracle-blast` species), never statically detected. The coarse case is
+      already structural (a declared-crossed dimension with NO entry member ⇒ §4/§5,
+      member-existence); runtime corroboration is lint-tier only, following §6's
+      dimension-utterability ladder (a who-am-I read corroborates user in-context;
+      netns has no utterance). Corroborate-and-warn, never license, never fail-fast.
+    - DST pins: the nested permutations above · chroot-in-chroot path composition ·
+      ⊤-in-the-middle poisons through an inner full lend AND an inner absolute map ·
+      unresolvable `sudo -u "$VAR"` ⇒ ⊤-value key, walls.
 - Degrade ladder, every direction safe: entry refused (`sudo -n` failure), impossible
   (chroot target unmounted), missing dependencies inside the view (rc 127), or an
   in-context decline (rc≥2) ⇒ can't-say ⇒ guard/run. Identity-demanding checks
@@ -409,7 +468,17 @@ for block-context briefs:
 - hostsim: context-qualified verdict injection; two-context e2e fixtures under inert
   mocks.
 - lints: the §6 set; the stdlib bar gains the two-user differential CI (+ tracer
-  read-set diffing where the container allows).
+  read-set diffing where the container allows); + the siting-corroboration nudge — a
+  policy-matching wrapper's entry form with no visible siting verification → hint.
+- stdlib sudo entry form (siting-vouch discharge; spellings STRAWMAN): the `-l`
+  complexity gate (`sudo -n -ll` showing any per-command routing attributes —
+  `CWD=`/`CHROOT=`/role — ⇒ decline; blanket-rule hosts pass) + a standalone
+  same-head tripwire (a separate `sudo -n <probe-head> <uid-check>` ahead of entry,
+  spelled with the SAME command word as the composed probe so path-granular rules
+  route both alike; landed-as-wrong-uid ⇒ decline). Known punt riding
+  `27C:rul-entry-denoted-siting-vouch`: the tripwire's routing-equivalence couples
+  to the engine's shipped probe-head spelling; no compat surface is minted for it
+  now — if the head changes, the stdlib tripwire is re-authored alongside.
 - **read-set closure pass (§4(a)-(B); the spike's load-bearing validation):** the
   conservative sh-taint that decides read-set closure over a verdict body —
   default-disqualify, an audited pure-construct safe-list, taint over data AND
@@ -447,10 +516,39 @@ axis-invariance (A) + engine-verified read-set closure (B); substrate axes only,
 excluded; the old engine-warranted-unflagged carried-by row is RETIRED (it rested on
 tool-semantics the engine may not hold). The conservative-closure pass is the spike's
 obligation to discharge and prove in practice — a correctness surface, not a nicety.
+· **entry-form siting vouch** (human-acked 2026-07-17;
+`27C:rul-entry-denoted-siting-vouch`, `27Xf:cr-sudo-entry-not-guest-insensitive`
+discharged): authoring an entry form vouches correct siting in the site's denoted
+context — verify (structural insensitivity · tool interrogation · same-head
+tripwire) or decline; discharge is authored body-code, never engine machinery;
+`"$@"` verbatim in command position is the ONLY entry shape (in-guest preamble
+variants PUNTED — complex policy falls to guard/run).
+· **the two-axis consent split** (HUMAN-TYPED 2026-07-17;
+`27C:rul-two-axis-escalation-consent`, §1; discharges
+`27Xf:cr-27C-1-authority-predicate-contradicts-rule`): mechanical capability and
+oracle-escalation consent are orthogonal; capability-not-identity is the test;
+axis-2 defaults to yes via the double-ended ack, `--no-probe-escalation` the
+opt-out.
+· **the probe-mutation ownership split** (WELDED, HUMAN-TYPED 2026-07-17;
+`27C:rul-probe-mutation-ownership-split`, §3; discharges
+`27Xf:cr-entry-self-effects-carve-is-AI-asserted`): the probe-never-mutates law
+allocates by OWNERSHIP — authored/oracle code under the loud frontloaded
+contract (entry self-effects = the author's vouched residue); engine-generated
+constructs OWNED, judgment/UX tier; "state the user cares about" struck as a
+justification.
+· the §3 composition-algebra ruled cells (2026-07-17):
+`27C:rul-top-absorbs-absolute-maps` (⊤ propagates uniformly; no overwrite-rescue —
+machine-state logic never skips the middle) · `27C:rul-dimension-owned-compose-ops`
+(compose ops + value-frames are engine-internal, fixed once per dimension; the
+authored surface is unchanged single-step `lend_map` emission) ·
+`27C:rul-fold-entry-coherence-failfast` (static argparse/argv-flow divergence between
+`lend_map` and the entry form ⇒ plan-time fail-fast; entry EFFECTIVENESS is
+traversal-vouched, never detected — corroboration lint-tier per the §6 ladder).
 
 STRAWMAN (swappable stubs; conductor's): every spelling and member/flag name —
 `tolerates:`, `__enter`, the dial names, the `user-invariant` token's placement
-details · the lifted-guards-gated-too reading of `--no-probe-escalation` ·
+details · the sudo siting-discharge spellings (§9: the `-l` gate + same-head
+tripwire) · the lifted-guards-gated-too reading of `--no-probe-escalation` ·
 conditional-tail mechanics and the generation-probe revival · the seams
 (`fs-read-arms`, `containment-jackets`, `no-root-targets-subdial`) · the trial
 prediction.
