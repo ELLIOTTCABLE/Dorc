@@ -133,6 +133,39 @@ only, no-check-resolved only, mapped-provider keyed) and the
   raw sink-landings).
 - rider-positional-modeling-hardening → stage value-recipe-reshape (above).
 
+## stage-2b: raw-ship repair (composed predicts) — LANDED 2026-07-17 (checkpoint PASSED)
+
+Commits `51b3706..d61b531` on `ai/r27-raw-ship-repair`, fast-forwarded into
+`ai/spike3-r27`. Builder: Opus solo. Landing note: **`notes/27F`** (coverage-rule
+shape for stage-4; tc-flags). The `24J` standing-law debt is REPAIRED:
+connected probes ship composed predicts only (`271:rul-only-oracle-bytes-ship`),
+argv-through-argparse, machine-pinned by
+`composed_probe_renders_predicts_never_raw_book_bytes` + two refusal pins + five
+`273` §2 classification pins. SIGPIPE riders landed (hostsim seeded race
+injection + DST; why-lane note on rc-141 sink landings; exit-code contract
+recorded at the sink site). 128/128 e2e; conductor inspected the changed-shape
+probe artifact (composed form verbatim, delegation-produced bytes).
+
+**Checkpoint dispositions:**
+
+- disposition-a6-scope-expansion — ACCEPTED: converting `if-form` (beyond the
+  brief's named case) was FORCED by the coverage rule itself (its `>/dev/null`
+  non-last stage declines the consumed channel ⇒ refuse ⇒ elide→run regression);
+  the conversion restores the elision honestly via delegation. The rule firing
+  against the brief's own scope is validation, not drift. `unvouched-mid`
+  consistency-converted, still walled by its `cat`.
+- disposition-last-stage-rc-honesty — the governing stage's stdout-gate
+  exemption is sound (only its rc is consumed); a printf-constant-rc arm
+  carrying a verdict mark would be AUTHORED wrongness (oracles-may-lie,
+  attributed to the marked line), not engine fabrication. BANKED as a stdlib
+  quality-bar lint candidate: "verdict/observe mark on a constant-rc line."
+- disposition-multi-command-arm-grading — tc-last-reached-command-coverage
+  ACCEPTED as safe-direction interim: classification decides substitution
+  grading only (real authored bytes always flow at probe runtime);
+  subsumed when stage-4's per-channel Observable production lands.
+- tc-stage-ship-triplication — inherited debt (mirrors ship_predict_body);
+  cleanup candidate for e2e-degraduation or block-context planning, not urgent.
+
 **Environment incident (surfaced to human 2026-07-17):** a SyncThing conflict file
 (`effect.sync-conflict-…-PHNHRER.rs`) appeared INSIDE the stage-1 builder's agent
 worktree mid-edit — device PHNHRER is live-syncing `.claude/worktrees/`, which the
