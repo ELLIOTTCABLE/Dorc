@@ -276,6 +276,9 @@ site only through these:
     its owner's `invariant:<axis>` line (`277` §4e — the same surface (b) uses,
     generalized to substrate axes). Authored, attributable: a wrong line is the
     kind-owner's pointable error (vouch-species), never the flag's naked at-most.
+    Non-vacuous by construction: the backing-set always contains the minting
+    line's own coordinate (`277` §5 inv-backing-set-nonempty-by-construction),
+    so (A) is never satisfied by an empty marked-kind set.
   - **(B) engine-verified read-set closure:** the engine proves, by conservative
     sh-taint over the verdict body, that everything influencing the verdict rc (data
     AND control-flow — branch conditions included) traces to either the site's argv

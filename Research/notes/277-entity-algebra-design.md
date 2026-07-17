@@ -413,6 +413,29 @@ spike is the kTYANNOT livability experiment. Syntax remains marker-gated
   minted once, never probe-re-entrant within a run; the post-probe re-bind
   (seam-pipeline-order, directly below) re-reads this clause the day it is
   designed.)*
+  Two side-invariants close the third quantifier hole
+  (`27Xf:cr-set-lifting-vacuous-at-empty`, acked 2026-07-17): universal-over-∅ is
+  vacuously true, so an empty backing-set would spare every wall and transport
+  everywhere — silence-as-license reached through an *absent* claim rather than a
+  wrong one (the fixpoint clause above likewise presupposes a member exists to
+  read unknown). **(inv-backing-set-nonempty-by-construction)** a fact's
+  backing-set always contains the minting line's own coordinate; ∅ is
+  unrepresentable at the constructor level. (The HEAD build conforms —
+  own-cell-first `member_selectors`, `of_fact` as the map-miss floor — but
+  incidentally; law from here.) This same membership anchors
+  `27C:mech-pure-predicate-carry` gate (A) non-vacuous: the marked-backing-kind
+  set always contains at least the fact's own kind, so "every marked backing
+  kind carries the invariance line" is never satisfied by emptiness.
+  **(inv-top-never-encoded-as-empty)** a failed, unknown, or ⊤ backing
+  derivation yields an explicit ⊤ member (collides with every footprint, blocks
+  all transport), never ∅ — binding especially the future per-channel/cross-kind
+  derive widening (`27D:limitation-backing-sets-same-kind-only`'s owner), where
+  return-empty-on-failure is the obvious wrong encoding. Precedent: the lend_map
+  ∅-vs-absent disambiguation (empty entry = full lend; missing key = ⊤ walls)
+  already rules this distinction deliberate. DST pins ride the
+  lane-fallback-carry + read-value-slice briefs: ∅-unrepresentable · ⊤-never-∅ ·
+  an own-cell-only-backed fact still requires its own kind's invariance line to
+  carry.
 - **The re-bind seams** (`219` q-3.e/q-4.b/q-4.c, carried by
   `271:rider-value-recipe-reshape-capture-seams`; restated because the fact-domain
   re-key is the cheapest moment they will ever have): (seam-pipeline-order) the value

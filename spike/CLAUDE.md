@@ -188,7 +188,10 @@ prompt you write:
   **pin-no-outcome-as-generator** (a compare-verdict feeds only its licensed consumer
   and never re-enters the relation as evidence for a later verdict);
   **pin-set-meet-order-independence** (a set with any unknown member collides at
-  every iteration, whatever the resolution order).
+  every iteration, whatever the resolution order). Backing-sets are NON-EMPTY by
+  construction (the minting line's own coordinate is always a member) and ⊤ is
+  never encoded as ∅ — universal-over-∅ would vacuously spare/transport (`277` §5
+  inv-backing-set-nonempty-by-construction · inv-top-never-encoded-as-empty).
 - **top-identifies-with-nothing** — ⊤ identifies with nothing, including itself;
   cross-kind *same* does not exist (no generator; the co-reference mechanism is
   parked behind a movable kind-fence).
