@@ -52,6 +52,13 @@ enum FnRole {
     /// `invariant:<axis>` colon-line. Recognized-but-INERT at this stage: parsed + reservation-
     /// linted, never semantically consumed (topology/keying is a later stage).
     StateStoredOnlyIn,
+    /// `<provider>__lend_map` — the wrapper's DIMENSION member (`271:rul-lend-map`; `273` §3).
+    /// COMMAND-keyed (like the wrapper's `predict`). Its body is one entry per dimension: a
+    /// colon-line `:   : user` = full lend, a `printf … : user` = mapped lend, a terminal `"$@"`
+    /// = the peel boundary. Reuses the predict body dialect; the consumer ([`crate::wrapper`])
+    /// reads the per-dimension entries off it. The enumerate-every-dimension law lives in the
+    /// consumer (an absent dimension is ⊤ — walls).
+    LendMap,
 }
 
 impl FnRole {
@@ -64,6 +71,7 @@ impl FnRole {
             FnRole::Resolve => "__resolve",
             FnRole::DisturbanceReachesOnly => "__disturbance_reaches_only",
             FnRole::StateStoredOnlyIn => "__state_stored_only_in",
+            FnRole::LendMap => "__lend_map",
         }
     }
 }
@@ -134,6 +142,16 @@ pub(crate) fn lift_reaches(interner: &mut Interner, src: &str) -> Carrier<Predic
 #[must_use]
 pub(crate) fn lift_state_stored_only_in(interner: &mut Interner, src: &str) -> Carrier<PredictSet> {
     lift_role(interner, src, FnRole::StateStoredOnlyIn)
+}
+
+/// Lift every `<provider>__lend_map` funcdef in `src` (the wrapper dimension member —
+/// `271:rul-lend-map`; `273` §3). Reuses the predict body dialect. Same fail-soft / deterministic
+/// contract as [`lift_predicts`]; only the scanned name-suffix differs. COMMAND-keyed (the
+/// underscore↔hyphen provider mapping, like `predict`). The consumer ([`crate::wrapper`]) reads
+/// the per-dimension lend entries off each body.
+#[must_use]
+pub(crate) fn lift_lend_maps(interner: &mut Interner, src: &str) -> Carrier<PredictSet> {
+    lift_role(interner, src, FnRole::LendMap)
 }
 
 /// Shared lift over a chosen [`FnRole`] — the one parse both siblings route through.

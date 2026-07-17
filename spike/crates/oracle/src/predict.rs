@@ -54,8 +54,8 @@ pub use parser::lift_predicts;
 pub(crate) use ast::{CaseArm, Command, Test, Word};
 pub(crate) use eval::{eval_test, pattern_matches, resolve_word};
 pub(crate) use parser::{
-    brace_tokens, lift_reaches, lift_resolvers, lift_state_stored_only_in, lift_touches,
-    lift_verdicts_converged,
+    brace_tokens, lift_lend_maps, lift_reaches, lift_resolvers, lift_state_stored_only_in,
+    lift_touches, lift_verdicts_converged,
 };
 
 /// Strip an authored check funcdef to runnable sh — the STRIP-ONLY pass (R1c / 23D §1).

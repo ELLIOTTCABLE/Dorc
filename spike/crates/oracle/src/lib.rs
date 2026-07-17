@@ -84,6 +84,14 @@ pub mod resolve;
 /// Reuses the `predict` dialect (with the pipelines-may-carry-a-mark carve-out).
 pub mod reaches;
 
+/// The peeling-wrapper model (`273`; `271:rul-predict-absorbs-wrapper-modeling` + `rul-lend-map`
+/// + `rul-env-claim-inversion`): peel DETECTION inside `<provider>__predict` (command-position
+/// `"$@"` ⇒ peeling wrapper by tautology), the ρ-claim ladder, `<provider>__lend_map` with the
+/// enumerate-every-dimension law, the wrapper/inner context split, and dual-peel coherence
+/// fail-fast. MODELS only — mints no license (the entry/dial/vouch machinery is the next lane);
+/// nothing here is consumed by `analysis`/`plan` yet, so the wrapper-free corpus stays byte-stable.
+pub mod wrapper;
+
 /// The munge-reservation lint (24Kc `fix-munge-reservation`; 24M `ca-munge-charclass`): the
 /// reserved `<munged>__<role>` sh-function namespace's charclass refusal, non-injective-munge
 /// collision refusal, and book-squat disclosure. A standing mitigation for the coincidental
