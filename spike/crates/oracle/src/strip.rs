@@ -395,4 +395,19 @@ sm_dorc_Package__state_stored_only_in() {\n\
         // construct simply is not reached — the corpus-absent limitation the module documents; the
         // test does not force a lift that may not exist.
     }
+
+    #[test]
+    fn dorc_sh_runtime_object_command_word_is_untouched() {
+        // Row-3 documented-dangle (`274` §1 / `dorc-sh-trio`): `dorc-sh` typed DIRECTLY as a command
+        // word is the runtime object, NOT an annotation — strip must leave it byte-for-byte (only the
+        // `dorc:` colon-prefix is erasable; `dorc-sh` starts with `dorc-`, never matched). Half-strip
+        // is worse than no-strip: the author's documented buy-in is that a post-uninstall `dorc-sh`
+        // dangles loud-127 identically under bash/sh/perl.
+        let src = "# dorc-lang/v0.1\nfoo__predict() {\n   dorc-sh -c 'echo hi'\n}\n";
+        let out = strip(src);
+        assert!(
+            out.contains("dorc-sh -c 'echo hi'"),
+            "the typed `dorc-sh` runtime object is left untouched (documented-dangle):\n{out}"
+        );
+    }
 }
