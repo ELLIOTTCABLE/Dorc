@@ -398,6 +398,11 @@ only benign concurrent-stage reordering forgiven).
 > invocation site. Repair home candidate: `270:block-rebuild`'s probe-emission
 > touch-point.]
 
+> **[RATIFIED 2026-07-16 — `271:rul-only-oracle-bytes-ship`; task-14 DISSOLVED;
+> repair = composed predicts per `notes/273` §6, further scoped by `plans/27C` §3
+> (context entry only through the wrapper-oracle's authored entry form); repair rides
+> `270:block-rebuild`'s probe-emission touch-point.]**
+
 ## First-contact polish pass (LANDED 2026-07-05; merged tip `00664b1` lineage)
 
 The `24H` charter applied in full minus enumerated deferrals (one Opus, 8 commits, 54 files;

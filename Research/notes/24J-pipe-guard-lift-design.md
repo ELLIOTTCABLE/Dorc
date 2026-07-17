@@ -24,6 +24,16 @@ recorded so the build is dispatchable from empty context.
 > site. "Nothing needs reassembling" bought this debt; the mechanism section below stands
 > as history.
 
+> **[RATIFIED — 2026-07-16, `271:rul-only-oracle-bytes-ship`: the deferral above closed
+> by explicit typed ack; task-14 DISSOLVED (a fresh in-context re-derivation, not a
+> clean-room pass — the human clarified "triple-check" never meant one). The
+> composed-predict repair stands RULED; build riders bind `270:block-rebuild`'s
+> probe-emission touch-point: per-channel coverage (rc-only bodies never upstream of a
+> byte-consumer) · stream-fidelity of substituted bodies on consumed channels ·
+> capture-ships-real-bytes (same rule, not an exception); plus
+> `271:rul-argv-flows-bytes-do-not` — book argv flows through the oracle author's own
+> argparse; book bytes never ship. This note's landed shape remains NEVER-imitate.]**
+
 ## The question
 
 The `||` consumes ONE value: the check-pipeline's exit status (grep's — last stage). If the

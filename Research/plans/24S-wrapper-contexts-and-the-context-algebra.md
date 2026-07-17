@@ -17,6 +17,24 @@ rulings (bare munged `__role` names; reverse-DNS kinds; the five per-line mechan
 elide/replace/guard/omit/descope — per KNOBS "Named mechanisms"). Every sh spelling below
 is STRAWMAN: the *shapes* are proposed, no syllable is. Certainty markers used throughout.
 
+> **⚠ SUPERSESSION BANNER (2026-07-16; verified against `notes/273`, `plans/27C`,
+> `plans/271`, `notes/272`):** this proposal's SURFACE has been superseded twice since
+> its two narrow `[27C]` brackets landed — first by the wrapper-surface redesign
+> (**`notes/273`**, block-settle task 5, 2026-07-11), then by context-entry probing
+> (**`plans/27C`** — THE current wrapper/context-transport spec). What died: §2b's
+> four-job context-function (→ `cmd__predict()` + `cmd__lend_map()`;
+> `271:rul-predict-absorbs-wrapper-modeling`, `271:rul-lend-map`); §6b's engine-built
+> whole-ρ replication closure (→ the AUTHORED predict body is the shipped stand-in,
+> RATIFIED as composed predicts — `271:rul-only-oracle-bytes-ship`, 2026-07-16); the
+> §1/§2d kind-side declared trichotomy (→ DERIVED topology, `notes/272`; `271`
+> task 3); §2a stage-D's disjointness dividend (never-derive-separation, `272` §4);
+> §1's vocabulary (axes → dimensions, tail → guest — `273` §10). §7's A1/A2/A3/A7 are
+> all CLOSED (brackets in place below). What STANDS: §0's impossibility ledger
+> (imp-1 as re-scoped in its own bracket; `273` reaffirms the ledger), §3a's axis
+> vocabulary as ratified (`271:rul-axis-vocabulary-v1`), §4a's attribution chain
+> (first link sharpened to line-level, `273` §2), and the §2c no-wrapper-awareness
+> referendum.
+
 ---
 
 ## §0 — Problem, scope, and the impossibility ledger (read first)
@@ -39,7 +57,7 @@ this ledger, the ledger wins):
   (an-privilege-fact; kFAIL-withhold). Consequence: state readable only *inside* a
   context (peer-auth-gated reads, root-only files) is plan-time unknowable, forever;
   such sites cap at run-with-guard, honestly (§4, opaques6-finding2).
-  **[RE-SCOPED — 2026-07-16, `notes/27C`, human-ruled: the defensible core is
+  **[RE-SCOPED — 2026-07-16, `plans/27C`, human-ruled: the defensible core is
   reuse-NEVER-ACQUIRE — the probe lane may re-use authority the connection already
   holds to execute tolerance-vouched oracle bodies in the site's denoted context,
   under the ternary escalation dial (`27C` §2). "Never acquires" stands (no prompts,
@@ -98,6 +116,10 @@ different consumer and neither reduces to the other):
    *across* the boundary. Acts at comparison time (Cell ↔ Cell, an equivalence on the
    store, after names are computed). Consumers: the elide-weld (does this vouch's yes
    speak of the site's cell?), footprint×backing intersections, disjointness/survival.
+
+**[VOCABULARY RETIRED — 2026-07-16, `273` §10: "axes" → dimensions; "tail" → guest;
+"context" as an authored surface retired. The ρ-vs-coordinate division below survives;
+the kind-side declared trichotomy does not (→ derived topology, `notes/272`).]**
 
 The algebra decomposes as **axes(wrapper-declared) × sensitivity(kind-declared)**
 (opaques5-proposal1 / opaques5-finding1):
@@ -177,11 +199,22 @@ What they see, by stage of stdlib coverage (compressed from the round's walkthro
   align — the entered check reads root's crontab; "unprobeable" now describes only the
   unmet-bar cells.]** AND the disjointness dividend:
   a drifted day where line 8 really runs no longer walls anything else (`cron(root)` ⊥
-  everything).
+  everything). **[The dividend half is DEAD — 2026-07-16, `272` §4 via `273` §0:
+  never-derive-separation — derivation yields keying, never separation; `cron(root)` ⊥
+  everything may not be read from a per-user-looking declaration, and declared
+  separation across context-values does not exist at v1. The preceding [27C] bracket
+  fixed only this stage's imp-1 half.]**
 - The `-u` variant (`sudo -u postgres psql …`): axes carry VALUES; cells key to
   (user=postgres); same machinery, no special case.
 
 ### §2b — The wrapper-oracle author (`sudo`, `env`, `su`, `nice`, … — small class, pay once)
+
+**[DEAD — 2026-07-16, `notes/273` §0–§3: this four-job context-function
+(peel + axes + ρ-transform + self-vouch) was dissolved wholesale. Predict absorbed
+wrapper modeling — wrapper-ness is DETECTED by command-position `"$@"`, never declared
+(`271:rul-predict-absorbs-wrapper-modeling`); the dimension member is `cmd__lend_map()`
+(`271:rul-lend-map`); self-effects ride the wrapper's own `cmd__disturbs()` arms + the
+standing self-vouch rule. Read `273` in place of this section.]**
 
 A wrapper's oracle is per-TOOL family (argv-keyed, 24G §2 — it alone knows its flag
 grammar) and answers, per matched argv shape (STRAWMAN shapes, not syllables):
@@ -256,6 +289,11 @@ What actually happens to their material under a wrapped site:
   (peer-auth reads, root-only files): no obligation exists because no effort helps —
   rc≥2/can't-say, the imp-1 honest cap; the r25 `su - postgres -c 'psql …'` line is
   class-3, correct disposition run-with-guard, no author effort demanded or wasted.
+  **[CONTRADICTED — 2026-07-16, `plans/27C` §8 (`27C:prediction-trial-walls-dissolve`,
+  falsifiable): the trial's `su - postgres -c` wall is predicted to DISSOLVE via
+  context-entry probing — measurement in the site's denoted context, under
+  dial × vouch × entry. Run-with-guard remains only the unmet-bar disposition, not the
+  class-3 cap.]**
 - Their remaining lever is the family's ordinary decline: `return 2` for shapes/
   contexts they won't answer for (the stage-4 arity-gate discipline, unchanged).
 
@@ -312,6 +350,11 @@ components {env-vars(per-variable), positionals, cwd}. Cross-cutting mechanisms 
 NOT axes: outer-residue (redirections/prefix-assignments evaluate in the OUTER context —
 [A-shellcheck-sc2024-wiki-2026]'s lesson; the half-built `$()`-scope machinery is the
 engine cousin); partiality (imp-6); locks (parked, r26-adjacent).
+
+**[RATIFIED — 2026-07-16, `271:rul-axis-vocabulary-v1` (typed 2026-07-10): this
+vocabulary stands as posed, with fs-view SOFT-DEFERRED (spike-minimum = a Very Simple
+Fs Stub); amended by `271:rul-networking-unpunt` — netns re-enters the roadmap,
+sequenced AHEAD of full fs-view. Vocabulary word now "dimensions" (`273` §10).]**
 
 ### §3b — fs-view is not a scalar (and the bounded honest ladder)
 
@@ -517,7 +560,21 @@ Sensitive kinds are self-declaredly probe-outside-UNLICENSED for other axis-valu
 the imp-1 cap: plan-time can't-tell, run-with-guard, reason printed
 (opaques6-finding2). Elision under wrappers is structurally invariant-kind value.
 
+**[SUPERSEDED — 2026-07-16, `plans/27C`: same re-scope as the imp-1 bracket at top —
+reuse-never-acquire; the wrapper-oracle's authored entry form is the ONE licensed seat
+for real context entry (`27C` §3), so the DEFAULT lane is measurement in the site's
+denoted context, not probe-outside. Invariance-fed consumption WITHOUT entry survives
+only as the fallback lane — the kind-owner's explicit positive line ×
+`--risk-faultless-skips` (`27C` §4; `271:rul-invariance-speech-act` re-roles the
+derivation to contradiction-checker). Predict closure bodies still never escalate.]**
+
 ### §6b — Whole-ρ replication (probe coherence without enumeration)
+
+**[DEAD — 2026-07-16, `notes/273` §0/§6: the engine builds NO closure — the AUTHORED
+predict body itself is the shipped stand-in (no translation gap; the body IS the
+ρ-claim), RATIFIED as composed predicts (`a__predict -f -f | b__predict`;
+`271:rul-only-oracle-bytes-ship`, 2026-07-16). The nobody-enumerates insight this
+section won survives inside that design.]**
 
 The engine ships every check for a wrapped site CLOSED under the wrapper's declared
 ρ-transform — morally `env -i TERM=… PATH=… HOME=/root USER=root <check>` — so every
@@ -564,14 +621,25 @@ machine-authored check-half would be closed, never user bytes) (opaques7-finding
 - **A1 — the versioned-closed axis vocabulary** (§3a; opaques7-finding9): ratify
   engine-owned, dialect-versioned axes; pick v1 = {user, fs-view} + ρ; name the
   host/network-ns overlap away someday; ipc/pid via expressibility clause.
+  **[CLOSED — 2026-07-16, `271:rul-axis-vocabulary-v1` (typed 2026-07-10): ratified
+  as posed, fs-view SOFT-DEFERRED; amended by `271:rul-networking-unpunt` (netns
+  ahead of full fs-view). §3a survives as ratified — do not read this closure as a
+  correction of it.]**
 - **A2 — the gate-2 tier for steady-state cross-context elision** (§4d): flag vs
   vouch-tier vs tier-by-relation; the proposal's lean is vouch-tier-conditional-on-A4,
-  with survival's flag untouched. THE central trust ruling.
+  with survival's flag untouched. THE central trust ruling. **[CLOSED — 2026-07-16,
+  `271` task 8 (typed 2026-07-12): `271:rul-flag-is-razor-residue` — claims own what
+  lines can say; the flag owns what no line can say (the open-world at-most residue);
+  steady-state line-sayable outcomes ride the vouch economy un-flagged — plus
+  `271:rul-flag-named-risk-faultless-skips` (`--risk-faultless-skips`).]**
 - **A3 — the trichotomy declaration spelling**: minted first-class syntax for the
   static trichotomy (the human's lean, kOOB-compatible: it is engine-config, not
   world-config… this needs explicit kOOB adjudication — it is NEW SYNTAX, not sidecar
   config, but the redline deserves a deliberate reading) vs sh-bodied; maps stay
-  sh-bodied either way (the carve).
+  sh-bodied either way (the carve). **[CLOSED — 2026-07-16, `271` task 3
+  (2026-07-11): DISSOLVED — the declared trichotomy died into address-derived
+  topology (`kind__state_stored_only_in()` + the engine-owned carried-by table);
+  durable = `notes/272`.]**
 - **A4 — the adjudicability build-list** (opaques6-finding18, load-bearing for A2):
   machine-read topology clauses on kinds; binding-side smell lints (probe body reads
   user-scoped locations while binding to a user-invariant kind); differential discharge
@@ -590,6 +658,12 @@ machine-authored check-half would be closed, never user bytes) (opaques7-finding
   representation (qualifier segment vs per-context spaces-with-bridges — queue-3b's
   fork to take) and (ii) room for per-kind per-axis topology declarations in the
   kind-owner surface. Cheap now, retrofit-hostile later. Relay to the r24 conductor.
+  **[CLOSED — 2026-07-16: seam (i) reserved as the coordinate's context slot, the
+  qualifier-vs-spaces fork dissolved at representation tier
+  (`271:rul-seam-context-slot-and-relational-chokepoint`, the `271` task-2 seams
+  half; carried into `270:block-rebuild`'s entity-algebra-rebuild); seam (ii)
+  overtaken by DERIVED topology (`notes/272`) — no declared-trichotomy room is
+  owed.]**
 - **A8 — razor registration**: razor-attributable-line as durable law (candidate for
   the rulings ledger / KNOBS-adjacent registry); it generalizes beyond this feature.
 

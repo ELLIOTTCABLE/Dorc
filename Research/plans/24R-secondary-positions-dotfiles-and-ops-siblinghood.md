@@ -320,6 +320,10 @@ the guard discipline our analyzer derives [A-pyinfra-deploy-process-2026]
   gap; the reserved seam (23J/17N §7) is where the eventual design lands.
   *(Annotation 2026-07-10: the design now EXISTS — `plans/24S` (context algebra) +
   `plans/24T` (payload decomposition); build scheduled as `270:block-context`.)*
+  *(Annotation 2026-07-16: the design moved TWICE more — `notes/273` (wrapper-surface
+  redesign: `cmd__predict()` + `cmd__lend_map()`; the `24S` §2b surface is dead), then
+  `plans/27C` (context-entry probing — THE current wrapper/context-transport spec).
+  Current readers land there, not on 24S.)*
 - flag-secrets: quarantined; the market pressure is recorded (§0b) for whenever that round
   runs.
 - flag-embedded-transparency: R2/R3 deserve a named home as design rules (cheap now,

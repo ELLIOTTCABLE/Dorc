@@ -190,6 +190,11 @@ Where decomposition actually pays, in order of realism (opaques8-finding3):
 Honesty row: the r25 `su - postgres -c 'psql …'` line decomposes, but its inner psql
 is credential-gated (24S's class-3) — its cap is run-with-guard FOREVER; what payloads
 buy there is the honest reason string and the su/ρ modeling, not elision.
+**[SUPERSEDED — 2026-07-16, `plans/27C` §8 (`27C:prediction-trial-walls-dissolve`):
+"FOREVER" is withdrawn — context-entry probing predicts this exact site dissolves on
+trial revival (peer-auth grants the entered check what outside measurement was refused;
+a falsifiable prediction, struck if a real host disagrees). Run-with-guard remains only
+where dial × vouch × entry go unmet.]**
 
 By chair: the **admin** never learns the feature exists (books analyzed as-written;
 opaque payloads lose value with named hints, never execution fidelity). The **carrier
@@ -340,6 +345,10 @@ evaluation of opaque runtime values, then insert into further static analysis") 
 past all three lines independently. `eval` itself: the transparent-context cousin
 (same shell, effects DO escape, no scope-clobber) — its unpark is "spelling"
 (human ruling); it inherits whatever the stopping point announces.
+**[CITATION FRESHENED — 2026-07-16: `24S:imp-1` (no-escalation) was re-scoped by
+`plans/27C` to reuse-never-acquire; the fence stands under that reading
+(`271:rul-stopping-point-unpinned` cites it as a standing constituent). The
+eval-boundary argument here is unaffected.]**
 
 ---
 
@@ -405,6 +414,11 @@ found for `$()`.
   24S §7-A7's queue-3b seam reservation.
 - **P-A6 — the announced stopping point** (§5c): owed at current-work close; the
   union-of-standing-boundaries candidate is on record with a gentle ack only.
+  **[CLOSED — 2026-07-16, `271:rul-stopping-point-unpinned` (typed 2026-07-12):
+  deliberately UNPINNED — no ratified, announced composed boundary; the three
+  constituent fences stand individually; consumers cite the constituents, never a
+  composed announcement. (The corrections log below still shows this merely
+  SCHEDULED.)]**
 
 ## §8 — Broad implementation sketch (NOT a build brief; firming deferred)
 

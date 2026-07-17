@@ -1,44 +1,82 @@
 # spike/crates/core — CLAUDE.md
 
-The shared vocabulary every crate agrees on first (chord `dac-B`: analyzer and provenance/error layer must agree the types *before* either builds, or they grow two incompatible graphs). Read `spike/CLAUDE.md` and `Research/plans/191-spike2-keystone-charter.md` for the spike-2 charter.
+Role: the shared vocabulary every crate agrees on FIRST (dac-B: agree the types
+before consumers build, or two incompatible graphs grow). Read `spike/CLAUDE.md`
+first — its invariant clusters are this crate's law; this file carries only the
+core-local sharpenings. Registry discipline: one rule per bullet, slugged; append
+new entries to the matching section.
 
-Today `core` holds: `AstId`/`BytePos`/`Span`, `Carrier<T>` + `Diagnostic` (the `dn-7` no-throw spine), `Interner`/`Symbol`, `OpaqueToken`/`KindId`/`ProviderId` (referent-agnostic identity), `Phase`/`Verdict`/`Grade`, and `FactDomain`/`Fact`.
+## Law — the claim-tier trust algebra (the soundness boundary lives here)
 
-## Critical types — `core::claim` (read their doc-comments before touching tier-gated code)
+- **claim-tier-shape** — `Claim<T: Tier, P>` with act/source aliases
+  `ByObservation<P>` / `ByVouch<P>` / `BySilence<P>`; tiers sealed — no fourth tier,
+  ever. Any code that GATES on a claim's tier must read the `core::claim`
+  doc-comments first (they carry the unrepresentability properties).
+- **when-blocked-rule** (repeated from root because it is the single most important
+  line in this crate): if one of these types blocks your build, you likely hold the
+  WRONG claim — obtain the real vouch (author the `is_converged()`), or let the
+  command run; NEVER convert a claim to satisfy the signature. That conversion IS
+  the soundness hole the boundary exists to stop. A blocked "expected `ByVouch`,
+  found `ByObservation`" is a measurement being laundered into a mutation-license.
+- **vouch-never-a-fact** — a vouch informs a license and never enters the
+  fact-plane; fact-plane exits ride `ByObservation`. Inadmissible in any other
+  site's elide/poison reasoning.
 
-The **claim-tier trust algebra** (`24D §1`/`§6`, rul24-tier-names): `Claim<T: Tier, P>` and its act/source-named aliases `ByObservation<P>` / `ByVouch<P>` / `BySilence<P>` (tiers `ObservationTier`/`VouchTier`/`SilenceTier`, sealed — no fourth tier). Any code that GATES on a claim's tier — a license mint demanding a `ByVouch` (the elide/guard weld, `plan`), a fact-plane exit off a `ByObservation` — MUST read those doc-comments FIRST. They carry the four unrepresentability properties (`TC-tier-1..4`) and the *when-blocked* rule: **if one of these types blocks your build you likely hold the WRONG claim — obtain the real vouch, never convert to satisfy the signature (that conversion IS the soundness hole the boundary exists to stop; let the command run instead).** The vocabulary reads "I hold this BY observation / BY vouch / BY silence"; a blocked "expected `ByVouch`, found `ByObservation`" is telling you a measurement is being laundered into a mutation-license.
+## Law — the coordinate (`notes/277` is THE spec; `plans/271` the rulings)
 
-## The keystone starts here (`ap-1`, `ch-entity-algebra`)
+- **flat-three-place** — the coordinate, everywhere it appears (facts, backings,
+  footprints, disjointness, probe keying), is flat `(kind, entity, selector)` in a
+  representation that also carries a **context slot** (default = the host-default
+  world; its name is deliberately unminted). Recursive/nested coordinate shapes
+  were DECLINED (`271:rul-coordinate-shape-flat-three-place`); deeper structure
+  lives in kind-owner functions BETWEEN coordinates, never in the coordinate.
+- **names-are-not-referents** — a coordinate names a CELL; two coordinates may name
+  one cell (aliasing — why `kind__resolve()` exists). Never read
+  coordinate-inequality as cell-disjointness (`272:never-derive-separation`).
+- **selector-chokepoint** — `SelectorId` stays opaque/interned; EVERY selector
+  comparison lives behind ONE `selector_covers`-shaped function. No caller compares
+  tokens inline. The bare selector-less form permanently means
+  whole-entity / ⊤-selector at consumers (collides with every cell, either side).
+- **relational-compare-chokepoint** — ALL whole-coordinate comparison sits behind
+  one chokepoint that MAY answer relationally; per-axis pointwise decomposition is
+  never baked into the API (`271:rul-seam-context-slot-and-relational-chokepoint`).
+  Verdicts are ternary {same | provably-disjoint | unknown}: same → transport only;
+  provably-disjoint → flag-gated sparing only; unknown → the safe bottom for both.
+- **pin-no-outcome-as-generator** — a compare-verdict feeds only its licensed
+  consumer; it never re-enters the relation as evidence for a later verdict.
+- **pin-set-meet-order-independence** — a coordinate-SET with any unknown member
+  collides, at every iteration, whatever the member-resolution order (universal
+  meet over backing-SETS; `277` §5).
+- **canonical-coord-continuity** — `CanonicalCoord` stays a private mint;
+  `kind__resolve()` canonicalizes the ENTITY within its kind; selectors do NOT
+  canonicalize at v1; `Resolution::MayAlias` ⇒ demote. A raw coordinate cannot
+  reach the intersection in a resolver-bearing kind.
+- **kind-fence-movable** — cross-kind pairs short-circuit disjoint BEFORE
+  canonicalization at v1, but the fence must stay MOVABLE (the parked co-reference
+  mechanism lands against it; keep `CanonicalCoord` extensible toward a
+  kind-carrying canonical).
 
-Spike-2's keystone is the entity-algebra re-key, and `core` is where the *shape* is defined. The flat `(kind, entity)` pair (one bit per pair) becomes a recursive, kind-typed structure whose fields are typed by the named-kind namespace itself (charter §3, `an-entity-shape`): kinds embed kinds — a `service`'s field can be typed `file` or `user` ("Wombat"-style handle-to-kind, *reusing* kinds established elsewhere, not a bespoke value-type system). Shape lean (`17N §4` / `17O F-ALGEBRA`): present-key = `true`, `!`-pun for false, values = direct types / kind-handles / nested structs, **absent ≠ asserted-false**. This is high-lock (`ch-entity-algebra`) and the first thing allowed to *give* — if the recursive shape turns unwieldy, simplify the shape (`ch-wrong`: bake a wrong shape, record where it hurts) before abandoning the keystone.
+## Seams — reserve representation room, build NOTHING (`277` §5)
 
-**The seam to know before you touch this** (`16P` §3.2 / `16Q` §1, +SURE — verified in source): the flat key the analysis *actually* exercises is `dorc_analysis::effect::FactKey { kind, entity }`, **not** `core::Fact`. `core::Fact`/`FactDomain` are the richer-but-unused vocabulary the round-16 spike reserved and never wired (`an-fact-domain` is literally tagged "B (decorative)"). So the re-key is two-sided: define the structured algebra here, and the analysis crate threads it through `Reach`/`command_effect`/`classify` and re-points `FactKey` (its sibling `CLAUDE.md` owns that half). Don't assume `core::Fact`'s current `{domain, entity, source}` is load-bearing — it isn't yet; decide deliberately whether the re-keyed algebra *is* `core::Fact` reshaped, or replaces it. The re-key propagates through `Reach`/`command_effect`/`classify`, the oracle effect-map (`Polarity` → a typestate transition, `inc-7`), `ProbePredict`, `prove_replaceable`, and `hostsim`'s `FactKey` store — i.e. nearly the whole engine. **Land it before `analysis`/`plan` build much on top** (`ap-1`): they key on it, so work on the old flat key is thrown away.
+- **seam-uniqueness-bit** — no strong update exists at v1 (`Kill` accumulates); the
+  standing 231 fence: "probably unique" may only DEMOTE, never license. Room in the
+  coordinate/comparison representation only.
+- **seam-backing-sets** — a fact's backing is a coordinate SET, derived per-channel
+  through recipe dataflow; an observe mark widens the enclosing fact's backing
+  (safe direction — kill-surface only grows).
+- **seam-re-bind** — (pipeline-order) the value plane runs strictly BEFORE the
+  probe; folding a captured literal back needs a second value-flow pass or a
+  fold-time substitution channel; (literal-provenance) keep a slot open for
+  source-literal vs probe-captured distinction on values.
 
-## What `core` owns in `ANALYZER-NEEDS` (cite by slug)
+## Law — vocabulary discipline
 
-§C, the precision keystone — the rows this crate's shape decision *is*:
-- `an-entity-shape` (flat vs structured-with-selectors — the re-key itself), `an-per-entity-selector` (`installed` vs `version`; `svc#enabled` vs `#active` — strong/weak operates per-selector). These are the poison-wall fix: `update` establishes `package-index#fresh`, `install` establishes `package:nginx#installed` — different cells, no cross-poison (`16Q` §1).
-- `an-strong-weak-update` + `an-entity-uniqueness` + `an-fresh-vs-summary-entity`: the recency lever. The shape must be able to *carry* a singleton/uniqueness tag, even though the strong/weak *transfer* is the analysis crate's. `notes/180` fnd-4 (+SURE): sound strong-update wants only "flat key + a `{singleton, multiple}` cardinality bit" — strong-update iff cardinality = 1 — not node-splitting recency machinery; Dorc's entities (`package:nginx`) are mostly statically-identifiable singletons (one nginx per host), so the heavy machinery is reserved for genuinely multiplicitous/dynamically-named entities (`for h in $hosts; do install…`).
-- `an-opaque-token` ↔ `an-named-kind`: already built here as `OpaqueToken`/`KindId`. The re-keyed value-fields must stay referent-agnostic — a kind-handle field is a `KindId`, never decoded text.
-- `an-entity-coref` (built): two opaque tokens denote the same entity iff they compare equal — the equality relation uniqueness and reaching both stand on.
-
-§A, the rows whose *element type* this shape feeds (you define the lattice element; `analysis` defines the transfer): `an-effect-class` (Pure / Establishes(F) / Kills(F) / Opaque / ⊤ — Opaque ≠ ⊤), `an-top-unknown` ↔ `an-bottom-pure`, `an-may-set` ↔ `an-must-set`.
-
-## Watch (`seam-finite`): the recursive shape threatens termination
-
-A recursive entity-algebra threatens finite-height (`an-finite-domain`/`an-monotonicity`). A non-monotone / infinite-height transfer **hangs** — empirically 435 & 783 CPU-s before kill (`16P` DP-2). **Depth-bound the recursion** as a guard; keep `solve`'s convergence cap. This is a correctness floor the "first-to-give" latitude can't fully cede (charter `seam-finite`).
-
-Calibrating the scare (`notes/180` fnd-3, +SURE): the recency "non-monotonicity" result is **meta-level** — it says refining the underlying address-abstraction need not improve recency's output (so you can't blind-swap a finer keying and assume more precision). It is **NOT** a claim that the per-program dataflow *transfer functions* are non-monotone; a monotone-worklist least-fixpoint over a *fixed* abstraction does not obviously break (`180` fnd-3/fnd-4). The residual hazard to verify (~SUSPECT): the strong-update step demotes most-recent→summary, a destructive (non-join) step — confirm the worklist hosts it without losing the ascending-chain guarantee. (Singleton strong-update on a flat domain is the cheap path that sidesteps this — `180` fnd-4.)
-
-## Honor (cite the slug when you rely on one)
-
-- `inv-determinism` — ordered collections only; never iterate a `HashMap`/`HashSet` into output. The `Interner` is order-of-interning, never hashed (its internal lookup `HashMap` is fine — never iterated to produce output). A re-keyed structured value used as a map key needs a deterministic `Ord`/`Hash` (the round-16 `MapL` was kept canonical so structural `Eq` = semantic equality — preserve that discipline if the algebra becomes a lattice element).
-- `inv-referent-agnostic` (`W4`) — never decode a token's/kind's text to infer meaning; compare for co-reference, resolve for display only. Cross-oracle identity binds to a named `KindId`, never a shared token.
-- `inv-no-throw` (`dn-7`) — `core` is the no-throw spine; constructors return data, never panic. (The existing `intern`'s `unwrap_or(u32::MAX)` is the no-throw posture, not a bug — keep that style.)
-- `inv-must-may` / `inv-superposition` apply at the *consumers*, but the vocabulary lives here: keep `Grade`/`Verdict`/`Phase` phase-/orientation-agnostic so the phased caller (not `core`) collapses them. Don't bake a phase default into a `core` type.
-
-## Seam-ownership — DECIDED → `core` (K1, `dec-seam-ownership`)
-
-The old open question (does the structured algebra live in `core` or stay canonical in `analysis::effect`?) is **closed → `core`** (K1, `notes/193` §2 / strain-3). `core` now defines `SelectorId` + `EntityRef{Operand(OpaqueToken)|Singleton}` + the re-keyed `FactKey{kind, entity, selector}`, and `analysis::effect::FactKey` is a `pub use dorc_core::FactKey` re-export — one shared type, per `dac-B`. The decorative `core::Fact`/`FactDomain` were *replaced* (they had zero non-test references outside `core`, so "replace, don't preserve" cost nothing — strain-3). `oracle`/`plan`/`hostsim`/`cli` all key on this one type. Do **not** re-introduce a parallel `analysis`-local key — that reproduces the decorative-vocabulary split spike-1 got dinged for.
-
-Landed-reality note (strain-3): the re-key threaded through `analysis` *mechanically* — `Reach`/`classify`/`SkipClass` are generic over `FactKey` as an opaque `Ord` key, so the only real logic change was `command_effect`'s entity-resolution (the singleton branch). The keystone's weight lands in the **consumers** (K2: every `FactKey{kind, entity}` literal-construction site in `plan`/`hostsim`/`cli`), not the dataflow core.
+- **inv-referent-agnostic** — never decode a token's/kind's text for meaning;
+  compare for co-reference, resolve for display only.
+- **inv-superposition-here** — `Grade`/`Verdict`/`Phase` stay phase-/orientation-
+  agnostic; the phased caller collapses, never a `core` type default.
+- **inv-determinism-here** — deterministic `Ord`/`Hash` for anything used as a map
+  key; the `Interner` is order-of-interning; keep canonical forms so structural
+  `Eq` = semantic equality.
+- **inv-no-throw-here** — `core` is the no-throw spine; constructors return data,
+  never panic.

@@ -1,157 +1,103 @@
 # spike/crates/syntax — CLAUDE.md
 
-The hand-rolled lexer + recursive-descent parser + arena AST for the modeled sh
-subset. Read `spike/CLAUDE.md` and `Research/plans/191-spike2-keystone-charter.md`.
+Role: hand-rolled lexer + recursive-descent parser + arena AST for the modeled sh
+subset. A **disposable test front-end** with a **non-disposable boundary
+discipline**. Read `spike/CLAUDE.md` first. Registry discipline: one rule per
+bullet, slugged; append to the matching section.
 
-## What this crate is for spike-2 — a disposable test front-end
+## Law — boundary discipline (durable even though the subset's contents are not)
 
-For spike-2 the parser is a **disposable test front-end** (`ch-shape-anno`): its
-only job is to feed the analyzer a faithful tree from the fixtures. You are
-explicitly allowed to **massage input scripts/values** to get them past parsing;
-accepting arbitrary shell-input is **not** a goal, and parser/lexer nightmares
-aren't worth the time. Grow the grammar **demand-driven** — add a construct only
-when a downstream analyzer/keystone need forces it, not prospectively.
+- **fixture-over-grammar** — massage fixtures past the parser; accepting arbitrary
+  shell-input is a non-goal; grow the grammar demand-driven only (a downstream
+  need forces a construct, never prospection). A weirdo that hits a syntax limit
+  is fixed by the fixture, not the grammar.
+- **top-reject-here** — anything unmodeled becomes an explicit `Unsupported` node
+  with the right reason PLUS a loud `Error` diagnostic — never silent; salvage
+  children so unrelated analysis proceeds. Under-modeling is a correctness
+  boundary (a half-understood construct can hide a mutation that invalidates an
+  elision). The parser is the engine's highest-risk surface: bias every ambiguity
+  to ⊤-reject-with-diagnostic.
+- **syntactic-top-triggers** (fixed; shrinking one is a deliberate design act) —
+  `eval` · dynamic command name · dynamic source target (literal `. /etc/x` is
+  kept) · `$(( ))` in command position · lvalue-taking builtins (`unset "$x"`,
+  `printf -v`, `test -v`) · background `&` · over-deep nesting · the residual
+  loop shapes (no-`in` `for`; `break`/`continue`; command-subst/arithmetic in a
+  for-list word).
+- **semantic-top-not-here** — the dynamic-word/expansion surface (unquoted `$x`,
+  `$()` arguments) is the analyzer's ⊤, not the parser's: preserve it LOSSLESSLY
+  (`Word::may_split`), never collapse a may-split word to ⊤ in the parser —
+  ⊤-rejecting only dynamic command-names would under-count the real surface.
+- **lossless-quoting-is-correctness** — an unquoted expansion changes a command's
+  arity AND its effect-target set; flattening a `Word` to a `String` is an
+  elision-soundness regression. Redirections are first-class nodes
+  (`: > /etc/x` mutates regardless of the no-op command word).
 
-Durable framing (`16P T2`): the subset's *contents* are disposable, but the
-**boundary discipline is not**. Under-modeling is a *correctness* boundary
-(elision-soundness), not a TODO — a half-understood construct could hide a
-mutation that invalidates an elision, so anything unmodeled must become an
-explicit ⊤ that is both un-probeable and un-elidable. Rule of thumb from the last
-spike: *a weirdo that hits a syntax limit is fixed by the fixture, not the
-grammar.* Prefer rewriting the fixture over chasing a grammar corner.
+## Law — the dialect surface (parse target; `notes/277` §4 is THE grammar; `notes/278` the reference)
 
-## The current demand-set (what already parses clean)
+- **marker-gates-syntax** — `# dorc-lang/v0.1`, exact-match, stands alone, first
+  ~10 lines: gates ALL non-POSIX syntax below. An unmarked file is plain sh.
+  `__role` NAME-recognition is ungated and permanent.
+- **the-authored-surfaces** — inline binds (`pkg : sm.dorc.Package = "$1"`) ·
+  trailing marks with the sigil family `:` / `:!` / `:?` · the attached-`#`
+  selector (a `#` is a selector-introducer ONLY when a valid coordinate character
+  immediately precedes it — it never fights shell comments) · brace-alternation
+  `#{a,b}` on claim-emission marks only · colon-line marks (a bare `:` command
+  carrying a trailing mark) · the `dorc:` command-word prefix (the only
+  prefix-position dorcism). Kinds are reverse-DNS ≥2 dots; there is no `.prop`
+  production (dots belong to kind names and entity content only).
+- **charsets-posix-in-spirit** — all lexical minutiae follow
+  `271:rul-posix-in-spirit-defaults` (find the POSIX rule, simplify, match in
+  spirit): selector tokens are POSIX names in spirit; unquoted entities are the
+  portable-filename set + `/`; quoted entities use POSIX quoting simplified.
+  Narrow-start is deliberate — characters once granted can never be clawed back.
+- **loud-or-nothing** — a mark failing its charset is a loud parse diagnostic,
+  never a silent ⊤. No nested annotation inside opaque payloads
+  (`271:rul-no-nested-annotation`, plan-time parse-failure tier).
+- **fence-rejection-rc** — never depend on the exit code or error text of a
+  construct the floor shells REJECT (dash exits 2 where posh exits 1); "parses
+  and runs identically" is scoped to ACCEPTED constructs.
 
-The grammar is grown to `fixtures/pi-webhost.book.sh` + `fixtures/package.oracle.sh`
-and the three oracle idioms. Already modeled (don't re-derive): `set -e`; `case`
-(alternation `a|b`, `*`, `:` null-cmd, command-subst scrutinee `"$(hostname)"`);
-`if/elif/else` with a negated-pipeline condition (`if ! command -v nginx …`);
-`&&`/`||` (left-assoc); pipelines; `( )` subshell / `{ }` group; `name() { … }`
-funcdef; redirs incl. `>/dev/null`, `2>&1` dup, and `cat > f <<'EOF'` heredoc
-(body captured, quoted-delimiter flag); the standalone-assignment statement
-(a bare `name=value` — the shape a check's inline identity annotation strips to) and
-any statically-named `Simple` command word-list. Lossless
-quoting is wired (`WordPart`/`Word::may_split`). +SURE these are green
-(`tests/parse.rs::fixture_pi_webhost_top_level_shape`).
+## Law — strip (the off-ramp; correctness-critical)
 
-## The ⊤-trigger set — fixed, and split by locus
+- **strip-is-pure-erasure** — binds + marks erased WHOLE-STATEMENT; `dorc:`
+  prefix-erasure (`dorc:sh` → bare `sh`); the shebang-runner rewrite; NO in-body
+  name rewriting (names are already bare POSIX NAMEs); `dorc-sh` typed directly
+  is untouched (documented-dangle: half-strip is worse than no-strip).
+- **last-substantive-command-rule** — a bare-mark statement is an annotation-LINE
+  (deleted whole; it is NOT a POSIX `:` command): the author's last substantive
+  command must remain the last status-affecting statement in the stripped body.
+  A stripped-in trailing `:` clobbers the body's tool-rc to 0 = an always-skip
+  guard.
+- **executable-off-ramp-test** — stripped output parses and runs identically
+  under `posh 0.14.1` ∩ `dash 0.5.12` (the kWHICHSH floor weld). Guaranteed for
+  lint-clean text only: bare `set -o pipefail` is accepted-and-modeled but fails
+  the floor by design, and strip never rewrites it (`276:rul-pipefail-emit-never`).
 
-The ⊤-trigger set is **fixed**; don't extend or relax it. It is split by *where*
-it fires:
-- **Syntactic ⊤, caught here** (`an-unsafe-boundary`, §K; `021 §2`): `eval`;
-  dynamic command name (first word not a fixed literal); `. "$dyn"`/`source $f`
-  (literal-target `. /etc/x` is kept, not rejected); `$(( … ))` in command
-  position; lvalue-taking builtins (`unset "$x"`, `printf -v`, `test -v`/`[ -v ]`);
-  the RESIDUAL loop shapes (task-L1 shrank this — see below); background `&`;
-  over-deep nesting. Each → an `Unsupported` node with the right
-  `UnsupportedReason` **plus** an `Error` diagnostic — loud, never silent
-  (`inv-top-reject`). Salvage children so unrelated analysis proceeds (`dn-7`).
-  - **Loops (task-L1, `209` brk-1):** `for NAME in WORD…`/`while`/`until` over an
-    enumerable list now PARSE to real `ForLoop`/`WhileLoop` nodes (body + words
-    captured) and lower to a cyclic CFG with a back-edge — they are NO LONGER ⊤.
-    What STAYS `UnsupportedReason::Loop`: the no-`in` `for NAME; do …` (iterates
-    runtime `"$@"`); `break`/`continue` anywhere in a loop body (un-modeled early
-    exit breaks the back-edge fixpoint's reaching-uses soundness — binds to the
-    *innermost* loop, so it ⊤-rejects only that one); and a `for`-list word
-    containing a command-substitution/arithmetic (effect-bearing expansion in word
-    position, deferred per HOLE#1). The PRECISION step (Powerset loop-domain +
-    member-elision render) is a LATER slice; L1 is structure only (the value plane
-    binds the for-var to the *Flat* JOIN of the list words — >1 distinct ⇒ ⊤).
-- **Semantic ⊤, NOT here** — deferred to the dataflow: no-oracle-entry, and the
-  *dynamic word* (unquoted `$x` as an argument). The crate's job is to *preserve*
-  the signal losslessly (`Word::may_split`), not to ⊤-reject it. ~SUSPECT this is
-  the easy thing to get wrong: do not collapse a `may_split` word to ⊤ in the
-  parser.
+## Law — totality mechanics (`inv-no-throw` rests on these; preserve when extending)
 
-The real ⊤-surface is **dynamic arguments + command-substitution**, not just
-dynamic command *names* (`an-top-surface`, §K, `150 fN-ANALYZABILITY`; the #2
-construct by frequency). The parser must keep `$()`/args lossless so the
-analyzer can size and gate that surface; ⊤-rejecting only dynamic command-names
-would under-count it.
-
-## Lossless quoting is a correctness need, not a nicety
-
-`an-word-expansion` (§B; `021 §2` "first-class hazard", 80% of real scripts carry
-≥1 smell): an unquoted expansion changes a command's **arity and its
-effect-target set**, so `echo "$x"` (one field) and `echo $x` (may split into
-many) must stay distinguishable. The `WordPart` ladder records *how* each
-fragment was quoted; `Word::may_split` *derives* the splitting hazard. Keep this
-intact when you touch words — flattening a `Word` to a `String` is an
-elision-soundness regression. Same for redirs-as-first-class (`an-redirection-effect`):
-`: > /etc/x` mutates regardless of the (no-op) command word, so a redir is its
-own node, not a flag on the command.
-
-## The `kTYANNOT-inline` experiment (the one thing to *build* here)
-
-`ch-shape-anno` locks the **inline type-annotation strawman** for this spike (the
-`kTYANNOT` inline pole the human flagged). Concretely the shape is, e.g.,
-`local w : com.frobber.Wombat{frocked} = "$1"` / a `return … : "$w" is …` /
-dotted `frobctl.predict()` (see `17O F-OFFRAMP` strawman A). -GUESS the parse work
-lands on the `Assign`/word path + funcdef-name lexing; it is **not yet built** —
-the current `Assign` only carries a bare `name=value`. Parse it
-demand-driven when the keystone/oracle-lift needs it.
-
-**Accepted debt — do not "fix" it.** This breaks the off-ramp weld
-(`17O F-OFFRAMP`, half-violating `kOOB`), verified live: `local w : T=…` →
-`dash` aborts (`local: :: bad variable name`); `bash` leaves `w` empty at rc 0
-(silent corruption); dotted `frobctl.check` → `dash -n` "Bad function name".
-That is the known, charter-accepted cost for this spike. Do **not** build the
-correctness-critical strip/transpile pass (`ch-shape-anno`, OUT in charter §6) —
-it is a source-to-source transpiler, not a regex strip, and out of scope.
-
-## Why hand-rolled + disposable is legitimate
-
-The trust model is **differential testing against dash/bash**
-(`an-differential-vs-shell`), not proof. Even CoLiS — maximally
-formal-methods-capable — declined to prove its shell parser correct ("the spec
-is informal … we do not even claim the absence of bugs"), trusting it via review
-+ differential tests (`notes/010`). A clean-room hand-rolled recursive-descent
-parser is the right altitude and *boring* is the goal (`notes/040`: the
-permissive off-the-shelf options don't fit, so a ~2–5k-LoC hand-roll is the
-realistic path). Lexing *unrestricted* shell is undecidable (alias/eval-driven);
-we define that away by ⊤-rejecting those constructs. The `parse∘pretty-print =
-identity` round-trip (`an-roundtrip-identity`) is a *specified-not-built*
-obligation that would live wherever the renderer does, **not** here — don't go
-looking for it in this crate.
-
-## Totality mechanics already in place — preserve them
-
-`inv-no-throw` rests on these; keep them when extending:
-- `MAX_DEPTH` (256) depth-bound in `parse_command` — hostile nesting
-  (`(((((…`, `$( $( …`) would otherwise blow the native stack (a panic-equivalent);
-  past it we ⊤-reject and stop descending.
+- `MAX_DEPTH` (256) in `parse_command` — hostile nesting blows the native stack
+  otherwise; past it, ⊤-reject and stop descending.
 - Anti-stall guards (`parse_command_list`, `lex_word`): if no token is consumed,
-  force one byte/token of progress so `parse` always terminates (the no-progress
-  cases are 24-GiB-allocation / infinite-loop footguns — see the lexer's
-  backtick comment).
-- The lexer always terminates the stream with `Eof`; unterminated quotes/heredocs/
-  substitutions close at EOF (the parser raises the diagnostic). `tests/parse.rs::
-  totality_hostile_inputs_never_panic` is the table this must keep passing.
-- `an-crlf-hazard` (§K): a `\r` in authored `.dorc.sh` corrupts compares/heredocs/
-  `read`/`case` (and `\r` in a shebang is an un-guardable exec failure). Out of
-  scope to *handle* here, but if you touch the lexer's line/heredoc logic, don't
-  silently mangle CRLF — surface it (the wire-transform that fixes it is the
-  emitter's job, `an-wire-transform`).
+  force one byte/token of progress so `parse` always terminates.
+- The lexer always terminates the stream with `Eof`; unterminated
+  quotes/heredocs/substitutions close at EOF (parser raises the diagnostic). The
+  hostile-inputs never-panic table must keep passing.
+- **crlf-hazard** — a `\r` in authored sh corrupts compares/heredocs/`read`/
+  `case`; don't silently mangle CRLF in line/heredoc logic — surface it (the
+  wire-transform fix is the emitter's job).
 
-## Honor
+## Trust model + tensions (flag, don't resolve)
 
-`inv-top-reject` (unmodeled → explicit ⊤ node + loud `Error`, never silently
-best-effort'd); `inv-no-throw` (`dn-7`: total — never panic on hostile/untrusted
-input, errors are data via `Carrier<T>`); `inv-determinism` (same bytes ⇒
-byte-identical arena + diags; no hashed iteration into output).
-
-## Tensions (flag, don't resolve)
-
-- `tn-anno-vs-offramp`: the `kTYANNOT-inline` build *is* the off-ramp break — the
-  two are the same act. The charter accepts it for this spike, but it sits
-  squarely against `inv-top-reject`'s spirit (we're parsing sh that stock dash
-  rejects). Surface where it bites; don't try to reconcile it.
-- `tn-massage-vs-fixture-trust`: "massage inputs past the parser" (`ch-shape-anno`)
-  is in mild tension with `ap-2`'s executable-acceptance — a fixture massaged into
-  parseability may no longer be runnable sh. Keep an eye on whether a massaged
-  input still `sh -n`-checks; if not, the acceptance harness can't vouch for it.
-- `tn-coarse-subst-provenance`: command-substitution bodies are re-lexed and their
-  inner diagnostic spans are *relative to the inner text*, not the outer source
-  (parser comment at `parse_subst_body`). Accepted coarse provenance for the spike;
-  it will fight the locator-DAG (`an-loc-user-src`, §F) if provenance fidelity
-  later matters.
+- **differential-not-proof** — the trust model is differential testing against
+  real shells (even CoLiS declined to prove its parser). Hand-rolled + boring is
+  the right altitude.
+- **tn-marks-corrupt-bare** — trailing marks on real commands corrupt silently
+  under `sh file` (marks become argv); the surface is narrowed by the shebang's
+  loud-127, the marker gate, and strip — the residue is the kTYANNOT
+  experiment's priced cost (`277` §4g). Record friction; don't redesign mid-task.
+- **tn-massage-vs-fixture-trust** — a fixture massaged into parseability may no
+  longer be runnable sh, which the ap-2 harness then can't vouch for; keep
+  massaged inputs `sh -n`-clean.
+- **tn-coarse-subst-provenance** — command-substitution bodies re-lex with
+  inner-relative spans; accepted for the spike; will fight the locator-DAG when
+  provenance fidelity matters.

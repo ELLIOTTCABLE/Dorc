@@ -90,6 +90,8 @@ ledger) · **`notes/278`** (the dorc-lang v0.1 reference, DRAFT tier).
     adjudication — Opus-conductable. Gates block-context lanes only; block-rebuild
     never waits on it. The 2026-07-12 conductor self-flagged as CONTAMINATED for
     the fresh-check role (had ingested the debt-confirmed framing).
+    **[DISSOLVED 2026-07-16 — ratified by typed ack; see rul-only-oracle-bytes-ship
+    below.]**
 15. semantics-proliferation stance (minted mid-task-6): whose interpretation of a
     tool's language/flags does an author answer for — eval'er heads the intense
     case (settled by ownership, `274`), GNU-vs-BSD grep the everyday one. PARKED
