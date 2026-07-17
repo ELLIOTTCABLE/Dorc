@@ -629,6 +629,156 @@ impl PeelTracer {
     }
 }
 
+// ===========================================================================
+// Book-side peel execution (lane-integration `27N`): the concrete-argv primitives the
+// book pipeline needs to split a wrapped site into (context, inner-site). MODELS-only above;
+// these are the seams `analysis`/`plan` consume through the cli edge.
+// ===========================================================================
+
+/// How many leading argv tokens a wrapper's `predict` consumes before its guest `"$@"` for a
+/// concrete site argv (`27C` §3) — i.e. where the INNER command begins (`argv[peel_consumed..]`).
+/// `None` if the body does not peel this argv (not a wrapper here, or the argparse degraded ⊤ —
+/// the safe wall: a site whose wrapper cannot be peeled walls as an opaque command, unchanged law).
+/// The public face of [`peel_tail_depth`] for the book pipeline; pure/total.
+#[must_use]
+pub fn peel_consumed(predict: &Predict, argv: &[&str]) -> Option<usize> {
+    peel_tail_depth(&predict.body, argv)
+}
+
+/// Resolve each MAPPED dimension's value for a concrete site argv (`27C` §3: "the mapped VALUE is
+/// ρ-resolved argv per-site; an unresolvable → ⊤ value"). Runs the `lend_map` argparse (the same
+/// `shift`/`case`/`while`/`if` control flow the peel tracer walks, reusing the shared word
+/// primitives) and, at each reached mapped-dimension mark line, resolves the producing command's
+/// value. One entry per mapped dimension the selected path reached: `Some(value)` when it resolved
+/// concretely, `None` (⊤ value ⇒ walls) otherwise. Full-lend and absent dimensions carry no value
+/// (the [`LendMap`] classifies them) and are absent here.
+///
+/// Value model (`ru-26` scope-cut): the strawman `printf FMT VAL… : dim` idiom maps `dim` to the
+/// space-joined resolved VAL operands (argv after the format string). Any other producing shape is
+/// a value ⊤ (safe wall) — a richer producing surface is a later refinement. Pure/total.
+#[must_use]
+pub fn resolve_lend_values(
+    lend_map: &Predict,
+    argv: &[&str],
+) -> BTreeMap<Dimension, Option<String>> {
+    let mut r = LendResolver {
+        positionals: argv.iter().map(|s| (*s).to_owned()).collect(),
+        vars: BTreeMap::new(),
+        values: BTreeMap::new(),
+        budget: argv.len().saturating_mul(4).saturating_add(32),
+        steps: 0,
+    };
+    r.run(&lend_map.body);
+    r.values
+}
+
+/// The argparse walker for [`resolve_lend_values`] — records each reached mapped-dimension line's
+/// resolved value. Mirrors [`PeelTracer`]'s control-flow walk (the collectors differ: this one runs
+/// PAST the argparse to the mark lines, resolving values). Budget-bounded (`inv-no-throw`).
+struct LendResolver {
+    positionals: Vec<String>,
+    vars: BTreeMap<Symbol, String>,
+    values: BTreeMap<Dimension, Option<String>>,
+    budget: usize,
+    steps: usize,
+}
+
+impl LendResolver {
+    fn run(&mut self, body: &[Stmt]) {
+        for stmt in body {
+            self.steps = self.steps.saturating_add(1);
+            if self.steps > self.budget {
+                return;
+            }
+            match stmt {
+                Stmt::Assign { name, value } => {
+                    if let Ok(v) = resolve_word(
+                        value,
+                        &self.positionals,
+                        &self.vars,
+                        UnsetPolicy::Unresolved,
+                    ) {
+                        self.vars.insert(*name, v);
+                    }
+                }
+                Stmt::Shift { count } => {
+                    let n = count.unwrap_or(1) as usize;
+                    if n <= self.positionals.len() {
+                        self.positionals.drain(0..n);
+                    }
+                }
+                Stmt::Command(c) => self.record_mapped(c),
+                Stmt::While { test, body } => {
+                    let mut guard = self.budget;
+                    while matches!(eval_test(test, &self.positionals, &self.vars), Ok(true)) {
+                        guard = guard.saturating_sub(1);
+                        if guard == 0 {
+                            return;
+                        }
+                        self.run(body);
+                    }
+                }
+                Stmt::If {
+                    test,
+                    then_body,
+                    else_body,
+                } => match eval_test(test, &self.positionals, &self.vars) {
+                    Ok(true) => self.run(then_body),
+                    Ok(false) => self.run(else_body),
+                    Err(_) => {}
+                },
+                Stmt::Case { scrutinee, arms } => {
+                    if let Ok(value) = resolve_word(
+                        scrutinee,
+                        &self.positionals,
+                        &self.vars,
+                        UnsetPolicy::Unresolved,
+                    ) {
+                        for arm in arms {
+                            if arm.patterns.iter().any(|p| pattern_matches(p, &value)) {
+                                self.run(&arm.body);
+                                break;
+                            }
+                        }
+                    }
+                }
+                Stmt::Annotation(_) => {}
+            }
+        }
+    }
+
+    /// Record a mapped-dimension line's resolved value (`printf FMT VAL… : dim`). A colon-line
+    /// (full lend) carries no value; an unknown-token or valueless line is skipped.
+    fn record_mapped(&mut self, cmd: &Command) {
+        let Some(mark) = &cmd.mark else { return };
+        let Some(dim) = Dimension::from_token(&mark.target.kind) else {
+            return;
+        };
+        if is_colon_line(cmd) {
+            return; // full lend — no value
+        }
+        self.values.insert(dim, self.mapped_value_of(cmd));
+    }
+
+    /// The mapped value of a producing command — the strawman `printf FMT VAL… : dim` idiom's
+    /// resolved operands after the format string, space-joined; `None` (⊤) for any other shape.
+    fn mapped_value_of(&self, cmd: &Command) -> Option<String> {
+        let [Word::Literal(head), _fmt, rest @ ..] = cmd.words.as_slice() else {
+            return None;
+        };
+        if head != "printf" || rest.is_empty() {
+            return None;
+        }
+        let mut parts = Vec::with_capacity(rest.len());
+        for w in rest {
+            parts.push(
+                resolve_word(w, &self.positionals, &self.vars, UnsetPolicy::Unresolved).ok()?,
+            );
+        }
+        Some(parts.join(" "))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -906,5 +1056,44 @@ mod tests {
         // positional-model transition against a false peel-detection.
         let (_i, verdict) = one_verdict("mycmd__is_converged() { mycmd --dry-run \"$@\" ;}");
         assert_eq!(detect_peel(&verdict), None);
+    }
+
+    // ── book-side peel execution (lane-integration `27N`) ────────────────────────
+
+    #[test]
+    fn peel_consumed_counts_flag_strip_before_the_guest() {
+        // `sudo__predict` flag-strips `-*` then execs the guest — `sudo -u bob pipx …` consumes
+        // the two `-u bob` tokens; the inner command begins at `pipx`. A no-flag `sudo pipx …`
+        // consumes nothing (the peel starts at argv[0]).
+        let (_i, p) = one_predict(
+            "sudo__predict() { while [ \"${1#-}\" != \"$1\" ]; do shift; done; env -i \"$@\" ; }",
+        );
+        assert_eq!(peel_consumed(&p, &["pipx", "install", "poddle"]), Some(0));
+        // A leading flag IS stripped by the `${1#-}` loop (one shift), so `-x` consumes one token.
+        assert_eq!(peel_consumed(&p, &["-x", "pipx", "install"]), Some(1));
+    }
+
+    #[test]
+    fn peel_consumed_none_when_not_a_peel() {
+        // A non-peeling verdict body (the guest is an argument, not command-position) does not peel.
+        let (_i, v) = one_predict("dpkg__predict() { dpkg -s \"$@\" : d.Pkg = \"$1\" ; }");
+        assert_eq!(peel_consumed(&v, &["nginx"]), None);
+    }
+
+    #[test]
+    fn resolve_lend_values_reads_the_mapped_user_target() {
+        // The babby-sudo lend_map: default `target=root`, remapped by `-u`. `resolve_lend_values`
+        // resolves `user` to the printf-mapped value; `fs-view` is a colon-line (full lend, no
+        // value ⇒ absent here). A `-u alice` site maps `user` to `alice` (distinct worlds key apart).
+        let (_i, lm) = one_lend_map(
+            "sudo__lend_map() { target=root; while [ \"${1#-}\" != \"$1\" ]; do \
+             case \"$1\" in -u) target=\"$2\"; shift 2 ;; *) shift ;; esac; done; \
+             printf '%s\\n' \"$target\" : user\n:   : fs-view\n\"$@\" ; }",
+        );
+        let vals = resolve_lend_values(&lm, &["pipx", "install", "poddle"]);
+        assert_eq!(vals.get(&Dimension::User), Some(&Some("root".to_owned())));
+        assert_eq!(vals.get(&Dimension::FsView), None); // full-lend colon-line: no value
+        let alice = resolve_lend_values(&lm, &["-u", "alice", "pipx", "install"]);
+        assert_eq!(alice.get(&Dimension::User), Some(&Some("alice".to_owned())));
     }
 }
