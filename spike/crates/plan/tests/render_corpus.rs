@@ -64,15 +64,19 @@ fn package_index(i: &mut Interner) -> KindIndex {
     idx
 }
 
-/// Run value-flow + the corpus checks + classify, returning the classified leaves.
-fn classify_value(
+/// Run value-flow + the given predict sources + classify, returning the classified leaves.
+fn classify_with(
     cfg: &dorc_analysis::cfg::Cfg,
     ast: &dorc_syntax::ast::Ast,
     idx: &KindIndex,
+    predict_srcs: &[&str],
     i: &mut Interner,
 ) -> Vec<(dorc_analysis::cfg::CfgNodeId, SkipClass)> {
     let value = dorc_analysis::value::analyze(cfg, ast, i);
-    let checks = vec![dorc_oracle::predict::lift_predicts(i, CORPUS_PREDICT_SRC).value];
+    let checks: Vec<_> = predict_srcs
+        .iter()
+        .map(|s| dorc_oracle::predict::lift_predicts(i, s).value)
+        .collect();
     let mut arena = dorc_core::ProvArena::new();
     dorc_analysis::effect::classify(
         cfg,
@@ -127,9 +131,24 @@ fn render_for(src: &str, holds: &[(&str, &str)]) -> (String, Plan) {
             selector: installed,
         })
         .collect();
+    render_core(src, &[CORPUS_PREDICT_SRC], &idx, held, &mut i)
+}
+
+/// The shared pipeline (`render_for`'s package-oracle specialization, the service/seam/singleton
+/// harnesses below, all funnel here): parse → classify (with `predict_srcs` + `idx`) → build_plan →
+/// `render_apply`, observing `held` (each listed `FactKey` cell Converged, else Diverged). Vouches
+/// every ambient establish (elision MECHANICS; the vouch GATE is pinned elsewhere). THE dash -n net
+/// fires on the rendered artifact so no twin can skip it.
+fn render_core(
+    src: &str,
+    predict_srcs: &[&str],
+    idx: &KindIndex,
+    held: Vec<FactKey>,
+    i: &mut Interner,
+) -> (String, Plan) {
     let parsed = dorc_syntax::parse(src);
     let cfg = dorc_analysis::cfg::build(&parsed.value).value;
-    let classes = classify_value(&cfg, &parsed.value, &idx, &mut i);
+    let classes = classify_with(&cfg, &parsed.value, idx, predict_srcs, i);
     let observe = move |f: FactKey| {
         if held.contains(&f) {
             Observable::verdict_only(Verdict::Converged)
@@ -187,6 +206,58 @@ fn run_syntax_check(rendered: &str) -> Option<(&'static str, std::process::Outpu
         }
     }
     None
+}
+
+/// The systemd service oracle (`enable ⇒ service#enabled`, `start ⇒ service#active`), simplified-kind
+/// like `CORPUS_PREDICT_SRC`. Effects come from `service_index`; this only argv-parses verb + operand.
+const SERVICE_PREDICT_SRC: &str = r#"
+systemctl__predict() {
+   verb=$1; shift
+   svc : service = "$1"
+   case $verb in
+      enable) systemctl is-enabled -- "$svc" ;;
+      start)  systemctl is-active  -- "$svc" ;;
+   esac
+}
+"#;
+
+/// `package_index` + the service oracle: `enable ⇒ service#enabled`, `start ⇒ service#active` — two
+/// DISTINCT selectors of one Service entity (enabling ≠ activating; that distinctness is the point of
+/// the exec-distinct-selectors / exec-enabled-not-active twins).
+fn service_index(i: &mut Interner) -> KindIndex {
+    let mut idx = package_index(i);
+    let service = KindId(i.intern("service"));
+    let enabled = SelectorId(i.intern("enabled"));
+    let active = SelectorId(i.intern("active"));
+    let systemctl = ProviderId(i.intern("systemctl"));
+    let enable = i.intern("enable");
+    let start = i.intern("start");
+    idx.add_effect(systemctl, enable, service, enabled, ValueClaim::Establish);
+    idx.add_effect(systemctl, start, service, active, ValueClaim::Establish);
+    idx
+}
+
+/// Render harness for the package+service two-oracle world. `holds` cells are `(kind, entity,
+/// selector)` triples — the service selectors `#enabled` / `#active` are distinct, so the selector
+/// is explicit (unlike `render_for`, which hardwires `#installed`).
+fn render_service_for(src: &str, holds: &[(&str, &str, &str)]) -> (String, Plan) {
+    let mut i = Interner::default();
+    let idx = service_index(&mut i);
+    let held: Vec<FactKey> = holds
+        .iter()
+        .map(|(k, e, s)| FactKey {
+            kind: KindId(i.intern(k)),
+            entity: EntityRef::Operand(OpaqueToken(i.intern(e))),
+            selector: SelectorId(i.intern(s)),
+        })
+        .collect();
+    render_core(
+        src,
+        &[CORPUS_PREDICT_SRC, SERVICE_PREDICT_SRC],
+        &idx,
+        held,
+        &mut i,
+    )
 }
 
 /// Is the leaf whose verbatim text contains `needle` **replaced** (elided to a stand-in)?
@@ -846,5 +917,104 @@ fn twin_inline21_in_loop_call_floored() {
     assert!(
         rendered.contains("for pkg in nginx; do w \"$pkg\"; done"),
         "the whole loop renders verbatim:\n{rendered}"
+    );
+}
+
+// ===========================================================================
+// SERVICE / TWO-ORACLE twins (`24I` batch-3; the service oracle added to the harness — `render_
+// service_for`). Two providers/kinds co-resident; the systemd `#enabled` / `#active` selectors are
+// DISTINCT cells of one Service entity (enabling ≠ activating), which is what the last two pin.
+// ===========================================================================
+
+#[test]
+fn twin_two_oracles() {
+    // né two-oracles: a package install (converged) + a service enable (converged) both elide, the
+    // trailing un-oracled `echo` runs. Proves two oracles (package + service) co-resolve in one book.
+    let (rendered, plan) = render_service_for(
+        "apt-get install -y nginx\nsystemctl enable nginx\necho provisioned\n",
+        &[
+            ("package", "nginx", "installed"),
+            ("service", "nginx", "enabled"),
+        ],
+    );
+    assert!(
+        is_replaced(&plan, "install -y nginx"),
+        "the converged install elides"
+    );
+    assert!(
+        is_replaced(&plan, "systemctl enable nginx"),
+        "the converged service enable elides: {:?}",
+        plan.steps
+            .iter()
+            .map(|s| (&s.sh, &s.disposition))
+            .collect::<Vec<_>>()
+    );
+    assert!(
+        rendered.contains("# apt-get install -y nginx")
+            && rendered.contains("# systemctl enable nginx"),
+        "both converged sites elide as whole-line comments:\n{rendered}"
+    );
+    assert!(
+        rendered.contains("echo provisioned"),
+        "the un-oracled echo runs verbatim:\n{rendered}"
+    );
+}
+
+#[test]
+fn twin_exec_distinct_selectors() {
+    // né exec-distinct-selectors (~SUSPECT → MIGRATE): `enable`→#enabled, `start`→#active are DISTINCT
+    // selectors of one Service. BOTH cells converged ⇒ both sites elide. (The distinctness is proved
+    // by the boundary sibling below — here both hold, so both elide.)
+    let (rendered, plan) = render_service_for(
+        "systemctl enable nginx\nsystemctl start nginx\n",
+        &[
+            ("service", "nginx", "enabled"),
+            ("service", "nginx", "active"),
+        ],
+    );
+    assert!(
+        is_replaced(&plan, "systemctl enable nginx"),
+        "enable (#enabled converged) elides"
+    );
+    assert!(
+        is_replaced(&plan, "systemctl start nginx"),
+        "start (#active converged) elides"
+    );
+    assert!(
+        rendered.contains("# systemctl enable nginx")
+            && rendered.contains("# systemctl start nginx"),
+        "both sites elide:\n{rendered}"
+    );
+}
+
+#[test]
+fn twin_exec_enabled_not_active_host() {
+    // né exec-enabled-not-active-host (~SUSPECT → MIGRATE, the DISTINCTNESS proof): the host has
+    // #enabled but NOT #active (enabled≠active boundary). `enable` elides (its cell holds); `start`
+    // RUNS (its #active cell is diverged). Were the selectors NOT distinct, `start` would wrongly
+    // elide off `enable`'s convergence — this is the twin that would catch that.
+    let (rendered, plan) = render_service_for(
+        "systemctl enable nginx\nsystemctl start nginx\n",
+        &[("service", "nginx", "enabled")],
+    );
+    assert!(
+        is_replaced(&plan, "systemctl enable nginx"),
+        "enable elides (#enabled holds)"
+    );
+    assert!(
+        !is_replaced(&plan, "systemctl start nginx"),
+        "start RUNS (#active diverged — distinct from #enabled): {:?}",
+        plan.steps
+            .iter()
+            .map(|s| (&s.sh, &s.disposition))
+            .collect::<Vec<_>>()
+    );
+    assert!(
+        rendered.contains("# systemctl enable nginx"),
+        "enable elides:\n{rendered}"
+    );
+    assert!(
+        rendered.contains("\nsystemctl start nginx"),
+        "start runs verbatim:\n{rendered}"
     );
 }
