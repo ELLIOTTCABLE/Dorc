@@ -906,6 +906,13 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
     // stdout report (below) is the detail surface, so a stderr echo would just double it.
     if advisory && mode != Mode::Why {
         emit_why_lens(&why_diags, &arena, &book_src);
+        // sigpipe-flap-class (`279f` §5): a probe record landing rc 141 (128+SIGPIPE) is the
+        // NAMED early-exit-race nondeterminism class — a `pipefail`-off `A | grep -q` whose
+        // consumer closed the pipe before an upstream stage finished writing. The landing is SAFE
+        // (cant-tell ⇒ Unknown ⇒ run) and never flaps the verdict, so this is an advisory nudge,
+        // not an error. (A `--exit-code`-like surface must source from divergence-of-world, never
+        // this raw rc — see `dorc_plan::render::probe::record_scaffold`.)
+        emit_sigpipe_race_notes(&results);
         // Stage 2 co-primary (rul24-divergence-is-the-game / TC-3): every SURVIVED elision names,
         // on this same why-lens lane, which running walls it crossed and whose footprint licensed
         // each crossing. This is the attribution tether under the sharpest claim in the design —
@@ -3185,6 +3192,31 @@ struct SiteRecord {
     rc: Rc,
     stdout: Predicted<OutClaim>,
     stderr: Predicted<OutClaim>,
+}
+
+/// The rc a `128 + SIGPIPE` early-exit race lands on (`sigpipe-flap-class`, `279f` §5):
+/// a `pipefail`-off pipeline whose early-exit consumer (`… | grep -q`) closed the pipe before an
+/// upstream stage finished writing produces this race-dependently. It is opaque to Dorc's verdict
+/// (a ≥2 flat-sink landing ⇒ cant-tell ⇒ run), so it is a WHY-lane nudge, never a decision input.
+const SIGPIPE_RC: i32 = 141;
+
+/// Emit the `sigpipe-flap-class` why-lane note (`279f` §5) for every probe record that landed
+/// [`SIGPIPE_RC`]: a stderr advisory suggesting a full-read form over the early-exit `| grep -q`.
+/// The landing is always SAFE (the site runs) and the verdict never flaps run-to-run, so this is a
+/// pure nudge — no gate asserts it, and it feeds no decision. Ordered (records is a `BTreeMap`).
+fn emit_sigpipe_race_notes(results: &SiteResults) {
+    for (key, rec) in &results.records {
+        if rec.rc.0 == SIGPIPE_RC {
+            let site = match key.member {
+                Some(m) => format!("{}.{m}", key.site.0),
+                None => key.site.0.to_string(),
+            };
+            eprintln!(
+                "note: site {site} landed rc 141 (likely benign early-exit SIGPIPE race; \
+                 consider a full-read form over `| grep -q`)"
+            );
+        }
+    }
 }
 
 /// Parse stdin probe-results into the site-keyed [`SiteResults`]

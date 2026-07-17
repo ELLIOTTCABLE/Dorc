@@ -180,6 +180,19 @@ pub mod probe {
     /// keys the record back to the apply leaf — or to a member of it (`N.M`, [`site_key`],
     /// task-L2 item-4) — (`inv-site-keyed-results`). Pinned by the `printf 'site …
     /// effect=` assertions across the probe-render tests + the `exec-*` gate-1 parity.
+    ///
+    /// THE ≥2 SINK-LANDING SITE (`sigpipe-flap-class`, `279f` §5): the `else _e=cant-tell`
+    /// arm is the flat ≥2 rc sink (`rul-rc-partition`) — every rc that is not 0/1 lands here,
+    /// including **rc 141** (`128 + SIGPIPE`), which a `pipefail`-off pipeline whose early-exit
+    /// consumer (`… | grep -q`) closed the pipe before an upstream stage finished writing can
+    /// produce race-dependently. That landing is ALWAYS SAFE here (cant-tell ⇒ `Unknown` ⇒
+    /// can't-elide ⇒ run), and it never flaps the VERDICT: whether the race fires or not, the
+    /// site runs. The cli's results readout attaches a why-lane note on a 141 landing
+    /// ("likely benign early-exit race; consider a full-read form"). CONTRACT (recorded here
+    /// because no such surface exists yet): a `dorc plan --exit-code`-like surface must NEVER
+    /// source from these raw sink-landings — it must compute from divergence-of-world facts
+    /// (`276:rul-verdicts-never-stable` / plan-as-API), so a benign SIGPIPE race can never move
+    /// a process exit code. Until that surface exists, this doc IS the contract.
     #[must_use]
     pub fn record_scaffold(invocation: &str, key: &str) -> String {
         format!(

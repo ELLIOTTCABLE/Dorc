@@ -212,6 +212,14 @@ pub struct Host {
     /// HITs ⇒ the victim DEMOTES ⇒ safe); a LYING answer OMITS it (the expansion misses ⇒ the victim
     /// wrongly survives ⇒ the end-state differential goes RED). Omission is THE sharp edge.
     reaches: BTreeMap<(KindId, EntityRef), BTreeSet<(KindId, EntityRef)>>,
+    /// The facts whose probe RACED to rc-141 this run (`sigpipe-flap-class`, `279f` §5): a
+    /// `pipefail`-off composed pipe whose early-exit consumer (`… | grep -q`) closed the pipe
+    /// before an upstream stage finished writing. A raced fact [`observe`](Host::observe)s
+    /// [`Verdict::Unknown`] — the ≥2 flat-sink (cant-tell) landing — INSTEAD of its true verdict,
+    /// modelling the SIGPIPE outcome at the seam (`model-the-outcome`, never `tc`/real SIGPIPE).
+    /// Seeded + precomputed by [`with_sigpipe_race`](Host::with_sigpipe_race) so it is bit-for-bit
+    /// reproducible and goldens cannot flap. Empty on every ordinary host (no behaviour change).
+    sigpipe_raced: BTreeSet<FactKey>,
 }
 
 impl Host {
@@ -226,6 +234,7 @@ impl Host {
             resolutions: BTreeMap::new(),
             resolver_kinds: BTreeSet::new(),
             reaches: BTreeMap::new(),
+            sigpipe_raced: BTreeSet::new(),
         }
     }
 
@@ -338,7 +347,34 @@ impl Host {
             resolutions: BTreeMap::new(),
             resolver_kinds: BTreeSet::new(),
             reaches: BTreeMap::new(),
+            sigpipe_raced: BTreeSet::new(),
         }
+    }
+
+    /// Inject a seeded `sigpipe-flap-class` race (`279f` §5) onto `flappy` facts: each independently
+    /// RACES to rc-141 with a deterministic coin drawn from `seed`. A raced fact
+    /// [`observe`](Host::observe)s [`Verdict::Unknown`] (the ≥2 flat-sink / cant-tell landing) instead
+    /// of its true verdict — the DST stand-in for a `pipefail`-off composed pipe whose early-exit
+    /// `| grep -q` consumer closed the pipe before an upstream stage finished writing. Seeded so the
+    /// outcome is bit-for-bit reproducible (goldens cannot flap); the coin is drawn per fact in the
+    /// slice's order (`model-the-outcome`: inject the OUTCOME at the seam, never real SIGPIPE). The
+    /// landing is always SAFE (Unknown ⇒ can't-elide ⇒ run), so injecting it can only DEMOTE elisions.
+    #[must_use]
+    pub fn with_sigpipe_race(mut self, seed: u64, flappy: &[FactKey]) -> Self {
+        let mut rng = Lcg::new(seed);
+        self.sigpipe_raced = flappy
+            .iter()
+            .copied()
+            .filter(|_| rng.chance(1, 2))
+            .collect();
+        self
+    }
+
+    /// Whether `fact`'s probe RACED to rc-141 this run (`sigpipe-flap-class`) — the reachability
+    /// probe a DST asserts on so a seed-set that never fires the race fails loudly (`sometimes-assert`).
+    #[must_use]
+    pub fn sigpipe_raced(&self, fact: FactKey) -> bool {
+        self.sigpipe_raced.contains(&fact)
     }
 
     /// Read-only verdict for a fact — the concrete `verdict_of` the plan stage
@@ -382,6 +418,12 @@ impl Host {
     /// modeled host states membership, not a tool's private rc convention.)
     #[must_use]
     pub fn observe(&self, fact: FactKey) -> Observable {
+        // sigpipe-flap-class (`279f` §5): a raced fact lands rc-141 ⇒ the ≥2 flat-sink (cant-tell)
+        // ⇒ `Verdict::Unknown` — NOT its true membership. Safe (Unknown ⇒ can't-elide ⇒ run) and
+        // deterministic (the raced set is seeded), so the verdict never flaps run-to-run.
+        if self.sigpipe_raced.contains(&fact) {
+            return Observable::verdict_only(Verdict::Unknown);
+        }
         Observable::verdict_only(self.verdict(fact))
     }
 
@@ -1086,6 +1128,209 @@ apt_get__predict() {
         assert!(
             apply.render_sh(&i).contains("apt-get install -y nginx"),
             "the un-elided install renders verbatim in the apply sh"
+        );
+    }
+
+    /// A connected check-pipe corpus (`271:rul-only-oracle-bytes-ship`): two read-only Query stages
+    /// that DELEGATE (real stdout), so the pipe ships as a COMPOSED probe. The A6 otelcol shape +
+    /// the stdlib grep, one source (`lift`/`lift_predicts` handle multiple funcdefs).
+    const CONNECTED_ORACLE: &str = r##"
+otelcol__predict() {
+   case $1 in
+      --version)
+         collector : io.opentelemetry.Collector = "otelcol"
+         otelcol --version :? io.opentelemetry.Collector:"otelcol"#version
+         ;;
+   esac
+}
+grep__predict() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   pat : sm.dorc.GrepMatch = "$1"
+   grep -q -- "$pat" :? sm.dorc.GrepMatch:"$pat"#matched
+}
+"##;
+
+    /// Resolve a connected pipe STAGE's stripped predict + stdout coverage from a given oracle `src`
+    /// (mirror of the cli's `ship_predict_stage`). Reuses `predict_stage_stdout` for the coverage bit.
+    fn ship_stage_from(
+        src: &str,
+        checks: &[dorc_oracle::predict::PredictSet],
+        interner: &Interner,
+        provider: dorc_core::Symbol,
+        argv: &[dorc_core::Symbol],
+    ) -> Option<dorc_plan::StageShip> {
+        use dorc_oracle::predict::{
+            Resolution, StageStdout, evaluate, map_provider_name, predict_stage_stdout,
+            strip_predict,
+        };
+        let want = map_provider_name(interner.resolve(provider));
+        let arg_texts: Vec<String> = argv
+            .iter()
+            .map(|s| interner.resolve(*s).to_owned())
+            .collect();
+        let arg_refs: Vec<&str> = arg_texts.iter().map(String::as_str).collect();
+        for cs in checks {
+            for cp in cs.providers() {
+                if map_provider_name(interner.resolve(cp)) != want {
+                    continue;
+                }
+                let Some(check) = cs.get(cp) else { continue };
+                if matches!(evaluate(check, &arg_refs), Resolution::Resolved(_)) {
+                    return Some(dorc_plan::StageShip {
+                        sh: strip_predict(src, check, interner),
+                        produces_real_stdout: predict_stage_stdout(check, &arg_refs)
+                            == StageStdout::RealBytes,
+                    });
+                }
+            }
+        }
+        None
+    }
+
+    /// Resolve a site's stripped predict body from a given oracle `src` (mirror of `ship_corpus`,
+    /// but stripping from `src` rather than the apt-get corpus). For the ordinary `compile_probe` seam.
+    fn ship_body_from(
+        src: &str,
+        checks: &[dorc_oracle::predict::PredictSet],
+        interner: &Interner,
+        provider: dorc_core::Symbol,
+        argv: &[dorc_core::Symbol],
+    ) -> Option<String> {
+        use dorc_oracle::predict::{Resolution, evaluate, map_provider_name, strip_predict};
+        let want = map_provider_name(interner.resolve(provider));
+        let arg_texts: Vec<String> = argv
+            .iter()
+            .map(|s| interner.resolve(*s).to_owned())
+            .collect();
+        let arg_refs: Vec<&str> = arg_texts.iter().map(String::as_str).collect();
+        for cs in checks {
+            for cp in cs.providers() {
+                if map_provider_name(interner.resolve(cp)) != want {
+                    continue;
+                }
+                let Some(check) = cs.get(cp) else { continue };
+                if matches!(evaluate(check, &arg_refs), Resolution::Resolved(_)) {
+                    return Some(strip_predict(src, check, interner));
+                }
+            }
+        }
+        None
+    }
+
+    #[test]
+    fn dst_composed_probe_under_sigpipe_race_lands_in_sink_without_flapping() {
+        // `279f` §5 / sigpipe-flap-class: a COMPOSED connected probe (`otelcol__predict |
+        // grep__predict`) whose governing fact's probe RACES to rc-141 lands in the ≥2 flat sink
+        // (cant-tell ⇒ Unknown). Three properties over seeds: (1) the race is SEEDED/deterministic
+        // (no flap — two builds at one seed render byte-identical); (2) a raced governing verdict
+        // is the ≥2 sink AND the pipe RUNS (never a wrong elision — the safe landing); (3) the race
+        // SOMETIMES fires and sometimes not (`sometimes-assert` reachability). The composed-probe
+        // SHAPE itself is pinned in plan's unit tests; this pins the race's SAFE interaction with it.
+        use dorc_plan::{Disposition, build_plan_walled, compile_probe, connected_check_pipes};
+
+        let book = "otelcol --version | grep -q 0.155.0 || curl https://example.com/x.tar.gz\n";
+        let mut i = Interner::default();
+        let parsed = dorc_syntax::parse(book);
+        let cfg = dorc_analysis::cfg::build(&parsed.value).value;
+        let value = dorc_analysis::value::analyze(&cfg, &parsed.value, &mut i);
+        let idx = dorc_oracle::lift(&mut i, &[CONNECTED_ORACLE]).value;
+        let checks = vec![dorc_oracle::predict::lift_predicts(&mut i, CONNECTED_ORACLE).value];
+        let classes = dorc_analysis::effect::classify(
+            &cfg,
+            &value,
+            &parsed.value,
+            &idx,
+            &checks,
+            &BTreeSet::new(),
+            &mut i,
+            &mut dorc_core::ProvArena::new(),
+        )
+        .value;
+
+        let connected = connected_check_pipes(
+            &parsed.value,
+            &cfg,
+            &value,
+            &classes,
+            |p, a: &[dorc_core::Symbol]| ship_stage_from(CONNECTED_ORACLE, &checks, &i, p, a),
+        );
+        let probe = compile_probe(
+            &parsed.value,
+            &cfg,
+            &value,
+            &classes,
+            &connected,
+            |p, a: &[dorc_core::Symbol]| ship_body_from(CONNECTED_ORACLE, &checks, &i, p, a),
+            |_, _, _| None,
+            |_| false,
+        );
+
+        // The composed probe exists: the connected recognition + compose worked (ONLY oracle bytes).
+        let gov = probe
+            .checks
+            .iter()
+            .find(|c| c.connected.is_some())
+            .expect("a composed connected probe ships for the all-Query delegating pipe");
+        let gov_fact = gov.fact;
+
+        let mut raced = 0u32;
+        for seed in 0..64u64 {
+            let host = Host::new([gov_fact]).with_sigpipe_race(seed, &[gov_fact]);
+            let observe = |f: FactKey| {
+                if probe.checks_fact(f) {
+                    host.observe(f)
+                } else {
+                    Observable::verdict_only(Verdict::Unknown)
+                }
+            };
+            let build = || {
+                build_plan_walled(
+                    book,
+                    &parsed.value,
+                    &cfg,
+                    &classes,
+                    &BTreeSet::new(),
+                    None,
+                    None,
+                    &dorc_plan::Vouches::new(),
+                    &connected,
+                    observe,
+                    &mut dorc_core::ProvArena::new(),
+                )
+            };
+            // (1) no flap: two builds at the SAME seed render byte-identical.
+            assert_eq!(
+                build().render_sh(&i),
+                build().render_sh(&i),
+                "seed {seed}: the verdict must not flap run-to-run (the race is seeded)"
+            );
+            if host.sigpipe_raced(gov_fact) {
+                raced += 1;
+                // (2a) the ≥2-sink landing: a raced fact observes Unknown (cant-tell), not its
+                // true membership.
+                assert_eq!(
+                    host.observe(gov_fact),
+                    Observable::verdict_only(Verdict::Unknown),
+                    "seed {seed}: a raced governing fact lands the ≥2 flat sink (Unknown)"
+                );
+                // (2b) SAFE: the governing grep stage RUNS (never elides) under the sink verdict.
+                let plan = build();
+                let gov_step = plan
+                    .steps
+                    .iter()
+                    .find(|s| s.sh.contains("grep -q"))
+                    .expect("the governing grep stage renders");
+                assert!(
+                    matches!(gov_step.disposition, Disposition::Run),
+                    "seed {seed}: a ≥2-sink governing verdict RUNS the pipe (never a wrong elision)"
+                );
+            }
+        }
+        // (3) reachability (sometimes-assert): the seeded race must fire for SOME seeds, not all.
+        assert!(
+            raced > 0 && raced < 64,
+            "the seeded SIGPIPE race must sometimes fire and sometimes not over 64 seeds \
+             (sometimes-assert): fired {raced}/64"
         );
     }
 }
