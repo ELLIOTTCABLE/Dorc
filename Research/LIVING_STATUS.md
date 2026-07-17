@@ -83,10 +83,11 @@ main@`c7efc27` leaving conflicts; conductor resolved `27C` to the union — main
 final composition algebra + siting vouch + §9/§10 additions, PLUS the lineage's
 `27C:rul-two-axis-escalation-consent` §1 block and
 `27C:rul-probe-mutation-ownership-split` §3 weld (both now registered in §10's
-RULED ledger; the interim composition block dropped as superseded). Residue,
-human-owed: one more `git merge main` to absorb `38a123b` — it brings the `27Xf`
-siting RESOLVED annotation (clean) and a `27C` conflict that resolves to OURS
-(the lineage copy is a verified superset of `38a123b`'s).
+RULED ledger; the interim composition block dropped as superseded). Residue: `38a123b`
+(the `27Xf` siting annotation + the 27C text already unified here) stays
+UNMERGED until round-close by human policy — nothing blocks; content-wise the
+lineage `27C` is a verified superset. If its `27C` conflicts at round-close,
+resolve to OURS.
 
 **Block-settle CLOSED (2026-07-12):** all 15 task-map items dispositioned —
 **`plans/271`** carries the rulings + the task map; the arc durables: `notes/272`
@@ -161,7 +162,10 @@ lives in `spike/CLAUDE.md` (verified 2026-07-16 — Boundaries: the human-doc no
 list, the KNOBS edit-uncommitted carve-out, the quarantine, note-ID minting;
 Spawning-subagents: worktree step-zero/0.5/one + the sonnet no-subagent clamp + the
 comment-budget rider; Build/test/run: the four gates, foreground e2e, BLESS-exclusive)
-— read it there, don't re-derive it here. Fences living only here: silence ≠ ack (only
+— read it there, don't re-derive it here. Fences living only here: merges from `main`
+BATCH AT ROUND-CLOSE (human, 2026-07-17) — no interim merge asks unless something
+genuinely blocks; carry needed main-side content by conductor reconciliation
+instead · silence ≠ ack (only
 what the human TYPED counts; keep an ack-ledger) · crosscheck adjudication under
 maximum skepticism; adversarial framing = exclusions-not-inclusions · never
 AskUserQuestion (ask in prose); dump the numbered task list on changes · Fable
