@@ -1,52 +1,72 @@
 # spike/crates/analysis — CLAUDE.md
 
-The engine: CFG construction (`cfg.rs`), the monotone-dataflow worklist (`lattice.rs` + `solve.rs`), and effect/classify — the ambient gate (`effect.rs`). The keystone's home, and the densest crate. Read `spike/CLAUDE.md` (the `inv-*` list) and `Research/plans/191-spike2-keystone-charter.md` (esp. §3 keystone, §4 substrate + the three seams) before working here. Design rationale for every choice: `Research/notes/163-analysis-engine-design-spa-grounded.md`.
+Role: the engine — CFG construction (`cfg.rs`), the monotone-dataflow worklist
+(`lattice.rs` + `solve.rs`), effect/classify (`effect.rs`). The densest crate and
+the entity-algebra's largest consumer. Read `spike/CLAUDE.md` first; deep design
+rationale: `Research/notes/163`. The built machinery is code-visible — read the
+code; this file carries only the dangerous, easy-to-miss parts. Registry
+discipline: one rule per bullet, slugged; append to the matching section.
 
-## What is already built (don't rebuild; thread the keystone *through* it)
+## Law — the dangers (each one is a latent wrong-elision or a hang)
 
-The `16P` ledger, traced live in source:
-- `solve.rs` — one worklist generic over `Graph` + `Lattice` + `Direction{Forward,Backward}` (`an-solver-direction`, `an-pure-kernel`). FIFO, ordered, deterministic. Termination rests on caller-upheld, *un-type-enforceable* preconditions (monotone · finite-height-for-values-produced · semantic `Eq`); a violation **hangs** — so `solve` carries an iteration cap and returns `Solution::converged == false` instead (`an-monotonicity`, `DP-2`: empirically 435 & 783 CPU-s before the cap was added). A correctness-critical caller MUST check `converged`. **Cyclic CFGs are now real (task-L1, `209` brk-1):** loops lower to a back-edge (`CfgNodeKind::LoopHead`), so the worklist's fixpoint-over-a-cycle is no longer a latent capability — it is exercised every loop (the value-plane joins the body's back-edge state at the head; the for-var is re-bound to a constant word-JOIN each iteration, which keeps the transfer monotone). The "the worklist handles cycles by construction but has never been fed one" caveat (the old `209` framing) is **retired** — convergence on real loops is pinned (`value::nested_loop_book_converges`, `effect::classify_converges_on_nested_loop_back_edges`).
-- `lattice.rs` — `Powerset`/`Flat`/`Product`/`MapL` combinators, all `BTreeSet`/`BTreeMap` (`inv-determinism`), plus the `May`/`Must` order-dual + `BoundedLattice` (`an-may-set`/`an-must-set`/`an-orientation-coercion`). The merge is picked by the *type*: `Must<L>` is `L`'s order-dual, so the *same* solver runs a must-analysis (`an-merge-op`, kills the union-where-you-meant-intersection bug). A must-analysis over a bare `Powerset` is a **compile error** (no representable ⊤) — the asymmetry note 165 predicted, made a type error.
-- `cfg.rs` — `build` is total + pure over any `Ast` (`inv-no-throw`, `MAX_DEPTH` guard). Intraprocedural. Two-phase because errexit couples build and dataflow (`an-build-then-solve-coupling`): a structural walk, then `materialise_errexit_edges` runs a small forward errexit pass (held local, *not* via `solve`) and adds **precise** failure→exit edges (`an-errexit-state`/`an-errexit-precise-edges`, note 166 / `T9`: pruned in negated pipelines + whole `if`/`while`/`until` conds + `&&`/`||` left operands + `|| true`; extended to failing redirections; only `set "$dyn"` ⇒ ⊤ ⇒ add). Also tracks scope (`ScopeEnter`/`Exit`, env/var/cwd don't escape `( )`/`$()` but FS does), the leaf-seam (`is_expansion_internal`: `$()`-body commands are effect-bearing non-leaves — `an-expansion-internal`/`an-leaf-scope`), and consumed-observables (`an-observable-liveness`, emitted un-collapsed per `inv-superposition`). **Loops (task-L1, `209` brk-1):** `lower_for`/`lower_while` emit a `CfgNodeKind::LoopHead` join + a **back-edge** (the first real cycle) + an exit edge; a `while`/`until` condition is `lower_condition_region(_, Some(StatusIterated))` (errexit-exempt; a per-iteration consumed sequence — blocks unconditionally, arch-1/note 214; the T9 `while`-cond exemption is LIVE, not vacuous), an `if`/`elif` condition marks `Some(StatusRelaxable)` (a known rc substitutes — the arch-1 guard-elision class), and a `set -e` body command keeps its failure-edge + `StatusRelaxable` (C-3). Loops do NOT open a subshell scope (body assigns persist). Body+condition nodes are flagged `in_loop_body` — the structural render-floor `plan` honors so an in-loop leaf never mints a license this round.
-- `effect.rs` — the **one instantiated analysis**: `command_effect` (⊤-conservative lookup against the oracle `KindIndex`) → `classify` (forward reaching-defs over `Reach`) → `{MustRun, EstablishAmbient, EstablishWritten}`. Gated by `reachable_from_entry` (`an-entry-reachability`/`DP-8`: a detached function body has a vacuous-⊥ in-state — reading it as ambient is a wrong-elision; fold to `MustRun`) and `trust_reach = reach.converged` (`an-convergence-trust`/`DP-9`, a *per-consumer* obligation). **arch-2 (round-21, note 216) split the funcdef story**: an ELIGIBLE same-file call splices a fresh lowering of the body at the call site (`try_inline_call`/`splice_funcdef_body`; budgets, recursion-⊤, `$@`/`shift`/`local` and redirect-write-body refusals — each loud) and aggregates the body sites into `SkipClass::InlineCall { sites }` (the all-or-nothing CALL license; `site N.M` probe sub-records); the definition's own detached body is now marked `spliced_internal` (never a leaf, no double-count), and an INELIGIBLE call stays Opaque exactly as before — the refusal arms are poison-preserving by design. `Opaque ⇒ Reach::Top ⇒ poisons all downstream ambient-ness` (`an-reaching-ambient`/`an-written-stale`).
+- **solve-termination-unenforceable** — the worklist's preconditions (monotone
+  transfer · finite-height domain · semantic `Eq`) are caller-upheld and
+  un-type-enforceable; a violation HANGS (empirically hundreds of CPU-seconds).
+  `solve` carries an iteration cap and returns `converged == false` instead —
+  every correctness-critical caller MUST check it (`trust_reach` is a
+  per-consumer obligation, never ambient).
+- **vacuous-entry-fold** — a detached/unreachable function body has a vacuous-⊥
+  in-state; reading it as ambient is a wrong-elision. Fold to `MustRun`
+  (`reachable_from_entry`).
+- **opaque-poison-is-the-product** — `Opaque ⇒ Reach::Top` poisons all downstream
+  ambient-ness. The poison wall is Dorc's honesty about unmodeled commands, not a
+  bug: never "fix" it locally, and keep every refusal arm (splice ineligibility,
+  over-budget, recursion) poison-preserving.
+- **no-phase-no-fold-here** — this crate emits phase-/orientation-agnostic facts
+  (consumed observables un-collapsed); never bake a phase default or fold
+  `May`/`Must` here (`inv-superposition`) — a baked posture is a wrong-elision
+  under the opposite phase's `kFAIL` direction.
+- **must-lattice-by-type** — the merge is picked by the TYPE (`Must<L>` = `L`'s
+  order-dual); a must-analysis over a bare `Powerset` is a compile error. Keep it
+  that way: the union-where-you-meant-intersection bug must stay unrepresentable.
+- **errexit-couples-build-and-solve** — CFG construction is two-phase
+  (structural walk, then precise failure→exit edge materialization). Loops are
+  real cycles (back-edges); a `while`/`until` condition is `StatusIterated`
+  (errexit-exempt, blocks unconditionally); `if`/`elif` conditions are
+  `StatusRelaxable`; loop bodies are flagged `in_loop_body` (the structural floor
+  `plan` honors — no in-loop license).
+- **pure-kernel** — ordered collections only; no clock/RNG/fs/net, directly or
+  transitively; that purity is what lets DST run with no DI ceremony.
 
-## The keystone, and why it is *the* spike (`ap-1`, charter §3, `16Q §1`)
+## Direction — the re-key (entity-algebra-rebuild; spec = `277` §§1–3 + §7b)
 
-+SURE, verified in source: **nothing elides on a realistic book.** `effect::FactKey { kind, entity }` is one flat bit per pair, so the un-oracled `apt-get update` (`Opaque ⇒ Top`) poisons the `apt-get install nginx` below it to `EstablishWritten` — refused even on a `Converged` host (`opaque_upstream_poisons_ambientness`, and `plan::fixture_install_runs_despite_converged_probe`). Marking `update` "pure" is a lie (it mutates the package index). The fix is the re-key: `update` establishes `package-index#fresh`, `install` establishes `package:nginx#installed` — different cells, no poison (`an-entity-shape`/`an-per-entity-selector`/`an-strong-weak-update`).
+- **thread-the-flat-coordinate** — `(kind, entity, selector)` + context slot
+  through `FactKey` → `Reach` → `command_effect` → `classify`/`SkipClass`.
+  Per-selector CELLS are the poison-wall fix: `apt-get update` establishes the
+  package-index cell, `install` establishes `…Package:nginx#installed` —
+  different cells, no cross-poison.
+- **compare-only-at-chokepoints** — dialect sets + backing provenance (minting
+  family) enter comparison inside core's chokepoints (`selector_covers`; the
+  relational whole-coordinate compare). Never inline token equality anywhere in
+  this crate. ⊤-selector (selector-less, either side) collides with every cell of
+  its entity.
+- **polarity-becomes-transitions** — the binary `Establish`/`Kill` bit becomes a
+  typestate transition-table (install vs purge vs update are different
+  transitions on one kind), still ⊤-conservative on lookup miss.
+- **no-strong-update-v1** — `Kill` accumulates; "probably unique" may only DEMOTE
+  (the 231 fence); the uniqueness bit is a reserved seam, never inferred hot.
 
-`core` owns the re-keyed entity-algebra's *shape* (its CLAUDE.md); **this crate is its largest consumer.** Spike-2 work here:
-- thread the new key through `FactKey` → `Reach`/`Reach::with`/`Reach::mutated` → `command_effect` → `classify`/`SkipClass`. ~SUSPECT this is most of the diff (`16Q §1`: "re-keying `FactKey` propagates through nearly the whole engine").
-- per-entity selectors (the poison-wall fix above) — `an-per-entity-selector`.
-- the effect-map transition: `oracle::Polarity` (binary `Establish`/`Kill`) becomes a typestate transition-table (`inc-7`, `an-effect-polarity`) — `install` vs `purge` vs `update` are *different* transitions on `package:nginx`, not one bit.
-- occurrence-typing narrowing (`inc-6`, unbuilt): a guard refines an entity's *state* per-branch.
-- strong vs weak update via a singleton/uniqueness bit (`an-entity-uniqueness`, `notes/180` fnd-4: strong-update only when cardinality = 1 — Dorc entities like `package:nginx` are mostly statically-unique singletons, so this is plausibly ~free without the heavy recency machinery; the multiplicitous case is `for h in $hosts; do …`).
-- instantiate the never-run backward / `Must` direction behind the apply-3 / `dorc bump` skeleton (`ch-scope`, `q1-backward`, `an-apply-3`/`an-backward-slice`). The whole `Must`/`Backward` tower is built but `16P T4` flags it "generality NOT BUILT" — this is the load-test of whether those locks were earned.
+## Seams — watch and report, don't resolve
 
-## The three seams — the deliverable is *where they strain*, not green tests (`ap-1`/`ap-3`, charter §4)
-
-The substrate is **deliberately underpowered** (decision `an-substrate`, below). These seams are where an overpowered substrate (IFDS summaries / Datalog provenance) would have carried us; the round's product is *how badly each strains* — the `re-eval-trigger` evidence. "It works on the easy cases" is the self-confirmation trap spike-1 fell into.
-- `seam-interproc` (`q1-interproc`/`an-call-return-edges`/`an-summary-edge`) — ↔ analysis-core (`ch-priority` #1). **Half-resolved by arch-2 (round-21, note 216)**: same-file, textually-before-call, budget-bounded calls are handled by CFG **splice** (per-call-site body clone), NOT call/return edges or IFDS summaries — the find-7 TODO is superseded for the eligible population (the detached body is `spliced_internal` now, not a forced-MustRun leaf set). STILL OPEN here: cross-file `. /path` sourcing (parses as a plain unfollowed command — ⊤ stands), the ineligible population (over-budget/recursive/`$@`-using bodies stay Opaque), and the original **watch** stands for any future move beyond splicing: does the worklist scale, or beg for IFDS realizable-path summaries? (`16P` fnd-6 still applies; splice sidesteps summaries at the cost of per-call-site node duplication under the budget.)
-- `seam-finite` (`an-finite-domain`/`an-monotonicity`) — termination under the *recursive* entity-algebra. The current `Reach` lattice is finite-height (bounded by the script's literal facts); unbounded kind-nesting threatens that. **Depth-bound the recursion** as a guard and keep `solve`'s cap + loud non-convergence. **Watch:** does kind-embedding stay bounded-height in practice? (charter `ch-entity-algebra` lets the algebra's *shape* give, but finite-height stays a floor.)
-- `seam-prov` (`an-queryable-factbase`/`an-locator-dag`) — ↔ correctness/taint (`ch-priority` #2). Mostly lives in `plan`/`core` (the locator-DAG), but the dependency graph *is* this crate's dataflow output (`an-edge-depends-on`/`an-graph-type-agreement`). Datalog gives why-trees ~free; the worklist hand-builds them. **Watch:** does the hand-built derivation-DAG stay tractable as taint grows? This is the strongest later case for a relational layer.
-
-## Substrate — committed, with a narrow re-eval trigger (`an-substrate`, charter §4, `notes/180`+`190`)
-
-DECISION (`top-level-agent`, +SURE on direction): **keep and extend the hand-rolled worklist.** Not IFDS-the-algorithm; not Datalog/Soufflé. Why: precision-equivalent to IFDS for the gen/kill core (substrate is *not* a precision question — `180` fnd-1); the recursive kind-typed algebra is non-distributive + not a finite flat powerset, so it fights IFDS's distributivity and flat Datalog's relational model (`180` fnd-5); the dep-free pure kernel is welded for DST (an external C++/Datalog engine breaks it); the perf-inversion moots the heavy substrates' scale win (`an-h-sparsity`, `180` fnd-2); and `ch-wrong` wants the costs *surfaced, not pre-paid*. Datafrog (rust-lang's polonius engine) corroborates: it *is* essentially a worklist (`190` fnd-7).
-
-`re-eval-trigger` (~SUSPECT; watch): graduate to **Ascent**-over-worklist (the one real Rust-native lattice-Datalog, `190` fnd-3/4) only if **all three coincide** — `kFIDELITY` why-trees get heavily weighted **and** a structured lattice domain is needed **and** DST tolerates `default-features=false` Ascent (its default `par`→rayon/dashmap is non-deterministic — `190` fnd-6). Ascent is held off mainly because it has **no provenance/why-trees** (`190` fnd-5: the exact `kFIDELITY` lever it was wanted for). Salsa is a memoization *layer*, not a substrate (`190` fnd-2) — out of scope.
-
-SPA grounding reads (`[B-moller-schwartzbach-static-program-analysis-2025]`): **4** Lattice Theory + **5** Monotone Frameworks (this engine — esp. 5.3 fixed-point, 5.8 forward/backward/may/must); **6** Widening (the `seam-finite` tool); **8** Interprocedural + **9** Distributive/IFDS/IDE (the *deferred* alternative — so the graduate-to signal is recognizable); **11** Pointer Analysis (Andersen/Steensgaard + flow-sensitive — the strong/weak-update + uniqueness mechanism behind the keystone); **12** Abstract Interpretation (the `kFAIL`/⊤-on-unknown frame). Skip 3 (HM, welded out), 7 (path-sensitivity, `kCONTEXT`-insensitive default), 10 (no higher-order). No slicing chapter exists — that source is Horwitz–Reps–Binkley, not SPA.
-
-## Honor (cite the slug where you rely on one)
-
-- `inv-determinism` — ordered collections only; never iterate a `HashMap` into output. The whole kernel is a pure function (`an-pure-kernel`), which is what lets it run under DST with no DI ceremony. No `async` here.
-- `inv-no-throw` (`dn-7`) — `build`/`classify`/`solve` are total; `unwrap`/`expect` only where untrusted input cannot reach. Out-of-range graph edges are `debug_assert` + release-skip, never panic.
-- `inv-top-reject` — `NodeKind::Unsupported` → `CfgNodeKind::Top` (absorbing ⊤, un-probeable ∧ un-elidable), never silently skipped. The ⊤-trigger set is fixed (`an-unsafe-boundary`).
-- `inv-referent-agnostic` (`W4`) — compare `OpaqueToken`s for intra-script co-reference (`an-entity-coref`); resolve only for display. Never branch on "is this `nginx`". Cross-oracle identity binds to a named `KindId` (`an-named-kind`), never a shared token.
-- `inv-must-may` — only a `Grade::Must` fact may license a skip; `May` is a hint, never elision authority.
-- `inv-superposition` — the kernel emits phase-/orientation-agnostic facts (e.g. `consumed_observables` un-collapsed); only the phased *caller* (`plan`) collapses them by arguing `Phase` + orientation. **Never bake a phase or fold `May`/`Must` here** — a baked posture is a wrong-skip under the opposite phase's `kFAIL`. (`F-FW3`: the probe plan-builder is the *only* real second phased caller, so until it exists "engine emits, caller collapses" is a one-caller fiction this crate must not quietly violate.)
-- `inv-monotonicity` — un-type-enforceable; rests on DST + the `solve` cap + loud non-convergence, **not** doc-comments. Any new transfer you add must be monotone over a finite-height domain, or it hangs.
-
-## Tension to flag, not resolve
-
-`seam-interproc` and `seam-finite` pull opposite ways on the recursive entity-algebra under `ch-priority` #1. Un-⊤-ing detached function bodies (the #1-priority analysis-core seam) widens what the recursive domain must represent across call boundaries — exactly the kind-nesting growth that threatens `seam-finite`'s finite-height floor. The charter lets the *algebra's shape* give first (`ch-entity-algebra`) but welds finite-height as non-negotiable. So if interprocedural reach forces deeper/unbounded kind-embedding, the resolution is forced and not yet known: depth-bound harder (lose interproc precision — readability/correctness over the perf that doesn't matter here), or simplify the algebra shape (cede the keystone's richness). --WONDER whether the singleton/uniqueness bit (`an-entity-uniqueness`) is itself the pressure valve — if cross-call entities are provably summarized (non-singleton ⇒ weak-update, ⊤-ward), the domain may stay bounded without a hard depth cap. Surface where this bites in `Research/notes/19x-*.md`; don't pre-decide it on paper (`ch-wrong`).
+- **seam-interproc** — same-file eligible calls SPLICE (per-call-site body clone;
+  all-or-nothing CALL license); cross-file `. /path` sourcing stays ⊤; the
+  ineligible population stays Opaque. Watch: does the worklist scale, or beg for
+  IFDS realizable-path summaries?
+- **seam-prov** — the dependency graph is this crate's dataflow output; the
+  hand-built derivation-DAG vs growing taint is the strongest later case for a
+  relational layer.
+- **substrate-decision-stands** — keep and extend the hand-rolled worklist (not
+  IFDS-the-algorithm, not Datalog/Soufflé). Graduate to Ascent ONLY if all three
+  coincide: why-trees heavily weighted ∧ structured lattice domain needed ∧ DST
+  tolerates `default-features=false` (Ascent has no provenance — the exact lever
+  it would be wanted for).
