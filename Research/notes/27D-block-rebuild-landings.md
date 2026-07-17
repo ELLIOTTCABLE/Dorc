@@ -301,6 +301,45 @@ robust, not coincidental (verbless corpus observes; ⊤ corpus disturbs).
   load-bearing for the payload-v1 brief); the re-entry trigger is discovered
   need, not a scheduled revisit.
 
+## stage-5: wire-records-v1-import — LANDED 2026-07-17 (checkpoint PASSED)
+
+Commits `52542cc..97854fe` on `ai/r27-wire-records`, folded into
+`ai/spike3-r27` (fold note: the fast-forward briefly orphaned the lineage's
+payload-rulings ledger commit, recovered by cherry-pick at `1b841ca`;
+conductor protocol now checks behind-count before every fold). Builder: Opus
+solo (survived two transient 529 interruptions, resumed with context intact).
+Landed: the full `dorc-records/1` framing contract per `262` §2 — production
+deframer in `plan::records`, terminal token `@@dorc@@`, last-to-token
+free-content fields (whitespace-truncation bug fixed), deriv-family
+end-records with the SAFETY INVERSION honored (partial at-most family ⇒
+wall-total), attempt keying, merge-by-meet, additive-keys, alien/late
+discipline. All four acceptance pins + the `279f` stdout-rider round-trip pin
++ byte-tier fault DST (seeded torn/glued/oversize through the PRODUCTION
+deframer). 708 unit / 128 e2e; golden delta = framing lines only (apply
+artifacts verified byte-identical) + one lax re-capture. r26's S1 scope
+shrinks to everything-not-in-§2 (width flag, waves, subshell isolation,
+ports).
+
+**Checkpoint dispositions:**
+
+- disposition-legacy-deframe-tolerance — tc-legacy-deframe-tolerance is a REAL
+  production hole as landed (a headerless stream on the real read path folds
+  leniently instead of refusing — a truncated-before-header artifact would
+  bypass every integrity key). RIDER to stage 6 (errand E4): gate the lenient
+  headerless regime behind an explicit harness/test-only escape; the
+  production read path becomes strict-only. Fixtures stay unframed (the
+  churn-avoidance disclosure stands).
+- disposition-book-digest-fnv — ACCEPTED for the spike (the `book=` key
+  detects accidental stream/book skew, not adversaries — hostile-host rides
+  the parked `kSTATE` coupling; rec-5 forbids cross-run re-ingest so a later
+  algorithm swap is cheap). NAMED for r26/real-executor: adopt sha256 at the
+  cli edge (never a kernel dep) when the shape ships beyond the spike.
+- disposition-fixed-spike-nonce — ACCEPTED (single-process spike; the
+  re-mint/zombie-discard MECHANISM is DST-tested with varying nonces; real
+  nonces arrive with the real executor).
+- `TrustedFootprints::contains` pub promotion (read-only, for the soundness
+  pin) — accepted.
+
 **Environment incident (surfaced to human 2026-07-17):** a SyncThing conflict file
 (`effect.sync-conflict-…-PHNHRER.rs`) appeared INSIDE the stage-1 builder's agent
 worktree mid-edit — device PHNHRER is live-syncing `.claude/worktrees/`, which the
