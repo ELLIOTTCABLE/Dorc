@@ -577,3 +577,39 @@ species), never statically detected. Coarse case stays member-existence;
 runtime corroboration is lint-tier only per the §6 utterability ladder.
 Builder redirected mid-run (supersedes redirect #1's point 5, which had it
 proposed-tier).
+
+## lane-context-entry (block-context lane 2) — LANDED 2026-07-17 (checkpoint PASSED)
+
+Commits (rebased) topped by the `27M`-note commit on `ai/r27-context-entry`,
+ff-folded. Landing note: **`notes/27M`** (its §9 = the deferred integration).
+Landed at model+CLI tier, rung-0 byte-stable (82 untouched; 84/84; 857 unit):
+`FactKey.context` (Copy-preserving; no-collision + no-transport pinned;
+cross-context compare = Unknown) · `EntryForm`/`FnRole::Enter` (structural
+detection; self_effect_span = the weld's attribution point) · `compose_chain`
+per the ruled algebra (dimension-owned ops; ⊤-sticky no-rescue; RhoAccum
+threading; normal-form canonical = batching AND fact key; all six DST pins) ·
+the full dial × capability consent-trace table (capability bounds before the
+dial; probe never self-acquires) · `tolerates:` vouch (colon-line spelling —
+recorded divergence from the `27C` §2 shorthand, STRAWMAN-tier, de-facto
+standing for the stdlib brief) · fold-entry coherence at the RULED narrow
+scope (static argparse-consumption only; DORC_EXIT=11) · §6 mined-idiom lints
++ authority-disclosure line · hostsim context/capability injection · the
+`VAR=x "$@"` ρ rung (27K gap closed). Both mid-run redirects acknowledged
+with rework-vs-conformant accounting (composition meet REWORKED; ⊤-stickiness
+conformant; coherence built fresh narrow).
+
+**Dispositions:** tc-entry-reentry-token → the per-run shim (`274` §5) is the
+recorded dissolution; owned by the INTEGRATION lane (below) ·
+tc-rho-nothing-as-key-identity → known limitation of deferred ρ-value-flow
+territory (`env -u` under-distinguishing); hint-tier; rides whoever builds
+ρ-value-flow · the babby-sudo story is demonstrated at model+hostsim tier
+only — NOT end-to-end.
+
+**lane-integration MINTED (next dispatch):** the cross-pipeline wiring that
+makes wrapped sites actually elide — peel wrapped BOOK sites in
+classify/value · emit the entry-composed probe (`sudo__enter pipx__predict …`
+via the per-run shim; only-oracle-bytes riders) · thread composed Context
+into the shipped FactKey and the records lane · read back context-qualified
+verdicts · elide/guard per the consent trace. This IS the "real sudo
+mechanism" of block-stdlib's precondition (`270` §2); the `27C` §8 babby-sudo
+e2e story is its acceptance.
