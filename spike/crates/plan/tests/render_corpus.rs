@@ -260,6 +260,85 @@ fn render_service_for(src: &str, holds: &[(&str, &str, &str)]) -> (String, Plan)
     )
 }
 
+/// A second provider (`yum`) for the SAME `package` kind (the cross-oracle Seam): its own check
+/// (`rpm -q`), same install verb → `package#installed`. Simplified-kind like `CORPUS_PREDICT_SRC`.
+const YUM_PREDICT_SRC: &str = r#"
+yum__predict() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   pkg : package = "$1"
+   if [ "$2" = "" ]; then probe-pkg "$pkg"; fi
+}
+"#;
+
+/// `package_index` + the `yum` provider on the SAME `package` kind (two providers, one kind).
+fn seam_index(i: &mut Interner) -> KindIndex {
+    let mut idx = package_index(i);
+    let package = KindId(i.intern("package"));
+    let installed = SelectorId(i.intern("installed"));
+    let yum = ProviderId(i.intern("yum"));
+    let install = i.intern("install");
+    idx.add_effect(yum, install, package, installed, ValueClaim::Establish);
+    idx
+}
+
+/// Render harness for the two-providers-one-kind seam (apt + yum ⇒ `package#installed`). `holds` are
+/// `(entity)` package cells (selector fixed `#installed`, both providers share it).
+fn render_seam_for(src: &str, holds: &[&str]) -> (String, Plan) {
+    let mut i = Interner::default();
+    let idx = seam_index(&mut i);
+    let installed = SelectorId(i.intern("installed"));
+    let package = KindId(i.intern("package"));
+    let held: Vec<FactKey> = holds
+        .iter()
+        .map(|e| FactKey {
+            kind: package,
+            entity: EntityRef::Operand(OpaqueToken(i.intern(e))),
+            selector: installed,
+        })
+        .collect();
+    render_core(
+        src,
+        &[CORPUS_PREDICT_SRC, YUM_PREDICT_SRC],
+        &idx,
+        held,
+        &mut i,
+    )
+}
+
+/// A nullary-verb Singleton oracle: `apt-get update ⇒ pkgindex#fresh` on the kind's implicit single
+/// cell (no operand). The `idx : pkgindex` bind is the value-less Singleton form.
+const PKGINDEX_PREDICT_SRC: &str = r#"
+apt_get__predict() {
+   verb=$1; shift
+   case $verb in
+      update) idx : pkgindex; test -n fresh ;;
+   esac
+}
+"#;
+
+/// Render harness for the Singleton `apt-get update` world (`pkgindex#fresh`, the kind's one cell).
+fn render_singleton_for(src: &str, holds_fresh: bool) -> (String, Plan) {
+    let mut i = Interner::default();
+    let pkgindex = KindId(i.intern("pkgindex"));
+    let fresh = SelectorId(i.intern("fresh"));
+    let apt = ProviderId(i.intern("apt_get"));
+    let update = i.intern("update");
+    let mut idx = KindIndex::default();
+    idx.add_effect(apt, update, pkgindex, fresh, ValueClaim::Establish);
+    let held: Vec<FactKey> = if holds_fresh {
+        vec![FactKey {
+            kind: pkgindex,
+            entity: EntityRef::Singleton,
+            selector: fresh,
+        }]
+    } else {
+        Vec::new()
+    };
+    render_core(src, &[PKGINDEX_PREDICT_SRC], &idx, held, &mut i)
+}
+
 /// Is the leaf whose verbatim text contains `needle` **replaced** (elided to a stand-in)?
 fn is_replaced(plan: &Plan, needle: &str) -> bool {
     plan.steps
@@ -1016,5 +1095,66 @@ fn twin_exec_enabled_not_active_host() {
     assert!(
         rendered.contains("\nsystemctl start nginx"),
         "start runs verbatim:\n{rendered}"
+    );
+}
+
+// ===========================================================================
+// SEAM + SINGLETON twins (`24I` batch-3). Two providers on one kind (apt+yum ⇒ package), and the
+// nullary-verb Singleton establish (apt-get update ⇒ pkgindex#fresh, the kind's one operand-less cell).
+// ===========================================================================
+
+#[test]
+fn twin_seam_two_providers_one_kind() {
+    // né seam-two-providers-one-kind: `apt-get install nginx` and `yum install httpd` are DIFFERENT
+    // providers of the SAME `package` kind. Both cells converged ⇒ both elide (cross-oracle seam).
+    let (rendered, plan) = render_seam_for(
+        "apt-get install -y nginx\nyum install -y httpd\n",
+        &["nginx", "httpd"],
+    );
+    assert!(
+        is_replaced(&plan, "install -y nginx"),
+        "the apt install elides"
+    );
+    assert!(
+        is_replaced(&plan, "yum install -y httpd"),
+        "the yum install (same kind, other provider) elides: {:?}",
+        plan.steps
+            .iter()
+            .map(|s| (&s.sh, &s.disposition))
+            .collect::<Vec<_>>()
+    );
+    assert!(
+        rendered.contains("# apt-get install -y nginx")
+            && rendered.contains("# yum install -y httpd"),
+        "both provider sites elide:\n{rendered}"
+    );
+}
+
+#[test]
+fn twin_exec_singleton_update() {
+    // né exec-singleton-update (~SUSPECT → MIGRATE): `apt-get update` is a nullary-verb establish on
+    // the Singleton `pkgindex#fresh` cell (no operand). Converged (index fresh) ⇒ it elides; diverged
+    // ⇒ it runs (the pole that proves the elision is host-gated, not unconditional).
+    let (rendered, plan) = render_singleton_for("apt-get update\n", true);
+    assert!(
+        is_replaced(&plan, "apt-get update"),
+        "the converged Singleton index-refresh elides: {:?}",
+        plan.steps
+            .iter()
+            .map(|s| (&s.sh, &s.disposition))
+            .collect::<Vec<_>>()
+    );
+    assert!(
+        rendered.contains("# apt-get update"),
+        "it elides as a whole-line comment:\n{rendered}"
+    );
+    let (drendered, dplan) = render_singleton_for("apt-get update\n", false);
+    assert!(
+        !is_replaced(&dplan, "apt-get update"),
+        "the diverged (stale) index-refresh runs"
+    );
+    assert!(
+        drendered.contains("\napt-get update") || drendered.trim_end().ends_with("apt-get update"),
+        "the stale refresh runs verbatim:\n{drendered}"
     );
 }
