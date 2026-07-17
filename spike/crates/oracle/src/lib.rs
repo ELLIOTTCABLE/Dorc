@@ -42,7 +42,7 @@
 )]
 
 use dorc_core::{Carrier, Interner, KindId, ProviderId, SelectorId, Symbol};
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 /// The command-keyed `check()` contract (19H §2 / 202 §1 face-check): a dedicated
 /// parser for the constrained oracle-contract dialect plus a concrete evaluator that
@@ -143,6 +143,17 @@ pub struct KindIndex {
     /// ([`empty_verb`]) — the check binds no verb, so the wiring looks up `(provider, ε)`
     /// (202 §2 / task-W §4).
     effects: BTreeMap<(ProviderId, Symbol), Vec<EffectCell>>,
+    /// observe-backing-widening (`277` §5 `seam-backing-sets` / `271` observe-backing-widening):
+    /// per `(provider, verb)`, the OBSERVE (`:?`) selectors that co-occur with a VERDICT
+    /// (`:`/`:!`) mark in that verb's predict-body arm. Such an observe is INSIDE a verdict body,
+    /// so it widens the enclosing establish fact's backing (a SIBLING cell — same kind+entity,
+    /// this selector) rather than standing as its own Query row (`derive.rs`: the model forces
+    /// all a `(provider, verb)`'s cells to one `(kind, entity)`, so the widening is selector-only).
+    /// Recorded here INSTEAD of an [`EffectCell`], so the establish site still classifies
+    /// `EstablishAmbient`/`Written` (a mixed `[Establishes, Queries]` slice would fall to
+    /// `MustRun`). An observe with NO co-occurring verdict stays a `Queries` cell (its own row,
+    /// "widens nothing"). Safe direction: widening only GROWS a fact's kill-surface.
+    widenings: BTreeMap<(ProviderId, Symbol), BTreeSet<SelectorId>>,
 }
 
 impl KindIndex {
@@ -190,6 +201,27 @@ impl KindIndex {
     #[must_use]
     pub fn is_empty(&self) -> bool {
         self.effects.is_empty()
+    }
+
+    /// Record that `(provider, verb)`'s predict body carries a co-occurring OBSERVE mark for
+    /// `selector` — i.e. an observe INSIDE a verdict body (`277` §5 observe-backing-widening).
+    /// It widens the verb's establish fact backing (a sibling cell), never becoming a Query cell.
+    pub fn add_widening(&mut self, provider: ProviderId, verb: Symbol, selector: SelectorId) {
+        self.widenings
+            .entry((provider, verb))
+            .or_default()
+            .insert(selector);
+    }
+
+    /// The observe-backing-widening selectors for `(provider, verb)` (`277` §5): the observed
+    /// sibling cells whose reads back this verb's establish fact. Empty (the corpus default —
+    /// every corpus observe is standalone, no co-occurring verdict) ⇒ no widening. The survival
+    /// backing unions these (same kind+entity as the fact, these selectors) — kill-surface only
+    /// grows (`inv-kfail`, apply).
+    #[must_use]
+    pub fn widening_of(&self, provider: ProviderId, verb: Symbol) -> &BTreeSet<SelectorId> {
+        static EMPTY: BTreeSet<SelectorId> = BTreeSet::new();
+        self.widenings.get(&(provider, verb)).unwrap_or(&EMPTY)
     }
 }
 
@@ -254,6 +286,10 @@ pub fn lift(interner: &mut Interner, oracle_sources: &[&str]) -> Carrier<KindInd
             // is surfaced here — the effect-map lift IS reported (cli `report_at`); this is NOT a
             // check-lift/parse diag (those come from the separate `lift_predicts` pass).
             out.diags.extend(diags);
+            // Intern each derived cell, keyed by verb, so we can decide observe-backing-widening
+            // per verb (an arm = a verb; `derive.rs` binds one verb per literal-pattern arm).
+            let mut by_verb: BTreeMap<Symbol, Vec<(KindId, SelectorId, ValueClaim)>> =
+                BTreeMap::new();
             for e in effects {
                 let verb = match e.verb {
                     Some(v) => interner.intern(&v),
@@ -261,10 +297,30 @@ pub fn lift(interner: &mut Interner, oracle_sources: &[&str]) -> Carrier<KindInd
                 };
                 let kind = KindId(interner.intern(&e.kind));
                 let selector = SelectorId(interner.intern(&e.selector));
-                // A duplicate cell cannot arise from a well-formed check (each verb-arm
-                // names a distinct selector); drop a derived duplicate silently.
-                out.value
-                    .add_effect(ProviderId(provider), verb, kind, selector, e.claim);
+                by_verb
+                    .entry(verb)
+                    .or_default()
+                    .push((kind, selector, e.claim));
+            }
+            let provider = ProviderId(provider);
+            for (verb, cells) in by_verb {
+                // observe-backing-widening (`277` §5): an OBSERVE (`:?`) that co-occurs with a
+                // VERDICT (`:`/`:!`) in one verb's arm is INSIDE a verdict body ⇒ it WIDENS the
+                // establish fact's backing (recorded via `add_widening`), NOT a Query cell. An
+                // observe with NO co-occurring verdict is standalone ⇒ stays a `Queries` cell
+                // (its own row, "widens nothing" — every corpus `:?` is this case, verbless).
+                let has_verdict = cells.iter().any(|(_, _, c)| {
+                    matches!(c, ValueClaim::Establish | ValueClaim::EstablishInverted)
+                });
+                for (kind, selector, claim) in cells {
+                    if has_verdict && claim == ValueClaim::Observe {
+                        out.value.add_widening(provider, verb, selector);
+                    } else {
+                        // A duplicate cell cannot arise from a well-formed check (each verb-arm
+                        // names a distinct selector); drop a derived duplicate silently.
+                        out.value.add_effect(provider, verb, kind, selector, claim);
+                    }
+                }
             }
         }
     }
@@ -459,6 +515,69 @@ mod tests {
                 claim: ValueClaim::Observe
             }],
             "the verbless guard keys on the ε-verb with an Observe claim: {cells:?}"
+        );
+    }
+
+    #[test]
+    fn co_occurring_observe_widens_the_verdict_fact_not_a_query_cell() {
+        // `277` §5 observe-backing-widening: a `:?` observe INSIDE a verdict body (same verb arm
+        // as a `:` establish) widens the establish fact's backing — recorded as a widening
+        // SELECTOR, NOT emitted as a `Queries` cell (a mixed establish+query slice at the book
+        // site would fall to `MustRun`). Here `install` establishes `#installed` AND observes
+        // `#indexed`: the effect map keeps ONLY the establish cell; `#indexed` is a widening.
+        let src = "apt_get__predict() { verb=$1; shift; pkg : package = \"$1\"; \
+                   case $verb in install) dpkg-query -W \"$pkg\" : package:\"$pkg\"#installed; \
+                   dpkg-query -s \"$pkg\" :? package:\"$pkg\"#indexed ;; esac; }";
+        let mut i = Interner::default();
+        let out = lift(&mut i, &[src]);
+        assert!(out.diags.is_empty(), "clean lift: {:?}", out.diags);
+        let apt = ProviderId(i.intern("apt_get"));
+        let install = i.intern("install");
+        let package = KindId(i.intern("package"));
+        let installed = SelectorId(i.intern("installed"));
+        let indexed = SelectorId(i.intern("indexed"));
+        // The effect map keeps only the establish cell (NOT a Query cell for #indexed).
+        assert_eq!(
+            out.value.effect_of(apt, install),
+            &[EffectCell {
+                kind: package,
+                selector: installed,
+                claim: ValueClaim::Establish
+            }],
+            "the observe co-occurring with the verdict is NOT a Query cell"
+        );
+        // #indexed is recorded as a backing-widening for (apt_get, install).
+        assert!(
+            out.value.widening_of(apt, install).contains(&indexed),
+            "the co-occurring observe widens the verdict fact's backing"
+        );
+    }
+
+    #[test]
+    fn standalone_observe_stays_a_query_cell_widens_nothing() {
+        // The corpus reality: a verbless `:?` observe with NO co-occurring verdict is standalone
+        // ⇒ it stays a `Queries` cell (its own row) and widens NOTHING (`277` §5). This is why the
+        // whole corpus is byte-identical: every corpus observe is exactly this shape.
+        let src = "dpkg__predict() { case $1 in -s) shift ;; esac; pkg : package = \"$1\"; \
+                   dpkg -s -- \"$pkg\" >/dev/null 2>&1 :? package:\"$pkg\"#installed; }";
+        let mut i = Interner::default();
+        let out = lift(&mut i, &[src]);
+        let dpkg = ProviderId(i.intern("dpkg"));
+        let eps = empty_verb(&mut i);
+        let package = KindId(i.intern("package"));
+        let installed = SelectorId(i.intern("installed"));
+        assert_eq!(
+            out.value.effect_of(dpkg, eps),
+            &[EffectCell {
+                kind: package,
+                selector: installed,
+                claim: ValueClaim::Observe
+            }],
+            "a standalone observe stays a Query cell"
+        );
+        assert!(
+            out.value.widening_of(dpkg, eps).is_empty(),
+            "a standalone observe widens nothing"
         );
     }
 
