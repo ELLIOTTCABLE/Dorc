@@ -373,11 +373,29 @@ spike is the kTYANNOT livability experiment. Syntax remains marker-gated
   the enclosing fact's backing (`271` observe-backing-widening — safe direction,
   kill-surface only grows). First consumer of the fragment-preserving recipes; rides
   the value-recipe-reshape. Set-lifting law (added 2026-07-13 per
-  `279f:fix-set-lifting`, awaiting ack): consumers quantify UNIVERSALLY — sparing
-  over a backing-set requires EVERY footprint×backing pair provably-disjoint (any
-  unknown member ⇒ collide); transport over a backing-set requires every member to
-  transport. An accidental existential in either consumer is an under-execution
-  path (279b-fd5).
+  `279f:fix-set-lifting`): consumers quantify UNIVERSALLY — sparing over a
+  backing-set requires EVERY footprint×backing pair provably-disjoint (the `272`
+  §1 ternary verdict: generator-licensed, never derived; any unknown member ⇒
+  collide); transport over a backing-set requires every member to transport. An
+  accidental existential in either consumer is an under-execution path (279b-fd5).
+  *(ACKED, typed, 2026-07-16 — 2/5 of `279f:ask-amendment-acks` — with a
+  fixpoint-soundness clause. Banked human concern: the generator/consumer split
+  reads pipeline-dependent; under any future re-run-to-fixpoint, a spare/collide
+  OUTCOME circling back as input could launder disjointness-information from
+  sources fenced out of generating it. Clause of record: the universal meet is
+  the fixpoint-robust form — at every intermediate iteration state a
+  not-yet-licensed member reads unknown ⇒ the set collides, so the set-verdict is
+  conservative and evaluation-order-independent, where an existential would spare
+  on whichever member resolved first. Two pins join the §5 rebuild-brief
+  quantifier pins: (pin-no-outcome-as-generator) compare-verdicts feed only their
+  licensed consumer — same→transport, provably-disjoint→sparing — and never
+  re-enter the relation as evidence for a later verdict; (pin-set-meet-order-
+  independence) a set with any unknown member collides at every iteration,
+  whatever the member-resolution order. NB the spike at HEAD has no such
+  back-edge — the value plane runs strictly before the probe, and plans are
+  minted once, never probe-re-entrant within a run; the post-probe re-bind
+  (seam-pipeline-order, directly below) re-reads this clause the day it is
+  designed.)*
 - **The re-bind seams** (`219` q-3.e/q-4.b/q-4.c, carried by
   `271:rider-value-recipe-reshape-capture-seams`; restated because the fact-domain
   re-key is the cheapest moment they will ever have): (seam-pipeline-order) the value
