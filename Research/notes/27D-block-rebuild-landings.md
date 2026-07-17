@@ -408,3 +408,29 @@ Cleanup + `.stignore` repair are human-owned.
   supersedes disposition-strip-keeps-marker — `dorc strip` erases the
   `# dorc-lang/v0.1` marker line; a stripped file is no longer dialect text.
   Routed as errand E5 to the running stage-6b builder (mid-run addendum).
+
+## BLOCK CLOSE — bless-checkpoint-two STAMPED 2026-07-17; block-rebuild COMPLETE
+
+Eight dispatches (corpus-respell · typeless-floor · raw-ship-repair ·
+entity-algebra-rebuild · value-recipe-reshape · backing-SETS · e2e-degraduation
+× 2), every one landed, checkpointed, and folded; lineage `ai/spike3-r27` tip at
+block close = the commit carrying this entry. Conductor's own block-close
+verification: fresh build, 27 test suites green, 76/76 e2e, four-gates-clean
+tips throughout. Cumulative golden census `4f0d89d..close` fully attributed:
+stage-5 framing rewrite pairs (predict-invocation bytes unchanged — verified
+byte-level) · stage-2b composed-predict reshapes (inspected at its checkpoint) ·
+new exemplar cases (stages 2/6) · migration deletions (117→76; stages 6/6b) ·
+accepted lax re-captures. No unexplained delta class; no bless was performed at
+this checkpoint (nothing needed re-blessing — all churn was already isolated,
+attributed, and inspected per-stage).
+
+**Rides forward to block-context planning** (the consolidated seam list):
+fact-plane context keying (né tc-context-slot-on-coord-not-factkey) ·
+oracle-side positional model (`"$@"` PositionalArgs across both evaluators; the
+founding-pin guard) · minting-LINE threading before stdlib mints
+selector-bearing disturbs · cross-kind backing members (derive-model widening)
+· the invited-rooms compile-failure pin (first hint/license type split) ·
+effect-check re-homing (punted, seam built) · tc-stage-ship-triplication
+cleanup · batch-5 + E3 tails (optional, unowned) · rul-payload-pins-near-weld +
+rul-synthesized-payload-render-stays-unwelded (human-typed, governing
+payload-v1) · the book-acceptance carve now in human voice (main DESIGN.md).
