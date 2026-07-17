@@ -25,8 +25,11 @@ block-settle CLOSED (`plans/271` = the rulings ledger + task map); wrapper/conte
 transport RESOLVED (`plans/27C`); the 270-era adversarial crosscheck adjudicated, no
 kill (`notes/279f` — read its §1 first).
 
-**⚠ Next activity — dispatch the block-context book-side integration lane
-(the self-sufficient brief is `27D`'s lane-context-entry Continuation paragraph).**
+**⚠ IN FLIGHT — lane-integration (the book-side wiring; the babby-sudo closer)
+dispatched 2026-07-17: Opus builder on `ai/r27-book-integration` off `c4c3276`;
+brief = `27D`'s lane-context-entry Continuation paragraph + the lane-integration
+mint; acceptance = `27C` §8's babby-sudo story as e2e; landing note will be `27N`.
+Conductor checkpoint + fold owed on its return.**
 `270:block-rebuild` is **CLOSED** (2026-07-17, one session: eight dispatches
 landed + both bless checkpoints stamped; ledger = **`notes/27D`** including its
 BLOCK CLOSE section + forward seam-list; builder notes `27E`–`27I`). The corpus is
@@ -74,7 +77,15 @@ sized 2–3-per-corpus-sweep. `279f:ask-amendment-acks` CLOSED (all five acked;
 records in `notes/277` + `275` §6; task-14 ratification at
 `271:rul-only-oracle-bytes-ship`). Non-blocking human leftovers: the root-doc
 queue · the `.claude/worktrees` SyncThing exclusion repair (`27D` environment
-incident: PHNHRER live-syncs agent worktrees — a mid-edit corruption risk).
+incident: PHNHRER live-syncs agent worktrees — a mid-edit corruption risk) ·
+**the `27C` fork** (2026-07-17): the root working dir holds UNCOMMITTED `27C`
+edits (siting vouch + fold-entry coherence + sudo siting spellings) and a `27Xf`
+RESOLVED annotation; meanwhile the lineage's `27C` copy carries ruled §1/§3
+corrections (`b189217` two-axis · `04cce54` ownership-split) main lacks, and main's
+`c7efc27` composition-algebra text the lineage lacks. Merge is human-reserved —
+asked: commit the root edits + merge main into `ai/spike3-r27`; the conductor then
+rewrites `27C` unified (plans are ahistorical, per main-AGENTS.md's new
+plans/notes maintenance block).
 
 **Block-settle CLOSED (2026-07-12):** all 15 task-map items dispositioned —
 **`plans/271`** carries the rulings + the task map; the arc durables: `notes/272`
