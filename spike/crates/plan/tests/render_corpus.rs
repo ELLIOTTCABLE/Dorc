@@ -24,7 +24,8 @@
 
 use dorc_analysis::effect::{FactKey, SkipClass};
 use dorc_core::{
-    EntityRef, Interner, KindId, Observable, OpaqueToken, ProviderId, SelectorId, Verdict,
+    EntityRef, Interner, KindId, Observable, OpaqueToken, Predicted, ProviderId, Rc, SelectorId,
+    Verdict,
 };
 use dorc_oracle::{KindIndex, ValueClaim};
 use dorc_plan::{Disposition, Plan, build_plan};
@@ -339,11 +340,124 @@ fn render_singleton_for(src: &str, holds_fresh: bool) -> (String, Plan) {
     render_core(src, &[PKGINDEX_PREDICT_SRC], &idx, held, &mut i)
 }
 
+/// The read-only `dpkg -s <pkg>` package-status QUERY oracle (the DESIGN door-1 `dpkg -s || install`
+/// idiom): `-s` stripped, operand annotated as `pkgstate` (a DISTINCT kind from `package`). Its probed
+/// rc feeds the fold's Status. Effects come from `query_index`.
+const DPKG_QUERY_PREDICT_SRC: &str = r#"
+dpkg__predict() {
+   case $1 in -s) shift ;; esac
+   pkg : pkgstate = "$1"
+   dpkg -s -- "$pkg" >/dev/null 2>&1
+}
+"#;
+
+/// `package_index` + the `dpkg -s` read-only Query on `pkgstate#installed` (Observe). The door-1 guard
+/// is a Query on `pkgstate`, a DIFFERENT kind from the `package` an install establishes — no cross-kind
+/// identity; the fold turns purely on the guard's own rc.
+fn query_index(i: &mut Interner) -> KindIndex {
+    let mut idx = package_index(i);
+    let pkgstate = KindId(i.intern("pkgstate"));
+    let installed = SelectorId(i.intern("installed"));
+    let dpkg = ProviderId(i.intern("dpkg"));
+    let eps = dorc_oracle::empty_verb(i);
+    idx.add_effect(dpkg, eps, pkgstate, installed, ValueClaim::Observe);
+    idx
+}
+
+/// Render harness for the door-1 `dpkg -s` Query-guard idiom, mirroring the cli's wrong-concrete
+/// FIREWALL (`observable_matrix.rs::plan_query`): the guard's `pkgstate:<guard_entity>#installed` cell
+/// is observed with `guard_rc`, but that rc reaches the fold's Status ONLY when the site classified a
+/// VALID `QueryResolvable` (else withheld ⇒ status ⊤, e.g. an in-loop/invalidated guard). `package`
+/// cells (inner installs) are answered verdict-only by `pkg_holds`. The guard's Effect verdict derives
+/// from its rc (0 ⇒ Converged). THE dash -n net fires.
+fn render_query_for(
+    src: &str,
+    guard_entity: &str,
+    guard_rc: i32,
+    pkg_holds: &[&str],
+) -> (String, Plan) {
+    let mut i = Interner::default();
+    let idx = query_index(&mut i);
+    let installed = SelectorId(i.intern("installed"));
+    let pkgstate = KindId(i.intern("pkgstate"));
+    let package = KindId(i.intern("package"));
+    let guard_fact = FactKey {
+        kind: pkgstate,
+        entity: EntityRef::Operand(OpaqueToken(i.intern(guard_entity))),
+        selector: installed,
+    };
+    let pkg_facts: Vec<FactKey> = pkg_holds
+        .iter()
+        .map(|e| FactKey {
+            kind: package,
+            entity: EntityRef::Operand(OpaqueToken(i.intern(e))),
+            selector: installed,
+        })
+        .collect();
+
+    let parsed = dorc_syntax::parse(src);
+    let cfg = dorc_analysis::cfg::build(&parsed.value).value;
+    let classes = classify_with(
+        &cfg,
+        &parsed.value,
+        &idx,
+        &[CORPUS_PREDICT_SRC, DPKG_QUERY_PREDICT_SRC],
+        &mut i,
+    );
+
+    // Mirror the cli firewall: the guard's rc reaches Status only when the site is a VALID Query.
+    let guard_valid = classes.iter().any(|(_, c)| {
+        matches!(c, SkipClass::QueryResolvable { fact, valid: true } if *fact == guard_fact)
+    });
+    let guard_effect = if guard_rc == 0 {
+        Verdict::Converged
+    } else {
+        Verdict::Diverged
+    };
+    let observe = move |f: FactKey| {
+        if f == guard_fact {
+            Observable {
+                effect: guard_effect,
+                status: if guard_valid {
+                    Predicted::Value(Rc(guard_rc))
+                } else {
+                    Predicted::Top
+                },
+                stdout: Predicted::Top,
+                stderr: Predicted::Top,
+            }
+        } else if pkg_facts.contains(&f) {
+            Observable::verdict_only(Verdict::Converged)
+        } else {
+            Observable::verdict_only(Verdict::Diverged)
+        }
+    };
+    let plan = build_plan(
+        src,
+        &parsed.value,
+        &cfg,
+        &classes,
+        &vouch_all(&classes),
+        observe,
+        &mut dorc_core::ProvArena::new(),
+    );
+    let rendered = plan.render_apply(src, &parsed.value);
+    assert_runnable(&rendered);
+    (rendered, plan)
+}
+
 /// Is the leaf whose verbatim text contains `needle` **replaced** (elided to a stand-in)?
 fn is_replaced(plan: &Plan, needle: &str) -> bool {
     plan.steps
         .iter()
         .any(|s| s.sh.contains(needle) && matches!(s.disposition, Disposition::Replace(_, _)))
+}
+
+/// Is the leaf containing `needle` **omitted** (a fold-dead branch — distinct from a `Replace`)?
+fn is_omitted(plan: &Plan, needle: &str) -> bool {
+    plan.steps
+        .iter()
+        .any(|s| s.sh.contains(needle) && matches!(s.disposition, Disposition::Omit { .. }))
 }
 
 // ===========================================================================
@@ -1156,5 +1270,239 @@ fn twin_exec_singleton_update() {
     assert!(
         drendered.contains("\napt-get update") || drendered.trim_end().ends_with("apt-get update"),
         "the stale refresh runs verbatim:\n{drendered}"
+    );
+}
+
+// ===========================================================================
+// DOOR-1 QUERY-GUARD twins (`24I` batch-3; the `render_query_for` dpkg-pkgstate harness). The door-1
+// idiom `dpkg -s X || { block }`: the guard's KNOWN probed rc folds the `||`. Converged (rc 0) ⇒ guard
+// substitutes `true`, the block is DEAD (each member Omit ⇒ `:`); diverged (rc 1) ⇒ guard substitutes
+// `false`, the block runs live. In-loop / invalidated guards withhold the rc ⇒ no fold.
+// ===========================================================================
+
+#[test]
+fn twin_door1_cascade_block_elides() {
+    // né door1-cascade-block-elides: guard converged (rc 0) ⇒ `true || { :; :; }` — the whole `||`
+    // handler block is fold-dead, each member omitted to `:`.
+    let (rendered, plan) = render_query_for(
+        "set -e\ndpkg -s nginx >/dev/null 2>&1 || { sed -i 's/x/y/' /etc/ssh/sshd_config; systemctl restart sshd; }\n",
+        "nginx",
+        0,
+        &[],
+    );
+    assert!(
+        is_replaced(&plan, "dpkg -s nginx"),
+        "the converged guard substitutes `true`"
+    );
+    assert!(
+        is_omitted(&plan, "sed -i"),
+        "the dead block's sed is omitted"
+    );
+    assert!(
+        is_omitted(&plan, "systemctl restart sshd"),
+        "the dead block's systemctl is omitted"
+    );
+    assert!(
+        rendered.contains("true || { :; :; }"),
+        "the guard folds to `true`, the dead block members render `:`:\n{rendered}"
+    );
+}
+
+#[test]
+fn twin_door1_cascade_diverged_runs() {
+    // né door1-cascade-diverged-runs: guard diverged (rc 1) ⇒ `false || { … }` — the guard substitutes
+    // `false`, the `||` handler block is REACHABLE ⇒ its members run verbatim.
+    let (rendered, plan) = render_query_for(
+        "set -e\ndpkg -s nginx >/dev/null 2>&1 || { sed -i 's/x/y/' /etc/ssh/sshd_config; systemctl restart sshd; }\n",
+        "nginx",
+        1,
+        &[],
+    );
+    assert!(
+        is_replaced(&plan, "dpkg -s nginx"),
+        "the diverged guard substitutes `false`"
+    );
+    assert!(
+        !is_omitted(&plan, "sed -i"),
+        "the live block's sed runs (not omitted)"
+    );
+    assert!(
+        !is_omitted(&plan, "systemctl restart sshd"),
+        "the live block's systemctl runs"
+    );
+    assert!(
+        rendered.contains("false || {")
+            && rendered.contains("sed -i")
+            && rendered.contains("systemctl restart sshd"),
+        "the guard folds to `false`, the block runs verbatim:\n{rendered}"
+    );
+}
+
+#[test]
+fn twin_door1_cascade_multistatement() {
+    // né door1-cascade-multistatement: guard converged ⇒ the whole MULTI-line handler block (incl. a
+    // nested `if`) is fold-dead; each leaf omits to `:` and the `if` renders `if :; then :; fi`.
+    let (rendered, plan) = render_query_for(
+        "set -e\ndpkg -s nginx >/dev/null 2>&1 || {\n   sed -i 's/x/y/' /etc/ssh/sshd_config\n   if [ -f /etc/ssh/sshd_config.bak ]; then cp /etc/ssh/sshd_config /etc/ssh/sshd_config.bak; fi\n   systemctl restart sshd\n}\n",
+        "nginx",
+        0,
+        &[],
+    );
+    assert!(
+        is_replaced(&plan, "dpkg -s nginx"),
+        "the converged guard substitutes `true`"
+    );
+    assert!(is_omitted(&plan, "sed -i"), "the block's sed is omitted");
+    assert!(
+        rendered.contains("true || {"),
+        "the guard folds to `true`, the multi-line block opens:\n{rendered}"
+    );
+    assert!(
+        rendered.contains("if :; then :; fi"),
+        "the nested if renders `if :; then :; fi` (both guard and body dead):\n{rendered}"
+    );
+}
+
+#[test]
+fn twin_door1_door3_dead_block_folds() {
+    // né door1-door3-dead-block-folds: door-1 × door-3. Guard converged ⇒ the whole block dead,
+    // INCLUDING the inner `apt-get install -y curl || true` ⇒ `: || :`. Renders `true || { : || :; :; }`.
+    let (rendered, plan) = render_query_for(
+        "set -e\ndpkg -s nginx >/dev/null 2>&1 || { apt-get install -y curl || true; systemctl restart sshd; }\n",
+        "nginx",
+        0,
+        &["curl"],
+    );
+    assert!(
+        is_replaced(&plan, "dpkg -s nginx"),
+        "the converged guard substitutes `true`"
+    );
+    assert!(
+        is_omitted(&plan, "install -y curl"),
+        "the inner curl install is fold-dead (omitted)"
+    );
+    assert!(
+        is_omitted(&plan, "systemctl restart sshd"),
+        "the systemctl is fold-dead"
+    );
+    assert!(
+        rendered.contains("true || { : || :; :; }"),
+        "the whole nested block folds to `: || :; :`:\n{rendered}"
+    );
+}
+
+#[test]
+fn twin_door1_door3_inner_elides() {
+    // né door1-door3-inner-elides: guard diverged ⇒ the block runs; the inner `apt-get install -y curl
+    // || true` with curl CONVERGED ⇒ door-3 StatusInvariant elides curl to `true` ⇒ `true || true`.
+    let (rendered, plan) = render_query_for(
+        "set -e\ndpkg -s nginx >/dev/null 2>&1 || { apt-get install -y curl || true; systemctl restart sshd; }\n",
+        "nginx",
+        1,
+        &["curl"],
+    );
+    assert!(
+        is_replaced(&plan, "dpkg -s nginx"),
+        "the diverged guard substitutes `false`"
+    );
+    assert!(
+        is_replaced(&plan, "install -y curl"),
+        "the converged inner curl elides via door-3 `|| true`: {:?}",
+        plan.steps
+            .iter()
+            .map(|s| (&s.sh, &s.disposition))
+            .collect::<Vec<_>>()
+    );
+    assert!(
+        rendered.contains("false || { true || true; systemctl restart sshd; }"),
+        "the guard folds `false`, curl elides to `true` inside the live block:\n{rendered}"
+    );
+}
+
+#[test]
+fn twin_door1_door3_inner_runs() {
+    // né door1-door3-inner-runs: guard diverged ⇒ block runs; the inner curl is DIVERGED ⇒ door-3
+    // clears Status but the Effect still gates ⇒ curl RUNS. `false || { apt-get install -y curl || true; … }`.
+    let (rendered, plan) = render_query_for(
+        "set -e\ndpkg -s nginx >/dev/null 2>&1 || { apt-get install -y curl || true; systemctl restart sshd; }\n",
+        "nginx",
+        1,
+        &[],
+    );
+    assert!(
+        is_replaced(&plan, "dpkg -s nginx"),
+        "the diverged guard substitutes `false`"
+    );
+    assert!(
+        !is_replaced(&plan, "install -y curl"),
+        "the diverged inner curl runs (door-3 clears Status, Effect gates): {:?}",
+        plan.steps
+            .iter()
+            .map(|s| (&s.sh, &s.disposition))
+            .collect::<Vec<_>>()
+    );
+    assert!(
+        rendered.contains("false || { apt-get install -y curl || true; systemctl restart sshd; }"),
+        "the live block runs the curl install verbatim:\n{rendered}"
+    );
+}
+
+#[test]
+fn twin_render21_if_guard_query_elides() {
+    // né render21-if-guard-query-elides: `if ! dpkg -s nginx …; then apt-get install …; fi`. Guard
+    // converged (rc 0) ⇒ `! 0` ⇒ if-false ⇒ the then-body install is fold-dead. Renders `if ! true …
+    // then : … fi`.
+    let (rendered, plan) = render_query_for(
+        "set -e\nif ! dpkg -s nginx >/dev/null 2>&1\nthen\n   apt-get install -y nginx\nfi\n",
+        "nginx",
+        0,
+        &["nginx"],
+    );
+    assert!(
+        is_replaced(&plan, "dpkg -s nginx"),
+        "the converged guard substitutes `true`"
+    );
+    assert!(
+        is_omitted(&plan, "install -y nginx"),
+        "the then-body install is fold-dead (Omit): {:?}",
+        plan.steps
+            .iter()
+            .map(|s| (&s.sh, &s.disposition))
+            .collect::<Vec<_>>()
+    );
+    assert!(
+        rendered.contains("if ! true"),
+        "the guard folds to `if ! true`:\n{rendered}"
+    );
+    assert!(
+        rendered.contains("\n   :   # dorc: elided"),
+        "the dead then-body renders `:`:\n{rendered}"
+    );
+}
+
+#[test]
+fn twin_render21_while_guard_floored() {
+    // né render21-while-guard-floored: an in-loop `while dpkg -s nginx …` condition is StatusIterated
+    // (a per-iteration sequence no single rc reproduces) AND excluded from probing ⇒ the rc is withheld
+    // ⇒ NO fold ⇒ the whole loop runs verbatim.
+    let (rendered, plan) = render_query_for(
+        "while dpkg -s nginx >/dev/null 2>&1\ndo\n   echo checking\ndone\n",
+        "nginx",
+        0,
+        &[],
+    );
+    assert!(
+        !is_replaced(&plan, "dpkg -s nginx"),
+        "the in-loop guard is floored (not folded/substituted): {:?}",
+        plan.steps
+            .iter()
+            .map(|s| (&s.sh, &s.disposition))
+            .collect::<Vec<_>>()
+    );
+    assert!(
+        rendered.contains("while dpkg -s nginx >/dev/null 2>&1")
+            && rendered.contains("echo checking")
+            && rendered.contains("done"),
+        "the whole loop renders verbatim:\n{rendered}"
     );
 }

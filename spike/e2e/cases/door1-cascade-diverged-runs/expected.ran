@@ -1,2 +1,0 @@
-ran: sed -i s/^.*PermitRootLogin.*/PermitRootLogin no/ /etc/ssh/sshd_config
-ran: systemctl restart sshd
