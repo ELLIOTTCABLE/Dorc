@@ -55,6 +55,13 @@ pub mod records;
 
 pub mod render;
 
+/// The per-run PATH shim for `dorc-sh` (`274` §5): the pure model — host-independent shipped text
+/// (`shim_script`), run-id-derived naming (`shim_dir_name`, no mktemp randomness), and the failure
+/// lattice (`classify_shim_rc` / `smoke_degrades_session` — every shim/exec failure drains to the ≥2
+/// sink ⇒ run; a failed preamble smoke degrades the session shimless). MODELS only — materialization
+/// is the cli/hostsim I/O edge and probe-shipping is task-14-gated; the corpus stays byte-stable.
+pub mod shim;
+
 pub mod survival;
 pub use survival::{
     Backing, CanonicalCoord, Crossing, DisjointOutcome, DisjointnessProof, EntityCoord, Footprint,
