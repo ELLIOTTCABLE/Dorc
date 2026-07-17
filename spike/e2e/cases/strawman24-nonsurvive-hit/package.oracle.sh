@@ -1,8 +1,6 @@
 #!/usr/bin/env dorc-sh
 # dorc-lang/v0.1
 # package oracle — predict() install/purge; touches() emits package:<operand>, PLUS a STRAWMAN
-# over-claim on `oldpkg` (it also claims to touch package:nginx) to exercise the entity-granular
-# HIT: the downstream nginx install's backing intersects this footprint ⇒ demote even flagged.
 apt_get__predict() {
    while [ "${1#-}" != "$1" ]; do shift; done
    verb=$1; shift

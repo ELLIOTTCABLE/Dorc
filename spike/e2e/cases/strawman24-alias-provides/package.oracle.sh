@@ -1,7 +1,6 @@
 #!/usr/bin/env dorc-sh
 # dorc-lang/v0.1
 # Kind-owner resolver case: sm_dorc_Package__resolve() is keyed by KIND — its NAME is the
-# kind's forward-munge. nginx-full provides-resolves to nginx's canonical ⇒ alias detected.
 apt_get__predict() {
    while [ "${1#-}" != "$1" ]; do shift; done
    verb=$1; shift

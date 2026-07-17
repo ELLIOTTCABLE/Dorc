@@ -1,8 +1,6 @@
 #!/usr/bin/env dorc-sh
 # dorc-lang/v0.1
 # minimal package oracle (apt/dpkg), lifted statically by dorc.
-# command-keyed predict(): flag-strip (pre- and post-verb), bind the verb, annotate the
-# single operand as `package`; the `[ "${2-}" = "" ]` guard refuses a SECOND operand.
 apt_get__predict() {
    while [ "${1#-}" != "$1" ]; do shift; done
    verb=$1; shift

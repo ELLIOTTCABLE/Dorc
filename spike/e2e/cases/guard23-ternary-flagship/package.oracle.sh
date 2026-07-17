@@ -1,7 +1,6 @@
 #!/usr/bin/env dorc-sh
 # dorc-lang/v0.1
 # guard23 flagship package oracle: predict() resolves the entity; authoring is_converged()
-# IS the vouch. The ${2-} arity check refuses multi-operand invocations (no probe ⇒ run).
 apt_get__predict() {
    while [ "${1#-}" != "$1" ]; do shift; done
    verb=$1; shift
@@ -15,7 +14,6 @@ apt_get__predict() {
    fi
 }
 
-# Unhandled-verb decline style: an unmodeled verb reaches no arm ⇒ no vouch ⇒ run.
 apt_get__is_converged() {
    while [ "${1#-}" != "$1" ]; do shift; done
    verb=$1; shift

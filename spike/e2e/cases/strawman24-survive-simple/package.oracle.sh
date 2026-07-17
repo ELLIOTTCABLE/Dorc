@@ -23,8 +23,6 @@ apt_get__disturbs() {
    esac
 }
 
-# Vouches install only; purge (a kill) and unknown verbs decline via the explicit `*) return 2`
-# — a literal `return 0` here would VOUCH, so the catch-all answers can't-say on purpose.
 apt_get__is_converged() {
    while [ "${1#-}" != "$1" ]; do shift; done
    verb=$1; shift

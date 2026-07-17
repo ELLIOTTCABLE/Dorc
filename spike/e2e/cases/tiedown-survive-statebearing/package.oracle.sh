@@ -1,10 +1,6 @@
 #!/usr/bin/env dorc-sh
 # dorc-lang/v0.1
 # minimal package oracle (apt/dpkg) — predict() + touches() (STRAWMAN spellings, 24A §1b).
-# predict(): the oracle's OWN argparse -> inline kind-annotation (entity-resolution; task-W).
-# touches(): the at-most FOOTPRINT — a third role-sibling, same argparse, that printfs the
-# entity-coordinates the verb mutates (one per line, kind:entity). Lifted STATICALLY (never
-# shipped/run this stage). install/purge both touch package:<operand>.
 apt_get__predict() {
    while [ "${1#-}" != "$1" ]; do shift; done
    verb=$1; shift
@@ -27,7 +23,6 @@ apt_get__disturbs() {                              # STRAWMAN footprint spelling
    esac
 }
 
-# THE VOUCH (elide-weld, 24D §3): vouches install (establish); declines purge + unknown (`*) return 2`).
 apt_get__is_converged() {
    while [ "${1#-}" != "$1" ]; do shift; done
    verb=$1; shift

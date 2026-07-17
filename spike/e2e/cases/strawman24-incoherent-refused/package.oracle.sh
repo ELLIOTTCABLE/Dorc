@@ -1,8 +1,6 @@
 #!/usr/bin/env dorc-sh
 # dorc-lang/v0.1
 # package oracle — predict() install/purge; touches() with a STRAWMAN INCOHERENT arm: for oldpkg
-# it emits package:wrongpkg (NOT its own package:oldpkg), so the establish coordinate is not ⊆ the
-# footprint ⇒ the coherence check refuses it. nginx stays coherent (emits its own package:nginx).
 apt_get__predict() {
    while [ "${1#-}" != "$1" ]; do shift; done
    verb=$1; shift

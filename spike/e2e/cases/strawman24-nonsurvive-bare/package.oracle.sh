@@ -1,8 +1,6 @@
 #!/usr/bin/env dorc-sh
 # dorc-lang/v0.1
 # package oracle with predict() but NO touches() — an un-footprinted mutator. Under
-# --trust-footprints its running install is a TOTAL wall (no footprint to scope it), so the
-# downstream converged install demotes exactly as in the honest Stage-1 baseline.
 apt_get__predict() {
    while [ "${1#-}" != "$1" ]; do shift; done
    verb=$1; shift

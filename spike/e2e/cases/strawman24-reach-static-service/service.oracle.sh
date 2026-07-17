@@ -1,9 +1,6 @@
 #!/usr/bin/env dorc-sh
 # dorc-lang/v0.1
 # Static disturbance_reaches_only() arm: hork's package footprint expands through sm_dorc_Package__disturbance_reaches_only()
-# to the same-named service coordinate, HITting the converged service-fact's backing ⇒ it
-# correctly demotes to run (token-equality alone would wrongly survive it). Traced at plan
-# time; no reach probe ships. expected.ran runs BOTH.
 hork__predict() {
    verb=$1; shift
    pkg : sm.dorc.Package = "$1"

@@ -1,7 +1,6 @@
 #!/usr/bin/env dorc-sh
 # dorc-lang/v0.1
 # service oracle: `systemctl enable` gates service:<unit>#enabled. NO touches() — the enable is
-# the downstream SURVIVOR here, not a wall, so it needs only a predict() (probe + establish).
 systemctl__predict() {
    verb=$1; shift
    svc : sm.dorc.Service = "$1"
@@ -12,8 +11,6 @@ systemctl__predict() {
    esac
 }
 
-# THE VOUCH (elide-weld, 24D §3): vouches enable/start (establishes, per-selector probes);
-# declines disable (a KILL) + unknown verbs via `*) return 2`.
 systemctl__is_converged() {
    verb=$1; shift
    case $verb in
