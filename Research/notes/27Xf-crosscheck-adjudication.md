@@ -220,6 +220,16 @@ whether context-entry self-effects breach the probe-mutation weld (they are the 
 write the design contemplates); scope it to the wrappers that log. Genuine open question,
 not a defect.
 
+> **RESOLVED 2026-07-17 (human-acked): `27C:rul-entry-denoted-siting-vouch`.** The
+> requirement lands as vouch-content on the entry-form member, not engine machinery:
+> authoring an entry form vouches the guest lands in the site's *denoted* context;
+> where unverifiable, the form declines (can't-say ⇒ guard/run). Discharge is
+> authored — structural insensitivity (chroot/env/mise, free), tool interrogation
+> (`sudo -n -l` complexity gate), or a standalone same-head tripwire — with the
+> stdlib rider + siting-corroboration lint at `27C` §9. No engine change; verbatim
+> `"$@"`-in-command-position freezes as the only entry shape (in-guest preamble
+> variants PUNTED; complex policy falls to the floor).
+
 **cr-sudo-entry-not-guest-insensitive** (27Xc critical-substituted-guest-changes-context) —
 **CREDITED, scoped to sudo/policy-wrappers, STRAWMAN-tier.** sudo policy can match on the
 guest command+args (per-command CWD/chroot/SELinux/AppArmor), so `sudo -n sh -c checker`

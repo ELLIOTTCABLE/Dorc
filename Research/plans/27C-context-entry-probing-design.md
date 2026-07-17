@@ -175,6 +175,21 @@ sudo__enter() {                # argv = the site's peeled sudo argv with the com
   answers for entry self-effects in the read lane (sudo: an auth-log line, a timestamp
   refresh — modeled, elide-alongside). A wrapper whose entry cost is a real mutation
   authors no entry form ⇒ its contexts are never entered.
+- **Siting is part of the vouch** (`27C:rul-entry-denoted-siting-vouch`, ruled
+  2026-07-17): authoring an entry form also vouches that entering via it lands the
+  guest in the site's *denoted* context. Policy-matching wrappers (sudo, doas) route
+  on the full command line including the guest, so the entry invocation (probe in
+  guest position) may match a different rule — different runas/CWD/CHROOT — than the
+  site's own bytes would; measured-in-the-wrong-world verdicts are the cardinal-sin
+  shape entering through the primary lane. Where the author cannot verify correct
+  siting — by structural insensitivity (chroot/env/mise fix context from their own
+  argv, satisfying the clause for free), by interrogating the tool (`sudo -n -l`
+  -class policy reads, self-vouched ordinary body-code), or by a standalone
+  same-head tripwire invocation — the form declines: unverifiable ⇒ rc≥2 ⇒ can't-say
+  ⇒ guard/run. Entry-form bodies stay ordinary pre-entry sh ending in `"$@"` verbatim
+  in command position; the not-in-command-position variant (an authored in-guest
+  preamble wrapping `"$@"`) is PUNTED — complex policy falls to the correct floor,
+  the value picked up later if warranted.
 - An unmodeled wrapper never peels ⇒ opaque line, wall (unchanged law). Unauthored
   entry cannot misfire because it does not exist.
 - Chains compose recursively (`sudo chroot /t CMD` ⇒ sudo-entry(chroot-entry(inner))),
@@ -219,10 +234,21 @@ sudo__enter() {                # argv = the site's peeled sudo argv with the com
       (`sudo -u postgres nice cmd` and `nice sudo -u postgres cmd` share one key;
       `env A=1 sudo cmd` and `sudo env A=1 cmd` do not — sudo scrubs). Batching and
       fact-keying both consume this key.
-    - **Fold-entry coherence** (conductor-PROPOSED, unruled): the lend-fold's denoted
-      context and the composed entry form must agree about the context the check
-      lands in; disagreement = static incoherence ⇒ plan-time fail-fast (the
-      dual-peel coherence pattern, third instance).
+    - **Fold-entry coherence** (`27C:rul-fold-entry-coherence-failfast`, HUMAN-ACKED
+      2026-07-17, scope-narrowed in the acking dialogue): where `lend_map` and the
+      entry form STATICALLY disagree — peel-position divergence (the two members'
+      `"$@"` reach different tail positions) or argv-flow divergence (the entry body
+      visibly drops/transforms args the fold consumed) — plan-time fail-fast, the
+      declarations-genuinely-contradict category (dual-peel pattern, third instance).
+      The check's reach is exactly sh-structure: whether an entry invocation actually
+      EFFECTS the declared dimension-shifts is tool-semantics the engine never holds
+      (`inv-referent-agnostic`) — that claim is part of the traversal vouch
+      (authoring-is-vouching; wrong ⇒ attributed authored error, the
+      `hole-bad-oracle-blast` species), never statically detected. The coarse case is
+      already structural (a declared-crossed dimension with NO entry member ⇒ §4/§5,
+      member-existence); runtime corroboration is lint-tier only, following §6's
+      dimension-utterability ladder (a who-am-I read corroborates user in-context;
+      netns has no utterance). Corroborate-and-warn, never license, never fail-fast.
     - DST pins: the nested permutations above · chroot-in-chroot path composition ·
       ⊤-in-the-middle poisons through an inner full lend AND an inner absolute map ·
       unresolvable `sudo -u "$VAR"` ⇒ ⊤-value key, walls.
@@ -402,7 +428,17 @@ for block-context briefs:
 - hostsim: context-qualified verdict injection; two-context e2e fixtures under inert
   mocks.
 - lints: the §6 set; the stdlib bar gains the two-user differential CI (+ tracer
-  read-set diffing where the container allows).
+  read-set diffing where the container allows); + the siting-corroboration nudge — a
+  policy-matching wrapper's entry form with no visible siting verification → hint.
+- stdlib sudo entry form (siting-vouch discharge; spellings STRAWMAN): the `-l`
+  complexity gate (`sudo -n -ll` showing any per-command routing attributes —
+  `CWD=`/`CHROOT=`/role — ⇒ decline; blanket-rule hosts pass) + a standalone
+  same-head tripwire (a separate `sudo -n <probe-head> <uid-check>` ahead of entry,
+  spelled with the SAME command word as the composed probe so path-granular rules
+  route both alike; landed-as-wrong-uid ⇒ decline). Known punt riding
+  `27C:rul-entry-denoted-siting-vouch`: the tripwire's routing-equivalence couples
+  to the engine's shipped probe-head spelling; no compat surface is minted for it
+  now — if the head changes, the stdlib tripwire is re-authored alongside.
 - **read-set closure pass (§4(a)-(B); the spike's load-bearing validation):** the
   conservative sh-taint that decides read-set closure over a verdict body —
   default-disqualify, an audited pure-construct safe-list, taint over data AND
@@ -440,16 +476,26 @@ axis-invariance (A) + engine-verified read-set closure (B); substrate axes only,
 excluded; the old engine-warranted-unflagged carried-by row is RETIRED (it rested on
 tool-semantics the engine may not hold). The conservative-closure pass is the spike's
 obligation to discharge and prove in practice — a correctness surface, not a nicety.
+· **entry-form siting vouch** (human-acked 2026-07-17;
+`27C:rul-entry-denoted-siting-vouch`, `27Xf:cr-sudo-entry-not-guest-insensitive`
+discharged): authoring an entry form vouches correct siting in the site's denoted
+context — verify (structural insensitivity · tool interrogation · same-head
+tripwire) or decline; discharge is authored body-code, never engine machinery;
+`"$@"` verbatim in command position is the ONLY entry shape (in-guest preamble
+variants PUNTED — complex policy falls to guard/run).
 · the §3 composition-algebra ruled cells (2026-07-17):
 `27C:rul-top-absorbs-absolute-maps` (⊤ propagates uniformly; no overwrite-rescue —
 machine-state logic never skips the middle) · `27C:rul-dimension-owned-compose-ops`
 (compose ops + value-frames are engine-internal, fixed once per dimension; the
-authored surface is unchanged single-step `lend_map` emission).
+authored surface is unchanged single-step `lend_map` emission) ·
+`27C:rul-fold-entry-coherence-failfast` (static argparse/argv-flow divergence between
+`lend_map` and the entry form ⇒ plan-time fail-fast; entry EFFECTIVENESS is
+traversal-vouched, never detected — corroboration lint-tier per the §6 ladder).
 
 STRAWMAN (swappable stubs; conductor's): every spelling and member/flag name —
 `tolerates:`, `__enter`, the dial names, the `user-invariant` token's placement
-details · the lifted-guards-gated-too reading of `--no-probe-escalation` ·
-conditional-tail mechanics and the generation-probe revival · the fold-entry
-coherence fail-fast (§3, conductor-proposed) · the seams
+details · the sudo siting-discharge spellings (§9: the `-l` gate + same-head
+tripwire) · the lifted-guards-gated-too reading of `--no-probe-escalation` ·
+conditional-tail mechanics and the generation-probe revival · the seams
 (`fs-read-arms`, `containment-jackets`, `no-root-targets-subdial`) · the trial
 prediction.
