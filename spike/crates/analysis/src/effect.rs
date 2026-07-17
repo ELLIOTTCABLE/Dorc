@@ -1766,6 +1766,46 @@ command__predict() {
     }
 
     #[test]
+    fn trap_at_tip_walls_and_is_never_silently_pure() {
+        // `27D` E2 / `276` trap fold-in t1 (the "pin what tip does on a trap-registering book"
+        // errand, in-memory home): a top-level `trap` is recognized-but-UNMODELED and must WALL
+        // LOUDLY — never be silently accepted as an ordinary/pure command. A silent-ordinary trap
+        // is a soundness bug (`276`: "silently-ordinary-command would be a soundness bug; wall is
+        // fine"): it would let a converged downstream establish elide PAST an unmodeled cleanup
+        // handler. Two teeth:
+        //
+        // (1) the DIRECT guard — `trap` is NOT in the target-state-pure allowlist. That allowlist
+        //     is the ONE place a mis-edit could silently re-classify trap as inert; pin it so
+        //     adding "trap" fails HERE, at the soundness surface.
+        assert!(
+            !is_target_state_pure_builtin("trap"),
+            "trap must never be a target-state-pure builtin (silent-ordinary trap is a soundness bug)"
+        );
+        // (2) the END-TO-END wall — `trap … EXIT` upstream is Opaque ⇒ ⊤ ⇒ it poisons the
+        //     downstream converged install's ambient-ness, exactly like the un-oracled `ufw allow`
+        //     dual (`opaque_upstream_poisons_ambientness`). The install is EstablishWritten
+        //     (walled), never EstablishAmbient (elidable): no silent acceptance, no modeling.
+        let (mut i, idx, _s) = package_setup();
+        let classes = classify_src(
+            "trap 'rm -f /tmp/lock' EXIT\napt-get install nginx",
+            &mut i,
+            &idx,
+        );
+        assert!(
+            classes
+                .iter()
+                .any(|c| matches!(c, SkipClass::EstablishWritten(_))),
+            "trap at tip walls the downstream install (EstablishWritten): {classes:?}"
+        );
+        assert!(
+            !classes
+                .iter()
+                .any(|c| matches!(c, SkipClass::EstablishAmbient(_))),
+            "no EstablishAmbient survives past an unmodeled trap — no silent acceptance"
+        );
+    }
+
+    #[test]
     fn called_function_body_inlines_to_a_single_call_leaf() {
         // arch-2 (brk-2): a call to a same-file-earlier funcdef is INLINED — the body is
         // spliced at the call, and the CALL is the one render/apply leaf, aggregating the
