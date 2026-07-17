@@ -107,7 +107,7 @@ emission. Forward-annotations on `24J`/`24C` are landed (the supersession pass, 
 (`spike/CLAUDE.md` + the seven crate `CLAUDE.md`s); supersession annotations landed on
 `270`/`24S`/`24T`/`24R`/`24L`/`271`/`24J`/`24C`; `Research/README.md` + this file
 refreshed (branches `ai/spike3-r23-corpus-refresh` + `ai/spike3-r23-map-status`,
-pending fold into the lineage).
+folded into the lineage at `0ee10e5`).
 
 **Branch map:** `ai/spike3-r23` = the live lineage (r24 history + round-27 forward) ·
 `ai/spike3-r25` = field-trial tooling, dormant (owed-on-revival banked `24U` §6 / `270`
