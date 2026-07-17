@@ -104,6 +104,13 @@
 # `helper.sh` no-op — neither emits a `ran:` line.)
 set -eu
 
+# 262 §2 dorc-records/1 framing: the fixed spike nonce + terminal token the probe emits, used by
+# gate-1 to deframe the executed probe's record stream. These MIRROR the Rust constants
+# plan::records::DEFAULT_NONCE and TERMINAL_TOKEN — keep the two in sync (a spike two-source-of-
+# truth; the real tool mints a per-attempt nonce, but the e2e default is fixed for stable goldens).
+RECORDS_NONCE=dorc
+RECORDS_TOKEN='@@dorc@@'
+
 here=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 
 # Locate the built binary (or take $DORC).
@@ -438,7 +445,7 @@ probe_exec_check() {
   # site). A key is `N` or — for an in-loop Members member (task-L2 item-4) — `N.M`, so the
   # pattern accepts a dot; the SET compare below uses a lexical sort (a `.M` key is not a
   # plain integer, so `sort -n` would mis-order, but lexical equality of the two sets holds).
-  _emit_ids=$(printf '%s\n' "$_art" | sed -n "s/.*printf 'site \\([0-9][0-9.]*\\) effect=.*/\\1/p" | LC_ALL=C sort)
+  _emit_ids=$(printf '%s\n' "$_art" | sed -n "s/.*printf '$RECORDS_NONCE site \\([0-9][0-9.]*\\) effect=.*/\\1/p" | LC_ALL=C sort)
   _log=$(mktemp)
   _sand=$(mktemp -d)
   _mocks=$(CDPATH= cd -- "${_dir}mocks" && pwd)
@@ -452,7 +459,14 @@ $_art
 EOF
   )
   rm -rf "$_sand"; rm -f "$_log"
-  _recs=$(printf '%s\n' "$_recs" | sed 's/\r$//')
+  # 262 §2 framing: the probe now emits the dorc-records/1 stream (a `dorc-records/1 …` header,
+  # per-record `<nonce> … <token>` lines, and a `dorc-records-end/1 …` sentinel). DEFRAME it here
+  # to the inner records the rest of gate-1 already understands: keep only `<nonce> <inner>
+  # <token>` lines, stripping the nonce prefix + terminal token (last-to-token). The header/
+  # sentinel start with `<nonce>-…`, not `<nonce> `, so they drop. (RECORDS_NONCE/RECORDS_TOKEN
+  # mirror plan::records::{DEFAULT_NONCE,TERMINAL_TOKEN} — keep in sync.)
+  _recs=$(printf '%s\n' "$_recs" | sed 's/\r$//' \
+    | sed -n "s/^$RECORDS_NONCE \\(.*\\) $RECORDS_TOKEN\$/\\1/p")
 
   # (a) grammar + site-completeness. Pull the well-formed records' ids; compare the SET
   # to the emitters'. A record that is missing, duplicated, or malformed shifts the set.

@@ -5,14 +5,15 @@
 # effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
 # rc is the raw PROBE-command status (opaque to Dorc — the record is the out-of-band lane).
 
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=aea93bb33e761a6d sites=2 @@dorc@@\n'
 # site 0: sm.dorc.Fs:/etc/app.conf#written
 writeconf__predict() {
    path="$1"
    conf-exists "$path"
 }
-writeconf__predict '/etc/app.conf'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'site 0 effect=%s rc=%s\n' "$_e" "$_rc"
+writeconf__predict '/etc/app.conf'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 0 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
 # site 1: sm.dorc.Fs:/etc/app.conf.lnk#written
-writeconf__predict '/etc/app.conf.lnk'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'site 1 effect=%s rc=%s\n' "$_e" "$_rc"
+writeconf__predict '/etc/app.conf.lnk'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 1 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
 # dorc resolver-probe (read-only, 24F §3): owner-declared identity canonicalization. Each
 # resolver-bearing coordinate runs its kind's <kind>.resolve() with the entity; when run it
 # prints the canonical form (or a dangling marker), re-keyed by the coordinate:
@@ -23,9 +24,10 @@ writeconf__predict '/etc/app.conf.lnk'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=hol
 sm_dorc_Fs__resolve() {
    realpath -m -- "$1"
 }
-_c=$(sm_dorc_Fs__resolve '/etc/app.conf' 2>/dev/null); _rr=$?; if [ "$_rr" -eq 0 ] && [ -n "$_c" ]; then printf 'resolv sm.dorc.Fs:/etc/app.conf canon=%s\n' "$_c"; else printf 'resolv sm.dorc.Fs:/etc/app.conf dangling\n'; fi
+_c=$(sm_dorc_Fs__resolve '/etc/app.conf' 2>/dev/null); _rr=$?; if [ "$_rr" -eq 0 ] && [ -n "$_c" ]; then printf 'dorc resolv sm.dorc.Fs:/etc/app.conf canon=%s @@dorc@@\n' "$_c"; else printf 'dorc resolv sm.dorc.Fs:/etc/app.conf dangling @@dorc@@\n'; fi
 # resolv sm.dorc.Fs:/etc/app.conf.lnk via sm.dorc.Fs.resolve()
-_c=$(sm_dorc_Fs__resolve '/etc/app.conf.lnk' 2>/dev/null); _rr=$?; if [ "$_rr" -eq 0 ] && [ -n "$_c" ]; then printf 'resolv sm.dorc.Fs:/etc/app.conf.lnk canon=%s\n' "$_c"; else printf 'resolv sm.dorc.Fs:/etc/app.conf.lnk dangling\n'; fi
+_c=$(sm_dorc_Fs__resolve '/etc/app.conf.lnk' 2>/dev/null); _rr=$?; if [ "$_rr" -eq 0 ] && [ -n "$_c" ]; then printf 'dorc resolv sm.dorc.Fs:/etc/app.conf.lnk canon=%s @@dorc@@\n' "$_c"; else printf 'dorc resolv sm.dorc.Fs:/etc/app.conf.lnk dangling @@dorc@@\n'; fi
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
 #!/bin/sh
 # dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
 

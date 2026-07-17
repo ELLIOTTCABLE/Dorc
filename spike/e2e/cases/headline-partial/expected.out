@@ -5,6 +5,7 @@
 # effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
 # rc is the raw PROBE-command status (opaque to Dorc — the record is the out-of-band lane).
 
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=eed81bc982f392a8 sites=6 @@dorc@@\n'
 # site 1: sm.dorc.PkgIndex#fresh
 apt_get__predict() {
    verb=$1; shift
@@ -12,7 +13,7 @@ apt_get__predict() {
       update) idx=; test -n fresh ;;
    esac
 }
-apt_get__predict 'update'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'site 1 effect=%s rc=%s\n' "$_e" "$_rc"
+apt_get__predict 'update'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 1 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
 # site 2: sm.dorc.Package:nginx#installed
 apt_get__predict() {
    while [ "${1#-}" != "$1" ]; do shift; done
@@ -26,7 +27,7 @@ apt_get__predict() {
       esac
    fi
 }
-apt_get__predict 'install' '-y' 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'site 2 effect=%s rc=%s\n' "$_e" "$_rc"
+apt_get__predict 'install' '-y' 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 2 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
 # site 3: sm.dorc.Firewall:80/tcp#allowed
 ufw__predict() {
    verb=$1; shift
@@ -36,9 +37,9 @@ ufw__predict() {
       deny) ufw status "$rule" >/dev/null 2>&1 ;;
    esac
 }
-ufw__predict 'allow' '80/tcp'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'site 3 effect=%s rc=%s\n' "$_e" "$_rc"
+ufw__predict 'allow' '80/tcp'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 3 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
 # site 4: sm.dorc.Firewall:443/tcp#allowed
-ufw__predict 'allow' '443/tcp'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'site 4 effect=%s rc=%s\n' "$_e" "$_rc"
+ufw__predict 'allow' '443/tcp'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 4 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
 # site 5: sm.dorc.Service:nginx#enabled
 systemctl__predict() {
    verb=$1; shift
@@ -49,13 +50,14 @@ systemctl__predict() {
       disable) systemctl is-enabled -- "$svc" ;;
    esac
 }
-systemctl__predict 'enable' 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'site 5 effect=%s rc=%s\n' "$_e" "$_rc"
+systemctl__predict 'enable' 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 5 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
 # site 6: sm.dorc.Service:nginx#active
-systemctl__predict 'start' 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'site 6 effect=%s rc=%s\n' "$_e" "$_rc"
+systemctl__predict 'start' 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 6 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
 # site:0 skip-unresolvable
 # site:7 skip-unresolvable
 # site:8 skip-unresolvable
 # site:9 skip-unresolvable
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
 #!/bin/sh
 # dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
 

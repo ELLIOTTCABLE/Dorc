@@ -24,4 +24,8 @@ extend-ignore-re = [
    # "unparseable" — the -eable spelling, used across the CLAUDE.mds; typos disputes
    # it for "unparsable" but both are accepted English.
    "\\bunparseable\\b",
+   # `book=<hex>` (262 §2 records-lane digest, e2e goldens): a machine-generated FNV
+   # hex identifier, not prose — hex runs (a-f) accidentally spell typo-triggers
+   # (`ede`, `ba`, ...). Ignore the whole digest token.
+   "book=[0-9a-f]+",
 ]
