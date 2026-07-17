@@ -104,6 +104,14 @@
 # `helper.sh` no-op — neither emits a `ran:` line.)
 set -eu
 
+# E4 (27D disposition-legacy-deframe-tolerance): the ~128 authored probe-results.txt fixtures are
+# UNFRAMED (headerless) — they carry no dorc-records/1 header/token. Production reads are now STRICT
+# (a headerless stream refuses, kFAIL-withhold), so the harness opts into the lenient legacy
+# passthrough via this env var (read at the cli edge; the kernel deframer stays a pure function of
+# its policy parameter). Exported here so EVERY `$dorc` invocation below inherits it; the artifact
+# execs run under `env -i` (scrubbed) but those exec the rendered probe/apply via $checker, not dorc.
+export DORC_ALLOW_LEGACY_RESULTS=1
+
 # 262 §2 dorc-records/1 framing: the fixed spike nonce + terminal token the probe emits, used by
 # gate-1 to deframe the executed probe's record stream. These MIRROR the Rust constants
 # plan::records::DEFAULT_NONCE and TERMINAL_TOKEN — keep the two in sync (a spike two-source-of-

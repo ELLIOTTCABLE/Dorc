@@ -182,19 +182,61 @@ pub struct Deframed {
     pub framed: bool,
 }
 
+/// Whether the deframer tolerates a headerless (unframed) stream (`27D` errand-E4 /
+/// `disposition-legacy-deframe-tolerance`). The lenient legacy passthrough is a
+/// harness/test-only escape: a truncated-before-header stream carries no terminal token, so
+/// under [`Tolerate`](LegacyPolicy::Tolerate) it would bypass EVERY integrity key — the
+/// production hole stage-5 flagged. Production reads pass [`Refuse`](LegacyPolicy::Refuse):
+/// a headerless stream refuses the read unit (kFAIL-withhold — no records fold ⇒ every site
+/// runs). The cli edge reads the escape from the environment (`io-at-edges-only`); the kernel
+/// stays a pure function of this parameter (`inv-determinism` — no env read inside `plan`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum LegacyPolicy {
+    /// Strict (production): a headerless stream refuses the read unit.
+    Refuse,
+    /// Lenient (harness/test-only): a headerless stream passes through the pre-framing parse.
+    Tolerate,
+}
+
 /// Deframe a raw probe-results stream into clean inner records + diagnostics (`262` §2, the
 /// PRODUCTION deframer). Pure and total (`inv-no-throw`): malformed bytes are DATA.
 ///
 /// Regime is chosen by terminal-token PRESENCE (robust to a torn header): any occurrence of
 /// [`TERMINAL_TOKEN`] ⇒ the FRAMED contract; none ⇒ the legacy passthrough (see the module
-/// doc's scope-cut). A real `dorc` probe always frames; the authored fixtures never do.
+/// doc's scope-cut), but ONLY under [`LegacyPolicy::Tolerate`] — the strict production path
+/// ([`LegacyPolicy::Refuse`]) refuses a headerless stream instead of bypassing the integrity
+/// keys (`27D` errand-E4).
 #[must_use]
-pub fn deframe(raw: &str, expect: &Expect) -> Deframed {
+pub fn deframe(raw: &str, expect: &Expect, legacy: LegacyPolicy) -> Deframed {
     if raw.contains(TERMINAL_TOKEN) {
         deframe_framed(raw, expect)
     } else {
-        deframe_legacy(raw)
+        match legacy {
+            LegacyPolicy::Tolerate => deframe_legacy(raw),
+            LegacyPolicy::Refuse => deframe_headerless_refused(),
+        }
     }
+}
+
+/// The strict production disposition for a headerless (tokenless) stream (`27D` errand-E4): a
+/// truncated-before-header artifact, or a non-dorc source, carries no framing at all. Refuse the
+/// whole read unit — every site folds Unknown ⇒ the host runs (kFAIL-withhold). This is what
+/// closes the `disposition-legacy-deframe-tolerance` hole: a real `dorc` probe ALWAYS frames,
+/// so on the production path a headerless stream can only be corruption or an alien source.
+fn deframe_headerless_refused() -> Deframed {
+    let mut out = Deframed {
+        refused: true,
+        ..Deframed::default()
+    };
+    out.diagnostics.push(Diagnostic::warning(
+        DiagCode("records-headerless-refused"),
+        None,
+        "a records stream carried no `dorc-records/1` framing at all (headerless — truncated \
+         before the header, or a non-dorc source) — refused on the strict production path, the \
+         fold is withheld and the host runs (kFAIL-withhold)"
+            .to_string(),
+    ));
+    out
 }
 
 /// The legacy (unframed) passthrough: non-blank, non-`#` lines pass straight to the inner
@@ -466,12 +508,15 @@ mod tests {
     }
 
     #[test]
-    fn legacy_unframed_passes_through_dropping_comments_and_blanks() {
-        // No terminal token anywhere ⇒ the legacy regime: non-blank, non-# lines pass to the
-        // inner parser verbatim (the ~128 authored fixtures ride this unchanged).
+    fn legacy_headerless_tolerated_passes_through_dropping_comments_and_blanks() {
+        // E4 the TOLERATE direction (`27D` disposition-legacy-deframe-tolerance): no terminal
+        // token anywhere + the harness/test escape ⇒ the legacy regime: non-blank, non-# lines
+        // pass to the inner parser verbatim (the ~128 authored fixtures ride this via run.sh's
+        // `DORC_ALLOW_LEGACY_RESULTS`).
         let d = deframe(
             "# a comment\nsite 0 effect=holds rc=0\n\nsite 1 effect=absent rc=1\n",
             &expect(),
+            LegacyPolicy::Tolerate,
         );
         assert!(!d.framed && !d.refused);
         assert_eq!(
@@ -481,8 +526,37 @@ mod tests {
     }
 
     #[test]
+    fn strict_headerless_refuses_fold_no_records() {
+        // E4 the REFUSE direction (`27D` disposition-legacy-deframe-tolerance — the production
+        // fix): the SAME headerless stream on the strict path refuses the whole read unit. A
+        // truncated-before-header artifact would otherwise bypass every integrity key; strict
+        // refuses ⇒ no records fold ⇒ every site folds Unknown ⇒ the host runs (kFAIL-withhold).
+        let d = deframe(
+            "# a comment\nsite 0 effect=holds rc=0\n\nsite 1 effect=absent rc=1\n",
+            &expect(),
+            LegacyPolicy::Refuse,
+        );
+        assert!(
+            d.refused,
+            "a headerless stream is refused on the strict production path"
+        );
+        assert!(d.records.is_empty(), "a refused read unit folds no records");
+        assert!(
+            d.diagnostics
+                .iter()
+                .any(|x| x.code.0 == "records-headerless-refused"),
+            "the refusal carries the registered code: {:?}",
+            d.diagnostics
+        );
+    }
+
+    #[test]
     fn framed_strips_nonce_prefix_and_terminal_token() {
-        let d = deframe(&stream(1, &["site 0 effect=holds rc=0"]), &expect());
+        let d = deframe(
+            &stream(1, &["site 0 effect=holds rc=0"]),
+            &expect(),
+            LegacyPolicy::Refuse,
+        );
         assert!(d.framed && !d.refused, "diags: {:?}", d.diagnostics);
         assert_eq!(d.records, vec!["site 0 effect=holds rc=0"]);
     }
@@ -495,6 +569,7 @@ mod tests {
         let d = deframe(
             &stream(0, &["deriv 0 coord=/etc/a file/with spaces"]),
             &expect(),
+            LegacyPolicy::Refuse,
         );
         assert_eq!(d.records, vec!["deriv 0 coord=/etc/a file/with spaces"]);
     }
@@ -508,7 +583,7 @@ mod tests {
             header(1),
             sentinel()
         );
-        let d = deframe(&s, &expect());
+        let d = deframe(&s, &expect(), LegacyPolicy::Refuse);
         assert!(d.records.is_empty(), "the torn fragment never folds");
         assert!(
             d.diagnostics
@@ -527,7 +602,7 @@ mod tests {
             header(1),
             sentinel()
         );
-        let d = deframe(&s, &expect());
+        let d = deframe(&s, &expect(), LegacyPolicy::Refuse);
         assert!(d.refused, "a glued read unit is refused");
         assert!(
             d.diagnostics
@@ -542,6 +617,7 @@ mod tests {
         let d = deframe(
             &stream(1, &["site 0 effect=holds rc=0"]).replace(SENTINEL_TAG, &alien),
             &expect(),
+            LegacyPolicy::Refuse,
         );
         assert!(
             d.diagnostics
@@ -558,7 +634,7 @@ mod tests {
         let mut s = stream(1, &["site 0 effect=holds rc=0"]);
         s.push_str(&rec("site 1 effect=absent rc=1")); // AFTER the sentinel ⇒ late
         s.push('\n');
-        let d = deframe(&s, &expect());
+        let d = deframe(&s, &expect(), LegacyPolicy::Refuse);
         assert_eq!(
             d.records,
             vec!["site 0 effect=holds rc=0"],
@@ -588,7 +664,7 @@ mod tests {
                 "{hdr}\n{}\n{SENTINEL_TAG} nonce={DEFAULT_NONCE} {TERMINAL_TOKEN}\n",
                 rec("site 0 effect=holds rc=0")
             );
-            let d = deframe(&s, &expect());
+            let d = deframe(&s, &expect(), LegacyPolicy::Refuse);
             assert!(d.refused, "{bad_key} mismatch must refuse the fold");
         }
     }
@@ -600,7 +676,7 @@ mod tests {
             "{}\n{SENTINEL_TAG} nonce={DEFAULT_NONCE} {TERMINAL_TOKEN}\n",
             rec("site 0 effect=holds rc=0")
         );
-        let d = deframe(&s, &expect());
+        let d = deframe(&s, &expect(), LegacyPolicy::Refuse);
         assert!(d.refused);
         assert!(
             d.diagnostics
@@ -619,7 +695,7 @@ mod tests {
             "{hdr}\n{}\n{SENTINEL_TAG} nonce={DEFAULT_NONCE} {TERMINAL_TOKEN}\n",
             rec("site 0 future=x effect=holds rc=0")
         );
-        let d = deframe(&s, &expect());
+        let d = deframe(&s, &expect(), LegacyPolicy::Refuse);
         assert!(!d.refused, "unknown keys are additive, not fatal");
         assert_eq!(d.records, vec!["site 0 future=x effect=holds rc=0"]);
     }
@@ -628,7 +704,11 @@ mod tests {
     fn sites_truncation_is_a_computable_range_note_not_refusal() {
         // Declared sites=3 but only 1 site record ⇒ a NOTE (the 2 unseen fold Unknown ⇒ run),
         // never a refusal (`26A` amend-smalls).
-        let d = deframe(&stream(3, &["site 0 effect=holds rc=0"]), &expect());
+        let d = deframe(
+            &stream(3, &["site 0 effect=holds rc=0"]),
+            &expect(),
+            LegacyPolicy::Refuse,
+        );
         assert!(!d.refused);
         assert!(
             d.diagnostics
@@ -648,7 +728,7 @@ mod tests {
             header(1),
             sentinel()
         );
-        let d = deframe(&s, &expect());
+        let d = deframe(&s, &expect(), LegacyPolicy::Refuse);
         assert!(d.records.is_empty(), "a stale-nonce record never folds");
         assert!(
             d.diagnostics

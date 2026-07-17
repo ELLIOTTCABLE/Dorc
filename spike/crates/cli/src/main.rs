@@ -790,7 +790,17 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
     // terminal-token strip), then inner-parse the clean records. A refused read unit (book/host/
     // attempt/nonce mismatch or a glued line) yields NO records ⇒ every site folds Unknown ⇒ run
     // (kFAIL-perform). The deframer tolerates the authored (unframed) fixtures via its legacy path.
-    let deframed = dorc_plan::records::deframe(&results_buf, &framing.expect());
+    // E4 (`27D` disposition-legacy-deframe-tolerance): production reads are STRICT — a headerless
+    // stream refuses (kFAIL-withhold), closing the truncated-before-header integrity bypass. The
+    // lenient legacy passthrough is a harness/test-only escape read HERE at the edge
+    // (`io-at-edges-only`; the kernel stays pure — `inv-determinism`): run.sh exports
+    // `DORC_ALLOW_LEGACY_RESULTS` for the ~128 unframed authored fixtures.
+    let legacy = if std::env::var_os("DORC_ALLOW_LEGACY_RESULTS").is_some() {
+        dorc_plan::records::LegacyPolicy::Tolerate
+    } else {
+        dorc_plan::records::LegacyPolicy::Refuse
+    };
+    let deframed = dorc_plan::records::deframe(&results_buf, &framing.expect(), legacy);
     report_at(advisory, "records", None, &deframed.diagnostics);
     let results = parse_results(&deframed.records, deframed.framed, &mut interner);
 
@@ -3667,7 +3677,8 @@ mod tests {
     /// legacy passthrough; the framed contract is pinned separately (deframe unit tests + DST).
     fn parse_str(input: &str, interner: &mut Interner) -> SiteResults {
         let expect = dorc_plan::records::Framing::spike(String::new()).expect();
-        let d = dorc_plan::records::deframe(input, &expect);
+        let d =
+            dorc_plan::records::deframe(input, &expect, dorc_plan::records::LegacyPolicy::Tolerate);
         parse_results(&d.records, d.framed, interner)
     }
 
@@ -3861,6 +3872,7 @@ mod tests {
             let d = dorc_plan::records::deframe(
                 stream,
                 &dorc_plan::records::Framing::spike("bk".to_owned()).expect(),
+                dorc_plan::records::LegacyPolicy::Refuse,
             );
             let results = parse_results(&d.records, d.framed, i);
             let derivations = dorc_plan::DerivationPlan {
@@ -4226,7 +4238,11 @@ mod tests {
             "dorc-records/1 nonce={DEFAULT_NONCE} attempt=1 host=localhost book=bk sites={sites} {TERMINAL_TOKEN}\n\
              {recs}dorc-records-end/1 nonce={DEFAULT_NONCE} {TERMINAL_TOKEN}\n"
         );
-        let d = dorc_plan::records::deframe(&s, &framing.expect());
+        let d = dorc_plan::records::deframe(
+            &s,
+            &framing.expect(),
+            dorc_plan::records::LegacyPolicy::Refuse,
+        );
         assert!(
             !d.refused,
             "the framed round-trip is not refused: {:?}",

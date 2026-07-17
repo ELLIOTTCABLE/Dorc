@@ -1443,7 +1443,7 @@ grep__predict() {
     /// each fault class fires over the seed range (a mutator that never tears is a dead DST).
     #[test]
     fn dst_byte_tier_record_faults_fold_toward_safe_never_fabricate() {
-        use dorc_plan::records::{Framing, TERMINAL_TOKEN, deframe};
+        use dorc_plan::records::{Framing, LegacyPolicy, TERMINAL_TOKEN, deframe};
         use fault::RecordFault;
 
         let framing = Framing::spike("bk".to_owned());
@@ -1458,8 +1458,10 @@ grep__predict() {
              {nonce} deriv-end 0 n=1 {TERMINAL_TOKEN}\n\
              dorc-records-end/1 nonce={nonce} {TERMINAL_TOKEN}\n"
         );
-        let clean_records: BTreeSet<String> =
-            deframe(&clean, &expect).records.into_iter().collect();
+        let clean_records: BTreeSet<String> = deframe(&clean, &expect, LegacyPolicy::Refuse)
+            .records
+            .into_iter()
+            .collect();
         assert!(
             clean_records.contains("deriv 0 coord=/etc/a file/with spaces"),
             "the clean stream round-trips the space-bearing coordinate (last-to-token)"
@@ -1468,7 +1470,7 @@ grep__predict() {
         let (mut torn, mut glued, mut oversize, mut clean_through) = (0u32, 0u32, 0u32, 0u32);
         for seed in 0..512u64 {
             let (mutated, class) = fault::mutate(seed, &clean, TERMINAL_TOKEN);
-            let d = deframe(&mutated, &expect);
+            let d = deframe(&mutated, &expect, LegacyPolicy::Refuse);
             match class {
                 RecordFault::Torn | RecordFault::Glued | RecordFault::Clean => {
                     // The safe direction: refused OR every emitted record is a CLEAN one (loss
