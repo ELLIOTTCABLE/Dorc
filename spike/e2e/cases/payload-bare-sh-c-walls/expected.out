@@ -1,0 +1,19 @@
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc — the record is the out-of-band lane).
+
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=0d79c23ce09e8354 sites=0 @@dorc@@\n'
+# site:0 skip-unresolvable
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+#!/bin/sh
+# payload-bare-sh-c-walls (274 §12 finding-scope-clarification; lane-payload-v1 rung-0): a bare
+# `sh -c` payload site with NO eval'er oracle loaded WALLS opaquely — the payload decomposition is
+# invisible without consumption (MODELS-only lane; empty-world-byte-identical). The site runs
+# verbatim; `sh` is the escape-hatch head that licenses nothing here.
+sh -c 'hork tune'
