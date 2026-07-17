@@ -309,14 +309,14 @@ fn render_seam_for(src: &str, holds: &[&str]) -> (String, Plan) {
 
 /// A nullary-verb Singleton oracle: `apt-get update ⇒ pkgindex#fresh` on the kind's implicit single
 /// cell (no operand). The `idx : pkgindex` bind is the value-less Singleton form.
-const PKGINDEX_PREDICT_SRC: &str = r#"
+const PKGINDEX_PREDICT_SRC: &str = r"
 apt_get__predict() {
    verb=$1; shift
    case $verb in
       update) idx : pkgindex; test -n fresh ;;
    esac
 }
-"#;
+";
 
 /// Render harness for the Singleton `apt-get update` world (`pkgindex#fresh`, the kind's one cell).
 fn render_singleton_for(src: &str, holds_fresh: bool) -> (String, Plan) {
