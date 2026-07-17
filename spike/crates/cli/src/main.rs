@@ -117,6 +117,12 @@ const EXIT_USAGE: u8 = 2;
 /// cannot model. The artifact still ships, but the exit signals partial understanding
 /// (ack-1). First of the reserved 10..=19 dorc-semantic fast-fail range.
 const EXIT_BOOK_UNMODELED: u8 = 10;
+/// A dual-peel incoherent wrapper oracle (`273` §5): a wrapper authoring BOTH `__predict`
+/// (peeling) and `__lend_map` whose `"$@"` reach DIFFERENT tail positions — the
+/// declarations-genuinely-contradict category, a genuine plan-time, pre-network fail-fast
+/// (`rul-proven-mutation-fails-fast` posture). The artifact still ships (the fail-fast is loud,
+/// not a crash); the exit stops a `dorc … && deploy` chain. Second of the 10..=19 range.
+const EXIT_WRAPPER_INCOHERENT: u8 = 11;
 
 /// What the arg-parse resolved to: an analysis run, or a help/version request (both of which
 /// are successes printed to stdout, ack-1 help-is-success — never a usage error).
@@ -141,6 +147,9 @@ enum RunOutcome {
     Complete,
     /// The book carried a parse/CFG ⊤-reject ⇒ the artifact shipped, but exit [`EXIT_BOOK_UNMODELED`].
     BookUnmodeled,
+    /// A wrapper oracle's `__predict`/`__lend_map` peels are dual-peel incoherent (`273` §5) ⇒ the
+    /// artifact shipped, but exit [`EXIT_WRAPPER_INCOHERENT`] (fail-fast).
+    WrapperIncoherent,
 }
 
 fn main() -> ExitCode {
@@ -164,6 +173,7 @@ fn main() -> ExitCode {
         Ok(Invocation::Analyze(args)) => match run(&args) {
             Ok(RunOutcome::Complete) => ExitCode::SUCCESS,
             Ok(RunOutcome::BookUnmodeled) => ExitCode::from(EXIT_BOOK_UNMODELED),
+            Ok(RunOutcome::WrapperIncoherent) => ExitCode::from(EXIT_WRAPPER_INCOHERENT),
             Err(msg) => {
                 eprintln!("dorc: {msg}");
                 ExitCode::from(EXIT_USAGE)
@@ -538,6 +548,15 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
         .map(|src| dorc_oracle::verdict::VerdictSet::lift(&mut interner, src).value)
         .collect();
 
+    // Dual-peel coherence (`273` §5): a wrapper authoring BOTH `__predict` (peeling) and
+    // `__lend_map` must have both members' `"$@"` reach the SAME tail position. Disagreement is
+    // genuine static incoherence (declarations-genuinely-contradict) ⇒ loud, pre-network
+    // fail-fast (`rul-proven-mutation-fails-fast` posture). Mints NO license — the safe direction
+    // (an error, never an elision). The artifact still ships; the outcome carries the fail-fast
+    // exit. This lane runs the check at oracle-load over canonical probe argvs; the per-site check
+    // over real book argvs is `lane-context-entry`'s refinement (`273` §5).
+    let wrapper_incoherent = check_wrapper_peel_coherence(advisory, &mut interner, &oracle_refs);
+
     // The munge-reservation lint (24Kc fix-munge-reservation / 24M ca-munge-charclass): refuse an
     // emitted `<munged>__<role>` funcname that is not a legal sh NAME (charclass) or that two
     // distinct source names collide onto (non-injective munge), over the whole oracle unit. No
@@ -610,6 +629,10 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
         .any(|d| d.severity == Severity::Error);
     let book_outcome = if book_unmodeled {
         RunOutcome::BookUnmodeled
+    } else if wrapper_incoherent {
+        // Dual-peel incoherence is pre-network fail-fast (`273` §5), independent of the book;
+        // ranked after book-unmodeled only because the exit codes are distinct signals.
+        RunOutcome::WrapperIncoherent
     } else {
         RunOutcome::Complete
     };
@@ -3615,6 +3638,77 @@ fn effect_word_to_verdict(word: &str) -> Verdict {
 /// receipt-free WITHOUT going blind. The filter is factored PURE (the printing is the I/O
 /// edge) so the lone per-severity routing decision rec-1 forces here is unit-testable, the
 /// same pure/driver split as [`why_lens_lines`]/[`emit_why_lens`].
+/// Dual-peel coherence over the whole oracle unit (`273` §5). For every provider that authors BOTH
+/// a peeling `__predict` and a `__lend_map`, assert their `"$@"` reach the SAME tail position over
+/// a set of canonical probe argvs. A disagreement is genuine static incoherence
+/// (declarations-genuinely-contradict) ⇒ a loud Error is reported and `true` returned (the caller
+/// fast-fails, `EXIT_WRAPPER_INCOHERENT`). Mints NO license — an error is the safe direction. The
+/// canonical argvs exercise the flag-strip loops and the guest/operand positions; a coherent pair
+/// agrees on all of them (`inv-determinism` — argument-order walk, ordered maps).
+fn check_wrapper_peel_coherence(
+    advisory: bool,
+    interner: &mut Interner,
+    oracle_refs: &[&str],
+) -> bool {
+    use dorc_oracle::predict::{Predict, lift_predicts};
+    use dorc_oracle::wrapper::{check_peel_coherence, detect_peel, lift_lend_map_set};
+
+    // Canonical probe argvs — flags (`-a`/`-b`) exercise the flag-strip loops, then a guest +
+    // operand. A coherent pair agrees on ALL; an incoherent pair disagrees on ≥1.
+    const CANON: [&[&str]; 3] = [&["g"], &["-a", "g"], &["-a", "-b", "g", "x"]];
+
+    // Gather each provider's peeling predict + lend_map across the unit (a wrapper's members share
+    // a file, but match unit-wide for robustness). Keyed by the provider `Symbol`; first wins.
+    let mut predicts: BTreeMap<Symbol, Predict> = BTreeMap::new();
+    let mut lend_maps: BTreeMap<Symbol, Predict> = BTreeMap::new();
+    for src in oracle_refs {
+        let ps = lift_predicts(interner, src).value;
+        for p in ps.providers() {
+            if let Some(c) = ps.get(p)
+                && detect_peel(c).is_some()
+            {
+                predicts.entry(p).or_insert_with(|| c.clone());
+            }
+        }
+        let ls = lift_lend_map_set(interner, src).value;
+        for p in ls.providers() {
+            if let Some(c) = ls.get(p) {
+                lend_maps.entry(p).or_insert_with(|| c.clone());
+            }
+        }
+    }
+
+    let mut diags = Vec::new();
+    for (provider, predict) in &predicts {
+        let Some(lend) = lend_maps.get(provider) else {
+            continue;
+        };
+        for argv in CANON {
+            if let Some(inc) = check_peel_coherence(predict, lend, argv) {
+                diags.push(dorc_core::Diagnostic::error(
+                    dorc_core::DiagCode("wrapper-peel-incoherent"),
+                    Some(predict.name_span),
+                    format!(
+                        "wrapper `{}`: __predict and __lend_map disagree on the peel tail position \
+                         (predict reaches \"$@\" after {} argv token(s), lend_map after {}) — static \
+                         incoherence (273 §5, declarations-genuinely-contradict). The guest would \
+                         start at a different token depending on which member dispatched; fix the \
+                         argparse so both peel to the same tail.",
+                        interner.resolve(*provider),
+                        inc.predict_depth,
+                        inc.lend_map_depth
+                    ),
+                ));
+                break; // one diagnostic per provider
+            }
+        }
+    }
+
+    let incoherent = !diags.is_empty();
+    report_at(advisory, "wrapper", None, &diags);
+    incoherent
+}
+
 fn report_at(
     advisory: bool,
     stage: &str,
