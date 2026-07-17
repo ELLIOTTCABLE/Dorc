@@ -92,18 +92,34 @@ fn classify_with(
     .value
 }
 
-/// Vouch every establish-bearing site so these render twins exercise the elision/guard MECHANICS (the
-/// vouch GATE is pinned elsewhere — plan units + e2e). `incl_written` also vouches `EstablishWritten`
-/// (past-a-poison-wall) sites, which fires the GUARD tier (`render_guard_for` only); the default
-/// ambient-only path keeps a poisoned unvouched install running (`twin_exec_opaque_neighbour_poisons`).
+/// How much of the establish population the test harness vouches (the vouch GATE is pinned elsewhere;
+/// these twins exercise elision/guard MECHANICS): `None` — nothing (the no-vouch floor, `guard23-no-
+/// vouch-runs`); `Ambient` — `EstablishAmbient` only (the elision harness); `Written` — also
+/// `EstablishWritten` (past-a-poison-wall), which is what fires the GUARD tier (`render_guard_for`).
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum VouchMode {
+    None,
+    Ambient,
+    Written,
+}
+
+/// Vouch establish-bearing sites per [`VouchMode`]. `Ambient`/`Written` both vouch `EstablishAmbient`
+/// (a converged one elides); `Written` also vouches `EstablishWritten` (a converged past-wall one
+/// guards). `None` vouches nothing — a converged install then RUNS (no-vouch-no-license).
 fn vouch_all(
     classes: &[(dorc_analysis::cfg::CfgNodeId, SkipClass)],
-    incl_written: bool,
+    mode: VouchMode,
 ) -> dorc_plan::Vouches {
     let mut vouches = dorc_plan::Vouches::new();
     for (node, class) in classes {
-        let vouchable = matches!(class, SkipClass::EstablishAmbient(_))
-            || (incl_written && matches!(class, SkipClass::EstablishWritten(_)));
+        let vouchable = match mode {
+            VouchMode::None => false,
+            VouchMode::Ambient => matches!(class, SkipClass::EstablishAmbient(_)),
+            VouchMode::Written => matches!(
+                class,
+                SkipClass::EstablishAmbient(_) | SkipClass::EstablishWritten(_)
+            ),
+        };
         if vouchable {
             let vouch = dorc_plan::VerdictVouch::new(
                 "apt_get__is_converged".to_string(),
@@ -127,6 +143,13 @@ fn vouch_all(
 /// disposition asserts). THE dash -n net fires here, on every rendered artifact, so no twin can skip
 /// it.
 fn render_for(src: &str, holds: &[(&str, &str)]) -> (String, Plan) {
+    render_for_mode(src, holds, VouchMode::Ambient)
+}
+
+/// [`render_for`] with an explicit [`VouchMode`] (the package-oracle world). `VouchMode::None` models
+/// an oracle that authored no verdict body — a converged install then RUNS (the `guard23-no-vouch-runs`
+/// no-vouch floor); `Written` makes the guard tier reachable for a past-wall install.
+fn render_for_mode(src: &str, holds: &[(&str, &str)], mode: VouchMode) -> (String, Plan) {
     let mut i = Interner::default();
     let idx = package_index(&mut i);
     let installed = SelectorId(i.intern("installed"));
@@ -138,7 +161,7 @@ fn render_for(src: &str, holds: &[(&str, &str)]) -> (String, Plan) {
             selector: installed,
         })
         .collect();
-    render_core(src, &[CORPUS_PREDICT_SRC], &idx, held, false, &mut i)
+    render_core(src, &[CORPUS_PREDICT_SRC], &idx, held, mode, &mut i)
 }
 
 /// The shared pipeline (`render_for`'s package-oracle specialization, the service/seam/singleton
@@ -151,7 +174,7 @@ fn render_core(
     predict_srcs: &[&str],
     idx: &KindIndex,
     held: Vec<FactKey>,
-    vouch_written: bool,
+    mode: VouchMode,
     i: &mut Interner,
 ) -> (String, Plan) {
     let parsed = dorc_syntax::parse(src);
@@ -169,7 +192,7 @@ fn render_core(
         &parsed.value,
         &cfg,
         &classes,
-        &vouch_all(&classes, vouch_written),
+        &vouch_all(&classes, mode),
         observe,
         &mut dorc_core::ProvArena::new(),
     );
@@ -264,7 +287,7 @@ fn render_service_for(src: &str, holds: &[(&str, &str, &str)]) -> (String, Plan)
         &[CORPUS_PREDICT_SRC, SERVICE_PREDICT_SRC],
         &idx,
         held,
-        false,
+        VouchMode::Ambient,
         &mut i,
     )
 }
@@ -312,7 +335,7 @@ fn render_seam_for(src: &str, holds: &[&str]) -> (String, Plan) {
         &[CORPUS_PREDICT_SRC, YUM_PREDICT_SRC],
         &idx,
         held,
-        false,
+        VouchMode::Ambient,
         &mut i,
     )
 }
@@ -346,7 +369,14 @@ fn render_singleton_for(src: &str, holds_fresh: bool) -> (String, Plan) {
     } else {
         Vec::new()
     };
-    render_core(src, &[PKGINDEX_PREDICT_SRC], &idx, held, false, &mut i)
+    render_core(
+        src,
+        &[PKGINDEX_PREDICT_SRC],
+        &idx,
+        held,
+        VouchMode::Ambient,
+        &mut i,
+    )
 }
 
 /// The read-only `dpkg -s <pkg>` package-status QUERY oracle (the DESIGN door-1 `dpkg -s || install`
@@ -446,7 +476,7 @@ fn render_query_for(
         &parsed.value,
         &cfg,
         &classes,
-        &vouch_all(&classes, false),
+        &vouch_all(&classes, VouchMode::Ambient),
         observe,
         &mut dorc_core::ProvArena::new(),
     );
@@ -471,7 +501,89 @@ fn render_guard_for(src: &str, holds: &[&str]) -> (String, Plan) {
             selector: installed,
         })
         .collect();
-    render_core(src, &[CORPUS_PREDICT_SRC], &idx, held, true, &mut i)
+    render_core(
+        src,
+        &[CORPUS_PREDICT_SRC],
+        &idx,
+        held,
+        VouchMode::Written,
+        &mut i,
+    )
+}
+
+/// Batch-4 scoped harness (the last no-mint floors): observe `converged` cells Converged, `canttell`
+/// cells Unknown (cant-tell), everything else Diverged; and vouch every establish whose fact-KIND is
+/// in `vouch_kinds` (ambient AND written), leaving other kinds UNVOUCHED — modeling an oracle's vouch
+/// being scoped to its OWN kind (`vouch-scope-is-the-body-never-the-tool`: apt's verdict never guards
+/// systemctl's sites). Uses `service_index` (package + service) so both tools resolve. Cells are
+/// `(kind, entity, selector)` triples. THE dash -n net fires.
+fn render_scoped(
+    src: &str,
+    converged: &[(&str, &str, &str)],
+    canttell: &[(&str, &str, &str)],
+    vouch_kinds: &[&str],
+) -> (String, Plan) {
+    let mut i = Interner::default();
+    let idx = service_index(&mut i);
+    let cell = |i: &mut Interner, (k, e, s): &(&str, &str, &str)| FactKey {
+        kind: KindId(i.intern(k)),
+        entity: EntityRef::Operand(OpaqueToken(i.intern(e))),
+        selector: SelectorId(i.intern(s)),
+    };
+    let conv: Vec<FactKey> = converged.iter().map(|c| cell(&mut i, c)).collect();
+    let cant: Vec<FactKey> = canttell.iter().map(|c| cell(&mut i, c)).collect();
+    let vkinds: Vec<KindId> = vouch_kinds.iter().map(|k| KindId(i.intern(k))).collect();
+
+    let parsed = dorc_syntax::parse(src);
+    let cfg = dorc_analysis::cfg::build(&parsed.value).value;
+    let classes = classify_with(
+        &cfg,
+        &parsed.value,
+        &idx,
+        &[CORPUS_PREDICT_SRC, SERVICE_PREDICT_SRC],
+        &mut i,
+    );
+    let mut vouches = dorc_plan::Vouches::new();
+    for (node, class) in &classes {
+        let fact = match class {
+            SkipClass::EstablishAmbient(f) | SkipClass::EstablishWritten(f) => Some(*f),
+            _ => None,
+        };
+        if fact.is_some_and(|f| vkinds.contains(&f.kind)) {
+            let vouch = dorc_plan::VerdictVouch::new(
+                "apt_get__is_converged".to_string(),
+                "apt_get__is_converged() { dpkg-query -W \"$1\" >/dev/null 2>&1; }".to_string(),
+                "apt_get__is_converged".to_string(),
+                "package".to_string(),
+                vec!["dpkg-query".to_string()],
+            );
+            vouches.insert(
+                *node,
+                dorc_core::ByVouch::vouched(vouch, dorc_core::Rung::Both),
+            );
+        }
+    }
+    let observe = move |f: FactKey| {
+        if conv.contains(&f) {
+            Observable::verdict_only(Verdict::Converged)
+        } else if cant.contains(&f) {
+            Observable::verdict_only(Verdict::Unknown)
+        } else {
+            Observable::verdict_only(Verdict::Diverged)
+        }
+    };
+    let plan = build_plan(
+        src,
+        &parsed.value,
+        &cfg,
+        &classes,
+        &vouches,
+        observe,
+        &mut dorc_core::ProvArena::new(),
+    );
+    let rendered = plan.render_apply(src, &parsed.value);
+    assert_runnable(&rendered);
+    (rendered, plan)
 }
 
 /// Is the leaf whose verbatim text contains `needle` **replaced** (elided to a stand-in)?
@@ -699,6 +811,13 @@ fn twin_loop_members_all_converged_elides() {
             .iter()
             .map(|s| (&s.sh, &s.disposition))
             .collect::<Vec<_>>()
+    );
+    // Batch-4 GuardLicense-absence tightening (subsumes né guard23-inloop-unchanged, the donor of
+    // this very shape): an in-loop member elides via the Members-loop license — the guard tier never
+    // touches it (no `Guard` disposition), so the guard leaves in-loop sites structurally unchanged.
+    assert!(
+        !is_guarded(&plan, "install -y \"$pkg\""),
+        "the in-loop member is NEVER guarded (Members-loop elision, not a guard)"
     );
     assert!(
         rendered.contains("for pkg in nginx curl; do true; done"),
@@ -1583,5 +1702,331 @@ fn twin_guard23_why_attribution() {
     assert!(
         rendered.contains("apt_get__is_converged() {"),
         "the vouch body ships as the guard preamble (rul-ternary-verdict: authored bytes verbatim):\n{rendered}"
+    );
+}
+
+// ===========================================================================
+// BATCH-4 — guard23 NO-MINT floors (`24I` order-item-4). Each pins that NO GuardLicense mints (and
+// no Replace either) for a shape where a converged install has the vouch AVAILABLE but a structural
+// reason forecloses the license — the site RUNS (`kFAIL-perform`). The `!is_guarded` assert is the
+// TIGHTER structural floor these convert to (from the retired run-set proxies). The mint-policy
+// itself (Unknown/Diverged/no-vouch ⇒ None) is unit-pinned in plan/src (guard_mints_only_on_a_
+// converged_probe_verdict, no_license_for_ambient_without_vouch); these carry the full-pipeline shape.
+// ===========================================================================
+
+#[test]
+fn twin_guard23_background_not_guarded() {
+    // né guard23-background-not-guarded: `apt-get install -y nginx &`. The `&` makes the site a
+    // ⊤-successor (P-background), which forecloses BOTH the elision (spec_topcontext_background) and
+    // the guard (`!has_top_successor`) — it runs. Converged host + vouch available.
+    let (rendered, plan) = render_for(
+        "apt-get install -y nginx &\nwait\n",
+        &[("package", "nginx")],
+    );
+    assert!(
+        !is_guarded(&plan, "install -y nginx"),
+        "a background site never guards (⊤-successor)"
+    );
+    assert!(
+        !is_replaced(&plan, "install -y nginx"),
+        "nor elides (⊤-successor) ⇒ runs"
+    );
+    assert!(
+        rendered.contains("apt-get install -y nginx &"),
+        "the background install runs verbatim:\n{rendered}"
+    );
+}
+
+#[test]
+fn twin_guard23_consumed_stdout_runs() {
+    // né guard23-consumed-stdout-runs: `apt-get install -y nginx | tee …`. The install's stdout is
+    // consumed by the pipe ⇒ its empty stub-default is unvouched ⇒ no license (neither elide nor
+    // guard) ⇒ runs. Converged host + vouch available.
+    let (rendered, plan) = render_for(
+        "apt-get install -y nginx | tee /var/log/install.log\n",
+        &[("package", "nginx")],
+    );
+    assert!(
+        !is_guarded(&plan, "install -y nginx"),
+        "a consumed-stdout site never guards"
+    );
+    assert!(
+        !is_replaced(&plan, "install -y nginx"),
+        "nor elides (consumed stdout) ⇒ runs"
+    );
+    assert!(
+        rendered.contains("apt-get install -y nginx | tee /var/log/install.log"),
+        "the pipeline runs verbatim:\n{rendered}"
+    );
+}
+
+#[test]
+fn twin_guard23_cmdsub_position_runs() {
+    // né guard23-cmdsub-position-runs: `out=$(apt-get install -y nginx)`. The install is
+    // expansion-internal (inside `$()`) ⇒ not a plan leaf ⇒ never a license candidate ⇒ runs.
+    let (rendered, plan) = render_for(
+        "out=$(apt-get install -y nginx)\necho \"$out\"\n",
+        &[("package", "nginx")],
+    );
+    assert!(
+        !is_guarded(&plan, "install -y nginx"),
+        "a cmdsub-position install never guards"
+    );
+    assert!(
+        !is_replaced(&plan, "install -y nginx"),
+        "nor elides (expansion-internal) ⇒ runs"
+    );
+    assert!(
+        rendered.contains("out=$(apt-get install -y nginx)"),
+        "the command-substitution runs verbatim:\n{rendered}"
+    );
+}
+
+#[test]
+fn twin_guard23_top_argv_runs() {
+    // né guard23-top-argv-runs: `PKG=$(cat /etc/pkg); apt-get install -y "$PKG"`. `$PKG` is ⊤ (a
+    // cmdsub value) ⇒ the argv is unresolvable ⇒ no cell ⇒ no license ⇒ runs (holds is irrelevant —
+    // there is no resolvable entity to answer).
+    let (rendered, plan) = render_for(
+        "PKG=$(cat /etc/pkg)\napt-get install -y \"$PKG\"\n",
+        &[("package", "nginx")],
+    );
+    assert!(
+        !is_guarded(&plan, "install -y \"$PKG\""),
+        "a ⊤-argv install never guards"
+    );
+    assert!(
+        !is_replaced(&plan, "install -y \"$PKG\""),
+        "nor elides (unresolvable argv) ⇒ runs"
+    );
+    assert!(
+        rendered.contains("apt-get install -y \"$PKG\""),
+        "the ⊤-argv install runs verbatim:\n{rendered}"
+    );
+}
+
+#[test]
+fn twin_guard23_inverted_vouch_never_backwards() {
+    // né guard23-inverted-vouch-never-backwards: `apt-get purge oldpkg`. A purge is EstablishInverted
+    // ⇒ classifies MustRun ⇒ never elides AND never guards (a guard is an establish-tier verb; an
+    // inverted/kill site has no converged-elide/guard path) ⇒ runs.
+    let (rendered, plan) = render_for("apt-get purge oldpkg\n", &[]);
+    assert!(
+        !is_guarded(&plan, "purge oldpkg"),
+        "an inverted (purge) site never guards backwards"
+    );
+    assert!(!is_replaced(&plan, "purge oldpkg"), "nor elides ⇒ runs");
+    assert!(
+        rendered.contains("apt-get purge oldpkg"),
+        "the purge runs verbatim:\n{rendered}"
+    );
+}
+
+#[test]
+fn twin_guard23_no_vouch_runs() {
+    // né guard23-no-vouch-runs: the oracle authored NO verdict body (VouchMode::None). The ambient
+    // nginx install can't elide (no vouch) and the past-`hork` curl install can't guard (no vouch) ⇒
+    // BOTH run. This is the no-vouch floor (rul24-vouch-is-verdict-authoring: no vouch ⇒ run).
+    let (rendered, plan) = render_for_mode(
+        "apt-get install -y nginx\nhork wombat\napt-get install -y curl\n",
+        &[("package", "nginx"), ("package", "curl")],
+        VouchMode::None,
+    );
+    assert!(
+        !is_replaced(&plan, "install -y nginx"),
+        "no vouch ⇒ the ambient install runs (no elide)"
+    );
+    assert!(
+        !is_guarded(&plan, "install -y curl"),
+        "no vouch ⇒ the past-wall install never guards"
+    );
+    assert!(
+        !is_replaced(&plan, "install -y curl"),
+        "and doesn't elide ⇒ runs"
+    );
+    assert!(
+        rendered.contains("apt-get install -y nginx")
+            && rendered.contains("apt-get install -y curl"),
+        "both installs run verbatim (nothing vouched):\n{rendered}"
+    );
+}
+
+#[test]
+fn twin_guard23_redirect_line_runs() {
+    // né guard23-redirect-line-runs: `hork wombat; apt-get install -y nginx >>log`. The install is
+    // past the poison wall AND vouched, so a GuardLicense DOES mint (disposition Guard) — but a
+    // non-/dev/null output redirect is a ratified render REFUSE-HOME (`guard_render_refused`:
+    // leaf_has_blocking_output_redirect), so the render keeps the line VERBATIM and ships no
+    // preamble ⇒ the install runs at apply. (This one is a render-refusal, not a mint-absence — the
+    // faithful floor is "runs verbatim, not guarded in the artifact".)
+    let (rendered, _plan) =
+        render_guard_for("hork wombat\napt-get install -y nginx >>log\n", &["nginx"]);
+    assert!(
+        rendered.contains("\napt-get install -y nginx >>log"),
+        "the redirected install renders VERBATIM (the redirect refuses the guard render):\n{rendered}"
+    );
+    assert!(
+        !rendered.contains("( apt_get__is_converged")
+            && !rendered.contains("apt_get__is_converged() {"),
+        "no guard line and no guard preamble are emitted for the refused redirect:\n{rendered}"
+    );
+}
+
+#[test]
+fn twin_guard23_rundelta_never_guards() {
+    // né guard23-rundelta-never-guards: `systemctl restart nginx`. `restart` is a run-delta verb the
+    // oracle does NOT model (no effect arm) ⇒ no fact/verdict ⇒ never a guard (nor elide) ⇒ runs. An
+    // oracle can't guard a verb it declined to describe.
+    let (rendered, plan) = render_service_for("systemctl restart nginx\n", &[]);
+    assert!(
+        !is_guarded(&plan, "systemctl restart nginx"),
+        "an unmodeled run-delta verb never guards"
+    );
+    assert!(
+        !is_replaced(&plan, "systemctl restart nginx"),
+        "nor elides ⇒ runs"
+    );
+    assert!(
+        rendered.contains("systemctl restart nginx"),
+        "the run-delta command runs verbatim:\n{rendered}"
+    );
+}
+
+#[test]
+fn twin_guard23_explicit_rc_consumers_run() {
+    // né guard23-explicit-rc-consumers-run: three converged installs whose rc is CONSUMED — an `if`
+    // guard, a `||` left operand, and a `$?`-read predecessor. A mutator's rc is ⊤ (fork-mutator-rc),
+    // so each StatusRelaxable consumer blocks the license ⇒ all three RUN, none guard/elide.
+    let (rendered, plan) = render_for(
+        "if apt-get install -y nginx; then echo ok; fi\napt-get install -y curl || echo fallback\napt-get install -y vim; rc=$?\necho \"rc was $rc\"\n",
+        &[
+            ("package", "nginx"),
+            ("package", "curl"),
+            ("package", "vim"),
+        ],
+    );
+    for pkg in ["install -y nginx", "install -y curl", "install -y vim"] {
+        assert!(
+            !is_guarded(&plan, pkg) && !is_replaced(&plan, pkg),
+            "the rc-consumed `{pkg}` runs (StatusRelaxable + ⊤ blocks) — no guard, no elide: {:?}",
+            plan.steps
+                .iter()
+                .map(|s| (&s.sh, &s.disposition))
+                .collect::<Vec<_>>()
+        );
+    }
+    assert!(
+        rendered.contains("if apt-get install -y nginx; then")
+            && rendered.contains("apt-get install -y curl || echo fallback")
+            && rendered.contains("apt-get install -y vim"),
+        "all three rc-consumer sites run verbatim:\n{rendered}"
+    );
+}
+
+#[test]
+fn twin_guard23_canttell_plan_runs() {
+    // né guard23-canttell-plan-runs: the past-`hork` curl install is vouched (Written) but the host
+    // reports it CANT-TELL (Unknown verdict) ⇒ GuardLicense::mint returns None off a non-Converged
+    // verdict ⇒ no guard ⇒ runs. The ambient nginx (converged) still elides. (Unknown→no-guard is
+    // also mint-unit-pinned by guard_mints_only_on_a_converged_probe_verdict; this is the pipeline.)
+    let (rendered, plan) = render_scoped(
+        "apt-get install -y nginx\nhork wombat\napt-get install -y curl\n",
+        &[("package", "nginx", "installed")],
+        &[("package", "curl", "installed")],
+        &["package"],
+    );
+    assert!(
+        is_replaced(&plan, "install -y nginx"),
+        "the converged ambient nginx elides"
+    );
+    assert!(
+        !is_guarded(&plan, "install -y curl"),
+        "a cant-tell (Unknown) verdict never mints a guard: {:?}",
+        plan.steps
+            .iter()
+            .map(|s| (&s.sh, &s.disposition))
+            .collect::<Vec<_>>()
+    );
+    assert!(
+        !is_replaced(&plan, "install -y curl"),
+        "and cant-tell doesn't elide ⇒ curl runs"
+    );
+    assert!(
+        rendered.contains("apt-get install -y curl"),
+        "the cant-tell install runs verbatim:\n{rendered}"
+    );
+}
+
+#[test]
+fn twin_guard23_vouch_gates_elision() {
+    // né guard23-vouch-gates-elision: WITH a vouch the converged install ELIDES; WITHOUT one it RUNS.
+    // apt is vouched (kind `package`), systemctl is NOT (kind `service` excluded) — both converged.
+    // The nginx install elides (vouch gates the elision); the systemctl enable runs (no vouch).
+    let (rendered, plan) = render_scoped(
+        "apt-get install -y nginx\nsystemctl enable nginx\n",
+        &[
+            ("package", "nginx", "installed"),
+            ("service", "nginx", "enabled"),
+        ],
+        &[],
+        &["package"],
+    );
+    assert!(
+        is_replaced(&plan, "install -y nginx"),
+        "the VOUCHED converged install elides"
+    );
+    assert!(
+        !is_replaced(&plan, "systemctl enable nginx"),
+        "the UNVOUCHED converged service enable runs (vouch gates the elision): {:?}",
+        plan.steps
+            .iter()
+            .map(|s| (&s.sh, &s.disposition))
+            .collect::<Vec<_>>()
+    );
+    assert!(
+        !is_guarded(&plan, "systemctl enable nginx"),
+        "and it is not guarded (no vouch)"
+    );
+    assert!(
+        rendered.contains("# apt-get install -y nginx")
+            && rendered.contains("\nsystemctl enable nginx"),
+        "nginx elides, systemctl runs verbatim:\n{rendered}"
+    );
+}
+
+#[test]
+fn twin_guard23_cross_oracle_vouch_scoped() {
+    // né guard23-cross-oracle-vouch-scoped (23C-fd9 / vouch-scope-is-the-body-never-the-tool): apt's
+    // vouch is scoped to apt's own sites. `systemctl enable foo` PAST the `hork` wall is
+    // EstablishWritten but UNVOUCHED by apt (different kind) ⇒ no guard ⇒ runs. The apt nginx install
+    // (before the wall, vouched) elides — proving the vouch reached its OWN kind but not systemctl's.
+    let (rendered, plan) = render_scoped(
+        "apt-get install -y nginx\nhork wombat\nsystemctl enable foo\n",
+        &[
+            ("package", "nginx", "installed"),
+            ("service", "foo", "enabled"),
+        ],
+        &[],
+        &["package"],
+    );
+    assert!(
+        is_replaced(&plan, "install -y nginx"),
+        "apt's own vouched install elides"
+    );
+    assert!(
+        !is_guarded(&plan, "systemctl enable foo"),
+        "apt's vouch does NOT guard systemctl's past-wall site (vouch-scope): {:?}",
+        plan.steps
+            .iter()
+            .map(|s| (&s.sh, &s.disposition))
+            .collect::<Vec<_>>()
+    );
+    assert!(
+        !is_replaced(&plan, "systemctl enable foo"),
+        "and it doesn't elide (past the wall) ⇒ runs"
+    );
+    assert!(
+        rendered.contains("hork wombat") && rendered.contains("\nsystemctl enable foo"),
+        "the wall and the unvouched service site run verbatim:\n{rendered}"
     );
 }

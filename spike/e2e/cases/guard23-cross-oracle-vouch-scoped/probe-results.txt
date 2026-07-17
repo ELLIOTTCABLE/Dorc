@@ -1,8 +1,0 @@
-# probe-results: site-keyed records (task-D1 WIRE). Grammar:
-#   site <leafid> effect=<holds|absent|cant-tell>
-# site 0 = apt-get install -y nginx (package oracle A, VOUCHED), converged BEFORE the wall ⇒
-#   elides (A's vouch is present and active on a real site). site 1 = hork (opaque wall). site 2
-#   = systemctl enable foo (service oracle B, UNVOUCHED) sits PAST the wall; its establish-probe
-#   never ships at HEAD (skip-unresolvable) and B carries no vouch, so no witness ever forms ⇒
-#   it RUNS bare. gate-1 parity holds on {site 0} alone; no authored past-wall record is needed.
-site 0 effect=holds
