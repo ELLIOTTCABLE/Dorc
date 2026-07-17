@@ -3898,6 +3898,7 @@ mod tests {
             kind: KindId(i.intern("package")),
             entity: EntityRef::Operand(OpaqueToken(i.intern(e))),
             selector: SelectorId(i.intern("installed")),
+            context: dorc_core::Context::HostDefault,
         }
     }
 
@@ -3975,6 +3976,7 @@ mod tests {
             kind: KindId(i.intern("tool")),
             entity: EntityRef::Operand(OpaqueToken(i.intern(e))),
             selector: SelectorId(i.intern("present")),
+            context: dorc_core::Context::HostDefault,
         }
     }
 

@@ -187,6 +187,7 @@ fn converged_facts(i: &mut Interner) -> Vec<FactKey> {
         kind: KindId(i.intern("package")),
         entity: EntityRef::Operand(OpaqueToken(i.intern("nginx"))),
         selector: SelectorId(i.intern("installed")),
+        context: dorc_core::Context::HostDefault,
     }]
 }
 

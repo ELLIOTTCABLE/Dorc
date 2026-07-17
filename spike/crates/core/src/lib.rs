@@ -177,12 +177,15 @@ pub use claim::{
 
 pub mod coord;
 pub use coord::{
-    Context, Coord, Dialect, EntityResolution, Relation, compare, selector_covers,
+    Context, ContextKey, Coord, Dialect, EntityResolution, Relation, compare, selector_covers,
     selector_identifies,
 };
 
 pub mod room;
 pub use room::{HintOnly, Invited, Room, RoomFact, RoomTag};
+
+pub mod escalation;
+pub use escalation::{Capability, EscalationDial};
 
 /// `result × accumulated diagnostics` — the type every pipeline stage returns
 /// (research chord `dn-7` / `ch-carrier`). A writer-monad shape: `map` transforms
@@ -659,14 +662,55 @@ pub enum EntityRef {
 /// equal iff `kind` + `entity` + `selector` all match.
 ///
 /// `Copy`/`Ord`/`Hash` are preserved: `Reach`'s `BTreeSet<FactKey>` needs `Ord`,
-/// and [`EntityRef`]/[`SelectorId`] are themselves `Copy`+`Ord`, so the bound holds.
+/// and [`EntityRef`]/[`SelectorId`]/[`Context`] are themselves `Copy`+`Ord`, so the bound holds.
 /// `inv-determinism`: any map/set keyed on `FactKey` stays `BTree*`, never
 /// hashed-into-output.
+///
+/// # The context slot (`27C` §3 / `27L` `tc-context-slot-on-coord-not-factkey`, resolved here)
+///
+/// The fourth field is the wrapper-denoted world a fact is born in ([`Context`]). It defaults to
+/// [`Context::HostDefault`] — every unwrapped fact, which is EVERY fact in the wrapper-free corpus,
+/// so keying is byte-identical to the three-place key (`empty-world-byte-identical`: the field is a
+/// constant across a wrapper-free run, so it partitions nothing). A wrapped site's measurement is
+/// born [`Context::Wrapped`], keyed by the composed-shift [`ContextKey`]: two same-cell facts in
+/// different contexts are now UNEQUAL (they can never collide in a `BTreeSet<FactKey>`), and the
+/// context reaches `compare` via [`Coord::of_fact`] so a cross-context pair answers
+/// [`Relation::Unknown`] — transport-by-collision is unrepresentable (`never-derive-separation`).
+/// Two keys are equal iff `kind` + `entity` + `selector` + `context` all match. The `context`
+/// field is FIRST-in-`Ord` after the three cell axes (declared last) so context-distinct facts
+/// still sort by cell — the render/census order is unperturbed for HostDefault-only runs.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct FactKey {
     pub kind: KindId,
     pub entity: EntityRef,
     pub selector: SelectorId,
+    /// The wrapper-denoted world this fact is born in (`27C` §3). `HostDefault` for every unwrapped
+    /// fact; [`Context::Wrapped`] for an in-context measurement. Construct the common case with
+    /// [`FactKey::cell`] (defaults `HostDefault`); a wrapped fact re-keys via [`FactKey::in_context`].
+    pub context: Context,
+}
+
+impl FactKey {
+    /// The common constructor — an ambient (`HostDefault`) fact cell. Every pre-`27C` construction
+    /// site is exactly this (the context slot defaults, so the migration is mechanical and
+    /// rung-0 byte-stable).
+    #[must_use]
+    pub const fn cell(kind: KindId, entity: EntityRef, selector: SelectorId) -> Self {
+        Self {
+            kind,
+            entity,
+            selector,
+            context: Context::HostDefault,
+        }
+    }
+
+    /// Re-key this fact into a wrapper-denoted world (`27C` §3): same cell, a distinct
+    /// [`Context::Wrapped`] key. A `HostDefault` fact and its `in_context` re-key are UNEQUAL — the
+    /// no-collision guarantee, pinned by [`tests::wrapped_and_ambient_same_cell_never_collide`].
+    #[must_use]
+    pub const fn in_context(self, context: Context) -> Self {
+        Self { context, ..self }
+    }
 }
 
 /// The survival-backing provenance of an ESTABLISH fact (`277` §5 backing-SETS): the minting
@@ -723,11 +767,11 @@ pub const AUTO_SELECTOR: &str = "converged";
 #[must_use]
 pub fn auto_fact(interner: &mut Interner, provider: &str) -> FactKey {
     let kind = KindId(interner.intern(&format!("{AUTO_KIND_PREFIX}{provider}")));
-    FactKey {
+    FactKey::cell(
         kind,
-        entity: EntityRef::Singleton,
-        selector: SelectorId(interner.intern(AUTO_SELECTOR)),
-    }
+        EntityRef::Singleton,
+        SelectorId(interner.intern(AUTO_SELECTOR)),
+    )
 }
 
 /// Is `kind` an auto-cell kind (`24L` §7 `fence-unnameable`)? The load-bearing predicate for the
@@ -819,6 +863,31 @@ mod tests {
             !is_auto_kind(&i, authored),
             "an authored kind is never auto (fence-unnameable)"
         );
+    }
+
+    #[test]
+    fn wrapped_and_ambient_same_cell_never_collide() {
+        // `27C` §3 (the non-negotiable no-collision requirement): two facts naming the SAME cell
+        // (kind, entity, selector) but born in DIFFERENT contexts must be UNEQUAL — so a
+        // `BTreeSet<FactKey>` (the host fact store, the probe results lane) holds them as distinct
+        // entries and a wrapped-context measurement can never overwrite/alias an ambient one.
+        let mut i = Interner::default();
+        let kind = KindId(i.intern("com.debian.apt.Package"));
+        let entity = EntityRef::Operand(OpaqueToken(i.intern("nginx")));
+        let selector = SelectorId(i.intern("installed"));
+        let ambient = FactKey::cell(kind, entity, selector);
+        let root_ctx = Context::Wrapped(ContextKey(i.intern("user=root")));
+        let target_ctx = Context::Wrapped(ContextKey(i.intern("fs-view=/mnt/target")));
+        let in_root = ambient.in_context(root_ctx);
+        let in_target = ambient.in_context(target_ctx);
+        assert_ne!(ambient, in_root, "ambient ≠ wrapped-root: no collision");
+        assert_ne!(in_root, in_target, "two distinct contexts never collide");
+        let set: std::collections::BTreeSet<FactKey> =
+            [ambient, in_root, in_target].into_iter().collect();
+        assert_eq!(set.len(), 3, "three distinct cells-in-worlds, none aliased");
+        // Same cell, SAME context ⇒ equal (the keying is by the composed key, not by identity):
+        // a re-measurement in the same wrapper-denoted world hits the same slot (self-healing).
+        assert_eq!(ambient.in_context(root_ctx), in_root);
     }
 
     #[test]

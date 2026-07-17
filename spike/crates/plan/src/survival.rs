@@ -961,6 +961,7 @@ mod tests {
             kind: KindId(i.intern(&format!("k{kind_n}"))),
             entity: EntityRef::Operand(OpaqueToken(i.intern(entity))),
             selector: SelectorId(i.intern(selector)),
+            context: dorc_core::Context::HostDefault,
         }
     }
 
@@ -1592,6 +1593,7 @@ mod tests {
             kind,
             entity: nginx,
             selector: enabled,
+            context: dorc_core::Context::HostDefault,
         };
         (i, fact, family, active, fp, d)
     }

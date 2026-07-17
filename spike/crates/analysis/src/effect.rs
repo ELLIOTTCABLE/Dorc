@@ -518,11 +518,10 @@ fn cell_effect(
             .to_legacy(interner),
         );
     }
-    let fact = FactKey {
-        kind: annotation_kind, // the annotation wins (declared identity)
-        entity,
-        selector: cell.selector,
-    };
+    // The annotation wins (declared identity). Ambient context (`HostDefault`) — an in-book
+    // establish is born in the caller's world; wrapped-site re-keying is `27C`'s probe-lane act,
+    // never a classification-time fact property.
+    let fact = FactKey::cell(annotation_kind, entity, cell.selector);
     match cell.claim {
         ValueClaim::Establish => CommandEffect::Establishes(fact),
         // TRANSITIONAL freeze (jc-polarity-vs-rc FINAL, ru-26 churn-disclosure): "no
@@ -586,11 +585,11 @@ pub fn is_target_state_pure_builtin(word: &str) -> bool {
 /// but a `file` cell has no oracle/probe ⇒ it never licenses an elision (the charter's
 /// "gen and poison, nothing licenses" — a `Redir` node is never a plan leaf anyway).
 fn file_write_cell(path: dorc_core::Symbol, interner: &mut Interner) -> FactKey {
-    FactKey {
-        kind: KindId(interner.intern("file")),
-        entity: EntityRef::Operand(OpaqueToken(path)),
-        selector: SelectorId(interner.intern("written")),
-    }
+    FactKey::cell(
+        KindId(interner.intern("file")),
+        EntityRef::Operand(OpaqueToken(path)),
+        SelectorId(interner.intern("written")),
+    )
 }
 
 /// Render a resolved argv to display text for a diagnostic (q-2): each literal
@@ -1498,6 +1497,7 @@ command__predict() {
             kind: s.package,
             entity: EntityRef::Operand(OpaqueToken(i.intern(entity))),
             selector: s.installed,
+            context: dorc_core::Context::HostDefault,
         }
     }
 
@@ -1718,11 +1718,13 @@ command__predict() {
             kind: service,
             entity: EntityRef::Operand(OpaqueToken(i.intern("nginx"))),
             selector: enabled,
+            context: dorc_core::Context::HostDefault,
         };
         let active_cell = FactKey {
             kind: service,
             entity: EntityRef::Operand(OpaqueToken(i.intern("nginx"))),
             selector: active,
+            context: dorc_core::Context::HostDefault,
         };
         assert!(
             classes.contains(&SkipClass::EstablishAmbient(enabled_cell)),
@@ -1921,6 +1923,7 @@ command__predict() {
             kind: s.package_index,
             entity: EntityRef::Singleton,
             selector: s.fresh,
+            context: dorc_core::Context::HostDefault,
         });
         assert_eq!(
             eff("apt-get update", &mut i, &idx),
@@ -2070,6 +2073,7 @@ command__predict() {
             kind: KindId(i.intern("tool")),
             entity: EntityRef::Operand(OpaqueToken(i.intern(entity))),
             selector: SelectorId(i.intern("present")),
+            context: dorc_core::Context::HostDefault,
         }
     }
 
@@ -2322,6 +2326,7 @@ command__predict() {
             kind: KindId(i.intern("file")),
             entity: EntityRef::Operand(OpaqueToken(i.intern(path))),
             selector: SelectorId(i.intern("written")),
+            context: dorc_core::Context::HostDefault,
         }
     }
 
@@ -2640,6 +2645,7 @@ command__predict() {
             kind: KindId(i.intern("package")),
             entity: EntityRef::Operand(OpaqueToken(i.intern(entity))),
             selector: SelectorId(i.intern("installed")),
+            context: dorc_core::Context::HostDefault,
         }
     }
 

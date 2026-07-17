@@ -159,6 +159,7 @@ fn render_for_mode(src: &str, holds: &[(&str, &str)], mode: VouchMode) -> (Strin
             kind: KindId(i.intern(k)),
             entity: EntityRef::Operand(OpaqueToken(i.intern(e))),
             selector: installed,
+            context: dorc_core::Context::HostDefault,
         })
         .collect();
     render_core(src, &[CORPUS_PREDICT_SRC], &idx, held, mode, &mut i)
@@ -280,6 +281,7 @@ fn render_service_for(src: &str, holds: &[(&str, &str, &str)]) -> (String, Plan)
             kind: KindId(i.intern(k)),
             entity: EntityRef::Operand(OpaqueToken(i.intern(e))),
             selector: SelectorId(i.intern(s)),
+            context: dorc_core::Context::HostDefault,
         })
         .collect();
     render_core(
@@ -328,6 +330,7 @@ fn render_seam_for(src: &str, holds: &[&str]) -> (String, Plan) {
             kind: package,
             entity: EntityRef::Operand(OpaqueToken(i.intern(e))),
             selector: installed,
+            context: dorc_core::Context::HostDefault,
         })
         .collect();
     render_core(
@@ -365,6 +368,7 @@ fn render_singleton_for(src: &str, holds_fresh: bool) -> (String, Plan) {
             kind: pkgindex,
             entity: EntityRef::Singleton,
             selector: fresh,
+            context: dorc_core::Context::HostDefault,
         }]
     } else {
         Vec::new()
@@ -424,6 +428,7 @@ fn render_query_for(
         kind: pkgstate,
         entity: EntityRef::Operand(OpaqueToken(i.intern(guard_entity))),
         selector: installed,
+        context: dorc_core::Context::HostDefault,
     };
     let pkg_facts: Vec<FactKey> = pkg_holds
         .iter()
@@ -431,6 +436,7 @@ fn render_query_for(
             kind: package,
             entity: EntityRef::Operand(OpaqueToken(i.intern(e))),
             selector: installed,
+            context: dorc_core::Context::HostDefault,
         })
         .collect();
 
@@ -499,6 +505,7 @@ fn render_guard_for(src: &str, holds: &[&str]) -> (String, Plan) {
             kind: package,
             entity: EntityRef::Operand(OpaqueToken(i.intern(e))),
             selector: installed,
+            context: dorc_core::Context::HostDefault,
         })
         .collect();
     render_core(
@@ -529,6 +536,7 @@ fn render_scoped(
         kind: KindId(i.intern(k)),
         entity: EntityRef::Operand(OpaqueToken(i.intern(e))),
         selector: SelectorId(i.intern(s)),
+        context: dorc_core::Context::HostDefault,
     };
     let conv: Vec<FactKey> = converged.iter().map(|c| cell(&mut i, c)).collect();
     let cant: Vec<FactKey> = canttell.iter().map(|c| cell(&mut i, c)).collect();

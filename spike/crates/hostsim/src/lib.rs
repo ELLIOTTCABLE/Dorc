@@ -698,6 +698,7 @@ apt_get__predict() {
             kind: KindId(i.intern(kind)),
             entity: EntityRef::Operand(OpaqueToken(i.intern(entity))),
             selector: SelectorId(i.intern("installed")),
+            context: dorc_core::Context::HostDefault,
         }
     }
 
@@ -958,10 +959,12 @@ apt_get__predict() {
             let mut idx = KindIndex::default();
             idx.add_effect(apt, install, package, installed, ValueClaim::Establish);
 
-            let cell = |i: &mut Interner, e: &str| FactKey {
-                kind: package,
-                entity: EntityRef::Operand(OpaqueToken(i.intern(e))),
-                selector: installed,
+            let cell = |i: &mut Interner, e: &str| {
+                FactKey::cell(
+                    package,
+                    EntityRef::Operand(OpaqueToken(i.intern(e))),
+                    installed,
+                )
             };
             let nginx = cell(&mut i, "nginx");
             let curl = cell(&mut i, "curl");
@@ -1032,10 +1035,12 @@ apt_get__predict() {
             let mut idx = KindIndex::default();
             idx.add_effect(apt, install, package, installed, ValueClaim::Establish);
 
-            let cell = |i: &mut Interner, e: &str| FactKey {
-                kind: package,
-                entity: EntityRef::Operand(OpaqueToken(i.intern(e))),
-                selector: installed,
+            let cell = |i: &mut Interner, e: &str| {
+                FactKey::cell(
+                    package,
+                    EntityRef::Operand(OpaqueToken(i.intern(e))),
+                    installed,
+                )
             };
             let nginx = cell(&mut i, "nginx");
             let curl = cell(&mut i, "curl");
@@ -1161,6 +1166,7 @@ apt_get__predict() {
             kind: package,
             entity: EntityRef::Operand(OpaqueToken(i.intern("nginx"))),
             selector: installed,
+            context: dorc_core::Context::HostDefault,
         };
         let host = Host::new([nginx]); // the host HOLDS nginx (converged)
 

@@ -176,6 +176,7 @@ fn plan_for(src: &str, holds: &[(&str, &str)]) -> Plan {
             kind: KindId(i.intern(k)),
             entity: EntityRef::Operand(OpaqueToken(i.intern(e))),
             selector: installed,
+            context: dorc_core::Context::HostDefault,
         })
         .collect();
     let parsed = dorc_syntax::parse(src);
@@ -419,6 +420,7 @@ fn andor_left_operand_undeclared_rc_runs_kfail_perform() {
         kind: KindId(i.intern("package")),
         entity: EntityRef::Operand(OpaqueToken(i.intern("nginx"))),
         selector: installed,
+        context: dorc_core::Context::HostDefault,
     };
     let src = "apt-get install -y nginx || systemctl start nginx\n";
     let parsed = dorc_syntax::parse(src);
@@ -706,6 +708,7 @@ fn spec_set_e_pure_at_effect_layer_but_c3_status_blocks() {
         kind: KindId(i.intern("package")),
         entity: EntityRef::Operand(OpaqueToken(i.intern("nginx"))),
         selector: installed,
+        context: dorc_core::Context::HostDefault,
     };
     let src = "set -e\napt-get install -y nginx\n";
     let parsed = dorc_syntax::parse(src);
@@ -814,6 +817,7 @@ fn plan_query_and_ast(
         kind: tool_kind,
         entity: EntityRef::Operand(OpaqueToken(i.intern(guard_tool))),
         selector: present,
+        context: dorc_core::Context::HostDefault,
     };
     let pkg_facts: Vec<FactKey> = pkg_holds
         .iter()
@@ -821,6 +825,7 @@ fn plan_query_and_ast(
             kind: package,
             entity: EntityRef::Operand(OpaqueToken(i.intern(e))),
             selector: installed,
+            context: dorc_core::Context::HostDefault,
         })
         .collect();
 
@@ -1144,6 +1149,7 @@ fn plan_and_ast(src: &str, holds: &[(&str, &str)]) -> (Plan, dorc_syntax::ast::A
             kind: KindId(i.intern(k)),
             entity: EntityRef::Operand(OpaqueToken(i.intern(e))),
             selector: installed,
+            context: dorc_core::Context::HostDefault,
         })
         .collect();
     let parsed = dorc_syntax::parse(src);

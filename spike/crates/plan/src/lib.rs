@@ -3894,6 +3894,7 @@ apt_get__predict() {
             kind: KindId(i.intern("package")),
             entity: EntityRef::Operand(OpaqueToken(i.intern("nginx"))),
             selector: SelectorId(i.intern("installed")),
+            context: dorc_core::Context::HostDefault,
         }
     }
 
@@ -4733,6 +4734,7 @@ apt_get__predict() {
             kind: KindId(i.intern("package")),
             entity: EntityRef::Operand(OpaqueToken(i.intern("nginx"))),
             selector: SelectorId(i.intern("installed")),
+            context: dorc_core::Context::HostDefault,
         };
         let parsed = dorc_syntax::parse(src);
         let cfg = dorc_analysis::cfg::build(&parsed.value).value;
@@ -5638,6 +5640,7 @@ apt_get__predict() {
             kind,
             entity: EntityRef::Operand(OpaqueToken(i.intern(e))),
             selector,
+            context: dorc_core::Context::HostDefault,
         };
         let family = vec![cell("nginx"), cell("curl")];
         let both_converged = vec![Verdict::Converged, Verdict::Converged];
@@ -6006,6 +6009,7 @@ apt_get__predict() {
                             kind: KindId(i.intern("grepmatch")),
                             entity: EntityRef::Operand(OpaqueToken(i.intern(name))),
                             selector: SelectorId(i.intern("matched")),
+                            context: dorc_core::Context::HostDefault,
                         },
                         valid: true,
                     },
@@ -6209,6 +6213,7 @@ apt_get__predict() {
             kind: KindId(i.intern("grepmatch")),
             entity: EntityRef::Operand(OpaqueToken(i.intern("x"))),
             selector: SelectorId(i.intern("matched")),
+            context: dorc_core::Context::HostDefault,
         };
         let otelcol = i.intern("otelcol");
         let grep = i.intern("grep");

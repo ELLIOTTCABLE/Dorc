@@ -263,12 +263,25 @@ fn canon_fact(f: dorc_core::FactKey) -> String {
         kind,
         entity,
         selector,
+        context,
     } = f;
     let entity = match entity {
         dorc_core::EntityRef::Operand(t) => format!("op{}", t.0.as_u32()),
         dorc_core::EntityRef::Singleton => "singleton".to_string(),
     };
-    format!("k{}#{}@{}", kind.0.as_u32(), selector.0.as_u32(), entity)
+    // The context is decision-identity too (`27C` §3): a wrapped fact is a DIFFERENT cell-in-world,
+    // so it must digest distinctly. `HostDefault` renders empty — a wrapper-free run's digest is
+    // byte-identical to the pre-`27C` three-place form (`empty-world-byte-identical`).
+    let ctx = match context {
+        dorc_core::Context::HostDefault => String::new(),
+        dorc_core::Context::Wrapped(k) => format!("~ctx{}", k.0.as_u32()),
+    };
+    format!(
+        "k{}#{}@{}{ctx}",
+        kind.0.as_u32(),
+        selector.0.as_u32(),
+        entity
+    )
 }
 
 /// Canonicalize the probe plan — EXHAUSTIVE destructure of [`ProbePlan`] and each [`ProbePredict`].
