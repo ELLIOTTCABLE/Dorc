@@ -4047,21 +4047,27 @@ mod tests {
 
     #[test]
     fn parse_results_drops_garbage_kfail_perform() {
-        // Unrecognized / malformed lines are dropped (⇒ Unknown ⇒ run). Pins the
-        // garbage-stdin behavior at the unit layer (`kFAIL-perform`). The dead
-        // `declared-rc` lane is now just an unrecognized line ⇒ dropped.
+        // Unrecognized / malformed lines are dropped (⇒ Unknown ⇒ run). This is the TWIN of the
+        // retired `garbage-stdin` e2e case (`27D`/`24I` batch-3 de-graduation, cli-surface): it feeds
+        // that case's EXACT specimen — a non-`site` leading token, a non-numeric site-id, a `site`
+        // line with no `effect=`, a `declared-rc` line with a non-integer rc, and a leading-whitespace
+        // garbage line. None resolve site 0's effect ⇒ it folds to Unknown ⇒ the install runs
+        // (`kFAIL-perform`), and the cli never crashes on the malformed stream.
         let mut i = Interner::default();
         let r = parse_str(
-            "this is not a record\nsite notanumber effect=holds\n\
-             site 0 garbled-no-effect\ndeclared-rc 0 rc=0\n# a comment\n",
+            "this is not a valid result line\nsite notanumber effect=holds\n\
+             site 0 garbled-no-effect-field\ndeclared-rc xyz rc=notanint\n\
+             \x20\x20\x20leading-whitespace garbage\n",
             &mut i,
         );
-        // `site 0 garbled-no-effect` parses the id but no effect= ⇒ Unknown (safe), rc 0.
+        // `site 0 garbled-no-effect-field` parses the id but no effect= ⇒ Unknown (safe ⇒ run).
         assert_eq!(
             r.records.get(&rk(0)).map(|x| x.verdict),
-            Some(Verdict::Unknown)
+            Some(Verdict::Unknown),
+            "site 0 has no valid effect ⇒ Unknown ⇒ run"
         );
-        // `site notanumber` ⇒ no id ⇒ dropped; the dead `declared-rc` line ⇒ dropped.
+        // `site notanumber` ⇒ no id ⇒ dropped; the `declared-rc`, non-`site`, and whitespace-garbage
+        // lines ⇒ dropped. Only the id-parseable site 0 lands (never a crash).
         assert_eq!(r.records.len(), 1, "only the id-parseable site landed");
     }
 
