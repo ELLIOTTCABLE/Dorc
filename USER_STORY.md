@@ -70,7 +70,7 @@ $ dorc plan --verbose webhost.sh web1.example.net
  9  systemctl enable --now nginx                       # runs
 10  hork tune --profile web >>/var/log/hork.log 2>&1   # runs: unmodeled ('hork')
 11  ufw allow 443/tcp                                  # runs
-plan: 7 run, 0 verify, 0 elided
+plan: 7 to run (0 skipped)
 ```
 
 Nothing was probed (nothing could be: probing requires an oracle to vouch that a check is
@@ -107,7 +107,7 @@ $ dorc plan --verbose webhost.sh web1.example.net
  9  systemctl enable --now nginx                       # runs: unmodeled ('systemctl')
 10  hork tune --profile web >>/var/log/hork.log 2>&1   # runs: unmodeled ('hork')
 11  ufw allow 443/tcp                                  # runs: unmodeled ('ufw')
-plan: 4 run, 0 verify, 3 elided
+plan: 4 to run (3 skipped)
 ```
 
 The top three sites are *elided*: commented out, literally removed from what will execute,
@@ -169,7 +169,7 @@ $ dorc plan --verbose webhost.sh web1.example.net
 10  hork tune --profile web >>/var/log/hork.log 2>&1   # runs: unmodeled ('hork')
 11  ( ufw_check allow 443/tcp ) \
 11     || ufw allow 443/tcp                            # verify: converged, but past 'hork' (line 10)
-plan: 2 run, 2 verify, 3 elided
+plan: 2 to run, 2 to verify (3 skipped)
 ```
 
 Two new things on screen, and they are the crux of the whole design. Note first what they
@@ -289,7 +289,7 @@ $ dorc plan --verbose webhost.sh web1.example.net
 10  hork tune --profile web >>/var/log/hork.log 2>&1   # runs: unmodeled ('hork')
 11  ( ufw_check allow 443/tcp ) \
 11     || ufw allow 443/tcp                            # verify: converged, but past 'hork' (line 10)
-plan: 1 run, 1 verify, 5 elided
+plan: 1 to run, 1 to verify (5 skipped)
 ```
 
 Two separate things just happened, and the second is the one people miss:
@@ -320,7 +320,7 @@ $ dorc plan --verbose webhost.sh web1.example.net
 10  hork tune --profile web >>/var/log/hork.log 2>&1   # runs: unmodeled ('hork')
 11  ( ufw_check allow 443/tcp ) \
 11     || ufw allow 443/tcp                            # verify: converged, but past 'hork' (line 10)
-plan: 2 run, 2 verify, 3 elided
+plan: 2 to run, 2 to verify (3 skipped)
 ```
 
 `foobar` comes back as a run, and `systemctl` falls back to its guard *for that apply* —
@@ -422,7 +422,7 @@ $ dorc plan --verbose webhost.sh web1.example.net
 10  hork tune --profile web >>/var/log/hork.log 2>&1   # runs: unmodeled ('hork')
 11  ( ufw_check allow 443/tcp ) \
 11     || ufw allow 443/tcp                            # verify: converged, but past 'hork' (line 10)
-plan: 3 run, 3 verify, 0 elided
+plan: 3 to run, 3 to verify (0 skipped)
 ```
 
 One stale index cost the entire book its shape. And the frustrating part: *everyone
@@ -499,7 +499,7 @@ $ dorc plan --verbose --risk-faultless-skips webhost.sh web1.example.net
 10  hork tune --profile web >>/var/log/hork.log 2>&1   # runs: unmodeled ('hork')
 11  ( ufw_check allow 443/tcp ) \
 11     || ufw allow 443/tcp                            # verify: converged, but past 'hork' (line 10)
-plan: 2 run, 1 verify, 5 elided
+plan: 2 to run, 1 to verify (5 skipped)
 ```
 
 Now's a good time to start showing what the *default* output will look like, to the average
@@ -513,7 +513,7 @@ $ dorc plan --risk-faultless-skips webhost.sh web1.example.net
 10  hork tune --profile web >>/var/log/hork.log 2>&1   # runs: unmodeled ('hork')
 11  ( ufw_check allow 443/tcp ) \
 11     || ufw allow 443/tcp                            # verify: converged, but past 'hork' (line 10)
-plan: 2 run, 1 verify, 5 elided
+plan: 2 to run, 1 to verify (5 skipped)
 ```
 
 (This is the "attention product." The core goal, realized: remove all the lines 'you don't
@@ -863,7 +863,7 @@ $ dorc plan machine.sh
  6  #    || brew bundle install --file="$HOME/Brewfile" # converged: your guard holds (rc 0)
  7  # chezmoi apply                                    # converged: chezmoi verify (rc 0)
  8  defaults write com.apple.dock autohide -bool true  # runs: unmodeled ('defaults')
-plan: 1 run, 0 verify, 4 elided
+plan: 1 to run (4 skipped)
 ```
 
 No host argument: the target is the machine you are sitting at. Almost nothing
@@ -936,7 +936,7 @@ $ dorc plan bastion.sh bastion.prod
  5  corp-agent enroll --renew                          # runs: unmodeled ('corp-agent')
  6  ( ufw_check limit 22/tcp ) \
  6     || ufw limit 22/tcp                             # verify: converged, but past 'corp-agent' (line 5)
-plan: 1 run, 1 verify, 2 elided
+plan: 1 to run, 1 to verify (2 skipped)
 ```
 
 Three things transfer from the culture they already have, and one question gets an honest

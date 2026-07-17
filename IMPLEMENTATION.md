@@ -156,7 +156,7 @@ outcome.
 
 ### To execute, or not to execute?
 
-For every mutative command in a playbook from a user, there's three possible
+For every mutative command in a playbook from a user, there's four possible
 outcomes:
 
 1. "under-execute": to mistakenly elide a command that *was* necessary to
@@ -408,7 +408,7 @@ will vary.
 
 Part of that boxing is to *double-end* the consent: specific authorship actions
 *in the oracles* are also necessary to license an elision that *could*, under
-*some combinations of circumstances, end up traveled and unattributable.
+some combinations of circumstances, end up traveled and unattributable.
 
 
 ### Kinds, reach, disjointness, UNFINISHED - SEE USER_STORY
@@ -416,7 +416,8 @@ Part of that boxing is to *double-end* the consent: specific authorship actions
 Thus a division: in our model, claims own what *a particular line* can say about
 the world, and the flag ownes what *no* particular line has said (i.e. where
 Dorc synthesizes knowledge from *multiple*, mutually-unaware claims that may in
-fact contradict) ...
+fact synthesize an incorrect fact about the universe that no actual human meant
+to claim) ...
 
 
 Spelling, language-design, and the flavour we want

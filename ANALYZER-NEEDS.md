@@ -333,7 +333,7 @@ Inside cells, `/` replaces `|`; `↔` marks a dual.
 
 | need | information | needed-by | dual | refs | st |
 |---|---|---|---|---|---|
-| an-verdict-function | the role-sibling family `predict()` / `is_converged()` / `is_diverged()`: sense-by-name; invoked with the site's argv; reached-path scoping through the author's OWN argparse (never engine token-matching); rc-partition 0/1/≥2 | oracle contract; probe + guard + license | an-vouch-license | 23L, 23O§1.4, 24A§1c | B |
+| an-verdict-function | the role-sibling family `predict()` / `is_converged()`: sense-by-name; invoked with the site's argv; reached-path scoping through the author's OWN argparse (never engine token-matching); rc-partition 0/1/≥2 | oracle contract; probe + guard + license | an-vouch-license | 23L, 23O§1.4, 24A§1c | B |
 | an-vouch-license | authoring the verdict-function IS the converged-vouch (no separate syllable; the tilde mark is dead); a reached path answering 0-in-the-named-sense licenses elide (pre-wall) / guard (past-wall); `return N`/`false`/`:` are DECLINES, never vouches | elide-weld; guard mint | an-claim-tier | 24A§1c, 24C§3A/§3B | B |
 | an-claim-tier | `Claim<Tier,_>`: ByObservation (probe-measured; licenses read-reproduction) / ByVouch (authored acceptance; licenses per rung — `kCONTRACT-RUNGS`) / BySilence (representable, licenses NOTHING); one-way demotion; license-mints DEMAND tiers in signatures; types protect the plumbing, never the truth of a judgment | every license decision | an-must-may-grade | 24D, 24A arc-win, KNOBS | B |
 | an-elide-weld | a full skip DEMANDS a reached ByVouch consumed by value; no vouch ⇒ run (kFAIL-perform); fact-plane ambience is never a second license-source | apply-2 license | an-vouch-license | 24C§3B, 23L LICENSE-SOURCE | B |

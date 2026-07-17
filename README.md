@@ -38,7 +38,9 @@ and time.
 
 ### Example
 
-(See a detailed walkthrough of this example in [USER_STORY.md](USER_STORY.md).)
+See a detailed walkthrough of this example in [USER_STORY.md](USER_STORY.md).
+(Note that this is all strawman; it's what I'm building right now, but the UI
+and spellings aren't necessarily settled.)
 
 ```sh
 #!/bin/sh
@@ -60,7 +62,7 @@ foobar__is_converged() {
    case "$verb" in
    sync-certs)
       dest : org.foob.Certs = "$1"
-      [ "$2" = "" ] || return 2
+      [ "${2-}" = "" ] || return 2
       foobar status --certs-current -- "$dest"  : org.foob.Certs:"$dest"#synced
       ;;
    *) return 2 ;;

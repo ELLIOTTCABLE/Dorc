@@ -101,11 +101,11 @@ prompt you write:
   satisfy a signature. That conversion IS the soundness hole the boundary exists to
   stop ("expected ByVouch, found ByObservation" = a measurement being laundered into a
   mutation-license). A vouch informs a license and never becomes a fact.
-- **rul-vouch-is-verdict-authoring** — authoring `cmd__is_converged()` /
-  `cmd__is_diverged()` IS the vouching act; a reached path answering
-  0-in-the-named-sense is the license. Declining is ordinary control-flow (`return 2`
-  / unauthored path); run-delta verbs decline natively. No vouch ⇒ run. The vouch
-  never enters the fact-plane and is inadmissible in any other site's reasoning.
+- **rul-vouch-is-verdict-authoring** — authoring `cmd__is_converged()` / IS the
+  vouching act; a reached path answering 0-in-the-named-sense is the license.
+  Declining is ordinary control-flow (`return 2` / unauthored path); run-delta verbs
+  decline natively. No vouch ⇒ run. The vouch never enters the fact-plane and is
+  inadmissible in any other site's reasoning.
 - **rul-ternary-verdict** — the per-site verdict set is {elide, guard, run}. A guard
   is `( <verdict-fn> <site argv> ) || <original bytes>`: the original command's bytes
   always survive verbatim (no code path removes them); the inserted check is the
@@ -356,7 +356,7 @@ prompt you write:
   claim/decline vocabulary: delegation line = faithful all-channel claim · printf =
   asserted output claim · explicit return = rc claim · redirect-to-null =
   per-channel DECLINE (that channel ⊤ for consumers) · `return 2` = whole-shape
-  decline. `cmd__is_converged()`/`__is_diverged()`: the verdict member (see
+  decline. `cmd__is_converged()`: the verdict member (see
   rul-vouch-is-verdict-authoring). `cmd__disturbs()` (né touches): at-most claims
   per MATCHED invocation-shape. `cmd__lend_map()`: the wrapper's dimension member —
   empty entry for a present key = full lend; contents = mapped lend; a MISSING key
