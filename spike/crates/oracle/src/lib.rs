@@ -92,6 +92,13 @@ pub mod reaches;
 /// nothing here is consumed by `analysis`/`plan` yet, so the wrapper-free corpus stays byte-stable.
 pub mod wrapper;
 
+/// Context ENTRY (`27C` — THE primary lane): the `cmd__enter()` member (the one licensed seat for
+/// real context entry), the two-axis consent decision (mechanical capability × the escalation dial ×
+/// the `tolerates:` vouch), the composition algebra across a peel chain (pointwise fold, ⊤
+/// propagates, order-sensitive), the degrade ladder, and the entry-form author's vouched
+/// self-effects (`27C:rul-probe-mutation-ownership-split`). Builds on [`wrapper`]'s peel model.
+pub mod entry;
+
 /// The eval'er surface (`274` · `271:rul-evaler-merge-no-structure-member`): reentry DETECTION
 /// inside `<provider>__predict` (a body that delegates to the `dorc:sh`/`dorc-sh` reentry primitive
 /// IS an eval'er — no separate structure member), the payload shape (which-arg-is-code / stdin /

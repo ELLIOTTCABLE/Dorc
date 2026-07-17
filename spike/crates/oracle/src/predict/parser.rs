@@ -59,6 +59,13 @@ enum FnRole {
     /// reads the per-dimension entries off it. The enumerate-every-dimension law lives in the
     /// consumer (an absent dimension is ⊤ — walls).
     LendMap,
+    /// `<provider>__enter` — the wrapper's ENTRY-FORM member (`27C` §3). COMMAND-keyed (like
+    /// `predict`/`lend_map`). The ONE licensed seat for REAL context entry: its body is the
+    /// non-interactive-by-construction entry command wrapping the guest (`sudo__enter() { sudo -n
+    /// "$@" ;}`). Authoring it IS the traversal vouch (`authoring-is-vouching`): the author answers
+    /// for the entry's self-effects (`27C:rul-probe-mutation-ownership-split`). Reuses the predict
+    /// body dialect; the consumer ([`crate::entry`]) reads the entry head + non-interactivity off it.
+    Enter,
 }
 
 impl FnRole {
@@ -72,6 +79,7 @@ impl FnRole {
             FnRole::DisturbanceReachesOnly => "__disturbance_reaches_only",
             FnRole::StateStoredOnlyIn => "__state_stored_only_in",
             FnRole::LendMap => "__lend_map",
+            FnRole::Enter => "__enter",
         }
     }
 }
@@ -152,6 +160,16 @@ pub(crate) fn lift_state_stored_only_in(interner: &mut Interner, src: &str) -> C
 #[must_use]
 pub(crate) fn lift_lend_maps(interner: &mut Interner, src: &str) -> Carrier<PredictSet> {
     lift_role(interner, src, FnRole::LendMap)
+}
+
+/// Lift every `<provider>__enter` funcdef in `src` (the wrapper ENTRY-FORM member — `27C` §3).
+/// Reuses the predict body dialect. Same fail-soft / deterministic contract as [`lift_predicts`];
+/// only the scanned name-suffix differs. COMMAND-keyed (the underscore↔hyphen provider mapping, like
+/// `predict`/`lend_map`). The consumer ([`crate::entry`]) reads the entry head + its
+/// non-interactivity off each body.
+#[must_use]
+pub(crate) fn lift_enters(interner: &mut Interner, src: &str) -> Carrier<PredictSet> {
+    lift_role(interner, src, FnRole::Enter)
 }
 
 /// Shared lift over a chosen [`FnRole`] — the one parse both siblings route through.
