@@ -288,6 +288,25 @@ robust, not coincidental (verbless corpus observes; ⊤ corpus disturbs).
   block-context implementation-planning for the record, but the
   conservative-proceed posture is authorized — the payload-v1 lane does not
   stall on the human's presence.
+- **correction-strip-not-gsub-tier** (HUMAN-TYPED 2026-07-17, superseding the
+  same-day chat steer recorded under stage-1's rider-dorc-sh-unbuilt): "the
+  strip *cannot* be gsub-tier simplicity" — the earlier
+  simple-plain-text-substitution recollection is retracted as a mistake.
+  Authority: main's updated DESIGN.md (human-authored): `dorc-strip` is a
+  "focused, simple, `ubi`-friendly standalone-binary cleaner to remove any/all
+  non-POSIX Dorc annotations" — parser-backed erasure shipped as its own
+  focused binary, never a text-substitution pass. The stage-6 builder was
+  corrected mid-run (E1); the strip-is-pure-erasure constraints were already
+  binding and are unchanged.
+- **observation-book-acceptance-carve-in-human-voice** (conductor-banked from
+  the same main root-doc update): DESIGN.md's "POSIX sh" section now carries
+  the human's own firming of the kWHICHSH open half — dorc-lang files =
+  POSIX-superset weld (stripping/reuse/cross-shell sharing); book-code = "as
+  unconstrained as we can afford," aspiring to partial zsh/bashism tolerance.
+  The TODO-ADDTL book-acceptance-carve item now has human-voice direction;
+  bears on block-context/stdlib framing and any future book-tolerance work,
+  not on block-rebuild. (IMPLEMENTATION.md also fixed the three→four outcomes
+  enumeration — an old doc-queue item discharged.)
 - **rul-synthesized-payload-render-stays-unwelded** (né "R2"; HUMAN-TYPED
   2026-07-17; slug conductor-minted per `270` §1 — the mechanism: rendering
   `sh -c "$SOMECONSTANT"` via value-propagation into an engine-synthesized
