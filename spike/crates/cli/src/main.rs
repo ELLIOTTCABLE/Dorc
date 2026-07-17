@@ -83,6 +83,8 @@ modes (an optional leading token; default is the probe-then-apply round-trip):
   apply        emit the byte-floored, receipt-free shippable apply artifact to stdout
   why [<addr>] report (to stdout) WHY the run decided as it did — bare: the run's problems;
                `book.sh:N`: the site on that source line; free text: matching commands
+  strip <file> print <file> with every dorc dialect construct erased — runnable stock POSIX sh
+               (the off-ramp cleaner; an unmarked file passes through unchanged)
   (none)       the round-trip: probe then apply on stdout, full disclosure on stderr
 
 options:
@@ -125,6 +127,10 @@ enum Invocation {
     Help,
     /// `--version`: print the version to stdout, exit 0.
     Version,
+    /// `dorc strip <file>`: the off-ramp cleaner (`27D` rider-dorc-sh-unbuilt / `274` §13). A
+    /// NON-analysis invocation (like help/version) — it erases every dialect construct from one
+    /// file and prints runnable stock sh to stdout. The path is the sole positional.
+    Strip(String),
 }
 
 /// The outcome of a completed analysis run — the process exit code (ack-1). `Complete` is the
@@ -148,6 +154,13 @@ fn main() -> ExitCode {
             println!("dorc {}", env!("CARGO_PKG_VERSION"));
             ExitCode::SUCCESS
         }
+        Ok(Invocation::Strip(path)) => match strip_command(&path) {
+            Ok(()) => ExitCode::SUCCESS,
+            Err(msg) => {
+                eprintln!("dorc: {msg}");
+                ExitCode::from(EXIT_USAGE)
+            }
+        },
         Ok(Invocation::Analyze(args)) => match run(&args) {
             Ok(RunOutcome::Complete) => ExitCode::SUCCESS,
             Ok(RunOutcome::BookUnmodeled) => ExitCode::from(EXIT_BOOK_UNMODELED),
@@ -241,6 +254,19 @@ fn parse_args() -> Result<Invocation, String> {
     if raw.iter().any(|a| a == "--version") {
         return Ok(Invocation::Version);
     }
+    // `dorc strip <file>`: the off-ramp cleaner — a non-analysis invocation, handled before the
+    // mode/flag machinery. Exactly one positional (the file to strip); no other flags apply.
+    if raw.first().map(String::as_str) == Some("strip") {
+        let path = raw
+            .get(1)
+            .ok_or_else(|| format!("strip needs a file path — {USAGE}"))?;
+        if path.starts_with('-') {
+            return Err(format!(
+                "strip needs a file path, got the flag {path:?} — {USAGE}"
+            ));
+        }
+        return Ok(Invocation::Strip(path.clone()));
+    }
 
     let mut books: Vec<String> = Vec::new();
     let mut oracles = Vec::new();
@@ -280,7 +306,7 @@ fn parse_args() -> Result<Invocation, String> {
             // A leading bare word that is NOT a known mode: if it is a NEAR-MISS of one, suggest it
             // (did-you-mean); otherwise it is a positional book (the round-trip default — the flag
             // loop below picks it up).
-            if let Some(sugg) = nearest(w, &["probe", "plan", "apply", "why"]) {
+            if let Some(sugg) = nearest(w, &["probe", "plan", "apply", "why", "strip"]) {
                 return Err(format!(
                     "unknown mode {w:?} — did you mean `{sugg}`? {USAGE}"
                 ));
@@ -391,6 +417,22 @@ fn levenshtein(a: &str, b: &str) -> usize {
 /// we were reading and the path, and translate the common `io::ErrorKind`s to plain English
 /// (a missing/permission-denied file, the two an admin actually hits) rather than the platform's
 /// raw "The system cannot find the file specified. (os error 2)".
+/// `dorc strip <path>` (`27D` rider-dorc-sh-unbuilt / `274` §13): read the file, erase every dorc
+/// dialect construct (parser-backed — [`dorc_oracle::strip_file`]), print runnable stock sh to
+/// stdout. An unmarked file passes through byte-identical (idempotent). Pure — the strip carries no
+/// diagnostics today, but any it grows are reported to stderr so stdout stays exactly the artifact.
+fn strip_command(path: &str) -> Result<(), String> {
+    let src = std::fs::read_to_string(path).map_err(|e| humane_read_error("source", path, &e))?;
+    let mut interner = Interner::default();
+    let stripped = dorc_oracle::strip_file(&mut interner, &src);
+    for d in &stripped.diags {
+        eprintln!("dorc: strip: {}", d.message);
+    }
+    print!("{}", stripped.value);
+    std::io::stdout().flush().ok();
+    Ok(())
+}
+
 fn humane_read_error(kind: &str, path: &str, err: &std::io::Error) -> String {
     let why = match err.kind() {
         std::io::ErrorKind::NotFound => "no such file".to_owned(),

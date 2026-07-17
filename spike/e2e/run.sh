@@ -991,12 +991,73 @@ scan_why() {
   return 1
 }
 
+# dorc_sh_smoke (E1, 27D rider-dorc-sh-unbuilt — the strip-and-exec off-ramp; run ONCE at harness
+# start, FATAL on failure). Proves the stamped `#!/usr/bin/env dorc-sh` shebangs are no longer inert:
+#   (1) `dorc strip` on a marked corpus oracle is $checker -n clean AND dialect-free (no dorc-sh
+#       shebang, no trailing `: sm.` mark, no `invariant:` bare-mark left as a stray `:`);
+#   (2) `dorc-sh` strips-and-execs a marked script, erasing the bind, producing the expected output.
+# The smoke script is BUILTIN-ONLY (`printf` + a function call) — it invokes NO external command, so
+# nothing mutating can run (the inert-mocks safety intent) regardless of PATH; the exec still runs
+# under the determinism rail (`env -i`), with PATH pinned to the real interpreter dir so dorc-sh can
+# locate `sh`. dorc-sh is invoked by ABSOLUTE path (env -i scrubs PATH; a relative path would break).
+dorc_sh_smoke() {
+  _dsh=${DORC_SH:-}
+  if [ -z "$_dsh" ]; then
+    _ddir=$(dirname -- "$dorc")
+    for _cand in "$_ddir/dorc-sh" "$_ddir/dorc-sh.exe"; do
+      [ -x "$_cand" ] && { _dsh=$_cand; break; }
+    done
+  fi
+  if [ -z "$_dsh" ] || [ ! -x "$_dsh" ]; then
+    echo "FATAL  dorc_sh_smoke: dorc-sh binary not found next to dorc ($dorc) — build the workspace; aborting" >&2
+    exit 3
+  fi
+  # (1) strip a marked corpus oracle → -n clean + dialect-free.
+  _oracle="$here/cases/strawman24-alias-provides/package.oracle.sh"
+  if [ -f "$_oracle" ]; then
+    _stripped=$("$dorc" strip "$_oracle")
+    if ! printf '%s\n' "$_stripped" | "$checker" -n 2>/dev/null; then
+      echo "FATAL  dorc_sh_smoke: 'dorc strip' output is not $checker -n clean; aborting" >&2
+      exit 3
+    fi
+    case "$_stripped" in
+      *"env dorc-sh"*|*": sm."*|*"invariant:"*)
+        echo "FATAL  dorc_sh_smoke: 'dorc strip' left a dialect construct (dorc-sh shebang / mark / bare-mark); aborting" >&2
+        exit 3 ;;
+    esac
+  fi
+  # (2) dorc-sh strips-and-execs a marked script (bind erased) → expected output, exit 0.
+  _shdir=$(dirname -- "$(command -v sh 2>/dev/null || echo /bin/sh)")
+  _ssand=$(mktemp -d)
+  cat > "$_ssand/marked.sh" <<'SMK'
+#!/usr/bin/env dorc-sh
+# dorc-lang/v0.1
+smoke__predict() {
+   pkg : sm.dorc.Package = "$1"
+   printf 'dorc-sh-smoke ran: %s\n' "$pkg"
+}
+smoke__predict nginx
+SMK
+  _rc=0
+  _out=$( cd -- "$_ssand" && umask 022 && env -i PATH="$_shdir" LC_ALL=C TZ=UTC "$_dsh" "$_ssand/marked.sh" 2>&1 ) || _rc=$?
+  rm -rf "$_ssand"
+  if [ "$_rc" -ne 0 ]; then
+    echo "FATAL  dorc_sh_smoke: dorc-sh exited $_rc on a marked script (expected 0); aborting" >&2
+    exit 3
+  fi
+  case "$_out" in
+    *"dorc-sh-smoke ran: nginx"*) ;;
+    *) echo "FATAL  dorc_sh_smoke: the stripped body did not run as expected (got: $_out); aborting" >&2; exit 3 ;;
+  esac
+}
+
 # gate-6 self-test (the confound battery) runs ONCE here, before any case — a lying judge is
 # worse than no judge, so this aborts (exit 3) if the dual-rail judge fails to scream. The
 # guard-shape floor's confound battery (23C-fd4) runs alongside it for the same reason.
 dual_rail_selftest
 guard_shape_selftest
 dorc_flags_selftest
+dorc_sh_smoke
 
 fails=0
 total=0

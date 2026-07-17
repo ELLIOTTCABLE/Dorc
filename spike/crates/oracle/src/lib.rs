@@ -94,6 +94,12 @@ pub mod reserved;
 /// trailing marks) in an UNMARKED file are a loud error; bare `__role` floor bodies work markerless.
 pub mod marker;
 
+/// The whole-file off-ramp cleaner (`dorc strip` / `dorc-sh`): parser-backed erasure of every
+/// dialect construct, yielding runnable stock sh (`strip-is-pure-erasure`, `274` §13).
+pub mod strip;
+
+pub use strip::strip_file;
+
 /// How a `(provider, verb)` reads/writes a fact's OPAQUE boolean — the lifted
 /// representation is [`ValueClaim`] (jc-polarity-vs-rc, FINAL — human 2026-07-02).
 /// The former `Polarity{Establish, Kill, Query}` is RETIRED: no create/destroy axis
