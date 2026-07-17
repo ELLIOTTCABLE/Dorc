@@ -627,6 +627,135 @@ pub fn decide_entry(
     }
 }
 
+// ===========================================================================
+// §6 mined-idiom lints (recognize, NEVER license) + the authority disclosure
+// ===========================================================================
+
+/// The one-line ADOPTION HINT for a site that degraded on a missing tolerance vouch
+/// (`27C` §2 / `EntryDegrade::Unvouched`): "line N would elide if <provider>'s oracle vouched
+/// context-tolerance". Recognize-never-license: this is a HINT, never a gate — the site runs/guards
+/// regardless. The suggested spelling is the parseable colon-line form.
+#[must_use]
+pub fn adoption_hint(provider_display: &str, dim: Dimension) -> String {
+    format!(
+        "would elide if {provider_display}'s oracle vouched context-tolerance \
+         (one line: `:   : tolerates:{}`)",
+        dim.as_token()
+    )
+}
+
+/// The authority-DISCLOSURE line for the plan header (`27C:render-authority-disclosure`): one line
+/// naming which contexts the probe will enter and under what. `entered` is `(entry-head-display,
+/// site-count)` per entered context. Consent legibility — the human sees, once, what escalation the
+/// probe re-uses. Empty ⇒ `None` (no wrapped entry ⇒ no disclosure line).
+#[must_use]
+pub fn authority_disclosure(capability: Capability, entered: &[(String, usize)]) -> Option<String> {
+    if entered.is_empty() {
+        return None;
+    }
+    let cap = match capability {
+        Capability::Root => "root",
+        Capability::NonRootNopasswd => "non-root (NOPASSWD)",
+        Capability::Degraded => "degraded",
+    };
+    let contexts = entered
+        .iter()
+        .map(|(head, n)| format!("{head} ({n} site{})", if *n == 1 { "" } else { "s" }))
+        .collect::<Vec<_>>()
+        .join(", ");
+    Some(format!(
+        "probe re-uses connection authority ({cap}): {contexts}; forbid with --no-probe-escalation"
+    ))
+}
+
+/// Does a verdict body VISIBLY depend on the caller's identity (`27C` §6 idiom-honest-read /
+/// idiom-demand-guard)? Recognizes the parseable identity idioms: a `$USER`/`$HOME`/`$LOGNAME` var
+/// read, or an `id`/`whoami` command. Consumed for CORROBORATION lints only (recognize-never-
+/// license): the recognizer over-triggers on incidental text and under-triggers on spelling variants
+/// (only lint-tier tolerates that — `27C:law-perfect-overlap`). Needs the interner to resolve var
+/// names (referent-agnostic elsewhere; a lint may read text for a HINT).
+#[must_use]
+pub fn reads_identity(verdict: &Predict, interner: &Interner) -> bool {
+    fn walk(body: &[Stmt], interner: &Interner) -> bool {
+        body.iter().any(|s| match s {
+            Stmt::Command(c) => {
+                matches!(c.words.first(), Some(Word::Literal(w)) if w == "id" || w == "whoami")
+                    || c.words.iter().any(|w| is_identity_var(w, interner))
+            }
+            Stmt::Assign { value, .. } => is_identity_var(value, interner),
+            Stmt::Case { arms, .. } => arms.iter().any(|a| walk(&a.body, interner)),
+            Stmt::If {
+                then_body,
+                else_body,
+                ..
+            } => walk(then_body, interner) || walk(else_body, interner),
+            Stmt::While { body, .. } => walk(body, interner),
+            _ => false,
+        })
+    }
+    walk(&verdict.body, interner)
+}
+
+/// Is `w` a read of an identity variable (`$USER`/`$HOME`/`$LOGNAME`)? Lint-tier text read.
+fn is_identity_var(w: &Word, interner: &Interner) -> bool {
+    matches!(w, Word::Var(sym) if matches!(interner.resolve(*sym), "USER" | "HOME" | "LOGNAME"))
+}
+
+/// A loud corroboration diagnostic code — a `tolerates:` mark sits over VISIBLE identity-dependence.
+const TOLERATES_OVER_IDENTITY: dorc_core::DiagCode =
+    dorc_core::DiagCode("tolerates-over-identity-dependence");
+
+/// Corroboration lint, forward direction (`27C` §6): a `tolerates:user` mark over a body that
+/// VISIBLY reads identity ⇒ "are you sure?" — the vouch claims read-only-under-shift, but the body's
+/// answer plainly depends on WHO is asking (a shifted user changes the answer, which is fine, but a
+/// mutation-on-shift would not be). A Warning (recognize-never-license): it never blocks, only asks.
+/// `None` when there is nothing to corroborate.
+#[must_use]
+pub fn corroborate_tolerance_over_identity(
+    vouch: &ToleranceVouch,
+    verdict: &Predict,
+    interner: &Interner,
+    span: dorc_core::Span,
+) -> Option<dorc_core::Diagnostic> {
+    (vouch.mentions(Dimension::User) && reads_identity(verdict, interner)).then(|| {
+        dorc_core::Diagnostic::warning(
+            TOLERATES_OVER_IDENTITY,
+            Some(span),
+            "this `is_converged` carries `tolerates:user` but VISIBLY reads the caller's identity \
+             (`id`/`$USER`/`$HOME`): are you sure the body is read-only under a user shift, not just \
+             answer-varying? A shifted user must not make it MUTATE (`27C` §2 corroboration)."
+                .to_owned(),
+        )
+    })
+}
+
+/// A one-line adoption-hint diagnostic code (Note-severity — a hint, not a failure).
+const HEAVY_CONTEXT_NO_VOUCH: dorc_core::DiagCode =
+    dorc_core::DiagCode("heavy-context-no-tolerance");
+
+/// Corroboration lint, reverse direction (`27C` §6): a body doing heavy context-handling (visible
+/// identity reads) with NO tolerance mark ⇒ the one-line hint (it would become context-shiftable
+/// with a `tolerates:` mark). A Note (recognize-never-license). `None` when the body is already
+/// vouched or reads no identity.
+#[must_use]
+pub fn hint_heavy_context_no_vouch(
+    vouch: &ToleranceVouch,
+    verdict: &Predict,
+    interner: &Interner,
+    span: dorc_core::Span,
+) -> Option<dorc_core::Diagnostic> {
+    (vouch.is_empty() && reads_identity(verdict, interner)).then(|| {
+        dorc_core::Diagnostic::note(
+            HEAVY_CONTEXT_NO_VOUCH,
+            Some(span),
+            "this `is_converged` reads the caller's identity but carries no tolerance vouch — a \
+             wrapped site (`sudo …`) will run/guard instead of eliding. One line makes it \
+             context-shiftable: `:   : tolerates:user` (`27C` §2)."
+                .to_owned(),
+        )
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1046,5 +1175,72 @@ mod tests {
             Dimension::FsView
         ));
         assert!(!capability_permits(Capability::Degraded, Dimension::User));
+    }
+
+    // ── §6 mined-idiom lints + disclosure (recognize, never license) ──────────────
+    #[test]
+    fn corroboration_fires_both_directions() {
+        // Forward (`27C` §6): `tolerates:user` over a body that reads `$USER` ⇒ "are you sure?".
+        let (i, v) = one_verdict(
+            "x__is_converged() { :   : tolerates:user\n me=$USER; case \"$me\" in \
+             root) return 0 ;; *) return 1 ;; esac }",
+        );
+        let (vouch, _d) = lift_tolerance(&v);
+        let span = dorc_core::Span::new(dorc_core::BytePos(0), dorc_core::BytePos(1));
+        assert!(
+            corroborate_tolerance_over_identity(&vouch, &v, &i, span).is_some(),
+            "a tolerance mark over visible identity-dependence corroborates"
+        );
+        // Reverse (`27C` §6): heavy context-handling (`$USER`) with NO mark ⇒ the one-line hint.
+        let (i2, v2) = one_verdict(
+            "y__is_converged() { me=$USER; case \"$me\" in root) return 0 ;; *) return 1 ;; esac }",
+        );
+        let (vouch2, _d2) = lift_tolerance(&v2);
+        assert!(
+            hint_heavy_context_no_vouch(&vouch2, &v2, &i2, span).is_some(),
+            "identity-handling with no vouch fires the adoption hint"
+        );
+        // A plain body (no identity read) corroborates nothing in either direction.
+        let (i3, v3) = one_verdict("z__is_converged() { dpkg -s nginx ;}");
+        let (vouch3, _d3) = lift_tolerance(&v3);
+        assert!(corroborate_tolerance_over_identity(&vouch3, &v3, &i3, span).is_none());
+        assert!(hint_heavy_context_no_vouch(&vouch3, &v3, &i3, span).is_none());
+    }
+
+    #[test]
+    fn reads_identity_recognizes_id_command() {
+        let (i, v) = one_verdict("w__is_converged() { id ;}");
+        assert!(
+            reads_identity(&v, &i),
+            "an `id` command is identity-dependence"
+        );
+    }
+
+    #[test]
+    fn authority_disclosure_names_contexts_or_is_silent() {
+        // No wrapped entry ⇒ no disclosure line.
+        assert_eq!(authority_disclosure(Capability::Root, &[]), None);
+        // Entered contexts ⇒ one legible line naming them + the opt-out flag.
+        let line = authority_disclosure(
+            Capability::Root,
+            &[
+                ("sudo -n".to_owned(), 1),
+                ("chroot /mnt/target".to_owned(), 2),
+            ],
+        )
+        .expect("entered contexts disclose");
+        assert!(line.contains("root"));
+        assert!(line.contains("sudo -n (1 site)"));
+        assert!(line.contains("chroot /mnt/target (2 sites)"));
+        assert!(line.contains("--no-probe-escalation"));
+    }
+
+    #[test]
+    fn adoption_hint_suggests_the_parseable_spelling() {
+        let hint = adoption_hint("pipx", Dimension::User);
+        assert!(
+            hint.contains(":   : tolerates:user"),
+            "suggests the colon-line form"
+        );
     }
 }
