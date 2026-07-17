@@ -502,3 +502,200 @@ fn twin_same_cell_kill_forces_install() {
         "the install renders verbatim:\n{rendered}"
     );
 }
+
+// ===========================================================================
+// EXEC / RENDER package-oracle twins (`24I` batch-3 remainder, stage-6b). Each carries the same
+// render end-state its retired e2e case pinned, on the existing `render_for` (package-oracle) harness:
+// a converged install elides (own line ⇒ whole-line comment; shared line ⇒ `true`), a pure/opaque
+// neighbour is or is-not a poison wall, an install used as a status-consumer runs. dash -n net rides.
+// ===========================================================================
+
+#[test]
+fn twin_exec_devnull_exempt() {
+    // né exec-devnull-exempt: `>/dev/null` is the discard sink the gate exempts (no consumer) ⇒ the
+    // converged install still elides (whole-line comment, its own physical line).
+    let (rendered, plan) = render_for(
+        "apt-get install -y nginx >/dev/null\n",
+        &[("package", "nginx")],
+    );
+    assert!(
+        is_replaced(&plan, "install -y nginx"),
+        "the devnull-redirected install elides"
+    );
+    assert!(
+        rendered.contains("# apt-get install -y nginx >/dev/null"),
+        "the whole line is commented out (the redirect kept in the receipt):\n{rendered}"
+    );
+    assert!(
+        rendered.contains("# dorc: elided"),
+        "the elision carries its receipt:\n{rendered}"
+    );
+}
+
+#[test]
+fn twin_exec_pure_builtin_cd() {
+    // né exec-pure-builtin: `cd` is a target-state-pure builtin (fs-4) — it does NOT poison the
+    // downstream converged install, which elides on its own line.
+    let (rendered, plan) = render_for(
+        "cd /tmp\napt-get install -y nginx\n",
+        &[("package", "nginx")],
+    );
+    assert!(
+        is_replaced(&plan, "install -y nginx"),
+        "the post-`cd` install elides (cd is pure)"
+    );
+    assert!(
+        rendered.contains("cd /tmp"),
+        "the `cd` survives verbatim (not poisoned away):\n{rendered}"
+    );
+    assert!(
+        rendered.contains("# apt-get install -y nginx"),
+        "the install elides on its own line (whole-line comment):\n{rendered}"
+    );
+}
+
+#[test]
+fn twin_exec_literal_unset_pure() {
+    // né exec-literal-unset-pure: `unset` of a literal name is target-state-pure ⇒ no poison ⇒ the
+    // converged install elides.
+    let (rendered, plan) = render_for(
+        "unset TMPDIR\napt-get install -y nginx\n",
+        &[("package", "nginx")],
+    );
+    assert!(
+        is_replaced(&plan, "install -y nginx"),
+        "the post-`unset` install elides"
+    );
+    assert!(
+        rendered.contains("unset TMPDIR"),
+        "the `unset` survives verbatim:\n{rendered}"
+    );
+    assert!(
+        rendered.contains("# apt-get install -y nginx"),
+        "the install elides on its own line:\n{rendered}"
+    );
+}
+
+#[test]
+fn twin_exec_multileaf_line_mixed() {
+    // né exec-multileaf-line-mixed: two leaves on ONE line — a converged install and an un-oracled
+    // `systemctl reload`. The install elides to `true`; the un-oracled neighbour RUNS verbatim, so
+    // the line renders `true; systemctl reload nginx` with a receipt naming the elided command.
+    let (rendered, plan) = render_for(
+        "apt-get install -y nginx; systemctl reload nginx\n",
+        &[("package", "nginx")],
+    );
+    assert!(is_replaced(&plan, "install -y nginx"), "the install elides");
+    assert!(
+        !is_replaced(&plan, "systemctl reload nginx"),
+        "the un-oracled neighbour runs (no model ⇒ no elision)"
+    );
+    assert!(
+        rendered.contains("true; systemctl reload nginx"),
+        "the elided install becomes `true`, the neighbour kept:\n{rendered}"
+    );
+    assert!(
+        rendered.contains("# dorc: elided [apt-get install -y nginx]"),
+        "the receipt names the elided leaf:\n{rendered}"
+    );
+}
+
+#[test]
+fn twin_render_if_guard_toprc_runs() {
+    // né render21-if-guard-toprc-runs: the install used AS the `if` condition is an establish
+    // (mutator) whose rc is ⊤ (fork-mutator-rc) ⇒ StatusRelaxable blocks ⇒ it RUNS, the whole `if`
+    // rendering verbatim. Converged host — the ONLY reason it runs is the unusable ⊤ rc.
+    let (rendered, plan) = render_for(
+        "if apt-get install -y nginx\nthen\n   echo started\nfi\n",
+        &[("package", "nginx")],
+    );
+    assert!(
+        !is_replaced(&plan, "install -y nginx"),
+        "the install-as-if-guard runs (⊤ rc, StatusRelaxable): {:?}",
+        plan.steps
+            .iter()
+            .map(|s| (&s.sh, &s.disposition))
+            .collect::<Vec<_>>()
+    );
+    assert!(
+        rendered.contains("if apt-get install -y nginx"),
+        "the whole `if` renders verbatim:\n{rendered}"
+    );
+}
+
+#[test]
+fn twin_guarded_if_true_then_body_elides() {
+    // né guarded: a converged install inside an `if true; then … fi` body elides to `true` in situ,
+    // the `if`/`fi` scaffold and the trailing `echo` kept verbatim.
+    let (rendered, plan) = render_for(
+        "if true; then\n   apt-get install -y nginx\nfi\necho done\n",
+        &[("package", "nginx")],
+    );
+    assert!(
+        is_replaced(&plan, "install -y nginx"),
+        "the then-body install elides"
+    );
+    assert!(
+        rendered.contains("if true; then"),
+        "the `if` opener survives:\n{rendered}"
+    );
+    assert!(
+        rendered.contains("true   # dorc: elided [apt-get install -y nginx]"),
+        "the install elides to `true` in the body:\n{rendered}"
+    );
+    assert!(
+        rendered.contains("echo done"),
+        "the trailing echo survives verbatim:\n{rendered}"
+    );
+}
+
+#[test]
+fn twin_door3_or_handler_blocks() {
+    // né door3-or-handler-blocks: `cmd || { handler; }` is NOT the door-3 `|| true` idiom — the rhs
+    // is a handler group, so the left keeps its blocking StatusRelaxable mark. Converged install +
+    // ⊤ rc ⇒ RUNS; door-3 must not widen to non-`true` handlers.
+    let (rendered, plan) = render_for(
+        "set -e\napt-get install -y nginx || { printf 'recovering\\n'; }\n",
+        &[("package", "nginx")],
+    );
+    assert!(
+        !is_replaced(&plan, "install -y nginx"),
+        "a `|| handler-group` left is not door-3 ⇒ the converged mutator runs: {:?}",
+        plan.steps
+            .iter()
+            .map(|s| (&s.sh, &s.disposition))
+            .collect::<Vec<_>>()
+    );
+    assert!(
+        rendered.contains("apt-get install -y nginx || { printf 'recovering\\n'; }"),
+        "the whole `|| {{ handler; }}` line renders verbatim:\n{rendered}"
+    );
+}
+
+#[test]
+fn twin_exec_opaque_neighbour_poisons() {
+    // né exec-opaque-neighbour (~SUSPECT → MIGRATE, twin STRENGTHENED to a converged-host pin): an
+    // un-oracled `ufw` is Opaque ⇒ a poison wall (opaque-poison-is-the-product). The DOWNSTREAM
+    // install runs EVEN THOUGH the host reports it converged — the wall, not divergence, is why. The
+    // converged host makes the poison the sole cause (the retired e2e never probed the install).
+    let (rendered, plan) = render_for(
+        "ufw allow 80/tcp\napt-get install -y nginx\n",
+        &[("package", "nginx")],
+    );
+    assert!(
+        !is_replaced(&plan, "install -y nginx"),
+        "the un-oracled `ufw` walls the converged install ⇒ it runs (poison, not divergence): {:?}",
+        plan.steps
+            .iter()
+            .map(|s| (&s.sh, &s.disposition))
+            .collect::<Vec<_>>()
+    );
+    assert!(
+        rendered.contains("ufw allow 80/tcp"),
+        "the opaque neighbour runs verbatim:\n{rendered}"
+    );
+    assert!(
+        rendered.contains("apt-get install -y nginx"),
+        "the walled install runs verbatim (not commented/elided):\n{rendered}"
+    );
+}
