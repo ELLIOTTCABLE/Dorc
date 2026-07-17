@@ -209,20 +209,28 @@ impl Parser<'_> {
     /// If the current token is a [`Tok::Word`], clone its lexeme + flag + span out
     /// (releasing the borrow on `self.toks`) and advance. Lets a caller then re-borrow
     /// `self.interner` for [`parse_word_lexeme`] without a borrow conflict.
-    fn take_word(&mut self) -> Option<(String, bool, Span)> {
-        let (lexeme, single_quoted, span) = match self.toks.get(self.pos) {
+    fn take_word(&mut self) -> Option<(String, WordQuoting, Span)> {
+        let (lexeme, single_quoted, double_quoted, span) = match self.toks.get(self.pos) {
             Some(Token {
                 kind:
                     Tok::Word {
                         lexeme,
                         single_quoted,
+                        double_quoted,
                     },
                 span,
-            }) => (lexeme.clone(), *single_quoted, *span),
+            }) => (lexeme.clone(), *single_quoted, *double_quoted, *span),
             _ => return None,
         };
         self.pos = self.pos.saturating_add(1);
-        Some((lexeme, single_quoted, span))
+        Some((
+            lexeme,
+            WordQuoting {
+                single_quoted,
+                double_quoted,
+            },
+            span,
+        ))
     }
 
     /// Skip newlines and bare `;` separators (statement boundaries).
@@ -243,7 +251,7 @@ impl Parser<'_> {
     /// word equal to `kw`. Used to match keywords (`while`, `do`, …), which are
     /// ordinary words to the lexer.
     fn at_keyword(&self, kw: &str) -> bool {
-        matches!(self.peek(), Some(Tok::Word { lexeme, single_quoted })
+        matches!(self.peek(), Some(Tok::Word { lexeme, single_quoted, .. })
             if !*single_quoted && lexeme == kw)
     }
 
@@ -285,6 +293,7 @@ impl Parser<'_> {
         let Some(Tok::Word {
             lexeme,
             single_quoted,
+            ..
         }) = self.peek()
         else {
             return None;
@@ -511,6 +520,7 @@ impl Parser<'_> {
             Some(Tok::Word {
                 lexeme,
                 single_quoted,
+                ..
             }) => {
                 let lexeme = lexeme.clone();
                 let single_quoted = *single_quoted;
@@ -536,6 +546,7 @@ impl Parser<'_> {
         let Some(Tok::Word {
             lexeme,
             single_quoted: false,
+            ..
         }) = self.peek()
         else {
             return Ok(Stmt::Shift { count: None });
@@ -560,6 +571,7 @@ impl Parser<'_> {
         let Some(Tok::Word {
             lexeme,
             single_quoted,
+            ..
         }) = self.peek()
         else {
             // A line that does not start with a word (e.g. a stray `]`, redirect,
@@ -579,7 +591,11 @@ impl Parser<'_> {
         // `name=` is degenerate; its value is the empty literal).
         if let Some((name, rest)) = (!first_sq).then(|| split_assignment(&first)).flatten() {
             self.bump();
-            let value = parse_word_lexeme(rest, false, self.interner);
+            // The RHS is a sub-lexeme of the `name=rest` word; a whole-word double-quote
+            // never survives the `=` split (`x="$@"` lexes multi-part ⇒ neither flag), so
+            // the value's quoting is UNQUOTED here — correct: an assignment RHS `"$@"` is a
+            // value-position ⊤ regardless (`27H`).
+            let value = parse_word_lexeme(rest, WordQuoting::unquoted(), self.interner);
             return Ok(Stmt::Assign {
                 name: self.interner.intern(name),
                 value,
@@ -608,7 +624,7 @@ impl Parser<'_> {
     fn next_word_is(&self, s: &str) -> bool {
         matches!(
             self.toks.get(self.pos.saturating_add(1)).map(|t| &t.kind),
-            Some(Tok::Word { lexeme, single_quoted: false }) if lexeme == s
+            Some(Tok::Word { lexeme, single_quoted: false, .. }) if lexeme == s
         )
     }
 
@@ -618,7 +634,7 @@ impl Parser<'_> {
     fn kind_after_colon_is_bare(&self) -> bool {
         matches!(
             self.toks.get(self.pos.saturating_add(2)).map(|t| &t.kind),
-            Some(Tok::Word { lexeme, single_quoted: false }) if !lexeme.contains(':')
+            Some(Tok::Word { lexeme, single_quoted: false, .. }) if !lexeme.contains(':')
         )
     }
 
@@ -632,7 +648,15 @@ impl Parser<'_> {
         self.bump(); // `:`
         // kind: a single plain word (reverse-DNS string, or a short kind name — the
         // derivation keys the effect-map on it, so annotation-kind == effect-map kind).
-        let Some((kind, false, kind_span)) = self.take_word() else {
+        let Some((
+            kind,
+            WordQuoting {
+                single_quoted: false,
+                ..
+            },
+            kind_span,
+        )) = self.take_word()
+        else {
             return Err(self.fail_here("annotation kind must be a single literal word"));
         };
         // The `= value` tail is OPTIONAL. Present ⇒ the ordinary operand annotation.
@@ -652,10 +676,10 @@ impl Parser<'_> {
             }));
         }
         self.bump(); // `=`
-        let Some((lexeme, single_quoted, val_span)) = self.take_word() else {
+        let Some((lexeme, quoting, val_span)) = self.take_word() else {
             return Err(self.fail_here("annotation requires a value word after `=`"));
         };
-        let value = parse_word_lexeme(&lexeme, single_quoted, self.interner);
+        let value = parse_word_lexeme(&lexeme, quoting, self.interner);
         Ok(Stmt::Annotation(Annotation {
             name: name_sym,
             kind,
@@ -695,6 +719,7 @@ impl Parser<'_> {
                 Some(Tok::Word {
                     lexeme,
                     single_quoted: false,
+                    ..
                 }) => {
                     if is_block_keyword(lexeme) {
                         CmdTok::End
@@ -726,8 +751,8 @@ impl Parser<'_> {
                     // with no command ⇒ falls through to the empty-command reject below.
                     if words.is_empty() && sigil == MarkSigil::Verdict {
                         end_span = self.peek_span().unwrap_or(end_span);
-                        if let Some((lexeme, single_quoted, _)) = self.take_word() {
-                            words.push(parse_word_lexeme(&lexeme, single_quoted, self.interner));
+                        if let Some((lexeme, quoting, _)) = self.take_word() {
+                            words.push(parse_word_lexeme(&lexeme, quoting, self.interner));
                         }
                     }
                     // Inside a pipeline, an (unquoted) `:` is normally opaque pipeline text — it
@@ -748,8 +773,8 @@ impl Parser<'_> {
                 }
                 CmdTok::Word => {
                     end_span = self.peek_span().unwrap_or(end_span);
-                    if let Some((lexeme, single_quoted, _)) = self.take_word() {
-                        words.push(parse_word_lexeme(&lexeme, single_quoted, self.interner));
+                    if let Some((lexeme, quoting, _)) = self.take_word() {
+                        words.push(parse_word_lexeme(&lexeme, quoting, self.interner));
                     }
                 }
                 CmdTok::Redirect(text) => {
@@ -805,18 +830,18 @@ impl Parser<'_> {
     fn parse_mark(&mut self, sigil: MarkSigil) -> Result<Mark, bool> {
         let marker_span = self.peek_span().unwrap_or(ZERO_SPAN);
         self.bump(); // the `:` / `:!` / `:?` marker word
-        let Some((lexeme, _sq, target_span)) = self.take_word() else {
+        let Some((lexeme, _quoting, target_span)) = self.take_word() else {
             return Err(self.fail_here("dialect mark requires a `kind:entity#selector` target"));
         };
         // Optional `= value` tail (a verdict-mark explicit-value assignment).
         let mut end_span = target_span;
         let value = if matches!(self.peek(), Some(Tok::Word { lexeme, .. }) if lexeme == "=") {
             self.bump(); // `=`
-            let Some((v, vsq, vspan)) = self.take_word() else {
+            let Some((v, vquoting, vspan)) = self.take_word() else {
                 return Err(self.fail_here("dialect mark `=` requires a value word"));
             };
             end_span = vspan;
-            Some(parse_word_lexeme(&v, vsq, self.interner))
+            Some(parse_word_lexeme(&v, vquoting, self.interner))
         } else {
             None
         };
@@ -854,8 +879,8 @@ impl Parser<'_> {
     /// Parse a single word token into a [`Word`].
     fn parse_word(&mut self) -> Result<Word, bool> {
         match self.take_word() {
-            Some((lexeme, single_quoted, _span)) => {
-                Ok(parse_word_lexeme(&lexeme, single_quoted, self.interner))
+            Some((lexeme, quoting, _span)) => {
+                Ok(parse_word_lexeme(&lexeme, quoting, self.interner))
             }
             None => Err(self.fail_here("expected a word")),
         }
@@ -873,10 +898,12 @@ impl Parser<'_> {
             Some(Tok::Word {
                 lexeme,
                 single_quoted: false,
+                ..
             }) if lexeme == "=" => TestOp::Eq,
             Some(Tok::Word {
                 lexeme,
                 single_quoted: false,
+                ..
             }) if lexeme == "!=" => TestOp::Ne,
             _ => {
                 return Err(self.fail_here("test operator must be `=` or `!=` (string comparison)"));
@@ -1037,14 +1064,14 @@ impl BlockEnd {
         match self {
             BlockEnd::Brace => matches!(tok, Tok::RBrace),
             BlockEnd::Keyword(kw) => {
-                matches!(tok, Tok::Word { lexeme, single_quoted: false } if lexeme == kw)
+                matches!(tok, Tok::Word { lexeme, single_quoted: false, .. } if lexeme == kw)
             }
             BlockEnd::CaseArmEnd => {
                 matches!(tok, Tok::DSemi)
-                    || matches!(tok, Tok::Word { lexeme, single_quoted: false } if lexeme == "esac")
+                    || matches!(tok, Tok::Word { lexeme, single_quoted: false, .. } if lexeme == "esac")
             }
             BlockEnd::IfThenEnd => {
-                matches!(tok, Tok::Word { lexeme, single_quoted: false }
+                matches!(tok, Tok::Word { lexeme, single_quoted: false, .. }
                     if lexeme == "else" || lexeme == "fi")
             }
         }
@@ -1112,10 +1139,32 @@ const ZERO_SPAN: Span = Span {
 
 // === word-lexeme decoding ===================================================
 
+/// The whole-word quoting of a lexed token — whether it was exactly one single- or
+/// double-quoted run (`273`/`27H`). `single_quoted` makes `$`/`#` literal; `double_quoted`
+/// is consulted ONLY for `"$@"` vs bare `$@` (the faithful list-form vs word-splitting), the
+/// oracle-side positional model's one quoting-sensitive decision. A word mixing quotes or
+/// bare bytes is neither.
+#[derive(Debug, Clone, Copy)]
+struct WordQuoting {
+    single_quoted: bool,
+    double_quoted: bool,
+}
+
+impl WordQuoting {
+    /// Neither quote — a bare word or a sub-lexeme where whole-word quoting cannot apply.
+    const fn unquoted() -> Self {
+        Self {
+            single_quoted: false,
+            double_quoted: false,
+        }
+    }
+}
+
 /// Decode a lexer word lexeme into a [`Word`]. `single_quoted` ⇒ the whole token
 /// was single-quoted, so `$`/`#` are literal (`'$1'` ⇒ the literal string `$1`).
-fn parse_word_lexeme(lexeme: &str, single_quoted: bool, interner: &mut Interner) -> Word {
-    if single_quoted {
+/// `double_quoted` is the `"$@"`-vs-`$@` discriminator (`273`/`27H`).
+fn parse_word_lexeme(lexeme: &str, quoting: WordQuoting, interner: &mut Interner) -> Word {
+    if quoting.single_quoted {
         return Word::SingleQuotedLiteral(lexeme.to_owned());
     }
     // `${N#PREFIX}` — positional with a leading LITERAL prefix stripped. dash treats the
@@ -1164,10 +1213,20 @@ fn parse_word_lexeme(lexeme: &str, single_quoted: bool, interner: &mut Interner)
         if sem::is_name(rest) {
             return Word::Var(interner.intern(rest));
         }
-        // `$@`, `$*`, `$#`, `$?` and the like: not modeled as a single resolvable
-        // value here. Keep literal ⇒ evaluator yields Top if it reaches a
-        // value-position. (`$@` re-expansion is a deferred precision item, 202 §1.)
-        return Word::Literal(lexeme.to_owned());
+        // `"$@"` — the faithful positional list (`273` §1: command-position `"$@"` runs the
+        // argument-slot ⇒ peel). ONLY the double-quoted form models: bare `$@` word-splits,
+        // and `$*`/`"$*"` IFS-join, so none of the three preserve the argument list — they
+        // route to `Unmodeled` ⇒ ⊤ in every position (`27H` bare-forms-route-to-top,
+        // `271:rul-env-claim-inversion`: bare `"$@"` claims NOTHING). This is the
+        // wrong-`Word::Literal("$@")` fix (`27H` finding-positional-oracle-side-couples-founding-pin):
+        // the old literal resolved to the text `$@`, a wrong concrete.
+        if rest == "@" && quoting.double_quoted {
+            return Word::PositionalArgs;
+        }
+        // `$@`, `$*`, `"$*"`, `$#`, `$?` and the like: not a single resolvable value and not
+        // the faithful list ⇒ `Unmodeled`, which fails to resolve in EVERY position (the safe
+        // direction; NOT `Literal`, which would evaluate as its own text — a wrong concrete).
+        return Word::Unmodeled(lexeme.to_owned());
     }
     // A bare literal. If a `$` appears mid-word (`pre$1`), we conservatively keep
     // the whole thing literal — the dialect's resolvable words are simple `$N`/
@@ -1596,22 +1655,79 @@ mod dialect_tests {
         // `${2-}` (the nounset idiom, `24P` §2) parses as PositionalDefault, NOT Unmodeled — so
         // `[ "${2-}" = "" ]` resolves the operand-count guard (the site would be un-probeable if it
         // degraded to ⊤). Adversarial: a non-empty default and the `:-` spelling both parse.
-        use super::{Word, parse_word_lexeme};
+        use super::{Word, WordQuoting, parse_word_lexeme};
         let mut i = Interner::default();
         assert_eq!(
-            parse_word_lexeme("${2-}", false, &mut i),
+            parse_word_lexeme("${2-}", WordQuoting::unquoted(), &mut i),
             Word::PositionalDefault {
                 n: 2,
                 default: String::new()
             }
         );
         assert_eq!(
-            parse_word_lexeme("${1:-def}", false, &mut i),
+            parse_word_lexeme("${1:-def}", WordQuoting::unquoted(), &mut i),
             Word::PositionalDefault {
                 n: 1,
                 default: "def".to_owned()
             }
         );
+    }
+
+    #[test]
+    fn positional_args_only_quoted_at_models_the_list() {
+        // The oracle-side positional model (`273`/`27H`): ONLY `"$@"` (double-quoted) is the
+        // faithful list-form `Word::PositionalArgs`. bare `$@`, `$*`, and `"$*"` route to
+        // `Word::Unmodeled` (⊤ everywhere — they word-split / IFS-join, not the arg list). This
+        // is the `27H` finding-positional-oracle-side-couples-founding-pin fix: the old
+        // `Word::Literal("$@")` was a wrong concrete.
+        use super::{Word, WordQuoting, parse_word_lexeme};
+        let dq = WordQuoting {
+            single_quoted: false,
+            double_quoted: true,
+        };
+        let bare = WordQuoting::unquoted();
+        let mut i = Interner::default();
+        assert_eq!(
+            parse_word_lexeme("$@", dq, &mut i),
+            Word::PositionalArgs,
+            "quoted `\"$@\"` is the faithful positional list"
+        );
+        assert_eq!(
+            parse_word_lexeme("$@", bare, &mut i),
+            Word::Unmodeled("$@".to_owned()),
+            "bare `$@` word-splits ⇒ ⊤ (not the list)"
+        );
+        assert_eq!(
+            parse_word_lexeme("$*", dq, &mut i),
+            Word::Unmodeled("$*".to_owned()),
+            "`\"$*\"` IFS-joins ⇒ ⊤ (not the list)"
+        );
+        assert_eq!(
+            parse_word_lexeme("$*", bare, &mut i),
+            Word::Unmodeled("$*".to_owned()),
+            "bare `$*` ⇒ ⊤"
+        );
+        // A single positional is quoting-insensitive (both `$1` and `"$1"` ⇒ Positional(1)).
+        assert_eq!(parse_word_lexeme("$1", dq, &mut i), Word::Positional(1));
+        assert_eq!(parse_word_lexeme("$1", bare, &mut i), Word::Positional(1));
+    }
+
+    #[test]
+    fn positional_args_lexes_with_double_quote_flag() {
+        // The lexer must PRESERVE the whole-word double-quote so the parser can tell `"$@"`
+        // from `$@` (the flag is otherwise decoded away). A command `mycmd "$@"` ⇒ the second
+        // word is `Word::PositionalArgs`; `mycmd $@` ⇒ `Word::Unmodeled`.
+        use super::Word;
+        let quoted = body_of("w__predict() { mycmd \"$@\"; }");
+        let bare = body_of("w__predict() { mycmd $@; }");
+        let last_word = |body: &[Stmt]| -> Word {
+            match body.last().expect("a command") {
+                Stmt::Command(c) => c.words.last().expect("a word").clone(),
+                other => panic!("expected a command, got {other:?}"),
+            }
+        };
+        assert_eq!(last_word(&quoted), Word::PositionalArgs);
+        assert_eq!(last_word(&bare), Word::Unmodeled("$@".to_owned()));
     }
 
     #[test]

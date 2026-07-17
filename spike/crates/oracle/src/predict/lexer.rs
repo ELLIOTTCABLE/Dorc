@@ -29,8 +29,17 @@ pub(super) enum Tok {
     /// stored `String` is the *decoded* lexeme (quotes removed, but `$`/`#`/`{`
     /// preserved); the parser decides if it is a positional, var, annotation
     /// fragment, etc. A separate `single_quoted` flag records whether the whole
-    /// word came from a single-quoted run (so `'$1'` is distinguishable).
-    Word { lexeme: String, single_quoted: bool },
+    /// word came from a single-quoted run (so `'$1'` is distinguishable). The
+    /// `double_quoted` flag records whether the whole word is exactly one
+    /// double-quoted run (so `"$@"` is distinguishable from bare `$@` — the
+    /// oracle-side positional model needs the quoting to tell the faithful
+    /// list-form `"$@"` from the word-splitting bare `$@`, `273`/`27H`; quotes are
+    /// otherwise decoded away by [`Lexer::word`]).
+    Word {
+        lexeme: String,
+        single_quoted: bool,
+        double_quoted: bool,
+    },
     /// `(` — open paren (case-arm patterns / subshell-shaped; only the case-arm use
     /// is in dialect).
     LParen,
@@ -274,7 +283,10 @@ impl Lexer<'_> {
         let mut lexeme = String::new();
         // `single_quoted` is true iff the entire word is exactly one single-quoted
         // run (so `'$1'` ⇒ literal `$1`); a word mixing quotes/literals is not.
+        // `double_quoted` mirrors it for `"…"` (so `"$@"` ⇒ the faithful list-form,
+        // `273`/`27H` — a word mixing quotes/literals is neither).
         let mut single_quoted_whole = false;
+        let mut double_quoted_whole = false;
         let mut saw_any_part = false;
         let mut multi_part = false;
 
@@ -283,6 +295,8 @@ impl Lexer<'_> {
                 Some(b'"') => {
                     if saw_any_part {
                         multi_part = true;
+                    } else {
+                        double_quoted_whole = true;
                     }
                     saw_any_part = true;
                     self.pos = self.pos.saturating_add(1);
@@ -316,10 +330,12 @@ impl Lexer<'_> {
         }
 
         let single_quoted = single_quoted_whole && !multi_part;
+        let double_quoted = double_quoted_whole && !multi_part;
         self.out.push(Token {
             kind: Tok::Word {
                 lexeme,
                 single_quoted,
+                double_quoted,
             },
             span: span(lo, self.pos),
         });

@@ -366,6 +366,15 @@ impl Tracer {
     /// resolved, non-idiom command sets the vouch.
     fn run_command(&mut self, cmd: &Command) -> Flow {
         for w in &cmd.words {
+            // `"$@"` in command position is the faithful positional list — concrete-by-
+            // construction (the traced positionals), so it does NOT ⊤ the check. This is the
+            // founding-pin fix (`27H` finding-positional-oracle-side-couples-founding-pin): the
+            // one-liner `mycmd --dry-run "$@"` vouches because `"$@"` re-expands the site's argv,
+            // which the shipped body runs verbatim (the probe's real rc is authoritative). A
+            // VALUE-position `"$@"` never reaches here (it ⊤s in `resolve_word`).
+            if matches!(w, Word::PositionalArgs) {
+                continue;
+            }
             if let Err(reason) = self.resolve(w) {
                 return Flow::Top(top_from_word(reason));
             }
