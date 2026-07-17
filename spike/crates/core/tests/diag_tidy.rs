@@ -155,6 +155,7 @@ const LEGACY_ALLOW_LIST: &[&str] = &[
     "munge-name-collision",
     "reserved-namespace-squat",
     "missing-dialect-marker",
+    "mark-brace-verdict-single-cell",
 ];
 
 /// The SPANLESS-MINT allow-list (arch-3-residual-2): EXACTLY the codes permitted to construct a
