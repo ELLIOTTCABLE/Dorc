@@ -42,7 +42,10 @@ corpus are failure-modes here:
 3. Markdown discipline, strictly budgeted:
    - at most one `*emphasis*` per two paragraphs; zero `**strong**`, anywhere;
    - lists only for genuinely list-shaped content (menus, checklists, tables of
-     outcomes); prose otherwise;
+     outcomes); prose otherwise. Register split (human-calibrated, 2026-07-18):
+     this binds the learning path and admin docs; `reference/` material relaxes
+     it - heavy bullets and dense per-item detail are acceptable, even
+     preferred, for contract material;
    - code-spans and fenced sh blocks are unrestricted - prefer showing actual sh over
      describing it;
    - readable sentence-case headers; no decorative markup;
@@ -60,7 +63,12 @@ corpus are failure-modes here:
    Dorc's contracts, unroll the rationale fully in place.
 6. sh examples use 3-space indentation, quote-as-law, printf-doctrine, and the
    dialect these docs themselves teach. An example that violates the contract it is
-   teaching is a bug.
+   teaching is a bug - as is one using spellings unverified against the grammar
+   (when unsure a decoration parses, annotate outside the code).
+7. Teach the when, not only the what. Every construct's documentation answers
+   "when would I reach for this?" (and when not) alongside its syntax and
+   semantics - in the reference especially, where a member with no when-guidance
+   is an incompleteness bug (human-calibrated, 2026-07-18).
 
 ## The one sanctioned exception: quoted footers
 
