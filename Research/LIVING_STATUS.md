@@ -57,6 +57,21 @@ conductor's teaching templates. Companion (2026-07-18): `spike/skills/author-ora
 protocol -> tripwire reiteration -> verification gates; corpus seeds fenced in
 their own section).
 
+**User-aid design sitting CLOSED (2026-07-18, Fable + human):** the hints/lints/why
+category got its standing registry — root **`AID-NEEDS.md`** (aid-classes + the Law
+section: two-plane opposite-fail, collapse-mints-evidence, trust-tier-is-syntax,
+defining-case catalog, error-authorship-tier; ANALYZER-NEEDS' sibling) — and a
+build-phase plan-of-record, **`notes/27T`**: whylog/posthoc-`dorc why` ruled BUILD-NOW
+(the sacred promise is fiction at HEAD; stream churn accepted), the legacy string-slug
+`Diagnostic` ruled KILLED (one catalog), the evidence plane (mint the reserved
+OriginKinds; collapse constructors demand evidence; minting-line threading = the `27Q`
+stdlib precondition, now owned), and the defining-case/promote prose pipeline
+(colocated triple render; committed catalog intermediate; Menhir-descendant).
+Sequencing: legacy-kill + evidence types land BEFORE block-stdlib authoring.
+**`notes/27U`** = proposed USER_STORY recovery section, awaiting human audit.
+`spike/CLAUDE.md` gained the User-aid law block. The lint lane (`27R`/`27S`,
+`ai/r27-lint*`) composes and is treated as merged.
+
 `270:block-rebuild` is **CLOSED** (2026-07-17, one session: eight dispatches
 landed + both bless checkpoints stamped; ledger = **`notes/27D`** including its
 BLOCK CLOSE section + forward seam-list; builder notes `27E`–`27I`). The corpus is
