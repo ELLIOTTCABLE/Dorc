@@ -30,9 +30,9 @@ suspended and never traded against performance.
   is unknown - a wall - never a permissive default. Adding description only ever
   adds capability at your own tool's sites; it cannot weaken anyone else's
   safety. (The one deliberate exception: a wrong at-most claim, section 5c.)
-- Only oracle bytes execute during probing. Book bytes never ship; a site's
+- Only oracle bytes execute during probing. Book commands never ship; a site's
   arguments flow into your functions through your own argument parsing, but the
-  admin's written bytes are never executed by the probe lane.
+  admin's written command-position bytes are never executed by the probe lane.
 - The book's order is sacred. Nothing you write can cause reordering; elision
   and probe-parallelism are the only speed mechanisms that exist.
 - Everything is attributed. Every elision names the answering function; every
