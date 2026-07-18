@@ -196,10 +196,54 @@ for it in a sketch.
   stealable-patterns shortlist gets folded into the builder brief + appended here
   before dispatch.
 
-## §8 — Fold instructions (human)
+## §8 — Prior-art fold (appended post-sweep, same sitting; digest = `27Ra`)
+
+The sweep (15 fetches; brew `doctor.rb` source, shellcheck/checkbashisms manpages,
+rustc JSON book, eslint processor spec, golangci-lint exit codes, reviewdog README —
+mostly +SURE from primaries) landed as `Research/notes/27Ra`. Deltas ADOPTED into the
+directives above (binding on the builder):
+
+- **delta-positive-clean-sentence** (brew): clean state is a positive statement
+  ("nothing found across N files, M sources"-shaped), never mere silence.
+- **delta-named-sources-selectable** (brew `--list-checks` / npm doctor): sources
+  carry stable names; `--list-sources` lists them; naming a source as an arg runs a
+  subset. Cheap, and it IS the pluggability surface made user-visible.
+- **delta-exit-trichotomy-sharpened** (shellcheck/golangci): 0 clean / 1 findings ≥
+  threshold / 2+ operational (usage stays 2; "linter broke" must never masquerade as
+  either clean or findings). checkbashisms' ADDITIVE exit codes (1|2|4 summed) are
+  the named anti-pattern: our adapters never interpret a foreign tool-rc beyond
+  zero/nonzero — parsed findings govern.
+- **delta-additive-only-format-policy** (rustc forward-compat + shellcheck
+  json1-vs-frozen-legacy): the JSONL envelope promise is additive-only fields +
+  consumers-tolerate-unknown-fields/enum-values — NOT a frozen schema; a breaking
+  change mints a new format name instead of mutating the live one.
+- **delta-eslint-processor-precedent**: ESLint processors (preprocess → lint virtual
+  blocks → postprocess MUST remap all locations to the original file) are the direct
+  precedent for strip-then-remap — and their autofix-under-transform default-OFF is
+  our v0 no-fix-mode confirmed: location-only remap, never range/fix remap.
+- **delta-checkbashisms-lint-flag**: prefer `checkbashisms --lint`
+  (`file:line:1: warning: …`) over its prose default; tolerant ladder unchanged.
+- **delta-advisory-preamble-taste** (brew's "just ignore this. Thanks!"): hint-tier
+  output owns its advisory-ness explicitly (exact spelling = builder latitude);
+  every emitted line is actionable or flagged advisory (the fatigue doctrine,
+  kWARN-rich's presentation half).
+
+Named SEAMS only (do not build): diff-aware filtering (reviewdog modes — a
+kSCOPE-asked cousin) · SARIF/checkstyle emitters (free reviewdog/GitHub integration
+later) · lint result caching (kSTATE-adjacent; parked with the same fences) ·
+shellcheck⇄checkbashisms double-report dedupe (v0 reports both, source-tagged) ·
+fix-suggestion confidence tiers (rustc applicability).
+
+Test-pin obligation from the sweep (~SUSPECT finding, `27Ra` bottom): `# shellcheck
+disable=` directives must survive strip ADJACENCY — a deleted annotation-LINE
+between a directive comment and its target must not detach the directive; pin with
+a unit test, treat as test-pin not redesign.
+
+## §9 — Fold instructions (human)
 
 Everything is on `ai/*` branches; nothing pushed. Expected end-state: `ai/r27-lint`
 (plan note + any conductor addenda) and `ai/r27-lint-build` (build atop the plan
 commit). Suggested fold: review `ai/r27-lint-build`, then fold it (it contains
 `ai/r27-lint`'s commits as ancestors); LIVING_STATUS pointer line rides the
 conductor's close-out commit.
+
