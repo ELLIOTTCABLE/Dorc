@@ -61,10 +61,10 @@ mean something different. Current per-command roles: `predict`, `is_converged`,
 `disturbs`, `lend_map`, `enter` (the last name still provisional). Current
 per-kind roles: `resolve`, `disturbance_reaches_only`, `state_stored_only_in`.
 
-The `only` naming convention binds authorship posture: a role with `only` in its
-name is complete-by-contract - consumers act on its negative space, so authoring
-it requires a totalistic survey first. A role without `only` grows arm by arm,
-each matched arm complete for its own shape only.
+The `only` naming convention binds authorship posture: *a role with `only` in
+its name is complete-by-contract* - consumers act on its negative space, so
+authoring it requires a totalistic survey first. A role without `only` grows arm
+by arm, each matched arm complete for its own shape only.
 
 ## 3. The answer channel: exit-status law
 
