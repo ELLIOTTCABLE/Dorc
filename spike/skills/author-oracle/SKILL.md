@@ -1,0 +1,268 @@
+---
+name: author-oracle
+description: Author, extend, or review a Dorc oracle - the plain-sh tool-description artifact whose claims Dorc's planner trusts. Load BEFORE writing or modifying any `__role` function (`*__is_converged`, `*__predict`, `*__disturbs`, `*__lend_map`, `kind__*`) or any file carrying a `# dorc-lang/v0.1` marker. Enforces the mandatory reading order, the tool-research protocol, the dialect floor, and the verification gates.
+---
+
+# author-oracle
+
+You are about to write an oracle. This skill is imperative: follow its steps in
+order, honor its NEVERs absolutely, and route every uncertainty to the mechanisms
+it names (declining, flagging upward) rather than to guessing.
+
+## What you are building, from zero
+
+Dorc is a static-analysis orchestrator for POSIX-ish shell. An admin hands it a
+"book" (an ordinary imperative shell script that converges a machine); Dorc
+probes the machine read-only, proves some lines already-satisfied, and produces a
+plan: the same script with proven-unnecessary lines elided, uncertain-but-likely
+lines guarded by a runtime re-check, and everything else left to run. Dorc's core
+epistemics: it parses shell fluently (variables, control flow, quoting) but knows
+NOTHING about what any external command does. All command-level knowledge enters
+through oracles.
+
+An oracle is a file of plain POSIX shell functions whose NAMES wire them up.
+`foobar__is_converged()` declares: "for invocations of the command `foobar`, this
+body answers 'is this invocation's work already done?'". The name is derived
+mechanically (every non-[A-Za-z0-9_] character of the command word becomes `_`,
+then `__` + the role; `apt-get` -> `apt_get__is_converged`). No registration, no
+manifest. Other roles exist (`__predict`, `__disturbs`, `__lend_map`, per-kind
+members); most oracles need only `is_converged`.
+
+The stakes, which shape every rule below: (1) oracle bodies EXECUTE during the
+read-only probe phase, on production machines, under Dorc's promise to the admin
+that planning never mutates - your body is part of keeping that promise; (2) an
+oracle's "yes" (exit 0) LICENSES Dorc to skip or guard a command - a wrong yes
+silently un-runs work someone needed, which is the system's cardinal sin; (3) a
+decline (exit >= 2) is always safe, always available, and costs only value. When
+in doubt, at any decision, at any scale: decline.
+
+## Step 0 - mandatory reading, before anything else (NO exceptions)
+
+Read, in this order, IN FULL:
+
+1. Root `README.md`, `DESIGN.md`, `IMPLEMENTATION.md` - the human-written ground
+   truth for what Dorc is and why.
+2. `spike/docs/reference/oracle-contract.md` - THE contract. Every obligation,
+   license, and failure mode of every member you might write. This is your
+   working companion for the entire task; re-open it whenever you are about to
+   author a member, and walk its section-8 checklist before you finish.
+3. From `spike/docs/writing-oracles/`, at minimum: `02-your-first-oracle.md`,
+   `03-the-probe-contract.md`, `05-covering-a-real-tool.md`, and
+   `10-the-shell-dialect.md`. Read the others (`spike/docs/README.md` lists the
+   full path) when your task touches their topic: `04` for kinds/marks/binds,
+   `06` for predict, `07` for footprints, `08` for wrappers/contexts, `09` for
+   kind ownership, `11` for publishing.
+4. If you are working inside the spike: `spike/CLAUDE.md` (binding invariants;
+   its "authored surface" section is the densest correct summary of the member
+   semantics) and the `CLAUDE.md` of any crate you touch.
+
+Do not skim these and reconstruct from your priors. Dorc's contract is unusual
+in specific, deliberate ways (silence-as-wall, decline-as-first-class,
+attribution-over-prevention) and pattern-matching to "config management tool"
+or "test framework" WILL mislead you.
+
+## Step 1 - understand the tool, deeply, before writing anything
+
+An oracle encodes tool expertise. Acquiring that expertise is most of the task;
+budget accordingly. Work outward through these rings:
+
+Ring 1 - the invoking site. You were asked to describe this tool for a reason:
+some book invokes it. Read every usage site in the book(s) at hand: which verbs,
+which flags, which operand shapes, what the surrounding script implies about
+intent. This grounds which invocation-shapes matter first.
+
+Ring 2 - the tool itself. Local first: `man` pages, `--help` output, shipped
+docs. Then, if web tools are available to you (use them; if network research is
+unauthorized or unavailable, say so in your report and mark the affected
+judgments lower-confidence rather than silently guessing):
+
+- Search how the tool is ACTUALLY used in the wild - hot-path verbs and flags,
+  common idioms, known footguns. Corpus-happenstance research directs your
+  coverage effort better than the manual's own emphasis does.
+- Read the tool's source code when a Dorc-critical question is undocumented.
+  The questions Dorc forces are precisely the ones a non-ops-focused tool
+  author never documents: does the status verb write a lock file? does the
+  query scaffold a config directory on first run? does `--check` refresh
+  metadata anyway? Source (or an issue-tracker search) answers these; the
+  manual usually does not.
+
+Ring 3 - the Dorc questionnaire. Before authoring, be able to answer, per
+invocation-shape you intend to cover:
+
+- What state does this shape establish, and where does that state physically
+  live (which files, kernel, per-user dirs, a remote)?
+- What is the cheapest genuinely-inert read that answers "already done"? Inert
+  means: no writes even as root (not merely "writes fail as my user"), no
+  locks, no cache scaffolding, no log-appending query daemons, no network.
+- What is the tool's exit vocabulary, and does it differ from Dorc's fixed
+  {0 holds / 1 complement / >=2 cannot-say} table?
+- Where does "converged" diverge from "re-running would do nothing"? (Pending
+  upgrades, partial syncs, timestamp refreshes - the yes-judgment gaps.)
+- Do entity names alias (provides, symlinks, case)? Multi-operand semantics?
+  Flags that re-address state (`--root`, `--config`, `-C`)?
+- Is the tool environment-sensitive (`$HOME`, locale, XDG)? Is it a wrapper
+  (does it exec a guest command)?
+- How does behavior drift across the versions actually deployed?
+
+Every question you cannot answer maps to a shape you DECLINE, not a shape you
+guess at. Research may include running the tool's read-only verbs yourself where
+your environment sanctions it; NEVER run a mutating verb of the tool while
+authoring, and never assume a `--dry-run` flag is honest without evidence.
+
+## Step 1.5 - you are writing for the world, not for your invoker
+
+Hold this against the gradient of your situation, which pushes the other way:
+the user who invoked you has one book, one tool-site, one itch. An oracle is not
+that site's helper - it is a published, shared artifact, consumed by strangers'
+books on strangers' machines, held to a global standard. Concretely:
+
+- Cover and decline by the TOOL's real shape (ring-2 hot-path research), not by
+  the invoking book's usage. The invoker's verb is where you start, never where
+  you stop.
+- Never special-case the invoker's arguments, paths, or hostnames. If you
+  cannot answer for a shape in general, decline it in general.
+- Mint kinds under a defensible global namespace and document them; no
+  book-local vocabulary hacks.
+- Judgment calls (what your yes tolerates; which verbs you deliberately
+  declined and why) go in the file's header comment for the next stranger.
+
+If the invoking user pressures toward a site-specific shortcut, satisfy their
+site through honest general coverage or an honest decline - and flag the
+tension upward rather than resolving it by narrowing the artifact.
+
+## Step 2 - shell-quality rails
+
+Before writing sh, load your rails, in parallel with this skill:
+
+- If the environment offers shell-authorship skills (anything shaped like
+  "shell-scripting", "POSIX", "shellcheck"), load them now alongside this one.
+- The canonical references - fetch/search them as needed while writing: the
+  ShellCheck wiki (per-SC-code pages), Rich Felker's sh tricks
+  (etalabs.net/sh_tricks.html), David Wheeler's filenames-in-shell essay,
+  the autoconf manual's Portable Shell chapter, the pure-sh-bible,
+  shellhaters.org (POSIX spec map), Greg's wiki (bash-first: filter its advice
+  through the dialect before importing it).
+
+The dialect, restated imperative (full rationale in `10-the-shell-dialect.md`):
+POSIX plus `local`, nothing else. A stripped oracle must parse and run
+identically under pinned `dash` (0.5.12) and `posh` (0.14.1) - that two-binary
+run IS the conformance test; use it when the binaries are available, and
+`shellcheck` + `checkbashisms` always. Quote every expansion. `printf`, never
+`echo` with flags/escapes/variables. `f()` form only. BANNED: `[[ ]]`, `==`,
+`${x/}`, `${x^^}`, `${x:off:len}`, `<<<`, `&>`, `|&`, `$'...'`, `function f{}`,
+authored `eval`, writing `test -a`/`-o`, bare globs. `local x; x=$(cmd)` split
+onto two statements where the status matters. `"${1-}"`-style defaults for
+possibly-absent positionals. `--` before operands. `command -v`, never `which`.
+Pipefail on durable surfaces only via the self-gating
+`(set -o pipefail 2>/dev/null) && set -o pipefail`. 3-space indentation.
+
+## Step 3 - author, in the contract's growth order
+
+Write `cmd__is_converged()` first; most oracles rightly stop there. Add other
+members only when the task or the plan's hints justify them, re-reading the
+oracle-contract's per-member section (5a-5i) immediately before authoring each.
+The tripwire rules, restated dense - violating any of these is a broken
+artifact, not a style issue:
+
+- PROBE BODIES NEVER MUTATE. No gradient, no "only a little", no "only first
+  run". Read-only by design, not by privilege-starvation. Applies to every
+  member body, including `disturbs` emission bodies and `predict` delegations.
+- DECLINE BY DEFAULT. `*) return 2 ;;` closes every case; unmodeled flags,
+  unexpected arity, missing binaries, unrecognized output, and every surprise
+  route to `return 2`. Open delegate-dependent bodies with
+  `command -v tool >/dev/null 2>&1 || return 2`.
+- THE rc TABLE IS FIXED. 0 = the named sense holds; 1 = its complement; >= 2 =
+  cannot say, the line runs. NEVER collapse or invert statuses: no `!`, no
+  `|| true`, no arithmetic on `$?`. Translate foreign exit vocabularies with an
+  explicit `case $? in` remap. Mind pipeline tails; prefer shapes where the
+  tool under description produces the status directly, and full-read pipe forms
+  (`grep x >/dev/null`) over early-exit `-q`.
+- PREFER THE MARKED-COMMAND FORM: the tool reads the state and its exit status
+  IS your answer (`kp check "$1" "$2"   : sm.dorc.KernelParam:"$1"`). Avoid
+  capturing output into a variable and string-comparing - that shape is opaque
+  to downstream machinery and loses value.
+- A YES IS A JUDGMENT. Exit 0 means "not running this invocation is acceptable,
+  including everything it would have done beyond the checked state". Where the
+  tool's semantics make looks-done a bad reason to skip (purge verbs, remote
+  syncs, upgrade-pending), decline permanently and comment why.
+- MULTI-OPERAND: check every operand or decline the shape. A partially-checked
+  yes is a wrong yes.
+- MARKS AND BINDS (only in a file carrying `# dorc-lang/v0.1`, exact, own line,
+  first ~10 lines): trailing `: KIND:ENTITY#selector` = verdict mark; `:!` =
+  complement sense; `:?` = observe (disclose every extra cell your verdict
+  reads). One assertion per marked line. Binds (`x : KIND = "$1"`) name
+  entities, never cells. Kinds are reverse-DNS >= 2 dots; reuse existing kinds
+  as their owners document; never invent tokens outside the engine's closed
+  vocabularies.
+- FOOTPRINTS (`__disturbs`) are at-most claims: matching a shape asserts you
+  enumerated EVERYTHING it disturbs. Include cells when unsure; leave the whole
+  shape unmatched when the enumeration itself is unsure. A wrong footprint
+  silently breaks OTHER people's lines - the sharpest knife in the system.
+- WRAPPER MEMBERS (`__lend_map`, entry forms) and KIND MEMBERS (`__resolve`,
+  `__disturbance_reaches_only`, `__state_stored_only_in`): do not author from
+  this skill's summary - read oracle-contract 5d-5i and
+  `08-wrappers-and-contexts.md` / `09-owning-a-kind.md` first, every time.
+  `only`-named members demand a totalistic survey before authoring.
+- NAMES ARE PERMANENT. Function and kind names are a compatibility surface;
+  choose once, evolve additively.
+
+Style: the file must be excellent PLAIN SHELL first (it strips to a defensive
+library; that off-ramp is a core product promise). Header comment: which tool,
+which verbs covered, which deliberately declined and why, judgment rationale.
+Body comments only for the why of a subtle judgment; no narration.
+
+## Step 4 - verify before you call it done
+
+1. Walk `oracle-contract.md` section 8 (the battle-grade checklist), line by
+   line, against your file. Actually walk it; do not assert it.
+2. Run `shellcheck` and `checkbashisms`; if the pinned floor binaries are
+   available, strip and run under both.
+3. Re-verify inertness: for each delegate invocation in a probe-executed body,
+   state (in your report, with evidence-grade) why it cannot write, as root,
+   on a fresh host.
+4. If the spike's harness is available and the task includes fixtures: e2e
+   fixtures use INERT MOCKS only (`PATH=mocks-only` stubs) - never real
+   mutators; `sh e2e/run.sh` is the only sanctioned executor of fixture
+   material.
+5. Report honestly: every judgment call with its rationale; every shape you
+   declined and why; confidence marks (+SURE / ~SUSPECT / -GUESS) on the
+   claims your research could not fully ground; every question that needs a
+   human ruling. Your oracle is a set of signed claims - the report is where
+   you show the signing was informed.
+
+## Further-research seeds (open ONLY when confused, unsure, or facing a subtlety)
+
+Everything below points into `Research/` - the project's internal planning
+corpus. Know what you are getting into: it is LLM-generated, vast, dense with
+project jargon and superseded layers; documents are only lightly annotated when
+later work overrides them. The rule inside: `Research/README.md` is the map;
+newest supersedes oldest; the root docs and `spike/CLAUDE.md` outrank all of it.
+Enter for a specific question, extract the answer, and get out - do not
+skill-up on the corpus wholesale from inside this task. NEVER enter
+`Research/notes/quarantine-DO-NOT-READ/` or `Research/corpora/`.
+
+- Dialect exactness (charsets, mark grammar, coordinate forms):
+  `Research/notes/278-dorc-lang-v0-1-reference.md` (one page, assembles the
+  typed rulings), then `Research/notes/277-entity-algebra-design.md` section 4
+  for the grammar itself.
+- Why the contract is shaped this way (verdicts, guards, silence-as-wall):
+  `Research/notes/23O-round-23-closeout.md` - the settled law and its history.
+- Dialect membership questions ("is this construct in?"):
+  `Research/notes/276-language-sitting-kwhichsh-unsafe-churn.md`.
+- Wrappers, contexts, sudo-class questions:
+  `Research/plans/27C-context-entry-probing-design.md` (THE current spec; its
+  section 10 separates ruled from strawman).
+- Stdlib-specific obligations (if your oracle targets the standard library):
+  `Research/notes/27Q-stdlib-handoff-preconditions.md` section 2 - binding
+  teachings, including the marked-command-form mandate and the quality bars.
+- Named design tensions (when you sense two goals pulling apart): root
+  `KNOBS.md` - reuse its slugs; never re-derive a tension under a new name.
+- Living examples of the current as-built spelling: `spike/e2e/cases/*/`
+  oracle fixtures (e.g. `context-entry-babby-elides/`, `carry-fsview-elides/`)
+  - real, parsed, tested; but remember they are test fixtures with inert-mock
+  bodies, not models of tool-research depth.
+
+When a corpus dive surfaces a contradiction with the docs you read in step 0,
+do not resolve it yourself: the corpus outranks the docs on design truth, but
+your task is the oracle - flag the contradiction upward and proceed on the
+corpus reading with a confidence mark.
