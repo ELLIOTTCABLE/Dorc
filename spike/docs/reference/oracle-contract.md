@@ -57,9 +57,17 @@ files, and permanent once published.
 
 The role vocabulary is owned by the engine, closed at each version, and extends
 only by introducing new names - an existing role name will never be re-read to
-mean something different. Current per-command roles: `predict`, `is_converged`,
-`disturbs`, `lend_map`, `enter` (the last name still provisional). Current
-per-kind roles: `resolve`, `disturbance_reaches_only`, `state_stored_only_in`.
+mean something different. Current per-command roles:
+- `cmd__predict()`,
+- `cmd__is_converged()`,
+- `cmd__disturbs()`,
+- `cmd__lend_map()`,
+- `cmd__enter()` (still provisional).
+
+Current per-kind roles:
+- `kind__resolve()`,
+- `kind__disturbance_reaches_only()`,
+- `kind__state_stored_only_in()`.
 
 The `only` naming convention binds authorship posture: *a role with `only` in
 its name is complete-by-contract* - consumers act on its negative space, so
@@ -99,7 +107,8 @@ and above is currently one flat "confused" sink, semantically flat.
 
 The marker. `# dorc-lang/v0.1`, exact, alone on its line, within roughly the
 first ten lines. Gates the syntax below for this file (and only the syntax; role
-names need no marker). An unmarked file is plain shell.
+names need no marker). An unmarked file is treated as plain shell; our
+annotations become syntax-errors.
 
 Coordinates. `KIND:ENTITY#SELECTOR`, with the tail parts optional:
 
@@ -127,14 +136,14 @@ Verdict and observe marks mint selector tokens into the kind's vocabulary and
 attach facts to the one line that measured them; they are single-cell only - a
 statement establishing two cells is two lines. An observe inside a verdict body
 widens that fact's staleness surface (its backing) to include the observed
-cell: always safe, often obligatory for honesty. Emission lines in the disturbs
-and reach members carry a third mark position - `: KIND` or `: KIND#SELECTOR`
-typing the emitted entities - and only these emission marks may use brace
-alternation (`#{enabled,active}`). Claim emissions never mint tokens. Two
-further trailing-token vocabularies are role-scoped: dimension tokens in
-`lend_map` bodies, and substrate plus `invariant:<dimension>` tokens in
-`state_stored_only_in` bodies. All token vocabularies are engine-owned and
-closed; authors never invent tokens.
+cell: always safe, often obligatory for honesty. Emission lines in the
+`cmd__disturbs()` and `kind__disturbance_reaches_only()` members carry a third
+mark position - `: KIND` or `: KIND#SELECTOR` typing the emitted entities - and
+only these emission marks may use brace alternation (`#{enabled,active}`). Claim
+emissions never mint tokens. Two further trailing-token vocabularies are
+role-scoped: dimension tokens in `cmd__lend_map()` bodies, and substrate plus
+`invariant:<dimension>` tokens in `kind__state_stored_only_in()` bodies. All
+token vocabularies are engine-owned and closed; authors never invent tokens.
 
 Binds. `name : KIND = "$value"` assigns and declares the value an entity of the
 kind. Binds name entities, never cells. Strip reduces a bind to the assignment.
@@ -152,16 +161,16 @@ licenses, what its author must hold true, and how it fails. The probe contract
 (read-only, fast, reentrant, answer-from-durable-state, fail-toward-2) applies
 to every body in this section without further mention.
 
-### 5a. `cmd__is_converged` - the verdict member
+### 5a. `cmd__is_converged()` - the verdict member
 
 Invoked with a site's arguments (everything after the command word, as the
 book's values resolved). Answers per section 3, where the named sense is "the
 state this invocation exists to establish already holds."
 
 Licenses: at this tool's own sites only - insertion of this body as a runtime
-guard (`( check args ) || original-bytes`), and, when a probe-proof applies,
-full elision of the line. The guard always preserves the original bytes and
-always falls through to them on any non-0 answer. The vouch is inadmissible
+guard (`( cmd__is_converged args ) || original-bytes`), and, when a probe-proof
+applies, full elision of the line. The guard always preserves the original bytes
+and always falls through to them on any non-0 answer. The vouch is inadmissible
 everywhere else: it never becomes a fact, never informs another site's
 reasoning, never transfers to another tool.
 
@@ -179,7 +188,7 @@ when it was needed - under-execution, at your own tool's site, attributed to
 this function by name. A wrong 1 merely runs a converged line (safe, noisy). A
 mutating body breaks the probe promise itself (see section 7, first entry).
 
-### 5b. `cmd__predict` - the modeling member
+### 5b. `cmd__predict()` - the modeling member
 
 Invoked with an invocation's arguments. Stands in for the command inside probe
 constructs: its stdout, stderr, and exit status are consumed as the command's
@@ -203,7 +212,7 @@ can surface as a wrong verdict for some enclosing construct. Bounded by the
 coverage rule (unclaimed channels block substitution) and attributed to the
 predict that claimed.
 
-### 5c. `cmd__disturbs` - the footprint member
+### 5c. `cmd__disturbs()` - the footprint member
 
 Invoked with a site's arguments. For a matched shape, emits the disturbed
 entities one per line on stdout, each typed by a trailing kind (or
@@ -231,12 +240,12 @@ re-probes reality and the line returns), and narrow (each other line held its
 own license) - but it is real, and it is the one place your mistake spends
 other people's safety. Author accordingly.
 
-### 5d. `cmd__lend_map` - the wrapper dimension member
+### 5d. `cmd__lend_map()` - the wrapper dimension member
 
 Invoked with the wrapper's own arguments; body parses the wrapper's prefix
 exactly as the tool does and ends with `"$@"` at the guest position. Emits one
 entry per dimension: a valued line (`printf '%s\n' "$target"   : user`) maps
-that dimension; an empty entry (`:   : fs-view`) passes it through unchanged;
+that dimension; an empty entry (`: : fs-view`) passes it through unchanged;
 a dimension with no entry at all is unknown and walls.
 
 Licenses: interpretation of wrapped sites - which context the guest denotes,
@@ -251,7 +260,7 @@ Failure modes: a wrong lend value mis-keys facts to the wrong context - the
 measured-wrong-world class, capped by the entry-form's own siting duties. A
 missing dimension merely walls (safe, value-losing).
 
-### 5e. `cmd__enter` - the context entry form (name provisional)
+### 5e. `cmd__enter()` - the context entry form (name provisional)
 
 Body is ordinary pre-entry shell ending in `"$@"` verbatim in command position
 (`sudo -n "$@"`). Invoked at probe time with a composed check in guest
@@ -276,7 +285,7 @@ non-interactive construction). A mutating entry is a probe-contract break.
 
 ### 5f. The `tolerates:` vouch (a mark, not a member)
 
-A bare colon-line mark inside a function body (`:   : tolerates:user`;
+A bare colon-line mark inside a function body (`: : tolerates:user`;
 brace-alternation for several dimensions), scoped like any statement to the
 paths that reach it.
 
@@ -291,7 +300,7 @@ was silently attempting all along. The vouch claims nothing about answers
 Failure modes: a false vouch is a probe-contract break executed in an entered
 context - bounded by the dial, attributed to the three consents involved.
 
-### 5g. `kind__resolve` - the canonicalizer
+### 5g. `kind__resolve()` - the canonicalizer
 
 Invoked with an entity name of its kind; prints the canonical name, falling
 through to the input for names it cannot answer. One resolver per kind in a
@@ -306,7 +315,7 @@ wrong merge over-verifies (safe); a wrong split re-opens the silent-skip hole
 the resolver exists to close (dangerous), so uncertainty always resolves
 toward not-merging-but-also-not-inventing-splits: echo the input.
 
-### 5h. `kind__disturbance_reaches_only` - reach
+### 5h. `kind__disturbance_reaches_only()` - reach
 
 Invoked per footprint coordinate of its kind, whoever emitted it; emits the
 implied coordinates in other kinds (footprint emission grammar; static lines
@@ -322,7 +331,7 @@ re-opens exactly the cross-kind gap the member exists to close, so the survey
 duty is real. Wrong-direction danger is asymmetric like the resolver's, and
 authoring posture is the same: include when unsure.
 
-### 5i. `kind__state_stored_only_in` - the store member
+### 5i. `kind__state_stored_only_in()` - the store member
 
 Emits the substrates where the kind's state lives (emission lines with
 substrate tokens), plus zero or more whole-member invariance declarations
