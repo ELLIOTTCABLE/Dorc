@@ -513,10 +513,29 @@ prompt you write:
   unwritten); prose is a conductor/human act issued from the builder's when/why/how
   report. Never ship builder-authored error prose.
 - **whylog-write-only-replay** — the whylog thin durable (invocation record · records
-  stream · decision digest · apply report · seed) is write-only and replay-driven
-  (`dorc why --last` re-derives through the same kernel); never a cache (rec-5);
-  contents are host-metadata-sensitive — the secrets round owns that work; do not widen
-  contents casually.
+  stream incl. the report lane · decision digest · apply report · seed) is write-only
+  and replay-driven (`dorc why --last` re-derives through the same kernel); never a
+  cache (rec-5); contents are host-metadata-sensitive — the secrets round owns that
+  work; do not widen contents casually.
+- **decline-class-emission** (`27W`) — an oracle classes a deliberate decline by a
+  plain-sh emission ON the declining path: `printf '<verb> <class> <tail>\n'
+  >>"${DREP_V1:-/dev/null}"` (sink name STRAWMAN; the `:-/dev/null` default makes the
+  idiom total off-Dorc). Verb + class vocabularies are engine-owned, append-only
+  (v1: verb `decline`; classes {unsound, unmodeled, interactive, hazard} — starter set
+  pending typed ack); unknown verb/class degrades to a generic note, never an error.
+  Static-first: per-arm inventory always; per-site class when argv threads; the
+  runtime emission is the only-opportunity fallback, deduped (site, arm, class).
+  Classes route AID only — the rc-partition stays a flat sink; the license plane
+  never reads a class. Silent declines stay legal; classing is enhancement.
+- **report-lane-versioned-entry** (`27W:rul-versioned-entry`) — the report sink's env
+  NAME carries its format version; a new format mints a new name; recognized sink
+  names are permanent once published (the `__role`-name posture).
+- **report-surface-massaging-carve** (`27W:rul-report-surface-massaging`) — report/why
+  surfaces may re-emit massaged code excerpts (contributing-lines slice, whole-comment
+  attachment, marked elisions): authorship-implying, repair-directing, never
+  byte-obligated. Binds ONLY the report/why render plane — the artifact byte-floor
+  (two-surfaces) and the executable-plane never-synthesized-sh law are untouched;
+  display-sh must never masquerade as runnable.
 
 ## Where the build stands (dated 2026-07-17 — the one drift-expected section; `Research/LIVING_STATUS.md` is the live view)
 

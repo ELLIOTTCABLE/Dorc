@@ -99,7 +99,8 @@ and carries the license-contamination map.
   adjudication: verdicts, spec amendments, brief riders, ask-list, dismissals).
 - **User aid (errors / hints / lints / `dorc why` / whylog)** — root **`AID-NEEDS.md`**
   (THE registry + law) over `notes/27V` (the build phase: whylog, evidence plane,
-  one-catalog, gap ledger) · USER_STORY's "Recovery" section · `notes/27R`/`27S`
+  one-catalog, gap ledger) · `notes/27W` (authored decline-classes + the versioned
+  report lane; show-the-code) · USER_STORY's "Recovery" section · `notes/27R`/`27S`
   (the `dorc lint` lane) · the r22 spine `plans/22A` + `notes/22D`/`22E` · `plans/111`
   (the round-11 conclusion).
 

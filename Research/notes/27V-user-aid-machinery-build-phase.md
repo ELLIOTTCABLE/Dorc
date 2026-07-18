@@ -109,6 +109,10 @@ Build:
   here: claims, vouches, and emission arms carry their defining source span end-to-end,
   so attribution renders file:line (the whole flagship output depends on it). MUST land
   before block-stdlib mints selector-bearing `disturbs` claims.
+- **`27V:rider-authored-decline-classes`** (`27W`) — the decline collapse-evidence
+  gains an `authored_reason` field (class + the emitting arm's span); the report-lane
+  ingestion (deframe, degrade-generic, dedup, sanitize+cap) lands with the records
+  touch-point; the whylog carries the report stream (§2 amended).
 - **Sealing**: the evidence types get the `27L` sealed treatment from day one — no
   conversion into any license-plane input compiles. The r26 explanation-lane feeders
   (`26C` §5b) later *extend* this plane; nothing here may foreclose them.
@@ -121,8 +125,9 @@ what cannot be recomputed — and the full narration is a rendering of a re-run.
 - **Contents (per run, one JSONL-ish file, version-tagged `dorc-whylog/1`-style,
   additive-only fields, NO byte-stability promise):** the invocation record (argv, flags
   — consent flags are chain-links; book+oracle content digests) · the records stream
-  as-received (`dorc-records/1` frames; iteration-keyed when r26 arrives) · the decision
-  digest · the apply report (per-line outcomes: ran / guard-passed / guard-fell-through /
+  as-received (`dorc-records/1` frames; iteration-keyed when r26 arrives) · the
+  report-lane stream (`27W` tier-3 emissions included) · the decision digest · the
+  apply report (per-line outcomes: ran / guard-passed / guard-fell-through /
   replaced; divergence flags; rcs) · the seed. NOT contents: renderings, prose,
   derivations, receipts-for-reuse.
 - **One reader**: the why-report is a pure function over
@@ -208,7 +213,8 @@ illustrative, not a target).
   step-zero/0.5/one · sonnet clamp · comment budget · four gates + foreground e2e ·
   granular commits). Builders mint codes with EMPTY prose per
   `27V:rul-error-authorship-tier`; prose emissions are conductor/human acts at
-  checkpoint. Landing notes: `27V`+.
+  checkpoint. Landing notes: next free 27-series IDs (check the tree — the
+  27W/27X/27Y families are taken).
 - **Riders** (cheap, attach to whichever lane touches the file): e2e `hint:` pinning
   (gap-6; `expected-hint` needle files, kWARN keepalive) · the ack-6 unloaded-sibling
   emitter (gap-5) · the diag.rs 20-vs-15 doc-count fix (gap-9) · the

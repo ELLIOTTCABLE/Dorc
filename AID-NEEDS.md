@@ -98,6 +98,12 @@ Law — what a row-minter and row-consumer must know (cite as `AID-NEEDS:law-…
   secret-free; the secrets round owns the work. Fences: `an-diag-secret-taint`,
   `an-output-sanitization`, `26B:need-scrub-before-freeze`, `24R:repurp-finding12`. The
   whylog is never a verdict cache (rec-5: write-only, replay-driven, no re-ingest).
+- **law-report-surfaces-speak-sh** (`27W:rul-report-surface-massaging`) — report/why
+  surfaces show *code* by preference (an oracle's own arm, comments riding along as
+  display, never parsed), and may massage what they show (slice to contributing lines,
+  attach whole adjacent comments, mark elisions): attribution means implying authorship
+  and directing repair, never byte-for-byte reproduction. The byte-floor laws bind the
+  plan/artifact planes only; display-sh must never masquerade as a runnable artifact.
 
 
 Registry
@@ -131,7 +137,7 @@ Registry
 | aid-why-line-address | per-line interrogation by `book.sh:N` or content match | same | rev◀ tui◀ post◀ | m+d | law-lineno-identity | B |
 | aid-why-license-chain | the full numbered chain behind any disposition, tier-worded per link, naked-trust links identified by construction, with re-measure + leverage-point epilogue | facts+topo+invoc | post◀ rev◀ | m+c+d | evidence plane + witnesses + minting-line threading (`27V`) | S |
 | aid-why-wall-narration | why a wall formed: which participant, which channel/coverage failure, what it costs downstream | text+orcl+topo | blo◀ olo◀ rev◀ | d | collapse evidence (walls) | S |
-| aid-why-decline-narration | which oracle arm declined this shape, and what would have answered | orcl+facts | olo◀ blo◀ | c+d | collapse evidence (declines); refusal breadcrumb lane (spelling settling) | S |
+| aid-why-decline-narration | which oracle arm declined this shape and why — the arm itself inlined (show-the-code, massaged per law) | orcl+facts | olo◀ blo◀ post◀ | c+d | collapse evidence (declines) + `27W` classes + arm-inlining | S |
 | aid-why-disagreement-narration | two establishers disagreed on one cell: who, where, which values | facts | rev◀ post◀ | m | collapse evidence (merge operands; `22H` §1) | S |
 | aid-why-value-chain-narration | a captured value narrated through iteration hops and host transformations, best-effort, feeder-attributed | facts±+history | post◀ | m+c+g | `26C:need-why-explanation-lane` + feeders; r26 | D |
 | aid-whylog-posthoc-why | all of the above, after everything is apparently complete, zero setup: `dorc why --last` | whylog | post◀ | m+c+d | thin durable + replay (`27V`); `22A:concl-10` | S |
@@ -150,6 +156,7 @@ Registry
 | aid-lint-carrier-payload-bar | carrier/payload quality: which-arg-is-code gates, reconstruction differential, dorcism-in-payload | text+orcl | olo▶ ci▶ | d | `24T:P-A4` | S |
 | aid-lint-kind-adjudicability-bar | kind-topology clauses machine-readable; binding smells; differential discharge — REQUIRED before kinds go community-shared | text+orcl | olo▶ ci▶ | d | `24S:A4`; unowned | S |
 | aid-lint-oracle-solo-mode | oracle files linted with no book present | orcl | olo▶ | d | `27S:seam-oracle-validate-factoring` | O |
+| aid-authored-decline-classes | which shapes an oracle deliberately declines, and why (closed class set: unsound/unmodeled/interactive/hazard); routes the enhancement-nags honestly | text+orcl (facts± at tier-3) | olo▶ blo▶ rev▶ post◀ ci▶ | c | `27W` (versioned report-lane emission; static-first three tiers; decline evidence field) | S |
 | aid-coverage-instrument | analyzer-coverage dashboard over a corpus (instrument, never a gate) | text+orcl | ci▶ | d | `dorc-coverage` | B |
 
 ### Error/report classes
@@ -159,7 +166,7 @@ Registry
 | aid-error-catalog-explainers | per-code colocated triple render: machine line, terse line, full prose registers (terse/deep/first-encounter) | — | all | — | defining cases + committed catalog (`27V` §3) | S |
 | aid-error-exit-code-family | semantic fast-fail exit codes (10+ range); `--exit-code` divergence-of-world contract for cron | invoc | ci▶ | d | `24H` ack-1 (B); `--exit-code` (S; never sink-landings — `279f`) | O |
 | aid-apply-divergence-report | apply-time divergence from prediction: proceed-and-flag report items, never questions | apply | post◀ rev▶ | m | rul-divergence-proceed; whylog feeds | S |
-| aid-refusal-breadcrumbs | an oracle's loud UNK refusals surfaced with the site that ran anyway | facts | rev▶ olo▶ | c | report stream, spelling settling (oracle-contract §6) | O |
+| aid-refusal-breadcrumbs | an oracle's loud refusals surfaced with the site that ran anyway | facts | rev▶ olo▶ | c | the versioned report lane (`27W` §2: `DREP_V1`-strawman sink, `<verb> <class> <tail>` grammar, degrade-generic) | S |
 
 
 Unowned (rows above whose mechanism no round owns; watch, don't lose)
