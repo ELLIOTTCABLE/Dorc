@@ -77,18 +77,21 @@ fixed, permanent table:
 | 1 | the complement holds | the line is needed; runs |
 | 2 or higher | cannot say | the line runs, always |
 
-Only 0 and 1 ever carry a verdict; everything at 2 and above is one flat
-"confused" sink, semantically flat forever - no future version will assign
-meanings to individual high statuses, and nothing at 2+ can ever license
-anything. Author obligations on this channel:
+Only 0 and 1 ever carry a verdict; 2 communiates "I cannot meaningfully speak
+for this (collapsing errro-states, NYI, instability, and so on.) Everything at 2
+and above is currently one flat "confused" sink, semantically flat.
 
+- Stray away from 'flattening' shell-vocab operators like `||` that will paper
+  over exit-status-semantics; and *extremely avoid shell-flipping-and-flattening
+  tools like `!`* - they will incorrectly flip tool "error" and other confused
+  statuses into convergence!
+- Instead, preferentially translate foreign exit vocabularies explicitly (`case
+  $? in`) whenever the delegate's dialect differs from the table - especially
+  tools whose 2 means something definite.
 - Mind pipeline tails: a body ending in a pipeline answers with the tail's
   status (or the pipeline's, under pipefail); make sure that status is the
   answer you mean, and prefer shapes where the tool under description produces
   the status directly.
-- Translate foreign exit vocabularies explicitly (`case $? in`) whenever the
-  delegate's dialect differs from the table - especially tools whose 2 means
-  something definite.
 - Route every surprise to 2+: missing binaries, unrecognized output, permission
   oddities. `command -v tool >/dev/null 2>&1 || return 2` is the standard gate.
 
