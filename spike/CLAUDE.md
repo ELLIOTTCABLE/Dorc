@@ -472,6 +472,44 @@ prompt you write:
   corresponding POSIX rule, simplify it for our purposes, match it in spirit.
   Conservative for the spike; characters once granted can never be clawed back.
 
+## User-aid & diagnostics law (registry + laws: root `AID-NEEDS.md`; build phase: `27T`)
+
+- **two-plane-aid-law** (`26C` §5b, human hard-ack) — the license plane fails toward
+  unsureness; the aid/explanation plane fails toward narration with attributed
+  confidence. Aid-evidence is decision-inert at the TYPE level (sealed; no conversion
+  into any license-plane input compiles); license values flow into evidence freely,
+  never back. Lint-clean licenses nothing.
+- **collapse-mints-evidence** (`AID-NEEDS:law-collapse-mints-evidence`) — every
+  safety-narrowing (meet-to-⊤, refuse, decline, wall, demote, cancel) mints
+  decision-inert evidence carrying the collapse's OPERANDS, demanded by the collapse
+  constructor at the VALUE level (pure data; kernels stay pure — arena registration is
+  post-pass per `22D`). Evidence is Eq-EXCLUDED from lattice equality (fixpoint
+  termination, `22W` §2) and k-capped. `Unexplained` is constructible but renders
+  self-advertisingly.
+- **trust-tier-is-syntax** — the epistemic tier of every rendered link (measured /
+  vouched / ran / claimed / derived / consented) is a typed evidence field rendered
+  uniformly by arrangement code; prose fragments never hand-write epistemics.
+- **one-catalog-no-legacy** (`27T:rul-kill-legacy-diagnostic`) — the structured
+  `DiagCode` catalog is the ONLY diagnostics mechanism; the legacy string-slug
+  `Diagnostic` is being removed. Never add new emissions to it.
+- **defining-case-catalog** — every code has exactly ONE defining case carrying the
+  colocated triple render (machine line · terse line · prose registers); prose flows
+  through the committed catalog intermediate regenerated ONLY by explicit promote
+  (BLESS-law: orchestrator-only, fresh binary, diff inspected) — the build parses the
+  catalog and never auto-tracks case files (the lag IS the assertion). Templates are
+  named-params-only; interpolated values use engine-owned canonical formatters; sibling
+  codes come from world-state/license variants ONLY, never grammar-fit
+  (`AID-NEEDS:law-codes-vary-by-world-not-grammar`).
+- **error-authorship-tier** (human-typed 2026-07-18) — builders mint codes and
+  defining-case structure with EXPLICITLY-EMPTY prose blocks (rendering greppably as
+  unwritten); prose is a conductor/human act issued from the builder's when/why/how
+  report. Never ship builder-authored error prose.
+- **whylog-write-only-replay** — the whylog thin durable (invocation record · records
+  stream · decision digest · apply report · seed) is write-only and replay-driven
+  (`dorc why --last` re-derives through the same kernel); never a cache (rec-5);
+  contents are host-metadata-sensitive — the secrets round owns that work; do not widen
+  contents casually.
+
 ## Where the build stands (dated 2026-07-17 — the one drift-expected section; `Research/LIVING_STATUS.md` is the live view)
 
 - LANDED: the round-24 ladder Stages 1–5 + `270:block-rebuild` COMPLETE (eight
