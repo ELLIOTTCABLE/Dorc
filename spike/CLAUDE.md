@@ -563,6 +563,15 @@ sh e2e/run.sh        # the e2e corpus (case-count drifts — count the dirs): da
 - Lint posture: the workspace lint table in `spike/Cargo.toml` is policy for new
   code — do not weaken it. Legacy crate-root `#![expect(..., reason)]`s
   self-ratchet; remove as layers are replaced; never add new ones to fresh code.
+- **real-tools-lane-opt-in** (human-authorized 2026-07-18) — the ONE sanctioned
+  real-external-invocation lane: `DORC_E2E_REAL_TOOLS=<comma-list>` (default
+  UNSET ⇒ zero external invocations, zero real-tool PATH probes) runs the lint
+  adapters against REAL, mise-pinned, read-only linters (shellcheck,
+  checkbashisms) over repo-local fixtures only. A listed-but-absent tool FAILS
+  the lane loudly (opt-in implies require-tools). Never default-on; never
+  golden-pins upstream message text (structural + stable-code assertions only);
+  never touches files outside the worktree. Real mutators remain forbidden
+  everywhere.
 
 ## Code style
 
