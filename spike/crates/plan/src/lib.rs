@@ -1527,6 +1527,41 @@ impl ProbePlan {
         out
     }
 
+    /// The per-run PATH shim FILE SET an entry-composed probe needs to resolve its inner check
+    /// across the wrapper's exec boundary (`274` §5 / `27L` task-14 — the shim-materialization last
+    /// mile). An entry form (`sudo__enter() { sudo -n "$@"; }`) EXECS its guest as a fresh process,
+    /// and a shell function does not survive `exec`; so `sudo__enter hork__is_converged …` cannot
+    /// resolve `hork__is_converged` at the guest position unless it is a real executable on PATH.
+    /// This maps each EXEC'd guest funcname → a standalone dispatch script (`#!/bin/sh` + the oracle's
+    /// stripped funcdef + `<fn> "$@"`), which the cli/e2e edge materializes into a PATH-prepend dir
+    /// before running the probe. ONLY oracle-authored bytes ship (`271:rul-only-oracle-bytes-ship`):
+    /// the funcdef is the shipped `inner_sh`/`enter_defs` verbatim; the shebang + dispatch line are
+    /// synthesized scaffolding (`probe-composition-walls` — never book bytes).
+    ///
+    /// The exec'd guests are every entry form AFTER the outermost (the outermost runs as a funcdef
+    /// in the probe shell) plus the inner check. A single-link `sudo__enter <inner>` yields exactly
+    /// one shim (the inner check). `Carry` (ambient, empty `enter_defs`) and plain ambient checks
+    /// (`entry: None`) cross no boundary ⇒ no shim. Deterministic content + `BTreeMap` ordering
+    /// (`inv-determinism`); empty for a wrapper-free run (`empty-world-byte-identical` — no shim dir).
+    #[must_use]
+    pub fn shim_files(&self) -> BTreeMap<String, String> {
+        let mut files = BTreeMap::new();
+        for check in &self.checks {
+            let Some(entry) = &check.entry else { continue };
+            if entry.enter_defs.is_empty() {
+                continue; // Carry / ambient — no exec boundary (see the doc-comment).
+            }
+            for (fname, fdef) in entry.enter_defs.iter().skip(1) {
+                files.insert(fname.clone(), shim_dispatch_script(fname, fdef));
+            }
+            files.insert(
+                entry.inner_fn.clone(),
+                shim_dispatch_script(&entry.inner_fn, &entry.inner_sh),
+            );
+        }
+        files
+    }
+
     /// Did the probe compile a check for `fact`? The apply may only elide a fact the
     /// probe actually checks (the "can't-probe ⇒ can't-elide" link). (Fact-keyed, not
     /// site-keyed: the DST/unit tests ask "is this cell probed at all"; the site-keyed
@@ -1535,6 +1570,14 @@ impl ProbePlan {
     pub fn checks_fact(&self, fact: FactKey) -> bool {
         self.checks.iter().any(|c| c.fact == fact)
     }
+}
+
+/// A per-run shim file's text: the oracle's stripped funcdef followed by a dispatch call that
+/// forwards the guest's argv (`274` §5). Run as `<fn> a b`, it defines the function then calls it
+/// with `$@ = a b` — identical positional binding to the in-process funcdef, so the oracle body
+/// reads its argv exactly as it does in the probe shell.
+fn shim_dispatch_script(fname: &str, fdef: &str) -> String {
+    format!("#!/bin/sh\n{fdef}\n{fname} \"$@\"\n")
 }
 
 /// A ship decision for one escalated derivation site (24E §2): the stripped `<provider>__touches`
@@ -6538,6 +6581,109 @@ apt_get__predict() {
         assert!(
             !rendered.contains("sudo hork install frob"),
             "NO raw book site bytes may appear in a shipped entry-composed probe: {rendered}"
+        );
+    }
+
+    /// Build a one-check `ProbePlan` whose sole check carries the given `entry` — the shared
+    /// fixture for the `shim_files` battery (the shim set is keyed only off `entry`).
+    fn probe_plan_with_entry(entry: Option<EntryComposed>) -> ProbePlan {
+        let mut i = Interner::default();
+        ProbePlan {
+            checks: vec![ProbePredict {
+                site: LeafId(1),
+                member: None,
+                fact: FactKey {
+                    kind: KindId(i.intern("dorc-auto:hork")),
+                    entity: EntityRef::Singleton,
+                    selector: SelectorId(i.intern("converged")),
+                    context: dorc_core::Context::HostDefault,
+                },
+                site_kind: ProbeSiteKind::Establish,
+                provider: i.intern("hork"),
+                argv: Vec::new(),
+                sh: String::new(),
+                connected: None,
+                verdict: false,
+                entry,
+            }],
+            unresolvable: Vec::new(),
+        }
+    }
+
+    #[test]
+    fn shim_files_wrap_the_exec_d_inner_check_as_a_dispatch_script() {
+        // A single-link `sudo__enter <inner>` needs exactly ONE shim — the inner check `sudo -n` execs
+        // — its bytes being shebang + the oracle funcdef verbatim + argv-dispatch (oracle bytes only).
+        let inner_sh = "hork__is_converged() {\n   :\n   case \"$1\" in\n   install) hork query \"$2\" ;;\n   *) return 2 ;;\n   esac\n}";
+        let plan = probe_plan_with_entry(Some(EntryComposed {
+            enter_defs: vec![(
+                "sudo__enter".to_owned(),
+                "sudo__enter() { sudo -n \"$@\"; }".to_owned(),
+            )],
+            inner_fn: "hork__is_converged".to_owned(),
+            inner_sh: inner_sh.to_owned(),
+            inner_argv: Vec::new(),
+        }));
+        let files = plan.shim_files();
+        assert_eq!(
+            files.keys().cloned().collect::<Vec<_>>(),
+            vec!["hork__is_converged".to_owned()],
+            "the exec'd guest (inner check) is the sole shim; the outermost enter form runs in-process"
+        );
+        assert_eq!(
+            files["hork__is_converged"],
+            format!("#!/bin/sh\n{inner_sh}\nhork__is_converged \"$@\"\n"),
+            "shim = shebang + verbatim oracle funcdef + argv-forwarding dispatch"
+        );
+    }
+
+    #[test]
+    fn shim_files_empty_for_ambient_and_carry_no_exec_boundary() {
+        // Ambient (`entry: None`) and CARRY (empty `enter_defs`, `27C` §4(a)) cross no exec boundary —
+        // the inner check runs in-process ⇒ no shim ⇒ `empty-world-byte-identical`.
+        assert!(
+            probe_plan_with_entry(None).shim_files().is_empty(),
+            "an ambient check materializes no shim"
+        );
+        let carry = probe_plan_with_entry(Some(EntryComposed {
+            enter_defs: Vec::new(),
+            inner_fn: "hork__is_converged".to_owned(),
+            inner_sh: "hork__is_converged() { :; }".to_owned(),
+            inner_argv: Vec::new(),
+        }));
+        assert!(
+            carry.shim_files().is_empty(),
+            "a Carry check (empty enter_defs) crosses no exec boundary ⇒ no shim"
+        );
+        assert!(
+            ProbePlan::default().shim_files().is_empty(),
+            "an empty probe materializes no shim"
+        );
+    }
+
+    #[test]
+    fn shim_files_materialize_every_exec_d_guest_of_a_multi_link_chain() {
+        // A chain execs its guests transitively (sudo execs chroot, chroot execs pipx), so every
+        // enter form AFTER the outermost + the inner check needs a shim; keys sorted (`inv-determinism`).
+        let plan = probe_plan_with_entry(Some(EntryComposed {
+            enter_defs: vec![
+                (
+                    "sudo__enter".to_owned(),
+                    "sudo__enter() { sudo -n \"$@\"; }".to_owned(),
+                ),
+                (
+                    "chroot__enter".to_owned(),
+                    "chroot__enter() { chroot / \"$@\"; }".to_owned(),
+                ),
+            ],
+            inner_fn: "pipx__is_converged".to_owned(),
+            inner_sh: "pipx__is_converged() { :; }".to_owned(),
+            inner_argv: Vec::new(),
+        }));
+        assert_eq!(
+            plan.shim_files().keys().cloned().collect::<Vec<_>>(),
+            vec!["chroot__enter".to_owned(), "pipx__is_converged".to_owned(),],
+            "every exec'd guest (inner enter forms + inner check) is materialized; the outermost is not"
         );
     }
 }
