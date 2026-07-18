@@ -95,13 +95,18 @@ records stay in `R`, so no later record un-conflicts the meet). Three consequenc
   +SURE on the mechanism) — when a conflict DOES occur, a transient state (cell held
   Value V before the conflicting record arrived) can mint wants that the final state
   (cell ⊤) would not: probes ship, their records enter `R`, and those extra facts are
-  *true measurements about other cells* that can license dispositions — including
-  extra elisions at sites outside the conflicted cell's dataflow cone (a fact about
-  cell X gathered for a cone-site also serves any other site reading X). So the final
-  record-set, and hence the plan, can vary with arrival order — and the variance is
-  NOT confined to the toward-run direction. Soundness is untouched (every fact is a
-  genuine measurement; the license machinery is indifferent to why a fact was
-  gathered), but plan reproducibility — a trust surface — is not free under conflict.
+  *true measurements* that can enable outcomes the other ordering would not reach.
+  <!-- /* corrected same day (§1b, prompted by the human's which-set-is-correct
+  question): the original text here claimed extra facts license "extra elisions at
+  sites outside the cone" via shared cells — wrong-as-stated, because
+  inv-site-keyed-results means a VERDICT never travels between sites. The real
+  cell-plane variance channel is the walls/patrol/fold-validity judgments (sound);
+  the site-plane case is instead a genuine soundness hazard, closed by §1b's
+  admissibility invariant. "Soundness is untouched" was likewise too glib — it is
+  RECOVERABLE, via §1b, under either menu option. */ -->
+  So the final record-set, and hence the plan, can vary with arrival order — and
+  the variance is NOT confined to the toward-run direction. Plan reproducibility —
+  a trust surface — is not free under conflict; soundness needs §1b's invariant.
 
 **The menu for the carve** (revival's to choose; argue, don't drift — the same
 discipline `26B:need-cancellation-finality-gate` demands):
@@ -122,6 +127,75 @@ discipline `26B:need-cancellation-finality-gate` demands):
   won't use it").
 
 Either way, hostsim gains conflict-injection seeds; see §9.
+
+## §1b — Addendum (same day; from the human's "the correct set of elisions is the correct set" question)
+
+The human's push-back — *either direction feels like a failure-mode* — was half
+right, and forced a split §1 blurred. There are TWO kinds of order-varying evidence,
+with opposite dispositions:
+
+- **Site-plane records under a retracted want — a genuine soundness hazard,
+  closed unconditionally.** Worked instance: `W` (an interposer whose `disturbs`
+  hits `/etc/pkg`) sits above `PKG=$(cat /etc/pkg)`; the capture's fold is valid
+  only while `W` is proven-converged-and-elided (an elided command casts no wall).
+  Cell `K_W` transiently reads converged → the fold validates → iteration 2 ships
+  `dpkg__predict -s 'nginx'` for site S → S's record arrives. Then the conflicting
+  `K_W` record lands → `K_W` → ⊤ → `W` runs → the wall stands → the fold retracts →
+  S's argv is ⊤ again. S now HAS a verdict-record — but it answers "is
+  `dpkg -s nginx` converged," and the apply-time site is `dpkg -s "$PKG"` with PKG
+  unknown: the record answers a question the site no longer asks. Consuming it
+  would elide on a stale premise — under-execution, the cardinal sin. Hence
+  **`26C:inv-record-admissibility-by-want`** (soundness-tier, MANDATORY under
+  either §1 menu option — this promotes §4's want-identity keying from bookkeeping
+  to invariant): *a verdict-record is admissible at mint iff its carried
+  want-identity `(site, context, resolved-argv)` re-derives from the final
+  knowledge state; a record whose want does not re-derive is inadmissible ⇒ the
+  site takes its final-state disposition (⊤ ⇒ run/guard).* Cheap to check: sticky
+  conflict-⊤ means a resolution can move Value→⊤ but never Value→Value′ (+SURE),
+  so admissibility is an equality test, not a search. Note the single-shot build
+  never needed this invariant — "record exists ⇒ argv resolved" holds trivially
+  when nothing retracts — which makes it exactly the class of quiet assumption
+  this note exists to surface.
+- **Cell-plane facts consumed by walls / the capture patrol / fold-validity —
+  sound, order-variant, and the only variance that remains once admissibility
+  holds.** These consumers ask questions about the WORLD ("did anything disturb
+  this backing in the window," "is this interposer converged"), and a true
+  measurement answers them soundly *whenever and for whatever reason it was
+  gathered* — the license predicate consults measurement-truth plus static
+  authored claims, never the motivation for asking. An extra cell-fact can
+  validate a capture-fold (⇒ downstream elisions) that the other ordering would
+  have left walled. Both outcomes are correct, because —
+
+**— "the correct set of elisions" is not a unique set.** Elision-licensing is a
+predicate over (plan, evidence), not a function of the world: the engine never
+promises the world-maximal elidable set, only that every elision it prints is
+individually licensed by true evidence. The licensed set was ALWAYS
+evidence-contingent — a richer oracle library elides more; a probe deadline elides
+less (`262` §1's own sanctioned weakening); a refused entry-form elides less — and
+nobody calls the deadline-shrunk plan incorrect. Under-elision is the permanent
+safe floor (unnecessary-execution is the LOWEST-ranked sin; "run everything" is
+always a correct plan). What conflict-transients add is not a new correctness
+axis but a new *determinism* axis: two identical invocations on an identical
+world could gather different evidence and print different (both-correct) plans —
+a trust/UX regression against the spirit of `262` spine-inv-order-free, not a
+soundness one.
+
+**Why `26C:opt-justified-fact-gc` restores determinism** (the replay argument,
++SURE): justification is computed by REPLAYING want-derivation from the final
+record-set in canonical batch-synchronous rounds — round 0 admits all records
+matching the no-facts want-set, re-derives, round 1 admits matches, and so on to
+fixpoint. In the replay, both conflicting `K_W` records land in the SAME round, so
+the cell is ⊤ before any later round's wants derive — the transient-motivated want
+never re-derives, its answers are discarded, and the kept subset is a pure
+function of the record-set's content, not its arrival order. Since (absent
+conflicts) the gathered record-set is itself order-free (`thm-process-confluence-
+conflict-free`), and (under conflicts) the replay discards exactly the
+order-varying tail, plans become byte-identical unconditionally — the DST
+byte-identity pin needs no conflict carve at all under this option. That testing
+story is the strongest argument FOR the GC; the arguments against remain §1's
+(a second analysis pass; "the engine measured X but refuses to look at it"). The
+§10 ask stands; admissibility (above) is NOT part of the menu — it holds either
+way.
 
 ## §2 — The line between scheduling and evidence (the `277` §5 re-read, delivered)
 
