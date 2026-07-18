@@ -681,6 +681,84 @@ r27 meanwhile owes only the standing negatives (`26B` §5, re-verified at tip): 
 choke point stays single (lane-integration must not fork it), the reserved seams
 stay open, nothing new closes them.
 
+## §8b — The typing discipline for argv-keyed facts (human-requested working-through, 2026-07-17e; proposal-tier, shapes STRAWMAN)
+
+How "facts are inherently argv-keyed" is spelled in Rust so the bad states are
+unrepresentable *in practice*, and how DAG-sized keys compare in O(1). Chat
+transcript of the full derivation is the design dialogue; this is the condensed
+durable. Spike-idiom constraints honored throughout: no unsafe, no macros, no
+HashMap iteration, newtypes + module privacy as the enforcement mechanism.
+
+- **`26C:disc-hashcons-want-identity`** — the key for a derivation DAG is its
+  *hash-consed name*: every DAG node is a shallow struct whose children are ids;
+  each node is interned (BTree-backed, deterministic insertion order) in a
+  per-host `WantArena`; the whole question's identity is one `WantId(u32)`.
+  Construction O(nodes) amortized; equality O(1); want-diffing = set-difference
+  over `BTreeSet<WantId>`. The arena persists across iterations SAFELY because it
+  caches *names, not knowledge* — content-addressed names cannot go stale, so
+  recompute-from-scratch re-derives the same ids for free.
+- **`26C:disc-intern-normal-forms-only`** — intern denotations, never syntax:
+  argv as post-resolution literals; contexts as the `27C` folded per-dimension
+  normal form (`CtxNormId`); compiled forms after composition. Producers of
+  internable nodes are exactly the normalization functions (private
+  constructors). Interning pre-normalization only causes spurious MISSES —
+  the safe/wasteful direction — but the discipline is normal-forms-only.
+- **`26C:disc-key-by-extension`** — the key holds the question's *extension*
+  (resolved bytes: `argv=['−s','nginx']`), never its *intension* (which capture
+  chain produced 'nginx'). Sound because answers are world-facts, indifferent to
+  why they were asked; the intension lives in the why/provenance plane. The
+  admissibility semantics still hold because the extension is only REACHABLE
+  through the intension: `derive()` resolves argv through the live value-plane,
+  so a retracted premise ⇒ resolution fails ⇒ no key derives. Key by extension,
+  narrate by intension.
+- **`26C:disc-three-moats`** — unrepresentability is three private-constructor
+  moats, not one clever type: (1) `WantId` is unforgeable — private field, no
+  `from_raw`, the ONE mint is `WantArena::derive(&Knowledge, SiteId) ->
+  Option<WantId>`; at plan-mint, `records.get(arena.derive(final_state, site)?)`
+  — **the `?` IS the admissibility invariant**. (2) the wire never speaks keys:
+  each shipped artifact carries an engine-side manifest `(Nonce, LeafId) →
+  WantId`; hosts answer *coordinates* and can never NAME a question (composes
+  with `26C:need-captured-bytes-ship-as-data` — host bytes are data in both
+  directions). (3) the record store has no site-keyed lookup: `Records:
+  BTreeMap<WantId, HostAnswer>`, get-by-WantId only — holding a WantId requires
+  deriving it against your CURRENT state.
+- **`26C:disc-two-stores-two-laws`** — the §1b planes become two typed stores:
+  `Records` (want-keyed; admissibility-by-derivability, above) and `Cells:
+  BTreeMap<FactKey, Cell<T>>` where `enum Cell<T> { Unknown, Known(T),
+  Conflicted }` — the meet sends disagreeing Knowns to `Conflicted`, which is
+  absorbing: stickiness (§1's known→never-different-known) becomes STRUCTURAL
+  (no function returns Conflicted→Known). Distinguishing `Conflicted` from
+  `Unknown` pays twice: the sticky meet, and finality (below) — while honoring
+  `inv-top-reject` for license decisions (both are ⊤ to every consumer that
+  licenses; only the why-lane and the finality analysis may distinguish).
+- **`26C:disc-finality-witness-grade`** — the §3 finality gate as a witness
+  pair: `Final<T>` / `Provisional<T>`, constructors private to a finality
+  module, each `Final` constructor consuming only retraction-proof inputs
+  (static structure; unmodeledness; `Cell::Conflicted`). `Final<T> → T` free;
+  `Provisional` never upgrades — the `inv-must-may` one-way-coercion idiom
+  reapplied. `cancel()` demands `Final<CeilingIsGuardOrRun>` *by value* (the
+  `ByVouch` precedent), so cancel-on-provisional-judgment does not compile.
+- **`26C:disc-schedule-evidence-seal`** — §2's line at type level: `Command`
+  (Ship/Cancel/Mint) is a SINK plane; no `From<Disposition>`/compare-verdict
+  constructor exists on any evidence/cell/record type; pinned with a
+  compile-fail doctest per the `27L` `core::room` precedent.
+- **Coherence "from elsewhere", the four cases** — cross-iteration: same arena
+  ⇒ same ids, automatic. Wire: manifest association, never re-derivation from
+  host bytes. Syntax-variants: normal-forms-before-interning (the
+  `sudo -u postgres nice` / `nice sudo -u postgres` pair share a `CtxNormId` by
+  the `27C` ruling). Cross-host: one arena PER host inside the per-host state —
+  the `260` s3-1 no-cross-host-API discipline makes cross-host id confusion
+  unrepresentable-by-absence; debug-tier generation stamps (DI'd counter, never
+  ambient) as the belt.
+- **Honest residue**: `derive()`'s `Option` deliberately erases the ⊤-cause
+  (license paths never branch on which-⊤); a `derive_explain` sibling feeds the
+  why-lane. Ids are within-run only — NEVER serialized (`kSTATE` parked; rec-5).
+  Two sites asking the byte-identical question stay two keys (site is in the
+  `WantNode`) per `inv-site-keyed-results` — collapsing them is the standing
+  kSTATE-coupled human decision, not a refactor. ~SUSPECT the node vocabulary
+  sketched (Predict/Composed/Entered × Lit-argv) is complete for R2's first
+  slice; the R2 brief treats it as a starting shape, not a spec.
+
 ## §9 — DST and harness plan
 
 - **The battery (R2):** per-iteration record service from hostsim (it is a state
