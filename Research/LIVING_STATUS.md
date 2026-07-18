@@ -66,8 +66,10 @@ wraps it in the r26 era) · the `27H` reserved capture seams stay open, unchange
 bytes enter plan/artifact surfaces this round; the deadline moved to
 `26B:need-scrub-before-freeze`) · the trial revival gains one rider,
 `26B:ask-trial-counts-capture-walls`. Then, in order: **lane-fallback-carry**
-(`27C` §0.2 — the engine-proved read-set-closure pass; unaffected by the strike,
-now standing alone after block-context's close). Then **block-stdlib**: ~40
+(`27C` §0.2 — the engine-proved read-set-closure pass; unaffected by the strike
+[human-confirmed 2026-07-17], now standing alone after block-context's close;
+scope pin for its brief: VERDICT-fact carry only — `27C` §4's world-cell-VALUE
+fallback corner rides r26 with the capture fold). Then **block-stdlib**: ~40
 bootstrap oracles against the finally-stable surface + yardstick-measurement, at
 whose close the r25 first-blooding revives. The live lineage is
 **`ai/spike3-r27`** (human-granted conductor-owned; lane branches `ai/r27-*` fold
