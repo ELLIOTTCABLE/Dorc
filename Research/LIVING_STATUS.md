@@ -52,7 +52,10 @@ docs for outsiders (admin pair + an 11-page oracle-author path +
 `271`/`276`/`277`/`278`/`plans/27C`/`27Q` + as-built fixtures; style/maintenance law
 in `spike/docs/CLAUDE.md` (corpus-slugs ride `<!-- quoted -->` section footers — grep
 those on design moves to find affected sections). Direct input for the block-stdlib
-conductor's teaching templates.
+conductor's teaching templates. Companion (2026-07-18): `spike/skills/author-oracle/`
+— the agentic oracle-authoring skill (mandatory-reading order -> tool-research
+protocol -> tripwire reiteration -> verification gates; corpus seeds fenced in
+their own section).
 
 `270:block-rebuild` is **CLOSED** (2026-07-17, one session: eight dispatches
 landed + both bless checkpoints stamped; ledger = **`notes/27D`** including its
