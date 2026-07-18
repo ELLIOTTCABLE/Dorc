@@ -329,6 +329,44 @@ Conductor cross-cutting review (altitude only; mechanicals not re-run):
   exit-code · tc-lint-e2e-stub-tools-spawn · tc-lint-shellcheck-dialect ·
   tc-lint-source-selection-flag) + the cosmetic e2e summary-line wording.
 
+## §8d — Conductor review ledger, lane 2: the real-tools test lane (2026-07-18)
+
+Human-authorized same day (typed): mise-config mutation + package installs in the
+mise pseudo-sandbox; an OPT-IN suite mode against REAL checkbashisms/shellcheck,
+never default. Builder: Opus-class, branch `ai/r27-lint-realtools`, tip `dba7168`
+(atop `245afe0`); landing note `27T`. Builder's numbers: gates green · default
+suites BYTE-STABLE (904 unit / 94 e2e unchanged) · opt-in run 95 with
+`ok lint-real/shellcheck` · comment budget 0 (all-shell lane).
+
+- **rev-gap-discharged**: `27S` §6's never-ran-against-real-tools caveat is
+  DISCHARGED for shellcheck — live json1 parsed MACHINE-tier on first contact,
+  `SC2086` remap:exact at the ORIGINAL line through the strip line-map (tool saw
+  stripped line 4 → reported line 6), path original. Zero adapter fixes needed.
+- **rev-law-coherence-verified**: the `real-tools-lane-opt-in` bullet landed
+  verbatim in `spike/CLAUDE.md` Build/test/run; the root `mise.toml` gain is
+  tools-only (`shellcheck = "0.11.0"`, aqua-pinned, inert to every default gate;
+  the file pre-existed — the old "no per-dir pin" assumption was rust-scoped).
+  Default-path zero-invocation proven two ways (gate inspection + a poison-PATH
+  run with real shellcheck reachable: zero leakage).
+- **rev-genuine-product-gap**: the lane's first catch is a REAL cli wrapping bug
+  on Windows — `tool_on_path` discovers via PATHEXT (finds `.cmd`) but
+  `Command::new` spawns `.exe`-only, so script-shaped tools discover-but-cannot-
+  spawn. checkbashisms is therefore *nix-live-by-design (verified link-by-link on
+  this box: `.pl --lint -` → tolerant-text tier → approximate remap to the right
+  line — the adapter side works); Windows lists `shellcheck` only. Fix seam:
+  `27T:seam-runner-pathext-spawn` — which also supersedes/discharges `27S`'s
+  tc-lint-e2e-stub-tools-spawn when built. checkbashisms pinned v2.23.7
+  (devscripts tag, sha256-verified, git-ignored dir; GPL body never vendored).
+- Ruling-queue delta: ADD tc-real-tools-lane-mechanism (env-gated shell lane over
+  `#[ignore]` Rust tests) · tc-checkbashisms-win-spawn (disposition: loud-fail
+  when listed-but-unrunnable; Windows invocations list shellcheck only) ·
+  tc-checkbashisms-pin-tag. RESOLVED-BY-EVENTS: `27S` tc-lint-e2e-stub-tools-spawn
+  (folds into seam-runner-pathext-spawn).
+- Operational note (builder-measured): default e2e ≈ 4.5 min on Windows/msys
+  (spawn-heavy), not a hang; the lane adds ~1 dorc invocation per listed tool.
+  One-line invocation documented in `run.sh`'s lane header;
+  `DORC_E2E_REAL_TOOLS=shellcheck` is the Windows spelling.
+
 ## §9 — Fold instructions (human)
 
 Everything is on `ai/*` branches; nothing pushed. Expected end-state: `ai/r27-lint`

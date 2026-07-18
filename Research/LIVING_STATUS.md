@@ -66,9 +66,18 @@ CI coverage assertion (`--expect-files`/`--require-tools`; zero-files =
 operational exit). Advisory-only by construction (no `core::claim` contact);
 rung-probe stays seam-only (= the plan pipeline's advisory surface, never a second
 probe path); rung-oracle-solo recon says the blocker is cli-side factoring
-(`27S:seam-oracle-validate-factoring`), not analysis-machinery rework. OWED: one
-live smoke against REAL shellcheck/checkbashisms (adapters modeled from manpages,
-never yet run against live output — `27S` §6); tc-* rulings queue at `27S` §5.
+(`27S:seam-oracle-validate-factoring`), not analysis-machinery rework. Lane 2
+same day (human-authorized): the OPT-IN real-tools test lane — branch
+`ai/r27-lint-realtools`, tip `dba7168` (contains the build branch), ledger
+`notes/27T`: `DORC_E2E_REAL_TOOLS=<comma-list>` gate (unset ⇒ zero external
+invocations, proven by poison-PATH run; listed-but-absent fails loud), root
+`mise.toml` pins `shellcheck = "0.11.0"` (tools-only, inert to defaults), law
+bullet `real-tools-lane-opt-in` appended to `spike/CLAUDE.md`. The `27S` §6
+live-fire gap is DISCHARGED for shellcheck (json1 machine-tier on first contact,
+remap:exact through the strip line-map, zero adapter fixes); checkbashisms is
+*nix-live-by-design — Windows blocked by a REAL cli gap the lane caught
+(PATHEXT discovery vs `.exe`-only spawn; `27T:seam-runner-pathext-spawn`).
+tc-* ruling queues: `27S` §5 + `27T`; conductor ledgers `27R` §8c/§8d.
 
 **User-aid design sitting CLOSED (2026-07-18, Fable + human):** the hints/lints/why
 category got its standing registry — root **`AID-NEEDS.md`** (aid-classes + the Law
