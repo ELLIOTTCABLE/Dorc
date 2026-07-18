@@ -50,9 +50,24 @@ tier). NEXT: the **book-side integration** — the cross-pipeline wiring that ma
 wrapped book site elide end-to-end (peel wrapped book sites in classify/value;
 emit the composed probe via the per-run shim; thread `context` into the shipped
 `FactKey` + records lane; read back the context-qualified verdict). It is a
-**block-stdlib precondition** (`270` §2). Then, in order: **read-value-slice** (the
-capture fold on the landed wire + recipe machinery) · **lane-fallback-carry**
-(`27C` §0.2 — the engine-proved read-set-closure pass). Then **block-stdlib**: ~40
+**block-stdlib precondition** (`270` §2) — and it CLOSES block-context:
+**read-value-slice is STRUCK from the block** (human ruling 2026-07-17, relayed
+from the Fable rubber-duck sitting; durable = **`notes/26B`**, minted into the r26
+series on `ai/main` at `a452366..c802067`, absorbed at round-close). Plan-
+construction is eventually REACTIVE (chaotic-fixpoint; executors add and
+discharge work; `26B` §1 carries the typed rulings), so the single-wave
+post-probe re-bind and the fold-time substitution channel are DEAD as designs;
+the capture-fold build defers WHOLE to the r26 revival, where `26B` sits beside
+`260`/`261`/`262` as spec (routing annotations + the TODO-ADDTL update already
+landed ON `ai/main` — do not duplicate them here). Standing obligations from the
+strike: plan-mint stays a SINGLE choke-point function (a quiescence witness
+wraps it in the r26 era) · the `27H` reserved capture seams stay open, unchanged
+· the secrets-seam urgency STANDS DOWN (with the fold deferred, no captured host
+bytes enter plan/artifact surfaces this round; the deadline moved to
+`26B:need-scrub-before-freeze`) · the trial revival gains one rider,
+`26B:ask-trial-counts-capture-walls`. Then, in order: **lane-fallback-carry**
+(`27C` §0.2 — the engine-proved read-set-closure pass; unaffected by the strike,
+now standing alone after block-context's close). Then **block-stdlib**: ~40
 bootstrap oracles against the finally-stable surface + yardstick-measurement, at
 whose close the r25 first-blooding revives. The live lineage is
 **`ai/spike3-r27`** (human-granted conductor-owned; lane branches `ai/r27-*` fold
@@ -86,8 +101,12 @@ final composition algebra + siting vouch + §9/§10 additions, PLUS the lineage'
 RULED ledger; the interim composition block dropped as superseded). Residue: `38a123b`
 (the `27Xf` siting annotation + the 27C text already unified here) stays
 UNMERGED until round-close by human policy — nothing blocks; content-wise the
-lineage `27C` is a verified superset. If its `27C` conflicts at round-close,
-resolve to OURS.
+lineage `27C` is a verified superset. UPDATED 2026-07-17 (later): `ai/main` has
+since accreted MORE 27C material — `de1b09c` (§2 vouch-vs-completeness gate
+rationale; "two asks surfaced" there) · `6ab002e` (27Xf trivia) · the `26B` trio
+(`a452366..c802067`) — so the round-close absorption is a THREE-WAY 27C union
+(lineage ⊕ `main` ⊕ `ai/main`); reconcile fresh at that point, never
+side-pick.
 
 **Block-settle CLOSED (2026-07-12):** all 15 task-map items dispositioned —
 **`plans/271`** carries the rulings + the task map; the arc durables: `notes/272`
