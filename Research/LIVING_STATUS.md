@@ -83,7 +83,7 @@ tc-* ruling queues: `27S` §5 + `27T`; conductor ledgers `27R` §8c/§8d.
 category got its standing registry — root **`AID-NEEDS.md`** (aid-classes + the Law
 section: two-plane opposite-fail, collapse-mints-evidence, trust-tier-is-syntax,
 defining-case catalog, error-authorship-tier; ANALYZER-NEEDS' sibling) — and a
-build-phase plan-of-record, **`notes/27T`**: whylog/posthoc-`dorc why` ruled BUILD-NOW
+build-phase plan-of-record, **`notes/27V`**: whylog/posthoc-`dorc why` ruled BUILD-NOW
 (the sacred promise is fiction at HEAD; stream churn accepted), the legacy string-slug
 `Diagnostic` ruled KILLED (one catalog), the evidence plane (mint the reserved
 OriginKinds; collapse constructors demand evidence; minting-line threading = the `27Q`

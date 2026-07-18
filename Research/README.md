@@ -98,7 +98,7 @@ and carries the license-contamination map.
 - **Did round-27's design survive adversarial review?** — `notes/279f` (the crosscheck
   adjudication: verdicts, spec amendments, brief riders, ask-list, dismissals).
 - **User aid (errors / hints / lints / `dorc why` / whylog)** — root **`AID-NEEDS.md`**
-  (THE registry + law) over `notes/27T` (the build phase: whylog, evidence plane,
+  (THE registry + law) over `notes/27V` (the build phase: whylog, evidence plane,
   one-catalog, gap ledger) · USER_STORY's "Recovery" section · `notes/27R`/`27S`
   (the `dorc lint` lane) · the r22 spine `plans/22A` + `notes/22D`/`22E` · `plans/111`
   (the round-11 conclusion).
@@ -195,7 +195,7 @@ and carries the license-contamination map.
   **`plans/27C`** (trail: `notes/27A` superseded-in-part · `notes/27B`
   superseded-as-design). Spike steering law (`spike/CLAUDE.md` + the seven crate
   `CLAUDE.md`s) rewritten current-truth 2026-07-16. The user-aid design sitting
-  (2026-07-18) minted root `AID-NEEDS.md` + `notes/27T` (build phase: whylog ·
+  (2026-07-18) minted root `AID-NEEDS.md` + `notes/27V` (build phase: whylog ·
   evidence plane · one-catalog) + USER_STORY's "Recovery" section; the
   `dorc lint` lane landed as `notes/27R`/`27S`.
 

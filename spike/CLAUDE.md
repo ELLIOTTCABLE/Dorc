@@ -472,7 +472,7 @@ prompt you write:
   corresponding POSIX rule, simplify it for our purposes, match it in spirit.
   Conservative for the spike; characters once granted can never be clawed back.
 
-## User-aid & diagnostics law (registry + laws: root `AID-NEEDS.md`; build phase: `27T`)
+## User-aid & diagnostics law (registry + laws: root `AID-NEEDS.md`; build phase: `27V`)
 
 - **two-plane-aid-law** (`26C` §5b, human hard-ack) — the license plane fails toward
   unsureness; the aid/explanation plane fails toward narration with attributed
@@ -486,10 +486,18 @@ prompt you write:
   post-pass per `22D`). Evidence is Eq-EXCLUDED from lattice equality (fixpoint
   termination, `22W` §2) and k-capped. `Unexplained` is constructible but renders
   self-advertisingly.
-- **trust-tier-is-syntax** — the epistemic tier of every rendered link (measured /
-  vouched / ran / claimed / derived / consented) is a typed evidence field rendered
-  uniformly by arrangement code; prose fragments never hand-write epistemics.
-- **one-catalog-no-legacy** (`27T:rul-kill-legacy-diagnostic`) — the structured
+- **trust-tier-is-syntax** — the epistemic tier of every rendered link (STRAWMAN
+  spellings: measured / vouched / ran / claimed / derived / consented) is a typed
+  evidence field rendered uniformly by arrangement code; prose fragments never
+  hand-write epistemics. The tier SET and its typed rendering are the law; the words
+  ride render-form-unwelded.
+- **render-form-unwelded** (`27V:rul-output-form-unwelded`) — the particulars of
+  rendered aid output (wording, numbering, connectives, arrangement shape) are
+  unstable-and-improving pending real-world generated output; `KNOBS:kFLOW` governs
+  the mechanism-vs-polish resting point. Goldens pin content + structure and re-bless
+  freely on arrangement churn; never treat a current render as contract (the
+  plan-as-API failure-mode's aid-surface cousin).
+- **one-catalog-no-legacy** (`27V:rul-kill-legacy-diagnostic`) — the structured
   `DiagCode` catalog is the ONLY diagnostics mechanism; the legacy string-slug
   `Diagnostic` is being removed. Never add new emissions to it.
 - **defining-case-catalog** — every code has exactly ONE defining case carrying the

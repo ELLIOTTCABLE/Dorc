@@ -15,7 +15,7 @@ visible. Many rows look small from the user's side and need deep machinery (evid
 threading, provenance, replay) to produce *correctly*; the mechanism column is the point.
 
 Engine-side build law for this category (evidence plane, whylog, the error catalog and
-its authoring pipeline) lives in `Research/notes/27T` and `spike/CLAUDE.md`'s user-aid
+its authoring pipeline) lives in `Research/notes/27V` and `spike/CLAUDE.md`'s user-aid
 block — not here. This file is the row-registry plus only the law needed to mint and
 consume rows.
 
@@ -73,12 +73,14 @@ Law — what a row-minter and row-consumer must know (cite as `AID-NEEDS:law-…
   (meet-to-⊤, refuse, decline, wall, demote, cancel) mints a decision-inert evidence
   record carrying the collapse's *operands*, at the moment of collapse. A new
   safety-narrowing without its evidence mint (and, usually, its row here) is a defect.
-  Mechanics: `27T` §1.
-- **law-trust-tier-is-syntax** — the epistemic tier of every rendered link (measured /
-  vouched / ran / claimed / derived / consented) is a typed field rendered uniformly by
-  arrangement code; prose never hand-writes epistemics, so a claim cannot be dressed as
-  a measurement. Mis-attribution is the worst aid failure (`271:rul-sin-ordering`);
-  where certainty runs out, say so rather than rounding up.
+  Mechanics: `27V` §1.
+- **law-trust-tier-is-syntax** — the epistemic tier of every rendered link (strawman
+  spellings: measured / vouched / ran / claimed / derived / consented) is a typed field
+  rendered uniformly by arrangement code; prose never hand-writes epistemics, so a claim
+  cannot be dressed as a measurement. The tier set and its typed rendering are the law;
+  all render particulars stay unwelded pending implementation (`KNOBS:kFLOW`;
+  `27V:rul-output-form-unwelded`). Mis-attribution is the worst aid failure
+  (`271:rul-sin-ordering`); where certainty runs out, say so rather than rounding up.
 - **law-pull-runs-wide-open** — on pull surfaces the user asked: derivability governs,
   answer maximally. On push surfaces selection is ruthless and root-cause-only
   (AGENTS fail-fast; `(cause, site)`-keyed dedup; stay-in-pure-propagation — `22E`).
@@ -115,7 +117,7 @@ Registry
 | aid-guard-license-attribution | whose check guards each verify line, under whose vouch | facts+topo | rev▶ post◀ | c+d | GuardLicense lane | B |
 | aid-carry-attribution | which cross-context carries happened, under which invariant lines + closure proof | facts+topo | rev▶ post◀ | c+d | `27C` §4(a); an-read-set-closure | B |
 | aid-run-cause-disclosure | why a line can never elide (unknowable operand etc.), with remediation | text+topo | rev▶ blo▶ | d | why-lens; `(cause,site)` dedup | B |
-| aid-escalation-consent-legibility | the escalation dial × capability × entry-capable wrappers in effect | invoc+orcl | rev▶ | m | `27C`; catalog re-home rides `27T` | B |
+| aid-escalation-consent-legibility | the escalation dial × capability × entry-capable wrappers in effect | invoc+orcl | rev▶ | m | `27C`; catalog re-home rides `27V` | B |
 | aid-caret-span-precision | which exact section of a compound a diagnostic means | text | all▶ | d | `24H` ack-8; an-output-sanitization owed | O |
 | aid-firehose-suppression | one honest aggregate instead of per-site unprobeable noise | text+topo | rev▶ | d | `24H` firehose fix | B |
 | aid-plan-finality-discipline | push-hints fire only at stable/minted state (no retracting hints mid-build) | facts± | tui▶ rev▶ | — | `26B` finality; r26 seam | D |
@@ -127,12 +129,12 @@ Registry
 |---|---|---|---|---|---|---|
 | aid-why-problems-report | zero-arg: the problematic subset of the current analysis (refusals, walls, guards, can't-tells) | text..facts | rev◀ blo◀ | m+d | `24H` ack-2i | B |
 | aid-why-line-address | per-line interrogation by `book.sh:N` or content match | same | rev◀ tui◀ post◀ | m+d | law-lineno-identity | B |
-| aid-why-license-chain | the full numbered chain behind any disposition, tier-worded per link, naked-trust links identified by construction, with re-measure + leverage-point epilogue | facts+topo+invoc | post◀ rev◀ | m+c+d | evidence plane + witnesses + minting-line threading (`27T`) | S |
+| aid-why-license-chain | the full numbered chain behind any disposition, tier-worded per link, naked-trust links identified by construction, with re-measure + leverage-point epilogue | facts+topo+invoc | post◀ rev◀ | m+c+d | evidence plane + witnesses + minting-line threading (`27V`) | S |
 | aid-why-wall-narration | why a wall formed: which participant, which channel/coverage failure, what it costs downstream | text+orcl+topo | blo◀ olo◀ rev◀ | d | collapse evidence (walls) | S |
 | aid-why-decline-narration | which oracle arm declined this shape, and what would have answered | orcl+facts | olo◀ blo◀ | c+d | collapse evidence (declines); refusal breadcrumb lane (spelling settling) | S |
 | aid-why-disagreement-narration | two establishers disagreed on one cell: who, where, which values | facts | rev◀ post◀ | m | collapse evidence (merge operands; `22H` §1) | S |
 | aid-why-value-chain-narration | a captured value narrated through iteration hops and host transformations, best-effort, feeder-attributed | facts±+history | post◀ | m+c+g | `26C:need-why-explanation-lane` + feeders; r26 | D |
-| aid-whylog-posthoc-why | all of the above, after everything is apparently complete, zero setup: `dorc why --last` | whylog | post◀ | m+c+d | thin durable + replay (`27T`); `22A:concl-10` | S |
+| aid-whylog-posthoc-why | all of the above, after everything is apparently complete, zero setup: `dorc why --last` | whylog | post◀ | m+c+d | thin durable + replay (`27V`); `22A:concl-10` | S |
 
 ### Authoring-time classes (`dorc lint`; ▶ push, hot-loop-safe, never probes)
 
@@ -142,7 +144,7 @@ Registry
 | aid-lint-unmodeled-inventory | per book: unmodeled families, first-wall position, degradation counts | text+orcl+topo | blo▶ ci▶ | d | `27R` source-2 | B |
 | aid-lint-verdict-body-mechanicals | status-flattening hazards in verdict bodies (pipeline tails; the rest caught upstream as dialect) | text | olo▶ ci▶ | d | `27R` source-3; `279f` constant-rc candidate seamed | B |
 | aid-lint-external-tool-relay | shellcheck/checkbashisms findings, strip-line-remapped, tolerant adapters, coverage-asserted envelope | text | olo▶ ci▶ | d | `27R` §4/§8b | B |
-| aid-lint-reserved-name-checks | munge charclass/collision; book squats on `__role` namespace | text | olo▶ blo▶ | d | `oracle/reserved.rs`; catalog re-home rides `27T` | B |
+| aid-lint-reserved-name-checks | munge charclass/collision; book squats on `__role` namespace | text | olo▶ blo▶ | d | `oracle/reserved.rs`; catalog re-home rides `27V` | B |
 | aid-lint-strip-floor-check | strip output parses/runs identically under both pinned floor shells | text | olo▶ ci▶ | d | two-binary floor; fence-rejection-rc; `27R` seam | S |
 | aid-lint-wrapper-oracle-bar | wrapper-family quality: peel cross-check, argparse lints, self-vouch/footprint | text+orcl | olo▶ ci▶ | d | `24S:A6` | S |
 | aid-lint-carrier-payload-bar | carrier/payload quality: which-arg-is-code gates, reconstruction differential, dorcism-in-payload | text+orcl | olo▶ ci▶ | d | `24T:P-A4` | S |
@@ -154,7 +156,7 @@ Registry
 
 | aid | what the user learns | demand | moments | grade | mech | st |
 |---|---|---|---|---|---|---|
-| aid-error-catalog-explainers | per-code colocated triple render: machine line, terse line, full prose registers (terse/deep/first-encounter) | — | all | — | defining cases + committed catalog (`27T` §3) | S |
+| aid-error-catalog-explainers | per-code colocated triple render: machine line, terse line, full prose registers (terse/deep/first-encounter) | — | all | — | defining cases + committed catalog (`27V` §3) | S |
 | aid-error-exit-code-family | semantic fast-fail exit codes (10+ range); `--exit-code` divergence-of-world contract for cron | invoc | ci▶ | d | `24H` ack-1 (B); `--exit-code` (S; never sink-landings — `279f`) | O |
 | aid-apply-divergence-report | apply-time divergence from prediction: proceed-and-flag report items, never questions | apply | post◀ rev▶ | m | rul-divergence-proceed; whylog feeds | S |
 | aid-refusal-breadcrumbs | an oracle's loud UNK refusals surfaced with the site that ran anyway | facts | rev▶ olo▶ | c | report stream, spelling settling (oracle-contract §6) | O |

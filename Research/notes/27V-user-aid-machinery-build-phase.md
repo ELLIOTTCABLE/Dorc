@@ -1,4 +1,4 @@
-# 27T — the user-aid machinery build phase: whylog, evidence plane, one-catalog
+# 27V — the user-aid machinery build phase: whylog, evidence plane, one-catalog
 
 AI-authored (Fable, design-rubber-duck sitting WITH the human, 2026-07-18). PLAN-OF-RECORD
 for the engine-internals work the aid design demands *now* — before/alongside block-stdlib,
@@ -17,26 +17,26 @@ sacred promise "`dorc why` will tell you why that went wrong," which countless d
 decisions bottom out on — is fiction at HEAD, and the aid plane under-carries evidence.
 Rulings, all human-typed or human-acked 2026-07-18:
 
-- **`27T:rul-whylog-build-now`** — the whylog/posthoc-why is "potentially the most
+- **`27V:rul-whylog-build-now`** — the whylog/posthoc-why is "potentially the most
   important" surface; stream-format churn under the r26 reactive rework is accepted;
   build now. The maximal-coherence goal: ONE machinery serving all phases, whose maximal
   mode is the posthoc-whylog-driven `dorc why` — the mode with the MOST information,
   answering the MOST questions, facing the user at their MOST annoyed.
-- **`27T:rul-kill-legacy-diagnostic`** — one mechanism for the whole problem-space:
+- **`27V:rul-kill-legacy-diagnostic`** — one mechanism for the whole problem-space:
   proactively rip out the legacy string-slug `Diagnostic` (don't mandate the new one —
   remove the old one). (`AID-NEEDS` gap-3.)
-- **`27T:rul-collapse-mints-evidence`** — `AID-NEEDS:law-collapse-mints-evidence`,
+- **`27V:rul-collapse-mints-evidence`** — `AID-NEEDS:law-collapse-mints-evidence`,
   value-level constructors / arena-backfill split as acked. The human's constructor nit
   ("require production of a why-step to merge-to-⊤?") resolves as: YES at the value level
   (collapse constructors demand a `CollapseEvidence` payload — pure data), NO at the
   arena level (kernels stay pure; `22D` stage-1 posture unchanged).
-- **`27T:rul-aid-survives-the-spike`** — human lean: the warning-surface is the
+- **`27V:rul-aid-survives-the-spike`** — human lean: the warning-surface is the
   second-most-likely thing to survive the spike; this work is HIGHER-criticality and
   higher-lock-in than spike-median, with human hands expected in it. The "spike code,
   meh" discount does not apply here. (Rides ru-17/held-4: the diag API was already the
   design-for-keeps exception; this phase extends that exception's scope to the evidence
   types + catalog pipeline, and NOTHING else gains the status by analogy.)
-- **`27T:rul-error-authorship-tier`** — builders mint codes + defining-case structure
+- **`27V:rul-error-authorship-tier`** — builders mint codes + defining-case structure
   with explicitly-empty prose blocks; a high-reasoning conductor or the human issues the
   prose from the builder's when/why/how report. Destined for `spike/CLAUDE.md`
   (registered there this sitting).
@@ -44,6 +44,15 @@ Rulings, all human-typed or human-acked 2026-07-18:
   codes · params-only templates · one-defining-case-per-code · committed catalog
   intermediate promoted-never-auto-tracked · per-code-full-prose-no-fallback — all in
   `AID-NEEDS` Law; binding here.
+- **`27V:rul-output-form-unwelded`** (human-typed 2026-07-18) — the PARTICULARS of
+  rendered output (tier-word spellings, numbering, connective phrasing, arrangement
+  shape) stay UNWELDED pending implementation. Whether outputs "flow" across the real
+  failure-mode corpus — and how much mechanism is worth accreting to improve flow — is
+  decidable only from generated output, never upfront, and never locked in by an example
+  render in an LLM-authored document. The governing tension is `KNOBS:kFLOW`
+  (authorable-mechanism ↔ polished-report; the refused extreme is mechanical
+  English-grammar composition from fragments). Defining-case goldens pin CONTENT and
+  STRUCTURE; arrangement/wording churn re-blesses freely (goldens-churn-freely).
 
 ## §0b — The gap ledger (built-vs-designed, from the 2026-07-18 code inventory)
 
@@ -94,9 +103,9 @@ Build:
 - **Mint the reserved origins**: `OriginKind::{OracleClaim, ProbeResult}` become real at
   the two obvious sites (a lifted vouch/claim enters the fact plane; a record binds to a
   site), with timestamps/iteration-nonce riding `ProbeResult` for the whylog's benefit.
-- **`27T:mech-trust-tier-typed`** — the tier field (`AID-NEEDS:law-trust-tier-is-syntax`)
+- **`27V:mech-trust-tier-typed`** — the tier field (`AID-NEEDS:law-trust-tier-is-syntax`)
   on every evidence node; rendered by arrangement code only.
-- **`27T:mech-minting-line-threading`** — discharge the unowned `27Q` §2 precondition
+- **`27V:mech-minting-line-threading`** — discharge the unowned `27Q` §2 precondition
   here: claims, vouches, and emission arms carry their defining source span end-to-end,
   so attribution renders file:line (the whole flagship output depends on it). MUST land
   before block-stdlib mints selector-bearing `disturbs` claims.
@@ -159,7 +168,17 @@ what cannot be recomputed — and the full narration is a rendering of a re-run.
   emitter (the fix-suggestion tier) or is explicitly re-parked with a seam note.
 - **Arrangement code**: the why-report walker (numbering, indentation, list-joins,
   tier-word rendering, engine-owned value formatters). Chain-position siblings only per
-  world-state variants (`AID-NEEDS:law-codes-vary-by-world-not-grammar`).
+  world-state variants (`AID-NEEDS:law-codes-vary-by-world-not-grammar`); the walker's
+  output shape rides `27V:rul-output-form-unwelded` — build the simple thing, let the
+  generated corpus argue for more.
+- **`27V:rider-lint-lane-absorption`** (`27R` §8e, absorbed): the one-catalog also
+  subsumes (a) the lint crate's lane-local `Finding`/`LintSeverity` model (one
+  structured-diagnostic type, many renders — lint was built registry-thin precisely for
+  this swap); (b) the inline oracle-validation emissions, factored book-free
+  (`27S:seam-oracle-validate-factoring` — simultaneously the rung-oracle-solo unlock);
+  (c) ownership of the machine-format name (`dorc-lint-format/1` folds under the unified
+  machine-diagnostics envelope while renaming is still free); (d) ONE severity
+  vocabulary (lint's {Error,Warn,Info} + `--fail-on` maps onto the catalog's tiering).
 
 ## §4 — The flagship acceptance case (build FIRST, TDD-style)
 
@@ -171,9 +190,12 @@ and `dorc why --last 9` (replayed) both produce the full chain render: numbered 
 tier words (measured/vouched/ran/claimed/derived/consented), file:line on every artifact,
 the naked-trust epilogue stating the DESIGN truth (which link is unverified by
 construction — never an instance guess), re-measure + leverage-point recovery moves.
-This case cannot pass until Lanes A+B+C all exist; it is the phase's acceptance test and
-the defining case for the arrangement. Its render is also the source material for
-USER_STORY's "Recovery" section (landed for in-place human review).
+Render particulars are ILLUSTRATIVE per `27V:rul-output-form-unwelded`: the case asserts
+evidence-COMPLETENESS and structure; its byte-golden re-blesses freely as the
+arrangement evolves. This case cannot pass until Lanes A+B+C all exist; it is the
+phase's acceptance test and the defining case for the arrangement. Its render shares
+source material with USER_STORY's "Recovery" section (whose render is likewise
+illustrative, not a target).
 
 ## §5 — Sequencing, dispatch shape, riders
 
@@ -185,7 +207,7 @@ USER_STORY's "Recovery" section (landed for in-place human review).
 - **Dispatch**: conductor-led lanes, Opus builders, standing law (safety block ·
   step-zero/0.5/one · sonnet clamp · comment budget · four gates + foreground e2e ·
   granular commits). Builders mint codes with EMPTY prose per
-  `27T:rul-error-authorship-tier`; prose emissions are conductor/human acts at
+  `27V:rul-error-authorship-tier`; prose emissions are conductor/human acts at
   checkpoint. Landing notes: `27V`+.
 - **Riders** (cheap, attach to whichever lane touches the file): e2e `hint:` pinning
   (gap-6; `expected-hint` needle files, kWARN keepalive) · the ack-6 unloaded-sibling
