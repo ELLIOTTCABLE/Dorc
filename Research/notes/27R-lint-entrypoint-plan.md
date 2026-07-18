@@ -239,6 +239,60 @@ disable=` directives must survive strip ADJACENCY — a deleted annotation-LINE
 between a directive comment and its target must not detach the directive; pin with
 a unit test, treat as test-pin not redesign.
 
+## §8b — Human-nits fold (TYPED 2026-07-18, pre-dispatch; binding)
+
+Two nits arrived from the human before builder dispatch; both bind the builder.
+
+**nit-coverage-assertion-for-ci** (human-typed; strawman `--expected-files 5` was
+theirs, mechanism mine): a machine-readable invocation's rc-0 must be conditional on
+the run's SCOPE matching intent — "no errors in what I've seen" != "no errors
+anywhere", and the named failure-mode is silent scope-shrinkage (file moves,
+gitignore/glob/invocation-path drift shrinking the linted set while CI keeps
+reporting clean). Adopted, state-free:
+
+- **dir-envelope-carries-coverage**: the JSONL envelope always includes a coverage
+  block — the lintable-file list, per-source status (ran | absent | off), counts.
+  Any external policy can diff it; we own no state.
+- **dir-zero-files-is-operational**: in machine mode, zero lintable files is an
+  OPERATIONAL error exit, never clean (precedent: eslint's no-match error;
+  golangci-lint `NoGoFiles`=5).
+- **dir-expect-files-assertion**: opt-in `--expect-files N` (spelling latitude) —
+  exact match on the lintable-file count; mismatch ⇒ operational-error exit with a
+  diagnostic naming actual vs expected. Zero state: the git-tracked expectation IS
+  the CI invocation line. `--require-tools` covers the same shrinkage on the
+  tool axis (shellcheck vanished from the CI image ⇒ silently narrower coverage).
+  `--help` documents the recommended-CI line (strawman:
+  `dorc lint --format=jsonl --fail-on=warn --require-tools --expect-files N …`).
+- **seam-lint-lock-manifest**: the human's alternative (a git-tracked run-manifest
+  compared against, CI-mode only) is NAMED-NOT-BUILT — kSTATE-adjacent (a second
+  source of truth, merge-noise, staleness); revisit only if count-assert proves too
+  coarse in field use. Conductor pushback recorded: prior-art handles only the
+  zero-case, nobody does partial-shrinkage; the concern is legitimate here anyway
+  because strip/remap pipelines churn paths more than most linters' inputs.
+
+**nit-functionality-ladder** (human-typed): the source taxonomy of §2/§3 re-cut as
+an explicit ladder of input-availability rungs:
+
+- **rung-file** — per-file sources needing no book and no world: external tools
+  (§4), parse-tier diagnostics, oracle-body lints (§2 item 3). Works on ANY file
+  handed to it. Build fully.
+- **rung-book** — the DEFAULT case, human-confirmed "nailed": book(s) present,
+  authorization-to-connect DENIED; the no-world pipeline prefix (§3) — analysis
+  diagnostics + unmodeled-wall inventory. Build fully.
+- **rung-probe** — probe-INCLUSIVE lint (book present, host reachable, admin
+  authorizes): SEAM ONLY this round, with a fence — probe-inclusive lint is the
+  plan pipeline's advisory surface wearing a lint hat; there must NEVER be a second
+  probe path minted for lint (probe law: oracle-authored bytes, consent dial, the
+  works — all of `plans/27C` would apply; reuse, don't rebuild).
+- **rung-oracle-solo** — oracles loaded with NO runbook and no plan-output: per the
+  human, almost certainly unsupported by the engine today and touching delicate
+  analysis machinery. Builder obligation: RECONNAISSANCE ONLY — investigate what the
+  pipeline actually does with an absent/empty book, write the strain-note in the
+  landing note (what breaks, what a real design would have to re-think), implement
+  ONLY what falls out with zero machinery restructuring. rung-file already gives
+  oracle authors most hot-loop value in the interim. Kept in sight; deferred by
+  direction.
+
 ## §9 — Fold instructions (human)
 
 Everything is on `ai/*` branches; nothing pushed. Expected end-state: `ai/r27-lint`
