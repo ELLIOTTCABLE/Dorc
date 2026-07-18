@@ -21,6 +21,13 @@ long tasks don't get sorted into the same reader-lane serially.
 > "$(hostname) probe-readback" case is now the `270:read-value-slice` (block-context), whose
 > record shape is authored `262`-§2-compatible so this plan's fold-consumption mechanism
 > inherits it unchanged at resumption.
+>
+> **⚠ ADDENDUM (2026-07-17, mid-r27): read §2's h1/h2 rules through `notes/26B` +
+> `notes/26C`.** The read-value-slice was subsequently STRUCK from r27
+> (`26B:dec-capture-fold-deferred`); plan-construction is human-ruled *reactive*
+> (`26B:rul-plan-construction-is-reactive`), which adds a third, cross-ITERATION h1
+> mechanism this plan's amended two-mechanism rule predates — see the inline notes at
+> §2 h1 and h2(iii), and `26C:finding-h1-rule-forecloses-iteration`.
 
 **Rulings received (human, 2026-07-07) + the spine extraction:**
 - **The organizing principle:** bake in early the *ability* to re-order for perf; defer the
@@ -159,6 +166,14 @@ scheduler's own obligation is only: never *create* an ordering hazard the axiom 
   compile step: the h1-edge extraction pass, with a zero-edges-on-today's-corpus pin plus one
   synthetic injected edge proving the compiler→schedule wiring — antichain-by-proof, not by
   accident. These are the ONLY true edges.
+  *(Annotation 2026-07-17: the two-mechanism rule is scoped to WITHIN one compiled
+  artifact, where it stands unchanged. Under the reactive direction
+  (`26B:rul-plan-construction-is-reactive`) a third mechanism exists ACROSS
+  iterations: a captured value returns to the controller, re-analysis mints a NEW
+  probe artifact whose argv embeds it — the (b) clause's "never by another shipped
+  probe" was minted in the single-wave frame and does not forbid this; it forbids
+  value-passing between waves of ONE artifact. The cross-iteration mechanism is
+  subject to `26C:need-captured-bytes-ship-as-data`.)*
 - **h2 · control-relevance** — probe results decide which sites are *live*, hence which
   probes were *worth running*. NOT a soundness edge (running a dead arm's read is safe,
   merely wasted) — a **cost** edge. Three positions: (i) **speculate** (the incumbent: ship
@@ -169,6 +184,11 @@ scheduler's own obligation is only: never *create* an ordering hazard the axiom 
   round-trips dominate everything (`plans/076`); relevance is recovered in-artifact or paid
   for, never re-crossed. v1 keeps (i); (ii) becomes worth building only if measurement shows
   dead-arm waste dominating (§9 dec-261-speculation-default).
+  *(Annotation 2026-07-17: this rejection binds RELEVANCE only, and stands. The
+  reactive engine's cross-iteration round-trips (`26B` §2) serve value-resolution and
+  re-analysis — a different h-class with no in-artifact alternative when the consumer
+  is the controller's own analysis. Do not cite this clause against the reactive
+  loop; see `26C` §7 item 2.)*
 - **h3 · resource contention** — tasks sharing a lock/daemon/device (dpkg DB, docker socket,
   network egress, one wedge-prone daemon — PM-3). Not an ordering edge but a **width/
   placement** constraint: v1 = the global width cap only (conservative); the designed slot =

@@ -64,6 +64,17 @@ over-claim in the prior wording):
   same run, if B saw fewer records then plan_B's run-set ⊇ plan_A's (and, per §2, an
   incomplete deriv family widens WALLS, never licenses). The §5 rig asserts this on
   deadline-crossing seeds.
+- *(Annotation 2026-07-17, reactive-direction scope notes — `26C` §7 items 4/5:)*
+  (i) the pins above quantify over arrival orderings of a FIXED record-set; under
+  `26B:rul-plan-construction-is-reactive` the record-set itself is
+  schedule-dependent in three named, bounded ways — deadline kills (the caveat
+  above), economy-cancellation (`26C` §3: demotion-only along elide ≻ guard ≻ run,
+  finality-gated), and same-cell conflict transients
+  (`26C:finding-confluence-needs-conflict-carve`: process-confluence is guaranteed
+  conflict-free; conflicted runs stay sound but may vary in gathered supersets).
+  (ii) the toward-run direction generalizes to the license-DEMOTION order
+  elide ≻ guard ≻ run (a cancelled vouched site may land on guard-by-vouch, not
+  bare run). At revival, S1's pins re-state accordingly.
 
 Defaults table (26A, one place — the flag/product split said plainly):
 
@@ -161,7 +172,11 @@ requirements: fixed, never produced by the inner grammar, cheap to append in one
   (26A amend-smalls wording) so fact-lane truncation is a *computable range*, not a guess;
   `attempt=` is per-attempt (26A amend-retry-hygiene): a probe retry re-mints, the prior
   attempt's records are discarded WHOLESALE, and a zombie writer's late records are
-  un-foldable by their stale nonce/attempt.
+  un-foldable by their stale nonce/attempt. *(Annotation 2026-07-17: `attempt=` is
+  retry-of-ONE-artifact only. Reactive ITERATIONS (`26B` §2) are a different axis whose
+  records ACCUMULATE — never reuse attempt-discard for them. At revival: fresh nonce
+  per artifact + an additive `iter=` key + per-artifact LeafId namespaces routed
+  through each artifact's own back-map — `26C` §4.)*
 - **Truncation semantics split by lane (26A stop-1 — the safety directions differ):**
   - *fact lane* (`site` records): received sites keep their facts; the un-received site set
     folds Unknown ⇒ run, render marks the boundary (`plans/128` fc-2). Loss folds toward run —

@@ -209,7 +209,17 @@ X consumes only X's facts. There is deliberately no cross-host lookup API on the
 make the wrong thing unrepresentable rather than linted. (Ties to acc-per-host-partition, and
 to the forged-verdict containment test: a hostile host's influence ends at its own plan.)
 
-**s3-2. Classify once, fold per arrival.** The static half (parse → cfg → value → classify →
+**s3-2. Classify once, fold per arrival.** *(Annotation 2026-07-17: TRUE for
+iteration 1 / rung-0 only. Under the reactive direction
+(`26B:rul-plan-construction-is-reactive`) host-captured values enter the value plane
+from iteration 2, so analysis states diverge PER HOST and classify/compile become
+per-(host × iteration) — the arrival-fold loop generalizes to the analyze-step loop,
+`A(book, oracles, R_host)`, per `26C` §7 item 3. Analysis stays free per the perf
+doctrine; the mission line's "shipped once" becomes shipped-once-per-iteration,
+bounded by capture-chain depth. HostPhase's Probing state correspondingly becomes a
+Probing⇄Analyzing loop closed by the quiescence witness
+(`26B:need-quiescence-witness-at-mint`), and the §6 per-host liveness print re-keys
+from first-fold to per-host quiescence.)* The static half (parse → cfg → value → classify →
 compile_probe) runs once per book — it is host-independent (`22H` §3, +SURE, standing). Each
 arriving per-host record batch: merge into that host's fact-store (`merge_observable` is
 commutative/idempotent — order-safe within one host), then re-run the (pure, cheap) fold for
