@@ -1,4 +1,9 @@
 #!/bin/sh
-# INERT strawman mock (never a real mutator): logs its argv for the run-set, mutates nothing.
+# INERT mock: `sudo -n <guest>` (27C probe entry) EXECs the guest for the real in-context check;
+# plain `sudo <guest>` (apply escalation) logs and exits (guest not re-run).
 . "${0%/*}/.log"; _dorc_logged "$@"
+_passthru=
+[ "${1:-}" = "-n" ] && _passthru=1
+while [ "${1#-}" != "$1" ]; do case "$1" in -u) shift 2 ;; *) shift ;; esac; done
+[ -n "$_passthru" ] && exec "$@"
 exit 0
