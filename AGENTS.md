@@ -2,7 +2,7 @@
 
 Follow this pattern to get bootstrapped on the codebase and design, *no matter what your task is*. You *must* understand the project before you can work on it effectively.
 
-1. README, DESIGN, IMPLEMENTATION, and TODO are human-written; USER_STORY, KNOBS, ANALYZER-NEEDS, and TODO-ADDTL are LLM-generated but reviewed/maintained and relatively authoritative.
+1. README, DESIGN, IMPLEMENTATION, and TODO are human-written; USER_STORY, KNOBS, ANALYZER-NEEDS, AID-NEEDS, and TODO-ADDTL are LLM-generated but reviewed/maintained and relatively authoritative.
   - ALWAYS read them first if they are not in-context (important context in those is *not* duplicated into this AGENTS.md, intentionally);
   - do not edit the first four, under any circumstances - suggest edits to the user if you see clear incorrectness; and
   - trust them over the ocean of unreviewed, LLM-generated planning-slop in the Research/ folder
@@ -22,7 +22,7 @@ Follow this pattern to get bootstrapped on the codebase and design, *no matter w
 All of the following should recieve frequent edits whenever work progresses:
 
 - `LIVING_STATUS.md` should always be kept up-to-date, it's nearly *always* valid to update it when your work pregresses. (It's occasionally managed by sibling conductors in one worktree, so be mildly defensive about concurrent edits.)
-- `ANALYZER-NEEDS.md` and similar LLM-authored report-table siblings should be kept current; they're an authoritative place to record cross-cutting information
+- `ANALYZER-NEEDS.md`, `AID-NEEDS.md`, and similar LLM-authored report-table siblings should be kept current; they're an authoritative place to record cross-cutting information. Don't turn them into play-by-plays; no chronological commentary, that's what git is for. Just always make them current, and correct.
 - the `CLAUDE.md` files under `spike/` are all conductor-LLM-managed; they are the correct place to site implementation-specific information that must make its way to implementing agents. (These should generally be updated as the last step, when a design has *firmed*; they're a place for firm implementation specifics and fully-ruled *invariants* that apply to code, not for general design-language.)
   - use judgement in deciding between the crate-specific / topic-focused `CLAUDE.md`s, vs. the spike-root `spike/CLAUDE.md`, for a given invariant;
   - repetition in the `CLAUDE.md`s is valid, but only for genuinely deeply-critical invariants, esp. ones that agents have gotten wrong before
