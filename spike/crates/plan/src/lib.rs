@@ -1206,7 +1206,66 @@ pub struct ProbePredict {
     /// oracle. `false` ⇒ the ordinary `__predict` shape. Steers only [`ProbePlan::render_sh`]'s
     /// funcname choice; the record grammar and site-keying are identical.
     pub verdict: bool,
+    /// `27C` §3 / lane-integration `27N` — the ENTRY-COMPOSED probe for a wrapped site whose consent
+    /// trace permits entry. `Some` ⇒ this site's check runs the inner oracle's body INSIDE the
+    /// wrapper chain's context: the entry forms wrap the inner predict/verdict, invoked with the
+    /// site's peeled argv (`sudo__enter pipx__is_converged install poddle`). ONLY oracle-authored
+    /// bytes ship — never the raw book bytes (`271:rul-only-oracle-bytes-ship`, extended to entry
+    /// composition). `fact` carries the composed [`Context`], so the record re-keys the context-
+    /// qualified verdict exactly. `None` ⇒ the ordinary (ambient) shape.
+    pub entry: Option<EntryComposed>,
 }
+
+/// The entry-composed body of a wrapped-site probe (`27C` §3 / `27N`): the wrapper chain's entry
+/// forms wrapping the inner oracle's stripped body, all oracle-authored, argv-flowing. Built at the
+/// cli edge (it needs the oracle sources + the peel chain); rendered by [`ProbePlan::render_sh`].
+///
+/// # The shim seam (`274` §5 / `27L` task-14, DISCLOSED deferral)
+///
+/// The composition `sudo__enter pipx__is_converged install poddle` crosses a real wrapper boundary
+/// only when the inner body is reachable across it — the per-run PATH shim's job (materialize the
+/// oracle bytes as executables `sudo` can exec). That materialization I/O edge is deferred (`274`
+/// §5 / `27L`); at HEAD the composition ships strip-only as shell funcdefs + a nested invocation, so
+/// a real `sudo -n <fn>` cannot resolve the funcdef across the boundary and the record lands
+/// can't-say ⇒ run (the SAFE degrade). The emission + context-qualified readback are exercised
+/// end-to-end via simulated results (`PROBE_RESULTS=authored`); the boundary-crossing execution
+/// rides the shim-materialization follow-on.
+#[derive(Debug, Clone)]
+pub struct EntryComposed {
+    /// The chain's stripped entry-form funcdefs, `(funcname, funcdef)`, OUTERMOST-FIRST
+    /// (`sudo__enter`, then `chroot__enter`). Each dedup-emitted like an ordinary check body.
+    pub enter_defs: Vec<(String, String)>,
+    /// The inner oracle's check funcname (`pipx__is_converged` / `pipx__predict`).
+    pub inner_fn: String,
+    /// The inner oracle's stripped check funcdef (strip-only, `271:rul-only-oracle-bytes-ship`).
+    pub inner_sh: String,
+    /// The site's PEELED argv (the inner command's args, F-quoted at render) — the admin's argv
+    /// flowing THROUGH the inner oracle's argparse (`rul-argv-flows-bytes-do-not`).
+    pub inner_argv: Vec<Symbol>,
+}
+
+/// The probe disposition of a wrapped BOOK site (`27C` §3 / `27N`), built at the cli edge from the
+/// two-axis consent decision (dial × capability × vouch × entry-form) and consulted by
+/// [`compile_probe`]. A wrapped site takes THIS path exclusively: the ordinary ship (keyed on the
+/// wrapper word `sudo`) would mis-resolve to the wrapper's own model.
+#[derive(Debug, Clone)]
+pub enum WrappedProbe {
+    /// The consent trace PERMITS entry: ship the entry-composed check (the inner oracle's body
+    /// inside the wrapper chain's context). `provider` is the inner provider (display/debug).
+    Enter {
+        /// The inner provider symbol (the `ProbePredict::provider` field; display only for entry).
+        provider: Symbol,
+        /// The entry-composed body (enter forms + inner check).
+        composed: EntryComposed,
+    },
+    /// The consent trace REFUSES entry (dial forbids, unvouched, no capability, ⊤ dimension, no
+    /// entry form, or a runtime degrade) ⇒ can't-say ⇒ the site runs (unresolvable in the probe).
+    Degrade,
+}
+
+/// The wrapped BOOK sites of a run, keyed by [`CfgNodeId`] (`27N`). Empty for a wrapper-free run ⇒
+/// [`compile_probe`] behaves byte-identically (`empty-world-byte-identical`).
+pub type WrappedProbes = BTreeMap<CfgNodeId, WrappedProbe>;
 
 /// A compiled probe: per-resolvable-site read-only checks whose answers drive the
 /// apply's elision (apply-2), plus the un-resolvable sites recorded for transparency.
@@ -1331,7 +1390,26 @@ impl ProbePlan {
             // (dedup-emitted like the ordinary path) piped, `stage0__predict a | stage1__predict b`.
             // ONLY oracle-authored bytes ship — never the raw book pipeline. Otherwise the ordinary
             // R3 shape: (re-)emit the stripped funcdef, then invoke it with the site's argv.
-            let invocation = if let Some(composed) = &check.connected {
+            let invocation = if let Some(entry) = &check.entry {
+                // `27C` §3 / `27N` — the ENTRY-COMPOSED probe: emit the chain's entry-form funcdefs
+                // (outermost-first) + the inner check funcdef (dedup like the ordinary path), then a
+                // NESTED invocation `sudo__enter … pipx__is_converged <argv>`. Only oracle-authored
+                // bytes ship (`271:rul-only-oracle-bytes-ship`); the admin's argv flows F-quoted.
+                let mut prefix: Vec<String> = Vec::with_capacity(entry.enter_defs.len() + 1);
+                for (fname, fdef) in &entry.enter_defs {
+                    if defined.insert(fname.clone(), fdef.as_str()) != Some(fdef.as_str()) {
+                        out.push_str(&render::probe::wrapper_def(fdef));
+                    }
+                    prefix.push(fname.clone());
+                }
+                if defined.insert(entry.inner_fn.clone(), entry.inner_sh.as_str())
+                    != Some(entry.inner_sh.as_str())
+                {
+                    out.push_str(&render::probe::wrapper_def(&entry.inner_sh));
+                }
+                prefix.push(entry.inner_fn.clone());
+                render::probe::invocation(&prefix.join(" "), &entry.inner_argv, interner)
+            } else if let Some(composed) = &check.connected {
                 let mut invs = Vec::with_capacity(composed.stages.len());
                 for stage in &composed.stages {
                     let stage_fn = predict_fn_name(interner, stage.provider);
@@ -1954,15 +2032,17 @@ fn ship_stage_for_argv(
     clippy::too_many_arguments,
     clippy::too_many_lines,
     reason = "the probe compiler threads the whole compiled context (ast/cfg/value/classes/connected) \
-              plus THREE ship seams — the predict body, the `24L` §2 auto-cell verdict body, and the \
-              vouch predicate; each is a distinct caller-supplied input. The auto-cell ship arm pushes \
-              the body just over the line cap; the per-class dispatch is irreducibly flat"
+              plus the `27N` wrapped-site decisions plus THREE ship seams — the predict body, the \
+              `24L` §2 auto-cell verdict body, and the vouch predicate; each is a distinct \
+              caller-supplied input. The auto-cell ship arm pushes the body just over the line cap; \
+              the per-class dispatch is irreducibly flat"
 )]
 pub fn compile_probe(
     ast: &Ast,
     cfg: &Cfg,
     value: &ValueFlow,
     classes: &[(CfgNodeId, SkipClass)],
+    wrapped: &WrappedProbes,
     connected: &ConnectedPipes,
     ship_body: impl Fn(Symbol, &[Symbol]) -> Option<String>,
     ship_auto: impl Fn(FactKey, Symbol, &[Symbol]) -> Option<String>,
@@ -1971,6 +2051,36 @@ pub fn compile_probe(
     let mut checks = Vec::new();
     let mut unresolvable = Vec::new();
     for (site, node, class) in site_order(ast, cfg, classes) {
+        // `27C` §3 / `27N` — a wrapped BOOK site takes the ENTRY path exclusively: ship the
+        // entry-composed check when the consent trace permits (`WrappedProbe::Enter`), else degrade
+        // to run (`WrappedProbe::Degrade`, or a non-fact-bearing inner). The ordinary ship (keyed on
+        // the wrapper word) would mis-resolve to the wrapper's own model, so it is skipped here.
+        if let Some(wp) = wrapped.get(&node) {
+            let fact = match class {
+                SkipClass::EstablishAmbient(f)
+                | SkipClass::EstablishWritten(f)
+                | SkipClass::QueryResolvable { fact: f, .. } => Some(*f),
+                _ => None,
+            };
+            match (fact, wp) {
+                (Some(fact), WrappedProbe::Enter { provider, composed }) => {
+                    checks.push(ProbePredict {
+                        site,
+                        member: None,
+                        fact,
+                        site_kind: ProbeSiteKind::Establish,
+                        provider: *provider,
+                        argv: Vec::new(),
+                        sh: String::new(),
+                        connected: None,
+                        verdict: false,
+                        entry: Some(composed.clone()),
+                    });
+                }
+                _ => unresolvable.push(site),
+            }
+            continue;
+        }
         // item-6b (20O find-6 / 20M §7): an in-loop QUERY site stays render-floored this
         // round (`disposition_for` runs it regardless), so probing it is wasted remote
         // work — and with the member-precision wire (item-4) it would ship per-member. So
@@ -2071,6 +2181,7 @@ pub fn compile_probe(
                     sh: String::new(),
                     connected: Some(composed.clone()),
                     verdict: false,
+                    entry: None,
                 });
             } else {
                 unresolvable.push(site);
@@ -2101,6 +2212,7 @@ pub fn compile_probe(
                 sh,
                 connected: None,
                 verdict: true,
+                entry: None,
             });
             continue;
         }
@@ -2118,6 +2230,7 @@ pub fn compile_probe(
                 sh,
                 connected: None,
                 verdict: false,
+                entry: None,
             }),
             None => unresolvable.push(site),
         }
@@ -2223,6 +2336,7 @@ fn push_member_predicts(
             sh,
             connected: None,
             verdict: false,
+            entry: None,
         });
     }
     checks.extend(staged);
@@ -2272,6 +2386,7 @@ fn push_inline_predicts(
                     sh,
                     connected: None,
                     verdict: false,
+                    entry: None,
                 });
             }
             SkipClass::QueryResolvable { fact, valid } => {
@@ -2288,6 +2403,7 @@ fn push_inline_predicts(
                         sh,
                         connected: None,
                         verdict: false,
+                        entry: None,
                     });
                 }
             }
@@ -4102,6 +4218,7 @@ apt_get__predict() {
             &cfg,
             &value,
             &classes,
+            &BTreeMap::new(),
             &ConnectedPipes::default(),
             |provider, argv| {
                 if probeable {
@@ -4454,6 +4571,7 @@ apt_get__predict() {
             &cfg,
             &value,
             &classes,
+            &BTreeMap::new(),
             &ConnectedPipes::default(),
             |provider, argv| ship_corpus(&checks, &i, provider, argv),
             |_, _, _| None,
@@ -6246,6 +6364,7 @@ apt_get__predict() {
                     ],
                 }),
                 verdict: false,
+                entry: None,
             }],
             unresolvable: Vec::new(),
         };

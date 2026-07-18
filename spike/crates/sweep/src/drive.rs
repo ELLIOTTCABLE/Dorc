@@ -101,6 +101,7 @@ pub fn run_kernel(declared: &DeclaredScenario, s0: &Host, flag_on: bool, i: &mut
             &cfg,
             &value,
             &classes,
+            &std::collections::BTreeMap::new(),
             &connected,
             ship,
             // The sweep corpus carries marked effects, so no typeless-floor auto-cell mints — the

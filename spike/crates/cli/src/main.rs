@@ -699,11 +699,23 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
     // `fact_backings` (`277` §5 backing-SETS): each establish fact's survival-backing provenance
     // — its minting family + observe-backing-widening selectors — threaded to `build_plan_walled`
     // so the survival tier builds each fact's backing SET (a widened backing GROWS kill-surface).
-    // `27N` — peel wrapped BOOK sites into (inner command, composed context). Empty for a
-    // wrapper-free run ⇒ classify is byte-identical (`empty-world-byte-identical`). The real map is
-    // built below once the wrapper oracles are indexed (populated later this run).
-    let peeled_sites: BTreeMap<dorc_analysis::cfg::CfgNodeId, dorc_analysis::effect::PeeledSite> =
-        BTreeMap::new();
+    // `27N` — peel wrapped BOOK sites into (inner command, composed context) + decide entry. Empty
+    // for a wrapper-free run ⇒ the whole pipeline is byte-identical (`empty-world-byte-identical`).
+    let wrapped_analysis = build_wrapped_analysis(
+        &oracle_srcs,
+        &oracle_refs,
+        &checks,
+        &verdict_sets,
+        &parsed.value,
+        &cfg.value,
+        &value,
+        args.dial,
+        args.capability,
+        &mut interner,
+    );
+    let peeled_sites = wrapped_analysis.peeled;
+    let wrapped_probes = wrapped_analysis.wrapped;
+    report_at(advisory, "wrapped", book_source, &wrapped_analysis.hints);
     let (classified, why_diags, kills, kill_coords, fact_backings) =
         dorc_analysis::effect::classify_with_why_diags(
             &cfg.value,
@@ -757,6 +769,7 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
         &cfg.value,
         &value,
         &classes,
+        &wrapped_probes,
         &connected,
         ship,
         ship_auto,
@@ -3870,6 +3883,275 @@ fn detect_peel_present(p: &dorc_oracle::predict::Predict) -> bool {
     dorc_oracle::wrapper::detect_peel(p).is_some()
 }
 
+/// The lane-integration `27N` product of the wrapped-BOOK-site analysis: the peel-map (for
+/// `classify` to birth each wrapped fact in its context), the wrapped-probe decisions (for
+/// `compile_probe`), and the adoption/disclosure hints.
+struct WrappedAnalysis {
+    /// Wrapped sites keyed by [`CfgNodeId`] → (inner argv, composed context) for `classify`.
+    peeled: BTreeMap<dorc_analysis::cfg::CfgNodeId, dorc_analysis::effect::PeeledSite>,
+    /// Wrapped-probe dispositions (Enter / Degrade) keyed by node, for `compile_probe`.
+    wrapped: dorc_plan::WrappedProbes,
+    /// One-line adoption hints (a degraded-on-vouch site) + degrade disclosures (`27C` §2/§6).
+    hints: Vec<dorc_core::Diagnostic>,
+}
+
+/// Build the wrapped-BOOK-site analysis (`27C` §3 / lane-integration `27N`): recognize each site
+/// whose head is a loaded wrapper, peel it into (inner command, composed context), decide entry
+/// (dial × capability × vouch × entry-form), and produce the peel-map + wrapped-probe decisions +
+/// hints. Empty when no wrapper oracle is loaded ⇒ the pipeline is byte-identical
+/// (`empty-world-byte-identical`). The entry-composed probe ships ONLY oracle bytes
+/// (`271:rul-only-oracle-bytes-ship`); the admin's argv flows through the inner oracle's argparse.
+#[expect(
+    clippy::too_many_arguments,
+    clippy::too_many_lines,
+    reason = "the wrapped-site analysis threads the whole compiled context (oracle sources + predict/verdict sets + cfg/value) plus the two admin axes (dial/capability); the per-site peel→resolve-inner→decide loop is one cohesive unit (`27N`), its sub-steps already extracted to build_wrapper_index + resolve_inner_check"
+)]
+fn build_wrapped_analysis(
+    oracle_srcs: &[String],
+    oracle_refs: &[&str],
+    checks: &[dorc_oracle::predict::PredictSet],
+    verdict_sets: &[dorc_oracle::verdict::VerdictSet],
+    ast: &dorc_syntax::ast::Ast,
+    cfg: &dorc_analysis::cfg::Cfg,
+    value: &dorc_analysis::value::ValueFlow,
+    dial: dorc_core::EscalationDial,
+    capability: dorc_core::Capability,
+    interner: &mut Interner,
+) -> WrappedAnalysis {
+    use dorc_analysis::cfg::{CfgNodeId, CfgNodeKind};
+    use dorc_analysis::value::ValueOf;
+    use dorc_oracle::entry::{
+        EntryDecision, EntryDegrade, adoption_hint, decide_entry, peel_book_chain,
+    };
+    use dorc_oracle::predict::map_provider_name;
+
+    let WrapperIndexBundle {
+        wrappers,
+        enter_defs,
+        tolerance,
+    } = build_wrapper_index(oracle_refs, verdict_sets, interner);
+
+    let mut out = WrappedAnalysis {
+        peeled: BTreeMap::new(),
+        wrapped: dorc_plan::WrappedProbes::new(),
+        hints: Vec::new(),
+    };
+    if wrappers.is_empty() {
+        return out; // no wrapper oracle ⇒ nothing peels (rung-0 byte-identical)
+    }
+
+    let command_nodes: Vec<CfgNodeId> = cfg
+        .iter()
+        .filter(|(id, n)| {
+            n.kind == CfgNodeKind::Command
+                && !cfg.is_expansion_internal(*id)
+                && !cfg.is_spliced_internal(*id)
+        })
+        .map(|(id, _)| id)
+        .collect();
+    for node in command_nodes {
+        // Resolve the site's whole argv to literals; a ⊤ word ⇒ not peelable (walls opaquely).
+        let argv = value.argv_values(node);
+        let mut argv_strs: Vec<String> = Vec::with_capacity(argv.len());
+        for w in &argv {
+            match w {
+                ValueOf::Literal(s) => argv_strs.push(interner.resolve(*s).to_owned()),
+                ValueOf::Top(_) => {
+                    argv_strs.clear();
+                    break;
+                }
+            }
+        }
+        let argv_refs: Vec<&str> = argv_strs.iter().map(String::as_str).collect();
+        let Some(chain) = peel_book_chain(&argv_refs, &wrappers) else {
+            continue; // not a wrapped site (or a wrapper that cannot peel ⇒ walls)
+        };
+        let Some((inner_word, inner_rest)) = chain.inner_argv.split_first() else {
+            continue;
+        };
+        let context = chain.composed.to_context(interner);
+        let inner_provider = interner.intern(&map_provider_name(inner_word));
+        let inner_operands: Vec<Symbol> = inner_rest.iter().map(|a| interner.intern(a)).collect();
+        // The peel-map entry (for classify): the fact is born in-context regardless of the decision.
+        let mut peeled_argv = vec![ValueOf::Literal(inner_provider)];
+        peeled_argv.extend(inner_operands.iter().map(|s| ValueOf::Literal(*s)));
+        out.peeled.insert(
+            node,
+            dorc_analysis::effect::PeeledSite {
+                inner_argv: peeled_argv,
+                context,
+            },
+        );
+        // The inner check body (predict first, else the auto-cell verdict body) — mirrors the ambient
+        // shape `compile_probe` would ship, now composed inside the entry chain.
+        let Some((inner_fn, inner_sh)) = resolve_inner_check(
+            oracle_srcs,
+            checks,
+            verdict_sets,
+            inner_word,
+            inner_provider,
+            &inner_operands,
+            interner,
+        ) else {
+            out.wrapped.insert(node, dorc_plan::WrappedProbe::Degrade); // no inner check ⇒ run
+            continue;
+        };
+        let composed_enter_defs: Vec<(String, String)> = chain
+            .links
+            .iter()
+            .filter_map(|l| l.entry.as_ref().and(enter_defs.get(&l.provider)).cloned())
+            .collect();
+        let composed = dorc_plan::EntryComposed {
+            enter_defs: composed_enter_defs,
+            inner_fn,
+            inner_sh,
+            inner_argv: inner_operands,
+        };
+        // An identity chain (HostDefault) needs NO entry — it ships the plain inner check in the
+        // ambient world. A shifted chain runs the two-axis consent decision (`27C` §1).
+        let decision = if context == dorc_core::Context::HostDefault {
+            EntryDecision::Enter
+        } else {
+            let has_entry_form = chain.links.iter().all(|l| l.entry.is_some());
+            let tolerated = tolerance
+                .get(&inner_provider)
+                .map(|t| t.tolerated_on_path(inner_rest.first().map(String::as_str)))
+                .unwrap_or_default();
+            decide_entry(
+                has_entry_form,
+                capability,
+                dial,
+                &chain.composed.crossed(),
+                &chain.composed.walls(),
+                &tolerated,
+            )
+        };
+        match decision {
+            EntryDecision::Enter => {
+                out.wrapped.insert(
+                    node,
+                    dorc_plan::WrappedProbe::Enter {
+                        provider: inner_provider,
+                        composed,
+                    },
+                );
+            }
+            EntryDecision::Degrade(reason) => {
+                out.wrapped.insert(node, dorc_plan::WrappedProbe::Degrade);
+                if let EntryDegrade::Unvouched(dim) = reason {
+                    out.hints.push(dorc_core::Diagnostic::note(
+                        dorc_core::DiagCode("wrapped-site-adoption-hint"),
+                        Some(ast.node(cfg.node(node).ast).span),
+                        adoption_hint(inner_word, dim),
+                    ));
+                }
+            }
+        }
+    }
+    out
+}
+
+/// The lifted wrapper models, per-provider stripped `__enter` defs, and `tolerates:` vouches — the
+/// wrapper-side inputs [`build_wrapped_analysis`] peels book sites against (`27N`).
+struct WrapperIndexBundle {
+    wrappers: dorc_oracle::entry::WrapperIndex,
+    enter_defs: BTreeMap<Symbol, (String, String)>,
+    tolerance: BTreeMap<Symbol, dorc_oracle::entry::ToleranceVouch>,
+}
+
+/// Build the [`WrapperIndexBundle`] from the loaded oracle sources (`27N`): every peeling `__predict`
+/// (with its ρ, `__lend_map`, `__enter`) keyed by book word, the stripped `__enter` funcdefs, and
+/// the per-provider `tolerates:` vouches (off the already-lifted verdict bodies, `27C` §2).
+fn build_wrapper_index(
+    oracle_refs: &[&str],
+    verdict_sets: &[dorc_oracle::verdict::VerdictSet],
+    interner: &mut Interner,
+) -> WrapperIndexBundle {
+    use dorc_oracle::entry::{
+        WrapperIndex, WrapperModel, detect_entry_form, lift_entry_set, lift_tolerance,
+    };
+    use dorc_oracle::predict::{lift_predicts, map_provider_name};
+    use dorc_oracle::wrapper::{derive_lend_map, detect_peel, lift_lend_map_set};
+
+    let mut wrappers: WrapperIndex = WrapperIndex::new();
+    let mut enter_defs: BTreeMap<Symbol, (String, String)> = BTreeMap::new();
+    let mut tolerance: BTreeMap<Symbol, dorc_oracle::entry::ToleranceVouch> = BTreeMap::new();
+    for src in oracle_refs {
+        let ps = lift_predicts(interner, src).value;
+        let ls = lift_lend_map_set(interner, src).value;
+        let es = lift_entry_set(interner, src).value;
+        for p in ps.providers() {
+            let Some(predict) = ps.get(p) else { continue };
+            let Some(peel) = detect_peel(predict) else {
+                continue; // not a peeling wrapper
+            };
+            let word = interner.resolve(p).to_owned();
+            let lend_map = ls.get(p).cloned();
+            let lend = lend_map
+                .as_ref()
+                .map_or_else(Default::default, |lm| derive_lend_map(lm).0);
+            let enter = es.get(p).and_then(detect_entry_form);
+            if let Some(form) = es.get(p) {
+                let stripped = dorc_oracle::predict::strip_enter(src, form, interner);
+                let fname = format!(
+                    "{}__enter",
+                    dorc_oracle::to_funcname_segment(&map_provider_name(&word))
+                );
+                enter_defs.entry(p).or_insert((fname, stripped));
+            }
+            wrappers.entry(word).or_insert(WrapperModel {
+                predict: predict.clone(),
+                rho: peel.rho,
+                lend,
+                lend_map,
+                enter,
+                provider: p,
+            });
+        }
+    }
+    for vs in verdict_sets {
+        for p in vs.providers() {
+            if let Some(v) = vs.get(p) {
+                let (vouch, _) = lift_tolerance(v);
+                tolerance.entry(p).or_insert(vouch);
+            }
+        }
+    }
+    WrapperIndexBundle {
+        wrappers,
+        enter_defs,
+        tolerance,
+    }
+}
+
+/// Resolve the inner oracle's check for a wrapped site's entry-composed probe (`27N`): the `__predict`
+/// body if the inner is a modeled command, else the auto-cell `__is_converged` verdict body (the
+/// markless shape). `None` ⇒ no inner check ⇒ the site can't be probed ⇒ runs. Returns
+/// `(mangled funcname, stripped funcdef)` — the funcname matches the strip's mangled name byte-for-byte.
+fn resolve_inner_check(
+    oracle_srcs: &[String],
+    checks: &[dorc_oracle::predict::PredictSet],
+    verdict_sets: &[dorc_oracle::verdict::VerdictSet],
+    inner_word: &str,
+    inner_provider: Symbol,
+    inner_operands: &[Symbol],
+    interner: &Interner,
+) -> Option<(String, String)> {
+    use dorc_oracle::predict::map_provider_name;
+    let seg = dorc_oracle::to_funcname_segment(&map_provider_name(inner_word));
+    if let Some(sh) = ship_predict_body(
+        oracle_srcs,
+        checks,
+        interner,
+        inner_provider,
+        inner_operands,
+    ) {
+        return Some((format!("{seg}__predict"), sh));
+    }
+    let sh = ship_verdict_body(oracle_srcs, verdict_sets, interner, inner_provider)?;
+    Some((format!("{seg}__is_converged"), sh))
+}
+
 fn report_at(
     advisory: bool,
     stage: &str,
@@ -4236,6 +4518,7 @@ mod tests {
                 sh: "{ :; }".to_string(),
                 connected: None,
                 verdict: false,
+                entry: None,
             }],
             unresolvable: vec![],
         }
@@ -4463,6 +4746,7 @@ mod tests {
                     sh: "{ :; }".to_string(),
                     connected: None,
                     verdict: false,
+                    entry: None,
                 },
                 ProbePredict {
                     site: LeafId(1),
@@ -4474,6 +4758,7 @@ mod tests {
                     sh: "{ :; }".to_string(),
                     connected: None,
                     verdict: false,
+                    entry: None,
                 },
             ],
             unresolvable: vec![],
@@ -4653,6 +4938,7 @@ mod tests {
             sh: "{ :; }".to_string(),
             connected: None,
             verdict: false,
+            entry: None,
         };
         ProbePlan {
             checks: vec![mk(0, f0), mk(1, f1)],
@@ -4720,6 +5006,7 @@ mod tests {
             &cfg.value,
             &value,
             &classes,
+            &BTreeMap::new(),
             &dorc_plan::ConnectedPipes::default(),
             |_, _| None,
             |_, _, _| None,

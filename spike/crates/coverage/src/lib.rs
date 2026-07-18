@@ -523,6 +523,7 @@ pub fn build_report(inputs: &Inputs<'_>) -> Report {
         &cfg,
         &value,
         &classes,
+        &BTreeMap::new(),
         &connected,
         |provider, argv| ship_predict_body(inputs.oracles, &checks, &interner, provider, argv),
         // The dashboard does not exercise the typeless-floor auto-cell probe (`24L` §2): its

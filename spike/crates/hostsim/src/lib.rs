@@ -1146,6 +1146,7 @@ apt_get__predict() {
                 &cfg,
                 &value,
                 &classes,
+                &BTreeMap::new(),
                 // hostsim's corpus has no all-Query pipeline ⇒ no connected check-pipe (24J §2);
                 // default keeps compile_probe consistent with the `build_plan` wrapper it uses below.
                 &dorc_plan::ConnectedPipes::default(),
@@ -1269,6 +1270,7 @@ apt_get__predict() {
             &cfg,
             &value,
             &classes,
+            &BTreeMap::new(),
             &dorc_plan::ConnectedPipes::default(),
             |_provider, _argv| None,
             |_, _, _| None,
@@ -1439,6 +1441,7 @@ grep__predict() {
             &cfg,
             &value,
             &classes,
+            &BTreeMap::new(),
             &connected,
             |p, a: &[dorc_core::Symbol]| ship_body_from(CONNECTED_ORACLE, &checks, &i, p, a),
             |_, _, _| None,
