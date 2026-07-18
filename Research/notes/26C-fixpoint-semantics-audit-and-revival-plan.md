@@ -156,6 +156,19 @@ with opposite dispositions:
   never needed this invariant — "record exists ⇒ argv resolved" holds trivially
   when nothing retracts — which makes it exactly the class of quiet assumption
   this note exists to surface.
+  **ACKED (human-typed, 2026-07-17d), with the governing reformulation theirs:
+  "our facts are inherently argv-keyed."** The value-plane *feeds the question*;
+  consuming the answer re-asserts the question's premises, so
+  all-value-plane-that-fed-the-question must be soundly carried — *completely* —
+  into "the value-plane feeds the answer." Build-shape consequence (conductor,
+  confirmed in the same exchange): prefer KEYING over FILTERING — the fact-store
+  keys records by the full want-identity (site · context · resolved compiled
+  form/recipe — context included, since a wrapper chain's denoted context can
+  itself be value-plane-derived), so a retracted premise makes the stale record
+  *unreachable* rather than found-and-rejected: the illegal state is
+  unrepresentable, and no mint-time check exists to forget. "Completely" is
+  load-bearing: the key covers everything the value-plane contributed to the
+  compiled probe-form, not merely the literal argv strings.
 - **Cell-plane facts consumed by walls / the capture patrol / fold-validity —
   sound, order-variant, and the only variance that remains once admissibility
   holds.** These consumers ask questions about the WORLD ("did anything disturb
@@ -720,7 +733,7 @@ stay open, nothing new closes them.
 |---|---|
 | semantic model; fold-confluence; conflict-free process-confluence | +SURE (theory); spike-fit ~SUSPECT until R2 |
 | confluence conflict-carve (the 26B §2 correction) | +SURE mechanism; ~SUSPECT real-world reachability; RESOLVED direction-tier 2026-07-17b (default maximal-elision; GC flagged — §1b) |
-| record-admissibility-by-want (§1b) | soundness invariant, both modes; conductor-derived, +SURE on the hazard it closes |
+| record-admissibility-by-want (§1b) | ACKED HARD 2026-07-17d; governing form = the human's "facts are inherently argv-keyed" (key, don't filter); both modes |
 | outcomes-schedule-never-evidence line; closure-pass fence | conductor synthesis; consistent with `277` §5's typed clause |
 | cancellation package (demotion order · guard-by-vouch · finality class) | proposal-tier (`ask-cancellation-posture`) |
 | wire iteration keys; want-identity; leafid namespaces | +SURE needed; shapes proposal-tier |
