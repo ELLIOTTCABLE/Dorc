@@ -7,7 +7,7 @@ whose oracle-emission growth multiplies everything here. Authority: root docs,
 doc; laws are not restated here, only cited) outrank this. Companion durables: `27R`/`27S`
 (the lint lane this composes with) · `26B`/`26C` (the reactive era + §5b two-lane
 direction) · `22A`/`22W` (the r22 spine this completes) · `24H` (the polish acks several
-riders discharge). Sibling registry: gap numbers cite `AID-NEEDS` gap-ledger entries.
+riders discharge). Gap numbers (gap-N) cite §0b below.
 
 ## §0 — Charter and the human-typed rulings (this sitting's ledger)
 
@@ -44,6 +44,31 @@ Rulings, all human-typed or human-acked 2026-07-18:
   codes · params-only templates · one-defining-case-per-code · committed catalog
   intermediate promoted-never-auto-tracked · per-code-full-prose-no-fallback — all in
   `AID-NEEDS` Law; binding here.
+
+## §0b — The gap ledger (built-vs-designed, from the 2026-07-18 code inventory)
+
+1. **gap-no-durable-why** — no whylog, no `--last`, no durable reader; USER_STORY's
+   headless story is fiction at HEAD (decision digest evaporates on stderr;
+   `dorc-records/1` is wire-only). → Lane B.
+2. **gap-claim-vs-receipt-unminted** — `OriginKind::{OracleClaim, ProbeResult}` reserved
+   since r22, never minted; only `TopCause` is. → Lane A.
+3. **gap-two-diag-systems** — legacy string-slug `Diagnostic` coexists with the
+   battlefield-bound catalog; the newest lanes (escalation, wrapped, munge) went legacy.
+   → Lane C (kill).
+4. **gap-suggestion-unwired** — `Suggestion`/`Applicability` zero production emits;
+   `RemediationClass` not a registry column; floors never ratified; `Floor::Pinned`
+   unused. → Lane C riders.
+5. **gap-ack6-sibling-hint-absent** — the ruled unloaded-sibling-oracle hint has no
+   emitter. → §5 rider.
+6. **gap-hints-unpinned** — zero `hint:` e2e expectations; the first-wall hint is
+   unasserted. → §5 rider.
+7. **gap-minting-line-threading** — claims/vouches carry no source line; blocks
+   stdlib-era attribution (`27Q` §2 precondition, previously unowned). → Lane A.
+8. **gap-why-surface-sanitization** — `an-output-sanitization` unbuilt while why/hint
+   lanes print host-derived text. → security round (OUT here; fence named).
+9. **gap-smalls** — `--risk-faultless-skips` ruled name unparsed (code:
+   `--trust-footprints`); `--exit-code` unbuilt; a diag.rs header claims 20 codes over
+   an enum of 15. → §5 riders / root-doc queue.
 
 ## §1 — Lane A: the evidence plane (the two-plane audit made structural)
 
@@ -147,8 +172,8 @@ tier words (measured/vouched/ran/claimed/derived/consented), file:line on every 
 the naked-trust epilogue stating the DESIGN truth (which link is unverified by
 construction — never an instance guess), re-measure + leverage-point recovery moves.
 This case cannot pass until Lanes A+B+C all exist; it is the phase's acceptance test and
-the defining case for the arrangement. Its render is also the source material for the
-USER_STORY recovery section (proposal: `27U`).
+the defining case for the arrangement. Its render is also the source material for
+USER_STORY's "Recovery" section (landed for in-place human review).
 
 ## §5 — Sequencing, dispatch shape, riders
 
@@ -161,7 +186,7 @@ USER_STORY recovery section (proposal: `27U`).
   step-zero/0.5/one · sonnet clamp · comment budget · four gates + foreground e2e ·
   granular commits). Builders mint codes with EMPTY prose per
   `27T:rul-error-authorship-tier`; prose emissions are conductor/human acts at
-  checkpoint. Landing notes: `27V`+ (27U reserved for the USER_STORY proposal).
+  checkpoint. Landing notes: `27V`+.
 - **Riders** (cheap, attach to whichever lane touches the file): e2e `hint:` pinning
   (gap-6; `expected-hint` needle files, kWARN keepalive) · the ack-6 unloaded-sibling
   emitter (gap-5) · the diag.rs 20-vs-15 doc-count fix (gap-9) · the

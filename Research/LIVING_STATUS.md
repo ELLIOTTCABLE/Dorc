@@ -68,9 +68,11 @@ OriginKinds; collapse constructors demand evidence; minting-line threading = the
 stdlib precondition, now owned), and the defining-case/promote prose pipeline
 (colocated triple render; committed catalog intermediate; Menhir-descendant).
 Sequencing: legacy-kill + evidence types land BEFORE block-stdlib authoring.
-**`notes/27U`** = proposed USER_STORY recovery section, awaiting human audit.
-`spike/CLAUDE.md` gained the User-aid law block. The lint lane (`27R`/`27S`,
-`ai/r27-lint*`) composes and is treated as merged.
+USER_STORY gained its "Recovery" section directly (LLM-maintained doc; in-place
+human review); KNOBS `kWARN` gained the AID-NEEDS pointer; `spike/CLAUDE.md` gained
+the User-aid law block + the corrected root-doc edit posture (LLM-maintained docs
+are edit-and-commit-for-review). The lint lane (`27R`/`27S`, `ai/r27-lint*`)
+composes and is treated as merged.
 
 `270:block-rebuild` is **CLOSED** (2026-07-17, one session: eight dispatches
 landed + both bless checkpoints stamped; ledger = **`notes/27D`** including its
