@@ -122,6 +122,11 @@ One comparison, everywhere:
 | verdict | consumers | notes |
 |---|---|---|
 | same | transport (a fact established in one context licenses action about the other); the probe-outside license | never survival |
+<!-- /* under-qualified per 27Xf cr-277-stale-transport-rows (2026-07-17): true as
+relation algebra (same cells ⇒ a fact does transport), but CROSS-CONTEXT consumption
+is not licensed by this row alone — it routes through plans/27C (measure-in-context
+first; the fallback lane's flag gates; the structural carried-by row's scope is
+27Xf Tier-1, human-owed). Annotate-don't-rewrite; the relation stands. */ -->
 | provably-disjoint | survival sparing (kill-traffic misses the backing) | consumed ONLY inside the flag-gated survive tier (`271:rul-flag-is-razor-residue`; the flag permits acting on separation claims, never manufactures them) |
 | unknown | the safe bottom: no transport, collide, walls, run | safe for BOTH consumers — why the relation is ternary (`273` §4: believed-no-overlap and believed-overlap are each dangerous to one consumer; only unknown is safe for both) |
 
@@ -395,6 +400,14 @@ spike is the kTYANNOT livability experiment. Syntax remains marker-gated
   §1 ternary verdict: generator-licensed, never derived; any unknown member ⇒
   collide); transport over a backing-set requires every member to transport. An
   accidental existential in either consumer is an under-execution path (279b-fd5).
+  Two side-invariants (added 2026-07-17 per 27Xf cr-set-lifting-vacuous-at-empty —
+  universal-over-∅ is vacuously true, so the law without them licenses
+  sparing-every-wall on an empty set): (inv-backing-set-non-empty) a fact's
+  backing-set is non-empty BY CONSTRUCTION — the minting line's own coordinate is
+  always a member; (inv-top-never-empty-set) ⊤/unknown is never ENCODED as ∅ — an
+  unknown backing is a ⊤ member, which collides. DST pins: ∅-unrepresentable;
+  ⊤-never-∅. (The in-flight build independently minted the same precondition —
+  `27D` stage-4b's minting-line threading; these invariants ratify that shape.)
   *(ACKED, typed, 2026-07-16 — 2/5 of `279f:ask-amendment-acks` — with a
   fixpoint-soundness clause. Banked human concern: the generator/consumer split
   reads pipeline-dependent; under any future re-run-to-fixpoint, a spare/collide

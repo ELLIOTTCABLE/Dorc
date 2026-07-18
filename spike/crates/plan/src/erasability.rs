@@ -119,7 +119,9 @@ pub fn canonical_decision(
     //     subsume much of (1)/(2) but are compared directly: a render bug that left the
     //     structured plane intact would still be caught.
     out.push_str("== render.probe ==\n");
-    out.push_str(&probe.render_sh(interner));
+    // A canonical differential form: the framing is fixed (spike default) so two renders of
+    // the same probe compare byte-identically; the digest is irrelevant to the comparison.
+    out.push_str(&probe.render_sh(&crate::records::Framing::spike(String::new()), interner));
     out.push_str("\n== render.apply ==\n");
     out.push_str(&plan.render_apply(src, ast));
     // (4) Error-class diagnostics by (code, site, severity) — sorted for order-independence.
@@ -261,12 +263,25 @@ fn canon_fact(f: dorc_core::FactKey) -> String {
         kind,
         entity,
         selector,
+        context,
     } = f;
     let entity = match entity {
         dorc_core::EntityRef::Operand(t) => format!("op{}", t.0.as_u32()),
         dorc_core::EntityRef::Singleton => "singleton".to_string(),
     };
-    format!("k{}#{}@{}", kind.0.as_u32(), selector.0.as_u32(), entity)
+    // The context is decision-identity too (`27C` §3): a wrapped fact is a DIFFERENT cell-in-world,
+    // so it must digest distinctly. `HostDefault` renders empty — a wrapper-free run's digest is
+    // byte-identical to the pre-`27C` three-place form (`empty-world-byte-identical`).
+    let ctx = match context {
+        dorc_core::Context::HostDefault => String::new(),
+        dorc_core::Context::Wrapped(k) => format!("~ctx{}", k.0.as_u32()),
+    };
+    format!(
+        "k{}#{}@{}{ctx}",
+        kind.0.as_u32(),
+        selector.0.as_u32(),
+        entity
+    )
 }
 
 /// Canonicalize the probe plan — EXHAUSTIVE destructure of [`ProbePlan`] and each [`ProbePredict`].
@@ -290,10 +305,11 @@ fn canon_probe(probe: &ProbePlan) -> String {
             sh,
             connected,
             verdict,
+            entry,
         } = c;
         let _ = writeln!(
             out,
-            "check site={} member={member:?} fact={} kind={} provider={provider:?} argv={argv:?} sh={sh:?} connected={connected:?} verdict={verdict:?}",
+            "check site={} member={member:?} fact={} kind={} provider={provider:?} argv={argv:?} sh={sh:?} connected={connected:?} verdict={verdict:?} entry={entry:?}",
             site.0,
             canon_fact(*fact),
             canon_site_kind(*site_kind),

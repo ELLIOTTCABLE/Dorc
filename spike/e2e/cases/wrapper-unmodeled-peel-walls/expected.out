@@ -1,0 +1,19 @@
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc — the record is the out-of-band lane).
+
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=a9e9d2b567dc37a2 sites=0 @@dorc@@\n'
+# site:0 skip-unresolvable
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+#!/bin/sh
+# wrapper-unmodeled-peel-walls (273 §1 floor): `sudo` has NO oracle ⇒ it is an opaque unmodeled
+# command ⇒ the whole wrapped site walls (runs verbatim). The baseline: an unmodeled wrapper is
+# just an unmodeled command (silence-licenses-nothing). Pins that peel machinery is invisible
+# without a wrapper oracle (empty-world-byte-identical).
+sudo hork setup

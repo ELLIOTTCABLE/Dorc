@@ -83,6 +83,8 @@ modes (an optional leading token; default is the probe-then-apply round-trip):
   apply        emit the byte-floored, receipt-free shippable apply artifact to stdout
   why [<addr>] report (to stdout) WHY the run decided as it did — bare: the run's problems;
                `book.sh:N`: the site on that source line; free text: matching commands
+  strip <file> print <file> with every dorc dialect construct erased — runnable stock POSIX sh
+               (the off-ramp cleaner; an unmarked file passes through unchanged)
   (none)       the round-trip: probe then apply on stdout, full disclosure on stderr
 
 options:
@@ -115,6 +117,12 @@ const EXIT_USAGE: u8 = 2;
 /// cannot model. The artifact still ships, but the exit signals partial understanding
 /// (ack-1). First of the reserved 10..=19 dorc-semantic fast-fail range.
 const EXIT_BOOK_UNMODELED: u8 = 10;
+/// A dual-peel incoherent wrapper oracle (`273` §5): a wrapper authoring BOTH `__predict`
+/// (peeling) and `__lend_map` whose `"$@"` reach DIFFERENT tail positions — the
+/// declarations-genuinely-contradict category, a genuine plan-time, pre-network fail-fast
+/// (`rul-proven-mutation-fails-fast` posture). The artifact still ships (the fail-fast is loud,
+/// not a crash); the exit stops a `dorc … && deploy` chain. Second of the 10..=19 range.
+const EXIT_WRAPPER_INCOHERENT: u8 = 11;
 
 /// What the arg-parse resolved to: an analysis run, or a help/version request (both of which
 /// are successes printed to stdout, ack-1 help-is-success — never a usage error).
@@ -125,6 +133,10 @@ enum Invocation {
     Help,
     /// `--version`: print the version to stdout, exit 0.
     Version,
+    /// `dorc strip <file>`: the off-ramp cleaner (`27D` rider-dorc-sh-unbuilt / `274` §13). A
+    /// NON-analysis invocation (like help/version) — it erases every dialect construct from one
+    /// file and prints runnable stock sh to stdout. The path is the sole positional.
+    Strip(String),
 }
 
 /// The outcome of a completed analysis run — the process exit code (ack-1). `Complete` is the
@@ -135,6 +147,9 @@ enum RunOutcome {
     Complete,
     /// The book carried a parse/CFG ⊤-reject ⇒ the artifact shipped, but exit [`EXIT_BOOK_UNMODELED`].
     BookUnmodeled,
+    /// A wrapper oracle's `__predict`/`__lend_map` peels are dual-peel incoherent (`273` §5) ⇒ the
+    /// artifact shipped, but exit [`EXIT_WRAPPER_INCOHERENT`] (fail-fast).
+    WrapperIncoherent,
 }
 
 fn main() -> ExitCode {
@@ -148,9 +163,17 @@ fn main() -> ExitCode {
             println!("dorc {}", env!("CARGO_PKG_VERSION"));
             ExitCode::SUCCESS
         }
+        Ok(Invocation::Strip(path)) => match strip_command(&path) {
+            Ok(()) => ExitCode::SUCCESS,
+            Err(msg) => {
+                eprintln!("dorc: {msg}");
+                ExitCode::from(EXIT_USAGE)
+            }
+        },
         Ok(Invocation::Analyze(args)) => match run(&args) {
             Ok(RunOutcome::Complete) => ExitCode::SUCCESS,
             Ok(RunOutcome::BookUnmodeled) => ExitCode::from(EXIT_BOOK_UNMODELED),
+            Ok(RunOutcome::WrapperIncoherent) => ExitCode::from(EXIT_WRAPPER_INCOHERENT),
             Err(msg) => {
                 eprintln!("dorc: {msg}");
                 ExitCode::from(EXIT_USAGE)
@@ -218,6 +241,20 @@ struct Args {
     /// rul24-lineno-identity), or free content to substring-match a command; `None` ⇒ the
     /// unargumented default (report the CURRENT run's problems). Only meaningful for [`Mode::Why`].
     why_address: Option<String>,
+    /// The escalation dial (`27C` §1 axis 2 — the ternary admin surface): `--no-probe-escalation` /
+    /// `--probe-escalation` (default) / `--escalate-any-probe`. Gates whether oracle code may
+    /// context-shift under a wrapped site (`27C:rul-two-axis-escalation-consent`).
+    dial: dorc_core::EscalationDial,
+    /// The connection's mechanical capability (`27C` §1 axis 1) — a HOST FACT the cli edge would
+    /// probe in reality (`hostsim`-injected in DST). `--probe-capability=root|nopasswd|degraded`
+    /// stands in for that probe in the spike; defaults to `root`. The probe NEVER self-acquires.
+    capability: dorc_core::Capability,
+    /// `--shim-dir=DIR` (`274` §5 / `27L` task-14 — the shim-materialization edge): DIR into which
+    /// the entry-composed probe's per-run PATH shim files are written (the session-establishment I/O
+    /// that lets a `sudo -n <inner-check>` resolve its guest across the exec boundary). A pure
+    /// side-effect at the cli edge; stdout is unchanged. `None` ⇒ no materialization (a wrapper-free
+    /// or already-answered run writes nothing — `empty-world-byte-identical`).
+    shim_dir: Option<String>,
 }
 
 /// Minimal hand-rolled parsing (no `clap` dep yet): resolve the whole invocation. `-h`/`--help`
@@ -241,6 +278,19 @@ fn parse_args() -> Result<Invocation, String> {
     if raw.iter().any(|a| a == "--version") {
         return Ok(Invocation::Version);
     }
+    // `dorc strip <file>`: the off-ramp cleaner — a non-analysis invocation, handled before the
+    // mode/flag machinery. Exactly one positional (the file to strip); no other flags apply.
+    if raw.first().map(String::as_str) == Some("strip") {
+        let path = raw
+            .get(1)
+            .ok_or_else(|| format!("strip needs a file path — {USAGE}"))?;
+        if path.starts_with('-') {
+            return Err(format!(
+                "strip needs a file path, got the flag {path:?} — {USAGE}"
+            ));
+        }
+        return Ok(Invocation::Strip(path.clone()));
+    }
 
     let mut books: Vec<String> = Vec::new();
     let mut oracles = Vec::new();
@@ -249,6 +299,9 @@ fn parse_args() -> Result<Invocation, String> {
     let mut debug_argv = false;
     let mut trust_footprints = false;
     let mut why_address: Option<String> = None;
+    let mut dial = dorc_core::EscalationDial::VouchedOnly;
+    let mut capability = dorc_core::Capability::Root;
+    let mut shim_dir: Option<String> = None;
     let mut it = raw.into_iter().peekable();
 
     // A leading bare word (no `-` prefix) selects the mode. A near-miss (`pln`, `aply`) is a
@@ -280,7 +333,7 @@ fn parse_args() -> Result<Invocation, String> {
             // A leading bare word that is NOT a known mode: if it is a NEAR-MISS of one, suggest it
             // (did-you-mean); otherwise it is a positional book (the round-trip default — the flag
             // loop below picks it up).
-            if let Some(sugg) = nearest(w, &["probe", "plan", "apply", "why"]) {
+            if let Some(sugg) = nearest(w, &["probe", "plan", "apply", "why", "strip"]) {
                 return Err(format!(
                     "unknown mode {w:?} — did you mean `{sugg}`? {USAGE}"
                 ));
@@ -311,6 +364,27 @@ fn parse_args() -> Result<Invocation, String> {
             debug_argv = true;
         } else if arg == "--trust-footprints" {
             trust_footprints = true;
+        } else if arg == "--no-probe-escalation" {
+            dial = dorc_core::EscalationDial::NoEscalation;
+        } else if arg == "--probe-escalation" {
+            dial = dorc_core::EscalationDial::VouchedOnly;
+        } else if arg == "--escalate-any-probe" {
+            dial = dorc_core::EscalationDial::AnyProbe;
+        } else if let Some(c) = arg.strip_prefix("--probe-capability=") {
+            capability = match c {
+                "root" => dorc_core::Capability::Root,
+                "nopasswd" => dorc_core::Capability::NonRootNopasswd,
+                "degraded" => dorc_core::Capability::Degraded,
+                other => {
+                    return Err(format!(
+                        "unknown --probe-capability {other:?} (expected root|nopasswd|degraded); {USAGE}"
+                    ));
+                }
+            };
+        } else if let Some(p) = arg.strip_prefix("--shim-dir=") {
+            shim_dir = Some(p.to_string());
+        } else if arg == "--shim-dir" {
+            shim_dir = Some(it.next().ok_or("--shim-dir needs a directory")?);
         } else if arg.starts_with('-') {
             // An unrecognized FLAG: suggest the nearest known one (did-you-mean) rather than a bare
             // "unexpected argument" (the recon's missing-suggestion hazard).
@@ -321,6 +395,11 @@ fn parse_args() -> Result<Invocation, String> {
                 "--results",
                 "--debug-argv",
                 "--trust-footprints",
+                "--no-probe-escalation",
+                "--probe-escalation",
+                "--escalate-any-probe",
+                "--probe-capability",
+                "--shim-dir",
                 "--help",
                 "--version",
             ];
@@ -350,6 +429,9 @@ fn parse_args() -> Result<Invocation, String> {
         debug_argv,
         trust_footprints,
         why_address,
+        dial,
+        capability,
+        shim_dir,
     }))
 }
 
@@ -391,6 +473,22 @@ fn levenshtein(a: &str, b: &str) -> usize {
 /// we were reading and the path, and translate the common `io::ErrorKind`s to plain English
 /// (a missing/permission-denied file, the two an admin actually hits) rather than the platform's
 /// raw "The system cannot find the file specified. (os error 2)".
+/// `dorc strip <path>` (`27D` rider-dorc-sh-unbuilt / `274` §13): read the file, erase every dorc
+/// dialect construct (parser-backed — [`dorc_oracle::strip_file`]), print runnable stock sh to
+/// stdout. An unmarked file passes through byte-identical (idempotent). Pure — the strip carries no
+/// diagnostics today, but any it grows are reported to stderr so stdout stays exactly the artifact.
+fn strip_command(path: &str) -> Result<(), String> {
+    let src = std::fs::read_to_string(path).map_err(|e| humane_read_error("source", path, &e))?;
+    let mut interner = Interner::default();
+    let stripped = dorc_oracle::strip_file(&mut interner, &src);
+    for d in &stripped.diags {
+        eprintln!("dorc: strip: {}", d.message);
+    }
+    print!("{}", stripped.value);
+    std::io::stdout().flush().ok();
+    Ok(())
+}
+
 fn humane_read_error(kind: &str, path: &str, err: &std::io::Error) -> String {
     let why = match err.kind() {
         std::io::ErrorKind::NotFound => "no such file".to_owned(),
@@ -433,6 +531,31 @@ fn resolve_oracle_paths(oracles: &[String], oracle_dirs: &[String]) -> Result<Ve
         paths.extend(found);
     }
     Ok(paths)
+}
+
+/// Materialize the per-run PATH shim files into `dir` (`274` §5 / `27L` task-14). `files` is the
+/// deterministic kernel product ([`dorc_plan::ProbePlan::shim_files`]); this is the I/O half at the
+/// cli edge (`io-at-edges-only`): create the dir, write each `(name, content)`, mark it executable so
+/// a `sudo -n <inner-check>` can exec the guest across the wrapper boundary. On unix the executable
+/// bit is set here; on other platforms (msys) the exec permission is supplied by the session harness
+/// (`e2e/run.sh` `chmod +x`), so a plain write suffices and this stays cross-platform.
+fn materialize_shim_dir(dir: &str, files: &BTreeMap<String, String>) -> Result<(), String> {
+    if files.is_empty() {
+        return Ok(()); // wrapper-free / already-answered run — nothing to materialize.
+    }
+    std::fs::create_dir_all(dir).map_err(|e| format!("cannot create shim dir {dir:?}: {e}"))?;
+    for (name, content) in files {
+        let path = std::path::Path::new(dir).join(name);
+        std::fs::write(&path, content)
+            .map_err(|e| format!("cannot write shim {}: {e}", path.display()))?;
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt as _;
+            std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o755))
+                .map_err(|e| format!("cannot mark shim {} executable: {e}", path.display()))?;
+        }
+    }
+    Ok(())
 }
 
 #[expect(
@@ -495,6 +618,26 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
         .iter()
         .map(|src| dorc_oracle::verdict::VerdictSet::lift(&mut interner, src).value)
         .collect();
+
+    // Dual-peel coherence (`273` §5): a wrapper authoring BOTH `__predict` (peeling) and
+    // `__lend_map` must have both members' `"$@"` reach the SAME tail position. Disagreement is
+    // genuine static incoherence (declarations-genuinely-contradict) ⇒ loud, pre-network
+    // fail-fast (`rul-proven-mutation-fails-fast` posture). Mints NO license — the safe direction
+    // (an error, never an elision). The artifact still ships; the outcome carries the fail-fast
+    // exit. This lane runs the check at oracle-load over canonical probe argvs; the per-site check
+    // over real book argvs is `lane-context-entry`'s refinement (`273` §5).
+    let wrapper_incoherent = check_wrapper_peel_coherence(advisory, &mut interner, &oracle_refs);
+
+    // The escalation-POLICY disclosure (`27C:render-authority-disclosure`): one advisory line naming
+    // the escalation posture (the dial × the connection capability) and the entry-capable wrappers
+    // loaded. Consent legibility — the admin sees, once, what authority the probe re-uses.
+    emit_escalation_policy(
+        advisory,
+        &mut interner,
+        &oracle_refs,
+        args.dial,
+        args.capability,
+    );
 
     // The munge-reservation lint (24Kc fix-munge-reservation / 24M ca-munge-charclass): refuse an
     // emitted `<munged>__<role>` funcname that is not a legal sh NAME (charclass) or that two
@@ -568,6 +711,10 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
         .any(|d| d.severity == Severity::Error);
     let book_outcome = if book_unmodeled {
         RunOutcome::BookUnmodeled
+    } else if wrapper_incoherent {
+        // Dual-peel incoherence is pre-network fail-fast (`273` §5), independent of the book;
+        // ranked after book-unmodeled only because the exit codes are distinct signals.
+        RunOutcome::WrapperIncoherent
     } else {
         RunOutcome::Complete
     };
@@ -590,6 +737,24 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
     // `fact_backings` (`277` §5 backing-SETS): each establish fact's survival-backing provenance
     // — its minting family + observe-backing-widening selectors — threaded to `build_plan_walled`
     // so the survival tier builds each fact's backing SET (a widened backing GROWS kill-surface).
+    // `27N` — peel wrapped BOOK sites into (inner command, composed context) + decide entry. Empty
+    // for a wrapper-free run ⇒ the whole pipeline is byte-identical (`empty-world-byte-identical`).
+    let wrapped_analysis = build_wrapped_analysis(
+        &oracle_srcs,
+        &oracle_refs,
+        &checks,
+        &verdict_sets,
+        &parsed.value,
+        &cfg.value,
+        &value,
+        args.dial,
+        args.capability,
+        &mut interner,
+    );
+    let peeled_sites = wrapped_analysis.peeled;
+    let wrapped_probes = wrapped_analysis.wrapped;
+    let carried_attribution = wrapped_analysis.carried;
+    report_at(advisory, "wrapped", book_source, &wrapped_analysis.hints);
     let (classified, why_diags, kills, kill_coords, fact_backings) =
         dorc_analysis::effect::classify_with_why_diags(
             &cfg.value,
@@ -598,6 +763,7 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
             &idx,
             &checks,
             &verdict_providers,
+            &peeled_sites,
             &mut interner,
             &mut arena,
         );
@@ -608,7 +774,15 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
     // ALWAYS-ON (guards are the un-flagged baseline; rul24-mode-gate governs only the survival
     // tier, NOT this). A vouched past-wall establish ships its read-only probe (the witness needs
     // the verdict) and, converged, mints a `Disposition::Guard`.
-    let vouches = build_vouches(&oracle_refs, &classes, &value, &mut interner, advisory);
+    let mut vouches = build_vouches(&oracle_refs, &classes, &value, &mut interner, advisory);
+    // `27N` — wrapped-entering sites vouch on the INNER verdict over the peeled argv (argv[0] is the
+    // wrapper word, invisible to `build_vouches`). Disjoint nodes ⇒ a plain merge.
+    vouches.extend(dorc_plan::build_wrapped_vouches(
+        &oracle_refs,
+        &classes,
+        &wrapped_probes,
+        &mut interner,
+    ));
 
     // The CONNECTED check-pipes (`24J` §2, repaired — `271:rul-only-oracle-bytes-ship`): a simple
     // all-vouched-read-only pipeline `A | F [| F…]` ships as ONE composed probe keyed to its
@@ -642,11 +816,18 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
         &cfg.value,
         &value,
         &classes,
+        &wrapped_probes,
         &connected,
         ship,
         ship_auto,
         |node| vouches.contains_key(&node),
     );
+
+    // Shim-materialization edge (`274` §5 / `27L` task-14): `--shim-dir` writes the entry-composed
+    // probe's per-run PATH shim files (a pure side-effect at the cli edge; stdout unchanged).
+    if let Some(dir) = &args.shim_dir {
+        materialize_shim_dir(dir, &probe.shim_files())?;
+    }
 
     // The DERIVATION-probe (24E §2 corr-§2 — the SECOND probe-shipping path, a NEW pipeline
     // stage): under `--trust-footprints`, a wall-candidate whose `touches()` body ESCALATED (it
@@ -746,11 +927,18 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
     // results exist yet — this is phase 1, what you ship to GET them), builds no plan, and so
     // emits no apply, no why-lens, no digest (there is no plan/identity-plane to hash —
     // tc-probe-no-digest, flagged). Stage diagnostics above already routed to stderr.
+    // `262` §2 framing: the run's records-lane keys, minted at THIS controller edge (the DI
+    // seam — `inv-determinism`, no ambient RNG in the kernel). The nonce/host/attempt are the
+    // spike fixed defaults (deterministic goldens; a real fleet mints per-attempt/per-host);
+    // `book=` binds the stream to the exact analyzed book bytes. The end-sentinel follows the
+    // final record lane (`records::sentinel_line`); the drain keys on it, never on EOF.
+    let framing = dorc_plan::records::Framing::spike(book_digest(&book_src));
     if mode == Mode::Probe {
-        print!("{}", probe.render_sh(&interner));
-        print!("{}", derivations.render_sh(&interner)); // 24E §2: rides the SAME phase-1 block
-        print!("{}", resolvers.render_sh()); // 24F §3: rides the SAME phase-1 block
-        print!("{}", reaches_plan.render_sh()); // 24G §4: rides the SAME phase-1 block
+        print!("{}", probe.render_sh(&framing, &interner));
+        print!("{}", derivations.render_sh(&framing.nonce, &interner)); // 24E §2: SAME phase-1 block
+        print!("{}", resolvers.render_sh(&framing.nonce)); // 24F §3: SAME phase-1 block
+        print!("{}", reaches_plan.render_sh(&framing.nonce)); // 24G §4: SAME phase-1 block
+        print!("{}", dorc_plan::records::sentinel_line(&framing.nonce));
         std::io::stdout().flush().ok();
         return Ok(book_outcome);
     }
@@ -759,10 +947,11 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
     // after stdin EOF — the e2e harness splits the two on the `#!/bin/sh` shebang. `plan`
     // and `apply` emit ONLY the apply artifact (the probe is an internal compile there).
     if mode == Mode::RoundTrip {
-        print!("{}", probe.render_sh(&interner));
-        print!("{}", derivations.render_sh(&interner)); // 24E §2: rides the SAME phase-1 block
-        print!("{}", resolvers.render_sh()); // 24F §3: rides the SAME phase-1 block
-        print!("{}", reaches_plan.render_sh()); // 24G §4: rides the SAME phase-1 block
+        print!("{}", probe.render_sh(&framing, &interner));
+        print!("{}", derivations.render_sh(&framing.nonce, &interner)); // 24E §2: SAME phase-1 block
+        print!("{}", resolvers.render_sh(&framing.nonce)); // 24F §3: SAME phase-1 block
+        print!("{}", reaches_plan.render_sh(&framing.nonce)); // 24G §4: SAME phase-1 block
+        print!("{}", dorc_plan::records::sentinel_line(&framing.nonce));
         std::io::stdout().flush().ok();
     }
 
@@ -778,7 +967,23 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
             .map_err(|e| format!("reading probe results from stdin: {e}"))?;
         buf
     };
-    let results = parse_results(&results_buf, &mut interner);
+    // `262` §2: deframe FIRST (the production deframer — integrity keys, torn/glued/alien/late,
+    // terminal-token strip), then inner-parse the clean records. A refused read unit (book/host/
+    // attempt/nonce mismatch or a glued line) yields NO records ⇒ every site folds Unknown ⇒ run
+    // (kFAIL-perform). The deframer tolerates the authored (unframed) fixtures via its legacy path.
+    // E4 (`27D` disposition-legacy-deframe-tolerance): production reads are STRICT — a headerless
+    // stream refuses (kFAIL-withhold), closing the truncated-before-header integrity bypass. The
+    // lenient legacy passthrough is a harness/test-only escape read HERE at the edge
+    // (`io-at-edges-only`; the kernel stays pure — `inv-determinism`): run.sh exports
+    // `DORC_ALLOW_LEGACY_RESULTS` for the ~128 unframed authored fixtures.
+    let legacy = if std::env::var_os("DORC_ALLOW_LEGACY_RESULTS").is_some() {
+        dorc_plan::records::LegacyPolicy::Tolerate
+    } else {
+        dorc_plan::records::LegacyPolicy::Refuse
+    };
+    let deframed = dorc_plan::records::deframe(&results_buf, &framing.expect(), legacy);
+    report_at(advisory, "records", None, &deframed.diagnostics);
+    let results = parse_results(&deframed.records, deframed.framed, &mut interner);
 
     // re-key the site-keyed records to the FactKey-keyed observations `build_plan`
     // consumes (its fold/elision machinery is fact-keyed; only this probe-answer
@@ -931,6 +1136,10 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
         // mechanism + its converged-vouch license + the vouching oracle (a render-REFUSED guard
         // discloses the refusal instead). Empty when no site guards.
         emit_guard_attribution(&plan, &parsed.value, &interner);
+        // `27C` §4(a): every pure-predicate-CARRY elision names its cross-context attribution chain
+        // on this same lane (the crossed substrate axes, each backing kind's owner `invariant:` line,
+        // the read-set-closure proof). Empty when no site carried.
+        emit_carry_attribution(&plan, &carried_attribution);
         // upcoming-firstwall-hint (USER_STORY stage 3): the forward NAG — ONE aggregated line for
         // the FIRST unmodeled wall, naming the count an oracle for it would un-wall. `hint: ` prefix
         // (never `error[`), so the gate-3 stderr floor ignores it. rul24-warnings-tune-high: the
@@ -1129,7 +1338,6 @@ fn ship_verdict_body(
     provider: Symbol,
 ) -> Option<String> {
     use dorc_oracle::predict::{map_provider_name, strip_verdict};
-    use dorc_oracle::verdict::VERDICT_SUFFIX;
     let want = map_provider_name(interner.resolve(provider));
     for (src, set) in oracle_srcs.iter().zip(verdict_sets) {
         for vp in set.providers() {
@@ -1137,7 +1345,7 @@ fn ship_verdict_body(
                 continue;
             }
             let Some(verdict) = set.get(vp) else { continue };
-            return Some(strip_verdict(src, verdict, interner, VERDICT_SUFFIX));
+            return Some(strip_verdict(src, verdict, interner));
         }
     }
     None
@@ -1397,6 +1605,35 @@ fn merge_derived_footprints(
         let Some(coord_strs) = results.derivations.get(&d.site) else {
             continue; // no readback records ⇒ empty derived footprint ⇒ wall (kFAIL-safe)
         };
+        // `262` §2 / `26A` stop-1 — THE at-most family completeness gate. A deriv footprint is
+        // an AT-MOST claim, so a mid-family cut SHRINKS it (⇒ more survivals — the
+        // under-execution cardinal sin). The family MUST close with `deriv-end n=<K>` whose K
+        // equals the received coord count; a missing end-record or a count mismatch ⇒ the
+        // family is INCOMPLETE ⇒ refuse the footprint ⇒ the site walls TOTAL (never keep a
+        // partial at-most family). This is the SAME wall-total path as the malformed-coord
+        // refusal below.
+        match results.derivation_ends.get(&d.site) {
+            // Legacy (unframed) fixtures carry no `deriv-end`; they are trusted-complete, so the
+            // gate is framed-only (the framed round-trip + DST enforce the real contract).
+            _ if !results.framed => {}
+            Some(&k) if k as usize == coord_strs.len() => {}
+            reason => {
+                diags.push(dorc_core::Diagnostic::warning(
+                    dorc_core::DiagCode("deriv-family-incomplete"),
+                    None,
+                    format!(
+                        "site {}: derived footprint family incomplete ({}) — footprint refused, \
+                         the site walls total (an at-most claim cannot be partial)",
+                        d.site.0,
+                        match reason {
+                            Some(&k) => format!("declared n={k}, received {}", coord_strs.len()),
+                            None => "no deriv-end close-record".to_string(),
+                        }
+                    ),
+                ));
+                continue;
+            }
+        }
         let mut coords = Vec::with_capacity(coord_strs.len());
         let mut malformed = false;
         for line in coord_strs {
@@ -2089,7 +2326,7 @@ fn entity_text_of(coord: dorc_plan::EntityCoord, interner: &Interner) -> String 
 /// Lift the per-site GUARD VOUCHES (rul-guard-license / rul24-vouch-is-verdict-authoring, 24A §1c).
 /// Called ALWAYS-ON — guards are the un-flagged baseline (rul24-mode-gate governs only the survival
 /// tier, NOT this). For each establish-bearing site whose provider authored a verdict function
-/// (`<provider>.is_converged`/`.is_diverged`) that REACHES a vouching path over the site's resolved
+/// (`<provider>.is_converged`) that REACHES a vouching path over the site's resolved
 /// argv (`evaluate_verdict` ⇒ `Vouched`), build a [`dorc_plan::Vouches`] entry: a
 /// `ByVouch<VerdictVouch>` carrying the guard emitter's data (the mangled funcname, the strip-only
 /// preamble, the invocation, the declared sense, the fact's kind label), keyed by the site's
@@ -2463,6 +2700,21 @@ fn emit_guard_attribution(
                  (to stay safe)",
                 step.leaf.0,
             );
+        }
+    }
+}
+
+/// Every pure-predicate-CARRY elision names, on the why-lens lane, its cross-context attribution
+/// chain (`27C` §9 / steering `pure-predicate-carry`): the crossed substrate axes, each backing
+/// kind's owner `invariant:<axis>` line (vouch-species), and the engine read-set-closure proof. The
+/// block acceptance demands this "from day one" — an UNFLAGGED cross-boundary answer resting on a
+/// kind-owner's typed line + an engine proof MUST disclose whose line and what proof licensed it.
+/// `carried` is keyed by the site's `AstId` (built at the carry decision); this re-keys to the plan's
+/// per-site number. Empty when no site carried. Deterministic (plan step order).
+fn emit_carry_attribution(plan: &dorc_plan::Plan, carried: &BTreeMap<dorc_core::AstId, String>) {
+    for step in &plan.steps {
+        if let Some(text) = carried.get(&step.ast) {
+            eprintln!("why: site {} {text}", step.leaf.0);
         }
     }
 }
@@ -3102,11 +3354,17 @@ fn facts_from_sites(
             member: check.member,
         });
         let effect = record.map_or(Verdict::Unknown, |r| r.verdict);
-        // The firewall: only a VALID Query site's rc is fold-usable as Status.
+        // The firewall: only a VALID Query site's rc is fold-usable as Status — and only when
+        // the record is not a duplicate-meet CONFLICT (`262` §2: a conflicting rc is can't-tell,
+        // so it must not substitute into the control-flow fold).
         let status = match check.site_kind {
-            ProbeSiteKind::Query { valid: true } => {
-                record.map_or(Predicted::Top, |r| Predicted::Value(r.rc))
-            }
+            ProbeSiteKind::Query { valid: true } => record.map_or(Predicted::Top, |r| {
+                if r.conflicted {
+                    Predicted::Top
+                } else {
+                    Predicted::Value(r.rc)
+                }
+            }),
             // Establish site (check's rc, not the mutator's) OR an invalid Query
             // (stale resting rc) ⇒ withhold the rc, status stays ⊤.
             ProbeSiteKind::Establish | ProbeSiteKind::Query { valid: false } => Predicted::Top,
@@ -3189,6 +3447,13 @@ struct SiteResults {
     /// collides with a site's `effect=`/`rc=` record — `inv-site-keyed-results`). Read back into a
     /// `Derived` [`dorc_plan::Footprint`] before the survival walk (24E §2 corr-§2).
     derivations: BTreeMap<dorc_plan::LeafId, Vec<String>>,
+    /// The DERIV FAMILY end-records (`262` §2 / `26A` stop-1): per escalated wall-site, the `n=<K>`
+    /// declared by its `deriv-end <leafid> n=<K>` close-record. THE SAFETY INVERSION: a deriv
+    /// footprint is an AT-MOST claim, so a mid-family cut SHRINKS it (⇒ more survivals — the
+    /// under-execution direction). The consumer ([`merge_derived_footprints`]) refuses a family
+    /// whose received coord count ≠ this `K` (or that has no end-record) ⇒ wall-total. Absent key
+    /// ⇒ the family never closed ⇒ refused.
+    derivation_ends: BTreeMap<dorc_plan::LeafId, u32>,
     /// The RESOLVER canonicalization lane (24F §3): per `kind:entity` coordinate label, the readback
     /// of running its `<kind>.resolve()` host-side — a [`ResolvOutcome`]. Demuxed SEPARATELY from the
     /// verdict + derivation lanes (keyed by the coordinate, not a site — resolution is a pure function
@@ -3200,6 +3465,10 @@ struct SiteResults {
     /// [`dorc_plan::Footprint::add_reached`]) before the survival walk. NB the arm index re-keys each
     /// line back to the arm's LIFTED kind (the vocabulary fence — the kind is never host-minted).
     reaches: BTreeMap<(String, usize), Vec<String>>,
+    /// Was the source stream FRAMED (`262` §2)? Gates the at-most deriv-family completeness
+    /// check ([`merge_derived_footprints`]) — only a framed stream carries `deriv-end`
+    /// close-records; the legacy authored fixtures are trusted-complete.
+    framed: bool,
 }
 
 /// One coordinate's resolver readback (24F §3): the canonical form its `<kind>.resolve()` printed, or
@@ -3224,6 +3493,12 @@ struct SiteRecord {
     rc: Rc,
     stdout: Predicted<OutBytes>,
     stderr: Predicted<OutBytes>,
+    /// A DUPLICATE-MEET marker (`262` §2 / `26A` stop-1): set when two records for one
+    /// (site, member) key DISAGREED and were met toward ⊤. The §1 tie-break law forbids
+    /// first-wins/last-wins; a conflict is can't-tell. `verdict` is already `Unknown` when
+    /// this is set (effect ⇒ run); this ALSO withholds the fold-usable Query rc
+    /// ([`facts_from_sites`]) so a conflicting rc cannot substitute into the control-flow fold.
+    conflicted: bool,
 }
 
 /// The rc a `128 + SIGPIPE` early-exit race lands on (`sigpipe-flap-class`, `279f` §5):
@@ -3251,6 +3526,22 @@ fn emit_sigpipe_race_notes(results: &SiteResults) {
     }
 }
 
+/// A deterministic content digest binding the records stream to the exact analyzed book bytes
+/// (`262` §2 `book=`; discharges `tc-probe-no-digest`). SPIKE NOTE (`churn-avoidance-disclosure`):
+/// the spec says sha256; the kernel stays dependency-clean (`inv-determinism` — no `sha2`/`rand`
+/// dep), so this is a hand-rolled FNV-1a-64 rendered hex. Mismatch-detection semantics are
+/// identical (any book-byte change flips the digest); cryptographic strength is not — there is no
+/// adversary-forged-book in the spike model. The real tool substitutes sha256 here, unchanged
+/// callers. Computed at the I/O edge (`io-at-edges-only`), never in the kernel.
+fn book_digest(book_src: &str) -> String {
+    let mut h: u64 = 0xcbf2_9ce4_8422_2325; // FNV-1a offset basis
+    for b in book_src.as_bytes() {
+        h ^= u64::from(*b);
+        h = h.wrapping_mul(0x0000_0100_0000_01b3); // FNV prime
+    }
+    format!("{h:016x}")
+}
+
 /// Parse stdin probe-results into the site-keyed [`SiteResults`]
 /// (`inv-site-keyed-results`). One line form; blank lines and `#` comments are ignored
 /// (so the probe's own `# site …` provenance echo can be piped back), and any
@@ -3274,116 +3565,175 @@ fn emit_sigpipe_race_notes(results: &SiteResults) {
 ///
 /// (The transitional `declared-rc <leafid> rc=N` lane — the 19I §2 rc-injection
 /// mechanism — is DEAD as of task-D2: a Query site's own `rc=` carries the fold rc now.)
-fn parse_results(input: &str, interner: &mut Interner) -> SiteResults {
-    let mut out = SiteResults::default();
-    for line in input.lines() {
-        let line = line.trim();
-        if line.is_empty() || line.starts_with('#') {
-            continue;
-        }
-        let mut it = line.split_whitespace();
-        match it.next() {
-            // 24E §5 (fork-s4-coordwire): `deriv <leafid> coord=<kind:entity>…` — accumulate an
-            // escalated wall-site's derived-footprint coordinates, demuxed by leaf-id in its OWN
-            // lane (never the `site` verdict records). A malformed leaf ⇒ drop (the site's derived
-            // footprint stays empty ⇒ wall, the kFAIL-safe direction).
-            Some("deriv") => {
-                if let Some(site) = it
-                    .next()
-                    .and_then(|t| t.parse::<u32>().ok())
-                    .map(dorc_plan::LeafId)
+fn parse_results(records: &[String], framed: bool, interner: &mut Interner) -> SiteResults {
+    let mut out = SiteResults {
+        framed,
+        ..SiteResults::default()
+    };
+    for line in records {
+        let line = line.as_str();
+        let Some((tag, rest)) = line.split_once(' ') else {
+            continue; // a bare tag with no body ⇒ drop (⇒ Unknown ⇒ run)
+        };
+        match tag {
+            // 24E §5: `deriv <leafid> coord=<coord>` — `coord=` is the FREE-CONTENT field
+            // (`262` §2 last-to-token): after deframing it runs to end-of-line, whitespace
+            // included (the incumbent whitespace-truncation bug is FIXED here). A malformed
+            // leaf ⇒ drop (empty derived footprint ⇒ wall, kFAIL-safe).
+            "deriv" => {
+                if let Some((site, coord)) = split_key(rest, "coord=")
+                    && let Some(site) = parse_leaf(site)
                 {
+                    out.derivations
+                        .entry(site)
+                        .or_default()
+                        .push(coord.to_owned());
+                }
+            }
+            // `262` §2 / `26A` stop-1: `deriv-end <leafid> n=<K>` — the at-most family close.
+            // Records the declared count; the consumer refuses a family whose received count
+            // ≠ K (or that never closed) ⇒ wall-total (never a shrunken at-most footprint).
+            "deriv-end" => {
+                let mut it = rest.split_whitespace();
+                if let Some(site) = it.next().and_then(parse_leaf) {
                     for tok in it {
-                        if let Some(coord) = tok.strip_prefix("coord=") {
-                            out.derivations
-                                .entry(site)
-                                .or_default()
-                                .push(coord.to_owned());
+                        if let Some(n) = tok.strip_prefix("n=").and_then(|n| n.parse::<u32>().ok())
+                        {
+                            out.derivation_ends.insert(site, n);
                         }
                     }
                 }
-                continue;
             }
-            // 24F §3: `resolv <kind:entity> canon=<canonical>` | `resolv <kind:entity> dangling` —
-            // the resolver readback, demuxed by the COORDINATE label in its OWN lane. A malformed
-            // line ⇒ drop (the coord stays unrecorded ⇒ may-alias, the kFAIL-safe direction).
-            Some("resolv") => {
-                if let Some(coord) = it.next() {
-                    let outcome = match it.next() {
-                        Some("dangling") => Some(ResolvOutcome::Dangling),
-                        Some(tok) => tok
-                            .strip_prefix("canon=")
-                            .map(|c| ResolvOutcome::Canonical(c.to_owned())),
-                        None => None,
+            // 24F §3: `resolv <coord> canon=<canonical>` | `resolv <coord> dangling`. `canon=`
+            // is the FREE-CONTENT field (last-to-token) so a space-bearing canonical survives.
+            "resolv" => {
+                if let Some((coord, tail)) = rest.split_once(' ') {
+                    let outcome = if tail == "dangling" {
+                        Some(ResolvOutcome::Dangling)
+                    } else {
+                        tail.strip_prefix("canon=")
+                            .map(|c| ResolvOutcome::Canonical(c.to_owned()))
                     };
                     if let Some(o) = outcome {
                         out.resolutions.insert(coord.to_owned(), o);
                     }
                 }
-                continue;
             }
-            // 24G §4: `reach <kind:entity> arm=<n> entity=<line>` — accumulate a DYNAMIC reaches()
-            // arm's emitted RAW ENTITY, demuxed by (coordinate, arm) in its OWN lane. A malformed
-            // line ⇒ drop (the coord's expansion stays narrower ⇒ the un-expanded floor, kFAIL-safe:
-            // an omitted reach only fails to WIDEN, never a wrong-reach). NB `entity=<line>` is the
-            // LAST token — a reached entity with an embedded space would truncate (the SAME
-            // single-token limitation as the `deriv`/`resolv` lanes; file paths rarely carry spaces).
-            Some("reach") => {
-                if let Some(coord) = it.next() {
+            // 24G §4: `reach <coord> arm=<n> entity=<line>` — `entity=` is the FREE-CONTENT
+            // field (last-to-token): a reached entity with embedded spaces now survives (the
+            // single-token truncation is fixed — `279f` rider generalization).
+            "reach" => {
+                if let Some((head, entity)) = split_key(rest, "entity=") {
+                    let mut coord: Option<&str> = None;
                     let mut arm: Option<usize> = None;
-                    let mut entity: Option<String> = None;
-                    for tok in it {
-                        if let Some(n) = tok.strip_prefix("arm=").and_then(|n| n.parse().ok()) {
+                    for (i, tok) in head.split_whitespace().enumerate() {
+                        if i == 0 {
+                            coord = Some(tok);
+                        } else if let Some(n) =
+                            tok.strip_prefix("arm=").and_then(|n| n.parse().ok())
+                        {
                             arm = Some(n);
-                        } else if let Some(e) = tok.strip_prefix("entity=") {
-                            entity = Some(e.to_owned());
                         }
                     }
-                    if let (Some(a), Some(e)) = (arm, entity) {
+                    if let (Some(c), Some(a)) = (coord, arm) {
                         out.reaches
-                            .entry((coord.to_owned(), a))
+                            .entry((c.to_owned(), a))
                             .or_default()
-                            .push(e);
+                            .push(entity.to_owned());
                     }
                 }
-                continue;
             }
-            Some("site") => {}
-            _ => continue, // unrecognized line ⇒ drop (kFAIL-perform: no verdict ⇒ run)
+            "site" => parse_site_record(rest, &mut out, interner),
+            _ => {} // unrecognized inner tag ⇒ drop (kFAIL-perform: no verdict ⇒ run)
         }
-        let Some(key) = it.next().and_then(parse_site_key) else {
-            continue; // malformed site key ⇒ drop (⇒ Unknown ⇒ run)
-        };
-        // The remaining tokens carry `effect=<word>`, `rc=<n>`, and the reserved
-        // `stdout=`/`stderr=` in any order. A missing/garbled `effect` ⇒ Unknown (the safe
-        // direction); a missing/garbled `rc` ⇒ 0 (carried, but irrelevant unless the
-        // firewall admits it for a valid Query). Absent out-claims stay `Predicted::Top`.
-        let mut verdict = Verdict::Unknown;
-        let mut rc = Rc(0);
-        let mut stdout = Predicted::Top;
-        let mut stderr = Predicted::Top;
-        for tok in it {
-            if let Some(w) = tok.strip_prefix("effect=") {
-                verdict = effect_word_to_verdict(w);
-            } else if let Some(n) = tok.strip_prefix("rc=").and_then(|n| n.parse::<i32>().ok()) {
-                rc = Rc(n);
-            } else if let Some(t) = tok.strip_prefix("stdout=") {
-                stdout = Predicted::Value(OutBytes(interner.intern(t)));
-            } else if let Some(t) = tok.strip_prefix("stderr=") {
-                stderr = Predicted::Value(OutBytes(interner.intern(t)));
-            }
-        }
-        out.records.insert(
-            key,
-            SiteRecord {
-                verdict,
-                rc,
-                stdout,
-                stderr,
-            },
-        );
     }
     out
+}
+
+/// Parse `u32` leaf-id.
+fn parse_leaf(tok: &str) -> Option<dorc_plan::LeafId> {
+    tok.parse::<u32>().ok().map(dorc_plan::LeafId)
+}
+
+/// Split a record body at a FREE-CONTENT `key=` into `(head, value)` where `value` runs to
+/// end-of-line (whitespace included — `262` §2 last-to-token). The key must be preceded by a
+/// space (or begin the body). Returns `None` when the key is absent.
+fn split_key<'a>(body: &'a str, key: &str) -> Option<(&'a str, &'a str)> {
+    if let Some(v) = body.strip_prefix(key) {
+        return Some(("", v));
+    }
+    let pat = format!(" {key}");
+    let at = body.find(&pat)?;
+    Some((&body[..at], &body[at..][pat.len()..]))
+}
+
+/// Parse one `site <leafid> effect=<word> rc=<n> [stdout=<free-content>]` record (`262` §2).
+/// `stdout=` is the FREE-CONTENT field (last-to-token) — the read-value lane's future carrier
+/// (`279f` rider): it runs to end-of-line so embedded spaces survive byte-exactly. `stderr=`
+/// stays single-token (stderr handling is out of spike scope — churn-avoidance-disclosure).
+/// Unknown keys BEFORE the free-content field are ignored (additive-keys, `24Kc`). A duplicate
+/// (site, member) record MERGES BY MEET, never last-wins (`262` §1 tie-break law).
+fn parse_site_record(rest: &str, out: &mut SiteResults, interner: &mut Interner) {
+    // `stdout=` is the trailing free-content field; everything from it runs to EOL.
+    let (head, stdout) = match split_key(rest, "stdout=") {
+        Some((h, v)) => (h, Predicted::Value(OutBytes(interner.intern(v)))),
+        None => (rest, Predicted::Top),
+    };
+    let mut it = head.split_whitespace();
+    let Some(key) = it.next().and_then(parse_site_key) else {
+        return; // malformed site key ⇒ drop (⇒ Unknown ⇒ run)
+    };
+    let mut verdict = Verdict::Unknown;
+    let mut rc = Rc(0);
+    let mut stderr = Predicted::Top;
+    for tok in it {
+        if let Some(w) = tok.strip_prefix("effect=") {
+            verdict = effect_word_to_verdict(w);
+        } else if let Some(n) = tok.strip_prefix("rc=").and_then(|n| n.parse::<i32>().ok()) {
+            rc = Rc(n);
+        } else if let Some(t) = tok.strip_prefix("stderr=") {
+            stderr = Predicted::Value(OutBytes(interner.intern(t)));
+        }
+    }
+    let rec = SiteRecord {
+        verdict,
+        rc,
+        stdout,
+        stderr,
+        conflicted: false,
+    };
+    out.records
+        .entry(key)
+        .and_modify(|prior| *prior = meet_record(*prior, rec))
+        .or_insert(rec);
+}
+
+/// Meet two records reported for one (site, member) key (`262` §2 duplicate-by-meet / §1
+/// tie-break law). Identical ⇒ idempotent (unchanged). ANY disagreement ⇒ can't-tell: verdict
+/// ⊤ (⇒ run), out-claims ⊤, and `conflicted` set so the fold-usable Query rc is withheld
+/// ([`facts_from_sites`]). NEVER first-wins/last-wins; commutative + idempotent, so arrival
+/// order cannot change the fold (`262` §1 pin-fold-permutation).
+fn meet_record(a: SiteRecord, b: SiteRecord) -> SiteRecord {
+    let rc_conflict = a.rc != b.rc;
+    SiteRecord {
+        verdict: if a.verdict == b.verdict {
+            a.verdict
+        } else {
+            Verdict::Unknown
+        },
+        rc: a.rc,
+        stdout: if a.stdout == b.stdout {
+            a.stdout
+        } else {
+            Predicted::Top
+        },
+        stderr: if a.stderr == b.stderr {
+            a.stderr
+        } else {
+            Predicted::Top
+        },
+        conflicted: a.conflicted || b.conflicted || rc_conflict || a.verdict != b.verdict,
+    }
 }
 
 /// Parse a record's site key token (task-L2 item-4): `N` ⇒ `RecordKey { site: N, member:
@@ -3422,6 +3772,555 @@ fn effect_word_to_verdict(word: &str) -> Verdict {
 /// receipt-free WITHOUT going blind. The filter is factored PURE (the printing is the I/O
 /// edge) so the lone per-severity routing decision rec-1 forces here is unit-testable, the
 /// same pure/driver split as [`why_lens_lines`]/[`emit_why_lens`].
+/// Dual-peel coherence over the whole oracle unit (`273` §5). For every provider that authors BOTH
+/// a peeling `__predict` and a `__lend_map`, assert their `"$@"` reach the SAME tail position over
+/// a set of canonical probe argvs. A disagreement is genuine static incoherence
+/// (declarations-genuinely-contradict) ⇒ a loud Error is reported and `true` returned (the caller
+/// fast-fails, `EXIT_WRAPPER_INCOHERENT`). Mints NO license — an error is the safe direction. The
+/// canonical argvs exercise the flag-strip loops and the guest/operand positions; a coherent pair
+/// agrees on all of them (`inv-determinism` — argument-order walk, ordered maps).
+fn check_wrapper_peel_coherence(
+    advisory: bool,
+    interner: &mut Interner,
+    oracle_refs: &[&str],
+) -> bool {
+    use dorc_oracle::entry::{check_entry_coherence, lift_entry_set};
+    use dorc_oracle::predict::{Predict, lift_predicts};
+    use dorc_oracle::wrapper::{check_peel_coherence, detect_peel, lift_lend_map_set};
+
+    // Canonical probe argvs — flags (`-a`/`-b`) exercise the flag-strip loops, then a guest +
+    // operand. A coherent pair agrees on ALL; an incoherent pair disagrees on ≥1.
+    const CANON: [&[&str]; 3] = [&["g"], &["-a", "g"], &["-a", "-b", "g", "x"]];
+
+    // Gather each provider's peeling predict + lend_map + entry form across the unit (a wrapper's
+    // members share a file, but match unit-wide for robustness). Keyed by provider `Symbol`; first wins.
+    let mut predicts: BTreeMap<Symbol, Predict> = BTreeMap::new();
+    let mut lend_maps: BTreeMap<Symbol, Predict> = BTreeMap::new();
+    let mut entries: BTreeMap<Symbol, Predict> = BTreeMap::new();
+    for src in oracle_refs {
+        let ps = lift_predicts(interner, src).value;
+        for p in ps.providers() {
+            if let Some(c) = ps.get(p)
+                && detect_peel(c).is_some()
+            {
+                predicts.entry(p).or_insert_with(|| c.clone());
+            }
+        }
+        let ls = lift_lend_map_set(interner, src).value;
+        for p in ls.providers() {
+            if let Some(c) = ls.get(p) {
+                lend_maps.entry(p).or_insert_with(|| c.clone());
+            }
+        }
+        let es = lift_entry_set(interner, src).value;
+        for p in es.providers() {
+            if let Some(c) = es.get(p) {
+                entries.entry(p).or_insert_with(|| c.clone());
+            }
+        }
+    }
+
+    let mut diags = Vec::new();
+    // Fold-entry coherence (`27C:rul-fold-entry-coherence-failfast`): where a wrapper authors BOTH a
+    // `lend_map` and an `__enter` form, their argv flow must agree by STATIC sh-structure (an
+    // argparsing entry must consume the same leading args the fold did). Disagreement is the
+    // declarations-genuinely-contradict category ⇒ the SAME pre-network fail-fast.
+    for (provider, lend) in &lend_maps {
+        let Some(enter) = entries.get(provider) else {
+            continue;
+        };
+        if let Some(inc) = check_entry_coherence(enter, lend) {
+            diags.push(dorc_core::Diagnostic::error(
+                dorc_core::DiagCode("wrapper-entry-incoherent"),
+                Some(enter.name_span),
+                format!(
+                    "wrapper `{}`: __enter and __lend_map disagree on argv flow (entry consumes {} \
+                     leading arg(s), the lend-fold consumes {}) — static incoherence \
+                     (27C:rul-fold-entry-coherence-failfast, declarations-genuinely-contradict). \
+                     The entry form drops/transforms args the fold relied on; make the entry pass \
+                     the fold's guest verbatim.",
+                    interner.resolve(*provider),
+                    inc.entry_shifts,
+                    inc.lend_shifts,
+                ),
+            ));
+        }
+    }
+    for (provider, predict) in &predicts {
+        let Some(lend) = lend_maps.get(provider) else {
+            continue;
+        };
+        for argv in CANON {
+            if let Some(inc) = check_peel_coherence(predict, lend, argv) {
+                diags.push(dorc_core::Diagnostic::error(
+                    dorc_core::DiagCode("wrapper-peel-incoherent"),
+                    Some(predict.name_span),
+                    format!(
+                        "wrapper `{}`: __predict and __lend_map disagree on the peel tail position \
+                         (predict reaches \"$@\" after {} argv token(s), lend_map after {}) — static \
+                         incoherence (273 §5, declarations-genuinely-contradict). The guest would \
+                         start at a different token depending on which member dispatched; fix the \
+                         argparse so both peel to the same tail.",
+                        interner.resolve(*provider),
+                        inc.predict_depth,
+                        inc.lend_map_depth
+                    ),
+                ));
+                break; // one diagnostic per provider
+            }
+        }
+    }
+
+    let incoherent = !diags.is_empty();
+    report_at(advisory, "wrapper", None, &diags);
+    incoherent
+}
+
+/// Emit the escalation-POLICY disclosure (`27C:render-authority-disclosure` — the consent-legibility
+/// line). Names the escalation posture the dial + capability set, and the entry-capable wrappers
+/// loaded (a wrapper authoring BOTH a peeling `__predict` and an `__enter` form). One `Note` to
+/// stderr (advisory), never a gate.
+///
+/// SCOPE (honest for the spike): this is the POLICY in effect, not a per-book-SITE "will enter"
+/// tally — the book-side entry-composed probe emission (which would count sites per entered context)
+/// is the deferred integration (`27K` §9 / this lane's report). The dial × capability × the loaded
+/// entry forms are all real; what is missing is the per-site consumption in the probe pipeline.
+fn emit_escalation_policy(
+    advisory: bool,
+    interner: &mut Interner,
+    oracle_refs: &[&str],
+    dial: dorc_core::EscalationDial,
+    capability: dorc_core::Capability,
+) {
+    use dorc_oracle::entry::{detect_entry_form, lift_entry_set};
+    use dorc_oracle::predict::lift_predicts;
+
+    // Entry-capable wrappers: a provider authoring an `__enter` form (whose predict also peels).
+    let mut heads: BTreeMap<Symbol, String> = BTreeMap::new();
+    for src in oracle_refs {
+        let peels: BTreeSet<Symbol> = {
+            let ps = lift_predicts(interner, src).value;
+            ps.providers()
+                .filter(|p| ps.get(*p).is_some_and(detect_peel_present))
+                .collect()
+        };
+        let es = lift_entry_set(interner, src).value;
+        for p in es.providers() {
+            if peels.contains(&p)
+                && let Some(form) = es.get(p).and_then(detect_entry_form)
+            {
+                heads.entry(p).or_insert_with(|| form.head.join(" "));
+            }
+        }
+    }
+    if heads.is_empty() {
+        return; // no entry-capable wrapper loaded ⇒ no escalation is possible ⇒ nothing to disclose
+    }
+    let head_list = heads.values().cloned().collect::<Vec<_>>().join(", ");
+    let cap = match capability {
+        dorc_core::Capability::Root => "root",
+        dorc_core::Capability::NonRootNopasswd => "non-root (NOPASSWD)",
+        dorc_core::Capability::Degraded => "degraded",
+    };
+    let msg = match dial {
+        dorc_core::EscalationDial::NoEscalation => format!(
+            "escalation policy: NO oracle code will context-shift (--no-probe-escalation); \
+             wrapped sites run/guard. Entry-capable wrappers loaded: {head_list}."
+        ),
+        dorc_core::EscalationDial::VouchedOnly => format!(
+            "escalation policy: probe re-uses connection authority ({cap}) for \
+             `tolerates:`-vouched functions only (default); entry forms: {head_list}. \
+             Forbid with --no-probe-escalation; widen with --escalate-any-probe."
+        ),
+        dorc_core::EscalationDial::AnyProbe => format!(
+            "escalation policy: probe re-uses connection authority ({cap}) for ALL oracles \
+             (--escalate-any-probe overrides absent author consent); entry forms: {head_list}."
+        ),
+    };
+    report_at(
+        advisory,
+        "escalation",
+        None,
+        &[dorc_core::Diagnostic::note(
+            dorc_core::DiagCode("escalation-policy"),
+            None,
+            msg,
+        )],
+    );
+}
+
+/// Whether a predict body peels (a wrapper) — the `detect_peel`-present predicate, factored so the
+/// entry-policy scan reuses it (`inv-referent-agnostic`: structural, never decodes the command).
+fn detect_peel_present(p: &dorc_oracle::predict::Predict) -> bool {
+    dorc_oracle::wrapper::detect_peel(p).is_some()
+}
+
+/// The lane-integration `27N` product of the wrapped-BOOK-site analysis: the peel-map (for
+/// `classify` to birth each wrapped fact in its context), the wrapped-probe decisions (for
+/// `compile_probe`), and the adoption/disclosure hints.
+struct WrappedAnalysis {
+    /// Wrapped sites keyed by [`CfgNodeId`] → (inner argv, composed context) for `classify`.
+    peeled: BTreeMap<dorc_analysis::cfg::CfgNodeId, dorc_analysis::effect::PeeledSite>,
+    /// Wrapped-probe dispositions (Enter / Degrade) keyed by node, for `compile_probe`.
+    wrapped: dorc_plan::WrappedProbes,
+    /// One-line adoption hints (a degraded-on-vouch site) + degrade disclosures (`27C` §2/§6).
+    hints: Vec<dorc_core::Diagnostic>,
+    /// Pure-predicate-carry attribution chains keyed by the carried site's [`AstId`] (`27C` §4(a)):
+    /// the why-lens tether emitted for every carried elision (`emit_carry_attribution`). Keyed by
+    /// `AstId` so the plan's per-site step re-keys to the site number for the `why: site N …` line.
+    carried: BTreeMap<dorc_core::AstId, String>,
+}
+
+/// Build the wrapped-BOOK-site analysis (`27C` §3 / lane-integration `27N`): recognize each site
+/// whose head is a loaded wrapper, peel it into (inner command, composed context), decide entry
+/// (dial × capability × vouch × entry-form), and produce the peel-map + wrapped-probe decisions +
+/// hints. Empty when no wrapper oracle is loaded ⇒ the pipeline is byte-identical
+/// (`empty-world-byte-identical`). The entry-composed probe ships ONLY oracle bytes
+/// (`271:rul-only-oracle-bytes-ship`); the admin's argv flows through the inner oracle's argparse.
+#[expect(
+    clippy::too_many_arguments,
+    clippy::too_many_lines,
+    reason = "the wrapped-site analysis threads the whole compiled context (oracle sources + predict/verdict sets + cfg/value) plus the two admin axes (dial/capability); the per-site peel→resolve-inner→decide loop is one cohesive unit (`27N`), its sub-steps already extracted to build_wrapper_index + resolve_inner_check"
+)]
+fn build_wrapped_analysis(
+    oracle_srcs: &[String],
+    oracle_refs: &[&str],
+    checks: &[dorc_oracle::predict::PredictSet],
+    verdict_sets: &[dorc_oracle::verdict::VerdictSet],
+    ast: &dorc_syntax::ast::Ast,
+    cfg: &dorc_analysis::cfg::Cfg,
+    value: &dorc_analysis::value::ValueFlow,
+    dial: dorc_core::EscalationDial,
+    capability: dorc_core::Capability,
+    interner: &mut Interner,
+) -> WrappedAnalysis {
+    use dorc_analysis::cfg::{CfgNodeId, CfgNodeKind};
+    use dorc_analysis::value::ValueOf;
+    use dorc_oracle::entry::{
+        EntryDecision, EntryDegrade, adoption_hint, decide_entry, peel_book_chain,
+    };
+    use dorc_oracle::predict::map_provider_name;
+
+    let WrapperIndexBundle {
+        wrappers,
+        enter_defs,
+        tolerance,
+    } = build_wrapper_index(oracle_refs, verdict_sets, interner);
+
+    let mut out = WrappedAnalysis {
+        peeled: BTreeMap::new(),
+        wrapped: dorc_plan::WrappedProbes::new(),
+        hints: Vec::new(),
+        carried: BTreeMap::new(),
+    };
+    if wrappers.is_empty() {
+        return out; // no wrapper oracle ⇒ nothing peels (rung-0 byte-identical)
+    }
+
+    // (A) the authored axis-invariance index (`27C` §4(a) pure-predicate carry) — lifted once from
+    // every `state_stored_only_in()` body; its netns-caveat contradictions surface as hints. Empty
+    // when no invariance line is declared ⇒ carry never licenses (`silence-licenses-nothing`).
+    let (invariance, inv_diags) = dorc_oracle::carry::InvarianceIndex::lift(interner, oracle_refs);
+    out.hints.extend(inv_diags);
+
+    let command_nodes: Vec<CfgNodeId> = cfg
+        .iter()
+        .filter(|(id, n)| {
+            n.kind == CfgNodeKind::Command
+                && !cfg.is_expansion_internal(*id)
+                && !cfg.is_spliced_internal(*id)
+        })
+        .map(|(id, _)| id)
+        .collect();
+    for node in command_nodes {
+        // Resolve the site's whole argv to literals; a ⊤ word ⇒ not peelable (walls opaquely).
+        let argv = value.argv_values(node);
+        let mut argv_strs: Vec<String> = Vec::with_capacity(argv.len());
+        for w in &argv {
+            match w {
+                ValueOf::Literal(s) => argv_strs.push(interner.resolve(*s).to_owned()),
+                ValueOf::Top(_) => {
+                    argv_strs.clear();
+                    break;
+                }
+            }
+        }
+        let argv_refs: Vec<&str> = argv_strs.iter().map(String::as_str).collect();
+        let Some(chain) = peel_book_chain(&argv_refs, &wrappers) else {
+            continue; // not a wrapped site (or a wrapper that cannot peel ⇒ walls)
+        };
+        let Some((inner_word, inner_rest)) = chain.inner_argv.split_first() else {
+            continue;
+        };
+        let context = chain.composed.to_context(interner);
+        let inner_provider = interner.intern(&map_provider_name(inner_word));
+        let inner_operands: Vec<Symbol> = inner_rest.iter().map(|a| interner.intern(a)).collect();
+        let mut peeled_argv = vec![ValueOf::Literal(inner_provider)];
+        peeled_argv.extend(inner_operands.iter().map(|s| ValueOf::Literal(*s)));
+        // The inner check body (predict first, else the auto-cell verdict body) — mirrors the ambient
+        // shape `compile_probe` would ship, now composed inside the entry chain.
+        let Some((inner_fn, inner_sh)) = resolve_inner_check(
+            oracle_srcs,
+            checks,
+            verdict_sets,
+            inner_word,
+            inner_provider,
+            &inner_operands,
+            interner,
+        ) else {
+            // No inner check ⇒ run; the fact is still born in-context for classify.
+            out.peeled.insert(
+                node,
+                dorc_analysis::effect::PeeledSite {
+                    inner_argv: peeled_argv,
+                    context,
+                },
+            );
+            out.wrapped.insert(node, dorc_plan::WrappedProbe::Degrade);
+            continue;
+        };
+        let composed_enter_defs: Vec<(String, String)> = chain
+            .links
+            .iter()
+            .filter_map(|l| l.entry.as_ref().and(enter_defs.get(&l.provider)).cloned())
+            .collect();
+        let composed = dorc_plan::EntryComposed {
+            enter_defs: composed_enter_defs,
+            inner_fn,
+            inner_sh,
+            inner_argv: inner_operands,
+        };
+        // An identity chain (HostDefault) needs NO entry — it ships the plain inner check in the
+        // ambient world. A shifted chain runs the two-axis consent decision (`27C` §1).
+        let decision = if context == dorc_core::Context::HostDefault {
+            EntryDecision::Enter
+        } else {
+            let has_entry_form = chain.links.iter().all(|l| l.entry.is_some());
+            let tolerated = tolerance
+                .get(&inner_provider)
+                .map(|t| t.tolerated_on_path(inner_rest.first().map(String::as_str)))
+                .unwrap_or_default();
+            decide_entry(
+                has_entry_form,
+                capability,
+                dial,
+                &chain.composed.crossed(),
+                &chain.composed.walls(),
+                &tolerated,
+            )
+        };
+        // The fact's context: Wrapped for Enter/Degrade (born in-context); HostDefault for a
+        // pure-predicate CARRY (measure ambient, carry across the substrate boundary, `27C` §4(a)).
+        let (fact_context, probe) = match decision {
+            EntryDecision::Enter => (
+                context,
+                dorc_plan::WrappedProbe::Enter {
+                    provider: inner_provider,
+                    composed,
+                },
+            ),
+            EntryDecision::Degrade(reason) => {
+                // Try pure-predicate carry (`27C` §4(a)) before defaulting to run. Gated on the
+                // shipped inner check BEING the verdict body (auto-cell) — the closed body must be
+                // the measured body; the predict-inner carry path is deferred (disclosed, `27O`).
+                let carried = if composed.inner_fn.ends_with("__is_converged") {
+                    try_carry(&chain, inner_provider, verdict_sets, &invariance)
+                } else {
+                    None
+                };
+                if let Some(read_kinds) = carried {
+                    // Attribution chain (`27C` §9: every cross-context elision renders it from day
+                    // one): the crossed substrate axes; each backing kind's owner `invariant:<axis>`
+                    // line (vouch-species); the engine read-set-closure proof. One note per site,
+                    // deterministic. Rides the diagnostic + why lanes only (two-surfaces: never the
+                    // `.sh` artifact).
+                    let span = ast.node(cfg.node(node).ast).span;
+                    let text = carry_attribution_text(&chain.composed.crossed(), &read_kinds);
+                    out.hints.push(dorc_core::Diagnostic::note(
+                        dorc_core::DiagCode("carried-across-substrate-axis"),
+                        Some(span),
+                        text.clone(),
+                    ));
+                    out.carried.insert(cfg.node(node).ast, text);
+                    (
+                        dorc_core::Context::HostDefault,
+                        dorc_plan::WrappedProbe::Carry {
+                            provider: inner_provider,
+                            composed: dorc_plan::EntryComposed {
+                                enter_defs: Vec::new(), // ambient: no entry form
+                                ..composed
+                            },
+                        },
+                    )
+                } else {
+                    if let EntryDegrade::Unvouched(dim) = reason {
+                        out.hints.push(dorc_core::Diagnostic::note(
+                            dorc_core::DiagCode("wrapped-site-adoption-hint"),
+                            Some(ast.node(cfg.node(node).ast).span),
+                            adoption_hint(inner_word, dim),
+                        ));
+                    }
+                    (context, dorc_plan::WrappedProbe::Degrade)
+                }
+            }
+        };
+        out.peeled.insert(
+            node,
+            dorc_analysis::effect::PeeledSite {
+                inner_argv: peeled_argv,
+                context: fact_context,
+            },
+        );
+        out.wrapped.insert(node, probe);
+    }
+    out
+}
+
+/// Try pure-predicate carry (`27C` §4(a); steering `pure-predicate-carry`) for a wrapped site whose
+/// entry DEGRADED: does the inner verdict body's read-set close (B) across a SUBSTRATE boundary
+/// whose backing kinds are authored-invariant (A)? Runs [`dorc_oracle::carry::read_set_closed`] over
+/// the inner verdict body and [`dorc_oracle::carry::decide_carry`] over the chain's crossed
+/// dimensions. `Some(read_kinds)` (the (A) attribution inputs) on carry; `None` when there is no
+/// inner verdict body, or (A)/(B)/substrate-scope fails — the site then runs (fail safe: a missed
+/// carry loses an elision, never carries a hidden read).
+fn try_carry(
+    chain: &dorc_oracle::entry::PeeledChain,
+    inner_provider: Symbol,
+    verdict_sets: &[dorc_oracle::verdict::VerdictSet],
+    invariance: &dorc_oracle::carry::InvarianceIndex,
+) -> Option<BTreeSet<String>> {
+    let verdict = verdict_sets
+        .iter()
+        .find_map(|set| set.get(inner_provider))?;
+    let closure = dorc_oracle::carry::read_set_closed(verdict);
+    match dorc_oracle::carry::decide_carry(&chain.composed.crossed(), &closure, invariance) {
+        dorc_oracle::carry::CarryDecision::Carry { read_kinds } => Some(read_kinds),
+        dorc_oracle::carry::CarryDecision::NoCarry(_) => None,
+    }
+}
+
+/// Render the pure-predicate-carry attribution chain (`27C` §9: every cross-context elision renders
+/// its four-link chain from day one). Names the crossed substrate axes, each marked backing kind
+/// whose owner's `invariant:<axis>` line licensed the crossing (vouch-species — the kind-owner's
+/// attributable claim), and the engine read-set-closure proof. Deterministic (sorted axes/kinds).
+fn carry_attribution_text(
+    crossed: &[dorc_oracle::wrapper::Dimension],
+    read_kinds: &BTreeSet<String>,
+) -> String {
+    let axes = crossed
+        .iter()
+        .map(|d| d.as_token())
+        .collect::<Vec<_>>()
+        .join("+");
+    let kinds = read_kinds.iter().cloned().collect::<Vec<_>>().join(", ");
+    format!(
+        "pure-predicate carry across {axes} (unflagged, 27C §4(a)): {kinds} — each vouched invariant \
+         across {axes} by its kind-owner's `invariant:` line (vouch-species); the verdict body is \
+         engine-proved read-set-closed"
+    )
+}
+
+/// The lifted wrapper models, per-provider stripped `__enter` defs, and `tolerates:` vouches — the
+/// wrapper-side inputs [`build_wrapped_analysis`] peels book sites against (`27N`).
+struct WrapperIndexBundle {
+    wrappers: dorc_oracle::entry::WrapperIndex,
+    enter_defs: BTreeMap<Symbol, (String, String)>,
+    tolerance: BTreeMap<Symbol, dorc_oracle::entry::ToleranceVouch>,
+}
+
+/// Build the [`WrapperIndexBundle`] from the loaded oracle sources (`27N`): every peeling `__predict`
+/// (with its ρ, `__lend_map`, `__enter`) keyed by book word, the stripped `__enter` funcdefs, and
+/// the per-provider `tolerates:` vouches (off the already-lifted verdict bodies, `27C` §2).
+fn build_wrapper_index(
+    oracle_refs: &[&str],
+    verdict_sets: &[dorc_oracle::verdict::VerdictSet],
+    interner: &mut Interner,
+) -> WrapperIndexBundle {
+    use dorc_oracle::entry::{
+        WrapperIndex, WrapperModel, detect_entry_form, lift_entry_set, lift_tolerance,
+    };
+    use dorc_oracle::predict::{lift_predicts, map_provider_name};
+    use dorc_oracle::wrapper::{derive_lend_map, detect_peel, lift_lend_map_set};
+
+    let mut wrappers: WrapperIndex = WrapperIndex::new();
+    let mut enter_defs: BTreeMap<Symbol, (String, String)> = BTreeMap::new();
+    let mut tolerance: BTreeMap<Symbol, dorc_oracle::entry::ToleranceVouch> = BTreeMap::new();
+    for src in oracle_refs {
+        let ps = lift_predicts(interner, src).value;
+        let ls = lift_lend_map_set(interner, src).value;
+        let es = lift_entry_set(interner, src).value;
+        for p in ps.providers() {
+            let Some(predict) = ps.get(p) else { continue };
+            let Some(peel) = detect_peel(predict) else {
+                continue; // not a peeling wrapper
+            };
+            let word = interner.resolve(p).to_owned();
+            let lend_map = ls.get(p).cloned();
+            let lend = lend_map
+                .as_ref()
+                .map_or_else(Default::default, |lm| derive_lend_map(lm).0);
+            let enter = es.get(p).and_then(detect_entry_form);
+            if let Some(form) = es.get(p) {
+                let stripped = dorc_oracle::predict::strip_enter(src, form, interner);
+                let fname = format!(
+                    "{}__enter",
+                    dorc_oracle::to_funcname_segment(&map_provider_name(&word))
+                );
+                enter_defs.entry(p).or_insert((fname, stripped));
+            }
+            wrappers.entry(word).or_insert(WrapperModel {
+                predict: predict.clone(),
+                rho: peel.rho,
+                lend,
+                lend_map,
+                enter,
+                provider: p,
+            });
+        }
+    }
+    for vs in verdict_sets {
+        for p in vs.providers() {
+            if let Some(v) = vs.get(p) {
+                let (vouch, _) = lift_tolerance(v);
+                tolerance.entry(p).or_insert(vouch);
+            }
+        }
+    }
+    WrapperIndexBundle {
+        wrappers,
+        enter_defs,
+        tolerance,
+    }
+}
+
+/// Resolve the inner oracle's check for a wrapped site's entry-composed probe (`27N`): the `__predict`
+/// body if the inner is a modeled command, else the auto-cell `__is_converged` verdict body (the
+/// markless shape). `None` ⇒ no inner check ⇒ the site can't be probed ⇒ runs. Returns
+/// `(mangled funcname, stripped funcdef)` — the funcname matches the strip's mangled name byte-for-byte.
+fn resolve_inner_check(
+    oracle_srcs: &[String],
+    checks: &[dorc_oracle::predict::PredictSet],
+    verdict_sets: &[dorc_oracle::verdict::VerdictSet],
+    inner_word: &str,
+    inner_provider: Symbol,
+    inner_operands: &[Symbol],
+    interner: &Interner,
+) -> Option<(String, String)> {
+    use dorc_oracle::predict::map_provider_name;
+    let seg = dorc_oracle::to_funcname_segment(&map_provider_name(inner_word));
+    if let Some(sh) = ship_predict_body(
+        oracle_srcs,
+        checks,
+        interner,
+        inner_provider,
+        inner_operands,
+    ) {
+        return Some((format!("{seg}__predict"), sh));
+    }
+    let sh = ship_verdict_body(oracle_srcs, verdict_sets, interner, inner_provider)?;
+    Some((format!("{seg}__is_converged"), sh))
+}
+
 fn report_at(
     advisory: bool,
     stage: &str,
@@ -3521,6 +4420,16 @@ mod tests {
     use dorc_core::{EntityRef, FactKey, Interner, KindId, OpaqueToken, SelectorId};
     use dorc_plan::{LeafId, ProbePlan, ProbePredict, ProbeSiteKind};
 
+    /// Route an unframed record string through the PRODUCTION deframer (legacy path) into the
+    /// inner parser — the exact pipeline the round-trip uses. Unframed input exercises the
+    /// legacy passthrough; the framed contract is pinned separately (deframe unit tests + DST).
+    fn parse_str(input: &str, interner: &mut Interner) -> SiteResults {
+        let expect = dorc_plan::records::Framing::spike(String::new()).expect();
+        let d =
+            dorc_plan::records::deframe(input, &expect, dorc_plan::records::LegacyPolicy::Tolerate);
+        parse_results(&d.records, d.framed, interner)
+    }
+
     /// ack-2 / rul24-lineno-identity: the `dorc why` address parser reads a SOURCE line-number from
     /// `book.sh:N` or bare `N` (the tail after the last `:` when numeric), so a `file:N` the report
     /// PRINTS round-trips to the `N` a query ACCEPTS. A non-numeric tail ⇒ `None` ⇒ content-match.
@@ -3601,6 +4510,7 @@ mod tests {
             kind: KindId(i.intern("package")),
             entity: EntityRef::Operand(OpaqueToken(i.intern(e))),
             selector: SelectorId(i.intern("installed")),
+            context: dorc_core::Context::HostDefault,
         }
     }
 
@@ -3678,7 +4588,82 @@ mod tests {
             kind: KindId(i.intern("tool")),
             entity: EntityRef::Operand(OpaqueToken(i.intern(e))),
             selector: SelectorId(i.intern("present")),
+            context: dorc_core::Context::HostDefault,
         }
+    }
+
+    /// pin-partial-deriv-demotes-to-wall (`262` §2 / `26A` stop-1 — THE safety inversion): a
+    /// deriv family is an AT-MOST claim; a mid-stream cut (byte tier) SHRINKS it, which would
+    /// license MORE survivals (the under-execution cardinal sin). So an incomplete family MUST
+    /// fold WALL-TOTAL (no footprint), never a shrunken footprint. Driven through the PRODUCTION
+    /// deframer: a framed deriv stream is cut, deframed, parsed, and merged — asserting the
+    /// site's footprint is refused (walls) on any cut, and present only when complete.
+    #[test]
+    fn pin_partial_deriv_family_demotes_to_wall_total() {
+        use dorc_analysis::cfg::CfgNodeId;
+        use dorc_plan::records::{DEFAULT_NONCE, TERMINAL_TOKEN};
+
+        // A framed deriv stream for site 5: `n` coord records + an OPTIONAL `deriv-end N n=<end>`.
+        let framed = |coords: usize, end: Option<usize>| -> String {
+            let coord_recs = (0..coords)
+                .map(|c| format!("{DEFAULT_NONCE} deriv 5 coord=package:pkg{c} {TERMINAL_TOKEN}\n"))
+                .collect::<Vec<_>>()
+                .concat();
+            let end_rec = end.map_or(String::new(), |n| {
+                format!("{DEFAULT_NONCE} deriv-end 5 n={n} {TERMINAL_TOKEN}\n")
+            });
+            format!(
+                "dorc-records/1 nonce={DEFAULT_NONCE} attempt=1 host=localhost book=bk sites=0 {TERMINAL_TOKEN}\n\
+                 {coord_recs}{end_rec}dorc-records-end/1 nonce={DEFAULT_NONCE} {TERMINAL_TOKEN}\n"
+            )
+        };
+
+        let merged_contains = |stream: &str, i: &mut Interner| -> bool {
+            let d = dorc_plan::records::deframe(
+                stream,
+                &dorc_plan::records::Framing::spike("bk".to_owned()).expect(),
+                dorc_plan::records::LegacyPolicy::Refuse,
+            );
+            let results = parse_results(&d.records, d.framed, i);
+            let derivations = dorc_plan::DerivationPlan {
+                derivations: vec![dorc_plan::ProbeDerivation {
+                    site: LeafId(5),
+                    node: CfgNodeId(5),
+                    provider: i.intern("apt-get"),
+                    argv: vec![],
+                    sh: "apt_get__touches() { :; }".to_string(),
+                    call: "apt-manifest".to_string(),
+                }],
+            };
+            let mut fps = dorc_plan::TrustedFootprints::new();
+            merge_derived_footprints(
+                &mut fps,
+                &derivations,
+                &results,
+                &[],
+                &BTreeMap::new(),
+                i,
+                false,
+            );
+            fps.contains(CfgNodeId(5))
+        };
+
+        let mut i = Interner::default();
+        // COMPLETE (2 coords, deriv-end n=2) ⇒ footprint lifted (the site can spare).
+        assert!(
+            merged_contains(&framed(2, Some(2)), &mut i),
+            "a complete family lifts its footprint"
+        );
+        // CUT: coord dropped mid-stream (only 1 coord, but the family declared n=2) ⇒ WALL.
+        assert!(
+            !merged_contains(&framed(1, Some(2)), &mut i),
+            "count mismatch ⇒ wall-total, never a shrunken footprint"
+        );
+        // CUT: the deriv-end close-record itself lost ⇒ the family never closed ⇒ WALL.
+        assert!(
+            !merged_contains(&framed(2, None), &mut i),
+            "no deriv-end ⇒ wall-total"
+        );
     }
 
     /// A no-member record key (the common single-fact site, `site N`).
@@ -3702,6 +4687,7 @@ mod tests {
                 sh: "{ :; }".to_string(),
                 connected: None,
                 verdict: false,
+                entry: None,
             }],
             unresolvable: vec![],
         }
@@ -3748,7 +4734,7 @@ mod tests {
         // The record maps holds/absent/cant-tell to the Effect verdict and carries the
         // raw rc on the wire (whether it is fold-usable is the firewall's call).
         let mut i = Interner::default();
-        let r = parse_results(
+        let r = parse_str(
             "site 0 effect=holds rc=0\nsite 1 effect=absent rc=1\nsite 2 effect=cant-tell rc=2\n",
             &mut i,
         );
@@ -3770,21 +4756,27 @@ mod tests {
 
     #[test]
     fn parse_results_drops_garbage_kfail_perform() {
-        // Unrecognized / malformed lines are dropped (⇒ Unknown ⇒ run). Pins the
-        // garbage-stdin behavior at the unit layer (`kFAIL-perform`). The dead
-        // `declared-rc` lane is now just an unrecognized line ⇒ dropped.
+        // Unrecognized / malformed lines are dropped (⇒ Unknown ⇒ run). This is the TWIN of the
+        // retired `garbage-stdin` e2e case (`27D`/`24I` batch-3 de-graduation, cli-surface): it feeds
+        // that case's EXACT specimen — a non-`site` leading token, a non-numeric site-id, a `site`
+        // line with no `effect=`, a `declared-rc` line with a non-integer rc, and a leading-whitespace
+        // garbage line. None resolve site 0's effect ⇒ it folds to Unknown ⇒ the install runs
+        // (`kFAIL-perform`), and the cli never crashes on the malformed stream.
         let mut i = Interner::default();
-        let r = parse_results(
-            "this is not a record\nsite notanumber effect=holds\n\
-             site 0 garbled-no-effect\ndeclared-rc 0 rc=0\n# a comment\n",
+        let r = parse_str(
+            "this is not a valid result line\nsite notanumber effect=holds\n\
+             site 0 garbled-no-effect-field\ndeclared-rc xyz rc=notanint\n\
+             \x20\x20\x20leading-whitespace garbage\n",
             &mut i,
         );
-        // `site 0 garbled-no-effect` parses the id but no effect= ⇒ Unknown (safe), rc 0.
+        // `site 0 garbled-no-effect-field` parses the id but no effect= ⇒ Unknown (safe ⇒ run).
         assert_eq!(
             r.records.get(&rk(0)).map(|x| x.verdict),
-            Some(Verdict::Unknown)
+            Some(Verdict::Unknown),
+            "site 0 has no valid effect ⇒ Unknown ⇒ run"
         );
-        // `site notanumber` ⇒ no id ⇒ dropped; the dead `declared-rc` line ⇒ dropped.
+        // `site notanumber` ⇒ no id ⇒ dropped; the `declared-rc`, non-`site`, and whitespace-garbage
+        // lines ⇒ dropped. Only the id-parseable site 0 lands (never a crash).
         assert_eq!(r.records.len(), 1, "only the id-parseable site landed");
     }
 
@@ -3799,7 +4791,7 @@ mod tests {
         // unconditional, never reading the claim). Anti-masking: this asserts the SHAPE
         // exists end-to-end, NOT that a check predicts a value (nothing does this round).
         let mut i = Interner::default();
-        let r = parse_results("site 0 effect=holds rc=0\n", &mut i);
+        let r = parse_str("site 0 effect=holds rc=0\n", &mut i);
         let rec = r.records.get(&rk(0)).expect("site 0");
         assert_eq!(
             rec.stdout,
@@ -3812,15 +4804,21 @@ mod tests {
             "absent stderr= ⇒ ⊤ (the live default)"
         );
         // Reserved keys parse-and-store (a future stdout-producing probe is value-plumbing).
-        let r = parse_results(
-            "site 0 effect=holds rc=0 stdout=hello stderr=warn\n",
+        // `262` §2 last-to-token: `stdout=` is the TRAILING free-content field (the read-value
+        // lane's carrier — `279f` rider), so `stderr=` (single-token, out of spike scope) must
+        // PRECEDE it; and `stdout=`'s value runs to end-of-line so embedded spaces survive.
+        let r = parse_str(
+            "site 0 effect=holds rc=0 stderr=warn stdout=hello there world\n",
             &mut i,
         );
         let rec = r.records.get(&rk(0)).expect("site 0");
-        assert!(
-            matches!(rec.stdout, Predicted::Value(OutBytes(_))),
-            "a reserved stdout= is stored as a value claim: {:?}",
-            rec.stdout
+        assert_eq!(
+            match rec.stdout {
+                Predicted::Value(OutBytes(s)) => i.resolve(s),
+                Predicted::Top => "<top>",
+            },
+            "hello there world",
+            "stdout= is last-to-token: embedded spaces survive byte-exactly (279f pin)"
         );
         assert!(
             matches!(rec.stderr, Predicted::Value(OutBytes(_))),
@@ -3841,7 +4839,7 @@ mod tests {
         let mut i = Interner::default();
         let fact = pkg(&mut i, "nginx");
         let probe = probe1(fact, ProbeSiteKind::Establish);
-        let results = parse_results("site 0 effect=holds rc=0\n", &mut i);
+        let results = parse_str("site 0 effect=holds rc=0\n", &mut i);
         let obs = facts_from_sites(&probe, &results)
             .get(&fact)
             .copied()
@@ -3862,7 +4860,7 @@ mod tests {
         let mut i = Interner::default();
         let fact = tool(&mut i, "nginx");
         let probe = probe1(fact, ProbeSiteKind::Query { valid: true });
-        let results = parse_results("site 0 effect=holds rc=0\n", &mut i);
+        let results = parse_str("site 0 effect=holds rc=0\n", &mut i);
         let obs = facts_from_sites(&probe, &results)
             .get(&fact)
             .copied()
@@ -3873,7 +4871,7 @@ mod tests {
             "a valid Query guard's own rc supplies the fold Status"
         );
         // A non-zero guard rc (nginx absent) carries through identically (Exit(n) path).
-        let results = parse_results("site 0 effect=absent rc=1\n", &mut i);
+        let results = parse_str("site 0 effect=absent rc=1\n", &mut i);
         let obs = facts_from_sites(&probe, &results)
             .get(&fact)
             .copied()
@@ -3891,7 +4889,7 @@ mod tests {
         let mut i = Interner::default();
         let fact = tool(&mut i, "nginx");
         let probe = probe1(fact, ProbeSiteKind::Query { valid: false });
-        let results = parse_results("site 0 effect=holds rc=0\n", &mut i);
+        let results = parse_str("site 0 effect=holds rc=0\n", &mut i);
         let obs = facts_from_sites(&probe, &results)
             .get(&fact)
             .copied()
@@ -3917,6 +4915,7 @@ mod tests {
                     sh: "{ :; }".to_string(),
                     connected: None,
                     verdict: false,
+                    entry: None,
                 },
                 ProbePredict {
                     site: LeafId(1),
@@ -3928,6 +4927,7 @@ mod tests {
                     sh: "{ :; }".to_string(),
                     connected: None,
                     verdict: false,
+                    entry: None,
                 },
             ],
             unresolvable: vec![],
@@ -3945,7 +4945,7 @@ mod tests {
         let mut i = Interner::default();
         let fact = pkg(&mut i, "nginx");
         let probe = probe2(fact, ProbeSiteKind::Establish, ProbeSiteKind::Establish);
-        let results = parse_results(
+        let results = parse_str(
             "site 0 effect=holds rc=0\nsite 1 effect=absent rc=1\n",
             &mut i,
         );
@@ -3968,7 +4968,7 @@ mod tests {
         let mut i = Interner::default();
         let fact = pkg(&mut i, "nginx");
         let probe = probe2(fact, ProbeSiteKind::Establish, ProbeSiteKind::Establish);
-        let results = parse_results(
+        let results = parse_str(
             "site 0 effect=holds rc=0\nsite 1 effect=holds rc=0\n",
             &mut i,
         );
@@ -3981,6 +4981,138 @@ mod tests {
             Verdict::Converged,
             "agreeing same-cell records keep the agreed verdict (no spurious ⊤)"
         );
+    }
+
+    /// Build + deframe a FRAMED stream (the framed regime) for a set of inner records, then
+    /// inner-parse — the exact production round-trip a real remote host drives.
+    fn parse_framed(sites: usize, inners: &[&str], i: &mut Interner) -> SiteResults {
+        use dorc_plan::records::{DEFAULT_NONCE, TERMINAL_TOKEN};
+        let framing = dorc_plan::records::Framing::spike("bk".to_owned());
+        let recs = inners
+            .iter()
+            .map(|inner| format!("{DEFAULT_NONCE} {inner} {TERMINAL_TOKEN}\n"))
+            .collect::<Vec<_>>()
+            .concat();
+        let s = format!(
+            "dorc-records/1 nonce={DEFAULT_NONCE} attempt=1 host=localhost book=bk sites={sites} {TERMINAL_TOKEN}\n\
+             {recs}dorc-records-end/1 nonce={DEFAULT_NONCE} {TERMINAL_TOKEN}\n"
+        );
+        let d = dorc_plan::records::deframe(
+            &s,
+            &framing.expect(),
+            dorc_plan::records::LegacyPolicy::Refuse,
+        );
+        assert!(
+            !d.refused,
+            "the framed round-trip is not refused: {:?}",
+            d.diagnostics
+        );
+        parse_results(&d.records, d.framed, i)
+    }
+
+    #[test]
+    fn pin_duplicate_records_merge_by_meet_never_last_wins() {
+        // `262` §2 / §1 tie-break law: two records for ONE (site, member) key merge by MEET,
+        // never last-wins. Conflicting ⇒ ⊤ (run); identical ⇒ idempotent. Arrival order is
+        // never consulted — the disagreement result is the same in either order.
+        let mut i = Interner::default();
+        let fwd = parse_str(
+            "site 0 effect=holds rc=0\nsite 0 effect=absent rc=1\n",
+            &mut i,
+        );
+        let rev = parse_str(
+            "site 0 effect=absent rc=1\nsite 0 effect=holds rc=0\n",
+            &mut i,
+        );
+        let ra = fwd.records.get(&rk(0)).copied().expect("site 0");
+        let rb = rev.records.get(&rk(0)).copied().expect("site 0");
+        assert_eq!(
+            ra.verdict,
+            Verdict::Unknown,
+            "conflict ⇒ ⊤ (run), never last-wins"
+        );
+        assert!(
+            ra.conflicted,
+            "a conflicting duplicate is marked (withholds the fold rc)"
+        );
+        assert_eq!(
+            (ra.verdict, ra.conflicted),
+            (rb.verdict, rb.conflicted),
+            "the meet is order-independent (no arrival-sequence tie-break)"
+        );
+        // Idempotent: two IDENTICAL records ⇒ unchanged (not spuriously conflicted).
+        let dup = parse_str(
+            "site 0 effect=holds rc=0\nsite 0 effect=holds rc=0\n",
+            &mut i,
+        );
+        let r = dup.records.get(&rk(0)).copied().expect("site 0");
+        assert!(
+            !r.conflicted && r.verdict == Verdict::Converged,
+            "identical dup is idempotent"
+        );
+    }
+
+    #[test]
+    fn pin_fold_permutation_records_are_leafid_keyed_order_free() {
+        // `262` §1 pin-fold-permutation: fold(any permutation of records) ≡ fold(book order).
+        // Records are leafid-keyed + self-describing (no positional meaning), so two
+        // distinct-cell records fed in either order fold to the identical by_fact map.
+        let mut i = Interner::default();
+        let nginx = pkg(&mut i, "nginx");
+        let curl = pkg(&mut i, "curl");
+        let probe = probe_two_facts(nginx, curl);
+        let book = parse_str(
+            "site 0 effect=holds rc=0\nsite 1 effect=absent rc=1\n",
+            &mut i,
+        );
+        let rev = parse_str(
+            "site 1 effect=absent rc=1\nsite 0 effect=holds rc=0\n",
+            &mut i,
+        );
+        assert_eq!(
+            facts_from_sites(&probe, &book),
+            facts_from_sites(&probe, &rev),
+            "record arrival order never changes the fold (leafid-keyed)"
+        );
+    }
+
+    #[test]
+    fn pin_terminal_determinism_framed_folds_like_unframed() {
+        // `262` §1 pin-terminal-determinism: the FRAMED serial stream folds to the same facts
+        // as the unframed equivalent (byte-identical modulo framing lines). Deframing +
+        // inner-parsing a framed stream ≡ legacy-parsing the same inner records.
+        let mut i = Interner::default();
+        let nginx = pkg(&mut i, "nginx");
+        let curl = pkg(&mut i, "curl");
+        let probe = probe_two_facts(nginx, curl);
+        let inners = ["site 0 effect=holds rc=0", "site 1 effect=absent rc=1"];
+        let unframed = parse_str(&format!("{}\n{}\n", inners[0], inners[1]), &mut i);
+        let framed = parse_framed(2, &inners, &mut i);
+        assert_eq!(
+            facts_from_sites(&probe, &unframed),
+            facts_from_sites(&probe, &framed),
+            "the framing lines are fold-invisible — the plan is unchanged"
+        );
+    }
+
+    /// A two-check probe over two DISTINCT cells (both valid Query, sites 0 and 1).
+    fn probe_two_facts(f0: FactKey, f1: FactKey) -> ProbePlan {
+        let mk = |site: u32, fact: FactKey| ProbePredict {
+            site: LeafId(site),
+            member: None,
+            fact,
+            provider: fact.kind.0,
+            argv: vec![],
+            site_kind: ProbeSiteKind::Query { valid: true },
+            sh: "{ :; }".to_string(),
+            connected: None,
+            verdict: false,
+            entry: None,
+        };
+        ProbePlan {
+            checks: vec![mk(0, f0), mk(1, f1)],
+            unresolvable: vec![],
+        }
     }
 
     #[test]
@@ -3996,7 +5128,7 @@ mod tests {
             ProbeSiteKind::Query { valid: true },
             ProbeSiteKind::Query { valid: true },
         );
-        let results = parse_results(
+        let results = parse_str(
             "site 0 effect=holds rc=0\nsite 1 effect=holds rc=1\n",
             &mut i,
         );
@@ -4043,6 +5175,7 @@ mod tests {
             &cfg.value,
             &value,
             &classes,
+            &BTreeMap::new(),
             &dorc_plan::ConnectedPipes::default(),
             |_, _| None,
             |_, _, _| None,

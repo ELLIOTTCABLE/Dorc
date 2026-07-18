@@ -12,6 +12,14 @@ publish = false
 name = "dorc"
 path = "src/main.rs"
 
+# `dorc-sh` — the strip-and-exec shebang runner the `#!/usr/bin/env dorc-sh` corpus stamp names
+# (`27D` rider-dorc-sh-unbuilt / `24P` §9 decision-dorc-sh-semantics). A thin second bin sharing the
+# workspace parsing crates (the "ubi-friendly standalone cleaner" is `dorc strip`; this is its
+# runtime sibling). Strip-if-marked, then run under stock sh.
+[[bin]]
+name = "dorc-sh"
+path = "src/bin/dorc-sh.rs"
+
 [dependencies]
 dorc-core = { path = "../core", version = "0.0.0" }
 dorc-syntax = { path = "../syntax", version = "0.0.0" }

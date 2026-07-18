@@ -1,0 +1,19 @@
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc — the record is the out-of-band lane).
+
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=59461478436456a9 sites=0 @@dorc@@\n'
+# site:0 skip-unresolvable
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+#!/bin/sh
+# wrapper-identity-lend-map-coheres (273 §8 identity wrappers): a `nice` oracle — bare-"$@" predict
+# (peel-transparent, claims nothing on env) + an all-full-lend lend_map (every dimension the same
+# world). It lifts clean and coheres (the identity wrapper's inner sits in HostDefault). The
+# wrapped site still walls (peel not yet consumed) — zero new trust.
+nice hork tune

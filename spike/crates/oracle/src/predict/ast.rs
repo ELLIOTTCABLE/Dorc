@@ -271,6 +271,22 @@ pub enum Word {
     /// which the dialect has no use for; `$0` ⇒ resolves to Top at eval (we never
     /// model a function name).
     Positional(u32),
+    /// `"$@"` — the whole positional list, faithfully (each element one word). The
+    /// oracle-side positional model (`273`/`27H` finding-positional-oracle-side-couples-founding-pin):
+    /// ONLY the double-quoted `"$@"` is modeled here — it re-expands the caller's argv
+    /// verbatim, which is exactly the peeling-wrapper contract (`273` §1: a body whose
+    /// command-position `"$@"` runs its argument-slot is a peeling wrapper by tautology).
+    /// bare `$@`, `$*`, and `"$*"` are NOT this variant — they word-split / IFS-join and
+    /// so do not preserve the argument list, routing to [`Unmodeled`](Word::Unmodeled) ⇒ ⊤
+    /// (`271:rul-env-claim-inversion`; `27H` bare-forms-route-to-top).
+    ///
+    /// Position-aware resolution (the founding-pin transition, `27H`): in COMMAND position
+    /// it is concrete-by-construction (the traced positional list) and must NOT ⊤ the check
+    /// — the callers that run commands (verdict `run_command`, the predict `Command` handler)
+    /// skip it; in VALUE position (annotation RHS, `[ ]` operand, `case` scrutinee) it is
+    /// genuinely ⊤ (a multi-value list is not one value) ⇒ [`resolve_word`](super::eval::resolve_word)
+    /// returns `Err`.
+    PositionalArgs,
     /// `${N#PREFIX}` — positional `N` with a leading literal `PREFIX` stripped
     /// (shortest match; sh `${var#pat}`). Only the literal-prefix form the
     /// flag-strip idiom uses is admitted (`${1#-}`).

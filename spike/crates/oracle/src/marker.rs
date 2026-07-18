@@ -25,7 +25,7 @@ pub const MARKER: &str = "# dorc-lang/v0.1";
 
 /// How many leading lines the marker may occupy (`24C:rul24-marker-v0.1`: "the first 10 physical
 /// lines"), so a shebang + a purpose header still precede it.
-const MARKER_WINDOW: usize = 10;
+pub const MARKER_WINDOW: usize = 10;
 
 /// Is `src` marked with the dialect version comment?
 #[must_use]

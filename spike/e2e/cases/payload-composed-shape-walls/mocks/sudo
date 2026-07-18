@@ -1,0 +1,5 @@
+#!/bin/sh
+# INERT strawman mock (never a real context-entry): logs its argv for the run-set, mutates nothing
+# and does NOT enter a context or evaluate the payload (the wall runs the site verbatim).
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0

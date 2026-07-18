@@ -89,6 +89,104 @@ impl Lcg {
     }
 }
 
+/// The `262` §2 / §5 byte-tier fault vocabulary for the records lane: seeded, deterministic
+/// mutations of a framed record stream that a best-effort pipe can inflict. `model-the-outcome`
+/// (mutate the bytes, never a real kernel/pipe); the DST feeds the RESULT through the PRODUCTION
+/// deframer and asserts the safe direction (loss/refusal, never a fabricated shrunken record).
+/// Plan-free by construction (the terminal token is passed IN) so `hostsim`'s kernel stays clean.
+pub mod fault {
+    use super::Lcg;
+
+    /// Which fault a seed selected (for the DST's `sometimes-assert` reachability).
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub enum RecordFault {
+        /// A record lost its terminating write ⇒ no terminal token (a prefix-truncated coordinate
+        /// necessarily lands here — it can never parse as a shorter valid record).
+        Torn,
+        /// Two atomic writes merged ⇒ bytes after the first token (the deframer refuses the unit).
+        Glued,
+        /// A `>PIPE_BUF` line: content inflated but still terminated (WIDENS, the safe direction).
+        Oversize,
+        /// The seed left the stream clean (the negative control).
+        Clean,
+    }
+
+    /// Apply one seeded fault to a framed record `stream`. `token` is the terminal token to
+    /// tear/inflate around. Deterministic in `seed`.
+    #[must_use]
+    pub fn mutate(seed: u64, stream: &str, token: &str) -> (String, RecordFault) {
+        let mut rng = Lcg::new(seed);
+        let mut lines: Vec<String> = stream.lines().map(str::to_owned).collect();
+        let framed: Vec<usize> = lines
+            .iter()
+            .enumerate()
+            .filter(|(_, l)| l.trim_end().ends_with(token))
+            .map(|(i, _)| i)
+            .collect();
+        if framed.is_empty() {
+            return (stream.to_owned(), RecordFault::Clean);
+        }
+        let class = match rng.below(4) {
+            0 => RecordFault::Torn,
+            1 => RecordFault::Glued,
+            2 => RecordFault::Oversize,
+            _ => RecordFault::Clean,
+        };
+        // Pick one framed line index (safe: `framed` is non-empty; `below` stays in-range).
+        let pick = |rng: &mut Lcg, from: &[usize]| -> Option<usize> {
+            from.get(usize::try_from(rng.below(from.len() as u64)).unwrap_or(0))
+                .copied()
+        };
+        match class {
+            RecordFault::Torn => {
+                if let Some(i) = pick(&mut rng, &framed)
+                    && let Some(l) = lines.get_mut(i)
+                {
+                    *l = strip_token(l, token);
+                }
+            }
+            RecordFault::Glued => {
+                // Join a framed line with its SUCCESSOR (drop the newline between) ⇒ the first
+                // token gets trailing bytes. Fall back to Clean if the pick has no successor.
+                let cands: Vec<usize> = framed
+                    .iter()
+                    .copied()
+                    .filter(|&i| i.checked_add(1).is_some_and(|n| n < lines.len()))
+                    .collect();
+                let Some(i) = pick(&mut rng, &cands) else {
+                    return (stream.to_owned(), RecordFault::Clean);
+                };
+                let j = i.saturating_add(1);
+                if let (Some(a), Some(b)) = (lines.get(i).cloned(), lines.get(j).cloned()) {
+                    if let Some(l) = lines.get_mut(i) {
+                        *l = format!("{a}{b}");
+                    }
+                    lines.remove(j);
+                }
+            }
+            RecordFault::Oversize => {
+                if let Some(i) = pick(&mut rng, &framed)
+                    && let Some(l) = lines.get_mut(i)
+                {
+                    let pad = "x".repeat(9000); // comfortably > PIPE_BUF
+                    *l = format!("{} {pad} {token}", strip_token(l, token));
+                }
+            }
+            RecordFault::Clean => {}
+        }
+        (lines.join("\n") + "\n", class)
+    }
+
+    /// Remove the trailing ` {token}` (and any trailing whitespace) from a framed line.
+    fn strip_token(line: &str, token: &str) -> String {
+        line.trim_end()
+            .strip_suffix(token)
+            .unwrap_or(line)
+            .trim_end()
+            .to_owned()
+    }
+}
+
 /// One operation a shipped probe/apply step performs against the host, abstracted
 /// to its system-state effect (the DST models effects, not real sh execution). A
 /// well-behaved *probe* is all [`Query`](HostOp::Query); an `Establish`/`Kill`
@@ -220,11 +318,21 @@ pub struct Host {
     /// Seeded + precomputed by [`with_sigpipe_race`](Host::with_sigpipe_race) so it is bit-for-bit
     /// reproducible and goldens cannot flap. Empty on every ordinary host (no behaviour change).
     sigpipe_raced: BTreeSet<FactKey>,
+    /// The connection's mechanical [`Capability`] (`27C` §1(1) axis 1 — CAN the connection effect a
+    /// shift, with zero new credentials). A host FACT the probe never self-acquires: injected here
+    /// in DST (`with_capability`), the cli edge in reality. The consent decision
+    /// (`dorc_oracle::entry::decide_entry`) reads it to gate context entry. Defaults to
+    /// [`Capability::Root`] (the spike posture); a degraded/NOPASSWD host is a distinct cell to fuzz.
+    capability: dorc_core::Capability,
 }
 
 impl Host {
     /// A host whose initial state is exactly `holding` (no PRNG — the state is
-    /// given, not generated).
+    /// given, not generated). Context-qualified injection (`27C` §3 / `plans/27C` §9): a fact
+    /// keyed [`dorc_core::Context::Wrapped`] models "in THIS wrapper-denoted world, the cell holds"
+    /// — it is a DISTINCT [`FactKey`] from the ambient cell, so [`verdict`](Host::verdict) answers
+    /// the two independently (a wrapped measurement never aliases the ambient one). No new
+    /// mechanism: the context rides the fact, so `Host::new([cell.in_context(ctx)])` just works.
     #[must_use]
     pub fn new(holding: impl IntoIterator<Item = FactKey>) -> Self {
         Host {
@@ -235,7 +343,25 @@ impl Host {
             resolver_kinds: BTreeSet::new(),
             reaches: BTreeMap::new(),
             sigpipe_raced: BTreeSet::new(),
+            capability: dorc_core::Capability::Root,
         }
+    }
+
+    /// Inject the connection's mechanical [`Capability`] (`27C` §1(1) — the capability-cell
+    /// injection: root / NOPASSWD-non-root / degraded). Consuming-builder shape so a scenario spells
+    /// its capability inline. The probe NEVER self-acquires (`27C` §1): this is a declared host fact,
+    /// exactly the `verdict`/`manifest`/`resolve` declared-data discipline.
+    #[must_use]
+    pub fn with_capability(mut self, capability: dorc_core::Capability) -> Self {
+        self.capability = capability;
+        self
+    }
+
+    /// The connection's declared mechanical [`Capability`] (`27C` §1(1)) — read by the consent
+    /// decision at the cli edge. `Root` unless [`with_capability`](Host::with_capability) set otherwise.
+    #[must_use]
+    pub fn capability(&self) -> dorc_core::Capability {
+        self.capability
     }
 
     /// Attach a DECLARED derivation manifest (24E §6): the modeled entity-set the host-run
@@ -348,6 +474,7 @@ impl Host {
             resolver_kinds: BTreeSet::new(),
             reaches: BTreeMap::new(),
             sigpipe_raced: BTreeSet::new(),
+            capability: dorc_core::Capability::Root,
         }
     }
 
@@ -490,6 +617,59 @@ mod tests {
     use super::*;
     use dorc_core::{EntityRef, Interner, KindId, OpaqueToken, SelectorId};
 
+    #[test]
+    fn context_qualified_verdict_injection_answers_worlds_independently() {
+        // `27C` §3 / `plans/27C` §9 — context-qualified verdict injection: a fact keyed in a
+        // wrapper-denoted world (`Context::Wrapped`) is a DISTINCT `FactKey`, so the host answers it
+        // INDEPENDENTLY of the ambient cell. Model the babby-sudo story: the ROOT tree has poddle
+        // installed, the ambient (caller's) tree does NOT. The wrapped measurement converges; the
+        // ambient one diverges — nothing traveled between the two worlds.
+        let mut i = Interner::default();
+        let cell = FactKey::cell(
+            KindId(i.intern("pipx.Package")),
+            EntityRef::Operand(OpaqueToken(i.intern("poddle"))),
+            SelectorId(i.intern("installed")),
+        );
+        let root_ctx = dorc_core::Context::Wrapped(dorc_core::ContextKey(i.intern("user=root")));
+        let in_root = cell.in_context(root_ctx);
+        // The host holds ONLY the root-context fact (poddle is in root's tree, not the caller's).
+        let host = Host::new([in_root]);
+        assert_eq!(
+            host.verdict(in_root),
+            Verdict::Converged,
+            "poddle IS installed in root's world"
+        );
+        assert_eq!(
+            host.verdict(cell),
+            Verdict::Diverged,
+            "poddle is NOT installed in the ambient world — no transport across the context gap"
+        );
+    }
+
+    #[test]
+    fn capability_cell_injection_defaults_root() {
+        // `27C` §1(1) — the capability-cell injection (root / NOPASSWD / degraded). Default = root;
+        // a scenario injects a degraded/NOPASSWD host to fuzz the consent cells.
+        use dorc_core::Capability;
+        assert_eq!(
+            Host::new([]).capability(),
+            Capability::Root,
+            "spike default"
+        );
+        assert_eq!(
+            Host::new([])
+                .with_capability(Capability::Degraded)
+                .capability(),
+            Capability::Degraded
+        );
+        assert_eq!(
+            Host::new([])
+                .with_capability(Capability::NonRootNopasswd)
+                .capability(),
+            Capability::NonRootNopasswd
+        );
+    }
+
     /// Corpus-shaped apt-get check (flag-strip → verb → single-operand `package`
     /// annotation, `[ "$2" = "" ]` multi-operand refusal). These DST tests model only
     /// `apt-get install` on `package`; `systemctl reload` has no check ⇒ Opaque ⇒ runs.
@@ -600,6 +780,7 @@ apt_get__predict() {
             kind: KindId(i.intern(kind)),
             entity: EntityRef::Operand(OpaqueToken(i.intern(entity))),
             selector: SelectorId(i.intern("installed")),
+            context: dorc_core::Context::HostDefault,
         }
     }
 
@@ -860,10 +1041,9 @@ apt_get__predict() {
             let mut idx = KindIndex::default();
             idx.add_effect(apt, install, package, installed, ValueClaim::Establish);
 
-            let cell = |i: &mut Interner, e: &str| FactKey {
-                kind: package,
-                entity: EntityRef::Operand(OpaqueToken(i.intern(e))),
-                selector: installed,
+            let cell = |i: &mut Interner, e: &str| {
+                let ent = EntityRef::Operand(OpaqueToken(i.intern(e)));
+                FactKey::cell(package, ent, installed)
             };
             let nginx = cell(&mut i, "nginx");
             let curl = cell(&mut i, "curl");
@@ -934,10 +1114,9 @@ apt_get__predict() {
             let mut idx = KindIndex::default();
             idx.add_effect(apt, install, package, installed, ValueClaim::Establish);
 
-            let cell = |i: &mut Interner, e: &str| FactKey {
-                kind: package,
-                entity: EntityRef::Operand(OpaqueToken(i.intern(e))),
-                selector: installed,
+            let cell = |i: &mut Interner, e: &str| {
+                let ent = EntityRef::Operand(OpaqueToken(i.intern(e)));
+                FactKey::cell(package, ent, installed)
             };
             let nginx = cell(&mut i, "nginx");
             let curl = cell(&mut i, "curl");
@@ -967,6 +1146,7 @@ apt_get__predict() {
                 &cfg,
                 &value,
                 &classes,
+                &BTreeMap::new(),
                 // hostsim's corpus has no all-Query pipeline ⇒ no connected check-pipe (24J §2);
                 // default keeps compile_probe consistent with the `build_plan` wrapper it uses below.
                 &dorc_plan::ConnectedPipes::default(),
@@ -980,7 +1160,7 @@ apt_get__predict() {
                 "seed {seed}: both ambient installs are probed (package has a probe)"
             );
             // …and the probe renders as a read-only, self-reporting shell-script.
-            let probe_sh = probe.render_sh(&i);
+            let probe_sh = probe.render_sh(&dorc_plan::records::Framing::spike(String::new()), &i);
             assert!(
                 probe_sh.contains("dpkg-query") && probe_sh.contains("read-only"),
                 "seed {seed}: probe renders the verbatim read-only check"
@@ -1063,6 +1243,7 @@ apt_get__predict() {
             kind: package,
             entity: EntityRef::Operand(OpaqueToken(i.intern("nginx"))),
             selector: installed,
+            context: dorc_core::Context::HostDefault,
         };
         let host = Host::new([nginx]); // the host HOLDS nginx (converged)
 
@@ -1089,6 +1270,7 @@ apt_get__predict() {
             &cfg,
             &value,
             &classes,
+            &BTreeMap::new(),
             &dorc_plan::ConnectedPipes::default(),
             |_provider, _argv| None,
             |_, _, _| None,
@@ -1259,6 +1441,7 @@ grep__predict() {
             &cfg,
             &value,
             &classes,
+            &BTreeMap::new(),
             &connected,
             |p, a: &[dorc_core::Symbol]| ship_body_from(CONNECTED_ORACLE, &checks, &i, p, a),
             |_, _, _| None,
@@ -1334,6 +1517,76 @@ grep__predict() {
             raced > 0 && raced < 64,
             "the seeded SIGPIPE race must sometimes fire and sometimes not over 64 seeds \
              (sometimes-assert): fired {raced}/64"
+        );
+    }
+
+    /// `262` §2/§5 byte-tier fault DST (THE tear-detector proof): seeded torn/glued/oversize
+    /// mutations of a framed record stream, fed through the PRODUCTION deframer, must fold in the
+    /// SAFE direction — a torn/truncated record is DROPPED or the read unit REFUSED, never a
+    /// fabricated shorter (more-licensing) record; an oversized line WIDENS (safe). Includes a
+    /// space-bearing deriv coord so last-to-token is stressed under mutation. `sometimes-assert`:
+    /// each fault class fires over the seed range (a mutator that never tears is a dead DST).
+    #[test]
+    fn dst_byte_tier_record_faults_fold_toward_safe_never_fabricate() {
+        use dorc_plan::records::{Framing, LegacyPolicy, TERMINAL_TOKEN, deframe};
+        use fault::RecordFault;
+
+        let framing = Framing::spike("bk".to_owned());
+        let expect = framing.expect();
+        let nonce = &framing.nonce.0;
+        // A clean framed stream: two site records + a space-bearing deriv coord + its family close.
+        let clean = format!(
+            "dorc-records/1 nonce={nonce} attempt=1 host=localhost book=bk sites=2 {TERMINAL_TOKEN}\n\
+             {nonce} site 0 effect=holds rc=0 {TERMINAL_TOKEN}\n\
+             {nonce} site 1 effect=absent rc=1 {TERMINAL_TOKEN}\n\
+             {nonce} deriv 0 coord=/etc/a file/with spaces {TERMINAL_TOKEN}\n\
+             {nonce} deriv-end 0 n=1 {TERMINAL_TOKEN}\n\
+             dorc-records-end/1 nonce={nonce} {TERMINAL_TOKEN}\n"
+        );
+        let clean_records: BTreeSet<String> = deframe(&clean, &expect, LegacyPolicy::Refuse)
+            .records
+            .into_iter()
+            .collect();
+        assert!(
+            clean_records.contains("deriv 0 coord=/etc/a file/with spaces"),
+            "the clean stream round-trips the space-bearing coordinate (last-to-token)"
+        );
+
+        let (mut torn, mut glued, mut oversize, mut clean_through) = (0u32, 0u32, 0u32, 0u32);
+        for seed in 0..512u64 {
+            let (mutated, class) = fault::mutate(seed, &clean, TERMINAL_TOKEN);
+            let d = deframe(&mutated, &expect, LegacyPolicy::Refuse);
+            match class {
+                RecordFault::Torn | RecordFault::Glued | RecordFault::Clean => {
+                    // The safe direction: refused OR every emitted record is a CLEAN one (loss
+                    // only). A prefix-truncated coordinate loses the token ⇒ dropped, never a
+                    // fabricated shorter record — the whole point of the terminal token.
+                    assert!(
+                        d.refused || d.records.iter().all(|r| clean_records.contains(r)),
+                        "seed {seed} ({class:?}): fabricated a record outside the clean set: {:?}",
+                        d.records
+                    );
+                }
+                RecordFault::Oversize => {
+                    // A still-terminated oversized line WIDENS content (more/longer coords = more
+                    // collisions = fewer survivals — safe). It must stay parseable, never refuse.
+                    assert!(
+                        !d.refused,
+                        "seed {seed}: an oversized (terminated) line stays parseable"
+                    );
+                }
+            }
+            match class {
+                RecordFault::Torn => torn += 1,
+                RecordFault::Glued => glued += 1,
+                RecordFault::Oversize => oversize += 1,
+                RecordFault::Clean => clean_through += 1,
+            }
+        }
+        assert!(
+            torn > 0 && glued > 0 && oversize > 0 && clean_through > 0,
+            "sometimes-assert: every fault class fires over 512 seeds \
+             (torn={torn} glued={glued} oversize={oversize} clean={clean_through})"
         );
     }
 }

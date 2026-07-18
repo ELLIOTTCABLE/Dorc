@@ -1,4 +1,0 @@
-# probe-results: site-keyed records (task-D1 WIRE). Grammar:
-#   site <leafid> effect=<holds|absent|cant-tell>
-# NO records: both sites are unresolvable (cmdsub RHS; TOP operand). Deliberately no bait
-# record either — the probe produces none, and gate-1 parity holds on the empty set.

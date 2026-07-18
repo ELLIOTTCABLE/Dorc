@@ -498,6 +498,14 @@ pub(crate) fn resolve_word(
             .get(sym)
             .cloned()
             .ok_or(TopReason::NonConcreteWord("unbound variable")),
+        // `"$@"` — the positional LIST — is genuinely ⊤ in VALUE position (annotation RHS,
+        // `[ ]` operand, `case` scrutinee): a multi-value list is not one value (`27H`
+        // finding-positional-oracle-side-couples-founding-pin). Its concrete COMMAND-position
+        // use (a peel's guest) is handled by the command-running callers (verdict `run_command`,
+        // the predict `Command` handler), which never route through here.
+        Word::PositionalArgs => Err(TopReason::NonConcreteWord(
+            "`\"$@\"` is the positional list — not one value (⊤ in value position)",
+        )),
         // Unmodeled expansions fail in every position — including `[ ]` tests:
         // evaluating them as text or guessing dash's glob semantics would be a
         // wrong concrete.

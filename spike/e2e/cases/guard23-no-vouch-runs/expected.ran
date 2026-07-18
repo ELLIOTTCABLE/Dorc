@@ -1,3 +1,0 @@
-ran: apt-get install -y nginx
-ran: hork wombat
-ran: apt-get install -y curl

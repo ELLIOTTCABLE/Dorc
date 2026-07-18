@@ -187,6 +187,7 @@ fn converged_facts(i: &mut Interner) -> Vec<FactKey> {
         kind: KindId(i.intern("package")),
         entity: EntityRef::Operand(OpaqueToken(i.intern("nginx"))),
         selector: SelectorId(i.intern("installed")),
+        context: dorc_core::Context::HostDefault,
     }]
 }
 
@@ -229,6 +230,7 @@ fn run_pipeline(book: &str, variation: ArenaMode) -> RunOutcome {
         &cfg,
         &value,
         &classes,
+        &std::collections::BTreeMap::new(),
         &ConnectedPipes::default(),
         |provider, argv| ship_from(ORACLE_SRC, &checks, &i, provider, argv),
         |_, _, _| None,
@@ -406,6 +408,7 @@ fn digest_is_receipt_invariant_across_runs() {
             &cfg,
             &value,
             &classes,
+            &std::collections::BTreeMap::new(),
             &ConnectedPipes::default(),
             |provider, argv| ship_from(ORACLE_SRC, &checks, i, provider, argv),
             |_, _, _| None,

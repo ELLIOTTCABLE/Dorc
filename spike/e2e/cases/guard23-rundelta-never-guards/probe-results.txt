@@ -1,4 +1,0 @@
-# probe-results: site-keyed records (task-D1 WIRE). Grammar:
-#   site <leafid> effect=<holds|absent|cant-tell>
-# NO records: restart is an unmodeled verb (no effect row), so site 0 is unresolvable and
-# ships no probe. Its convergence is not even a well-formed question — the run IS the value.

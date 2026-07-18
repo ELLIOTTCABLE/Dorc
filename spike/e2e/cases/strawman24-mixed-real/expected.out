@@ -5,13 +5,14 @@
 # effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
 # rc is the raw PROBE-command status (opaque to Dorc — the record is the out-of-band lane).
 
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=f5d68b20a51356bc sites=5 @@dorc@@\n'
 # site 0: sm.dorc.PkgState:nginx#installed
 dpkg__predict() {
    case $1 in -s) shift ;; esac
    pkg="$1"
    dpkg -s -- "$pkg" >/dev/null 2>&1
 }
-dpkg__predict '-s' 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'site 0 effect=%s rc=%s\n' "$_e" "$_rc"
+dpkg__predict '-s' 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 0 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
 # site 1: sm.dorc.Package:nginx#installed
 apt_get__predict() {
    while [ "${1#-}" != "$1" ]; do shift; done
@@ -25,14 +26,15 @@ apt_get__predict() {
       esac
    fi
 }
-apt_get__predict 'install' '-y' 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'site 1 effect=%s rc=%s\n' "$_e" "$_rc"
+apt_get__predict 'install' '-y' 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 1 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
 # site 2: sm.dorc.Package:curl#installed
-apt_get__predict 'install' '-y' 'curl'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'site 2 effect=%s rc=%s\n' "$_e" "$_rc"
+apt_get__predict 'install' '-y' 'curl'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 2 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
 # site 3: sm.dorc.Package:oldpkg#installed
-apt_get__predict 'install' '-y' 'oldpkg'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'site 3 effect=%s rc=%s\n' "$_e" "$_rc"
+apt_get__predict 'install' '-y' 'oldpkg'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 3 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
 # site 5: sm.dorc.Package:vim#installed
-apt_get__predict 'install' '-y' 'vim'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'site 5 effect=%s rc=%s\n' "$_e" "$_rc"
+apt_get__predict 'install' '-y' 'vim'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 5 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
 # site:4 skip-unresolvable
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
 #!/bin/sh
 # dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
 

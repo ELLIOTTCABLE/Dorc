@@ -1,6 +1,0 @@
-#!/bin/sh
-# INERT mock for `cat /etc/pkg` — supplies the runtime-only value the engine must never
-# guess. Logs argv; prints the package name the real host file would carry.
-. "${0%/*}/.log"; _dorc_logged "$@"
-printf 'nginx\n'
-exit 0

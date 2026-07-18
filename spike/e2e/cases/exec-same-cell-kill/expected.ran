@@ -1,2 +1,0 @@
-ran: apt-get purge nginx
-ran: apt-get install -y nginx

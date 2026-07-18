@@ -1,3 +1,0 @@
-# probe-results: site-keyed records (task-D1 WIRE). Grammar:
-#   site <leafid> effect=<holds|absent|cant-tell>
-# NO records: the backgrounded site is a TOP-reject; nothing probes.

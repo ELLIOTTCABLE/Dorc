@@ -1,0 +1,5 @@
+#!/bin/sh
+# INERT strawman mock (never a real evaluator): logs its argv for the run-set, mutates nothing and
+# does NOT evaluate the payload (the wall runs the site verbatim; the payload is not decomposed).
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0

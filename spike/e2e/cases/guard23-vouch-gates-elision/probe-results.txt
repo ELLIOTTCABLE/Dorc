@@ -1,7 +1,0 @@
-# probe-results: site-keyed records (task-D1 WIRE). Grammar:
-#   site <leafid> effect=<holds|absent|cant-tell>
-# BOTH sites are converged (holds); the vouch — not the host state — decides the verdict:
-# site 0 = package:nginx#installed (apt, VOUCHED) — holds ⇒ ELIDES (the vouch licenses the skip).
-# site 1 = service:nginx#enabled (systemctl, UNVOUCHED) — holds too, but no vouch ⇒ RUNS bare.
-site 0 effect=holds
-site 1 effect=holds

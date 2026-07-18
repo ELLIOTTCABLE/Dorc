@@ -1,6 +1,0 @@
-#!/bin/sh
-# INERT mock (ap-2 exec harness): logs that it ran, mutates NOTHING, exits 0. The
-# book calls the real name; under the harness's PATH=mocks-only this shim is the only
-# thing that runs, so executing a rendered apply is provably safe.
-. "${0%/*}/.log"; _dorc_logged "$@"
-exit 0

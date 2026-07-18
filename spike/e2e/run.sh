@@ -104,6 +104,21 @@
 # `helper.sh` no-op — neither emits a `ran:` line.)
 set -eu
 
+# E4 (27D disposition-legacy-deframe-tolerance): the ~128 authored probe-results.txt fixtures are
+# UNFRAMED (headerless) — they carry no dorc-records/1 header/token. Production reads are now STRICT
+# (a headerless stream refuses, kFAIL-withhold), so the harness opts into the lenient legacy
+# passthrough via this env var (read at the cli edge; the kernel deframer stays a pure function of
+# its policy parameter). Exported here so EVERY `$dorc` invocation below inherits it; the artifact
+# execs run under `env -i` (scrubbed) but those exec the rendered probe/apply via $checker, not dorc.
+export DORC_ALLOW_LEGACY_RESULTS=1
+
+# 262 §2 dorc-records/1 framing: the fixed spike nonce + terminal token the probe emits, used by
+# gate-1 to deframe the executed probe's record stream. These MIRROR the Rust constants
+# plan::records::DEFAULT_NONCE and TERMINAL_TOKEN — keep the two in sync (a spike two-source-of-
+# truth; the real tool mints a per-attempt nonce, but the e2e default is fixed for stable goldens).
+RECORDS_NONCE=dorc
+RECORDS_TOKEN='@@dorc@@'
+
 here=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 
 # Locate the built binary (or take $DORC).
@@ -432,27 +447,43 @@ EOF
 # Authoring those shims is explicitly out of D3a scope; the opt-out records which cases
 # need them rather than silently re-blessing fixtures to match all-exit-0 mock output.
 probe_exec_check() {
-  _art=$1; _case=$2; _dir=$3
+  _art=$1; _case=$2; _dir=$3; _shim=$4
   scan_redirect_safety probe "$_art" "$_case" || return 1
+  _mocks=$(CDPATH= cd -- "${_dir}mocks" && pwd)
+  # Shim-materialization last mile (`274` §5 / `27L` task-14): an entry-composed probe execs its inner
+  # check across the wrapper boundary (a shell function does not survive exec); $_shim carries those
+  # checks as executables. MOCKS-FIRST (mocked tools keep winning; the shim adds only the disjoint
+  # oracle-check names); `chmod +x` ensures the bit under msys. Empty ⇒ PATH unchanged.
+  _probe_path="$_mocks"
+  if [ -n "$_shim" ] && [ -d "$_shim" ] && [ -n "$(ls -A "$_shim" 2>/dev/null)" ]; then
+    chmod +x "$_shim"/* 2>/dev/null || true
+    _probe_path="$_mocks:$_shim"
+  fi
   # The resolvable site-keys the probe will self-report (one `printf 'site <key> …` per
   # site). A key is `N` or — for an in-loop Members member (task-L2 item-4) — `N.M`, so the
   # pattern accepts a dot; the SET compare below uses a lexical sort (a `.M` key is not a
   # plain integer, so `sort -n` would mis-order, but lexical equality of the two sets holds).
-  _emit_ids=$(printf '%s\n' "$_art" | sed -n "s/.*printf 'site \\([0-9][0-9.]*\\) effect=.*/\\1/p" | LC_ALL=C sort)
+  _emit_ids=$(printf '%s\n' "$_art" | sed -n "s/.*printf '$RECORDS_NONCE site \\([0-9][0-9.]*\\) effect=.*/\\1/p" | LC_ALL=C sort)
   _log=$(mktemp)
   _sand=$(mktemp -d)
-  _mocks=$(CDPATH= cd -- "${_dir}mocks" && pwd)
-  # Execute the probe (sandbox cwd + mocks PATH + DORC_LOG). Its stdout is the records;
+  # Execute the probe (sandbox cwd + mocks[+shim] PATH + DORC_LOG). Its stdout is the records;
   # its own stderr/the shim log are not asserted here (the probe is read-only — we assert
   # the records it returns, not what it touched, beyond the no-127 vouch check below).
   # DETERMINISM RAIL (slice-2, 221 dc-1): same fixed-env discipline as exec_check — `env -i`
   # + `umask 022` so the probe's records cannot drift on an ambient locale/TZ/umask.
-  _recs=$( cd -- "$_sand" && umask 022 && env -i PATH="$_mocks" DORC_LOG="$_log" LC_ALL=C TZ=UTC "$checker_abs" 2>/dev/null <<EOF
+  _recs=$( cd -- "$_sand" && umask 022 && env -i PATH="$_probe_path" DORC_LOG="$_log" LC_ALL=C TZ=UTC "$checker_abs" 2>/dev/null <<EOF
 $_art
 EOF
   )
   rm -rf "$_sand"; rm -f "$_log"
-  _recs=$(printf '%s\n' "$_recs" | sed 's/\r$//')
+  # 262 §2 framing: the probe now emits the dorc-records/1 stream (a `dorc-records/1 …` header,
+  # per-record `<nonce> … <token>` lines, and a `dorc-records-end/1 …` sentinel). DEFRAME it here
+  # to the inner records the rest of gate-1 already understands: keep only `<nonce> <inner>
+  # <token>` lines, stripping the nonce prefix + terminal token (last-to-token). The header/
+  # sentinel start with `<nonce>-…`, not `<nonce> `, so they drop. (RECORDS_NONCE/RECORDS_TOKEN
+  # mirror plan::records::{DEFAULT_NONCE,TERMINAL_TOKEN} — keep in sync.)
+  _recs=$(printf '%s\n' "$_recs" | sed 's/\r$//' \
+    | sed -n "s/^$RECORDS_NONCE \\(.*\\) $RECORDS_TOKEN\$/\\1/p")
 
   # (a) grammar + site-completeness. Pull the well-formed records' ids; compare the SET
   # to the emitters'. A record that is missing, duplicated, or malformed shifts the set.
@@ -969,12 +1000,73 @@ scan_why() {
   return 1
 }
 
+# dorc_sh_smoke (E1, 27D rider-dorc-sh-unbuilt — the strip-and-exec off-ramp; run ONCE at harness
+# start, FATAL on failure). Proves the stamped `#!/usr/bin/env dorc-sh` shebangs are no longer inert:
+#   (1) `dorc strip` on a marked corpus oracle is $checker -n clean AND dialect-free (no dorc-sh
+#       shebang, no trailing `: sm.` mark, no `invariant:` bare-mark left as a stray `:`);
+#   (2) `dorc-sh` strips-and-execs a marked script, erasing the bind, producing the expected output.
+# The smoke script is BUILTIN-ONLY (`printf` + a function call) — it invokes NO external command, so
+# nothing mutating can run (the inert-mocks safety intent) regardless of PATH; the exec still runs
+# under the determinism rail (`env -i`), with PATH pinned to the real interpreter dir so dorc-sh can
+# locate `sh`. dorc-sh is invoked by ABSOLUTE path (env -i scrubs PATH; a relative path would break).
+dorc_sh_smoke() {
+  _dsh=${DORC_SH:-}
+  if [ -z "$_dsh" ]; then
+    _ddir=$(dirname -- "$dorc")
+    for _cand in "$_ddir/dorc-sh" "$_ddir/dorc-sh.exe"; do
+      [ -x "$_cand" ] && { _dsh=$_cand; break; }
+    done
+  fi
+  if [ -z "$_dsh" ] || [ ! -x "$_dsh" ]; then
+    echo "FATAL  dorc_sh_smoke: dorc-sh binary not found next to dorc ($dorc) — build the workspace; aborting" >&2
+    exit 3
+  fi
+  # (1) strip a marked corpus oracle → -n clean + dialect-free.
+  _oracle="$here/cases/strawman24-alias-provides/package.oracle.sh"
+  if [ -f "$_oracle" ]; then
+    _stripped=$("$dorc" strip "$_oracle")
+    if ! printf '%s\n' "$_stripped" | "$checker" -n 2>/dev/null; then
+      echo "FATAL  dorc_sh_smoke: 'dorc strip' output is not $checker -n clean; aborting" >&2
+      exit 3
+    fi
+    case "$_stripped" in
+      *"env dorc-sh"*|*": sm."*|*"invariant:"*)
+        echo "FATAL  dorc_sh_smoke: 'dorc strip' left a dialect construct (dorc-sh shebang / mark / bare-mark); aborting" >&2
+        exit 3 ;;
+    esac
+  fi
+  # (2) dorc-sh strips-and-execs a marked script (bind erased) → expected output, exit 0.
+  _shdir=$(dirname -- "$(command -v sh 2>/dev/null || echo /bin/sh)")
+  _ssand=$(mktemp -d)
+  cat > "$_ssand/marked.sh" <<'SMK'
+#!/usr/bin/env dorc-sh
+# dorc-lang/v0.1
+smoke__predict() {
+   pkg : sm.dorc.Package = "$1"
+   printf 'dorc-sh-smoke ran: %s\n' "$pkg"
+}
+smoke__predict nginx
+SMK
+  _rc=0
+  _out=$( cd -- "$_ssand" && umask 022 && env -i PATH="$_shdir" LC_ALL=C TZ=UTC "$_dsh" "$_ssand/marked.sh" 2>&1 ) || _rc=$?
+  rm -rf "$_ssand"
+  if [ "$_rc" -ne 0 ]; then
+    echo "FATAL  dorc_sh_smoke: dorc-sh exited $_rc on a marked script (expected 0); aborting" >&2
+    exit 3
+  fi
+  case "$_out" in
+    *"dorc-sh-smoke ran: nginx"*) ;;
+    *) echo "FATAL  dorc_sh_smoke: the stripped body did not run as expected (got: $_out); aborting" >&2; exit 3 ;;
+  esac
+}
+
 # gate-6 self-test (the confound battery) runs ONCE here, before any case — a lying judge is
 # worse than no judge, so this aborts (exit 3) if the dual-rail judge fails to scream. The
 # guard-shape floor's confound battery (23C-fd4) runs alongside it for the same reason.
 dual_rail_selftest
 guard_shape_selftest
 dorc_flags_selftest
+dorc_sh_smoke
 
 fails=0
 total=0
@@ -1038,7 +1130,11 @@ for dir in "$here"/cases/*/; do
   # was declared — the fast-fail stopped firing) fails just like a nonzero-when-0-expected.
   dorc_rc=0
   err_file=$(mktemp)
-  raw=$("$dorc" --book="${dir}book.sh" "$@" < "${dir}probe-results.txt" 2>"$err_file") || dorc_rc=$?
+  # Per-case per-run PATH shim dir (`274` §5): `--shim-dir` makes the round-trip ALSO write the
+  # entry-composed probe's inner-check executables here (pure side effect; empty for a wrapper-free
+  # case; probe_exec_check adds it to PATH; cleaned up at case end).
+  _shimdir=$(mktemp -d)
+  raw=$("$dorc" --shim-dir="$_shimdir" --book="${dir}book.sh" "$@" < "${dir}probe-results.txt" 2>"$err_file") || dorc_rc=$?
   got=$(printf '%s\n' "$raw" | sed 's/\r$//')
   if [ "$dorc_rc" -ne "$_dorc_exit" ] || [ -z "$got" ]; then
     echo "FAIL  $name  [dorc exited rc=$dorc_rc (expected $_dorc_exit) / produced no output — a dead engine, or a wrong exit-code contract, is never green]"
@@ -1093,7 +1189,7 @@ for dir in "$here"/cases/*/; do
   # never silently re-blesses fixtures to match all-exit-0 mock output).
   if [ "$case_ok" -eq 1 ] && [ -d "${dir}mocks" ]; then
     exec_check apply "$apply_art" "$name" "$dir" || case_ok=0
-    probe_exec_check "$probe_art" "$name" "$dir" || case_ok=0
+    probe_exec_check "$probe_art" "$name" "$dir" "$_shimdir" || case_ok=0
     # gate-5 (cm-2 argv-echo differential): cross-check the engine's per-site resolved
     # argv against the bare book's executed argvs under dash. Conservative, one-directional
     # (engine-resolved-and-shimmed ⊆ logged). Pass the space-delimited shim set + the
@@ -1185,6 +1281,7 @@ for dir in "$here"/cases/*/; do
     fails=$((fails + 1))
   fi
   rm -f "$err_file"
+  rm -rf "$_shimdir"
 done
 
 echo "---"

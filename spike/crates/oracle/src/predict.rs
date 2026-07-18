@@ -51,11 +51,11 @@ pub use parser::lift_predicts;
 // same funcdef AST ([`ast`]) and the same word-resolution ([`eval`]) so footprint fragments
 // travel the exact value-flow predict does (the vocabulary fence). Re-exported `pub(crate)`
 // for that sibling module — these are internal to the oracle crate, not public API.
-pub(crate) use ast::{CaseArm, Command, Test, Word};
+pub(crate) use ast::{CaseArm, Command, Pattern, Test, Word};
 pub(crate) use eval::{eval_test, pattern_matches, resolve_word};
 pub(crate) use parser::{
-    brace_tokens, lift_reaches, lift_resolvers, lift_state_stored_only_in, lift_touches,
-    lift_verdicts_converged,
+    brace_tokens, lift_enters, lift_lend_maps, lift_reaches, lift_resolvers,
+    lift_state_stored_only_in, lift_touches, lift_verdicts_converged,
 };
 
 /// Strip an authored check funcdef to runnable sh — the STRIP-ONLY pass (R1c / 23D §1).
@@ -87,22 +87,17 @@ pub fn strip_predict(src: &str, check: &Predict, interner: &Interner) -> String 
     strip_role(src, check, interner, "__predict")
 }
 
-/// Strip an authored **verdict** funcdef (`<provider>.is_converged`/`.is_diverged`) to runnable
-/// sh for shipping in GUARD position (24D §2/§3 — the guard's check IS the oracle's own verdict
-/// body, strip-only). Identical to [`strip_predict`] but mangles the funcname to the verdict
-/// suffix the guard emitter invokes (`apt-get.is_converged` → `apt_get__is_converged`), so the
-/// shipped preamble def and the guard invocation agree byte-for-byte. `mangled_suffix` is
-/// `"__is_converged"` or `"__is_diverged"` (the caller passes it from the lifted
-/// [`crate::verdict::VerdictSense`]); everything else — annotation removal, bare-mark deletion,
-/// verbatim body bytes — is the strip's standing contract (strip-fidelity, 23H §9.4).
+/// Strip an authored **verdict** funcdef (`<provider>.is_converged`) to runnable sh for shipping in
+/// GUARD position (24D §2/§3 — the guard's check IS the oracle's own verdict body, strip-only).
+/// Identical to [`strip_predict`] but mangles the funcname to the verdict suffix the guard emitter
+/// invokes (`apt-get.is_converged` → `apt_get__is_converged`), so the shipped preamble def and the
+/// guard invocation agree byte-for-byte. The suffix is hardcoded like every sibling strip fn
+/// (`is_converged` is the sole verdict role — `24C:rul24-ditch-is-diverged`); everything else —
+/// annotation removal, bare-mark deletion, verbatim body bytes — is the strip's standing contract
+/// (strip-fidelity, 23H §9.4).
 #[must_use]
-pub fn strip_verdict(
-    src: &str,
-    verdict: &Predict,
-    interner: &Interner,
-    mangled_suffix: &str,
-) -> String {
-    strip_role(src, verdict, interner, mangled_suffix)
+pub fn strip_verdict(src: &str, verdict: &Predict, interner: &Interner) -> String {
+    strip_role(src, verdict, interner, "__is_converged")
 }
 
 /// Strip an authored **touches** funcdef (`<provider>.touches`) to runnable sh for shipping in
@@ -152,10 +147,23 @@ pub fn strip_reaches(src: &str, reaches: &Predict, interner: &Interner) -> Strin
     strip_role(src, reaches, interner, "__disturbance_reaches_only")
 }
 
+/// Strip a wrapper's **entry-form** funcdef (`<provider>__enter`) to runnable sh for shipping the
+/// ENTRY-COMPOSED probe (`27C` §3 / lane-integration `27N` — the ONE licensed seat for real context
+/// entry). The entry body (`sudo -n "$@"`) wraps the inner oracle's stripped body invoked with the
+/// site's peeled argv; the whole composition ships strip-only (`271:rul-only-oracle-bytes-ship`).
+/// Mangles the funcname to `__enter` (its own hardcoded suffix — the role vocabulary is closed and
+/// extends by new name only, `24C:rul24-ditch-is-diverged` precedent). Same strip-fidelity contract
+/// and self-vouch tier as the siblings (authoring the entry form IS the traversal vouch,
+/// `27C:rul-entry-denoted-siting-vouch`).
+#[must_use]
+pub fn strip_enter(src: &str, enter: &Predict, interner: &Interner) -> String {
+    strip_role(src, enter, interner, "__enter")
+}
+
 /// The shared STRIP-ONLY pass (R1c / 23D §1), parametrized by the target mangled suffix so the
-/// probe lane (`__predict`), the guard lane (`__is_converged`/`__is_diverged`), and the
-/// derivation lane (`__touches`, 24E §2) route through ONE audited implementation. See
-/// [`strip_predict`] for the full contract.
+/// probe lane (`__predict`), the guard lane (`__is_converged`), and the derivation lane
+/// (`__disturbs`, 24E §2) route through ONE audited implementation. See [`strip_predict`] for the
+/// full contract.
 fn strip_role(src: &str, check: &Predict, interner: &Interner, mangled_suffix: &str) -> String {
     let base = check.span.lo.0 as usize;
     let funcdef = src
@@ -425,7 +433,7 @@ apt_get__is_converged() {
         assert!(out.diags.is_empty(), "clean lift: {:?}", out.diags);
         let provider = out.value.providers().next().expect("one provider");
         let v = out.value.get(provider).expect("the verdict funcdef");
-        let stripped = strip_verdict(authored, v, &i, "__is_converged");
+        let stripped = strip_verdict(authored, v, &i);
         assert!(
             stripped.starts_with("apt_get__is_converged()"),
             "funcname mangled to the verdict suffix: {stripped}"

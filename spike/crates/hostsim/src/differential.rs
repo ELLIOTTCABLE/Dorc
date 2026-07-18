@@ -923,11 +923,13 @@ fn exec_probe(tools: &Tools, dir: &Path, probe_art: &str) -> String {
     }
     let _ = std::fs::remove_dir_all(&sand);
     let _ = std::fs::remove_file(&log);
-    // Keep only the records (drop the probe's own `# site …` provenance comments — dorc's
-    // parser ignores comments anyway, but trimming keeps the fixture clean for findings).
+    // `262` §2 framing: pass the FULL framed record stream through (header + nonce-prefixed
+    // records + end-sentinel) — dorc's production deframer consumes it. The executed probe
+    // emits only printf'd protocol lines (its `# site …` comments live in the artifact TEXT,
+    // never in stdout), so keeping every non-blank line is exactly the framed stream.
     records
         .lines()
-        .filter(|l| l.trim_start().starts_with("site "))
+        .filter(|l| !l.trim().is_empty())
         .map(|l| l.trim_end_matches('\r').to_string())
         .collect::<Vec<_>>()
         .join("\n")

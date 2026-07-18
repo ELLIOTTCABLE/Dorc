@@ -1,5 +1,0 @@
-#!/bin/sh
-# INERT probe shim for `dpkg-query -W <pkg>` — nginx and curl both installed (rc 0).
-# Read-only; logs argv. Only site 0's probe runs it at HEAD (site 2 ships no probe).
-. "${0%/*}/.log"; _dorc_logged "$@"
-exit 0

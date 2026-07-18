@@ -1,4 +1,0 @@
-# probe-results: site-keyed records (task-D1 WIRE). Grammar:
-#   site <leafid> effect=<holds|absent|cant-tell>
-# site 1 (vouched install, past the hork wall): holds => the witness completes => guard.
-site 1 effect=holds

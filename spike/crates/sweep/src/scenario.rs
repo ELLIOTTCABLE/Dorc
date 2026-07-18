@@ -201,11 +201,11 @@ enum WallKind {
 /// scenario ground-truth cells are minted through here, so they compare equal to the cells the
 /// kernel resolves from the book's `install nginx`.
 fn cell(i: &mut Interner, entity: &str, selector: &str) -> FactKey {
-    FactKey {
-        kind: KindId(i.intern(KIND)),
-        entity: EntityRef::Operand(OpaqueToken(i.intern(entity))),
-        selector: SelectorId(i.intern(selector)),
-    }
+    FactKey::cell(
+        KindId(i.intern(KIND)),
+        EntityRef::Operand(OpaqueToken(i.intern(entity))),
+        SelectorId(i.intern(selector)),
+    )
 }
 
 /// The `kind:entity:selector` label of a cell (interner-free, for the self-contained result).

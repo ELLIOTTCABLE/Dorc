@@ -1,7 +1,0 @@
-# probe-results: `set -e` is leaf 0, so the calls are leaf 1 (nginx) / leaf 2 (curl); each
-# ships ONE body establish sub-record (`site 1.0` / `site 2.0`). BOTH report `holds`
-# (converged). The bare call (leaf 1) RUNS anyway (consumed ⊤ status under `set -e` blocks);
-# the `|| true` call (leaf 2) would ELIDE on status (door-3 never blocks) but is WALLED by the
-# running nginx call above it (silence=wall `23Ib-fd10`) ⇒ it RUNS too.
-site 1.0 effect=holds
-site 2.0 effect=holds

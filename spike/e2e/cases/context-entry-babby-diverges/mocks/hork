@@ -1,0 +1,6 @@
+#!/bin/sh
+# INERT mock: `query frob` (sudo-context) is ABSENT (rc 1) ⇒ wrapped site diverges/runs; `query
+# wombat` (ambient) HOLDS (rc 0) ⇒ elides. Two contexts, two answers, real in-context probe.
+. "${0%/*}/.log"; _dorc_logged "$@"
+[ "$1 $2" = "query frob" ] && exit 1
+exit 0

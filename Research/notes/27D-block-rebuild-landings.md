@@ -279,9 +279,553 @@ robust, not coincidental (verbless corpus observes; ⊤ corpus disturbs).
   derive model widens. Not corpus-observable; block-context's
   read-value-slice / per-channel backing work owns the widening.
 
+## Human rulings received mid-block (2026-07-17, typed in-session)
+
+- **rul-payload-pins-near-weld** (HUMAN-TYPED 2026-07-17): the human reviewed
+  `270:adj-payload-pins` thoroughly; nothing new worth noting; grading verbatim:
+  "very close to weld, but not quite." Consequence: block-context proceeds on
+  the `24T` pins as reviewed; the formal packet is still assembled at
+  block-context implementation-planning for the record, but the
+  conservative-proceed posture is authorized — the payload-v1 lane does not
+  stall on the human's presence.
+- **correction-strip-not-gsub-tier** (HUMAN-TYPED 2026-07-17, superseding the
+  same-day chat steer recorded under stage-1's rider-dorc-sh-unbuilt): "the
+  strip *cannot* be gsub-tier simplicity" — the earlier
+  simple-plain-text-substitution recollection is retracted as a mistake.
+  Authority: main's updated DESIGN.md (human-authored): `dorc-strip` is a
+  "focused, simple, `ubi`-friendly standalone-binary cleaner to remove any/all
+  non-POSIX Dorc annotations" — parser-backed erasure shipped as its own
+  focused binary, never a text-substitution pass. The stage-6 builder was
+  corrected mid-run (E1); the strip-is-pure-erasure constraints were already
+  binding and are unchanged.
+- **observation-book-acceptance-carve-in-human-voice** (conductor-banked from
+  the same main root-doc update): DESIGN.md's "POSIX sh" section now carries
+  the human's own firming of the kWHICHSH open half — dorc-lang files =
+  POSIX-superset weld (stripping/reuse/cross-shell sharing); book-code = "as
+  unconstrained as we can afford," aspiring to partial zsh/bashism tolerance.
+  The TODO-ADDTL book-acceptance-carve item now has human-voice direction;
+  bears on block-context/stdlib framing and any future book-tolerance work,
+  not on block-rebuild. (IMPLEMENTATION.md also fixed the three→four outcomes
+  enumeration — an old doc-queue item discharged.)
+- **rul-synthesized-payload-render-stays-unwelded** (né "R2"; HUMAN-TYPED
+  2026-07-17; slug conductor-minted per `270` §1 — the mechanism: rendering
+  `sh -c "$SOMECONSTANT"` via value-propagation into an engine-synthesized
+  payload string): the refuse-forever-vs-refuse-for-v1 fork is ruled
+  **deliberately just-barely-unwelded** — refused at v1, never welded shut.
+  Rationale verbatim: undecidable right now — "an *ocean* of downsides to
+  doing it, but a completely unknown-size-of-upside"; "we won't know if we
+  need it until we discover that we need it." Build consequences: payload-v1
+  refuses synthesized-payload-render; NO machinery, lint, or representation
+  choice may foreclose a future un-refusal (the door-open obligation is
+  load-bearing for the payload-v1 brief); the re-entry trigger is discovered
+  need, not a scheduled revisit.
+
+## stage-5: wire-records-v1-import — LANDED 2026-07-17 (checkpoint PASSED)
+
+Commits `52542cc..97854fe` on `ai/r27-wire-records`, folded into
+`ai/spike3-r27` (fold note: the fast-forward briefly orphaned the lineage's
+payload-rulings ledger commit, recovered by cherry-pick at `1b841ca`;
+conductor protocol now checks behind-count before every fold). Builder: Opus
+solo (survived two transient 529 interruptions, resumed with context intact).
+Landed: the full `dorc-records/1` framing contract per `262` §2 — production
+deframer in `plan::records`, terminal token `@@dorc@@`, last-to-token
+free-content fields (whitespace-truncation bug fixed), deriv-family
+end-records with the SAFETY INVERSION honored (partial at-most family ⇒
+wall-total), attempt keying, merge-by-meet, additive-keys, alien/late
+discipline. All four acceptance pins + the `279f` stdout-rider round-trip pin
++ byte-tier fault DST (seeded torn/glued/oversize through the PRODUCTION
+deframer). 708 unit / 128 e2e; golden delta = framing lines only (apply
+artifacts verified byte-identical) + one lax re-capture. r26's S1 scope
+shrinks to everything-not-in-§2 (width flag, waves, subshell isolation,
+ports).
+
+**Checkpoint dispositions:**
+
+- disposition-legacy-deframe-tolerance — tc-legacy-deframe-tolerance is a REAL
+  production hole as landed (a headerless stream on the real read path folds
+  leniently instead of refusing — a truncated-before-header artifact would
+  bypass every integrity key). RIDER to stage 6 (errand E4): gate the lenient
+  headerless regime behind an explicit harness/test-only escape; the
+  production read path becomes strict-only. Fixtures stay unframed (the
+  churn-avoidance disclosure stands).
+- disposition-book-digest-fnv — ACCEPTED for the spike (the `book=` key
+  detects accidental stream/book skew, not adversaries — hostile-host rides
+  the parked `kSTATE` coupling; rec-5 forbids cross-run re-ingest so a later
+  algorithm swap is cheap). NAMED for r26/real-executor: adopt sha256 at the
+  cli edge (never a kernel dep) when the shape ships beyond the spike.
+- disposition-fixed-spike-nonce — ACCEPTED (single-process spike; the
+  re-mint/zombie-discard MECHANISM is DST-tested with varying nonces; real
+  nonces arrive with the real executor).
+- `TrustedFootprints::contains` pub promotion (read-only, for the soundness
+  pin) — accepted.
+
+## stage-6: e2e-degraduation, first slice — LANDED 2026-07-17 (checkpoint PASSED; stage-6b continuation minted)
+
+Commits `13a8e51..29d0202` on `ai/r27-e2e-degraduation`, folded into
+`ai/spike3-r27` (second behind-count-1 fold; the strip-correction ledger
+commit recovered by cherry-pick at `6adf472` — conductor now separates the
+count-check from the fold command). Builder: Opus (honest partial delivery —
+front-loaded the errands + the load-bearing net, deferred the bulk migration
+unstarted rather than half-landing). Landed: **E1** dorc-sh + whole-file
+`dorc strip` (parser-backed erasure per correction-strip-not-gsub-tier,
+acknowledged in-run; bare-mark whole-statement deletion pinned; smoke e2e) ·
+**E2** trap-at-tip walls-loudly pin (in-memory home; discharges the `271`
+task-12 conductor errand) · **E4** strict-deframe production path
+(`LegacyPolicy` at the cli edge; `DORC_ALLOW_LEGACY_RESULTS` harness escape) ·
+the `render_corpus.rs` twin tier with the MANDATORY dash-n net wired into the
+harness itself + proof-it-fires test + the `24C:st-1` must-cover · an 11-case
+migration slice (13 twins; kill-then-install ≡ exec-same-cell-kill collapsed,
+twin STRENGTHENED to a converged-host pin). e2e 128 → 117, deletions-only
+churn, no bless needed; 27 suites green.
+
+**Checkpoint dispositions:**
+
+- disposition-strip-keeps-marker — ACCEPTED as landed, human-veto invited: the
+  `# dorc-lang/v0.1` marker survives stripping. Consistent with main-DESIGN's
+  own wording ("remove any/all NON-POSIX Dorc annotations" — the marker is a
+  valid POSIX comment) and harmless on re-ingest (marker-gates-syntax-only; a
+  stripped file has no dialect constructs). The opposite call (strip it — the
+  file is no longer dialect text) is defensible; one-word human ruling welcome,
+  low stakes, reversible.
+- disposition-dorc-sh-spawn-not-exec — ACCEPTED (Windows-portable spawn-and-
+  wait; disclosed; true exec is a real-executor-era nicety).
+- disposition-partial-delivery — ACCEPTED; the remainder (batch-3's ~40
+  remaining cases incl. all ~SUSPECT rows, batch-4 guard23 conversions,
+  optional batch-5 + E3) is pattern-established mechanical work ⇒ minted as
+  **stage-6b**, dispatched immediately (Opus lead + clamped Sonnets per the
+  established twin pattern).
+
 **Environment incident (surfaced to human 2026-07-17):** a SyncThing conflict file
 (`effect.sync-conflict-…-PHNHRER.rs`) appeared INSIDE the stage-1 builder's agent
 worktree mid-edit — device PHNHRER is live-syncing `.claude/worktrees/`, which the
 standing exclusion intent says it must not. Inert this time (untracked, not
 compiled); a real mid-edit corruption risk for future parallel agent work.
 Cleanup + `.stignore` repair are human-owned.
+
+## Ruling addendum (2026-07-17, human-typed)
+
+- **rul-strip-erases-marker** (HUMAN-TYPED: "Strip it… very low priority"):
+  supersedes disposition-strip-keeps-marker — `dorc strip` erases the
+  `# dorc-lang/v0.1` marker line; a stripped file is no longer dialect text.
+  Routed as errand E5 to the running stage-6b builder (mid-run addendum).
+
+## BLOCK CLOSE — bless-checkpoint-two STAMPED 2026-07-17; block-rebuild COMPLETE
+
+Eight dispatches (corpus-respell · typeless-floor · raw-ship-repair ·
+entity-algebra-rebuild · value-recipe-reshape · backing-SETS · e2e-degraduation
+× 2), every one landed, checkpointed, and folded; lineage `ai/spike3-r27` tip at
+block close = the commit carrying this entry. Conductor's own block-close
+verification: fresh build, 27 test suites green, 76/76 e2e, four-gates-clean
+tips throughout. Cumulative golden census `4f0d89d..close` fully attributed:
+stage-5 framing rewrite pairs (predict-invocation bytes unchanged — verified
+byte-level) · stage-2b composed-predict reshapes (inspected at its checkpoint) ·
+new exemplar cases (stages 2/6) · migration deletions (117→76; stages 6/6b) ·
+accepted lax re-captures. No unexplained delta class; no bless was performed at
+this checkpoint (nothing needed re-blessing — all churn was already isolated,
+attributed, and inspected per-stage).
+
+**Rides forward to block-context planning** (the consolidated seam list):
+fact-plane context keying (né tc-context-slot-on-coord-not-factkey) ·
+oracle-side positional model (`"$@"` PositionalArgs across both evaluators; the
+founding-pin guard) · minting-LINE threading before stdlib mints
+selector-bearing disturbs · cross-kind backing members (derive-model widening)
+· the invited-rooms compile-failure pin (first hint/license type split) ·
+effect-check re-homing (punted, seam built) · tc-stage-ship-triplication
+cleanup · batch-5 + E3 tails (optional, unowned) · rul-payload-pins-near-weld +
+rul-synthesized-payload-render-stays-unwelded (human-typed, governing
+payload-v1) · the book-acceptance carve now in human voice (main DESIGN.md).
+
+## lane-wrapper-peel (block-context lane 1) — LANDED 2026-07-17 (checkpoint PASSED)
+
+Commits (rebased across the merge of main) topped by `e26b448` on
+`ai/r27-wrapper-peel`, ff-folded into `ai/spike3-r27`. Landing note:
+**`notes/27K`**. Landed MODELS-only, zero new trust: the positional model
+(`Word::PositionalArgs`; quoted-`"$@"` faithful, bare forms Unmodeled; both
+founding pins green) · `oracle::wrapper` (`detect_peel` command-position
+tautology; the `RhoClaim` ladder with the `274` §12 riders; the closed
+`Dimension` set; `cmd__lend_map` lift under the enumerate-every-dimension law;
+`InnerContext` population design) · dual-peel coherence plan-time fail-fast.
+Rung-0: 76 pre-existing e2e cases BYTE-STABLE; 80/80 total. The REFERENDUM did
+not fire. Disclosed gap: the bare prefix-assignment ρ rung (`VAR=x "$@"`) is
+unmodeled (parser splits it script-scoped) — rides lane-context-entry.
+
+**Post-27Xf conductor repairs applied same-day:** `277` §2 consumer-map
+transport-row annotation + §5 non-emptiness side-invariants
+(inv-backing-set-non-empty · inv-top-never-empty-set, ratifying stage-4b's
+in-build shape); `27C` §3 gains the pointwise lend/ρ composition algebra
+(⊤ propagates; nested-permutation pins). The human struck `is_diverged` from
+steering + ANALYZER-NEEDS and handled the hazard quarantine (27Xn ignored by
+their ruling); main merged into the lineage at `c19a4f5` by their hand.
+
+**Still gating lane-context-entry (human-owed, asked):** the 27Xf Tier-1
+structural carried-by ruling (recommendation on record: keying-only at v1) ·
+the `27C` §1 authority predicate-vs-rule sentence. Lane-payload-v1 is NOT
+gated and dispatches next; its brief carries the negative is_diverged
+acceptance pin (neither reserved nor recognized) as a rider.
+
+## Ruling addendum (2026-07-17, human-typed — the authority axes)
+
+- **27C:rul-two-axis-escalation-consent** (HUMAN-TYPED, applied to `27C` §1 in
+  place): mechanical-capability and oracle-escalation-consent are ORTHOGONAL
+  axes. Axis 1 = can the probe-bootstrap mechanically acquire its setup
+  privileges (capability test, never identity; NOPASSWD non-root counts;
+  acquisition mechanisms are open user-established infrastructure; the probe
+  never self-acquires mid-run). Axis 2 = admin consent to apply escalation to
+  fallible oracle code ("escalation" = any permission/access-changing
+  machinery, sudo-upgrade and su-sidegrade inclusive) — DEFAULTS TO YES via
+  the double-ended ack; `--no-probe-escalation` is the opt-out. The old
+  "a non-root connection performs none of them" sentence was a drafting
+  artifact, corrected. Discharges `27Xf:cr-27C-1-authority-predicate-
+  contradicts-rule`; lane-context-entry's gate-2 CLEARED.
+- **27Xf Tier-1 status**: `27Xf:cr-structural-carried-by-transports-a-
+  measurement` is UNDER RE-ADJUDICATION in the human's separate design session
+  ("there's unsoundness in the report" — treat `27Xf` §3 Tier-1 as
+  under-review, act on nothing from it until the human's adjudication lands).
+  Consequence: the `27C` §4 fallback lane is CARVED OUT of lane-context-entry's
+  scope entirely (primary entry lane + dial + vouch + guards only; no fallback
+  lane, no carried-by transport, no invariance-line consumption built this
+  lane) — lane-context-entry is therefore UNGATED and dispatches after
+  lane-payload-v1 folds.
+
+## lane-payload-v1 (block-context lane 3, dispatched ahead) — LANDED 2026-07-17 (checkpoint PASSED)
+
+Commits (rebased) topped by the `27L` landing-note commit on `ai/r27-payload-v1`,
+ff-folded. Landing note: **`notes/27L`**. Models-only, zero new trust, rung-0
+byte-stable (80 untouched, +2 honest-wall cases; 82/82). Landed: the `dorc:sh`
+three-spelling recognition + row-3 strip pin · invited-rooms type split
+(`core::room`, sealed; `into_license_input()` exists only on Invited; the `279f`
+§5 compile-failure pin is a real compile_fail doctest) · eval'er reentry
+detection · payload decomposition with the accept frontier at
+const_literal_text (interpolation ⇒ REFUSE-⊤ with cause; site-local degrade) ·
+whole-line fold {elide, guard-conjunction, run} · the per-run shim model ·
+negative is_diverged pin. The synthesized-payload-render door honored
+STRUCTURALLY (no payload bytes re-serialized; un-refusal = one additive
+LineFold variant) per `27D:rul-synthesized-payload-render-stays-unwelded`.
+
+**Dispositions:** tc-room-tag-on-fact-vs-factkey → joins the fact-keying seam
+family (context slot + room tag), OWNED by lane-context-entry's FactKey
+decision · tc-book-bare-sh-room-source → wiring-correctness note for whoever
+makes payload facts real (the room sources from detect_evaler's head, never
+the book head); rides the reentry-execution follow-on · `24T` §6 L1/L2/L4/L5/L7
+differential obligations TRANSFERRED (need reentry execution; probe-shipping
+follow-on) · the two build-surfaced facts (predict-dialect while-argparse gap;
+dorc-sh Windows-unmockable) recorded as fixture constraints.
+
+## The Tier-1 adjudication is IN (2026-07-17, human's session, arrived by merge)
+
+`27C` §0's fallback lane is REWRITTEN at the source: sub-lane (a) =
+**pure-predicate carry** — unflagged, substrate axes only, requiring BOTH the
+kind-owner's `invariant:<axis>` line AND an engine-proved READ-SET-CLOSED
+verdict body (everything influencing the verdict traces to site argv or a
+marked read; the engine closes the "and nothing else", so no human at-most
+claim remains ⇒ no flag). Sub-lane (b) = ingredient/identity axes stay behind
+`--risk-faultless-skips`. Supersedes the old engine-warranted carried-by row
+AND this ledger's interim keying-only carve-out. Lane replan: the fallback
+lane becomes its own follow-on lane (**lane-fallback-carry**, after
+read-value-slice — the read-set-closure proof is real machinery sharing bones
+with the punted effect-check); lane-context-entry stays primary-entry-only and
+dispatches now.
+
+## Ruling addendum (2026-07-17, human-typed — the probe-mutation ownership weld)
+
+- **27C:rul-probe-mutation-ownership-split** (WELDED; applied to `27C` §3 +
+  spike/CLAUDE.md; discharges `27Xf:cr-entry-self-effects-carve-is-AI-asserted`;
+  the running lane-context-entry builder notified — excision-isolation lifted):
+  the probe-never-mutates law allocates by OWNERSHIP. Authored/oracle code
+  (stdlib included) = the uncontrolled ocean ⇒ the loud frontloaded contract
+  stands; an entry-form's self-effects (sudo auth-log line, timestamp refresh)
+  are the AUTHOR's vouched residue, claimed by the authoring speech-act,
+  attributed to their line — if the community someday rejects probe log-lines,
+  the at-fault party is a human author, orthogonal to Dorc. Engine-generated
+  constructs = OWNED ⇒ no hard line; judgment/UX tier, careful-and-necessary
+  against the flag-derived user-story (whom-we're-writing-for is a function of
+  the active flags). The conductor's "no state you care about changes" framing
+  is STRUCK (referent-agnostic violation + a phantom user-instruction);
+  kFAIL's KNOBS prose is untouched — this ruling allocates responsibility
+  within the weld, it does not move the weld.
+
+## Mid-run redirect (2026-07-17 — lane-context-entry, from the human's in-flight 27C revision)
+
+The human's root working-dir carries an uncommitted `27C` §3 revision that
+SUPERSEDES the conductor's interim composition-algebra block. Redirect issued
+to the running builder with the ruled cells inline:
+`27C:rul-top-absorbs-absolute-maps` (⊤ propagates uniformly; NO
+overwrite-rescue through inner absolute maps — machine-state logic never
+skips the middle) · `27C:rul-dimension-owned-compose-ops` (compose ops +
+value frames engine-internal, per-dimension: user=absolute overwrite,
+fs-view=caller-relative path composition; authored surface stays single-step)
+· cross-link ρ-threading (the one dimension that threads through every link's
+argv-resolution) · canonical context key = the folded per-dimension NORMAL
+FORM, never chain syntax (nice-position chains share a key; env-vs-sudo order
+does not) · fold-entry coherence stays conductor-proposed/strawman · the DST
+pin list. Full text arrives with the human's commit; this entry is the
+pointer, not the content. Also noted from the same root read: the fallback
+lane's settle commit (`c55ffbe`) RETIRES the old engine-warranted carried-by
+row explicitly and names the conservative-closure pass "the spike's
+obligation to discharge and prove in practice."
+
+## Mid-run redirect #2 (2026-07-17 — fold-entry coherence RULED, narrowed)
+
+From the human's next in-flight `27C` revision (the composition algebra itself
+landed on main at `c7efc27`; this rides uncommitted on top):
+**`27C:rul-fold-entry-coherence-failfast`** (HUMAN-ACKED, scope-narrowed) —
+fail-fast fires ONLY on static sh-structure disagreement between `lend_map`
+and the entry form (peel-position divergence; argv-flow divergence). Whether
+entry actually EFFECTS the declared shifts is tool-semantics = traversal-vouch
+territory (attributed authored error when wrong; hole-bad-oracle-blast
+species), never statically detected. Coarse case stays member-existence;
+runtime corroboration is lint-tier only per the §6 utterability ladder.
+Builder redirected mid-run (supersedes redirect #1's point 5, which had it
+proposed-tier).
+
+## lane-context-entry (block-context lane 2) — LANDED 2026-07-17 (checkpoint PASSED)
+
+Commits (rebased) topped by the landing-note commit on `ai/r27-context-entry`,
+ff-folded. Continuation-critical detail is inlined in the **Continuation**
+paragraph below — no separate landing-note read is needed to proceed.
+Landed at model+CLI tier, rung-0 byte-stable (82 untouched; 84/84; 857 unit):
+`FactKey.context` (Copy-preserving; no-collision + no-transport pinned;
+cross-context compare = Unknown) · `EntryForm`/`FnRole::Enter` (structural
+detection; self_effect_span = the weld's attribution point) · `compose_chain`
+per the ruled algebra (dimension-owned ops; ⊤-sticky no-rescue; RhoAccum
+threading; normal-form canonical = batching AND fact key; all six DST pins) ·
+the full dial × capability consent-trace table (capability bounds before the
+dial; probe never self-acquires) · `tolerates:` vouch (colon-line spelling —
+recorded divergence from the `27C` §2 shorthand, STRAWMAN-tier, de-facto
+standing for the stdlib brief) · fold-entry coherence at the RULED narrow
+scope (static argparse-consumption only; DORC_EXIT=11) · §6 mined-idiom lints
++ authority-disclosure line · hostsim context/capability injection · the
+`VAR=x "$@"` ρ rung (27K gap closed). Both mid-run redirects acknowledged
+with rework-vs-conformant accounting (composition meet REWORKED; ⊤-stickiness
+conformant; coherence built fresh narrow).
+
+**Continuation (self-sufficient; inlined for a clean-context reboot — the phase
+proceeds from this paragraph alone).** This lane landed at the MODEL + CLI-surface
+tier and folded into the lineage: the engine models (a new `context` field on
+`FactKey` — `Copy`-preserving, with no-collision and no-cross-context-transport
+both pinned; the wrapper entry-form + chain-composition machinery per the ruled
+per-dimension algebra; the admin control-surface with its full decision table;
+the degrade ladder; the in-context guard shape; fold-entry coherence at the
+ruled narrow static scope) are all built and green, rung-0 byte-stable. NOT
+built — the ONE deferred piece and the block's next dispatch (a fresh builder
+lane, per the established models-first pattern): the cross-pipeline **book-side
+integration** that makes a wrapped book site actually elide end-to-end — peel
+wrapped book sites in classify/value, emit the composed probe through the
+per-run PATH shim (the `274` §5 dissolution of the reentry-token seam), thread
+the composed `context` into the shipped `FactKey` + the records lane, and read
+back the context-qualified verdict. This integration is a **block-stdlib
+precondition** (`270` §2). Remaining block-context lanes after it, in order:
+**read-value-slice** (the capture fold on the landed wire + recipe machinery)
+and **lane-fallback-carry** (the conservative cross-context carry, `27C` §0.2 —
+the engine-proved read-set-closure pass, which shares bones with the punted
+effect-check). Then **block-stdlib**: the ~40 bootstrap oracles authored against
+the finally-stable surface, plus yardstick-measurement (the may-alias
+sensitivity number). Carried limitation: `tc-rho-nothing-as-key-identity`
+(hint-tier; rides the deferred value-flow work).
+
+**Dispositions:** tc-entry-reentry-token → the per-run shim (`274` §5) is the
+recorded dissolution; owned by the INTEGRATION lane (below) ·
+tc-rho-nothing-as-key-identity → known limitation of deferred ρ-value-flow
+territory (`env -u` under-distinguishing); hint-tier; rides whoever builds
+ρ-value-flow · the babby-sudo story is demonstrated at model+hostsim tier
+only — NOT end-to-end.
+
+**lane-integration MINTED (next dispatch):** the cross-pipeline wiring that
+makes wrapped sites actually elide — peel wrapped BOOK sites in
+classify/value · emit the entry-composed probe (`sudo__enter pipx__predict …`
+via the per-run shim; only-oracle-bytes riders) · thread composed Context
+into the shipped FactKey and the records lane · read back context-qualified
+verdicts · elide/guard per the consent trace. This IS the "real sudo
+mechanism" of block-stdlib's precondition (`270` §2); the `27C` §8 babby-sudo
+e2e story is its acceptance.
+
+## lane-integration (block-context lane 4, the closer) — LANDED 2026-07-17 (checkpoint PASSED; block-context CLOSED)
+
+Commits (rebased by the human — see protocol correction below) topped by
+`96917b2` on `ai/r27-book-integration`, ff-folded into `ai/spike3-r27` by the
+human's hand. Landing note: **`notes/27N`**. Landed: the cross-pipeline wiring
+making a wrapped BOOK site elide end-to-end — peel-map threaded into classify
+(facts born `in_context`; kernel stays wrapper-unaware, cli precomputes) ·
+entry-composed probe emission (`ProbePredict.entry`; ships
+`sudo__enter <inner-check> <peeled-argv>`; machine pin EXTENDED:
+`entry_composed_probe_renders_enter_forms_never_raw_book_bytes`, both
+directions) · context rides `FactKey.context` end-to-end, records WIRE grammar
+unchanged (site-keyed; cli re-keys site→fact) · context-qualified readback ·
+elide/run per `decide_entry` (two-axis order: capability walls, then dial, then
+vouch quantified over EVERY crossed dimension) + the adoption hint + the
+authority-disclosure line. Babby-sudo acceptance (`27C` §8): 4 e2e cases
+(elides / diverges / unvouched / noescalation), all `PROBE_RESULTS=authored`
+(disclosed — see shim disposition). 863 unit / 88 e2e; **84 pre-existing cases
+BYTE-STABLE** (rung-0); the REFERENDUM did not fire.
+
+**Conductor verification (own hand, on the folded lineage):** fresh build ·
+four gates · 863/863 unit · 88/88 foreground e2e; spot-reads: the machine pin
+(structural, positive + negative asserts) · `decide_entry` (ruled two-axis
+order, first-blocking-rung deterministic) · the shipped probe artifact
+(entry form + inner verdict + peeled argv; zero book bytes) · the fixture sudo
+oracle (dual-peel coherent; enumerate-every-dimension lend_map) · rider
+acceptance greps re-run (zero `is_diverged` outside reserved.rs; zero
+`VerdictSense`).
+
+**Checkpoint dispositions (conductor-adjudicated):**
+
+- disposition-comment-budget-overage — ACCEPTED. The 27.9% headline decomposes:
+  170 mandated `///` doc-comments (why-tier, slug-citing — spot-checked) + ~113
+  non-authored lines (generated goldens, copied mock logs) + ~9% genuine inline
+  commentary, which is within the budget's spirit. FUTURE BRIEFS: the counting
+  command excludes `///` doc-comments and generated fixture content from the
+  numerator; doc-comment quality is checked by eye at checkpoint instead.
+- disposition-factkey-widening-via-cli-peelmap (né tc-factkey-widening-via-cli-
+  peelmap) — ACCEPTED as landed: CLI-precomputed peel-map, kernel
+  wrapper-unaware (referendum-clean by construction). Whether peel migrates
+  into `command_effect` is banked to the forward seam list, kSTATE-adjacent,
+  never a local refactor.
+- disposition-context-blind-stage1-wall (né tc-context-blind-stage1-wall) —
+  ACCEPTED, safe direction (over-execute, never under): a running wrapped
+  mutator walls downstream converged establishes context-BLIND. NAMED
+  LIMITATION — the block-stdlib brief and the survival-tier follow-on
+  (context-qualified wall-sparing) both carry it; the acceptance fixtures order
+  the unwrapped site first to sidestep it, disclosed in-fixture.
+- disposition-wrapped-guard-unexercised (né tc-wrapped-guard-shape-unexercised)
+  — scaffold ACCEPTED; RIDER to the next dispatch (lane-fallback-carry): one
+  wrapped-QUERY e2e exercising the in-context guard shape.
+- disposition-shim-materialization-deferred — ACCEPTED: emission + readback
+  proven; the per-run PATH shim materialization (`274` §5 / `27L` task-14) is
+  the bounded last mile and becomes the block-stdlib package's FIRST errand
+  (the real boundary-crossing lands before oracles author against it). Under
+  inert mocks the shipped form 127s ⇒ can't-say ⇒ run — degrade-safe.
+- rider-strike-is-diverged-dual-residue — DONE (`b002157`): `strip_verdict`
+  hardcodes; `VERDICT_SUFFIX` retained (consumed by `verdict_fn_name`);
+  `__enter` got its own hardcoded `strip_enter`; conductor re-greps confirm.
+- plan-mint choke-point (the `26B` obligation) — CONFORMANT: all wiring threads
+  data into the existing `build_plan_walled` + `compile_probe`→`ProbePlan`; no
+  second assembly exit. 27H capture seams untouched and OPEN.
+
+**PROTOCOL CORRECTION (hook-verified this landing):** rebases, merges, and
+lineage ref-moves are ALL hook-reserved to the human ("the user does the
+review-and-rebase pass on AI commits"). Fold flow now: conductor verifies zero
+file-overlap + behind-count, REQUESTS the two human commands (lane-worktree
+`git rebase ai/spike3-r27`; lineage-worktree `git merge --ff-only
+ai/r27-<lane>`), then re-verifies gates + tests on the folded lineage by own
+hand. Builders never rebase; they hold at tip and report.
+
+**Block-context CLOSED** per the `26B` ruling (read-value-slice STRUCK; four
+lanes landed: wrapper-peel `27K` · payload-v1 `27L` · context-entry (27D
+Continuation) · integration `27N`). Carried out of the block: shim
+materialization (stdlib E1) · wrapped-guard fixture (fallback-carry rider) ·
+context-blind wall (stdlib brief + survival follow-on) · the forward seam list
+above.
+
+## Mid-run rider (2026-07-17 — lane-integration; handed off from the human's design session)
+
+- **rider-strike-is-diverged-dual-residue** (source:
+  `27Xf:cr-is-diverged-lives-in-steering-and-ANALYZER-NEEDS`, code half;
+  conductor-verified against `d2ce3e2`, routed to the running builder):
+  `is_diverged`/`VerdictSense` comment+API residue in exactly the lane's files —
+  `strip_verdict`'s fossil `mangled_suffix` parameter de-parameterized to match
+  its hardcoding siblings (two callers + test; the orphaned `VERDICT_SUFFIX`
+  const resolved honestly); dual-presenting doc-comments ripped
+  (`oracle/lib.rs:64` · `predict.rs:90/95/156` · `verdict.rs:3/25/27` ·
+  `cli/main.rs:2254` · `plan/lib.rs:~901` + conductor-found
+  `predict/derive.rs:78` · `predict/parser.rs:37`); the `__enter` strip fn must
+  NOT copy the parameterized shape (roles extend by new name only). Acceptance:
+  `is_diverged` greps to reserved.rs ONLY (the standing negative pin + its
+  retirement docs; pin stays, never re-added); zero surviving `VerdictSense`.
+
+## lane-fallback-carry — LANDED 2026-07-17 (checkpoint PASSED; fold PENDING as a stacked ff)
+
+Commits `a80d8f4..9884de1` on `ai/r27-fallback-carry` (base `1aecaa3`,
+behind-count 0 — a pure fast-forward when folded). Landing note: **`notes/27O`**
+(the safe-list audit IS the artifact). Landed: the `27C` §4(a) pure-predicate
+carry — `oracle::carry` ((A) `InvarianceIndex`, waking the stage-1-inert
+`state_stored_only_in` marks for the `invariant:<axis>` line ONLY;
+netns-on-net-kernel forbidden with a loud diagnostic · (B) `read_set_closed`
+default-disqualify sh-taint · `decide_carry` universal-meet) ·
+`plan::WrappedProbe::Carry` as a DISTINCT licensed path (carried facts keyed
+`Context::HostDefault` — where they were MEASURED; `core::coord::compare`
+untouched; the FactKey no-collision/no-transport pins green) · the full `27C`
+§9 DST battery (13 rows → 18 unit tests; coverage map in `27O`) · 3 e2e
+fixtures · the attribution errand (below). 881 unit / 91 e2e; 88 pre-existing
+BYTE-STABLE (rung-0); the referendum did not fire; **§4(b) NOT built**
+(punt-empowered; honest walls).
+
+**Conductor verification (own hand, at `9884de1` in the lane worktree —
+content-identical to the post-ff lineage):** build + four gates + 881/0 unit +
+91/91 foreground e2e; spot-reads: the safe-list table (seven pure builtins; all
+else marked-or-walls) · the carry goldens (probe ships the AMBIENT check, no
+entry form; artifact bytes receipt-free) · the guard-rider render with inline
+attribution · the why-lane emission text (all four links named).
+
+**Checkpoint dispositions (conductor-adjudicated):**
+
+- disposition-safe-list-accepted — the enumerated audit accepted as the
+  artifact; home `oracle::carry` accepted (a pure static read of authored
+  bodies + marks; `inv-referent-agnostic`).
+- disposition-cmdsub-idiom-divergence — ACCEPTED, safe direction: `27C` §4(a)'s
+  STRAWMAN cmdsub-comparison exemplar is NOT closable at v1 (command
+  substitution lifts to `Word::Unmodeled` ⇒ disqualifies ⇒ walls, never a
+  hidden read); the v1 closable idiom is the MARKED-COMMAND rc-partition form;
+  cmdsub-VALUE modeling is the named future safe-list extension. `27C`
+  annotated in place (this stack); the STDLIB TEACHING TEMPLATE must teach the
+  marked-command form.
+- disposition-carry-keys-hostdefault (né tc-carry-keys-fact-hostdefault) —
+  ACCEPTED: the fact is keyed where it was MEASURED (ambient); carry licenses
+  consumption at the wrapped site and never fabricates a context-qualified
+  fact; pin-no-outcome-as-generator held.
+- disposition-guard-rider-fixture-only — ACCEPTED: the `27N` guard scaffold
+  needed ZERO wiring (`context-entry-wrapped-guard` is fixture-only); the
+  "query site" ask landed as EstablishWritten-whose-guard-check-is-a-read —
+  same shape, disclosed honestly.
+- errand-carry-attribution-why-note — DELIVERED dual-lane (coded Note
+  `carried-across-substrate-axis` + the gate-7-pinned `why:` line; `.sh`
+  artifact bytes verified unchanged — two-surfaces). Dual-lane ACCEPTED under
+  the kWARN-rich weld (the Note is mechanism-keepalive; the why-line carries
+  the block acceptance clause). Pinned by `carry-fsview-elides/expected-why`.
+- tc-carry-verdict-body-only · tc-carry-empty-read-set-conservative — accepted
+  interim; banked to the forward seam list (predict-inner carry mirrors `27N`'s
+  predict-inner deferral).
+- noted: step-zero caught a genuinely-stale agent-worktree base (`4b9e8aa`, a
+  divergent r26 doc lineage) — the step-zero protocol earning its keep.
+
+**Stacked-fold note (2026-07-17, human away — push-through directive):** the
+lineage ref is FROZEN at `1aecaa3` (ref-moves hook-reserved to the human);
+checkpoint docs and the following shim lane STACK on `ai/r27-fallback-carry`'s
+chain so the return-fold stays ONE `git merge --ff-only` of the whole verified
+stack.
+
+## shim-materialization errand-lane — LANDED 2026-07-17 (checkpoint PASSED; the queue's last code lane)
+
+Commits `3dabad5..c1e95fe` on `ai/r27-shim-materialization` (base `81092f1`,
+6 ahead / 0 behind the fallback-carry chain — the stack stays one ff). Landing
+note: **`notes/27P`**. Landed: the `274` §5 per-run PATH shim MATERIALIZED —
+`ProbePlan::shim_files()` (pure, BTreeMap-ordered; draws EXCLUSIVELY from the
+already-shipped `EntryComposed` oracle bytes — conductor-verified at source;
+Carry/ambient checks excluded, no exec boundary) · `--shim-dir` writes at the
+cli edge (io-at-edges-only) · the e2e harness runs probes with
+`PATH=$mocks:$shim` (mocks-first; the shim adds only disjoint
+`*__is_converged` names). **Acceptance: real probe execution** —
+`context-entry-babby-elides`/`-diverges` dropped `PROBE_RESULTS=authored`;
+real records match the formerly-authored ones byte-for-byte; ANTI-MASKING
+proven (without the shim, the wrapped site lands cant-tell rc-127 ⇒ run). 884
+unit / 91 e2e / four gates, conductor-verified own-hand at `c1e95fe`; ZERO
+golden churn (89 cases untouched; the two acceptance cases changed
+fixture-infra only). No new trust surface.
+
+**Checkpoint dispositions (conductor-adjudicated):**
+
+- disposition-shim-in-harness-not-executor (né tc-…) — ACCEPTED: the spike
+  harness IS the session; real-executor write choreography (atomicity,
+  smoke-test, cleanup) rides the r26/real-executor era. Seam list.
+- disposition-sudo-mock-keyed-on-dash-n (né tc-…) — ACCEPTED as a FIXTURE
+  CONSTRAINT: the pass-through mock keys on the `sudo -n` entry-form spelling;
+  if the stdlib's sudo entry form respells, these fixtures churn with it.
+- Disclosed gaps accepted: the `dorc:sh` colon shim stays deferred
+  (Windows-unmockable, `27L`); the `274` §9 PATH-weave soft spot (an
+  env-scrubbing real sudo ⇒ rc-127 ⇒ run, safe — the stdlib sudo entry form
+  should consider PATH-preservation explicitly, banked to `27Q`); multi-link
+  chains unit-pinned, not e2e-exercised; unvouched/noescalation/wrapped-guard
+  cases stay authored (no entry-composed probe ships for them — orthogonal,
+  trivial follow-up).
+
+**CONDUCTOR QUEUE COMPLETE at this entry** — the stdlib handoff ledger is
+**`notes/27Q`**; the stdlib MINTING belongs to the human's new conductor.

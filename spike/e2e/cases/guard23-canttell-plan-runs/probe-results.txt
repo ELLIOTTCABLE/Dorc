@@ -1,8 +1,0 @@
-# probe-results: site-keyed records (task-D1 WIRE). Grammar:
-#   site <leafid> effect=<holds|absent|cant-tell>
-# site 0 nginx holds (before the wall) ⇒ elides. site 1 hork (opaque wall). site 2 curl is
-# VOUCHED and past the wall, and its PLAN-TIME verdict is CANT-TELL ⇒ the converged-only mint
-# declines (ruling h1) ⇒ curl runs bare. PROBE_RESULTS=authored: this cant-tell is a plan-time
-# hold, not reproducible by the past-wall establish-probe at HEAD (drift-trio pattern).
-site 0 effect=holds
-site 2 effect=cant-tell

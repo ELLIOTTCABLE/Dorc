@@ -1,0 +1,1 @@
+# bare `sh -c` walls (no eval'er oracle) ⇒ the site runs unprobed; no probe site.

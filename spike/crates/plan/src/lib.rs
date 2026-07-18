@@ -51,7 +51,16 @@ pub use fold::{AbstractRc, FoldResult};
 
 pub mod erasability;
 
+pub mod records;
+
 pub mod render;
+
+/// The per-run PATH shim for `dorc-sh` (`274` §5): the pure model — host-independent shipped text
+/// (`shim_script`), run-id-derived naming (`shim_dir_name`, no mktemp randomness), and the failure
+/// lattice (`classify_shim_rc` / `smoke_degrades_session` — every shim/exec failure drains to the ≥2
+/// sink ⇒ run; a failed preamble smoke degrades the session shimless). MODELS only — materialization
+/// is the cli/hostsim I/O edge and probe-shipping is task-14-gated; the corpus stays byte-stable.
+pub mod shim;
 
 pub mod survival;
 pub use survival::{
@@ -808,9 +817,9 @@ impl GuardInsert {
     /// Render the guarded line: `( <check-invocation> ) || <original>   # dorc: guard [<kind>
     /// converged-vouch; probe: <word>]` (24D §2 / rul-ternary-verdict). The original bytes survive
     /// VERBATIM as the `||`-right (no code path removes them — the two never-clauses). The glue is
-    /// always the direct `( f_is_converged args ) || <original>` (rul24-ditch-is-diverged retired
-    /// the `is_diverged` sense-flip; the inverted sense is now spelled with explicit-return manual
-    /// inversion inside `is_converged`). `original` is the site's verbatim command bytes.
+    /// always the direct `( f_is_converged args ) || <original>` (`24C:rul24-ditch-is-diverged`: the
+    /// sole verdict role is `is_converged`; the inverted sense is now spelled with explicit-return
+    /// manual inversion inside it). `original` is the site's verbatim command bytes.
     #[must_use]
     fn render_line(&self, original: &str) -> String {
         let check = format!("( {} )", self.vouch.invocation);
@@ -889,7 +898,7 @@ pub type Vouches = BTreeMap<CfgNodeId, ByVouch<VerdictVouch>>;
 /// Lift the per-site VOUCHES (24D §3 elide-weld / rul-guard-license / rul24-vouch-is-verdict-
 /// authoring) — the ONE home for the composition every driver shares (the cli, the sweep net, the
 /// coverage dashboard, the hostsim DST). For each establish-bearing site whose provider authored a
-/// verdict function (`<provider>.is_converged`/`.is_diverged`) that REACHES a vouching path over
+/// verdict function (`<provider>.is_converged`) that REACHES a vouching path over
 /// the site's constant-propagated argv (`evaluate_verdict` ⇒ `Vouched`), it builds one
 /// [`ByVouch<VerdictVouch>`] keyed by the site's [`CfgNodeId`]. A site ABSENT from the map has no
 /// reached vouch ⇒ it never elides (the elide-weld, [`ReplaceLicense::prove_replaceable`]) and
@@ -975,7 +984,7 @@ pub fn build_vouches(
             "{}{VERDICT_SUFFIX}",
             dorc_oracle::to_funcname_segment(interner.resolve(verdict.provider)),
         );
-        let preamble = strip_verdict(src, verdict, interner, VERDICT_SUFFIX);
+        let preamble = strip_verdict(src, verdict, interner);
         let invocation = if op_refs.is_empty() {
             fn_name.clone()
         } else {
@@ -987,6 +996,87 @@ pub fn build_vouches(
         vouches.insert(*node, ByVouch::vouched(vouch, Rung::Both));
     }
     Carrier::new(vouches, diags)
+}
+
+/// Mint the elide/guard VOUCHES for wrapped-ENTERING BOOK sites (`27C` §3 / lane-integration
+/// `27N`). A wrapped site's argv[0] is the WRAPPER word (`sudo`), so [`build_vouches`] — which keys
+/// the verdict on argv[0] — cannot vouch it. Here the vouch is minted from the INNER oracle's
+/// verdict reached over the site's PEELED argv (the same reached-path license, `rul-guard-license`),
+/// gated on the consent decision already having permitted entry ([`WrappedProbe::Enter`]). The
+/// vouch's guard data is the ENTRY-COMPOSED invocation (`sudo__enter pipx__is_converged install
+/// poddle`) so an in-context guard renders correctly; the elide (`Replace`) consumes only the
+/// license. Merge the result into [`build_vouches`]'s map at the cli edge (wrapped nodes are
+/// disjoint from ambient ones).
+#[must_use]
+pub fn build_wrapped_vouches(
+    oracle_srcs: &[&str],
+    classes: &[(CfgNodeId, SkipClass)],
+    wrapped: &WrappedProbes,
+    interner: &mut Interner,
+) -> Vouches {
+    use dorc_oracle::verdict::{VerdictResolution, VerdictSet, check_commands, evaluate_verdict};
+
+    let verdict_sets: Vec<VerdictSet> = oracle_srcs
+        .iter()
+        .map(|src| VerdictSet::lift(interner, src).value)
+        .collect();
+    let mut vouches = Vouches::new();
+    for (node, wp) in wrapped {
+        // Enter and Carry both mint an elide/guard vouch from the inner verdict over the peeled argv
+        // (`27C` §3/§4(a)). Carry's `composed.enter_defs` is empty ⇒ the guard shape is the AMBIENT
+        // inner check guarding the book bytes (measure ambient, carry across the substrate boundary).
+        let (WrappedProbe::Enter { provider, composed }
+        | WrappedProbe::Carry { provider, composed }) = wp
+        else {
+            continue; // a Degrade site runs — no vouch
+        };
+        let fact = classes.iter().find_map(|(n, c)| match c {
+            SkipClass::EstablishAmbient(f) | SkipClass::EstablishWritten(f) if n == node => {
+                Some(*f)
+            }
+            _ => None,
+        });
+        let Some(fact) = fact else { continue };
+        // The inner verdict, reached over the PEELED argv (operands after the inner command word).
+        let op_refs: Vec<String> = composed
+            .inner_argv
+            .iter()
+            .map(|s| interner.resolve(*s).to_owned())
+            .collect();
+        let op_slices: Vec<&str> = op_refs.iter().map(String::as_str).collect();
+        let inner_verdict = verdict_sets.iter().find_map(|set| set.get(*provider));
+        let Some(verdict) = inner_verdict else {
+            continue;
+        };
+        if !matches!(
+            evaluate_verdict(verdict, &op_slices),
+            VerdictResolution::Vouched
+        ) {
+            continue; // the inner verdict declines over this argv ⇒ no elide license (run)
+        }
+        // The entry-composed guard shape (`27C` §5): `sudo__enter … pipx__is_converged <argv>`. The
+        // preamble carries every shipped funcdef (enter forms + the inner verdict body), all oracle
+        // bytes (`271:rul-only-oracle-bytes-ship`).
+        let mut invocation: Vec<String> =
+            composed.enter_defs.iter().map(|(f, _)| f.clone()).collect();
+        invocation.push(composed.inner_fn.clone());
+        invocation.extend(op_refs.iter().cloned());
+        let mut preamble = String::new();
+        for (_, def) in &composed.enter_defs {
+            preamble.push_str(def);
+            preamble.push('\n');
+        }
+        preamble.push_str(&composed.inner_sh);
+        let vouch = VerdictVouch::new(
+            composed.inner_fn.clone(),
+            preamble,
+            invocation.join(" "),
+            interner.resolve(fact.kind.0).to_owned(),
+            check_commands(verdict),
+        );
+        vouches.insert(*node, ByVouch::vouched(vouch, Rung::Both));
+    }
+    vouches
 }
 
 /// What the plan does with one leaf.
@@ -1197,7 +1287,75 @@ pub struct ProbePredict {
     /// oracle. `false` ⇒ the ordinary `__predict` shape. Steers only [`ProbePlan::render_sh`]'s
     /// funcname choice; the record grammar and site-keying are identical.
     pub verdict: bool,
+    /// `27C` §3 / lane-integration `27N` — the ENTRY-COMPOSED probe for a wrapped site whose consent
+    /// trace permits entry. `Some` ⇒ this site's check runs the inner oracle's body INSIDE the
+    /// wrapper chain's context: the entry forms wrap the inner predict/verdict, invoked with the
+    /// site's peeled argv (`sudo__enter pipx__is_converged install poddle`). ONLY oracle-authored
+    /// bytes ship — never the raw book bytes (`271:rul-only-oracle-bytes-ship`, extended to entry
+    /// composition). `fact` carries the composed [`Context`], so the record re-keys the context-
+    /// qualified verdict exactly. `None` ⇒ the ordinary (ambient) shape.
+    pub entry: Option<EntryComposed>,
 }
+
+/// The entry-composed body of a wrapped-site probe (`27C` §3 / `27N`): the wrapper chain's entry
+/// forms wrapping the inner oracle's stripped body, all oracle-authored, argv-flowing. Built at the
+/// cli edge; rendered by [`ProbePlan::render_sh`].
+///
+/// Shim seam (`274` §5 / `27L` task-14, DISCLOSED deferral): the real `sudo` boundary crossing needs
+/// the per-run PATH shim to materialize the oracle bytes as executables `sudo` can exec; that I/O
+/// edge is deferred. At HEAD the composition ships strip-only funcdefs + a nested invocation, so a
+/// real `sudo -n <fn>` cannot resolve the funcdef and the record lands can't-say ⇒ run (safe). The
+/// emission + context-qualified readback are exercised via simulated results (`PROBE_RESULTS=authored`).
+#[derive(Debug, Clone)]
+pub struct EntryComposed {
+    /// The chain's stripped entry-form funcdefs, `(funcname, funcdef)`, OUTERMOST-FIRST
+    /// (`sudo__enter`, then `chroot__enter`). Each dedup-emitted like an ordinary check body.
+    pub enter_defs: Vec<(String, String)>,
+    /// The inner oracle's check funcname (`pipx__is_converged` / `pipx__predict`).
+    pub inner_fn: String,
+    /// The inner oracle's stripped check funcdef (strip-only, `271:rul-only-oracle-bytes-ship`).
+    pub inner_sh: String,
+    /// The site's PEELED argv (the inner command's args, F-quoted at render) — the admin's argv
+    /// flowing THROUGH the inner oracle's argparse (`rul-argv-flows-bytes-do-not`).
+    pub inner_argv: Vec<Symbol>,
+}
+
+/// The probe disposition of a wrapped BOOK site (`27C` §3 / `27N`), built at the cli edge from the
+/// two-axis consent decision (dial × capability × vouch × entry-form) and consulted by
+/// [`compile_probe`]. A wrapped site takes THIS path exclusively: the ordinary ship (keyed on the
+/// wrapper word `sudo`) would mis-resolve to the wrapper's own model.
+#[derive(Debug, Clone)]
+pub enum WrappedProbe {
+    /// The consent trace PERMITS entry: ship the entry-composed check (the inner oracle's body
+    /// inside the wrapper chain's context). `provider` is the inner provider (display/debug).
+    Enter {
+        /// The inner provider symbol (the `ProbePredict::provider` field; display only for entry).
+        provider: Symbol,
+        /// The entry-composed body (enter forms + inner check).
+        composed: EntryComposed,
+    },
+    /// PURE-PREDICATE CARRY (`27C` §4(a); steering `pure-predicate-carry`): entry degraded, but the
+    /// crossed boundary is a SUBSTRATE axis, the fact's marked backing kinds carry `invariant:<axis>`
+    /// (A), and the verdict body is read-set-closed (B) — so the AMBIENT measurement answers the
+    /// wrapped site, UNFLAGGED. `composed` has EMPTY `enter_defs` (measure ambient, no entry form);
+    /// the cli keys the fact `Context::HostDefault`, so this ships the plain inner check and the
+    /// ambient verdict answers it. A DISTINCT licensed path — `compare` is untouched
+    /// (`pin-no-outcome-as-generator`).
+    Carry {
+        /// The inner provider symbol (display only; the `ProbePredict::provider` field).
+        provider: Symbol,
+        /// The AMBIENT inner check (enter forms EMPTY — measured in the host-default world).
+        composed: EntryComposed,
+    },
+    /// The consent trace REFUSES entry (dial forbids, unvouched, no capability, ⊤ dimension, no
+    /// entry form, or a runtime degrade) AND pure-predicate carry does not apply ⇒ can't-say ⇒ the
+    /// site runs (unresolvable in the probe).
+    Degrade,
+}
+
+/// The wrapped BOOK sites of a run, keyed by [`CfgNodeId`] (`27N`). Empty for a wrapper-free run ⇒
+/// [`compile_probe`] behaves byte-identically (`empty-world-byte-identical`).
+pub type WrappedProbes = BTreeMap<CfgNodeId, WrappedProbe>;
 
 /// A compiled probe: per-resolvable-site read-only checks whose answers drive the
 /// apply's elision (apply-2), plus the un-resolvable sites recorded for transparency.
@@ -1284,8 +1442,14 @@ impl ProbePlan {
     /// `$?` immediately after the check, maps it to the three-outcome word, and prints the
     /// record.
     #[must_use]
-    pub fn render_sh(&self, interner: &Interner) -> String {
+    pub fn render_sh(&self, framing: &records::Framing, interner: &Interner) -> String {
         let mut out = String::from(render::probe::header());
+        // `262` §2 framing header — the artifact's FIRST OUTPUT line. `sites=` is the
+        // fact-lane census (the resolvable site-record count), so a truncated fact lane is a
+        // computable range at the deframer (`26A` amend-smalls). The end-sentinel is emitted
+        // by the round-trip driver AFTER every record lane (`records::sentinel_line`).
+        out.push_str(&records::header_line(framing, self.checks.len()));
+        let nonce = &framing.nonce;
         // R3 (23D §1 — the check IS the oracle): emit each provider's stripped
         // `<provider>__predict` funcdef, then invoke it per SITE with the site's full argv +
         // the self-report wrapper. The funcdef is deduped per funcname but RE-EMITTED
@@ -1316,7 +1480,26 @@ impl ProbePlan {
             // (dedup-emitted like the ordinary path) piped, `stage0__predict a | stage1__predict b`.
             // ONLY oracle-authored bytes ship — never the raw book pipeline. Otherwise the ordinary
             // R3 shape: (re-)emit the stripped funcdef, then invoke it with the site's argv.
-            let invocation = if let Some(composed) = &check.connected {
+            let invocation = if let Some(entry) = &check.entry {
+                // `27C` §3 / `27N` — the ENTRY-COMPOSED probe: emit the chain's entry-form funcdefs
+                // (outermost-first) + the inner check funcdef (dedup like the ordinary path), then a
+                // NESTED invocation `sudo__enter … pipx__is_converged <argv>`. Only oracle-authored
+                // bytes ship (`271:rul-only-oracle-bytes-ship`); the admin's argv flows F-quoted.
+                let mut prefix: Vec<String> = Vec::with_capacity(entry.enter_defs.len() + 1);
+                for (fname, fdef) in &entry.enter_defs {
+                    if defined.insert(fname.clone(), fdef.as_str()) != Some(fdef.as_str()) {
+                        out.push_str(&render::probe::wrapper_def(fdef));
+                    }
+                    prefix.push(fname.clone());
+                }
+                if defined.insert(entry.inner_fn.clone(), entry.inner_sh.as_str())
+                    != Some(entry.inner_sh.as_str())
+                {
+                    out.push_str(&render::probe::wrapper_def(&entry.inner_sh));
+                }
+                prefix.push(entry.inner_fn.clone());
+                render::probe::invocation(&prefix.join(" "), &entry.inner_argv, interner)
+            } else if let Some(composed) = &check.connected {
                 let mut invs = Vec::with_capacity(composed.stages.len());
                 for stage in &composed.stages {
                     let stage_fn = predict_fn_name(interner, stage.provider);
@@ -1334,7 +1517,7 @@ impl ProbePlan {
                 }
                 render::probe::invocation(&fn_name, &check.argv, interner)
             };
-            out.push_str(&render::probe::record_scaffold(&invocation, &key));
+            out.push_str(&render::probe::record_scaffold(&invocation, &key, nonce));
         }
         // Un-resolvable sites are recorded as comments (never invoked): transparency
         // for the human reading the artifact and the D3 argv-echo differential.
@@ -1342,6 +1525,41 @@ impl ProbePlan {
             out.push_str(&render::probe::unresolvable_comment(*site));
         }
         out
+    }
+
+    /// The per-run PATH shim FILE SET an entry-composed probe needs to resolve its inner check
+    /// across the wrapper's exec boundary (`274` §5 / `27L` task-14 — the shim-materialization last
+    /// mile). An entry form (`sudo__enter() { sudo -n "$@"; }`) EXECS its guest as a fresh process,
+    /// and a shell function does not survive `exec`; so `sudo__enter hork__is_converged …` cannot
+    /// resolve `hork__is_converged` at the guest position unless it is a real executable on PATH.
+    /// This maps each EXEC'd guest funcname → a standalone dispatch script (`#!/bin/sh` + the oracle's
+    /// stripped funcdef + `<fn> "$@"`), which the cli/e2e edge materializes into a PATH-prepend dir
+    /// before running the probe. ONLY oracle-authored bytes ship (`271:rul-only-oracle-bytes-ship`):
+    /// the funcdef is the shipped `inner_sh`/`enter_defs` verbatim; the shebang + dispatch line are
+    /// synthesized scaffolding (`probe-composition-walls` — never book bytes).
+    ///
+    /// The exec'd guests are every entry form AFTER the outermost (the outermost runs as a funcdef
+    /// in the probe shell) plus the inner check. A single-link `sudo__enter <inner>` yields exactly
+    /// one shim (the inner check). `Carry` (ambient, empty `enter_defs`) and plain ambient checks
+    /// (`entry: None`) cross no boundary ⇒ no shim. Deterministic content + `BTreeMap` ordering
+    /// (`inv-determinism`); empty for a wrapper-free run (`empty-world-byte-identical` — no shim dir).
+    #[must_use]
+    pub fn shim_files(&self) -> BTreeMap<String, String> {
+        let mut files = BTreeMap::new();
+        for check in &self.checks {
+            let Some(entry) = &check.entry else { continue };
+            if entry.enter_defs.is_empty() {
+                continue; // Carry / ambient — no exec boundary (see the doc-comment).
+            }
+            for (fname, fdef) in entry.enter_defs.iter().skip(1) {
+                files.insert(fname.clone(), shim_dispatch_script(fname, fdef));
+            }
+            files.insert(
+                entry.inner_fn.clone(),
+                shim_dispatch_script(&entry.inner_fn, &entry.inner_sh),
+            );
+        }
+        files
     }
 
     /// Did the probe compile a check for `fact`? The apply may only elide a fact the
@@ -1352,6 +1570,14 @@ impl ProbePlan {
     pub fn checks_fact(&self, fact: FactKey) -> bool {
         self.checks.iter().any(|c| c.fact == fact)
     }
+}
+
+/// A per-run shim file's text: the oracle's stripped funcdef followed by a dispatch call that
+/// forwards the guest's argv (`274` §5). Run as `<fn> a b`, it defines the function then calls it
+/// with `$@ = a b` — identical positional binding to the in-process funcdef, so the oracle body
+/// reads its argv exactly as it does in the probe shell.
+fn shim_dispatch_script(fname: &str, fdef: &str) -> String {
+    format!("#!/bin/sh\n{fdef}\n{fname} \"$@\"\n")
 }
 
 /// A ship decision for one escalated derivation site (24E §2): the stripped `<provider>__touches`
@@ -1437,7 +1663,7 @@ impl ResolverPlan {
     /// with the entity; its stdout is re-keyed to a `resolv <coord> canon=…` record (or `dangling`,
     /// §4). Empty ⇒ `""` (nothing appended). Interner-free (all fields pre-resolved).
     #[must_use]
-    pub fn render_sh(&self) -> String {
+    pub fn render_sh(&self, nonce: &records::Nonce) -> String {
         if self.probes.is_empty() {
             return String::new();
         }
@@ -1455,6 +1681,7 @@ impl ResolverPlan {
                 &p.kind_fn,
                 &p.entity_text,
                 &p.coord_label,
+                nonce,
             ));
         }
         out
@@ -1502,7 +1729,7 @@ impl ReachPlan {
     /// body change — sh last-writer-wins), then invoked per COORDINATE with the entity; its stdout is
     /// re-keyed per-line to a `reach <coord> arm=<index> entity=…` record. Empty ⇒ `""`. Interner-free.
     #[must_use]
-    pub fn render_sh(&self) -> String {
+    pub fn render_sh(&self, nonce: &records::Nonce) -> String {
         if self.probes.is_empty() {
             return String::new();
         }
@@ -1522,6 +1749,7 @@ impl ReachPlan {
                 &p.entity_text,
                 &p.coord_label,
                 p.arm_index,
+                nonce,
             ));
         }
         out
@@ -1548,7 +1776,7 @@ impl DerivationPlan {
     /// multi-body provider), then invoked per SITE with the site's argv, its stdout coord-lines
     /// re-keyed to `deriv <leafid> coord=…` records. Empty ⇒ `""` (nothing appended).
     #[must_use]
-    pub fn render_sh(&self, interner: &Interner) -> String {
+    pub fn render_sh(&self, nonce: &records::Nonce, interner: &Interner) -> String {
         if self.derivations.is_empty() {
             return String::new();
         }
@@ -1565,7 +1793,7 @@ impl DerivationPlan {
                 out.push_str(&render::probe::wrapper_def(&d.sh));
             }
             let invocation = render::deriv::invocation(&fn_name, &d.argv, interner);
-            out.push_str(&render::deriv::record_scaffold(&invocation, d.site));
+            out.push_str(&render::deriv::record_scaffold(&invocation, d.site, nonce));
         }
         out
     }
@@ -1937,15 +2165,17 @@ fn ship_stage_for_argv(
     clippy::too_many_arguments,
     clippy::too_many_lines,
     reason = "the probe compiler threads the whole compiled context (ast/cfg/value/classes/connected) \
-              plus THREE ship seams — the predict body, the `24L` §2 auto-cell verdict body, and the \
-              vouch predicate; each is a distinct caller-supplied input. The auto-cell ship arm pushes \
-              the body just over the line cap; the per-class dispatch is irreducibly flat"
+              plus the `27N` wrapped-site decisions plus THREE ship seams — the predict body, the \
+              `24L` §2 auto-cell verdict body, and the vouch predicate; each is a distinct \
+              caller-supplied input. The auto-cell ship arm pushes the body just over the line cap; \
+              the per-class dispatch is irreducibly flat"
 )]
 pub fn compile_probe(
     ast: &Ast,
     cfg: &Cfg,
     value: &ValueFlow,
     classes: &[(CfgNodeId, SkipClass)],
+    wrapped: &WrappedProbes,
     connected: &ConnectedPipes,
     ship_body: impl Fn(Symbol, &[Symbol]) -> Option<String>,
     ship_auto: impl Fn(FactKey, Symbol, &[Symbol]) -> Option<String>,
@@ -1954,6 +2184,43 @@ pub fn compile_probe(
     let mut checks = Vec::new();
     let mut unresolvable = Vec::new();
     for (site, node, class) in site_order(ast, cfg, classes) {
+        // `27C` §3 / `27N` — a wrapped BOOK site takes the ENTRY path exclusively: ship the
+        // entry-composed check when the consent trace permits (`WrappedProbe::Enter`), else degrade
+        // to run (`WrappedProbe::Degrade`, or a non-fact-bearing inner). The ordinary ship (keyed on
+        // the wrapper word) would mis-resolve to the wrapper's own model, so it is skipped here.
+        if let Some(wp) = wrapped.get(&node) {
+            let fact = match class {
+                SkipClass::EstablishAmbient(f)
+                | SkipClass::EstablishWritten(f)
+                | SkipClass::QueryResolvable { fact: f, .. } => Some(*f),
+                _ => None,
+            };
+            match (fact, wp) {
+                // Enter (measure in-context, `fact` carries the Wrapped context) and Carry (measure
+                // AMBIENT, `fact` carries HostDefault, `composed.enter_defs` empty) ship the SAME
+                // entry-composed shape — the fact's own context steers the readback (`27C` §3/§4(a)).
+                (
+                    Some(fact),
+                    WrappedProbe::Enter { provider, composed }
+                    | WrappedProbe::Carry { provider, composed },
+                ) => {
+                    checks.push(ProbePredict {
+                        site,
+                        member: None,
+                        fact,
+                        site_kind: ProbeSiteKind::Establish,
+                        provider: *provider,
+                        argv: Vec::new(),
+                        sh: String::new(),
+                        connected: None,
+                        verdict: false,
+                        entry: Some(composed.clone()),
+                    });
+                }
+                _ => unresolvable.push(site),
+            }
+            continue;
+        }
         // item-6b (20O find-6 / 20M §7): an in-loop QUERY site stays render-floored this
         // round (`disposition_for` runs it regardless), so probing it is wasted remote
         // work — and with the member-precision wire (item-4) it would ship per-member. So
@@ -2054,6 +2321,7 @@ pub fn compile_probe(
                     sh: String::new(),
                     connected: Some(composed.clone()),
                     verdict: false,
+                    entry: None,
                 });
             } else {
                 unresolvable.push(site);
@@ -2084,6 +2352,7 @@ pub fn compile_probe(
                 sh,
                 connected: None,
                 verdict: true,
+                entry: None,
             });
             continue;
         }
@@ -2101,6 +2370,7 @@ pub fn compile_probe(
                 sh,
                 connected: None,
                 verdict: false,
+                entry: None,
             }),
             None => unresolvable.push(site),
         }
@@ -2206,6 +2476,7 @@ fn push_member_predicts(
             sh,
             connected: None,
             verdict: false,
+            entry: None,
         });
     }
     checks.extend(staged);
@@ -2255,6 +2526,7 @@ fn push_inline_predicts(
                     sh,
                     connected: None,
                     verdict: false,
+                    entry: None,
                 });
             }
             SkipClass::QueryResolvable { fact, valid } => {
@@ -2271,6 +2543,7 @@ fn push_inline_predicts(
                         sh,
                         connected: None,
                         verdict: false,
+                        entry: None,
                     });
                 }
             }
@@ -3877,6 +4150,7 @@ apt_get__predict() {
             kind: KindId(i.intern("package")),
             entity: EntityRef::Operand(OpaqueToken(i.intern("nginx"))),
             selector: SelectorId(i.intern("installed")),
+            context: dorc_core::Context::HostDefault,
         }
     }
 
@@ -4084,6 +4358,7 @@ apt_get__predict() {
             &cfg,
             &value,
             &classes,
+            &BTreeMap::new(),
             &ConnectedPipes::default(),
             |provider, argv| {
                 if probeable {
@@ -4212,6 +4487,7 @@ apt_get__predict() {
                 &idx,
                 &checks,
                 &BTreeSet::new(),
+                &BTreeMap::new(),
                 &mut i,
                 &mut dorc_core::ProvArena::new(),
             );
@@ -4243,14 +4519,18 @@ apt_get__predict() {
             LeafId(0),
             "the install is site 0"
         );
-        let sh = derivations.render_sh(&i);
+        let sh = derivations.render_sh(&records::Nonce::spike_default(), &i);
         assert!(
             sh.contains("apt_get__touches() { apt-manifest"),
             "the stripped touches def ships verbatim: {sh}"
         );
         assert!(
-            sh.contains("| while IFS= read -r _c; do printf 'deriv 0 coord=%s"),
-            "the per-site deriv readback scaffold renders: {sh}"
+            sh.contains("| { _n=0; while IFS= read -r _c; do printf 'dorc deriv 0 coord=%s"),
+            "the per-site deriv readback scaffold renders (framed, counting subshell): {sh}"
+        );
+        assert!(
+            sh.contains("printf 'dorc deriv-end 0 n=%s @@dorc@@\\n' \"$_n\"; }"),
+            "the at-most family closes with a `deriv-end` count record (262 §2 / 26A stop-1): {sh}"
         );
         assert!(
             !sh.starts_with("#!/bin/sh"),
@@ -4277,9 +4557,9 @@ apt_get__predict() {
             vec![LeafId(1)],
             "site 1 is a DISTINCT site, recorded unresolvable (same-cell Written), not collapsed"
         );
-        let rendered = probe.render_sh(&i);
+        let rendered = probe.render_sh(&records::Framing::spike(String::new()), &i);
         assert!(
-            rendered.contains("printf 'site 0 effect="),
+            rendered.contains("printf 'dorc site 0 effect="),
             "site 0 record:\n{rendered}"
         );
         assert!(
@@ -4301,13 +4581,13 @@ apt_get__predict() {
             probe.checks[0].fact, probe.checks[1].fact,
             "distinct cells (nginx vs curl)"
         );
-        let rendered = probe.render_sh(&i);
+        let rendered = probe.render_sh(&records::Framing::spike(String::new()), &i);
         assert!(
-            rendered.contains("printf 'site 0 effect="),
+            rendered.contains("printf 'dorc site 0 effect="),
             "site 0 record:\n{rendered}"
         );
         assert!(
-            rendered.contains("printf 'site 1 effect="),
+            rendered.contains("printf 'dorc site 1 effect="),
             "site 1 record:\n{rendered}"
         );
     }
@@ -4325,7 +4605,7 @@ apt_get__predict() {
             "apt-get install -y nginx\napt-get install -y curl\napt-get update\n",
             true,
         );
-        let rendered = probe.render_sh(&i);
+        let rendered = probe.render_sh(&records::Framing::spike(String::new()), &i);
 
         // Full argv bound + single-quoted per word (F-QUOTE): the check argparses the entity.
         assert!(
@@ -4350,7 +4630,7 @@ apt_get__predict() {
         );
         // Self-reporting: a site-keyed record printf per resolvable site (3 of them).
         assert_eq!(
-            rendered.matches("printf 'site ").count(),
+            rendered.matches("printf 'dorc site ").count(),
             3,
             "one record per resolvable site:\n{rendered}"
         );
@@ -4376,7 +4656,7 @@ apt_get__predict() {
         // Spaced operand via a flowed assignment. R3: the whole argv is F-quoted per word,
         // so the spaced operand renders as exactly one arg (`'my pkg'`).
         let (probe, i) = probe_for_src("PKG='my pkg'\napt-get install -y \"$PKG\"\n", true);
-        let rendered = probe.render_sh(&i);
+        let rendered = probe.render_sh(&records::Framing::spike(String::new()), &i);
         assert!(
             rendered.contains("apt_get__predict 'install' '-y' 'my pkg'"),
             "spaced operand single-quoted to one arg:\n{rendered}"
@@ -4387,7 +4667,7 @@ apt_get__predict() {
             "PKG='x; touch /tmp/PWNED'\napt-get install -y \"$PKG\"\n",
             true,
         );
-        let rendered = probe.render_sh(&i);
+        let rendered = probe.render_sh(&records::Framing::spike(String::new()), &i);
         assert!(
             rendered.contains("apt_get__predict 'install' '-y' 'x; touch /tmp/PWNED'"),
             "metachar operand single-quoted ⇒ the `;` cannot split:\n{rendered}"
@@ -4431,6 +4711,7 @@ apt_get__predict() {
             &cfg,
             &value,
             &classes,
+            &BTreeMap::new(),
             &ConnectedPipes::default(),
             |provider, argv| ship_corpus(&checks, &i, provider, argv),
             |_, _, _| None,
@@ -4712,6 +4993,7 @@ apt_get__predict() {
             kind: KindId(i.intern("package")),
             entity: EntityRef::Operand(OpaqueToken(i.intern("nginx"))),
             selector: SelectorId(i.intern("installed")),
+            context: dorc_core::Context::HostDefault,
         };
         let parsed = dorc_syntax::parse(src);
         let cfg = dorc_analysis::cfg::build(&parsed.value).value;
@@ -5125,6 +5407,7 @@ apt_get__predict() {
                 &idx,
                 &checks,
                 &BTreeSet::new(),
+                &BTreeMap::new(),
                 &mut i,
                 &mut arena,
             );
@@ -5617,6 +5900,7 @@ apt_get__predict() {
             kind,
             entity: EntityRef::Operand(OpaqueToken(i.intern(e))),
             selector,
+            context: dorc_core::Context::HostDefault,
         };
         let family = vec![cell("nginx"), cell("curl")];
         let both_converged = vec![Verdict::Converged, Verdict::Converged];
@@ -5985,6 +6269,7 @@ apt_get__predict() {
                             kind: KindId(i.intern("grepmatch")),
                             entity: EntityRef::Operand(OpaqueToken(i.intern(name))),
                             selector: SelectorId(i.intern("matched")),
+                            context: dorc_core::Context::HostDefault,
                         },
                         valid: true,
                     },
@@ -6188,6 +6473,7 @@ apt_get__predict() {
             kind: KindId(i.intern("grepmatch")),
             entity: EntityRef::Operand(OpaqueToken(i.intern("x"))),
             selector: SelectorId(i.intern("matched")),
+            context: dorc_core::Context::HostDefault,
         };
         let otelcol = i.intern("otelcol");
         let grep = i.intern("grep");
@@ -6218,10 +6504,11 @@ apt_get__predict() {
                     ],
                 }),
                 verdict: false,
+                entry: None,
             }],
             unresolvable: Vec::new(),
         };
-        let rendered = plan.render_sh(&i);
+        let rendered = plan.render_sh(&records::Framing::spike(String::new()), &i);
         assert!(
             rendered.contains("otelcol__predict '--version' | grep__predict '-q' '0.155.0'"),
             "the composed predict invocation ships (oracle bytes, admin argv as arguments): {rendered}"
@@ -6231,6 +6518,172 @@ apt_get__predict() {
         assert!(
             !rendered.contains("--version | grep -q"),
             "NO raw book pipeline bytes may appear in a shipped connected probe: {rendered}"
+        );
+    }
+
+    #[test]
+    fn entry_composed_probe_renders_enter_forms_never_raw_book_bytes() {
+        // The STRUCTURAL no-book-bytes pin EXTENDED to ENTRY composition (`27C` §3 / `27N`;
+        // `271:rul-only-oracle-bytes-ship`): a wrapped site's entry-composed probe carries ONLY
+        // oracle-authored bytes — the wrapper's `__enter` funcdef + the inner oracle's check body,
+        // invoked with the site's PEELED argv (`sudo__enter hork__is_converged 'install' 'frob'`).
+        // The raw book site `sudo hork install frob` must NEVER appear — its presence is book bytes
+        // crossing the wrapper boundary (the very hole entry composition closes).
+        let mut i = Interner::default();
+        let fact = FactKey {
+            kind: KindId(i.intern("dorc-auto:hork")),
+            entity: EntityRef::Singleton,
+            selector: SelectorId(i.intern("converged")),
+            context: dorc_core::Context::Wrapped(dorc_core::ContextKey(
+                i.intern("user=M:root;fs-view=F;netns=F"),
+            )),
+        };
+        let hork = i.intern("hork");
+        let install = i.intern("install");
+        let frob = i.intern("frob");
+        let plan = ProbePlan {
+            checks: vec![ProbePredict {
+                site: LeafId(1),
+                member: None,
+                fact,
+                site_kind: ProbeSiteKind::Establish,
+                provider: hork,
+                argv: Vec::new(),
+                sh: String::new(),
+                connected: None,
+                verdict: false,
+                entry: Some(EntryComposed {
+                    enter_defs: vec![(
+                        "sudo__enter".to_owned(),
+                        "sudo__enter() { sudo -n \"$@\"; }".to_owned(),
+                    )],
+                    inner_fn: "hork__is_converged".to_owned(),
+                    inner_sh:
+                        "hork__is_converged() { case $1 in install) hork query \"$2\" ;; esac; }"
+                            .to_owned(),
+                    inner_argv: vec![install, frob],
+                }),
+            }],
+            unresolvable: Vec::new(),
+        };
+        let rendered = plan.render_sh(&records::Framing::spike(String::new()), &i);
+        assert!(
+            rendered.contains("sudo__enter hork__is_converged 'install' 'frob'"),
+            "the entry-composed invocation ships (enter form + inner oracle bytes, admin argv as \
+             arguments): {rendered}"
+        );
+        assert!(
+            rendered.contains("sudo__enter() { sudo -n \"$@\"; }"),
+            "the wrapper's __enter funcdef ships (oracle bytes): {rendered}"
+        );
+        // The raw book site bytes `sudo hork install frob` must NOT appear — book bytes never cross
+        // the wrapper boundary (`271:rul-only-oracle-bytes-ship`; `rul-argv-flows-bytes-do-not`).
+        assert!(
+            !rendered.contains("sudo hork install frob"),
+            "NO raw book site bytes may appear in a shipped entry-composed probe: {rendered}"
+        );
+    }
+
+    /// Build a one-check `ProbePlan` whose sole check carries the given `entry` — the shared
+    /// fixture for the `shim_files` battery (the shim set is keyed only off `entry`).
+    fn probe_plan_with_entry(entry: Option<EntryComposed>) -> ProbePlan {
+        let mut i = Interner::default();
+        ProbePlan {
+            checks: vec![ProbePredict {
+                site: LeafId(1),
+                member: None,
+                fact: FactKey {
+                    kind: KindId(i.intern("dorc-auto:hork")),
+                    entity: EntityRef::Singleton,
+                    selector: SelectorId(i.intern("converged")),
+                    context: dorc_core::Context::HostDefault,
+                },
+                site_kind: ProbeSiteKind::Establish,
+                provider: i.intern("hork"),
+                argv: Vec::new(),
+                sh: String::new(),
+                connected: None,
+                verdict: false,
+                entry,
+            }],
+            unresolvable: Vec::new(),
+        }
+    }
+
+    #[test]
+    fn shim_files_wrap_the_exec_d_inner_check_as_a_dispatch_script() {
+        // A single-link `sudo__enter <inner>` needs exactly ONE shim — the inner check `sudo -n` execs
+        // — its bytes being shebang + the oracle funcdef verbatim + argv-dispatch (oracle bytes only).
+        let inner_sh = "hork__is_converged() {\n   :\n   case \"$1\" in\n   install) hork query \"$2\" ;;\n   *) return 2 ;;\n   esac\n}";
+        let plan = probe_plan_with_entry(Some(EntryComposed {
+            enter_defs: vec![(
+                "sudo__enter".to_owned(),
+                "sudo__enter() { sudo -n \"$@\"; }".to_owned(),
+            )],
+            inner_fn: "hork__is_converged".to_owned(),
+            inner_sh: inner_sh.to_owned(),
+            inner_argv: Vec::new(),
+        }));
+        let files = plan.shim_files();
+        assert_eq!(
+            files.keys().cloned().collect::<Vec<_>>(),
+            vec!["hork__is_converged".to_owned()],
+            "the exec'd guest (inner check) is the sole shim; the outermost enter form runs in-process"
+        );
+        assert_eq!(
+            files["hork__is_converged"],
+            format!("#!/bin/sh\n{inner_sh}\nhork__is_converged \"$@\"\n"),
+            "shim = shebang + verbatim oracle funcdef + argv-forwarding dispatch"
+        );
+    }
+
+    #[test]
+    fn shim_files_empty_for_ambient_and_carry_no_exec_boundary() {
+        // Ambient (`entry: None`) and CARRY (empty `enter_defs`, `27C` §4(a)) cross no exec boundary —
+        // the inner check runs in-process ⇒ no shim ⇒ `empty-world-byte-identical`.
+        assert!(
+            probe_plan_with_entry(None).shim_files().is_empty(),
+            "an ambient check materializes no shim"
+        );
+        let carry = probe_plan_with_entry(Some(EntryComposed {
+            enter_defs: Vec::new(),
+            inner_fn: "hork__is_converged".to_owned(),
+            inner_sh: "hork__is_converged() { :; }".to_owned(),
+            inner_argv: Vec::new(),
+        }));
+        assert!(
+            carry.shim_files().is_empty(),
+            "a Carry check (empty enter_defs) crosses no exec boundary ⇒ no shim"
+        );
+        assert!(
+            ProbePlan::default().shim_files().is_empty(),
+            "an empty probe materializes no shim"
+        );
+    }
+
+    #[test]
+    fn shim_files_materialize_every_exec_d_guest_of_a_multi_link_chain() {
+        // A chain execs its guests transitively (sudo execs chroot, chroot execs pipx), so every
+        // enter form AFTER the outermost + the inner check needs a shim; keys sorted (`inv-determinism`).
+        let plan = probe_plan_with_entry(Some(EntryComposed {
+            enter_defs: vec![
+                (
+                    "sudo__enter".to_owned(),
+                    "sudo__enter() { sudo -n \"$@\"; }".to_owned(),
+                ),
+                (
+                    "chroot__enter".to_owned(),
+                    "chroot__enter() { chroot / \"$@\"; }".to_owned(),
+                ),
+            ],
+            inner_fn: "pipx__is_converged".to_owned(),
+            inner_sh: "pipx__is_converged() { :; }".to_owned(),
+            inner_argv: Vec::new(),
+        }));
+        assert_eq!(
+            plan.shim_files().keys().cloned().collect::<Vec<_>>(),
+            vec!["chroot__enter".to_owned(), "pipx__is_converged".to_owned(),],
+            "every exec'd guest (inner enter forms + inner check) is materialized; the outermost is not"
         );
     }
 }

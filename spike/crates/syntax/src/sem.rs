@@ -575,6 +575,97 @@ pub fn word_has_leading_tilde(parts: &[WordPart]) -> bool {
     matches!(parts.first(), Some(WordPart::Literal(s)) if s.starts_with('~'))
 }
 
+// ===========================================================================
+// §9 The dorc:sh prefix-mark: three spellings, one recognition (`274` §1; `dorc-sh-trio`)
+// ===========================================================================
+
+/// How a command HEAD word spells its relationship to the `dorc:sh` reentry surface
+/// (`271:rul-dorc-prefix-head-synthesis`; `274` §1). ONE classification distinguishes the three
+/// spellings the design turns on; the [`RoomTag`](dorc_core::RoomTag) it maps to
+/// ([`analysis_room`](EvalerHead::analysis_room)) is what gates whether the payload's derived facts
+/// may license (the invited-rooms type split, `core::room`).
+///
+/// This is a purely LEXICAL split on the head word — `inv-referent-agnostic`: it reads the prefix
+/// bytes, never what the underlying command MEANS. Whether the [`command`](EvalerHead::command) is
+/// actually an eval'er (has a `<cmd>__predict` that argparses a `-c` payload) is the oracle's job,
+/// downstream; this only says which ROOM a payload under this head is analyzed in.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum EvalerHead<'a> {
+    /// Bare `sh` / `bash` / `su` / any non-prefixed head — **THE escape hatch** (the long-owed
+    /// `unsafe`, `276:rul-unsafe-is-bare-sh`). Analysis of a payload here DESCENDS for hints only and
+    /// licenses NOTHING (the [`HintOnly`](dorc_core::HintOnly) room). Carries the head verbatim as
+    /// [`command`](EvalerHead::command).
+    Bare {
+        /// The head command word, unchanged (`sh`).
+        command: &'a str,
+    },
+    /// `dorc:sh` — the **invited room** (`dorc:sh -c '…'`): the author invited full analysis license,
+    /// so a payload fact MAY mint (the [`Invited`](dorc_core::Invited) room). [`command`](EvalerHead::command)
+    /// is the underlying command with the `dorc:` prefix stripped (`dorc:sh` ⇒ `sh`) — that is what the
+    /// probe ships (rewritten to `dorc-sh` via the per-run PATH shim) and what strip erases back to.
+    Invited {
+        /// The underlying command, `dorc:` stripped (`sh`).
+        command: &'a str,
+    },
+    /// `dorc-sh` typed DIRECTLY — the **runtime object** (`274` §1 row 3): the pinned per-run
+    /// evaluator, addressed by construction (multi-nest, `xargs`/`find -exec`). NO analysis license
+    /// (it is not a room the engine reasons in); strip leaves it untouched (documented-dangle). Recognized
+    /// so the engine knows to neither analyze NOR erase it — distinct from an ordinary command.
+    RuntimeObject,
+}
+
+/// The `dorc:` invited-room prefix (`274` §1) — a valid sh word prefix (colon is an ordinary word
+/// char), grammar-valid / world-invalid (a stock shell fails it LOUD at 127, naming the token).
+pub const DORC_PREFIX: &str = "dorc:";
+
+/// The `dorc-sh` runtime shim NAME (`274` §5) — row 3, the pinned evaluator object.
+pub const DORC_SH_RUNTIME: &str = "dorc-sh";
+
+/// Classify a command HEAD word into its [`EvalerHead`] spelling (`274` §1). Pure/total.
+///
+/// * a `dorc:`-prefixed head ⇒ [`Invited`](EvalerHead::Invited), `command` = the tail
+///   (`dorc:sh` ⇒ `sh`; a bare `dorc:` with no tail is degenerate but still invited over the empty
+///   command — the caller walls it downstream);
+/// * exactly `dorc-sh` ⇒ [`RuntimeObject`](EvalerHead::RuntimeObject);
+/// * anything else ⇒ [`Bare`](EvalerHead::Bare), `command` = the head verbatim.
+#[must_use]
+pub fn classify_evaler_head(head: &str) -> EvalerHead<'_> {
+    if let Some(command) = head.strip_prefix(DORC_PREFIX) {
+        return EvalerHead::Invited { command };
+    }
+    if head == DORC_SH_RUNTIME {
+        return EvalerHead::RuntimeObject;
+    }
+    EvalerHead::Bare { command: head }
+}
+
+impl<'a> EvalerHead<'a> {
+    /// The [`RoomTag`](dorc_core::RoomTag) a payload under this head is analyzed in, or [`None`] for
+    /// the [`RuntimeObject`](EvalerHead::RuntimeObject) (which is not analyzed at all). This is the
+    /// bridge into the invited-rooms type split (`core::room`): an [`Invited`](EvalerHead::Invited)
+    /// head's payload facts may license; a [`Bare`](EvalerHead::Bare) head's may only hint.
+    #[must_use]
+    pub fn analysis_room(&self) -> Option<dorc_core::RoomTag> {
+        match self {
+            EvalerHead::Bare { .. } => Some(dorc_core::RoomTag::HintOnly),
+            EvalerHead::Invited { .. } => Some(dorc_core::RoomTag::Invited),
+            EvalerHead::RuntimeObject => None,
+        }
+    }
+
+    /// The underlying command word this head evaluates through (`sh`), or [`None`] for the
+    /// [`RuntimeObject`](EvalerHead::RuntimeObject) (the command IS the shim). For [`Invited`] this is
+    /// the `dorc:`-stripped tail — so the eval'er-oracle lookup keys off the real command, never the
+    /// annotated spelling.
+    #[must_use]
+    pub fn command(&self) -> Option<&'a str> {
+        match self {
+            EvalerHead::Bare { command } | EvalerHead::Invited { command } => Some(command),
+            EvalerHead::RuntimeObject => None,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -942,5 +1033,68 @@ mod tests {
             },
             WordPart::Literal("~".to_owned()),
         ]));
+    }
+
+    // ---- §9 the dorc:sh three-spelling recognition (`274` §1) ------------------
+
+    #[test]
+    fn bare_head_is_the_hint_only_escape_hatch() {
+        // bare `sh` — THE escape hatch (`276:rul-unsafe-is-bare-sh`): hint-only room, licenses nothing.
+        let h = classify_evaler_head("sh");
+        assert_eq!(h, EvalerHead::Bare { command: "sh" });
+        assert_eq!(h.analysis_room(), Some(dorc_core::RoomTag::HintOnly));
+        assert_eq!(h.command(), Some("sh"));
+        // Any other unprefixed command is likewise bare (the eval'er-ness is the oracle's call).
+        assert_eq!(
+            classify_evaler_head("bash"),
+            EvalerHead::Bare { command: "bash" }
+        );
+        assert_eq!(
+            classify_evaler_head("su"),
+            EvalerHead::Bare { command: "su" }
+        );
+    }
+
+    #[test]
+    fn dorc_prefixed_head_is_the_invited_room() {
+        // `dorc:sh` — the invited room: full analysis license; `command` is the `dorc:`-stripped tail
+        // (`sh`), which is what the eval'er-oracle lookup keys on and what the probe/strip target.
+        let h = classify_evaler_head("dorc:sh");
+        assert_eq!(h, EvalerHead::Invited { command: "sh" });
+        assert_eq!(h.analysis_room(), Some(dorc_core::RoomTag::Invited));
+        assert_eq!(h.command(), Some("sh"));
+        // The prefix generalizes over the head (`274` §9 door): `dorc:bash` invites over `bash`.
+        assert_eq!(
+            classify_evaler_head("dorc:bash"),
+            EvalerHead::Invited { command: "bash" }
+        );
+    }
+
+    #[test]
+    fn dorc_sh_typed_directly_is_the_runtime_object() {
+        // `dorc-sh` — row 3, the runtime shim object: NO analysis room, strip leaves it untouched.
+        let h = classify_evaler_head("dorc-sh");
+        assert_eq!(h, EvalerHead::RuntimeObject);
+        assert_eq!(
+            h.analysis_room(),
+            None,
+            "the runtime object is not an analysis room"
+        );
+        assert_eq!(h.command(), None, "the command IS the shim");
+    }
+
+    #[test]
+    fn one_glyph_separates_invited_from_runtime_object() {
+        // The rows-2/3 one-glyph trap (`274` §9): `dorc:sh` (colon) invites analysis; `dorc-sh`
+        // (hyphen) is the pinned runtime object with NO license. The recognition keeps them distinct.
+        assert_ne!(
+            classify_evaler_head("dorc:sh"),
+            classify_evaler_head("dorc-sh")
+        );
+        assert_eq!(
+            classify_evaler_head("dorc:sh").analysis_room(),
+            Some(dorc_core::RoomTag::Invited)
+        );
+        assert_eq!(classify_evaler_head("dorc-sh").analysis_room(), None);
     }
 }

@@ -61,11 +61,34 @@ context-shifting in BOTH lanes (ruled). Book bytes at apply are untouched in eve
 position (the book escalating itself is not Dorc's act). ρ-only wrappers (`env`,
 `nice`) shift no identity or view and sit outside the dial.
 
-The authority rule (`27C:rule-reuse-never-acquire`, ruled): the probe lane exercises
-only authority the *connection* already holds — a root connection performs user-shifts,
-`chroot`, and netns entry with zero new credentials; a non-root connection performs
-none of them. No prompting, no credential handling, no password lanes in the probe
-path. There is **no privilege ordering** (`27C:rule-no-privilege-order`, ruled):
+**`27C:rul-two-axis-escalation-consent` (HUMAN-TYPED 2026-07-17; supersedes this
+section's earlier conflation — the drafting artifact `27Xf:cr-27C-1-authority-
+predicate-contradicts-rule` flagged):** two completely independent axes, never
+collapsed into each other:
+
+1. **Mechanical capability** — can the probe-bootstrap acquire the privilege to
+   do its setup at all (protected channels, perms), or is it in DEGRADED
+   user-only mode, bounded by the ssh-connection user? The test is capability,
+   never identity: a connection performs exactly the shifts it can mechanically
+   effect (root: all of user/chroot/netns; non-root: whatever non-interactive
+   forms already succeed, `sudo -n`-class NOPASSWD included; bare non-root:
+   degraded mode). HOW capability arises is open infrastructure — the
+   connection's own authority today; user-provided creds, a sudoers
+   management-user, or user-dictated/acked negotiation flows as later
+   implementation details (the deferred `27C:open-cell-granted-acquire-ux` cell
+   stands). The probe never SELF-acquires: no mid-run prompting, no credential
+   handling that the user did not explicitly establish and ack in advance.
+   (This axis is `27C:rule-reuse-never-acquire` in its refined form.)
+2. **Consent to apply that capability to ORACLE CODE** — given
+   mechanical-yes, has the admin consented to pointing escalation machinery at
+   fallible human-authored oracles? "Escalation" = ANY permission/access-
+   changing machinery — `sudo`-upgrade and `su -`-sidegrade inclusive.
+   **Defaults to YES** for the spike, via the double-ended ack (the author's
+   per-function amenability mark × the admin default); `--no-probe-escalation`
+   is the explicit OPT-OUT for admins who want to bound the bad-oracle
+   blast-radius.
+
+There is **no privilege ordering** (`27C:rule-no-privilege-order`, ruled):
 "demotion" is not a safety category (peer-auth grants postgres what root-qua-root is
 refused; NFS root-squash makes root read *less*; lateral shifts route through the
 superuser mechanically) — the only implementable predicate is *can the connection do it
@@ -210,6 +233,23 @@ sudo__enter() {                # argv = the site's peeled sudo argv with the com
   answers for entry self-effects in the read lane (sudo: an auth-log line, a timestamp
   refresh — modeled, elide-alongside). A wrapper whose entry cost is a real mutation
   authors no entry form ⇒ its contexts are never entered.
+  **WELDED (`27C:rul-probe-mutation-ownership-split`, HUMAN-TYPED 2026-07-17 —
+  discharges `27Xf:cr-entry-self-effects-carve-is-AI-asserted`; the carve's
+  rationale corrected in the same ruling):** the probe-mutation law allocates by
+  OWNERSHIP, not by effect-class. (1) AUTHORED code — every oracle, stdlib
+  included — sits under the loud, hard, frontloaded no-mutation contract because
+  it is the uncontrolled ocean ("modulo insane-oracles-might-exist"; the
+  horizon/disownership tier): an entry-form's self-effects are the AUTHOR's
+  vouched residue, claimed by the human speech-act of authoring the form,
+  attributed to their line. Sudo's auth-log line lives HERE — not in any engine
+  carve-out. (2) ENGINE-generated commands and constructs are OWNED: free to
+  mutate except that they shouldn't — no hard line, "merely" good software
+  design/UX, judged carefully-and-necessarily against the flag-derived
+  user-story (whom-we're-writing-for changes with the flags in play). The
+  unreliability dimension — cannot-claim-because-do-not-know — evaporates for
+  owned acts, and with it the need for frontloaded hard claims. NEVER justify
+  either tier via "state the user cares about" (struck: referent-agnostic
+  violation + an unwritten user instruction).
 - **Siting is part of the vouch** (`27C:rul-entry-denoted-siting-vouch`, ruled
   2026-07-17): authoring an entry form also vouches that entering via it lands the
   guest in the site's *denoted* context. Policy-matching wrappers (sudo, doas) route
@@ -324,6 +364,14 @@ site only through these:
     read, an opaque call, a clock/RNG touch each DISQUALIFY. Default-disqualify on any
     construct not on the audited pure-construct safe-list; the pass fails safe (a
     missed-safe body loses its elision, never carries a hidden read).
+
+    > **v1 closable-idiom note (BUILT `27O`, 2026-07-17):** as built, the
+    > cmdsub-comparison spelling below (`[ "$(sysctl -n "$1")" = "$2" ]`) is NOT yet
+    > closable — command substitution lifts to `Word::Unmodeled` and disqualifies
+    > (safe direction: walls, never a hidden read). The v1 closable idiom is the
+    > **marked-command rc-partition form** (the tool reads the marked cell; its rc IS
+    > the verdict). Cmdsub-VALUE modeling is the named future safe-list extension
+    > (`27O`); the stdlib teaching template must teach the marked-command form.
 
   (B) *closes* the completeness residue `279f` §3 refused to hand the flag: it removes
   the open-world "and nothing else" by structure rather than accepting it, so the carry
@@ -515,6 +563,11 @@ axis-invariance (A) + engine-verified read-set closure (B); substrate axes only,
 excluded; the old engine-warranted-unflagged carried-by row is RETIRED (it rested on
 tool-semantics the engine may not hold). The conservative-closure pass is the spike's
 obligation to discharge and prove in practice — a correctness surface, not a nicety.
+**DISCHARGED 2026-07-17 (`27O`, lane-fallback-carry):** `oracle::carry` — the (A)
+invariance index (netns-on-net-kernel forbidden, loud) + the (B) default-disqualify
+closure pass (safe-list enumerated in `27O`) + the 13-row §9 battery; VERDICT-fact
+carry only (world-cell VALUE carry rides r26); §4(b) not built (honest walls);
+carried elisions render the four-link attribution chain (Note + why-line).
 · **entry-form siting vouch** (human-acked 2026-07-17;
 `27C:rul-entry-denoted-siting-vouch`, `27Xf:cr-sudo-entry-not-guest-insensitive`
 discharged): authoring an entry form vouches correct siting in the site's denoted
@@ -522,6 +575,19 @@ context — verify (structural insensitivity · tool interrogation · same-head
 tripwire) or decline; discharge is authored body-code, never engine machinery;
 `"$@"` verbatim in command position is the ONLY entry shape (in-guest preamble
 variants PUNTED — complex policy falls to guard/run).
+· **the two-axis consent split** (HUMAN-TYPED 2026-07-17;
+`27C:rul-two-axis-escalation-consent`, §1; discharges
+`27Xf:cr-27C-1-authority-predicate-contradicts-rule`): mechanical capability and
+oracle-escalation consent are orthogonal; capability-not-identity is the test;
+axis-2 defaults to yes via the double-ended ack, `--no-probe-escalation` the
+opt-out.
+· **the probe-mutation ownership split** (WELDED, HUMAN-TYPED 2026-07-17;
+`27C:rul-probe-mutation-ownership-split`, §3; discharges
+`27Xf:cr-entry-self-effects-carve-is-AI-asserted`): the probe-never-mutates law
+allocates by OWNERSHIP — authored/oracle code under the loud frontloaded
+contract (entry self-effects = the author's vouched residue); engine-generated
+constructs OWNED, judgment/UX tier; "state the user cares about" struck as a
+justification.
 · the §3 composition-algebra ruled cells (2026-07-17):
 `27C:rul-top-absorbs-absolute-maps` (⊤ propagates uniformly; no overwrite-rescue —
 machine-state logic never skips the middle) · `27C:rul-dimension-owned-compose-ops`

@@ -156,6 +156,50 @@ const LEGACY_ALLOW_LIST: &[&str] = &[
     "reserved-namespace-squat",
     "missing-dialect-marker",
     "mark-brace-verdict-single-cell",
+    // `262` §2 wire-records-v1-import (270:block-rebuild): the framing deframer's fault +
+    // integrity diagnostics + the at-most deriv-family completeness refusal.
+    "records-glued-line",
+    "records-header-missing",
+    // `27D` E4 (disposition-legacy-deframe-tolerance): the strict-path headerless refusal.
+    "records-headerless-refused",
+    "records-integrity-refused",
+    "records-sentinel-nonce",
+    "records-fact-truncated",
+    "records-torn-line",
+    "records-alien-line",
+    "records-late-line",
+    "deriv-family-incomplete",
+    // `273` lane-wrapper-peel (270:block-context): the wrapper model's two lift/load diagnostics.
+    // `lend-map-unknown-dimension` (Warning, oracle/wrapper.rs derive_lend_map) — a mark token on a
+    // `__lend_map` line that is not a known dimension (the engine-owned closed vocabulary); the line
+    // mints no lend. `wrapper-peel-incoherent` (Error, cli check_wrapper_peel_coherence) — a
+    // wrapper's __predict and __lend_map peel to different tail positions (273 §5,
+    // declarations-genuinely-contradict fail-fast). cli/oracle-edge; PENDING the same typed-spine
+    // migration as the other cli-edge lint codes (tc-footprint-diag).
+    "lend-map-unknown-dimension",
+    "wrapper-peel-incoherent",
+    // `27C` lane-context-entry (270:block-context): the entry/dial/vouch diagnostics.
+    // `wrapper-entry-incoherent` (Error, cli) — a wrapper's __enter and __lend_map disagree on argv
+    // flow (27C:rul-fold-entry-coherence-failfast, declarations-genuinely-contradict fail-fast).
+    // `tolerates-unknown-dimension` (Warning, oracle/entry.rs lift_tolerance) — an unknown dimension
+    // token on a `: tolerates:` vouch. `escalation-policy` (Note, cli) — the authority-disclosure
+    // consent-legibility line. `tolerates-over-identity-dependence` (Warning) + `heavy-context-no-
+    // tolerance` (Note) — the §6 corroboration lints (recognize-never-license). cli/oracle-edge;
+    // PENDING the same typed-spine migration as the other cli-edge lint codes (tc-footprint-diag).
+    // `wrapped-site-adoption-hint` (Note, cli, `27N`) — a wrapped BOOK site degraded on a missing
+    // `tolerates:` vouch; the one-line adoption hint (recognize-never-license, `27C` §2).
+    // `carry-netns-on-net-kernel-forbidden` (Note, oracle, `27O`) — the pure-predicate-carry netns
+    // caveat: a `net-kernel` store claiming `invariant:netns` is a contradiction (`27C` §4(a)).
+    // `carried-across-substrate-axis` (Note, cli, `27O`) — the pure-predicate-carry attribution
+    // chain rendered at every carried elision (`27C` §9: cross-context elisions render from day one).
+    "wrapper-entry-incoherent",
+    "tolerates-unknown-dimension",
+    "escalation-policy",
+    "tolerates-over-identity-dependence",
+    "heavy-context-no-tolerance",
+    "wrapped-site-adoption-hint",
+    "carry-netns-on-net-kernel-forbidden",
+    "carried-across-substrate-axis",
 ];
 
 /// The SPANLESS-MINT allow-list (arch-3-residual-2): EXACTLY the codes permitted to construct a

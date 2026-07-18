@@ -1,0 +1,21 @@
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc — the record is the out-of-band lane).
+
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=4767cb8bbf05f415 sites=0 @@dorc@@\n'
+# site:0 skip-unresolvable
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+#!/bin/sh
+# wrapper-modeled-peel-coheres-walls (273; 27J §2.1 zero-new-trust): a COHERENT sudo wrapper oracle
+# is loaded (predict env-peels, lend_map answers user/fs-view; both peel to the same tail). It
+# lifts clean and coheres (no fail-fast). But the wrapped book site STILL walls — this lane MODELS
+# the peel, it does not yet consume it in the pipeline (the entry/dial/vouch machinery is the next
+# lane). Byte-identical to wrapper-unmodeled-peel-walls: loading a valid wrapper oracle mints no
+# elision (zero new trust surface).
+sudo hork setup

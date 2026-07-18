@@ -31,18 +31,48 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use crate::{EntityRef, KindId, ProviderId, SelectorId};
 
-/// The world-qualifier slot of a coordinate (`277` §1). At v1 the sole value is the host-default
+/// A **wrapped-context key** (`27C` §3; `plans/27C:mech-context-entry`) — the opaque, order-
+/// sensitive identity of a wrapper-denoted world. Minted by the wrapper machinery
+/// ([`dorc_oracle::entry::compose_context_key`]) as an interned canonical string built from the
+/// composed per-dimension shifts of a peel chain, then handed here as a bare [`Symbol`]. The engine
+/// NEVER decodes it (`inv-referent-agnostic`): two `ContextKey`s compare equal iff their canonical
+/// strings interned to the same symbol — same wrapper-denoted world — and unequal otherwise. That
+/// equality is the whole mechanism the fact plane needs: two same-cell facts in DIFFERENT contexts
+/// carry different keys ⇒ distinct [`FactKey`]s ⇒ they cannot collide, and [`compare`] answers
+/// [`Relation::Unknown`] across the context gap ⇒ transport-by-collision is unrepresentable.
+///
+/// `Copy`/`Ord`/`Hash` (a `Symbol` newtype) so [`Context`], [`Coord`], and [`crate::FactKey`] stay
+/// `Copy` — the field is additive, never a representation change (the load-bearing property that
+/// keeps the ~56 fact-construction sites and the `BTreeSet<FactKey>` host model working unchanged).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct ContextKey(pub crate::Symbol);
+
+/// The world-qualifier slot of a coordinate (`277` §1). At v1 the default value is the host-default
 /// world; its NAME is deliberately unminted (`277` §1 — no hostname pre-design, `~SUSPECT` it ends
-/// up `<hostname>`-root-ish when the multi-host round lands). Populated by NOTHING yet — the
-/// wrapper machinery (`273`/block-context) fills it. An opaque default variant reserves the
-/// representation room (`277` §5 `seam-context-qualifier-slot`, né `24S:A7`(i)); the relational
+/// up `<hostname>`-root-ish when the multi-host round lands). The wrapper machinery
+/// (`273`/`27C`/block-context) fills the [`Wrapped`](Context::Wrapped) variant; the relational
 /// [`compare`] consumes it, so the fork between a space-tag and a qualifier field already dissolved
 /// (`271:rul-seam-context-slot-and-relational-chokepoint`).
+///
+/// # The room-tag seat (`27L` `tc-room-tag-on-fact-vs-factkey`, owned here by ruling)
+///
+/// This is the FIRST runtime qualifier the fact plane keys on. The payload lane's room tag (`274`
+/// §1 — which analysis room a payload-derived fact was born in) is the SECOND, and joins by the
+/// IDENTICAL additive-`Copy`-field-on-[`FactKey`] pattern this variant proves out: an additive
+/// `room: RoomKey` field, default = the unqualified value, rung-0 byte-stable because every
+/// pre-existing fact takes the default. The seat is that demonstrated pattern; building the room
+/// field is the payload-reentry lane's, not this one's (kept a separate `tc-*`, not resolved here).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 pub enum Context {
-    /// The host-default world — the only context at v1 (name unminted).
+    /// The host-default world — the ambient context every unwrapped fact is born in (the default).
     #[default]
     HostDefault,
+    /// A wrapper-denoted world — a fact measured (or to be measured) inside a wrapper chain's
+    /// entered context (`27C` §3 "the fact is born in the site's context"). The [`ContextKey`] is
+    /// the order-sensitive composed-shift identity; a `HostDefault` fact and a `Wrapped` fact of
+    /// the same cell are DISTINCT (`compare` answers `Unknown` across the gap — no transport, and
+    /// they never collide in a fact set).
+    Wrapped(ContextKey),
 }
 
 /// A whole coordinate as the comparison chokepoint sees it (`277` §1): the flat three-place
@@ -80,7 +110,10 @@ impl Coord {
             kind: fact.kind,
             entity: fact.entity,
             selector: Some(fact.selector),
-            context: Context::HostDefault,
+            // The fact's OWN context (`27C` §3): a wrapped fact carries its wrapper-denoted world
+            // into `compare`, which answers `Unknown` across a context gap — so a wrapped fact
+            // neither transports to nor spares an ambient one (`never-derive-separation`).
+            context: fact.context,
         }
     }
 
@@ -639,6 +672,52 @@ mod tests {
     }
 
     // ── §6 fences pinned at the chokepoint ──────────────────────────────────────────────────
+
+    #[test]
+    fn compare_cross_context_is_unknown_never_transports_never_spares() {
+        // `27C` §3 (the non-negotiable no-accidental-transport requirement): a wrapped-context
+        // coordinate and an ambient (or differently-wrapped) coordinate of the SAME (kind, entity,
+        // selector) answer `Unknown` — the safe bottom for BOTH consumers. So a fact born in a
+        // wrapper-denoted world neither TRANSPORTS to the ambient world (transport needs
+        // `Overlaps`+`selector_identifies`) nor SPARES a disturbance there (sparing needs
+        // `ProvablyDisjoint`). Transport-by-collision is unrepresentable: the context axis is
+        // checked FIRST in `compare`, before the ProvablyDisjoint short-circuits can fire.
+        let mut i = Interner::default();
+        let k = KindId(i.intern("com.a.K"));
+        let e = EntityRef::Operand(OpaqueToken(i.intern("x")));
+        let s = sel(&mut i, "installed");
+        let ambient = coord(k, e, Some(s));
+        let mut wrapped = ambient;
+        wrapped.context = Context::Wrapped(ContextKey(i.intern("user=root")));
+        // Identical cell, different world ⇒ Unknown (not Overlaps, not ProvablyDisjoint).
+        assert_eq!(
+            compare(
+                ambient,
+                wrapped,
+                EntityResolution::Canonical(e),
+                EntityResolution::Canonical(e),
+                &Dialect::empty(),
+                None,
+            ),
+            Relation::Unknown,
+            "same cell, different context ⇒ Unknown (no transport, no sparing)"
+        );
+        // Two DIFFERENT wrapped worlds are also Unknown to each other (never-derive-separation:
+        // distinct keys block transport but never manufacture disjointness).
+        let mut other = ambient;
+        other.context = Context::Wrapped(ContextKey(i.intern("fs-view=/mnt/target")));
+        assert_eq!(
+            compare(
+                wrapped,
+                other,
+                EntityResolution::Canonical(e),
+                EntityResolution::Canonical(e),
+                &Dialect::empty(),
+                None,
+            ),
+            Relation::Unknown
+        );
+    }
 
     #[test]
     fn compare_cross_kind_has_no_same_generator() {

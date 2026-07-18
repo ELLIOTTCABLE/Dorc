@@ -61,8 +61,8 @@ pub mod predict;
 pub mod touches;
 
 /// The guard-**verdict** function lift (rul-role-split / rul24-vouch-is-verdict-authoring, 24A
-/// §1c / 24D §3): the `<provider>.is_converged()` / `.is_diverged()` role-siblings. Authoring one
-/// IS the vouch; this module decides STATICALLY whether a site's argv reaches a vouching path (the
+/// §1c / 24D §3): the `<provider>.is_converged()` role member. Authoring it IS the vouch; this
+/// module decides STATICALLY whether a site's argv reaches a vouching path (the
 /// judgment-tier license source), and the guard emitter ships the same body strip-only. Reuses the
 /// `predict` dialect.
 pub mod verdict;
@@ -84,6 +84,44 @@ pub mod resolve;
 /// Reuses the `predict` dialect (with the pipelines-may-carry-a-mark carve-out).
 pub mod reaches;
 
+/// The peeling-wrapper model (`273`; `271:rul-predict-absorbs-wrapper-modeling` + `rul-lend-map`
+/// + `rul-env-claim-inversion`): peel DETECTION inside `<provider>__predict` (command-position
+/// `"$@"` ⇒ peeling wrapper by tautology), the ρ-claim ladder, `<provider>__lend_map` with the
+/// enumerate-every-dimension law, the wrapper/inner context split, and dual-peel coherence
+/// fail-fast. MODELS only — mints no license (the entry/dial/vouch machinery is the next lane);
+/// nothing here is consumed by `analysis`/`plan` yet, so the wrapper-free corpus stays byte-stable.
+pub mod wrapper;
+
+/// Context ENTRY (`27C` — THE primary lane): the `cmd__enter()` member (the one licensed seat for
+/// real context entry), the two-axis consent decision (mechanical capability × the escalation dial ×
+/// the `tolerates:` vouch), the composition algebra across a peel chain (pointwise fold, ⊤
+/// propagates, order-sensitive), the degrade ladder, and the entry-form author's vouched
+/// self-effects (`27C:rul-probe-mutation-ownership-split`). Builds on [`wrapper`]'s peel model.
+pub mod entry;
+
+/// The pure-predicate carry (`27C` §4(a); steering `pure-predicate-carry`): the ONLY unflagged
+/// cross-substrate-boundary carry. The (A) `invariant:<axis>` index lifted from
+/// `state_stored_only_in()` (with the netns caveat), the (B) read-set-closure sh-taint pass over a
+/// verdict body (default-disqualify, an audited pure-construct safe-list), and the combined carry
+/// decision (substrate axes only; user excluded). Reads marks + structure only
+/// (`inv-referent-agnostic`); fails safe (a missed-safe body loses an elision, never carries a read).
+pub mod carry;
+
+/// The eval'er surface (`274` · `271:rul-evaler-merge-no-structure-member`): reentry DETECTION
+/// inside `<provider>__predict` (a body that delegates to the `dorc:sh`/`dorc-sh` reentry primitive
+/// IS an eval'er — no separate structure member), the payload shape (which-arg-is-code / stdin /
+/// file), and the reentry ρ-claim. MODELS only — mints no license; nothing here is consumed by
+/// `analysis`/`plan` yet, so the eval'er-free corpus stays byte-stable.
+pub mod evaler;
+
+/// Payload decomposition (`24T` §4/§5 · `274` · `27J` §2.3): the accept/refuse basic-forms table
+/// (`classify_payload_form` — single-quoted/const literal accepted, interpolated refused to ⊤), the
+/// nested parse of an accepted literal as book-code (site-local degrade on unparseable /
+/// nested-annotation), and the whole-line fold (`fold_line` — elide iff every leaf elides, else
+/// guard-conjunction, else run). MODELS only; the per-leaf disposition is supplied (plan-wiring is
+/// the follow-on) and no payload bytes are re-serialized (the synthesized-render door stays open).
+pub mod payload;
+
 /// The munge-reservation lint (24Kc `fix-munge-reservation`; 24M `ca-munge-charclass`): the
 /// reserved `<munged>__<role>` sh-function namespace's charclass refusal, non-injective-munge
 /// collision refusal, and book-squat disclosure. A standing mitigation for the coincidental
@@ -93,6 +131,12 @@ pub mod reserved;
 /// The `# dorc-lang/v0.1` marker gate (`marker-gates-syntax-only`): dialect constructs (binds,
 /// trailing marks) in an UNMARKED file are a loud error; bare `__role` floor bodies work markerless.
 pub mod marker;
+
+/// The whole-file off-ramp cleaner (`dorc strip` / `dorc-sh`): parser-backed erasure of every
+/// dialect construct, yielding runnable stock sh (`strip-is-pure-erasure`, `274` §13).
+pub mod strip;
+
+pub use strip::strip_file;
 
 /// How a `(provider, verb)` reads/writes a fact's OPAQUE boolean — the lifted
 /// representation is [`ValueClaim`] (jc-polarity-vs-rc, FINAL — human 2026-07-02).
