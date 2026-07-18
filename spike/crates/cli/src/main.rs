@@ -249,6 +249,12 @@ struct Args {
     /// probe in reality (`hostsim`-injected in DST). `--probe-capability=root|nopasswd|degraded`
     /// stands in for that probe in the spike; defaults to `root`. The probe NEVER self-acquires.
     capability: dorc_core::Capability,
+    /// `--shim-dir=DIR` (`274` §5 / `27L` task-14 — the shim-materialization edge): DIR into which
+    /// the entry-composed probe's per-run PATH shim files are written (the session-establishment I/O
+    /// that lets a `sudo -n <inner-check>` resolve its guest across the exec boundary). A pure
+    /// side-effect at the cli edge; stdout is unchanged. `None` ⇒ no materialization (a wrapper-free
+    /// or already-answered run writes nothing — `empty-world-byte-identical`).
+    shim_dir: Option<String>,
 }
 
 /// Minimal hand-rolled parsing (no `clap` dep yet): resolve the whole invocation. `-h`/`--help`
@@ -295,6 +301,7 @@ fn parse_args() -> Result<Invocation, String> {
     let mut why_address: Option<String> = None;
     let mut dial = dorc_core::EscalationDial::VouchedOnly;
     let mut capability = dorc_core::Capability::Root;
+    let mut shim_dir: Option<String> = None;
     let mut it = raw.into_iter().peekable();
 
     // A leading bare word (no `-` prefix) selects the mode. A near-miss (`pln`, `aply`) is a
@@ -374,6 +381,10 @@ fn parse_args() -> Result<Invocation, String> {
                     ));
                 }
             };
+        } else if let Some(p) = arg.strip_prefix("--shim-dir=") {
+            shim_dir = Some(p.to_string());
+        } else if arg == "--shim-dir" {
+            shim_dir = Some(it.next().ok_or("--shim-dir needs a directory")?);
         } else if arg.starts_with('-') {
             // An unrecognized FLAG: suggest the nearest known one (did-you-mean) rather than a bare
             // "unexpected argument" (the recon's missing-suggestion hazard).
@@ -388,6 +399,7 @@ fn parse_args() -> Result<Invocation, String> {
                 "--probe-escalation",
                 "--escalate-any-probe",
                 "--probe-capability",
+                "--shim-dir",
                 "--help",
                 "--version",
             ];
@@ -419,6 +431,7 @@ fn parse_args() -> Result<Invocation, String> {
         why_address,
         dial,
         capability,
+        shim_dir,
     }))
 }
 
@@ -518,6 +531,31 @@ fn resolve_oracle_paths(oracles: &[String], oracle_dirs: &[String]) -> Result<Ve
         paths.extend(found);
     }
     Ok(paths)
+}
+
+/// Materialize the per-run PATH shim files into `dir` (`274` §5 / `27L` task-14). `files` is the
+/// deterministic kernel product ([`dorc_plan::ProbePlan::shim_files`]); this is the I/O half at the
+/// cli edge (`io-at-edges-only`): create the dir, write each `(name, content)`, mark it executable so
+/// a `sudo -n <inner-check>` can exec the guest across the wrapper boundary. On unix the executable
+/// bit is set here; on other platforms (msys) the exec permission is supplied by the session harness
+/// (`e2e/run.sh` `chmod +x`), so a plain write suffices and this stays cross-platform.
+fn materialize_shim_dir(dir: &str, files: &BTreeMap<String, String>) -> Result<(), String> {
+    if files.is_empty() {
+        return Ok(()); // wrapper-free / already-answered run — nothing to materialize.
+    }
+    std::fs::create_dir_all(dir).map_err(|e| format!("cannot create shim dir {dir:?}: {e}"))?;
+    for (name, content) in files {
+        let path = std::path::Path::new(dir).join(name);
+        std::fs::write(&path, content)
+            .map_err(|e| format!("cannot write shim {}: {e}", path.display()))?;
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt as _;
+            std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o755))
+                .map_err(|e| format!("cannot mark shim {} executable: {e}", path.display()))?;
+        }
+    }
+    Ok(())
 }
 
 #[expect(
@@ -784,6 +822,12 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
         ship_auto,
         |node| vouches.contains_key(&node),
     );
+
+    // Shim-materialization edge (`274` §5 / `27L` task-14): `--shim-dir` writes the entry-composed
+    // probe's per-run PATH shim files (a pure side-effect at the cli edge; stdout unchanged).
+    if let Some(dir) = &args.shim_dir {
+        materialize_shim_dir(dir, &probe.shim_files())?;
+    }
 
     // The DERIVATION-probe (24E §2 corr-§2 — the SECOND probe-shipping path, a NEW pipeline
     // stage): under `--trust-footprints`, a wall-candidate whose `touches()` body ESCALATED (it
