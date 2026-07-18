@@ -579,9 +579,12 @@ sh e2e/run.sh        # the e2e corpus (case-count drifts — count the dirs): da
 ## Boundaries
 
 - **Never edit** the worktree-root human docs: `README.md`, `DESIGN.md`,
-  `IMPLEMENTATION.md`, `USER_STORY.md`, `TODO.md`, `AGENTS.md`, root `CLAUDE.md`.
-  `KNOBS.md` is conductor-editable only with edits left UNCOMMITTED for human ack.
-  Surface problems upward instead.
+  `IMPLEMENTATION.md`, `TODO.md`, `AGENTS.md`, root `CLAUDE.md` — surface problems
+  upward instead. The LLM-maintained root docs (`USER_STORY.md`, `KNOBS.md`,
+  `ANALYZER-NEEDS.md`, `AID-NEEDS.md`, `TODO-ADDTL.md`) are edit-and-commit for
+  in-place human review (the human deletes what they disagree with); keep them
+  living, task-focused, and free of session chronology ("updated by X during Y"
+  never appears in them — conductor-tier edits only, not casual subagent edits).
 - **Never read** `Research/notes/quarantine-DO-NOT-READ/` (including spike2 code)
   or `Research/corpora/` unless the orchestrator explicitly hands you a pointer.
 - Spike design notes (what strained, where, confidence-marked) go in
