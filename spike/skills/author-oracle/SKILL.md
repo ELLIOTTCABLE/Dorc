@@ -9,6 +9,29 @@ You are about to write an oracle. This skill is imperative: follow its steps in
 order, honor its NEVERs absolutely, and route every uncertainty to the mechanisms
 it names (declining, flagging upward) rather than to guessing.
 
+## The shape of this task - read this first, and hold it
+
+You are not performing translation. The most likely way for you to fail here is
+to treat oracle-writing as a mechanical mapping - "thing I observed about the
+tool" to "line of oracle code", one to one - which produces something that LOOKS
+like diligent coverage and is wrong in the only way that matters. Nothing about
+this task is 1:1.
+
+An oracle is a recording of JUDGMENTS: your considered positions on how this
+tool participates in the ops-world. What should "already done" mean for this
+verb, on a machine you will never see? Which invocation-shapes deserve an answer
+at all? What does a yes tolerate skipping? Which looks-done states are lies? The
+shell file is merely the notation those judgments are recorded in - executable
+so machines can act on them, readable so humans can audit and second-guess them.
+The judgments are the artifact.
+
+Operative consequences, for the whole task: every arm you write is a decision,
+and a decision requires a rationale you can state - if you cannot state the
+rationale, you have not made the decision, and the arm must decline instead.
+Expect soft edges and weighing, not derivation; expect the research below to
+change your mind; expect several of your most valuable lines to be deliberate
+refusals to answer.
+
 ## What you are building, from zero
 
 Dorc is a static-analysis orchestrator for POSIX-ish shell. An admin hands it a
@@ -154,13 +177,27 @@ authored `eval`, writing `test -a`/`-o`, bare globs. `local x; x=$(cmd)` split
 onto two statements where the status matters. `"${1-}"`-style defaults for
 possibly-absent positionals. `--` before operands. `command -v`, never `which`.
 Pipefail on durable surfaces only via the self-gating
-`(set -o pipefail 2>/dev/null) && set -o pipefail`. 3-space indentation.
+`(set -o pipefail 2>/dev/null) && set -o pipefail`.
 
 ## Step 3 - author, in the contract's growth order
 
-Write `cmd__is_converged()` first; most oracles rightly stop there. Add other
-members only when the task or the plan's hints justify them, re-reading the
-oracle-contract's per-member section (5a-5i) immediately before authoring each.
+Write `cmd__is_converged()`, then STOP. Do not author further members
+speculatively - not because they are forbidden, but because you lack the
+engine's knowledge of what is actually missing. The workflow that replaces
+speculation: land the verdict member; then, if a runnable Dorc is available
+(build with `mise exec -- cargo build --workspace` from `spike/`; invocation
+details in the cli crate's `CLAUDE.md` and `spike/e2e/run.sh`), run a plan over
+the motivating book and READ IT. The plan's reason strings and hints name what
+is limiting it - which sites stayed unmodeled, which wall degrades the tail,
+what one description would recover - with topology-knowledge you do not have.
+Author a further member only against a named need: a plan reason, a hint, or an
+explicit task instruction; and re-read the oracle-contract's per-member section
+(5a-5i) immediately before authoring each. Two riders: before any plan run,
+re-verify your bodies' inertness (step 4, item 3) - a plan run EXECUTES probe
+bodies, and the read-only promise it keeps rests on the code you just wrote;
+and if no runnable Dorc is available, stop at the verdict member and record
+candidate next members in your report instead of authoring them.
+
 The tripwire rules, restated dense - violating any of these is a broken
 artifact, not a style issue:
 
@@ -178,7 +215,7 @@ artifact, not a style issue:
   tool under description produces the status directly, and full-read pipe forms
   (`grep x >/dev/null`) over early-exit `-q`.
 - PREFER THE MARKED-COMMAND FORM: the tool reads the state and its exit status
-  IS your answer (`kp check "$1" "$2"   : sm.dorc.KernelParam:"$1"`). Avoid
+  IS your answer (`kp check "$1" "$2" : sm.dorc.KernelParam:"$1"`). Avoid
   capturing output into a variable and string-comparing - that shape is opaque
   to downstream machinery and loses value.
 - A YES IS A JUDGMENT. Exit 0 means "not running this invocation is acceptable,
@@ -208,8 +245,14 @@ artifact, not a style issue:
 
 Style: the file must be excellent PLAIN SHELL first (it strips to a defensive
 library; that off-ramp is a core product promise). Header comment: which tool,
-which verbs covered, which deliberately declined and why, judgment rationale.
-Body comments only for the why of a subtle judgment; no narration.
+which verbs covered, which deliberately declined and why. Then comment the
+JUDGMENTS generously, in place: an arm's reason for answering, a decline's
+reason for declining, a return-0 path's tolerance rationale - elaborated enough
+that the human reviewing you, and the stranger deciding whether to install the
+file, can second-guess the decision without redoing your research. This is not
+comment-noise: an oracle is decisions falling out of rationale, and the
+rationale is part of the artifact. What stays banned is mechanical narration -
+comments restating what self-evident shell does.
 
 ## Step 4 - verify before you call it done
 
