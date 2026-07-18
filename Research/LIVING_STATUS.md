@@ -46,6 +46,14 @@ r25 field-trial revival (`270` §5; + `26B:ask-trial-counts-capture-walls`). **l
 lane-integration section; landing note `notes/27N`; lineage tip at close
 `96917b2` (conductor-verified: four gates · 863 unit · 88/88 foreground e2e ·
 84 pre-existing cases byte-stable).
+**Human-facing docs tree minted (2026-07-18):** `spike/docs/` — simple concept-first
+docs for outsiders (admin pair + an 11-page oracle-author path +
+`reference/oracle-contract.md`), synthesized from the root docs +
+`271`/`276`/`277`/`278`/`plans/27C`/`27Q` + as-built fixtures; style/maintenance law
+in `spike/docs/CLAUDE.md` (corpus-slugs ride `<!-- quoted -->` section footers — grep
+those on design moves to find affected sections). Direct input for the block-stdlib
+conductor's teaching templates.
+
 `270:block-rebuild` is **CLOSED** (2026-07-17, one session: eight dispatches
 landed + both bless checkpoints stamped; ledger = **`notes/27D`** including its
 BLOCK CLOSE section + forward seam-list; builder notes `27E`–`27I`). The corpus is
