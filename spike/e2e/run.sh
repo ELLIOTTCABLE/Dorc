@@ -447,8 +447,18 @@ EOF
 # Authoring those shims is explicitly out of D3a scope; the opt-out records which cases
 # need them rather than silently re-blessing fixtures to match all-exit-0 mock output.
 probe_exec_check() {
-  _art=$1; _case=$2; _dir=$3
+  _art=$1; _case=$2; _dir=$3; _shim=$4
   scan_redirect_safety probe "$_art" "$_case" || return 1
+  _mocks=$(CDPATH= cd -- "${_dir}mocks" && pwd)
+  # Shim-materialization last mile (`274` §5 / `27L` task-14): an entry-composed probe execs its inner
+  # check across the wrapper boundary (a shell function does not survive exec); $_shim carries those
+  # checks as executables. MOCKS-FIRST (mocked tools keep winning; the shim adds only the disjoint
+  # oracle-check names); `chmod +x` ensures the bit under msys. Empty ⇒ PATH unchanged.
+  _probe_path="$_mocks"
+  if [ -n "$_shim" ] && [ -d "$_shim" ] && [ -n "$(ls -A "$_shim" 2>/dev/null)" ]; then
+    chmod +x "$_shim"/* 2>/dev/null || true
+    _probe_path="$_mocks:$_shim"
+  fi
   # The resolvable site-keys the probe will self-report (one `printf 'site <key> …` per
   # site). A key is `N` or — for an in-loop Members member (task-L2 item-4) — `N.M`, so the
   # pattern accepts a dot; the SET compare below uses a lexical sort (a `.M` key is not a
@@ -456,13 +466,12 @@ probe_exec_check() {
   _emit_ids=$(printf '%s\n' "$_art" | sed -n "s/.*printf '$RECORDS_NONCE site \\([0-9][0-9.]*\\) effect=.*/\\1/p" | LC_ALL=C sort)
   _log=$(mktemp)
   _sand=$(mktemp -d)
-  _mocks=$(CDPATH= cd -- "${_dir}mocks" && pwd)
-  # Execute the probe (sandbox cwd + mocks PATH + DORC_LOG). Its stdout is the records;
+  # Execute the probe (sandbox cwd + mocks[+shim] PATH + DORC_LOG). Its stdout is the records;
   # its own stderr/the shim log are not asserted here (the probe is read-only — we assert
   # the records it returns, not what it touched, beyond the no-127 vouch check below).
   # DETERMINISM RAIL (slice-2, 221 dc-1): same fixed-env discipline as exec_check — `env -i`
   # + `umask 022` so the probe's records cannot drift on an ambient locale/TZ/umask.
-  _recs=$( cd -- "$_sand" && umask 022 && env -i PATH="$_mocks" DORC_LOG="$_log" LC_ALL=C TZ=UTC "$checker_abs" 2>/dev/null <<EOF
+  _recs=$( cd -- "$_sand" && umask 022 && env -i PATH="$_probe_path" DORC_LOG="$_log" LC_ALL=C TZ=UTC "$checker_abs" 2>/dev/null <<EOF
 $_art
 EOF
   )
@@ -1121,7 +1130,11 @@ for dir in "$here"/cases/*/; do
   # was declared — the fast-fail stopped firing) fails just like a nonzero-when-0-expected.
   dorc_rc=0
   err_file=$(mktemp)
-  raw=$("$dorc" --book="${dir}book.sh" "$@" < "${dir}probe-results.txt" 2>"$err_file") || dorc_rc=$?
+  # Per-case per-run PATH shim dir (`274` §5): `--shim-dir` makes the round-trip ALSO write the
+  # entry-composed probe's inner-check executables here (pure side effect; empty for a wrapper-free
+  # case; probe_exec_check adds it to PATH; cleaned up at case end).
+  _shimdir=$(mktemp -d)
+  raw=$("$dorc" --shim-dir="$_shimdir" --book="${dir}book.sh" "$@" < "${dir}probe-results.txt" 2>"$err_file") || dorc_rc=$?
   got=$(printf '%s\n' "$raw" | sed 's/\r$//')
   if [ "$dorc_rc" -ne "$_dorc_exit" ] || [ -z "$got" ]; then
     echo "FAIL  $name  [dorc exited rc=$dorc_rc (expected $_dorc_exit) / produced no output — a dead engine, or a wrong exit-code contract, is never green]"
@@ -1176,7 +1189,7 @@ for dir in "$here"/cases/*/; do
   # never silently re-blesses fixtures to match all-exit-0 mock output).
   if [ "$case_ok" -eq 1 ] && [ -d "${dir}mocks" ]; then
     exec_check apply "$apply_art" "$name" "$dir" || case_ok=0
-    probe_exec_check "$probe_art" "$name" "$dir" || case_ok=0
+    probe_exec_check "$probe_art" "$name" "$dir" "$_shimdir" || case_ok=0
     # gate-5 (cm-2 argv-echo differential): cross-check the engine's per-site resolved
     # argv against the bare book's executed argvs under dash. Conservative, one-directional
     # (engine-resolved-and-shimmed ⊆ logged). Pass the space-delimited shim set + the
@@ -1268,6 +1281,7 @@ for dir in "$here"/cases/*/; do
     fails=$((fails + 1))
   fi
   rm -f "$err_file"
+  rm -rf "$_shimdir"
 done
 
 echo "---"
