@@ -159,12 +159,19 @@ Before writing sh, load your rails, in parallel with this skill:
 
 - If the environment offers shell-authorship skills (anything shaped like
   "shell-scripting", "POSIX", "shellcheck"), load them now alongside this one.
-- The canonical references - fetch/search them as needed while writing: the
-  ShellCheck wiki (per-SC-code pages), Rich Felker's sh tricks
-  (etalabs.net/sh_tricks.html), David Wheeler's filenames-in-shell essay,
-  the autoconf manual's Portable Shell chapter, the pure-sh-bible,
-  shellhaters.org (POSIX spec map), Greg's wiki (bash-first: filter its advice
-  through the dialect before importing it).
+- The canonical references - fetch/search them as needed while writing (URLs
+  verified resolving 2026-07-18):
+  - the ShellCheck wiki: https://www.shellcheck.net/wiki/ (per-code pages at
+    `https://www.shellcheck.net/wiki/SC<code>`);
+  - Rich Felker's sh tricks: https://www.etalabs.net/sh_tricks.html
+  - David Wheeler's filenames-in-shell essay:
+    https://dwheeler.com/essays/filenames-in-shell.html
+  - the autoconf manual's Portable Shell chapter:
+    https://www.gnu.org/software/autoconf/manual/autoconf-2.68/html_node/Portable-Shell.html
+  - the pure-sh-bible: https://github.com/dylanaraps/pure-sh-bible
+  - shellhaters.org (POSIX spec map): http://shellhaters.org/
+  - Greg's wiki (bash-first - filter its advice through the dialect before
+    importing it): https://mywiki.wooledge.org/
 
 The dialect, restated imperative (full rationale in `10-the-shell-dialect.md`):
 POSIX plus `local`, nothing else. A stripped oracle must parse and run

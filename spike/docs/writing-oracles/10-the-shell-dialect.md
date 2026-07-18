@@ -126,18 +126,23 @@ None of this is Dorc-specific, and that is the point: an oracle is just a very
 well-behaved shell library. The canonical deeper sources, in rough order of
 usefulness:
 
-- the ShellCheck wiki - per-finding pages; read them, do not just silence
-  codes;
-- Rich Felker's "sh tricks" page - the classic on doing portable shell
-  correctly;
-- David Wheeler's essay on filenames in shell - the full horror and the full
-  fix;
-- the autoconf manual's "Portable Shell" chapter - decades of cross-platform
-  scar tissue;
-- the pure-sh-bible - a catalog of no-external-command idioms;
-- shellhaters.org - a navigable map of the actual POSIX spec;
-- and Greg's wiki - excellent, but bash-first; filter its advice through the
-  dialect before importing it.
+- [the ShellCheck wiki](https://www.shellcheck.net/wiki/) - per-finding pages
+  (`https://www.shellcheck.net/wiki/SC2086` and friends); read them, do not
+  just silence codes;
+- [Rich Felker's "sh tricks" page](https://www.etalabs.net/sh_tricks.html) -
+  the classic on doing portable shell correctly;
+- [David Wheeler's essay on filenames in
+  shell](https://dwheeler.com/essays/filenames-in-shell.html) - the full
+  horror and the full fix;
+- [the autoconf manual's "Portable Shell"
+  chapter](https://www.gnu.org/software/autoconf/manual/autoconf-2.68/html_node/Portable-Shell.html)
+  - decades of cross-platform scar tissue;
+- [the pure-sh-bible](https://github.com/dylanaraps/pure-sh-bible) - a catalog
+  of no-external-command idioms;
+- [shellhaters.org](http://shellhaters.org/) - a navigable map of the actual
+  POSIX spec;
+- and [Greg's wiki](https://mywiki.wooledge.org/) - excellent, but bash-first;
+  filter its advice through the dialect before importing it.
 
 <!-- quoted: 276 rul-base-dialect-ruling-list, rul-spec-two-binary-floor,
      rul-pipefail-four-lanes; 278 section 1; spike/CLAUDE.md
