@@ -56,6 +56,19 @@ conductor's teaching templates. Companion (2026-07-18): `spike/skills/author-ora
 — the agentic oracle-authoring skill (mandatory-reading order -> tool-research
 protocol -> tripwire reiteration -> verification gates; corpus seeds fenced in
 their own section).
+**`dorc lint` sketch LANDED (2026-07-18, side-lane):** plan `notes/27R` + prior-art
+`27Ra` (conductor, branch `ai/r27-lint`) · as-built ledger `notes/27S` (builder,
+branch `ai/r27-lint-build`, tip `245afe0` — fold-ready, contains the conductor
+branch). The oracle-author doctor/lint grab-bag: `lint` cli mode + `crates/lint`
+dumb source registry + kernel-pure strip line-map + shellcheck/checkbashisms
+adapters behind the runner DI seam + `dorc-lint-format/1` JSONL with the `27R` §8b
+CI coverage assertion (`--expect-files`/`--require-tools`; zero-files =
+operational exit). Advisory-only by construction (no `core::claim` contact);
+rung-probe stays seam-only (= the plan pipeline's advisory surface, never a second
+probe path); rung-oracle-solo recon says the blocker is cli-side factoring
+(`27S:seam-oracle-validate-factoring`), not analysis-machinery rework. OWED: one
+live smoke against REAL shellcheck/checkbashisms (adapters modeled from manpages,
+never yet run against live output — `27S` §6); tc-* rulings queue at `27S` §5.
 
 **User-aid design sitting CLOSED (2026-07-18, Fable + human):** the hints/lints/why
 category got its standing registry — root **`AID-NEEDS.md`** (aid-classes + the Law

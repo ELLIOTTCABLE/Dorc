@@ -293,6 +293,42 @@ an explicit ladder of input-availability rungs:
   oracle authors most hot-loop value in the interim. Kept in sight; deferred by
   direction.
 
+## §8c — Conductor review ledger (post-build, 2026-07-18)
+
+Builder: Opus-class, branch `ai/r27-lint-build`, tip `245afe0` (4 commits atop
+`1d0590f`); landing note `27S`. Self-reported mechanicals (builder's numbers,
+never conductor-vouched, per the human's review-altitude ruling this same day):
+four gates green · 884→904 unit · 91→94 e2e · comment budget 9/25 · manual
+read-only smoke of every flag path.
+
+Conductor cross-cutting review (altitude only; mechanicals not re-run):
+- **rev-license-plane-clean**: no `core::claim` imports anywhere in `crates/lint`
+  (grep-verified); advisory-only framing carried in the crate docs; registry +
+  output determinism structural (fixed registry order; findings sorted
+  `(path, line, source, code)`).
+- **rev-deviations-accepted**: all six `27S` §3 deviations accepted — notably
+  dev-verdict-body-pipeline-only (`!`/`|| true` are out-of-dialect and already
+  surface as analysis diagnostics — upstream catch, dedicated lint redundant) and
+  dev-e2e-findings-via-native (Windows CreateProcess cannot spawn shebang stubs;
+  adapter parse coverage stays unit-tier over raw bytes, real-spawn e2e seamed).
+- **rev-ide-diagnostics-false-alarm**: post-landing IDE rustc/rust-analyzer errors
+  (E0689 etc.) in the builder worktree were stale unlinked-file analysis — the tip
+  code carries explicit `usize` annotations at the flagged lines, and the flagged
+  unused-import was removed in the builder's own `ce69921` cleanup. Spot-checked
+  by eye; resolved, no action.
+- **rev-recon-headline**: rung-oracle-solo's blocker is FACTORING
+  (`27S:seam-oracle-validate-factoring` — oracle-side lints inline in the cli's
+  `run()`, stderr-emitting), NOT analysis-machinery rework; and the §3 hint-lane
+  question is ANSWERED — the diag machinery already supports input-staged
+  factoring, no new seam needed at sketch scale.
+- **rev-standing-gap**: the one genuinely unverified surface is live external-tool
+  output (adapters modeled from `27Ra` manpage reads; real binaries absent on the
+  dev box). First action on any box with the tools installed: one read-only
+  `dorc lint` smoke. Never-vouch applies until then.
+- Human ruling queue: `27S` §5 (tc-lint-fail-on-default · tc-lint-operational-
+  exit-code · tc-lint-e2e-stub-tools-spawn · tc-lint-shellcheck-dialect ·
+  tc-lint-source-selection-flag) + the cosmetic e2e summary-line wording.
+
 ## §9 — Fold instructions (human)
 
 Everything is on `ai/*` branches; nothing pushed. Expected end-state: `ai/r27-lint`
