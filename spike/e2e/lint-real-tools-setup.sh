@@ -7,7 +7,7 @@
 # a version-pinned copy, sha256-verified, GPL body NEVER vendored into the tracked tree.
 #
 # Prints the absolute .real-tools dir on stdout (for the caller to prepend to PATH); all human
-# chatter goes to stderr. Idempotent: an already-present, sha256-matching copy skips the download.
+# chatter goes to stderr. Idempotent: an already-present, sha256-matching copy needs no re-fetch.
 set -eu
 
 # The pin (task: record exact versions). Immutable git TAG, never a moving branch, so the bytes —

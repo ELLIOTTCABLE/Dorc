@@ -36,7 +36,7 @@ changed. Files:
 - **`spike/e2e/lint-real-tools-setup.sh`** — provisions checkbashisms (task fallback (b)): a
   version-PINNED download (devscripts git TAG `v2.23.7`, immutable) sha256-verified into the
   git-ignored `spike/e2e/.real-tools/`; GPL perl body NEVER vendored into the tracked tree.
-  Idempotent (sha256-match ⇒ skip download). Platform-split launcher (§4). Invoked ONLY by the lane.
+  Idempotent (sha256-match ⇒ no re-fetch). Platform-split launcher (§4). Invoked ONLY by the lane.
 - **`spike/.gitignore`** — `/e2e/.real-tools/` (regenerated on demand; never committed).
 - **`spike/e2e/run.sh`** — the OPT-IN lane: a strictly-additive block AFTER the untouched `cases/*/`
   and `lint-cases/*/` loops, before the final tally. Gated ENTIRELY on `DORC_E2E_REAL_TOOLS` (comma
@@ -134,7 +134,7 @@ independent of whether the pinned tools are installed.
 - **tc-checkbashisms-win-spawn** — checkbashisms is *nix-live-only for the lane; on Windows it is
   documented-not-live (dorc `Command::new` can't spawn a perl-script launcher). List only
   `shellcheck` on Windows. NOT a correctness compromise — the tool is cleanly absent (loud fail), not
-  silently skipped.
+  silently dropped.
 - **tc-checkbashisms-pin-tag** — pinned to devscripts tag `v2.23.7` (the only probed tag that
   resolved) + sha256, not "latest". A newer checkbashisms is a one-line + one-hash bump; the lane's
   structural asserts (external-text / approximate / line 6) are version-tolerant so a bump should not
