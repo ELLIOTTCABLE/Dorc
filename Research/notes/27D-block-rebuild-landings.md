@@ -639,6 +639,83 @@ verdicts · elide/guard per the consent trace. This IS the "real sudo
 mechanism" of block-stdlib's precondition (`270` §2); the `27C` §8 babby-sudo
 e2e story is its acceptance.
 
+## lane-integration (block-context lane 4, the closer) — LANDED 2026-07-17 (checkpoint PASSED; block-context CLOSED)
+
+Commits (rebased by the human — see protocol correction below) topped by
+`96917b2` on `ai/r27-book-integration`, ff-folded into `ai/spike3-r27` by the
+human's hand. Landing note: **`notes/27N`**. Landed: the cross-pipeline wiring
+making a wrapped BOOK site elide end-to-end — peel-map threaded into classify
+(facts born `in_context`; kernel stays wrapper-unaware, cli precomputes) ·
+entry-composed probe emission (`ProbePredict.entry`; ships
+`sudo__enter <inner-check> <peeled-argv>`; machine pin EXTENDED:
+`entry_composed_probe_renders_enter_forms_never_raw_book_bytes`, both
+directions) · context rides `FactKey.context` end-to-end, records WIRE grammar
+unchanged (site-keyed; cli re-keys site→fact) · context-qualified readback ·
+elide/run per `decide_entry` (two-axis order: capability walls, then dial, then
+vouch quantified over EVERY crossed dimension) + the adoption hint + the
+authority-disclosure line. Babby-sudo acceptance (`27C` §8): 4 e2e cases
+(elides / diverges / unvouched / noescalation), all `PROBE_RESULTS=authored`
+(disclosed — see shim disposition). 863 unit / 88 e2e; **84 pre-existing cases
+BYTE-STABLE** (rung-0); the REFERENDUM did not fire.
+
+**Conductor verification (own hand, on the folded lineage):** fresh build ·
+four gates · 863/863 unit · 88/88 foreground e2e; spot-reads: the machine pin
+(structural, positive + negative asserts) · `decide_entry` (ruled two-axis
+order, first-blocking-rung deterministic) · the shipped probe artifact
+(entry form + inner verdict + peeled argv; zero book bytes) · the fixture sudo
+oracle (dual-peel coherent; enumerate-every-dimension lend_map) · rider
+acceptance greps re-run (zero `is_diverged` outside reserved.rs; zero
+`VerdictSense`).
+
+**Checkpoint dispositions (conductor-adjudicated):**
+
+- disposition-comment-budget-overage — ACCEPTED. The 27.9% headline decomposes:
+  170 mandated `///` doc-comments (why-tier, slug-citing — spot-checked) + ~113
+  non-authored lines (generated goldens, copied mock logs) + ~9% genuine inline
+  commentary, which is within the budget's spirit. FUTURE BRIEFS: the counting
+  command excludes `///` doc-comments and generated fixture content from the
+  numerator; doc-comment quality is checked by eye at checkpoint instead.
+- disposition-factkey-widening-via-cli-peelmap (né tc-factkey-widening-via-cli-
+  peelmap) — ACCEPTED as landed: CLI-precomputed peel-map, kernel
+  wrapper-unaware (referendum-clean by construction). Whether peel migrates
+  into `command_effect` is banked to the forward seam list, kSTATE-adjacent,
+  never a local refactor.
+- disposition-context-blind-stage1-wall (né tc-context-blind-stage1-wall) —
+  ACCEPTED, safe direction (over-execute, never under): a running wrapped
+  mutator walls downstream converged establishes context-BLIND. NAMED
+  LIMITATION — the block-stdlib brief and the survival-tier follow-on
+  (context-qualified wall-sparing) both carry it; the acceptance fixtures order
+  the unwrapped site first to sidestep it, disclosed in-fixture.
+- disposition-wrapped-guard-unexercised (né tc-wrapped-guard-shape-unexercised)
+  — scaffold ACCEPTED; RIDER to the next dispatch (lane-fallback-carry): one
+  wrapped-QUERY e2e exercising the in-context guard shape.
+- disposition-shim-materialization-deferred — ACCEPTED: emission + readback
+  proven; the per-run PATH shim materialization (`274` §5 / `27L` task-14) is
+  the bounded last mile and becomes the block-stdlib package's FIRST errand
+  (the real boundary-crossing lands before oracles author against it). Under
+  inert mocks the shipped form 127s ⇒ can't-say ⇒ run — degrade-safe.
+- rider-strike-is-diverged-dual-residue — DONE (`b002157`): `strip_verdict`
+  hardcodes; `VERDICT_SUFFIX` retained (consumed by `verdict_fn_name`);
+  `__enter` got its own hardcoded `strip_enter`; conductor re-greps confirm.
+- plan-mint choke-point (the `26B` obligation) — CONFORMANT: all wiring threads
+  data into the existing `build_plan_walled` + `compile_probe`→`ProbePlan`; no
+  second assembly exit. 27H capture seams untouched and OPEN.
+
+**PROTOCOL CORRECTION (hook-verified this landing):** rebases, merges, and
+lineage ref-moves are ALL hook-reserved to the human ("the user does the
+review-and-rebase pass on AI commits"). Fold flow now: conductor verifies zero
+file-overlap + behind-count, REQUESTS the two human commands (lane-worktree
+`git rebase ai/spike3-r27`; lineage-worktree `git merge --ff-only
+ai/r27-<lane>`), then re-verifies gates + tests on the folded lineage by own
+hand. Builders never rebase; they hold at tip and report.
+
+**Block-context CLOSED** per the `26B` ruling (read-value-slice STRUCK; four
+lanes landed: wrapper-peel `27K` · payload-v1 `27L` · context-entry (27D
+Continuation) · integration `27N`). Carried out of the block: shim
+materialization (stdlib E1) · wrapped-guard fixture (fallback-carry rider) ·
+context-blind wall (stdlib brief + survival follow-on) · the forward seam list
+above.
+
 ## Mid-run rider (2026-07-17 — lane-integration; handed off from the human's design session)
 
 - **rider-strike-is-diverged-dual-residue** (source:

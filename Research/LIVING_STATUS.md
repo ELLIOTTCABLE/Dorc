@@ -25,11 +25,15 @@ block-settle CLOSED (`plans/271` = the rulings ledger + task map); wrapper/conte
 transport RESOLVED (`plans/27C`); the 270-era adversarial crosscheck adjudicated, no
 kill (`notes/279f` — read its §1 first).
 
-**⚠ IN FLIGHT — lane-integration (the book-side wiring; the babby-sudo closer)
-dispatched 2026-07-17: Opus builder on `ai/r27-book-integration` off `c4c3276`;
-brief = `27D`'s lane-context-entry Continuation paragraph + the lane-integration
-mint; acceptance = `27C` §8's babby-sudo story as e2e; landing note will be `27N`.
-Conductor checkpoint + fold owed on its return.**
+**⚠ Next activity — dispatch lane-fallback-carry** (the `27C` §4(a)
+read-set-closure pass; scope pin: VERDICT-fact carry only; + the wrapped-QUERY
+guard-fixture rider from `27D`'s lane-integration dispositions). Then the
+block-stdlib package, whose FIRST errand is the per-run PATH shim
+materialization. **lane-integration LANDED and block-context CLOSED 2026-07-17**
+— ledger entry + dispositions + the fold-protocol correction: `27D`'s
+lane-integration section; landing note `notes/27N`; lineage tip at close
+`96917b2` (conductor-verified: four gates · 863 unit · 88/88 foreground e2e ·
+84 pre-existing cases byte-stable).
 `270:block-rebuild` is **CLOSED** (2026-07-17, one session: eight dispatches
 landed + both bless checkpoints stamped; ledger = **`notes/27D`** including its
 BLOCK CLOSE section + forward seam-list; builder notes `27E`–`27I`). The corpus is
@@ -72,9 +76,15 @@ scope pin for its brief: VERDICT-fact carry only — `27C` §4's world-cell-VALU
 fallback corner rides r26 with the capture fold). Then **block-stdlib**: ~40
 bootstrap oracles against the finally-stable surface + yardstick-measurement, at
 whose close the r25 first-blooding revives. The live lineage is
-**`ai/spike3-r27`** (human-granted conductor-owned; lane branches `ai/r27-*` fold
-by fast-forward; a builder that dispatched before a lineage-advance rebases in its
-own worktree first, then ff-folds — check behind-count before every fold).
+**`ai/spike3-r27`** (human-granted conductor-owned for COMMITS; lane branches
+`ai/r27-*` fold by fast-forward). PROTOCOL CORRECTION (verified against the hooks
+2026-07-17): rebases, merges, and lineage ref-moves are ALL hook-reserved to the
+human — "the user does the review-and-rebase pass on AI commits." Fold flow:
+conductor verifies zero file-overlap + behind-count and REQUESTS the two human
+commands (lane-worktree `git rebase ai/spike3-r27`; lineage-worktree
+`git merge --ff-only ai/r27-<lane>`); conductor then re-verifies gates + tests
+on the folded lineage by own hand. Builders never rebase; they hold at their
+tip and report.
 
 **Wrapper/context design — SETTLED and mostly BUILT; `plans/27C` is THE
 kept-current spec** (a wrapped site is answered by measurement in its *denoted*
