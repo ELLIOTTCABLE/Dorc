@@ -89,6 +89,10 @@ members (derive-model widening; rides r26's capture era) · effect-check re-homi
 built, punted) · real-executor shim choreography (atomicity/cleanup; `27P`) ·
 multi-link chain e2e · tc-stage-ship-triplication cleanup · batch-5 + E3 e2e tails ·
 survival-tier context-qualified wall-sparing (the context-blind wall's fix) · the
-round-close merge batch: `main`@`38a123b` + `ai/main` (the `26B` trio · `de1b09c` 27C
-§2 rationale + its "two asks" · `6ab002e`) — the 27C reconciliation at round-close is a
-THREE-WAY union; this stack's copy is the most complete and should seed it.
+round-close merge batch — **DISCHARGED 2026-07-18 at `a651fe8`**: the r27 stack merged
+into `ai/main`, the three-way 27C union completed (stack rulings ⊕ the
+`27C:rationale-vouch-vs-completeness-gate` §2 block + non-vacuity + cross-ref), merged
+tree conductor-verified (884/0 unit · 91/91 e2e · four gates). Residual topology
+(`main` vs `ai/main`; the frozen `ai/spike3-r27` ref) is the human's; the "two asks"
+inside `de1b09c`'s commit-era dialogue were never surfaced to this conductor — the new
+conductor should ask the human whether they were handled in their own session.

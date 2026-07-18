@@ -122,15 +122,16 @@ main@`c7efc27` leaving conflicts; conductor resolved `27C` to the union — main
 final composition algebra + siting vouch + §9/§10 additions, PLUS the lineage's
 `27C:rul-two-axis-escalation-consent` §1 block and
 `27C:rul-probe-mutation-ownership-split` §3 weld (both now registered in §10's
-RULED ledger; the interim composition block dropped as superseded). Residue: `38a123b`
-(the `27Xf` siting annotation + the 27C text already unified here) stays
-UNMERGED until round-close by human policy — nothing blocks; content-wise the
-lineage `27C` is a verified superset. UPDATED 2026-07-17 (later): `ai/main` has
-since accreted MORE 27C material — `de1b09c` (§2 vouch-vs-completeness gate
-rationale; "two asks surfaced" there) · `6ab002e` (27Xf trivia) · the `26B` trio
-(`a452366..c802067`) — so the round-close absorption is a THREE-WAY 27C union
-(lineage ⊕ `main` ⊕ `ai/main`); reconcile fresh at that point, never
-side-pick.
+RULED ledger; the interim composition block dropped as superseded).
+**FULLY RESOLVED 2026-07-18 at `a651fe8`:** the human merged the whole r27
+stack (`2c128bf`) into `ai/main`; conductor completed it — the THREE-WAY `27C`
+union is DONE (stack rulings + build-status ⊕ `ai/main`'s
+`27C:rationale-vouch-vs-completeness-gate` §2 block + the §4(a) non-vacuity
+sentence + the §7 cross-ref), the quarantine relocation honored (27M/27Xm land
+in the moved `Research/quarantine-DO-NOT-READ/`, unread), and the merged tree
+conductor-verified (fresh build · four gates · 884/0 unit · 91/91 e2e).
+`ai/main` now carries EVERYTHING; remaining branch topology (`main` vs
+`ai/main`; the frozen `ai/spike3-r27` ref) is the human's.
 
 **Block-settle CLOSED (2026-07-12):** all 15 task-map items dispositioned —
 **`plans/271`** carries the rulings + the task map; the arc durables: `notes/272`
