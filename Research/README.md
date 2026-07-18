@@ -90,7 +90,9 @@ and carries the license-contamination map.
 - **Value-predictions & the capture lane** — `notes/275` (its §6 carries a NOT-RATIFIED
   banner — honor it); origin analysis `notes/219` (round-21 vintage; concepts carry,
   cites stale); the BUILD is deferred to the r26 revival — direction + design bank
-  `notes/26B` (reactive plan-construction; the binding-site gate-question).
+  `notes/26B` (reactive plan-construction; the binding-site gate-question) +
+  **`notes/26C`** (the fixpoint semantics made precise; the quiet-welding audit; the
+  R0–R4 revival ladder; the captured-bytes-as-data law ask).
 - **Eval'ers & the `dorc:sh` reentry trio** — `notes/274` (reentry token ·
   descend-don't-license · the probe-shipping split).
 - **Did round-27's design survive adversarial review?** — `notes/279f` (the crosscheck
@@ -172,7 +174,9 @@ and carries the license-contamination map.
   adjudication only, zero build commits; resumes post-field-trial per `plans/270` §5)
   — → `plans/262` (build spine) · `plans/260` (multi-host) · `plans/261` (read-concurrency)
   · `notes/26A` (crosscheck adjudication) · `notes/26B` (reactive plan-construction
-  direction + capture-fold deferral bank; minted out-of-order 2026-07-17, mid-r27).
+  direction + capture-fold deferral bank; minted out-of-order 2026-07-17, mid-r27)
+  · `notes/26C` (same-day deep pass: fixpoint semantics + conflict carve, the
+  quiet-welding audit vs the r27 tip, the R0–R4 revival implementation ladder).
 - **r27 the consolidation round** (current; branch `ai/spike3-r23`) — rest-of-round-24 +
   the wrapper/payload work, authored-once discipline. → **`plans/270` (charter: block
   arc · adjudication ledger · naming discipline)**; predecessor accounting `notes/24U`.

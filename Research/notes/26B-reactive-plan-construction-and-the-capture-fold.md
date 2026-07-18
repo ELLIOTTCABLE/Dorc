@@ -15,7 +15,10 @@ Companions: `plans/22H` (the live-plan seed this direction confirms) ·
 value-prediction species) · `notes/27H`/`27I` (the landed capture representation) ·
 `notes/219` (origin analysis; round-21 vintage) · `plans/27C` (context machinery) ·
 `notes/277` §5 (the fixpoint-soundness clause + pins this note operationalizes) ·
-`notes/279f` §5 (the read-value riders re-banked in §4 here).
+`notes/279f` §5 (the read-value riders re-banked in §4 here) · **`notes/26C`** (the
+follow-on deep pass, same day: semantics made precise incl. a §2 correction, the
+quiet-welding audit against the r27 tip, and the R0–R4 revival ladder — read it
+WITH this note).
 
 ## §0 — How this note came to exist, and what DIED
 
@@ -107,7 +110,14 @@ input change, in any order — the fixpoint is the same. Three consequences:
   `pin-set-meet-order-independence`) stop being defensive fences and become the
   engine's advertised property — and a DST target: hostsim shuffles
   record-arrival order across seeds; the pin is *byte-identical plan under every
-  ordering*. A single-wave build could never exercise this property; that is the
+  ordering*.
+  <!-- /* corrected by 26C §1 (2026-07-17, same sitting-cluster): byte-identical-
+  under-shuffle is guaranteed only for CONFLICT-FREE runs — merge_observable's
+  conflict-meet (⊤→Value→⊤, 22H §1) makes want-generation path-dependent, so
+  conflicted runs can gather order-varying record SUPERSETS (sound, but not
+  byte-reproducible). Fold-confluence over a fixed record-set is unconditional.
+  See 26C:finding-confluence-needs-conflict-carve + ask-confluence-carve-choice. */ -->
+  A single-wave build could never exercise this property; that is the
   concrete sense in which single-wave "hides the holes".
 - **The batch pipeline is the degenerate schedule** of the reactive engine, not
   the other way round. The honest spike-scale mechanism is an event-shaped pure
