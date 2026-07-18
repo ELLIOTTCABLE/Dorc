@@ -101,9 +101,11 @@ Law — what a row-minter and row-consumer must know (cite as `AID-NEEDS:law-…
 - **law-report-surfaces-speak-sh** (`27W:rul-report-surface-massaging`) — report/why
   surfaces show *code* by preference (an oracle's own arm, comments riding along as
   display, never parsed), and may massage what they show (slice to contributing lines,
-  attach whole adjacent comments, mark elisions): attribution means implying authorship
-  and directing repair, never byte-for-byte reproduction. The byte-floor laws bind the
-  plan/artifact planes only; display-sh must never masquerade as a runnable artifact.
+  attach whole adjacent comments, mark elisions): 'attribution' in the context
+  of show-the-code means implying authorship and directing repair, not
+  necessarily byte-for-byte reproduction. The byte-floor laws bind the
+  plan/artifact planes only; display-sh needn't masquerade as a runnable
+  artifact.
 
 
 Registry
