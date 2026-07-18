@@ -2,3 +2,8 @@
 # wide, so these never sync either.) Cargo.lock IS committed — this is a
 # binary/workspace, and a pinned lockfile keeps the spike reproducible.
 /target
+
+# The opt-in real-tools lint lane provisions a version-pinned checkbashisms here
+# (GPL perl body; never vendored into the tracked tree) — see e2e/lint-real-tools-setup.sh
+# and Research/notes/27T. Regenerated on demand; never committed.
+/e2e/.real-tools/

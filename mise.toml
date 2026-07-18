@@ -32,6 +32,15 @@ pkl = "0.31.1"
 "cargo:cargo-deny" = "latest"
 typos = "latest"
 
+# Opt-in `dorc lint` real-external-tools test lane ONLY (human-authorized 2026-07-18;
+# spike/CLAUDE.md `real-tools-lane-opt-in`, `Research/notes/27T`). Pinned EXACT so the lane's
+# live-fire is reproducible. shellcheck is INERT for every default gate/suite: the default
+# `sh e2e/run.sh` lint-cases scrub PATH to an empty dir and the unit tier runs a fake runner,
+# so nothing spawns it unless `DORC_E2E_REAL_TOOLS` opts in. It does not touch the rust
+# toolchain or any existing gate. (checkbashisms is a Debian perl script absent from every mise
+# backend — the lane provisions it out-of-band into the git-ignored `spike/e2e/.real-tools/`.)
+shellcheck = "0.11.0"
+
 [env]
 # Route hk's hook invocation + step commands through mise (so `cargo`/`hk`
 # resolve without an activated shell). Matches `mise x` usage in hk.pkl.
