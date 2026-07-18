@@ -85,9 +85,9 @@ fixed, permanent table:
 | 1 | the complement holds | the line is needed; runs |
 | 2 or higher | cannot say | the line runs, always |
 
-Only 0 and 1 ever carry a verdict; 2 communiates "I cannot meaningfully speak
-for this (collapsing errro-states, NYI, instability, and so on.) Everything at 2
-and above is currently one flat "confused" sink, semantically flat.
+Only 0 and 1 ever carry a verdict; 2 communicates "I cannot meaningfully speak
+for this" (collapsing error-states, NYI, instability, and so on). Everything at
+2 and above is currently one flat "confused" sink, semantically flat.
 
 - Stray away from 'flattening' shell-vocab operators like `||` that will paper
   over exit-status-semantics; and *extremely avoid shell-flipping-and-flattening
@@ -108,7 +108,9 @@ and above is currently one flat "confused" sink, semantically flat.
 The marker. `# dorc-lang/v0.1`, exact, alone on its line, within roughly the
 first ten lines. Gates the syntax below for this file (and only the syntax; role
 names need no marker). An unmarked file is treated as plain shell; our
-annotations become syntax-errors.
+annotations become syntax-errors. Add the marker at the moment a file first
+uses a bind, a mark, or the `dorc:` prefix; a role-functions-only file needs
+none.
 
 Coordinates. `KIND:ENTITY#SELECTOR`, with the tail parts optional:
 
@@ -116,37 +118,57 @@ Coordinates. `KIND:ENTITY#SELECTOR`, with the tail parts optional:
     sm.dorc.Package:"$pkg"              a whole entity
     sm.dorc.PkgIndex                    a whole (singleton) kind
 
-Kinds are reverse-DNS, two dots minimum; mint only under a domain you plausibly
-answer for, reuse others' kinds only as their owners document. Entities are
-written bare when they contain only letters, digits, `.`, `_`, `-`, `/`, and
-double-quoted (with normal `"$var"` interpolation) otherwise. Selector tokens
-are identifiers (letter or underscore first, then letters, digits,
-underscores); the `#` must directly touch the entity (or the `:` in the
-entity-less transitional form). A selector-less coordinate means the whole
-entity and, on the consuming side, interacts with every cell of it. Polarity
-never appears in a coordinate; it rides the mark sigil.
+- Kind: reverse-DNS, two dots minimum. Mint only under a domain you plausibly
+  answer for; reuse others' kinds only as their owners document.
+- Entity: written bare when it contains only letters, digits, `.`, `_`, `-`,
+  `/`; double-quoted (with normal `"$var"` interpolation) otherwise.
+- Selector: an identifier (letter or underscore first, then letters, digits,
+  underscores). The `#` must directly touch the entity (or the `:` in the
+  entity-less transitional form).
+- A selector-less coordinate means the whole entity - and, on the consuming
+  side, it interacts with every cell of that entity. Reach for a selector
+  whenever you can name the aspect you actually measured; reserve the bare
+  form for claims that genuinely concern all of it.
+- Polarity never appears in a coordinate; it rides the mark sigil.
 
-Marks. A mark trails a statement, whitespace-separated, one assertion per line:
+Marks. A mark trails a statement, whitespace-separated. Write one on any line
+whose result deserves an address: marked facts are what plans report by name,
+what disturbance-tracking keys on precisely, and what the survival machinery
+can reason about. An unmarked check still works, but its fact is anonymous and
+handled maximally conservatively.
 
     cmd args   : COORD      verdict: exit 0 asserts the cell holds
     cmd args   :! COORD     verdict, complement sense: exit 0 asserts it does not
     cmd args   :? COORD     observe: this statement reads that cell
 
-Verdict and observe marks mint selector tokens into the kind's vocabulary and
-attach facts to the one line that measured them; they are single-cell only - a
-statement establishing two cells is two lines. An observe inside a verdict body
-widens that fact's staleness surface (its backing) to include the observed
-cell: always safe, often obligatory for honesty. Emission lines in the
-`cmd__disturbs()` and `kind__disturbance_reaches_only()` members carry a third
-mark position - `: KIND` or `: KIND#SELECTOR` typing the emitted entities - and
-only these emission marks may use brace alternation (`#{enabled,active}`). Claim
-emissions never mint tokens. Two further trailing-token vocabularies are
-role-scoped: dimension tokens in `cmd__lend_map()` bodies, and substrate plus
-`invariant:<dimension>` tokens in `kind__state_stored_only_in()` bodies. All
-token vocabularies are engine-owned and closed; authors never invent tokens.
+- Verdict and observe marks mint selector tokens into the kind's vocabulary,
+  and attach facts to the one line that measured them.
+- Marked runnable lines are single-cell: one assertion per line; a statement
+  establishing two cells is two lines.
+- An observe (`:?`) inside a verdict body widens that fact's staleness surface
+  (its backing) to include the observed cell - always safe, often obligatory
+  for honesty. Write one whenever your verdict consults state beyond the cell
+  it answers for.
+- Emission lines in the `cmd__disturbs()` and `kind__disturbance_reaches_only()`
+  members carry a third mark position - `: KIND` or `: KIND#SELECTOR`, typing
+  the emitted entities. Only these emission marks may use brace alternation
+  (`#{enabled,active}`); claim emissions never mint tokens.
+- Two further trailing-token vocabularies are role-scoped: dimension tokens in
+  `cmd__lend_map()` bodies; substrate plus `invariant:<dimension>` tokens in
+  `kind__state_stored_only_in()` bodies. All token vocabularies are
+  engine-owned and closed; authors never invent tokens.
 
 Binds. `name : KIND = "$value"` assigns and declares the value an entity of the
-kind. Binds name entities, never cells. Strip reduces a bind to the assignment.
+kind. Binds name entities, never cells; strip reduces a bind to the assignment.
+Write one when an operand you received is an entity you are about to make
+claims about: the bind lets the analyzer carry the kind through your body's
+value-flow and back out to the book's site, so the plan's reason can name the
+concrete entity ("converged: org.foob.Certs:/etc/nginx/certs#synced") rather
+than a positional argument. The usual rhythm is one bind per entity-shaped
+operand, placed where the operand is first received; every later mark on that
+value then inherits its identity. Skip binds for values that are not entities
+(counts, modes, free text) and for entities you never mark - an unused bind is
+noise, not safety.
 
 The `dorc:` prefix. `dorc:sh -c '...'` is the one prefix-position spelling:
 full-analysis invitation on an interpreter head. Bare `sh -c '...'` is the
@@ -156,16 +178,36 @@ recognized inside opaque payload strings.
 
 ## 5. Per-member contracts
 
-Each member below states: how it is invoked, what its output means, what it
-licenses, what its author must hold true, and how it fails. The probe contract
-(read-only, fast, reentrant, answer-from-durable-state, fail-toward-2) applies
-to every body in this section without further mention.
+Each member below states: how it is invoked, when to write it, what its output
+means, what it licenses, what its author must hold true, and how it fails. The
+probe contract (read-only, fast, reentrant, answer-from-durable-state,
+fail-toward-2) applies to every body in this section without further mention.
+
+A typical oracle grows through the members in a stable order, and the order is
+itself when-guidance:
+
+1. `cmd__is_converged()` - first, always; most oracles rightly stop here.
+2. `cmd__predict()` - when your tool starts appearing inside compound
+   constructs and admins' hand-guards, and the hints say modeling would unlock
+   them.
+3. `tolerates:` - when books wrap your tool's sites (sudo and friends) and you
+   have re-audited the vouched body for shifted execution.
+4. `cmd__disturbs()` - when your tool is the churn-heavy early wall that costs
+   drifted-day books their shape, and you can survey its verbs completely.
+5. `cmd__lend_map()` and `cmd__enter()` - only if your tool is itself a
+   wrapper.
+6. The `kind__*` members - only if you own a shared vocabulary.
 
 ### 5a. `cmd__is_converged()` - the verdict member
 
 Invoked with a site's arguments (everything after the command word, as the
 book's values resolved). Answers per section 3, where the named sense is "the
 state this invocation exists to establish already holds."
+
+Write it first, for any tool with a cheap, read-only way to answer "already
+done" - which is most tools. Decline the shapes where checking costs as much
+as doing: a guard body pays its check-tax on every apply, and a cheap
+idempotent command (`mkdir -p`) is its own best check.
 
 Licenses: at this tool's own sites only - insertion of this body as a runtime
 guard (`( cmd__is_converged args ) || original-bytes`), and, when a probe-proof
@@ -174,19 +216,21 @@ and always falls through to them on any non-0 answer. The vouch is inadmissible
 everywhere else: it never becomes a fact, never informs another site's
 reasoning, never transfers to another tool.
 
-Author holds true: that an answer of 0 means not-running this invocation is an
-acceptable outcome - all of it, including effects beyond the checked state
-(converged is not the same as no-op; the pending-upgrade case is yours to
-judge). That the body declines every shape not deliberately modeled: unknown
-verbs, unmodeled flags (especially state-addressing ones like `--root`),
-operand counts beyond what is checked. That multi-operand shapes are either
-fully checked (every operand) or declined - a partially-checked yes is a wrong
-yes.
+Author holds true:
+- That an answer of 0 means not-running this invocation is an acceptable
+  outcome; all of it, including effects beyond the checked state (converged is
+  not the same as no-op; the pending-upgrade case is yours to judge).
+- That the body declines every shape not deliberately modeled: unknown verbs,
+  unmodeled flags (especially state-addressing ones like `--root`), operand
+  counts beyond what is checked.
+- That multi-operand shapes are either fully checked (every operand) or
+  declined; a partially-checked yes is a wrong yes.
 
-Failure modes: a wrong 0 causes this tool's line to be skipped or guarded-away
-when it was needed - under-execution, at your own tool's site, attributed to
-this function by name. A wrong 1 merely runs a converged line (safe, noisy). A
-mutating body breaks the probe promise itself (see section 7, first entry).
+Failure modes:
+- a wrong 0 causes this tool's line to be skipped or guarded-away when it was
+  needed - under-execution, at your own tool's site, attributed to this function
+  by name. A wrong 1 merely runs a converged line (safe, noisy).
+- A mutating body breaks the probe promise itself (see section 7, first entry).
 
 ### 5b. `cmd__predict()` - the modeling member
 
@@ -197,20 +241,29 @@ predicted observables, per the claim vocabulary - delegation of the real
 `return N` claims the status; redirecting a channel to `/dev/null` declines
 that channel; `return 2` up front declines the shape.
 
+Write it when your tool appears inside constructs rather than alone on lines:
+pipelines and compounds cannot probe without a stand-in for every participant,
+and an admin's hand-written guard invoking your tool lifts only through your
+predict. The plan's hints point at exactly these sites; until they do,
+`is_converged` alone is usually the better spend.
+
 Licenses: substitution of this body for the tool inside composed probes and
 lifted hand-guards, but only where every channel the surrounding construct
 consumes is covered by the body's claims. Recognition of the peel shape (a
 body whose `"$@"` runs its own argument-slot) classifies the tool a wrapper.
 A predict never licenses eliding anything by itself.
 
-Author holds true: that every claimed channel is faithful for every matched
-shape, on hosts unlike theirs; that no matched shape mutates; that
-convenience channels not thought through are declined, not guessed.
+Author holds true:
+- That every claimed channel is faithful for every matched shape, on hosts
+  unlike theirs.
+- That no matched shape mutates.
+- That convenience channels not thought through are declined, not guessed.
 
-Failure modes: a wrong channel claim corrupts a composed probe's result - which
-can surface as a wrong verdict for some enclosing construct. Bounded by the
-coverage rule (unclaimed channels block substitution) and attributed to the
-predict that claimed.
+Failure modes:
+- A wrong channel claim corrupts a composed probe's result, which can surface
+  as a wrong verdict for some enclosing construct. Bounded by the coverage
+  rule (unclaimed channels block substitution); attributed to the predict that
+  claimed.
 
 ### 5c. `cmd__disturbs()` - the footprint member
 
@@ -221,24 +274,35 @@ matched shape's emission is a complete at-most claim: this invocation disturbs
 at most these cells, and anything omitted is declared untouched. An unmatched
 shape emits nothing and claims nothing.
 
+Write it when your tool is the wall that costs drifted-day books their shape:
+churn-heavy, early-in-book commands (index refreshes, cache warms, log
+rotations) whose effects you can genuinely enumerate. Do not write it
+speculatively - an unsurveyed verb is better left unmatched, and a tool that
+rarely runs mid-book earns little from a footprint.
+
 Licenses: under the admin's explicit risk flag only - survival of downstream
 proven facts past this command actually running, wherever fact-backing and
 claimed footprint are provably disjoint. Never consumed outside the flag;
 never able to manufacture separation the comparison machinery cannot prove.
 
-Author holds true: the survey. Match a shape only after genuinely enumerating
-that shape's effects; when unsure whether some cell is disturbed, include it
-(over-claiming only walls; under-claiming under-executes); when unsure the
-enumeration is complete, do not match the shape. Selector-precision is welcome
-refinement of a complete survey, never a substitute.
+Author holds true:
+- The survey: match a shape only after genuinely enumerating that shape's
+  effects.
+- When unsure whether some cell is disturbed, include it - over-claiming only
+  walls; under-claiming under-executes.
+- When unsure the enumeration is complete, do not match the shape at all.
+- Selector-precision is welcome refinement of a complete survey, never a
+  substitute for one.
 
-Failure modes: the sharpest in the system. An omitted cell in a matched shape
-can silently un-run someone else's line - a different tool, author, and file -
-with no runtime net. The bite is flag-gated (the admin typed for it), fully
-attributed (the why-machinery names this member), short (the next plan
-re-probes reality and the line returns), and narrow (each other line held its
-own license) - but it is real, and it is the one place your mistake spends
-other people's safety. Author accordingly.
+Failure modes:
+- The sharpest in the system: an omitted cell in a matched shape can silently
+  un-run someone else's line - a different tool, author, and file - with no
+  runtime net.
+- The bite is flag-gated (the admin typed for it), fully attributed (the
+  why-machinery names this member), short (the next plan re-probes reality
+  and the line returns), and narrow (every other line held its own license) -
+  but it is real, and it is the one place your mistake spends other people's
+  safety. Author accordingly.
 
 ### 5d. `cmd__lend_map()` - the wrapper dimension member
 
@@ -248,17 +312,25 @@ entry per dimension: a valued line (`printf '%s\n' "$target"   : user`) maps
 that dimension; an empty entry (`: : fs-view`) passes it through unchanged;
 a dimension with no entry at all is unknown and walls.
 
+Write it whenever your tool is a wrapper at all: without it every wrapped site
+is opaque, and the guest's own oracle never even gets consulted. It is the
+highest-leverage member a wrapper family has - one small map un-walls every
+book that uses the wrapper.
+
 Licenses: interpretation of wrapped sites - which context the guest denotes,
 per dimension - feeding context keying, entry composition, and chain folding.
 
-Author holds true: enumerate-every-dimension (say "unchanged" explicitly); that
-the peel position agrees with the predict's (checked statically; disagreement
-is refused at plan time); that emitted values are single-link truths (the
-engine owns composition across chains - never pre-compose nesting yourself).
+Author holds true:
+- Enumerate-every-dimension: say "unchanged" explicitly, per dimension.
+- The peel position agrees with the predict's (checked statically;
+  disagreement is refused at plan time).
+- Emitted values are single-link truths; the engine owns composition across
+  chains - never pre-compose nesting yourself.
 
-Failure modes: a wrong lend value mis-keys facts to the wrong context - the
-measured-wrong-world class, capped by the entry-form's own siting duties. A
-missing dimension merely walls (safe, value-losing).
+Failure modes:
+- A wrong lend value mis-keys facts to the wrong context - the
+  measured-wrong-world class, capped by the entry-form's own siting duties.
+- A missing dimension merely walls (safe, value-losing).
 
 ### 5e. `cmd__enter()` - the context entry form (name provisional)
 
@@ -266,22 +338,32 @@ Body is ordinary pre-entry shell ending in `"$@"` verbatim in command position
 (`sudo -n "$@"`). Invoked at probe time with a composed check in guest
 position, under the admin's escalation dial.
 
+Write it when the contexts your wrapper denotes hold describable state worth
+probing in place - and only when a non-interactive entry whose siting you can
+verify (or decline) exists. A wrapper with no trustworthy entry story is
+better off without one; wrapped sites still get verified by guards at apply.
+
 Licenses: real context entry in the probe lane - the only licensed seat for
 it. (Predict closure bodies never escalate; a wrapper with no entry form has
 contexts that are simply never entered.)
 
-Author holds true: non-interactive by construction (fails rather than
-prompts, ever); self-effects acceptable as probe residue and answered for by
-name (the auth-log class); siting - entry through this form lands the guest in
-the same context the site's own bytes would reach, verified structurally, by
-interrogating the tool, or by a tripwire, and *declined* (2+) where
-unverifiable. Policy-routing wrappers make siting genuinely hard; a declined
-entry is always correct and costs only value.
+Author holds true:
+- Non-interactive by construction: fails rather than prompts, ever.
+- Self-effects acceptable as probe residue, answered for by name (the
+  auth-log class).
+- Siting: entry through this form lands the guest in the same context the
+  site's own bytes would reach - verified structurally, by interrogating the
+  tool, or by a tripwire - and *declined* (2+) where unverifiable.
+  Policy-routing wrappers make siting genuinely hard; a declined entry is
+  always correct and costs only value.
 
-Failure modes: a wrongly-sited entry measures the wrong world and can produce
-confident wrong verdicts - the worst object the probe lane can emit; hence the
-decline duty. A prompting entry hangs or fails probes (contained by the
-non-interactive construction). A mutating entry is a probe-contract break.
+Failure modes:
+- A wrongly-sited entry measures the wrong world and can produce confident
+  wrong verdicts - the worst object the probe lane can emit; hence the
+  decline duty.
+- A prompting entry hangs or fails probes (contained by the non-interactive
+  construction).
+- A mutating entry is a probe-contract break.
 
 ### 5f. The `tolerates:` vouch (a mark, not a member)
 
@@ -289,16 +371,24 @@ A bare colon-line mark inside a function body (`: : tolerates:user`;
 brace-alternation for several dimensions), scoped like any statement to the
 paths that reach it.
 
+Write it per function, when books genuinely wrap your tool's sites and you
+have re-audited that body for shifted execution. There is deliberately no
+blanket file-scope form: vouch the dimensions you have actually thought about,
+function by function - and arm by arm, where verbs differ.
+
 Licenses: executing that function in contexts shifted along the named
 dimensions, under the admin's dial.
 
-Author holds true: the body's effects are read-only by design, not by
-privilege-starvation - shifting it (notably to root) does not unlock writes it
-was silently attempting all along. The vouch claims nothing about answers
-(answers are supposed to vary per context) and nothing about other functions.
+Author holds true:
+- The body's effects are read-only by design, not by privilege-starvation:
+  shifting it (notably to root) does not unlock writes it was silently
+  attempting all along.
+- The vouch claims nothing about answers (answers are supposed to vary per
+  context) and nothing about other functions.
 
-Failure modes: a false vouch is a probe-contract break executed in an entered
-context - bounded by the dial, attributed to the three consents involved.
+Failure modes:
+- A false vouch is a probe-contract break executed in an entered context -
+  bounded by the dial, attributed to the three consents involved.
 
 ### 5g. `kind__resolve()` - the canonicalizer
 
@@ -306,14 +396,26 @@ Invoked with an entity name of its kind; prints the canonical name, falling
 through to the input for names it cannot answer. One resolver per kind in a
 loaded world; duplicates are refused loudly.
 
+Write it when your kind's names alias in the wild - package provides,
+symlinked paths, case-folded names - and the substrate offers an authoritative
+canonicalization query to delegate to. A kind whose names are canonical by
+construction needs none, and loses nothing: plain name-comparison remains the
+floor.
+
 Licenses: canonicalization of both sides of every same-kind comparison -
 aliased names collide correctly, distinct names stay distinct.
 
-Author holds true: conservative resolution - delegate to the substrate's own
-authoritative query where one exists; map unknown names to themselves. A
-wrong merge over-verifies (safe); a wrong split re-opens the silent-skip hole
-the resolver exists to close (dangerous), so uncertainty always resolves
-toward not-merging-but-also-not-inventing-splits: echo the input.
+Author holds true:
+- Conservative resolution: delegate to the substrate's own authoritative query
+  where one exists; map unknown names to themselves.
+- Uncertainty resolves toward echoing the input - never invent a merge, never
+  invent a split.
+
+Failure modes:
+- A wrong merge over-verifies: needless collisions, guards where elisions were
+  earned. Safe, value-losing.
+- A wrong split re-opens the silent-skip hole the resolver exists to close -
+  under-execution at some consumer's line, attributed to the resolver.
 
 ### 5h. `kind__disturbance_reaches_only()` - reach
 
@@ -321,15 +423,25 @@ Invoked per footprint coordinate of its kind, whoever emitted it; emits the
 implied coordinates in other kinds (footprint emission grammar; static lines
 and read-only host-question lines both welcome).
 
+Write it when disturbing an entity of your kind implies effects in other kinds
+that emitters cannot know from their seat - the package-to-its-files case. The
+knowledge must be the kind's own, derivable from its substrate; a guess about
+particular tools' behavior belongs in those tools' `disturbs`, not here.
+
 Licenses: widening of every footprint of the kind to cover what touching such
 an entity drags along. Footprints only; never widens what any fact claims for
 its own backing.
 
-Author holds true: the `only` contract - a totalistic survey of what
-disturbance of this kind can reach. Over-breadth only walls; an omitted edge
-re-opens exactly the cross-kind gap the member exists to close, so the survey
-duty is real. Wrong-direction danger is asymmetric like the resolver's, and
-authoring posture is the same: include when unsure.
+Author holds true:
+- The `only` contract: a totalistic survey, before authoring, of what
+  disturbance of this kind can reach.
+- Include when unsure - over-breadth only walls.
+
+Failure modes:
+- An omitted edge re-opens exactly the cross-kind gap the member exists to
+  close: a fact in the unreached kind survives a wall that really touched its
+  referent. Attributed to this member.
+- Over-breadth merely walls (safe, value-losing).
 
 ### 5i. `kind__state_stored_only_in()` - the store member
 
@@ -337,39 +449,52 @@ Emits the substrates where the kind's state lives (emission lines with
 substrate tokens), plus zero or more whole-member invariance declarations
 (`:   : invariant:<dimension>` colon-lines).
 
-Licenses: substrate keying of the kind's facts; and, per invariance line,
-cross-context carry of the kind's facts along that dimension - unflagged for
-substrate dimensions (the engine independently verifies each carried verdict
-body read nothing beyond its arguments and marked reads; bodies that fail
-that structural check simply do not carry), flag-gated for identity
-dimensions.
+Write it when your kind's facts deserve to travel: state that is one store
+machine-wide (kernel parameters, say) can answer across filesystem views, and
+crisply-located state benefits from substrate keying either way. If you
+cannot state where the state lives without hedging, the kind is not ready for
+this member.
 
-Author holds true: the `only` contract on the emission set; invariances that
-are true of the substrate itself, not of your test environment. Known-refused
-combinations are enforced (network-state kinds cannot claim netns-invariance);
-contradictions between a declared invariance and the member's own emissions
-are refused at plan time.
+Licenses:
+- Substrate keying of the kind's facts.
+- Per invariance line, cross-context carry of the kind's facts along that
+  dimension: unflagged for substrate dimensions (the engine independently
+  verifies each carried verdict body read nothing beyond its arguments and
+  marked reads; bodies failing that structural check simply do not carry);
+  flag-gated for identity dimensions.
 
-Failure modes: a false invariance line lets a fact measured in one world
-answer for another where the answer differs - under-execution of the
-consuming site, attributed to this line. The engine's structural check
-narrows but does not replace your duty: it verifies the measuring body's
-reads, not your claim about the substrate.
+Author holds true:
+- The `only` contract on the emission set.
+- Invariances true of the substrate itself, not of your test environment.
+  Known-refused combinations are enforced (network-state kinds cannot claim
+  netns-invariance); contradictions between a declared invariance and the
+  member's own emissions are refused at plan time.
+
+Failure modes:
+- A false invariance line lets a fact measured in one world answer for
+  another where the answer differs - under-execution of the consuming site,
+  attributed to this line.
+- The engine's structural check narrows but does not replace your duty: it
+  verifies the measuring body's reads, not your claim about the substrate.
 
 ## 6. The probe execution environment
 
-What a body may assume when it runs: it receives argv only (no environment
-contract beyond what your own file establishes; assume `set -u`-grade
-strictness in consumers); it may run many times, concurrently with other
-bodies, batched with strangers' bodies on the same host; in the apply lane
-the identical bytes run as guards, so nothing may depend on "this only runs
-at plan time"; entered bodies run in shifted contexts exactly when their
-vouches and the dial align. Its exit status is the entire in-band answer -
-Dorc's own signalling travels out-of-band, and no exit code means "unknown"
-except as section 3 defines. Its stdout/stderr are consumed only where a
-contract says so (predict channels, emission grammars); verdict bodies should
-run quiet, and refusal breadcrumbs go to the report stream, whose concrete
-spelling is still settling.
+What a body may assume when it runs:
+
+- It receives argv only. No environment contract exists beyond what your own
+  file establishes; assume `set -u`-grade strictness in consumers.
+- It may run many times, concurrently with other bodies, batched with
+  strangers' bodies on the same host.
+- In the apply lane the identical bytes run as guards; nothing may depend on
+  "this only runs at plan time".
+- Entered bodies run in shifted contexts exactly when their vouches and the
+  dial align.
+- Its exit status is the entire in-band answer. Dorc's own signalling travels
+  out-of-band; no exit code means "unknown" except as section 3 defines.
+- Its stdout and stderr are consumed only where a contract says so (predict
+  channels, emission grammars); verdict bodies should run quiet.
+- Refusal breadcrumbs go to the report stream, whose concrete spelling is
+  still settling.
 
 ## 7. The failure catalogue, ranked
 
