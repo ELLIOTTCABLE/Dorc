@@ -1,0 +1,20 @@
+[package]
+name = "dorc-lint"
+version = "0.0.0"
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+
+# The `dorc lint` machinery (27R §1 dir-lint-is-a-mode): the oracle-author doctor/lint
+# grab-bag. Deterministic given an injected external-tool runner (27R §1
+# dir-runner-is-the-di-seam) — the real subprocess impl lives at the cli edge, never here,
+# so this crate stays a pure function of its inputs (inv-determinism posture). Advisory-only:
+# it never touches core::claim tiers (dir-no-license-plane-contact).
+[dependencies]
+dorc-core = { path = "../core", version = "0.0.0" }
+dorc-syntax = { path = "../syntax", version = "0.0.0" }
+dorc-analysis = { path = "../analysis", version = "0.0.0" }
+dorc-oracle = { path = "../oracle", version = "0.0.0" }
+
+[lints]
+workspace = true

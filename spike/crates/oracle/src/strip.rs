@@ -51,7 +51,47 @@ pub fn strip_file(interner: &mut Interner, src: &str) -> Carrier<String> {
     if !has_marker(src) {
         return Carrier::pure(src.to_owned());
     }
+    Carrier::pure(apply_edits(src, collect_strip_edits(interner, src)))
+}
 
+/// A stripped file paired with a stripped-line → original-line map (`27R` §4 dir-strip-then-lint:
+/// the external-tool remap needs to name the user's ORIGINAL line even though the tool saw the
+/// stripped bytes). Kernel-pure (`strip-is-pure-erasure`): the map is DERIVED from the same edits
+/// `strip_file` applies — it changes no output byte.
+#[derive(Debug, Clone)]
+pub struct StripMapped {
+    /// The stripped text — byte-identical to [`strip_file`]'s output for the same input.
+    pub text: String,
+    /// `line_map[i]` = the 1-based ORIGINAL source line of the `(i+1)`-th stripped line. Only
+    /// whole-deleted annotation-LINES shift the numbering (`27R` §4); within-line edits (a bind
+    /// rewrite, a trailing-mark deletion, the shebang rewrite) keep their line, so those entries
+    /// are the identity. An unmarked file yields the pure identity map.
+    pub line_map: Vec<u32>,
+}
+
+/// Strip a file AND return the stripped-line → original-line map (`27R` §4). The stripped `text`
+/// is byte-identical to [`strip_file`] (both apply [`collect_strip_edits`]); the map is computed
+/// from the SAME edits, so it can never disagree with the bytes. An unmarked file is the identity
+/// (no edits, no shifts) — the uniform path that lets external tools remap marked and unmarked
+/// files alike (`27R` §4 "unmarked files pass through strip unchanged by construction").
+#[must_use]
+pub fn strip_file_with_map(interner: &mut Interner, src: &str) -> Carrier<StripMapped> {
+    if !has_marker(src) {
+        return Carrier::pure(StripMapped {
+            text: src.to_owned(),
+            line_map: identity_line_map(src),
+        });
+    }
+    let edits = collect_strip_edits(interner, src);
+    let line_map = line_map_from_edits(src, &edits);
+    let text = apply_edits(src, edits);
+    Carrier::pure(StripMapped { text, line_map })
+}
+
+/// Collect the FILE-ABSOLUTE `(lo, hi, replacement)` erasure edits for a marked file (the spans are
+/// file-absolute; funcdefs are disjoint, so the regions never overlap). Shared by [`strip_file`] and
+/// [`strip_file_with_map`] so the two can never diverge (single source of truth for the edit set).
+fn collect_strip_edits(interner: &mut Interner, src: &str) -> Vec<(usize, usize, String)> {
     // Every role funcdef in the file. Each `lift_role` scans only its own `__<role>` suffix, so a
     // funcdef is collected exactly once; the six sets partition the file's role funcdefs. These are
     // pure, cheap re-lifts (the marker gate runs the identical six).
@@ -70,10 +110,6 @@ pub fn strip_file(interner: &mut Interner, src: &str) -> Carrier<String> {
             }
         }
     }
-
-    // (lo, hi, replacement) FILE-ABSOLUTE edits (the spans are file-absolute; funcdefs are
-    // disjoint, so the collected edit regions never overlap). Applied back-to-front so earlier
-    // offsets stay valid.
     let mut edits: Vec<(usize, usize, String)> = Vec::new();
     for p in &predicts {
         collect_file_strip_edits(&p.body, src, &mut edits);
@@ -84,7 +120,12 @@ pub fn strip_file(interner: &mut Interner, src: &str) -> Carrier<String> {
     if let Some(edit) = marker_line_edit(src) {
         edits.push(edit);
     }
+    edits
+}
 
+/// Apply the erasure edits back-to-front (sorted by descending `lo` so earlier offsets stay valid).
+/// `inv-no-throw`: a non-char-boundary or out-of-bounds span is skipped, never panicked on.
+fn apply_edits(src: &str, mut edits: Vec<(usize, usize, String)>) -> String {
     edits.sort_by_key(|e| core::cmp::Reverse(e.0));
     let mut out = src.to_owned();
     for (lo, hi, repl) in edits {
@@ -92,7 +133,69 @@ pub fn strip_file(interner: &mut Interner, src: &str) -> Carrier<String> {
             out.replace_range(lo..hi, &repl);
         }
     }
-    Carrier::pure(out)
+    out
+}
+
+/// The identity line-map for an unmarked file: `[1, 2, …, n]` for `n` source lines. `src.lines()`
+/// under-counts by one when the file lacks a trailing newline, so a non-empty file always has at
+/// least one line; a trailing-newline file's final empty segment is not a stripped line.
+fn identity_line_map(src: &str) -> Vec<u32> {
+    let n = count_output_lines(src);
+    (1..=n).collect()
+}
+
+/// Count the lines a text presents to a downstream line-based tool: one per `\n`-delimited segment,
+/// plus a final segment if the text does not end in `\n`. An empty string has zero lines.
+fn count_output_lines(text: &str) -> u32 {
+    if text.is_empty() {
+        return 0;
+    }
+    let newlines = u32::try_from(text.bytes().filter(|&b| b == b'\n').count()).unwrap_or(u32::MAX);
+    // A trailing `\n` closes the last line (no dangling segment); its absence leaves one more.
+    if text.ends_with('\n') {
+        newlines
+    } else {
+        newlines.saturating_add(1)
+    }
+}
+
+/// Build the stripped-line → original-line map from the erasure edits (`27R` §4). An original line
+/// VANISHES iff a whole-deleted annotation-line covers it — encoded here as a deletion edit (empty
+/// replacement) whose span covers the line's content start through its terminating newline. Only
+/// those edits shift the numbering; within-line edits (a trailing-mark deletion covers only the
+/// mark suffix, a bind rewrite carries a non-empty replacement, the shebang rewrite is non-empty)
+/// never make a line vanish, so their original lines survive 1:1. Referent-agnostic and pure.
+fn line_map_from_edits(src: &str, edits: &[(usize, usize, String)]) -> Vec<u32> {
+    let deletions: Vec<(usize, usize)> = edits
+        .iter()
+        .filter(|(_, _, repl)| repl.is_empty())
+        .map(|(lo, hi, _)| (*lo, *hi))
+        .collect();
+    let mut map: Vec<u32> = Vec::new();
+    let mut line_no: u32 = 0;
+    let mut line_start = 0usize;
+    let bytes = src.as_bytes();
+    for i in 0..=bytes.len() {
+        let at_newline = bytes.get(i) == Some(&b'\n');
+        let at_end = i == bytes.len();
+        if at_newline || at_end {
+            // The line's byte range including its terminating newline (or EOF).
+            let content_start = line_start;
+            let line_end_incl = if at_newline { i.saturating_add(1) } else { i };
+            // A degenerate final empty segment (a trailing `\n` then EOF) is not a line.
+            if !(at_end && content_start == i) {
+                line_no = line_no.saturating_add(1);
+                let vanished = deletions
+                    .iter()
+                    .any(|&(lo, hi)| lo <= content_start && hi >= line_end_incl);
+                if !vanished {
+                    map.push(line_no);
+                }
+            }
+            line_start = i.saturating_add(1);
+        }
+    }
+    map
 }
 
 /// Collect the erasure edits for a statement list, recursing through `case`/`if`/`while` bodies
@@ -394,6 +497,84 @@ sm_dorc_Package__state_stored_only_in() {\n\
         // If the dialect lexer declines `dorc:sh` (out-of-dialect ⇒ the funcdef does not lift), the
         // construct simply is not reached — the corpus-absent limitation the module documents; the
         // test does not force a lift that may not exist.
+    }
+
+    fn strip_mapped(src: &str) -> StripMapped {
+        strip_file_with_map(&mut Interner::default(), src).value
+    }
+
+    #[test]
+    fn line_map_is_identity_for_unmarked_file() {
+        // An unmarked file passes through byte-identical, so every stripped line IS its original
+        // line (`27R` §4 uniform path). Four lines ⇒ `[1,2,3,4]`.
+        let plain = "#!/bin/sh\nfoo() { :; }\nls -la\necho done\n";
+        let m = strip_mapped(plain);
+        assert_eq!(m.text, plain, "unmarked file is byte-identical");
+        assert_eq!(
+            m.line_map,
+            vec![1, 2, 3, 4],
+            "identity map for an unmarked file"
+        );
+    }
+
+    #[test]
+    fn line_map_shifts_only_on_whole_deleted_annotation_lines() {
+        // The MARKED fixture: the marker line (orig 2) and the `invariant:` bare-mark line (orig 9)
+        // are whole-deleted and VANISH; every within-line edit (the shebang rewrite, the bind, the
+        // two trailing marks) keeps its line. So the 8 stripped lines map back to [1,3,4,5,6,7,8,10]
+        // — the only shifts are at the two vanished lines (`27R` §4). The map length equals the
+        // stripped output's line count, and each stripped line's text sits at its mapped original.
+        let m = strip_mapped(MARKED);
+        assert_eq!(
+            m.line_map,
+            vec![1, 3, 4, 5, 6, 7, 8, 10],
+            "only the marker + bare-mark lines shift the numbering:\n{}",
+            m.text
+        );
+        let stripped_lines: Vec<&str> = m.text.lines().collect();
+        let orig_lines: Vec<&str> = MARKED.lines().collect();
+        assert_eq!(
+            stripped_lines.len(),
+            m.line_map.len(),
+            "one map entry per stripped line"
+        );
+        // The dpkg-query command is stripped line 4 → original line 5 (its trailing mark gone).
+        assert_eq!(m.line_map.get(3).copied(), Some(5));
+        assert!(stripped_lines[3].contains("dpkg-query -W"));
+        assert!(
+            orig_lines[4].contains("dpkg-query -W"),
+            "original line 5 is the dpkg-query"
+        );
+    }
+
+    #[test]
+    fn shellcheck_directive_not_detached_by_deleted_annotation_line() {
+        // `27R` §8 test-pin (the sweep's ~SUSPECT finding): a `# shellcheck disable=` directive
+        // applies to the NEXT command. When strip whole-deletes a bare-mark annotation LINE sitting
+        // between the directive and its target, the directive must end up ADJACENT to the target
+        // (no residual blank line) — otherwise shellcheck's directive would target a blank line and
+        // silently fail to suppress. `consume_trailing_newline` (the whole-line delete taking its
+        // own newline) is what keeps them attached; this pins that it stays true.
+        // NB the Rust `\`-continuation strips each next line's leading whitespace, so this source is
+        // un-indented (`# shellcheck`, `:`, `printf` all at column 0) — immaterial to the property.
+        let src = "# dorc-lang/v0.1\n\
+foo__state_stored_only_in() {\n\
+# shellcheck disable=SC2086\n\
+:   : invariant:fs-view\n\
+printf 'x\\n'   : kernel\n\
+}\n";
+        let m = strip_mapped(src);
+        assert!(
+            m.text
+                .contains("# shellcheck disable=SC2086\nprintf 'x\\n'\n"),
+            "the directive is immediately followed by its target (annotation line deleted, no blank line):\n{}",
+            m.text
+        );
+        assert!(
+            !m.text.contains("invariant"),
+            "the bare-mark invariant line is gone:\n{}",
+            m.text
+        );
     }
 
     #[test]
