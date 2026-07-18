@@ -75,6 +75,7 @@ dependencies = [
  "anstyle",
  "dorc-analysis",
  "dorc-core",
+ "dorc-lint",
  "dorc-oracle",
  "dorc-plan",
  "dorc-syntax",

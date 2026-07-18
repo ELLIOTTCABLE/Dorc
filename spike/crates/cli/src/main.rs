@@ -85,6 +85,12 @@ modes (an optional leading token; default is the probe-then-apply round-trip):
                `book.sh:N`: the site on that source line; free text: matching commands
   strip <file> print <file> with every dorc dialect construct erased — runnable stock POSIX sh
                (the off-ramp cleaner; an unmarked file passes through unchanged)
+  lint <files> the oracle-author doctor/lint grab-bag over the files (no hosts, no probes):
+               parse/cfg diagnostics, unmodeled-wall inventory, verdict-body checks, and
+               shellcheck/checkbashisms when present. Flags: --format=human|jsonl,
+               --fail-on=error|warn|never, --no-tools, --require-tools, --expect-files N,
+               --source NAME (repeatable), --list-sources. Recommended CI line:
+               `dorc lint --format=jsonl --fail-on=warn --require-tools --expect-files N <files>`
   (none)       the round-trip: probe then apply on stdout, full disclosure on stderr
 
 options:
@@ -109,6 +115,12 @@ exit codes:
        ⊤-reject / CFG ⊤-node); the artifact still ships byte-identically, but the exit
        signals partial understanding so a `dorc … && deploy` chain stops. First of the
        reserved 10..19 dorc-semantic fast-fail range (vacuous/obvious, dorc-specific).
+
+  lint exit codes (distinct family — a ⊤-reject book is a FINDING here, never an exit-10):
+  0    clean — no findings at or above --fail-on
+  1    findings at or above --fail-on were reported
+  3    operational — the lint itself is compromised (no lintable files, an --expect-files
+       mismatch, or a --require-tools absence): distinct from both clean and findings
 ";
 
 /// A usage/argument error, or an unreadable input file (the classic getopt convention).
@@ -124,6 +136,16 @@ const EXIT_BOOK_UNMODELED: u8 = 10;
 /// not a crash); the exit stops a `dorc … && deploy` chain. Second of the 10..=19 range.
 const EXIT_WRAPPER_INCOHERENT: u8 = 11;
 
+/// `dorc lint`: findings AT OR ABOVE the `--fail-on` threshold were reported (`27R` §5 exit
+/// trichotomy). Distinct from clean (0) and from operational (below); shares linter convention.
+const EXIT_LINT_FINDINGS: u8 = 1;
+/// `dorc lint`: an OPERATIONAL error — the lint itself is compromised, distinct from both clean and
+/// findings (`27R` §5, §8b): zero lintable files, an `--expect-files` mismatch, or a `--require-tools`
+/// absence. NOT in the 10..=19 dorc-semantic family (a ⊤-reject book is a FINDING for lint, `27R` §5).
+/// Numbered 3 (tc-lint-operational-exit-code — golangci-lint uses 3=Failure, shellcheck 3=bad-invoke;
+/// the conservative lean, flagged for the human).
+const EXIT_LINT_OPERATIONAL: u8 = 3;
+
 /// What the arg-parse resolved to: an analysis run, or a help/version request (both of which
 /// are successes printed to stdout, ack-1 help-is-success — never a usage error).
 enum Invocation {
@@ -137,6 +159,9 @@ enum Invocation {
     /// NON-analysis invocation (like help/version) — it erases every dialect construct from one
     /// file and prints runnable stock sh to stdout. The path is the sole positional.
     Strip(String),
+    /// `dorc lint <files…>`: the oracle-author doctor/lint grab-bag (`27R`). A NON-analysis
+    /// invocation over the `dorc-lint` crate; contacts no hosts, ships no probes (`dir-lint-never-probes`).
+    Lint(LintArgs),
 }
 
 /// The outcome of a completed analysis run — the process exit code (ack-1). `Complete` is the
@@ -170,6 +195,7 @@ fn main() -> ExitCode {
                 ExitCode::from(EXIT_USAGE)
             }
         },
+        Ok(Invocation::Lint(args)) => lint_command(&args),
         Ok(Invocation::Analyze(args)) => match run(&args) {
             Ok(RunOutcome::Complete) => ExitCode::SUCCESS,
             Ok(RunOutcome::BookUnmodeled) => ExitCode::from(EXIT_BOOK_UNMODELED),
@@ -290,6 +316,12 @@ fn parse_args() -> Result<Invocation, String> {
             ));
         }
         return Ok(Invocation::Strip(path.clone()));
+    }
+
+    // `dorc lint <files…> [flags]`: a distinct arg surface (`27R` §5) — handled before the
+    // analyze mode/flag machinery, like strip.
+    if raw.first().map(String::as_str) == Some("lint") {
+        return parse_lint_args(&raw);
     }
 
     let mut books: Vec<String> = Vec::new();
@@ -531,6 +563,324 @@ fn resolve_oracle_paths(oracles: &[String], oracle_dirs: &[String]) -> Result<Ve
         paths.extend(found);
     }
     Ok(paths)
+}
+
+// ===========================================================================
+// `dorc lint` (27R): the oracle-author doctor/lint grab-bag. The cli edge — arg parse, file read,
+// the REAL subprocess runner (io-at-edges-only), render, exit code. The machinery is in `dorc-lint`.
+// ===========================================================================
+
+/// One-line usage for the `lint` sub-surface (`27R` §5). Embedded in lint arg errors.
+const LINT_USAGE: &str = "usage: dorc lint <files…> [-o <oracle>]… [--oracle-dir <dir>] \
+    [--format=human|jsonl] [--fail-on=error|warn|never] [--no-tools] [--require-tools] \
+    [--expect-files N] [--source NAME]… [--list-sources]";
+
+/// The parsed `dorc lint` invocation (`27R` §5). Files + oracle sources + the render/exit knobs.
+struct LintArgs {
+    files: Vec<String>,
+    oracles: Vec<String>,
+    oracle_dirs: Vec<String>,
+    format: LintFormat,
+    /// The `--fail-on` threshold as a severity, or `None` for `never` (`27R` §5).
+    fail_on: Option<dorc_lint::LintSeverity>,
+    tools_enabled: bool,
+    require_tools: bool,
+    /// `--expect-files N` (`27R` §8b): the exact lintable-file count CI asserts.
+    expect_files: Option<usize>,
+    list_sources: bool,
+    /// `--source NAME` subset selection (`27R` §8 delta-named-sources-selectable); empty ⇒ all.
+    sources: Vec<String>,
+}
+
+/// The `--format` choice (`27R` §5 dir-two-renders-one-model).
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum LintFormat {
+    Human,
+    Jsonl,
+}
+
+/// Parse `dorc lint <files…> [flags]` (`raw[0]` is `"lint"`). No config file, ever (`kOOB` redline —
+/// flags only); no comment-directive suppression for dorc-native findings (the dialect marker stays
+/// the one comment-parse). Files are positionals; `--source NAME` selects a subset (positionals are
+/// taken by files, so subset selection needs a flag — deviation from brew's positional-checks, `27S`).
+fn parse_lint_args(raw: &[String]) -> Result<Invocation, String> {
+    let mut files = Vec::new();
+    let mut oracles = Vec::new();
+    let mut oracle_dirs = Vec::new();
+    let mut format = LintFormat::Human;
+    // tc-lint-fail-on-default: `error` (hot-loop mercy; CI tightens to `warn`). The conservative
+    // lean, flagged for the human (`27R` §6 tension-fail-on-default).
+    let mut fail_on = Some(dorc_lint::LintSeverity::Error);
+    let mut tools_enabled = true;
+    let mut require_tools = false;
+    let mut expect_files = None;
+    let mut list_sources = false;
+    let mut sources = Vec::new();
+    let mut it = raw.iter().skip(1).cloned().peekable();
+    while let Some(arg) = it.next() {
+        if let Some(p) = arg.strip_prefix("--oracle-dir=") {
+            oracle_dirs.push(p.to_owned());
+        } else if arg == "--oracle-dir" {
+            oracle_dirs.push(it.next().ok_or("--oracle-dir needs a directory")?);
+        } else if arg == "-o" || arg == "--oracle" {
+            oracles.push(it.next().ok_or("-o needs a path")?);
+        } else if let Some(p) = arg.strip_prefix("-o").filter(|p| !p.is_empty()) {
+            oracles.push(p.to_owned());
+        } else if let Some(p) = arg.strip_prefix("--format=") {
+            format = parse_lint_format(p)?;
+        } else if arg == "--format" {
+            format = parse_lint_format(&it.next().ok_or("--format needs a value")?)?;
+        } else if let Some(p) = arg.strip_prefix("--fail-on=") {
+            fail_on = parse_fail_on(p)?;
+        } else if arg == "--fail-on" {
+            fail_on = parse_fail_on(&it.next().ok_or("--fail-on needs a value")?)?;
+        } else if arg == "--no-tools" {
+            tools_enabled = false;
+        } else if arg == "--require-tools" {
+            require_tools = true;
+        } else if let Some(p) = arg.strip_prefix("--expect-files=") {
+            expect_files = Some(parse_expect_count(p)?);
+        } else if arg == "--expect-files" {
+            expect_files = Some(parse_expect_count(
+                &it.next().ok_or("--expect-files needs a number")?,
+            )?);
+        } else if arg == "--list-sources" {
+            list_sources = true;
+        } else if let Some(p) = arg.strip_prefix("--source=") {
+            sources.push(p.to_owned());
+        } else if arg == "--source" {
+            sources.push(it.next().ok_or("--source needs a name")?);
+        } else if arg.starts_with('-') {
+            return Err(format!("unknown lint flag {arg:?}; {LINT_USAGE}"));
+        } else {
+            files.push(arg);
+        }
+    }
+    Ok(Invocation::Lint(LintArgs {
+        files,
+        oracles,
+        oracle_dirs,
+        format,
+        fail_on,
+        tools_enabled,
+        require_tools,
+        expect_files,
+        list_sources,
+        sources,
+    }))
+}
+
+fn parse_lint_format(v: &str) -> Result<LintFormat, String> {
+    match v {
+        "human" => Ok(LintFormat::Human),
+        "jsonl" => Ok(LintFormat::Jsonl),
+        other => Err(format!(
+            "unknown --format {other:?} (expected human|jsonl); {LINT_USAGE}"
+        )),
+    }
+}
+
+/// `--fail-on` → the severity threshold, or `None` for `never`. `27R` §5: only `error`/`warn`
+/// gate (`info` never does).
+fn parse_fail_on(v: &str) -> Result<Option<dorc_lint::LintSeverity>, String> {
+    match v {
+        "error" => Ok(Some(dorc_lint::LintSeverity::Error)),
+        "warn" => Ok(Some(dorc_lint::LintSeverity::Warn)),
+        "never" => Ok(None),
+        other => Err(format!(
+            "unknown --fail-on {other:?} (expected error|warn|never); {LINT_USAGE}"
+        )),
+    }
+}
+
+fn parse_expect_count(v: &str) -> Result<usize, String> {
+    v.parse::<usize>().map_err(|_| {
+        format!("--expect-files needs a non-negative integer, got {v:?}; {LINT_USAGE}")
+    })
+}
+
+/// The REAL external-tool runner at the cli edge (`27R` §1 dir-runner-is-the-di-seam): the ONLY
+/// non-hermetic part, kept out of the deterministic `dorc-lint` crate. Feeds the stripped bytes on the
+/// tool's stdin (so the tool sees `-`/stdin, never a temp path — `dir-paths-stay-yours`).
+struct SubprocessRunner;
+
+impl dorc_lint::ExternalToolRunner for SubprocessRunner {
+    fn available(&self, tool: &str) -> bool {
+        tool_on_path(tool)
+    }
+
+    fn run(&self, tool: &str, args: &[&str], stdin: &[u8]) -> dorc_lint::ToolRun {
+        use std::process::{Command, Stdio};
+        let mut child = match Command::new(tool)
+            .args(args)
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+        {
+            Ok(c) => c,
+            // The tool vanished between the availability probe and here: rc 127 (command-not-found),
+            // the adapter's degradation ladder turns it into a finding, never a crash.
+            Err(e) => {
+                return dorc_lint::ToolRun {
+                    rc: 127,
+                    stdout: Vec::new(),
+                    stderr: e.to_string().into_bytes(),
+                };
+            }
+        };
+        if let Some(mut si) = child.stdin.take() {
+            // A tool that reads only a prefix of stdin closes early ⇒ BrokenPipe; that is not an
+            // error (we want its diagnosis of what it DID read), so the write result is ignored.
+            let _ = si.write_all(stdin);
+        }
+        match child.wait_with_output() {
+            Ok(out) => dorc_lint::ToolRun {
+                rc: out.status.code().unwrap_or(-1),
+                stdout: out.stdout,
+                stderr: out.stderr,
+            },
+            Err(e) => dorc_lint::ToolRun {
+                rc: -1,
+                stdout: Vec::new(),
+                stderr: e.to_string().into_bytes(),
+            },
+        }
+    }
+}
+
+/// Is `tool` an executable on `PATH`? A `which`-style scan (no process spawn) — cross-platform via
+/// `PATHEXT` on Windows (an extensionless script like a POSIX `shellcheck` won't be CreateProcess-able
+/// on Windows, so a `.exe`/`.cmd` is required there; see `27S` for the e2e consequence).
+fn tool_on_path(tool: &str) -> bool {
+    let Some(path) = std::env::var_os("PATH") else {
+        return false;
+    };
+    for dir in std::env::split_paths(&path) {
+        for ext in executable_exts() {
+            if dir.join(format!("{tool}{ext}")).is_file() {
+                return true;
+            }
+        }
+    }
+    false
+}
+
+/// The executable suffixes to try: just `""` on unix; `""` plus each `PATHEXT` entry on Windows.
+fn executable_exts() -> Vec<String> {
+    let mut exts = vec![String::new()];
+    if cfg!(windows)
+        && let Ok(pathext) = std::env::var("PATHEXT")
+    {
+        for e in pathext.split(';') {
+            let e = e.trim();
+            if !e.is_empty() {
+                exts.push(e.to_owned());
+            }
+        }
+    }
+    exts
+}
+
+/// `dorc lint` driver (`27R` §5): resolve inputs, run `dorc-lint`, render, and compute the exit
+/// trichotomy (0 clean / 1 findings-at-or-above / operational distinct from both). Operational checks
+/// take precedence over the findings threshold (a compromised run must not read as a clean/findings
+/// signal — `27R` §8 delta-exit-trichotomy-sharpened).
+fn lint_command(args: &LintArgs) -> ExitCode {
+    if args.list_sources {
+        for s in dorc_lint::list_sources() {
+            println!("{:<22} [{}]  {}", s.name, s.rung, s.describe);
+        }
+        return ExitCode::SUCCESS;
+    }
+    let inputs = match read_lint_inputs("file", &args.files) {
+        Ok(v) => v,
+        Err(msg) => {
+            eprintln!("dorc: lint: {msg}");
+            return ExitCode::from(EXIT_LINT_OPERATIONAL);
+        }
+    };
+    let oracle_paths = match resolve_oracle_paths(&args.oracles, &args.oracle_dirs) {
+        Ok(p) => p,
+        Err(msg) => {
+            eprintln!("dorc: {msg}");
+            return ExitCode::from(EXIT_USAGE);
+        }
+    };
+    let oracles = match read_lint_inputs("oracle", &oracle_paths) {
+        Ok(v) => v,
+        Err(msg) => {
+            eprintln!("dorc: lint: {msg}");
+            return ExitCode::from(EXIT_LINT_OPERATIONAL);
+        }
+    };
+    let options = dorc_lint::LintOptions {
+        tools_enabled: args.tools_enabled,
+    };
+    let only = (!args.sources.is_empty()).then_some(args.sources.as_slice());
+    let report = dorc_lint::lint(&inputs, &oracles, options, &SubprocessRunner, only);
+
+    // Zero lintable files is OPERATIONAL, never clean (`27R` §8b dir-zero-files-is-operational). In
+    // machine mode the envelope still ships (coverage shows the empty file set); human mode says so.
+    if inputs.is_empty() {
+        if args.format == LintFormat::Jsonl {
+            print!("{}", dorc_lint::render::render_jsonl(&report));
+            std::io::stdout().flush().ok();
+        }
+        eprintln!("dorc: lint: no lintable files given (operational, not clean); {LINT_USAGE}");
+        return ExitCode::from(EXIT_LINT_OPERATIONAL);
+    }
+
+    match args.format {
+        LintFormat::Human => print!("{}", dorc_lint::render::render_human(&report)),
+        LintFormat::Jsonl => print!("{}", dorc_lint::render::render_jsonl(&report)),
+    }
+    std::io::stdout().flush().ok();
+
+    // Operational precedence: --expect-files scope drift, then --require-tools absence.
+    if let Some(want) = args.expect_files
+        && inputs.len() != want
+    {
+        eprintln!(
+            "dorc: lint: --expect-files: expected {want} lintable file(s), saw {} (scope drift)",
+            inputs.len()
+        );
+        return ExitCode::from(EXIT_LINT_OPERATIONAL);
+    }
+    if args.require_tools {
+        let absent: Vec<&str> = report
+            .coverage
+            .sources
+            .iter()
+            .filter(|s| s.status == dorc_lint::SourceStatus::Absent)
+            .map(|s| s.name)
+            .collect();
+        if !absent.is_empty() {
+            eprintln!(
+                "dorc: lint: --require-tools: required tool(s) missing from PATH: {}",
+                absent.join(", ")
+            );
+            return ExitCode::from(EXIT_LINT_OPERATIONAL);
+        }
+    }
+    if report.count_at_or_above(args.fail_on) > 0 {
+        return ExitCode::from(EXIT_LINT_FINDINGS);
+    }
+    ExitCode::SUCCESS
+}
+
+/// Read a set of paths into [`dorc_lint::LintInput`]s; an unreadable file is a hard error (the lint
+/// cannot lint what it cannot read — an operational failure, `27R` §8b). `kind` labels the humane error.
+fn read_lint_inputs(kind: &str, paths: &[String]) -> Result<Vec<dorc_lint::LintInput>, String> {
+    let mut inputs = Vec::new();
+    for path in paths {
+        let src = std::fs::read_to_string(path).map_err(|e| humane_read_error(kind, path, &e))?;
+        inputs.push(dorc_lint::LintInput {
+            path: path.clone(),
+            src,
+        });
+    }
+    Ok(inputs)
 }
 
 /// Materialize the per-run PATH shim files into `dir` (`274` §5 / `27L` task-14). `files` is the

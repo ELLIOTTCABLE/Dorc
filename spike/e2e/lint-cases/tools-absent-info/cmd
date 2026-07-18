@@ -1,0 +1,1 @@
+--source=shellcheck --source=checkbashisms

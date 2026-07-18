@@ -1284,6 +1284,42 @@ for dir in "$here"/cases/*/; do
   rm -rf "$_shimdir"
 done
 
+# ---------------------------------------------------------------------------
+# `dorc lint` cases (27R) — a STRICTLY ADDITIVE second corpus (lint-cases/*/), disjoint from the
+# round-trip cases/*/ above (cli/CLAUDE.md harness contract: a NEW case type, existing cases and
+# their gates untouched). Each case dir carries: `cmd` (the lint flags, one line), `book.sh` (the
+# file to lint), `expected.out` (hand-authored — NEVER blessed), and `expected-rc`. Each is run as
+# `dorc lint <flags> book.sh` from INSIDE the case dir, so the finding path is the stable RELATIVE
+# `book.sh`; and under a SCRUBBED PATH (a fresh empty dir) so shellcheck/checkbashisms are
+# deterministically ABSENT regardless of the host — the spike never spawns real external tools in
+# tests (the adapter parse ladder is unit-tested over a fake runner; tc-lint-e2e-stub-tools-spawn).
+if [ -d "$here/lint-cases" ]; then
+  _lint_empty=$(mktemp -d)
+  for ldir in "$here"/lint-cases/*/; do
+    [ -f "${ldir}cmd" ] || continue
+    lname=lint/$(basename "$ldir")
+    total=$((total + 1))
+    _lflags=$(cat "${ldir}cmd")
+    _lwant_rc=$(cat "${ldir}expected-rc" 2>/dev/null || echo 0)
+    _lrc=0
+    # shellcheck disable=SC2086  # $_lflags is intentionally word-split into separate flags.
+    _lgot=$( cd -- "$ldir" && env PATH="$_lint_empty" "$dorc" lint $_lflags book.sh 2>/dev/null ) || _lrc=$?
+    _lgot=$(printf '%s\n' "$_lgot" | sed 's/\r$//')
+    _lwant=$(sed 's/\r$//' < "${ldir}expected.out")
+    if [ "$_lrc" != "$_lwant_rc" ]; then
+      echo "FAIL  $lname  [lint: exit rc=$_lrc, expected $_lwant_rc]"
+      fails=$((fails + 1))
+    elif [ "$_lgot" != "$_lwant" ]; then
+      echo "FAIL  $lname  [lint: stdout content diff]"
+      command -v diff >/dev/null 2>&1 && printf '%s\n' "$_lgot" | diff -u "${ldir}expected.out" - || true
+      fails=$((fails + 1))
+    else
+      [ "${DORC_E2E_QUIET:-}" = "1" ] || echo "ok    $lname"
+    fi
+  done
+  rm -rf "$_lint_empty"
+fi
+
 echo "---"
 if [ "$fails" -ne 0 ]; then
   echo "$fails/$total e2e round-trips FAILED" >&2
