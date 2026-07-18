@@ -10,7 +10,11 @@ branch cleanly re-mergeable over it.
 Companions: `plans/261` (the within-host read-concurrency half) and **`plans/262` (the
 extracted build-spine — the records-lane contract, emission locus, order-independence
 invariant, policy ports, and determinism rig shared by both tracks; 262's S0/S1 build FIRST,
-then this plan's stages proceed)**.
+then this plan's stages proceed)**. Joined 2026-07-17 (minted out-of-order, mid-r27) by
+**`notes/26B`** — the human-typed reactive plan-construction direction (chaotic-fixpoint
+engine, consent-cut weld, cancellation/finality, quiescence-at-mint) plus the deferred
+capture-fold's design bank; it reshapes how this plan's engine + `262`'s spine should be
+read on revival.
 
 > **⚠ ROUND TABLED (2026-07-10, r24 close-out — `notes/24U` §6):** zero build commits ever
 > landed on `ai/spike3-r26` (verified at close); this plan + `26A`'s amendments remain the

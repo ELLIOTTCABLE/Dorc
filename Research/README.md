@@ -67,7 +67,9 @@ and carries the license-contamination map.
 - **The first real-machine field trial** — `plans/252` (THE protocol) + `notes/254`
   (adjudication + retrospective ledger) + `notes/255-*` (book + dry-run + predictions).
 - **Multi-host & read-concurrency** — `plans/262` (build spine) + `plans/260`/`261`,
-  adjudicated `notes/26A` (round 26, branch `ai/spike3-r26`).
+  adjudicated `notes/26A` (round 26, branch `ai/spike3-r26`); joined out-of-order by
+  `notes/26B` (reactive plan-construction direction + the capture-fold deferral,
+  minted mid-r27).
 - **Wrapper contexts (sudo/su/env): context-entry probing, the escalation dial, the
   tolerance vouch** — **`plans/27C` (THE current spec: measurement in the site's denoted
   context; reuse-never-acquire; the fallback consumption lane)** over `notes/273` (the
@@ -87,7 +89,8 @@ and carries the license-contamination map.
   topology; `kind__state_stored_only_in()`; §12 is its ratification-status table).
 - **Value-predictions & the capture lane** — `notes/275` (its §6 carries a NOT-RATIFIED
   banner — honor it); origin analysis `notes/219` (round-21 vintage; concepts carry,
-  cites stale).
+  cites stale); the BUILD is deferred to the r26 revival — direction + design bank
+  `notes/26B` (reactive plan-construction; the binding-site gate-question).
 - **Eval'ers & the `dorc:sh` reentry trio** — `notes/274` (reentry token ·
   descend-don't-license · the probe-shipping split).
 - **Did round-27's design survive adversarial review?** — `notes/279f` (the crosscheck
@@ -168,7 +171,8 @@ and carries the license-contamination map.
 - **r26 multi-host + read-concurrency** (branch `ai/spike3-r26`; TABLED — plans +
   adjudication only, zero build commits; resumes post-field-trial per `plans/270` §5)
   — → `plans/262` (build spine) · `plans/260` (multi-host) · `plans/261` (read-concurrency)
-  · `notes/26A` (crosscheck adjudication).
+  · `notes/26A` (crosscheck adjudication) · `notes/26B` (reactive plan-construction
+  direction + capture-fold deferral bank; minted out-of-order 2026-07-17, mid-r27).
 - **r27 the consolidation round** (current; branch `ai/spike3-r23`) — rest-of-round-24 +
   the wrapper/payload work, authored-once discipline. → **`plans/270` (charter: block
   arc · adjudication ledger · naming discipline)**; predecessor accounting `notes/24U`.

@@ -308,13 +308,20 @@ axiom).
 - **field-trial revival** (né r25; branch `ai/spike3-r25`): fires when block-stdlib
   lands. `252`'s protocol stands unchanged. Owed-on-revival (banked in `24U` §6):
   fold `255` §5 → `252` §4/§8; the `_assert_tagged` eyeball; the HHHF zsh smoke-test;
-  the lying-check differential must-cover (`24C` §rc-passthrough-taxonomy). The trial
+  the lying-check differential must-cover (`24C` §rc-passthrough-taxonomy); the
+  capture-wall counting rider (`26B:ask-trial-counts-capture-walls` — the trial runs
+  WITHOUT the capture fold, so dynamic-value walls get counted as a named category,
+  sizing the r26-revival investment). The trial
   gets materially stronger than its original design: the book's two permanent walls
   (`su - postgres -c`, the hostname host-guard) are now in-scope machinery.
 - **multi-host resumption** (né r26; branch `ai/spike3-r26`, zero build commits):
   resumes after the field trial by rebasing onto the then-current lineage; its S1
   scope shrinks by whatever wire-records-v1-import already landed; `260`/`261`/`262`
-  + `26A`'s stop-2/stop-3 amendments remain its spec.
+  + `26A`'s stop-2/stop-3 amendments remain its spec — JOINED (minted out-of-order
+  2026-07-17, mid-r27) by **`notes/26B`**: the human-typed reactive
+  plan-construction direction, the capture-fold deferral (r27's read-value-slice
+  lane STRUCK), and the design bank grounding the revival conductor. Read `26B`
+  alongside `262` before re-cutting S1.
 - *(Annotation 2026-07-16, banked here when LIVING_STATUS compressed:)*
   **dotfiles-acceptance-day** (a round-24 settled-list one-liner, 2026-07-07) stays
   TABLED — no block owns it; revives at human discretion (design record for the

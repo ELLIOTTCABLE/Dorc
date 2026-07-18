@@ -7,6 +7,13 @@ document IS that spine. 260 and 261 keep the shape/reasoning/tradeoffs/gotchas o
 and now reference this doc for the shared substrate. **Build order: this doc's S0/S1 first;
 the two tracks decouple after S1.**
 
+> **⚠ ADDENDUM (2026-07-17, minted out-of-order mid-r27): `notes/26B` joins this spine's
+> reading list.** It carries human-typed rulings making plan-construction *reactive*
+> (facts stream in; analysis re-runs to quiescence; work is added AND cancelled) and
+> re-homes the deferred capture-fold lane here. Its §§2–4 (confluence-as-property,
+> quiescence-at-mint, cancellation-finality, per-host partition shape) bear directly on
+> S1's engine loop — read it before re-cutting S1 at revival.
+>
 > **⚠ ROUND TABLED / PARTIALLY IMPORTED (2026-07-10, r24 close-out):** r26's build never
 > started; this spine remains its spec. THREE pieces were pulled forward into round 27
 > (`plans/270`): (1) the §2 records contract's single-host minimum =
