@@ -750,7 +750,24 @@ HashMap iteration, newtypes + module privacy as the enforcement mechanism.
   the `260` s3-1 no-cross-host-API discipline makes cross-host id confusion
   unrepresentable-by-absence; debug-tier generation stamps (DI'd counter, never
   ambient) as the belt.
-- **Honest residue**: `derive()`'s `Option` deliberately erases the ⊤-cause
+- **`26C:disc-naming-question-answer-belief`** (naming pass, human-prompted
+  2026-07-17f) — the sketch's names above are superseded for the R2 brief:
+  `Want` → **`Question`**/`QuestionId` (the type's uses are question-flavored;
+  "want" dissolves into the predicate `∉ asked` — `asked: BTreeSet<QuestionId>`,
+  diff by set-difference); `Records` → **`Answers`** (`BTreeMap<QuestionId,
+  Answer>` — the acked invariant becomes utterable in the names: *an answer is
+  readable only by re-deriving its question*); `Cell<T>`-the-enum →
+  **`Belief<T>`** `{ Unknown, Held(T), Conflicted }` over `Beliefs:
+  BTreeMap<Coordinate, …>` ("a conflicted belief never resolves" = the
+  stickiness law in English; honest per oracles-may-lie). "Cell" keeps its
+  established `277` referent — the coordinate-named slot in the WORLD — so the
+  store holds beliefs *about* cells; "record" demotes back to wire-tier
+  (`dorc-records/1`) where it always belonged; "site plane" retired as a phrase
+  (say: answers are question-keyed; beliefs are world-keyed). `Query` is VETOED
+  for the identity type — hard collision with the existing Queries effect-class
+  vocabulary, and overloaded tokens mislead both human readers and agents;
+  where a concept does something unusual, an idiomatic name is camouflage
+  (human's ear-perking principle, adopted).
   (license paths never branch on which-⊤); a `derive_explain` sibling feeds the
   why-lane. Ids are within-run only — NEVER serialized (`kSTATE` parked; rec-5).
   Two sites asking the byte-identical question stay two keys (site is in the
