@@ -196,3 +196,29 @@ guard-check is a read-only query — same shape.)
 - Whoever migrates the `FactKey`-widening into `command_effect` (the `27N` `tc-factkey-widening`
   flag): the carry path keys the `PeeledSite` context `HostDefault` on the Degrade arm — that keying
   decision must survive the migration (it is the carry license's manifestation).
+
+## Errand — errand-carry-attribution-why-note (checkpoint-required, DONE)
+
+Conductor errand (checkpoint verdict, 2026-07-17): a carried elision must render its four-link
+attribution chain from day one (the block acceptance clause "every cross-context elision renders its
+four-link attribution chain") — an unflagged cross-boundary answer resting on a kind-owner's typed
+line + an engine proof MUST say so. Landed:
+
+- At the Carry mint (`build_wrapped_analysis`, the `if carried` arm): `try_carry` now returns the
+  read-set's `read_kinds`; `carry_attribution_text` renders the chain (crossed substrate axes; each
+  backing kind vouched invariant across those axes by its kind-owner's `invariant:` line —
+  vouch-species; the engine read-set-closure proof). One per carried site, deterministic.
+- **Two lanes** (both receipt-free — stderr only, the `.sh` artifact stays byte-identical, verified):
+  a coded Note `carried-across-substrate-axis` (registered on the `diag_tidy` legacy allow-list; the
+  diagnostic lane, `wrapped: note[…]`), AND a `why: site N …` line (`emit_carry_attribution`, sibling
+  to `emit_guard_attribution`; the two-surfaces why-lens home, gate-7-pinnable).
+- **Pinned** by `carry-fsview-elides/expected-why` (one `&&`-conjoined pattern requiring the crossed
+  axis + kind + `invariant:` line + `read-set-closed` in ONE why-line). Only `carry-fsview-elides`
+  carries; `carry-fsview-hidden-read-walls` walls (no carry ⇒ no note — correct). `expected.out`
+  goldens UNCHANGED (the chain rides stderr, never stdout).
+- **Rendered text (verbatim from the `carry-fsview-elides` run):**
+  - `wrapped: note[carried-across-substrate-axis]: pure-predicate carry across fs-view (unflagged, 27C §4(a)): sm.dorc.KernelParam — each vouched invariant across fs-view by its kind-owner's ` + "`invariant:`" + ` line (vouch-species); the verdict body is engine-proved read-set-closed`
+  - `why: site 0 pure-predicate carry across fs-view (unflagged, 27C §4(a)): sm.dorc.KernelParam — each vouched invariant across fs-view by its kind-owner's ` + "`invariant:`" + ` line (vouch-species); the verdict body is engine-proved read-set-closed`
+- `CarryDecision::Carry` gained a `read_kinds` field (the (A) attribution inputs); `carried-across-
+  substrate-axis` added to the `diag_tidy` allow-list. Gates re-run clean; 91/91 e2e (88 pre-existing
+  byte-stable); unit unchanged at 881.

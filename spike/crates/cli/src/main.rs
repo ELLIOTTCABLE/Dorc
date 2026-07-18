@@ -715,6 +715,7 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
     );
     let peeled_sites = wrapped_analysis.peeled;
     let wrapped_probes = wrapped_analysis.wrapped;
+    let carried_attribution = wrapped_analysis.carried;
     report_at(advisory, "wrapped", book_source, &wrapped_analysis.hints);
     let (classified, why_diags, kills, kill_coords, fact_backings) =
         dorc_analysis::effect::classify_with_why_diags(
@@ -1091,6 +1092,10 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
         // mechanism + its converged-vouch license + the vouching oracle (a render-REFUSED guard
         // discloses the refusal instead). Empty when no site guards.
         emit_guard_attribution(&plan, &parsed.value, &interner);
+        // `27C` §4(a): every pure-predicate-CARRY elision names its cross-context attribution chain
+        // on this same lane (the crossed substrate axes, each backing kind's owner `invariant:` line,
+        // the read-set-closure proof). Empty when no site carried.
+        emit_carry_attribution(&plan, &carried_attribution);
         // upcoming-firstwall-hint (USER_STORY stage 3): the forward NAG — ONE aggregated line for
         // the FIRST unmodeled wall, naming the count an oracle for it would un-wall. `hint: ` prefix
         // (never `error[`), so the gate-3 stderr floor ignores it. rul24-warnings-tune-high: the
@@ -2655,6 +2660,21 @@ fn emit_guard_attribution(
     }
 }
 
+/// Every pure-predicate-CARRY elision names, on the why-lens lane, its cross-context attribution
+/// chain (`27C` §9 / steering `pure-predicate-carry`): the crossed substrate axes, each backing
+/// kind's owner `invariant:<axis>` line (vouch-species), and the engine read-set-closure proof. The
+/// block acceptance demands this "from day one" — an UNFLAGGED cross-boundary answer resting on a
+/// kind-owner's typed line + an engine proof MUST disclose whose line and what proof licensed it.
+/// `carried` is keyed by the site's `AstId` (built at the carry decision); this re-keys to the plan's
+/// per-site number. Empty when no site carried. Deterministic (plan step order).
+fn emit_carry_attribution(plan: &dorc_plan::Plan, carried: &BTreeMap<dorc_core::AstId, String>) {
+    for step in &plan.steps {
+        if let Some(text) = carried.get(&step.ast) {
+            eprintln!("why: site {} {text}", step.leaf.0);
+        }
+    }
+}
+
 /// upcoming-firstwall-hint (`USER_STORY` stage 3): the role a plan step plays in the poison-wall
 /// walk, reduced for the first-wall hint. The wall the hint TARGETS is specifically an UNMODELED
 /// (opaque) running command — the class an oracle could describe; a modeled-but-diverged wall is
@@ -3901,6 +3921,10 @@ struct WrappedAnalysis {
     wrapped: dorc_plan::WrappedProbes,
     /// One-line adoption hints (a degraded-on-vouch site) + degrade disclosures (`27C` §2/§6).
     hints: Vec<dorc_core::Diagnostic>,
+    /// Pure-predicate-carry attribution chains keyed by the carried site's [`AstId`] (`27C` §4(a)):
+    /// the why-lens tether emitted for every carried elision (`emit_carry_attribution`). Keyed by
+    /// `AstId` so the plan's per-site step re-keys to the site number for the `why: site N …` line.
+    carried: BTreeMap<dorc_core::AstId, String>,
 }
 
 /// Build the wrapped-BOOK-site analysis (`27C` §3 / lane-integration `27N`): recognize each site
@@ -3943,6 +3967,7 @@ fn build_wrapped_analysis(
         peeled: BTreeMap::new(),
         wrapped: dorc_plan::WrappedProbes::new(),
         hints: Vec::new(),
+        carried: BTreeMap::new(),
     };
     if wrappers.is_empty() {
         return out; // no wrapper oracle ⇒ nothing peels (rung-0 byte-identical)
@@ -4054,9 +4079,25 @@ fn build_wrapped_analysis(
                 // Try pure-predicate carry (`27C` §4(a)) before defaulting to run. Gated on the
                 // shipped inner check BEING the verdict body (auto-cell) — the closed body must be
                 // the measured body; the predict-inner carry path is deferred (disclosed, `27O`).
-                let carried = composed.inner_fn.ends_with("__is_converged")
-                    && try_carry(&chain, inner_provider, verdict_sets, &invariance);
-                if carried {
+                let carried = if composed.inner_fn.ends_with("__is_converged") {
+                    try_carry(&chain, inner_provider, verdict_sets, &invariance)
+                } else {
+                    None
+                };
+                if let Some(read_kinds) = carried {
+                    // Attribution chain (`27C` §9: every cross-context elision renders it from day
+                    // one): the crossed substrate axes; each backing kind's owner `invariant:<axis>`
+                    // line (vouch-species); the engine read-set-closure proof. One note per site,
+                    // deterministic. Rides the diagnostic + why lanes only (two-surfaces: never the
+                    // `.sh` artifact).
+                    let span = ast.node(cfg.node(node).ast).span;
+                    let text = carry_attribution_text(&chain.composed.crossed(), &read_kinds);
+                    out.hints.push(dorc_core::Diagnostic::note(
+                        dorc_core::DiagCode("carried-across-substrate-axis"),
+                        Some(span),
+                        text.clone(),
+                    ));
+                    out.carried.insert(cfg.node(node).ast, text);
                     (
                         dorc_core::Context::HostDefault,
                         dorc_plan::WrappedProbe::Carry {
@@ -4095,21 +4136,43 @@ fn build_wrapped_analysis(
 /// entry DEGRADED: does the inner verdict body's read-set close (B) across a SUBSTRATE boundary
 /// whose backing kinds are authored-invariant (A)? Runs [`dorc_oracle::carry::read_set_closed`] over
 /// the inner verdict body and [`dorc_oracle::carry::decide_carry`] over the chain's crossed
-/// dimensions. `false` when there is no inner verdict body, or (A)/(B)/substrate-scope fails — the
-/// site then runs (fail safe: a missed carry loses an elision, never carries a hidden read).
+/// dimensions. `Some(read_kinds)` (the (A) attribution inputs) on carry; `None` when there is no
+/// inner verdict body, or (A)/(B)/substrate-scope fails — the site then runs (fail safe: a missed
+/// carry loses an elision, never carries a hidden read).
 fn try_carry(
     chain: &dorc_oracle::entry::PeeledChain,
     inner_provider: Symbol,
     verdict_sets: &[dorc_oracle::verdict::VerdictSet],
     invariance: &dorc_oracle::carry::InvarianceIndex,
-) -> bool {
-    let Some(verdict) = verdict_sets.iter().find_map(|set| set.get(inner_provider)) else {
-        return false; // no inner verdict body ⇒ nothing to prove closed
-    };
+) -> Option<BTreeSet<String>> {
+    let verdict = verdict_sets
+        .iter()
+        .find_map(|set| set.get(inner_provider))?;
     let closure = dorc_oracle::carry::read_set_closed(verdict);
-    matches!(
-        dorc_oracle::carry::decide_carry(&chain.composed.crossed(), &closure, invariance),
-        dorc_oracle::carry::CarryDecision::Carry
+    match dorc_oracle::carry::decide_carry(&chain.composed.crossed(), &closure, invariance) {
+        dorc_oracle::carry::CarryDecision::Carry { read_kinds } => Some(read_kinds),
+        dorc_oracle::carry::CarryDecision::NoCarry(_) => None,
+    }
+}
+
+/// Render the pure-predicate-carry attribution chain (`27C` §9: every cross-context elision renders
+/// its four-link chain from day one). Names the crossed substrate axes, each marked backing kind
+/// whose owner's `invariant:<axis>` line licensed the crossing (vouch-species — the kind-owner's
+/// attributable claim), and the engine read-set-closure proof. Deterministic (sorted axes/kinds).
+fn carry_attribution_text(
+    crossed: &[dorc_oracle::wrapper::Dimension],
+    read_kinds: &BTreeSet<String>,
+) -> String {
+    let axes = crossed
+        .iter()
+        .map(|d| d.as_token())
+        .collect::<Vec<_>>()
+        .join("+");
+    let kinds = read_kinds.iter().cloned().collect::<Vec<_>>().join(", ");
+    format!(
+        "pure-predicate carry across {axes} (unflagged, 27C §4(a)): {kinds} — each vouched invariant \
+         across {axes} by its kind-owner's `invariant:` line (vouch-species); the verdict body is \
+         engine-proved read-set-closed"
     )
 }
 

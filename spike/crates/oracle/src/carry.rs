@@ -399,8 +399,10 @@ fn reject(reason: RejectReason, span: Option<Span>) -> ClosureReject {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum CarryDecision {
     /// Carry: the ambient measurement answers the wrapped site across the substrate boundary,
-    /// unflagged. The cli keys the fact `Context::HostDefault` (measure ambient).
-    Carry,
+    /// unflagged. The cli keys the fact `Context::HostDefault` (measure ambient). `read_kinds` are
+    /// the marked backing kinds whose owners' `invariant:<axis>` lines licensed the crossing — the
+    /// (A) half of the attribution chain the carry note renders (`carried-across-substrate-axis`).
+    Carry { read_kinds: BTreeSet<String> },
     /// No carry — the reason drives the wall (and the why-lens), never a permissive default.
     NoCarry(CarryReject),
 }
@@ -452,7 +454,9 @@ pub fn decide_carry(
             }
         }
     }
-    CarryDecision::Carry
+    CarryDecision::Carry {
+        read_kinds: read_kinds.clone(),
+    }
 }
 
 #[cfg(test)]
@@ -647,10 +651,10 @@ mod tests {
         let (inv, _) = invariance(&[
             "sm_dorc_KernelParam__state_stored_only_in() { printf 's\\n' : kernel ; : : invariant:fs-view ; }",
         ]);
-        assert_eq!(
+        assert!(matches!(
             decide_carry(&[Dimension::FsView], &read_set_closed(&body), &inv),
-            CarryDecision::Carry
-        );
+            CarryDecision::Carry { .. }
+        ));
     }
 
     /// (`27C` §9 battery row 3): a marked read of a NON-invariant kind walls — (B) holds but (A)
@@ -710,10 +714,10 @@ mod tests {
         let (inv, _) = invariance(&[
             "sm_dorc_Vm__state_stored_only_in() { printf 's\\n' : kernel ; : : invariant:netns ; }",
         ]);
-        assert_eq!(
+        assert!(matches!(
             decide_carry(&[Dimension::Netns], &read_set_closed(&body), &inv),
-            CarryDecision::Carry
-        );
+            CarryDecision::Carry { .. }
+        ));
     }
 
     /// A straddling body walls carry via (B) even when (A) would hold for its declared read.

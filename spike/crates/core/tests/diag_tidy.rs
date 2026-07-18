@@ -190,6 +190,8 @@ const LEGACY_ALLOW_LIST: &[&str] = &[
     // `tolerates:` vouch; the one-line adoption hint (recognize-never-license, `27C` §2).
     // `carry-netns-on-net-kernel-forbidden` (Note, oracle, `27O`) — the pure-predicate-carry netns
     // caveat: a `net-kernel` store claiming `invariant:netns` is a contradiction (`27C` §4(a)).
+    // `carried-across-substrate-axis` (Note, cli, `27O`) — the pure-predicate-carry attribution
+    // chain rendered at every carried elision (`27C` §9: cross-context elisions render from day one).
     "wrapper-entry-incoherent",
     "tolerates-unknown-dimension",
     "escalation-policy",
@@ -197,6 +199,7 @@ const LEGACY_ALLOW_LIST: &[&str] = &[
     "heavy-context-no-tolerance",
     "wrapped-site-adoption-hint",
     "carry-netns-on-net-kernel-forbidden",
+    "carried-across-substrate-axis",
 ];
 
 /// The SPANLESS-MINT allow-list (arch-3-residual-2): EXACTLY the codes permitted to construct a
