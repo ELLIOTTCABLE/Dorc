@@ -6456,4 +6456,67 @@ apt_get__predict() {
             "NO raw book pipeline bytes may appear in a shipped connected probe: {rendered}"
         );
     }
+
+    #[test]
+    fn entry_composed_probe_renders_enter_forms_never_raw_book_bytes() {
+        // The STRUCTURAL no-book-bytes pin EXTENDED to ENTRY composition (`27C` §3 / `27N`;
+        // `271:rul-only-oracle-bytes-ship`): a wrapped site's entry-composed probe carries ONLY
+        // oracle-authored bytes — the wrapper's `__enter` funcdef + the inner oracle's check body,
+        // invoked with the site's PEELED argv (`sudo__enter hork__is_converged 'install' 'frob'`).
+        // The raw book site `sudo hork install frob` must NEVER appear — its presence is book bytes
+        // crossing the wrapper boundary (the very hole entry composition closes).
+        let mut i = Interner::default();
+        let fact = FactKey {
+            kind: KindId(i.intern("dorc-auto:hork")),
+            entity: EntityRef::Singleton,
+            selector: SelectorId(i.intern("converged")),
+            context: dorc_core::Context::Wrapped(dorc_core::ContextKey(
+                i.intern("user=M:root;fs-view=F;netns=F"),
+            )),
+        };
+        let hork = i.intern("hork");
+        let install = i.intern("install");
+        let frob = i.intern("frob");
+        let plan = ProbePlan {
+            checks: vec![ProbePredict {
+                site: LeafId(1),
+                member: None,
+                fact,
+                site_kind: ProbeSiteKind::Establish,
+                provider: hork,
+                argv: Vec::new(),
+                sh: String::new(),
+                connected: None,
+                verdict: false,
+                entry: Some(EntryComposed {
+                    enter_defs: vec![(
+                        "sudo__enter".to_owned(),
+                        "sudo__enter() { sudo -n \"$@\"; }".to_owned(),
+                    )],
+                    inner_fn: "hork__is_converged".to_owned(),
+                    inner_sh:
+                        "hork__is_converged() { case $1 in install) hork query \"$2\" ;; esac; }"
+                            .to_owned(),
+                    inner_argv: vec![install, frob],
+                }),
+            }],
+            unresolvable: Vec::new(),
+        };
+        let rendered = plan.render_sh(&records::Framing::spike(String::new()), &i);
+        assert!(
+            rendered.contains("sudo__enter hork__is_converged 'install' 'frob'"),
+            "the entry-composed invocation ships (enter form + inner oracle bytes, admin argv as \
+             arguments): {rendered}"
+        );
+        assert!(
+            rendered.contains("sudo__enter() { sudo -n \"$@\"; }"),
+            "the wrapper's __enter funcdef ships (oracle bytes): {rendered}"
+        );
+        // The raw book site bytes `sudo hork install frob` must NOT appear — book bytes never cross
+        // the wrapper boundary (`271:rul-only-oracle-bytes-ship`; `rul-argv-flows-bytes-do-not`).
+        assert!(
+            !rendered.contains("sudo hork install frob"),
+            "NO raw book site bytes may appear in a shipped entry-composed probe: {rendered}"
+        );
+    }
 }
