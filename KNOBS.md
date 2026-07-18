@@ -203,6 +203,15 @@ Poles: `kWHICHSH-minimum-lcd ↔ kWHICHSH-maximum-gcd`
 **Owner:** welded (human) on the floor; user + corpus on the open book-acceptance half. **Lock-in:** absolute on the floor (welded; and `__role` name-recognition was already a permanent, unversionable surface, `Research/notes/24M`); med on the book-tolerance tier, concentrating in the parser's error-tolerance posture (decided at the rebuild, cheap never again).
 Entangled: `kLANG` (parent weld) · `kTYANNOT`/`kOOB` (what the *marked* dialect adds is settling in the `271` sittings) · `kTPLATFORMS` (sh-precondition targets, below).
 
+## User aid & reporting — *how the tool talks to people*
+
+### `kFLOW`
+Poles: `kFLOW-authorable-mechanism ↔ kFLOW-polished-report`
+
+**Tension:** a simple, coherent authoring mechanism (params-only prose fragments, world-state-keyed codes, code-owned arrangement) — which yields better *actual authoring* of the prose-y bits and stays maintainable **vs** the ideal, flowing, final human-facing report — which pulls complex, nitty-gritty machinery accreted around that authoring. The refused extreme of the second pole is mechanically composing perfect English grammar (case/plurality-matching, fragment-composition storytelling) out of separately-maintained prose fragments. Output must be *readable* and must *flow*; it need not be grammar-perfect, and codes/cases are minted by world-state variants, never to fit composition grammar (`AID-NEEDS:law-codes-vary-by-world-not-grammar`).
+**Status:** open — deliberately unwelded pending implementation (`27V:rul-output-form-unwelded`): the resting point is decidable only from real generated output across the real failure-mode corpus, never upfront, and never locked by an example render in an LLM-authored document. **Owner:** user (taste, adjudicated over generated output) + implementation evidence. **Lock-in:** low-med — mechanism accretes around authoring habits; the refused extreme is the only hard fence.
+Entangled: `kWARN` (push-surface policy for the same surfaces); the AID-NEEDS law section; `Research/notes/27V` (the build phase this governs).
+
 ## Platform reach — *how far do we bend for odd hosts/targets?*
 
 ### `kTPLATFORMS`
