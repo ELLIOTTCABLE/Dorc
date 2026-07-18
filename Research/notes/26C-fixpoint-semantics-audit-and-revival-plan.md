@@ -713,6 +713,54 @@ HashMap iteration, newtypes + module privacy as the enforcement mechanism.
   seed that cancels outside the class is a rig ERROR (the gate is a
   precondition, not a policy preference).
 
+## §9b — The prospective-invariant dictionary (law-form; the 26x-resident registry)
+
+Fixed names, short statements of what must be held; the unrolled *why* lives in
+the cited sections. These are NOT in `spike/CLAUDE.md` by design — the steering
+files are current-truth-only, and this machinery is unbuilt; each entry migrates
+there at the revival stage that makes it real (R2–R4), and until then THIS table
+is the registry.
+
+- **`26C:inv-record-admissibility-by-want`** (§1; R2) — an Answer is consumable
+  only by re-deriving its full Question — (site · context · resolved compiled
+  form) — from the current knowledge state. A retracted premise makes the Answer
+  *unreachable*, never re-interpreted. Build as keying, not filtering.
+- **`26C:need-captured-bytes-ship-as-data`** (§5; R2) — a captured value
+  re-enters a shipped artifact only as a single-quoted argv token of an
+  oracle-authored function, through its argparse; never command/code position,
+  redirect targets, or heredoc bodies. Single-line enforced at capture. Holds at
+  EVERY iteration's ship, not only at mint.
+- **`26C:law-host-boundary-severs-provenance`** (§5 cl.6; R2; license lanes
+  ONLY) — provenance/backing never inherit through a host-side transformation.
+  A chained capture folds only if every input capture folds; its patrol-surface
+  is the union; any un-derivable link is ⊤ and walls.
+- **`26C:fence-capture-never-feeds-closure-pass`** (§2; binds from
+  lane-fallback-carry onward) — read-set closure is proven over marks and sh
+  structure only; a capture-resolved value never qualifies a body.
+- **outcomes-schedule-never-evidence** (§2; R2) — dispositions and
+  compare-verdicts may drive question-minting and cancellation; they never enter
+  beliefs, backings, or license mints. (`277` §5's two pins re-proven
+  non-trivially the day the back-edge exists.)
+- **`26C:rul-candidate-demotion-only-cancellation`** (§3; R4) — any
+  timing/cancellation policy may only DEMOTE a site along elide ≻ guard ≻ run.
+- **the attention-first cancellation gate** (§3; R4) — economy-cancellation may
+  never cost a possible elision; it fires only on retraction-proof finality
+  (`26C:mech-wall-standing-finality-class`); a cancelled vouched site rests on
+  guard-by-vouch (`26C:mech-cancel-lands-on-guard-by-vouch`), never bare run.
+- **`26C:need-per-artifact-identity`** + **`26C:need-per-artifact-leafid-namespace`**
+  (§4; R1) — every shipped artifact: fresh nonce, additive `iter=`, its own
+  leafid space resolved through its engine-side manifest. `attempt=` stays
+  retry-only (discard-wholesale); iteration results ACCUMULATE. Hosts answer
+  coordinates; they never name Questions.
+- **`26C:rul-diagnostics-final-state-only`** (§7 item 11; R2) — user-facing
+  diagnostics emit from the quiesced final state only; no per-iteration
+  emission, no stale wall-warnings for lifted walls.
+- *Theorems (descriptive, DST-pinned, not obligations):*
+  `26C:thm-fold-confluence-unconditional` (fixed evidence ⇒ order-free plan) ·
+  `26C:thm-process-confluence-conflict-free` (conflict-free runs ⇒
+  byte-identical plans under shuffle; conflicted runs stay sound, order-variant;
+  the stability flag restores unconditional byte-identity).
+
 ## §10 — What remains open (everything else is acked or future-sited by design)
 
 - **The binding-site gate** (§6) — deliberately un-ruled; decided at R2 entry.
