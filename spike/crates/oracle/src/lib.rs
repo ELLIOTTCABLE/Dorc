@@ -99,6 +99,14 @@ pub mod wrapper;
 /// self-effects (`27C:rul-probe-mutation-ownership-split`). Builds on [`wrapper`]'s peel model.
 pub mod entry;
 
+/// The pure-predicate carry (`27C` §4(a); steering `pure-predicate-carry`): the ONLY unflagged
+/// cross-substrate-boundary carry. The (A) `invariant:<axis>` index lifted from
+/// `state_stored_only_in()` (with the netns caveat), the (B) read-set-closure sh-taint pass over a
+/// verdict body (default-disqualify, an audited pure-construct safe-list), and the combined carry
+/// decision (substrate axes only; user excluded). Reads marks + structure only
+/// (`inv-referent-agnostic`); fails safe (a missed-safe body loses an elision, never carries a read).
+pub mod carry;
+
 /// The eval'er surface (`274` · `271:rul-evaler-merge-no-structure-member`): reentry DETECTION
 /// inside `<provider>__predict` (a body that delegates to the `dorc:sh`/`dorc-sh` reentry primitive
 /// IS an eval'er — no separate structure member), the payload shape (which-arg-is-code / stdin /
