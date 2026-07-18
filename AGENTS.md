@@ -95,3 +95,14 @@ Some terms have shifted throughout the planning documents; be careful of these m
   - be careful of paths, esp. re. WSL2/zsh vs BashTool() (which uses msys)
   - be careful of SyncThing, it's live in a parentdir; don't move/create large vendored subrepos without ensuring they're syncthing-ignored *first* (once created-while-unignored, they start to sync; ignoring-them-afterwards leaves borderline-permanent artifacts)
 - you may be in a git-worktree; be careful. AGENTS/KNOBS/DESIGN/TODO are meant to be central communication channels, make sure you're watching for changes to those *anywhere* (use a permissive glob), and applying any changes I direct you to make (remember, they're human-direct-single-auth-to-edit *only*) must be made to the root ones, not the worktree.
+
+## Project-management
+- it bears repeating that *gitlabels style* must be followed. This is directly contrary to your training data, this project uses an idiosyncratic commit-message form that *does not match* what agents keep producing. The cardinal rule for commit messages is DO NOT DUPLICATE INFORMATION AVAILABLE ELSEWHERE:
+  - *do not* include the filename, a section-name, or a slug in the commit message
+  - *do not* name the component, if that's obvious from the modified directory-names
+  - *do not* name the function, or the header.
+  - instead, in a very short to-the-point-phrase, say *what you did*, as an *action* - and usually, leave the grammatical subject to be implied by the `git show` output.
+  - BAD: "(AI fix) r27 shim-materalization: peel_book_chain (WrapperIndex) ..." - full of information that's obvious from `git show`
+  - GOOD: "(AI fix) Move WrapperIndex onto the hot-path for ..." - describes *what you changed*, avoiding repeating context and metadata.
+  - speak in imperative case, plain-english as much as possible
+  - avoid multi-line breakdowns, context discovers in-filesystem-tree, in more discoverable places (work-log or chronological-notes-document that you're probably already keeping, in most cases)
