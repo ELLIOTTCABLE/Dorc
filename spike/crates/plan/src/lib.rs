@@ -1294,18 +1294,13 @@ pub struct ProbePredict {
 
 /// The entry-composed body of a wrapped-site probe (`27C` §3 / `27N`): the wrapper chain's entry
 /// forms wrapping the inner oracle's stripped body, all oracle-authored, argv-flowing. Built at the
-/// cli edge (it needs the oracle sources + the peel chain); rendered by [`ProbePlan::render_sh`].
+/// cli edge; rendered by [`ProbePlan::render_sh`].
 ///
-/// # The shim seam (`274` §5 / `27L` task-14, DISCLOSED deferral)
-///
-/// The composition `sudo__enter pipx__is_converged install poddle` crosses a real wrapper boundary
-/// only when the inner body is reachable across it — the per-run PATH shim's job (materialize the
-/// oracle bytes as executables `sudo` can exec). That materialization I/O edge is deferred (`274`
-/// §5 / `27L`); at HEAD the composition ships strip-only as shell funcdefs + a nested invocation, so
-/// a real `sudo -n <fn>` cannot resolve the funcdef across the boundary and the record lands
-/// can't-say ⇒ run (the SAFE degrade). The emission + context-qualified readback are exercised
-/// end-to-end via simulated results (`PROBE_RESULTS=authored`); the boundary-crossing execution
-/// rides the shim-materialization follow-on.
+/// Shim seam (`274` §5 / `27L` task-14, DISCLOSED deferral): the real `sudo` boundary crossing needs
+/// the per-run PATH shim to materialize the oracle bytes as executables `sudo` can exec; that I/O
+/// edge is deferred. At HEAD the composition ships strip-only funcdefs + a nested invocation, so a
+/// real `sudo -n <fn>` cannot resolve the funcdef and the record lands can't-say ⇒ run (safe). The
+/// emission + context-qualified readback are exercised via simulated results (`PROBE_RESULTS=authored`).
 #[derive(Debug, Clone)]
 pub struct EntryComposed {
     /// The chain's stripped entry-form funcdefs, `(funcname, funcdef)`, OUTERMOST-FIRST

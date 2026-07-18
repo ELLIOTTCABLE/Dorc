@@ -1023,15 +1023,13 @@ fn mint_top_causes(
     (top_causes, fallback_cause)
 }
 
-/// A wrapped BOOK site peeled into its inner command + composed context (lane-integration `27N`;
-/// `27C` §3 "the fact is born in the site's context"). Precomputed at the cli edge
-/// (`dorc_oracle::entry::peel_book_chain`) — a pure DATA input threaded into [`classify_with_why_diags`]
-/// (the classify kernel stays wrapper-unaware; it just resolves `inner_argv` against the inner oracle
-/// and re-keys the fact into `context`). The entry DECISION (dial × capability × vouch) is the phased
-/// cli/plan collapse — NOT here (`inv-superposition`: the kernel emits a phase-agnostic in-context
-/// fact). tc-flag (`27N`): the FactKey-widening for wrapped sites is done via this precomputed map,
-/// NOT via wrapper-recursion inside `command_effect` — the "should peel move into `command_effect`
-/// per `thread-the-flat-coordinate`" question is flagged UP, not settled here.
+/// A wrapped BOOK site peeled into its inner command + composed context (`27N`; `27C` §3 "the fact
+/// is born in the site's context"). Precomputed at the cli edge (`dorc_oracle::entry::peel_book_chain`)
+/// — a pure DATA input threaded into [`classify_with_why_diags`]: the kernel stays wrapper-unaware,
+/// resolving `inner_argv` against the inner oracle and re-keying the fact into `context`. The entry
+/// DECISION is the phased cli/plan collapse, NOT here (`inv-superposition`). tc-flag (`27N`): the
+/// FactKey-widening is done via this precomputed map, NOT wrapper-recursion in `command_effect` — the
+/// "peel into `command_effect` per `thread-the-flat-coordinate`" question is flagged UP, not settled.
 #[derive(Debug, Clone)]
 pub struct PeeledSite {
     /// The inner (non-wrapper) command's full argv (command word first), resolved literals.
