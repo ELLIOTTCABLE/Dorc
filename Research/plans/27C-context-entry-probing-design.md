@@ -327,6 +327,14 @@ site only through these:
     construct not on the audited pure-construct safe-list; the pass fails safe (a
     missed-safe body loses its elision, never carries a hidden read).
 
+    > **v1 closable-idiom note (BUILT `27O`, 2026-07-17):** as built, the
+    > cmdsub-comparison spelling below (`[ "$(sysctl -n "$1")" = "$2" ]`) is NOT yet
+    > closable — command substitution lifts to `Word::Unmodeled` and disqualifies
+    > (safe direction: walls, never a hidden read). The v1 closable idiom is the
+    > **marked-command rc-partition form** (the tool reads the marked cell; its rc IS
+    > the verdict). Cmdsub-VALUE modeling is the named future safe-list extension
+    > (`27O`); the stdlib teaching template must teach the marked-command form.
+
   (B) *closes* the completeness residue `279f` §3 refused to hand the flag: it removes
   the open-world "and nothing else" by structure rather than accepting it, so the carry
   is unflagged-sound *modulo the analyzer's conservative pass and the kind-owner's line*
@@ -516,6 +524,11 @@ axis-invariance (A) + engine-verified read-set closure (B); substrate axes only,
 excluded; the old engine-warranted-unflagged carried-by row is RETIRED (it rested on
 tool-semantics the engine may not hold). The conservative-closure pass is the spike's
 obligation to discharge and prove in practice — a correctness surface, not a nicety.
+**DISCHARGED 2026-07-17 (`27O`, lane-fallback-carry):** `oracle::carry` — the (A)
+invariance index (netns-on-net-kernel forbidden, loud) + the (B) default-disqualify
+closure pass (safe-list enumerated in `27O`) + the 13-row §9 battery; VERDICT-fact
+carry only (world-cell VALUE carry rides r26); §4(b) not built (honest walls);
+carried elisions render the four-link attribution chain (Note + why-line).
 · **entry-form siting vouch** (human-acked 2026-07-17;
 `27C:rul-entry-denoted-siting-vouch`, `27Xf:cr-sudo-entry-not-guest-insensitive`
 discharged): authoring an entry form vouches correct siting in the site's denoted
