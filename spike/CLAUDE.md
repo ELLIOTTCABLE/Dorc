@@ -527,6 +527,9 @@ prompt you write:
   runtime emission is the only-opportunity fallback, deduped (site, arm, class).
   Classes route AID only — the rc-partition stays a flat sink; the license plane
   never reads a class. Silent declines stay legal; classing is enhancement.
+  Noise-tolerant (`27W:rul-report-noise-tolerant`): ingestion never silently drops
+  author emissions — unrecognized/free-form lines are retained (sanitized, capped,
+  attributed) and print in full at max verbosity; default surfaces stay selected.
 - **report-lane-versioned-entry** (`27W:rul-versioned-entry`) — the report sink's env
   NAME carries its format version; a new format mints a new name; recognized sink
   names are permanent once published (the `__role`-name posture).

@@ -44,15 +44,24 @@ HUMAN-ACKED (2026-07-18, typed):
   inline printing. The byte-floor laws (two-surfaces; attention-honesty) bind the
   plan/artifact planes only and are untouched.
 
-CONDUCTOR-LEANED, NOT YET TYPED-ACKED (flagged per silence-is-not-ack):
-- **`27W:lean-class-starter-set`** — closed v1 classes {unsound, unmodeled,
-  interactive, hazard}. Low-stakes (engine-owned, append-only; build can start
-  four-wide and prune) but the set itself never got a typed ack.
-- **`27W:lean-advise-verb-deferred`** — v1 ships the `decline` verb ONLY; an
+SOFT-ACKED (human, 2026-07-18, "soft ack on both" — build on them; cheap to revisit):
+- **`27W:rul-class-starter-set`** (né lean) — closed v1 classes {unsound, unmodeled,
+  interactive, hazard}; engine-owned, append-only.
+- **`27W:rul-advise-verb-deferred`** (né lean) — v1 ships the `decline` verb ONLY; an
   `advise`-on-covered-arms verb stays a named seam gated on the modeling-crutch
   question (§4): advisory prose can relieve modeling pressure wrongly (the
   sysctl runtime-vs-persisted annoyance is properly TWO CELLS — `#value` /
   `#persisted` — not an advisory note).
+
+LATE HUMAN-TYPED ADDITION (same day, post-close):
+- **`27W:rul-report-noise-tolerant`** — gradual-enhancement applies to BOTH parties;
+  be a conscientious middle-man while protecting them from each other. The report
+  lane tolerates noise best-effort: nothing an author dumps into it is silently
+  dropped — unrecognized verbs/classes and free-form lines are retained (sanitized,
+  size-capped, attributed) and, under the MOST verbose mode / deepest pull tier, all
+  of it prints, so even a cargo-culted barely-thought warning can be caught by a
+  curious admin. Default surfaces stay ruthlessly selected; verbosity is the
+  admission gate, never existence.
 
 ## §1 — The classes and what they route
 
@@ -105,7 +114,9 @@ vm.drop_caches|vm.compact_memory)
 - Report-lane plumbing constraints inherited from the transport design: one record per
   line, short records, PIPE_BUF-atomic (an-marker-atomicity); the free tail is author
   text — sanitized and size-capped at ingestion (an-output-sanitization is the owed
-  fence); ingestion never errors on malformed lines (degrade to generic).
+  fence); ingestion never errors on malformed lines and never silently DROPS them —
+  unrecognized content is retained and printable at max verbosity
+  (`27W:rul-report-noise-tolerant`).
 - Tier-3 emissions flow into the whylog durable with the rest of the record stream
   (`27V` §2 contents, amended).
 

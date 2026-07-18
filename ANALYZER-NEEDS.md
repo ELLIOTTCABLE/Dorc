@@ -12,7 +12,10 @@ Seeded round-17 by a 7-way neutral fan-out + a 3-way adversarial gap-hunt over t
 over-inclusive. **Refreshed 2026-07-05 (round-24 close audit):** statuses re-graded against the
 ternary-verdict / claim-tier / footprint world (rounds 23–24; settled law in `notes/23O` §2 +
 `spike/CLAUDE.md`); new section **O** carries the verdict/license/frame machinery those rounds minted;
-superseded rows are tombstoned in place (`X`), never silently dropped.
+superseded rows are tombstoned in place (`X`), never silently dropped. **Refreshed
+2026-07-18:** §F gains the user-aid machinery rows (collapse-evidence ·
+authored-decline-class · whylog-durable; build phase `notes/27V`/`27W`); the aid-side
+sibling registry is root `AID-NEEDS.md`.
 
 **Columns** — `need` (slug, `an-*`) · `information` (the datum) · `needed-by` (consumer/phase/feature) ·
 `dual` (paired half, if any — many needs come in tension-pairs) · `refs` (pointers into `Research/` /
@@ -164,6 +167,9 @@ Inside cells, `/` replaces `|`; `↔` marks a dual.
 | an-graph-type-agreement | analyzer and error/provenance layer must agree the graph types *first* (depends-on edges ARE the dataflow output) or build two incompatible graphs | architecture precondition | — | 111 dac-B (highest-leverage) | O |
 | an-diag-vs-verdict | transient chronological diagnostic *stream* kept distinct from the durable structured *verdict* | reporting model | — | 111§0, 112-f50 (K8s) | S |
 | an-diag-secret-taint | runtime stderr leaks secrets/paths; the controller aggregating every host's stderr *is* the whole-fleet target | provenance transport security | an-output-sanitization | 111§0, 102-E1 | S |
+| an-collapse-evidence | every safety-narrowing (meet-to-⊤ / refuse / decline / wall / demote / cancel) mints decision-inert evidence carrying the collapse's OPERANDS, at the collapse; value-level (constructor-demanded), Eq-excluded (termination), k-capped; aid-plane-sealed (no path into license inputs) | why-lens depth; whylog; AID-NEEDS law-collapse-mints-evidence | an-why-elided | 27V§1, 26C§5b, 22W§2 | S |
+| an-authored-decline-class | an oracle's typed decline-reason (closed set; v1 {unsound/unmodeled/interactive/hazard}) via the versioned report-lane emission (sink-name-versioned, `DREP_V1`-strawman); static-first (per-arm inventory / per-site thread / runtime-only-opportunity fallback, deduped); routes hint machinery (anti-nag honesty), NEVER the license plane; noise-tolerant ingestion | enhancement-nag honesty; lint coverage; decline narration | an-enrichment-nudge | 27W | S |
+| an-whylog-durable | the thin posthoc durable: invocation record + records-as-received + report stream + decision digest + apply report + seed; write-only, replay-driven (`dorc why --last` re-derives via kernel determinism); version-tagged, no byte-stability; NEVER a reuse-cache (rec-5) | posthoc why; zero-setup recovery | an-replay-seed | 27V§2, 22A concl-10 | S |
 
 ## G · Verdict, memo & freshness
 

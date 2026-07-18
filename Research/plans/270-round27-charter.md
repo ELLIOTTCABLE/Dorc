@@ -32,6 +32,10 @@ measures the true product instead of a sudo-blind approximation of it.
 The round's ordering (human-acked): **block-settle → block-rebuild → block-context →
 block-stdlib**, then the field-trial revival (né r25), then the multi-host resumption
 (né r26). r25 and r26 are tabled, not cancelled; their revival conditions are §5.
+(Amended 2026-07-18: a **user-aid phase** — `notes/27V`, whylog + evidence plane +
+one-catalog + `27W` decline-classes — inserts before block-stdlib: its legacy-diag
+kill, evidence types, and minting-line threading are stdlib preconditions; registry =
+root `AID-NEEDS.md`. The `dorc lint` side-lane (`27R`/`27S`) landed the same day.)
 
 ## §1 — Naming discipline (BINDING on this round's conductors and every brief)
 

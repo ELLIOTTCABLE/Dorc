@@ -94,7 +94,20 @@ USER_STORY gained its "Recovery" section directly (LLM-maintained doc; in-place
 human review); KNOBS `kWARN` gained the AID-NEEDS pointer; `spike/CLAUDE.md` gained
 the User-aid law block + the corrected root-doc edit posture (LLM-maintained docs
 are edit-and-commit-for-review). The lint lane (`27R`/`27S`, `ai/r27-lint*`)
-composes and is treated as merged.
+composes and is treated as merged. CLOSE-OUT COMPLETE (same day, follow-on
+sittings): **`notes/27W`** = authored decline-classes + the versioned report lane
+(sink-name-versioned `DREP_V1`-strawman; static-first three tiers; show-the-code
+with the massaging carve; noise-tolerant ingestion — all human-acked, two
+soft-acks recorded in its §0 ledger) · `KNOBS:kFLOW` minted
+(authorable-mechanism ↔ polished-report; deliberately unwelded —
+`27V:rul-output-form-unwelded`; render particulars never lock via examples) ·
+ANALYZER-NEEDS §F gained the machinery rows · `270` §0 amended (user-aid phase
+inserts before block-stdlib) · `27Q`'s minting-line precondition annotated
+now-OWNED. ⚠ ID note: `notes/27T` is the lint real-tools ledger; the user-aid
+build phase is `notes/27V` (renamed from a same-day collision). **DISPATCH
+PACKAGE for the imminent implementor:** `27V` whole (lanes A/B/C + §0b gaps +
+riders) + `27W` §5 (decline-class riders + oracle-builder guidance) +
+`spike/CLAUDE.md`'s User-aid law block; registry = root `AID-NEEDS.md`.
 
 `270:block-rebuild` is **CLOSED** (2026-07-17, one session: eight dispatches
 landed + both bless checkpoints stamped; ledger = **`notes/27D`** including its

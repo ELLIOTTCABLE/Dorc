@@ -39,6 +39,11 @@ state) → `27D` end-to-end (the round's ledger: every landing, every dispositio
   disposition): attribution-at-sparing-verdict requires the minting LINE (source span)
   — MUST land before the stdlib mints selector-bearing `disturbs` claims. UNOWNED;
   schedule it as an early errand of the stdlib block.
+  <!-- /* superseded 2026-07-18: now OWNED — the user-aid build phase (notes/27V,
+  mech-minting-line-threading) discharges it pre-stdlib. Also new for oracle
+  authoring: classify deliberate declines as you author (notes/27W §5 guidance —
+  the DREP report-lane emission; rationale in a comment ON the arm, shown never
+  parsed). */ -->
 - **quality bars, all three, plus the adjudicability list**: the `279f` §5 stdlib
   quality-bar adds (incl. the banked lint candidate "verdict/observe mark on a
   constant-rc line") · the wrapper-oracle bar `24S:A6` (peel cross-check, argparse

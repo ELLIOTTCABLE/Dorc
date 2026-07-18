@@ -194,7 +194,9 @@ Surfaces (selection policies over the registry)
 - **apply console** — error floor + decision digest only; receipt-free
   (`22F:advisory-vs-error-cut`). Never "cleaned up" to zero-stderr (silent-ship hole).
 - **`dorc why`** — pull; wide-open derivability; problems-report default; the chain
-  answer is the flagship product.
+  answer is the flagship product. At its most verbose it prints everything the report
+  lane received, noise included — sanitized, attributed, never silently dropped
+  (`27W:rul-report-noise-tolerant`).
 - **whylog** — the same reader over the replayed thin durable; the *most*-informed mode,
   facing the user at their most annoyed. Never a cache; sensitivity-fenced.
 - **TUI (future)** — sugar over the same rows (`26B:rul-one-attention-moment`); the
