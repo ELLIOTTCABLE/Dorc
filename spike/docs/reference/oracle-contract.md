@@ -204,10 +204,11 @@ Invoked with a site's arguments (everything after the command word, as the
 book's values resolved). Answers per section 3, where the named sense is "the
 state this invocation exists to establish already holds."
 
-Write it first, for any tool with a cheap, read-only way to answer "already
-done" - which is most tools. Decline the shapes where checking costs as much
-as doing: a guard body pays its check-tax on every apply, and a cheap
-idempotent command (`mkdir -p`) is its own best check.
+Write it first, for any tool. Even for tools that are as cheap to run as they
+are to test (think `mkdir -p`), Dorc benefits from a read-only test that it can
+parallelize, and that can drive later elisions. ("If `mkdir -p` *might* change
+the filesystem, I cannot safely skip later command `x`. If I can *check*, then I
+can skip both.")
 
 Licenses: at this tool's own sites only - insertion of this body as a runtime
 guard (`( cmd__is_converged args ) || original-bytes`), and, when a probe-proof
@@ -245,7 +246,7 @@ Write it when your tool appears inside constructs rather than alone on lines:
 pipelines and compounds cannot probe without a stand-in for every participant,
 and an admin's hand-written guard invoking your tool lifts only through your
 predict. The plan's hints point at exactly these sites; until they do,
-`is_converged` alone is usually the better spend.
+`cmd__is_converged()` alone is usually the better spend.
 
 Licenses: substitution of this body for the tool inside composed probes and
 lifted hand-guards, but only where every channel the surrounding construct
