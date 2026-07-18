@@ -197,6 +197,24 @@ story is the strongest argument FOR the GC; the arguments against remain §1's
 §10 ask stands; admissibility (above) is NOT part of the menu — it holds either
 way.
 
+**RESOLVED direction-tier (human-typed lean, 2026-07-17b — confirm at R2 entry):**
+seeing the GC named as a *filter* re-framed it — "throwing away good, correct
+elisions is throwing away product-value." The landing: **DEFAULT = maximal correct
+elision** (`opt-accept-superset-variance`); the justified-fact GC ships as a
+**FLAGGED stability mode** (spelling STRAWMAN — a `--stable-plan`-class flag), for
+(a) users who want reproducible plans — the dorc-ci / scheduled-plan-comparison
+shape — and (b) the DST, where it is the canonical test surface: filtered runs pin
+unconditional byte-identity under shuffle; unfiltered runs pin byte-identity on
+conflict-free seeds plus the containment relation *filtered-plan elisions ⊆
+unfiltered-plan elisions*. One documentation consequence falls out: plan-shape
+stability under the default is honest only *modulo conflict* — any scheduled
+plan-comparison consumer (the `24R` cron story, `--exit-code`-adjacent tooling)
+should be pointed at the flag, not at an implied determinism the default no
+longer promises. (Scope note, for calibration not relitigation: the variance only
+exists at all in conflicted runs — already adequacy-class anomalies — so the
+default's determinism cost is confined to runs that were already abnormal.)
+`26C:inv-record-admissibility-by-want` is unaffected: it holds in both modes.
+
 ## §2 — The line between scheduling and evidence (the `277` §5 re-read, delivered)
 
 `27I` closed with: the fixpoint clause and `pin-no-outcome-as-generator` hold
@@ -270,6 +288,23 @@ conflict the wall-judgment itself can revert to unknown, which is why the finali
 predicate must be derived from retraction-proof grounds (unmodeledness is
 retraction-proof; a measured divergence is not, -GUESS pending the revival's
 precision pass).
+
+**Re-grounded (2026-07-17b, human pushback — three corrections of emphasis):**
+(i) The attention-ack-wall is ABSOLUTE (standing law restated: guards never buy
+attention — `kHALVES`, rul-attention-honesty). Landing-on-guard is never a
+*solution* nor a licensed trade; it is only the resting place of a site whose
+ceiling was already guard. Shifting work to guard-time is never an answer to
+probe cost. (ii) The finality gate, restated attention-first — its real content:
+**economy-cancellation may never cost a possible elision.** A probe that could
+still remove a line from the plan is never cancelled for economy, however slow;
+the derivable class (below a confirmed-running unmodeled wall) qualifies
+precisely because the attention-product there is already forfeit — the line
+renders guard-or-run, i.e. VISIBLE, under every possible answer the probe could
+have returned, so cancellation moves nothing the admin would ever have been
+spared. (iii) Scope, per the human: the motivating situation is exclusively
+*shedding needed-then-disnecessitated work* — a probe minted because the plan
+required it, later obviated by a parallel fact. Speculative add-then-cancel
+architectures are not the subject and take no license from this section.
 
 ## §4 — Iteration mechanics on the wire (the `262` §2 delta)
 
@@ -345,6 +380,32 @@ The law, proposal-tier:
 (+SURE the surface is real; ~SUSPECT the five clauses are complete — the revival's
 adversarial crosscheck should treat this section as a target, exclusions-not-
 inclusions per standing practice.)
+
+**ACKED HARD (human-typed 2026-07-17b, in-chat) — with a corollary that becomes
+clause 6.** The ack, near-verbatim: provenance *and* correctness depend on careful
+threading of host-produced data *through* later planes in a fundamentally new,
+orthogonal way. The corollary (human's, near-verbatim): inside Dorc's engine a
+value can carry an attribution/provenance type with metadata; the moment we mint
+`'nginx'` out into a shipped script and feed it as argv, **the provenance chain is
+severed** — the output of the thing that consumed it may be a modified form of the
+input, and we have no way of knowing which input components and what global state
+contributed to that next-phase transformation, unlike a value moving inside our
+own value-plane. Composition must be clean and must **fail toward unsureness**.
+
+- **Clause 6 (`26C:law-host-boundary-severs-provenance`)** — a round-trip value's
+  provenance grade and backing are derived ONLY from the producing oracle's own
+  marks and delegation structure (`275` §2, unchanged) — NEVER inherited through a
+  host-side transformation, which is opaque by definition. Concretely, for chained
+  captures (`A=$(f); B=$(g "$A")`): B's *value* is `g_host(A, world_g)` — an
+  engine-opaque function — so (i) B's backing/grade come from g's oracle, not from
+  A's; (ii) B's fold-VALIDITY composes transitively engine-side through the
+  recipe: B may fold only if every capture in its input recipe itself folds, and
+  B's effective patrol-surface is the UNION of its own producer's backing with its
+  input captures' backings (frozen-B stands for apply-time-B only while frozen-A
+  stands for apply-time-A — the `275` §5 question-axis, chain edition); (iii) any
+  un-derivable link — unvouched producer, unmarked read, unfoldable input — is ⊤
+  and walls the fold. A host transformation never launders provenance; the
+  engine's inability to see inside it is encoded as unsureness, not assumption.
 
 This also softens `26B:watch-dependent-chain-scheduling`'s asymmetry: the on-host
 chain (executor-era) and the controller-side iteration have the SAME
@@ -570,16 +631,17 @@ stay open, nothing new closes them.
 
 ## §10 — Asks for the human (slugged; none block r27)
 
-1. **`26C:ask-ack-captured-bytes-law`** — §5's captured-bytes-ship-as-data law wants
-   a typed ack (or correction) before the revival's R2 builds. It extends
-   `rul-argv-flows-bytes-do-not` to a third byte-provenance and I judge it the one
-   genuinely load-bearing NEW law in this note.
-2. **`26C:ask-confluence-carve-choice`** — §1's menu: accept superset-variance under
-   conflicts (my lean) vs justified-fact-GC for full reproducibility. Cheap to defer
-   to R2 entry; recorded so it is chosen, not drifted into.
-3. **`26C:ask-cancellation-posture`** — §3's package (demotion-only rule +
-   guard-by-vouch landing + wall-standing finality class) as the standing answer to
-   `26B:need-cancellation-finality-gate` — sanity-ack wanted, R4-timed.
+1. **`26C:ask-ack-captured-bytes-law`** — CLOSED 2026-07-17b: **ACKED HARD**
+   (human-typed, in-chat), with the host-boundary-severs-provenance corollary
+   banked as §5 clause 6 (`26C:law-host-boundary-severs-provenance`).
+2. **`26C:ask-confluence-carve-choice`** — ANSWERED direction-tier 2026-07-17b
+   (§1b): default = maximal correct elision; the justified-fact GC becomes a
+   flagged stability mode + the canonical DST surface. Formal confirmation rides
+   R2 entry.
+3. **`26C:ask-cancellation-posture`** — OPEN, re-grounded 2026-07-17b (§3): the
+   attention-first restatement (cancellation may never cost a possible elision;
+   the attention-ack-wall absolute; scope = shedding needed-then-disnecessitated
+   work only) is now the package's governing frame; sanity-ack wanted, R4-timed.
 4. **`26C:ask-annotation-review`** — the §7 APPLIED annotations touch `260`/`261`/
    `262` (plans are ahistorical; they were annotated, not rewritten, because the
    single-artifact readings remain correct for r27-era consumers). Skim-review at
@@ -593,11 +655,13 @@ stay open, nothing new closes them.
 | component | status |
 |---|---|
 | semantic model; fold-confluence; conflict-free process-confluence | +SURE (theory); spike-fit ~SUSPECT until R2 |
-| confluence conflict-carve (the 26B §2 correction) | +SURE mechanism; ~SUSPECT real-world reachability; menu un-chosen (`ask-confluence-carve-choice`) |
+| confluence conflict-carve (the 26B §2 correction) | +SURE mechanism; ~SUSPECT real-world reachability; RESOLVED direction-tier 2026-07-17b (default maximal-elision; GC flagged — §1b) |
+| record-admissibility-by-want (§1b) | soundness invariant, both modes; conductor-derived, +SURE on the hazard it closes |
 | outcomes-schedule-never-evidence line; closure-pass fence | conductor synthesis; consistent with `277` §5's typed clause |
 | cancellation package (demotion order · guard-by-vouch · finality class) | proposal-tier (`ask-cancellation-posture`) |
 | wire iteration keys; want-identity; leafid namespaces | +SURE needed; shapes proposal-tier |
-| captured-bytes-as-data law | NEW LAW, proposal-tier, ack wanted (`ask-ack-captured-bytes-law`) |
+| captured-bytes-as-data law | ACKED HARD 2026-07-17b + corollary clause 6 (host boundary severs provenance) |
+| cancellation package | re-grounded attention-first 2026-07-17b (§3); sanity-ack still owed at R4 |
 | binding-site gate menu incl. (b′) structure-preserving folds | sharpened, deliberately UN-ruled (human's, at R2 entry) |
 | quiet-welding ledger + APPLIED annotations | audit complete against tip `e16b0c8`; annotations one-commit-revertible |
 | R0–R4 revival ladder | proposal-tier; composes `262` S0/S1 + `260`/`261` without re-deciding their settled content |
