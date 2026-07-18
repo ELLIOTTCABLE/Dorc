@@ -367,6 +367,35 @@ suites BYTE-STABLE (904 unit / 94 e2e unchanged) · opt-in run 95 with
   One-line invocation documented in `run.sh`'s lane header;
   `DORC_E2E_REAL_TOOLS=shellcheck` is the Windows spelling.
 
+## §8e — Handoff to the why/hint-machinery redesign (2026-07-18; successor-facing)
+
+A sibling conductor is redesigning/reifying the hint/error/why-lens/why-log
+machinery with awareness of this lane. The intersection points, so the redesign
+ABSORBS rather than rediscovers:
+
+- **hand-finding-model-unification-candidate**: `crates/lint` minted its OWN
+  `Finding`/`LintSeverity` model, separate from the Carrier/diag spine;
+  `source-analysis-diagnostics` is the bridge (it converts Carrier diags →
+  findings). A reified diagnostic spine should probably absorb the lint model
+  (one structured-diagnostic type, many renders) — the lint crate was built
+  registry-thin precisely so this swap is cheap. The `27S` §2 finding stands:
+  input-staged factoring already works; a pass-input manifest only becomes
+  worthwhile when more passes are lint-exposed.
+- **hand-oracle-validation-emission**: `27S:seam-oracle-validate-factoring` is
+  squarely in the redesign's territory — the oracle-side lints live inline in
+  the cli's `run()`, emitting via `report_at` to stderr instead of as structured
+  diagnostics. Factoring them book-free is BOTH the rung-oracle-solo unlock and
+  a natural why-machinery reification step; solving it once serves both.
+- **hand-machine-format-ownership**: `dorc-lint-format/1` (JSONL envelope,
+  additive-only policy, append-only slugged codes) was minted lane-locally. If
+  the redesign owns a unified machine-diagnostics story, it should own/subsume
+  this format name too — nothing external depends on it yet; renaming is free
+  exactly until it isn't.
+- **hand-severity-vocabulary**: lint's {Error,Warn,Info} + `--fail-on` threshold
+  is a lane-local severity ladder; the redesign's tiering (kWARN-rich's late
+  cheap knobs: tiering/curation/muting) should become the single vocabulary,
+  with lint's ladder mapped onto it.
+
 ## §9 — Fold instructions (human)
 
 Everything is on `ai/*` branches; nothing pushed. Expected end-state: `ai/r27-lint`
