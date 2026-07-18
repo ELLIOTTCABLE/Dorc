@@ -731,3 +731,64 @@ above.
   NOT copy the parameterized shape (roles extend by new name only). Acceptance:
   `is_diverged` greps to reserved.rs ONLY (the standing negative pin + its
   retirement docs; pin stays, never re-added); zero surviving `VerdictSense`.
+
+## lane-fallback-carry — LANDED 2026-07-17 (checkpoint PASSED; fold PENDING as a stacked ff)
+
+Commits `a80d8f4..9884de1` on `ai/r27-fallback-carry` (base `1aecaa3`,
+behind-count 0 — a pure fast-forward when folded). Landing note: **`notes/27O`**
+(the safe-list audit IS the artifact). Landed: the `27C` §4(a) pure-predicate
+carry — `oracle::carry` ((A) `InvarianceIndex`, waking the stage-1-inert
+`state_stored_only_in` marks for the `invariant:<axis>` line ONLY;
+netns-on-net-kernel forbidden with a loud diagnostic · (B) `read_set_closed`
+default-disqualify sh-taint · `decide_carry` universal-meet) ·
+`plan::WrappedProbe::Carry` as a DISTINCT licensed path (carried facts keyed
+`Context::HostDefault` — where they were MEASURED; `core::coord::compare`
+untouched; the FactKey no-collision/no-transport pins green) · the full `27C`
+§9 DST battery (13 rows → 18 unit tests; coverage map in `27O`) · 3 e2e
+fixtures · the attribution errand (below). 881 unit / 91 e2e; 88 pre-existing
+BYTE-STABLE (rung-0); the referendum did not fire; **§4(b) NOT built**
+(punt-empowered; honest walls).
+
+**Conductor verification (own hand, at `9884de1` in the lane worktree —
+content-identical to the post-ff lineage):** build + four gates + 881/0 unit +
+91/91 foreground e2e; spot-reads: the safe-list table (seven pure builtins; all
+else marked-or-walls) · the carry goldens (probe ships the AMBIENT check, no
+entry form; artifact bytes receipt-free) · the guard-rider render with inline
+attribution · the why-lane emission text (all four links named).
+
+**Checkpoint dispositions (conductor-adjudicated):**
+
+- disposition-safe-list-accepted — the enumerated audit accepted as the
+  artifact; home `oracle::carry` accepted (a pure static read of authored
+  bodies + marks; `inv-referent-agnostic`).
+- disposition-cmdsub-idiom-divergence — ACCEPTED, safe direction: `27C` §4(a)'s
+  STRAWMAN cmdsub-comparison exemplar is NOT closable at v1 (command
+  substitution lifts to `Word::Unmodeled` ⇒ disqualifies ⇒ walls, never a
+  hidden read); the v1 closable idiom is the MARKED-COMMAND rc-partition form;
+  cmdsub-VALUE modeling is the named future safe-list extension. `27C`
+  annotated in place (this stack); the STDLIB TEACHING TEMPLATE must teach the
+  marked-command form.
+- disposition-carry-keys-hostdefault (né tc-carry-keys-fact-hostdefault) —
+  ACCEPTED: the fact is keyed where it was MEASURED (ambient); carry licenses
+  consumption at the wrapped site and never fabricates a context-qualified
+  fact; pin-no-outcome-as-generator held.
+- disposition-guard-rider-fixture-only — ACCEPTED: the `27N` guard scaffold
+  needed ZERO wiring (`context-entry-wrapped-guard` is fixture-only); the
+  "query site" ask landed as EstablishWritten-whose-guard-check-is-a-read —
+  same shape, disclosed honestly.
+- errand-carry-attribution-why-note — DELIVERED dual-lane (coded Note
+  `carried-across-substrate-axis` + the gate-7-pinned `why:` line; `.sh`
+  artifact bytes verified unchanged — two-surfaces). Dual-lane ACCEPTED under
+  the kWARN-rich weld (the Note is mechanism-keepalive; the why-line carries
+  the block acceptance clause). Pinned by `carry-fsview-elides/expected-why`.
+- tc-carry-verdict-body-only · tc-carry-empty-read-set-conservative — accepted
+  interim; banked to the forward seam list (predict-inner carry mirrors `27N`'s
+  predict-inner deferral).
+- noted: step-zero caught a genuinely-stale agent-worktree base (`4b9e8aa`, a
+  divergent r26 doc lineage) — the step-zero protocol earning its keep.
+
+**Stacked-fold note (2026-07-17, human away — push-through directive):** the
+lineage ref is FROZEN at `1aecaa3` (ref-moves hook-reserved to the human);
+checkpoint docs and the following shim lane STACK on `ai/r27-fallback-carry`'s
+chain so the return-fold stays ONE `git merge --ff-only` of the whole verified
+stack.

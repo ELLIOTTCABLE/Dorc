@@ -25,11 +25,18 @@ block-settle CLOSED (`plans/271` = the rulings ledger + task map); wrapper/conte
 transport RESOLVED (`plans/27C`); the 270-era adversarial crosscheck adjudicated, no
 kill (`notes/279f` — read its §1 first).
 
-**⚠ Next activity — dispatch lane-fallback-carry** (the `27C` §4(a)
-read-set-closure pass; scope pin: VERDICT-fact carry only; + the wrapped-QUERY
-guard-fixture rider from `27D`'s lane-integration dispositions). Then the
-block-stdlib package, whose FIRST errand is the per-run PATH shim
-materialization. **lane-integration LANDED and block-context CLOSED 2026-07-17**
+**⚠ STACKING MODE (2026-07-17, human away — push-through directive):** the
+lineage ref `ai/spike3-r27` is FROZEN at `1aecaa3` (ref-moves are hook-reserved
+to the human); verified work STACKS on the `ai/r27-fallback-carry` chain, so the
+return-fold is ONE `git merge --ff-only` of the whole stack (final tip named in
+the conductor's report). **lane-fallback-carry LANDED + checkpointed** (`27D`
+entry; landing `27O`; 881 unit / 91 e2e / four gates, conductor-verified at
+`9884de1`; carried elisions render the four-link attribution chain). NEXT: the
+shim-materialization errand-lane (`274` §5 last mile) → stdlib handoff prep
+(preconditions ledger, `27Q`) → **STOP at block-stdlib**: the stdlib MINTING
+moves to a NEW human-led conductor (human ruling 2026-07-17 — quality-critical
++ security-flavoured oracles need their active direction; this conductor's
+queue ends at the handoff). **lane-integration LANDED and block-context CLOSED 2026-07-17**
 — ledger entry + dispositions + the fold-protocol correction: `27D`'s
 lane-integration section; landing note `notes/27N`; lineage tip at close
 `96917b2` (conductor-verified: four gates · 863 unit · 88/88 foreground e2e ·
