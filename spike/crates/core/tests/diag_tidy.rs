@@ -186,11 +186,14 @@ const LEGACY_ALLOW_LIST: &[&str] = &[
     // consent-legibility line. `tolerates-over-identity-dependence` (Warning) + `heavy-context-no-
     // tolerance` (Note) — the §6 corroboration lints (recognize-never-license). cli/oracle-edge;
     // PENDING the same typed-spine migration as the other cli-edge lint codes (tc-footprint-diag).
+    // `wrapped-site-adoption-hint` (Note, cli, `27N`) — a wrapped BOOK site degraded on a missing
+    // `tolerates:` vouch; the one-line adoption hint (recognize-never-license, `27C` §2).
     "wrapper-entry-incoherent",
     "tolerates-unknown-dimension",
     "escalation-policy",
     "tolerates-over-identity-dependence",
     "heavy-context-no-tolerance",
+    "wrapped-site-adoption-hint",
 ];
 
 /// The SPANLESS-MINT allow-list (arch-3-residual-2): EXACTLY the codes permitted to construct a

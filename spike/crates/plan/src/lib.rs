@@ -998,6 +998,82 @@ pub fn build_vouches(
     Carrier::new(vouches, diags)
 }
 
+/// Mint the elide/guard VOUCHES for wrapped-ENTERING BOOK sites (`27C` §3 / lane-integration
+/// `27N`). A wrapped site's argv[0] is the WRAPPER word (`sudo`), so [`build_vouches`] — which keys
+/// the verdict on argv[0] — cannot vouch it. Here the vouch is minted from the INNER oracle's
+/// verdict reached over the site's PEELED argv (the same reached-path license, `rul-guard-license`),
+/// gated on the consent decision already having permitted entry ([`WrappedProbe::Enter`]). The
+/// vouch's guard data is the ENTRY-COMPOSED invocation (`sudo__enter pipx__is_converged install
+/// poddle`) so an in-context guard renders correctly; the elide (`Replace`) consumes only the
+/// license. Merge the result into [`build_vouches`]'s map at the cli edge (wrapped nodes are
+/// disjoint from ambient ones).
+#[must_use]
+pub fn build_wrapped_vouches(
+    oracle_srcs: &[&str],
+    classes: &[(CfgNodeId, SkipClass)],
+    wrapped: &WrappedProbes,
+    interner: &mut Interner,
+) -> Vouches {
+    use dorc_oracle::verdict::{VerdictResolution, VerdictSet, check_commands, evaluate_verdict};
+
+    let verdict_sets: Vec<VerdictSet> = oracle_srcs
+        .iter()
+        .map(|src| VerdictSet::lift(interner, src).value)
+        .collect();
+    let mut vouches = Vouches::new();
+    for (node, wp) in wrapped {
+        let WrappedProbe::Enter { provider, composed } = wp else {
+            continue; // a Degrade site runs — no vouch
+        };
+        let fact = classes.iter().find_map(|(n, c)| match c {
+            SkipClass::EstablishAmbient(f) | SkipClass::EstablishWritten(f) if n == node => {
+                Some(*f)
+            }
+            _ => None,
+        });
+        let Some(fact) = fact else { continue };
+        // The inner verdict, reached over the PEELED argv (operands after the inner command word).
+        let op_refs: Vec<String> = composed
+            .inner_argv
+            .iter()
+            .map(|s| interner.resolve(*s).to_owned())
+            .collect();
+        let op_slices: Vec<&str> = op_refs.iter().map(String::as_str).collect();
+        let inner_verdict = verdict_sets.iter().find_map(|set| set.get(*provider));
+        let Some(verdict) = inner_verdict else {
+            continue;
+        };
+        if !matches!(
+            evaluate_verdict(verdict, &op_slices),
+            VerdictResolution::Vouched
+        ) {
+            continue; // the inner verdict declines over this argv ⇒ no elide license (run)
+        }
+        // The entry-composed guard shape (`27C` §5): `sudo__enter … pipx__is_converged <argv>`. The
+        // preamble carries every shipped funcdef (enter forms + the inner verdict body), all oracle
+        // bytes (`271:rul-only-oracle-bytes-ship`).
+        let mut invocation: Vec<String> =
+            composed.enter_defs.iter().map(|(f, _)| f.clone()).collect();
+        invocation.push(composed.inner_fn.clone());
+        invocation.extend(op_refs.iter().cloned());
+        let mut preamble = String::new();
+        for (_, def) in &composed.enter_defs {
+            preamble.push_str(def);
+            preamble.push('\n');
+        }
+        preamble.push_str(&composed.inner_sh);
+        let vouch = VerdictVouch::new(
+            composed.inner_fn.clone(),
+            preamble,
+            invocation.join(" "),
+            interner.resolve(fact.kind.0).to_owned(),
+            check_commands(verdict),
+        );
+        vouches.insert(*node, ByVouch::vouched(vouch, Rung::Both));
+    }
+    vouches
+}
+
 /// What the plan does with one leaf.
 #[derive(Debug, Clone)]
 pub enum Disposition {

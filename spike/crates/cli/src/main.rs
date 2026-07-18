@@ -735,7 +735,15 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
     // ALWAYS-ON (guards are the un-flagged baseline; rul24-mode-gate governs only the survival
     // tier, NOT this). A vouched past-wall establish ships its read-only probe (the witness needs
     // the verdict) and, converged, mints a `Disposition::Guard`.
-    let vouches = build_vouches(&oracle_refs, &classes, &value, &mut interner, advisory);
+    let mut vouches = build_vouches(&oracle_refs, &classes, &value, &mut interner, advisory);
+    // `27N` — wrapped-entering sites vouch on the INNER verdict over the peeled argv (argv[0] is the
+    // wrapper word, invisible to `build_vouches`). Disjoint nodes ⇒ a plain merge.
+    vouches.extend(dorc_plan::build_wrapped_vouches(
+        &oracle_refs,
+        &classes,
+        &wrapped_probes,
+        &mut interner,
+    ));
 
     // The CONNECTED check-pipes (`24J` §2, repaired — `271:rul-only-oracle-bytes-ship`): a simple
     // all-vouched-read-only pipeline `A | F [| F…]` ships as ONE composed probe keyed to its
