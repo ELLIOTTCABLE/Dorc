@@ -82,9 +82,6 @@ Only 0 and 1 ever carry a verdict; everything at 2 and above is one flat
 meanings to individual high statuses, and nothing at 2+ can ever license
 anything. Author obligations on this channel:
 
-- Never collapse or invert statuses: no `!`, no `|| true`, no arithmetic on
-  `$?` to "normalize" it. Sense-inversion is expressed by member naming and by
-  the `:!` mark sigil, never by hand.
 - Mind pipeline tails: a body ending in a pipeline answers with the tail's
   status (or the pipeline's, under pipefail); make sure that status is the
   answer you mean, and prefer shapes where the tool under description produces
