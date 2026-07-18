@@ -202,11 +202,18 @@ seeing the GC named as a *filter* re-framed it — "throwing away good, correct
 elisions is throwing away product-value." The landing: **DEFAULT = maximal correct
 elision** (`opt-accept-superset-variance`); the justified-fact GC ships as a
 **FLAGGED stability mode** (spelling STRAWMAN — a `--stable-plan`-class flag), for
-(a) users who want reproducible plans — the dorc-ci / scheduled-plan-comparison
-shape — and (b) the DST, where it is the canonical test surface: filtered runs pin
-unconditional byte-identity under shuffle; unfiltered runs pin byte-identity on
-conflict-free seeds plus the containment relation *filtered-plan elisions ⊆
-unfiltered-plan elisions*. One documentation consequence falls out: plan-shape
+users who want reproducible plans — the dorc-ci / scheduled-plan-comparison shape.
+On testing (human self-correction, 2026-07-17c — the earlier "canonical DST
+surface" phrasing misspoke, mine as much as theirs): DST exists to test the
+product, and if the default product is nondeterministic-across-host-facts, the
+testing must *exercise* that nondeterminism — so the DEFAULT mode is the primary
+battery. No paradox: the rig is seed-deterministic (`inv-determinism` — rerun any
+seed ⇒ bit-identical), so every individual run stays exactly assertable; the
+variance lives ACROSS seeds, where the pins are per-seed reproducibility +
+cross-seed soundness envelope + admissibility + conflict-free byte-identity. The
+flagged mode contributes one ADDITIONAL pin family — unconditional byte-identity
+under shuffle, plus the cross-mode differential oracle *filtered-plan elisions ⊆
+unfiltered-plan elisions* — a useful secondary net, never the primary surface. One documentation consequence falls out: plan-shape
 stability under the default is honest only *modulo conflict* — any scheduled
 plan-comparison consumer (the `24R` cron story, `--exit-code`-adjacent tooling)
 should be pointed at the flag, not at an implied determinism the default no
@@ -406,6 +413,63 @@ own value-plane. Composition must be clean and must **fail toward unsureness**.
   un-derivable link — unvouched producer, unmarked read, unfoldable input — is ⊤
   and walls the fold. A host transformation never launders provenance; the
   engine's inability to see inside it is encoded as unsureness, not assumption.
+  **Scope-fence (human-typed 2026-07-17c): clause 6 governs the CLAIMS/LICENSE
+  lanes only.** The explanation product is the opposite obligation — see §5b.
+
+### §5b — The why-lens through the black box (human-typed direction, 2026-07-17c; exploratory tier)
+
+The severed-provenance law is correct for claims-driving and correctness, and
+*cannot be allowed to be* the `dorc why` story: "your `dorc why` output only tells
+the tale back to the most recent re-issue / value-fold" is — human's words — not
+remotely good enough. Under rerun-to-fixpoint, the why-chain must narrate a value
+like `'nginx'` THROUGH iteration hops and host-side transformations, best-effort,
+even though nothing in that narration may ever feed the license plane. The two
+lanes fail in OPPOSITE directions by design: the license lane fails toward
+unsureness (clause 6); the explanation lane fails toward *narration with
+attributed confidence*. This deepens `26B:need-provenance-through-rounds` from
+"thread the chain" into a real sub-design: **`26C:need-why-explanation-lane`**.
+
+What the engine gets FREE and sound (conductor observation, +SURE): the
+*structural* spine already spans the boundary — recipes record that B was
+computed by `g "$A"`, want-identities record which capture made which probe
+compilable, per-artifact nonces give the iteration coordinate. The black box's
+inputs and outputs are engine-known even where the transformation is not; the
+genuinely best-effort part is *contentful* narration of what happened inside.
+
+The human's candidate feeder classes (typed in-chat, near-verbatim; each
+display-plane-only, each attributed BY CLASS in the why output):
+
+- **`26C:feeder-non-referent-agnostic-text`** — static analysis vetoed everywhere
+  else (`inv-referent-agnostic`): tool-aware textual reasoning ("`grep` filters
+  its input's lines"; "the output contains the captured string") producing
+  inferred-from-text-shape links.
+- **`26C:feeder-host-observation-hot-path`** — powerful host machinery watching
+  what *actually* happens, where available: the punted lint/mechanical-
+  verification/tracer class (the `077` seccomp observe backstop; the
+  `kFIDELITY-faithful` one-leaf-one-exec seam; the DX-tooling tracer ambitions)
+  entering the probe HOT PATH — explicitly, specifically best-effort, producing
+  provenance/logging/value-tracking that feeds `dorc why` only.
+- **`26C:feeder-oracle-why-metadata`** — the dangerous one, meta-tier: oracles
+  *contributing to* (never driving) the why-chain. Oracles are the very
+  untrustworthy source `dorc why` exists to tattle on, so their contributions
+  render as claimed-by-oracle-X, forever display-tier. OPEN CORNER, flagged not
+  solved: what an authored why-contribution's *spelling* is under the `kOOB`
+  redline (much of the need may already be served by existing marks + predicts;
+  the residue is the question).
+
+The fence that makes the backflips safe to even attempt: the decision-inert
+plane already EXISTS as typed precedent — ru-11's `OriginKind` ("grounds the
+why-lens EXPLANATION, never a decision", `22H` §1) and the `27L` sealed
+`core::room` split (`into_license_input()` exists only on Invited; compile-fail
+pinned). The explanation lane's evidence type gets the same sealed treatment:
+no conversion into any license-plane input exists, at the type level, from day
+one — so the vetoed analyses stay vetoed where the veto matters, and
+`26C:fence-capture-never-feeds-closure-pass` (§2) is one instance of the
+general rule. Multiple feeders working in concert, disagreeing gracefully, each
+tagged with its class and confidence, is the expected end-shape — human: "a
+nasty corner"; the revival owns sizing it, and the r25 trial's why-output
+critique is the natural evidence source for how much narration depth is
+actually owed.
 
 This also softens `26B:watch-dependent-chain-scheduling`'s asymmetry: the on-host
 chain (executor-era) and the controller-side iteration have the SAME
@@ -660,7 +724,8 @@ stay open, nothing new closes them.
 | outcomes-schedule-never-evidence line; closure-pass fence | conductor synthesis; consistent with `277` §5's typed clause |
 | cancellation package (demotion order · guard-by-vouch · finality class) | proposal-tier (`ask-cancellation-posture`) |
 | wire iteration keys; want-identity; leafid namespaces | +SURE needed; shapes proposal-tier |
-| captured-bytes-as-data law | ACKED HARD 2026-07-17b + corollary clause 6 (host boundary severs provenance) |
+| captured-bytes-as-data law | ACKED HARD 2026-07-17b + corollary clause 6 (host boundary severs provenance); scope-fenced to license lanes 2026-07-17c |
+| why-explanation lane (§5b) | HUMAN-TYPED direction 2026-07-17c, exploratory tier; feeder classes banked; oracle-why-metadata spelling = open corner; revival owns sizing |
 | cancellation package | re-grounded attention-first 2026-07-17b (§3); sanity-ack still owed at R4 |
 | binding-site gate menu incl. (b′) structure-preserving folds | sharpened, deliberately UN-ruled (human's, at R2 entry) |
 | quiet-welding ledger + APPLIED annotations | audit complete against tip `e16b0c8`; annotations one-commit-revertible |
