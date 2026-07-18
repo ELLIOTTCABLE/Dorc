@@ -49,7 +49,6 @@ pub struct LintContext<'a> {
     pub runner: &'a dyn ExternalToolRunner,
 }
 
-// A manual `Debug` (the trait-object `runner` field cannot derive it); the runner is elided.
 impl std::fmt::Debug for LintContext<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("LintContext")

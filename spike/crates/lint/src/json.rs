@@ -79,7 +79,6 @@ pub fn parse(src: &str) -> Option<Json> {
     p.skip_ws();
     let v = p.value()?;
     p.skip_ws();
-    // A well-formed document has nothing but whitespace after the top value.
     if p.pos == p.chars.len() {
         Some(v)
     } else {
@@ -244,8 +243,6 @@ pub fn escape_into(out: &mut String, s: &str) {
             '\t' => out.push_str("\\t"),
             c if (c as u32) < 0x20 => {
                 out.push_str("\\u");
-                // Four lowercase hex digits, zero-padded — control chars only, so the high bytes
-                // are always zero.
                 let code = c as u32;
                 for shift in [12u32, 8, 4, 0] {
                     let nibble = (code >> shift) & 0xf;

@@ -151,7 +151,6 @@ fn count_output_lines(text: &str) -> u32 {
         return 0;
     }
     let newlines = u32::try_from(text.bytes().filter(|&b| b == b'\n').count()).unwrap_or(u32::MAX);
-    // A trailing `\n` closes the last line (no dangling segment); its absence leaves one more.
     if text.ends_with('\n') {
         newlines
     } else {
@@ -179,10 +178,9 @@ fn line_map_from_edits(src: &str, edits: &[(usize, usize, String)]) -> Vec<u32> 
         let at_newline = bytes.get(i) == Some(&b'\n');
         let at_end = i == bytes.len();
         if at_newline || at_end {
-            // The line's byte range including its terminating newline (or EOF).
             let content_start = line_start;
             let line_end_incl = if at_newline { i.saturating_add(1) } else { i };
-            // A degenerate final empty segment (a trailing `\n` then EOF) is not a line.
+            // A trailing `\n`+EOF leaves a final empty segment that is not a line.
             if !(at_end && content_start == i) {
                 line_no = line_no.saturating_add(1);
                 let vanished = deletions
@@ -505,8 +503,6 @@ sm_dorc_Package__state_stored_only_in() {\n\
 
     #[test]
     fn line_map_is_identity_for_unmarked_file() {
-        // An unmarked file passes through byte-identical, so every stripped line IS its original
-        // line (`27R` §4 uniform path). Four lines ⇒ `[1,2,3,4]`.
         let plain = "#!/bin/sh\nfoo() { :; }\nls -la\necho done\n";
         let m = strip_mapped(plain);
         assert_eq!(m.text, plain, "unmarked file is byte-identical");
@@ -519,11 +515,7 @@ sm_dorc_Package__state_stored_only_in() {\n\
 
     #[test]
     fn line_map_shifts_only_on_whole_deleted_annotation_lines() {
-        // The MARKED fixture: the marker line (orig 2) and the `invariant:` bare-mark line (orig 9)
-        // are whole-deleted and VANISH; every within-line edit (the shebang rewrite, the bind, the
-        // two trailing marks) keeps its line. So the 8 stripped lines map back to [1,3,4,5,6,7,8,10]
-        // — the only shifts are at the two vanished lines (`27R` §4). The map length equals the
-        // stripped output's line count, and each stripped line's text sits at its mapped original.
+        // `27R` §4: only the whole-deleted marker (orig 2) + `invariant:` bare-mark (orig 9) shift.
         let m = strip_mapped(MARKED);
         assert_eq!(
             m.line_map,
@@ -538,7 +530,6 @@ sm_dorc_Package__state_stored_only_in() {\n\
             m.line_map.len(),
             "one map entry per stripped line"
         );
-        // The dpkg-query command is stripped line 4 → original line 5 (its trailing mark gone).
         assert_eq!(m.line_map.get(3).copied(), Some(5));
         assert!(stripped_lines[3].contains("dpkg-query -W"));
         assert!(
@@ -549,14 +540,8 @@ sm_dorc_Package__state_stored_only_in() {\n\
 
     #[test]
     fn shellcheck_directive_not_detached_by_deleted_annotation_line() {
-        // `27R` §8 test-pin (the sweep's ~SUSPECT finding): a `# shellcheck disable=` directive
-        // applies to the NEXT command. When strip whole-deletes a bare-mark annotation LINE sitting
-        // between the directive and its target, the directive must end up ADJACENT to the target
-        // (no residual blank line) — otherwise shellcheck's directive would target a blank line and
-        // silently fail to suppress. `consume_trailing_newline` (the whole-line delete taking its
-        // own newline) is what keeps them attached; this pins that it stays true.
-        // NB the Rust `\`-continuation strips each next line's leading whitespace, so this source is
-        // un-indented (`# shellcheck`, `:`, `printf` all at column 0) — immaterial to the property.
+        // `27R` §8 pin: a deleted bare-mark line between a `# shellcheck disable=` directive and its
+        // target must leave them ADJACENT (no residual blank line, or the directive suppresses nothing).
         let src = "# dorc-lang/v0.1\n\
 foo__state_stored_only_in() {\n\
 # shellcheck disable=SC2086\n\

@@ -318,8 +318,7 @@ fn parse_args() -> Result<Invocation, String> {
         return Ok(Invocation::Strip(path.clone()));
     }
 
-    // `dorc lint <files…> [flags]`: a distinct arg surface (`27R` §5) — handled before the
-    // analyze mode/flag machinery, like strip.
+    // `dorc lint`: a distinct arg surface (`27R` §5), handled before the analyze machinery like strip.
     if raw.first().map(String::as_str) == Some("lint") {
         return parse_lint_args(&raw);
     }
@@ -565,11 +564,6 @@ fn resolve_oracle_paths(oracles: &[String], oracle_dirs: &[String]) -> Result<Ve
     Ok(paths)
 }
 
-// ===========================================================================
-// `dorc lint` (27R): the oracle-author doctor/lint grab-bag. The cli edge — arg parse, file read,
-// the REAL subprocess runner (io-at-edges-only), render, exit code. The machinery is in `dorc-lint`.
-// ===========================================================================
-
 /// One-line usage for the `lint` sub-surface (`27R` §5). Embedded in lint arg errors.
 const LINT_USAGE: &str = "usage: dorc lint <files…> [-o <oracle>]… [--oracle-dir <dir>] \
     [--format=human|jsonl] [--fail-on=error|warn|never] [--no-tools] [--require-tools] \
@@ -608,8 +602,7 @@ fn parse_lint_args(raw: &[String]) -> Result<Invocation, String> {
     let mut oracles = Vec::new();
     let mut oracle_dirs = Vec::new();
     let mut format = LintFormat::Human;
-    // tc-lint-fail-on-default: `error` (hot-loop mercy; CI tightens to `warn`). The conservative
-    // lean, flagged for the human (`27R` §6 tension-fail-on-default).
+    // tc-lint-fail-on-default: `error` (hot-loop mercy; CI tightens to `warn`) — `27R` §6, flagged.
     let mut fail_on = Some(dorc_lint::LintSeverity::Error);
     let mut tools_enabled = true;
     let mut require_tools = false;
@@ -719,8 +712,7 @@ impl dorc_lint::ExternalToolRunner for SubprocessRunner {
             .spawn()
         {
             Ok(c) => c,
-            // The tool vanished between the availability probe and here: rc 127 (command-not-found),
-            // the adapter's degradation ladder turns it into a finding, never a crash.
+            // Vanished since the availability probe: rc 127, which the adapter turns into a finding.
             Err(e) => {
                 return dorc_lint::ToolRun {
                     rc: 127,
@@ -730,8 +722,7 @@ impl dorc_lint::ExternalToolRunner for SubprocessRunner {
             }
         };
         if let Some(mut si) = child.stdin.take() {
-            // A tool that reads only a prefix of stdin closes early ⇒ BrokenPipe; that is not an
-            // error (we want its diagnosis of what it DID read), so the write result is ignored.
+            // A tool reading only a prefix of stdin closes early (BrokenPipe) — not an error here.
             let _ = si.write_all(stdin);
         }
         match child.wait_with_output() {
@@ -820,8 +811,7 @@ fn lint_command(args: &LintArgs) -> ExitCode {
     let only = (!args.sources.is_empty()).then_some(args.sources.as_slice());
     let report = dorc_lint::lint(&inputs, &oracles, options, &SubprocessRunner, only);
 
-    // Zero lintable files is OPERATIONAL, never clean (`27R` §8b dir-zero-files-is-operational). In
-    // machine mode the envelope still ships (coverage shows the empty file set); human mode says so.
+    // Zero lintable files is OPERATIONAL, never clean (`27R` §8b); the jsonl envelope still ships.
     if inputs.is_empty() {
         if args.format == LintFormat::Jsonl {
             print!("{}", dorc_lint::render::render_jsonl(&report));
@@ -837,7 +827,6 @@ fn lint_command(args: &LintArgs) -> ExitCode {
     }
     std::io::stdout().flush().ok();
 
-    // Operational precedence: --expect-files scope drift, then --require-tools absence.
     if let Some(want) = args.expect_files
         && inputs.len() != want
     {

@@ -81,8 +81,6 @@ fn run_external(
         return SourceStatus::Off;
     }
     if !ctx.runner.available(tool) {
-        // `27R` §4 dir-absent-is-info: ONE info finding per run (not per file). A run-level finding
-        // carries an empty path (the human render groups it as a run note; JSONL carries "").
         out.push(Finding {
             path: String::new(),
             line: None,
@@ -123,14 +121,11 @@ fn lint_one_file(
                 out.push(remap_finding(&file.path, &mapped.line_map, tool, raw));
             }
         }
-        // Parsed cleanly, zero findings: clean UNLESS the tool tripped a nonzero rc — then one warn
-        // operational finding (never masquerading as clean; `27R` §8 delta-exit-trichotomy-sharpened).
         ParseResult::Findings(_) => {
             if run.rc != 0 {
                 out.push(operational_finding(&file.path, tool, run.rc));
             }
         }
-        // Total confusion: emit the raw output as ONE opaque finding block (`27R` §4(c)).
         ParseResult::Unparsable(raw) => {
             out.push(Finding {
                 path: file.path.clone(),
@@ -174,7 +169,6 @@ enum ParseResult {
 fn parse_output(try_json: bool, run: &ToolRun) -> ParseResult {
     if try_json {
         let stdout = String::from_utf8_lossy(&run.stdout);
-        // A valid json1 with a `comments` array wins; anything else falls through to the text tier.
         if let Some(v) = json::parse(stdout.trim())
             && let Some(comments) = v.get("comments").and_then(json::Json::as_array)
         {
@@ -248,7 +242,6 @@ fn parse_text(run: &ToolRun) -> ParseResult {
 /// Parse one "looks like a diagnostic" text line, or `None`. Handles both the colon-delimited
 /// `file:NN:CC: level: message` shape and the `… line NN …` prose shape.
 fn parse_text_line(line: &str) -> Option<RawFinding> {
-    // Colon shape: split into at most 4 pieces `[file, NN, CC, rest]`; accept if piece 1 is digits.
     let parts: Vec<&str> = line.splitn(4, ':').collect();
     if parts.len() >= 3
         && let Some(n) = parts.get(1).and_then(|s| s.trim().parse::<u32>().ok())
@@ -268,7 +261,6 @@ fn parse_text_line(line: &str) -> Option<RawFinding> {
             base: RemapFidelity::Approximate,
         });
     }
-    // Prose shape: `… line NN …` (checkbashisms default). Find `line ` then trailing digits.
     if let Some(n) = parse_line_keyword(line) {
         return Some(RawFinding {
             line: Some(n),
@@ -296,7 +288,6 @@ fn text_severity(line: &str) -> LintSeverity {
     if lower.contains("error") {
         LintSeverity::Error
     } else {
-        // Bashisms/portability findings are warnings; default there rather than Info so they surface.
         LintSeverity::Warn
     }
 }

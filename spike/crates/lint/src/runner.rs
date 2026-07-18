@@ -46,7 +46,6 @@ impl ExternalToolRunner for NoToolsRunner {
     }
 
     fn run(&self, _tool: &str, _args: &[&str], _stdin: &[u8]) -> ToolRun {
-        // Never reached in practice (an unavailable tool is not run); return an empty, inert result.
         ToolRun {
             rc: 0,
             stdout: Vec::new(),

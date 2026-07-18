@@ -6,7 +6,7 @@
 //! that `plan`/`apply` emit with MORE inputs, emitted here with fewer (no world) — every pass whose
 //! inputs exist fires; passes needing probe facts simply never run (they are not stubbed or faked).
 
-use dorc_core::{Interner, Severity};
+use dorc_core::Severity;
 
 use crate::finding::{Finding, LintSeverity, RemapFidelity, SourceStatus};
 use crate::source::{LintContext, LintSource, Rung};
@@ -32,17 +32,11 @@ impl LintSource for AnalysisDiagnostics {
 
     fn run(&self, ctx: &LintContext<'_>, out: &mut Vec<Finding>) -> SourceStatus {
         for file in ctx.files {
-            // A fresh interner per file: the sources are independent (nothing keys symbols across
-            // them), so this keeps the crate a pure function of its inputs without a shared mutable.
-            let mut interner = Interner::default();
             let parsed = dorc_syntax::parse(&file.src);
             let cfg = dorc_analysis::cfg::build(&parsed.value);
             for diag in parsed.diags.iter().chain(cfg.diags.iter()) {
                 out.push(diag_to_finding(&file.path, &file.src, diag, self.name()));
             }
-            // The interner is not consumed by parse/cfg here (they take `&str`); held only to make
-            // the "each source mints its own" discipline explicit and future-proof.
-            let _ = &mut interner;
         }
         SourceStatus::Ran
     }

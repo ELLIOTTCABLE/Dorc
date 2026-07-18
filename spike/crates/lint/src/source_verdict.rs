@@ -36,9 +36,6 @@ impl LintSource for VerdictBodyFlattening {
     }
 
     fn run(&self, ctx: &LintContext<'_>, out: &mut Vec<Finding>) -> SourceStatus {
-        // Verdict bodies live in the oracle files (the `-o` set); a lint target that is itself a
-        // marked oracle is not double-linted here (only `ctx.oracles`), matching the "verdict bodies
-        // come from the loaded oracles" shape. A future round may unify the two input lists.
         for oracle in ctx.oracles {
             let mut interner = Interner::default();
             let verdicts = VerdictSet::lift(&mut interner, &oracle.src).value;

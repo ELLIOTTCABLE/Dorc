@@ -85,7 +85,6 @@ fn unmodeled_inventory_reports_one_wall_summary() {
 #[test]
 fn clean_book_is_silent_with_a_positive_sentence() {
     let report = run_native(&[file("book.sh", CLEAN_BOOK)], None);
-    // No tools available (NoToolsRunner) ⇒ two tool-absent info findings, but no error/warn walls.
     let native: Vec<_> = report
         .findings
         .iter()
@@ -95,8 +94,6 @@ fn clean_book_is_silent_with_a_positive_sentence() {
         native.is_empty(),
         "a clean book has no native findings: {native:?}"
     );
-    // With ONLY the two rung-book sources selected, the report is fully clean and the render is the
-    // positive sentence (`27R` §8 delta-positive-clean-sentence), never mere silence.
     let clean = run_native(
         &[file("book.sh", CLEAN_BOOK)],
         Some(&only(&["analysis-diagnostics", "unmodeled-inventory"])),
@@ -155,7 +152,6 @@ fn jsonl_envelope_carries_format_and_coverage_block() {
             .unwrap_or(0)
             >= 2
     );
-    // Every remaining line is a valid finding object.
     for line in lines {
         let f = json::parse(line).unwrap_or_else(|| panic!("finding line is valid JSON: {line}"));
         assert!(
@@ -192,7 +188,6 @@ fn source_subset_selection_runs_only_named() {
 
 #[test]
 fn severity_threshold_counting_drives_the_exit_trichotomy() {
-    // The eval book yields ≥2 Error findings from analysis-diagnostics.
     let report = run_native(
         &[file("book.sh", EVAL_BOOK)],
         Some(&only(&["analysis-diagnostics", "unmodeled-inventory"])),
@@ -202,7 +197,6 @@ fn severity_threshold_counting_drives_the_exit_trichotomy() {
         errors >= 2 && infos >= 1,
         "errors from the wall, an info from the inventory"
     );
-    // fail-on=error counts only errors; fail-on=warn counts errors+warns; never counts nothing.
     assert_eq!(
         report.count_at_or_above(Some(LintSeverity::Error)),
         errors,
@@ -221,8 +215,6 @@ fn severity_threshold_counting_drives_the_exit_trichotomy() {
 
 #[test]
 fn verdict_body_flags_a_terminal_pipeline() {
-    // A verdict body answering with a pipeline tail (`… | grep -q`) is the falsification-first
-    // hazard (oracle-contract §3): the answering rc is grep's, not the modeled tool's.
     let oracle = "# dorc-lang/v0.1\nfoo__is_converged() {\nfoo --status \"$1\" | grep -q ok\n}\n";
     let report = lint(
         &[],

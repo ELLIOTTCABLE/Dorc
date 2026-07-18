@@ -36,15 +36,12 @@ impl LintSource for UnmodeledInventory {
         for file in ctx.files {
             let parsed = dorc_syntax::parse(&file.src);
             let cfg = dorc_analysis::cfg::build(&parsed.value);
-            // The ⊤-walls: `Top` CFG nodes, by their source byte offset (span.lo of the AST node).
             let mut wall_offsets: Vec<u32> = Vec::new();
             let mut leaf_offsets: Vec<u32> = Vec::new();
             for (id, node) in cfg.value.iter() {
                 let span = parsed.value.node(node.ast).span;
                 match node.kind {
                     CfgNodeKind::Top => wall_offsets.push(span.lo.0),
-                    // Real effect leaves only (a `$()`-body / spliced / in-loop command is not a
-                    // plan leaf — `inv-leaf-seam`); an approximate "downstream attention" surface.
                     CfgNodeKind::Command
                         if !cfg.value.is_expansion_internal(id) && !cfg.value.in_loop_body(id) =>
                     {

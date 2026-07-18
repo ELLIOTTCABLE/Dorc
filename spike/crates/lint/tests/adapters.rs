@@ -100,7 +100,6 @@ fn shellcheck_good_json1_maps_severity_code_and_line() {
 
 #[test]
 fn shellcheck_corrupt_json_degrades_to_tolerant_text() {
-    // Not valid JSON, but carries a `-:NN:CC:`-shaped diagnostic — the tolerant text tier remaps it.
     let text = "-:2:1: warning: apt-get update output not checked [SC2069]";
     let runner = FakeRunner::new().with("shellcheck", 1, text, "");
     let report = lint(
@@ -123,7 +122,6 @@ fn shellcheck_corrupt_json_degrades_to_tolerant_text() {
 
 #[test]
 fn shellcheck_unstructured_output_is_raw_passthrough() {
-    // Non-empty output with no line-number shape ⇒ one opaque raw finding (`27R` §4(c)).
     let blather = "shellcheck: something went sideways and there is no structure here";
     let runner = FakeRunner::new().with("shellcheck", 2, blather, "");
     let report = lint(
@@ -143,8 +141,6 @@ fn shellcheck_unstructured_output_is_raw_passthrough() {
 
 #[test]
 fn checkbashisms_additive_rc_is_ignored_when_findings_parse() {
-    // rc=3 (checkbashisms' additive 1+2) — MUST be ignored; the parsed finding governs, and there
-    // is NO spurious operational finding (`27R` §8 delta-exit-trichotomy-sharpened).
     let lint_out = "-:3:1: warning: possible bashism; 'echo -n'";
     let runner = FakeRunner::new().with("checkbashisms", 3, lint_out, "");
     let report = lint(
@@ -173,7 +169,6 @@ fn checkbashisms_additive_rc_is_ignored_when_findings_parse() {
 
 #[test]
 fn nonzero_rc_with_no_findings_is_one_operational_warn() {
-    // Clean-parsing (empty) output but nonzero rc ⇒ exactly one warn operational finding.
     let runner = FakeRunner::new().with("checkbashisms", 2, "", "");
     let report = lint(
         &[file("book.sh", BOOK)],
@@ -246,13 +241,7 @@ fn no_tools_option_disables_external_sources() {
 
 #[test]
 fn strip_line_map_remaps_a_marked_file_finding() {
-    // A marked oracle: the marker line (orig 2) and the `invariant:` bare-mark line vanish, so a
-    // finding on a STRIPPED line must be remapped to its ORIGINAL line (`27R` §4 dir-paths-stay-yours).
-    // Stripped text lines: 1 `apt_get__predict() {` (orig 2 vanished the marker; wait orig1 is marker)…
-    // The map is asserted precisely by the oracle-crate strip tests; here we assert the remap wiring:
-    // a json finding at stripped line 1 maps to whatever original line 1 became.
     let marked = "# dorc-lang/v0.1\nfoo__state_stored_only_in() {\n:   : invariant:fs-view\nprintf 'x\\n'   : kernel\n}\n";
-    // Stripped: line1 `foo__…() {` (orig 2), line2 `printf 'x\n'` (orig 4), line3 `}` (orig 5).
     let json = r#"{"comments":[{"file":"-","line":2,"column":1,"level":"info","code":2043,"message":"whatever"}]}"#;
     let runner = FakeRunner::new().with("shellcheck", 1, json, "");
     let report = lint(

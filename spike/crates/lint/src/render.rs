@@ -32,7 +32,6 @@ pub fn render_human(report: &LintReport) -> String {
     out.push_str(
         "dorc lint findings (advisory; the machine format `--format=jsonl` is the stable surface):\n",
     );
-    // Findings are already globally sorted (path, line, source, code), so a simple sweep groups them.
     let mut current_group: Option<&str> = None;
     for f in &report.findings {
         let group = if f.path.is_empty() {
