@@ -37,8 +37,8 @@ suspended and never traded against performance.
   and probe-parallelism are the only speed mechanisms that exist.
 - Everything is attributed. Every elision names the answering function; every
   survival names the claims it rested on; every entered context names the
-  consents that licensed it. Publishing an oracle is accepting that your name
-  is in that chain.
+  consents that licensed it. *Publishing an oracle is accepting that your name
+  is in that chain.*
 
 ## 2. The family: names, roles, extension
 
