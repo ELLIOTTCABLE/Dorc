@@ -320,8 +320,15 @@ axiom).
   + `26A`'s stop-2/stop-3 amendments remain its spec — JOINED (minted out-of-order
   2026-07-17, mid-r27) by **`notes/26B`**: the human-typed reactive
   plan-construction direction, the capture-fold deferral (r27's read-value-slice
-  lane STRUCK), and the design bank grounding the revival conductor. Read `26B`
-  alongside `262` before re-cutting S1.
+  lane STRUCK), and the design bank grounding the revival conductor — and by
+  **`notes/26C`** (same-day deep pass, human-reviewed 2026-07-17: the fixpoint
+  semantics + conflict carve + admissibility invariant, the quiet-welding audit
+  with its applied `260`/`261`/`262` annotations, the acked captured-bytes/
+  severed-provenance laws, the §5b why-explanation-lane direction, and the R0–R4
+  ladder that re-cuts S1). Read `26B` + `26C` alongside `262` before re-cutting
+  S1. (The trial-revival rider `26B:ask-trial-counts-capture-walls` above gains a
+  soft sibling from `26C` §5b: the trial's `dorc why` output critique doubles as
+  the sizing evidence for how much narration depth the explanation lane owes.)
 - *(Annotation 2026-07-16, banked here when LIVING_STATUS compressed:)*
   **dotfiles-acceptance-day** (a round-24 settled-list one-liner, 2026-07-07) stays
   TABLED — no block owns it; revives at human discretion (design record for the
