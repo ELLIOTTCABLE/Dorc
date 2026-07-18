@@ -1320,6 +1320,88 @@ if [ -d "$here/lint-cases" ]; then
   rm -rf "$_lint_empty"
 fi
 
+# ---------------------------------------------------------------------------
+# OPT-IN real-external-tools lint lane (27T; spike/CLAUDE.md real-tools-lane-opt-in). Gated ENTIRELY
+# on DORC_E2E_REAL_TOOLS — a comma-list of tool names; the LIST is the coverage assertion (27R §8b).
+# UNSET (default) => this whole block does not exist: ZERO external invocations, ZERO real-tool PATH
+# probes, byte-identical to the run above. SET => every LISTED tool must be present AND runnable AND
+# produce the expected STRUCTURAL findings — a listed-but-absent/unrunnable tool FAILS LOUDLY (opt-in
+# implies require-tools: --require-tools makes an absent tool a hard rc-3, caught below). Assertions
+# are STRUCTURAL only (stable SCxxxx / external-text codes, remap fidelity, the ORIGINAL pre-strip
+# line, coverage=ran) — NEVER golden upstream message text or finding counts, so the lane survives
+# routine linter upgrades (27R §4 agility doctrine applied to our own tests). This exercises OUR
+# WRAPPING (adapter parse tier, strip line-map remap, coverage reporting), not the linters.
+#
+#   ONE-LINE INVOCATION (pinned tools made visible to dorc's SubprocessRunner):
+#     DORC_E2E_REAL_TOOLS=shellcheck,checkbashisms  sh e2e/run.sh
+#   shellcheck is auto-located via `mise which` (registry-pinned in mise.toml); checkbashisms is
+#   provisioned on demand by lint-real-tools-setup.sh into the git-ignored .real-tools/. On THIS
+#   Windows dev box use DORC_E2E_REAL_TOOLS=shellcheck only — dorc's `Command::new` appends `.exe`
+#   and cannot spawn checkbashisms' perl-script `.cmd` launcher (27T tc-checkbashisms-win-spawn); the
+#   checkbashisms half is correct-by-design and live on *nix (extensionless launcher, native execve).
+if [ -n "${DORC_E2E_REAL_TOOLS:-}" ]; then
+  _rt_path="$PATH"
+  if command -v mise >/dev/null 2>&1; then
+    _rt_sc=$(mise which shellcheck 2>/dev/null || true)
+    [ -n "$_rt_sc" ] && _rt_path="$(dirname "$_rt_sc"):$_rt_path"
+  fi
+  case ",${DORC_E2E_REAL_TOOLS}," in
+    *,checkbashisms,*)
+      if _rt_cb=$(sh "$here/lint-real-tools-setup.sh"); then
+        _rt_path="$_rt_cb:$_rt_path"
+      else
+        echo "FAIL  lint-real/checkbashisms  [lint-real: pinned provisioning (download/sha256) failed]"
+        fails=$((fails + 1))
+      fi
+      ;;
+  esac
+  _rt_oldifs=$IFS; IFS=','
+  # shellcheck disable=SC2086  # the tool LIST is intentionally word-split on comma into $@.
+  set -- $DORC_E2E_REAL_TOOLS
+  IFS=$_rt_oldifs
+  for _tool in "$@"; do
+    lname=lint-real/$_tool
+    total=$((total + 1))
+    _cdir="$here/lint-real-cases/$_tool"
+    if [ ! -f "$_cdir/book.sh" ]; then
+      echo "FAIL  $lname  [lint-real: listed tool has no fixture (lint-real-cases/$_tool/book.sh)]"
+      fails=$((fails + 1)); continue
+    fi
+    _rt_rc=0
+    _rt_out=$( cd -- "$_cdir" && env PATH="$_rt_path" "$dorc" lint --format=jsonl --source "$_tool" --require-tools book.sh 2>/dev/null ) || _rt_rc=$?
+    if [ "$_rt_rc" != 0 ]; then
+      echo "FAIL  $lname  [lint-real: dorc exited $_rt_rc — a LISTED tool is absent/unrunnable (opt-in requires it)]"
+      printf '%s\n' "$_rt_out" | sed 's/^/      /'
+      fails=$((fails + 1)); continue
+    fi
+    # The stable code + fidelity each tool's ADAPTER TIER must produce. shellcheck: json1 MACHINE tier
+    # (exact remap) — if real json1 fell through to text/raw, `code` would be external-text/-raw and
+    # this fails, which is exactly what the lane exists to catch. checkbashisms: tolerant TEXT tier
+    # (approximate). Both remap the stripped issue-line back to the ORIGINAL pre-strip line 6.
+    case "$_tool" in
+      shellcheck)
+        _rt_cov='"name":"shellcheck","status":"ran"'
+        _rt_find='"path":"book\.sh","line":6,.*"source":"shellcheck","code":"SC2086",.*"remap":"exact"' ;;
+      checkbashisms)
+        _rt_cov='"name":"checkbashisms","status":"ran"'
+        _rt_find='"path":"book\.sh","line":6,.*"source":"checkbashisms","code":"external-text",.*"remap":"approximate"' ;;
+      *)
+        echo "FAIL  $lname  [lint-real: unknown tool in DORC_E2E_REAL_TOOLS (no adapter/fixture)]"
+        fails=$((fails + 1)); continue ;;
+    esac
+    _rt_bad=
+    printf '%s\n' "$_rt_out" | grep -qF "$_rt_cov" || _rt_bad="coverage did not report the tool as ran"
+    printf '%s\n' "$_rt_out" | grep -Eq "$_rt_find" \
+      || _rt_bad="${_rt_bad:+$_rt_bad; }expected-tier finding missing (stable code + original remapped line + fidelity)"
+    if [ -n "$_rt_bad" ]; then
+      echo "FAIL  $lname  [lint-real: $_rt_bad]"
+      printf '%s\n' "$_rt_out" | sed 's/^/      /'
+      fails=$((fails + 1)); continue
+    fi
+    [ "${DORC_E2E_QUIET:-}" = "1" ] || echo "ok    $lname"
+  done
+fi
+
 echo "---"
 if [ "$fails" -ne 0 ]; then
   echo "$fails/$total e2e round-trips FAILED" >&2
