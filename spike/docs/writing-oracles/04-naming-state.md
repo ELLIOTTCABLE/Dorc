@@ -26,8 +26,8 @@ address is called a coordinate, and it has up to three parts:
 
 ```
 sm.dorc.Service:"$svc"#enabled
-\____________/ \____/ \______/
-    kind       entity selector
+\_____________/ \____/\______/
+      kind      entity selector
 ```
 
 The kind names a vocabulary: a namespace of one type of describable state, spelled
@@ -95,11 +95,9 @@ precise about yours instead of conservative about everything.
 
 There are three mark sigils, and each marked line asserts exactly one thing:
 
-```sh
-tool query "$x"      : some.kind.Name:"$x"#present     # verdict: 0 means it holds
-tool absent "$x"     :! some.kind.Name:"$x"#present    # verdict, complement sense
-tool peek "$y"       :? some.kind.Name:"$y"#mode       # observe: this line reads that cell
-```
+    tool query "$x"    : some.kind.Name:"$x"#present      verdict: exit 0 asserts it holds
+    tool absent "$x"   :! some.kind.Name:"$x"#present     verdict, complement sense
+    tool peek "$y"     :? some.kind.Name:"$y"#mode        observe: this line reads that cell
 
 The plain `:` form you have seen. The `:!` form is for arms whose converged state
 is an absence - a `remove` verb's check, where exit 0 must mean "the thing is

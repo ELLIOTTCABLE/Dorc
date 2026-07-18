@@ -122,16 +122,22 @@ the host's locale is one more thing you do not control. And remember that `$( )`
 strips all trailing newlines from its output - almost always what you want, worth
 knowing the day it is not.
 
-None of this list is Dorc-specific, and that is the point: an oracle is just a
-very well-behaved shell library. The canonical deeper sources, in rough order of
-usefulness: the ShellCheck wiki (per-finding pages; read them, do not just
-silence codes), Rich Felker's "sh tricks" page (the classic on doing portable
-shell correctly), David Wheeler's essay on filenames in shell (the full horror
-and the full fix), the autoconf manual's "Portable Shell" chapter (decades of
-cross-platform scar tissue), the pure-sh-bible (a catalog of no-external-command
-idioms), shellhaters.org (a navigable map of the actual POSIX spec), and Greg's
-wiki (excellent, but bash-first - filter its advice through the dialect before
-importing it).
+None of this is Dorc-specific, and that is the point: an oracle is just a very
+well-behaved shell library. The canonical deeper sources, in rough order of
+usefulness:
+
+- the ShellCheck wiki - per-finding pages; read them, do not just silence
+  codes;
+- Rich Felker's "sh tricks" page - the classic on doing portable shell
+  correctly;
+- David Wheeler's essay on filenames in shell - the full horror and the full
+  fix;
+- the autoconf manual's "Portable Shell" chapter - decades of cross-platform
+  scar tissue;
+- the pure-sh-bible - a catalog of no-external-command idioms;
+- shellhaters.org - a navigable map of the actual POSIX spec;
+- and Greg's wiki - excellent, but bash-first; filter its advice through the
+  dialect before importing it.
 
 <!-- quoted: 276 rul-base-dialect-ruling-list, rul-spec-two-binary-floor,
      rul-pipefail-four-lanes; 278 section 1; spike/CLAUDE.md
