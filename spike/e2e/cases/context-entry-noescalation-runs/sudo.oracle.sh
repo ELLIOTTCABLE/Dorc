@@ -1,8 +1,7 @@
 # dorc-lang/v0.1
-# A COHERENT sudo wrapper (273 + 27C §3): predict env-scrubs then execs the guest; lend_map maps
-# user (root, or `-u TARGET`) and FULL-lends fs-view + netns (sudo shifts neither — the enumerate-
-# every-dimension law); the entry form re-runs sudo non-interactively (`-n`, non-interactive by
-# construction). Authoring `sudo__enter` IS the traversal vouch (27C:rul-entry-denoted-siting-vouch).
+# A coherent sudo wrapper (273 + 27C §3): predict env-scrubs + execs the guest; lend_map maps user
+# and full-lends fs-view + netns (enumerate-every-dimension); the entry form re-runs sudo `-n`
+# (non-interactive by construction). Authoring `sudo__enter` IS the traversal vouch.
 sudo__predict() {
    while [ "${1#-}" != "$1" ]; do case "$1" in -u) shift 2 ;; *) shift ;; esac; done
    env -i HOME=/root "$@"

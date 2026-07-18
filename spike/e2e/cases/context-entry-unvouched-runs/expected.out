@@ -5,7 +5,7 @@
 # effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
 # rc is the raw PROBE-command status (opaque to Dorc — the record is the out-of-band lane).
 
-printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=354c56947f064aea sites=1 @@dorc@@\n'
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=9de2626ce60de0dc sites=1 @@dorc@@\n'
 # site 0: dorc-auto:hork#converged
 hork__is_converged() {
    case "$1" in
@@ -20,10 +20,8 @@ printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
 # dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
 
 #!/bin/sh
-# 27C §8 babby-sudo (27N end-to-end): an ambient `hork install` + a sudo-WRAPPED one. The wrapped
-# site is answered by measurement IN the root context (sudo's entry form), the ambient one bare;
-# two sites, two contexts, two independent answers. `hork`/`sudo` are inert mocks (never real
-# mutators). The unwrapped site is FIRST so its ambient elision is independent of the wrapped
-# mutator's downstream wall (the context-blind Stage-1 wall is a disclosed 27N limitation).
+# 27C §8 babby-sudo (27N): an ambient `hork install` + a sudo-WRAPPED one, answered in two contexts.
+# Unwrapped FIRST so its ambient elision is independent of the wrapped mutator's downstream wall
+# (the context-blind Stage-1 wall is a disclosed 27N limitation). `hork`/`sudo` are inert mocks.
 # hork install wombat   # dorc: elided (already converged / dead branch)
 sudo hork install frob
