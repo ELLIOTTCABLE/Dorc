@@ -792,3 +792,40 @@ lineage ref is FROZEN at `1aecaa3` (ref-moves hook-reserved to the human);
 checkpoint docs and the following shim lane STACK on `ai/r27-fallback-carry`'s
 chain so the return-fold stays ONE `git merge --ff-only` of the whole verified
 stack.
+
+## shim-materialization errand-lane — LANDED 2026-07-17 (checkpoint PASSED; the queue's last code lane)
+
+Commits `3dabad5..c1e95fe` on `ai/r27-shim-materialization` (base `81092f1`,
+6 ahead / 0 behind the fallback-carry chain — the stack stays one ff). Landing
+note: **`notes/27P`**. Landed: the `274` §5 per-run PATH shim MATERIALIZED —
+`ProbePlan::shim_files()` (pure, BTreeMap-ordered; draws EXCLUSIVELY from the
+already-shipped `EntryComposed` oracle bytes — conductor-verified at source;
+Carry/ambient checks excluded, no exec boundary) · `--shim-dir` writes at the
+cli edge (io-at-edges-only) · the e2e harness runs probes with
+`PATH=$mocks:$shim` (mocks-first; the shim adds only disjoint
+`*__is_converged` names). **Acceptance: real probe execution** —
+`context-entry-babby-elides`/`-diverges` dropped `PROBE_RESULTS=authored`;
+real records match the formerly-authored ones byte-for-byte; ANTI-MASKING
+proven (without the shim, the wrapped site lands cant-tell rc-127 ⇒ run). 884
+unit / 91 e2e / four gates, conductor-verified own-hand at `c1e95fe`; ZERO
+golden churn (89 cases untouched; the two acceptance cases changed
+fixture-infra only). No new trust surface.
+
+**Checkpoint dispositions (conductor-adjudicated):**
+
+- disposition-shim-in-harness-not-executor (né tc-…) — ACCEPTED: the spike
+  harness IS the session; real-executor write choreography (atomicity,
+  smoke-test, cleanup) rides the r26/real-executor era. Seam list.
+- disposition-sudo-mock-keyed-on-dash-n (né tc-…) — ACCEPTED as a FIXTURE
+  CONSTRAINT: the pass-through mock keys on the `sudo -n` entry-form spelling;
+  if the stdlib's sudo entry form respells, these fixtures churn with it.
+- Disclosed gaps accepted: the `dorc:sh` colon shim stays deferred
+  (Windows-unmockable, `27L`); the `274` §9 PATH-weave soft spot (an
+  env-scrubbing real sudo ⇒ rc-127 ⇒ run, safe — the stdlib sudo entry form
+  should consider PATH-preservation explicitly, banked to `27Q`); multi-link
+  chains unit-pinned, not e2e-exercised; unvouched/noescalation/wrapped-guard
+  cases stay authored (no entry-composed probe ships for them — orthogonal,
+  trivial follow-up).
+
+**CONDUCTOR QUEUE COMPLETE at this entry** — the stdlib handoff ledger is
+**`notes/27Q`**; the stdlib MINTING belongs to the human's new conductor.

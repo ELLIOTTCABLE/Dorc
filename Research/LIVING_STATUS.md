@@ -25,18 +25,23 @@ block-settle CLOSED (`plans/271` = the rulings ledger + task map); wrapper/conte
 transport RESOLVED (`plans/27C`); the 270-era adversarial crosscheck adjudicated, no
 kill (`notes/279f` — read its §1 first).
 
-**⚠ STACKING MODE (2026-07-17, human away — push-through directive):** the
-lineage ref `ai/spike3-r27` is FROZEN at `1aecaa3` (ref-moves are hook-reserved
-to the human); verified work STACKS on the `ai/r27-fallback-carry` chain, so the
-return-fold is ONE `git merge --ff-only` of the whole stack (final tip named in
-the conductor's report). **lane-fallback-carry LANDED + checkpointed** (`27D`
-entry; landing `27O`; 881 unit / 91 e2e / four gates, conductor-verified at
-`9884de1`; carried elisions render the four-link attribution chain). NEXT: the
-shim-materialization errand-lane (`274` §5 last mile) → stdlib handoff prep
-(preconditions ledger, `27Q`) → **STOP at block-stdlib**: the stdlib MINTING
-moves to a NEW human-led conductor (human ruling 2026-07-17 — quality-critical
-+ security-flavoured oracles need their active direction; this conductor's
-queue ends at the handoff). **lane-integration LANDED and block-context CLOSED 2026-07-17**
+**⚠ R27-IMPL CONDUCTOR QUEUE COMPLETE — STOPPED AT BLOCK-STDLIB (2026-07-17).**
+The lineage ref `ai/spike3-r27` is FROZEN at `1aecaa3` (ref-moves hook-reserved
+to the human); ALL remaining work is verified and STACKED on
+**`ai/r27-shim-materialization`** — the human's single return command, run in
+the `spike3-r27` worktree, folds everything:
+`git merge --ff-only ai/r27-shim-materialization`. The stack (all
+conductor-verified own-hand, four gates + full unit + foreground e2e per
+landing): **lane-fallback-carry** (`27O` — pure-predicate carry + the
+attribution errand; 881→884 unit era) → checkpoint docs → **shim-
+materialization** (`27P` — entry-composed probes execute for REAL; babby-sudo
+on real records, anti-masking proven; 884 unit / 91 e2e at `c1e95fe`) → this
+close-out. **NEXT ARC: block-stdlib, under a NEW human-led conductor** (human
+ruling 2026-07-17 — quality-critical + security-flavoured oracles need their
+active direction). The new conductor's on-ramp: **`notes/27Q`** (the
+preconditions ledger — read its §2 before ANY oracle is authored), then `27D`
+end-to-end, then `plans/27C`. At whose close: yardstick-measurement, then the
+r25 field-trial revival (`270` §5; + `26B:ask-trial-counts-capture-walls`). **lane-integration LANDED and block-context CLOSED 2026-07-17**
 — ledger entry + dispositions + the fold-protocol correction: `27D`'s
 lane-integration section; landing note `notes/27N`; lineage tip at close
 `96917b2` (conductor-verified: four gates · 863 unit · 88/88 foreground e2e ·
