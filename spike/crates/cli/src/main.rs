@@ -3948,6 +3948,12 @@ fn build_wrapped_analysis(
         return out; // no wrapper oracle ⇒ nothing peels (rung-0 byte-identical)
     }
 
+    // (A) the authored axis-invariance index (`27C` §4(a) pure-predicate carry) — lifted once from
+    // every `state_stored_only_in()` body; its netns-caveat contradictions surface as hints. Empty
+    // when no invariance line is declared ⇒ carry never licenses (`silence-licenses-nothing`).
+    let (invariance, inv_diags) = dorc_oracle::carry::InvarianceIndex::lift(interner, oracle_refs);
+    out.hints.extend(inv_diags);
+
     let command_nodes: Vec<CfgNodeId> = cfg
         .iter()
         .filter(|(id, n)| {
@@ -3980,16 +3986,8 @@ fn build_wrapped_analysis(
         let context = chain.composed.to_context(interner);
         let inner_provider = interner.intern(&map_provider_name(inner_word));
         let inner_operands: Vec<Symbol> = inner_rest.iter().map(|a| interner.intern(a)).collect();
-        // The peel-map entry (for classify): the fact is born in-context regardless of the decision.
         let mut peeled_argv = vec![ValueOf::Literal(inner_provider)];
         peeled_argv.extend(inner_operands.iter().map(|s| ValueOf::Literal(*s)));
-        out.peeled.insert(
-            node,
-            dorc_analysis::effect::PeeledSite {
-                inner_argv: peeled_argv,
-                context,
-            },
-        );
         // The inner check body (predict first, else the auto-cell verdict body) — mirrors the ambient
         // shape `compile_probe` would ship, now composed inside the entry chain.
         let Some((inner_fn, inner_sh)) = resolve_inner_check(
@@ -4001,7 +3999,15 @@ fn build_wrapped_analysis(
             &inner_operands,
             interner,
         ) else {
-            out.wrapped.insert(node, dorc_plan::WrappedProbe::Degrade); // no inner check ⇒ run
+            // No inner check ⇒ run; the fact is still born in-context for classify.
+            out.peeled.insert(
+                node,
+                dorc_analysis::effect::PeeledSite {
+                    inner_argv: peeled_argv,
+                    context,
+                },
+            );
+            out.wrapped.insert(node, dorc_plan::WrappedProbe::Degrade);
             continue;
         };
         let composed_enter_defs: Vec<(String, String)> = chain
@@ -4034,29 +4040,77 @@ fn build_wrapped_analysis(
                 &tolerated,
             )
         };
-        match decision {
-            EntryDecision::Enter => {
-                out.wrapped.insert(
-                    node,
-                    dorc_plan::WrappedProbe::Enter {
-                        provider: inner_provider,
-                        composed,
-                    },
-                );
-            }
+        // The fact's context: Wrapped for Enter/Degrade (born in-context); HostDefault for a
+        // pure-predicate CARRY (measure ambient, carry across the substrate boundary, `27C` §4(a)).
+        let (fact_context, probe) = match decision {
+            EntryDecision::Enter => (
+                context,
+                dorc_plan::WrappedProbe::Enter {
+                    provider: inner_provider,
+                    composed,
+                },
+            ),
             EntryDecision::Degrade(reason) => {
-                out.wrapped.insert(node, dorc_plan::WrappedProbe::Degrade);
-                if let EntryDegrade::Unvouched(dim) = reason {
-                    out.hints.push(dorc_core::Diagnostic::note(
-                        dorc_core::DiagCode("wrapped-site-adoption-hint"),
-                        Some(ast.node(cfg.node(node).ast).span),
-                        adoption_hint(inner_word, dim),
-                    ));
+                // Try pure-predicate carry (`27C` §4(a)) before defaulting to run. Gated on the
+                // shipped inner check BEING the verdict body (auto-cell) — the closed body must be
+                // the measured body; the predict-inner carry path is deferred (disclosed, `27O`).
+                let carried = composed.inner_fn.ends_with("__is_converged")
+                    && try_carry(&chain, inner_provider, verdict_sets, &invariance);
+                if carried {
+                    (
+                        dorc_core::Context::HostDefault,
+                        dorc_plan::WrappedProbe::Carry {
+                            provider: inner_provider,
+                            composed: dorc_plan::EntryComposed {
+                                enter_defs: Vec::new(), // ambient: no entry form
+                                ..composed
+                            },
+                        },
+                    )
+                } else {
+                    if let EntryDegrade::Unvouched(dim) = reason {
+                        out.hints.push(dorc_core::Diagnostic::note(
+                            dorc_core::DiagCode("wrapped-site-adoption-hint"),
+                            Some(ast.node(cfg.node(node).ast).span),
+                            adoption_hint(inner_word, dim),
+                        ));
+                    }
+                    (context, dorc_plan::WrappedProbe::Degrade)
                 }
             }
-        }
+        };
+        out.peeled.insert(
+            node,
+            dorc_analysis::effect::PeeledSite {
+                inner_argv: peeled_argv,
+                context: fact_context,
+            },
+        );
+        out.wrapped.insert(node, probe);
     }
     out
+}
+
+/// Try pure-predicate carry (`27C` §4(a); steering `pure-predicate-carry`) for a wrapped site whose
+/// entry DEGRADED: does the inner verdict body's read-set close (B) across a SUBSTRATE boundary
+/// whose backing kinds are authored-invariant (A)? Runs [`dorc_oracle::carry::read_set_closed`] over
+/// the inner verdict body and [`dorc_oracle::carry::decide_carry`] over the chain's crossed
+/// dimensions. `false` when there is no inner verdict body, or (A)/(B)/substrate-scope fails — the
+/// site then runs (fail safe: a missed carry loses an elision, never carries a hidden read).
+fn try_carry(
+    chain: &dorc_oracle::entry::PeeledChain,
+    inner_provider: Symbol,
+    verdict_sets: &[dorc_oracle::verdict::VerdictSet],
+    invariance: &dorc_oracle::carry::InvarianceIndex,
+) -> bool {
+    let Some(verdict) = verdict_sets.iter().find_map(|set| set.get(inner_provider)) else {
+        return false; // no inner verdict body ⇒ nothing to prove closed
+    };
+    let closure = dorc_oracle::carry::read_set_closed(verdict);
+    matches!(
+        dorc_oracle::carry::decide_carry(&chain.composed.crossed(), &closure, invariance),
+        dorc_oracle::carry::CarryDecision::Carry
+    )
 }
 
 /// The lifted wrapper models, per-provider stripped `__enter` defs, and `tolerates:` vouches — the

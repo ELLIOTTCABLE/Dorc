@@ -1022,7 +1022,12 @@ pub fn build_wrapped_vouches(
         .collect();
     let mut vouches = Vouches::new();
     for (node, wp) in wrapped {
-        let WrappedProbe::Enter { provider, composed } = wp else {
+        // Enter and Carry both mint an elide/guard vouch from the inner verdict over the peeled argv
+        // (`27C` §3/§4(a)). Carry's `composed.enter_defs` is empty ⇒ the guard shape is the AMBIENT
+        // inner check guarding the book bytes (measure ambient, carry across the substrate boundary).
+        let (WrappedProbe::Enter { provider, composed }
+        | WrappedProbe::Carry { provider, composed }) = wp
+        else {
             continue; // a Degrade site runs — no vouch
         };
         let fact = classes.iter().find_map(|(n, c)| match c {
@@ -1329,8 +1334,22 @@ pub enum WrappedProbe {
         /// The entry-composed body (enter forms + inner check).
         composed: EntryComposed,
     },
+    /// PURE-PREDICATE CARRY (`27C` §4(a); steering `pure-predicate-carry`): entry degraded, but the
+    /// crossed boundary is a SUBSTRATE axis, the fact's marked backing kinds carry `invariant:<axis>`
+    /// (A), and the verdict body is read-set-closed (B) — so the AMBIENT measurement answers the
+    /// wrapped site, UNFLAGGED. `composed` has EMPTY `enter_defs` (measure ambient, no entry form);
+    /// the cli keys the fact `Context::HostDefault`, so this ships the plain inner check and the
+    /// ambient verdict answers it. A DISTINCT licensed path — `compare` is untouched
+    /// (`pin-no-outcome-as-generator`).
+    Carry {
+        /// The inner provider symbol (display only; the `ProbePredict::provider` field).
+        provider: Symbol,
+        /// The AMBIENT inner check (enter forms EMPTY — measured in the host-default world).
+        composed: EntryComposed,
+    },
     /// The consent trace REFUSES entry (dial forbids, unvouched, no capability, ⊤ dimension, no
-    /// entry form, or a runtime degrade) ⇒ can't-say ⇒ the site runs (unresolvable in the probe).
+    /// entry form, or a runtime degrade) AND pure-predicate carry does not apply ⇒ can't-say ⇒ the
+    /// site runs (unresolvable in the probe).
     Degrade,
 }
 
@@ -2134,7 +2153,14 @@ pub fn compile_probe(
                 _ => None,
             };
             match (fact, wp) {
-                (Some(fact), WrappedProbe::Enter { provider, composed }) => {
+                // Enter (measure in-context, `fact` carries the Wrapped context) and Carry (measure
+                // AMBIENT, `fact` carries HostDefault, `composed.enter_defs` empty) ship the SAME
+                // entry-composed shape — the fact's own context steers the readback (`27C` §3/§4(a)).
+                (
+                    Some(fact),
+                    WrappedProbe::Enter { provider, composed }
+                    | WrappedProbe::Carry { provider, composed },
+                ) => {
                     checks.push(ProbePredict {
                         site,
                         member: None,
