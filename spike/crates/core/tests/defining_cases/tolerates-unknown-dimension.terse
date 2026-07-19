@@ -1,0 +1,1 @@
+sm `netns2` is not a known context dimension on a `tolerates:` vouch (expected one of user, netns, fs-view); the mark vouches nothing and the site stays walled on that dimension (`27C` §2).

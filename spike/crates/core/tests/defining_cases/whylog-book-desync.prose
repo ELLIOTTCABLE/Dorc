@@ -1,0 +1,2 @@
+the saved why-log no longer matches what is on disk: `book` has changed since it was written
+  = help: replaying old decisions against changed files would mislead; re-run `dorc why` live for a current answer

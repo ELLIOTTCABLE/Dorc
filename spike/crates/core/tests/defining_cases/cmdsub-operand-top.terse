@@ -1,0 +1,1 @@
+sm command forced to run (never elided): operand 1 is a command-substitution `$(…)` / arithmetic / operator-form expansion ⇒ its identity is unresolved (⊤)

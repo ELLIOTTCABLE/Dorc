@@ -1,0 +1,2 @@
+sm leaf-exact render refuses to elide a heredoc-bearing command (`cat <<EOF`): its span covers the `<<` operator, not the body lines, so substituting it would strand the heredoc body — it runs verbatim
+  = help: sm split the heredoc body to its own leaf, or mark the kind un-elidable
