@@ -1,21 +1,45 @@
-//! errorloom — the transcript-case prose pipeline.
+//! errorloom — executable transcript cases as the authoring surface for prose.
 //!
 //! errorloom makes the executable transcript case the authoring surface for a
 //! CLI tool's user-facing prose (`282:rul-transcript-is-the-authoring-surface`):
 //! authors edit what a user actually sees, and the compiled prose catalog is
-//! DERIVED from those edits. This crate is the layer-1 transport engine: given a
-//! machine-produced *tagged render* (bytes plus a [`Span`] map classifying every
-//! run) and an author's *edited* text, it word-diffs the two, attributes each
-//! change through the span map, re-holes instantiated param values, and yields
-//! per-field prose edits — or a blunt [`Refusal`] (`282` §5).
+//! DERIVED from those edits. It is generic over an opaque consumer key (see
+//! [`ConsumerKey`]); Dorc is the first consumer, but the crate holds no Dorc types.
 //!
-//! It is generic over an opaque consumer key (see [`ConsumerKey`]); Dorc is the
-//! first consumer, but the crate holds no Dorc types. The container/runner,
-//! bless orchestration, git trait, and CLI are separate layers (`28A` §1).
+//! The pieces (`28A` §1):
+//! - the [`Case`] container — txtar sections with flat-YAML frontmatter;
+//! - the replay runner ([`run_case`], [`check_run`], [`bless_structure`]) — runs a
+//!   case's `$ ` command blocks in a caller-injected sandbox ([`RunEnv`]);
+//! - the transport engine ([`promote`]) — word-diffs a [`TaggedRender`] against an
+//!   edited transcript, attributes each change, and yields per-field prose edits or
+//!   a blunt [`Refusal`];
+//! - the bless orchestration ([`prose_bless`], [`structure_bless`],
+//!   [`fixpoint_check`]) over the [`Consumer`] and [`Git`] traits — the two bless
+//!   modes, their exclusivity, and the CI fixpoint gate.
 //!
-//! Status: pre-1.0, `publish = false`. The one hard-tested guarantee (`282` §5):
-//! an edit confined to one template region round-trips exactly, modulo
-//! whitespace normalization.
+//! The one hard-tested guarantee (`282` §5): an edit confined to one template
+//! region round-trips exactly, modulo whitespace normalization.
+//!
+//! Status: pre-1.0, `publish = false`. Sharp edges are intentional
+//! (`282:rul-internal-tool-sharp-edges`); refusals are blunt.
+//!
+//! # Examples
+//! Parse a case and run the required-token coherence gate — every replay block
+//! must surface the frontmatter `code` value:
+//! ```
+//! use errorloom::Case;
+//!
+//! # fn main() -> Result<(), errorloom::CaseError> {
+//! let text = "---\ncode: motd-refused\n---\n\
+//!             -- replay --\n\
+//!             $ mytool explain motd-refused\n\
+//!             error[motd-refused]: refusing to elide the heredoc\n";
+//! let case = Case::parse(text)?;
+//! assert_eq!(case.frontmatter().scalar("code"), Some("motd-refused"));
+//! case.check_hygiene(Some("code"))?;
+//! # Ok(())
+//! # }
+//! ```
 
 use std::fmt::Debug;
 
