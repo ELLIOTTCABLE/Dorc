@@ -216,22 +216,32 @@ impl<K: fmt::Debug> fmt::Display for Refusal<K> {
 
 impl<K: fmt::Debug> std::error::Error for Refusal<K> {}
 
-/// The owned streams a refusal is built from, cloned once up front so any refusal
-/// site can render the full dump.
-struct RefusalCtx<K> {
-    baseline: Vec<AttributedToken<K>>,
-    edited: Vec<Token>,
-    regions: Vec<Span<K>>,
+/// Borrows the source streams so a refusal's blunt dump is materialized (with
+/// clones) ONLY on the error path — the common success path clones nothing.
+struct RefusalCtx<'a, K> {
+    baseline: &'a TaggedRender<K>,
+    located: &'a [Located],
+    span_idx: &'a [Option<usize>],
+    edited: &'a [Token],
 }
 
-impl<K: Clone> RefusalCtx<K> {
+impl<K: Clone> RefusalCtx<'_, K> {
     fn refuse(&self, class: RefusalClass, offending: String) -> Refusal<K> {
+        let baseline = self
+            .located
+            .iter()
+            .zip(self.span_idx)
+            .map(|(l, si)| AttributedToken {
+                token: l.token.clone(),
+                region: si.and_then(|i| region_of(self.baseline, i)).cloned(),
+            })
+            .collect();
         Refusal {
             class,
             offending,
-            baseline: self.baseline.clone(),
-            edited: self.edited.clone(),
-            regions: self.regions.clone(),
+            baseline,
+            edited: self.edited.to_vec(),
+            regions: self.baseline.spans().to_vec(),
         }
     }
 }
@@ -258,33 +268,31 @@ pub fn promote<K: ConsumerKey>(
         .collect();
 
     let ctx = RefusalCtx {
-        baseline: base_located
-            .iter()
-            .zip(&base_span_idx)
-            .map(|(l, si)| AttributedToken {
-                token: l.token.clone(),
-                region: si.and_then(|i| region_of(baseline, i)).cloned(),
-            })
-            .collect(),
-        edited: edit_tokens.clone(),
-        regions: baseline.spans().to_vec(),
+        baseline,
+        located: &base_located,
+        span_idx: &base_span_idx,
+        edited: &edit_tokens,
     };
 
     let base_tokens: Vec<Token> = base_located.iter().map(|l| l.token.clone()).collect();
     let ops = diff(&base_tokens, &edit_tokens);
+    let break_positions: Vec<usize> = base_located
+        .iter()
+        .filter(|l| matches!(l.token, Token::ParagraphBreak))
+        .map(|l| l.start)
+        .collect();
 
     let span_new_words = Attributor {
         baseline,
         base_located: &base_located,
         base_span_idx: &base_span_idx,
         edit_tokens: &edit_tokens,
-        ctx: &ctx,
         span_new_words: seed_template_spans(baseline),
         pending_del: Vec::new(),
         pending_ins: Vec::new(),
         left_anchor: None,
     }
-    .run(&ops)?;
+    .run(&ops, &ctx)?;
 
     let orig_words = original_words(baseline, &base_located, &base_span_idx);
     let keys = edited_keys(baseline, &span_new_words, &orig_words);
@@ -294,8 +302,14 @@ pub fn promote<K: ConsumerKey>(
         let param_values = params.values_for(key);
         let mut distinct: Vec<FieldTemplate> = Vec::new();
         for instance in instances_of(key, baseline.spans()) {
-            let ft =
-                reconstruct_instance(&instance, baseline, &span_new_words, param_values, &ctx)?;
+            let ft = reconstruct_instance(
+                &instance,
+                baseline,
+                &span_new_words,
+                param_values,
+                &break_positions,
+                &ctx,
+            )?;
             if !distinct.contains(&ft) {
                 distinct.push(ft);
             }
@@ -343,7 +357,6 @@ struct Attributor<'a, K> {
     base_located: &'a [Located],
     base_span_idx: &'a [Option<usize>],
     edit_tokens: &'a [Token],
-    ctx: &'a RefusalCtx<K>,
     span_new_words: BTreeMap<usize, Vec<Word>>,
     pending_del: Vec<usize>,
     pending_ins: Vec<usize>,
@@ -351,14 +364,18 @@ struct Attributor<'a, K> {
 }
 
 impl<K: ConsumerKey> Attributor<'_, K> {
-    fn run(mut self, ops: &[DiffOp]) -> Result<BTreeMap<usize, Vec<Word>>, Refusal<K>> {
+    fn run(
+        mut self,
+        ops: &[DiffOp],
+        ctx: &RefusalCtx<'_, K>,
+    ) -> Result<BTreeMap<usize, Vec<Word>>, Refusal<K>> {
         for op in ops {
             match *op {
                 DiffOp::Delete { base } => self.pending_del.push(base),
                 DiffOp::Insert { edit } => self.pending_ins.push(edit),
                 DiffOp::Equal { base, edit } => {
                     let right_anchor = self.base_span_idx.get(base).copied().flatten();
-                    self.flush(right_anchor)?;
+                    self.flush(right_anchor, ctx)?;
                     if let (Some(si), Some(Token::Word(w))) =
                         (right_anchor, self.edit_tokens.get(edit))
                         && is_template(self.baseline, si)
@@ -369,11 +386,15 @@ impl<K: ConsumerKey> Attributor<'_, K> {
                 }
             }
         }
-        self.flush(None)?;
+        self.flush(None, ctx)?;
         Ok(self.span_new_words)
     }
 
-    fn flush(&mut self, right_anchor: Option<usize>) -> Result<(), Refusal<K>> {
+    fn flush(
+        &mut self,
+        right_anchor: Option<usize>,
+        ctx: &RefusalCtx<'_, K>,
+    ) -> Result<(), Refusal<K>> {
         if self.pending_del.is_empty() && self.pending_ins.is_empty() {
             return Ok(());
         }
@@ -384,7 +405,7 @@ impl<K: ConsumerKey> Attributor<'_, K> {
                 self.base_located.get(d).map(|l| &l.token),
                 Some(Token::ParagraphBreak)
             ) {
-                return Err(self.ctx.refuse(
+                return Err(ctx.refuse(
                     RefusalClass::ArrangementEdited,
                     String::from("a baseline paragraph break was removed"),
                 ));
@@ -397,7 +418,7 @@ impl<K: ConsumerKey> Attributor<'_, K> {
                             None => target = Some(i),
                             Some(t) if t == i => {}
                             Some(_) => {
-                                return Err(self.ctx.refuse(
+                                return Err(ctx.refuse(
                                     RefusalClass::AmbiguousBoundaryInsertion,
                                     String::from("an edit straddles two template regions"),
                                 ));
@@ -406,7 +427,7 @@ impl<K: ConsumerKey> Attributor<'_, K> {
                     }
                 }
                 Some(Region::ParamValue { .. }) => {
-                    return Err(self.ctx.refuse(
+                    return Err(ctx.refuse(
                         RefusalClass::PayloadEdited,
                         String::from(
                             "a param value's words were edited — that is payload, not prose",
@@ -414,13 +435,13 @@ impl<K: ConsumerKey> Attributor<'_, K> {
                     ));
                 }
                 Some(Region::ForeignText { .. }) => {
-                    return Err(self.ctx.refuse(
+                    return Err(ctx.refuse(
                         RefusalClass::ForeignEdited,
                         String::from("passthrough foreign text was edited"),
                     ));
                 }
                 Some(Region::Arrangement { .. }) | None => {
-                    return Err(self.ctx.refuse(
+                    return Err(ctx.refuse(
                         RefusalClass::ArrangementEdited,
                         String::from("render-owned structure was edited"),
                     ));
@@ -439,7 +460,7 @@ impl<K: ConsumerKey> Attributor<'_, K> {
 
         if !self.pending_ins.is_empty() {
             let Some(it) = insert_target else {
-                return Err(self.ctx.refuse(
+                return Err(ctx.refuse(
                     RefusalClass::AmbiguousBoundaryInsertion,
                     String::from(
                         "an insertion could not be attributed to a single template region",
@@ -452,7 +473,7 @@ impl<K: ConsumerKey> Attributor<'_, K> {
                         self.span_new_words.entry(it).or_default().push(w.clone());
                     }
                     Some(Token::ParagraphBreak) => {
-                        return Err(self.ctx.refuse(
+                        return Err(ctx.refuse(
                             RefusalClass::ArrangementEdited,
                             String::from(
                                 "a paragraph break was inserted (structure is render-owned at v1)",
@@ -504,51 +525,35 @@ fn edited_keys<K: ConsumerKey>(
     keys
 }
 
-/// Group a key's spans into instances (`282` §5 "two instances of one template").
-/// A new instance begins where the field's render restarts: K-spans separated by
-/// only arrangement whose paragraph index does not advance are distinct renders.
+/// Group a key's spans into instances (`282` §5 "two instances of one template" —
+/// the same field rendered more than once). A `TemplateLiteral` starts a new
+/// instance iff it is SEPARATED from the previous key-span (not byte-adjacent, so
+/// arrangement or another field lies between) AND its paragraph index does not
+/// advance — i.e. the render restarts rather than continuing to the next
+/// paragraph. Param spans never decide; a hole-split paragraph stays one run.
+/// (Edge: a hole sitting BETWEEN two instances attaches to the earlier one and
+/// may spuriously refuse; sharp-edges v1 — flagged.)
 fn instances_of<K: ConsumerKey>(key: &K, spans: &[Span<K>]) -> Vec<Vec<usize>> {
-    let k_spans: Vec<usize> = spans
-        .iter()
-        .enumerate()
-        .filter(|(_, s)| s.region.key() == Some(key))
-        .map(|(i, _)| i)
-        .collect();
-
     let mut instances: Vec<Vec<usize>> = Vec::new();
     let mut current: Vec<usize> = Vec::new();
-    let mut current_max_para: Option<usize> = None;
-    let mut prev: Option<usize> = None;
+    let mut max_para: Option<usize> = None;
+    let mut prev_key_idx: Option<usize> = None;
 
-    for &i in &k_spans {
-        let para = match spans.get(i).map(|s| &s.region) {
-            Some(Region::TemplateLiteral { paragraph, .. }) => Some(*paragraph),
-            _ => None,
-        };
-        let starts_new_instance = match prev {
-            None => false,
-            Some(p) if i == p.saturating_add(1) => false,
-            Some(p) => {
-                let middle_all_arrangement = spans.get(p.saturating_add(1)..i).is_some_and(|mid| {
-                    mid.iter()
-                        .all(|s| matches!(s.region, Region::Arrangement { .. }))
-                });
-                if middle_all_arrangement {
-                    !matches!((para, current_max_para), (Some(pp), Some(mx)) if pp > mx)
-                } else {
-                    true
-                }
+    for (i, span) in spans.iter().enumerate() {
+        if span.region.key() != Some(key) {
+            continue;
+        }
+        if let Region::TemplateLiteral { paragraph, .. } = &span.region {
+            let separated = prev_key_idx.is_some_and(|p| i != p.saturating_add(1));
+            let advances = max_para.is_none_or(|mx| *paragraph > mx);
+            if separated && !advances {
+                instances.push(std::mem::take(&mut current));
+                max_para = None;
             }
-        };
-        if starts_new_instance {
-            instances.push(std::mem::take(&mut current));
-            current_max_para = None;
+            max_para = Some(max_para.map_or(*paragraph, |mx| mx.max(*paragraph)));
         }
         current.push(i);
-        if let Some(pp) = para {
-            current_max_para = Some(current_max_para.map_or(pp, |mx| mx.max(pp)));
-        }
-        prev = Some(i);
+        prev_key_idx = Some(i);
     }
     if !current.is_empty() {
         instances.push(current);
@@ -557,31 +562,36 @@ fn instances_of<K: ConsumerKey>(key: &K, spans: &[Span<K>]) -> Vec<Vec<usize>> {
 }
 
 /// Rebuild one instance's stored field template: template spans contribute their
-/// new words (literal `{param}` becomes a hole), param spans contribute a hole,
-/// paragraph boundaries come from the template regions' paragraph indices. A
-/// final re-hole pass turns any stray instantiated values back into holes.
+/// new words (literal `{param}` becomes a hole), param spans contribute a hole.
+/// Paragraph boundaries are taken from the baseline's own paragraph-break token
+/// positions (not the arrangement's slug), so a hole at a boundary lands in the
+/// right paragraph. A final re-hole pass turns stray instantiated values back
+/// into holes.
 fn reconstruct_instance<K: ConsumerKey>(
     instance: &[usize],
     baseline: &TaggedRender<K>,
     span_new_words: &BTreeMap<usize, Vec<Word>>,
     param_values: Option<&ParamValues>,
-    ctx: &RefusalCtx<K>,
+    break_positions: &[usize],
+    ctx: &RefusalCtx<'_, K>,
 ) -> Result<FieldTemplate, Refusal<K>> {
     let mut paragraphs: Vec<Vec<Fragment>> = Vec::new();
     let mut current: Vec<Fragment> = Vec::new();
-    let mut current_para: Option<usize> = None;
+    let mut prev_end: Option<usize> = None;
 
     for &i in instance {
-        match region_of(baseline, i) {
-            Some(Region::TemplateLiteral { paragraph, .. }) => {
-                match current_para {
-                    None => current_para = Some(*paragraph),
-                    Some(cp) if *paragraph > cp => {
-                        paragraphs.push(std::mem::take(&mut current));
-                        current_para = Some(*paragraph);
-                    }
-                    _ => {}
-                }
+        let Some(span) = baseline.spans().get(i) else {
+            continue;
+        };
+        if let Some(pe) = prev_end
+            && break_positions
+                .iter()
+                .any(|bp| *bp >= pe && *bp < span.range.start)
+        {
+            paragraphs.push(std::mem::take(&mut current));
+        }
+        match &span.region {
+            Region::TemplateLiteral { .. } => {
                 for w in span_new_words.get(&i).cloned().unwrap_or_default() {
                     match literal_hole(&w, param_values) {
                         Some(name) => current.push(Fragment::Hole(name)),
@@ -589,14 +599,10 @@ fn reconstruct_instance<K: ConsumerKey>(
                     }
                 }
             }
-            Some(Region::ParamValue { param, .. }) => {
-                if current_para.is_none() {
-                    current_para = Some(0);
-                }
-                current.push(Fragment::Hole(param.clone()));
-            }
+            Region::ParamValue { param, .. } => current.push(Fragment::Hole(param.clone())),
             _ => {}
         }
+        prev_end = Some(span.range.end);
     }
     paragraphs.push(current);
 
@@ -618,7 +624,7 @@ fn literal_hole(word: &Word, param_values: Option<&ParamValues>) -> Option<Param
 fn rehole<K: ConsumerKey>(
     paragraphs: Vec<Vec<Fragment>>,
     param_values: Option<&ParamValues>,
-    ctx: &RefusalCtx<K>,
+    ctx: &RefusalCtx<'_, K>,
 ) -> Result<Vec<Paragraph>, Refusal<K>> {
     let Some(values) = param_values else {
         return Ok(paragraphs.into_iter().map(Paragraph::new).collect());
@@ -637,7 +643,7 @@ fn rehole<K: ConsumerKey>(
 fn rehole_paragraph<K: ConsumerKey>(
     frags: Vec<Fragment>,
     values: &BTreeMap<ParamName, Vec<Word>>,
-    ctx: &RefusalCtx<K>,
+    ctx: &RefusalCtx<'_, K>,
 ) -> Result<Vec<Fragment>, Refusal<K>> {
     let mut matches: Vec<(usize, usize, ParamName)> = Vec::new();
     for (name, value) in values {
