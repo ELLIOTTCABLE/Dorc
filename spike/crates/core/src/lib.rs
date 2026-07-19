@@ -138,6 +138,9 @@ pub use room::{HintOnly, Invited, Room, RoomFact, RoomTag};
 pub mod escalation;
 pub use escalation::{Capability, EscalationDial};
 
+pub mod evidence;
+pub use evidence::{CollapseEvidence, CollapseKind, TrustTier};
+
 /// `result × accumulated diagnostics` — the type every pipeline stage returns
 /// (research chord `dn-7` / `ch-carrier`). A writer-monad shape: `map` transforms
 /// the value, `and_then` sequences a stage while concatenating its diagnostics.
