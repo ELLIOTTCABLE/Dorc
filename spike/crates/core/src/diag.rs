@@ -1259,8 +1259,7 @@ pub fn registry(code: &DiagCode) -> CodeSpec {
             severity: Severity::Error,
             floor: Floor::WarnOrDeny,
         },
-        // `dorc why --last` refusals: pull-surface disclosures (the user asked and must learn WHY
-        // the answer is no) ⇒ Warning + Floor::None (ruling tc-whylog-code-severity).
+        // `dorc why --last` refusals: pull-surface disclosures ⇒ Warning + Floor::None.
         DiagCode::WhylogVersionRefused(_) => CodeSpec {
             severity: Severity::Warning,
             floor: Floor::None,

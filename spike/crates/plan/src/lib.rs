@@ -2644,8 +2644,7 @@ pub fn build_plan(
         &BTreeMap::new(),
         vouches,
         &ConnectedPipes::default(),
-        // No probe-origin witnesses in this flag-off/kill-unaware entry (tests + hostsim): the
-        // Witness is EXEMPT output-only, so an empty map only omits the measured origin (C6).
+        // No probe-origin witnesses in this flag-off/kill-unaware entry (C6): the Witness is EXEMPT.
         &BTreeMap::new(),
         observe,
         arena,

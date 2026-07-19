@@ -216,8 +216,7 @@ const SPANLESS_SITE_PAYLOADS: &[&str] = &[
     "ReachesConflict",
     "ReachesProviderCollision",
     "EscalationPolicy",
-    // plan/whylog.rs + cli/main.rs — the `--last` durable reader refusals: about the DURABLE
-    // FILE, not a book/oracle source point, so genuinely spanless (`27V` Lane B).
+    // plan/whylog.rs + cli/main.rs — `--last` reader refusals: about the durable FILE ⇒ spanless.
     "WhylogVersionRefused",
     "WhylogBookDesync",
     "WhylogAbsent",

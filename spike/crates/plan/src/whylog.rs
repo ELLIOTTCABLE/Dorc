@@ -137,9 +137,7 @@ pub fn parse(raw: &str) -> WhylogParse {
         return corrupt(&mut out, "empty or headerless durable");
     };
     let header = strip_token(raw[..header_end].trim_end());
-    // Version gate: the header must be EXACTLY this binary's tag. A different `dorc-whylog/N`
-    // refuses politely (versioned-additive: never mis-parse a foreign format); anything else is
-    // not a whylog at all ⇒ corrupt.
+    // Version gate: a different `dorc-whylog/N` refuses politely; anything else ⇒ corrupt.
     let Some(rest_after_tag) = header.strip_prefix(WHYLOG_TAG) else {
         if let Some(found) = header
             .split_whitespace()
@@ -160,7 +158,7 @@ pub fn parse(raw: &str) -> WhylogParse {
     let mut doc = WhylogDoc::default();
     read_header_keys(rest_after_tag, &mut doc);
 
-    // Walk the remaining lines. A `results bytes=N` line switches to reading N raw bytes verbatim.
+    // A `results bytes=N` line switches to reading N raw bytes verbatim.
     let mut cursor = header_end + 1;
     let bytes = raw.as_bytes();
     let mut saw_end = false;
@@ -311,7 +309,7 @@ mod tests {
             attempt: 1,
             host: "localhost".to_owned(),
             decision_digest: "0011223344556677".to_owned(),
-            // raw_results carries its OWN terminal tokens — the byte-count block must survive them.
+            // raw_results carries its OWN terminal tokens (the byte-count block must survive them).
             raw_results: "dorc site 0 effect=holds rc=0 @@dorc@@\ndorc report site=1 decline unsound k @@dorc@@\n".to_owned(),
             apply: vec![
                 ApplyLine { leaf: 0, disposition: "replace".to_owned(), predicted: true },
@@ -322,9 +320,6 @@ mod tests {
 
     #[test]
     fn round_trips_including_embedded_tokens_and_spaced_paths() {
-        // The load-bearing property: serialize→parse is identity, EVEN when the records stream
-        // carries its own `@@dorc@@` tokens (the byte-count block) and a path has a space (last-to-
-        // token). This is the replay tie — the durable must reconstruct byte-exactly.
         let d = doc();
         let parsed = parse(&serialize(&d));
         assert!(
@@ -337,7 +332,6 @@ mod tests {
 
     #[test]
     fn wrong_version_refuses_politely_never_panics() {
-        // A `dorc-whylog/2` durable refuses with the version code, no doc (never mis-parsed).
         let raw =
             format!("dorc-whylog/2 nonce=dorc {TERMINAL_TOKEN}\n{WHYLOG_END} {TERMINAL_TOKEN}\n");
         let p = parse(&raw);
@@ -351,7 +345,6 @@ mod tests {
 
     #[test]
     fn truncated_durable_is_corrupt_not_a_panic() {
-        // No end sentinel ⇒ corrupt (inv-no-throw). A partial write is the canonical case.
         let mut raw = serialize(&doc());
         raw.truncate(raw.len() / 2);
         let p = parse(&raw);

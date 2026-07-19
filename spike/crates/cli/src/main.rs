@@ -474,7 +474,6 @@ fn parse_args() -> Result<Invocation, String> {
             books.push(arg);
         }
     }
-    // `--last` reconstructs the book from the durable (`27V` Lane B), so it needs no book arg.
     if books.is_empty() && !last {
         return Err(format!(
             "no book given (a positional path or --book=PATH); {USAGE}"
@@ -946,9 +945,7 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
     // load-bearing surface judgment — flagged to the conductor, not silently settled.
     let advisory = !matches!(mode, Mode::Apply);
 
-    // `--last` replay (`27V` Lane B · whylog-write-only-replay): load the durable and reconstruct
-    // the run's INPUT PATHS from it, so the rest of the pipeline replays deterministically through
-    // the SAME kernel. A refusal (absent/version/corrupt) was already surfaced ⇒ return cleanly.
+    // `--last` replay (`27V` Lane B): reconstruct inputs from the durable; a surfaced refusal returns.
     let replay = if args.last {
         match load_whylog_replay(args, advisory)? {
             Some(r) => Some(r),
@@ -961,9 +958,6 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
     // ---- the shared, pure pipeline (one call-shape for every mode — the thin-driver
     // mandate: no mode branches the kernel; only the stdout/stderr ROUTING below differs) ----
 
-    // Resolve the oracle PATHS: on `--last`, the durable's recorded oracle paths (re-read + digest-
-    // verified below); else the explicit `-o` list, then every `*.oracle.sh` in each `--oracle-dir`
-    // (glob-sorted, deterministic — ack-6). Then read each (humane errors).
     let oracle_paths = match &replay {
         Some(r) => r.doc.oracles.iter().map(|(p, _)| p.clone()).collect(),
         None => resolve_oracle_paths(&args.oracles, &args.oracle_dirs)?,
@@ -1056,8 +1050,6 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
     // CONCATENATE into one analyzed unit (`\n`-joined so no two files' lines merge). `book_name`
     // is the display path (the first book) — for a single book (the norm) the frame's line numbers
     // are exact source lines; a multi-book unit's line numbers are into the concatenation.
-    // On `--last`, the book path comes from the durable (`27V` Lane B): re-read from disk (only
-    // digests were stored), so `dorc why --last` needs no `--book` (the zero-setup replay).
     let replay_books: Vec<String>;
     let books: &[String] = match &replay {
         Some(r) => {
@@ -1068,9 +1060,7 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
     };
     let book_src = read_books(books)?;
     let book_name = books.first().map_or("book.sh", String::as_str);
-    // `--last` desync guard (`27V` Lane B; the `22F` book-identity guard): the re-read book/oracle
-    // digests MUST match what the durable recorded, or the replay would reconstruct a DIFFERENT run
-    // — refuse politely rather than replay against changed inputs (whylog-book-desync).
+    // `--last` desync guard (`22F` book-identity): re-read digests must match the durable's.
     if let Some(r) = &replay
         && let Some(which) = whylog_input_desync(r, &book_src, &oracle_paths, &oracle_srcs)
     {
@@ -1373,9 +1363,8 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
     }
 
     // read the (simulated) probe results — the site-keyed records the rendered probe would emit
-    // when run remotely (the round-trip's return channel). On `--last`, the records come from the
-    // durable AS-RECEIVED (`27V` Lane B — replay through the identical deframe path); else from
-    // `--results FILE` when given, else the default stdin (the harness pipes them in).
+    // when run remotely (the round-trip's return channel). From `--results FILE` when given, else
+    // the default stdin (the harness pipes them in).
     let results_buf = if let Some(r) = &replay {
         r.doc.raw_results.clone()
     } else if let Some(path) = &args.results {
@@ -1414,9 +1403,6 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
     // VALID Query-class site (the guard's own rc); an establish site's rc is the PROBE
     // command's (dpkg-query's), NOT the mutator's, so it feeds the fold NOTHING.
     let (by_fact, merge_evidence) = facts_from_sites(&probe, &results);
-    // C6: mint the probe-result origins (fact → receipt) so a licensed elision's witness ties to
-    // the record that measured it. EXEMPT-plane (the digest omits the witness), so this perturbs no
-    // decision — the `erasability` gate proves it.
     let probe_origins = probe_origins(&probe, &results, &mut arena);
 
     // The survival tier (Stage 2 / rul24-mode-gate, TC-1): footprints are lifted ONLY under
@@ -1557,9 +1543,7 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
         // not an error. (A `--exit-code`-like surface must source from divergence-of-world, never
         // this raw rc — see `dorc_plan::render::probe::record_scaffold`.)
         emit_sigpipe_race_notes(&results);
-        // `27W` §2: the report lane's selected default disclosure (recognized author decline-classes;
-        // noise retained for d4's max verbosity). Empty in-corpus (empty-world-byte-identical).
-        emit_report_lane_notes(&results);
+        emit_report_lane_notes(&results); // `27W` §2 selected default disclosure; empty in-corpus
         // Stage 2 co-primary (rul24-divergence-is-the-game / TC-3): every SURVIVED elision names,
         // on this same why-lens lane, which running walls it crossed and whose footprint licensed
         // each crossing. This is the attribution tether under the sharpest claim in the design —
@@ -1610,9 +1594,6 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
     let refusals = plan.render_refusal_diagnostics(&parsed.value, &interner);
     report("render", book_source, &refusals);
 
-    // The decision digest (arch-1 drift signal), computed ONCE here: `--last` verifies the replay
-    // reproduced the recorded decision, and the whylog write records it. Identity plane = the
-    // classify diags + the render refusals (the same set `emit_decision_digest` folds).
     let identity_diags: Vec<Diag> = classified
         .diags
         .iter()
@@ -1632,9 +1613,7 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
     // STDOUT (its own non-analysis output) and return — no artifact, no plan-summary, no digest.
     // It runs the full pipeline above so it reports on the CURRENT run's real dispositions.
     if mode == Mode::Why {
-        // `--last` belt-and-suspenders (`27V` Lane B): the book/oracle digests matched, but if the
-        // re-derived decision digest differs the binary's behavior changed on the same inputs —
-        // refuse politely rather than narrate a decision the recorded run did not make.
+        // `--last` belt-and-suspenders: a diverged decision digest (same inputs) ⇒ refuse, not narrate.
         if let Some(r) = &replay
             && decision_digest != r.doc.decision_digest
         {
@@ -1675,14 +1654,9 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
     // plans/240 Stage-1 yardstick: the plan-summary on stderr, alongside the digest below.
     emit_plan_summary(&plan);
 
-    // arch-1 decision-digest (`mechanism-decision-digest`, `22A` concl-3): the always-on drift
-    // signal (identity-plane hash; receipts cannot move it). To stderr — stdout stays the artifact.
     eprintln!("dorc: decision-digest {decision_digest}");
 
-    // `27V` Lane B — the thin posthoc-why durable: written (opt-in) on a plan/apply/round-trip run
-    // so `dorc why --last` can replay it. A side-effect at the cli edge (stdout unchanged);
-    // best-effort (a write failure never fails the run — the durable is a postmortem aid). NEVER on
-    // `--last` (a replay is a read) — but that path already returned in the Why branch above.
+    // `27V` Lane B: write the thin durable (opt-in) so `dorc why --last` can replay it (best-effort).
     if let Some(dir) = &args.whylog_dir {
         let doc = assemble_whylog_doc(
             mode,
@@ -1775,7 +1749,7 @@ fn write_whylog(dir: &str, doc: &dorc_plan::whylog::WhylogDoc) {
     }
     let mut bytes = dorc_plan::whylog::serialize(doc);
     if bytes.len() > WHYLOG_CAP {
-        // Size-cap: truncate at the last newline ≤ the cap (byte-safe) + a note (best-effort).
+        // Size-cap: truncate at the last newline ≤ the cap (byte-safe).
         let window = bytes
             .as_bytes()
             .get(..WHYLOG_CAP.min(bytes.len()))
@@ -1794,7 +1768,6 @@ fn write_whylog(dir: &str, doc: &dorc_plan::whylog::WhylogDoc) {
     if std::fs::write(&path, bytes).is_err() {
         return;
     }
-    // Retention: drop all but the newest WHYLOG_KEEP.
     let entries = whylog_entries(dir);
     if let Some(drop_before) = entries.len().checked_sub(WHYLOG_KEEP) {
         for (_, p) in entries.into_iter().take(drop_before) {
@@ -4022,14 +3995,8 @@ fn facts_from_sites(
                 },
             ));
         }
-        // Runtime EntryFailure (`27C` §3 `EntryDegrade::RuntimeEntryFailure`; d2 inheritance): an
-        // ENTRY-bearing site whose record landed the ≥2 flat sink (cant-tell) is a runtime entry
-        // failure. Decision-inert — the rc-partition already folds ≥2 to guard/run; the class
-        // names it for the DISCLOSURE only (`two-plane-aid-law`: the license plane never reads it).
-        // rc 127 = missing deps in the view; other ≥2 = an in-context decline. Refused (`sudo -n`)
-        // and Impossible (chroot target missing) are NOT minted — the flat rc-partition carries no
-        // signal to distinguish them, and a finer label than the signal supports would mis-attribute
-        // (`271:rul-sin-ordering` pope-sin). SEAM: finer discrimination wants an entry-scaffold marker.
+        // Runtime EntryFailure (`27C` §3): entry-bearing ≥2 sink-landing, class-only + inert. rc 127
+        // ⇒ missing deps; other ≥2 ⇒ in-context decline. Refused/Impossible unminted (SEAM: a marker).
         if check.entry.is_some()
             && let Some(rc) = record.map(|r| r.rc.0)
             && rc >= 2
@@ -4318,7 +4285,7 @@ fn decline_class_word(class: dorc_core::evidence::DeclineClass) -> &'static str 
 /// `empty-world-byte-identical`). `note:` prefix ⇒ never crosses the gate-3 error floor.
 fn emit_report_lane_notes(results: &SiteResults) {
     for r in &results.reports {
-        // Default surface = the SELECTED (recognized) records; noise waits for max verbosity (d4).
+        // Default surface = recognized records; noise waits for d4's max verbosity.
         let Some(class) = r.class.filter(|_| r.recognized) else {
             continue;
         };
@@ -4329,7 +4296,6 @@ fn emit_report_lane_notes(results: &SiteResults) {
             },
             None => String::new(),
         };
-        // The tail = the emission past `<verb> <class>` (the author's own words).
         let tail = r.raw.splitn(3, ' ').nth(2).unwrap_or(r.raw.as_str());
         eprintln!(
             "note: author declines [{}]{at} — {tail}",
@@ -4387,9 +4353,7 @@ fn parse_results(records: &[String], framed: bool, interner: &mut Interner) -> S
         let Some((tag, rest)) = line.split_once(' ') else {
             continue; // a bare tag with no body ⇒ drop (⇒ Unknown ⇒ run)
         };
-        // C6: the record-stream ordinal is the arrival position in the deframed stream — a pure,
-        // deterministic function of position (no clock), carried onto the `site` record's stamp.
-        let ordinal = idx as u64;
+        let ordinal = idx as u64; // C6: record-stream ordinal (arrival position; no clock)
         match tag {
             // 24E §5: `deriv <leafid> coord=<coord>` — `coord=` is the FREE-CONTENT field
             // (`262` §2 last-to-token): after deframing it runs to end-of-line, whitespace
@@ -4459,9 +4423,7 @@ fn parse_results(records: &[String], framed: bool, interner: &mut Interner) -> S
                 }
             }
             "site" => parse_site_record(rest, ordinal, &mut out, interner),
-            // `27W` §2 tier-3: `report [site=<key>] <verb> <class> <free tail…>`. Ingested into the
-            // decision-INERT report lane — never a fold input (`two-plane-aid-law`).
-            "report" => parse_report_record(rest, &mut out),
+            "report" => parse_report_record(rest, &mut out), // `27W` §2 tier-3 (decision-inert lane)
             _ => {} // unrecognized inner tag ⇒ drop (kFAIL-perform: no verdict ⇒ run)
         }
     }
@@ -4474,7 +4436,6 @@ fn parse_results(records: &[String], framed: bool, interner: &mut Interner) -> S
 /// dropped, never an error. Deduped on the whole record — a tier-3 echo of an already-ingested line
 /// adds nothing (the dedup the tier-2 static classification will later key by (site, arm, class)).
 fn parse_report_record(rest: &str, out: &mut SiteResults) {
-    // Optional `site=<key>` prefix the scaffold attaches; the remainder is the author's emission.
     let (site, body) = match rest.strip_prefix("site=") {
         Some(after) => {
             let (key_tok, tail) = after.split_once(' ').unwrap_or((after, ""));
@@ -4482,8 +4443,7 @@ fn parse_report_record(rest: &str, out: &mut SiteResults) {
         }
         None => (None, rest),
     };
-    // v1 grammar: verb `decline` (`27W:rul-advise-verb-deferred`) + a starter-set class. Either
-    // unrecognized ⇒ degrade-generic (kept as an author-note).
+    // v1 grammar: verb `decline` + a starter-set class; either unrecognized ⇒ degrade-generic.
     let mut words = body.split_whitespace();
     let verb = words.next();
     let class = words
@@ -5591,9 +5551,6 @@ mod tests {
 
     #[test]
     fn report_lane_ingests_recognized_declines_and_retains_noise() {
-        // `27W` §2 + `27W:rul-report-noise-tolerant`: a recognized `decline <class>` is classed and
-        // site-keyed; an unknown verb/class or a free-form line is RETAINED (recognized=false),
-        // never dropped. Dedup on the whole record. Decision-inert (never near the fold).
         use dorc_core::evidence::DeclineClass;
         let mut i = Interner::default();
         let r = parse_str(
@@ -5623,7 +5580,6 @@ mod tests {
 
     #[test]
     fn report_lane_sanitizes_and_caps_the_raw_tail() {
-        // The ingestion BASIC cap (`27W` §2; full sanitization is the security round's).
         let capped = sanitize_report_raw(&format!("decline hazard {}", "x".repeat(500)));
         assert!(
             capped.chars().count() <= REPORT_RAW_CAP + 1,
@@ -5639,9 +5595,6 @@ mod tests {
 
     #[test]
     fn whylog_input_desync_flags_a_changed_book_or_oracle() {
-        // `27V` Lane B desync guard (the `22F` book-identity guard): a `--last` replay refuses when
-        // the re-read book/oracle content no longer matches the digest the durable recorded — a
-        // deterministic replay would otherwise reconstruct a DIFFERENT run. Pure (digest compare).
         let doc = dorc_plan::whylog::WhylogDoc {
             book: ("b.sh".to_owned(), book_digest("orig book bytes")),
             oracles: vec![("o.sh".to_owned(), book_digest("orig oracle"))],
@@ -5686,9 +5639,6 @@ mod tests {
 
     #[test]
     fn entry_bearing_site_ge2_rc_mints_class_only_runtime_entry_failure() {
-        // Runtime EntryFailure (`27C` §3, d2 inheritance): an entry-bearing site whose record lands
-        // the ≥2 flat sink mints ONE decision-inert, class-only EntryFailure. rc 127 ⇒ MissingDeps;
-        // other ≥2 ⇒ InContextDecline. An answered check (rc 0/1) and a NON-entry site mint none.
         use dorc_core::evidence::EntryFailureTag;
         let mut i = Interner::default();
         let fact = tool(&mut i, "nginx");
@@ -5971,10 +5921,6 @@ mod tests {
 
     #[test]
     fn probe_origins_keys_measured_receipt_by_fact_with_stream_ordinal() {
-        // C6 (`27V` Lane A · `OriginKind::ProbeResult`): probe_origins mints one measured origin
-        // per received record, keyed by the fact it establishes, carrying the record's STREAM
-        // ORDINAL as its stamp (deterministic, no clock). The receipt resolves back through the
-        // arena — the whylog's replay tie from a disposition to the record that measured it.
         let mut i = Interner::default();
         let fact = pkg(&mut i, "nginx");
         let probe = probe1(fact, ProbeSiteKind::Establish);

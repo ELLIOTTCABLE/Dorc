@@ -709,10 +709,9 @@ pub const CATALOG: &[CatalogEntry] = &[
         message: "sm {detail}",
         help: None,
     },
-    // ── `dorc why --last` durable reader (`27V` Lane B) — the phase's FIRST `[unwritten:]`
-    //    entries. Prose is a conductor/human act from this metadata (`27V:rul-error-authorship-tier`);
-    //    the builder ships zero user-facing prose. `example` is a STRAWMAN illustration of the
-    //    eventual message, NOT committed prose — a model for the prose author.
+    // ── `dorc why --last` durable reader (`27V` Lane B) — the phase's FIRST `[unwritten:]` entries;
+    //    prose is a conductor act from this metadata (`27V:rul-error-authorship-tier`). `example` is a
+    //    STRAWMAN model for the prose author, not committed prose.
     CatalogEntry {
         slug: "whylog-version-refused",
         when_fires: "`dorc why --last` opened a durable whose `dorc-whylog/N` header tag names a \

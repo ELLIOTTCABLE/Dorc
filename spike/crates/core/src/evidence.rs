@@ -514,8 +514,6 @@ mod tests {
 
     #[test]
     fn decline_class_from_token_is_the_closed_v1_set() {
-        // `27W:rul-class-starter-set`: exactly the four v1 tokens map; anything else degrades to
-        // None (the report lane keeps it as a generic author-note, never an error).
         assert_eq!(
             DeclineClass::from_token("unsound"),
             Some(DeclineClass::Unsound)
@@ -534,9 +532,8 @@ mod tests {
 
     #[test]
     fn with_authored_reason_populates_a_decline_without_mutation_and_is_idempotent() {
-        // d3 / `27W` §3 (tc-authored-reason-immutability): a VerdictDecline gains its authored
-        // reason via a narrow reconstructor, never a field setter. Idempotent: an already-populated
-        // reason (tier-2 static) is NOT overwritten by a later tier-3 runtime echo.
+        // d3 / `27W` §3: a narrow reconstructor populates the reason without mutation; idempotent —
+        // a tier-2 static reason is not overwritten by a tier-3 runtime echo.
         let reason = AuthoredReason {
             class: DeclineClass::Unsound,
             arm: MintSpan(span(4, 9)),
@@ -557,7 +554,6 @@ mod tests {
             ),
             "the reconstructor populates the class"
         );
-        // Idempotent: a second reason does not overwrite.
         let other = AuthoredReason {
             class: DeclineClass::Hazard,
             arm: MintSpan(span(1, 2)),
@@ -570,7 +566,6 @@ mod tests {
             ),
             "a populated reason is never overwritten (tier-2 wins over a tier-3 echo)"
         );
-        // A non-decline evidence is returned unchanged.
         let refusal = CollapseEvidence::new(
             TrustTier::Derived,
             CollapseKind::render_refusal_heredoc(site(2)),
