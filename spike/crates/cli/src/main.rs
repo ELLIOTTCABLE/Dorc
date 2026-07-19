@@ -67,7 +67,8 @@ use dorc_core::diag::{
     WrapperEntryIncoherent, WrapperPeelIncoherent,
 };
 use dorc_core::{
-    Interner, Observable, OutBytes, Predicted, ProvArena, Rc, Severity, Symbol, Verdict,
+    CollapseEvidence, CollapseKind, Interner, Observable, OutBytes, Predicted, ProvArena, Rc,
+    Severity, Symbol, TrustTier, Verdict,
 };
 
 /// The one-line usage synopsis, embedded in argument-error messages. The full
@@ -1103,7 +1104,7 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
     let wrapped_probes = wrapped_analysis.wrapped;
     let carried_attribution = wrapped_analysis.carried;
     report_at(advisory, "wrapped", book_source, &wrapped_analysis.hints);
-    let (classified, why_diags, kills, kill_coords, fact_backings, _collapse_evidence) =
+    let (classified, why_diags, kills, kill_coords, fact_backings, classify_evidence) =
         dorc_analysis::effect::classify_with_why_diags(
             &cfg.value,
             &value,
@@ -1341,7 +1342,7 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
     // firewall, 202 §3 / task-D2): a record's `rc` feeds the fold's Status ONLY for a
     // VALID Query-class site (the guard's own rc); an establish site's rc is the PROBE
     // command's (dpkg-query's), NOT the mutator's, so it feeds the fold NOTHING.
-    let by_fact = facts_from_sites(&probe, &results);
+    let (by_fact, merge_evidence) = facts_from_sites(&probe, &results);
 
     // The survival tier (Stage 2 / rul24-mode-gate, TC-1): footprints are lifted ONLY under
     // `--trust-footprints` — off ⇒ `None` ⇒ the honest Stage-1 total wall, the data never exists.
@@ -1463,7 +1464,14 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
     // lanes are load-bearing correctness disclosures gate-7 pins). `why` mode SKIPS them — its
     // stdout report (below) is the detail surface, so a stderr echo would just double it.
     if advisory && mode != Mode::Why {
-        emit_why_lens(&why_diags, &arena, &book_src);
+        // The C3 static-merge + C4 probe-merge collapse-evidence, unioned onto the why-lens seam
+        // (d4 fills the render; both are decision-inert — `two-plane-aid-law`).
+        let collapse_evidence: Vec<CollapseEvidence> = classify_evidence
+            .iter()
+            .cloned()
+            .chain(merge_evidence.iter().cloned())
+            .collect();
+        emit_why_lens(&why_diags, &arena, &book_src, &collapse_evidence);
         // sigpipe-flap-class (`279f` §5): a probe record landing rc 141 (128+SIGPIPE) is the
         // NAMED early-exit-race nondeterminism class — a `pipefail`-off `A | grep -q` whose
         // consumer closed the pipe before an upstream stage finished writing. The landing is SAFE
@@ -2893,7 +2901,16 @@ fn emit_plan_summary(plan: &dorc_plan::Plan) {
 /// woven into the byte-floored `.sh` artifact on stdout (the artifact stays receipt-free). The
 /// line is prefixed `why:` and never `error[`, so the e2e gate-3 stderr-floor (which keys on the
 /// `<stage>: error[` shape) ignores it — the why-lens is additive, never a case-failing diagnostic.
-fn emit_why_lens(why_diags: &[Diag], arena: &ProvArena, src: &str) {
+///
+/// `_collapse_evidence` is the C3/C4 decision-inert evidence seam (`27V` Lane A): the collapse
+/// records the why-lens will render (d4). Carried through here and IGNORED for now — the render
+/// arrangement is d4's, so surfacing it early would freeze `render-form-unwelded` output.
+fn emit_why_lens(
+    why_diags: &[Diag],
+    arena: &ProvArena,
+    src: &str,
+    _collapse_evidence: &[CollapseEvidence],
+) {
     for line in why_lens_lines(why_diags, arena, src) {
         eprintln!("why: {line}");
     }
@@ -3661,10 +3678,22 @@ fn disposition_tag(disposition: &dorc_plan::Disposition) -> &'static str {
 fn facts_from_sites(
     probe: &dorc_plan::ProbePlan,
     results: &SiteResults,
-) -> BTreeMap<dorc_core::FactKey, Observable> {
+) -> (
+    BTreeMap<dorc_core::FactKey, Observable>,
+    Vec<CollapseEvidence>,
+) {
     use dorc_plan::ProbeSiteKind;
     let mut by_fact: BTreeMap<dorc_core::FactKey, Observable> = BTreeMap::new();
+    // C4 aid plane (`27V` Lane A): the `Measured`-tier fact-merge evidence a probe-result
+    // disagreement narrates — minted BESIDE the conservative ⊤-fold, never steering it. `first_site`
+    // remembers each cell's first establisher so a cross-site conflict names both operands.
+    let mut collapse_evidence: Vec<CollapseEvidence> = Vec::new();
+    let mut first_site: BTreeMap<dorc_core::FactKey, dorc_core::diag::SiteId> = BTreeMap::new();
     for check in &probe.checks {
+        let site_id = dorc_core::diag::SiteId {
+            leaf: check.site,
+            member: check.member,
+        };
         // Key the record by (site, member) — a member check (`site N.M`) reads its own
         // sub-record (task-L2 item-4); an ordinary check (`site N`) reads `member: None`.
         let record = results.records.get(&RecordKey {
@@ -3700,12 +3729,53 @@ fn facts_from_sites(
             stdout,
             stderr,
         };
-        by_fact
-            .entry(check.fact)
-            .and_modify(|prior| *prior = merge_observable(*prior, obs))
-            .or_insert(obs);
+        // Source 1 — a WITHIN-site conflict: a valid Query whose record already merged to a
+        // contradiction at parse (`r.conflicted`), so its fold-usable rc is withheld to ⊤ above.
+        if matches!(check.site_kind, ProbeSiteKind::Query { valid: true })
+            && record.is_some_and(|r| r.conflicted)
+        {
+            collapse_evidence.push(measured_merge_disagreement(site_id, &[site_id]));
+        }
+        // Source 2 — a CROSS-site conflict: two sites on one cell whose observables disagree. The
+        // meet degrades the channel to ⊤ (`merge_observable`); the evidence names both establishers.
+        if let Some(prior) = by_fact.get(&check.fact).copied() {
+            if prior != obs {
+                let prior_site = first_site.get(&check.fact).copied().unwrap_or(site_id);
+                collapse_evidence
+                    .push(measured_merge_disagreement(site_id, &[prior_site, site_id]));
+            }
+            by_fact.insert(check.fact, merge_observable(prior, obs));
+        } else {
+            first_site.insert(check.fact, site_id);
+            by_fact.insert(check.fact, obs);
+        }
     }
-    by_fact
+    (by_fact, collapse_evidence)
+}
+
+/// Build the `Measured`-tier fact-merge evidence a probe-result disagreement narrates (C4;
+/// `27V` Lane A, `AID-NEEDS:law-collapse-mints-evidence`): a host self-contradiction at `cell`,
+/// carrying the participating establisher sites as operands (`minting_line`/`shown` filled by d3).
+/// Decision-inert (`two-plane-aid-law`): the conservative meet already folded the channel to ⊤
+/// (`kFAIL-perform`, the only safe resolution of a self-contradicting host); this only narrates why.
+fn measured_merge_disagreement(
+    cell: dorc_core::diag::SiteId,
+    sites: &[dorc_core::diag::SiteId],
+) -> CollapseEvidence {
+    let operands = dorc_core::evidence::Operands::capped(
+        sites
+            .iter()
+            .map(|&site| dorc_core::evidence::ValueOperand {
+                site,
+                minting_line: None,
+                shown: None,
+            })
+            .collect(),
+    );
+    CollapseEvidence::new(
+        TrustTier::Measured,
+        CollapseKind::FactMergeDisagreement { cell, operands },
+    )
 }
 
 /// Conservatively merge two [`Observable`]s reported for the SAME cell (20I find-6a /
@@ -5162,6 +5232,7 @@ mod tests {
         let probe = probe1(fact, ProbeSiteKind::Establish);
         let results = parse_str("site 0 effect=holds rc=0\n", &mut i);
         let obs = facts_from_sites(&probe, &results)
+            .0
             .get(&fact)
             .copied()
             .expect("keyed");
@@ -5183,6 +5254,7 @@ mod tests {
         let probe = probe1(fact, ProbeSiteKind::Query { valid: true });
         let results = parse_str("site 0 effect=holds rc=0\n", &mut i);
         let obs = facts_from_sites(&probe, &results)
+            .0
             .get(&fact)
             .copied()
             .expect("keyed");
@@ -5194,6 +5266,7 @@ mod tests {
         // A non-zero guard rc (nginx absent) carries through identically (Exit(n) path).
         let results = parse_str("site 0 effect=absent rc=1\n", &mut i);
         let obs = facts_from_sites(&probe, &results)
+            .0
             .get(&fact)
             .copied()
             .unwrap();
@@ -5212,6 +5285,7 @@ mod tests {
         let probe = probe1(fact, ProbeSiteKind::Query { valid: false });
         let results = parse_str("site 0 effect=holds rc=0\n", &mut i);
         let obs = facts_from_sites(&probe, &results)
+            .0
             .get(&fact)
             .copied()
             .expect("keyed");
@@ -5271,6 +5345,7 @@ mod tests {
             &mut i,
         );
         let obs = facts_from_sites(&probe, &results)
+            .0
             .get(&fact)
             .copied()
             .expect("keyed");
@@ -5294,6 +5369,7 @@ mod tests {
             &mut i,
         );
         let obs = facts_from_sites(&probe, &results)
+            .0
             .get(&fact)
             .copied()
             .expect("keyed");
@@ -5302,6 +5378,39 @@ mod tests {
             Verdict::Converged,
             "agreeing same-cell records keep the agreed verdict (no spurious ⊤)"
         );
+    }
+
+    #[test]
+    fn same_cell_disagreement_mints_measured_evidence_agreement_mints_none() {
+        // C4 (`AID-NEEDS:law-collapse-mints-evidence`; `anti-masking-tests`): a cross-site probe
+        // disagreement MINTS one `Measured`-tier FactMergeDisagreement BESIDE the ⊤-fold, DERIVED
+        // from the real conflict (never hand-injected); an agreement mints none.
+        let mut i = Interner::default();
+        let fact = pkg(&mut i, "nginx");
+        let probe = probe2(fact, ProbeSiteKind::Establish, ProbeSiteKind::Establish);
+
+        let conflict = parse_str(
+            "site 0 effect=holds rc=0\nsite 1 effect=absent rc=1\n",
+            &mut i,
+        );
+        let (_facts, evidence) = facts_from_sites(&probe, &conflict);
+        assert_eq!(
+            evidence.len(),
+            1,
+            "one cross-site disagreement ⇒ one record"
+        );
+        assert_eq!(evidence[0].tier(), TrustTier::Measured);
+        assert!(matches!(
+            evidence[0].kind(),
+            CollapseKind::FactMergeDisagreement { .. }
+        ));
+
+        let agree = parse_str(
+            "site 0 effect=holds rc=0\nsite 1 effect=holds rc=0\n",
+            &mut i,
+        );
+        let (_facts, evidence) = facts_from_sites(&probe, &agree);
+        assert!(evidence.is_empty(), "agreeing records mint no disagreement");
     }
 
     /// Build + deframe a FRAMED stream (the framed regime) for a set of inner records, then
@@ -5391,8 +5500,8 @@ mod tests {
             &mut i,
         );
         assert_eq!(
-            facts_from_sites(&probe, &book),
-            facts_from_sites(&probe, &rev),
+            facts_from_sites(&probe, &book).0,
+            facts_from_sites(&probe, &rev).0,
             "record arrival order never changes the fold (leafid-keyed)"
         );
     }
@@ -5410,8 +5519,8 @@ mod tests {
         let unframed = parse_str(&format!("{}\n{}\n", inners[0], inners[1]), &mut i);
         let framed = parse_framed(2, &inners, &mut i);
         assert_eq!(
-            facts_from_sites(&probe, &unframed),
-            facts_from_sites(&probe, &framed),
+            facts_from_sites(&probe, &unframed).0,
+            facts_from_sites(&probe, &framed).0,
             "the framing lines are fold-invisible — the plan is unchanged"
         );
     }
@@ -5454,6 +5563,7 @@ mod tests {
             &mut i,
         );
         let obs = facts_from_sites(&probe, &results)
+            .0
             .get(&fact)
             .copied()
             .expect("keyed");
