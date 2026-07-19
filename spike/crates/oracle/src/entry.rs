@@ -37,7 +37,7 @@ use dorc_core::diag::{
 };
 use dorc_core::{Capability, Context, ContextKey, EscalationDial, Interner, Symbol};
 
-use crate::predict::{Predict, PredictSet, Stmt, Word};
+use crate::predict::{MarkKind, Predict, PredictSet, Stmt, Word};
 use crate::wrapper::{Dimension, LendEntry, LendMap, RhoClaim};
 
 // ===========================================================================
@@ -213,12 +213,6 @@ fn leading_shifts_before_guest(body: &[Stmt]) -> Option<usize> {
 // The tolerance vouch (`27C` §2 — the oracle surface)
 // ===========================================================================
 
-/// The engine-owned mark-token that introduces a tolerance vouch (`27C` §2, STRAWMAN spelling):
-/// `: tolerates:<dim>`. The mark parses as a bare-`:` colon-line carrying an `Establish`-sigil mark
-/// whose `kind` fragment is exactly this token; the `entity` fragment (and any brace-alternation) is
-/// the dimension set.
-const TOLERATES_TOKEN: &str = "tolerates";
-
 /// A lifted `tolerates:` vouch over a verdict body (`27C:vouch-tolerates`): per-function, per-
 /// dimension, reachability-scoped. Asserts, for exactly the reached path: "this body's effects are
 /// read-only BY DESIGN, not by privilege-starvation — executing it context-shifted along the named
@@ -311,7 +305,7 @@ fn collect_tolerance(
         match stmt {
             Stmt::Command(c) => {
                 let Some(mark) = &c.mark else { continue };
-                if mark.target.kind != TOLERATES_TOKEN {
+                if mark.kind != MarkKind::SafeAcross {
                     continue;
                 }
                 // The dimension(s) live in the mark's `entity` fragment (`tolerates:user` ⇒

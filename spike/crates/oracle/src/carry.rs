@@ -45,11 +45,6 @@ use crate::wrapper::Dimension;
 /// `net-kernel` store IS `net.*` sysctl state, which is per-netns namespaced.
 const NET_KERNEL_SUBSTRATE: &str = "net-kernel";
 
-/// The mark `kind` fragment that introduces an `invariant:<axis>` colon-line inside
-/// `state_stored_only_in()` (`277` §4e: `:   : invariant:user` parses to
-/// `MarkTarget{kind:"invariant", entity:"<axis>"}`).
-const INVARIANT_TOKEN: &str = "invariant";
-
 /// The pure sh builtins a closed verdict body may invoke UNMARKED (`27C` §4(a)-(B) safe-list): they
 /// read NO external system state, so their rc traces purely to their (clean) argv operands. Every
 /// OTHER command word is an external read/effect and is admissible ONLY when MARKED (a declared read
@@ -161,8 +156,8 @@ struct StateBodyScan {
 }
 
 /// Scan a `state_stored_only_in()` body for its `invariant:<axis>` lines + `net-kernel` substrate
-/// emissions (`277` §4e). Both ride `MarkKind::Establish` marks distinguished by the mark's `kind`
-/// fragment (`invariant` vs the substrate token `net-kernel`). Whole-member scope (`277` §4e);
+/// emissions (`277` §4e). Distinguished by the typed VERB (`MarkKind::Undivided` vs
+/// `MarkKind::StoredIn` with the `net-kernel` substrate token). Whole-member scope (`277` §4e);
 /// control-flow arms are all scanned (over-approximation is safe for the caveat — it can only ADD a
 /// forbid). Substrate axes only reach the index (`from_token` maps `fs-view`/`netns`; a stray
 /// `invariant:user` line is dropped here — user is not a carry axis).
@@ -185,7 +180,7 @@ fn scan_state_block(
         match stmt {
             Stmt::Command(cmd) => {
                 let Some(mark) = &cmd.mark else { continue };
-                if mark.target.kind == INVARIANT_TOKEN {
+                if mark.kind == MarkKind::Undivided {
                     if let Some(axis) = &mark.target.entity
                         && let Some(dim) = Dimension::from_token(axis)
                         && dim != Dimension::User
@@ -194,7 +189,9 @@ fn scan_state_block(
                         // points at (render 3/3). First occurrence wins (deterministic).
                         invariant.entry(dim).or_insert(cmd.span);
                     }
-                } else if mark.target.kind == NET_KERNEL_SUBSTRATE {
+                } else if mark.kind == MarkKind::StoredIn
+                    && mark.target.kind == NET_KERNEL_SUBSTRATE
+                {
                     *stores_net_kernel = true;
                 }
             }
