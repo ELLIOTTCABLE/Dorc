@@ -1,12 +1,12 @@
-# survivebite27-naked-trust-chain (27V §4 flagship, DECLARED XFAIL): the "bought unsoundness"
-# survival-bite. A deliberately-LYING disturbs footprint (see package.oracle.sh) + --trust-footprints
-# spares a downstream elision that must NOT have survived; the world breaks. The acceptance target is
-# the FULL CHAIN render `dorc why 9` should produce once Lanes A (evidence plane) + B (whylog) exist:
-# numbered links, per-link tier words, file:line on every artifact, and the naked-trust epilogue that
-# states — by CONSTRUCTION, never an instance guess — WHICH link is unverified. The expected-why
-# needles below pin that content+structure; they cannot be emitted yet, so the case stays `xfail`.
-apt-get install -y oldpkg
-apt-get install -y badpkg
-apt-get install -y nginx
-apt-get purge -y gonepkg
-apt-get install -y curl
+# survivebite27-naked-trust-chain (27V §4 flagship): the "bought unsoundness" survival-bite, made
+# into the acceptance test for the full `dorc why` chain render (aid-why-license-chain). A LYING
+# `certsync` disturbs (see certsync.oracle.sh) claims at most its OWN CertBundle cell but its real
+# push ALSO reloads nginx (a Service cell a DIFFERENT tool backs) — the omitted cell survives the
+# own-coordinate canary, so under --trust-footprints the downstream service elision is spared a wall
+# it truly collides with. The bite. NOTE (tc-flagship-lie-is-narrative, conductor-accepted): DST
+# cannot observe the world breaking (no real mutation); this case asserts NARRATION-COMPLETENESS
+# ONLY — that `dorc why 12` (the systemctl line) discloses the survival rode a CLAIM (not a measurement), names
+# the claimed link unverified-BY-CONSTRUCTION, and gives the two recovery moves. Never "fix" it
+# toward an impossible world-breakage assertion.
+certsync push web1
+systemctl start nginx

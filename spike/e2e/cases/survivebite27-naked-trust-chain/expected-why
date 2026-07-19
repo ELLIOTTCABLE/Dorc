@@ -1,16 +1,2 @@
-why: survival chain for site
-1. link
-2. link
-3. link
-tier: measured
-tier: vouched
-tier: ran
-tier: claimed
-tier: derived
-tier: consented
-book.sh:
-package.oracle.sh:
-naked trust
-unverified by construction
-re-measure
-leverage
+site 1 survives+elides && certsync && sm.dorc.Service:nginx disjoint
+vouched at && service.oracle.sh:

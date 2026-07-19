@@ -1000,6 +1000,69 @@ scan_why() {
   return 1
 }
 
+# needles_missing: read a needle file ($1; one pattern/line, blank + `#`-comment lines skipped,
+# ` && `-conjoinable) and a haystack on STDIN; echo the patterns NOT satisfied (empty ⇒ all land).
+# A conjoined needle must land in ONE haystack line (the gate-7 discipline, factored for reuse).
+needles_missing() {
+  _hay=$(cat)
+  _miss=
+  while IFS= read -r _pat; do
+    case $_pat in ''|'#'*) continue ;; esac
+    case $_pat in
+      *" && "*)
+        _cand=$_hay; _rest=$_pat
+        while [ -n "$_rest" ]; do
+          _needle=${_rest%%" && "*}
+          case $_rest in *" && "*) _rest=${_rest#*" && "} ;; *) _rest= ;; esac
+          [ -z "$_needle" ] && continue
+          _cand=$(printf '%s\n' "$_cand" | grep -F -- "$_needle" || true)
+          [ -z "$_cand" ] && break
+        done
+        [ -n "$_cand" ] || _miss="${_miss}${_pat}
+"
+        ;;
+      *)
+        printf '%s\n' "$_hay" | grep -qF -- "$_pat" || _miss="${_miss}${_pat}
+"
+        ;;
+    esac
+  done < "$1"
+  printf '%s' "$_miss"
+}
+
+# gate-8 (why-chain PAIR, 27V §4 / aid-why-license-chain): if a case ships a `WHY_ADDR=<n>` marker +
+# an `expected-why-chain` needle file, run `dorc why <n>` LIVE and `dorc why <n> --last` REPLAY (via
+# the whylog) and assert the SAME chain needles land in BOTH — the full numbered chain is a PULL
+# answer (law-pull-runs-wide-open), identical live and replayed through the one kernel. $1=case,
+# $2=dir; remaining $@ = the `-o oracle …` + DORC_FLAGS args.
+scan_why_chain() {
+  _case=$1; _dir=$2; shift 2
+  _decl="${_dir}expected-why-chain"
+  { [ -f "$_decl" ] && [ -s "$_decl" ]; } || return 0   # opt-in
+  _addr=
+  for _m in "${_dir}"WHY_ADDR=*; do [ -e "$_m" ] && _addr=${_m##*WHY_ADDR=}; done
+  if [ -z "$_addr" ]; then
+    echo "FAIL  $_case  [gate-8: expected-why-chain present but no WHY_ADDR=<n> marker]"
+    return 1
+  fi
+  # LIVE: the addressed pull answer (address FIRST — `dorc why` takes the address before flags).
+  _live=$("$dorc" why "$_addr" --book="${_dir}book.sh" "$@" < "${_dir}probe-results.txt" 2>/dev/null)
+  # REPLAY: write the durable, then re-derive `dorc why --last` through the same kernel.
+  _wl=$(mktemp -d)
+  "$dorc" --book="${_dir}book.sh" "$@" --whylog-dir="$_wl" < "${_dir}probe-results.txt" >/dev/null 2>&1
+  _replay=$("$dorc" why "$_addr" --last --book="${_dir}book.sh" "$@" --whylog-dir="$_wl" < /dev/null 2>/dev/null)
+  rm -rf "$_wl"
+  _ml=$(printf '%s\n' "$_live" | needles_missing "$_decl")
+  _mr=$(printf '%s\n' "$_replay" | needles_missing "$_decl")
+  [ -z "$_ml" ] && [ -z "$_mr" ] && return 0
+  if [ "${XFAIL_ACTIVE:-}" != "1" ]; then
+    echo "FAIL  $_case  [gate-8: why-chain needle(s) missing — fix the walker, or update expected-why-chain]"
+    [ -n "$_ml" ] && printf '%s' "$_ml" | sed 's/^/      missing (live): /'
+    [ -n "$_mr" ] && printf '%s' "$_mr" | sed 's/^/      missing (replay): /'
+  fi
+  return 1
+}
+
 # dorc_sh_smoke (E1, 27D rider-dorc-sh-unbuilt — the strip-and-exec off-ramp; run ONCE at harness
 # start, FATAL on failure). Proves the stamped `#!/usr/bin/env dorc-sh` shebangs are no longer inert:
 #   (1) `dorc strip` on a marked corpus oracle is $checker -n clean AND dialect-free (no dorc-sh
@@ -1220,6 +1283,8 @@ for dir in "$here"/cases/*/; do
   scan_diagnostics "$name" "$err_file" "$dir" || case_ok=0
   # gate-7 (why-lens emission): opt-in expected-why substring assertion (#16, x2-fd1).
   scan_why "$name" "$err_file" "$dir" || case_ok=0
+  # gate-8 (why-chain PAIR): opt-in `dorc why <n>` live + `--last` replay chain assertion (27V §4).
+  scan_why_chain "$name" "$dir" "$@" || case_ok=0
 
   # guard-shape floor (23C-fd4): assert every guarded line in the apply obeys the artifact-shape
   # law (never-1 + bytes-verbatim). INERT until guards appear; a violation fails the case AND is
