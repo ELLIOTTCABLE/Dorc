@@ -923,8 +923,7 @@ pub fn build_vouches(
     };
 
     let mut diags = Vec::new();
-    // C5 aid plane (`27V` Lane A): the decision-inert VerdictDecline evidence minted beside the
-    // no-vouch-⇒-run collapse (`two-plane-aid-law`; steers nothing). Threaded to the why-lens seam.
+    // C5 (`27V` Lane A): decision-inert VerdictDecline evidence beside the no-vouch-⇒-run collapse.
     let mut collapse_evidence: Vec<CollapseEvidence> = Vec::new();
     let verdict_sets: Vec<VerdictSet> = oracle_srcs
         .iter()
@@ -985,8 +984,8 @@ pub fn build_vouches(
             evaluate_verdict(verdict, &op_refs),
             VerdictResolution::Vouched
         ) {
-            // Narrate a genuine DECLINE (not a ⊤): name the gate + the authoring funcdef span (c7
-            // refines to the precise arm; `authored_reason` is d3-populated).
+            // Narrate a genuine DECLINE (not a ⊤): gate + authoring funcdef span (c7 refines to the
+            // precise arm; `authored_reason` d3-populated).
             if let Some(gate) = decline_gate(verdict, &op_refs) {
                 collapse_evidence.push(CollapseEvidence::new(
                     TrustTier::Vouched,
@@ -2956,9 +2955,7 @@ fn wall_walk_survival(
         // otherwise (silence = wall). An elided/omitted mutator (survived, or converged away)
         // casts no shadow, so it is skipped here.
         if *is_mutator && matches!(step.disposition, Disposition::Run) {
-            // C5 aid: a running mutator forms a wall on the Effect channel (`rul-only-oracle-bytes-
-            // ship`) ⇒ downstream survival is constrained. Decision-inert (the wall itself is the
-            // accumulate/total-wall below; this only narrates it).
+            // C5 aid: a running mutator forms an Effect-channel wall (`rul-only-oracle-bytes-ship`).
             report.collapse_evidence.push(CollapseEvidence::new(
                 TrustTier::Derived,
                 CollapseKind::WallFormation {
@@ -5767,10 +5764,8 @@ apt_get__predict() {
 
     #[test]
     fn survival_walk_mints_wall_and_demotion_evidence() {
-        // C5 (`AID-NEEDS:law-collapse-mints-evidence`; `anti-masking-tests`): the survival walk
-        // MINTS decision-inert evidence BESIDE its dispositions — a running curl mutator forms a
-        // WallFormation, the downstream converged nginx install DEMOTES past it (Demotion). DERIVED
-        // from the real collapse, never hand-injected; all `Derived` tier.
+        // C5 anti-masking (`AID-NEEDS:law-collapse-mints-evidence`): the running curl mutator mints
+        // a WallFormation and the demoted nginx a Demotion — DERIVED from the collapse, all Derived.
         let plan = survival_plan_empty_footprints(
             "apt-get install -y curl\napt-get install -y nginx\n",
             |e| {

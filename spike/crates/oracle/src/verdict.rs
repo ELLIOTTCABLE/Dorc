@@ -244,7 +244,6 @@ pub fn decline_gate(verdict: &Predict, argv: &[&str]) -> Option<DeclineGate> {
         Flow::Normal if tr.reached_command => None, // Vouched
         Flow::Normal if tr.reached_inert => Some(DeclineGate::InertBuiltin),
         Flow::Normal => Some(DeclineGate::Unreached),
-        // An explicit `return N`: `return 0` vouches, everything else declines through the gate.
         Flow::Returned(code) if code.0 == 0 => None,
         Flow::Returned(_) | Flow::Declined => Some(DeclineGate::Return),
         Flow::Top(_) => None, // ⊤, not a decline
@@ -570,9 +569,8 @@ mod tests {
 
     #[test]
     fn decline_gate_names_the_reached_decline_shape() {
-        // C5 (`AID-NEEDS:law-collapse-mints-evidence`; `anti-masking-tests`): the decline classifier
-        // NAMES the gate a Declined trace reached, DERIVED from the reached path — never a hand-set
-        // tag. A Vouched trace has no gate.
+        // C5 anti-masking (`AID-NEEDS:law-collapse-mints-evidence`): the gate is DERIVED from the
+        // reached path, never a hand-set tag; a Vouched trace has no gate.
         assert_eq!(
             gate("x__is_converged() { return 2; }\n", &["a"]),
             Some(DeclineGate::Return),

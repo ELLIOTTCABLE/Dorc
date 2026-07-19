@@ -1327,8 +1327,7 @@ pub fn classify_with_why_diags(
     // (rides `Reach::Top`, excluded from `Eq`); it perturbs no decision.
     let (top_causes, fallback_cause) = mint_top_causes(cfg, ast, &effects, arena);
 
-    // C3 aid plane (`27V` Lane A): the static value-plane give-up narrated as decision-inert
-    // `FactMergeDisagreement` evidence, keyed like the `Top(cause)` above. Feeds no decision.
+    // C3 (`27V` Lane A): narrate the give-up as decision-inert evidence (see `mint_merge_evidence`).
     let collapse_evidence = mint_merge_evidence(&effects);
 
     // stage-1 cause-wiring (the corrected `tc-cmdsub-cause`): NOW that `top_causes` is minted,
@@ -1726,10 +1725,8 @@ command__predict() {
 
     #[test]
     fn an_opaque_reached_cell_mints_one_fact_merge_disagreement() {
-        // C3 anti-masking (`AID-NEEDS:law-collapse-mints-evidence`; `anti-masking-tests`): the
-        // static value-plane give-up MINTS its own evidence. A book with one Opaque command
-        // yields exactly one `Derived`-tier FactMergeDisagreement — DERIVED from the collapse
-        // (the Opaque node), never hand-injected — while a modeled-only book mints none.
+        // C3 anti-masking (`AID-NEEDS:law-collapse-mints-evidence`): the collapse MINTS its own
+        // evidence (one `Derived` FactMergeDisagreement per Opaque node), never hand-injected.
         let (mut i, idx, _s) = package_setup();
         let checks = vec![lift_predicts(&mut i, CORPUS_PREDICT_SRC).value];
 

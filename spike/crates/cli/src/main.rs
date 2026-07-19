@@ -1466,9 +1466,7 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
     // lanes are load-bearing correctness disclosures gate-7 pins). `why` mode SKIPS them — its
     // stdout report (below) is the detail surface, so a stderr echo would just double it.
     if advisory && mode != Mode::Why {
-        // The C3 static-merge + C4 probe-merge + C5 (verdict decline · entry denial · substitution
-        // refusal · survival wall/demotion) collapse-evidence, unioned onto the why-lens seam (d4
-        // fills the render; all decision-inert — `two-plane-aid-law`).
+        // Union the C3/C4/C5 collapse-evidence onto the why-lens seam (d4 renders; decision-inert).
         let collapse_evidence: Vec<CollapseEvidence> = classify_evidence
             .iter()
             .cloned()
@@ -2692,8 +2690,7 @@ fn build_vouches(
     // The composition lives in `dorc_plan::build_vouches` (the ONE home — the sweep/coverage DSTs
     // share it). This edge only ROUTES the lift diagnostics: surfaced AS-IS (inv-top-reject — the
     // tc-verdict-return softening is reverted, find-return-vouches 24C), so a genuinely
-    // out-of-dialect verdict body fails gate-3's error-floor rather than degrading silently. The C5
-    // decline-evidence rides out to the why-lens seam.
+    // out-of-dialect verdict body fails gate-3's error-floor rather than degrading silently.
     let (lifted, decline_evidence) =
         dorc_plan::build_vouches(oracle_refs, classes, value, interner);
     report_at(advisory, "verdict", None, &lifted.diags);
@@ -3692,8 +3689,7 @@ fn facts_from_sites(
 ) {
     use dorc_plan::ProbeSiteKind;
     let mut by_fact: BTreeMap<dorc_core::FactKey, Observable> = BTreeMap::new();
-    // C4 aid plane (`27V` Lane A): the `Measured`-tier fact-merge evidence a probe-result
-    // disagreement narrates — minted BESIDE the conservative ⊤-fold, never steering it. `first_site`
+    // C4 (`27V` Lane A): `Measured` fact-merge evidence minted beside the ⊤-fold. `first_site`
     // remembers each cell's first establisher so a cross-site conflict names both operands.
     let mut collapse_evidence: Vec<CollapseEvidence> = Vec::new();
     let mut first_site: BTreeMap<dorc_core::FactKey, dorc_core::diag::SiteId> = BTreeMap::new();
@@ -3737,18 +3733,16 @@ fn facts_from_sites(
             stdout,
             stderr,
         };
-        // Source 1 — a WITHIN-site conflict: a valid Query whose record already merged to a
-        // contradiction at parse (`r.conflicted`), so its fold-usable rc is withheld to ⊤ above.
+        // Source 1 — a WITHIN-site conflict: a valid Query whose parse-merged record contradicts
+        // itself (`r.conflicted`), so its fold-usable rc is withheld to ⊤ above.
         if matches!(check.site_kind, ProbeSiteKind::Query { valid: true })
             && record.is_some_and(|r| r.conflicted)
         {
             collapse_evidence.push(measured_merge_disagreement(site_id, &[site_id]));
         }
-        // C5 substitution refusal: an INVALID Query (a mutator/opaque reached its guard) has a
-        // stale resting rc ⇒ its consumed Status stays ⊤ above ⇒ the guard runs, no substitution.
-        // tc-substitution-refusal-scope: minted only for the invalid-Query withhold (a genuine
-        // consumed-channel refusal), NOT the establish withhold (firewall-by-design; it elides via
-        // Effect). Decision-inert — the run is the firewall's; this only narrates the ⊤ channel.
+        // C5 substitution refusal. tc-substitution-refusal-scope: minted ONLY for the invalid-Query
+        // withhold (a genuine consumed-channel refusal), NOT the establish withhold (firewall-by-
+        // design; it elides via Effect). Flagged UP — a scoping judgment (`inv-superposition`).
         if matches!(check.site_kind, ProbeSiteKind::Query { valid: false }) {
             collapse_evidence.push(CollapseEvidence::new(
                 TrustTier::Derived,
@@ -3758,8 +3752,7 @@ fn facts_from_sites(
                 },
             ));
         }
-        // Source 2 — a CROSS-site conflict: two sites on one cell whose observables disagree. The
-        // meet degrades the channel to ⊤ (`merge_observable`); the evidence names both establishers.
+        // Source 2 — a CROSS-site conflict: two sites on one cell disagree ⇒ the meet ⊤s the channel.
         if let Some(prior) = by_fact.get(&check.fact).copied() {
             if prior != obs {
                 let prior_site = first_site.get(&check.fact).copied().unwrap_or(site_id);
@@ -4571,10 +4564,7 @@ fn build_wrapped_analysis(
                         },
                     )
                 } else {
-                    // C5 aid: the entry consent degraded to guard/run — narrate the STATIC rung
-                    // (`27C` §3). Consented-tier (dial × capability); decision-inert (the run is the
-                    // degrade's; this only names the rung). The runtime rung surfaces as an
-                    // EntryFailure at the probe rc-partition, not here.
+                    // C5 aid: narrate the STATIC entry-degrade rung (`27C` §3; Consented-tier).
                     let rung = match reason {
                         EntryDegrade::NoCapability(_) => Some(EntryDegradeTag::NoCapability),
                         EntryDegrade::DialForbids => Some(EntryDegradeTag::DialForbids),
@@ -5344,9 +5334,8 @@ mod tests {
 
     #[test]
     fn invalid_query_withhold_mints_substitution_refusal() {
-        // C5 (`AID-NEEDS:law-collapse-mints-evidence`; `anti-masking-tests`): an INVALID Query's
-        // consumed Status stays ⊤ ⇒ the guard runs (no substitution). The withhold MINTS one
-        // SubstitutionRefusal naming the ⊤ channel; a VALID Query (substitutable rc) mints none.
+        // C5 anti-masking (`AID-NEEDS:law-collapse-mints-evidence`): the invalid-Query withhold
+        // mints one SubstitutionRefusal; a valid Query (substitutable rc) mints none.
         let mut i = Interner::default();
         let fact = tool(&mut i, "nginx");
         let results = parse_str("site 0 effect=holds rc=0\n", &mut i);
@@ -5458,9 +5447,8 @@ mod tests {
 
     #[test]
     fn same_cell_disagreement_mints_measured_evidence_agreement_mints_none() {
-        // C4 (`AID-NEEDS:law-collapse-mints-evidence`; `anti-masking-tests`): a cross-site probe
-        // disagreement MINTS one `Measured`-tier FactMergeDisagreement BESIDE the ⊤-fold, DERIVED
-        // from the real conflict (never hand-injected); an agreement mints none.
+        // C4 anti-masking (`AID-NEEDS:law-collapse-mints-evidence`): a cross-site disagreement
+        // mints one `Measured` FactMergeDisagreement; an agreement mints none.
         let mut i = Interner::default();
         let fact = pkg(&mut i, "nginx");
         let probe = probe2(fact, ProbeSiteKind::Establish, ProbeSiteKind::Establish);
