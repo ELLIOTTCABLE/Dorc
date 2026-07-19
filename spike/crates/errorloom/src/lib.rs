@@ -23,6 +23,7 @@ mod container;
 mod diff;
 mod promote;
 mod prose;
+mod runner;
 mod span;
 
 pub use crate::container::{
@@ -34,6 +35,9 @@ pub use crate::promote::{
 };
 pub use crate::prose::{
     FieldTemplate, Fragment, Paragraph, ParamName, Prose, Token, Word, tokenize,
+};
+pub use crate::runner::{
+    Drift, ReplayCapture, RunEnv, RunError, RunReport, bless_structure, check_run, run_case,
 };
 pub use crate::span::{ArrangementSlug, InstanceId, Region, Span, TaggedRender, TaggedRenderError};
 
