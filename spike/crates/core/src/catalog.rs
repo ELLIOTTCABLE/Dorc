@@ -849,9 +849,10 @@ pub fn fill_template(template: &str, params: &[(&str, &str)]) -> String {
     out
 }
 
-/// Collect a template's `{name}` holes (skipping `{{`/`}}` escapes) — the gate-test primitive that
-/// enforces `holes ⊆ declared params`. Pure; order-preserving.
-#[cfg(test)]
+/// Collect a template's `{name}` holes (skipping `{{`/`}}` escapes) — the gate-test primitive
+/// (`holes ⊆ declared params`) AND the [`promote_catalog_source`] param-refresh source. Order-
+/// preserving, NOT deduped (a hole used twice appears twice); callers that need a param SET dedup.
+/// Pure.
 #[must_use]
 fn template_holes(template: &str) -> Vec<String> {
     let mut holes = Vec::new();
@@ -878,6 +879,83 @@ fn template_holes(template: &str) -> Vec<String> {
         }
     }
     holes
+}
+
+// ===========================================================================
+// The promote pipeline (`27V` §3 · `AID-NEEDS:law-one-defining-case-per-code`)
+// ===========================================================================
+
+/// The refreshed param SET for an entry — the first-occurrence-ordered, deduped union of the holes in
+/// its `message` and `help` templates. Promote sets `params` to EXACTLY the holes the prose uses
+/// (tightening the gate's `holes ⊆ params` to `holes == params`).
+fn refreshed_params(entry: &CatalogEntry) -> Vec<String> {
+    let mut params: Vec<String> = Vec::new();
+    for template in std::iter::once(entry.message).chain(entry.help) {
+        for hole in template_holes(template) {
+            if !params.contains(&hole) {
+                params.push(hole);
+            }
+        }
+    }
+    params
+}
+
+/// The refreshed `example` — the measured render of the current prose (ru-27 / conductor ruling): the
+/// `message` template filled with `<param>` placeholders. Drift-proof by construction (it changes iff
+/// the prose does), and payload-free (no canonical `DiagCode` needed), so promote stays a pure
+/// function of the committed catalog. The particulars ride `27V:rul-output-form-unwelded`.
+fn schematic_example(entry: &CatalogEntry, params: &[String]) -> String {
+    let placeholders: Vec<(&str, String)> = params
+        .iter()
+        .map(|p| (p.as_str(), format!("<{p}>")))
+        .collect();
+    let refs: Vec<(&str, &str)> = placeholders.iter().map(|(k, v)| (*k, v.as_str())).collect();
+    fill_template(entry.message, &refs)
+}
+
+/// The d4b PROMOTE pipeline (`27V` §3; BLESS-law — orchestrator-only, fresh binary, diff inspected;
+/// the builder builds this, NEVER runs it): codegen the committed `CATALOG` const from the current
+/// catalog, DIFFABLE and committed. It refreshes the machine-facing fields and CARRIES the prose:
+/// * `params` ⇐ [`refreshed_params`] (exactly the holes the prose uses);
+/// * `example` ⇐ [`schematic_example`] (the measured render of the current prose — drift-proof);
+/// * `message` / `help` / `when_fires` / `why` ⇐ carried VERBATIM from the current entry.
+///
+/// PROSE PROVABLY UNTOUCHED (`tc-promote-refresh-boundary`, conductor-confirmed): promote has no code
+/// path that writes a `message`/`help` string other than copying the current entry's — the
+/// `promote_is_a_prose_fixpoint` gate pins that structurally. Strings are emitted via `{:?}` (valid
+/// Rust escaping); a `cargo fmt` pass over the spliced source is the orchestrator's final step. The
+/// `inv-no-unsafe` family stands: this is codegen-to-committed-source, never a macro.
+#[must_use]
+pub fn promote_catalog_source() -> String {
+    use std::fmt::Write as _;
+    let mut out = String::from("pub const CATALOG: &[CatalogEntry] = &[\n");
+    for e in CATALOG {
+        let params = refreshed_params(e);
+        let example = schematic_example(e, &params);
+        out.push_str("    CatalogEntry {\n");
+        let _ = writeln!(out, "        slug: {:?},", e.slug);
+        let _ = writeln!(out, "        when_fires: {:?},", e.when_fires);
+        let _ = writeln!(out, "        why: {:?},", e.why);
+        out.push_str("        params: &[");
+        for (i, p) in params.iter().enumerate() {
+            if i > 0 {
+                out.push_str(", ");
+            }
+            let _ = write!(out, "{p:?}");
+        }
+        out.push_str("],\n");
+        let _ = writeln!(out, "        example: {example:?},");
+        let _ = writeln!(out, "        message: {:?},", e.message);
+        match e.help {
+            Some(h) => {
+                let _ = writeln!(out, "        help: Some({h:?}),");
+            }
+            None => out.push_str("        help: None,\n"),
+        }
+        out.push_str("    },\n");
+    }
+    out.push_str("];\n");
+    out
 }
 
 #[cfg(test)]
@@ -1000,5 +1078,85 @@ mod tests {
             .slug(),
             "render-heredoc-refused"
         );
+    }
+
+    /// PROMOTE is a PROSE FIXPOINT (`tc-promote-refresh-boundary`, conductor-confirmed — "that gate
+    /// is the mechanism I wanted"): the generated source carries every entry's `message`/`help`
+    /// VERBATIM (promote never regenerates prose), and it is deterministic (idempotent). Together
+    /// these make "prose provably untouched" structural, not disciplinary.
+    #[test]
+    fn promote_is_a_prose_fixpoint() {
+        let src = promote_catalog_source();
+        for e in CATALOG {
+            assert!(
+                src.contains(&format!("message: {:?},", e.message)),
+                "promote must carry `{}`'s message VERBATIM (prose never regenerated)",
+                e.slug
+            );
+            if let Some(h) = e.help {
+                assert!(
+                    src.contains(&format!("help: Some({h:?}),")),
+                    "promote must carry `{}`'s help VERBATIM",
+                    e.slug
+                );
+            }
+            // when_fires / why are carried too (machine-facing, hand-authored — never regenerated).
+            assert!(
+                src.contains(&format!("when_fires: {:?},", e.when_fires)),
+                "promote must carry `{}`'s when_fires VERBATIM",
+                e.slug
+            );
+        }
+        assert_eq!(
+            src,
+            promote_catalog_source(),
+            "promote is deterministic (idempotent)"
+        );
+    }
+
+    /// PROMOTE refreshes the machine-facing fields: `params` becomes EXACTLY the prose's holes, and
+    /// `example` becomes the schematic measured render (holes → `<param>`), drift-proof.
+    #[test]
+    fn promote_refreshes_params_and_example() {
+        // A PASSTHROUGH code (`sm {detail}`): params ⇒ [detail]; example ⇒ the prose with `<detail>`.
+        let e = entry("site-unresolvable").expect("passthrough entry");
+        let params = refreshed_params(e);
+        assert_eq!(
+            params,
+            vec!["detail".to_owned()],
+            "params = the prose's holes"
+        );
+        assert_eq!(
+            schematic_example(e, &params),
+            "sm <detail>",
+            "example = the measured render of the current prose (drift-proof)"
+        );
+        // A code whose template uses a hole TWICE (`{count}` in munge-name-collision) dedups in params.
+        let coll = entry("munge-name-collision").expect("collision entry");
+        let cp = refreshed_params(coll);
+        assert_eq!(
+            cp.iter().filter(|p| *p == "count").count(),
+            1,
+            "a param used twice appears once in the refreshed set: {cp:?}"
+        );
+        // The generated source is valid-shaped: the const opener + a closing `];`.
+        let src = promote_catalog_source();
+        assert!(src.starts_with("pub const CATALOG: &[CatalogEntry] = &[\n"));
+        assert!(src.trim_end().ends_with("];"));
+    }
+
+    /// The orchestrator's RUN entry for promote (BLESS-law — orchestrator-only, fresh binary, diff
+    /// inspected; the builder NEVER runs it with the env set): `DORC_CATALOG_PROMOTE=1` writes the
+    /// regenerated `CATALOG` block to `target/catalog-promoted.rs` for diff + splice into
+    /// `catalog.rs`, followed by `cargo fmt`. A no-op without the env, so the ordinary suite is inert.
+    #[test]
+    fn promote_writer_gated() {
+        if std::env::var("DORC_CATALOG_PROMOTE").as_deref() != Ok("1") {
+            return;
+        }
+        let out = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../target/catalog-promoted.rs");
+        std::fs::write(&out, promote_catalog_source()).expect("write promoted catalog");
+        eprintln!("promote: wrote {} (diff, splice, cargo fmt)", out.display());
     }
 }
