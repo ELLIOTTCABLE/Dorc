@@ -226,8 +226,8 @@ fn consume_verb(verb: Verb, words: &[SpannedWord], i: usize, out: &mut LineMarks
 }
 
 /// Build a coordinate/meta mark from `payload` for `kind` and push it, refusing a brace on a
-/// verdict payload (`281` §6, the reused single-cell rule). A payload word is a coordinate/token
-/// here; the `= value` verdict tail is captured by the statement classifier, not this scan.
+/// verdict payload (`281` §6, the reused single-cell rule). A payload word is a coordinate/token.
+/// (The old verdict `= value` tail is dropped — `28A:rul-verdict-value-tail-drops`.)
 fn push_coordinate_mark(kind: MarkKind, payload: &SpannedWord, out: &mut LineMarks) {
     let Some(parsed) = split_mark_target(&payload.lexeme, SELECTOR) else {
         return;
@@ -250,7 +250,6 @@ fn push_coordinate_mark(kind: MarkKind, payload: &SpannedWord, out: &mut LineMar
             kind: parsed.kind,
             entity: parsed.entity,
             prop: parsed.prop,
-            value: None,
         },
         span: payload.span,
     });

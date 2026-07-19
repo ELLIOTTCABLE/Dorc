@@ -357,9 +357,7 @@ impl ClosureWalk {
             self.clean_word(w, Some(cmd.span))?;
         }
         if let Some(mark) = &cmd.mark {
-            if let Some(v) = &mark.target.value {
-                self.clean_word(v, Some(cmd.span))?;
-            }
+            // (The old verdict `= value` cleanliness read DROPPED here — seam in `ast::MarkTarget`.)
             // A verdict/observe mark declares the read — record its (dotted) kind for the (A) check.
             if matches!(
                 mark.kind,

@@ -881,19 +881,7 @@ impl Parser<'_> {
         let Some((lexeme, _quoting, target_span)) = self.take_word() else {
             return Err(self.fail_here("dialect mark requires a `kind:entity#selector` target"));
         };
-        // Optional `= value` tail (a verdict-mark explicit-value assignment).
-        let mut end_span = target_span;
-        let value = if matches!(self.peek(), Some(Tok::Word { lexeme, .. }) if lexeme == "=") {
-            self.bump(); // `=`
-            let Some((v, vquoting, vspan)) = self.take_word() else {
-                return Err(self.fail_here("dialect mark `=` requires a value word"));
-            };
-            end_span = vspan;
-            Some(parse_word_lexeme(&v, vquoting, self.interner))
-        } else {
-            None
-        };
-
+        let end_span = target_span;
         let Some(parsed) = split_mark_target(&lexeme, '#') else {
             return Err(
                 self.fail_here("malformed dialect mark target (expected `kind:entity#selector`)")
@@ -917,7 +905,6 @@ impl Parser<'_> {
                 kind: parsed.kind,
                 entity: parsed.entity,
                 prop: parsed.prop,
-                value,
             },
             span: marker_span.to(end_span),
         })
@@ -1733,17 +1720,6 @@ mod dialect_tests {
         assert_eq!(m.target.kind, "sm.dorc.File");
         assert_eq!(m.target.entity.as_deref(), Some("/etc/nginx.conf"));
         assert_eq!(m.target.prop, None);
-    }
-
-    #[test]
-    fn verdict_mark_with_explicit_value_parses() {
-        // `… : sm.dorc.Service:"$svc"#active = false` — the explicit-value tail on a verdict mark.
-        let body = body_of(
-            "systemctl__predict() { svc : sm.dorc.Service = \"$1\"; systemctl is-active -- \"$svc\" : sm.dorc.Service:\"$svc\"#active = false; }",
-        );
-        let m = first_command_mark(&body).expect("a trailing mark");
-        assert_eq!(m.kind, MarkKind::Asserts);
-        assert!(m.target.value.is_some(), "the `= value` tail is captured");
     }
 
     #[test]

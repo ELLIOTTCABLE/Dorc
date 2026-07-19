@@ -146,22 +146,26 @@ pub enum MarkKind {
     Undivided,
 }
 
-/// The `kind:entity#selector` coordinate of a [`Mark`], split syntactically and left
+/// The `kind:entity@selector` coordinate of a [`Mark`], split syntactically and left
 /// OPAQUE (`inv-referent-agnostic` — never decoded). Entity/selector may be absent (a
-/// kind-only emission mark `: sm.dorc.Package`; a substrate token `: fs`).
+/// kind-only emission mark `: disturbs sm.dorc.Package`; a substrate token `: stored-in fs`).
+///
+/// SEAM (`28A:rul-verdict-value-tail-drops`): the old verdict-position `= value` tail (once a
+/// `value: Option<Word>` field here, read by the `carry.rs` read-set-closure walk) is DROPPED
+/// with the old grammar — corpus-dead, no `281` spelling. Re-add the field here + re-wire the
+/// `carry.rs` value-cleanliness read if the value plane ever returns (extend-by-name; the
+/// `.diff`/is-noop value-layer future mints its own spelling, TODO-ADDTL item 1).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MarkTarget {
     /// The kind fragment (everything before the first `:`). Opaque; keeps its
     /// reverse-DNS dots (`sm.dorc.Package`).
     pub kind: String,
-    /// The entity fragment (between the first `:` and the `#`), if present. An
-    /// explicit empty string is the empty-entity form `kind:#sel` (`277` §4a).
+    /// The entity fragment (between the first `:` and the `@`), if present. An
+    /// explicit empty string is the empty-entity form `kind:@sel` (`281` §6).
     pub entity: Option<String>,
-    /// The selector fragment (after the `#`), if present. Opaque. (Field named `prop`
-    /// for continuity; it is the `#selector` third coordinate position now.)
+    /// The selector fragment (after the `@`), if present. Opaque. (Field named `prop`
+    /// for continuity; it is the `@selector` third coordinate position now.)
     pub prop: Option<String>,
-    /// The optional `= value` tail on a verdict mark (an explicit value).
-    pub value: Option<Word>,
 }
 
 /// The inline kind-annotation `name : kind = value` (19H §2.1, ch-shape-anno).
