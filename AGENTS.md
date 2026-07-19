@@ -105,4 +105,5 @@ Some terms have shifted throughout the planning documents; be careful of these m
   - BAD: "(AI fix) r27 shim-materalization: peel_book_chain (WrapperIndex) ..." - full of information that's obvious from `git show`
   - GOOD: "(AI fix) Move WrapperIndex onto the hot-path for ..." - describes *what you changed*, avoiding repeating context and metadata.
   - speak in imperative case, plain-english as much as possible
-  - avoid multi-line breakdowns, context discovers in-filesystem-tree, in more discoverable places (work-log or chronological-notes-document that you're probably already keeping, in most cases)
+  - avoid multi-line breakdowns as commit-message-trailers, context discovers in-filesystem-tree, in more discoverable places (work-log or chronological-notes-document that you're probably already keeping, in most cases)
+    - single exception: if a commit was *fully mechanical* (commit A -> a single shell-command -> commit B), then including that shell-command as the folded third/later lines of the commit-message is reasonable
