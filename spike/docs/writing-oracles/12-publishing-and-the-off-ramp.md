@@ -22,7 +22,7 @@ What remains is exactly the defensive shell library a careful person would have
 wanted anyway: a `foobar__is_converged`-shaped check function any script in any
 Bourne-family shell can source and call. This is the product's deepest design
 promise, and as an author you are one of its keepers - it holds only if your file
-is good *as shell*, which is what the previous page was for. One mechanical
+is good *as shell*, which is what the shell-dialect page was for. One mechanical
 consequence to know: strip guarantees your function's last real command is still
 its last status-affecting statement, so stripped checks answer exactly as the
 oracle did.
@@ -84,7 +84,7 @@ dependent. An oracle that quietly gets *more* conservative as the world drifts
 away from it is aging exactly as designed.
 
 That is the whole arc. From here, the contract reference is your working
-companion: every obligation and license from these eleven pages, collected in
+companion: every obligation and license from these twelve pages, collected in
 one place, for the days you are writing something you intend strangers to trust.
 
 <!-- quoted: 278 section 3 strip semantics; spike/CLAUDE.md strip-is-pure-erasure,

@@ -46,7 +46,9 @@ body of the documentation:
   publishing a vocabulary: aliasing, reach, and where state actually lives.
 - `writing-oracles/10-the-shell-dialect.md` - exactly what shell to write, and the
   defensive habits that make an oracle survive strangers' machines.
-- `writing-oracles/11-publishing-and-the-off-ramp.md` - stripping, sharing,
+- `writing-oracles/11-authoring-with-the-engine.md` - classing your declines,
+  running the linter as you write, and reading back what an admin will see.
+- `writing-oracles/12-publishing-and-the-off-ramp.md` - stripping, sharing,
   ownership, and what your users can rely on.
 
 Finally, one reference document sits apart from the learning path:

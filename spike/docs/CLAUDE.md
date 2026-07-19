@@ -118,7 +118,9 @@ document must leave the reader with something that works:
 8. Describe wrappers and contexts.
 9. Steward a vocabulary (kind ownership).
 10. Write everything in the portable dialect, defensively.
-11. Publish, own, and maintain what they shipped.
+11. Bring the engine into the authoring loop: class declines, lint as you write,
+    read back what an admin will see.
+12. Publish, own, and maintain what they shipped.
 
 The reference page then serves the reader who has completed the arc. When editing,
 check changes against this path: a concept must not be used before the point where the
