@@ -282,6 +282,51 @@ publish flip. Flag rulings:
   structural fallback) joins the two ruled emitter requirements for the unify
   lane's phase-2 builder.
 
+## §2h — Syntax-lane CP-B+CP-C checkpoint rulings + the CP-D go (conductor, 2026-07-19)
+
+The coupled unit LANDED @ `0373dfa` on `ai/r28-syntax-respell-2` (5 commits atop
+CP-A; the four codes as full covered() cases — the e2e-trigger contingency never
+fired, the "fires" gate greps cfg(test) too; the new parser + strip in a
+`#[cfg(test)]`-gated module, zero production surface — ACCEPTED, un-gating is
+CP-D step one; 20 license-behavior unit tests; budget 24/24; e2e 97/97 old
+grammar). Checkpoint rulings on the five flags:
+
+- **`28A:rul-uniform-kind-payload-home`** — token payloads live uniformly in
+  `target.kind` (the old `.entity` home for safe-across/undivided was an
+  artifact of splitting `tolerates:user` on its colon; the new grammar has no
+  such split). CP-D migrates `entry.rs`/`carry.rs` to read `.kind` when the new
+  parser drives; the `28B` §2a payload-enum reshape is SANCTIONED-OPTIONAL —
+  take it only if it doesn't balloon the cutover, flag if it would.
+- **`28A:rul-per-intro-head-decode`** — ACCEPTED as the only reading consistent
+  with `281` §11 (the `:?` continuation requires per-intro sugar decode). A
+  bare-coordinate continuation legitimately reads `asserts` and trips rc-arity
+  against a head verdict — correct behavior, right diagnostic. Docs-pass rider:
+  one clarifying sentence into `281` §4 (kept-current plan; the ambiguity is
+  real).
+- **`28A:rul-brace-on-reads-legal`** — `281` §6's plain text wins over the
+  277-era observe refusal: brace on `reads` expands to N observe facts
+  (backing-widening is always-safe and honesty-positive); the verdict refusal
+  stands. CP-D updates `derive.rs` accordingly; `MarkBraceVerdictSingleCell`'s
+  slug is already verdict-scoped — no wire change.
+- **`28A:rul-value-tail-inventory-precondition`** (the hazard) — the old
+  grammar's verdict-position `= value` tail (`… @active = false`-shaped) has NO
+  `281` spelling, and neither `28B` nor `281` dispositioned it. HARD CP-D
+  PRECONDITION: inventory corpus+test usage of `= value` in verdict position
+  (bind excluded). Zero instances ⇒ dead construct, drops silently. ANY
+  instance ⇒ STOP before the cutover and flag the list up — the conductor rules
+  a spelling then. The cutover may not flip with this unresolved.
+- Remediation-class `DeclareIdentity` on all four: accepted as placeholder;
+  re-cut at prose-authoring time.
+
+CP-D GO issued to the same builder (context-hot on its own parser beats fresh
+onboarding for the delicate wiring; gates back-stop degradation). CP-D scope =
+`28B` §5 step 4 + the banked riders: un-gate + wire the parser · consumer
+`.kind` migration · derive.rs brace update · the mechanical corpus respell
+(incl. `28A:rul-singleton-bind-drops` drops + the `@` flip + verb-words +
+double-colon collapse) · crate `CLAUDE.md` authored-surface blocks · goldens
+regenerated as WORKING-STATE (authoritative bless stays conductor's at fold) ·
+comment budget: 0 net-new non-doc (doc-comments exempt; flag genuine need).
+
 ## §3 — Lane map and state (update on every change)
 
 | lane | branch | shape | state |
