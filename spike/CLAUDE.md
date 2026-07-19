@@ -539,6 +539,17 @@ prompt you write:
   byte-obligated. Binds ONLY the report/why render plane — the artifact byte-floor
   (two-surfaces) and the executable-plane never-synthesized-sh law are untouched;
   display-sh must never masquerade as runnable.
+- **error-prose-conductor-flow** (`27U` §4/§5; phase-tested ×2) — catalog prose is
+  three-state: `sm `-prefixed migrated-verbatim builder text (awaiting human
+  rewrite) · `[unwritten: <slug>]` (awaiting conductor prose) · unprefixed prose
+  whose slug is on the `CONDUCTOR_AUTHORED` roster. Builders author ZERO
+  user-facing strings, ever, and never extend the roster; the conductor authors
+  from the catalog's structured metadata alone (one Read, N Edits, one
+  conduct-bless). Promote carries prose by slug behind the fixpoint gate.
+- **rul-chain-is-pull-only** (`27U` d4a) — the full numbered why-chain renders only
+  on pull surfaces (`dorc why N` live / `--last`); plan stderr keeps compact
+  attribution lines. Push stays ruthlessly selected even under the spike's
+  kWARN tune-high.
 
 ## Where the build stands (dated 2026-07-17 — the one drift-expected section; `Research/LIVING_STATUS.md` is the live view)
 
@@ -560,10 +571,18 @@ prompt you write:
 - The `24J` raw-ship law-debt is CLEARED — the invariant block above remains
   binding law; the "HEAD DEBT" annotation inside rul-only-oracle-bytes-ship is
   historical.
-- NEXT: `270:block-context` (implementation-planning first; consumes
-  `plans/27C` whole + the `27D` forward seam-list; payload rulings
-  `27D:rul-payload-pins-near-weld` + `27D:rul-synthesized-payload-render-stays-
-  unwelded` govern payload-v1), then `270:block-stdlib`.
+- LANDED (2026-07-19, the user-aid build phase — `notes/27U` is the ledger;
+  branch `ai/r27-aid` awaiting the human fold): legacy `Diagnostic` dead; the
+  ONE catalog (const-table + three-state prose + defining-cases 17/52 with the
+  shrink-only ratchet + the promote fixpoint tool) · the sealed evidence plane
+  minted at every collapse class · the whylog durable + `dorc why --last`
+  replay · the `27W` report lane all three tiers (incl. the runtime drain) ·
+  minting-line/file:line attribution end-to-end · the arrangement walker + THE
+  FLAGSHIP GREEN (the naked-trust chain, live and replayed) · lint absorbed
+  (one severity vocabulary; `dorc_oracle::validate` book-free;
+  rung-oracle-solo) · caret plumbing + multi-line frames · `conduct-bless.sh`.
+- NEXT: `270:block-stdlib` under the human-led conductor (`27Q` on-ramp; the
+  minting-line precondition is now DISCHARGED), then the field-trial revival.
 
 ## Build / test / run
 
@@ -654,7 +673,19 @@ sh e2e/run.sh        # the e2e corpus (case-count drifts — count the dirs): da
   full-word slugs; `docID:slug` for outside references; subscript old opaque
   labels once ("né P5").
 - Briefs that churn tests/fixtures carry the comment budget rider (`24P` §8:
-  rip-don't-update + a hard numeric budget + the counting command).
+  rip-don't-update + a hard numeric budget + the counting command; structural
+  banners in large data tables are noted separately, not billed).
+- **worktree-file-access-law** (`27U` §2 — two incidents, one root cause) — a
+  worktree agent's every Read/Grep/Edit/cite lives under its OWN worktree; the
+  primary checkout is radioactive for ANY access, read-only included; re-verify
+  `pwd` + branch before every commit.
+- **map-then-execute-split** (`27U` §4) — big-bang dispatches split map-and-rule
+  (proposal + conductor rulings + a mechanical spec) from execution (fresh
+  budget, zero re-derivation); the checkpoint between them is where conductor
+  review catches grounding errors and license bugs cheaply.
+- **foreground-final-verification** (`27U` §2) — a builder's FINAL verification
+  runs foreground; ending a turn awaiting your own backgrounded task strands
+  the lane (the wake-up goes to the conductor, not you).
 
 ## Confidence + reference discipline
 

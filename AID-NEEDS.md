@@ -126,7 +126,7 @@ Registry
 | aid-carry-attribution | which cross-context carries happened, under which invariant lines + closure proof | facts+topo | rev▶ post◀ | c+d | `27C` §4(a); an-read-set-closure | B |
 | aid-run-cause-disclosure | why a line can never elide (unknowable operand etc.), with remediation | text+topo | rev▶ blo▶ | d | why-lens; `(cause,site)` dedup | B |
 | aid-escalation-consent-legibility | the escalation dial × capability × entry-capable wrappers in effect | invoc+orcl | rev▶ | m | `27C`; catalog re-home rides `27V` | B |
-| aid-caret-span-precision | which exact section of a compound a diagnostic means | text | all▶ | d | `24H` ack-8; an-output-sanitization owed | O |
+| aid-caret-span-precision | which exact section of a compound a diagnostic means | text | all▶ | d | `24H` ack-8; `27U` caret dispatch (7 sites plumbed, multi-line frames, survey committed; two named deferrals) | B |
 | aid-firehose-suppression | one honest aggregate instead of per-site unprobeable noise | text+topo | rev▶ | d | `24H` firehose fix | B |
 | aid-plan-finality-discipline | push-hints fire only at stable/minted state (no retracting hints mid-build) | facts± | tui▶ rev▶ | — | `26B` finality; r26 seam | D |
 | aid-sigpipe-flap-note | rc-141 sink-landings flagged "likely benign early-exit race" | facts | rev▶ | d | `279f` named class | B |
@@ -137,12 +137,12 @@ Registry
 |---|---|---|---|---|---|---|
 | aid-why-problems-report | zero-arg: the problematic subset of the current analysis (refusals, walls, guards, can't-tells) | text..facts | rev◀ blo◀ | m+d | `24H` ack-2i | B |
 | aid-why-line-address | per-line interrogation by `book.sh:N` or content match | same | rev◀ tui◀ post◀ | m+d | law-lineno-identity | B |
-| aid-why-license-chain | the full numbered chain behind any disposition, tier-worded per link, naked-trust links identified by construction, with re-measure + leverage-point epilogue | facts+topo+invoc | post◀ rev◀ | m+c+d | evidence plane + witnesses + minting-line threading (`27V`) | S |
+| aid-why-license-chain | the full numbered chain behind any disposition, tier-worded per link, naked-trust links identified by construction, with re-measure + leverage-point epilogue | facts+topo+invoc | post◀ rev◀ | m+c+d | evidence plane + witnesses + minting-line threading (`27V`); the walker + flagship (`27U`) | B |
 | aid-why-wall-narration | why a wall formed: which participant, which channel/coverage failure, what it costs downstream | text+orcl+topo | blo◀ olo◀ rev◀ | d | collapse evidence (walls) | S |
-| aid-why-decline-narration | which oracle arm declined this shape and why — the arm itself inlined (show-the-code, massaged per law) | orcl+facts | olo◀ blo◀ post◀ | c+d | collapse evidence (declines) + `27W` classes + arm-inlining | S |
+| aid-why-decline-narration | which oracle arm declined this shape and why — the arm itself inlined (show-the-code, massaged per law) | orcl+facts | olo◀ blo◀ post◀ | c+d | collapse evidence (declines) + `27W` classes + arm-inlining | B |
 | aid-why-disagreement-narration | two establishers disagreed on one cell: who, where, which values | facts | rev◀ post◀ | m | collapse evidence (merge operands; `22H` §1) | S |
 | aid-why-value-chain-narration | a captured value narrated through iteration hops and host transformations, best-effort, feeder-attributed | facts±+history | post◀ | m+c+g | `26C:need-why-explanation-lane` + feeders; r26 | D |
-| aid-whylog-posthoc-why | all of the above, after everything is apparently complete, zero setup: `dorc why --last` | whylog | post◀ | m+c+d | thin durable + replay (`27V`); `22A:concl-10` | S |
+| aid-whylog-posthoc-why | all of the above, after everything is apparently complete, zero setup: `dorc why --last` | whylog | post◀ | m+c+d | thin durable + replay (`27V`/`27U`; spike: `--whylog-dir` opt-in, disclosed cut of the zero-setup posture) | B |
 
 ### Authoring-time classes (`dorc lint`; ▶ push, hot-loop-safe, never probes)
 
@@ -157,8 +157,8 @@ Registry
 | aid-lint-wrapper-oracle-bar | wrapper-family quality: peel cross-check, argparse lints, self-vouch/footprint | text+orcl | olo▶ ci▶ | d | `24S:A6` | S |
 | aid-lint-carrier-payload-bar | carrier/payload quality: which-arg-is-code gates, reconstruction differential, dorcism-in-payload | text+orcl | olo▶ ci▶ | d | `24T:P-A4` | S |
 | aid-lint-kind-adjudicability-bar | kind-topology clauses machine-readable; binding smells; differential discharge — REQUIRED before kinds go community-shared | text+orcl | olo▶ ci▶ | d | `24S:A4`; unowned | S |
-| aid-lint-oracle-solo-mode | oracle files linted with no book present | orcl | olo▶ | d | `27S:seam-oracle-validate-factoring` | O |
-| aid-authored-decline-classes | which shapes an oracle deliberately declines, and why (closed class set: unsound/unmodeled/interactive/hazard); routes the enhancement-nags honestly | text+orcl (facts± at tier-3) | olo▶ blo▶ rev▶ post◀ ci▶ | c | `27W` (versioned report-lane emission; static-first three tiers; decline evidence field) | S |
+| aid-lint-oracle-solo-mode | oracle files linted with no book present | orcl | olo▶ | d | `dorc_oracle::validate` factored book-free (`27U` d4b); + the decline-inventory source | B |
+| aid-authored-decline-classes | which shapes an oracle deliberately declines, and why (closed class set: unsound/unmodeled/interactive/hazard); routes the enhancement-nags honestly | text+orcl (facts± at tier-3) | olo▶ blo▶ rev▶ post◀ ci▶ | c | `27W` all three tiers built (`27U`: sink recognition, per-site classing, runtime drain + pairing) | B |
 | aid-coverage-instrument | analyzer-coverage dashboard over a corpus (instrument, never a gate) | text+orcl | ci▶ | d | `dorc-coverage` | B |
 
 ### Error/report classes
@@ -168,18 +168,19 @@ Registry
 | aid-error-catalog-explainers | per-code colocated triple render: machine line, terse line, full prose registers (terse/deep/first-encounter) | — | all | — | defining cases + committed catalog (`27V` §3) | S |
 | aid-error-exit-code-family | semantic fast-fail exit codes (10+ range); `--exit-code` divergence-of-world contract for cron | invoc | ci▶ | d | `24H` ack-1 (B); `--exit-code` (S; never sink-landings — `279f`) | O |
 | aid-apply-divergence-report | apply-time divergence from prediction: proceed-and-flag report items, never questions | apply | post◀ rev▶ | m | rul-divergence-proceed; whylog feeds | S |
-| aid-refusal-breadcrumbs | an oracle's loud refusals surfaced with the site that ran anyway | facts | rev▶ olo▶ | c | the versioned report lane (`27W` §2: `DREP_V1`-strawman sink, `<verb> <class> <tail>` grammar, degrade-generic) | S |
+| aid-refusal-breadcrumbs | an oracle's loud refusals surfaced with the site that ran anyway | facts | rev▶ olo▶ | c | the versioned report lane BUILT (`DREP_V1` sink recognized + drained + ingested noise-tolerant; `27U`) | B |
 
 
 Unowned (rows above whose mechanism no round owns; watch, don't lose)
 ---------------------------------------------------------------------
 
 - `aid-lint-kind-adjudicability-bar` (`24S:A4`) — hard-gates community-shared kinds.
-- `aid-refusal-breadcrumbs` — the report-stream spelling is still unsettled.
 - Why-surface output sanitization (`an-output-sanitization`) + whylog sensitivity —
   security round.
-- `aid-caret-span-precision` / `aid-loaded-oracle-inventory` — build-state unverified;
-  confirm against the code before citing as built.
+- `aid-loaded-oracle-inventory` — build-state unverified; confirm against the code
+  before citing as built.
+- The prose-register schema (terse/deep/first-encounter) + a catalog home for the
+  class-level remediation-hint prose — human/conductor design sitting (`27U` §7).
 
 
 Surfaces (selection policies over the registry)
@@ -201,6 +202,17 @@ Surfaces (selection policies over the registry)
   facing the user at their most annoyed. Never a cache; sensitivity-fenced.
 - **TUI (future)** — sugar over the same rows (`26B:rul-one-attention-moment`); the
   greyed-row curiosity query is pull embedded in push chrome.
+- **LSP (future)** — another selection policy over the same rows: publishDiagnostics =
+  the push side under a precise-or-silent-leaning default (the kWARN weld's
+  late-cheap-knobs route); hover/code-lens = pull, wide-open. Finality-cut gating
+  applies (no retracting squiggles); span precision is the felt-quality dependency.
+  Probing tier: an editor EXTENSION drives consent over these same lanes — never a
+  second probe path (`27R` §8b's rung-probe fence), one design class with scheduled/
+  cron probing; tabled with the half-typed-argv hazard (`27U` §6).
+- **MCP (future)** — the CI-mode posture is the contract (versioned additive
+  envelopes; gate on codes/severity, never finding-set identity); lint/why/explain
+  tools put the engine in an authoring agent's loop; a container-target probe tool
+  sidesteps the standing-consent hazard. Punted, recorded (`27U` §6).
 - **CI mode** — machine render only; versioned additive-only envelopes; gates on
   divergence-of-world and severity thresholds, never on finding-set stability
   (plan-as-API is the named failure-mode).

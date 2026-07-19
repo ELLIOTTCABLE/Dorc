@@ -16,6 +16,24 @@
 
 ## R27 ONBOARDING (refreshed 2026-07-16 — the single current view)
 
+**USER-AID BUILD PHASE COMPLETE (2026-07-19, Fable conductor + Opus builders; the
+ONE durable = `notes/27U`).** The `27V` plan executed whole across seven serial
+dispatches on conductor stack **`ai/r27-aid`** (base `380f2fa`, off `ai/main`):
+legacy-Diagnostic kill → one catalog (three-state prose protocol, defining-case
+ratchet 17/52, promote-with-fixpoint) → sealed evidence plane (all nine collapse
+classes) → whylog durable + `dorc why --last` replay → the `27W` report lane all
+three tiers → minting-line/file:line attribution → the arrangement walker + **THE
+FLAGSHIP GREEN** (`survivebite27-naked-trust-chain`: the six-link naked-trust
+chain, live AND replayed) → lint absorption + rung-oracle-solo → caret plumbing +
+multi-line frames → docs/skill refresh. 958 unit / 97 e2e / four gates,
+conductor-verified at every advance. The block-stdlib preconditions this phase
+owned (`27Q` §2 minting-line threading; stdlib emissions born on the one catalog)
+are DISCHARGED. **Awaiting the human: the single fold of `ai/r27-aid` + the `27U`
+§7 ask-list** (floors ratification, ratchet ack, `27W` soft-ack typing, flag
+rename re-ask, C8 park veto, SyncThing `.stignore` repair). Design finding with
+teeth, banked: `27U` §3 (the emission-vouches license bug, caught+fixed;
+canary-blind-crosskind demonstrated by the flagship fixture).
+
 **The state in one paragraph:** round 24 CLOSED by reshuffle (`notes/24U` §1; the
 reshuffle map is its §4); the field trial (né r25) and multi-host (né r26) are TABLED
 with revival conditions (`270` §5). The live arc is **round 27, the consolidation
