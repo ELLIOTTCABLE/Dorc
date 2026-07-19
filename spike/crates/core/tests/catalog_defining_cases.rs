@@ -495,7 +495,8 @@ fn ratchet_only_shrinks() {
 
 /// Count the `("slug", "note")` rows inside the committed `DEFINING_CASE_RATCHET` literal by shape
 /// (bounded to the `const DEFINING_CASE_RATCHET` block), so the guard reads the baseline without
-/// importing the committed source. A `(",..` opener per line is one entry.
+/// importing the committed source. Robust to rustfmt wrapping: an entry opener is a line whose
+/// trimmed form is either the wrapped `(` or the single-line `("…`.
 fn count_ratchet_entries(src: &str) -> usize {
     let Some(start) = src.find("const DEFINING_CASE_RATCHET") else {
         return usize::MAX; // unreadable ⇒ never trips the <= assert (conservative)
@@ -504,7 +505,10 @@ fn count_ratchet_entries(src: &str) -> usize {
     let end = body.find("];").map_or(body.len(), |i| i);
     body[..end]
         .lines()
-        .filter(|l| l.trim_start().starts_with("(\""))
+        .filter(|l| {
+            let t = l.trim();
+            t == "(" || t.starts_with("(\"")
+        })
         .count()
 }
 
