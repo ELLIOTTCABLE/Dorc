@@ -13,14 +13,17 @@
 //! final compile takes effect — no per-edit codegen step (`amendment-single-bless-confirmed`).
 //! The d4 promote pipeline later becomes codegen-to-this-source, staying diffable and committed.
 //!
-//! # The two legal states of a `message` (mechanically gated)
+//! # The three legal states of a `message` (mechanically gated)
 //!
-//! Every [`CatalogEntry::message`] (and [`CatalogEntry::help`]) is EITHER:
+//! Every [`CatalogEntry::message`] (and [`CatalogEntry::help`]) is ONE of:
 //! * `sm `-prefixed prior-builder prose migrated VERBATIM from the base tip (`380f2fa`) — the
 //!   `sm ` marker means "builder prose awaiting human rewrite" (`27V:rul-error-authorship-tier`,
-//!   sharpened by `amendment-prose-boundary`); OR
+//!   sharpened by `amendment-prose-boundary`);
 //! * the exact placeholder `[unwritten: <slug>]` for any user-facing string that did NOT exist at
-//!   the base tip (a new or split code) — builders author ZERO new user-facing prose.
+//!   the base tip (a new or split code) — builders author ZERO new user-facing prose; or
+//! * conductor/human-authored prose, unprefixed, whose slug is listed in the gate test's
+//!   `CONDUCTOR_AUTHORED` roster (adding prose without the roster entry fails the gate; a builder
+//!   may never extend the roster).
 //!
 //! The metadata fields (`when_fires` / `why` / `params` / `example`) are conductor/machine-facing,
 //! authored by the builder, and carry NO prefix.
@@ -725,8 +728,12 @@ pub const CATALOG: &[CatalogEntry] = &[
         params: &["found"],
         example: "this whylog was written in format `dorc-whylog/2`, which this dorc \
                   (understands `dorc-whylog/1`) cannot replay — re-run `dorc why` live instead",
-        message: "[unwritten: whylog-version-refused]",
-        help: Some("[unwritten: whylog-version-refused]"),
+        message: "the saved why-log uses format `{found}`, which this version of dorc cannot \
+                  read back",
+        help: Some(
+            "ask the question live instead: `dorc why` (without `--last`) re-analyzes the \
+                    current book directly",
+        ),
     },
     CatalogEntry {
         slug: "whylog-book-desync",
@@ -744,8 +751,12 @@ pub const CATALOG: &[CatalogEntry] = &[
         example: "the book has changed since this whylog was written (recorded digest ≠ current \
                   `book.sh`), so its recorded decisions cannot be faithfully replayed — re-run \
                   `dorc why` live",
-        message: "[unwritten: whylog-book-desync]",
-        help: Some("[unwritten: whylog-book-desync]"),
+        message: "the saved why-log no longer matches what is on disk: `{which}` has changed \
+                  since it was written",
+        help: Some(
+            "replaying old decisions against changed files would mislead; re-run \
+                    `dorc why` live for a current answer",
+        ),
     },
     CatalogEntry {
         slug: "whylog-absent",
@@ -760,8 +771,11 @@ pub const CATALOG: &[CatalogEntry] = &[
         params: &["dir"],
         example: "no whylog to replay in `./.dorc/whylog` — run a plan or apply first (its run \
                   writes the durable that `dorc why --last` reads back)",
-        message: "[unwritten: whylog-absent]",
-        help: Some("[unwritten: whylog-absent]"),
+        message: "no saved why-log to read back in `{dir}`",
+        help: Some(
+            "a why-log is saved when a plan or apply runs with `--whylog-dir`; run one \
+                    first, or point `--whylog-dir` at the right directory",
+        ),
     },
     CatalogEntry {
         slug: "whylog-corrupt",
@@ -776,8 +790,11 @@ pub const CATALOG: &[CatalogEntry] = &[
         params: &["detail"],
         example: "the whylog durable is damaged (no end-sentinel — a partial write?) and cannot be \
                   replayed — re-run `dorc why` live",
-        message: "[unwritten: whylog-corrupt]",
-        help: Some("[unwritten: whylog-corrupt]"),
+        message: "the saved why-log is damaged and cannot be read back ({detail})",
+        help: Some(
+            "this usually means an interrupted write; re-run `dorc why` live, and the \
+                    next plan or apply will save a fresh why-log",
+        ),
     },
 ];
 
@@ -932,9 +949,21 @@ mod tests {
         }
     }
 
-    /// Gate (`amendment-prose-boundary`): every user-facing register is EITHER `sm `-prefixed
-    /// base-tip prose OR the exact `[unwritten: <slug>]` placeholder — the mechanical enforcement
-    /// that builders author no new user-facing prose (`27V:rul-error-authorship-tier`).
+    /// The three-state prose protocol's third state: slugs whose user-facing prose was authored
+    /// at conductor/human tier (`27V:rul-error-authorship-tier`). A builder adding prose must
+    /// also add the slug HERE — a two-place claim the conductor's diff review catches; never
+    /// extend this list from a builder brief.
+    const CONDUCTOR_AUTHORED: &[&str] = &[
+        "whylog-version-refused",
+        "whylog-book-desync",
+        "whylog-absent",
+        "whylog-corrupt",
+    ];
+
+    /// Gate (`amendment-prose-boundary`): every user-facing register is `sm `-prefixed base-tip
+    /// prose, the exact `[unwritten: <slug>]` placeholder, or conductor/human-authored (listed in
+    /// [`CONDUCTOR_AUTHORED`]) — the mechanical enforcement that builders author no new
+    /// user-facing prose (`27V:rul-error-authorship-tier`).
     #[test]
     fn message_registers_are_sm_or_unwritten() {
         for e in CATALOG {
@@ -942,9 +971,12 @@ mod tests {
             for (field, text) in [("message", Some(e.message)), ("help", e.help)] {
                 let Some(text) = text else { continue };
                 assert!(
-                    text.starts_with("sm ") || text == unwritten,
-                    "catalog `{}` {field}: user-facing text must be `sm `-prefixed base-tip prose \
-                     or the exact `{unwritten}` placeholder, got: {text:?}",
+                    text.starts_with("sm ")
+                        || text == unwritten
+                        || CONDUCTOR_AUTHORED.contains(&e.slug),
+                    "catalog `{}` {field}: user-facing text must be `sm `-prefixed base-tip prose, \
+                     the exact `{unwritten}` placeholder, or a CONDUCTOR_AUTHORED slug, got: \
+                     {text:?}",
                     e.slug
                 );
             }
