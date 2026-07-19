@@ -158,12 +158,44 @@ in-scope now.
   the e2e dash gate; inline-arm marks take the region-delete path);
   `reads`/`:?` identical wiring to Observe.
 
+## §2c — errorloom d1 flag rulings (conductor, 2026-07-19, on the d1 landing report)
+
+d1 LANDED at `c397cf8` on `ai/r28-errorloom-crate` (two commits off `0825f6e`; six
+tests incl. the 500-seed round-trip property; zero deps — hand-rolled word-LCS,
+accepted with its stated dep-clean rationale; comment budget 0/30; all gates + e2e
+97/97 green; the human's mid-flight Rust-taste redirect absorbed, one real fix:
+refusal-context borrows sources, dump materializes only on the error path).
+
+- **`28A:rul-paragraph-model-v1-refuses-restructure`** (on d1
+  `flag-paragraph-restructuring-refuses`) — ACCEPTED: intra-paragraph word edits
+  only; break add/remove refuses as ArrangementEdited (`282:rul-words-and-
+  paragraphs-only`'s "starts this small"). NAMED SEAM, recorded honestly:
+  post-generation-flip there is NO path to add/remove a paragraph in existing
+  prose except a v2 model growth or the `282` §5 annotated-editing retreat — if
+  the human's prose-rewrite pass hits this, it surfaces fast and the growth is
+  priced then, not now.
+- **`28A:rul-tagged-render-emits-instance-ids`** (on d1
+  `flag-instance-inference-is-structural` + `flag-hole-between-two-instances`) —
+  ACCEPTED the builder's recommendation, and threading it forward: d2 grows the
+  span schema with an OPTIONAL instance/occurrence discriminator on
+  TemplateLiteral (+ParamValue), structural inference retained as the
+  absent-case fallback; the unify lane's phase-2 emitter MUST emit instance ids
+  (retiring the two heuristics for Dorc's own use). Schema change now is cheap
+  (pre-publication); after publication it would be a breaking change.
+- **`28A:rul-span-cover-stays-total`** (on d1 `flag-full-coverage-span-map-
+  contract`) — the gap-free total-cover contract STANDS (fail-fast beats
+  permissive); the unify lane's emitter renders inter-region whitespace as
+  Arrangement runs (which `282` §4 already classifies as Arrangement: "blank
+  structure"). If the phase-2 builder finds this genuinely awkward, that is a
+  flag-up, and relaxation ("non-overlapping, word-starts-covered") is a
+  documented API change to adjudicate then.
+
 ## §3 — Lane map and state (update on every change)
 
 | lane | branch | shape | state |
 |---|---|---|---|
-| errorloom-crate d1: transport engine | `ai/r28-errorloom-crate` | single dispatch | DISPATCHED 2026-07-19 |
-| errorloom-crate d2: container/runner/orchestration/CLI | same branch | single dispatch, after d1 checkpoint | pending |
+| errorloom-crate d1: transport engine | `ai/r28-errorloom-crate` | single dispatch | LANDED 2026-07-19 @ `c397cf8` (flags ruled §2c) |
+| errorloom-crate d2: container/runner/orchestration/CLI | same branch | FRESH executor (27U pattern), off `c397cf8` | DISPATCHED 2026-07-19 |
 | syntax-respell phase A: proposal (`notes/28B`) | `ai/r28-syntax-respell` | map-then-execute, map half | DISPATCHED 2026-07-19 |
 | syntax-respell phase B: execute | same branch | after conductor ruling on 28B | pending |
 | janitor sweep (side-quest) | no branch; repo-global surgery | single dispatch, guarded | LANDED 2026-07-19 → `notes/28C` (15 worktrees removed, 34 merged branches `-d`'d, zero force-ops; dropped-work findings A–F for human adjudication) |
