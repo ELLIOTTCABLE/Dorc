@@ -70,11 +70,13 @@ Read, in this order, IN FULL:
    working companion for the entire task; re-open it whenever you are about to
    author a member, and walk its section-8 checklist before you finish.
 3. From `spike/docs/writing-oracles/`, at minimum: `02-your-first-oracle.md`,
-   `03-the-probe-contract.md`, `05-covering-a-real-tool.md`, and
-   `10-the-shell-dialect.md`. Read the others (`spike/docs/README.md` lists the
-   full path) when your task touches their topic: `04` for kinds/marks/binds,
-   `06` for predict, `07` for footprints, `08` for wrappers/contexts, `09` for
-   kind ownership, `11` for publishing.
+   `03-the-probe-contract.md`, `05-covering-a-real-tool.md`,
+   `11-authoring-with-the-engine.md` (classing your declines, linting as you
+   write, reading `dorc why` back), and `10-the-shell-dialect.md`. Read the
+   others (`spike/docs/README.md` lists the full path) when your task touches
+   their topic: `04` for kinds/marks/binds, `06` for predict, `07` for
+   footprints, `08` for wrappers/contexts, `09` for kind ownership, `12` for
+   publishing.
 4. If you are working inside the spike: `spike/CLAUDE.md` (binding invariants;
    its "authored surface" section is the densest correct summary of the member
    semantics) and the `CLAUDE.md` of any crate you touch.
@@ -215,6 +217,17 @@ artifact, not a style issue:
   unexpected arity, missing binaries, unrecognized output, and every surprise
   route to `return 2`. Open delegate-dependent bodies with
   `command -v tool >/dev/null 2>&1 || return 2`.
+- CLASS THE DELIBERATE DECLINES. On a decline you can name (never the catch-all
+  `*` arm), emit `printf '<verb> <class> <tail>\n' >>"${DREP_V1:-/dev/null}"` on
+  the declining path, before `return 2`. v1 verb: `decline`; classes: `unsound`
+  (no answer ever), `unmodeled` (a better oracle could), `interactive` (prompts),
+  `hazard` (your editorial warning to the admin's book). Leave silent/ambiguous
+  declines silent. Put the human-facing reason in a comment ON the arm - it is
+  SHOWN to the admin by `dorc why`, never parsed. Keep the format string a
+  LITERAL; a dynamically-built format cannot be read statically and demotes the
+  class to runtime-only. Classing is aid-only: it never changes an rc or a
+  license. Full treatment: `11-authoring-with-the-engine.md` and oracle-contract
+  section 6a.
 - THE rc TABLE IS FIXED. 0 = the named sense holds; 1 = its complement; >= 2 =
   cannot say, the line runs. NEVER collapse or invert statuses: no `!`, no
   `|| true`, no arithmetic on `$?`. Translate foreign exit vocabularies with an
@@ -265,8 +278,13 @@ comments restating what self-evident shell does.
 
 1. Walk `oracle-contract.md` section 8 (the battle-grade checklist), line by
    line, against your file. Actually walk it; do not assert it.
-2. Run `shellcheck` and `checkbashisms`; if the pinned floor binaries are
-   available, strip and run under both.
+2. Run `dorc lint` over your oracle file(s) - it needs no book and contacts no
+   host, and it is the single gate that runs the mechanical checks: `shellcheck`
+   and `checkbashisms` (remapped to your original lines), dorc's own verdict-body
+   and dialect checks, and your decline inventory. Walk the findings; read the
+   decline inventory back and confirm every deliberate decline is classed the way
+   you meant and reads statically (literal formats). If the pinned floor binaries
+   are available, strip and run under both.
 3. Re-verify inertness: for each delegate invocation in a probe-executed body,
    state (in your report, with evidence-grade) why it cannot write, as root,
    on a fresh host.
