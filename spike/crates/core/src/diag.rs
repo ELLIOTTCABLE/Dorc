@@ -1937,10 +1937,11 @@ pub fn line_col(src: &str, byte: usize) -> (usize, usize) {
 ///
 /// Feeds **rul24-lineno-identity**: the `N` gutter IS the SOURCE line (via [`line_col`]), so a
 /// number the user reads here is the number they type back as `:N`. ASCII only (color is a
-/// severity/tier channel layered at the I/O edge, never in these bytes). A multi-line span
-/// underlines to the END of its first line (half-assed by design — span-precision is the point,
-/// polish is not). Each returned line is newline-prefixed so it appends cleanly after a title.
-/// `inv-referent-agnostic`: the source line is shown for orientation, never decoded.
+/// severity/tier channel layered at the I/O edge, never in these bytes). A multi-line span renders
+/// EVERY source line it covers, each in its own `N | …` gutter with a per-line underline (the rustc
+/// continuation shape) — precision first, beauty second (no `_^`-wrapping, no color). A single-line
+/// span is byte-identical to the pre-multiline form. Each returned line is newline-prefixed so it
+/// appends cleanly after a title. `inv-referent-agnostic`: the source line is shown, never decoded.
 #[must_use]
 pub fn frame_region(
     span: Span,
@@ -1954,24 +1955,32 @@ pub fn frame_region(
     let hi = span.hi.0 as usize;
     let (line, col) = line_col(src, lo);
     let (hi_line, hi_col) = line_col(src, hi);
-    let line_text = src.lines().nth(line.saturating_sub(1)).unwrap_or("");
-    let gutter = " ".repeat(line.to_string().len());
-    // The underline: `col-1` leading spaces, then the caret run across this line's slice of the
-    // span. A span ending on a later line underlines to end-of-line (the multi-line half-ass).
-    let start = col.saturating_sub(1);
-    let end = if hi_line == line {
-        hi_col.saturating_sub(1)
-    } else {
-        line_text.len()
-    };
-    let run = end.saturating_sub(start).max(1);
     let marker = if primary { '^' } else { '-' };
-    let underline: String = core::iter::repeat_n(marker, run).collect();
+    // The gutter is sized to the WIDEST line number (the last), so the `|` columns align down a
+    // multi-line frame; a single-line span keeps `hi_line == line`, so the width is unchanged.
+    let gutter_w = hi_line.to_string().len();
+    let gutter = " ".repeat(gutter_w);
+    let lines: Vec<&str> = src.lines().collect();
     let mut out = String::new();
     let _ = write!(out, "\n  --> {filename}:{line}:{col}");
     let _ = write!(out, "\n{gutter} |");
-    let _ = write!(out, "\n{line} | {line_text}");
-    let _ = write!(out, "\n{gutter} | {}{underline}", " ".repeat(start));
+    for l in line..=hi_line {
+        let line_text = lines.get(l.saturating_sub(1)).copied().unwrap_or("");
+        let num = l.to_string();
+        let pad = " ".repeat(gutter_w.saturating_sub(num.len()));
+        // This line's slice of the span: from the start column on the FIRST line (0 on continuation
+        // lines) to the end column on the LAST line (end-of-line on earlier lines).
+        let start = if l == line { col.saturating_sub(1) } else { 0 };
+        let end = if l == hi_line {
+            hi_col.saturating_sub(1)
+        } else {
+            line_text.len()
+        };
+        let run = end.saturating_sub(start).max(1);
+        let underline: String = core::iter::repeat_n(marker, run).collect();
+        let _ = write!(out, "\n{pad}{num} | {line_text}");
+        let _ = write!(out, "\n{gutter} | {}{underline}", " ".repeat(start));
+    }
     if let Some(l) = label {
         let _ = write!(out, " {l}");
     }
@@ -2319,6 +2328,42 @@ mod tests {
         assert!(
             frame.contains("^^^^^^^"),
             "a 7-caret underline under `$(date)`: {frame}"
+        );
+    }
+
+    /// ack-8 the MULTI-LINE caret frame (`aid-caret-span-precision`): a span crossing lines renders
+    /// EVERY covered source line, each with its own `N | …` gutter and a per-line underline (the
+    /// first line from its start column, continuation lines from column 0, the last line to its end
+    /// column). The gutter is right-padded to the widest line number so the `|` columns align. Here
+    /// the span covers lines 9–10, so ` 9` aligns under `10` and both `iii`/`jjj` are underlined.
+    #[test]
+    fn frame_region_renders_every_line_of_a_multiline_span() {
+        let src = "a\nb\nc\nd\ne\nf\ng\nh\niii\njjj\n";
+        let lo = u32::try_from(src.find("iii").unwrap()).unwrap();
+        let hi = u32::try_from(src.find("jjj").unwrap() + "jjj".len()).unwrap();
+        let frame = frame_region(
+            Span::new(BytePos(lo), BytePos(hi)),
+            src,
+            "book.sh",
+            None,
+            true,
+        );
+        assert!(
+            frame.contains("--> book.sh:9:1"),
+            "locator on the first line: {frame}"
+        );
+        assert!(
+            frame.contains("\n 9 | iii"),
+            "line 9 in a width-2 gutter: {frame}"
+        );
+        assert!(
+            frame.contains("\n10 | jjj"),
+            "line 10 in the aligned gutter: {frame}"
+        );
+        assert_eq!(
+            frame.matches("\n   | ^^^").count(),
+            2,
+            "a per-line `^^^` underline beneath BOTH covered lines (not just the first): {frame}"
         );
     }
 
