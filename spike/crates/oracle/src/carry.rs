@@ -35,7 +35,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use dorc_core::diag::{CarryNetnsOnNetKernelForbidden, Diag, DiagCode};
-use dorc_core::{Interner, Span, Symbol};
+use dorc_core::{Interner, OracleFileId, Span, Symbol};
 
 use crate::predict::{Command, MarkKind, Predict, Stmt, Word};
 use crate::wrapper::Dimension;
@@ -76,7 +76,11 @@ const PURE_BUILTINS: &[&str] = &[":", "true", "false", "return", "[", "test", "p
 /// (`empty-world-byte-identical`, `silence-licenses-nothing`).
 #[derive(Debug, Clone, Default)]
 pub struct InvarianceIndex {
-    per_kind: BTreeMap<String, BTreeSet<Dimension>>,
+    /// Per kind, each invariant [`Dimension`] mapped to its `invariant:<axis>` line's defining
+    /// `(Span, OracleFileId)` (`tc-disturbs-span-threading`'s sibling — `27V:mech-minting-line-
+    /// threading`), so a carry's attribution renders the kind-owner's line as `file:line` (render 3/3;
+    /// `27C` §9). The span is the mark's own command line; the file id disambiguates which oracle.
+    per_kind: BTreeMap<String, BTreeMap<Dimension, (Span, OracleFileId)>>,
 }
 
 impl InvarianceIndex {
@@ -89,9 +93,11 @@ impl InvarianceIndex {
     /// deterministic (`inv-determinism`); reads marks + structure only (`inv-referent-agnostic`).
     #[must_use]
     pub fn lift(interner: &mut Interner, srcs: &[&str]) -> (Self, Vec<Diag>) {
-        let mut per_kind: BTreeMap<String, BTreeSet<Dimension>> = BTreeMap::new();
+        let mut per_kind: BTreeMap<String, BTreeMap<Dimension, (Span, OracleFileId)>> =
+            BTreeMap::new();
         let mut diags = Vec::new();
-        for src in srcs {
+        for (idx, src) in srcs.iter().enumerate() {
+            let file = OracleFileId(u32::try_from(idx).unwrap_or(u32::MAX));
             let set = crate::predict::lift_state_stored_only_in(interner, src);
             for provider in set.value.providers() {
                 let Some(body) = set.value.get(provider) else {
@@ -100,7 +106,7 @@ impl InvarianceIndex {
                 let kind_munged = interner.resolve(provider).to_owned();
                 let scan = scan_state_body(body);
                 let entry = per_kind.entry(kind_munged.clone()).or_default();
-                for dim in scan.invariant {
+                for (dim, span) in scan.invariant {
                     // netns caveat: net-kernel state is per-netns ⇒ an `invariant:netns` claim on it
                     // is a contradiction; drop it and diagnose (never honor a false invariance line).
                     if dim == Dimension::Netns && scan.stores_net_kernel {
@@ -114,7 +120,7 @@ impl InvarianceIndex {
                         ));
                         continue;
                     }
-                    entry.insert(dim);
+                    entry.entry(dim).or_insert((span, file));
                 }
             }
         }
@@ -128,19 +134,29 @@ impl InvarianceIndex {
     pub fn invariant_across(&self, kind: &str, dim: Dimension) -> bool {
         self.per_kind
             .get(&crate::to_funcname_segment(kind))
-            .is_some_and(|dims| dims.contains(&dim))
+            .is_some_and(|dims| dims.contains_key(&dim))
+    }
+
+    /// The `invariant:<dim>` line's defining `(Span, OracleFileId)` for `kind` (render 3/3, `27C` §9):
+    /// the kind-owner's attributable line the carry attribution renders as `file:line`. `None` when
+    /// the kind carries no such line (`silence-licenses-nothing`).
+    #[must_use]
+    pub fn invariant_span(&self, kind: &str, dim: Dimension) -> Option<(Span, OracleFileId)> {
+        self.per_kind
+            .get(&crate::to_funcname_segment(kind))
+            .and_then(|dims| dims.get(&dim).copied())
     }
 
     #[must_use]
     pub fn is_empty(&self) -> bool {
-        self.per_kind.values().all(BTreeSet::is_empty)
+        self.per_kind.values().all(BTreeMap::is_empty)
     }
 }
 
 /// What one `state_stored_only_in()` body declared (`272` §2 / `277` §4e): the substrate-invariance
 /// axes and whether it emits the per-netns `net-kernel` store (for the netns caveat).
 struct StateBodyScan {
-    invariant: BTreeSet<Dimension>,
+    invariant: BTreeMap<Dimension, Span>,
     stores_net_kernel: bool,
 }
 
@@ -151,7 +167,7 @@ struct StateBodyScan {
 /// forbid). Substrate axes only reach the index (`from_token` maps `fs-view`/`netns`; a stray
 /// `invariant:user` line is dropped here — user is not a carry axis).
 fn scan_state_body(body: &Predict) -> StateBodyScan {
-    let mut invariant = BTreeSet::new();
+    let mut invariant = BTreeMap::new();
     let mut stores_net_kernel = false;
     scan_state_block(&body.body, &mut invariant, &mut stores_net_kernel);
     StateBodyScan {
@@ -162,7 +178,7 @@ fn scan_state_body(body: &Predict) -> StateBodyScan {
 
 fn scan_state_block(
     body: &[Stmt],
-    invariant: &mut BTreeSet<Dimension>,
+    invariant: &mut BTreeMap<Dimension, Span>,
     stores_net_kernel: &mut bool,
 ) {
     for stmt in body {
@@ -174,7 +190,9 @@ fn scan_state_block(
                         && let Some(dim) = Dimension::from_token(axis)
                         && dim != Dimension::User
                     {
-                        invariant.insert(dim);
+                        // The mark's own command-line span is the `file:line` the carry attribution
+                        // points at (render 3/3). First occurrence wins (deterministic).
+                        invariant.entry(dim).or_insert(cmd.span);
                     }
                 } else if mark.target.kind == NET_KERNEL_SUBSTRATE {
                     *stores_net_kernel = true;

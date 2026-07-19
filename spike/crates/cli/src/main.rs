@@ -1147,6 +1147,7 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
     let wrapped_analysis = build_wrapped_analysis(
         &oracle_srcs,
         &oracle_refs,
+        &oracle_paths,
         &checks,
         &verdict_sets,
         &parsed.value,
@@ -5216,6 +5217,7 @@ struct WrappedAnalysis {
 fn build_wrapped_analysis(
     oracle_srcs: &[String],
     oracle_refs: &[&str],
+    oracle_paths: &[String],
     checks: &[dorc_oracle::predict::PredictSet],
     verdict_sets: &[dorc_oracle::verdict::VerdictSet],
     ast: &dorc_syntax::ast::Ast,
@@ -5368,7 +5370,23 @@ fn build_wrapped_analysis(
                     // deterministic. Rides the diagnostic + why lanes only (two-surfaces: never the
                     // `.sh` artifact).
                     let span = ast.node(cfg.node(node).ast).span;
-                    let text = carry_attribution_text(&chain.composed.crossed(), &read_kinds);
+                    // render 3/3 (`27C` §9): each carried kind's owner `invariant:<axis>` line as
+                    // `file:line` (the attributable claim the crossing rode). First crossed axis with
+                    // a threaded span wins; absent ⇒ no locus (never fabricate one).
+                    let loci: BTreeMap<String, String> = read_kinds
+                        .iter()
+                        .filter_map(|k| {
+                            chain
+                                .composed
+                                .crossed()
+                                .iter()
+                                .find_map(|d| invariance.invariant_span(k, *d))
+                                .and_then(|sp| oracle_locus(Some(sp), oracle_paths, oracle_srcs))
+                                .map(|loc| (k.clone(), loc))
+                        })
+                        .collect();
+                    let text =
+                        carry_attribution_text(&chain.composed.crossed(), &read_kinds, &loci);
                     out.hints.push(Diag::new(
                         DiagCode::CarriedAcrossSubstrateAxis(CarriedAcrossSubstrateAxis {
                             detail: text.clone(),
@@ -5456,13 +5474,22 @@ fn try_carry(
 fn carry_attribution_text(
     crossed: &[dorc_oracle::wrapper::Dimension],
     read_kinds: &BTreeSet<String>,
+    loci: &BTreeMap<String, String>,
 ) -> String {
     let axes = crossed
         .iter()
         .map(|d| d.as_token())
         .collect::<Vec<_>>()
         .join("+");
-    let kinds = read_kinds.iter().cloned().collect::<Vec<_>>().join(", ");
+    // render 3/3: each kind names its owner's `invariant:` line as `file:line` when threaded.
+    let kinds = read_kinds
+        .iter()
+        .map(|k| match loci.get(k) {
+            Some(loc) => format!("{k} (invariant: line at {loc})"),
+            None => k.clone(),
+        })
+        .collect::<Vec<_>>()
+        .join(", ");
     format!(
         "pure-predicate carry across {axes} (unflagged, 27C §4(a)): {kinds} — each vouched invariant \
          across {axes} by its kind-owner's `invariant:` line (vouch-species); the verdict body is \
