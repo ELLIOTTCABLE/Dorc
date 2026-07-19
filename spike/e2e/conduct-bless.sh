@@ -28,12 +28,15 @@ trap cleanup EXIT INT TERM
 step() {
   _label=$1
   shift
-  if ! ( cd -- "$spike" && "$@" ) >"$log" 2>&1; then
-    _rc=$?
-    echo "conduct-bless: FAILED at [$_label] (exit $_rc)" >&2
-    tail -40 "$log" >&2
-    exit "$_rc"
+  if ( cd -- "$spike" && "$@" ) >"$log" 2>&1; then
+    return 0
   fi
+  # `$?` must be read in the else-arm, un-negated: `if ! cmd` inverts the status and
+  # made a failing step exit 0 (found live, first conductor run).
+  _rc=$?
+  echo "conduct-bless: FAILED at [$_label] (exit $_rc)" >&2
+  tail -40 "$log" >&2
+  exit "$_rc"
 }
 
 # 1. fresh build (spike/CLAUDE.md: force a fresh build before trusting e2e).
@@ -53,6 +56,12 @@ else
   _e2e_mode="blessed"
 fi
 e2e=$(awk '/e2e round-trips passed/ { print $2 } /^blessed [0-9]+ cases/ { print $2 }' "$log")
+
+# 4. the four pre-commit gates, so the tally's "gates ok" is a run fact, not a claim.
+step "fmt --check" mise exec -- cargo fmt --check
+step "clippy" mise exec -- cargo clippy --workspace --all-targets -- -D warnings
+step "deny" mise exec -- cargo deny check licenses bans sources
+step "typos" mise exec -- typos .
 
 echo "conduct-bless: build ok | unit ${unit} passed | e2e ${e2e:-0} ${_e2e_mode} | gates ok"
 
