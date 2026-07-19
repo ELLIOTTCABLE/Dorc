@@ -586,6 +586,155 @@ fn done(kind: StmtKind, line: usize, diags: Vec<Diag>) -> ParsedStmt {
     ParsedStmt { kind, line, diags }
 }
 
+/// Strip the `281` marks + binds from an oracle `src` to floor-legal POSIX (`281` §9) — the
+/// new-grammar counterpart of the OLD [`super::strip`] pass, landed UNWIRED. A trailing mark
+/// region-erases from the command end to the block end (the command survives); a standalone
+/// mark line-deletes when it is the whole physical line, else region-erases in place
+/// (`28B:flag-emptied-case-arm`: a case-arm mark leaves a POSIX-valid empty arm — the `;;` is a
+/// separator, untouched); an inline bind reduces to `name=value` (verbatim name/value bytes); a
+/// `#:` block erases only when it parses, else is left a plain comment. Edits apply back-to-front.
+fn strip_marks(src: &str) -> String {
+    let tokens = lex_marks(src);
+    let mut edits: Vec<(usize, usize, String)> = split_statements(&tokens)
+        .iter()
+        .filter_map(|stmt| strip_edit(src, stmt))
+        .collect();
+    edits.sort_by_key(|e| e.0);
+    let mut out = String::new();
+    let mut cursor = 0usize;
+    for (lo, hi, rep) in edits {
+        if lo < cursor || lo > hi || hi > src.len() {
+            continue;
+        }
+        out.push_str(src.get(cursor..lo).unwrap_or_default());
+        out.push_str(&rep);
+        cursor = hi;
+    }
+    out.push_str(src.get(cursor..).unwrap_or_default());
+    out
+}
+
+/// The strip edit `(lo, hi, replacement)` for one statement, or `None` when it carries no mark.
+/// Dispatches inline-bind (`= value` → `name=value`) before the intro-position split, leaves a
+/// malformed `#:` comment untouched, and preserves a lone `:` null command.
+fn strip_edit(src: &str, stmt: &RawStmt) -> Option<(usize, usize, String)> {
+    let words = &stmt.words;
+    let pos = words
+        .iter()
+        .position(|w| decode_intro(&w.lexeme).is_some())?;
+    let intro = decode_intro(&words.get(pos)?.lexeme)?;
+    let intro_start = span_lo(words.get(pos)?.span);
+    let block_end = span_hi(words.last()?.span);
+    let payload = words.get(pos.saturating_add(1)..).unwrap_or(&[]);
+
+    if intro.carrier == Carrier::Hash && !decode_line_marks(intro, payload).diags.is_empty() {
+        return None;
+    }
+    if let Some((name_span, value_span)) = inline_bind_spans(words, pos, intro) {
+        let name = src
+            .get(span_lo(name_span)..span_hi(name_span))
+            .unwrap_or_default();
+        let value = src
+            .get(span_lo(value_span)..span_hi(value_span))
+            .unwrap_or_default();
+        return Some((
+            span_lo(name_span),
+            span_hi(value_span),
+            format!("{name}={value}"),
+        ));
+    }
+    let leading_kw = words.first().is_some_and(|w| is_keyword(&w.lexeme));
+    if pos == 0 || (leading_kw && pos == 1) {
+        if intro.carrier == Carrier::Colon && intro.sugar.is_none() && payload.is_empty() {
+            return None;
+        }
+        if line_solitary(src, intro_start, block_end) {
+            return Some((
+                line_start(src, intro_start),
+                line_delete_end(src, block_end),
+                String::new(),
+            ));
+        }
+        return Some((intro_start, block_end, String::new()));
+    }
+    let cmd_end = span_hi(words.get(pos.checked_sub(1)?)?.span);
+    Some((cmd_end, block_end, String::new()))
+}
+
+/// The `(name_span, value_span)` of an inline bind (`281` §8), for the `name=value` strip edit.
+fn inline_bind_spans(words: &[SpannedWord], pos: usize, intro: Intro) -> Option<(Span, Span)> {
+    if pos != 1 || intro.carrier != Carrier::Colon || intro.sugar.is_some() {
+        return None;
+    }
+    let name = words.first()?;
+    if !sem::is_name(&name.lexeme) {
+        return None;
+    }
+    words.get(pos.saturating_add(1))?;
+    let eq = words.get(pos.saturating_add(2))?;
+    let value = words.get(pos.saturating_add(3))?;
+    if eq.lexeme != "=" || value.lexeme.is_empty() {
+        return None;
+    }
+    Some((name.span, value.span))
+}
+
+/// A byte offset from a span's low/high `BytePos` (widening `u32`→`usize`, never truncating).
+fn span_lo(span: Span) -> usize {
+    span.lo.0 as usize
+}
+fn span_hi(span: Span) -> usize {
+    span.hi.0 as usize
+}
+
+/// The physical line start (the byte after the preceding `\n`, or 0) — a line-delete takes the
+/// whole line including its leading indentation.
+fn line_start(src: &str, pos: usize) -> usize {
+    let bytes = src.as_bytes();
+    let mut i = pos;
+    while let Some(prev) = i.checked_sub(1) {
+        if bytes.get(prev) == Some(&b'\n') {
+            break;
+        }
+        i = prev;
+    }
+    i
+}
+
+/// Extend past `pos` to the end of its physical line, consuming the terminating `\n`.
+fn line_delete_end(src: &str, pos: usize) -> usize {
+    let bytes = src.as_bytes();
+    let mut i = pos;
+    while let Some(b) = bytes.get(i) {
+        i = i.saturating_add(1);
+        if *b == b'\n' {
+            break;
+        }
+    }
+    i
+}
+
+/// Whether the mark region `[intro_start, block_end]` is the whole physical line (only
+/// whitespace before and after) — a line-delete is safe; otherwise (e.g. a case pattern or a
+/// trailing `;;` shares the line) a region-delete keeps the surrounding bytes.
+fn line_solitary(src: &str, intro_start: usize, block_end: usize) -> bool {
+    let before = src
+        .get(line_start(src, intro_start)..intro_start)
+        .unwrap_or("");
+    let bytes = src.as_bytes();
+    let mut i = block_end;
+    while let Some(b) = bytes.get(i) {
+        if *b == b'\n' {
+            break;
+        }
+        if !b.is_ascii_whitespace() {
+            return false;
+        }
+        i = i.saturating_add(1);
+    }
+    before.trim().is_empty()
+}
+
 #[cfg(test)]
 mod tests {
     //! License-bearing behaviors of the `281` new-grammar parser (mission point 4 · the CP-C
@@ -813,7 +962,6 @@ mod tests {
                 .any(|s| matches!(s.kind, StmtKind::NullColon)),
             "the `:` loop condition is the null command, not a mark intro"
         );
-        // A statement-leading `:` FOLLOWED by content is a mark intro, not the null command.
         let marked = parse_marks(": disturbs sm.dorc.File\n");
         assert!(matches!(marked.stmts[0].kind, StmtKind::Standalone { .. }));
     }
@@ -884,5 +1032,71 @@ mod tests {
             &word.stmts[0].kind,
             StmtKind::TrailingBind { bind, .. } if bind.kind == "sm.dorc.Package"
         ));
+    }
+
+    /// Strip of a trailing mark region-erases to the block end, leaving the command verbatim
+    /// (`281` §9). The last substantive command survives as the last status-affecting statement.
+    #[test]
+    fn strip_trailing_mark_keeps_the_command() {
+        assert_eq!(
+            strip_marks("dpkg -s nginx : sm.dorc.Package:nginx@installed\n"),
+            "dpkg -s nginx\n"
+        );
+    }
+
+    /// Strip of a standalone mark line-deletes the whole line; a continuation line (a mark-only
+    /// line after a marked command) is likewise line-deleted, leaving the command (`281` §9/§11).
+    #[test]
+    fn strip_standalone_and_continuation_lines() {
+        assert_eq!(
+            strip_marks("foo\n: undivided-by-transit-across fs-view\n"),
+            "foo\n"
+        );
+        assert_eq!(
+            strip_marks(
+                "printf '/proc/sys\\n' : stored-in kernel\n: undivided-by-transit-across fs-view\n"
+            ),
+            "printf '/proc/sys\\n'\n"
+        );
+    }
+
+    /// The `#:` carrier strips only when it parses (`281` §9): a valid block is deleted; a
+    /// malformed one is left a plain comment (never mis-erased).
+    #[test]
+    fn strip_hashcolon_deletes_valid_leaves_malformed() {
+        assert_eq!(
+            strip_marks("printf x : disturbs sm.dorc.File\n#: reads sm.dorc.Policy@p\n"),
+            "printf x\n"
+        );
+        assert_eq!(strip_marks("cmd\n#: frobnicate\n"), "cmd\n#: frobnicate\n");
+    }
+
+    /// A whole-kind disturbs mark inline in a `case` arm strips to a POSIX-valid empty arm
+    /// (`28B:flag-emptied-case-arm`): the `;;` is a separator, untouched — region-delete, not
+    /// line-delete.
+    #[test]
+    fn strip_emptied_case_arm_stays_posix_valid() {
+        assert_eq!(
+            strip_marks("case \"$verb\" in\nupdate) : disturbs sm.dorc.PkgIndex ;;\nesac\n"),
+            "case \"$verb\" in\nupdate) ;;\nesac\n"
+        );
+    }
+
+    /// An inline bind reduces to a plain assignment with verbatim name/value bytes; a trailing
+    /// bind reduces to the bare assignment (`281` §8).
+    #[test]
+    fn strip_bind_forms_reduce_to_assignment() {
+        assert_eq!(
+            strip_marks("pkg : sm.dorc.Package = \"$1\"\n"),
+            "pkg=\"$1\"\n"
+        );
+        assert_eq!(
+            strip_marks("FOO=\"bar\" := sm.dorc.Package\n"),
+            "FOO=\"bar\"\n"
+        );
+        assert_eq!(
+            strip_marks("FOO=\"bar\" : bind sm.dorc.Package\n"),
+            "FOO=\"bar\"\n"
+        );
     }
 }
