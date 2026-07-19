@@ -215,6 +215,16 @@ pub struct Command {
     /// [`super::lexer::Tok::Redirect`] chunks; irrelevant to the strip (which ships the
     /// verbatim span, redirect included).
     pub stdout_void: bool,
+    /// Whether this command APPEND-redirects (`>>`) to a recognized versioned report SINK
+    /// (`${DREP_V1:-…}` — the `decline-class-emission` idiom, `27W` §2). Computed at parse from
+    /// the redirect chunk + its following target word against an engine-owned sink-name list
+    /// (`report-lane-versioned-entry`: a new format is a list append, never surgery). Two
+    /// load-bearing consumers: the tier-1 inventory ([`super::super::report`]) value-threads a
+    /// sink-emitting command's literal format string into `(verb, class)`; and the verdict tracer
+    /// treats it as INERT (`tc-emission-inert-in-tracer` — a recognized emission never vouches,
+    /// never ⊤s: decision-inert, fail-toward-run). `false` for every ordinary command; irrelevant
+    /// to the strip (which ships the verbatim span).
+    pub report_sink: bool,
 }
 
 /// A test inside `while`/`if`. The dialect admits exactly the shape the flag-strip

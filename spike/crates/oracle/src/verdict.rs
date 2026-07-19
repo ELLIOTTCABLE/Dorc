@@ -417,6 +417,17 @@ impl Tracer {
     /// `false`/`:`/`true` ([`Decline::Inert`]) run but record no vouch (the path continues). Only a
     /// resolved, non-idiom command sets the vouch.
     fn run_command(&mut self, cmd: &Command) -> Flow {
+        // A recognized report-sink emission (`27W` §2 `decline-class-emission`) is DECISION-INERT
+        // (`tc-emission-inert-in-tracer`): it never vouches and never ⊤s. This is a license-plane
+        // correctness fix in the safe direction — an emission-only body would otherwise answer the
+        // printf's rc-0 and VOUCH (a wrong license); recognized here, it declines ⇒ run
+        // (fail-toward-run). Skipped BEFORE the word-resolve loop so its ⊤-shaped sink target word
+        // (`${DREP_V1:-…}`) cannot ⊤ the trace before the arm's own `return 2` is reached.
+        if cmd.report_sink {
+            self.reached_inert = true;
+            self.decline_span = Some(cmd.span);
+            return Flow::Normal;
+        }
         for w in &cmd.words {
             // `"$@"` in command position is the faithful positional list — concrete-by-
             // construction (the traced positionals), so it does NOT ⊤ the check. This is the
@@ -598,6 +609,51 @@ mod tests {
         let verdict = set.value.get(provider).expect("the verdict funcdef");
         decline_site(verdict, argv)
             .and_then(|(_, span)| span.map(|s| &src[s.lo.0 as usize..s.hi.0 as usize]))
+    }
+
+    #[test]
+    fn emission_only_body_declines_never_vouches() {
+        // tc-emission-inert-in-tracer (LICENSE-PLANE correctness, fail-toward-run): a body whose
+        // reached arm ONLY emits a report line (no check, no return) must NOT vouch — the printf's
+        // rc-0 would otherwise be read as a vouch (a wrong license). Recognized as inert ⇒ Declined
+        // ⇒ run.
+        let src = "\
+x__is_converged() {
+   case $1 in
+   drop_caches) printf 'decline unsound %s\\n' \"$1\" >>\"${DREP_V1:-/dev/null}\" ;;
+   esac
+}";
+        assert_eq!(
+            trace(src, &["drop_caches"]),
+            VerdictResolution::Declined,
+            "an emission-only arm declines (never vouches on the printf's rc-0)"
+        );
+    }
+
+    #[test]
+    fn canonical_emission_then_return_two_declines_with_arm_captured() {
+        // The canonical idiom (`27W` §2): emit, then `return 2`. The emission is inert, the
+        // `return 2` declines through the Return gate, and the arm span is the `return 2` (the last
+        // reached declining statement). The sink target word never ⊤s the trace (inert-skip).
+        let src = "\
+x__is_converged() {
+   case $1 in
+   drop_caches)
+      printf 'decline unsound %s\\n' \"$1\" >>\"${DREP_V1:-/dev/null}\"
+      return 2 ;;
+   esac
+}";
+        assert_eq!(trace(src, &["drop_caches"]), VerdictResolution::Declined);
+        assert_eq!(
+            gate(src, &["drop_caches"]),
+            Some(DeclineGate::Return),
+            "the `return 2` after the emission is the decline gate (not a ⊤ from the sink word)"
+        );
+        assert_eq!(
+            decline_arm_text(src, &["drop_caches"]),
+            Some("return 2"),
+            "the arm span is the reached `return 2`"
+        );
     }
 
     #[test]

@@ -67,6 +67,14 @@ pub mod touches;
 /// `predict` dialect.
 pub mod verdict;
 
+/// The tier-1 static report-sink **inventory** (`27W` §3 `rul-static-first-three-tier`): an
+/// oracle-alone AST pass over verdict bodies that enumerates the `decline-class-emission`
+/// idioms (`printf '<verb> <class> …' >>"${DREP_V1:-…}"`), value-threading the LITERAL format
+/// string into per-arm `(arm span, class)`. Feeds tier-2 per-site classification and the
+/// oracle-solo lint surface; a dynamically-built format defeats static reading and degrades to
+/// tier-3 runtime emission (by design).
+pub mod report;
+
 /// The identity **canonicalizer** lift (24F §3 — the resid-aliasing closure; the FOURTH
 /// role-sibling): the `<kind>.resolve()` role-sibling, keyed by KIND (not the command word). Lifted
 /// and shipped strip-only to the probe lane, it runs read-only per coordinate and prints the

@@ -738,6 +738,11 @@ impl Parser<'_> {
         // §2 stdout DECLINE (`271:rul-only-oracle-bytes-ship` rider 1): whether a redirect voids
         // fd 1. Consumed only by the composed-probe coverage rule; the strip ships the verbatim span.
         let mut stdout_void = false;
+        // `27W` §2 report-sink recognition: whether this command APPEND-redirects to a versioned
+        // sink (`>>"${DREP_V1:-…}"`). `awaits_report_target` bridges the two tokens the quoted-sink
+        // idiom splits into — the `>>` redirect chunk, then the sink target word.
+        let mut report_sink = false;
+        let mut awaits_report_target = false;
         let guard = self.toks.len().saturating_add(1);
         let mut steps = 0usize;
         loop {
@@ -745,6 +750,10 @@ impl Parser<'_> {
             if steps > guard {
                 return Err(false);
             }
+            // One-shot: `target_pending` is true iff the PREVIOUS token was a bare output redirect,
+            // so only the token IMMEDIATELY after `>>` can be recognized as the sink target.
+            let target_pending = awaits_report_target;
+            awaits_report_target = false;
             // Classify the current token without holding a borrow across the body.
             let class = match self.peek() {
                 None | Some(Tok::Newline | Tok::Semi | Tok::DSemi | Tok::RBrace) => CmdTok::End,
@@ -809,11 +818,17 @@ impl Parser<'_> {
                 CmdTok::Word => {
                     end_span = self.peek_span().unwrap_or(end_span);
                     if let Some((lexeme, quoting, _)) = self.take_word() {
+                        // A word right after an output-redirect operator is its target: a recognized
+                        // sink flags this command as a `27W` §2 emission (the word still pushes to
+                        // `words` — the tracer skips a `report_sink` command before resolving).
+                        report_sink =
+                            report_sink || (target_pending && word_is_report_sink(&lexeme));
                         words.push(parse_word_lexeme(&lexeme, quoting, self.interner));
                     }
                 }
                 CmdTok::Redirect(text) => {
                     stdout_void = stdout_void || redirect_voids_stdout(&text);
+                    awaits_report_target = redirect_awaits_target(&text);
                     end_span = self.peek_span().unwrap_or(end_span);
                     self.bump();
                 }
@@ -854,6 +869,7 @@ impl Parser<'_> {
             mark,
             pipeline,
             stdout_void,
+            report_sink,
         }))
     }
 
@@ -1432,6 +1448,37 @@ fn redirect_voids_stdout(text: &str) -> bool {
     }
     // No explicit fd ⇒ `>` defaults to fd 1; an explicit fd voids stdout only if it IS 1.
     digits_end == 0 || text.get(..digits_end) == Some("1")
+}
+
+/// The engine-owned recognized report-sink variable names (`27W:rul-versioned-entry`). A new
+/// report format mints a NEW name and APPENDS it here (the `__role`-name posture: recognized
+/// names are permanent once published, and adding one is a list append, never surgery —
+/// `report-lane-versioned-entry`, `tc-sink-recognition-mechanism`).
+const REPORT_SINK_NAMES: &[&str] = &["DREP_V1"];
+
+/// Is `chunk` an OUTPUT redirect operator (`>`/`>>`, optional fd digits) with NO inline target —
+/// so its target is the FOLLOWING word (the quoted-sink case: the lexer stops the redirect chunk
+/// at the opening `"` of `>>"${DREP_V1:-…}"`)? Distinguishes `>>` (awaits a target word) from
+/// `>/dev/null` (inline target) and `>&2` (fd dup, no file target).
+fn redirect_awaits_target(chunk: &str) -> bool {
+    let op = chunk.trim_start_matches(|c: char| c.is_ascii_digit());
+    matches!(op, ">" | ">>")
+}
+
+/// Does a redirect-target word reference a recognized report sink (`27W` §2)? Extracts the
+/// referenced variable NAME from `${NAME:-def}` / `${NAME-def}` / `${NAME}` / `$NAME` (the
+/// `:-/dev/null`-default idiom that makes the emission total off-Dorc) and matches it against
+/// [`REPORT_SINK_NAMES`]. A dynamic / non-sink target ⇒ `false` (⇒ tier-3 runtime fallback).
+fn word_is_report_sink(lexeme: &str) -> bool {
+    let inner = match lexeme.strip_prefix("${").and_then(|s| s.strip_suffix('}')) {
+        Some(braced) => braced,
+        None => lexeme.strip_prefix('$').unwrap_or(lexeme),
+    };
+    let name = inner
+        .split_once(":-")
+        .or_else(|| inner.split_once('-'))
+        .map_or(inner, |(n, _)| n);
+    REPORT_SINK_NAMES.contains(&name)
 }
 
 #[cfg(test)]
