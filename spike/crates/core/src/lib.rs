@@ -161,6 +161,8 @@ impl Diagnostic {
 
 pub mod diag;
 
+pub mod catalog;
+
 pub mod prov;
 pub use prov::{
     JOIN_PARENT_CAP, OriginKind, OriginNode, Parents, ProvArena, ProvId, Variation, Witness,
