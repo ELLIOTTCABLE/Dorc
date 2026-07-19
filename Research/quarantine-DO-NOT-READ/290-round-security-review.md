@@ -114,3 +114,25 @@ delta. Report what round 10 still covers, what needs revalidation, and what genu
 research is load-bearing for the changed design. Do not audit the Rust code yet and do
 not mutate the repository outside the assigned `291` durable and its quarantined research
 artifacts.
+
+## Conductor-context budget
+
+The security conductor's context window is materially smaller than the corpus and is a
+mildly scarce review resource. Spend it on global synthesis, adjudication, the exact
+repository contracts under review, and full reads of primary sources already confirmed
+to be load-bearing. Do not consume it prospectively with raw search results, repetitive
+CLI output, broad historical trawls, or narrow evidence-gathering that a focused agent
+can perform and persist accurately.
+
+This is a judgment constraint, not a reason to avoid important evidence. Tool failure or
+document length must not silently remove a load-bearing source. First narrow and grade
+the candidate material; then read the retained source into conductor context when its
+details affect a decision. Keep intermediate evidence, rejected hypotheses, citations,
+and handoff state in numbered quarantine durables so a fresh conductor can resume after
+context reset without treating a compressed summary as the evidence itself.
+
+Prefer several bounded review sessions with explicit durable handoffs over one
+ever-growing context. Before a reset, record unresolved questions, current confidence,
+which sources were read in full, and the next independently executable step. Context
+conservation must not become delegation of final judgment: the conductor still owns the
+union of findings and reads the precise evidence behind every load-bearing conclusion.
