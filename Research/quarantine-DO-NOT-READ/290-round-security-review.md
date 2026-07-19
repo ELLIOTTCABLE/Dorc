@@ -133,6 +133,16 @@ context reset without treating a compressed summary as the evidence itself.
 
 Prefer several bounded review sessions with explicit durable handoffs over one
 ever-growing context. Before a reset, record unresolved questions, current confidence,
-which sources were read in full, and the next independently executable step. Context
-conservation must not become delegation of final judgment: the conductor still owns the
-union of findings and reads the precise evidence behind every load-bearing conclusion.
+which sources were read in full, and the next independently executable step. Also record
+which full reads proved valuable enough to merit pre-emptive re-reading by the next
+conductor, why they mattered, and which future decisions depend on their detail. The
+best time to judge reread value is while the source and the rest of the evidence are
+simultaneously in context; a bare “read previously” marker cannot preserve that judgment.
+
+This reread set should be small but allowed to consume a meaningful fraction of the next
+window. A source that materially changed the model, resolves several findings, or
+contains qualifications likely to be lost in summary may repay that cost. A source that
+only supplied a stable fact can normally remain represented by a precise durable note
+and citation. Context conservation must not become delegation of final judgment: the
+conductor still owns the union of findings and reads the precise evidence behind every
+load-bearing conclusion.
