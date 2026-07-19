@@ -4588,12 +4588,9 @@ apt_get__predict() {
 
     #[test]
     fn verdict_decline_leaf_index_matches_build_plan() {
-        // `tc-verdictdecline-site-leaf-source` (conductor-ruled): the `VerdictDecline.site.leaf`
-        // `build_vouches` mints is the ENUMERATION INDEX over `classes` — the SAME positional leaf
-        // assignment `compile_probe`/`build_plan` makes (`inv-site-keyed-results`). If the two ever
-        // diverged, a report-lane record's `site=<key>` would pair to the wrong decline. Two
-        // declining establish sites (a `return 2` verdict) at indices 0 and 1 pin the identity: the
-        // decline evidence's leaves and the probe checks' leaves are the same positional set.
+        // `tc-verdictdecline-site-leaf-source`: `build_vouches` keys a `VerdictDecline` by the
+        // enumeration index over `classes` — the SAME positional leaf `compile_probe` assigns, so a
+        // report record's `site=<key>` pairs to the right decline. Two declining sites pin it.
         let src = "apt-get install -y curl\napt-get install -y nginx\n";
         let mut i = Interner::default();
         let idx = package_index(&mut i);
@@ -4612,8 +4609,7 @@ apt_get__predict() {
             &mut dorc_core::ProvArena::new(),
         )
         .value;
-        // A verdict that always declines (`return 2`) ⇒ both establish sites mint a VerdictDecline.
-        let verdict_src = "apt_get__is_converged() { return 2 ; }";
+        let verdict_src = "apt_get__is_converged() { return 2 ; }"; // always declines ⇒ two declines
         let (_vouches, evidence) = build_vouches(&[verdict_src], &classes, &value, &mut i);
         let mut decline_leaves: Vec<u32> = evidence
             .iter()
@@ -4628,8 +4624,7 @@ apt_get__predict() {
             vec![0, 1],
             "the two declining establish sites mint VerdictDecline at leaves 0 and 1 (positional)"
         );
-        // The SAME classes slice → the probe's positional leaf assignment: build_plan and
-        // build_vouches agree on which index is which leaf.
+        // The SAME classes slice → the probe's positional leaves agree with the declines'.
         let probe = compile_probe(
             &parsed.value,
             &cfg,

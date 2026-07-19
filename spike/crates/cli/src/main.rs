@@ -2046,8 +2046,7 @@ fn build_survival_footprints(
         // footprint. A no-op on the hit-surface HERE (the canary just proved own ∈ coords), but it
         // records own for the why-lens and keeps the two lanes uniform. Empty emission ⇒ None from
         // `authored` ⇒ `with_own` cannot resurrect it (anti-233).
-        // `tc-disturbs-span-threading`: attach the `disturbs` funcdef's `file:line` so a survival's
-        // `claimed` link renders the leverage point (the line to widen — USER_STORY Recovery).
+        // `tc-disturbs-span-threading`: the `disturbs` funcdef `file:line` = a survival's leverage point.
         let defining = touches_defining_span(provider, &touches_sets, interner);
         if let Some(mut footprint) = dorc_plan::Footprint::authored(provider, coords)
             .map(|fp| fp.with_own(own).with_defining(defining))
@@ -3715,9 +3714,8 @@ fn survival_chain(
             locus: None,
         });
     }
-    // The structural triple (`tc-naked-trust-epilogue-derivation`): consent + a claim + a derived
-    // sparing over a measured backing ⇒ the claim is naked-by-construction. Absent the triple, no
-    // epilogue (an ordinary disjoint survival with no consent is not a naked-trust corner).
+    // `tc-naked-trust-epilogue-derivation`: consent + a claim ⇒ the claim is naked-by-construction;
+    // absent the triple, no epilogue (a consent-less disjoint survival is not the naked-trust corner).
     let epilogue = (trust_footprints && claimed_link.is_some()).then(|| NakedTrust {
         naked_link: claimed_link.unwrap_or(0),
         leverage: witness
@@ -3830,9 +3828,8 @@ fn emit_why_report(
 ) {
     use dorc_plan::Disposition;
     let mut sites: Vec<WhySite> = Vec::new();
-    // The full survival chains (`aid-why-license-chain`), keyed by SOURCE line: a survived elision's
-    // pull answer is the numbered chain, not the flat reasons. Built here so `dorc why N` renders it
-    // for the addressed line and the unargumented run lists them in the TRUST-SPENT section.
+    // Survival chains (`aid-why-license-chain`) keyed by SOURCE line — a survived elision's pull
+    // answer is the numbered chain, rendered for the addressed line + the unargumented trust-spent list.
     let mut chains: Vec<(usize, ChainRender)> = Vec::new();
     for step in &plan.steps {
         let span = ast.node(step.ast).span;
@@ -3976,10 +3973,8 @@ fn emit_why_report(
     let chain_for = |line: usize| chains.iter().find(|(l, _)| *l == line).map(|(_, c)| c);
 
     if address.is_none() {
-        // The unargumented default: two DISTINCT sections (`tc-survived-elision-is-problem`,
-        // conductor-ruled) — the PROBLEMS proper (refusals/walls/guards/can't-tells), then the
-        // TRUST-SPENT section (survived elisions: spent trust, not a failure, but the bad-morning
-        // flow wants it visible). Both surface; neither conflates the other.
+        // `tc-survived-elision-is-problem` (conductor-ruled): two DISTINCT sections — the PROBLEMS
+        // proper, then the TRUST-SPENT survivals (spent trust, not a failure). Neither conflates the other.
         if matched.is_empty() && chains.is_empty() {
             println!(
                 "dorc why: no problems in the current run of {filename} — every site elided, ran \
@@ -5371,8 +5366,7 @@ fn build_wrapped_analysis(
                     // `.sh` artifact).
                     let span = ast.node(cfg.node(node).ast).span;
                     // render 3/3 (`27C` §9): each carried kind's owner `invariant:<axis>` line as
-                    // `file:line` (the attributable claim the crossing rode). First crossed axis with
-                    // a threaded span wins; absent ⇒ no locus (never fabricate one).
+                    // `file:line` (first crossed axis with a threaded span wins; absent ⇒ no locus).
                     let loci: BTreeMap<String, String> = read_kinds
                         .iter()
                         .filter_map(|k| {
@@ -6001,10 +5995,8 @@ mod tests {
 
     #[test]
     fn pairing_folds_a_runtime_record_into_its_site_decline_and_tier2_wins() {
-        // C3 (`27W` §3): a tier-3 runtime record (recognized class + site) pairs into that site's
-        // VerdictDecline via with_authored_reason — the runtime supplies the CLASS a dynamic format
-        // hid; the arm span is the decline's OWN traced arm. Idempotent: a tier-2 static reason is
-        // never overwritten by a runtime echo (static wins). A non-matching site is untouched.
+        // C3 (`27W` §3): a runtime record classes a site's previously-unread decline (static wins
+        // on a populated reason; a non-matching site is untouched).
         use dorc_core::evidence::{
             AuthoredReason, CollapseKind, DeclineClass, DeclineGate, MintSpan,
         };
