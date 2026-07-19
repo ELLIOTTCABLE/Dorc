@@ -146,7 +146,7 @@ in-scope now.
 | errorloom-crate d2: container/runner/orchestration/CLI | same branch | single dispatch, after d1 checkpoint | pending |
 | syntax-respell phase A: proposal (`notes/28B`) | `ai/r28-syntax-respell` | map-then-execute, map half | DISPATCHED 2026-07-19 |
 | syntax-respell phase B: execute | same branch | after conductor ruling on 28B | pending |
-| janitor sweep (side-quest) | no branch; repo-global surgery | single dispatch, guarded | DISPATCHED 2026-07-19 |
+| janitor sweep (side-quest) | no branch; repo-global surgery | single dispatch, guarded | LANDED 2026-07-19 → `notes/28C` (15 worktrees removed, 34 merged branches `-d`'d, zero force-ops; dropped-work findings A–F for human adjudication) |
 | errorloom-unify (`280` §3) | `ai/r28-errorloom-unify` | serial, off both folds | pending |
 | docs/steering/registry re-synthesis | rides unify tail | must ALSO sync `KNOBS:kOOB`/`kTYANNOT` (`281` §12: both carriers ship; the "exactly ONE comment-parse" text is stale post-`#:`-ack) + `spike/CLAUDE.md` authored-surface + marker-gates-syntax-only + strip bullets + `docs/reference/oracle-contract.md` §4 + author-oracle skill | pending |
 
@@ -155,8 +155,16 @@ in-scope now.
 - 2026-07-19 session brief: the three deliverables; conductor latitude over the
   division; autonomy posture; "quality trumps progress". (TYPED.)
 - 2026-07-19 mid-session: the janitor side-quest. (TYPED.)
-- Outstanding asks to the human: none yet. Riders parked: errorloom LICENSE choice;
-  the `TODO-ADDTL` tail riders remain banked (charter law — none block the lanes).
+- Outstanding asks to the human (none block the lanes): (1) `28C` findings A–F —
+  chiefly the STRANDED ANALYZER-NEEDS block-settle re-grade (`de22017`,
+  human-reviewed 2026-07-17, absent from ai/main; the round-28 docs pass is
+  chartered to union-merge it with ai/main's 2026-07-18 aid refresh and present
+  for review — veto if you'd rather hand-merge); the unmerged 24Ka/24Kb
+  language-review ledgers + 279a–e/280a–e crosscheck reports (presumed
+  intentional, `279f` being the distilled product — adjudicate at leisure); the
+  three dirty worktrees holding uncommitted unique-looking notes (janitor
+  refused removal, correctly). (2) errorloom LICENSE choice. The `TODO-ADDTL`
+  tail riders remain banked (charter law — none block the lanes).
 
 ## §5 — Dispatch log
 
