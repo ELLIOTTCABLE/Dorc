@@ -60,8 +60,10 @@ and carries the license-contamination map.
 - **The language dialect: names, marker, kinds, the typeless floor** — **`notes/24M`
   (binding human rulings, 2026-07-07)** over `plans/24L` (mechanism spec) over `notes/24Kc`
   (the crosscheck that forced it); the executable floor + the pipefail lanes `notes/276`
-  (the kWHICHSH two-binary weld; the `unsafe` hatch) · the mark grammar `notes/277` §4 ·
-  the one-page reference `notes/278` (DRAFT — assembles, never rules).
+  (the kWHICHSH two-binary weld; the `unsafe` hatch) · the mark grammar
+  **`plans/281`** (THE spec — supersedes `notes/277` §4's worked minimum; takes over
+  the grammar `278` §6 deferred) · the one-page reference `notes/278` (DRAFT —
+  assembles, never rules).
 - **What's actually BUILT, and its residue** — `notes/24C` (the per-landing ledger) +
   `LIVING_STATUS.md`; spike-1 history in `plans/16P`/`16Q`.
 - **The first real-machine field trial** — `plans/252` (THE protocol) + `notes/254`
@@ -82,9 +84,11 @@ and carries the license-contamination map.
 - **Where did round-24's unfinished work go?** — `notes/24U` (close-out + reshuffle map)
   → `plans/270` (the round-27 charter; block arc + adjudication ledger + the naming
   discipline binding all briefs).
-- **The entity algebra (coordinate · selector dialect · comparison chokepoint · the mark
-  grammar)** — **`notes/277` (THE spec)** over `plans/271` (the block-settle rulings
-  ledger + task map whose typed acks it assembles).
+- **The entity algebra (coordinate · selector dialect · comparison chokepoint)** —
+  **`notes/277` (THE spec)** over `plans/271` (the block-settle rulings ledger + task
+  map whose typed acks it assembles). The mark GRAMMAR moved: **`plans/281`**
+  supersedes `277` §4 (verb vocabulary · `@` selector · `#:` carrier · the respell
+  grep-map).
 - **Kind-side topology & never-derive-separation** — `notes/272` (address-derived
   topology; `kind__state_stored_only_in()`; §12 is its ratification-status table).
 - **Value-predictions & the capture lane** — `notes/275` (its §6 carries a NOT-RATIFIED
@@ -99,8 +103,10 @@ and carries the license-contamination map.
   adjudication: verdicts, spec amendments, brief riders, ask-list, dismissals).
 - **User aid (errors / hints / lints / `dorc why` / whylog)** — root **`AID-NEEDS.md`**
   (THE registry + law) over `notes/27V` (the build phase: whylog, evidence plane,
-  one-catalog, gap ledger) · `notes/27W` (authored decline-classes + the versioned
-  report lane; show-the-code) · USER_STORY's "Recovery" section · `notes/27R`/`27S`
+  one-catalog, gap ledger) · `notes/27U` (the build phase's as-built ledger) ·
+  `plans/282` (the transcript-case prose pipeline; the round-28 build) · `notes/27W`
+  (authored decline-classes + the versioned report lane; show-the-code) ·
+  USER_STORY's "Recovery" section · `notes/27R`/`27S`
   (the `dorc lint` lane) · the r22 spine `plans/22A` + `notes/22D`/`22E` · `plans/111`
   (the round-11 conclusion).
 
