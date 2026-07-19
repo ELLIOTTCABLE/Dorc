@@ -56,6 +56,8 @@ pub mod erasability;
 
 pub mod records;
 
+pub mod whylog;
+
 pub mod render;
 
 /// The per-run PATH shim for `dorc-sh` (`274` §5): the pure model — host-independent shipped text

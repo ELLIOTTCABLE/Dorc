@@ -197,6 +197,18 @@ pub enum DiagCode {
     WrapperEntryIncoherent(WrapperEntryIncoherent),
     /// A wrapper's `__predict` and `__lend_map` disagree on the peel tail — static incoherence.
     WrapperPeelIncoherent(WrapperPeelIncoherent),
+
+    // ── cli/main.rs + plan/whylog.rs (`dorc why --last` durable reader — `27V` Lane B) ──────
+    /// `dorc why --last` found a durable written by a format version this binary does not
+    /// understand — refuse politely (never replay a format we cannot parse).
+    WhylogVersionRefused(WhylogVersionRefused),
+    /// The durable's recorded book/oracle digest (or its stored decision digest) diverges from
+    /// the current on-disk inputs — the replay would not reconstruct the recorded run.
+    WhylogBookDesync(WhylogBookDesync),
+    /// `dorc why --last` found no durable to replay in the whylog directory.
+    WhylogAbsent(WhylogAbsent),
+    /// A durable was found but is truncated / unparseable — diagnostics, never a panic.
+    WhylogCorrupt(WhylogCorrupt),
 }
 
 impl DiagCode {
@@ -256,6 +268,10 @@ impl DiagCode {
             DiagCode::ReachesProviderCollision(_) => "reaches-provider-collision",
             DiagCode::WrapperEntryIncoherent(_) => "wrapper-entry-incoherent",
             DiagCode::WrapperPeelIncoherent(_) => "wrapper-peel-incoherent",
+            DiagCode::WhylogVersionRefused(_) => "whylog-version-refused",
+            DiagCode::WhylogBookDesync(_) => "whylog-book-desync",
+            DiagCode::WhylogAbsent(_) => "whylog-absent",
+            DiagCode::WhylogCorrupt(_) => "whylog-corrupt",
         }
     }
 }
@@ -704,6 +720,39 @@ pub struct WrapperEntryIncoherent {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct WrapperPeelIncoherent {
     /// The full incoherence-refusal text (display only).
+    pub detail: String,
+}
+
+/// Payload of [`DiagCode::WhylogVersionRefused`] (`27V` Lane B): the durable's format-version tag
+/// this binary could not parse. `{found}` = the tag read from the file's header.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct WhylogVersionRefused {
+    /// The `dorc-whylog/N` tag found in the durable's header (`{found}`).
+    pub found: String,
+}
+
+/// Payload of [`DiagCode::WhylogBookDesync`] (`27V` Lane B; the `22F` book-identity/desync guard):
+/// which recorded digest diverged from the current on-disk inputs. `{which}` = `book` / an oracle
+/// path / `decision-digest`.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct WhylogBookDesync {
+    /// The diverged input's description (`{which}`).
+    pub which: String,
+}
+
+/// Payload of [`DiagCode::WhylogAbsent`] (`27V` Lane B): `dorc why --last` found no durable to
+/// replay. `{dir}` = the whylog directory searched.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct WhylogAbsent {
+    /// The whylog directory searched (`{dir}`).
+    pub dir: String,
+}
+
+/// Payload of [`DiagCode::WhylogCorrupt`] (`27V` Lane B; `inv-no-throw`): a durable was found but is
+/// truncated / unparseable. `{detail}` = the parse-failure reason.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct WhylogCorrupt {
+    /// The parse-failure reason (`{detail}`).
     pub detail: String,
 }
 
@@ -1210,6 +1259,24 @@ pub fn registry(code: &DiagCode) -> CodeSpec {
             severity: Severity::Error,
             floor: Floor::WarnOrDeny,
         },
+        // `dorc why --last` refusals: pull-surface disclosures (the user asked and must learn WHY
+        // the answer is no) ⇒ Warning + Floor::None (ruling tc-whylog-code-severity).
+        DiagCode::WhylogVersionRefused(_) => CodeSpec {
+            severity: Severity::Warning,
+            floor: Floor::None,
+        },
+        DiagCode::WhylogBookDesync(_) => CodeSpec {
+            severity: Severity::Warning,
+            floor: Floor::None,
+        },
+        DiagCode::WhylogAbsent(_) => CodeSpec {
+            severity: Severity::Warning,
+            floor: Floor::None,
+        },
+        DiagCode::WhylogCorrupt(_) => CodeSpec {
+            severity: Severity::Warning,
+            floor: Floor::None,
+        },
     }
 }
 
@@ -1381,6 +1448,10 @@ pub fn params_of(code: &DiagCode, _interner: &crate::Interner) -> Vec<(&'static 
         DiagCode::WrappedSiteAdoptionHint(p) => vec![("detail", p.detail.clone())],
         DiagCode::WrapperEntryIncoherent(p) => vec![("detail", p.detail.clone())],
         DiagCode::WrapperPeelIncoherent(p) => vec![("detail", p.detail.clone())],
+        DiagCode::WhylogVersionRefused(p) => vec![("found", p.found.clone())],
+        DiagCode::WhylogBookDesync(p) => vec![("which", p.which.clone())],
+        DiagCode::WhylogAbsent(p) => vec![("dir", p.dir.clone())],
+        DiagCode::WhylogCorrupt(p) => vec![("detail", p.detail.clone())],
         DiagCode::MungeNameInvalid(p) => vec![
             ("source", p.source.clone()),
             ("funcname", p.funcname.clone()),

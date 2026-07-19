@@ -709,6 +709,77 @@ pub const CATALOG: &[CatalogEntry] = &[
         message: "sm {detail}",
         help: None,
     },
+    // ── `dorc why --last` durable reader (`27V` Lane B) — the phase's FIRST `[unwritten:]`
+    //    entries. Prose is a conductor/human act from this metadata (`27V:rul-error-authorship-tier`);
+    //    the builder ships zero user-facing prose. `example` is a STRAWMAN illustration of the
+    //    eventual message, NOT committed prose — a model for the prose author.
+    CatalogEntry {
+        slug: "whylog-version-refused",
+        when_fires: "`dorc why --last` opened a durable whose `dorc-whylog/N` header tag names a \
+                     format version this binary does not understand, so replay is refused (we never \
+                     replay a format we cannot parse). plan/whylog.rs parse; cli --last reader.",
+        why: "whylog-write-only-replay + versioned-additive format: a durable is version-tagged and \
+              NOT byte-stable across versions, so a newer/older format is refused politely rather \
+              than mis-parsed. Pull-surface (the user asked): Warning, Floor::None. `{found}` = the \
+              tag read from the header. Remediation register (help) wanted: re-run the live analysis \
+              (`dorc why` without --last) since the old durable cannot be replayed by this binary.",
+        params: &["found"],
+        example: "this whylog was written in format `dorc-whylog/2`, which this dorc \
+                  (understands `dorc-whylog/1`) cannot replay — re-run `dorc why` live instead",
+        message: "[unwritten: whylog-version-refused]",
+        help: Some("[unwritten: whylog-version-refused]"),
+    },
+    CatalogEntry {
+        slug: "whylog-book-desync",
+        when_fires: "`dorc why --last` found a durable whose recorded book/oracle content digest (or \
+                     its stored decision digest) diverges from the current on-disk inputs, so a \
+                     deterministic replay would NOT reconstruct the recorded run. cli --last reader \
+                     (the `22F` book-identity/desync guard, cer-2-shaped).",
+        why: "determinism-is-the-replay-license: the durable stores digests, not book/oracle \
+              CONTENT, and re-reads them from disk; a changed input breaks the replay tie, so it is \
+              refused rather than silently replayed against the wrong source. Pull-surface: Warning, \
+              Floor::None. `{which}` = the diverged input (`book`, an oracle path, or \
+              `decision-digest`). Remediation register (help) wanted: the book/oracle changed since \
+              that run — re-run the live analysis for a current answer.",
+        params: &["which"],
+        example: "the book has changed since this whylog was written (recorded digest ≠ current \
+                  `book.sh`), so its recorded decisions cannot be faithfully replayed — re-run \
+                  `dorc why` live",
+        message: "[unwritten: whylog-book-desync]",
+        help: Some("[unwritten: whylog-book-desync]"),
+    },
+    CatalogEntry {
+        slug: "whylog-absent",
+        when_fires: "`dorc why --last` was asked to replay the last run but no durable exists in the \
+                     whylog directory (no prior run wrote one, or the wrong directory). cli --last \
+                     reader.",
+        why: "the durable is written only when a plan/apply/round-trip run was asked to (spike: the \
+              `--whylog-dir` opt-in; product: quietly beside its work); a `--last` with nothing to \
+              replay is a benign no-answer, not a crash. Pull-surface: Warning, Floor::None. `{dir}` \
+              = the whylog directory searched. Remediation register (help) wanted: run a plan/apply \
+              first (or point --whylog-dir at the right directory) to produce a durable to replay.",
+        params: &["dir"],
+        example: "no whylog to replay in `./.dorc/whylog` — run a plan or apply first (its run \
+                  writes the durable that `dorc why --last` reads back)",
+        message: "[unwritten: whylog-absent]",
+        help: Some("[unwritten: whylog-absent]"),
+    },
+    CatalogEntry {
+        slug: "whylog-corrupt",
+        when_fires: "`dorc why --last` found a durable but it is truncated or otherwise unparseable \
+                     (a partial write, a clobbered file). plan/whylog.rs parse (`inv-no-throw`: \
+                     malformed bytes are DATA, never a panic).",
+        why: "inv-no-throw: a corrupt durable is diagnostics, never a crash — the reader refuses \
+              politely and names the parse-failure reason. Pull-surface: Warning, Floor::None. \
+              `{detail}` = the parse-failure reason (e.g. missing header/end sentinel, an \
+              unrecognized section). Remediation register (help) wanted: the durable is damaged — \
+              re-run the live analysis to regenerate it.",
+        params: &["detail"],
+        example: "the whylog durable is damaged (no end-sentinel — a partial write?) and cannot be \
+                  replayed — re-run `dorc why` live",
+        message: "[unwritten: whylog-corrupt]",
+        help: Some("[unwritten: whylog-corrupt]"),
+    },
 ];
 
 /// The catalog entry for `slug`, or `None` when the slug has no entry (dead code path pre-sweep;

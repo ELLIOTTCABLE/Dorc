@@ -106,6 +106,11 @@ const MIGRATED_PAYLOADS: &[&str] = &[
     "ReachesProviderCollision",
     "WrapperEntryIncoherent",
     "WrapperPeelIncoherent",
+    // plan/whylog.rs + cli/main.rs (`dorc why --last` durable reader — `27V` Lane B)
+    "WhylogVersionRefused",
+    "WhylogBookDesync",
+    "WhylogAbsent",
+    "WhylogCorrupt",
 ];
 
 /// Every catalog slug (the stable wire string) — for the retire-guard and reachability. KEEP IN
@@ -159,6 +164,10 @@ const MIGRATED_SLUGS: &[&str] = &[
     "reaches-provider-collision",
     "wrapper-entry-incoherent",
     "wrapper-peel-incoherent",
+    "whylog-version-refused",
+    "whylog-book-desync",
+    "whylog-absent",
+    "whylog-corrupt",
 ];
 
 /// Deliberately RETIRED/RENAMED slugs (`27V`): the `dq-` prefix drop on the five value-plane
@@ -207,6 +216,12 @@ const SPANLESS_SITE_PAYLOADS: &[&str] = &[
     "ReachesConflict",
     "ReachesProviderCollision",
     "EscalationPolicy",
+    // plan/whylog.rs + cli/main.rs — the `--last` durable reader refusals: about the DURABLE
+    // FILE, not a book/oracle source point, so genuinely spanless (`27V` Lane B).
+    "WhylogVersionRefused",
+    "WhylogBookDesync",
+    "WhylogAbsent",
+    "WhylogCorrupt",
 ];
 
 /// The crate-`src` roots scanned (the emit surface). The workspace's analyzer crates; `core`

@@ -282,6 +282,17 @@ struct Args {
     /// probe in reality (`hostsim`-injected in DST). `--probe-capability=root|nopasswd|degraded`
     /// stands in for that probe in the spike; defaults to `root`. The probe NEVER self-acquires.
     capability: dorc_core::Capability,
+    /// `--whylog-dir=DIR` (`27V` Lane B): DIR the thin posthoc-why durable is written to (on a
+    /// plan/apply/round-trip run) and read from (`dorc why --last`). Default UNSET ⇒ NO durable
+    /// write — keeps every existing golden byte-identical and honors `law-whylog-is-sensitive`.
+    /// churn-avoidance-disclosure (tc-whylog-default-off): the PRODUCT posture is the sacred
+    /// zero-setup promise (`USER_STORY`: `--last` works "with nothing you had to set up"), so the
+    /// real-tool default is write-quietly-beside-its-work; this spike opt-in is a disclosed
+    /// scope-cut, one line to flip later.
+    whylog_dir: Option<String>,
+    /// `--last` (`27V` Lane B): `dorc why --last` replays the most recent durable in `--whylog-dir`
+    /// through the SAME kernel instead of the live pipeline (determinism is the replay license).
+    last: bool,
     /// `--shim-dir=DIR` (`274` §5 / `27L` task-14 — the shim-materialization edge): DIR into which
     /// the entry-composed probe's per-run PATH shim files are written (the session-establishment I/O
     /// that lets a `sudo -n <inner-check>` resolve its guest across the exec boundary). A pure
@@ -339,6 +350,8 @@ fn parse_args() -> Result<Invocation, String> {
     let mut why_address: Option<String> = None;
     let mut dial = dorc_core::EscalationDial::VouchedOnly;
     let mut capability = dorc_core::Capability::Root;
+    let mut whylog_dir: Option<String> = None;
+    let mut last = false;
     let mut shim_dir: Option<String> = None;
     let mut it = raw.into_iter().peekable();
 
@@ -419,6 +432,12 @@ fn parse_args() -> Result<Invocation, String> {
                     ));
                 }
             };
+        } else if let Some(p) = arg.strip_prefix("--whylog-dir=") {
+            whylog_dir = Some(p.to_string());
+        } else if arg == "--whylog-dir" {
+            whylog_dir = Some(it.next().ok_or("--whylog-dir needs a directory")?);
+        } else if arg == "--last" {
+            last = true;
         } else if let Some(p) = arg.strip_prefix("--shim-dir=") {
             shim_dir = Some(p.to_string());
         } else if arg == "--shim-dir" {
@@ -437,6 +456,8 @@ fn parse_args() -> Result<Invocation, String> {
                 "--probe-escalation",
                 "--escalate-any-probe",
                 "--probe-capability",
+                "--whylog-dir",
+                "--last",
                 "--shim-dir",
                 "--help",
                 "--version",
@@ -453,7 +474,8 @@ fn parse_args() -> Result<Invocation, String> {
             books.push(arg);
         }
     }
-    if books.is_empty() {
+    // `--last` reconstructs the book from the durable (`27V` Lane B), so it needs no book arg.
+    if books.is_empty() && !last {
         return Err(format!(
             "no book given (a positional path or --book=PATH); {USAGE}"
         ));
@@ -469,6 +491,8 @@ fn parse_args() -> Result<Invocation, String> {
         why_address,
         dial,
         capability,
+        whylog_dir,
+        last,
         shim_dir,
     }))
 }
@@ -922,12 +946,28 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
     // load-bearing surface judgment — flagged to the conductor, not silently settled.
     let advisory = !matches!(mode, Mode::Apply);
 
+    // `--last` replay (`27V` Lane B · whylog-write-only-replay): load the durable and reconstruct
+    // the run's INPUT PATHS from it, so the rest of the pipeline replays deterministically through
+    // the SAME kernel. A refusal (absent/version/corrupt) was already surfaced ⇒ return cleanly.
+    let replay = if args.last {
+        match load_whylog_replay(args, advisory)? {
+            Some(r) => Some(r),
+            None => return Ok(RunOutcome::Complete),
+        }
+    } else {
+        None
+    };
+
     // ---- the shared, pure pipeline (one call-shape for every mode — the thin-driver
     // mandate: no mode branches the kernel; only the stdout/stderr ROUTING below differs) ----
 
-    // Resolve the oracle PATHS: the explicit `-o` list, then every `*.oracle.sh` in each
-    // `--oracle-dir` (glob-sorted, deterministic — ack-6). Then read each (humane errors).
-    let oracle_paths = resolve_oracle_paths(&args.oracles, &args.oracle_dirs)?;
+    // Resolve the oracle PATHS: on `--last`, the durable's recorded oracle paths (re-read + digest-
+    // verified below); else the explicit `-o` list, then every `*.oracle.sh` in each `--oracle-dir`
+    // (glob-sorted, deterministic — ack-6). Then read each (humane errors).
+    let oracle_paths = match &replay {
+        Some(r) => r.doc.oracles.iter().map(|(p, _)| p.clone()).collect(),
+        None => resolve_oracle_paths(&args.oracles, &args.oracle_dirs)?,
+    };
     let oracle_srcs: Vec<String> = oracle_paths
         .iter()
         .map(|p| std::fs::read_to_string(p).map_err(|e| humane_read_error("oracle", p, &e)))
@@ -1016,8 +1056,34 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
     // CONCATENATE into one analyzed unit (`\n`-joined so no two files' lines merge). `book_name`
     // is the display path (the first book) — for a single book (the norm) the frame's line numbers
     // are exact source lines; a multi-book unit's line numbers are into the concatenation.
-    let book_src = read_books(&args.books)?;
-    let book_name = args.books.first().map_or("book.sh", String::as_str);
+    // On `--last`, the book path comes from the durable (`27V` Lane B): re-read from disk (only
+    // digests were stored), so `dorc why --last` needs no `--book` (the zero-setup replay).
+    let replay_books: Vec<String>;
+    let books: &[String] = match &replay {
+        Some(r) => {
+            replay_books = vec![r.doc.book.0.clone()];
+            &replay_books
+        }
+        None => &args.books,
+    };
+    let book_src = read_books(books)?;
+    let book_name = books.first().map_or("book.sh", String::as_str);
+    // `--last` desync guard (`27V` Lane B; the `22F` book-identity guard): the re-read book/oracle
+    // digests MUST match what the durable recorded, or the replay would reconstruct a DIFFERENT run
+    // — refuse politely rather than replay against changed inputs (whylog-book-desync).
+    if let Some(r) = &replay
+        && let Some(which) = whylog_input_desync(r, &book_src, &oracle_paths, &oracle_srcs)
+    {
+        report_at(
+            advisory,
+            "whylog",
+            None,
+            &[Diag::new_spanless_site(DiagCode::WhylogBookDesync(
+                dorc_core::diag::WhylogBookDesync { which },
+            ))],
+        );
+        return Ok(RunOutcome::Complete);
+    }
     // ack-8: the book-stage diags (parse/cfg/classify/probe/render) all span into `book_src`;
     // this pair feeds their file:line:col frames (rul24-lineno-identity — the SOURCE line space).
     let book_source = Some((book_name, book_src.as_str()));
@@ -1307,9 +1373,12 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
     }
 
     // read the (simulated) probe results — the site-keyed records the rendered probe would emit
-    // when run remotely (the round-trip's return channel). From `--results FILE` when given, else
-    // the default stdin (the harness pipes them in).
-    let results_buf = if let Some(path) = &args.results {
+    // when run remotely (the round-trip's return channel). On `--last`, the records come from the
+    // durable AS-RECEIVED (`27V` Lane B — replay through the identical deframe path); else from
+    // `--results FILE` when given, else the default stdin (the harness pipes them in).
+    let results_buf = if let Some(r) = &replay {
+        r.doc.raw_results.clone()
+    } else if let Some(path) = &args.results {
         std::fs::read_to_string(path).map_err(|e| humane_read_error("results", path, &e))?
     } else {
         let mut buf = String::new();
@@ -1538,10 +1607,46 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
     let refusals = plan.render_refusal_diagnostics(&parsed.value, &interner);
     report("render", book_source, &refusals);
 
+    // The decision digest (arch-1 drift signal), computed ONCE here: `--last` verifies the replay
+    // reproduced the recorded decision, and the whylog write records it. Identity plane = the
+    // classify diags + the render refusals (the same set `emit_decision_digest` folds).
+    let identity_diags: Vec<Diag> = classified
+        .diags
+        .iter()
+        .cloned()
+        .chain(refusals.iter().cloned())
+        .collect();
+    let decision_digest = dorc_plan::erasability::decision_digest(
+        &plan,
+        &probe,
+        &book_src,
+        &parsed.value,
+        &interner,
+        &identity_diags,
+    );
+
     // ack-2 `dorc why`: NOT an artifact-producing invocation. Emit the source-line-keyed report to
     // STDOUT (its own non-analysis output) and return — no artifact, no plan-summary, no digest.
     // It runs the full pipeline above so it reports on the CURRENT run's real dispositions.
     if mode == Mode::Why {
+        // `--last` belt-and-suspenders (`27V` Lane B): the book/oracle digests matched, but if the
+        // re-derived decision digest differs the binary's behavior changed on the same inputs —
+        // refuse politely rather than narrate a decision the recorded run did not make.
+        if let Some(r) = &replay
+            && decision_digest != r.doc.decision_digest
+        {
+            report_at(
+                advisory,
+                "whylog",
+                None,
+                &[Diag::new_spanless_site(DiagCode::WhylogBookDesync(
+                    dorc_core::diag::WhylogBookDesync {
+                        which: "decision-digest".to_owned(),
+                    },
+                ))],
+            );
+            return Ok(book_outcome);
+        }
         emit_why_report(
             args.why_address.as_deref(),
             &plan,
@@ -1567,47 +1672,204 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
     // plans/240 Stage-1 yardstick: the plan-summary on stderr, alongside the digest below.
     emit_plan_summary(&plan);
 
-    emit_decision_digest(
-        &plan,
-        &probe,
-        &book_src,
-        &parsed.value,
-        &interner,
-        classified.diags,
-        refusals,
-    );
+    // arch-1 decision-digest (`mechanism-decision-digest`, `22A` concl-3): the always-on drift
+    // signal (identity-plane hash; receipts cannot move it). To stderr — stdout stays the artifact.
+    eprintln!("dorc: decision-digest {decision_digest}");
+
+    // `27V` Lane B — the thin posthoc-why durable: written (opt-in) on a plan/apply/round-trip run
+    // so `dorc why --last` can replay it. A side-effect at the cli edge (stdout unchanged);
+    // best-effort (a write failure never fails the run — the durable is a postmortem aid). NEVER on
+    // `--last` (a replay is a read) — but that path already returned in the Why branch above.
+    if let Some(dir) = &args.whylog_dir {
+        let doc = assemble_whylog_doc(
+            mode,
+            &framing,
+            book_name,
+            &book_src,
+            &oracle_paths,
+            &oracle_srcs,
+            &decision_digest,
+            &results_buf,
+            &plan,
+        );
+        write_whylog(dir, &doc);
+    }
     Ok(book_outcome)
 }
 
-/// arch-1 decision-digest (`mechanism-decision-digest`, `22A` concl-3): a one-line hash of the
-/// canonical IDENTITY plane, emitted on every plan-building run as a cheap always-on drift
-/// signal. Receipts cannot move it — it hashes only the identity plane (the `plan::erasability`
-/// gate proves that). To stderr (stdout stays the artifact). KEPT even in the receipt-free
-/// `apply` mode: the digest is identity-plane, not a receipt. The Error-class diagnostics on the
-/// identity plane are the analyzer's accumulated ones (classify) plus the render refusals;
-/// warnings/notes are exempt (dropped by the canon).
-fn emit_decision_digest(
-    plan: &dorc_plan::Plan,
-    probe: &dorc_plan::ProbePlan,
+/// A `--last` replay context (`27V` Lane B · `whylog-write-only-replay`): the reconstructed durable
+/// whose recorded book/oracle PATHS + results the pipeline replays. Book/oracle CONTENT is re-read
+/// from disk (only digests are stored) and verified against the recorded digests before replay.
+struct Replay {
+    doc: dorc_plan::whylog::WhylogDoc,
+}
+
+/// Whylog retention (ruling tc-whylog-retention-params, builder latitude): keep the newest
+/// [`WHYLOG_KEEP`] durables by run-index; cap each at [`WHYLOG_CAP`] bytes. Deterministic (index
+/// order, no clock — `inv-determinism` at the edge).
+const WHYLOG_KEEP: usize = 5;
+const WHYLOG_CAP: usize = 1_000_000;
+
+/// Load + parse the durable for `dorc why --last` (`27V` Lane B). Returns `Some(Replay)` to replay,
+/// or `None` when a refusal was surfaced (absent / version / corrupt — pull-surface Warnings, the
+/// user asked and must learn WHY the answer is no). Desync is checked later (after the re-read).
+fn load_whylog_replay(args: &Args, advisory: bool) -> Result<Option<Replay>, String> {
+    let dir = args.whylog_dir.as_deref().ok_or(
+        "dorc why --last needs --whylog-dir=DIR (the spike opt-in siting; the product writes the \
+         durable quietly beside its work — tc-whylog-default-off)",
+    )?;
+    let Some(path) = newest_whylog(dir) else {
+        report_at(
+            advisory,
+            "whylog",
+            None,
+            &[Diag::new_spanless_site(DiagCode::WhylogAbsent(
+                dorc_core::diag::WhylogAbsent {
+                    dir: dir.to_owned(),
+                },
+            ))],
+        );
+        return Ok(None);
+    };
+    let raw = std::fs::read_to_string(&path)
+        .map_err(|e| humane_read_error("whylog", &path.to_string_lossy(), &e))?;
+    let parsed = dorc_plan::whylog::parse(&raw);
+    report_at(advisory, "whylog", None, &parsed.diagnostics);
+    Ok(parsed.doc.map(|doc| Replay { doc }))
+}
+
+/// The `whylog-<NNNN>.txt` durables in `dir`, ascending by run-index (deterministic).
+fn whylog_entries(dir: &str) -> Vec<(u64, std::path::PathBuf)> {
+    let mut v: Vec<(u64, std::path::PathBuf)> = std::fs::read_dir(dir)
+        .into_iter()
+        .flatten()
+        .flatten()
+        .filter_map(|e| {
+            let idx = e
+                .file_name()
+                .to_string_lossy()
+                .strip_prefix("whylog-")?
+                .strip_suffix(".txt")?
+                .parse::<u64>()
+                .ok()?;
+            Some((idx, e.path()))
+        })
+        .collect();
+    v.sort_by_key(|(i, _)| *i);
+    v
+}
+
+/// The newest durable in `dir` (highest run-index), or `None`.
+fn newest_whylog(dir: &str) -> Option<std::path::PathBuf> {
+    whylog_entries(dir).pop().map(|(_, p)| p)
+}
+
+/// Write the durable for a completed run (`27V` Lane B), with retention. Best-effort: a write
+/// failure is swallowed (the durable is a postmortem aid, never load-bearing — stdout is untouched).
+fn write_whylog(dir: &str, doc: &dorc_plan::whylog::WhylogDoc) {
+    if std::fs::create_dir_all(dir).is_err() {
+        return;
+    }
+    let mut bytes = dorc_plan::whylog::serialize(doc);
+    if bytes.len() > WHYLOG_CAP {
+        // Size-cap: truncate at the last newline ≤ the cap (byte-safe) + a note (best-effort).
+        let window = bytes
+            .as_bytes()
+            .get(..WHYLOG_CAP.min(bytes.len()))
+            .unwrap_or(&[]);
+        let cut = window
+            .iter()
+            .rposition(|&b| b == b'\n')
+            .map_or(0, |i| i.saturating_add(1));
+        bytes.truncate(cut);
+        bytes.push_str("# whylog truncated at size cap\n");
+    }
+    let next = whylog_entries(dir)
+        .last()
+        .map_or(1, |(i, _)| i.saturating_add(1));
+    let path = std::path::Path::new(dir).join(format!("whylog-{next:04}.txt"));
+    if std::fs::write(&path, bytes).is_err() {
+        return;
+    }
+    // Retention: drop all but the newest WHYLOG_KEEP.
+    let entries = whylog_entries(dir);
+    if let Some(drop_before) = entries.len().checked_sub(WHYLOG_KEEP) {
+        for (_, p) in entries.into_iter().take(drop_before) {
+            let _ = std::fs::remove_file(p);
+        }
+    }
+}
+
+/// The `--last` desync guard (`27V` Lane B; the `22F` book-identity guard): the re-read book/oracle
+/// digests MUST match what the durable recorded, or a deterministic replay would reconstruct a
+/// DIFFERENT run. Returns the diverged input's description (`{which}`), or `None` when all match.
+fn whylog_input_desync(
+    r: &Replay,
     book_src: &str,
-    ast: &dorc_syntax::ast::Ast,
-    interner: &Interner,
-    classify_diags: Vec<Diag>,
-    refusals: Vec<Diag>,
-) {
-    let mut identity_diags = classify_diags;
-    identity_diags.extend(refusals);
-    eprintln!(
-        "dorc: decision-digest {}",
-        dorc_plan::erasability::decision_digest(
-            plan,
-            probe,
-            book_src,
-            ast,
-            interner,
-            &identity_diags,
-        )
-    );
+    oracle_paths: &[String],
+    oracle_srcs: &[String],
+) -> Option<String> {
+    if book_digest(book_src) != r.doc.book.1 {
+        return Some("book".to_owned());
+    }
+    for ((path, src), recorded) in oracle_paths.iter().zip(oracle_srcs).zip(&r.doc.oracles) {
+        if book_digest(src) != recorded.1 {
+            return Some(format!("oracle {path}"));
+        }
+    }
+    None
+}
+
+/// Assemble the thin durable from a completed run (`27V` §2). The apply report records the PREDICTED
+/// per-leaf disposition (`predicted=true`) — the spike has no apply executor (`tc-apply-report-is-
+/// prediction`); the field shape is additive so a real executor fills genuine outcomes later.
+#[expect(
+    clippy::too_many_arguments,
+    reason = "the durable assembles the whole run context (mode/framing/book/oracles/digest/results/plan); each is a distinct pipeline output, not a bundle"
+)]
+fn assemble_whylog_doc(
+    mode: Mode,
+    framing: &dorc_plan::records::Framing,
+    book_name: &str,
+    book_src: &str,
+    oracle_paths: &[String],
+    oracle_srcs: &[String],
+    decision_digest: &str,
+    results_buf: &str,
+    plan: &dorc_plan::Plan,
+) -> dorc_plan::whylog::WhylogDoc {
+    let apply = plan
+        .steps
+        .iter()
+        .map(|s| dorc_plan::whylog::ApplyLine {
+            leaf: s.leaf.0,
+            disposition: disposition_tag(&s.disposition).to_owned(),
+            predicted: true,
+        })
+        .collect();
+    dorc_plan::whylog::WhylogDoc {
+        mode: match mode {
+            Mode::Plan => "plan",
+            Mode::Apply => "apply",
+            Mode::RoundTrip => "roundtrip",
+            Mode::Probe => "probe",
+            Mode::Why => "why",
+        }
+        .to_owned(),
+        argv: std::env::args().collect(),
+        book: (book_name.to_owned(), book_digest(book_src)),
+        oracles: oracle_paths
+            .iter()
+            .zip(oracle_srcs)
+            .map(|(p, s)| (p.clone(), book_digest(s)))
+            .collect(),
+        nonce: framing.nonce.0.clone(),
+        attempt: framing.attempt,
+        host: framing.host.clone(),
+        decision_digest: decision_digest.to_owned(),
+        raw_results: results_buf.to_owned(),
+        apply,
+    }
 }
 
 /// R3 (23D §1 — the check IS the oracle): resolve the stripped `<provider>__predict` funcdef
@@ -3763,7 +4025,7 @@ fn facts_from_sites(
         // names it for the DISCLOSURE only (`two-plane-aid-law`: the license plane never reads it).
         // rc 127 = missing deps in the view; other ≥2 = an in-context decline. Refused (`sudo -n`)
         // and Impossible (chroot target missing) are NOT minted — the flat rc-partition carries no
-        // signal to distinguish them, and a finer label than the signal supports would MIS-ATTRIBUTE
+        // signal to distinguish them, and a finer label than the signal supports would mis-attribute
         // (`271:rul-sin-ordering` pope-sin). SEAM: finer discrimination wants an entry-scaffold marker.
         if check.entry.is_some()
             && let Some(rc) = record.map(|r| r.rc.0)
@@ -5195,6 +5457,41 @@ mod tests {
             }],
             unresolvable: vec![],
         }
+    }
+
+    #[test]
+    fn whylog_input_desync_flags_a_changed_book_or_oracle() {
+        // `27V` Lane B desync guard (the `22F` book-identity guard): a `--last` replay refuses when
+        // the re-read book/oracle content no longer matches the digest the durable recorded — a
+        // deterministic replay would otherwise reconstruct a DIFFERENT run. Pure (digest compare).
+        let doc = dorc_plan::whylog::WhylogDoc {
+            book: ("b.sh".to_owned(), book_digest("orig book bytes")),
+            oracles: vec![("o.sh".to_owned(), book_digest("orig oracle"))],
+            ..Default::default()
+        };
+        let r = Replay { doc };
+        let opaths = ["o.sh".to_owned()];
+        let osrcs = ["orig oracle".to_owned()];
+        assert_eq!(
+            whylog_input_desync(&r, "orig book bytes", &opaths, &osrcs),
+            None,
+            "unchanged inputs ⇒ no desync ⇒ replay proceeds"
+        );
+        assert_eq!(
+            whylog_input_desync(&r, "CHANGED book", &opaths, &osrcs),
+            Some("book".to_owned()),
+            "a changed book ⇒ desync (which=book)"
+        );
+        assert_eq!(
+            whylog_input_desync(
+                &r,
+                "orig book bytes",
+                &opaths,
+                &["CHANGED oracle".to_owned()]
+            ),
+            Some("oracle o.sh".to_owned()),
+            "a changed oracle ⇒ desync (which names the oracle path)"
+        );
     }
 
     /// [`probe1`] but ENTRY-bearing (a wrapped-context site): the runtime-EntryFailure input.
