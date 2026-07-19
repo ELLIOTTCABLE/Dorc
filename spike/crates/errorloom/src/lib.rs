@@ -19,6 +19,7 @@
 
 use std::fmt::Debug;
 
+mod bless;
 mod container;
 mod diff;
 mod promote;
@@ -26,6 +27,10 @@ mod prose;
 mod runner;
 mod span;
 
+pub use crate::bless::{
+    BlessError, BlessMode, BlessResult, CaseFile, Consumer, FakeGit, Git, GitError, ModeRefusal,
+    SubprocessGit, TaggedBaseline, fixpoint_check, infer_mode, prose_bless, structure_bless,
+};
 pub use crate::container::{
     Case, CaseError, Frontmatter, FrontmatterValue, REPLAY_SECTION, ReplayBlock, ReplaySection,
     Section,
