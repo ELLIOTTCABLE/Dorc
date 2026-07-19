@@ -16,6 +16,16 @@
 
 ## ROUND 28 (seeded 2026-07-19 — the current view)
 
+**Conduct seat (2026-07-19, later the same day):** the build conductor is seated on
+**`ai/r28-impl`** (worktree `r28-impl`; base = the folded ai/main tip `40f8005`);
+the round's ONE durable ledger is **`notes/28A`** — it carries the
+`28A:rul-errorloom-product-cut` scope ruling (amends `280` §1: bless orchestration,
+span-map schema, generic case gates, CLI, and a toy consumer move INTO errorloom),
+the syntax-lane pre-rulings (§2), the lane/dispatch state, and the ack-ledger. Lanes
+`ai/r28-errorloom-crate` (transport d1) and `ai/r28-syntax-respell` (phase-A
+proposal → `notes/28B`) are dispatched off `0825f6e`; a human-directed janitor sweep
+of stale worktrees/branches runs alongside.
+
 **Where we are:** the user-aid build phase is COMPLETE (below), and round 28 opens
 on two seed documents. **`plans/281`** (the annotation mark-grammar — THE spec of
 the line-annotation surface: one-intro+sugar grammar, the word-verb vocabulary,
