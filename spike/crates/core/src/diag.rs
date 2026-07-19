@@ -972,6 +972,13 @@ pub enum SubDiag {
 ///
 /// No machine-applicable SPAN-EDIT to a shipped `.sh` artifact this round: a suggestion is
 /// admin-facing guidance (CLI), not an artifact rewrite — the artifact stays fact-plane (ru-12).
+///
+/// SEAM (gap-4, RE-PARKED d4b): `Suggestion` has NO production emitter yet — the type stands, the
+/// wiring waits. The natural FIRST emitter is `missing-dialect-marker` (an honest
+/// `Applicability::MachineApplicable` insert of `# dorc-lang/v0.1` into an oracle's first 10 lines),
+/// which unparks WITH the `dorc fix` apply-story (`27S` §4 fix-modes, deferred) — its artifact-vs-
+/// authoring-plane auto-apply boundary needs a human ruling before the first real `MachineApplicable`
+/// lands. Until then the code's `message` already states the fix in prose.
 #[derive(Debug, Clone)]
 pub struct Suggestion {
     /// The remediation prose ("declare nginx's `installed` selector in the oracle").
@@ -997,24 +1004,28 @@ pub enum Applicability {
     Unspecified,
 }
 
-/// The human-ratified render axis (ru-6, `224` §7; `22A` arch-2): classify every remediable
-/// origin by what USER ACTION clears it, and rank/group the render by that. The dashboard's
-/// four-cause decomposition, generalized per-site.
+/// The human-ratified render axis (ru-6, `224` §7), re-cut HOW-not-WHO per ru-27: classify every
+/// remediable origin by the KIND OF FIX that clears it — not who does it — and rank/group the render
+/// by that. The old who-decomposition (author-oracle / fix-book-line) collapsed the dev-vs-admin
+/// distinction into the ACTION type, which is what the render actually groups on; the two-user
+/// distinction (AGENTS) now rides the fix's phrasing at render time, not the class.
 ///
-/// The two-user exclusion-check (AGENTS): [`AuthorOracle`](Self::AuthorOracle) speaks to the
-/// dev-team author, [`FixBookLine`](Self::FixBookLine) to the ops admin — the two users get
-/// separate remediation verbs. [`Structural`](Self::Structural) is the honest "no user action
-/// clears this; it's a Dorc limitation" bucket — load-bearing for not lying to an admin that
-/// they can fix a ⊤ that is really ours.
+/// [`Structural`](Self::Structural) stays the honest "no user action clears this; it's a Dorc
+/// limitation" bucket — load-bearing for not lying that a ⊤ that is really ours is fixable
+/// (`271:rul-sin-ordering`: mis-attribution is the worst aid failure).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RemediationClass {
-    /// An oracle must be written/extended (the dev-team author).
-    AuthorOracle,
-    /// A missing kind/selector/Query declaration (oracle or book).
-    AddDeclaration,
-    /// The book line itself is wrong/ambiguous (the admin).
-    FixBookLine,
-    /// Unmodeled construct — Dorc itself must grow; no user fix.
+    /// Resolve a dynamic/runtime value so Dorc can read it (make the operand a literal, drop the
+    /// `$(…)`): the give-up is a value Dorc could not resolve, not a missing model.
+    ResolveDynamism,
+    /// Declare the missing identity: a kind/selector/coordinate/vouch/marker the analyzer needs to
+    /// bind or license (an oracle- OR book-side declaration).
+    DeclareIdentity,
+    /// Provide or extend a model: author/fix an oracle (a read-only probe, a coherent wrapper, a
+    /// well-formed check body) so the tool is no longer unmodeled.
+    ProvideModel,
+    /// No user action clears it — a Dorc-modeling limitation (an honest "it's ours", never a false
+    /// "you can fix this").
     Structural,
 }
 
@@ -1049,16 +1060,19 @@ pub fn registry(code: &DiagCode) -> CodeSpec {
         DiagCode::CmdsubOperandTop(_) => CodeSpec {
             severity: Severity::Note,
             floor: Floor::None,
+            remediation: RemediationClass::ResolveDynamism,
         },
         DiagCode::SiteUnresolvable(_) => CodeSpec {
             severity: Severity::Note,
             floor: Floor::None,
+            remediation: RemediationClass::ProvideModel,
         },
         DiagCode::RenderHeredocRefused(_) => CodeSpec {
             severity: Severity::Error,
             // PROPOSED floor (22B-fork-floor-membership): a render-refusal that would otherwise
             // ship a broken artifact must never be silenced below a warning.
             floor: Floor::WarnOrDeny,
+            remediation: RemediationClass::Structural,
         },
         // ── B4 sweep: former diag::legacy survivors ──────────────────────────
         // Pure disclosures (the apply runs these sites regardless) → Note + Floor::None.
@@ -1066,16 +1080,19 @@ pub fn registry(code: &DiagCode) -> CodeSpec {
             severity: Severity::Note,
             // PROPOSED floor: pure disclosure, no correctness floor needed.
             floor: Floor::None,
+            remediation: RemediationClass::Structural,
         },
         DiagCode::RedirTargetTop(_) => CodeSpec {
             severity: Severity::Note,
             // PROPOSED floor: pure disclosure.
             floor: Floor::None,
+            remediation: RemediationClass::ResolveDynamism,
         },
         DiagCode::Depth2PositionalUnthreaded(_) => CodeSpec {
             severity: Severity::Note,
             // PROPOSED floor: pure disclosure of a depth-2 limitation.
             floor: Floor::None,
+            remediation: RemediationClass::Structural,
         },
         // ── B4 sweep: syntax/parser.rs ───────────────────────────────────────
         // Syntax errors are Error-class correctness give-ups → WarnOrDeny floor.
@@ -1084,49 +1101,58 @@ pub fn registry(code: &DiagCode) -> CodeSpec {
             // PROPOSED floor: an unmodeled construct causes ⊤; silencing it would hide a
             // correctness give-up.
             floor: Floor::WarnOrDeny,
+            remediation: RemediationClass::Structural,
         },
         DiagCode::SyntaxMalformed(_) => CodeSpec {
             severity: Severity::Error,
             // PROPOSED floor: a parse error is a hard correctness boundary.
             floor: Floor::WarnOrDeny,
+            remediation: RemediationClass::Structural,
         },
         // ── B4 sweep: analysis/cfg.rs ────────────────────────────────────────
         DiagCode::CfgTopNode(_) => CodeSpec {
             severity: Severity::Error,
             // PROPOSED floor: a ⊤-reject is a correctness give-up.
             floor: Floor::WarnOrDeny,
+            remediation: RemediationClass::Structural,
         },
         DiagCode::CfgErexitUnknown(_) => CodeSpec {
             severity: Severity::Warning,
             // PROPOSED floor: a conservative assumption, but silencing could mask a missed edge.
             floor: Floor::None,
+            remediation: RemediationClass::Structural,
         },
         DiagCode::CfgInlineRefused(_) => CodeSpec {
             severity: Severity::Warning,
             // PROPOSED floor: a capability disclosure; the call runs as unmodeled (MustRun, safe).
             floor: Floor::None,
+            remediation: RemediationClass::Structural,
         },
         DiagCode::CfgBuiltinShadowed(_) => CodeSpec {
             severity: Severity::Warning,
             // PROPOSED floor: a disclosure of an assumption that may be unsound.
             floor: Floor::None,
+            remediation: RemediationClass::Structural,
         },
         // ── B4 sweep: analysis/effect.rs ─────────────────────────────────────
         DiagCode::EffectKindDisagreement(_) => CodeSpec {
             severity: Severity::Warning,
             // PROPOSED floor: the annotation wins; the warning is informational.
             floor: Floor::None,
+            remediation: RemediationClass::DeclareIdentity,
         },
         // ── B4 sweep: oracle/predict/parser.rs ─────────────────────────────────
         DiagCode::PredictOutOfDialect(_) => CodeSpec {
             severity: Severity::Error,
             // PROPOSED floor: an out-of-dialect check cannot be lifted — correctness gap.
             floor: Floor::WarnOrDeny,
+            remediation: RemediationClass::ProvideModel,
         },
         DiagCode::PredictUnterminated(_) => CodeSpec {
             severity: Severity::Error,
             // PROPOSED floor: an unterminated check body cannot be lifted — correctness gap.
             floor: Floor::WarnOrDeny,
+            remediation: RemediationClass::ProvideModel,
         },
         // ── sweep: severities preserve each emit site's CURRENT classification exactly.
         // Floor rule (as elsewhere): Error ⇒ WarnOrDeny (a refusal must not silence below Warning);
@@ -1134,159 +1160,198 @@ pub fn registry(code: &DiagCode) -> CodeSpec {
         DiagCode::MungeNameInvalid(_) => CodeSpec {
             severity: Severity::Error,
             floor: Floor::WarnOrDeny,
+            remediation: RemediationClass::ProvideModel,
         },
         DiagCode::MungeNameCollision(_) => CodeSpec {
             severity: Severity::Error,
             floor: Floor::WarnOrDeny,
+            remediation: RemediationClass::ProvideModel,
         },
         DiagCode::ReservedNamespaceSquat(_) => CodeSpec {
             severity: Severity::Warning,
             floor: Floor::None,
+            remediation: RemediationClass::DeclareIdentity,
         },
         DiagCode::MissingDialectMarker(_) => CodeSpec {
             severity: Severity::Error,
             floor: Floor::WarnOrDeny,
+            remediation: RemediationClass::DeclareIdentity,
         },
         DiagCode::ToleratesUnknownDimension(_) => CodeSpec {
             severity: Severity::Warning,
             floor: Floor::None,
+            remediation: RemediationClass::DeclareIdentity,
         },
         DiagCode::ToleratesOverIdentityDependence(_) => CodeSpec {
             severity: Severity::Warning,
             floor: Floor::None,
+            remediation: RemediationClass::DeclareIdentity,
         },
         DiagCode::HeavyContextNoTolerance(_) => CodeSpec {
             severity: Severity::Note,
             floor: Floor::None,
+            remediation: RemediationClass::DeclareIdentity,
         },
         DiagCode::LendMapUnknownDimension(_) => CodeSpec {
             severity: Severity::Warning,
             floor: Floor::None,
+            remediation: RemediationClass::DeclareIdentity,
         },
         DiagCode::CarryNetnsOnNetKernelForbidden(_) => CodeSpec {
             severity: Severity::Note,
             floor: Floor::None,
+            remediation: RemediationClass::DeclareIdentity,
         },
         DiagCode::MarkBraceVerdictSingleCell(_) => CodeSpec {
             severity: Severity::Warning,
             floor: Floor::None,
+            remediation: RemediationClass::DeclareIdentity,
         },
         DiagCode::RecordsHeaderlessRefused(_) => CodeSpec {
             severity: Severity::Warning,
             floor: Floor::None,
+            remediation: RemediationClass::Structural,
         },
         DiagCode::RecordsGluedLine(_) => CodeSpec {
             severity: Severity::Warning,
             floor: Floor::None,
+            remediation: RemediationClass::Structural,
         },
         DiagCode::RecordsHeaderMissing(_) => CodeSpec {
             severity: Severity::Warning,
             floor: Floor::None,
+            remediation: RemediationClass::Structural,
         },
         DiagCode::RecordsSentinelNonce(_) => CodeSpec {
             severity: Severity::Warning,
             floor: Floor::None,
+            remediation: RemediationClass::Structural,
         },
         DiagCode::RecordsFactTruncated(_) => CodeSpec {
             severity: Severity::Note,
             floor: Floor::None,
+            remediation: RemediationClass::Structural,
         },
         DiagCode::RecordsIntegrityRefused(_) => CodeSpec {
             severity: Severity::Warning,
             floor: Floor::None,
+            remediation: RemediationClass::Structural,
         },
         DiagCode::RecordsTornLine(_) => CodeSpec {
             severity: Severity::Warning,
             floor: Floor::None,
+            remediation: RemediationClass::Structural,
         },
         DiagCode::RecordsAlienLine(_) => CodeSpec {
             severity: Severity::Warning,
             floor: Floor::None,
+            remediation: RemediationClass::Structural,
         },
         DiagCode::RecordsLateLine(_) => CodeSpec {
             severity: Severity::Warning,
             floor: Floor::None,
+            remediation: RemediationClass::Structural,
         },
         DiagCode::FootprintIncoherent(_) => CodeSpec {
             severity: Severity::Warning,
             floor: Floor::None,
+            remediation: RemediationClass::ProvideModel,
         },
         DiagCode::TouchesEscalated(_) => CodeSpec {
             severity: Severity::Note,
             floor: Floor::None,
+            remediation: RemediationClass::Structural,
         },
         DiagCode::DerivFamilyIncomplete(_) => CodeSpec {
             severity: Severity::Warning,
             floor: Floor::None,
+            remediation: RemediationClass::ProvideModel,
         },
         DiagCode::EscalationPolicy(_) => CodeSpec {
             severity: Severity::Note,
             floor: Floor::None,
+            remediation: RemediationClass::Structural,
         },
         DiagCode::CarriedAcrossSubstrateAxis(_) => CodeSpec {
             severity: Severity::Note,
             floor: Floor::None,
+            remediation: RemediationClass::Structural,
         },
         DiagCode::WrappedSiteAdoptionHint(_) => CodeSpec {
             severity: Severity::Note,
             floor: Floor::None,
+            remediation: RemediationClass::DeclareIdentity,
         },
         DiagCode::ResolverConflict(_) => CodeSpec {
             severity: Severity::Error,
             floor: Floor::WarnOrDeny,
+            remediation: RemediationClass::ProvideModel,
         },
         DiagCode::ResolverProviderCollision(_) => CodeSpec {
             severity: Severity::Warning,
             floor: Floor::None,
+            remediation: RemediationClass::ProvideModel,
         },
         DiagCode::DanglingReference(_) => CodeSpec {
             severity: Severity::Note,
             floor: Floor::None,
+            remediation: RemediationClass::DeclareIdentity,
         },
         DiagCode::ReachesConflict(_) => CodeSpec {
             severity: Severity::Error,
             floor: Floor::WarnOrDeny,
+            remediation: RemediationClass::ProvideModel,
         },
         DiagCode::ReachesProviderCollision(_) => CodeSpec {
             severity: Severity::Warning,
             floor: Floor::None,
+            remediation: RemediationClass::ProvideModel,
         },
         DiagCode::WrapperEntryIncoherent(_) => CodeSpec {
             severity: Severity::Error,
             floor: Floor::WarnOrDeny,
+            remediation: RemediationClass::ProvideModel,
         },
         DiagCode::WrapperPeelIncoherent(_) => CodeSpec {
             severity: Severity::Error,
             floor: Floor::WarnOrDeny,
+            remediation: RemediationClass::ProvideModel,
         },
         // `dorc why --last` refusals: pull-surface disclosures ⇒ Warning + Floor::None.
         DiagCode::WhylogVersionRefused(_) => CodeSpec {
             severity: Severity::Warning,
             floor: Floor::None,
+            remediation: RemediationClass::Structural,
         },
         DiagCode::WhylogBookDesync(_) => CodeSpec {
             severity: Severity::Warning,
             floor: Floor::None,
+            remediation: RemediationClass::Structural,
         },
         DiagCode::WhylogAbsent(_) => CodeSpec {
             severity: Severity::Warning,
             floor: Floor::None,
+            remediation: RemediationClass::Structural,
         },
         DiagCode::WhylogCorrupt(_) => CodeSpec {
             severity: Severity::Warning,
             floor: Floor::None,
+            remediation: RemediationClass::Structural,
         },
     }
 }
 
-/// A code's declared severity + floor (the [`registry`] row). Severity comes from HERE, never a
-/// constructor (`crib-4`).
+/// A code's declared severity + floor + remediation class (the [`registry`] row). Severity comes
+/// from HERE, never a constructor (`crib-4`); [`remediation`](Self::remediation) is the ru-27
+/// HOW-not-WHO column (gap-4 — replacing the old `remediation_for` default-to-Structural stub).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct CodeSpec {
     /// The declared severity (the gate-3 floor keys on `Error`).
     pub severity: Severity,
     /// The un-overridable floor (`crib-5`).
     pub floor: Floor,
+    /// The HOW-not-WHO remediation class (ru-27): the kind of fix that clears this code's origin.
+    pub remediation: RemediationClass,
 }
 
 /// The un-overridable floor (`crib-5`; rustc `future-incompatible` = a floor, not a level). When
@@ -1721,39 +1786,26 @@ pub fn why(diag: &Diag, arena: &crate::ProvArena, src: &str) -> Option<Explanati
     })
 }
 
-/// The PROPOSED remediation class for a code, for the why-lens (`tc-whylens-remediation` — the
-/// builder PROPOSES, the conductor disposes at harvest, per `22D` §3 fork-remediation). My
-/// per-code judgment, clearly marked:
-/// * [`DiagCode::CmdsubOperandTop`] ⇒ [`RemediationClass::FixBookLine`] — the forced run comes
-///   from a DYNAMIC operand in the BOOK (`$(…)`/runtime value); the actionable fix is the admin's
-///   (make the operand a literal so Dorc can resolve+probe it). It is NOT `AuthorOracle` (no
-///   oracle gap forces it) nor `Structural` (the book line CAN be written to resolve). ~SUSPECT:
-///   a defensible alternative is `Structural` (Dorc fundamentally cannot resolve a runtime
-///   substitution) — flagged for the conductor.
-/// * every other code ⇒ [`RemediationClass::Structural`] as a conservative default; the why-lens
-///   does not currently explain them (it returns `None`), so this is only a placeholder the
-///   harvest revisits if those codes ever gain a why.
+/// The remediation class for a code — now the [`registry`] column (ru-27; gap-4), replacing the old
+/// `remediation_for` default-to-Structural stub. The why-lens reads it through here so a caused-⊤
+/// renders the right fix-kind.
 fn remediation_for(code: &DiagCode) -> RemediationClass {
-    match code {
-        DiagCode::CmdsubOperandTop(_) => RemediationClass::FixBookLine,
-        _ => RemediationClass::Structural,
-    }
+    registry(code).remediation
 }
 
-/// The one-line remediation hint for a class (the why-lens's `<remediation hint>` tail). Addresses
-/// the right user (AGENTS two-user exclusion-check): the admin for [`RemediationClass::FixBookLine`],
-/// the oracle author for [`RemediationClass::AuthorOracle`], and an honest "no user fix" for
-/// [`RemediationClass::Structural`].
+/// The one-line remediation hint for a class (the why-lens's `<remediation hint>` tail). The four
+/// sentences CARRY verbatim from the old who-classes onto the ru-27 how-classes (the `[tag]` updates
+/// with the rename); the right-user phrasing lives in the prose, not the class.
 fn remediation_hint(class: RemediationClass) -> &'static str {
     match class {
-        RemediationClass::AuthorOracle => {
-            "to elide it, an oracle must declare a read-only probe for this kind [author-oracle]"
+        RemediationClass::ProvideModel => {
+            "to elide it, an oracle must declare a read-only probe for this kind [provide-model]"
         }
-        RemediationClass::AddDeclaration => {
-            "to elide it, add the missing kind/selector/Query declaration [add-declaration]"
+        RemediationClass::DeclareIdentity => {
+            "to elide it, add the missing kind/selector/Query declaration [declare-identity]"
         }
-        RemediationClass::FixBookLine => {
-            "to elide it, make the operand a literal Dorc can resolve+probe [fix-book-line]"
+        RemediationClass::ResolveDynamism => {
+            "to elide it, make the operand a literal Dorc can resolve+probe [resolve-dynamism]"
         }
         RemediationClass::Structural => {
             "no user fix — Dorc cannot model this construct [structural]"
@@ -1812,9 +1864,9 @@ fn severity_word(severity: Severity) -> &'static str {
 /// The `[remediation-class]` inline tag (`render-1`): a stable lowercase slug per class.
 fn remediation_tag(class: RemediationClass) -> &'static str {
     match class {
-        RemediationClass::AuthorOracle => "author-oracle",
-        RemediationClass::AddDeclaration => "add-declaration",
-        RemediationClass::FixBookLine => "fix-book-line",
+        RemediationClass::ResolveDynamism => "resolve-dynamism",
+        RemediationClass::DeclareIdentity => "declare-identity",
+        RemediationClass::ProvideModel => "provide-model",
         RemediationClass::Structural => "structural",
     }
 }
@@ -2181,7 +2233,7 @@ mod tests {
         .suggest(Suggestion {
             message: "declare the kind's selector in its oracle".to_owned(),
             applicability: Applicability::MaybeIncorrect,
-            remediation: RemediationClass::AuthorOracle,
+            remediation: RemediationClass::ProvideModel,
         });
         assert_eq!(d.secondary.len(), 1);
         assert_eq!(d.children.len(), 1);
@@ -2189,7 +2241,7 @@ mod tests {
         let cli = render_cli(&d, "01234_56789poisoned_", "book.sh", &Interner::default());
         assert!(cli.contains("command forced to run"), "{cli}");
         assert!(cli.contains("cannot be elided"), "{cli}");
-        assert!(cli.contains("[author-oracle]"), "{cli}");
+        assert!(cli.contains("[provide-model]"), "{cli}");
     }
 
     /// ack-8 `line_col`: the SOURCE-file line-number space (rul24-lineno-identity). 1-based line
@@ -2333,8 +2385,8 @@ mod tests {
         let exp = why(&d, &arena, src).expect("a caused-⊤ has a why-lens explanation");
         assert_eq!(
             exp.remediation,
-            RemediationClass::FixBookLine,
-            "PROPOSED remediation class for a dynamic-operand forced run (tc-whylens-remediation)"
+            RemediationClass::ResolveDynamism,
+            "the ru-27 HOW class for a dynamic-operand forced run (registry column)"
         );
         assert!(
             exp.reason.contains("operand 1"),
@@ -2352,7 +2404,7 @@ mod tests {
             exp.reason
         );
         assert!(
-            exp.reason.contains("[fix-book-line]"),
+            exp.reason.contains("[resolve-dynamism]"),
             "the remediation hint addresses the right user (admin): {}",
             exp.reason
         );
