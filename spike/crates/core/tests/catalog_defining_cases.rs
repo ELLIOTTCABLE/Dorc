@@ -211,9 +211,7 @@ fn covered() -> Vec<DefiningCase> {
             },
         },
         // The four `281` mark-grammar parse codes (`28A:rul-new-codes-ship-covered-cases`): each
-        // ships as a covered() case with `[unwritten: <slug>]` prose (the aid precedent above), so
-        // the ratchet does not grow. Their REAL cases + prose arrive through the `282` empty loop
-        // after the generation flip — a named rider on the unify lane, not this lane's work.
+        // covered() with `[unwritten:]` prose (the aid precedent above), so the ratchet never grows.
         DefiningCase {
             slug: "mark-unknown-verb",
             build: || {
@@ -575,9 +573,8 @@ fn unwritten_renders_are_greppable_and_pinned() {
     }
     // At the base tip the prose is `sm `-prefixed or conductor-authored — zero `[unwritten:]` yet.
     // This pin SHRINKS to accommodate new codes' placeholders and re-tightens as prose is authored;
-    // it never silently grows unnoticed (a bump here is a conscious conductor act). Ceiling bumped
-    // 1 → 5 for the four `281` mark-grammar codes' `[unwritten:]` prose (`28A:rul-new-codes-ship-
-    // covered-cases` authorizes this conscious bump); it re-tightens as the `282` loop authors them.
+    // it never silently grows unnoticed (a bump here is a conscious conductor act). Ceiling 1 → 5
+    // for the four `281` mark-grammar codes' `[unwritten:]` prose (`28A:rul-new-codes-ship-covered-cases`).
     assert!(
         unwritten.len() <= 5,
         "more `[unwritten:]` placeholders ({}) than the pinned ceiling — each is a conductor prose \

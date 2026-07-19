@@ -74,13 +74,32 @@ pub(super) enum Tok {
 
 /// Lex `src` into tokens. Total: every byte is consumed into some token (or an
 /// `Error` token), and the function always terminates. Spans are byte offsets into
-/// `src`.
+/// `src`. The OLD-grammar entry — `#:` is an ordinary comment here (byte-identical to
+/// pre-`281` behavior; the new grammar reaches `#:` marks only through [`lex_marks`]).
 pub(super) fn lex(src: &str) -> Vec<Token> {
     Lexer {
         bytes: src.as_bytes(),
         src,
         pos: 0,
         out: Vec::new(),
+        hashcolon: false,
+    }
+    .run()
+}
+
+/// Lex `src` recognizing the `281` hash-colon carrier: a `#` at a comment boundary whose
+/// immediate next byte is `:` (no space) emits a `#:`… word (a mark intro), not a comment
+/// (`281` §1). `# dorc-lang/v0.1` (a space follows the `#`) stays a comment — the immediate
+/// colon is the whole disambiguator. Reached ONLY by the new-grammar [`super::mark_grammar`]
+/// (itself `#[cfg(test)]`-gated UNWIRED); the OLD parser keeps [`lex`], so e2e is untouched.
+#[cfg(test)]
+pub(super) fn lex_marks(src: &str) -> Vec<Token> {
+    Lexer {
+        bytes: src.as_bytes(),
+        src,
+        pos: 0,
+        out: Vec::new(),
+        hashcolon: true,
     }
     .run()
 }
@@ -90,6 +109,8 @@ struct Lexer<'a> {
     src: &'a str,
     pos: usize,
     out: Vec<Token>,
+    /// Recognize the `281` `#:` carrier (see [`lex_marks`]); `false` for the OLD grammar.
+    hashcolon: bool,
 }
 
 impl Lexer<'_> {
@@ -107,7 +128,9 @@ impl Lexer<'_> {
             match b {
                 b' ' | b'\t' | b'\r' => self.pos = self.pos.saturating_add(1),
                 b'\n' => self.punct(Tok::Newline, 1),
-                b'#' if self.at_comment_start() => self.skip_comment(),
+                b'#' if self.at_comment_start() && !self.at_hashcolon_intro() => {
+                    self.skip_comment();
+                }
                 b'(' => self.punct(Tok::LParen, 1),
                 b')' => self.punct(Tok::RParen, 1),
                 b'{' if self.brace_is_standalone() => self.punct(Tok::LBrace, 1),
@@ -177,6 +200,13 @@ impl Lexer<'_> {
     /// whitespace) — `${1#-}` and `dpkg-query`'s `#` are NOT comments.
     fn at_comment_start(&self) -> bool {
         matches!(self.prev(), None | Some(b' ' | b'\t' | b'\n' | b'\r'))
+    }
+
+    /// In hash-colon mode, a `#` whose immediate next byte is `:` opens a `281` mark intro
+    /// (`#:`/`#:!`/`#:?`/`#:=`), not a comment — the word lexer takes it (`#`/`:` are word
+    /// bytes). The immediate colon is the disambiguator from `# dorc-lang/v0.1` (`281` §1).
+    fn at_hashcolon_intro(&self) -> bool {
+        self.hashcolon && self.peek(1) == Some(b':')
     }
 
     fn skip_comment(&mut self) {

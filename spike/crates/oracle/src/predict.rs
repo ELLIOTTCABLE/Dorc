@@ -40,6 +40,11 @@ mod eval;
 mod lexer;
 mod parser;
 
+// The `281` new-grammar mark parser lands UNWIRED (`28A:rul-respell-atomic-cutover`): reached
+// only by its own unit tests until the CP-D cutover un-gates and wires it into lift/strip.
+#[cfg(test)]
+mod mark_grammar;
+
 pub use ast::{Mark, MarkKind, MarkTarget, Predict, PredictSet, Stmt};
 pub use derive::{DerivedEffect, ValueClaim, derive_predict};
 pub use eval::{

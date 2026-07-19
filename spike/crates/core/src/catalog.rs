@@ -422,10 +422,8 @@ pub const CATALOG: &[CatalogEntry] = &[
         help: None,
     },
     // ── oracle/predict (the `281` mark-grammar parse — new-grammar path) ─────
-    //    UNWRITTEN prose (`27V:rul-error-authorship-tier`): the builder mints the code + metadata
-    //    with an empty prose block (the `[unwritten: <slug>]` placeholder); the conductor authors
-    //    the message from this metadata after the `282` generation flip (`28A:rul-new-codes-ship-
-    //    covered-cases`). `example` is a machine-facing strawman for the prose author, not prose.
+    //    UNWRITTEN prose (`27V:rul-error-authorship-tier`): message is the `[unwritten:]`
+    //    placeholder; conductor authors it after the `282` flip. `example` is a strawman, not prose.
     CatalogEntry {
         slug: "mark-unknown-verb",
         when_fires: "the new-grammar mark parser hit a period-free head/continuation token that is \

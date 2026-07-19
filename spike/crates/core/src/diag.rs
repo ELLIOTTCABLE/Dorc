@@ -1265,11 +1265,8 @@ pub fn registry(code: &DiagCode) -> CodeSpec {
             floor: Floor::None,
             remediation: RemediationClass::DeclareIdentity,
         },
-        // ── `281` mark-grammar parse errors: a malformed mark is committed syntax ⇒ the block
-        // drops to ⊤ (`inv-top-reject`), Error + WarnOrDeny. `mark-hashcolon-malformed` is the
-        // ONE Warning (`281` §9: the `#:` comment stays a comment, never mis-erased). Remediation
-        // is DeclareIdentity throughout, tracking the sibling `mark-brace-verdict-single-cell` (a
-        // builder judgment on a not-yet-user-visible code; conductor may re-cut with the prose).
+        // `281` marks ⇒ ⊤ (`inv-top-reject`): Error+WarnOrDeny, save `mark-hashcolon-malformed`
+        // (Warning, `281` §9). Remediation DeclareIdentity tracks `mark-brace-verdict-single-cell`.
         DiagCode::MarkUnknownVerb(_) => CodeSpec {
             severity: Severity::Error,
             floor: Floor::WarnOrDeny,
