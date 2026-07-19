@@ -1,0 +1,6 @@
+#!/bin/sh
+# INERT mock: the book runs `sysctl vm.drop_caches` (the decline means no elision — it RUNS).
+# In the probe, the reached arm only `printf`s to the report sink + `return 2` (no external
+# command), so this mock is invoked ONLY by the apply. Mutates nothing.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
