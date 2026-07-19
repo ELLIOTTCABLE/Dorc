@@ -1643,6 +1643,9 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
             &book_src,
             book_name,
             &interner,
+            &oracle_paths,
+            &oracle_srcs,
+            args.trust_footprints,
         );
         std::io::stdout().flush().ok();
         return Ok(book_outcome);
@@ -3588,6 +3591,191 @@ fn is_establish_bearing(class: &dorc_analysis::effect::SkipClass) -> bool {
     }
 }
 
+/// The ONE seat that renders a [`TrustTier`] to a word (`law-trust-tier-is-syntax`;
+/// `27V:mech-trust-tier-typed`): the chain walker below is the ONLY code that turns a typed tier into
+/// prose, so a `claimed` link can never wear a `measured`'s clothes (mis-attribution is the worst aid
+/// failure — `271:rul-sin-ordering`). STRAWMAN spellings, unwelded (`27V:rul-output-form-unwelded`).
+fn tier_word(tier: TrustTier) -> &'static str {
+    match tier {
+        TrustTier::Measured => "measured",
+        TrustTier::Vouched => "vouched",
+        TrustTier::Ran => "ran",
+        TrustTier::Claimed => "claimed",
+        TrustTier::Derived => "derived",
+        TrustTier::Consented => "consented",
+    }
+}
+
+/// One rendered link in a `dorc why N` disposition chain (`27V` §3 arrangement walker;
+/// `aid-why-license-chain`). `tier` is the only epistemic signal — rendered by [`tier_word`] alone,
+/// never hand-written into `body` (`law-trust-tier-is-syntax`). `locus` is the `file:line` a link
+/// attributes to a named author (`None` for a host measurement / engine derivation / consent flag).
+struct ChainLink {
+    tier: TrustTier,
+    body: String,
+    locus: Option<String>,
+}
+
+/// The naked-trust epilogue (`aid-why-license-chain`; the flagship's product moment,
+/// `tc-naked-trust-epilogue-derivation`, conductor-confirmed). Derived STRUCTURALLY from which
+/// evidence-kinds the chain carries — never an instance guess: a chain that carries `Consented` +
+/// `Claimed` + a `Derived` disjointness sparing a `Measured` backing has exactly ONE
+/// unverified-by-construction link, the `Claimed` one, because the survival tier is the SOLE place a
+/// naked human claim ships (`USER_STORY` bought-unsoundness). `leverage` is that claim's line to widen.
+struct NakedTrust {
+    naked_link: u32,
+    leverage: Option<String>,
+}
+
+/// A `dorc why N` disposition chain (`27V` §3): the numbered links + the naked-trust epilogue.
+/// Content + structure are the law; wording/arrangement ride `27V:rul-output-form-unwelded` (the
+/// byte-render re-blesses freely; needles pin the tier words, the loci, and the epilogue's presence).
+struct ChainRender {
+    header: String,
+    disposition: String,
+    links: Vec<ChainLink>,
+    epilogue: Option<NakedTrust>,
+}
+
+/// Build the SURVIVAL chain for a survived-elision step (`aid-why-license-chain`; the `27V` §4
+/// flagship acceptance). Pure over the plan's [`dorc_plan::SurvivalWitness`] + display context: the
+/// numbered measured/vouched/ran/claimed/derived/consented links per `USER_STORY` Recovery. `None` when
+/// the step survived no wall (an ordinary elision has no chain to walk). The naked-trust epilogue is
+/// derived from evidence-kind presence only (`tc-naked-trust-epilogue-derivation`).
+fn survival_chain(
+    header: String,
+    license: &dorc_plan::ReplaceLicense,
+    trust_footprints: bool,
+    interner: &Interner,
+    oracle_paths: &[String],
+    oracle_srcs: &[String],
+) -> Option<ChainRender> {
+    let witness = license.derivation().survival.as_ref()?;
+    let backing = render_coord(witness.backing(), interner);
+    let mut links = vec![
+        ChainLink {
+            tier: TrustTier::Measured,
+            body: format!("{backing} was measured converged on the host at plan time"),
+            locus: None,
+        },
+        ChainLink {
+            tier: TrustTier::Vouched,
+            body:
+                "the site's own oracle accepts that measured state as reason enough not to re-run \
+                   this line"
+                    .to_owned(),
+            locus: oracle_locus(license.derivation().vouch_span, oracle_paths, oracle_srcs),
+        },
+    ];
+    let mut claimed_link: Option<u32> = None;
+    for c in witness.crossings() {
+        links.push(ChainLink {
+            tier: TrustTier::Ran,
+            body: format!(
+                "`{}` (wall site {}) really ran above this line",
+                interner.resolve(c.provider()),
+                c.wall_leaf().0
+            ),
+            locus: None,
+        });
+        let coords: Vec<String> = c
+            .footprint()
+            .iter()
+            .map(|fc| render_coord(*fc, interner))
+            .collect();
+        links.push(ChainLink {
+            tier: TrustTier::Claimed,
+            body: format!(
+                "that wall's author claims it disturbs at most {{{}}} — an author's claim, nothing \
+                 verifies it",
+                coords.join(" ")
+            ),
+            locus: oracle_locus(c.footprint_span(), oracle_paths, oracle_srcs),
+        });
+        claimed_link = Some(u32::try_from(links.len()).unwrap_or(u32::MAX)); // 1-based: the link just pushed
+    }
+    links.push(ChainLink {
+        tier: TrustTier::Derived,
+        body: format!(
+            "that claim is proven disjoint from {backing} — it does not overlap what was measured"
+        ),
+        locus: None,
+    });
+    if trust_footprints {
+        links.push(ChainLink {
+            tier: TrustTier::Consented,
+            body:
+                "`--trust-footprints` was set, which is what lets a claim keep a line out of the \
+                   plan past a running mutation"
+                    .to_owned(),
+            locus: None,
+        });
+    }
+    // The structural triple (`tc-naked-trust-epilogue-derivation`): consent + a claim + a derived
+    // sparing over a measured backing ⇒ the claim is naked-by-construction. Absent the triple, no
+    // epilogue (an ordinary disjoint survival with no consent is not a naked-trust corner).
+    let epilogue = (trust_footprints && claimed_link.is_some()).then(|| NakedTrust {
+        naked_link: claimed_link.unwrap_or(0),
+        leverage: witness
+            .crossings()
+            .iter()
+            .find_map(|c| oracle_locus(c.footprint_span(), oracle_paths, oracle_srcs)),
+    });
+    Some(ChainRender {
+        header,
+        disposition: format!(
+            "removed from the plan (elided) — {backing} is converged (probe: holds)"
+        ),
+        links,
+        epilogue,
+    })
+}
+
+/// Render a [`ChainRender`] to output lines (`27V` §3; `27V:rul-output-form-unwelded`). Links number
+/// at render time; each shows `<n>. <tier-word>: <body> (<locus>)`. The epilogue states which link is
+/// unverified-by-construction and the two recovery moves (re-measure + fix at the leverage point).
+fn render_chain(chain: &ChainRender) -> Vec<String> {
+    let mut out = vec![
+        chain.header.clone(),
+        format!("  {}", chain.disposition),
+        String::new(),
+        "  it was removed because all of the following held together:".to_owned(),
+    ];
+    for (i, l) in chain.links.iter().enumerate() {
+        let locus = l
+            .locus
+            .as_ref()
+            .map_or_else(String::new, |s| format!(" ({s})"));
+        out.push(format!(
+            "  {}. {}: {}{locus}",
+            i.saturating_add(1),
+            tier_word(l.tier),
+            l.body
+        ));
+    }
+    if let Some(ep) = &chain.epilogue {
+        out.push(String::new());
+        out.push(format!(
+            "  if this line SHOULD have run: dorc cannot see which link is wrong, but link {} is \
+             the one unverified-by-construction claim in this chain (a naked footprint claim).",
+            ep.naked_link
+        ));
+        out.push(
+            "  to re-measure: `dorc plan <book> <host>` reads the world as it is now — dorc kept no \
+             state that can stay wrong, so a broken fact comes back diverged and the line returns."
+                .to_owned(),
+        );
+        if let Some(lev) = &ep.leverage {
+            out.push(format!(
+                "  to fix: {lev} is the line to widen; every book using that oracle inherits the \
+                 repair."
+            ));
+        }
+    }
+    out.push(String::new());
+    out
+}
+
 /// One site's WHY-record ([`emit_why_report`]): its SOURCE line (rul24-lineno-identity), the
 /// one-line command, the disposition tag, the ASCII cause-chain, and whether it is a PROBLEM
 /// (the unargumented `dorc why` filter — a ⊤/unprobed run, a guard, or a render-refusal, never a
@@ -3632,14 +3820,34 @@ fn emit_why_report(
     book_src: &str,
     filename: &str,
     interner: &Interner,
+    oracle_paths: &[String],
+    oracle_srcs: &[String],
+    trust_footprints: bool,
 ) {
     use dorc_plan::Disposition;
     let mut sites: Vec<WhySite> = Vec::new();
+    // The full survival chains (`aid-why-license-chain`), keyed by SOURCE line: a survived elision's
+    // pull answer is the numbered chain, not the flat reasons. Built here so `dorc why N` renders it
+    // for the addressed line and the unargumented run lists them in the TRUST-SPENT section.
+    let mut chains: Vec<(usize, ChainRender)> = Vec::new();
     for step in &plan.steps {
         let span = ast.node(step.ast).span;
         let (lo, hi) = (span.lo.0 as usize, span.hi.0 as usize);
         let line = dorc_core::diag::line_col(book_src, lo).0;
         let command = flatten_ws(book_src.get(lo..hi).unwrap_or("<source unavailable>"));
+        if let Disposition::Replace(license, _) = &step.disposition {
+            let header = format!("{filename}:{line}  `{command}`");
+            if let Some(chain) = survival_chain(
+                header,
+                license,
+                trust_footprints,
+                interner,
+                oracle_paths,
+                oracle_srcs,
+            ) {
+                chains.push((line, chain));
+            }
+        }
         let refused = refusals.iter().any(|d| {
             d.primary
                 .span()
@@ -3759,29 +3967,61 @@ fn emit_why_report(
         },
     };
 
+    // A survived elision's pull answer is its full chain (`aid-why-license-chain`), not the flat
+    // reasons; `chain_for` looks one up by source line.
+    let chain_for = |line: usize| chains.iter().find(|(l, _)| *l == line).map(|(_, c)| c);
+
     if address.is_none() {
-        // The unargumented default: the run's PROBLEMS, with a count-bearing heading.
-        if matched.is_empty() {
+        // The unargumented default: two DISTINCT sections (`tc-survived-elision-is-problem`,
+        // conductor-ruled) — the PROBLEMS proper (refusals/walls/guards/can't-tells), then the
+        // TRUST-SPENT section (survived elisions: spent trust, not a failure, but the bad-morning
+        // flow wants it visible). Both surface; neither conflates the other.
+        if matched.is_empty() && chains.is_empty() {
             println!(
                 "dorc why: no problems in the current run of {filename} — every site elided, ran \
                  cleanly, or was omitted."
             );
             return;
         }
-        println!(
-            "dorc why: {} problem(s) in the current run of {filename} (source-line order):\n",
-            matched.len()
-        );
-    } else if matched.is_empty() {
+        if !matched.is_empty() {
+            println!(
+                "dorc why: {} problem(s) in the current run of {filename} (source-line order):\n",
+                matched.len()
+            );
+            for s in &matched {
+                print_why_site(s, filename);
+            }
+        }
+        if !chains.is_empty() {
+            println!(
+                "dorc why: {} survived elision(s) — trust SPENT past a running wall (`--trust-\
+                 footprints`); pull the chain for each:\n",
+                chains.len()
+            );
+            for (_, chain) in &chains {
+                for l in render_chain(chain) {
+                    println!("{l}");
+                }
+            }
+        }
+        return;
+    }
+    if matched.is_empty() {
         println!(
             "{heading} no analyzed command matched (rul24-lineno-identity: a line-address is a SOURCE line)."
         );
         return;
-    } else {
-        println!("{heading}\n");
     }
+    println!("{heading}\n");
     for s in matched {
-        print_why_site(s, filename);
+        // The addressed pull answer: the full chain when the line survived a wall, else the flat record.
+        if let Some(chain) = chain_for(s.line) {
+            for l in render_chain(chain) {
+                println!("{l}");
+            }
+        } else {
+            print_why_site(s, filename);
+        }
     }
 }
 
