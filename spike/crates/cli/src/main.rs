@@ -1543,7 +1543,10 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
         // not an error. (A `--exit-code`-like surface must source from divergence-of-world, never
         // this raw rc — see `dorc_plan::render::probe::record_scaffold`.)
         emit_sigpipe_race_notes(&results);
-        emit_report_lane_notes(&results); // `27W` §2 selected default disclosure; empty in-corpus
+        emit_report_lane_notes(&results); // `27W` §2 tier-3 RUNTIME records; empty in-corpus
+        // `27W` §3 tier-2 STATIC decline classes (the `authored_reason` on decline evidence),
+        // surfaced at plan time with the emitting arm's file:line. Empty in-corpus.
+        emit_static_decline_notes(&collapse_evidence, &oracle_paths, &oracle_srcs);
         // Stage 2 co-primary (rul24-divergence-is-the-game / TC-3): every SURVIVED elision names,
         // on this same why-lens lane, which running walls it crossed and whose footprint licensed
         // each crossing. This is the attribution tether under the sharpest claim in the design —
@@ -4333,6 +4336,46 @@ fn emit_report_lane_notes(results: &SiteResults) {
         eprintln!(
             "note: author declines [{}]{at} — {tail}",
             decline_class_word(class)
+        );
+    }
+}
+
+/// Emit the TIER-2 STATIC decline-class disclosure (`27W` §3 `rul-static-first-three-tier`): one
+/// why-lens line per site whose static argv reached a recognized `decline-class-emission` arm at
+/// PLAN time (the `authored_reason` the [`dorc_core::evidence::CollapseKind::VerdictDecline`]
+/// evidence carries). A DECLINE is a why-a-line-RUNS disclosure (the author declined ⇒ the site
+/// runs), so it belongs on the same `why:` lane as the run/survival attributions — and a tier-2
+/// class is known before execution, surfacing at plan time with the emitting arm's `file:line`
+/// (C7). The tier-3 RUNTIME records take the advisory `note:` lane ([`emit_report_lane_notes`]).
+/// The full why-lens CHAIN render (numbered links, tier words) is d4's arrangement walker; this is
+/// the selected default line, siteless because the decline evidence is not yet site-keyed (the
+/// tier-3 pairing-seam gap). Empty in the corpus (no oracle emits ⇒ `empty-world-byte-identical`);
+/// wording rides `27V:rul-output-form-unwelded`. Never `error[` ⇒ ignored by the gate-3 floor; the
+/// `why:` prefix lets gate-7 pin it.
+fn emit_static_decline_notes(
+    collapse_evidence: &[CollapseEvidence],
+    oracle_paths: &[String],
+    oracle_srcs: &[String],
+) {
+    for ev in collapse_evidence {
+        let CollapseKind::VerdictDecline {
+            authored_reason: Some(reason),
+            ..
+        } = ev.kind()
+        else {
+            continue;
+        };
+        let at = oracle_locus(
+            Some((reason.arm.0, reason.arm_file)),
+            oracle_paths,
+            oracle_srcs,
+        )
+        .map(|l| format!(" (at {l})"))
+        .unwrap_or_default();
+        eprintln!(
+            "why: author declines [{}]{at} — a deliberate decline the author classed, so the site \
+             runs",
+            decline_class_word(reason.class)
         );
     }
 }
