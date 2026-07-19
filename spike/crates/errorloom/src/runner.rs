@@ -1,0 +1,427 @@
+//! The replay runner (`282` §7): materialize a case's file sections to a temp
+//! dir, run the `-- replay --` section's `$ ` command blocks SEQUENTIALLY in one
+//! shared cwd (state flows between commands by design), and capture each block's
+//! combined output for drift-checking or inline-on-bless.
+//!
+//! Environment is fully caller-injected ([`RunEnv`]) — errorloom provides the
+//! mechanism (an exact env table + a `PATH` search list, `env -i`-style) and
+//! never invents an environment; policy such as inert mocks is the consumer's
+//! (`28A` §1). This is the crate's I/O edge; the transport kernel stays pure.
+
+use std::collections::BTreeMap;
+use std::fs::{self, File};
+use std::path::{Path, PathBuf};
+use std::process::{Command, Stdio};
+use std::sync::atomic::{AtomicU64, Ordering};
+
+use crate::container::{Case, CaseError};
+
+/// A caller-injected execution environment: the exact env table plus a `PATH`
+/// search list. Nothing ambient leaks in (`env -i`-style) so runs are
+/// deterministic; consumers inject only what their commands need.
+#[derive(Clone, PartialEq, Eq, Debug, Default)]
+pub struct RunEnv {
+    path: Vec<PathBuf>,
+    vars: BTreeMap<String, String>,
+}
+
+impl RunEnv {
+    /// An empty environment (no PATH dirs, no vars).
+    #[must_use]
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Add a directory to the `PATH` search list (where argv[0] is resolved and
+    /// what the child sees as `PATH`).
+    #[must_use]
+    pub fn path_dir(mut self, dir: impl Into<PathBuf>) -> Self {
+        self.path.push(dir.into());
+        self
+    }
+
+    /// Set an environment variable for every command.
+    #[must_use]
+    pub fn var(mut self, name: impl Into<String>, value: impl Into<String>) -> Self {
+        self.vars.insert(name.into(), value.into());
+        self
+    }
+}
+
+/// The combined per-block output captured by one replay run (`282` §7), in block
+/// order.
+#[derive(Clone, PartialEq, Eq, Debug)]
+#[must_use = "a capture holds the outputs to compare or inline"]
+pub struct ReplayCapture {
+    outputs: Vec<String>,
+}
+
+impl ReplayCapture {
+    /// The captured combined outputs, one per block, in order.
+    #[must_use]
+    pub fn outputs(&self) -> &[String] {
+        &self.outputs
+    }
+
+    /// Consume the capture, yielding the outputs (for inline-on-bless).
+    #[must_use]
+    pub fn into_outputs(self) -> Vec<String> {
+        self.outputs
+    }
+}
+
+/// One block whose captured output diverged from the committed transcript.
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub struct Drift {
+    block: usize,
+    command: String,
+    expected: String,
+    actual: String,
+}
+
+impl Drift {
+    /// The zero-based block index.
+    #[must_use]
+    pub fn block(&self) -> usize {
+        self.block
+    }
+
+    /// The command whose output diverged.
+    #[must_use]
+    pub fn command(&self) -> &str {
+        &self.command
+    }
+
+    /// The committed (expected) output.
+    #[must_use]
+    pub fn expected(&self) -> &str {
+        &self.expected
+    }
+
+    /// The freshly-captured (actual) output.
+    #[must_use]
+    pub fn actual(&self) -> &str {
+        &self.actual
+    }
+}
+
+/// The result of a drift check: the blocks whose output moved (`282` §7 — byte
+/// stability under re-execution is the run gate).
+#[derive(Clone, PartialEq, Eq, Debug)]
+#[must_use = "a run report must be inspected for drift"]
+pub struct RunReport {
+    drifts: Vec<Drift>,
+}
+
+impl RunReport {
+    /// The drifted blocks (empty ⇒ byte-stable).
+    #[must_use]
+    pub fn drifts(&self) -> &[Drift] {
+        &self.drifts
+    }
+
+    /// Whether every block reproduced its committed output.
+    #[must_use]
+    pub fn is_clean(&self) -> bool {
+        self.drifts.is_empty()
+    }
+}
+
+/// Why a replay run failed (`282` §7). Blunt (`282:rul-internal-tool-sharp-edges`).
+#[derive(Clone, PartialEq, Eq, Debug)]
+#[non_exhaustive]
+pub enum RunError {
+    /// An I/O failure (materialize, spawn, capture); carries the message.
+    Io(String),
+    /// A replay block had an empty command line.
+    EmptyCommand {
+        /// Zero-based block index.
+        block: usize,
+    },
+    /// A command's program was not found on the injected `PATH`.
+    CommandNotFound {
+        /// Zero-based block index.
+        block: usize,
+        /// The unresolved program name.
+        program: String,
+    },
+    /// A command produced non-UTF-8 output; transcripts are text-only.
+    NonUtf8Output {
+        /// Zero-based block index.
+        block: usize,
+    },
+    /// Captured output leaked the sandbox's absolute path (`282` §7).
+    SandboxPathLeak {
+        /// Zero-based block index.
+        block: usize,
+        /// The offending line.
+        line: String,
+    },
+    /// The inlined output failed a case-hygiene gate.
+    Hygiene(CaseError),
+}
+
+impl std::fmt::Display for RunError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            RunError::Io(message) => write!(f, "run: io error: {message}"),
+            RunError::EmptyCommand { block } => write!(f, "run: block {block} has no command"),
+            RunError::CommandNotFound { block, program } => {
+                write!(f, "run: block {block} program {program:?} not on PATH")
+            }
+            RunError::NonUtf8Output { block } => {
+                write!(f, "run: block {block} produced non-UTF-8 output")
+            }
+            RunError::SandboxPathLeak { block, line } => {
+                write!(f, "run: block {block} leaked the sandbox path: {line:?}")
+            }
+            RunError::Hygiene(inner) => write!(f, "run: {inner}"),
+        }
+    }
+}
+
+impl std::error::Error for RunError {}
+
+impl From<std::io::Error> for RunError {
+    fn from(error: std::io::Error) -> Self {
+        RunError::Io(error.to_string())
+    }
+}
+
+/// Materialize a case and run its replay blocks, returning the combined output of
+/// each in order.
+///
+/// # Errors
+/// Returns [`RunError`] for an I/O failure, an empty or unresolvable command,
+/// non-UTF-8 output, or a sandbox-path leak.
+pub fn run_case(case: &Case, env: &RunEnv) -> Result<ReplayCapture, RunError> {
+    let base = unique_base()?;
+    let result = run_in(case, env, &base);
+    let _ = fs::remove_dir_all(&base);
+    result
+}
+
+fn run_in(case: &Case, env: &RunEnv, base: &Path) -> Result<ReplayCapture, RunError> {
+    let work = base.join("work");
+    fs::create_dir(&work)?;
+    for (rel, content) in case.materialized_files() {
+        let target = work.join(&rel);
+        if let Some(parent) = target.parent() {
+            fs::create_dir_all(parent)?;
+        }
+        fs::write(&target, content)?;
+    }
+
+    let mut outputs: Vec<String> = Vec::new();
+    for (index, block) in case.replay().blocks().iter().enumerate() {
+        let output = run_block(index, block.command(), env, base, &work)?;
+        outputs.push(output);
+    }
+
+    let base_str = base.to_string_lossy();
+    for (index, output) in outputs.iter().enumerate() {
+        for line in output.lines() {
+            if line.contains(base_str.as_ref()) {
+                return Err(RunError::SandboxPathLeak {
+                    block: index,
+                    line: line.to_owned(),
+                });
+            }
+        }
+    }
+    Ok(ReplayCapture { outputs })
+}
+
+fn run_block(
+    index: usize,
+    command_line: &str,
+    env: &RunEnv,
+    base: &Path,
+    work: &Path,
+) -> Result<String, RunError> {
+    let parsed = parse_command(command_line);
+    let Some(program_name) = parsed.argv.first() else {
+        return Err(RunError::EmptyCommand { block: index });
+    };
+    let program =
+        resolve_program(program_name, &env.path).ok_or_else(|| RunError::CommandNotFound {
+            block: index,
+            program: program_name.clone(),
+        })?;
+
+    let capture_path = base.join(format!("cap-{index}"));
+    let file = File::create(&capture_path)?;
+    let file_err = file.try_clone()?;
+
+    let mut command = Command::new(&program);
+    command.args(parsed.argv.iter().skip(1));
+    command.current_dir(work);
+    command.env_clear();
+    for (name, value) in &env.vars {
+        command.env(name, value);
+    }
+    if let Ok(joined) = std::env::join_paths(&env.path) {
+        command.env("PATH", joined);
+    }
+    command.stdout(Stdio::from(file));
+    command.stderr(Stdio::from(file_err));
+    match &parsed.stdin_file {
+        Some(name) => {
+            let input = File::open(work.join(name))?;
+            command.stdin(Stdio::from(input));
+        }
+        None => {
+            command.stdin(Stdio::null());
+        }
+    }
+
+    let _status = command.status()?;
+    let bytes = fs::read(&capture_path)?;
+    String::from_utf8(bytes).map_err(|_| RunError::NonUtf8Output { block: index })
+}
+
+/// A parsed replay command: argv plus an optional `< file` stdin redirect (`282`
+/// §7 — combined `2>&1` capture is automatic; a `>`/split-capture redirect is the
+/// deferred escape hatch and is NOT parsed here).
+struct ParsedCommand {
+    argv: Vec<String>,
+    stdin_file: Option<String>,
+}
+
+fn parse_command(line: &str) -> ParsedCommand {
+    let mut argv: Vec<String> = Vec::new();
+    let mut stdin_file: Option<String> = None;
+    let mut want_stdin = false;
+    for token in tokenize_command(line) {
+        if want_stdin {
+            stdin_file = Some(token);
+            want_stdin = false;
+        } else if token == "<" {
+            want_stdin = true;
+        } else {
+            argv.push(token);
+        }
+    }
+    ParsedCommand { argv, stdin_file }
+}
+
+/// Split a command line into tokens, honoring single/double quotes (no escapes at
+/// v1 — internal tooling, sharp edges fine).
+fn tokenize_command(line: &str) -> Vec<String> {
+    let mut tokens: Vec<String> = Vec::new();
+    let mut current = String::new();
+    let mut open = false;
+    let mut quote: Option<char> = None;
+    for ch in line.chars() {
+        match quote {
+            Some(q) => {
+                if ch == q {
+                    quote = None;
+                } else {
+                    current.push(ch);
+                }
+            }
+            None => {
+                if ch == '\'' || ch == '"' {
+                    quote = Some(ch);
+                    open = true;
+                } else if ch.is_whitespace() {
+                    if open {
+                        tokens.push(std::mem::take(&mut current));
+                        open = false;
+                    }
+                } else {
+                    current.push(ch);
+                    open = true;
+                }
+            }
+        }
+    }
+    if open {
+        tokens.push(current);
+    }
+    tokens
+}
+
+/// Resolve a program name against the injected PATH (absolute path used as-is;
+/// `.exe` tried for the Windows lane), returning an absolute path to invoke.
+fn resolve_program(name: &str, path: &[PathBuf]) -> Option<PathBuf> {
+    let candidate = Path::new(name);
+    if candidate.is_absolute() {
+        return candidate.is_file().then(|| candidate.to_path_buf());
+    }
+    for dir in path {
+        let direct = dir.join(name);
+        if direct.is_file() {
+            return Some(direct);
+        }
+        let exe = dir.join(format!("{name}.exe"));
+        if exe.is_file() {
+            return Some(exe);
+        }
+    }
+    None
+}
+
+/// Run the case and report which blocks diverged from their committed output
+/// (`282` §7). The committed transcript is the expectation.
+///
+/// # Errors
+/// Propagates any [`RunError`] from [`run_case`].
+pub fn check_run(case: &Case, env: &RunEnv) -> Result<RunReport, RunError> {
+    let capture = run_case(case, env)?;
+    let mut drifts: Vec<Drift> = Vec::new();
+    for (index, (block, actual)) in case
+        .replay()
+        .blocks()
+        .iter()
+        .zip(capture.outputs())
+        .enumerate()
+    {
+        if block.output() != actual {
+            drifts.push(Drift {
+                block: index,
+                command: block.command().to_owned(),
+                expected: block.output().to_owned(),
+                actual: actual.clone(),
+            });
+        }
+    }
+    Ok(RunReport { drifts })
+}
+
+/// Structure-bless (the generic cram mode, `282` §6): re-run and re-inline every
+/// block's output, then apply the case-hygiene gates. `required_key` names the
+/// frontmatter coherence key, if any.
+///
+/// # Errors
+/// Propagates any [`RunError`], including a hygiene refusal after inlining.
+pub fn bless_structure(
+    case: &mut Case,
+    env: &RunEnv,
+    required_key: Option<&str>,
+) -> Result<(), RunError> {
+    let capture = run_case(case, env)?;
+    case.set_replay_outputs(capture.into_outputs());
+    case.check_hygiene(required_key)
+        .map_err(RunError::Hygiene)?;
+    Ok(())
+}
+
+static COUNTER: AtomicU64 = AtomicU64::new(0);
+
+/// Create a fresh, uniquely-named session dir under the system temp dir. Unique
+/// by pid + a process-monotonic counter, so concurrent runs never collide; the
+/// non-deterministic path is exactly why the sandbox-leak gate exists.
+fn unique_base() -> std::io::Result<PathBuf> {
+    let pid = std::process::id();
+    loop {
+        let nonce = COUNTER.fetch_add(1, Ordering::Relaxed);
+        let candidate = std::env::temp_dir().join(format!("errorloom-{pid}-{nonce}"));
+        match fs::create_dir(&candidate) {
+            Ok(()) => return Ok(candidate),
+            Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => {}
+            Err(error) => return Err(error),
+        }
+    }
+}
