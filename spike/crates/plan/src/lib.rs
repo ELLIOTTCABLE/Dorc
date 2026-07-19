@@ -738,13 +738,21 @@ pub struct VerdictVouch {
     /// apply-only line. Display/attribution, NOT decision data: EXCLUDED from
     /// [`GuardInsert::canonical`] (it derives from `preamble`, which the canon already covers).
     check_cmds: Vec<String>,
+    /// The vouch's DEFINING span (C7 `27V:mech-minting-line-threading`): the reached vouching
+    /// arm + which oracle file it indexes (`tc-oracle-file-identity`), for the guard attribution's
+    /// `file:line`. `None` when the caller did not thread it (the DST/test constructors) or the
+    /// vouch located no check (an explicit `return 0` — the render falls back to no locus). Display
+    /// tier only — decision-inert (a vouch informs a license and never becomes a fact, TC-tier-3).
+    defining_span: Option<(dorc_core::Span, OracleFileId)>,
 }
 
 impl VerdictVouch {
     /// Build a vouch descriptor from the cli-resolved verdict-function data (the sole constructor;
     /// the cli edge owns the lift + strip + argv-render). `fn_name`/`invocation` are the mangled
     /// name and the full invocation; `preamble` is the stripped body; `kind_label` the fact's kind
-    /// for attribution; `check_cmds` the verdict body's own command names (gate-6 attribution).
+    /// for attribution; `check_cmds` the verdict body's own command names (gate-6 attribution). The
+    /// defining span is threaded separately by [`with_defining_span`](Self::with_defining_span)
+    /// (only the plan driver has the oracle-file index; DST/test constructors omit it).
     #[must_use]
     pub fn new(
         fn_name: String,
@@ -759,7 +767,23 @@ impl VerdictVouch {
             invocation,
             kind_label,
             check_cmds,
+            defining_span: None,
         }
+    }
+
+    /// Thread the vouch's defining span + oracle-file id post-construction (C7). Low-churn: only
+    /// `build_vouches` (which holds the oracle-file index) calls it; every other constructor leaves
+    /// it `None` and the render omits the locus.
+    #[must_use]
+    pub fn with_defining_span(mut self, arm: dorc_core::Span, file: OracleFileId) -> Self {
+        self.defining_span = Some((arm, file));
+        self
+    }
+
+    /// The vouch's defining span + oracle-file id (C7), if threaded — the guard render's `file:line`.
+    #[must_use]
+    pub fn defining_span(&self) -> Option<(dorc_core::Span, OracleFileId)> {
+        self.defining_span
     }
 }
 
@@ -786,6 +810,12 @@ impl GuardInsert {
     #[must_use]
     pub fn preamble(&self) -> &str {
         &self.vouch.preamble
+    }
+
+    /// The vouch's defining span + oracle-file id (C7 `file:line`), if the plan driver threaded it.
+    #[must_use]
+    pub fn defining_span(&self) -> Option<(dorc_core::Span, OracleFileId)> {
+        self.vouch.defining_span()
     }
 
     /// The verdict body's own check-commands (gate-6 `guardcmd` attribution; 23A §5). The cli
@@ -922,6 +952,7 @@ pub fn build_vouches(
     use dorc_oracle::predict::{map_provider_name, strip_verdict};
     use dorc_oracle::verdict::{
         VerdictResolution, VerdictSet, check_commands, classify_decline, evaluate_verdict,
+        vouch_site,
     };
 
     let mut diags = Vec::new();
@@ -1030,7 +1061,11 @@ pub fn build_vouches(
         };
         let kind_label = interner.resolve(fact.kind.0).to_owned();
         let check_cmds = check_commands(verdict);
-        let vouch = VerdictVouch::new(fn_name, preamble, invocation, kind_label, check_cmds);
+        // C7: the reached vouching-arm span (or the funcdef `name_span` when the vouch runs no
+        // located check — an explicit `return 0`), with its oracle-file id, for the guard render.
+        let defining = vouch_site(verdict, &op_refs).unwrap_or(verdict.name_span);
+        let vouch = VerdictVouch::new(fn_name, preamble, invocation, kind_label, check_cmds)
+            .with_defining_span(defining, arm_file);
         vouches.insert(*node, ByVouch::vouched(vouch, Rung::Both));
     }
     (Carrier::new(vouches, diags), collapse_evidence)

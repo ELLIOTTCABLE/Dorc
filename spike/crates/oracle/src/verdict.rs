@@ -191,6 +191,7 @@ pub fn evaluate_verdict(verdict: &Predict, argv: &[&str]) -> VerdictResolution {
         reached_inert: false,
         decline_span: None,
         emission: None,
+        vouch_span: None,
         budget,
         steps: 0,
     };
@@ -242,6 +243,37 @@ pub struct DeclineInfo {
     pub emission: Option<(DeclineClass, Span)>,
 }
 
+/// The span of the reached VOUCHING arm (the first authored check) for a `Vouched` trace over
+/// `argv` (C7 vouch span; `27V:mech-minting-line-threading`) — the guard attribution's `file:line`.
+/// `None` for a decline / ⊤ (no vouch) or a vouch with no located check (an explicit `return 0`
+/// vouch runs no check ⇒ no reached-check span; the caller falls back to the funcdef `name_span`).
+/// Re-traces (analysis-side, cheap), like [`classify_decline`].
+#[must_use]
+pub fn vouch_site(verdict: &Predict, argv: &[&str]) -> Option<Span> {
+    if argv.is_empty() {
+        return None;
+    }
+    let budget = argv.len().saturating_mul(4).saturating_add(BUDGET_CONSTANT);
+    let mut tr = Tracer {
+        positionals: argv.iter().map(|s| (*s).to_owned()).collect(),
+        vars: BTreeMap::new(),
+        reached_command: false,
+        reached_inert: false,
+        decline_span: None,
+        emission: None,
+        vouch_span: None,
+        budget,
+        steps: 0,
+    };
+    match tr.run_block(&verdict.body) {
+        // A reached-check vouch: the first check's span. An explicit `return 0` vouch reaches no
+        // check ⇒ `vouch_span` is `None` (name_span fallback at the caller).
+        Flow::Normal if tr.reached_command => tr.vouch_span,
+        Flow::Returned(code) if code.0 == 0 => tr.vouch_span,
+        _ => None, // a decline / ⊤ — no vouch
+    }
+}
+
 /// The [`DeclineGate`] a verdict trace decline took (C5). Thin wrapper over [`classify_decline`].
 #[must_use]
 pub fn decline_gate(verdict: &Predict, argv: &[&str]) -> Option<DeclineGate> {
@@ -271,6 +303,7 @@ pub fn classify_decline(verdict: &Predict, argv: &[&str]) -> Option<DeclineInfo>
         reached_inert: false,
         decline_span: None,
         emission: None,
+        vouch_span: None,
         budget,
         steps: 0,
     };
@@ -319,6 +352,10 @@ struct Tracer {
     /// format. `None` when the reached path emitted nothing, or the format was dynamic (⇒ tier-3
     /// runtime fallback). Decision-inert (`two-plane-aid-law`); never read by the decision.
     emission: Option<(DeclineClass, Span)>,
+    /// The span of the FIRST reached authored check (the vouching arm) — the C7 precise vouch span
+    /// for [`vouch_site`], surfaced as `file:line` at the guard attribution render. Display tier
+    /// only; never read by the decision (the vouch signal is `reached_command`).
+    vouch_span: Option<Span>,
     budget: usize,
     steps: usize,
 }
@@ -488,9 +525,13 @@ impl Tracer {
                 self.decline_span = Some(cmd.span);
                 Flow::Normal
             }
-            // A real check ran on this path ⇒ the vouch signal (hz-refusepath: only here).
+            // A real check ran on this path ⇒ the vouch signal (hz-refusepath: only here). The
+            // FIRST such check's span is the vouching arm (C7 vouch span), for the guard render.
             None => {
                 self.reached_command = true;
+                if self.vouch_span.is_none() {
+                    self.vouch_span = Some(cmd.span);
+                }
                 Flow::Normal
             }
         }
@@ -720,6 +761,23 @@ x__is_converged() {
         );
         // The `restart` verb reaches a real check ⇒ vouches ⇒ classify_decline is None.
         assert!(classify_decline(v, &["restart", "nginx"]).is_none());
+    }
+
+    #[test]
+    fn vouch_site_points_at_the_reached_check_arm() {
+        // C7 vouch span: the guard render's `file:line` is the reached CHECK arm, not the funcdef.
+        let mut i = Interner::default();
+        let set = VerdictSet::lift(&mut i, APT);
+        let p = set.value.providers().next().unwrap();
+        let v = set.value.get(p).unwrap();
+        let span = vouch_site(v, &["install", "-y", "curl"]).expect("a reached check");
+        assert_eq!(
+            &APT[span.lo.0 as usize..span.hi.0 as usize],
+            "dpkg-query -W \"$1\" >/dev/null 2>&1",
+            "the vouch span is the reached check command, not the funcdef name"
+        );
+        // A decline reaches no check ⇒ no vouch span.
+        assert_eq!(vouch_site(v, &["restart", "nginx"]), None);
     }
 
     #[test]

@@ -1556,7 +1556,7 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
         // Stage 3 (rul-guard-license / X-why): every GUARDED site names, on the same lane, the
         // mechanism + its converged-vouch license + the vouching oracle (a render-REFUSED guard
         // discloses the refusal instead). Empty when no site guards.
-        emit_guard_attribution(&plan, &parsed.value, &interner);
+        emit_guard_attribution(&plan, &parsed.value, &interner, &oracle_paths, &oracle_srcs);
         // `27C` §4(a): every pure-predicate-CARRY elision names its cross-context attribution chain
         // on this same lane (the crossed substrate axes, each backing kind's owner `invariant:` line,
         // the read-set-closure proof). Empty when no site carried.
@@ -3261,6 +3261,8 @@ fn emit_guard_attribution(
     plan: &dorc_plan::Plan,
     ast: &dorc_syntax::ast::Ast,
     interner: &Interner,
+    oracle_paths: &[String],
+    oracle_srcs: &[String],
 ) {
     // A render-REFUSED guard (heredoc / non-devnull output redirect) does NOT guard the site — the
     // mutator runs verbatim. rul-attention-honesty: never claim a skip that did not happen; disclose
@@ -3280,14 +3282,35 @@ fn emit_guard_attribution(
                 step.leaf.0,
             );
         } else {
+            // C7 minting-line threading: name the vouch's defining `file:line` (the reached check
+            // arm) when the plan threaded it — the whole flagship output rests on it.
+            let locus = oracle_locus(license.insert().defining_span(), oracle_paths, oracle_srcs)
+                .map(|l| format!(" (at {l})"))
+                .unwrap_or_default();
             eprintln!(
-                "why: site {} guard [{kind}] — licensed by the {kind} oracle's vouch that it is \
-                 already satisfied; the original bytes survive and the check re-runs live at apply \
-                 (to stay safe)",
+                "why: site {} guard [{kind}] — licensed by the {kind} oracle's vouch{locus} that \
+                 it is already satisfied; the original bytes survive and the check re-runs live at \
+                 apply (to stay safe)",
                 step.leaf.0,
             );
         }
     }
+}
+
+/// Resolve a threaded oracle `(Span, OracleFileId)` to a `path:line` locus (C7 `file:line`;
+/// `law-lineno-identity` — the file id disambiguates WHICH oracle's line-number space, since a
+/// bare span is file-ambiguous once >1 oracle is loaded). `None` when the vouch/claim was
+/// unthreaded, or the id is out of range (the render omits the locus — never fabricates one).
+fn oracle_locus(
+    defining: Option<(dorc_core::Span, dorc_core::OracleFileId)>,
+    oracle_paths: &[String],
+    oracle_srcs: &[String],
+) -> Option<String> {
+    let (span, file) = defining?;
+    let i = file.0 as usize;
+    let (path, src) = (oracle_paths.get(i)?, oracle_srcs.get(i)?);
+    let (line, _col) = dorc_core::diag::line_col(src, span.lo.0 as usize);
+    Some(format!("{path}:{line}"))
 }
 
 /// Every pure-predicate-CARRY elision names, on the why-lens lane, its cross-context attribution
