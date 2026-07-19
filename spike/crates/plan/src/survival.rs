@@ -34,8 +34,8 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use dorc_analysis::cfg::CfgNodeId;
 use dorc_core::{
-    Coord, Dialect, EntityRef, EntityResolution, FactKey, KindId, ProviderId, Relation, SelectorId,
-    Symbol, compare,
+    Coord, Dialect, EntityRef, EntityResolution, FactKey, KindId, OracleFileId, ProviderId,
+    Relation, SelectorId, Span, Symbol, compare,
 };
 
 use crate::LeafId;
@@ -311,6 +311,12 @@ pub struct Footprint {
     /// (`empty-world-byte-identical`). SPIKE SCOPE: an entity emitted twice with differing
     /// selectors keeps the last — no corpus body does this.
     selectors: BTreeMap<EntityCoord, SelectorId>,
+    /// `27V:mech-minting-line-threading` (`tc-disturbs-span-threading`) — the `disturbs` funcdef's
+    /// defining `(Span, OracleFileId)`, so a survival's `claimed` chain-link renders the leverage
+    /// point (`<file>:<line> is the line to widen` — `USER_STORY` Recovery's product moment). The
+    /// funcdef `name_span` is the honest coarsest-true span; arm-precision is a deferred refinement.
+    /// `None` for a derived footprint (its span is the host-derivation call, not an authored line).
+    defining: Option<(Span, OracleFileId)>,
 }
 
 impl Footprint {
@@ -347,7 +353,17 @@ impl Footprint {
             origin,
             reached_via: BTreeMap::new(),
             selectors: BTreeMap::new(),
+            defining: None,
         })
+    }
+
+    /// Attach the `disturbs` funcdef's defining `(Span, OracleFileId)` (`tc-disturbs-span-threading`)
+    /// — builder-chained after [`authored`](Footprint::authored), so a survival's `claimed` link can
+    /// render the leverage point. `None` is a no-op (the derived lane has no authored line).
+    #[must_use]
+    pub fn with_defining(mut self, defining: Option<(Span, OracleFileId)>) -> Self {
+        self.defining = defining;
+        self
     }
 
     /// Record the disturbs-emission selector for one footprint coordinate (`277` §3). Called by the
@@ -391,6 +407,13 @@ impl Footprint {
     #[must_use]
     pub fn provider(&self) -> Symbol {
         self.provider
+    }
+
+    /// The `disturbs` funcdef's defining `(Span, OracleFileId)` (`tc-disturbs-span-threading`), or
+    /// `None` (derived footprint / unthreaded). Carried onto a [`Crossing`] for the leverage-point render.
+    #[must_use]
+    pub fn defining(&self) -> Option<(Span, OracleFileId)> {
+        self.defining
     }
 
     /// The claimed coordinates (attribution render; the disjointness test).
@@ -702,6 +725,10 @@ pub struct Crossing {
     /// `<kind>.resolve()` canonicalization"). `None` for a resolver-less kind (plain token-equality
     /// disjointness — no resolver to name).
     via_resolver: Option<KindId>,
+    /// `tc-disturbs-span-threading` — the `disturbs` funcdef's defining `(Span, OracleFileId)`, so the
+    /// survival chain's `claimed` link renders the leverage point (the line to widen). Carried from the
+    /// crossed wall's [`Footprint`]. `None` for a derived footprint or an unthreaded lift.
+    footprint_span: Option<(Span, OracleFileId)>,
 }
 
 impl Crossing {
@@ -742,6 +769,13 @@ impl Crossing {
     #[must_use]
     pub fn proof(&self) -> DisjointnessProof {
         self.proof
+    }
+
+    /// The `disturbs` funcdef's defining `(Span, OracleFileId)` (`tc-disturbs-span-threading`) — the
+    /// survival chain's leverage point. `None` for a derived footprint or an unthreaded lift.
+    #[must_use]
+    pub fn footprint_span(&self) -> Option<(Span, OracleFileId)> {
+        self.footprint_span
     }
 
     /// The resolver that canonicalized this crossing's compared coordinates, if any (24F §6): the
@@ -931,6 +965,7 @@ pub(crate) fn wall_verdict(
                 origin: wall.footprint.origin().clone(),
                 proof,
                 via_resolver,
+                footprint_span: wall.footprint.defining(),
             }),
             // A proven canonical collision (the aliasing closure firing, a plain token hit, or a
             // reaches()-expanded coordinate hitting — 24G Part B, attributed via `via_reach`).

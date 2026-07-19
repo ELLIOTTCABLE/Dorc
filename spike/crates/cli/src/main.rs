@@ -2039,8 +2039,11 @@ fn build_survival_footprints(
         // footprint. A no-op on the hit-surface HERE (the canary just proved own ∈ coords), but it
         // records own for the why-lens and keeps the two lanes uniform. Empty emission ⇒ None from
         // `authored` ⇒ `with_own` cannot resurrect it (anti-233).
-        if let Some(mut footprint) =
-            dorc_plan::Footprint::authored(provider, coords).map(|fp| fp.with_own(own))
+        // `tc-disturbs-span-threading`: attach the `disturbs` funcdef's `file:line` so a survival's
+        // `claimed` link renders the leverage point (the line to widen — USER_STORY Recovery).
+        let defining = touches_defining_span(provider, &touches_sets, interner);
+        if let Some(mut footprint) = dorc_plan::Footprint::authored(provider, coords)
+            .map(|fp| fp.with_own(own).with_defining(defining))
         {
             // `277` §3: record each emission's `#selector` so a selector-bearing disturbs mark can
             // SPARE a sibling cell under the dialect. Whole-entity emissions (the corpus default,
@@ -2123,6 +2126,31 @@ fn resolve_touches_footprint(
         })
         .collect();
     Some((*provider, entity_coords))
+}
+
+/// The `disturbs` funcdef's defining `(Span, OracleFileId)` for a provider (`tc-disturbs-span-
+/// threading`; `27V:mech-minting-line-threading`) — a NAME-keyed lookup (no argv trace): the touches
+/// funcdef's `name_span` is the leverage point a survival's `claimed` link points at ("the line to
+/// widen"). The funcdef `name_span` is the honest coarsest-true span; per-arm precision is deferred.
+/// `None` when the provider has no touches funcdef in the loaded set.
+fn touches_defining_span(
+    provider: Symbol,
+    touches_sets: &[dorc_oracle::touches::TouchesSet],
+    interner: &Interner,
+) -> Option<(dorc_core::Span, dorc_core::OracleFileId)> {
+    use dorc_oracle::predict::map_provider_name;
+    let want = map_provider_name(interner.resolve(provider));
+    touches_sets.iter().enumerate().find_map(|(idx, set)| {
+        set.providers()
+            .find(|p| map_provider_name(interner.resolve(*p)) == want)
+            .and_then(|p| set.get(p))
+            .map(|t| {
+                (
+                    t.name_span,
+                    dorc_core::OracleFileId(u32::try_from(idx).unwrap_or(u32::MAX)),
+                )
+            })
+    })
 }
 
 /// The derivation-probe seam (24E §2/§3 — fork-4A: the SAME self-vouch tier as `predict`, no new
