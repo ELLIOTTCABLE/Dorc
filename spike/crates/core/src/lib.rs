@@ -97,8 +97,9 @@ impl Span {
 // Diagnostics + the no-throw Carrier (dn-7)
 // ===========================================================================
 
-/// Severity of a [`Diagnostic`]. `Error` does not abort the pipeline (stages
-/// never throw); it marks that the carried result is best-effort / degraded.
+/// Severity of a [`Diag`](diag::Diag). `Error` does not abort the pipeline (stages
+/// never throw); it marks that the carried result is best-effort / degraded. It is the
+/// [`registry`](diag::registry) severity — never set at a construction site.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Severity {
     Error,
@@ -106,60 +107,8 @@ pub enum Severity {
     Note,
 }
 
-/// A stable, greppable diagnostic code (research chord `ch-catalog`: messages
-/// live in a catalog keyed by code, decoupled from the emitting logic).
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct DiagCode(pub &'static str);
-
-/// One diagnostic. Provenance-bearing: it points back at the source span that
-/// triggered it. (The richer N-tier locator DAG — `ch-locator-list` — is a later
-/// phase; a single optional span suffices while there are no real hosts.)
-#[derive(Debug, Clone)]
-pub struct Diagnostic {
-    pub severity: Severity,
-    pub code: DiagCode,
-    pub span: Option<Span>,
-    pub message: String,
-}
-
-impl Diagnostic {
-    #[must_use]
-    pub fn error(code: DiagCode, span: Option<Span>, message: impl Into<String>) -> Self {
-        Self {
-            severity: Severity::Error,
-            code,
-            span,
-            message: message.into(),
-        }
-    }
-
-    #[must_use]
-    pub fn warning(code: DiagCode, span: Option<Span>, message: impl Into<String>) -> Self {
-        Self {
-            severity: Severity::Warning,
-            code,
-            span,
-            message: message.into(),
-        }
-    }
-
-    /// A `Note`-severity diagnostic — a disclosure, never a failure. The e2e
-    /// stderr-floor gate (gate-3) keys only on the `error[…]` shape, so a Note
-    /// surfaces information (a silent ⊤-degradation, a probe-unresolvable site)
-    /// without tripping any case (`219` q-2.b: the `$()` ⊤-diagnostics are
-    /// Note-severity disclosures).
-    #[must_use]
-    pub fn note(code: DiagCode, span: Option<Span>, message: impl Into<String>) -> Self {
-        Self {
-            severity: Severity::Note,
-            code,
-            span,
-            message: message.into(),
-        }
-    }
-}
-
 pub mod diag;
+pub use diag::Diag;
 
 pub mod catalog;
 
@@ -197,7 +146,7 @@ pub use escalation::{Capability, EscalationDial};
 #[derive(Debug, Clone)]
 pub struct Carrier<T> {
     pub value: T,
-    pub diags: Vec<Diagnostic>,
+    pub diags: Vec<Diag>,
 }
 
 impl<T> Carrier<T> {
@@ -211,7 +160,7 @@ impl<T> Carrier<T> {
     }
 
     #[must_use]
-    pub fn new(value: T, diags: Vec<Diagnostic>) -> Self {
+    pub fn new(value: T, diags: Vec<Diag>) -> Self {
         Self { value, diags }
     }
 
@@ -235,17 +184,17 @@ impl<T> Carrier<T> {
         }
     }
 
-    pub fn push(&mut self, diag: Diagnostic) {
+    pub fn push(&mut self, diag: Diag) {
         self.diags.push(diag);
     }
 
     #[must_use]
     pub fn has_errors(&self) -> bool {
-        self.diags.iter().any(|d| d.severity == Severity::Error)
+        self.diags.iter().any(|d| d.severity() == Severity::Error)
     }
 
     #[must_use]
-    pub fn into_parts(self) -> (T, Vec<Diagnostic>) {
+    pub fn into_parts(self) -> (T, Vec<Diag>) {
         (self.value, self.diags)
     }
 }
@@ -894,12 +843,17 @@ mod tests {
 
     #[test]
     fn carrier_threads_diagnostics_through_stages() {
-        let result = Carrier::pure(2).map(|n| n + 1).and_then(|n| {
-            Carrier::new(
-                n * 10,
-                vec![Diagnostic::warning(DiagCode("test-warn"), None, "heads up")],
-            )
-        });
+        // A Warning-severity Diag (severity is registry data, `crib-4`): CfgBuiltinShadowed is
+        // registry-Warning, so `has_errors()` stays false.
+        let warn = Diag::new(
+            diag::DiagCode::CfgBuiltinShadowed(diag::CfgBuiltinShadowed {
+                detail: "heads up".to_owned(),
+            }),
+            Span::new(BytePos(0), BytePos(1)),
+        );
+        let result = Carrier::pure(2)
+            .map(|n| n + 1)
+            .and_then(|n| Carrier::new(n * 10, vec![warn]));
         assert_eq!(result.value, 30);
         assert_eq!(result.diags.len(), 1);
         assert!(!result.has_errors());
@@ -907,11 +861,13 @@ mod tests {
 
     #[test]
     fn carrier_reports_errors_without_panicking() {
+        // An Error-severity Diag: SyntaxMalformed is registry-Error, so `has_errors()` is true.
         let mut c = Carrier::pure(());
-        c.push(Diagnostic::error(
-            DiagCode("boom"),
-            None,
-            "bad input, kept going",
+        c.push(Diag::new(
+            diag::DiagCode::SyntaxMalformed(diag::SyntaxMalformed {
+                detail: "bad input, kept going".to_owned(),
+            }),
+            Span::new(BytePos(0), BytePos(1)),
         ));
         assert!(c.has_errors());
     }

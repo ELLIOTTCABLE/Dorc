@@ -31,7 +31,7 @@ use dorc_core::diag::{
     CfgBuiltinShadowed, CfgErexitUnknown, CfgInlineRefused, CfgTopNode, Depth2PositionalUnthreaded,
     Diag, DiagCode as Code, SiteId,
 };
-use dorc_core::{AstId, BytePos, Carrier, Channel, Diagnostic, LeafId, Span};
+use dorc_core::{AstId, BytePos, Carrier, Channel, LeafId, Span};
 use dorc_syntax::{
     Ast, NodeKind, WordPart,
     ast::{CaseArm, ElseIf, RedirOp, RedirTarget},
@@ -409,7 +409,7 @@ struct Builder<'a> {
     nodes: Vec<CfgNode>,
     succ: Vec<Vec<usize>>,
     pred: Vec<Vec<usize>>,
-    diags: Vec<Diagnostic>,
+    diags: Vec<Diag>,
     entry: CfgNodeId,
     exit: CfgNodeId,
     /// Per-node: does this node toggle errexit, and is it fallible /
@@ -558,16 +558,13 @@ impl<'a> Builder<'a> {
             // B4 sweep: migrated onto Diag spine. registry() severity is Error (vs. the prior
             // Warning here) — flagged `b4-cfg-top-severity`: two sites, two severities in legacy;
             // the spine unifies at Error (louder, safer). Human disposes at PR.
-            let diag = Diag::new(
+            self.diags.push(Diag::new(
                 Code::CfgTopNode(CfgTopNode {
                     detail: "CFG nesting bound hit; construct treated as ⊤ (un-probeable)"
                         .to_string(),
                 }),
                 self.span(id),
-            )
-            .label("CFG nesting bound hit; construct treated as ⊤ (un-probeable)");
-            self.diags
-                .push(diag.to_legacy(&dorc_core::Interner::default()));
+            ));
             self.add_edge(entry_pred, top);
             return top;
         }
@@ -770,10 +767,6 @@ impl<'a> Builder<'a> {
     /// * the splice fits the node budgets (`≤ MAX_NODES_PER_SITE` for this site, and the
     ///   running total `≤ MAX_NODES_PER_BOOK`) — over-budget ⇒ `Opaque` WITH a diagnostic
     ///   naming the exceeded budget.
-    #[expect(
-        clippy::too_many_lines,
-        reason = "B4 sweep expanded diagnostic emit sites; refactor deferred to a later pass"
-    )]
     fn try_inline_call(&mut self, id: AstId, words: &[AstId], cmd: CfgNodeId) -> Option<CfgNodeId> {
         // A non-literal word, or a name no funcdef declares, is an ordinary command (None,
         // silent — it might be a PATH binary).
@@ -787,16 +780,10 @@ impl<'a> Builder<'a> {
                  (redefinition tracking is out of the modeled subset) — it runs as an \
                  ordinary unmodeled command"
             );
-            self.diags.push(
-                Diag::new(
-                    Code::CfgInlineRefused(CfgInlineRefused {
-                        detail: detail.clone(),
-                    }),
-                    self.span(id),
-                )
-                .label(detail)
-                .to_legacy(&dorc_core::Interner::default()),
-            );
+            self.diags.push(Diag::new(
+                Code::CfgInlineRefused(CfgInlineRefused { detail }),
+                self.span(id),
+            ));
             return None;
         }
         // The LAST definition strictly BEFORE the call; a forward/absent definition resolves to
@@ -812,16 +799,10 @@ impl<'a> Builder<'a> {
                 "recursive call to `{name}` (direct or transitive within the active inline \
                  stack); not inlined — it runs as an ordinary unmodeled command"
             );
-            self.diags.push(
-                Diag::new(
-                    Code::CfgInlineRefused(CfgInlineRefused {
-                        detail: detail.clone(),
-                    }),
-                    self.span(id),
-                )
-                .label(detail)
-                .to_legacy(&dorc_core::Interner::default()),
-            );
+            self.diags.push(Diag::new(
+                Code::CfgInlineRefused(CfgInlineRefused { detail }),
+                self.span(id),
+            ));
             return None;
         }
         if self.inline_stack.len() as u32 >= inline_budget::MAX_DEPTH {
@@ -830,16 +811,10 @@ impl<'a> Builder<'a> {
                  runs as an ordinary unmodeled command",
                 inline_budget::MAX_DEPTH
             );
-            self.diags.push(
-                Diag::new(
-                    Code::CfgInlineRefused(CfgInlineRefused {
-                        detail: detail.clone(),
-                    }),
-                    self.span(id),
-                )
-                .label(detail)
-                .to_legacy(&dorc_core::Interner::default()),
-            );
+            self.diags.push(Diag::new(
+                Code::CfgInlineRefused(CfgInlineRefused { detail }),
+                self.span(id),
+            ));
             return None;
         }
         // Depth-2 positional threading does NOT work (arch-2 wave-2 correction): a NESTED call
@@ -852,23 +827,13 @@ impl<'a> Builder<'a> {
             // Migrated onto the Diag spine (B4 sweep). `cmd` is the CFG node for the call site;
             // `self.span(id)` is the AST source span. CFG-node-space SiteId (pre-plan, same
             // precedent as CmdsubOperandTop — flagged `tc-cmdsub-siteid`).
-            let diag = Diag::new(
+            self.diags.push(Diag::new(
                 Code::Depth2PositionalUnthreaded(Depth2PositionalUnthreaded {
                     site: SiteId::leaf(LeafId(cmd.0)),
                     name: name.to_owned(),
                 }),
                 self.span(id),
-            )
-            .label(format!(
-                "call `{name}` not inlined: its argument references a positional \
-                 (`$1`..`$9`/`$#`) that does not thread through two inline levels ⇒ the inner \
-                 body's positional is ⊤ — it runs as an ordinary unmodeled command \
-                 (depth-2 positional threading is out of the modeled subset)"
             ));
-            // The payload carries no OutBytes (no interner resolution needed); a fresh
-            // default interner is sufficient for the to_legacy bridge.
-            self.diags
-                .push(diag.to_legacy(&dorc_core::Interner::default()));
             return None;
         }
         if let Some(construct) = self.body_uses_unmodeled_positional(body) {
@@ -876,16 +841,10 @@ impl<'a> Builder<'a> {
                 "call to `{name}` not inlined: its body uses `{construct}` (out of the \
                  modeled subset) — it runs as an ordinary unmodeled command"
             );
-            self.diags.push(
-                Diag::new(
-                    Code::CfgInlineRefused(CfgInlineRefused {
-                        detail: detail.clone(),
-                    }),
-                    self.span(id),
-                )
-                .label(detail)
-                .to_legacy(&dorc_core::Interner::default()),
-            );
+            self.diags.push(Diag::new(
+                Code::CfgInlineRefused(CfgInlineRefused { detail }),
+                self.span(id),
+            ));
             return None;
         }
         // tc-M2: inlining would EXPOSE an invisible body file-write as wrong-ambience
@@ -895,16 +854,10 @@ impl<'a> Builder<'a> {
                 "call to `{name}` not inlined: its body has an unmodeled write-redirect \
                  ({detail}) — it runs as an ordinary unmodeled command (tc-M2)"
             );
-            self.diags.push(
-                Diag::new(
-                    Code::CfgInlineRefused(CfgInlineRefused {
-                        detail: detail.clone(),
-                    }),
-                    self.span(id),
-                )
-                .label(detail)
-                .to_legacy(&dorc_core::Interner::default()),
-            );
+            self.diags.push(Diag::new(
+                Code::CfgInlineRefused(CfgInlineRefused { detail }),
+                self.span(id),
+            ));
             return None;
         }
         self.splice_funcdef_body(id, name, body, cmd)
@@ -943,16 +896,10 @@ impl<'a> Builder<'a> {
                 estimate,
                 inline_budget::MAX_NODES_PER_SITE
             );
-            self.diags.push(
-                Diag::new(
-                    Code::CfgInlineRefused(CfgInlineRefused {
-                        detail: detail.clone(),
-                    }),
-                    self.span(id),
-                )
-                .label(detail)
-                .to_legacy(&dorc_core::Interner::default()),
-            );
+            self.diags.push(Diag::new(
+                Code::CfgInlineRefused(CfgInlineRefused { detail }),
+                self.span(id),
+            ));
             return None;
         }
         if self.spliced_node_total.saturating_add(estimate) > inline_budget::MAX_NODES_PER_BOOK {
@@ -963,16 +910,10 @@ impl<'a> Builder<'a> {
                 estimate,
                 inline_budget::MAX_NODES_PER_BOOK
             );
-            self.diags.push(
-                Diag::new(
-                    Code::CfgInlineRefused(CfgInlineRefused {
-                        detail: detail.clone(),
-                    }),
-                    self.span(id),
-                )
-                .label(detail)
-                .to_legacy(&dorc_core::Interner::default()),
-            );
+            self.diags.push(Diag::new(
+                Code::CfgInlineRefused(CfgInlineRefused { detail }),
+                self.span(id),
+            ));
             return None;
         }
 
@@ -1395,15 +1336,12 @@ impl<'a> Builder<'a> {
     fn lower_top(&mut self, id: AstId, entry_pred: CfgNodeId) -> CfgNodeId {
         let top = self.fresh(id, CfgNodeKind::Top);
         self.add_edge(entry_pred, top);
-        let diag = Diag::new(
+        self.diags.push(Diag::new(
             Code::CfgTopNode(CfgTopNode {
                 detail: "unsupported construct (⊤): un-probeable and un-skippable".to_string(),
             }),
             self.span(id),
-        )
-        .label("unsupported construct (⊤): un-probeable and un-skippable");
-        self.diags
-            .push(diag.to_legacy(&dorc_core::Interner::default()));
+        ));
         top
     }
 
@@ -1559,13 +1497,12 @@ impl<'a> Builder<'a> {
             // Spanless: the errexit pass spans a region, not a single point (arch-3-residual-2).
             let msg = "errexit state is ⊤ at one or more commands; failure-edges \
                        added conservatively (over-approximate, sound)";
-            self.diags.push(
-                Diag::new_spanless_site(Code::CfgErexitUnknown(CfgErexitUnknown {
-                    detail: msg.to_string(),
-                }))
-                .label(msg)
-                .to_legacy(&dorc_core::Interner::default()),
-            );
+            self.diags
+                .push(Diag::new_spanless_site(Code::CfgErexitUnknown(
+                    CfgErexitUnknown {
+                        detail: msg.to_string(),
+                    },
+                )));
         }
     }
 
@@ -1959,14 +1896,10 @@ impl<'a> Builder<'a> {
                      effects and minting stand-ins, so builtin-dependent conclusions \
                      may be unsound for this book"
                 );
-                self.diags.push(
-                    Diag::new(
-                        Code::CfgBuiltinShadowed(CfgBuiltinShadowed { name: name.clone() }),
-                        *name_span,
-                    )
-                    .label(detail)
-                    .to_legacy(&dorc_core::Interner::default()),
-                );
+                self.diags.push(Diag::new(
+                    Code::CfgBuiltinShadowed(CfgBuiltinShadowed { detail }),
+                    *name_span,
+                ));
             }
         }
     }

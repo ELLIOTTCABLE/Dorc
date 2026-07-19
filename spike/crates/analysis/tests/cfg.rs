@@ -278,7 +278,10 @@ fn unsupported_loop_becomes_top_node_with_diagnostic() {
         kind_counts(cfg)
     );
     assert!(
-        carried.diags.iter().any(|d| d.code.0 == "cfg-top-node"),
+        carried
+            .diags
+            .iter()
+            .any(|d| d.code.slug() == "cfg-top-node"),
         "a diagnostic accompanies the ⊤ node"
     );
     // Surrounding nodes still present and wired: entry reaches the ⊤, ⊤ reaches exit.
@@ -586,14 +589,17 @@ fn case_with_subst_scrutinee_does_not_spuriously_flag_errexit_top() {
         !carried
             .diags
             .iter()
-            .any(|d| d.code.0 == "cfg-errexit-unknown"),
+            .any(|d| d.code.slug() == "cfg-errexit-unknown"),
         "no spurious errexit ⊤ on `case $(...)` + a following command: {:?}",
         carried.diags
     );
     // Non-vacuity: the case must be modeled (not ⊤-rejected), else the test passes
     // for the wrong reason.
     assert!(
-        !carried.diags.iter().any(|d| d.code.0 == "cfg-top-node"),
+        !carried
+            .diags
+            .iter()
+            .any(|d| d.code.slug() == "cfg-top-node"),
         "the case is modeled, not ⊤-rejected"
     );
 }
@@ -609,7 +615,7 @@ fn genuine_set_plus_e_split_still_flags_errexit_top() {
         carried
             .diags
             .iter()
-            .any(|d| d.code.0 == "cfg-errexit-unknown"),
+            .any(|d| d.code.slug() == "cfg-errexit-unknown"),
         "a genuine set+e / set-e split must still flag ⊤: {:?}",
         carried.diags
     );
@@ -650,7 +656,7 @@ fn errexit_unknown_is_conservative() {
             carried
                 .diags
                 .iter()
-                .any(|d| d.code.0 == "cfg-errexit-unknown"),
+                .any(|d| d.code.slug() == "cfg-errexit-unknown"),
             "a diagnostic flags the conservative ⊤ failure-edges"
         );
     }
@@ -1563,26 +1569,30 @@ fn funcdef_shadowing_relied_builtin_warns_loudly() {
     let shadow: Vec<_> = built
         .diags
         .iter()
-        .filter(|d| d.code.0 == "cfg-builtin-shadowed")
+        .filter(|d| d.code.slug() == "cfg-builtin-shadowed")
         .collect();
     assert_eq!(
         shadow.len(),
         1,
         "one warning per offending funcdef: {:?}",
-        built.diags.iter().map(|d| d.code.0).collect::<Vec<_>>()
+        built
+            .diags
+            .iter()
+            .map(|d| d.code.slug())
+            .collect::<Vec<_>>()
     );
     assert_eq!(
-        shadow[0].severity,
+        shadow[0].severity(),
         Severity::Warning,
         "WARNING-class disclosure (not a Note, not an Error)"
     );
+    let shadow_msg = dorc_core::diag::render_body(shadow[0], &dorc_core::Interner::default());
     assert!(
-        shadow[0].message.contains("`true`"),
-        "the warning names the shadowed builtin: {}",
-        shadow[0].message
+        shadow_msg.contains("`true`"),
+        "the warning names the shadowed builtin: {shadow_msg}"
     );
     assert!(
-        shadow[0].span.is_some(),
+        shadow[0].primary.span().is_some(),
         "the warning carries the definition's span"
     );
 
@@ -1592,7 +1602,9 @@ fn funcdef_shadowing_relied_builtin_warns_loudly() {
         build(&parsed.value)
             .diags
             .iter()
-            .any(|d| d.code.0 == "cfg-builtin-shadowed" && d.message.contains("`false`")),
+            .any(|d| d.code.slug() == "cfg-builtin-shadowed"
+                && dorc_core::diag::render_body(d, &dorc_core::Interner::default())
+                    .contains("`false`")),
         "a `false()` funcdef is disclosed too (the other stand-in word)"
     );
 }
@@ -1608,7 +1620,7 @@ fn funcdef_ordinary_name_does_not_warn() {
         !build(&parsed.value)
             .diags
             .iter()
-            .any(|d| d.code.0 == "cfg-builtin-shadowed"),
+            .any(|d| d.code.slug() == "cfg-builtin-shadowed"),
         "an ordinary funcdef name (`p`) must not trip the shadowing disclosure"
     );
 }
@@ -1663,10 +1675,10 @@ fn consumed_post_for_dollar_question_marks_body() {
 /// Did `build(src)` emit a `cfg-inline-refused` diagnostic mentioning `needle`?
 fn inline_refused_for(src: &str, needle: &str) -> bool {
     let parsed = parse(src);
-    build(&parsed.value)
-        .diags
-        .iter()
-        .any(|d| d.code.0 == "cfg-inline-refused" && d.message.contains(needle))
+    build(&parsed.value).diags.iter().any(|d| {
+        d.code.slug() == "cfg-inline-refused"
+            && dorc_core::diag::render_body(d, &dorc_core::Interner::default()).contains(needle)
+    })
 }
 
 /// The body-leaf list (CFG node ids) of the FIRST inlined call whose call-word is `lit`.
@@ -1710,7 +1722,7 @@ fn forward_call_before_definition_is_not_inlined() {
         !build(&parsed.value)
             .diags
             .iter()
-            .any(|d| d.code.0 == "cfg-inline-refused"),
+            .any(|d| d.code.slug() == "cfg-inline-refused"),
         "a forward call is silent (no refusal diagnostic — it might be a PATH binary)"
     );
 }
@@ -1913,9 +1925,13 @@ fn depth_2_positional_argument_refuses_inner_call_loudly() {
         built
             .diags
             .iter()
-            .any(|d| d.code.0 == "dq-depth-2-positional-unthreaded"),
+            .any(|d| d.code.slug() == "depth-2-positional-unthreaded"),
         "the un-threaded depth-2 positional inner call refuses LOUDLY (catalogued Note): {:?}",
-        built.diags.iter().map(|d| d.code.0).collect::<Vec<_>>()
+        built
+            .diags
+            .iter()
+            .map(|d| d.code.slug())
+            .collect::<Vec<_>>()
     );
     let cfg = &built.value;
     // The OUTER call `a` still inlines (its argument `nginx` is a literal, threads fine).
@@ -1951,7 +1967,7 @@ fn depth_2_literal_argument_still_inlines() {
         !built
             .diags
             .iter()
-            .any(|d| d.code.0 == "dq-depth-2-positional-unthreaded"),
+            .any(|d| d.code.slug() == "depth-2-positional-unthreaded"),
         "a literal-argument nested call is NOT refused (it threads one level fine)"
     );
     let reachable_b = reachable_command_nodes_with_literal(&built.value, src, "b");

@@ -32,7 +32,7 @@
 //! entity's text *means*. Kind strings are opaque coordination handles.
 
 use dorc_core::diag::{Diag, DiagCode as Code, PredictOutOfDialect, PredictUnterminated};
-use dorc_core::{Diagnostic, Interner, Span};
+use dorc_core::{Interner, Span};
 
 mod ast;
 mod derive;
@@ -314,33 +314,19 @@ const VERB_BINDING: &str = "verb";
 /// these emits — a `Diag::new(var, …)` form would be invisible to the needle-shape scanner (t-4
 /// non-literal bypass) and read as dead catalog. Verbose-on-purpose; the literals are the gate's
 /// eyes.
-pub(crate) fn lift_failure(
-    is_unterminated: bool,
-    span: Span,
-    message: impl Into<String>,
-    interner: &mut Interner,
-) -> Diagnostic {
-    let msg = message.into();
-    // `Diag::to_legacy` rebuilds the legacy `message` from the primary label plus the render body
-    // (empty for these `detail`-only payloads), so `.label(msg)` reproduces the prior bare text
-    // exactly. Severity/code/span all flow from the typed value (severity via `registry`).
-    let diag = if is_unterminated {
+pub(crate) fn lift_failure(is_unterminated: bool, span: Span, message: impl Into<String>) -> Diag {
+    let detail = message.into();
+    if is_unterminated {
         Diag::new(
-            Code::PredictUnterminated(PredictUnterminated {
-                detail: msg.clone(),
-            }),
+            Code::PredictUnterminated(PredictUnterminated { detail }),
             span,
         )
     } else {
         Diag::new(
-            Code::PredictOutOfDialect(PredictOutOfDialect {
-                detail: msg.clone(),
-            }),
+            Code::PredictOutOfDialect(PredictOutOfDialect { detail }),
             span,
         )
     }
-    .label(msg);
-    diag.to_legacy(interner)
 }
 
 #[cfg(test)]
@@ -594,36 +580,42 @@ mod lift_failure_tests {
     /// is pinned separately in [`eof_give_up_carries_a_real_end_span`]).
     #[test]
     fn lift_failure_severity_agrees_with_registry() {
-        let mut interner = Interner::default();
+        let interner = Interner::default();
         let span = Span::new(BytePos(3), BytePos(7));
         let want_unterm = registry(&Code::PredictUnterminated(PredictUnterminated {
             detail: String::new(),
         }))
         .severity;
-        let d = lift_failure(true, span, "unterminated", &mut interner);
-        assert_eq!(d.code.0, "predict-unterminated");
+        let d = lift_failure(true, span, "unterminated");
+        assert_eq!(d.code.slug(), "predict-unterminated");
         assert_eq!(
-            d.severity, want_unterm,
+            d.severity(),
+            want_unterm,
             "unterminated severity must equal the registry's, not a hardcoded value"
         );
-        assert_eq!(d.span, Some(span), "span flows through unchanged");
+        assert_eq!(d.primary.span(), Some(span), "span flows through unchanged");
         assert_eq!(
-            d.message, "unterminated",
-            "message is the bare text (no body added)"
+            dorc_core::diag::render_body(&d, &interner),
+            "sm unterminated",
+            "PASSTHROUGH message is `sm ` + the detail"
         );
 
         let want_dialect = registry(&Code::PredictOutOfDialect(PredictOutOfDialect {
             detail: String::new(),
         }))
         .severity;
-        let d = lift_failure(false, span, "out of dialect", &mut interner);
-        assert_eq!(d.code.0, "predict-out-of-dialect");
+        let d = lift_failure(false, span, "out of dialect");
+        assert_eq!(d.code.slug(), "predict-out-of-dialect");
         assert_eq!(
-            d.severity, want_dialect,
+            d.severity(),
+            want_dialect,
             "out-of-dialect severity must equal the registry's, not a hardcoded value"
         );
-        assert_eq!(d.span, Some(span));
-        assert_eq!(d.message, "out of dialect");
+        assert_eq!(d.primary.span(), Some(span));
+        assert_eq!(
+            dorc_core::diag::render_body(&d, &interner),
+            "sm out of dialect"
+        );
     }
 
     /// An EOF give-up now carries a REAL zero-width end-of-input span, never a span-less mint
@@ -643,7 +635,8 @@ mod lift_failure_tests {
             .first()
             .expect("an unterminated body yields a lift diagnostic");
         let span = diag
-            .span
+            .primary
+            .span()
             .expect("the EOF give-up carries a real span now, not None (22-q1)");
         assert_eq!(
             span.lo, span.hi,
@@ -675,7 +668,7 @@ mod lift_failure_tests {
             lifted
                 .diags
                 .iter()
-                .any(|d| d.code.0 == "predict-unterminated"),
+                .any(|d| d.code.slug() == "predict-unterminated"),
             "an unterminated check body must disclose predict-unterminated: {:?}",
             lifted.diags
         );
@@ -694,7 +687,7 @@ mod lift_failure_tests {
             lifted
                 .diags
                 .iter()
-                .any(|d| d.code.0 == "predict-out-of-dialect"),
+                .any(|d| d.code.slug() == "predict-out-of-dialect"),
             "a `for` loop (outside the check dialect) must disclose predict-out-of-dialect: {:?}",
             lifted.diags
         );

@@ -39,6 +39,7 @@ use dorc_analysis::cfg::{Cfg, CfgNodeId, CfgNodeKind};
 use dorc_analysis::effect::{FactKey, InlineSite, SkipClass};
 use dorc_analysis::lattice::{May, Powerset};
 use dorc_analysis::value::{ValueFlow, ValueOf};
+use dorc_core::diag::Diag;
 use dorc_core::{
     AstId, ByVouch, Carrier, Channel, Dialect, EntityRef, FactBacking, Grade, Interner, KindId,
     Observable, Predicted, Rc, Rung, Symbol, Verdict,
@@ -3361,12 +3362,8 @@ impl Plan {
     /// converged mutator would otherwise be invisible). The cli `report()`s these on stderr;
     /// the e2e gate-3 floor requires a case exercising this path to declare the diagnostic.
     #[must_use]
-    pub fn render_refusal_diagnostics(
-        &self,
-        ast: &Ast,
-        interner: &Interner,
-    ) -> Vec<dorc_core::Diagnostic> {
-        use dorc_core::diag::{Diag, DiagCode, RenderHeredocRefused, SiteId};
+    pub fn render_refusal_diagnostics(&self, ast: &Ast, _interner: &Interner) -> Vec<Diag> {
+        use dorc_core::diag::{DiagCode, RenderHeredocRefused, SiteId};
         let by_ast: BTreeMap<AstId, &Disposition> =
             self.steps.iter().map(|s| (s.ast, &s.disposition)).collect();
         let mut diags = Vec::new();
@@ -3393,20 +3390,14 @@ impl Plan {
                 } else {
                     "elide"
                 };
-                let diag = Diag::new(
+                diags.push(Diag::new(
                     DiagCode::RenderHeredocRefused(RenderHeredocRefused {
                         site: SiteId::leaf(step.leaf),
+                        verb,
+                        command: command_text_oneline(&step.sh),
                     }),
                     ast.node(step.ast).span,
-                )
-                .label(format!(
-                    "leaf-exact render refuses to {verb} a heredoc-bearing command (`{}`): its \
-                     span covers the `<<` operator, not the body lines, so substituting it would \
-                     strand the heredoc body — it runs verbatim",
-                    command_text_oneline(&step.sh),
-                ))
-                .help("split the heredoc body to its own leaf, or mark the kind un-elidable");
-                diags.push(diag.to_legacy(interner));
+                ));
             }
         }
         diags

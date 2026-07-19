@@ -52,27 +52,48 @@ pub struct CatalogEntry {
 }
 
 /// The committed catalog table (`amendment-catalog-fields-are-data`). Order is stable/deterministic
-/// (source order; `inv-determinism`). SEED SCAFFOLDING (dispatch d1 phase 1): a representative pair
-/// proving the shape end-to-end — the phase-2 sweep populates one entry per migrated `DiagCode`
-/// variant and the completeness gate (every variant ⇒ exactly one entry) lands with it.
+/// (source order; `inv-determinism`). ONE entry per `DiagCode` variant (the completeness gate —
+/// `core/tests/diag_tidy.rs::every_variant_has_exactly_one_catalog_entry` — pins the bijection).
+/// PASSTHROUGH codes carry the message on a runtime `detail` (template `sm {detail}`); TEMPLATIZED
+/// codes carry a real `sm <template>` filled from named payload params. All user-facing prose is
+/// `sm `-prefixed base-tip prose awaiting a human rewrite (`27V:rul-error-authorship-tier`).
 pub const CATALOG: &[CatalogEntry] = &[
+    // ── round-22 spine + former legacy survivors ────────────────────────────
     CatalogEntry {
-        slug: "dq-site-unresolvable",
-        when_fires: "a probe could not ship a read-only check for a command-site, so the apply \
-                     runs it.",
-        why: "spike/CLAUDE.md two-phases-opposite-fail-directions (kFAIL-perform): unsure ⇒ run; \
-              the disclosure names the site that will run every apply.",
-        params: &["source_excerpt"],
-        example: "sm site runs `make install`",
-        message: "sm site runs `{source_excerpt}`",
+        slug: "cmdsub-operand-top",
+        when_fires: "a `$(…)`/runtime-dynamic operand (or the command word) forced a command to ⊤, \
+                     so it runs (never elided). effect.rs finalize_cmdsub_tops.",
+        why: "no-silent-phantoms disclosure (find-3); the template fills `{position}` from \
+              `OperandPosition::describe()` and `{cause}` from `TopCause::describe()`. \
+              NOTE plain-language pass owed: describe()-interpolated + ⊤/top wording \
+              (law-plain-language-surfaces, 24H ack-4).",
+        params: &["position", "cause"],
+        example: "sm command forced to run (never elided): operand 1 is a command-substitution \
+                  `$(…)` / arithmetic / operator-form expansion ⇒ its identity is unresolved (⊤)",
+        message: "sm command forced to run (never elided): {position} is {cause} ⇒ its identity \
+                  is unresolved (⊤)",
+        help: None,
+    },
+    CatalogEntry {
+        slug: "site-unresolvable",
+        when_fires: "a probe could not ship a read-only check for one or more command-sites, so \
+                     the apply runs each. cli unresolvable_diagnostics (né dq-site-unresolvable).",
+        why: "kFAIL-perform: unsure ⇒ run. PASSTHROUGH — `detail` reproduces BOTH the aggregate \
+              label (N sites …) AND the folded `\\n  = note: site runs `{excerpt}`` line the old \
+              render_body emitted, so the migrated output is byte-identical bar the `sm ` prefix.",
+        params: &["detail"],
+        example: "sm 2 sites run unprobed (no read-only check could be shipped): `make install`, \
+                  `ldconfig` — run `dorc why` for the per-site detail (the apply runs each anyway, \
+                  to stay safe)",
+        message: "sm {detail}",
         help: None,
     },
     CatalogEntry {
         slug: "render-heredoc-refused",
         when_fires: "the leaf-exact render would elide/guard a licensed leaf whose span covers a \
                      `<<` heredoc opener (not its body), so the leaf runs verbatim instead.",
-        why: "spike/CLAUDE.md inv-kfail (kFAIL-perform, arch-1 d-6): substituting the opener span \
-              would strand the heredoc body — an Error-class give-up (a broken artifact otherwise).",
+        why: "kFAIL-perform, arch-1 d-6: substituting the opener span would strand the heredoc \
+              body — an Error-class give-up (a broken artifact otherwise). `{verb}` = elide/guard.",
         params: &["verb", "command"],
         example: "sm leaf-exact render refuses to elide a heredoc-bearing command (`cat <<EOF`): \
                   its span covers the `<<` operator, not the body lines, so substituting it would \
@@ -81,6 +102,612 @@ pub const CATALOG: &[CatalogEntry] = &[
                   its span covers the `<<` operator, not the body lines, so substituting it would \
                   strand the heredoc body — it runs verbatim",
         help: Some("sm split the heredoc body to its own leaf, or mark the kind un-elidable"),
+    },
+    CatalogEntry {
+        slug: "cmdsub-inner-nonleaf",
+        when_fires: "an effect-bearing command runs inside a `$(…)` substitution body, so it has \
+                     no independent leaf. effect.rs classify (né dq-cmdsub-inner-nonleaf).",
+        why: "q-1.f silent-1/silent-4 disclosure; the inner command runs whenever its enclosing \
+              line runs. `{inner}` = the resolved inner argv.",
+        params: &["inner"],
+        example: "sm command `id -u` runs inside a `$(…)` substitution ⇒ effect-bearing but not \
+                  independently elidable (it runs whenever its enclosing line runs)",
+        message: "sm command `{inner}` runs inside a `$(…)` substitution ⇒ effect-bearing but not \
+                  independently elidable (it runs whenever its enclosing line runs)",
+        help: None,
+    },
+    CatalogEntry {
+        slug: "redir-target-top",
+        when_fires: "a write-redirect (`>`/`>>`) to a dynamic/unresolved target joins ⊤. \
+                     effect.rs classify Redir arm (né dq-redir-target-top).",
+        why: "y-1 / 21F imp-1: the target is unresolvable so no per-path `file` cell can be keyed. \
+              NOTE plain-language pass owed: ⊤/top wording (law-plain-language-surfaces, 24H ack-4).",
+        params: &[],
+        example: "sm write-redirect to a dynamic/unresolved target ⇒ no per-path `file` cell can \
+                  be keyed, so the write joins ⊤ and the command runs (never elided)",
+        message: "sm write-redirect to a dynamic/unresolved target ⇒ no per-path `file` cell can \
+                  be keyed, so the write joins ⊤ and the command runs (never elided)",
+        help: None,
+    },
+    CatalogEntry {
+        slug: "depth-2-positional-unthreaded",
+        when_fires: "a depth-2 inlined call's argument references a positional that does not thread \
+                     two inline levels. cfg.rs (né dq-depth-2-positional-unthreaded).",
+        why: "216 §1.2 correction: the inner body's positional resolves ⊤, so the call runs \
+              verbatim. `{name}` = the refused call's function name. NOTE plain-language pass \
+              owed: ⊤/top wording (law-plain-language-surfaces, 24H ack-4).",
+        params: &["name"],
+        example: "sm call `deploy` not inlined: its argument references a positional \
+                  (`$1`..`$9`/`$#`) that does not thread through two inline levels ⇒ the inner \
+                  body's positional is ⊤ — it runs as an ordinary unmodeled command (depth-2 \
+                  positional threading is out of the modeled subset)",
+        message: "sm call `{name}` not inlined: its argument references a positional \
+                  (`$1`..`$9`/`$#`) that does not thread through two inline levels ⇒ the inner \
+                  body's positional is ⊤ — it runs as an ordinary unmodeled command (depth-2 \
+                  positional threading is out of the modeled subset)",
+        help: None,
+    },
+    // ── syntax/parser.rs (PASSTHROUGH) ──────────────────────────────────────
+    CatalogEntry {
+        slug: "syntax-unsupported",
+        when_fires: "the parser hit an unmodeled/out-of-scope sh construct; it becomes an \
+                     `Unsupported` ⊤-node and parsing continues.",
+        why: "inv-top-reject: under-modeling is a loud correctness boundary. PASSTHROUGH — the \
+              parser's own description of the construct rides `detail`.",
+        params: &["detail"],
+        example: "sm process substitution `<(…)` is not modeled",
+        message: "sm {detail}",
+        help: None,
+    },
+    CatalogEntry {
+        slug: "syntax-malformed",
+        when_fires: "the parser hit a structurally malformed sh construct (a parse error); parsing \
+                     continues fail-soft.",
+        why: "inv-no-throw: errors are data. PASSTHROUGH — the parser's description rides `detail`.",
+        params: &["detail"],
+        example: "sm unterminated double-quote",
+        message: "sm {detail}",
+        help: None,
+    },
+    // ── analysis/cfg.rs (PASSTHROUGH) ───────────────────────────────────────
+    CatalogEntry {
+        slug: "cfg-top-node",
+        when_fires: "an `Unsupported` AST ⊤-node became a CFG `Top` node (an unsupported construct, \
+                     or the CFG nesting bound). cfg.rs lower_top + fresh(Top).",
+        why: "the conservative ⊤-absorbing semantics; any command after it may mutate anything. \
+              PASSTHROUGH — the CFG builder's reason rides `detail`. NOTE plain-language pass owed: \
+              slug carries top/⊤ wording (law-plain-language-surfaces, 24H ack-4).",
+        params: &["detail"],
+        example: "sm unsupported construct (⊤): un-probeable and un-skippable",
+        message: "sm {detail}",
+        help: None,
+    },
+    CatalogEntry {
+        slug: "cfg-errexit-unknown",
+        when_fires: "the errexit-region pass hit an unknown/unmodeled command; the `set -e` \
+                     failure-edge is conservatively assumed. cfg.rs (SPANLESS — spans a region).",
+        why: "over-approximate, sound. PASSTHROUGH — the pass's description rides `detail`.",
+        params: &["detail"],
+        example: "sm errexit state is ⊤ at one or more commands; failure-edges added conservatively \
+                  (over-approximate, sound)",
+        message: "sm {detail}",
+        help: None,
+    },
+    CatalogEntry {
+        slug: "cfg-inline-refused",
+        when_fires: "a function call could not be inlined. cfg.rs — SEVEN distinct emit paths under \
+                     one slug: redefinition, recursion, inline-depth budget, unmodeled positional \
+                     in body, unmodeled write-redirect in body (tc-M2), per-call node budget, \
+                     per-book node budget. Each names its own reason.",
+        why: "the call runs as an ordinary unmodeled command (MustRun, safe). PASSTHROUGH — the \
+              per-path reason rides `detail`.",
+        params: &["detail"],
+        example: "sm call to `helper` exceeds the inline-depth budget (8); not inlined — it runs \
+                  as an ordinary unmodeled command",
+        message: "sm {detail}",
+        help: None,
+    },
+    CatalogEntry {
+        slug: "cfg-builtin-shadowed",
+        when_fires: "a book funcdef shadows a shell builtin the engine relies on (dash resolves a \
+                     function before a regular builtin). cfg.rs warn_shadowed_relied_builtins.",
+        why: "find-I: builtin-dependent conclusions may be unsound for this book. PASSTHROUGH — the \
+              disclosure text rides `detail`; the primary span is the funcdef name_span.",
+        params: &["detail"],
+        example: "sm function `test` shadows a shell builtin the engine relies on (dash resolves a \
+                  function before a regular builtin): analysis treats the bare word `test` as the \
+                  builtin when classifying effects and minting stand-ins, so builtin-dependent \
+                  conclusions may be unsound for this book",
+        message: "sm {detail}",
+        help: None,
+    },
+    // ── analysis/effect.rs (PASSTHROUGH) ────────────────────────────────────
+    CatalogEntry {
+        slug: "effect-kind-disagreement",
+        when_fires: "a check's annotation kind disagrees with the effect-map kind for the same \
+                     verb; the annotation wins. effect.rs (SPANLESS — mid-resolution, no leaf).",
+        why: "204 §6 open seam: declared identity wins. PASSTHROUGH — the disagreement rides \
+              `detail`.",
+        params: &["detail"],
+        example: "sm check annotation kind `sm.dorc.Package` disagrees with the effect-map kind \
+                  `sm.dorc.File` for this verb — the annotation (declared identity) wins",
+        message: "sm {detail}",
+        help: None,
+    },
+    // ── oracle/predict.rs (PASSTHROUGH) ─────────────────────────────────────
+    CatalogEntry {
+        slug: "predict-out-of-dialect",
+        when_fires: "a check function body uses a construct outside the check dialect (a strict \
+                     subset of sh). oracle/predict.rs lift_failure.",
+        why: "out-of-dialect input is a lift failure. PASSTHROUGH — the check parser's description \
+              rides `detail`.",
+        params: &["detail"],
+        example: "sm check body uses `[[ … ]]`, outside the check dialect",
+        message: "sm {detail}",
+        help: None,
+    },
+    CatalogEntry {
+        slug: "predict-unterminated",
+        when_fires: "a check function body is structurally unterminated (missing `;;`/`esac`). \
+                     oracle/predict.rs lift_failure.",
+        why: "the check cannot be lifted. PASSTHROUGH — the check parser's description rides \
+              `detail`.",
+        params: &["detail"],
+        example: "sm check body ends mid-`case` (missing `esac`)",
+        message: "sm {detail}",
+        help: None,
+    },
+    // ── oracle/reserved.rs (TEMPLATIZED) ────────────────────────────────────
+    CatalogEntry {
+        slug: "munge-name-invalid",
+        when_fires: "an emitted `<munged>__<role>` funcname is not a legal sh NAME (leading digit, \
+                     dot, non-ASCII). oracle/reserved.rs lint_oracle_reserved_names.",
+        why: "ca-munge-charclass (24M §4b): a broken function name cannot ship — REFUSED. \
+              `{problem}` is `ShNameProblem::describe()`.",
+        params: &["source", "funcname", "problem"],
+        example: "sm `9pkg` munges to the sh function name `9pkg`, which is not a legal NAME: \
+                  starts with a digit (ca-munge-charclass, 24M §4b) — REFUSED (a broken function \
+                  name cannot ship; the munger must transliterate or the name must be renamed)",
+        message: "sm `{source}` munges to the sh function name `{funcname}`, which is not a legal \
+                  NAME: {problem} (ca-munge-charclass, 24M §4b) — REFUSED (a broken function name \
+                  cannot ship; the munger must transliterate or the name must be renamed)",
+        help: None,
+    },
+    CatalogEntry {
+        slug: "munge-name-collision",
+        when_fires: "two DISTINCT source names munge to one sh funcname. oracle/reserved.rs. \
+                     `{count}` interpolates twice (the count and the funcdef count).",
+        why: "non-injective munge: refuse-and-run (never silently last-writer-wins).",
+        params: &["source", "funcname", "count", "names"],
+        example: "sm `a.b` munges to the sh function name `a_b`, shared by 2 distinct source names \
+                  (a.b, a-b) — REFUSED, never silently merged (the shipped artifact would carry 2 \
+                  same-named funcdefs, last-writer-wins; align with the reingest-collision floor: \
+                  refuse-and-run)",
+        message: "sm `{source}` munges to the sh function name `{funcname}`, shared by {count} \
+                  distinct source names ({names}) — REFUSED, never silently merged (the shipped \
+                  artifact would carry {count} same-named funcdefs, last-writer-wins; align with \
+                  the reingest-collision floor: refuse-and-run)",
+        help: None,
+    },
+    CatalogEntry {
+        slug: "reserved-namespace-squat",
+        when_fires: "a book funcdef coincidentally named `*__<role>` squats the reserved oracle \
+                     namespace. oracle/reserved.rs lint_book_reserved_names. `{role}` twice.",
+        why: "rul24M-bare-dorcism-names: accepted-not-prevented; the disclosure is loud (warnings \
+              tune high this era).",
+        params: &["name", "role"],
+        example: "sm book function `nginx__predict` squats the reserved `__predict` oracle \
+                  namespace (rul24M-bare-dorcism-names): if unintended, it coincidentally matches \
+                  an emitted oracle function name — it is treated as an ordinary opaque command \
+                  here (run-verbatim), but a shipped oracle preamble of the same name would collide \
+                  (last-writer-wins). Rename it to stay clear of `*__predict`.",
+        message: "sm book function `{name}` squats the reserved `{role}` oracle namespace \
+                  (rul24M-bare-dorcism-names): if unintended, it coincidentally matches an emitted \
+                  oracle function name — it is treated as an ordinary opaque command here \
+                  (run-verbatim), but a shipped oracle preamble of the same name would collide \
+                  (last-writer-wins). Rename it to stay clear of `*{role}`.",
+        help: None,
+    },
+    // ── oracle/marker.rs (static) ───────────────────────────────────────────
+    CatalogEntry {
+        slug: "missing-dialect-marker",
+        when_fires: "a dorc-lang dialect construct (a bind or trailing mark) appears in a file \
+                     lacking the `# dorc-lang/v0.1` version marker. oracle/marker.rs.",
+        why: "marker-gates-syntax-only: a loud file-level refusal. Static — the marker text is \
+              inline (MARKER / MARKER_WINDOW compile-time constants).",
+        params: &[],
+        example: "sm this file uses a dorc-lang dialect construct (a bind `name : kind = …` or a \
+                  trailing `:`/`:!`/`:?` mark) but lacks the `# dorc-lang/v0.1` version marker \
+                  (marker-gates-syntax-only): add `# dorc-lang/v0.1` as a standalone comment in the \
+                  first 10 lines, or drop the dialect (the bare `__role` floor works markerless)",
+        message: "sm this file uses a dorc-lang dialect construct (a bind `name : kind = …` or a \
+                  trailing `:`/`:!`/`:?` mark) but lacks the `# dorc-lang/v0.1` version marker \
+                  (marker-gates-syntax-only): add `# dorc-lang/v0.1` as a standalone comment in the \
+                  first 10 lines, or drop the dialect (the bare `__role` floor works markerless)",
+        help: None,
+    },
+    // ── oracle/entry.rs (tolerance vouch + corroboration) ───────────────────
+    CatalogEntry {
+        slug: "tolerates-unknown-dimension",
+        when_fires: "an unknown context-dimension token appears on a `tolerates:` vouch. \
+                     oracle/entry.rs collect_tolerance. `{expected}` = the known-dimension list.",
+        why: "27C §2: the mark vouches nothing and the site stays walled on that dimension \
+              (engine-owned closed vocabulary).",
+        params: &["token", "expected"],
+        example: "sm `netns2` is not a known context dimension on a `tolerates:` vouch (expected \
+                  one of user, netns, fs-view); the mark vouches nothing and the site stays walled \
+                  on that dimension (`27C` §2).",
+        message: "sm `{token}` is not a known context dimension on a `tolerates:` vouch (expected \
+                  one of {expected}); the mark vouches nothing and the site stays walled on that \
+                  dimension (`27C` §2).",
+        help: None,
+    },
+    CatalogEntry {
+        slug: "tolerates-over-identity-dependence",
+        when_fires: "a `tolerates:user` vouch sits over a body that visibly reads identity \
+                     (`id`/`$USER`/`$HOME`). oracle/entry.rs corroborate_tolerance_over_identity.",
+        why: "27C §6 corroboration (recognize-never-license): the ask never blocks. Static.",
+        params: &[],
+        example: "sm this `is_converged` carries `tolerates:user` but VISIBLY reads the caller's \
+                  identity (`id`/`$USER`/`$HOME`): are you sure the body is read-only under a user \
+                  shift, not just answer-varying? A shifted user must not make it MUTATE (`27C` §2 \
+                  corroboration).",
+        message: "sm this `is_converged` carries `tolerates:user` but VISIBLY reads the caller's \
+                  identity (`id`/`$USER`/`$HOME`): are you sure the body is read-only under a user \
+                  shift, not just answer-varying? A shifted user must not make it MUTATE (`27C` §2 \
+                  corroboration).",
+        help: None,
+    },
+    CatalogEntry {
+        slug: "heavy-context-no-tolerance",
+        when_fires: "a body reads identity but carries no tolerance vouch. oracle/entry.rs \
+                     hint_heavy_context_no_vouch (reverse-direction corroboration hint).",
+        why: "27C §6 (recognize-never-license): a one-line vouch would make it context-shiftable. \
+              Static.",
+        params: &[],
+        example: "sm this `is_converged` reads the caller's identity but carries no tolerance \
+                  vouch — a wrapped site (`sudo …`) will run/guard instead of eliding. One line \
+                  makes it context-shiftable: `:   : tolerates:user` (`27C` §2).",
+        message: "sm this `is_converged` reads the caller's identity but carries no tolerance \
+                  vouch — a wrapped site (`sudo …`) will run/guard instead of eliding. One line \
+                  makes it context-shiftable: `:   : tolerates:user` (`27C` §2).",
+        help: None,
+    },
+    // ── oracle/wrapper.rs (TEMPLATIZED) ─────────────────────────────────────
+    CatalogEntry {
+        slug: "lend-map-unknown-dimension",
+        when_fires: "an unknown lend_map dimension token appears on a `__lend_map` line. \
+                     oracle/wrapper.rs walk_lend_body. `{expected}` = the known-dimension list.",
+        why: "273 §8: the line mints no lend and the dimension it meant to answer walls. NOTE \
+              plain-language pass owed: ⊤/top wording (law-plain-language-surfaces, 24H ack-4).",
+        params: &["token", "expected"],
+        example: "sm `netns2` is not a known lend_map dimension (expected one of user, netns, \
+                  fs-view); the line mints no lend and the dimension it meant to answer stays ⊤ \
+                  (walls). Dimension marks are an engine-owned closed vocabulary (`273` §8).",
+        message: "sm `{token}` is not a known lend_map dimension (expected one of {expected}); the \
+                  line mints no lend and the dimension it meant to answer stays ⊤ (walls). \
+                  Dimension marks are an engine-owned closed vocabulary (`273` §8).",
+        help: None,
+    },
+    // ── oracle/carry.rs (TEMPLATIZED) ───────────────────────────────────────
+    CatalogEntry {
+        slug: "carry-netns-on-net-kernel-forbidden",
+        when_fires: "a kind's per-netns `net-kernel` store claims `invariant:netns` (a \
+                     contradiction). oracle/carry.rs lift. `{kind_munged}` = the munged kind.",
+        why: "27C §4(a): network kernel state is namespaced; the false invariance line is dropped.",
+        params: &["kind_munged"],
+        example: "sm `invariant:netns` is forbidden on the per-netns `net-kernel` store of \
+                  `sm_dorc_KernelParam` — network kernel state is namespaced, never netns-invariant",
+        message: "sm `invariant:netns` is forbidden on the per-netns `net-kernel` store of \
+                  `{kind_munged}` — network kernel state is namespaced, never netns-invariant",
+        help: None,
+    },
+    // ── oracle/predict/derive.rs (static) ───────────────────────────────────
+    CatalogEntry {
+        slug: "mark-brace-verdict-single-cell",
+        when_fires: "a brace-alternation `#{a,b}` appears on a single-cell verdict/observe mark. \
+                     oracle/predict/derive.rs. Static (literal braces escaped in the template).",
+        why: "277 §4c: a verdict/observe mark asserts exactly one cell; the brace mints no cell \
+              and the site runs (a role-aware rejection the parser cannot make).",
+        params: &[],
+        example: "sm verdict and observe marks are single-cell; brace alternation `#{a,b}` is \
+                  claim-emission-only (`277` §4c) — this mark mints NO cell and the site will run. \
+                  Split it into one marked probe line per cell.",
+        message: "sm verdict and observe marks are single-cell; brace alternation `#{{a,b}}` is \
+                  claim-emission-only (`277` §4c) — this mark mints NO cell and the site will run. \
+                  Split it into one marked probe line per cell.",
+        help: None,
+    },
+    // ── plan/records.rs (framed deframer; all SPANLESS) ─────────────────────
+    CatalogEntry {
+        slug: "records-headerless-refused",
+        when_fires: "a records stream carried no framing at all (headerless) on the strict \
+                     production path. plan/records.rs deframe_headerless_refused. Static.",
+        why: "27D E4: a real dorc probe always frames, so a headerless stream is corruption or an \
+              alien source — refuse (kFAIL-withhold, the fold is withheld, the host runs).",
+        params: &[],
+        example: "sm a records stream carried no `dorc-records/1` framing at all (headerless — \
+                  truncated before the header, or a non-dorc source) — refused on the strict \
+                  production path, the fold is withheld and the host runs (kFAIL-withhold)",
+        message: "sm a records stream carried no `dorc-records/1` framing at all (headerless — \
+                  truncated before the header, or a non-dorc source) — refused on the strict \
+                  production path, the fold is withheld and the host runs (kFAIL-withhold)",
+        help: None,
+    },
+    CatalogEntry {
+        slug: "records-glued-line",
+        when_fires: "a records line carried bytes after its terminal token (two atomic writes \
+                     glued). plan/records.rs deframe_framed. Static.",
+        why: "262 §2: reject the whole read unit, the safe direction (kFAIL-perform).",
+        params: &[],
+        example: "sm a records line carried bytes after its terminal token (two writes glued) — \
+                  the whole read unit is refused, the host runs (kFAIL-perform)",
+        message: "sm a records line carried bytes after its terminal token (two writes glued) — \
+                  the whole read unit is refused, the host runs (kFAIL-perform)",
+        help: None,
+    },
+    CatalogEntry {
+        slug: "records-header-missing",
+        when_fires: "a framed records stream carried no header (torn or absent). \
+                     plan/records.rs finalize. Static.",
+        why: "262 §1/§2: a missing header refuses the read unit (kFAIL-perform).",
+        params: &[],
+        example: "sm a framed records stream carried no `dorc-records/1` header (torn/absent) — \
+                  the read unit is refused, the host runs (kFAIL-perform)",
+        message: "sm a framed records stream carried no `dorc-records/1` header (torn/absent) — \
+                  the read unit is refused, the host runs (kFAIL-perform)",
+        help: None,
+    },
+    CatalogEntry {
+        slug: "records-sentinel-nonce",
+        when_fires: "the end-sentinel carried a nonce that is not this attempt's. \
+                     plan/records.rs deframe_framed. Static.",
+        why: "26A amend-retry-hygiene: ignored — the stream's own records are keyed independently.",
+        params: &[],
+        example: "sm the end-sentinel carried a nonce that is not this attempt's — ignored (the \
+                  stream's own records are keyed independently)",
+        message: "sm the end-sentinel carried a nonce that is not this attempt's — ignored (the \
+                  stream's own records are keyed independently)",
+        help: None,
+    },
+    CatalogEntry {
+        slug: "records-fact-truncated",
+        when_fires: "fewer site records arrived than the header declared. plan/records.rs \
+                     finalize. `{received}`/`{declared}`/`{unseen}` are the site counts.",
+        why: "plans/128 fc-2: a computable range, not a refusal — the unseen sites fold Unknown ⇒ \
+              run on their own. NOTE plain-language pass owed: Unknown/⊤-join wording \
+              (law-plain-language-surfaces, 24H ack-4).",
+        params: &["received", "declared", "unseen"],
+        example: "sm fact lane truncated: 3 of 5 declared site records received — the 2 unseen \
+                  site(s) fold Unknown (run)",
+        message: "sm fact lane truncated: {received} of {declared} declared site records received \
+                  — the {unseen} unseen site(s) fold Unknown (run)",
+        help: None,
+    },
+    CatalogEntry {
+        slug: "records-integrity-refused",
+        when_fires: "the records header failed an integrity key (nonce/attempt/host/book). \
+                     plan/records.rs read_header. `{which}` names the mismatched key.",
+        why: "262 §2: any known-key mismatch refuses the whole read unit (kFAIL-perform).",
+        params: &["which"],
+        example: "sm the records header failed integrity on host (a mis-plumbed peer host's \
+                  stream) — the whole read unit is refused, the host runs (kFAIL-perform)",
+        message: "sm the records header failed integrity on {which} — the whole read unit is \
+                  refused, the host runs (kFAIL-perform)",
+        help: None,
+    },
+    CatalogEntry {
+        slug: "records-torn-line",
+        when_fires: "torn record lines (fragments that lost their terminating write) were counted. \
+                     plan/records.rs finalize. `{count}` = the aggregate count.",
+        why: "262 §1 pin-late-and-alien-records: counted, never folded; one aggregated warning.",
+        params: &["count"],
+        example: "sm 2 torn (no terminal token) record line(s) discarded (counted, never folded)",
+        message: "sm {count} torn (no terminal token) record line(s) discarded (counted, never \
+                  folded)",
+        help: None,
+    },
+    CatalogEntry {
+        slug: "records-alien-line",
+        when_fires: "alien (non-nonce) record lines were counted. plan/records.rs finalize. \
+                     `{count}` = the aggregate count.",
+        why: "262 §1 pin-late-and-alien-records: counted, never folded; one aggregated warning.",
+        params: &["count"],
+        example: "sm 1 alien (non-nonce) record line(s) discarded (counted, never folded)",
+        message: "sm {count} alien (non-nonce) record line(s) discarded (counted, never folded)",
+        help: None,
+    },
+    CatalogEntry {
+        slug: "records-late-line",
+        when_fires: "late (after the end-sentinel) record lines were counted. plan/records.rs \
+                     finalize. `{count}` = the aggregate count.",
+        why: "262 §1 pin-late-and-alien-records: counted, never folded; one aggregated warning.",
+        params: &["count"],
+        example: "sm 1 late (after the end-sentinel) record line(s) discarded (counted, never \
+                  folded)",
+        message: "sm {count} late (after the end-sentinel) record line(s) discarded (counted, \
+                  never folded)",
+        help: None,
+    },
+    // ── cli/main.rs (footprint / escalation / carry) ────────────────────────
+    CatalogEntry {
+        slug: "footprint-incoherent",
+        when_fires: "a touches() footprint is incoherent. cli/main.rs — TWO emit paths: the SPANNED \
+                     own-coordinate canary (footprint omits its own effect coordinate), and the \
+                     SPANLESS malformed-derived-coordinate refusal (the SPANLESS_SITE_PAYLOADS one).",
+        why: "24A §1b / 24E §7: an at-most claim cannot be partial — refuse ⇒ the site walls. \
+              PASSTHROUGH — the per-path text rides `detail`.",
+        params: &["detail"],
+        example: "sm touches() footprint omits this command's own effect coordinate (at-least ⊄ \
+                  at-most) — footprint refused, the site walls",
+        message: "sm {detail}",
+        help: None,
+    },
+    CatalogEntry {
+        slug: "touches-escalated",
+        when_fires: "a payload-bound touches() escalated to host-derivation. cli/main.rs \
+                     merge_derived_footprints. `{site}` = node id, `{call}` = the escalated call.",
+        why: "ru-26 SPIKE-ONLY: makes the static→dynamic boundary visible in the render; must not \
+              leak into greenfield as a permanent per-escalation requirement.",
+        params: &["site", "call"],
+        example: "sm site 4: touches() escalated to host-derivation (dpkg-query -W nginx)",
+        message: "sm site {site}: touches() escalated to host-derivation ({call})",
+        help: None,
+    },
+    CatalogEntry {
+        slug: "deriv-family-incomplete",
+        when_fires: "a derived footprint family did not close completely (missing deriv-end, or a \
+                     count mismatch). cli/main.rs. `{site}` = node id, `{reason}` = the match.",
+        why: "262 §2 / 26A stop-1: an at-most family cannot be partial — refuse ⇒ the site walls \
+              total.",
+        params: &["site", "reason"],
+        example: "sm site 4: derived footprint family incomplete (declared n=3, received 2) — \
+                  footprint refused, the site walls total (an at-most claim cannot be partial)",
+        message: "sm site {site}: derived footprint family incomplete ({reason}) — footprint \
+                  refused, the site walls total (an at-most claim cannot be partial)",
+        help: None,
+    },
+    CatalogEntry {
+        slug: "escalation-policy",
+        when_fires: "the authority-disclosure line for the probe-escalation policy. cli/main.rs \
+                     (SPANLESS). Consent legibility.",
+        why: "27C §2: the disclosure varies by dial (default vs --escalate-any-probe). PASSTHROUGH \
+              — the policy text rides `detail`.",
+        params: &["detail"],
+        example: "sm escalation policy: probe re-uses connection authority (cap-net-admin) for \
+                  `tolerates:`-vouched functions only (default); entry forms: sudo. Forbid with \
+                  --no-probe-escalation; widen with --escalate-any-probe.",
+        message: "sm {detail}",
+        help: None,
+    },
+    CatalogEntry {
+        slug: "carried-across-substrate-axis",
+        when_fires: "a cross-context elision carried a substrate-axis fact via pure-predicate \
+                     carry. cli/main.rs. Spanned (the carried site's span).",
+        why: "27C §9: every cross-context elision renders its attribution chain from day one. \
+              PASSTHROUGH — the chain text rides `detail`.",
+        params: &["detail"],
+        example: "sm elision carried across the fs-view axis: backing kind `sm_dorc_File` vouches \
+                  `invariant:fs-view`; the verdict body is read-set-closed",
+        message: "sm {detail}",
+        help: None,
+    },
+    CatalogEntry {
+        slug: "wrapped-site-adoption-hint",
+        when_fires: "a wrapped BOOK site degraded on a missing `tolerates:` vouch. cli/main.rs \
+                     (27N). Spanned (the wrapped site's span).",
+        why: "27C §2 (recognize-never-license): the one-line adoption hint. PASSTHROUGH — the hint \
+              text rides `detail`.",
+        params: &["detail"],
+        example: "sm this `sudo`-wrapped site could elide with a `tolerates:user` vouch on its \
+                  is_converged (adoption hint)",
+        message: "sm {detail}",
+        help: None,
+    },
+    // ── cli/main.rs (resolver / reaches confusability; SPANLESS) ────────────
+    CatalogEntry {
+        slug: "resolver-conflict",
+        when_fires: "two oracle files declare one kind's resolver. cli/main.rs. `{kind}` = the \
+                     kind, `{count}` = the resolver count.",
+        why: "24F §3 at-most-one-resolver-per-kind: BOTH refused (never first-wins-silently); the \
+              kind keeps token-equality.",
+        params: &["kind", "count"],
+        example: "sm kind 'sm.dorc.Package' has 2 resolvers across oracle files — \
+                  at-most-one-resolver-per-kind (24F §3): BOTH refused, the kind keeps \
+                  token-equality (never first-wins-silently)",
+        message: "sm kind '{kind}' has {count} resolvers across oracle files — \
+                  at-most-one-resolver-per-kind (24F §3): BOTH refused, the kind keeps \
+                  token-equality (never first-wins-silently)",
+        help: None,
+    },
+    CatalogEntry {
+        slug: "resolver-provider-collision",
+        when_fires: "a resolver is keyed to a name matching a known COMMAND provider. cli/main.rs. \
+                     `{name}` = the colliding name.",
+        why: "corr-kind-keying §10: resolvers are keyed by KIND, not command — a likely mis-key \
+              (kept; the warning surfaces the risk).",
+        params: &["name"],
+        example: "sm resolver 'nginx.resolve()' is keyed to a name matching a known COMMAND \
+                  provider — resolvers are keyed by KIND, not command (corr-kind-keying §10); this \
+                  mints identity for a kind no coordinate may use (a likely mis-key)",
+        message: "sm resolver '{name}.resolve()' is keyed to a name matching a known COMMAND \
+                  provider — resolvers are keyed by KIND, not command (corr-kind-keying §10); this \
+                  mints identity for a kind no coordinate may use (a likely mis-key)",
+        help: None,
+    },
+    CatalogEntry {
+        slug: "dangling-reference",
+        when_fires: "a coordinate resolved DANGLING (no such entity on an enumerable kind). \
+                     cli/main.rs dangling_diagnostics. `{coord}` = the rendered coordinate.",
+        why: "24F §4: turns a third-party-typo from silent value-loss into a pointed hint; the \
+              coord rides the may-alias degrade (the site runs). ADVISORY (fail toward run).",
+        params: &["coord"],
+        example: "sm coordinate sm.dorc.Package:nginx resolved DANGLING — the kind's resolver \
+                  reports no such entity (a likely typo / stale name); it degrades to may-alias \
+                  (the site runs)",
+        message: "sm coordinate {coord} resolved DANGLING — the kind's resolver reports no such \
+                  entity (a likely typo / stale name); it degrades to may-alias (the site runs)",
+        help: None,
+    },
+    CatalogEntry {
+        slug: "reaches-conflict",
+        when_fires: "two oracle files declare one kind's reach-function. cli/main.rs. `{kind}` = \
+                     the kind, `{count}` = the reach-function count.",
+        why: "24G §4 at-most-one-reaches-per-kind: BOTH refused (never first-wins-silently); the \
+              kind's footprints do not expand.",
+        params: &["kind", "count"],
+        example: "sm kind 'sm.dorc.Package' has 2 reach-functions across oracle files — \
+                  at-most-one-reaches-per-kind (24G §4): BOTH refused, the kind's footprints do \
+                  not expand (never first-wins-silently)",
+        message: "sm kind '{kind}' has {count} reach-functions across oracle files — \
+                  at-most-one-reaches-per-kind (24G §4): BOTH refused, the kind's footprints do \
+                  not expand (never first-wins-silently)",
+        help: None,
+    },
+    CatalogEntry {
+        slug: "reaches-provider-collision",
+        when_fires: "a reach-function is keyed to a name matching a known COMMAND provider. \
+                     cli/main.rs. `{name}` = the colliding name.",
+        why: "24G §4: reaches is keyed by KIND, not command — a likely mis-key.",
+        params: &["name"],
+        example: "sm reach-function 'nginx.reaches()' is keyed to a name matching a known COMMAND \
+                  provider — reaches is keyed by KIND, not command (24G §4); this expands a kind \
+                  no coordinate may use (a likely mis-key)",
+        message: "sm reach-function '{name}.reaches()' is keyed to a name matching a known COMMAND \
+                  provider — reaches is keyed by KIND, not command (24G §4); this expands a kind \
+                  no coordinate may use (a likely mis-key)",
+        help: None,
+    },
+    // ── cli/main.rs (wrapper coherence fail-fast; PASSTHROUGH) ──────────────
+    CatalogEntry {
+        slug: "wrapper-entry-incoherent",
+        when_fires: "a wrapper's `__enter` and `__lend_map` disagree on argv flow. cli/main.rs. \
+                     Spanned (the entry name_span).",
+        why: "27C:rul-fold-entry-coherence-failfast (declarations-genuinely-contradict): a \
+              pre-network fail-fast. PASSTHROUGH — the refusal text rides `detail`.",
+        params: &["detail"],
+        example: "sm wrapper `sudo`: __enter and __lend_map disagree on argv flow (entry consumes \
+                  1 leading arg(s), the lend-fold consumes 0) — static incoherence \
+                  (27C:rul-fold-entry-coherence-failfast, declarations-genuinely-contradict). The \
+                  entry form drops/transforms args the fold relied on; make the entry pass the \
+                  fold's guest verbatim.",
+        message: "sm {detail}",
+        help: None,
+    },
+    CatalogEntry {
+        slug: "wrapper-peel-incoherent",
+        when_fires: "a wrapper's `__predict` and `__lend_map` disagree on the peel tail position. \
+                     cli/main.rs. Spanned (the predict name_span).",
+        why: "273 §5 (declarations-genuinely-contradict): a pre-network fail-fast. PASSTHROUGH — \
+              the refusal text rides `detail`.",
+        params: &["detail"],
+        example: "sm wrapper `sudo`: __predict and __lend_map disagree on the peel tail position \
+                  (predict reaches \"$@\" after 1 argv token(s), lend_map after 0) — static \
+                  incoherence (273 §5, declarations-genuinely-contradict). The guest would start at \
+                  a different token depending on which member dispatched; fix the argparse so both \
+                  peel to the same tail.",
+        message: "sm {detail}",
+        help: None,
     },
 ];
 
@@ -254,17 +881,19 @@ mod tests {
         }
     }
 
-    /// The seeded slugs resolve through [`entry`] and are known `DiagCode` wire tokens (catalog ⊆
-    /// enum, one direction; the reverse completeness direction is the phase-2 gate).
+    /// Sample slugs resolve through [`entry`] and are known `DiagCode` wire tokens (catalog ⊆
+    /// enum, one direction; the reverse completeness direction is the tidy-gate bijection).
     #[test]
-    fn seeded_slugs_resolve_and_are_real_codes() {
-        for slug in ["dq-site-unresolvable", "render-heredoc-refused"] {
-            assert!(entry(slug).is_some(), "seed slug `{slug}` resolves");
+    fn sample_slugs_resolve_and_are_real_codes() {
+        for slug in ["site-unresolvable", "render-heredoc-refused"] {
+            assert!(entry(slug).is_some(), "slug `{slug}` resolves");
         }
         // Cross-check against the enum's own wire tokens (constructed instances name their slug).
         assert_eq!(
             crate::diag::DiagCode::RenderHeredocRefused(crate::diag::RenderHeredocRefused {
                 site: crate::diag::SiteId::leaf(crate::LeafId(0)),
+                verb: "elide",
+                command: "cat <<EOF".to_owned(),
             })
             .slug(),
             "render-heredoc-refused"

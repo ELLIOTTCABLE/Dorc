@@ -21,7 +21,7 @@
 //! as an argument because it is not in command position.
 
 use dorc_core::diag::{Diag, DiagCode as Code, SyntaxMalformed, SyntaxUnsupported};
-use dorc_core::{BytePos, Carrier, Diagnostic, Interner, Span};
+use dorc_core::{BytePos, Carrier, Span};
 
 use crate::ast::{
     AndOrOp, Ast, AstBuilder, CaseArm, ElseIf, Node, NodeKind, RedirOp, RedirTarget,
@@ -101,7 +101,7 @@ struct Parser {
     tokens: Vec<Token>,
     cursor: usize,
     builder: AstBuilder,
-    diags: Vec<Diagnostic>,
+    diags: Vec<Diag>,
     /// Current nesting depth (see [`MAX_DEPTH`]).
     depth: u32,
 }
@@ -147,27 +147,17 @@ impl Parser {
     }
 
     fn push_unsupported(&mut self, span: Span, msg: impl Into<String>) {
-        let msg = msg.into();
-        let diag = Diag::new(
-            Code::SyntaxUnsupported(SyntaxUnsupported {
-                detail: msg.clone(),
-            }),
+        self.diags.push(Diag::new(
+            Code::SyntaxUnsupported(SyntaxUnsupported { detail: msg.into() }),
             span,
-        )
-        .label(msg);
-        self.diags.push(diag.to_legacy(&Interner::default()));
+        ));
     }
 
     fn push_malformed(&mut self, span: Span, msg: impl Into<String>) {
-        let msg = msg.into();
-        let diag = Diag::new(
-            Code::SyntaxMalformed(SyntaxMalformed {
-                detail: msg.clone(),
-            }),
+        self.diags.push(Diag::new(
+            Code::SyntaxMalformed(SyntaxMalformed { detail: msg.into() }),
             span,
-        )
-        .label(msg);
-        self.diags.push(diag.to_legacy(&Interner::default()));
+        ));
     }
 
     /// Allocate an `Unsupported` ⊤-node and emit the paired `Error` diagnostic

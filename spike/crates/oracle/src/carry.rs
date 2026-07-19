@@ -34,7 +34,8 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
-use dorc_core::{DiagCode, Diagnostic, Interner, Span, Symbol};
+use dorc_core::diag::{CarryNetnsOnNetKernelForbidden, Diag, DiagCode};
+use dorc_core::{Interner, Span, Symbol};
 
 use crate::predict::{Command, MarkKind, Predict, Stmt, Word};
 use crate::wrapper::Dimension;
@@ -87,7 +88,7 @@ impl InvarianceIndex {
     /// the model must not let an owner claim it netns-invariant). Fail-soft (`inv-no-throw`),
     /// deterministic (`inv-determinism`); reads marks + structure only (`inv-referent-agnostic`).
     #[must_use]
-    pub fn lift(interner: &mut Interner, srcs: &[&str]) -> (Self, Vec<Diagnostic>) {
+    pub fn lift(interner: &mut Interner, srcs: &[&str]) -> (Self, Vec<Diag>) {
         let mut per_kind: BTreeMap<String, BTreeSet<Dimension>> = BTreeMap::new();
         let mut diags = Vec::new();
         for src in srcs {
@@ -103,13 +104,13 @@ impl InvarianceIndex {
                     // netns caveat: net-kernel state is per-netns ⇒ an `invariant:netns` claim on it
                     // is a contradiction; drop it and diagnose (never honor a false invariance line).
                     if dim == Dimension::Netns && scan.stores_net_kernel {
-                        diags.push(Diagnostic::note(
-                            DiagCode("carry-netns-on-net-kernel-forbidden"),
-                            Some(body.name_span),
-                            format!(
-                                "`invariant:netns` is forbidden on the per-netns `net-kernel` store of \
-                                 `{kind_munged}` — network kernel state is namespaced, never netns-invariant"
+                        diags.push(Diag::new(
+                            DiagCode::CarryNetnsOnNetKernelForbidden(
+                                CarryNetnsOnNetKernelForbidden {
+                                    kind_munged: kind_munged.clone(),
+                                },
                             ),
+                            body.name_span,
                         ));
                         continue;
                     }
@@ -474,7 +475,7 @@ mod tests {
     }
 
     /// Build the (A) index from `srcs`, returning the index + its diagnostics.
-    fn invariance(srcs: &[&str]) -> (InvarianceIndex, Vec<Diagnostic>) {
+    fn invariance(srcs: &[&str]) -> (InvarianceIndex, Vec<Diag>) {
         let mut i = Interner::default();
         InvarianceIndex::lift(&mut i, srcs)
     }
@@ -615,7 +616,7 @@ mod tests {
             "netns invariance on net-kernel state must NOT be honored"
         );
         assert_eq!(diags.len(), 1, "the caveat is diagnosed loudly");
-        assert_eq!(diags[0].code.0, "carry-netns-on-net-kernel-forbidden");
+        assert_eq!(diags[0].code.slug(), "carry-netns-on-net-kernel-forbidden");
     }
 
     /// A NON-net `kernel` store CAN be netns-invariant (`vm.swappiness`-class) — the caveat is

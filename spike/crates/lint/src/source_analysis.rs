@@ -46,13 +46,8 @@ impl LintSource for AnalysisDiagnostics {
 /// [`Finding`]. The span resolves to a 1-based `(line, col)` via `dorc_core::diag::line_col`
 /// (rul24-lineno-identity — the SOURCE line space); a span-less diagnostic (the pre-CFG codes) yields
 /// a whole-file finding (`line: None`). Native findings are always `RemapFidelity::Exact` (real span).
-fn diag_to_finding(
-    path: &str,
-    src: &str,
-    diag: &dorc_core::Diagnostic,
-    source: &'static str,
-) -> Finding {
-    let (line, col) = match diag.span {
+fn diag_to_finding(path: &str, src: &str, diag: &dorc_core::Diag, source: &'static str) -> Finding {
+    let (line, col) = match diag.primary.span() {
         Some(span) => {
             let (l, c) = dorc_core::diag::line_col(src, span.lo.0 as usize);
             (
@@ -66,10 +61,12 @@ fn diag_to_finding(
         path: path.to_owned(),
         line,
         col,
-        severity: map_severity(diag.severity),
+        severity: map_severity(diag.severity()),
         source,
-        code: diag.code.0.to_owned(),
-        message: diag.message.clone(),
+        code: diag.code.slug().to_owned(),
+        // The catalog-rendered message (default interner — no payload resolves an interned handle;
+        // MINIMAL re-bridge, `27V`).
+        message: dorc_core::diag::render_body(diag, &dorc_core::Interner::default()),
         remap: RemapFidelity::Exact,
     }
 }

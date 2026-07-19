@@ -11,16 +11,14 @@
 //!    with a registry row but no emit site is dead catalog; an emit with no row cannot exist
 //!    (it would not compile), so this direction is a belt-and-braces grep.
 //! 2. **a git-diff retire-guard** (`226` §1, the `error_codes.rs` deletion guard) — a catalog
-//!    slug removed from `diag.rs` without being added to the retired-list is a SILENT variant
+//!    slug removed from `diag.rs` without being recorded on `RETIRED_SLUGS` is a SILENT variant
 //!    deletion (a code that quietly stopped existing). Caught by diffing the committed `diag.rs`
 //!    against the working tree for removed `slug` arms. Best-effort: skipped (not failed) when
 //!    git is unavailable, so the gate never blocks a non-git checkout.
-//! 3. **a self-cleaning allow-list** (`226` §1, the hardcoded grandfathered gaps) — every
-//!    legacy give-up site NOT yet migrated onto the spine is named here, reviewer-visible. The
-//!    list SHRINKS as the B4 sweep migrates codes; a legacy `DiagCode("…")` string-construction
-//!    that is NOT on the list fails the gate (a new un-migrated code must be declared, or
-//!    migrated). "Self-cleaning": a slug on the list that no longer appears in the source also
-//!    fails (the list must not rot with stale entries).
+//! 3. **the catalog COMPLETENESS bijection** (`27V:rul-kill-legacy-diagnostic`) — every `DiagCode`
+//!    variant has EXACTLY ONE `catalog::CatalogEntry`, and every entry names a real variant. The
+//!    legacy string-slug scan is retired with the legacy `Diagnostic` mechanism (no `DiagCode("…")`
+//!    form remains); the bijection is what now keeps a code from rendering `[unwritten:]`.
 //!
 //! It NEVER touches message prose (`crib-7` / `refuse-5`): it polices registration and
 //! reachability, never quality. The scan is a plain lexical pass over the workspace's own crate
@@ -52,175 +50,167 @@ const MIGRATED_PAYLOADS: &[&str] = &[
     "CmdsubOperandTop",
     "SiteUnresolvable",
     "RenderHeredocRefused",
-    // B4 sweep: former diag::legacy survivors
     "CmdsubInnerNonleaf",
     "RedirTargetTop",
     "Depth2PositionalUnthreaded",
-    // B4 sweep: syntax/parser.rs
+    // syntax/parser.rs
     "SyntaxUnsupported",
     "SyntaxMalformed",
-    // B4 sweep: analysis/cfg.rs
+    // analysis/cfg.rs
     "CfgTopNode",
     "CfgErexitUnknown",
     "CfgInlineRefused",
     "CfgBuiltinShadowed",
-    // B4 sweep: analysis/effect.rs
+    // analysis/effect.rs
     "EffectKindDisagreement",
-    // B4 sweep: oracle/predict/parser.rs
+    // oracle/predict.rs
     "PredictOutOfDialect",
     "PredictUnterminated",
+    // oracle/reserved.rs
+    "MungeNameInvalid",
+    "MungeNameCollision",
+    "ReservedNamespaceSquat",
+    // oracle/marker.rs
+    "MissingDialectMarker",
+    // oracle/entry.rs
+    "ToleratesUnknownDimension",
+    "ToleratesOverIdentityDependence",
+    "HeavyContextNoTolerance",
+    // oracle/wrapper.rs
+    "LendMapUnknownDimension",
+    // oracle/carry.rs
+    "CarryNetnsOnNetKernelForbidden",
+    // oracle/predict/derive.rs
+    "MarkBraceVerdictSingleCell",
+    // plan/records.rs
+    "RecordsHeaderlessRefused",
+    "RecordsGluedLine",
+    "RecordsHeaderMissing",
+    "RecordsSentinelNonce",
+    "RecordsFactTruncated",
+    "RecordsIntegrityRefused",
+    "RecordsTornLine",
+    "RecordsAlienLine",
+    "RecordsLateLine",
+    // cli/main.rs
+    "FootprintIncoherent",
+    "TouchesEscalated",
+    "DerivFamilyIncomplete",
+    "EscalationPolicy",
+    "CarriedAcrossSubstrateAxis",
+    "WrappedSiteAdoptionHint",
+    "ResolverConflict",
+    "ResolverProviderCollision",
+    "DanglingReference",
+    "ReachesConflict",
+    "ReachesProviderCollision",
+    "WrapperEntryIncoherent",
+    "WrapperPeelIncoherent",
 ];
 
 /// Every catalog slug (the stable wire string) — for the retire-guard and reachability. KEEP IN
 /// SYNC with `DiagCode::slug`. A slug removed here without a retired-list entry is a silent
 /// deletion (guard 2).
 const MIGRATED_SLUGS: &[&str] = &[
-    "dq-cmdsub-operand-top",
-    "dq-site-unresolvable",
+    "cmdsub-operand-top",
+    "site-unresolvable",
     "render-heredoc-refused",
-    // B4 sweep: former diag::legacy survivors
-    "dq-cmdsub-inner-nonleaf",
-    "dq-redir-target-top",
-    "dq-depth-2-positional-unthreaded",
-    // B4 sweep: syntax/parser.rs
+    "cmdsub-inner-nonleaf",
+    "redir-target-top",
+    "depth-2-positional-unthreaded",
     "syntax-unsupported",
     "syntax-malformed",
-    // B4 sweep: analysis/cfg.rs
     "cfg-top-node",
     "cfg-errexit-unknown",
     "cfg-inline-refused",
     "cfg-builtin-shadowed",
-    // B4 sweep: analysis/effect.rs
     "effect-kind-disagreement",
-    // B4 sweep: oracle/predict/parser.rs
     "predict-out-of-dialect",
     "predict-unterminated",
-];
-
-/// The self-cleaning ALLOW-LIST (`226` §1): every legacy give-up code still on
-/// [`dorc_core::Diagnostic`] (the string-`DiagCode("…")` form), NOT yet migrated onto the spine.
-/// Reviewer-visible and SHRINKING — the B4 mechanical sweep empties it. Each entry is a legacy
-/// code's stable string slug. Two directions are enforced (the "self-cleaning" half):
-/// * a legacy `DiagCode("X")` construction in the source whose `X` is NOT here ⇒ FAIL (a new
-///   un-migrated code must be declared or migrated);
-/// * an `X` here that no longer appears in the source ⇒ FAIL (a stale allow-list entry — it was
-///   migrated or deleted but left rotting on the list).
-///
-/// Seeded at this HEAD by inventorying every `DiagCode("…")` literal across the crate sources
-/// (the conductor's re-inventory mandate — `21Z`/`22B` site counts were stale). The migrated
-/// three are deliberately ABSENT (they moved to the spine).
-// B4 sweep complete: all 20 codes migrated onto the Diag spine. Self-cleaning: a new
-// un-migrated code that introduces a DiagCode("…") literal must be declared here immediately.
-// * `footprint-incoherent` (Stage 2 / 24A §1b coherence check): the loud refusal when a wall's
-//   touches() footprint omits its own establish coordinate (at-least ⊄ at-most). A cli-edge
-//   Warning; PENDING typed-spine migration (tc-footprint-diag — the diagnostic wants a
-//   registry-declared home like the predict-dialect codes, deferred with the guard-tier
-//   diagnostics it will share a render pass with).
-// * `touches-escalated` (Stage 4 / 24E §4 fork-4B): the SPIKE-ONLY (ru-26) escalation advisory —
-//   a cli-edge Note surfacing that a payload-bound touches() shipped to host-derivation. Shares
-//   the deferred typed-spine migration (tc-footprint-diag); spike-instrumentation, not a
-//   permanent greenfield requirement.
-// * `resolver-conflict` / `resolver-provider-collision` (Stage 5 / 24F §3 corr-kind-keying §10):
-//   the confusability enforcement — two files declaring one kind's resolver (Error, both refused),
-//   or a resolver keyed to a known provider name (Warning, likely mis-key). cli-edge; PENDING the
-//   same typed-spine migration (tc-footprint-diag).
-// * `dangling-reference` (Stage 5 / 24F §4): a cli-edge Note — a coordinate the resolver flagged
-//   dangling (no such entity on an enumerable kind); rides the may-alias degrade. Same deferred
-//   migration.
-// * `reaches-conflict` / `reaches-provider-collision` (Stage 5 Part B / 24G §4): the reach-function
-//   confusability enforcement, kind-keyed exactly like the resolver's — two files declaring one kind's
-//   reaches() (Error, both refused), or a reaches keyed to a known provider name (Warning, likely
-//   mis-key). cli-edge; PENDING the same typed-spine migration (tc-footprint-diag).
-// * `munge-name-invalid` / `munge-name-collision` / `reserved-namespace-squat` (the
-//   munge-reservation lint, 24Kc fix-munge-reservation / 24M ca-munge-charclass, oracle/reserved.rs):
-//   the charclass refusal (an emitted `<munged>__<role>` funcname that is not a legal sh NAME —
-//   leading digit / dot / non-ASCII), the non-injective-munge collision refusal (two distinct
-//   source names → one NAME, refuse-and-run), and the book-squat disclosure (a book funcdef
-//   coincidentally named `*__<role>`). cli-edge; the first two are Error (refuse), the squat is a
-//   Warning. PENDING the same typed-spine migration as the other collision-family codes
-//   (tc-footprint-diag — the reservation lint shares the confusability-diagnostic render pass).
-// * `missing-dialect-marker` (the marker gate, marker-gates-syntax-only / 24M rul24M-version-comment,
-//   oracle/marker.rs): a dialect construct (bind/mark) in an UNMARKED oracle/book — Error (a loud
-//   file-level refusal naming the missing `# dorc-lang/v0.1`). cli-edge; PENDING the same typed-spine
-//   migration as the other cli-edge lint codes (tc-footprint-diag).
-const LEGACY_ALLOW_LIST: &[&str] = &[
+    "munge-name-invalid",
+    "munge-name-collision",
+    "reserved-namespace-squat",
+    "missing-dialect-marker",
+    "tolerates-unknown-dimension",
+    "tolerates-over-identity-dependence",
+    "heavy-context-no-tolerance",
+    "lend-map-unknown-dimension",
+    "carry-netns-on-net-kernel-forbidden",
+    "mark-brace-verdict-single-cell",
+    "records-headerless-refused",
+    "records-glued-line",
+    "records-header-missing",
+    "records-sentinel-nonce",
+    "records-fact-truncated",
+    "records-integrity-refused",
+    "records-torn-line",
+    "records-alien-line",
+    "records-late-line",
     "footprint-incoherent",
     "touches-escalated",
+    "deriv-family-incomplete",
+    "escalation-policy",
+    "carried-across-substrate-axis",
+    "wrapped-site-adoption-hint",
     "resolver-conflict",
     "resolver-provider-collision",
     "dangling-reference",
     "reaches-conflict",
     "reaches-provider-collision",
-    "munge-name-invalid",
-    "munge-name-collision",
-    "reserved-namespace-squat",
-    "missing-dialect-marker",
-    "mark-brace-verdict-single-cell",
-    // `262` §2 wire-records-v1-import (270:block-rebuild): the framing deframer's fault +
-    // integrity diagnostics + the at-most deriv-family completeness refusal.
-    "records-glued-line",
-    "records-header-missing",
-    // `27D` E4 (disposition-legacy-deframe-tolerance): the strict-path headerless refusal.
-    "records-headerless-refused",
-    "records-integrity-refused",
-    "records-sentinel-nonce",
-    "records-fact-truncated",
-    "records-torn-line",
-    "records-alien-line",
-    "records-late-line",
-    "deriv-family-incomplete",
-    // `273` lane-wrapper-peel (270:block-context): the wrapper model's two lift/load diagnostics.
-    // `lend-map-unknown-dimension` (Warning, oracle/wrapper.rs derive_lend_map) — a mark token on a
-    // `__lend_map` line that is not a known dimension (the engine-owned closed vocabulary); the line
-    // mints no lend. `wrapper-peel-incoherent` (Error, cli check_wrapper_peel_coherence) — a
-    // wrapper's __predict and __lend_map peel to different tail positions (273 §5,
-    // declarations-genuinely-contradict fail-fast). cli/oracle-edge; PENDING the same typed-spine
-    // migration as the other cli-edge lint codes (tc-footprint-diag).
-    "lend-map-unknown-dimension",
-    "wrapper-peel-incoherent",
-    // `27C` lane-context-entry (270:block-context): the entry/dial/vouch diagnostics.
-    // `wrapper-entry-incoherent` (Error, cli) — a wrapper's __enter and __lend_map disagree on argv
-    // flow (27C:rul-fold-entry-coherence-failfast, declarations-genuinely-contradict fail-fast).
-    // `tolerates-unknown-dimension` (Warning, oracle/entry.rs lift_tolerance) — an unknown dimension
-    // token on a `: tolerates:` vouch. `escalation-policy` (Note, cli) — the authority-disclosure
-    // consent-legibility line. `tolerates-over-identity-dependence` (Warning) + `heavy-context-no-
-    // tolerance` (Note) — the §6 corroboration lints (recognize-never-license). cli/oracle-edge;
-    // PENDING the same typed-spine migration as the other cli-edge lint codes (tc-footprint-diag).
-    // `wrapped-site-adoption-hint` (Note, cli, `27N`) — a wrapped BOOK site degraded on a missing
-    // `tolerates:` vouch; the one-line adoption hint (recognize-never-license, `27C` §2).
-    // `carry-netns-on-net-kernel-forbidden` (Note, oracle, `27O`) — the pure-predicate-carry netns
-    // caveat: a `net-kernel` store claiming `invariant:netns` is a contradiction (`27C` §4(a)).
-    // `carried-across-substrate-axis` (Note, cli, `27O`) — the pure-predicate-carry attribution
-    // chain rendered at every carried elision (`27C` §9: cross-context elisions render from day one).
     "wrapper-entry-incoherent",
-    "tolerates-unknown-dimension",
-    "escalation-policy",
-    "tolerates-over-identity-dependence",
-    "heavy-context-no-tolerance",
-    "wrapped-site-adoption-hint",
-    "carry-netns-on-net-kernel-forbidden",
-    "carried-across-substrate-axis",
+    "wrapper-peel-incoherent",
+];
+
+/// Deliberately RETIRED/RENAMED slugs (`27V`): the `dq-` prefix drop on the five value-plane
+/// codes. Recorded so the git-diff retire-guard reads a rename as intentional, not a silent
+/// deletion (`assert_no_slug_vanished` accepts a committed slug here).
+const RETIRED_SLUGS: &[&str] = &[
+    "dq-cmdsub-operand-top",
+    "dq-site-unresolvable",
+    "dq-cmdsub-inner-nonleaf",
+    "dq-redir-target-top",
+    "dq-depth-2-positional-unthreaded",
 ];
 
 /// The SPANLESS-MINT allow-list (arch-3-residual-2): EXACTLY the codes permitted to construct a
 /// diagnostic with no primary span, via [`dorc_core::diag::Diag::new_spanless_site`]. Every other
 /// code MUST point at a real source span ([`dorc_core::diag::Diag::new`] takes a mandatory
-/// [`dorc_core::Span`] — `21Z` drop-B). These SIX are the give-up sites whose emit context
-/// genuinely has no location: the errexit-region pass, the effect-map kind-disagreement check, and
-/// the four whole-file oracle-lifter contract verdicts. Entries are PAYLOAD-struct names (the
-/// `Code::<Payload>(` construction marker the grep sees), paired with the wire slug for reviewers.
+/// [`dorc_core::Span`] — `21Z` drop-B). These are the give-up sites whose emit context genuinely
+/// has no location: the errexit-region pass, the effect-map kind-disagreement check, every framed
+/// records fault/integrity code, and the cli-edge whole-stream/whole-plan verdicts. Entries are
+/// PAYLOAD-struct names (the `Code::<Payload>(` construction marker the grep sees).
 /// Two directions are enforced by [`spanless_mint_allow_list_is_exact`] (the "structural enforce"):
 /// * a `new_spanless_site(Code::X(…))` in PRODUCTION source whose `X` is NOT here ⇒ FAIL (a new
 ///   spanless mint must be justified and declared, or given a real span);
 /// * an `X` here that no longer appears at a production `new_spanless_site` site ⇒ FAIL (the entry
-///   is stale — the code stopped minting spanless; remove it). Self-cleaning, like the legacy list.
+///   is stale — the code stopped minting spanless; remove it). Self-cleaning.
 const SPANLESS_SITE_PAYLOADS: &[&str] = &[
     "CfgErexitUnknown",       // cfg-errexit-unknown      (analysis/cfg.rs)
     "EffectKindDisagreement", // effect-kind-disagreement (analysis/effect.rs)
+    // plan/records.rs — every framed-deframer fault/integrity code is spanless.
+    "RecordsHeaderlessRefused",
+    "RecordsGluedLine",
+    "RecordsHeaderMissing",
+    "RecordsSentinelNonce",
+    "RecordsFactTruncated",
+    "RecordsIntegrityRefused",
+    "RecordsTornLine",
+    "RecordsAlienLine",
+    "RecordsLateLine",
+    // cli/main.rs — whole-stream/whole-plan verdicts with no single source point.
+    "TouchesEscalated",
+    "DerivFamilyIncomplete",
+    "FootprintIncoherent", // the malformed-derived-coordinate emit (the own-coordinate emit is spanned)
+    "ResolverConflict",
+    "ResolverProviderCollision",
+    "DanglingReference",
+    "ReachesConflict",
+    "ReachesProviderCollision",
+    "EscalationPolicy",
 ];
 
 /// The crate-`src` roots scanned (the emit surface). The workspace's analyzer crates; `core`
-/// itself is included for the `diag.rs` retire-guard + the `legacy` module's consts.
+/// itself is included for the `diag.rs` retire-guard.
 const SCANNED_CRATES: &[&str] = &[
     "core", "syntax", "analysis", "oracle", "plan", "cli", "coverage", "hostsim",
 ];
@@ -314,28 +304,6 @@ fn spanless_site_payloads(source: &str) -> BTreeSet<String> {
             if !name.is_empty() && name.chars().all(|c| c.is_alphanumeric() || c == '_') {
                 out.insert(name.to_string());
             }
-        }
-    }
-    out
-}
-
-/// Extract every `DiagCode("X")` legacy-string slug constructed in `source` (the migration-debt
-/// surface). A simple lexical scan for the `DiagCode("` … `")` form; the const-definition sites
-/// (`const FOO: DiagCode = DiagCode("x")`) and the emit sites both match, which is what we want
-/// (a const defined but never emitted is still catalog debt). Test-fixture slugs (the
-/// erasability/coverage `x-err`-style throwaways) are filtered by asserting only against the
-/// allow-list's known slugs, never the raw set.
-fn legacy_string_slugs(source: &str) -> BTreeSet<String> {
-    let mut out = BTreeSet::new();
-    let needle = "DiagCode(\"";
-    let mut rest = source;
-    while let Some(i) = rest.find(needle) {
-        let after = &rest[i + needle.len()..];
-        if let Some(end) = after.find('"') {
-            out.insert(after[..end].to_string());
-            rest = &after[end..];
-        } else {
-            break;
         }
     }
     out
@@ -482,10 +450,11 @@ fn assert_no_slug_vanished(committed_diag_rs: &str) {
     );
     for slug in committed {
         assert!(
-            MIGRATED_SLUGS.contains(&slug.as_str()),
+            MIGRATED_SLUGS.contains(&slug.as_str()) || RETIRED_SLUGS.contains(&slug.as_str()),
             "retire-guard: catalog slug `{slug}` was in the committed diag.rs `slug()` but is gone \
-             from MIGRATED_SLUGS — a silent catalog deletion. If intentional, record it as retired \
-             deliberately; do not let a code quietly stop existing (226 §1 retire-guard)."
+             from MIGRATED_SLUGS — a silent catalog deletion. If intentional (a rename/retirement), \
+             record it on RETIRED_SLUGS deliberately; do not let a code quietly stop existing \
+             (226 §1 retire-guard)."
         );
     }
 }
@@ -532,41 +501,37 @@ fn committed_slug_arms(diag_rs: &str) -> BTreeSet<String> {
     out
 }
 
-/// (3) The self-cleaning ALLOW-LIST (`226` §1). Two directions:
-/// * every legacy `DiagCode("X")` slug in the source is EITHER a migrated slug (a leftover
-///   reference, e.g. a test fixture or the slug constant) OR on the allow-list — a new
-///   un-migrated code that is neither fails;
-/// * every allow-list entry still appears in the source (no stale entry rotting the list).
+/// (3) The catalog COMPLETENESS bijection (`27V:rul-kill-legacy-diagnostic` / `defining-case-
+/// catalog`): every `DiagCode` variant has EXACTLY ONE [`dorc_core::catalog::CatalogEntry`], and
+/// every entry names a real variant. `MIGRATED_SLUGS` mirrors the exhaustive `DiagCode::slug`
+/// match (its own gate, `every_migrated_payload_name_is_a_real_variant`, pins that mirror), so the
+/// slug set stands in for the variant set. This is what makes a code with no prose home — or an
+/// orphan catalog row — a loud test failure rather than a silent `[unwritten:]` render.
 #[test]
-fn legacy_allow_list_is_complete_and_self_cleaning() {
-    let source = scanned_source();
-    let found = legacy_string_slugs(&source);
-
-    // Direction A: every legacy slug found is accounted for (allow-listed, or a migrated slug
-    // whose string still appears — e.g. the coverage `refusal_diag` test helper or the slug
-    // const). A slug that is neither is an undeclared un-migrated code.
-    for slug in &found {
-        let accounted = LEGACY_ALLOW_LIST.contains(&slug.as_str())
-            || MIGRATED_SLUGS.contains(&slug.as_str())
-            // test-fixture throwaways (erasability/carrier unit tests) — never real codes.
-            || is_test_fixture_slug(slug);
+fn every_variant_has_exactly_one_catalog_entry() {
+    use dorc_core::catalog::CATALOG;
+    let catalog_slugs: BTreeSet<&str> = CATALOG.iter().map(|e| e.slug).collect();
+    // No duplicate entries (catalog's own gate also checks this; belt-and-braces here).
+    assert_eq!(
+        catalog_slugs.len(),
+        CATALOG.len(),
+        "the catalog carries a duplicate slug (two entries for one code)"
+    );
+    // Every variant slug has an entry (no `[unwritten:]`-rendering hole).
+    for slug in MIGRATED_SLUGS {
         assert!(
-            accounted,
-            "legacy `DiagCode(\"{slug}\")` is constructed but is neither on the LEGACY_ALLOW_LIST \
-             nor a migrated/ fixture slug — declare it on the allow-list (un-migrated) or migrate \
-             it onto the spine (226 §1)"
+            catalog_slugs.contains(slug),
+            "DiagCode variant slug `{slug}` has no CatalogEntry — every code needs exactly one \
+             prose home (27V:rul-kill-legacy-diagnostic). Add its entry to core/src/catalog.rs."
         );
     }
-
-    // Direction B (self-cleaning): every allow-list entry must still appear in the source. A
-    // stale entry means the code was migrated/deleted but left here — the list must shrink, not
-    // rot.
-    for &slug in LEGACY_ALLOW_LIST {
+    // Every catalog entry names a real variant (no orphan row).
+    for e in CATALOG {
         assert!(
-            found.contains(slug),
-            "LEGACY_ALLOW_LIST entry `{slug}` no longer appears as a `DiagCode(\"…\")` in the \
-             source — it was migrated or removed; delete it from the allow-list (the list is \
-             self-cleaning, 226 §1)"
+            MIGRATED_SLUGS.contains(&e.slug),
+            "CatalogEntry `{}` names no DiagCode variant (orphan catalog row) — remove it or add \
+             the variant + its slug arm.",
+            e.slug
         );
     }
 }
@@ -622,16 +587,6 @@ fn spanless_mint_allow_list_is_exact() {
     );
 }
 
-/// The known TEST-FIXTURE diagnostic slugs (the erasability/carrier unit-test throwaways): never
-/// real catalog codes, so they are neither allow-listed nor migrated. Listing them explicitly
-/// (rather than filtering by "in a test module") keeps the gate's exclusion reviewer-visible.
-fn is_test_fixture_slug(slug: &str) -> bool {
-    matches!(
-        slug,
-        "test-warn" | "boom" | "x-note" | "x-warn" | "x-err" | "e"
-    )
-}
-
 // ===========================================================================
 // Negative controls — prove the rewritten guards can actually FIRE (the t-1/t-2 class)
 // ===========================================================================
@@ -649,7 +604,7 @@ fn retire_guard_negative_control_trips_on_silent_retirement() {
     let committed = r#"
         pub fn slug(&self) -> &'static str {
             match self {
-                DiagCode::SomeLiveCode(_) => "dq-site-unresolvable",
+                DiagCode::SomeLiveCode(_) => "site-unresolvable",
                 DiagCode::GhostRetired(_) => "ghost-retired-code",
             }
         }

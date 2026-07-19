@@ -32,7 +32,10 @@
 //! rather than refuse — a policy decision the respell owns. This lint's job is only to guarantee
 //! no broken NAME ships silently (`kFAIL`-safe: refuse over emit-broken).
 
-use dorc_core::{Diagnostic, Interner, Span};
+use dorc_core::diag::{
+    Diag, DiagCode, MungeNameCollision, MungeNameInvalid, ReservedNamespaceSquat,
+};
+use dorc_core::{Interner, Span};
 use std::collections::BTreeMap;
 
 use crate::predict::PredictSet;
@@ -198,10 +201,7 @@ fn emitted_names(interner: &mut Interner, src: &str) -> Vec<EmittedName> {
 /// `file:line:col` — a spike-scoped simplification (ru-26): threading per-file source through a
 /// cross-file collision needs a file handle on the span the spike does not carry, deferred.
 #[must_use]
-pub fn lint_oracle_reserved_names(
-    interner: &mut Interner,
-    oracle_srcs: &[&str],
-) -> Vec<Diagnostic> {
+pub fn lint_oracle_reserved_names(interner: &mut Interner, oracle_srcs: &[&str]) -> Vec<Diag> {
     let mut diags = Vec::new();
     // funcname → the distinct (source-name, span) pairs that emit it. `>1` distinct source ⇒ a
     // collision. `BTreeMap` for determinism.
@@ -211,17 +211,13 @@ pub fn lint_oracle_reserved_names(
         for e in emitted_names(interner, src) {
             // charclass: the emitted funcname must be a legal sh NAME, or it cannot ship.
             if let Err(problem) = validate_sh_name(&e.funcname) {
-                diags.push(Diagnostic::error(
-                    dorc_core::DiagCode("munge-name-invalid"),
-                    Some(e.span),
-                    format!(
-                        "`{}` munges to the sh function name `{}`, which is not a legal NAME: {} \
-                         (ca-munge-charclass, 24M §4b) — REFUSED (a broken function name cannot \
-                         ship; the munger must transliterate or the name must be renamed)",
-                        e.source,
-                        e.funcname,
-                        problem.describe(),
-                    ),
+                diags.push(Diag::new(
+                    DiagCode::MungeNameInvalid(MungeNameInvalid {
+                        source: e.source.clone(),
+                        funcname: e.funcname.clone(),
+                        problem: problem.describe(),
+                    }),
+                    e.span,
                 ));
             }
             let entry = by_funcname.entry(e.funcname).or_default();
@@ -240,18 +236,14 @@ pub fn lint_oracle_reserved_names(
         }
         let names: Vec<&str> = sources.iter().map(|(s, _)| s.as_str()).collect();
         for (source, span) in sources {
-            diags.push(Diagnostic::error(
-                dorc_core::DiagCode("munge-name-collision"),
-                Some(*span),
-                format!(
-                    "`{source}` munges to the sh function name `{funcname}`, shared by {} distinct \
-                     source names ({}) — REFUSED, never silently merged (the shipped artifact \
-                     would carry {} same-named funcdefs, last-writer-wins; align with the \
-                     reingest-collision floor: refuse-and-run)",
-                    names.len(),
-                    names.join(", "),
-                    names.len(),
-                ),
+            diags.push(Diag::new(
+                DiagCode::MungeNameCollision(MungeNameCollision {
+                    source: source.clone(),
+                    funcname: funcname.clone(),
+                    count: names.len(),
+                    names: names.join(", "),
+                }),
+                *span,
             ));
         }
     }
@@ -267,7 +259,7 @@ pub fn lint_oracle_reserved_names(
 /// namespace, so an author who did NOT mean it as an oracle role learns of it loudly rather than
 /// silently.
 #[must_use]
-pub fn lint_book_reserved_names(ast: &dorc_syntax::Ast) -> Vec<Diagnostic> {
+pub fn lint_book_reserved_names(ast: &dorc_syntax::Ast) -> Vec<Diag> {
     use dorc_syntax::ast::NodeKind;
     let mut diags = Vec::new();
     for (_, node) in ast.iter() {
@@ -283,16 +275,12 @@ pub fn lint_book_reserved_names(ast: &dorc_syntax::Ast) -> Vec<Diagnostic> {
         }) else {
             continue;
         };
-        diags.push(Diagnostic::warning(
-            dorc_core::DiagCode("reserved-namespace-squat"),
-            Some(*name_span),
-            format!(
-                "book function `{name}` squats the reserved `{role}` oracle namespace \
-                 (rul24M-bare-dorcism-names): if unintended, it coincidentally matches an emitted \
-                 oracle function name — it is treated as an ordinary opaque command here \
-                 (run-verbatim), but a shipped oracle preamble of the same name would collide \
-                 (last-writer-wins). Rename it to stay clear of `*{role}`.",
-            ),
+        diags.push(Diag::new(
+            DiagCode::ReservedNamespaceSquat(ReservedNamespaceSquat {
+                name: name.clone(),
+                role: (*role).to_owned(),
+            }),
+            *name_span,
         ));
     }
     diags
@@ -338,7 +326,7 @@ mod tests {
         let src = "\u{4e2d}pkg__predict() { pkg : archive = \"$1\"; foo l -- \"$pkg\"; }";
         let diags = lint_oracle_reserved_names(&mut i, &[src]);
         assert!(
-            diags.iter().any(|d| d.code.0 == "munge-name-invalid"),
+            diags.iter().any(|d| d.code.slug() == "munge-name-invalid"),
             "a non-ASCII provider funcname is refused as an invalid NAME: {diags:?}"
         );
     }
@@ -352,7 +340,7 @@ mod tests {
         let src = "7z__predict() { pkg : archive = \"$1\"; foo l -- \"$pkg\"; }";
         let diags = lint_oracle_reserved_names(&mut i, &[src]);
         assert!(
-            !diags.iter().any(|d| d.code.0 == "munge-name-invalid"),
+            !diags.iter().any(|d| d.code.slug() == "munge-name-invalid"),
             "a leading-digit provider repairs to `_7z__predict`, no refusal: {diags:?}"
         );
     }
@@ -368,7 +356,7 @@ mod tests {
         let diags = lint_oracle_reserved_names(&mut i, &[dotted, under]);
         let hits: Vec<_> = diags
             .iter()
-            .filter(|d| d.code.0 == "munge-name-collision")
+            .filter(|d| d.code.slug() == "munge-name-collision")
             .collect();
         assert_eq!(
             hits.len(),
@@ -376,7 +364,8 @@ mod tests {
             "BOTH colliding source names are refused (refuse-and-run, not first-wins): {diags:?}"
         );
         assert!(
-            hits.iter().all(|d| d.message.contains("apt_get__predict")),
+            hits.iter()
+                .all(|d| dorc_core::diag::render_body(d, &i).contains("apt_get__predict")),
             "the collision names the shared emitted funcname: {diags:?}"
         );
     }
@@ -390,7 +379,9 @@ mod tests {
         let b = "apt_get__disturbs() { printf '%s\\n' \"$1\" : package; }";
         let diags = lint_oracle_reserved_names(&mut i, &[a, b]);
         assert!(
-            !diags.iter().any(|d| d.code.0 == "munge-name-collision"),
+            !diags
+                .iter()
+                .any(|d| d.code.slug() == "munge-name-collision"),
             "one provider, two files, two roles ⇒ no collision: {diags:?}"
         );
     }
@@ -422,9 +413,12 @@ apt_get__predict install -y nginx || apt-get install -y nginx
         let ast = dorc_syntax::parse(book).value;
         let diags = lint_book_reserved_names(&ast);
         assert_eq!(diags.len(), 1, "one squatting funcdef: {diags:?}");
-        assert_eq!(diags[0].code.0, "reserved-namespace-squat");
-        assert_eq!(diags[0].severity, dorc_core::Severity::Warning);
-        assert!(diags[0].message.contains("apt_get__predict"));
+        assert_eq!(diags[0].code.slug(), "reserved-namespace-squat");
+        assert_eq!(diags[0].severity(), dorc_core::Severity::Warning);
+        assert!(
+            dorc_core::diag::render_body(&diags[0], &Interner::default())
+                .contains("apt_get__predict")
+        );
     }
 
     /// An ordinary book helper (no reserved suffix) is not flagged — the squat lint fires ONLY on

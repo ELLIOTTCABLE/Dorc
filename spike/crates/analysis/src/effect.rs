@@ -31,8 +31,8 @@ use dorc_core::diag::{
     OperandPosition, RedirTargetTop, SiteId,
 };
 use dorc_core::{
-    Carrier, Context, Diagnostic, EntityRef, FactBacking, Interner, KindId, LeafId, OpaqueToken,
-    ProviderId, SelectorId, Span,
+    Carrier, Context, EntityRef, FactBacking, Interner, KindId, LeafId, OpaqueToken, ProviderId,
+    SelectorId, Span,
 };
 use dorc_oracle::predict::{self, PredictSet, ResolvedEntity};
 use dorc_oracle::{EffectCell, KindIndex, ValueClaim, empty_verb};
@@ -193,14 +193,10 @@ fn finalize_cmdsub_tops(
                     site: top.site.site,
                     position: top.position,
                     cause: Some(cause),
+                    top_cause: top.top_cause,
                 }),
                 top.site.span,
             )
-            .label(format!(
-                "command forced to run (never elided): {} is {} ⇒ its identity is unresolved (⊤)",
-                top.position.describe(),
-                top.top_cause.describe()
-            ))
         })
         .collect()
 }
@@ -256,7 +252,7 @@ pub fn command_effect(
     verdict_providers: &BTreeSet<ProviderId>,
     argv: &[ValueOf],
     interner: &mut Interner,
-    diags: &mut Vec<Diagnostic>,
+    diags: &mut Vec<Diag>,
     cmdsub_tops: &mut Vec<CmdsubTop>,
     site: Option<DiagSite>,
     backings: &mut BTreeMap<FactKey, FactBacking>,
@@ -439,7 +435,7 @@ fn member_family(
     idx: &KindIndex,
     checks: &[PredictSet],
     interner: &mut Interner,
-    diags: &mut Vec<Diagnostic>,
+    diags: &mut Vec<Diag>,
 ) -> Option<Vec<FactKey>> {
     if cfg.node(id).kind != CfgNodeKind::Command {
         return None;
@@ -501,7 +497,7 @@ fn cell_effect(
     annotation_kind_str: &str,
     entity: EntityRef,
     interner: &mut Interner,
-    diags: &mut Vec<Diagnostic>,
+    diags: &mut Vec<Diag>,
 ) -> CommandEffect {
     if cell.kind != annotation_kind {
         let em_kind = interner.resolve(cell.kind.0).to_owned();
@@ -510,13 +506,9 @@ fn cell_effect(
             "check annotation kind `{annotation_kind_str}` disagrees with the effect-map \
              kind `{em_kind}` for this verb — the annotation (declared identity) wins"
         );
-        diags.push(
-            Diag::new_spanless_site(Code::EffectKindDisagreement(EffectKindDisagreement {
-                detail: msg.clone(),
-            }))
-            .label(msg)
-            .to_legacy(interner),
-        );
+        diags.push(Diag::new_spanless_site(Code::EffectKindDisagreement(
+            EffectKindDisagreement { detail: msg },
+        )));
     }
     // The annotation wins (declared identity). Ambient context (`HostDefault`) — an in-book
     // establish is born in the caller's world; wrapped-site re-keying is `27C`'s probe-lane act,
@@ -899,7 +891,7 @@ fn node_effects(
     checks: &[PredictSet],
     verdict_providers: &BTreeSet<ProviderId>,
     interner: &mut Interner,
-    diags: &mut Vec<Diagnostic>,
+    diags: &mut Vec<Diag>,
     cmdsub_tops: &mut Vec<CmdsubTop>,
     backings: &mut BTreeMap<FactKey, FactBacking>,
 ) -> Vec<CommandEffect> {
@@ -954,15 +946,10 @@ fn node_effects(
                 // Migrated onto the Diag spine (B4 sweep): the site carries a real span (s-2
                 // widening) and a CFG-node-space SiteId (pre-plan; same precedent as
                 // CmdsubOperandTop — flagged `tc-cmdsub-siteid`).
-                let diag = Diag::new(
+                diags.push(Diag::new(
                     Code::RedirTargetTop(RedirTargetTop { site: site.site }),
                     site.span,
-                )
-                .label(
-                    "write-redirect to a dynamic/unresolved target ⇒ no per-path `file` cell \
-                     can be keyed, so the write joins ⊤ and the command runs (never elided)",
-                );
-                diags.push(diag.to_legacy(interner));
+                ));
                 vec![CommandEffect::Opaque]
             }
             None => vec![CommandEffect::Pure],
@@ -1056,7 +1043,7 @@ fn peeled_node_effects(
     checks: &[PredictSet],
     verdict_providers: &BTreeSet<ProviderId>,
     interner: &mut Interner,
-    diags: &mut Vec<Diagnostic>,
+    diags: &mut Vec<Diag>,
     cmdsub_tops: &mut Vec<CmdsubTop>,
     backings: &mut BTreeMap<FactKey, FactBacking>,
 ) -> Vec<CommandEffect> {
@@ -1113,7 +1100,7 @@ fn resolve_node_effects(
     verdict_providers: &BTreeSet<ProviderId>,
     peeled: &BTreeMap<CfgNodeId, PeeledSite>,
     interner: &mut Interner,
-    diags: &mut Vec<Diagnostic>,
+    diags: &mut Vec<Diag>,
 ) -> (
     Vec<Option<Vec<FactKey>>>,
     Vec<Vec<CommandEffect>>,
@@ -1286,7 +1273,7 @@ pub fn classify_with_why_diags(
     BTreeMap<CfgNodeId, FactKey>,
     BTreeMap<FactKey, FactBacking>,
 ) {
-    let mut diags: Vec<Diagnostic> = Vec::new();
+    let mut diags: Vec<Diag> = Vec::new();
     // Precompute every node's member-family + effect cells, recording the deferred cmdsub-⊤
     // disclosures (stage-1) and the `277` §5 survival-backing provenance. Extracted so this fn
     // stays under the line cap. `27N`: a wrapped BOOK site (`peeled`) resolves its INNER command
@@ -1315,7 +1302,9 @@ pub fn classify_with_why_diags(
     // output, so its cause cannot exist earlier). The cause is EXEMPT (ru-11) — it rides the
     // typed diagnostic for the why-lens, never an artifact or a decision.
     let why_diags = finalize_cmdsub_tops(&cmdsub_tops, &top_causes, fallback_cause);
-    diags.extend(why_diags.iter().map(|d| d.to_legacy(interner)));
+    // A COPY rides `diags` for `report`/gate-3; the originals are returned for the why-lens
+    // (stage-3) — the typed `cause` on the returned diags is what `dorc_core::diag::why` reads.
+    diags.extend(why_diags.iter().cloned());
 
     // Forward reaching-defs: out = in ⊔ gen(node). Each of a node's cells is genned
     // (a multi-cell verb writes every cell); an Opaque cell joins ⊤ (carrying its
@@ -1409,18 +1398,13 @@ pub fn classify_with_why_diags(
                 // CFG-node-space SiteId (pre-plan; flagged `tc-cmdsub-siteid`).
                 let span = ast.node(cfg.node(id).ast).span;
                 let inner = render_argv(&value.argv_values(id), interner);
-                let diag = Diag::new(
+                diags.push(Diag::new(
                     Code::CmdsubInnerNonleaf(CmdsubInnerNonleaf {
                         site: SiteId::leaf(LeafId(id.0)),
-                        inner: inner.clone(),
+                        inner,
                     }),
                     span,
-                )
-                .label(format!(
-                    "command `{inner}` runs inside a `$(…)` substitution ⇒ effect-bearing but \
-                     not independently elidable (it runs whenever its enclosing line runs)"
                 ));
-                diags.push(diag.to_legacy(interner));
             }
             continue;
         }
@@ -1614,7 +1598,7 @@ command__predict() {
 
     /// Like [`classify_src`] but return the classify-stage diagnostics (the q-2 emit-site
     /// pins): the codes a `$()`/⊤ book discloses.
-    fn classify_src_diags(src: &str, interner: &mut Interner, idx: &KindIndex) -> Vec<Diagnostic> {
+    fn classify_src_diags(src: &str, interner: &mut Interner, idx: &KindIndex) -> Vec<Diag> {
         let parsed = dorc_syntax::parse(src);
         let built = cfg::build(&parsed.value);
         let value = analyze(&built.value, &parsed.value, interner);
@@ -1633,8 +1617,8 @@ command__predict() {
         .diags
     }
 
-    fn has_code(diags: &[Diagnostic], code: &str) -> bool {
-        diags.iter().any(|d| d.code.0 == code)
+    fn has_code(diags: &[Diag], code: &str) -> bool {
+        diags.iter().any(|d| d.code.slug() == code)
     }
 
     #[test]
@@ -2518,7 +2502,7 @@ command__predict() {
             &idx,
         );
         assert!(
-            !has_code(&diags, "dq-redir-target-top"),
+            !has_code(&diags, "redir-target-top"),
             "a var-RESOLVED redirect target takes the concrete-cell path (no ⊤ disclosure): {diags:?}"
         );
     }
@@ -2606,8 +2590,8 @@ command__predict() {
         let idx = package_and_query_index(&mut i);
         let diags = classify_src_diags(": > \"$dyn\"\ncommand -v nginx", &mut i, &idx);
         assert!(
-            has_code(&diags, "dq-redir-target-top"),
-            "a ⊤-target write-redirect must disclose dq-redir-target-top: {diags:?}"
+            has_code(&diags, "redir-target-top"),
+            "a ⊤-target write-redirect must disclose redir-target-top: {diags:?}"
         );
     }
 
@@ -2914,8 +2898,8 @@ command__predict() {
             &idx,
         );
         assert!(
-            has_code(&diags, "dq-cmdsub-operand-top"),
-            "a ⊤ operand must disclose dq-cmdsub-operand-top, never silently Opaque: {diags:?}"
+            has_code(&diags, "cmdsub-operand-top"),
+            "a ⊤ operand must disclose cmdsub-operand-top, never silently Opaque: {diags:?}"
         );
     }
 
@@ -2933,7 +2917,7 @@ command__predict() {
         let built = cfg::build(&parsed.value);
         let value = analyze(&built.value, &parsed.value, &mut i);
         let checks = vec![lift_predicts(&mut i, CORPUS_PREDICT_SRC).value];
-        let mut diags: Vec<Diagnostic> = Vec::new();
+        let mut diags: Vec<Diag> = Vec::new();
         // The same precompute classify runs (member families + effects + the deferred cmdsub-⊤
         // records), then the same post-mint finalize — so this exercises the real wiring.
         let (_families, effects, cmdsub_tops, _backings) = resolve_node_effects(
@@ -3005,11 +2989,11 @@ command__predict() {
         let diags = classify_src_diags(src, &mut i2, &idx2);
         let count = diags
             .iter()
-            .filter(|d| d.code.0 == "dq-cmdsub-operand-top")
+            .filter(|d| d.code.slug() == "cmdsub-operand-top")
             .count();
         assert_eq!(
             count, 1,
-            "exactly ONE dq-cmdsub-operand-top must fire — the member-scan emit is suppressed and \
+            "exactly ONE cmdsub-operand-top must fire — the member-scan emit is suppressed and \
              the single-cell fallback discloses once (the dedup). count={count}, diags={diags:?}"
         );
     }
@@ -3028,7 +3012,7 @@ command__predict() {
             &idx,
         );
         assert!(
-            has_code(&diags, "dq-cmdsub-inner-nonleaf"),
+            has_code(&diags, "cmdsub-inner-nonleaf"),
             "an effect-bearing $()-inner command must be disclosed: {diags:?}"
         );
     }
@@ -3041,7 +3025,7 @@ command__predict() {
         let (mut i, idx, _s) = package_setup();
         let diags = classify_src_diags("echo \"got: $(echo hi)\"", &mut i, &idx);
         assert!(
-            !has_code(&diags, "dq-cmdsub-inner-nonleaf"),
+            !has_code(&diags, "cmdsub-inner-nonleaf"),
             "a pure $()-inner command discloses nothing un-elidable: {diags:?}"
         );
     }
@@ -3054,8 +3038,7 @@ command__predict() {
         let (mut i, idx, _s) = package_setup();
         let diags = classify_src_diags("apt-get install -y nginx", &mut i, &idx);
         assert!(
-            !has_code(&diags, "dq-cmdsub-operand-top")
-                && !has_code(&diags, "dq-cmdsub-inner-nonleaf"),
+            !has_code(&diags, "cmdsub-operand-top") && !has_code(&diags, "cmdsub-inner-nonleaf"),
             "a concrete book emits no cmdsub ⊤-diagnostics: {diags:?}"
         );
     }

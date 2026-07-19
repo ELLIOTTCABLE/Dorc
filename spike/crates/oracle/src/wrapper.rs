@@ -26,6 +26,7 @@
 
 use std::collections::BTreeMap;
 
+use dorc_core::diag::{Diag, DiagCode, LendMapUnknownDimension};
 use dorc_core::{Carrier, Interner, Symbol};
 
 use crate::predict::{
@@ -332,17 +333,14 @@ impl LendMap {
 /// boundary. An unknown mark token on a `lend_map` line is out-of-vocabulary — reported as a loud
 /// diagnostic (`inv-top-reject`), never silently accepted. Pure/total.
 #[must_use]
-pub fn derive_lend_map(check: &Predict) -> (LendMap, Vec<dorc_core::Diagnostic>) {
+pub fn derive_lend_map(check: &Predict) -> (LendMap, Vec<Diag>) {
     let mut map = LendMap::default();
     let mut diags = Vec::new();
     walk_lend_body(&check.body, &mut map, &mut diags);
     (map, diags)
 }
 
-const LENDMAP_UNKNOWN_DIMENSION: dorc_core::DiagCode =
-    dorc_core::DiagCode("lend-map-unknown-dimension");
-
-fn walk_lend_body(body: &[Stmt], map: &mut LendMap, diags: &mut Vec<dorc_core::Diagnostic>) {
+fn walk_lend_body(body: &[Stmt], map: &mut LendMap, diags: &mut Vec<Diag>) {
     for stmt in body {
         match stmt {
             Stmt::Command(c) => {
@@ -353,16 +351,12 @@ fn walk_lend_body(body: &[Stmt], map: &mut LendMap, diags: &mut Vec<dorc_core::D
                 // A dimension entry: the mark's `kind` fragment is the dimension token (`: user`).
                 let token = &mark.target.kind;
                 let Some(dim) = Dimension::from_token(token) else {
-                    diags.push(dorc_core::Diagnostic::warning(
-                        LENDMAP_UNKNOWN_DIMENSION,
-                        Some(mark.span),
-                        format!(
-                            "`{token}` is not a known lend_map dimension (expected one of {}); \
-                             the line mints no lend and the dimension it meant to answer stays ⊤ \
-                             (walls). Dimension marks are an engine-owned closed vocabulary \
-                             (`273` §8).",
-                            Dimension::ALL.map(Dimension::as_token).join(", ")
-                        ),
+                    diags.push(Diag::new(
+                        DiagCode::LendMapUnknownDimension(LendMapUnknownDimension {
+                            token: token.clone(),
+                            expected: Dimension::ALL.map(Dimension::as_token).join(", "),
+                        }),
+                        mark.span,
                     ));
                     continue;
                 };
@@ -985,7 +979,7 @@ mod tests {
         let (_i, check) = one_lend_map("x__lend_map() { :   : universe; \"$@\"; }");
         let (map, diags) = derive_lend_map(&check);
         assert_eq!(diags.len(), 1, "one loud diagnostic: {diags:?}");
-        assert_eq!(diags[0].code, LENDMAP_UNKNOWN_DIMENSION);
+        assert_eq!(diags[0].code.slug(), "lend-map-unknown-dimension");
         assert!(
             map.missing_dimensions().len() == 3,
             "the unknown token minted no dimension"

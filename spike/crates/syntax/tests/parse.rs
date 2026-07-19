@@ -1016,7 +1016,7 @@ fn unterminated_subshell_emits_syntax_malformed() {
     // fires it. Pins the registered code from the real `parse` path (not a constructed variant).
     let p = parse("(echo hi");
     assert!(
-        p.diags.iter().any(|d| d.code.0 == "syntax-malformed"),
+        p.diags.iter().any(|d| d.code.slug() == "syntax-malformed"),
         "an unterminated subshell must emit syntax-malformed: {:?}",
         p.diags
     );
@@ -1033,7 +1033,9 @@ fn background_amp_emits_syntax_unsupported() {
     // real `parse` path, not a constructed variant nor the node alone.
     let p = parse("foo &");
     assert!(
-        p.diags.iter().any(|d| d.code.0 == "syntax-unsupported"),
+        p.diags
+            .iter()
+            .any(|d| d.code.slug() == "syntax-unsupported"),
         "a background `&` must emit syntax-unsupported: {:?}",
         p.diags
     );

@@ -60,6 +60,12 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::io::{Read, Write};
 use std::process::ExitCode;
 
+use dorc_core::diag::{
+    CarriedAcrossSubstrateAxis, DanglingReference, DerivFamilyIncomplete, Diag, DiagCode,
+    EscalationPolicy, FootprintIncoherent, ReachesConflict, ReachesProviderCollision,
+    ResolverConflict, ResolverProviderCollision, TouchesEscalated, WrappedSiteAdoptionHint,
+    WrapperEntryIncoherent, WrapperPeelIncoherent,
+};
 use dorc_core::{
     Interner, Observable, OutBytes, Predicted, ProvArena, Rc, Severity, Symbol, Verdict,
 };
@@ -513,7 +519,10 @@ fn strip_command(path: &str) -> Result<(), String> {
     let mut interner = Interner::default();
     let stripped = dorc_oracle::strip_file(&mut interner, &src);
     for d in &stripped.diags {
-        eprintln!("dorc: strip: {}", d.message);
+        eprintln!(
+            "dorc: strip: {}",
+            dorc_core::diag::render_body(d, &interner)
+        );
     }
     print!("{}", stripped.value);
     std::io::stdout().flush().ok();
@@ -1047,7 +1056,7 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
         .diags
         .iter()
         .chain(cfg.diags.iter())
-        .any(|d| d.severity == Severity::Error);
+        .any(|d| d.severity() == Severity::Error);
     let book_outcome = if book_unmodeled {
         RunOutcome::BookUnmodeled
     } else if wrapper_incoherent {
@@ -1425,7 +1434,7 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
         advisory,
         "probe",
         book_source, // the unresolvable-site notes span into the book (file:line:col frame)
-        &unresolvable_diagnostics(&probe, &plan, &parsed.value, &book_src, &mut interner),
+        &unresolvable_diagnostics(&probe, &plan, &parsed.value, &book_src),
     );
 
     // upcoming-firstwall-hint (USER_STORY stage 3): the FIRST poison wall formed by an UNMODELED
@@ -1566,8 +1575,8 @@ fn emit_decision_digest(
     book_src: &str,
     ast: &dorc_syntax::ast::Ast,
     interner: &Interner,
-    classify_diags: Vec<dorc_core::Diagnostic>,
-    refusals: Vec<dorc_core::Diagnostic>,
+    classify_diags: Vec<Diag>,
+    refusals: Vec<Diag>,
 ) {
     let mut identity_diags = classify_diags;
     identity_diags.extend(refusals);
@@ -1759,11 +1768,13 @@ fn build_survival_footprints(
             && !coords.contains(&own_coord)
         {
             let span = ast.node(cfg.node(*node).ast).span;
-            diags.push(dorc_core::Diagnostic::warning(
-                dorc_core::DiagCode("footprint-incoherent"),
-                Some(span),
-                "touches() footprint omits this command's own effect coordinate \
-                 (at-least ⊄ at-most) — footprint refused, the site walls",
+            diags.push(Diag::new(
+                DiagCode::FootprintIncoherent(FootprintIncoherent {
+                    detail: "touches() footprint omits this command's own effect coordinate \
+                             (at-least ⊄ at-most) — footprint refused, the site walls"
+                        .to_string(),
+                }),
+                span,
             ));
             continue;
         }
@@ -1933,14 +1944,12 @@ fn merge_derived_footprints(
 ) {
     let mut diags = Vec::new();
     for d in &derivations.derivations {
-        diags.push(dorc_core::Diagnostic::note(
-            dorc_core::DiagCode("touches-escalated"),
-            None,
-            format!(
-                "site {}: touches() escalated to host-derivation ({})",
-                d.site.0, d.call
-            ),
-        ));
+        diags.push(Diag::new_spanless_site(DiagCode::TouchesEscalated(
+            TouchesEscalated {
+                site: d.site.0,
+                call: d.call.clone(),
+            },
+        )));
         let Some(coord_strs) = results.derivations.get(&d.site) else {
             continue; // no readback records ⇒ empty derived footprint ⇒ wall (kFAIL-safe)
         };
@@ -1957,19 +1966,15 @@ fn merge_derived_footprints(
             _ if !results.framed => {}
             Some(&k) if k as usize == coord_strs.len() => {}
             reason => {
-                diags.push(dorc_core::Diagnostic::warning(
-                    dorc_core::DiagCode("deriv-family-incomplete"),
-                    None,
-                    format!(
-                        "site {}: derived footprint family incomplete ({}) — footprint refused, \
-                         the site walls total (an at-most claim cannot be partial)",
-                        d.site.0,
-                        match reason {
+                diags.push(Diag::new_spanless_site(DiagCode::DerivFamilyIncomplete(
+                    DerivFamilyIncomplete {
+                        site: d.site.0,
+                        reason: match reason {
                             Some(&k) => format!("declared n={k}, received {}", coord_strs.len()),
                             None => "no deriv-end close-record".to_string(),
-                        }
-                    ),
-                ));
+                        },
+                    },
+                )));
                 continue;
             }
         }
@@ -1984,13 +1989,14 @@ fn merge_derived_footprints(
             }
         }
         if malformed {
-            diags.push(dorc_core::Diagnostic::warning(
-                dorc_core::DiagCode("footprint-incoherent"),
-                None,
-                "derived touches() emitted a malformed coordinate (not kind:entity) — footprint \
-                 refused, the site walls (an at-most claim cannot be partial)"
-                    .to_string(),
-            ));
+            diags.push(Diag::new_spanless_site(DiagCode::FootprintIncoherent(
+                FootprintIncoherent {
+                    detail: "derived touches() emitted a malformed coordinate (not kind:entity) \
+                             — footprint refused, the site walls (an at-most claim cannot be \
+                             partial)"
+                        .to_string(),
+                },
+            )));
             continue;
         }
         // 24G §8: the DERIVED lane DROPS the own-membership requirement — the boilerplate
@@ -2151,26 +2157,19 @@ fn build_kind_resolvers(
     for (kind, files) in per_kind {
         let name = interner.resolve(kind).to_owned();
         if files.len() > 1 {
-            diags.push(dorc_core::Diagnostic::error(
-                dorc_core::DiagCode("resolver-conflict"),
-                None,
-                format!(
-                    "kind '{name}' has {} resolvers across oracle files — at-most-one-resolver-per-kind \
-                     (24F §3): BOTH refused, the kind keeps token-equality (never first-wins-silently)",
-                    files.len()
-                ),
-            ));
+            diags.push(Diag::new_spanless_site(DiagCode::ResolverConflict(
+                ResolverConflict {
+                    kind: name.clone(),
+                    count: files.len(),
+                },
+            )));
             continue; // refuse both ⇒ resolver-less
         }
         if providers.contains(&name) {
-            diags.push(dorc_core::Diagnostic::warning(
-                dorc_core::DiagCode("resolver-provider-collision"),
-                None,
-                format!(
-                    "resolver '{name}.resolve()' is keyed to a name matching a known COMMAND provider \
-                     — resolvers are keyed by KIND, not command (corr-kind-keying §10); this mints \
-                     identity for a kind no coordinate may use (a likely mis-key)"
-                ),
+            diags.push(Diag::new_spanless_site(
+                DiagCode::ResolverProviderCollision(ResolverProviderCollision {
+                    name: name.clone(),
+                }),
             ));
             // Kept (it may legitimately match a kind of the same name); the warning surfaces the risk.
         }
@@ -2377,22 +2376,13 @@ fn build_resolutions(
 /// value-loss into a pointed hint; the coordinate ALSO rides the may-alias degrade (§3a). ADVISORY —
 /// the apply runs the affected site either way (fail toward run), so no correctness rides on this
 /// readout; it is the render surface (rec-1). `inv-referent-agnostic`: the coord label is display.
-fn dangling_diagnostics(
-    resolutions: &dorc_plan::Resolutions,
-    interner: &Interner,
-) -> Vec<dorc_core::Diagnostic> {
+fn dangling_diagnostics(resolutions: &dorc_plan::Resolutions, interner: &Interner) -> Vec<Diag> {
     resolutions
         .dangling()
         .map(|coord| {
-            dorc_core::Diagnostic::note(
-                dorc_core::DiagCode("dangling-reference"),
-                None,
-                format!(
-                    "coordinate {} resolved DANGLING — the kind's resolver reports no such entity \
-                     (a likely typo / stale name); it degrades to may-alias (the site runs)",
-                    render_coord(coord, interner)
-                ),
-            )
+            Diag::new_spanless_site(DiagCode::DanglingReference(DanglingReference {
+                coord: render_coord(coord, interner),
+            }))
         })
         .collect()
 }
@@ -2473,27 +2463,18 @@ fn build_kind_reaches(
     for (kind, files) in per_kind {
         let name = interner.resolve(kind).to_owned();
         if files.len() > 1 {
-            diags.push(dorc_core::Diagnostic::error(
-                dorc_core::DiagCode("reaches-conflict"),
-                None,
-                format!(
-                    "kind '{name}' has {} reach-functions across oracle files — at-most-one-reaches-per-kind \
-                     (24G §4): BOTH refused, the kind's footprints do not expand (never first-wins-silently)",
-                    files.len()
-                ),
-            ));
+            diags.push(Diag::new_spanless_site(DiagCode::ReachesConflict(
+                ReachesConflict {
+                    kind: name.clone(),
+                    count: files.len(),
+                },
+            )));
             continue;
         }
         if providers.contains(&name) {
-            diags.push(dorc_core::Diagnostic::warning(
-                dorc_core::DiagCode("reaches-provider-collision"),
-                None,
-                format!(
-                    "reach-function '{name}.reaches()' is keyed to a name matching a known COMMAND provider \
-                     — reaches is keyed by KIND, not command (24G §4); this expands a kind no coordinate \
-                     may use (a likely mis-key)"
-                ),
-            ));
+            diags.push(Diag::new_spanless_site(DiagCode::ReachesProviderCollision(
+                ReachesProviderCollision { name: name.clone() },
+            )));
         }
         if let Some(&idx) = files.first() {
             base_to_idx.insert(kind, idx);
@@ -2794,9 +2775,8 @@ fn unresolvable_diagnostics(
     plan: &dorc_plan::Plan,
     ast: &dorc_syntax::ast::Ast,
     book_src: &str,
-    interner: &mut Interner,
-) -> Vec<dorc_core::Diagnostic> {
-    use dorc_core::diag::{Diag, DiagCode, SiteId, SiteUnresolvable};
+) -> Vec<Diag> {
+    use dorc_core::diag::{SiteId, SiteUnresolvable};
     let ast_of_leaf: BTreeMap<dorc_plan::LeafId, dorc_core::AstId> =
         plan.steps.iter().map(|s| (s.leaf, s.ast)).collect();
 
@@ -2838,15 +2818,17 @@ fn unresolvable_diagnostics(
     let first_text = book_src
         .get(first_span.lo.0 as usize..first_span.hi.0 as usize)
         .unwrap_or("<source unavailable>");
-    let diag = Diag::new(
+    // PASSTHROUGH `detail` reproduces BOTH the aggregate label AND the old render_body
+    // `\n  = note: site runs `{excerpt}`` continuation, folded into one string so the migrated
+    // render stays byte-identical bar the `sm ` prefix (`27V`, conductor-ruled shape).
+    let detail = format!("{label}\n  = note: site runs `{first_text}`");
+    vec![Diag::new(
         DiagCode::SiteUnresolvable(SiteUnresolvable {
             site: SiteId::leaf(first_leaf),
-            source_excerpt: OutBytes(interner.intern(first_text)),
+            detail,
         }),
         first_span,
-    )
-    .label(label);
-    vec![diag.to_legacy(interner)]
+    )]
 }
 
 /// cheap-7: is this command source text a STRUCTURALLY-UNPROBEABLE site — one for which no
@@ -2911,7 +2893,7 @@ fn emit_plan_summary(plan: &dorc_plan::Plan) {
 /// woven into the byte-floored `.sh` artifact on stdout (the artifact stays receipt-free). The
 /// line is prefixed `why:` and never `error[`, so the e2e gate-3 stderr-floor (which keys on the
 /// `<stage>: error[` shape) ignores it — the why-lens is additive, never a case-failing diagnostic.
-fn emit_why_lens(why_diags: &[dorc_core::diag::Diag], arena: &ProvArena, src: &str) {
+fn emit_why_lens(why_diags: &[Diag], arena: &ProvArena, src: &str) {
     for line in why_lens_lines(why_diags, arena, src) {
         eprintln!("why: {line}");
     }
@@ -3317,8 +3299,8 @@ fn emit_why_report(
     plan: &dorc_plan::Plan,
     probe: &dorc_plan::ProbePlan,
     first_wall: Option<&FirstWallHint>,
-    why_diags: &[dorc_core::diag::Diag],
-    refusals: &[dorc_core::Diagnostic],
+    why_diags: &[Diag],
+    refusals: &[Diag],
     arena: &ProvArena,
     ast: &dorc_syntax::ast::Ast,
     book_src: &str,
@@ -3332,9 +3314,11 @@ fn emit_why_report(
         let (lo, hi) = (span.lo.0 as usize, span.hi.0 as usize);
         let line = dorc_core::diag::line_col(book_src, lo).0;
         let command = flatten_ws(book_src.get(lo..hi).unwrap_or("<source unavailable>"));
-        let refused = refusals
-            .iter()
-            .any(|d| d.span.is_some_and(|s| s.lo == span.lo && s.hi == span.hi));
+        let refused = refusals.iter().any(|d| {
+            d.primary
+                .span()
+                .is_some_and(|s| s.lo == span.lo && s.hi == span.hi)
+        });
         let (tag, reasons, is_problem): (&'static str, Vec<String>, bool) = match &step.disposition
         {
             Disposition::Run => {
@@ -3491,7 +3475,7 @@ fn print_why_site(s: &WhySite, filename: &str) {
 /// `plan` render surfaces). `None` ⇒ no ⊤-cause (the caller falls to unprobed / not-elidable).
 fn top_run_reason(
     span: dorc_core::Span,
-    why_diags: &[dorc_core::diag::Diag],
+    why_diags: &[Diag],
     arena: &ProvArena,
     book_src: &str,
 ) -> Option<String> {
@@ -3540,11 +3524,7 @@ fn render_coord(coord: dorc_plan::EntityCoord, interner: &Interner) -> String {
 /// first-occurrences — `ProvId` is `!Ord` (no `BTreeSet`) and the diags arrive in node order, so
 /// first-seen order is deterministic (`inv-determinism`). The only suppression built (no general
 /// subsystem — `22D` §1 stage-4).
-fn why_lens_lines(
-    why_diags: &[dorc_core::diag::Diag],
-    arena: &ProvArena,
-    src: &str,
-) -> Vec<String> {
+fn why_lens_lines(why_diags: &[Diag], arena: &ProvArena, src: &str) -> Vec<String> {
     let mut shown: Vec<(dorc_core::ProvId, dorc_core::diag::SiteId)> = Vec::new();
     let mut lines = Vec::new();
     for diag in why_diags {
@@ -3565,11 +3545,9 @@ fn why_lens_lines(
 /// `CmdsubOperandTop` carries a cause at HEAD (stage-1); any other diag returns `None` (the why-lens
 /// does not explain it anyway, fd-G), so it never participates in the dedup. The `site` half is what
 /// separates two inlined call-sites sharing one cause `ProvId` (`x2-fd1`).
-fn cmdsub_cause_site(
-    diag: &dorc_core::diag::Diag,
-) -> Option<(dorc_core::ProvId, dorc_core::diag::SiteId)> {
+fn cmdsub_cause_site(diag: &Diag) -> Option<(dorc_core::ProvId, dorc_core::diag::SiteId)> {
     match &diag.code {
-        dorc_core::diag::DiagCode::CmdsubOperandTop(p) => p.cause.map(|c| (c, p.site)),
+        DiagCode::CmdsubOperandTop(p) => p.cause.map(|c| (c, p.site)),
         _ => None,
     }
 }
@@ -3582,7 +3560,7 @@ mod why_lens_dedup_tests {
     //! `(OriginKind, span)` origins (`core::prov` `hash_cons_shares_identical_origins`), so two
     //! `arena.leaf(TopCause, same_span)` calls reproduce the inlined-body cause collision.
     use dorc_core::diag::{CmdsubOperandTop, Diag, DiagCode, OperandPosition, SiteId};
-    use dorc_core::{BytePos, LeafId, OriginKind, ProvArena, Span};
+    use dorc_core::{BytePos, LeafId, OriginKind, ProvArena, Span, TopCause};
 
     fn cmdsub_top(arena: &mut ProvArena, leaf: u32, body_span: Span) -> Diag {
         let cause = arena.leaf(OriginKind::TopCause, Some(body_span));
@@ -3591,6 +3569,7 @@ mod why_lens_dedup_tests {
                 site: SiteId::leaf(LeafId(leaf)),
                 position: OperandPosition::Operand(1),
                 cause: Some(cause),
+                top_cause: TopCause::UnmodeledExpansion,
             }),
             Span::new(BytePos(0), BytePos(20)),
         )
@@ -4169,19 +4148,20 @@ fn check_wrapper_peel_coherence(
             continue;
         };
         if let Some(inc) = check_entry_coherence(enter, lend) {
-            diags.push(dorc_core::Diagnostic::error(
-                dorc_core::DiagCode("wrapper-entry-incoherent"),
-                Some(enter.name_span),
-                format!(
-                    "wrapper `{}`: __enter and __lend_map disagree on argv flow (entry consumes {} \
-                     leading arg(s), the lend-fold consumes {}) — static incoherence \
-                     (27C:rul-fold-entry-coherence-failfast, declarations-genuinely-contradict). \
-                     The entry form drops/transforms args the fold relied on; make the entry pass \
-                     the fold's guest verbatim.",
-                    interner.resolve(*provider),
-                    inc.entry_shifts,
-                    inc.lend_shifts,
-                ),
+            diags.push(Diag::new(
+                DiagCode::WrapperEntryIncoherent(WrapperEntryIncoherent {
+                    detail: format!(
+                        "wrapper `{}`: __enter and __lend_map disagree on argv flow (entry \
+                         consumes {} leading arg(s), the lend-fold consumes {}) — static \
+                         incoherence (27C:rul-fold-entry-coherence-failfast, \
+                         declarations-genuinely-contradict). The entry form drops/transforms args \
+                         the fold relied on; make the entry pass the fold's guest verbatim.",
+                        interner.resolve(*provider),
+                        inc.entry_shifts,
+                        inc.lend_shifts,
+                    ),
+                }),
+                enter.name_span,
             ));
         }
     }
@@ -4191,19 +4171,21 @@ fn check_wrapper_peel_coherence(
         };
         for argv in CANON {
             if let Some(inc) = check_peel_coherence(predict, lend, argv) {
-                diags.push(dorc_core::Diagnostic::error(
-                    dorc_core::DiagCode("wrapper-peel-incoherent"),
-                    Some(predict.name_span),
-                    format!(
-                        "wrapper `{}`: __predict and __lend_map disagree on the peel tail position \
-                         (predict reaches \"$@\" after {} argv token(s), lend_map after {}) — static \
-                         incoherence (273 §5, declarations-genuinely-contradict). The guest would \
-                         start at a different token depending on which member dispatched; fix the \
-                         argparse so both peel to the same tail.",
-                        interner.resolve(*provider),
-                        inc.predict_depth,
-                        inc.lend_map_depth
-                    ),
+                diags.push(Diag::new(
+                    DiagCode::WrapperPeelIncoherent(WrapperPeelIncoherent {
+                        detail: format!(
+                            "wrapper `{}`: __predict and __lend_map disagree on the peel tail \
+                             position (predict reaches \"$@\" after {} argv token(s), lend_map \
+                             after {}) — static incoherence (273 §5, \
+                             declarations-genuinely-contradict). The guest would start at a \
+                             different token depending on which member dispatched; fix the \
+                             argparse so both peel to the same tail.",
+                            interner.resolve(*provider),
+                            inc.predict_depth,
+                            inc.lend_map_depth
+                        ),
+                    }),
+                    predict.name_span,
                 ));
                 break; // one diagnostic per provider
             }
@@ -4280,11 +4262,9 @@ fn emit_escalation_policy(
         advisory,
         "escalation",
         None,
-        &[dorc_core::Diagnostic::note(
-            dorc_core::DiagCode("escalation-policy"),
-            None,
-            msg,
-        )],
+        &[Diag::new_spanless_site(DiagCode::EscalationPolicy(
+            EscalationPolicy { detail: msg },
+        ))],
     );
 }
 
@@ -4303,7 +4283,7 @@ struct WrappedAnalysis {
     /// Wrapped-probe dispositions (Enter / Degrade) keyed by node, for `compile_probe`.
     wrapped: dorc_plan::WrappedProbes,
     /// One-line adoption hints (a degraded-on-vouch site) + degrade disclosures (`27C` §2/§6).
-    hints: Vec<dorc_core::Diagnostic>,
+    hints: Vec<Diag>,
     /// Pure-predicate-carry attribution chains keyed by the carried site's [`AstId`] (`27C` §4(a)):
     /// the why-lens tether emitted for every carried elision (`emit_carry_attribution`). Keyed by
     /// `AstId` so the plan's per-site step re-keys to the site number for the `why: site N …` line.
@@ -4475,10 +4455,11 @@ fn build_wrapped_analysis(
                     // `.sh` artifact).
                     let span = ast.node(cfg.node(node).ast).span;
                     let text = carry_attribution_text(&chain.composed.crossed(), &read_kinds);
-                    out.hints.push(dorc_core::Diagnostic::note(
-                        dorc_core::DiagCode("carried-across-substrate-axis"),
-                        Some(span),
-                        text.clone(),
+                    out.hints.push(Diag::new(
+                        DiagCode::CarriedAcrossSubstrateAxis(CarriedAcrossSubstrateAxis {
+                            detail: text.clone(),
+                        }),
+                        span,
                     ));
                     out.carried.insert(cfg.node(node).ast, text);
                     (
@@ -4493,10 +4474,11 @@ fn build_wrapped_analysis(
                     )
                 } else {
                     if let EntryDegrade::Unvouched(dim) = reason {
-                        out.hints.push(dorc_core::Diagnostic::note(
-                            dorc_core::DiagCode("wrapped-site-adoption-hint"),
-                            Some(ast.node(cfg.node(node).ast).span),
-                            adoption_hint(inner_word, dim),
+                        out.hints.push(Diag::new(
+                            DiagCode::WrappedSiteAdoptionHint(WrappedSiteAdoptionHint {
+                                detail: adoption_hint(inner_word, dim),
+                            }),
+                            ast.node(cfg.node(node).ast).span,
                         ));
                     }
                     (context, dorc_plan::WrappedProbe::Degrade)
@@ -4660,12 +4642,7 @@ fn resolve_inner_check(
     Some((format!("{seg}__is_converged"), sh))
 }
 
-fn report_at(
-    advisory: bool,
-    stage: &str,
-    source: Option<(&str, &str)>,
-    diags: &[dorc_core::Diagnostic],
-) {
+fn report_at(advisory: bool, stage: &str, source: Option<(&str, &str)>, diags: &[Diag]) {
     report(stage, source, &advisory_filter(advisory, diags));
 }
 
@@ -4675,13 +4652,13 @@ fn report_at(
 /// dropping warnings + notes. Errors are NEVER dropped — the floor that keeps `apply`
 /// honest while receipt-free. Returns owned clones (the call sites are cold — once per
 /// pipeline stage — so the copy is irrelevant against the SSH-tunnel cost DESIGN floors on).
-fn advisory_filter(advisory: bool, diags: &[dorc_core::Diagnostic]) -> Vec<dorc_core::Diagnostic> {
+fn advisory_filter(advisory: bool, diags: &[Diag]) -> Vec<Diag> {
     if advisory {
         diags.to_vec()
     } else {
         diags
             .iter()
-            .filter(|d| d.severity == Severity::Error)
+            .filter(|d| d.severity() == Severity::Error)
             .cloned()
             .collect()
     }
@@ -4706,21 +4683,26 @@ fn advisory_filter(advisory: bool, diags: &[dorc_core::Diagnostic]) -> Vec<dorc_
 /// ANSI on a non-tty and honors `NO_COLOR` (+ enables Windows VT on a real console). Plain-when-
 /// piped is load-bearing: the e2e harness captures stderr to a FILE ⇒ non-tty ⇒ the color vanishes,
 /// so the gate-3/gate-7 needle-matching (and every golden) is byte-identical to the un-colored form.
-fn report(stage: &str, source: Option<(&str, &str)>, diags: &[dorc_core::Diagnostic]) {
+fn report(stage: &str, source: Option<(&str, &str)>, diags: &[Diag]) {
     use std::io::Write as _;
+    // params_of resolves no interned handle at HEAD, so a default interner suffices (`27V`).
+    let interner = Interner::default();
     let mut w = anstream::stderr();
     for d in diags {
-        let (word, style) = severity_style(d.severity);
-        // Split the message so the region frame lands right after the TITLE line, before any
-        // folded ` = note:`/` = help:` continuations a lowered `Diag` carries in its message.
-        let (title, folded) = match d.message.split_once('\n') {
-            Some((t, rest)) => (t, Some(rest)),
-            None => (d.message.as_str(), None),
+        let (word, style) = severity_style(d.severity());
+        // Split the catalog message so the region frame lands after the TITLE, before the tail.
+        let body = dorc_core::diag::render_body(d, &interner);
+        let (title, folded) = match body.split_once('\n') {
+            Some((t, rest)) => (t.to_owned(), Some(rest.to_owned())),
+            None => (body.clone(), None),
         };
-        // The severity word carries the ANSI (stripped when piped); the `[code]` + region + notes
-        // are plain. `{style}` opens the style, `{style:#}` resets it (anstyle's Display shape).
-        let _ = write!(w, "{stage}: {style}{word}{style:#}[{}]: {title}", d.code.0);
-        let _ = write!(w, "{}", dorc_core::diag::render_legacy_region(d, source));
+        // The severity word carries the ANSI (stripped when piped); the rest is plain.
+        let _ = write!(
+            w,
+            "{stage}: {style}{word}{style:#}[{}]: {title}",
+            d.code.slug()
+        );
+        let _ = write!(w, "{}", dorc_core::diag::render_region(d, source));
         let _ = match folded {
             Some(rest) => writeln!(w, "\n{rest}"),
             None => writeln!(w),
@@ -5530,19 +5512,19 @@ mod tests {
             |_| Observable::verdict_only(Verdict::Unknown),
             &mut arena,
         );
-        let diags = unresolvable_diagnostics(&probe, &plan, &parsed.value, book, &mut interner);
+        let diags = unresolvable_diagnostics(&probe, &plan, &parsed.value, book);
+        let i = Interner::default();
         assert!(
-            diags.iter().any(|d| d.code.0 == "dq-site-unresolvable"),
+            diags.iter().any(|d| d.code.slug() == "site-unresolvable"),
             "an Opaque site must be disclosed unresolvable: {diags:?}"
         );
         assert!(
-            diags
-                .iter()
-                .any(|d| d.code.0 == "dq-site-unresolvable" && d.message.contains("make install")),
+            diags.iter().any(|d| d.code.slug() == "site-unresolvable"
+                && dorc_core::diag::render_body(d, &i).contains("make install")),
             "the disclosure must name the source command: {diags:?}"
         );
         assert!(
-            diags.iter().all(|d| d.severity == Severity::Note),
+            diags.iter().all(|d| d.severity() == Severity::Note),
             "the readout is Note-severity (never trips gate-3): {diags:?}"
         );
     }
@@ -5555,15 +5537,29 @@ mod tests {
         // through. This is the lone place the artifact-vs-render two-surface split becomes a
         // per-severity routing decision — pin BOTH directions so a future edit cannot silently
         // (a) leak advisory disclosure into the off-ramp surface, or (b) swallow an error there.
-        // The slugs are the diag_tidy-recognized throwaway-fixture set (`x-err`/`x-warn`/
-        // `x-note`, core::tests::diag_tidy::is_test_fixture_slug) — NOT real catalog codes, so
-        // the legacy-allow-list completeness gate (226 §1) exempts them without an allow-list entry.
-        use dorc_core::{BytePos, DiagCode, Diagnostic, Span};
-        let span = Some(Span::new(BytePos(0), BytePos(1)));
+        // One code per severity, spelled with real catalog variants (registry-Error/Warning/Note).
+        use dorc_core::diag::{CfgBuiltinShadowed, RedirTargetTop, SiteId, SyntaxMalformed};
+        use dorc_core::{BytePos, Span};
+        let span = Span::new(BytePos(0), BytePos(1));
         let mixed = vec![
-            Diagnostic::error(DiagCode("x-err"), span, "an error"),
-            Diagnostic::warning(DiagCode("x-warn"), span, "a warning"),
-            Diagnostic::note(DiagCode("x-note"), span, "a note"),
+            Diag::new(
+                DiagCode::SyntaxMalformed(SyntaxMalformed {
+                    detail: "an error".to_owned(),
+                }),
+                span,
+            ),
+            Diag::new(
+                DiagCode::CfgBuiltinShadowed(CfgBuiltinShadowed {
+                    detail: "a warning".to_owned(),
+                }),
+                span,
+            ),
+            Diag::new(
+                DiagCode::RedirTargetTop(RedirTargetTop {
+                    site: SiteId::leaf(LeafId(0)),
+                }),
+                span,
+            ),
         ];
 
         // advisory=true (plan / round-trip): every severity survives — the full cited-disclosure
@@ -5579,7 +5575,7 @@ mod tests {
             "apply keeps only the error floor (no warnings/notes): {kept:?}"
         );
         assert_eq!(
-            kept[0].severity,
+            kept[0].severity(),
             Severity::Error,
             "the surviving diagnostic is the Error (the never-hide floor): {kept:?}"
         );

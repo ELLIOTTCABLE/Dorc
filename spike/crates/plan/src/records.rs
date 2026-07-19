@@ -27,7 +27,11 @@
 //! full contract (integrity keys, torn/glued/alien/late, sentinel) rides the FRAMED path,
 //! exercised end-to-end by the `sweep` byte-tier DST and the plan/cli unit pins.
 
-use dorc_core::{DiagCode, Diagnostic};
+use dorc_core::diag::{
+    Diag, DiagCode, RecordsAlienLine, RecordsFactTruncated, RecordsGluedLine, RecordsHeaderMissing,
+    RecordsHeaderlessRefused, RecordsIntegrityRefused, RecordsLateLine, RecordsSentinelNonce,
+    RecordsTornLine,
+};
 
 /// The per-record terminal token (`262` §2 / `26A` stop-1). Requirements: fixed, never
 /// produced by the inner grammar, cheap to append in one `printf`. `@@dorc@@` is printable
@@ -172,7 +176,7 @@ pub struct Deframed {
     pub records: Vec<String>,
     /// Accumulated diagnostics (torn/alien/late aggregates, integrity mismatches, truncation
     /// range). Data, never a panic (`inv-no-throw`).
-    pub diagnostics: Vec<Diagnostic>,
+    pub diagnostics: Vec<Diag>,
     /// The whole read unit is refused (fold everything to Unknown ⇒ run): a header integrity
     /// mismatch (book/host/attempt/nonce) or a glued line (`262` §2 — reject the read unit).
     pub refused: bool,
@@ -228,14 +232,10 @@ fn deframe_headerless_refused() -> Deframed {
         refused: true,
         ..Deframed::default()
     };
-    out.diagnostics.push(Diagnostic::warning(
-        DiagCode("records-headerless-refused"),
-        None,
-        "a records stream carried no `dorc-records/1` framing at all (headerless — truncated \
-         before the header, or a non-dorc source) — refused on the strict production path, the \
-         fold is withheld and the host runs (kFAIL-withhold)"
-            .to_string(),
-    ));
+    out.diagnostics
+        .push(Diag::new_spanless_site(DiagCode::RecordsHeaderlessRefused(
+            RecordsHeaderlessRefused,
+        )));
     out
 }
 
@@ -303,13 +303,10 @@ fn deframe_framed(raw: &str, expect: &Expect) -> Deframed {
         // whole read unit (`262` §2), the safe direction.
         if body.contains(TERMINAL_TOKEN) {
             out.refused = true;
-            out.diagnostics.push(Diagnostic::warning(
-                DiagCode("records-glued-line"),
-                None,
-                "a records line carried bytes after its terminal token (two writes glued) — \
-                 the whole read unit is refused, the host runs (kFAIL-perform)"
-                    .to_string(),
-            ));
+            out.diagnostics
+                .push(Diag::new_spanless_site(DiagCode::RecordsGluedLine(
+                    RecordsGluedLine,
+                )));
             continue;
         }
 
@@ -321,13 +318,10 @@ fn deframe_framed(raw: &str, expect: &Expect) -> Deframed {
         if let Some(rest) = body.strip_prefix(&format!("{SENTINEL_TAG} ")) {
             t.sentinel_seen = true;
             if header_nonce_key(rest).is_some_and(|n| n != expect.nonce.0) {
-                out.diagnostics.push(Diagnostic::warning(
-                    DiagCode("records-sentinel-nonce"),
-                    None,
-                    "the end-sentinel carried a nonce that is not this attempt's — \
-                     ignored (the stream's own records are keyed independently)"
-                        .to_string(),
-                ));
+                out.diagnostics
+                    .push(Diag::new_spanless_site(DiagCode::RecordsSentinelNonce(
+                        RecordsSentinelNonce,
+                    )));
             }
             continue;
         }
@@ -358,46 +352,43 @@ fn deframe_framed(raw: &str, expect: &Expect) -> Deframed {
 fn finalize(out: &mut Deframed, t: &Tally) {
     if !t.header_seen {
         out.refused = true;
-        out.diagnostics.push(Diagnostic::warning(
-            DiagCode("records-header-missing"),
-            None,
-            "a framed records stream carried no `dorc-records/1` header (torn/absent) — \
-             the read unit is refused, the host runs (kFAIL-perform)"
-                .to_string(),
-        ));
+        out.diagnostics
+            .push(Diag::new_spanless_site(DiagCode::RecordsHeaderMissing(
+                RecordsHeaderMissing,
+            )));
     }
     if let Some(declared) = t.declared_sites
         && t.site_records < declared
     {
-        out.diagnostics.push(Diagnostic::note(
-            DiagCode("records-fact-truncated"),
-            None,
-            format!(
-                "fact lane truncated: {} of {declared} declared site records received — the {} \
-                 unseen site(s) fold Unknown (run)",
-                t.site_records,
-                declared - t.site_records
-            ),
-        ));
+        out.diagnostics
+            .push(Diag::new_spanless_site(DiagCode::RecordsFactTruncated(
+                RecordsFactTruncated {
+                    received: t.site_records,
+                    declared,
+                    unseen: declared - t.site_records,
+                },
+            )));
     }
-    aggregate(
-        out,
-        DiagCode("records-torn-line"),
-        t.torn,
-        "torn (no terminal token)",
-    );
-    aggregate(
-        out,
-        DiagCode("records-alien-line"),
-        t.alien,
-        "alien (non-nonce)",
-    );
-    aggregate(
-        out,
-        DiagCode("records-late-line"),
-        t.late,
-        "late (after the end-sentinel)",
-    );
+    // Each aggregate is spelled with a LITERAL `new_spanless_site(DiagCode::…(` so the diag_tidy
+    // spanless-mint gate's needle-scan sees it (a variable-built code would be invisible — t-4).
+    if t.torn > 0 {
+        out.diagnostics
+            .push(Diag::new_spanless_site(DiagCode::RecordsTornLine(
+                RecordsTornLine { count: t.torn },
+            )));
+    }
+    if t.alien > 0 {
+        out.diagnostics
+            .push(Diag::new_spanless_site(DiagCode::RecordsAlienLine(
+                RecordsAlienLine { count: t.alien },
+            )));
+    }
+    if t.late > 0 {
+        out.diagnostics
+            .push(Diag::new_spanless_site(DiagCode::RecordsLateLine(
+                RecordsLateLine { count: t.late },
+            )));
+    }
 }
 
 /// Strip the trailing ` {token}` (one separator space + the token). Returns the body without
@@ -438,14 +429,12 @@ fn read_header(rest: &str, expect: &Expect, out: &mut Deframed) -> Option<usize>
     }
     if let Some(which) = mismatch {
         out.refused = true;
-        out.diagnostics.push(Diagnostic::warning(
-            DiagCode("records-integrity-refused"),
-            None,
-            format!(
-                "the records header failed integrity on {which} — the whole read unit is \
-                 refused, the host runs (kFAIL-perform)"
-            ),
-        ));
+        out.diagnostics
+            .push(Diag::new_spanless_site(DiagCode::RecordsIntegrityRefused(
+                RecordsIntegrityRefused {
+                    which: which.to_owned(),
+                },
+            )));
     }
     sites
 }
@@ -454,18 +443,6 @@ fn read_header(rest: &str, expect: &Expect, out: &mut Deframed) -> Option<usize>
 fn header_nonce_key(rest: &str) -> Option<&str> {
     rest.split_whitespace()
         .find_map(|t| t.strip_prefix("nonce="))
-}
-
-/// One aggregated warning per fault class per host (`262` §1 pin-late-and-alien-records):
-/// hostile/sloppy bytes are counted, never folded, and reported once.
-fn aggregate(out: &mut Deframed, code: DiagCode, count: usize, what: &str) {
-    if count > 0 {
-        out.diagnostics.push(Diagnostic::warning(
-            code,
-            None,
-            format!("{count} {what} record line(s) discarded (counted, never folded)"),
-        ));
-    }
 }
 
 #[cfg(test)]
@@ -544,7 +521,7 @@ mod tests {
         assert!(
             d.diagnostics
                 .iter()
-                .any(|x| x.code.0 == "records-headerless-refused"),
+                .any(|x| x.code.slug() == "records-headerless-refused"),
             "the refusal carries the registered code: {:?}",
             d.diagnostics
         );
@@ -588,7 +565,7 @@ mod tests {
         assert!(
             d.diagnostics
                 .iter()
-                .any(|x| x.code.0 == "records-torn-line"),
+                .any(|x| x.code.slug() == "records-torn-line"),
             "torn is counted + warned"
         );
     }
@@ -607,7 +584,7 @@ mod tests {
         assert!(
             d.diagnostics
                 .iter()
-                .any(|x| x.code.0 == "records-glued-line")
+                .any(|x| x.code.slug() == "records-glued-line")
         );
     }
 
@@ -622,7 +599,7 @@ mod tests {
         assert!(
             d.diagnostics
                 .iter()
-                .any(|x| x.code.0 == "records-alien-line"),
+                .any(|x| x.code.slug() == "records-alien-line"),
             "a non-nonce framed line is alien: {:?}",
             d.diagnostics
         );
@@ -643,7 +620,7 @@ mod tests {
         assert!(
             d.diagnostics
                 .iter()
-                .any(|x| x.code.0 == "records-late-line")
+                .any(|x| x.code.slug() == "records-late-line")
         );
     }
 
@@ -681,7 +658,7 @@ mod tests {
         assert!(
             d.diagnostics
                 .iter()
-                .any(|x| x.code.0 == "records-header-missing")
+                .any(|x| x.code.slug() == "records-header-missing")
         );
     }
 
@@ -713,7 +690,7 @@ mod tests {
         assert!(
             d.diagnostics
                 .iter()
-                .any(|x| x.code.0 == "records-fact-truncated"),
+                .any(|x| x.code.slug() == "records-fact-truncated"),
             "truncation is a computable range: {:?}",
             d.diagnostics
         );
@@ -733,7 +710,7 @@ mod tests {
         assert!(
             d.diagnostics
                 .iter()
-                .any(|x| x.code.0 == "records-alien-line")
+                .any(|x| x.code.slug() == "records-alien-line")
         );
     }
 }

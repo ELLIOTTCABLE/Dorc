@@ -12,7 +12,8 @@
 //! gate fires at the user boundary (every oracle/book the cli loads). The parser is marker-blind;
 //! this pass flags the dialect-in-unmarked-file post-hoc.
 
-use dorc_core::{DiagCode, Diagnostic, Interner, Span};
+use dorc_core::diag::{Diag, DiagCode, MissingDialectMarker};
+use dorc_core::{Interner, Span};
 
 use crate::predict::{
     Stmt, lift_predicts, lift_reaches, lift_resolvers, lift_state_stored_only_in, lift_touches,
@@ -41,7 +42,7 @@ pub fn has_marker(src: &str) -> bool {
 /// pass silently. Re-lifts all six roles (pure, cheap) to scan every funcdef body; `build_vouches`
 /// and the effect-map lift do their own lifts, so nothing here is load-bearing beyond the gate.
 #[must_use]
-pub fn check_dialect_marker(interner: &mut Interner, src: &str) -> Vec<Diagnostic> {
+pub fn check_dialect_marker(interner: &mut Interner, src: &str) -> Vec<Diag> {
     if has_marker(src) {
         return Vec::new();
     }
@@ -68,15 +69,9 @@ pub fn check_dialect_marker(interner: &mut Interner, src: &str) -> Vec<Diagnosti
         }
     }
     match offender {
-        Some(span) => vec![Diagnostic::error(
-            DiagCode("missing-dialect-marker"),
-            Some(span),
-            format!(
-                "this file uses a dorc-lang dialect construct (a bind `name : kind = …` or a \
-                 trailing `:`/`:!`/`:?` mark) but lacks the `{MARKER}` version marker \
-                 (marker-gates-syntax-only): add `{MARKER}` as a standalone comment in the first \
-                 {MARKER_WINDOW} lines, or drop the dialect (the bare `__role` floor works markerless)"
-            ),
+        Some(span) => vec![Diag::new(
+            DiagCode::MissingDialectMarker(MissingDialectMarker),
+            span,
         )],
         None => Vec::new(),
     }
@@ -151,7 +146,7 @@ mod tests {
         let src = "apt_get__predict() { pkg : package = \"$1\"; dpkg-query -W \"$pkg\"; }";
         let diags = check_dialect_marker(&mut i, src);
         assert_eq!(diags.len(), 1, "one file-level error");
-        assert_eq!(diags[0].code.0, "missing-dialect-marker");
+        assert_eq!(diags[0].code.slug(), "missing-dialect-marker");
     }
 
     #[test]
@@ -161,7 +156,7 @@ mod tests {
         let src = "svc__is_converged() { systemctl is-active -- \"$1\"  : sm.dorc.Service:\"$1\"#active ; }";
         let diags = check_dialect_marker(&mut i, src);
         assert_eq!(diags.len(), 1, "a trailing mark in an unmarked file errors");
-        assert_eq!(diags[0].code.0, "missing-dialect-marker");
+        assert_eq!(diags[0].code.slug(), "missing-dialect-marker");
     }
 
     #[test]

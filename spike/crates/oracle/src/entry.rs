@@ -31,6 +31,10 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
+use dorc_core::diag::{
+    Diag, DiagCode, HeavyContextNoTolerance, ToleratesOverIdentityDependence,
+    ToleratesUnknownDimension,
+};
 use dorc_core::{Capability, Context, ContextKey, EscalationDial, Interner, Symbol};
 
 use crate::predict::{Predict, PredictSet, Stmt, Word};
@@ -282,17 +286,13 @@ impl ToleranceVouch {
     }
 }
 
-/// A loud diagnostic code for an unknown dimension token on a `tolerates:` mark (`inv-top-reject`).
-const TOLERATES_UNKNOWN_DIMENSION: dorc_core::DiagCode =
-    dorc_core::DiagCode("tolerates-unknown-dimension");
-
 /// Lift the [`ToleranceVouch`] from a verdict body (`27C` §2 — the `is_converged` member). Walks the
 /// body for `: tolerates:<dim>` colon-lines: a mark at top level is unconditional; a mark inside a
 /// `case` arm is scoped to that arm's verb patterns. Brace-alternation `tolerates:{user,fs-view}`
 /// expands to a per-dimension set. An unknown dimension token is a LOUD diagnostic (`inv-top-reject`)
 /// that mints no tolerance. Pure/total.
 #[must_use]
-pub fn lift_tolerance(verdict: &Predict) -> (ToleranceVouch, Vec<dorc_core::Diagnostic>) {
+pub fn lift_tolerance(verdict: &Predict) -> (ToleranceVouch, Vec<Diag>) {
     let mut vouch = ToleranceVouch::default();
     let mut diags = Vec::new();
     collect_tolerance(&verdict.body, None, &mut vouch, &mut diags);
@@ -305,7 +305,7 @@ fn collect_tolerance(
     body: &[Stmt],
     arm: Option<(&[String], bool)>,
     vouch: &mut ToleranceVouch,
-    diags: &mut Vec<dorc_core::Diagnostic>,
+    diags: &mut Vec<Diag>,
 ) {
     for stmt in body {
         match stmt {
@@ -323,15 +323,12 @@ fn collect_tolerance(
                         Some(d) => {
                             dims.insert(d);
                         }
-                        None => diags.push(dorc_core::Diagnostic::warning(
-                            TOLERATES_UNKNOWN_DIMENSION,
-                            Some(mark.span),
-                            format!(
-                                "`{tok}` is not a known context dimension on a `tolerates:` vouch \
-                                 (expected one of {}); the mark vouches nothing and the site stays \
-                                 walled on that dimension (`27C` §2).",
-                                Dimension::ALL.map(Dimension::as_token).join(", ")
-                            ),
+                        None => diags.push(Diag::new(
+                            DiagCode::ToleratesUnknownDimension(ToleratesUnknownDimension {
+                                token: tok.clone(),
+                                expected: Dimension::ALL.map(Dimension::as_token).join(", "),
+                            }),
+                            mark.span,
                         )),
                     }
                 }
@@ -995,10 +992,6 @@ fn is_identity_var(w: &Word, interner: &Interner) -> bool {
     matches!(w, Word::Var(sym) if matches!(interner.resolve(*sym), "USER" | "HOME" | "LOGNAME"))
 }
 
-/// A loud corroboration diagnostic code — a `tolerates:` mark sits over VISIBLE identity-dependence.
-const TOLERATES_OVER_IDENTITY: dorc_core::DiagCode =
-    dorc_core::DiagCode("tolerates-over-identity-dependence");
-
 /// Corroboration lint, forward direction (`27C` §6): a `tolerates:user` mark over a body that
 /// VISIBLY reads identity ⇒ "are you sure?" — the vouch claims read-only-under-shift, but the body's
 /// answer plainly depends on WHO is asking (a shifted user changes the answer, which is fine, but a
@@ -1010,22 +1003,14 @@ pub fn corroborate_tolerance_over_identity(
     verdict: &Predict,
     interner: &Interner,
     span: dorc_core::Span,
-) -> Option<dorc_core::Diagnostic> {
+) -> Option<Diag> {
     (vouch.mentions(Dimension::User) && reads_identity(verdict, interner)).then(|| {
-        dorc_core::Diagnostic::warning(
-            TOLERATES_OVER_IDENTITY,
-            Some(span),
-            "this `is_converged` carries `tolerates:user` but VISIBLY reads the caller's identity \
-             (`id`/`$USER`/`$HOME`): are you sure the body is read-only under a user shift, not just \
-             answer-varying? A shifted user must not make it MUTATE (`27C` §2 corroboration)."
-                .to_owned(),
+        Diag::new(
+            DiagCode::ToleratesOverIdentityDependence(ToleratesOverIdentityDependence),
+            span,
         )
     })
 }
-
-/// A one-line adoption-hint diagnostic code (Note-severity — a hint, not a failure).
-const HEAVY_CONTEXT_NO_VOUCH: dorc_core::DiagCode =
-    dorc_core::DiagCode("heavy-context-no-tolerance");
 
 /// Corroboration lint, reverse direction (`27C` §6): a body doing heavy context-handling (visible
 /// identity reads) with NO tolerance mark ⇒ the one-line hint (it would become context-shiftable
@@ -1037,15 +1022,11 @@ pub fn hint_heavy_context_no_vouch(
     verdict: &Predict,
     interner: &Interner,
     span: dorc_core::Span,
-) -> Option<dorc_core::Diagnostic> {
+) -> Option<Diag> {
     (vouch.is_empty() && reads_identity(verdict, interner)).then(|| {
-        dorc_core::Diagnostic::note(
-            HEAVY_CONTEXT_NO_VOUCH,
-            Some(span),
-            "this `is_converged` reads the caller's identity but carries no tolerance vouch — a \
-             wrapped site (`sudo …`) will run/guard instead of eliding. One line makes it \
-             context-shiftable: `:   : tolerates:user` (`27C` §2)."
-                .to_owned(),
+        Diag::new(
+            DiagCode::HeavyContextNoTolerance(HeavyContextNoTolerance),
+            span,
         )
     })
 }
@@ -1218,7 +1199,7 @@ mod tests {
         let (_i, v) = one_verdict("x__is_converged() { :   : tolerates:universe\n return 0 }");
         let (vouch, diags) = lift_tolerance(&v);
         assert_eq!(diags.len(), 1, "one loud diag: {diags:?}");
-        assert_eq!(diags[0].code, TOLERATES_UNKNOWN_DIMENSION);
+        assert_eq!(diags[0].code.slug(), "tolerates-unknown-dimension");
         assert!(vouch.is_empty(), "an unknown token vouches nothing");
     }
 

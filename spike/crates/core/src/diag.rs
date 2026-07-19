@@ -9,15 +9,12 @@
 //! `inv-no-unsafe`: proc-macros forbidden workspace-wide). The *types* do the work the derive
 //! DSL did, with the stock compiler as the only enforcement engine.
 //!
-//! # Coexistence (round-22 migration scope)
+//! # One catalog, no legacy (`27V:rul-kill-legacy-diagnostic`)
 //!
-//! Exactly THREE codes are migrated onto this spine as the proving set (`22B` §5):
-//! [`DiagCode::SiteUnresolvable`], [`DiagCode::RenderHeredocRefused`],
-//! [`DiagCode::CmdsubOperandTop`]. Every other legacy give-up stays on [`crate::Diagnostic`]
-//! (the gate-grep allow-list in `core/tests/diag_tidy.rs` names them); a later mechanical
-//! sweep (B4) empties that list. A [`Diag`] lowers to the legacy stream via
-//! [`Diag::to_legacy`] so the existing `report()`/erasability/coverage consumers keep working
-//! unchanged while the spine is proven end-to-end.
+//! This is the ONE diagnostics mechanism — the legacy string-slug `Diagnostic` is gone. Every
+//! give-up/disclosure the analyzer emits is a typed [`DiagCode`] variant; all user-facing prose
+//! lives in the committed [`crate::catalog`] keyed by slug, filled from the payload via
+//! [`params_of`]. Message text is authored NOWHERE else (`AID-NEEDS:defining-case-catalog`).
 //!
 //! # Invariants honored here (cite the slug)
 //!
@@ -25,12 +22,12 @@
 //! * `inv-determinism` — ordered collections only (`Vec`, never a hashed map iterated to
 //!   output); [`registry`] is a pure `match`.
 //! * `inv-no-unsafe` — stock `#[derive]`s only; no macros, no proc-macros.
-//! * `inv-referent-agnostic` — a payload's text excerpt is an [`OutBytes`] (an interned
-//!   handle), never decoded for meaning; the [`ProvId`] cause is opaque and non-`Display`.
+//! * `inv-referent-agnostic` — a payload's text is display-only, never decoded for meaning; the
+//!   [`ProvId`] cause is opaque and non-`Display`.
 //! * `inv-site-keyed-results` — [`SiteId`] preserves command-site keying (promoted from the
 //!   cli's `RecordKey`).
 
-use crate::{LeafId, OutBytes, ProvId, Severity, Span};
+use crate::{LeafId, ProvId, Severity, Span, TopCause};
 
 // ===========================================================================
 // The catalog enum (exhaustive spine) + typed per-variant payloads (type-sketch-1)
@@ -49,11 +46,13 @@ use crate::{LeafId, OutBytes, ProvId, Severity, Span};
 /// Each variant carries a TYPED payload demanding exactly the objects the diagnostic cites
 /// (`22B` `type-sketch-1`, the capability instinct made structural): you cannot author the
 /// diagnostic wrong because you cannot NAME the wrong objects. Adding a code is ONE variant
-/// here + ONE [`registry`] arm + ONE arm in each render — the `22B` §7 friction test, bounded
-/// and compiler-guided.
+/// here + ONE [`registry`] arm + ONE [`params_of`] arm + ONE [`crate::catalog`] entry — the
+/// `22B` §7 friction test, bounded and compiler-guided.
 ///
-/// Scope: the three `22B` §5 worked examples PLUS the full B4 mechanical sweep of every
-/// legacy give-up code (all 20 codes landed; the `diag::legacy` submodule is deleted).
+/// Scope: every give-up/disclosure the analyzer emits (`27V:rul-kill-legacy-diagnostic`); the
+/// legacy string-slug mechanism is retired. Variant kinds: PASSTHROUGH codes carry a `detail`
+/// the emit site fills (catalog message `sm {detail}`); TEMPLATIZED codes carry named params a
+/// real `sm <template>` interpolates (`params_of`).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum DiagCode {
     // ── round-22 §5 worked examples ─────────────────────────────────────────
@@ -112,6 +111,92 @@ pub enum DiagCode {
     PredictOutOfDialect(PredictOutOfDialect),
     /// A check function body is structurally unterminated (a missing `;;` or `esac` etc.).
     PredictUnterminated(PredictUnterminated),
+
+    // ── oracle/reserved.rs (munge-reservation lint) ─────────────────────────
+    /// An emitted `<munged>__<role>` funcname is not a legal sh NAME (leading digit / dot /
+    /// non-ASCII) ⇒ REFUSED (a broken function name cannot ship).
+    MungeNameInvalid(MungeNameInvalid),
+    /// Two DISTINCT source names munge to one sh function name ⇒ REFUSED, never silently merged.
+    MungeNameCollision(MungeNameCollision),
+    /// A book funcdef squats the reserved `<x>__<role>` oracle namespace (a coincidental capture).
+    ReservedNamespaceSquat(ReservedNamespaceSquat),
+
+    // ── oracle/marker.rs (marker gate) ──────────────────────────────────────
+    /// A dorc-lang dialect construct appears in a file lacking the version marker.
+    MissingDialectMarker(MissingDialectMarker),
+
+    // ── oracle/entry.rs (tolerance vouch + corroboration) ───────────────────
+    /// An unknown context-dimension token on a `tolerates:` vouch (walls that dimension).
+    ToleratesUnknownDimension(ToleratesUnknownDimension),
+    /// A `tolerates:user` vouch over a body that visibly reads identity (corroboration ask).
+    ToleratesOverIdentityDependence(ToleratesOverIdentityDependence),
+    /// A body reads identity but carries no tolerance vouch (the one-line adoption hint).
+    HeavyContextNoTolerance(HeavyContextNoTolerance),
+
+    // ── oracle/wrapper.rs (lend_map lift) ───────────────────────────────────
+    /// An unknown `lend_map` dimension token (mints no lend; the dimension walls).
+    LendMapUnknownDimension(LendMapUnknownDimension),
+
+    // ── oracle/carry.rs (pure-predicate carry) ──────────────────────────────
+    /// An `invariant:netns` claim on a per-netns `net-kernel` store — a contradiction, dropped.
+    CarryNetnsOnNetKernelForbidden(CarryNetnsOnNetKernelForbidden),
+
+    // ── oracle/predict/derive.rs (verdict-mark derivation) ──────────────────
+    /// A brace-alternation `#{a,b}` on a single-cell verdict/observe mark (mints no cell).
+    MarkBraceVerdictSingleCell(MarkBraceVerdictSingleCell),
+
+    // ── plan/records.rs (framed records deframer) ───────────────────────────
+    /// A records stream carried no framing at all (headerless) — refused, the host runs.
+    RecordsHeaderlessRefused(RecordsHeaderlessRefused),
+    /// A records line carried bytes after its terminal token (two writes glued) — refused.
+    RecordsGluedLine(RecordsGluedLine),
+    /// A framed records stream carried no header (torn/absent) — refused, the host runs.
+    RecordsHeaderMissing(RecordsHeaderMissing),
+    /// The end-sentinel carried a nonce that is not this attempt's — ignored.
+    RecordsSentinelNonce(RecordsSentinelNonce),
+    /// The fact lane truncated: fewer site records received than declared (unseen sites run).
+    RecordsFactTruncated(RecordsFactTruncated),
+    /// The records header failed an integrity key (nonce/attempt/host/book) — refused.
+    RecordsIntegrityRefused(RecordsIntegrityRefused),
+    /// Torn (no terminal token) record lines discarded (counted, never folded).
+    RecordsTornLine(RecordsTornLine),
+    /// Alien (non-nonce) record lines discarded (counted, never folded).
+    RecordsAlienLine(RecordsAlienLine),
+    /// Late (after the end-sentinel) record lines discarded (counted, never folded).
+    RecordsLateLine(RecordsLateLine),
+
+    // ── cli/main.rs (footprint / escalation / carry disclosures) ────────────
+    /// A `touches()` footprint is incoherent (omits its own effect coordinate, or a malformed
+    /// derived coordinate) — footprint refused, the site walls.
+    FootprintIncoherent(FootprintIncoherent),
+    /// A payload-bound `touches()` escalated to host-derivation (the spike-only advisory).
+    TouchesEscalated(TouchesEscalated),
+    /// A derived footprint family did not close completely — footprint refused, the site walls.
+    DerivFamilyIncomplete(DerivFamilyIncomplete),
+    /// The authority-disclosure line for the probe-escalation policy (consent legibility).
+    EscalationPolicy(EscalationPolicy),
+    /// The pure-predicate-carry attribution chain, rendered at every carried elision.
+    CarriedAcrossSubstrateAxis(CarriedAcrossSubstrateAxis),
+    /// A wrapped BOOK site degraded on a missing `tolerates:` vouch (the adoption hint).
+    WrappedSiteAdoptionHint(WrappedSiteAdoptionHint),
+
+    // ── cli/main.rs (resolver / reaches confusability) ──────────────────────
+    /// Two oracle files declare one kind's resolver — BOTH refused, token-equality kept.
+    ResolverConflict(ResolverConflict),
+    /// A resolver keyed to a name matching a known COMMAND provider (a likely mis-key).
+    ResolverProviderCollision(ResolverProviderCollision),
+    /// A coordinate resolved DANGLING (no such entity on an enumerable kind) — the site runs.
+    DanglingReference(DanglingReference),
+    /// Two oracle files declare one kind's reach-function — BOTH refused, no expansion.
+    ReachesConflict(ReachesConflict),
+    /// A reach-function keyed to a name matching a known COMMAND provider (a likely mis-key).
+    ReachesProviderCollision(ReachesProviderCollision),
+
+    // ── cli/main.rs (wrapper coherence fail-fast) ───────────────────────────
+    /// A wrapper's `__enter` and `__lend_map` disagree on argv flow — static incoherence.
+    WrapperEntryIncoherent(WrapperEntryIncoherent),
+    /// A wrapper's `__predict` and `__lend_map` disagree on the peel tail — static incoherence.
+    WrapperPeelIncoherent(WrapperPeelIncoherent),
 }
 
 impl DiagCode {
@@ -124,12 +209,12 @@ impl DiagCode {
     #[must_use]
     pub fn slug(&self) -> &'static str {
         match self {
-            DiagCode::CmdsubOperandTop(_) => "dq-cmdsub-operand-top",
-            DiagCode::SiteUnresolvable(_) => "dq-site-unresolvable",
+            DiagCode::CmdsubOperandTop(_) => "cmdsub-operand-top",
+            DiagCode::SiteUnresolvable(_) => "site-unresolvable",
             DiagCode::RenderHeredocRefused(_) => "render-heredoc-refused",
-            DiagCode::CmdsubInnerNonleaf(_) => "dq-cmdsub-inner-nonleaf",
-            DiagCode::RedirTargetTop(_) => "dq-redir-target-top",
-            DiagCode::Depth2PositionalUnthreaded(_) => "dq-depth-2-positional-unthreaded",
+            DiagCode::CmdsubInnerNonleaf(_) => "cmdsub-inner-nonleaf",
+            DiagCode::RedirTargetTop(_) => "redir-target-top",
+            DiagCode::Depth2PositionalUnthreaded(_) => "depth-2-positional-unthreaded",
             DiagCode::SyntaxUnsupported(_) => "syntax-unsupported",
             DiagCode::SyntaxMalformed(_) => "syntax-malformed",
             DiagCode::CfgTopNode(_) => "cfg-top-node",
@@ -139,6 +224,38 @@ impl DiagCode {
             DiagCode::EffectKindDisagreement(_) => "effect-kind-disagreement",
             DiagCode::PredictOutOfDialect(_) => "predict-out-of-dialect",
             DiagCode::PredictUnterminated(_) => "predict-unterminated",
+            DiagCode::MungeNameInvalid(_) => "munge-name-invalid",
+            DiagCode::MungeNameCollision(_) => "munge-name-collision",
+            DiagCode::ReservedNamespaceSquat(_) => "reserved-namespace-squat",
+            DiagCode::MissingDialectMarker(_) => "missing-dialect-marker",
+            DiagCode::ToleratesUnknownDimension(_) => "tolerates-unknown-dimension",
+            DiagCode::ToleratesOverIdentityDependence(_) => "tolerates-over-identity-dependence",
+            DiagCode::HeavyContextNoTolerance(_) => "heavy-context-no-tolerance",
+            DiagCode::LendMapUnknownDimension(_) => "lend-map-unknown-dimension",
+            DiagCode::CarryNetnsOnNetKernelForbidden(_) => "carry-netns-on-net-kernel-forbidden",
+            DiagCode::MarkBraceVerdictSingleCell(_) => "mark-brace-verdict-single-cell",
+            DiagCode::RecordsHeaderlessRefused(_) => "records-headerless-refused",
+            DiagCode::RecordsGluedLine(_) => "records-glued-line",
+            DiagCode::RecordsHeaderMissing(_) => "records-header-missing",
+            DiagCode::RecordsSentinelNonce(_) => "records-sentinel-nonce",
+            DiagCode::RecordsFactTruncated(_) => "records-fact-truncated",
+            DiagCode::RecordsIntegrityRefused(_) => "records-integrity-refused",
+            DiagCode::RecordsTornLine(_) => "records-torn-line",
+            DiagCode::RecordsAlienLine(_) => "records-alien-line",
+            DiagCode::RecordsLateLine(_) => "records-late-line",
+            DiagCode::FootprintIncoherent(_) => "footprint-incoherent",
+            DiagCode::TouchesEscalated(_) => "touches-escalated",
+            DiagCode::DerivFamilyIncomplete(_) => "deriv-family-incomplete",
+            DiagCode::EscalationPolicy(_) => "escalation-policy",
+            DiagCode::CarriedAcrossSubstrateAxis(_) => "carried-across-substrate-axis",
+            DiagCode::WrappedSiteAdoptionHint(_) => "wrapped-site-adoption-hint",
+            DiagCode::ResolverConflict(_) => "resolver-conflict",
+            DiagCode::ResolverProviderCollision(_) => "resolver-provider-collision",
+            DiagCode::DanglingReference(_) => "dangling-reference",
+            DiagCode::ReachesConflict(_) => "reaches-conflict",
+            DiagCode::ReachesProviderCollision(_) => "reaches-provider-collision",
+            DiagCode::WrapperEntryIncoherent(_) => "wrapper-entry-incoherent",
+            DiagCode::WrapperPeelIncoherent(_) => "wrapper-peel-incoherent",
         }
     }
 }
@@ -181,35 +298,38 @@ pub struct CmdsubOperandTop {
     /// it rides the diagnostic for the why-lens/dashboard dedup but reaches no artifact and
     /// drives no decision.
     pub cause: Option<ProvId>,
+    /// The category of ⊤-cause, for the template's `{cause}` fill (`top_cause.describe()`); the
+    /// message-plane companion to the exempt-plane [`cause`](Self::cause) receipt.
+    pub top_cause: TopCause,
 }
 
-/// Payload of [`DiagCode::SiteUnresolvable`]: the probe-unresolvable site and the
-/// referent-agnostic source excerpt naming it. The typed payload replaces the legacy
-/// constructor's bare `&str` leaf/source pair (`22B` `worked-1`): the [`SiteId`] is first-class
-/// and the excerpt is an [`OutBytes`] (an interned handle), never a fumble-able `&str`.
-///
-/// NB (conductor re-inventory): `22B` `type-sketch-1` sketched a `probe: ProbeSiteRef` field,
-/// but at HEAD the cli's `ProbePlan::unresolvable` is a bare `Vec<LeafId>` — there is no
-/// first-class probe-record handle to demand, and minting one is out of this round's scope. The
-/// [`SiteId`] IS the blamed handle (the probe record keys back to it by `LeafId`); flagged
-/// `tc-probe-site-ref` in the report.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// Payload of [`DiagCode::SiteUnresolvable`]: the probe-unresolvable site and the passthrough
+/// `detail` string. A PASSTHROUGH code (catalog message `sm {detail}`); the emit site builds
+/// `detail` to reproduce the pre-catalog output verbatim — the aggregate label AND the old
+/// `render_body` site-runs note continuation, folded into one string so the migrated render is
+/// byte-identical bar the `sm ` prefix (`27V`, conductor-ruled). The [`SiteId`] is the blamed
+/// handle the probe record keys back to (`inv-site-keyed-results`).
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SiteUnresolvable {
     /// The probe-unresolvable command-site (the apply runs it).
     pub site: SiteId,
-    /// The site's source command text, referent-agnostic (`inv-referent-agnostic`): rendered
-    /// for display, never decoded to infer meaning.
-    pub source_excerpt: OutBytes,
+    /// The full disclosure text (aggregate label + the folded site-runs note), referent-agnostic.
+    pub detail: String,
 }
 
 /// Payload of [`DiagCode::RenderHeredocRefused`]: the heredoc-bearing site the leaf-exact render
 /// refused to elide (`22B` `worked-2`). The legacy form was an inline literal (`21Z`: "not even
 /// a named const"); the typed payload makes it a first-class enum variant the grep gate sees
 /// and the dashboard can group.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RenderHeredocRefused {
     /// The heredoc-carrying command-site that runs verbatim instead of being elided.
     pub site: SiteId,
+    /// The disposition verb the refusal names (`elide` for a Replace/Omit, `guard` for a Guard)
+    /// — the template's `{verb}` fill.
+    pub verb: &'static str,
+    /// The one-line command text the refusal points at (display only) — the template's `{command}`.
+    pub command: String,
 }
 
 // ===========================================================================
@@ -290,11 +410,12 @@ pub struct CfgInlineRefused {
 }
 
 /// Payload of [`DiagCode::CfgBuiltinShadowed`]: a book funcdef shadows a shell builtin the
-/// engine relies on. The `name` is the shadowed builtin. No `SiteId` (`site()` returns `None`).
+/// engine relies on. PASSTHROUGH (`sm {detail}`). Spanned (the funcdef `name_span`), so `site()`
+/// returns `None` (no plan-`LeafId`) but the primary span points at the definition.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CfgBuiltinShadowed {
-    /// The builtin name that is shadowed (display only).
-    pub name: String,
+    /// The full disclosure text (display only — `inv-referent-agnostic`).
+    pub detail: String,
 }
 
 /// Payload of [`DiagCode::EffectKindDisagreement`]: a check's annotation kind disagrees with
@@ -320,6 +441,269 @@ pub struct PredictOutOfDialect {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PredictUnterminated {
     /// The check parser's description (display only).
+    pub detail: String,
+}
+
+// ===========================================================================
+// Sweep payload structs — oracle-lane (reserved / marker / entry / wrapper / carry / derive)
+// ===========================================================================
+
+/// Payload of [`DiagCode::MungeNameInvalid`] (TEMPLATIZED): the source name, its illegal munged
+/// funcname, and the charclass problem. Spanned (the emitted-name span); `site()` returns `None`.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct MungeNameInvalid {
+    /// The oracle source name (`{source}`).
+    pub source: String,
+    /// The munged sh funcname that is not a legal NAME (`{funcname}`).
+    pub funcname: String,
+    /// The charclass problem description (`{problem}` — `problem.describe()`).
+    pub problem: String,
+}
+
+/// Payload of [`DiagCode::MungeNameCollision`] (TEMPLATIZED): one source, the shared funcname, the
+/// collision count, and the colliding source names. Spanned; `site()` returns `None`.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct MungeNameCollision {
+    /// One of the colliding source names (`{source}`).
+    pub source: String,
+    /// The shared munged funcname (`{funcname}`).
+    pub funcname: String,
+    /// The number of distinct source names sharing the funcname (`{count}`, twice in the template).
+    pub count: usize,
+    /// The colliding source names, comma-joined (`{names}`).
+    pub names: String,
+}
+
+/// Payload of [`DiagCode::ReservedNamespaceSquat`] (TEMPLATIZED): the squatting book funcname and
+/// the reserved role suffix. Spanned; `site()` returns `None`.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ReservedNamespaceSquat {
+    /// The book funcname squatting the namespace (`{name}`).
+    pub name: String,
+    /// The reserved role suffix it collides with (`{role}`, twice in the template).
+    pub role: String,
+}
+
+/// Payload of [`DiagCode::MissingDialectMarker`] (static): the file-level marker refusal. The
+/// marker text is inline in the template. Spanned (the first dialect construct); `site()` = `None`.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct MissingDialectMarker;
+
+/// Payload of [`DiagCode::ToleratesUnknownDimension`] (TEMPLATIZED): the unknown token and the
+/// expected-dimension list. Spanned (the mark span); `site()` returns `None`.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ToleratesUnknownDimension {
+    /// The unrecognized dimension token (`{token}`).
+    pub token: String,
+    /// The comma-joined list of known dimensions (`{expected}`).
+    pub expected: String,
+}
+
+/// Payload of [`DiagCode::ToleratesOverIdentityDependence`] (static): the corroboration ask.
+/// Spanned; `site()` returns `None`.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ToleratesOverIdentityDependence;
+
+/// Payload of [`DiagCode::HeavyContextNoTolerance`] (static): the adoption hint. Spanned;
+/// `site()` returns `None`.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct HeavyContextNoTolerance;
+
+/// Payload of [`DiagCode::LendMapUnknownDimension`] (TEMPLATIZED): the unknown token and the
+/// expected-dimension list. Spanned (the mark span); `site()` returns `None`.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct LendMapUnknownDimension {
+    /// The unrecognized dimension token (`{token}`).
+    pub token: String,
+    /// The comma-joined list of known dimensions (`{expected}`).
+    pub expected: String,
+}
+
+/// Payload of [`DiagCode::CarryNetnsOnNetKernelForbidden`] (TEMPLATIZED): the kind whose
+/// `net-kernel` store claimed `invariant:netns`. Spanned (the store `name_span`); `site()` = `None`.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CarryNetnsOnNetKernelForbidden {
+    /// The munged kind name (`{kind_munged}`).
+    pub kind_munged: String,
+}
+
+/// Payload of [`DiagCode::MarkBraceVerdictSingleCell`] (static): the single-cell brace refusal.
+/// Spanned (the mark span); `site()` returns `None`.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct MarkBraceVerdictSingleCell;
+
+// ===========================================================================
+// Sweep payload structs — plan/records.rs (the framed deframer's fault + integrity codes)
+// ===========================================================================
+
+/// Payload of [`DiagCode::RecordsHeaderlessRefused`] (static). Spanless.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RecordsHeaderlessRefused;
+
+/// Payload of [`DiagCode::RecordsGluedLine`] (static). Spanless.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RecordsGluedLine;
+
+/// Payload of [`DiagCode::RecordsHeaderMissing`] (static). Spanless.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RecordsHeaderMissing;
+
+/// Payload of [`DiagCode::RecordsSentinelNonce`] (static). Spanless.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RecordsSentinelNonce;
+
+/// Payload of [`DiagCode::RecordsFactTruncated`] (TEMPLATIZED): the received/declared/unseen site
+/// counts. Spanless.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RecordsFactTruncated {
+    /// Site records actually received (`{received}`).
+    pub received: usize,
+    /// Site records the header declared (`{declared}`).
+    pub declared: usize,
+    /// The unseen count that folds Unknown ⇒ run (`{unseen}`).
+    pub unseen: usize,
+}
+
+/// Payload of [`DiagCode::RecordsIntegrityRefused`] (TEMPLATIZED): which integrity key mismatched.
+/// Spanless.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RecordsIntegrityRefused {
+    /// The mismatched key's description (`{which}`).
+    pub which: String,
+}
+
+/// Payload of [`DiagCode::RecordsTornLine`] (TEMPLATIZED): the discarded-line count. Spanless.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RecordsTornLine {
+    /// The number of torn lines discarded (`{count}`).
+    pub count: usize,
+}
+
+/// Payload of [`DiagCode::RecordsAlienLine`] (TEMPLATIZED): the discarded-line count. Spanless.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RecordsAlienLine {
+    /// The number of alien lines discarded (`{count}`).
+    pub count: usize,
+}
+
+/// Payload of [`DiagCode::RecordsLateLine`] (TEMPLATIZED): the discarded-line count. Spanless.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RecordsLateLine {
+    /// The number of late lines discarded (`{count}`).
+    pub count: usize,
+}
+
+// ===========================================================================
+// Sweep payload structs — cli/main.rs (footprint / escalation / carry / resolver / wrapper)
+// ===========================================================================
+
+/// Payload of [`DiagCode::FootprintIncoherent`] (PASSTHROUGH `sm {detail}`): two emit sites (the
+/// spanned own-coordinate canary and the spanless malformed-derived-coordinate refusal); the
+/// malformed-site emit is the spanless one (`SPANLESS_SITE_PAYLOADS`). `site()` returns `None`.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct FootprintIncoherent {
+    /// The full refusal text (display only).
+    pub detail: String,
+}
+
+/// Payload of [`DiagCode::TouchesEscalated`] (TEMPLATIZED): the escalated site number and the call.
+/// Spanless.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TouchesEscalated {
+    /// The escalated site's node id (`{site}`).
+    pub site: u32,
+    /// The escalated call text (`{call}`).
+    pub call: String,
+}
+
+/// Payload of [`DiagCode::DerivFamilyIncomplete`] (TEMPLATIZED): the site number and the
+/// incompleteness reason. Spanless.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DerivFamilyIncomplete {
+    /// The site's node id (`{site}`).
+    pub site: u32,
+    /// The incompleteness reason (`{reason}` — the declared-vs-received or no-close-record match).
+    pub reason: String,
+}
+
+/// Payload of [`DiagCode::EscalationPolicy`] (PASSTHROUGH `sm {detail}`): the authority-disclosure
+/// line. Spanless.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct EscalationPolicy {
+    /// The full policy-disclosure text (display only).
+    pub detail: String,
+}
+
+/// Payload of [`DiagCode::CarriedAcrossSubstrateAxis`] (PASSTHROUGH `sm {detail}`): the carry
+/// attribution chain. Spanned (the carried site's span); `site()` returns `None`.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CarriedAcrossSubstrateAxis {
+    /// The full attribution-chain text (display only).
+    pub detail: String,
+}
+
+/// Payload of [`DiagCode::WrappedSiteAdoptionHint`] (PASSTHROUGH `sm {detail}`): the one-line
+/// adoption hint. Spanned (the wrapped site's span); `site()` returns `None`.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct WrappedSiteAdoptionHint {
+    /// The full adoption-hint text (display only).
+    pub detail: String,
+}
+
+/// Payload of [`DiagCode::ResolverConflict`] (TEMPLATIZED): the kind and the resolver count.
+/// Spanless.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ResolverConflict {
+    /// The kind name (`{kind}`).
+    pub kind: String,
+    /// The number of conflicting resolvers (`{count}`).
+    pub count: usize,
+}
+
+/// Payload of [`DiagCode::ResolverProviderCollision`] (TEMPLATIZED): the colliding name. Spanless.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ResolverProviderCollision {
+    /// The resolver name matching a known provider (`{name}`).
+    pub name: String,
+}
+
+/// Payload of [`DiagCode::DanglingReference`] (TEMPLATIZED): the dangling coordinate. Spanless.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DanglingReference {
+    /// The rendered dangling coordinate (`{coord}`, display only).
+    pub coord: String,
+}
+
+/// Payload of [`DiagCode::ReachesConflict`] (TEMPLATIZED): the kind and the reach-function count.
+/// Spanless.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ReachesConflict {
+    /// The kind name (`{kind}`).
+    pub kind: String,
+    /// The number of conflicting reach-functions (`{count}`).
+    pub count: usize,
+}
+
+/// Payload of [`DiagCode::ReachesProviderCollision`] (TEMPLATIZED): the colliding name. Spanless.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ReachesProviderCollision {
+    /// The reach-function name matching a known provider (`{name}`).
+    pub name: String,
+}
+
+/// Payload of [`DiagCode::WrapperEntryIncoherent`] (PASSTHROUGH `sm {detail}`): the fold/entry
+/// incoherence refusal. Spanned (the entry `name_span`); `site()` returns `None`.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct WrapperEntryIncoherent {
+    /// The full incoherence-refusal text (display only).
+    pub detail: String,
+}
+
+/// Payload of [`DiagCode::WrapperPeelIncoherent`] (PASSTHROUGH `sm {detail}`): the peel-tail
+/// incoherence refusal. Spanned (the predict `name_span`); `site()` returns `None`.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct WrapperPeelIncoherent {
+    /// The full incoherence-refusal text (display only).
     pub detail: String,
 }
 
@@ -431,16 +815,9 @@ impl DiagCode {
             DiagCode::CmdsubInnerNonleaf(p) => Some(p.site),
             DiagCode::RedirTargetTop(p) => Some(p.site),
             DiagCode::Depth2PositionalUnthreaded(p) => Some(p.site),
-            // Pre-CFG or no-plan-leaf sites: no SiteId available.
-            DiagCode::SyntaxUnsupported(_)
-            | DiagCode::SyntaxMalformed(_)
-            | DiagCode::CfgTopNode(_)
-            | DiagCode::CfgErexitUnknown(_)
-            | DiagCode::CfgInlineRefused(_)
-            | DiagCode::CfgBuiltinShadowed(_)
-            | DiagCode::EffectKindDisagreement(_)
-            | DiagCode::PredictOutOfDialect(_)
-            | DiagCode::PredictUnterminated(_) => None,
+            // Every other code carries no plan-`LeafId` SiteId: pre-CFG, a source-span-only
+            // oracle/cli site, or a spanless whole-stream/whole-file verdict.
+            _ => None,
         }
     }
 }
@@ -611,10 +988,11 @@ pub enum RemediationClass {
 #[must_use]
 #[expect(
     clippy::match_same_arms,
+    clippy::too_many_lines,
     reason = "the catalog's friction test is one ROW PER CODE (22B §7) — adding a code adds one \
-              arm; merging the two Note-class arms by `|` would hide that a code has a declared \
-              row and break the per-code-grading shape, so each code keeps its own arm even when \
-              two share a CodeSpec value"
+              arm; merging arms by `|` would hide that a code has a declared row and break the \
+              per-code-grading shape, so each of the 47 codes keeps its own arm even when several \
+              share a CodeSpec value (which also makes the fn necessarily long)"
 )]
 pub fn registry(code: &DiagCode) -> CodeSpec {
     match code {
@@ -699,6 +1077,137 @@ pub fn registry(code: &DiagCode) -> CodeSpec {
         DiagCode::PredictUnterminated(_) => CodeSpec {
             severity: Severity::Error,
             // PROPOSED floor: an unterminated check body cannot be lifted — correctness gap.
+            floor: Floor::WarnOrDeny,
+        },
+        // ── sweep: severities preserve each emit site's CURRENT classification exactly.
+        // Floor rule (as elsewhere): Error ⇒ WarnOrDeny (a refusal must not silence below Warning);
+        // Warning/Note disclosures ⇒ None.
+        DiagCode::MungeNameInvalid(_) => CodeSpec {
+            severity: Severity::Error,
+            floor: Floor::WarnOrDeny,
+        },
+        DiagCode::MungeNameCollision(_) => CodeSpec {
+            severity: Severity::Error,
+            floor: Floor::WarnOrDeny,
+        },
+        DiagCode::ReservedNamespaceSquat(_) => CodeSpec {
+            severity: Severity::Warning,
+            floor: Floor::None,
+        },
+        DiagCode::MissingDialectMarker(_) => CodeSpec {
+            severity: Severity::Error,
+            floor: Floor::WarnOrDeny,
+        },
+        DiagCode::ToleratesUnknownDimension(_) => CodeSpec {
+            severity: Severity::Warning,
+            floor: Floor::None,
+        },
+        DiagCode::ToleratesOverIdentityDependence(_) => CodeSpec {
+            severity: Severity::Warning,
+            floor: Floor::None,
+        },
+        DiagCode::HeavyContextNoTolerance(_) => CodeSpec {
+            severity: Severity::Note,
+            floor: Floor::None,
+        },
+        DiagCode::LendMapUnknownDimension(_) => CodeSpec {
+            severity: Severity::Warning,
+            floor: Floor::None,
+        },
+        DiagCode::CarryNetnsOnNetKernelForbidden(_) => CodeSpec {
+            severity: Severity::Note,
+            floor: Floor::None,
+        },
+        DiagCode::MarkBraceVerdictSingleCell(_) => CodeSpec {
+            severity: Severity::Warning,
+            floor: Floor::None,
+        },
+        DiagCode::RecordsHeaderlessRefused(_) => CodeSpec {
+            severity: Severity::Warning,
+            floor: Floor::None,
+        },
+        DiagCode::RecordsGluedLine(_) => CodeSpec {
+            severity: Severity::Warning,
+            floor: Floor::None,
+        },
+        DiagCode::RecordsHeaderMissing(_) => CodeSpec {
+            severity: Severity::Warning,
+            floor: Floor::None,
+        },
+        DiagCode::RecordsSentinelNonce(_) => CodeSpec {
+            severity: Severity::Warning,
+            floor: Floor::None,
+        },
+        DiagCode::RecordsFactTruncated(_) => CodeSpec {
+            severity: Severity::Note,
+            floor: Floor::None,
+        },
+        DiagCode::RecordsIntegrityRefused(_) => CodeSpec {
+            severity: Severity::Warning,
+            floor: Floor::None,
+        },
+        DiagCode::RecordsTornLine(_) => CodeSpec {
+            severity: Severity::Warning,
+            floor: Floor::None,
+        },
+        DiagCode::RecordsAlienLine(_) => CodeSpec {
+            severity: Severity::Warning,
+            floor: Floor::None,
+        },
+        DiagCode::RecordsLateLine(_) => CodeSpec {
+            severity: Severity::Warning,
+            floor: Floor::None,
+        },
+        DiagCode::FootprintIncoherent(_) => CodeSpec {
+            severity: Severity::Warning,
+            floor: Floor::None,
+        },
+        DiagCode::TouchesEscalated(_) => CodeSpec {
+            severity: Severity::Note,
+            floor: Floor::None,
+        },
+        DiagCode::DerivFamilyIncomplete(_) => CodeSpec {
+            severity: Severity::Warning,
+            floor: Floor::None,
+        },
+        DiagCode::EscalationPolicy(_) => CodeSpec {
+            severity: Severity::Note,
+            floor: Floor::None,
+        },
+        DiagCode::CarriedAcrossSubstrateAxis(_) => CodeSpec {
+            severity: Severity::Note,
+            floor: Floor::None,
+        },
+        DiagCode::WrappedSiteAdoptionHint(_) => CodeSpec {
+            severity: Severity::Note,
+            floor: Floor::None,
+        },
+        DiagCode::ResolverConflict(_) => CodeSpec {
+            severity: Severity::Error,
+            floor: Floor::WarnOrDeny,
+        },
+        DiagCode::ResolverProviderCollision(_) => CodeSpec {
+            severity: Severity::Warning,
+            floor: Floor::None,
+        },
+        DiagCode::DanglingReference(_) => CodeSpec {
+            severity: Severity::Note,
+            floor: Floor::None,
+        },
+        DiagCode::ReachesConflict(_) => CodeSpec {
+            severity: Severity::Error,
+            floor: Floor::WarnOrDeny,
+        },
+        DiagCode::ReachesProviderCollision(_) => CodeSpec {
+            severity: Severity::Warning,
+            floor: Floor::None,
+        },
+        DiagCode::WrapperEntryIncoherent(_) => CodeSpec {
+            severity: Severity::Error,
+            floor: Floor::WarnOrDeny,
+        },
+        DiagCode::WrapperPeelIncoherent(_) => CodeSpec {
+            severity: Severity::Error,
             floor: Floor::WarnOrDeny,
         },
     }
@@ -837,47 +1346,142 @@ impl Diag {
 // The render model (§4): one Diag value, three lanes, authored once
 // ===========================================================================
 
-/// The CLI narrative render (`22B` `render-1`, the render-plane half of rec-1 two-surfaces).
-/// Elm's four-part narrative (`crib-6`) over rustc's data (`crib-1`): title (severity+code) /
-/// region (the primary span as a rustc-style caret frame) / problem (the label) / hints (notes
-/// then helps, and the suggestion as a remediation-classed help). ack-8 (round-24): the region is
-/// now the full [`frame_region`] caret art — `--> file:line:col`, the source line in a gutter, and
-/// a `^^^` underline — with each LABELED secondary span rendered as its own `---` caret frame, so
-/// a cause and its effect land in ONE frame (228). `src`/`filename` resolve a span to a framed
-/// source excerpt (rul24-lineno-identity: the gutter line number is the SOURCE line); `interner`
-/// resolves the [`OutBytes`] excerpt.
-///
-/// This is `render_cli` — EVERYTHING (the render plane): title, region, prose, helps, the
-/// suggestion. The artifact-bound projection is [`render_artifact_comment`], which admits only
-/// fact-plane fields. Returns the full multi-line narrative as a standalone `String`.
-///
-/// (The cli's `report()` renders the LEGACY-lowered stream via [`render_legacy_region`] — sharing
-/// [`frame_region`], so a legacy diagnostic gets the same primary caret frame. This structured
-/// path is what carries the MULTI-span model — the labeled secondary carets a lowered `Diag`
-/// cannot express — and is the shape the unit tests pin.)
+/// The named template params a code's payload supplies, in `(name, value)` form — the closed set
+/// of `{holes}` the catalog message/help may interpolate (`27V` §3 · `AID-NEEDS:law-trust-tier`).
+/// The per-variant formatter: PASSTHROUGH codes yield `[("detail", …)]`; TEMPLATIZED codes yield
+/// their named params (calling the sanctioned engine formatters — `position.describe()`,
+/// `top_cause.describe()` — where needed, never hand-writing values); static-message codes yield
+/// `[]`. The `interner` is threaded for forward-compat (no payload resolves an interned handle at
+/// HEAD — the excerpt handles were retired into `detail` strings). Pure; `inv-no-throw`.
+#[must_use]
+pub fn params_of(code: &DiagCode, _interner: &crate::Interner) -> Vec<(&'static str, String)> {
+    match code {
+        DiagCode::CmdsubOperandTop(p) => vec![
+            ("position", p.position.describe()),
+            ("cause", p.top_cause.describe().to_owned()),
+        ],
+        DiagCode::RenderHeredocRefused(p) => {
+            vec![("verb", p.verb.to_owned()), ("command", p.command.clone())]
+        }
+        DiagCode::CmdsubInnerNonleaf(p) => vec![("inner", p.inner.clone())],
+        DiagCode::Depth2PositionalUnthreaded(p) => vec![("name", p.name.clone())],
+        DiagCode::SiteUnresolvable(p) => vec![("detail", p.detail.clone())],
+        DiagCode::SyntaxUnsupported(p) => vec![("detail", p.detail.clone())],
+        DiagCode::SyntaxMalformed(p) => vec![("detail", p.detail.clone())],
+        DiagCode::CfgTopNode(p) => vec![("detail", p.detail.clone())],
+        DiagCode::CfgErexitUnknown(p) => vec![("detail", p.detail.clone())],
+        DiagCode::CfgInlineRefused(p) => vec![("detail", p.detail.clone())],
+        DiagCode::CfgBuiltinShadowed(p) => vec![("detail", p.detail.clone())],
+        DiagCode::EffectKindDisagreement(p) => vec![("detail", p.detail.clone())],
+        DiagCode::PredictOutOfDialect(p) => vec![("detail", p.detail.clone())],
+        DiagCode::PredictUnterminated(p) => vec![("detail", p.detail.clone())],
+        DiagCode::FootprintIncoherent(p) => vec![("detail", p.detail.clone())],
+        DiagCode::EscalationPolicy(p) => vec![("detail", p.detail.clone())],
+        DiagCode::CarriedAcrossSubstrateAxis(p) => vec![("detail", p.detail.clone())],
+        DiagCode::WrappedSiteAdoptionHint(p) => vec![("detail", p.detail.clone())],
+        DiagCode::WrapperEntryIncoherent(p) => vec![("detail", p.detail.clone())],
+        DiagCode::WrapperPeelIncoherent(p) => vec![("detail", p.detail.clone())],
+        DiagCode::MungeNameInvalid(p) => vec![
+            ("source", p.source.clone()),
+            ("funcname", p.funcname.clone()),
+            ("problem", p.problem.clone()),
+        ],
+        DiagCode::MungeNameCollision(p) => vec![
+            ("source", p.source.clone()),
+            ("funcname", p.funcname.clone()),
+            ("count", p.count.to_string()),
+            ("names", p.names.clone()),
+        ],
+        DiagCode::ReservedNamespaceSquat(p) => {
+            vec![("name", p.name.clone()), ("role", p.role.clone())]
+        }
+        DiagCode::ToleratesUnknownDimension(p) => {
+            vec![("token", p.token.clone()), ("expected", p.expected.clone())]
+        }
+        DiagCode::LendMapUnknownDimension(p) => {
+            vec![("token", p.token.clone()), ("expected", p.expected.clone())]
+        }
+        DiagCode::CarryNetnsOnNetKernelForbidden(p) => {
+            vec![("kind_munged", p.kind_munged.clone())]
+        }
+        DiagCode::RecordsFactTruncated(p) => vec![
+            ("received", p.received.to_string()),
+            ("declared", p.declared.to_string()),
+            ("unseen", p.unseen.to_string()),
+        ],
+        DiagCode::RecordsIntegrityRefused(p) => vec![("which", p.which.clone())],
+        DiagCode::RecordsTornLine(p) => vec![("count", p.count.to_string())],
+        DiagCode::RecordsAlienLine(p) => vec![("count", p.count.to_string())],
+        DiagCode::RecordsLateLine(p) => vec![("count", p.count.to_string())],
+        DiagCode::TouchesEscalated(p) => {
+            vec![("site", p.site.to_string()), ("call", p.call.clone())]
+        }
+        DiagCode::DerivFamilyIncomplete(p) => {
+            vec![("site", p.site.to_string()), ("reason", p.reason.clone())]
+        }
+        DiagCode::ResolverConflict(p) => {
+            vec![("kind", p.kind.clone()), ("count", p.count.to_string())]
+        }
+        DiagCode::ResolverProviderCollision(p) => vec![("name", p.name.clone())],
+        DiagCode::DanglingReference(p) => vec![("coord", p.coord.clone())],
+        DiagCode::ReachesConflict(p) => {
+            vec![("kind", p.kind.clone()), ("count", p.count.to_string())]
+        }
+        DiagCode::ReachesProviderCollision(p) => vec![("name", p.name.clone())],
+        // Static-message codes (no interpolation): no params.
+        DiagCode::RedirTargetTop(_)
+        | DiagCode::MissingDialectMarker(_)
+        | DiagCode::ToleratesOverIdentityDependence(_)
+        | DiagCode::HeavyContextNoTolerance(_)
+        | DiagCode::MarkBraceVerdictSingleCell(_)
+        | DiagCode::RecordsHeaderlessRefused(_)
+        | DiagCode::RecordsGluedLine(_)
+        | DiagCode::RecordsHeaderMissing(_)
+        | DiagCode::RecordsSentinelNonce(_) => vec![],
+    }
+}
+
+/// The filled catalog message for a code (`27V` §3): `fill_template(catalog message, params_of)`.
+/// A code with no catalog entry (unreachable once the completeness gate is green) renders the
+/// greppable `[unwritten: <slug>]` placeholder. Pure; `inv-no-throw`.
+#[must_use]
+pub fn render_message(code: &DiagCode, interner: &crate::Interner) -> String {
+    let params = params_of(code, interner);
+    let refs: Vec<(&str, &str)> = params.iter().map(|(k, v)| (*k, v.as_str())).collect();
+    match crate::catalog::entry(code.slug()) {
+        Some(e) => crate::catalog::fill_template(e.message, &refs),
+        None => format!("[unwritten: {}]", code.slug()),
+    }
+}
+
+/// The CLI narrative render (`22B` `render-1`, the render-plane half of rec-1 two-surfaces): title
+/// (`<severity>[<slug>]: <problem>`, the filled catalog message's first line) / the primary span as
+/// a rustc-style caret frame (`--> file:line:col`, source-line gutter, `^^^` underline; ack-8) /
+/// each LABELED secondary span as its own `---` caret frame (cause+effect in one frame, 228) / the
+/// message body's continuation lines (a multi-line catalog message's tail, the catalog help, and
+/// any authored notes/suggestion). `src`/`filename` resolve a span to a framed source excerpt
+/// (rul24-lineno-identity). The unit tests pin this shape; the cli's `report()` shares
+/// [`render_body`] + [`frame_region`] but owns the stage prefix + colour + no-source fallback.
 #[must_use]
 pub fn render_cli(diag: &Diag, src: &str, filename: &str, interner: &crate::Interner) -> String {
     use std::fmt::Write;
     let spec = registry(&diag.code);
+    let body = render_body(diag, interner);
+    let (problem, rest) = match body.split_once('\n') {
+        Some((p, r)) => (p, Some(r)),
+        None => (body.as_str(), None),
+    };
     let mut out = String::new();
-    // title: `<severity>[<slug>]: <problem>` — the primary label is the problem statement
-    // (Elm's "problem"); the registry severity is the level (crib-4).
     let _ = write!(
         out,
-        "{}[{}]: {}",
+        "{}[{}]: {problem}",
         severity_word(spec.severity),
         diag.code.slug(),
-        diag.primary.label.as_deref().unwrap_or("")
     );
-    // region: the primary span as a rustc-style caret frame (ack-8). The primary label already
-    // rode the title (Elm's "problem"), so the underline carries no duplicate label. The spanless
-    // second-class case (arch-3-residual-2) omits the region entirely — no location to point at.
+    // The primary caret frame (ack-8); the spanless second-class case (arch-3-residual-2) omits it.
     if let Some(primary) = diag.primary.span() {
         out.push_str(&frame_region(primary, src, filename, None, true));
     }
-    // secondary labeled spans — each its OWN `---` caret frame carrying its label (cause-then-
-    // effect in one frame, 228: the flagship being pipeline-stage precision — a diagnostic about
-    // `a | b || c` underlines the exact stage it means). Secondaries always carry a real span.
     for sec in &diag.secondary {
         if let Some(span) = sec.span() {
             out.push_str(&frame_region(
@@ -889,29 +1493,36 @@ pub fn render_cli(diag: &Diag, src: &str, filename: &str, interner: &crate::Inte
             ));
         }
     }
-    out.push_str(&render_body(diag, interner));
+    // The message-body continuation lines land AFTER the region (caret frame beneath the title).
+    if let Some(rest) = rest {
+        out.push('\n');
+        out.push_str(rest);
+    }
     out
 }
 
-/// The PROSE BODY of a diagnostic (`render-1`'s hints) — the children (notes then helps), the
-/// remediation-classed suggestion, and the referent-agnostic excerpt — WITHOUT the title or
-/// region. This is what [`Diag::to_legacy`] folds into a legacy `message` (the title + span are
-/// produced by the cli's `report()` from the legacy `code`/`severity`/`span` fields, so the body
-/// must not repeat them). Each part is one ` = note:`/` = help:` continuation line.
-fn render_body(diag: &Diag, interner: &crate::Interner) -> String {
+/// The full rendered MESSAGE TEXT of a diagnostic (`render-1`): the filled catalog message, then
+/// the catalog help + any authored notes/suggestion as ` = help:`/` = note:` continuation lines.
+/// The lint crate uses this verbatim as a finding's message; [`render_cli`] and the cli's
+/// `report()` split its first line onto the title and place the rest after the region. Pure.
+#[must_use]
+pub fn render_body(diag: &Diag, interner: &crate::Interner) -> String {
     use std::fmt::Write;
-    let mut out = String::new();
-    // referent-agnostic excerpt: a SiteUnresolvable carries the source command text as an
-    // OutBytes; surface it (resolved for display only — inv-referent-agnostic). First so the
-    // legacy message keeps naming the source command (the cli test pins `make install`).
-    if let DiagCode::SiteUnresolvable(p) = &diag.code {
+    let params = params_of(&diag.code, interner);
+    let refs: Vec<(&str, &str)> = params.iter().map(|(k, v)| (*k, v.as_str())).collect();
+    let entry = crate::catalog::entry(diag.code.slug());
+    let mut out = match entry {
+        Some(e) => crate::catalog::fill_template(e.message, &refs),
+        None => format!("[unwritten: {}]", diag.code.slug()),
+    };
+    if let Some(help) = entry.and_then(|e| e.help) {
         let _ = write!(
             out,
-            "\n  = note: site runs `{}`",
-            interner.resolve(p.source_excerpt.0)
+            "\n  = help: {}",
+            crate::catalog::fill_template(help, &refs)
         );
     }
-    // hints: notes then helps (children, in authored order).
+    // Authored children + suggestion: empty in production, exercised by the builder tests.
     for child in &diag.children {
         match child {
             SubDiag::Note(n) => {
@@ -922,7 +1533,6 @@ fn render_body(diag: &Diag, interner: &crate::Interner) -> String {
             }
         }
     }
-    // the suggestion, as a remediation-classed help (its [class] tag inline).
     if let Some(s) = &diag.suggestion {
         let _ = write!(
             out,
@@ -962,20 +1572,7 @@ pub fn render_artifact_comment(diag: &Diag) -> Option<String> {
         // All other codes: pure render-plane disclosures or give-ups; no fact-plane artifact
         // comment (the apply runs the site; the existing skip-unresolvable comment, if any,
         // is the cli's, not this projection's).
-        DiagCode::SiteUnresolvable(_)
-        | DiagCode::CmdsubOperandTop(_)
-        | DiagCode::CmdsubInnerNonleaf(_)
-        | DiagCode::RedirTargetTop(_)
-        | DiagCode::Depth2PositionalUnthreaded(_)
-        | DiagCode::SyntaxUnsupported(_)
-        | DiagCode::SyntaxMalformed(_)
-        | DiagCode::CfgTopNode(_)
-        | DiagCode::CfgErexitUnknown(_)
-        | DiagCode::CfgInlineRefused(_)
-        | DiagCode::CfgBuiltinShadowed(_)
-        | DiagCode::EffectKindDisagreement(_)
-        | DiagCode::PredictOutOfDialect(_)
-        | DiagCode::PredictUnterminated(_) => None,
+        _ => None,
     }
 }
 
@@ -1129,46 +1726,6 @@ pub struct OobProjection {
 }
 
 // ===========================================================================
-// Legacy bridge — coexistence with crate::Diagnostic (the migration seam)
-// ===========================================================================
-
-impl Diag {
-    /// Lower this structured [`Diag`] to a legacy [`crate::Diagnostic`] for the existing
-    /// stderr/erasability/coverage plumbing (the round-22 coexistence seam — `22B` §1). The
-    /// legacy `message` is the [`render_cli`] narrative (so `report()` surfaces the span — the
-    /// drop-A fix); the legacy `severity`/`code`/`span` are the registry severity, the stable
-    /// slug, and the primary span. This keeps the 96 untouched consumers working while the spine
-    /// is proven; the B4 sweep migrates them and this bridge's callers shrink.
-    ///
-    /// The span is `Some(primary.span)` for every ordinary [`Diag::new`] diagnostic — the
-    /// mandatory-primary-span fix (`21Z` drop-B). The six arch-3-residual-2 spanless-site codes
-    /// (minted via [`Diag::new_spanless_site`]) lower to `span: None`, byte-identically to the
-    /// pre-spine `Diagnostic::{warning,error}(code, None, msg)` form they used. The erasability
-    /// gate's `canon_diag` keys an Error-class diagnostic on `(code, span, severity)`; this lowering
-    /// preserves all three (a spanless Error-class code carries `None` exactly as its legacy form
-    /// did — none of the six are Error-floored gate-3 cases at HEAD, but the identity stays faithful).
-    ///
-    /// The legacy `message` is `<primary label><body>` — NO title and NO region line (the cli's
-    /// `report()` produces `<stage>: <sev>[<code>]: ` and renders the span itself, so embedding
-    /// them here would double them). The body's continuation lines (` = note:`/` = help:`) ride
-    /// after, exactly as the legacy multi-param messages did not — but gate-3 only keys on the
-    /// `error[`-shaped first line, so the continuations are inert to it.
-    #[must_use]
-    pub fn to_legacy(&self, interner: &crate::Interner) -> crate::Diagnostic {
-        let mut message = self.primary.label.clone().unwrap_or_default();
-        message.push_str(&render_body(self, interner));
-        crate::Diagnostic {
-            severity: self.severity(),
-            code: crate::DiagCode(self.code.slug()),
-            // `Some(span)` for an ordinary diagnostic; `None` for a spanless-site code
-            // (arch-3-residual-2) — exactly the legacy `span: None` those sites produced.
-            span: self.primary.span(),
-            message,
-        }
-    }
-}
-
-// ===========================================================================
 // Small render helpers (pure, allocation-light)
 // ===========================================================================
 
@@ -1276,30 +1833,23 @@ pub fn frame_region(
     out
 }
 
-/// The region frame for a LEGACY [`crate::Diagnostic`] (the cli `report()` path): the
-/// [`frame_region`] block for its primary span against `source` (`(filename, text)`), or the
-/// byte-offset fallback `  --> <lo>:<hi>` when no source is available (an ambiguous/combined
-/// stage), or the empty string when the diagnostic is spanless. Keyed off the legacy fields
-/// (a lowered `Diag` carries no secondaries), so it renders exactly one primary caret — the
-/// multi-span extension lives in [`render_cli`] on the structured [`Diag`]. The cli builds the
-/// TITLE (`<stage>: <sev>[<code>]: <msg>`, the gate-3 floor's shape); this is only the region
+/// The PRIMARY-span region frame for a [`Diag`] (the cli `report()` path): the [`frame_region`]
+/// block against `source` (`(filename, text)`), or the byte-offset fallback `  --> <lo>:<hi>` when
+/// no source is threaded for this stage, or the empty string when the diagnostic is spanless. Only
+/// the primary caret — the multi-span secondaries live in [`render_cli`]. `report()` builds the
+/// TITLE (`<stage>: <sev>[<code>]: <msg>`, the gate-3 floor's shape) itself; this is the region
 /// below it.
 #[must_use]
-pub fn render_legacy_region(diag: &crate::Diagnostic, source: Option<(&str, &str)>) -> String {
-    match (diag.span, source) {
+pub fn render_region(diag: &Diag, source: Option<(&str, &str)>) -> String {
+    match (diag.primary.span(), source) {
         (Some(span), Some((filename, src))) => frame_region(span, src, filename, None, true),
-        // No source to resolve line:col against ⇒ the byte-offset fallback (drop-A: the span
-        // still reaches the user, just without the framed excerpt).
+        // No source to resolve line:col against ⇒ the byte-offset fallback (the span still reaches
+        // the user, just without the framed excerpt).
         (Some(span), None) => format!("\n  --> {}:{}", span.lo.0, span.hi.0),
-        // Spanless (arch-3-residual-2): no location to point at, as the legacy `span: None` sites.
+        // Spanless (arch-3-residual-2): no location to point at.
         (None, _) => String::new(),
     }
 }
-
-// The `diag::legacy` submodule has been deleted by the B4 sweep — all three former
-// legacy survivors (`dq-cmdsub-inner-nonleaf`, `dq-redir-target-top`,
-// `dq-depth-2-positional-unthreaded`) are now first-class variants of [`DiagCode`] above.
-// The LEGACY_ALLOW_LIST in `core/tests/diag_tidy.rs` no longer contains them.
 
 #[cfg(test)]
 mod tests {
@@ -1314,54 +1864,59 @@ mod tests {
         SiteId::leaf(LeafId(n))
     }
 
+    /// A [`CmdsubOperandTop`] payload with the sweep's `top_cause` field (test helper).
+    fn cmdsub_top(pos: OperandPosition, cause: Option<ProvId>) -> CmdsubOperandTop {
+        CmdsubOperandTop {
+            site: site(0),
+            position: pos,
+            cause,
+            top_cause: TopCause::UnmodeledExpansion,
+        }
+    }
+
     /// The mandatory primary span is structural for the ORDINARY path (`21Z` drop-A/drop-B):
-    /// [`Diag::new`] always carries a real span, and `to_legacy` lowers it to `Some(span)` — the
-    /// legacy `None` is unreachable through `new`. (Span-lessness is reachable ONLY via the gated
-    /// [`Diag::new_spanless_site`]; see `spanless_site_lowers_to_none`.)
+    /// [`Diag::new`] always carries a real span. (Span-lessness is reachable ONLY via the gated
+    /// [`Diag::new_spanless_site`]; see `spanless_site_renders_without_region`.)
     #[test]
-    fn primary_span_is_mandatory_and_reaches_legacy() {
+    fn primary_span_is_mandatory_on_the_ordinary_path() {
         let d = Diag::new(
-            DiagCode::RenderHeredocRefused(RenderHeredocRefused { site: site(3) }),
+            DiagCode::RenderHeredocRefused(RenderHeredocRefused {
+                site: site(3),
+                verb: "elide",
+                command: "cat <<EOF".to_owned(),
+            }),
             span(10, 20),
         );
         assert_eq!(d.primary.span(), Some(span(10, 20)));
-        let i = Interner::default();
-        let legacy = d.to_legacy(&i);
-        assert_eq!(
-            legacy.span,
-            Some(span(10, 20)),
-            "an ordinary diagnostic's span is never None"
-        );
     }
 
     /// The second-class spanless mint (arch-3-residual-2): [`Diag::new_spanless_site`] produces a
-    /// primary whose span is `None`, and `to_legacy` lowers it to `span: None` with the label as
-    /// the verbatim legacy `message` — byte-identical to the pre-spine
-    /// `Diagnostic::warning(code, None, msg)` form the six migrated sites used. This pins that the
-    /// spanless door reproduces the legacy output exactly (the round-22 behavior-preservation
-    /// constraint), and that the ordinary mandatory-span guarantee is untouched.
+    /// primary whose span is `None`; `render_cli` renders the title (catalog message) but OMITS the
+    /// region (no location to point at) and never panics (`inv-no-throw`). The message is the
+    /// filled catalog template (the `sm `-prefixed passthrough `detail`).
     #[test]
-    fn spanless_site_lowers_to_none() {
-        let msg = "errexit state is ⊤ at one or more commands; failure-edges added conservatively";
+    fn spanless_site_renders_without_region() {
+        let detail =
+            "errexit state is ⊤ at one or more commands; failure-edges added conservatively";
         let d = Diag::new_spanless_site(DiagCode::CfgErexitUnknown(CfgErexitUnknown {
-            detail: msg.to_owned(),
-        }))
-        .label(msg);
+            detail: detail.to_owned(),
+        }));
         assert_eq!(
             d.primary.span(),
             None,
             "the spanless primary carries no span"
         );
         let i = Interner::default();
-        let legacy = d.to_legacy(&i);
-        assert_eq!(legacy.span, None, "lowers to the legacy span: None");
-        assert_eq!(legacy.message, msg, "message is the verbatim legacy text");
-        assert_eq!(legacy.severity, Severity::Warning, "registry severity");
-        assert_eq!(legacy.code.0, "cfg-errexit-unknown", "stable slug");
-        // render_cli must not panic on the spanless case (inv-no-throw) and must omit the region.
         let cli = render_cli(&d, "irrelevant source", "book.sh", &i);
         assert!(!cli.contains("-->"), "no region line when spanless: {cli}");
-        assert!(cli.starts_with("warning["), "title still renders: {cli}");
+        assert!(
+            cli.starts_with("warning[cfg-errexit-unknown]: "),
+            "title renders: {cli}"
+        );
+        assert!(
+            cli.contains(&format!("sm {detail}")),
+            "sm-prefixed detail: {cli}"
+        );
     }
 
     /// Severity comes ONLY from the registry (`crib-4`): there is no severity constructor, and a
@@ -1371,51 +1926,48 @@ mod tests {
         let note = Diag::new(
             DiagCode::SiteUnresolvable(SiteUnresolvable {
                 site: site(0),
-                source_excerpt: OutBytes(Interner::default().intern("x")),
+                detail: "x".to_owned(),
             }),
             span(0, 1),
         );
         assert_eq!(note.severity(), Severity::Note);
         let err = Diag::new(
-            DiagCode::RenderHeredocRefused(RenderHeredocRefused { site: site(0) }),
+            DiagCode::RenderHeredocRefused(RenderHeredocRefused {
+                site: site(0),
+                verb: "elide",
+                command: "x".to_owned(),
+            }),
             span(0, 1),
         );
         assert_eq!(err.severity(), Severity::Error);
     }
 
-    /// The PROPOSED floor column (`22B-fork-floor-membership`): the render-refusal pins
+    /// The floor column (`22B-fork-floor-membership`): the render-refusal pins
     /// [`Floor::WarnOrDeny`]; the disclosures are floorless.
     #[test]
-    fn proposed_floor_column() {
-        let refused = DiagCode::RenderHeredocRefused(RenderHeredocRefused { site: site(0) });
+    fn floor_column() {
+        let refused = DiagCode::RenderHeredocRefused(RenderHeredocRefused {
+            site: site(0),
+            verb: "elide",
+            command: "x".to_owned(),
+        });
         assert_eq!(registry(&refused).floor, Floor::WarnOrDeny);
         let unresolvable = DiagCode::SiteUnresolvable(SiteUnresolvable {
             site: site(0),
-            source_excerpt: OutBytes(Interner::default().intern("x")),
+            detail: "x".to_owned(),
         });
         assert_eq!(registry(&unresolvable).floor, Floor::None);
     }
 
-    /// The gate-3 interaction, EVOLVED (conductor flag): the round-21 `core::diag` carried an
-    /// `every_registered_code_is_note_severity` invariant protecting the e2e stderr error-floor
-    /// (gate-3 keys on `error[…]`-shaped lines; an undeclared Error-class code fails a case). The
-    /// spine's catalog is now a deliberate MIX — the two disclosures stay `Note` (they must never
-    /// silently become Error and trip gate-3 undeclared), and the render-refusal is `Error` (it
-    /// always was, as a legacy inline literal; the e2e `render21-heredoc-refusal` case already
-    /// declares it in `expected-diagnostics`). This pins that split so a future severity drift on
-    /// the Note-class codes is a deliberate change, not a silent gate-3 breach.
+    /// The gate-3 interaction: the two ⊤-disclosures stay `Note` (they must never silently become
+    /// Error and trip the e2e stderr error-floor undeclared), and the render-refusal is `Error`.
     #[test]
     fn gate3_floor_note_codes_stay_note_error_code_is_declared() {
-        // The disclosures MUST stay Note (else they trip gate-3 on every ⊤/unresolvable case).
         for code in [
-            DiagCode::CmdsubOperandTop(CmdsubOperandTop {
-                site: site(0),
-                position: OperandPosition::CommandWord,
-                cause: None,
-            }),
+            DiagCode::CmdsubOperandTop(cmdsub_top(OperandPosition::CommandWord, None)),
             DiagCode::SiteUnresolvable(SiteUnresolvable {
                 site: site(0),
-                source_excerpt: OutBytes(Interner::default().intern("x")),
+                detail: "x".to_owned(),
             }),
         ] {
             assert_eq!(
@@ -1425,44 +1977,49 @@ mod tests {
                 code.slug()
             );
         }
-        // The one Error-class code (the render-refusal) — its presence is deliberate and
-        // declared by the e2e case; pin that it is Error (a downgrade to Note would mask a
-        // broken-artifact refusal).
-        let refused = DiagCode::RenderHeredocRefused(RenderHeredocRefused { site: site(0) });
+        let refused = DiagCode::RenderHeredocRefused(RenderHeredocRefused {
+            site: site(0),
+            verb: "elide",
+            command: "x".to_owned(),
+        });
         assert_eq!(registry(&refused).severity, Severity::Error);
     }
 
     /// The render partition (`render-3`, the ru-12 weld): the artifact comment is fact-plane
-    /// (returns `Some` only for the fact-relevant refusal, `None` for render-plane disclosures);
-    /// the CLI render carries the full narrative including the remediation help.
+    /// (`Some` only for the fact-relevant refusal, `None` for render-plane disclosures); `render_cli`
+    /// carries the filled catalog message (the `.label` message-path is retired).
     #[test]
     fn render_partition_artifact_is_fact_plane() {
         let i = Interner::default();
-        // A Note disclosure: no artifact comment (render-plane only).
         let note = Diag::new(
-            DiagCode::CmdsubOperandTop(CmdsubOperandTop {
-                site: site(2),
-                position: OperandPosition::Operand(1),
-                cause: None,
-            }),
+            DiagCode::CmdsubOperandTop(cmdsub_top(OperandPosition::Operand(1), None)),
             span(0, 4),
-        )
-        .label("this `$(…)` is unresolvable (⊤)");
+        );
         assert_eq!(
             render_artifact_comment(&note),
             None,
             "a disclosure contributes no fact-plane artifact comment"
         );
-        // The CLI render carries the label (drop-A: the span + label reach the user).
+        // The CLI render carries the CATALOG message (filled from the payload), not a `.label`.
         let cli = render_cli(&note, "echo TAIL", "book.sh", &i);
-        assert!(cli.contains("this `$(…)` is unresolvable"), "{cli}");
-        assert!(cli.starts_with("note["), "title is severity-keyed: {cli}");
+        assert!(
+            cli.contains("command forced to run"),
+            "catalog message: {cli}"
+        );
+        assert!(cli.contains("operand 1 is"), "position param filled: {cli}");
+        assert!(
+            cli.starts_with("note[cmdsub-operand-top]: "),
+            "title is severity-keyed: {cli}"
+        );
         // An Error refusal: a fact-plane comment naming the site, no prose.
         let refused = Diag::new(
-            DiagCode::RenderHeredocRefused(RenderHeredocRefused { site: site(7) }),
+            DiagCode::RenderHeredocRefused(RenderHeredocRefused {
+                site: site(7),
+                verb: "elide",
+                command: "cat <<EOF".to_owned(),
+            }),
             span(0, 4),
-        )
-        .help("split the heredoc body to its own leaf");
+        );
         let comment = render_artifact_comment(&refused).expect("a refusal is artifact-relevant");
         assert!(comment.starts_with('#'), "a comment: {comment}");
         assert!(
@@ -1475,8 +2032,49 @@ mod tests {
         );
     }
 
+    /// The `sm `-prefix migration boundary (`27V`): every user-facing message is the catalog's
+    /// `sm `-prefixed base-tip prose. A PASSTHROUGH code renders `sm ` + its detail; a TEMPLATIZED
+    /// code fills its named params. The catalog help also `sm `-prefixes.
+    #[test]
+    fn catalog_messages_are_sm_prefixed_and_param_filled() {
+        let i = Interner::default();
+        let pass = Diag::new(
+            DiagCode::SiteUnresolvable(SiteUnresolvable {
+                site: site(0),
+                detail: "3 sites run unprobed".to_owned(),
+            }),
+            span(0, 1),
+        );
+        assert_eq!(
+            render_body(&pass, &i),
+            "sm 3 sites run unprobed",
+            "passthrough message is `sm ` + detail"
+        );
+        let tmpl = Diag::new(
+            DiagCode::RenderHeredocRefused(RenderHeredocRefused {
+                site: site(0),
+                verb: "guard",
+                command: "cat <<EOF".to_owned(),
+            }),
+            span(0, 1),
+        );
+        let body = render_body(&tmpl, &i);
+        assert!(
+            body.starts_with("sm leaf-exact render refuses to guard"),
+            "{body}"
+        );
+        assert!(
+            body.contains("(`cat <<EOF`)"),
+            "command param filled: {body}"
+        );
+        assert!(
+            body.contains("\n  = help: sm split the heredoc body"),
+            "catalog help renders sm-prefixed: {body}"
+        );
+    }
+
     /// The OOB projection (`render-2`) is fact-plane: site + slug + severity, no prose. The slug
-    /// is the stable wire token (`22B-fork-wire-code`).
+    /// is the stable wire token (dq- dropped by the sweep).
     #[test]
     fn oob_projection_is_fact_plane_slug_keyed() {
         let d = Diag::new(
@@ -1485,31 +2083,29 @@ mod tests {
                     leaf: LeafId(4),
                     member: Some(2),
                 },
-                source_excerpt: OutBytes(Interner::default().intern("make install")),
+                detail: "make install".to_owned(),
             }),
             span(0, 12),
         );
         let p = project_oob(&d);
-        assert_eq!(p.code, "dq-site-unresolvable", "stable wire slug");
+        assert_eq!(
+            p.code, "site-unresolvable",
+            "stable wire slug (dq- dropped)"
+        );
         let site = p.site.expect("SiteUnresolvable always has a site");
         assert_eq!(site.leaf, LeafId(4));
         assert_eq!(site.member, Some(2));
         assert_eq!(p.severity, Severity::Note);
     }
 
-    /// The builder chains the GOOD shape (`type-sketch-7`): a label, a secondary cause-span, a
-    /// note, and a remediation-classed suggestion — all from `new` + chained calls, no DSL.
+    /// The builder chains the GOOD shape (`type-sketch-7`): a secondary cause-span, a note, and a
+    /// remediation-classed suggestion — the message rides the catalog, the extras chain on.
     #[test]
     fn builder_assembles_the_good_shape() {
         let d = Diag::new(
-            DiagCode::CmdsubOperandTop(CmdsubOperandTop {
-                site: site(0),
-                position: OperandPosition::CommandWord,
-                cause: None,
-            }),
+            DiagCode::CmdsubOperandTop(cmdsub_top(OperandPosition::CommandWord, None)),
             span(0, 5),
         )
-        .label("this `$(…)` is unresolvable (⊤)")
         .secondary(span(10, 20), "and so this command cannot be elided")
         .note("downstream commands run unconditionally")
         .suggest(Suggestion {
@@ -1521,7 +2117,7 @@ mod tests {
         assert_eq!(d.children.len(), 1);
         assert!(d.suggestion.is_some());
         let cli = render_cli(&d, "01234_56789poisoned_", "book.sh", &Interner::default());
-        // the secondary label and the remediation tag both render.
+        assert!(cli.contains("command forced to run"), "{cli}");
         assert!(cli.contains("cannot be elided"), "{cli}");
         assert!(cli.contains("[author-oracle]"), "{cli}");
     }
@@ -1594,14 +2190,9 @@ mod tests {
         let stage_lo = u32::try_from(src.find("grep -q x").unwrap()).unwrap();
         let stage_hi = stage_lo + u32::try_from("grep -q x".len()).unwrap();
         let d = Diag::new(
-            DiagCode::CmdsubOperandTop(CmdsubOperandTop {
-                site: site(0),
-                position: OperandPosition::CommandWord,
-                cause: None,
-            }),
+            DiagCode::CmdsubOperandTop(cmdsub_top(OperandPosition::CommandWord, None)),
             Span::new(BytePos(a_lo), BytePos(a_hi)),
         )
-        .label("the pipeline runs (never elided)")
         .secondary(
             Span::new(BytePos(stage_lo), BytePos(stage_hi)),
             "this stage is the opaque one",
@@ -1640,7 +2231,11 @@ mod tests {
     #[test]
     fn grouping_keys_fine_and_stubbed_coarse() {
         let d = Diag::new(
-            DiagCode::RenderHeredocRefused(RenderHeredocRefused { site: site(5) }),
+            DiagCode::RenderHeredocRefused(RenderHeredocRefused {
+                site: site(5),
+                verb: "elide",
+                command: "x".to_owned(),
+            }),
             span(0, 4),
         );
         let fine = d.fine_key();
@@ -1661,11 +2256,7 @@ mod tests {
         // The ⊤-cause origin: a give-up minted at the operand's source span (as classify mints it).
         let cause = arena.leaf(crate::OriginKind::TopCause, Some(span(11, 20)));
         let d = Diag::new(
-            DiagCode::CmdsubOperandTop(CmdsubOperandTop {
-                site: site(0),
-                position: OperandPosition::Operand(1),
-                cause: Some(cause),
-            }),
+            DiagCode::CmdsubOperandTop(cmdsub_top(OperandPosition::Operand(1), Some(cause))),
             span(0, 20),
         );
         let src = "apt-get install $(date)";
@@ -1709,7 +2300,7 @@ mod tests {
         let unresolvable = Diag::new(
             DiagCode::SiteUnresolvable(SiteUnresolvable {
                 site: site(0),
-                source_excerpt: OutBytes(Interner::default().intern("make install")),
+                detail: "make install".to_owned(),
             }),
             span(0, 12),
         );
@@ -1720,11 +2311,7 @@ mod tests {
         );
         // A CmdsubOperandTop with cause: None ⇒ no fabrication either.
         let causeless_top = Diag::new(
-            DiagCode::CmdsubOperandTop(CmdsubOperandTop {
-                site: site(0),
-                position: OperandPosition::CommandWord,
-                cause: None,
-            }),
+            DiagCode::CmdsubOperandTop(cmdsub_top(OperandPosition::CommandWord, None)),
             span(0, 5),
         );
         assert_eq!(
@@ -1743,11 +2330,7 @@ mod tests {
         let mut arena = crate::ProvArena::new();
         let cause = arena.leaf(crate::OriginKind::TopCause, Some(span(11, 20)));
         let d = Diag::new(
-            DiagCode::CmdsubOperandTop(CmdsubOperandTop {
-                site: site(0),
-                position: OperandPosition::Operand(1),
-                cause: Some(cause),
-            }),
+            DiagCode::CmdsubOperandTop(cmdsub_top(OperandPosition::Operand(1), Some(cause))),
             span(0, 20),
         );
         // RENDER surface: the why-lens explains it.

@@ -650,14 +650,15 @@ fn render_refused_leaves(
 /// Matches are counted per-diagnostic (NOT as the matched set's len) so two refusals resolving
 /// to one leaf — were span-disjointness ever violated — could not mask a miss by set-dedup.
 fn bridge_refusals_to_leaves(
-    refusals: &[dorc_core::Diagnostic],
+    refusals: &[dorc_core::Diag],
     leaf_by_span: &BTreeMap<(u32, u32), LeafId>,
 ) -> (std::collections::BTreeSet<LeafId>, u32) {
     let mut refused = std::collections::BTreeSet::new();
     let mut unbridged: u32 = 0;
     for d in refusals {
         match d
-            .span
+            .primary
+            .span()
             .and_then(|s| leaf_by_span.get(&(s.lo.0, s.hi.0)).copied())
         {
             Some(leaf) => {
@@ -1371,13 +1372,27 @@ dpkg__predict() {
         );
     }
 
-    /// A render-refusal diagnostic shaped like the real one (`render-heredoc-refused`).
-    fn refusal_diag(span: Option<dorc_core::Span>) -> dorc_core::Diagnostic {
-        dorc_core::Diagnostic::error(
-            dorc_core::DiagCode("render-heredoc-refused"),
+    /// A render-refusal diagnostic shaped like the real one (`render-heredoc-refused`), at a real
+    /// span (the production shape always carries `Some(step.span)`).
+    fn refusal_diag(span: dorc_core::Span) -> dorc_core::Diag {
+        use dorc_core::diag::{Diag, DiagCode, RenderHeredocRefused, SiteId};
+        Diag::new(
+            DiagCode::RenderHeredocRefused(RenderHeredocRefused {
+                site: SiteId::leaf(LeafId(0)),
+                verb: "elide",
+                command: "cat <<EOF".to_owned(),
+            }),
             span,
-            "leaf-exact render refuses a heredoc-bearing leaf",
         )
+    }
+
+    /// A spanless refusal (the defensive no-span path the bridge must count, not drop). The bridge
+    /// reads only the primary span, so any spanless code exercises it; a records fault code is the
+    /// spanless-allow-listed stand-in (`RenderHeredocRefused` is a spanned code and must never mint
+    /// spanless — the `diag_tidy` gate would trip).
+    fn spanless_refusal_diag() -> dorc_core::Diag {
+        use dorc_core::diag::{Diag, DiagCode, RecordsHeaderlessRefused};
+        Diag::new_spanless_site(DiagCode::RecordsHeaderlessRefused(RecordsHeaderlessRefused))
     }
 
     fn span_at(lo: u32, hi: u32) -> dorc_core::Span {
@@ -1396,7 +1411,8 @@ dpkg__predict() {
         // must trip this, not silently regrow the over-count.)
         let leaf_by_span: BTreeMap<(u32, u32), LeafId> =
             [((0, 10), LeafId(0))].into_iter().collect();
-        let (matched, suspect) = bridge_refusals_to_leaves(&[refusal_diag(None)], &leaf_by_span);
+        let (matched, suspect) =
+            bridge_refusals_to_leaves(&[spanless_refusal_diag()], &leaf_by_span);
         assert!(matched.is_empty(), "a None-span refusal bridges to nothing");
         assert_eq!(
             suspect, 1,
@@ -1411,7 +1427,7 @@ dpkg__predict() {
         let leaf_by_span: BTreeMap<(u32, u32), LeafId> =
             [((0, 10), LeafId(0))].into_iter().collect();
         let (matched, suspect) =
-            bridge_refusals_to_leaves(&[refusal_diag(Some(span_at(99, 105)))], &leaf_by_span);
+            bridge_refusals_to_leaves(&[refusal_diag(span_at(99, 105))], &leaf_by_span);
         assert!(matched.is_empty(), "a non-matching span bridges to nothing");
         assert_eq!(suspect, 1, "the unmatched refusal is counted loudly");
     }
@@ -1423,7 +1439,7 @@ dpkg__predict() {
         let leaf_by_span: BTreeMap<(u32, u32), LeafId> =
             [((0, 10), LeafId(7))].into_iter().collect();
         let (matched, suspect) =
-            bridge_refusals_to_leaves(&[refusal_diag(Some(span_at(0, 10)))], &leaf_by_span);
+            bridge_refusals_to_leaves(&[refusal_diag(span_at(0, 10))], &leaf_by_span);
         assert_eq!(
             matched.into_iter().collect::<Vec<_>>(),
             vec![LeafId(7)],

@@ -22,7 +22,8 @@
 //! arms, its annotation shape, its mark punctuation) — never the meaning of a kind /
 //! entity / selector string. Those stay opaque coordination handles.
 
-use dorc_core::{DiagCode, Diagnostic, Span};
+use dorc_core::Span;
+use dorc_core::diag::{Diag, DiagCode, MarkBraceVerdictSingleCell};
 
 use super::ast::{MarkKind, MarkTarget, Pattern, Predict, Stmt, Word};
 
@@ -75,14 +76,11 @@ pub struct DerivedEffect {
 /// and total (`inv-no-throw`: no panics — a shape the walk cannot characterize simply
 /// emits nothing, the safe direction). NB the converged-vouch is no longer a mark
 /// (rul24-vouch-is-verdict-authoring, 24A §1c): it is an authored `is_converged()`
-/// verdict function, unread by this derivation.
-/// A brace-alternation `#{a,b}` on a VERDICT/OBSERVE mark is inert (`277` §4c single-cell law) —
-/// a loud diagnostic, not a silent drop (`27D` disposition-brace-verdict-silent, 24Kc F2 the
-/// silent-inert authored-construct class; `inv-top-reject`).
-const BRACE_VERDICT_INERT: DiagCode = DiagCode("mark-brace-verdict-single-cell");
-
+/// verdict function, unread by this derivation. A brace-alternation `#{a,b}` on a
+/// VERDICT/OBSERVE mark is inert (`277` §4c single-cell law) — a loud diagnostic, not a silent
+/// drop (`27D` disposition-brace-verdict-silent, 24Kc F2; `inv-top-reject`).
 #[must_use]
-pub fn derive_predict(check: &Predict) -> (Vec<DerivedEffect>, Vec<Diagnostic>) {
+pub fn derive_predict(check: &Predict) -> (Vec<DerivedEffect>, Vec<Diag>) {
     let mut effects = Vec::new();
     let mut diags = Vec::new();
     let ctx = Ctx {
@@ -109,12 +107,7 @@ struct Ctx {
     verb_sym: dorc_core::Symbol,
 }
 
-fn walk(
-    body: &[Stmt],
-    mut ctx: Ctx,
-    effects: &mut Vec<DerivedEffect>,
-    diags: &mut Vec<Diagnostic>,
-) {
+fn walk(body: &[Stmt], mut ctx: Ctx, effects: &mut Vec<DerivedEffect>, diags: &mut Vec<Diag>) {
     for stmt in body {
         match stmt {
             // An inline annotation names the kind for everything reached after it on
@@ -172,7 +165,7 @@ fn push_effect(
     target: &MarkTarget,
     span: Span,
     effects: &mut Vec<DerivedEffect>,
-    diags: &mut Vec<Diagnostic>,
+    diags: &mut Vec<Diag>,
 ) {
     let claim = match kind {
         MarkKind::Establish => ValueClaim::Establish,
@@ -189,12 +182,9 @@ fn push_effect(
     // `:` serving both verdict and disturbs) cannot make. LOUD, not a silent inert drop (`27D`
     // disposition-brace-verdict-silent, 24Kc F2; `inv-top-reject`).
     if crate::predict::brace_tokens(&selector).is_some() {
-        diags.push(Diagnostic::warning(
-            BRACE_VERDICT_INERT,
-            Some(span),
-            "verdict and observe marks are single-cell; brace alternation `#{a,b}` is \
-             claim-emission-only (`277` §4c) — this mark mints NO cell and the site will run. \
-             Split it into one marked probe line per cell.",
+        diags.push(Diag::new(
+            DiagCode::MarkBraceVerdictSingleCell(MarkBraceVerdictSingleCell),
+            span,
         ));
         return;
     }
@@ -336,8 +326,8 @@ systemctl__predict() {
             "a brace-alternation verdict mints NO cell (single-cell law): {effects:?}"
         );
         assert_eq!(diags.len(), 1, "exactly one loud diagnostic: {diags:?}");
-        assert_eq!(diags[0].code, BRACE_VERDICT_INERT);
-        assert_eq!(diags[0].severity, dorc_core::Severity::Warning);
+        assert_eq!(diags[0].code.slug(), "mark-brace-verdict-single-cell");
+        assert_eq!(diags[0].severity(), dorc_core::Severity::Warning);
     }
 
     #[test]

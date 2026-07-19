@@ -1051,7 +1051,8 @@ fn refused_heredoc_guard_keeps_dead_oror_body_verbatim() {
     // otherwise had only count/behavior pins in the unit suite, so a wrong-code regression on the
     // refusal path was invisible to `cargo test` (e2e gate-3 caught it; the unit suite did not).
     assert_eq!(
-        diags[0].code.0, "render-heredoc-refused",
+        diags[0].code.slug(),
+        "render-heredoc-refused",
         "the refusal carries the registered render-heredoc-refused code: {diags:?}"
     );
 }

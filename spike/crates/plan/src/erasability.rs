@@ -35,7 +35,7 @@
 //! it. The hash is a hand-rolled FNV-1a (`core` is dependency-free and `DefaultHasher` is not
 //! a stable cross-version function); its job is drift-detection, not cryptographic strength.
 
-use dorc_core::Diagnostic;
+use dorc_core::Diag;
 
 use crate::{Derivation, Disposition, LicenseVia, Plan, ProbePlan, StandIn, Step};
 
@@ -103,7 +103,7 @@ pub fn canonical_decision(
     src: &str,
     ast: &dorc_syntax::ast::Ast,
     interner: &dorc_core::Interner,
-    diags: &[Diagnostic],
+    diags: &[Diag],
 ) -> String {
     let mut out = String::new();
     // (1) the per-site dispositions (the structured decision).
@@ -145,7 +145,7 @@ pub fn decision_digest(
     src: &str,
     ast: &dorc_syntax::ast::Ast,
     interner: &dorc_core::Interner,
-    diags: &[Diagnostic],
+    diags: &[Diag],
 ) -> String {
     let canon = canonical_decision(plan, probe, src, ast, interner, diags);
     let mut h = Fnv1a::new();
@@ -338,23 +338,19 @@ fn canon_site_kind(k: crate::ProbeSiteKind) -> String {
 /// entirely (a receipt-prompted Note must be free to appear/vary — the gate would otherwise
 /// forbid the why-lens). A span is rendered by its byte coordinates (the stable site); `None`
 /// span renders as `@?`.
-fn canon_diag(d: &Diagnostic) -> Option<String> {
-    let Diagnostic {
-        severity,
-        code,
-        span,
-        message: _, // EXEMPT: Exempt::Explanation — human text, may embed receipt-rendered provenance.
-    } = d;
+fn canon_diag(d: &Diag) -> Option<String> {
     // Only Error-class diagnostics are on the identity plane (ru-12). A Warning/Note is a
-    // disclosure that a receipt-prompted change may legitimately add or vary ⇒ dropped.
-    if *severity != dorc_core::Severity::Error {
+    // disclosure that a receipt-prompted change may legitimately add or vary ⇒ dropped. The
+    // catalog-rendered MESSAGE is EXEMPT (Exempt::Explanation): identity keys on the code slug,
+    // the primary span, and the severity only.
+    if d.severity() != dorc_core::Severity::Error {
         return None;
     }
-    let site = match span {
+    let site = match d.primary.span() {
         Some(s) => format!("@{}:{}", s.lo.0, s.hi.0),
         None => "@?".to_string(),
     };
-    Some(format!("error[{}] {site}", code.0))
+    Some(format!("error[{}] {site}", d.code.slug()))
 }
 
 #[cfg(test)]
@@ -380,39 +376,58 @@ mod tests {
 
     #[test]
     fn canon_drops_non_error_diagnostics() {
-        // Only Error-class diagnostics are identity (ru-12). A Note (the common
-        // receipt-prompted disclosure shape) is dropped, so a why-lens Note can vary freely
-        // without the gate forbidding it.
-        let note = Diagnostic::note(dorc_core::DiagCode("x-note"), None, "a disclosure");
-        let warn = Diagnostic::warning(dorc_core::DiagCode("x-warn"), None, "a warning");
-        let err = Diagnostic::error(
-            dorc_core::DiagCode("x-err"),
-            Some(dorc_core::Span::new(
-                dorc_core::BytePos(1),
-                dorc_core::BytePos(2),
-            )),
-            "an error",
+        use dorc_core::diag::{
+            CfgBuiltinShadowed, DiagCode, RedirTargetTop, SiteId, SyntaxMalformed,
+        };
+        // Only Error-class diagnostics are identity (ru-12). A Note (RedirTargetTop) and a
+        // Warning (CfgBuiltinShadowed) are dropped; the Error (SyntaxMalformed) keys on
+        // (slug, span, severity), its rendered message exempt.
+        let note = Diag::new(
+            DiagCode::RedirTargetTop(RedirTargetTop {
+                site: SiteId::leaf(dorc_core::LeafId(0)),
+            }),
+            dorc_core::Span::new(dorc_core::BytePos(0), dorc_core::BytePos(1)),
+        );
+        let warn = Diag::new(
+            DiagCode::CfgBuiltinShadowed(CfgBuiltinShadowed {
+                detail: "a warning".to_owned(),
+            }),
+            dorc_core::Span::new(dorc_core::BytePos(0), dorc_core::BytePos(1)),
+        );
+        let err = Diag::new(
+            DiagCode::SyntaxMalformed(SyntaxMalformed {
+                detail: "an error".to_owned(),
+            }),
+            dorc_core::Span::new(dorc_core::BytePos(1), dorc_core::BytePos(2)),
         );
         assert_eq!(canon_diag(&note), None, "Note dropped");
         assert_eq!(canon_diag(&warn), None, "Warning dropped");
         assert_eq!(
             canon_diag(&err),
-            Some("error[x-err] @1:2".to_string()),
+            Some("error[syntax-malformed] @1:2".to_string()),
             "Error keyed by (code, site, severity); message exempt"
         );
     }
 
     #[test]
     fn canon_diag_message_is_exempt() {
-        // Two errors identical in (code, site, severity) but DIFFERENT in message canonicalize
-        // identically — the message is Exempt::Explanation (a receipt-rendered why-string must
-        // not move the identity plane).
-        let span = Some(dorc_core::Span::new(
-            dorc_core::BytePos(3),
-            dorc_core::BytePos(7),
-        ));
-        let a = Diagnostic::error(dorc_core::DiagCode("e"), span, "message A (receipt foo)");
-        let b = Diagnostic::error(dorc_core::DiagCode("e"), span, "message B (receipt bar)");
+        use dorc_core::diag::{DiagCode, SyntaxMalformed};
+        // Two errors identical in (code, span, severity) but DIFFERENT in payload detail (⇒
+        // different rendered message) canonicalize identically — the message is
+        // Exempt::Explanation (identity keys on slug/span/severity only).
+        let span = dorc_core::Span::new(dorc_core::BytePos(3), dorc_core::BytePos(7));
+        let a = Diag::new(
+            DiagCode::SyntaxMalformed(SyntaxMalformed {
+                detail: "message A (receipt foo)".to_owned(),
+            }),
+            span,
+        );
+        let b = Diag::new(
+            DiagCode::SyntaxMalformed(SyntaxMalformed {
+                detail: "message B (receipt bar)".to_owned(),
+            }),
+            span,
+        );
         assert_eq!(
             canon_diag(&a),
             canon_diag(&b),
