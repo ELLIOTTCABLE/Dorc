@@ -1030,6 +1030,25 @@ needles_missing() {
   printf '%s' "$_miss"
 }
 
+# gate-hint (first-wall hint emission, gap-6 / AID-NEEDS:aid-first-wall-nudge): if a case ships an
+# `expected-hint` file, assert each of its (substring) patterns appears in some `hint:` stderr line —
+# pinning the first-wall nudge + the coverage-nudge clauses reach stderr end-to-end (kWARN keepalive;
+# ZERO hint expectations existed before this gate). Opt-in like gate-7; a case without the file is
+# unaffected (the hint is additive — many cases emit one, unasserted).
+scan_hint() {
+  _case=$1; _err=$2; _dir=$3
+  _decl="${_dir}expected-hint"
+  { [ -f "$_decl" ] && [ -s "$_decl" ]; } || return 0   # opt-in
+  _hints=$(grep -E '^hint: ' "$_err" 2>/dev/null || true)
+  _missing=$(printf '%s\n' "$_hints" | needles_missing "$_decl")
+  [ -z "$_missing" ] && return 0
+  if [ "${XFAIL_ACTIVE:-}" != "1" ]; then
+    echo "FAIL  $_case  [gate-hint: expected first-wall hint line(s) not emitted on stderr — fix the cause, or update expected-hint]"
+    printf '%s' "$_missing" | sed 's/^/      missing: /'
+  fi
+  return 1
+}
+
 # gate-8 (why-chain PAIR, 27V §4 / aid-why-license-chain): if a case ships a `WHY_ADDR=<n>` marker +
 # an `expected-why-chain` needle file, run `dorc why <n>` LIVE and `dorc why <n> --last` REPLAY (via
 # the whylog) and assert the SAME chain needles land in BOTH — the full numbered chain is a PULL
@@ -1283,6 +1302,8 @@ for dir in "$here"/cases/*/; do
   scan_diagnostics "$name" "$err_file" "$dir" || case_ok=0
   # gate-7 (why-lens emission): opt-in expected-why substring assertion (#16, x2-fd1).
   scan_why "$name" "$err_file" "$dir" || case_ok=0
+  # gate-hint (first-wall hint emission): opt-in expected-hint substring assertion (gap-6).
+  scan_hint "$name" "$err_file" "$dir" || case_ok=0
   # gate-8 (why-chain PAIR): opt-in `dorc why <n>` live + `--last` replay chain assertion (27V §4).
   scan_why_chain "$name" "$dir" "$@" || case_ok=0
 
