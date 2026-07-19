@@ -327,6 +327,32 @@ double-colon collapse) · crate `CLAUDE.md` authored-surface blocks · goldens
 regenerated as WORKING-STATE (authoritative bless stays conductor's at fold) ·
 comment budget: 0 net-new non-doc (doc-comments exempt; flag genuine need).
 
+## §2i — The value-tail ruling (conductor, 2026-07-19; precondition fired as designed)
+
+Inventory: ZERO corpus instances; ONE test literal (the old parser's `= value`
+capture test, `parser.rs:1742`, semantically incoherent by its own content); one
+production consumer branch (`carry.rs:360-362` value-cleanliness in the
+read-set-closure walk) that nothing ever populates.
+
+**`28A:rul-verdict-value-tail-drops`** — the verdict-position `= value` construct
+is corpus-dead and undocumented (absent from the oracle-contract reference §4;
+never dispositioned by `277`/`281`): it DROPS with the old parser. Foreclosure
+check: the value-bearing-verdict future (the `.diff` verb, is_noop-style
+state-precise siblings, MH2/an-ide-value-layer) is PARKED under
+extend-by-name-never-re-read (TODO-ADDTL item 1) — that future mints its own
+spelling; a dead vestigial capture forecloses nothing. Excision posture:
+PREFERRED = remove `MarkTarget.value` + the dead carry branch entirely
+(always-None fields are representable-illegal-state smell; the closure walk is
+default-disqualify and must not carry zombie surface), with the closure tests
+pinning unchanged behavior on remaining inputs; FALLBACK if the field threads
+wider than expected = keep it with a deprecated-dead doc-comment citing this
+ruling. Builder judgment between the two, reported. The capture test dies with
+the old parser. CP-D precondition RESOLVED — but the cutover is HELD on the
+human grammar-nit ack round (human-directed mid-session 2026-07-19: "surface
+grammar nits… I would like this to be the last respell"). Nit list in chat +
+pushed; the builder stays stopped until acks land and the conductor sends the
+combined ruling+go.
+
 ## §3 — Lane map and state (update on every change)
 
 | lane | branch | shape | state |
