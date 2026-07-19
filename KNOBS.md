@@ -64,6 +64,14 @@ Poles: `kTYANNOT-inline ↔ kTYANNOT-eol-comment`
 **Owner:** user (DX/ergonomics vs off-ramp purity). **Lock-in:** med (the spelling threads the parser + every typed oracle; the off-ramp guarantee is high-lock).
 > Entangled with `kOOB` (the eol pole's cost) and `kLANG` (the inline pole's cost). Sources: `Research/plans/17N` top paragraph · `17O` F-OFFRAMP · `spike/CLAUDE.md` strip-fidelity.
 
+### `kSALIENCE`
+Poles: `kSALIENCE-salient-designed ↔ kSALIENCE-invisible-posix`
+
+**Tension:** correctness-critical annotations that *draw* reader attention — loud, syntax-highlighted, hard to miss in any editor (source-side `rul-attention-honesty`; the FlowType→TypeScript lesson that demoted, greyed annotations rot) **vs** a surface that vanishes into plain shell — strips trivially, off-ramp-invisible, never looks like a new language the world must adopt (`kLANG`). The reconciling lean that dissolves the conflict: draw salience *only* from shell tokens that already highlight (`"$var"`, `{a,b}`, `@`, `:`), **never** from invented syntax — then salient and invisible-as-a-language coincide (we borrow shell's highlighting, never demand our own). Concretely this dropped `#` (greys/poisons the rest of the line in GitHub's renderer) for `@` as the selector introducer, and it is *why* the comment-carrier (`#:`) is offered but never the default.
+**Status:** directional — lean the reconciling constraint. Two tiers kept apart: the **passive-highlight** tier (borrowed shell tokens rendering salient) is a now-testable spelling goal — a named editor/web-renderer battery (GitHub · VS Code · tree-sitter-bash), best-effort against versioned highlighters, graceful-degrade to plain (never poisoned); the **active-loudness** tier (red squiggles, real syntax errors) defers to a Dorc LSP (DESIGN §5), not a spelling property. Full design: `Research/plans/27U` §10.
+**Owner:** user (DX/taste) + corpus (what actually highlights). **Lock-in:** med — the choice threads the parser and every marked oracle; salience characters are cheap to grant, near-impossible to claw back.
+> Entangled with `kTYANNOT` (the annotation spelling this constrains — inline-vs-comment is orthogonal to salient-vs-invisible) and `kLANG`/`kOOB` (the invisibility pole's welds). Source: `Research/plans/27U` (§10 goal; §R1/§R4 rationale).
+
 ### `kCONTRACT-RUNGS`
 Poles: `kCONTRACT-RUNGS-single ↔ kCONTRACT-RUNGS-ladder`
 
