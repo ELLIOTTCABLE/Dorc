@@ -32,6 +32,8 @@ For genuinely critical design-direction-changes, when such happen, recall the ab
   - `notes/` documents are generally historical (except the single most-recently-minted one that you're actively working in); and only the most critical incorrectnesses get notated (adjacent, with a `<!-- /* superceded by ...`-style note) so a later trawling LLM doesn't get misled
   - `plans/` documents are *ahistorical* and if incorrect, should simply be rewritten to become correct. (history is in git if necessary, don't fill them up with churn-noise.)
 
+Be defensive about multiple worktrees, for the documents that involve 'global project status'. Especially the critical, human-authored design-docs and CLAUDE.md are worth an occasional one-command 'did this get edited outside my worktree?' check during long-running efforts; and especially *edits* to files like `LIVING_STATUS` should be made *after* ensuring you're aware of concurrent edits by sibling conductors in their worktrees. (Not necessarily to proactively merge; simply as a quiet, passive method of cross-conductor communication about concurrent work.)
+
 ## Critical engineering reminders
 - this codebase depends heavily on deterministic systems-testing, DST, for correctness. you *must* analyze all changes for hermeticity; and all non-hermetic (non-pure) actions *must* be DI'd so as to be mockable for DST.
   - specifically, *always* access the clock, network, disk, or randomness *through the correct DI primitives*. they must stay fuzzable.
