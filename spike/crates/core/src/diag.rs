@@ -145,6 +145,20 @@ pub enum DiagCode {
     /// A brace-alternation `#{a,b}` on a single-cell verdict/observe mark (mints no cell).
     MarkBraceVerdictSingleCell(MarkBraceVerdictSingleCell),
 
+    // ── oracle/predict (the `281` mark-grammar parse — new-grammar path) ─────
+    /// A period-free head/continuation token that is not a known mark verb (`281` §4 rule-3
+    /// miss) — the block drops to ⊤ (`inv-top-reject`).
+    MarkUnknownVerb(MarkUnknownVerb),
+    /// Two rc-consuming marks (`asserts`/`refutes`) in one block (`281` §7 rc-arity) — one
+    /// exit code cannot witness two cells, so the block drops to ⊤.
+    MarkRcArityExceeded(MarkRcArityExceeded),
+    /// A standalone mark-block (no command to bind) carries an rc-consumer or `reads`
+    /// (`28A:rul-continuation-attachment`) — nothing to measure/back, so it drops to ⊤.
+    MarkStandaloneRcConsumer(MarkStandaloneRcConsumer),
+    /// A `#:` comment looks like a mark-block but did not parse (`281` §9) — left a comment,
+    /// diagnosed (the hash-colon carrier never silently mis-erases).
+    MarkHashcolonMalformed(MarkHashcolonMalformed),
+
     // ── plan/records.rs (framed records deframer) ───────────────────────────
     /// A records stream carried no framing at all (headerless) — refused, the host runs.
     RecordsHeaderlessRefused(RecordsHeaderlessRefused),
@@ -251,6 +265,10 @@ impl DiagCode {
             DiagCode::LendMapUnknownDimension(_) => "lend-map-unknown-dimension",
             DiagCode::CarryNetnsOnNetKernelForbidden(_) => "carry-netns-on-net-kernel-forbidden",
             DiagCode::MarkBraceVerdictSingleCell(_) => "mark-brace-verdict-single-cell",
+            DiagCode::MarkUnknownVerb(_) => "mark-unknown-verb",
+            DiagCode::MarkRcArityExceeded(_) => "mark-rc-arity-exceeded",
+            DiagCode::MarkStandaloneRcConsumer(_) => "mark-standalone-rc-consumer",
+            DiagCode::MarkHashcolonMalformed(_) => "mark-hashcolon-malformed",
             DiagCode::RecordsHeaderlessRefused(_) => "records-headerless-refused",
             DiagCode::RecordsGluedLine(_) => "records-glued-line",
             DiagCode::RecordsHeaderMissing(_) => "records-header-missing",
@@ -553,6 +571,31 @@ pub struct CarryNetnsOnNetKernelForbidden {
 /// Spanned (the mark span); `site()` returns `None`.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MarkBraceVerdictSingleCell;
+
+/// Payload of [`DiagCode::MarkUnknownVerb`] (TEMPLATIZED): the unknown verb token and the known
+/// verb vocabulary. Spanned (the token span); `site()` returns `None`.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct MarkUnknownVerb {
+    /// The unrecognized period-free head/continuation token (`{token}`).
+    pub token: String,
+    /// The comma-joined list of known mark verbs (`{expected}`).
+    pub expected: String,
+}
+
+/// Payload of [`DiagCode::MarkRcArityExceeded`] (static): a second rc-consumer on one block.
+/// Spanned (the offending mark span); `site()` returns `None`.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct MarkRcArityExceeded;
+
+/// Payload of [`DiagCode::MarkStandaloneRcConsumer`] (static): an rc-consumer/`reads` on a
+/// standalone block. Spanned (the mark span); `site()` returns `None`.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct MarkStandaloneRcConsumer;
+
+/// Payload of [`DiagCode::MarkHashcolonMalformed`] (static): a `#:` comment that looked like a
+/// mark but did not parse. Spanned (the `#:` intro span); `site()` returns `None`.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct MarkHashcolonMalformed;
 
 // ===========================================================================
 // Sweep payload structs — plan/records.rs (the framed deframer's fault + integrity codes)
@@ -1222,6 +1265,31 @@ pub fn registry(code: &DiagCode) -> CodeSpec {
             floor: Floor::None,
             remediation: RemediationClass::DeclareIdentity,
         },
+        // ── `281` mark-grammar parse errors: a malformed mark is committed syntax ⇒ the block
+        // drops to ⊤ (`inv-top-reject`), Error + WarnOrDeny. `mark-hashcolon-malformed` is the
+        // ONE Warning (`281` §9: the `#:` comment stays a comment, never mis-erased). Remediation
+        // is DeclareIdentity throughout, tracking the sibling `mark-brace-verdict-single-cell` (a
+        // builder judgment on a not-yet-user-visible code; conductor may re-cut with the prose).
+        DiagCode::MarkUnknownVerb(_) => CodeSpec {
+            severity: Severity::Error,
+            floor: Floor::WarnOrDeny,
+            remediation: RemediationClass::DeclareIdentity,
+        },
+        DiagCode::MarkRcArityExceeded(_) => CodeSpec {
+            severity: Severity::Error,
+            floor: Floor::WarnOrDeny,
+            remediation: RemediationClass::DeclareIdentity,
+        },
+        DiagCode::MarkStandaloneRcConsumer(_) => CodeSpec {
+            severity: Severity::Error,
+            floor: Floor::WarnOrDeny,
+            remediation: RemediationClass::DeclareIdentity,
+        },
+        DiagCode::MarkHashcolonMalformed(_) => CodeSpec {
+            severity: Severity::Warning,
+            floor: Floor::None,
+            remediation: RemediationClass::DeclareIdentity,
+        },
         DiagCode::RecordsHeaderlessRefused(_) => CodeSpec {
             severity: Severity::Warning,
             floor: Floor::None,
@@ -1556,6 +1624,9 @@ pub fn params_of(code: &DiagCode, _interner: &crate::Interner) -> Vec<(&'static 
         DiagCode::ToleratesUnknownDimension(p) => {
             vec![("token", p.token.clone()), ("expected", p.expected.clone())]
         }
+        DiagCode::MarkUnknownVerb(p) => {
+            vec![("token", p.token.clone()), ("expected", p.expected.clone())]
+        }
         DiagCode::LendMapUnknownDimension(p) => {
             vec![("token", p.token.clone()), ("expected", p.expected.clone())]
         }
@@ -1592,6 +1663,9 @@ pub fn params_of(code: &DiagCode, _interner: &crate::Interner) -> Vec<(&'static 
         | DiagCode::ToleratesOverIdentityDependence(_)
         | DiagCode::HeavyContextNoTolerance(_)
         | DiagCode::MarkBraceVerdictSingleCell(_)
+        | DiagCode::MarkRcArityExceeded(_)
+        | DiagCode::MarkStandaloneRcConsumer(_)
+        | DiagCode::MarkHashcolonMalformed(_)
         | DiagCode::RecordsHeaderlessRefused(_)
         | DiagCode::RecordsGluedLine(_)
         | DiagCode::RecordsHeaderMissing(_)

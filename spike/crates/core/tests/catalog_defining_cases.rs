@@ -28,10 +28,11 @@
 
 use dorc_core::diag::{
     self, AidUnloadedSiblingOracle, CarriedAcrossSubstrateAxis, CmdsubOperandTop,
-    DanglingReference, Diag, DiagCode, EscalationPolicy, MissingDialectMarker, MungeNameInvalid,
-    OperandPosition, RecordsFactTruncated, RenderHeredocRefused, SiteId, SiteUnresolvable,
-    SyntaxUnsupported, ToleratesUnknownDimension, WhylogAbsent, WhylogBookDesync, WhylogCorrupt,
-    WhylogVersionRefused, WrapperPeelIncoherent,
+    DanglingReference, Diag, DiagCode, EscalationPolicy, MarkHashcolonMalformed,
+    MarkRcArityExceeded, MarkStandaloneRcConsumer, MarkUnknownVerb, MissingDialectMarker,
+    MungeNameInvalid, OperandPosition, RecordsFactTruncated, RenderHeredocRefused, SiteId,
+    SiteUnresolvable, SyntaxUnsupported, ToleratesUnknownDimension, WhylogAbsent, WhylogBookDesync,
+    WhylogCorrupt, WhylogVersionRefused, WrapperPeelIncoherent,
 };
 use dorc_core::{BytePos, Interner, LeafId, Severity, Span, TopCause};
 
@@ -208,6 +209,33 @@ fn covered() -> Vec<DefiningCase> {
                         .to_owned(),
                 })
             },
+        },
+        // The four `281` mark-grammar parse codes (`28A:rul-new-codes-ship-covered-cases`): each
+        // ships as a covered() case with `[unwritten: <slug>]` prose (the aid precedent above), so
+        // the ratchet does not grow. Their REAL cases + prose arrive through the `282` empty loop
+        // after the generation flip — a named rider on the unify lane, not this lane's work.
+        DefiningCase {
+            slug: "mark-unknown-verb",
+            build: || {
+                DiagCode::MarkUnknownVerb(MarkUnknownVerb {
+                    token: "frobnicate".to_owned(),
+                    expected: "asserts, refutes, reads, bind, safe-across, disturbs, lends, \
+                               stored-in, undivided-by-transit-across"
+                        .to_owned(),
+                })
+            },
+        },
+        DefiningCase {
+            slug: "mark-rc-arity-exceeded",
+            build: || DiagCode::MarkRcArityExceeded(MarkRcArityExceeded),
+        },
+        DefiningCase {
+            slug: "mark-standalone-rc-consumer",
+            build: || DiagCode::MarkStandaloneRcConsumer(MarkStandaloneRcConsumer),
+        },
+        DefiningCase {
+            slug: "mark-hashcolon-malformed",
+            build: || DiagCode::MarkHashcolonMalformed(MarkHashcolonMalformed),
         },
     ]
 }
@@ -547,9 +575,11 @@ fn unwritten_renders_are_greppable_and_pinned() {
     }
     // At the base tip the prose is `sm `-prefixed or conductor-authored — zero `[unwritten:]` yet.
     // This pin SHRINKS to accommodate new codes' placeholders and re-tightens as prose is authored;
-    // it never silently grows unnoticed (a bump here is a conscious conductor act).
+    // it never silently grows unnoticed (a bump here is a conscious conductor act). Ceiling bumped
+    // 1 → 5 for the four `281` mark-grammar codes' `[unwritten:]` prose (`28A:rul-new-codes-ship-
+    // covered-cases` authorizes this conscious bump); it re-tightens as the `282` loop authors them.
     assert!(
-        unwritten.len() <= 1,
+        unwritten.len() <= 5,
         "more `[unwritten:]` placeholders ({}) than the pinned ceiling — each is a conductor prose \
          debt; bump this ceiling consciously when a new code lands with empty prose: {unwritten:?}",
         unwritten.len()

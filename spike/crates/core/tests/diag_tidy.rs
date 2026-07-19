@@ -82,6 +82,11 @@ const MIGRATED_PAYLOADS: &[&str] = &[
     "CarryNetnsOnNetKernelForbidden",
     // oracle/predict/derive.rs
     "MarkBraceVerdictSingleCell",
+    // oracle/predict/mark_grammar.rs (the `281` new-grammar parse)
+    "MarkUnknownVerb",
+    "MarkRcArityExceeded",
+    "MarkStandaloneRcConsumer",
+    "MarkHashcolonMalformed",
     // plan/records.rs
     "RecordsHeaderlessRefused",
     "RecordsGluedLine",
@@ -144,6 +149,10 @@ const MIGRATED_SLUGS: &[&str] = &[
     "lend-map-unknown-dimension",
     "carry-netns-on-net-kernel-forbidden",
     "mark-brace-verdict-single-cell",
+    "mark-unknown-verb",
+    "mark-rc-arity-exceeded",
+    "mark-standalone-rc-consumer",
+    "mark-hashcolon-malformed",
     "records-headerless-refused",
     "records-glued-line",
     "records-header-missing",
