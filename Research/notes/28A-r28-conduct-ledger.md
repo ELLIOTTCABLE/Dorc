@@ -402,6 +402,31 @@ existing marker-version code before minting; unwritten-ceiling bump to 6
 pre-authorized if a mint is needed). `28A:rul-marker-version-unchanged` is
 SUPERSEDED by this block.
 
+## §2k — CP-D deltas landed; the single-mark ratification; the cutover handoff (conductor, 2026-07-19)
+
+Landed green on `ai/r28-syntax-respell-2` @ `632070b`: the value-tail excision
+(`5bbda5b`, PREFERRED posture — `MarkTarget.value` removed whole, re-add seams
+doc-commented) and the brace expand-then-validate model in the reference
+(`632070b`, four position tests). The builder then declined to rush the atomic
+cutover at deep budget and handed off a turnkey plan — accepted; the fresh
+cutover executor runs it (map→fresh-executor, third application this round).
+
+**`28A:rul-single-mark-production-subset`** (ratifies the builder's
+architecture flag) — production keeps single `Command.mark` + consumer-side
+brace expansion; the full mark-block model (multi-mark lines, continuations,
+cross-line rc-arity) stays tested-in-reference-only, adopted in a future
+`Command.marks: Vec` round. THE LAST-RESPELL TEST DECIDES IT: `Vec` adoption
+later changes zero spellings (single-mark corpus stays byte-valid; multi-mark
+is additive ACCEPTANCE, not a respell), while adopting now would swell the
+riskiest commit of the round across ~10 consumers for capability the corpus
+does not use. Expressiveness note, honest: same-line `reads` disclosure and
+same-line meta-verb chaining are deferred — authors spell them as separate
+statements/standalone lines (the corpus-live idiom; body-wide observe marks
+remain the superior spelling for real reads anyway). DOCS-PASS RIDER: document
+v0.2-production as one-mark-per-physical-line, the block model
+specified-but-not-yet-accepted (a named seam, `281` remains THE spec); plus
+the §2h rider (one clarifying sentence into `281` §4).
+
 ## §3 — Lane map and state (update on every change)
 
 | lane | branch | shape | state |
