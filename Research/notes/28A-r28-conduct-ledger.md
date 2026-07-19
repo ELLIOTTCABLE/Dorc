@@ -353,6 +353,55 @@ grammar nits… I would like this to be the last respell"). Nit list in chat +
 pushed; the builder stays stopped until acks land and the conductor sends the
 combined ruling+go.
 
+## §2j — The grammar-nit ack round (HUMAN-TYPED, 2026-07-19; the "last respell" gate)
+
+All eight nits acked; the cutover hold LIFTS. Itemized with grade:
+
+- `nit-at-selector-permanence` — ACKED, spike-grade permanence semantics
+  clarified: the grammar being built this round is **v0.2** ("once it's all
+  committed and solid"); a non-`@` selector would be a **v0.3** event. That IS
+  what permanent-as-anything-can-be means here.
+- `nit-singleton-bind-drops` — **SOFT ack** ("not entirely convinced it's
+  valueless"): status = dropped-for-0.2. Re-entry, if ever, is a fresh design.
+- `nit-verdict-value-tail-drops` — same soft grade: dropped; "if we need it,
+  we'll find out the hard way, and re-add it" (extend-by-name covers re-entry).
+- `nit-marked-colon-owns-statement-start` — ACKED; human classes it with the
+  trailing-mark argv hazard: same danger-class, cost of entry.
+- `nit-continuation-attachment` (incl. the standalone-rc fail-fast) — ACKED.
+- `nit-per-intro-head-decode` — ACKED.
+- `nit-brace-on-reads-legal` — ACKED, and generalized into a NEW HUMAN LAW,
+  **`28A:rul-consistency-standing-authorization`** (typed): consistency is the
+  goal of this pass — authors learn a construct once and naturally reuse it;
+  standing authorization to take any ACKED construct and make it work in a new
+  context someone may type it, PROVIDED doing so is sound and encourages
+  correctness. (Conductor-mediated: builders still flag new-context extensions
+  up; the conductor authorizes under this law.)
+- `nit-entityless-transitional-form` — ACKED, lives on for 0.2.
+
+**The brace MODEL (human-typed, supersedes the conductor's "two shapes"
+framing, which was wrong):** braces are NOT asymmetric — they may surround an
+entire payload word (N payloads) or a subset of one (shell-identical
+"N payloads with this portion differing"). Braces trend DUMB: shell-like
+lexing and semantics, never context-aware. v0.2 positional constraint (human:
+"only before/after certain tokens… let's not stray into `fs{view,amble}`"):
+brace groups legal ONLY as a whole payload word or immediately following `@`;
+mid-token infix refused for now (extensible later under the standing
+authorization). Implementation framing: expand-then-validate — expansion is
+uniform and dumb; the existing laws (rc-arity) refuse what expansion makes
+illegal; the specific braced-verdict diagnostic is retained as a friendlier
+pre-check, not as context-aware lexing.
+
+**Marker plan (conductor default, veto-window open):** the cutover stamps
+`# dorc-lang/v0.2` as a SEPARATE FINAL COMMIT in the lane (veto = drop one
+commit) — rationale: post-cutover files carrying v0.1 markers over new-grammar
+syntax would be incoherent with the human's newly-named version semantics, and
+the stamp rides the same sweep for free. Engine recognized-set moves to
+{v0.2}; a `# dorc-lang/vX.Y`-shaped but unrecognized marker should diagnose
+loudly rather than silently degrade to plain-sh (builder checks for an
+existing marker-version code before minting; unwritten-ceiling bump to 6
+pre-authorized if a mint is needed). `28A:rul-marker-version-unchanged` is
+SUPERSEDED by this block.
+
 ## §3 — Lane map and state (update on every change)
 
 | lane | branch | shape | state |
