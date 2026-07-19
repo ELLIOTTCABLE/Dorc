@@ -206,6 +206,12 @@ and carries the license-contamination map.
   evidence plane · one-catalog) + USER_STORY's "Recovery" section; the
   `dorc lint` lane landed as `notes/27R`/`27S`.
 
+- **r28 (current; seeded 2026-07-19)** — the syntax unification + the errorloom
+  prose pipeline. → **`plans/280`** (charter: two parallel lanes + the serial
+  unify; bless discipline; the resumed `270` §5 horizon) · **`plans/281`** (THE
+  annotation mark-grammar) · **`plans/282`** (errorloom: the transcript-case
+  prose pipeline). Pending-ruling riders: `TODO-ADDTL.md` tail.
+
 ## Vendor/ (full-history clones)
 
 CoLiS ecosystem (morbig, morsmall, colis-language, colis-constraints, shstats, lintshell,

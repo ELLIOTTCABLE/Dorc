@@ -29,10 +29,12 @@ what a user sees — and the compiled catalog is DERIVED from them
 (txtar+frontmatter cases · words-and-paragraphs prose model · tagged-render +
 word-diff transport · prose-bless/structure-bless exclusivity · git-gated
 promote · type-gated passthrough), reversing the aid phase's catalog-first
-as-built. The **`plans/280` round charter is UNMINTED** — it follows a
-floating-work sweep PENDING the human's explicit ack; until it exists,
-`plans/270` (as amended) plus this file carry the sequencing, and the ordering of
-the 281 respell, the 282 build, and block-stdlib is the charter's to fix.
+as-built. **`plans/280` (the charter) is MINTED and human-acked (2026-07-19):**
+`lane-errorloom-crate` ∥ `lane-syntax-unification-respell`, then the serial
+`lane-errorloom-unify`; block-stdlib waits on the respell at minimum; the `#:`
+carrier is acked and `KNOBS:kSALIENCE` registered (`7851eeb`, ai/main); the
+pending-ruling riders are banked at `TODO-ADDTL.md`'s tail (blockers-only
+discipline: the charter names none).
 
 **The aid build phase (CLOSED 2026-07-19; the ONE durable = `notes/27U`):** the
 `27V` plan executed whole across seven serial dispatches on **`ai/r27-aid`** (base
@@ -49,22 +51,19 @@ notes `27V`/`27W`. Incidents + protocol verdict: `27U` §2/§4 (worktree-file-ac
 law candidates in §5). NOTE: `282` supersedes-in-part the catalog-pipeline shape
 described in `27V` §3 and built by `27U` d1/d4b — read `282` §0/§8 for what changes.
 
-**Open human queue:** (1) the `plans/280` sweep-then-charter ack (this session's
-standing next act) · (2) the `plans/281` §12 rulings: the `#:` second
-comment-parse (kOOB); KNOBS registration of `salient-designed ↔ invisible-posix`;
-`@` permanence; respell timing · (3) the `27U` §7 ask-list: fold of `ai/r27-aid`;
-floors ratification; ratchet ack (re-cut by `282` §8); `27W` soft-ack typing; the
-`--risk-faultless-skips` rename re-ask; C8 park veto; the prose-register schema
-sitting (re-cut by `282` §10) · (4) the SyncThing `.claude/worktrees` exclusion
-repair + conflict-file cleanup (three worktrees affected; live risk).
+**Open human queue:** (1) the fold of `ai/r27-aid` (one command; carries the aid
+phase + the round-28 seed) · (2) the **rider dump at `TODO-ADDTL.md`'s tail**
+(2026-07-19, thirteen slugged items: floors, ratchet, soft-acks, flag rename,
+prose registers, lint tc-* leans, small fixes, SyncThing) — to be dug into with a
+fresh conductor, interactively; none blocks the 280 lanes.
 
 **Round-28 read-first:** root docs AT HEAD → `spike/CLAUDE.md` (steering law; the
 User-aid block; NB the authored-surface block still teaches the pre-`281` mark
-spellings until the respell lands) → `notes/27U` (the aid as-built) →
-**`plans/281`** + **`plans/282`** (the round's seed pair) → `plans/270` (the r27
-charter, as amended — still the block sequencing until `280` exists) → for
-block-stdlib: `notes/27Q` (preconditions; read §2 before ANY oracle is authored) →
-per-task pointers via `Research/README.md`'s topic index.
+spellings until the respell lands) → **`plans/280`** (the charter: lanes, bless
+discipline, horizon) → **`plans/281`** + **`plans/282`** (the seed specs) →
+`notes/27U` (the aid as-built) → for block-stdlib: `notes/27Q` (preconditions;
+read §2 before ANY oracle is authored) → per-task pointers via
+`Research/README.md`'s topic index.
 
 **Conduct fences (standing; bind any successor):** repo-durable conduct law lives
 in `spike/CLAUDE.md` (Boundaries · Spawning-subagents · Build/test/run) — read it
