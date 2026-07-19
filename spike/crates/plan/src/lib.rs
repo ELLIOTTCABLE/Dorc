@@ -2786,23 +2786,9 @@ pub fn build_plan_walled(
                 }
             }
         };
-        // arch-1 witness (`vp-17`/`vp-18`): a licensed `Replace` records its FULL granted
-        // witness — the establish site's `BookSource` origin, PLUS (C6) the `ProbeResult` origin
-        // of the record that measured its fact converged — uncapped (the license tier). Pure
-        // OUTPUT provenance attached AFTER the mint (the WELD): the origins are sites the license
-        // already keys on, so they cannot influence the decision; they are EXEMPT
-        // (`Exempt::ReceiptId`) and the `erasability` gate proves they perturb nothing.
         if let Disposition::Replace(license, stand_in) = disposition {
-            let book = arena.leaf(
-                dorc_core::OriginKind::BookSource,
-                Some(ast.node(ast_id).span),
-            );
-            // C6: the measured origin ties the elision to its record; absent ⇒ book origin only.
-            let origins = match probe_origins.get(&license.fact()) {
-                Some(&measured) => vec![book, measured],
-                None => vec![book],
-            };
-            let license = license.with_witness(dorc_core::Witness::of(origins));
+            let license =
+                attach_replace_witness(license, ast.node(ast_id).span, probe_origins, arena);
             disposition = Disposition::Replace(license, stand_in);
         }
         // Wall-bearing = an establish-bearing class OR a flagged kill (R3 / 24A §3): a running
@@ -2860,6 +2846,26 @@ pub fn build_plan_walled(
         steps,
         survival_report,
     }
+}
+
+/// arch-1 witness (`vp-17`/`vp-18`) + C6: the FULL granted witness for a licensed `Replace` — the
+/// establish site's `BookSource` origin PLUS the `ProbeResult` origin of the record that measured
+/// its fact converged (absent ⇒ book origin only). Pure OUTPUT provenance attached AFTER the mint
+/// (the WELD): the origins are sites the license already keys on, so they cannot influence the
+/// decision; they are EXEMPT (`Exempt::ReceiptId`) and the `erasability` gate proves they perturb
+/// nothing.
+fn attach_replace_witness(
+    license: ReplaceLicense,
+    site_span: dorc_core::Span,
+    probe_origins: &BTreeMap<FactKey, dorc_core::ProvId>,
+    arena: &mut dorc_core::ProvArena,
+) -> ReplaceLicense {
+    let book = arena.leaf(dorc_core::OriginKind::BookSource, Some(site_span));
+    let origins = match probe_origins.get(&license.fact()) {
+        Some(&measured) => vec![book, measured],
+        None => vec![book],
+    };
+    license.with_witness(dorc_core::Witness::of(origins))
 }
 
 /// The BASELINE wall walk (flag-off / Stage-1 / `23Ib-fd10`): walk once in execution order
