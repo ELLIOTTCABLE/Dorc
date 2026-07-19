@@ -3738,6 +3738,20 @@ fn facts_from_sites(
         {
             collapse_evidence.push(measured_merge_disagreement(site_id, &[site_id]));
         }
+        // C5 substitution refusal: an INVALID Query (a mutator/opaque reached its guard) has a
+        // stale resting rc ⇒ its consumed Status stays ⊤ above ⇒ the guard runs, no substitution.
+        // tc-substitution-refusal-scope: minted only for the invalid-Query withhold (a genuine
+        // consumed-channel refusal), NOT the establish withhold (firewall-by-design; it elides via
+        // Effect). Decision-inert — the run is the firewall's; this only narrates the ⊤ channel.
+        if matches!(check.site_kind, ProbeSiteKind::Query { valid: false }) {
+            collapse_evidence.push(CollapseEvidence::new(
+                TrustTier::Derived,
+                CollapseKind::SubstitutionRefusal {
+                    site: site_id,
+                    top_channel: dorc_core::Channel::StatusRelaxable,
+                },
+            ));
+        }
         // Source 2 — a CROSS-site conflict: two sites on one cell whose observables disagree. The
         // meet degrades the channel to ⊤ (`merge_observable`); the evidence names both establishers.
         if let Some(prior) = by_fact.get(&check.fact).copied() {
@@ -5295,6 +5309,36 @@ mod tests {
             obs.status,
             Predicted::Top,
             "an INVALID Query guard's rc is stale ⇒ withheld (status Top ⇒ runs for real)"
+        );
+    }
+
+    #[test]
+    fn invalid_query_withhold_mints_substitution_refusal() {
+        // C5 (`AID-NEEDS:law-collapse-mints-evidence`; `anti-masking-tests`): an INVALID Query's
+        // consumed Status stays ⊤ ⇒ the guard runs (no substitution). The withhold MINTS one
+        // SubstitutionRefusal naming the ⊤ channel; a VALID Query (substitutable rc) mints none.
+        let mut i = Interner::default();
+        let fact = tool(&mut i, "nginx");
+        let results = parse_str("site 0 effect=holds rc=0\n", &mut i);
+
+        let invalid = probe1(fact, ProbeSiteKind::Query { valid: false });
+        let (_facts, evidence) = facts_from_sites(&invalid, &results);
+        assert_eq!(
+            evidence
+                .iter()
+                .filter(|e| matches!(e.kind(), CollapseKind::SubstitutionRefusal { .. }))
+                .count(),
+            1,
+            "an invalid Query withhold mints one SubstitutionRefusal"
+        );
+
+        let valid = probe1(fact, ProbeSiteKind::Query { valid: true });
+        let (_facts, evidence) = facts_from_sites(&valid, &results);
+        assert!(
+            !evidence
+                .iter()
+                .any(|e| matches!(e.kind(), CollapseKind::SubstitutionRefusal { .. })),
+            "a valid Query substitutes its rc ⇒ no refusal"
         );
     }
 
