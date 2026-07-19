@@ -1557,6 +1557,9 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
         // not an error. (A `--exit-code`-like surface must source from divergence-of-world, never
         // this raw rc — see `dorc_plan::render::probe::record_scaffold`.)
         emit_sigpipe_race_notes(&results);
+        // `27W` §2: the report lane's selected default disclosure (recognized author decline-classes;
+        // noise retained for d4's max verbosity). Empty in-corpus (empty-world-byte-identical).
+        emit_report_lane_notes(&results);
         // Stage 2 co-primary (rul24-divergence-is-the-game / TC-3): every SURVIVED elision names,
         // on this same why-lens lane, which running walls it crossed and whose footprint licensed
         // each crossing. This is the attribution tether under the sharpest claim in the design —
@@ -4197,11 +4200,42 @@ struct SiteResults {
     /// [`dorc_plan::Footprint::add_reached`]) before the survival walk. NB the arm index re-keys each
     /// line back to the arm's LIFTED kind (the vocabulary fence — the kind is never host-minted).
     reaches: BTreeMap<(String, usize), Vec<String>>,
+    /// The REPORT lane (`27W` §2 tier-3): the `<verb> <class> <tail>` emissions an oracle wrote on
+    /// its declining paths, re-keyed to their emitting site by the probe scaffold (`report site=<key>
+    /// …`). Decision-inert (`two-plane-aid-law`): classes route AID only, never the license plane.
+    /// Noise-tolerant (`27W:rul-report-noise-tolerant`): nothing is silently dropped — an
+    /// unrecognized verb/class or free-form line is RETAINED (`recognized=false`), sanitized +
+    /// size-capped, for max-verbosity display (d4). Ordered by arrival (a `Vec`, deduped on the
+    /// whole record).
+    reports: Vec<ReportRecord>,
     /// Was the source stream FRAMED (`262` §2)? Gates the at-most deriv-family completeness
     /// check ([`merge_derived_footprints`]) — only a framed stream carries `deriv-end`
     /// close-records; the legacy authored fixtures are trusted-complete.
     framed: bool,
 }
+
+/// One ingested report-lane record (`27W` §2 tier-3 · `decline-class-emission`): an emission an
+/// oracle wrote on a declining path (`printf '<verb> <class> <tail>' >>"${DREP_V1:-/dev/null}"`),
+/// re-keyed to its site by the probe scaffold. Decision-inert. Noise-tolerant: an unrecognized
+/// verb/class is kept (`recognized=false`) as a generic author-note, never dropped, never an error.
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct ReportRecord {
+    /// The emitting site (the scaffold's `site=<key>`), if attached.
+    site: Option<RecordKey>,
+    /// The recognized decline class, or `None` (degrade-generic — unknown token / free-form line).
+    class: Option<dorc_core::evidence::DeclineClass>,
+    /// The full raw `<verb> <class> <tail>` emission, sanitized + size-capped at ingestion (the
+    /// BASIC cap only — full why-surface sanitization is the security round's, `an-output-sanitization`
+    /// fence named; `law-whylog-is-sensitive`). Retained for max-verbosity display (d4).
+    raw: String,
+    /// Whether the verb + class were BOTH recognized (else retained as a generic author-note).
+    recognized: bool,
+}
+
+/// The ingestion size-cap on a report-lane emission's raw text (`27W` §2 — the BASIC cap only). A
+/// tail longer than this is truncated with an ellipsis; a curious admin still sees the head at max
+/// verbosity, and the full text never reaches a decision (decision-inert).
+const REPORT_RAW_CAP: usize = 200;
 
 /// One coordinate's resolver readback (24F §3): the canonical form its `<kind>.resolve()` printed, or
 /// [`Dangling`](ResolvOutcome::Dangling) — the resolver's natural failure on an enumerable kind (§4,
@@ -4260,6 +4294,47 @@ fn emit_sigpipe_race_notes(results: &SiteResults) {
                  consider a full-read form over `| grep -q`)"
             );
         }
+    }
+}
+
+/// The engine-owned display word for a decline class (`27W:rul-class-starter-set`). Display only
+/// (`inv-referent-agnostic`); the spellings ride `27V:rul-output-form-unwelded`.
+fn decline_class_word(class: dorc_core::evidence::DeclineClass) -> &'static str {
+    use dorc_core::evidence::DeclineClass;
+    match class {
+        DeclineClass::Unsound => "unsound",
+        DeclineClass::Unmodeled => "unmodeled",
+        DeclineClass::Interactive => "interactive",
+        DeclineClass::Hazard => "hazard",
+    }
+}
+
+/// Emit the report lane's SELECTED default disclosure (`27W` §2 · `decline-class-emission`): one
+/// advisory note per RECOGNIZED author decline-class (the class-routing an admin sees by default).
+/// The unrecognized / free-form NOISE is retained in `results.reports`
+/// (`27W:rul-report-noise-tolerant`) but printed only at max verbosity — d4's surface, not this
+/// default. THINNEST surface pending d4's arrangement (`27V:rul-output-form-unwelded`): the wording
+/// re-blesses freely. Empty in the corpus (no oracle emits report lines ⇒
+/// `empty-world-byte-identical`). `note:` prefix ⇒ never crosses the gate-3 error floor.
+fn emit_report_lane_notes(results: &SiteResults) {
+    for r in &results.reports {
+        // Default surface = the SELECTED (recognized) records; noise waits for max verbosity (d4).
+        let Some(class) = r.class.filter(|_| r.recognized) else {
+            continue;
+        };
+        let at = match r.site {
+            Some(k) => match k.member {
+                Some(m) => format!(" at site {}.{m}", k.site.0),
+                None => format!(" at site {}", k.site.0),
+            },
+            None => String::new(),
+        };
+        // The tail = the emission past `<verb> <class>` (the author's own words).
+        let tail = r.raw.splitn(3, ' ').nth(2).unwrap_or(r.raw.as_str());
+        eprintln!(
+            "note: author declines [{}]{at} — {tail}",
+            decline_class_word(class)
+        );
     }
 }
 
@@ -4384,10 +4459,65 @@ fn parse_results(records: &[String], framed: bool, interner: &mut Interner) -> S
                 }
             }
             "site" => parse_site_record(rest, ordinal, &mut out, interner),
+            // `27W` §2 tier-3: `report [site=<key>] <verb> <class> <free tail…>`. Ingested into the
+            // decision-INERT report lane — never a fold input (`two-plane-aid-law`).
+            "report" => parse_report_record(rest, &mut out),
             _ => {} // unrecognized inner tag ⇒ drop (kFAIL-perform: no verdict ⇒ run)
         }
     }
     out
+}
+
+/// Ingest one report-lane record (`27W` §2 tier-3): `report [site=<key>] <verb> <class> <tail…>`.
+/// Decision-inert. Noise-tolerant (`27W:rul-report-noise-tolerant`): the verb/class are recognized
+/// best-effort, but an unrecognized token or free-form line is RETAINED (`recognized=false`), never
+/// dropped, never an error. Deduped on the whole record — a tier-3 echo of an already-ingested line
+/// adds nothing (the dedup the tier-2 static classification will later key by (site, arm, class)).
+fn parse_report_record(rest: &str, out: &mut SiteResults) {
+    // Optional `site=<key>` prefix the scaffold attaches; the remainder is the author's emission.
+    let (site, body) = match rest.strip_prefix("site=") {
+        Some(after) => {
+            let (key_tok, tail) = after.split_once(' ').unwrap_or((after, ""));
+            (parse_site_key(key_tok), tail)
+        }
+        None => (None, rest),
+    };
+    // v1 grammar: verb `decline` (`27W:rul-advise-verb-deferred`) + a starter-set class. Either
+    // unrecognized ⇒ degrade-generic (kept as an author-note).
+    let mut words = body.split_whitespace();
+    let verb = words.next();
+    let class = words
+        .next()
+        .and_then(dorc_core::evidence::DeclineClass::from_token);
+    let recognized = verb == Some("decline") && class.is_some();
+    let rec = ReportRecord {
+        site,
+        class,
+        raw: sanitize_report_raw(body),
+        recognized,
+    };
+    if !out.reports.contains(&rec) {
+        out.reports.push(rec);
+    }
+}
+
+/// Sanitize + size-cap a report-lane emission's raw text at ingestion (`27W` §2 — the BASIC cap
+/// only; full why-surface sanitization is the security round's, fence `an-output-sanitization`).
+/// Control bytes become spaces (a minimal terminal-safety floor); the text is truncated at a char
+/// boundary past [`REPORT_RAW_CAP`] with an ellipsis. NEVER a decision input (decision-inert).
+fn sanitize_report_raw(s: &str) -> String {
+    let cleaned: String = s
+        .chars()
+        .map(|c| if c.is_control() { ' ' } else { c })
+        .collect();
+    if cleaned.len() <= REPORT_RAW_CAP {
+        return cleaned;
+    }
+    let mut end = REPORT_RAW_CAP;
+    while end > 0 && !cleaned.is_char_boundary(end) {
+        end = end.saturating_sub(1);
+    }
+    format!("{}…", &cleaned[..end])
 }
 
 /// Parse `u32` leaf-id.
@@ -5457,6 +5587,54 @@ mod tests {
             }],
             unresolvable: vec![],
         }
+    }
+
+    #[test]
+    fn report_lane_ingests_recognized_declines_and_retains_noise() {
+        // `27W` §2 + `27W:rul-report-noise-tolerant`: a recognized `decline <class>` is classed and
+        // site-keyed; an unknown verb/class or a free-form line is RETAINED (recognized=false),
+        // never dropped. Dedup on the whole record. Decision-inert (never near the fold).
+        use dorc_core::evidence::DeclineClass;
+        let mut i = Interner::default();
+        let r = parse_str(
+            "report site=5 decline unsound vm.drop_caches is a write-only trigger key\n\
+             report decline bogusclass some free text\n\
+             report totally freeform author noise\n\
+             report site=5 decline unsound vm.drop_caches is a write-only trigger key\n",
+            &mut i,
+        );
+        assert_eq!(r.reports.len(), 3, "the exact duplicate is deduped");
+        assert!(
+            r.reports[0].recognized
+                && r.reports[0].class == Some(DeclineClass::Unsound)
+                && r.reports[0].site == Some(rk(5)),
+            "a recognized decline is classed + site-keyed: {:?}",
+            r.reports[0]
+        );
+        assert!(
+            !r.reports[1].recognized && r.reports[1].class.is_none(),
+            "an unknown class ⇒ degrade-generic, retained (never dropped)"
+        );
+        assert!(
+            !r.reports[2].recognized,
+            "a free-form line (no `decline` verb) is retained, never dropped"
+        );
+    }
+
+    #[test]
+    fn report_lane_sanitizes_and_caps_the_raw_tail() {
+        // The ingestion BASIC cap (`27W` §2; full sanitization is the security round's).
+        let capped = sanitize_report_raw(&format!("decline hazard {}", "x".repeat(500)));
+        assert!(
+            capped.chars().count() <= REPORT_RAW_CAP + 1,
+            "capped at REPORT_RAW_CAP chars (+ the ellipsis)"
+        );
+        assert!(capped.ends_with('…'), "an over-cap tail is ellipsized");
+        let cleaned = sanitize_report_raw("decline unsound has\ta\ttab and \u{7} bell");
+        assert!(
+            !cleaned.contains('\u{7}') && !cleaned.contains('\t'),
+            "control bytes are neutralized (a minimal terminal-safety floor)"
+        );
     }
 
     #[test]

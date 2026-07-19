@@ -197,6 +197,22 @@ pub enum DeclineClass {
     Hazard,
 }
 
+impl DeclineClass {
+    /// Parse an engine-owned decline-class token (`27W:rul-class-starter-set`, soft-acked; the
+    /// closed, append-only v1 set). An unknown token ⇒ `None` — the report lane DEGRADES it to a
+    /// generic author-note, never an error (`27W:rul-report-noise-tolerant`).
+    #[must_use]
+    pub fn from_token(token: &str) -> Option<Self> {
+        match token {
+            "unsound" => Some(Self::Unsound),
+            "unmodeled" => Some(Self::Unmodeled),
+            "interactive" => Some(Self::Interactive),
+            "hazard" => Some(Self::Hazard),
+            _ => None,
+        }
+    }
+}
+
 /// The authored reason a decline carries (`27W` §3): the class plus the emitting arm's source
 /// span. The FIELD lands NOW; its POPULATION lands with d3's report-lane ingestion (until then a
 /// decline mints `authored_reason: None` — a silent decline stays legal, classing is enhancement).
@@ -367,6 +383,32 @@ impl CollapseEvidence {
     pub fn kind(&self) -> &CollapseKind {
         &self.kind
     }
+
+    /// Reconstruct a [`CollapseKind::VerdictDecline`] evidence with its `authored_reason` populated
+    /// (`27W` §3 · d3): the report-lane ingestion resolves the decline CLASS + emitting-arm span
+    /// AFTER the static decline mint (a dynamic-argv decline is classed only at runtime), so the
+    /// evidence gains its authored reason WITHOUT field mutation (immutable evidence — the
+    /// tc-authored-reason-immutability ruling: a narrow reconstructor, never a mutable setter). A
+    /// non-decline evidence, or one already carrying a reason, is returned unchanged (idempotent —
+    /// the tier-2 static class already populated it, so a tier-3 runtime echo never overwrites).
+    #[must_use]
+    pub fn with_authored_reason(self, reason: AuthoredReason) -> Self {
+        match self.kind {
+            CollapseKind::VerdictDecline {
+                arm,
+                gate,
+                authored_reason: None,
+            } => Self {
+                tier: self.tier,
+                kind: CollapseKind::VerdictDecline {
+                    arm,
+                    gate,
+                    authored_reason: Some(reason),
+                },
+            },
+            _ => self,
+        }
+    }
 }
 
 #[cfg(test)]
@@ -468,6 +510,76 @@ mod tests {
         if let CollapseKind::Cancellation(r) = ev.kind() {
             match *r {}
         }
+    }
+
+    #[test]
+    fn decline_class_from_token_is_the_closed_v1_set() {
+        // `27W:rul-class-starter-set`: exactly the four v1 tokens map; anything else degrades to
+        // None (the report lane keeps it as a generic author-note, never an error).
+        assert_eq!(
+            DeclineClass::from_token("unsound"),
+            Some(DeclineClass::Unsound)
+        );
+        assert_eq!(
+            DeclineClass::from_token("hazard"),
+            Some(DeclineClass::Hazard)
+        );
+        assert_eq!(
+            DeclineClass::from_token("bogus"),
+            None,
+            "unknown ⇒ degrade-generic"
+        );
+        assert_eq!(DeclineClass::from_token(""), None);
+    }
+
+    #[test]
+    fn with_authored_reason_populates_a_decline_without_mutation_and_is_idempotent() {
+        // d3 / `27W` §3 (tc-authored-reason-immutability): a VerdictDecline gains its authored
+        // reason via a narrow reconstructor, never a field setter. Idempotent: an already-populated
+        // reason (tier-2 static) is NOT overwritten by a later tier-3 runtime echo.
+        let reason = AuthoredReason {
+            class: DeclineClass::Unsound,
+            arm: MintSpan(span(4, 9)),
+        };
+        let ev = CollapseEvidence::new(
+            TrustTier::Vouched,
+            CollapseKind::VerdictDecline {
+                arm: MintSpan(span(0, 3)),
+                gate: DeclineGate::Return,
+                authored_reason: None,
+            },
+        );
+        let populated = ev.with_authored_reason(reason);
+        assert!(
+            matches!(
+                populated.kind(),
+                CollapseKind::VerdictDecline { authored_reason: Some(r), .. } if r.class == DeclineClass::Unsound
+            ),
+            "the reconstructor populates the class"
+        );
+        // Idempotent: a second reason does not overwrite.
+        let other = AuthoredReason {
+            class: DeclineClass::Hazard,
+            arm: MintSpan(span(1, 2)),
+        };
+        let again = populated.with_authored_reason(other);
+        assert!(
+            matches!(
+                again.kind(),
+                CollapseKind::VerdictDecline { authored_reason: Some(r), .. } if r.class == DeclineClass::Unsound
+            ),
+            "a populated reason is never overwritten (tier-2 wins over a tier-3 echo)"
+        );
+        // A non-decline evidence is returned unchanged.
+        let refusal = CollapseEvidence::new(
+            TrustTier::Derived,
+            CollapseKind::render_refusal_heredoc(site(2)),
+        );
+        assert_eq!(
+            refusal.clone().with_authored_reason(reason),
+            refusal,
+            "non-decline unchanged"
+        );
     }
 
     #[test]
