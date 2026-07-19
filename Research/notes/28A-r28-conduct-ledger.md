@@ -234,6 +234,25 @@ refusal-context borrows sources, dump materializes only on the error path).
   into a subdir if preferred; the `24Ka`/`24Kb`/xcheck branches are now fully
   redundant with quarantine copies and safe to retire at leisure.
 
+## §2f — Tasteful-Rust research adjudication (conductor, 2026-07-19)
+
+The human-resumed research round LANDED (`.claude/research/tasteful-rust/`: 22
+graded sources, validate-clean; anchor = Microsoft Pragmatic Rust Guidelines
+v2026.6 + official API Guidelines). Conductor adjudication: most of the rule-set
+is already enforced (workspace lints = panic-free/no-unsafe; DST law =
+M-MOCKABLE-SYSCALLS stated first-party; comment-budget law =
+M-NO-META-DESIGN-DOCUMENTATION; d1/d2 briefs = borrow-first,
+concrete-over-abstract, typed errors). THREADED to errorloom d2 mid-flight (six
+items): common-derives audit · `#[non_exhaustive]` judgment pass on growable
+public enums (semver, pre-publication) · `#[must_use]` audit · doc conventions
+(crate example, `## Errors`, `?`-examples, missing_docs) · MSRV declaration ·
+the taste-stance synthesis (both LLM-slop and idiomatic-maximalism are distance
+from simple-and-correct, opposite directions; visible clone ≠ defeat). DECLINED
+to thread: iterator-combinator taste (clippy covers), crate-splitting
+(simplicity beats compile-time for one small crate), pedantic-clippy expansion
++ cargo-audit/miri (lint-table/CI churn = human's call at publication). The
+syntax lane gets none of this (dorc-internal conventions rule).
+
 ## §3 — Lane map and state (update on every change)
 
 | lane | branch | shape | state |
