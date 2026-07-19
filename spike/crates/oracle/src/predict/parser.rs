@@ -894,7 +894,7 @@ impl Parser<'_> {
             None
         };
 
-        let Some(parsed) = split_mark_target(&lexeme) else {
+        let Some(parsed) = split_mark_target(&lexeme, '#') else {
             return Err(
                 self.fail_here("malformed dialect mark target (expected `kind:entity#selector`)")
             );
@@ -1305,37 +1305,39 @@ fn mark_marker(lexeme: &str) -> Option<MarkSigil> {
 
 /// A syntactically-split mark target — every fragment OPAQUE (`inv-referent-agnostic`,
 /// never decoded). See [`split_mark_target`].
-struct ParsedTarget {
-    kind: String,
-    entity: Option<String>,
-    prop: Option<String>,
+pub(crate) struct ParsedTarget {
+    pub(crate) kind: String,
+    pub(crate) entity: Option<String>,
+    pub(crate) prop: Option<String>,
 }
 
-/// Split a mark target lexeme `kind[:entity[#selector]]` into its opaque fragments
-/// (`277` §4a): split the body on the FIRST `:` (kind ⟂ rest) and the rest on the FIRST
-/// `#` (entity ⟂ selector). `None` if empty or kind-less (⊤-reject upstream). The kind
-/// fragment keeps its reverse-DNS dots; `.` no longer introduces anything in coordinate
-/// position (the `.prop` production is dead — `277` §4a). An empty entity before the `#`
-/// is the empty-entity transitional form `kind:#sel` (`entity = Some("")`, a real value,
-/// not absence — `inv-referent-agnostic`: empty ≠ None). No fragment is interpreted.
-fn split_mark_target(lexeme: &str) -> Option<ParsedTarget> {
+/// Split a mark target lexeme `kind[:entity[<sel>selector]]` into its opaque fragments
+/// (`277` §4a / `281` §6): split the body on the FIRST `:` (kind ⟂ rest) and the rest on the
+/// FIRST selector-introducer `sel` (entity ⟂ selector). `sel` is `#` for the OLD grammar and
+/// `@` for the `281` respell (`281` §R4) — the only difference between the two, so ONE impl
+/// serves both. `None` if empty or kind-less (⊤-reject upstream). The kind fragment keeps its
+/// reverse-DNS dots; `.` no longer introduces anything in coordinate position (the `.prop`
+/// production is dead — `277` §4a). An empty entity before `sel` is the empty-entity
+/// transitional form `kind:<sel>selector` (`entity = Some("")`, a real value, not absence —
+/// `inv-referent-agnostic`: empty ≠ None). No fragment is interpreted.
+pub(crate) fn split_mark_target(lexeme: &str, sel: char) -> Option<ParsedTarget> {
     if lexeme.is_empty() {
         return None;
     }
     let Some((kind, rest)) = lexeme.split_once(':') else {
-        // No `:` — the emission form `KIND#SELECTOR` (the selector rides the mark; the entity comes
-        // from the printf line — `rul-emission-selector-on-mark`) or a bare `KIND` (`277` §4a). The
-        // selector splits off the FIRST `#`; the kind keeps its reverse-DNS dots (no `#` is a valid
-        // kind char). Entity is `None` (no entity in the mark).
-        return match lexeme.split_once('#') {
-            Some((kind, sel)) if !kind.is_empty() && !sel.is_empty() => Some(ParsedTarget {
+        // No `:` — the emission form `KIND<sel>SELECTOR` (the selector rides the mark; the entity
+        // comes from the printf line — `rul-emission-selector-on-mark`) or a bare `KIND` (`277` §4a).
+        // The selector splits off the FIRST `sel`; the kind keeps its reverse-DNS dots (no `sel` is a
+        // valid kind char). Entity is `None` (no entity in the mark).
+        return match lexeme.split_once(sel) {
+            Some((kind, s)) if !kind.is_empty() && !s.is_empty() => Some(ParsedTarget {
                 kind: kind.to_owned(),
                 entity: None,
-                prop: Some(sel.to_owned()),
+                prop: Some(s.to_owned()),
             }),
-            // `KIND#` (empty selector) or `#…` (empty kind) — no clean split ⇒ bare kind (a trailing
-            // `#` stays in the kind, caught by the kind-charset differential; the corpus never does
-            // this).
+            // `KIND<sel>` (empty selector) or `<sel>…` (empty kind) — no clean split ⇒ bare kind (a
+            // trailing `sel` stays in the kind, caught by the kind-charset differential; the corpus
+            // never does this).
             _ => Some(ParsedTarget {
                 kind: lexeme.to_owned(),
                 entity: None,
@@ -1348,12 +1350,12 @@ fn split_mark_target(lexeme: &str) -> Option<ParsedTarget> {
     }
     let (entity, prop) = match rest {
         "" => (None, None),
-        // The entity/selector split is on the FIRST `#` (the attached selector-introducer,
-        // `277` §4a). No `#` ⇒ a whole-entity coordinate. A leading `#` ⇒ the empty-entity form
-        // `kind:#sel`.
-        r => match r.split_once('#') {
+        // The entity/selector split is on the FIRST `sel` (the attached selector-introducer,
+        // `277` §4a / `281` §6). No `sel` ⇒ a whole-entity coordinate. A leading `sel` ⇒ the
+        // empty-entity form `kind:<sel>selector`.
+        r => match r.split_once(sel) {
             Some((e, s)) if !s.is_empty() => (Some(e.to_owned()), Some(s.to_owned())),
-            // `kind:entity#` (empty selector) is malformed — treat the whole rest as the
+            // `kind:entity<sel>` (empty selector) is malformed — treat the whole rest as the
             // entity (the selector is dropped; the differential gate catches a mis-spell).
             _ => (Some(r.to_owned()), None),
         },
@@ -1372,12 +1374,12 @@ fn split_mark_target(lexeme: &str) -> Option<ParsedTarget> {
 /// consumers (`derive_predict`), not here: the parser is role-agnostic (`:` serves both verdict and
 /// disturbs marks), so it accepts the brace SHAPE and leaves the single-cell rejection to the
 /// role-aware lift.
-fn is_valid_selector(sel: &str) -> bool {
+pub(crate) fn is_valid_selector(sel: &str) -> bool {
     sem::is_name(sel) || is_brace_alternation(sel)
 }
 
 /// Is `sel` a well-formed brace-alternation `{tok,tok[,…]}` (`277` §4c)?
-fn is_brace_alternation(sel: &str) -> bool {
+pub(crate) fn is_brace_alternation(sel: &str) -> bool {
     brace_tokens(sel).is_some()
 }
 
