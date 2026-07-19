@@ -1103,6 +1103,7 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
     let peeled_sites = wrapped_analysis.peeled;
     let wrapped_probes = wrapped_analysis.wrapped;
     let carried_attribution = wrapped_analysis.carried;
+    let entry_evidence = wrapped_analysis.collapse_evidence;
     report_at(advisory, "wrapped", book_source, &wrapped_analysis.hints);
     let (classified, why_diags, kills, kill_coords, fact_backings, classify_evidence) =
         dorc_analysis::effect::classify_with_why_diags(
@@ -1465,13 +1466,14 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
     // lanes are load-bearing correctness disclosures gate-7 pins). `why` mode SKIPS them — its
     // stdout report (below) is the detail surface, so a stderr echo would just double it.
     if advisory && mode != Mode::Why {
-        // The C3 static-merge + C4 probe-merge + C5 (verdict decline · substitution refusal ·
-        // survival wall/demotion) collapse-evidence, unioned onto the why-lens seam (d4 fills the
-        // render; all decision-inert — `two-plane-aid-law`).
+        // The C3 static-merge + C4 probe-merge + C5 (verdict decline · entry denial · substitution
+        // refusal · survival wall/demotion) collapse-evidence, unioned onto the why-lens seam (d4
+        // fills the render; all decision-inert — `two-plane-aid-law`).
         let collapse_evidence: Vec<CollapseEvidence> = classify_evidence
             .iter()
             .cloned()
             .chain(decline_evidence.iter().cloned())
+            .chain(entry_evidence.iter().cloned())
             .chain(merge_evidence.iter().cloned())
             .chain(plan.survival_report.collapse_evidence().iter().cloned())
             .collect();
@@ -4378,6 +4380,10 @@ struct WrappedAnalysis {
     /// the why-lens tether emitted for every carried elision (`emit_carry_attribution`). Keyed by
     /// `AstId` so the plan's per-site step re-keys to the site number for the `why: site N …` line.
     carried: BTreeMap<dorc_core::AstId, String>,
+    /// C5 aid plane (`27V` Lane A): the decision-inert [`CollapseKind::EntryDenial`] evidence minted
+    /// when a wrapped site's entry consent degrades to guard/run (`two-plane-aid-law`; steers
+    /// nothing). Threaded to the why-lens seam by the cli edge (d4 renders).
+    collapse_evidence: Vec<CollapseEvidence>,
 }
 
 /// Build the wrapped-BOOK-site analysis (`27C` §3 / lane-integration `27N`): recognize each site
@@ -4405,6 +4411,7 @@ fn build_wrapped_analysis(
 ) -> WrappedAnalysis {
     use dorc_analysis::cfg::{CfgNodeId, CfgNodeKind};
     use dorc_analysis::value::ValueOf;
+    use dorc_core::evidence::EntryDegradeTag;
     use dorc_oracle::entry::{
         EntryDecision, EntryDegrade, adoption_hint, decide_entry, peel_book_chain,
     };
@@ -4421,6 +4428,7 @@ fn build_wrapped_analysis(
         wrapped: dorc_plan::WrappedProbes::new(),
         hints: Vec::new(),
         carried: BTreeMap::new(),
+        collapse_evidence: Vec::new(),
     };
     if wrappers.is_empty() {
         return out; // no wrapper oracle ⇒ nothing peels (rung-0 byte-identical)
@@ -4563,6 +4571,24 @@ fn build_wrapped_analysis(
                         },
                     )
                 } else {
+                    // C5 aid: the entry consent degraded to guard/run — narrate the STATIC rung
+                    // (`27C` §3). Consented-tier (dial × capability); decision-inert (the run is the
+                    // degrade's; this only names the rung). The runtime rung surfaces as an
+                    // EntryFailure at the probe rc-partition, not here.
+                    let rung = match reason {
+                        EntryDegrade::NoCapability(_) => Some(EntryDegradeTag::NoCapability),
+                        EntryDegrade::DialForbids => Some(EntryDegradeTag::DialForbids),
+                        EntryDegrade::Unvouched(_) => Some(EntryDegradeTag::Unvouched),
+                        EntryDegrade::TopDimension(_) => Some(EntryDegradeTag::TopDimension),
+                        EntryDegrade::NoEntryForm => Some(EntryDegradeTag::NoEntryForm),
+                        EntryDegrade::RuntimeEntryFailure => None,
+                    };
+                    if let Some(rung) = rung {
+                        out.collapse_evidence.push(CollapseEvidence::new(
+                            TrustTier::Consented,
+                            CollapseKind::EntryDenial { rung },
+                        ));
+                    }
                     if let EntryDegrade::Unvouched(dim) = reason {
                         out.hints.push(Diag::new(
                             DiagCode::WrappedSiteAdoptionHint(WrappedSiteAdoptionHint {
