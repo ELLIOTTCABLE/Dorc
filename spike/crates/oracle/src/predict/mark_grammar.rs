@@ -225,10 +225,21 @@ fn consume_verb(verb: Verb, words: &[SpannedWord], i: usize, out: &mut LineMarks
     i.saturating_add(1)
 }
 
-/// Build a coordinate/meta mark from `payload` for `kind` and push it, refusing a brace on a
-/// verdict payload (`281` §6, the reused single-cell rule). A payload word is a coordinate/token.
+/// Build the coordinate/meta mark(s) from `payload` for `kind`, per the DUMB expand-then-validate
+/// brace model (`28A:rul-*` brace ruling, `281` §6). Braces expand shell-identically in exactly two
+/// v0.2 positions: a WHOLE payload word (`verb {a,b}` → N token marks) or a suffix immediately after
+/// `@` (`@{a,b}` → N selector marks); mid-token infix (`fs{view,amble}`) is not a valid selector and
+/// refuses. The expansion is uniform/context-free; the existing laws then judge — rc-arity makes a
+/// braced verdict illegal, and [`Code::MarkBraceVerdictSingleCell`] is kept as the friendlier
+/// specific pre-check for that common mistake (emitted in lieu of the N-verdict expansion).
 /// (The old verdict `= value` tail is dropped — `28A:rul-verdict-value-tail-drops`.)
 fn push_coordinate_mark(kind: MarkKind, payload: &SpannedWord, out: &mut LineMarks) {
+    if let Some(tokens) = brace_split(&payload.lexeme) {
+        for t in tokens {
+            push_one(kind, t, None, payload.span, out);
+        }
+        return;
+    }
     let Some(parsed) = split_mark_target(&payload.lexeme, SELECTOR) else {
         return;
     };
@@ -236,11 +247,23 @@ fn push_coordinate_mark(kind: MarkKind, payload: &SpannedWord, out: &mut LineMar
         if !is_valid_selector(sel) {
             return;
         }
-        if is_rc_consumer(kind) && brace_tokens(sel).is_some() {
-            out.diags.push(Diag::new(
-                Code::MarkBraceVerdictSingleCell(MarkBraceVerdictSingleCell),
-                payload.span,
-            ));
+        if let Some(tokens) = brace_tokens(sel) {
+            if is_rc_consumer(kind) {
+                out.diags.push(Diag::new(
+                    Code::MarkBraceVerdictSingleCell(MarkBraceVerdictSingleCell),
+                    payload.span,
+                ));
+                return;
+            }
+            for t in tokens {
+                push_one(
+                    kind,
+                    parsed.kind.clone(),
+                    Some((parsed.entity.clone(), t)),
+                    payload.span,
+                    out,
+                );
+            }
             return;
         }
     }
@@ -252,6 +275,40 @@ fn push_coordinate_mark(kind: MarkKind, payload: &SpannedWord, out: &mut LineMar
             prop: parsed.prop,
         },
         span: payload.span,
+    });
+}
+
+/// DUMB brace split of a whole payload word `{a,b[,…]}` (shell-identical, `28A` brace ruling): a
+/// `{`-wrapped word with ≥2 comma-separated tokens, NO charset validation (dimension tokens carry
+/// hyphens — `{user,fs-view}`), each token validated later by its consumer. `None` for a non-brace
+/// word (mid-token infix like `fs{view,amble}` does not start with `{`, so it refuses here).
+fn brace_split(word: &str) -> Option<Vec<String>> {
+    let inner = word.strip_prefix('{')?.strip_suffix('}')?;
+    let tokens: Vec<&str> = inner.split(',').collect();
+    (tokens.len() >= 2).then(|| tokens.into_iter().map(str::to_owned).collect())
+}
+
+/// Push one expanded mark: `sel = Some((entity, selector))` for a coordinate, `None` for a bare
+/// token payload (`kind` IS the token). The [`push_coordinate_mark`] brace-expansion helper.
+fn push_one(
+    kind: MarkKind,
+    kind_str: String,
+    sel: Option<(Option<String>, String)>,
+    span: Span,
+    out: &mut LineMarks,
+) {
+    let (entity, prop) = match sel {
+        Some((e, s)) => (e, Some(s)),
+        None => (None, None),
+    };
+    out.marks.push(Mark {
+        kind,
+        target: MarkTarget {
+            kind: kind_str,
+            entity,
+            prop,
+        },
+        span,
     });
 }
 
@@ -897,22 +954,53 @@ mod tests {
         assert_eq!(empty_ent.marks[0].target.prop.as_deref(), Some("sel"));
     }
 
-    /// Brace-alternation both shapes (`281` §6): attached `@{a,b}` and the standalone payload word
-    /// `verb {a,b}`. Refused on a verdict payload (the reused `mark-brace-verdict-single-cell`),
-    /// accepted on `disturbs`/`safe-across`.
+    /// Brace position 1 (attached `@{a,b}`): a suffix immediately after `@` expands to N selector
+    /// marks (`28A` brace ruling, DUMB expand-then-validate) on an emission verb.
     #[test]
-    fn brace_refused_on_verdict_allowed_on_emission() {
+    fn brace_attached_selector_expands() {
+        let lm = decode_line_marks(colon(), &words(&["disturbs", "sm.dorc.X@{a,b}"]));
+        assert!(lm.diags.is_empty());
+        let props: Vec<&str> = lm
+            .marks
+            .iter()
+            .filter_map(|m| m.target.prop.as_deref())
+            .collect();
+        assert_eq!(props, vec!["a", "b"]);
+        assert!(lm.marks.iter().all(|m| m.target.kind == "sm.dorc.X"));
+    }
+
+    /// Brace position 2 (whole payload word `{a,b}`): expands to N token marks (dimension payloads).
+    #[test]
+    fn brace_whole_payload_word_expands() {
+        let lm = decode_line_marks(colon(), &words(&["safe-across", "{user,fs-view}"]));
+        assert!(lm.diags.is_empty());
+        let kinds: Vec<&str> = lm.marks.iter().map(|m| m.target.kind.as_str()).collect();
+        assert_eq!(kinds, vec!["user", "fs-view"]);
+        assert!(lm.marks.iter().all(|m| m.kind == MarkKind::SafeAcross));
+    }
+
+    /// A braced verdict payload hits the friendlier `mark-brace-verdict-single-cell` pre-check (in
+    /// lieu of the N-verdict expansion rc-arity would then refuse); a braced `reads` expands to N
+    /// observe facts (`28A:rul-brace-on-reads-legal`).
+    #[test]
+    fn brace_on_verdict_precheck_on_reads_expands() {
         let verdict = decode_line_marks(colon(), &words(&["sm.dorc.X@{a,b}"]));
         assert_eq!(
             slugs(&verdict.diags),
             vec!["mark-brace-verdict-single-cell"]
         );
         assert!(verdict.marks.is_empty());
-        let disturbs = decode_line_marks(colon(), &words(&["disturbs", "sm.dorc.X@{a,b}"]));
-        assert!(disturbs.diags.is_empty() && disturbs.marks.len() == 1);
-        let dims = decode_line_marks(colon(), &words(&["safe-across", "{user,fs-view}"]));
-        assert!(dims.diags.is_empty() && dims.marks[0].kind == MarkKind::SafeAcross);
-        assert_eq!(dims.marks[0].target.kind, "{user,fs-view}");
+        let reads = decode_line_marks(decode_intro(":?").unwrap(), &words(&["sm.dorc.X@{a,b}"]));
+        assert!(reads.diags.is_empty());
+        assert_eq!(reads.marks.len(), 2);
+        assert!(reads.marks.iter().all(|m| m.kind == MarkKind::Reads));
+    }
+
+    /// Mid-token infix `@fs{view,amble}` is not a valid selector (v0.2 refuses it) — no mark minted.
+    #[test]
+    fn brace_infix_refused() {
+        let lm = decode_line_marks(colon(), &words(&["disturbs", "sm.dorc.X@fs{view,amble}"]));
+        assert!(lm.marks.is_empty());
     }
 
     /// rc-arity is over the WHOLE block, continuations included (`281` §7): two verdicts across a
