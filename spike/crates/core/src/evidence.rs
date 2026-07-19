@@ -49,7 +49,7 @@
 //! Nothing in THIS module iterates a fixpoint, so its own `Eq` is free.
 
 use crate::diag::SiteId;
-use crate::{Channel, JOIN_PARENT_CAP, LeafId, OutBytes, Span};
+use crate::{Channel, JOIN_PARENT_CAP, LeafId, OracleFileId, OutBytes, Span};
 
 /// The typed epistemic tier of a rendered link (`27V:mech-trust-tier-typed`;
 /// `AID-NEEDS:law-trust-tier-is-syntax`). Rendered UNIFORMLY by arrangement code (d4) — prose
@@ -222,6 +222,10 @@ pub struct AuthoredReason {
     pub class: DeclineClass,
     /// The declining arm's defining source span (`mech-minting-line-threading`).
     pub arm: MintSpan,
+    /// Which oracle file `arm` indexes into (`tc-oracle-file-identity`): the arm span crosses out
+    /// of its owning file's context to the render, so it carries the same file id the vouch span
+    /// does — a bare span is ambiguous once >1 oracle is loaded.
+    pub arm_file: OracleFileId,
 }
 
 /// Which channel-coverage failure formed a wall (`rul-only-oracle-bytes-ship` per-channel
@@ -309,9 +313,11 @@ pub enum CollapseKind {
         operands: Operands<ValueOperand>,
     },
     /// A verdict body declined (`rul-vouch-is-verdict-authoring`) ⇒ the site runs. Carries the
-    /// declining arm + the gate; `authored_reason` populated by d3 (`27W` §3).
+    /// declining arm (with its file id — `tc-oracle-file-identity`) + the gate; `authored_reason`
+    /// populated by the report-lane pairing (`27W` §3).
     VerdictDecline {
         arm: MintSpan,
+        arm_file: OracleFileId,
         gate: DeclineGate,
         authored_reason: Option<AuthoredReason>,
     },
@@ -396,12 +402,14 @@ impl CollapseEvidence {
         match self.kind {
             CollapseKind::VerdictDecline {
                 arm,
+                arm_file,
                 gate,
                 authored_reason: None,
             } => Self {
                 tier: self.tier,
                 kind: CollapseKind::VerdictDecline {
                     arm,
+                    arm_file,
                     gate,
                     authored_reason: Some(reason),
                 },
@@ -415,6 +423,10 @@ impl CollapseEvidence {
 mod tests {
     use super::*;
     use crate::{ByVouch, BytePos, LeafId, Rung};
+
+    /// A fixed non-zero oracle-file id for the tests (the id disambiguates >1 loaded oracle; a
+    /// single-file test just needs a stable value).
+    const F: OracleFileId = OracleFileId(1);
 
     fn span(lo: u32, hi: u32) -> Span {
         Span::new(BytePos(lo), BytePos(hi))
@@ -439,6 +451,7 @@ mod tests {
             tier,
             CollapseKind::VerdictDecline {
                 arm: MintSpan(span(4, 9)),
+                arm_file: F,
                 gate: DeclineGate::Return,
                 authored_reason: None,
             },
@@ -537,11 +550,13 @@ mod tests {
         let reason = AuthoredReason {
             class: DeclineClass::Unsound,
             arm: MintSpan(span(4, 9)),
+            arm_file: F,
         };
         let ev = CollapseEvidence::new(
             TrustTier::Vouched,
             CollapseKind::VerdictDecline {
                 arm: MintSpan(span(0, 3)),
+                arm_file: F,
                 gate: DeclineGate::Return,
                 authored_reason: None,
             },
@@ -557,6 +572,7 @@ mod tests {
         let other = AuthoredReason {
             class: DeclineClass::Hazard,
             arm: MintSpan(span(1, 2)),
+            arm_file: F,
         };
         let again = populated.with_authored_reason(other);
         assert!(

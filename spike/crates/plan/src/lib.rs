@@ -43,8 +43,8 @@ use dorc_core::diag::Diag;
 use dorc_core::evidence::{ChannelCoverage, DemoteTag, MintSpan};
 use dorc_core::{
     AstId, ByVouch, Carrier, Channel, CollapseEvidence, CollapseKind, Dialect, EntityRef,
-    FactBacking, Grade, Interner, KindId, Observable, Predicted, Rc, Rung, Symbol, TrustTier,
-    Verdict,
+    FactBacking, Grade, Interner, KindId, Observable, OracleFileId, Predicted, Rc, Rung, Symbol,
+    TrustTier, Verdict,
 };
 use dorc_oracle::verdict::VERDICT_SUFFIX;
 use dorc_syntax::ast::{Ast, NodeKind, RedirOp, RedirTarget};
@@ -921,7 +921,7 @@ pub fn build_vouches(
 ) -> (Carrier<Vouches>, Vec<CollapseEvidence>) {
     use dorc_oracle::predict::{map_provider_name, strip_verdict};
     use dorc_oracle::verdict::{
-        VerdictResolution, VerdictSet, check_commands, decline_gate, evaluate_verdict,
+        VerdictResolution, VerdictSet, check_commands, decline_site, evaluate_verdict,
     };
 
     let mut diags = Vec::new();
@@ -969,16 +969,24 @@ pub fn build_vouches(
         let op_refs: Vec<&str> = op_texts.iter().map(String::as_str).collect();
 
         // Find the provider's verdict funcdef (shared hyphen↔underscore convention) and trace it.
+        // The file INDEX (`OracleFileId`) rides along so a decline arm span crossing to the render
+        // carries its file identity (`tc-oracle-file-identity`).
         let want = map_provider_name(interner.resolve(*provider));
-        let found = verdict_sets.iter().zip(oracle_srcs).find_map(|(set, src)| {
-            set.providers()
-                .find(|p| map_provider_name(interner.resolve(*p)) == want)
-                .and_then(|p| set.get(p))
-                .map(|verdict| (*src, verdict))
-        });
-        let Some((src, verdict)) = found else {
+        let found =
+            verdict_sets
+                .iter()
+                .zip(oracle_srcs)
+                .enumerate()
+                .find_map(|(idx, (set, src))| {
+                    set.providers()
+                        .find(|p| map_provider_name(interner.resolve(*p)) == want)
+                        .and_then(|p| set.get(p))
+                        .map(|verdict| (idx, *src, verdict))
+                });
+        let Some((file_idx, src, verdict)) = found else {
             continue;
         };
+        let arm_file = OracleFileId(u32::try_from(file_idx).unwrap_or(u32::MAX));
         // The reached-path license (rul-guard-license): ONLY a Vouched resolution mints. A Declined
         // (unhandled path / an inert builtin / a non-converged `return` — hz-refusepath) or ⊤ ⇒ no
         // vouch ⇒ run.
@@ -986,13 +994,15 @@ pub fn build_vouches(
             evaluate_verdict(verdict, &op_refs),
             VerdictResolution::Vouched
         ) {
-            // Narrate a genuine DECLINE (not a ⊤): gate + authoring funcdef span (c7 refines to the
-            // precise arm; `authored_reason` d3-populated).
-            if let Some(gate) = decline_gate(verdict, &op_refs) {
+            // Narrate a genuine DECLINE (not a ⊤): gate + the PRECISE reached declining-arm span
+            // (C7; `Unreached` has no reached statement ⇒ falls back to the funcdef `name_span`,
+            // the honest coarsest-true span). `authored_reason` populated by the report-lane pairing.
+            if let Some((gate, arm_span)) = decline_site(verdict, &op_refs) {
                 collapse_evidence.push(CollapseEvidence::new(
                     TrustTier::Vouched,
                     CollapseKind::VerdictDecline {
-                        arm: MintSpan(verdict.name_span),
+                        arm: MintSpan(arm_span.unwrap_or(verdict.name_span)),
+                        arm_file,
                         gate,
                         authored_reason: None,
                     },

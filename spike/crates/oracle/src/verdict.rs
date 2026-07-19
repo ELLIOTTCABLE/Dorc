@@ -59,7 +59,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use dorc_core::evidence::DeclineGate;
-use dorc_core::{Carrier, Interner, ProviderId, Rc, Symbol};
+use dorc_core::{Carrier, Interner, ProviderId, Rc, Span, Symbol};
 use dorc_syntax::sem::UnsetPolicy;
 
 use crate::predict::{
@@ -187,6 +187,7 @@ pub fn evaluate_verdict(verdict: &Predict, argv: &[&str]) -> VerdictResolution {
         vars: BTreeMap::new(),
         reached_command: false,
         reached_inert: false,
+        decline_span: None,
         budget,
         steps: 0,
     };
@@ -221,13 +222,24 @@ fn classify_return(code: Rc) -> VerdictResolution {
 }
 
 /// The [`DeclineGate`] a verdict trace decline took (C5; `27V` Lane A / `rul-vouch-is-verdict-
-/// authoring`): `Some(gate)` for a [`VerdictResolution::Declined`], `None` for a `Vouched` or ⊤ one.
-/// Names the GATE the decline reached — an explicit non-converged `return`, a reached arm that ran
-/// no check, or an inert fixed-rc builtin — never the license (decision-inert; the rc-partition
-/// stays a flat sink, the license plane never reads a gate). Re-traces (analysis-side, cheap) so
-/// [`evaluate_verdict`]'s hot decision path stays byte-untouched (`inv-determinism`).
+/// authoring`). Thin wrapper over [`decline_site`] for callers wanting only the gate.
 #[must_use]
 pub fn decline_gate(verdict: &Predict, argv: &[&str]) -> Option<DeclineGate> {
+    decline_site(verdict, argv).map(|(gate, _)| gate)
+}
+
+/// The [`DeclineGate`] a verdict trace decline took PLUS the PRECISE declining-statement span
+/// (C7 arm-span refinement; `27V:mech-minting-line-threading`): `Some((gate, span))` for a
+/// [`VerdictResolution::Declined`], `None` for a `Vouched` or ⊤ trace. The span points at the
+/// exact reached declining statement — the `return N` or the inert builtin — so attribution
+/// renders the emitting ARM, not the whole funcdef. It is `None` for the `Unreached` gate: an
+/// unmatched `case` / `if`-false-no-`else` / empty body reaches NO statement, so there is genuinely
+/// nothing to point at (never-synthesize-a-span; the caller falls back to the funcdef `name_span`,
+/// the honest coarsest-true span — `tc-unreached-arm-span-fallback`). Names the GATE, never the
+/// license (decision-inert; the rc-partition stays a flat sink). Re-traces (analysis-side, cheap)
+/// so [`evaluate_verdict`]'s hot decision path stays byte-untouched (`inv-determinism`).
+#[must_use]
+pub fn decline_site(verdict: &Predict, argv: &[&str]) -> Option<(DeclineGate, Option<Span>)> {
     if argv.is_empty() {
         return None; // empty argv ⇒ ⊤ (not a decline)
     }
@@ -237,15 +249,16 @@ pub fn decline_gate(verdict: &Predict, argv: &[&str]) -> Option<DeclineGate> {
         vars: BTreeMap::new(),
         reached_command: false,
         reached_inert: false,
+        decline_span: None,
         budget,
         steps: 0,
     };
     match tr.run_block(&verdict.body) {
         Flow::Normal if tr.reached_command => None, // Vouched
-        Flow::Normal if tr.reached_inert => Some(DeclineGate::InertBuiltin),
-        Flow::Normal => Some(DeclineGate::Unreached),
+        Flow::Normal if tr.reached_inert => Some((DeclineGate::InertBuiltin, tr.decline_span)),
+        Flow::Normal => Some((DeclineGate::Unreached, None)),
         Flow::Returned(code) if code.0 == 0 => None,
-        Flow::Returned(_) | Flow::Declined => Some(DeclineGate::Return),
+        Flow::Returned(_) | Flow::Declined => Some((DeclineGate::Return, tr.decline_span)),
         Flow::Top(_) => None, // ⊤, not a decline
     }
 }
@@ -271,6 +284,9 @@ struct Tracer {
     /// check — the `DeclineGate::InertBuiltin` signal for the aid plane ([`decline_gate`]). Display
     /// tier only; never read by [`evaluate_verdict`]'s decision (an inert path declines either way).
     reached_inert: bool,
+    /// The span of the LAST reached declining statement (a `return N` or an inert builtin) — the
+    /// C7 precise arm span for [`decline_site`]. Display tier only; never read by the decision.
+    decline_span: Option<Span>,
     budget: usize,
     steps: usize,
 }
@@ -421,6 +437,7 @@ impl Tracer {
             // `false`/`:`/`true` ran but measured nothing ⇒ no vouch; the path continues.
             Some(Decline::Inert) => {
                 self.reached_inert = true;
+                self.decline_span = Some(cmd.span);
                 Flow::Normal
             }
             // A real check ran on this path ⇒ the vouch signal (hz-refusepath: only here).
@@ -437,6 +454,9 @@ impl Tracer {
     /// or a non-integer arg cannot be read to a code ⇒ [`Flow::Declined`] (conservative: run). The
     /// words already resolved in [`run_command`], so re-resolving the arg here never ⊤s.
     fn run_return(&mut self, cmd: &Command) -> Flow {
+        // The `return`'s own span is the precise declining arm (C7); every path out of here
+        // declines or vouches through this one statement.
+        self.decline_span = Some(cmd.span);
         // A malformed `return 0 junk` (≥2 args) is a runtime arity error in dash (rc≠0), so it is
         // NOT the author's converged verdict — DECLINE it (run), never read `words[1]` and ignore
         // the rest (resid-return-arity, `24C`: reading `get(1)` alone silently VOUCHED the wrong
@@ -565,6 +585,51 @@ mod tests {
         let provider = set.value.providers().next().expect("one verdict funcdef");
         let verdict = set.value.get(provider).expect("the verdict funcdef");
         decline_gate(verdict, argv)
+    }
+
+    /// Lift the sole verdict funcdef, trace over `argv`, and return the SOURCE TEXT the decline
+    /// arm span covers (or `None` for `Unreached` / a vouch). Pins C7's precise arm span against
+    /// the real bytes — an anti-masking check (the span is derived, never hand-set).
+    fn decline_arm_text<'a>(src: &'a str, argv: &[&str]) -> Option<&'a str> {
+        let mut i = Interner::default();
+        let set = VerdictSet::lift(&mut i, src);
+        assert!(set.diags.is_empty(), "clean lift: {:?}", set.diags);
+        let provider = set.value.providers().next().expect("one verdict funcdef");
+        let verdict = set.value.get(provider).expect("the verdict funcdef");
+        decline_site(verdict, argv)
+            .and_then(|(_, span)| span.map(|s| &src[s.lo.0 as usize..s.hi.0 as usize]))
+    }
+
+    #[test]
+    fn decline_site_points_at_the_precise_reached_arm() {
+        // C7: the decline span is the EXACT reached declining statement, not the funcdef.
+        let src = "\
+x__is_converged() {
+   case $1 in
+   install) dpkg-query -W \"$2\" ;;
+   *) return 2 ;;
+   esac
+}";
+        assert_eq!(
+            decline_arm_text(src, &["remove"]),
+            Some("return 2"),
+            "an unhandled verb reaches the `*) return 2` arm ⇒ the `return 2` span"
+        );
+        // An unmatched case with NO catch-all reaches no statement ⇒ no honest span (Unreached ⇒
+        // the caller falls back to the funcdef name_span; here decline_site's span is None).
+        let no_catchall = "x__is_converged() { case $1 in install) dpkg-query -W \"$2\" ;; esac }";
+        assert_eq!(
+            decline_arm_text(no_catchall, &["remove"]),
+            None,
+            "Unreached has no reached statement ⇒ span is None (name_span fallback)"
+        );
+        // An inert builtin arm points at the builtin command.
+        let inert = "x__is_converged() { verb=$1; shift; case $verb in restart) false ;; esac }";
+        assert_eq!(
+            decline_arm_text(inert, &["restart"]),
+            Some("false"),
+            "the inert `false` arm ⇒ the `false` span"
+        );
     }
 
     #[test]

@@ -58,6 +58,15 @@ pub struct AstId(pub u32);
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct LeafId(pub u32);
 
+/// Which loaded oracle file a [`Span`] indexes into (`27V:mech-minting-line-threading`,
+/// `tc-oracle-file-identity`). A [`Span`] is a bare byte-range with no file identity, so an
+/// oracle-lift span (a vouch/decline arm, a claim mark) is ambiguous once more than one oracle is
+/// loaded. This is the index into the driver's ordered oracle-source list — the ONE disambiguator
+/// `law-lineno-identity` presupposed. The book's own spans need no such id (there is exactly one
+/// book); only spans crossing OUT of an oracle file's context carry it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct OracleFileId(pub u32);
+
 // ===========================================================================
 // Source positions
 // ===========================================================================
