@@ -1,0 +1,3 @@
+dorc-records/1 nonce=dorc attempt=1 host=localhost book=4e5cc5b68f963fcd sites=0 @@dorc@@
+dorc report site=0 decline unsound vm.drop_caches is a write-only trigger key @@dorc@@
+dorc-records-end/1 nonce=dorc @@dorc@@

@@ -969,11 +969,8 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
         .collect::<Result<_, _>>()?;
     let oracle_refs: Vec<&str> = oracle_srcs.iter().map(String::as_str).collect();
 
-    // Oracle-side validation (`27S:seam-oracle-validate-factoring`): the effect-map lift, the
-    // per-file check-dialect lift, dual-peel + fold-entry coherence, the munge-reservation lint, and
-    // the marker gate — all book-free, factored into one entry the lint rung-oracle-solo lane shares
-    // (`27R` §8b). The cli routes its stages to stderr; `wrapper_incoherent` carries the pre-network
-    // fail-fast (`27C:rul-fold-entry-coherence-failfast`), which moves NOWHERE.
+    // The book-free oracle-side lints, factored into one entry the lint rung-oracle-solo lane also
+    // uses (`27S:seam-oracle-validate-factoring`); `wrapper_incoherent` is the pre-network fail-fast.
     let validation = dorc_oracle::validate::validate(&mut interner, &oracle_refs);
     let wrapper_incoherent = validation.wrapper_incoherent;
     for stage in &validation.stages {
@@ -983,14 +980,11 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
         report_at(advisory, stage.stage, source, &stage.diags);
     }
 
-    // The effect-map value (23D §1 — the check is the oracle; the probe lane R3 ships the same
-    // stripped check bodies per-site). Its diags were emitted by `validate` above.
+    // The effect-map value (23D §1 — the check is the oracle); its diags were emitted by `validate`.
     let idx = dorc_oracle::lift(&mut interner, &oracle_refs).value;
 
-    // Lift each oracle's `<provider>__predict` functions into a per-file PredictSet (the real
-    // entity-resolution mechanism — the engine threads the book's value-flow through these, never
-    // parsing argv itself). Shared interner, so provider symbols match the book's command words (204
-    // seam #2). The per-file `check`-dialect diags were emitted by `validate` above.
+    // The per-file PredictSets (the entity-resolution mechanism; shared interner — 204 seam #2). The
+    // per-file `check`-dialect diags were emitted by `validate` above.
     let checks: Vec<dorc_oracle::predict::PredictSet> = oracle_refs
         .iter()
         .map(|src| dorc_oracle::predict::lift_predicts(&mut interner, src).value)
@@ -1034,8 +1028,7 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
     };
     let book_src = read_books(books)?;
     let book_name = books.first().map_or("book.sh", String::as_str);
-    // The unloaded-sibling-oracle hint (`AID-NEEDS:aid-unloaded-sibling-oracle`, gap-5 / `24H` ack-6):
-    // a cli-edge, filesystem-reading disclosure (non-hermetic ⇒ the cli edge, never the kernel).
+    // The unloaded-sibling-oracle hint (gap-5 / `24H` ack-6): a cli-edge, filesystem-reading disclosure.
     emit_unloaded_sibling_oracles(advisory, books, &oracle_paths);
     // `--last` desync guard (`22F` book-identity): re-read digests must match the durable's.
     if let Some(r) = &replay
@@ -1190,12 +1183,13 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
     // verdict). `Some` ONLY for an auto-cell fact (keyed on the reserved auto-kind), so `compile_probe`
     // reads a `Some` as the auto-cell signal. rul-only-oracle-bytes-ship: the shipped bytes are the
     // oracle's OWN authored `is_converged` funcdef, strip-only; the admin's argv flows as arguments.
-    let ship_auto = |fact: dorc_core::FactKey, p: Symbol, _a: &[Symbol]| -> Option<String> {
-        if !dorc_core::is_auto_kind(&interner, fact.kind) {
-            return None;
-        }
-        ship_verdict_body(&oracle_srcs, &verdict_sets, &interner, p)
-    };
+    let ship_auto =
+        |fact: dorc_core::FactKey, p: Symbol, _a: &[Symbol]| -> Option<(String, bool)> {
+            if !dorc_core::is_auto_kind(&interner, fact.kind) {
+                return None;
+            }
+            ship_verdict_body(&oracle_srcs, &verdict_sets, &interner, p)
+        };
     let probe = dorc_plan::compile_probe(
         &parsed.value,
         &cfg.value,
@@ -1925,7 +1919,7 @@ fn ship_verdict_body(
     verdict_sets: &[dorc_oracle::verdict::VerdictSet],
     interner: &Interner,
     provider: Symbol,
-) -> Option<String> {
+) -> Option<(String, bool)> {
     use dorc_oracle::predict::{map_provider_name, strip_verdict};
     let want = map_provider_name(interner.resolve(provider));
     for (src, set) in oracle_srcs.iter().zip(verdict_sets) {
@@ -1934,7 +1928,9 @@ fn ship_verdict_body(
                 continue;
             }
             let Some(verdict) = set.get(vp) else { continue };
-            return Some(strip_verdict(src, verdict, interner));
+            // `27W` §3 C4: pair the body with whether it emits report lines (gates the tier-3 drain).
+            let emits_report = dorc_oracle::report::emits_report(verdict);
+            return Some((strip_verdict(src, verdict, interner), emits_report));
         }
     }
     None
@@ -5505,7 +5501,9 @@ fn resolve_inner_check(
     ) {
         return Some((format!("{seg}__predict"), sh));
     }
-    let sh = ship_verdict_body(oracle_srcs, verdict_sets, interner, inner_provider)?;
+    // Entry-composition is out of the tier-3 drain scope this round, so `emits_report` is ignored.
+    let (sh, _emits_report) =
+        ship_verdict_body(oracle_srcs, verdict_sets, interner, inner_provider)?;
     Some((format!("{seg}__is_converged"), sh))
 }
 
@@ -5875,6 +5873,7 @@ mod tests {
                 sh: "{ :; }".to_string(),
                 connected: None,
                 verdict: false,
+                emits_report: false,
                 entry: None,
             }],
             unresolvable: vec![],
@@ -6358,6 +6357,7 @@ mod tests {
                     sh: "{ :; }".to_string(),
                     connected: None,
                     verdict: false,
+                    emits_report: false,
                     entry: None,
                 },
                 ProbePredict {
@@ -6370,6 +6370,7 @@ mod tests {
                     sh: "{ :; }".to_string(),
                     connected: None,
                     verdict: false,
+                    emits_report: false,
                     entry: None,
                 },
             ],
@@ -6584,6 +6585,7 @@ mod tests {
             sh: "{ :; }".to_string(),
             connected: None,
             verdict: false,
+            emits_report: false,
             entry: None,
         };
         ProbePlan {

@@ -1402,6 +1402,13 @@ pub struct ProbePredict {
     /// composition). `fact` carries the composed [`Context`], so the record re-keys the context-
     /// qualified verdict exactly. `None` ⇒ the ordinary (ambient) shape.
     pub entry: Option<EntryComposed>,
+    /// `27W` §3 tier-3 (C4) — this check's shipped body EMITS report-lane lines (a `decline <class>`
+    /// on a declining path). ONLY the auto-cell verdict path can be `true` (a `__predict` model never
+    /// emits reports; entry/connected bodies are out of the tier-3 scope this round). When `true`,
+    /// [`ProbePlan::render_sh`] ships the DRAIN scaffold: the check runs with `DREP_V1` bound to a
+    /// per-site scratch, and its emissions are re-framed as `report site=<key> …` records. `false` ⇒
+    /// the ordinary scaffold, byte-identical (`empty-world-byte-identical`).
+    pub emits_report: bool,
 }
 
 /// The entry-composed body of a wrapped-site probe (`27C` §3 / `27N`): the wrapper chain's entry
@@ -1624,7 +1631,16 @@ impl ProbePlan {
                 }
                 render::probe::invocation(&fn_name, &check.argv, interner)
             };
-            out.push_str(&render::probe::record_scaffold(&invocation, &key, nonce));
+            // `27W` §3 C4: an emission-bearing auto-cell body drains; every other stays byte-identical.
+            if check.emits_report {
+                out.push_str(&render::probe::record_scaffold_draining(
+                    &invocation,
+                    &key,
+                    nonce,
+                ));
+            } else {
+                out.push_str(&render::probe::record_scaffold(&invocation, &key, nonce));
+            }
         }
         // Un-resolvable sites are recorded as comments (never invoked): transparency
         // for the human reading the artifact and the D3 argv-echo differential.
@@ -2285,7 +2301,7 @@ pub fn compile_probe(
     wrapped: &WrappedProbes,
     connected: &ConnectedPipes,
     ship_body: impl Fn(Symbol, &[Symbol]) -> Option<String>,
-    ship_auto: impl Fn(FactKey, Symbol, &[Symbol]) -> Option<String>,
+    ship_auto: impl Fn(FactKey, Symbol, &[Symbol]) -> Option<(String, bool)>,
     is_vouched: impl Fn(CfgNodeId) -> bool,
 ) -> ProbePlan {
     let mut checks = Vec::new();
@@ -2321,6 +2337,7 @@ pub fn compile_probe(
                         sh: String::new(),
                         connected: None,
                         verdict: false,
+                        emits_report: false,
                         entry: Some(composed.clone()),
                     });
                 }
@@ -2428,6 +2445,7 @@ pub fn compile_probe(
                     sh: String::new(),
                     connected: Some(composed.clone()),
                     verdict: false,
+                    emits_report: false,
                     entry: None,
                 });
             } else {
@@ -2446,7 +2464,7 @@ pub fn compile_probe(
         // (`guard23-refusepath-rc0-never-passes`: a declined verdict never licenses, and never probes).
         if matches!(site_kind, ProbeSiteKind::Establish)
             && is_vouched(node)
-            && let Some((provider, argv, sh)) =
+            && let Some((provider, argv, sh, emits_report)) =
                 ship_auto_for_argv(&value.argv_values(node), fact, &ship_auto)
         {
             checks.push(ProbePredict {
@@ -2460,6 +2478,7 @@ pub fn compile_probe(
                 connected: None,
                 verdict: true,
                 entry: None,
+                emits_report,
             });
             continue;
         }
@@ -2477,6 +2496,7 @@ pub fn compile_probe(
                 sh,
                 connected: None,
                 verdict: false,
+                emits_report: false,
                 entry: None,
             }),
             None => unresolvable.push(site),
@@ -2503,8 +2523,8 @@ pub fn compile_probe(
 fn ship_auto_for_argv(
     argv: &[ValueOf],
     fact: FactKey,
-    ship_auto: &impl Fn(FactKey, Symbol, &[Symbol]) -> Option<String>,
-) -> Option<(Symbol, Vec<Symbol>, String)> {
+    ship_auto: &impl Fn(FactKey, Symbol, &[Symbol]) -> Option<(String, bool)>,
+) -> Option<(Symbol, Vec<Symbol>, String, bool)> {
     let (first, rest) = argv.split_first()?;
     let &ValueOf::Literal(provider) = first else {
         return None;
@@ -2516,8 +2536,9 @@ fn ship_auto_for_argv(
         };
         operands.push(s);
     }
-    let sh = ship_auto(fact, provider, &operands)?;
-    Some((provider, operands, sh))
+    // `27W` §3 C4: the auto-cell closure returns (verdict body, emits-report) — the only site that can.
+    let (sh, emits_report) = ship_auto(fact, provider, &operands)?;
+    Some((provider, operands, sh, emits_report))
 }
 
 fn ship_for_argv(
@@ -2583,6 +2604,7 @@ fn push_member_predicts(
             sh,
             connected: None,
             verdict: false,
+            emits_report: false,
             entry: None,
         });
     }
@@ -2633,6 +2655,7 @@ fn push_inline_predicts(
                     sh,
                     connected: None,
                     verdict: false,
+                    emits_report: false,
                     entry: None,
                 });
             }
@@ -2650,6 +2673,7 @@ fn push_inline_predicts(
                         sh,
                         connected: None,
                         verdict: false,
+                        emits_report: false,
                         entry: None,
                     });
                 }
@@ -6728,6 +6752,7 @@ apt_get__predict() {
                     ],
                 }),
                 verdict: false,
+                emits_report: false,
                 entry: None,
             }],
             unresolvable: Vec::new(),
@@ -6742,6 +6767,90 @@ apt_get__predict() {
         assert!(
             !rendered.contains("--version | grep -q"),
             "NO raw book pipeline bytes may appear in a shipped connected probe: {rendered}"
+        );
+    }
+
+    /// An auto-cell probe whose shipped verdict body EMITS report lines (`emits_report: true`).
+    fn auto_cell_check(i: &mut Interner, emits_report: bool) -> ProbePredict {
+        let fact = FactKey {
+            kind: KindId(i.intern("dorc-auto")),
+            entity: EntityRef::Operand(OpaqueToken(i.intern("vm.drop_caches"))),
+            selector: SelectorId(i.intern("converged")),
+            context: dorc_core::Context::HostDefault,
+        };
+        let provider = i.intern("sysctl");
+        let key = i.intern("vm.drop_caches");
+        ProbePredict {
+            site: LeafId(0),
+            member: None,
+            fact,
+            site_kind: ProbeSiteKind::Establish,
+            provider,
+            argv: vec![key],
+            sh: "sysctl__is_converged() { printf \"$fmt\" \"$1\" >>\"${DREP_V1:-/dev/null}\"; \
+                 return 2; }"
+                .to_owned(),
+            connected: None,
+            verdict: true,
+            emits_report,
+            entry: None,
+        }
+    }
+
+    /// `27W` §3 C4: an emitting auto-cell body ships the TIER-3 DRAIN scaffold — the check runs with
+    /// `DREP_V1` bound to a deterministic per-site scratch, and its emissions are re-framed as
+    /// `report site=<key> …` records — while the EFFECT record stays byte-identical to the ordinary
+    /// scaffold. This is the runtime tier the static inventory cannot reach (a dynamic format).
+    #[test]
+    fn emitting_auto_cell_ships_the_tier3_drain_scaffold() {
+        let mut i = Interner::default();
+        let plan = ProbePlan {
+            checks: vec![auto_cell_check(&mut i, true)],
+            unresolvable: Vec::new(),
+        };
+        let rendered = plan.render_sh(&records::Framing::spike(String::new()), &i);
+        assert!(
+            rendered.contains("\"${TMPDIR:-/tmp}/dorc-drep.dorc.0\""),
+            "the per-site scratch is keyed by nonce+site (no two live probes collide): {rendered}"
+        );
+        assert!(
+            rendered.contains("DREP_V1=\"$_drep\""),
+            "DREP_V1 is bound to the scratch for the check: {rendered}"
+        );
+        assert!(
+            rendered
+                .contains("while IFS= read -r _dl; do printf 'dorc report site=0 %s @@dorc@@\\n'"),
+            "the drain loop re-frames each emission as a report record: {rendered}"
+        );
+        assert!(
+            rendered.contains("printf 'dorc site 0 effect=%s rc=%s @@dorc@@\\n' \"$_e\" \"$_rc\""),
+            "the effect record is unchanged (the drain is additive): {rendered}"
+        );
+    }
+
+    /// The HARD byte-stability floor (`empty-world-byte-identical`): a NON-emitting auto-cell body
+    /// (`emits_report: false`) ships the ORDINARY scaffold — no `DREP_V1`, no drain loop, no `report`
+    /// record — so an ordinary run is byte-identical to before the tier-3 lane existed.
+    #[test]
+    fn nonemitting_auto_cell_ships_the_ordinary_scaffold() {
+        let mut i = Interner::default();
+        let plan = ProbePlan {
+            checks: vec![auto_cell_check(&mut i, false)],
+            unresolvable: Vec::new(),
+        };
+        let rendered = plan.render_sh(&records::Framing::spike(String::new()), &i);
+        assert!(
+            !rendered.contains("DREP_V1="),
+            "no drain binding: {rendered}"
+        );
+        assert!(!rendered.contains("_drep"), "no drain scratch: {rendered}");
+        assert!(
+            !rendered.contains("report site="),
+            "no report record: {rendered}"
+        );
+        assert!(
+            rendered.contains("printf 'dorc site 0 effect=%s rc=%s @@dorc@@\\n' \"$_e\" \"$_rc\""),
+            "the ordinary effect record ships: {rendered}"
         );
     }
 
@@ -6776,6 +6885,7 @@ apt_get__predict() {
                 sh: String::new(),
                 connected: None,
                 verdict: false,
+                emits_report: false,
                 entry: Some(EntryComposed {
                     enter_defs: vec![(
                         "sudo__enter".to_owned(),
@@ -6828,6 +6938,7 @@ apt_get__predict() {
                 sh: String::new(),
                 connected: None,
                 verdict: false,
+                emits_report: false,
                 entry,
             }],
             unresolvable: Vec::new(),
