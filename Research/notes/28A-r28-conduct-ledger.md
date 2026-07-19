@@ -96,6 +96,48 @@ in-scope now.
   mechanism (stored `[unwritten: <slug>]`) — the absent-field render arrives only
   with the `282` phase-4 flip, serial lane.
 
+## §2b — Phase-B rulings (conductor, 2026-07-19, on `notes/28B`'s flag list)
+
+- **`28A:rul-new-codes-ship-covered-cases`** (SUPERSEDES `rul-ratchet-accepts-new-codes`;
+  resolves `28B:flag-ratchet-forbids-additions`) — the as-built `ratchet_only_shrinks`
+  gate is correct and stands; new DiagCodes ship as `covered()` defining cases with
+  `[unwritten: <slug>]` prose (the d4b `aid-unloaded-sibling-oracle` precedent). The
+  `unwritten <= 1` ceiling bump to 5 is hereby consciously authorized (the test's own
+  "conscious conductor act"). The four codes' REAL cases + prose arrive through the
+  `282` empty loop after the generation flip — a named rider on the unify lane's
+  case-authoring fan-out, not this lane's work.
+- **`28A:rul-marked-colon-is-the-grammars`** (resolves the dialect edge inside
+  `28B:flag-standalone-single-colon-restructure`) — in a MARKED file, a
+  statement-leading `:` followed by any content is the mark intro, always (loud
+  malformed-⊤ per `281` §9; inv-top-reject bias). A LONE `:` with no following
+  content on the line stays the POSIX null command (`while :; do` survives — an
+  intro requires WS + at least one mark). Genuine null-command-with-args idioms
+  (`: "${VAR:=default}"`) are thereby outside the marked dialect: respell corpus
+  instances to a `true`-spelled equivalent; phase B greps statement-leading-`:`
+  non-mark uses and reports the count, flagging back if any are load-bearing or
+  teach-facing.
+- **`28A:rul-bind-equals-tail-disambiguates`** (resolves
+  `28B:flag-inline-bind-vs-head-decode`) — inline-bind dispatch runs BEFORE mark
+  head-decode, keyed on the `= value` tail per `281` §8 (not merely on bare-kind
+  shape). No `=` tail ⇒ the `:` is a mark intro. Value-less inline binds are OUT of
+  the grammar; respell the corpus-live `index : pkgindex` instance to a proper
+  two-dot kind + valued form (flag if it resists).
+- **`28A:rul-one-checkpoint-after-machinery`** — ONE mid-lane conductor checkpoint,
+  sited AFTER CP-C (AST + consumers + diagnostics + lexer/parser machinery all
+  unit-green, corpus untouched, parser still unwired from e2e): phase B executes
+  CP-A→CP-B→CP-C then STOPS for conductor review of the license-bearing parse
+  behavior; CP-D (the one-commit cutover + respell + working-state bless) runs only
+  on the conductor's explicit go.
+- Accepted as proposed, no amendment: both brace shapes (`@{a,b}` attached ·
+  `verb {a,b}` standalone payload); absorbing selector-charset/malformed-target
+  failures into `PredictOutOfDialect` (no `mark-selector-invalid` mint); reusing
+  `MarkBraceVerdictSingleCell`; `mark-hashcolon-malformed` at Warning; the four-code
+  mint list; zero wire-slug renames (prose mentions only); the
+  `28B:flag-emptied-case-arm` handling PLUS a rider: a strip-floor differential
+  fixture (stripped whole-kind-disturbs oracle → empty case arm → parses+runs under
+  the e2e dash gate; inline-arm marks take the region-delete path);
+  `reads`/`:?` identical wiring to Observe.
+
 ## §3 — Lane map and state (update on every change)
 
 | lane | branch | shape | state |
