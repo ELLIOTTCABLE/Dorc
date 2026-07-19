@@ -1544,8 +1544,7 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
         // this raw rc — see `dorc_plan::render::probe::record_scaffold`.)
         emit_sigpipe_race_notes(&results);
         emit_report_lane_notes(&results); // `27W` §2 tier-3 RUNTIME records; empty in-corpus
-        // `27W` §3 tier-2 STATIC decline classes (the `authored_reason` on decline evidence),
-        // surfaced at plan time with the emitting arm's file:line. Empty in-corpus.
+        // `27W` §3 tier-2 STATIC decline classes at plan time, with the emitting arm's file:line.
         emit_static_decline_notes(&collapse_evidence, &oracle_paths, &oracle_srcs);
         // Stage 2 co-primary (rul24-divergence-is-the-game / TC-3): every SURVIVED elision names,
         // on this same why-lens lane, which running walls it crossed and whose footprint licensed
@@ -3231,8 +3230,7 @@ fn emit_survival_attribution(
                 )
             })
             .collect();
-        // C7: name the licensing vouch's oracle `file:line` when the plan threaded it (the
-        // ConvergedEstablish elide-weld path); omitted for vouchless survival paths.
+        // C7: the licensing vouch's oracle `file:line` (elide-weld path; omitted for vouchless survival).
         let locus = oracle_locus(license.derivation().vouch_span, oracle_paths, oracle_srcs)
             .map(|l| format!("; vouched at {l}"))
             .unwrap_or_default();
@@ -3295,8 +3293,7 @@ fn emit_guard_attribution(
                 step.leaf.0,
             );
         } else {
-            // C7 minting-line threading: name the vouch's defining `file:line` (the reached check
-            // arm) when the plan threaded it — the whole flagship output rests on it.
+            // C7: the vouch's defining `file:line` (the reached check arm), when the plan threaded it.
             let locus = oracle_locus(license.insert().defining_span(), oracle_paths, oracle_srcs)
                 .map(|l| format!(" (at {l})"))
                 .unwrap_or_default();

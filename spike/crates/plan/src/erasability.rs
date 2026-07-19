@@ -226,9 +226,8 @@ fn canon_derivation(d: &Derivation) -> String {
         // elision's (both render the StandIn); only its disposition (Replace vs
         // Run) is identity, and that is already hashed. So the attribution detail
         // is output-only, like `witness`.
-        vouch_span: _, // EXEMPT (C7 minting-line threading): the vouch's `file:line` is why-lens
-                       // attribution only (a vouch informs a license, never becomes a fact —
-                       // TC-tier-3); it reaches no artifact byte, exactly like `witness`/`survival`.
+        vouch_span: _, // EXEMPT (C7): the vouch's `file:line` is why-lens attribution only (a
+                       // vouch informs, never becomes a fact — TC-tier-3), like `witness`/`survival`.
     } = d;
     format!(
         "deriv(fact={} via={} ambient={ambient} grade={grade:?} verdict={verdict:?})",

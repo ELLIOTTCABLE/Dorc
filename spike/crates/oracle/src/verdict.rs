@@ -266,8 +266,7 @@ pub fn vouch_site(verdict: &Predict, argv: &[&str]) -> Option<Span> {
         steps: 0,
     };
     match tr.run_block(&verdict.body) {
-        // A reached-check vouch: the first check's span. An explicit `return 0` vouch reaches no
-        // check ⇒ `vouch_span` is `None` (name_span fallback at the caller).
+        // A `return 0` vouch reaches no check ⇒ `vouch_span` is `None` (name_span fallback).
         Flow::Normal if tr.reached_command => tr.vouch_span,
         Flow::Returned(code) if code.0 == 0 => tr.vouch_span,
         _ => None, // a decline / ⊤ — no vouch
@@ -486,17 +485,14 @@ impl Tracer {
     /// `false`/`:`/`true` ([`Decline::Inert`]) run but record no vouch (the path continues). Only a
     /// resolved, non-idiom command sets the vouch.
     fn run_command(&mut self, cmd: &Command) -> Flow {
-        // A recognized report-sink emission (`27W` §2 `decline-class-emission`) is DECISION-INERT
-        // (`tc-emission-inert-in-tracer`): it never vouches and never ⊤s. This is a license-plane
-        // correctness fix in the safe direction — an emission-only body would otherwise answer the
-        // printf's rc-0 and VOUCH (a wrong license); recognized here, it declines ⇒ run
-        // (fail-toward-run). Skipped BEFORE the word-resolve loop so its ⊤-shaped sink target word
-        // (`${DREP_V1:-…}`) cannot ⊤ the trace before the arm's own `return 2` is reached.
+        // A recognized report-sink emission is DECISION-INERT (`tc-emission-inert-in-tracer`,
+        // `27W` §2): never vouches, never ⊤s — a license-plane fix in the safe direction (an
+        // emission-only body would else read the printf's rc-0 as a vouch). Skipped BEFORE the
+        // word-resolve loop so its ⊤-shaped sink word never ⊤s the trace; the tier-2 class + arm
+        // are captured here (`27W` §3), `None` for a dynamic format (⇒ tier-3).
         if cmd.report_sink {
             self.reached_inert = true;
             self.decline_span = Some(cmd.span);
-            // Tier-2 (`27W` §3): the argv reached this emission ⇒ capture its class + arm span at
-            // the site. A dynamic/unknown format leaves it `None` (⇒ tier-3 runtime fallback).
             if let Some(class) = recognized_class(cmd) {
                 self.emission = Some((class, cmd.span));
             }
@@ -526,7 +522,7 @@ impl Tracer {
                 Flow::Normal
             }
             // A real check ran on this path ⇒ the vouch signal (hz-refusepath: only here). The
-            // FIRST such check's span is the vouching arm (C7 vouch span), for the guard render.
+            // FIRST such check's span is the C7 vouch arm (guard render `file:line`).
             None => {
                 self.reached_command = true;
                 if self.vouch_span.is_none() {
@@ -543,9 +539,7 @@ impl Tracer {
     /// or a non-integer arg cannot be read to a code ⇒ [`Flow::Declined`] (conservative: run). The
     /// words already resolved in [`run_command`], so re-resolving the arg here never ⊤s.
     fn run_return(&mut self, cmd: &Command) -> Flow {
-        // The `return`'s own span is the precise declining arm (C7); every path out of here
-        // declines or vouches through this one statement.
-        self.decline_span = Some(cmd.span);
+        self.decline_span = Some(cmd.span); // the `return`'s own span is the precise decline arm (C7)
         // A malformed `return 0 junk` (≥2 args) is a runtime arity error in dash (rc≠0), so it is
         // NOT the author's converged verdict — DECLINE it (run), never read `words[1]` and ignore
         // the rest (resid-return-arity, `24C`: reading `get(1)` alone silently VOUCHED the wrong
@@ -691,10 +685,7 @@ mod tests {
 
     #[test]
     fn emission_only_body_declines_never_vouches() {
-        // tc-emission-inert-in-tracer (LICENSE-PLANE correctness, fail-toward-run): a body whose
-        // reached arm ONLY emits a report line (no check, no return) must NOT vouch — the printf's
-        // rc-0 would otherwise be read as a vouch (a wrong license). Recognized as inert ⇒ Declined
-        // ⇒ run.
+        // tc-emission-inert-in-tracer: an emission-only arm must NOT vouch on the printf's rc-0.
         let src = "\
 x__is_converged() {
    case $1 in
@@ -710,9 +701,7 @@ x__is_converged() {
 
     #[test]
     fn canonical_emission_then_return_two_declines_with_arm_captured() {
-        // The canonical idiom (`27W` §2): emit, then `return 2`. The emission is inert, the
-        // `return 2` declines through the Return gate, and the arm span is the `return 2` (the last
-        // reached declining statement). The sink target word never ⊤s the trace (inert-skip).
+        // The canonical idiom (`27W` §2): emit, then `return 2` ⇒ Return gate, arm = the `return 2`.
         let src = "\
 x__is_converged() {
    case $1 in
@@ -736,8 +725,7 @@ x__is_converged() {
 
     #[test]
     fn classify_decline_captures_the_tier2_class() {
-        // Tier-2 (`27W` §3): a site's argv threads to a reached emission ⇒ the class + emitting-arm
-        // span land at the site. A verb the arm doesn't reach yields no emission.
+        // Tier-2 (`27W` §3): argv threads to a reached emission ⇒ class + emitting-arm span at the site.
         let src = "\
 x__is_converged() {
    case $1 in
@@ -759,13 +747,13 @@ x__is_converged() {
             "printf 'decline unsound %s\\n' \"$1\" >>\"${DREP_V1:-/dev/null}\"",
             "the emitting-arm span is the printf, distinct from the `return 2` decline arm"
         );
-        // The `restart` verb reaches a real check ⇒ vouches ⇒ classify_decline is None.
+        // `restart` reaches a real check ⇒ vouches ⇒ no decline.
         assert!(classify_decline(v, &["restart", "nginx"]).is_none());
     }
 
     #[test]
     fn vouch_site_points_at_the_reached_check_arm() {
-        // C7 vouch span: the guard render's `file:line` is the reached CHECK arm, not the funcdef.
+        // C7 vouch span: the reached CHECK arm, not the funcdef.
         let mut i = Interner::default();
         let set = VerdictSet::lift(&mut i, APT);
         let p = set.value.providers().next().unwrap();
@@ -776,13 +764,13 @@ x__is_converged() {
             "dpkg-query -W \"$1\" >/dev/null 2>&1",
             "the vouch span is the reached check command, not the funcdef name"
         );
-        // A decline reaches no check ⇒ no vouch span.
-        assert_eq!(vouch_site(v, &["restart", "nginx"]), None);
+        assert_eq!(vouch_site(v, &["restart", "nginx"]), None); // a decline reaches no check
     }
 
     #[test]
     fn decline_site_points_at_the_precise_reached_arm() {
         // C7: the decline span is the EXACT reached declining statement, not the funcdef.
+        // (Return arm ⇒ the `return`; Unreached ⇒ None/name_span; inert ⇒ the builtin.)
         let src = "\
 x__is_converged() {
    case $1 in
@@ -795,15 +783,12 @@ x__is_converged() {
             Some("return 2"),
             "an unhandled verb reaches the `*) return 2` arm ⇒ the `return 2` span"
         );
-        // An unmatched case with NO catch-all reaches no statement ⇒ no honest span (Unreached ⇒
-        // the caller falls back to the funcdef name_span; here decline_site's span is None).
         let no_catchall = "x__is_converged() { case $1 in install) dpkg-query -W \"$2\" ;; esac }";
         assert_eq!(
             decline_arm_text(no_catchall, &["remove"]),
             None,
             "Unreached has no reached statement ⇒ span is None (name_span fallback)"
         );
-        // An inert builtin arm points at the builtin command.
         let inert = "x__is_converged() { verb=$1; shift; case $verb in restart) false ;; esac }";
         assert_eq!(
             decline_arm_text(inert, &["restart"]),

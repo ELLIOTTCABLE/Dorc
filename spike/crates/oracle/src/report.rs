@@ -155,14 +155,12 @@ sysctl__is_converged() {
         assert_eq!(inv[0].class, Some(DeclineClass::Unsound));
         assert!(inv[0].verb_recognized);
         assert_eq!(inv[1].class, Some(DeclineClass::Unmodeled));
-        assert!(inv[1].verb_recognized);
-        // The check arm (`sysctl -n …`) is not an emission — not inventoried.
+        assert!(inv[1].verb_recognized); // the check arm (`sysctl -n …`) is not inventoried
     }
 
     #[test]
     fn unknown_class_token_degrades_generic_never_errors() {
-        // `27W:rul-report-noise-tolerant`: an unrecognized class is kept (as an arm) with `class:
-        // None`, never dropped, never an error.
+        // `27W:rul-report-noise-tolerant`: an unrecognized class is kept (class `None`), never dropped.
         let src = "\
 x__is_converged() {
    case $1 in
@@ -178,9 +176,8 @@ x__is_converged() {
 
     #[test]
     fn dynamic_format_is_not_inventoried_by_class() {
-        // A `$fmt`-built format defeats static reading ⇒ recognized as an emission (the sink is
-        // static) but its class is unreadable (tier-3 fallback). The redirect target is static, so
-        // `report_sink` fires, but `words[1]` is not a literal.
+        // A `$fmt` format: the static sink still fires `report_sink`, but `words[1]` is not a
+        // literal ⇒ class unreadable statically (tier-3 fallback).
         let src = "\
 x__is_converged() {
    fmt='decline unsound x'

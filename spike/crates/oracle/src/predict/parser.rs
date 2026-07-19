@@ -738,9 +738,8 @@ impl Parser<'_> {
         // §2 stdout DECLINE (`271:rul-only-oracle-bytes-ship` rider 1): whether a redirect voids
         // fd 1. Consumed only by the composed-probe coverage rule; the strip ships the verbatim span.
         let mut stdout_void = false;
-        // `27W` §2 report-sink recognition: whether this command APPEND-redirects to a versioned
-        // sink (`>>"${DREP_V1:-…}"`). `awaits_report_target` bridges the two tokens the quoted-sink
-        // idiom splits into — the `>>` redirect chunk, then the sink target word.
+        // `27W` §2 report-sink recognition (`>>"${DREP_V1:-…}"`): `awaits_report_target` bridges
+        // the two tokens the quoted-sink idiom splits into — the `>>` chunk, then the target word.
         let mut report_sink = false;
         let mut awaits_report_target = false;
         let guard = self.toks.len().saturating_add(1);
@@ -750,8 +749,7 @@ impl Parser<'_> {
             if steps > guard {
                 return Err(false);
             }
-            // One-shot: `target_pending` is true iff the PREVIOUS token was a bare output redirect,
-            // so only the token IMMEDIATELY after `>>` can be recognized as the sink target.
+            // One-shot: only the token IMMEDIATELY after a bare `>>` can be the sink target.
             let target_pending = awaits_report_target;
             awaits_report_target = false;
             // Classify the current token without holding a borrow across the body.
@@ -818,9 +816,8 @@ impl Parser<'_> {
                 CmdTok::Word => {
                     end_span = self.peek_span().unwrap_or(end_span);
                     if let Some((lexeme, quoting, _)) = self.take_word() {
-                        // A word right after an output-redirect operator is its target: a recognized
-                        // sink flags this command as a `27W` §2 emission (the word still pushes to
-                        // `words` — the tracer skips a `report_sink` command before resolving).
+                        // A recognized sink target after `>>` flags a `27W` §2 emission (the word
+                        // still pushes to `words`; the tracer skips a `report_sink` cmd first).
                         report_sink =
                             report_sink || (target_pending && word_is_report_sink(&lexeme));
                         words.push(parse_word_lexeme(&lexeme, quoting, self.interner));

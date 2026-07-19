@@ -361,9 +361,8 @@ impl ReplaceLicense {
                 // A `ByObservation`/`BySilence` cannot inhabit this `Option`, so a converged
                 // measurement alone no longer elides (the vouchless-elide gap, closed).
                 let vouch: ByVouch<VerdictVouch> = vouch?;
-                // C7: read the vouch's defining span (display-only) BEFORE it drops — for the
-                // survival render's `file:line`. Reading it does not retain a license (a vouch
-                // informs, never becomes a fact — TC-tier-3; the span is exempt output provenance).
+                // C7: read the vouch's defining span (display-only) BEFORE it drops, for the
+                // survival render's `file:line` (a vouch informs, never becomes a fact — TC-tier-3).
                 let vouch_span = vouch.vouch().defining_span();
                 if grade != Grade::Must {
                     return None;
@@ -442,8 +441,7 @@ impl ReplaceLicense {
                 verdict,
                 witness: dorc_core::Witness::empty(),
                 survival: None,
-                // No vouch is consumed on this path (Query/loop/call elisions) ⇒ no locus.
-                vouch_span: None,
+                vouch_span: None, // Query/loop/call elisions consume no vouch ⇒ no locus
             },
         })
     }
@@ -499,8 +497,7 @@ impl ReplaceLicense {
                 verdict: Verdict::Converged,
                 witness: dorc_core::Witness::empty(),
                 survival: None,
-                // No vouch is consumed on this path (Query/loop/call elisions) ⇒ no locus.
-                vouch_span: None,
+                vouch_span: None, // Query/loop/call elisions consume no vouch ⇒ no locus
             },
         })
     }
@@ -582,8 +579,7 @@ impl ReplaceLicense {
                 verdict: Verdict::Converged,
                 witness: dorc_core::Witness::empty(),
                 survival: None,
-                // No vouch is consumed on this path (Query/loop/call elisions) ⇒ no locus.
-                vouch_span: None,
+                vouch_span: None, // Query/loop/call elisions consume no vouch ⇒ no locus
             },
         })
     }
@@ -1019,8 +1015,8 @@ pub fn build_vouches(
         let op_refs: Vec<&str> = op_texts.iter().map(String::as_str).collect();
 
         // Find the provider's verdict funcdef (shared hyphen↔underscore convention) and trace it.
-        // The file INDEX (`OracleFileId`) rides along so a decline arm span crossing to the render
-        // carries its file identity (`tc-oracle-file-identity`).
+        // The file INDEX rides along so an arm span crossing to the render carries its file
+        // identity (`tc-oracle-file-identity`).
         let want = map_provider_name(interner.resolve(*provider));
         let found =
             verdict_sets
@@ -1044,11 +1040,9 @@ pub fn build_vouches(
             evaluate_verdict(verdict, &op_refs),
             VerdictResolution::Vouched
         ) {
-            // Narrate a genuine DECLINE (not a ⊤): gate + the PRECISE reached declining-arm span
-            // (C7; `Unreached` has no reached statement ⇒ falls back to the funcdef `name_span`,
-            // the honest coarsest-true span). Tier-2 (`27W` §3): if the reached path ran a
-            // recognized report-sink emission, the class + emitting-arm span populate
-            // `authored_reason` AT PLAN TIME (a dynamic argv/format leaves it `None` ⇒ tier-3).
+            // Narrate a genuine DECLINE: the gate + precise arm span (C7; `Unreached` ⇒ name_span
+            // fallback), and the tier-2 class + emitting-arm span if the reached path emitted one
+            // (`27W` §3; a dynamic argv/format leaves `authored_reason` `None` ⇒ tier-3).
             if let Some(info) = classify_decline(verdict, &op_refs) {
                 let authored_reason = info.emission.map(|(class, emit_span)| AuthoredReason {
                     class,
@@ -1080,8 +1074,8 @@ pub fn build_vouches(
         };
         let kind_label = interner.resolve(fact.kind.0).to_owned();
         let check_cmds = check_commands(verdict);
-        // C7: the reached vouching-arm span (or the funcdef `name_span` when the vouch runs no
-        // located check — an explicit `return 0`), with its oracle-file id, for the guard render.
+        // C7: the reached vouching-arm span (or `name_span` for a check-less `return 0` vouch) +
+        // its oracle-file id, for the guard render.
         let defining = vouch_site(verdict, &op_refs).unwrap_or(verdict.name_span);
         let vouch = VerdictVouch::new(fn_name, preamble, invocation, kind_label, check_cmds)
             .with_defining_span(defining, arm_file);
