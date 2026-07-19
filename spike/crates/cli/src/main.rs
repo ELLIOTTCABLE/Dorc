@@ -1526,11 +1526,14 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
     // lanes are load-bearing correctness disclosures gate-7 pins). `why` mode SKIPS them — its
     // stdout report (below) is the detail surface, so a stderr echo would just double it.
     if advisory && mode != Mode::Why {
-        // Union the C3/C4/C5 collapse-evidence onto the why-lens seam (d4 renders; decision-inert).
+        // `27W` §3 C3 pairing: fold each ingested tier-3 report record (recognized class + site)
+        // into its site's `VerdictDecline` via `with_authored_reason` (idempotent — tier-2 static
+        // wins). Then union the collapse-evidence onto the why-lens seam (d4 renders; decision-inert).
+        let paired_declines = pair_authored_reasons(decline_evidence, &results.reports);
         let collapse_evidence: Vec<CollapseEvidence> = classify_evidence
             .iter()
             .cloned()
-            .chain(decline_evidence.iter().cloned())
+            .chain(paired_declines)
             .chain(entry_evidence.iter().cloned())
             .chain(merge_evidence.iter().cloned())
             .chain(plan.survival_report.collapse_evidence().iter().cloned())
@@ -4605,18 +4608,68 @@ fn emit_report_lane_notes(results: &SiteResults) {
     }
 }
 
-/// Emit the TIER-2 STATIC decline-class disclosure (`27W` §3 `rul-static-first-three-tier`): one
-/// why-lens line per site whose static argv reached a recognized `decline-class-emission` arm at
-/// PLAN time (the `authored_reason` the [`dorc_core::evidence::CollapseKind::VerdictDecline`]
-/// evidence carries). A DECLINE is a why-a-line-RUNS disclosure (the author declined ⇒ the site
-/// runs), so it belongs on the same `why:` lane as the run/survival attributions — and a tier-2
-/// class is known before execution, surfacing at plan time with the emitting arm's `file:line`
-/// (C7). The tier-3 RUNTIME records take the advisory `note:` lane ([`emit_report_lane_notes`]).
-/// The full why-lens CHAIN render (numbered links, tier words) is d4's arrangement walker; this is
-/// the selected default line, siteless because the decline evidence is not yet site-keyed (the
-/// tier-3 pairing-seam gap). Empty in the corpus (no oracle emits ⇒ `empty-world-byte-identical`);
-/// wording rides `27V:rul-output-form-unwelded`. Never `error[` ⇒ ignored by the gate-3 floor; the
-/// `why:` prefix lets gate-7 pin it.
+/// C3 report-lane pairing (`27W` §3 `rul-static-first-three-tier`): fold each ingested tier-3 report
+/// record (a recognized decline class + a site) into that site's
+/// [`dorc_core::evidence::CollapseKind::VerdictDecline`] evidence via
+/// [`dorc_core::evidence::CollapseEvidence::with_authored_reason`]. The runtime record supplies only
+/// the missing CLASS — a dynamic format string defeated static reading (`27W` §2 "one honest loss"),
+/// so `classify_decline` traced the reached decline arm but left the class unread. The arm span +
+/// file id are the [`dorc_core::evidence::CollapseKind::VerdictDecline`]'s OWN already-traced reached
+/// arm (the precise `file:line`,
+/// `27V:mech-minting-line-threading`); the inventory-keyed lookup the spec sketched is redundant here
+/// — a class-readable inventory arm implies static ALREADY populated the reason. Deduped
+/// `(site, arm, class)` against tier-2: `with_authored_reason` is idempotent, so a runtime echo never
+/// overwrites a statically populated reason (static wins). Empty in the corpus (no oracle emits ⇒
+/// `empty-world-byte-identical`). Decision-inert (`two-plane-aid-law`): classes route AID only.
+fn pair_authored_reasons(
+    evidence: Vec<CollapseEvidence>,
+    reports: &[ReportRecord],
+) -> Vec<CollapseEvidence> {
+    use dorc_core::evidence::{AuthoredReason, CollapseKind};
+    evidence
+        .into_iter()
+        .map(|ev| {
+            let CollapseKind::VerdictDecline {
+                site,
+                arm,
+                arm_file,
+                ..
+            } = *ev.kind()
+            else {
+                return ev;
+            };
+            // A recognized runtime record for this exact site (leaf + member), if one arrived.
+            let paired = reports.iter().find_map(|r| {
+                let rk = r.site?;
+                let matches = r.recognized
+                    && dorc_core::diag::SiteId {
+                        leaf: rk.site,
+                        member: rk.member,
+                    } == site;
+                matches.then_some(r.class).flatten()
+            });
+            match paired {
+                Some(class) => ev.with_authored_reason(AuthoredReason {
+                    class,
+                    arm,
+                    arm_file,
+                }),
+                None => ev,
+            }
+        })
+        .collect()
+}
+
+/// Emit the STATIC/paired decline-class disclosure (`27W` §3 `rul-static-first-three-tier`): one
+/// why-lens line per site whose `VerdictDecline` evidence carries an `authored_reason` — the tier-2
+/// static class (argv threaded statically) OR the tier-3 runtime class paired in by
+/// [`pair_authored_reasons`]. A DECLINE is a why-a-line-RUNS disclosure (the author declined ⇒ the
+/// site runs), so it belongs on the same `why:` lane as the run/survival attributions, surfacing the
+/// emitting arm's `file:line` (C7). The tier-3 RUNTIME records ALSO take the advisory `note:` lane
+/// ([`emit_report_lane_notes`]) for their free-tail text. The full why-lens CHAIN render (numbered
+/// links, tier words) is the arrangement walker. Empty in the corpus (no oracle emits ⇒
+/// `empty-world-byte-identical`); wording rides `27V:rul-output-form-unwelded`. Never `error[` ⇒
+/// ignored by the gate-3 floor; the `why:` prefix lets gate-7 pin it.
 fn emit_static_decline_notes(
     collapse_evidence: &[CollapseEvidence],
     oracle_paths: &[String],
@@ -5916,6 +5969,79 @@ mod tests {
         assert!(
             !r.reports[2].recognized,
             "a free-form line (no `decline` verb) is retained, never dropped"
+        );
+    }
+
+    #[test]
+    fn pairing_folds_a_runtime_record_into_its_site_decline_and_tier2_wins() {
+        // C3 (`27W` §3): a tier-3 runtime record (recognized class + site) pairs into that site's
+        // VerdictDecline via with_authored_reason — the runtime supplies the CLASS a dynamic format
+        // hid; the arm span is the decline's OWN traced arm. Idempotent: a tier-2 static reason is
+        // never overwritten by a runtime echo (static wins). A non-matching site is untouched.
+        use dorc_core::evidence::{
+            AuthoredReason, CollapseKind, DeclineClass, DeclineGate, MintSpan,
+        };
+        let sid = |leaf: u32| dorc_core::diag::SiteId {
+            leaf: LeafId(leaf),
+            member: None,
+        };
+        let decline = |leaf: u32, reason: Option<AuthoredReason>| {
+            CollapseEvidence::new(
+                TrustTier::Vouched,
+                CollapseKind::VerdictDecline {
+                    site: sid(leaf),
+                    arm: MintSpan(dorc_core::Span::new(
+                        dorc_core::BytePos(4),
+                        dorc_core::BytePos(9),
+                    )),
+                    arm_file: dorc_core::OracleFileId(0),
+                    gate: DeclineGate::Return,
+                    authored_reason: reason,
+                },
+            )
+        };
+        let tier2 = AuthoredReason {
+            class: DeclineClass::Hazard,
+            arm: MintSpan(dorc_core::Span::new(
+                dorc_core::BytePos(1),
+                dorc_core::BytePos(2),
+            )),
+            arm_file: dorc_core::OracleFileId(0),
+        };
+        let evidence = vec![
+            decline(5, None), // site 5 — a dynamic-format decline (class unread statically)
+            decline(6, Some(tier2)), // site 6 — already tier-2 classed (static wins)
+        ];
+        let reports = vec![
+            ReportRecord {
+                site: Some(rk(5)),
+                class: Some(DeclineClass::Unsound),
+                raw: "decline unsound k".to_owned(),
+                recognized: true,
+            },
+            ReportRecord {
+                site: Some(rk(6)),
+                class: Some(DeclineClass::Unsound),
+                raw: "decline unsound k".to_owned(),
+                recognized: true,
+            },
+        ];
+        let paired = pair_authored_reasons(evidence, &reports);
+        assert!(
+            matches!(
+                paired[0].kind(),
+                CollapseKind::VerdictDecline { authored_reason: Some(r), .. }
+                    if r.class == DeclineClass::Unsound
+            ),
+            "the runtime record classes site 5's previously-unclassed decline"
+        );
+        assert!(
+            matches!(
+                paired[1].kind(),
+                CollapseKind::VerdictDecline { authored_reason: Some(r), .. }
+                    if r.class == DeclineClass::Hazard
+            ),
+            "site 6's tier-2 static class is NOT overwritten by the runtime echo (static wins)"
         );
     }
 
