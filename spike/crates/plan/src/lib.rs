@@ -258,6 +258,14 @@ pub struct Derivation {
     /// artifact — rec-1). NOT a proof of adequacy (converged≠no-op stays the vouch's) — see
     /// [`survival`].
     pub survival: Option<SurvivalWitness>,
+    /// The licensing vouch's DEFINING span + oracle-file id (C7 `27V:mech-minting-line-threading`),
+    /// for the survival attribution's `file:line`. `Some` only on the [`LicenseVia::ConvergedEstablish`]
+    /// (elide-weld) path, which consumes a [`ByVouch<VerdictVouch>`]; `None` for Query/loop/call
+    /// elisions (no vouch consumed) and for vouches minted without a threaded span. Pure OUTPUT
+    /// provenance — EXEMPT from the erasability identity comparison (like [`witness`]/[`survival`]):
+    /// a vouch informs a license and never becomes a fact (TC-tier-3), and this reaches only the
+    /// why-lens render, never the byte-floored artifact.
+    pub vouch_span: Option<(dorc_core::Span, OracleFileId)>,
 }
 
 /// The witness authorising the one irreversible verb — *elide a command*. Its
@@ -352,7 +360,11 @@ impl ReplaceLicense {
                 // The elide-weld (TC-tier-2): consume the reached vouch BY VALUE — no vouch ⇒ run.
                 // A `ByObservation`/`BySilence` cannot inhabit this `Option`, so a converged
                 // measurement alone no longer elides (the vouchless-elide gap, closed).
-                let _vouch: ByVouch<VerdictVouch> = vouch?;
+                let vouch: ByVouch<VerdictVouch> = vouch?;
+                // C7: read the vouch's defining span (display-only) BEFORE it drops — for the
+                // survival render's `file:line`. Reading it does not retain a license (a vouch
+                // informs, never becomes a fact — TC-tier-3; the span is exempt output provenance).
+                let vouch_span = vouch.vouch().defining_span();
                 if grade != Grade::Must {
                     return None;
                 }
@@ -371,6 +383,7 @@ impl ReplaceLicense {
                         // real witness post-mint via `with_witness` (arch-1, output-only/exempt).
                         witness: dorc_core::Witness::empty(),
                         survival: None,
+                        vouch_span,
                     },
                 })
             }
@@ -429,6 +442,8 @@ impl ReplaceLicense {
                 verdict,
                 witness: dorc_core::Witness::empty(),
                 survival: None,
+                // No vouch is consumed on this path (Query/loop/call elisions) ⇒ no locus.
+                vouch_span: None,
             },
         })
     }
@@ -484,6 +499,8 @@ impl ReplaceLicense {
                 verdict: Verdict::Converged,
                 witness: dorc_core::Witness::empty(),
                 survival: None,
+                // No vouch is consumed on this path (Query/loop/call elisions) ⇒ no locus.
+                vouch_span: None,
             },
         })
     }
@@ -565,6 +582,8 @@ impl ReplaceLicense {
                 verdict: Verdict::Converged,
                 witness: dorc_core::Witness::empty(),
                 survival: None,
+                // No vouch is consumed on this path (Query/loop/call elisions) ⇒ no locus.
+                vouch_span: None,
             },
         })
     }

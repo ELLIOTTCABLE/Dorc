@@ -221,11 +221,14 @@ fn canon_derivation(d: &Derivation) -> String {
         witness: _, // EXEMPT: Exempt::ReceiptId + Exempt::OriginOrdering — the full granted
         // witness is output-only provenance; the adversarial gate proves it inert.
         survival: _, // EXEMPT (Stage 2 / TC-3): the survival witness is render-surface
-                     // attribution (the why-lens), NEVER woven into the byte-floored artifact
-                     // (rec-1). A survived elision's ARTIFACT bytes are identical to any other
-                     // elision's (both render the StandIn); only its disposition (Replace vs
-                     // Run) is identity, and that is already hashed. So the attribution detail
-                     // is output-only, like `witness`.
+        // attribution (the why-lens), NEVER woven into the byte-floored artifact
+        // (rec-1). A survived elision's ARTIFACT bytes are identical to any other
+        // elision's (both render the StandIn); only its disposition (Replace vs
+        // Run) is identity, and that is already hashed. So the attribution detail
+        // is output-only, like `witness`.
+        vouch_span: _, // EXEMPT (C7 minting-line threading): the vouch's `file:line` is why-lens
+                       // attribution only (a vouch informs a license, never becomes a fact —
+                       // TC-tier-3); it reaches no artifact byte, exactly like `witness`/`survival`.
     } = d;
     format!(
         "deriv(fact={} via={} ambient={ambient} grade={grade:?} verdict={verdict:?})",

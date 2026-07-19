@@ -1549,7 +1549,7 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
         // each crossing. This is the attribution tether under the sharpest claim in the design —
         // a wrong footprint silently under-executes someone else's line, so the render surface
         // must always say whose footprint you trusted. Empty when unflagged (no survivals).
-        emit_survival_attribution(&plan, &interner);
+        emit_survival_attribution(&plan, &interner, &oracle_paths, &oracle_srcs);
         // 24G Part B: every converged elision a reaches() expansion DEMOTED names the reach-function
         // (the cross-author demote); empty when no reach expansion poisoned an elision.
         emit_reach_poisonings(&plan, &interner);
@@ -3174,7 +3174,12 @@ fn emit_why_lens(
 /// artifact stays receipt-free (a survived elision's artifact bytes are identical to any other
 /// elision's). Never `error[`, so the gate-3 stderr floor ignores it; the `why: ` prefix lets
 /// gate-7 (`expected-why`) pin the attribution end-to-end.
-fn emit_survival_attribution(plan: &dorc_plan::Plan, interner: &Interner) {
+fn emit_survival_attribution(
+    plan: &dorc_plan::Plan,
+    interner: &Interner,
+    oracle_paths: &[String],
+    oracle_srcs: &[String],
+) {
     for step in &plan.steps {
         let dorc_plan::Disposition::Replace(license, _) = &step.disposition else {
             continue;
@@ -3223,8 +3228,13 @@ fn emit_survival_attribution(plan: &dorc_plan::Plan, interner: &Interner) {
                 )
             })
             .collect();
+        // C7: name the licensing vouch's oracle `file:line` when the plan threaded it (the
+        // ConvergedEstablish elide-weld path); omitted for vouchless survival paths.
+        let locus = oracle_locus(license.derivation().vouch_span, oracle_paths, oracle_srcs)
+            .map(|l| format!("; vouched at {l}"))
+            .unwrap_or_default();
         eprintln!(
-            "why: site {} survives+elides past {} — backing {} disjoint (trusted footprint)",
+            "why: site {} survives+elides past {} — backing {} disjoint (trusted footprint){locus}",
             step.leaf.0,
             crossings.join(", "),
             render_coord(witness.backing(), interner),
