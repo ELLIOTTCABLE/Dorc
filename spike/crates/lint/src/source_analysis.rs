@@ -6,9 +6,7 @@
 //! that `plan`/`apply` emit with MORE inputs, emitted here with fewer (no world) — every pass whose
 //! inputs exist fires; passes needing probe facts simply never run (they are not stubbed or faked).
 
-use dorc_core::Severity;
-
-use crate::finding::{Finding, LintSeverity, RemapFidelity, SourceStatus};
+use crate::finding::{Finding, RemapFidelity, SourceStatus};
 use crate::source::{LintContext, LintSource, Rung};
 
 /// The analysis-diagnostics source. Deterministic (`inv-determinism`): the pipeline is a pure
@@ -61,22 +59,14 @@ fn diag_to_finding(path: &str, src: &str, diag: &dorc_core::Diag, source: &'stat
         path: path.to_owned(),
         line,
         col,
-        severity: map_severity(diag.severity()),
+        // The one severity vocabulary (`27V` §3 rider-d): a native finding carries the engine's own
+        // `core::Severity` verbatim — no remap, the swap the registry-thin design was built for.
+        severity: diag.severity(),
         source,
         code: diag.code.slug().to_owned(),
         // The catalog-rendered message (default interner — no payload resolves an interned handle;
         // MINIMAL re-bridge, `27V`).
         message: dorc_core::diag::render_body(diag, &dorc_core::Interner::default()),
         remap: RemapFidelity::Exact,
-    }
-}
-
-/// Map the engine's three-value `core::Severity` onto the lint tier: `Note` is an advisory
-/// disclosure ⇒ `Info` (never gates), `Warning ⇒ Warn`, `Error ⇒ Error`.
-fn map_severity(sev: Severity) -> LintSeverity {
-    match sev {
-        Severity::Error => LintSeverity::Error,
-        Severity::Warning => LintSeverity::Warn,
-        Severity::Note => LintSeverity::Info,
     }
 }

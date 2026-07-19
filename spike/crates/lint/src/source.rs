@@ -82,8 +82,10 @@ pub trait LintSource {
     fn run(&self, ctx: &LintContext<'_>, out: &mut Vec<Finding>) -> SourceStatus;
 }
 
-/// The input-availability rung a source sits on (`27R` §8b nit-functionality-ladder). Only the two
-/// no-world rungs are buildable this round; `rung-probe`/`rung-oracle-solo` are named-not-built.
+/// The input-availability rung a source sits on (`27R` §8b nit-functionality-ladder). `rung-probe`
+/// stays named-not-built (probe-inclusive lint is the plan pipeline's advisory surface, never a
+/// second probe path); `rung-oracle-solo` is UNLOCKED (`27S:seam-oracle-validate-factoring` landed —
+/// the book-free `dorc_oracle::validate` entry the cli and lint now share).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Rung {
     /// Per-file, no book and no world (external tools, parse-tier diagnostics, oracle-body lints).
@@ -91,6 +93,9 @@ pub enum Rung {
     /// Book(s) present, connection DENIED — the no-world pipeline prefix (analysis diagnostics,
     /// unmodeled-wall inventory).
     Book,
+    /// Oracle sources ALONE, no book (`27R` §8b rung-oracle-solo): the book-free oracle-side
+    /// validation + the tier-1 authored-decline inventory.
+    OracleSolo,
 }
 
 impl Rung {
@@ -100,6 +105,7 @@ impl Rung {
         match self {
             Rung::File => "file",
             Rung::Book => "book",
+            Rung::OracleSolo => "oracle-solo",
         }
     }
 }
@@ -112,6 +118,8 @@ pub fn registry() -> Vec<Box<dyn LintSource>> {
         Box::new(crate::source_analysis::AnalysisDiagnostics),
         Box::new(crate::source_unmodeled::UnmodeledInventory),
         Box::new(crate::source_verdict::VerdictBodyFlattening),
+        Box::new(crate::source_oracle_solo::OracleValidate),
+        Box::new(crate::source_oracle_solo::OracleDeclinedInventory),
         Box::new(crate::source_external::Shellcheck),
         Box::new(crate::source_external::Checkbashisms),
     ]

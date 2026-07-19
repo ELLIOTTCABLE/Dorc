@@ -15,7 +15,7 @@ use dorc_core::Interner;
 use dorc_oracle::predict::Stmt;
 use dorc_oracle::verdict::VerdictSet;
 
-use crate::finding::{Finding, LintSeverity, RemapFidelity, SourceStatus};
+use crate::finding::{Finding, RemapFidelity, SourceStatus};
 use crate::source::{LintContext, LintSource, Rung};
 
 /// The verdict-body flattening source. Deterministic (pure over the oracle bytes).
@@ -50,7 +50,7 @@ impl LintSource for VerdictBodyFlattening {
                         path: oracle.path.clone(),
                         line: Some(u32::try_from(line).unwrap_or(u32::MAX)),
                         col: Some(u32::try_from(col).unwrap_or(u32::MAX)),
-                        severity: LintSeverity::Warn,
+                        severity: dorc_core::Severity::Warning,
                         source: self.name(),
                         code: "verdict-terminal-pipeline".to_owned(),
                         message: "this __is_converged body answers with a pipeline's tail status \

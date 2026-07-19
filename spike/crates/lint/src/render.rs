@@ -6,7 +6,7 @@
 
 use std::fmt::Write as _;
 
-use crate::finding::{Coverage, Finding, LintReport, LintSeverity, RemapFidelity};
+use crate::finding::{Coverage, Finding, LintReport, RemapFidelity, severity_token};
 use crate::json::escape_into;
 
 /// The versioned machine-format name (`27R` §5 dir-stability-split): the ENVELOPE/field schema is
@@ -67,20 +67,11 @@ fn render_finding_line(f: &Finding) -> String {
     };
     format!(
         "  {loc} {} [{}:{}] {}{fidelity}\n",
-        severity_word(f.severity),
+        severity_token(f.severity),
         f.source,
         f.code,
         f.message
     )
-}
-
-/// The severity word for the human render.
-fn severity_word(sev: LintSeverity) -> &'static str {
-    match sev {
-        LintSeverity::Error => "error",
-        LintSeverity::Warn => "warn",
-        LintSeverity::Info => "info",
-    }
 }
 
 /// The JSONL render (`27R` §5, §8b). Line 1 is the envelope (format name + coverage block); each
@@ -162,7 +153,7 @@ fn finding_object(f: &Finding) -> String {
     s.push_str(",\"col\":");
     push_opt_num(&mut s, f.col);
     s.push_str(",\"severity\":");
-    push_json_str(&mut s, f.severity.token());
+    push_json_str(&mut s, severity_token(f.severity));
     s.push_str(",\"source\":");
     push_json_str(&mut s, f.source);
     s.push_str(",\"code\":");

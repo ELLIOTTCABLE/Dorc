@@ -2,9 +2,9 @@
 //! JSONL envelope + coverage block, source-subset selection, the clean sentence, and the
 //! severity-threshold counting the cli's exit trichotomy consumes.
 
+use dorc_core::Severity;
 use dorc_lint::{
-    LintInput, LintOptions, LintReport, LintSeverity, NoToolsRunner, json, lint, list_sources,
-    render,
+    LintInput, LintOptions, LintReport, NoToolsRunner, json, lint, list_sources, render,
 };
 
 fn file(path: &str, src: &str) -> LintInput {
@@ -60,7 +60,7 @@ fn analysis_diagnostics_surface_eval_wall_errors() {
         report
             .findings
             .iter()
-            .any(|f| f.severity == LintSeverity::Error),
+            .any(|f| f.severity == Severity::Error),
         "the wall errors are Error-severity"
     );
 }
@@ -74,11 +74,7 @@ fn unmodeled_inventory_reports_one_wall_summary() {
     assert_eq!(report.findings.len(), 1, "one per-book summary finding");
     let f = &report.findings[0];
     assert_eq!(f.code, "unmodeled-wall-inventory");
-    assert_eq!(
-        f.severity,
-        LintSeverity::Info,
-        "an advisory hint, never gates"
-    );
+    assert_eq!(f.severity, Severity::Note, "an advisory hint, never gates");
     assert_eq!(f.line, Some(1), "the first wall is the eval on line 1");
 }
 
@@ -198,12 +194,12 @@ fn severity_threshold_counting_drives_the_exit_trichotomy() {
         "errors from the wall, an info from the inventory"
     );
     assert_eq!(
-        report.count_at_or_above(Some(LintSeverity::Error)),
+        report.count_at_or_above(Some(Severity::Error)),
         errors,
         "fail-on=error"
     );
     assert!(
-        report.count_at_or_above(Some(LintSeverity::Warn)) >= errors,
+        report.count_at_or_above(Some(Severity::Warning)) >= errors,
         "fail-on=warn includes errors"
     );
     assert_eq!(
@@ -230,7 +226,7 @@ fn verdict_body_flags_a_terminal_pipeline() {
     );
     let f = &report.findings[0];
     assert_eq!(f.code, "verdict-terminal-pipeline");
-    assert_eq!(f.severity, LintSeverity::Warn);
+    assert_eq!(f.severity, Severity::Warning);
     assert_eq!(f.source, "verdict-body");
     assert_eq!(f.line, Some(3), "the pipeline command is on line 3");
 }

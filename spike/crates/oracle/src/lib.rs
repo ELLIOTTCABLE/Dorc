@@ -140,6 +140,10 @@ pub mod reserved;
 /// trailing marks) in an UNMARKED file are a loud error; bare `__role` floor bodies work markerless.
 pub mod marker;
 
+/// The book-free oracle-side validation surface (`27S:seam-oracle-validate-factoring`): the cli's
+/// inline oracle lints, factored into one entry the cli and the lint rung-oracle-solo lane share.
+pub mod validate;
+
 /// The whole-file off-ramp cleaner (`dorc strip` / `dorc-sh`): parser-backed erasure of every
 /// dialect construct, yielding runnable stock sh (`strip-is-pure-erasure`, `274` §13).
 pub mod strip;

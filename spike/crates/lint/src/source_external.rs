@@ -12,9 +12,9 @@
 //! findings govern: findings present ⇒ just findings (rc ignored); zero findings + nonzero rc ⇒ one
 //! warn operational finding; unrecognized output ⇒ raw passthrough.
 
-use dorc_core::Interner;
+use dorc_core::{Interner, Severity};
 
-use crate::finding::{Finding, LintSeverity, RemapFidelity, SourceStatus};
+use crate::finding::{Finding, RemapFidelity, SourceStatus};
 use crate::json;
 use crate::runner::ToolRun;
 use crate::source::{LintContext, LintSource, Rung};
@@ -85,7 +85,7 @@ fn run_external(
             path: String::new(),
             line: None,
             col: None,
-            severity: LintSeverity::Info,
+            severity: Severity::Note,
             source: tool,
             code: "tool-absent".to_owned(),
             message: format!(
@@ -131,7 +131,7 @@ fn lint_one_file(
                 path: file.path.clone(),
                 line: None,
                 col: None,
-                severity: LintSeverity::Warn,
+                severity: Severity::Warning,
                 source: tool,
                 code: "external-raw".to_owned(),
                 message: format!(
@@ -149,7 +149,7 @@ struct RawFinding {
     /// The 1-based STRIPPED line the tool reported, if any.
     line: Option<u32>,
     col: Option<u32>,
-    severity: LintSeverity,
+    severity: Severity,
     code: String,
     message: String,
     /// The best fidelity this finding can carry once remapped — `Exact` from a machine format,
@@ -206,12 +206,12 @@ fn parse_shellcheck_comment(c: &json::Json) -> RawFinding {
     }
 }
 
-/// shellcheck `level` → lint severity. `error ⇒ Error`, `warning ⇒ Warn`, `info`/`style ⇒ Info`.
-fn shellcheck_level(level: &str) -> LintSeverity {
+/// shellcheck `level` → `core::Severity`. `error ⇒ Error`, `warning ⇒ Warning`, `info`/`style ⇒ Note`.
+fn shellcheck_level(level: &str) -> Severity {
     match level {
-        "error" => LintSeverity::Error,
-        "warning" => LintSeverity::Warn,
-        _ => LintSeverity::Info,
+        "error" => Severity::Error,
+        "warning" => Severity::Warning,
+        _ => Severity::Note,
     }
 }
 
@@ -283,12 +283,12 @@ fn parse_line_keyword(s: &str) -> Option<u32> {
 }
 
 /// Guess a severity from a text line's words (the text tier carries no structured level).
-fn text_severity(line: &str) -> LintSeverity {
+fn text_severity(line: &str) -> Severity {
     let lower = line.to_ascii_lowercase();
     if lower.contains("error") {
-        LintSeverity::Error
+        Severity::Error
     } else {
-        LintSeverity::Warn
+        Severity::Warning
     }
 }
 
@@ -326,7 +326,7 @@ fn operational_finding(path: &str, tool: &'static str, rc: i32) -> Finding {
         path: path.to_owned(),
         line: None,
         col: None,
-        severity: LintSeverity::Warn,
+        severity: Severity::Warning,
         source: tool,
         code: "external-operational".to_owned(),
         message: format!("`{tool}` exited with status {rc} but produced no parseable findings"),

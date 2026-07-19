@@ -64,7 +64,6 @@ use dorc_core::diag::{
     CarriedAcrossSubstrateAxis, DanglingReference, DerivFamilyIncomplete, Diag, DiagCode,
     EscalationPolicy, FootprintIncoherent, ReachesConflict, ReachesProviderCollision,
     ResolverConflict, ResolverProviderCollision, TouchesEscalated, WrappedSiteAdoptionHint,
-    WrapperEntryIncoherent, WrapperPeelIncoherent,
 };
 use dorc_core::{
     CollapseEvidence, CollapseKind, Interner, Observable, OutBytes, Predicted, ProvArena, Rc,
@@ -608,8 +607,9 @@ struct LintArgs {
     oracles: Vec<String>,
     oracle_dirs: Vec<String>,
     format: LintFormat,
-    /// The `--fail-on` threshold as a severity, or `None` for `never` (`27R` §5).
-    fail_on: Option<dorc_lint::LintSeverity>,
+    /// The `--fail-on` threshold as a severity, or `None` for `never` (`27R` §5). The one severity
+    /// vocabulary is `core::Severity` (`27V` §3 rider-d); the `warn` wire token maps to `Warning`.
+    fail_on: Option<Severity>,
     tools_enabled: bool,
     require_tools: bool,
     /// `--expect-files N` (`27R` §8b): the exact lintable-file count CI asserts.
@@ -636,7 +636,7 @@ fn parse_lint_args(raw: &[String]) -> Result<Invocation, String> {
     let mut oracle_dirs = Vec::new();
     let mut format = LintFormat::Human;
     // tc-lint-fail-on-default: `error` (hot-loop mercy; CI tightens to `warn`) — `27R` §6, flagged.
-    let mut fail_on = Some(dorc_lint::LintSeverity::Error);
+    let mut fail_on = Some(Severity::Error);
     let mut tools_enabled = true;
     let mut require_tools = false;
     let mut expect_files = None;
@@ -708,10 +708,10 @@ fn parse_lint_format(v: &str) -> Result<LintFormat, String> {
 
 /// `--fail-on` → the severity threshold, or `None` for `never`. `27R` §5: only `error`/`warn`
 /// gate (`info` never does).
-fn parse_fail_on(v: &str) -> Result<Option<dorc_lint::LintSeverity>, String> {
+fn parse_fail_on(v: &str) -> Result<Option<Severity>, String> {
     match v {
-        "error" => Ok(Some(dorc_lint::LintSeverity::Error)),
-        "warn" => Ok(Some(dorc_lint::LintSeverity::Warn)),
+        "error" => Ok(Some(Severity::Error)),
+        "warn" => Ok(Some(Severity::Warning)),
         "never" => Ok(None),
         other => Err(format!(
             "unknown --fail-on {other:?} (expected error|warn|never); {LINT_USAGE}"
@@ -967,26 +967,32 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
         .map(|p| std::fs::read_to_string(p).map_err(|e| humane_read_error("oracle", p, &e)))
         .collect::<Result<_, _>>()?;
     let oracle_refs: Vec<&str> = oracle_srcs.iter().map(String::as_str).collect();
-    // The effect-map is derived from the inline check bodies (23D §1 — the check is the
-    // oracle); the probe lane (R3) ships the same stripped check bodies per-site.
-    let lifted = dorc_oracle::lift(&mut interner, &oracle_refs);
-    report_at(advisory, "oracle", None, &lifted.diags);
-    let idx = lifted.value;
 
-    // Lift each oracle's `<provider>__predict` functions into a per-file PredictSet (the
-    // real entity-resolution mechanism — the engine threads the book's value-flow
-    // through these, never parsing argv itself). Shared interner, so provider symbols
-    // match the book's command words (204 seam #2).
-    // ack-8: the per-file `check` diags span into THIS oracle's source, so zip the path back in
-    // for the file:line:col frame (the check-dialect give-ups are the main oracle-side errors).
+    // Oracle-side validation (`27S:seam-oracle-validate-factoring`): the effect-map lift, the
+    // per-file check-dialect lift, dual-peel + fold-entry coherence, the munge-reservation lint, and
+    // the marker gate — all book-free, factored into one entry the lint rung-oracle-solo lane shares
+    // (`27R` §8b). The cli routes its stages to stderr; `wrapper_incoherent` carries the pre-network
+    // fail-fast (`27C:rul-fold-entry-coherence-failfast`), which moves NOWHERE.
+    let validation = dorc_oracle::validate::validate(&mut interner, &oracle_refs);
+    let wrapper_incoherent = validation.wrapper_incoherent;
+    for stage in &validation.stages {
+        let source = stage
+            .file
+            .and_then(|i| Some((oracle_paths.get(i)?.as_str(), oracle_srcs.get(i)?.as_str())));
+        report_at(advisory, stage.stage, source, &stage.diags);
+    }
+
+    // The effect-map value (23D §1 — the check is the oracle; the probe lane R3 ships the same
+    // stripped check bodies per-site). Its diags were emitted by `validate` above.
+    let idx = dorc_oracle::lift(&mut interner, &oracle_refs).value;
+
+    // Lift each oracle's `<provider>__predict` functions into a per-file PredictSet (the real
+    // entity-resolution mechanism — the engine threads the book's value-flow through these, never
+    // parsing argv itself). Shared interner, so provider symbols match the book's command words (204
+    // seam #2). The per-file `check`-dialect diags were emitted by `validate` above.
     let checks: Vec<dorc_oracle::predict::PredictSet> = oracle_refs
         .iter()
-        .zip(oracle_paths.iter())
-        .map(|(src, path)| {
-            let lifted = dorc_oracle::predict::lift_predicts(&mut interner, src);
-            report_at(advisory, "check", Some((path.as_str(), src)), &lifted.diags);
-            lifted.value
-        })
+        .map(|src| dorc_oracle::predict::lift_predicts(&mut interner, src).value)
         .collect();
 
     // The typeless-floor verdict-provider set (`24L` §7 — THE kernel seam): the analyzer kernel is
@@ -1002,15 +1008,6 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
         .map(|src| dorc_oracle::verdict::VerdictSet::lift(&mut interner, src).value)
         .collect();
 
-    // Dual-peel coherence (`273` §5): a wrapper authoring BOTH `__predict` (peeling) and
-    // `__lend_map` must have both members' `"$@"` reach the SAME tail position. Disagreement is
-    // genuine static incoherence (declarations-genuinely-contradict) ⇒ loud, pre-network
-    // fail-fast (`rul-proven-mutation-fails-fast` posture). Mints NO license — the safe direction
-    // (an error, never an elision). The artifact still ships; the outcome carries the fail-fast
-    // exit. This lane runs the check at oracle-load over canonical probe argvs; the per-site check
-    // over real book argvs is `lane-context-entry`'s refinement (`273` §5).
-    let wrapper_incoherent = check_wrapper_peel_coherence(advisory, &mut interner, &oracle_refs);
-
     // The escalation-POLICY disclosure (`27C:render-authority-disclosure`): one advisory line naming
     // the escalation posture (the dial × the connection capability) and the entry-capable wrappers
     // loaded. Consent legibility — the admin sees, once, what authority the probe re-uses.
@@ -1021,30 +1018,6 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
         args.dial,
         args.capability,
     );
-
-    // The munge-reservation lint (24Kc fix-munge-reservation / 24M ca-munge-charclass): refuse an
-    // emitted `<munged>__<role>` funcname that is not a legal sh NAME (charclass) or that two
-    // distinct source names collide onto (non-injective munge), over the whole oracle unit. No
-    // threaded source (the `oracle`-stage precedent — a cross-file collision has no single file to
-    // frame into); the corpus is clean, so these Error-severity lints never fire in-corpus.
-    report_at(
-        advisory,
-        "reserved",
-        None,
-        &dorc_oracle::reserved::lint_oracle_reserved_names(&mut interner, &oracle_refs),
-    );
-
-    // The marker gate (marker-gates-syntax-only): a dialect construct (bind/mark) in an UNMARKED
-    // oracle is a loud error naming the missing `# dorc-lang/v0.1`. The corpus is marker-stamped
-    // corpus-wide, so this is silent there; the bare `__role` floor lifts markerless regardless.
-    for (src, path) in oracle_refs.iter().zip(oracle_paths.iter()) {
-        report_at(
-            advisory,
-            "marker",
-            Some((path.as_str(), src)),
-            &dorc_oracle::marker::check_dialect_marker(&mut interner, src),
-        );
-    }
 
     // Parse + analyze the book (shared interner, so symbols match the oracles). Multiple books
     // CONCATENATE into one analyzed unit (`\n`-joined so no two files' lines merge). `book_name`
@@ -4564,16 +4537,11 @@ fn emit_sigpipe_race_notes(results: &SiteResults) {
     }
 }
 
-/// The engine-owned display word for a decline class (`27W:rul-class-starter-set`). Display only
-/// (`inv-referent-agnostic`); the spellings ride `27V:rul-output-form-unwelded`.
+/// The engine-owned display word for a decline class (`27W:rul-class-starter-set`). Delegates to
+/// the one home ([`dorc_core::evidence::DeclineClass::token`]); display only
+/// (`inv-referent-agnostic`; spellings ride `27V:rul-output-form-unwelded`).
 fn decline_class_word(class: dorc_core::evidence::DeclineClass) -> &'static str {
-    use dorc_core::evidence::DeclineClass;
-    match class {
-        DeclineClass::Unsound => "unsound",
-        DeclineClass::Unmodeled => "unmodeled",
-        DeclineClass::Interactive => "interactive",
-        DeclineClass::Hazard => "hazard",
-    }
+    class.token()
 }
 
 /// Emit the report lane's SELECTED default disclosure (`27W` §2 · `decline-class-emission`): one
@@ -4984,121 +4952,6 @@ fn effect_word_to_verdict(word: &str) -> Verdict {
         "absent" => Verdict::Diverged,
         _ => Verdict::Unknown,
     }
-}
-
-/// Advisory-gated [`report`] (rec-1 / tc-apply-receipt-floor): the stderr driver over
-/// [`advisory_filter`]. When `advisory` is true, emit every severity (the `plan` /
-/// round-trip render surface — the ui-3 cited-disclosure console); when false (the off-ramp
-/// `apply` mode), emit ONLY Error-severity diagnostics. The error floor is never suppressed
-/// in any mode — a shippable artifact must never hide an error — so `apply` stays
-/// receipt-free WITHOUT going blind. The filter is factored PURE (the printing is the I/O
-/// edge) so the lone per-severity routing decision rec-1 forces here is unit-testable, the
-/// same pure/driver split as [`why_lens_lines`]/[`emit_why_lens`].
-/// Dual-peel coherence over the whole oracle unit (`273` §5). For every provider that authors BOTH
-/// a peeling `__predict` and a `__lend_map`, assert their `"$@"` reach the SAME tail position over
-/// a set of canonical probe argvs. A disagreement is genuine static incoherence
-/// (declarations-genuinely-contradict) ⇒ a loud Error is reported and `true` returned (the caller
-/// fast-fails, `EXIT_WRAPPER_INCOHERENT`). Mints NO license — an error is the safe direction. The
-/// canonical argvs exercise the flag-strip loops and the guest/operand positions; a coherent pair
-/// agrees on all of them (`inv-determinism` — argument-order walk, ordered maps).
-fn check_wrapper_peel_coherence(
-    advisory: bool,
-    interner: &mut Interner,
-    oracle_refs: &[&str],
-) -> bool {
-    use dorc_oracle::entry::{check_entry_coherence, lift_entry_set};
-    use dorc_oracle::predict::{Predict, lift_predicts};
-    use dorc_oracle::wrapper::{check_peel_coherence, detect_peel, lift_lend_map_set};
-
-    // Canonical probe argvs — flags (`-a`/`-b`) exercise the flag-strip loops, then a guest +
-    // operand. A coherent pair agrees on ALL; an incoherent pair disagrees on ≥1.
-    const CANON: [&[&str]; 3] = [&["g"], &["-a", "g"], &["-a", "-b", "g", "x"]];
-
-    // Gather each provider's peeling predict + lend_map + entry form across the unit (a wrapper's
-    // members share a file, but match unit-wide for robustness). Keyed by provider `Symbol`; first wins.
-    let mut predicts: BTreeMap<Symbol, Predict> = BTreeMap::new();
-    let mut lend_maps: BTreeMap<Symbol, Predict> = BTreeMap::new();
-    let mut entries: BTreeMap<Symbol, Predict> = BTreeMap::new();
-    for src in oracle_refs {
-        let ps = lift_predicts(interner, src).value;
-        for p in ps.providers() {
-            if let Some(c) = ps.get(p)
-                && detect_peel(c).is_some()
-            {
-                predicts.entry(p).or_insert_with(|| c.clone());
-            }
-        }
-        let ls = lift_lend_map_set(interner, src).value;
-        for p in ls.providers() {
-            if let Some(c) = ls.get(p) {
-                lend_maps.entry(p).or_insert_with(|| c.clone());
-            }
-        }
-        let es = lift_entry_set(interner, src).value;
-        for p in es.providers() {
-            if let Some(c) = es.get(p) {
-                entries.entry(p).or_insert_with(|| c.clone());
-            }
-        }
-    }
-
-    let mut diags = Vec::new();
-    // Fold-entry coherence (`27C:rul-fold-entry-coherence-failfast`): where a wrapper authors BOTH a
-    // `lend_map` and an `__enter` form, their argv flow must agree by STATIC sh-structure (an
-    // argparsing entry must consume the same leading args the fold did). Disagreement is the
-    // declarations-genuinely-contradict category ⇒ the SAME pre-network fail-fast.
-    for (provider, lend) in &lend_maps {
-        let Some(enter) = entries.get(provider) else {
-            continue;
-        };
-        if let Some(inc) = check_entry_coherence(enter, lend) {
-            diags.push(Diag::new(
-                DiagCode::WrapperEntryIncoherent(WrapperEntryIncoherent {
-                    detail: format!(
-                        "wrapper `{}`: __enter and __lend_map disagree on argv flow (entry \
-                         consumes {} leading arg(s), the lend-fold consumes {}) — static \
-                         incoherence (27C:rul-fold-entry-coherence-failfast, \
-                         declarations-genuinely-contradict). The entry form drops/transforms args \
-                         the fold relied on; make the entry pass the fold's guest verbatim.",
-                        interner.resolve(*provider),
-                        inc.entry_shifts,
-                        inc.lend_shifts,
-                    ),
-                }),
-                enter.name_span,
-            ));
-        }
-    }
-    for (provider, predict) in &predicts {
-        let Some(lend) = lend_maps.get(provider) else {
-            continue;
-        };
-        for argv in CANON {
-            if let Some(inc) = check_peel_coherence(predict, lend, argv) {
-                diags.push(Diag::new(
-                    DiagCode::WrapperPeelIncoherent(WrapperPeelIncoherent {
-                        detail: format!(
-                            "wrapper `{}`: __predict and __lend_map disagree on the peel tail \
-                             position (predict reaches \"$@\" after {} argv token(s), lend_map \
-                             after {}) — static incoherence (273 §5, \
-                             declarations-genuinely-contradict). The guest would start at a \
-                             different token depending on which member dispatched; fix the \
-                             argparse so both peel to the same tail.",
-                            interner.resolve(*provider),
-                            inc.predict_depth,
-                            inc.lend_map_depth
-                        ),
-                    }),
-                    predict.name_span,
-                ));
-                break; // one diagnostic per provider
-            }
-        }
-    }
-
-    let incoherent = !diags.is_empty();
-    report_at(advisory, "wrapper", None, &diags);
-    incoherent
 }
 
 /// Emit the escalation-POLICY disclosure (`27C:render-authority-disclosure` — the consent-legibility

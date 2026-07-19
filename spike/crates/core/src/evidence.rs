@@ -211,6 +211,19 @@ impl DeclineClass {
             _ => None,
         }
     }
+
+    /// The engine-owned display/wire token (the reverse of [`from_token`](Self::from_token)); the one
+    /// home for the class spellings (display only, `inv-referent-agnostic`; the words ride
+    /// `27V:rul-output-form-unwelded`). `from_token(c.token()) == Some(c)` for every class.
+    #[must_use]
+    pub fn token(self) -> &'static str {
+        match self {
+            Self::Unsound => "unsound",
+            Self::Unmodeled => "unmodeled",
+            Self::Interactive => "interactive",
+            Self::Hazard => "hazard",
+        }
+    }
 }
 
 /// The authored reason a decline carries (`27W` §3): the class plus the emitting arm's source

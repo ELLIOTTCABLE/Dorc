@@ -12,7 +12,7 @@
 
 use dorc_analysis::cfg::CfgNodeKind;
 
-use crate::finding::{Finding, LintSeverity, RemapFidelity, SourceStatus};
+use crate::finding::{Finding, RemapFidelity, SourceStatus};
 use crate::source::{LintContext, LintSource, Rung};
 
 /// The unmodeled-wall inventory source. Deterministic (pure over the source bytes).
@@ -66,7 +66,7 @@ impl LintSource for UnmodeledInventory {
                 path: file.path.clone(),
                 line: Some(u32::try_from(line).unwrap_or(u32::MAX)),
                 col: Some(u32::try_from(col).unwrap_or(u32::MAX)),
-                severity: LintSeverity::Info,
+                severity: dorc_core::Severity::Note,
                 source: self.name(),
                 code: "unmodeled-wall-inventory".to_owned(),
                 message,

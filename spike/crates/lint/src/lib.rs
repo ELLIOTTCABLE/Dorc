@@ -23,11 +23,12 @@ pub mod source;
 
 mod source_analysis;
 mod source_external;
+mod source_oracle_solo;
 mod source_unmodeled;
 mod source_verdict;
 
 pub use finding::{
-    Coverage, Finding, LintReport, LintSeverity, RemapFidelity, SourceCoverage, SourceStatus,
+    Coverage, Finding, LintReport, RemapFidelity, SourceCoverage, SourceStatus, severity_token,
 };
 pub use runner::{ExternalToolRunner, NoToolsRunner, ToolRun};
 pub use source::{LintContext, LintInput, LintOptions, LintSource, Rung, registry};
