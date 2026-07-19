@@ -13,6 +13,11 @@ publish = false
 # Any future dep must clear `cargo deny check licenses bans sources` and stay
 # compatible with the workspace `forbid(unsafe)`.
 
+# The thin generic cram CLI (`282` §5): `run` reports drift, `bless` re-inlines.
+[[bin]]
+name = "errorloom"
+path = "src/bin/errorloom.rs"
+
 # The replay runner's self-tests (`282` §7) drive this deterministic echo tool
 # instead of a shell or a real command — cross-platform, no external tools.
 [[bin]]
