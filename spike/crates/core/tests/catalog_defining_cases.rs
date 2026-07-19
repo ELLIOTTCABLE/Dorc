@@ -27,11 +27,11 @@
 //! corruption-injection surface so future coverage is mechanical, not re-derived (conductor rider).
 
 use dorc_core::diag::{
-    self, CarriedAcrossSubstrateAxis, CmdsubOperandTop, DanglingReference, Diag, DiagCode,
-    EscalationPolicy, MissingDialectMarker, MungeNameInvalid, OperandPosition,
-    RecordsFactTruncated, RenderHeredocRefused, SiteId, SiteUnresolvable, SyntaxUnsupported,
-    ToleratesUnknownDimension, WhylogAbsent, WhylogBookDesync, WhylogCorrupt, WhylogVersionRefused,
-    WrapperPeelIncoherent,
+    self, AidUnloadedSiblingOracle, CarriedAcrossSubstrateAxis, CmdsubOperandTop,
+    DanglingReference, Diag, DiagCode, EscalationPolicy, MissingDialectMarker, MungeNameInvalid,
+    OperandPosition, RecordsFactTruncated, RenderHeredocRefused, SiteId, SiteUnresolvable,
+    SyntaxUnsupported, ToleratesUnknownDimension, WhylogAbsent, WhylogBookDesync, WhylogCorrupt,
+    WhylogVersionRefused, WrapperPeelIncoherent,
 };
 use dorc_core::{BytePos, Interner, LeafId, Severity, Span, TopCause};
 
@@ -194,6 +194,18 @@ fn covered() -> Vec<DefiningCase> {
             build: || {
                 DiagCode::WhylogCorrupt(WhylogCorrupt {
                     detail: "no end-sentinel — a partial write?".to_owned(),
+                })
+            },
+        },
+        // The new code (gap-5) mints with UNWRITTEN prose (`27V:rul-error-authorship-tier`): its
+        // defining case pins that the render is the greppable `[unwritten: …]` placeholder — a valid
+        // defining case that flips to the authored render when the conductor writes the prose.
+        DefiningCase {
+            slug: "aid-unloaded-sibling-oracle",
+            build: || {
+                DiagCode::AidUnloadedSiblingOracle(AidUnloadedSiblingOracle {
+                    detail: "1 sibling oracle exists on disk but was not loaded: `redis.oracle.sh`"
+                        .to_owned(),
                 })
             },
         },

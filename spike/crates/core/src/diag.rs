@@ -209,6 +209,11 @@ pub enum DiagCode {
     WhylogAbsent(WhylogAbsent),
     /// A durable was found but is truncated / unparseable — diagnostics, never a panic.
     WhylogCorrupt(WhylogCorrupt),
+
+    // ── cli/main.rs (aid hints) — `AID-NEEDS:aid-unloaded-sibling-oracle` (gap-5, ack-6) ──────
+    /// Sibling `*.oracle.sh` files sit on disk beside the loaded set but were not loaded — a
+    /// suggest-never-auto-load hint (`24H` ack-6). Advisory; the run is unchanged.
+    AidUnloadedSiblingOracle(AidUnloadedSiblingOracle),
 }
 
 impl DiagCode {
@@ -272,6 +277,7 @@ impl DiagCode {
             DiagCode::WhylogBookDesync(_) => "whylog-book-desync",
             DiagCode::WhylogAbsent(_) => "whylog-absent",
             DiagCode::WhylogCorrupt(_) => "whylog-corrupt",
+            DiagCode::AidUnloadedSiblingOracle(_) => "aid-unloaded-sibling-oracle",
         }
     }
 }
@@ -753,6 +759,15 @@ pub struct WhylogAbsent {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct WhylogCorrupt {
     /// The parse-failure reason (`{detail}`).
+    pub detail: String,
+}
+
+/// Payload of [`DiagCode::AidUnloadedSiblingOracle`] (PASSTHROUGH `{detail}`; `AID-NEEDS:aid-unloaded-
+/// sibling-oracle`, gap-5 / `24H` ack-6): the cli-edge scan builds `detail` listing the sibling
+/// `*.oracle.sh` files found on disk but not loaded (suggest, never auto-load). Spanless.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AidUnloadedSiblingOracle {
+    /// The full hint text (the unloaded sibling list; display only, `inv-referent-agnostic`).
     pub detail: String,
 }
 
@@ -1338,6 +1353,13 @@ pub fn registry(code: &DiagCode) -> CodeSpec {
             floor: Floor::None,
             remediation: RemediationClass::Structural,
         },
+        // The unloaded-sibling hint: a Note (suggest, never auto-load); ProvideModel — the oracle
+        // exists on disk, loading it provides the model that would lift the wall.
+        DiagCode::AidUnloadedSiblingOracle(_) => CodeSpec {
+            severity: Severity::Note,
+            floor: Floor::None,
+            remediation: RemediationClass::ProvideModel,
+        },
     }
 }
 
@@ -1516,6 +1538,7 @@ pub fn params_of(code: &DiagCode, _interner: &crate::Interner) -> Vec<(&'static 
         DiagCode::WhylogBookDesync(p) => vec![("which", p.which.clone())],
         DiagCode::WhylogAbsent(p) => vec![("dir", p.dir.clone())],
         DiagCode::WhylogCorrupt(p) => vec![("detail", p.detail.clone())],
+        DiagCode::AidUnloadedSiblingOracle(p) => vec![("detail", p.detail.clone())],
         DiagCode::MungeNameInvalid(p) => vec![
             ("source", p.source.clone()),
             ("funcname", p.funcname.clone()),

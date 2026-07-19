@@ -796,6 +796,23 @@ pub const CATALOG: &[CatalogEntry] = &[
                     next plan or apply will save a fresh why-log",
         ),
     },
+    // ── cli/main.rs (aid hint) — `AID-NEEDS:aid-unloaded-sibling-oracle` (gap-5 / `24H` ack-6).
+    //    UNWRITTEN prose (`27V:rul-error-authorship-tier` — the builder mints the code + metadata
+    //    with an empty prose block; the conductor authors the message from this metadata). `example`
+    //    is a STRAWMAN model for the prose author, not committed prose.
+    CatalogEntry {
+        slug: "aid-unloaded-sibling-oracle",
+        when_fires: "the cli-edge scan found `*.oracle.sh` files on disk beside the loaded oracles \
+                     (or the book) that were NOT loaded this run. cli emit_unloaded_sibling_oracles.",
+        why: "24H ack-6 (suggest, never auto-load): a likely-forgotten oracle is a common cause of a \
+              wall that a present-but-unloaded oracle would lift; the run is unchanged (advisory Note). \
+              PASSTHROUGH — the cli builds `{detail}` (the sorted unloaded-sibling list).",
+        params: &["detail"],
+        example: "1 sibling oracle exists on disk but was not loaded: `redis.oracle.sh` — load it \
+                  with `--oracle` (or `--oracle-dir`) to model its tool; dorc never auto-loads siblings",
+        message: "[unwritten: aid-unloaded-sibling-oracle]",
+        help: None,
+    },
 ];
 
 /// The catalog entry for `slug`, or `None` when the slug has no entry (dead code path pre-sweep;

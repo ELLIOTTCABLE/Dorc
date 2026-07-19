@@ -61,9 +61,10 @@ use std::io::{Read, Write};
 use std::process::ExitCode;
 
 use dorc_core::diag::{
-    CarriedAcrossSubstrateAxis, DanglingReference, DerivFamilyIncomplete, Diag, DiagCode,
-    EscalationPolicy, FootprintIncoherent, ReachesConflict, ReachesProviderCollision,
-    ResolverConflict, ResolverProviderCollision, TouchesEscalated, WrappedSiteAdoptionHint,
+    AidUnloadedSiblingOracle, CarriedAcrossSubstrateAxis, DanglingReference, DerivFamilyIncomplete,
+    Diag, DiagCode, EscalationPolicy, FootprintIncoherent, ReachesConflict,
+    ReachesProviderCollision, ResolverConflict, ResolverProviderCollision, TouchesEscalated,
+    WrappedSiteAdoptionHint,
 };
 use dorc_core::{
     CollapseEvidence, CollapseKind, Interner, Observable, OutBytes, Predicted, ProvArena, Rc,
@@ -1033,6 +1034,9 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
     };
     let book_src = read_books(books)?;
     let book_name = books.first().map_or("book.sh", String::as_str);
+    // The unloaded-sibling-oracle hint (`AID-NEEDS:aid-unloaded-sibling-oracle`, gap-5 / `24H` ack-6):
+    // a cli-edge, filesystem-reading disclosure (non-hermetic ⇒ the cli edge, never the kernel).
+    emit_unloaded_sibling_oracles(advisory, books, &oracle_paths);
     // `--last` desync guard (`22F` book-identity): re-read digests must match the durable's.
     if let Some(r) = &replay
         && let Some(which) = whylog_input_desync(r, &book_src, &oracle_paths, &oracle_srcs)
@@ -4959,6 +4963,66 @@ fn effect_word_to_verdict(word: &str) -> Verdict {
 /// loaded (a wrapper authoring BOTH a peeling `__predict` and an `__enter` form). One `Note` to
 /// stderr (advisory), never a gate.
 ///
+/// Emit the unloaded-sibling-oracle hint (`AID-NEEDS:aid-unloaded-sibling-oracle`, gap-5 / `24H`
+/// ack-6): scan the directories of the loaded oracles + the book(s) for `*.oracle.sh` files that were
+/// NOT loaded, and disclose them (suggest, never auto-load). A cli-edge disclosure — it reads the
+/// filesystem, so it lives here, never in the kernel; the `read_dir` order is OS-dependent, so the
+/// result is SORTED (`inv-determinism` at the edge). The payload's `detail` carries the DATA (the
+/// sorted backtick-quoted path list); the user-facing framing prose stays `[unwritten:]` for the
+/// conductor (`27V:rul-error-authorship-tier` — the builder authors no user-facing prose).
+fn emit_unloaded_sibling_oracles(advisory: bool, books: &[String], oracle_paths: &[String]) {
+    use std::path::Path;
+    // Normalize `\` → `/` before comparing: `read_dir` yields platform-separator paths (backslash on
+    // Windows) while the loaded set carries the `-o` args verbatim (forward slash), so a raw string
+    // compare would miss every loaded oracle on Windows and falsely report it unloaded.
+    let norm = |p: &str| p.replace('\\', "/");
+    let loaded: BTreeSet<String> = oracle_paths.iter().map(|p| norm(p)).collect();
+    let mut dirs: BTreeSet<std::path::PathBuf> = BTreeSet::new();
+    for p in oracle_paths.iter().chain(books.iter()) {
+        if let Some(parent) = Path::new(p).parent() {
+            // An empty parent (a bare filename) means the current directory.
+            let dir = if parent.as_os_str().is_empty() {
+                Path::new(".").to_path_buf()
+            } else {
+                parent.to_path_buf()
+            };
+            dirs.insert(dir);
+        }
+    }
+    let mut unloaded: Vec<String> = Vec::new();
+    for dir in &dirs {
+        let Ok(entries) = std::fs::read_dir(dir) else {
+            continue;
+        };
+        for entry in entries.flatten() {
+            let shown = norm(&entry.path().to_string_lossy());
+            if shown.ends_with(".oracle.sh")
+                && !loaded.contains(&shown)
+                && !unloaded.contains(&shown)
+            {
+                unloaded.push(shown);
+            }
+        }
+    }
+    if unloaded.is_empty() {
+        return;
+    }
+    unloaded.sort();
+    let detail = unloaded
+        .iter()
+        .map(|p| format!("`{p}`"))
+        .collect::<Vec<_>>()
+        .join(", ");
+    report_at(
+        advisory,
+        "oracle",
+        None,
+        &[Diag::new_spanless_site(DiagCode::AidUnloadedSiblingOracle(
+            AidUnloadedSiblingOracle { detail },
+        ))],
+    );
+}
+
 /// SCOPE (honest for the spike): this is the POLICY in effect, not a per-book-SITE "will enter"
 /// tally — the book-side entry-composed probe emission (which would count sites per entered context)
 /// is the deferred integration (`27K` §9 / this lane's report). The dial × capability × the loaded

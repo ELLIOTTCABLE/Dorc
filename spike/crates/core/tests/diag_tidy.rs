@@ -111,6 +111,8 @@ const MIGRATED_PAYLOADS: &[&str] = &[
     "WhylogBookDesync",
     "WhylogAbsent",
     "WhylogCorrupt",
+    // cli/main.rs (aid hint) — AID-NEEDS:aid-unloaded-sibling-oracle (gap-5 / 24H ack-6)
+    "AidUnloadedSiblingOracle",
 ];
 
 /// Every catalog slug (the stable wire string) — for the retire-guard and reachability. KEEP IN
@@ -168,6 +170,7 @@ const MIGRATED_SLUGS: &[&str] = &[
     "whylog-book-desync",
     "whylog-absent",
     "whylog-corrupt",
+    "aid-unloaded-sibling-oracle",
 ];
 
 /// Deliberately RETIRED/RENAMED slugs (`27V`): the `dq-` prefix drop on the five value-plane
@@ -221,6 +224,8 @@ const SPANLESS_SITE_PAYLOADS: &[&str] = &[
     "WhylogBookDesync",
     "WhylogAbsent",
     "WhylogCorrupt",
+    // cli/main.rs — the unloaded-sibling hint is a whole-run disclosure with no source point.
+    "AidUnloadedSiblingOracle",
 ];
 
 /// The crate-`src` roots scanned (the emit surface). The workspace's analyzer crates; `core`
