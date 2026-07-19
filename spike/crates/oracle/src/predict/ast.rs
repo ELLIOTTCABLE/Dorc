@@ -98,7 +98,7 @@ pub enum Stmt {
 /// the marker plus target (for the surgical strip, R1c).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Mark {
-    /// Which dialect mark this is (selected by the sigil `:` / `:!` / `:?`).
+    /// The mark VERB (`281` §5) — the typed payload discriminant.
     pub kind: MarkKind,
     /// The `kind:entity#selector` coordinate (entity/selector may be absent).
     pub target: MarkTarget,
@@ -107,24 +107,43 @@ pub struct Mark {
     pub span: Span,
 }
 
-/// The dialect mark discriminant, selected by the sigil family (`277` §4a). All marks
-/// trail a command; the bare statement-position ACK/POISON marks are RETIRED (deleted
-/// from the grammar in the corpus respell — zero occurrences).
+/// The dialect mark VERB (`281` §5), the typed discriminant of a mark-block entry.
+/// Selected by the sigil head-sugar (`:`/`:!`/`:?`/`:=`) or a period-free verb word. The
+/// verb fixes the payload TYPE read out of [`MarkTarget`] (`281` §4 keystone: verbs are
+/// period-free, coordinates dotted). During the additive respell ladder the OLD parser
+/// still emits these from OLD spellings role-awarely ([`super::parser`]); the payload
+/// LOCATION per verb is noted below (the field the split populates).
+///
+/// Core cell-and-value plane (coordinate payload — `target.kind`/`.entity`/`.prop`):
+/// `Asserts`/`Refutes`/`Reads`. Meta plane (token/kind payload): the rest. Payload
+/// homes stay where the `kind:entity` split lands until CP-D unifies them.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MarkKind {
-    /// `cmd … : kind:entity#selector` — the verdict mark, named sense: the command's
-    /// rc establishes the property (→ `ValueClaim::Establish`). ALSO the bare-kind
-    /// emission mark on a `disturbs()`/`reaches()` line (`… : sm.dorc.Package`) and
-    /// the substrate/invariance token mark on a `state_stored_only_in()` line
-    /// (`… : fs`, `… : invariant:user`) — those carry no selector and key no cell.
-    Establish,
-    /// `cmd … :! kind:entity#selector` — the verdict mark, complement sense: the verb
-    /// makes the fact NOT hold (→ `ValueClaim::EstablishInverted`). Polarity rides the
-    /// `:!` sigil now, never a coordinate suffix (`277` §4a).
-    EstablishInverted,
-    /// `cmd … :? kind:entity#selector` — the observe mark: read-only depends-upon
-    /// (→ `ValueClaim::Observe`).
-    Observe,
+    /// `:` (omit sugar) / word `asserts` — verdict, named sense: the command's rc
+    /// establishes the property (→ `ValueClaim::Establish`). rc-consuming. Coordinate.
+    Asserts,
+    /// `:!` / word `refutes` — verdict, complement sense: rc 0 witnesses the cell false
+    /// (→ `ValueClaim::EstablishInverted`). rc-consuming. Coordinate.
+    Refutes,
+    /// `:?` / word `reads` — observe: read-only depends-upon (→ `ValueClaim::Observe`,
+    /// backing-widening). Coordinate.
+    Reads,
+    /// word `safe-across` — the context vouch (`27C` §2; `entry.rs`). Payload = a
+    /// dimension token in `target.entity` (old `tolerates:user` split; brace-set there).
+    SafeAcross,
+    /// word `disturbs` — first-order footprint (`cmd__disturbs`) AND transitive reach
+    /// (`kind__disturbance_reaches_only`), unified (`281` §5). Payload = a kind in
+    /// `target.kind` (+ `@selector` in `target.prop`); the entity rides the printf line.
+    Disturbs,
+    /// word `lends` — the wrapper dimension member (`273` §3; `wrapper.rs`). Payload = a
+    /// dimension token in `target.kind` (old `: user` / `: fs-view`).
+    Lends,
+    /// word `stored-in` — the kind's substrate (`272` §2; `carry.rs`). Payload = a
+    /// substrate token in `target.kind` (old `: fs` / `: net-kernel`).
+    StoredIn,
+    /// word `undivided-by-transit-across` — axis invariance (`277` §4e / `27C` §4(a);
+    /// `carry.rs`). Payload = an axis token in `target.entity` (old `invariant:user`).
+    Undivided,
 }
 
 /// The `kind:entity#selector` coordinate of a [`Mark`], split syntactically and left

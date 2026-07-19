@@ -168,9 +168,15 @@ fn push_effect(
     diags: &mut Vec<Diag>,
 ) {
     let claim = match kind {
-        MarkKind::Establish => ValueClaim::Establish,
-        MarkKind::EstablishInverted => ValueClaim::EstablishInverted,
-        MarkKind::Observe => ValueClaim::Observe,
+        MarkKind::Asserts => ValueClaim::Establish,
+        MarkKind::Refutes => ValueClaim::EstablishInverted,
+        MarkKind::Reads => ValueClaim::Observe,
+        // Meta-plane verbs ride other members; a mis-routed one mints nothing (safe direction).
+        MarkKind::SafeAcross
+        | MarkKind::Disturbs
+        | MarkKind::Lends
+        | MarkKind::StoredIn
+        | MarkKind::Undivided => return,
     };
     let (Some(kind_str), Some(selector)) = (ctx.kind.clone(), target.prop.clone()) else {
         return;

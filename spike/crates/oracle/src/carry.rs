@@ -366,7 +366,7 @@ impl ClosureWalk {
             // A verdict/observe mark declares the read — record its (dotted) kind for the (A) check.
             if matches!(
                 mark.kind,
-                MarkKind::Establish | MarkKind::EstablishInverted | MarkKind::Observe
+                MarkKind::Asserts | MarkKind::Refutes | MarkKind::Reads
             ) {
                 self.read_kinds.insert(mark.target.kind.clone());
             }

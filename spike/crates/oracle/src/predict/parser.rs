@@ -910,8 +910,9 @@ impl Parser<'_> {
                  or a brace-alternation `#{a,b}`",
             ));
         }
+        let mark_kind = classify_mark(sigil, self.role, &parsed);
         Ok(Mark {
-            kind: classify_mark(sigil),
+            kind: mark_kind,
             target: MarkTarget {
                 kind: parsed.kind,
                 entity: parsed.entity,
@@ -1391,14 +1392,32 @@ pub(crate) fn brace_tokens(sel: &str) -> Option<Vec<String>> {
         .then(|| tokens.into_iter().map(str::to_owned).collect())
 }
 
-/// Classify a parsed mark into a [`MarkKind`] from its [`MarkSigil`] (`277` §4a). All
-/// marks trail a command; bare statement-position ACK/POISON marks are retired (deleted
-/// from the grammar). The sigil alone decides polarity — the coordinate carries none.
-fn classify_mark(sigil: MarkSigil) -> MarkKind {
+/// The old-spelling head token that recovers the `undivided-by-transit-across` verb from a
+/// `state_stored_only_in` body (`: invariant:user`) during the additive respell ladder — the
+/// verb becomes an explicit word at CP-D. Kept in sync with `carry::INVARIANT_TOKEN`.
+const OLD_INVARIANT_HEAD: &str = "invariant";
+/// The old-spelling head token that recovers the `safe-across` verb from a verdict body
+/// (`: tolerates:user`). Kept in sync with `entry::TOLERATES_TOKEN`.
+const OLD_TOLERATES_HEAD: &str = "tolerates";
+
+/// Classify a parsed mark into its [`MarkKind`] VERB (`281` §5). The `:!`/`:?` sigils fix
+/// `Refutes`/`Reads` outright; the `:` sigil's verb is ROLE-derived in the OLD grammar (the
+/// verb word is implicit — the same sigil is a verdict, a footprint emission, a dimension
+/// lend, a substrate/invariance, or a context vouch depending on the enclosing member). The
+/// new grammar spells the verb; this recovers it from `role` + head token so the AST carries
+/// typed verbs before the parser flip (CP-D). `parsed` is the split target.
+fn classify_mark(sigil: MarkSigil, role: FnRole, parsed: &ParsedTarget) -> MarkKind {
     match sigil {
-        MarkSigil::Verdict => MarkKind::Establish,
-        MarkSigil::Inverted => MarkKind::EstablishInverted,
-        MarkSigil::Observe => MarkKind::Observe,
+        MarkSigil::Inverted => MarkKind::Refutes,
+        MarkSigil::Observe => MarkKind::Reads,
+        MarkSigil::Verdict => match role {
+            FnRole::LendMap => MarkKind::Lends,
+            FnRole::StateStoredOnlyIn if parsed.kind == OLD_INVARIANT_HEAD => MarkKind::Undivided,
+            FnRole::StateStoredOnlyIn => MarkKind::StoredIn,
+            FnRole::Disturbs | FnRole::DisturbanceReachesOnly => MarkKind::Disturbs,
+            _ if parsed.kind == OLD_TOLERATES_HEAD => MarkKind::SafeAcross,
+            _ => MarkKind::Asserts,
+        },
     }
 }
 
@@ -1592,7 +1611,7 @@ mod dialect_tests {
             "apt_get__predict() { pkg : sm.dorc.Package = \"$1\"; dpkg-query -W \"$pkg\" : sm.dorc.Package:\"$pkg\"#installed; }",
         );
         let m = first_command_mark(&body).expect("a trailing mark");
-        assert_eq!(m.kind, MarkKind::Establish);
+        assert_eq!(m.kind, MarkKind::Asserts);
         assert_eq!(m.target.kind, "sm.dorc.Package");
         assert_eq!(m.target.entity.as_deref(), Some("$pkg"));
         assert_eq!(m.target.prop.as_deref(), Some("installed"));
@@ -1606,7 +1625,7 @@ mod dialect_tests {
             "apt_get__predict() { pkg : sm.dorc.Package = \"$1\"; dpkg-query -W \"$pkg\" :! sm.dorc.Package:\"$pkg\"#installed; }",
         );
         let m = first_command_mark(&body).expect("a trailing mark");
-        assert_eq!(m.kind, MarkKind::EstablishInverted);
+        assert_eq!(m.kind, MarkKind::Refutes);
         assert_eq!(m.target.prop.as_deref(), Some("installed"));
     }
 
@@ -1617,7 +1636,7 @@ mod dialect_tests {
             "grep__predict() { pat : sm.dorc.GrepMatch = \"$1\"; grep -q -- \"$pat\" :? sm.dorc.GrepMatch:\"$pat\"#matched; }",
         );
         let m = first_command_mark(&body).expect("a trailing mark");
-        assert_eq!(m.kind, MarkKind::Observe);
+        assert_eq!(m.kind, MarkKind::Reads);
         assert_eq!(m.target.kind, "sm.dorc.GrepMatch");
         assert_eq!(m.target.prop.as_deref(), Some("matched"));
     }
@@ -1630,7 +1649,7 @@ mod dialect_tests {
             "otelcol__predict() { case $1 in --version) otelcol --version >/dev/null 2>&1 :? io.opentelemetry.Collector:#v0155 ;; esac }",
         );
         let m = first_command_mark(&body).expect("an empty-entity observe mark");
-        assert_eq!(m.kind, MarkKind::Observe);
+        assert_eq!(m.kind, MarkKind::Reads);
         assert_eq!(m.target.kind, "io.opentelemetry.Collector");
         assert_eq!(
             m.target.entity.as_deref(),
@@ -1673,7 +1692,7 @@ mod dialect_tests {
         // kind rides the trailing mark, no entity, no selector.
         let body = body_of("apt_get__predict() { printf '%s\\n' \"$1\" : sm.dorc.Package; }");
         let m = first_command_mark(&body).expect("a bare-kind emission mark");
-        assert_eq!(m.kind, MarkKind::Establish);
+        assert_eq!(m.kind, MarkKind::Asserts);
         assert_eq!(m.target.kind, "sm.dorc.Package");
         assert_eq!(m.target.entity, None);
         assert_eq!(m.target.prop, None);
@@ -1721,7 +1740,7 @@ mod dialect_tests {
             "systemctl__predict() { svc : sm.dorc.Service = \"$1\"; systemctl is-active -- \"$svc\" : sm.dorc.Service:\"$svc\"#active = false; }",
         );
         let m = first_command_mark(&body).expect("a trailing mark");
-        assert_eq!(m.kind, MarkKind::Establish);
+        assert_eq!(m.kind, MarkKind::Asserts);
         assert!(m.target.value.is_some(), "the `= value` tail is captured");
     }
 
@@ -1860,7 +1879,7 @@ mod dialect_tests {
         let m = c
             .mark
             .expect("the reaches pipeline carries its trailing mark (the carve-out)");
-        assert_eq!(m.kind, MarkKind::Establish);
+        assert_eq!(m.kind, MarkKind::Disturbs);
         assert_eq!(m.target.kind, "sm.dorc.File");
     }
 
