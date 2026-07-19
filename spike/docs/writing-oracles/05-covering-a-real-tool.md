@@ -116,17 +116,21 @@ A silent `return 2` is always safe, but on a shape you *expected people to hit*,
 it wastes a teaching moment: the user sees "runs", with no idea one line of
 modeling would have upgraded it. For those shapes, leave a breadcrumb - a short
 note on Dorc's report channel explaining what was not modeled - and then decline
-exactly as before. The current spelling routes a line to a report stream the
-engine provides (the exact mechanism is still settling; the concept is stable):
+exactly as before. The note is an ordinary `printf` appended to a channel Dorc
+provides through an environment variable (its exact name may still shift); the
+`:-/dev/null` default means the same line is a harmless no-op when the file runs
+outside Dorc:
 
 ```sh
-[ "${2-}" = "" ] || { printf 'multi-operand form not modeled\n' >>"$DORC_REPORT"; return 2; }
+[ "${2-}" = "" ] || { printf 'multi-operand form not modeled\n' >>"${DREP_V1:-/dev/null}"; return 2; }
 ```
 
 A refusal is just a decline that explains itself. The plan carries the reason, the
 site runs, and the next person (possibly you, next quarter) knows exactly which arm
 to grow next. Reserve breadcrumbs for genuinely-expected shapes; the `*` arm
-usually stays quiet, or the report becomes noise.
+usually stays quiet, or the report becomes noise. A free-text note like this one is
+the floor; a later page sharpens it into a classified refusal that tells Dorc what
+kind of decline it is, and buys you more for the same one line.
 
 ## The delegation question
 
@@ -143,4 +147,5 @@ skips the parts it cannot check, which makes its yes worthless to stand on.
 
 <!-- quoted: USER_STORY.md stage 4 + rung-3 ansible decline; spike/CLAUDE.md
      rul-rc-partition, rul-zero-one-inversion-pair, sigpipe-flap-class,
-     identity-declared-never-inferred; 276 pipefail quality-bar rider -->
+     identity-declared-never-inferred, decline-class-emission; 276 pipefail
+     quality-bar rider; 27W:rul-report-noise-tolerant (breadcrumb -> classed) -->

@@ -494,8 +494,72 @@ What a body may assume when it runs:
   out-of-band; no exit code means "unknown" except as section 3 defines.
 - Its stdout and stderr are consumed only where a contract says so (predict
   channels, emission grammars); verdict bodies should run quiet.
-- Refusal breadcrumbs go to the report stream, whose concrete spelling is
-  still settling.
+- Refusal breadcrumbs and classed declines go to the report stream (subsection
+  6a); its transport, grammar, and noise-tolerance are settled below, only the
+  sink name still strawman.
+
+### 6a. The report stream and authored declines
+
+The report stream is a write-only side channel a body may append to; it never
+affects an answer (the exit status is the entire in-band answer, section 3), and
+nothing in it is ever read by the license plane.
+
+- Sink. A body writes with `>>"${DREP_V1:-/dev/null}"`. The probe lane sets the
+  variable to the channel it drains; off-Dorc the `:-/dev/null` default makes
+  every write a total, `set -u`-safe no-op. The sink's env NAME carries the
+  stream's format version (strawman `DREP_V1`); a future format mints a new name,
+  and a recognized name is permanent once published - the role-name posture.
+  `strip` leaves these lines alone: they are working shell, not annotation.
+- Framing. One record per line, kept short (a record must fit a single atomic
+  write). Free-form lines are legal.
+- Noise tolerance. Ingestion never errors on a malformed line and never silently
+  drops one. Unrecognized or free-form content is retained - sanitized,
+  size-capped, attributed to the emitting body - and prints in full under the
+  most verbose pull; default surfaces stay ruthlessly selected. Verbosity is the
+  admission gate, not existence. Nothing you emit is lost.
+
+The classed-decline record. The one recognized grammar today is
+`<verb> <class> <free tail>`, emitted on a declining path before its `return 2`:
+
+    printf 'decline unsound %s is a write-only trigger key\n' "$key" \
+       >>"${DREP_V1:-/dev/null}"
+
+- The verb and class vocabularies are engine-owned and append-only. v1 ships one
+  verb, `decline`, and four classes: `unsound` (permanently unanswerable -
+  write-only triggers, nondeterministic reads); `unmodeled` (a better oracle
+  could answer; not yet built); `interactive` (prompts by construction;
+  unprobeable headless); `hazard` (the author's editorial claim about the admin's
+  usage - deprecated or discouraged - the one class aimed at the book rather than
+  at Dorc's own reasoning, and the only one that can surface, capped and
+  attributed, on a plan). An unknown verb or class degrades to a generic
+  author-noted line, never an error.
+- Static-first. With a literal format string the class is read from source
+  without execution: a per-arm inventory always (no sites needed), a per-site
+  class when a site's argv threads statically to the arm. A dynamically-built
+  format defeats static reading and demotes the class to a runtime-only fact,
+  recovered only when the arm actually executes during a probe. Prefer literal
+  formats.
+- Routing is aid-plane only: the rc partition is untouched (2-and-up stays one
+  flat sink in every decision table). A wrong class misdirects attention (a wrong
+  `unsound` silences deserved enhancement pressure), attributed to the arm's
+  file:line; it can never under- or over-execute a line. Classing is enhancement;
+  a silent `return 2` stays exactly as legal and as safe.
+- The comment on the arm is display material. When `dorc why` inlines a declined
+  arm, the arm's adjacent comment is shown to the admin as authored text - never
+  parsed, never load-bearing on a decision. Write it for the operator reading
+  their plan.
+
+When to reach for a class, and the modeling-crutch caution. Class a decline
+whenever you can state which of the four it is; leave genuinely-ambiguous or
+unremarkable declines silent. Before reaching for a warning about a shape you can
+actually answer, ask the sharper question: should the model be richer instead?
+The recurring example is a tool whose live value and persisted value can differ
+(a `sysctl` key set for the running kernel but not written to the boot config).
+The temptation is an advisory note; the honest answer is two cells - `#value` and
+`#persisted` - measured separately, not one cell plus prose. An advisory that
+wants to explain a gap in your model is usually a missing distinction in the
+model. Warning on a covered (answered) arm has no verb in v1 by design; it is a
+deliberately-held seam pending exactly this question.
 
 ## 7. The failure catalogue, ranked
 
@@ -535,8 +599,9 @@ Before publishing, walk the file once against each line:
   vocabularies remapped; pipeline tails audited.
 - Every verdict arm: the yes re-examined as "is re-running truly acceptable
   noise here?"; multi-operand shapes fully checked or declined; state-
-  addressing flags modeled or declined; the deliberate-decline verbs present
-  and commented with their reasons.
+  addressing flags modeled or declined; the deliberate-decline verbs present,
+  commented with their reasons, and classed (section 6a) where the class is
+  known - literal format strings, so the class reads statically.
 - Every body: read-only by design (not by privilege), no scaffolding
   side-effects, no dry-run flags taken on faith, answers from durable state,
   reentrant, cheap enough to pay the check-tax forever.
@@ -552,6 +617,9 @@ Before publishing, walk the file once against each line:
   and judgment rationale; kinds documented; names treated as permanent.
 
 <!-- quoted: spike/CLAUDE.md invariants (license-and-trust, separation,
-     observables, authored-surface, language-law blocks); 271 rulings ledger;
-     277 sections 1-6; 278 whole; 276 dialect rulings; plans/27C sections 1-7;
-     23O settled law; USER_STORY.md bought-unsoundness; 27Q quality bars -->
+     observables, authored-surface, language-law blocks), decline-class-emission,
+     report-lane-versioned-entry, report-surface-massaging-carve; 271 rulings
+     ledger; 277 sections 1-6; 278 whole; 276 dialect rulings; plans/27C sections
+     1-7; 23O settled law; USER_STORY.md bought-unsoundness; 27Q quality bars;
+     27W:rul-emission-grammar-v1, rul-versioned-entry, rul-report-noise-tolerant,
+     rul-advise-verb-deferred (modeling-crutch) -->
