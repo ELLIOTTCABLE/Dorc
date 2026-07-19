@@ -3757,6 +3757,31 @@ fn facts_from_sites(
                 },
             ));
         }
+        // Runtime EntryFailure (`27C` §3 `EntryDegrade::RuntimeEntryFailure`; d2 inheritance): an
+        // ENTRY-bearing site whose record landed the ≥2 flat sink (cant-tell) is a runtime entry
+        // failure. Decision-inert — the rc-partition already folds ≥2 to guard/run; the class
+        // names it for the DISCLOSURE only (`two-plane-aid-law`: the license plane never reads it).
+        // rc 127 = missing deps in the view; other ≥2 = an in-context decline. Refused (`sudo -n`)
+        // and Impossible (chroot target missing) are NOT minted — the flat rc-partition carries no
+        // signal to distinguish them, and a finer label than the signal supports would MIS-ATTRIBUTE
+        // (`271:rul-sin-ordering` pope-sin). SEAM: finer discrimination wants an entry-scaffold marker.
+        if check.entry.is_some()
+            && let Some(rc) = record.map(|r| r.rc.0)
+            && rc >= 2
+        {
+            let class = if rc == 127 {
+                dorc_core::evidence::EntryFailureTag::MissingDeps
+            } else {
+                dorc_core::evidence::EntryFailureTag::InContextDecline
+            };
+            collapse_evidence.push(CollapseEvidence::new(
+                TrustTier::Measured,
+                CollapseKind::EntryFailure {
+                    site: site_id,
+                    class,
+                },
+            ));
+        }
         // Source 2 — a CROSS-site conflict: two sites on one cell disagree ⇒ the meet ⊤s the channel.
         if let Some(prior) = by_fact.get(&check.fact).copied() {
             if prior != obs {
@@ -5170,6 +5195,62 @@ mod tests {
             }],
             unresolvable: vec![],
         }
+    }
+
+    /// [`probe1`] but ENTRY-bearing (a wrapped-context site): the runtime-EntryFailure input.
+    fn probe1_entry(fact: FactKey, site_kind: ProbeSiteKind) -> ProbePlan {
+        let mut p = probe1(fact, site_kind);
+        p.checks[0].entry = Some(dorc_plan::EntryComposed {
+            enter_defs: vec![],
+            inner_fn: "x__predict".to_string(),
+            inner_sh: "x__predict() { :; }".to_string(),
+            inner_argv: vec![],
+        });
+        p
+    }
+
+    #[test]
+    fn entry_bearing_site_ge2_rc_mints_class_only_runtime_entry_failure() {
+        // Runtime EntryFailure (`27C` §3, d2 inheritance): an entry-bearing site whose record lands
+        // the ≥2 flat sink mints ONE decision-inert, class-only EntryFailure. rc 127 ⇒ MissingDeps;
+        // other ≥2 ⇒ InContextDecline. An answered check (rc 0/1) and a NON-entry site mint none.
+        use dorc_core::evidence::EntryFailureTag;
+        let mut i = Interner::default();
+        let fact = tool(&mut i, "nginx");
+        let entry_probe = probe1_entry(fact, ProbeSiteKind::Query { valid: true });
+        let tag = |records: &str, i: &mut Interner| -> Option<EntryFailureTag> {
+            facts_from_sites(&entry_probe, &parse_str(records, i))
+                .1
+                .into_iter()
+                .find_map(|e| match e.kind() {
+                    CollapseKind::EntryFailure { class, .. } => Some(*class),
+                    _ => None,
+                })
+        };
+        assert_eq!(
+            tag("site 0 effect=cant-tell rc=127\n", &mut i),
+            Some(EntryFailureTag::MissingDeps),
+            "rc 127 ⇒ missing deps in the view"
+        );
+        assert_eq!(
+            tag("site 0 effect=cant-tell rc=2\n", &mut i),
+            Some(EntryFailureTag::InContextDecline),
+            "other ≥2 ⇒ in-context decline"
+        );
+        assert_eq!(
+            tag("site 0 effect=holds rc=0\n", &mut i),
+            None,
+            "an answered entry check (rc 0) is no failure"
+        );
+        let plain = probe1(fact, ProbeSiteKind::Query { valid: true });
+        let results = parse_str("site 0 effect=cant-tell rc=127\n", &mut i);
+        assert!(
+            !facts_from_sites(&plain, &results)
+                .1
+                .iter()
+                .any(|e| matches!(e.kind(), CollapseKind::EntryFailure { .. })),
+            "a non-entry site mints no EntryFailure (the class is entry-scoped)"
+        );
     }
 
     #[test]
