@@ -1010,6 +1010,34 @@ fn mint_top_causes(
     (top_causes, fallback_cause)
 }
 
+/// Mint the `Derived`-tier fact-merge evidence the static value-plane `Reach::Top` collapse
+/// narrates (C3; `27V` Lane A, `AID-NEEDS:law-collapse-mints-evidence`): one
+/// [`dorc_core::CollapseKind::FactMergeDisagreement`] per Opaque-bearing node — the cell whose
+/// establishers meet to ⊤. Mirrors [`mint_top_causes`] (same Opaque-bearing key, same node-index
+/// order), so the product `Vec` is mint-pass-ordered — deterministic, no clock (`inv-determinism`;
+/// the `two-plane-aid-law` mint-order pin). Decision-inert: the evidence rides OUT of
+/// [`classify_with_why_diags`] for the why-lens and feeds no decision (`two-plane-aid-law`;
+/// `empty-world-byte-identical` holds — an oracle-free book has no Opaque nodes and mints none).
+///
+/// Operands are EMPTY here (`Operands::default`): the c8 reaching-defs walk recovers the
+/// disagreeing establisher values+sites into them; until then the cell keys the disagreement and
+/// each operand's `shown` is `None`. Tier is `Derived` (an engine derivation), CONTRASTING the
+/// `Measured` probe merge (C4, `facts_from_sites`).
+fn mint_merge_evidence(effects: &[Vec<CommandEffect>]) -> Vec<dorc_core::CollapseEvidence> {
+    (0..effects.len())
+        .filter(|&i| effects[i].contains(&CommandEffect::Opaque))
+        .map(|i| {
+            dorc_core::CollapseEvidence::new(
+                dorc_core::TrustTier::Derived,
+                dorc_core::CollapseKind::FactMergeDisagreement {
+                    cell: SiteId::leaf(LeafId(i as u32)),
+                    operands: dorc_core::evidence::Operands::default(),
+                },
+            )
+        })
+        .collect()
+}
+
 /// A wrapped BOOK site peeled into its inner command + composed context (`27N`; `27C` §3 "the fact
 /// is born in the site's context"). Precomputed at the cli edge (`dorc_oracle::entry::peel_book_chain`)
 /// — a pure DATA input threaded into [`classify_with_why_diags`]: the kernel stays wrapper-unaware,
@@ -1230,7 +1258,10 @@ pub type BackingMap = BTreeMap<FactKey, FactBacking>;
 /// `cause` off them (`to_legacy` drops it — [`dorc_core::diag::why`] needs the typed value).
 ///
 /// Returns `(Carrier<dispositions+legacy-diags>, typed-why-lens-diags, kill-node-set,
-/// kill-coords, backing-map)`. The typed diags are a subset-by-construction of the lowered ones
+/// kill-coords, backing-map, collapse-evidence)`. The last element is the C3 aid plane
+/// (`27V` Lane A): one `Derived`-tier [`dorc_core::CollapseKind::FactMergeDisagreement`] per
+/// Opaque-bearing node ([`mint_merge_evidence`]), decision-inert (`two-plane-aid-law`) and threaded
+/// to the why-lens seam. The typed diags are a subset-by-construction of the lowered ones
 /// (the same `CmdsubOperandTop`s, before lowering) — no second pass, no divergence. EXEMPT
 /// (ru-11): the typed diags' `cause` informs the render only, never a decision. The **backing-map**
 /// (`277` §5) is fact → [`FactBacking`] (minting family + observe-widening selectors), threaded to
@@ -1249,12 +1280,12 @@ pub type BackingMap = BTreeMap<FactKey, FactBacking>;
     clippy::type_complexity,
     clippy::too_many_arguments,
     clippy::too_many_lines,
-    reason = "the five parallel products (site classifications + typed why-lens diags + the R3 \
-              kill-node set + the killed-coordinate side-map, 24E §7 + the `277` §5 backing-map) \
-              are the fn's whole output; a named struct for a two-call-site return (the cli + the \
-              plan test seam) buys nothing. The verdict-provider set (`24L` §7 seam) is one more \
-              input, and its threaded call pushes the body just over the line cap — the classify \
-              core is irreducibly long"
+    reason = "the six parallel products (site classifications + typed why-lens diags + the R3 \
+              kill-node set + the killed-coordinate side-map, 24E §7 + the `277` §5 backing-map + \
+              the C3 collapse-evidence aid plane) are the fn's whole output; a named struct for a \
+              two-call-site return (the cli + the plan test seam) buys nothing. The verdict-provider \
+              set (`24L` §7 seam) is one more input, and its threaded call pushes the body just over \
+              the line cap — the classify core is irreducibly long"
 )]
 pub fn classify_with_why_diags(
     cfg: &Cfg,
@@ -1272,6 +1303,7 @@ pub fn classify_with_why_diags(
     BTreeSet<CfgNodeId>,
     BTreeMap<CfgNodeId, FactKey>,
     BTreeMap<FactKey, FactBacking>,
+    Vec<dorc_core::CollapseEvidence>,
 ) {
     let mut diags: Vec<Diag> = Vec::new();
     // Precompute every node's member-family + effect cells, recording the deferred cmdsub-⊤
@@ -1294,6 +1326,10 @@ pub fn classify_with_why_diags(
     // keyed on source spans, so the ⊤-poison cascade is attributable. The cause is EXEMPT
     // (rides `Reach::Top`, excluded from `Eq`); it perturbs no decision.
     let (top_causes, fallback_cause) = mint_top_causes(cfg, ast, &effects, arena);
+
+    // C3 aid plane (`27V` Lane A): the static value-plane give-up narrated as decision-inert
+    // `FactMergeDisagreement` evidence, keyed like the `Top(cause)` above. Feeds no decision.
+    let collapse_evidence = mint_merge_evidence(&effects);
 
     // stage-1 cause-wiring (the corrected `tc-cmdsub-cause`): NOW that `top_causes` is minted,
     // finalize the deferred cmdsub-⊤ disclosures with each node's real ⊤-cause. The TYPED diags
@@ -1450,6 +1486,7 @@ pub fn classify_with_why_diags(
         kills,
         kill_coords,
         backings,
+        collapse_evidence,
     )
 }
 
@@ -1666,7 +1703,7 @@ command__predict() {
         let value = analyze(&built.value, &parsed.value, &mut i);
         let checks = vec![lift_predicts(&mut i, CORPUS_PREDICT_SRC).value];
         let mut arena = dorc_core::ProvArena::new();
-        let (_classes, _why, kills, kill_coords, _backings) = classify_with_why_diags(
+        let (_classes, _why, kills, kill_coords, _backings, _evidence) = classify_with_why_diags(
             &built.value,
             &value,
             &parsed.value,
@@ -1684,6 +1721,56 @@ command__predict() {
             kill_coords.get(&node),
             Some(&killed),
             "the kill node maps to its killed coordinate package:nginx#installed"
+        );
+    }
+
+    #[test]
+    fn an_opaque_reached_cell_mints_one_fact_merge_disagreement() {
+        // C3 anti-masking (`AID-NEEDS:law-collapse-mints-evidence`; `anti-masking-tests`): the
+        // static value-plane give-up MINTS its own evidence. A book with one Opaque command
+        // yields exactly one `Derived`-tier FactMergeDisagreement — DERIVED from the collapse
+        // (the Opaque node), never hand-injected — while a modeled-only book mints none.
+        let (mut i, idx, _s) = package_setup();
+        let checks = vec![lift_predicts(&mut i, CORPUS_PREDICT_SRC).value];
+
+        let collapse = |src: &str, i: &mut Interner| -> Vec<dorc_core::CollapseEvidence> {
+            let parsed = dorc_syntax::parse(src);
+            let built = cfg::build(&parsed.value);
+            let value = analyze(&built.value, &parsed.value, i);
+            let mut arena = dorc_core::ProvArena::new();
+            classify_with_why_diags(
+                &built.value,
+                &value,
+                &parsed.value,
+                &idx,
+                &checks,
+                &BTreeSet::new(),
+                &BTreeMap::new(),
+                i,
+                &mut arena,
+            )
+            .5
+        };
+
+        let evidence = collapse("ufw allow 80/tcp\n", &mut i);
+        assert_eq!(
+            evidence.len(),
+            1,
+            "one Opaque node ⇒ one merge-disagreement"
+        );
+        assert_eq!(evidence[0].tier(), dorc_core::TrustTier::Derived);
+        assert!(
+            matches!(
+                evidence[0].kind(),
+                dorc_core::CollapseKind::FactMergeDisagreement { .. }
+            ),
+            "the collapse minted a FactMergeDisagreement, not a hand-injected record"
+        );
+
+        let modeled = collapse("apt-get install nginx\n", &mut i);
+        assert!(
+            modeled.is_empty(),
+            "a modeled-only book has no Opaque collapse and mints no evidence"
         );
     }
 

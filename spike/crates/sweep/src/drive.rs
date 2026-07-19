@@ -61,7 +61,7 @@ pub fn run_kernel(declared: &DeclaredScenario, s0: &Host, flag_on: bool, i: &mut
     let verdict_providers = dorc_oracle::verdict::verdict_providers(i, &oracle_refs);
 
     let mut arena = ProvArena::new();
-    let (classified, _why, kills, _kill_coords, fact_backings) =
+    let (classified, _why, kills, _kill_coords, fact_backings, _collapse_evidence) =
         dorc_analysis::effect::classify_with_why_diags(
             &cfg,
             &value,

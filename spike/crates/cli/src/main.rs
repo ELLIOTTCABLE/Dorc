@@ -1103,7 +1103,7 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
     let wrapped_probes = wrapped_analysis.wrapped;
     let carried_attribution = wrapped_analysis.carried;
     report_at(advisory, "wrapped", book_source, &wrapped_analysis.hints);
-    let (classified, why_diags, kills, kill_coords, fact_backings) =
+    let (classified, why_diags, kills, kill_coords, fact_backings, _collapse_evidence) =
         dorc_analysis::effect::classify_with_why_diags(
             &cfg.value,
             &value,
