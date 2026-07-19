@@ -620,8 +620,8 @@ pub struct RecordsLateLine {
 // ===========================================================================
 
 /// Payload of [`DiagCode::FootprintIncoherent`] (PASSTHROUGH `sm {detail}`): two emit sites (the
-/// spanned own-coordinate canary and the spanless malformed-derived-coordinate refusal); the
-/// malformed-site emit is the spanless one (`SPANLESS_SITE_PAYLOADS`). `site()` returns `None`.
+/// own-coordinate canary and the malformed-derived-coordinate refusal); BOTH now carry the escalated
+/// book command's span (`aid-caret-span-precision`). `site()` returns `None` (no plan-`LeafId`).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FootprintIncoherent {
     /// The full refusal text (display only).
@@ -629,7 +629,7 @@ pub struct FootprintIncoherent {
 }
 
 /// Payload of [`DiagCode::TouchesEscalated`] (TEMPLATIZED): the escalated site number and the call.
-/// Spanless.
+/// Spanned (the escalated book command's span; `aid-caret-span-precision`); `site()` returns `None`.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TouchesEscalated {
     /// The escalated site's node id (`{site}`).
@@ -639,7 +639,7 @@ pub struct TouchesEscalated {
 }
 
 /// Payload of [`DiagCode::DerivFamilyIncomplete`] (TEMPLATIZED): the site number and the
-/// incompleteness reason. Spanless.
+/// incompleteness reason. Spanned (the escalated book command's span); `site()` returns `None`.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DerivFamilyIncomplete {
     /// The site's node id (`{site}`).

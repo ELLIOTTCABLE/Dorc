@@ -1250,6 +1250,7 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
     };
     let kind_resolvers = build_kind_resolvers(
         &oracle_srcs,
+        &oracle_paths,
         &checks,
         &touches_paired,
         &coord_kinds,
@@ -1279,6 +1280,7 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
     // footprints (via `Footprint::add_reached`) before the survival walk. STATIC arms never ship.
     let kind_reaches = build_kind_reaches(
         &oracle_srcs,
+        &oracle_paths,
         &checks,
         &touches_paired,
         &coord_kinds,
@@ -1395,13 +1397,22 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
         // derivation-probe's `deriv` coord-records) into the authored set, before the survival
         // walk. An escalated site has NO authored footprint (its static trace ⊤'d), so the two
         // sets are disjoint by construction — no collision.
+        // The escalated sites' book spans (`aid-caret-span-precision`), precomputed at the edge (the
+        // merge runs interner-only): each derivation's `CfgNodeId`→AST span, total by construction.
+        let derived_node_spans: BTreeMap<_, _> = derivations
+            .derivations
+            .iter()
+            .map(|d| (d.node, parsed.value.node(cfg.value.node(d.node).ast).span))
+            .collect();
         merge_derived_footprints(
             &mut fps,
             &derivations,
             &results,
             &classes,
             &kill_coords,
+            &derived_node_spans,
             &mut interner,
+            book_source,
             advisory,
         );
         // 24G §4: EXPAND each reach-bearing footprint coord via reaches() — STATIC arms (cli-traced,
@@ -2194,6 +2205,10 @@ fn ship_touches_body(
 /// SPIKE-ONLY (ru-26): the `touches-escalated` advisory below makes the static→dynamic boundary
 /// visible in the render/differential; it must NOT leak into greenfield as a permanent
 /// per-escalation requirement.
+#[expect(
+    clippy::too_many_arguments,
+    reason = "the derived-footprint merge threads the compiled context (footprints/derivations/results/classes/kill-coords/node-spans/interner) + the book-source and advisory routing; each is a distinct pipeline output, not a bundle-able struct"
+)]
 fn merge_derived_footprints(
     footprints: &mut dorc_plan::TrustedFootprints,
     derivations: &dorc_plan::DerivationPlan,
@@ -2203,17 +2218,27 @@ fn merge_derived_footprints(
         dorc_analysis::effect::SkipClass,
     )],
     kill_coords: &BTreeMap<dorc_analysis::cfg::CfgNodeId, dorc_core::FactKey>,
+    node_spans: &BTreeMap<dorc_analysis::cfg::CfgNodeId, dorc_core::Span>,
     interner: &mut Interner,
+    book_source: Option<(&str, &str)>,
     advisory: bool,
 ) {
     let mut diags = Vec::new();
     for d in &derivations.derivations {
-        diags.push(Diag::new_spanless_site(DiagCode::TouchesEscalated(
-            TouchesEscalated {
+        // The escalated book command's own span (`aid-caret-span-precision`): every diag this loop
+        // emits points at the site that escalated (the same `CfgNodeId`→AST span the canary uses,
+        // precomputed at the cli edge). Absent ⇒ wall this site silently (kFAIL-safe; never happens
+        // in production, where the map covers every derivation node).
+        let Some(&span) = node_spans.get(&d.node) else {
+            continue;
+        };
+        diags.push(Diag::new(
+            DiagCode::TouchesEscalated(TouchesEscalated {
                 site: d.site.0,
                 call: d.call.clone(),
-            },
-        )));
+            }),
+            span,
+        ));
         let Some(coord_strs) = results.derivations.get(&d.site) else {
             continue; // no readback records ⇒ empty derived footprint ⇒ wall (kFAIL-safe)
         };
@@ -2230,15 +2255,16 @@ fn merge_derived_footprints(
             _ if !results.framed => {}
             Some(&k) if k as usize == coord_strs.len() => {}
             reason => {
-                diags.push(Diag::new_spanless_site(DiagCode::DerivFamilyIncomplete(
-                    DerivFamilyIncomplete {
+                diags.push(Diag::new(
+                    DiagCode::DerivFamilyIncomplete(DerivFamilyIncomplete {
                         site: d.site.0,
                         reason: match reason {
                             Some(&k) => format!("declared n={k}, received {}", coord_strs.len()),
                             None => "no deriv-end close-record".to_string(),
                         },
-                    },
-                )));
+                    }),
+                    span,
+                ));
                 continue;
             }
         }
@@ -2253,14 +2279,15 @@ fn merge_derived_footprints(
             }
         }
         if malformed {
-            diags.push(Diag::new_spanless_site(DiagCode::FootprintIncoherent(
-                FootprintIncoherent {
+            diags.push(Diag::new(
+                DiagCode::FootprintIncoherent(FootprintIncoherent {
                     detail: "derived touches() emitted a malformed coordinate (not kind:entity) \
                              — footprint refused, the site walls (an at-most claim cannot be \
                              partial)"
                         .to_string(),
-                },
-            )));
+                }),
+                span,
+            ));
             continue;
         }
         // 24G §8: the DERIVED lane DROPS the own-membership requirement — the boilerplate
@@ -2276,7 +2303,7 @@ fn merge_derived_footprints(
             footprints.insert(d.node, fp);
         }
     }
-    report_at(advisory, "derive", None, &diags);
+    report_at(advisory, "derive", book_source, &diags);
 }
 
 /// Intern one readback `kind:entity` coordinate line into the shared vocabulary (24A §1b fence —
@@ -2374,6 +2401,7 @@ impl KindResolvers {
 /// symbols/strings, never decoded.
 fn build_kind_resolvers(
     oracle_srcs: &[String],
+    oracle_paths: &[String],
     checks: &[dorc_oracle::predict::PredictSet],
     touches_paired: &[(&str, dorc_oracle::touches::TouchesSet)],
     coord_kinds: &BTreeSet<Symbol>,
@@ -2416,32 +2444,49 @@ fn build_kind_resolvers(
         }
     }
 
-    let mut diags = Vec::new();
+    let mut diags_by_file: BTreeMap<usize, Vec<Diag>> = BTreeMap::new();
     let mut base_to_idx: BTreeMap<Symbol, usize> = BTreeMap::new();
     for (kind, files) in per_kind {
         let name = interner.resolve(kind).to_owned();
+        // The diagnostic points at the FIRST declaring file's `<kind>__resolve` funcdef name
+        // (`aid-caret-span-precision`); the file index carries its `law-lineno-identity` space.
+        let anchor = files
+            .first()
+            .and_then(|&idx| Some((idx, sets.get(idx)?.get(kind)?.name_span)));
         if files.len() > 1 {
-            diags.push(Diag::new_spanless_site(DiagCode::ResolverConflict(
-                ResolverConflict {
-                    kind: name.clone(),
-                    count: files.len(),
-                },
-            )));
+            if let Some((idx, span)) = anchor {
+                diags_by_file.entry(idx).or_default().push(Diag::new(
+                    DiagCode::ResolverConflict(ResolverConflict {
+                        kind: name.clone(),
+                        count: files.len(),
+                    }),
+                    span,
+                ));
+            }
             continue; // refuse both ⇒ resolver-less
         }
-        if providers.contains(&name) {
-            diags.push(Diag::new_spanless_site(
+        if providers.contains(&name)
+            && let Some((idx, span)) = anchor
+        {
+            // Kept (it may legitimately match a kind of the same name); the warning surfaces the risk.
+            diags_by_file.entry(idx).or_default().push(Diag::new(
                 DiagCode::ResolverProviderCollision(ResolverProviderCollision {
                     name: name.clone(),
                 }),
+                span,
             ));
-            // Kept (it may legitimately match a kind of the same name); the warning surfaces the risk.
         }
         if let Some(&idx) = files.first() {
             base_to_idx.insert(kind, idx);
         }
     }
-    report_at(advisory, "resolve", None, &diags);
+    report_by_oracle_file(
+        advisory,
+        "resolve",
+        oracle_paths,
+        oracle_srcs,
+        &diags_by_file,
+    );
     let by_kind = rekey_to_raw_kinds(&base_to_idx, coord_kinds, interner);
     KindResolvers { sets, by_kind }
 }
@@ -2685,6 +2730,7 @@ impl KindReaches {
 /// compared as interned strings, never decoded.
 fn build_kind_reaches(
     oracle_srcs: &[String],
+    oracle_paths: &[String],
     checks: &[dorc_oracle::predict::PredictSet],
     touches_paired: &[(&str, dorc_oracle::touches::TouchesSet)],
     coord_kinds: &BTreeSet<Symbol>,
@@ -2722,29 +2768,45 @@ fn build_kind_reaches(
         }
     }
 
-    let mut diags = Vec::new();
+    let mut diags_by_file: BTreeMap<usize, Vec<Diag>> = BTreeMap::new();
     let mut base_to_idx: BTreeMap<Symbol, usize> = BTreeMap::new();
     for (kind, files) in per_kind {
         let name = interner.resolve(kind).to_owned();
+        // Point at the FIRST declaring file's `<kind>__reaches` funcdef name (`aid-caret-span-precision`).
+        let anchor = files
+            .first()
+            .and_then(|&idx| Some((idx, sets.get(idx)?.get(kind)?.name_span)));
         if files.len() > 1 {
-            diags.push(Diag::new_spanless_site(DiagCode::ReachesConflict(
-                ReachesConflict {
-                    kind: name.clone(),
-                    count: files.len(),
-                },
-            )));
+            if let Some((idx, span)) = anchor {
+                diags_by_file.entry(idx).or_default().push(Diag::new(
+                    DiagCode::ReachesConflict(ReachesConflict {
+                        kind: name.clone(),
+                        count: files.len(),
+                    }),
+                    span,
+                ));
+            }
             continue;
         }
-        if providers.contains(&name) {
-            diags.push(Diag::new_spanless_site(DiagCode::ReachesProviderCollision(
-                ReachesProviderCollision { name: name.clone() },
-            )));
+        if providers.contains(&name)
+            && let Some((idx, span)) = anchor
+        {
+            diags_by_file.entry(idx).or_default().push(Diag::new(
+                DiagCode::ReachesProviderCollision(ReachesProviderCollision { name: name.clone() }),
+                span,
+            ));
         }
         if let Some(&idx) = files.first() {
             base_to_idx.insert(kind, idx);
         }
     }
-    report_at(advisory, "reaches", None, &diags);
+    report_by_oracle_file(
+        advisory,
+        "reaches",
+        oracle_paths,
+        oracle_srcs,
+        &diags_by_file,
+    );
     let by_kind = rekey_to_raw_kinds(&base_to_idx, coord_kinds, interner);
     KindReaches { sets, by_kind }
 }
@@ -5511,6 +5573,26 @@ fn report_at(advisory: bool, stage: &str, source: Option<(&str, &str)>, diags: &
     report(stage, source, &advisory_filter(advisory, diags));
 }
 
+/// Report per-oracle-file diagnostics, each against its OWN `(path, src)` source, so a funcdef-keyed
+/// diagnostic's caret frame resolves against the RIGHT oracle (`law-lineno-identity`: the file index
+/// disambiguates the line-number space a bare span cannot). A file with no resolvable source falls to
+/// the byte-offset fallback — never a wrong-file frame. Deterministic (`BTreeMap` key order).
+fn report_by_oracle_file(
+    advisory: bool,
+    stage: &str,
+    oracle_paths: &[String],
+    oracle_srcs: &[String],
+    diags_by_file: &BTreeMap<usize, Vec<Diag>>,
+) {
+    for (idx, diags) in diags_by_file {
+        let source = oracle_paths
+            .get(*idx)
+            .map(String::as_str)
+            .zip(oracle_srcs.get(*idx).map(String::as_str));
+        report_at(advisory, stage, source, diags);
+    }
+}
+
 /// The advisory severity-filter (rec-1 / tc-apply-receipt-floor), factored pure for
 /// testing. `advisory` ⇒ pass every diagnostic through (the `plan`/round-trip render
 /// surface); `!advisory` (the receipt-free `apply` off-ramp) ⇒ keep ONLY Error-severity,
@@ -5727,6 +5809,7 @@ mod tests {
         let clean = vec!["package__resolve() { printf '%s\\n' \"$1\"; }".to_string()];
         let kr = build_kind_resolvers(
             &clean,
+            &["clean.oracle.sh".to_string()],
             &checks,
             &touches_paired,
             &coord_kinds,
@@ -5743,8 +5826,15 @@ mod tests {
             "package__resolve() { printf '%s\\n' \"$1\"; }".to_string(),
             "package__resolve() { printf '%s\\n' \"$1\"; }".to_string(),
         ];
-        let kr_dup =
-            build_kind_resolvers(&dup, &checks, &touches_paired, &coord_kinds, &mut i, false);
+        let kr_dup = build_kind_resolvers(
+            &dup,
+            &["a.oracle.sh".to_string(), "b.oracle.sh".to_string()],
+            &checks,
+            &touches_paired,
+            &coord_kinds,
+            &mut i,
+            false,
+        );
         assert_eq!(
             kr_dup.resolver_kinds().count(),
             0,
@@ -5757,6 +5847,7 @@ mod tests {
         let collide = vec!["apt_get__resolve() { printf '%s\\n' \"$1\"; }".to_string()];
         let kr_col = build_kind_resolvers(
             &collide,
+            &["collide.oracle.sh".to_string()],
             &checks,
             &touches_paired,
             &coord_kinds,
@@ -5822,13 +5913,19 @@ mod tests {
                 }],
             };
             let mut fps = dorc_plan::TrustedFootprints::new();
+            let node_spans = BTreeMap::from([(
+                CfgNodeId(5),
+                dorc_core::Span::new(dorc_core::BytePos(0), dorc_core::BytePos(1)),
+            )]);
             merge_derived_footprints(
                 &mut fps,
                 &derivations,
                 &results,
                 &[],
                 &BTreeMap::new(),
+                &node_spans,
                 i,
+                None,
                 false,
             );
             fps.contains(CfgNodeId(5))

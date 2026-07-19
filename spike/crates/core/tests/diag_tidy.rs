@@ -210,14 +210,7 @@ const SPANLESS_SITE_PAYLOADS: &[&str] = &[
     "RecordsAlienLine",
     "RecordsLateLine",
     // cli/main.rs — whole-stream/whole-plan verdicts with no single source point.
-    "TouchesEscalated",
-    "DerivFamilyIncomplete",
-    "FootprintIncoherent", // the malformed-derived-coordinate emit (the own-coordinate emit is spanned)
-    "ResolverConflict",
-    "ResolverProviderCollision",
-    "DanglingReference",
-    "ReachesConflict",
-    "ReachesProviderCollision",
+    "DanglingReference", // the dangling coord's book-origin site is not in the emit scope (deferred, not synthesized)
     "EscalationPolicy",
     // plan/whylog.rs + cli/main.rs — `--last` reader refusals: about the durable FILE ⇒ spanless.
     "WhylogVersionRefused",
