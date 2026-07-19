@@ -810,8 +810,11 @@ pub const CATALOG: &[CatalogEntry] = &[
         params: &["detail"],
         example: "1 sibling oracle exists on disk but was not loaded: `redis.oracle.sh` — load it \
                   with `--oracle` (or `--oracle-dir`) to model its tool; dorc never auto-loads siblings",
-        message: "[unwritten: aid-unloaded-sibling-oracle]",
-        help: None,
+        message: "sibling oracle files exist on disk but were not loaded: {detail}",
+        help: Some(
+            "load them with `--oracle <file>` (or point `--oracle-dir` at their directory); \
+             dorc never loads an oracle you did not name",
+        ),
     },
 ];
 
@@ -1053,6 +1056,7 @@ mod tests {
         "whylog-book-desync",
         "whylog-absent",
         "whylog-corrupt",
+        "aid-unloaded-sibling-oracle",
     ];
 
     /// Gate (`amendment-prose-boundary`): every user-facing register is `sm `-prefixed base-tip
