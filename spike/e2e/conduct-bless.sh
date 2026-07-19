@@ -28,15 +28,16 @@ trap cleanup EXIT INT TERM
 step() {
   _label=$1
   shift
-  if ( cd -- "$spike" && "$@" ) >"$log" 2>&1; then
-    return 0
+  # The one set-e-safe rc capture: `|| _rc=$?` reads the LEFT side's true status. Both
+  # `if ! cmd; then _rc=$?` (negated) and `if cmd; then return; fi; _rc=$?` (reads the
+  # if-statement's 0) mis-captured — each found live on a real failing run.
+  _rc=0
+  ( cd -- "$spike" && "$@" ) >"$log" 2>&1 || _rc=$?
+  if [ "$_rc" -ne 0 ]; then
+    echo "conduct-bless: FAILED at [$_label] (exit $_rc)" >&2
+    tail -40 "$log" >&2
+    exit "$_rc"
   fi
-  # `$?` must be read in the else-arm, un-negated: `if ! cmd` inverts the status and
-  # made a failing step exit 0 (found live, first conductor run).
-  _rc=$?
-  echo "conduct-bless: FAILED at [$_label] (exit $_rc)" >&2
-  tail -40 "$log" >&2
-  exit "$_rc"
 }
 
 # 1. fresh build (spike/CLAUDE.md: force a fresh build before trusting e2e).
