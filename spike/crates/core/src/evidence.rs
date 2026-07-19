@@ -313,9 +313,11 @@ pub enum CollapseKind {
         operands: Operands<ValueOperand>,
     },
     /// A verdict body declined (`rul-vouch-is-verdict-authoring`) ⇒ the site runs. Carries the
-    /// declining arm (with its file id — `tc-oracle-file-identity`) + the gate; `authored_reason`
-    /// populated by the report-lane pairing (`27W` §3).
+    /// declining `site` (aligning with its evidence siblings — `WallFormation`/`SubstitutionRefusal`/
+    /// `Demotion` all key by site), the declining arm (with its file id — `tc-oracle-file-identity`)
+    /// + the gate; `authored_reason` populated by the report-lane pairing keyed on `site` (`27W` §3).
     VerdictDecline {
+        site: SiteId,
         arm: MintSpan,
         arm_file: OracleFileId,
         gate: DeclineGate,
@@ -401,6 +403,7 @@ impl CollapseEvidence {
     pub fn with_authored_reason(self, reason: AuthoredReason) -> Self {
         match self.kind {
             CollapseKind::VerdictDecline {
+                site,
                 arm,
                 arm_file,
                 gate,
@@ -408,6 +411,7 @@ impl CollapseEvidence {
             } => Self {
                 tier: self.tier,
                 kind: CollapseKind::VerdictDecline {
+                    site,
                     arm,
                     arm_file,
                     gate,
@@ -450,6 +454,7 @@ mod tests {
         let ev = CollapseEvidence::new(
             tier,
             CollapseKind::VerdictDecline {
+                site: site(1),
                 arm: MintSpan(span(4, 9)),
                 arm_file: F,
                 gate: DeclineGate::Return,
@@ -555,6 +560,7 @@ mod tests {
         let ev = CollapseEvidence::new(
             TrustTier::Vouched,
             CollapseKind::VerdictDecline {
+                site: site(3),
                 arm: MintSpan(span(0, 3)),
                 arm_file: F,
                 gate: DeclineGate::Return,

@@ -958,6 +958,11 @@ pub type Vouches = BTreeMap<CfgNodeId, ByVouch<VerdictVouch>>;
 /// surface (the cli's gate-3 error-floor; the DSTs drop them). `inv-referent-agnostic`: the kind
 /// label + operands are resolved for the invocation/attribution, never decoded (the 24A §1b fence).
 #[must_use]
+#[expect(
+    clippy::too_many_lines,
+    reason = "the ONE composition every driver shares (vouch lift + decline-evidence mint); \
+              splitting it would scatter the single vouch-authoring path"
+)]
 pub fn build_vouches(
     oracle_srcs: &[&str],
     classes: &[(CfgNodeId, SkipClass)],
@@ -983,7 +988,9 @@ pub fn build_vouches(
         .collect();
 
     let mut vouches = Vouches::new();
-    for (node, class) in classes {
+    // `leaf_idx` IS the site's `LeafId` — the SAME positional assignment `build_plan` makes, so a
+    // `VerdictDecline` keys by the site a report-lane record re-keys to (pinned by the leaf-index test).
+    for (leaf_idx, (node, class)) in classes.iter().enumerate() {
         // A vouch is consumed only at an establish-bearing site (elide: EstablishAmbient; guard:
         // EstablishWritten). Computing both is future-proof and inert where unused.
         let fact = match class {
@@ -1052,6 +1059,9 @@ pub fn build_vouches(
                 collapse_evidence.push(CollapseEvidence::new(
                     TrustTier::Vouched,
                     CollapseKind::VerdictDecline {
+                        site: dorc_core::diag::SiteId::leaf(LeafId(
+                            u32::try_from(leaf_idx).unwrap_or(u32::MAX),
+                        )),
                         arm: MintSpan(info.arm_span.unwrap_or(verdict.name_span)),
                         arm_file,
                         gate: info.gate,
@@ -4573,6 +4583,69 @@ apt_get__predict() {
         assert!(
             !probe.unresolvable.is_empty(),
             "the un-oracled reload is recorded unresolvable: {probe:?}"
+        );
+    }
+
+    #[test]
+    fn verdict_decline_leaf_index_matches_build_plan() {
+        // `tc-verdictdecline-site-leaf-source` (conductor-ruled): the `VerdictDecline.site.leaf`
+        // `build_vouches` mints is the ENUMERATION INDEX over `classes` — the SAME positional leaf
+        // assignment `compile_probe`/`build_plan` makes (`inv-site-keyed-results`). If the two ever
+        // diverged, a report-lane record's `site=<key>` would pair to the wrong decline. Two
+        // declining establish sites (a `return 2` verdict) at indices 0 and 1 pin the identity: the
+        // decline evidence's leaves and the probe checks' leaves are the same positional set.
+        let src = "apt-get install -y curl\napt-get install -y nginx\n";
+        let mut i = Interner::default();
+        let idx = package_index(&mut i);
+        let parsed = dorc_syntax::parse(src);
+        let cfg = dorc_analysis::cfg::build(&parsed.value).value;
+        let value = dorc_analysis::value::analyze(&cfg, &parsed.value, &mut i);
+        let checks = vec![dorc_oracle::predict::lift_predicts(&mut i, CORPUS_PREDICT_SRC).value];
+        let classes = dorc_analysis::effect::classify(
+            &cfg,
+            &value,
+            &parsed.value,
+            &idx,
+            &checks,
+            &BTreeSet::new(),
+            &mut i,
+            &mut dorc_core::ProvArena::new(),
+        )
+        .value;
+        // A verdict that always declines (`return 2`) ⇒ both establish sites mint a VerdictDecline.
+        let verdict_src = "apt_get__is_converged() { return 2 ; }";
+        let (_vouches, evidence) = build_vouches(&[verdict_src], &classes, &value, &mut i);
+        let mut decline_leaves: Vec<u32> = evidence
+            .iter()
+            .filter_map(|ev| match ev.kind() {
+                CollapseKind::VerdictDecline { site, .. } => Some(site.leaf.0),
+                _ => None,
+            })
+            .collect();
+        decline_leaves.sort_unstable();
+        assert_eq!(
+            decline_leaves,
+            vec![0, 1],
+            "the two declining establish sites mint VerdictDecline at leaves 0 and 1 (positional)"
+        );
+        // The SAME classes slice → the probe's positional leaf assignment: build_plan and
+        // build_vouches agree on which index is which leaf.
+        let probe = compile_probe(
+            &parsed.value,
+            &cfg,
+            &value,
+            &classes,
+            &BTreeMap::new(),
+            &ConnectedPipes::default(),
+            |provider, argv| ship_corpus(&checks, &i, provider, argv),
+            |_, _, _| None,
+            |_| false,
+        );
+        let mut probe_leaves: Vec<u32> = probe.checks.iter().map(|c| c.site.0).collect();
+        probe_leaves.sort_unstable();
+        assert_eq!(
+            probe_leaves, decline_leaves,
+            "the probe checks key by the same positional leaves the declines do"
         );
     }
 
