@@ -1,0 +1,17 @@
+[package]
+name = "errorloom"
+version = "0.0.0"
+edition.workspace = true
+rust-version.workspace = true
+description = "Executable transcript cases as the authoring surface for a CLI tool's user-facing prose: a cram/txtar-lineage runner plus diff-driven prose extraction."
+# publish stays off until the human picks a LICENSE (28A:rider-errorloom-license-choice).
+publish = false
+
+# Dependency-free by design. The transport engine is a deterministic,
+# correctness-critical kernel guarded by its own round-trip property test; a
+# hand-rolled word LCS keeps it dep-clean and dodges cargo-deny/network surface.
+# Any future dep must clear `cargo deny check licenses bans sources` and stay
+# compatible with the workspace `forbid(unsafe)`.
+
+[lints]
+workspace = true

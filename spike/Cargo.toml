@@ -9,7 +9,7 @@
 # binary e2e/run.sh looks for comes from `crates/cli`.
 [workspace]
 resolver = "2"
-members = ["crates/core", "crates/syntax", "crates/analysis", "crates/oracle", "crates/plan", "crates/hostsim", "crates/sweep", "crates/cli", "crates/coverage", "crates/lint"]
+members = ["crates/core", "crates/syntax", "crates/analysis", "crates/oracle", "crates/plan", "crates/hostsim", "crates/sweep", "crates/cli", "crates/coverage", "crates/lint", "crates/errorloom"]
 
 [workspace.package]
 edition = "2024"
