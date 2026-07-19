@@ -1464,12 +1464,14 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
     // lanes are load-bearing correctness disclosures gate-7 pins). `why` mode SKIPS them — its
     // stdout report (below) is the detail surface, so a stderr echo would just double it.
     if advisory && mode != Mode::Why {
-        // The C3 static-merge + C4 probe-merge collapse-evidence, unioned onto the why-lens seam
-        // (d4 fills the render; both are decision-inert — `two-plane-aid-law`).
+        // The C3 static-merge + C4 probe-merge + C5 survival wall/demotion collapse-evidence,
+        // unioned onto the why-lens seam (d4 fills the render; all decision-inert —
+        // `two-plane-aid-law`).
         let collapse_evidence: Vec<CollapseEvidence> = classify_evidence
             .iter()
             .cloned()
             .chain(merge_evidence.iter().cloned())
+            .chain(plan.survival_report.collapse_evidence().iter().cloned())
             .collect();
         emit_why_lens(&why_diags, &arena, &book_src, &collapse_evidence);
         // sigpipe-flap-class (`279f` §5): a probe record landing rc 141 (128+SIGPIPE) is the

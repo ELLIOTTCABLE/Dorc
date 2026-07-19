@@ -40,9 +40,11 @@ use dorc_analysis::effect::{FactKey, InlineSite, SkipClass};
 use dorc_analysis::lattice::{May, Powerset};
 use dorc_analysis::value::{ValueFlow, ValueOf};
 use dorc_core::diag::Diag;
+use dorc_core::evidence::{ChannelCoverage, DemoteTag};
 use dorc_core::{
-    AstId, ByVouch, Carrier, Channel, Dialect, EntityRef, FactBacking, Grade, Interner, KindId,
-    Observable, Predicted, Rc, Rung, Symbol, Verdict,
+    AstId, ByVouch, Carrier, Channel, CollapseEvidence, CollapseKind, Dialect, EntityRef,
+    FactBacking, Grade, Interner, KindId, Observable, Predicted, Rc, Rung, Symbol, TrustTier,
+    Verdict,
 };
 use dorc_oracle::verdict::VERDICT_SUFFIX;
 use dorc_syntax::ast::{Ast, NodeKind, RedirOp, RedirTarget};
@@ -1144,6 +1146,10 @@ pub struct SurvivalReport {
     /// (the cross-author demote). The why-lens surfaces "site N: poisoned via `<kind>.reaches()`".
     /// Empty when no reach expansion poisoned an elision.
     reach_poisonings: Vec<(LeafId, KindId)>,
+    /// C5 aid plane (`27V` Lane A): the decision-inert `WallFormation` / `Demotion` evidence the
+    /// survival walk mints beside its dispositions (`two-plane-aid-law`; steers nothing). Mint-pass
+    /// ordered (`inv-determinism`); threaded to the why-lens seam by the cli (d4 renders).
+    collapse_evidence: Vec<CollapseEvidence>,
 }
 
 impl SurvivalReport {
@@ -1159,6 +1165,13 @@ impl SurvivalReport {
     /// reach-function for each ("…poisoned via `<kind>.reaches()`").
     pub fn reach_poisonings(&self) -> impl Iterator<Item = (LeafId, KindId)> + '_ {
         self.reach_poisonings.iter().copied()
+    }
+
+    /// The C5 wall/demotion collapse-evidence (`27V` Lane A): decision-inert records the cli unions
+    /// onto the why-lens seam. Read-only display tier (`two-plane-aid-law`).
+    #[must_use]
+    pub fn collapse_evidence(&self) -> &[CollapseEvidence] {
+        &self.collapse_evidence
     }
 }
 
@@ -2906,6 +2919,18 @@ fn wall_walk_survival(
                         survival::DemoteReason::TotalWall
                         | survival::DemoteReason::Poisoned { via_reach: None } => {}
                     }
+                    let tag = match reason {
+                        survival::DemoteReason::TotalWall => DemoteTag::TotalWall,
+                        survival::DemoteReason::Poisoned { .. } => DemoteTag::Poisoned,
+                        survival::DemoteReason::MayAlias => DemoteTag::MayAlias,
+                    };
+                    report.collapse_evidence.push(CollapseEvidence::new(
+                        TrustTier::Derived,
+                        CollapseKind::Demotion {
+                            site: dorc_core::diag::SiteId::leaf(step.leaf),
+                            reason: tag,
+                        },
+                    ));
                     step.disposition = Disposition::Run;
                 }
             }
@@ -2914,6 +2939,18 @@ fn wall_walk_survival(
         // otherwise (silence = wall). An elided/omitted mutator (survived, or converged away)
         // casts no shadow, so it is skipped here.
         if *is_mutator && matches!(step.disposition, Disposition::Run) {
+            // C5 aid: a running mutator forms a wall on the Effect channel (`rul-only-oracle-bytes-
+            // ship`) ⇒ downstream survival is constrained. Decision-inert (the wall itself is the
+            // accumulate/total-wall below; this only narrates it).
+            report.collapse_evidence.push(CollapseEvidence::new(
+                TrustTier::Derived,
+                CollapseKind::WallFormation {
+                    participant: step.leaf,
+                    channel: ChannelCoverage {
+                        channel: Channel::Effect,
+                    },
+                },
+            ));
             match footprints.get(*node) {
                 Some(footprint) => accumulated.push(survival::AccumulatedWall {
                     wall_leaf: step.leaf,
@@ -5710,6 +5747,39 @@ apt_get__predict() {
     // (The non-disjoint HIT direction — a footprint intersecting the backing demotes even
     // flagged — is pinned by `survival::tests::poisoned_backing_demotes` + the
     // `strawman24-nonsurvive-hit` e2e case; no plan-level duplicate here.)
+
+    #[test]
+    fn survival_walk_mints_wall_and_demotion_evidence() {
+        // C5 (`AID-NEEDS:law-collapse-mints-evidence`; `anti-masking-tests`): the survival walk
+        // MINTS decision-inert evidence BESIDE its dispositions — a running curl mutator forms a
+        // WallFormation, the downstream converged nginx install DEMOTES past it (Demotion). DERIVED
+        // from the real collapse, never hand-injected; all `Derived` tier.
+        let plan = survival_plan_empty_footprints(
+            "apt-get install -y curl\napt-get install -y nginx\n",
+            |e| {
+                if e == "curl" {
+                    Verdict::Diverged
+                } else {
+                    Verdict::Converged
+                }
+            },
+        );
+        let ev = plan.survival_report.collapse_evidence();
+        assert!(
+            ev.iter()
+                .any(|e| matches!(e.kind(), CollapseKind::WallFormation { .. })),
+            "the running curl mutator mints a WallFormation"
+        );
+        assert!(
+            ev.iter()
+                .any(|e| matches!(e.kind(), CollapseKind::Demotion { .. })),
+            "the demoted nginx install mints a Demotion"
+        );
+        assert!(
+            ev.iter().all(|e| e.tier() == TrustTier::Derived),
+            "survival-walk evidence is engine-derived"
+        );
+    }
 
     #[test]
     fn in_loop_constant_establish_runs_even_when_converged() {
