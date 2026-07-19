@@ -100,6 +100,16 @@ fn read_emission(cmd: &Command) -> ArmReport {
     }
 }
 
+/// The FULLY-recognized decline class of a sink-emitting command (`decline <class>` header,
+/// literal format), or `None` for an unknown class / dynamic format / non-`decline` verb (an
+/// `advise` verb is deferred — `27W:rul-advise-verb-deferred`). The tier-2 per-site class the
+/// verdict tracer captures when a site's argv reaches this emission (`27W` §3). Same
+/// value-threading as the tier-1 inventory.
+pub(crate) fn recognized_class(cmd: &Command) -> Option<DeclineClass> {
+    let r = read_emission(cmd);
+    r.class.filter(|_| r.verb_recognized)
+}
+
 /// The literal text of a word, or `None` for any expansion-bearing form (a dynamic format defeats
 /// static reading — `27W` §2).
 fn literal_text(w: &Word) -> Option<&str> {

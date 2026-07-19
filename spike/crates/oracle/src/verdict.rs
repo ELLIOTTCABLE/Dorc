@@ -58,9 +58,11 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
-use dorc_core::evidence::DeclineGate;
+use dorc_core::evidence::{DeclineClass, DeclineGate};
 use dorc_core::{Carrier, Interner, ProviderId, Rc, Span, Symbol};
 use dorc_syntax::sem::UnsetPolicy;
+
+use crate::report::recognized_class;
 
 use crate::predict::{
     CaseArm, Command, Predict, PredictSet, Stmt, Test, TopReason, Word, eval_test,
@@ -188,6 +190,7 @@ pub fn evaluate_verdict(verdict: &Predict, argv: &[&str]) -> VerdictResolution {
         reached_command: false,
         reached_inert: false,
         decline_span: None,
+        emission: None,
         budget,
         steps: 0,
     };
@@ -221,25 +224,42 @@ fn classify_return(code: Rc) -> VerdictResolution {
     }
 }
 
-/// The [`DeclineGate`] a verdict trace decline took (C5; `27V` Lane A / `rul-vouch-is-verdict-
-/// authoring`). Thin wrapper over [`decline_site`] for callers wanting only the gate.
-#[must_use]
-pub fn decline_gate(verdict: &Predict, argv: &[&str]) -> Option<DeclineGate> {
-    decline_site(verdict, argv).map(|(gate, _)| gate)
+/// A genuine verdict-trace DECLINE, fully classified (`27V` Lane A / `27W` §3): the gate, the
+/// precise declining-arm span, and — when the reached path ran a recognized report-sink emission —
+/// the tier-2 per-site authored class + emitting-arm span. All decision-inert (the rc-partition
+/// stays a flat sink; the license plane reads none of it).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct DeclineInfo {
+    /// Which gate the decline reached (an explicit non-converged `return`, a reached arm that ran
+    /// no check, or an inert fixed-rc builtin).
+    pub gate: DeclineGate,
+    /// The PRECISE declining-statement span (the `return N` or the inert builtin), or `None` for
+    /// the `Unreached` gate — nothing was reached to point at (`tc-unreached-arm-span-fallback`;
+    /// the caller falls back to the funcdef `name_span`, the honest coarsest-true span).
+    pub arm_span: Option<Span>,
+    /// The tier-2 per-site emission on the reached path (`27W` §3): the recognized decline class +
+    /// the emitting arm's span, or `None` (emitted nothing / dynamic format ⇒ tier-3 fallback).
+    pub emission: Option<(DeclineClass, Span)>,
 }
 
-/// The [`DeclineGate`] a verdict trace decline took PLUS the PRECISE declining-statement span
-/// (C7 arm-span refinement; `27V:mech-minting-line-threading`): `Some((gate, span))` for a
-/// [`VerdictResolution::Declined`], `None` for a `Vouched` or ⊤ trace. The span points at the
-/// exact reached declining statement — the `return N` or the inert builtin — so attribution
-/// renders the emitting ARM, not the whole funcdef. It is `None` for the `Unreached` gate: an
-/// unmatched `case` / `if`-false-no-`else` / empty body reaches NO statement, so there is genuinely
-/// nothing to point at (never-synthesize-a-span; the caller falls back to the funcdef `name_span`,
-/// the honest coarsest-true span — `tc-unreached-arm-span-fallback`). Names the GATE, never the
-/// license (decision-inert; the rc-partition stays a flat sink). Re-traces (analysis-side, cheap)
-/// so [`evaluate_verdict`]'s hot decision path stays byte-untouched (`inv-determinism`).
+/// The [`DeclineGate`] a verdict trace decline took (C5). Thin wrapper over [`classify_decline`].
+#[must_use]
+pub fn decline_gate(verdict: &Predict, argv: &[&str]) -> Option<DeclineGate> {
+    classify_decline(verdict, argv).map(|i| i.gate)
+}
+
+/// The gate + PRECISE declining-arm span (C7). Thin wrapper over [`classify_decline`].
 #[must_use]
 pub fn decline_site(verdict: &Predict, argv: &[&str]) -> Option<(DeclineGate, Option<Span>)> {
+    classify_decline(verdict, argv).map(|i| (i.gate, i.arm_span))
+}
+
+/// Fully classify a verdict trace's DECLINE over `argv` (C5 gate + C7 arm span + `27W` tier-2
+/// class): `Some(DeclineInfo)` for a [`VerdictResolution::Declined`], `None` for a `Vouched` or ⊤
+/// trace. Re-traces (analysis-side, cheap) so [`evaluate_verdict`]'s hot decision path stays
+/// byte-untouched (`inv-determinism`).
+#[must_use]
+pub fn classify_decline(verdict: &Predict, argv: &[&str]) -> Option<DeclineInfo> {
     if argv.is_empty() {
         return None; // empty argv ⇒ ⊤ (not a decline)
     }
@@ -250,17 +270,24 @@ pub fn decline_site(verdict: &Predict, argv: &[&str]) -> Option<(DeclineGate, Op
         reached_command: false,
         reached_inert: false,
         decline_span: None,
+        emission: None,
         budget,
         steps: 0,
     };
-    match tr.run_block(&verdict.body) {
-        Flow::Normal if tr.reached_command => None, // Vouched
-        Flow::Normal if tr.reached_inert => Some((DeclineGate::InertBuiltin, tr.decline_span)),
-        Flow::Normal => Some((DeclineGate::Unreached, None)),
-        Flow::Returned(code) if code.0 == 0 => None,
-        Flow::Returned(_) | Flow::Declined => Some((DeclineGate::Return, tr.decline_span)),
-        Flow::Top(_) => None, // ⊤, not a decline
-    }
+    let gate = match tr.run_block(&verdict.body) {
+        Flow::Normal if tr.reached_command => return None, // Vouched
+        Flow::Normal if tr.reached_inert => DeclineGate::InertBuiltin,
+        Flow::Normal => DeclineGate::Unreached,
+        Flow::Returned(code) if code.0 == 0 => return None, // Vouched
+        Flow::Returned(_) | Flow::Declined => DeclineGate::Return,
+        Flow::Top(_) => return None, // ⊤, not a decline
+    };
+    // `Unreached` reached no statement ⇒ no honest span (its `decline_span` is already `None`).
+    Some(DeclineInfo {
+        gate,
+        arm_span: tr.decline_span,
+        emission: tr.emission,
+    })
 }
 
 /// Budget = `4 * argv.len() + BUDGET_CONSTANT` — mirrors the predict/touches evaluators.
@@ -287,6 +314,11 @@ struct Tracer {
     /// The span of the LAST reached declining statement (a `return N` or an inert builtin) — the
     /// C7 precise arm span for [`decline_site`]. Display tier only; never read by the decision.
     decline_span: Option<Span>,
+    /// The tier-2 per-site emission (`27W` §3): the recognized decline CLASS + the emitting arm's
+    /// span, captured when a reached path ran a `report_sink` emission with a readable literal
+    /// format. `None` when the reached path emitted nothing, or the format was dynamic (⇒ tier-3
+    /// runtime fallback). Decision-inert (`two-plane-aid-law`); never read by the decision.
+    emission: Option<(DeclineClass, Span)>,
     budget: usize,
     steps: usize,
 }
@@ -426,6 +458,11 @@ impl Tracer {
         if cmd.report_sink {
             self.reached_inert = true;
             self.decline_span = Some(cmd.span);
+            // Tier-2 (`27W` §3): the argv reached this emission ⇒ capture its class + arm span at
+            // the site. A dynamic/unknown format leaves it `None` (⇒ tier-3 runtime fallback).
+            if let Some(class) = recognized_class(cmd) {
+                self.emission = Some((class, cmd.span));
+            }
             return Flow::Normal;
         }
         for w in &cmd.words {
@@ -654,6 +691,35 @@ x__is_converged() {
             Some("return 2"),
             "the arm span is the reached `return 2`"
         );
+    }
+
+    #[test]
+    fn classify_decline_captures_the_tier2_class() {
+        // Tier-2 (`27W` §3): a site's argv threads to a reached emission ⇒ the class + emitting-arm
+        // span land at the site. A verb the arm doesn't reach yields no emission.
+        let src = "\
+x__is_converged() {
+   case $1 in
+   drop_caches)
+      printf 'decline unsound %s\\n' \"$1\" >>\"${DREP_V1:-/dev/null}\"
+      return 2 ;;
+   restart) systemctl is-active -- \"$2\" ;;
+   esac
+}";
+        let mut i = Interner::default();
+        let set = VerdictSet::lift(&mut i, src);
+        let p = set.value.providers().next().unwrap();
+        let v = set.value.get(p).unwrap();
+        let info = classify_decline(v, &["drop_caches"]).expect("a decline");
+        let (class, span) = info.emission.expect("the reached emission's class");
+        assert_eq!(class, DeclineClass::Unsound);
+        assert_eq!(
+            &src[span.lo.0 as usize..span.hi.0 as usize],
+            "printf 'decline unsound %s\\n' \"$1\" >>\"${DREP_V1:-/dev/null}\"",
+            "the emitting-arm span is the printf, distinct from the `return 2` decline arm"
+        );
+        // The `restart` verb reaches a real check ⇒ vouches ⇒ classify_decline is None.
+        assert!(classify_decline(v, &["restart", "nginx"]).is_none());
     }
 
     #[test]

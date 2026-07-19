@@ -40,7 +40,7 @@ use dorc_analysis::effect::{FactKey, InlineSite, SkipClass};
 use dorc_analysis::lattice::{May, Powerset};
 use dorc_analysis::value::{ValueFlow, ValueOf};
 use dorc_core::diag::Diag;
-use dorc_core::evidence::{ChannelCoverage, DemoteTag, MintSpan};
+use dorc_core::evidence::{AuthoredReason, ChannelCoverage, DemoteTag, MintSpan};
 use dorc_core::{
     AstId, ByVouch, Carrier, Channel, CollapseEvidence, CollapseKind, Dialect, EntityRef,
     FactBacking, Grade, Interner, KindId, Observable, OracleFileId, Predicted, Rc, Rung, Symbol,
@@ -921,7 +921,7 @@ pub fn build_vouches(
 ) -> (Carrier<Vouches>, Vec<CollapseEvidence>) {
     use dorc_oracle::predict::{map_provider_name, strip_verdict};
     use dorc_oracle::verdict::{
-        VerdictResolution, VerdictSet, check_commands, decline_site, evaluate_verdict,
+        VerdictResolution, VerdictSet, check_commands, classify_decline, evaluate_verdict,
     };
 
     let mut diags = Vec::new();
@@ -996,15 +996,22 @@ pub fn build_vouches(
         ) {
             // Narrate a genuine DECLINE (not a ⊤): gate + the PRECISE reached declining-arm span
             // (C7; `Unreached` has no reached statement ⇒ falls back to the funcdef `name_span`,
-            // the honest coarsest-true span). `authored_reason` populated by the report-lane pairing.
-            if let Some((gate, arm_span)) = decline_site(verdict, &op_refs) {
+            // the honest coarsest-true span). Tier-2 (`27W` §3): if the reached path ran a
+            // recognized report-sink emission, the class + emitting-arm span populate
+            // `authored_reason` AT PLAN TIME (a dynamic argv/format leaves it `None` ⇒ tier-3).
+            if let Some(info) = classify_decline(verdict, &op_refs) {
+                let authored_reason = info.emission.map(|(class, emit_span)| AuthoredReason {
+                    class,
+                    arm: MintSpan(emit_span),
+                    arm_file,
+                });
                 collapse_evidence.push(CollapseEvidence::new(
                     TrustTier::Vouched,
                     CollapseKind::VerdictDecline {
-                        arm: MintSpan(arm_span.unwrap_or(verdict.name_span)),
+                        arm: MintSpan(info.arm_span.unwrap_or(verdict.name_span)),
                         arm_file,
-                        gate,
-                        authored_reason: None,
+                        gate: info.gate,
+                        authored_reason,
                     },
                 ));
             }
