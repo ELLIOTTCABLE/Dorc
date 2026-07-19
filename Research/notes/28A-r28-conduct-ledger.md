@@ -190,6 +190,50 @@ refusal-context borrows sources, dump materializes only on the error path).
   flag-up, and relaxation ("non-overlapping, word-starts-covered") is a
   documented API change to adjudicate then.
 
+## §2d — Syntax-lane CP-A checkpoint + the Singleton-bind ruling (conductor, 2026-07-19)
+
+- CP-A LANDED @ `8cd0221` on `ai/r28-syntax-respell` (2 commits: `MarkKind` grown to
+  the typed verb set with role-aware recovery from OLD spellings; carry/entry
+  consumers verb-routed, dead tokens removed; 958 unit + 97/97 e2e + four gates
+  green; 1/25 comment budget). Builder retired at budget, principledly early.
+- **Coupled-CP finding ACCEPTED**: CP-B (the four DiagCodes) and CP-C (the new
+  parser) are one indivisible green unit — `diag_tidy`'s production-emit gate needs
+  the new parser's literal emit sites. The remaining unit executes under a FRESH
+  builder (27U map→fresh-executor pattern) on branch `ai/r28-syntax-respell-2`;
+  the `28A:rul-one-checkpoint-after-machinery` shape is unchanged (stop before
+  CP-D; conductor go required). Contingency granted: if the covered() harness's
+  e2e-trigger half mechanically requires the wired parser, land what lands green
+  pre-cutover and carry the remainder into CP-D — never weaken a gate; report
+  actual mechanics.
+- **Colon-carve grep result banked**: ZERO corpus resistance to
+  `rul-marked-colon-is-the-grammars` (no `while :`, no null-command-with-args in
+  any marked file; the 33 double-colon lines are all mark intros). Lone-`:`
+  survival = unit-pin only.
+- **`28A:rul-singleton-bind-drops`** (resolves the builder's bind-resists flag) —
+  option (b): the value-less Singleton bind (`idx : sm.dorc.PkgIndex`) is DROPPED,
+  not respelled; the entity-less whole-kind coordinate (e.g.
+  `sm.dorc.PkgIndex@fresh`) IS the sanctioned nullary spelling, and binds require
+  the `= value` tail with no exceptions. Rationale: a bind types a VALUE as an
+  entity (`281` §8); a singleton kind has no value to type — the coordinate names
+  it directly, and the bound name was already unused by the marks. Corpus respell
+  (pkgindex.oracle.sh + 5 e2e cases + test literals) rides CP-D.
+
+## §2e — Makework lane LANDED + FOLDED (2026-07-19; branch `ai/r28-makework` @ `bb176ba`, merged `3517689`)
+
+- ANALYZER-NEEDS union: 277-slug exact union of both lineages; two two-sided rows
+  (header ¶s kept both, chronological; `an-verdict-function` resolved to
+  de22017's strictly-subsuming text). Conductor own-hand structural verification
+  passed (both refresh ¶s · section P · aid rows · slug sentinels). Human reviews
+  at round fold.
+- Quarantine restock, with two PREMISE CORRECTIONS now authoritative: the
+  quarantine lives at `Research/quarantine-DO-NOT-READ/` (moved by human commit
+  `f8d8add`; the old `notes/`-nested path is empty), and the 280-report series
+  lives there renamed `27X{a..e}` (not 279-renamed). 15 acks · 16 rescues · 0
+  uncertain; two `-recovered` suffixed files preserve divergent authoring passes;
+  nothing overwritten. Human follow-ups: bucket the flat-rescued 279/280 material
+  into a subdir if preferred; the `24Ka`/`24Kb`/xcheck branches are now fully
+  redundant with quarantine copies and safe to retire at leisure.
+
 ## §3 — Lane map and state (update on every change)
 
 | lane | branch | shape | state |
