@@ -556,6 +556,9 @@ pub fn build_report(inputs: &Inputs<'_>) -> Report {
         &BTreeMap::new(),
         &vouches,
         &connected,
+        // No probe-origin witnesses in the coverage dashboard (C6): the Witness is EXEMPT
+        // output-only, so an empty map only omits the measured origin.
+        &BTreeMap::new(),
         observe,
         &mut arena,
     );

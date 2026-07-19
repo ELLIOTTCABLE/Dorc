@@ -172,6 +172,7 @@ pub fn run_kernel(declared: &DeclaredScenario, s0: &Host, flag_on: bool, i: &mut
         &fact_backings,
         &vouches,
         &connected,
+        &std::collections::BTreeMap::new(), // no probe-origin witnesses (C6: Witness is EXEMPT)
         |f| {
             if probe.checks_fact(f) {
                 s0.observe(f)

@@ -90,19 +90,24 @@ pub enum OriginKind {
     /// NO stamp (the lift runs in the pure analysis kernel — `inv-determinism`, no clock).
     OracleClaim,
     /// A host probe-result's origin (the `loc-probe` tier): a probed observable binding to its
-    /// site. Carries a [`ProbeStamp`] — the iteration-nonce the whylog orders replays by (`27V` §2).
-    /// The stamp is INJECTED from the cli/hostsim edge (`inv-determinism`: the kernel never mints a
-    /// `ProbeResult`); distinct probe events carry distinct stamps, so hash-consing keeps them as
-    /// distinct nodes (two bindings are two events — pinned by a test below).
+    /// site (C6, `27V` Lane A). Carries a [`ProbeStamp`] — the record-stream ordinal the whylog
+    /// orders replays by (`27V` §2). Minted at the cli edge from a received probe record
+    /// (`facts_from_sites`/`probe_origins`), then attached to the licensing fact's `Witness` so the
+    /// why-chain can tie a disposition to the exact record that measured it. The stamp is INJECTED
+    /// from the cli/hostsim edge (`inv-determinism`: the kernel never mints a `ProbeResult`);
+    /// distinct probe events carry distinct stamps, so hash-consing keeps them as distinct nodes
+    /// (two bindings are two events — pinned by a test below).
     ProbeResult(ProbeStamp),
 }
 
-/// The iteration-nonce riding a [`OriginKind::ProbeResult`] (`27V` §1/§2): orders the whylog's
-/// replay of probe events. A `Copy` newtype so [`OriginKind`] stays `Copy`. EXEMPT-plane by
-/// construction: a [`ProvId`] is already `!Ord` (the WELD), so no decision can order by this stamp;
-/// it is display/replay-only. INJECTED at the cli/hostsim edge — the analyzer kernel is pure
-/// (`inv-determinism`: no clock/counter in the kernel; the edge supplies a monotonic nonce, seeded
-/// and deterministic under `hostsim`).
+/// The record-stream ORDINAL riding a [`OriginKind::ProbeResult`] (`27V` §1/§2 · C6): the position
+/// of a received probe record in the deframed results stream, used to order the whylog's replay of
+/// probe events. A `Copy` newtype so [`OriginKind`] stays `Copy`. EXEMPT-plane by construction: a
+/// [`ProvId`] is already `!Ord` (the WELD), so no decision can order by this stamp; it is
+/// display/replay-only. A deterministic ordinal, NOT a clock (`inv-determinism`: no wall-clock or
+/// RNG in the kernel; the ordinal is a pure function of arrival position, injected at the cli edge
+/// and identical under `hostsim` replay). Distinct records carry distinct ordinals, so two
+/// bindings at one site stay two events.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct ProbeStamp(pub u64);
 

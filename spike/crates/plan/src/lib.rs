@@ -2642,6 +2642,9 @@ pub fn build_plan(
         &BTreeMap::new(),
         vouches,
         &ConnectedPipes::default(),
+        // No probe-origin witnesses in this flag-off/kill-unaware entry (tests + hostsim): the
+        // Witness is EXEMPT output-only, so an empty map only omits the measured origin (C6).
+        &BTreeMap::new(),
         observe,
         arena,
     )
@@ -2688,6 +2691,7 @@ pub fn build_plan_walled(
     fact_backings: &BTreeMap<FactKey, FactBacking>,
     vouches: &Vouches,
     connected: &ConnectedPipes,
+    probe_origins: &BTreeMap<FactKey, dorc_core::ProvId>,
     observe: impl Fn(FactKey) -> Observable,
     arena: &mut dorc_core::ProvArena,
 ) -> Plan {
@@ -2783,19 +2787,23 @@ pub fn build_plan_walled(
             }
         };
         // arch-1 witness (`vp-17`/`vp-18`): a licensed `Replace` records its FULL granted
-        // witness — the establish site's `BookSource` origin — uncapped (the license tier).
-        // Pure OUTPUT provenance attached AFTER the mint (the WELD): the origin is the site
-        // the license already keys on, so it cannot influence the decision; it is EXEMPT
-        // (`Exempt::ReceiptId`) and the `erasability` gate proves it perturbs nothing.
+        // witness — the establish site's `BookSource` origin, PLUS (C6) the `ProbeResult` origin
+        // of the record that measured its fact converged — uncapped (the license tier). Pure
+        // OUTPUT provenance attached AFTER the mint (the WELD): the origins are sites the license
+        // already keys on, so they cannot influence the decision; they are EXEMPT
+        // (`Exempt::ReceiptId`) and the `erasability` gate proves they perturb nothing.
         if let Disposition::Replace(license, stand_in) = disposition {
-            let origin = arena.leaf(
+            let book = arena.leaf(
                 dorc_core::OriginKind::BookSource,
                 Some(ast.node(ast_id).span),
             );
-            disposition = Disposition::Replace(
-                license.with_witness(dorc_core::Witness::of(vec![origin])),
-                stand_in,
-            );
+            // C6: the measured origin ties the elision to its record; absent ⇒ book origin only.
+            let origins = match probe_origins.get(&license.fact()) {
+                Some(&measured) => vec![book, measured],
+                None => vec![book],
+            };
+            let license = license.with_witness(dorc_core::Witness::of(origins));
+            disposition = Disposition::Replace(license, stand_in);
         }
         // Wall-bearing = an establish-bearing class OR a flagged kill (R3 / 24A §3): a running
         // kill mutates but classifies `MustRun`, invisible to `class_is_establish_bearing`, so
@@ -5476,6 +5484,7 @@ apt_get__predict() {
             &BTreeMap::new(),
             &vouch_all(&classes),
             &ConnectedPipes::default(),
+            &BTreeMap::new(),
             observe,
             &mut arena,
         );
@@ -5620,6 +5629,7 @@ apt_get__predict() {
             &BTreeMap::new(),
             &vouch_all(&classes),
             &ConnectedPipes::default(),
+            &BTreeMap::new(),
             observe,
             &mut arena,
         )
@@ -5715,6 +5725,7 @@ apt_get__predict() {
             &BTreeMap::new(),
             &vouch_all(&classes),
             &ConnectedPipes::default(),
+            &BTreeMap::new(),
             observe,
             &mut arena,
         )

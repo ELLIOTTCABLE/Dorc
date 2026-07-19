@@ -1345,6 +1345,10 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
     // VALID Query-class site (the guard's own rc); an establish site's rc is the PROBE
     // command's (dpkg-query's), NOT the mutator's, so it feeds the fold NOTHING.
     let (by_fact, merge_evidence) = facts_from_sites(&probe, &results);
+    // C6: mint the probe-result origins (fact → receipt) so a licensed elision's witness ties to
+    // the record that measured it. EXEMPT-plane (the digest omits the witness), so this perturbs no
+    // decision — the `erasability` gate proves it.
+    let probe_origins = probe_origins(&probe, &results, &mut arena);
 
     // The survival tier (Stage 2 / rul24-mode-gate, TC-1): footprints are lifted ONLY under
     // `--trust-footprints` — off ⇒ `None` ⇒ the honest Stage-1 total wall, the data never exists.
@@ -1418,6 +1422,7 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
         &fact_backings,
         &vouches,
         &connected,
+        &probe_origins,
         |f| {
             by_fact
                 .get(&f)
@@ -3768,6 +3773,43 @@ fn facts_from_sites(
     (by_fact, collapse_evidence)
 }
 
+/// C6 (`27V` Lane A · `OriginKind::ProbeResult`): mint one probe-result origin per received record
+/// and key it by the fact it establishes, so [`dorc_plan::build_plan_walled`] can attach it to a
+/// licensing disposition's `Witness` — the why-chain's tie from "why THIS elision" back to the
+/// exact record that measured it. The stamp is the record's stream ordinal (deterministic, no
+/// clock — `inv-determinism`). A fact backed by two records JOINS their origins (two records are
+/// two events). Runs at the cli edge where the arena lives (`io-at-edges-only`); the [`Observable`]
+/// stays receipt-clean (the tc-c6-scope ruling: the receipt rides the record, not the value).
+///
+/// The origin's source SPAN is `None` at v1 — the fact-keying IS the replay tie; attaching the
+/// site's book span for display ("measured at line N") is a refinement deferred to the span
+/// dispatch / d4 render (churn-avoidance-disclosure: a spike scope-cut, not a silent omission).
+fn probe_origins(
+    probe: &dorc_plan::ProbePlan,
+    results: &SiteResults,
+    arena: &mut ProvArena,
+) -> BTreeMap<dorc_core::FactKey, dorc_core::ProvId> {
+    let mut origins: BTreeMap<dorc_core::FactKey, dorc_core::ProvId> = BTreeMap::new();
+    for check in &probe.checks {
+        let Some(record) = results.records.get(&RecordKey {
+            site: check.site,
+            member: check.member,
+        }) else {
+            continue;
+        };
+        let origin = arena.leaf(
+            dorc_core::OriginKind::ProbeResult(dorc_core::ProbeStamp(record.ordinal)),
+            None,
+        );
+        let merged = match origins.get(&check.fact) {
+            Some(&prior) => arena.join(None, &[prior, origin]).unwrap_or(origin),
+            None => origin,
+        };
+        origins.insert(check.fact, merged);
+    }
+    origins
+}
+
 /// Build the `Measured`-tier fact-merge evidence a probe-result disagreement narrates (C4;
 /// `27V` Lane A, `AID-NEEDS:law-collapse-mints-evidence`): a host self-contradiction at `cell`,
 /// carrying the participating establisher sites as operands (`minting_line`/`shown` filled by d3).
@@ -3896,6 +3938,11 @@ struct SiteRecord {
     rc: Rc,
     stdout: Predicted<OutBytes>,
     stderr: Predicted<OutBytes>,
+    /// The record-stream ORDINAL (C6, `27V` §2): this record's arrival position in the deframed
+    /// stream, minted into the [`dorc_core::OriginKind::ProbeResult`] stamp so the whylog can
+    /// order/replay probe events deterministically (no clock — `inv-determinism`). A meet keeps
+    /// the first-seen ordinal.
+    ordinal: u64,
     /// A DUPLICATE-MEET marker (`262` §2 / `26A` stop-1): set when two records for one
     /// (site, member) key DISAGREED and were met toward ⊤. The §1 tie-break law forbids
     /// first-wins/last-wins; a conflict is can't-tell. `verdict` is already `Unknown` when
@@ -3973,11 +4020,14 @@ fn parse_results(records: &[String], framed: bool, interner: &mut Interner) -> S
         framed,
         ..SiteResults::default()
     };
-    for line in records {
+    for (idx, line) in records.iter().enumerate() {
         let line = line.as_str();
         let Some((tag, rest)) = line.split_once(' ') else {
             continue; // a bare tag with no body ⇒ drop (⇒ Unknown ⇒ run)
         };
+        // C6: the record-stream ordinal is the arrival position in the deframed stream — a pure,
+        // deterministic function of position (no clock), carried onto the `site` record's stamp.
+        let ordinal = idx as u64;
         match tag {
             // 24E §5: `deriv <leafid> coord=<coord>` — `coord=` is the FREE-CONTENT field
             // (`262` §2 last-to-token): after deframing it runs to end-of-line, whitespace
@@ -4046,7 +4096,7 @@ fn parse_results(records: &[String], framed: bool, interner: &mut Interner) -> S
                     }
                 }
             }
-            "site" => parse_site_record(rest, &mut out, interner),
+            "site" => parse_site_record(rest, ordinal, &mut out, interner),
             _ => {} // unrecognized inner tag ⇒ drop (kFAIL-perform: no verdict ⇒ run)
         }
     }
@@ -4076,7 +4126,7 @@ fn split_key<'a>(body: &'a str, key: &str) -> Option<(&'a str, &'a str)> {
 /// stays single-token (stderr handling is out of spike scope — churn-avoidance-disclosure).
 /// Unknown keys BEFORE the free-content field are ignored (additive-keys, `24Kc`). A duplicate
 /// (site, member) record MERGES BY MEET, never last-wins (`262` §1 tie-break law).
-fn parse_site_record(rest: &str, out: &mut SiteResults, interner: &mut Interner) {
+fn parse_site_record(rest: &str, ordinal: u64, out: &mut SiteResults, interner: &mut Interner) {
     // `stdout=` is the trailing free-content field; everything from it runs to EOL.
     let (head, stdout) = match split_key(rest, "stdout=") {
         Some((h, v)) => (h, Predicted::Value(OutBytes(interner.intern(v)))),
@@ -4104,6 +4154,7 @@ fn parse_site_record(rest: &str, out: &mut SiteResults, interner: &mut Interner)
         stdout,
         stderr,
         conflicted: false,
+        ordinal,
     };
     out.records
         .entry(key)
@@ -4136,6 +4187,7 @@ fn meet_record(a: SiteRecord, b: SiteRecord) -> SiteRecord {
             Predicted::Top
         },
         conflicted: a.conflicted || b.conflicted || rc_conflict || a.verdict != b.verdict,
+        ordinal: a.ordinal, // keep the first-seen ordinal (C6): the meet is order-independent
     }
 }
 
@@ -5358,6 +5410,32 @@ mod tests {
                 .iter()
                 .any(|e| matches!(e.kind(), CollapseKind::SubstitutionRefusal { .. })),
             "a valid Query substitutes its rc ⇒ no refusal"
+        );
+    }
+
+    #[test]
+    fn probe_origins_keys_measured_receipt_by_fact_with_stream_ordinal() {
+        // C6 (`27V` Lane A · `OriginKind::ProbeResult`): probe_origins mints one measured origin
+        // per received record, keyed by the fact it establishes, carrying the record's STREAM
+        // ORDINAL as its stamp (deterministic, no clock). The receipt resolves back through the
+        // arena — the whylog's replay tie from a disposition to the record that measured it.
+        let mut i = Interner::default();
+        let fact = pkg(&mut i, "nginx");
+        let probe = probe1(fact, ProbeSiteKind::Establish);
+        let results = parse_str("site 0 effect=holds rc=0\n", &mut i);
+        let mut arena = ProvArena::new();
+        let origins = probe_origins(&probe, &results, &mut arena);
+        let id = origins
+            .get(&fact)
+            .copied()
+            .expect("the establish fact carries a probe-result origin");
+        let node = arena
+            .node(id)
+            .expect("the measured origin resolves in the arena");
+        assert_eq!(
+            node.kind,
+            dorc_core::OriginKind::ProbeResult(dorc_core::ProbeStamp(0)),
+            "the ProbeResult stamp is the record's stream ordinal (site 0 = the 0th deframed record)"
         );
     }
 

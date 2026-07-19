@@ -1480,6 +1480,7 @@ grep__predict() {
                     &BTreeMap::new(),
                     &dorc_plan::Vouches::new(),
                     &connected,
+                    &BTreeMap::new(), // no probe-origin witnesses in DST (C6: Witness is EXEMPT)
                     observe,
                     &mut dorc_core::ProvArena::new(),
                 )
