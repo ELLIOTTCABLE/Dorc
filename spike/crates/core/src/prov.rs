@@ -85,13 +85,26 @@ pub enum OriginKind {
     /// A value formed by `join`ing ≥2 inbound origins at a control-flow merge (`vp-6`). The
     /// node's parents are the joined origins, k-capped (see [`ProvArena::join`]).
     Join,
-    /// An oracle-declared fact's origin (the `loc-oracle`/claim tier) — reserved for the
-    /// claim-vs-receipt trust axis (`225` §0 Carata tail); minted as the effect-map grows.
+    /// An oracle-declared fact's origin (the `loc-oracle`/claim tier — `225` §0 Carata tail): a
+    /// `predict` printf/return CLAIM lifted into the fact plane. Minted at the predict-lift; carries
+    /// NO stamp (the lift runs in the pure analysis kernel — `inv-determinism`, no clock).
     OracleClaim,
-    /// A host probe-result's origin (the `loc-probe` tier) — reserved for when a probe-sourced
-    /// observable carries provenance into the why-lens.
-    ProbeResult,
+    /// A host probe-result's origin (the `loc-probe` tier): a probed observable binding to its
+    /// site. Carries a [`ProbeStamp`] — the iteration-nonce the whylog orders replays by (`27V` §2).
+    /// The stamp is INJECTED from the cli/hostsim edge (`inv-determinism`: the kernel never mints a
+    /// `ProbeResult`); distinct probe events carry distinct stamps, so hash-consing keeps them as
+    /// distinct nodes (two bindings are two events — pinned by a test below).
+    ProbeResult(ProbeStamp),
 }
+
+/// The iteration-nonce riding a [`OriginKind::ProbeResult`] (`27V` §1/§2): orders the whylog's
+/// replay of probe events. A `Copy` newtype so [`OriginKind`] stays `Copy`. EXEMPT-plane by
+/// construction: a [`ProvId`] is already `!Ord` (the WELD), so no decision can order by this stamp;
+/// it is display/replay-only. INJECTED at the cli/hostsim edge — the analyzer kernel is pure
+/// (`inv-determinism`: no clock/counter in the kernel; the edge supplies a monotonic nonce, seeded
+/// and deterministic under `hostsim`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct ProbeStamp(pub u64);
 
 /// The bounded fan-in of an [`OriginNode`] (`notes/220` §6: a bounded parent list). A join's
 /// inbound origins past the cap are dropped with a [`truncated`] marker
@@ -538,13 +551,33 @@ mod tests {
     #[test]
     fn node_reads_back_and_unknown_id_is_none() {
         let mut a = ProvArena::new();
-        let id = a.leaf(OriginKind::ProbeResult, Some(span(5, 9)));
+        let id = a.leaf(OriginKind::ProbeResult(ProbeStamp(0)), Some(span(5, 9)));
         let node = a.node(id).expect("read back");
-        assert_eq!(node.kind, OriginKind::ProbeResult);
+        assert_eq!(node.kind, OriginKind::ProbeResult(ProbeStamp(0)));
         assert_eq!(node.site, Some(span(5, 9)));
         // An id whose index exceeds the arena resolves to None (defensive; never panics).
         let bogus = ProvId(NonZeroU32::new(999).unwrap());
         assert_eq!(a.node(bogus), None);
+    }
+
+    #[test]
+    fn distinct_probe_events_mint_distinct_nodes() {
+        // 27V tc-probestamp: two probe bindings at the SAME site are two EVENTS — the injected
+        // iteration-nonce makes their origins structurally distinct, so hash-consing does NOT
+        // collapse them (correct: the whylog must be able to order/replay each event). Contrast a
+        // TopCause at one site, which SHOULD dedup (a give-up is re-derived, not re-eventful).
+        let mut a = ProvArena::new();
+        let first = a.leaf(OriginKind::ProbeResult(ProbeStamp(1)), Some(span(5, 9)));
+        let second = a.leaf(OriginKind::ProbeResult(ProbeStamp(2)), Some(span(5, 9)));
+        assert_ne!(
+            first, second,
+            "distinct stamps ⇒ distinct nodes (two events)"
+        );
+        assert_eq!(a.len(), 2, "the nonce prevents dedup of distinct events");
+        // Same stamp at the same site DOES hash-cons (a genuine re-derivation of one event).
+        let again = a.leaf(OriginKind::ProbeResult(ProbeStamp(1)), Some(span(5, 9)));
+        assert_eq!(first, again, "identical stamp+site hash-cons to one id");
+        assert_eq!(a.len(), 2, "no growth on a re-derived identical event");
     }
 
     #[test]
