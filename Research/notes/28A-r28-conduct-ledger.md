@@ -24,6 +24,26 @@ tips as folds land.
 - Side-quest (human-typed mid-session): an Opus janitor sweep of ancient
   worktrees/branches — guarded, merge-checked, dropped-work surfaced never deleted.
 
+## §0b — Directives typed 2026-07-19 (mid-round, second sitting)
+
+- **DocID naming**: no semantic/lettered suffixes; serial claim-the-next
+  (`283`, `284`, …) across the round's shared ID space. The already-minted
+  `28A`/`28B`/`28C` stand GRANDFATHERED (their `28A:rul-*` slugs are live in
+  builder contexts and commits; renaming mid-flight breaks references; human
+  graded the nit not-important). Next free ID: **283**. Propagate to every
+  future brief.
+- **ANALYZER-NEEDS union-merge ACKED**, subagent-driven (human hands-off):
+  lane `ai/r28-analyzer-needs-merge`, 3-way against
+  `merge-base(ai/main, de22017)`, faithful union of both refresh lineages, NO
+  spelling modernization (the docs pass owns spelling sync post-respell).
+- **Quarantine restock**: the full 24K*/279* ledgers are believed to live in
+  `Research/notes/quarantine-DO-NOT-READ/` (the 280-series reports were renamed
+  279-something there, per human recollection). Opus builders ARE welcome in the
+  quarantine (human-typed license) but must report upward ONLY ack/nacks —
+  filenames, existence, provenance; never content. Lane
+  `ai/r28-quarantine-restock`: verify existence, rescue any missing from the
+  surviving branches (janitor findings A/B/F), never overwrite quarantine files.
+
 ## §1 — `28A:rul-errorloom-product-cut` (conductor ruling; amends `280` §1 scope)
 
 The charter's crate lane = `282` phases 1+3 (transport + container/runner). Re-cut by
