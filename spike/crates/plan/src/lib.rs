@@ -40,7 +40,7 @@ use dorc_analysis::effect::{FactKey, InlineSite, SkipClass};
 use dorc_analysis::lattice::{May, Powerset};
 use dorc_analysis::value::{ValueFlow, ValueOf};
 use dorc_core::diag::Diag;
-use dorc_core::evidence::{ChannelCoverage, DemoteTag};
+use dorc_core::evidence::{ChannelCoverage, DemoteTag, MintSpan};
 use dorc_core::{
     AstId, ByVouch, Carrier, Channel, CollapseEvidence, CollapseKind, Dialect, EntityRef,
     FactBacking, Grade, Interner, KindId, Observable, Predicted, Rc, Rung, Symbol, TrustTier,
@@ -916,11 +916,16 @@ pub fn build_vouches(
     classes: &[(CfgNodeId, SkipClass)],
     value: &ValueFlow,
     interner: &mut Interner,
-) -> Carrier<Vouches> {
+) -> (Carrier<Vouches>, Vec<CollapseEvidence>) {
     use dorc_oracle::predict::{map_provider_name, strip_verdict};
-    use dorc_oracle::verdict::{VerdictResolution, VerdictSet, check_commands, evaluate_verdict};
+    use dorc_oracle::verdict::{
+        VerdictResolution, VerdictSet, check_commands, decline_gate, evaluate_verdict,
+    };
 
     let mut diags = Vec::new();
+    // C5 aid plane (`27V` Lane A): the decision-inert VerdictDecline evidence minted beside the
+    // no-vouch-⇒-run collapse (`two-plane-aid-law`; steers nothing). Threaded to the why-lens seam.
+    let mut collapse_evidence: Vec<CollapseEvidence> = Vec::new();
     let verdict_sets: Vec<VerdictSet> = oracle_srcs
         .iter()
         .map(|src| {
@@ -980,6 +985,18 @@ pub fn build_vouches(
             evaluate_verdict(verdict, &op_refs),
             VerdictResolution::Vouched
         ) {
+            // Narrate a genuine DECLINE (not a ⊤): name the gate + the authoring funcdef span (c7
+            // refines to the precise arm; `authored_reason` is d3-populated).
+            if let Some(gate) = decline_gate(verdict, &op_refs) {
+                collapse_evidence.push(CollapseEvidence::new(
+                    TrustTier::Vouched,
+                    CollapseKind::VerdictDecline {
+                        arm: MintSpan(verdict.name_span),
+                        gate,
+                        authored_reason: None,
+                    },
+                ));
+            }
             continue;
         }
 
@@ -998,7 +1015,7 @@ pub fn build_vouches(
         let vouch = VerdictVouch::new(fn_name, preamble, invocation, kind_label, check_cmds);
         vouches.insert(*node, ByVouch::vouched(vouch, Rung::Both));
     }
-    Carrier::new(vouches, diags)
+    (Carrier::new(vouches, diags), collapse_evidence)
 }
 
 /// Mint the elide/guard VOUCHES for wrapped-ENTERING BOOK sites (`27C` §3 / lane-integration

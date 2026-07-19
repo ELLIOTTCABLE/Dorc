@@ -539,7 +539,9 @@ pub fn build_report(inputs: &Inputs<'_>) -> Report {
     // dashboard must build them (the SAME `dorc_plan::build_vouches` the cli drives) or it would
     // under-report elision vs the shipped tool. Lift diags are dropped (the dashboard is a readout,
     // not gate-3). Kill-aware, survival-OFF (`None`): dashboard parity with the honest baseline.
-    let vouches = dorc_plan::build_vouches(inputs.oracles, &classes, &value, &mut interner).value;
+    let vouches = dorc_plan::build_vouches(inputs.oracles, &classes, &value, &mut interner)
+        .0
+        .value;
     let plan = dorc_plan::build_plan_walled(
         inputs.book,
         &parsed.value,

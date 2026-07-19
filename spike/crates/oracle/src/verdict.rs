@@ -58,6 +58,7 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
+use dorc_core::evidence::DeclineGate;
 use dorc_core::{Carrier, Interner, ProviderId, Rc, Symbol};
 use dorc_syntax::sem::UnsetPolicy;
 
@@ -185,6 +186,7 @@ pub fn evaluate_verdict(verdict: &Predict, argv: &[&str]) -> VerdictResolution {
         positionals: argv.iter().map(|s| (*s).to_owned()).collect(),
         vars: BTreeMap::new(),
         reached_command: false,
+        reached_inert: false,
         budget,
         steps: 0,
     };
@@ -218,6 +220,37 @@ fn classify_return(code: Rc) -> VerdictResolution {
     }
 }
 
+/// The [`DeclineGate`] a verdict trace decline took (C5; `27V` Lane A / `rul-vouch-is-verdict-
+/// authoring`): `Some(gate)` for a [`VerdictResolution::Declined`], `None` for a `Vouched` or ⊤ one.
+/// Names the GATE the decline reached — an explicit non-converged `return`, a reached arm that ran
+/// no check, or an inert fixed-rc builtin — never the license (decision-inert; the rc-partition
+/// stays a flat sink, the license plane never reads a gate). Re-traces (analysis-side, cheap) so
+/// [`evaluate_verdict`]'s hot decision path stays byte-untouched (`inv-determinism`).
+#[must_use]
+pub fn decline_gate(verdict: &Predict, argv: &[&str]) -> Option<DeclineGate> {
+    if argv.is_empty() {
+        return None; // empty argv ⇒ ⊤ (not a decline)
+    }
+    let budget = argv.len().saturating_mul(4).saturating_add(BUDGET_CONSTANT);
+    let mut tr = Tracer {
+        positionals: argv.iter().map(|s| (*s).to_owned()).collect(),
+        vars: BTreeMap::new(),
+        reached_command: false,
+        reached_inert: false,
+        budget,
+        steps: 0,
+    };
+    match tr.run_block(&verdict.body) {
+        Flow::Normal if tr.reached_command => None, // Vouched
+        Flow::Normal if tr.reached_inert => Some(DeclineGate::InertBuiltin),
+        Flow::Normal => Some(DeclineGate::Unreached),
+        // An explicit `return N`: `return 0` vouches, everything else declines through the gate.
+        Flow::Returned(code) if code.0 == 0 => None,
+        Flow::Returned(_) | Flow::Declined => Some(DeclineGate::Return),
+        Flow::Top(_) => None, // ⊤, not a decline
+    }
+}
+
 /// Budget = `4 * argv.len() + BUDGET_CONSTANT` — mirrors the predict/touches evaluators.
 const BUDGET_CONSTANT: usize = 32;
 
@@ -235,6 +268,10 @@ struct Tracer {
     /// wrote a check for). An argparse-only path (`while`/`shift`/assign, an unmatched `case`)
     /// never sets it ⇒ [`VerdictResolution::Declined`].
     reached_command: bool,
+    /// Set true when a reached path ran an inert fixed-rc builtin (`false`/`:`/`true`) but no real
+    /// check — the `DeclineGate::InertBuiltin` signal for the aid plane ([`decline_gate`]). Display
+    /// tier only; never read by [`evaluate_verdict`]'s decision (an inert path declines either way).
+    reached_inert: bool,
     budget: usize,
     steps: usize,
 }
@@ -383,7 +420,10 @@ impl Tracer {
             // `return N` exits the function with the author's explicit verdict code (sense-read).
             Some(Decline::Return) => self.run_return(cmd),
             // `false`/`:`/`true` ran but measured nothing ⇒ no vouch; the path continues.
-            Some(Decline::Inert) => Flow::Normal,
+            Some(Decline::Inert) => {
+                self.reached_inert = true;
+                Flow::Normal
+            }
             // A real check ran on this path ⇒ the vouch signal (hz-refusepath: only here).
             None => {
                 self.reached_command = true;
@@ -516,6 +556,49 @@ mod tests {
         let provider = set.value.providers().next().expect("one verdict funcdef");
         let verdict = set.value.get(provider).expect("the verdict funcdef");
         evaluate_verdict(verdict, argv)
+    }
+
+    /// Lift the sole verdict funcdef and classify its decline gate over `argv`.
+    fn gate(src: &str, argv: &[&str]) -> Option<DeclineGate> {
+        let mut i = Interner::default();
+        let set = VerdictSet::lift(&mut i, src);
+        assert!(set.diags.is_empty(), "clean lift: {:?}", set.diags);
+        let provider = set.value.providers().next().expect("one verdict funcdef");
+        let verdict = set.value.get(provider).expect("the verdict funcdef");
+        decline_gate(verdict, argv)
+    }
+
+    #[test]
+    fn decline_gate_names_the_reached_decline_shape() {
+        // C5 (`AID-NEEDS:law-collapse-mints-evidence`; `anti-masking-tests`): the decline classifier
+        // NAMES the gate a Declined trace reached, DERIVED from the reached path — never a hand-set
+        // tag. A Vouched trace has no gate.
+        assert_eq!(
+            gate("x__is_converged() { return 2; }\n", &["a"]),
+            Some(DeclineGate::Return),
+            "a non-converged explicit return declines through the Return gate"
+        );
+        assert_eq!(
+            gate(
+                "x__is_converged() { case $1 in install) dpkg-query -W \"$2\" ;; esac }\n",
+                &["remove"],
+            ),
+            Some(DeclineGate::Unreached),
+            "an unmatched case reaches no check ⇒ the Unreached gate"
+        );
+        assert_eq!(
+            gate("x__is_converged() { false; }\n", &["a"]),
+            Some(DeclineGate::InertBuiltin),
+            "an inert fixed-rc builtin runs no check ⇒ the InertBuiltin gate"
+        );
+        assert_eq!(
+            gate(
+                "x__is_converged() { case $1 in install) dpkg-query -W \"$2\" ;; esac }\n",
+                &["install", "nginx"],
+            ),
+            None,
+            "a reached authored check vouches ⇒ no decline gate"
+        );
     }
 
     // Mirrors the real apt argparse: flag-strip before and after the verb, bind the verb, and

@@ -1123,7 +1123,8 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
     // ALWAYS-ON (guards are the un-flagged baseline; rul24-mode-gate governs only the survival
     // tier, NOT this). A vouched past-wall establish ships its read-only probe (the witness needs
     // the verdict) and, converged, mints a `Disposition::Guard`.
-    let mut vouches = build_vouches(&oracle_refs, &classes, &value, &mut interner, advisory);
+    let (mut vouches, decline_evidence) =
+        build_vouches(&oracle_refs, &classes, &value, &mut interner, advisory);
     // `27N` — wrapped-entering sites vouch on the INNER verdict over the peeled argv (argv[0] is the
     // wrapper word, invisible to `build_vouches`). Disjoint nodes ⇒ a plain merge.
     vouches.extend(dorc_plan::build_wrapped_vouches(
@@ -1464,12 +1465,13 @@ fn run(args: &Args) -> Result<RunOutcome, String> {
     // lanes are load-bearing correctness disclosures gate-7 pins). `why` mode SKIPS them — its
     // stdout report (below) is the detail surface, so a stderr echo would just double it.
     if advisory && mode != Mode::Why {
-        // The C3 static-merge + C4 probe-merge + C5 survival wall/demotion collapse-evidence,
-        // unioned onto the why-lens seam (d4 fills the render; all decision-inert —
-        // `two-plane-aid-law`).
+        // The C3 static-merge + C4 probe-merge + C5 (verdict decline · substitution refusal ·
+        // survival wall/demotion) collapse-evidence, unioned onto the why-lens seam (d4 fills the
+        // render; all decision-inert — `two-plane-aid-law`).
         let collapse_evidence: Vec<CollapseEvidence> = classify_evidence
             .iter()
             .cloned()
+            .chain(decline_evidence.iter().cloned())
             .chain(merge_evidence.iter().cloned())
             .chain(plan.survival_report.collapse_evidence().iter().cloned())
             .collect();
@@ -2684,14 +2686,16 @@ fn build_vouches(
     value: &dorc_analysis::value::ValueFlow,
     interner: &mut Interner,
     advisory: bool,
-) -> dorc_plan::Vouches {
+) -> (dorc_plan::Vouches, Vec<CollapseEvidence>) {
     // The composition lives in `dorc_plan::build_vouches` (the ONE home — the sweep/coverage DSTs
     // share it). This edge only ROUTES the lift diagnostics: surfaced AS-IS (inv-top-reject — the
     // tc-verdict-return softening is reverted, find-return-vouches 24C), so a genuinely
-    // out-of-dialect verdict body fails gate-3's error-floor rather than degrading silently.
-    let lifted = dorc_plan::build_vouches(oracle_refs, classes, value, interner);
+    // out-of-dialect verdict body fails gate-3's error-floor rather than degrading silently. The C5
+    // decline-evidence rides out to the why-lens seam.
+    let (lifted, decline_evidence) =
+        dorc_plan::build_vouches(oracle_refs, classes, value, interner);
     report_at(advisory, "verdict", None, &lifted.diags);
-    lifted.value
+    (lifted.value, decline_evidence)
 }
 
 /// gate-5 / cm-2 readout: per command site, emit `argv <leafid> <disposition> <word|TOP
