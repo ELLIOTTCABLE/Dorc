@@ -19,11 +19,16 @@
 
 use std::fmt::Debug;
 
+mod container;
 mod diff;
 mod promote;
 mod prose;
 mod span;
 
+pub use crate::container::{
+    Case, CaseError, Frontmatter, FrontmatterValue, REPLAY_SECTION, ReplayBlock, ReplaySection,
+    Section,
+};
 pub use crate::promote::{
     AttributedToken, ParamTables, ParamValues, PromoteOutcome, Refusal, RefusalClass, promote,
 };
@@ -39,5 +44,7 @@ pub trait ConsumerKey: Clone + Ord + Debug {}
 
 impl<T: Clone + Ord + Debug> ConsumerKey for T {}
 
+#[cfg(test)]
+mod container_tests;
 #[cfg(test)]
 mod tests;
