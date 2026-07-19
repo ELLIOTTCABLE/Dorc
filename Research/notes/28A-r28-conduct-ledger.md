@@ -253,6 +253,35 @@ to thread: iterator-combinator taste (clippy covers), crate-splitting
 + cargo-audit/miri (lint-table/CI churn = human's call at publication). The
 syntax lane gets none of this (dorc-internal conventions rule).
 
+## §2g — errorloom d2 landing + flag rulings + lane fold (conductor, 2026-07-19)
+
+d2 LANDED @ `37b26bd` (6 commits; 38 crate tests incl. the full toy-consumer loop;
+all six taste-addendum items done; budget 28/30). Lane FOLDED @ merge `8d84b01`,
+conductor own-hand verified: fresh build · 996 unit · e2e 97/97 · gates ok
+(`DRY=1 conduct-bless`). The crate is COMPLETE pending the human's LICENSE +
+publish flip. Flag rulings:
+
+- **`editable_text` as a 4th Consumer method: ACCEPTED** — which blocks of a
+  multi-replay case are prose-editable is consumer knowledge by construction
+  (`282:rul-multi-replay-per-case`: machine-format replays are whole-block
+  structural, never prose-diffed); errorloom cannot infer it. The `28A` §1 trait
+  shape is amended to four methods.
+- **Absolute-path hygiene gate scoped to temp-dir-leak: ACCEPTED** — refusing any
+  `/…` string would false-positive on legitimate transcript content (`/etc/…` in
+  rendered errors); the deterministic sandbox-leak check matches `282` §7's
+  intent. Broader path-policy, if wanted, is a Dorc-side case-lint later.
+- **Render-level fixpoint accepted as the GENERIC floor; RIDER minted for the
+  unify lane**: Dorc's CI gate must ALSO implement `282` §6's literal
+  promote→catalog-byte-identical check consumer-side (where the serializer
+  lives) — a render-invisible catalog metadata hand-edit is not caught at the
+  generic layer.
+- Toy-consumer in-process render split, and the skip-sans-git `SubprocessGit`
+  test (hermetic via `FakeGit`): accepted as reported.
+- **Emitter contract addition banked**: per-key ALL-OR-NOTHING instance
+  stamping (any stamped span for a key ⇒ every span of that key stamped, else
+  structural fallback) joins the two ruled emitter requirements for the unify
+  lane's phase-2 builder.
+
 ## §3 — Lane map and state (update on every change)
 
 | lane | branch | shape | state |
