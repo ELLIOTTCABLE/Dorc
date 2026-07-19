@@ -11,6 +11,32 @@ use std::ops::Range;
 
 use crate::prose::ParamName;
 
+/// An explicit occurrence discriminator for a field's render.
+///
+/// A field may render more than once in a transcript (`282` §5 "two instances
+/// of one template"). When a consumer stamps each render with an `InstanceId`,
+/// `promote` groups spans into instances by exact identity
+/// (`28A:rul-tagged-render-emits-instance-ids`); when absent, it falls back to
+/// the d1 structural inference (paragraph/adjacency heuristic). Opting in is
+/// per-key all-or-nothing: a key whose spans all carry an id is grouped exactly,
+/// otherwise the whole key falls back to structural.
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
+pub struct InstanceId(usize);
+
+impl InstanceId {
+    /// Wrap an occurrence index.
+    #[must_use]
+    pub fn new(index: usize) -> Self {
+        InstanceId(index)
+    }
+
+    /// The occurrence index.
+    #[must_use]
+    pub fn get(self) -> usize {
+        self.0
+    }
+}
+
 /// An arrangement region's display slug: render-owned structure (numbering,
 /// connectives, tier words, blank structure — `282` §4). Carried only so a
 /// refusal can name what structure was touched.
@@ -33,7 +59,11 @@ impl ArrangementSlug {
 /// The classification of one byte-run of a baseline render (`282` §4). `K` is the
 /// consumer-opaque field key (Dorc: `(code, field)`); errorloom groups and
 /// compares by it but never inspects it.
+///
+/// `#[non_exhaustive]`: schema growth adds region kinds (e.g. the `282` §8
+/// passthrough work), which must not be a breaking change for a published crate.
 #[derive(Clone, PartialEq, Eq, Debug)]
+#[non_exhaustive]
 pub enum Region<K> {
     /// The field's own prose words for paragraph `paragraph`. The ONLY editable
     /// class — everything else refuses.
@@ -42,6 +72,10 @@ pub enum Region<K> {
         key: K,
         /// Zero-based paragraph index within the field.
         paragraph: usize,
+        /// The occurrence this render belongs to, when the consumer stamps it
+        /// (`28A:rul-tagged-render-emits-instance-ids`); `None` ⇒ structural
+        /// inference groups the instances.
+        instance: Option<InstanceId>,
     },
     /// Interpolated payload for `param`; editing it refuses (data, not prose).
     ParamValue {
@@ -49,6 +83,8 @@ pub enum Region<K> {
         key: K,
         /// The hole this value fills.
         param: ParamName,
+        /// The occurrence this value belongs to (see `TemplateLiteral::instance`).
+        instance: Option<InstanceId>,
     },
     /// Passthrough foreign text riding a hole (`282:rul-passthrough-type-gated`):
     /// tainted bytes, never our prose. Editing it refuses.
@@ -65,9 +101,21 @@ pub enum Region<K> {
 
 impl<K> Region<K> {
     /// The field key this region belongs to, if any (template/param regions).
+    #[must_use]
     pub fn key(&self) -> Option<&K> {
         match self {
             Region::TemplateLiteral { key, .. } | Region::ParamValue { key, .. } => Some(key),
+            Region::ForeignText { .. } | Region::Arrangement { .. } => None,
+        }
+    }
+
+    /// The explicit occurrence id this region carries, if any.
+    #[must_use]
+    pub fn instance(&self) -> Option<InstanceId> {
+        match self {
+            Region::TemplateLiteral { instance, .. } | Region::ParamValue { instance, .. } => {
+                *instance
+            }
             Region::ForeignText { .. } | Region::Arrangement { .. } => None,
         }
     }
@@ -85,7 +133,10 @@ pub struct Span<K> {
 /// Why a [`TaggedRender`] failed to validate. The span map must be a gap-free
 /// cover of the render bytes so region lookup is total (a consumer bug, caught
 /// fail-fast — the `inv-top-reject` posture).
+///
+/// `#[non_exhaustive]`: new validation kinds must not break a published consumer.
 #[derive(Clone, PartialEq, Eq, Debug)]
+#[non_exhaustive]
 pub enum TaggedRenderError {
     /// Span `index` does not start where the previous span ended.
     NonContiguous {

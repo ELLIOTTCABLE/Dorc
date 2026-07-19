@@ -57,6 +57,7 @@ struct Fake {
     catalog: BTreeMap<Key, FieldTemplate>,
     params: BTreeMap<Key, BTreeMap<ParamName, Vec<Word>>>,
     order: Vec<Key>,
+    use_instances: bool,
 }
 
 fn push_chunk(text: &mut String, spans: &mut Vec<Span<Key>>, region: Region<Key>, content: &str) {
@@ -76,7 +77,13 @@ fn paragraph_chunks(
     paragraph: usize,
     para: &Paragraph,
     pmap: Option<&BTreeMap<ParamName, Vec<Word>>>,
+    inst: Option<InstanceId>,
 ) -> Vec<(Region<Key>, String)> {
+    let tl_region = |p: usize| Region::TemplateLiteral {
+        key,
+        paragraph: p,
+        instance: inst,
+    };
     let mut chunks: Vec<(Region<Key>, String)> = Vec::new();
     let mut words: Vec<String> = Vec::new();
     for frag in para.fragments() {
@@ -84,17 +91,22 @@ fn paragraph_chunks(
             Fragment::Word(w) => words.push(w.as_str().to_owned()),
             Fragment::Hole(name) => {
                 if !words.is_empty() {
-                    chunks.push((tl(key, paragraph), words.join(" ")));
+                    chunks.push((tl_region(paragraph), words.join(" ")));
                     words = Vec::new();
                 }
                 let value: Vec<Word> = pmap.and_then(|m| m.get(name)).cloned().unwrap_or_default();
                 let joined = value.iter().map(Word::as_str).collect::<Vec<_>>().join(" ");
-                chunks.push((pv_region(key, name.as_str()), joined));
+                let region = Region::ParamValue {
+                    key,
+                    param: name.clone(),
+                    instance: inst,
+                };
+                chunks.push((region, joined));
             }
         }
     }
     if !words.is_empty() {
-        chunks.push((tl(key, paragraph), words.join(" ")));
+        chunks.push((tl_region(paragraph), words.join(" ")));
     }
     chunks
 }
@@ -114,11 +126,12 @@ impl Fake {
                 continue;
             };
             let pmap = self.params.get(key);
+            let inst = self.use_instances.then(|| InstanceId::new(0));
             for (p, para) in ft.paragraphs().iter().enumerate() {
                 if p > 0 {
                     push_chunk(&mut text, &mut spans, arr("para-blank"), "\n\n");
                 }
-                let chunks = paragraph_chunks(*key, p, para, pmap);
+                let chunks = paragraph_chunks(*key, p, para, pmap, inst);
                 let last_idx = chunks.len().saturating_sub(1);
                 for (ci, (region, mut content)) in chunks.into_iter().enumerate() {
                     if ci != last_idx {
@@ -144,7 +157,7 @@ impl Fake {
     }
 }
 
-fn gen_fake(rng: &mut Rng) -> Fake {
+fn gen_fake(rng: &mut Rng, use_instances: bool) -> Fake {
     let num_fields = rng.range(1, 3);
     let mut order = Vec::new();
     let mut catalog = BTreeMap::new();
@@ -191,6 +204,7 @@ fn gen_fake(rng: &mut Rng) -> Fake {
         catalog,
         params,
         order,
+        use_instances,
     }
 }
 
@@ -241,9 +255,11 @@ fn serialize(tokens: &[Token]) -> String {
 
 #[test]
 fn edit_confined_to_one_template_region_round_trips() {
+    // Both modes (item 1): even seeds infer instances structurally (d1 fallback),
+    // odd seeds carry explicit `InstanceId`s (28A:rul-tagged-render-emits-instance-ids).
     for seed in 0..500u64 {
         let mut rng = Rng::new(seed);
-        let mut fake = gen_fake(&mut rng);
+        let mut fake = gen_fake(&mut rng, seed % 2 == 1);
         let baseline = fake.render(rng.next_u64());
 
         let template_spans: Vec<usize> = baseline
@@ -302,6 +318,32 @@ fn no_op_edit_reports_no_field_edits() {
     let baseline = build(vec![(tl(1, 0), "steady words here")]);
     let outcome = promote(&baseline, "steady words here", &ParamTables::new()).expect("no-op");
     assert!(outcome.is_empty());
+}
+
+#[test]
+fn explicit_instances_group_by_id() {
+    // The same field rendered twice, stamped with explicit instance ids
+    // (28A:rul-tagged-render-emits-instance-ids). A consistent edit to both
+    // instances collapses to one field edit; an inconsistent one refuses.
+    let two = || {
+        build(vec![
+            (tli(1, 0, 0), "keep foo"),
+            (arr("sep"), " ~ "),
+            (tli(1, 0, 1), "keep foo"),
+        ])
+    };
+    let ok = promote(&two(), "keep bar ~ keep bar", &ParamTables::new()).expect("consistent");
+    let expected = FieldTemplate::new(vec![Paragraph::new(vec![
+        Fragment::Word(Word::new("keep")),
+        Fragment::Word(Word::new("bar")),
+    ])]);
+    assert_eq!(ok.field_edits().get(&1), Some(&expected));
+    assert_refuses(
+        &two(),
+        "keep bar ~ keep baz",
+        &ParamTables::new(),
+        RefusalClass::ContradictoryEdits,
+    );
 }
 
 #[test]
@@ -453,13 +495,26 @@ fn assert_refuses(
 }
 
 fn tl(key: Key, paragraph: usize) -> Region<Key> {
-    Region::TemplateLiteral { key, paragraph }
+    Region::TemplateLiteral {
+        key,
+        paragraph,
+        instance: None,
+    }
+}
+
+fn tli(key: Key, paragraph: usize, instance: usize) -> Region<Key> {
+    Region::TemplateLiteral {
+        key,
+        paragraph,
+        instance: Some(InstanceId::new(instance)),
+    }
 }
 
 fn pv_region(key: Key, name: &str) -> Region<Key> {
     Region::ParamValue {
         key,
         param: ParamName::new(name),
+        instance: None,
     }
 }
 

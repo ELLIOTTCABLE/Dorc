@@ -14,7 +14,7 @@ use crate::diff::{DiffOp, diff};
 use crate::prose::{
     FieldTemplate, Fragment, Located, Paragraph, ParamName, Token, Word, tokenize, tokenize_located,
 };
-use crate::span::{Region, Span, TaggedRender};
+use crate::span::{InstanceId, Region, Span, TaggedRender};
 
 /// The instantiated param values for one field: each declared param mapped to
 /// the word-sequence it rendered as in the baseline world (`282` §5 re-holing
@@ -79,6 +79,7 @@ impl<K: ConsumerKey> ParamTables<K> {
 /// stored template. `282` §5 / `28A` §1 — layer-1 reports WHICH keys were edited;
 /// the edits-only-in-the-defining-case rule is consumer policy.
 #[derive(Clone, PartialEq, Eq, Debug)]
+#[must_use = "a promote outcome carries the field edits to write into the catalog"]
 pub struct PromoteOutcome<K> {
     field_edits: BTreeMap<K, FieldTemplate>,
 }
@@ -102,8 +103,14 @@ impl<K: ConsumerKey> PromoteOutcome<K> {
     }
 }
 
-/// The closed set of reasons promote refuses (`282` §5).
+/// A reason promote refuses (`282` §5).
+///
+/// `#[non_exhaustive]`: prose-model growth (`282` §3 "may grow later") adds
+/// classes; consumers render this through [`Display`](std::fmt::Display) or a
+/// wildcard arm rather than an exhaustive match, so forward-compat wins over
+/// closed-match ergonomics for a published crate.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
+#[non_exhaustive]
 pub enum RefusalClass {
     /// A `ParamValue` region's words changed — that is payload, not prose.
     PayloadEdited,
@@ -526,14 +533,21 @@ fn edited_keys<K: ConsumerKey>(
 }
 
 /// Group a key's spans into instances (`282` §5 "two instances of one template" —
-/// the same field rendered more than once). A `TemplateLiteral` starts a new
-/// instance iff it is SEPARATED from the previous key-span (not byte-adjacent, so
+/// the same field rendered more than once).
+///
+/// Explicit-first (`28A:rul-tagged-render-emits-instance-ids`): if every one of
+/// the key's spans carries an [`InstanceId`], group by it exactly. Otherwise fall
+/// back to the d1 structural heuristic: a `TemplateLiteral` starts a new instance
+/// iff it is SEPARATED from the previous key-span (not byte-adjacent, so
 /// arrangement or another field lies between) AND its paragraph index does not
-/// advance — i.e. the render restarts rather than continuing to the next
-/// paragraph. Param spans never decide; a hole-split paragraph stays one run.
-/// (Edge: a hole sitting BETWEEN two instances attaches to the earlier one and
-/// may spuriously refuse; sharp-edges v1 — flagged.)
+/// advance — the render restarts rather than continuing to the next paragraph.
+/// Param spans never decide; a hole-split paragraph stays one run. (Structural
+/// edge: a hole sitting BETWEEN two instances attaches to the earlier one and may
+/// spuriously refuse — the explicit id is the escape hatch; sharp-edges v1.)
 fn instances_of<K: ConsumerKey>(key: &K, spans: &[Span<K>]) -> Vec<Vec<usize>> {
+    if let Some(explicit) = instances_by_id(key, spans) {
+        return explicit;
+    }
     let mut instances: Vec<Vec<usize>> = Vec::new();
     let mut current: Vec<usize> = Vec::new();
     let mut max_para: Option<usize> = None;
@@ -559,6 +573,28 @@ fn instances_of<K: ConsumerKey>(key: &K, spans: &[Span<K>]) -> Vec<Vec<usize>> {
         instances.push(current);
     }
     instances
+}
+
+/// Exact-identity grouping when every one of `key`'s spans carries an
+/// [`InstanceId`] (`28A:rul-tagged-render-emits-instance-ids`); `None` ⇒ any span
+/// lacks one, so the caller falls back to structural inference. Groups order by
+/// id (deterministic — `inv-determinism`).
+fn instances_by_id<K: ConsumerKey>(key: &K, spans: &[Span<K>]) -> Option<Vec<Vec<usize>>> {
+    let key_span_idxs: Vec<usize> = spans
+        .iter()
+        .enumerate()
+        .filter(|(_, s)| s.region.key() == Some(key))
+        .map(|(i, _)| i)
+        .collect();
+    if key_span_idxs.is_empty() {
+        return None;
+    }
+    let mut groups: BTreeMap<InstanceId, Vec<usize>> = BTreeMap::new();
+    for &i in &key_span_idxs {
+        let id = spans.get(i).and_then(|s| s.region.instance())?;
+        groups.entry(id).or_default().push(i);
+    }
+    Some(groups.into_values().collect())
 }
 
 /// Rebuild one instance's stored field template: template spans contribute their

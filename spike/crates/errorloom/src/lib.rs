@@ -30,7 +30,7 @@ pub use crate::promote::{
 pub use crate::prose::{
     FieldTemplate, Fragment, Paragraph, ParamName, Prose, Token, Word, tokenize,
 };
-pub use crate::span::{ArrangementSlug, Region, Span, TaggedRender, TaggedRenderError};
+pub use crate::span::{ArrangementSlug, InstanceId, Region, Span, TaggedRender, TaggedRenderError};
 
 /// What a consumer's opaque field key must satisfy. errorloom groups, sorts, and
 /// compares by the key but never inspects it (Dorc's key is `(code, field)`).
