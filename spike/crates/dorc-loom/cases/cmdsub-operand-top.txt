@@ -1,0 +1,6 @@
+---
+code: cmdsub-operand-top
+---
+-- replay --
+$ dorc plan --book=book.sh
+note[cmdsub-operand-top]: sm command forced to run (never elided): operand 1 is a command-substitution `$(…)` / arithmetic / operator-form expansion ⇒ its identity is unresolved (⊤)

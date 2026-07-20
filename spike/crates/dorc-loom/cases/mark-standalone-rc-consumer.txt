@@ -1,0 +1,6 @@
+---
+code: mark-standalone-rc-consumer
+---
+-- replay --
+$ dorc lint oracle.sh
+error[mark-standalone-rc-consumer]: [unwritten: mark-standalone-rc-consumer]

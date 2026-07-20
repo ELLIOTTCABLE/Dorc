@@ -1,2 +1,0 @@
-the saved why-log uses format `dorc-whylog/2`, which this version of dorc cannot read back
-  = help: ask the question live instead: `dorc why` (without `--last`) re-analyzes the current book directly
