@@ -1,0 +1,6 @@
+---
+code: mark-hashcolon-malformed
+---
+-- replay --
+$ dorc lint oracle.sh
+warning[mark-hashcolon-malformed]: [unwritten: mark-hashcolon-malformed]

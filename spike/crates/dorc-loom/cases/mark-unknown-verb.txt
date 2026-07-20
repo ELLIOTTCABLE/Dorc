@@ -1,0 +1,6 @@
+---
+code: mark-unknown-verb
+---
+-- replay --
+$ dorc lint oracle.sh
+error[mark-unknown-verb]: [unwritten: mark-unknown-verb]

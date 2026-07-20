@@ -11,12 +11,16 @@
 
 use std::collections::BTreeMap;
 
-use dorc_core::Interner;
 use dorc_core::catalog::{OwnedEntry, owned_catalog};
 use dorc_core::diag::{
-    AidUnloadedSiblingOracle, DanglingReference, Diag, DiagCode, WhylogAbsent, WhylogBookDesync,
-    WhylogCorrupt, WhylogVersionRefused, render_cli_tagged, render_cli_with,
+    AidUnloadedSiblingOracle, CarriedAcrossSubstrateAxis, CmdsubOperandTop, DanglingReference,
+    Diag, DiagCode, EscalationPolicy, MarkHashcolonMalformed, MarkRcArityExceeded,
+    MarkStandaloneRcConsumer, MarkUnknownVerb, MissingDialectMarker, MungeNameInvalid,
+    OperandPosition, RecordsFactTruncated, RenderHeredocRefused, SiteId, SiteUnresolvable,
+    SyntaxUnsupported, ToleratesUnknownDimension, WhylogAbsent, WhylogBookDesync, WhylogCorrupt,
+    WhylogVersionRefused, WrapperPeelIncoherent, render_cli_tagged, render_cli_with,
 };
+use dorc_core::{Interner, LeafId, TopCause};
 use errorloom::{
     Case, Consumer, FieldTemplate, Fragment, ParamName, ParamTables, ParamValues,
     Region as LoomRegion, TaggedBaseline, Token, Word, tokenize,
@@ -149,12 +153,78 @@ impl Consumer for DorcConsumer {
     }
 }
 
-/// The world-as-payload canonical constructors, keyed by slug (`283:dec-world-two-forms`). The five
-/// roster codes are spanless in production (their emit context has no source point), so the
-/// transcript is the frame-less title+body render. `dangling-reference` (also spanless, a
-/// space-delimited `{coord}`) is carried for the prose-bless round-trip exercise.
+/// The world-as-payload canonical constructors, keyed by slug (`283:dec-world-two-forms`). The
+/// phase-5 backport (`283` §5.9) renders every non-pipeline covered code SPANLESS: a code may carry a
+/// span in production, but its defining case pins the frame-less title+body prose registers (the
+/// authoring surface), not the caret frame — that is the marker pilot's world-as-pipeline job.
 fn canonical_payload(slug: &str) -> Option<Diag> {
     let code = match slug {
+        // phase-5 backport: the covered give-up / records / mark-grammar codes.
+        "cmdsub-operand-top" => DiagCode::CmdsubOperandTop(CmdsubOperandTop {
+            site: SiteId::leaf(LeafId(3)),
+            position: OperandPosition::Operand(1),
+            cause: None,
+            top_cause: TopCause::UnmodeledExpansion,
+        }),
+        "site-unresolvable" => DiagCode::SiteUnresolvable(SiteUnresolvable {
+            site: SiteId::leaf(LeafId(4)),
+            detail: "2 sites run unprobed (no read-only check could be shipped): \
+                     `make install`, `ldconfig`"
+                .to_owned(),
+        }),
+        "render-heredoc-refused" => DiagCode::RenderHeredocRefused(RenderHeredocRefused {
+            site: SiteId::leaf(LeafId(7)),
+            verb: "elide",
+            command: "cat <<EOF".to_owned(),
+        }),
+        "syntax-unsupported" => DiagCode::SyntaxUnsupported(SyntaxUnsupported {
+            detail: "process substitution `<(…)` is not modeled".to_owned(),
+        }),
+        "missing-dialect-marker" => DiagCode::MissingDialectMarker(MissingDialectMarker),
+        "munge-name-invalid" => DiagCode::MungeNameInvalid(MungeNameInvalid {
+            source: "9pkg".to_owned(),
+            funcname: "9pkg".to_owned(),
+            problem: "starts with a digit".to_owned(),
+        }),
+        "tolerates-unknown-dimension" => {
+            DiagCode::ToleratesUnknownDimension(ToleratesUnknownDimension {
+                token: "netns2".to_owned(),
+                expected: "user, netns, fs-view".to_owned(),
+            })
+        }
+        "records-fact-truncated" => DiagCode::RecordsFactTruncated(RecordsFactTruncated {
+            received: 3,
+            declared: 5,
+            unseen: 2,
+        }),
+        "escalation-policy" => DiagCode::EscalationPolicy(EscalationPolicy {
+            detail: "escalation policy: probe re-uses connection authority for \
+                     `tolerates:`-vouched functions only (default)"
+                .to_owned(),
+        }),
+        "carried-across-substrate-axis" => {
+            DiagCode::CarriedAcrossSubstrateAxis(CarriedAcrossSubstrateAxis {
+                detail: "elision carried across the fs-view axis: backing kind `sm_dorc_File` \
+                         vouches `invariant:fs-view`; the verdict body is read-set-closed"
+                    .to_owned(),
+            })
+        }
+        "wrapper-peel-incoherent" => DiagCode::WrapperPeelIncoherent(WrapperPeelIncoherent {
+            detail: "wrapper `sudo`: __predict and __lend_map disagree on the peel tail \
+                     position (predict reaches \"$@\" after 1 argv token(s), lend_map after 0)"
+                .to_owned(),
+        }),
+        "mark-unknown-verb" => DiagCode::MarkUnknownVerb(MarkUnknownVerb {
+            token: "frobnicate".to_owned(),
+            expected: "asserts, refutes, reads, bind, safe-across, disturbs, lends, \
+                       stored-in, undivided-by-transit-across"
+                .to_owned(),
+        }),
+        "mark-rc-arity-exceeded" => DiagCode::MarkRcArityExceeded(MarkRcArityExceeded),
+        "mark-standalone-rc-consumer" => {
+            DiagCode::MarkStandaloneRcConsumer(MarkStandaloneRcConsumer)
+        }
+        "mark-hashcolon-malformed" => DiagCode::MarkHashcolonMalformed(MarkHashcolonMalformed),
         "whylog-version-refused" => DiagCode::WhylogVersionRefused(WhylogVersionRefused {
             found: "dorc-whylog/2".to_owned(),
         }),

@@ -1,0 +1,6 @@
+---
+code: mark-rc-arity-exceeded
+---
+-- replay --
+$ dorc lint oracle.sh
+error[mark-rc-arity-exceeded]: [unwritten: mark-rc-arity-exceeded]
