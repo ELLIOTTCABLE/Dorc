@@ -1,18 +1,17 @@
 # errorloom
 
 Executable transcript cases as the authoring-surface for a CLI tool's
-user-facing prose.
+user-facing prose. (**Write your messages directly into your test-files, while
+looking directly at what your user sees.**)
 
-**Write your messages directly into your test-files, while looking directly at
-what your user sees.**
-
-Working example, [from Dorc](https://github.com/ELLIOTTCABLE/Dorc/blob/326018ce/spike/crates/dorc-loom/cases/cmdsub-operand-top.txt),
+Here's a live example, [from Dorc](https://github.com/ELLIOTTCABLE/Dorc/blob/326018ce/spike/crates/dorc-loom/cases/cmdsub-operand-top.txt),
 the project for which I built this library:
 
 ```txtar
 ---
 code: cmdsub-operand-top
 ---
+
 -- book.sh --
 #!/bin/sh
 # pi-webhost provisioning (curated package set from the fleet inventory)
@@ -21,6 +20,7 @@ set -e
 apt-get update
 apt-get install -y "$(cat /etc/webhost/pkgset)"
 systemctl enable nginx
+
 -- replay --
 $ dorc plan --book=book.sh
 note[cmdsub-operand-top]: apt-get operand 3 is a command-substitution `$(…)` /
@@ -37,6 +37,7 @@ note[cmdsub-operand-top]: apt-get operand 3 is a command-substitution `$(…)` /
       the command once it has converged. If your value must stay dynamic, load
       an oracle that vouches for this command's convergence, and Dorc will guard
       the command instead of running it every time.
+
 $ dorc plan --book=book.sh --format=jsonl
 {"code":"cmdsub-operand-top","severity":"note"}
 ```
@@ -52,7 +53,7 @@ demanded separation of prose-bless from structure-bless.
 > on difficult work ... take that as you will. I will be maintaining and
 > responding to any issues, though; I'm sharing this because I believe it has
 > value.
-
+>
 > It's got sharp edges and may need refinement as I work with it; but
 > it should be ready for use if you're curious.
 
@@ -102,20 +103,23 @@ head:
 code: motd-refused
 when-fires: the leaf-exact render would elide a heredoc-bearing leaf
 ---
+
 -- book.sh --
 #!/bin/sh
 cat <<EOF >/etc/motd
 hello
 EOF
+
 -- probe-results.txt --
 site 0 effect=holds
+
 -- replay --
 $ mytool plan --book=book.sh < probe-results.txt
 render: error[motd-refused]: refusing to elide the heredoc-bearing leaf
+
 $ mytool plan --book=book.sh --format=jsonl < probe-results.txt
 {"envelope":"lint/1","code":"motd-refused"}
 ```
-
 
  - **Frontmatter** is an opaque flat map to errorloom (`key: value` scalars and
    `key:` + `- item` lists; nested structures refuse). The schema - which keys
@@ -125,6 +129,7 @@ $ mytool plan --book=book.sh --format=jsonl < probe-results.txt
  - **The replay section** (always last) is a sequence of `$ `-prefixed command
    blocks, each followed by exactly what the command printed. Commands run
    sequentially in one shared temp cwd, so state flows between them by design.
+
 
 ### Case-hygiene gates
 
@@ -140,7 +145,8 @@ Blunt refusals, all generic, either NYI or out-of-scope:
    replay block's output must surface its value (e.g. "every replay must mention
    its own `error-code`" or whatever you like).
 
-## CLI - the generic cram mode
+
+## CLI: the generic cram mode
 
 The `errorloom` binary is the fully-generic cram tool. The environment is
 entirely caller-injected (`env -i`-style): nothing ambient leaks in.
@@ -182,7 +188,8 @@ fn transcripts_are_byte_stable() -> Result<(), Box<dyn std::error::Error>> {
 The primary **prose-promote** flow is deliberately *not* in the CLI: it needs
 consumer callbacks (see below).
 
-## Library - the promote flow and the two bless modes
+
+## Library API: the promote flow and the two bless modes
 
 Prose-promote is library-only because it needs a [`Consumer`] (a baseline tagged
 render for a case, apply field-edits, re-render a case) and a two-method [`Git`]
@@ -260,7 +267,7 @@ impl Consumer for MyTool {
 }
 ```
 
-… and the drive loop:
+... and the drive loop:
 
 ```rust
 use std::path::Path;
@@ -284,6 +291,7 @@ for (path, text) in blessed.regenerated() {
 
 // ... and `structure_bless(&tool, &git, &corpus, ...)` in the same shape.
 ```
+
 
 ## The span-map contract
 
@@ -309,6 +317,7 @@ in a transcript. When you stamp each render with an `InstanceId`, promotion
 groups spans into instances by *exact* identity; when absent, it falls back to
 structural inference (paragraph/adjacency). Opting in is per-key,
 all-or-nothing.
+
 
 ## Status
 
