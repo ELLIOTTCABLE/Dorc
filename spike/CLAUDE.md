@@ -513,14 +513,22 @@ prompt you write:
 - **one-catalog-no-legacy** (`27V:rul-kill-legacy-diagnostic`) — the structured
   `DiagCode` catalog is the ONLY diagnostics mechanism; the legacy string-slug
   `Diagnostic` is being removed. Never add new emissions to it.
-- **defining-case-catalog** — every code has exactly ONE defining case carrying the
-  colocated triple render (machine line · terse line · prose registers); prose flows
-  through the committed catalog intermediate regenerated ONLY by explicit promote
-  (BLESS-law: orchestrator-only, fresh binary, diff inspected) — the build parses the
-  catalog and never auto-tracks case files (the lag IS the assertion). Templates are
-  named-params-only; interpolated values use engine-owned canonical formatters; sibling
-  codes come from world-state/license variants ONLY, never grammar-fit
-  (`AID-NEEDS:law-codes-vary-by-world-not-grammar`).
+- **defining-case-catalog** (post-`282`-flip) — every code has exactly ONE defining
+  case; the **committed transcript CASE is the authoring surface** and the compiled
+  `core::catalog.rs` const-table is DERIVED from it (`282:rul-transcript-is-the-
+  authoring-surface`). Cases live at `crates/dorc-loom/cases/<slug>.txt` (txtar +
+  flat-YAML frontmatter). Prose regenerates ONLY by explicit promote-v2
+  (`DORC_CATALOG_PROMOTE`; BLESS-law: orchestrator-only, fresh binary, diff
+  inspected) driving `errorloom::prose_bless` over the `dorc-loom` `Consumer`; the
+  build parses the catalog and never auto-tracks case files (the lag IS the
+  assertion). Templates are named-params-only; `message`/`help` are
+  `Option<&'static str>` (`None` renders the `[unwritten:]` placeholder at render
+  time, never a stored string); interpolated values use engine-owned canonical
+  formatters; sibling codes come from world-state/license variants ONLY, never
+  grammar-fit (`AID-NEEDS:law-codes-vary-by-world-not-grammar`). Two fixpoint gates
+  guard it: errorloom render-level (catches prose hand-edits) + the Dorc-side
+  promote→catalog gate (params-regen today; whole-file byte-identity after the
+  conductor canonicalization, `28A` §2o/§2q).
 - **error-authorship-tier** (human-typed 2026-07-18) — builders mint codes and
   defining-case structure with EXPLICITLY-EMPTY prose blocks (rendering greppably as
   unwritten); prose is a conductor/human act issued from the builder's when/why/how
@@ -552,13 +560,19 @@ prompt you write:
   byte-obligated. Binds ONLY the report/why render plane — the artifact byte-floor
   (two-surfaces) and the executable-plane never-synthesized-sh law are untouched;
   display-sh must never masquerade as runnable.
-- **error-prose-conductor-flow** (`27U` §4/§5; phase-tested ×2) — catalog prose is
-  three-state: `sm `-prefixed migrated-verbatim builder text (awaiting human
-  rewrite) · `[unwritten: <slug>]` (awaiting conductor prose) · unprefixed prose
-  whose slug is on the `CONDUCTOR_AUTHORED` roster. Builders author ZERO
-  user-facing strings, ever, and never extend the roster; the conductor authors
-  from the catalog's structured metadata alone (one Read, N Edits, one
-  conduct-bless). Promote carries prose by slug behind the fixpoint gate.
+- **error-prose-conductor-flow** (`27U` §4/§5; `282`-flip retired the roster,
+  `28A` §2p) — catalog prose is three-state: `sm `-prefixed migrated-verbatim
+  builder text (awaiting human rewrite) · `[unwritten: <slug>]` (`message: None`,
+  awaiting conductor/human prose) · unprefixed prose for a **case-owned** code (a
+  `dorc-loom` case file exists for its slug). The `CONDUCTOR_AUTHORED` roster is
+  GONE; enforcement is `message_registers_are_sm_or_unwritten` re-keyed to
+  `is_case_owned(slug)` + the two fixpoint gates. Builders author ZERO user-facing
+  strings, ever; prose is a conductor/human act (`27V:rul-error-authorship-tier`),
+  authored at the transcript surface (looking at the rendered case) or, still
+  sanctioned, by direct catalog edit from the structured metadata — promote-v2
+  carries it behind the fixpoint gate, orchestrator-only. Prose burn-down is
+  LAZY-by-design (`282:lean-machinery-now-prose-lazy`); `[unwritten:]` is a legal
+  resting state (the prose-quality sprint is human-owned).
 - **rul-chain-is-pull-only** (`27U` d4a) — the full numbered why-chain renders only
   on pull surfaces (`dorc why N` live / `--last`); plan stderr keeps compact
   attribution lines. Push stays ruthlessly selected even under the spike's
