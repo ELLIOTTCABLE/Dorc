@@ -705,6 +705,37 @@ Two reported-not-fixed findings banked:
   rushed round-close fix (non-comment; would risk the verified build). Verify in
   other cells before touching.
 
+## §2u — errorloom review (285) + phase-5 landed (conductor, 2026-07-20)
+
+- **285-series COMPLETE + banked** (`bf40f11`): two DeepSeek lanes (`285b` taste,
+  `285c` swe) → adjudication `285d`. Verified-kill: swe-F1 "Region unconstructable"
+  (FALSE — enum-level non_exhaustive; dorc-loom constructs it; DeepSeek conflated
+  enum/variant level). Ruled-reject: swe-F4 "make error enums exhaustive" (contra
+  the standing taste ruling + the taste lane's own praise — KEEP non_exhaustive).
+  Credited repairs → the last-polish pass (error-richness cluster · silent-parse
+  fixes · cheap hardening · apply_field_edits-by-value); judgment-tier items
+  (Display-vs-Debug dump, child-timeout) at builder latitude. Human-only forks:
+  the non_exhaustive-error-enum publish-taste call; the LICENSE/publish flip.
+- **PHASE 5 LANDED + FOLDED + cold-verified** (`4189e92`; builder tip `9817860`):
+  16 covered codes backported to `dorc-loom/cases/` world-as-payload files (the
+  count was 16 not 15 — the marker pilot had already entered covered(); benign
+  doc-drift, `283 f-fragment-count` pre-flagged it); 66 fragment goldens +
+  `DORC_DEFINING_BLESS` retired; completeness re-keyed to filesystem
+  `is_case_owned` — partition case-owned(22) ∪ ratchet(35) == CATALOG(57),
+  `ratchet_only_shrinks` untouched at 35≤35. Prose preserved verbatim (the four
+  `mark-*` stay `[unwritten:]`; `sm ` stays `sm `). Cold verify own-hand: clean +
+  clippy zero + conduct-bless green + e2e 97/97; only the known lax-order `.ran`
+  drift, restored.
+- **`28A:rul-keep-covered-with-drift-guard`** (rules the builder's escalated
+  `tc`-call) — KEEP `covered()` + its two in-core tagged-render twins (the
+  in-core byte-check of all 22 payloads is real breadth a core test can't get by
+  depping dorc-loom; `283` §4c sanctions world-as-payload survival). The
+  duplication (constructors in both `covered()` and `canonical_payload`) is
+  accepted; the silent-drift gap the builder flagged (completeness doesn't force
+  `covered() ⊆ case-owned`) closes with a ONE-TEST coherence guard
+  (`covered()`-slugs ⊆ case-owned) — banked as a cheap round-close/next-round
+  rider, NOT urgent (the lists are aligned now).
+
 ## §3 — Lane map and state (update on every change)
 
 | lane | branch | shape | state |
