@@ -265,7 +265,7 @@ impl Case {
             }
             sections.push(Section {
                 name: name.clone(),
-                content: content.clone(),
+                content: strip_trailing_separator(content),
             });
         }
 
@@ -309,8 +309,10 @@ impl Case {
         }
     }
 
-    /// Serialize back to case-file text (LF pinned). Byte-identical to the
-    /// source when no output was rewritten (`282` §7 round-trip gate).
+    /// Serialize back to case-file text (LF pinned). CANONICAL form (`282` §12 items 3–4): a blank
+    /// line separates each header from the body above it and each replay block from the one above it.
+    /// Round-trips byte-identically because parse STRIPS those separators (emit-and-tolerate); a
+    /// source lacking them normalizes TO them.
     #[must_use]
     pub fn to_text(&self) -> String {
         let mut out = String::new();
@@ -318,19 +320,31 @@ impl Case {
         out.push_str(self.frontmatter.raw.as_str());
         out.push_str("---\n");
         out.push_str(&self.preamble);
+        // A blank line before every header that follows a body (never before the first).
+        let mut after_body = false;
         for section in &self.sections {
             ensure_trailing_lf(&mut out);
+            if after_body {
+                out.push('\n');
+            }
             out.push_str("-- ");
             out.push_str(&section.name);
             out.push_str(" --\n");
             out.push_str(&section.content);
+            after_body = true;
         }
         ensure_trailing_lf(&mut out);
+        if after_body {
+            out.push('\n');
+        }
         out.push_str("-- ");
         out.push_str(REPLAY_SECTION);
         out.push_str(" --\n");
-        for block in &self.replay.blocks {
+        for (index, block) in self.replay.blocks.iter().enumerate() {
             ensure_trailing_lf(&mut out);
+            if index > 0 {
+                out.push('\n');
+            }
             out.push_str("$ ");
             out.push_str(&block.command);
             out.push('\n');
@@ -526,6 +540,16 @@ fn marker_name(line: &str) -> Option<String> {
     }
 }
 
+/// Drop a single trailing blank line — the canonical separator [`Case::to_text`] inserts before a
+/// header / replay block (`282` §12 items 3–4, the "tolerate" half). Idempotent with the emit: a
+/// content already ending in a blank line loses exactly one `\n`, which `to_text` restores.
+fn strip_trailing_separator(content: &str) -> String {
+    match content.strip_suffix('\n') {
+        Some(rest) if rest.is_empty() || rest.ends_with('\n') => rest.to_owned(),
+        _ => content.to_owned(),
+    }
+}
+
 /// Parse a replay section's content into `$ `-prefixed command blocks.
 fn parse_replay(content: &str) -> Result<ReplaySection, CaseError> {
     let mut blocks: Vec<ReplayBlock> = Vec::new();
@@ -533,7 +557,8 @@ fn parse_replay(content: &str) -> Result<ReplaySection, CaseError> {
     for line in content.split_inclusive('\n') {
         let bare = line.strip_suffix('\n').unwrap_or(line);
         if let Some(command) = bare.strip_prefix("$ ") {
-            if let Some(block) = current.take() {
+            if let Some(mut block) = current.take() {
+                block.output = strip_trailing_separator(&block.output);
                 blocks.push(block);
             }
             current = Some(ReplayBlock {
@@ -546,7 +571,8 @@ fn parse_replay(content: &str) -> Result<ReplaySection, CaseError> {
             return Err(CaseError::ReplayPreamble);
         }
     }
-    if let Some(block) = current.take() {
+    if let Some(mut block) = current.take() {
+        block.output = strip_trailing_separator(&block.output);
         blocks.push(block);
     }
     if blocks.is_empty() {

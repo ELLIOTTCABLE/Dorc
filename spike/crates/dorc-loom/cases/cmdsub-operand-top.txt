@@ -9,6 +9,7 @@ set -e
 apt-get update
 apt-get install -y "$(cat /etc/webhost/pkgset)"
 systemctl enable nginx
+
 -- replay --
 $ dorc plan --book=book.sh
 note[cmdsub-operand-top]: operand 3 is a command-substitution `$(…)` /
@@ -25,5 +26,6 @@ note[cmdsub-operand-top]: operand 3 is a command-substitution `$(…)` /
       command once it has converged. If the value must stay dynamic, load an
       oracle that vouches for this command's convergence, and Dorc will guard
       the command instead of running it every time.
+
 $ dorc plan --book=book.sh --format=jsonl
 {"code":"cmdsub-operand-top","severity":"note"}

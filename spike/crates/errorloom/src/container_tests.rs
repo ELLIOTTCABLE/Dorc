@@ -3,7 +3,7 @@
 
 use crate::{Case, CaseError, FrontmatterValue};
 
-const SAMPLE: &str = "---\ncode: render-heredoc-refused\nwhen-fires: the leaf-exact render would elide\nviews:\n  - verbose\n  - terse\n---\n-- book.sh --\n#!/bin/sh\ncat /etc/motd\n-- replay --\n$ tool plan --book=book.sh\nrender: error[render-heredoc-refused]: refused\n$ tool plan --format=jsonl\n{\"code\":\"render-heredoc-refused\"}\n";
+const SAMPLE: &str = "---\ncode: render-heredoc-refused\nwhen-fires: the leaf-exact render would elide\nviews:\n  - verbose\n  - terse\n---\n-- book.sh --\n#!/bin/sh\ncat /etc/motd\n\n-- replay --\n$ tool plan --book=book.sh\nrender: error[render-heredoc-refused]: refused\n\n$ tool plan --format=jsonl\n{\"code\":\"render-heredoc-refused\"}\n";
 
 #[test]
 fn parse_round_trips_byte_identically() {
