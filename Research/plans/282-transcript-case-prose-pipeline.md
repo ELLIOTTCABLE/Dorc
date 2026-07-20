@@ -364,3 +364,39 @@ boring algorithm under the refuse-loudly posture (the property test + refusal
 table is the tripwire; the annotated-editing retreat is priced); the carry-forward
 keeps migration monotone (no code loses prose mid-flight). -GUESS: phase sizing
 (1–3 feel like one lane each; 4 is the risky one and is checkpointed accordingly).
+
+## §12 — Follow-up: human-directed flagship-render polish (rider, 2026-07-20)
+
+Prompted by the flagship case (`crates/dorc-loom/cases/cmdsub-operand-top.txt`) and
+the human's hand-edited target render (`e6edf5e`). These refine the RENDER FORM
+(`AID-NEEDS:kFLOW` render-form-unwelded — exactly the "resting point decidable only
+from real generated output" this rider IS) and the errorloom PROSE MODEL (§3). Being
+executed live under human steer on `ai/r28-flagship-polish`; each is a small cleanup,
+PUNT-if-invasive (human-sanctioned). Grep-anchor: `flagship-render-polish`.
+
+Render-form (touch `core::diag` render_cli / caret plumbing — Dorc-side, cousins of
+`AID-NEEDS:kFLOW`):
+- **span-caret `\__/`** — a source-SPAN (AST region, start+end) underlines with
+  `\`+`_`…`_`+`/`, not `^^^`. Door left open for `^^^` on single lexemes; a SET of
+  results all share `\__/`. Don't overengineer a style system.
+- **invocation-global gutter** — the code gutter width holds the HIGHEST source
+  line-number across the WHOLE invocation (all replay blocks), default 3-wide
+  (0-999), so code columns never shift between blocks; 4 incl. the `|`.
+- **`{command}` template param** — the command word (e.g. `apt-get`) is a templated
+  value in the message, not baked prose.
+- **`= repair:` not `= help:`** — the correct follow-up-categorizer term for this
+  error class/category (per-class, not a global rename).
+- **following-ness punctuation** — a fragment renders terminal `:` when content
+  follows, `.` when nothing does; architecture-driven, NOT mechanically-composed
+  grammar (that extreme stays refused, `AID-NEEDS:law-codes-vary-by-world-not-grammar`).
+
+Prose-model (errorloom §3 words-and-paragraphs):
+- **wrap-agnostic source** — committed case prose is hard-wrapped + indented for
+  editing (message continuations 3-sp, repair 6-sp in the target); the RENDER owns
+  layout and reflows stored prose to a pinned canonical width, so source-wrap is
+  invisible to the render. Read-in already collapses `\n`+indent → one space (§3);
+  the render-side canonical-wrap-with-continuation-indent is the new half, and the
+  likeliest punt if invasive.
+
+Not code: the human also rewrote actual prose ("Dorc" → "I", etc.) — voice, no
+mechanics owed.
