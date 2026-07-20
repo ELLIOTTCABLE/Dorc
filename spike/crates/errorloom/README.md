@@ -3,25 +3,6 @@
 Executable transcript cases as the authoring surface for a CLI tool's
 user-facing prose.
 
-```
----
-code: motd-refused
-when-fires: the leaf-exact render would elide a heredoc-bearing leaf
----
--- book.sh --
-#!/bin/sh
-cat <<EOF >/etc/motd
-hello
-EOF
--- probe-results.txt --
-site 0 effect=holds
--- replay --
-$ mytool plan --book=book.sh < probe-results.txt
-render: error[motd-refused]: refusing to elide the heredoc-bearing leaf
-$ mytool plan --book=book.sh --format=jsonl < probe-results.txt
-{"envelope":"lint/1","code":"motd-refused"}
-```
-
 > This was built as internal tooling while heads-down on [Dorc][]. It is
 > *entirely* AI-written; distrust that as suits your risk-profile. (I generally
 > wouldn't.) It was lightly reviewed by me (a human); and I'm using it in anger
@@ -73,6 +54,26 @@ prose.)
 A case is one txtar archive with a `---`-fenced flat-YAML-subset frontmatter
 head:
 
+```
+---
+code: motd-refused
+when-fires: the leaf-exact render would elide a heredoc-bearing leaf
+---
+-- book.sh --
+#!/bin/sh
+cat <<EOF >/etc/motd
+hello
+EOF
+-- probe-results.txt --
+site 0 effect=holds
+-- replay --
+$ mytool plan --book=book.sh < probe-results.txt
+render: error[motd-refused]: refusing to elide the heredoc-bearing leaf
+$ mytool plan --book=book.sh --format=jsonl < probe-results.txt
+{"envelope":"lint/1","code":"motd-refused"}
+```
+
+
  - **Frontmatter** is an opaque flat map to errorloom (`key: value` scalars and
    `key:` + `- item` lists; nested structures refuse). The schema - which keys
    mean what - belongs to you.
@@ -116,8 +117,27 @@ errorloom bless [--path=DIR]... [--env=K=V]... [--require-token=KEY] CASE...
 `PATH`; `--env K=V` sets exact variables. Policy such as inert mocks is yours; a
 `--path` pointing at a mocks dir keeps real tools out.
 
-The **prose-promote** flow is deliberately *not* in the CLI: it needs consumer
-callbacks (see below).
+Both gates are one call deep in-process, if you'd rather drive them from your
+own test-suite (`bless_structure` is `bless`; `run_case` yields the raw
+captures):
+
+```rust
+use errorloom::{Case, RunEnv, check_run};
+
+#[test]
+fn transcripts_are_byte_stable() -> Result<(), Box<dyn std::error::Error>> {
+    let case = Case::parse(&std::fs::read_to_string("cases/motd-refused.txt")?)?;
+    let env = RunEnv::new()
+        .path_dir("target/debug")   // the tool under test
+        .path_dir("tests/mocks");   // inert stand-ins for everything else
+    let report = check_run(&case, &env)?;
+    assert!(report.is_clean(), "{:#?}", report.drifts());
+    Ok(())
+}
+```
+
+The primary **prose-promote** flow is deliberately *not* in the CLI: it needs
+consumer callbacks (see below).
 
 ## Library - the promote flow and the two bless modes
 
@@ -157,6 +177,70 @@ re-render to its own committed bytes. A catalog hand-edit (prose or metadata)
 moves the render off the committed transcript, so the gate catches it. This is
 what lets the promote flow be trusted without a hand-maintained authorship
 roster.
+
+A consumer, sketched:
+
+```rust
+use std::collections::BTreeMap;
+use errorloom::{Case, Consumer, FieldTemplate, ParamTables, TaggedBaseline, TaggedRender};
+
+struct MyTool {
+    catalog: BTreeMap<(String, String), String>,
+}
+
+impl Consumer for MyTool {
+    type Key = (String, String); // opaque to errorloom; Dorc's is `(code, field)`
+    type Error = String;
+
+    // The attribution baseline: render from CURRENT catalog state, one Span
+    // per byte-run (the span-map contract, below)
+    fn tagged_render(&self, case: &Case) -> Result<TaggedBaseline<Self::Key>, String> {
+        let (text, spans) = todo!("your tagged renderer");
+        let render = TaggedRender::new(text, spans).map_err(|e| e.to_string())?;
+        Ok(TaggedBaseline::new(render, ParamTables::new()))
+    }
+
+    // The transcript block the author edits, as it sits on disk
+    fn editable_text(&self, case: &Case) -> Result<String, String> {
+        Ok(case.replay().blocks().first()
+            .map(|b| b.output().to_owned()).unwrap_or_default())
+    }
+
+    fn apply_field_edits(&mut self, edits: &BTreeMap<Self::Key, FieldTemplate>)
+    -> Result<(), String> {
+        todo!("write each template back into your catalog")
+    }
+
+    fn render_case(&self, case: &Case) -> Result<String, String> {
+        todo!("the whole case text, re-rendered from CURRENT catalog state")
+    }
+}
+```
+
+… and the drive loop:
+
+```rust
+use std::path::Path;
+use errorloom::{CaseFile, SubprocessGit, fixpoint_check, prose_bless};
+
+let mut corpus = Vec::new();
+for path in case_paths { // git-relative; they're compared against `git status`
+    corpus.push(CaseFile::new(&path, std::fs::read_to_string(&path)?));
+}
+let git = SubprocessGit::new(".");
+
+// e.g. in CI: every committed case must re-render to its own committed bytes.
+fixpoint_check(&tool, &corpus)?;
+
+// An author edited words in a transcript. Extract, regenerate, write back;
+// the review surface is the resulting git diff
+let blessed = prose_bless(&mut tool, &git, &corpus, Path::new("src/catalog.rs"))?;
+for (path, text) in blessed.regenerated() {
+    std::fs::write(path, text)?;
+}
+
+// ... and `structure_bless(&tool, &git, &corpus, ...)` in the same shape.
+```
 
 ## The span-map contract
 
