@@ -121,6 +121,8 @@ pub use diag::Diag;
 
 pub mod catalog;
 
+pub mod tagged;
+
 pub mod prov;
 pub use prov::{
     JOIN_PARENT_CAP, OriginKind, OriginNode, Parents, ProbeStamp, ProvArena, ProvId, Variation,
