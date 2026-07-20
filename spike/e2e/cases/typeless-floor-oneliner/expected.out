@@ -6,7 +6,7 @@
 # rc is the raw PROBE-command status (opaque to Dorc — the record is the out-of-band lane).
 
 printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=ab743bc482d4af0c sites=1 @@dorc@@\n'
-# site 0: dorc-auto:mycmd#converged
+# site 0: dorc-auto:mycmd@converged
 mycmd__is_converged() { mycmd --dry-run "$@" ;}
 mycmd__is_converged 'apply-config' '/etc/mycmd.conf'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 0 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
 printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'

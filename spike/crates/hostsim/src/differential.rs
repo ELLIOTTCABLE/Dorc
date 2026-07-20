@@ -540,7 +540,7 @@ fn oracle_text(k: &KindSpec) -> String {
         let _ = writeln!(s, "      case $verb in");
         let _ = writeln!(
             s,
-            "         {}) {probe} \"$e\" {} {}:\"$e\"#{} ;;",
+            "         {}) {probe} \"$e\" {} {}:\"$e\"@{} ;;",
             k.verb,
             k.polarity.mark_marker(),
             k.kind,
@@ -570,7 +570,7 @@ fn oracle_text(k: &KindSpec) -> String {
         let _ = writeln!(s, "   e : {} = \"$1\"", k.kind);
         let _ = writeln!(
             s,
-            "   if [ \"$2\" = \"\" ]; then {probe} \"$e\" {} {}:\"$e\"#{}; fi",
+            "   if [ \"$2\" = \"\" ]; then {probe} \"$e\" {} {}:\"$e\"@{}; fi",
             k.polarity.mark_marker(),
             k.kind,
             k.selector

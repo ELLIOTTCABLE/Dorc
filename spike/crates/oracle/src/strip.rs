@@ -378,11 +378,11 @@ mod tests {
 # dorc-lang/v0.1\n\
 apt_get__predict() {\n\
    pkg : sm.dorc.Package = \"$1\"\n\
-   dpkg-query -W \"$pkg\" >/dev/null 2>&1 : sm.dorc.Package:\"$pkg\"#installed\n\
+   dpkg-query -W \"$pkg\" >/dev/null 2>&1 : sm.dorc.Package:\"$pkg\"@installed\n\
 }\n\
 sm_dorc_Package__state_stored_only_in() {\n\
-   printf '/var/lib/dpkg\\n' : fs\n\
-   :                          : invariant:user\n\
+   printf '/var/lib/dpkg\\n' : stored-in fs\n\
+   : undivided-by-transit-across user\n\
 }\n";
 
     fn strip(src: &str) -> String {
@@ -545,8 +545,8 @@ sm_dorc_Package__state_stored_only_in() {\n\
         let src = "# dorc-lang/v0.1\n\
 foo__state_stored_only_in() {\n\
 # shellcheck disable=SC2086\n\
-:   : invariant:fs-view\n\
-printf 'x\\n'   : kernel\n\
+: undivided-by-transit-across fs-view\n\
+printf 'x\\n'   : stored-in kernel\n\
 }\n";
         let m = strip_mapped(src);
         assert!(

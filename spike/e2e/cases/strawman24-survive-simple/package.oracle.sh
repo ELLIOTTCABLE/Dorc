@@ -8,8 +8,8 @@ apt_get__predict() {
    pkg : sm.dorc.Package = "$1"
    if [ "${2-}" = "" ]; then
       case $verb in
-         install) dpkg-query -W "$pkg" >/dev/null 2>&1 : sm.dorc.Package:"$pkg"#installed ;;
-         purge) dpkg-query -W "$pkg" >/dev/null 2>&1 :! sm.dorc.Package:"$pkg"#installed ;;
+         install) dpkg-query -W "$pkg" >/dev/null 2>&1 : sm.dorc.Package:"$pkg"@installed ;;
+         purge) dpkg-query -W "$pkg" >/dev/null 2>&1 :! sm.dorc.Package:"$pkg"@installed ;;
       esac
    fi
 }
@@ -19,7 +19,7 @@ apt_get__disturbs() {
    verb=$1; shift
    while [ "${1#-}" != "$1" ]; do shift; done
    case $verb in
-      install|purge) printf '%s\n' "$1" : sm.dorc.Package ;;
+      install|purge) printf '%s\n' "$1" : disturbs sm.dorc.Package ;;
    esac
 }
 

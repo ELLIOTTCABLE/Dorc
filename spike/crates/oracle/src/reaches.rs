@@ -289,7 +289,8 @@ mod tests {
     #[test]
     fn reaches_lifts_keyed_by_kind() {
         let mut i = Interner::default();
-        let src = "package__disturbance_reaches_only() { printf '%s\\n' \"$1\" : service; }";
+        let src =
+            "package__disturbance_reaches_only() { printf '%s\\n' \"$1\" : disturbs service; }";
         let set = ReachesSet::lift(&mut i, src);
         assert!(set.diags.is_empty(), "clean lift: {:?}", set.diags);
         let kind = i.intern("package");
@@ -306,8 +307,8 @@ mod tests {
     fn static_and_dynamic_arms_classify_and_type() {
         let src = "\
 package__disturbance_reaches_only() {
-   printf '%s\\n' \"$1\"    : service
-   dpkg -L \"$1\"           : file
+   printf '%s\\n' \"$1\"    : disturbs service
+   dpkg -L \"$1\"           : disturbs file
 }";
         let e = expand(src, "nginx");
         assert!(
@@ -348,7 +349,7 @@ package__disturbance_reaches_only() {
     /// trace-conservatively). The mark types the emission; the pipeline ships byte-exact.
     #[test]
     fn pipeline_arm_carries_mark_and_escalates() {
-        let src = "package__disturbance_reaches_only() { dpkg -L \"$1\" | grep '\\.service$' : service; }";
+        let src = "package__disturbance_reaches_only() { dpkg -L \"$1\" | grep '\\.service$' : disturbs service; }";
         let e = expand(src, "nginx");
         assert!(
             e.smells.is_empty(),
@@ -367,7 +368,7 @@ package__disturbance_reaches_only() {
     /// A static printf may emit SEVERAL entity lines (one arm, many entities — all in the arm's kind).
     #[test]
     fn static_arm_may_emit_multiple_entities() {
-        let src = "svc__disturbance_reaches_only() { printf '%s\\n%s\\n' \"$1\" \"$1\" : unit; }";
+        let src = "svc__disturbance_reaches_only() { printf '%s\\n%s\\n' \"$1\" \"$1\" : disturbs unit; }";
         let e = expand(src, "nginx");
         assert_eq!(e.arms.len(), 1);
         assert_eq!(

@@ -4,5 +4,5 @@
 dpkg__predict() {
    case $1 in -s) shift ;; esac
    pkg : sm.dorc.PkgState = "$1"
-   dpkg -s -- "$pkg" >/dev/null 2>&1 :? sm.dorc.PkgState:"$pkg"#installed
+   dpkg -s -- "$pkg" >/dev/null 2>&1 :? sm.dorc.PkgState:"$pkg"@installed
 }

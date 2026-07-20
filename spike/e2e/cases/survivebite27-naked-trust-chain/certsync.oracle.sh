@@ -9,7 +9,7 @@ certsync__predict() {
    verb=$1; shift
    bundle : sm.dorc.CertBundle = "$1"
    case $verb in
-      push) certsync status -- "$bundle" : sm.dorc.CertBundle:"$bundle"#synced ;;
+      push) certsync status -- "$bundle" : sm.dorc.CertBundle:"$bundle"@synced ;;
    esac
 }
 
@@ -17,7 +17,7 @@ certsync__disturbs() {                             # THE LIE: at-most its OWN Ce
    verb=$1; shift                                  # real push ALSO reloads nginx (Service:nginx#active),
    bundle : sm.dorc.CertBundle = "$1"              # UNCLAIMED and invisible to every coherence check.
    case $verb in
-      push) printf '%s\n' "$bundle" : sm.dorc.CertBundle ;;
+      push) printf '%s\n' "$bundle" : disturbs sm.dorc.CertBundle ;;
    esac
 }
 

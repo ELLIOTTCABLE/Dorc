@@ -5,9 +5,9 @@ chroot__predict() {
    "$@"
 }
 chroot__lend_map() {
-   printf '%s\n' "$1"   : fs-view
-   :   : user
-   :   : netns
+   printf '%s\n' "$1"   : lends fs-view
+   : lends user
+   : lends netns
    shift
    "$@"
 }

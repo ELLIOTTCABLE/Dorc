@@ -4,5 +4,5 @@
 grep__predict() {
    while [ "${1#-}" != "$1" ]; do shift; done
    pat : sm.dorc.GrepMatch = "$1"
-   grep -q -- "$pat" :? sm.dorc.GrepMatch:"$pat"#matched
+   grep -q -- "$pat" :? sm.dorc.GrepMatch:"$pat"@matched
 }

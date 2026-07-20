@@ -167,7 +167,7 @@ fn package_index(i: &mut Interner) -> KindIndex {
 fn plan_for(src: &str, holds: &[(&str, &str)]) -> Plan {
     let mut i = Interner::default();
     let idx = package_index(&mut i);
-    // Every cell in this matrix is `<kind>:<entity>#installed` (the install/purge
+    // Every cell in this matrix is `<kind>:<entity>@installed` (the install/purge
     // selector — the only one this oracle models), so the host-held facts carry it.
     let installed = SelectorId(i.intern("installed"));
     let held: Vec<FactKey> = holds
@@ -790,9 +790,9 @@ fn query_index(i: &mut Interner) -> KindIndex {
 }
 
 /// Run the whole pipeline with a Query guard, mirroring the cli's wrong-concrete
-/// FIREWALL: the `tool:<guard_tool>#present` Query cell is observed with `guard_rc`,
+/// FIREWALL: the `tool:<guard_tool>@present` Query cell is observed with `guard_rc`,
 /// but that rc reaches the fold's Status ONLY when the classified site is a VALID
-/// `QueryResolvable` (else withheld — status ⊤). `package:<e>#installed` cells are
+/// `QueryResolvable` (else withheld — status ⊤). `package:<e>@installed` cells are
 /// answered verdict-only by `pkg_holds` (a mutator's rc is always ⊤). The Effect verdict
 /// of the guard cell is derived from its rc (0 ⇒ Converged/holds, else Diverged).
 fn plan_query(src: &str, guard_tool: &str, guard_rc: i32, pkg_holds: &[&str]) -> Plan {
@@ -963,7 +963,7 @@ fn query_guard_absent_keeps_install_live_exit_revival() {
 fn query_guard_invalid_after_mutator_runs_for_real() {
     // THE invalidation pin (rule-query-validity, 205 §2 / 20A §4 st-3): the SAME guard
     // BELOW an oracled mutator (`apt-get install -y curl` establishes
-    // package:curl#installed) ⇒ a write reaches the guard from entry ⇒ the guard is an
+    // package:curl@installed) ⇒ a write reaches the guard from entry ⇒ the guard is an
     // INVALID Query ⇒ the firewall withholds its rc (status ⊤) ⇒ the fold cannot resolve
     // the `||` ⇒ the nginx install stays LIVE, and the guard itself runs for real
     // (StatusRelaxable-consumed + ⊤ rc ⇒ no license). curl install runs (diverged). Nothing

@@ -43,7 +43,7 @@ discipline: one rule per bullet, slugged; append to the matching section.
 - **thread-the-flat-coordinate** — `(kind, entity, selector)` + context slot
   through `FactKey` → `Reach` → `command_effect` → `classify`/`SkipClass`.
   Per-selector CELLS are the poison-wall fix: `apt-get update` establishes the
-  package-index cell, `install` establishes `…Package:nginx#installed` —
+  package-index cell, `install` establishes `…Package:nginx@installed` —
   different cells, no cross-poison.
 - **compare-only-at-chokepoints** — dialect sets + backing provenance (minting
   family) enter comparison inside core's chokepoints (`selector_covers`; the

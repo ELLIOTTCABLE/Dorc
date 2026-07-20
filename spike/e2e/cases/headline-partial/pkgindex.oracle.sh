@@ -4,6 +4,6 @@
 apt_get__predict() {
    verb=$1; shift
    case $verb in
-      update) idx : sm.dorc.PkgIndex; test -n fresh : sm.dorc.PkgIndex:#fresh ;;
+      update) test -n fresh : sm.dorc.PkgIndex@fresh ;;
    esac
 }

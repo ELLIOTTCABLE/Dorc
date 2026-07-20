@@ -6,7 +6,7 @@
 # rc is the raw PROBE-command status (opaque to Dorc — the record is the out-of-band lane).
 
 printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=1431061b8aaa3b8b sites=1 @@dorc@@\n'
-# site 1: sm.dorc.Package:curl#installed
+# site 1: sm.dorc.Package:curl@installed
 apt_get__predict() {
    while [ "${1#-}" != "$1" ]; do shift; done
    verb=$1; shift

@@ -725,13 +725,45 @@ impl Parser<'_> {
         }))
     }
 
+    /// Classify the current token for [`parse_command`](Self::parse_command), without holding a
+    /// borrow across the loop body. A block-ending keyword (`done`/`fi`/…) and a statement
+    /// terminator END the command (not consumed); a `281` mark intro begins a trailing mark; a
+    /// pipe folds the list-item into a byte-exact pipeline; a subshell/metachar is out-of-dialect.
+    fn classify_cmd_tok(&self) -> CmdTok {
+        match self.peek() {
+            None | Some(Tok::Newline | Tok::Semi | Tok::DSemi | Tok::RBrace) => CmdTok::End,
+            Some(Tok::Word {
+                lexeme,
+                single_quoted: false,
+                ..
+            }) => {
+                if is_block_keyword(lexeme) {
+                    CmdTok::End
+                } else if let Some(intro) = mark_marker(lexeme) {
+                    CmdTok::MarkStart(intro)
+                } else {
+                    CmdTok::Word
+                }
+            }
+            // A single-quoted word is always a plain command word (`':'` is a literal).
+            Some(Tok::Word { .. }) => CmdTok::Word,
+            Some(Tok::Redirect(t)) => CmdTok::Redirect(t.clone()),
+            Some(Tok::Error(msg)) => CmdTok::Error(msg.clone()),
+            // A pipe `|` (24E §14): ACCEPT it — the whole list-item ships byte-exact and ⊤s at
+            // trace (parse-permissively / trace-conservatively).
+            Some(Tok::Pipe) => CmdTok::Pipe,
+            // Any OTHER metacharacter (`(`, subshells, brackets) is out of dialect ⇒ ⊤-reject.
+            Some(_) => CmdTok::Other,
+        }
+    }
+
     /// Parse a plain command: a run of words and redirects up to a statement
     /// terminator (`;`, `;;`, newline, `}`, or a block keyword). Records the
     /// verbatim source span (`Command::span`) for shipping into the probe.
     fn parse_command(&mut self, start_span: Span) -> Result<Stmt, bool> {
         let mut words = Vec::new();
         let mut end_span = start_span;
-        let mut mark_sigil: Option<MarkSigil> = None;
+        let mut mark_intro: Option<MarkIntro> = None;
         // 24E §14: once a `|` is seen, this list-item is a PIPELINE — everything to the
         // list-item end folds into one span-covering, byte-exact-shipping Command the tracers ⊤ on.
         let mut pipeline = false;
@@ -752,49 +784,33 @@ impl Parser<'_> {
             // One-shot: only the token IMMEDIATELY after a bare `>>` can be the sink target.
             let target_pending = awaits_report_target;
             awaits_report_target = false;
-            // Classify the current token without holding a borrow across the body.
-            let class = match self.peek() {
-                None | Some(Tok::Newline | Tok::Semi | Tok::DSemi | Tok::RBrace) => CmdTok::End,
-                // An unquoted word: a block-ending keyword (`done`/`fi`/…) ends the command
-                // without being consumed; a standalone `:`/`:!`/`:?` marker begins a
-                // TRAILING mark (`277` §4a); anything else is a command word.
-                Some(Tok::Word {
-                    lexeme,
-                    single_quoted: false,
-                    ..
-                }) => {
-                    if is_block_keyword(lexeme) {
-                        CmdTok::End
-                    } else if let Some(sigil) = mark_marker(lexeme) {
-                        CmdTok::MarkStart(sigil)
-                    } else {
-                        CmdTok::Word
-                    }
-                }
-                // A single-quoted word is always a plain command word (`':'` is a literal).
-                Some(Tok::Word { .. }) => CmdTok::Word,
-                Some(Tok::Redirect(t)) => CmdTok::Redirect(t.clone()),
-                Some(Tok::Error(msg)) => CmdTok::Error(msg.clone()),
-                // A pipe `|` (24E §14): ACCEPT it — the whole list-item is a pipeline that ships
-                // byte-exact and ⊤s at trace (parse-permissively / trace-conservatively).
-                Some(Tok::Pipe) => CmdTok::Pipe,
-                // Any OTHER metacharacter (`(`, subshells, brackets) inside a command is still out
-                // of dialect ⇒ ⊤-reject at parse (PIPES ONLY were lifted — a subshell has no
-                // strip-fidelity story yet). The bias stays hard here for genuinely-unmodeled syntax.
-                Some(_) => CmdTok::Other,
-            };
-            match class {
+            match self.classify_cmd_tok() {
                 CmdTok::End => break,
-                CmdTok::MarkStart(sigil) => {
-                    // A leading `:` (words still empty) is the sh no-op COMMAND, not a mark
-                    // introducer (the `state_stored_only_in` colon-line, `277` §4e): consume
-                    // it as the command word so its own ` : <token>` tail parses as the mark.
-                    // Only the plain `:` sigil colon-commands; a leading `:!`/`:?` is a mark
-                    // with no command ⇒ falls through to the empty-command reject below.
-                    if words.is_empty() && sigil == MarkSigil::Verdict {
-                        end_span = self.peek_span().unwrap_or(end_span);
-                        if let Some((lexeme, quoting, _)) = self.take_word() {
-                            words.push(parse_word_lexeme(&lexeme, quoting, self.interner));
+                CmdTok::MarkStart(intro) => {
+                    // A statement-leading intro (words still empty). A lone `:` (colon carrier, no
+                    // sugar) with no following mark word is the POSIX null command — consume it as a
+                    // command word (`28A:rul-marked-colon-is-the-grammars`; `while :; do` survives).
+                    // Any other leading intro synthesizes a `:` host so the mark trails a bare-colon
+                    // command (keeps `is_bare_colon_host` + strip whole-line; the intro token is NOT
+                    // consumed here — `parse_mark` bumps it). The source bytes strip by span.
+                    if words.is_empty() {
+                        let next_is_word = matches!(
+                            self.toks.get(self.pos.saturating_add(1)).map(|t| &t.kind),
+                            Some(Tok::Word { .. })
+                        );
+                        if intro.carrier == MarkCarrier::Colon
+                            && intro.sugar.is_none()
+                            && !next_is_word
+                        {
+                            end_span = self.peek_span().unwrap_or(end_span);
+                            if let Some((lexeme, quoting, _)) = self.take_word() {
+                                words.push(parse_word_lexeme(&lexeme, quoting, self.interner));
+                            }
+                        } else {
+                            end_span = self.peek_span().unwrap_or(end_span);
+                            words.push(Word::Literal(":".to_owned()));
+                            mark_intro = Some(intro);
+                            break;
                         }
                     }
                     // Inside a pipeline, an (unquoted) `:` is normally opaque pipeline text — it
@@ -809,7 +825,7 @@ impl Parser<'_> {
                         end_span = self.peek_span().unwrap_or(end_span);
                         self.bump();
                     } else {
-                        mark_sigil = Some(sigil);
+                        mark_intro = Some(intro);
                         break;
                     }
                 }
@@ -853,8 +869,8 @@ impl Parser<'_> {
         let span = start_span.to(end_span);
         let carries_mark = !pipeline || self.role == FnRole::DisturbanceReachesOnly;
         let mark = if carries_mark {
-            match mark_sigil {
-                Some(sigil) => Some(self.parse_mark(sigil)?),
+            match mark_intro {
+                Some(intro) => Some(self.parse_mark(intro)?),
                 None => None,
             }
         } else {
@@ -870,43 +886,82 @@ impl Parser<'_> {
         }))
     }
 
-    /// Parse a dialect mark starting at the `:`/`:!`/`:?` marker token: consume the
-    /// marker, the target word, and an optional `= value` tail; split the target and
-    /// classify by [`MarkSigil`] (`277` §4a). All marks are TRAILING now (bare
-    /// statement-position ACK/POISON marks are retired). Malformed ⇒ ⊤-reject (the
-    /// parser's standing bias — never guess).
-    fn parse_mark(&mut self, sigil: MarkSigil) -> Result<Mark, bool> {
+    /// Parse ONE `281` mark starting at the intro token (`28A:rul-single-mark-production-subset`):
+    /// bump the intro, head-decode the verb by the `281` §4 three-rule (sugar → the sugar's verb;
+    /// else a dotted first token is an `asserts` coordinate; else a dotless first token is a verb
+    /// word), then consume the ONE payload word and split it (`@` selector). A trailing bind (`:=` /
+    /// `bind`) and an unknown verb word ⊤-reject (`inv-top-reject`; the block-model rc-arity and
+    /// multi-mark surface stay in the reference module). Malformed ⇒ ⊤-reject — never guess.
+    fn parse_mark(&mut self, intro: MarkIntro) -> Result<Mark, bool> {
         let marker_span = self.peek_span().unwrap_or(ZERO_SPAN);
-        self.bump(); // the `:` / `:!` / `:?` marker word
-        let Some((lexeme, _quoting, target_span)) = self.take_word() else {
-            return Err(self.fail_here("dialect mark requires a `kind:entity#selector` target"));
+        self.bump(); // the intro token (`:` / `:!` / `#:` / …)
+        // Head-decode the verb. A dotless verb WORD is consumed here (rule 3); sugar (rule 1) and
+        // a dotted coordinate (rule 2) leave the payload word for the split below.
+        let kind = match intro.sugar {
+            Some(Sugar::Bang) => MarkKind::Refutes,
+            Some(Sugar::Question) => MarkKind::Reads,
+            Some(Sugar::Equals) => {
+                return Err(self.fail_here(
+                    "trailing bind marks (`:=` / `bind`) are not accepted in v0.2 production \
+                     (`28A:rul-single-mark-production-subset`); type the value inline `name : KIND = value`",
+                ));
+            }
+            None => {
+                let head = match self.peek() {
+                    Some(Tok::Word { lexeme, .. }) => lexeme.clone(),
+                    _ => {
+                        return Err(self.fail_here("dialect mark requires a verb or coordinate"));
+                    }
+                };
+                if head.contains('.') {
+                    MarkKind::Asserts // rule 2: a dotted coordinate, the omitted-verb default
+                } else {
+                    self.bump(); // rule 3: consume the verb word
+                    if head == "bind" {
+                        return Err(self.fail_here(
+                            "trailing bind marks (`bind`) are not accepted in v0.2 production \
+                             (`28A:rul-single-mark-production-subset`)",
+                        ));
+                    }
+                    match mark_verb(&head) {
+                        Some(k) => k,
+                        None => {
+                            return Err(self.fail_here(&format!(
+                                "unknown mark verb `{head}` (expected one of: {})",
+                                expected_verbs()
+                            )));
+                        }
+                    }
+                }
+            }
         };
-        let end_span = target_span;
-        let Some(parsed) = split_mark_target(&lexeme, '#') else {
+        let Some((lexeme, _quoting, target_span)) = self.take_word() else {
+            return Err(self.fail_here("dialect mark requires a payload after the verb"));
+        };
+        let Some(parsed) = split_mark_target(&lexeme, '@') else {
             return Err(
-                self.fail_here("malformed dialect mark target (expected `kind:entity#selector`)")
+                self.fail_here("malformed dialect mark target (expected `kind:entity@selector`)")
             );
         };
-        // rider-selector-charset-unenforced (`277` §4b): a selector is a POSIX name in spirit (or a
-        // brace-alternation `#{a,b}`, `277` §4c). A violating selector is a LOUD ⊤-reject, never a
-        // silent ⊤ (`inv-top-reject` — bias every ambiguity toward reject-with-diagnostic).
+        // rider-selector-charset-unenforced (`277` §4b / `281` §6): a selector is a POSIX name in
+        // spirit (or a brace-alternation `{a,b}`, expanded consumer-side). A violating selector is
+        // a LOUD ⊤-reject, never a silent ⊤ (`inv-top-reject`).
         if let Some(prop) = &parsed.prop
             && !is_valid_selector(prop)
         {
             return Err(self.fail_here(
                 "selector must be a POSIX name (letter/underscore, then letters/digits/underscores) \
-                 or a brace-alternation `#{a,b}`",
+                 or a brace-alternation `{a,b}`",
             ));
         }
-        let mark_kind = classify_mark(sigil, self.role, &parsed);
         Ok(Mark {
-            kind: mark_kind,
+            kind,
             target: MarkTarget {
                 kind: parsed.kind,
                 entity: parsed.entity,
                 prop: parsed.prop,
             },
-            span: marker_span.to(end_span),
+            span: marker_span.to(target_span),
         })
     }
 
@@ -1060,10 +1115,10 @@ struct PredictHeader {
 enum CmdTok {
     /// A statement terminator / block keyword — ends the command (not consumed).
     End,
-    /// A standalone `:`/`:!`/`:?` marker begins a trailing mark — ends the command (not
-    /// consumed), carrying the [`MarkSigil`]. (A leading `:` is instead consumed as the
-    /// colon-command word; see [`Parser::parse_command`].)
-    MarkStart(MarkSigil),
+    /// A `281` mark intro (`:`/`:!`/`:?`/`:=`/`#:`…) begins a trailing mark — ends the command
+    /// (not consumed), carrying the [`MarkIntro`]. (A statement-leading intro is instead handled
+    /// by synthesizing a `:` host command; see [`Parser::parse_command`].)
+    MarkStart(MarkIntro),
     /// A plain word to add to the command.
     Word,
     /// A redirection chunk to fold into the verbatim span (carrying its verbatim text so
@@ -1266,28 +1321,81 @@ fn parse_word_lexeme(lexeme: &str, quoting: WordQuoting, interner: &mut Interner
     Word::Literal(lexeme.to_owned())
 }
 
-/// The mark sigil family (`277` §4a): `:` verdict named sense, `:!` verdict complement
-/// sense, `:?` observe. Polarity rides the sigil, never a coordinate suffix.
+/// The two `281` §1 mark carriers: the salient default `:` and the inert comment `#:`. The
+/// production single-mark subset (`28A:rul-single-mark-production-subset`) parses both — a valid
+/// `#:` block behaves identically to its `:` twin; the carrier only changes strip/off-ramp behavior.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum MarkSigil {
-    /// `:` — verdict, named sense (also the bare-kind emission / substrate token mark).
-    Verdict,
-    /// `:!` — verdict, complement sense.
-    Inverted,
-    /// `:?` — observe (read-only depends-upon).
-    Observe,
+enum MarkCarrier {
+    /// `:` — the salient colon form (highlights as shell; corrupts under a raw run).
+    Colon,
+    /// `#:` — the inert hash-colon comment carrier.
+    Hash,
 }
 
-/// Is `lexeme` a standalone inline-dialect mark marker? Recognizes the `277` §4a sigil
-/// family (`:` / `:!` / `:?`); anything else ⇒ `None`. The space-flanked marker lexes as
-/// its own word (the target `kind:entity#selector` is a separate, adjacent word).
-fn mark_marker(lexeme: &str) -> Option<MarkSigil> {
-    match lexeme {
-        ":" => Some(MarkSigil::Verdict),
-        ":!" => Some(MarkSigil::Inverted),
-        ":?" => Some(MarkSigil::Observe),
-        _ => None,
-    }
+/// The head-only sugar characters (`281` §3): the core cell-and-value shortcuts (`!`=refutes,
+/// `?`=reads, `=`=bind). Meta verbs are always spelled as words.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Sugar {
+    /// `!` — the complement verdict (`refutes`).
+    Bang,
+    /// `?` — the read (`reads`).
+    Question,
+    /// `=` — the bind (`281` §8).
+    Equals,
+}
+
+/// A decoded mark intro `( ':' | '#:' ) [ SUGAR ]` (`281` §3): the carrier plus optional head
+/// sugar. Replaces the old `MarkSigil` — the head-decode (`parse_mark`) turns it into one
+/// [`MarkKind`] verb via the `281` §4 three-rule.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct MarkIntro {
+    carrier: MarkCarrier,
+    sugar: Option<Sugar>,
+}
+
+/// Decode a lexeme to a `281` mark intro (`281` §3), or `None` if it is not one of the eight
+/// legal intros (`:` `:!` `:?` `:=` `#:` `#:!` `#:?` `#:=`). The space-flanked intro lexes as its
+/// own word; the payload (verb / coordinate) follows as adjacent words. (Production-local twin of
+/// [`super::mark_grammar::decode_intro`]; DUPLICATED, not shared, so production stays independent
+/// of the `#[cfg(test)]` reference module — `28A` CP-D handoff.)
+fn mark_marker(lexeme: &str) -> Option<MarkIntro> {
+    let (carrier, rest) = match lexeme.strip_prefix("#:") {
+        Some(rest) => (MarkCarrier::Hash, rest),
+        None => (MarkCarrier::Colon, lexeme.strip_prefix(':')?),
+    };
+    let sugar = match rest {
+        "" => None,
+        "!" => Some(Sugar::Bang),
+        "?" => Some(Sugar::Question),
+        "=" => Some(Sugar::Equals),
+        _ => return None,
+    };
+    Some(MarkIntro { carrier, sugar })
+}
+
+/// The engine-owned mark verb vocabulary (`281` §5), closed at v0.2, extends by new name only.
+/// `Some(kind)` maps a verb WORD to its [`MarkKind`]; `bind` is the value-plane verb with no
+/// coordinate `MarkKind` (`281` §8) and is handled at the call site (⊤-reject in the production
+/// subset). (Twin of the reference module's `VERBS`; DUPLICATED per the CP-D handoff — the
+/// vocabulary is closed, so the two-table drift risk is bounded and both are unit-tested.)
+fn mark_verb(word: &str) -> Option<MarkKind> {
+    Some(match word {
+        "asserts" => MarkKind::Asserts,
+        "refutes" => MarkKind::Refutes,
+        "reads" => MarkKind::Reads,
+        "safe-across" => MarkKind::SafeAcross,
+        "disturbs" => MarkKind::Disturbs,
+        "lends" => MarkKind::Lends,
+        "stored-in" => MarkKind::StoredIn,
+        "undivided-by-transit-across" => MarkKind::Undivided,
+        _ => return None,
+    })
+}
+
+/// The comma-joined known-verb vocabulary, for the unknown-verb ⊤-reject diagnostic (`281` §4).
+fn expected_verbs() -> &'static str {
+    "asserts, refutes, reads, bind, safe-across, disturbs, lends, stored-in, \
+     undivided-by-transit-across"
 }
 
 /// A syntactically-split mark target — every fragment OPAQUE (`inv-referent-agnostic`,
@@ -1379,35 +1487,6 @@ pub(crate) fn brace_tokens(sel: &str) -> Option<Vec<String>> {
     let tokens: Vec<&str> = inner.split(',').collect();
     (tokens.len() >= 2 && tokens.iter().all(|t| sem::is_name(t)))
         .then(|| tokens.into_iter().map(str::to_owned).collect())
-}
-
-/// The old-spelling head token that recovers the `undivided-by-transit-across` verb from a
-/// `state_stored_only_in` body (`: invariant:user`) during the additive respell ladder — the
-/// verb becomes an explicit word at CP-D. Kept in sync with `carry::INVARIANT_TOKEN`.
-const OLD_INVARIANT_HEAD: &str = "invariant";
-/// The old-spelling head token that recovers the `safe-across` verb from a verdict body
-/// (`: tolerates:user`). Kept in sync with `entry::TOLERATES_TOKEN`.
-const OLD_TOLERATES_HEAD: &str = "tolerates";
-
-/// Classify a parsed mark into its [`MarkKind`] VERB (`281` §5). The `:!`/`:?` sigils fix
-/// `Refutes`/`Reads` outright; the `:` sigil's verb is ROLE-derived in the OLD grammar (the
-/// verb word is implicit — the same sigil is a verdict, a footprint emission, a dimension
-/// lend, a substrate/invariance, or a context vouch depending on the enclosing member). The
-/// new grammar spells the verb; this recovers it from `role` + head token so the AST carries
-/// typed verbs before the parser flip (CP-D). `parsed` is the split target.
-fn classify_mark(sigil: MarkSigil, role: FnRole, parsed: &ParsedTarget) -> MarkKind {
-    match sigil {
-        MarkSigil::Inverted => MarkKind::Refutes,
-        MarkSigil::Observe => MarkKind::Reads,
-        MarkSigil::Verdict => match role {
-            FnRole::LendMap => MarkKind::Lends,
-            FnRole::StateStoredOnlyIn if parsed.kind == OLD_INVARIANT_HEAD => MarkKind::Undivided,
-            FnRole::StateStoredOnlyIn => MarkKind::StoredIn,
-            FnRole::Disturbs | FnRole::DisturbanceReachesOnly => MarkKind::Disturbs,
-            _ if parsed.kind == OLD_TOLERATES_HEAD => MarkKind::SafeAcross,
-            _ => MarkKind::Asserts,
-        },
-    }
 }
 
 /// Split `name=value` if `name` is a valid POSIX name (`sem::is_name`) and the lexeme
@@ -1594,10 +1673,10 @@ mod dialect_tests {
 
     #[test]
     fn trailing_verdict_mark_splits_kind_entity_selector() {
-        // `dpkg-query … : sm.dorc.Package:"$pkg"#installed` — a trailing verdict mark. kind keeps
+        // `dpkg-query … : sm.dorc.Package:"$pkg"@installed` — a trailing verdict mark. kind keeps
         // its reverse-DNS dots; entity/selector split on the attached `#` (`277` §4a).
         let body = body_of(
-            "apt_get__predict() { pkg : sm.dorc.Package = \"$1\"; dpkg-query -W \"$pkg\" : sm.dorc.Package:\"$pkg\"#installed; }",
+            "apt_get__predict() { pkg : sm.dorc.Package = \"$1\"; dpkg-query -W \"$pkg\" : sm.dorc.Package:\"$pkg\"@installed; }",
         );
         let m = first_command_mark(&body).expect("a trailing mark");
         assert_eq!(m.kind, MarkKind::Asserts);
@@ -1608,10 +1687,10 @@ mod dialect_tests {
 
     #[test]
     fn inverted_sigil_is_establish_inverted() {
-        // `… :! sm.dorc.Package:"$pkg"#installed` — polarity rides the `:!` sigil now, never a
+        // `… :! sm.dorc.Package:"$pkg"@installed` — polarity rides the `:!` sigil now, never a
         // coordinate suffix (`277` §4a). The coordinate is a pure name.
         let body = body_of(
-            "apt_get__predict() { pkg : sm.dorc.Package = \"$1\"; dpkg-query -W \"$pkg\" :! sm.dorc.Package:\"$pkg\"#installed; }",
+            "apt_get__predict() { pkg : sm.dorc.Package = \"$1\"; dpkg-query -W \"$pkg\" :! sm.dorc.Package:\"$pkg\"@installed; }",
         );
         let m = first_command_mark(&body).expect("a trailing mark");
         assert_eq!(m.kind, MarkKind::Refutes);
@@ -1620,9 +1699,9 @@ mod dialect_tests {
 
     #[test]
     fn observe_sigil_is_observe() {
-        // `… :? sm.dorc.GrepMatch:"$pat"#matched` — the observe mark (read-only depends-upon).
+        // `… :? sm.dorc.GrepMatch:"$pat"@matched` — the observe mark (read-only depends-upon).
         let body = body_of(
-            "grep__predict() { pat : sm.dorc.GrepMatch = \"$1\"; grep -q -- \"$pat\" :? sm.dorc.GrepMatch:\"$pat\"#matched; }",
+            "grep__predict() { pat : sm.dorc.GrepMatch = \"$1\"; grep -q -- \"$pat\" :? sm.dorc.GrepMatch:\"$pat\"@matched; }",
         );
         let m = first_command_mark(&body).expect("a trailing mark");
         assert_eq!(m.kind, MarkKind::Reads);
@@ -1632,10 +1711,10 @@ mod dialect_tests {
 
     #[test]
     fn empty_entity_form_carries_an_explicit_empty_entity() {
-        // `… :? io.opentelemetry.Collector:#v0155` — the empty-entity transitional form `kind:#sel`
-        // (`277` §4a): the entity slot is a DELIBERATE empty string (the-one), never `None`.
+        // `… :? io.opentelemetry.Collector:@v0155` — the empty-entity transitional form `kind:@sel`
+        // (`281` §6): the entity slot is a DELIBERATE empty string (the-one), never `None`.
         let body = body_of(
-            "otelcol__predict() { case $1 in --version) otelcol --version >/dev/null 2>&1 :? io.opentelemetry.Collector:#v0155 ;; esac }",
+            "otelcol__predict() { case $1 in --version) otelcol --version >/dev/null 2>&1 :? io.opentelemetry.Collector:@v0155 ;; esac }",
         );
         let m = first_command_mark(&body).expect("an empty-entity observe mark");
         assert_eq!(m.kind, MarkKind::Reads);
@@ -1655,7 +1734,7 @@ mod dialect_tests {
         let mut i = Interner::default();
         let out = lift_predicts(
             &mut i,
-            "x__predict() { case $1 in a) foo : sm.dorc.K:e#bad-sel ;; esac }",
+            "x__predict() { case $1 in a) foo : sm.dorc.K:e@bad-sel ;; esac }",
         );
         assert!(
             !out.diags.is_empty(),
@@ -1669,7 +1748,7 @@ mod dialect_tests {
         // claim-emission marks is enforced downstream). Here the mark's selector holds the raw
         // `{enabled,active}` (the touches lift expands it; verdict/observe reject it in derive).
         let body = body_of(
-            "x__predict() { case $1 in a) foo : sm.dorc.Service:nginx#{enabled,active} ;; esac }",
+            "x__predict() { case $1 in a) foo : sm.dorc.Service:nginx@{enabled,active} ;; esac }",
         );
         let m = first_command_mark(&body).expect("a brace-alternation mark parses");
         assert_eq!(m.target.prop.as_deref(), Some("{enabled,active}"));
@@ -1689,24 +1768,35 @@ mod dialect_tests {
 
     #[test]
     fn colon_line_is_a_command_carrying_a_trailing_token_mark() {
-        // The `state_stored_only_in` colon-line shape (`277` §4e): a leading `:` is the sh no-op
-        // COMMAND (not a mark introducer), and its ` : <token>` tail is the trailing mark. A
-        // substrate `: fs` and the `: invariant:user` axis line both parse this way, inert.
-        let body =
-            body_of("dpkg__predict() { printf '/var/lib/dpkg\\n' : fs; : : invariant:user; }");
-        // First stmt: `printf … : fs`.
+        // The `state_stored_only_in` colon-line shape (`281` §4/§11): a statement-leading intro
+        // synthesizes a `:` no-op host COMMAND carrying the mark. A trailing `: stored-in fs`
+        // substrate mark and a leading `: undivided-by-transit-across user` axis line both parse
+        // this way, inert.
+        let body = body_of(
+            "dpkg__predict() { printf '/var/lib/dpkg\\n' : stored-in fs; : undivided-by-transit-across user; }",
+        );
+        // First stmt: `printf … : stored-in fs`.
         let Some(Stmt::Command(first)) = body.first() else {
             panic!("expected a command: {body:?}");
         };
-        let m = first.mark.as_ref().expect("the `: fs` substrate mark");
+        let m = first
+            .mark
+            .as_ref()
+            .expect("the `: stored-in fs` substrate mark");
+        assert_eq!(m.kind, MarkKind::StoredIn);
         assert_eq!(m.target.kind, "fs");
-        // Second stmt: the colon-command `:` carrying `: invariant:user`.
+        // Second stmt: the synthetic colon-command `:` hosting `: undivided-by-transit-across user`
+        // (the axis token in the uniform `.kind` payload home).
         let Some(Stmt::Command(second)) = body.get(1) else {
             panic!("expected a colon-command: {body:?}");
         };
-        let m2 = second.mark.as_ref().expect("the invariant colon-line mark");
-        assert_eq!(m2.target.kind, "invariant");
-        assert_eq!(m2.target.entity.as_deref(), Some("user"));
+        let m2 = second
+            .mark
+            .as_ref()
+            .expect("the invariance colon-line mark");
+        assert_eq!(m2.kind, MarkKind::Undivided);
+        assert_eq!(m2.target.kind, "user");
+        assert_eq!(m2.target.entity, None);
     }
 
     #[test]
@@ -1851,7 +1941,7 @@ mod dialect_tests {
     #[test]
     fn reaches_pipeline_carries_trailing_mark_after_multi_stage_pipe() {
         let c = reaches_command(
-            "sm_dorc_Package__disturbance_reaches_only() { dpkg -L \"$1\" | grep x | sed y : sm.dorc.File ; }",
+            "sm_dorc_Package__disturbance_reaches_only() { dpkg -L \"$1\" | grep x | sed y : disturbs sm.dorc.File ; }",
         );
         assert!(c.pipeline, "a multi-stage pipe is a pipeline");
         let m = c
@@ -1866,7 +1956,7 @@ mod dialect_tests {
     #[test]
     fn reaches_pipeline_quoted_colon_inside_arg_is_not_a_mark() {
         let c = reaches_command(
-            "sm_dorc_Package__disturbance_reaches_only() { dpkg -L \"$1\" | sed 's|x|file:|' : sm.dorc.File ; }",
+            "sm_dorc_Package__disturbance_reaches_only() { dpkg -L \"$1\" | sed 's|x|file:|' : disturbs sm.dorc.File ; }",
         );
         assert!(c.pipeline);
         let m = c

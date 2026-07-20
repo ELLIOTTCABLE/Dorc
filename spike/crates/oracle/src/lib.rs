@@ -10,14 +10,14 @@
 //!    verb=$1; shift
 //!    pkg : package = "$1"                                    # the kind annotation
 //!    case $verb in
-//!       install) dpkg-query -W "$pkg" : package:"$pkg"#installed ;;   # establish
-//!       purge)   dpkg-query -W "$pkg" : package:"$pkg"#installed! ;;  # inverted
+//!       install) dpkg-query -W "$pkg" : package:"$pkg"@installed ;;   # establish
+//!       purge)   dpkg-query -W "$pkg" : package:"$pkg"@installed! ;;  # inverted
 //!    esac
 //! }
 //! ```
 //!
 //! From a book's bare `apt-get install -y nginx`, the analyzer derives the effect
-//! `(apt-get, install) → (package, #installed, Establish)` (the `case $verb` arm names the
+//! `(apt-get, install) → (package, @installed, Establish)` (the `case $verb` arm names the
 //! verb, the inline `pkg : package` annotation names the kind, the trailing mark names the
 //! selector + rc convention — see [`predict::derive_predict`]). The kind name is the only
 //! cross-oracle anchor (apt's `package` ≡ yum's `package`); it is never decoded for meaning
@@ -162,7 +162,7 @@ pub use predict::ValueClaim;
 /// One declared effect cell of a `(provider, verb)`: which `kind`, which `selector`
 /// facet, and the [`ValueClaim`]. A `(provider, verb)` may declare **several** cells
 /// (`us-effectmap`, note 205 §3: a multi-cell verb is real — `purge` kills
-/// `#installed` and may dirty a `#config` cell). The wiring (`analysis::effect`)
+/// `@installed` and may dirty a `@config` cell). The wiring (`analysis::effect`)
 /// treats each cell as written, in declaration order.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct EffectCell {
@@ -192,7 +192,7 @@ pub struct KindIndex {
     /// many providers and many verbs coexist (`apt-get install` vs `apt-get purge`
     /// vs `dpkg -i`). The value is a **Vec** of [`EffectCell`]s (`us-effectmap`, note
     /// 205 §3): a verb may gate several cells. The `selector`
-    /// (`#installed`/`#fresh`/`#enabled`/`#active`) is the per-entity facet
+    /// (`@installed`/`@fresh`/`@enabled`/`@active`) is the per-entity facet
     /// (`an-per-entity-selector`, `notes/193` §4): `enable` and `start` target
     /// *different* selectors on the same `service` cell, so neither discharges the
     /// other. A **verbless** provider (`useradd`, `command -v`) keys on the ε-verb
@@ -490,7 +490,7 @@ mod tests {
         // complete effect-map. jc-dpkg-i: the fixture declares BOTH the `apt_get__predict`
         // (verb-dispatched) and the minimal verbless `dpkg__predict` (strips `-i`, so `dpkg`
         // is verbless ⇒ the ε-verb), preserving the pinned intent "dpkg -i establishes
-        // package#installed" under check-is-the-oracle.
+        // package@installed" under check-is-the-oracle.
         let fixture = include_str!(concat!(
             env!("CARGO_MANIFEST_DIR"),
             "/../../fixtures/package.oracle.sh"
@@ -524,7 +524,7 @@ mod tests {
                 .first()
                 .map(|c| (c.kind, c.selector, c.claim)),
             Some((package, installed, ValueClaim::Establish)),
-            "dpkg -i establishes package#installed via the ε-verb"
+            "dpkg -i establishes package@installed via the ε-verb"
         );
     }
 
@@ -533,9 +533,9 @@ mod tests {
         // dn-1's whole point: many oracle files contribute to one index, in argument
         // order, with no cross-file interference. Two providers, same kind (the Seam).
         let a = "apt_get__predict() { verb=$1; shift; pkg : package = \"$1\"; \
-                 case $verb in install) dpkg-query -W \"$pkg\" : package:\"$pkg\"#installed ;; esac; }";
+                 case $verb in install) dpkg-query -W \"$pkg\" : sm.dorc.Package:\"$pkg\"@installed ;; esac; }";
         let b = "yum__predict() { verb=$1; shift; pkg : package = \"$1\"; \
-                 case $verb in install) rpm -q \"$pkg\" : package:\"$pkg\"#installed ;; esac; }";
+                 case $verb in install) rpm -q \"$pkg\" : sm.dorc.Package:\"$pkg\"@installed ;; esac; }";
         let mut i = Interner::default();
         let out = lift(&mut i, &[a, b]);
         let package = KindId(i.intern("package"));
@@ -555,7 +555,7 @@ mod tests {
         // A verbless check (`command -v`) derives its effect on the ε-verb — the key the
         // wiring uses for a check that binds no verb (202 §2 / task-W §4).
         let src = "command__predict() { case $1 in -v) shift ;; esac; tool : tool = \"$1\"; \
-                   command -v -- \"$tool\" >/dev/null 2>&1 :? tool:\"$tool\"#present; }";
+                   command -v -- \"$tool\" >/dev/null 2>&1 :? sm.dorc.Tool:\"$tool\"@present; }";
         let mut i = Interner::default();
         let out = lift(&mut i, &[src]);
         assert!(!out.value.is_empty(), "the verbless guard lifts a cell");
@@ -579,11 +579,11 @@ mod tests {
         // `277` §5 observe-backing-widening: a `:?` observe INSIDE a verdict body (same verb arm
         // as a `:` establish) widens the establish fact's backing — recorded as a widening
         // SELECTOR, NOT emitted as a `Queries` cell (a mixed establish+query slice at the book
-        // site would fall to `MustRun`). Here `install` establishes `#installed` AND observes
-        // `#indexed`: the effect map keeps ONLY the establish cell; `#indexed` is a widening.
+        // site would fall to `MustRun`). Here `install` establishes `@installed` AND observes
+        // `@indexed`: the effect map keeps ONLY the establish cell; `@indexed` is a widening.
         let src = "apt_get__predict() { verb=$1; shift; pkg : package = \"$1\"; \
-                   case $verb in install) dpkg-query -W \"$pkg\" : package:\"$pkg\"#installed; \
-                   dpkg-query -s \"$pkg\" :? package:\"$pkg\"#indexed ;; esac; }";
+                   case $verb in install) dpkg-query -W \"$pkg\" : sm.dorc.Package:\"$pkg\"@installed; \
+                   dpkg-query -s \"$pkg\" :? sm.dorc.Package:\"$pkg\"@indexed ;; esac; }";
         let mut i = Interner::default();
         let out = lift(&mut i, &[src]);
         assert!(out.diags.is_empty(), "clean lift: {:?}", out.diags);
@@ -592,7 +592,7 @@ mod tests {
         let package = KindId(i.intern("package"));
         let installed = SelectorId(i.intern("installed"));
         let indexed = SelectorId(i.intern("indexed"));
-        // The effect map keeps only the establish cell (NOT a Query cell for #indexed).
+        // The effect map keeps only the establish cell (NOT a Query cell for @indexed).
         assert_eq!(
             out.value.effect_of(apt, install),
             &[EffectCell {
@@ -602,7 +602,7 @@ mod tests {
             }],
             "the observe co-occurring with the verdict is NOT a Query cell"
         );
-        // #indexed is recorded as a backing-widening for (apt_get, install).
+        // @indexed is recorded as a backing-widening for (apt_get, install).
         assert!(
             out.value.widening_of(apt, install).contains(&indexed),
             "the co-occurring observe widens the verdict fact's backing"
@@ -615,7 +615,7 @@ mod tests {
         // ⇒ it stays a `Queries` cell (its own row) and widens NOTHING (`277` §5). This is why the
         // whole corpus is byte-identical: every corpus observe is exactly this shape.
         let src = "dpkg__predict() { case $1 in -s) shift ;; esac; pkg : package = \"$1\"; \
-                   dpkg -s -- \"$pkg\" >/dev/null 2>&1 :? package:\"$pkg\"#installed; }";
+                   dpkg -s -- \"$pkg\" >/dev/null 2>&1 :? sm.dorc.Package:\"$pkg\"@installed; }";
         let mut i = Interner::default();
         let out = lift(&mut i, &[src]);
         let dpkg = ProviderId(i.intern("dpkg"));

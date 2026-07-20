@@ -3,11 +3,11 @@
 # minimal fs (config-file) oracle for a `writeconf <path>` tool — the 24F closure on the `fs` kind.
 writeconf__predict() {
    path : sm.dorc.Fs = "$1"
-   conf-exists "$path" : sm.dorc.Fs:"$path"#written
+   conf-exists "$path" : sm.dorc.Fs:"$path"@written
 }
 
 writeconf__disturbs() {
-   printf '%s\n' "$1" : sm.dorc.Fs
+   printf '%s\n' "$1" : disturbs sm.dorc.Fs
 }
 
 writeconf__is_converged() {

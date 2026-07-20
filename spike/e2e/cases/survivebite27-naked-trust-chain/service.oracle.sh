@@ -6,8 +6,8 @@ systemctl__predict() {
    verb=$1; shift
    svc : sm.dorc.Service = "$1"
    case $verb in
-      start)   systemctl is-active  -- "$svc" : sm.dorc.Service:"$svc"#active ;;
-      enable)  systemctl is-enabled -- "$svc" : sm.dorc.Service:"$svc"#enabled ;;
+      start)   systemctl is-active  -- "$svc" : sm.dorc.Service:"$svc"@active ;;
+      enable)  systemctl is-enabled -- "$svc" : sm.dorc.Service:"$svc"@enabled ;;
    esac
 }
 

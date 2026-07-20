@@ -4218,16 +4218,16 @@ fn subtree_leaves_all(
 /// map on the string, never decoding it), so the format is the cli's stdin grammar.
 ///
 /// Two shapes, discriminated by the presence of a `:` *operand* segment:
-/// * `kind:entity#selector` for [`EntityRef::Operand`] — `package:nginx#installed`;
-/// * `kind#selector` for [`EntityRef::Singleton`] — `package-index#fresh`. A
-///   singleton has no operand, so it carries NO `:`-segment (the bare `package-index:#fresh`
+/// * `kind:entity@selector` for [`EntityRef::Operand`] — `package:nginx@installed`;
+/// * `kind@selector` for [`EntityRef::Singleton`] — `package-index@fresh`. A
+///   singleton has no operand, so it carries NO `:`-segment (the bare `package-index@fresh`
 ///   the strain-4 note warned against is avoided — `:` present ⇔ an operand exists).
 ///
-/// The selector is ALWAYS rendered (`#selector`): it is the per-entity facet the
+/// The selector is ALWAYS rendered (`@selector`, `281` §R4): it is the per-entity facet the
 /// re-key added (`an-per-entity-selector`), and dropping it would let an `is-active`
-/// probe-verdict discharge an unmet `#enabled` cell — a wrong-elision under apply's
+/// probe-verdict discharge an unmet `@enabled` cell — a wrong-elision under apply's
 /// `kFAIL` (`cli/CLAUDE.md` "stdin re-key gotcha"). The label is injective over
-/// distinct `FactKey`s modulo a `:`/`#` collision in an interned name (a disposable-
+/// distinct `FactKey`s modulo a `:`/`@` collision in an interned name (a disposable-
 /// parser limitation, `ch-scope`; book operands like `nginx` don't carry them).
 #[must_use]
 pub fn fact_label(interner: &Interner, fact: FactKey) -> String {
@@ -4235,9 +4235,9 @@ pub fn fact_label(interner: &Interner, fact: FactKey) -> String {
     let selector = interner.resolve(fact.selector.0);
     match fact.entity {
         EntityRef::Operand(tok) => {
-            format!("{kind}:{}#{selector}", interner.resolve(tok.0))
+            format!("{kind}:{}@{selector}", interner.resolve(tok.0))
         }
-        EntityRef::Singleton => format!("{kind}#{selector}"),
+        EntityRef::Singleton => format!("{kind}@{selector}"),
     }
 }
 
@@ -4252,19 +4252,19 @@ mod tests {
     /// `package` with a `[ "$2" = "" ]` multi-operand refusal). Annotation kinds match
     /// the effect-map's, so the kind-agreement rule never fires. Lifted with the test's
     /// interner so provider symbols match the book's command words (204 seam #2).
-    const CORPUS_PREDICT_SRC: &str = r##"
+    const CORPUS_PREDICT_SRC: &str = r#"
 apt_get__predict() {
    while [ "${1#-}" != "$1" ]; do shift; done
    verb=$1; shift
    case $verb in
-      update) idx : package-index; test -n fresh : package-index:#fresh ;;
+      update) test -n fresh : sm.dorc.PkgIndex@fresh ;;
       *)
          while [ "${1#-}" != "$1" ]; do shift; done
          pkg : package = "$1"
-         if [ "$2" = "" ]; then dpkg-query -W "$pkg" >/dev/null 2>&1 : package:"$pkg"#installed ; fi ;;
+         if [ "$2" = "" ]; then dpkg-query -W "$pkg" >/dev/null 2>&1 : sm.dorc.Package:"$pkg"@installed ; fi ;;
    esac
 }
-"##;
+"#;
 
     /// R3 test seam: resolve+strip the corpus `apt_get__predict` for a site's (provider, argv),
     /// the same resolution the cli's `ship_predict_body` runs — the FIRST check whose provider
@@ -4298,7 +4298,7 @@ apt_get__predict() {
         None
     }
 
-    /// `package:nginx#installed` — the cell `apt-get install nginx` gates. The
+    /// `package:nginx@installed` — the cell `apt-get install nginx` gates. The
     /// re-key (`notes/193`) made the entity an [`EntityRef`] and added a selector.
     fn nginx_fact() -> FactKey {
         let mut i = Interner::default();
@@ -5179,8 +5179,8 @@ apt_get__predict() {
 
     // --- end-to-end: the whole pipeline (parse → cfg → classify → plan) ---
 
-    /// A package kind-index modeling `apt-get install → package#installed` AND
-    /// `apt-get update → package-index#fresh` (the spike-2 re-key, `notes/193` §1).
+    /// A package kind-index modeling `apt-get install → package@installed` AND
+    /// `apt-get update → package-index@fresh` (the spike-2 re-key, `notes/193` §1).
     /// `update` now lands on a *distinct cell* from `install`, so it no longer
     /// poisons the install below it — the poison-wall fix. (Pre-key, `update` was
     /// left un-modeled ⇒ Opaque ⇒ `Reach::Top` ⇒ it poisoned everything downstream.)
@@ -5198,7 +5198,7 @@ apt_get__predict() {
         idx
     }
 
-    /// Run the pipeline on `src`, answering `package:nginx#installed` with
+    /// Run the pipeline on `src`, answering `package:nginx@installed` with
     /// `nginx_verdict` and every other fact `Unknown`.
     fn plan_for(src: &str, nginx_verdict: Verdict) -> (Plan, Interner) {
         let mut i = Interner::default();
@@ -5246,7 +5246,7 @@ apt_get__predict() {
         (plan, i)
     }
 
-    /// Run the pipeline on `src`, answering each `package:<entity>#installed` cell with
+    /// Run the pipeline on `src`, answering each `package:<entity>@installed` cell with
     /// the verdict `verdict_of(entity)` returns (every non-package fact ⇒ Unknown). For the
     /// task-L2 member tests that need DIFFERENT verdicts per member (e.g. nginx converged,
     /// curl diverged). Status stays ⊤ (fork-mutator-rc), as `plan_for`.
@@ -5726,7 +5726,7 @@ apt_get__predict() {
         "apt-get install -y oldpkg\napt-get install -y badpkg\napt-get install -y nginx\n",
     ];
 
-    /// Build a plan for an install-only book, answering `package:<entity>#installed` with
+    /// Build a plan for an install-only book, answering `package:<entity>@installed` with
     /// `verdict_of(entity)`. `survival` selects the walk: `None` ⇒ Stage-1 total wall;
     /// `Some(self_footprints)` ⇒ every establish-bearing node footprints its OWN coordinate
     /// (coherent by construction — the well-authored oracle shape), so a wall is disjoint from
@@ -6100,7 +6100,7 @@ apt_get__predict() {
         // hunt the strain note flagged as the top crosscheck target): a sibling `apt-get
         // purge curl` INSIDE the loop body writes a member cell. The suppressed-solve must
         // catch it — the SIBLING's gen is NOT suppressed (only the install's own is), so the
-        // purge's `curl#installed` reaches the install's in-state via the back-edge as a
+        // purge's `curl@installed` reaches the install's in-state via the back-edge as a
         // NON-self writer ⇒ self-reach false ⇒ the install RUNS despite both members reported
         // converged. (Proves the suppressed-solve is sound against back-edge siblings, not
         // just pre-loop writers.)

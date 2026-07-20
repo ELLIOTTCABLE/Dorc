@@ -6,7 +6,7 @@
 # rc is the raw PROBE-command status (opaque to Dorc — the record is the out-of-band lane).
 
 printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=8a720b1dae6d20e8 sites=1 @@dorc@@\n'
-# site 0: dorc-auto:kp#converged
+# site 0: dorc-auto:kp@converged
 kp__is_converged() {
    kp check "$1" "$2"
 }

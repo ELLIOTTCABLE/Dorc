@@ -4,7 +4,7 @@
 //! touches which `(kind, selector)` is READ OFF the check body's own control
 //! flow: the `case $verb` arms name the verbs, the inline identity annotation
 //! (`pkg : package = "$1"`) names the kind, and the trailing effect mark on the
-//! reached probe command (`… : package:"$pkg"#installed`) names the selector and the
+//! reached probe command (`… : package:"$pkg"@installed`) names the selector and the
 //! rc convention. Nothing new is authored — the author writes idiomatic sh and Dorc
 //! narrows it (`AGENTS.md`: annotation-by-narrowing, never a config surface).
 //!
@@ -76,7 +76,7 @@ pub struct DerivedEffect {
 /// and total (`inv-no-throw`: no panics — a shape the walk cannot characterize simply
 /// emits nothing, the safe direction). NB the converged-vouch is no longer a mark
 /// (rul24-vouch-is-verdict-authoring, 24A §1c): it is an authored `is_converged()`
-/// verdict function, unread by this derivation. A brace-alternation `#{a,b}` on a
+/// verdict function, unread by this derivation. A brace-alternation `@{a,b}` on a
 /// VERDICT/OBSERVE mark is inert (`277` §4c single-cell law) — a loud diagnostic, not a silent
 /// drop (`27D` disposition-brace-verdict-silent, 24Kc F2; `inv-top-reject`).
 #[must_use]
@@ -178,20 +178,37 @@ fn push_effect(
         | MarkKind::StoredIn
         | MarkKind::Undivided => return,
     };
-    let (Some(kind_str), Some(selector)) = (ctx.kind.clone(), target.prop.clone()) else {
+    // The kind comes from the inline annotation reached on this path, or — when NO annotation was
+    // reached (the value-less nullary Singleton form, `28A:rul-singleton-bind-drops`: the bind is
+    // dropped and the coordinate names the kind directly) — from the mark's own coordinate.
+    let kind_str = ctx
+        .kind
+        .clone()
+        .or_else(|| (!target.kind.is_empty()).then(|| target.kind.clone()));
+    let (Some(kind_str), Some(selector)) = (kind_str, target.prop.clone()) else {
         return;
     };
-    // `277` §4c single-cell law: a verdict/observe mark asserts EXACTLY ONE cell, so a brace-
-    // alternation `#{a,b}` is claim-emission-only and mints NO cell here. This derivation walks
-    // ONLY verdict/observe (`:`/`:!`/`:?`) function bodies, so any brace here IS on a single-cell
-    // mark — a role-aware rejection the parser (which accepts the brace SHAPE role-agnostically,
-    // `:` serving both verdict and disturbs) cannot make. LOUD, not a silent inert drop (`27D`
-    // disposition-brace-verdict-silent, 24Kc F2; `inv-top-reject`).
-    if crate::predict::brace_tokens(&selector).is_some() {
-        diags.push(Diag::new(
-            DiagCode::MarkBraceVerdictSingleCell(MarkBraceVerdictSingleCell),
-            span,
-        ));
+    // Brace-alternation on the selector (`281` §6, DUMB expand-then-validate): a VERDICT is
+    // single-cell by rc-arity — a `@{a,b}` mints NO cell, LOUDLY (`27D`
+    // disposition-brace-verdict-silent, 24Kc F2; `inv-top-reject`). An OBSERVE (`:?`/`reads`)
+    // EXPANDS to N observe facts (`28A:rul-brace-on-reads-legal`: backing-widening is always-safe
+    // and honesty-positive).
+    if let Some(tokens) = crate::predict::brace_tokens(&selector) {
+        if matches!(claim, ValueClaim::Establish | ValueClaim::EstablishInverted) {
+            diags.push(Diag::new(
+                DiagCode::MarkBraceVerdictSingleCell(MarkBraceVerdictSingleCell),
+                span,
+            ));
+            return;
+        }
+        for token in tokens {
+            effects.push(DerivedEffect {
+                verb: ctx.verb.clone(),
+                kind: kind_str.clone(),
+                selector: token,
+                claim,
+            });
+        }
         return;
     }
     effects.push(DerivedEffect {
@@ -264,62 +281,62 @@ apt_get__predict() {
    while [ \"${1#-}\" != \"$1\" ]; do shift; done
    verb=$1; shift
    while [ \"${1#-}\" != \"$1\" ]; do shift; done
-   pkg : package = \"$1\"
+   pkg : sm.dorc.Package = \"$1\"
    if [ \"$2\" = \"\" ]; then
       case $verb in
-         install|reinstall) dpkg-query -W \"$pkg\" >/dev/null 2>&1 : package:\"$pkg\"#installed ;;
-         purge|remove) dpkg-query -W \"$pkg\" >/dev/null 2>&1 :! package:\"$pkg\"#installed ;;
+         install|reinstall) dpkg-query -W \"$pkg\" >/dev/null 2>&1 : sm.dorc.Package:\"$pkg\"@installed ;;
+         purge|remove) dpkg-query -W \"$pkg\" >/dev/null 2>&1 :! sm.dorc.Package:\"$pkg\"@installed ;;
       esac
    fi
 }";
         assert_eq!(
             derived_set(dialect, "apt_get"),
             expect(&[
-                ("install", "package", "installed", "establish"),
-                ("reinstall", "package", "installed", "establish"),
-                ("purge", "package", "installed", "inverted"),
-                ("remove", "package", "installed", "inverted"),
+                ("install", "sm.dorc.Package", "installed", "establish"),
+                ("reinstall", "sm.dorc.Package", "installed", "establish"),
+                ("purge", "sm.dorc.Package", "installed", "inverted"),
+                ("remove", "sm.dorc.Package", "installed", "inverted"),
             ]),
-            "install/reinstall establish #installed; purge/remove invert it (the `!` mark)"
+            "install/reinstall establish @installed; purge/remove invert it (the `!` mark)"
         );
     }
 
     #[test]
     fn service_systemctl_derives_multi_selector_cells() {
-        // The multi-selector service shape: enable→#enabled, start→#active (both
-        // establish), disable→#enabled INVERTED (the `!` mark).
+        // The multi-selector service shape: enable→@enabled, start→@active (both
+        // establish), disable→@enabled INVERTED (the `!` mark).
         let dialect = "\
 systemctl__predict() {
    verb=$1; shift
-   svc : service = \"$1\"
+   svc : sm.dorc.Service = \"$1\"
    case $verb in
-      enable)  systemctl is-enabled -- \"$svc\" : service:\"$svc\"#enabled ;;
-      start)   systemctl is-active -- \"$svc\" : service:\"$svc\"#active ;;
-      disable) systemctl is-enabled -- \"$svc\" :! service:\"$svc\"#enabled ;;
+      enable)  systemctl is-enabled -- \"$svc\" : sm.dorc.Service:\"$svc\"@enabled ;;
+      start)   systemctl is-active -- \"$svc\" : sm.dorc.Service:\"$svc\"@active ;;
+      disable) systemctl is-enabled -- \"$svc\" :! sm.dorc.Service:\"$svc\"@enabled ;;
    esac
 }";
         assert_eq!(
             derived_set(dialect, "systemctl"),
             expect(&[
-                ("enable", "service", "enabled", "establish"),
-                ("start", "service", "active", "establish"),
-                ("disable", "service", "enabled", "inverted"),
+                ("enable", "sm.dorc.Service", "enabled", "establish"),
+                ("start", "sm.dorc.Service", "active", "establish"),
+                ("disable", "sm.dorc.Service", "enabled", "inverted"),
             ]),
         );
     }
 
     #[test]
     fn brace_alternation_on_verdict_mark_is_loud_not_silent() {
-        // `277` §4c: a brace-alternation `#{a,b}` on a verdict/observe mark is single-cell-illegal
+        // `277` §4c: a brace-alternation `@{a,b}` on a verdict/observe mark is single-cell-illegal
         // — it mints NO cell (safe: the arm declines ⇒ run) but LOUDLY, not silently (`27D`
         // disposition-brace-verdict-silent, 24Kc F2 the silent-inert authored-construct class). An
         // author who wrote a two-cell verdict must hear it is inert, not discover a mystery run.
         let dialect = "\
 systemctl__predict() {
    verb=$1; shift
-   svc : service = \"$1\"
+   svc : sm.dorc.Service = \"$1\"
    case $verb in
-      enable) systemctl is-enabled -- \"$svc\" : service:\"$svc\"#{enabled,active} ;;
+      enable) systemctl is-enabled -- \"$svc\" : sm.dorc.Service:\"$svc\"@{enabled,active} ;;
    esac
 }";
         let mut i = Interner::default();
@@ -338,17 +355,17 @@ systemctl__predict() {
 
     #[test]
     fn tool_command_v_verbless_observe_derives_present() {
-        // The verbless read-only guard: `command -v` is an OBSERVE of tool:#present on the
+        // The verbless read-only guard: `command -v` is an OBSERVE of tool@present on the
         // ε-verb (the `:?` mark).
         let dialect = "\
 command__predict() {
    case $1 in -v) shift ;; esac
-   tool : tool = \"$1\"
-   command -v -- \"$tool\" >/dev/null 2>&1 :? tool:\"$tool\"#present
+   tool : sm.dorc.Tool = \"$1\"
+   command -v -- \"$tool\" >/dev/null 2>&1 :? sm.dorc.Tool:\"$tool\"@present
 }";
         assert_eq!(
             derived_set(dialect, "command"),
-            expect(&[("", "tool", "present", "observe")]),
+            expect(&[("", "sm.dorc.Tool", "present", "observe")]),
         );
     }
 
@@ -360,10 +377,10 @@ command__predict() {
         let dialect = "\
 apt_get__predict() {
    verb=$1; shift
-   pkg : package = \"$1\"
+   pkg : sm.dorc.Package = \"$1\"
    case $verb in
-      install) dpkg-query -W \"$pkg\" : package:\"$pkg\"#installed ;;
-      *) dpkg-query -W \"$pkg\" : package:\"$pkg\"#installed ;;
+      install) dpkg-query -W \"$pkg\" : sm.dorc.Package:\"$pkg\"@installed ;;
+      *) dpkg-query -W \"$pkg\" : sm.dorc.Package:\"$pkg\"@installed ;;
    esac
 }";
         let set = derived_set(dialect, "apt_get");

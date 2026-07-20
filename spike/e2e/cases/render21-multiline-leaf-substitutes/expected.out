@@ -7,7 +7,7 @@
 
 printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=dbd5398ea023a056 sites=1 @@dorc@@\n'
 # site 0: sm.dorc.Package:multi
-line#installed
+line@installed
 apt_get__predict() {
    while [ "${1#-}" != "$1" ]; do shift; done
    verb=$1; shift

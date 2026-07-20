@@ -44,8 +44,8 @@ use std::collections::{BTreeMap, BTreeSet};
 /// type; `analysis` is its largest *consumer*, not a parallel owner. The flat
 /// `(kind, entity)` pair of spike-1 became `core::FactKey { kind, entity:
 /// EntityRef, selector }` — the per-entity selector is what kills the poison wall
-/// (`apt-get update` ⇒ `package-index#fresh`, distinct from `install`'s
-/// `package:nginx#installed`).
+/// (`apt-get update` ⇒ `package-index@fresh`, distinct from `install`'s
+/// `package:nginx@installed`).
 pub use dorc_core::FactKey;
 
 /// What a command does to — or *observes about* — system state, as far as the
@@ -59,7 +59,7 @@ pub enum CommandEffect {
     /// Kills `fact` (`apt-get purge nginx`).
     Kills(FactKey),
     /// READS `fact` and mutates nothing — the read-only guard-class (`command -v
-    /// nginx` ⇒ `Queries(tool:nginx#present)`; 202 §2 / task-D2). A `Query`
+    /// nginx` ⇒ `Queries(tool:nginx@present)`; 202 §2 / task-D2). A `Query`
     /// **poisons no reaching-defs and establishes nothing** (the reaching-defs gen
     /// treats it like `Pure`): a guard reads state, it does not change it, so it must
     /// not force a downstream establish to `EstablishWritten` nor invalidate a
@@ -724,7 +724,7 @@ pub enum SkipClass {
     /// run). The `purge X; … install X` case.
     EstablishWritten(FactKey),
     /// A read-only **Query** guard reading `fact` (`command -v nginx` ⇒
-    /// `tool:nginx#present`; 202 §2 / task-D2). Probe-resolvable like an
+    /// `tool:nginx@present`; 202 §2 / task-D2). Probe-resolvable like an
     /// `EstablishAmbient` (its check IS the probe), but its probed rc feeds the
     /// fold's **Status** channel rather than gating a mutation-elision — and ONLY
     /// when [`valid`](SkipClass::QueryResolvable::valid) holds.
@@ -1529,7 +1529,7 @@ apt_get__predict() {
    while [ "${1#-}" != "$1" ]; do shift; done
    verb=$1; shift
    case $verb in
-      update) idx : package-index; probe-fresh ;;
+      update) probe-fresh : sm.dorc.PkgIndex@fresh ;;
       *)
          while [ "${1#-}" != "$1" ]; do shift; done
          pkg : package = "$1"
@@ -1562,13 +1562,13 @@ command__predict() {
     }
 
     /// Build (interner, index, syms) modeling the package oracle's effects — now
-    /// *including* `apt-get update → (package-index, #fresh)`, the modeled nullary
+    /// *including* `apt-get update → (package-index, @fresh)`, the modeled nullary
     /// that the poison-wall fix relies on (`notes/193` §1). `install`/`purge` gate
-    /// the `#installed` selector of `package`.
+    /// the `@installed` selector of `package`.
     fn package_setup() -> (Interner, KindIndex, Syms) {
         let mut interner = Interner::default();
         let package = KindId(interner.intern("package"));
-        let package_index = KindId(interner.intern("package-index"));
+        let package_index = KindId(interner.intern("sm.dorc.PkgIndex"));
         let installed = SelectorId(interner.intern("installed"));
         let fresh = SelectorId(interner.intern("fresh"));
         let apt = ProviderId(interner.intern("apt_get"));
@@ -1597,7 +1597,7 @@ command__predict() {
         )
     }
 
-    /// `package:<entity>#installed` — the cell `apt-get install <entity>` gates.
+    /// `package:<entity>@installed` — the cell `apt-get install <entity>` gates.
     fn pkg_installed(i: &mut Interner, s: &Syms, entity: &str) -> FactKey {
         FactKey {
             kind: s.package,
@@ -1675,7 +1675,7 @@ command__predict() {
     fn upstream_purge_makes_install_written() {
         // Why (note 162 O-1 / break-10, THE wrong-skip): an upstream same-run kill
         // means the resting probe is stale — the install must NOT be treated as
-        // ambient/skippable. purge + install gate the SAME (package:nginx#installed)
+        // ambient/skippable. purge + install gate the SAME (package:nginx@installed)
         // cell, so the kill reaches the establish.
         let (mut i, idx, s) = package_setup();
         let classes = classify_src("apt-get purge nginx\napt-get install nginx", &mut i, &idx);
@@ -1695,7 +1695,7 @@ command__predict() {
         // 24E §7 (resid-kill-coherence): `classify_with_why_diags` records each single-kill node's
         // KILLED coordinate in the side-map — the comparand the cli's kill-wall coherence check uses
         // (own-killed-coord ⊆ footprint, closing the gap kill-walls left open). `apt-get purge nginx`
-        // kills package:nginx#installed; its node maps to exactly that cell.
+        // kills package:nginx@installed; its node maps to exactly that cell.
         let (mut i, idx, s) = package_setup();
         let parsed = dorc_syntax::parse("apt-get purge nginx\n");
         let built = cfg::build(&parsed.value);
@@ -1719,7 +1719,7 @@ command__predict() {
         assert_eq!(
             kill_coords.get(&node),
             Some(&killed),
-            "the kill node maps to its killed coordinate package:nginx#installed"
+            "the kill node maps to its killed coordinate package:nginx@installed"
         );
     }
 
@@ -1796,7 +1796,7 @@ command__predict() {
     #[test]
     fn poison_wall_dies_modeled_update_does_not_poison_install() {
         // THE keystone win (`notes/193` §1 / acceptance §7.2): a modeled `apt-get
-        // update` establishes a *distinct cell* (`package-index#fresh`), so it no
+        // update` establishes a *distinct cell* (`package-index@fresh`), so it no
         // longer poisons the `apt-get install nginx` below it. Before the re-key,
         // `update` was doubly-unkeyable (no operand, and — pre-modeling — no verb) ⇒
         // Opaque ⇒ Reach::Top ⇒ install forced EstablishWritten. Now it's ambient.
@@ -1821,7 +1821,7 @@ command__predict() {
             !classes
                 .iter()
                 .any(|c| matches!(c, SkipClass::EstablishWritten(_))),
-            "no Written: update's cell (package-index#fresh) ≠ install's (package:nginx#installed)"
+            "no Written: update's cell (package-index@fresh) ≠ install's (package:nginx@installed)"
         );
     }
 
@@ -1829,7 +1829,7 @@ command__predict() {
     fn genuine_same_cell_kill_still_forces_written() {
         // exclusion-check (`notes/193` §7.3): the re-key must NOT over-loosen the
         // ambient gate. A real same-cell kill (`purge nginx; install nginx`, both on
-        // package:nginx#installed) must STILL force Written — resting probe is stale.
+        // package:nginx@installed) must STILL force Written — resting probe is stale.
         let (mut i, idx, s) = package_setup();
         let classes = classify_src("apt-get purge nginx\napt-get install nginx", &mut i, &idx);
         assert!(
@@ -1849,8 +1849,8 @@ command__predict() {
     fn distinct_selectors_do_not_discharge_each_other() {
         // The selector regression (`notes/193` §7.4): `systemctl enable nginx` and
         // `systemctl start nginx` gate DIFFERENT selectors of the SAME service:nginx
-        // cell (#enabled vs #active). Neither discharges the other — both stay
-        // EstablishAmbient (an `is-active` probe must not satisfy an unmet `#enabled`).
+        // cell (@enabled vs @active). Neither discharges the other — both stay
+        // EstablishAmbient (an `is-active` probe must not satisfy an unmet `@enabled`).
         // A flat key (one bit per kind+entity) could not hold this — the second would
         // see the first reach its cell and (mis-)classify Written.
         let mut i = Interner::default();
@@ -1883,11 +1883,11 @@ command__predict() {
         };
         assert!(
             classes.contains(&SkipClass::EstablishAmbient(enabled_cell)),
-            "enable nginx ⇒ service:nginx#enabled, ambient: {classes:?}"
+            "enable nginx ⇒ service:nginx@enabled, ambient: {classes:?}"
         );
         assert!(
             classes.contains(&SkipClass::EstablishAmbient(active_cell)),
-            "start nginx ⇒ service:nginx#active, ambient (NOT discharged by #enabled): {classes:?}"
+            "start nginx ⇒ service:nginx@active, ambient (NOT discharged by @enabled): {classes:?}"
         );
         assert!(
             !classes
@@ -2069,7 +2069,7 @@ command__predict() {
         assert_eq!(
             eff("apt-get install -y nginx", &mut i, &idx),
             vec![CommandEffect::Establishes(nginx_cell)],
-            "the check strips the post-verb -y ⇒ Operand(nginx)#installed"
+            "the check strips the post-verb -y ⇒ Operand(nginx)@installed"
         );
         // Nullary modeled verb (`update`) ⇒ the check's value-less `package-index`
         // annotation ⇒ Singleton (the poison-wall fix). A flag-only tail stays nullary
@@ -2083,7 +2083,7 @@ command__predict() {
         assert_eq!(
             eff("apt-get update", &mut i, &idx),
             vec![pkg_index_fresh.clone()],
-            "nullary modeled verb ⇒ Singleton(package-index#fresh)"
+            "nullary modeled verb ⇒ Singleton(package-index@fresh)"
         );
         assert_eq!(
             eff("apt-get update -y", &mut i, &idx),
@@ -2222,7 +2222,7 @@ command__predict() {
 
     // --- task-D2: the Query effect-class + rule-query-validity (202 §2 / 205 §2) ---
 
-    /// `tool:<entity>#present` — the cell `command -v <entity>` queries.
+    /// `tool:<entity>@present` — the cell `command -v <entity>` queries.
     fn tool_present(i: &mut Interner, entity: &str) -> FactKey {
         FactKey {
             kind: KindId(i.intern("tool")),
@@ -2238,7 +2238,7 @@ command__predict() {
     /// classify + assertions.
     fn package_and_query_index(i: &mut Interner) -> KindIndex {
         let package = KindId(i.intern("package"));
-        let package_index = KindId(i.intern("package-index"));
+        let package_index = KindId(i.intern("sm.dorc.PkgIndex"));
         let installed = SelectorId(i.intern("installed"));
         let fresh = SelectorId(i.intern("fresh"));
         let apt = ProviderId(i.intern("apt_get"));
@@ -2332,7 +2332,7 @@ command__predict() {
     fn query_after_mutator_is_invalid() {
         // rule-query-validity (205 §2): an upstream MUTATOR (a write) invalidates a
         // downstream Query — its resting rc is now stale. `apt-get install curl`
-        // (establishes package:curl#installed) ⇒ the `command -v nginx` guard below it
+        // (establishes package:curl@installed) ⇒ the `command -v nginx` guard below it
         // is QueryResolvable but INVALID (valid: false). The cell mutated is irrelevant
         // (ANY write invalidates — the pristine-prefix rule, not same-cell).
         let mut i = Interner::default();
@@ -2431,13 +2431,13 @@ command__predict() {
         let dialect = "\
 otelcol__predict() {
    case $1 in
-      --version) v : otelcol; otelcol --version >/dev/null 2>&1 :? otelcol:#v0155 ;;
+      --version) v : otelcol; otelcol --version >/dev/null 2>&1 :? otelcol@v0155 ;;
    esac
 }
 command__predict() {
    case $1 in -v) shift ;; esac
    tool : tool = \"$1\"
-   command -v -- \"$tool\" >/dev/null 2>&1 :? tool:\"$tool\"#present
+   command -v -- \"$tool\" >/dev/null 2>&1 :? tool:\"$tool\"@present
 }
 ";
         // LIFT the effect-map from the SAME dialect (as the cli does) so the index + the predict
@@ -2475,7 +2475,7 @@ command__predict() {
 
     // --- y-1 (redirect-effects, `21F` imp-1): a write-redirect is a file-write WRITER ----
 
-    /// `file:<path>#written` — the cell a write-redirect (`>`/`>>`) to `path` gens.
+    /// `file:<path>@written` — the cell a write-redirect (`>`/`>>`) to `path` gens.
     fn file_written(i: &mut Interner, path: &str) -> FactKey {
         FactKey {
             kind: KindId(i.intern("file")),
@@ -2502,7 +2502,7 @@ command__predict() {
     #[test]
     fn write_redirect_invalidates_downstream_query() {
         // THE `21F` imp-1 regression pin (the reason y-1 exists). A write-redirect to a real
-        // sink is a WRITER: `: > /etc/marker` gens `file:/etc/marker#written`, so the
+        // sink is a WRITER: `: > /etc/marker` gens `file:/etc/marker@written`, so the
         // downstream `command -v nginx` guard fails rule-query-validity (its resting rc is now
         // stale — a file the book just wrote sits between entry and the guard). Pre-y-1 the
         // redirect was invisibly Pure ⇒ the guard read `valid: true` ⇒ a stale-guard fold
@@ -2550,7 +2550,7 @@ command__predict() {
         // The value-plane integration the charter emphasizes (y1-a: "resolve the target word
         // through the EXISTING value plane"): a redirect target is an ordinary expansion, so
         // `logfile=app.log; : > "$logfile"` resolves `$logfile` ⇒ `app.log` ⇒ gens
-        // `file:app.log#written` ⇒ invalidates the downstream Query. Constant propagation
+        // `file:app.log@written` ⇒ invalidates the downstream Query. Constant propagation
         // composes with the redirect-target resolution (shared `resolve_recipe` machinery).
         let mut i = Interner::default();
         let idx = package_and_query_index(&mut i);
@@ -2632,7 +2632,7 @@ command__predict() {
     fn write_redirect_poisons_downstream_establish_ambientness() {
         // A write-redirect is a WRITER, so — like any Opaque/mutator — it makes a downstream
         // establish non-ambient when... actually NO: a `file` cell is a DIFFERENT cell from
-        // `package:nginx#installed`, so by the poison-wall keystone it must NOT poison the
+        // `package:nginx@installed`, so by the poison-wall keystone it must NOT poison the
         // install (distinct cells don't cross-poison). The install stays EstablishAmbient.
         // This pins that the file-cell is a real per-path cell (not a ⊤ that havocs): only
         // the SAME cell (or an Opaque ⊤) invalidates ambient-ness.
@@ -2683,7 +2683,7 @@ command__predict() {
     fn blessed_pure_colon_with_write_redirect_invalidates_downstream_query() {
         // fix-4(a) regression pin (y-1): `: > f` is a blessed-pure colon builtin carrying a
         // write-redirect. The `:` command itself gens nothing, but the `> f` Redir node gens
-        // `file:f#written` into reaching-defs — so a downstream Query reading the just-written
+        // `file:f@written` into reaching-defs — so a downstream Query reading the just-written
         // file is non-pristine ⇒ INVALID. Pins that the redirect's file-write effect is NOT
         // masked by the blessed-pure command word (the precise imp-1 hazard: the write is on the
         // redirect, not the verb). Mirrors `write_redirect_invalidates_downstream_query`, kept
@@ -2706,7 +2706,7 @@ command__predict() {
     fn bare_redirect_empty_argv_invalidates_downstream_query() {
         // fix-4(b) regression pin (y-1): a BARE `> f` (an empty-argv command — no command word,
         // only a write-redirect) is still a file-write WRITER. The empty-argv command node is a
-        // `MustRun` (no verb to classify), but the `> f` Redir node gens `file:f#written` into
+        // `MustRun` (no verb to classify), but the `> f` Redir node gens `file:f@written` into
         // reaching-defs — so a downstream Query is non-pristine ⇒ INVALID. Pins that the
         // redirect-effect is seen even with NO command word (the redirect runs in the current
         // shell, truncating the file). The novel shape the other y-1 pins (`:`/`printf`/`echo`
@@ -2793,7 +2793,7 @@ command__predict() {
         );
     }
 
-    /// `package:<entity>#installed` via a shared interner (sibling of `pkg_installed`
+    /// `package:<entity>@installed` via a shared interner (sibling of `pkg_installed`
     /// for the Query tests that build their own index inline).
     fn pkg_installed_with(i: &mut Interner, entity: &str) -> FactKey {
         FactKey {
@@ -2810,7 +2810,7 @@ command__predict() {
     fn in_loop_members_site_classifies_as_establish_members_family() {
         // THE item-2 unlock: `for pkg in nginx curl; do apt-get install -y "$pkg"; done` ⇒
         // the body install is `EstablishMembers` carrying the per-member family
-        // [package:nginx#installed, package:curl#installed], in list order. Each member
+        // [package:nginx@installed, package:curl@installed], in list order. Each member
         // resolved through the oracle check exactly as a straight-line install would.
         let (mut i, idx, s) = package_setup();
         let classes = classify_src(
@@ -2855,7 +2855,7 @@ command__predict() {
         // the WHOLE site is NOT a family. `for p in nginx "a b"; do apt-get install -y $p;
         // done` — the list is two eligible single-concrete members (`nginx`, `a b`), but the
         // body's UNQUOTED `$p` field-splits each member's value: `nginx` ⇒ one operand
-        // (resolves to package:nginx#installed), while `a b` ⇒ TWO operands (`apt-get
+        // (resolves to package:nginx@installed), while `a b` ⇒ TWO operands (`apt-get
         // install -y a b`) ⇒ the check's `[ "$2" = "" ]` guard refuses ⇒ that member is
         // Opaque. One member unresolvable ⇒ NO family (not a partial [nginx-only] one) ⇒
         // the in-loop site falls to the single-cell Flat path ⇒ MustRun (the floor).
@@ -2923,7 +2923,7 @@ command__predict() {
     #[test]
     fn members_self_reach_broken_by_pre_loop_writer() {
         // item-3(b) self-reach FALSE (the `loop-member-external-writer-runs` core): a
-        // PRE-LOOP `apt-get purge curl` kills `package:curl#installed` — a member cell. That
+        // PRE-LOOP `apt-get purge curl` kills `package:curl@installed` — a member cell. That
         // write reaches the in-loop install via the in-state, so the site's in-state is NOT
         // a subset of its own family ⇒ `self_reached: false`. The family still resolves
         // (item-2); only the self-reach bit flips ⇒ the license (item-3) will refuse.

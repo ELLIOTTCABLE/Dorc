@@ -93,14 +93,14 @@ pub enum Stmt {
 
 /// A parsed inline-dialect mark (`277` §4a/§4d): an effect / observe / emission
 /// annotation trailing a command. Every fragment is an OPAQUE syntactic string
-/// (`inv-referent-agnostic`): the parser splits `kind:entity#selector` structurally
+/// (`inv-referent-agnostic`): the parser splits `kind:entity@selector` structurally
 /// and NEVER decodes what the tokens mean. Carries a [`span`](Mark::span) covering
 /// the marker plus target (for the surgical strip, R1c).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Mark {
     /// The mark VERB (`281` §5) — the typed payload discriminant.
     pub kind: MarkKind,
-    /// The `kind:entity#selector` coordinate (entity/selector may be absent).
+    /// The `kind:entity@selector` coordinate (entity/selector may be absent).
     pub target: MarkTarget,
     /// The mark span, from the `:`/`:!`/`:?` marker token through the end of the
     /// target. The strip deletes exactly this region.

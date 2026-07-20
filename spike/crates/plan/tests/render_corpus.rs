@@ -46,7 +46,7 @@ apt_get__predict() {
 }
 "#;
 
-/// The package oracle: `apt-get install ⇒ establishes package#installed`, `purge ⇒ inverts`.
+/// The package oracle: `apt-get install ⇒ establishes package@installed`, `purge ⇒ inverts`.
 fn package_index(i: &mut Interner) -> KindIndex {
     let package = KindId(i.intern("package"));
     let installed = SelectorId(i.intern("installed"));
@@ -240,7 +240,7 @@ fn run_syntax_check(rendered: &str) -> Option<(&'static str, std::process::Outpu
     None
 }
 
-/// The systemd service oracle (`enable ⇒ service#enabled`, `start ⇒ service#active`), simplified-kind
+/// The systemd service oracle (`enable ⇒ service@enabled`, `start ⇒ service@active`), simplified-kind
 /// like `CORPUS_PREDICT_SRC`. Effects come from `service_index`; this only argv-parses verb + operand.
 const SERVICE_PREDICT_SRC: &str = r#"
 systemctl__predict() {
@@ -253,7 +253,7 @@ systemctl__predict() {
 }
 "#;
 
-/// `package_index` + the service oracle: `enable ⇒ service#enabled`, `start ⇒ service#active` — two
+/// `package_index` + the service oracle: `enable ⇒ service@enabled`, `start ⇒ service@active` — two
 /// DISTINCT selectors of one Service entity (enabling ≠ activating; that distinctness is the point of
 /// the exec-distinct-selectors / exec-enabled-not-active twins).
 fn service_index(i: &mut Interner) -> KindIndex {
@@ -270,8 +270,8 @@ fn service_index(i: &mut Interner) -> KindIndex {
 }
 
 /// Render harness for the package+service two-oracle world. `holds` cells are `(kind, entity,
-/// selector)` triples — the service selectors `#enabled` / `#active` are distinct, so the selector
-/// is explicit (unlike `render_for`, which hardwires `#installed`).
+/// selector)` triples — the service selectors `@enabled` / `@active` are distinct, so the selector
+/// is explicit (unlike `render_for`, which hardwires `@installed`).
 fn render_service_for(src: &str, holds: &[(&str, &str, &str)]) -> (String, Plan) {
     let mut i = Interner::default();
     let idx = service_index(&mut i);
@@ -295,7 +295,7 @@ fn render_service_for(src: &str, holds: &[(&str, &str, &str)]) -> (String, Plan)
 }
 
 /// A second provider (`yum`) for the SAME `package` kind (the cross-oracle Seam): its own check
-/// (`rpm -q`), same install verb → `package#installed`. Simplified-kind like `CORPUS_PREDICT_SRC`.
+/// (`rpm -q`), same install verb → `package@installed`. Simplified-kind like `CORPUS_PREDICT_SRC`.
 const YUM_PREDICT_SRC: &str = r#"
 yum__predict() {
    while [ "${1#-}" != "$1" ]; do shift; done
@@ -317,8 +317,8 @@ fn seam_index(i: &mut Interner) -> KindIndex {
     idx
 }
 
-/// Render harness for the two-providers-one-kind seam (apt + yum ⇒ `package#installed`). `holds` are
-/// `(entity)` package cells (selector fixed `#installed`, both providers share it).
+/// Render harness for the two-providers-one-kind seam (apt + yum ⇒ `package@installed`). `holds` are
+/// `(entity)` package cells (selector fixed `@installed`, both providers share it).
 fn render_seam_for(src: &str, holds: &[&str]) -> (String, Plan) {
     let mut i = Interner::default();
     let idx = seam_index(&mut i);
@@ -343,21 +343,21 @@ fn render_seam_for(src: &str, holds: &[&str]) -> (String, Plan) {
     )
 }
 
-/// A nullary-verb Singleton oracle: `apt-get update ⇒ pkgindex#fresh` on the kind's implicit single
+/// A nullary-verb Singleton oracle: `apt-get update ⇒ pkgindex@fresh` on the kind's implicit single
 /// cell (no operand). The `idx : pkgindex` bind is the value-less Singleton form.
 const PKGINDEX_PREDICT_SRC: &str = r"
 apt_get__predict() {
    verb=$1; shift
    case $verb in
-      update) idx : pkgindex; test -n fresh ;;
+      update) test -n fresh : sm.dorc.PkgIndex@fresh ;;
    esac
 }
 ";
 
-/// Render harness for the Singleton `apt-get update` world (`pkgindex#fresh`, the kind's one cell).
+/// Render harness for the Singleton `apt-get update` world (`pkgindex@fresh`, the kind's one cell).
 fn render_singleton_for(src: &str, holds_fresh: bool) -> (String, Plan) {
     let mut i = Interner::default();
-    let pkgindex = KindId(i.intern("pkgindex"));
+    let pkgindex = KindId(i.intern("sm.dorc.PkgIndex"));
     let fresh = SelectorId(i.intern("fresh"));
     let apt = ProviderId(i.intern("apt_get"));
     let update = i.intern("update");
@@ -394,7 +394,7 @@ dpkg__predict() {
 }
 "#;
 
-/// `package_index` + the `dpkg -s` read-only Query on `pkgstate#installed` (Observe). The door-1 guard
+/// `package_index` + the `dpkg -s` read-only Query on `pkgstate@installed` (Observe). The door-1 guard
 /// is a Query on `pkgstate`, a DIFFERENT kind from the `package` an install establishes — no cross-kind
 /// identity; the fold turns purely on the guard's own rc.
 fn query_index(i: &mut Interner) -> KindIndex {
@@ -408,7 +408,7 @@ fn query_index(i: &mut Interner) -> KindIndex {
 }
 
 /// Render harness for the door-1 `dpkg -s` Query-guard idiom, mirroring the cli's wrong-concrete
-/// FIREWALL (`observable_matrix.rs::plan_query`): the guard's `pkgstate:<guard_entity>#installed` cell
+/// FIREWALL (`observable_matrix.rs::plan_query`): the guard's `pkgstate:<guard_entity>@installed` cell
 /// is observed with `guard_rc`, but that rc reaches the fold's Status ONLY when the site classified a
 /// VALID `QueryResolvable` (else withheld ⇒ status ⊤, e.g. an in-loop/invalidated guard). `package`
 /// cells (inner installs) are answered verdict-only by `pkg_holds`. The guard's Effect verdict derives
@@ -895,7 +895,7 @@ fn twin_loop_post_elision_revives() {
 
 // ===========================================================================
 // SAME-CELL-KILL twin (`24I` batch-3 collapse: kill-then-install ≡ exec-same-cell-kill, byte-
-// identical books). A `purge` (EstablishInverted) KILLS `package:nginx#installed`; the following
+// identical books). A `purge` (EstablishInverted) KILLS `package:nginx@installed`; the following
 // `install` of the same cell must RUN even when the host reports it converged — the kill walls the
 // elision (frame problem). This carries the STRONGER converged-host pin (the retired cases used an
 // empty host, where the install runs trivially-diverged); both render both lines verbatim.
@@ -1277,7 +1277,7 @@ fn twin_inline21_in_loop_call_floored() {
 
 // ===========================================================================
 // SERVICE / TWO-ORACLE twins (`24I` batch-3; the service oracle added to the harness — `render_
-// service_for`). Two providers/kinds co-resident; the systemd `#enabled` / `#active` selectors are
+// service_for`). Two providers/kinds co-resident; the systemd `@enabled` / `@active` selectors are
 // DISTINCT cells of one Service entity (enabling ≠ activating), which is what the last two pin.
 // ===========================================================================
 
@@ -1317,7 +1317,7 @@ fn twin_two_oracles() {
 
 #[test]
 fn twin_exec_distinct_selectors() {
-    // né exec-distinct-selectors (~SUSPECT → MIGRATE): `enable`→#enabled, `start`→#active are DISTINCT
+    // né exec-distinct-selectors (~SUSPECT → MIGRATE): `enable`→@enabled, `start`→@active are DISTINCT
     // selectors of one Service. BOTH cells converged ⇒ both sites elide. (The distinctness is proved
     // by the boundary sibling below — here both hold, so both elide.)
     let (rendered, plan) = render_service_for(
@@ -1329,11 +1329,11 @@ fn twin_exec_distinct_selectors() {
     );
     assert!(
         is_replaced(&plan, "systemctl enable nginx"),
-        "enable (#enabled converged) elides"
+        "enable (@enabled converged) elides"
     );
     assert!(
         is_replaced(&plan, "systemctl start nginx"),
-        "start (#active converged) elides"
+        "start (@active converged) elides"
     );
     assert!(
         rendered.contains("# systemctl enable nginx")
@@ -1345,8 +1345,8 @@ fn twin_exec_distinct_selectors() {
 #[test]
 fn twin_exec_enabled_not_active_host() {
     // né exec-enabled-not-active-host (~SUSPECT → MIGRATE, the DISTINCTNESS proof): the host has
-    // #enabled but NOT #active (enabled≠active boundary). `enable` elides (its cell holds); `start`
-    // RUNS (its #active cell is diverged). Were the selectors NOT distinct, `start` would wrongly
+    // @enabled but NOT @active (enabled≠active boundary). `enable` elides (its cell holds); `start`
+    // RUNS (its @active cell is diverged). Were the selectors NOT distinct, `start` would wrongly
     // elide off `enable`'s convergence — this is the twin that would catch that.
     let (rendered, plan) = render_service_for(
         "systemctl enable nginx\nsystemctl start nginx\n",
@@ -1354,11 +1354,11 @@ fn twin_exec_enabled_not_active_host() {
     );
     assert!(
         is_replaced(&plan, "systemctl enable nginx"),
-        "enable elides (#enabled holds)"
+        "enable elides (@enabled holds)"
     );
     assert!(
         !is_replaced(&plan, "systemctl start nginx"),
-        "start RUNS (#active diverged — distinct from #enabled): {:?}",
+        "start RUNS (@active diverged — distinct from @enabled): {:?}",
         plan.steps
             .iter()
             .map(|s| (&s.sh, &s.disposition))
@@ -1376,7 +1376,7 @@ fn twin_exec_enabled_not_active_host() {
 
 // ===========================================================================
 // SEAM + SINGLETON twins (`24I` batch-3). Two providers on one kind (apt+yum ⇒ package), and the
-// nullary-verb Singleton establish (apt-get update ⇒ pkgindex#fresh, the kind's one operand-less cell).
+// nullary-verb Singleton establish (apt-get update ⇒ pkgindex@fresh, the kind's one operand-less cell).
 // ===========================================================================
 
 #[test]
@@ -1409,7 +1409,7 @@ fn twin_seam_two_providers_one_kind() {
 #[test]
 fn twin_exec_singleton_update() {
     // né exec-singleton-update (~SUSPECT → MIGRATE): `apt-get update` is a nullary-verb establish on
-    // the Singleton `pkgindex#fresh` cell (no operand). Converged (index fresh) ⇒ it elides; diverged
+    // the Singleton `pkgindex@fresh` cell (no operand). Converged (index fresh) ⇒ it elides; diverged
     // ⇒ it runs (the pole that proves the elision is host-gated, not unconditional).
     let (rendered, plan) = render_singleton_for("apt-get update\n", true);
     assert!(

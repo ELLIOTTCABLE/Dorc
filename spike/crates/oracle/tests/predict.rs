@@ -300,7 +300,7 @@ fn nullary_verb_value_less_annotation_resolves_singleton() {
     // whole). The check binds `verb=update`, the `case` selects the `update` arm, and
     // the VALUE-LESS annotation `index : pkgindex` resolves the Singleton entity (no
     // operand to bind). This is the explicit nullary spelling task-W needs to key the
-    // cell on `EntityRef::Singleton` (preserving `package-index#fresh` semantics).
+    // cell on `EntityRef::Singleton` (preserving `package-index@fresh` semantics).
     let src = r"
 apt_get__predict() {
    verb=$1
@@ -895,7 +895,7 @@ fn forward_munge_keys_the_funcdef_segment_and_serves_literal_underscore() {
         "the backward `apt-get` form is NOT the key (the un-munge path is deleted)"
     );
 
-    let src = "my_tool__predict() { pkg : package = \"$1\"; dpkg-query -W \"$pkg\"; }";
+    let src = "my_tool__predict() { pkg : sm.dorc.Package = \"$1\"; dpkg-query -W \"$pkg\"; }";
     let mytool = lift_predicts(&mut interner, src);
     let seg = dorc_oracle::to_funcname_segment("my_tool");
     assert_eq!(

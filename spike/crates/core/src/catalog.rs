@@ -370,10 +370,10 @@ pub const CATALOG: &[CatalogEntry] = &[
         params: &[],
         example: "sm this `is_converged` reads the caller's identity but carries no tolerance \
                   vouch — a wrapped site (`sudo …`) will run/guard instead of eliding. One line \
-                  makes it context-shiftable: `:   : tolerates:user` (`27C` §2).",
+                  makes it context-shiftable: `: safe-across user` (`27C` §2).",
         message: "sm this `is_converged` reads the caller's identity but carries no tolerance \
                   vouch — a wrapped site (`sudo …`) will run/guard instead of eliding. One line \
-                  makes it context-shiftable: `:   : tolerates:user` (`27C` §2).",
+                  makes it context-shiftable: `: safe-across user` (`27C` §2).",
         help: None,
     },
     // ── oracle/wrapper.rs (TEMPLATIZED) ─────────────────────────────────────
@@ -408,15 +408,15 @@ pub const CATALOG: &[CatalogEntry] = &[
     // ── oracle/predict/derive.rs (static) ───────────────────────────────────
     CatalogEntry {
         slug: "mark-brace-verdict-single-cell",
-        when_fires: "a brace-alternation `#{a,b}` appears on a single-cell verdict/observe mark. \
+        when_fires: "a brace-alternation `@{a,b}` appears on a single-cell verdict/observe mark. \
                      oracle/predict/derive.rs. Static (literal braces escaped in the template).",
         why: "277 §4c: a verdict/observe mark asserts exactly one cell; the brace mints no cell \
               and the site runs (a role-aware rejection the parser cannot make).",
         params: &[],
-        example: "sm verdict and observe marks are single-cell; brace alternation `#{a,b}` is \
+        example: "sm verdict and observe marks are single-cell; brace alternation `@{a,b}` is \
                   claim-emission-only (`277` §4c) — this mark mints NO cell and the site will run. \
                   Split it into one marked probe line per cell.",
-        message: "sm verdict and observe marks are single-cell; brace alternation `#{{a,b}}` is \
+        message: "sm verdict and observe marks are single-cell; brace alternation `@{{a,b}}` is \
                   claim-emission-only (`277` §4c) — this mark mints NO cell and the site will run. \
                   Split it into one marked probe line per cell.",
         help: None,

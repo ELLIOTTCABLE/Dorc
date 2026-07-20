@@ -9,8 +9,8 @@ sudo__predict() {
 }
 sudo__lend_map() {
    while [ "${1#-}" != "$1" ]; do shift; done
-   printf '%s\n' root : user
-   :                        : fs-view
+   printf '%s\n' root : lends user
+   : lends fs-view
    "$@"
 }
 sudo__enter() {

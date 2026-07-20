@@ -3,7 +3,7 @@
 # leading arg (the fs-view target) before the guest; the entry form consumes TWO. The entry drops an
 # arg the fold relied on — static incoherence, caught pre-network (never a semantic-effect check).
 myctx__lend_map() {
-   printf '%s\n' "$1" : fs-view
+   printf '%s\n' "$1" : lends fs-view
    shift
    "$@"
 }

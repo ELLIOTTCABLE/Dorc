@@ -361,7 +361,7 @@ apt_get__predict() {
    while [ \"${1#-}\" != \"$1\" ]; do shift; done
    verb=$1; shift
    while [ \"${1#-}\" != \"$1\" ]; do shift; done
-   pkg : package = \"$1\"
+   pkg : sm.dorc.Package = \"$1\"
    if [ \"$2\" = \"\" ]; then dpkg-query -W \"$pkg\" >/dev/null 2>&1; fi
 }";
         let expected = "\
@@ -379,7 +379,7 @@ apt_get__predict() {
     /// probe command that ships is the bare `dpkg-query …`.
     #[test]
     fn trailing_mark_is_removed_leaving_the_bare_command() {
-        let authored = "apt_get__predict() { pkg : package = \"$1\"; dpkg-query -W \"$pkg\" : package:\"$pkg\"#installed; }";
+        let authored = "apt_get__predict() { pkg : sm.dorc.Package = \"$1\"; dpkg-query -W \"$pkg\" : sm.dorc.Package:\"$pkg\"@installed; }";
         let stripped = strip_one(authored);
         assert!(
             stripped.contains("dpkg-query -W \"$pkg\";")
@@ -399,7 +399,7 @@ apt_get__predict() {
     /// Idempotence / no-regression (R1c): a body strips byte-stably (re-stripping is a fixpoint).
     #[test]
     fn mark_free_body_strips_unchanged_and_stably() {
-        let authored = "apt_get__predict() { pkg : package = \"$1\"; dpkg-query -W \"$pkg\" : package:\"$pkg\"#installed; }";
+        let authored = "apt_get__predict() { pkg : sm.dorc.Package = \"$1\"; dpkg-query -W \"$pkg\" : sm.dorc.Package:\"$pkg\"@installed; }";
         let expected = "apt_get__predict() { pkg=\"$1\"; dpkg-query -W \"$pkg\"; }";
         assert_eq!(strip_one(authored), expected);
         assert_eq!(strip_one(authored), strip_one(authored));
@@ -518,8 +518,8 @@ package__resolve() {
         use crate::reaches::ReachesSet;
         let authored = "\
 package__disturbance_reaches_only() {
-   printf '%s\\n' \"$1\"    : service
-   dpkg -L \"$1\"           : file
+   printf '%s\\n' \"$1\"    : disturbs service
+   dpkg -L \"$1\"           : disturbs file
 }";
         let mut i = Interner::default();
         let set = ReachesSet::lift(&mut i, authored);
@@ -544,7 +544,7 @@ package__disturbance_reaches_only() {
     /// Byte-stability (R1c): strip is a deterministic function of its input.
     #[test]
     fn strip_is_byte_stable() {
-        let authored = "systemctl__predict() { verb=$1; shift; svc : service = \"$1\"; case $verb in enable) systemctl is-enabled -- \"$svc\" : service:\"$svc\"#enabled ;; esac; }";
+        let authored = "systemctl__predict() { verb=$1; shift; svc : sm.dorc.Service = \"$1\"; case $verb in enable) systemctl is-enabled -- \"$svc\" : sm.dorc.Service:\"$svc\"@enabled ;; esac; }";
         assert_eq!(strip_one(authored), strip_one(authored));
         let stripped = strip_one(authored);
         assert!(stripped.starts_with("systemctl__predict()"));

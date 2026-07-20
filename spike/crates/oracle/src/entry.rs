@@ -308,9 +308,10 @@ fn collect_tolerance(
                 if mark.kind != MarkKind::SafeAcross {
                     continue;
                 }
-                // The dimension(s) live in the mark's `entity` fragment (`tolerates:user` ⇒
-                // entity="user"; `tolerates:{user,fs-view}` ⇒ entity="{user,fs-view}").
-                let raw = mark.target.entity.as_deref().unwrap_or_default();
+                // The dimension(s) live in the mark's `kind` fragment — the uniform token-payload
+                // home (`28A:rul-uniform-kind-payload-home`): `safe-across user` ⇒ kind="user";
+                // `safe-across {user,fs-view}` ⇒ kind="{user,fs-view}" (`281` §5/§6).
+                let raw = mark.target.kind.as_str();
                 let mut dims = BTreeSet::new();
                 for tok in expand_dimension_set(raw) {
                     match Dimension::from_token(&tok) {
@@ -524,7 +525,7 @@ impl RhoAccum {
             RhoClaim::PerVariable { vars } => {
                 // Per-variable claim (`VAR=x "$@"`): add the vars (symbol-id tags, referent-agnostic).
                 self.overrides
-                    .extend(vars.iter().map(|s| format!("#{}", s.as_u32())));
+                    .extend(vars.iter().map(|s| format!("@{}", s.as_u32())));
                 self
             }
         }
@@ -924,7 +925,7 @@ pub fn decide_entry(
 pub fn adoption_hint(provider_display: &str, dim: Dimension) -> String {
     format!(
         "would elide if {provider_display}'s oracle vouched context-tolerance \
-         (one line: `:   : tolerates:{}`)",
+         (one line: `: safe-across {}`)",
         dim.as_token()
     )
 }
@@ -1094,7 +1095,7 @@ mod tests {
         // the sudo lend_map (whose flag-strip `while` yields `None` anyway — conservatively skipped).
         let (_i, e) = one_enter("sudo__enter() { sudo -n \"$@\" ;}");
         let (_il, lm) = one_lend_map(
-            "sudo__lend_map() { while [ \"${1#-}\" != \"$1\" ]; do shift; done; printf '%s\\n' root : user; \"$@\"; }",
+            "sudo__lend_map() { while [ \"${1#-}\" != \"$1\" ]; do shift; done; printf '%s\\n' root : lends user; \"$@\"; }",
         );
         assert_eq!(
             check_entry_coherence(&e, &lm),
@@ -1106,8 +1107,9 @@ mod tests {
     fn argparsing_entry_matching_lend_fold_is_coherent() {
         // chroot: the entry shifts the dir (1) and the lend_map shifts the dir (1) ⇒ agree ⇒ coherent.
         let (_i, e) = one_enter("chroot__enter() { dir=$1; shift; chroot \"$dir\" \"$@\" ;}");
-        let (_il, lm) =
-            one_lend_map("chroot__lend_map() { printf '%s\\n' \"$1\" : fs-view; shift; \"$@\" ;}");
+        let (_il, lm) = one_lend_map(
+            "chroot__lend_map() { printf '%s\\n' \"$1\" : lends fs-view; shift; \"$@\" ;}",
+        );
         assert_eq!(
             check_entry_coherence(&e, &lm),
             None,
@@ -1120,8 +1122,9 @@ mod tests {
         // on ⇒ argv-flow divergence ⇒ fail-fast (declarations-genuinely-contradict).
         let (_i, e) =
             one_enter("chroot__enter() { a=$1; shift; b=$1; shift; chroot \"$a\" \"$@\" ;}");
-        let (_il, lm) =
-            one_lend_map("chroot__lend_map() { printf '%s\\n' \"$1\" : fs-view; shift; \"$@\" ;}");
+        let (_il, lm) = one_lend_map(
+            "chroot__lend_map() { printf '%s\\n' \"$1\" : lends fs-view; shift; \"$@\" ;}",
+        );
         assert_eq!(
             check_entry_coherence(&e, &lm),
             Some(EntryIncoherence {
@@ -1133,15 +1136,15 @@ mod tests {
     }
 
     // ── the tolerance vouch ──────────────────────────────────────────────────────
-    // NB the parseable spelling is the colon-line `:   : tolerates:<dim>` (no-op `:` command + a
-    // `: target` mark, exactly like the corpus `:   : invariant:user`), NOT the spec §2 STRAWMAN
+    // NB the parseable spelling is the colon-line `: safe-across <dim>` (no-op `:` command + a
+    // `: target` mark, exactly like the corpus `: undivided-by-transit-across user`), NOT the spec §2 STRAWMAN
     // shorthand `: tolerates:<dim>` (a single `:` is a no-op command with an argument, no mark).
     #[test]
     fn top_level_tolerates_is_unconditional() {
         // A `tolerates:user` mark at the top of the body vouches user for EVERY verb (the babby
         // template).
         let (_i, v) = one_verdict(
-            "pipx__is_converged() { :   : tolerates:user\n verb=$1; shift; case \"$verb\" in \
+            "pipx__is_converged() { : safe-across user\n verb=$1; shift; case \"$verb\" in \
              install) pipx list ;; *) return 2 ;; esac }",
         );
         let (vouch, diags) = lift_tolerance(&v);
@@ -1164,7 +1167,7 @@ mod tests {
         // scoped): a `remove` site is NOT licensed to shift (the safe direction).
         let (_i, v) = one_verdict(
             "pipx__is_converged() { verb=$1; shift; case \"$verb\" in \
-             install) :   : tolerates:user\n pipx list ;; remove) pipx list ;; *) return 2 ;; esac }",
+             install) : safe-across user\n pipx list ;; remove) pipx list ;; *) return 2 ;; esac }",
         );
         let (vouch, _d) = lift_tolerance(&v);
         assert!(
@@ -1181,8 +1184,7 @@ mod tests {
     }
     #[test]
     fn brace_alternation_tolerates_multiple_dimensions() {
-        let (_i, v) =
-            one_verdict("x__is_converged() { :   : tolerates:{user,fs-view}\n return 0 }");
+        let (_i, v) = one_verdict("x__is_converged() { : safe-across {user,fs-view}\n return 0 }");
         let (vouch, diags) = lift_tolerance(&v);
         assert!(diags.is_empty(), "clean: {diags:?}");
         let dims = vouch.tolerated_on_path(None);
@@ -1190,7 +1192,7 @@ mod tests {
     }
     #[test]
     fn unknown_tolerates_dimension_is_loud() {
-        let (_i, v) = one_verdict("x__is_converged() { :   : tolerates:universe\n return 0 }");
+        let (_i, v) = one_verdict("x__is_converged() { : safe-across universe\n return 0 }");
         let (vouch, diags) = lift_tolerance(&v);
         assert_eq!(diags.len(), 1, "one loud diag: {diags:?}");
         assert_eq!(diags[0].code.slug(), "tolerates-unknown-dimension");
@@ -1345,7 +1347,7 @@ mod tests {
         let mut i = Interner::default();
         let set = lift_lend_map_set(
             &mut i,
-            "sudo__lend_map() { printf '%s\\n' root : user; :   : fs-view; :   : netns; \"$@\"; }",
+            "sudo__lend_map() { printf '%s\\n' root : lends user; : lends fs-view; : lends netns; \"$@\"; }",
         );
         let p = set.value.providers().next().unwrap();
         let lm = set.value.get(p).unwrap().clone();
@@ -1514,7 +1516,7 @@ mod tests {
     fn corroboration_fires_both_directions() {
         // Forward (`27C` §6): `tolerates:user` over a body that reads `$USER` ⇒ "are you sure?".
         let (i, v) = one_verdict(
-            "x__is_converged() { :   : tolerates:user\n me=$USER; case \"$me\" in \
+            "x__is_converged() { : safe-across user\n me=$USER; case \"$me\" in \
              root) return 0 ;; *) return 1 ;; esac }",
         );
         let (vouch, _d) = lift_tolerance(&v);
@@ -1571,7 +1573,7 @@ mod tests {
     fn adoption_hint_suggests_the_parseable_spelling() {
         let hint = adoption_hint("pipx", Dimension::User);
         assert!(
-            hint.contains(":   : tolerates:user"),
+            hint.contains(": safe-across user"),
             "suggests the colon-line form"
         );
     }
@@ -1590,7 +1592,7 @@ mod tests {
             &mut i,
             "sudo__lend_map() { target=root; while [ \"${1#-}\" != \"$1\" ]; do \
              case \"$1\" in -u) target=\"$2\"; shift 2 ;; *) shift ;; esac; done; \
-             printf '%s\\n' \"$target\" : user\n:   : fs-view\n:   : netns\n\"$@\" ; }",
+             printf '%s\\n' \"$target\" : lends user\n: lends fs-view\n: lends netns\n\"$@\" ; }",
         );
         let enter_set = lift_entry_set(&mut i, "sudo__enter() { sudo -n \"$@\" ;}");
         let p = predict_set.value.providers().next().unwrap();

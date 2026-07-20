@@ -84,7 +84,7 @@ pub struct EmittedCoord {
     /// The emission's selector cell (`277` §3 / `rul-emission-selector-on-mark`), or `None` for a
     /// whole-entity emission (the corpus default — `: sm.dorc.Package` mints no selector, so the
     /// footprint is ⊤/whole-entity, poisoning every cell). Carried into the survival comparison so
-    /// a selector-bearing disturbs mark (`: sm.dorc.Service#active`) can SPARE a sibling cell under
+    /// a selector-bearing disturbs mark (`: sm.dorc.Service@active`) can SPARE a sibling cell under
     /// the dialect. Opaque; interned by the wiring. Legacy stringly emissions carry `None`.
     pub selector: Option<String>,
 }
@@ -340,8 +340,8 @@ impl Emitter {
                 match &cmd.mark {
                     Some(mark) => {
                         let kind = mark.target.kind.clone();
-                        // `277` §3/§4c: the selector rides the trailing mark. A plain `#sel` is one
-                        // whole-entity footprint per line; a brace-alternation `#{a,b}` EXPANDS to
+                        // `277` §3/§4c: the selector rides the trailing mark. A plain `@sel` is one
+                        // whole-entity footprint per line; a brace-alternation `@{a,b}` EXPANDS to
                         // one coordinate per token (claim-emission marks only — `277` §4c); no `#`
                         // mints a whole-entity ⊤ footprint. Disturbs is a claim-emission role, so the
                         // expansion is licensed here (verdict/observe reject it in `derive_predict`).
@@ -505,7 +505,7 @@ apt_get__disturbs() {
     fn emission_selector_rides_the_mark() {
         // `277` §3 / rul-emission-selector-on-mark: a disturbs emission `KIND#SELECTOR` carries the
         // selector on every emitted coordinate (entity from the printf line, selector from the mark).
-        let src = "x__disturbs() { printf '%s\\n' \"$1\" : sm.dorc.Service#active ; }";
+        let src = "x__disturbs() { printf '%s\\n' \"$1\" : disturbs sm.dorc.Service@active ; }";
         assert_eq!(
             trace(src, &["nginx"]),
             TouchesResolution::Emitted(vec![EmittedCoord {
@@ -518,9 +518,10 @@ apt_get__disturbs() {
 
     #[test]
     fn brace_alternation_disturbs_expands_to_one_coord_per_token() {
-        // `277` §4c: a claim-emission (disturbs) brace-alternation `#{enabled,active}` expands to one
+        // `277` §4c: a claim-emission (disturbs) brace-alternation `@{enabled,active}` expands to one
         // coordinate per token, each on the emitted entity.
-        let src = "x__disturbs() { printf '%s\\n' \"$1\" : sm.dorc.Service#{enabled,active} ; }";
+        let src =
+            "x__disturbs() { printf '%s\\n' \"$1\" : disturbs sm.dorc.Service@{enabled,active} ; }";
         assert_eq!(
             trace(src, &["nginx"]),
             TouchesResolution::Emitted(vec![

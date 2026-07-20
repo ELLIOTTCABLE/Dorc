@@ -81,7 +81,7 @@ pub enum TopologyClass {
     /// The wall's footprint (`package:base`) is EXPANDED by `package__disturbance_reaches_only()` to drag `package:dep`
     /// — the reach-function knowledge the wall's own `touches()` cannot spell (24G §4, the cross-author
     /// point). The wall TRULY reaches the shared referent (its `CellDelta` kills the victim's
-    /// `package:dep#installed`), so WITHOUT expansion the `package:base` footprint is disjoint from the
+    /// `package:dep@installed`), so WITHOUT expansion the `package:base` footprint is disjoint from the
     /// victim's `package:dep` backing ⇒ the victim wrongly survives. The DECLARED reach answer bridges
     /// them: HONEST (`!lying`) INCLUDES `package:dep` ⇒ the expanded footprint HITs ⇒ the victim
     /// DEMOTES ⇒ safe (end-states match); LYING OMITS it ⇒ the victim wrongly survives ⇒ the end-state
@@ -172,25 +172,25 @@ const ENTITY_POOL: [&str; 6] = ["nginx", "curl", "vim", "htop", "oldpkg", "redis
 /// The kind every generated fact lives in (the oracle is a package oracle).
 const KIND: &str = "package";
 
-/// The one modeled selector a fact-cell carries in the sweep (`#installed`). Config/refresh walls
+/// The one modeled selector a fact-cell carries in the sweep (`@installed`). Config/refresh walls
 /// deliberately establish a DIFFERENT selector on the same entity (see [`WallKind`]).
 const INSTALLED: &str = "installed";
 
 /// How the primary wall mutates — the axis that selects establish / kill / silent behaviour.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum WallKind {
-    /// `apt-get install X` — establishes `package:X#installed`, footprint `package:X`.
+    /// `apt-get install X` — establishes `package:X@installed`, footprint `package:X`.
     Install,
-    /// `apt-get config X` — establishes `package:X#configured` (a DIFFERENT selector, so a
-    /// same-entity victim's `#installed` stays ambient), footprint `package:X`. The HIT wall.
+    /// `apt-get config X` — establishes `package:X@configured` (a DIFFERENT selector, so a
+    /// same-entity victim's `@installed` stays ambient), footprint `package:X`. The HIT wall.
     Config,
     /// `apt-get purge X` — a KILL (`EstablishInverted` ⇒ `MustRun` ⇒ walls via the `kills` set),
     /// footprint `package:X`, coherence-unchecked (24C resid-kill-coherence).
     Purge,
-    /// `apt-get refresh X` — establishes `package:X#refreshed` but has NO `touches()` arm ⇒ no
+    /// `apt-get refresh X` — establishes `package:X@refreshed` but has NO `touches()` arm ⇒ no
     /// footprint ⇒ a TOTAL wall (silence = wall).
     Silent,
-    /// `apt-get place X` (24E §6) — establishes `package:X#installed` like `Install`, but its
+    /// `apt-get place X` (24E §6) — establishes `package:X@installed` like `Install`, but its
     /// `touches()` arm ESCALATES (reaches `apt-manifest`), so its footprint is DERIVED via
     /// [`Host::derive`], not authored. A MISS establish wall with a probe-time footprint.
     Derived,
@@ -408,7 +408,7 @@ pub fn generate(seed: Seed, i: &mut Interner) -> Scenario {
     };
 
     // The wall kind: HIT ⇒ `config` (a different selector on the SAME entity, so the victim's
-    // `#installed` stays ambient); `derived` ⇒ `place` (host-derived footprint); `alias` ⇒ plain
+    // `@installed` stays ambient); `derived` ⇒ `place` (host-derived footprint); `alias` ⇒ plain
     // `install` (the aliasing lives in the names + resolver, not the verb); else establish/kill/silent.
     let wall_kind = if hit {
         WallKind::Config
@@ -446,7 +446,7 @@ pub fn generate(seed: Seed, i: &mut Interner) -> Scenario {
     let mut commands: Vec<(String, Option<TrueEffect>)> = Vec::new();
 
     let (wall_line, honest_wall_delta) = wall_command(i, &wall_entity, wall_kind);
-    // The LIE (rul24-divergence-is-the-game): the wall truly ALSO kills the victim's `#installed` —
+    // The LIE (rul24-divergence-is-the-game): the wall truly ALSO kills the victim's `@installed` —
     // the footprint's undeclared clobber (`lying`), the INTRINSIC aliasing hazard (`alias`: the two
     // names ARE one referent), OR the INTRINSIC reach hazard (`reach`: touching `package:base` really
     // drags `package:dep`, so the true effect ALWAYS kills the dep — independent of whether the

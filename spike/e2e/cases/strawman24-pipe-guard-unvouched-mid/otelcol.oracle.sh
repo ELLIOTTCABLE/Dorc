@@ -8,7 +8,7 @@ otelcol__predict() {
    case $1 in
       --version)
          collector : io.opentelemetry.Collector = "otelcol"
-         otelcol --version :? io.opentelemetry.Collector:"otelcol"#version
+         otelcol --version :? io.opentelemetry.Collector:"otelcol"@version
          ;;
    esac
 }

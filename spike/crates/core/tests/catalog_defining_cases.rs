@@ -315,7 +315,7 @@ const DEFINING_CASE_RATCHET: &[(&str, &str)] = &[
     ),
     (
         "mark-brace-verdict-single-cell",
-        "oracle: a brace-alternation `#{a,b}` on a verdict/observe mark",
+        "oracle: a brace-alternation `@{a,b}` on a verdict/observe mark",
     ),
     (
         "footprint-incoherent",

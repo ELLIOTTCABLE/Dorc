@@ -905,7 +905,7 @@ mod tests {
     fn ordinary_predict_is_not_a_peel() {
         // A normal tool predict (the vast majority) does NOT peel: no command-position `"$@"`.
         let (_i, check) = one_predict(
-            "apt_get__predict() { verb=$1; shift; pkg : package = \"$1\"; dpkg-query -W \"$pkg\"; }",
+            "apt_get__predict() { verb=$1; shift; pkg : sm.dorc.Package = \"$1\"; dpkg-query -W \"$pkg\"; }",
         );
         assert_eq!(detect_peel(&check), None);
     }
@@ -942,8 +942,9 @@ mod tests {
         // `sudo__lend_map` answers `user` (mapped) and `fs-view` (full colon-line); it does NOT
         // answer `netns` ⇒ that dimension is ⊤ (walls) — the enumerate-every-dimension law
         // (`271:rul-lend-map`: absent-key-means-full-lend is REJECTED).
-        let (_i, check) =
-            one_lend_map("sudo__lend_map() { printf '%s\\n' root : user; :   : fs-view; \"$@\"; }");
+        let (_i, check) = one_lend_map(
+            "sudo__lend_map() { printf '%s\\n' root : lends user; : lends fs-view; \"$@\"; }",
+        );
         let (map, diags) = derive_lend_map(&check);
         assert!(diags.is_empty(), "clean derive: {diags:?}");
         assert_eq!(map.lend(Dimension::User), LendEntry::Mapped);
@@ -961,8 +962,9 @@ mod tests {
     fn identity_lend_map_all_full() {
         // `nice__lend_map` colon-lines every dimension = full lend everywhere (identity wrapper:
         // same world) ⇒ the inner sits in HostDefault.
-        let (_i, check) =
-            one_lend_map("nice__lend_map() { :   : user; :   : fs-view; :   : netns; \"$@\"; }");
+        let (_i, check) = one_lend_map(
+            "nice__lend_map() { : lends user; : lends fs-view; : lends netns; \"$@\"; }",
+        );
         let (map, diags) = derive_lend_map(&check);
         assert!(diags.is_empty());
         assert!(
@@ -976,7 +978,7 @@ mod tests {
     fn lend_map_unknown_dimension_is_loud() {
         // A mark token that is not a known dimension (`: universe`) is out-of-vocabulary — a LOUD
         // diagnostic (`inv-top-reject`), and the line mints no lend.
-        let (_i, check) = one_lend_map("x__lend_map() { :   : universe; \"$@\"; }");
+        let (_i, check) = one_lend_map("x__lend_map() { : lends universe; \"$@\"; }");
         let (map, diags) = derive_lend_map(&check);
         assert_eq!(diags.len(), 1, "one loud diagnostic: {diags:?}");
         assert_eq!(diags[0].code.slug(), "lend-map-unknown-dimension");
@@ -990,8 +992,9 @@ mod tests {
     fn inner_context_shifts_on_mapped_or_missing() {
         // A mapped `user` (distinct world) OR a ⊤ `netns` (wall) shifts the inner out of
         // HostDefault (`273` §1 wrapper/inner split).
-        let (_i, check) =
-            one_lend_map("sudo__lend_map() { printf '%s\\n' root : user; :   : fs-view; \"$@\"; }");
+        let (_i, check) = one_lend_map(
+            "sudo__lend_map() { printf '%s\\n' root : lends user; : lends fs-view; \"$@\"; }",
+        );
         let (map, _d) = derive_lend_map(&check);
         let InnerContext::Shifted { shifts } = inner_context(&map) else {
             panic!("a mapped/⊤ dimension must shift the inner context");
@@ -1010,7 +1013,7 @@ mod tests {
     fn coherent_peels_agree_on_tail_position() {
         // predict and lend_map both consume the verb before `"$@"` ⇒ coherent (same tail depth).
         let (_ip, predict) = one_predict("w__predict() { verb=$1; shift; env \"$@\"; }");
-        let (_il, lend) = one_lend_map("w__lend_map() { verb=$1; shift; :   : user; \"$@\"; }");
+        let (_il, lend) = one_lend_map("w__lend_map() { verb=$1; shift; : lends user; \"$@\"; }");
         assert_eq!(
             check_peel_coherence(&predict, &lend, &["install", "nginx"]),
             None,
@@ -1024,7 +1027,7 @@ mod tests {
         // the guest would start at a different token ⇒ static incoherence (`273` §5). The
         // declarations-genuinely-contradict category.
         let (_ip, predict) = one_predict("w__predict() { verb=$1; shift; env \"$@\"; }");
-        let (_il, lend) = one_lend_map("w__lend_map() { :   : user; \"$@\"; }");
+        let (_il, lend) = one_lend_map("w__lend_map() { : lends user; \"$@\"; }");
         assert_eq!(
             check_peel_coherence(&predict, &lend, &["install", "nginx"]),
             Some(Incoherence {
@@ -1039,7 +1042,7 @@ mod tests {
         // A member that does not peel over this argv adds no license and cannot contradict
         // (`273` §5: declining is coherent). `None`.
         let (_ip, predict) = one_predict("w__predict() { verb=$1; shift; env \"$@\"; }");
-        let (_il, lend) = one_lend_map("w__lend_map() { :   : user; }"); // no `"$@"` boundary
+        let (_il, lend) = one_lend_map("w__lend_map() { : lends user; }"); // no `"$@"` boundary
         assert_eq!(check_peel_coherence(&predict, &lend, &["x"]), None);
     }
 
@@ -1082,7 +1085,7 @@ mod tests {
         let (_i, lm) = one_lend_map(
             "sudo__lend_map() { target=root; while [ \"${1#-}\" != \"$1\" ]; do \
              case \"$1\" in -u) target=\"$2\"; shift 2 ;; *) shift ;; esac; done; \
-             printf '%s\\n' \"$target\" : user\n:   : fs-view\n\"$@\" ; }",
+             printf '%s\\n' \"$target\" : lends user\n: lends fs-view\n\"$@\" ; }",
         );
         let vals = resolve_lend_values(&lm, &["pipx", "install", "poddle"]);
         assert_eq!(vals.get(&Dimension::User), Some(&Some("root".to_owned())));

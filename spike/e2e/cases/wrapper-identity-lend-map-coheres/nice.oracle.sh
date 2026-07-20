@@ -8,8 +8,8 @@ nice__predict() {
 }
 nice__lend_map() {
    while [ "${1#-}" != "$1" ]; do shift 2; done
-   :   : user
-   :   : fs-view
-   :   : netns
+   : lends user
+   : lends fs-view
+   : lends netns
    "$@"
 }

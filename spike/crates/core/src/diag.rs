@@ -142,7 +142,7 @@ pub enum DiagCode {
     CarryNetnsOnNetKernelForbidden(CarryNetnsOnNetKernelForbidden),
 
     // ── oracle/predict/derive.rs (verdict-mark derivation) ──────────────────
-    /// A brace-alternation `#{a,b}` on a single-cell verdict/observe mark (mints no cell).
+    /// A brace-alternation `@{a,b}` on a single-cell verdict/observe mark (mints no cell).
     MarkBraceVerdictSingleCell(MarkBraceVerdictSingleCell),
 
     // ── oracle/predict (the `281` mark-grammar parse — new-grammar path) ─────
