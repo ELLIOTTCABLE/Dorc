@@ -59,14 +59,23 @@ impl DorcConsumer {
         }
     }
 
-    /// The (diag, source, filename) a case materializes into. World-as-payload builds the canonical
-    /// constructor keyed by the frontmatter `code`; world-as-pipeline is the marker pilot (added with
-    /// that code). Spanless codes need no source.
+    /// The (diag, source, filename) a case materializes into (`283:dec-world-two-forms`). A case
+    /// carrying a materialized `*.oracle.sh` section is WORLD-AS-PIPELINE: the REAL in-process marker
+    /// gate fires the diagnostic over that source (the one real-fired proof, `28A` §2n) — a spanned
+    /// diag whose caret frame points into it. Otherwise WORLD-AS-PAYLOAD: the canonical constructor
+    /// keyed by the frontmatter `code` (spanless roster codes need no source).
     fn world_of(&self, case: &Case) -> Result<(Diag, String, String), String> {
         let slug = case
             .frontmatter()
             .scalar("code")
             .ok_or_else(|| "case has no `code`".to_owned())?;
+        if let Some(section) = case
+            .sections()
+            .iter()
+            .find(|s| s.name().ends_with("oracle.sh"))
+        {
+            return fire_marker_gate(slug, section.name(), section.content());
+        }
         let diag = canonical_payload(slug)
             .ok_or_else(|| format!("no canonical world for `{slug}` (world-as-payload)"))?;
         Ok((diag, String::new(), String::new()))
@@ -170,6 +179,29 @@ fn canonical_payload(slug: &str) -> Option<Diag> {
         _ => return None,
     };
     Some(Diag::new_spanless_site(code))
+}
+
+/// World-as-pipeline for the marker pilot (`28A` §2n): fire the REAL in-process marker gate over the
+/// materialized oracle `source`, returning its (spanned) diagnostic + the source the caret frame
+/// resolves against. Refuses if the gate fired nothing or a different code than the case declares
+/// (the honest-trigger coherence the world-as-pipeline form buys).
+fn fire_marker_gate(
+    slug: &str,
+    filename: &str,
+    source: &str,
+) -> Result<(Diag, String, String), String> {
+    let mut interner = Interner::default();
+    let diag = dorc_oracle::marker::check_dialect_marker(&mut interner, source)
+        .into_iter()
+        .next()
+        .ok_or_else(|| format!("world-as-pipeline `{slug}` fired no diagnostic"))?;
+    if diag.code.slug() != slug {
+        return Err(format!(
+            "world-as-pipeline `{slug}` fired `{}` — the case's `code` must match the fired diagnostic",
+            diag.code.slug()
+        ));
+    }
+    Ok((diag, source.to_owned(), filename.to_owned()))
 }
 
 /// Flatten an errorloom [`FieldTemplate`] to the mirror's single-`String` form (`28A` §2c v1 — one

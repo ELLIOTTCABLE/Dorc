@@ -138,6 +138,31 @@ fn structure_drift_within_prose_bless_refuses() {
 }
 
 #[test]
+fn world_as_pipeline_marker_pilot_fires_the_real_gate() {
+    // The one real-fired proof (`28A` §2n): a wrong-version marked oracle drives the REAL in-process
+    // marker gate, so the render is SPANNED (a caret frame into the materialized source), not the
+    // spanless world-as-payload path — and it is what the binary actually produces.
+    let case_text = "---\ncode: marker-version-unrecognized\n---\n\
+                     -- oracle.sh --\n# dorc-lang/v0.1\n\
+                     apt_get__predict() { pkg : sm.dorc.Package = \"$1\"; dpkg-query -W \"$pkg\"; }\n\
+                     -- replay --\n$ dorc lint oracle.sh\n";
+    let case = Case::parse(case_text).expect("case parses");
+    let rendered = DorcConsumer::new()
+        .render_case(&case)
+        .expect("pipeline render");
+    assert!(
+        rendered.contains(
+            "error[marker-version-unrecognized]: [unwritten: marker-version-unrecognized]"
+        ),
+        "the unwritten render fires: {rendered}"
+    );
+    assert!(
+        rendered.contains("--> oracle.sh:2:"),
+        "a spanned caret frame from the real gate (not the spanless payload path): {rendered}"
+    );
+}
+
+#[test]
 fn fixpoint_gate_catches_a_catalog_hand_edit() {
     // Hand-edit the mirror (prose) without regenerating the committed transcript: the fixpoint gate
     // sees the committed transcript no longer reproduce.
