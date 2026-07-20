@@ -105,16 +105,47 @@ for this" (collapsing error-states, NYI, instability, and so on). Everything at
 
 ## 4. The grammar: marker, coordinates, marks, binds
 
-The marker. `# dorc-lang/v0.1`, exact, alone on its line, within roughly the
+The marker. `# dorc-lang/v0.2`, exact, alone on its line, within roughly the
 first ten lines. Gates the syntax below for this file (and only the syntax; role
 names need no marker). An unmarked file is treated as plain shell; our
-annotations become syntax-errors. Add the marker at the moment a file first
-uses a bind, a mark, or the `dorc:` prefix; a role-functions-only file needs
-none.
+annotations become syntax-errors. A file whose marker names a version this Dorc
+does not recognize is a loud diagnostic, never a silent downgrade to plain
+shell. Add the marker at the moment a file first uses a bind, a mark, or the
+`dorc:` prefix; a role-functions-only file needs none.
 
-Coordinates. `KIND:ENTITY#SELECTOR`, with the tail parts optional:
+Two carriers, one grammar. Every mark rides one of two interchangeable carriers,
+chosen per physical line; the grammar after the carrier is identical.
 
-    sm.dorc.Service:"$svc"#enabled      one cell of one entity
+- The colon form (`:`) is the default. It lexes and highlights as ordinary shell
+  in every editor checked, so a correctness-critical mark stays visible. Its cost
+  is a real, accepted hazard: if an unstripped marked file reaches a shell by a
+  route the intended paths do not cover (piped to `sh`, `source`d,
+  stripped-then-forgotten), a colon mark corrupts that command's arguments, and a
+  standalone colon mark forces the line's exit status to 0. The `dorc-sh` shebang
+  catches a plain run; the hazard is what remains after that net.
+- The hash-colon form (`#:`) is an opt-in comment carrier, for marks about
+  genuinely dangerous state. It is a real comment - inert under any shell, on
+  every route, even unstripped - so it never corrupts and never forces a status.
+  Its cost is highlight demotion: the leading `#` greys the mark in some
+  renderers. It is told apart from an ordinary comment, and from the version
+  marker, by the colon touching the `#` with no space (`#:`, never `# :`).
+
+The intro and its head sugar. A mark opens with the carrier, optionally followed
+- with no intervening space - by one sugar character, then a space. The eight
+legal intros:
+
+    :    :!   :?   :=          the colon carrier: plain, and one per sugar
+    #:   #:!  #:?  #:=          the same four on the comment carrier
+
+The four sugars are head-only shortcuts for the core relations a line states
+about a cell or a value - plain is `asserts`, `!` is `refutes`, `?` is `reads`,
+`=` is `bind` - and apply only to the first mark on a line. Every other relation
+is spelled as a word verb (below), and a core relation moved off the head is
+spelled with its word too.
+
+Coordinates. `KIND:ENTITY@SELECTOR`, with the tail parts optional:
+
+    sm.dorc.Service:"$svc"@enabled      one cell of one entity
     sm.dorc.Package:"$pkg"              a whole entity
     sm.dorc.PkgIndex                    a whole (singleton) kind
 
@@ -123,52 +154,94 @@ Coordinates. `KIND:ENTITY#SELECTOR`, with the tail parts optional:
 - Entity: written bare when it contains only letters, digits, `.`, `_`, `-`,
   `/`; double-quoted (with normal `"$var"` interpolation) otherwise.
 - Selector: an identifier (letter or underscore first, then letters, digits,
-  underscores). The `#` must directly touch the entity (or the `:` in the
-  entity-less transitional form).
+  underscores). `@` introduces it, attached with no space - to the entity, or
+  to the `:` in the entity-less transitional form `KIND:@SELECTOR`. (`@` lexes
+  as an ordinary word character under the floor shells and highlights cleanly,
+  which is why it, not `#`, carries the selector.)
 - A selector-less coordinate means the whole entity - and, on the consuming
   side, it interacts with every cell of that entity. Reach for a selector
   whenever you can name the aspect you actually measured; reserve the bare
   form for claims that genuinely concern all of it.
-- Polarity never appears in a coordinate; it rides the mark sigil.
+- Polarity never appears in a coordinate; it rides the verb (`asserts` /
+  `refutes`).
 
-Marks. A mark trails a statement, whitespace-separated. Write one on any line
-whose result deserves an address: marked facts are what plans report by name,
-what disturbance-tracking keys on precisely, and what the survival machinery
-can reason about. An unmarked check still works, but its fact is anonymous and
+The keystone that keeps a verb apart from a coordinate: a verb never contains a
+period, and a kind always contains at least two. That single rule decides the
+head of a mark; everything after the head is read verb by verb, so a payload may
+contain periods freely.
+
+Marks. A mark trails a statement (binding to its exit status or value) or stands
+alone on its own line (scope per its verb's member). Write one on any line whose
+result deserves an address: marked facts are what plans report by name, what
+disturbance-tracking keys on precisely, and what the survival machinery can
+reason about. An unmarked check still works, but its fact is anonymous and
 handled maximally conservatively.
 
     cmd args   : COORD      verdict: exit 0 asserts the cell holds
     cmd args   :! COORD     verdict, complement sense: exit 0 asserts it does not
     cmd args   :? COORD     observe: this statement reads that cell
 
-- Verdict and observe marks mint selector tokens into the kind's vocabulary,
-  and attach facts to the one line that measured them.
-- Marked runnable lines are single-cell: one assertion per line; a statement
-  establishing two cells is two lines.
-- An observe (`:?`) inside a verdict body widens that fact's staleness surface
-  (its backing) to include the observed cell - always safe, often obligatory
-  for honesty. Write one whenever your verdict consults state beyond the cell
-  it answers for.
-- Emission lines in the `cmd__disturbs()` and `kind__disturbance_reaches_only()`
-  members carry a third mark position - `: KIND` or `: KIND#SELECTOR`, typing
-  the emitted entities. Only these emission marks may use brace alternation
-  (`#{enabled,active}`); claim emissions never mint tokens.
-- Two further trailing-token vocabularies are role-scoped: dimension tokens in
-  `cmd__lend_map()` bodies; substrate plus `invariant:<dimension>` tokens in
-  `kind__state_stored_only_in()` bodies. All token vocabularies are
+Off the head those same three read as the words `asserts`, `refutes`, and
+`reads`; the sugar is only a shortcut for the first mark. The full verb set is
+engine-owned and closed, extended only by introducing new names:
+
+- Core cell-and-value relations, sugar-eligible: `asserts` (plain), `refutes`
+  (`!`), `reads` (`?`), `bind` (`=`).
+- Meta relations, always word verbs: `safe-across` (a context vouch, section
+  5f), `disturbs` (a footprint, sections 5c and 5h), `lends` (a wrapper
+  dimension, 5d), `stored-in` and `undivided-by-transit-across` (a kind's store
+  and its invariance, 5i).
+
+The rules on marks:
+
+- Verdict and observe marks mint selector tokens into the kind's vocabulary, and
+  attach facts to the one line that measured them.
+- At most one verdict (`asserts` or `refutes`) per line. A line has one exit
+  status, and a verdict maps that one status onto one cell's truth; two cells
+  would need two statuses, and which cell diverged is what decides what runs.
+  This is the whole content of the old "one assertion per line" rule. Observes
+  and every meta mark do not consume the status.
+- An observe (`:?`) elsewhere in a verdict body widens that fact's staleness
+  surface (its backing) to include the observed cell - always safe, often
+  obligatory for honesty. Write one, as its own statement, whenever your verdict
+  consults state beyond the cell it answers for.
+- Emission members type what they emit with a verb-led mark. `cmd__disturbs()`
+  and `kind__disturbance_reaches_only()` write `: disturbs KIND` or
+  `: disturbs KIND@SELECTOR`; `cmd__lend_map()` writes `: lends DIMENSION`;
+  `kind__state_stored_only_in()` writes `: stored-in SUBSTRATE` plus, per whole
+  member, `: undivided-by-transit-across AXIS`. All these token vocabularies are
   engine-owned and closed; authors never invent tokens.
+- Brace alternation is a general shortcut for "several payloads, or one payload
+  with a varying part": `@{enabled,active}` expands to one selector each,
+  `safe-across {user,fs-view}` to one mark per dimension. It is legal wherever
+  several cells are meaningful - selectors, observes, disturbs emissions - and
+  refused only where it would forge a multi-cell verdict, since one status
+  cannot witness two.
+
+What this engine reads today. The grammar describes a mark-block: several marks
+may share one physical line, and a block may spill onto continuation lines (each
+re-opening with its own carrier). Today's engine reads one mark per physical
+line, so an extra read or a second meta claim is disclosed as its own line. The
+block form is specified in the grammar spec and will be adopted later without
+changing any spelling written now.
 
 Binds. `name : KIND = "$value"` assigns and declares the value an entity of the
-kind. Binds name entities, never cells; strip reduces a bind to the assignment.
-Write one when an operand you received is an entity you are about to make
-claims about: the bind lets the analyzer carry the kind through your body's
+kind. Binds name entities, never cells; strip reduces a bind to the plain
+assignment. Write one when an operand you received is an entity you are about to
+make claims about: the bind lets the analyzer carry the kind through your body's
 value-flow and back out to the book's site, so the plan's reason can name the
-concrete entity ("converged: org.foob.Certs:/etc/nginx/certs#synced") rather
+concrete entity ("converged: org.foob.Certs:/etc/nginx/certs@synced") rather
 than a positional argument. The usual rhythm is one bind per entity-shaped
 operand, placed where the operand is first received; every later mark on that
 value then inherits its identity. Skip binds for values that are not entities
 (counts, modes, free text) and for entities you never mark - an unused bind is
 noise, not safety.
+
+The inline form above is the one this engine reads. The grammar also defines a
+trailing bind that rides an assignment - `FOO="bar" := KIND` (sugar) or the word
+`: bind KIND` - which is what would let the whole annotation surface sit on `#:`
+comments; but that trailing form is not yet accepted in production (it is
+diagnosed, not parsed), so write the inline bind for now.
 
 The `dorc:` prefix. `dorc:sh -c '...'` is the one prefix-position spelling:
 full-analysis invitation on an interpreter head. Bare `sh -c '...'` is the
@@ -190,7 +263,7 @@ itself when-guidance:
 2. `cmd__predict()` - when your tool starts appearing inside compound
    constructs and admins' hand-guards, and the hints say modeling would unlock
    them.
-3. `tolerates:` - when books wrap your tool's sites (sudo and friends) and you
+3. `safe-across` - when books wrap your tool's sites (sudo and friends) and you
    have re-audited the vouched body for shifted execution.
 4. `cmd__disturbs()` - when your tool is the churn-heavy early wall that costs
    drifted-day books their shape, and you can survey its verbs completely.
@@ -269,9 +342,10 @@ Failure modes:
 ### 5c. `cmd__disturbs()` - the footprint member
 
 Invoked with a site's arguments. For a matched shape, emits the disturbed
-entities one per line on stdout, each typed by a trailing kind (or
-kind#selector) mark; `:` serves as the emission line for whole-kind claims. A
-matched shape's emission is a complete at-most claim: this invocation disturbs
+entities one per line on stdout, each typed by a trailing `: disturbs` mark
+(`: disturbs KIND`, or `: disturbs KIND@SELECTOR` for a single cell; the
+bare-kind form is the whole-kind claim). A matched shape's emission is a
+complete at-most claim: this invocation disturbs
 at most these cells, and anything omitted is declared untouched. An unmatched
 shape emits nothing and claims nothing.
 
@@ -309,9 +383,9 @@ Failure modes:
 
 Invoked with the wrapper's own arguments; body parses the wrapper's prefix
 exactly as the tool does and ends with `"$@"` at the guest position. Emits one
-entry per dimension: a valued line (`printf '%s\n' "$target"   : user`) maps
-that dimension; an empty entry (`: : fs-view`) passes it through unchanged;
-a dimension with no entry at all is unknown and walls.
+entry per dimension: a valued line (`printf '%s\n' "$target"   : lends user`)
+maps that dimension; a bare `: lends fs-view` passes it through unchanged; a
+dimension with no entry at all is unknown and walls.
 
 Write it whenever your tool is a wrapper at all: without it every wrapped site
 is opaque, and the guest's own oracle never even gets consulted. It is the
@@ -366,11 +440,11 @@ Failure modes:
   construction).
 - A mutating entry is a probe-contract break.
 
-### 5f. The `tolerates:` vouch (a mark, not a member)
+### 5f. The `safe-across` vouch (a mark, not a member)
 
-A bare colon-line mark inside a function body (`: : tolerates:user`;
-brace-alternation for several dimensions), scoped like any statement to the
-paths that reach it.
+A standalone mark inside a function body (`: safe-across user`;
+brace-alternation `: safe-across {user,fs-view}` for several dimensions), scoped
+like any statement to the paths that reach it.
 
 Write it per function, when books genuinely wrap your tool's sites and you
 have re-audited that body for shifted execution. There is deliberately no
@@ -446,9 +520,9 @@ Failure modes:
 
 ### 5i. `kind__state_stored_only_in()` - the store member
 
-Emits the substrates where the kind's state lives (emission lines with
-substrate tokens), plus zero or more whole-member invariance declarations
-(`:   : invariant:<dimension>` colon-lines).
+Emits the substrates where the kind's state lives (`: stored-in SUBSTRATE`
+lines), plus zero or more whole-member invariance declarations
+(`: undivided-by-transit-across AXIS` lines).
 
 Write it when your kind's facts deserve to travel: state that is one store
 machine-wide (kernel parameters, say) can answer across filesystem views, and
@@ -555,8 +629,8 @@ unremarkable declines silent. Before reaching for a warning about a shape you ca
 actually answer, ask the sharper question: should the model be richer instead?
 The recurring example is a tool whose live value and persisted value can differ
 (a `sysctl` key set for the running kernel but not written to the boot config).
-The temptation is an advisory note; the honest answer is two cells - `#value` and
-`#persisted` - measured separately, not one cell plus prose. An advisory that
+The temptation is an advisory note; the honest answer is two cells - `@value` and
+`@persisted` - measured separately, not one cell plus prose. An advisory that
 wants to explain a gap in your model is usually a missing distinction in the
 model. Warning on a covered (answered) arm has no verb in v1 by design; it is a
 deliberately-held seam pending exactly this question.
@@ -565,7 +639,7 @@ deliberately-held seam pending exactly this question.
 
 Worst first, with the repair path that attribution buys:
 
-1. Probe-time mutation (any body; false `tolerates:`; mutating entry form).
+1. Probe-time mutation (any body; false `safe-across`; mutating entry form).
    Breaks the promise the whole product rests on; no gradient, no net. Repair:
    none after the fact - prevention is the entire section-3-of-page-three
    discipline. The engine refuses provable mutation at plan time; everything
@@ -609,7 +683,7 @@ Before publishing, walk the file once against each line:
   verdict reads; complement senses on `:!`, never hand-inverted.
 - Wrapper families: every dimension enumerated in `lend_map`; peel positions
   coherent between members; entry form non-interactive, siting-verified or
-  declining; `tolerates:` only on bodies re-audited for shifted execution.
+  declining; `safe-across` only on bodies re-audited for shifted execution.
 - Footprints and kind members: matched shapes surveyed to completion;
   unsure-cells included; unsurveyed shapes unmatched; `only` members authored
   from a total survey or not at all.
@@ -619,7 +693,8 @@ Before publishing, walk the file once against each line:
 <!-- quoted: spike/CLAUDE.md invariants (license-and-trust, separation,
      observables, authored-surface, language-law blocks), decline-class-emission,
      report-lane-versioned-entry, report-surface-massaging-carve; 271 rulings
-     ledger; 277 sections 1-6; 278 whole; 276 dialect rulings; plans/27C sections
+     ledger; plans/281 mark grammar v0.2 (supersedes 277 section 4 / 278 section 6);
+     277 sections 1-6; 278 whole; 276 dialect rulings; plans/27C sections
      1-7; 23O settled law; USER_STORY.md bought-unsoundness; 27Q quality bars;
      27W:rul-emission-grammar-v1, rul-versioned-entry, rul-report-noise-tolerant,
      rul-advise-verb-deferred (modeling-crutch) -->
