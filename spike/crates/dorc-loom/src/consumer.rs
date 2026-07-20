@@ -64,7 +64,7 @@ impl DorcConsumer {
     /// gate fires the diagnostic over that source (the one real-fired proof, `28A` §2n) — a spanned
     /// diag whose caret frame points into it. Otherwise WORLD-AS-PAYLOAD: the canonical constructor
     /// keyed by the frontmatter `code` (spanless roster codes need no source).
-    fn world_of(&self, case: &Case) -> Result<(Diag, String, String), String> {
+    fn world_of(case: &Case) -> Result<(Diag, String, String), String> {
         let slug = case
             .frontmatter()
             .scalar("code")
@@ -84,7 +84,7 @@ impl DorcConsumer {
     /// The rendered transcript for a case from CURRENT mirror state — the shared body of
     /// `render_case` and the committed-case seed.
     fn render_transcript(&self, case: &Case) -> Result<String, String> {
-        let (diag, src, filename) = self.world_of(case)?;
+        let (diag, src, filename) = Self::world_of(case)?;
         let interner = Interner::default();
         Ok(render_cli_with(
             &self.mirror,
@@ -101,7 +101,7 @@ impl Consumer for DorcConsumer {
     type Error = String;
 
     fn tagged_render(&self, case: &Case) -> Result<TaggedBaseline<FieldKey>, String> {
-        let (diag, src, filename) = self.world_of(case)?;
+        let (diag, src, filename) = Self::world_of(case)?;
         let interner = Interner::default();
         let core = render_cli_tagged(&self.mirror, &diag, &src, &filename, &interner);
         let render = to_errorloom(&core).map_err(|e| e.to_string())?;

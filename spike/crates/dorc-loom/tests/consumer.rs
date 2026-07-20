@@ -8,6 +8,11 @@
 //! round-trip — a backtick-GLUED param would straddle the word/span boundary and mangle re-holing,
 //! which is a `282` §5 sharp edge, not exercised here.
 
+#![expect(
+    clippy::expect_used,
+    reason = "committed-case helpers over the known-good test tree; the no-panic lints guard untrusted input"
+)]
+
 use std::path::Path;
 
 use dorc_loom::DorcConsumer;

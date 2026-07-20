@@ -1785,13 +1785,13 @@ pub fn render_cli_with(
 /// The full-transcript tagged twin of [`render_cli`] (`282` §2 · `28A` §2m — the prose-bless
 /// baseline). `text()` is byte-identical to [`render_cli_with`] under the same lookup (gate-pinned);
 /// the span map is the attribution authority the promote flow reads. The composition mirrors
-/// [`render_cli_with`]: the title (`severity[slug]: ` — [`Arrangement`](crate::tagged::Region::
-/// Arrangement)) around the body's FIRST LINE (relocated prose spans), then the caret frames (WHOLE
-/// `Arrangement` — structure, not prose), then the body tail (help connective + help + notes —
-/// relocated prose/arrangement spans). The load-bearing move is the TITLE-SPLIT: [`render_body_
-/// tagged_with`]'s span vector is split at the first `\n` (splitting a straddler — a passthrough
-/// `detail` may embed one) and each half re-based into the composed byte offsets, preserving the
-/// gap-free total cover the `dorc-loom` adapter validates through `errorloom::TaggedRender::new`.
+/// [`render_cli_with`]: the title (`severity[slug]: `, a whole `Arrangement`) around the body's FIRST
+/// LINE (relocated prose spans), then the caret frames (WHOLE `Arrangement` — structure, not prose),
+/// then the body tail (help connective + help + notes — relocated prose/arrangement spans). The
+/// load-bearing move is the TITLE-SPLIT: `render_body_tagged_with`'s span vector is split at the first
+/// `\n` (splitting a straddler — a passthrough `detail` may embed one) and each half re-based into the
+/// composed byte offsets, preserving the gap-free total cover the `dorc-loom` adapter validates
+/// through `errorloom::TaggedRender::new`.
 /// A tool-mode output (`282` §4), never a product surface. Pure; `inv-no-throw`.
 #[must_use]
 pub fn render_cli_tagged(
@@ -1876,9 +1876,10 @@ fn rebase_spans_into(
 ) {
     let dst_base = out.len();
     out.push_str(text);
+    let rebase = |offset: usize| offset.saturating_sub(src_base).saturating_add(dst_base);
     for s in src_spans {
         spans.push(crate::tagged::Span {
-            range: (s.range.start - src_base + dst_base)..(s.range.end - src_base + dst_base),
+            range: rebase(s.range.start)..rebase(s.range.end),
             region: s.region.clone(),
         });
     }

@@ -4,6 +4,11 @@
 //! (`SubprocessGit`, gated). At this checkpoint the corpus is the two phase-4 pilots (`283` §1d);
 //! before step 6 populates it the gates pass vacuously.
 
+#![expect(
+    clippy::expect_used,
+    reason = "corpus-loader helper over the committed tree; the no-panic lints guard untrusted input"
+)]
+
 use std::path::{Path, PathBuf};
 
 use dorc_loom::DorcConsumer;

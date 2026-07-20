@@ -59,8 +59,8 @@ fn every_catalog_code_maps_to_a_valid_tagged_render() {
         let mut spans: Vec<Span> = Vec::new();
         // An unwritten (`None`) message tags its synthesized placeholder WHOLE as Arrangement — the
         // same arm `render_body_tagged` takes (`283:dec-message-becomes-option`).
-        match e.message {
-            Some(message) => fill_template_tagged(
+        if let Some(message) = e.message {
+            fill_template_tagged(
                 &mut out,
                 &mut spans,
                 message,
@@ -68,17 +68,16 @@ fn every_catalog_code_maps_to_a_valid_tagged_render() {
                 e.slug,
                 Field::Message,
                 0,
-            ),
-            None => {
-                let placeholder = format!("[unwritten: {}]", e.slug);
-                out.push_str(&placeholder);
-                spans.push(Span {
-                    range: 0..out.len(),
-                    region: Region::Arrangement {
-                        slug: "unwritten-placeholder",
-                    },
-                });
-            }
+            );
+        } else {
+            let placeholder = format!("[unwritten: {}]", e.slug);
+            out.push_str(&placeholder);
+            spans.push(Span {
+                range: 0..out.len(),
+                region: Region::Arrangement {
+                    slug: "unwritten-placeholder",
+                },
+            });
         }
         if let Some(help) = e.help {
             let start = out.len();
