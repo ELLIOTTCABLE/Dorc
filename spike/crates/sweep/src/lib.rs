@@ -49,13 +49,13 @@ pub use scenario::{Honesty, Scenario, Seed, TopologyClass};
 /// net's elision coverage would vanish. `install`/`config`/`purge` touch `package:<operand>` via a
 /// STATIC (authored) `touches()`; `refresh` establishes but has NO `touches()` arm ⇒ a
 /// footprint-less (silent, total-walling) mutator. `config` establishes a DIFFERENT selector
-/// (`#configured`) so a same-entity victim's `#installed` stays ambient — the entity-granular HIT.
-/// **`place` (24E §6) establishes `package:<op>#installed` like `install`, but its `touches()` arm
+/// (`@configured`) so a same-entity victim's `@installed` stays ambient — the entity-granular HIT.
+/// **`place` (24E §6) establishes `package:<op>@installed` like `install`, but its `touches()` arm
 /// reaches a host tool (`apt-manifest`) ⇒ the static tracer ⊤s (`NonPrintfCommand`) ⇒ it ESCALATES
 /// to host-derivation: its footprint is DERIVED via [`dorc_hostsim::Host::derive`], not authored —
 /// the derived-footprint wall the lying-derived net drives.** `is_converged()` vouches the establish
 /// verbs (install/config/refresh/place); a `purge` is a KILL (never elides), declined by `*) return 2`.
-pub const ORACLE_SH: &str = r##"
+pub const ORACLE_SH: &str = r#"
 apt_get__predict() {
    while [ "${1#-}" != "$1" ]; do shift; done
    verb=$1; shift
@@ -63,11 +63,11 @@ apt_get__predict() {
    pkg : package = "$1"
    if [ "$2" = "" ]; then
       case $verb in
-         install) dpkg-query -W "$pkg" >/dev/null 2>&1 : package:"$pkg"#installed ;;
-         config)  dpkg-query -W "$pkg" >/dev/null 2>&1 : package:"$pkg"#configured ;;
-         refresh) dpkg-query -W "$pkg" >/dev/null 2>&1 : package:"$pkg".refreshed ;;
-         purge)   dpkg-query -W "$pkg" >/dev/null 2>&1 :! package:"$pkg"#installed ;;
-         place)   dpkg-query -W "$pkg" >/dev/null 2>&1 : package:"$pkg"#installed ;;
+         install) dpkg-query -W "$pkg" >/dev/null 2>&1 : sm.dorc.Package:"$pkg"@installed ;;
+         config)  dpkg-query -W "$pkg" >/dev/null 2>&1 : sm.dorc.Package:"$pkg"@configured ;;
+         refresh) dpkg-query -W "$pkg" >/dev/null 2>&1 : sm.dorc.Package:"$pkg".refreshed ;;
+         purge)   dpkg-query -W "$pkg" >/dev/null 2>&1 :! sm.dorc.Package:"$pkg"@installed ;;
+         place)   dpkg-query -W "$pkg" >/dev/null 2>&1 : sm.dorc.Package:"$pkg"@installed ;;
       esac
    fi
 }
@@ -93,9 +93,9 @@ apt_get__is_converged() {
 }
 
 package__disturbance_reaches_only() {
-   apt-rdepends "$1"    : package
+   apt-rdepends "$1"    : disturbs package
 }
-"##;
+"#;
 
 /// One survived elision's attribution, lifted from a flag-on plan (interner-free). The
 /// attribution-under-lies assertion checks that a diverging lying scenario has a survival whose

@@ -6,7 +6,7 @@
 # rc is the raw PROBE-command status (opaque to Dorc — the record is the out-of-band lane).
 
 printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=9de2626ce60de0dc sites=2 @@dorc@@\n'
-# site 0: dorc-auto:hork#converged
+# site 0: dorc-auto:hork@converged
 hork__is_converged() {
    :
    case "$1" in
@@ -15,7 +15,7 @@ hork__is_converged() {
    esac
 }
 hork__is_converged 'install' 'wombat'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 0 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
-# site 1: dorc-auto:hork#converged
+# site 1: dorc-auto:hork@converged
 sudo__enter() {
    sudo -n "$@"
 }

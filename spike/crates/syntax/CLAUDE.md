@@ -41,7 +41,7 @@ bullet, slugged; append to the matching section.
   trailing marks with the sigil family `:` / `:!` / `:?` · the attached-`#`
   selector (a `#` is a selector-introducer ONLY when a valid coordinate character
   immediately precedes it — it never fights shell comments) · brace-alternation
-  `#{a,b}` on claim-emission marks only · colon-line marks (a bare `:` command
+  `@{a,b}` on claim-emission marks only · colon-line marks (a bare `:` command
   carrying a trailing mark) · the `dorc:` command-word prefix (the only
   prefix-position dorcism). Kinds are reverse-DNS ≥2 dots; there is no `.prop`
   production (dots belong to kind names and entity content only).

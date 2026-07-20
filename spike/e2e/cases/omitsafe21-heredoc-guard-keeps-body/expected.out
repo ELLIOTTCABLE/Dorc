@@ -6,7 +6,7 @@
 # rc is the raw PROBE-command status (opaque to Dorc — the record is the out-of-band lane).
 
 printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=1f00f887f1817ec4 sites=1 @@dorc@@\n'
-# site 1: sm.dorc.PkgState:nginx#installed
+# site 1: sm.dorc.PkgState:nginx@installed
 dpkg__predict() {
    case $1 in -s) shift ;; esac
    pkg="$1"

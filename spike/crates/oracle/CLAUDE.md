@@ -39,11 +39,11 @@ discipline: one rule per bullet, slugged; append to the matching section.
 ## The authored surface — worked minimum (the one syntax anchor; semantics live in `spike/CLAUDE.md`)
 
 ```sh
-# dorc-lang/v0.1
+# dorc-lang/v0.2
 systemctl__is_converged() {
    case "${1-}" in
-   enable) systemctl is-enabled --quiet -- "${2-}"   : sm.dorc.Service:"$2"#enabled ;;
-   start)  systemctl is-active  --quiet -- "${2-}"   : sm.dorc.Service:"$2"#active  ;;
+   enable) systemctl is-enabled --quiet -- "${2-}"   : sm.dorc.Service:"$2"@enabled ;;
+   start)  systemctl is-active  --quiet -- "${2-}"   : sm.dorc.Service:"$2"@active  ;;
    *) return 2 ;;
    esac
 }
@@ -55,7 +55,7 @@ systemctl__is_converged() {
   file/author-derived (`271:rul-family`).
 - **minting-law** — verdict (`:`/`:!`) and observe (`:?`) marks on runnable lines
   MINT selector tokens; claim/disturbs emissions never mint; a mark asserts
-  exactly ONE thing; brace-alternation `#{a,b}` is claim-emission marks only.
+  exactly ONE thing; brace-alternation `@{a,b}` is claim-emission marks only.
 
 ## The stdlib quality bar — regression classes, NOT engine holes
 

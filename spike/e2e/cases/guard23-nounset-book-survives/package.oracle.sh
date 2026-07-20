@@ -1,5 +1,5 @@
 #!/usr/bin/env dorc-sh
-# dorc-lang/v0.1
+# dorc-lang/v0.2
 # minimal package oracle (apt/dpkg) — the guard23 SET-U fixture variant (23C-fd2). The predict()
 apt_get__predict() {
    while [ "${1#-}" != "$1" ]; do shift; done
@@ -8,8 +8,8 @@ apt_get__predict() {
    pkg : sm.dorc.Package = "$1"
    if [ "${2-}" = "" ]; then
       case $verb in
-         install) dpkg-query -W "$pkg" >/dev/null 2>&1 : sm.dorc.Package:"$pkg"#installed ;;
-         purge) dpkg-query -W "$pkg" >/dev/null 2>&1 :! sm.dorc.Package:"$pkg"#installed ;;
+         install) dpkg-query -W "$pkg" >/dev/null 2>&1 : sm.dorc.Package:"$pkg"@installed ;;
+         purge) dpkg-query -W "$pkg" >/dev/null 2>&1 :! sm.dorc.Package:"$pkg"@installed ;;
       esac
    fi
 }

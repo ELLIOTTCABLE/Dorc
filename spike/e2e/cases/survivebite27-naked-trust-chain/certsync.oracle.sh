@@ -1,5 +1,5 @@
 #!/usr/bin/env dorc-sh
-# dorc-lang/v0.1
+# dorc-lang/v0.2
 # LYING wall oracle (27V §4 flagship). `certsync push` rewrites a cert bundle AND — per its real
 # post-push behaviour — reloads nginx. But its disturbs claims at most its OWN CertBundle cell,
 # omitting the Service cell systemctl backs. The omission survives the own-coordinate canary (the
@@ -9,7 +9,7 @@ certsync__predict() {
    verb=$1; shift
    bundle : sm.dorc.CertBundle = "$1"
    case $verb in
-      push) certsync status -- "$bundle" : sm.dorc.CertBundle:"$bundle"#synced ;;
+      push) certsync status -- "$bundle" : sm.dorc.CertBundle:"$bundle"@synced ;;
    esac
 }
 
@@ -17,7 +17,7 @@ certsync__disturbs() {                             # THE LIE: at-most its OWN Ce
    verb=$1; shift                                  # real push ALSO reloads nginx (Service:nginx#active),
    bundle : sm.dorc.CertBundle = "$1"              # UNCLAIMED and invisible to every coherence check.
    case $verb in
-      push) printf '%s\n' "$bundle" : sm.dorc.CertBundle ;;
+      push) printf '%s\n' "$bundle" : disturbs sm.dorc.CertBundle ;;
    esac
 }
 

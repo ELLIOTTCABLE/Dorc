@@ -305,7 +305,7 @@ pub struct Footprint {
     reached_via: BTreeMap<EntityCoord, KindId>,
     /// `277` §3 — the disturbs-emission SELECTOR per footprint coordinate. Absent (the corpus
     /// default) ⇒ a whole-entity ⊤ footprint, poisoning every cell (`selector_covers` collides).
-    /// Present ⇒ a selector-bearing disturbs mark (`: sm.dorc.Service#active`) that can SPARE a
+    /// Present ⇒ a selector-bearing disturbs mark (`: sm.dorc.Service@active`) that can SPARE a
     /// sibling cell under the dialect. A side-table (not a field on `EntityCoord`) so the
     /// entity-granular render/canonicalization/reach machinery stays untouched
     /// (`empty-world-byte-identical`). SPIKE SCOPE: an entity emitted twice with differing
@@ -367,7 +367,7 @@ impl Footprint {
     }
 
     /// Record the disturbs-emission selector for one footprint coordinate (`277` §3). Called by the
-    /// wiring when an emission carried a `#selector` mark; absent coords stay whole-entity ⊤.
+    /// wiring when an emission carried a `@selector` mark; absent coords stay whole-entity ⊤.
     pub fn set_selector(&mut self, coord: EntityCoord, selector: SelectorId) {
         self.selectors.insert(coord, selector);
     }
@@ -1047,7 +1047,7 @@ mod tests {
         let k = KindId(i.intern("package"));
         let e = EntityRef::Operand(OpaqueToken(i.intern("nginx")));
         let fp = Footprint::authored(i.intern("apt-get"), vec![EntityCoord::new(k, e)]).unwrap();
-        // backing on the SAME entity but a different selector (#configured vs the footprint's
+        // backing on the SAME entity but a different selector (@configured vs the footprint's
         // entity-granular claim) ⇒ hit.
         let backing = backing_of(EntityCoord::new(k, e), None);
         assert!(
@@ -1552,9 +1552,9 @@ mod tests {
     #[test]
     fn dialect_selector_bearing_disturbs_spares_sibling_cell() {
         // `277` §3 end-to-end (the disturbs × dialect-selector DST case, `279f` §5): a footprint
-        // whose disturbs mark carries `#active` SPARES a downstream `#enabled` backing of the SAME
+        // whose disturbs mark carries `@active` SPARES a downstream `@enabled` backing of the SAME
         // entity — sibling cells in one dialect. The backing's minting family is RECOVERED from the
-        // dialect (`sole_family`); the claim's `#active` ∈ dialect(that family, kind) ⇒ the wall's
+        // dialect (`sole_family`); the claim's `@active` ∈ dialect(that family, kind) ⇒ the wall's
         // kill-traffic misses the fact. Empty dialect ⇒ collide (the entity-granular floor). ONE
         // interner throughout (the fact's symbols must match the dialect's).
         let mut i = dorc_core::Interner::default();
@@ -1564,10 +1564,10 @@ mod tests {
         let enabled = SelectorId(i.intern("enabled"));
         let active = SelectorId(i.intern("active"));
         let coord = EntityCoord::new(kind, nginx);
-        // Footprint: `systemctl restart nginx` disturbs `sm.dorc.Service:nginx#active`.
+        // Footprint: `systemctl restart nginx` disturbs `sm.dorc.Service:nginx@active`.
         let mut fp = Footprint::authored(i.intern("systemctl"), vec![coord]).unwrap();
         fp.set_selector(coord, active);
-        // Backing: the downstream converged fact `sm.dorc.Service:nginx#enabled`.
+        // Backing: the downstream converged fact `sm.dorc.Service:nginx@enabled`.
         let backing = backing_of(coord, Some(enabled));
         // Dialect: systemctl mints {enabled, active} for sm.dorc.Service (its verdict marks).
         let mut d = Dialect::empty();
@@ -1578,7 +1578,7 @@ mod tests {
                 disjoint(&fp, &backing, &Resolutions::none(), &d),
                 DisjointOutcome::Disjoint(_)
             ),
-            "a #active disturbs mark spares a #enabled sibling-cell backing under the dialect"
+            "a @active disturbs mark spares a @enabled sibling-cell backing under the dialect"
         );
         // Empty dialect ⇒ no minted tokens ⇒ collide (empty-world-byte-identical floor).
         assert!(
@@ -1602,7 +1602,7 @@ mod tests {
     // ── `277` §5 backing-SETS — observe-widening + the universal meet (REAL sets) ─────────────
 
     /// The `277` §5 shared setup: kind `sm.dorc.Service`, entity `nginx`, family `systemctl`
-    /// minting {enabled, active}, a footprint whose disturbs mark carries `#active`.
+    /// minting {enabled, active}, a footprint whose disturbs mark carries `@active`.
     fn service_widening_setup() -> (
         dorc_core::Interner,
         FactKey,
@@ -1618,7 +1618,7 @@ mod tests {
         let enabled = SelectorId(i.intern("enabled"));
         let active = SelectorId(i.intern("active"));
         let coord = EntityCoord::new(kind, nginx);
-        // `systemctl reload nginx` disturbs `sm.dorc.Service:nginx#active`.
+        // `systemctl reload nginx` disturbs `sm.dorc.Service:nginx@active`.
         let mut fp = Footprint::authored(i.intern("systemctl"), vec![coord]).unwrap();
         fp.set_selector(coord, active);
         let mut d = Dialect::empty();
@@ -1635,22 +1635,22 @@ mod tests {
 
     #[test]
     fn observe_widened_backing_collides_where_the_bare_fact_would_spare() {
-        // `277` §5 observe-backing-widening + universal meet: a `#enabled` fact whose verdict body
-        // OBSERVED `#active` carries `#active` as a backing MEMBER. A `#active` disturbs SPARES the
-        // bare `#enabled` cell (sibling under the dialect) — but COLLIDES the WIDENED backing (the
-        // `#active` member is hit) ⇒ demote. Widening GROWS kill-surface; the universal meet
+        // `277` §5 observe-backing-widening + universal meet: a `@enabled` fact whose verdict body
+        // OBSERVED `@active` carries `@active` as a backing MEMBER. A `@active` disturbs SPARES the
+        // bare `@enabled` cell (sibling under the dialect) — but COLLIDES the WIDENED backing (the
+        // `@active` member is hit) ⇒ demote. Widening GROWS kill-surface; the universal meet
         // collides the set on ANY member hit (`pin-set-meet-order-independence`).
         let (_i, fact, family, active, fp, d) = service_widening_setup();
-        // Bare fact (no widening): the `#active` disturbs spares the `#enabled` sibling ⇒ survives.
+        // Bare fact (no widening): the `@active` disturbs spares the `@enabled` sibling ⇒ survives.
         let bare = Backing::widened(fact, Some(family), BTreeSet::new());
         assert!(
             matches!(
                 disjoint(&fp, &bare, &Resolutions::none(), &d),
                 DisjointOutcome::Disjoint(_)
             ),
-            "the bare #enabled fact spares the #active disturbs (sibling cell)"
+            "the bare @enabled fact spares the @active disturbs (sibling cell)"
         );
-        // Widened by the observed `#active`: the `#active` member is HIT ⇒ the SET collides.
+        // Widened by the observed `@active`: the `@active` member is HIT ⇒ the SET collides.
         let observed: BTreeSet<SelectorId> = std::iter::once(active).collect();
         let widened = Backing::widened(fact, Some(family), observed);
         assert!(
@@ -1658,7 +1658,7 @@ mod tests {
                 disjoint(&fp, &widened, &Resolutions::none(), &d),
                 DisjointOutcome::Hit { .. }
             ),
-            "the observe-widened #active member collides ⇒ the universal meet demotes"
+            "the observe-widened @active member collides ⇒ the universal meet demotes"
         );
     }
 
@@ -1666,7 +1666,7 @@ mod tests {
     fn widened_backing_survives_when_every_member_is_disjoint() {
         // The universal meet's SPARE arm: a backing whose OWN cell AND every observe-widened
         // sibling are all provably-disjoint from the footprint survives. Here the fact is
-        // `#enabled`, widened by `#reloaded`; the footprint disturbs `#active` — distinct from
+        // `@enabled`, widened by `@reloaded`; the footprint disturbs `@active` — distinct from
         // BOTH members under the dialect ⇒ all pairs provably-disjoint ⇒ the SET spares.
         let (mut i, fact, family, _active, fp, mut d) = service_widening_setup();
         let reloaded = SelectorId(i.intern("reloaded"));
@@ -1678,7 +1678,7 @@ mod tests {
                 disjoint(&fp, &widened, &Resolutions::none(), &d),
                 DisjointOutcome::Disjoint(_)
             ),
-            "every member (#enabled, #reloaded) disjoint from #active ⇒ the set spares"
+            "every member (@enabled, @reloaded) disjoint from @active ⇒ the set spares"
         );
     }
 
@@ -1688,12 +1688,12 @@ mod tests {
         // minting family is AUTHORITATIVE past `fence-divergent-meaning`. Two families both mint
         // {enabled, active} for the kind, so `sole_family` is ambiguous ⇒ `None` ⇒ the map-miss
         // reverse-lookup floor COLLIDES. The threaded `Some(systemctl)` uses systemctl's dialect
-        // ⇒ the `#active` disturbs SPARES the `#enabled` fact. This is the exact behavior the
+        // ⇒ the `@active` disturbs SPARES the `@enabled` fact. This is the exact behavior the
         // reverse-lookup could not give — the divergent-meaning improvement, member-wise.
         let (mut i, fact, systemctl, _active, fp, mut d) = service_widening_setup();
         let otherctl = ProviderId(i.intern("otherctl"));
-        d.mint(otherctl, fact.kind, fact.selector); // second family mints #enabled too
-        d.mint(otherctl, fact.kind, SelectorId(i.intern("active"))); // …and #active ⇒ ambiguous
+        d.mint(otherctl, fact.kind, fact.selector); // second family mints @enabled too
+        d.mint(otherctl, fact.kind, SelectorId(i.intern("active"))); // …and @active ⇒ ambiguous
         // Map-miss `of_fact` (family None ⇒ recover via sole_family, now ambiguous ⇒ None ⇒ collide).
         let recovered = Backing::of_fact(fact);
         assert!(

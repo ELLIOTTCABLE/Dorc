@@ -241,7 +241,7 @@ fn no_tools_option_disables_external_sources() {
 
 #[test]
 fn strip_line_map_remaps_a_marked_file_finding() {
-    let marked = "# dorc-lang/v0.1\nfoo__state_stored_only_in() {\n:   : invariant:fs-view\nprintf 'x\\n'   : kernel\n}\n";
+    let marked = "# dorc-lang/v0.2\nfoo__state_stored_only_in() {\n: undivided-by-transit-across fs-view\nprintf 'x\\n'   : stored-in kernel\n}\n";
     let json = r#"{"comments":[{"file":"-","line":2,"column":1,"level":"info","code":2043,"message":"whatever"}]}"#;
     let runner = FakeRunner::new().with("shellcheck", 1, json, "");
     let report = lint(

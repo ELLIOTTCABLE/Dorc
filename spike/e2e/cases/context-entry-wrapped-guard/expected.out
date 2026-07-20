@@ -6,7 +6,7 @@
 # rc is the raw PROBE-command status (opaque to Dorc — the record is the out-of-band lane).
 
 printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=78e1f742219aeaee sites=1 @@dorc@@\n'
-# site 1: dorc-auto:hork#converged
+# site 1: dorc-auto:hork@converged
 sudo__enter() {
    sudo -n "$@"
 }

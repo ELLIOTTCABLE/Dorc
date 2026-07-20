@@ -315,17 +315,17 @@ pub const CATALOG: &[CatalogEntry] = &[
     CatalogEntry {
         slug: "missing-dialect-marker",
         when_fires: "a dorc-lang dialect construct (a bind or trailing mark) appears in a file \
-                     lacking the `# dorc-lang/v0.1` version marker. oracle/marker.rs.",
+                     lacking the `# dorc-lang/v0.2` version marker. oracle/marker.rs.",
         why: "marker-gates-syntax-only: a loud file-level refusal. Static — the marker text is \
               inline (MARKER / MARKER_WINDOW compile-time constants).",
         params: &[],
         example: "sm this file uses a dorc-lang dialect construct (a bind `name : kind = …` or a \
-                  trailing `:`/`:!`/`:?` mark) but lacks the `# dorc-lang/v0.1` version marker \
-                  (marker-gates-syntax-only): add `# dorc-lang/v0.1` as a standalone comment in the \
+                  trailing `:`/`:!`/`:?` mark) but lacks the `# dorc-lang/v0.2` version marker \
+                  (marker-gates-syntax-only): add `# dorc-lang/v0.2` as a standalone comment in the \
                   first 10 lines, or drop the dialect (the bare `__role` floor works markerless)",
         message: "sm this file uses a dorc-lang dialect construct (a bind `name : kind = …` or a \
-                  trailing `:`/`:!`/`:?` mark) but lacks the `# dorc-lang/v0.1` version marker \
-                  (marker-gates-syntax-only): add `# dorc-lang/v0.1` as a standalone comment in the \
+                  trailing `:`/`:!`/`:?` mark) but lacks the `# dorc-lang/v0.2` version marker \
+                  (marker-gates-syntax-only): add `# dorc-lang/v0.2` as a standalone comment in the \
                   first 10 lines, or drop the dialect (the bare `__role` floor works markerless)",
         help: None,
     },
@@ -370,10 +370,10 @@ pub const CATALOG: &[CatalogEntry] = &[
         params: &[],
         example: "sm this `is_converged` reads the caller's identity but carries no tolerance \
                   vouch — a wrapped site (`sudo …`) will run/guard instead of eliding. One line \
-                  makes it context-shiftable: `:   : tolerates:user` (`27C` §2).",
+                  makes it context-shiftable: `: safe-across user` (`27C` §2).",
         message: "sm this `is_converged` reads the caller's identity but carries no tolerance \
                   vouch — a wrapped site (`sudo …`) will run/guard instead of eliding. One line \
-                  makes it context-shiftable: `:   : tolerates:user` (`27C` §2).",
+                  makes it context-shiftable: `: safe-across user` (`27C` §2).",
         help: None,
     },
     // ── oracle/wrapper.rs (TEMPLATIZED) ─────────────────────────────────────
@@ -408,17 +408,65 @@ pub const CATALOG: &[CatalogEntry] = &[
     // ── oracle/predict/derive.rs (static) ───────────────────────────────────
     CatalogEntry {
         slug: "mark-brace-verdict-single-cell",
-        when_fires: "a brace-alternation `#{a,b}` appears on a single-cell verdict/observe mark. \
+        when_fires: "a brace-alternation `@{a,b}` appears on a single-cell verdict/observe mark. \
                      oracle/predict/derive.rs. Static (literal braces escaped in the template).",
         why: "277 §4c: a verdict/observe mark asserts exactly one cell; the brace mints no cell \
               and the site runs (a role-aware rejection the parser cannot make).",
         params: &[],
-        example: "sm verdict and observe marks are single-cell; brace alternation `#{a,b}` is \
+        example: "sm verdict and observe marks are single-cell; brace alternation `@{a,b}` is \
                   claim-emission-only (`277` §4c) — this mark mints NO cell and the site will run. \
                   Split it into one marked probe line per cell.",
-        message: "sm verdict and observe marks are single-cell; brace alternation `#{{a,b}}` is \
+        message: "sm verdict and observe marks are single-cell; brace alternation `@{{a,b}}` is \
                   claim-emission-only (`277` §4c) — this mark mints NO cell and the site will run. \
                   Split it into one marked probe line per cell.",
+        help: None,
+    },
+    // ── oracle/predict (the `281` mark-grammar parse — new-grammar path) ─────
+    //    UNWRITTEN prose (`27V:rul-error-authorship-tier`): message is the `[unwritten:]`
+    //    placeholder; conductor authors it after the `282` flip. `example` is a strawman, not prose.
+    CatalogEntry {
+        slug: "mark-unknown-verb",
+        when_fires: "the new-grammar mark parser hit a period-free head/continuation token that is \
+                     not a known verb (`281` §4 rule-3 miss). oracle/predict/mark_grammar.rs.",
+        why: "281 §4 keystone (rul-verbs-dotless-kinds-dotted): a dotless mark token is a verb; an \
+              unknown one is malformed committed syntax ⇒ the block drops to ⊤ (`inv-top-reject`). \
+              `{token}` = the bad token, `{expected}` = the known-verb vocabulary.",
+        params: &[],
+        example: "an oracle mark `: frobnicate sm.dorc.X` names no known verb; the block drops to ⊤",
+        message: "[unwritten: mark-unknown-verb]",
+        help: None,
+    },
+    CatalogEntry {
+        slug: "mark-rc-arity-exceeded",
+        when_fires: "the new-grammar mark parser found two rc-consuming marks (`asserts`/`refutes`) \
+                     in one block, incl. continuations (`281` §7). oracle/predict/mark_grammar.rs.",
+        why: "281 §7 rc-arity: one exit code witnesses one cell, so two verdicts on one block is \
+              unmeasurable ⇒ the block drops to ⊤ (`inv-top-reject`).",
+        params: &[],
+        example: "a block `cmd : sm.a.B@x refutes sm.a.B@y` carries two verdicts on one rc",
+        message: "[unwritten: mark-rc-arity-exceeded]",
+        help: None,
+    },
+    CatalogEntry {
+        slug: "mark-standalone-rc-consumer",
+        when_fires: "the new-grammar mark parser found a standalone mark-block (no command to bind) \
+                     carrying an rc-consumer or `reads`. oracle/predict/mark_grammar.rs.",
+        why: "28A:rul-continuation-attachment: a standalone block has no statement to measure/back, \
+              so a verdict/observe there is unbacked ⇒ the block drops to ⊤ (`inv-top-reject`).",
+        params: &[],
+        example: "a bare `: sm.a.B@x` line with no preceding command and no continuation",
+        message: "[unwritten: mark-standalone-rc-consumer]",
+        help: None,
+    },
+    CatalogEntry {
+        slug: "mark-hashcolon-malformed",
+        when_fires: "the new-grammar mark parser found a `#:` comment that looks like a mark-block \
+                     but did not parse (`281` §9). oracle/predict/mark_grammar.rs.",
+        why: "281 §9 graceful degradation: the hash-colon carrier is left a plain comment (never \
+              mis-erased) but diagnosed (Warning) so a broken one is never silently ignored.",
+        params: &[],
+        example: "a `#: frobnicate` comment reads like a mark but names no known verb",
+        message: "[unwritten: mark-hashcolon-malformed]",
         help: None,
     },
     // ── plan/records.rs (framed deframer; all SPANLESS) ─────────────────────

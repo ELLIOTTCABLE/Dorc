@@ -1,4 +1,4 @@
-# dorc-lang/v0.1
+# dorc-lang/v0.2
 # policyctl STRADDLER (27Xb counterexample): compares against `$(cat /etc/policy)`, an unmarked
 # fs-view-dependent read ⇒ (B) not read-set-closed ⇒ carry walls.
 policyctl__is_converged() {

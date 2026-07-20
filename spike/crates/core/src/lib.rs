@@ -593,9 +593,9 @@ pub enum Grade {
 /// (`inv-referent-agnostic`) — compared for co-reference, resolved for display.
 ///
 /// The selector is what splits a flat per-(kind,entity) bit into independent
-/// cells: `service#enabled` and `service#active` are *separately* mutation-gating
+/// cells: `service@enabled` and `service@active` are *separately* mutation-gating
 /// (`systemctl enable --now` writes both; an `is-active` probe must not discharge
-/// an unmet `#enabled`), which a flat key could not hold (`notes/193` §1).
+/// an unmet `@enabled`), which a flat key could not hold (`notes/193` §1).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct SelectorId(pub Symbol);
 
@@ -719,7 +719,7 @@ pub const AUTO_KIND_PREFIX: &str = "dorc-auto:";
 
 /// The auto-cell's fixed selector (`24L` §2 "property: opaque/auto"). One reserved token; the
 /// cell is a per-provider singleton, so the selector never discriminates — it exists only to
-/// fill the flat coordinate's third slot and render (`dorc-auto:foobar#converged`).
+/// fill the flat coordinate's third slot and render (`dorc-auto:foobar@converged`).
 pub const AUTO_SELECTOR: &str = "converged";
 
 /// Mint the typeless-floor **auto-cell** for `provider` (`24L` §2/§3 — THE floor coordinate).

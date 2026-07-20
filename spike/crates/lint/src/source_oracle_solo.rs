@@ -207,7 +207,7 @@ sysctl__is_converged() {
     #[test]
     fn oracle_validate_surfaces_a_check_dialect_giveup() {
         // A backtick command-substitution is out of the check dialect (`predict/lexer.rs`).
-        let out_of_dialect = "# dorc-lang/v0.1\nfoo__predict() {\n   foo --check `date`\n}\n";
+        let out_of_dialect = "# dorc-lang/v0.2\nfoo__predict() {\n   foo --check `date`\n}\n";
         let report = lint(
             &[],
             &[oracle("foo.oracle.sh", out_of_dialect)],

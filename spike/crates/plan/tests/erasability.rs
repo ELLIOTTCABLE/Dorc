@@ -123,13 +123,13 @@ fn ship_from(
 }
 
 /// The corpus-shaped apt-get oracle (mirrors `e2e/cases/converged/package.oracle.sh`): the
-/// check body's `case $verb` arms + trailing marks (install ⇒ establish `package#installed`,
+/// check body's `case $verb` arms + trailing marks (install ⇒ establish `package@installed`,
 /// purge ⇒ inverted) are what make a command classify as an Establish (and thus eligible for
 /// Replace) — WITHOUT them every command is Opaque and the gate would never exercise the
 /// elision plane (the anti-masking lesson: a fixture that elides nothing cannot test
 /// receipt-inertness OF a decision). The `apt_get__predict` argparse is the entity-resolver and
 /// the shipped probe. Lifted with the test interner so provider symbols match the book's words.
-const ORACLE_SRC: &str = r##"
+const ORACLE_SRC: &str = r#"
 apt_get__predict() {
    while [ "${1#-}" != "$1" ]; do shift; done
    verb=$1; shift
@@ -137,12 +137,12 @@ apt_get__predict() {
    pkg : package = "$1"
    if [ "$2" = "" ]; then
       case $verb in
-         install) dpkg-query -W "$pkg" >/dev/null 2>&1 : package:"$pkg"#installed ;;
-         purge) dpkg-query -W "$pkg" >/dev/null 2>&1 :! package:"$pkg"#installed ;;
+         install) dpkg-query -W "$pkg" >/dev/null 2>&1 : sm.dorc.Package:"$pkg"@installed ;;
+         purge) dpkg-query -W "$pkg" >/dev/null 2>&1 :! sm.dorc.Package:"$pkg"@installed ;;
       esac
    fi
 }
-"##;
+"#;
 
 /// The fixture books — each targets ≥1 hunt-list leak vector (see the module header). Chosen to
 /// exercise the receipts plane where a leak COULD bite: ⊤-causes, control-flow joins, loops
@@ -179,7 +179,7 @@ const FIXTURES: &[(&str, &str)] = &[
 ];
 
 /// The facts the simulated host already has (Converged). Fixed across run-A and run-B so the
-/// arena variation is the ONLY difference. We converge `package:nginx#installed` (NOT curl's),
+/// arena variation is the ONLY difference. We converge `package:nginx@installed` (NOT curl's),
 /// so a fixture installing nginx ELIDES (Replace) while one installing curl RUNS — exercising
 /// both sides of the disposition plane.
 fn converged_facts(i: &mut Interner) -> Vec<FactKey> {

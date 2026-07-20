@@ -211,7 +211,7 @@ fn severity_threshold_counting_drives_the_exit_trichotomy() {
 
 #[test]
 fn verdict_body_flags_a_terminal_pipeline() {
-    let oracle = "# dorc-lang/v0.1\nfoo__is_converged() {\nfoo --status \"$1\" | grep -q ok\n}\n";
+    let oracle = "# dorc-lang/v0.2\nfoo__is_converged() {\nfoo --status \"$1\" | grep -q ok\n}\n";
     let report = lint(
         &[],
         &[file("foo.oracle.sh", oracle)],

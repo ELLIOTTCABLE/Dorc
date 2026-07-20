@@ -1,5 +1,5 @@
 #!/usr/bin/env dorc-sh
-# dorc-lang/v0.1
+# dorc-lang/v0.2
 # Vendor-authored oracle: a third-party kind lives under the VENDOR's domain. predict()'s
 # `--version` is a read-only OBSERVE that DELEGATES to the real command, so a composed pipe stage
 # ships this body and prints the genuine version banner on stdout for the downstream grep to read
@@ -8,7 +8,7 @@ otelcol__predict() {
    case $1 in
       --version)
          collector : io.opentelemetry.Collector = "otelcol"
-         otelcol --version :? io.opentelemetry.Collector:"otelcol"#version
+         otelcol --version :? io.opentelemetry.Collector:"otelcol"@version
          ;;
    esac
 }

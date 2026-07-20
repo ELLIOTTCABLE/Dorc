@@ -45,11 +45,6 @@ use crate::wrapper::Dimension;
 /// `net-kernel` store IS `net.*` sysctl state, which is per-netns namespaced.
 const NET_KERNEL_SUBSTRATE: &str = "net-kernel";
 
-/// The mark `kind` fragment that introduces an `invariant:<axis>` colon-line inside
-/// `state_stored_only_in()` (`277` §4e: `:   : invariant:user` parses to
-/// `MarkTarget{kind:"invariant", entity:"<axis>"}`).
-const INVARIANT_TOKEN: &str = "invariant";
-
 /// The pure sh builtins a closed verdict body may invoke UNMARKED (`27C` §4(a)-(B) safe-list): they
 /// read NO external system state, so their rc traces purely to their (clean) argv operands. Every
 /// OTHER command word is an external read/effect and is admissible ONLY when MARKED (a declared read
@@ -161,8 +156,8 @@ struct StateBodyScan {
 }
 
 /// Scan a `state_stored_only_in()` body for its `invariant:<axis>` lines + `net-kernel` substrate
-/// emissions (`277` §4e). Both ride `MarkKind::Establish` marks distinguished by the mark's `kind`
-/// fragment (`invariant` vs the substrate token `net-kernel`). Whole-member scope (`277` §4e);
+/// emissions (`277` §4e). Distinguished by the typed VERB (`MarkKind::Undivided` vs
+/// `MarkKind::StoredIn` with the `net-kernel` substrate token). Whole-member scope (`277` §4e);
 /// control-flow arms are all scanned (over-approximation is safe for the caveat — it can only ADD a
 /// forbid). Substrate axes only reach the index (`from_token` maps `fs-view`/`netns`; a stray
 /// `invariant:user` line is dropped here — user is not a carry axis).
@@ -185,16 +180,20 @@ fn scan_state_block(
         match stmt {
             Stmt::Command(cmd) => {
                 let Some(mark) = &cmd.mark else { continue };
-                if mark.target.kind == INVARIANT_TOKEN {
-                    if let Some(axis) = &mark.target.entity
-                        && let Some(dim) = Dimension::from_token(axis)
+                if mark.kind == MarkKind::Undivided {
+                    // The axis token lives in the uniform `kind` payload home
+                    // (`28A:rul-uniform-kind-payload-home`): `undivided-by-transit-across fs-view`
+                    // ⇒ kind="fs-view" (`281` §5).
+                    if let Some(dim) = Dimension::from_token(&mark.target.kind)
                         && dim != Dimension::User
                     {
                         // The mark's own command-line span is the `file:line` the carry attribution
                         // points at (render 3/3). First occurrence wins (deterministic).
                         invariant.entry(dim).or_insert(cmd.span);
                     }
-                } else if mark.target.kind == NET_KERNEL_SUBSTRATE {
+                } else if mark.kind == MarkKind::StoredIn
+                    && mark.target.kind == NET_KERNEL_SUBSTRATE
+                {
                     *stores_net_kernel = true;
                 }
             }
@@ -360,13 +359,11 @@ impl ClosureWalk {
             self.clean_word(w, Some(cmd.span))?;
         }
         if let Some(mark) = &cmd.mark {
-            if let Some(v) = &mark.target.value {
-                self.clean_word(v, Some(cmd.span))?;
-            }
+            // (The old verdict `= value` cleanliness read DROPPED here — seam in `ast::MarkTarget`.)
             // A verdict/observe mark declares the read — record its (dotted) kind for the (A) check.
             if matches!(
                 mark.kind,
-                MarkKind::Establish | MarkKind::EstablishInverted | MarkKind::Observe
+                MarkKind::Asserts | MarkKind::Refutes | MarkKind::Reads
             ) {
                 self.read_kinds.insert(mark.target.kind.clone());
             }
@@ -614,7 +611,7 @@ mod tests {
     #[test]
     fn invariance_index_lifts_fsview_line() {
         let (inv, diags) = invariance(&[
-            "sm_dorc_KernelParam__state_stored_only_in() { printf 'sys\\n' : kernel ; : : invariant:fs-view ; }",
+            "sm_dorc_KernelParam__state_stored_only_in() { printf 'sys\\n' : stored-in kernel ; : undivided-by-transit-across fs-view ; }",
         ]);
         assert!(diags.is_empty(), "clean lift: {diags:?}");
         assert!(inv.invariant_across("sm.dorc.KernelParam", Dimension::FsView));
@@ -627,7 +624,7 @@ mod tests {
     #[test]
     fn invariance_netns_on_net_kernel_is_dropped_and_diagnosed() {
         let (inv, diags) = invariance(&[
-            "sm_dorc_Fw__state_stored_only_in() { printf 'nft\\n' : net-kernel ; : : invariant:netns ; }",
+            "sm_dorc_Fw__state_stored_only_in() { printf 'nft\\n' : stored-in net-kernel ; : undivided-by-transit-across netns ; }",
         ]);
         assert!(
             !inv.invariant_across("sm.dorc.Fw", Dimension::Netns),
@@ -642,7 +639,7 @@ mod tests {
     #[test]
     fn invariance_netns_on_plain_kernel_is_honored() {
         let (inv, diags) = invariance(&[
-            "sm_dorc_Vm__state_stored_only_in() { printf 'sys\\n' : kernel ; : : invariant:netns ; }",
+            "sm_dorc_Vm__state_stored_only_in() { printf 'sys\\n' : stored-in kernel ; : undivided-by-transit-across netns ; }",
         ]);
         assert!(diags.is_empty());
         assert!(inv.invariant_across("sm.dorc.Vm", Dimension::Netns));
@@ -668,7 +665,7 @@ mod tests {
             "kp__is_converged() { hork -c \"$1\" \"$2\" : sm.dorc.KernelParam:\"$1\" ; }",
         );
         let (inv, _) = invariance(&[
-            "sm_dorc_KernelParam__state_stored_only_in() { printf 's\\n' : kernel ; : : invariant:fs-view ; }",
+            "sm_dorc_KernelParam__state_stored_only_in() { printf 's\\n' : stored-in kernel ; : undivided-by-transit-across fs-view ; }",
         ]);
         assert!(matches!(
             decide_carry(&[Dimension::FsView], &read_set_closed(&body), &inv),
@@ -683,7 +680,7 @@ mod tests {
         let body =
             verdict_body("kp__is_converged() { hork -c \"$1\" : sm.dorc.KernelParam:\"$1\" ; }");
         let (inv, _) = invariance(&[
-            "sm_dorc_KernelParam__state_stored_only_in() { printf 's\\n' : kernel ; }", // no invariance line
+            "sm_dorc_KernelParam__state_stored_only_in() { printf 's\\n' : stored-in kernel ; }", // no invariance line
         ]);
         assert_eq!(
             decide_carry(&[Dimension::FsView], &read_set_closed(&body), &inv),
@@ -701,7 +698,7 @@ mod tests {
         let body =
             verdict_body("kp__is_converged() { hork -c \"$1\" : sm.dorc.KernelParam:\"$1\" ; }");
         let (inv, _) = invariance(&[
-            "sm_dorc_KernelParam__state_stored_only_in() { printf 's\\n' : kernel ; : : invariant:fs-view ; }",
+            "sm_dorc_KernelParam__state_stored_only_in() { printf 's\\n' : stored-in kernel ; : undivided-by-transit-across fs-view ; }",
         ]);
         assert_eq!(
             decide_carry(&[Dimension::User], &read_set_closed(&body), &inv),
@@ -715,7 +712,7 @@ mod tests {
     fn decide_walls_net_kernel_across_netns() {
         let body = verdict_body("fw__is_converged() { hork -c \"$1\" : sm.dorc.Fw:\"$1\" ; }");
         let (inv, _) = invariance(&[
-            "sm_dorc_Fw__state_stored_only_in() { printf 'nft\\n' : net-kernel ; : : invariant:netns ; }",
+            "sm_dorc_Fw__state_stored_only_in() { printf 'nft\\n' : stored-in net-kernel ; : undivided-by-transit-across netns ; }",
         ]);
         assert!(matches!(
             decide_carry(&[Dimension::Netns], &read_set_closed(&body), &inv),
@@ -731,7 +728,7 @@ mod tests {
     fn decide_carries_plain_kernel_across_netns() {
         let body = verdict_body("vm__is_converged() { hork -c \"$1\" : sm.dorc.Vm:\"$1\" ; }");
         let (inv, _) = invariance(&[
-            "sm_dorc_Vm__state_stored_only_in() { printf 's\\n' : kernel ; : : invariant:netns ; }",
+            "sm_dorc_Vm__state_stored_only_in() { printf 's\\n' : stored-in kernel ; : undivided-by-transit-across netns ; }",
         ]);
         assert!(matches!(
             decide_carry(&[Dimension::Netns], &read_set_closed(&body), &inv),
@@ -746,7 +743,7 @@ mod tests {
             "kp__is_converged() { want=\"$(cat /etc/policy)\" ; hork -c \"$1\" \"$want\" : sm.dorc.KernelParam:\"$1\" ; }",
         );
         let (inv, _) = invariance(&[
-            "sm_dorc_KernelParam__state_stored_only_in() { printf 's\\n' : kernel ; : : invariant:fs-view ; }",
+            "sm_dorc_KernelParam__state_stored_only_in() { printf 's\\n' : stored-in kernel ; : undivided-by-transit-across fs-view ; }",
         ]);
         assert!(matches!(
             decide_carry(&[Dimension::FsView], &read_set_closed(&body), &inv),

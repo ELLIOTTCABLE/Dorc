@@ -6,7 +6,7 @@
 # rc is the raw PROBE-command status (opaque to Dorc — the record is the out-of-band lane).
 
 printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=9e92b016c512a034 sites=1 @@dorc@@\n'
-# site 1: sm.dorc.GrepMatch:0.155.0#matched
+# site 1: sm.dorc.GrepMatch:0.155.0@matched
 otelcol__predict() {
    case $1 in
       --version)

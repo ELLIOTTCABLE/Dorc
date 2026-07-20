@@ -16,7 +16,7 @@
 //!   last exit-status-affecting statement.
 //! * the line-1 `dorc-sh` shebang RUNNER → `sh` (a narrow, parse-informed line-1 rewrite, so the
 //!   off-ramp artifact is fully dorc-free and runs under stock sh — `274` §13).
-//! * the `# dorc-lang/v0.1` dialect marker line → deleted whole (human ruling 2026-07-17,
+//! * the `# dorc-lang/v0.2` dialect marker line → deleted whole (human ruling 2026-07-17,
 //!   `27D:disposition-strip-keeps-marker` RULED STRIP-IT): a stripped artifact is no longer dialect
 //!   text and must not claim to be. This also makes the strip converge on a marker-FREE artifact, so
 //!   a second pass early-returns (idempotence via the marker gate, not via a dialect-free re-walk).
@@ -350,7 +350,7 @@ fn basename(path: &str) -> &str {
     path.rsplit('/').next().unwrap_or(path)
 }
 
-/// The `# dorc-lang/v0.1` dialect marker line edit: the FIRST marker line within the same
+/// The `# dorc-lang/v0.2` dialect marker line edit: the FIRST marker line within the same
 /// `MARKER_WINDOW` [`has_marker`] honors is deleted whole (through its trailing newline). Human
 /// ruling 2026-07-17 (`27D:disposition-strip-keeps-marker` → STRIP IT): a stripped off-ramp artifact
 /// is no longer dialect text. `None` when unmarked (`strip_file` already gated, so a marked file
@@ -375,14 +375,14 @@ mod tests {
     /// mark, a trailing emission mark, and — the load-bearing one — a `state_stored_only_in`
     /// `invariant:` bare-mark statement (a `:` no-op hosting a mark).
     const MARKED: &str = "#!/usr/bin/env dorc-sh\n\
-# dorc-lang/v0.1\n\
+# dorc-lang/v0.2\n\
 apt_get__predict() {\n\
    pkg : sm.dorc.Package = \"$1\"\n\
-   dpkg-query -W \"$pkg\" >/dev/null 2>&1 : sm.dorc.Package:\"$pkg\"#installed\n\
+   dpkg-query -W \"$pkg\" >/dev/null 2>&1 : sm.dorc.Package:\"$pkg\"@installed\n\
 }\n\
 sm_dorc_Package__state_stored_only_in() {\n\
-   printf '/var/lib/dpkg\\n' : fs\n\
-   :                          : invariant:user\n\
+   printf '/var/lib/dpkg\\n' : stored-in fs\n\
+   : undivided-by-transit-across user\n\
 }\n";
 
     fn strip(src: &str) -> String {
@@ -427,10 +427,10 @@ sm_dorc_Package__state_stored_only_in() {\n\
             out.contains("printf '/var/lib/dpkg\\n'\n"),
             "the emission command survives, its `: fs` mark gone:\n{out}"
         );
-        // The `# dorc-lang/v0.1` marker line IS erased (human ruling 2026-07-17,
+        // The `# dorc-lang/v0.2` marker line IS erased (human ruling 2026-07-17,
         // `27D:disposition-strip-keeps-marker` → STRIP IT): a stripped artifact is not dialect text.
         assert!(
-            !out.contains("# dorc-lang/v0.1"),
+            !out.contains("# dorc-lang/v0.2"),
             "the marker line is erased:\n{out}"
         );
     }
@@ -474,7 +474,7 @@ sm_dorc_Package__state_stored_only_in() {\n\
         // is erased), so the second pass hits the marker gate's early return and is byte-identity.
         let once = strip(MARKED);
         assert!(
-            !once.contains("# dorc-lang/v0.1"),
+            !once.contains("# dorc-lang/v0.2"),
             "once-stripped is marker-free"
         );
         assert_eq!(strip(&once), once, "strip is idempotent");
@@ -484,7 +484,7 @@ sm_dorc_Package__state_stored_only_in() {\n\
     fn dorc_prefix_erased_from_command_word() {
         // `dorc:sh …` → `sh …` (the `274` full-analysis-license prefix). Placed inside a lifted role
         // body so the whole-file walk reaches it (the module scope note covers book-level `dorc:`).
-        let src = "# dorc-lang/v0.1\nfoo__predict() {\n   dorc:sh -c 'echo hi'\n}\n";
+        let src = "# dorc-lang/v0.2\nfoo__predict() {\n   dorc:sh -c 'echo hi'\n}\n";
         let out = strip(src);
         if out.contains("sh -c 'echo hi'") {
             assert!(
@@ -542,11 +542,11 @@ sm_dorc_Package__state_stored_only_in() {\n\
     fn shellcheck_directive_not_detached_by_deleted_annotation_line() {
         // `27R` §8 pin: a deleted bare-mark line between a `# shellcheck disable=` directive and its
         // target must leave them ADJACENT (no residual blank line, or the directive suppresses nothing).
-        let src = "# dorc-lang/v0.1\n\
+        let src = "# dorc-lang/v0.2\n\
 foo__state_stored_only_in() {\n\
 # shellcheck disable=SC2086\n\
-:   : invariant:fs-view\n\
-printf 'x\\n'   : kernel\n\
+: undivided-by-transit-across fs-view\n\
+printf 'x\\n'   : stored-in kernel\n\
 }\n";
         let m = strip_mapped(src);
         assert!(
@@ -569,7 +569,7 @@ printf 'x\\n'   : kernel\n\
         // `dorc:` colon-prefix is erasable; `dorc-sh` starts with `dorc-`, never matched). Half-strip
         // is worse than no-strip: the author's documented buy-in is that a post-uninstall `dorc-sh`
         // dangles loud-127 identically under bash/sh/perl.
-        let src = "# dorc-lang/v0.1\nfoo__predict() {\n   dorc-sh -c 'echo hi'\n}\n";
+        let src = "# dorc-lang/v0.2\nfoo__predict() {\n   dorc-sh -c 'echo hi'\n}\n";
         let out = strip(src);
         assert!(
             out.contains("dorc-sh -c 'echo hi'"),

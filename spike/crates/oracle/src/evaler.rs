@@ -345,8 +345,9 @@ mod tests {
     #[test]
     fn ordinary_predict_is_not_an_evaler() {
         // A normal tool predict (no reentry primitive) is not an eval'er.
-        let check =
-            one_predict("apt_get__predict() { pkg : package = \"$1\"; dpkg-query -W \"$pkg\"; }");
+        let check = one_predict(
+            "apt_get__predict() { pkg : sm.dorc.Package = \"$1\"; dpkg-query -W \"$pkg\"; }",
+        );
         assert_eq!(detect_evaler(&check), None);
     }
 

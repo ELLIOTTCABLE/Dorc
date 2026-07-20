@@ -1260,16 +1260,16 @@ mod tests {
 
     /// The package oracle (apt/dpkg-query establish) — install/purge mutators. Mirrors
     /// the e2e `package.oracle.sh` idiom.
-    const PACKAGE_ORACLE: &str = r##"
+    const PACKAGE_ORACLE: &str = r#"
 apt_get__predict() {
    while [ "${1#-}" != "$1" ]; do shift; done
    verb=$1; shift
    while [ "${1#-}" != "$1" ]; do shift; done
-   pkg : package = "$1"
+   pkg : sm.dorc.Package = "$1"
    if [ "$2" = "" ]; then
       case $verb in
-         install) dpkg-query -W "$pkg" >/dev/null 2>&1 : package:"$pkg"#installed ;;
-         purge) dpkg-query -W "$pkg" >/dev/null 2>&1 :! package:"$pkg"#installed ;;
+         install) dpkg-query -W "$pkg" >/dev/null 2>&1 : sm.dorc.Package:"$pkg"@installed ;;
+         purge) dpkg-query -W "$pkg" >/dev/null 2>&1 :! sm.dorc.Package:"$pkg"@installed ;;
       esac
    fi
 }
@@ -1283,18 +1283,18 @@ apt_get__is_converged() {
       *) return 2 ;;
    esac
 }
-"##;
+"#;
 
     /// The pkgstate QUERY oracle (`dpkg -s X` reads installed-ness) — a read-only
     /// `Queries` cell, the fold-usable guard. Mirrors the e2e `pkgstate.oracle.sh`
     /// (an EXTERNAL query, mock-reproducible, unlike the builtin `command -v`).
-    const PKGSTATE_ORACLE: &str = r##"
+    const PKGSTATE_ORACLE: &str = r#"
 dpkg__predict() {
    case $1 in -s) shift ;; esac
    pkg : pkgstate = "$1"
-   dpkg -s -- "$pkg" >/dev/null 2>&1 :? pkgstate:"$pkg"#installed
+   dpkg -s -- "$pkg" >/dev/null 2>&1 :? pkgstate:"$pkg"@installed
 }
-"##;
+"#;
 
     fn report(book: &str, probe: Option<&str>) -> Report {
         let weights = weights::Weights::line_count_standin();

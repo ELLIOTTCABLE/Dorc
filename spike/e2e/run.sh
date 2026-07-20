@@ -1122,7 +1122,7 @@ dorc_sh_smoke() {
   _ssand=$(mktemp -d)
   cat > "$_ssand/marked.sh" <<'SMK'
 #!/usr/bin/env dorc-sh
-# dorc-lang/v0.1
+# dorc-lang/v0.2
 smoke__predict() {
    pkg : sm.dorc.Package = "$1"
    printf 'dorc-sh-smoke ran: %s\n' "$pkg"

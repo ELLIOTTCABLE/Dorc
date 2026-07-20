@@ -555,7 +555,7 @@ mod tests {
         let enabled = sel(&mut i, "enabled");
         let active = sel(&mut i, "active");
         let d = dialect_of(&mut i, family, k, &["enabled", "active"]);
-        // claim disturbs #active, backing fact is #enabled ⇒ spared.
+        // claim disturbs @active, backing fact is @enabled ⇒ spared.
         assert_eq!(
             compare(
                 coord(k, e, Some(active)),
@@ -790,7 +790,7 @@ mod tests {
         // a claim-token is interpreted in the BACKING family's dialect, so two families spelling the
         // SAME tokens for their own cells will each spare the other's sibling-cell backing under the
         // flag. THIS IS THE PRICED FOOTGUN — documented, never lint-rescued. Both `widgetctl` and
-        // `evilctl` mint {clean, dirty} for kind K; a `#dirty` claim spares a `#clean` backing of
+        // `evilctl` mint {clean, dirty} for kind K; a `@dirty` claim spares a `@clean` backing of
         // EITHER family.
         let mut i = Interner::default();
         let k = KindId(i.intern("com.widget.K"));

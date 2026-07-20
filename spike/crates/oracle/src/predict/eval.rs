@@ -17,7 +17,7 @@
 //! module bakes no phase. Anything non-concrete ⇒ [`Resolution::Top`] with a reason
 //! string (`inv-kfail`, both directions: nothing ships, nothing elides).
 
-use super::ast::{Annotation, Command, Pattern, Predict, Stmt, Test, TestOp, Word};
+use super::ast::{Annotation, Command, MarkKind, Pattern, Predict, Stmt, Test, TestOp, Word};
 use dorc_core::{Span, Symbol};
 use dorc_syntax::sem::{self, UnsetPolicy};
 use std::collections::BTreeMap;
@@ -90,7 +90,7 @@ pub struct Resolved {
 /// Maps directly onto `core::EntityRef` at the wiring boundary
 /// (`Operand(text)` → `EntityRef::Operand`, `Singleton` → `EntityRef::Singleton`),
 /// preserving the existing Singleton semantics (`apt-get update` ⇒
-/// `package-index#fresh`, no `:operand` segment in its `fact_label`).
+/// `package-index@fresh`, no `:operand` segment in its `fact_label`).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ResolvedEntity {
     /// A concrete operand argv element (`nginx`) the annotation's value resolved to.
@@ -291,9 +291,25 @@ impl Evaluator {
                 }
                 // a probe body on the selected path: record its verbatim span (we run
                 // statically — the span ships into the probe artifact, C-1). A trailing
-                // effect mark (`cmd.mark`) is metadata for the lift/strip only; it does
-                // not change what the probe command DOES, so evaluation ignores it.
+                // effect mark (`cmd.mark`) does not change what the probe command DOES, so
+                // evaluation ignores it — EXCEPT the Singleton re-point below.
                 self.probe_body.push(cmd.span);
+                // Singleton re-point (`28A:rul-singleton-bind-drops`): a value-less nullary check
+                // drops its inline bind, so the identity comes from a verdict/observe mark's
+                // entity-LESS coordinate (`sm.dorc.PkgIndex@fresh`) — kind = the coordinate kind,
+                // entity = Singleton. Only when NO annotation was reached (the normal valued form
+                // sets `annotation` first); a non-empty entity here declines (⊤ MissingAnnotation).
+                if self.annotation.is_none()
+                    && let Some(mark) = &cmd.mark
+                    && matches!(
+                        mark.kind,
+                        MarkKind::Asserts | MarkKind::Refutes | MarkKind::Reads
+                    )
+                    && mark.target.entity.as_deref().unwrap_or("").is_empty()
+                    && !mark.target.kind.is_empty()
+                {
+                    self.annotation = Some((mark.target.kind.clone(), ResolvedEntity::Singleton));
+                }
                 // §2 per-channel STDOUT coverage (composed-probe rule): the last producing
                 // command reached IS the arm's stdout, so a later command overwrites this.
                 self.last_stdout = Some(stage_stdout_of(cmd));

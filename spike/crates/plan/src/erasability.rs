@@ -279,7 +279,7 @@ fn canon_fact(f: dorc_core::FactKey) -> String {
         dorc_core::Context::Wrapped(k) => format!("~ctx{}", k.0.as_u32()),
     };
     format!(
-        "k{}#{}@{}{ctx}",
+        "k{}@{}@{}{ctx}",
         kind.0.as_u32(),
         selector.0.as_u32(),
         entity

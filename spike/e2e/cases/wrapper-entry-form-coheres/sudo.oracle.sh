@@ -1,4 +1,4 @@
-# dorc-lang/v0.1
+# dorc-lang/v0.2
 # A COHERENT sudo wrapper (273 + 27C §3): predict env-scrubs then execs the guest; lend_map answers
 # user (mapped) / fs-view (full); the entry form re-runs sudo non-interactively (`-n`), passing the
 # guest verbatim. Authoring `sudo__enter` IS the traversal vouch (authoring-is-vouching): the author
@@ -9,8 +9,8 @@ sudo__predict() {
 }
 sudo__lend_map() {
    while [ "${1#-}" != "$1" ]; do shift; done
-   printf '%s\n' root : user
-   :                        : fs-view
+   printf '%s\n' root : lends user
+   : lends fs-view
    "$@"
 }
 sudo__enter() {

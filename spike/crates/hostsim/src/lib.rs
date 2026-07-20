@@ -674,15 +674,15 @@ mod tests {
     /// annotation, `[ "$2" = "" ]` multi-operand refusal). These DST tests model only
     /// `apt-get install` on `package`; `systemctl reload` has no check ⇒ Opaque ⇒ runs.
     /// Lifted with the test's interner so provider symbols match the book.
-    const CORPUS_PREDICT_SRC: &str = r##"
+    const CORPUS_PREDICT_SRC: &str = r#"
 apt_get__predict() {
    while [ "${1#-}" != "$1" ]; do shift; done
    verb=$1; shift
    while [ "${1#-}" != "$1" ]; do shift; done
    pkg : package = "$1"
-   if [ "$2" = "" ]; then dpkg-query -W "$pkg" >/dev/null 2>&1 : package:"$pkg"#installed ; fi
+   if [ "$2" = "" ]; then dpkg-query -W "$pkg" >/dev/null 2>&1 : sm.dorc.Package:"$pkg"@installed ; fi
 }
-"##;
+"#;
 
     /// Test convenience (elide-weld, 24D §3): vouch EVERY establish-bearing site so these DSTs keep
     /// exercising elision MECHANICS (convergence × wall). The vouch GATE is pinned elsewhere (plan's
@@ -772,8 +772,8 @@ apt_get__predict() {
         .value
     }
 
-    /// `kind:entity#installed` — the re-keyed cell (`notes/193`). These host-model
-    /// tests only ever exercise `package#installed`, so the selector is fixed here;
+    /// `kind:entity@installed` — the re-keyed cell (`notes/193`). These host-model
+    /// tests only ever exercise `package@installed`, so the selector is fixed here;
     /// the host is a plain set-membership oracle over whatever `FactKey` it is given.
     fn fk(i: &mut Interner, kind: &str, entity: &str) -> FactKey {
         FactKey {
@@ -1316,21 +1316,21 @@ apt_get__predict() {
     /// A connected check-pipe corpus (`271:rul-only-oracle-bytes-ship`): two read-only Query stages
     /// that DELEGATE (real stdout), so the pipe ships as a COMPOSED probe. The A6 otelcol shape +
     /// the stdlib grep, one source (`lift`/`lift_predicts` handle multiple funcdefs).
-    const CONNECTED_ORACLE: &str = r##"
+    const CONNECTED_ORACLE: &str = r#"
 otelcol__predict() {
    case $1 in
       --version)
          collector : io.opentelemetry.Collector = "otelcol"
-         otelcol --version :? io.opentelemetry.Collector:"otelcol"#version
+         otelcol --version :? io.opentelemetry.Collector:"otelcol"@version
          ;;
    esac
 }
 grep__predict() {
    while [ "${1#-}" != "$1" ]; do shift; done
    pat : sm.dorc.GrepMatch = "$1"
-   grep -q -- "$pat" :? sm.dorc.GrepMatch:"$pat"#matched
+   grep -q -- "$pat" :? sm.dorc.GrepMatch:"$pat"@matched
 }
-"##;
+"#;
 
     /// Resolve a connected pipe STAGE's stripped predict + stdout coverage from a given oracle `src`
     /// (mirror of the cli's `ship_predict_stage`). Reuses `predict_stage_stdout` for the coverage bit.

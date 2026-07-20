@@ -2035,7 +2035,7 @@ fn build_survival_footprints(
         if let Some(mut footprint) = dorc_plan::Footprint::authored(provider, coords)
             .map(|fp| fp.with_own(own).with_defining(defining))
         {
-            // `277` §3: record each emission's `#selector` so a selector-bearing disturbs mark can
+            // `277` §3: record each emission's `@selector` so a selector-bearing disturbs mark can
             // SPARE a sibling cell under the dialect. Whole-entity emissions (the corpus default,
             // `None`) record nothing ⇒ ⊤ ⇒ collide (empty-world-byte-identical).
             for (coord, selector) in coords_with_selectors {
@@ -2056,7 +2056,7 @@ fn build_survival_footprints(
 /// and intern the emitted coordinates. `None` ⇒ any of: non-literal argv, no matching
 /// `touches()`, a ⊤ trace, or an EMPTY emission (no claim = wall).
 /// One footprint coordinate plus its disturbs-emission selector (`277` §3): the entity-granular
-/// [`dorc_plan::EntityCoord`] that drives canonicalization/render, and the `#selector` cell the
+/// [`dorc_plan::EntityCoord`] that drives canonicalization/render, and the `@selector` cell the
 /// dialect consults (`None` ⇒ whole-entity ⊤).
 type FootprintCoord = (dorc_plan::EntityCoord, Option<dorc_core::SelectorId>);
 
@@ -2096,7 +2096,7 @@ fn resolve_touches_footprint(
             })
     })?;
 
-    // Intern each opaque `kind:entity#selector` fragment into the shared vocabulary (the fence).
+    // Intern each opaque `kind:entity@selector` fragment into the shared vocabulary (the fence).
     // The selector rides alongside the entity-granular coord (`277` §3): absent ⇒ whole-entity ⊤.
     let entity_coords = coords
         .iter()
@@ -6186,7 +6186,7 @@ mod tests {
         use dorc_analysis::cfg::CfgNodeId;
         use dorc_analysis::effect::SkipClass;
         let mut i = Interner::default();
-        let killed = pkg(&mut i, "nginx"); // package:nginx#installed (a purge's killed cell)
+        let killed = pkg(&mut i, "nginx"); // package:nginx@installed (a purge's killed cell)
         let established = pkg(&mut i, "curl");
         let kill_node = CfgNodeId(7);
         let est_node = CfgNodeId(3);

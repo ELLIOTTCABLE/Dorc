@@ -93,56 +93,79 @@ pub enum Stmt {
 
 /// A parsed inline-dialect mark (`277` §4a/§4d): an effect / observe / emission
 /// annotation trailing a command. Every fragment is an OPAQUE syntactic string
-/// (`inv-referent-agnostic`): the parser splits `kind:entity#selector` structurally
+/// (`inv-referent-agnostic`): the parser splits `kind:entity@selector` structurally
 /// and NEVER decodes what the tokens mean. Carries a [`span`](Mark::span) covering
 /// the marker plus target (for the surgical strip, R1c).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Mark {
-    /// Which dialect mark this is (selected by the sigil `:` / `:!` / `:?`).
+    /// The mark VERB (`281` §5) — the typed payload discriminant.
     pub kind: MarkKind,
-    /// The `kind:entity#selector` coordinate (entity/selector may be absent).
+    /// The `kind:entity@selector` coordinate (entity/selector may be absent).
     pub target: MarkTarget,
     /// The mark span, from the `:`/`:!`/`:?` marker token through the end of the
     /// target. The strip deletes exactly this region.
     pub span: Span,
 }
 
-/// The dialect mark discriminant, selected by the sigil family (`277` §4a). All marks
-/// trail a command; the bare statement-position ACK/POISON marks are RETIRED (deleted
-/// from the grammar in the corpus respell — zero occurrences).
+/// The dialect mark VERB (`281` §5), the typed discriminant of a mark-block entry.
+/// Selected by the sigil head-sugar (`:`/`:!`/`:?`/`:=`) or a period-free verb word. The
+/// verb fixes the payload TYPE read out of [`MarkTarget`] (`281` §4 keystone: verbs are
+/// period-free, coordinates dotted). During the additive respell ladder the OLD parser
+/// still emits these from OLD spellings role-awarely ([`super::parser`]); the payload
+/// LOCATION per verb is noted below (the field the split populates).
+///
+/// Core cell-and-value plane (coordinate payload — `target.kind`/`.entity`/`.prop`):
+/// `Asserts`/`Refutes`/`Reads`. Meta plane (token/kind payload): the rest. Payload
+/// homes stay where the `kind:entity` split lands until CP-D unifies them.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MarkKind {
-    /// `cmd … : kind:entity#selector` — the verdict mark, named sense: the command's
-    /// rc establishes the property (→ `ValueClaim::Establish`). ALSO the bare-kind
-    /// emission mark on a `disturbs()`/`reaches()` line (`… : sm.dorc.Package`) and
-    /// the substrate/invariance token mark on a `state_stored_only_in()` line
-    /// (`… : fs`, `… : invariant:user`) — those carry no selector and key no cell.
-    Establish,
-    /// `cmd … :! kind:entity#selector` — the verdict mark, complement sense: the verb
-    /// makes the fact NOT hold (→ `ValueClaim::EstablishInverted`). Polarity rides the
-    /// `:!` sigil now, never a coordinate suffix (`277` §4a).
-    EstablishInverted,
-    /// `cmd … :? kind:entity#selector` — the observe mark: read-only depends-upon
-    /// (→ `ValueClaim::Observe`).
-    Observe,
+    /// `:` (omit sugar) / word `asserts` — verdict, named sense: the command's rc
+    /// establishes the property (→ `ValueClaim::Establish`). rc-consuming. Coordinate.
+    Asserts,
+    /// `:!` / word `refutes` — verdict, complement sense: rc 0 witnesses the cell false
+    /// (→ `ValueClaim::EstablishInverted`). rc-consuming. Coordinate.
+    Refutes,
+    /// `:?` / word `reads` — observe: read-only depends-upon (→ `ValueClaim::Observe`,
+    /// backing-widening). Coordinate.
+    Reads,
+    /// word `safe-across` — the context vouch (`27C` §2; `entry.rs`). Payload = a
+    /// dimension token in `target.entity` (old `tolerates:user` split; brace-set there).
+    SafeAcross,
+    /// word `disturbs` — first-order footprint (`cmd__disturbs`) AND transitive reach
+    /// (`kind__disturbance_reaches_only`), unified (`281` §5). Payload = a kind in
+    /// `target.kind` (+ `@selector` in `target.prop`); the entity rides the printf line.
+    Disturbs,
+    /// word `lends` — the wrapper dimension member (`273` §3; `wrapper.rs`). Payload = a
+    /// dimension token in `target.kind` (old `: user` / `: fs-view`).
+    Lends,
+    /// word `stored-in` — the kind's substrate (`272` §2; `carry.rs`). Payload = a
+    /// substrate token in `target.kind` (old `: fs` / `: net-kernel`).
+    StoredIn,
+    /// word `undivided-by-transit-across` — axis invariance (`277` §4e / `27C` §4(a);
+    /// `carry.rs`). Payload = an axis token in `target.entity` (old `invariant:user`).
+    Undivided,
 }
 
-/// The `kind:entity#selector` coordinate of a [`Mark`], split syntactically and left
+/// The `kind:entity@selector` coordinate of a [`Mark`], split syntactically and left
 /// OPAQUE (`inv-referent-agnostic` — never decoded). Entity/selector may be absent (a
-/// kind-only emission mark `: sm.dorc.Package`; a substrate token `: fs`).
+/// kind-only emission mark `: disturbs sm.dorc.Package`; a substrate token `: stored-in fs`).
+///
+/// SEAM (`28A:rul-verdict-value-tail-drops`): the old verdict-position `= value` tail (once a
+/// `value: Option<Word>` field here, read by the `carry.rs` read-set-closure walk) is DROPPED
+/// with the old grammar — corpus-dead, no `281` spelling. Re-add the field here + re-wire the
+/// `carry.rs` value-cleanliness read if the value plane ever returns (extend-by-name; the
+/// `.diff`/is-noop value-layer future mints its own spelling, TODO-ADDTL item 1).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MarkTarget {
     /// The kind fragment (everything before the first `:`). Opaque; keeps its
     /// reverse-DNS dots (`sm.dorc.Package`).
     pub kind: String,
-    /// The entity fragment (between the first `:` and the `#`), if present. An
-    /// explicit empty string is the empty-entity form `kind:#sel` (`277` §4a).
+    /// The entity fragment (between the first `:` and the `@`), if present. An
+    /// explicit empty string is the empty-entity form `kind:@sel` (`281` §6).
     pub entity: Option<String>,
-    /// The selector fragment (after the `#`), if present. Opaque. (Field named `prop`
-    /// for continuity; it is the `#selector` third coordinate position now.)
+    /// The selector fragment (after the `@`), if present. Opaque. (Field named `prop`
+    /// for continuity; it is the `@selector` third coordinate position now.)
     pub prop: Option<String>,
-    /// The optional `= value` tail on a verdict mark (an explicit value).
-    pub value: Option<Word>,
 }
 
 /// The inline kind-annotation `name : kind = value` (19H §2.1, ch-shape-anno).

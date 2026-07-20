@@ -351,8 +351,10 @@ mod tests {
     #[test]
     fn collision_refuses_munge_non_injectivity() {
         let mut i = Interner::default();
-        let dotted = "apt.get__predict() { pkg : package = \"$1\"; dpkg-query -W \"$pkg\"; }";
-        let under = "apt_get__predict() { pkg : package = \"$1\"; dpkg-query -W \"$pkg\"; }";
+        let dotted =
+            "apt.get__predict() { pkg : sm.dorc.Package = \"$1\"; dpkg-query -W \"$pkg\"; }";
+        let under =
+            "apt_get__predict() { pkg : sm.dorc.Package = \"$1\"; dpkg-query -W \"$pkg\"; }";
         let diags = lint_oracle_reserved_names(&mut i, &[dotted, under]);
         let hits: Vec<_> = diags
             .iter()
@@ -375,8 +377,8 @@ mod tests {
     #[test]
     fn same_provider_two_files_is_not_a_collision() {
         let mut i = Interner::default();
-        let a = "apt_get__predict() { pkg : package = \"$1\"; dpkg-query -W \"$pkg\"; }";
-        let b = "apt_get__disturbs() { printf '%s\\n' \"$1\" : package; }";
+        let a = "apt_get__predict() { pkg : sm.dorc.Package = \"$1\"; dpkg-query -W \"$pkg\"; }";
+        let b = "apt_get__disturbs() { printf '%s\\n' \"$1\" : disturbs package; }";
         let diags = lint_oracle_reserved_names(&mut i, &[a, b]);
         assert!(
             !diags
