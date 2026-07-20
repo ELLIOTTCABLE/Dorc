@@ -4159,9 +4159,7 @@ mod why_lens_dedup_tests {
     //! the 2nd forced run's `why:` is wrongly suppressed. The arena hash-conses identical
     //! `(OriginKind, span)` origins (`core::prov` `hash_cons_shares_identical_origins`), so two
     //! `arena.leaf(TopCause, same_span)` calls reproduce the inlined-body cause collision.
-    use dorc_core::diag::{
-        CmdsubOperandTop, CommandName, Diag, DiagCode, OperandPosition, SiteId,
-    };
+    use dorc_core::diag::{CmdsubOperandTop, CommandName, Diag, DiagCode, OperandPosition, SiteId};
     use dorc_core::{BytePos, LeafId, OriginKind, ProvArena, Span, TopCause};
 
     fn cmdsub_top(arena: &mut ProvArena, leaf: u32, body_span: Span) -> Diag {

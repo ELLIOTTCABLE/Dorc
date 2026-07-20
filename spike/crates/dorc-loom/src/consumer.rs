@@ -14,11 +14,11 @@ use std::collections::{BTreeMap, BTreeSet};
 use dorc_core::catalog::{OwnedEntry, owned_catalog};
 use dorc_core::diag::{
     AidUnloadedSiblingOracle, CarriedAcrossSubstrateAxis, CmdsubOperandTop, CommandName,
-    DanglingReference, Diag, DiagCode, EscalationPolicy, MarkHashcolonMalformed, MarkRcArityExceeded,
-    MarkStandaloneRcConsumer, MarkUnknownVerb, MissingDialectMarker, MungeNameInvalid,
-    OperandPosition, RecordsFactTruncated, RenderHeredocRefused, SiteId, SiteUnresolvable,
-    SyntaxUnsupported, ToleratesUnknownDimension, WhylogAbsent, WhylogBookDesync, WhylogCorrupt,
-    WhylogVersionRefused, WrapperPeelIncoherent, render_cli_tagged, render_cli_with,
+    DanglingReference, Diag, DiagCode, EscalationPolicy, MarkHashcolonMalformed,
+    MarkRcArityExceeded, MarkStandaloneRcConsumer, MarkUnknownVerb, MissingDialectMarker,
+    MungeNameInvalid, OperandPosition, RecordsFactTruncated, RenderHeredocRefused, SiteId,
+    SiteUnresolvable, SyntaxUnsupported, ToleratesUnknownDimension, WhylogAbsent, WhylogBookDesync,
+    WhylogCorrupt, WhylogVersionRefused, WrapperPeelIncoherent, render_cli_tagged, render_cli_with,
 };
 use dorc_core::{Interner, LeafId, ProvArena, Severity, TopCause};
 use errorloom::{
