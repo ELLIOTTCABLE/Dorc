@@ -1008,7 +1008,7 @@ pub fn owned_catalog() -> Vec<OwnedEntry> {
         .collect()
 }
 
-impl CatalogLookup for [OwnedEntry] {
+impl CatalogLookup for Vec<OwnedEntry> {
     fn message(&self, slug: &str) -> Option<&str> {
         self.iter()
             .find(|e| e.slug == slug)

@@ -18,6 +18,9 @@ use errorloom::{
     ArrangementSlug, InstanceId, ParamName, Region, Span, TaggedRender, TaggedRenderError,
 };
 
+mod consumer;
+pub use consumer::DorcConsumer;
+
 /// The opaque consumer key errorloom groups prose fields by: Dorc's
 /// `(code, field)` (`28A` §1). errorloom compares/sorts it but never inspects it;
 /// the derives satisfy `errorloom::ConsumerKey` (`Clone + Ord + Debug`).
