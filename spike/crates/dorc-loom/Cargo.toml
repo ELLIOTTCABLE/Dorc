@@ -1,0 +1,18 @@
+[package]
+name = "dorc-loom"
+version = "0.0.0"
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+
+# The Dorc↔errorloom adapter (`282` §4 · `28A` §1). dorc-core OWNS its tagged-span
+# vocabulary and takes NO dependency on errorloom (kernel-dep-cleanliness); THIS
+# crate is the ordinary consumer shape — it maps a core-owned tagged render onto
+# errorloom's generic span schema and proves the gap-free total cover through
+# `errorloom::TaggedRender::new`. Both deps are path-local, publish=false.
+[dependencies]
+dorc-core = { path = "../core", version = "0.0.0" }
+errorloom = { path = "../errorloom", version = "0.0.0" }
+
+[lints]
+workspace = true
