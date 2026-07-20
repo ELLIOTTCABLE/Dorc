@@ -2291,9 +2291,33 @@ pub fn line_col(src: &str, byte: usize) -> (usize, usize) {
     (line, clamped.saturating_sub(line_start).saturating_add(1))
 }
 
+/// The floor on the gutter's line-number field (item-2 gutter stability): a 3-digit field holds
+/// 0–999, so the `|` column stays put across a whole invocation of small/medium books and a code
+/// line never shifts relative to its neighbours. A larger number BUTTS the bar (`999|`), conserving
+/// width; the field grows past this only when a book exceeds 999 lines.
+const GUTTER_MIN_WIDTH: usize = 3;
+
+/// The under-span mark for a caret frame. A primary SPAN (a byte region, `run >= 2`) renders the
+/// bracket form `\`+`_`…+`/` — it reads as "this whole extent", not "this point" (the `e6edf5e`
+/// style). A single-column primary keeps a `^` (the door item-1 left open for a lexeme point); a
+/// secondary span keeps its `-` underline. Pure; total.
+fn span_underline(run: usize, primary: bool) -> String {
+    if !primary {
+        return "-".repeat(run);
+    }
+    if run < 2 {
+        return "^".repeat(run);
+    }
+    let mut mark = String::with_capacity(run);
+    mark.push('\\');
+    mark.extend(core::iter::repeat_n('_', run.saturating_sub(2)));
+    mark.push('/');
+    mark
+}
+
 /// A rustc-style caret region for ONE span (ack-8, the diagnostics frame): the `--> file:line:col`
-/// locator, the source line in a `N | …` gutter, and an underline (`^` primary / `-` secondary)
-/// beneath the span with an optional label. This is the shared primitive both the legacy-diag
+/// locator, the source line in a `N | …` gutter, and an underline (`\`…`/` primary span / `-`
+/// secondary) beneath the span with an optional label. This is the shared primitive both the legacy-diag
 /// render (the cli's `report()`) and [`render_cli`]'s multi-span model call, so the frame shape
 /// stays identical whether a diagnostic carries one span or several (cause+effect in one frame).
 ///
@@ -2317,15 +2341,15 @@ pub fn frame_region(
     let hi = span.hi.0 as usize;
     let (line, col) = line_col(src, lo);
     let (hi_line, hi_col) = line_col(src, hi);
-    let marker = if primary { '^' } else { '-' };
-    // The gutter is sized to the WIDEST line number (the last), so the `|` columns align down a
-    // multi-line frame; a single-line span keeps `hi_line == line`, so the width is unchanged.
-    let gutter_w = hi_line.to_string().len();
+    // The gutter is sized to the WIDEST line number (the last), floored at [`GUTTER_MIN_WIDTH`] so
+    // the `|` column sits at a stable place across small books (item-2 gutter stability); a
+    // multi-line span keeps the `|` columns aligned, a single-line span keeps `hi_line == line`.
+    let gutter_w = hi_line.to_string().len().max(GUTTER_MIN_WIDTH);
     let gutter = " ".repeat(gutter_w);
     let lines: Vec<&str> = src.lines().collect();
     let mut out = String::new();
-    let _ = write!(out, "\n  --> {filename}:{line}:{col}");
-    let _ = write!(out, "\n{gutter} |");
+    let _ = write!(out, "\n{gutter}--> {filename}:{line}:{col}");
+    let _ = write!(out, "\n{gutter}|");
     for l in line..=hi_line {
         let line_text = lines.get(l.saturating_sub(1)).copied().unwrap_or("");
         let num = l.to_string();
@@ -2339,9 +2363,9 @@ pub fn frame_region(
             line_text.len()
         };
         let run = end.saturating_sub(start).max(1);
-        let underline: String = core::iter::repeat_n(marker, run).collect();
-        let _ = write!(out, "\n{pad}{num} | {line_text}");
-        let _ = write!(out, "\n{gutter} | {}{underline}", " ".repeat(start));
+        let underline = span_underline(run, primary);
+        let _ = write!(out, "\n{pad}{num}| {line_text}");
+        let _ = write!(out, "\n{gutter}| {}{underline}", " ".repeat(start));
     }
     if let Some(l) = label {
         let _ = write!(out, " {l}");
@@ -2684,12 +2708,12 @@ mod tests {
             "file:line:col locator: {frame}"
         );
         assert!(
-            frame.contains("2 | apt-get install $(date)"),
+            frame.contains("2| apt-get install $(date)"),
             "the source line in a gutter: {frame}"
         );
         assert!(
-            frame.contains("^^^^^^^"),
-            "a 7-caret underline under `$(date)`: {frame}"
+            frame.contains("\\_____/"),
+            "a 7-wide span bracket under `$(date)`: {frame}"
         );
     }
 
@@ -2715,17 +2739,17 @@ mod tests {
             "locator on the first line: {frame}"
         );
         assert!(
-            frame.contains("\n 9 | iii"),
-            "line 9 in a width-2 gutter: {frame}"
+            frame.contains("\n  9| iii"),
+            "line 9 in the 3-wide gutter: {frame}"
         );
         assert!(
-            frame.contains("\n10 | jjj"),
+            frame.contains("\n 10| jjj"),
             "line 10 in the aligned gutter: {frame}"
         );
         assert_eq!(
-            frame.matches("\n   | ^^^").count(),
+            frame.matches("\n   | \\_/").count(),
             2,
-            "a per-line `^^^` underline beneath BOTH covered lines (not just the first): {frame}"
+            "a per-line `\\_/` span bracket beneath BOTH covered lines (not just the first): {frame}"
         );
     }
 
@@ -2751,8 +2775,8 @@ mod tests {
         );
         let cli = render_cli(&d, src, "book.sh", &Interner::default());
         assert!(
-            cli.contains("^^^^^^^^^^^"),
-            "primary `^` caret under `run_stage_a`: {cli}"
+            cli.contains("\\_________/"),
+            "primary span bracket under `run_stage_a`: {cli}"
         );
         assert!(
             cli.contains("---------"),
